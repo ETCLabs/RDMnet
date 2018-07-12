@@ -86,7 +86,7 @@ Steps to build the Windows RDMnet prototypes:
 
 3. Open the Device solution (`RDMnet/apps/windows/device/msvc2015/device.sln`)
 4. Build the solution in your configuration of choice (Build -> Build Solution)
-   
+
 #### To build the Broker:
 
 3. Open the Broker solution (`RDMnet/apps/windows/broker/msvc2015/broker.sln`)
@@ -98,6 +98,8 @@ Steps to build the Windows RDMnet prototypes:
 4. Build the solution in your configuration of choice (Build -> Build Solution)
 
 #### To build the Controller:
+
+(**Note that only the 32-bit version of the Controller is currently buildable**)
 
 3. To satisfy the Controller's Qt dependency, there are two options:
    + Set a system environment variable called QTDIR which points at the Qt
@@ -132,8 +134,9 @@ build_all_apps.bat
 ### lwpa
 
 RDMnet depends on the LightWeight Platform Abstraction (lwpa) library for
-platform abstraction. See the documentation for lwpa **TODO link** for details
-on how to include lwpa in your project.
+platform abstraction. See the
+[documentation for lwpa](https://etclabs.github.io/lwpa) for details on how to
+include lwpa in your project.
 
 ### Bonjour SDK for Windows
 
