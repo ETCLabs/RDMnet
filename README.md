@@ -41,8 +41,8 @@ using Microsoft's Visual Studio 2015 toolchain.
 ## Building
 
 For instructions on building the RDMnet library and applications, as well as an
-RDMnet overview and in-depth documentation, please see the documentation
-**TODO link**.
+RDMnet overview and in-depth documentation, please see the
+[documentation](https://etclabs.github.io/RDMnet/docs/index.html).
 
 ## Future Plans
 
