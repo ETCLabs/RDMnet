@@ -33,7 +33,8 @@ Gateway, using one or more ETC [Gadget II](https://www.etcconnect.com/Products/N
 devices to communicate with RDM fixtures.
 * *manager*: A console application which implements a basic LLRP Manager.
 
-The applications are available as a binary package here **TODO Link**.
+The applications are available as a binary package
+[here](https://etclabs.github.io/RDMnet).
 
 The library and applications currently support Microsoft Windows, and are built
 using Microsoft's Visual Studio 2015 toolchain.
