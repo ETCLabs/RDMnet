@@ -6,6 +6,12 @@
 *.exe
 *.o
 *.so
+bin/
+
+# MSVC2015 and Qt
+Debug/
+Release/
+GeneratedFiles/
 
 # Packages #
 ############
@@ -35,3 +41,8 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Visual Studio Code #
+######################
+.vscode/
+*.code-workspace
