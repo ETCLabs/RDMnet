@@ -1,0 +1,417 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Form Files">
+      <UniqueIdentifier>{99349809-55BA-4b9d-BF79-8FDBB0286EB3}</UniqueIdentifier>
+      <Extensions>ui</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}</UniqueIdentifier>
+      <Extensions>moc;h;cpp</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="Generated Files\Debug">
+      <UniqueIdentifier>{82e8aede-5507-4158-a9da-74d4e12e4a86}</UniqueIdentifier>
+      <Extensions>cpp;moc</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="Generated Files\Release">
+      <UniqueIdentifier>{bbf01eaa-9d90-43da-9c37-336cf8f08656}</UniqueIdentifier>
+      <Extensions>cpp;moc</Extensions>
+      <SourceControlFiles>False</SourceControlFiles>
+    </Filter>
+    <Filter Include="Header Files\GUI">
+      <UniqueIdentifier>{abba38db-78cb-45cd-9c39-e6a7ce141376}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GUI">
+      <UniqueIdentifier>{332bde15-13c6-4543-8aa2-7be709eb1e13}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\GUI\Models">
+      <UniqueIdentifier>{4099a47b-3419-4042-b0ba-faa3561c9c77}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\GUI\Items">
+      <UniqueIdentifier>{30603a5a-5da9-4331-abe2-23588c284c2e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GUI\Items">
+      <UniqueIdentifier>{ea48554b-897d-4368-bb0c-55ae746d7c64}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GUI\Models">
+      <UniqueIdentifier>{f0696142-3d39-480e-a8a5-ea11cea6c96e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\rdmnet_lib">
+      <UniqueIdentifier>{0763847a-f0be-4e26-9f7c-1d11475d9e95}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\lwpa_lib">
+      <UniqueIdentifier>{66aa5c08-0348-4068-be2d-284acc3f9b9f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\rdmnet_lib">
+      <UniqueIdentifier>{6c75802c-d119-4f3d-b51d-a1baa418ad70}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\lwpa_lib">
+      <UniqueIdentifier>{e9170ce9-efa0-4f5a-97a6-517aa27f6952}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="GeneratedFiles\Debug\moc_RDMnetControllerGUI.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_RDMnetControllerGUI.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="..\RDMnetClientItem.cpp">
+      <Filter>Source Files\GUI\Items</Filter>
+    </ClCompile>
+    <ClCompile Include="..\RDMnetNetworkItem.cpp">
+      <Filter>Source Files\GUI\Items</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ResponderItem.cpp">
+      <Filter>Source Files\GUI\Items</Filter>
+    </ClCompile>
+    <ClCompile Include="..\SearchingStatusItem.cpp">
+      <Filter>Source Files\GUI\Items</Filter>
+    </ClCompile>
+    <ClCompile Include="..\BrokerItem.cpp">
+      <Filter>Source Files\GUI\Items</Filter>
+    </ClCompile>
+    <ClCompile Include="..\EndpointItem.cpp">
+      <Filter>Source Files\GUI\Items</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PersonalityPropertyValueItem.cpp">
+      <Filter>Source Files\GUI\Items</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PropertyItem.cpp">
+      <Filter>Source Files\GUI\Items</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PropertyValueItem.cpp">
+      <Filter>Source Files\GUI\Items</Filter>
+    </ClCompile>
+    <ClCompile Include="..\RDMnetNetworkModel.cpp">
+      <Filter>Source Files\GUI\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="..\SimpleNetworkProxyModel.cpp">
+      <Filter>Source Files\GUI\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="..\NetworkDetailsProxyModel.cpp">
+      <Filter>Source Files\GUI\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="..\RDMnetControllerGUI.cpp">
+      <Filter>Source Files\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\BrokerStaticAddGUI.cpp">
+      <Filter>Source Files\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\main.cpp">
+      <Filter>Source Files\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PropertyEditorsDelegate.cpp">
+      <Filter>Source Files\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_NetworkDetailsProxyModel.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_NetworkDetailsProxyModel.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_RDMnetNetworkModel.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_RDMnetNetworkModel.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_SimpleNetworkProxyModel.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_SimpleNetworkProxyModel.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_BrokerStaticAddGUI.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_BrokerStaticAddGUI.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_PropertyEditorsDelegate.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_PropertyEditorsDelegate.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\qrc_RDMnetControllerGUI.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_error.c">
+      <Filter>Source Files\lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_log.c">
+      <Filter>Source Files\lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_mempool.c">
+      <Filter>Source Files\lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_pdu.c">
+      <Filter>Source Files\lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_rbtree.c">
+      <Filter>Source Files\lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_rootlayerpdu.c">
+      <Filter>Source Files\lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\md5c.c">
+      <Filter>Source Files\lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_cid.c">
+      <Filter>Source Files\lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_socket.c">
+      <Filter>Source Files\lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_thread.c">
+      <Filter>Source Files\lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_timer.c">
+      <Filter>Source Files\lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_lock.c">
+      <Filter>Source Files\lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_netint.c">
+      <Filter>Source Files\lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\rdmresponder.c">
+      <Filter>Source Files\rdmnet_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\rptprot.c">
+      <Filter>Source Files\rdmnet_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\brokerprot.c">
+      <Filter>Source Files\rdmnet_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\rdmcontroller.c">
+      <Filter>Source Files\rdmnet_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\rdmnetclient.c">
+      <Filter>Source Files\rdmnet_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\rdmnetconnection.c">
+      <Filter>Source Files\rdmnet_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\rdmnetmsgbuf.c">
+      <Filter>Source Files\rdmnet_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\rdmtypes.c">
+      <Filter>Source Files\rdmnet_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\rdmnetmessage.c">
+      <Filter>Source Files\rdmnet_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\discovery\bonjour\rdmnetdiscovery_bonjour.c">
+      <Filter>Source Files\rdmnet_lib</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\RDMnetClientItem.h">
+      <Filter>Header Files\GUI\Items</Filter>
+    </ClInclude>
+    <ClInclude Include="..\RDMnetNetworkItem.h">
+      <Filter>Header Files\GUI\Items</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ResponderItem.h">
+      <Filter>Header Files\GUI\Items</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SearchingStatusItem.h">
+      <Filter>Header Files\GUI\Items</Filter>
+    </ClInclude>
+    <ClInclude Include="..\BrokerItem.h">
+      <Filter>Header Files\GUI\Items</Filter>
+    </ClInclude>
+    <ClInclude Include="..\EndpointItem.h">
+      <Filter>Header Files\GUI\Items</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PersonalityPropertyValueItem.h">
+      <Filter>Header Files\GUI\Items</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PropertyItem.h">
+      <Filter>Header Files\GUI\Items</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PropertyValueItem.h">
+      <Filter>Header Files\GUI\Items</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_RDMnetControllerGUI.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_BrokerStaticAddGUI.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\src\md5.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_log.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_mempool.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_netint.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_pack.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_pdu.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_rbtree.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_rootlayerpdu.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_socket.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_timer.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\acn_prot.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_bool.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_cid.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_common.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_error.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_inet.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_int.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\windows\lwpa_socket_plat.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\windows\lwpa_thread.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\windows\lwpa_lock.h">
+      <Filter>Header Files\lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\llrpprot.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\message.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\opts.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\rdmcontroller.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\rdmresponder.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\rdmtypes.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\rptprot.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\version.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\brokerprot.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\client.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\connection.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\cpputil.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\discovery.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\eptprot.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\estardm.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\estardmnet.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\common\brokerprotpriv.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\common\rdmnetconnpriv.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\common\rdmnetmsgbuf.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\common\rptprotpriv.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\discovery\bonjour\rdmnetdiscovery_bonjour.h">
+      <Filter>Header Files\rdmnet_lib</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\RDMnetControllerGUI.h">
+      <Filter>Header Files\GUI</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\RDMnetControllerGUI.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\BrokerStaticAddGUI.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\NetworkDetailsProxyModel.h">
+      <Filter>Header Files\GUI\Models</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\RDMnetNetworkModel.h">
+      <Filter>Header Files\GUI\Models</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\SimpleNetworkProxyModel.h">
+      <Filter>Header Files\GUI\Models</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\BrokerStaticAddGUI.h">
+      <Filter>Header Files\GUI</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\PropertyEditorsDelegate.h">
+      <Filter>Header Files\GUI</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\RDMnetControllerGUI.qrc">
+      <Filter>Resource Files</Filter>
+    </CustomBuild>
+  </ItemGroup>
+</Project>

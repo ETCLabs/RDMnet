@@ -1,0 +1,194 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{FEF3AD8B-F247-462E-85A3-618A392CBF5D}</ProjectGuid>
+    <RootNamespace>manager</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(Platform)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(Platform)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>..;..\..\..\..\src\include;..\..\..\..\port\windows\msvc2015\include;..\..\..\..\..\lwpa\include;..\..\..\..\..\lwpa\include\windows;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+      <AdditionalDependencies>ws2_32.lib;iphlpapi.lib;winmm.lib;Rpcrt4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>..;..\..\..\..\src\include;..\..\..\..\port\windows\msvc2015\include;..\..\..\..\..\lwpa\include;..\..\..\..\..\lwpa\include\windows;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>ws2_32.lib;iphlpapi.lib;winmm.lib;Rpcrt4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>..;..\..\..\..\src\include;..\..\..\..\port\windows\msvc2015\include;..\..\..\..\..\lwpa\include;..\..\..\..\..\lwpa\include\windows;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+      <AdditionalDependencies>ws2_32.lib;iphlpapi.lib;winmm.lib;Rpcrt4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>..;..\..\..\..\src\include;..\..\..\..\port\windows\msvc2015\include;..\..\..\..\..\lwpa\include;..\..\..\..\..\lwpa\include\windows;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>ws2_32.lib;iphlpapi.lib;winmm.lib;Rpcrt4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_cid.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_error.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_log.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_mempool.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_pdu.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_rbtree.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_rootlayerpdu.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_uid.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\md5c.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_lock.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_netint.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_socket.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_thread.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_timer.c" />
+    <ClCompile Include="..\..\..\..\src\common\llrp.c" />
+    <ClCompile Include="..\..\..\..\src\common\llrpprot.c" />
+    <ClCompile Include="..\..\..\..\src\common\rdmcontroller.c" />
+    <ClCompile Include="..\..\..\..\src\common\rdmtypes.c" />
+    <ClCompile Include="..\manager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\acn_prot.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\estardm.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\estardmnet.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_bool.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_cid.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_common.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_error.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_inet.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_int.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_log.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_mempool.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_netint.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_pack.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_pdu.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_rbtree.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_rootlayerpdu.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_socket.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_timer.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_uid.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\windows\lwpa_lock.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\windows\lwpa_socket_plat.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\windows\lwpa_thread.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\src\md5.h" />
+    <ClInclude Include="..\..\..\..\src\common\llrppriv.h" />
+    <ClInclude Include="..\..\..\..\src\common\llrpprotpriv.h" />
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\llrp.h" />
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\rdmcontroller.h" />
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\rdmtypes.h" />
+    <ClInclude Include="..\rdmnet_config.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

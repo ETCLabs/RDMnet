@@ -1,0 +1,140 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="rdmnet_lib">
+      <UniqueIdentifier>{efbe4c1b-dbfd-4a96-b068-92d2b637f4ac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lwpa_lib">
+      <UniqueIdentifier>{95eb812d-faea-4c14-8a8a-06bc938a4b76}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lwpa_lib\src">
+      <UniqueIdentifier>{1c0d3a3e-ecc2-4f0a-87a2-c68f3f090c36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lwpa_lib\include">
+      <UniqueIdentifier>{265ca3da-c1fa-441f-8c8d-8ebe15869791}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\..\lwpa\src\lwpa_rbtree.c">
+      <Filter>lwpa_lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\..\lwpa\src\lwpa_rootlayerpdu.c">
+      <Filter>lwpa_lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\..\lwpa\src\md5c.c">
+      <Filter>lwpa_lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\..\lwpa\src\lwpa_cid.c">
+      <Filter>lwpa_lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\..\lwpa\src\lwpa_error.c">
+      <Filter>lwpa_lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\..\lwpa\src\lwpa_log.c">
+      <Filter>lwpa_lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\..\lwpa\src\lwpa_mempool.c">
+      <Filter>lwpa_lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\..\lwpa\src\lwpa_pdu.c">
+      <Filter>lwpa_lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\..\lwpa\src\windows\lwpa_socket.c">
+      <Filter>lwpa_lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\..\lwpa\src\windows\lwpa_thread.c">
+      <Filter>lwpa_lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\..\lwpa\src\windows\lwpa_timer.c">
+      <Filter>lwpa_lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\..\lwpa\src\windows\lwpa_lock.c">
+      <Filter>lwpa_lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\..\lwpa\src\windows\lwpa_netint.c">
+      <Filter>lwpa_lib\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\discovery\bonjour\rdmnetdiscovery_bonjour.c">
+      <Filter>rdmnet_lib</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\lwpa_inet.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\lwpa_int.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\lwpa_log.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\lwpa_mempool.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\lwpa_netint.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\lwpa_pack.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\lwpa_pdu.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\lwpa_rbtree.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\lwpa_rootlayerpdu.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\lwpa_socket.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\lwpa_timer.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\acn_prot.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\lwpa_bool.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\lwpa_cid.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\lwpa_common.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\lwpa_error.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\windows\lwpa_socket_plat.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\windows\lwpa_thread.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\include\windows\lwpa_lock.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\lwpa\src\md5.h">
+      <Filter>lwpa_lib\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\bonjour_browse\rdmnetdiscovery_bonjour.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\src\include\rdmnet\rdmnetdiscovery.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

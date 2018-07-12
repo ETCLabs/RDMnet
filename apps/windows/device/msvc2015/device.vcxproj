@@ -1,0 +1,247 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_cid.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_error.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_log.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_mempool.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_pdu.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_rbtree.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_rootlayerpdu.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_uid.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\md5c.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_lock.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_netint.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_socket.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_thread.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_timer.c" />
+    <ClCompile Include="..\..\..\..\src\common\brokerprot.c" />
+    <ClCompile Include="..\..\..\..\src\common\llrp.c" />
+    <ClCompile Include="..\..\..\..\src\common\llrpprot.c" />
+    <ClCompile Include="..\..\..\..\src\common\rdmcontroller.c" />
+    <ClCompile Include="..\..\..\..\src\common\rdmnetclient.c" />
+    <ClCompile Include="..\..\..\..\src\common\rdmnetconnection.c" />
+    <ClCompile Include="..\..\..\..\src\common\rdmnetmessage.c" />
+    <ClCompile Include="..\..\..\..\src\common\rdmnetmsgbuf.c" />
+    <ClCompile Include="..\..\..\..\src\common\rdmresponder.c" />
+    <ClCompile Include="..\..\..\..\src\common\rdmtypes.c" />
+    <ClCompile Include="..\..\..\..\src\common\rptprot.c" />
+    <ClCompile Include="..\..\..\..\src\discovery\bonjour\rdmnetdiscovery_bonjour.c" />
+    <ClCompile Include="..\defaultresponder.c" />
+    <ClCompile Include="..\device.c" />
+    <ClCompile Include="..\devicellrp.c" />
+    <ClCompile Include="..\devicelog.c" />
+    <ClCompile Include="..\devicemain.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\lwpa\include\acn_prot.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_bool.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_cid.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_common.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_error.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_inet.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_int.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_log.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_mempool.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_netint.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_pack.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_pdu.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_rbtree.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_rootlayerpdu.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_socket.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_timer.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\lwpa_uid.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\windows\lwpa_lock.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\windows\lwpa_socket_plat.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\include\windows\lwpa_thread.h" />
+    <ClInclude Include="..\..\..\..\..\lwpa\src\md5.h" />
+    <ClInclude Include="..\..\..\..\src\common\brokerprotpriv.h" />
+    <ClInclude Include="..\..\..\..\src\common\llrppriv.h" />
+    <ClInclude Include="..\..\..\..\src\common\llrpprotpriv.h" />
+    <ClInclude Include="..\..\..\..\src\common\rdmnetconnpriv.h" />
+    <ClInclude Include="..\..\..\..\src\common\rdmnetmessagepriv.h" />
+    <ClInclude Include="..\..\..\..\src\common\rdmnetmsgbuf.h" />
+    <ClInclude Include="..\..\..\..\src\common\rptprotpriv.h" />
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\brokerprot.h" />
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\client.h" />
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\connection.h" />
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\discovery.h" />
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\eptprot.h" />
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\estardm.h" />
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\estardmnet.h" />
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\llrp.h" />
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\message.h" />
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\opts.h" />
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\rdmcontroller.h" />
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\rdmresponder.h" />
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\rdmtypes.h" />
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\rptprot.h" />
+    <ClInclude Include="..\..\..\..\src\include\rdmnet\version.h" />
+    <ClInclude Include="..\defaultresponder.h" />
+    <ClInclude Include="..\device.h" />
+    <ClInclude Include="..\devicellrp.h" />
+    <ClInclude Include="..\devicelog.h" />
+    <ClInclude Include="..\rdmnet_config.h" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{A44E871F-67F1-4C17-964D-5AE9509A86DA}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>RDMnetBroker</RootNamespace>
+    <ProjectName>device</ProjectName>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(Platform)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(Platform)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>HAVE_STDINT_H;HAVE_STDBOOL_H;WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..;..\..\..\..\src\include;..\..\..\..\port\windows\msvc2015\include;..\..\..\..\..\lwpa\include;..\..\..\..\..\lwpa\include\windows;$(BONJOUR_SDK_HOME)/Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>dnssd.lib;ws2_32.lib;iphlpapi.lib;winmm.lib;Rpcrt4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(BONJOUR_SDK_HOME)/Lib/$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>HAVE_STDINT_H;HAVE_STDBOOL_H;WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..;..\..\..\..\src\include;..\..\..\..\port\windows\msvc2015\include;..\..\..\..\..\lwpa\include;..\..\..\..\..\lwpa\include\windows;$(BONJOUR_SDK_HOME)/Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessToFile>false</PreprocessToFile>
+      <PreprocessKeepComments>false</PreprocessKeepComments>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>dnssd.lib;ws2_32.lib;iphlpapi.lib;winmm.lib;Rpcrt4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(BONJOUR_SDK_HOME)/Lib/$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>HAVE_STDINT_H;HAVE_STDBOOL_H;WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..;..\..\..\..\src\include;..\..\..\..\port\windows\msvc2015\include;..\..\..\..\..\lwpa\include;..\..\..\..\..\lwpa\include\windows;$(BONJOUR_SDK_HOME)/Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessToFile>false</PreprocessToFile>
+      <PreprocessKeepComments>false</PreprocessKeepComments>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(BONJOUR_SDK_HOME)/Lib/$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dnssd.lib;ws2_32.lib;iphlpapi.lib;winmm.lib;Rpcrt4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>HAVE_STDINT_H;HAVE_STDBOOL_H;WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..;..\..\..\..\src\include;..\..\..\..\port\windows\msvc2015\include;..\..\..\..\..\lwpa\include;..\..\..\..\..\lwpa\include\windows;$(BONJOUR_SDK_HOME)/Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessToFile>false</PreprocessToFile>
+      <PreprocessKeepComments>false</PreprocessKeepComments>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(BONJOUR_SDK_HOME)/Lib/$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dnssd.lib;ws2_32.lib;iphlpapi.lib;winmm.lib;Rpcrt4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

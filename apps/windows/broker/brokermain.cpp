@@ -1,0 +1,557 @@
+/******************************************************************************
+************************* IMPORTANT NOTE -- READ ME!!! ************************
+*******************************************************************************
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
+* GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
+* VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
+* BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
+*******************************************************************************
+* Copyright 2018 ETC Inc.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*******************************************************************************
+* This file is a part of RDMnet. For more information, go to:
+* https://github.com/ETCLabs/RDMnet
+******************************************************************************/
+
+// brokermain.cpp : Defines the entry point for the console application,
+// and drives the generic RDMnet broker logic.
+
+#include <WinSock2.h>  //MUST ALWAYS BE INCLUDED before windows.h!
+#include <IPHlpApi.h>  //For the network change detection
+#include <windows.h>
+#include <WS2tcpip.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <wchar.h>
+#include <string>
+#include <vector>
+#include "lwpa_log.h"
+#include "lwpa_pack.h"
+#include "lwpa_socket.h"
+#include "serviceshell.h"
+#include "iflist.h"
+#include "rdmnet/version.h"
+#include "brokerlog.h"
+#include "broker/broker.h"
+
+static bool debug = false;
+
+const LPWSTR SERVICE_NAME = L"ETC RDMnet Broker";
+const LPWSTR BROKER_SERVICE_DESCRIPTION = L"Provides basic RDMnet Broker functionality";
+
+static CServiceShell *g_shell = NULL;  // static global instance of the
+                                       // class associated with the service
+
+bool g_set_new_scope = false;
+std::string g_scope_to_set;
+
+#define MYKEY HKEY_CURRENT_USER
+#define MYSUBKEY L"SOFTWARE\\ETC\\RDMnetBroker"
+#define MYSCOPE L"scope"
+#define MYIFACES L"localips"
+#define MYMACS L"localmacs"
+#define MYPORT L"port"
+
+// Turn defined string literals into wide strings
+#define __MAKE_L(strlit) L##strlit
+#define MAKE_L(strlit) __MAKE_L(strlit)
+
+// If no scope exists, default is returned
+void GetScopeKey(std::string &scope)
+{
+  scope = E133_DEFAULT_SCOPE;
+  HKEY key;
+  if (ERROR_SUCCESS == RegOpenKeyExW(MYKEY, MYSUBKEY, 0, KEY_READ, &key))
+  {
+    WCHAR val[128];
+    DWORD valsize = sizeof(val);
+    if (ERROR_SUCCESS == RegQueryValueExW(key, MYSCOPE, NULL, NULL, (BYTE *)&val, &valsize))
+    {
+      if (wcslen(val) != 0)
+      {
+        char val_utf8[256];
+        WideCharToMultiByte(CP_UTF8, 0, val, -1, val_utf8, 256, NULL, NULL);
+        scope = val_utf8;
+      }
+    }
+
+    RegCloseKey(key);
+  }
+}
+
+// Given a pointer to a string, parses out a mac addr
+void ParseMac(WCHAR *s, uint8_t *pmac)
+{
+  WCHAR *p = s;
+
+  for (int index = 0; index < IFList::kMACLen; ++index)
+  {
+    pmac[index] = (uint8_t)wcstol(p, &p, 16);
+    ++p;  // P points at the :
+  }
+}
+
+// Fills in the vector of addrs based on the registry key.
+// If the key is empty, all interfaces are used.
+void GetMyIfaceKey(std::vector<LwpaIpAddr> &addrs, const std::vector<IFList::iflist_entry> &interfaces)
+{
+  addrs.clear();
+
+  HKEY key;
+  if (ERROR_SUCCESS == RegOpenKeyExW(MYKEY, MYSUBKEY, 0, KEY_READ, &key))
+  {
+    WCHAR val[MAX_PATH];
+    DWORD valsize = sizeof(val);
+    // We prefer mac addresses to ip addrs
+    if (ERROR_SUCCESS == RegQueryValueExW(key, MYMACS, NULL, NULL, (BYTE *)&val, &valsize))
+    {
+      if (wcslen(val) != 0)
+      {
+        WCHAR *context;
+        for (WCHAR *p = wcstok_s(val, L",", &context); p != NULL; p = wcstok_s(NULL, L",", &context))
+        {
+          uint8_t tstmac[IFList::kMACLen];
+          ParseMac(p, tstmac);
+          for (auto iface = interfaces.cbegin(); iface != interfaces.cend(); ++iface)
+          {
+            if (0 == memcmp(tstmac, iface->mac, IFList::kMACLen))
+            {
+              addrs.push_back(iface->addr);
+              break;
+            }
+          }
+        }
+      }
+    }
+    else if (ERROR_SUCCESS == RegQueryValueExW(key, MYIFACES, NULL, NULL, (BYTE *)&val, &valsize))
+    {
+      if (wcslen(val) != 0)
+      {
+        WCHAR *context;
+        for (WCHAR *p = wcstok_s(val, L",", &context); p != NULL; p = wcstok_s(NULL, L",", &context))
+        {
+          struct in_addr tst_addr;
+          struct in6_addr tst_addr6;
+          LwpaIpAddr addr;
+
+          INT res = InetPtonW(AF_INET, p, &tst_addr);
+          if (res == 1)
+            ip_plat_to_lwpa_v4(&addr, &tst_addr);
+          else
+          {
+            res = InetPtonW(AF_INET6, p, &tst_addr6);
+            if (res == 1)
+              ip_plat_to_lwpa_v6(&addr, &tst_addr6);
+          }
+          if (res == 1)
+          {
+            for (auto iface = interfaces.cbegin(); iface != interfaces.cend(); ++iface)
+            {
+              if (lwpaip_equal(&addr, &iface->addr))
+              {
+                addrs.push_back(iface->addr);
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+    RegCloseKey(key);
+  }
+
+  if (addrs.empty())
+  {
+    for (auto iface = interfaces.cbegin(); iface != interfaces.cend(); ++iface)
+      addrs.push_back(iface->addr);
+  }
+}
+
+void GetPortKey(uint16_t &port)
+{
+  HKEY key;
+
+  port = 8888;
+
+  if (ERROR_SUCCESS == RegOpenKeyExW(MYKEY, MYSUBKEY, 0, KEY_READ, &key))
+  {
+    WCHAR val[165];
+    DWORD valsize = sizeof(val);
+    if (ERROR_SUCCESS == RegQueryValueExW(key, MYPORT, NULL, NULL, (BYTE *)val, &valsize))
+    {
+      if (wcslen(val) != 0)
+      {
+        port = static_cast<uint16_t>(_wtoi(val));
+      }
+    }
+
+    RegCloseKey(key);
+  }
+}
+
+uint16_t GetPortKey()
+{
+  uint16_t port;
+  GetPortKey(port);
+  return port;
+}
+
+void SetScopeKey(const LPWSTR buffer)
+{
+  HKEY key;
+  DWORD disp;
+
+  LONG create_result =
+      RegCreateKeyExW(MYKEY, MYSUBKEY, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &key, &disp);
+
+  if (create_result == ERROR_SUCCESS)
+  {
+    if (wcslen(buffer) == 0)
+    {
+      RegSetValueExW(key, MYSCOPE, 0, REG_SZ, (BYTE *)MAKE_L(E133_DEFAULT_SCOPE),
+                     (DWORD)((wcslen(MAKE_L(E133_DEFAULT_SCOPE)) + 1) * sizeof(WCHAR)));
+    }
+    else
+    {
+      RegSetValueExW(key, MYSCOPE, 0, REG_SZ, (BYTE *)buffer, (DWORD)((wcslen(buffer) + 1) * sizeof(WCHAR)));
+    }
+
+    RegCloseKey(key);
+  }
+}
+
+void SetMyIfaceKey(const LPWSTR buffer)
+{
+  // We only allow setting the mac address key
+  HKEY key;
+  DWORD disp;
+  if (ERROR_SUCCESS ==
+      RegCreateKeyExW(MYKEY, MYSUBKEY, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &key, &disp))
+  {
+    RegSetValueExW(key, MYMACS, 0, REG_SZ, (BYTE *)buffer,
+                   (DWORD)(min(((wcslen(buffer) + 1) * sizeof(WCHAR)), (MAX_PATH - 1))));
+    // Also try to delete the localips
+    RegDeleteValueW(key, MYIFACES);
+    RegCloseKey(key);
+  }
+}
+
+void SetPortKey(const LPWSTR buffer)
+{
+  HKEY key;
+  DWORD disp;
+
+  LPWSTR default_port_str = L"8888";
+
+  if (ERROR_SUCCESS ==
+      RegCreateKeyExW(MYKEY, MYSUBKEY, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &key, &disp))
+  {
+    if (wcslen(buffer) == 0)
+    {
+      RegSetValueExW(key, MYPORT, 0, REG_SZ, (BYTE *)default_port_str,
+                     (DWORD)((wcslen(default_port_str) + 1) * sizeof(WCHAR)));
+    }
+    else
+    {
+      RegSetValueExW(key, MYPORT, 0, REG_SZ, (BYTE *)buffer, (DWORD)((wcslen(buffer) + 1) * sizeof(WCHAR)));
+    }
+
+    RegCloseKey(key);
+  }
+}
+
+void SetPortKey(uint16_t port)
+{
+  WCHAR port_buffer[6];
+
+  wmemset(port_buffer, 0, 6);
+  _itow_s(port, port_buffer, 6, 10);
+
+  SetPortKey(port_buffer);
+}
+
+class BrokerNotify : public IBrokerNotify
+{
+public:
+  // The scope has changed due to RDMnet messaging.
+  // Save it for the next time you are starting the broker.
+  void ScopeChanged(const std::string &new_scope)
+  {
+    g_set_new_scope = true;
+    g_scope_to_set = new_scope;
+
+    int w_new_scope_size = static_cast<int>((new_scope.size() * sizeof(WCHAR)) + 1);
+    WCHAR *w_new_scope = new WCHAR[w_new_scope_size];
+    if (w_new_scope)
+    {
+      if (0 != MultiByteToWideChar(CP_UTF8, 0, new_scope.c_str(), -1, w_new_scope, w_new_scope_size))
+      {
+        SetScopeKey(w_new_scope);
+      }
+      delete[] w_new_scope;
+    }
+  }
+};
+
+bool ShouldApplyChanges(HANDLE net_handle, LPOVERLAPPED net_overlap, bool &bOverlapped)
+{
+  DWORD temp;
+  bOverlapped = (GetOverlappedResult(net_handle, net_overlap, &temp, false) ? true : false);
+  return (bOverlapped || g_set_new_scope);
+}
+
+void PrepForSettingsChange(Broker &broker_core, BrokerSettings &settings)
+{
+  broker_core.Shutdown();
+  broker_core.GetSettings(settings);
+}
+
+void ApplySettingsChanges(BrokerLog &log, bool bOverlapped, BrokerSettings &settings, HANDLE net_handle,
+                          LPOVERLAPPED net_overlap, std::vector<IFList::iflist_entry> &interfaces,
+                          std::vector<LwpaIpAddr> &useaddrs)
+{
+  // If we detect the network changed, restart the broker core
+  if (bOverlapped)
+  {
+    log.Log(LWPA_LOG_INFO, "Network change detected, restarting broker and applying changes");
+
+    // We need to reset the useaddrs vector
+    IFList::FindIFaces(log, interfaces);
+    GetMyIfaceKey(useaddrs, interfaces);
+    memset(net_overlap, 0, sizeof(OVERLAPPED));
+    net_handle = NULL;
+    NotifyAddrChange(&net_handle, net_overlap);
+  }
+
+  // If there are other new settings, apply them here.
+  if (g_set_new_scope)
+  {
+    g_set_new_scope = false;
+    log.Log(LWPA_LOG_INFO, "Scope change detected, restarting broker and applying changes");
+    settings.disc_attributes.scope = g_scope_to_set;
+  }
+}
+
+DWORD WINAPI ServiceThread(LPVOID /*param*/)
+{
+  // allocate any resources needed in your thread here
+  WindowsBrokerLog broker_log(debug, "RDMnetBroker.log");
+  broker_log.StartThread();
+
+  BrokerNotify broker_notify;
+  BrokerSettings broker_settings;
+  GetScopeKey(broker_settings.disc_attributes.scope);
+  std::vector<IFList::iflist_entry> interfaces;
+  IFList::FindIFaces(broker_log, interfaces);
+
+  // Given the first network interface found, generate the cid and UID
+  if (!interfaces.empty())
+  {
+    // The cid will be based on the scope, in case we want to run different
+    // instances on the same machine
+    std::string cidstr("ETC E133 BROKER for scope: ");
+    cidstr += broker_settings.disc_attributes.scope;
+    generate_cid(&broker_settings.cid, cidstr.c_str(), interfaces.front().mac, 1);
+    broker_settings.uid = {0x6574, upack_32b(interfaces.front().mac + 2)};
+  }
+
+  broker_settings.disc_attributes.mdns_manufacturer = "ETC";
+  broker_settings.disc_attributes.mdns_service_instance_name = "UNIQUE NAME";
+  broker_settings.disc_attributes.mdns_model = "E1.33 Broker Prototype";
+
+  std::vector<LwpaIpAddr> useaddrs;
+  GetMyIfaceKey(useaddrs, interfaces);
+
+  Broker broker_core(&broker_log, &broker_notify);
+  broker_core.Startup(broker_settings, GetPortKey(), useaddrs);
+
+  // We want to detect network change as well
+  OVERLAPPED net_overlap;
+  memset(&net_overlap, 0, sizeof(OVERLAPPED));
+  HANDLE net_handle = NULL;
+  NotifyAddrChange(&net_handle, &net_overlap);
+
+  // We want this to run forever if a console, otherwise run for how long the
+  // service manager allows it
+  while (!g_shell || !g_shell->exitServiceThread)
+  {
+    // Do the main service work here
+    bool bOverlapped = false;
+
+    broker_core.Tick();
+
+    if (ShouldApplyChanges(net_handle, &net_overlap, bOverlapped))
+    {
+      PrepForSettingsChange(broker_core, broker_settings);
+      ApplySettingsChanges(broker_log, bOverlapped, broker_settings, net_handle, &net_overlap, interfaces, useaddrs);
+      broker_core.Startup(broker_settings, GetPortKey(), useaddrs);
+    }
+
+    Sleep(300);
+  }
+
+  // deallocate any resources allocated in your thread here
+  broker_core.Shutdown();
+  /* TESTING TODO REMOVE
+  if(iface_lib)
+  {
+      iface_lib->Shutdown();
+      IWinAsyncSocketServ::DestroyInstance(iface_lib);
+  }
+  */
+
+  return 0;
+}
+
+void WINAPI SCMCallback(DWORD controlCode)
+{
+  if (g_shell)
+  {
+    g_shell->ServiceCtrlHandler(controlCode);
+  }
+}
+
+void CallbackServiceMain(DWORD argc, LPWSTR *argv)
+{
+  if (!g_shell)
+  {
+    g_shell = new CServiceShell();
+    g_shell->InitShell(SERVICE_NAME, SCMCallback, ServiceThread);
+  }
+  g_shell->ServiceMain(argc, argv);
+
+  // When the control reaches here, Windows is trying to shut down the service.
+  // do the cleanup for your service here and terminate it
+  g_shell->terminate(0);
+  delete g_shell;
+}
+
+void PrintHelp(wchar_t *app_name)
+{
+  printf("ETC Prototype RDMnet Broker\n");
+  printf("Version %s\n", RDMNET_VERSION_STRING);
+  printf("\n");
+  printf("Usage: %ls [-install | -run | -remove] [-auto] [-debug] \n", app_name);
+  printf(
+      "               [-scope=V] [-ifaces=W] [-query0=X] [-depth=Y] [-port=Z] "
+      "\n");
+  printf("   -install: installs the service\n");
+  printf("   -run: starts the service, installing it if necessary\n");
+  printf("   -remove: removes the service\n");
+  printf("   -auto: installs/runs as automatic, otherwise manual\n");
+  printf(
+      "   -debug: Runs the service as a console application, similarly to "
+      "slpd.exe\n");
+  printf(
+      "   -scope=X: configures the RDMnetScope source and saves it to the "
+      "registry. \n");
+  printf("            Enter nothing after = to set the scope to the default.\n");
+  printf(
+      "   -ifaces: An optional comma separated list of local network "
+      "interface mac\n");
+  printf(
+      "            addresses to use, e.g. (00:c0:16:11:da:b3). These get "
+      "saved to \n");
+  printf(
+      "            the registry. Enter nothing after = to clear the ifaces "
+      "key and \n");
+  printf("            use all interfaces available.\n");
+  printf(
+      "   -port=X: The port that this broker instance should use (default "
+      "8888).\n");
+  printf("            This gets saved to the registry for future use.\n");
+  printf("            Enter nothing after = to set the port to the default.\n");
+}
+
+int wmain(int argc, wchar_t *argv[])
+{
+  SERVICE_TABLE_ENTRY serviceTable[] = {
+      {const_cast<LPWSTR>(SERVICE_NAME), (LPSERVICE_MAIN_FUNCTION)CallbackServiceMain}, {NULL, NULL}};
+
+  bool should_exit = false;
+  // Because we are doing automatic and non-automatic installs, we need wait
+  // until the parse is complete
+  bool fAuto = false;
+  bool should_install = false;
+  bool should_run = false;
+
+  // handle any command line parsing for handling the install, remove
+  // or run functions for the service(s)
+  if (argc > 1)
+  {
+    for (int i = 2; i <= argc; ++i)
+    {
+      if (_wcsicmp(argv[i - 1], L"-auto") == 0)
+        fAuto = true;
+      else if (_wcsnicmp(argv[i - 1], L"-scope=", 7) == 0)
+      {
+        SetScopeKey(argv[i - 1] + 7);
+        should_exit = false;
+      }
+      else if (_wcsnicmp(argv[i - 1], L"-ifaces=", 8) == 0)
+      {
+        SetMyIfaceKey(argv[i - 1] + 8);
+        should_exit = false;
+      }
+      else if (_wcsicmp(argv[i - 1], L"-install") == 0)
+      {
+        should_install = true;
+        should_exit = true;
+      }
+      else if (_wcsicmp(argv[i - 1], L"-run") == 0)
+      {
+        should_run = true;
+        should_exit = true;
+      }
+      else if (_wcsicmp(argv[i - 1], L"-remove") == 0)
+      {
+        RemoveService(SERVICE_NAME);
+        should_exit = true;
+      }
+      else if (_wcsicmp(argv[i - 1], L"-debug") == 0)
+      {
+        should_exit = false;
+        debug = true;
+      }
+      else if (_wcsnicmp(argv[i - 1], L"-port=", 6) == 0)
+      {
+        SetPortKey(argv[i - 1] + 6);
+        should_exit = false;
+      }
+      else
+      {
+        PrintHelp(argv[0]);
+        should_exit = true;
+      }
+    }
+  }
+
+  if (should_install)
+    InstallService(SERVICE_NAME, BROKER_SERVICE_DESCRIPTION, fAuto);
+
+  if (should_run)
+    RunService(SERVICE_NAME, BROKER_SERVICE_DESCRIPTION, argc, argv, fAuto);
+
+  if (debug)
+  {
+    ServiceThread(NULL);
+  }
+  // call StartServiceCtrlDispatcher if we don't need to exit
+  if (!should_exit && !StartServiceCtrlDispatcherW(serviceTable))
+  {
+    printf("Error in calling StartServiceCtrlDispatcher\r\n");
+  }
+  return 0;
+}

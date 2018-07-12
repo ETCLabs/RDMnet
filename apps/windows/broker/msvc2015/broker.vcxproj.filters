@@ -1,0 +1,155 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="rdmnet_lib">
+      <UniqueIdentifier>{33c009e4-41e2-4758-9c6e-20171f43a571}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lwpa_lib">
+      <UniqueIdentifier>{4b8c3276-48e5-46e9-b993-4280ca8cd2c0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\src\broker\brokerthreads.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\broker\broker.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\brokermain.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\iflist.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\serviceshell.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\serviceutils.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\brokerlog.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\rdmnetconnection.c">
+      <Filter>rdmnet_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\rdmnetmsgbuf.c">
+      <Filter>rdmnet_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\brokerprot.c">
+      <Filter>rdmnet_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_rbtree.c">
+      <Filter>lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_rootlayerpdu.c">
+      <Filter>lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\md5c.c">
+      <Filter>lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_cid.c">
+      <Filter>lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_error.c">
+      <Filter>lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_log.c">
+      <Filter>lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_mempool.c">
+      <Filter>lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_pdu.c">
+      <Filter>lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_socket.c">
+      <Filter>lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_thread.c">
+      <Filter>lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_timer.c">
+      <Filter>lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_lock.c">
+      <Filter>lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_netint.c">
+      <Filter>lwpa_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\broker\brokerutil.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\rdmnetmessage.c">
+      <Filter>rdmnet_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\discovery\bonjour\rdmnetdiscovery_bonjour.c">
+      <Filter>rdmnet_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\broker\brokerclient.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\broker\brokerresponder.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\rdmresponder.c">
+      <Filter>rdmnet_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\rdmtypes.c">
+      <Filter>rdmnet_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\rptprot.c">
+      <Filter>rdmnet_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\rdmcontroller.c">
+      <Filter>rdmnet_lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\common\rdmnetclient.c">
+      <Filter>rdmnet_lib</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\src\include\broker\broker.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\broker\threads.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\broker\brokerconsts.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\iflist.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\rdmnet_config.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\serviceshell.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\brokerlog.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\lwpa\src\md5.h">
+      <Filter>lwpa_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\broker\util.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\broker\client.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\broker\responder.h">
+      <Filter>include</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
