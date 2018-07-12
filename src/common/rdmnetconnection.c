@@ -594,7 +594,7 @@ lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const C
             should_break = true;
           }
         }
-        lwpa_mutex_give(&conn->lock);
+        release_conn_and_readlock(conn);
       }
       else
         should_break = true;

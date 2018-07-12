@@ -87,9 +87,9 @@ Steps to build the Windows RDMnet prototypes:
 3. Open the Device solution (`RDMnet/apps/windows/device/msvc2015/device.sln`)
 4. Build the solution in your configuration of choice (Build -> Build Solution)
 
-#### To build the Broker:
+#### To build the %Broker:
 
-3. Open the Broker solution (`RDMnet/apps/windows/broker/msvc2015/broker.sln`)
+3. Open the %Broker solution (`RDMnet/apps/windows/broker/msvc2015/broker.sln`)
 4. Build the solution in your configuration of choice (Build -> Build Solution)
 
 #### To build the LLRP Manager:
