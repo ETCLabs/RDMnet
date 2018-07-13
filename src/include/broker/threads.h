@@ -92,7 +92,7 @@ protected:
 class IConnPollThread_Notify
 {
 public:
-  virtual bool PollConnections(const std::vector<int> &conn_handles, RdmnetPoll *poll_arr) = 0;
+  virtual void PollConnections(const std::vector<int> &conn_handles, RdmnetPoll *poll_arr) = 0;
 };
 
 // Used to poll RDMnet connections for incoming data.

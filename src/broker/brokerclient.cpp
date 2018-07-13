@@ -27,6 +27,7 @@
 
 #include "broker/client.h"
 
+#include <cassert>
 #include "rdmnet/connection.h"
 #include "broker/broker.h"
 
@@ -89,14 +90,6 @@ bool RPTClient::Push(const LwpaCid &sender_cid, const BrokerMessage &msg)
     return false;
 
   return BrokerClient::PushPostSizeCheck(sender_cid, msg);
-}
-
-bool RPTClient::Push(const LwpaCid &sender_cid, const RptHeader &header, const RptStatusMsg &msg)
-{
-  if (broker_msgs_.size() + status_msgs_.size() >= max_q_size_)
-    return false;
-
-  return PushPostSizeCheck(sender_cid, header, msg);
 }
 
 bool RPTClient::PushPostSizeCheck(const LwpaCid &sender_cid, const RptHeader &header, const RptStatusMsg &msg)
@@ -163,6 +156,14 @@ bool RPTController::Push(const LwpaCid &sender_cid, const BrokerMessage &msg)
     return false;
   }
   return BrokerClient::PushPostSizeCheck(sender_cid, msg);
+}
+
+bool RPTController::Push(const LwpaCid &sender_cid, const RptHeader &header, const RptStatusMsg &msg)
+{
+  if (broker_msgs_.size() + status_msgs_.size() >= max_q_size_)
+    return false;
+
+  return PushPostSizeCheck(sender_cid, header, msg);
 }
 
 bool RPTController::Send()
@@ -260,17 +261,14 @@ bool RPTDevice::Send()
   std::queue<MessageRef> *q = nullptr;
   bool is_rpt = false;
 
-  // Broker messages are first priority, then status messages, then RPT
-  // messages.
+  // We should never push a status message to a Device.
+  assert(status_msgs_.empty());
+
+  // Broker messages are first priority, then RPT messages.
   if (!broker_msgs_.empty())
   {
     q = &broker_msgs_;
     msg = &broker_msgs_.front();
-  }
-  else if (!status_msgs_.empty())
-  {
-    q = &status_msgs_;
-    msg = &status_msgs_.front();
   }
   else if (!rpt_msgs_.empty())
   {

@@ -257,10 +257,7 @@ void ConnPollThread::Run()
     }
 
     if (do_poll)
-    {
-      if (!notify_->PollConnections(conn_snapshot, poll_arr_snapshot->data()))
-        lwpa_thread_sleep(50);
-    }
+      notify_->PollConnections(conn_snapshot, poll_arr_snapshot->data());
     else
       lwpa_thread_sleep(50);
   }

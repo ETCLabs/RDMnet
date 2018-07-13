@@ -182,16 +182,26 @@ void connect_to_broker(int conn, const LwpaCid *my_cid, const LwpaUid *my_uid, c
   default_responder_set_tcp_status(&broker_addr);
 }
 
-void print_help(wchar_t *app_name)
+void print_version()
 {
   printf("ETC Prototype RDMnet Device\n");
   printf("Version %s\n\n", RDMNET_VERSION_STRING);
+  printf("Copyright (c) 2018 ETC Inc.\n");
+  printf("License: Apache License v2.0 <http://www.apache.org/licenses/LICENSE-2.0>\n");
+  printf("Unless required by applicable law or agreed to in writing, this software is\n");
+  printf("provided \"AS IS\", WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express\n");
+  printf("or implied.\n");
+}
 
-  printf("Usage: %ls [--scope=SCOPE] [--broker=IPV4:PORT]\n", app_name);
-  printf("   --scope=SCOPE: Configures the RDMnet Scope to SCOPE. Enter nothing\n");
-  printf("                  after = to set the scope to the default.\n");
-  printf("   --broker=IP:PORT: Connect to a Broker at address IP:PORT instead of\n");
-  printf("                     performing discovery.\n");
+void print_help(wchar_t *app_name)
+{
+  printf("Usage: %ls [OPTION]...\n\n", app_name);
+  printf("  --scope=SCOPE     Configures the RDMnet Scope to SCOPE. Enter nothing after\n");
+  printf("                    '=' to set the scope to the default.\n");
+  printf("  --broker=IP:PORT  Connect to a Broker at address IP:PORT instead of\n");
+  printf("                    performing discovery.\n");
+  printf("  --help            Display this help and exit.\n");
+  printf("  --version         Output version information and exit.\n");
 }
 
 bool set_scope(wchar_t *arg, char *scope_buf)
@@ -239,7 +249,7 @@ int wmain(int argc, wchar_t *argv[])
   LwpaCid my_cid;
   LwpaUid my_uid;
   char scope[E133_SCOPE_STRING_PADDED_LENGTH];
-  bool print_usage_and_exit = false;
+  bool should_exit = false;
   UUID uuid;
   RdmnetDiscCallbacks callbacks;
   DeviceSettings settings;
@@ -254,25 +264,42 @@ int wmain(int argc, wchar_t *argv[])
     {
       if (_wcsnicmp(argv[i], L"--scope=", 8) == 0)
       {
-        print_usage_and_exit = !set_scope(&argv[i][8], scope);
-        settings.scope = scope;
+        if (set_scope(&argv[i][8], scope))
+        {
+          settings.scope = scope;
+        }
+        else
+        {
+          print_help(argv[0]);
+          should_exit = true;
+          break;
+        }
       }
       else if (_wcsnicmp(argv[i], L"--broker=", 9) == 0)
       {
-        print_usage_and_exit = !set_static_broker(&argv[i][9], &settings.static_broker_addr);
+        if (!set_static_broker(&argv[i][9], &settings.static_broker_addr))
+        {
+          print_help(argv[0]);
+          should_exit = true;
+          break;
+        }
+      }
+      else if (_wcsicmp(argv[i], L"--version") == 0)
+      {
+        print_version();
+        should_exit = true;
+        break;
       }
       else
       {
-        print_usage_and_exit = true;
+        print_help(argv[0]);
+        should_exit = true;
         break;
       }
     }
   }
-  if (print_usage_and_exit)
-  {
-    print_help(argv[0]);
+  if (should_exit)
     return 1;
-  }
 
   device_log_init("RDMnetDevice.log");
   lparams = device_get_log_params();

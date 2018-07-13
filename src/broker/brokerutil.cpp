@@ -26,6 +26,7 @@
 ******************************************************************************/
 
 #include "broker/util.h"
+#include <cassert>
 
 /* Suppress strncpy() warning on Windows/MSVC. */
 #ifdef _MSC_VER
@@ -46,6 +47,7 @@ RptHeader SwapHeaderData(const RptHeader &source)
 
 static void BrokerLogCallback(void *context, const char * /*syslog_str*/, const char *human_str)
 {
+  assert(human_str);
   BrokerLog *bl = static_cast<BrokerLog *>(context);
   if (bl)
     bl->LogFromCallback(human_str);
@@ -78,18 +80,10 @@ BrokerLog::~BrokerLog()
   lwpa_signal_destroy(&signal_);
 }
 
-void BrokerLog::InitializeLogParams(const std::string &hostname, const std::string &app_name, const std::string &procid,
-                                    int facility, int log_mask)
+void BrokerLog::InitializeLogParams(int log_mask)
 {
   log_params_.action = kLwpaLogCreateHumanReadableLog;
   log_params_.log_fn = BrokerLogCallback;
-  strncpy(log_params_.syslog_params.hostname, hostname.c_str(), LWPA_LOG_HOSTNAME_MAX_LEN);
-  log_params_.syslog_params.hostname[LWPA_LOG_HOSTNAME_MAX_LEN - 1] = '\0';
-  strncpy(log_params_.syslog_params.app_name, app_name.c_str(), LWPA_LOG_APP_NAME_MAX_LEN);
-  log_params_.syslog_params.app_name[LWPA_LOG_APP_NAME_MAX_LEN - 1] = '\0';
-  strncpy(log_params_.syslog_params.procid, procid.c_str(), LWPA_LOG_PROCID_MAX_LEN);
-  log_params_.syslog_params.procid[LWPA_LOG_PROCID_MAX_LEN - 1] = '\0';
-  log_params_.syslog_params.facility = facility;
   log_params_.log_mask = log_mask;
   log_params_.time_method = kLwpaLogUseTimeFn;
   log_params_.time_fn = BrokerTimeCallback;

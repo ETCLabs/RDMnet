@@ -142,7 +142,10 @@ void free_rdmnet_message(RdmnetMessage *msg)
           default:
             break;
         }
+        break;
       }
+      default:
+        break;
     }
   }
 }

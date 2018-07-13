@@ -166,7 +166,7 @@ protected:
   virtual void LogError(const std::string &err) override;
 
   // IConnPollThread_Notify messages
-  virtual bool PollConnections(const std::vector<int> &conn_handles, RdmnetPoll *poll_arr) override;
+  virtual void PollConnections(const std::vector<int> &conn_handles, RdmnetPoll *poll_arr) override;
 
   // ILLRPSocketProxy_Notify messages
   //  virtual void Received(const uint8_t *llrp_data, size_t llrp_data_len,
@@ -254,7 +254,7 @@ protected:
   void SendClientList(int conn);
   void SendClientsAdded(client_protocol_t client_prot, int conn_to_ignore, std::vector<ClientEntryData> &entries);
   void SendClientsRemoved(client_protocol_t client_prot, std::vector<ClientEntryData> &entries);
-  void SendStatus(RPTClient *rptcli, const RptHeader &header, uint16_t status_code,
+  void SendStatus(RPTController *controller, const RptHeader &header, uint16_t status_code,
                   const std::string &status_str = std::string());
 
   // broker callback functions

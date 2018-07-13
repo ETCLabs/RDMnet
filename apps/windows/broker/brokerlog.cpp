@@ -34,9 +34,7 @@ WindowsBrokerLog::WindowsBrokerLog(bool debug, const std::string &file_name) : B
 {
   file_.open(file_name.c_str(), std::fstream::out);
   if (file_.fail())
-  {
     std::cout << "BrokerLog couldn't open log file '" << file_name << "'." << std::endl;
-  }
 
   WSADATA wsdata;
   WSAStartup(MAKEWORD(2, 2), &wsdata);
@@ -56,23 +54,7 @@ WindowsBrokerLog::WindowsBrokerLog(bool debug, const std::string &file_name) : B
       break;
   }
 
-  DWORD procid = GetCurrentProcessId();
-  snprintf(log_params_.syslog_params.procid, LWPA_LOG_PROCID_MAX_LEN, "%d", procid);
-
-  char hostname[LWPA_LOG_HOSTNAME_MAX_LEN];
-  if (0 != gethostname(hostname, LWPA_LOG_HOSTNAME_MAX_LEN))
-  {
-    WCHAR error_text[128];
-    char error_text_utf8[256] = "Unknown Error";
-
-    GetLastErrorMessage(error_text, 128);
-    WideCharToMultiByte(CP_UTF8, 0, error_text, -1, error_text_utf8, 256, NULL, NULL);
-    LogFromCallback("BrokerLog couldn't get hostname: Error '" + std::string(error_text_utf8) + "'.");
-    hostname[0] = '\0';
-  }
-
-  InitializeLogParams(hostname, "RDMnet Broker", std::to_string(procid), LWPA_LOG_LOCAL1,
-                      debug ? LWPA_LOG_UPTO(LWPA_LOG_DEBUG) : LWPA_LOG_UPTO(LWPA_LOG_INFO));
+  InitializeLogParams(debug ? LWPA_LOG_UPTO(LWPA_LOG_DEBUG) : LWPA_LOG_UPTO(LWPA_LOG_INFO));
 }
 
 WindowsBrokerLog::~WindowsBrokerLog()

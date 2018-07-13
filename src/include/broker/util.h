@@ -90,8 +90,7 @@ class BrokerLog
 public:
   BrokerLog();
   virtual ~BrokerLog();
-  void InitializeLogParams(const std::string &hostname, const std::string &app_name, const std::string &procid,
-                           int facility, int log_mask);
+  void InitializeLogParams(int log_mask);
   bool StartThread();
   void StopThread();
 

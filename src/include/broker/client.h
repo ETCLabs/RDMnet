@@ -158,7 +158,6 @@ public:
 
   virtual bool Push(int /*from_conn*/, const LwpaCid & /*sender_cid*/, const RptMessage & /*msg*/) { return false; }
   virtual bool Push(const LwpaCid &sender_cid, const BrokerMessage &msg) override;
-  virtual bool Push(const LwpaCid &sender_cid, const RptHeader &header, const RptStatusMsg &msg);
 
   LwpaUid uid;
   rpt_client_type_t client_type;
@@ -190,9 +189,9 @@ public:
 
   virtual bool Push(int from_conn, const LwpaCid &sender_cid, const RptMessage &msg) override;
   virtual bool Push(const LwpaCid &sender_cid, const BrokerMessage &msg) override;
+  virtual bool Push(const LwpaCid &sender_cid, const RptHeader &header, const RptStatusMsg &msg);
   virtual bool Send() override;
 
-protected:
   std::queue<MessageRef> rpt_msgs_;
 };
 

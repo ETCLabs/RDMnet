@@ -1092,7 +1092,12 @@ size_t parse_rpt_status(RptStatusState *rsstate, const uint8_t *data, size_t dat
 
         /* These status codes contain an optional status string */
         if (str_len == 0)
+        {
+#if RDMNET_DYNAMIC_MEM
+          smsg->status_string = NULL;
+#endif
           res = kPSFullBlockParseOk;
+        }
         else if (str_len > RPT_STATUS_STRING_MAXLEN)
         {
           bytes_parsed += consume_bad_block(&rsstate->block, remaining_len, &res);

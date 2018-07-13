@@ -92,17 +92,8 @@ bool Broker::Startup(const BrokerSettings &settings, uint16_t listen_port, std::
 
     settings_ = settings;
 
-    // Initialize LLRP support
-    //   serv_ = IWinAsyncSocketServ::CreateInstance();
-
-    //   serv_->Startup();
-    //   llrpSocket_.Startupserv_, false, true);
-    //   llrpSocketProxy_.StartProxy(llrpSocket_, this);
-
-    BrokerDiscInfo info;  // We'll use this to register the broker, but it also provides us a few defaults.. if
-                          // settings_.scope.empty())
-    // settings_.disc_attributes.scope = info.scope;
-
+    // Initialize DNS discovery.
+    BrokerDiscInfo info;
     fill_default_broker_info(&info);
 
     if (settings_.disc_attributes.mdns_domain.empty())
@@ -120,17 +111,6 @@ bool Broker::Startup(const BrokerSettings &settings, uint16_t listen_port, std::
     strncpy(info.scope, settings_.disc_attributes.scope.c_str(), E133_SCOPE_STRING_PADDED_LENGTH);
     strncpy(info.service_name, settings_.disc_attributes.mdns_service_instance_name.c_str(),
             E133_SERVICE_NAME_STRING_PADDED_LENGTH);
-
-    /// if (!info.IsValid() &&log_) /*validity check is done when broker is registered*/
-    ///{
-    ///  log_->Log(LWPA_LOG_INFO, std::string("You don't have all the mdns related settings filled in.").c_str());
-    ///  return false;
-    ///}
-
-    //    RDMCtl_Initsettings_.uid.GetDeviceId(), 0, port_);
-
-    //    if (!RDMnetSocket::StackStartup())
-    //      return false;
 
     if (LWPA_OK != rdmnet_init(log_->GetLogParams()))
       return false;
@@ -179,15 +159,11 @@ bool Broker::Startup(const BrokerSettings &settings, uint16_t listen_port, std::
       return false;
     }
 
-    // Initialize LLRPMessageProcessor
-    //   llrp_msg_proc_.SetData(false,settings_.cid, llrpSocket_,serv_,
-    //   port_);
-
     log_->Log(LWPA_LOG_INFO, std::string(settings_.disc_attributes.mdns_manufacturer +
                                          " Prototype RDMnet Broker Version " + RDMNET_VERSION_STRING)
                                  .c_str());
-    log_->Log(LWPA_LOG_INFO,
-              "Broker starting at scope \"%s\", using network interfaces:", settings.disc_attributes.scope.c_str());
+    log_->Log(LWPA_LOG_INFO, "Broker starting at scope \"%s\", listening on port %d, using network interfaces:",
+              settings.disc_attributes.scope.c_str(), listen_port);
     for (auto addr : listen_addrs)
     {
       char addrbuf[LWPA_INET6_ADDRSTRLEN];
@@ -525,7 +501,7 @@ void Broker::LogError(const std::string &err)
   log_->Log(LWPA_LOG_ERR, "%s", err.c_str());
 }
 
-bool Broker::PollConnections(const std::vector<int> &conn_handles, RdmnetPoll *poll_arr)
+void Broker::PollConnections(const std::vector<int> &conn_handles, RdmnetPoll *poll_arr)
 {
   size_t poll_arr_size = 0;
   std::vector<int> conns;
@@ -627,7 +603,6 @@ bool Broker::PollConnections(const std::vector<int> &conn_handles, RdmnetPoll *p
       // TODO finish
     }
   }
-  return (poll_res != 0);
 }
 
 ///* ILLRPSocketProxy_Notify messages */
@@ -906,7 +881,8 @@ void Broker::SendClientsRemoved(client_protocol_t client_prot, std::vector<Clien
   }
 }
 
-void Broker::SendStatus(RPTClient *rptcli, const RptHeader &header, uint16_t status_code, const std::string &status_str)
+void Broker::SendStatus(RPTController *controller, const RptHeader &header, uint16_t status_code,
+                        const std::string &status_str)
 {
   RptHeader new_header;
   new_header.dest_endpoint_id = header.source_endpoint_id;
@@ -932,14 +908,13 @@ void Broker::SendStatus(RPTClient *rptcli, const RptHeader &header, uint16_t sta
     status.status_string[0] = '\0';
 #endif
 
-  if (rptcli->Push(settings_.cid, new_header, status))
+  if (controller->Push(settings_.cid, new_header, status))
   {
     if (log_->CanLog(LWPA_LOG_INFO))
     {
       char cid_str[CID_STRING_BYTES];
-      cid_to_string(cid_str, &rptcli->cid);
-      log_->Log(LWPA_LOG_WARNING, "Sending RPT Status code %d to %s %s", status_code,
-                rptcli->client_type == kRPTClientTypeController ? "Controller" : "Device", cid_str);
+      cid_to_string(cid_str, &controller->cid);
+      log_->Log(LWPA_LOG_WARNING, "Sending RPT Status code %d to Controller %s", status_code, cid_str);
     }
   }
   else
@@ -1112,22 +1087,20 @@ void Broker::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
         case VECTOR_RPT_REQUEST:
           if (rptcli->client_type == kRPTClientTypeController)
           {
+            RPTController *controller = static_cast<RPTController *>(rptcli);
             if (!IsValidControllerDestinationUID(rptmsg->header.dest_uid))
             {
-              SendStatus(rptcli, rptmsg->header, VECTOR_RPT_STATUS_UNKNOWN_RPT_UID);
+              SendStatus(controller, rptmsg->header, VECTOR_RPT_STATUS_UNKNOWN_RPT_UID);
               log_->Log(LWPA_LOG_DEBUG,
-                        "Received Request PDU addressed to invalid or not found UID %04x:%08x from "
-                        "Client %d",
+                        "Received Request PDU addressed to invalid or not found UID %04x:%08x from Controller %d",
                         rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
             }
             else if (get_rdm_cmd_list(rptmsg)->list->next)
             {
-              // There should only ever be one RDM command in an RPT
-              // request.
-              SendStatus(rptcli, rptmsg->header, VECTOR_RPT_STATUS_INVALID_MESSAGE);
+              // There should only ever be one RDM command in an RPT request.
+              SendStatus(controller, rptmsg->header, VECTOR_RPT_STATUS_INVALID_MESSAGE);
               log_->Log(LWPA_LOG_DEBUG,
-                        "Received Request PDU from Client %d which incorrectly contains multiple "
-                        "RDM Command PDUs",
+                        "Received Request PDU from Controller %d which incorrectly contains multiple RDM Command PDUs",
                         conn);
             }
             else
@@ -1135,7 +1108,6 @@ void Broker::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
           }
           else
           {
-            SendStatus(rptcli, rptmsg->header, VECTOR_RPT_STATUS_UNKNOWN_VECTOR);
             log_->Log(LWPA_LOG_DEBUG, "Received Request PDU from Client %d, which is not an RPT Controller", conn);
           }
           break;
@@ -1146,26 +1118,19 @@ void Broker::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
             if (IsValidDeviceDestinationUID(rptmsg->header.dest_uid))
             {
               if (get_status_msg(rptmsg)->status_code != VECTOR_RPT_STATUS_BROADCAST_COMPLETE)
-              {
                 route_msg = true;
-              }
               else
-              {
-                SendStatus(rptcli, rptmsg->header, VECTOR_RPT_STATUS_UNKNOWN_RPT_UID);
                 log_->Log(LWPA_LOG_DEBUG, "Device %d sent broadcast complete message.", conn);
-              }
             }
             else
             {
               log_->Log(LWPA_LOG_DEBUG,
-                        "Received Status PDU addressed to invalid or not found UID %04x:%08x from "
-                        "Client %d",
+                        "Received Status PDU addressed to invalid or not found UID %04x:%08x from Device %d",
                         rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
             }
           }
           else
           {
-            SendStatus(rptcli, rptmsg->header, VECTOR_RPT_STATUS_UNKNOWN_VECTOR);
             log_->Log(LWPA_LOG_DEBUG, "Received Status PDU from Client %d, which is not an RPT Device", conn);
           }
           break;
@@ -1177,23 +1142,19 @@ void Broker::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
               route_msg = true;
             else
             {
-              SendStatus(rptcli, rptmsg->header, VECTOR_RPT_STATUS_UNKNOWN_RPT_UID);
               log_->Log(LWPA_LOG_DEBUG,
-                        "Received Notification PDU addressed to invalid or not found UID %04x:%08x "
-                        "from Client %d",
+                        "Received Notification PDU addressed to invalid or not found UID %04x:%08x from Device %d",
                         rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
             }
           }
           else
           {
-            SendStatus(rptcli, rptmsg->header, VECTOR_RPT_STATUS_UNKNOWN_VECTOR);
             log_->Log(LWPA_LOG_DEBUG, "Received Notification PDU from Client %d, which is not an RPT Device",
                       rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
           }
           break;
 
         default:
-          SendStatus(rptcli, rptmsg->header, VECTOR_RPT_STATUS_UNKNOWN_VECTOR);
           log_->Log(LWPA_LOG_WARNING, "Received RPT PDU with unknown vector %d from Client %d", rptmsg->vector, conn);
           break;
       }
@@ -1238,8 +1199,7 @@ void Broker::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
     else if (IsDeviceManuBroadcastUID(rptmsg->header.dest_uid, device_manu))
     {
       log_->Log(LWPA_LOG_DEBUG,
-                "Broadcasting RPT message from Controller %04x:%08x to all Devices from "
-                "manufacturer %04x",
+                "Broadcasting RPT message from Controller %04x:%08x to all Devices from manufacturer %04x",
                 rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id, device_manu);
       for (auto device : devices_)
       {
@@ -1282,9 +1242,8 @@ void Broker::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
       if (!found_dest_client)
       {
         log_->Log(LWPA_LOG_ERR,
-                  "Could not route message from RPT Client %d (%04x:%08x): Destination UID "
-                  "%04x:%08x not found.",
-                  conn, rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id, rptmsg->header.dest_uid.manu,
+                  "Could not route message from RPT Client %d (%04x:%08x): Destination UID %04x:%08x not found.", conn,
+                  rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id, rptmsg->header.dest_uid.manu,
                   rptmsg->header.dest_uid.id);
       }
     }

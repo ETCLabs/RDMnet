@@ -438,41 +438,39 @@ void CallbackServiceMain(DWORD argc, LPWSTR *argv)
   delete g_shell;
 }
 
-void PrintHelp(wchar_t *app_name)
+void PrintVersion()
 {
   printf("ETC Prototype RDMnet Broker\n");
-  printf("Version %s\n", RDMNET_VERSION_STRING);
-  printf("\n");
-  printf("Usage: %ls [-install | -run | -remove] [-auto] [-debug] \n", app_name);
-  printf(
-      "               [-scope=V] [-ifaces=W] [-query0=X] [-depth=Y] [-port=Z] "
-      "\n");
-  printf("   -install: installs the service\n");
-  printf("   -run: starts the service, installing it if necessary\n");
-  printf("   -remove: removes the service\n");
-  printf("   -auto: installs/runs as automatic, otherwise manual\n");
-  printf(
-      "   -debug: Runs the service as a console application, similarly to "
-      "slpd.exe\n");
-  printf(
-      "   -scope=X: configures the RDMnetScope source and saves it to the "
-      "registry. \n");
-  printf("            Enter nothing after = to set the scope to the default.\n");
-  printf(
-      "   -ifaces: An optional comma separated list of local network "
-      "interface mac\n");
-  printf(
-      "            addresses to use, e.g. (00:c0:16:11:da:b3). These get "
-      "saved to \n");
-  printf(
-      "            the registry. Enter nothing after = to clear the ifaces "
-      "key and \n");
-  printf("            use all interfaces available.\n");
-  printf(
-      "   -port=X: The port that this broker instance should use (default "
-      "8888).\n");
-  printf("            This gets saved to the registry for future use.\n");
-  printf("            Enter nothing after = to set the port to the default.\n");
+  printf("Version %s\n\n", RDMNET_VERSION_STRING);
+  printf("Copyright (c) 2018 ETC Inc.\n");
+  printf("License: Apache License v2.0 <http://www.apache.org/licenses/LICENSE-2.0>\n");
+  printf("Unless required by applicable law or agreed to in writing, this software is\n");
+  printf("provided \"AS IS\", WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express\n");
+  printf("or implied.\n");
+}
+
+void PrintHelp(wchar_t *app_name)
+{
+  printf("Usage: %ls [OPTION]... COMMAND\n\n", app_name);
+  printf("Commands:\n");
+  printf("  install  Install the service\n");
+  printf("  run      Start the service, installing it if necessary\n");
+  printf("  remove   Remove the service\n");
+  printf("  debug    Run the service as a console application\n\n");
+  printf("Options:\n");
+  printf("  --auto               Installs/runs as automatic, otherwise manual\n");
+  printf("  --scope=SCOPE        Configures the RDMnet Scope to SCOPE and saves it to the\n");
+  printf("                       registry. Enter nothing after '=' to set the scope to\n");
+  printf("                       the default.\n");
+  printf("  --ifaces=IFACE_LIST  A comma-separated list of local network interface mac\n");
+  printf("                       addresses to use, e.g. 00:c0:16:11:da:b3. These get\n");
+  printf("                       saved to the registry. Enter nothing after '=' to clear\n");
+  printf("                       the ifaces key and use all interfaces available.\n");
+  printf("  --port=PORT          The port that this broker instance should use (default\n");
+  printf("                       8888). This gets saved to the registry for future use.\n");
+  printf("                       Enter nothing after '=' to set the port to the default.\n");
+  printf("  --help               Display this help and exit.\n");
+  printf("  --version            Output version information and exit.\n");
 }
 
 int wmain(int argc, wchar_t *argv[])
@@ -480,7 +478,7 @@ int wmain(int argc, wchar_t *argv[])
   SERVICE_TABLE_ENTRY serviceTable[] = {
       {const_cast<LPWSTR>(SERVICE_NAME), (LPSERVICE_MAIN_FUNCTION)CallbackServiceMain}, {NULL, NULL}};
 
-  bool should_exit = false;
+  bool should_exit = true;
   // Because we are doing automatic and non-automatic installs, we need wait
   // until the parse is complete
   bool fAuto = false;
@@ -491,52 +489,58 @@ int wmain(int argc, wchar_t *argv[])
   // or run functions for the service(s)
   if (argc > 1)
   {
-    for (int i = 2; i <= argc; ++i)
+    for (int i = 1; i < argc; ++i)
     {
-      if (_wcsicmp(argv[i - 1], L"-auto") == 0)
+      if (_wcsicmp(argv[i], L"--auto") == 0)
         fAuto = true;
-      else if (_wcsnicmp(argv[i - 1], L"-scope=", 7) == 0)
+      else if (_wcsnicmp(argv[i], L"--scope=", 8) == 0)
       {
-        SetScopeKey(argv[i - 1] + 7);
+        SetScopeKey(argv[i] + 8);
         should_exit = false;
       }
-      else if (_wcsnicmp(argv[i - 1], L"-ifaces=", 8) == 0)
+      else if (_wcsnicmp(argv[i], L"--ifaces=", 9) == 0)
       {
-        SetMyIfaceKey(argv[i - 1] + 8);
+        SetMyIfaceKey(argv[i] + 9);
         should_exit = false;
       }
-      else if (_wcsicmp(argv[i - 1], L"-install") == 0)
+      else if (_wcsicmp(argv[i], L"install") == 0)
       {
         should_install = true;
-        should_exit = true;
       }
-      else if (_wcsicmp(argv[i - 1], L"-run") == 0)
+      else if (_wcsicmp(argv[i], L"run") == 0)
       {
         should_run = true;
         should_exit = true;
       }
-      else if (_wcsicmp(argv[i - 1], L"-remove") == 0)
+      else if (_wcsicmp(argv[i], L"remove") == 0)
       {
         RemoveService(SERVICE_NAME);
         should_exit = true;
       }
-      else if (_wcsicmp(argv[i - 1], L"-debug") == 0)
+      else if (_wcsicmp(argv[i], L"debug") == 0)
       {
         should_exit = false;
         debug = true;
       }
-      else if (_wcsnicmp(argv[i - 1], L"-port=", 6) == 0)
+      else if (_wcsnicmp(argv[i], L"--port=", 7) == 0)
       {
-        SetPortKey(argv[i - 1] + 6);
+        SetPortKey(argv[i] + 7);
         should_exit = false;
+      }
+      else if (_wcsicmp(argv[i], L"--version") == 0)
+      {
+        PrintVersion();
+        break;
       }
       else
       {
         PrintHelp(argv[0]);
-        should_exit = true;
+        break;
       }
     }
   }
+  else
+    PrintHelp(argv[0]);
 
   if (should_install)
     InstallService(SERVICE_NAME, BROKER_SERVICE_DESCRIPTION, fAuto);
