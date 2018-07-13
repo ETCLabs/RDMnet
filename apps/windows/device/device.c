@@ -35,11 +35,6 @@
 #include "rdmnet/rdmresponder.h"
 #include "defaultresponder.h"
 
-/**************************** Private constants ******************************/
-
-/* clang-format off */
-/* clang-format on */
-
 /***************************** Private macros ********************************/
 
 #define rpt_uid_matches_mine(uidptr)                                       \
@@ -75,13 +70,14 @@ static void handle_rdm_command(int conn, const RptHeader *received_header, const
 
 /*************************** Function definitions ****************************/
 
-void device_init(const LwpaCid *local_cid, const LwpaUid *local_uid, const LwpaSockaddr *static_broker_addr)
+void device_init(const DeviceSettings *settings)
 {
-  default_responder_init(static_broker_addr);
-  if (local_cid)
-    my_cid = *local_cid;
-  if (local_uid)
-    my_uid = *local_uid;
+  if (settings)
+  {
+    default_responder_init(&settings->static_broker_addr, settings->scope);
+    my_cid = settings->cid;
+    my_uid = settings->uid;
+  }
 }
 
 void device_deinit()
@@ -106,9 +102,7 @@ void device_handle_message(int conn, const RdmnetMessage *msg, const LwpaLogPara
         else
         {
           send_status(conn, VECTOR_RPT_STATUS_UNKNOWN_ENDPOINT, &rptmsg->header, lparams);
-          lwpa_log(lparams, LWPA_LOG_WARNING,
-                   "Device received RPT message addressed to unknown Endpoint "
-                   "ID %d",
+          lwpa_log(lparams, LWPA_LOG_WARNING, "Device received RPT message addressed to unknown Endpoint ID %d",
                    rptmsg->header.dest_endpoint_id);
         }
       }
@@ -192,8 +186,7 @@ void handle_rdm_command(int conn, const RptHeader *received_header, const RdmBuf
         {
           send_nack(conn, received_header, &cmd_data, nack_reason, lparams);
           lwpa_log(lparams, LWPA_LOG_DEBUG,
-                   "Sending SET_COMMAND NACK to Controller %04x:%08x for "
-                   "supported PID 0x%04x with reason 0x%04x",
+                   "Sending SET_COMMAND NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
                    received_header->source_uid.manu, received_header->source_uid.id, cmd_data.param_id, nack_reason);
         }
         break;
@@ -240,8 +233,7 @@ void handle_rdm_command(int conn, const RptHeader *received_header, const RdmBuf
         {
           send_nack(conn, received_header, &cmd_data, nack_reason, lparams);
           lwpa_log(lparams, LWPA_LOG_DEBUG,
-                   "Sending GET_COMMAND NACK to Controller %04x:%08x for "
-                   "supported PID 0x%04x with reason 0x%04x",
+                   "Sending GET_COMMAND NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
                    received_header->source_uid.manu, received_header->source_uid.id, cmd_data.param_id, nack_reason);
         }
         break;

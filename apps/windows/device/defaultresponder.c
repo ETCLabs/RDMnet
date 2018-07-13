@@ -131,17 +131,14 @@ bool get_endpoint_responders(const uint8_t *param_data, uint8_t param_data_len, 
 
 /*************************** Function definitions ****************************/
 
-void default_responder_init(const LwpaSockaddr *static_broker_addr)
+void default_responder_init(const LwpaSockaddr *static_broker_addr, const char *scope)
 {
   lwpa_rwlock_create(&prop_lock);
 
   strncpy(prop_data.device_label, DEFAULT_DEVICE_LABEL, DEVICE_LABEL_MAX_LEN);
-  strncpy(prop_data.rdmnet_params.scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH - 1);
+  strncpy(prop_data.rdmnet_params.scope, scope, E133_SCOPE_STRING_PADDED_LENGTH - 1);
   strncpy(prop_data.rdmnet_params.search_domain, E133_DEFAULT_DOMAIN, 64);
-  if (static_broker_addr)
-    prop_data.rdmnet_params.broker_static_addr = *static_broker_addr;
-  else
-    lwpaip_set_invalid(&prop_data.rdmnet_params.broker_static_addr.ip);
+  prop_data.rdmnet_params.broker_static_addr = *static_broker_addr;
 }
 
 void default_responder_deinit()

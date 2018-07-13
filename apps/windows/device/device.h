@@ -29,15 +29,24 @@
 #define _DEVICE_H_
 
 #include "lwpa_log.h"
+#include "estardmnet.h"
 #include "rdmnet/message.h"
 #include "rdmnet/rdmtypes.h"
 #include "defaultresponder.h"
+
+typedef struct DeviceSettings
+{
+  LwpaCid cid;
+  LwpaUid uid;
+  LwpaSockaddr static_broker_addr;
+  const char *scope;
+} DeviceSettings;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void device_init(const LwpaCid *local_cid, const LwpaUid *local_uid, const LwpaSockaddr *static_broker_addr);
+void device_init(const DeviceSettings *settings);
 void device_deinit();
 void device_handle_message(int conn, const RdmnetMessage *msg, const LwpaLogParams *lparams, bool *requires_reconnect);
 

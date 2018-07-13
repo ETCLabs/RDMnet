@@ -55,7 +55,7 @@ typedef struct RdmnetConnectParams
 extern "C" {
 #endif
 
-void default_responder_init(const LwpaSockaddr *static_broker_addr);
+void default_responder_init(const LwpaSockaddr *static_broker_addr, const char *scope);
 void default_responder_deinit();
 
 /* Interface between the E1.33 Device logic and the default responder */

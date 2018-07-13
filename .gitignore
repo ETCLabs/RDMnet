@@ -9,6 +9,9 @@
 bin/
 
 # MSVC2015 and Qt
+*.VC.db
+*.vcxproj.user
+.vs/
 Debug/
 Release/
 GeneratedFiles/
