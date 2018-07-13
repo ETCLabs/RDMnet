@@ -246,8 +246,6 @@ bool set_static_broker(wchar_t *arg, LwpaSockaddr *static_broker_addr)
 int wmain(int argc, wchar_t *argv[])
 {
   lwpa_error_t res = LWPA_OK;
-  LwpaCid my_cid;
-  LwpaUid my_uid;
   char scope[E133_SCOPE_STRING_PADDED_LENGTH];
   bool should_exit = false;
   UUID uuid;
@@ -334,13 +332,13 @@ int wmain(int argc, wchar_t *argv[])
   device_init(&settings);
 
   /* Initialize LLRP */
-  device_llrp_init(&my_cid, &my_uid, lparams);
+  device_llrp_init(&settings.cid, &settings.uid, lparams);
 
   /* Create a new connection handle */
   int broker_conn = -1;
   if (res == LWPA_OK)
   {
-    broker_conn = rdmnet_new_connection(&my_cid);
+    broker_conn = rdmnet_new_connection(&settings.cid);
     if (broker_conn < 0)
     {
       res = broker_conn;
@@ -352,7 +350,7 @@ int wmain(int argc, wchar_t *argv[])
   /* Try to connect to a static broker. */
   if (res == LWPA_OK)
   {
-    connect_to_broker(broker_conn, &my_cid, &my_uid, lparams);
+    connect_to_broker(broker_conn, &settings.cid, &settings.uid, lparams);
     lwpa_log(lparams, LWPA_LOG_INFO, "Connected to Broker. Entering main run loop...");
     while (1)
     {
@@ -369,7 +367,7 @@ int wmain(int argc, wchar_t *argv[])
                    "Device received configuration message that requires re-connection to Broker. Disconnecting...");
           /* Standard TODO, this needs a better reason */
           rdmnet_disconnect(broker_conn, true, E133_DISCONNECT_LLRP_RECONFIGURE);
-          connect_to_broker(broker_conn, &my_cid, &my_uid, lparams);
+          connect_to_broker(broker_conn, &settings.cid, &settings.uid, lparams);
           lwpa_log(lparams, LWPA_LOG_INFO, "Re-connected to Broker.");
         }
       }
@@ -384,7 +382,7 @@ int wmain(int argc, wchar_t *argv[])
           default_responder_incr_unhealthy_count();
 
         /* Attempt to reconnect to the Broker using our most current connect parameters. */
-        connect_to_broker(broker_conn, &my_cid, &my_uid, lparams);
+        connect_to_broker(broker_conn, &settings.cid, &settings.uid, lparams);
         lwpa_log(lparams, LWPA_LOG_INFO, "Re-connected to Broker.");
       }
     }
