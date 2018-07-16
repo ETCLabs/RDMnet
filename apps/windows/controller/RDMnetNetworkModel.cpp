@@ -1627,6 +1627,11 @@ bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand &cmd)
 void RDMnetNetworkModel::ProcessRDMResponse(int /*conn*/, bool have_command, const RdmCommand &cmd,
                                             const std::vector<RdmResponse> &response)
 {
+  if (response.size() == 0)
+  {
+    return;
+  }
+
   auto first_resp = response.front();
   switch (first_resp.resp_type)
   {
