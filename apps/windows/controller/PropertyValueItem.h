@@ -70,6 +70,8 @@ class PropertyValueItem : public RDMnetNetworkItem
 public:
   static const int PropertyValueItemType = QStandardItem::UserType + 7;
 
+  static bool pidInfoExists(uint16_t pid);
+
   static bool pidSupportsGet(uint16_t pid);
   static bool pidSupportsSet(uint16_t pid);
   static QVariant::Type pidDataType(uint16_t pid);

@@ -29,6 +29,11 @@
 
 std::map<uint16_t, PIDInfo> PropertyValueItem::pidInfo;
 
+bool PropertyValueItem::pidInfoExists(uint16_t pid)
+{
+  return pidInfo.find(pid) != pidInfo.end();
+}
+
 bool PropertyValueItem::pidSupportsGet(uint16_t pid)
 {
   return pidInfo[pid].supportsGet;

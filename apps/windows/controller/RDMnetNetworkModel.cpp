@@ -1032,8 +1032,9 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   // PropertyValueItem::addPIDPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV6,
   //                                             tr("Port Number (Static Configuration)"));
 
-  PropertyValueItem::setPIDInfo(E133_SEARCH_DOMAIN, true, false, QVariant::Type::String, Qt::EditRole, kDevice);
+  PropertyValueItem::setPIDInfo(E133_SEARCH_DOMAIN, true, true, QVariant::Type::String, Qt::EditRole, kDevice);
   PropertyValueItem::addPIDPropertyDisplayName(E133_SEARCH_DOMAIN, tr("Search Domain"));
+  PropertyValueItem::setPIDMaxBufferSize(E133_SEARCH_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
 
   PropertyValueItem::setPIDInfo(E133_TCP_COMMS_STATUS, true, false, QVariant::Type::Invalid, Qt::EditRole, kDevice);
   PropertyValueItem::addPIDPropertyDisplayName(E133_TCP_COMMS_STATUS, tr("Broker IPv4 Address (Current)"));
@@ -1285,7 +1286,13 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
                 packPtr[0] = static_cast<uint8_t>(value.toInt());
                 break;
               default:
-                return false;
+                //switch (pid)
+                //{
+                //case E133_BROKER_STATIC_CONFIG_IPV4:
+                //  break;
+                //default:
+                  return false;
+                //}
             }
 
             SendRDMCommand(setCmd);
@@ -2111,9 +2118,33 @@ void RDMnetNetworkModel::responderListChange(uint32_t /*changeNumber*/, uint16_t
   SendRDMCommand(cmd);
 }
 
-void RDMnetNetworkModel::nack(uint16_t /*reason*/, const RdmResponse * /*resp*/)
+void RDMnetNetworkModel::nack(uint16_t reason, const RdmResponse * resp)
 {
-  // TODO
+  if ((resp->command_class == E120_SET_COMMAND_RESPONSE) && (PropertyValueItem::pidInfoExists(resp->param_id)))
+  {
+    // Attempt to set a property failed. Get the original property value back.
+    RdmCommand cmd;
+
+    memset(cmd.data, 0, RDM_MAX_PDL);
+    cmd.dest_uid.manu = resp->src_uid.manu;
+    cmd.dest_uid.id = resp->src_uid.id;
+    cmd.subdevice = 0;
+
+    cmd.command_class = E120_GET_COMMAND;
+    cmd.param_id = resp->param_id;
+
+    if (cmd.param_id == E133_COMPONENT_SCOPE)
+    {
+      cmd.datalen = 2;
+      pack_16b(cmd.data, 0x0001);  // Scope slot, default to 1 for RPT Devices (non-controllers, non-brokers).
+    }
+    else
+    {
+      cmd.datalen = 0;
+    }
+
+    SendRDMCommand(cmd);
+  }
 }
 
 void RDMnetNetworkModel::status(uint8_t /*type*/, uint16_t /*messageId*/, uint16_t /*data1*/, uint16_t /*data2*/,
