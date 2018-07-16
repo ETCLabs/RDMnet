@@ -38,15 +38,15 @@ public:
   ResponderItem(uint16_t man, uint32_t dev);
   virtual ~ResponderItem();
 
-  uint16_t getMan(void) const { return m_Man; };
-  uint32_t getDev(void) const { return m_Dev; };
+  virtual uint16_t getMan(void) const { return m_Man; };
+  virtual uint32_t getDev(void) const { return m_Dev; };
+  virtual bool hasValidProperties() const;
 
   bool initiatePersonalityDescriptionSearch(uint8_t numberOfPersonalities);
   void personalityDescriptionFound(uint8_t personality, uint16_t footprint, const QString &description);
   bool allPersonalityDescriptionsFound();
   QStringList personalityDescriptionList();
   QString personalityDescriptionAt(int i);
-  bool deviceWasReset() const;
   void setDeviceWasReset(bool reset);
 
   virtual int type() const override;

@@ -876,7 +876,7 @@ void RDMnetNetworkModel::resetDevice(ResponderItem *device)
 {
   if (device != NULL)
   {
-    if (!device->deviceWasReset())
+    if (device->hasValidProperties()) // Means device wasn't reset
     {
       device->disableAllChildItems();
       device->setDeviceWasReset(true);
@@ -1013,10 +1013,10 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   PropertyValueItem::setPIDMaxBufferSize(E120_RESET_DEVICE, 1);
 
   // E1.33
-  PropertyValueItem::setPIDInfo(E133_COMPONENT_SCOPE, true, false /*true*/, QVariant::Type::String, Qt::EditRole,
+  PropertyValueItem::setPIDInfo(E133_COMPONENT_SCOPE, true, true, QVariant::Type::String, Qt::EditRole,
                                 kDevice);
   PropertyValueItem::addPIDPropertyDisplayName(E133_COMPONENT_SCOPE, tr("Component Scope"));
-  PropertyValueItem::setPIDMaxBufferSize(E133_COMPONENT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH + 16);
+  PropertyValueItem::setPIDMaxBufferSize(E133_COMPONENT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH + 2);
 
   PropertyValueItem::setPIDInfo(E133_BROKER_STATIC_CONFIG_IPV4, true, false, QVariant::Type::Invalid, Qt::EditRole,
                                 kDevice);
@@ -1202,9 +1202,14 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
     if (item->type() == PropertyValueItem::PropertyValueItemType)
     {
       PropertyValueItem *propertyValueItem = dynamic_cast<PropertyValueItem *>(item);
-      ResponderItem *responderParentItem = getNearestParentItemOfType<ResponderItem>(item);
+      RDMnetNetworkItem *parentItem = getNearestParentItemOfType<ResponderItem>(item);
 
-      if ((propertyValueItem != NULL) && (responderParentItem != NULL))
+      if (parentItem == NULL)
+      {
+        parentItem = getNearestParentItemOfType<RDMnetClientItem>(item);
+      }
+
+      if ((propertyValueItem != NULL) && (parentItem != NULL))
       {
         uint16_t pid = propertyValueItem->getPID();
 
@@ -1217,7 +1222,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
             // Value is out of range, reset to original value.
             updateValue = false;
           }
-          else if (responderParentItem->deviceWasReset())
+          else if (!parentItem->hasValidProperties())
           {
             // User interacted with a dead property that has yet to be removed.
             updateValue = false;
@@ -1228,47 +1233,56 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
             int32_t maxBuffSize = PropertyValueItem::pidMaxBufferSize(pid);
             QString qstr;
             std::string stdstr;
+            uint8_t *packPtr;
 
-            setCmd.dest_uid.manu = responderParentItem->getMan();
-            setCmd.dest_uid.id = responderParentItem->getDev();
+            setCmd.dest_uid.manu = parentItem->getMan();
+            setCmd.dest_uid.id = parentItem->getDev();
             setCmd.subdevice = 0;
             setCmd.command_class = E120_SET_COMMAND;
             setCmd.param_id = pid;
             setCmd.datalen = maxBuffSize;
             memset(setCmd.data, 0, maxBuffSize);
+            packPtr = setCmd.data;
+
+            // Special cases for certain PIDs
+            if (pid == E133_COMPONENT_SCOPE)
+            {
+              pack_16b(packPtr, 1); // Scope slot (default to 1)
+              packPtr += 2;
+            }
 
             switch (PropertyValueItem::pidDataType(pid))
             {
               case QVariant::Type::Int:
-                switch (maxBuffSize)
+                switch (maxBuffSize - (packPtr - setCmd.data))
                 {
                   case 2:
-                    pack_16b(setCmd.data, value.toInt());
+                    pack_16b(packPtr, value.toInt());
                     break;
                   case 4:
-                    pack_32b(setCmd.data, value.toInt());
+                    pack_32b(packPtr, value.toInt());
                     break;
                 }
                 break;
               case QVariant::Type::String:
                 qstr = value.toString();
-                qstr.truncate(maxBuffSize);
+                qstr.truncate(maxBuffSize - (packPtr - setCmd.data));
                 newValue = qstr;
                 stdstr = qstr.toStdString();
-                memcpy(setCmd.data, stdstr.data(), stdstr.length());
+                memcpy(packPtr, stdstr.data(), stdstr.length());
                 break;
               case QVariant::Type::Bool:
                 if (value.toBool())
                 {
-                  setCmd.data[0] = 1;
+                  packPtr[0] = 1;
                 }
                 else
                 {
-                  setCmd.data[0] = 0;
+                  packPtr[0] = 0;
                 }
                 break;
               case QVariant::Type::Char:
-                setCmd.data[0] = static_cast<uint8_t>(value.toInt());
+                packPtr[0] = static_cast<uint8_t>(value.toInt());
                 break;
               default:
                 return false;
@@ -1278,7 +1292,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
 
             if (pid == E120_DMX_PERSONALITY)
             {
-              sendGetCommand(E120_DEVICE_INFO, responderParentItem->getMan(), responderParentItem->getDev());
+              sendGetCommand(E120_DEVICE_INFO, parentItem->getMan(), parentItem->getDev());
             }
           }
         }

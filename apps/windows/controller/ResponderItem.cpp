@@ -47,6 +47,11 @@ ResponderItem::~ResponderItem()
   delete[] personalityDescriptions;
 }
 
+bool ResponderItem::hasValidProperties() const
+{
+  return !device_reset_;
+}
+
 bool ResponderItem::initiatePersonalityDescriptionSearch(uint8_t numberOfPersonalities)
 {
   if (personalityDescriptions == NULL)
@@ -91,11 +96,6 @@ QStringList ResponderItem::personalityDescriptionList()
 QString ResponderItem::personalityDescriptionAt(int i)
 {
   return personalityDescriptions[i];
-}
-
-bool ResponderItem::deviceWasReset() const
-{
-  return device_reset_;
 }
 
 void ResponderItem::setDeviceWasReset(bool reset)

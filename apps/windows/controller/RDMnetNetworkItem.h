@@ -74,6 +74,10 @@ public:
   void completelyRemoveChildren(int row, int count = 1);
   void disableAllChildItems();
 
+  virtual uint16_t getMan(void) const { return 0; };
+  virtual uint32_t getDev(void) const { return 0; };
+  virtual bool hasValidProperties(void) const { return true; };
+
   std::vector<class PropertyItem *> properties;
 
 protected:
