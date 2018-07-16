@@ -178,8 +178,7 @@ void llrp_handle_rdm_command(llrp_socket_t sock, const LlrpRdmMessage *llrp_msg)
         {
           llrp_send_nack(sock, llrp_msg, &cmd_data, nack_reason);
           lwpa_log(llrp_info.lparams, LWPA_LOG_DEBUG,
-                   "Sending GET_COMMAND NACK to Controller %04x:%08x for "
-                   "supported PID 0x%04x with reason 0x%04x",
+                   "Sending GET_COMMAND NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
                    cmd_data.src_uid.manu, cmd_data.src_uid.id, cmd_data.param_id, nack_reason);
         }
         break;

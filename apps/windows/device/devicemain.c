@@ -36,153 +36,12 @@
 #include "lwpa_cid.h"
 #include "lwpa_socket.h"
 #include "rdmnet/version.h"
-#include "rdmnet/connection.h"
 #include "device.h"
 #include "devicelog.h"
 #include "devicellrp.h"
-#include "rdmnet/discovery.h"
 
 /* DEBUG */
 #include <stdio.h>
-
-/****** mdns / dns-sd ********************************************************/
-
-LwpaSockaddr mdns_broker_addr;
-
-void broker_found(const char *scope, const BrokerDiscInfo *broker_info, void *context)
-{
-  (void)scope;
-  (void)context;
-
-  size_t ip_index;
-  for (ip_index = 0; ip_index < broker_info->listen_addrs_count; ip_index++)
-  {
-    if (lwpaip_is_v4(&broker_info->listen_addrs[ip_index].ip))
-    {
-      mdns_broker_addr = broker_info->listen_addrs[ip_index];
-      break;
-    }
-  }
-  lwpa_log(device_get_log_params(), LWPA_LOG_INFO, "Found Broker '%s'.", broker_info->service_name);
-}
-
-void broker_lost(const char *service_name, void *context)
-{
-  (void)service_name;
-  (void)context;
-}
-
-void scope_monitor_error(const ScopeMonitorInfo *scope_info, int platform_error, void *context)
-{
-  (void)scope_info;
-  (void)platform_error;
-  (void)context;
-}
-
-void broker_registered(const BrokerDiscInfo *broker_info, const char *assigned_service_name, void *context)
-{
-  (void)broker_info;
-  (void)assigned_service_name;
-  (void)context;
-}
-
-void broker_register_error(const BrokerDiscInfo *broker_info, int platform_error, void *context)
-{
-  (void)broker_info;
-  (void)platform_error;
-  (void)context;
-}
-
-void set_callback_functions(RdmnetDiscCallbacks *callbacks)
-{
-  callbacks->broker_found = &broker_found;
-  callbacks->broker_lost = &broker_lost;
-  callbacks->scope_monitor_error = &scope_monitor_error;
-  callbacks->broker_registered = &broker_registered;
-  callbacks->broker_register_error = &broker_register_error;
-}
-
-void mdns_dnssd_resolve_addr(RdmnetConnectParams *connect_params)
-{
-  int platform_specific_error;
-  ScopeMonitorInfo scope_monitor_info;
-  fill_default_scope_info(&scope_monitor_info);
-
-  strncpy(scope_monitor_info.scope, connect_params->scope, E133_SCOPE_STRING_PADDED_LENGTH);
-  strncpy(scope_monitor_info.domain, connect_params->search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
-
-  rdmnetdisc_startmonitoring(&scope_monitor_info, &platform_specific_error, NULL);
-
-  while (lwpaip_is_invalid(&mdns_broker_addr.ip))
-  {
-    rdmnetdisc_tick(NULL);
-    Sleep(100);
-  }
-
-  rdmnetdisc_stopmonitoring(&scope_monitor_info);
-}
-
-/****************************************************************************/
-
-void get_connect_params(RdmnetConnectParams *connect_params, LwpaSockaddr *broker_addr)
-{
-  default_responder_get_e133_params(connect_params);
-
-  /* If we have a static configuration, use it to connect to the Broker. */
-  if (lwpaip_is_invalid(&connect_params->broker_static_addr.ip))
-  {
-    lwpaip_set_invalid(&mdns_broker_addr.ip);
-    mdns_dnssd_resolve_addr(connect_params);
-    *broker_addr = mdns_broker_addr;
-  }
-  else
-  {
-    *broker_addr = connect_params->broker_static_addr;
-  }
-}
-
-void connect_to_broker(int conn, const LwpaCid *my_cid, const LwpaUid *my_uid, const LwpaLogParams *lparams)
-{
-  static RdmnetData connect_data;
-  ClientConnectMsg connect_msg;
-  RdmnetConnectParams connect_params;
-  LwpaSockaddr broker_addr;
-  lwpa_error_t res;
-
-  do
-  {
-    get_connect_params(&connect_params, &broker_addr);
-
-    /* Fill in the information used in the initial connection handshake. */
-    connect_msg.scope = connect_params.scope;
-    connect_msg.search_domain = connect_params.search_domain;
-    connect_msg.e133_version = E133_VERSION;
-    connect_msg.connect_flags = 0;
-    create_rpt_client_entry(my_cid, my_uid, kRPTClientTypeDevice, NULL, &connect_msg.client_entry);
-
-    /* Attempt to connect. */
-    res = rdmnet_connect(conn, &broker_addr, &connect_msg, &connect_data);
-    if (res != LWPA_OK)
-    {
-      if (lwpa_canlog(lparams, LWPA_LOG_WARNING))
-      {
-        char addr_str[LWPA_INET6_ADDRSTRLEN];
-        lwpa_inet_ntop(&broker_addr.ip, addr_str, LWPA_INET6_ADDRSTRLEN);
-        lwpa_log(lparams, LWPA_LOG_WARNING,
-                 "Connection to Broker at address %s:%d failed with error: '%s'. Retrying...", addr_str,
-                 broker_addr.port, lwpa_strerror(res));
-      }
-    }
-    else
-    {
-      /* If we were redirected, the data structure will tell us the new address. */
-      if (rdmnet_data_is_addr(&connect_data))
-        broker_addr = *(rdmnet_data_addr(&connect_data));
-    }
-  } while (res != LWPA_OK);
-
-  default_responder_set_tcp_status(&broker_addr);
-}
 
 void print_version()
 {
@@ -245,13 +104,26 @@ bool set_static_broker(wchar_t *arg, LwpaSockaddr *static_broker_addr)
   return false;
 }
 
+static bool device_keep_running = true;
+
+BOOL WINAPI console_handler(DWORD signal)
+{
+  if (signal == CTRL_C_EVENT)
+  {
+    printf("Stopping Device...\n");
+    device_keep_running = false;
+    device_deinit();
+  }
+
+  return TRUE;
+}
+
 int wmain(int argc, wchar_t *argv[])
 {
   lwpa_error_t res = LWPA_OK;
   char scope[E133_SCOPE_STRING_PADDED_LENGTH];
   bool should_exit = false;
   UUID uuid;
-  RdmnetDiscCallbacks callbacks;
   DeviceSettings settings;
   const LwpaLogParams *lparams;
 
@@ -305,9 +177,6 @@ int wmain(int argc, wchar_t *argv[])
   lparams = device_get_log_params();
   lwpa_log(lparams, LWPA_LOG_INFO, "ETC Prototype RDMnet Device Version " RDMNET_VERSION_STRING);
 
-  set_callback_functions(&callbacks);
-  rdmnetdisc_init(&callbacks);
-
   /* Create the Device's CID */
   /* Normally we would use lwpa_cid's generate_cid() function to lock a CID to
    * the local MAC address. This conforms more closely to the CID requirements
@@ -322,77 +191,28 @@ int wmain(int argc, wchar_t *argv[])
   /* Slight hack - using the last 32 bits of the CID as the UID. */
   settings.uid.id = upack_32b(&settings.cid.data[12]);
 
-  /* Initialize the RDMnet library */
-  res = rdmnet_init(lparams);
-  if (res != LWPA_OK)
-  {
-    lwpa_log(lparams, LWPA_LOG_ERR, "Couldn't initialize RDMnet library due to error: '%s'. Stopping.",
-             lwpa_strerror(res));
-  }
-
-  /* Initialize the device settings */
-  device_init(&settings);
-
   /* Initialize LLRP */
   device_llrp_init(&settings.cid, &settings.uid, lparams);
 
-  /* Create a new connection handle */
-  int broker_conn = -1;
-  if (res == LWPA_OK)
+  /* Handle console signals */
+  if (!SetConsoleCtrlHandler(console_handler, TRUE))
   {
-    broker_conn = rdmnet_new_connection(&settings.cid);
-    if (broker_conn < 0)
-    {
-      res = broker_conn;
-      lwpa_log(lparams, LWPA_LOG_ERR, "Couldn't create a new RDMnet Connection due to error: '%s'. Stopping.",
-               lwpa_strerror(res));
-    }
+    lwpa_log(lparams, LWPA_LOG_ERR, "Could not set console signal handler.");
+    return 1;
   }
 
-  /* Try to connect to a static broker. */
-  if (res == LWPA_OK)
+  /* Startup the device */
+  res = device_init(&settings, lparams);
+  if (res != LWPA_OK)
   {
-    connect_to_broker(broker_conn, &settings.cid, &settings.uid, lparams);
-    lwpa_log(lparams, LWPA_LOG_INFO, "Connected to Broker. Entering main run loop...");
-    while (1)
-    {
-      static RdmnetData recv_data;
-
-      res = rdmnet_recv(broker_conn, &recv_data);
-      if (res == LWPA_OK)
-      {
-        bool reconnect_required = false;
-        device_handle_message(broker_conn, rdmnet_data_msg(&recv_data), lparams, &reconnect_required);
-        if (reconnect_required)
-        {
-          lwpa_log(lparams, LWPA_LOG_INFO,
-                   "Device received configuration message that requires re-connection to Broker. Disconnecting...");
-          /* Standard TODO, this needs a better reason */
-          rdmnet_disconnect(broker_conn, true, E133_DISCONNECT_LLRP_RECONFIGURE);
-          connect_to_broker(broker_conn, &settings.cid, &settings.uid, lparams);
-          lwpa_log(lparams, LWPA_LOG_INFO, "Re-connected to Broker.");
-        }
-      }
-      else if (res != LWPA_NODATA)
-      {
-        /* Disconnected from Broker. */
-        lwpa_log(lparams, LWPA_LOG_INFO, "Disconnected from Broker with error: '%s'. Attempting to reconnect...",
-                 lwpa_strerror(res));
-
-        Sleep(1000);
-        /* On an unhealthy TCP event, increment our internal counter. */
-        if (res == LWPA_TIMEDOUT)
-          default_responder_incr_unhealthy_count();
-
-        /* Attempt to reconnect to the Broker using our most current connect parameters. */
-        connect_to_broker(broker_conn, &settings.cid, &settings.uid, lparams);
-        lwpa_log(lparams, LWPA_LOG_INFO, "Re-connected to Broker.");
-      }
-    }
+    lwpa_log(lparams, LWPA_LOG_ERR, "Device failed to initialize: '%s'", lwpa_strerror(res));
+    return 1;
   }
 
-  device_deinit();
-  rdmnet_deinit();
+  while (device_keep_running)
+    device_run();
+
+  device_llrp_deinit();
   device_log_deinit();
-  return (res == LWPA_OK ? 0 : 1);
+  return 0;
 }

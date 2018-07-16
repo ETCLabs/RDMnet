@@ -28,6 +28,7 @@
 #ifndef _DEVICE_H_
 #define _DEVICE_H_
 
+#include "lwpa_int.h"
 #include "lwpa_log.h"
 #include "estardmnet.h"
 #include "rdmnet/message.h"
@@ -46,9 +47,11 @@ typedef struct DeviceSettings
 extern "C" {
 #endif
 
-void device_init(const DeviceSettings *settings);
+lwpa_error_t device_init(const DeviceSettings *settings, const LwpaLogParams *lparams);
 void device_deinit();
-void device_handle_message(int conn, const RdmnetMessage *msg, const LwpaLogParams *lparams, bool *requires_reconnect);
+void device_run();
+
+bool device_llrp_set(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason);
 
 #ifdef __cplusplus
 }

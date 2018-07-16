@@ -843,7 +843,7 @@ lwpa_error_t rdmnet_disconnect(int handle, bool send_disconnect_msg, rdmnet_disc
       dm.disconnect_reason = disconnect_reason;
       send_disconnect(conn, &dm);
     }
-    /* TODO explore shutdown here */
+    lwpa_shutdown(conn->sock, LWPA_SHUT_WR);
     lwpa_close(conn->sock);
     conn->sock = LWPA_SOCKET_INVALID;
   }
