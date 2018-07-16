@@ -95,6 +95,7 @@ typedef struct RdmnetConnection
   LwpaTimer send_timer;
   LwpaTimer hb_timer;
   LwpaTimer backoff_timer;
+  bool rdmnet_conn_failed;
 
   /* Send tracking */
   lwpa_mutex_t send_lock;

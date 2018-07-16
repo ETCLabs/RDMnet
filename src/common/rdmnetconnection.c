@@ -317,6 +317,7 @@ int rdmnet_new_connection(const LwpaCid *local_cid)
     conn->state = kCSNotConnected;
     conn->poll_list = NULL;
     lwpa_timer_start(&conn->backoff_timer, 0);
+    conn->rdmnet_conn_failed = false;
     conn->recv_disconn_err = LWPA_TIMEDOUT;
     conn->recv_waiting = false;
     rdmnet_msg_buf_init(&conn->recv_buf, rc_state.log_params);
@@ -348,7 +349,7 @@ lwpa_error_t update_backoff_and_wait_if_blocking(RdmnetConnection *conn, const L
   lwpa_error_t res = LWPA_OK;
   conn->state = kCSBackoff;
 
-  if (lwpasock_ip_port_equal(&conn->remote_addr, remote_addr))
+  if (conn->rdmnet_conn_failed && lwpasock_ip_port_equal(&conn->remote_addr, remote_addr))
   {
     lwpa_timer_start(&conn->backoff_timer, update_backoff(conn->backoff_timer.interval));
     if (conn->is_blocking)
@@ -462,6 +463,9 @@ lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const C
     bool reacquire_locks = conn->is_blocking;
     lwpa_error_t find_res;
 
+    /* Reset the RDMnet connection failure flag for a new connection attempt */
+    conn->rdmnet_conn_failed = false;
+
     /* Release the locks before a potentially long blocking connect */
     if (conn->is_blocking)
       release_conn_and_readlock(conn);
@@ -488,6 +492,8 @@ lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const C
   {
     /* We are connected! */
     conn->state = kCSRDMnetConnPending;
+    /* Flag that if the connection fails after this point, we increment the backoff timer. */
+    conn->rdmnet_conn_failed = true;
     /* TODO capture error from this */
     send_client_connect(conn, connect_data);
     lwpa_timer_start(&conn->send_timer, E133_TCP_HEARTBEAT_INTERVAL_SEC * 1000);
@@ -567,6 +573,7 @@ lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const C
                   case kRDMnetConnectOk:
                     /* TODO check version and Broker UID */
                     conn->state = kCSHeartbeat;
+                    conn->rdmnet_conn_failed = false;
                     lwpa_timer_start(&conn->backoff_timer, 0);
                     should_break = true;
                     break;

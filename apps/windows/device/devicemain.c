@@ -63,14 +63,7 @@ void broker_found(const char *scope, const BrokerDiscInfo *broker_info, void *co
       break;
     }
   }
-
-  char broker_info_string[48];
-  strcpy(broker_info_string, "Found Broker \"");
-  strcat(broker_info_string, broker_info->service_name);
-  strcat(broker_info_string, "\" ");
-
-  const LwpaLogParams *lparams = device_get_log_params();
-  lwpa_log(lparams, LWPA_LOG_INFO, broker_info_string);
+  lwpa_log(device_get_log_params(), LWPA_LOG_INFO, "Found Broker '%s'.", broker_info->service_name);
 }
 
 void broker_lost(const char *service_name, void *context)
@@ -120,65 +113,74 @@ void mdns_dnssd_resolve_addr(RdmnetConnectParams *connect_params)
 
   rdmnetdisc_startmonitoring(&scope_monitor_info, &platform_specific_error, NULL);
 
-  while (mdns_broker_addr.ip.type == LWPA_IP_INVALID)
+  while (lwpaip_is_invalid(&mdns_broker_addr.ip))
   {
     rdmnetdisc_tick(NULL);
     Sleep(100);
   }
+
+  rdmnetdisc_stopmonitoring(&scope_monitor_info);
 }
+
 /****************************************************************************/
 
-void try_connecting_until_connected(int broker_conn, LwpaSockaddr *broker_addr, const ClientConnectMsg *connect_msg,
-                                    const LwpaLogParams *lparams)
+void get_connect_params(RdmnetConnectParams *connect_params, LwpaSockaddr *broker_addr)
 {
-  static RdmnetData connect_data;
+  default_responder_get_e133_params(connect_params);
 
-  /* Attempt to connect. */
-  lwpa_error_t res = rdmnet_connect(broker_conn, broker_addr, connect_msg, &connect_data);
-  while (res != LWPA_OK)
+  /* If we have a static configuration, use it to connect to the Broker. */
+  if (lwpaip_is_invalid(&connect_params->broker_static_addr.ip))
   {
-    if (lwpa_canlog(lparams, LWPA_LOG_WARNING))
-    {
-      char addr_str[LWPA_INET6_ADDRSTRLEN];
-      lwpa_inet_ntop(&broker_addr->ip, addr_str, LWPA_INET6_ADDRSTRLEN);
-      lwpa_log(lparams, LWPA_LOG_WARNING, "Connection to Broker at address %s:%d failed with error: '%s'. Retrying...",
-               addr_str, broker_addr->port, lwpa_strerror(res));
-    }
-    res = rdmnet_connect(broker_conn, broker_addr, connect_msg, &connect_data);
+    lwpaip_set_invalid(&mdns_broker_addr.ip);
+    mdns_dnssd_resolve_addr(connect_params);
+    *broker_addr = mdns_broker_addr;
   }
-
-  /* If we were redirected, the data structure will tell us the new address. */
-  if (rdmnet_data_is_addr(&connect_data))
-    *broker_addr = *(rdmnet_data_addr(&connect_data));
+  else
+  {
+    *broker_addr = connect_params->broker_static_addr;
+  }
 }
 
 void connect_to_broker(int conn, const LwpaCid *my_cid, const LwpaUid *my_uid, const LwpaLogParams *lparams)
 {
-  RdmnetConnectParams my_connect_params;
+  static RdmnetData connect_data;
   ClientConnectMsg connect_msg;
-
-  default_responder_get_e133_params(&my_connect_params);
-
-  /* Fill in the information used in the initial connection handshake. */
-  connect_msg.scope = my_connect_params.scope;
-  connect_msg.search_domain = my_connect_params.search_domain;
-  connect_msg.e133_version = E133_VERSION;
-  connect_msg.connect_flags = 0;
-  create_rpt_client_entry(my_cid, my_uid, kRPTClientTypeDevice, NULL, &connect_msg.client_entry);
-
+  RdmnetConnectParams connect_params;
   LwpaSockaddr broker_addr;
-  /* If we have a static configuration, use it to connect to the Broker. */
-  if (lwpaip_is_invalid(&my_connect_params.broker_static_addr.ip))
-  {
-    mdns_dnssd_resolve_addr(&my_connect_params);
-    broker_addr = mdns_broker_addr;
-  }
-  else
-  {
-    broker_addr = my_connect_params.broker_static_addr;
-  }
+  lwpa_error_t res;
 
-  try_connecting_until_connected(conn, &broker_addr, &connect_msg, lparams);
+  do
+  {
+    get_connect_params(&connect_params, &broker_addr);
+
+    /* Fill in the information used in the initial connection handshake. */
+    connect_msg.scope = connect_params.scope;
+    connect_msg.search_domain = connect_params.search_domain;
+    connect_msg.e133_version = E133_VERSION;
+    connect_msg.connect_flags = 0;
+    create_rpt_client_entry(my_cid, my_uid, kRPTClientTypeDevice, NULL, &connect_msg.client_entry);
+
+    /* Attempt to connect. */
+    res = rdmnet_connect(conn, &broker_addr, &connect_msg, &connect_data);
+    if (res != LWPA_OK)
+    {
+      if (lwpa_canlog(lparams, LWPA_LOG_WARNING))
+      {
+        char addr_str[LWPA_INET6_ADDRSTRLEN];
+        lwpa_inet_ntop(&broker_addr.ip, addr_str, LWPA_INET6_ADDRSTRLEN);
+        lwpa_log(lparams, LWPA_LOG_WARNING,
+                 "Connection to Broker at address %s:%d failed with error: '%s'. Retrying...", addr_str,
+                 broker_addr.port, lwpa_strerror(res));
+      }
+    }
+    else
+    {
+      /* If we were redirected, the data structure will tell us the new address. */
+      if (rdmnet_data_is_addr(&connect_data))
+        broker_addr = *(rdmnet_data_addr(&connect_data));
+    }
+  } while (res != LWPA_OK);
+
   default_responder_set_tcp_status(&broker_addr);
 }
 
@@ -377,6 +379,7 @@ int wmain(int argc, wchar_t *argv[])
         lwpa_log(lparams, LWPA_LOG_INFO, "Disconnected from Broker with error: '%s'. Attempting to reconnect...",
                  lwpa_strerror(res));
 
+        Sleep(1000);
         /* On an unhealthy TCP event, increment our internal counter. */
         if (res == LWPA_TIMEDOUT)
           default_responder_incr_unhealthy_count();

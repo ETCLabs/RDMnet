@@ -742,7 +742,7 @@ void rdmnetdisc_stopmonitoring(const ScopeMonitorInfo *scope_info)
   {
     for (unsigned int i = 0; i < disc_state.scopes.count; i++)
     {
-      if (disc_state.scopes.monitor_info[i].scope == scope_info->scope)
+      if (0 == strncmp(disc_state.scopes.monitor_info[i].scope, scope_info->scope, E133_SCOPE_STRING_PADDED_LENGTH))
       {
         ref = disc_state.scopes.refs[i];
         scope_monitored_erase(i);
