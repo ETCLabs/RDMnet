@@ -52,11 +52,11 @@
 #define RDMNET_VERSION_ISCRITSIT  0 /*!< Whether this is a critical-situation build. */
 /*!@}*/
 
-/*! \name sACN version strings
- * @{
+/*! \name RDMnet version strings
+ *  @{
  */
 #define RDMNET_VERSION_STRING "0.1.0.2"
-#define RDMNET_VERSION_DATESTR "13.July.2018"
+#define RDMNET_VERSION_DATESTR "13.Jul.2018"
 #define RDMNET_VERSION_COPYRIGHT "Copyright 2018 Electronic Theatre Controls, Inc."
 #define RDMNET_VERSION_PRODUCTNAME "RDMnet"
 /*!@}*/
