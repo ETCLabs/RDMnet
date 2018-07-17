@@ -45,6 +45,10 @@
 #include "lwpa_timer.h"
 #include "rdmnet/rdmcontroller.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
+
 struct LLRPNetint
 {
   LwpaNetintInfo info;
@@ -69,6 +73,7 @@ public:
   void GetDeviceModelDescription(int target_handle);
   void GetComponentScope(int target_handle, int scope_slot);
 
+  void SetDeviceLabel(int target_handle, const std::string &label);
   void SetComponentScope(int target_handle, int scope_slot, const std::string &scope_utf8);
 
 protected:
@@ -140,6 +145,8 @@ void LLRPManager::PrintCommandList()
   printf("    pi: Print network interfaces\n");
   printf("    i <target_handle>: Get DEVICE_INFO from Target <target_handle>\n");
   printf("    l <target_handle>: Get DEVICE_LABEL from Target <target_handle>\n");
+  printf("    sl <target_handle> <label>: Set DEVICE_LABEL to <label> on Target\n");
+  printf("        <target_handle>\n");
   printf("    m <target_handle>: Get MANUFACTURER_LABEL from Target <target_handle>\n");
   printf("    c <target_handle>: Get DEVICE_MODEL_DESCRIPTION from Target <target_handle>\n");
   printf("    s <target_handle> <scope_slot>: Get COMPONENT_SCOPE for Scope Slot\n");
@@ -228,52 +235,77 @@ bool LLRPManager::ParseCommand(const std::wstring &line)
       case 's':
         if (line.length() >= 2)
         {
-          if (line[1] == 's')
+          switch (line[1])
           {
-            try
-            {
-              std::wstring args = line.substr(3);
-              size_t first_sp_pos = args.find_first_of(' ');
-              size_t second_sp_pos = args.find_first_of(' ', first_sp_pos + 1);
-
-              int target_handle = std::stoi(args);
-              int scope_slot = std::stoi(args.substr(first_sp_pos, second_sp_pos));
-
-              // Get and convert the scope
-              std::wstring scope = args.substr(second_sp_pos);
-              char scope_utf8[E133_SCOPE_STRING_PADDED_LENGTH];
-              if (WideCharToMultiByte(CP_UTF8, 0, scope.c_str(), -1, scope_utf8, E133_SCOPE_STRING_PADDED_LENGTH, NULL, NULL) > 0)
+            case 's':
+              try
               {
-                SetComponentScope(target_handle, scope_slot, scope_utf8);
+                std::wstring args = line.substr(3);
+                size_t first_sp_pos = args.find_first_of(' ');
+                size_t second_sp_pos = args.find_first_of(' ', first_sp_pos + 1);
+
+                int target_handle = std::stoi(args);
+                int scope_slot = std::stoi(args.substr(first_sp_pos, second_sp_pos));
+
+                // Get and convert the scope
+                std::wstring scope = args.substr(second_sp_pos + 1);
+                char scope_utf8[E133_SCOPE_STRING_PADDED_LENGTH];
+                if (WideCharToMultiByte(CP_UTF8, 0, scope.c_str(), -1, scope_utf8, E133_SCOPE_STRING_PADDED_LENGTH,
+                                        NULL, NULL) > 0)
+                {
+                  SetComponentScope(target_handle, scope_slot, scope_utf8);
+                }
+                else
+                {
+                  printf("Invalid scope.\n");
+                }
               }
-              else
+              catch (std::exception)
               {
-                printf("Invalid scope.\n");
+                printf("Command syntax: ss <target_handle> <scope_slot> <scope>\n");
               }
-            }
-            catch (std::exception)
-            {
-              printf("Command syntax: ss <target_handle> <scope_slot> <scope>\n");
-            }
-          }
-          else if (line[1] == ' ')
-          {
-            try
-            {
-              std::wstring args = line.substr(2);
-              size_t sp_pos = args.find_first_of(' ');
-              int target_handle = std::stoi(args);
-              int scope_slot = std::stoi(args.substr(sp_pos));
-              GetComponentScope(target_handle, scope_slot);
-            }
-            catch (std::exception)
-            {
-              printf("Command syntax: s <target_handle> <scope_slot>\n");
-            }
-          }
-          else
-          {
-            printf("Unrecognized command.\n");
+              break;
+            case 'l':
+              try
+              {
+                std::wstring args = line.substr(3);
+                size_t sp_pos = args.find_first_of(' ');
+
+                int target_handle = std::stoi(args);
+                std::wstring label = args.substr(sp_pos + 1);
+                // Yes, yes, the device label is supposed to be ASCII. This is easier on unicode Windows for now.
+                char label_utf8[32];
+                if (WideCharToMultiByte(CP_UTF8, 0, label.c_str(), -1, label_utf8, 32, NULL, NULL) > 0)
+                {
+                  SetDeviceLabel(target_handle, label_utf8);
+                }
+                else
+                {
+                  printf("Invalid Device Label.\n");
+                }
+              }
+              catch (std::exception)
+              {
+                printf("Command syntax: sl <target_handle> <label>\n");
+              }
+              break;
+            case ' ':
+              try
+              {
+                std::wstring args = line.substr(2);
+                size_t sp_pos = args.find_first_of(' ');
+                int target_handle = std::stoi(args);
+                int scope_slot = std::stoi(args.substr(sp_pos));
+                GetComponentScope(target_handle, scope_slot);
+              }
+              catch (std::exception)
+              {
+                printf("Command syntax: s <target_handle> <scope_slot>\n");
+              }
+              break;
+            default:
+              printf("Unrecognized command\n");
+              break;
           }
         }
         else
@@ -573,8 +605,82 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
     printf("Error sending COMPONENT_SCOPE command.\n");
 }
 
+void LLRPManager::SetDeviceLabel(int target_handle, const std::string &label)
+{
+  auto netint_pair = llrp_sockets_.find(active_interface_);
+  if (netint_pair != llrp_sockets_.end())
+  {
+    auto target = targets_.find(target_handle);
+    if (target != targets_.end())
+    {
+      RdmCommand cmd_data;
+      RdmResponse resp_data;
+
+      cmd_data.src_uid = uid_;
+      cmd_data.dest_uid = target->second.target_uid;
+      cmd_data.transaction_num = rdm_trans_num_++;
+      cmd_data.port_id = 0;
+      cmd_data.subdevice = 0;
+      cmd_data.command_class = E120_SET_COMMAND;
+      cmd_data.param_id = E120_DEVICE_LABEL;
+      cmd_data.datalen = (uint8_t)label.length();
+      strncpy((char *)cmd_data.data, label.c_str(), RDM_MAX_PDL);
+
+      if (SendRDMAndGetResponse(netint_pair->second.sock, target->second.target_cid, cmd_data, resp_data))
+        printf("Set device label successfully.\n");
+    }
+    else
+    {
+      printf("Target handle %d not found\n", target_handle);
+    }
+  }
+  else
+  {
+    printf("Error sending COMPONENT_SCOPE command.\n");
+  }
+}
+
 void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std::string &scope_utf8)
 {
+  if (scope_slot < 1 || scope_slot > 65535)
+  {
+    printf("Invalid scope slot.\n");
+    return;
+  }
+
+  auto netint_pair = llrp_sockets_.find(active_interface_);
+  if (netint_pair != llrp_sockets_.end())
+  {
+    auto target = targets_.find(target_handle);
+    if (target != targets_.end())
+    {
+      RdmCommand cmd_data;
+      RdmResponse resp_data;
+
+      cmd_data.src_uid = uid_;
+      cmd_data.dest_uid = target->second.target_uid;
+      cmd_data.transaction_num = rdm_trans_num_++;
+      cmd_data.port_id = 0;
+      cmd_data.subdevice = 0;
+      cmd_data.command_class = E120_SET_COMMAND;
+      cmd_data.param_id = E133_COMPONENT_SCOPE;
+      cmd_data.datalen = 2 + E133_SCOPE_STRING_PADDED_LENGTH;
+      memset(cmd_data.data, 0, 2 + E133_SCOPE_STRING_PADDED_LENGTH);
+      pack_16b(cmd_data.data, scope_slot);
+      strncpy((char *)&cmd_data.data[2], scope_utf8.c_str(), E133_SCOPE_STRING_PADDED_LENGTH - 1);
+
+      if (SendRDMAndGetResponse(netint_pair->second.sock, target->second.target_cid, cmd_data, resp_data))
+        printf("Set scope successfully.\n");
+    }
+    else
+    {
+      printf("Target handle %d not found\n", target_handle);
+    }
+  }
+  else
+  {
+    printf("Error sending COMPONENT_SCOPE command.\n");
+  }
 }
 
 bool LLRPManager::SendRDMAndGetResponse(llrp_socket_t sock, const LwpaCid &target_cid, const RdmCommand &cmd_data,
@@ -604,7 +710,9 @@ bool LLRPManager::SendRDMAndGetResponse(llrp_socket_t sock, const LwpaCid &targe
             if (resp_data.command_class == cmd_data.command_class + 1 && resp_data.param_id == cmd_data.param_id)
             {
               if (resp_data.resp_type == E120_RESPONSE_TYPE_ACK)
+              {
                 return true;
+              }
               else if (resp_data.resp_type == E120_RESPONSE_TYPE_NACK_REASON)
               {
                 resp_timeout = false;

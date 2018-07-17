@@ -33,6 +33,7 @@
 #include "estardm.h"
 #include "rdmnet/rptprot.h"
 #include "rdmnet/rdmresponder.h"
+#include "rdmnet/rdmcontroller.h"
 #include "rdmnet/discovery.h"
 #include "rdmnet/connection.h"
 #include "defaultresponder.h"
@@ -59,7 +60,7 @@
 
 static struct device_state
 {
-  bool initialized;
+  bool configuration_change;
 
   LwpaCid my_cid;
   LwpaUid my_uid;
@@ -82,7 +83,7 @@ static void broker_register_error(const BrokerDiscInfo *broker_info, int platfor
 static void mdns_dnssd_resolve_addr(RdmnetConnectParams *connect_params);
 
 /* Broker connection */
-static void connect_to_broker();
+static bool connect_to_broker();
 static void get_connect_params(RdmnetConnectParams *connect_params, LwpaSockaddr *broker_addr);
 
 /* RDM command handling */
@@ -134,21 +135,21 @@ lwpa_error_t device_init(const DeviceSettings *settings, const LwpaLogParams *lp
 
   device_state.my_cid = settings->cid;
   device_state.my_uid = settings->uid;
-  device_state.initialized = true;
+  device_state.configuration_change = false;
   device_state.lparams = lparams;
 
-  connect_to_broker();
-  device_state.connected = true;
-  lwpa_log(lparams, LWPA_LOG_INFO, "Connected to Broker.");
+  device_state.connected = connect_to_broker();
+  if (device_state.connected)
+    lwpa_log(lparams, LWPA_LOG_INFO, "Connected to Broker.");
   return LWPA_OK;
 }
 
 void device_deinit()
 {
-  device_state.initialized = false;
+  device_state.configuration_change = true;
   if (device_state.connected)
   {
-    rdmnet_disconnect(device_state.broker_conn, true, E133_DISCONNECT_SHUTDOWN);
+    rdmnet_disconnect(device_state.broker_conn, true, kRDMnetDisconnectShutdown);
   }
   rdmnet_deinit();
   rdmnetdisc_deinit();
@@ -170,11 +171,11 @@ void device_run()
         lwpa_log(device_state.lparams, LWPA_LOG_INFO,
                  "Device received configuration message that requires re-connection to Broker. Disconnecting...");
         /* Standard TODO, this needs a better reason */
-        rdmnet_disconnect(device_state.broker_conn, true, E133_DISCONNECT_LLRP_RECONFIGURE);
+        rdmnet_disconnect(device_state.broker_conn, true, kRDMnetDisconnectLLRPReconfigure);
         device_state.connected = false;
       }
     }
-    else if (res != LWPA_NODATA && device_state.initialized)
+    else if (res != LWPA_NODATA && !device_state.configuration_change)
     {
       /* Disconnected from Broker. */
       device_state.connected = false;
@@ -192,23 +193,71 @@ void device_run()
     Sleep(1000);
 
     /* Attempt to reconnect to the Broker using our most current connect parameters. */
-    connect_to_broker();
-    device_state.connected = true;
-    lwpa_log(device_state.lparams, LWPA_LOG_INFO, "Re-connected to Broker.");
+    if (connect_to_broker())
+    {
+      device_state.connected = true;
+      lwpa_log(device_state.lparams, LWPA_LOG_INFO, "Re-connected to Broker.");
+    }
   }
 }
 
-bool device_llrp_set(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason)
+bool device_llrp_set(const RdmCommand *cmd_data, uint16_t *nack_reason)
 {
   bool reconnect_required;
 
-  bool set_res = default_responder_set(pid, param_data, param_data_len, nack_reason, &reconnect_required);
-  if (set_res && reconnect_required && device_state.connected)
+  lwpa_log(device_state.lparams, LWPA_LOG_INFO, "Handling LLRP SET command...");
+
+  bool set_res =
+      default_responder_set(cmd_data->param_id, cmd_data->data, cmd_data->datalen, nack_reason, &reconnect_required);
+  if (set_res)
   {
-    lwpa_log(device_state.lparams, LWPA_LOG_INFO,
-             "A setting was changed using LLRP which requires re-connection to Broker. Disconnecting...");
-    rdmnet_disconnect(device_state.broker_conn, true, E133_DISCONNECT_LLRP_RECONFIGURE);
-    device_state.connected = false;
+    device_state.configuration_change = true;
+    if (device_state.connected)
+    {
+      if (reconnect_required)
+      {
+        /* Disconnect from the Broker */
+        lwpa_log(device_state.lparams, LWPA_LOG_INFO,
+                 "A setting was changed using LLRP which requires re-connection to Broker. Disconnecting...");
+        rdmnet_disconnect(device_state.broker_conn, true, kRDMnetDisconnectLLRPReconfigure);
+        device_state.connected = false;
+      }
+      else
+      {
+        /* Send the result of the LLRP change to Controllers */
+        RdmResponse resp_data;
+        RdmCmdListEntry resp;
+        RptHeader header;
+
+        resp_data.src_uid = device_state.my_uid;
+        resp_data.dest_uid = kBroadcastUid;
+        resp_data.transaction_num = cmd_data->transaction_num;
+        resp_data.resp_type = E120_RESPONSE_TYPE_ACK;
+        resp_data.msg_count = 0;
+        resp_data.subdevice = 0;
+        resp_data.command_class = E120_SET_COMMAND_RESPONSE;
+        resp_data.param_id = cmd_data->param_id;
+        resp_data.datalen = 0;
+
+        if (LWPA_OK == rdmresp_create_response(&resp_data, &resp.msg))
+        {
+          RdmCmdListEntry orig_cmd;
+
+          if (LWPA_OK == rdmctl_create_command(cmd_data, &orig_cmd.msg))
+          {
+            orig_cmd.next = &resp;
+            resp.next = NULL;
+            header.source_uid = kRdmnetControllerBroadcastUid;
+            header.source_endpoint_id = NULL_ENDPOINT;
+            header.dest_uid = device_state.my_uid;
+            header.dest_endpoint_id = NULL_ENDPOINT;
+            header.seqnum = 0;
+
+            send_notification(&header, &orig_cmd);
+          }
+        }
+      }
+    }
   }
 
   return set_res;
@@ -282,7 +331,7 @@ void mdns_dnssd_resolve_addr(RdmnetConnectParams *connect_params)
 
   rdmnetdisc_startmonitoring(&scope_monitor_info, &platform_specific_error, NULL);
 
-  while (device_state.initialized && lwpaip_is_invalid(&mdns_broker_addr.ip))
+  while (!device_state.configuration_change && lwpaip_is_invalid(&mdns_broker_addr.ip))
   {
     rdmnetdisc_tick(NULL);
     Sleep(100);
@@ -310,19 +359,19 @@ void get_connect_params(RdmnetConnectParams *connect_params, LwpaSockaddr *broke
   }
 }
 
-void connect_to_broker()
+bool connect_to_broker()
 {
   static RdmnetData connect_data;
   ClientConnectMsg connect_msg;
   RdmnetConnectParams connect_params;
   LwpaSockaddr broker_addr;
-  lwpa_error_t res;
+  lwpa_error_t res = LWPA_NOTCONN;
 
   do
   {
     get_connect_params(&connect_params, &broker_addr);
 
-    if (!device_state.initialized)
+    if (device_state.configuration_change)
       break;
 
     /* Fill in the information used in the initial connection handshake. */
@@ -352,10 +401,14 @@ void connect_to_broker()
       if (rdmnet_data_is_addr(&connect_data))
         broker_addr = *(rdmnet_data_addr(&connect_data));
     }
-  } while (device_state.initialized && res != LWPA_OK);
+  } while (!device_state.configuration_change && res != LWPA_OK);
 
-  if (device_state.initialized)
+  if (device_state.configuration_change)
+    device_state.configuration_change = false;
+  else
     default_responder_set_tcp_status(&broker_addr);
+
+  return (res == LWPA_OK);
 }
 
 void device_handle_message(const RdmnetMessage *msg, bool *requires_reconnect)
@@ -440,7 +493,7 @@ void handle_rdm_command(const RptHeader *received_header, const RdmBuffer *cmd, 
           RdmCmdListEntry resp;
 
           resp_data.src_uid = device_state.my_uid;
-          resp_data.dest_uid = received_header->source_uid;
+          resp_data.dest_uid = kBroadcastUid;
           resp_data.transaction_num = cmd_data.transaction_num;
           resp_data.resp_type = E120_RESPONSE_TYPE_ACK;
           resp_data.msg_count = 0;
@@ -451,8 +504,15 @@ void handle_rdm_command(const RptHeader *received_header, const RdmBuffer *cmd, 
 
           if (LWPA_OK == rdmresp_create_response(&resp_data, &resp.msg))
           {
+            RdmCmdListEntry orig_cmd;
+            RptHeader header = *received_header;
+            header.source_uid = kRdmnetControllerBroadcastUid;
+
+            orig_cmd.msg = *cmd;
+            orig_cmd.next = &resp;
             resp.next = NULL;
-            send_notification(received_header, &resp);
+
+            send_notification(&header, &orig_cmd);
             lwpa_log(device_state.lparams, LWPA_LOG_DEBUG,
                      "ACK'ing SET_COMMAND for PID 0x%04x from Controller %04x:%08x", cmd_data.param_id,
                      received_header->source_uid.manu, received_header->source_uid.id);

@@ -34,7 +34,7 @@
 #include "lwpa_socket.h"
 #include "rdmnet/llrp.h"
 #include "rdmnet/rdmresponder.h"
-#include "defaultresponder.h"
+#include "device.h"
 
 #define rdm_uid_matches_mine(uidptr) (uid_equal(uidptr, &llrp_info.uid) || uid_is_broadcast(uidptr))
 
@@ -97,14 +97,12 @@ void llrp_handle_rdm_command(llrp_socket_t sock, const LlrpRdmMessage *llrp_msg)
   }
   else
   {
-    bool requires_reconnect = false;
     switch (cmd_data.command_class)
     {
       case E120_SET_COMMAND:
       {
         uint16_t nack_reason;
-        if (default_responder_set(cmd_data.param_id, cmd_data.data, cmd_data.datalen, &nack_reason,
-                                  &requires_reconnect))
+        if (device_llrp_set(&cmd_data, &nack_reason))
         {
           RdmResponse resp_data;
           RdmBuffer resp;
@@ -121,7 +119,6 @@ void llrp_handle_rdm_command(llrp_socket_t sock, const LlrpRdmMessage *llrp_msg)
 
           if (LWPA_OK == rdmresp_create_response(&resp_data, &resp))
           {
-            /* TODO send update to connected Broker over RPT */
             llrp_send_rdm_response(sock, &llrp_msg->source_cid, &resp, llrp_msg->transaction_num);
             lwpa_log(llrp_info.lparams, LWPA_LOG_DEBUG, "ACK'ing SET_COMMAND for PID 0x%04x from Controller %04x:%08x",
                      cmd_data.param_id, cmd_data.src_uid.manu, cmd_data.src_uid.id);
@@ -131,8 +128,7 @@ void llrp_handle_rdm_command(llrp_socket_t sock, const LlrpRdmMessage *llrp_msg)
         {
           llrp_send_nack(sock, llrp_msg, &cmd_data, nack_reason);
           lwpa_log(llrp_info.lparams, LWPA_LOG_DEBUG,
-                   "Sending SET_COMMAND NACK to Controller %04x:%08x for "
-                   "supported PID 0x%04x with reason 0x%04x",
+                   "Sending SET_COMMAND NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
                    cmd_data.src_uid.manu, cmd_data.src_uid.id, cmd_data.param_id, nack_reason);
         }
         break;

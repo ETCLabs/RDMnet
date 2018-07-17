@@ -51,7 +51,7 @@ lwpa_error_t device_init(const DeviceSettings *settings, const LwpaLogParams *lp
 void device_deinit();
 void device_run();
 
-bool device_llrp_set(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason);
+bool device_llrp_set(const RdmCommand *cmd_data, uint16_t *nack_reason);
 
 #ifdef __cplusplus
 }
