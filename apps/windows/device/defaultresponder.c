@@ -388,37 +388,34 @@ bool set_broker_static_config_ipv4(const uint8_t *param_data, uint8_t param_data
   {
     LwpaIpAddr new_ipv4;
     lwpaip_set_v4_address(&new_ipv4, upack_32b(cur_ptr));
-    if (!lwpaip_is_invalid(&new_ipv4))
+
+    cur_ptr += 4;
+    uint16_t new_port = upack_16b(cur_ptr);
+
+    cur_ptr += 2;
+    if (strncmp((char *)param_data, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
     {
-      cur_ptr += 6;
-      if (strncmp((char *)param_data, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
+      /* setting one field to zero, but not the other is invalid */
+      if (!((lwpaip_v4_address(&new_ipv4) == 0 && new_port != 0) || (lwpaip_v4_address(&new_ipv4) != 0 && new_port == 0)))
       {
-        cur_ptr -= 2;
-        uint16_t new_port = upack_16b(cur_ptr);
-        /* setting one field to zero, but not the other is invlaid */
-        if ((lwpaip_v4_address(&new_ipv4) == 0 && new_port != 0) || (lwpaip_v4_address(&new_ipv4) != 0 && new_port == 0))
+        /* when both fields are set to zero, remove static config */
+        if (lwpaip_v4_address(&new_ipv4) == 0 && new_port == 0)
         {
-          /* when both fields are set to zero remove static config */
-          if (!(lwpaip_v4_address(&new_ipv4) == 0 && new_port == 0))
-          {
-            lwpaip_set_invalid(&prop_data.rdmnet_params.broker_static_addr.ip);
-          }
-          else
-          {
-            lwpaip_set_v4_address(&prop_data.rdmnet_params.broker_static_addr.ip, &new_ipv4);
-            prop_data.rdmnet_params.broker_static_addr.port = new_port;
-          }
-          *requires_reconnect = true;
-          return true;
+          lwpaip_set_invalid(&prop_data.rdmnet_params.broker_static_addr.ip);
         }
         else
-          *nack_reason = E120_NR_DATA_OUT_OF_RANGE;
+        {
+          lwpaip_set_v4_address(&prop_data.rdmnet_params.broker_static_addr.ip, &new_ipv4);
+          prop_data.rdmnet_params.broker_static_addr.port = new_port;
+        }
+        *requires_reconnect = true;
+        return true;
       }
       else
-        *nack_reason = E133_NR_UNKNOWN_SCOPE;
+        *nack_reason = E120_NR_DATA_OUT_OF_RANGE;
     }
     else
-      *nack_reason = E120_NR_FORMAT_ERROR;
+      *nack_reason = E133_NR_UNKNOWN_SCOPE;
   }
   else
     *nack_reason = E120_NR_FORMAT_ERROR;
