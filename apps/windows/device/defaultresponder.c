@@ -347,7 +347,7 @@ bool set_device_label(const uint8_t *param_data, uint8_t param_data_len, uint16_
     return false;
   }
 }
-
+//--
 bool set_component_scope(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
                          bool *requires_reconnect)
 {
