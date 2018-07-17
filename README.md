@@ -2,15 +2,14 @@
 
 THE SOFTWARE IN THIS REPOSITORY IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33
 rev. 63. <mark><b>UNDER NO CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR OR
-INCLUDED IN ANY PRODUCT AVAILABLE FOR GENERAL SALE TO THE PUBLIC.</b></mark> 
+INCLUDED IN ANY PRODUCT AVAILABLE FOR GENERAL SALE TO THE PUBLIC.</b></mark>
 DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL VALUES AND BEHAVIORAL
 REQUIREMENTS, <mark>PRODUCTS USING THIS SOFTWARE WILL **NOT** BE INTEROPERABLE
 WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.</mark>
 
 # RDMnet
 
-This repository contains a software library and example applications that
-implement *RDMnet*, an upcoming entertainment technology standard by
+*RDMnet* is an upcoming entertainment technology standard by
 [ESTA](http://tsp.esta.org) for transmission of [RDM](http://www.rdmprotocol.org)
 over IP networks. RDMnet leverages and extends the widely-adopted RDM message
 set and provides a standard method for configuring both IP-based entertainment
@@ -75,3 +74,13 @@ Other key items on the `TODO` list include:
 
 The current version of this repository implements BSR E1.33 rev. 63, which was
 offered for public review by ESTA in the first quarter of 2018.
+
+## About this ETCLabs Project
+
+RDMnet is official, open-source software developed by ETC employees and is
+designed to interact with ETC products. For challenges using, integrating,
+compiling, or modifying this software, we encourage posting on the
+[issues page](https://github.com/ETCLabs/RDMnet/issues) of this project.
+
+Before posting an issue or opening a pull request, please read the
+[contribution guidelines](./CONTRIBUTING.md).
