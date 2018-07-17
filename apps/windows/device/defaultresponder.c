@@ -388,7 +388,7 @@ bool set_broker_static_config_ipv4(const uint8_t *param_data, uint8_t param_data
   {
     LwpaIpAddr new_ipv4;
     lwpaip_set_v4_address(&new_ipv4, upack_32b(cur_ptr));
-    if (lwpaip_is_invalid(&new_ipv4))
+    if (!lwpaip_is_invalid(&new_ipv4))
     {
       if (strncmp((char *)param_data, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
       {
