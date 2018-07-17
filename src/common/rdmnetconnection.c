@@ -242,6 +242,9 @@ static void conn_tree_dealloc(const LwpaRbTree *self, LwpaRbNode *node)
  */
 void rdmnet_deinit()
 {
+  if (!rc_state.initted)
+    return;
+
   rc_state.initted = false;
 
 #if RDMNET_USE_TICK_THREAD
