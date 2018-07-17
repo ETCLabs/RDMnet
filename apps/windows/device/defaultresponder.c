@@ -378,35 +378,104 @@ bool set_component_scope(const uint8_t *param_data, uint8_t param_data_len, uint
 }
 
 bool set_broker_static_config_ipv4(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                                   bool *requires_reconnect)
+  bool *requires_reconnect)
 {
-  (void)param_data;
-  (void)param_data_len;
-  (void)requires_reconnect;
+  uint8_t *cur_ptr = param_data[0];
 
-  *nack_reason = E120_NR_UNKNOWN_PID;
+  *requires_reconnect = false;
+
+  if (param_data_len == 4 + 2 + E133_SCOPE_STRING_PADDED_LENGTH)
+  {
+    LwpaIpAddr new_ipv4;
+    lwpaip_set_v4_address(&new_ipv4, upack_32b(cur_ptr));
+    if (lwpaip_is_invalid(&new_ipv4))
+    {
+      if (strncmp((char *)param_data, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
+      {
+        cur_ptr += 4;
+        uint16_t new_port = upack_16b(cur_ptr);
+        /* setting one field to zero, but not the other is invlaid */
+        if ((lwpaip_v4_address(&new_ipv4) == 0 && new_port != 0) || (lwpaip_v4_address(&new_ipv4) != 0 && new_port == 0))
+        {
+          /* when both fields are set to zero remove static config */
+          if (!(lwpaip_v4_address(&new_ipv4) == 0 && new_port == 0))
+          {
+            lwpaip_set_invalid(&prop_data.rdmnet_params.broker_static_addr.ip);
+          }
+          else
+          {
+            lwpaip_set_v4_address(&prop_data.rdmnet_params.broker_static_addr.ip, &new_ipv4);
+            prop_data.rdmnet_params.broker_static_addr.port = new_port;
+          }
+          *requires_reconnect = true;
+          return true;
+        }
+        else
+          *nack_reason = E120_NR_DATA_OUT_OF_RANGE;
+      }
+      else
+        *nack_reason = E133_NR_UNKNOWN_SCOPE;
+    }
+    else
+      *nack_reason = E120_NR_FORMAT_ERROR;
+  }
+  else
+    *nack_reason = E120_NR_FORMAT_ERROR;
+
   return false;
-}
+  }
 
 bool set_search_domain(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
                        bool *requires_reconnect)
 {
-  (void)param_data;
-  (void)param_data_len;
-  (void)requires_reconnect;
+  if (param_data_len <= E133_DOMAIN_STRING_PADDED_LENGTH)
+  {
 
-  *nack_reason = E120_NR_UNKNOWN_PID;
+    if (param_data_len > 0 || strcmp("", (char *)param_data) != 0)
+    {
+      if (strncmp(prop_data.rdmnet_params.search_domain, (char *)param_data, E133_DOMAIN_STRING_PADDED_LENGTH) == 0)
+      {
+        /* Same domain as current */
+        *requires_reconnect = false;
+      }
+      else
+      {
+        strncpy(prop_data.rdmnet_params.search_domain, (char *)param_data, E133_DOMAIN_STRING_PADDED_LENGTH);
+        *requires_reconnect = true;
+      }
+    }
+    else
+    {
+      lwpaip_set_invalid(&prop_data.rdmnet_params.broker_static_addr.ip);
+      *requires_reconnect = true;
+    }
+    return true;
+  }
+  else
+    *nack_reason = E120_NR_FORMAT_ERROR;
+
   return false;
 }
 
 bool set_tcp_comms_status(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
                           bool *requires_reconnect)
 {
-  (void)param_data;
-  (void)param_data_len;
-  (void)requires_reconnect;
+  *requires_reconnect = false;
 
-  *nack_reason = E120_NR_UNKNOWN_PID;
+  if (param_data_len == E133_SCOPE_STRING_PADDED_LENGTH)
+  {
+    if (strncmp((char *)param_data, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
+    {
+      /* Same scope as current */
+      prop_data.tcp_unhealthy_counter = 0;
+      return true;
+    }
+    else
+      *nack_reason = E133_NR_UNKNOWN_SCOPE;
+  }
+  else
+    *nack_reason = E120_NR_FORMAT_ERROR;
+
   return false;
 }
 
