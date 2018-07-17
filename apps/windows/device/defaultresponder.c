@@ -390,9 +390,10 @@ bool set_broker_static_config_ipv4(const uint8_t *param_data, uint8_t param_data
     lwpaip_set_v4_address(&new_ipv4, upack_32b(cur_ptr));
     if (!lwpaip_is_invalid(&new_ipv4))
     {
+      cur_ptr += 6;
       if (strncmp((char *)param_data, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
       {
-        cur_ptr += 4;
+        cur_ptr -= 2;
         uint16_t new_port = upack_16b(cur_ptr);
         /* setting one field to zero, but not the other is invlaid */
         if ((lwpaip_v4_address(&new_ipv4) == 0 && new_port != 0) || (lwpaip_v4_address(&new_ipv4) != 0 && new_port == 0))
