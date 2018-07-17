@@ -77,22 +77,22 @@ void llrp_handle_rdm_command(llrp_socket_t sock, const LlrpRdmMessage *llrp_msg)
   RdmCommand cmd_data;
   if (LWPA_OK != rdmresp_unpack_command(&llrp_msg->msg, &cmd_data))
   {
-    lwpa_log(llrp_info.lparams, LWPA_LOG_WARNING, "Device received incorrectly-formatted RDM command.");
+    lwpa_log(llrp_info.lparams, LWPA_LOG_WARNING, "Device received incorrectly-formatted LLRP RDM command.");
   }
   else if (!rdm_uid_matches_mine(&cmd_data.dest_uid))
   {
-    lwpa_log(llrp_info.lparams, LWPA_LOG_WARNING, "Device received RDM command addressed to unknown UID %04x:%08x",
+    lwpa_log(llrp_info.lparams, LWPA_LOG_WARNING, "Device received LLRP RDM command addressed to unknown UID %04x:%08x",
              cmd_data.dest_uid.manu, cmd_data.dest_uid.id);
   }
   else if (cmd_data.command_class != E120_GET_COMMAND && cmd_data.command_class != E120_SET_COMMAND)
   {
-    lwpa_log(llrp_info.lparams, LWPA_LOG_WARNING, "Device received RDM command with invalid command class %d",
+    lwpa_log(llrp_info.lparams, LWPA_LOG_WARNING, "Device received LLRP RDM command with invalid command class %d",
              cmd_data.command_class);
   }
   else if (!default_responder_supports_pid(cmd_data.param_id))
   {
     llrp_send_nack(sock, llrp_msg, &cmd_data, E120_NR_UNKNOWN_PID);
-    lwpa_log(llrp_info.lparams, LWPA_LOG_DEBUG, "Sending NACK to Manager %04x:%08x for unknown PID 0x%04x",
+    lwpa_log(llrp_info.lparams, LWPA_LOG_DEBUG, "Sending LLRP NACK to Manager %04x:%08x for unknown PID 0x%04x",
              cmd_data.src_uid.manu, cmd_data.src_uid.id, cmd_data.param_id);
   }
   else
@@ -120,15 +120,16 @@ void llrp_handle_rdm_command(llrp_socket_t sock, const LlrpRdmMessage *llrp_msg)
           if (LWPA_OK == rdmresp_create_response(&resp_data, &resp))
           {
             llrp_send_rdm_response(sock, &llrp_msg->source_cid, &resp, llrp_msg->transaction_num);
-            lwpa_log(llrp_info.lparams, LWPA_LOG_DEBUG, "ACK'ing SET_COMMAND for PID 0x%04x from Controller %04x:%08x",
-                     cmd_data.param_id, cmd_data.src_uid.manu, cmd_data.src_uid.id);
+            lwpa_log(llrp_info.lparams, LWPA_LOG_DEBUG,
+                     "ACK'ing LLRP SET_COMMAND for PID 0x%04x from Controller %04x:%08x", cmd_data.param_id,
+                     cmd_data.src_uid.manu, cmd_data.src_uid.id);
           }
         }
         else
         {
           llrp_send_nack(sock, llrp_msg, &cmd_data, nack_reason);
           lwpa_log(llrp_info.lparams, LWPA_LOG_DEBUG,
-                   "Sending SET_COMMAND NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
+                   "Sending LLRP SET_COMMAND NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
                    cmd_data.src_uid.manu, cmd_data.src_uid.id, cmd_data.param_id, nack_reason);
         }
         break;
@@ -166,15 +167,16 @@ void llrp_handle_rdm_command(llrp_socket_t sock, const LlrpRdmMessage *llrp_msg)
           if (LWPA_OK == rdmresp_create_response(&resp_data, &resp))
           {
             llrp_send_rdm_response(sock, &llrp_msg->source_cid, &resp, llrp_msg->transaction_num);
-            lwpa_log(llrp_info.lparams, LWPA_LOG_DEBUG, "ACK'ing GET_COMMAND for PID 0x%04x from Controller %04x:%08x",
-                     cmd_data.param_id, cmd_data.src_uid.manu, cmd_data.src_uid.id);
+            lwpa_log(llrp_info.lparams, LWPA_LOG_DEBUG,
+                     "ACK'ing LLRP GET_COMMAND for PID 0x%04x from Controller %04x:%08x", cmd_data.param_id,
+                     cmd_data.src_uid.manu, cmd_data.src_uid.id);
           }
         }
         else
         {
           llrp_send_nack(sock, llrp_msg, &cmd_data, nack_reason);
           lwpa_log(llrp_info.lparams, LWPA_LOG_DEBUG,
-                   "Sending GET_COMMAND NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
+                   "Sending LLRP GET_COMMAND NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
                    cmd_data.src_uid.manu, cmd_data.src_uid.id, cmd_data.param_id, nack_reason);
         }
         break;
@@ -250,9 +252,7 @@ void device_llrp_init(const LwpaCid *my_cid, const LwpaUid *my_uid, const LwpaLo
         {
           char addr_str[LWPA_INET6_ADDRSTRLEN];
           lwpa_inet_ntop(&netint->addr, addr_str, LWPA_INET6_ADDRSTRLEN);
-          lwpa_log(lparams, LWPA_LOG_WARNING,
-                   "Warning: couldn't create LLRP Target Socket on network "
-                   "interface %s.",
+          lwpa_log(lparams, LWPA_LOG_WARNING, "Warning: couldn't create LLRP Target Socket on network interface %s.",
                    addr_str);
         }
       }
@@ -288,9 +288,7 @@ void device_llrp_init(const LwpaCid *my_cid, const LwpaUid *my_uid, const LwpaLo
   }
   else
   {
-    lwpa_log(lparams, LWPA_LOG_ERR,
-             "Couldn't initialize LLRP - no LLRP target sockets could be "
-             "created.");
+    lwpa_log(lparams, LWPA_LOG_ERR, "Couldn't initialize LLRP - no LLRP target sockets could be created.");
   }
 }
 
@@ -307,4 +305,13 @@ void device_llrp_deinit()
   }
   free(llrp_info.target_socks);
   memset(&llrp_info, 0, sizeof llrp_info);
+}
+
+void device_llrp_set_connected(bool connected)
+{
+  size_t i;
+  for (i = 0; i < llrp_info.num_target_socks; ++i)
+  {
+    llrp_target_update_connection_state(llrp_info.target_socks[i].handle, connected);
+  }
 }

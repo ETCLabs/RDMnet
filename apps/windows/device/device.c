@@ -37,6 +37,7 @@
 #include "rdmnet/discovery.h"
 #include "rdmnet/connection.h"
 #include "defaultresponder.h"
+#include "devicellrp.h"
 
 /***************************** Private macros ********************************/
 
@@ -140,7 +141,10 @@ lwpa_error_t device_init(const DeviceSettings *settings, const LwpaLogParams *lp
 
   device_state.connected = connect_to_broker();
   if (device_state.connected)
+  {
+    device_llrp_set_connected(true);
     lwpa_log(lparams, LWPA_LOG_INFO, "Connected to Broker.");
+  }
   return LWPA_OK;
 }
 
@@ -173,12 +177,14 @@ void device_run()
         /* Standard TODO, this needs a better reason */
         rdmnet_disconnect(device_state.broker_conn, true, kRDMnetDisconnectLLRPReconfigure);
         device_state.connected = false;
+        device_llrp_set_connected(false);
       }
     }
     else if (res != LWPA_NODATA && !device_state.configuration_change)
     {
       /* Disconnected from Broker. */
       device_state.connected = false;
+      device_llrp_set_connected(false);
       lwpa_log(device_state.lparams, LWPA_LOG_INFO,
                "Disconnected from Broker with error: '%s'. Attempting to reconnect...", lwpa_strerror(res));
 
@@ -196,6 +202,7 @@ void device_run()
     if (connect_to_broker())
     {
       device_state.connected = true;
+      device_llrp_set_connected(true);
       lwpa_log(device_state.lparams, LWPA_LOG_INFO, "Re-connected to Broker.");
     }
   }
@@ -221,6 +228,7 @@ bool device_llrp_set(const RdmCommand *cmd_data, uint16_t *nack_reason)
                  "A setting was changed using LLRP which requires re-connection to Broker. Disconnecting...");
         rdmnet_disconnect(device_state.broker_conn, true, kRDMnetDisconnectLLRPReconfigure);
         device_state.connected = false;
+        device_llrp_set_connected(false);
       }
       else
       {

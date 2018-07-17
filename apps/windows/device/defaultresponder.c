@@ -143,6 +143,11 @@ void default_responder_init(const LwpaSockaddr *static_broker_addr, const char *
 
 void default_responder_deinit()
 {
+  if (prop_data.identifying)
+  {
+    prop_data.identifying = false;
+    lwpa_thread_stop(&prop_data.identify_thread, 5000);
+  }
   lwpa_rwlock_destroy(&prop_lock);
 }
 

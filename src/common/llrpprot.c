@@ -172,7 +172,7 @@ bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessa
 
   /* If our UID is not in the range, there is no need to check the Known
    * UIDs. */
-  if (uidcmp(&interest->my_uid, &lower_uid_bound) >= 0 && uidcmp(&interest->my_uid, &upper_uid_bound) <= 0)
+  if (uid_cmp(&interest->my_uid, &lower_uid_bound) >= 0 && uid_cmp(&interest->my_uid, &upper_uid_bound) <= 0)
   {
     request->contains_my_uid = true;
 
