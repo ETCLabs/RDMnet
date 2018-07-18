@@ -1018,20 +1018,13 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
 
   PropertyValueItem::setPIDInfo(E133_BROKER_STATIC_CONFIG_IPV4, true, true, QVariant::Type::Invalid, Qt::EditRole,
                                 kDevice);
-<<<<<<< Updated upstream
-  PropertyValueItem::addPIDPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV4,
-    QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv4 Address (Static Configuration)")));
-  PropertyValueItem::addPIDPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV4,
-    QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Port Number (Static Configuration)")));
-  PropertyValueItem::setPIDMaxBufferSize(E133_BROKER_STATIC_CONFIG_IPV4, 6);
-=======
   PropertyValueItem::addPIDPropertyDisplayName(
       E133_BROKER_STATIC_CONFIG_IPV4,
       QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv4 Address (Static Configuration)")));
   PropertyValueItem::addPIDPropertyDisplayName(
       E133_BROKER_STATIC_CONFIG_IPV4,
       QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Port Number (Static Configuration)")));
->>>>>>> Stashed changes
+  PropertyValueItem::setPIDMaxBufferSize(E133_BROKER_STATIC_CONFIG_IPV4, 6);
 
   PropertyValueItem::setPIDInfo(E133_BROKER_STATIC_CONFIG_IPV6, true, false, QVariant::Type::Invalid, Qt::EditRole,
                                 kDevice);
@@ -1300,39 +1293,29 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
                 packPtr[0] = static_cast<uint8_t>(value.toInt());
                 break;
               default:
-<<<<<<< Updated upstream
                 switch (pid)
                 {
-                case E133_BROKER_STATIC_CONFIG_IPV4:
-                  ipValueItem = getSiblingValueItem(propertyValueItem, E133_BROKER_STATIC_CONFIG_IPV4, 0);
-                  portValueItem = getSiblingValueItem(propertyValueItem, E133_BROKER_STATIC_CONFIG_IPV4, 1);
+                  case E133_BROKER_STATIC_CONFIG_IPV4:
+                    ipValueItem = getSiblingValueItem(propertyValueItem, E133_BROKER_STATIC_CONFIG_IPV4, 0);
+                    portValueItem = getSiblingValueItem(propertyValueItem, E133_BROKER_STATIC_CONFIG_IPV4, 1);
 
-                  if (propertyValueItem == ipValueItem) // IP was changed - value contains IP
-                  {
-                    parseAndPackIPAddress(LWPA_IPV4, value.toString().toLatin1().constData(),
-                      value.toString().length(), packPtr);
-                    pack_16l(packPtr + 4, static_cast<uint16_t>(portValueItem->data().toInt()));
-                  }
-                  else // Port was changed - value contains port
-                  {
-                    parseAndPackIPAddress(LWPA_IPV4, ipValueItem->data().toString().toLatin1().constData(),
-                      ipValueItem->data().toString().length(), packPtr);
-                    pack_16l(packPtr + 4, static_cast<uint16_t>(value.toInt()));
-                  }
+                    if (propertyValueItem == ipValueItem)  // IP was changed - value contains IP
+                    {
+                      parseAndPackIPAddress(LWPA_IPV4, value.toString().toLatin1().constData(),
+                                            value.toString().length(), packPtr);
+                      pack_16l(packPtr + 4, static_cast<uint16_t>(portValueItem->data().toInt()));
+                    }
+                    else  // Port was changed - value contains port
+                    {
+                      parseAndPackIPAddress(LWPA_IPV4, ipValueItem->data().toString().toLatin1().constData(),
+                                            ipValueItem->data().toString().length(), packPtr);
+                      pack_16l(packPtr + 4, static_cast<uint16_t>(value.toInt()));
+                    }
 
-                  break;
-                default:
-                  return false;
+                    break;
+                  default:
+                    return false;
                 }
-=======
-                // switch (pid)
-                //{
-                // case E133_BROKER_STATIC_CONFIG_IPV4:
-                //  break;
-                // default:
-                return false;
-                //}
->>>>>>> Stashed changes
             }
 
             SendRDMCommand(setCmd);
@@ -2719,7 +2702,7 @@ PropertyItem *RDMnetNetworkModel::createPropertyItem(RDMnetNetworkItem *parent, 
     {
       groupingItem = createGroupingItem(currentParent, groupName);
     }
-    
+
     currentParent = groupingItem;
     groupingItem->properties.push_back(propertyItem);
 
@@ -2794,7 +2777,7 @@ QString RDMnetNetworkModel::getChildPathName(const QString &superPathName)
   ;
 }
 
-PropertyValueItem * RDMnetNetworkModel::getSiblingValueItem(PropertyValueItem * item, uint16_t pid, int32_t index)
+PropertyValueItem *RDMnetNetworkModel::getSiblingValueItem(PropertyValueItem *item, uint16_t pid, int32_t index)
 {
   PropertyItem *parent = dynamic_cast<PropertyItem *>(item->parent());
   QString siblingShortName = getShortPropertyName(PropertyValueItem::pidPropertyDisplayName(pid, index));
