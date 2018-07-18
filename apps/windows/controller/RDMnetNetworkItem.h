@@ -42,13 +42,15 @@ public:
   static const int EditorWidgetTypeRole = Qt::UserRole + 1;
 
 protected:
-  bool self_has_local_changes_;
   bool children_search_running_;
   bool supports_reset_device_;
 
-  int num_children_with_local_changes_;
+  QString *personalityDescriptions;
+  uint8_t numberOfDescriptionsFound;
+  uint8_t totalNumberOfDescriptions;
 
-  void updateParentWithLocalChanges(bool hadLocalChangesPreviously);
+  bool device_reset_;
+
   bool rowHasSearchingStatusItem(int row);
 
 public:
@@ -57,17 +59,11 @@ public:
   RDMnetNetworkItem(const QVariant &data, int role);
   virtual ~RDMnetNetworkItem();
 
-  // Accessors
   virtual int type() const override;
 
-  bool hasLocalChanges() const;
   bool childrenSearchRunning() const;
   bool supportsResetDevice() const;
 
-  int numberOfChildrenWithLocalChanges() const;
-
-  // Mutators
-  void setSelfHasLocalChanges(bool value);
   void enableChildrenSearch();
   void disableChildrenSearch();
   void enableResetDevice();
@@ -76,11 +72,14 @@ public:
 
   virtual uint16_t getMan(void) const { return 0; };
   virtual uint32_t getDev(void) const { return 0; };
-  virtual bool hasValidProperties(void) const { return true; };
+  virtual bool hasValidProperties(void) const;
+
+  bool initiatePersonalityDescriptionSearch(uint8_t numberOfPersonalities);
+  void personalityDescriptionFound(uint8_t personality, uint16_t footprint, const QString &description);
+  bool allPersonalityDescriptionsFound();
+  QStringList personalityDescriptionList();
+  QString personalityDescriptionAt(int i);
+  void setDeviceWasReset(bool reset);
 
   std::vector<class PropertyItem *> properties;
-
-protected:
-  void incrementNumberOfChildrenWithLocalChanges();
-  void decrementNumberOfChildrenWithLocalChanges();
 };

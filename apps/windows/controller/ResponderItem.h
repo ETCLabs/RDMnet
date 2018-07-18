@@ -36,18 +36,9 @@ public:
 
   // ResponderItem(uint16_t man, uint32_t dev) { m_Man = man; m_Dev = dev; m_HaveInfo = false; };
   ResponderItem(uint16_t man, uint32_t dev);
-  virtual ~ResponderItem();
 
   virtual uint16_t getMan(void) const { return m_Man; };
   virtual uint32_t getDev(void) const { return m_Dev; };
-  virtual bool hasValidProperties() const;
-
-  bool initiatePersonalityDescriptionSearch(uint8_t numberOfPersonalities);
-  void personalityDescriptionFound(uint8_t personality, uint16_t footprint, const QString &description);
-  bool allPersonalityDescriptionsFound();
-  QStringList personalityDescriptionList();
-  QString personalityDescriptionAt(int i);
-  void setDeviceWasReset(bool reset);
 
   virtual int type() const override;
 
@@ -56,10 +47,4 @@ public:
 private:
   uint16_t m_Man;  // RDM Manufacturer ID
   uint32_t m_Dev;  // RDM Device ID
-
-  QString *personalityDescriptions;
-  uint8_t numberOfDescriptionsFound;
-  uint8_t totalNumberOfDescriptions;
-
-  bool device_reset_;
 };

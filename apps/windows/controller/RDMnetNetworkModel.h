@@ -297,8 +297,8 @@ protected:
 
   // Item handling
   RDMnetClientItem *getClientItem(RdmResponse *resp);
-  ResponderItem *getResponderItem(RdmResponse *resp);
-  void checkPersonalityDescriptions(ResponderItem *device, uint8_t numberOfPersonalities, RdmResponse *resp);
+  RDMnetNetworkItem *getNetworkItem(RdmResponse *resp);
+  void checkPersonalityDescriptions(RDMnetNetworkItem *device, uint8_t numberOfPersonalities, RdmResponse *resp);
   QVariant getPropertyData(RDMnetNetworkItem *parent, unsigned short pid, int role);
 
 private:

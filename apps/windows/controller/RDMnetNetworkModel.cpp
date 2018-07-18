@@ -587,13 +587,13 @@ void RDMnetNetworkModel::processNewEndpointList(RDMnetClientItem *treeClientItem
   {
     treeClientItem->disableChildrenSearch();
 
-    // Add the Default Responder
-    EndpointItem *def_resp_item = new EndpointItem(treeClientItem->Uid().manu, treeClientItem->Uid().id);
-    appendRowToItem(treeClientItem, def_resp_item);
-    treeClientItem->endpoints_.push_back(def_resp_item);
-    std::vector<LwpaUid> responder_list;
-    responder_list.push_back(treeClientItem->Uid());
-    processNewResponderList(def_resp_item, responder_list);
+  //  // Add the Default Responder
+  //  EndpointItem *def_resp_item = new EndpointItem(treeClientItem->Uid().manu, treeClientItem->Uid().id);
+  //  appendRowToItem(treeClientItem, def_resp_item);
+  //  treeClientItem->endpoints_.push_back(def_resp_item);
+  //  std::vector<LwpaUid> responder_list;
+  //  responder_list.push_back(treeClientItem->Uid());
+  //  processNewResponderList(def_resp_item, responder_list);
   }
 
   std::vector<EndpointItem *> prev_list = treeClientItem->endpoints_;
@@ -2174,7 +2174,7 @@ void RDMnetNetworkModel::commands(std::vector<uint16_t> list, RdmResponse *resp)
       }
       else if (list[i] == E120_RESET_DEVICE)
       {
-        ResponderItem *device = getResponderItem(resp);
+        RDMnetNetworkItem *device = getNetworkItem(resp);
 
         if (device != NULL)
         {
@@ -2190,7 +2190,7 @@ void RDMnetNetworkModel::deviceInfo(uint16_t protocolVersion, uint16_t modelId, 
                                     uint16_t footprint, uint8_t personality, uint8_t totalPersonality, uint16_t address,
                                     uint16_t subdeviceCount, uint8_t sensorCount, RdmResponse *resp)
 {
-  ResponderItem *device = getResponderItem(resp);
+  RDMnetNetworkItem *device = getNetworkItem(resp);
 
   if (device != NULL)
   {
@@ -2216,7 +2216,7 @@ void RDMnetNetworkModel::deviceInfo(uint16_t protocolVersion, uint16_t modelId, 
 
 void RDMnetNetworkModel::modelDesc(const char *label, RdmResponse *resp)
 {
-  ResponderItem *device = getResponderItem(resp);
+  RDMnetNetworkItem *device = getNetworkItem(resp);
 
   if (device != NULL)
   {
@@ -2227,7 +2227,7 @@ void RDMnetNetworkModel::modelDesc(const char *label, RdmResponse *resp)
 
 void RDMnetNetworkModel::manufacturerLabel(const char *label, RdmResponse *resp)
 {
-  ResponderItem *device = getResponderItem(resp);
+  RDMnetNetworkItem *device = getNetworkItem(resp);
 
   if (device != NULL)
   {
@@ -2238,7 +2238,7 @@ void RDMnetNetworkModel::manufacturerLabel(const char *label, RdmResponse *resp)
 
 void RDMnetNetworkModel::deviceLabel(const char *label, RdmResponse *resp)
 {
-  ResponderItem *device = getResponderItem(resp);
+  RDMnetNetworkItem *device = getNetworkItem(resp);
 
   if (device != NULL)
   {
@@ -2249,7 +2249,7 @@ void RDMnetNetworkModel::deviceLabel(const char *label, RdmResponse *resp)
 
 void RDMnetNetworkModel::softwareLabel(const char *label, RdmResponse *resp)
 {
-  ResponderItem *device = getResponderItem(resp);
+  RDMnetNetworkItem *device = getNetworkItem(resp);
 
   if (device != NULL)
   {
@@ -2260,7 +2260,7 @@ void RDMnetNetworkModel::softwareLabel(const char *label, RdmResponse *resp)
 
 void RDMnetNetworkModel::bootSoftwareID(uint32_t id, RdmResponse *resp)
 {
-  ResponderItem *device = getResponderItem(resp);
+  RDMnetNetworkItem *device = getNetworkItem(resp);
 
   if (device != NULL)
   {
@@ -2271,7 +2271,7 @@ void RDMnetNetworkModel::bootSoftwareID(uint32_t id, RdmResponse *resp)
 
 void RDMnetNetworkModel::bootSoftwareLabel(const char *label, RdmResponse *resp)
 {
-  ResponderItem *device = getResponderItem(resp);
+  RDMnetNetworkItem *device = getNetworkItem(resp);
 
   if (device != NULL)
   {
@@ -2282,7 +2282,7 @@ void RDMnetNetworkModel::bootSoftwareLabel(const char *label, RdmResponse *resp)
 
 void RDMnetNetworkModel::address(uint16_t address, RdmResponse *resp)
 {
-  ResponderItem *device = getResponderItem(resp);
+  RDMnetNetworkItem *device = getNetworkItem(resp);
 
   if (device != NULL)
   {
@@ -2293,7 +2293,7 @@ void RDMnetNetworkModel::address(uint16_t address, RdmResponse *resp)
 
 void RDMnetNetworkModel::identify(bool enable, RdmResponse *resp)
 {
-  ResponderItem *device = getResponderItem(resp);
+  RDMnetNetworkItem *device = getNetworkItem(resp);
 
   if (device != NULL)
   {
@@ -2304,7 +2304,7 @@ void RDMnetNetworkModel::identify(bool enable, RdmResponse *resp)
 
 void RDMnetNetworkModel::personality(uint8_t current, uint8_t number, RdmResponse *resp)
 {
-  ResponderItem *device = getResponderItem(resp);
+  RDMnetNetworkItem *device = getNetworkItem(resp);
   bool personalityChanged = false;
 
   if (device != NULL)
@@ -2342,7 +2342,7 @@ void RDMnetNetworkModel::personality(uint8_t current, uint8_t number, RdmRespons
 void RDMnetNetworkModel::personalityDescription(uint8_t personality, uint16_t footprint, const char *description,
                                                 RdmResponse *resp)
 {
-  ResponderItem *device = getResponderItem(resp);
+  RDMnetNetworkItem *device = getNetworkItem(resp);
   const bool SHOW_FOOTPRINT = false;
 
   if (device != NULL)
@@ -2505,6 +2505,16 @@ void RDMnetNetworkModel::initializeRPTDeviceProperties(RDMnetClientItem *parent,
   cmd.command_class = E120_GET_COMMAND;
   cmd.datalen = 0;
 
+  cmd.param_id = E120_SUPPORTED_PARAMETERS;
+  SendRDMCommand(cmd);
+  cmd.param_id = E120_DEVICE_INFO;
+  SendRDMCommand(cmd);
+  cmd.param_id = E120_SOFTWARE_VERSION_LABEL;
+  SendRDMCommand(cmd);
+  cmd.param_id = E120_DMX_START_ADDRESS;
+  SendRDMCommand(cmd);
+  cmd.param_id = E120_IDENTIFY_DEVICE;
+  SendRDMCommand(cmd);
   cmd.param_id = E133_BROKER_STATIC_CONFIG_IPV4;
   SendRDMCommand(cmd);
   cmd.param_id = E133_BROKER_STATIC_CONFIG_IPV6;
@@ -2559,8 +2569,8 @@ RDMnetClientItem *RDMnetNetworkModel::getClientItem(RdmResponse *resp)
       {
         for (auto i : brokerItem->rdmnet_devices_)
         {
-          if ((get_rpt_client_entry_data(&i->entry_)->client_uid.manu == resp->src_uid.manu) &&
-              (get_rpt_client_entry_data(&i->entry_)->client_uid.id == resp->src_uid.id))
+          if ((i->getMan() == resp->src_uid.manu) &&
+              (i->getDev() == resp->src_uid.id))
           {
             return i;
           }
@@ -2572,7 +2582,7 @@ RDMnetClientItem *RDMnetNetworkModel::getClientItem(RdmResponse *resp)
   return NULL;
 }
 
-ResponderItem *RDMnetNetworkModel::getResponderItem(RdmResponse *resp)
+RDMnetNetworkItem *RDMnetNetworkModel::getNetworkItem(RdmResponse *resp)
 {
   for (auto &brokerConnectionIter : broker_connections_)
   {
@@ -2584,6 +2594,11 @@ ResponderItem *RDMnetNetworkModel::getResponderItem(RdmResponse *resp)
       {
         for (auto i : brokerItem->rdmnet_devices_)
         {
+          if ((i->getMan() == resp->src_uid.manu) && (i->getDev() == resp->src_uid.id))
+          {
+            return i;
+          }
+
           for (auto j : i->endpoints_)
           {
             for (auto k : j->devices_)
@@ -2602,7 +2617,7 @@ ResponderItem *RDMnetNetworkModel::getResponderItem(RdmResponse *resp)
   return NULL;
 }
 
-void RDMnetNetworkModel::checkPersonalityDescriptions(ResponderItem *device, uint8_t numberOfPersonalities,
+void RDMnetNetworkModel::checkPersonalityDescriptions(RDMnetNetworkItem *device, uint8_t numberOfPersonalities,
                                                       RdmResponse *resp)
 {
   if (numberOfPersonalities > 0)

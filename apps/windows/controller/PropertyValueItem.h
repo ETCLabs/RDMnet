@@ -82,7 +82,7 @@ public:
   static QString pidPropertyDisplayName(uint16_t pid, int32_t index = 0);
 
   static void setPIDInfo(uint16_t pid, bool supportsGet, bool supportsSet, QVariant::Type dataType, int32_t role,
-                         PropertyLocation locationOfProperties = kResponder);
+                         PropertyLocation locationOfProperties = kResponder | kDevice);
   static void setPIDInfo(uint16_t pid, bool supportsGet, bool supportsSet, QVariant::Type dataType,
                          bool includedInDataModel = true);
   static void setPIDNumericDomain(uint16_t pid, int32_t min, int32_t max);

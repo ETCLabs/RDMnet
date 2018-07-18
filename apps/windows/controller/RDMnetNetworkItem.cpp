@@ -28,33 +28,6 @@
 #include "RDMnetNetworkItem.h"
 #include "SearchingStatusItem.h"
 
-void RDMnetNetworkItem::updateParentWithLocalChanges(bool hadLocalChangesPreviously)
-{
-  bool hasLocalChangesCurrently = this->hasLocalChanges();
-
-  if (hasLocalChangesCurrently != hadLocalChangesPreviously)
-  {
-    QStandardItem *parent = this->parent();
-
-    if (parent != NULL)
-    {
-      if (parent->type() == RDMnetNetworkItemType)
-      {
-        RDMnetNetworkItem *castedParent = dynamic_cast<RDMnetNetworkItem *>(parent);
-
-        if (hasLocalChangesCurrently == true)  // hasLocalChanges() just became true.
-        {
-          castedParent->incrementNumberOfChildrenWithLocalChanges();
-        }
-        else  // hasLocalChanges() just became false.
-        {
-          castedParent->decrementNumberOfChildrenWithLocalChanges();
-        }
-      }
-    }
-  }
-}
-
 bool RDMnetNetworkItem::rowHasSearchingStatusItem(int row)
 {
   QStandardItem *current = this->child(row);
@@ -68,10 +41,12 @@ bool RDMnetNetworkItem::rowHasSearchingStatusItem(int row)
 }
 
 RDMnetNetworkItem::RDMnetNetworkItem()
-    : self_has_local_changes_(false)
-    , children_search_running_(false)
+    : children_search_running_(false)
     , supports_reset_device_(false)
-    , num_children_with_local_changes_(0)
+    , device_reset_(false)
+    , personalityDescriptions(NULL)
+    , numberOfDescriptionsFound(0)
+    , totalNumberOfDescriptions(0)
 {
   setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
 
@@ -80,10 +55,12 @@ RDMnetNetworkItem::RDMnetNetworkItem()
 
 RDMnetNetworkItem::RDMnetNetworkItem(const QVariant &data)
     : QStandardItem()
-    , self_has_local_changes_(false)
     , children_search_running_(false)
     , supports_reset_device_(false)
-    , num_children_with_local_changes_(0)
+    , device_reset_(false)
+    , personalityDescriptions(NULL)
+    , numberOfDescriptionsFound(0)
+    , totalNumberOfDescriptions(0)
 {
   setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
 
@@ -101,10 +78,12 @@ RDMnetNetworkItem::RDMnetNetworkItem(const QVariant &data)
 
 RDMnetNetworkItem::RDMnetNetworkItem(const QVariant &data, int role)
     : QStandardItem()
-    , self_has_local_changes_(false)
     , children_search_running_(false)
     , supports_reset_device_(false)
-    , num_children_with_local_changes_(0)
+    , device_reset_(false)
+    , personalityDescriptions(NULL)
+    , numberOfDescriptionsFound(0)
+    , totalNumberOfDescriptions(0)
 {
   setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
 
@@ -122,16 +101,12 @@ RDMnetNetworkItem::RDMnetNetworkItem(const QVariant &data, int role)
 
 RDMnetNetworkItem::~RDMnetNetworkItem()
 {
+  delete[] personalityDescriptions;
 }
 
 int RDMnetNetworkItem::type() const
 {
   return RDMnetNetworkItemType;
-}
-
-bool RDMnetNetworkItem::hasLocalChanges() const
-{
-  return self_has_local_changes_ || (num_children_with_local_changes_ > 0);
 }
 
 bool RDMnetNetworkItem::childrenSearchRunning() const
@@ -142,23 +117,6 @@ bool RDMnetNetworkItem::childrenSearchRunning() const
 bool RDMnetNetworkItem::supportsResetDevice() const
 {
   return supports_reset_device_;
-}
-
-int RDMnetNetworkItem::numberOfChildrenWithLocalChanges() const
-{
-  return num_children_with_local_changes_;
-}
-
-void RDMnetNetworkItem::setSelfHasLocalChanges(bool value)
-{
-  if (self_has_local_changes_ != value)
-  {
-    bool previousHasLocalChanges = this->hasLocalChanges();
-
-    self_has_local_changes_ = value;
-
-    updateParentWithLocalChanges(previousHasLocalChanges);
-  }
 }
 
 void RDMnetNetworkItem::enableChildrenSearch()
@@ -230,21 +188,58 @@ void RDMnetNetworkItem::disableAllChildItems()
   }
 }
 
-void RDMnetNetworkItem::incrementNumberOfChildrenWithLocalChanges()
+bool RDMnetNetworkItem::hasValidProperties(void) const
 {
-  bool previousHasLocalChanges = this->hasLocalChanges();
-
-  ++num_children_with_local_changes_;
-
-  updateParentWithLocalChanges(previousHasLocalChanges);
+  return !device_reset_;
 }
 
-void RDMnetNetworkItem::decrementNumberOfChildrenWithLocalChanges()
+bool RDMnetNetworkItem::initiatePersonalityDescriptionSearch(uint8_t numberOfPersonalities)
 {
-  if (num_children_with_local_changes_ >= 1)  // Assumes that hasLocalChanges() is true at this point.
+  if (personalityDescriptions == NULL)
   {
-    --num_children_with_local_changes_;
-
-    updateParentWithLocalChanges(true);
+    totalNumberOfDescriptions = numberOfPersonalities;
+    personalityDescriptions = new QString[numberOfPersonalities];
+    return true;
   }
+
+  return false;
+}
+
+void RDMnetNetworkItem::personalityDescriptionFound(uint8_t personality, uint16_t /*footprint*/, const QString &description)
+{
+  if (personality <= totalNumberOfDescriptions)
+  {
+    personalityDescriptions[personality - 1] = description;
+    ++numberOfDescriptionsFound;
+  }
+}
+
+bool RDMnetNetworkItem::allPersonalityDescriptionsFound()
+{
+  return (numberOfDescriptionsFound >= totalNumberOfDescriptions) && (personalityDescriptions != NULL);
+}
+
+QStringList RDMnetNetworkItem::personalityDescriptionList()
+{
+  QStringList result;
+
+  if (allPersonalityDescriptionsFound())
+  {
+    for (int i = 0; i < totalNumberOfDescriptions; ++i)
+    {
+      result.push_back(personalityDescriptions[i]);
+    }
+  }
+
+  return result;
+}
+
+QString RDMnetNetworkItem::personalityDescriptionAt(int i)
+{
+  return personalityDescriptions[i];
+}
+
+void RDMnetNetworkItem::setDeviceWasReset(bool reset)
+{
+  device_reset_ = reset;
 }
