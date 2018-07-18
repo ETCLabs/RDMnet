@@ -103,7 +103,7 @@ void PropertyValueItem::setPIDInfo(uint16_t pid, bool supportsGet, bool supports
     pidInfo[pid].dataType = dataType;
     pidInfo[pid].role = Qt::EditRole;
     pidInfo[pid].includedInDataModel = includedInDataModel;
-    pidInfo[pid].locationOfProperties = kResponder;
+    pidInfo[pid].locationOfProperties = kResponder | kDevice;
   }
 }
 

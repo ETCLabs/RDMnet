@@ -27,8 +27,9 @@
 
 #include "PropertyItem.h"
 
-PropertyItem::PropertyItem(const QString &text) : RDMnetNetworkItem(text), m_ValueItem(NULL)
+PropertyItem::PropertyItem(const QString &fullName, const QString &displayText) : RDMnetNetworkItem(displayText), m_ValueItem(NULL)
 {
+  m_FullName = fullName;
 }
 
 PropertyItem::~PropertyItem()
@@ -66,4 +67,9 @@ void PropertyItem::setValueItem(PropertyValueItem *item, bool deleteItemArgument
       parent()->setChild(row(), 1, m_ValueItem);
     }
   }
+}
+
+QString PropertyItem::getFullName()
+{
+  return m_FullName;
 }

@@ -301,6 +301,15 @@ protected:
   void checkPersonalityDescriptions(RDMnetNetworkItem *device, uint8_t numberOfPersonalities, RdmResponse *resp);
   QVariant getPropertyData(RDMnetNetworkItem *parent, unsigned short pid, int role);
 
+  PropertyItem *createPropertyItem(RDMnetNetworkItem *parent, const QString &fullName);
+  QString getShortPropertyName(const QString &fullPropertyName);
+  QString getHighestGroupName(const QString &pathName);
+  PropertyItem *getGroupingItem(RDMnetNetworkItem *parent, const QString & groupName);
+  PropertyItem *createGroupingItem(RDMnetNetworkItem *parent, const QString & groupName);
+  QString getChildPathName(const QString &superPathName);
+
+
+
 private:
   RDMnetNetworkModel();
 };
