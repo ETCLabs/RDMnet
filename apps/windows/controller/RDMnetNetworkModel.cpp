@@ -124,6 +124,22 @@ static void unpackAndParseIPAddress(const uint8_t *addrData, lwpa_iptype_t addrT
   lwpa_inet_ntop(&ip, strBufOut, strBufLen);
 }
 
+static void parseAndPackIPAddress(lwpa_iptype_t addrType, const char *ipString, size_t ipStringLen, uint8_t *outBuf)
+{
+  LwpaIpAddr ip;
+
+  lwpa_inet_pton(addrType, ipString, &ip);
+
+  if (addrType == LWPA_IPV4)
+  {
+    pack_32l(outBuf, ip.addr.v4);
+  }
+  else if (addrType == LWPA_IPV6)
+  {
+    memcpy(outBuf, ip.addr.v6, IPV6_BYTES);
+  }
+}
+
 MyLog::MyLog(const std::string &file_name)
 {
   file_.open(file_name.c_str(), std::fstream::out);
@@ -1001,12 +1017,13 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
     QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Component Scope")));
   PropertyValueItem::setPIDMaxBufferSize(E133_COMPONENT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH + 2);
 
-  PropertyValueItem::setPIDInfo(E133_BROKER_STATIC_CONFIG_IPV4, true, false, QVariant::Type::Invalid, Qt::EditRole,
+  PropertyValueItem::setPIDInfo(E133_BROKER_STATIC_CONFIG_IPV4, true, true, QVariant::Type::Invalid, Qt::EditRole,
                                 kDevice);
   PropertyValueItem::addPIDPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV4,
     QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv4 Address (Static Configuration)")));
   PropertyValueItem::addPIDPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV4,
     QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Port Number (Static Configuration)")));
+  PropertyValueItem::setPIDMaxBufferSize(E133_BROKER_STATIC_CONFIG_IPV4, 6);
 
   PropertyValueItem::setPIDInfo(E133_BROKER_STATIC_CONFIG_IPV6, true, false, QVariant::Type::Invalid, Qt::EditRole,
                                 kDevice);
@@ -1221,6 +1238,8 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
             QString qstr;
             std::string stdstr;
             uint8_t *packPtr;
+            PropertyValueItem *ipValueItem;
+            PropertyValueItem *portValueItem;
 
             setCmd.dest_uid.manu = parentItem->getMan();
             setCmd.dest_uid.id = parentItem->getDev();
@@ -1272,13 +1291,29 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
                 packPtr[0] = static_cast<uint8_t>(value.toInt());
                 break;
               default:
-                //switch (pid)
-                //{
-                //case E133_BROKER_STATIC_CONFIG_IPV4:
-                //  break;
-                //default:
+                switch (pid)
+                {
+                case E133_BROKER_STATIC_CONFIG_IPV4:
+                  ipValueItem = getSiblingValueItem(propertyValueItem, E133_BROKER_STATIC_CONFIG_IPV4, 0);
+                  portValueItem = getSiblingValueItem(propertyValueItem, E133_BROKER_STATIC_CONFIG_IPV4, 1);
+
+                  if (propertyValueItem == ipValueItem) // IP was changed - value contains IP
+                  {
+                    parseAndPackIPAddress(LWPA_IPV4, value.toString().toLatin1().constData(),
+                      value.toString().length(), packPtr);
+                    pack_16l(packPtr + 4, static_cast<uint16_t>(portValueItem->data().toInt()));
+                  }
+                  else // Port was changed - value contains port
+                  {
+                    parseAndPackIPAddress(LWPA_IPV4, ipValueItem->data().toString().toLatin1().constData(),
+                      ipValueItem->data().toString().length(), packPtr);
+                    pack_16l(packPtr + 4, static_cast<uint16_t>(value.toInt()));
+                  }
+
+                  break;
+                default:
                   return false;
-                //}
+                }
             }
 
             SendRDMCommand(setCmd);
@@ -2654,6 +2689,7 @@ PropertyItem * RDMnetNetworkModel::createPropertyItem(RDMnetNetworkItem * parent
   RDMnetNetworkItem *currentParent = parent;
   QString currentPathName = fullName;
   QString shortName = getShortPropertyName(fullName);
+  PropertyItem *propertyItem = new PropertyItem(fullName, shortName);
 
   while (currentPathName != shortName)
   {
@@ -2663,17 +2699,15 @@ PropertyItem * RDMnetNetworkModel::createPropertyItem(RDMnetNetworkItem * parent
 
     if (groupingItem == NULL)
     {
-      currentParent = createGroupingItem(currentParent, groupName);
+      groupingItem = createGroupingItem(currentParent, groupName);
     }
-    else
-    {
-      currentParent = groupingItem;
-    }
+    
+    currentParent = groupingItem;
+    groupingItem->properties.push_back(propertyItem);
 
     currentPathName = getChildPathName(currentPathName);
   }
 
-  PropertyItem *propertyItem = new PropertyItem(fullName, shortName);
   appendRowToItem(currentParent, propertyItem);
 
   return propertyItem;
@@ -2739,6 +2773,25 @@ QString RDMnetNetworkModel::getChildPathName(const QString & superPathName)
   int startPosition = highGroupName.length() + 1; // Name + delimiter character
 
   return superPathName.mid(startPosition, superPathName.length() - startPosition);;
+}
+
+PropertyValueItem * RDMnetNetworkModel::getSiblingValueItem(PropertyValueItem * item, uint16_t pid, int32_t index)
+{
+  PropertyItem *parent = dynamic_cast<PropertyItem *>(item->parent());
+  QString siblingShortName = getShortPropertyName(PropertyValueItem::pidPropertyDisplayName(pid, index));
+
+  if (parent)
+  {
+    for (auto item : parent->properties)
+    {
+      if ((item->text() == siblingShortName) && (item->getValueItem()->getPID() == pid))
+      {
+        return item->getValueItem();
+      }
+    }
+  }
+
+  return NULL;
 }
 
 RDMnetNetworkModel::RDMnetNetworkModel() : log_("RDMnetController.log")
