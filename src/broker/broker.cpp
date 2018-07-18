@@ -895,7 +895,7 @@ void Broker::SendStatus(RPTController *controller, const RptHeader &header, uint
   status.status_code = status_code;
 #if RDMNET_DYNAMIC_MEM
   if (!status_str.empty())
-    status.status_string = const_cast<char *>(status_str.c_str());  // Ugh
+    status.status_string = status_str.c_str();
   else
     status.status_string = nullptr;
 #else
@@ -946,6 +946,7 @@ void Broker::ProcessConnectRequest(int conn, const ClientConnectMsg *cmsg)
         deny_connection = !ProcessRPTConnectRequest(conn, cmsg->client_entry, connect_status);
         break;
       default:
+        connect_status = kRDMnetConnectInvalidClientEntry;
         break;
     }
   }

@@ -76,7 +76,7 @@ typedef struct RptStatusMsg
 {
   uint16_t status_code;
 #if RDMNET_DYNAMIC_MEM
-  char *status_string;
+  const char *status_string;
 #else
   char status_string[RPT_STATUS_STRING_MAXLEN + 1];
 #endif

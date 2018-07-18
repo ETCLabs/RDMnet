@@ -337,8 +337,8 @@ void BrokerConnection::runConnectStateMachine()
   connect_data.connect_flags = CONNECTFLAG_INCREMENTAL_UPDATES;
   connect_data.e133_version = E133_VERSION;
   QByteArray utf8_scope = scope_.toUtf8();
-  connect_data.scope = utf8_scope.data();
-  connect_data.search_domain = "local";
+  connect_data.scope = utf8_scope.constData();
+  connect_data.search_domain = E133_DEFAULT_DOMAIN;
   create_rpt_client_entry(&local_cid_, &local_uid_, kRPTClientTypeController, nullptr, &connect_data.client_entry);
 
   RdmnetData result_data;
@@ -603,13 +603,13 @@ void RDMnetNetworkModel::processNewEndpointList(RDMnetClientItem *treeClientItem
   {
     treeClientItem->disableChildrenSearch();
 
-  //  // Add the Default Responder
-  //  EndpointItem *def_resp_item = new EndpointItem(treeClientItem->Uid().manu, treeClientItem->Uid().id);
-  //  appendRowToItem(treeClientItem, def_resp_item);
-  //  treeClientItem->endpoints_.push_back(def_resp_item);
-  //  std::vector<LwpaUid> responder_list;
-  //  responder_list.push_back(treeClientItem->Uid());
-  //  processNewResponderList(def_resp_item, responder_list);
+    //  // Add the Default Responder
+    //  EndpointItem *def_resp_item = new EndpointItem(treeClientItem->Uid().manu, treeClientItem->Uid().id);
+    //  appendRowToItem(treeClientItem, def_resp_item);
+    //  treeClientItem->endpoints_.push_back(def_resp_item);
+    //  std::vector<LwpaUid> responder_list;
+    //  responder_list.push_back(treeClientItem->Uid());
+    //  processNewResponderList(def_resp_item, responder_list);
   }
 
   std::vector<EndpointItem *> prev_list = treeClientItem->endpoints_;
@@ -776,7 +776,7 @@ void RDMnetNetworkModel::processSetPropertyData(RDMnetNetworkItem *parent, unsig
       }
 
       // Property doesn't exist, so make a new one.
-      PropertyItem *propertyItem = createPropertyItem(parent, name);// new PropertyItem(name, name);
+      PropertyItem *propertyItem = createPropertyItem(parent, name);  // new PropertyItem(name, name);
       PropertyValueItem *propertyValueItem;
 
       if (pid == E120_DMX_PERSONALITY)
@@ -790,7 +790,7 @@ void RDMnetNetworkModel::processSetPropertyData(RDMnetNetworkItem *parent, unsig
 
       propertyValueItem->setPID(pid);
 
-      //appendRowToItem(parent, propertyItem);
+      // appendRowToItem(parent, propertyItem);
       propertyItem->setValueItem(propertyValueItem);
 
       parent->properties.push_back(propertyItem);
@@ -856,7 +856,7 @@ void RDMnetNetworkModel::resetDevice(ResponderItem *device)
 {
   if (device != NULL)
   {
-    if (device->hasValidProperties()) // Means device wasn't reset
+    if (device->hasValidProperties())  // Means device wasn't reset
     {
       device->disableAllChildItems();
       device->setDeviceWasReset(true);
@@ -949,61 +949,61 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   PropertyValueItem::setPIDInfo(E120_SUPPORTED_PARAMETERS, true, false, QVariant::Type::Invalid, false);
 
   PropertyValueItem::setPIDInfo(E120_DEVICE_INFO, true, false, QVariant::Type::Invalid, Qt::EditRole);
-  PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO, 
-    QString("%0\\%1").arg(rdmGroupName).arg(tr("RDM Protocol Version")));
-  PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO, 
-    QString("%0\\%1").arg(rdmGroupName).arg(tr("Device Model ID")));
-  PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO, 
-    QString("%0\\%1").arg(rdmGroupName).arg(tr("Product Category")));
-  PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO, 
-    QString("%0\\%1").arg(rdmGroupName).arg(tr("Software Version ID")));
-  PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO, 
-    QString("%0\\%1").arg(rdmGroupName).arg(tr("DMX512 Footprint")));
-  PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO, 
-    QString("%0\\%1").arg(rdmGroupName).arg(tr("Sub-Device Count")));
-  PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO, 
-    QString("%0\\%1").arg(rdmGroupName).arg(tr("Sensor Count")));
+  PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO,
+                                               QString("%0\\%1").arg(rdmGroupName).arg(tr("RDM Protocol Version")));
+  PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO,
+                                               QString("%0\\%1").arg(rdmGroupName).arg(tr("Device Model ID")));
+  PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO,
+                                               QString("%0\\%1").arg(rdmGroupName).arg(tr("Product Category")));
+  PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO,
+                                               QString("%0\\%1").arg(rdmGroupName).arg(tr("Software Version ID")));
+  PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO,
+                                               QString("%0\\%1").arg(rdmGroupName).arg(tr("DMX512 Footprint")));
+  PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO,
+                                               QString("%0\\%1").arg(rdmGroupName).arg(tr("Sub-Device Count")));
+  PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO,
+                                               QString("%0\\%1").arg(rdmGroupName).arg(tr("Sensor Count")));
 
   PropertyValueItem::setPIDInfo(E120_DEVICE_MODEL_DESCRIPTION, true, false, QVariant::Type::String);
-  PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_MODEL_DESCRIPTION, 
-    QString("%0\\%1").arg(rdmGroupName).arg(tr("Device Model Description")));
+  PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_MODEL_DESCRIPTION,
+                                               QString("%0\\%1").arg(rdmGroupName).arg(tr("Device Model Description")));
 
   PropertyValueItem::setPIDInfo(E120_MANUFACTURER_LABEL, true, false, QVariant::Type::String);
-  PropertyValueItem::addPIDPropertyDisplayName(E120_MANUFACTURER_LABEL, 
-    QString("%0\\%1").arg(rdmGroupName).arg(tr("Manufacturer Label")));
+  PropertyValueItem::addPIDPropertyDisplayName(E120_MANUFACTURER_LABEL,
+                                               QString("%0\\%1").arg(rdmGroupName).arg(tr("Manufacturer Label")));
 
   PropertyValueItem::setPIDInfo(E120_DEVICE_LABEL, true, true, QVariant::Type::String);
-  PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_LABEL, 
-    QString("%0\\%1").arg(rdmGroupName).arg(tr("Device Label")));
+  PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_LABEL,
+                                               QString("%0\\%1").arg(rdmGroupName).arg(tr("Device Label")));
   PropertyValueItem::setPIDMaxBufferSize(E120_DEVICE_LABEL, 32);
 
   PropertyValueItem::setPIDInfo(E120_SOFTWARE_VERSION_LABEL, true, false, QVariant::Type::String);
-  PropertyValueItem::addPIDPropertyDisplayName(E120_SOFTWARE_VERSION_LABEL, 
-    QString("%0\\%1").arg(rdmGroupName).arg(tr("Software Label")));
+  PropertyValueItem::addPIDPropertyDisplayName(E120_SOFTWARE_VERSION_LABEL,
+                                               QString("%0\\%1").arg(rdmGroupName).arg(tr("Software Label")));
 
   PropertyValueItem::setPIDInfo(E120_BOOT_SOFTWARE_VERSION_ID, true, false, QVariant::Type::Int);
-  PropertyValueItem::addPIDPropertyDisplayName(E120_BOOT_SOFTWARE_VERSION_ID, 
-    QString("%0\\%1").arg(rdmGroupName).arg(tr("Boot Software ID")));
+  PropertyValueItem::addPIDPropertyDisplayName(E120_BOOT_SOFTWARE_VERSION_ID,
+                                               QString("%0\\%1").arg(rdmGroupName).arg(tr("Boot Software ID")));
 
   PropertyValueItem::setPIDInfo(E120_BOOT_SOFTWARE_VERSION_LABEL, true, false, QVariant::Type::String);
-  PropertyValueItem::addPIDPropertyDisplayName(E120_BOOT_SOFTWARE_VERSION_LABEL, 
-    QString("%0\\%1").arg(rdmGroupName).arg(tr("Boot Software Label")));
+  PropertyValueItem::addPIDPropertyDisplayName(E120_BOOT_SOFTWARE_VERSION_LABEL,
+                                               QString("%0\\%1").arg(rdmGroupName).arg(tr("Boot Software Label")));
 
   PropertyValueItem::setPIDInfo(E120_DMX_START_ADDRESS, true, true, QVariant::Type::Int);
-  PropertyValueItem::addPIDPropertyDisplayName(E120_DMX_START_ADDRESS, 
-    QString("%0\\%1").arg(rdmGroupName).arg(tr("DMX512 Start Address")));
+  PropertyValueItem::addPIDPropertyDisplayName(E120_DMX_START_ADDRESS,
+                                               QString("%0\\%1").arg(rdmGroupName).arg(tr("DMX512 Start Address")));
   PropertyValueItem::setPIDNumericDomain(E120_DMX_START_ADDRESS, 1, 512);
   PropertyValueItem::setPIDMaxBufferSize(E120_DMX_START_ADDRESS, 2);
 
   PropertyValueItem::setPIDInfo(E120_IDENTIFY_DEVICE, true, true, QVariant::Type::Bool, Qt::CheckStateRole);
-  PropertyValueItem::addPIDPropertyDisplayName(E120_IDENTIFY_DEVICE, 
-    QString("%0\\%1").arg(rdmGroupName).arg(tr("Identify")));
+  PropertyValueItem::addPIDPropertyDisplayName(E120_IDENTIFY_DEVICE,
+                                               QString("%0\\%1").arg(rdmGroupName).arg(tr("Identify")));
   PropertyValueItem::setPIDMaxBufferSize(E120_IDENTIFY_DEVICE, 1);
 
   PropertyValueItem::setPIDInfo(E120_DMX_PERSONALITY, true, true, QVariant::Type::Char,
                                 PersonalityPropertyValueItem::PersonalityNumberRole);
-  PropertyValueItem::addPIDPropertyDisplayName(E120_DMX_PERSONALITY, 
-    QString("%0\\%1").arg(rdmGroupName).arg(tr("DMX512 Personality")));
+  PropertyValueItem::addPIDPropertyDisplayName(E120_DMX_PERSONALITY,
+                                               QString("%0\\%1").arg(rdmGroupName).arg(tr("DMX512 Personality")));
   PropertyValueItem::setPIDNumericDomain(E120_DMX_PERSONALITY, 1, 255);
   PropertyValueItem::setPIDMaxBufferSize(E120_DMX_PERSONALITY, 1);
 
@@ -1011,39 +1011,48 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   PropertyValueItem::setPIDMaxBufferSize(E120_RESET_DEVICE, 1);
 
   // E1.33
-  PropertyValueItem::setPIDInfo(E133_COMPONENT_SCOPE, true, true, QVariant::Type::String, Qt::EditRole,
-                                kDevice);
-  PropertyValueItem::addPIDPropertyDisplayName(E133_COMPONENT_SCOPE, 
-    QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Component Scope")));
+  PropertyValueItem::setPIDInfo(E133_COMPONENT_SCOPE, true, true, QVariant::Type::String, Qt::EditRole, kDevice);
+  PropertyValueItem::addPIDPropertyDisplayName(E133_COMPONENT_SCOPE,
+                                               QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Component Scope")));
   PropertyValueItem::setPIDMaxBufferSize(E133_COMPONENT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH + 2);
 
   PropertyValueItem::setPIDInfo(E133_BROKER_STATIC_CONFIG_IPV4, true, true, QVariant::Type::Invalid, Qt::EditRole,
                                 kDevice);
+<<<<<<< Updated upstream
   PropertyValueItem::addPIDPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV4,
     QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv4 Address (Static Configuration)")));
   PropertyValueItem::addPIDPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV4,
     QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Port Number (Static Configuration)")));
   PropertyValueItem::setPIDMaxBufferSize(E133_BROKER_STATIC_CONFIG_IPV4, 6);
+=======
+  PropertyValueItem::addPIDPropertyDisplayName(
+      E133_BROKER_STATIC_CONFIG_IPV4,
+      QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv4 Address (Static Configuration)")));
+  PropertyValueItem::addPIDPropertyDisplayName(
+      E133_BROKER_STATIC_CONFIG_IPV4,
+      QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Port Number (Static Configuration)")));
+>>>>>>> Stashed changes
 
   PropertyValueItem::setPIDInfo(E133_BROKER_STATIC_CONFIG_IPV6, true, false, QVariant::Type::Invalid, Qt::EditRole,
                                 kDevice);
-  PropertyValueItem::addPIDPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV6,
-    QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv6 Address (Static Configuration)")));
+  PropertyValueItem::addPIDPropertyDisplayName(
+      E133_BROKER_STATIC_CONFIG_IPV6,
+      QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv6 Address (Static Configuration)")));
 
   PropertyValueItem::setPIDInfo(E133_SEARCH_DOMAIN, true, true, QVariant::Type::String, Qt::EditRole, kDevice);
-  PropertyValueItem::addPIDPropertyDisplayName(E133_SEARCH_DOMAIN, 
-    QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Search Domain")));
+  PropertyValueItem::addPIDPropertyDisplayName(E133_SEARCH_DOMAIN,
+                                               QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Search Domain")));
   PropertyValueItem::setPIDMaxBufferSize(E133_SEARCH_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
 
   PropertyValueItem::setPIDInfo(E133_TCP_COMMS_STATUS, true, false, QVariant::Type::Invalid, Qt::EditRole, kDevice);
-  PropertyValueItem::addPIDPropertyDisplayName(E133_TCP_COMMS_STATUS, 
-    QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv4 Address (Current)")));
-  PropertyValueItem::addPIDPropertyDisplayName(E133_TCP_COMMS_STATUS, 
-    QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv6 Address (Current)")));
-  PropertyValueItem::addPIDPropertyDisplayName(E133_TCP_COMMS_STATUS, 
-    QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Port Number (Current)")));
-  PropertyValueItem::addPIDPropertyDisplayName(E133_TCP_COMMS_STATUS, 
-    QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Unhealthy TCP Events")));
+  PropertyValueItem::addPIDPropertyDisplayName(
+      E133_TCP_COMMS_STATUS, QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv4 Address (Current)")));
+  PropertyValueItem::addPIDPropertyDisplayName(
+      E133_TCP_COMMS_STATUS, QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv6 Address (Current)")));
+  PropertyValueItem::addPIDPropertyDisplayName(E133_TCP_COMMS_STATUS,
+                                               QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Port Number (Current)")));
+  PropertyValueItem::addPIDPropertyDisplayName(E133_TCP_COMMS_STATUS,
+                                               QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Unhealthy TCP Events")));
 
   model->setColumnCount(2);
   model->setHeaderData(0, Qt::Orientation::Horizontal, tr("Property"));
@@ -1253,7 +1262,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
             // Special cases for certain PIDs
             if (pid == E133_COMPONENT_SCOPE)
             {
-              pack_16b(packPtr, 1); // Scope slot (default to 1)
+              pack_16b(packPtr, 1);  // Scope slot (default to 1)
               packPtr += 2;
             }
 
@@ -1291,6 +1300,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
                 packPtr[0] = static_cast<uint8_t>(value.toInt());
                 break;
               default:
+<<<<<<< Updated upstream
                 switch (pid)
                 {
                 case E133_BROKER_STATIC_CONFIG_IPV4:
@@ -1314,6 +1324,15 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
                 default:
                   return false;
                 }
+=======
+                // switch (pid)
+                //{
+                // case E133_BROKER_STATIC_CONFIG_IPV4:
+                //  break;
+                // default:
+                return false;
+                //}
+>>>>>>> Stashed changes
             }
 
             SendRDMCommand(setCmd);
@@ -2139,7 +2158,7 @@ void RDMnetNetworkModel::responderListChange(uint32_t /*changeNumber*/, uint16_t
   SendRDMCommand(cmd);
 }
 
-void RDMnetNetworkModel::nack(uint16_t reason, const RdmResponse * resp)
+void RDMnetNetworkModel::nack(uint16_t reason, const RdmResponse *resp)
 {
   if ((resp->command_class == E120_SET_COMMAND_RESPONSE) && (PropertyValueItem::pidInfoExists(resp->param_id)))
   {
@@ -2590,8 +2609,7 @@ RDMnetClientItem *RDMnetNetworkModel::getClientItem(RdmResponse *resp)
       {
         for (auto i : brokerItem->rdmnet_devices_)
         {
-          if ((i->getMan() == resp->src_uid.manu) &&
-              (i->getDev() == resp->src_uid.id))
+          if ((i->getMan() == resp->src_uid.manu) && (i->getDev() == resp->src_uid.id))
           {
             return i;
           }
@@ -2684,7 +2702,7 @@ QVariant RDMnetNetworkModel::getPropertyData(RDMnetNetworkItem *parent, unsigned
   return result;
 }
 
-PropertyItem * RDMnetNetworkModel::createPropertyItem(RDMnetNetworkItem * parent, const QString & fullName)
+PropertyItem *RDMnetNetworkModel::createPropertyItem(RDMnetNetworkItem *parent, const QString &fullName)
 {
   RDMnetNetworkItem *currentParent = parent;
   QString currentPathName = fullName;
@@ -2713,7 +2731,7 @@ PropertyItem * RDMnetNetworkModel::createPropertyItem(RDMnetNetworkItem * parent
   return propertyItem;
 }
 
-QString RDMnetNetworkModel::getShortPropertyName(const QString & fullPropertyName)
+QString RDMnetNetworkModel::getShortPropertyName(const QString &fullPropertyName)
 {
   QRegExp re("(\\\\)");
   QStringList query = fullPropertyName.split(re);
@@ -2726,7 +2744,7 @@ QString RDMnetNetworkModel::getShortPropertyName(const QString & fullPropertyNam
   return QString();
 }
 
-QString RDMnetNetworkModel::getHighestGroupName(const QString & pathName)
+QString RDMnetNetworkModel::getHighestGroupName(const QString &pathName)
 {
   QRegExp re("(\\\\)");
   QStringList query = pathName.split(re);
@@ -2739,7 +2757,7 @@ QString RDMnetNetworkModel::getHighestGroupName(const QString & pathName)
   return QString();
 }
 
-PropertyItem * RDMnetNetworkModel::getGroupingItem(RDMnetNetworkItem * parent, const QString & groupName)
+PropertyItem *RDMnetNetworkModel::getGroupingItem(RDMnetNetworkItem *parent, const QString &groupName)
 {
   for (int i = 0; i < parent->rowCount(); ++i)
   {
@@ -2757,7 +2775,7 @@ PropertyItem * RDMnetNetworkModel::getGroupingItem(RDMnetNetworkItem * parent, c
   return NULL;
 }
 
-PropertyItem * RDMnetNetworkModel::createGroupingItem(RDMnetNetworkItem * parent, const QString & groupName)
+PropertyItem *RDMnetNetworkModel::createGroupingItem(RDMnetNetworkItem *parent, const QString &groupName)
 {
   PropertyItem *groupingItem = new PropertyItem(groupName, groupName);
 
@@ -2767,12 +2785,13 @@ PropertyItem * RDMnetNetworkModel::createGroupingItem(RDMnetNetworkItem * parent
   return groupingItem;
 }
 
-QString RDMnetNetworkModel::getChildPathName(const QString & superPathName)
+QString RDMnetNetworkModel::getChildPathName(const QString &superPathName)
 {
   QString highGroupName = getHighestGroupName(superPathName);
-  int startPosition = highGroupName.length() + 1; // Name + delimiter character
+  int startPosition = highGroupName.length() + 1;  // Name + delimiter character
 
-  return superPathName.mid(startPosition, superPathName.length() - startPosition);;
+  return superPathName.mid(startPosition, superPathName.length() - startPosition);
+  ;
 }
 
 PropertyValueItem * RDMnetNetworkModel::getSiblingValueItem(PropertyValueItem * item, uint16_t pid, int32_t index)

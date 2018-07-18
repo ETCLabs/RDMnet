@@ -80,8 +80,7 @@ typedef enum
 {
   /*! The remote Component is shutting down. */
   kRDMnetDisconnectShutdown = E133_DISCONNECT_SHUTDOWN,
-  /*! The remote Component no longer has the ability to support this
-   *  connection. */
+  /*! The remote Component no longer has the ability to support this connection. */
   kRDMnetDisconnectCapacityExhausted = E133_DISCONNECT_CAPACITY_EXHAUSTED,
   /*! Not a valid reason, removed from next revision. */
   kRDMnetDisconnectIncorrectClientType = E133_DISCONNECT_INCORRECT_CLIENT_TYPE,
@@ -101,55 +100,92 @@ typedef enum
   kRDMnetDisconnectUserReconfigure = E133_DISCONNECT_USER_RECONFIGURE
 } rdmnet_disconnect_reason_t;
 
+/*! The Client Connect message in the Broker protocol. */
 typedef struct ClientConnectMsg
 {
 #if RDMNET_DYNAMIC_MEM && !defined(__DOXYGEN__)
-  char *scope;
+  /*! The Client's configured scope. Maximum length #E133_SCOPE_STRING_PADDED_LENGTH,
+   *  including null terminator. */
+  const char *scope;
 #else
   char scope[E133_SCOPE_STRING_PADDED_LENGTH];
 #endif
+  /*! The maximum version of the standard supported by the Client. */
   uint16_t e133_version;
 #if RDMNET_DYNAMIC_MEM && !defined(__DOXYGEN__)
-  char *search_domain;
+  /*! The search domain of the Client. Maximum length #E133_DOMAIN_STRING_PADDED_LENGTH,
+   *  including null terminator. */
+  const char *search_domain;
 #else
   char search_domain[E133_DOMAIN_STRING_PADDED_LENGTH];
 #endif
+  /*! Configurable options for the connection. See CONNECTFLAG_*. */
   uint8_t connect_flags;
+  /*! The Client's Client Entry. */
   ClientEntryData client_entry;
 } ClientConnectMsg;
 
+/*! The Connect Reply message in the Broker protocol. */
 typedef struct ConnectReplyMsg
 {
+  /*! The connection status - kRdmnetConnectOk is the only one that indicates a
+   *  successful connection. */
   rdmnet_connect_status_t connect_status;
+  /*! The maximum version of the standard supported by the Broker. */
   uint16_t e133_version;
+  /*! The Broker's UID for use in RPT and LLRP. */
   LwpaUid broker_uid;
 } ConnectReplyMsg;
 
+/*! The Client Entry Update message in the Broker protocol. */
 typedef struct ClientEntryUpdateMsg
 {
+  /*! Configurable options for the connection. See CONNECTFLAG_*. */
   uint8_t connect_flags;
+  /*! The new Client Entry. The standard says that it must have the same values
+   *  for client_protocol and client_cid as the entry sent on initial connection -
+   *  only the data section can be different.
+   */
   ClientEntryData client_entry;
 } ClientEntryUpdateMsg;
 
+/*! The Client Redirect message in the Broker protocol. This struture is used
+ *  to represent both CLIENT_REDIRECT_IPV4 and CLIENT_REDIRECT_IPV6. */
 typedef struct ClientRedirectMsg
 {
+  /*! The new IPv4 or IPv6 address to which to connect. */
   LwpaSockaddr new_addr;
 } ClientRedirectMsg;
 
+/*! A structure that represents a list of Client Entries. Represents the data for
+ *  multiple Broker Protocol messages: Connected Client List, Client Incremental
+ *  Addition, Client Incremental Deletion, and Client Entry Change. */
 typedef struct ClientList
 {
+  /*! This message contains a partial list. This can be set when the library runs out
+   *  of static memory in which to store Client Entries and must deliver the partial
+   *  list before continuing. The application should store the entries in the list
+   *  but should not act on the list until another ClientList is received with
+   *  partial set to false. */
   bool partial;
+  /*! The head of a linked list of Client Entries. */
   ClientEntryData *client_entry_list;
 } ClientList;
 
+/*! The Disconnect message in the Broker protocol. */
 typedef struct DisconnectMsg
 {
+  /*! The reason for the disconnect event. */
   rdmnet_disconnect_reason_t disconnect_reason;
 } DisconnectMsg;
 
+/*! A Broker message. */
 typedef struct BrokerMessage
 {
+  /*! The vector indicates which type of message is present in the data section.
+   *  Valid values are indicated by VECTOR_BROKER_* in estardmnet.h. */
   uint16_t vector;
+  /*! The encapsulated message; use the helper macros to access it. */
   union
   {
     ClientConnectMsg client_connect;
@@ -161,21 +197,58 @@ typedef struct BrokerMessage
   } data;
 } BrokerMessage;
 
+/*! \brief Determine whether a BrokerMessage contains a Client Connect message.
+ *  \param msgptr Pointer to BrokerMessage.
+ *  \return (true or false) whether the message contains a Client Connect message. */
 #define is_client_connect_msg(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_CONNECT)
+/*! \brief Get the encapsulated Client Connect message from a BrokerMessage.
+ *  \param msgptr Pointer to BrokerMessage.
+ *  \return Pointer to encapsulated Client Connect message (ClientConnectMsg *). */
 #define get_client_connect_msg(brokermsgptr) (&(brokermsgptr)->data.client_connect)
+/*! \brief Determine whether a BrokerMessage contains a Connect Reply message.
+ *  \param msgptr Pointer to BrokerMessage.
+ *  \return (true or false) whether the message contains a Connect Reply message. */
 #define is_connect_reply_msg(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_CONNECT_REPLY)
+/*! \brief Get the encapsulated Connect Reply message from a BrokerMessage.
+ *  \param msgptr Pointer to BrokerMessage.
+ *  \return Pointer to encapsulated Connect Reply message (ConnectReplyMsg *). */
 #define get_connect_reply_msg(brokermsgptr) (&(brokermsgptr)->data.connect_reply)
+/*! \brief Determine whether a BrokerMessage contains a Client Entry Update message.
+ *  \param msgptr Pointer to BrokerMessage.
+ *  \return (true or false) whether the message contains a Client Entry Update message. */
 #define is_client_entry_update_msg(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_CLIENT_ENTRY_UPDATE)
+/*! \brief Get the encapsulated Client Entry Update message from a BrokerMessage.
+ *  \param msgptr Pointer to BrokerMessage.
+ *  \return Pointer to encapsulated Client Entry Update message (ClientEntryUpdateMsg *). */
 #define get_client_entry_update_msg(brokermsgptr) (&(brokermsgptr)->data.client_entry_update)
+/*! \brief Determine whether a BrokerMessage contains a Client Redirect message.
+ *  \param msgptr Pointer to BrokerMessage.
+ *  \return (true or false) whether the message contains a Client Redirect message. */
 #define is_client_redirect_msg(brokermsgptr) \
   ((brokermsgptr)->vector == VECTOR_BROKER_REDIRECT_V4 || (brokermsgptr)->vector == VECTOR_BROKER_REDIRECT_V6)
+/*! \brief Get the encapsulated Client Redirect message from a BrokerMessage.
+ *  \param msgptr Pointer to BrokerMessage.
+ *  \return Pointer to encapsulated Client Redirect message (ClientRedirectMsg *). */
 #define get_client_redirect_msg(brokermsgptr) (&(brokermsgptr)->data.client_redirect)
+/*! \brief Determine whether a BrokerMessage contains a Client List. Multiple types
+ *         of Broker messages can contain Client Lists.
+ *  \param msgptr Pointer to BrokerMessage.
+ *  \return (true or false) whether the message contains a Client List. */
 #define is_client_list(brokermsgptr)                                                                                \
   (&(brokermsgptr)->vector == VECTOR_BROKER_CONNECTED_CLIENT_LIST ||                                                \
    &(brokermsgptr)->vector == VECTOR_BROKER_CLIENT_ADD || &(brokermsgptr)->vector == VECTOR_BROKER_CLIENT_REMOVE || \
    &(brokermsgptr)->vector == VECTOR_BROKER_CLIENT_ENTRY_CHANGE)
+/*! \brief Get the encapsulated Client List from a BrokerMessage.
+ *  \param msgptr Pointer to BrokerMessage.
+ *  \return Pointer to encapsulated Client List (ClientList *). */
 #define get_client_list(brokermsgptr) (&(brokermsgptr)->data.client_list)
+/*! \brief Determine whether a BrokerMessage contains a Disconnect message.
+ *  \param msgptr Pointer to BrokerMessage.
+ *  \return (true or false) whether the message contains a Disconnect message. */
 #define is_disconnect(brokermsgptr) (&(brokermsgptr)->vector == VECTOR_BROKER_DISCONNECT)
+/*! \brief Get the encapsulated Disconnect message from a BrokerMessage.
+ *  \param msgptr Pointer to BrokerMessage.
+ *  \return Pointer to encapsulated Disconnect message (ClientConnectMsg *). */
 #define get_disconnect_msg(brokermsgptr) (&(brokermsgptr)->data.disconnect)
 
 #ifdef __cplusplus

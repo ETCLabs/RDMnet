@@ -100,9 +100,15 @@ void free_rdmnet_message(RdmnetMessage *msg)
           {
             ClientConnectMsg *connmsg = get_client_connect_msg(bmsg);
             if (connmsg->scope)
-              free(connmsg->scope);
+            {
+              free((char *)connmsg->scope);
+              connmsg->scope = NULL;
+            }
             if (connmsg->search_domain)
-              free(connmsg->search_domain);
+            {
+              free((char *)connmsg->search_domain);
+              connmsg->search_domain = NULL;
+            }
             break;
           }
 #endif
@@ -135,7 +141,10 @@ void free_rdmnet_message(RdmnetMessage *msg)
           {
             RptStatusMsg *status = get_status_msg(rmsg);
             if (status->status_string)
-              free(status->status_string);
+            {
+              free((char *)status->status_string);
+              status->status_string = NULL;
+            }
             break;
           }
 #endif
