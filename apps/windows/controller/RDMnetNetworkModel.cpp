@@ -1303,13 +1303,13 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
                     {
                       parseAndPackIPAddress(LWPA_IPV4, value.toString().toLatin1().constData(),
                                             value.toString().length(), packPtr);
-                      pack_16l(packPtr + 4, static_cast<uint16_t>(portValueItem->data().toInt()));
+                      pack_16b(packPtr + 4, static_cast<uint16_t>(portValueItem->data().toInt()));
                     }
                     else  // Port was changed - value contains port
                     {
                       parseAndPackIPAddress(LWPA_IPV4, ipValueItem->data().toString().toLatin1().constData(),
                                             ipValueItem->data().toString().length(), packPtr);
-                      pack_16l(packPtr + 4, static_cast<uint16_t>(value.toInt()));
+                      pack_16b(packPtr + 4, static_cast<uint16_t>(value.toInt()));
                     }
 
                     break;
