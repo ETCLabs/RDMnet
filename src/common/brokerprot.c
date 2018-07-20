@@ -241,6 +241,14 @@ lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg 
 
 /******************************* Connect Reply *******************************/
 
+/*! \brief Pack a Connect Reply message into a buffer.
+ *
+ *  \param[out] buf Buffer into which to pack the Connect Reply message.
+ *  \param[in] buflen Length in bytes of buf.
+ *  \param[in] local_cid CID of the Component sending the Connect Reply message.
+ *  \param[in] data Connect Reply data to pack into the data segment.
+ *  \return Number of bytes packed, or 0 on error.
+ */
 size_t pack_connect_reply(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, const ConnectReplyMsg *data)
 {
   RootLayerPdu rlp;
@@ -273,6 +281,17 @@ size_t pack_connect_reply(uint8_t *buf, size_t buflen, const LwpaCid *local_cid,
   return cur_ptr - buf;
 }
 
+/*! \brief Send a Connect Reply message on an RDMnet connection.
+ *  \param[in] handle RDMnet connection handle on which to send the Connect
+ *                    Reply message.
+ *  \param[in] local_cid CID of the Component sending the Connect Reply message.
+ *  \param[in] data Connect Reply data.
+ *  \return #LWPA_OK: Send success.\n
+ *          #LWPA_INVALID: Invalid argument provided.\n
+ *          #LWPA_SYSERR: An internal library or system call error occurred.\n
+ *          Note: Other error codes might be propagated from underlying socket
+ *          calls.\n
+ */
 lwpa_error_t send_connect_reply(int handle, const LwpaCid *local_cid, const ConnectReplyMsg *data)
 {
   int res;
@@ -321,6 +340,17 @@ lwpa_error_t send_connect_reply(int handle, const LwpaCid *local_cid, const Conn
 
 /***************************** Fetch Client List *****************************/
 
+/*! \brief Send a Fetch Client List message on an RDMnet connection.
+ *  \param[in] handle RDMnet connection handle on which to send the Fetch Client
+ *                    List message.
+ *  \param[in] local_cid CID of the Component sending the Fetch Client List
+ *                       message.
+ *  \return #LWPA_OK: Send success.\n
+ *          #LWPA_INVALID: Invalid argument provided.\n
+ *          #LWPA_SYSERR: An internal library or system call error occurred.\n
+ *          Note: Other error codes might be propagated from underlying socket
+ *          calls.\n
+ */
 lwpa_error_t send_fetch_client_list(int handle, const LwpaCid *local_cid)
 {
   int res;
@@ -347,10 +377,10 @@ lwpa_error_t send_fetch_client_list(int handle, const LwpaCid *local_cid)
 
 /**************************** Client List Messages ***************************/
 
-size_t calc_client_entry_buf_size(ClientEntryData *client_entry_list)
+size_t calc_client_entry_buf_size(const ClientEntryData *client_entry_list)
 {
   size_t res = 0;
-  ClientEntryData *cur_entry = client_entry_list;
+  const ClientEntryData *cur_entry = client_entry_list;
 
   for (; cur_entry; cur_entry = cur_entry->next)
   {
@@ -367,13 +397,31 @@ size_t calc_client_entry_buf_size(ClientEntryData *client_entry_list)
   return res;
 }
 
-size_t bufsize_client_list(ClientEntryData *client_entry_list)
+/*! \brief Get the packed buffer size for a given Client List.
+ *  \param[in] client_entry_list Client List of which to calculate the packed size.
+ *  \return Required buffer size, or 0 on error.
+ */
+size_t bufsize_client_list(const ClientEntryData *client_entry_list)
 {
   return (client_entry_list ? (BROKER_PDU_FULL_HEADER_SIZE + calc_client_entry_buf_size(client_entry_list)) : 0);
 }
 
+/*! \brief Pack a Client List message into a buffer.
+ *
+ *  Multiple types of Broker messages can contain a Client List; indicate which
+ *  type this should be with the vector field. Valid values are
+ *  #VECTOR_BROKER_CONNECTED_CLIENT_LIST, #VECTOR_BROKER_CLIENT_ADD,
+ *  #VECTOR_BROKER_CLIENT_REMOVE and #VECTOR_BROKER_CLIENT_ENTRY_CHANGE.
+ *
+ *  \param[out] buf Buffer into which to pack the Client List message.
+ *  \param[in] buflen Length in bytes of buf.
+ *  \param[in] local_cid CID of the Component sending the Client List message.
+ *  \param[in] vector Which type of Client List message this is.
+ *  \param[in] client_entry_list Client List to pack into the data segment.
+ *  \return Number of bytes packed, or 0 on error.
+ */
 size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, uint16_t vector,
-                        ClientEntryData *client_entry_list)
+                        const ClientEntryData *client_entry_list)
 {
   RootLayerPdu rlp;
   uint8_t *cur_ptr = buf;
@@ -439,6 +487,8 @@ size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, u
   return cur_ptr - buf;
 }
 
+/******************************** Disconnect *********************************/
+
 lwpa_error_t send_disconnect(RdmnetConnection *conn, const DisconnectMsg *data)
 {
   int res;
@@ -461,6 +511,8 @@ lwpa_error_t send_disconnect(RdmnetConnection *conn, const DisconnectMsg *data)
   lwpa_timer_reset(&conn->send_timer);
   return LWPA_OK;
 }
+
+/*********************************** Null ************************************/
 
 lwpa_error_t send_null(RdmnetConnection *conn)
 {

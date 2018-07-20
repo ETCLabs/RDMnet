@@ -245,7 +245,7 @@ typedef struct BrokerMessage
 /*! \brief Determine whether a BrokerMessage contains a Disconnect message.
  *  \param msgptr Pointer to BrokerMessage.
  *  \return (true or false) whether the message contains a Disconnect message. */
-#define is_disconnect(brokermsgptr) (&(brokermsgptr)->vector == VECTOR_BROKER_DISCONNECT)
+#define is_disconnect(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_DISCONNECT)
 /*! \brief Get the encapsulated Disconnect message from a BrokerMessage.
  *  \param msgptr Pointer to BrokerMessage.
  *  \return Pointer to encapsulated Disconnect message (ClientConnectMsg *). */
@@ -255,7 +255,7 @@ typedef struct BrokerMessage
 extern "C" {
 #endif
 
-size_t bufsize_client_list(ClientEntryData *client_entry_list);
+size_t bufsize_client_list(const ClientEntryData *client_entry_list);
 
 size_t pack_connect_reply(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, const ConnectReplyMsg *data);
 size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, uint16_t vector,
