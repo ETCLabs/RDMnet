@@ -522,12 +522,17 @@ bool process_parsed_msg(LlrpBaseSocket *sock, const LlrpMessage *msg, LlrpData *
         new_known_uid->next = NULL;
         if (rb_tree_find(&mgrdata->known_uids, new_known_uid) || !rb_tree_insert(&mgrdata->known_uids, new_known_uid))
         {
+          /* This Target was already in our known UIDs, but is replying anyway. */
           free(new_known_uid);
         }
+        else
+        {
+          /* Newly discovered Target. */
+          mgrdata->num_clean_sends = 0;
+          llrp_data_set_disc_target(data, *new_target);
+          return true;
+        }
       }
-      mgrdata->num_clean_sends = 0;
-      llrp_data_set_disc_target(data, *new_target);
-      return true;
     }
     return false;
   }
