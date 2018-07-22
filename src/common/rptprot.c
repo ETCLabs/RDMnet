@@ -39,6 +39,7 @@
 
 /***************************** Private macros ********************************/
 
+/* Helper macros for RDM Command PDUs */
 #define rdm_cmd_pdu_len(rdmbufptr) ((rdmbufptr)->datalen + 3)
 #define pack_rdm_cmd_pdu(rdmbufptr, buf)                                \
   do                                                                    \
@@ -49,6 +50,7 @@
     memcpy(&(buf)[4], &(rdmbufptr)->data[1], (rdmbufptr)->datalen - 1); \
   } while (0)
 
+/* Helper macros to pack the various RPT headers */
 #define pack_request_header(length, buf)       \
   do                                           \
   {                                            \
@@ -169,11 +171,23 @@ size_t calc_request_pdu_size(const RdmBuffer *cmd)
   return REQUEST_NOTIF_PDU_HEADER_SIZE + rdm_cmd_pdu_len(cmd);
 }
 
+/*! \brief Get the packed buffer size for an RPT Request message.
+ *  \param[in] cmd Encapsulated RDM Command that will occupy the RPT Request message.
+ *  \return Required buffer size, or 0 on error.
+ */
 size_t bufsize_rpt_request(const RdmBuffer *cmd)
 {
   return (cmd ? (RPT_PDU_FULL_HEADER_SIZE + calc_request_pdu_size(cmd)) : 0);
 }
 
+/*! \brief Pack an RPT Request message into a buffer.
+ *  \param[out] buf Buffer into which to pack the RPT Request message.
+ *  \param[in] buflen Length in bytes of buf.
+ *  \param[in] local_cid CID of the Component sending the RPT Request message.
+ *  \param[in] header Header data for the RPT PDU that encapsulates this Request message.
+ *  \param[in] cmd Encapsulated RDM Command that will occupy the RPT Request message.
+ *  \return Number of bytes packed, or 0 on error.
+ */
 size_t pack_rpt_request(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, const RptHeader *header,
                         const RdmBuffer *cmd)
 {
@@ -205,6 +219,17 @@ size_t pack_rpt_request(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, c
   return cur_ptr - buf;
 }
 
+/*! \brief Send an RPT Request message on an RDMnet connection.
+ *  \param[in] handle RDMnet connection handle on which to send the RPT Request message.
+ *  \param[in] local_cid CID of the Component sending the RPT Request message.
+ *  \param[in] header Header data for the RPT PDU that encapsulates this RPT Request message.
+ *  \param[in] cmd Encapsulated RDM Command that will occupy the RPT Request message.
+ *  \return #LWPA_OK: Send success.\n
+ *          #LWPA_INVALID: Invalid argument provided.\n
+ *          #LWPA_SYSERR: An internal library or system call error occurred.\n
+ *          Note: Other error codes might be propagated from underlying socket
+ *          calls.\n
+ */
 lwpa_error_t send_rpt_request(int handle, const LwpaCid *local_cid, const RptHeader *header, const RdmBuffer *cmd)
 {
   int res;
@@ -258,11 +283,23 @@ size_t calc_status_pdu_size(const RptStatusMsg *status)
 #endif
 }
 
+/*! \brief Get the packed buffer size for an RPT Status message.
+ *  \param[in] status RPT Status message data.
+ *  \return Required buffer size, or 0 on error.
+ */
 size_t bufsize_rpt_status(const RptStatusMsg *status)
 {
   return (status ? RPT_PDU_FULL_HEADER_SIZE + calc_status_pdu_size(status) : 0);
 }
 
+/*! \brief Pack an RPT Status message into a buffer.
+ *  \param[out] buf Buffer into which to pack the RPT Status message.
+ *  \param[in] buflen Length in bytes of buf.
+ *  \param[in] local_cid CID of the Component sending the RPT Status message.
+ *  \param[in] header Header data for the RPT PDU that encapsulates this Status message.
+ *  \param[in] status RPT Status message data.
+ *  \return Number of bytes packed, or 0 on error.
+ */
 size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, const RptHeader *header,
                        const RptStatusMsg *status)
 {
@@ -296,6 +333,17 @@ size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, co
   return cur_ptr - buf;
 }
 
+/*! \brief Send an RPT Status message on an RDMnet connection.
+ *  \param[in] handle RDMnet connection handle on which to send the RPT Status message.
+ *  \param[in] local_cid CID of the Component sending the RPT Status message.
+ *  \param[in] header Header data for the RPT PDU that encapsulates this Status message.
+ *  \param[in] status RPT Status message data.
+ *  \return #LWPA_OK: Send success.\n
+ *          #LWPA_INVALID: Invalid argument provided.\n
+ *          #LWPA_SYSERR: An internal library or system call error occurred.\n
+ *          Note: Other error codes might be propagated from underlying socket
+ *          calls.\n
+ */
 lwpa_error_t send_rpt_status(int handle, const LwpaCid *local_cid, const RptHeader *header, const RptStatusMsg *status)
 {
   int res;
@@ -356,11 +404,24 @@ size_t calc_notification_pdu_size(const RdmCmdListEntry *cmd_list)
   return res;
 }
 
+/*! \brief Get the packed buffer size for an RPT Notification message.
+ *  \param[in] cmd_list Encapsulated RDM Command List that will occupy the RPT
+ *                      Notification message.
+ *  \return Required buffer size, or 0 on error.
+ */
 size_t bufsize_rpt_notification(const RdmCmdListEntry *cmd_list)
 {
   return (cmd_list ? (RPT_PDU_FULL_HEADER_SIZE + calc_notification_pdu_size(cmd_list)) : 0);
 }
 
+/*! \brief Pack an RPT Notification message into a buffer.
+ *  \param[out] buf Buffer into which to pack the RPT Notification message.
+ *  \param[in] buflen Length in bytes of buf.
+ *  \param[in] local_cid CID of the Component sending the RPT Notification message.
+ *  \param[in] header Header data for the RPT PDU that encapsulates this RPT Notification message.
+ *  \param[in] cmd_list List of RDM Commands contained in this RPT Notification.
+ *  \return Number of bytes packed, or 0 on error.
+ */
 size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, const RptHeader *header,
                              const RdmCmdListEntry *cmd_list)
 {
@@ -396,6 +457,17 @@ size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaCid *local_c
   return cur_ptr - buf;
 }
 
+/*! \brief Send an RPT Notification message on an RDMnet connection.
+ *  \param[in] handle RDMnet connection handle on which to send the RPT Notification message.
+ *  \param[in] local_cid CID of the Component sending the RPT Notification message.
+ *  \param[in] header Header data for the RPT PDU that encapsulates this RPT Notification message.
+ *  \param[in] cmd_list List of RDM Commands contained in this RPT Notification.
+ *  \return #LWPA_OK: Send success.\n
+ *          #LWPA_INVALID: Invalid argument provided.\n
+ *          #LWPA_SYSERR: An internal library or system call error occurred.\n
+ *          Note: Other error codes might be propagated from underlying socket
+ *          calls.\n
+ */
 lwpa_error_t send_rpt_notification(int handle, const LwpaCid *local_cid, const RptHeader *header,
                                    const RdmCmdListEntry *cmd_list)
 {

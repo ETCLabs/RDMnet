@@ -905,7 +905,7 @@ size_t parse_rpt_block(RptState *rstate, const uint8_t *data, size_t datalen, Rp
         break;
       case VECTOR_RPT_STATUS:
         next_layer_bytes_parsed = parse_rpt_status(&rstate->data.status, &data[bytes_parsed], remaining_len,
-                                                   get_status_msg(rmsg), &res, lparams);
+                                                   get_rpt_status_msg(rmsg), &res, lparams);
         break;
       default:
         /* Unknown RPT vector - discard this RPT PDU. */

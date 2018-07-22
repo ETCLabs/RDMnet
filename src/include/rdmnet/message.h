@@ -43,6 +43,7 @@
  *  \ingroup rdmnet_core_lib
  *
  *  Types to represent RDMnet messages, and functions to pack and unpack them.
+ *  LLRP Messages are excluded, as they are handled by separate logic.
  *
  *  @{
  */

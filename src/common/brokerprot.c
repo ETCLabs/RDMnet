@@ -427,7 +427,7 @@ size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, u
   uint8_t *cur_ptr = buf;
   uint8_t *buf_end = buf + buflen;
   size_t data_size;
-  ClientEntryData *cur_entry;
+  const ClientEntryData *cur_entry;
 
   if (!buf || buflen < BROKER_PDU_FULL_HEADER_SIZE || !local_cid || !client_entry_list ||
       (vector != VECTOR_BROKER_CONNECTED_CLIENT_LIST && vector != VECTOR_BROKER_CLIENT_ADD &&
@@ -463,7 +463,7 @@ size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, u
 
     if (cur_entry->client_protocol == E133_CLIENT_PROTOCOL_RPT)
     {
-      ClientEntryDataRpt *rpt_data = get_rpt_client_entry_data(cur_entry);
+      const ClientEntryDataRpt *rpt_data = get_rpt_client_entry_data(cur_entry);
 
       /* Check bounds. */
       if (cur_ptr + RPT_CLIENT_ENTRY_DATA_SIZE > buf_end)

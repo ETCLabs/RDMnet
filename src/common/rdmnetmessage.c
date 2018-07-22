@@ -139,7 +139,7 @@ void free_rdmnet_message(RdmnetMessage *msg)
 #if RDMNET_DYNAMIC_MEM
           case VECTOR_RPT_STATUS:
           {
-            RptStatusMsg *status = get_status_msg(rmsg);
+            RptStatusMsg *status = get_rpt_status_msg(rmsg);
             if (status->status_string)
             {
               free((char *)status->status_string);

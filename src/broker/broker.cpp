@@ -881,7 +881,7 @@ void Broker::SendClientsRemoved(client_protocol_t client_prot, std::vector<Clien
   }
 }
 
-void Broker::SendStatus(RPTController *controller, const RptHeader &header, uint16_t status_code,
+void Broker::SendStatus(RPTController *controller, const RptHeader &header, rpt_status_code_t status_code,
                         const std::string &status_str)
 {
   RptHeader new_header;
@@ -1091,7 +1091,7 @@ void Broker::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
             RPTController *controller = static_cast<RPTController *>(rptcli);
             if (!IsValidControllerDestinationUID(rptmsg->header.dest_uid))
             {
-              SendStatus(controller, rptmsg->header, VECTOR_RPT_STATUS_UNKNOWN_RPT_UID);
+              SendStatus(controller, rptmsg->header, kRptStatusUnknownRptUid);
               log_->Log(LWPA_LOG_DEBUG,
                         "Received Request PDU addressed to invalid or not found UID %04x:%08x from Controller %d",
                         rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
@@ -1099,7 +1099,7 @@ void Broker::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
             else if (get_rdm_cmd_list(rptmsg)->list->next)
             {
               // There should only ever be one RDM command in an RPT request.
-              SendStatus(controller, rptmsg->header, VECTOR_RPT_STATUS_INVALID_MESSAGE);
+              SendStatus(controller, rptmsg->header, kRptStatusInvalidMessage);
               log_->Log(LWPA_LOG_DEBUG,
                         "Received Request PDU from Controller %d which incorrectly contains multiple RDM Command PDUs",
                         conn);
@@ -1118,7 +1118,7 @@ void Broker::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
           {
             if (IsValidDeviceDestinationUID(rptmsg->header.dest_uid))
             {
-              if (get_status_msg(rptmsg)->status_code != VECTOR_RPT_STATUS_BROADCAST_COMPLETE)
+              if (get_rpt_status_msg(rptmsg)->status_code != kRptStatusBroadcastComplete)
                 route_msg = true;
               else
                 log_->Log(LWPA_LOG_DEBUG, "Device %d sent broadcast complete message.", conn);

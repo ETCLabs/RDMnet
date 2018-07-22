@@ -33,9 +33,16 @@
 #ifndef _RDMNET_EPTPROT_H_
 #define _RDMNET_EPTPROT_H_
 
+/*! \addtogroup rdmnet_message
+ *  @{
+ */
+
+/*! An EPT message. */
 typedef struct EptMessage
 {
   int dummy; /* TODO placeholder */
 } EptMessage;
+
+/*!@}*/
 
 #endif /* _RDMNET_EPTPROT_H_ */

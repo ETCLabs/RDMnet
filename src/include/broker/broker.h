@@ -254,7 +254,7 @@ protected:
   void SendClientList(int conn);
   void SendClientsAdded(client_protocol_t client_prot, int conn_to_ignore, std::vector<ClientEntryData> &entries);
   void SendClientsRemoved(client_protocol_t client_prot, std::vector<ClientEntryData> &entries);
-  void SendStatus(RPTController *controller, const RptHeader &header, uint16_t status_code,
+  void SendStatus(RPTController *controller, const RptHeader &header, rpt_status_code_t status_code,
                   const std::string &status_str = std::string());
 
   // broker callback functions

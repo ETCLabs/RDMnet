@@ -122,7 +122,7 @@ bool RPTController::Push(int /*from_conn*/, const LwpaCid &sender_cid, const Rpt
   switch (msg.vector)
   {
     case VECTOR_RPT_STATUS:
-      res = RPTClient::PushPostSizeCheck(sender_cid, msg.header, *get_status_msg(&msg));
+      res = RPTClient::PushPostSizeCheck(sender_cid, msg.header, *get_rpt_status_msg(&msg));
       break;
 
     case VECTOR_RPT_NOTIFICATION:
@@ -218,7 +218,7 @@ bool RPTDevice::Push(int from_conn, const LwpaCid &sender_cid, const RptMessage 
   switch (msg.vector)
   {
     case VECTOR_RPT_STATUS:
-      res = RPTClient::PushPostSizeCheck(sender_cid, msg.header, *get_status_msg(&msg));
+      res = RPTClient::PushPostSizeCheck(sender_cid, msg.header, *get_rpt_status_msg(&msg));
       break;
 
     case VECTOR_RPT_REQUEST:
