@@ -53,7 +53,7 @@
     (sendhdrptr)->dest_uid = (recvhdrptr)->source_uid;                 \
     (sendhdrptr)->dest_endpoint_id = (recvhdrptr)->source_endpoint_id; \
     (sendhdrptr)->source_uid = device_state.my_uid;                    \
-    (sendhdrptr)->source_endpoint_id = NULL_ENDPOINT;                  \
+    (sendhdrptr)->source_endpoint_id = E133_NULL_ENDPOINT;             \
     (sendhdrptr)->seqnum = (recvhdrptr)->seqnum;                       \
   } while (0)
 
@@ -256,9 +256,9 @@ bool device_llrp_set(const RdmCommand *cmd_data, uint16_t *nack_reason)
             orig_cmd.next = &resp;
             resp.next = NULL;
             header.source_uid = kRdmnetControllerBroadcastUid;
-            header.source_endpoint_id = NULL_ENDPOINT;
+            header.source_endpoint_id = E133_NULL_ENDPOINT;
             header.dest_uid = device_state.my_uid;
-            header.dest_endpoint_id = NULL_ENDPOINT;
+            header.dest_endpoint_id = E133_NULL_ENDPOINT;
             header.seqnum = 0;
 
             send_notification(&header, &orig_cmd);
@@ -428,7 +428,7 @@ void device_handle_message(const RdmnetMessage *msg, bool *requires_reconnect)
     {
       if (rpt_uid_matches_mine(&rptmsg->header.dest_uid))
       {
-        if (rptmsg->header.dest_endpoint_id == NULL_ENDPOINT)
+        if (rptmsg->header.dest_endpoint_id == E133_NULL_ENDPOINT)
         {
           const RdmCmdList *cmdlist = get_rdm_cmd_list(rptmsg);
           handle_rdm_command(&rptmsg->header, &cmdlist->list->msg, requires_reconnect);

@@ -378,9 +378,9 @@ bool set_component_scope(const uint8_t *param_data, uint8_t param_data_len, uint
 }
 
 bool set_broker_static_config_ipv4(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-  bool *requires_reconnect)
+                                   bool *requires_reconnect)
 {
-  uint8_t *cur_ptr = param_data[0];
+  const uint8_t *cur_ptr = param_data;
 
   *requires_reconnect = false;
 
@@ -396,7 +396,8 @@ bool set_broker_static_config_ipv4(const uint8_t *param_data, uint8_t param_data
     if (strncmp((char *)param_data, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
     {
       /* setting one field to zero, but not the other is invalid */
-      if (!((lwpaip_v4_address(&new_ipv4) == 0 && new_port != 0) || (lwpaip_v4_address(&new_ipv4) != 0 && new_port == 0)))
+      if (!((lwpaip_v4_address(&new_ipv4) == 0 && new_port != 0) ||
+            (lwpaip_v4_address(&new_ipv4) != 0 && new_port == 0)))
       {
         /* when both fields are set to zero, remove static config */
         if (lwpaip_v4_address(&new_ipv4) == 0 && new_port == 0)
@@ -405,7 +406,7 @@ bool set_broker_static_config_ipv4(const uint8_t *param_data, uint8_t param_data
         }
         else
         {
-          lwpaip_set_v4_address(&prop_data.rdmnet_params.broker_static_addr.ip, &new_ipv4);
+          prop_data.rdmnet_params.broker_static_addr.ip = new_ipv4;
           prop_data.rdmnet_params.broker_static_addr.port = new_port;
         }
         *requires_reconnect = true;
@@ -421,14 +422,13 @@ bool set_broker_static_config_ipv4(const uint8_t *param_data, uint8_t param_data
     *nack_reason = E120_NR_FORMAT_ERROR;
 
   return false;
-  }
+}
 
 bool set_search_domain(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
                        bool *requires_reconnect)
 {
   if (param_data_len <= E133_DOMAIN_STRING_PADDED_LENGTH)
   {
-
     if (param_data_len > 0 || strcmp("", (char *)param_data) != 0)
     {
       if (strncmp(prop_data.rdmnet_params.search_domain, (char *)param_data, E133_DOMAIN_STRING_PADDED_LENGTH) == 0)
