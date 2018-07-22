@@ -367,9 +367,9 @@ DWORD WINAPI ServiceThread(LPVOID /*param*/)
     broker_settings.uid = {0x6574, upack_32b(interfaces.front().mac + 2)};
   }
 
-  broker_settings.disc_attributes.mdns_manufacturer = "ETC";
-  broker_settings.disc_attributes.mdns_service_instance_name = "UNIQUE NAME";
-  broker_settings.disc_attributes.mdns_model = "E1.33 Broker Prototype";
+  broker_settings.disc_attributes.dns_manufacturer = "ETC";
+  broker_settings.disc_attributes.dns_service_instance_name = "UNIQUE NAME";
+  broker_settings.disc_attributes.dns_model = "E1.33 Broker Prototype";
 
   std::vector<LwpaIpAddr> useaddrs;
   GetMyIfaceKey(useaddrs, interfaces);

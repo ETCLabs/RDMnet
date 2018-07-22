@@ -34,6 +34,7 @@
     <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_timer.c" />
     <ClCompile Include="..\..\..\..\src\broker\broker.cpp" />
     <ClCompile Include="..\..\..\..\src\broker\brokerclient.cpp" />
+    <ClCompile Include="..\..\..\..\src\broker\brokerdiscovery.cpp" />
     <ClCompile Include="..\..\..\..\src\broker\brokerresponder.cpp" />
     <ClCompile Include="..\..\..\..\src\broker\brokerthreads.cpp" />
     <ClCompile Include="..\..\..\..\src\broker\brokerutil.cpp" />
@@ -58,6 +59,7 @@
     <ClInclude Include="..\..\..\..\src\broker\brokerconsts.h" />
     <ClInclude Include="..\..\..\..\src\include\broker\broker.h" />
     <ClInclude Include="..\..\..\..\src\include\broker\client.h" />
+    <ClInclude Include="..\..\..\..\src\include\broker\discovery.h" />
     <ClInclude Include="..\..\..\..\src\include\broker\responder.h" />
     <ClInclude Include="..\..\..\..\src\include\broker\threads.h" />
     <ClInclude Include="..\..\..\..\src\include\broker\util.h" />

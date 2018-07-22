@@ -116,6 +116,9 @@
     <ClCompile Include="..\..\..\..\src\common\rdmnetclient.c">
       <Filter>rdmnet_lib</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\src\broker\brokerdiscovery.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\src\include\broker\broker.h">
@@ -149,6 +152,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\include\broker\responder.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\include\broker\discovery.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

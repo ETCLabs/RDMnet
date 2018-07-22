@@ -63,7 +63,6 @@ typedef struct BrokerDiscInfo
   uint16_t port;
   LwpaSockaddr listen_addrs[ARRAY_SIZE_DEFAULT];
   size_t listen_addrs_count;
-  char domain[E133_DOMAIN_STRING_PADDED_LENGTH];
   char scope[E133_SCOPE_STRING_PADDED_LENGTH];
   char model[E133_MODEL_STRING_PADDED_LENGTH];
   char manufacturer[E133_MANUFACTURER_STRING_PADDED_LENGTH];
@@ -93,7 +92,7 @@ void rdmnetdisc_stopmonitoring_all_scopes();
 lwpa_error_t rdmnetdisc_registerbroker(const BrokerDiscInfo *broker_info, void *context);
 void rdmnetdisc_unregisterbroker();
 
-void rdmnetdisc_tick(void *context);
+void rdmnetdisc_tick();
 
 #ifdef __cplusplus
 }

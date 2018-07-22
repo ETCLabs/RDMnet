@@ -219,9 +219,10 @@ static void broker_connect_thread_func(void *arg)
 
 static void rdmnetdisc_tick_thread_func(void *arg)
 {
+  (void)arg;
   while (!g_ShuttingDown)
   {
-    rdmnetdisc_tick(arg);
+    rdmnetdisc_tick();
   }
 }
 
@@ -939,7 +940,7 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   tparams.thread_name = "RDMnet Discovery Tick Thread";
   tparams.thread_priority = LWPA_THREAD_DEFAULT_PRIORITY;
 
-  lwpa_thread_create(&tick_thread_, &tparams, &rdmnetdisc_tick_thread_func, model);
+  lwpa_thread_create(&tick_thread_, &tparams, &rdmnetdisc_tick_thread_func, nullptr);
 
   // Initialize GUI-supported PID information
   QString rdmGroupName("RDM");
@@ -1448,7 +1449,7 @@ void RDMnetNetworkModel::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
   switch (rptmsg->vector)
   {
     case VECTOR_RPT_STATUS:
-      ProcessRPTStatus(conn, &rptmsg->header, get_status_msg(rptmsg));
+      ProcessRPTStatus(conn, &rptmsg->header, get_rpt_status_msg(rptmsg));
     case VECTOR_RPT_NOTIFICATION:
       ProcessRPTNotification(conn, &rptmsg->header, get_rdm_cmd_list(rptmsg));
     default:
@@ -1633,7 +1634,7 @@ bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand &cmd)
   {
     header.source_uid = BrokerConnection::getLocalUID();
     header.source_endpoint_id = 0;
-    header.dest_uid = rpt_dest_uid;
+    header.dest_uid = { 0, 0 };
     header.dest_endpoint_id = dest_endpoint;
     header.seqnum = connectionToUse->sequencePreIncrement();
 

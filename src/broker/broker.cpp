@@ -63,12 +63,11 @@ Broker::Broker(BrokerLog *log, IBrokerNotify *notify)
     : IListenThread_Notify()
     , IClientServiceThread_Notify()
     , IConnPollThread_Notify()
-    //  , IRDMnet_MDNS_Notify()
     , service_thread_(1)
     , started_(false)
     , log_(log)
     , notify_(notify)
-//  , mdns_(nullptr)
+    , disc_(this)
 {
 }
 
@@ -78,11 +77,13 @@ Broker::~Broker()
     Shutdown();
 }
 
-// This starts all Broker functionality and threads.
-// If listen_addrs is empty, this returns false.  Otherwise, the broker
-// uses the address fields to set up the listening sockets. If the
-// listen_port is 0 and their is only one listen_addr, an ephemeral port is
-// chosen. If there are more listen_addrs, listen_port must not be 0.
+/// \brief Start all %Broker functionality and threads.
+/// \param[in] settings Settings for the Broker to use for this session.
+/// \param[in] listen_port Port
+/// If listen_addrs is empty, this returns false.  Otherwise, the broker
+/// uses the address fields to set up the listening sockets. If the
+/// listen_port is 0 and their is only one listen_addr, an ephemeral port is
+/// chosen. If there are more listen_addrs, listen_port must not be 0.
 bool Broker::Startup(const BrokerSettings &settings, uint16_t listen_port, std::vector<LwpaIpAddr> &listen_addrs)
 {
   if (!started_)
@@ -92,25 +93,7 @@ bool Broker::Startup(const BrokerSettings &settings, uint16_t listen_port, std::
 
     settings_ = settings;
 
-    // Initialize DNS discovery.
-    BrokerDiscInfo info;
-    fill_default_broker_info(&info);
-
-    if (settings_.disc_attributes.mdns_domain.empty())
-      settings_.disc_attributes.mdns_domain = E133_DEFAULT_DOMAIN;
-    info.cid = settings_.cid;
-    strncpy(info.domain, settings_.disc_attributes.mdns_domain.c_str(), E133_DOMAIN_STRING_PADDED_LENGTH);
-    for (size_t i = 0; i < listen_addrs.size(); i++)
-      info.listen_addrs[i].ip =
-          listen_addrs[i];  // TODO: make sure lwpa_sockaddr is what we want on the library's side of things
-    info.listen_addrs_count = listen_addrs.size();
-    strncpy(info.manufacturer, settings_.disc_attributes.mdns_manufacturer.c_str(),
-            E133_MANUFACTURER_STRING_PADDED_LENGTH);
-    strncpy(info.model, settings_.disc_attributes.mdns_model.c_str(), E133_MODEL_STRING_PADDED_LENGTH);
-    info.port = listen_port;
-    strncpy(info.scope, settings_.disc_attributes.scope.c_str(), E133_SCOPE_STRING_PADDED_LENGTH);
-    strncpy(info.service_name, settings_.disc_attributes.mdns_service_instance_name.c_str(),
-            E133_SERVICE_NAME_STRING_PADDED_LENGTH);
+    BrokerDiscoveryManager::InitLibrary();
 
     if (LWPA_OK != rdmnet_init(log_->GetLogParams()))
       return false;
@@ -151,15 +134,9 @@ bool Broker::Startup(const BrokerSettings &settings, uint16_t listen_port, std::
     service_thread_.SetNotify(this);
     service_thread_.Start();
 
-    SetCallbackFunctions(&callbacks_);
-    rdmnetdisc_init(&callbacks_);
-    if (rdmnetdisc_registerbroker(&info, this))  // previous code calls shutdown if true?
-    {
-      Shutdown();
-      return false;
-    }
+    disc_.RegisterBroker(settings_.disc_attributes, settings_.cid, listen_addrs, listen_port);
 
-    log_->Log(LWPA_LOG_INFO, std::string(settings_.disc_attributes.mdns_manufacturer +
+    log_->Log(LWPA_LOG_INFO, std::string(settings_.disc_attributes.dns_manufacturer +
                                          " Prototype RDMnet Broker Version " + RDMNET_VERSION_STRING)
                                  .c_str());
     log_->Log(LWPA_LOG_INFO, "Broker starting at scope \"%s\", listening on port %d, using network interfaces:",
@@ -180,7 +157,8 @@ void Broker::Shutdown()
 {
   if (started_)
   {
-    rdmnetdisc_unregisterbroker();
+    disc_.UnregisterBroker();
+    BrokerDiscoveryManager::DeinitLibrary();
 
     StopListening();
     listeners_.clear();
@@ -233,7 +211,7 @@ void Broker::Shutdown()
 
 void Broker::Tick()
 {
-  rdmnetdisc_tick(this);
+  BrokerDiscoveryManager::LibraryTick();
   DestroyMarkedClientSockets();
 }
 
@@ -335,116 +313,6 @@ void Broker::GetConnSnapshot(std::vector<int> &conns, bool include_devices, bool
         }
       }
     }
-  }
-}
-
-// Gets the appropriate locks for writing controller state.  If something's
-// wrong, returns nullptr. Be sure to call ReleaseControllerFromWriting if
-// this returns a valid pointer.
-RPTController *Broker::GetControllerForWriting(int conn) const
-{
-  RPTController *pdata = nullptr;
-  if (ClientReadLock())
-  {
-    auto it = controllers_.find(conn);
-    if (it != controllers_.end() && it->second && it->second->WriteLock())
-    {
-      pdata = it->second.get();
-      // And keep the read lock
-    }
-    else
-      ClientReadUnlock();
-  }
-  return pdata;
-}
-
-void Broker::ReleaseControllerFromWriting(RPTController *pdata) const
-{
-  if (pdata)
-  {
-    pdata->WriteUnlock();
-    ClientReadUnlock();
-  }
-}
-
-// Gets the appropriate locks for reading controller state.  If something's
-// wrong, returns nullptr. Be sure to call ReleaseControllerFromReading if
-// this returns a valid pointer.
-const RPTController *Broker::GetControllerForReading(int conn) const
-{
-  const RPTController *pdata = nullptr;
-  if (ClientReadLock())
-  {
-    auto it = controllers_.find(conn);
-    if (it != controllers_.end() && it->second && it->second->ReadLock())
-      pdata = it->second.get();
-    else
-      ClientReadUnlock();
-  }
-
-  return pdata;
-}
-
-void Broker::ReleaseControllerFromReading(const RPTController *pdata) const
-{
-  if (pdata)
-  {
-    pdata->ReadUnlock();
-    ClientReadUnlock();
-  }
-}
-
-// Gets the appropriate locks for writing device state.  If something's
-// wrong, returns nullptr. Be sure to call ReleaseDeviceFromWriting if this
-// returns a valid pointer.
-RPTDevice *Broker::GetDeviceForWriting(int conn) const
-{
-  RPTDevice *pdata = nullptr;
-  if (ClientReadLock())
-  {
-    auto it = devices_.find(conn);
-    if (it != devices_.end() && it->second && it->second->WriteLock())
-      pdata = it->second.get();
-    else
-      ClientReadUnlock();
-  }
-
-  return pdata;
-}
-
-void Broker::ReleaseDeviceFromWriting(RPTDevice *pdata) const
-{
-  if (pdata)
-  {
-    pdata->WriteUnlock();
-    ClientReadUnlock();
-  }
-}
-
-// Gets the appropriate locks for reading device state.  If something's
-// wrong, returns nullptr. Be sure to call ReleaseDeviceFromReading if this
-// returns a valid pointer.
-const RPTDevice *Broker::GetDeviceForReading(int conn) const
-{
-  RPTDevice *pdata = nullptr;
-  if (ClientReadLock())
-  {
-    auto it = devices_.find(conn);
-    if (it != devices_.end() && it->second && it->second->ReadLock())
-      pdata = it->second.get();
-    else
-      ClientReadUnlock();
-  }
-
-  return pdata;
-}
-
-void Broker::ReleaseDeviceFromReading(const RPTDevice *pdata) const
-{
-  if (pdata)
-  {
-    pdata->ReadUnlock();
-    ClientReadUnlock();
   }
 }
 
@@ -605,14 +473,14 @@ void Broker::PollConnections(const std::vector<int> &conn_handles, RdmnetPoll *p
   }
 }
 
-///* ILLRPSocketProxy_Notify messages */
-////llrp_data will point to the buffer data immediately after the UDP
-/// preamble. /packet_data will point to the beginning of the packet. This
-/// is the pointer you should call DeletePacket() on when finished.
-/// /data_length will be the size of the buffer memory BELOW the UDP
-/// preamble. /packet_length will be the size of the whole packet,
-/// INCLUDING the UDP preamble. /Call E133::UnpackRoot with llrp_data to
-/// start parsing the packet.
+/* ILLRPSocketProxy_Notify messages */
+// llrp_data will point to the buffer data immediately after the UDP
+// preamble. /packet_data will point to the beginning of the packet. This
+// is the pointer you should call DeletePacket() on when finished.
+// /data_length will be the size of the buffer memory BELOW the UDP
+// preamble. /packet_length will be the size of the whole packet,
+// INCLUDING the UDP preamble. /Call E133::UnpackRoot with llrp_data to
+// start parsing the packet.
 // void Broker::Received(const uint8_t* llrp_data, uint llrp_data_len,
 // uint8_t* packet_data, uint packet_len)
 //{
@@ -698,10 +566,10 @@ void Broker::PollConnections(const std::vector<int> &conn_handles, RdmnetPoll *p
 // llrpSocket_.DeletePacket(packet_data, packet_len);
 //}
 
-////This means that the target reading socket has gone bad/closed. Call
-/// Shutdown() on the LLRPSocket to make sure /that the bad socket is
-/// destroyed. From there you can call Startup() again to recover with new
-/// sockets.
+// This means that the target reading socket has gone bad/closed. Call
+// Shutdown() on the LLRPSocket to make sure /that the bad socket is
+// destroyed. From there you can call Startup() again to recover with new
+// sockets.
 // void Broker::TargetReadSocketBad()
 //{
 //  if log_)
@@ -713,10 +581,10 @@ void Broker::PollConnections(const std::vector<int> &conn_handles, RdmnetPoll *p
 // llrpSocket_.Shutdown();
 //}
 
-////This means that the target writing socket has gone bad/closed. Call
-/// Shutdown() on the LLRPSocket to make sure /that the bad socket is
-/// destroyed. From there you can call Startup() again to recover with new
-/// sockets.
+// This means that the target writing socket has gone bad/closed. Call
+// Shutdown() on the LLRPSocket to make sure /that the bad socket is
+// destroyed. From there you can call Startup() again to recover with new
+// sockets.
 // void Broker::TargetWriteSocketBad()
 //{
 //  if log_)
@@ -728,11 +596,11 @@ void Broker::PollConnections(const std::vector<int> &conn_handles, RdmnetPoll *p
 // llrpSocket_.Shutdown();
 //}
 
-////This means that the  reading socket has gone bad/closed. Call
-/// Shutdown()
-/// on
-/// the LLRPSocket to make sure /that the bad socket is destroyed. From
-/// there you can call Startup() again to recover with new sockets.
+// This means that the  reading socket has gone bad/closed. Call
+// Shutdown()
+// on
+// the LLRPSocket to make sure /that the bad socket is destroyed. From
+// there you can call Startup() again to recover with new sockets.
 // void Broker::ControllerReadSocketBad()
 //{
 //  if log_)
@@ -744,10 +612,10 @@ void Broker::PollConnections(const std::vector<int> &conn_handles, RdmnetPoll *p
 // llrpSocket_.Shutdown();
 //}
 
-////This means that the controller writing socket has gone bad/closed. Call
-/// Shutdown() on the LLRPSocket to make sure /that the bad socket is
-/// destroyed. From there you can call Startup() again to recover with new
-/// sockets.
+// This means that the controller writing socket has gone bad/closed. Call
+// Shutdown() on the LLRPSocket to make sure /that the bad socket is
+// destroyed. From there you can call Startup() again to recover with new
+// sockets.
 // void Broker::ControllerWriteSocketBad()
 //{
 //  if log_)
@@ -1427,52 +1295,35 @@ void Broker::RemoveConnections(const std::vector<int> &connections)
     SendClientsRemoved(entries[0].client_protocol, entries);
 }
 
-// Called when the broker has successfully registered. If there is some
-// naming conflict, you may later get the BrokerFound notification. If some
-// other service is already at that name, the mdns library may change it,
-// rather than returning a BrokerRegisterError. Therefore, the new service
-// name is passed back.
-void Broker::BrokerRegistered(const BrokerDiscInfo *info_given, const char *assigned_service_name, void *context)
+void Broker::BrokerRegistered(const BrokerDiscInfo &broker_info, const std::string &assigned_service_name)
 {
-  Broker *broker = reinterpret_cast<Broker *>(context);
-  if (context && broker->GetLog())
-    broker->GetLog()->Log(LWPA_LOG_INFO, "Broker \"%s\" (now named \"%s\") successfully registered at scope \"%s\"",
-                          info_given->service_name, assigned_service_name, info_given->scope);
+  log_->Log(LWPA_LOG_INFO, "Broker \"%s\" (now named \"%s\") successfully registered at scope \"%s\"",
+            broker_info.service_name, assigned_service_name.c_str(), broker_info.scope);
 }
 
-// Called if the BrokerRegistration failed.  The platform-specific error
-// is
-// given for logging/debugging.
-void Broker::BrokerRegisterError(const BrokerDiscInfo *info_given, int platform_specific_error, void *context)
+void Broker::BrokerRegisterError(const BrokerDiscInfo &broker_info, int platform_specific_error)
 {
-  Broker *broker = reinterpret_cast<Broker *>(context);
-  if (context && broker->GetLog())
-    broker->GetLog()->Log(LWPA_LOG_INFO, "Broker \"%s\" register error %d at scope \"%s\"", info_given->service_name,
-                          platform_specific_error, info_given->scope);
+  log_->Log(LWPA_LOG_ERR, "Broker \"%s\" register error %d at scope \"%s\"", broker_info.service_name,
+            platform_specific_error, broker_info.scope);
 }
 
-// Called whenever a broker was found. As this could be called multiple
-// times for the same service (e.g. the ip address changes or more are
-// discovered), you should always check the service_name field.  If you
-// find more one broker for the scope, the user should be notified of an
-// error!
-void Broker::BrokerFound(const char *scope, const BrokerDiscInfo *broker_found, void *context)
+void Broker::OtherBrokerFound(const BrokerDiscInfo &broker_info)
 {
   std::string addrs;
-  for (unsigned int i = 0; i < broker_found->listen_addrs_count; i++)
+  for (unsigned int i = 0; i < broker_info.listen_addrs_count; i++)
   {
     // large enough to fit a uin32_t plus a null terminator
     char num_as_char_arr[11];
-    if (lwpaip_is_v4(&broker_found->listen_addrs[i].ip))
+    if (lwpaip_is_v4(&broker_info.listen_addrs[i].ip))
     {
-      sprintf(num_as_char_arr, "%d", lwpaip_v4_address(&broker_found->listen_addrs[i].ip));
+      sprintf(num_as_char_arr, "%d", lwpaip_v4_address(&broker_info.listen_addrs[i].ip));
       addrs.append(num_as_char_arr);
     }
-    else if (lwpaip_is_v6(&broker_found->listen_addrs[i].ip))
+    else if (lwpaip_is_v6(&broker_info.listen_addrs[i].ip))
     {
       for (int a = 0; a < 16; a++)
       {
-        sprintf(num_as_char_arr, "%02X", lwpaip_v6_address(&broker_found->listen_addrs[i].ip)[a]);
+        sprintf(num_as_char_arr, "%02X", lwpaip_v6_address(&broker_info.listen_addrs[i].ip)[a]);
         addrs.append(num_as_char_arr);
         if (a % 2 == 1 && a != 15)
           addrs.append(":");
@@ -1483,44 +1334,20 @@ void Broker::BrokerFound(const char *scope, const BrokerDiscInfo *broker_found, 
       addrs.append("LWPA_IP_INVALID");
     }
 
-    if (i + 1 < broker_found->listen_addrs_count)
+    if (i + 1 < broker_info.listen_addrs_count)
       addrs.append(", ");
   }
 
-  Broker *broker = reinterpret_cast<Broker *>(context);
-  if (context && broker->GetLog())
-    broker->GetLog()->Log(LWPA_LOG_INFO, "Broker \"%s\", ip[%s] found at same scope(\"%s\") as this broker.",
-                          broker_found->service_name, addrs.c_str(), scope);
+  log_->Log(LWPA_LOG_WARNING, "Broker \"%s\", ip[%s] found at same scope(\"%s\") as this broker.",
+            broker_info.service_name, addrs.c_str(), broker_info.scope);
 }
 
-// Called whenever a broker went away.  The name corresponds to the
-// service_name field given in BrokerFound.
-void Broker::BrokerRemoved(const char *broker_service_name, void *context)
+void Broker::OtherBrokerLost(const std::string &service_name)
 {
-  Broker *broker = reinterpret_cast<Broker *>(context);
-  if (context && broker->GetLog())
-    broker->GetLog()->Log(LWPA_LOG_INFO, "Broker %s left", broker_service_name);
-}
-
-// Called when the query had a platform-specific error. Monitoring will
-// attempt to continue.
-void Broker::ScopeMonitorError(const ScopeMonitorInfo *info, int platform_specific_error, void *context)
-{
-  Broker *broker = reinterpret_cast<Broker *>(context);
-  if (context && broker->GetLog())
-    broker->GetLog()->Log(LWPA_LOG_INFO, "ScopeMonitorError %d for scope %s", platform_specific_error, info->scope);
+  log_->Log(LWPA_LOG_WARNING, "Broker %s left", service_name.c_str());
 }
 
 BrokerLog *Broker::GetLog()
 {
   return log_;
-}
-
-void Broker::SetCallbackFunctions(RdmnetDiscCallbacks *callbacks)
-{
-  callbacks->broker_found = &BrokerFound;
-  callbacks->broker_lost = &BrokerRemoved;
-  callbacks->scope_monitor_error = &ScopeMonitorError;
-  callbacks->broker_registered = &BrokerRegistered;
-  callbacks->broker_register_error = &BrokerRegisterError;
 }

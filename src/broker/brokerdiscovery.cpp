@@ -26,22 +26,16 @@
 ******************************************************************************/
 #include "broker/discovery.h"
 
-static BrokerDiscoveryManager *g_instance;
-
-/*********************** Private function prototypes *************************/
-
-static void disccb_broker_found(const char *scope, const BrokerDiscInfo *broker_info);
-static void disccb_broker_lost(const char *service_name);
-static void disccb_scope_monitor_error(const ScopeMonitorInfo *scope_info, int platform_error);
-static void disccb_broker_registered(const BrokerDiscInfo *broker_info, const char *assigned_service_name);
-static void disccb_broker_register_error(const BrokerDiscInfo *broker_info, int platform_error);
+/* Suppress strncpy() warning on Windows/MSVC. */
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
 
 /*************************** Function definitions ****************************/
 
 lwpa_error_t BrokerDiscoveryManager::InitLibrary()
 {
-  RdmnetDiscCallbacks callbacks = {disccb_broker_found, disccb_broker_lost, disccb_scope_monitor_error,
-                                   disccb_broker_registered, disccb_broker_register_error};
+  RdmnetDiscCallbacks callbacks = {BrokerFound, BrokerLost, ScopeMonitorError, BrokerRegistered, BrokerRegisterError};
 
   return rdmnetdisc_init(&callbacks);
 }
@@ -51,18 +45,78 @@ void BrokerDiscoveryManager::DeinitLibrary()
   rdmnetdisc_deinit();
 }
 
-BrokerDiscoveryManager::BrokerDiscoveryManager()
+void BrokerDiscoveryManager::LibraryTick()
 {
-  // TODO BIG HACK, waiting on the context pointers in the discovery library
-  g_instance = this;
+  rdmnetdisc_tick();
+}
+
+BrokerDiscoveryManager::BrokerDiscoveryManager(IBrokerDiscoveryManager_Notify *notify) : notify_(notify)
+{
 }
 
 BrokerDiscoveryManager::~BrokerDiscoveryManager()
 {
-  // TODO BIG HACK, waiting on the context pointers in the discovery library
-  g_instance = nullptr;
 }
 
-lwpa_error_t BrokerDiscoveryManager::RegisterBroker(const BrokerDiscoveryAttributes &disc_attributes)
+lwpa_error_t BrokerDiscoveryManager::RegisterBroker(const BrokerDiscoveryAttributes &disc_attributes,
+                                                    const LwpaCid &local_cid,
+                                                    const std::vector<LwpaIpAddr> &listen_addrs, uint16_t listen_port)
 {
+  // Start with the default information.
+  BrokerDiscInfo info;
+  fill_default_broker_info(&info);
+
+  info.cid = local_cid;
+  for (size_t i = 0; i < listen_addrs.size(); i++)
+  {
+    // TODO: make sure lwpa_sockaddr is what we want on the library's side of things
+    info.listen_addrs[i].ip = listen_addrs[i];
+  }
+  info.listen_addrs_count = listen_addrs.size();
+  strncpy(info.manufacturer, disc_attributes.dns_manufacturer.c_str(), E133_MANUFACTURER_STRING_PADDED_LENGTH);
+  strncpy(info.model, disc_attributes.dns_model.c_str(), E133_MODEL_STRING_PADDED_LENGTH);
+  info.port = listen_port;
+  strncpy(info.scope, disc_attributes.scope.c_str(), E133_SCOPE_STRING_PADDED_LENGTH);
+  strncpy(info.service_name, disc_attributes.dns_service_instance_name.c_str(), E133_SERVICE_NAME_STRING_PADDED_LENGTH);
+
+  return rdmnetdisc_registerbroker(&info, notify_);
+}
+
+void BrokerDiscoveryManager::UnregisterBroker()
+{
+  rdmnetdisc_unregisterbroker();
+}
+
+void BrokerDiscoveryManager::BrokerFound(const char * /*scope*/, const BrokerDiscInfo *broker_info, void *context)
+{
+  IBrokerDiscoveryManager_Notify *notify = static_cast<IBrokerDiscoveryManager_Notify *>(context);
+  if (notify && broker_info)
+    notify->OtherBrokerFound(*broker_info);
+}
+
+void BrokerDiscoveryManager::BrokerLost(const char *service_name, void *context)
+{
+  IBrokerDiscoveryManager_Notify *notify = static_cast<IBrokerDiscoveryManager_Notify *>(context);
+  if (notify)
+    notify->OtherBrokerLost(service_name);
+}
+
+void BrokerDiscoveryManager::ScopeMonitorError(const ScopeMonitorInfo * /*scope_info*/, int /*platform_error*/,
+                                               void * /*context*/)
+{
+}
+
+void BrokerDiscoveryManager::BrokerRegistered(const BrokerDiscInfo *broker_info, const char *assigned_service_name,
+                                              void *context)
+{
+  IBrokerDiscoveryManager_Notify *notify = static_cast<IBrokerDiscoveryManager_Notify *>(context);
+  if (notify && broker_info)
+    notify->BrokerRegistered(*broker_info, assigned_service_name);
+}
+
+void BrokerDiscoveryManager::BrokerRegisterError(const BrokerDiscInfo *broker_info, int platform_error, void *context)
+{
+  IBrokerDiscoveryManager_Notify *notify = static_cast<IBrokerDiscoveryManager_Notify *>(context);
+  if (notify && broker_info)
+    notify->BrokerRegisterError(*broker_info, platform_error);
 }

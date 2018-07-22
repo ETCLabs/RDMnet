@@ -62,6 +62,7 @@ typedef struct DiscoveryState
   BrokerDiscInfo info_to_register;
 
   enum BROKER_REGISTRATION_STATE broker_reg_state;
+  void *broker_reg_context;
 
   /*The handle used for lwpa_poll()*/
   lwpa_socket_t dns_reg_handle;
@@ -293,8 +294,8 @@ void get_registration_string(const char *srv_type, const char *scope, char *reg_
 bool broker_info_is_valid(const BrokerDiscInfo *info)
 {
   /*make sure none of the broker info's fields are empty*/
-  return !(info->cid.data == 0 || strlen(info->service_name) == 0 || strlen(info->domain) == 0 ||
-           strlen(info->scope) == 0 || strlen(info->model) == 0 || strlen(info->manufacturer) == 0);
+  return !(info->cid.data == 0 || strlen(info->service_name) == 0 || strlen(info->scope) == 0 ||
+           strlen(info->model) == 0 || strlen(info->manufacturer) == 0);
 }
 
 bool create_socket_handle_from_raw_int(int raw_sock, lwpa_socket_t *new_handle)
@@ -611,7 +612,6 @@ void DNSSD_API process_DNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlag
     /*Start the next part of the resolution*/
     BrokerDiscInfo info = {0};
     strncpy(info.service_name, serviceName, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
-    strncpy(info.domain, replyDomain, E133_DOMAIN_STRING_PADDED_LENGTH);
 
     /*In case we have an error, this will != 0*/
     int monitor_error = 0;
@@ -707,7 +707,6 @@ void fill_default_broker_info(BrokerDiscInfo *broker_info)
   broker_info->port = 0;
   memset(broker_info->listen_addrs, 0, sizeof(LwpaSockaddr) * ARRAY_SIZE_DEFAULT);
   broker_info->listen_addrs_count = 0;
-  strncpy(broker_info->domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
   strncpy(broker_info->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH);
   memset(broker_info->model, 0, E133_MODEL_STRING_PADDED_LENGTH);
   memset(broker_info->manufacturer, 0, E133_MANUFACTURER_STRING_PADDED_LENGTH);
@@ -769,14 +768,15 @@ void rdmnetdisc_stopmonitoring_all_scopes()
 
 lwpa_error_t rdmnetdisc_registerbroker(const BrokerDiscInfo *broker_info, void *context)
 {
-  (void)context;
-
   if (disc_state.broker_reg_state != kBrokerNotRegistered || disc_state.dns_reg_ref != NULL ||
       !broker_info_is_valid(broker_info))
+  {
     return false;
+  }
 
   disc_state.info_to_register = *broker_info;
   disc_state.broker_reg_state = kBrokerInfoSet;
+  disc_state.broker_reg_context = context;
 
   return LWPA_OK;
 }
@@ -794,7 +794,7 @@ void rdmnetdisc_unregisterbroker()
     /*Since the broker only cares about scopes while it is running, shut down
      * any outstanding queries for that scope.*/
     ScopeMonitorInfo info = {0};
-    strncpy(info.domain, disc_state.info_to_register.domain, E133_DOMAIN_STRING_PADDED_LENGTH);
+    strncpy(info.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
     strncpy(info.scope, disc_state.info_to_register.scope, E133_SCOPE_STRING_PADDED_LENGTH);
     rdmnetdisc_stopmonitoring(&info);
 
@@ -863,9 +863,9 @@ DNSServiceErrorType send_registration(const BrokerDiscInfo *info, void *context)
     /*TODO: If we want to register a device on a particular interface instead
      * of all interfaces, we'll have to have multiple reg_refs and do a
      * DNSServiceRegister on each interface. Not ideal.*/
-    result = DNSServiceRegister(&disc_state.dns_reg_ref, 0, 0, info->service_name, reg_str, info->domain, NULL,
-                                net_port, TXTRecordGetLength(&txt), TXTRecordGetBytesPtr(&txt),
-                                process_DNSServiceRegisterReply, context);
+    result = DNSServiceRegister(&disc_state.dns_reg_ref, 0, 0, info->service_name, reg_str, NULL, NULL, net_port,
+                                TXTRecordGetLength(&txt), TXTRecordGetBytesPtr(&txt), process_DNSServiceRegisterReply,
+                                context);
 
     if (result == kDNSServiceErr_NoError)
     {
@@ -881,7 +881,7 @@ DNSServiceErrorType send_registration(const BrokerDiscInfo *info, void *context)
   return result;
 }
 
-void rdmnetdisc_tick(void *context)
+void rdmnetdisc_tick()
 {
   switch (disc_state.broker_reg_state)
   {
@@ -890,25 +890,25 @@ void rdmnetdisc_tick(void *context)
       /*The info was set.  Start the registration and monitoring*/
       disc_state.broker_reg_state = kBrokeRegisterStarted;
 
-      DNSServiceErrorType reg_result = send_registration(&disc_state.info_to_register, context);
+      DNSServiceErrorType reg_result = send_registration(&disc_state.info_to_register, disc_state.broker_reg_context);
 
       if (reg_result != kDNSServiceErr_NoError)
       {
         disc_state.broker_reg_state = kBrokerNotRegistered;
         if (disc_state.callbacks.broker_register_error != NULL)
         {
-          disc_state.callbacks.broker_register_error(&disc_state.info_to_register, reg_result, context);
+          disc_state.callbacks.broker_register_error(&disc_state.info_to_register, reg_result, disc_state.broker_reg_context);
         }
       }
 
       int mon_error = 0;
       ScopeMonitorInfo info;
       strncpy(info.scope, disc_state.info_to_register.scope, E133_SCOPE_STRING_PADDED_LENGTH);
-      strncpy(info.domain, disc_state.info_to_register.domain, E133_DOMAIN_STRING_PADDED_LENGTH);
-      if (rdmnetdisc_startmonitoring(&info, &mon_error, context) != LWPA_OK)
+      strncpy(info.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
+      if (rdmnetdisc_startmonitoring(&info, &mon_error, disc_state.broker_reg_context) != LWPA_OK)
       {
         if (disc_state.callbacks.scope_monitor_error != NULL)
-          disc_state.callbacks.scope_monitor_error(&info, mon_error, context);
+          disc_state.callbacks.scope_monitor_error(&info, mon_error, disc_state.broker_reg_context);
       }
     }
     break;
@@ -956,8 +956,7 @@ void rdmnetdisc_tick(void *context)
 
       if (process_error != kDNSServiceErr_NoError)
       {
-        /*For now, do nothing and keep processing.  We may want to kill the
-         * socket later.*/
+        /*For now, do nothing and keep processing.  We may want to kill the socket later.*/
       }
     }
   }

@@ -59,38 +59,38 @@
  *  @{
  */
 
-// These are the settings the broker needs to run.
+/// A group of settings for Broker operation.
 struct BrokerSettings
 {
-  // Identification
-  LwpaCid cid;
-  LwpaUid uid;
+  LwpaCid cid;  ///< The Broker's CID.
+  LwpaUid uid;  ///< The Broker's UID.
 
   BrokerDiscoveryAttributes disc_attributes;
 
-  // The maximum number of client connections supported.  0 means infinite.
+  /// The maximum number of client connections supported. 0 means infinite.
   unsigned int max_connections;
 
-  // The maximum number of controllers allowed.  0 means infinite
+  /// The maximum number of controllers allowed. 0 means infinite.
   unsigned int max_controllers;
 
-  // The maximum number of queued messages per controller.  0 means infinite
+  /// The maximum number of queued messages per controller. 0 means infinite.
   unsigned int max_controller_messages;
 
-  // The maximum number of devices allowed.  0 means infinite
+  /// The maximum number of devices allowed.  0 means infinite.
   unsigned int max_devices;
 
+  /// The maximum number of queued messages per device. 0 means infinite.
   unsigned int max_device_messages;
 
-  // If you reach the number of max connections, This number of tcp-level
-  // connections are still supported to reject the connection request.
+  /// If you reach the number of max connections, this number of tcp-level
+  /// connections are still supported to reject the connection request.
   unsigned int max_reject_connections;
 
-  /*THESE ARE FOR DEBUGGING PURPOSES ONLY.  When not debugging, use
-    the defaults provided by the constructor. */
+  // THESE ARE FOR DEBUGGING PURPOSES ONLY. When not debugging, use the defaults
+  // provided by the constructor.
 
-  // Each read thread can support many sockets, up to the maximum allowed by
-  // your socket
+  /// Each read thread can support many sockets, up to the maximum allowed by
+  /// your platform's socket implementation.
   unsigned int max_socket_per_read_thread;
 
   BrokerSettings()
@@ -105,15 +105,24 @@ struct BrokerSettings
   }
 };
 
-// The callback interface for Broker notifications
+/// A callback interface for notifications from the Broker.
 class IBrokerNotify
 {
 public:
+  /// The Scope of the Broker has changed via RDMnet configuration. The Broker should be restarted.
   virtual void ScopeChanged(const std::string &new_scope) = 0;
 };
 
-/*! \brief Defines an instance of RDMnet %Broker functionality. */
-class Broker : public IListenThread_Notify, public IConnPollThread_Notify, public IClientServiceThread_Notify
+/// \brief Defines an instance of RDMnet %Broker functionality.
+///
+/// After instantiatiation, call Startup() to start Broker services on a set of network interfaces.
+/// Starts some threads (defined in broker/threads.h) to handle messages and connections.
+/// Periodically call Tick() to handle some cleanup and housekeeping.
+/// Call Shutdown() at exit, when Broker services are no longer needed, or when a setting has changed.
+class Broker : public IListenThread_Notify,
+               public IConnPollThread_Notify,
+               public IClientServiceThread_Notify,
+               public IBrokerDiscoveryManager_Notify
 {
 public:
   Broker(BrokerLog *log, IBrokerNotify *notify);
@@ -147,13 +156,14 @@ protected:
   // The Broker's RDM responder
   BrokerResponder responder_;
 
+  ClientServiceThread service_thread_;
+  BrokerDiscoveryManager disc_;
+
   // LLRP data
   // LLRPSocket m_llrpSocket;
   // LLRPSocketProxy m_llrpSocketProxy;
   // IWinAsyncSocketServ *m_serv;
   // LLRPMessageProcessor m_llrp_msg_proc;
-
-  // IRDMnet_MDNS* m_mdns;
 
   // If you have a maximum number of connections, we may be stopping and
   // starting the listen threads.
@@ -180,18 +190,10 @@ protected:
   virtual bool ServiceClients() override;
 
   // IBrokerDiscoveryManager_Notify messages
-  // virtual void BrokerRegistered(const mdns_broker_info &info_given,
-  //                             const std::string & assigned_service_name)
-  //                             override;
-  // virtual void BrokerRegisterError(const mdns_broker_info &info_given,
-  //                                 int platform_specific_error) override;
-  // virtual void BrokerFound(const std::string &     scope,
-  //                         const mdns_broker_info &broker_found) override;
-  // virtual void BrokerRemoved(const std::string &broker_service_name)
-  // override; virtual void ScopeMonitorError(const mdns_monitor_info &info,
-  //                               int platform_specific_error) override;
-
-  ClientServiceThread service_thread_;
+  virtual void BrokerRegistered(const BrokerDiscInfo &broker_info, const std::string &assigned_service_name) override;
+  virtual void OtherBrokerFound(const BrokerDiscInfo &broker_info) override;
+  virtual void OtherBrokerLost(const std::string &service_name) override;
+  virtual void BrokerRegisterError(const BrokerDiscInfo &broker_info, int platform_error) override;
 
   // The poll operation has a maximum size, so we need a pool of threads to do
   // the poll operation.
@@ -208,11 +210,6 @@ protected:
   // clients themselves.
   mutable lwpa_rwlock_t client_lock_;
 
-  bool ClientReadLock() const { return lwpa_rwlock_readlock(&client_lock_, LWPA_WAIT_FOREVER); }
-  void ClientReadUnlock() const { lwpa_rwlock_readunlock(&client_lock_); }
-  bool ClientWriteLock() const { return lwpa_rwlock_writelock(&client_lock_, LWPA_WAIT_FOREVER); }
-  void ClientWriteUnlock() const { lwpa_rwlock_writeunlock(&client_lock_); }
-
   bool UIDToHandle(const LwpaUid &uid, int &conn_handle) const;
 
   void GetConnSnapshot(std::vector<int> &conns, bool include_devices, bool include_controllers, bool include_unknown,
@@ -220,12 +217,6 @@ protected:
 
   // The state data for each controller, indexed by its connection handle.
   std::map<int, std::shared_ptr<RPTController>> controllers_;
-
-  RPTController *GetControllerForWriting(int conn) const;
-  void ReleaseControllerFromWriting(RPTController *pdata) const;
-  const RPTController *GetControllerForReading(int conn) const;
-  void ReleaseControllerFromReading(const RPTController *pdata) const;
-
   // The set of devices, indexed by the connection handle.
   std::map<int, std::shared_ptr<RPTDevice>> devices_;
 
@@ -256,17 +247,6 @@ protected:
   void SendClientsRemoved(client_protocol_t client_prot, std::vector<ClientEntryData> &entries);
   void SendStatus(RPTController *controller, const RptHeader &header, rpt_status_code_t status_code,
                   const std::string &status_str = std::string());
-
-  // broker callback functions
-  static void BrokerRegistered(const BrokerDiscInfo *info_given, const char *assigned_service_name, void *context);
-  static void BrokerRegisterError(const BrokerDiscInfo *info_given, int platform_specific_error, void *context);
-  static void BrokerFound(const char *scope, const BrokerDiscInfo *broker_found, void *context);
-  static void BrokerRemoved(const char *broker_service_name, void *context);
-  static void ScopeMonitorError(const ScopeMonitorInfo *info, int platform_specific_error, void *context);
-
-  void SetCallbackFunctions(RdmnetDiscCallbacks *callbacks);
-
-  RdmnetDiscCallbacks callbacks_;
 };
 
 /*!@}*/
