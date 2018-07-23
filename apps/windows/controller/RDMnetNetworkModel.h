@@ -308,8 +308,6 @@ protected:
   PropertyItem *createGroupingItem(RDMnetNetworkItem *parent, const QString & groupName);
   QString getChildPathName(const QString &superPathName);
 
-  PropertyValueItem *getSiblingValueItem(PropertyValueItem *item, uint16_t pid, int32_t index);
-
 private:
   RDMnetNetworkModel();
 };

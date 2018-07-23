@@ -109,35 +109,51 @@ static void broker_register_error(const BrokerDiscInfo *broker_info, int platfor
 static void unpackAndParseIPAddress(const uint8_t *addrData, lwpa_iptype_t addrType, char *strBufOut, size_t strBufLen)
 {
   LwpaIpAddr ip;
+  bool zeroedOut = false;
 
   ip.type = addrType;
 
   if (addrType == LWPA_IPV4)
   {
     ip.addr.v4 = upack_32b(addrData);
+    zeroedOut = (ip.addr.v4 == 0);
   }
   else if (addrType == LWPA_IPV6)
   {
     memcpy(ip.addr.v6, addrData, IPV6_BYTES);
+
+    zeroedOut = true;
+    for (int i = 0; (i < IPV6_BYTES) && zeroedOut; ++i)
+    {
+      zeroedOut = zeroedOut && (ip.addr.v6[i] == 0);
+    }
   }
 
-  lwpa_inet_ntop(&ip, strBufOut, strBufLen);
+  if (!zeroedOut)
+  {
+    lwpa_inet_ntop(&ip, strBufOut, strBufLen);
+  }
 }
 
-static void parseAndPackIPAddress(lwpa_iptype_t addrType, const char *ipString, size_t ipStringLen, uint8_t *outBuf)
+static lwpa_error_t parseAndPackIPAddress(lwpa_iptype_t addrType, const char *ipString, size_t ipStringLen, uint8_t *outBuf)
 {
   LwpaIpAddr ip;
 
-  lwpa_inet_pton(addrType, ipString, &ip);
+  lwpa_error_t result = lwpa_inet_pton(addrType, ipString, &ip);
 
-  if (addrType == LWPA_IPV4)
+  if (result == LWPA_OK)
   {
-    pack_32l(outBuf, ip.addr.v4);
+    if (addrType == LWPA_IPV4)
+    {
+      pack_32l(outBuf, ip.addr.v4);
+    }
+    else if (addrType == LWPA_IPV6)
+    {
+      memcpy(outBuf, ip.addr.v6, IPV6_BYTES);
+    }
   }
-  else if (addrType == LWPA_IPV6)
-  {
-    memcpy(outBuf, ip.addr.v6, IPV6_BYTES);
-  }
+
+  return result;
 }
 
 MyLog::MyLog(const std::string &file_name)
@@ -1022,9 +1038,6 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   PropertyValueItem::addPIDPropertyDisplayName(
       E133_BROKER_STATIC_CONFIG_IPV4,
       QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv4 Address (Static Configuration)")));
-  PropertyValueItem::addPIDPropertyDisplayName(
-      E133_BROKER_STATIC_CONFIG_IPV4,
-      QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Port Number (Static Configuration)")));
   PropertyValueItem::setPIDMaxBufferSize(E133_BROKER_STATIC_CONFIG_IPV4, 6);
 
   PropertyValueItem::setPIDInfo(E133_BROKER_STATIC_CONFIG_IPV6, true, false, QVariant::Type::Invalid, Qt::EditRole,
@@ -1040,11 +1053,7 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
 
   PropertyValueItem::setPIDInfo(E133_TCP_COMMS_STATUS, true, false, QVariant::Type::Invalid, Qt::EditRole, kDevice);
   PropertyValueItem::addPIDPropertyDisplayName(
-      E133_TCP_COMMS_STATUS, QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv4 Address (Current)")));
-  PropertyValueItem::addPIDPropertyDisplayName(
-      E133_TCP_COMMS_STATUS, QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv6 Address (Current)")));
-  PropertyValueItem::addPIDPropertyDisplayName(E133_TCP_COMMS_STATUS,
-                                               QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Port Number (Current)")));
+      E133_TCP_COMMS_STATUS, QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IP Address (Current)")));
   PropertyValueItem::addPIDPropertyDisplayName(E133_TCP_COMMS_STATUS,
                                                QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Unhealthy TCP Events")));
 
@@ -1241,8 +1250,12 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
             QString qstr;
             std::string stdstr;
             uint8_t *packPtr;
-            PropertyValueItem *ipValueItem;
-            PropertyValueItem *portValueItem;
+
+            //IP static config variables
+            char ipStrBuffer[64];
+            unsigned int portNumber;
+
+            memset(ipStrBuffer, '\0', 64);
 
             setCmd.dest_uid.manu = parentItem->getMan();
             setCmd.dest_uid.id = parentItem->getDev();
@@ -1297,33 +1310,60 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
                 switch (pid)
                 {
                   case E133_BROKER_STATIC_CONFIG_IPV4:
-                    ipValueItem = getSiblingValueItem(propertyValueItem, E133_BROKER_STATIC_CONFIG_IPV4, 0);
-                    portValueItem = getSiblingValueItem(propertyValueItem, E133_BROKER_STATIC_CONFIG_IPV4, 1);
-
-                    if (propertyValueItem == ipValueItem)  // IP was changed - value contains IP
+                    if (sscanf(value.toString().toLocal8Bit().constData(), "%63[1234567890.]:%u", ipStrBuffer, &portNumber) < 2)
                     {
-                      parseAndPackIPAddress(LWPA_IPV4, value.toString().toLatin1().constData(),
-                                            value.toString().length(), packPtr);
-                      pack_16b(packPtr + 4, static_cast<uint16_t>(portValueItem->data().toInt()));
+                      // Incorrect format entered.
+                      updateValue = false;
                     }
-                    else  // Port was changed - value contains port
+                    else if (parseAndPackIPAddress(LWPA_IPV4, ipStrBuffer, strlen(ipStrBuffer), packPtr) != LWPA_OK)
                     {
-                      parseAndPackIPAddress(LWPA_IPV4, ipValueItem->data().toString().toLatin1().constData(),
-                                            ipValueItem->data().toString().length(), packPtr);
-                      pack_16b(packPtr + 4, static_cast<uint16_t>(value.toInt()));
+                      updateValue = false;
+                    }
+                    else if (portNumber > 65535)
+                    {
+                      updateValue = false;
+                    }
+                    else
+                    {
+                      pack_16b(packPtr + 4, static_cast<uint16_t>(portNumber));
                     }
 
                     break;
+
+                  case E133_BROKER_STATIC_CONFIG_IPV6:
+                    if (sscanf(value.toString().toLocal8Bit().constData(), "[%63[1234567890:abcdeABCDE]]:%u", ipStrBuffer, &portNumber) < 2)
+                    {
+                      // Incorrect format entered.
+                      updateValue = false;
+                    }
+                    else if (parseAndPackIPAddress(LWPA_IPV6, ipStrBuffer, strlen(ipStrBuffer), packPtr) != LWPA_OK)
+                    {
+                      updateValue = false;
+                    }
+                    else if (portNumber > 65535)
+                    {
+                      updateValue = false;
+                    }
+                    else
+                    {
+                      pack_16b(packPtr + 4, static_cast<uint16_t>(portNumber));
+                    }
+
+                    break;
+
                   default:
                     return false;
                 }
             }
 
-            SendRDMCommand(setCmd);
-
-            if (pid == E120_DMX_PERSONALITY)
+            if (updateValue)
             {
-              sendGetCommand(E120_DEVICE_INFO, parentItem->getMan(), parentItem->getDev());
+              SendRDMCommand(setCmd);
+
+              if (pid == E120_DMX_PERSONALITY)
+              {
+                sendGetCommand(E120_DEVICE_INFO, parentItem->getMan(), parentItem->getDev());
+              }
             }
           }
         }
@@ -2419,10 +2459,19 @@ void RDMnetNetworkModel::brokerStaticConfigIPv4(const char *addrString, uint16_t
 
   if (client != NULL)
   {
-    emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV4,
-                         PropertyValueItem::pidPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV4, 0), addrString);
-    emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV4,
-                         PropertyValueItem::pidPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV4, 1), port);
+    if ((strlen(addrString) == 0) && (port == 0))
+    {
+      // Empty data, empty property
+      emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV4,
+                           PropertyValueItem::pidPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV4, 0),
+                           QString(""));
+    }
+    else
+    {
+      emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV4,
+                           PropertyValueItem::pidPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV4, 0),
+                           QString("%0:%1").arg(addrString).arg(port));
+    }
   }
 }
 
@@ -2433,12 +2482,19 @@ void RDMnetNetworkModel::brokerStaticConfigIPv6(const char *addrString, uint16_t
 
   if (client != NULL)
   {
-    emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV6,
-                         PropertyValueItem::pidPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV6, 0), addrString);
-
-    // Use v4 version here to assume port should be handled the same and use the same property
-    emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV4,
-                         PropertyValueItem::pidPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV4, 1), port);
+    if ((strlen(addrString) == 0) && (port == 0))
+    {
+      // Empty data, empty property
+      emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV6,
+                           PropertyValueItem::pidPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV6, 0),
+                           QString(""));
+    }
+    else
+    {
+      emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV6,
+                           PropertyValueItem::pidPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV6, 0),
+                           QString("[%0]:%1").arg(addrString).arg(port));
+    }
   }
 }
 
@@ -2460,14 +2516,22 @@ void RDMnetNetworkModel::tcpCommsStatus(const char *scopeString, const char *v4A
 
   if (client != NULL)
   {
+    if (strlen(v4AddrString) == 0) // use v6
+    {
+      emit setPropertyData(client, E133_TCP_COMMS_STATUS,
+        PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 0), 
+                                                  QString("[%0]:%1").arg(v6AddrString).arg(port));
+    }
+    else // use v4
+    {
+
+      emit setPropertyData(client, E133_TCP_COMMS_STATUS,
+        PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 0), 
+                                                  QString("%0:%1").arg(v4AddrString).arg(port));
+    }
+
     emit setPropertyData(client, E133_TCP_COMMS_STATUS,
-                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 0), v4AddrString);
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS,
-                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 1), v6AddrString);
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS,
-                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 2), port);
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS,
-                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 3), unhealthyTCPEvents);
+                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 1), unhealthyTCPEvents);
   }
 }
 
@@ -2776,25 +2840,6 @@ QString RDMnetNetworkModel::getChildPathName(const QString &superPathName)
 
   return superPathName.mid(startPosition, superPathName.length() - startPosition);
   ;
-}
-
-PropertyValueItem *RDMnetNetworkModel::getSiblingValueItem(PropertyValueItem *item, uint16_t pid, int32_t index)
-{
-  PropertyItem *parent = dynamic_cast<PropertyItem *>(item->parent());
-  QString siblingShortName = getShortPropertyName(PropertyValueItem::pidPropertyDisplayName(pid, index));
-
-  if (parent)
-  {
-    for (auto item : parent->properties)
-    {
-      if ((item->text() == siblingShortName) && (item->getValueItem()->getPID() == pid))
-      {
-        return item->getValueItem();
-      }
-    }
-  }
-
-  return NULL;
 }
 
 RDMnetNetworkModel::RDMnetNetworkModel() : log_("RDMnetController.log")
