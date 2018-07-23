@@ -1634,7 +1634,7 @@ bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand &cmd)
   {
     header.source_uid = BrokerConnection::getLocalUID();
     header.source_endpoint_id = 0;
-    header.dest_uid = { 0, 0 };
+    header.dest_uid = rpt_dest_uid;
     header.dest_endpoint_id = dest_endpoint;
     header.seqnum = connectionToUse->sequencePreIncrement();
 
