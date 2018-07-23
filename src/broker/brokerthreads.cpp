@@ -119,14 +119,14 @@ void ListenThread::Stop()
 {
   if (!terminated_)
   {
-    terminated_ = true;
-    lwpa_thread_stop(&thread_handle_, 10000);
-
     if (listen_socket_ != LWPA_SOCKET_INVALID)
     {
       lwpa_close(listen_socket_);
       listen_socket_ = LWPA_SOCKET_INVALID;
     }
+
+    terminated_ = true;
+    lwpa_thread_stop(&thread_handle_, 10000);
   }
 }
 

@@ -63,6 +63,7 @@ typedef struct DiscoveryState
 
   enum BROKER_REGISTRATION_STATE broker_reg_state;
   void *broker_reg_context;
+  bool broker_reg_monitor_scope;
 
   /*The handle used for lwpa_poll()*/
   lwpa_socket_t dns_reg_handle;
@@ -766,7 +767,7 @@ void rdmnetdisc_stopmonitoring_all_scopes()
   disc_state.scopes.count = 0;
 }
 
-lwpa_error_t rdmnetdisc_registerbroker(const BrokerDiscInfo *broker_info, void *context)
+lwpa_error_t rdmnetdisc_registerbroker(const BrokerDiscInfo *broker_info, bool monitor_scope, void *context)
 {
   if (disc_state.broker_reg_state != kBrokerNotRegistered || disc_state.dns_reg_ref != NULL ||
       !broker_info_is_valid(broker_info))
@@ -777,11 +778,12 @@ lwpa_error_t rdmnetdisc_registerbroker(const BrokerDiscInfo *broker_info, void *
   disc_state.info_to_register = *broker_info;
   disc_state.broker_reg_state = kBrokerInfoSet;
   disc_state.broker_reg_context = context;
+  disc_state.broker_reg_monitor_scope = monitor_scope;
 
   return LWPA_OK;
 }
 
-void rdmnetdisc_unregisterbroker()
+void rdmnetdisc_unregisterbroker(bool stop_monitoring_scope)
 {
   if (disc_state.broker_reg_state != kBrokerNotRegistered)
   {
@@ -791,12 +793,15 @@ void rdmnetdisc_unregisterbroker()
       disc_state.dns_reg_ref = NULL;
     }
 
-    /*Since the broker only cares about scopes while it is running, shut down
-     * any outstanding queries for that scope.*/
-    ScopeMonitorInfo info = {0};
-    strncpy(info.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
-    strncpy(info.scope, disc_state.info_to_register.scope, E133_SCOPE_STRING_PADDED_LENGTH);
-    rdmnetdisc_stopmonitoring(&info);
+    if (stop_monitoring_scope)
+    {
+      /* Since the broker only cares about scopes while it is running, shut down
+       * any outstanding queries for that scope.*/
+      ScopeMonitorInfo info = {0};
+      strncpy(info.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
+      strncpy(info.scope, disc_state.info_to_register.scope, E133_SCOPE_STRING_PADDED_LENGTH);
+      rdmnetdisc_stopmonitoring(&info);
+    }
 
     /*Reset the state*/
     disc_state.broker_reg_state = kBrokerNotRegistered;
@@ -897,18 +902,22 @@ void rdmnetdisc_tick()
         disc_state.broker_reg_state = kBrokerNotRegistered;
         if (disc_state.callbacks.broker_register_error != NULL)
         {
-          disc_state.callbacks.broker_register_error(&disc_state.info_to_register, reg_result, disc_state.broker_reg_context);
+          disc_state.callbacks.broker_register_error(&disc_state.info_to_register, reg_result,
+                                                     disc_state.broker_reg_context);
         }
       }
 
-      int mon_error = 0;
-      ScopeMonitorInfo info;
-      strncpy(info.scope, disc_state.info_to_register.scope, E133_SCOPE_STRING_PADDED_LENGTH);
-      strncpy(info.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
-      if (rdmnetdisc_startmonitoring(&info, &mon_error, disc_state.broker_reg_context) != LWPA_OK)
+      if (disc_state.broker_reg_monitor_scope)
       {
-        if (disc_state.callbacks.scope_monitor_error != NULL)
-          disc_state.callbacks.scope_monitor_error(&info, mon_error, disc_state.broker_reg_context);
+        int mon_error = 0;
+        ScopeMonitorInfo info;
+        strncpy(info.scope, disc_state.info_to_register.scope, E133_SCOPE_STRING_PADDED_LENGTH);
+        strncpy(info.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
+        if (rdmnetdisc_startmonitoring(&info, &mon_error, disc_state.broker_reg_context) != LWPA_OK)
+        {
+          if (disc_state.callbacks.scope_monitor_error != NULL)
+            disc_state.callbacks.scope_monitor_error(&info, mon_error, disc_state.broker_reg_context);
+        }
       }
     }
     break;

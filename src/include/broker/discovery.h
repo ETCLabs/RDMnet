@@ -88,6 +88,8 @@ public:
   lwpa_error_t RegisterBroker(const BrokerDiscoveryAttributes &disc_attributes, const LwpaCid &local_cid,
                               const std::vector<LwpaIpAddr> &listen_addrs, uint16_t listen_port);
   void UnregisterBroker();
+  void Standby();
+  lwpa_error_t Resume();
 
 protected:
   static void BrokerFound(const char *scope, const BrokerDiscInfo *broker_info, void *context);
@@ -97,6 +99,8 @@ protected:
   static void BrokerRegisterError(const BrokerDiscInfo *broker_info, int platform_error, void *context);
 
   IBrokerDiscoveryManager_Notify *notify_;
+  BrokerDiscInfo cur_info_;
+  bool cur_info_valid_;
 };
 
 #endif  // _BROKER_DISCOVERY_H_

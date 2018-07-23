@@ -50,7 +50,8 @@ void BrokerDiscoveryManager::LibraryTick()
   rdmnetdisc_tick();
 }
 
-BrokerDiscoveryManager::BrokerDiscoveryManager(IBrokerDiscoveryManager_Notify *notify) : notify_(notify)
+BrokerDiscoveryManager::BrokerDiscoveryManager(IBrokerDiscoveryManager_Notify *notify)
+    : notify_(notify), cur_info_valid_(false)
 {
 }
 
@@ -63,28 +64,42 @@ lwpa_error_t BrokerDiscoveryManager::RegisterBroker(const BrokerDiscoveryAttribu
                                                     const std::vector<LwpaIpAddr> &listen_addrs, uint16_t listen_port)
 {
   // Start with the default information.
-  BrokerDiscInfo info;
-  fill_default_broker_info(&info);
+  fill_default_broker_info(&cur_info_);
 
-  info.cid = local_cid;
+  cur_info_.cid = local_cid;
   for (size_t i = 0; i < listen_addrs.size(); i++)
   {
     // TODO: make sure lwpa_sockaddr is what we want on the library's side of things
-    info.listen_addrs[i].ip = listen_addrs[i];
+    cur_info_.listen_addrs[i].ip = listen_addrs[i];
   }
-  info.listen_addrs_count = listen_addrs.size();
-  strncpy(info.manufacturer, disc_attributes.dns_manufacturer.c_str(), E133_MANUFACTURER_STRING_PADDED_LENGTH);
-  strncpy(info.model, disc_attributes.dns_model.c_str(), E133_MODEL_STRING_PADDED_LENGTH);
-  info.port = listen_port;
-  strncpy(info.scope, disc_attributes.scope.c_str(), E133_SCOPE_STRING_PADDED_LENGTH);
-  strncpy(info.service_name, disc_attributes.dns_service_instance_name.c_str(), E133_SERVICE_NAME_STRING_PADDED_LENGTH);
+  cur_info_.listen_addrs_count = listen_addrs.size();
+  strncpy(cur_info_.manufacturer, disc_attributes.dns_manufacturer.c_str(), E133_MANUFACTURER_STRING_PADDED_LENGTH);
+  strncpy(cur_info_.model, disc_attributes.dns_model.c_str(), E133_MODEL_STRING_PADDED_LENGTH);
+  cur_info_.port = listen_port;
+  strncpy(cur_info_.scope, disc_attributes.scope.c_str(), E133_SCOPE_STRING_PADDED_LENGTH);
+  strncpy(cur_info_.service_name, disc_attributes.dns_service_instance_name.c_str(),
+          E133_SERVICE_NAME_STRING_PADDED_LENGTH);
 
-  return rdmnetdisc_registerbroker(&info, notify_);
+  lwpa_error_t res = rdmnetdisc_registerbroker(&cur_info_, true, notify_);
+  if (res == LWPA_OK)
+    cur_info_valid_ = true;
+  return res;
 }
 
 void BrokerDiscoveryManager::UnregisterBroker()
 {
-  rdmnetdisc_unregisterbroker();
+  cur_info_valid_ = false;
+  rdmnetdisc_unregisterbroker(true);
+}
+
+void BrokerDiscoveryManager::Standby()
+{
+  rdmnetdisc_unregisterbroker(false);
+}
+
+lwpa_error_t BrokerDiscoveryManager::Resume()
+{
+  return rdmnetdisc_registerbroker(&cur_info_, false, notify_);
 }
 
 void BrokerDiscoveryManager::BrokerFound(const char * /*scope*/, const BrokerDiscInfo *broker_info, void *context)
