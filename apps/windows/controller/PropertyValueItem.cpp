@@ -36,12 +36,22 @@ bool PropertyValueItem::pidInfoExists(uint16_t pid)
 
 bool PropertyValueItem::pidSupportsGet(uint16_t pid)
 {
-  return pidInfo[pid].supportsGet;
+  return pidInfo[pid].pidFlags & kSupportsGet;
 }
 
 bool PropertyValueItem::pidSupportsSet(uint16_t pid)
 {
-  return pidInfo[pid].supportsSet;
+  return pidInfo[pid].pidFlags & kSupportsSet;
+}
+
+bool PropertyValueItem::excludePIDFromModel(uint16_t pid)
+{
+  return pidInfo[pid].pidFlags & kExcludeFromModel;;
+}
+
+bool PropertyValueItem::pidStartEnabled(uint16_t pid)
+{
+  return pidInfo[pid].pidFlags & kStartEnabled;;
 }
 
 QVariant::Type PropertyValueItem::pidDataType(uint16_t pid)
@@ -79,31 +89,18 @@ QString PropertyValueItem::pidPropertyDisplayName(uint16_t pid, int32_t index)
   return pidInfo[pid].propertyDisplayNames.at(index);
 }
 
-void PropertyValueItem::setPIDInfo(uint16_t pid, bool supportsGet, bool supportsSet, QVariant::Type dataType,
-                                   int32_t role, PropertyLocation locationOfProperties)
+PIDFlags PropertyValueItem::pidFlags(uint16_t pid)
 {
-  if (pidInfo.count(pid) == 0)  // Only allow writing the first time
-  {
-    pidInfo[pid].supportsGet = supportsGet;
-    pidInfo[pid].supportsSet = supportsSet;
-    pidInfo[pid].dataType = dataType;
-    pidInfo[pid].role = role;
-    pidInfo[pid].includedInDataModel = true;
-    pidInfo[pid].locationOfProperties = locationOfProperties;
-  }
+  return pidInfo[pid].pidFlags;
 }
 
-void PropertyValueItem::setPIDInfo(uint16_t pid, bool supportsGet, bool supportsSet, QVariant::Type dataType,
-                                   bool includedInDataModel)
+void PropertyValueItem::setPIDInfo(uint16_t pid, PIDFlags flags, QVariant::Type dataType, int32_t role)
 {
   if (pidInfo.count(pid) == 0)  // Only allow writing the first time
   {
-    pidInfo[pid].supportsGet = supportsGet;
-    pidInfo[pid].supportsSet = supportsSet;
     pidInfo[pid].dataType = dataType;
-    pidInfo[pid].role = Qt::EditRole;
-    pidInfo[pid].includedInDataModel = includedInDataModel;
-    pidInfo[pid].locationOfProperties = kResponder | kDevice;
+    pidInfo[pid].role = role;
+    pidInfo[pid].pidFlags = flags;
   }
 }
 

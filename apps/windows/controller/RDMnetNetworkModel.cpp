@@ -145,7 +145,7 @@ static lwpa_error_t parseAndPackIPAddress(lwpa_iptype_t addrType, const char *ip
   {
     if (addrType == LWPA_IPV4)
     {
-      pack_32l(outBuf, ip.addr.v4);
+      pack_32b(outBuf, ip.addr.v4);
     }
     else if (addrType == LWPA_IPV6)
     {
@@ -346,6 +346,7 @@ void BrokerConnection::wasDisconnected()
 {
   connected_ = false;
   broker_item_->setText(generateBrokerItemText());
+  broker_item_->setScope(scope_);
 }
 
 void BrokerConnection::runConnectStateMachine()
@@ -390,6 +391,7 @@ void BrokerConnection::runConnectStateMachine()
   connected_ = true;
   connect_in_progress_ = false;
   broker_item_->setText(generateBrokerItemText());
+  broker_item_->setScope(scope_);
 }
 
 void BrokerConnection::appendBrokerItemToTree(QStandardItem *invisibleRootItem, uint32_t connectionCookie)
@@ -397,6 +399,7 @@ void BrokerConnection::appendBrokerItemToTree(QStandardItem *invisibleRootItem, 
   if ((broker_item_ == NULL) && static_info_initialized_)
   {
     broker_item_ = new BrokerItem(generateBrokerItemText(), connectionCookie);
+    broker_item_->setScope(scope_);
 
     appendRowToItem(invisibleRootItem, broker_item_);
 
@@ -770,6 +773,8 @@ void RDMnetNetworkModel::processNewResponderList(EndpointItem *treeEndpointItem,
 void RDMnetNetworkModel::processSetPropertyData(RDMnetNetworkItem *parent, unsigned short pid, const QString &name,
                                                 const QVariant &value, int role)
 {
+  bool enable = value.isValid() || PropertyValueItem::pidStartEnabled(pid);
+
   if (parent != NULL)
   {
     if (parent->isEnabled())
@@ -784,8 +789,8 @@ void RDMnetNetworkModel::processSetPropertyData(RDMnetNetworkItem *parent, unsig
           {
             item->getValueItem()->setData(value, role);
 
-            item->setEnabled(value.isValid());
-            item->getValueItem()->setEnabled(value.isValid() ? PropertyValueItem::pidSupportsSet(pid) : false);
+            item->setEnabled(enable);
+            item->getValueItem()->setEnabled(enable && PropertyValueItem::pidSupportsSet(pid));
 
             return;
           }
@@ -793,7 +798,7 @@ void RDMnetNetworkModel::processSetPropertyData(RDMnetNetworkItem *parent, unsig
       }
 
       // Property doesn't exist, so make a new one.
-      PropertyItem *propertyItem = createPropertyItem(parent, name);  // new PropertyItem(name, name);
+      PropertyItem *propertyItem = createPropertyItem(parent, name);
       PropertyValueItem *propertyValueItem;
 
       if (pid == E120_DMX_PERSONALITY)
@@ -806,14 +811,10 @@ void RDMnetNetworkModel::processSetPropertyData(RDMnetNetworkItem *parent, unsig
       }
 
       propertyValueItem->setPID(pid);
-
-      // appendRowToItem(parent, propertyItem);
+      propertyValueItem->setEnabled(enable && PropertyValueItem::pidSupportsSet(pid));
       propertyItem->setValueItem(propertyValueItem);
-
+      propertyItem->setEnabled(enable);
       parent->properties.push_back(propertyItem);
-
-      propertyItem->setEnabled(value.isValid());
-      propertyValueItem->setEnabled(value.isValid() ? PropertyValueItem::pidSupportsSet(pid) : false);
     }
   }
 }
@@ -961,11 +962,15 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   // Initialize GUI-supported PID information
   QString rdmGroupName("RDM");
   QString rdmNetGroupName("RDMnet");
+  PIDFlags rdmPIDFlags = kLocDevice | kLocResponder;
+  PIDFlags rdmNetPIDFlags = kLocDevice;
 
   // E1.20
-  PropertyValueItem::setPIDInfo(E120_SUPPORTED_PARAMETERS, true, false, QVariant::Type::Invalid, false);
+  // pid, get, set, type, role/included
+  PropertyValueItem::setPIDInfo(E120_SUPPORTED_PARAMETERS, 
+                                rdmPIDFlags | kSupportsGet | kExcludeFromModel, QVariant::Type::Invalid);
 
-  PropertyValueItem::setPIDInfo(E120_DEVICE_INFO, true, false, QVariant::Type::Invalid, Qt::EditRole);
+  PropertyValueItem::setPIDInfo(E120_DEVICE_INFO, rdmPIDFlags | kSupportsGet, QVariant::Type::Invalid);
   PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("RDM Protocol Version")));
   PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO,
@@ -981,77 +986,80 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Sensor Count")));
 
-  PropertyValueItem::setPIDInfo(E120_DEVICE_MODEL_DESCRIPTION, true, false, QVariant::Type::String);
+  PropertyValueItem::setPIDInfo(E120_DEVICE_MODEL_DESCRIPTION, rdmPIDFlags | kSupportsGet, QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_MODEL_DESCRIPTION,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Device Model Description")));
 
-  PropertyValueItem::setPIDInfo(E120_MANUFACTURER_LABEL, true, false, QVariant::Type::String);
+  PropertyValueItem::setPIDInfo(E120_MANUFACTURER_LABEL, rdmPIDFlags | kSupportsGet, QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E120_MANUFACTURER_LABEL,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Manufacturer Label")));
 
-  PropertyValueItem::setPIDInfo(E120_DEVICE_LABEL, true, true, QVariant::Type::String);
+  PropertyValueItem::setPIDInfo(E120_DEVICE_LABEL, rdmPIDFlags | kSupportsGet | kSupportsSet, QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_LABEL,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Device Label")));
   PropertyValueItem::setPIDMaxBufferSize(E120_DEVICE_LABEL, 32);
 
-  PropertyValueItem::setPIDInfo(E120_SOFTWARE_VERSION_LABEL, true, false, QVariant::Type::String);
+  PropertyValueItem::setPIDInfo(E120_SOFTWARE_VERSION_LABEL, rdmPIDFlags | kSupportsGet, QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E120_SOFTWARE_VERSION_LABEL,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Software Label")));
 
-  PropertyValueItem::setPIDInfo(E120_BOOT_SOFTWARE_VERSION_ID, true, false, QVariant::Type::Int);
+  PropertyValueItem::setPIDInfo(E120_BOOT_SOFTWARE_VERSION_ID, rdmPIDFlags | kSupportsGet, QVariant::Type::Int);
   PropertyValueItem::addPIDPropertyDisplayName(E120_BOOT_SOFTWARE_VERSION_ID,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Boot Software ID")));
 
-  PropertyValueItem::setPIDInfo(E120_BOOT_SOFTWARE_VERSION_LABEL, true, false, QVariant::Type::String);
+  PropertyValueItem::setPIDInfo(E120_BOOT_SOFTWARE_VERSION_LABEL, rdmPIDFlags | kSupportsGet, QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E120_BOOT_SOFTWARE_VERSION_LABEL,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Boot Software Label")));
 
-  PropertyValueItem::setPIDInfo(E120_DMX_START_ADDRESS, true, true, QVariant::Type::Int);
+  PropertyValueItem::setPIDInfo(E120_DMX_START_ADDRESS, rdmPIDFlags | kSupportsGet | kSupportsSet, QVariant::Type::Int);
   PropertyValueItem::addPIDPropertyDisplayName(E120_DMX_START_ADDRESS,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("DMX512 Start Address")));
   PropertyValueItem::setPIDNumericDomain(E120_DMX_START_ADDRESS, 1, 512);
   PropertyValueItem::setPIDMaxBufferSize(E120_DMX_START_ADDRESS, 2);
 
-  PropertyValueItem::setPIDInfo(E120_IDENTIFY_DEVICE, true, true, QVariant::Type::Bool, Qt::CheckStateRole);
+  PropertyValueItem::setPIDInfo(E120_IDENTIFY_DEVICE, rdmPIDFlags | kSupportsGet | kSupportsSet, 
+                                QVariant::Type::Bool, Qt::CheckStateRole);
   PropertyValueItem::addPIDPropertyDisplayName(E120_IDENTIFY_DEVICE,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Identify")));
   PropertyValueItem::setPIDMaxBufferSize(E120_IDENTIFY_DEVICE, 1);
 
-  PropertyValueItem::setPIDInfo(E120_DMX_PERSONALITY, true, true, QVariant::Type::Char,
+  PropertyValueItem::setPIDInfo(E120_DMX_PERSONALITY, rdmPIDFlags | kSupportsGet | kSupportsSet, QVariant::Type::Char,
                                 PersonalityPropertyValueItem::PersonalityNumberRole);
   PropertyValueItem::addPIDPropertyDisplayName(E120_DMX_PERSONALITY,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("DMX512 Personality")));
   PropertyValueItem::setPIDNumericDomain(E120_DMX_PERSONALITY, 1, 255);
   PropertyValueItem::setPIDMaxBufferSize(E120_DMX_PERSONALITY, 1);
 
-  PropertyValueItem::setPIDInfo(E120_RESET_DEVICE, false, true, QVariant::Type::Char, false);
+  PropertyValueItem::setPIDInfo(E120_RESET_DEVICE, rdmPIDFlags | kSupportsSet | kExcludeFromModel, 
+                                QVariant::Type::Char);
   PropertyValueItem::setPIDMaxBufferSize(E120_RESET_DEVICE, 1);
 
   // E1.33
-  PropertyValueItem::setPIDInfo(E133_COMPONENT_SCOPE, true, true, QVariant::Type::String, Qt::EditRole, kDevice);
+  PropertyValueItem::setPIDInfo(E133_COMPONENT_SCOPE, rdmNetPIDFlags | kSupportsGet | kSupportsSet, 
+                                QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E133_COMPONENT_SCOPE,
                                                QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Component Scope")));
   PropertyValueItem::setPIDMaxBufferSize(E133_COMPONENT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH + 2);
 
-  PropertyValueItem::setPIDInfo(E133_BROKER_STATIC_CONFIG_IPV4, true, true, QVariant::Type::Invalid, Qt::EditRole,
-                                kDevice);
-  PropertyValueItem::addPIDPropertyDisplayName(
-      E133_BROKER_STATIC_CONFIG_IPV4,
+  PropertyValueItem::setPIDInfo(E133_BROKER_STATIC_CONFIG_IPV4, 
+                                rdmNetPIDFlags | kSupportsGet | kSupportsSet | kStartEnabled, QVariant::Type::Invalid);
+  PropertyValueItem::addPIDPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV4,
       QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv4 Address (Static Configuration)")));
-  PropertyValueItem::setPIDMaxBufferSize(E133_BROKER_STATIC_CONFIG_IPV4, 6);
+  PropertyValueItem::setPIDMaxBufferSize(E133_BROKER_STATIC_CONFIG_IPV4, 4 + 2 + E133_SCOPE_STRING_PADDED_LENGTH);
 
-  PropertyValueItem::setPIDInfo(E133_BROKER_STATIC_CONFIG_IPV6, true, false, QVariant::Type::Invalid, Qt::EditRole,
-                                kDevice);
-  PropertyValueItem::addPIDPropertyDisplayName(
-      E133_BROKER_STATIC_CONFIG_IPV6,
+  PropertyValueItem::setPIDInfo(E133_BROKER_STATIC_CONFIG_IPV6, 
+                                rdmNetPIDFlags | kSupportsGet | kSupportsSet | kStartEnabled, QVariant::Type::Invalid);
+  PropertyValueItem::addPIDPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV6,
       QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv6 Address (Static Configuration)")));
+  PropertyValueItem::setPIDMaxBufferSize(E133_BROKER_STATIC_CONFIG_IPV6, IPV6_BYTES + 2 + E133_SCOPE_STRING_PADDED_LENGTH);
 
-  PropertyValueItem::setPIDInfo(E133_SEARCH_DOMAIN, true, true, QVariant::Type::String, Qt::EditRole, kDevice);
+  PropertyValueItem::setPIDInfo(E133_SEARCH_DOMAIN, rdmNetPIDFlags | kSupportsGet | kSupportsSet, 
+                                QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E133_SEARCH_DOMAIN,
                                                QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Search Domain")));
   PropertyValueItem::setPIDMaxBufferSize(E133_SEARCH_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
 
-  PropertyValueItem::setPIDInfo(E133_TCP_COMMS_STATUS, true, false, QVariant::Type::Invalid, Qt::EditRole, kDevice);
+  PropertyValueItem::setPIDInfo(E133_TCP_COMMS_STATUS, rdmNetPIDFlags | kSupportsGet, QVariant::Type::Invalid);
   PropertyValueItem::addPIDPropertyDisplayName(
       E133_TCP_COMMS_STATUS, QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IP Address (Current)")));
   PropertyValueItem::addPIDPropertyDisplayName(E133_TCP_COMMS_STATUS,
@@ -1219,13 +1227,14 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
     {
       PropertyValueItem *propertyValueItem = dynamic_cast<PropertyValueItem *>(item);
       RDMnetNetworkItem *parentItem = getNearestParentItemOfType<ResponderItem>(item);
+      BrokerItem *brokerItem = getNearestParentItemOfType<BrokerItem>(item);
 
       if (parentItem == NULL)
       {
         parentItem = getNearestParentItemOfType<RDMnetClientItem>(item);
       }
 
-      if ((propertyValueItem != NULL) && (parentItem != NULL))
+      if ((propertyValueItem != NULL) && (parentItem != NULL) && (brokerItem != NULL))
       {
         uint16_t pid = propertyValueItem->getPID();
 
@@ -1310,51 +1319,17 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
                 switch (pid)
                 {
                   case E133_BROKER_STATIC_CONFIG_IPV4:
-                    if (sscanf(value.toString().toLocal8Bit().constData(), "%63[1234567890.]:%u", ipStrBuffer, &portNumber) < 2)
-                    {
-                      // Incorrect format entered.
-                      updateValue = false;
-                    }
-                    else if (parseAndPackIPAddress(LWPA_IPV4, ipStrBuffer, strlen(ipStrBuffer), packPtr) != LWPA_OK)
-                    {
-                      updateValue = false;
-                    }
-                    else if (portNumber > 65535)
-                    {
-                      updateValue = false;
-                    }
-                    else
-                    {
-                      pack_16b(packPtr + 4, static_cast<uint16_t>(portNumber));
-                    }
-
+                    packPtr = packStaticConfigItem(brokerItem, value, LWPA_IPV4, packPtr);
                     break;
-
                   case E133_BROKER_STATIC_CONFIG_IPV6:
-                    if (sscanf(value.toString().toLocal8Bit().constData(), "[%63[1234567890:abcdeABCDE]]:%u", ipStrBuffer, &portNumber) < 2)
-                    {
-                      // Incorrect format entered.
-                      updateValue = false;
-                    }
-                    else if (parseAndPackIPAddress(LWPA_IPV6, ipStrBuffer, strlen(ipStrBuffer), packPtr) != LWPA_OK)
-                    {
-                      updateValue = false;
-                    }
-                    else if (portNumber > 65535)
-                    {
-                      updateValue = false;
-                    }
-                    else
-                    {
-                      pack_16b(packPtr + 4, static_cast<uint16_t>(portNumber));
-                    }
-
+                    packPtr = packStaticConfigItem(brokerItem, value, LWPA_IPV6, packPtr);
                     break;
-
                   default:
-                    return false;
+                    updateValue = false;
                 }
             }
+
+            updateValue = updateValue && (packPtr != NULL);
 
             if (updateValue)
             {
@@ -2535,13 +2510,16 @@ void RDMnetNetworkModel::tcpCommsStatus(const char *scopeString, const char *v4A
   }
 }
 
-void RDMnetNetworkModel::addPropertyEntries(RDMnetNetworkItem *parent, PropertyLocation location)
+void RDMnetNetworkModel::addPropertyEntries(RDMnetNetworkItem *parent, PIDFlags location)
 {
   // Start out by adding all known properties and disabling them. Later on,
   // only the properties that the device supports will be enabled.
   for (PIDInfoIterator i = PropertyValueItem::pidsBegin(); i != PropertyValueItem::pidsEnd(); ++i)
   {
-    if (i->second.includedInDataModel && ((i->second.locationOfProperties & location) == location))
+    bool excludeFromModel = i->second.pidFlags & kExcludeFromModel;
+    location = location & (kLocResponder | kLocEndpoint | kLocDevice | kLocController | kLocBroker);
+
+    if (!excludeFromModel && ((i->second.pidFlags & location) == location))
     {
       for (QStringList::iterator j = i->second.propertyDisplayNames.begin(); j != i->second.propertyDisplayNames.end();
            ++j)
@@ -2556,7 +2534,7 @@ void RDMnetNetworkModel::initializeResponderProperties(ResponderItem *parent, ui
 {
   RdmCommand cmd;
 
-  addPropertyEntries(parent, kResponder);
+  addPropertyEntries(parent, kLocResponder);
 
   // Now send requests for core required properties.
   cmd.dest_uid.manu = manuID;
@@ -2582,7 +2560,7 @@ void RDMnetNetworkModel::initializeRPTDeviceProperties(RDMnetClientItem *parent,
 {
   RdmCommand cmd;
 
-  addPropertyEntries(parent, kDevice);
+  addPropertyEntries(parent, kLocDevice);
 
   // Now send requests for core required properties.
   memset(cmd.data, 0, RDM_MAX_PDL);
@@ -2632,11 +2610,61 @@ void RDMnetNetworkModel::sendGetCommand(uint16_t pid, uint16_t manu, uint32_t de
   SendRDMCommand(getCmd);
 }
 
+uint8_t *RDMnetNetworkModel::packIPAddressItem(const QVariant & value, lwpa_iptype_t addrType, uint8_t * packPtr)
+{
+  char ipStrBuffer[64];
+  unsigned int portNumber;
+  size_t memSize = (addrType == LWPA_IPV4) ? 6 : (IPV6_BYTES + 2);
+
+  if (packPtr == NULL)
+  {
+    return NULL;
+  }
+
+  if (value.toString().length() == 0)
+  {
+    memset(packPtr, 0, memSize);
+  }
+  else if (sscanf(value.toString().toLocal8Bit().constData(), 
+             (addrType == LWPA_IPV4) ? "%63[1234567890.]:%u" : "[%63[1234567890:abcdefABCDEF]]:%u", 
+             ipStrBuffer, &portNumber) < 2)
+  {
+    // Incorrect format entered.
+    return NULL;
+  }
+  else if (parseAndPackIPAddress(addrType, ipStrBuffer, strlen(ipStrBuffer), packPtr) != LWPA_OK)
+  {
+    return NULL;
+  }
+  else if (portNumber > 65535)
+  {
+    return NULL;
+  }
+  else
+  {
+    pack_16b(packPtr + memSize - 2, static_cast<uint16_t>(portNumber));
+  }
+
+  return packPtr + memSize;
+}
+
+uint8_t * RDMnetNetworkModel::packStaticConfigItem(const BrokerItem * broker, const QVariant & value, lwpa_iptype_t addrType, uint8_t * packPtr)
+{
+  uint8_t *result = packIPAddressItem(value, addrType, packPtr);
+  if (result != NULL)
+  {
+    memcpy(result, broker->scope().toLocal8Bit().constData(), E133_SCOPE_STRING_PADDED_LENGTH);
+    result += E133_SCOPE_STRING_PADDED_LENGTH;
+  }
+
+  return result;
+}
+
 bool RDMnetNetworkModel::pidSupportedByGUI(uint16_t pid, bool checkSupportGet)
 {
   for (PIDInfoIterator iter = PropertyValueItem::pidsBegin(); iter != PropertyValueItem::pidsEnd(); ++iter)
   {
-    if ((iter->first == pid) && (!checkSupportGet || iter->second.supportsGet))
+    if ((iter->first == pid) && (!checkSupportGet || (iter->second.pidFlags & kSupportsGet)))
     {
       return true;
     }

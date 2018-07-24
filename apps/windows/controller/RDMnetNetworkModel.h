@@ -287,10 +287,12 @@ protected:
                       uint16_t unhealthyTCPEvents, RdmResponse *resp);
 
   // Message sending
-  void addPropertyEntries(RDMnetNetworkItem *parent, PropertyLocation location);
+  void addPropertyEntries(RDMnetNetworkItem *parent, PIDFlags location);
   void initializeResponderProperties(ResponderItem *parent, uint16_t manuID, uint32_t deviceID);
   void initializeRPTDeviceProperties(RDMnetClientItem *parent, uint16_t manuID, uint32_t deviceID);
   void sendGetCommand(uint16_t pid, uint16_t manu, uint32_t dev);
+  uint8_t *packIPAddressItem(const QVariant &value, lwpa_iptype_t addrType, uint8_t *packPtr);
+  uint8_t *packStaticConfigItem(const BrokerItem *broker, const QVariant &value, lwpa_iptype_t addrType, uint8_t *packPtr);
 
   // PID handling
   bool pidSupportedByGUI(uint16_t pid, bool checkSupportGet);

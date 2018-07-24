@@ -38,12 +38,12 @@
 
 /**************************** Private constants ******************************/
 
-#define NUM_SUPPORTED_PIDS 14
+#define NUM_SUPPORTED_PIDS 15
 static const uint16_t kSupportedPIDList[NUM_SUPPORTED_PIDS] = {
     E120_IDENTIFY_DEVICE,           E120_SUPPORTED_PARAMETERS,   E120_DEVICE_INFO,      E120_MANUFACTURER_LABEL,
     E120_DEVICE_MODEL_DESCRIPTION,  E120_SOFTWARE_VERSION_LABEL, E120_DEVICE_LABEL,     E133_COMPONENT_SCOPE,
     E133_BROKER_STATIC_CONFIG_IPV4, E133_SEARCH_DOMAIN,          E133_TCP_COMMS_STATUS, E133_DUPLICATE_UID_DETECTED,
-    E137_7_ENDPOINT_LIST,           E137_7_ENDPOINT_RESPONDERS,
+    E133_BROKER_STATIC_CONFIG_IPV6, E137_7_ENDPOINT_RESPONDERS,  E137_7_ENDPOINT_LIST,
 };
 
 /* clang-format off */
@@ -96,6 +96,8 @@ bool set_component_scope(const uint8_t *param_data, uint8_t param_data_len, uint
                          bool *requires_reconnect);
 bool set_broker_static_config_ipv4(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
                                    bool *requires_reconnect);
+bool set_broker_static_config_ipv6(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
+                                   bool *requires_reconnect);
 bool set_search_domain(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
                        bool *requires_reconnect);
 bool set_tcp_comms_status(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
@@ -109,6 +111,8 @@ bool get_device_label(const uint8_t *param_data, uint8_t param_data_len, param_d
 bool get_component_scope(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
                          size_t *num_responses, uint16_t *nack_reason);
 bool get_broker_static_config_ipv4(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                                   size_t *num_responses, uint16_t *nack_reason);
+bool get_broker_static_config_ipv6(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
                                    size_t *num_responses, uint16_t *nack_reason);
 bool get_search_domain(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
                        size_t *num_responses, uint16_t *nack_reason);
@@ -209,6 +213,9 @@ bool default_responder_set(uint16_t pid, const uint8_t *param_data, uint8_t para
       case E133_BROKER_STATIC_CONFIG_IPV4:
         res = set_broker_static_config_ipv4(param_data, param_data_len, nack_reason, requires_reconnect);
         break;
+      case E133_BROKER_STATIC_CONFIG_IPV6:
+        res = set_broker_static_config_ipv6(param_data, param_data_len, nack_reason, requires_reconnect);
+        break;
       case E133_SEARCH_DOMAIN:
         res = set_search_domain(param_data, param_data_len, nack_reason, requires_reconnect);
         break;
@@ -253,6 +260,9 @@ bool default_responder_get(uint16_t pid, const uint8_t *param_data, uint8_t para
         break;
       case E133_BROKER_STATIC_CONFIG_IPV4:
         res = get_broker_static_config_ipv4(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+        break;
+      case E133_BROKER_STATIC_CONFIG_IPV6:
+        res = get_broker_static_config_ipv6(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
         break;
       case E133_SEARCH_DOMAIN:
         res = get_search_domain(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
@@ -393,7 +403,7 @@ bool set_broker_static_config_ipv4(const uint8_t *param_data, uint8_t param_data
     uint16_t new_port = upack_16b(cur_ptr);
 
     cur_ptr += 2;
-    if (strncmp((char *)param_data, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
+    if (strncmp((char *) cur_ptr, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
     {
       /* setting one field to zero, but not the other is invalid */
       if (!((lwpaip_v4_address(&new_ipv4) == 0 && new_port != 0) ||
@@ -421,6 +431,62 @@ bool set_broker_static_config_ipv4(const uint8_t *param_data, uint8_t param_data
   else
     *nack_reason = E120_NR_FORMAT_ERROR;
 
+  return false;
+}
+
+bool set_broker_static_config_ipv6(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
+                                   bool *requires_reconnect)
+{
+  const uint8_t *cur_ptr = param_data;
+
+  *requires_reconnect = false;
+
+  if (param_data_len == IPV6_BYTES + 2 + E133_SCOPE_STRING_PADDED_LENGTH)
+  {
+    LwpaIpAddr new_ipv6;
+    lwpaip_set_v6_address(&new_ipv6, cur_ptr);
+
+    cur_ptr += IPV6_BYTES;
+    uint16_t new_port = upack_16b(cur_ptr);
+
+    cur_ptr += 2;
+    if (strncmp((char *) cur_ptr, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
+    {
+      bool zeroIPv6 = true;
+
+      for (int i = 0; (i < IPV6_BYTES) && zeroIPv6; ++i)
+      {
+        zeroIPv6 = zeroIPv6 && (lwpaip_v6_address(&new_ipv6)[i] == 0);
+      }
+
+      /* setting one field to zero, but not the other is invalid */
+      if (!((zeroIPv6 && new_port != 0) || (!zeroIPv6 && new_port == 0)))
+      {
+        // Uncomment this code once IPv6 support is added. 
+        // Code might need adjusting depending on implementation.
+        ///* when both fields are set to zero, remove static config */
+        //if (zeroIPv6 && new_port == 0)
+        //{
+        //  lwpaip_set_invalid(&prop_data.rdmnet_params.broker_static_addr.ip);
+        //}
+        //else
+        //{
+        //  prop_data.rdmnet_params.broker_static_addr.ip = new_ipv6;
+        //  prop_data.rdmnet_params.broker_static_addr.port = new_port;
+        //}
+        //*requires_reconnect = true;
+        //return true;
+      }
+      else
+        *nack_reason = E120_NR_DATA_OUT_OF_RANGE;
+    }
+    else
+      *nack_reason = E133_NR_UNKNOWN_SCOPE;
+  }
+  else
+    *nack_reason = E120_NR_FORMAT_ERROR;
+
+  *nack_reason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
   return false;
 }
 
@@ -551,6 +617,25 @@ bool get_broker_static_config_ipv4(const uint8_t *param_data, uint8_t param_data
   strncpy((char *)cur_ptr, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH);
   cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
   resp_data_list[0].datalen = (uint8_t)(cur_ptr - resp_data_list[0].data);
+  *num_responses = 1;
+  return true;
+}
+
+bool get_broker_static_config_ipv6(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                                   size_t *num_responses, uint16_t *nack_reason)
+{
+  uint8_t *cur_ptr = resp_data_list[0].data;
+
+  // This function should actually be implemented once IPv6 is supported.
+  /* Set all 0's for the static IPv6 address and port */
+  memset(cur_ptr, 0, IPV6_BYTES + 2);
+  cur_ptr += (IPV6_BYTES + 2);
+
+  /* Copy the scope string */
+  memset(cur_ptr, 0, E133_SCOPE_STRING_PADDED_LENGTH);
+  strncpy((char *) cur_ptr, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH);
+  cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
+  resp_data_list[0].datalen = (uint8_t) (cur_ptr - resp_data_list[0].data);
   *num_responses = 1;
   return true;
 }

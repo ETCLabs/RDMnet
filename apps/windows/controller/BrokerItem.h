@@ -41,8 +41,12 @@ public:
   virtual int type() const override;
   uint32_t getConnectionCookie() { return connection_cookie_; }
 
+  void setScope(const QString &scope) { scope_ = scope; }
+  QString scope() const { return scope_; }
+
   std::vector<RDMnetClientItem *> rdmnet_devices_;
 
 private:
   uint32_t connection_cookie_;
+  QString scope_;
 };

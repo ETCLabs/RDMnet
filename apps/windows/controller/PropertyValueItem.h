@@ -32,25 +32,32 @@
 
 #include <QVariant>
 
-enum PropertyLocation
+enum PIDFlags
 {
-  kResponder = 1,
-  kEndpoint = 2,
-  kDevice = 4,
-  kController = 8,
-  kBroker = 16
+  kNoFlags = 0x000,
+  kLocResponder = 0x001,
+  kLocEndpoint = 0x002,
+  kLocDevice = 0x004,
+  kLocController = 0x008,
+  kLocBroker = 0x010,
+  kSupportsGet = 0x020,
+  kSupportsSet = 0x040,
+  kExcludeFromModel = 0x080,
+  kStartEnabled = 0x100
 };
 
-inline PropertyLocation operator|(PropertyLocation a, PropertyLocation b)
+inline PIDFlags operator|(PIDFlags a, PIDFlags b)
 {
-  return static_cast<PropertyLocation>(static_cast<int>(a) | static_cast<int>(b));
+  return static_cast<PIDFlags>(static_cast<int>(a) | static_cast<int>(b));
+}
+
+inline PIDFlags operator&(PIDFlags a, PIDFlags b)
+{
+  return static_cast<PIDFlags>(static_cast<int>(a) & static_cast<int>(b));
 }
 
 struct PIDInfo
 {
-  bool supportsGet;
-  bool supportsSet;
-  bool includedInDataModel;
   QVariant::Type dataType;
   int32_t role;
 
@@ -60,7 +67,7 @@ struct PIDInfo
 
   QStringList propertyDisplayNames;
 
-  PropertyLocation locationOfProperties;
+  PIDFlags pidFlags;
 };
 
 typedef std::map<uint16_t, PIDInfo>::iterator PIDInfoIterator;
@@ -74,17 +81,18 @@ public:
 
   static bool pidSupportsGet(uint16_t pid);
   static bool pidSupportsSet(uint16_t pid);
+  static bool excludePIDFromModel(uint16_t pid);
+  static bool pidStartEnabled(uint16_t pid);
   static QVariant::Type pidDataType(uint16_t pid);
   static int32_t pidDataRole(uint16_t pid);
   static int32_t pidDomainMin(uint16_t pid);
   static int32_t pidDomainMax(uint16_t pid);
   static int32_t pidMaxBufferSize(uint16_t pid);
   static QString pidPropertyDisplayName(uint16_t pid, int32_t index = 0);
+  static PIDFlags pidFlags(uint16_t pid);
 
-  static void setPIDInfo(uint16_t pid, bool supportsGet, bool supportsSet, QVariant::Type dataType, int32_t role,
-                         PropertyLocation locationOfProperties = kResponder | kDevice);
-  static void setPIDInfo(uint16_t pid, bool supportsGet, bool supportsSet, QVariant::Type dataType,
-                         bool includedInDataModel = true);
+  static void setPIDInfo(uint16_t pid, PIDFlags flags, QVariant::Type dataType, 
+                         int32_t role = Qt::EditRole);
   static void setPIDNumericDomain(uint16_t pid, int32_t min, int32_t max);
   static void setPIDMaxBufferSize(uint16_t pid, int32_t size);
   static void addPIDPropertyDisplayName(uint16_t pid, QString displayName);
