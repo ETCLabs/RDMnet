@@ -148,6 +148,8 @@ protected:
   // These are never modified between startup and shutdown, so they don't
   // need to be locked.
   bool started_;
+  bool service_registered_;
+  int other_brokers_found_;
   BrokerLog *log_;
   IBrokerNotify *notify_;
   BrokerSettings settings_;
@@ -167,9 +169,8 @@ protected:
 
   // If you have a maximum number of connections, we may be stopping and
   // starting the listen threads.
-  // TESTING TODO:  We don't ever stop listening yet.
-  void StartListening();
-  void StopListening();
+  void StartBrokerServices();
+  void StopBrokerServices();
 
   // IListenThread_Notify messages
   virtual bool NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr &addr) override;
@@ -219,11 +220,6 @@ protected:
   std::map<int, std::shared_ptr<RPTController>> controllers_;
   // The set of devices, indexed by the connection handle.
   std::map<int, std::shared_ptr<RPTDevice>> devices_;
-
-  RPTDevice *GetDeviceForWriting(int conn) const;
-  void ReleaseDeviceFromWriting(RPTDevice *pdata) const;
-  const RPTDevice *GetDeviceForReading(int conn) const;
-  void ReleaseDeviceFromReading(const RPTDevice *pdata) const;
 
   lwpa_mutex_t client_destroy_lock_;
   std::set<int> clients_to_destroy_;

@@ -65,6 +65,8 @@ Broker::Broker(BrokerLog *log, IBrokerNotify *notify)
     , IConnPollThread_Notify()
     , service_thread_(1)
     , started_(false)
+    , service_registered_(false)
+    , other_brokers_found_(0)
     , log_(log)
     , notify_(notify)
     , disc_(this)
@@ -129,7 +131,7 @@ bool Broker::Startup(const BrokerSettings &settings, uint16_t listen_port, std::
 
     started_ = true;
 
-    StartListening();
+    StartBrokerServices();
 
     service_thread_.SetNotify(this);
     service_thread_.Start();
@@ -160,50 +162,17 @@ void Broker::Shutdown()
     disc_.UnregisterBroker();
     BrokerDiscoveryManager::DeinitLibrary();
 
-    StopListening();
+    StopBrokerServices();
     listeners_.clear();
-
-    // No new connections coming in, manually shut down the existing ones.
-    //    std::vector<int> conns;
-    //    GetConnSnapshot(conns, true, true, true);
-
-    //    for (auto it = conns.begin(); it != conns.end(); ++it)
-    //      MarkSocketForDestruction(*it, true, DISCONNECT_SHUTDOWN);
-
-    // Give the device sockets up to 1 second to send out the disconnect
-    // notifications and shut down
-    //    for (int i = 0; i < 10; ++i)
-    //    {
-    //      if device_destroy_lock_.ReadLock())
-    //      {
-    //        if devices_to_destroy_.size() == 0)
-    //        {
-    //         device_destroy_lock_.ReadUnlock();
-    //          break;
-    //        }
-    //        lwpa_thread_sleep(100);
-    //      }
-    //    }
 
     service_thread_.Stop();
 
-    // Cleanup remaining sockets manually
-    //    DestroyMarkedControllerSockets();
-    //    DestroyMarkedDeviceSockets();
-
-    //    //Clean up any remaining messages
-    //    RDMnetSocket::socket_msg msg;
-    //    while socket_messages_.pop(msg))
-    //      DeleteMessage(msg);
-
     lwpa_rwlock_destroy(&client_lock_);
-    // rdmnet_deinit();
+    rdmnet_deinit();
 
     started_ = false;
 
-    //    RDMnetSocket::StackShutdown();
-
-    //    // Shutdown LLRP socket and proxy
+    // Shutdown LLRP socket and proxy
     //   llrpSocketProxy_.StopProxy();
     //   llrpSocket_.Shutdown();
   }
@@ -212,7 +181,9 @@ void Broker::Shutdown()
 void Broker::Tick()
 {
   BrokerDiscoveryManager::LibraryTick();
-  DestroyMarkedClientSockets();
+
+  if (!other_brokers_found_)
+    DestroyMarkedClientSockets();
 }
 
 // Fills in the current settings the broker is using.  Can be called even
@@ -1119,16 +1090,25 @@ void Broker::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
   }
 }
 
-void Broker::StartListening()
+void Broker::StartBrokerServices()
 {
   for (const auto &listener : listeners_)
     listener->Start();
 }
 
-void Broker::StopListening()
+void Broker::StopBrokerServices()
 {
   for (const auto &listener : listeners_)
     listener->Stop();
+
+  // No new connections coming in, manually shut down the existing ones.
+  std::vector<int> conns;
+  GetConnSnapshot(conns, true, true, true);
+
+  for (auto &conn : conns)
+    MarkConnForDestruction(conn, true, kRDMnetDisconnectShutdown);
+
+  DestroyMarkedClientSockets();
 }
 
 void Broker::AddConnToPollThread(int conn, std::shared_ptr<ConnPollThread> &thread)
@@ -1297,6 +1277,7 @@ void Broker::RemoveConnections(const std::vector<int> &connections)
 
 void Broker::BrokerRegistered(const BrokerDiscInfo &broker_info, const std::string &assigned_service_name)
 {
+  service_registered_ = true;
   log_->Log(LWPA_LOG_INFO, "Broker \"%s\" (now named \"%s\") successfully registered at scope \"%s\"",
             broker_info.service_name, assigned_service_name.c_str(), broker_info.scope);
 }
@@ -1309,42 +1290,43 @@ void Broker::BrokerRegisterError(const BrokerDiscInfo &broker_info, int platform
 
 void Broker::OtherBrokerFound(const BrokerDiscInfo &broker_info)
 {
-  std::string addrs;
-  for (unsigned int i = 0; i < broker_info.listen_addrs_count; i++)
+  ++other_brokers_found_;
+  if (log_->CanLog(LWPA_LOG_WARNING))
   {
-    // large enough to fit a uin32_t plus a null terminator
-    char num_as_char_arr[11];
-    if (lwpaip_is_v4(&broker_info.listen_addrs[i].ip))
+    std::string addrs;
+    for (size_t i = 0; i < broker_info.listen_addrs_count; i++)
     {
-      sprintf(num_as_char_arr, "%d", lwpaip_v4_address(&broker_info.listen_addrs[i].ip));
-      addrs.append(num_as_char_arr);
-    }
-    else if (lwpaip_is_v6(&broker_info.listen_addrs[i].ip))
-    {
-      for (int a = 0; a < 16; a++)
+      char addr_string[LWPA_INET6_ADDRSTRLEN];
+      if (LWPA_OK == lwpa_inet_ntop(&broker_info.listen_addrs[i].ip, addr_string, LWPA_INET6_ADDRSTRLEN))
       {
-        sprintf(num_as_char_arr, "%02X", lwpaip_v6_address(&broker_info.listen_addrs[i].ip)[a]);
-        addrs.append(num_as_char_arr);
-        if (a % 2 == 1 && a != 15)
-          addrs.append(":");
+        addrs.append(addr_string);
+        if (i + 1 < broker_info.listen_addrs_count)
+          addrs.append(", ");
       }
     }
-    else  // LWPA_IP_INVALID
-    {
-      addrs.append("LWPA_IP_INVALID");
-    }
 
-    if (i + 1 < broker_info.listen_addrs_count)
-      addrs.append(", ");
+    log_->Log(LWPA_LOG_WARNING, "Broker \"%s\", ip[%s] found at same scope(\"%s\") as this broker.",
+              broker_info.service_name, addrs.c_str(), broker_info.scope);
   }
-
-  log_->Log(LWPA_LOG_WARNING, "Broker \"%s\", ip[%s] found at same scope(\"%s\") as this broker.",
-            broker_info.service_name, addrs.c_str(), broker_info.scope);
+  if (!service_registered_)
+  {
+    log_->Log(LWPA_LOG_WARNING, "Entering Standby mode.");
+    disc_.Standby();
+    StopBrokerServices();
+  }
 }
 
 void Broker::OtherBrokerLost(const std::string &service_name)
 {
   log_->Log(LWPA_LOG_WARNING, "Broker %s left", service_name.c_str());
+  if (other_brokers_found_ > 0)
+    --other_brokers_found_;
+  if (other_brokers_found_ == 0)
+  {
+    log_->Log(LWPA_LOG_INFO, "All conflicting Brokers gone. Resuming Broker services.");
+    StartBrokerServices();
+    disc_.Resume();
+  }
 }
 
 BrokerLog *Broker::GetLog()

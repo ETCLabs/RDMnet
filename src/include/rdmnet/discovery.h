@@ -89,8 +89,8 @@ lwpa_error_t rdmnetdisc_startmonitoring(const ScopeMonitorInfo *scope_info, int 
 void rdmnetdisc_stopmonitoring(const ScopeMonitorInfo *scope_info);
 void rdmnetdisc_stopmonitoring_all_scopes();
 
-lwpa_error_t rdmnetdisc_registerbroker(const BrokerDiscInfo *broker_info, void *context);
-void rdmnetdisc_unregisterbroker();
+lwpa_error_t rdmnetdisc_registerbroker(const BrokerDiscInfo *broker_info, bool monitor_scope, void *context);
+void rdmnetdisc_unregisterbroker(bool stop_monitoring_scope);
 
 void rdmnetdisc_tick();
 
