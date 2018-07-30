@@ -34,7 +34,7 @@ class PropertyEditorsDelegate : public QStyledItemDelegate
   Q_OBJECT
 
 public:
-  PropertyEditorsDelegate(QObject *parent = 0);
+  explicit PropertyEditorsDelegate(QObject *parent = 0);
   ~PropertyEditorsDelegate();
 
   QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const override;

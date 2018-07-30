@@ -49,7 +49,7 @@ void appendRowToItem(QStandardItem *parent, QStandardItem *child);
 class MyLog
 {
 public:
-  MyLog(const std::string &file_name);
+  explicit MyLog(const std::string &file_name);
   virtual ~MyLog();
 
   void Log(int pri, const char *format, ...);
@@ -92,7 +92,7 @@ public:
   static LwpaCid getLocalCID() { return local_cid_; }
   static LwpaUid getLocalUID() { return local_uid_; }
 
-  BrokerConnection(std::string scope);
+  explicit BrokerConnection(std::string scope);
   BrokerConnection(std::string scope, const LwpaSockaddr &addr);
   ~BrokerConnection();
 
@@ -108,16 +108,6 @@ public:
   const QString generateBrokerItemText();
 
   bool operator==(const BrokerConnection &other) { return scope_ == other.scope_; }
-
-  BrokerConnection &operator=(const BrokerConnection &copy)
-  {
-    scope_ = copy.scope_;
-    broker_addr_ = copy.broker_addr_;
-    broker_item_ = copy.broker_item_;
-
-    if (copy.connected_)
-      rdmnet_disconnect(copy.conn_, false, kRDMnetDisconnectShutdown);
-  }
 
   uint32_t sequencePreIncrement() { return ++sequence_; }
 

@@ -67,7 +67,7 @@ signals:
   void addBrokerByIPActivated(std::string scope, const LwpaSockaddr &addr);
 
 private:
-  RDMnetControllerGUI(QWidget *parent = Q_NULLPTR);
+  explicit RDMnetControllerGUI(QWidget *parent = Q_NULLPTR);
 
   Ui::RDMnetControllerGUIClass ui;
 

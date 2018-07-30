@@ -132,11 +132,14 @@ PIDInfoIterator PropertyValueItem::pidsEnd()
 
 PropertyValueItem::PropertyValueItem(const QVariant &value, bool writable) : RDMnetNetworkItem(value)
 {
+  pid_ = 0;
   setEditable(writable);
 }
 
 PropertyValueItem::PropertyValueItem(const QVariant &value, int role, bool writable) : RDMnetNetworkItem(value, role)
 {
+  pid_ = 0;
+
   if ((role == Qt::CheckStateRole) && writable)
   {
     setFlags(flags() | Qt::ItemIsUserCheckable);

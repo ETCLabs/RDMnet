@@ -415,10 +415,10 @@ bool BrokerConnection::isUsingMDNS()
 void RDMnetNetworkModel::addScopeToMonitor(std::string scope)
 {
   int platform_error;
-  bool scopeAlreadyAdded = false;
 
   if (scope.length() > 0)
   {
+    bool scopeAlreadyAdded = false;
     for (auto iter = broker_connections_.begin(); (iter != broker_connections_.end()) && !scopeAlreadyAdded; ++iter)
     {
       if (iter->second->scope() == scope)
@@ -1262,7 +1262,6 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
 
             //IP static config variables
             char ipStrBuffer[64];
-            unsigned int portNumber;
 
             memset(ipStrBuffer, '\0', 64);
 
@@ -1384,10 +1383,9 @@ void RDMnetNetworkModel::RecvThreadRun()
       }
     }
 
-    int poll_res = 0;
     if (poll_arr && poll_arr_size)
     {
-      poll_res = rdmnet_poll(poll_arr, poll_arr_size, 200);
+      int poll_res = rdmnet_poll(poll_arr, poll_arr_size, 200);
 
       if (poll_res > 0)
       {
@@ -2344,7 +2342,6 @@ void RDMnetNetworkModel::identify(bool enable, RdmResponse *resp)
 void RDMnetNetworkModel::personality(uint8_t current, uint8_t number, RdmResponse *resp)
 {
   RDMnetNetworkItem *device = getNetworkItem(resp);
-  bool personalityChanged = false;
 
   if (device != NULL)
   {
@@ -2360,7 +2357,7 @@ void RDMnetNetworkModel::personality(uint8_t current, uint8_t number, RdmRespons
                            PropertyValueItem::pidPropertyDisplayName(E120_DMX_PERSONALITY), tr(""));
     }
 
-    personalityChanged =
+    bool personalityChanged =
         (current != static_cast<uint8_t>(getPropertyData(device, E120_DMX_PERSONALITY,
                                                          PersonalityPropertyValueItem::PersonalityNumberRole)
                                              .toInt()));

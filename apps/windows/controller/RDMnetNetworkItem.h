@@ -55,7 +55,7 @@ protected:
 
 public:
   RDMnetNetworkItem();
-  RDMnetNetworkItem(const QVariant &data);
+  explicit RDMnetNetworkItem(const QVariant &data);
   RDMnetNetworkItem(const QVariant &data, int role);
   virtual ~RDMnetNetworkItem();
 

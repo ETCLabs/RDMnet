@@ -31,6 +31,7 @@
 
 NetworkDetailsProxyModel::NetworkDetailsProxyModel()
 {
+  sourceNetworkModel = NULL;
   currentParentIndex = NULL;
   currentParentItem = NULL;
   filterEnabled = true;
