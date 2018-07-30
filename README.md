@@ -16,6 +16,16 @@ set and provides a standard method for configuring both IP-based entertainment
 equipment and interfaces between IP and DMX512 (commonly referred to as
 *gateways*).
 
+## About this ETCLabs Project
+
+RDMnet is official, open-source software developed by ETC employees and is
+designed to interact with ETC products. For challenges using, integrating,
+compiling, or modifying this software, we encourage posting on the
+[issues page](https://github.com/ETCLabs/RDMnet/issues) of this project.
+
+Before posting an issue or opening a pull request, please read the
+[contribution guidelines](./CONTRIBUTING.md).
+
 ## Repository Contents
 
 This repository contains a C-language library for core RDMnet communication. It
@@ -74,13 +84,3 @@ Other key items on the `TODO` list include:
 
 The current version of this repository implements BSR E1.33 rev. 63, which was
 offered for public review by ESTA in the first quarter of 2018.
-
-## About this ETCLabs Project
-
-RDMnet is official, open-source software developed by ETC employees and is
-designed to interact with ETC products. For challenges using, integrating,
-compiling, or modifying this software, we encourage posting on the
-[issues page](https://github.com/ETCLabs/RDMnet/issues) of this project.
-
-Before posting an issue or opening a pull request, please read the
-[contribution guidelines](./CONTRIBUTING.md).
