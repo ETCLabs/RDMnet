@@ -1608,7 +1608,10 @@ lwpa_error_t get_writelock_and_conn(int handle, RdmnetConnection **conn_ptr)
   conn = (RdmnetConnection *)rb_tree_find(&rc_state.connections, &conn_to_find);
 
   if (!conn)
+  {
+    rdmnet_writeunlock();
     return LWPA_NOTFOUND;
+  }
 
   /* Taking the global write lock means we don't have to take the conn
    * mutex. */

@@ -1044,13 +1044,13 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   PropertyValueItem::setPIDInfo(E133_BROKER_STATIC_CONFIG_IPV4, 
                                 rdmNetPIDFlags | kSupportsGet | kSupportsSet | kStartEnabled, QVariant::Type::Invalid);
   PropertyValueItem::addPIDPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV4,
-      QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv4 Address (Static Configuration)")));
+      QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv4 Address (Leave blank for dynamic)")));
   PropertyValueItem::setPIDMaxBufferSize(E133_BROKER_STATIC_CONFIG_IPV4, 4 + 2 + E133_SCOPE_STRING_PADDED_LENGTH);
 
   PropertyValueItem::setPIDInfo(E133_BROKER_STATIC_CONFIG_IPV6, 
                                 rdmNetPIDFlags | kSupportsGet | kSupportsSet | kStartEnabled, QVariant::Type::Invalid);
   PropertyValueItem::addPIDPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV6,
-      QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv6 Address (Static Configuration)")));
+      QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv6 Address (Leave blank for dynamic)")));
   PropertyValueItem::setPIDMaxBufferSize(E133_BROKER_STATIC_CONFIG_IPV6, IPV6_BYTES + 2 + E133_SCOPE_STRING_PADDED_LENGTH);
 
   PropertyValueItem::setPIDInfo(E133_SEARCH_DOMAIN, rdmNetPIDFlags | kSupportsGet | kSupportsSet, 
