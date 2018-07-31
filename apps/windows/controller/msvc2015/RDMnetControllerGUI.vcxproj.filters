@@ -94,9 +94,6 @@
     <ClCompile Include="..\EndpointItem.cpp">
       <Filter>Source Files\GUI\Items</Filter>
     </ClCompile>
-    <ClCompile Include="..\PersonalityPropertyValueItem.cpp">
-      <Filter>Source Files\GUI\Items</Filter>
-    </ClCompile>
     <ClCompile Include="..\PropertyItem.cpp">
       <Filter>Source Files\GUI\Items</Filter>
     </ClCompile>
@@ -226,6 +223,15 @@
     <ClCompile Include="..\..\..\..\src\discovery\bonjour\rdmnetdiscovery_bonjour.c">
       <Filter>Source Files\rdmnet_lib</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_PropertyPushButton.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_PropertyPushButton.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="PropertyPushButton.cpp">
+      <Filter>Source Files\GUI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\RDMnetClientItem.h">
@@ -244,9 +250,6 @@
       <Filter>Header Files\GUI\Items</Filter>
     </ClInclude>
     <ClInclude Include="..\EndpointItem.h">
-      <Filter>Header Files\GUI\Items</Filter>
-    </ClInclude>
-    <ClInclude Include="..\PersonalityPropertyValueItem.h">
       <Filter>Header Files\GUI\Items</Filter>
     </ClInclude>
     <ClInclude Include="..\PropertyItem.h">
@@ -412,6 +415,9 @@
     </CustomBuild>
     <CustomBuild Include="..\RDMnetControllerGUI.qrc">
       <Filter>Resource Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="PropertyPushButton.h">
+      <Filter>Header Files\GUI</Filter>
     </CustomBuild>
   </ItemGroup>
 </Project>

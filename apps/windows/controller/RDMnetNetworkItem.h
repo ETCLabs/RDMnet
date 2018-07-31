@@ -31,8 +31,9 @@
 
 enum EditorWidgetType
 {
-  EWT_COMBOBOX,
-  EWT_DEFAULT
+  kComboBox,
+  kButton,
+  kDefault
 };
 
 class RDMnetNetworkItem : public QStandardItem
@@ -40,6 +41,13 @@ class RDMnetNetworkItem : public QStandardItem
 public:
   static const int RDMnetNetworkItemType = QStandardItem::UserType;
   static const int EditorWidgetTypeRole = Qt::UserRole + 1;
+  static const int PersonalityNumberRole = Qt::UserRole + 2;
+  static const int PersonalityDescriptionListRole = Qt::UserRole + 3;
+  static const int ScopeDataRole = Qt::UserRole + 4;
+  static const int CallbackObjectRole = Qt::UserRole + 5;
+  static const int CallbackSlotRole = Qt::UserRole + 6;
+  static const int ClientManuRole = Qt::UserRole + 7;
+  static const int ClientDevRole = Qt::UserRole + 8;
 
 protected:
   bool children_search_running_;

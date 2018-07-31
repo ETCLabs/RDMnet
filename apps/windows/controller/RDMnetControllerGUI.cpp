@@ -210,8 +210,11 @@ void RDMnetControllerGUI::detailsTreeViewActivated(const QModelIndex &index)
 void RDMnetControllerGUI::addScopeTriggered()
 {
   QString scopeText = ui.newScopeNameEdit->text();
+  QByteArray utf8 = scopeText.toUtf8();
+  const char *scopeData = utf8.constData();
+
   ui.newScopeNameEdit->clear();
-  emit addScopeActivated(scopeText.toUtf8().constData());
+  emit addScopeActivated(scopeData);
 }
 
 void RDMnetControllerGUI::removeSelectedBrokerTriggered()

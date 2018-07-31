@@ -43,7 +43,8 @@ enum PIDFlags
   kSupportsGet = 0x020,
   kSupportsSet = 0x040,
   kExcludeFromModel = 0x080,
-  kStartEnabled = 0x100
+  kStartEnabled = 0x100,
+  kEnableButtons = 0x200
 };
 
 inline PIDFlags operator|(PIDFlags a, PIDFlags b)
@@ -100,8 +101,8 @@ public:
   static PIDInfoIterator pidsBegin();
   static PIDInfoIterator pidsEnd();
 
-  PropertyValueItem(const QVariant &value, bool writable);
-  PropertyValueItem(const QVariant &value, int role, bool writable);
+  PropertyValueItem(const QVariant &value, bool writable = true);
+  PropertyValueItem(const QVariant &value, int role, bool writable = true);
   virtual ~PropertyValueItem();
 
   virtual int type() const override;

@@ -165,6 +165,7 @@ protected slots:
   void processSetPropertyData(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, const QVariant &value,
                               int role);
   void processAddPropertyEntry(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, int role);
+  void processPropertyButtonClick(const QPersistentModelIndex &propertyIndex);
   void removeBroker(BrokerItem *brokerItem);
   void removeAllBrokers();
   void resetDevice(ResponderItem *device);

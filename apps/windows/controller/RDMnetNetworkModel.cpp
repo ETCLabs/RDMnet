@@ -35,11 +35,9 @@
 #include "lwpa_pack.h"
 #include "rdmnet/rdmresponder.h"
 #include "PropertyItem.h"
-#include "PersonalityPropertyValueItem.h"
 
 LwpaCid BrokerConnection::local_cid_;
 LwpaUid BrokerConnection::local_uid_;
-// IRDMnetSocketProxy_Notify *BrokerConnection::socketProxyNotify = NULL;
 MyLog *BrokerConnection::log_ = NULL;
 bool BrokerConnection::static_info_initialized_ = false;
 
@@ -774,6 +772,9 @@ void RDMnetNetworkModel::processSetPropertyData(RDMnetNetworkItem *parent, unsig
                                                 const QVariant &value, int role)
 {
   bool enable = value.isValid() || PropertyValueItem::pidStartEnabled(pid);
+  bool overrideEnableSet = (role == RDMnetNetworkItem::EditorWidgetTypeRole)
+                           && (static_cast<EditorWidgetType>(value.toInt()) == kButton)
+                           && (PropertyValueItem::pidFlags(pid) & kEnableButtons);
 
   if (parent != NULL)
   {
@@ -790,7 +791,7 @@ void RDMnetNetworkModel::processSetPropertyData(RDMnetNetworkItem *parent, unsig
             item->getValueItem()->setData(value, role);
 
             item->setEnabled(enable);
-            item->getValueItem()->setEnabled(enable && PropertyValueItem::pidSupportsSet(pid));
+            item->getValueItem()->setEnabled((enable && PropertyValueItem::pidSupportsSet(pid)) || overrideEnableSet);
 
             return;
           }
@@ -799,19 +800,15 @@ void RDMnetNetworkModel::processSetPropertyData(RDMnetNetworkItem *parent, unsig
 
       // Property doesn't exist, so make a new one.
       PropertyItem *propertyItem = createPropertyItem(parent, name);
-      PropertyValueItem *propertyValueItem;
+      PropertyValueItem *propertyValueItem = new PropertyValueItem(value, role);
 
       if (pid == E120_DMX_PERSONALITY)
       {
-        propertyValueItem = new PersonalityPropertyValueItem(value, role, PropertyValueItem::pidSupportsSet(pid));
-      }
-      else
-      {
-        propertyValueItem = new PropertyValueItem(value, role, PropertyValueItem::pidSupportsSet(pid));
+        propertyValueItem->setData(EditorWidgetType::kComboBox, RDMnetNetworkItem::EditorWidgetTypeRole);
       }
 
       propertyValueItem->setPID(pid);
-      propertyValueItem->setEnabled(enable && PropertyValueItem::pidSupportsSet(pid));
+      propertyValueItem->setEnabled((enable && PropertyValueItem::pidSupportsSet(pid)) || overrideEnableSet);
       propertyItem->setValueItem(propertyValueItem);
       propertyItem->setEnabled(enable);
       parent->properties.push_back(propertyItem);
@@ -823,6 +820,33 @@ void RDMnetNetworkModel::processAddPropertyEntry(RDMnetNetworkItem *parent, unsi
                                                  int role)
 {
   processSetPropertyData(parent, pid, name, QVariant(), role);
+}
+
+void RDMnetNetworkModel::processPropertyButtonClick(const QPersistentModelIndex & propertyIndex)
+{
+  // Assuming this is SET TCP_COMMS_STATUS for now.
+  if (propertyIndex.isValid())
+  {
+    QString scope = propertyIndex.data(RDMnetNetworkItem::ScopeDataRole).toString();
+    QByteArray local8Bit = scope.toLocal8Bit();
+    const char *scopeData = local8Bit.constData();
+
+    RdmCommand setCmd;
+    int32_t maxBuffSize = PropertyValueItem::pidMaxBufferSize(E133_TCP_COMMS_STATUS);
+    QVariant manuVariant = propertyIndex.data(RDMnetNetworkItem::ClientManuRole);
+    QVariant devVariant = propertyIndex.data(RDMnetNetworkItem::ClientDevRole);
+
+    setCmd.dest_uid.manu = static_cast<uint16_t>(manuVariant.toUInt());
+    setCmd.dest_uid.id = static_cast<uint32_t>(devVariant.toUInt());
+    setCmd.subdevice = 0;
+    setCmd.command_class = E120_SET_COMMAND;
+    setCmd.param_id = E133_TCP_COMMS_STATUS;
+    setCmd.datalen = maxBuffSize;
+    memset(setCmd.data, 0, maxBuffSize);
+    memcpy(setCmd.data, scopeData, min(scope.length(), maxBuffSize));
+
+    SendRDMCommand(setCmd);
+  }
 }
 
 void RDMnetNetworkModel::removeBroker(BrokerItem *brokerItem)
@@ -1024,7 +1048,7 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   PropertyValueItem::setPIDMaxBufferSize(E120_IDENTIFY_DEVICE, 1);
 
   PropertyValueItem::setPIDInfo(E120_DMX_PERSONALITY, rdmPIDFlags | kSupportsGet | kSupportsSet, QVariant::Type::Char,
-                                PersonalityPropertyValueItem::PersonalityNumberRole);
+                                RDMnetNetworkItem::PersonalityNumberRole);
   PropertyValueItem::addPIDPropertyDisplayName(E120_DMX_PERSONALITY,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("DMX512 Personality")));
   PropertyValueItem::setPIDNumericDomain(E120_DMX_PERSONALITY, 1, 255);
@@ -1059,11 +1083,14 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
                                                QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Search Domain")));
   PropertyValueItem::setPIDMaxBufferSize(E133_SEARCH_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
 
-  PropertyValueItem::setPIDInfo(E133_TCP_COMMS_STATUS, rdmNetPIDFlags | kSupportsGet, QVariant::Type::Invalid);
+  PropertyValueItem::setPIDInfo(E133_TCP_COMMS_STATUS, rdmNetPIDFlags | kSupportsGet | kEnableButtons, QVariant::Type::Invalid);
   PropertyValueItem::addPIDPropertyDisplayName(
       E133_TCP_COMMS_STATUS, QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IP Address (Current)")));
   PropertyValueItem::addPIDPropertyDisplayName(E133_TCP_COMMS_STATUS,
                                                QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Unhealthy TCP Events")));
+  PropertyValueItem::addPIDPropertyDisplayName(E133_TCP_COMMS_STATUS,
+                                               QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Unhealthy TCP Events\\Reset Counter")));
+  PropertyValueItem::setPIDMaxBufferSize(E133_TCP_COMMS_STATUS, E133_SCOPE_STRING_PADDED_LENGTH);
 
   model->setColumnCount(2);
   model->setHeaderData(0, Qt::Orientation::Horizontal, tr("Property"));
@@ -2359,14 +2386,14 @@ void RDMnetNetworkModel::personality(uint8_t current, uint8_t number, RdmRespons
 
     bool personalityChanged =
         (current != static_cast<uint8_t>(getPropertyData(device, E120_DMX_PERSONALITY,
-                                                         PersonalityPropertyValueItem::PersonalityNumberRole)
+                                                         RDMnetNetworkItem::PersonalityNumberRole)
                                              .toInt()));
 
     if ((current != 0) && personalityChanged)
     {
       emit setPropertyData(device, E120_DMX_PERSONALITY,
                            PropertyValueItem::pidPropertyDisplayName(E120_DMX_PERSONALITY), (uint16_t)current,
-                           PersonalityPropertyValueItem::PersonalityNumberRole);
+                           RDMnetNetworkItem::PersonalityNumberRole);
 
       sendGetCommand(E120_DEVICE_INFO, resp->src_uid.manu, resp->src_uid.id);
     }
@@ -2392,7 +2419,7 @@ void RDMnetNetworkModel::personalityDescription(uint8_t personality, uint16_t fo
     {
       QStringList personalityDescriptions = device->personalityDescriptionList();
       uint8_t currentPersonality =
-          getPropertyData(device, E120_DMX_PERSONALITY, PersonalityPropertyValueItem::PersonalityNumberRole).toInt();
+          getPropertyData(device, E120_DMX_PERSONALITY, RDMnetNetworkItem::PersonalityNumberRole).toInt();
 
       if (currentPersonality == 0)
       {
@@ -2408,7 +2435,7 @@ void RDMnetNetworkModel::personalityDescription(uint8_t personality, uint16_t fo
 
       emit setPropertyData(device, E120_DMX_PERSONALITY,
                            PropertyValueItem::pidPropertyDisplayName(E120_DMX_PERSONALITY), personalityDescriptions,
-                           PersonalityPropertyValueItem::PersonalityDescriptionListRole);
+                           RDMnetNetworkItem::PersonalityDescriptionListRole);
     }
   }
 }
@@ -2488,6 +2515,12 @@ void RDMnetNetworkModel::tcpCommsStatus(const char *scopeString, const char *v4A
 
   if (client != NULL)
   {
+    QVariant callbackObjectVariant;
+    const char *callbackSlotString = SLOT(processPropertyButtonClick(const QPersistentModelIndex &));
+    QString callbackSlotQString(callbackSlotString);
+
+    callbackObjectVariant.setValue(this);
+
     if (strlen(v4AddrString) == 0) // use v6
     {
       emit setPropertyData(client, E133_TCP_COMMS_STATUS,
@@ -2496,7 +2529,6 @@ void RDMnetNetworkModel::tcpCommsStatus(const char *scopeString, const char *v4A
     }
     else // use v4
     {
-
       emit setPropertyData(client, E133_TCP_COMMS_STATUS,
         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 0), 
                                                   QString("%0:%1").arg(v4AddrString).arg(port));
@@ -2504,6 +2536,34 @@ void RDMnetNetworkModel::tcpCommsStatus(const char *scopeString, const char *v4A
 
     emit setPropertyData(client, E133_TCP_COMMS_STATUS,
                          PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 1), unhealthyTCPEvents);
+
+    emit setPropertyData(client, E133_TCP_COMMS_STATUS,
+                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 2), tr("Reset"));
+
+    emit setPropertyData(client, E133_TCP_COMMS_STATUS,
+                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 2),
+                         tr(scopeString), RDMnetNetworkItem::ScopeDataRole);
+
+    emit setPropertyData(client, E133_TCP_COMMS_STATUS,
+                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 2),
+                         callbackObjectVariant, RDMnetNetworkItem::CallbackObjectRole);
+
+    emit setPropertyData(client, E133_TCP_COMMS_STATUS,
+                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 2),
+                         callbackSlotQString, RDMnetNetworkItem::CallbackSlotRole);
+
+    emit setPropertyData(client, E133_TCP_COMMS_STATUS,
+                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 2),
+                         resp->src_uid.manu, RDMnetNetworkItem::ClientManuRole);
+
+    emit setPropertyData(client, E133_TCP_COMMS_STATUS,
+                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 2),
+                         resp->src_uid.id, RDMnetNetworkItem::ClientDevRole);
+
+    // This needs to be the last call to setPropertyData so that the button can be enabled if needed.
+    emit setPropertyData(client, E133_TCP_COMMS_STATUS,
+                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 2), 
+                         EditorWidgetType::kButton, RDMnetNetworkItem::EditorWidgetTypeRole);
   }
 }
 
@@ -2618,11 +2678,15 @@ uint8_t *RDMnetNetworkModel::packIPAddressItem(const QVariant & value, lwpa_ipty
     return NULL;
   }
 
+  QString valueQString = value.toString();
+  QByteArray local8Bit = valueQString.toLocal8Bit();
+  const char *valueData = local8Bit.constData();
+
   if (value.toString().length() == 0)
   {
     memset(packPtr, 0, memSize);
   }
-  else if (sscanf(value.toString().toLocal8Bit().constData(), 
+  else if (sscanf(valueData,
              (addrType == LWPA_IPV4) ? "%63[1234567890.]:%u" : "[%63[1234567890:abcdefABCDEF]]:%u", 
              ipStrBuffer, &portNumber) < 2)
   {
@@ -2650,7 +2714,9 @@ uint8_t * RDMnetNetworkModel::packStaticConfigItem(const BrokerItem * broker, co
   uint8_t *result = packIPAddressItem(value, addrType, packPtr);
   if (result != NULL)
   {
-    memcpy(result, broker->scope().toLocal8Bit().constData(), E133_SCOPE_STRING_PADDED_LENGTH);
+    QByteArray local8Bit = broker->scope().toLocal8Bit();
+    const char *scopeData = local8Bit.constData();
+    memcpy(result, scopeData, E133_SCOPE_STRING_PADDED_LENGTH);
     result += E133_SCOPE_STRING_PADDED_LENGTH;
   }
 

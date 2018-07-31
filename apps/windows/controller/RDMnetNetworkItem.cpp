@@ -50,7 +50,7 @@ RDMnetNetworkItem::RDMnetNetworkItem()
 {
   setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
 
-  setData(EditorWidgetType::EWT_DEFAULT, EditorWidgetTypeRole);
+  setData(EditorWidgetType::kDefault, EditorWidgetTypeRole);
 }
 
 RDMnetNetworkItem::RDMnetNetworkItem(const QVariant &data)
@@ -73,7 +73,7 @@ RDMnetNetworkItem::RDMnetNetworkItem(const QVariant &data)
     setData(data, Qt::DisplayRole);
   }
 
-  setData(EditorWidgetType::EWT_DEFAULT, EditorWidgetTypeRole);
+  setData(EditorWidgetType::kDefault, EditorWidgetTypeRole);
 }
 
 RDMnetNetworkItem::RDMnetNetworkItem(const QVariant &data, int role)
@@ -96,7 +96,7 @@ RDMnetNetworkItem::RDMnetNetworkItem(const QVariant &data, int role)
     setData(data, role);
   }
 
-  setData(EditorWidgetType::EWT_DEFAULT, EditorWidgetTypeRole);
+  setData(EditorWidgetType::kDefault, EditorWidgetTypeRole);
 }
 
 RDMnetNetworkItem::~RDMnetNetworkItem()
