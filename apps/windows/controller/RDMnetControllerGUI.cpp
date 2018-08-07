@@ -314,9 +314,14 @@ void RDMnetControllerGUI::processResetDeviceSupportChanged(const RDMnetNetworkIt
 
 void RDMnetControllerGUI::expandNewItem(const QModelIndex & index, int type)
 {
+  //QModelIndex index = (type == PropertyItem::PropertyItemType)
+  //                    ? net_details_proxy_->mapFromSource(index)
+  //                    : simple_net_proxy_->mapFromSource(index);
+
   switch (type)
   {
   case PropertyItem::PropertyItemType:
+    //index = net_details_proxy_->mapFromSource(index);
     ui.detailsTreeView->expand(net_details_proxy_->mapFromSource(index));
     break;
   default:

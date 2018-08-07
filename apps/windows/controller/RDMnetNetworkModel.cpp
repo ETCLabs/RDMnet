@@ -2922,7 +2922,7 @@ PropertyItem *RDMnetNetworkModel::createGroupingItem(RDMnetNetworkItem *parent, 
   PropertyValueItem *valueItem = new PropertyValueItem(QVariant(), false);
   groupingItem->setValueItem(valueItem);
 
-  emit expandNewItem(groupingItem->index(), PropertyItem::PropertyItemType);
+  //emit expandNewItem(groupingItem->index(), PropertyItem::PropertyItemType);
 
   return groupingItem;
 }
@@ -2933,7 +2933,6 @@ QString RDMnetNetworkModel::getChildPathName(const QString &superPathName)
   int startPosition = highGroupName.length() + 1;  // Name + delimiter character
 
   return superPathName.mid(startPosition, superPathName.length() - startPosition);
-  ;
 }
 
 RDMnetNetworkModel::RDMnetNetworkModel() : log_("RDMnetController.log")

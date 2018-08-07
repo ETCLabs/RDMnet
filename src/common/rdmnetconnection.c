@@ -458,7 +458,7 @@ lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const C
     res = update_backoff_and_wait_if_blocking(conn, remote_addr);
   /* Any error other than LWPA_INPROGRESS indicates that there was a problem
    * reacquiring the locks and we should return now. */
-  if (res != LWPA_OK && res != LWPA_INPROGRESS)
+  if (res != LWPA_OK && res != LWPA_INPROGRESS && res != LWPA_ISCONN)
     return res;
 
   if (res == LWPA_OK)
@@ -510,7 +510,7 @@ lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const C
     else
       res = LWPA_INPROGRESS;
   }
-  else
+  else if (res != LWPA_ISCONN)
   {
     /* The connection failed. */
     conn->state = kCSNotConnected;
