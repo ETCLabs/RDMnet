@@ -55,8 +55,7 @@ public slots:
   void openBrokerStaticAddDialog();
   void processBrokerItemTextUpdate(const class BrokerItem *item);
   void processResetDeviceSupportChanged(const class RDMnetNetworkItem *item);
-  void dataChangeTest1(QModelIndex a, QModelIndex b, QVector<int> c);
-  void dataChangeTest2(QModelIndex a, QModelIndex b, QVector<int> c);
+  void expandNewItem(const QModelIndex &index, int type);
 
 signals:
 

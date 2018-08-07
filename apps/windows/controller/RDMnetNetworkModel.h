@@ -130,15 +130,6 @@ class RDMnetNetworkModel : public QStandardItemModel  //, public IRDMnet_MDNS_No
 public:
   std::map<int, std::unique_ptr<BrokerConnection>> broker_connections_;
 
-private:
-  static bool rdmnet_initialized_;
-
-  MyLog log_;
-  ScopeMonitorInfo scope_info_;
-  uint32_t broker_count_ = 0;
-  bool recv_thread_run_;
-  lwpa_thread_t recv_thread_;
-
 signals:
   void brokerDisconnection(int conn);
   void addRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list);
@@ -150,6 +141,16 @@ signals:
   void brokerItemTextUpdated(const BrokerItem *item);
   void addPropertyEntry(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, int role);
   void resetDeviceSupportChanged(const class RDMnetNetworkItem *item);
+  void expandNewItem(const QModelIndex &index, int type);
+
+private:
+  static bool rdmnet_initialized_;
+
+  MyLog log_;
+  ScopeMonitorInfo scope_info_;
+  uint32_t broker_count_ = 0;
+  bool recv_thread_run_;
+  lwpa_thread_t recv_thread_;
 
 public slots:
   void addScopeToMonitor(std::string scope);

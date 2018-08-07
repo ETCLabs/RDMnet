@@ -128,51 +128,24 @@ void NetworkDetailsProxyModel::setFilterEnabled(bool setting)
 
 bool NetworkDetailsProxyModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const
 {
-  if (filterEnabled)
+  if (filterEnabled && currentParentItem && sourceNetworkModel)
   {
-    bool isChildOfCurrentParent = false;
+    QModelIndex child = source_parent.child(source_row, 0);
 
-    if (sourceNetworkModel)
+    if (child == currentParentItem->index())
     {
-      QStandardItem *item = NULL, *potentialParent = NULL;
-
-      if (source_parent.isValid())
-      {
-        item = sourceNetworkModel->itemFromIndex(source_parent);
-      }
-      else if (source_parent == sourceNetworkModel->indexFromItem(sourceNetworkModel->invisibleRootItem()))
-      {
-        item = sourceNetworkModel->invisibleRootItem();
-        isChildOfCurrentParent = true;
-      }
-
-      potentialParent = item;
-
-      while ((potentialParent != NULL) && !isChildOfCurrentParent)
-      {
-        isChildOfCurrentParent = (potentialParent == currentParentItem);
-
-        potentialParent = potentialParent->parent();
-      }
-
-      if (item && isChildOfCurrentParent)
-      {
-        QStandardItem *child = item->child(source_row);
-
-        if (child)
-        {
-          if (child->type() == PropertyItem::PropertyItemType)
-          {
-            return true;
-          }
-        }
-      }
+      return true;
     }
 
-    return !isChildOfCurrentParent;
+    QStandardItem *childItem = sourceNetworkModel->itemFromIndex(child);
+
+    if (childItem)
+    {
+      return (childItem->type() == PropertyItem::PropertyItemType);
+    }
   }
 
-  return true;
+  return source_parent.isValid();
 }
 
 bool NetworkDetailsProxyModel::lessThan(const QModelIndex &left, const QModelIndex &right) const

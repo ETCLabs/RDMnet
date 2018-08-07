@@ -31,6 +31,7 @@
 #include "NetworkDetailsProxyModel.h"
 #include "SimpleNetworkProxyModel.h"
 #include "PropertyEditorsDelegate.h"
+#include "PropertyItem.h"
 
 RDMnetControllerGUI::~RDMnetControllerGUI()
 {
@@ -118,10 +119,10 @@ RDMnetControllerGUI *RDMnetControllerGUI::makeRDMnetControllerGUI()
   connect(gui->main_network_model_, SIGNAL(resetDeviceSupportChanged(const class RDMnetNetworkItem *)), gui,
           SLOT(processResetDeviceSupportChanged(const class RDMnetNetworkItem *)));
 
-  connect(gui->main_network_model_, SIGNAL(dataChanged(QModelIndex, QModelIndex, QVector<int>)), gui,
-          SLOT(dataChangeTest1(QModelIndex, QModelIndex, QVector<int>)));
-  connect(gui->net_details_proxy_, SIGNAL(dataChanged(QModelIndex, QModelIndex, QVector<int>)), gui,
-          SLOT(dataChangeTest2(QModelIndex, QModelIndex, QVector<int>)));
+  connect(gui->main_network_model_, SIGNAL(expandNewItem(const QModelIndex &, int)), gui,
+          SLOT(expandNewItem(const QModelIndex &, int)));
+
+  gui->main_network_model_->addScopeToMonitor(E133_DEFAULT_SCOPE);
 
   return gui;
 }
@@ -246,6 +247,8 @@ void RDMnetControllerGUI::removeSelectedBrokerTriggered()
 
 void RDMnetControllerGUI::removeAllBrokersTriggered()
 {
+  emit removeAllBrokersActivated();
+
   ui.networkTreeView->clearSelection();
   ui.detailsTreeView->clearSelection();
   ui.detailsTreeView->setRootIndex(QModelIndex());
@@ -254,7 +257,6 @@ void RDMnetControllerGUI::removeAllBrokersTriggered()
   net_details_proxy_->clearCurrentParentIndex();
   net_details_proxy_->setCurrentParentItem(NULL);
 
-  emit removeAllBrokersActivated();
   currently_selected_broker_item_ = NULL;
 
   net_details_proxy_->setFilterEnabled(true);
@@ -310,12 +312,16 @@ void RDMnetControllerGUI::processResetDeviceSupportChanged(const RDMnetNetworkIt
   }
 }
 
-void RDMnetControllerGUI::dataChangeTest1(QModelIndex /*a*/, QModelIndex /*b*/, QVector<int> /*c*/)
+void RDMnetControllerGUI::expandNewItem(const QModelIndex & index, int type)
 {
-}
-
-void RDMnetControllerGUI::dataChangeTest2(QModelIndex /*a*/, QModelIndex /*b*/, QVector<int> /*c*/)
-{
+  switch (type)
+  {
+  case PropertyItem::PropertyItemType:
+    ui.detailsTreeView->expand(net_details_proxy_->mapFromSource(index));
+    break;
+  default:
+    ui.networkTreeView->expand(simple_net_proxy_->mapFromSource(index));
+  }
 }
 
 RDMnetControllerGUI::RDMnetControllerGUI(QWidget *parent)

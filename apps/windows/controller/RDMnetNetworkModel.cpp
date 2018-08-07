@@ -442,6 +442,8 @@ void RDMnetNetworkModel::addScopeToMonitor(std::string scope)
       broker_connections_[broker_count_] = std::move(connection);
       broker_connections_[broker_count_]->appendBrokerItemToTree(invisibleRootItem(), broker_count_);
 
+      emit expandNewItem(broker_connections_[broker_count_]->treeBrokerItem()->index(), BrokerItem::BrokerItemType);
+
       ++broker_count_;
 
       memset(scope_info_.scope, '\0', E133_SCOPE_STRING_PADDED_LENGTH);
@@ -503,6 +505,8 @@ void RDMnetNetworkModel::addBrokerByIP(std::string scope, const LwpaSockaddr &ad
     broker_connections_[new_conn]->appendBrokerItemToTree(invisibleRootItem(), broker_count_);
     broker_connections_[new_conn]->connect();
 
+    emit expandNewItem(broker_connections_[new_conn]->treeBrokerItem()->index(), BrokerItem::BrokerItemType);
+
     ++broker_count_;
   }
 }
@@ -511,23 +515,26 @@ void RDMnetNetworkModel::processBrokerDisconnection(int conn)
 {
   BrokerConnection *connection = broker_connections_[conn].get();
 
-  if (connection->connected())
+  if (connection)
   {
-    connection->disconnect();
-
-    if (connection->treeBrokerItem() != NULL)
+    if (connection->connected())
     {
-      emit brokerItemTextUpdated(connection->treeBrokerItem());
+      connection->disconnect();
+
+      if (connection->treeBrokerItem() != NULL)
+      {
+        emit brokerItemTextUpdated(connection->treeBrokerItem());
+      }
+
+      connection->treeBrokerItem()->rdmnet_devices_.clear();
+      connection->treeBrokerItem()->completelyRemoveChildren(0, connection->treeBrokerItem()->rowCount());
+      connection->treeBrokerItem()->enableChildrenSearch();
     }
 
-    connection->treeBrokerItem()->rdmnet_devices_.clear();
-    connection->treeBrokerItem()->completelyRemoveChildren(0, connection->treeBrokerItem()->rowCount());
-    connection->treeBrokerItem()->enableChildrenSearch();
-  }
-
-  if (!connection->isUsingMDNS())
-  {
-    connection->connect();
+    if (!connection->isUsingMDNS())
+    {
+      connection->connect();
+    }
   }
 }
 
@@ -617,17 +624,9 @@ void RDMnetNetworkModel::processRemoveRDMnetClients(BrokerItem *treeBrokerItem,
 void RDMnetNetworkModel::processNewEndpointList(RDMnetClientItem *treeClientItem,
                                                 const std::vector<std::pair<uint16_t, uint8_t>> &list)
 {
-  if (treeClientItem->childrenSearchRunning())
+  if (treeClientItem->childrenSearchRunning() && (list.size() > 1))
   {
     treeClientItem->disableChildrenSearch();
-
-    //  // Add the Default Responder
-    //  EndpointItem *def_resp_item = new EndpointItem(treeClientItem->Uid().manu, treeClientItem->Uid().id);
-    //  appendRowToItem(treeClientItem, def_resp_item);
-    //  treeClientItem->endpoints_.push_back(def_resp_item);
-    //  std::vector<LwpaUid> responder_list;
-    //  responder_list.push_back(treeClientItem->Uid());
-    //  processNewResponderList(def_resp_item, responder_list);
   }
 
   std::vector<EndpointItem *> prev_list = treeClientItem->endpoints_;
@@ -1095,8 +1094,6 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   model->setColumnCount(2);
   model->setHeaderData(0, Qt::Orientation::Horizontal, tr("Property"));
   model->setHeaderData(1, Qt::Orientation::Horizontal, tr("Value"));
-
-  model->addScopeToMonitor(E133_DEFAULT_SCOPE);
 
   qRegisterMetaType<std::vector<ClientEntryData>>("std::vector<ClientEntryData>");
   qRegisterMetaType<std::vector<std::pair<uint16_t, uint8_t>>>("std::vector<std::pair<uint16_t, uint8_t>>");
@@ -2920,6 +2917,12 @@ PropertyItem *RDMnetNetworkModel::createGroupingItem(RDMnetNetworkItem *parent, 
 
   appendRowToItem(parent, groupingItem);
   groupingItem->setEnabled(true);
+
+  // Make sure values of group items are blank and inaccessible.
+  PropertyValueItem *valueItem = new PropertyValueItem(QVariant(), false);
+  groupingItem->setValueItem(valueItem);
+
+  emit expandNewItem(groupingItem->index(), PropertyItem::PropertyItemType);
 
   return groupingItem;
 }
