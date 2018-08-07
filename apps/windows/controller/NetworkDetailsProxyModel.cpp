@@ -128,24 +128,30 @@ void NetworkDetailsProxyModel::setFilterEnabled(bool setting)
 
 bool NetworkDetailsProxyModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const
 {
-  if (filterEnabled && currentParentItem && sourceNetworkModel)
+  if (filterEnabled)
   {
     QModelIndex child = source_parent.child(source_row, 0);
 
-    if (child == currentParentItem->index())
+    if (currentParentItem)
     {
-      return true;
+      if (child == currentParentItem->index())
+      {
+        return true;
+      }
     }
 
-    QStandardItem *childItem = sourceNetworkModel->itemFromIndex(child);
-
-    if (childItem)
+    if (sourceNetworkModel)
     {
-      return (childItem->type() == PropertyItem::PropertyItemType);
+      QStandardItem *childItem = sourceNetworkModel->itemFromIndex(child);
+
+      if (childItem)
+      {
+        return (childItem->type() == PropertyItem::PropertyItemType);
+      }
     }
   }
 
-  return source_parent.isValid();
+  return !filterEnabled;
 }
 
 bool NetworkDetailsProxyModel::lessThan(const QModelIndex &left, const QModelIndex &right) const
