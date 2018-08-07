@@ -140,7 +140,7 @@ signals:
                        int role = Qt::DisplayRole);
   void brokerItemTextUpdated(const BrokerItem *item);
   void addPropertyEntry(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, int role);
-  void resetDeviceSupportChanged(const class RDMnetNetworkItem *item);
+  void featureSupportChanged(const class RDMnetNetworkItem *item, SupportedDeviceFeature feature);
   void expandNewItem(const QModelIndex &index, int type);
 
 private:
@@ -169,7 +169,7 @@ protected slots:
   void processPropertyButtonClick(const QPersistentModelIndex &propertyIndex);
   void removeBroker(BrokerItem *brokerItem);
   void removeAllBrokers();
-  void resetDevice(ResponderItem *device);
+  void activateFeature(RDMnetNetworkItem *device, SupportedDeviceFeature feature);
 
 public:
   void InitRDMnet();

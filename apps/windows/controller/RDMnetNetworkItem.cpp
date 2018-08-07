@@ -42,8 +42,9 @@ bool RDMnetNetworkItem::rowHasSearchingStatusItem(int row)
 
 RDMnetNetworkItem::RDMnetNetworkItem()
     : children_search_running_(false)
-    , supports_reset_device_(false)
+    , supportedFeatures(kNoSupport)
     , device_reset_(false)
+    , device_identifying_(false)
     , personalityDescriptions(NULL)
     , numberOfDescriptionsFound(0)
     , totalNumberOfDescriptions(0)
@@ -56,8 +57,9 @@ RDMnetNetworkItem::RDMnetNetworkItem()
 RDMnetNetworkItem::RDMnetNetworkItem(const QVariant &data)
     : QStandardItem()
     , children_search_running_(false)
-    , supports_reset_device_(false)
+    , supportedFeatures(kNoSupport)
     , device_reset_(false)
+    , device_identifying_(false)
     , personalityDescriptions(NULL)
     , numberOfDescriptionsFound(0)
     , totalNumberOfDescriptions(0)
@@ -79,8 +81,9 @@ RDMnetNetworkItem::RDMnetNetworkItem(const QVariant &data)
 RDMnetNetworkItem::RDMnetNetworkItem(const QVariant &data, int role)
     : QStandardItem()
     , children_search_running_(false)
-    , supports_reset_device_(false)
+    , supportedFeatures(kNoSupport)
     , device_reset_(false)
+    , device_identifying_(false)
     , personalityDescriptions(NULL)
     , numberOfDescriptionsFound(0)
     , totalNumberOfDescriptions(0)
@@ -114,9 +117,9 @@ bool RDMnetNetworkItem::childrenSearchRunning() const
   return children_search_running_;
 }
 
-bool RDMnetNetworkItem::supportsResetDevice() const
+bool RDMnetNetworkItem::supportsFeature(SupportedDeviceFeature feature) const
 {
-  return supports_reset_device_;
+  return supportedFeatures & feature;
 }
 
 void RDMnetNetworkItem::enableChildrenSearch()
@@ -151,9 +154,9 @@ void RDMnetNetworkItem::disableChildrenSearch()
   }
 }
 
-void RDMnetNetworkItem::enableResetDevice()
+void RDMnetNetworkItem::enableFeature(SupportedDeviceFeature feature)
 {
-  supports_reset_device_ = true;
+  supportedFeatures |= feature;
 }
 
 void RDMnetNetworkItem::completelyRemoveChildren(int row, int count)
@@ -242,4 +245,14 @@ QString RDMnetNetworkItem::personalityDescriptionAt(int i)
 void RDMnetNetworkItem::setDeviceWasReset(bool reset)
 {
   device_reset_ = reset;
+}
+
+void RDMnetNetworkItem::setDeviceIdentifying(bool identifying)
+{
+  device_identifying_ = identifying;
+}
+
+bool RDMnetNetworkItem::identifying()
+{
+  return device_identifying_;
 }

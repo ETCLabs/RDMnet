@@ -36,6 +36,30 @@ enum EditorWidgetType
   kDefault
 };
 
+enum SupportedDeviceFeature
+{
+  kNoSupport = 0x0,
+  kResetDevice = 0x1,
+  kIdentifyDevice = 0x2
+};
+
+inline SupportedDeviceFeature operator|(SupportedDeviceFeature a, SupportedDeviceFeature b)
+{
+  return static_cast<SupportedDeviceFeature>(static_cast<int>(a) | static_cast<int>(b));
+}
+
+inline SupportedDeviceFeature operator|=(SupportedDeviceFeature &a, SupportedDeviceFeature b)
+{
+  return a = (a | b);
+}
+
+inline SupportedDeviceFeature operator&(SupportedDeviceFeature a, SupportedDeviceFeature b)
+{
+  return static_cast<SupportedDeviceFeature>(static_cast<int>(a) & static_cast<int>(b));
+}
+
+Q_DECLARE_METATYPE(SupportedDeviceFeature)
+
 class RDMnetNetworkItem : public QStandardItem
 {
 public:
@@ -50,14 +74,16 @@ public:
   static const int ClientDevRole = Qt::UserRole + 8;
 
 protected:
+  SupportedDeviceFeature supportedFeatures;
+
   bool children_search_running_;
-  bool supports_reset_device_;
 
   QString *personalityDescriptions;
   uint8_t numberOfDescriptionsFound;
   uint8_t totalNumberOfDescriptions;
 
   bool device_reset_;
+  bool device_identifying_;
 
   bool rowHasSearchingStatusItem(int row);
 
@@ -70,11 +96,11 @@ public:
   virtual int type() const override;
 
   bool childrenSearchRunning() const;
-  bool supportsResetDevice() const;
+  bool supportsFeature(SupportedDeviceFeature feature) const;
 
   void enableChildrenSearch();
   void disableChildrenSearch();
-  void enableResetDevice();
+  void enableFeature(SupportedDeviceFeature feature);
   void completelyRemoveChildren(int row, int count = 1);
   void disableAllChildItems();
 
@@ -88,6 +114,8 @@ public:
   QStringList personalityDescriptionList();
   QString personalityDescriptionAt(int i);
   void setDeviceWasReset(bool reset);
+  void setDeviceIdentifying(bool identifying);
+  bool identifying();
 
   std::vector<class PropertyItem *> properties;
 };

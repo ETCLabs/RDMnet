@@ -32,6 +32,7 @@
 #include "ui_RDMnetControllerGUI.h"
 
 #include "BrokerStaticAddGUI.h"
+#include "RDMnetNetworkItem.h"
 
 class RDMnetControllerGUI : public QMainWindow, public IHandlesBrokerStaticAdd
 {
@@ -52,9 +53,10 @@ public slots:
   void removeSelectedBrokerTriggered();
   void removeAllBrokersTriggered();
   void resetDeviceTriggered();
+  void identifyDeviceTriggered();
   void openBrokerStaticAddDialog();
   void processBrokerItemTextUpdate(const class BrokerItem *item);
-  void processResetDeviceSupportChanged(const class RDMnetNetworkItem *item);
+  void processFeatureSupportChange(const class RDMnetNetworkItem *item, SupportedDeviceFeature feature);
   void expandNewItem(const QModelIndex &index, int type);
 
 signals:
@@ -62,7 +64,7 @@ signals:
   void addScopeActivated(std::string scope);
   void removeSelectedBrokerActivated(class BrokerItem *brokerItem);
   void removeAllBrokersActivated();
-  void resetDeviceActivated(class ResponderItem *device);
+  void featureActivated(class RDMnetNetworkItem *device, SupportedDeviceFeature feature);
   void addBrokerByIPActivated(std::string scope, const LwpaSockaddr &addr);
 
 private:

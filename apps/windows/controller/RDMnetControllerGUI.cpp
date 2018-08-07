@@ -82,6 +82,8 @@ RDMnetControllerGUI *RDMnetControllerGUI::makeRDMnetControllerGUI()
   networkTreeHeaderView->hideSection(1);
   networkTreeHeaderView->setSectionResizeMode(0, QHeaderView::Fixed);
 
+  qRegisterMetaType<SupportedDeviceFeature>("SupportedDeviceFeature");
+
   connect(gui->ui.networkTreeView->selectionModel(),
           SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)), gui,
           SLOT(networkTreeViewSelectionChanged(const QItemSelection &, const QItemSelection &)));
@@ -100,8 +102,9 @@ RDMnetControllerGUI *RDMnetControllerGUI::makeRDMnetControllerGUI()
   connect(gui, SIGNAL(removeAllBrokersActivated()), gui->main_network_model_, SLOT(removeAllBrokers()));
 
   connect(gui->ui.resetDeviceButton, SIGNAL(clicked()), gui, SLOT(resetDeviceTriggered()));
-  connect(gui, SIGNAL(resetDeviceActivated(ResponderItem *)), gui->main_network_model_,
-          SLOT(resetDevice(ResponderItem *)));
+  connect(gui->ui.identifyDeviceButton, SIGNAL(clicked()), gui, SLOT(identifyDeviceTriggered()));
+  connect(gui, SIGNAL(featureActivated(RDMnetNetworkItem *, SupportedDeviceFeature)), gui->main_network_model_,
+          SLOT(activateFeature(RDMnetNetworkItem *, SupportedDeviceFeature)));
 
   connect(gui->ui.networkTreeView, SIGNAL(expanded(const QModelIndex &)), gui->simple_net_proxy_,
           SLOT(directChildrenRevealed(const QModelIndex &)));
@@ -116,8 +119,9 @@ RDMnetControllerGUI *RDMnetControllerGUI::makeRDMnetControllerGUI()
   connect(gui->main_network_model_, SIGNAL(brokerItemTextUpdated(const BrokerItem *)), gui,
           SLOT(processBrokerItemTextUpdate(const BrokerItem *)));
 
-  connect(gui->main_network_model_, SIGNAL(resetDeviceSupportChanged(const class RDMnetNetworkItem *)), gui,
-          SLOT(processResetDeviceSupportChanged(const class RDMnetNetworkItem *)));
+  connect(gui->main_network_model_, 
+          SIGNAL(featureSupportChanged(const class RDMnetNetworkItem *, SupportedDeviceFeature)), gui,
+          SLOT(processFeatureSupportChange(const class RDMnetNetworkItem *, SupportedDeviceFeature)));
 
   connect(gui->main_network_model_, SIGNAL(expandNewItem(const QModelIndex &, int)), gui,
           SLOT(expandNewItem(const QModelIndex &, int)));
@@ -154,7 +158,8 @@ void RDMnetControllerGUI::networkTreeViewSelectionChanged(const QItemSelection &
       if (netItem != NULL)
       {
         currently_selected_network_item_ = netItem;
-        ui.resetDeviceButton->setEnabled(netItem->supportsResetDevice());
+        ui.resetDeviceButton->setEnabled(netItem->supportsFeature(kResetDevice));
+        ui.identifyDeviceButton->setEnabled(netItem->supportsFeature(kIdentifyDevice));
       }
 
       if (selectedItem->type() == BrokerItem::BrokerItemType)
@@ -269,15 +274,15 @@ void RDMnetControllerGUI::resetDeviceTriggered()
 {
   if (currently_selected_network_item_ != NULL)
   {
-    if (currently_selected_network_item_->type() == ResponderItem::ResponderItemType)
-    {
-      ResponderItem *device = dynamic_cast<ResponderItem *>(currently_selected_network_item_);
+    emit featureActivated(currently_selected_network_item_, kResetDevice);
+  }
+}
 
-      if (device != NULL)
-      {
-        emit resetDeviceActivated(device);
-      }
-    }
+void RDMnetControllerGUI::identifyDeviceTriggered()
+{
+  if (currently_selected_network_item_ != NULL)
+  {
+    emit featureActivated(currently_selected_network_item_, kIdentifyDevice);
   }
 }
 
@@ -301,13 +306,21 @@ void RDMnetControllerGUI::processBrokerItemTextUpdate(const BrokerItem *item)
   }
 }
 
-void RDMnetControllerGUI::processResetDeviceSupportChanged(const RDMnetNetworkItem *item)
+void RDMnetControllerGUI::processFeatureSupportChange(const RDMnetNetworkItem *item, SupportedDeviceFeature feature)
 {
   if (currently_selected_network_item_ != NULL)
   {
     if (currently_selected_network_item_ == item)
     {
-      ui.resetDeviceButton->setEnabled(item->supportsResetDevice() && item->isEnabled());
+      if (feature & kResetDevice)
+      {
+        ui.resetDeviceButton->setEnabled(item->supportsFeature(kResetDevice) && item->isEnabled());
+      }
+
+      if (feature & kIdentifyDevice)
+      {
+        ui.identifyDeviceButton->setEnabled(item->supportsFeature(kIdentifyDevice) && item->isEnabled());
+      }
     }
   }
 }

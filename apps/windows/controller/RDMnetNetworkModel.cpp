@@ -580,6 +580,9 @@ void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem *treeBrokerItem, con
       {
         initializeRPTDeviceProperties(newRDMnetClientItem, get_rpt_client_entry_data(&entry)->client_uid.manu,
                                       get_rpt_client_entry_data(&entry)->client_uid.id);
+
+        newRDMnetClientItem->enableFeature(kIdentifyDevice);
+        emit featureSupportChanged(newRDMnetClientItem, kIdentifyDevice);
       }
 
       if (!is_me)
@@ -729,6 +732,9 @@ void RDMnetNetworkModel::processNewResponderList(EndpointItem *treeEndpointItem,
       somethingWasAdded = true;
 
       initializeResponderProperties(newResponderItem, resp_uid.manu, resp_uid.id);
+
+      newResponderItem->enableFeature(kIdentifyDevice);
+      emit featureSupportChanged(newResponderItem, kIdentifyDevice);
     }
   }
 
@@ -893,33 +899,47 @@ void RDMnetNetworkModel::removeAllBrokers()
   invisibleRootItem()->removeRows(0, invisibleRootItem()->rowCount());
 }
 
-void RDMnetNetworkModel::resetDevice(ResponderItem *device)
+void RDMnetNetworkModel::activateFeature(RDMnetNetworkItem *device, SupportedDeviceFeature feature)
 {
   if (device != NULL)
   {
-    if (device->hasValidProperties())  // Means device wasn't reset
+    RdmCommand setCmd;
+
+    setCmd.dest_uid.manu = device->getMan();
+    setCmd.dest_uid.id = device->getDev();
+    setCmd.subdevice = 0;
+    setCmd.command_class = E120_SET_COMMAND;
+
+    if (feature & kResetDevice)
     {
-      device->disableAllChildItems();
-      device->setDeviceWasReset(true);
-      device->setEnabled(false);
+      if (device->hasValidProperties())  // Means device wasn't reset
+      {
+        device->disableAllChildItems();
+        device->setDeviceWasReset(true);
+        device->setEnabled(false);
 
-      emit resetDeviceSupportChanged(device);
+        emit featureSupportChanged(device, kResetDevice | kIdentifyDevice);
 
-      RdmCommand setCmd;
-      int32_t maxBuffSize = PropertyValueItem::pidMaxBufferSize(E120_RESET_DEVICE);
+        setCmd.param_id = E120_RESET_DEVICE;
+        setCmd.datalen = PropertyValueItem::pidMaxBufferSize(E120_RESET_DEVICE);
 
-      setCmd.dest_uid.manu = device->getMan();
-      setCmd.dest_uid.id = device->getDev();
-      setCmd.subdevice = 0;
-      setCmd.command_class = E120_SET_COMMAND;
-      setCmd.param_id = E120_RESET_DEVICE;
-      setCmd.datalen = maxBuffSize;
-      memset(setCmd.data, 0, maxBuffSize);
-
-      setCmd.data[0] = 0xFF;  // Default to cold reset
-
-      SendRDMCommand(setCmd);
+        memset(setCmd.data, 0, setCmd.datalen);
+        setCmd.data[0] = 0xFF;  // Default to cold reset
+      }
     }
+
+    if (feature & kIdentifyDevice)
+    {
+      device->setDeviceIdentifying(!device->identifying());
+
+      setCmd.param_id = E120_IDENTIFY_DEVICE;
+      setCmd.datalen = PropertyValueItem::pidMaxBufferSize(E120_IDENTIFY_DEVICE);
+
+      memset(setCmd.data, 0, setCmd.datalen);
+      setCmd.data[0] = device->identifying() ? 0x01 : 0x00;
+    }
+
+    SendRDMCommand(setCmd);
   }
 }
 
@@ -1040,10 +1060,8 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   PropertyValueItem::setPIDNumericDomain(E120_DMX_START_ADDRESS, 1, 512);
   PropertyValueItem::setPIDMaxBufferSize(E120_DMX_START_ADDRESS, 2);
 
-  PropertyValueItem::setPIDInfo(E120_IDENTIFY_DEVICE, rdmPIDFlags | kSupportsGet | kSupportsSet, 
-                                QVariant::Type::Bool, Qt::CheckStateRole);
-  PropertyValueItem::addPIDPropertyDisplayName(E120_IDENTIFY_DEVICE,
-                                               QString("%0\\%1").arg(rdmGroupName).arg(tr("Identify")));
+  PropertyValueItem::setPIDInfo(E120_IDENTIFY_DEVICE, rdmPIDFlags | kSupportsSet | kExcludeFromModel,
+                                QVariant::Type::Bool);
   PropertyValueItem::setPIDMaxBufferSize(E120_IDENTIFY_DEVICE, 1);
 
   PropertyValueItem::setPIDInfo(E120_DMX_PERSONALITY, rdmPIDFlags | kSupportsGet | kSupportsSet, QVariant::Type::Char,
@@ -2239,8 +2257,8 @@ void RDMnetNetworkModel::commands(std::vector<uint16_t> list, RdmResponse *resp)
 
         if (device != NULL)
         {
-          device->enableResetDevice();
-          emit resetDeviceSupportChanged(device);
+          device->enableFeature(kResetDevice);
+          emit featureSupportChanged(device, kResetDevice);
         }
       }
     }
@@ -2358,8 +2376,7 @@ void RDMnetNetworkModel::identify(bool enable, RdmResponse *resp)
 
   if (device != NULL)
   {
-    emit setPropertyData(device, E120_IDENTIFY_DEVICE, PropertyValueItem::pidPropertyDisplayName(E120_IDENTIFY_DEVICE),
-                         enable ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
+    device->setDeviceIdentifying(enable);
   }
 }
 
