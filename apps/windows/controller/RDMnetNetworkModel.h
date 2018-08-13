@@ -46,6 +46,13 @@ class BrokerConnection;
 
 void appendRowToItem(QStandardItem *parent, QStandardItem *child);
 
+class LogOutputStream
+{
+public:
+  virtual LogOutputStream &operator<<(const std::string &str) = 0;
+  virtual void clear() = 0;
+};
+
 class MyLog
 {
 public:
@@ -58,9 +65,14 @@ public:
 
   void LogFromCallback(const std::string &str);
 
+  void addCustomOutputStream(LogOutputStream *stream);
+  void removeCustomOutputStream(LogOutputStream *stream);
+
 protected:
   std::fstream file_;
+  std::string file_name_;
   LwpaLogParams params_;
+  std::vector<LogOutputStream *> customOutputStreams;
 };
 
 class BrokerConnection
@@ -157,6 +169,8 @@ public slots:
   void addScopeToMonitor(std::string scope);
   void directChildrenRevealed(const QModelIndex &parentIndex);
   void addBrokerByIP(std::string scope, const LwpaSockaddr &addr);
+  void addCustomLogOutputStream(LogOutputStream *stream);
+  void removeCustomLogOutputStream(LogOutputStream *stream);
 
 protected slots:
   void processBrokerDisconnection(int conn);

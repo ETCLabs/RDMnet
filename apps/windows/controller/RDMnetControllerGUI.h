@@ -55,6 +55,7 @@ public slots:
   void resetDeviceTriggered();
   void identifyDeviceTriggered();
   void openBrokerStaticAddDialog();
+  void openLogWindowDialog();
   void processBrokerItemTextUpdate(const class BrokerItem *item);
   void processFeatureSupportChange(const class RDMnetNetworkItem *item, SupportedDeviceFeature feature);
   void expandNewItem(const QModelIndex &index, int type);

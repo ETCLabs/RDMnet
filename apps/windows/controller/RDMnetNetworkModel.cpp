@@ -154,7 +154,7 @@ static lwpa_error_t parseAndPackIPAddress(lwpa_iptype_t addrType, const char *ip
   return result;
 }
 
-MyLog::MyLog(const std::string &file_name)
+MyLog::MyLog(const std::string &file_name) : file_name_(file_name)
 {
   file_.open(file_name.c_str(), std::fstream::out);
 
@@ -190,6 +190,48 @@ void MyLog::LogFromCallback(const std::string &str)
 {
   if (file_.is_open())
     file_ << str << std::endl;
+
+  for (LogOutputStream *stream : customOutputStreams)
+  {
+    if (stream != NULL)
+    {
+      (*stream) << str << "\n";
+    }
+  }
+}
+
+void MyLog::addCustomOutputStream(LogOutputStream * stream)
+{
+  if (stream != NULL)
+  {
+    if (std::find(customOutputStreams.begin(), customOutputStreams.end(), stream) == customOutputStreams.end())
+    {
+      // Reinitialize the stream's contents to the log file's contents.
+      stream->clear();
+      
+      std::ifstream ifs(file_name_, std::ifstream::in);
+
+      std::string str((std::istreambuf_iterator<char>(ifs)),
+                      std::istreambuf_iterator<char>());
+
+      (*stream) << str;
+
+      ifs.close();
+
+      customOutputStreams.push_back(stream);
+    }
+  }
+}
+
+void MyLog::removeCustomOutputStream(LogOutputStream * stream)
+{
+  for (int i = 0; i < customOutputStreams.size(); ++i)
+  {
+    if (customOutputStreams.at(i) == stream)
+    {
+      customOutputStreams.erase(customOutputStreams.begin() + i);
+    }
+  }
 }
 
 void appendRowToItem(QStandardItem *parent, QStandardItem *child)
@@ -509,6 +551,16 @@ void RDMnetNetworkModel::addBrokerByIP(std::string scope, const LwpaSockaddr &ad
 
     ++broker_count_;
   }
+}
+
+void RDMnetNetworkModel::addCustomLogOutputStream(LogOutputStream * stream)
+{
+  log_.addCustomOutputStream(stream);
+}
+
+void RDMnetNetworkModel::removeCustomLogOutputStream(LogOutputStream * stream)
+{
+  log_.removeCustomOutputStream(stream);
 }
 
 void RDMnetNetworkModel::processBrokerDisconnection(int conn)
@@ -1741,6 +1793,8 @@ void RDMnetNetworkModel::ProcessRDMResponse(int /*conn*/, bool have_command, con
 
   if (first_resp.command_class == E120_GET_COMMAND_RESPONSE)
   {
+    log_.Log(LWPA_LOG_INFO, "Got GET_COMMAND_RESPONSE with PID %d", first_resp.param_id);
+
     switch (first_resp.param_id)
     {
       case E120_STATUS_MESSAGES:
@@ -1966,6 +2020,8 @@ void RDMnetNetworkModel::ProcessRDMResponse(int /*conn*/, bool have_command, con
   }
   else if (first_resp.command_class == E120_SET_COMMAND_RESPONSE)
   {
+    log_.Log(LWPA_LOG_INFO, "Got SET_COMMAND_RESPONSE with PID %d", first_resp.param_id);
+
     if (have_command)
     {
       // Make sure this Controller is up-to-date with data that was set on a Device.
@@ -2938,7 +2994,7 @@ PropertyItem *RDMnetNetworkModel::createGroupingItem(RDMnetNetworkItem *parent, 
   PropertyValueItem *valueItem = new PropertyValueItem(QVariant(), false);
   groupingItem->setValueItem(valueItem);
 
-  emit expandNewItem(groupingItem->index(), PropertyItem::PropertyItemType);
+  //emit expandNewItem(groupingItem->index(), PropertyItem::PropertyItemType);
 
   return groupingItem;
 }

@@ -37,6 +37,7 @@ int main(int argc, char *argv[])
   RDMnetControllerGUI *w = RDMnetControllerGUI::makeRDMnetControllerGUI();
 
   w->show();
+  w->openLogWindowDialog();
   retVal = a.exec();
 
   delete w;

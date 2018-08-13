@@ -34,6 +34,7 @@
 #include "SimpleNetworkProxyModel.h"
 #include "PropertyEditorsDelegate.h"
 #include "PropertyItem.h"
+#include "LogWindowGUI.h"
 
 RDMnetControllerGUI::~RDMnetControllerGUI()
 {
@@ -300,6 +301,16 @@ void RDMnetControllerGUI::openBrokerStaticAddDialog()
   brokerStaticAddDialog->setWindowModality(Qt::WindowModal);
   brokerStaticAddDialog->setWindowTitle(tr("Add Broker by Static IP"));
   brokerStaticAddDialog->show();
+}
+
+void RDMnetControllerGUI::openLogWindowDialog()
+{
+  LogWindowGUI *logWindowDialog = new LogWindowGUI(this, main_network_model_);
+  logWindowDialog->setAttribute(Qt::WA_DeleteOnClose);
+  logWindowDialog->setWindowTitle(tr("Log Window"));
+  logWindowDialog->move(QPoint(this->pos().rx() + this->width() + 20, this->pos().ry()));
+  logWindowDialog->resize(QSize(logWindowDialog->width() * 1.2, logWindowDialog->height()));
+  logWindowDialog->show();
 }
 
 void RDMnetControllerGUI::processBrokerItemTextUpdate(const BrokerItem *item)
