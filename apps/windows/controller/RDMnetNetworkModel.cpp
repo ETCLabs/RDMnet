@@ -930,13 +930,11 @@ void RDMnetNetworkModel::activateFeature(RDMnetNetworkItem *device, SupportedDev
 
     if (feature & kIdentifyDevice)
     {
-      device->setDeviceIdentifying(!device->identifying());
-
       setCmd.param_id = E120_IDENTIFY_DEVICE;
       setCmd.datalen = PropertyValueItem::pidMaxBufferSize(E120_IDENTIFY_DEVICE);
 
       memset(setCmd.data, 0, setCmd.datalen);
-      setCmd.data[0] = device->identifying() ? 0x01 : 0x00;
+      setCmd.data[0] = device->identifying() ? 0x00 : 0x01;
     }
 
     SendRDMCommand(setCmd);
@@ -2377,6 +2375,7 @@ void RDMnetNetworkModel::identify(bool enable, RdmResponse *resp)
   if (device != NULL)
   {
     device->setDeviceIdentifying(enable);
+    emit identifyChanged(device, enable);
   }
 }
 
@@ -2939,7 +2938,7 @@ PropertyItem *RDMnetNetworkModel::createGroupingItem(RDMnetNetworkItem *parent, 
   PropertyValueItem *valueItem = new PropertyValueItem(QVariant(), false);
   groupingItem->setValueItem(valueItem);
 
-  //emit expandNewItem(groupingItem->index(), PropertyItem::PropertyItemType);
+  emit expandNewItem(groupingItem->index(), PropertyItem::PropertyItemType);
 
   return groupingItem;
 }

@@ -142,6 +142,7 @@ signals:
   void addPropertyEntry(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, int role);
   void featureSupportChanged(const class RDMnetNetworkItem *item, SupportedDeviceFeature feature);
   void expandNewItem(const QModelIndex &index, int type);
+  void identifyChanged(const RDMnetNetworkItem *item, bool identify);
 
 private:
   static bool rdmnet_initialized_;

@@ -27,6 +27,8 @@
 
 #include "RDMnetControllerGUI.h"
 
+#include <qpalette.h>
+
 #include "RDMnetNetworkModel.h"
 #include "NetworkDetailsProxyModel.h"
 #include "SimpleNetworkProxyModel.h"
@@ -126,6 +128,9 @@ RDMnetControllerGUI *RDMnetControllerGUI::makeRDMnetControllerGUI()
   connect(gui->main_network_model_, SIGNAL(expandNewItem(const QModelIndex &, int)), gui,
           SLOT(expandNewItem(const QModelIndex &, int)));
 
+  connect(gui->main_network_model_, SIGNAL(identifyChanged(const RDMnetNetworkItem *, bool)), gui,
+          SLOT(identifyChanged(const RDMnetNetworkItem *, bool)));
+
   gui->main_network_model_->addScopeToMonitor(E133_DEFAULT_SCOPE);
 
   return gui;
@@ -160,6 +165,8 @@ void RDMnetControllerGUI::networkTreeViewSelectionChanged(const QItemSelection &
         currently_selected_network_item_ = netItem;
         ui.resetDeviceButton->setEnabled(netItem->supportsFeature(kResetDevice));
         ui.identifyDeviceButton->setEnabled(netItem->supportsFeature(kIdentifyDevice));
+
+        identifyChanged(netItem, netItem->identifying());
       }
 
       if (selectedItem->type() == BrokerItem::BrokerItemType)
@@ -327,18 +334,25 @@ void RDMnetControllerGUI::processFeatureSupportChange(const RDMnetNetworkItem *i
 
 void RDMnetControllerGUI::expandNewItem(const QModelIndex & index, int type)
 {
-  //QModelIndex index = (type == PropertyItem::PropertyItemType)
-  //                    ? net_details_proxy_->mapFromSource(index)
-  //                    : simple_net_proxy_->mapFromSource(index);
-
   switch (type)
   {
   case PropertyItem::PropertyItemType:
-    //index = net_details_proxy_->mapFromSource(index);
     ui.detailsTreeView->expand(net_details_proxy_->mapFromSource(index));
     break;
   default:
     ui.networkTreeView->expand(simple_net_proxy_->mapFromSource(index));
+  }
+}
+
+void RDMnetControllerGUI::identifyChanged(const RDMnetNetworkItem *item, bool identify)
+{
+  if (currently_selected_network_item_ != NULL)
+  {
+    if (currently_selected_network_item_ == item)
+    {
+      ui.identifyDeviceButton->setStyleSheet(identify ? "QPushButton {background-color: red}" : "");
+      ui.identifyDeviceButton->setText(identify ? "Stop Identifying" : "Identify Device");
+    }
   }
 }
 
