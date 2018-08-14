@@ -234,6 +234,11 @@ void MyLog::removeCustomOutputStream(LogOutputStream * stream)
   }
 }
 
+int MyLog::getNumberOfCustomLogOutputStreams()
+{
+  return customOutputStreams.size();
+}
+
 void appendRowToItem(QStandardItem *parent, QStandardItem *child)
 {
   if ((parent != NULL) && (child != NULL))
@@ -1305,6 +1310,11 @@ void RDMnetNetworkModel::searchingItemRevealed(SearchingStatusItem *searchItem)
       }
     }
   }
+}
+
+int RDMnetNetworkModel::getNumberOfCustomLogOutputStreams()
+{
+  return log_.getNumberOfCustomLogOutputStreams();
 }
 
 bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value, int role)

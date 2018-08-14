@@ -241,6 +241,15 @@
     <ClCompile Include="LogWindowGUI.cpp">
       <Filter>Source Files\GUI</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_AboutGUI.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_AboutGUI.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="AboutGUI.cpp">
+      <Filter>Source Files\GUI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\RDMnetClientItem.h">
@@ -399,6 +408,9 @@
     <ClInclude Include="GeneratedFiles\ui_LogWindowGUI.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_AboutGUI.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\RDMnetControllerGUI.h">
@@ -435,6 +447,12 @@
       <Filter>Form Files</Filter>
     </CustomBuild>
     <CustomBuild Include="LogWindowGUI.h">
+      <Filter>Header Files\GUI</Filter>
+    </CustomBuild>
+    <CustomBuild Include="AboutGUI.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="AboutGUI.h">
       <Filter>Header Files\GUI</Filter>
     </CustomBuild>
   </ItemGroup>

@@ -15,6 +15,8 @@ LogWindowGUI::LogWindowGUI(QWidget *parent, RDMnetNetworkModel *model)
     {
       model->addCustomLogOutputStream(this);
     }
+
+    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 }
 
 LogWindowGUI::~LogWindowGUI()

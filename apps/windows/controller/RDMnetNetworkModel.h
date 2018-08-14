@@ -68,6 +68,8 @@ public:
   void addCustomOutputStream(LogOutputStream *stream);
   void removeCustomOutputStream(LogOutputStream *stream);
 
+  int getNumberOfCustomLogOutputStreams();
+
 protected:
   std::fstream file_;
   std::string file_name_;
@@ -196,6 +198,8 @@ public:
   ~RDMnetNetworkModel();
 
   void searchingItemRevealed(SearchingStatusItem *searchItem);
+
+  int getNumberOfCustomLogOutputStreams();
 
   /******* QStandardItemModel overrides *******/
 

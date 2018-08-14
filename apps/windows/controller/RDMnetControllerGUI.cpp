@@ -35,6 +35,9 @@
 #include "PropertyEditorsDelegate.h"
 #include "PropertyItem.h"
 #include "LogWindowGUI.h"
+#include "AboutGUI.h"
+
+#include "rdmnet\version.h"
 
 RDMnetControllerGUI::~RDMnetControllerGUI()
 {
@@ -131,6 +134,10 @@ RDMnetControllerGUI *RDMnetControllerGUI::makeRDMnetControllerGUI()
 
   connect(gui->main_network_model_, SIGNAL(identifyChanged(const RDMnetNetworkItem *, bool)), gui,
           SLOT(identifyChanged(const RDMnetNetworkItem *, bool)));
+
+  connect(gui->ui.actionLogWindow, SIGNAL(triggered()), gui, SLOT(openLogWindowDialog()));
+  connect(gui->ui.actionExit, SIGNAL(triggered()), gui, SLOT(exitApplication()));
+  connect(gui->ui.actionAbout, SIGNAL(triggered()), gui, SLOT(openAboutDialog()));
 
   gui->main_network_model_->addScopeToMonitor(E133_DEFAULT_SCOPE);
 
@@ -305,12 +312,27 @@ void RDMnetControllerGUI::openBrokerStaticAddDialog()
 
 void RDMnetControllerGUI::openLogWindowDialog()
 {
-  LogWindowGUI *logWindowDialog = new LogWindowGUI(this, main_network_model_);
-  logWindowDialog->setAttribute(Qt::WA_DeleteOnClose);
-  logWindowDialog->setWindowTitle(tr("Log Window"));
-  logWindowDialog->move(QPoint(this->pos().rx() + this->width() + 20, this->pos().ry()));
-  logWindowDialog->resize(QSize(logWindowDialog->width() * 1.2, logWindowDialog->height()));
-  logWindowDialog->show();
+  if (main_network_model_ != NULL)
+  {
+    if (main_network_model_->getNumberOfCustomLogOutputStreams() == 0)
+    {
+      LogWindowGUI *logWindowDialog = new LogWindowGUI(this, main_network_model_);
+      logWindowDialog->setAttribute(Qt::WA_DeleteOnClose);
+      logWindowDialog->setWindowTitle(tr("Log Window"));
+      logWindowDialog->resize(QSize(logWindowDialog->width() * 1.2, logWindowDialog->height()));
+      logWindowDialog->show();
+    }
+  }
+}
+
+void RDMnetControllerGUI::openAboutDialog()
+{
+  AboutGUI *aboutDialog = new AboutGUI(this, QT_VERSION_STR, RDMNET_VERSION_STRING);
+  aboutDialog->setAttribute(Qt::WA_DeleteOnClose);
+  aboutDialog->setWindowModality(Qt::WindowModal);
+  aboutDialog->setWindowTitle(tr("About"));
+  aboutDialog->setFixedSize(QSize(410, aboutDialog->size().height()));
+  aboutDialog->show();
 }
 
 void RDMnetControllerGUI::processBrokerItemTextUpdate(const BrokerItem *item)
@@ -365,6 +387,11 @@ void RDMnetControllerGUI::identifyChanged(const RDMnetNetworkItem *item, bool id
       ui.identifyDeviceButton->setText(identify ? "Stop Identifying" : "Identify Device");
     }
   }
+}
+
+void RDMnetControllerGUI::exitApplication()
+{
+  QApplication::quit();
 }
 
 RDMnetControllerGUI::RDMnetControllerGUI(QWidget *parent)

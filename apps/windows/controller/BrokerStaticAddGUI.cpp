@@ -39,6 +39,8 @@ BrokerStaticAddGUI::BrokerStaticAddGUI(QWidget *parent, IHandlesBrokerStaticAdd 
   ui.portEdit->setValidator(new QIntValidator(1, 65535, this));
 
   connect(ui.addBrokerButton, SIGNAL(clicked()), this, SLOT(addBrokerTriggered()));
+
+  setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 }
 
 BrokerStaticAddGUI::~BrokerStaticAddGUI()
