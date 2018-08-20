@@ -303,7 +303,7 @@ protected:
   void initializeRPTDeviceProperties(RDMnetClientItem *parent, uint16_t manuID, uint32_t deviceID);
   void sendGetCommand(uint16_t pid, uint16_t manu, uint32_t dev);
   uint8_t *packIPAddressItem(const QVariant &value, lwpa_iptype_t addrType, uint8_t *packPtr);
-  uint8_t *packStaticConfigItem(const BrokerItem *broker, const QVariant &value, lwpa_iptype_t addrType, uint8_t *packPtr);
+  uint8_t *packStaticConfigItem(const QModelIndex &valueIndex, const QVariant &value, lwpa_iptype_t addrType, uint8_t *packPtr);
 
   // PID handling
   bool pidSupportedByGUI(uint16_t pid, bool checkSupportGet);
@@ -317,9 +317,11 @@ protected:
   PropertyItem *createPropertyItem(RDMnetNetworkItem *parent, const QString &fullName);
   QString getShortPropertyName(const QString &fullPropertyName);
   QString getHighestGroupName(const QString &pathName);
+  QString getPathSubset(const QString &fullPath, int first, int last = -1);
   PropertyItem *getGroupingItem(RDMnetNetworkItem *parent, const QString & groupName);
   PropertyItem *createGroupingItem(RDMnetNetworkItem *parent, const QString & groupName);
   QString getChildPathName(const QString &superPathName);
+  QString getScopeSubPropertyFullName(RDMnetClientItem *client, uint16_t pid, int32_t index, const char *scope);
 
 private:
   RDMnetNetworkModel();

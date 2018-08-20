@@ -1329,14 +1329,13 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
     {
       PropertyValueItem *propertyValueItem = dynamic_cast<PropertyValueItem *>(item);
       RDMnetNetworkItem *parentItem = getNearestParentItemOfType<ResponderItem>(item);
-      BrokerItem *brokerItem = getNearestParentItemOfType<BrokerItem>(item);
 
       if (parentItem == NULL)
       {
         parentItem = getNearestParentItemOfType<RDMnetClientItem>(item);
       }
 
-      if ((propertyValueItem != NULL) && (parentItem != NULL) && (brokerItem != NULL))
+      if ((propertyValueItem != NULL) && (parentItem != NULL))
       {
         uint16_t pid = propertyValueItem->getPID();
 
@@ -1379,7 +1378,8 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
             // Special cases for certain PIDs
             if (pid == E133_COMPONENT_SCOPE)
             {
-              pack_16b(packPtr, 1);  // Scope slot (default to 1)
+              // Scope slot (default to 1)
+              pack_16b(packPtr, index.data(RDMnetNetworkItem::ScopeSlotRole).toInt());
               packPtr += 2;
             }
 
@@ -1420,10 +1420,10 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
                 switch (pid)
                 {
                   case E133_BROKER_STATIC_CONFIG_IPV4:
-                    packPtr = packStaticConfigItem(brokerItem, value, LWPA_IPV4, packPtr);
+                    packPtr = packStaticConfigItem(index, value, LWPA_IPV4, packPtr);
                     break;
                   case E133_BROKER_STATIC_CONFIG_IPV6:
-                    packPtr = packStaticConfigItem(brokerItem, value, LWPA_IPV6, packPtr);
+                    packPtr = packStaticConfigItem(index, value, LWPA_IPV6, packPtr);
                     break;
                   default:
                     updateValue = false;
@@ -2525,8 +2525,23 @@ void RDMnetNetworkModel::componentScope(uint16_t scopeSlot, const char *scopeStr
 
   if (client != NULL)
   {
-    emit setPropertyData(client, E133_COMPONENT_SCOPE,
-                         PropertyValueItem::pidPropertyDisplayName(E133_COMPONENT_SCOPE, 0), scopeString);
+    QString displayName;
+    if (client->ClientType() == kRPTClientTypeController)
+    {
+      displayName = QString("%0 (Slot %1)")
+                      .arg(PropertyValueItem::pidPropertyDisplayName(E133_COMPONENT_SCOPE, 0))
+                      .arg(scopeSlot);
+    }
+    else
+    {
+      displayName = PropertyValueItem::pidPropertyDisplayName(E133_COMPONENT_SCOPE, 0);
+    }
+
+    client->setScopeSlot(scopeString, scopeSlot);
+
+    emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeString);
+    emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeString, RDMnetNetworkItem::ScopeDataRole);
+    emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeSlot, RDMnetNetworkItem::ScopeSlotRole);
   }
 }
 
@@ -2537,19 +2552,21 @@ void RDMnetNetworkModel::brokerStaticConfigIPv4(const char *addrString, uint16_t
 
   if (client != NULL)
   {
+    QString propertyName = getScopeSubPropertyFullName(client, E133_BROKER_STATIC_CONFIG_IPV4, 0, scopeString);
+
     if ((strlen(addrString) == 0) && (port == 0))
     {
       // Empty data, empty property
-      emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV4,
-                           PropertyValueItem::pidPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV4, 0),
-                           QString(""));
+      emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV4, propertyName, QString(""));
     }
     else
     {
-      emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV4,
-                           PropertyValueItem::pidPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV4, 0),
+      emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV4, propertyName,
                            QString("%0:%1").arg(addrString).arg(port));
     }
+
+    emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV4, propertyName,
+                         tr(scopeString), RDMnetNetworkItem::ScopeDataRole);
   }
 }
 
@@ -2560,19 +2577,21 @@ void RDMnetNetworkModel::brokerStaticConfigIPv6(const char *addrString, uint16_t
 
   if (client != NULL)
   {
+    QString propertyName = getScopeSubPropertyFullName(client, E133_BROKER_STATIC_CONFIG_IPV6, 0, scopeString);
+
     if ((strlen(addrString) == 0) && (port == 0))
     {
       // Empty data, empty property
-      emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV6,
-                           PropertyValueItem::pidPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV6, 0),
-                           QString(""));
+      emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV6, propertyName, QString(""));
     }
     else
     {
-      emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV6,
-                           PropertyValueItem::pidPropertyDisplayName(E133_BROKER_STATIC_CONFIG_IPV6, 0),
+      emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV6, propertyName,
                            QString("[%0]:%1").arg(addrString).arg(port));
     }
+
+    emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV6, propertyName,
+                         tr(scopeString), RDMnetNetworkItem::ScopeDataRole);
   }
 }
 
@@ -2598,50 +2617,44 @@ void RDMnetNetworkModel::tcpCommsStatus(const char *scopeString, const char *v4A
     const char *callbackSlotString = SLOT(processPropertyButtonClick(const QPersistentModelIndex &));
     QString callbackSlotQString(callbackSlotString);
 
+    QString propertyName0 = getScopeSubPropertyFullName(client, E133_TCP_COMMS_STATUS, 0, scopeString);
+    QString propertyName1 = getScopeSubPropertyFullName(client, E133_TCP_COMMS_STATUS, 1, scopeString);
+    QString propertyName2 = getScopeSubPropertyFullName(client, E133_TCP_COMMS_STATUS, 2, scopeString);
+
     callbackObjectVariant.setValue(this);
 
     if (strlen(v4AddrString) == 0) // use v6
     {
-      emit setPropertyData(client, E133_TCP_COMMS_STATUS,
-        PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 0), 
-                                                  QString("[%0]:%1").arg(v6AddrString).arg(port));
+      emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName0,
+                           QString("[%0]:%1").arg(v6AddrString).arg(port));
     }
     else // use v4
     {
-      emit setPropertyData(client, E133_TCP_COMMS_STATUS,
-        PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 0), 
-                                                  QString("%0:%1").arg(v4AddrString).arg(port));
+      emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName0,
+                                   QString("%0:%1").arg(v4AddrString).arg(port));
     }
 
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS,
-                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 1), unhealthyTCPEvents);
+    emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName1, unhealthyTCPEvents);
 
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS,
-                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 2), tr("Reset"));
+    emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2, tr("Reset"));
 
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS,
-                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 2),
+    emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2,
                          tr(scopeString), RDMnetNetworkItem::ScopeDataRole);
 
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS,
-                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 2),
+    emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2,
                          callbackObjectVariant, RDMnetNetworkItem::CallbackObjectRole);
 
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS,
-                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 2),
+    emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2,
                          callbackSlotQString, RDMnetNetworkItem::CallbackSlotRole);
 
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS,
-                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 2),
+    emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2,
                          resp->src_uid.manu, RDMnetNetworkItem::ClientManuRole);
 
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS,
-                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 2),
+    emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2,
                          resp->src_uid.id, RDMnetNetworkItem::ClientDevRole);
 
     // This needs to be the last call to setPropertyData so that the button can be enabled if needed.
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS,
-                         PropertyValueItem::pidPropertyDisplayName(E133_TCP_COMMS_STATUS, 2), 
+    emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2,
                          EditorWidgetType::kButton, RDMnetNetworkItem::EditorWidgetTypeRole);
   }
 }
@@ -2788,12 +2801,13 @@ uint8_t *RDMnetNetworkModel::packIPAddressItem(const QVariant & value, lwpa_ipty
   return packPtr + memSize;
 }
 
-uint8_t * RDMnetNetworkModel::packStaticConfigItem(const BrokerItem * broker, const QVariant & value, lwpa_iptype_t addrType, uint8_t * packPtr)
+uint8_t * RDMnetNetworkModel::packStaticConfigItem(const QModelIndex &valueIndex, const QVariant & value, lwpa_iptype_t addrType, uint8_t * packPtr)
 {
   uint8_t *result = packIPAddressItem(value, addrType, packPtr);
-  if (result != NULL)
+  if ((result != NULL) && valueIndex.isValid())
   {
-    QByteArray local8Bit = broker->scope().toLocal8Bit();
+    QString scope = valueIndex.data(RDMnetNetworkItem::ScopeDataRole).toString();
+    QByteArray local8Bit = scope.toLocal8Bit();
     const char *scopeData = local8Bit.constData();
     memcpy(result, scopeData, E133_SCOPE_STRING_PADDED_LENGTH);
     result += E133_SCOPE_STRING_PADDED_LENGTH;
@@ -2975,6 +2989,30 @@ QString RDMnetNetworkModel::getHighestGroupName(const QString &pathName)
   return QString();
 }
 
+QString RDMnetNetworkModel::getPathSubset(const QString & fullPath, int first, int last)
+{
+  QRegExp re("(\\\\)");
+  QStringList query = fullPath.split(re);
+  QString result;
+
+  if (last == -1)
+  {
+    last = (query.length() - 1);
+  }
+
+  for (int i = first; i <= min(last, (query.length() - 1)); ++i)
+  {
+    result += query.at(i);
+
+    if (i != (query.length() - 1))
+    {
+      result += "\\";
+    }
+  }
+
+  return result;
+}
+
 PropertyItem *RDMnetNetworkModel::getGroupingItem(RDMnetNetworkItem *parent, const QString &groupName)
 {
   for (int i = 0; i < parent->rowCount(); ++i)
@@ -3015,6 +3053,29 @@ QString RDMnetNetworkModel::getChildPathName(const QString &superPathName)
   int startPosition = highGroupName.length() + 1;  // Name + delimiter character
 
   return superPathName.mid(startPosition, superPathName.length() - startPosition);
+}
+
+QString RDMnetNetworkModel::getScopeSubPropertyFullName(RDMnetClientItem * client, uint16_t pid,
+                                                    int32_t index, const char * scope)
+{
+  QString original = PropertyValueItem::pidPropertyDisplayName(pid, index);
+
+  if (client != NULL)
+  {
+    if (client->ClientType() == kRPTClientTypeController)
+    {
+      QString scopePropertyDisplay = PropertyValueItem::pidPropertyDisplayName(E133_COMPONENT_SCOPE, 0);
+      QRegExp re("(\\\\)");
+      QStringList query = scopePropertyDisplay.split(re);
+
+      return QString("%0%1 (Slot %2)\\%3").arg(getPathSubset(original, 0, query.length() - 2))
+                                          .arg(query.at(query.length() - 1))
+                                          .arg(client->getScopeSlot(scope))
+                                          .arg(getPathSubset(original, query.length() - 1));
+    }
+  }
+
+  return original;
 }
 
 RDMnetNetworkModel::RDMnetNetworkModel() : log_("RDMnetController.log")

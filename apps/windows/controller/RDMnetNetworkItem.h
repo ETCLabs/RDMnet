@@ -72,6 +72,7 @@ public:
   static const int CallbackSlotRole = Qt::UserRole + 6;
   static const int ClientManuRole = Qt::UserRole + 7;
   static const int ClientDevRole = Qt::UserRole + 8;
+  static const int ScopeSlotRole = Qt::UserRole + 9;
 
 protected:
   SupportedDeviceFeature supportedFeatures;
