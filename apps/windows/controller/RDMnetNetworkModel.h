@@ -32,6 +32,7 @@
 #include <memory>
 #include <QStandardItemModel>
 #include "lwpa_log.h"
+#include "lwpa_lock.h"
 #include "lwpa_thread.h"
 #include "lwpa_cid.h"
 #include "lwpa_uid.h"
@@ -41,6 +42,8 @@
 #include "SearchingStatusItem.h"
 #include "rdmnet/discovery.h"
 #include "PropertyValueItem.h"
+
+#define DEVICE_LABEL_MAX_LEN 32
 
 class BrokerConnection;
 
@@ -90,7 +93,7 @@ private:
   bool connected_;
   bool using_mdns_;
 
-  int conn_;
+  uint16_t conn_;
   QString scope_;
   LwpaSockaddr broker_addr_;
 
@@ -113,7 +116,7 @@ public:
   // Accessors
   bool connected() const { return connected_; }
   const std::string scope() const { return scope_.toStdString(); }
-  int handle() const { return conn_; }
+  uint16_t handle() const { return conn_; }
 
   BrokerItem *treeBrokerItem() const { return broker_item_; }
 
@@ -135,17 +138,35 @@ public:
   void appendBrokerItemToTree(QStandardItem *invisibleRootItem, uint32_t connectionCookie);
 
   bool isUsingMDNS();
+
+  LwpaSockaddr currentSockAddr();
+  LwpaSockaddr staticSockAddr();
 };
+
+typedef struct RdmParamData
+{
+  uint8_t datalen;
+  uint8_t data[RDM_MAX_PDL];
+} RdmParamData;
+
+typedef struct DefaultResponderPropertyData
+{
+  uint32_t endpoint_list_change_number;
+  bool identifying;
+  char device_label[DEVICE_LABEL_MAX_LEN + 1];
+  char search_domain[E133_DOMAIN_STRING_PADDED_LENGTH];
+  uint16_t tcp_unhealthy_counter;
+} DefaultResponderPropertyData;
 
 class RDMnetNetworkModel : public QStandardItemModel  //, public IRDMnet_MDNS_Notify
 {
   Q_OBJECT
 
 public:
-  std::map<int, std::unique_ptr<BrokerConnection>> broker_connections_;
+  std::map<uint16_t, std::unique_ptr<BrokerConnection>> broker_connections_;
 
 signals:
-  void brokerDisconnection(int conn);
+  void brokerDisconnection(uint16_t conn);
   void addRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list);
   void removeRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list);
   void newEndpointList(RDMnetClientItem *treeClientItem, const std::vector<std::pair<uint16_t, uint8_t>> &list);
@@ -163,9 +184,16 @@ private:
 
   MyLog log_;
   ScopeMonitorInfo scope_info_;
-  uint32_t broker_count_ = 0;
+  uint16_t broker_create_count_ = 0;
   bool recv_thread_run_;
   lwpa_thread_t recv_thread_;
+
+  DefaultResponderPropertyData prop_data_;
+
+  // Protects prop_data_ and broker_connections_.
+  lwpa_rwlock_t prop_lock;
+
+  friend void broker_found(const char *scope, const BrokerDiscInfo *broker_info, void *context);
 
 public slots:
   void addScopeToMonitor(std::string scope);
@@ -175,7 +203,7 @@ public slots:
   void removeCustomLogOutputStream(LogOutputStream *stream);
 
 protected slots:
-  void processBrokerDisconnection(int conn);
+  void processBrokerDisconnection(uint16_t conn);
   void processAddRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list);
   void processRemoveRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list);
   void processNewEndpointList(RDMnetClientItem *treeClientItem, const std::vector<std::pair<uint16_t, uint8_t>> &list);
@@ -194,8 +222,6 @@ public:
 
   static RDMnetNetworkModel *makeRDMnetNetworkModel();
   static RDMnetNetworkModel *makeTestModel();
-
-  ~RDMnetNetworkModel();
 
   void searchingItemRevealed(SearchingStatusItem *searchItem);
 
@@ -229,18 +255,59 @@ public:
 
 protected:
   /******* RDM message handling functions *******/
-  void ProcessMessage(int conn, const RdmnetMessage *msg);
-  void ProcessRPTMessage(int conn, const RdmnetMessage *msg);
-  void ProcessBrokerMessage(int conn, const RdmnetMessage *msg);
+  void ProcessMessage(uint16_t conn, const RdmnetMessage *msg);
+  void ProcessRPTMessage(uint16_t conn, const RdmnetMessage *msg);
+  void ProcessBrokerMessage(uint16_t conn, const RdmnetMessage *msg);
 
-  void ProcessRPTStatus(int conn, const RptHeader *header, const RptStatusMsg *status);
-  void ProcessRPTNotification(int conn, const RptHeader *header, const RdmCmdList *cmd_list);
-  void ProcessRDMResponse(int conn, bool have_command, const RdmCommand &cmd, const std::vector<RdmResponse> &response);
+  void ProcessRPTStatus(uint16_t conn, const RptHeader *header, const RptStatusMsg *status);
+  void ProcessRPTNotification(uint16_t conn, const RptHeader *header, const RdmCmdList *cmd_list);
+  void ProcessRDMCommand(uint16_t conn, const RptHeader *header, const RdmCommand &cmd);
+  bool DefaultResponderGet(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len,
+                             RdmParamData *resp_data_list, size_t *num_responses, uint16_t *nack_reason);
+  void ProcessRDMResponse(uint16_t conn, bool have_command, const RdmCommand &cmd, const std::vector<RdmResponse> &response);
 
   // Use this with data that has identical GET_COMMAND_RESPONSE and SET_COMMAND forms.
   void ProcessRDMGetSetData(uint16_t param_id, const uint8_t *data, uint8_t datalen, RdmResponse *resp);
 
+  BrokerConnection *getBrokerConnection(uint16_t destManu, uint32_t destDeviceID, LwpaUid &rptDestUID, 
+                                        uint16_t &destEndpoint);
+
   bool SendRDMCommand(const RdmCommand &cmd);
+  void SendNACK(const RptHeader *received_header, const RdmCommand *cmd_data, uint16_t nack_reason);
+  void SendNotification(const RptHeader *received_header, const RdmCmdListEntry *cmd_list);
+
+  /* GET/SET PROCESSING */
+
+  bool getIdentifyDevice(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
+                         size_t *num_responses, uint16_t *nack_reason);
+  bool getDeviceLabel(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
+                      size_t *num_responses, uint16_t *nack_reason);
+  bool getComponentScope(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
+                         size_t *num_responses, uint16_t *nack_reason);
+  bool getBrokerStaticConfigIPv4(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
+                                 size_t *num_responses, uint16_t *nack_reason);
+  bool getBrokerStaticConfigIPv6(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
+                                 size_t *num_responses, uint16_t *nack_reason);
+  bool getSearchDomain(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
+                       size_t *num_responses, uint16_t *nack_reason);
+  bool getTCPCommsStatus(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
+                         size_t *num_responses, uint16_t *nack_reason);
+  bool getSupportedParameters(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
+                              size_t *num_responses, uint16_t *nack_reason);
+  bool getDeviceInfo(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
+                     size_t *num_responses, uint16_t *nack_reason);
+  bool getManufacturerLabel(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
+                            size_t *num_responses, uint16_t *nack_reason);
+  bool getDeviceModelDescription(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
+                                 size_t *num_responses, uint16_t *nack_reason);
+  bool getSoftwareVersionLabel(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
+                               size_t *num_responses, uint16_t *nack_reason);
+  bool getEndpointList(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
+                       size_t *num_responses, uint16_t *nack_reason);
+  bool getEndpointResponders(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
+                             size_t *num_responses, uint16_t *nack_reason);
+
+  /* GET/SET RESPONSE PROCESSING */
 
   // RDMnet messages
   void endpointList(uint32_t changeNumber, const std::vector<std::pair<uint16_t, uint8_t>> &list,
@@ -323,6 +390,7 @@ protected:
   QString getChildPathName(const QString &superPathName);
   QString getScopeSubPropertyFullName(RDMnetClientItem *client, uint16_t pid, int32_t index, const char *scope);
 
-private:
+public:
   RDMnetNetworkModel();
+  ~RDMnetNetworkModel();
 };
