@@ -121,6 +121,24 @@ bool RPTController::Push(int /*from_conn*/, const LwpaCid &sender_cid, const Rpt
 
   switch (msg.vector)
   {
+    case VECTOR_RPT_REQUEST: // Controllers should respond to requests like devices do.
+    {
+      MessageRef to_push;
+      size_t bufsize = bufsize_rpt_request(&(get_rdm_cmd_list(&msg)->list->msg));
+      to_push.data = std::make_unique<uint8_t[]>(bufsize);
+      if (to_push.data)
+      {
+        to_push.size = pack_rpt_request(to_push.data.get(), bufsize, &sender_cid, &msg.header,
+          &(get_rdm_cmd_list(&msg)->list->msg));
+        if (to_push.size)
+        {
+          rpt_msgs_.push(std::move(to_push));
+          res = true;
+        }
+      }
+    }
+    break;
+
     case VECTOR_RPT_STATUS:
       res = RPTClient::PushPostSizeCheck(sender_cid, msg.header, *get_rpt_status_msg(&msg));
       break;

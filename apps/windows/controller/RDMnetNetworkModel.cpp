@@ -712,10 +712,11 @@ void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem *treeBrokerItem, con
       appendRowToItem(treeBrokerItem, newRDMnetClientItem);
       treeBrokerItem->rdmnet_devices_.push_back(newRDMnetClientItem);
 
-      if (get_rpt_client_entry_data(&entry)->client_type == kRPTClientTypeDevice)
+      if (get_rpt_client_entry_data(&entry)->client_type != kRPTClientTypeUnknown)
       {
-        initializeRPTDeviceProperties(newRDMnetClientItem, get_rpt_client_entry_data(&entry)->client_uid.manu,
-                                      get_rpt_client_entry_data(&entry)->client_uid.id);
+        initializeRPTClientProperties(newRDMnetClientItem, get_rpt_client_entry_data(&entry)->client_uid.manu,
+                                      get_rpt_client_entry_data(&entry)->client_uid.id,
+                                      get_rpt_client_entry_data(&entry)->client_type);
 
         newRDMnetClientItem->enableFeature(kIdentifyDevice);
         emit featureSupportChanged(newRDMnetClientItem, kIdentifyDevice);
@@ -1149,7 +1150,9 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   // Initialize GUI-supported PID information
   QString rdmGroupName("RDM");
   QString rdmNetGroupName("RDMnet");
-  PIDFlags rdmPIDFlags = kLocDevice | kLocResponder;
+
+  // Location flags specify where specific property items will be created by default. Exceptions can be made.
+  PIDFlags rdmPIDFlags = kLocDevice | kLocController | kLocResponder;
   PIDFlags rdmNetPIDFlags = kLocDevice;
 
   // E1.20
@@ -1238,7 +1241,7 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
       QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv6 Address (Leave blank for dynamic)")));
   PropertyValueItem::setPIDMaxBufferSize(E133_BROKER_STATIC_CONFIG_IPV6, IPV6_BYTES + 2 + E133_SCOPE_STRING_PADDED_LENGTH);
 
-  PropertyValueItem::setPIDInfo(E133_SEARCH_DOMAIN, rdmNetPIDFlags | kSupportsGet | kSupportsSet, 
+  PropertyValueItem::setPIDInfo(E133_SEARCH_DOMAIN, rdmNetPIDFlags | kLocController | kSupportsGet | kSupportsSet,
                                 QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E133_SEARCH_DOMAIN,
                                                QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Search Domain")));
@@ -1644,10 +1647,13 @@ void RDMnetNetworkModel::ProcessRPTMessage(uint16_t conn, const RdmnetMessage *m
   const RptMessage *rptmsg = get_rpt_msg(msg);
   switch (rptmsg->vector)
   {
+    case VECTOR_RPT_REQUEST:
+      ProcessRPTNotificationOrRequest(conn, &rptmsg->header, get_rdm_cmd_list(rptmsg));
+      break;
     case VECTOR_RPT_STATUS:
       ProcessRPTStatus(conn, &rptmsg->header, get_rpt_status_msg(rptmsg));
     case VECTOR_RPT_NOTIFICATION:
-      ProcessRPTNotification(conn, &rptmsg->header, get_rdm_cmd_list(rptmsg));
+      ProcessRPTNotificationOrRequest(conn, &rptmsg->header, get_rdm_cmd_list(rptmsg));
     default:
       // printf("\nERROR Received Endpoint vector= 0x%04x                 len=
       // %u\n", vector, len);
@@ -1755,7 +1761,7 @@ void RDMnetNetworkModel::ProcessRPTStatus(uint16_t /*conn*/, const RptHeader * /
   }
 }
 
-void RDMnetNetworkModel::ProcessRPTNotification(uint16_t conn, const RptHeader *header, const RdmCmdList *cmd_list)
+void RDMnetNetworkModel::ProcessRPTNotificationOrRequest(uint16_t conn, const RptHeader *header, const RdmCmdList *cmd_list)
 {
   // TODO handle partial list
   // TODO error checking
@@ -2006,7 +2012,7 @@ void RDMnetNetworkModel::ProcessRDMCommand(uint16_t /*conn*/, const RptHeader *h
   {
     SendNACK(header, &cmd, nack_reason);
     log_.Log(LWPA_LOG_DEBUG,
-             "Sending GET_COMMAND NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
+             "Sending NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
              header->source_uid.manu, header->source_uid.id, cmd.param_id, nack_reason);
   }
 }
@@ -2913,6 +2919,12 @@ void RDMnetNetworkModel::nack(uint16_t reason, const RdmResponse *resp)
 
     SendRDMCommand(cmd);
   }
+  else if ((resp->command_class == E120_GET_COMMAND_RESPONSE) && (resp->param_id == E133_COMPONENT_SCOPE)
+           && (reason == E120_NR_DATA_OUT_OF_RANGE))
+  {
+    // We have all of this controller's scope-slot pairs. Now request scope-specific properties.
+    sendGetControllerScopeProperties(resp->src_uid.manu, resp->src_uid.id);
+  }
 }
 
 void RDMnetNetworkModel::status(uint8_t /*type*/, uint16_t /*messageId*/, uint16_t /*data1*/, uint16_t /*data2*/,
@@ -3150,23 +3162,36 @@ void RDMnetNetworkModel::componentScope(uint16_t scopeSlot, const char *scopeStr
 
   if (client != NULL)
   {
-    QString displayName;
-    if (client->ClientType() == kRPTClientTypeController)
+    if ((client->ClientType() == kRPTClientTypeController) && (strlen(scopeString) == 0))
     {
-      displayName = QString("%0 (Slot %1)")
-                      .arg(PropertyValueItem::pidPropertyDisplayName(E133_COMPONENT_SCOPE, 0))
-                      .arg(scopeSlot);
+      // We have all of this controller's scope-slot pairs. Now request scope-specific properties.
+      sendGetControllerScopeProperties(resp->src_uid.manu, resp->src_uid.id);
     }
     else
     {
-      displayName = PropertyValueItem::pidPropertyDisplayName(E133_COMPONENT_SCOPE, 0);
+      QString displayName;
+      if (client->ClientType() == kRPTClientTypeController)
+      {
+        displayName = QString("%0 (Slot %1)")
+          .arg(PropertyValueItem::pidPropertyDisplayName(E133_COMPONENT_SCOPE, 0))
+          .arg(scopeSlot);
+      }
+      else
+      {
+        displayName = PropertyValueItem::pidPropertyDisplayName(E133_COMPONENT_SCOPE, 0);
+      }
+
+      client->setScopeSlot(scopeString, scopeSlot);
+
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeString);
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeString, RDMnetNetworkItem::ScopeDataRole);
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeSlot, RDMnetNetworkItem::ScopeSlotRole);
+
+      if (client->ClientType() == kRPTClientTypeController)
+      {
+        sendGetNextControllerScope(resp->src_uid.manu, resp->src_uid.id, scopeSlot);
+      }
     }
-
-    client->setScopeSlot(scopeString, scopeSlot);
-
-    emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeString);
-    emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeString, RDMnetNetworkItem::ScopeDataRole);
-    emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeSlot, RDMnetNetworkItem::ScopeSlotRole);
   }
 }
 
@@ -3330,11 +3355,12 @@ void RDMnetNetworkModel::initializeResponderProperties(ResponderItem *parent, ui
   SendRDMCommand(cmd);
 }
 
-void RDMnetNetworkModel::initializeRPTDeviceProperties(RDMnetClientItem *parent, uint16_t manuID, uint32_t deviceID)
+void RDMnetNetworkModel::initializeRPTClientProperties(RDMnetClientItem *parent, uint16_t manuID, uint32_t deviceID, 
+                                                       rpt_client_type_t clientType)
 {
   RdmCommand cmd;
 
-  addPropertyEntries(parent, kLocDevice);
+  addPropertyEntries(parent, (clientType == kRPTClientTypeDevice) ? kLocDevice : kLocController);
 
   // Now send requests for core required properties.
   memset(cmd.data, 0, RDM_MAX_PDL);
@@ -3355,17 +3381,59 @@ void RDMnetNetworkModel::initializeRPTDeviceProperties(RDMnetClientItem *parent,
   SendRDMCommand(cmd);
   cmd.param_id = E120_IDENTIFY_DEVICE;
   SendRDMCommand(cmd);
+
+  cmd.param_id = E133_SEARCH_DOMAIN;
+  SendRDMCommand(cmd);
+
+  if (clientType == kRPTClientTypeDevice) // For controllers, we need to wait for all the scopes first.
+  {
+    cmd.param_id = E133_BROKER_STATIC_CONFIG_IPV4;
+    SendRDMCommand(cmd);
+    cmd.param_id = E133_BROKER_STATIC_CONFIG_IPV6;
+    SendRDMCommand(cmd);
+    cmd.param_id = E133_TCP_COMMS_STATUS;
+    SendRDMCommand(cmd);
+  }
+
+  cmd.datalen = 2;
+  pack_16b(cmd.data, 0x0001);  // Scope slot, start with #1
+  cmd.param_id = E133_COMPONENT_SCOPE;
+  SendRDMCommand(cmd);
+}
+
+void RDMnetNetworkModel::sendGetControllerScopeProperties(uint16_t manuID, uint32_t deviceID)
+{
+  RdmCommand cmd;
+
+  memset(cmd.data, 0, RDM_MAX_PDL);
+  cmd.dest_uid.manu = manuID;
+  cmd.dest_uid.id = deviceID;
+  cmd.subdevice = 0;
+
+  cmd.command_class = E120_GET_COMMAND;
+  cmd.datalen = 0;
+
   cmd.param_id = E133_BROKER_STATIC_CONFIG_IPV4;
   SendRDMCommand(cmd);
   cmd.param_id = E133_BROKER_STATIC_CONFIG_IPV6;
   SendRDMCommand(cmd);
-  cmd.param_id = E133_SEARCH_DOMAIN;
-  SendRDMCommand(cmd);
   cmd.param_id = E133_TCP_COMMS_STATUS;
   SendRDMCommand(cmd);
+}
 
+void RDMnetNetworkModel::sendGetNextControllerScope(uint16_t manuID, uint32_t deviceID, uint16_t currentSlot)
+{
+  RdmCommand cmd;
+
+  memset(cmd.data, 0, RDM_MAX_PDL);
+  cmd.dest_uid.manu = manuID;
+  cmd.dest_uid.id = deviceID;
+  cmd.subdevice = 0;
+
+  cmd.command_class = E120_GET_COMMAND;
   cmd.datalen = 2;
-  pack_16b(cmd.data, 0x0001);  // Scope slot, default to 1 for RPT Devices (non-controllers, non-brokers).
+
+  pack_16b(cmd.data, min(currentSlot + 1, MAX_SCOPE_SLOT_NUMBER));  // Scope slot, start with #1
   cmd.param_id = E133_COMPONENT_SCOPE;
   SendRDMCommand(cmd);
 }

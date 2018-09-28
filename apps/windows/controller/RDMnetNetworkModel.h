@@ -260,7 +260,7 @@ protected:
   void ProcessBrokerMessage(uint16_t conn, const RdmnetMessage *msg);
 
   void ProcessRPTStatus(uint16_t conn, const RptHeader *header, const RptStatusMsg *status);
-  void ProcessRPTNotification(uint16_t conn, const RptHeader *header, const RdmCmdList *cmd_list);
+  void ProcessRPTNotificationOrRequest(uint16_t conn, const RptHeader *header, const RdmCmdList *cmd_list);
   void ProcessRDMCommand(uint16_t conn, const RptHeader *header, const RdmCommand &cmd);
   bool DefaultResponderGet(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len,
                              RdmParamData *resp_data_list, size_t *num_responses, uint16_t *nack_reason);
@@ -367,7 +367,9 @@ protected:
   // Message sending
   void addPropertyEntries(RDMnetNetworkItem *parent, PIDFlags location);
   void initializeResponderProperties(ResponderItem *parent, uint16_t manuID, uint32_t deviceID);
-  void initializeRPTDeviceProperties(RDMnetClientItem *parent, uint16_t manuID, uint32_t deviceID);
+  void initializeRPTClientProperties(RDMnetClientItem *parent, uint16_t manuID, uint32_t deviceID, rpt_client_type_t clientType);
+  void sendGetControllerScopeProperties(uint16_t manuID, uint32_t deviceID);
+  void sendGetNextControllerScope(uint16_t manuID, uint32_t deviceID, uint16_t currentSlot);
   void sendGetCommand(uint16_t pid, uint16_t manu, uint32_t dev);
   uint8_t *packIPAddressItem(const QVariant &value, lwpa_iptype_t addrType, uint8_t *packPtr);
   uint8_t *packStaticConfigItem(const QModelIndex &valueIndex, const QVariant &value, lwpa_iptype_t addrType, uint8_t *packPtr);
