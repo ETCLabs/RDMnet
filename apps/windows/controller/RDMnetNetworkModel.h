@@ -267,7 +267,7 @@ protected:
   void ProcessRDMResponse(uint16_t conn, bool have_command, const RdmCommand &cmd, const std::vector<RdmResponse> &response);
 
   // Use this with data that has identical GET_COMMAND_RESPONSE and SET_COMMAND forms.
-  void ProcessRDMGetSetData(uint16_t param_id, const uint8_t *data, uint8_t datalen, RdmResponse *resp);
+  void ProcessRDMGetSetData(uint16_t param_id, const uint8_t *data, uint8_t datalen, const RdmResponse *firstResp);
 
   BrokerConnection *getBrokerConnection(uint16_t destManu, uint32_t destDeviceID, LwpaUid &rptDestUID, 
                                         uint16_t &destEndpoint);
@@ -319,50 +319,50 @@ protected:
 
   // RDM PID GET responses/updates
   void nack(uint16_t reason, const RdmResponse *resp);
-  void status(uint8_t type, uint16_t messageId, uint16_t data1, uint16_t data2, RdmResponse *resp);
+  void status(uint8_t type, uint16_t messageId, uint16_t data1, uint16_t data2, const RdmResponse *resp);
 
   // E1.20
   // SUPPORTED_PARAMETERS
-  void commands(std::vector<uint16_t> list, RdmResponse *resp);
+  void commands(std::vector<uint16_t> list, const RdmResponse *resp);
   // DEVICE_INFO
   void deviceInfo(uint16_t protocolVersion, uint16_t modelId, uint16_t category, uint32_t swVersionId,
                   uint16_t footprint, uint8_t personality, uint8_t totalPersonality, uint16_t address,
-                  uint16_t subdeviceCount, uint8_t sensorCount, RdmResponse *resp);
+                  uint16_t subdeviceCount, uint8_t sensorCount, const RdmResponse *resp);
   // DEVICE_MODEL_DESCRIPTION
-  void modelDesc(const char *label, RdmResponse *resp);
+  void modelDesc(const char *label, const RdmResponse *resp);
   // MANUFACTURER_LABEL
-  void manufacturerLabel(const char *label, RdmResponse *resp);
+  void manufacturerLabel(const char *label, const RdmResponse *resp);
   // DEVICE_LABEL
-  void deviceLabel(const char *label, RdmResponse *resp);
+  void deviceLabel(const char *label, const RdmResponse *resp);
   // SOFTWARE_VERSION_LABEL
-  void softwareLabel(const char *label, RdmResponse *resp);
+  void softwareLabel(const char *label, const RdmResponse *resp);
   // BOOT_SOFTWARE_VERSION_ID
-  void bootSoftwareID(uint32_t id, RdmResponse *resp);
+  void bootSoftwareID(uint32_t id, const RdmResponse *resp);
   // BOOT_SOFTWARE_VERSION_LABEL
-  void bootSoftwareLabel(const char *label, RdmResponse *resp);
+  void bootSoftwareLabel(const char *label, const RdmResponse *resp);
   // DMX_START_ADDRESS
-  void address(uint16_t address, RdmResponse *resp);
+  void address(uint16_t address, const RdmResponse *resp);
   // IDENTIFY_DEVICE
-  void identify(bool enable, RdmResponse *resp);
+  void identify(bool enable, const RdmResponse *resp);
   // DMX_PERSONALITY (number may equal zero if data is not provided)
-  void personality(uint8_t current, uint8_t number, RdmResponse *resp);
+  void personality(uint8_t current, uint8_t number, const RdmResponse *resp);
   // DMX_PERSONALITY_DESCRIPTION
-  void personalityDescription(uint8_t personality, uint16_t footprint, const char *description, RdmResponse *resp);
+  void personalityDescription(uint8_t personality, uint16_t footprint, const char *description, const RdmResponse *resp);
 
   // E1.33
   // COMPONENT_SCOPE
-  void componentScope(uint16_t scopeSlot, const char *scopeString, RdmResponse *resp);
+  void componentScope(uint16_t scopeSlot, const char *scopeString, const RdmResponse *resp);
   // BROKER_STATIC_CONFIG_IPV4
   void brokerStaticConfigIPv4(const char *addrString, uint16_t port, const char *scopeString,
-                              RdmResponse *resp);
+                              const RdmResponse *resp);
   // BROKER_STATIC_CONFIG_IPV6
   void brokerStaticConfigIPv6(const char *addrString, uint16_t port, const char *scopeString,
-                              RdmResponse *resp);
+                              const RdmResponse *resp);
   // SEARCH_DOMAIN
-  void searchDomain(const char *domainNameString, RdmResponse *resp);
+  void searchDomain(const char *domainNameString, const RdmResponse *resp);
   // TCP_COMMS_STATUS
   void tcpCommsStatus(const char *scopeString, const char *v4AddrString, const char *v6AddrString, uint16_t port,
-                      uint16_t unhealthyTCPEvents, RdmResponse *resp);
+                      uint16_t unhealthyTCPEvents, const RdmResponse *resp);
 
   // Message sending
   void addPropertyEntries(RDMnetNetworkItem *parent, PIDFlags location);
@@ -378,9 +378,9 @@ protected:
   bool pidSupportedByGUI(uint16_t pid, bool checkSupportGet);
 
   // Item handling
-  RDMnetClientItem *getClientItem(RdmResponse *resp);
-  RDMnetNetworkItem *getNetworkItem(RdmResponse *resp);
-  void checkPersonalityDescriptions(RDMnetNetworkItem *device, uint8_t numberOfPersonalities, RdmResponse *resp);
+  RDMnetClientItem *getClientItem(const RdmResponse *resp);
+  RDMnetNetworkItem *getNetworkItem(const RdmResponse *resp);
+  void checkPersonalityDescriptions(RDMnetNetworkItem *device, uint8_t numberOfPersonalities, const RdmResponse *resp);
   QVariant getPropertyData(RDMnetNetworkItem *parent, unsigned short pid, int role);
 
   PropertyItem *createPropertyItem(RDMnetNetworkItem *parent, const QString &fullName);
