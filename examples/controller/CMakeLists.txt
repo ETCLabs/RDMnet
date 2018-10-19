@@ -67,3 +67,6 @@ add_executable(RDMnetControllerGUI
   SimpleNetworkProxyModel.h
 )
 target_link_libraries(RDMnetControllerGUI PRIVATE Qt5::Widgets RDMnet)
+if(WIN32)
+  target_include_directories(RDMnetControllerGUI PRIVATE windows)
+endif()
