@@ -49,7 +49,7 @@ bool g_ShuttingDown = false;
 
 lwpa_thread_t tick_thread_;
 
-static void LogCallback(void *context, const char * /*syslog_str*/, const char *human_str)
+static void LogCallback(void *context, const char * /*syslog_str*/, const char *human_str, const char * /*raw_str*/)
 {
   MyLog *log = static_cast<MyLog *>(context);
   if (log)
@@ -61,14 +61,12 @@ static void TimeCallback(void * /*context*/, LwpaLogTimeParams *time)
   QDateTime now = QDateTime::currentDateTime();
   QDate qdate = now.date();
   QTime qtime = now.time();
-  time->cur_time.tm_sec = qtime.second();
-  time->cur_time.tm_min = qtime.minute();
-  time->cur_time.tm_hour = qtime.hour();
-  time->cur_time.tm_mday = qdate.day();
-  time->cur_time.tm_mon = qdate.month() - 1;
-  time->cur_time.tm_year = qdate.year() - 1900;
-  time->cur_time.tm_wday = (qdate.dayOfWeek() == 7 ? 0 : qdate.dayOfWeek());
-  time->cur_time.tm_isdst = now.isDaylightTime();
+  time->second = qtime.second();
+  time->minute = qtime.minute();
+  time->hour = qtime.hour();
+  time->day = qdate.day();
+  time->month = qdate.month();
+  time->year = qdate.year();
   time->msec = qtime.msec();
   time->utc_offset = (QTimeZone::systemTimeZone().offsetFromUtc(now) / 60);
 }
@@ -165,7 +163,6 @@ MyLog::MyLog(const std::string &file_name) : file_name_(file_name)
   params_.syslog_params.procid[0] = '\0';
   params_.syslog_params.hostname[0] = '\0';
   params_.log_mask = LWPA_LOG_UPTO(LWPA_LOG_DEBUG);
-  params_.time_method = kLwpaLogUseTimeFn;
   params_.time_fn = TimeCallback;
   params_.context = this;
   lwpa_validate_log_params(&params_);
