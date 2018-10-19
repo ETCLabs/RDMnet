@@ -67,12 +67,12 @@ void WindowsBrokerLog::GetTimeFromCallback(LwpaLogTimeParams *time)
 {
   SYSTEMTIME win_time;
   GetLocalTime(&win_time);
-  time->cur_time.tm_year = win_time.wYear - 1900;
-  time->cur_time.tm_mon = win_time.wMonth - 1;
-  time->cur_time.tm_mday = win_time.wDay;
-  time->cur_time.tm_hour = win_time.wHour;
-  time->cur_time.tm_min = win_time.wMinute;
-  time->cur_time.tm_sec = win_time.wSecond;
+  time->year = win_time.wYear;
+  time->month = win_time.wMonth;
+  time->day = win_time.wDay;
+  time->hour = win_time.wHour;
+  time->minute = win_time.wMinute;
+  time->second = win_time.wSecond;
   time->msec = win_time.wMilliseconds;
   time->utc_offset = utcoffset_;
 }
