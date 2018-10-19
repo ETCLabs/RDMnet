@@ -25,12 +25,12 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 #include "rdmnet/llrp.h"
-#include "llrppriv.h"
+#include "llrp_priv.h"
 
 #include "lwpa_mempool.h"
 #include "lwpa_socket.h"
 #include "estardmnet.h"
-#include "rdmnet/opts.h"
+#include "rdmnet/common/opts.h"
 
 /***************************** Private macros ********************************/
 
@@ -74,7 +74,7 @@ static int known_uid_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const
 static void known_uid_clear_cb(const LwpaRbTree *self, LwpaRbNode *node);
 
 /* Functions for Manager discovery */
-static void halve_range(LwpaUid *uid1, LwpaUid *uid2);
+static void halve_range(RdmUid *uid1, RdmUid *uid2);
 static bool update_probe_range(LlrpManagerSocketData *mgrdata, KnownUid **uid_list);
 static bool send_next_probe(LlrpBaseSocket *sock);
 
@@ -189,7 +189,7 @@ llrp_socket_t llrp_create_manager_socket(const LwpaIpAddr *netint, const LwpaCid
  *                            Component.
  *  \return A new LLRP socket (success) or #LLRP_SOCKET_INVALID (failure).
  */
-llrp_socket_t llrp_create_target_socket(const LwpaIpAddr *netint, const LwpaCid *target_cid, const LwpaUid *target_uid,
+llrp_socket_t llrp_create_target_socket(const LwpaIpAddr *netint, const LwpaCid *target_cid, const RdmUid *target_uid,
                                         const uint8_t *hardware_address, llrp_component_t component_type)
 {
   LlrpTargetSocketData *targetdata;
@@ -295,7 +295,7 @@ bool llrp_stop_discovery(llrp_socket_t handle)
   return false;
 }
 
-void halve_range(LwpaUid *uid1, LwpaUid *uid2)
+void halve_range(RdmUid *uid1, RdmUid *uid2)
 {
   uint64_t uval1 = ((((uint64_t)uid1->manu) << 32) | uid1->id);
   uint64_t uval2 = ((((uint64_t)uid2->manu) << 32) | uid2->id);
@@ -1014,7 +1014,7 @@ void node_dealloc(LwpaRbNode *node)
 int known_uid_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const LwpaRbNode *node_b)
 {
   (void)self;
-  const LwpaUid *a = (const LwpaUid *)node_a->value;
-  const LwpaUid *b = (const LwpaUid *)node_b->value;
+  const RdmUid *a = (const RdmUid *)node_a->value;
+  const RdmUid *b = (const RdmUid *)node_b->value;
   return uid_cmp(a, b);
 }
