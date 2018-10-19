@@ -28,7 +28,7 @@ add_subdirectory(src)
 
 # Examples
 
-# option(RDMNET_BUILD_EXAMPLES "Build the RDMnet example applications" OFF)
-# if(RDMNET_BUILD_EXAMPLES OR PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-#   add_subdirectory(examples)
-# endif()
+option(RDMNET_BUILD_EXAMPLES "Build the RDMnet example applications" OFF)
+if(RDMNET_BUILD_EXAMPLES OR PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+  add_subdirectory(examples)
+endif()
