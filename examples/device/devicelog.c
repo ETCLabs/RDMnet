@@ -60,10 +60,11 @@ static void GetLastErrorMessage(LPWSTR lpszerr, unsigned int nSize)
   LocalFree(lpMsgBuf);
 }
 
-static void device_log_callback(void *context, const char *syslog_str, const char *human_str)
+static void device_log_callback(void *context, const char *syslog_str, const char *human_str, const char *raw_str)
 {
   (void)context;
   (void)syslog_str;
+  (void)raw_str;
   printf("%s\n", human_str);
   if (s_log_file)
     fprintf(s_log_file, "%s\n", human_str);
@@ -74,12 +75,12 @@ static void device_time_callback(void *context, LwpaLogTimeParams *time)
   SYSTEMTIME win_time;
   (void)context;
   GetLocalTime(&win_time);
-  time->cur_time.tm_year = win_time.wYear - 1900;
-  time->cur_time.tm_mon = win_time.wMonth - 1;
-  time->cur_time.tm_mday = win_time.wDay;
-  time->cur_time.tm_hour = win_time.wHour;
-  time->cur_time.tm_min = win_time.wMinute;
-  time->cur_time.tm_sec = win_time.wSecond;
+  time->year = win_time.wYear;
+  time->month = win_time.wMonth;
+  time->day = win_time.wDay;
+  time->hour = win_time.wHour;
+  time->minute = win_time.wMinute;
+  time->second = win_time.wSecond;
   time->msec = win_time.wMilliseconds;
   time->utc_offset = s_utc_offset;
 }
@@ -104,7 +105,7 @@ void device_log_init(const char *file_name)
       s_utc_offset = -(tzinfo.Bias + tzinfo.DaylightBias);
       break;
     default:
-      device_log_callback(NULL, NULL, "Device Log: Couldn't get time zone info.\n");
+      device_log_callback(NULL, NULL, "Device Log: Couldn't get time zone info.\n", NULL);
       break;
   }
 
@@ -113,7 +114,6 @@ void device_log_init(const char *file_name)
   strncpy_s(s_device_log_params.syslog_params.app_name, LWPA_LOG_APP_NAME_MAX_LEN, "RDMnet Device", _TRUNCATE);
   s_device_log_params.syslog_params.facility = LWPA_LOG_LOCAL1;
   s_device_log_params.log_mask = LWPA_LOG_UPTO(LWPA_LOG_DEBUG);
-  s_device_log_params.time_method = kLwpaLogUseTimeFn;
   s_device_log_params.time_fn = device_time_callback;
   s_device_log_params.context = NULL;
 
@@ -127,8 +127,8 @@ void device_log_init(const char *file_name)
 
     GetLastErrorMessage(error_text, 128);
     WideCharToMultiByte(CP_UTF8, 0, error_text, -1, error_text_utf8, 256, NULL, NULL);
-    device_log_callback(NULL, NULL, "Device Log: Couldn't get hostname due to error:\n");
-    device_log_callback(NULL, NULL, error_text_utf8);
+    device_log_callback(NULL, NULL, "Device Log: Couldn't get hostname due to error:\n", NULL);
+    device_log_callback(NULL, NULL, error_text_utf8, NULL);
     s_device_log_params.syslog_params.hostname[0] = '\0';
   }
 
