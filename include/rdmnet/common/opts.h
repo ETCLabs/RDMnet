@@ -39,16 +39,13 @@
 /*! \defgroup rdmnetopts RDMnet Configuration Options
  *  \brief Compile-time configuration options for RDMnet.
  *
- *  Default values can be overriden by defining the option in your project's
- *  rdmnet_config.h file. Default values for platform-specific options are
- *  contained in rdmnet_platform_defaults.h, which lives with each platform in
- *  the port folder.
+ *  Default values can be overriden by defining the option in your project's rdmnet_config.h file.
+ *  Default values for platform-specific options are contained in rdmnet/common/plat_opts.h.
  */
 
-/* User configuration options. Any non-defined ones will get their defaults in
- * this file. */
-#include "rdmnet_config.h"
-#include "rdmnet_platform_defaults.h"
+/* User and platform configuration options. Any non-defined ones will get their defaults in this
+ * file. */
+#include "rdmnet/common/plat_opts.h"
 
 /********************************* Global ************************************/
 

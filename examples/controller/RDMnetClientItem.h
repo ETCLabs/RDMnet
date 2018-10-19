@@ -27,9 +27,8 @@
 
 #pragma once
 
-#include "rdmnet/rdmtypes.h"
+#include "rdm/message.h"
 #include "rdmnet/client.h"
-#include "rdmnet/cpputil.h"
 #include "EndpointItem.h"
 
 class RDMnetClientItem : public RDMnetNetworkItem
@@ -48,10 +47,10 @@ public:
   bool operator==(const RDMnetClientItem &other)
   {
     return (get_rpt_client_entry_data(&entry_)->client_type == get_rpt_client_entry_data(&other.entry_)->client_type) &&
-           (get_rpt_client_entry_data(&entry_)->client_uid == get_rpt_client_entry_data(&other.entry_)->client_uid);
+           (uid_equal(&(get_rpt_client_entry_data(&entry_)->client_uid), &(get_rpt_client_entry_data(&other.entry_)->client_uid)));
   }
 
-  const LwpaUid &Uid() const { return get_rpt_client_entry_data(&entry_)->client_uid; }
+  const RdmUid &Uid() const { return get_rpt_client_entry_data(&entry_)->client_uid; }
   const rpt_client_type_t ClientType() const { return get_rpt_client_entry_data(&entry_)->client_type; }
 
   virtual uint16_t getMan(void) const { return get_rpt_client_entry_data(&entry_)->client_uid.manu; };

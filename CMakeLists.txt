@@ -19,6 +19,12 @@ endif()
 
 add_subdirectory(src)
 
+if(PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+  set(OPTION_DEFAULTS ON)
+else()
+  set(OPTION_DEFAULTS OFF)
+endif()
+
 # Tests
 
 # option(RDMNET_BUILD_TESTS "Build the RDMnet unit tests" OFF)
@@ -28,7 +34,7 @@ add_subdirectory(src)
 
 # Examples
 
-option(RDMNET_BUILD_EXAMPLES "Build the RDMnet example applications" OFF)
-if(RDMNET_BUILD_EXAMPLES OR PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+option(RDMNET_BUILD_EXAMPLES "Build the RDMnet example applications" ${OPTION_DEFAULTS})
+if(RDMNET_BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()

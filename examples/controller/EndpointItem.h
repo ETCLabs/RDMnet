@@ -27,9 +27,8 @@
 
 #pragma once
 
-#include "estardm.h"
-#include "lwpa_uid.h"
-#include "rdmnet/cpputil.h"
+#include "rdm/defs.h"
+#include "rdm/uid.h"
 #include "ResponderItem.h"
 
 class EndpointItem : public RDMnetNetworkItem
@@ -47,10 +46,10 @@ public:
 
   bool operator==(const EndpointItem &other)
   {
-    return (parent_uid_ == other.parent_uid_) && (endpoint_ == other.endpoint_) && (type_ == other.type_);
+    return (uid_equal(&parent_uid_, &other.parent_uid_)) && (endpoint_ == other.endpoint_) && (type_ == other.type_);
   }
 
-  LwpaUid parent_uid_;
+  RdmUid parent_uid_;
   uint16_t endpoint_;
   uint8_t type_;
   std::vector<ResponderItem *> devices_;

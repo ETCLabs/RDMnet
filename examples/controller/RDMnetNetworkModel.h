@@ -34,12 +34,12 @@
 #include "lwpa_log.h"
 #include "lwpa_thread.h"
 #include "lwpa_cid.h"
-#include "lwpa_uid.h"
-#include "rdmnet/connection.h"
-#include "rdmnet/rdmcontroller.h"
+#include "rdm/uid.h"
+#include "rdm/controller.h"
+#include "rdmnet/common/connection.h"
+#include "rdmnet/common/discovery.h"
 #include "BrokerItem.h"
 #include "SearchingStatusItem.h"
-#include "rdmnet/discovery.h"
 #include "PropertyValueItem.h"
 
 class BrokerConnection;
@@ -81,7 +81,7 @@ class BrokerConnection
 {
 private:
   static LwpaCid local_cid_;
-  static LwpaUid local_uid_;
+  static RdmUid local_uid_;
 
   static MyLog *log_;
 
@@ -102,9 +102,9 @@ private:
   bool connect_in_progress_;
 
 public:
-  static bool initializeStaticConnectionInfo(const LwpaCid &cid, const LwpaUid &uid, MyLog *log);
+  static bool initializeStaticConnectionInfo(const LwpaCid &cid, const RdmUid &uid, MyLog *log);
   static LwpaCid getLocalCID() { return local_cid_; }
-  static LwpaUid getLocalUID() { return local_uid_; }
+  static RdmUid getLocalUID() { return local_uid_; }
 
   explicit BrokerConnection(std::string scope);
   BrokerConnection(std::string scope, const LwpaSockaddr &addr);
@@ -149,7 +149,7 @@ signals:
   void addRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list);
   void removeRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list);
   void newEndpointList(RDMnetClientItem *treeClientItem, const std::vector<std::pair<uint16_t, uint8_t>> &list);
-  void newResponderList(EndpointItem *treeEndpointItem, const std::vector<LwpaUid> &list);
+  void newResponderList(EndpointItem *treeEndpointItem, const std::vector<RdmUid> &list);
   void setPropertyData(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, const QVariant &value,
                        int role = Qt::DisplayRole);
   void brokerItemTextUpdated(const BrokerItem *item);
@@ -179,7 +179,7 @@ protected slots:
   void processAddRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list);
   void processRemoveRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list);
   void processNewEndpointList(RDMnetClientItem *treeClientItem, const std::vector<std::pair<uint16_t, uint8_t>> &list);
-  void processNewResponderList(EndpointItem *treeEndpointItem, const std::vector<LwpaUid> &list);
+  void processNewResponderList(EndpointItem *treeEndpointItem, const std::vector<RdmUid> &list);
   void processSetPropertyData(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, const QVariant &value,
                               int role);
   void processAddPropertyEntry(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, int role);
@@ -244,11 +244,11 @@ protected:
 
   // RDMnet messages
   void endpointList(uint32_t changeNumber, const std::vector<std::pair<uint16_t, uint8_t>> &list,
-                    const LwpaUid &src_uid);
-  void endpointResponders(uint16_t endpoint, uint32_t changeNumber, const std::vector<LwpaUid> &list,
-                          const LwpaUid &src_uid);
-  void endpointListChange(uint32_t changeNumber, const LwpaUid &src_uid);
-  void responderListChange(uint32_t changeNumber, uint16_t endpoint, const LwpaUid &src_uid);
+                    const RdmUid &src_uid);
+  void endpointResponders(uint16_t endpoint, uint32_t changeNumber, const std::vector<RdmUid> &list,
+                          const RdmUid &src_uid);
+  void endpointListChange(uint32_t changeNumber, const RdmUid &src_uid);
+  void responderListChange(uint32_t changeNumber, uint16_t endpoint, const RdmUid &src_uid);
 
   // RDM PID GET responses/updates
   void nack(uint16_t reason, const RdmResponse *resp);

@@ -33,11 +33,11 @@
 #include <QTimeZone>
 #include <QMessageBox>
 #include "lwpa_pack.h"
-#include "rdmnet/rdmresponder.h"
+#include "rdm/responder.h"
 #include "PropertyItem.h"
 
 LwpaCid BrokerConnection::local_cid_;
-LwpaUid BrokerConnection::local_uid_;
+RdmUid BrokerConnection::local_uid_;
 MyLog *BrokerConnection::log_ = NULL;
 bool BrokerConnection::static_info_initialized_ = false;
 
@@ -287,7 +287,7 @@ static void rdmnetdisc_tick_thread_func(void *arg)
   }
 }
 
-bool BrokerConnection::initializeStaticConnectionInfo(const LwpaCid &cid, const LwpaUid &uid, MyLog *log)
+bool BrokerConnection::initializeStaticConnectionInfo(const LwpaCid &cid, const RdmUid &uid, MyLog *log)
 {
   if (!static_info_initialized_)
   {
@@ -756,7 +756,7 @@ void RDMnetNetworkModel::processNewEndpointList(RDMnetClientItem *treeClientItem
   }
 }
 
-void RDMnetNetworkModel::processNewResponderList(EndpointItem *treeEndpointItem, const std::vector<LwpaUid> &list)
+void RDMnetNetworkModel::processNewResponderList(EndpointItem *treeEndpointItem, const std::vector<RdmUid> &list)
 {
   bool somethingWasAdded = false;
 
@@ -1024,7 +1024,7 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   UUID uuid;
 
   LwpaCid my_cid;
-  LwpaUid my_uid;
+  RdmUid my_uid;
 
   model->InitRDMnet();
   model->StartRecvThread();
@@ -1170,7 +1170,7 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
 
   qRegisterMetaType<std::vector<ClientEntryData>>("std::vector<ClientEntryData>");
   qRegisterMetaType<std::vector<std::pair<uint16_t, uint8_t>>>("std::vector<std::pair<uint16_t, uint8_t>>");
-  qRegisterMetaType<std::vector<LwpaUid>>("std::vector<LwpaUid>");
+  qRegisterMetaType<std::vector<RdmUid>>("std::vector<RdmUid>");
 
   connect(model, SIGNAL(brokerDisconnection(int)), model, SLOT(processBrokerDisconnection(int)), Qt::AutoConnection);
   connect(model, SIGNAL(addRDMnetClients(BrokerItem *, const std::vector<ClientEntryData> &)), model,
@@ -1180,8 +1180,8 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   connect(model, SIGNAL(newEndpointList(RDMnetClientItem *, const std::vector<std::pair<uint16_t, uint8_t>> &)), model,
           SLOT(processNewEndpointList(RDMnetClientItem *, const std::vector<std::pair<uint16_t, uint8_t>> &)),
           Qt::AutoConnection);
-  connect(model, SIGNAL(newResponderList(EndpointItem *, const std::vector<LwpaUid> &)), model,
-          SLOT(processNewResponderList(EndpointItem *, const std::vector<LwpaUid> &)), Qt::AutoConnection);
+  connect(model, SIGNAL(newResponderList(EndpointItem *, const std::vector<RdmUid> &)), model,
+          SLOT(processNewResponderList(EndpointItem *, const std::vector<RdmUid> &)), Qt::AutoConnection);
   connect(model, SIGNAL(setPropertyData(RDMnetNetworkItem *, unsigned short, const QString &, const QVariant &, int)),
           model,
           SLOT(processSetPropertyData(RDMnetNetworkItem *, unsigned short, const QString &, const QVariant &, int)),
@@ -1702,8 +1702,8 @@ void RDMnetNetworkModel::ProcessRPTNotification(int conn, const RptHeader * /*he
 bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand &cmd)
 {
   RptHeader header;
-  LwpaUid rpt_dest_uid = cmd.dest_uid;
-  LwpaUid rdm_dest_uid = cmd.dest_uid;
+  RdmUid rpt_dest_uid = cmd.dest_uid;
+  RdmUid rdm_dest_uid = cmd.dest_uid;
   uint16_t dest_endpoint = 0;
 
   BrokerConnection *connectionToUse = NULL;
@@ -1921,7 +1921,7 @@ void RDMnetNetworkModel::ProcessRDMResponse(int /*conn*/, bool have_command, con
         bool is_first_message = true;
         uint32_t change_number = 0;
         std::vector<std::pair<uint16_t, uint8_t>> list;
-        LwpaUid src_uid;
+        RdmUid src_uid;
 
         for (auto resp_part : response)
         {
@@ -1949,8 +1949,8 @@ void RDMnetNetworkModel::ProcessRDMResponse(int /*conn*/, bool have_command, con
       case E137_7_ENDPOINT_RESPONDERS:
       {
         bool is_first_message = true;
-        LwpaUid src_uid;
-        std::vector<LwpaUid> list;
+        RdmUid src_uid;
+        std::vector<RdmUid> list;
         uint16_t endpoint_id = 0;
         uint32_t change_number = 0;
 
@@ -1969,7 +1969,7 @@ void RDMnetNetworkModel::ProcessRDMResponse(int /*conn*/, bool have_command, con
 
           for (; pos + 5 < resp_part.datalen; pos += 6)
           {
-            LwpaUid device;
+            RdmUid device;
             device.manu = upack_16b(&resp_part.data[pos]);
             device.id = upack_32b(&resp_part.data[pos + 2]);
             list.push_back(device);
@@ -2154,7 +2154,7 @@ void RDMnetNetworkModel::ProcessRDMGetSetData(uint16_t param_id, const uint8_t *
 }
 
 void RDMnetNetworkModel::endpointList(uint32_t /*changeNumber*/, const std::vector<std::pair<uint16_t, uint8_t>> &list,
-                                      const LwpaUid &src_uid)
+                                      const RdmUid &src_uid)
 {
   for (auto &brokerConnectionIter : broker_connections_)
   {
@@ -2190,7 +2190,7 @@ void RDMnetNetworkModel::endpointList(uint32_t /*changeNumber*/, const std::vect
 }
 
 void RDMnetNetworkModel::endpointResponders(uint16_t endpoint, uint32_t /*changeNumber*/,
-                                            const std::vector<LwpaUid> &list, const LwpaUid &src_uid)
+                                            const std::vector<RdmUid> &list, const RdmUid &src_uid)
 {
   for (auto &brokerConnectionIter : broker_connections_)
   {
@@ -2228,12 +2228,12 @@ void RDMnetNetworkModel::endpointResponders(uint16_t endpoint, uint32_t /*change
   // printf("\tAge =          %u\n", age);
   // printf("\tContains=      (size= %u)\n", list.size());
 
-  // for (std::vector<LwpaUid>::const_iterator i = list.begin(); i != list.end();
+  // for (std::vector<RdmUid>::const_iterator i = list.begin(); i != list.end();
   // i++) 	printf("\t\tMan=0x%04x Dev= 0x%08x\n", i->manu, i->id);
   // printf("\n");
 }
 
-void RDMnetNetworkModel::endpointListChange(uint32_t /*changeNumber*/, const LwpaUid &src_uid)
+void RDMnetNetworkModel::endpointListChange(uint32_t /*changeNumber*/, const RdmUid &src_uid)
 {
   RdmCommand cmd;
 
@@ -2246,7 +2246,7 @@ void RDMnetNetworkModel::endpointListChange(uint32_t /*changeNumber*/, const Lwp
   SendRDMCommand(cmd);
 }
 
-void RDMnetNetworkModel::responderListChange(uint32_t /*changeNumber*/, uint16_t endpoint, const LwpaUid &src_uid)
+void RDMnetNetworkModel::responderListChange(uint32_t /*changeNumber*/, uint16_t endpoint, const RdmUid &src_uid)
 {
   // Ask for the devices on each endpoint
   RdmCommand cmd;

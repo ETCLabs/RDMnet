@@ -25,8 +25,12 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#ifndef _RDMNET_PLATFORM_DEFAULTS_H_
-#define _RDMNET_PLATFORM_DEFAULTS_H_
+#ifndef _RDMNET_PLATFORM_OPTS_H_
+#define _RDMNET_PLATFORM_OPTS_H_
+
+#include "rdmnet_config.h"
+
+#if RDMNET_PLATFORM_WINDOWS
 
 #ifndef RDMNET_TICK_THREAD_PRIORITY
 #define RDMNET_TICK_THREAD_PRIORITY THREAD_PRIORITY_NORMAL
@@ -46,4 +50,6 @@
 #undef LLRP_BIND_TO_MCAST_ADDRESS
 #define LLRP_BIND_TO_MCAST_ADDRESS 0
 
-#endif /* _RDMNET_PLATFORM_DEFAULTS_H_ */
+#endif /* RDMNET_PLATFORM_WINDOWS */
+
+#endif /* _RDMNET_PLATFORM_OPTS_H_ */

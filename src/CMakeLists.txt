@@ -20,6 +20,19 @@ if(NOT TARGET RDM)
   add_subdirectory(${RDM_DIR} RDM)
 endif()
 
+################################## Config file ################################
+
+if(WIN32)
+  set(RDMNET_BASE_CONFIG "#define RDMNET_PLATFORM_WINDOWS 1")
+endif()
+
+if(DEFINED RDMNET_CONFIG_LOC)
+else()
+  message("No rdmnet_config.h provided. Creating a default one in the build directory...")
+  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/rdmnet_config.h ${RDMNET_BASE_CONFIG})
+  set(CMAKE_INCLUDE_CURRENT_DIR ON)
+endif()
+
 ################################ DNS-SD SUPPORT ###############################
 
 if(WIN32)
@@ -96,13 +109,6 @@ target_include_directories(RDMnet
   PRIVATE ${DNS_SD_ADDITIONAL_INCLUDE_DIRS}
 )
 target_link_libraries(RDMnet PUBLIC lwpa RDM ${DNS_SD_ADDITIONAL_LIBS})
-
-# TODO Fix this
-if(WIN32)
-  file(TOUCH ${CMAKE_CURRENT_BINARY_DIR}/rdmnet_config.h)
-  # TODO reexamine whether this should be public
-  target_include_directories(RDMnet PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ${RDMNET_ROOT}/port/windows/msvc2015/include)
-endif()
 
 #################################### Broker ###################################
 
