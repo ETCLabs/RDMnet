@@ -25,26 +25,24 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet/discovery.h
- *  \brief Functions to discover a Broker and/or register a Broker for
- *         discovery. Uses mDNS and DNS-SD under the hood.
+/*! \file rdmnet/common/discovery.h
+ *  \brief Functions to discover a Broker and/or register a Broker for discovery. Uses mDNS and
+ *         DNS-SD under the hood.
  */
 #ifndef _RDMNET_DISCOVERY_H_
 #define _RDMNET_DISCOVERY_H_
 
-#include "lwpa_error.h"
-#include "lwpa_cid.h"
-#include "lwpa_socket.h"
+#include "lwpa/error.h"
+#include "lwpa/uuid.h"
+#include "lwpa/socket.h"
+#include "rdmnet/defs.h"
 
-#include "estardmnet.h"
+/* Does not appear to have a standardized size in E133, current default value that is being used is
+ * "_draft-e133._tcp." */
+#define SRV_TYPE_PADDED_LENGTH 32
 
-#define SRV_TYPE_PADDED_LENGTH \
-  32  // does not appear to have a standardized size in E133, current default
-      // value that is being used is "_draft-e133._tcp."
-
-#define ARRAY_SIZE_DEFAULT \
-  100  // defines the size of the arrays, i.e. operation_map,
-       // m_brokers_being_discovered, etc
+/* defines the size of the arrays, i.e. operation_map, m_brokers_being_discovered, etc */
+#define ARRAY_SIZE_DEFAULT 100
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,7 +56,7 @@ typedef struct ScopeMonitorInfo
 
 typedef struct BrokerDiscInfo
 {
-  LwpaCid cid;
+  LwpaUuid cid;
   char service_name[E133_SERVICE_NAME_STRING_PADDED_LENGTH];
   uint16_t port;
   LwpaSockaddr listen_addrs[ARRAY_SIZE_DEFAULT];

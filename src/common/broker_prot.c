@@ -28,7 +28,7 @@
 #include "rdmnet/common/broker_prot.h"
 #include "rdmnet/common/connection.h"
 #include "broker_prot_priv.h"
-#include "lwpa_pack.h"
+#include "lwpa/pack.h"
 
 /* Suppress strncpy() warning on Windows/MSVC. */
 #ifdef _MSC_VER
@@ -51,13 +51,13 @@
     (buf)[0] = 0xf0;                                          \
     pdu_pack_ext_len(buf, length);                            \
     pack_32b(&(buf)[3], vector);                              \
-    memcpy(&(buf)[7], (cidptr)->data, CID_BYTES);             \
+    memcpy(&(buf)[7], (cidptr)->data, UUID_BYTES);            \
   } while (0)
 
 /*********************** Private function prototypes *************************/
 
 static size_t calc_client_connect_len(const ClientConnectMsg *data);
-static lwpa_error_t do_send(int handle, RdmnetConnection *conn, const uint8_t *data, size_t datasize);
+static int do_send(int handle, RdmnetConnection *conn, const uint8_t *data, size_t datasize);
 static size_t pack_broker_header_with_rlp(const RootLayerPdu *rlp, uint8_t *buf, size_t buflen, uint32_t vector);
 static lwpa_error_t send_broker_header(int handle, RdmnetConnection *conn, const RootLayerPdu *rlp, uint8_t *buf,
                                        size_t buflen, uint32_t vector);
@@ -65,7 +65,7 @@ static lwpa_error_t send_connect_reply_internal(RdmnetConnection *conn, const Cl
 
 /*************************** Function definitions ****************************/
 
-lwpa_error_t do_send(int handle, RdmnetConnection *conn, const uint8_t *data, size_t datasize)
+int do_send(int handle, RdmnetConnection *conn, const uint8_t *data, size_t datasize)
 {
   if (conn)
     return lwpa_send(conn->sock, data, datasize, 0);
@@ -103,7 +103,7 @@ size_t pack_broker_header_with_rlp(const RootLayerPdu *rlp, uint8_t *buf, size_t
 lwpa_error_t send_broker_header(int handle, RdmnetConnection *conn, const RootLayerPdu *rlp, uint8_t *buf,
                                 size_t buflen, uint32_t vector)
 {
-  int res;
+  int send_res;
   size_t data_size = root_layer_buf_size(rlp, 1);
 
   if (data_size == 0)
@@ -117,23 +117,23 @@ lwpa_error_t send_broker_header(int handle, RdmnetConnection *conn, const RootLa
   data_size = pack_tcp_preamble(buf, buflen, data_size);
   if (data_size == 0)
     return LWPA_PROTERR;
-  res = do_send(handle, conn, buf, data_size);
-  if (res < 0)
-    return res;
+  send_res = do_send(handle, conn, buf, data_size);
+  if (send_res < 0)
+    return (lwpa_error_t)send_res;
 
   /* Pack and send the Root Layer PDU header */
   data_size = pack_root_layer_header(buf, buflen, rlp);
   if (data_size == 0)
     return LWPA_PROTERR;
-  res = do_send(handle, conn, buf, data_size);
-  if (res < 0)
-    return res;
+  send_res = do_send(handle, conn, buf, data_size);
+  if (send_res < 0)
+    return (lwpa_error_t)send_res;
 
   /* Pack and send the Broker PDU header */
   pack_broker_header(rlp->datalen, vector, buf);
-  res = do_send(handle, conn, buf, BROKER_PDU_HEADER_SIZE);
-  if (res < 0)
-    return res;
+  send_res = do_send(handle, conn, buf, BROKER_PDU_HEADER_SIZE);
+  if (send_res < 0)
+    return (lwpa_error_t)send_res;
 
   return LWPA_OK;
 }
@@ -163,7 +163,8 @@ size_t calc_client_connect_len(const ClientConnectMsg *data)
 
 lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg *data)
 {
-  int res;
+  lwpa_error_t res;
+  int send_res;
   RootLayerPdu rlp;
   uint8_t buf[CLIENT_CONNECT_COMMON_FIELD_SIZE];
   uint8_t *cur_ptr;
@@ -192,14 +193,14 @@ lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg 
   cur_ptr[E133_DOMAIN_STRING_PADDED_LENGTH - 1] = '\0';
   cur_ptr += E133_DOMAIN_STRING_PADDED_LENGTH;
   *cur_ptr++ = data->connect_flags;
-  res = lwpa_send(conn->sock, buf, cur_ptr - buf, 0);
-  if (res < 0)
-    return res;
+  send_res = lwpa_send(conn->sock, buf, cur_ptr - buf, 0);
+  if (send_res < 0)
+    return (lwpa_error_t)send_res;
 
   /* Pack and send the beginning of the Client Entry PDU */
   pack_client_entry_header(rlp.datalen - (BROKER_PDU_HEADER_SIZE + CLIENT_CONNECT_COMMON_FIELD_SIZE),
                            data->client_entry.client_protocol, &data->client_entry.client_cid, buf);
-  res = lwpa_send(conn->sock, buf, CLIENT_ENTRY_HEADER_SIZE, 0);
+  send_res = lwpa_send(conn->sock, buf, CLIENT_ENTRY_HEADER_SIZE, 0);
 
   if (is_rpt_client_entry(&data->client_entry))
   {
@@ -211,11 +212,11 @@ lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg 
     pack_32b(cur_ptr, rpt_data->client_uid.id);
     cur_ptr += 4;
     *cur_ptr++ = rpt_data->client_type;
-    memcpy(cur_ptr, rpt_data->binding_cid.data, CID_BYTES);
-    cur_ptr += CID_BYTES;
-    res = lwpa_send(conn->sock, buf, RPT_CLIENT_ENTRY_DATA_SIZE, 0);
-    if (res < 0)
-      return res;
+    memcpy(cur_ptr, rpt_data->binding_cid.data, UUID_BYTES);
+    cur_ptr += UUID_BYTES;
+    send_res = lwpa_send(conn->sock, buf, RPT_CLIENT_ENTRY_DATA_SIZE, 0);
+    if (send_res < 0)
+      return (lwpa_error_t)send_res;
   }
   else /* is EPT client entry */
   {
@@ -230,9 +231,9 @@ lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg 
       strncpy((char *)cur_ptr, prot->protocol_string, EPT_PROTOCOL_STRING_PADDED_LENGTH);
       cur_ptr[EPT_PROTOCOL_STRING_PADDED_LENGTH - 1] = '\0';
       cur_ptr += EPT_PROTOCOL_STRING_PADDED_LENGTH;
-      res = lwpa_send(conn->sock, buf, EPT_PROTOCOL_ENTRY_SIZE, 0);
-      if (res < 0)
-        return res;
+      send_res = lwpa_send(conn->sock, buf, EPT_PROTOCOL_ENTRY_SIZE, 0);
+      if (send_res < 0)
+        return (lwpa_error_t)send_res;
     }
   }
   lwpa_timer_reset(&conn->send_timer);
@@ -249,7 +250,7 @@ lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg 
  *  \param[in] data Connect Reply data to pack into the data segment.
  *  \return Number of bytes packed, or 0 on error.
  */
-size_t pack_connect_reply(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, const ConnectReplyMsg *data)
+size_t pack_connect_reply(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const ConnectReplyMsg *data)
 {
   RootLayerPdu rlp;
   uint8_t *cur_ptr = buf;
@@ -282,19 +283,18 @@ size_t pack_connect_reply(uint8_t *buf, size_t buflen, const LwpaCid *local_cid,
 }
 
 /*! \brief Send a Connect Reply message on an RDMnet connection.
- *  \param[in] handle RDMnet connection handle on which to send the Connect
- *                    Reply message.
+ *  \param[in] handle RDMnet connection handle on which to send the Connect Reply message.
  *  \param[in] local_cid CID of the Component sending the Connect Reply message.
  *  \param[in] data Connect Reply data.
  *  \return #LWPA_OK: Send success.\n
  *          #LWPA_INVALID: Invalid argument provided.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket
- *          calls.\n
+ *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
-lwpa_error_t send_connect_reply(int handle, const LwpaCid *local_cid, const ConnectReplyMsg *data)
+lwpa_error_t send_connect_reply(int handle, const LwpaUuid *local_cid, const ConnectReplyMsg *data)
 {
-  int res;
+  lwpa_error_t res;
+  int send_res;
   RootLayerPdu rlp;
   uint8_t buf[RLP_HEADER_SIZE_EXT_LEN];
   uint8_t *cur_ptr;
@@ -328,11 +328,11 @@ lwpa_error_t send_connect_reply(int handle, const LwpaCid *local_cid, const Conn
   pack_32b(cur_ptr, data->broker_uid.id);
   cur_ptr += 4;
 
-  res = do_send(handle, NULL, buf, cur_ptr - buf);
-  if (res < 0)
+  send_res = do_send(handle, NULL, buf, cur_ptr - buf);
+  if (send_res < 0)
   {
     rdmnet_end_message(handle);
-    return res;
+    return (lwpa_error_t)send_res;
   }
 
   return rdmnet_end_message(handle);
@@ -341,19 +341,16 @@ lwpa_error_t send_connect_reply(int handle, const LwpaCid *local_cid, const Conn
 /***************************** Fetch Client List *****************************/
 
 /*! \brief Send a Fetch Client List message on an RDMnet connection.
- *  \param[in] handle RDMnet connection handle on which to send the Fetch Client
- *                    List message.
- *  \param[in] local_cid CID of the Component sending the Fetch Client List
- *                       message.
+ *  \param[in] handle RDMnet connection handle on which to send the Fetch Client List message.
+ *  \param[in] local_cid CID of the Component sending the Fetch Client List message.
  *  \return #LWPA_OK: Send success.\n
  *          #LWPA_INVALID: Invalid argument provided.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket
- *          calls.\n
+ *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
-lwpa_error_t send_fetch_client_list(int handle, const LwpaCid *local_cid)
+lwpa_error_t send_fetch_client_list(int handle, const LwpaUuid *local_cid)
 {
-  int res;
+  lwpa_error_t res;
   RootLayerPdu rlp;
   uint8_t buf[RLP_HEADER_SIZE_EXT_LEN];
 
@@ -408,10 +405,9 @@ size_t bufsize_client_list(const ClientEntryData *client_entry_list)
 
 /*! \brief Pack a Client List message into a buffer.
  *
- *  Multiple types of Broker messages can contain a Client List; indicate which
- *  type this should be with the vector field. Valid values are
- *  #VECTOR_BROKER_CONNECTED_CLIENT_LIST, #VECTOR_BROKER_CLIENT_ADD,
- *  #VECTOR_BROKER_CLIENT_REMOVE and #VECTOR_BROKER_CLIENT_ENTRY_CHANGE.
+ *  Multiple types of Broker messages can contain a Client List; indicate which type this should be
+ *  with the vector field. Valid values are #VECTOR_BROKER_CONNECTED_CLIENT_LIST,
+ *  #VECTOR_BROKER_CLIENT_ADD, #VECTOR_BROKER_CLIENT_REMOVE and #VECTOR_BROKER_CLIENT_ENTRY_CHANGE.
  *
  *  \param[out] buf Buffer into which to pack the Client List message.
  *  \param[in] buflen Length in bytes of buf.
@@ -420,7 +416,7 @@ size_t bufsize_client_list(const ClientEntryData *client_entry_list)
  *  \param[in] client_entry_list Client List to pack into the data segment.
  *  \return Number of bytes packed, or 0 on error.
  */
-size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, uint16_t vector,
+size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, uint16_t vector,
                         const ClientEntryData *client_entry_list)
 {
   RootLayerPdu rlp;
@@ -458,8 +454,8 @@ size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, u
     cur_ptr += 3;
     pack_32b(cur_ptr, cur_entry->client_protocol);
     cur_ptr += 4;
-    memcpy(cur_ptr, cur_entry->client_cid.data, CID_BYTES);
-    cur_ptr += CID_BYTES;
+    memcpy(cur_ptr, cur_entry->client_cid.data, UUID_BYTES);
+    cur_ptr += UUID_BYTES;
 
     if (cur_entry->client_protocol == E133_CLIENT_PROTOCOL_RPT)
     {
@@ -475,8 +471,8 @@ size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, u
       pack_32b(cur_ptr, rpt_data->client_uid.id);
       cur_ptr += 4;
       *cur_ptr++ = rpt_data->client_type;
-      memcpy(cur_ptr, rpt_data->binding_cid.data, CID_BYTES);
-      cur_ptr += CID_BYTES;
+      memcpy(cur_ptr, rpt_data->binding_cid.data, UUID_BYTES);
+      cur_ptr += UUID_BYTES;
     }
     else
     {
@@ -491,7 +487,8 @@ size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, u
 
 lwpa_error_t send_disconnect(RdmnetConnection *conn, const DisconnectMsg *data)
 {
-  int res;
+  lwpa_error_t res;
+  int send_res;
   RootLayerPdu rlp;
   uint8_t buf[RLP_HEADER_SIZE_EXT_LEN];
 
@@ -504,9 +501,9 @@ lwpa_error_t send_disconnect(RdmnetConnection *conn, const DisconnectMsg *data)
     return res;
 
   pack_16b(buf, data->disconnect_reason);
-  res = lwpa_send(conn->sock, buf, 2, 0);
-  if (res < 0)
-    return res;
+  send_res = lwpa_send(conn->sock, buf, 2, 0);
+  if (send_res < 0)
+    return (lwpa_error_t)send_res;
 
   lwpa_timer_reset(&conn->send_timer);
   return LWPA_OK;
@@ -516,7 +513,7 @@ lwpa_error_t send_disconnect(RdmnetConnection *conn, const DisconnectMsg *data)
 
 lwpa_error_t send_null(RdmnetConnection *conn)
 {
-  int res;
+  lwpa_error_t res;
   RootLayerPdu rlp;
   uint8_t buf[RLP_HEADER_SIZE_EXT_LEN];
 

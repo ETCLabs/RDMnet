@@ -32,11 +32,11 @@
 #ifndef _RDMNET_CONN_PRIV_H_
 #define _RDMNET_CONN_PRIV_H_
 
-#include "lwpa_bool.h"
-#include "lwpa_int.h"
-#include "lwpa_lock.h"
-#include "lwpa_timer.h"
-#include "lwpa_inet.h"
+#include "lwpa/bool.h"
+#include "lwpa/int.h"
+#include "lwpa/lock.h"
+#include "lwpa/timer.h"
+#include "lwpa/inet.h"
 #include "rdmnet/common/opts.h"
 #include "rdmnet/common/connection.h"
 #include "rdmnet_msg_buf.h"
@@ -83,7 +83,7 @@ typedef struct RdmnetConnection
 {
   /* Identification */
   int handle;
-  LwpaCid local_cid;
+  LwpaUuid local_cid;
   lwpa_socket_t sock;
   LwpaSockaddr remote_addr;
   bool is_blocking;

@@ -27,9 +27,9 @@
 
 #include "rdmnet/common/rpt_prot.h"
 
-#include "lwpa_pack.h"
+#include "lwpa/pack.h"
 #include "rdmnet/common/connection.h"
-#include "estardmnet.h"
+#include "rdmnet/defs.h"
 #include "rpt_prot_priv.h"
 
 /* Suppress strncpy() warning on Windows/MSVC. */
@@ -127,7 +127,7 @@ size_t pack_rpt_header_with_rlp(const RootLayerPdu *rlp, uint8_t *buf, size_t bu
 lwpa_error_t send_rpt_header(int handle, const RootLayerPdu *rlp, uint32_t rpt_vector, const RptHeader *header,
                              uint8_t *buf, size_t buflen)
 {
-  int res;
+  int send_res;
   size_t data_size = root_layer_buf_size(rlp, 1);
   if (data_size == 0)
   {
@@ -142,9 +142,9 @@ lwpa_error_t send_rpt_header(int handle, const RootLayerPdu *rlp, uint32_t rpt_v
     rdmnet_end_message(handle);
     return LWPA_PROTERR;
   }
-  res = rdmnet_send_partial_message(handle, buf, data_size);
-  if (res < 0)
-    return res;
+  send_res = rdmnet_send_partial_message(handle, buf, data_size);
+  if (send_res < 0)
+    return (lwpa_error_t)send_res;
 
   /* Pack and send the Root Layer PDU header */
   data_size = pack_root_layer_header(buf, buflen, rlp);
@@ -153,15 +153,15 @@ lwpa_error_t send_rpt_header(int handle, const RootLayerPdu *rlp, uint32_t rpt_v
     rdmnet_end_message(handle);
     return LWPA_PROTERR;
   }
-  res = rdmnet_send_partial_message(handle, buf, data_size);
-  if (res < 0)
-    return res;
+  send_res = rdmnet_send_partial_message(handle, buf, data_size);
+  if (send_res < 0)
+    return (lwpa_error_t)send_res;
 
   /* Pack and send the RPT PDU header */
   pack_rpt_header(rlp->datalen, rpt_vector, header, buf);
-  res = rdmnet_send_partial_message(handle, buf, RPT_PDU_HEADER_SIZE);
-  if (res < 0)
-    return res;
+  send_res = rdmnet_send_partial_message(handle, buf, RPT_PDU_HEADER_SIZE);
+  if (send_res < 0)
+    return (lwpa_error_t)send_res;
 
   return LWPA_OK;
 }
@@ -188,7 +188,7 @@ size_t bufsize_rpt_request(const RdmBuffer *cmd)
  *  \param[in] cmd Encapsulated RDM Command that will occupy the RPT Request message.
  *  \return Number of bytes packed, or 0 on error.
  */
-size_t pack_rpt_request(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, const RptHeader *header,
+size_t pack_rpt_request(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
                         const RdmBuffer *cmd)
 {
   RootLayerPdu rlp;
@@ -227,12 +227,12 @@ size_t pack_rpt_request(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, c
  *  \return #LWPA_OK: Send success.\n
  *          #LWPA_INVALID: Invalid argument provided.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket
- *          calls.\n
+ *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
-lwpa_error_t send_rpt_request(int handle, const LwpaCid *local_cid, const RptHeader *header, const RdmBuffer *cmd)
+lwpa_error_t send_rpt_request(int handle, const LwpaUuid *local_cid, const RptHeader *header, const RdmBuffer *cmd)
 {
-  int res;
+  lwpa_error_t res;
+  int send_res;
   RootLayerPdu rlp;
   uint8_t buf[RDM_CMD_PDU_MAX_SIZE];
 
@@ -255,19 +255,19 @@ lwpa_error_t send_rpt_request(int handle, const LwpaCid *local_cid, const RptHea
   }
 
   pack_request_header(rlp.datalen - RPT_PDU_HEADER_SIZE, buf);
-  res = rdmnet_send_partial_message(handle, buf, REQUEST_NOTIF_PDU_HEADER_SIZE);
-  if (res < 0)
+  send_res = rdmnet_send_partial_message(handle, buf, REQUEST_NOTIF_PDU_HEADER_SIZE);
+  if (send_res < 0)
   {
     rdmnet_end_message(handle);
-    return res;
+    return (lwpa_error_t)send_res;
   }
 
   pack_rdm_cmd_pdu(cmd, buf);
-  res = rdmnet_send_partial_message(handle, buf, rdm_cmd_pdu_len(cmd));
-  if (res < 0)
+  send_res = rdmnet_send_partial_message(handle, buf, rdm_cmd_pdu_len(cmd));
+  if (send_res < 0)
   {
     rdmnet_end_message(handle);
-    return res;
+    return (lwpa_error_t)send_res;
   }
 
   return rdmnet_end_message(handle);
@@ -300,7 +300,7 @@ size_t bufsize_rpt_status(const RptStatusMsg *status)
  *  \param[in] status RPT Status message data.
  *  \return Number of bytes packed, or 0 on error.
  */
-size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, const RptHeader *header,
+size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
                        const RptStatusMsg *status)
 {
   RootLayerPdu rlp;
@@ -344,9 +344,10 @@ size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, co
  *          Note: Other error codes might be propagated from underlying socket
  *          calls.\n
  */
-lwpa_error_t send_rpt_status(int handle, const LwpaCid *local_cid, const RptHeader *header, const RptStatusMsg *status)
+lwpa_error_t send_rpt_status(int handle, const LwpaUuid *local_cid, const RptHeader *header, const RptStatusMsg *status)
 {
-  int res;
+  lwpa_error_t res;
+  int send_res;
   RootLayerPdu rlp;
   uint8_t buf[RPT_PDU_HEADER_SIZE];
   size_t status_pdu_size;
@@ -371,21 +372,21 @@ lwpa_error_t send_rpt_status(int handle, const LwpaCid *local_cid, const RptHead
   }
 
   pack_status_header(status_pdu_size, status->status_code, buf);
-  res = rdmnet_send_partial_message(handle, buf, RPT_STATUS_HEADER_SIZE);
-  if (res < 0)
+  send_res = rdmnet_send_partial_message(handle, buf, RPT_STATUS_HEADER_SIZE);
+  if (send_res < 0)
   {
     rdmnet_end_message(handle);
-    return res;
+    return (lwpa_error_t)send_res;
   }
 
   if (status_pdu_size > RPT_STATUS_HEADER_SIZE)
   {
-    res =
+    send_res =
         rdmnet_send_partial_message(handle, (uint8_t *)status->status_string, status_pdu_size - RPT_STATUS_HEADER_SIZE);
-    if (res < 0)
+    if (send_res < 0)
     {
       rdmnet_end_message(handle);
-      return res;
+      return (lwpa_error_t)send_res;
     }
   }
 
@@ -422,7 +423,7 @@ size_t bufsize_rpt_notification(const RdmCmdListEntry *cmd_list)
  *  \param[in] cmd_list List of RDM Commands contained in this RPT Notification.
  *  \return Number of bytes packed, or 0 on error.
  */
-size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, const RptHeader *header,
+size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
                              const RdmCmdListEntry *cmd_list)
 {
   RootLayerPdu rlp;
@@ -468,10 +469,11 @@ size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaCid *local_c
  *          Note: Other error codes might be propagated from underlying socket
  *          calls.\n
  */
-lwpa_error_t send_rpt_notification(int handle, const LwpaCid *local_cid, const RptHeader *header,
+lwpa_error_t send_rpt_notification(int handle, const LwpaUuid *local_cid, const RptHeader *header,
                                    const RdmCmdListEntry *cmd_list)
 {
-  int res;
+  lwpa_error_t res;
+  int send_res;
   RootLayerPdu rlp;
   uint8_t buf[RDM_CMD_PDU_MAX_SIZE];
   size_t notif_pdu_size;
@@ -497,17 +499,17 @@ lwpa_error_t send_rpt_notification(int handle, const LwpaCid *local_cid, const R
   }
 
   pack_notification_header(notif_pdu_size, buf);
-  res = rdmnet_send_partial_message(handle, buf, REQUEST_NOTIF_PDU_HEADER_SIZE);
-  if (res < 0)
+  send_res = rdmnet_send_partial_message(handle, buf, REQUEST_NOTIF_PDU_HEADER_SIZE);
+  if (send_res < 0)
   {
     rdmnet_end_message(handle);
-    return res;
+    return (lwpa_error_t)send_res;
   }
 
   for (cur_cmd = cmd_list; cur_cmd; cur_cmd = cur_cmd->next)
   {
     pack_rdm_cmd_pdu(&cur_cmd->msg, buf);
-    res = rdmnet_send_partial_message(handle, buf, rdm_cmd_pdu_len(&cur_cmd->msg));
+    send_res = rdmnet_send_partial_message(handle, buf, rdm_cmd_pdu_len(&cur_cmd->msg));
   }
 
   return rdmnet_end_message(handle);

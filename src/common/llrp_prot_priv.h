@@ -27,10 +27,10 @@
 #ifndef _LLRP_PROT_PRIV_H_
 #define _LLRP_PROT_PRIV_H_
 
-#include "lwpa_int.h"
-#include "lwpa_bool.h"
-#include "lwpa_cid.h"
-#include "lwpa_rootlayerpdu.h"
+#include "lwpa/int.h"
+#include "lwpa/bool.h"
+#include "lwpa/uuid.h"
+#include "lwpa/root_layer_pdu.h"
 #include "rdm/uid.h"
 #include "rdm/message.h"
 #include "rdmnet/llrp.h"
@@ -45,8 +45,8 @@
 
 typedef struct LlrpHeader
 {
-  LwpaCid sender_cid;
-  LwpaCid dest_cid;
+  LwpaUuid sender_cid;
+  LwpaUuid dest_cid;
 
   uint32_t transaction_number;
 } LlrpHeader;
@@ -55,7 +55,7 @@ typedef struct LlrpMessageInterest
 {
   bool interested_in_probe_request;
   bool interested_in_probe_reply;
-  LwpaCid my_cid;
+  LwpaUuid my_cid;
   RdmUid my_uid;
 } LlrpMessageInterest;
 
@@ -68,9 +68,8 @@ struct KnownUid
 
 typedef struct ProbeRequestRecv
 {
-  /* True if this probe request contains my UID as registered in the
-   * struct llrp_message_interest, and it is not suppressed by the Known UID
-   * list. */
+  /* True if this probe request contains my UID as registered in the LlrpMessageInterest struct, and
+   * it is not suppressed by the Known UID list. */
   bool contains_my_uid;
   uint8_t filter;
 } ProbeRequestRecv;
@@ -103,7 +102,7 @@ typedef struct LlrpMessage
 extern "C" {
 #endif
 
-extern LwpaCid kLLRPBroadcastCID;
+extern LwpaUuid kLLRPBroadcastCID;
 
 void llrp_prot_init();
 

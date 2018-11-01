@@ -26,20 +26,19 @@
 ******************************************************************************/
 
 /*! \file rdmnet/rptprot.h
- *  \brief Functions to pack, send and parse RPT PDUs and their encapsulated
- *         messages.
+ *  \brief Functions to pack, send and parse RPT PDUs and their encapsulated messages.
  *  \author Sam Kearney
  */
 #ifndef _RDMNET_RPTPROT_H_
 #define _RDMNET_RPTPROT_H_
 
 #include <stddef.h>
-#include "lwpa_int.h"
-#include "lwpa_cid.h"
-#include "lwpa_error.h"
-#include "lwpa_rootlayerpdu.h"
-#include "estardmnet.h"
+#include "lwpa/int.h"
+#include "lwpa/uuid.h"
+#include "lwpa/error.h"
+#include "lwpa/root_layer_pdu.h"
 #include "rdm/message.h"
+#include "rdmnet/defs.h"
 #include "rdmnet/common/opts.h"
 
 /*! \addtogroup rdmnet_message
@@ -178,16 +177,17 @@ size_t bufsize_rpt_request(const RdmBuffer *cmd);
 size_t bufsize_rpt_status(const RptStatusMsg *status);
 size_t bufsize_rpt_notification(const RdmCmdListEntry *cmd_list);
 
-size_t pack_rpt_request(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, const RptHeader *header,
+size_t pack_rpt_request(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
                         const RdmBuffer *cmd);
-size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, const RptHeader *header,
+size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
                        const RptStatusMsg *status);
-size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, const RptHeader *header,
+size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
                              const RdmCmdListEntry *cmd_list);
 
-lwpa_error_t send_rpt_request(int handle, const LwpaCid *local_cid, const RptHeader *header, const RdmBuffer *cmd);
-lwpa_error_t send_rpt_status(int handle, const LwpaCid *local_cid, const RptHeader *header, const RptStatusMsg *status);
-lwpa_error_t send_rpt_notification(int handle, const LwpaCid *local_cid, const RptHeader *header,
+lwpa_error_t send_rpt_request(int handle, const LwpaUuid *local_cid, const RptHeader *header, const RdmBuffer *cmd);
+lwpa_error_t send_rpt_status(int handle, const LwpaUuid *local_cid, const RptHeader *header,
+                             const RptStatusMsg *status);
+lwpa_error_t send_rpt_notification(int handle, const LwpaUuid *local_cid, const RptHeader *header,
                                    const RdmCmdListEntry *cmd_list);
 
 #ifdef __cplusplus

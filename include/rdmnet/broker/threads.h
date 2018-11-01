@@ -25,20 +25,20 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file broker/threads.h
+/*! \file rdmnet/broker/threads.h
  * \brief Classes to represent threads used by the Broker.
  * \author Nick Ballhorn-Wagner and Sam Kearney
  */
-#ifndef _BROKER_THREADS_H_
-#define _BROKER_THREADS_H_
+#ifndef _RDMNET_BROKER_THREADS_H_
+#define _RDMNET_BROKER_THREADS_H_
 
 #include <vector>
 #include <deque>
 #include <memory>
-#include "lwpa_thread.h"
-#include "lwpa_lock.h"
-#include "lwpa_inet.h"
-#include "lwpa_socket.h"
+#include "lwpa/thread.h"
+#include "lwpa/lock.h"
+#include "lwpa/inet.h"
+#include "lwpa/socket.h"
 #include "rdmnet/common/connection.h"
 #include "rdmnet/broker/util.h"
 
@@ -154,4 +154,4 @@ protected:
   IClientServiceThread_Notify *notify_;
 };
 
-#endif  // _BROKER_THREADS_H_
+#endif  // _RDMNET_BROKER_THREADS_H_

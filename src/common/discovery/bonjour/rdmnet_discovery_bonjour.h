@@ -28,8 +28,8 @@
 #ifndef _RDMNET_DISCOVERY_BONJOUR_H_
 #define _RDMNET_DISCOVERY_BONJOUR_H_
 
-#include "lwpa_lock.h"
-#include "lwpa_socket.h"
+#include "lwpa/lock.h"
+#include "lwpa/socket.h"
 #include "dns_sd.h"
 
 /*From dns_sd.h :

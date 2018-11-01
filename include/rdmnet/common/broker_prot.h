@@ -26,20 +26,19 @@
 ******************************************************************************/
 
 /*! \file rdmnet/brokerprot.h
- *  \brief Functions to pack, send, and parse %Broker PDUs and their
- *         encapsulated messages.
+ *  \brief Functions to pack, send, and parse %Broker PDUs and their encapsulated messages.
  *  \author Sam Kearney
  */
 #ifndef _RDMNET_BROKERPROT_H_
 #define _RDMNET_BROKERPROT_H_
 
-#include "lwpa_int.h"
-#include "lwpa_bool.h"
-#include "lwpa_error.h"
-#include "lwpa_inet.h"
-#include "lwpa_rootlayerpdu.h"
-#include "estardmnet.h"
+#include "lwpa/int.h"
+#include "lwpa/bool.h"
+#include "lwpa/error.h"
+#include "lwpa/inet.h"
+#include "lwpa/root_layer_pdu.h"
 #include "rdm/uid.h"
+#include "rdmnet/defs.h"
 #include "rdmnet/common/opts.h"
 #include "rdmnet/client.h"
 
@@ -53,9 +52,9 @@
 #define CONNECT_REPLY_DATA_SIZE (2 /* Connection Code */ + 2 /* E1.33 Version */ + 6 /* %Broker's UID */)
 #define CONNECT_REPLY_FULL_MSG_SIZE (BROKER_PDU_FULL_HEADER_SIZE + CONNECT_REPLY_DATA_SIZE)
 
-/*! A flag to indicate whether a client would like to receive notifications
- *  when other clients connect and disconnect. Used in the connect_flags field
- *  of a ClientConnectMsg or ClientEntryUpdateMsg.
+/*! A flag to indicate whether a client would like to receive notifications when other clients
+ *  connect and disconnect. Used in the connect_flags field of a ClientConnectMsg or
+ *  ClientEntryUpdateMsg.
  */
 #define CONNECTFLAG_INCREMENTAL_UPDATES 0x01u
 
@@ -68,8 +67,7 @@ typedef enum
   kRDMnetConnectScopeMismatch = E133_CONNECT_SCOPE_MISMATCH,
   /*! The %Broker has no further capacity for new Clients. */
   kRDMnetConnectCapacityExceeded = E133_CONNECT_CAPACITY_EXCEEDED,
-  /*! The Client's Dynamic UID matches another connected Client's Dynamic
-   *  UID. */
+  /*! The Client's Dynamic UID matches another connected Client's Dynamic UID. */
   kRDMnetConnectDuplicateUID = E133_CONNECT_DUPLICATE_UID,
   /*! The Client's Client Entry is invalid. */
   kRDMnetConnectInvalidClientEntry = E133_CONNECT_INVALID_CLIENT_ENTRY
@@ -92,11 +90,11 @@ typedef enum
   kRDMnetDisconnectSoftwareReset = E133_DISCONNECT_SOFTWARE_RESET,
   /*! Send by %Brokers that are not on the desired Scope. */
   kRDMnetDisconnectIncorrectScope = E133_DISCONNECT_INCORRECT_SCOPE,
-  /*! The Component was reconfigured using LLRP, and the new configuration
-   *  requires connection termination. */
+  /*! The Component was reconfigured using LLRP, and the new configuration requires connection
+   *  termination. */
   kRDMnetDisconnectLLRPReconfigure = E133_DISCONNECT_LLRP_RECONFIGURE,
-  /*! The Component was reconfigured via some other means, and the new
-   *  configuration requires connection termination. */
+  /*! The Component was reconfigured via some other means, and the new configuration requires
+   *  connection termination. */
   kRDMnetDisconnectUserReconfigure = E133_DISCONNECT_USER_RECONFIGURE
 } rdmnet_disconnect_reason_t;
 
@@ -106,9 +104,8 @@ typedef struct ClientConnectMsg
 #if RDMNET_DYNAMIC_MEM && !defined(__DOXYGEN__)
   const char *scope;
 #else
-  /*! The Client's configured scope. Maximum length #E133_SCOPE_STRING_PADDED_LENGTH,
-   *  including null terminator. If #RDMNET_DYNAMIC_MEM is defined nonzero, this field
-   *  is of type const char *. */
+  /*! The Client's configured scope. Maximum length #E133_SCOPE_STRING_PADDED_LENGTH, including null
+   *  terminator. If #RDMNET_DYNAMIC_MEM is defined nonzero, this field is of type const char *. */
   char scope[E133_SCOPE_STRING_PADDED_LENGTH];
 #endif
   /*! The maximum version of the standard supported by the Client. */
@@ -116,9 +113,9 @@ typedef struct ClientConnectMsg
 #if RDMNET_DYNAMIC_MEM && !defined(__DOXYGEN__)
   const char *search_domain;
 #else
-  /*! The search domain of the Client. Maximum length #E133_DOMAIN_STRING_PADDED_LENGTH,
-   *  including null terminator. If #RDMNET_DYNAMIC_MEM is defined nonzero, this field
-   *  is of type const char *. */
+  /*! The search domain of the Client. Maximum length #E133_DOMAIN_STRING_PADDED_LENGTH, including
+   *  null terminator. If #RDMNET_DYNAMIC_MEM is defined nonzero, this field is of type const
+   *  char *. */
   char search_domain[E133_DOMAIN_STRING_PADDED_LENGTH];
 #endif
   /*! Configurable options for the connection. See CONNECTFLAG_*. */
@@ -130,8 +127,8 @@ typedef struct ClientConnectMsg
 /*! The Connect Reply message in the %Broker protocol. */
 typedef struct ConnectReplyMsg
 {
-  /*! The connection status - kRdmnetConnectOk is the only one that indicates a
-   *  successful connection. */
+  /*! The connection status - kRdmnetConnectOk is the only one that indicates a successful
+   *  connection. */
   rdmnet_connect_status_t connect_status;
   /*! The maximum version of the standard supported by the %Broker. */
   uint16_t e133_version;
@@ -144,31 +141,29 @@ typedef struct ClientEntryUpdateMsg
 {
   /*! Configurable options for the connection. See CONNECTFLAG_*. */
   uint8_t connect_flags;
-  /*! The new Client Entry. The standard says that it must have the same values
-   *  for client_protocol and client_cid as the entry sent on initial connection -
-   *  only the data section can be different.
-   */
+  /*! The new Client Entry. The standard says that it must have the same values for client_protocol
+   *  and client_cid as the entry sent on initial connection - only the data section can be
+   *  different. */
   ClientEntryData client_entry;
 } ClientEntryUpdateMsg;
 
-/*! The Client Redirect message in the %Broker protocol. This struture is used
- *  to represent both CLIENT_REDIRECT_IPV4 and CLIENT_REDIRECT_IPV6. */
+/*! The Client Redirect message in the %Broker protocol. This struture is used to represent both
+ *  CLIENT_REDIRECT_IPV4 and CLIENT_REDIRECT_IPV6. */
 typedef struct ClientRedirectMsg
 {
   /*! The new IPv4 or IPv6 address to which to connect. */
   LwpaSockaddr new_addr;
 } ClientRedirectMsg;
 
-/*! A structure that represents a list of Client Entries. Represents the data for
- *  multiple %Broker Protocol messages: Connected Client List, Client Incremental
- *  Addition, Client Incremental Deletion, and Client Entry Change. */
+/*! A structure that represents a list of Client Entries. Represents the data for multiple %Broker
+ *  Protocol messages: Connected Client List, Client Incremental Addition, Client Incremental
+ *  Deletion, and Client Entry Change. */
 typedef struct ClientList
 {
-  /*! This message contains a partial list. This can be set when the library runs out
-   *  of static memory in which to store Client Entries and must deliver the partial
-   *  list before continuing. The application should store the entries in the list
-   *  but should not act on the list until another ClientList is received with
-   *  partial set to false. */
+  /*! This message contains a partial list. This can be set when the library runs out of static
+   *  memory in which to store Client Entries and must deliver the partial list before continuing.
+   *  The application should store the entries in the list but should not act on the list until
+   *  another ClientList is received with partial set to false. */
   bool partial;
   /*! The head of a linked list of Client Entries. */
   ClientEntryData *client_entry_list;
@@ -184,8 +179,8 @@ typedef struct DisconnectMsg
 /*! A %Broker message. */
 typedef struct BrokerMessage
 {
-  /*! The vector indicates which type of message is present in the data section.
-   *  Valid values are indicated by VECTOR_BROKER_* in estardmnet.h. */
+  /*! The vector indicates which type of message is present in the data section. Valid values are
+   *  indicated by VECTOR_BROKER_* in estardmnet.h. */
   uint16_t vector;
   /*! The encapsulated message; use the helper macros to access it. */
   union
@@ -232,8 +227,8 @@ typedef struct BrokerMessage
  *  \param brokermsgptr Pointer to BrokerMessage.
  *  \return Pointer to encapsulated Client Redirect message (ClientRedirectMsg *). */
 #define get_client_redirect_msg(brokermsgptr) (&(brokermsgptr)->data.client_redirect)
-/*! \brief Determine whether a BrokerMessage contains a Client List. Multiple types
- *         of %Broker messages can contain Client Lists.
+/*! \brief Determine whether a BrokerMessage contains a Client List. Multiple types of %Broker
+ *         message can contain Client Lists.
  *  \param brokermsgptr Pointer to BrokerMessage.
  *  \return (true or false) whether the message contains a Client List. */
 #define is_client_list(brokermsgptr)                                                                              \
@@ -259,13 +254,13 @@ extern "C" {
 
 size_t bufsize_client_list(const ClientEntryData *client_entry_list);
 
-size_t pack_connect_reply(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, const ConnectReplyMsg *data);
-size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaCid *local_cid, uint16_t vector,
+size_t pack_connect_reply(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const ConnectReplyMsg *data);
+size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, uint16_t vector,
                         const ClientEntryData *client_entry_list);
 
-lwpa_error_t send_connect_reply(int handle, const LwpaCid *local_cid, const ConnectReplyMsg *data);
+lwpa_error_t send_connect_reply(int handle, const LwpaUuid *local_cid, const ConnectReplyMsg *data);
 
-lwpa_error_t send_fetch_client_list(int handle, const LwpaCid *local_cid);
+lwpa_error_t send_fetch_client_list(int handle, const LwpaUuid *local_cid);
 
 #ifdef __cplusplus
 }

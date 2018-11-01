@@ -28,12 +28,12 @@
 #ifndef _RDMNET_MESSAGE_PRIV_H_
 #define _RDMNET_MESSAGE_PRIV_H_
 
-#include "lwpa_error.h"
+#include "lwpa/error.h"
 #include "rdmnet/common/opts.h"
 #if RDMNET_DYNAMIC_MEM
 #include <stdlib.h>
 #else
-#include "lwpa_mempool.h"
+#include "lwpa/mempool.h"
 #endif
 #include "rdmnet/common/message.h"
 

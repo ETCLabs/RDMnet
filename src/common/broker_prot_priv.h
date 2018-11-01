@@ -32,7 +32,7 @@
 #ifndef _BROKER_PROT_PRIV_H_
 #define _BROKER_PROT_PRIV_H_
 
-#include "lwpa_error.h"
+#include "lwpa/error.h"
 #include "rdmnet/common/broker_prot.h"
 #include "rdmnet_conn_priv.h"
 

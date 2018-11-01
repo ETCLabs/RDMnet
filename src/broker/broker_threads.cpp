@@ -28,7 +28,7 @@
 #include "rdmnet/broker/threads.h"
 
 #include <map>
-#include "lwpa_socket.h"
+#include "lwpa/socket.h"
 #include "rdmnet/common/connection.h"
 #include "rdmnet/broker/util.h"
 

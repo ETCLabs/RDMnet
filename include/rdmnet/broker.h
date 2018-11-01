@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file broker/broker.h
+/*! \file rdmnet/broker.h
  *  \brief A platform-neutral RDMnet Broker implementation.
  *  \author Nick Ballhorn-Wagner and Sam Kearney */
 #ifndef _RDMNET_BROKER_H_
@@ -39,12 +39,12 @@
 #include <memory>
 #include <cstddef>
 
-#include "lwpa_int.h"
-#include "lwpa_log.h"
-#include "lwpa_cid.h"
-#include "estardmnet.h"
+#include "lwpa/int.h"
+#include "lwpa/log.h"
+#include "lwpa/uuid.h"
 #include "rdm/defs.h"
 #include "rdm/message.h"
+#include "rdmnet/defs.h"
 #include "rdmnet/client.h"
 #include "rdmnet/common/discovery.h"
 #include "rdmnet/common/connection.h"
@@ -53,16 +53,16 @@
 #include "broker/responder.h"
 #include "broker/discovery.h"
 
-/*! \defgroup rdmnet_broker Broker
- *  \brief A platform-neutral RDMnet %Broker implementation.
- *  @{
- */
+/// \defgroup rdmnet_broker Broker
+/// \brief A platform-neutral RDMnet %Broker implementation.
+/// @{
+///
 
 /// A group of settings for Broker operation.
 struct BrokerSettings
 {
-  LwpaCid cid;  ///< The Broker's CID.
-  RdmUid uid;  ///< The Broker's UID.
+  LwpaUuid cid;  ///< The Broker's CID.
+  RdmUid uid;    ///< The Broker's UID.
 
   BrokerDiscoveryAttributes disc_attributes;
 
@@ -141,7 +141,7 @@ public:
   bool IsValidControllerDestinationUID(const RdmUid &uid) const;
   bool IsValidDeviceDestinationUID(const RdmUid &uid) const;
 
-  BrokerLog *GetLog();
+  BrokerLog *GetLog() { return log_; }
 
 protected:
   // These are never modified between startup and shutdown, so they don't
@@ -244,6 +244,6 @@ protected:
                   const std::string &status_str = std::string());
 };
 
-/*!@}*/
+/// @}
 
 #endif  // _RDMNET_BROKER_H_

@@ -31,7 +31,7 @@
 #include "rdmnet/common/connection.h"
 #include "rdmnet/broker.h"
 
-bool BrokerClient::Push(const LwpaCid &sender_cid, const BrokerMessage &msg)
+bool BrokerClient::Push(const LwpaUuid &sender_cid, const BrokerMessage &msg)
 {
   if (broker_msgs_.size() < max_q_size_)
     return false;
@@ -39,7 +39,7 @@ bool BrokerClient::Push(const LwpaCid &sender_cid, const BrokerMessage &msg)
   return PushPostSizeCheck(sender_cid, msg);
 }
 
-bool BrokerClient::PushPostSizeCheck(const LwpaCid &sender_cid, const BrokerMessage &msg)
+bool BrokerClient::PushPostSizeCheck(const LwpaUuid &sender_cid, const BrokerMessage &msg)
 {
   MessageRef to_push;
   bool res = false;
@@ -84,7 +84,7 @@ bool BrokerClient::PushPostSizeCheck(const LwpaCid &sender_cid, const BrokerMess
   return res;
 }
 
-bool RPTClient::Push(const LwpaCid &sender_cid, const BrokerMessage &msg)
+bool RPTClient::Push(const LwpaUuid &sender_cid, const BrokerMessage &msg)
 {
   if (broker_msgs_.size() + status_msgs_.size() >= max_q_size_)
     return false;
@@ -92,7 +92,7 @@ bool RPTClient::Push(const LwpaCid &sender_cid, const BrokerMessage &msg)
   return BrokerClient::PushPostSizeCheck(sender_cid, msg);
 }
 
-bool RPTClient::PushPostSizeCheck(const LwpaCid &sender_cid, const RptHeader &header, const RptStatusMsg &msg)
+bool RPTClient::PushPostSizeCheck(const LwpaUuid &sender_cid, const RptHeader &header, const RptStatusMsg &msg)
 {
   bool res = false;
   MessageRef to_push;
@@ -111,7 +111,7 @@ bool RPTClient::PushPostSizeCheck(const LwpaCid &sender_cid, const RptHeader &he
   return res;
 }
 
-bool RPTController::Push(int /*from_conn*/, const LwpaCid &sender_cid, const RptMessage &msg)
+bool RPTController::Push(int /*from_conn*/, const LwpaUuid &sender_cid, const RptMessage &msg)
 {
   bool res = false;
   if ((status_msgs_.size() + broker_msgs_.size() + rpt_msgs_.size()) >= max_q_size_)
@@ -149,7 +149,7 @@ bool RPTController::Push(int /*from_conn*/, const LwpaCid &sender_cid, const Rpt
   return res;
 }
 
-bool RPTController::Push(const LwpaCid &sender_cid, const BrokerMessage &msg)
+bool RPTController::Push(const LwpaUuid &sender_cid, const BrokerMessage &msg)
 {
   if ((status_msgs_.size() + broker_msgs_.size() + rpt_msgs_.size()) >= max_q_size_)
   {
@@ -158,7 +158,7 @@ bool RPTController::Push(const LwpaCid &sender_cid, const BrokerMessage &msg)
   return BrokerClient::PushPostSizeCheck(sender_cid, msg);
 }
 
-bool RPTController::Push(const LwpaCid &sender_cid, const RptHeader &header, const RptStatusMsg &msg)
+bool RPTController::Push(const LwpaUuid &sender_cid, const RptHeader &header, const RptStatusMsg &msg)
 {
   if (broker_msgs_.size() + status_msgs_.size() >= max_q_size_)
     return false;
@@ -207,7 +207,7 @@ bool RPTController::Send()
   return false;
 }
 
-bool RPTDevice::Push(int from_conn, const LwpaCid &sender_cid, const RptMessage &msg)
+bool RPTDevice::Push(int from_conn, const LwpaUuid &sender_cid, const RptMessage &msg)
 {
   bool res = false;
   if ((status_msgs_.size() + broker_msgs_.size() + rpt_msgs_total_size_) >= max_q_size_)
@@ -246,7 +246,7 @@ bool RPTDevice::Push(int from_conn, const LwpaCid &sender_cid, const RptMessage 
   return res;
 }
 
-bool RPTDevice::Push(const LwpaCid &sender_cid, const BrokerMessage &msg)
+bool RPTDevice::Push(const LwpaUuid &sender_cid, const BrokerMessage &msg)
 {
   if ((status_msgs_.size() + broker_msgs_.size() + rpt_msgs_total_size_) >= max_q_size_)
   {

@@ -31,15 +31,15 @@
 #if RDMNET_DYNAMIC_MEM
 #include <stdlib.h>
 #else
-#include "lwpa_mempool.h"
+#include "lwpa/mempool.h"
 #endif
 #if RDMNET_USE_TICK_THREAD
-#include "lwpa_thread.h"
+#include "lwpa/thread.h"
 #endif
-#include "lwpa_lock.h"
-#include "lwpa_rbtree.h"
-#include "lwpa_socket.h"
-#include "estardmnet.h"
+#include "lwpa/lock.h"
+#include "lwpa/rbtree.h"
+#include "lwpa/socket.h"
+#include "rdmnet/defs.h"
 #include "rdmnet/common/message.h"
 #include "rdmnet_message_priv.h"
 #include "rdmnet_conn_priv.h"
@@ -55,8 +55,8 @@
 
 /*************************** Private constants *******************************/
 
-/* When waiting on the backoff timer for a new connection, the interval at
- * which to wake up and make sure that we haven't been deinitted/closed. */
+/* When waiting on the backoff timer for a new connection, the interval at which to wake up and make
+ * sure that we haven't been deinitted/closed. */
 #define BLOCKING_BACKOFF_WAIT_INTERVAL 500
 
 /***************************** Private macros ********************************/
@@ -83,8 +83,7 @@
 
 #define release_conn_and_writelock(connptr) rdmnet_writeunlock()
 
-/* Macros for dynamic vs static allocation. Static allocation is done using
- * lwpa_mempool. */
+/* Macros for dynamic vs static allocation. Static allocation is done using lwpa_mempool. */
 #if RDMNET_DYNAMIC_MEM
 #define alloc_rdmnet_connection() malloc(sizeof(RdmnetConnection))
 #define free_rdmnet_connection(ptr) free(ptr)
@@ -144,15 +143,12 @@ static lwpa_error_t handle_redirect(RdmnetConnection *conn, ClientRedirectMsg *r
 
 /*! \brief Initialize the RDMnet Connection module.
  *
- *  Do all necessary initialization before other RDMnet Connection API
- *  functions can be called.
+ *  Do all necessary initialization before other RDMnet Connection API functions can be called.
  *
- *  \param[in] log_params A struct used by the library to log messages, or NULL
- *                        for no logging.
+ *  \param[in] log_params A struct used by the library to log messages, or NULL for no logging.
  *  \return #LWPA_OK: Initialization successful.\n
  *          #LWPA_SYSERR: An internal library of system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket
- *          calls.\n
+ *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
 lwpa_error_t rdmnet_init(const LwpaLogParams *log_params)
 {
@@ -236,9 +232,9 @@ static void conn_tree_dealloc(const LwpaRbTree *self, LwpaRbNode *node)
 
 /*! \brief Deinitialize the RDMnet Connection module.
  *
- *  Set the RDMnet Connection module back to an uninitialized state. All
- *  existing connections will be closed/disconnected. Calls to other RDMnet
- *  Connection API functions will fail until rdmnet_init() is called again.
+ *  Set the RDMnet Connection module back to an uninitialized state. All existing connections will
+ *  be closed/disconnected. Calls to other RDMnet Connection API functions will fail until
+ *  rdmnet_init() is called again.
  */
 void rdmnet_deinit()
 {
@@ -264,18 +260,17 @@ void rdmnet_deinit()
 
 /*! \brief Create a new handle to use for an RDMnet Connection.
  *
- *  This function simply allocates a connection handle - use rdmnet_connect()
- *  to actually start the connection process.
+ *  This function simply allocates a connection handle - use rdmnet_connect() to actually start the
+ *  connection process.
  *
  *  \param[in] local_cid The CID of the local component using the connection.
- *  \return A new connection handle (valid values are >= 0) or an enumerated
- *          error value:\n
+ *  \return A new connection handle (valid values are >= 0) or an enumerated error value:\n
  *          #LWPA_INVALID: Invalid argument provided.\n
  *          #LWPA_NOTINIT: Module not initialized.\n
  *          #LWPA_NOMEM: No room to allocate additional connection.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
  */
-int rdmnet_new_connection(const LwpaCid *local_cid)
+int rdmnet_new_connection(const LwpaUuid *local_cid)
 {
   RdmnetConnection *conn;
   bool send_lock_created = false;
@@ -289,9 +284,8 @@ int rdmnet_new_connection(const LwpaCid *local_cid)
   if (!rdmnet_writelock())
     return LWPA_SYSERR;
 
-  /* Passed the quick checks, try to create a struct to represent a new
-   * connection. This function creates the new connection, gives it a unique
-   * handle and inserts it into the connection map. */
+  /* Passed the quick checks, try to create a struct to represent a new connection. This function
+   * creates the new connection, gives it a unique handle and inserts it into the connection map. */
   conn = create_new_connection();
   if (!conn)
     res = LWPA_NOMEM;
@@ -341,10 +335,10 @@ int rdmnet_new_connection(const LwpaCid *local_cid)
   return (res == LWPA_OK ? conn->handle : (int)res);
 }
 
-/* Internal function to update the backoff timer. If the connection is a
- * blocking connection, proceeds to wait the backoff time. Returns
- * LWPA_INPROGRESS for a non-blocking connection to indicate that the timer has
- * been started, LWPA_OK to indicate we waited successfully, or an error code.
+/* Internal function to update the backoff timer. If the connection is a blocking connection,
+ * proceeds to wait the backoff time. Returns LWPA_INPROGRESS for a non-blocking connection to
+ * indicate that the timer has been started, LWPA_OK to indicate we waited successfully, or an error
+ * code.
  */
 lwpa_error_t update_backoff_and_wait_if_blocking(RdmnetConnection *conn, const LwpaSockaddr *remote_addr)
 {
@@ -376,47 +370,39 @@ lwpa_error_t update_backoff_and_wait_if_blocking(RdmnetConnection *conn, const L
       res = LWPA_INPROGRESS;
   }
 
-  /* We always save the remote address that was requested, for updating the
-   * backoff timer. */
+  /* We always save the remote address that was requested, for updating the backoff timer. */
   conn->remote_addr = *remote_addr;
   return res;
 }
 
 /*! \brief Connect to an RDMnet %Broker.
  *
- *  If this connection is set to blocking, attempts to do the TCP connection
- *  and complete the RDMnet connection handshake within this function.
- *  Otherwise, starts a non-blocking TCP connect and returns immediately; use
- *  rdmnet_connect_poll() to check connection status. Handles redirections
- *  automatically. On failure, calling this function again on the same
- *  connection will wait for the backoff time required by the standard before
- *  reconnecting. This backoff time is added to the blocking time for blocking
- *  connections, or run in the background for nonblocking connections.
+ *  If this connection is set to blocking, attempts to do the TCP connection and complete the RDMnet
+ *  connection handshake within this function. Otherwise, starts a non-blocking TCP connect and
+ *  returns immediately; use rdmnet_connect_poll() to check connection status. Handles redirections
+ *  automatically. On failure, calling this function again on the same connection will wait for the
+ *  backoff time required by the standard before reconnecting. This backoff time is added to the
+ *  blocking time for blocking connections, or run in the background for nonblocking connections.
  *
- *  \param[in] handle Connection handle to connect. Must have been previously
- *                    created using rdmnet_new_connection().
+ *  \param[in] handle Connection handle to connect. Must have been previously created using
+ *                    rdmnet_new_connection().
  *  \param[in] remote_addr %Broker's IP address and port.
- *  \param[in] connect_data The information about this client that will be sent
- *                          to the %Broker as part of the connection handshake.
- *                          Caller maintains ownership.
- *  \param[out] additional_data If the connection was redirected to another
- *                              network address, this structure contains the
- *                              new address. On error, additional error data is
- *                              stored in this structure.
+ *  \param[in] connect_data The information about this client that will be sent to the %Broker as
+ *                          part of the connection handshake. Caller maintains ownership.
+ *  \param[out] additional_data If the connection was redirected to another network address, this
+ *                              structure contains the new address. On error, additional error data
+ *                              is stored in this structure.
  *  \return #LWPA_OK: Connection completed successfully.\n
  *          #LWPA_INPROGRESS: Non-blocking connection started.\n
  *          #LWPA_INVALID: Invalid argument provided.\n
  *          #LWPA_NOTINIT: Module not initialized.\n
  *          #LWPA_NOTFOUND: Connection handle not previously created.\n
  *          #LWPA_ISCONN: Already connected on this handle.\n
- *          #LWPA_TIMEDOUT: Timed out waiting for connection handshake to
- *                          complete.\n
- *          #LWPA_CONNREFUSED: Connection refused either at the TCP or RDMnet
- *                             level. additional_data may contain a reason
- *                             code.\n
+ *          #LWPA_TIMEDOUT: Timed out waiting for connection handshake to complete.\n
+ *          #LWPA_CONNREFUSED: Connection refused either at the TCP or RDMnet level. additional_data
+ *                             may contain a reason code.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket
- *          calls.\n
+ *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
 lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const ClientConnectMsg *connect_data,
                             RdmnetData *additional_data)
@@ -437,8 +423,8 @@ lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const C
     res = LWPA_ISCONN;
   else if (conn->is_blocking)
   {
-    /* If this is going to be a blocking connect, the user needs to provide an
-     * additional_data argument to capture the result of the connect. */
+    /* If this is going to be a blocking connect, the user needs to provide an additional_data
+     * argument to capture the result of the connect. */
     if (!additional_data)
       res = LWPA_INVALID;
     else
@@ -456,8 +442,8 @@ lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const C
   /* If it's a blocking connection, wait on the backoff timer. */
   if (res == LWPA_OK)
     res = update_backoff_and_wait_if_blocking(conn, remote_addr);
-  /* Any error other than LWPA_INPROGRESS indicates that there was a problem
-   * reacquiring the locks and we should return now. */
+  /* Any error other than LWPA_INPROGRESS indicates that there was a problem reacquiring the locks
+   * and we should return now. */
   if (res != LWPA_OK && res != LWPA_INPROGRESS && res != LWPA_ISCONN)
     return res;
 
@@ -483,8 +469,8 @@ lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const C
     }
   }
 
-  /* If we are nonblocking, LWPA_INPROGRESS or LWPA_WOULDBLOCK indicates
-   * that we can return now and process the connection later. */
+  /* If we are nonblocking, LWPA_INPROGRESS or LWPA_WOULDBLOCK indicates that we can return now and
+   * process the connection later. */
   if (!conn->is_blocking && (res == LWPA_INPROGRESS || res == LWPA_WOULDBLOCK))
   {
     res = LWPA_INPROGRESS;
@@ -519,8 +505,7 @@ lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const C
   }
   release_conn_and_readlock(conn);
 
-  /* For a blocking connect, time to block until the connection handshake is
-   * complete. */
+  /* For a blocking connect, time to block until the connection handshake is complete. */
   if (res == LWPA_OK && blocking_wait)
   {
     while (true)
@@ -544,7 +529,7 @@ lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const C
       {
         if (poll_res < 0)
         {
-          res = poll_res;
+          res = (lwpa_error_t)poll_res;
           conn->state = kCSNotConnected;
           lwpa_close(conn->sock);
           conn->sock = LWPA_SOCKET_INVALID;
@@ -699,22 +684,19 @@ int rdmnet_connect_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_
 /*! \brief Set an RDMnet connection handle to be either blocking or
  *         non-blocking.
  *
- *  The blocking state of a connection controls how other API calls behave. If
- *  a connection is:
+ *  The blocking state of a connection controls how other API calls behave. If a connection is:
  *
  *  * Blocking:
- *    - rdmnet_connect() will block until the RDMnet connection handshake is
- *      completed.
+ *    - rdmnet_connect() will block until the RDMnet connection handshake is completed.
  *    - rdmnet_send() and related functions will block until all data is sent.
  *    - rdmnet_recv() will block until a fully-parsed message is received.
  *  * Non-blocking:
- *    - rdmnet_connect() will return immediately with error code
- *      #LWPA_INPROGRESS. The connection can be polled for completion status
- *      using rdmnet_connect_poll().
- *    - rdmnet_send() will return immediately with error code #LWPA_WOULDBLOCK
- *      if there is too much data to fit in the underlying send buffer.
- *    - rdmnet_recv() will return immediately with error code #LWPA_WOULDBLOCK
- *      if there is no immediate data to be received.
+ *    - rdmnet_connect() will return immediately with error code #LWPA_INPROGRESS. The connection
+ *      can be polled for completion status using rdmnet_connect_poll().
+ *    - rdmnet_send() will return immediately with error code #LWPA_WOULDBLOCK if there is too much
+ *      data to fit in the underlying send buffer.
+ *    - rdmnet_recv() will return immediately with error code #LWPA_WOULDBLOCK if there is no
+ *      immediate data to be received.
  *
  *  \param[in] handle Connection handle for which to change blocking state.
  *  \param[in] blocking Whether the connection should be blocking.
@@ -723,8 +705,7 @@ int rdmnet_connect_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_
  *          #LWPA_NOTINIT: Module not initialized.\n
  *          #LWPA_BUSY: A connection is currently in progress.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket
- *          calls.\n
+ *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
 lwpa_error_t rdmnet_set_blocking(int handle, bool blocking)
 {
@@ -759,23 +740,20 @@ lwpa_error_t rdmnet_set_blocking(int handle, bool blocking)
   return res;
 }
 
-/*! \brief ADVANCED USAGE: Attach an RDMnet connection handle to an
- *         already-connected system socket.
+/*! \brief ADVANCED USAGE: Attach an RDMnet connection handle to an already-connected system socket.
  *
- *  This function is typically only used by %Brokers. The RDMnet connection is
- *  assumed to have already completed and be at the Heartbeat stage.
+ *  This function is typically only used by %Brokers. The RDMnet connection is assumed to have
+ *  already completed and be at the Heartbeat stage.
  *
- *  \param[in] handle Connection handle to attach the socket to. Must have been
- *                    previously created using rdmnet_new_connection().
- *  \param[in] sock System socket to attach to the connection handle. Must be
- *                  an already-connected stream socket.
- *  \param[in] remote_addr The remote network address to which the socket is
- *                         currently connected.
+ *  \param[in] handle Connection handle to attach the socket to. Must have been previously created
+ *                    using rdmnet_new_connection().
+ *  \param[in] sock System socket to attach to the connection handle. Must be an already-connected
+ *                  stream socket.
+ *  \param[in] remote_addr The remote network address to which the socket is currently connected.
  *  \return #LWPA_OK: Socket was attached successfully.\n
  *          #LWPA_INVALID: Invalid argument provided.\n
  *          #LWPA_NOTINIT: Module not initialized.\n
- *          #LWPA_ISCONN: The connection handle provided is already connected
- *                        using another socket.
+ *          #LWPA_ISCONN: The connection handle provided is already connected using another socket.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
  */
 lwpa_error_t rdmnet_attach_existing_socket(int handle, lwpa_socket_t sock, const LwpaSockaddr *remote_addr)
@@ -806,21 +784,18 @@ lwpa_error_t rdmnet_attach_existing_socket(int handle, lwpa_socket_t sock, const
 
 /*! \brief Disconnect an RDMnet connection.
  *
- *  The connection handle can be reused for another connection; if it is not to
- *  be reused, make sure to clean up its resources using
- *  rdmnet_destroy_connection().
+ *  The connection handle can be reused for another connection; if it is not to be reused, make sure
+ *  to clean up its resources using rdmnet_destroy_connection().
  *
  *  \param[in] handle Connection handle to disconnect.
- *  \param[in] send_disconnect_msg Whether to send an RDMnet Disconnect
- *             message. This is the proper way to gracefully close a connection
- *             in RDMnet.
- *  \param[in] disconnect_reason If send_disconnect_msg is true, the RDMnet
- *                               disconnect reason code to send.
+ *  \param[in] send_disconnect_msg Whether to send an RDMnet Disconnect message. This is the proper
+ *                                 way to gracefully close a connection in RDMnet.
+ *  \param[in] disconnect_reason If send_disconnect_msg is true, the RDMnet disconnect reason code
+ *                               to send.
  *  \return #LWPA_OK: Connection was successfully disconnected\n
  *          #LWPA_INVALID: Invalid argument provided.\n
  *          #LWPA_NOTINIT: Module not initialized.\n
- *          #LWPA_NOTCONN: The connection handle provided is not currently
- *                         connected.\n
+ *          #LWPA_NOTCONN: The connection handle provided is not currently connected.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
  */
 lwpa_error_t rdmnet_disconnect(int handle, bool send_disconnect_msg, rdmnet_disconnect_reason_t disconnect_reason)
@@ -857,8 +832,8 @@ lwpa_error_t rdmnet_disconnect(int handle, bool send_disconnect_msg, rdmnet_disc
 
 /*! \brief Destroy an RDMnet connection handle.
  *
- *  If the connection is currently healthy, call rdmnet_disconnect() first to
- *  do a graceful RDMnet-level disconnect.
+ *  If the connection is currently healthy, call rdmnet_disconnect() first to do a graceful
+ *  RDMnet-level disconnect.
  *
  *  \param[in] handle Connection handle to destroy.
  *  \return #LWPA_OK: Connection was successfully destroyed\n
@@ -891,28 +866,26 @@ lwpa_error_t rdmnet_destroy_connection(int handle)
 
 /*! \brief Poll for received data on a group of RDMnet connections.
  *
- *  For an application which maintains multiple RDMnet connections, this
- *  function can be used to poll for received data on all of them at once.
+ *  For an application which maintains multiple RDMnet connections, this function can be used to
+ *  poll for received data on all of them at once.
  *
- *  \param poll_arr Array of rdmnet_poll structs, each representing a
- *                  connection to be polled. After this function returns, each
- *                  structure's err member indicates the result of this poll:\n
- *    * #LWPA_OK indicates that there is data to be received on this
- *      connection. Use rdmnet_recv() to receive the data.
+ *  \param poll_arr Array of rdmnet_poll structs, each representing a connection to be polled. After
+ *                  this function returns, each structure's err member indicates the result of this
+ *                  poll:\n
+ *    * #LWPA_OK indicates that there is data to be received on this connection. Use rdmnet_recv()
+ *      to receive the data.
  *    * #LWPA_NODATA indicates that there was no activity on this connection.
- *    * Any other value indicates an error that caused the connection to be
- *      disconnected.
+ *    * Any other value indicates an error that caused the connection to be disconnected.
  *  \param poll_arr_size Number of rdmnet_poll structs in the poll_arr.
  *  \param timeout_ms Amount of time to wait for activity, in milliseconds.
  *  \return Number of elements in poll_arr which have data (success)\n
  *          0 (timed out)\n
  *          #LWPA_INVALID: Invalid argument provided.\n
  *          #LWPA_NOTINIT: Module not initialized.\n
- *          #LWPA_NOMEM: (only when #RDMNET_DYNAMIC_MEM is defined to 1) Unable
- *                       to allocate memory for poll operation.\n
+ *          #LWPA_NOMEM: (only when #RDMNET_DYNAMIC_MEM is defined to 1) Unable to allocate memory
+ *                       for poll operation.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket
- *          calls.\n
+ *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
 int rdmnet_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_ms)
 {
@@ -946,7 +919,7 @@ int rdmnet_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_ms)
   }
 
 #if RDMNET_DYNAMIC_MEM
-  pfds = calloc(poll_arr_size, sizeof(LwpaPollfd));
+  pfds = (LwpaPollfd *)calloc(poll_arr_size, sizeof(LwpaPollfd));
   if (!pfds)
   {
     lwpa_mutex_give(&rc_state.poll_lock);
@@ -961,7 +934,7 @@ int rdmnet_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_ms)
     RdmnetConnection conn_cmp;
 
     conn_cmp.handle = poll->handle;
-    conn = rb_tree_find(&rc_state.connections, &conn_cmp);
+    conn = (RdmnetConnection *)rb_tree_find(&rc_state.connections, &conn_cmp);
     if (!conn)
     {
       ++res;
@@ -1011,7 +984,7 @@ int rdmnet_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_ms)
           RdmnetConnection conn_cmp;
 
           conn_cmp.handle = poll_arr[i].handle;
-          conn = rb_tree_find(&rc_state.connections, &conn_cmp);
+          conn = (RdmnetConnection *)rb_tree_find(&rc_state.connections, &conn_cmp);
           if (conn && lwpa_mutex_take(&conn->lock, LWPA_WAIT_FOREVER))
           {
             if (conn->state == kCSHeartbeat)
@@ -1057,8 +1030,8 @@ int rdmnet_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_ms)
 
 /*! \brief Send data on an RDMnet connection.
  *
- *  Thin wrapper over the underlying socket send function. Use
- *  rdmnet_set_blocking() to control the blocking behavior of this send.
+ *  Thin wrapper over the underlying socket send function. Use rdmnet_set_blocking() to control the
+ *  blocking behavior of this send.
  *
  *  \param[in] handle Connection handle on which to send.
  *  \param[in] data Data buffer to send.
@@ -1066,11 +1039,9 @@ int rdmnet_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_ms)
  *  \return Number of bytes sent (success)\n
  *          #LWPA_INVALID: Invalid argument provided.\n
  *          #LWPA_NOTINIT: Module not initialized.\n
- *          #LWPA_NOTCONN: The connection handle has not been successfully
- *                         connected.\n
+ *          #LWPA_NOTCONN: The connection handle has not been successfully connected.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket
- *          calls.\n
+ *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
 int rdmnet_send(int handle, const uint8_t *data, size_t size)
 {
@@ -1104,21 +1075,17 @@ int rdmnet_send(int handle, const uint8_t *data, size_t size)
 
 /*! \brief Start an atomic send operation on an RDMnet connection.
  *
- *  Because RDMnet uses stream sockets, it is sometimes convenient to send
- *  messages piece by piece. This function, together with
- *  rdmnet_send_partial_message() and rdmnet_end_message(), can be used to
- *  guarantee an atomic piece-wise send operation in a multithreaded
- *  environment. Once started, any other calls to rdmnet_send() or
- *  rdmnet_start_message() will block waiting for this operation to end using
- *  rdmnet_end_message().
+ *  Because RDMnet uses stream sockets, it is sometimes convenient to send messages piece by piece.
+ *  This function, together with rdmnet_send_partial_message() and rdmnet_end_message(), can be used
+ *  to guarantee an atomic piece-wise send operation in a multithreaded environment. Once started,
+ *  any other calls to rdmnet_send() or rdmnet_start_message() will block waiting for this operation
+ *  to end using rdmnet_end_message().
  *
- *  \param[in] handle Connection handle on which to start an atomic send
- *                    operation.
+ *  \param[in] handle Connection handle on which to start an atomic send operation.
  *  \return #LWPA_OK: Send operation started successfully.\n
  *          #LWPA_INVALID: Invalid argument provided.\n
  *          #LWPA_NOTINIT: Module not initialized.\n
- *          #LWPA_NOTCONN: The connection handle has not been successfully
- *                         connected.\n
+ *          #LWPA_NOTCONN: The connection handle has not been successfully connected.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
  */
 lwpa_error_t rdmnet_start_message(int handle)
@@ -1155,16 +1122,13 @@ lwpa_error_t rdmnet_start_message(int handle)
   return res;
 }
 
-/*! \brief Send a partial message as part of an atomic send operation on an
- *         RDMnet connection.
+/*! \brief Send a partial message as part of an atomic send operation on an RDMnet connection.
  *
  *  MUST call rdmnet_start_message() first to begin an atomic send operation.
  *
- *  Because RDMnet uses stream sockets, it is sometimes convenient to send
- *  messages piece by piece. This function, together with
- *  rdmnet_start_message() and rdmnet_end_message(), can be used to
- *  guarantee an atomic piece-wise send operation in a multithreaded
- *  environment.
+ *  Because RDMnet uses stream sockets, it is sometimes convenient to send messages piece-by-piece.
+ *  This function, together with rdmnet_start_message() and rdmnet_end_message(), can be used to
+ *  guarantee an atomic piece-wise send operation in a multithreaded environment.
  *
  *  \param[in] handle Connection handle on which to send a partial message.
  *  \param[in] data Data buffer to send.
@@ -1172,11 +1136,9 @@ lwpa_error_t rdmnet_start_message(int handle)
  *  \return Number of bytes sent (success)\n
  *          #LWPA_INVALID: Invalid argument provided.\n
  *          #LWPA_NOTINIT: Module not initialized.\n
- *          #LWPA_NOTCONN: The connection handle has not been successfully
- *                         connected.\n
+ *          #LWPA_NOTCONN: The connection handle has not been successfully connected.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket
- *          calls.\n
+ *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
 int rdmnet_send_partial_message(int handle, const uint8_t *data, size_t size)
 {
@@ -1209,14 +1171,11 @@ int rdmnet_send_partial_message(int handle, const uint8_t *data, size_t size)
  *
  *  MUST call rdmnet_start_message() first to begin an atomic send operation.
  *
- *  Because RDMnet uses stream sockets, it is sometimes convenient to send
- *  messages piece by piece. This function, together with
- *  rdmnet_start_message() and rdmnet_send_partial_message(), can be used to
- *  guarantee an atomic piece-wise send operation in a multithreaded
- *  environment.
+ *  Because RDMnet uses stream sockets, it is sometimes convenient to send messages piece by piece.
+ *  This function, together with rdmnet_start_message() and rdmnet_send_partial_message(), can be
+ *  used to guarantee an atomic piece-wise send operation in a multithreaded environment.
  *
- *  \param[in] handle Connection handle on which to end an atomic send
- *                    operation.
+ *  \param[in] handle Connection handle on which to end an atomic send operation.
  *  \return #LWPA_OK: Send operation ended successfully.\n
  *          #LWPA_INVALID: Invalid argument provided.\n
  *          #LWPA_NOTINIT: Module not initialized.\n
@@ -1242,55 +1201,46 @@ lwpa_error_t rdmnet_end_message(int handle)
     lwpa_mutex_give(&conn->send_lock);
     rdmnet_readunlock();
   }
-  /* And release the read lock that we took at the beginning of this
-   * function. */
+  /* And release the read lock that we took at the beginning of this function. */
   rdmnet_readunlock();
   return res;
 }
 
 /*! \brief Receive data on an RDMnet connection.
  *
- *  The RDMnet Connection library uses a stream parser under the hood to
- *  reassemble RDMnet data packets from the TCP stream. Each time this function
- *  is called, the parser executes the following steps:
- *    * Attempt to parse a full message from any data already received, and
- *      return on success.
- *    * If there is no data or not enough data available, do a socket-level
- *      recv().
- *    * If the socket-level recv() returns data, attempt to parse a full
- *      message from the data currently available, and return the result.
+ *  The RDMnet Connection library uses a stream parser under the hood to reassemble RDMnet data
+ *  packets from the TCP stream. Each time this function is called, the parser executes the
+ *  following steps:
+ *    * Attempt to parse a full message from any data already received, and return on success.
+ *    * If there is no data or not enough data available, do a socket-level recv().
+ *    * If the socket-level recv() returns data, attempt to parse a full message from the data
+ *      currently available, and return the result.
  *
  *  The result might be #LWPA_NODATA, which indicates one of two conditions:
  *    * Not enough data has yet been received to parse a full message.
- *    * A message was parsed and consumed internally (i.e. an RDMnet TCP
- *      heartbeat message)
+ *    * A message was parsed and consumed internally (i.e. an RDMnet TCP heartbeat message)
  *
- *  Your application should handle #LWPA_NODATA as a special case which
- *  indicates that the context calling this function should simply continue
- *  with normal operation.
+ *  Your application should handle #LWPA_NODATA as a special case which indicates that the context
+ *  calling this function should simply continue with normal operation.
  *
- *  This function may allocate lists of structures (either dynamically or from
- *  memory pools, based on the value of #RDMNET_DYNAMIC_MEM) to represent
- *  repeated data contained in a message. If this function returns #LWPA_OK,
- *  you MUST free the resulting message with free_rdmnet_message() to avoid
- *  memory leaks.
+ *  This function may allocate lists of structures (either dynamically or from memory pools, based
+ *  on the value of #RDMNET_DYNAMIC_MEM) to represent repeated data contained in a message. If this
+ *  function returns #LWPA_OK, you MUST free the resulting message with free_rdmnet_message() to
+ *  avoid memory leaks.
  *
  *  \param[in] handle Connection handle on which to receive.
- *  \param[out] data Data structure which contains a received message or status
- *                   code.
+ *  \param[out] data Data structure which contains a received message or status code.
  *  \return #LWPA_OK: Message received successfully and stored in data.\n
  *          #LWPA_INVALID: Invalid argument provided.\n
  *          #LWPA_NOTINIT: Module not initialized.\n
- *          #LWPA_NOTCONN: The connection handle has not been successfully
- *                         connected.\n
- *          #LWPA_ALREADY: rdmnet_recv() is already being called and blocked on
- *                         from another context.\n
+ *          #LWPA_NOTCONN: The connection handle has not been successfully connected.\n
+ *          #LWPA_ALREADY: rdmnet_recv() is already being called and blocked on from another
+ *                         context.\n
  *          #LWPA_NODATA: See above.\n
- *          #LWPA_CONNCLOSED: The connection was closed gracefully, and data
- *                            contains the RDMnet disconnect reason code.\n
+ *          #LWPA_CONNCLOSED: The connection was closed gracefully, and data contains the RDMnet
+ *                            disconnect reason code.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket
- *          calls.\n
+ *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
 lwpa_error_t rdmnet_recv(int handle, RdmnetData *data)
 {
@@ -1362,8 +1312,7 @@ lwpa_error_t rdmnet_recv(int handle, RdmnetData *data)
       }
       else
       {
-        /* We've received something on this connection. Reset the heartbeat
-         * timer. */
+        /* We've received something on this connection. Reset the heartbeat timer. */
         lwpa_timer_reset(&conn->hb_timer);
       }
       release_conn_and_readlock(conn);
@@ -1388,10 +1337,9 @@ void rdmnet_tick_thread(void *arg)
 
 /*! \brief Handle periodic RDMnet functionality.
  *
- *  If #RDMNET_USE_TICK_THREAD is defined nonzero, this is an internal function
- *  called automatically by the library. Otherwise, it must be called by the
- *  application preiodically to handle health-checked TCP functionality.
- *  Recommended calling interval is ~1s.
+ *  If #RDMNET_USE_TICK_THREAD is defined nonzero, this is an internal function called automatically
+ *  by the library. Otherwise, it must be called by the application preiodically to handle
+ *  health-checked TCP functionality. Recommended calling interval is ~1s.
  */
 void rdmnet_tick()
 {
@@ -1404,7 +1352,7 @@ void rdmnet_tick()
   if (rdmnet_readlock())
   {
     rb_iter_init(&iter);
-    conn = rb_iter_first(&iter, &rc_state.connections);
+    conn = (RdmnetConnection *)rb_iter_first(&iter, &rc_state.connections);
     while (conn)
     {
       if (lwpa_mutex_take(&conn->lock, LWPA_WAIT_FOREVER))
@@ -1423,9 +1371,8 @@ void rdmnet_tick()
             }
             else if (lwpa_timer_isexpired(&conn->send_timer))
             {
-              /* Just poll the send lock. If another context is in the middle
-               * of a partial message, no need to block and send a
-               * heartbeat. */
+              /* Just poll the send lock. If another context is in the middle of a partial message,
+               * no need to block and send a heartbeat. */
               if (lwpa_mutex_take(&conn->send_lock, 0))
               {
                 send_null(conn);
@@ -1439,15 +1386,14 @@ void rdmnet_tick()
         }
         lwpa_mutex_give(&conn->lock);
       }
-      conn = rb_iter_next(&iter);
+      conn = (RdmnetConnection *)rb_iter_next(&iter);
     }
     rdmnet_readunlock();
   }
 }
 
-/* Internal function which attempts to allocate and track a new connection,
- * including allocating the structure, creating a new handle value, and
- * inserting it into the global map.
+/* Internal function which attempts to allocate and track a new connection, including allocating the
+ * structure, creating a new handle value, and inserting it into the global map.
  *
  *  Must have write lock.
  */
@@ -1456,12 +1402,12 @@ RdmnetConnection *create_new_connection()
   RdmnetConnection *conn;
   int original_handle = rc_state.next_conn_handle;
 
-  conn = alloc_rdmnet_connection();
+  conn = (RdmnetConnection *)alloc_rdmnet_connection();
   if (!conn)
     return NULL;
 
-  /* Grab a new integer handle for this connection, making sure we don't
-   * overlap with one that's already in use. */
+  /* Grab a new integer handle for this connection, making sure we don't overlap with one that's
+   * already in use. */
   conn->handle = rc_state.next_conn_handle;
   if (++rc_state.next_conn_handle < 0)
     rc_state.next_conn_handle = 0;
@@ -1486,8 +1432,8 @@ RdmnetConnection *create_new_connection()
   return conn;
 }
 
-/* Internal function to update a backoff timer value using the algorithm
- * specified in E1.33. Returns the new value. */
+/* Internal function to update a backoff timer value using the algorithm specified in E1.33. Returns
+ * the new value. */
 int update_backoff(int previous_backoff)
 {
   int result = ((rand() % 4001) + 1000);
@@ -1498,8 +1444,8 @@ int update_backoff(int previous_backoff)
   return result;
 }
 
-/* Internal function to handle an RDMnet redirect. Attempts to connect to the
- * new address and returns the result. */
+/* Internal function to handle an RDMnet redirect. Attempts to connect to the new address and
+ * returns the result. */
 lwpa_error_t handle_redirect(RdmnetConnection *conn, ClientRedirectMsg *reply)
 {
   lwpa_error_t conn_res;
@@ -1613,8 +1559,7 @@ lwpa_error_t get_writelock_and_conn(int handle, RdmnetConnection **conn_ptr)
     return LWPA_NOTFOUND;
   }
 
-  /* Taking the global write lock means we don't have to take the conn
-   * mutex. */
+  /* Taking the global write lock means we don't have to take the conn mutex. */
   *conn_ptr = conn;
   return LWPA_OK;
 }

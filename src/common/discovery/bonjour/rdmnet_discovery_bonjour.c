@@ -36,10 +36,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
-
-#include "lwpa_inet.h"
-#include "lwpa_bool.h"
-#include "lwpa_pack.h"
+#include "lwpa/inet.h"
+#include "lwpa/bool.h"
+#include "lwpa/pack.h"
 
 typedef struct DiscoveryState
 {
@@ -61,7 +60,7 @@ typedef struct DiscoveryState
   RdmnetDiscCallbacks callbacks;
   BrokerDiscInfo info_to_register;
 
-  enum BROKER_REGISTRATION_STATE broker_reg_state;
+  enum BROKER_STATE broker_reg_state;
   void *broker_reg_context;
   bool broker_reg_monitor_scope;
 
@@ -565,7 +564,7 @@ void DNSSD_API process_DNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFla
 
           value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord, "CID", &value_len));
           if (value && value_len)
-            string_to_cid(&info->cid, value, value_len);
+            string_to_uuid(&info->cid, value, value_len);
 
           value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord, "Model", &value_len));
           if (value && value_len)
@@ -772,7 +771,7 @@ lwpa_error_t rdmnetdisc_registerbroker(const BrokerDiscInfo *broker_info, bool m
   if (disc_state.broker_reg_state != kBrokerNotRegistered || disc_state.dns_reg_ref != NULL ||
       !broker_info_is_valid(broker_info))
   {
-    return false;
+    return LWPA_INVALID;
   }
 
   disc_state.info_to_register = *broker_info;
@@ -842,8 +841,8 @@ DNSServiceErrorType send_registration(const BrokerDiscInfo *info, void *context)
   if (result == kDNSServiceErr_NoError)
   {
     /*The CID can't have hyphens, so we'll strip them.*/
-    char cid_str[CID_STRING_BYTES];
-    cid_to_string(cid_str, &info->cid);
+    char cid_str[UUID_STRING_BYTES];
+    uuid_to_string(cid_str, &info->cid);
     char *src = cid_str;
     for (char *dst = src; *dst != 0; ++src, ++dst)
     {

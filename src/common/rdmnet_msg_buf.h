@@ -33,11 +33,11 @@
 #define _RDMNET_MSG_BUF_H_
 
 #include <stddef.h>
-#include "lwpa_int.h"
-#include "lwpa_bool.h"
-#include "lwpa_log.h"
-#include "lwpa_cid.h"
-#include "lwpa_socket.h"
+#include "lwpa/int.h"
+#include "lwpa/bool.h"
+#include "lwpa/log.h"
+#include "lwpa/uuid.h"
+#include "lwpa/socket.h"
 #include "rdmnet/common/opts.h"
 #include "rdmnet/common/message.h"
 

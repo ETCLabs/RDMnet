@@ -28,14 +28,14 @@
 /*! \file broker/util.h
  *
  */
-#ifndef _BROKER_UTIL_H_
-#define _BROKER_UTIL_H_
+#ifndef _RDMNET_BROKER_UTIL_H_
+#define _RDMNET_BROKER_UTIL_H_
 
 #include <stdexcept>
 #include <queue>
-#include "lwpa_lock.h"
-#include "lwpa_log.h"
-#include "lwpa_thread.h"
+#include "lwpa/lock.h"
+#include "lwpa/log.h"
+#include "lwpa/thread.h"
 #include "rdm/uid.h"
 #include "rdmnet/common/rpt_prot.h"
 
@@ -114,17 +114,5 @@ protected:
   lwpa_mutex_t lock_;
   bool keep_running_;
 };
-
-// Comparison operators for UIDs
-
-inline bool operator<(const RdmUid &a, const RdmUid &b)
-{
-  return ((a.manu == b.manu) ? (a.id < b.id) : (a.manu < b.manu));
-}
-
-inline bool operator==(const RdmUid &a, const RdmUid &b)
-{
-  return ((a.manu == b.manu && a.id == b.id));
-}
 
 #endif  // _BROKER_UTIL_H_

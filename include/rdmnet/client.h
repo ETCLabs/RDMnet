@@ -26,16 +26,16 @@
 ******************************************************************************/
 
 /*! \file rdmnet/client.h
- *  \brief Defining information about an RDMnet Client, including all
- *         information that is sent on initial connection to a Broker.
+ *  \brief Defining information about an RDMnet Client, including all information that is sent on
+ *         initial connection to a Broker.
  *  \author Sam Kearney
  */
 #ifndef _RDMNET_CLIENT_H_
 #define _RDMNET_CLIENT_H_
 
-#include "lwpa_cid.h"
-#include "estardmnet.h"
+#include "lwpa/uuid.h"
 #include "rdm/uid.h"
+#include "rdmnet/defs.h"
 
 typedef enum
 {
@@ -55,7 +55,7 @@ typedef struct ClientEntryDataRpt
 {
   RdmUid client_uid;
   rpt_client_type_t client_type;
-  LwpaCid binding_cid;
+  LwpaUuid binding_cid;
 } ClientEntryDataRpt;
 
 #define EPT_PROTOCOL_STRING_PADDED_LENGTH 32
@@ -78,7 +78,7 @@ typedef struct ClientEntryData ClientEntryData;
 struct ClientEntryData
 {
   client_protocol_t client_protocol;
-  LwpaCid client_cid;
+  LwpaUuid client_cid;
   union
   {
     ClientEntryDataRpt rpt_data;
@@ -96,9 +96,9 @@ struct ClientEntryData
 extern "C" {
 #endif
 
-bool create_rpt_client_entry(const LwpaCid *cid, const RdmUid *uid, rpt_client_type_t client_type,
-                             const LwpaCid *binding_cid, ClientEntryData *entry);
-bool create_ept_client_entry(const LwpaCid *cid, const EptSubProtocol *protocol_arr, size_t protocol_arr_size,
+bool create_rpt_client_entry(const LwpaUuid *cid, const RdmUid *uid, rpt_client_type_t client_type,
+                             const LwpaUuid *binding_cid, ClientEntryData *entry);
+bool create_ept_client_entry(const LwpaUuid *cid, const EptSubProtocol *protocol_arr, size_t protocol_arr_size,
                              ClientEntryData *entry);
 
 #ifdef __cplusplus

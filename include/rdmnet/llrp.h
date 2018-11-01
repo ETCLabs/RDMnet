@@ -26,18 +26,18 @@
 ******************************************************************************/
 
 /*! \file rdmnet/llrp.h
- *  \brief Functions for initializing/deinitializing LLRP and handling LLRP
- *         discovery and networking.
+ *  \brief Functions for initializing/deinitializing LLRP and handling LLRP discovery and
+ *         networking.
  *  \author Christian Reese and Sam Kearney
  */
 #ifndef _RDMNET_LLRP_H_
 #define _RDMNET_LLRP_H_
 
-#include "lwpa_common.h"
-#include "lwpa_cid.h"
-#include "lwpa_int.h"
-#include "lwpa_error.h"
-#include "lwpa_inet.h"
+#include "lwpa/common.h"
+#include "lwpa/uuid.h"
+#include "lwpa/int.h"
+#include "lwpa/error.h"
+#include "lwpa/inet.h"
 #include "rdm/uid.h"
 #include "rdm/message.h"
 
@@ -67,8 +67,7 @@ typedef enum
   kLLRPDataDiscoveryFinished
 } llrp_data_t;
 
-/*! Identifies the type of RPT Component with which this LLRP Target is
- *  associated. */
+/*! Identifies the type of RPT Component with which this LLRP Target is associated. */
 typedef enum
 {
   /*! This LLRP Target is associated with an RPT Device. */
@@ -77,8 +76,7 @@ typedef enum
   kLLRPCompRPTController = 1,
   /*! This LLRP Target is associated with a Broker. */
   kLLRPCompBroker = 2,
-  /*! This LLRP Target is standalone or associated with an unknown Component
-   *  type. */
+  /*! This LLRP Target is standalone or associated with an unknown Component type. */
   kLLRPCompUnknown = 255
 } llrp_component_t;
 
@@ -86,7 +84,7 @@ typedef enum
 typedef struct LlrpRdmMessage
 {
   /*! The CID of the LLRP Component sending this message. */
-  LwpaCid source_cid;
+  LwpaUuid source_cid;
   /*! The LLRP transaction number of this message. */
   uint32_t transaction_num;
   /*! The RDM message. */
@@ -97,7 +95,7 @@ typedef struct LlrpRdmMessage
 typedef struct LlrpTarget
 {
   /*! The LLRP Target's CID. */
-  LwpaCid target_cid;
+  LwpaUuid target_cid;
   /*! The LLRP Target's UID. */
   RdmUid target_uid;
   /*! The LLRP Target's hardware address (usually the MAC address) */
@@ -158,8 +156,8 @@ extern "C" {
 lwpa_error_t llrp_init();
 void llrp_deinit();
 
-llrp_socket_t llrp_create_manager_socket(const LwpaIpAddr *netint, const LwpaCid *manager_cid);
-llrp_socket_t llrp_create_target_socket(const LwpaIpAddr *netint, const LwpaCid *target_cid, const RdmUid *target_uid,
+llrp_socket_t llrp_create_manager_socket(const LwpaIpAddr *netint, const LwpaUuid *manager_cid);
+llrp_socket_t llrp_create_target_socket(const LwpaIpAddr *netint, const LwpaUuid *target_cid, const RdmUid *target_uid,
                                         const uint8_t *hardware_address, llrp_component_t component_type);
 bool llrp_close_socket(llrp_socket_t handle);
 bool llrp_start_discovery(llrp_socket_t handle, uint8_t filter);
@@ -169,10 +167,10 @@ int llrp_update(LlrpPoll *poll_array, size_t poll_array_size, int timeout_ms);
 
 void llrp_target_update_connection_state(llrp_socket_t handle, bool connected_to_broker);
 
-lwpa_error_t llrp_send_rdm_command(llrp_socket_t handle, const LwpaCid *destination, const RdmBuffer *command,
+lwpa_error_t llrp_send_rdm_command(llrp_socket_t handle, const LwpaUuid *destination, const RdmBuffer *command,
                                    uint32_t *transaction_num);
 
-lwpa_error_t llrp_send_rdm_response(llrp_socket_t handle, const LwpaCid *destination, const RdmBuffer *response,
+lwpa_error_t llrp_send_rdm_response(llrp_socket_t handle, const LwpaUuid *destination, const RdmBuffer *response,
                                     uint32_t transaction_num);
 
 #ifdef __cplusplus

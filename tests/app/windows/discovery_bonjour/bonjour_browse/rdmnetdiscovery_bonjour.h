@@ -28,9 +28,9 @@
 #ifndef _RDMNET_DISCOVERY_BONJOUR_H_
 #define _RDMNET_DISCOVERY_BONJOUR_H_
 
-#include "rdmnet/discovery.h"
+#include "rdmnet/common/discovery.h"
 
-#include "lwpa_lock.h"
+#include "lwpa/lock.h"
 
 /*This implementation leverages Apple's Bonjour libraries.
  *  These libraries must be installed and part of the project search path.
@@ -43,8 +43,7 @@
  *  less than 100 bytes, so in most cases a simple fixed - sized
  *  256 - byte buffer will be more than sufficient.*/
 #define TXT_RECORD_BUFFER_LENGTH 256
-#define REGISTRATION_STRING_PADDED_LENGTH \
-  SRV_TYPE_PADDED_LENGTH + E133_SCOPE_STRING_PADDED_LENGTH + 4
+#define REGISTRATION_STRING_PADDED_LENGTH SRV_TYPE_PADDED_LENGTH + E133_SCOPE_STRING_PADDED_LENGTH + 4
 
 enum BROKER_REGISTRATION_STATE
 {

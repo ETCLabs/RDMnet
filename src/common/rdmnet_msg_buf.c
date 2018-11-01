@@ -32,8 +32,8 @@
 #if RDMNET_DYNAMIC_MEM
 #include <stdlib.h>
 #endif
-#include "lwpa_pack.h"
-#include "lwpa_rootlayerpdu.h"
+#include "lwpa/pack.h"
+#include "lwpa/root_layer_pdu.h"
 #include "broker_prot_priv.h"
 #include "rpt_prot_priv.h"
 #include "rdmnet_message_priv.h"
@@ -116,7 +116,7 @@ lwpa_error_t rdmnet_msg_buf_recv(lwpa_socket_t sock, RdmnetMsgBuf *msg_buf)
     int recv_res =
         lwpa_recv(sock, &msg_buf->buf[msg_buf->cur_data_size], RDMNET_RECV_BUF_SIZE - msg_buf->cur_data_size, 0);
     if (recv_res < 0)
-      return recv_res;
+      return (lwpa_error_t)recv_res;
     else if (recv_res == 0)
       /* 0 indicates graceful close of connection by peer */
       return LWPA_CONNCLOSED;
@@ -434,7 +434,7 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
         {
           ConnectReplyMsg *crmsg = get_connect_reply_msg(bmsg);
           const uint8_t *cur_ptr = &data[bytes_parsed];
-          crmsg->connect_status = upack_16b(cur_ptr);
+          crmsg->connect_status = (rdmnet_connect_status_t)upack_16b(cur_ptr);
           cur_ptr += 2;
           crmsg->e133_version = upack_16b(cur_ptr);
           cur_ptr += 2;
@@ -493,7 +493,7 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
         if (remaining_len >= DISCONNECT_DATA_SIZE)
         {
           const uint8_t *cur_ptr = &data[bytes_parsed];
-          get_disconnect_msg(bmsg)->disconnect_reason = upack_16b(cur_ptr);
+          get_disconnect_msg(bmsg)->disconnect_reason = (rdmnet_disconnect_reason_t)upack_16b(cur_ptr);
           cur_ptr += 2;
           next_layer_bytes_parsed = cur_ptr - &data[bytes_parsed];
           res = kPSFullBlockParseOk;
@@ -638,9 +638,9 @@ size_t parse_client_entry_header(const uint8_t *data, ClientEntryData *entry)
   const uint8_t *cur_ptr = data;
   size_t len = pdu_length(cur_ptr);
   cur_ptr += 3;
-  entry->client_protocol = upack_32b(cur_ptr);
+  entry->client_protocol = (client_protocol_t)upack_32b(cur_ptr);
   cur_ptr += 4;
-  memcpy(entry->client_cid.data, cur_ptr, CID_BYTES);
+  memcpy(entry->client_cid.data, cur_ptr, UUID_BYTES);
   entry->next = NULL;
   return len;
 }
@@ -694,8 +694,8 @@ size_t parse_single_client_entry(ClientEntryState *cstate, const uint8_t *data, 
           cur_ptr += 2;
           rpt_entry->client_uid.id = upack_32b(cur_ptr);
           cur_ptr += 4;
-          rpt_entry->client_type = *cur_ptr++;
-          memcpy(rpt_entry->binding_cid.data, cur_ptr, CID_BYTES);
+          rpt_entry->client_type = (rpt_client_type_t)*cur_ptr++;
+          memcpy(rpt_entry->binding_cid.data, cur_ptr, UUID_BYTES);
           bytes_parsed += RPT_CLIENT_ENTRY_DATA_SIZE;
           cstate->entry_data.size_parsed += RPT_CLIENT_ENTRY_DATA_SIZE;
           res = kPSFullBlockParseOk;
@@ -749,7 +749,7 @@ size_t parse_client_list(ClientListState *clstate, const uint8_t *data, size_t d
         if (*centry_ptr)
           centry_ptr = &(*centry_ptr)->next;
 
-        *centry_ptr = alloc_client_entry();
+        *centry_ptr = (ClientEntryData *)alloc_client_entry();
         if (!(*centry_ptr))
         {
           /* We've run out of space for client entries - send back up what we
@@ -978,7 +978,7 @@ size_t parse_rdm_list(RdmListState *rlstate, const uint8_t *data, size_t datalen
           else if (remaining_len >= rdm_cmd_pdu_len)
           {
             /* Allocate a new struct at the end of the list */
-            *rdmcmd_ptr = alloc_rdm_command();
+            *rdmcmd_ptr = (RdmCmdListEntry *)alloc_rdm_command();
             if (!(*rdmcmd_ptr))
             {
               /* We've run out of space for RDM commands - send back up what
@@ -1049,7 +1049,7 @@ size_t parse_rpt_status(RptStatusState *rsstate, const uint8_t *data, size_t dat
       if (pdu_len >= RPT_STATUS_HEADER_SIZE && pdu_len >= rsstate->block.block_size)
       {
         cur_ptr += 3;
-        smsg->status_code = upack_16b(cur_ptr);
+        smsg->status_code = (rpt_status_code_t)upack_16b(cur_ptr);
         cur_ptr += 2;
         bytes_parsed += RPT_STATUS_HEADER_SIZE;
         rsstate->block.size_parsed += RPT_STATUS_HEADER_SIZE;

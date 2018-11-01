@@ -60,7 +60,7 @@ BrokerDiscoveryManager::~BrokerDiscoveryManager()
 }
 
 lwpa_error_t BrokerDiscoveryManager::RegisterBroker(const BrokerDiscoveryAttributes &disc_attributes,
-                                                    const LwpaCid &local_cid,
+                                                    const LwpaUuid &local_cid,
                                                     const std::vector<LwpaIpAddr> &listen_addrs, uint16_t listen_port)
 {
   // Start with the default information.

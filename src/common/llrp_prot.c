@@ -27,14 +27,14 @@
 #include "llrp_prot_priv.h"
 
 #include <string.h>
-#include "lwpa_pack.h"
-#include "estardmnet.h"
-#include "lwpa_socket.h"
+#include "lwpa/pack.h"
+#include "lwpa/socket.h"
+#include "rdmnet/defs.h"
 #include "llrp_priv.h"
 
 /**************************** Global variables *******************************/
 
-LwpaCid kLLRPBroadcastCID;
+LwpaUuid kLLRPBroadcastCID;
 
 /*************************** Private constants *******************************/
 
@@ -57,7 +57,7 @@ static bool parse_llrp_rdm_command(const uint8_t *buf, size_t buflen, RdmBuffer 
 
 void llrp_prot_init()
 {
-  string_to_cid(&kLLRPBroadcastCID, LLRP_BROADCAST_CID, sizeof(LLRP_BROADCAST_CID));
+  string_to_uuid(&kLLRPBroadcastCID, LLRP_BROADCAST_CID, sizeof(LLRP_BROADCAST_CID));
 }
 
 bool parse_llrp_message(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest, LlrpMessage *msg)
@@ -101,14 +101,13 @@ bool parse_llrp_pdu(const uint8_t *buf, size_t buflen, const LlrpMessageInterest
   cur_ptr += 3;
   msg->vector = upack_32b(cur_ptr);
   cur_ptr += 4;
-  memcpy(msg->header.dest_cid.data, cur_ptr, CID_BYTES);
-  cur_ptr += CID_BYTES;
+  memcpy(msg->header.dest_cid.data, cur_ptr, UUID_BYTES);
+  cur_ptr += UUID_BYTES;
   msg->header.transaction_number = upack_32b(cur_ptr);
   cur_ptr += 4;
 
-  /* Parse the next layer, based on the vector value and what the caller has
-   * registered interest in */
-  if (0 == cidcmp(&msg->header.dest_cid, &kLLRPBroadcastCID) || 0 == cidcmp(&msg->header.dest_cid, &interest->my_cid))
+  /* Parse the next layer, based on the vector value and what the caller has registered interest in */
+  if (0 == uuidcmp(&msg->header.dest_cid, &kLLRPBroadcastCID) || 0 == uuidcmp(&msg->header.dest_cid, &interest->my_cid))
   {
     switch (msg->vector)
     {
@@ -170,8 +169,7 @@ bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessa
   cur_ptr += 4;
   request->filter = *cur_ptr++;
 
-  /* If our UID is not in the range, there is no need to check the Known
-   * UIDs. */
+  /* If our UID is not in the range, there is no need to check the Known UIDs. */
   if (uid_cmp(&interest->my_uid, &lower_uid_bound) >= 0 && uid_cmp(&interest->my_uid, &upper_uid_bound) <= 0)
   {
     request->contains_my_uid = true;
@@ -259,8 +257,8 @@ size_t pack_llrp_header(uint8_t *buf, size_t pdu_len, uint32_t vector, const Llr
   cur_ptr += 3;
   pack_32b(cur_ptr, vector);
   cur_ptr += 4;
-  memcpy(cur_ptr, header->dest_cid.data, CID_BYTES);
-  cur_ptr += CID_BYTES;
+  memcpy(cur_ptr, header->dest_cid.data, UUID_BYTES);
+  cur_ptr += UUID_BYTES;
   pack_32b(cur_ptr, header->transaction_number);
   cur_ptr += 4;
   return cur_ptr - buf;
@@ -332,7 +330,7 @@ lwpa_error_t send_llrp_probe_request(llrp_socket_t handle, const LwpaSockaddr *d
   if (send_res >= 0)
     return LWPA_OK;
   else
-    return send_res;
+    return (lwpa_error_t)send_res;
 }
 
 #define PROBE_REPLY_RLP_DATA_SIZE (LLRP_HEADER_SIZE + PROBE_REPLY_PDU_SIZE)
@@ -376,7 +374,7 @@ lwpa_error_t send_llrp_probe_reply(llrp_socket_t handle, const LwpaSockaddr *des
   if (send_res >= 0)
     return LWPA_OK;
   else
-    return send_res;
+    return (lwpa_error_t)send_res;
 }
 
 #define RDM_CMD_RLP_DATA_MIN_SIZE (LLRP_HEADER_SIZE + 3 /* RDM cmd PDU Flags + Length */)
@@ -413,5 +411,5 @@ lwpa_error_t send_llrp_rdm(llrp_socket_t handle, const LwpaSockaddr *dest_addr, 
   if (send_res >= 0)
     return LWPA_OK;
   else
-    return send_res;
+    return (lwpa_error_t)send_res;
 }

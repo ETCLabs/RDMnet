@@ -32,16 +32,16 @@
 #ifndef _LLRP_PRIV_H_
 #define _LLRP_PRIV_H_
 
-#include "lwpa_cid.h"
-#include "lwpa_bool.h"
-#include "lwpa_int.h"
-#include "lwpa_inet.h"
-#include "lwpa_rbtree.h"
-#include "lwpa_timer.h"
-#include "lwpa_socket.h"
-#include "lwpa_rootlayerpdu.h"
-#include "estardmnet.h"
+#include "lwpa/uuid.h"
+#include "lwpa/bool.h"
+#include "lwpa/int.h"
+#include "lwpa/inet.h"
+#include "lwpa/rbtree.h"
+#include "lwpa/timer.h"
+#include "lwpa/socket.h"
+#include "lwpa/root_layer_pdu.h"
 #include "rdm/uid.h"
+#include "rdmnet/defs.h"
 #include "rdmnet/llrp.h"
 #include "llrp_prot_priv.h"
 
@@ -58,7 +58,7 @@ typedef struct LlrpTargetSocketData
 
   bool connected_to_broker;
   bool reply_pending;
-  LwpaCid pending_reply_cid;
+  LwpaUuid pending_reply_cid;
   uint32_t pending_reply_trans_num;
   LwpaTimer reply_backoff;
 } LlrpTargetSocketData;
@@ -81,7 +81,7 @@ typedef struct LlrpBaseSocket LlrpBaseSocket;
 struct LlrpBaseSocket
 {
   LwpaIpAddr net_int_addr;
-  LwpaCid owner_cid;
+  LwpaUuid owner_cid;
 
   lwpa_socket_t sys_sock;
 

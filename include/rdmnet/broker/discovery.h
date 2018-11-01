@@ -26,18 +26,17 @@
 ******************************************************************************/
 
 /*! \file broker/discovery.h
- *  \brief Handles the Broker's DNS registration and discovery of other
- *         Brokers.
+ *  \brief Handles the Broker's DNS registration and discovery of other Brokers.
  *  \author Sam Kearney
  */
-#ifndef _BROKER_DISCOVERY_H_
-#define _BROKER_DISCOVERY_H_
+#ifndef _RDMNET_BROKER_DISCOVERY_H_
+#define _RDMNET_BROKER_DISCOVERY_H_
 
 #include <string>
 #include <vector>
-#include "lwpa_error.h"
-#include "lwpa_int.h"
-#include "estardmnet.h"
+#include "lwpa/error.h"
+#include "lwpa/int.h"
+#include "rdmnet/defs.h"
 #include "rdmnet/common/discovery.h"
 
 /// Settings for the Broker's DNS Discovery functionality.
@@ -85,7 +84,7 @@ public:
   static void DeinitLibrary();
   static void LibraryTick();
 
-  lwpa_error_t RegisterBroker(const BrokerDiscoveryAttributes &disc_attributes, const LwpaCid &local_cid,
+  lwpa_error_t RegisterBroker(const BrokerDiscoveryAttributes &disc_attributes, const LwpaUuid &local_cid,
                               const std::vector<LwpaIpAddr> &listen_addrs, uint16_t listen_port);
   void UnregisterBroker();
   void Standby();

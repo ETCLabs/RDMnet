@@ -31,20 +31,20 @@
 
 /*************************** Function definitions ****************************/
 
-bool create_rpt_client_entry(const LwpaCid *cid, const RdmUid *uid, rpt_client_type_t client_type,
-                             const LwpaCid *binding_cid, ClientEntryData *entry)
+bool create_rpt_client_entry(const LwpaUuid *cid, const RdmUid *uid, rpt_client_type_t client_type,
+                             const LwpaUuid *binding_cid, ClientEntryData *entry)
 {
   if (!cid || !uid || !entry)
     return false;
 
-  entry->client_protocol = E133_CLIENT_PROTOCOL_RPT;
+  entry->client_protocol = (client_protocol_t)E133_CLIENT_PROTOCOL_RPT;
   entry->client_cid = *cid;
   entry->data.rpt_data.client_uid = *uid;
   entry->data.rpt_data.client_type = client_type;
   if (binding_cid)
     entry->data.rpt_data.binding_cid = *binding_cid;
   else
-    memset(entry->data.rpt_data.binding_cid.data, 0, CID_BYTES);
+    memset(entry->data.rpt_data.binding_cid.data, 0, UUID_BYTES);
   entry->next = NULL;
   return true;
 }

@@ -32,9 +32,9 @@
 #ifndef _RDMNET_MESSAGE_H_
 #define _RDMNET_MESSAGE_H_
 
-#include "lwpa_int.h"
-#include "lwpa_rootlayerpdu.h"
-#include "lwpa_cid.h"
+#include "lwpa/int.h"
+#include "lwpa/root_layer_pdu.h"
+#include "lwpa/uuid.h"
 #include "rdmnet/common/broker_prot.h"
 #include "rdmnet/common/rpt_prot.h"
 #include "rdmnet/common/ept_prot.h"
@@ -51,11 +51,10 @@
 /*! A received RDMnet message. */
 typedef struct RdmnetMessage
 {
-  /*! The root layer vector. Compare to the vectors in
-   *  \ref lwpa_rootlayerpdu. */
+  /*! The root layer vector. Compare to the vectors in \ref lwpa_rootlayerpdu. */
   uint32_t vector;
   /*! The CID of the Component that sent this message. */
-  LwpaCid sender_cid;
+  LwpaUuid sender_cid;
   /*! The encapsulated message; use the helper macros to access it. */
   union
   {

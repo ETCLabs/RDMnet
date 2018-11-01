@@ -25,11 +25,11 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file broker/client.h
+/*! \file rdmnet/broker/client.h
  *
  */
-#ifndef _BROKER_CLIENT_H_
-#define _BROKER_CLIENT_H_
+#ifndef _RDMNET_BROKER_CLIENT_H_
+#define _RDMNET_BROKER_CLIENT_H_
 
 #include <set>
 #include <queue>
@@ -37,8 +37,8 @@
 #include <map>
 #include <cassert>
 #include <stdexcept>
-#include "lwpa_lock.h"
-#include "lwpa_inet.h"
+#include "lwpa/lock.h"
+#include "lwpa/inet.h"
 #include "rdm/message.h"
 #include "rdmnet/client.h"
 #include "rdmnet/common/message.h"
@@ -90,7 +90,7 @@ public:
   }
   virtual ~BrokerClient() { lwpa_rwlock_destroy(&lock_); }
 
-  virtual bool Push(const LwpaCid &sender_cid, const BrokerMessage &msg);
+  virtual bool Push(const LwpaUuid &sender_cid, const BrokerMessage &msg);
   virtual bool Send() { return false; }
 
   // Read/write lock functions. Prefer use of ClientReadGuard and
@@ -100,14 +100,14 @@ public:
   bool WriteLock() const { return lwpa_rwlock_writelock(&lock_, LWPA_WAIT_FOREVER); }
   void WriteUnlock() const { lwpa_rwlock_writeunlock(&lock_); }
 
-  LwpaCid cid;
+  LwpaUuid cid;
   client_protocol_t client_protocol;
   LwpaSockaddr addr;
   std::shared_ptr<ConnPollThread> poll_thread;
   bool marked_for_destruction;
 
 protected:
-  bool PushPostSizeCheck(const LwpaCid &sender_cid, const BrokerMessage &msg);
+  bool PushPostSizeCheck(const LwpaUuid &sender_cid, const BrokerMessage &msg);
 
   mutable lwpa_rwlock_t lock_;
   int conn_;
@@ -156,15 +156,15 @@ public:
   }
   virtual ~RPTClient() {}
 
-  virtual bool Push(int /*from_conn*/, const LwpaCid & /*sender_cid*/, const RptMessage & /*msg*/) { return false; }
-  virtual bool Push(const LwpaCid &sender_cid, const BrokerMessage &msg) override;
+  virtual bool Push(int /*from_conn*/, const LwpaUuid & /*sender_cid*/, const RptMessage & /*msg*/) { return false; }
+  virtual bool Push(const LwpaUuid &sender_cid, const BrokerMessage &msg) override;
 
   RdmUid uid;
   rpt_client_type_t client_type;
-  LwpaCid binding_cid;
+  LwpaUuid binding_cid;
 
 protected:
-  bool PushPostSizeCheck(const LwpaCid &sender_cid, const RptHeader &header, const RptStatusMsg &msg);
+  bool PushPostSizeCheck(const LwpaUuid &sender_cid, const RptHeader &header, const RptStatusMsg &msg);
 
   std::queue<MessageRef> status_msgs_;
 };
@@ -187,9 +187,9 @@ public:
   }
   virtual ~RPTController() {}
 
-  virtual bool Push(int from_conn, const LwpaCid &sender_cid, const RptMessage &msg) override;
-  virtual bool Push(const LwpaCid &sender_cid, const BrokerMessage &msg) override;
-  virtual bool Push(const LwpaCid &sender_cid, const RptHeader &header, const RptStatusMsg &msg);
+  virtual bool Push(int from_conn, const LwpaUuid &sender_cid, const RptMessage &msg) override;
+  virtual bool Push(const LwpaUuid &sender_cid, const BrokerMessage &msg) override;
+  virtual bool Push(const LwpaUuid &sender_cid, const RptHeader &header, const RptStatusMsg &msg);
   virtual bool Send() override;
 
   std::queue<MessageRef> rpt_msgs_;
@@ -210,8 +210,8 @@ public:
   }
   virtual ~RPTDevice() {}
 
-  virtual bool Push(int from_conn, const LwpaCid &sender_cid, const RptMessage &msg) override;
-  virtual bool Push(const LwpaCid &sender_cid, const BrokerMessage &msg) override;
+  virtual bool Push(int from_conn, const LwpaUuid &sender_cid, const RptMessage &msg) override;
+  virtual bool Push(const LwpaUuid &sender_cid, const BrokerMessage &msg) override;
   virtual bool Send() override;
 
 protected:
@@ -220,4 +220,4 @@ protected:
   std::map<int, std::queue<MessageRef>> rpt_msgs_;
 };
 
-#endif  // _BROKER_CLIENT_H_
+#endif  // _RDMNET_BROKER_CLIENT_H_

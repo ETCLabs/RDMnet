@@ -25,12 +25,12 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "lwpa_int.h"
+#include "lwpa/int.h"
 #include "rdmnet/broker/client.h"
 
 // The Broker's RDM responder.
-#ifndef _BROKER_RESPONDER_H_
-#define _BROKER_RESPONDER_H_
+#ifndef _RDMNET_BROKER_RESPONDER_H_
+#define _RDMNET_BROKER_RESPONDER_H_
 
 class BrokerResponder
 {
@@ -50,4 +50,4 @@ class BrokerResponder
   void SendNack(int conn, const RPTMessageRef &msg, uint16_t pid, uint16_t reason, bool set_response);
 };
 
-#endif  // _BROKER_RESPONDER_H_
+#endif  // _RDMNET_BROKER_RESPONDER_H_

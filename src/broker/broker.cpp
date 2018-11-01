@@ -30,8 +30,8 @@
 #include "rdmnet/broker.h"
 
 #include <cstring>
-#include "lwpa_pack.h"
-#include "lwpa_socket.h"
+#include "lwpa/pack.h"
+#include "lwpa/socket.h"
 #include "rdmnet/version.h"
 #include "rdmnet/common/connection.h"
 #include "rdmnet/common/discovery.h"
@@ -751,8 +751,8 @@ void Broker::SendStatus(RPTController *controller, const RptHeader &header, rpt_
   {
     if (log_->CanLog(LWPA_LOG_INFO))
     {
-      char cid_str[CID_STRING_BYTES];
-      cid_to_string(cid_str, &controller->cid);
+      char cid_str[UUID_STRING_BYTES];
+      uuid_to_string(cid_str, &controller->cid);
       log_->Log(LWPA_LOG_WARNING, "Sending RPT Status code %d to Controller %s", status_code, cid_str);
     }
   }
@@ -1327,9 +1327,4 @@ void Broker::OtherBrokerLost(const std::string &service_name)
     StartBrokerServices();
     disc_.Resume();
   }
-}
-
-BrokerLog *Broker::GetLog()
-{
-  return log_;
 }
