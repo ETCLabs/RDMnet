@@ -50,7 +50,6 @@ bool g_ShuttingDown = false;
 
 lwpa_thread_t tick_thread_;
 
-<<<<<<< HEAD
 #define NUM_SUPPORTED_PIDS 14
 static const uint16_t kSupportedPIDList[NUM_SUPPORTED_PIDS] = {
   E120_IDENTIFY_DEVICE,           E120_SUPPORTED_PARAMETERS,   E120_DEVICE_INFO,      E120_MANUFACTURER_LABEL,
@@ -89,10 +88,7 @@ static const uint8_t kDeviceInfo[] = {
 #define MANUFACTURER_LABEL "ETC"
 #define DEVICE_MODEL_DESCRIPTION "Prototype RDMnet Controller"
 
-static void LogCallback(void *context, const char * /*syslog_str*/, const char *human_str)
-=======
 static void LogCallback(void *context, const char * /*syslog_str*/, const char *human_str, const char * /*raw_str*/)
->>>>>>> e7736bdc6e0177ca2513ce78337bd0373d1fddd5
 {
   MyLog *log = static_cast<MyLog *>(context);
   if (log)
@@ -1264,8 +1260,10 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   qRegisterMetaType<std::vector<ClientEntryData>>("std::vector<ClientEntryData>");
   qRegisterMetaType<std::vector<std::pair<uint16_t, uint8_t>>>("std::vector<std::pair<uint16_t, uint8_t>>");
   qRegisterMetaType<std::vector<LwpaUid>>("std::vector<LwpaUid>");
+  qRegisterMetaType<QVector<int>>("QVector<int>");
+  qRegisterMetaType<uint16_t>("uint16_t");
 
-  connect(model, SIGNAL(brokerDisconnection(int)), model, SLOT(processBrokerDisconnection(int)), Qt::AutoConnection);
+  connect(model, SIGNAL(brokerDisconnection(uint16_t)), model, SLOT(processBrokerDisconnection(uint16_t)), Qt::AutoConnection);
   connect(model, SIGNAL(addRDMnetClients(BrokerItem *, const std::vector<ClientEntryData> &)), model,
           SLOT(processAddRDMnetClients(BrokerItem *, const std::vector<ClientEntryData> &)), Qt::AutoConnection);
   connect(model, SIGNAL(removeRDMnetClients(BrokerItem *, const std::vector<ClientEntryData> &)), model,
@@ -3281,21 +3279,24 @@ void RDMnetNetworkModel::brokerStaticConfigIPv4(const char *addrString, uint16_t
 
   if (client != NULL)
   {
-    QString propertyName = getScopeSubPropertyFullName(client, E133_BROKER_STATIC_CONFIG_IPV4, 0, scopeString);
+    if (client->getScopeSlot(scopeString) != 0)
+    {
+      QString propertyName = getScopeSubPropertyFullName(client, E133_BROKER_STATIC_CONFIG_IPV4, 0, scopeString);
 
-    if ((strlen(addrString) == 0) && (port == 0))
-    {
-      // Empty data, empty property
-      emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV4, propertyName, QString(""));
-    }
-    else
-    {
+      if ((strlen(addrString) == 0) && (port == 0))
+      {
+        // Empty data, empty property
+        emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV4, propertyName, QString(""));
+      }
+      else
+      {
+        emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV4, propertyName,
+          QString("%0:%1").arg(addrString).arg(port));
+      }
+
       emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV4, propertyName,
-                           QString("%0:%1").arg(addrString).arg(port));
+        tr(scopeString), RDMnetNetworkItem::ScopeDataRole);
     }
-
-    emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV4, propertyName,
-                         tr(scopeString), RDMnetNetworkItem::ScopeDataRole);
   }
 }
 
@@ -3306,21 +3307,24 @@ void RDMnetNetworkModel::brokerStaticConfigIPv6(const char *addrString, uint16_t
 
   if (client != NULL)
   {
-    QString propertyName = getScopeSubPropertyFullName(client, E133_BROKER_STATIC_CONFIG_IPV6, 0, scopeString);
+    if (client->getScopeSlot(scopeString) != 0)
+    {
+      QString propertyName = getScopeSubPropertyFullName(client, E133_BROKER_STATIC_CONFIG_IPV6, 0, scopeString);
 
-    if ((strlen(addrString) == 0) && (port == 0))
-    {
-      // Empty data, empty property
-      emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV6, propertyName, QString(""));
-    }
-    else
-    {
+      if ((strlen(addrString) == 0) && (port == 0))
+      {
+        // Empty data, empty property
+        emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV6, propertyName, QString(""));
+      }
+      else
+      {
+        emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV6, propertyName,
+          QString("[%0]:%1").arg(addrString).arg(port));
+      }
+
       emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV6, propertyName,
-                           QString("[%0]:%1").arg(addrString).arg(port));
+        tr(scopeString), RDMnetNetworkItem::ScopeDataRole);
     }
-
-    emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV6, propertyName,
-                         tr(scopeString), RDMnetNetworkItem::ScopeDataRole);
   }
 }
 
@@ -3342,56 +3346,59 @@ void RDMnetNetworkModel::tcpCommsStatus(const char *scopeString, const char *v4A
 
   if (client != NULL)
   {
-    QVariant callbackObjectVariant;
-    const char *callbackSlotString = SLOT(processPropertyButtonClick(const QPersistentModelIndex &));
-    QString callbackSlotQString(callbackSlotString);
-
-    QString propertyName0 = getScopeSubPropertyFullName(client, E133_TCP_COMMS_STATUS, 0, scopeString);
-    QString propertyName1 = getScopeSubPropertyFullName(client, E133_TCP_COMMS_STATUS, 1, scopeString);
-    QString propertyName2 = getScopeSubPropertyFullName(client, E133_TCP_COMMS_STATUS, 2, scopeString);
-
-    size_t v4AddrStrLen = strlen(v4AddrString);
-    size_t v6AddrStrLen = strlen(v6AddrString);
-
-    callbackObjectVariant.setValue(this);
-
-    if ((v4AddrStrLen == 0) && (v6AddrStrLen == 0))
+    if (client->getScopeSlot(scopeString) != 0)
     {
-      emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName0, QString(""));
+      QVariant callbackObjectVariant;
+      const char *callbackSlotString = SLOT(processPropertyButtonClick(const QPersistentModelIndex &));
+      QString callbackSlotQString(callbackSlotString);
+
+      QString propertyName0 = getScopeSubPropertyFullName(client, E133_TCP_COMMS_STATUS, 0, scopeString);
+      QString propertyName1 = getScopeSubPropertyFullName(client, E133_TCP_COMMS_STATUS, 1, scopeString);
+      QString propertyName2 = getScopeSubPropertyFullName(client, E133_TCP_COMMS_STATUS, 2, scopeString);
+
+      size_t v4AddrStrLen = strlen(v4AddrString);
+      size_t v6AddrStrLen = strlen(v6AddrString);
+
+      callbackObjectVariant.setValue(this);
+
+      if ((v4AddrStrLen == 0) && (v6AddrStrLen == 0))
+      {
+        emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName0, QString(""));
+      }
+      else if (v4AddrStrLen == 0) // use v6
+      {
+        emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName0,
+          QString("[%0]:%1").arg(v6AddrString).arg(port));
+      }
+      else // use v4
+      {
+        emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName0,
+          QString("%0:%1").arg(v4AddrString).arg(port));
+      }
+
+      emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName1, unhealthyTCPEvents);
+
+      emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2, tr("Reset"));
+
+      emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2,
+        tr(scopeString), RDMnetNetworkItem::ScopeDataRole);
+
+      emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2,
+        callbackObjectVariant, RDMnetNetworkItem::CallbackObjectRole);
+
+      emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2,
+        callbackSlotQString, RDMnetNetworkItem::CallbackSlotRole);
+
+      emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2,
+        resp->src_uid.manu, RDMnetNetworkItem::ClientManuRole);
+
+      emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2,
+        resp->src_uid.id, RDMnetNetworkItem::ClientDevRole);
+
+      // This needs to be the last call to setPropertyData so that the button can be enabled if needed.
+      emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2,
+        EditorWidgetType::kButton, RDMnetNetworkItem::EditorWidgetTypeRole);
     }
-    else if (v4AddrStrLen == 0) // use v6
-    {
-      emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName0,
-                           QString("[%0]:%1").arg(v6AddrString).arg(port));
-    }
-    else // use v4
-    {
-      emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName0,
-                                   QString("%0:%1").arg(v4AddrString).arg(port));
-    }
-
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName1, unhealthyTCPEvents);
-
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2, tr("Reset"));
-
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2,
-                         tr(scopeString), RDMnetNetworkItem::ScopeDataRole);
-
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2,
-                         callbackObjectVariant, RDMnetNetworkItem::CallbackObjectRole);
-
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2,
-                         callbackSlotQString, RDMnetNetworkItem::CallbackSlotRole);
-
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2,
-                         resp->src_uid.manu, RDMnetNetworkItem::ClientManuRole);
-
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2,
-                         resp->src_uid.id, RDMnetNetworkItem::ClientDevRole);
-
-    // This needs to be the last call to setPropertyData so that the button can be enabled if needed.
-    emit setPropertyData(client, E133_TCP_COMMS_STATUS, propertyName2,
-                         EditorWidgetType::kButton, RDMnetNetworkItem::EditorWidgetTypeRole);
   }
 }
 

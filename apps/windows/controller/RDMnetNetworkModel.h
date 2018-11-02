@@ -383,12 +383,12 @@ protected:
   void checkPersonalityDescriptions(RDMnetNetworkItem *device, uint8_t numberOfPersonalities, const RdmResponse *resp);
   QVariant getPropertyData(RDMnetNetworkItem *parent, unsigned short pid, int role);
 
-  PropertyItem *createPropertyItem(RDMnetNetworkItem *parent, const QString &fullName);
+  class PropertyItem *createPropertyItem(RDMnetNetworkItem *parent, const QString &fullName);
   QString getShortPropertyName(const QString &fullPropertyName);
   QString getHighestGroupName(const QString &pathName);
   QString getPathSubset(const QString &fullPath, int first, int last = -1);
-  PropertyItem *getGroupingItem(RDMnetNetworkItem *parent, const QString & groupName);
-  PropertyItem *createGroupingItem(RDMnetNetworkItem *parent, const QString & groupName);
+  class PropertyItem *getGroupingItem(RDMnetNetworkItem *parent, const QString & groupName);
+  class PropertyItem *createGroupingItem(RDMnetNetworkItem *parent, const QString & groupName);
   QString getChildPathName(const QString &superPathName);
   QString getScopeSubPropertyFullName(RDMnetClientItem *client, uint16_t pid, int32_t index, const char *scope);
 
