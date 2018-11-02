@@ -45,7 +45,8 @@ RptHeader SwapHeaderData(const RptHeader &source)
   return swapped_header;
 }
 
-static void BrokerLogCallback(void *context, const char * /*syslog_str*/, const char *human_str)
+static void BrokerLogCallback(void *context, const char * /*syslog_str*/, const char *human_str,
+                              const char * /*raw_str*/)
 {
   assert(human_str);
   BrokerLog *bl = static_cast<BrokerLog *>(context);
@@ -85,7 +86,6 @@ void BrokerLog::InitializeLogParams(int log_mask)
   log_params_.action = kLwpaLogCreateHumanReadableLog;
   log_params_.log_fn = BrokerLogCallback;
   log_params_.log_mask = log_mask;
-  log_params_.time_method = kLwpaLogUseTimeFn;
   log_params_.time_fn = BrokerTimeCallback;
   log_params_.context = this;
 
