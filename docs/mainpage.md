@@ -48,17 +48,17 @@ For an overview of how RDMnet works, check out \ref how_it_works.
 
 RDMnet is currently ported for the following platforms and toolchains:
 * Windows
-  + Visual Studio 2015 (x86 and x86_64)
+  + Microsoft Visual Studio (x86 and x86_64)
 
 ### Building RDMnet for Your Platform
 
 Prerequisites:
 
-* **For all applications: Microsoft Visual Studio 2015**. Currently the only
-  toolchain for which RDMnet is ported. Visual Studio 2015 Community Edition is
-  free, without restriction, for open-source projects. It is available
-  [here](https://visualstudio.microsoft.com/vs/older-downloads/). Make sure to
-  install Visual C++ as part of the Visual Studio 2015 installation.
+* **For all applications: Microsoft Visual Studio**. Currently the only
+  toolchain for which lwpa (and thus RDMnet) is ported. Visual Studio 2017
+  Community Edition is free, without restriction, for open-source projects. It
+  is available [here](https://visualstudio.microsoft.com/downloads/). Make sure
+  to install Visual C++ as part of the Visual Studio installation.
 
 * **For controller, broker and device: Bonjour SDK for Windows v3.0**. Apple's
   Bonjour service implements RDMnet's discovery mechanism (mDNS/DNS-SD). Note
@@ -67,7 +67,7 @@ Prerequisites:
   Installation of the Bonjour SDK will set a system environment variable which
   will enable the RDMnet projects to find the proper headers and libraries.
 
-* **For controller: Qt 5.9.1 open-source**.  Qt installers are available
+* **For controller: Qt (>= 5.9.7) open-source**.  Qt installers are available
   [here](https://www.qt.io/download).
 
 Steps to build the Windows RDMnet prototypes:
@@ -81,32 +81,36 @@ Steps to build the Windows RDMnet prototypes:
    ```
    git clone https://github.com/ETCLabs/lwpa
    ```
+3. Clone (or download and extract) the RDM repository at the same level as the
+   RDMnet repository:
+   ```
+   git clone https://github.com/ETCLabs/RDM
+   ```
 
 #### To build the Device:
 
-3. Open the Device solution (`RDMnet/apps/windows/device/msvc2015/device.sln`)
-4. Build the solution in your configuration of choice (Build -> Build Solution)
+4. Open the Device solution (`RDMnet/apps/windows/device/msvc2015/device.sln`)
+5. Build the solution in your configuration of choice (Build -> Build Solution)
 
 #### To build the %Broker:
 
-3. Open the %Broker solution (`RDMnet/apps/windows/broker/msvc2015/broker.sln`)
-4. Build the solution in your configuration of choice (Build -> Build Solution)
+4. Open the %Broker solution (`RDMnet/apps/windows/broker/msvc2015/broker.sln`)
+5. Build the solution in your configuration of choice (Build -> Build Solution)
 
 #### To build the LLRP Manager:
 
-3. Open the LLRP Manager solution (`RDMnet/apps/windows/llrp_manager/msvc2015/manager.sln`)
-4. Build the solution in your configuration of choice (Build -> Build Solution)
+4. Open the LLRP Manager solution (`RDMnet/apps/windows/llrp_manager/msvc2015/manager.sln`)
+5. Build the solution in your configuration of choice (Build -> Build Solution)
 
 #### To build the Controller:
 
-(**Note that only the 32-bit version of the Controller is currently buildable**)
-
 3. To satisfy the Controller's Qt dependency, there are two options:
    + Set a system environment variable called QTDIR which points at the Qt
-     5.9.1 VS2015 32-bit directory (i.e. .../Qt/5.9.1/msvc2015)
-   + Install the Qt extension for Visual Studio 2015, and use it to set the
-     Qt project settings for the controller project (typically stored locally
-     in a .user file).
+     installation directory (i.e. .../Qt/5.9.7/msvc2017_64)
+   + Provide the Qt installation directory as an argument to CMake:
+     ```
+     cmake -DQTDIR=[...]/Qt/5.9.7/msvc2017_64
+     ```
 4. Open the Controller solution (`RDMnet/apps/windows/controller/msvc2015/controller.sln`)
 5. Build the solution in your configuration of choice (Build -> Build Solution)
 6. To run or distribute the executable outside of Visual Studio, run the
@@ -115,19 +119,6 @@ Steps to build the Windows RDMnet prototypes:
    ```
    %QTDIR%\bin\windeployqt RDMnetControllerGUI.exe
    ```
-
-#### build_all_apps.bat
-
-The root directory of the RDMnet repository contains a Windows batch script
-called `build_all_apps.bat` which automatically builds the release versions of
-all of the above apps. Since it builds the Controller, it also needs the Qt
-location as a variable called QTDIR. If you chose not to set an environment
-variable as part of the Controller section above, it's simple to set one
-temporarily before running the script:
-```
-SET QTDIR=[path\to\qt]\Qt\5.9.1\msvc2015
-build_all_apps.bat
-```
 
 ## Dependencies
 

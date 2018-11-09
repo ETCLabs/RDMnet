@@ -1,5 +1,10 @@
 
-option(BUILD_CONTROLLER_EXAMPLE "Build the RDMnet Controller GUI example" OFF)
-if(BUILD_CONTROLLER_EXAMPLE)
+if(RDMNET_BUILD_EXAMPLES)
   add_subdirectory(controller)
 endif()
+
+# if(RDMNET_BUILD_EXAMPLES OR RDMNET_BUILD_CONSOLE_EXAMPLES)
+#   add_subdirectory(broker)
+#   add_subdirectory(device)
+#   add_subdirectory(llrp_manager)
+# endif()

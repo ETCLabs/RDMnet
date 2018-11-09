@@ -31,9 +31,9 @@
 #include <map>
 #include <memory>
 #include <QStandardItemModel>
-#include "lwpa_log.h"
-#include "lwpa_thread.h"
-#include "lwpa_cid.h"
+#include "lwpa/log.h"
+#include "lwpa/thread.h"
+#include "lwpa/uuid.h"
 #include "rdm/uid.h"
 #include "rdm/controller.h"
 #include "rdmnet/common/connection.h"
@@ -80,7 +80,7 @@ protected:
 class BrokerConnection
 {
 private:
-  static LwpaCid local_cid_;
+  static LwpaUuid local_cid_;
   static RdmUid local_uid_;
 
   static MyLog *log_;
@@ -102,8 +102,8 @@ private:
   bool connect_in_progress_;
 
 public:
-  static bool initializeStaticConnectionInfo(const LwpaCid &cid, const RdmUid &uid, MyLog *log);
-  static LwpaCid getLocalCID() { return local_cid_; }
+  static bool initializeStaticConnectionInfo(const LwpaUuid &cid, const RdmUid &uid, MyLog *log);
+  static LwpaUuid getLocalCID() { return local_cid_; }
   static RdmUid getLocalUID() { return local_uid_; }
 
   explicit BrokerConnection(std::string scope);
@@ -286,11 +286,9 @@ protected:
   // COMPONENT_SCOPE
   void componentScope(uint16_t scopeSlot, const char *scopeString, RdmResponse *resp);
   // BROKER_STATIC_CONFIG_IPV4
-  void brokerStaticConfigIPv4(const char *addrString, uint16_t port, const char *scopeString,
-                              RdmResponse *resp);
+  void brokerStaticConfigIPv4(const char *addrString, uint16_t port, const char *scopeString, RdmResponse *resp);
   // BROKER_STATIC_CONFIG_IPV6
-  void brokerStaticConfigIPv6(const char *addrString, uint16_t port, const char *scopeString,
-                              RdmResponse *resp);
+  void brokerStaticConfigIPv6(const char *addrString, uint16_t port, const char *scopeString, RdmResponse *resp);
   // SEARCH_DOMAIN
   void searchDomain(const char *domainNameString, RdmResponse *resp);
   // TCP_COMMS_STATUS
@@ -303,7 +301,8 @@ protected:
   void initializeRPTDeviceProperties(RDMnetClientItem *parent, uint16_t manuID, uint32_t deviceID);
   void sendGetCommand(uint16_t pid, uint16_t manu, uint32_t dev);
   uint8_t *packIPAddressItem(const QVariant &value, lwpa_iptype_t addrType, uint8_t *packPtr);
-  uint8_t *packStaticConfigItem(const BrokerItem *broker, const QVariant &value, lwpa_iptype_t addrType, uint8_t *packPtr);
+  uint8_t *packStaticConfigItem(const BrokerItem *broker, const QVariant &value, lwpa_iptype_t addrType,
+                                uint8_t *packPtr);
 
   // PID handling
   bool pidSupportedByGUI(uint16_t pid, bool checkSupportGet);
@@ -317,8 +316,8 @@ protected:
   PropertyItem *createPropertyItem(RDMnetNetworkItem *parent, const QString &fullName);
   QString getShortPropertyName(const QString &fullPropertyName);
   QString getHighestGroupName(const QString &pathName);
-  PropertyItem *getGroupingItem(RDMnetNetworkItem *parent, const QString & groupName);
-  PropertyItem *createGroupingItem(RDMnetNetworkItem *parent, const QString & groupName);
+  PropertyItem *getGroupingItem(RDMnetNetworkItem *parent, const QString &groupName);
+  PropertyItem *createGroupingItem(RDMnetNetworkItem *parent, const QString &groupName);
   QString getChildPathName(const QString &superPathName);
 
 private:

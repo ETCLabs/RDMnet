@@ -28,7 +28,7 @@
 #include "BrokerStaticAddGUI.h"
 
 #include <QMessageBox>
-#include "lwpa_socket.h"
+#include "lwpa/socket.h"
 
 BrokerStaticAddGUI::BrokerStaticAddGUI(QWidget *parent, IHandlesBrokerStaticAdd *handler) : QDialog(parent)
 {

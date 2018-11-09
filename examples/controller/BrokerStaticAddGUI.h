@@ -30,7 +30,7 @@
 #include <QDialog>
 #include "ui_BrokerStaticAddGUI.h"
 
-#include "lwpa_inet.h"
+#include "lwpa/inet.h"
 
 class IHandlesBrokerStaticAdd
 {
