@@ -36,9 +36,9 @@
 #define IFLIST_H
 
 #include <vector>
-#include "lwpa_log.h"
-#include "lwpa_inet.h"
-#include "brokerlog.h"
+#include "lwpa/log.h"
+#include "lwpa/inet.h"
+#include "broker_log.h"
 
 namespace IFList
 {

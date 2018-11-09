@@ -32,7 +32,7 @@
 //
 //////////////////////////////////////////////////////////////////
 #include <time.h>
-#include "ServiceShell.h"
+#include "service_shell.h"
 /*-----------------------------------------------------------------
   Function: GetLastErrorMessage
 

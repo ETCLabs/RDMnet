@@ -25,10 +25,10 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "brokerlog.h"
+#include "broker_log.h"
 #include <iostream>
 #include <cstdarg>
-#include "serviceshell.h"
+#include "service_shell.h"
 
 WindowsBrokerLog::WindowsBrokerLog(bool debug, const std::string &file_name) : BrokerLog(), debug_(debug), utcoffset_(0)
 {

@@ -40,7 +40,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <tchar.h>
-#include "ServiceShell.h"
+#include "service_shell.h"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction

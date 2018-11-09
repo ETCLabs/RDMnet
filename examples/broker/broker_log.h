@@ -34,10 +34,10 @@
 #include <fstream>
 #include <string>
 #include <queue>
-#include "lwpa_log.h"
-#include "lwpa_thread.h"
-#include "lwpa_lock.h"
-#include "broker/util.h"
+#include "lwpa/log.h"
+#include "lwpa/thread.h"
+#include "lwpa/lock.h"
+#include "rdmnet/broker/util.h"
 
 class WindowsBrokerLog : public BrokerLog
 {

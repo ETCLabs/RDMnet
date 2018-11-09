@@ -37,14 +37,14 @@
 #include <wchar.h>
 #include <string>
 #include <vector>
-#include "lwpa_log.h"
-#include "lwpa_pack.h"
-#include "lwpa_socket.h"
-#include "serviceshell.h"
-#include "iflist.h"
+#include "lwpa/log.h"
+#include "lwpa/pack.h"
+#include "lwpa/socket.h"
 #include "rdmnet/version.h"
-#include "brokerlog.h"
-#include "broker/broker.h"
+#include "rdmnet/broker.h"
+#include "service_shell.h"
+#include "iflist.h"
+#include "broker_log.h"
 
 static bool debug = false;
 
@@ -363,7 +363,7 @@ DWORD WINAPI ServiceThread(LPVOID /*param*/)
     // instances on the same machine
     std::string cidstr("ETC E133 BROKER for scope: ");
     cidstr += broker_settings.disc_attributes.scope;
-    generate_cid(&broker_settings.cid, cidstr.c_str(), interfaces.front().mac, 1);
+    generate_v3_uuid(&broker_settings.cid, cidstr.c_str(), interfaces.front().mac, 1);
     broker_settings.uid = {0x6574, upack_32b(interfaces.front().mac + 2)};
   }
 
