@@ -36,14 +36,14 @@
 #include <map>
 
 #include "rdmnet/llrp.h"
-#include "lwpa_netint.h"
-#include "lwpa_socket.h"
-#include "lwpa_log.h"
-#include "lwpa_pack.h"
-#include "estardm.h"
-#include "estardmnet.h"
-#include "lwpa_timer.h"
-#include "rdmnet/rdmcontroller.h"
+#include "lwpa/netint.h"
+#include "lwpa/socket.h"
+#include "lwpa/log.h"
+#include "lwpa/pack.h"
+#include "lwpa/timer.h"
+#include "rdm/defs.h"
+#include "rdm/controller.h"
+#include "rdmnet/defs.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4996)
@@ -58,7 +58,7 @@ struct LLRPNetint
 class LLRPManager
 {
 public:
-  LLRPManager(const LwpaCid &my_cid, const LwpaUid &my_uid);
+  LLRPManager(const LwpaUuid &my_cid, const RdmUid &my_uid);
   virtual ~LLRPManager();
 
   void PrintCommandList();
@@ -77,21 +77,21 @@ public:
   void SetComponentScope(int target_handle, int scope_slot, const std::string &scope_utf8);
 
 protected:
-  bool SendRDMAndGetResponse(llrp_socket_t sock, const LwpaCid &target_cid, const RdmCommand &cmd_data,
+  bool SendRDMAndGetResponse(llrp_socket_t sock, const LwpaUuid &target_cid, const RdmCommand &cmd_data,
                              RdmResponse &resp_data);
   static const char *LLRPComponentTypeToString(llrp_component_t type);
 
 private:
   std::map<int, LLRPNetint> llrp_sockets_;
-  LwpaCid cid_;
-  LwpaUid uid_;
+  LwpaUuid cid_;
+  RdmUid uid_;
   uint8_t rdm_trans_num_;
 
   std::map<int, LlrpTarget> targets_;
   int active_interface_;
 };
 
-LLRPManager::LLRPManager(const LwpaCid &my_cid, const LwpaUid &my_uid)
+LLRPManager::LLRPManager(const LwpaUuid &my_cid, const RdmUid &my_uid)
     : cid_(my_cid), uid_(my_uid), rdm_trans_num_(0), active_interface_(-1)
 {
   llrp_init();
@@ -362,7 +362,7 @@ void LLRPManager::Discover(int netint_handle)
     }
     else if (llrp_data_is_disc_target(&poll.data))
     {
-      LwpaUid target_uid = llrp_data_disc_target(&poll.data)->target_uid;
+      RdmUid target_uid = llrp_data_disc_target(&poll.data)->target_uid;
 
       printf("Adding LLRP Target, UID %04x:%08x, with handle %d\n", target_uid.manu, target_uid.id, target_handle);
 
@@ -382,8 +382,8 @@ void LLRPManager::PrintTargets()
   printf("Handle %-13s %-36s %-15s\n", "UID", "CID", "Type");
   for (const auto &target : targets_)
   {
-    char cid_str[CID_STRING_BYTES];
-    cid_to_string(cid_str, &target.second.target_cid);
+    char cid_str[UUID_STRING_BYTES];
+    uuid_to_string(cid_str, &target.second.target_cid);
     printf("%-6d %04x:%08x %s %s\n", target.first, target.second.target_uid.manu, target.second.target_uid.id, cid_str,
            LLRPComponentTypeToString(target.second.component_type));
   }
@@ -683,7 +683,7 @@ void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std
   }
 }
 
-bool LLRPManager::SendRDMAndGetResponse(llrp_socket_t sock, const LwpaCid &target_cid, const RdmCommand &cmd_data,
+bool LLRPManager::SendRDMAndGetResponse(llrp_socket_t sock, const LwpaUuid &target_cid, const RdmCommand &cmd_data,
                                         RdmResponse &resp_data)
 {
   RdmBuffer cmd;
@@ -764,14 +764,14 @@ const char *LLRPManager::LLRPComponentTypeToString(llrp_component_t type)
   }
 }
 
-int wmain(int /*argc*/, wchar_t * /*argv*/[])
+int wmain(int /*argc*/, wchar_t * /*argv*/ [])
 {
-  LwpaCid manager_cid;
-  LwpaUid manager_uid;
+  LwpaUuid manager_cid;
+  RdmUid manager_uid;
 
   UUID uuid;
   UuidCreate(&uuid);
-  memcpy(manager_cid.data, &uuid, CID_BYTES);
+  memcpy(manager_cid.data, &uuid, UUID_BYTES);
 
   manager_uid.manu = 0xe574;
   /* Slight hack - using the last 32 bits of the CID as the UID. */
