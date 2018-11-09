@@ -25,53 +25,22 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#ifndef _DEFAULTRESPONDER_H_
-#define _DEFAULTRESPONDER_H_
+#ifndef _DEVICE_LOG_H_
+#define _DEVICE_LOG_H_
 
-#include "lwpa_int.h"
-#include "lwpa_bool.h"
-#include "estardmnet.h"
-#include "lwpa_inet.h"
-#include "rdmnet/rdmtypes.h"
-
-#define MAX_RESPONSES_IN_ACK_OVERFLOW 2
-
-typedef struct RdmParamData
-{
-  uint8_t datalen;
-  uint8_t data[RDM_MAX_PDL];
-} RdmParamData;
-
-typedef RdmParamData param_data_list_t[MAX_RESPONSES_IN_ACK_OVERFLOW];
-
-typedef struct RdmnetConnectParams
-{
-  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
-  char search_domain[E133_DOMAIN_STRING_PADDED_LENGTH];
-  LwpaSockaddr broker_static_addr;
-} RdmnetConnectParams;
+#include "lwpa/bool.h"
+#include "lwpa/log.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void default_responder_init(const LwpaSockaddr *static_broker_addr, const char *scope);
-void default_responder_deinit();
-
-/* Interface between the E1.33 Device logic and the default responder */
-void default_responder_get_e133_params(RdmnetConnectParams *params);
-void default_responder_incr_unhealthy_count();
-bool default_responder_supports_pid(uint16_t pid);
-void default_responder_set_tcp_status(LwpaSockaddr *broker_addr);
-
-/* Generic PID get and set functions */
-bool default_responder_set(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                           bool *requires_reconnect);
-bool default_responder_get(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len,
-                           param_data_list_t resp_data_list, size_t *num_responses, uint16_t *nack_reason);
+void device_log_init(const char *file_name);
+const LwpaLogParams *device_get_log_params();
+void device_log_deinit();
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _DEFAULTRESPONDER_H_ */
+#endif /* _DEVICE_LOG_H_ */

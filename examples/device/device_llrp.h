@@ -27,15 +27,15 @@
 #ifndef _DEVICE_LLRP_H_
 #define _DEVICE_LLRP_H_
 
-#include "lwpa_cid.h"
-#include "lwpa_uid.h"
-#include "lwpa_log.h"
+#include "lwpa/uuid.h"
+#include "rdm/uid.h"
+#include "lwpa/log.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void device_llrp_init(const LwpaCid *my_cid, const LwpaUid *my_uid, const LwpaLogParams *lparams);
+void device_llrp_init(const LwpaUuid *my_cid, const RdmUid *my_uid, const LwpaLogParams *lparams);
 void device_llrp_deinit();
 void device_llrp_set_connected(bool connected);
 

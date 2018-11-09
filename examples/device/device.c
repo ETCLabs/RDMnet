@@ -26,18 +26,18 @@
 ******************************************************************************/
 
 #include "device.h"
-#include "lwpa_int.h"
-#include "lwpa_pack.h"
-#include "lwpa_uid.h"
-#include "estardmnet.h"
-#include "estardm.h"
-#include "rdmnet/rptprot.h"
-#include "rdmnet/rdmresponder.h"
-#include "rdmnet/rdmcontroller.h"
-#include "rdmnet/discovery.h"
-#include "rdmnet/connection.h"
-#include "defaultresponder.h"
-#include "devicellrp.h"
+#include "lwpa/int.h"
+#include "lwpa/pack.h"
+#include "rdm/uid.h"
+#include "rdm/defs.h"
+#include "rdm/responder.h"
+#include "rdm/controller.h"
+#include "rdmnet/defs.h"
+#include "rdmnet/common/rpt_prot.h"
+#include "rdmnet/common/discovery.h"
+#include "rdmnet/common/connection.h"
+#include "default_responder.h"
+#include "device_llrp.h"
 
 /***************************** Private macros ********************************/
 
@@ -63,8 +63,8 @@ static struct device_state
 {
   bool configuration_change;
 
-  LwpaCid my_cid;
-  LwpaUid my_uid;
+  LwpaUuid my_cid;
+  RdmUid my_uid;
 
   int broker_conn;
   bool connected;

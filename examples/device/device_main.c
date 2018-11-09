@@ -32,13 +32,13 @@
 #include <stdbool.h>
 #include <wchar.h>
 #include <string.h>
-#include "lwpa_pack.h"
-#include "lwpa_cid.h"
-#include "lwpa_socket.h"
+#include "lwpa/pack.h"
+#include "lwpa/uuid.h"
+#include "lwpa/socket.h"
 #include "rdmnet/version.h"
 #include "device.h"
-#include "devicelog.h"
-#include "devicellrp.h"
+#include "device_log.h"
+#include "device_llrp.h"
 
 /* DEBUG */
 #include <stdio.h>
@@ -185,7 +185,7 @@ int wmain(int argc, wchar_t *argv[])
    * the fly. */
   // generate_cid(&my_cid, "ETC Prototype RDMnet Device", macaddr, 1);
   UuidCreate(&uuid);
-  memcpy(settings.cid.data, &uuid, CID_BYTES);
+  memcpy(settings.cid.data, &uuid, UUID_BYTES);
 
   settings.uid.manu = 0xe574;
   /* Slight hack - using the last 32 bits of the CID as the UID. */

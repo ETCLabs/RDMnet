@@ -28,7 +28,9 @@ set(CMAKE_AUTOUIC ON)
 
 ############################ RDMnet Controller GUI ############################ 
 
-add_executable(RDMnetControllerGUI
+set(CONTROLLER_TARGET RDMnetExampleController)
+
+add_executable(${CONTROLLER_TARGET}
   AboutGUI.cpp
   AboutGUI.h
   AboutGUI.ui
@@ -69,10 +71,10 @@ add_executable(RDMnetControllerGUI
   SimpleNetworkProxyModel.cpp
   SimpleNetworkProxyModel.h
 )
-target_link_libraries(RDMnetControllerGUI PRIVATE Qt5::Widgets RDMnet)
+target_link_libraries(${CONTROLLER_TARGET} PRIVATE Qt5::Widgets RDMnet)
 if(WIN32)
-  target_include_directories(RDMnetControllerGUI PRIVATE windows)
-  target_link_libraries(RDMnetControllerGUI PRIVATE rpcrt4.lib)
+  target_include_directories(${CONTROLLER_TARGET} PRIVATE windows)
+  target_link_libraries(${CONTROLLER_TARGET} PRIVATE rpcrt4)
 endif()
 
 ############################## Allow Qt Debugging #############################
@@ -81,8 +83,8 @@ endif()
 # DLLs.
 if(MSVC)
   configure_file(
-    ${CMAKE_CURRENT_LIST_DIR}/../../tools/cmake/RDMnetControllerGUI.vcxproj.user.in
-    ${CMAKE_CURRENT_BINARY_DIR}/RDMnetControllerGUI.vcxproj.user
+    ${CMAKE_CURRENT_LIST_DIR}/../../tools/cmake/ExampleController.vcxproj.user.in
+    ${CMAKE_CURRENT_BINARY_DIR}/${CONTROLLER_TARGET}.vcxproj.user
     @ONLY
   )
 endif()

@@ -28,17 +28,17 @@
 #ifndef _DEVICE_H_
 #define _DEVICE_H_
 
-#include "lwpa_int.h"
-#include "lwpa_log.h"
-#include "estardmnet.h"
-#include "rdmnet/message.h"
-#include "rdmnet/rdmtypes.h"
-#include "defaultresponder.h"
+#include "lwpa/int.h"
+#include "lwpa/log.h"
+#include "rdm/message.h"
+#include "rdmnet/defs.h"
+#include "rdmnet/common/message.h"
+#include "default_responder.h"
 
 typedef struct DeviceSettings
 {
-  LwpaCid cid;
-  LwpaUid uid;
+  LwpaUuid cid;
+  RdmUid uid;
   LwpaSockaddr static_broker_addr;
   const char *scope;
 } DeviceSettings;

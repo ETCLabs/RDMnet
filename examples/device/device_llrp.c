@@ -24,16 +24,16 @@
 * This file is a part of RDMnet. For more information, go to:
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
-#include "devicellrp.h"
+#include "device_llrp.h"
 
-#include "lwpa_netint.h"
-#include "lwpa_thread.h"
-#include "lwpa_pack.h"
-#include "lwpa_uid.h"
-#include "estardm.h"
-#include "lwpa_socket.h"
+#include "lwpa/netint.h"
+#include "lwpa/thread.h"
+#include "lwpa/pack.h"
+#include "lwpa/socket.h"
+#include "rdm/uid.h"
+#include "rdm/defs.h"
+#include "rdm/responder.h"
 #include "rdmnet/llrp.h"
-#include "rdmnet/rdmresponder.h"
 #include "device.h"
 
 #define rdm_uid_matches_mine(uidptr) (uid_equal(uidptr, &llrp_info.uid) || uid_is_broadcast(uidptr))
@@ -44,8 +44,8 @@ static struct llrp_info
   size_t num_target_socks;
   lwpa_thread_t update_thread;
   bool llrp_thread_run;
-  LwpaCid cid;
-  LwpaUid uid;
+  LwpaUuid cid;
+  RdmUid uid;
   const LwpaLogParams *lparams;
 } llrp_info;
 
@@ -215,7 +215,7 @@ void device_llrp_update_thread(void *arg)
   }
 }
 
-void device_llrp_init(const LwpaCid *my_cid, const LwpaUid *my_uid, const LwpaLogParams *lparams)
+void device_llrp_init(const LwpaUuid *my_cid, const RdmUid *my_uid, const LwpaLogParams *lparams)
 {
   size_t num_interfaces;
 

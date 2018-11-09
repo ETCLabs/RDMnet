@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "devicelog.h"
+#include "device_log.h"
 
 #include <WinSock2.h>
 #include <Windows.h>

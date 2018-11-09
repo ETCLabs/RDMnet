@@ -25,15 +25,15 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "defaultresponder.h"
+#include "default_responder.h"
 
 #include <string.h>
 #include <stdio.h>
-#include "lwpa_pack.h"
-#include "lwpa_thread.h"
-#include "lwpa_lock.h"
-#include "estardmnet.h"
-#include "estardm.h"
+#include "lwpa/pack.h"
+#include "lwpa/thread.h"
+#include "lwpa/lock.h"
+#include "rdm/defs.h"
+#include "rdmnet/defs.h"
 #include "rdmnet/version.h"
 
 /**************************** Private constants ******************************/
@@ -403,7 +403,7 @@ bool set_broker_static_config_ipv4(const uint8_t *param_data, uint8_t param_data
     uint16_t new_port = upack_16b(cur_ptr);
 
     cur_ptr += 2;
-    if (strncmp((char *) cur_ptr, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
+    if (strncmp((char *)cur_ptr, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
     {
       /* setting one field to zero, but not the other is invalid */
       if (!((lwpaip_v4_address(&new_ipv4) == 0 && new_port != 0) ||
@@ -450,7 +450,7 @@ bool set_broker_static_config_ipv6(const uint8_t *param_data, uint8_t param_data
     uint16_t new_port = upack_16b(cur_ptr);
 
     cur_ptr += 2;
-    if (strncmp((char *) cur_ptr, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
+    if (strncmp((char *)cur_ptr, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
     {
       bool zeroIPv6 = true;
 
@@ -462,20 +462,20 @@ bool set_broker_static_config_ipv6(const uint8_t *param_data, uint8_t param_data
       /* setting one field to zero, but not the other is invalid */
       if (!((zeroIPv6 && new_port != 0) || (!zeroIPv6 && new_port == 0)))
       {
-        // Uncomment this code once IPv6 support is added. 
+        // Uncomment this code once IPv6 support is added.
         // Code might need adjusting depending on implementation.
         ///* when both fields are set to zero, remove static config */
-        //if (zeroIPv6 && new_port == 0)
+        // if (zeroIPv6 && new_port == 0)
         //{
         //  lwpaip_set_invalid(&prop_data.rdmnet_params.broker_static_addr.ip);
         //}
-        //else
+        // else
         //{
         //  prop_data.rdmnet_params.broker_static_addr.ip = new_ipv6;
         //  prop_data.rdmnet_params.broker_static_addr.port = new_port;
         //}
         //*requires_reconnect = true;
-        //return true;
+        // return true;
       }
       else
         *nack_reason = E120_NR_DATA_OUT_OF_RANGE;
@@ -633,9 +633,9 @@ bool get_broker_static_config_ipv6(const uint8_t *param_data, uint8_t param_data
 
   /* Copy the scope string */
   memset(cur_ptr, 0, E133_SCOPE_STRING_PADDED_LENGTH);
-  strncpy((char *) cur_ptr, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH);
+  strncpy((char *)cur_ptr, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH);
   cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
-  resp_data_list[0].datalen = (uint8_t) (cur_ptr - resp_data_list[0].data);
+  resp_data_list[0].datalen = (uint8_t)(cur_ptr - resp_data_list[0].data);
   *num_responses = 1;
   return true;
 }
