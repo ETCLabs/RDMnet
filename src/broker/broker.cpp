@@ -27,16 +27,16 @@
 
 // The generic broker implementation
 
-#include "broker/broker.h"
+#include "rdmnet/broker.h"
 
 #include <cstring>
-#include "lwpa_pack.h"
-#include "lwpa_socket.h"
-#include "brokerconsts.h"
+#include "lwpa/pack.h"
+#include "lwpa/socket.h"
 #include "rdmnet/version.h"
-#include "rdmnet/connection.h"
-#include "broker/util.h"
-#include "rdmnet/discovery.h"
+#include "rdmnet/common/connection.h"
+#include "rdmnet/common/discovery.h"
+#include "rdmnet/broker/util.h"
+#include "broker_consts.h"
 
 /* Suppress strncpy() warning on Windows/MSVC. */
 #ifdef _MSC_VER
@@ -194,22 +194,22 @@ void Broker::GetSettings(BrokerSettings &settings) const
   settings = settings_;
 }
 
-constexpr bool Broker::IsBroadcastUID(const LwpaUid &uid)
+constexpr bool Broker::IsBroadcastUID(const RdmUid &uid)
 {
   return uid.id == 0xffffffff;
 }
 
-constexpr bool Broker::IsControllerBroadcastUID(const LwpaUid &uid)
+constexpr bool Broker::IsControllerBroadcastUID(const RdmUid &uid)
 {
   return (((uint64_t)uid.manu << 32 | uid.id) == E133_RPT_ALL_CONTROLLERS);
 }
 
-constexpr bool Broker::IsDeviceBroadcastUID(const LwpaUid &uid)
+constexpr bool Broker::IsDeviceBroadcastUID(const RdmUid &uid)
 {
   return (((uint64_t)uid.manu << 32 | uid.id) == E133_RPT_ALL_DEVICES);
 }
 
-bool Broker::IsDeviceManuBroadcastUID(const LwpaUid &uid, uint16_t &manu)
+bool Broker::IsDeviceManuBroadcastUID(const RdmUid &uid, uint16_t &manu)
 {
   if ((uid.manu == ((uint16_t)((E133_RPT_ALL_DEVICES >> 16) & 0xffffu))) &&
       (((uint16_t)uid.id) == ((uint16_t)(E133_RPT_ALL_DEVICES & 0xffffu))) && (((uint16_t)(uid.id >> 16) != 0xffffu)))
@@ -220,7 +220,7 @@ bool Broker::IsDeviceManuBroadcastUID(const LwpaUid &uid, uint16_t &manu)
   return false;
 }
 
-bool Broker::IsValidControllerDestinationUID(const LwpaUid &uid) const
+bool Broker::IsValidControllerDestinationUID(const RdmUid &uid) const
 {
   if (IsDeviceBroadcastUID(uid) || (uid == settings_.uid))
     return true;
@@ -230,7 +230,7 @@ bool Broker::IsValidControllerDestinationUID(const LwpaUid &uid) const
   return UIDToHandle(uid, tmp);
 }
 
-bool Broker::IsValidDeviceDestinationUID(const LwpaUid &uid) const
+bool Broker::IsValidDeviceDestinationUID(const RdmUid &uid) const
 {
   if (IsControllerBroadcastUID(uid))
     return true;
@@ -241,7 +241,7 @@ bool Broker::IsValidDeviceDestinationUID(const LwpaUid &uid) const
 }
 
 // If the uid is in the map, this returns true and fills in the cookie.
-bool Broker::UIDToHandle(const LwpaUid &uid, int &conn_handle) const
+bool Broker::UIDToHandle(const RdmUid &uid, int &conn_handle) const
 {
   BrokerReadGuard client_read(client_lock_);
 
@@ -751,8 +751,8 @@ void Broker::SendStatus(RPTController *controller, const RptHeader &header, rpt_
   {
     if (log_->CanLog(LWPA_LOG_INFO))
     {
-      char cid_str[CID_STRING_BYTES];
-      cid_to_string(cid_str, &controller->cid);
+      char cid_str[UUID_STRING_BYTES];
+      uuid_to_string(cid_str, &controller->cid);
       log_->Log(LWPA_LOG_WARNING, "Sending RPT Status code %d to Controller %s", status_code, cid_str);
     }
   }
@@ -1327,9 +1327,4 @@ void Broker::OtherBrokerLost(const std::string &service_name)
     StartBrokerServices();
     disc_.Resume();
   }
-}
-
-BrokerLog *Broker::GetLog()
-{
-  return log_;
 }

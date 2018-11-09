@@ -8,6 +8,9 @@
 *.so
 bin/
 
+# CMake
+build/
+
 # MSVC2015 and Qt
 *.VC.db
 *.VC.opendb
