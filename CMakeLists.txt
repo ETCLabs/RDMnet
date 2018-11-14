@@ -36,6 +36,10 @@ endif()
 
 option(RDMNET_BUILD_EXAMPLES "Build the RDMnet example applications" ${OPTION_DEFAULTS})
 option(RDMNET_BUILD_CONSOLE_EXAMPLES "Build only the console RDMnet example applications" OFF)
+if(RDMNET_BUILD_CONSOLE_EXAMPLES)
+  set(RDMNET_BUILD_EXAMPLES OFF)
+endif()
+
 if(RDMNET_BUILD_EXAMPLES OR RDMNET_BUILD_CONSOLE_EXAMPLES)
   add_subdirectory(examples)
 endif()
