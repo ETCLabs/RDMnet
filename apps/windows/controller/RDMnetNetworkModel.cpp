@@ -520,14 +520,15 @@ LwpaSockaddr BrokerConnection::staticSockAddr()
 
 void RDMnetNetworkModel::addScopeToMonitor(std::string scope)
 {
+  static RdmParamData resp_data_list[MAX_RESPONSES_IN_ACK_OVERFLOW];
+  size_t num_responses;
   int platform_error;
+  bool scopeAlreadyAdded = false;
 
   if (scope.length() > 0)
   {
     if (lwpa_rwlock_writelock(&prop_lock, LWPA_WAIT_FOREVER))
     {
-      bool scopeAlreadyAdded = false;
-
       for (auto iter = broker_connections_.begin(); (iter != broker_connections_.end()) && !scopeAlreadyAdded; ++iter)
       {
         if (iter->second->scope() == scope)
@@ -565,6 +566,17 @@ void RDMnetNetworkModel::addScopeToMonitor(std::string scope)
 
       lwpa_rwlock_writeunlock(&prop_lock);
     }
+
+    if (!scopeAlreadyAdded) // Scope must have been added
+    {
+      // Broadcast GET_RESPONSE notification with newly added scope
+      // (broker_create_count_ = new scope slot number)
+      if (getComponentScope(broker_create_count_, resp_data_list, &num_responses))
+      {
+        SendRDMGetResponses(kBroadcastUid, E133_BROADCAST_ENDPOINT, E133_COMPONENT_SCOPE,
+                            resp_data_list, num_responses, 0, 0);
+      }
+    }
   }
 }
 
@@ -591,10 +603,12 @@ void RDMnetNetworkModel::directChildrenRevealed(const QModelIndex &parentIndex)
 
 void RDMnetNetworkModel::addBrokerByIP(std::string scope, const LwpaSockaddr &addr)
 {
+  static RdmParamData resp_data_list[MAX_RESPONSES_IN_ACK_OVERFLOW];
+  size_t num_responses;
+  bool brokerAlreadyAdded = false;
+
   if (lwpa_rwlock_writelock(&prop_lock, LWPA_WAIT_FOREVER))
   {
-    bool brokerAlreadyAdded = false;
-
     for (auto iter = broker_connections_.cbegin(); (iter != broker_connections_.cend()) && !brokerAlreadyAdded; ++iter)
     {
       if (iter->second->scope() == scope)
@@ -616,17 +630,28 @@ void RDMnetNetworkModel::addBrokerByIP(std::string scope, const LwpaSockaddr &ad
     else
     {
       auto connection = std::make_unique<BrokerConnection>(scope, addr);
-      uint16_t new_conn = connection->handle();
-      broker_connections_[new_conn] = std::move(connection);
-      broker_connections_[new_conn]->appendBrokerItemToTree(invisibleRootItem(), broker_create_count_);
-      broker_connections_[new_conn]->connect();
+      
+      broker_connections_[broker_create_count_] = std::move(connection);
+      broker_connections_[broker_create_count_]->appendBrokerItemToTree(invisibleRootItem(), broker_create_count_);
+      broker_connections_[broker_create_count_]->connect();
 
-      emit expandNewItem(broker_connections_[new_conn]->treeBrokerItem()->index(), BrokerItem::BrokerItemType);
+      emit expandNewItem(broker_connections_[broker_create_count_]->treeBrokerItem()->index(), BrokerItem::BrokerItemType);
 
       ++broker_create_count_;
     }
 
     lwpa_rwlock_writeunlock(&prop_lock);
+  }
+
+  if (!brokerAlreadyAdded) // Broker must have been added
+  {
+    // Broadcast GET_RESPONSE notification with newly added scope
+    // (broker_create_count_ = new scope slot number)
+    if (getComponentScope(broker_create_count_, resp_data_list, &num_responses))
+    {
+      SendRDMGetResponses(kBroadcastUid, E133_BROADCAST_ENDPOINT, E133_COMPONENT_SCOPE,
+                          resp_data_list, num_responses, 0, 0);
+    }
   }
 }
 
@@ -990,6 +1015,9 @@ void RDMnetNetworkModel::processPropertyButtonClick(const QPersistentModelIndex 
 
 void RDMnetNetworkModel::removeBroker(BrokerItem *brokerItem)
 {
+  static RdmParamData resp_data_list[MAX_RESPONSES_IN_ACK_OVERFLOW];
+  size_t num_responses;
+
   uint32_t connectionCookie = brokerItem->getConnectionCookie();
   bool removeComplete = false;
 
@@ -1016,10 +1044,21 @@ void RDMnetNetworkModel::removeBroker(BrokerItem *brokerItem)
       }
     }
   }
+
+  // Broadcast GET_RESPONSE notification with scope immediately before removed scope
+  // (connectionCookie = slot - 1)
+  if (getComponentScope(min(0xFFFF, max(0x0001, connectionCookie)), resp_data_list, &num_responses))
+  {
+    SendRDMGetResponses(kBroadcastUid, E133_BROADCAST_ENDPOINT, E133_COMPONENT_SCOPE,
+                        resp_data_list, num_responses, 0, 0);
+  }
 }
 
 void RDMnetNetworkModel::removeAllBrokers()
 {
+  static RdmParamData resp_data_list[MAX_RESPONSES_IN_ACK_OVERFLOW];
+  size_t num_responses;
+
   if (lwpa_rwlock_writelock(&prop_lock, LWPA_WAIT_FOREVER))
   {
     for (auto &&broker_conn : broker_connections_)
@@ -1041,6 +1080,14 @@ void RDMnetNetworkModel::removeAllBrokers()
   }
 
   invisibleRootItem()->removeRows(0, invisibleRootItem()->rowCount());
+
+  // Broadcast GET_RESPONSE notification, which will send an empty scope
+  // to show that there are no scopes left.
+  if (getComponentScope(0x0001, resp_data_list, &num_responses))
+  {
+    SendRDMGetResponses(kBroadcastUid, E133_BROADCAST_ENDPOINT, E133_COMPONENT_SCOPE,
+                        resp_data_list, num_responses, 0, 0);
+  }
 }
 
 void RDMnetNetworkModel::activateFeature(RDMnetNetworkItem *device, SupportedDeviceFeature feature)
@@ -1898,6 +1945,40 @@ bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand &cmd)
   return false;
 }
 
+void RDMnetNetworkModel::SendRDMGetResponses(const LwpaUid & dest_uid, uint16_t dest_endpoint_id, uint16_t param_id, 
+                                          const RdmParamData *resp_data_list, size_t num_responses, uint32_t seqnum, 
+                                          uint8_t transaction_num)
+{
+  static RdmCmdListEntry resp_list[MAX_RESPONSES_IN_ACK_OVERFLOW];
+
+  RdmResponse resp_data;
+
+  resp_data.src_uid = BrokerConnection::getLocalUID();
+  resp_data.dest_uid = dest_uid;
+  resp_data.transaction_num = transaction_num;
+  resp_data.resp_type = num_responses > 1 ? E120_RESPONSE_TYPE_ACK_OVERFLOW : E120_RESPONSE_TYPE_ACK;
+  resp_data.msg_count = 0;
+  resp_data.subdevice = 0;
+  resp_data.command_class = E120_GET_COMMAND_RESPONSE;
+  resp_data.param_id = param_id;
+
+  size_t i;
+  for (i = 0; i < num_responses; ++i)
+  {
+    memcpy(resp_data.data, resp_data_list[i].data, resp_data_list[i].datalen);
+    resp_data.datalen = resp_data_list[i].datalen;
+    if (i == num_responses - 1)
+    {
+      resp_data.resp_type = E120_RESPONSE_TYPE_ACK;
+      resp_list[i].next = NULL;
+    }
+    else
+      resp_list[i].next = &resp_list[i + 1];
+    rdmresp_create_response(&resp_data, &resp_list[i].msg);
+  }
+  SendNotification(dest_uid, dest_endpoint_id, seqnum, resp_list);
+}
+
 void RDMnetNetworkModel::SendNACK(const RptHeader *received_header, const RdmCommand *cmd_data, uint16_t nack_reason)
 {
   RdmResponse resp_data;
@@ -1923,6 +2004,12 @@ void RDMnetNetworkModel::SendNACK(const RptHeader *received_header, const RdmCom
 
 void RDMnetNetworkModel::SendNotification(const RptHeader *received_header, const RdmCmdListEntry *cmd_list)
 {
+  SendNotification(received_header->source_uid, received_header->source_endpoint_id, 
+                   received_header->seqnum, cmd_list);
+}
+
+void RDMnetNetworkModel::SendNotification(const LwpaUid &dest_uid, uint16_t dest_endpoint_id, uint32_t seqnum, const RdmCmdListEntry * cmd_list)
+{
   RptHeader header_to_send;
   lwpa_error_t send_res;
   LwpaUid rpt_dest_uid;
@@ -1930,14 +2017,14 @@ void RDMnetNetworkModel::SendNotification(const RptHeader *received_header, cons
 
   BrokerConnection *connectionToUse = NULL;
 
-  header_to_send.dest_uid = received_header->source_uid;
-  header_to_send.dest_endpoint_id = received_header->source_endpoint_id;
+  header_to_send.dest_uid = dest_uid;
+  header_to_send.dest_endpoint_id = dest_endpoint_id;
   header_to_send.source_uid = BrokerConnection::getLocalUID();
   header_to_send.source_endpoint_id = E133_NULL_ENDPOINT;
-  header_to_send.seqnum = received_header->seqnum;
+  header_to_send.seqnum = seqnum;
 
   connectionToUse = getBrokerConnection(header_to_send.dest_uid.manu, header_to_send.dest_uid.id, rpt_dest_uid,
-                                        dest_endpoint);
+    dest_endpoint);
 
   if (connectionToUse != NULL)
   {
@@ -1969,32 +2056,9 @@ void RDMnetNetworkModel::ProcessRDMCommand(uint16_t /*conn*/, const RptHeader *h
 
     if (DefaultResponderGet(cmd.param_id, cmd.data, cmd.datalen, resp_data_list, &num_responses, &nack_reason))
     {
-      RdmResponse resp_data;
+      SendRDMGetResponses(header->source_uid, header->source_endpoint_id, cmd.param_id, resp_data_list, 
+                          num_responses, header->seqnum, cmd.transaction_num);
 
-      resp_data.src_uid = BrokerConnection::getLocalUID();
-      resp_data.dest_uid = header->source_uid;
-      resp_data.transaction_num = cmd.transaction_num;
-      resp_data.resp_type = num_responses > 1 ? E120_RESPONSE_TYPE_ACK_OVERFLOW : E120_RESPONSE_TYPE_ACK;
-      resp_data.msg_count = 0;
-      resp_data.subdevice = 0;
-      resp_data.command_class = E120_GET_COMMAND_RESPONSE;
-      resp_data.param_id = cmd.param_id;
-
-      size_t i;
-      for (i = 0; i < num_responses; ++i)
-      {
-        memcpy(resp_data.data, resp_data_list[i].data, resp_data_list[i].datalen);
-        resp_data.datalen = resp_data_list[i].datalen;
-        if (i == num_responses - 1)
-        {
-          resp_data.resp_type = E120_RESPONSE_TYPE_ACK;
-          resp_list[i].next = NULL;
-        }
-        else
-          resp_list[i].next = &resp_list[i + 1];
-        rdmresp_create_response(&resp_data, &resp_list[i].msg);
-      }
-      SendNotification(header, resp_list);
       log_.Log(LWPA_LOG_DEBUG, "ACK'ing GET_COMMAND for PID 0x%04x from Controller %04x:%08x",
                cmd.param_id, header->source_uid.manu, header->source_uid.id);
     }
@@ -2025,58 +2089,53 @@ bool RDMnetNetworkModel::DefaultResponderGet(uint16_t pid, const uint8_t * param
 {
   bool res = false;
 
-  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
+  switch (pid)
   {
-    switch (pid)
-    {
-    case E120_IDENTIFY_DEVICE:
-      res = getIdentifyDevice(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E120_DEVICE_LABEL:
-      res = getDeviceLabel(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E133_COMPONENT_SCOPE:
-      res = getComponentScope(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E133_BROKER_STATIC_CONFIG_IPV4:
-      res = getBrokerStaticConfigIPv4(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E133_BROKER_STATIC_CONFIG_IPV6:
-      res = getBrokerStaticConfigIPv6(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E133_SEARCH_DOMAIN:
-      res = getSearchDomain(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E133_TCP_COMMS_STATUS:
-      res = getTCPCommsStatus(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E120_SUPPORTED_PARAMETERS:
-      res = getSupportedParameters(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E120_DEVICE_INFO:
-      res = getDeviceInfo(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E120_MANUFACTURER_LABEL:
-      res = getManufacturerLabel(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E120_DEVICE_MODEL_DESCRIPTION:
-      res = getDeviceModelDescription(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E120_SOFTWARE_VERSION_LABEL:
-      res = getSoftwareVersionLabel(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E137_7_ENDPOINT_LIST:
-      res = getEndpointList(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E137_7_ENDPOINT_RESPONDERS:
-      res = getEndpointResponders(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    default:
-      *nack_reason = E120_NR_UNKNOWN_PID;
-      break;
-    }
-
-    lwpa_rwlock_readunlock(&prop_lock);
+  case E120_IDENTIFY_DEVICE:
+    res = getIdentifyDevice(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+    break;
+  case E120_DEVICE_LABEL:
+    res = getDeviceLabel(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+    break;
+  case E133_COMPONENT_SCOPE:
+    res = getComponentScope(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+    break;
+  case E133_BROKER_STATIC_CONFIG_IPV4:
+    res = getBrokerStaticConfigIPv4(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+    break;
+  case E133_BROKER_STATIC_CONFIG_IPV6:
+    res = getBrokerStaticConfigIPv6(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+    break;
+  case E133_SEARCH_DOMAIN:
+    res = getSearchDomain(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+    break;
+  case E133_TCP_COMMS_STATUS:
+    res = getTCPCommsStatus(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+    break;
+  case E120_SUPPORTED_PARAMETERS:
+    res = getSupportedParameters(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+    break;
+  case E120_DEVICE_INFO:
+    res = getDeviceInfo(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+    break;
+  case E120_MANUFACTURER_LABEL:
+    res = getManufacturerLabel(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+    break;
+  case E120_DEVICE_MODEL_DESCRIPTION:
+    res = getDeviceModelDescription(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+    break;
+  case E120_SOFTWARE_VERSION_LABEL:
+    res = getSoftwareVersionLabel(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+    break;
+  case E137_7_ENDPOINT_LIST:
+    res = getEndpointList(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+    break;
+  case E137_7_ENDPOINT_RESPONDERS:
+    res = getEndpointResponders(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+    break;
+  default:
+    *nack_reason = E120_NR_UNKNOWN_PID;
+    break;
   }
 
   return res;
@@ -2527,7 +2586,11 @@ bool RDMnetNetworkModel::getIdentifyDevice(const uint8_t *param_data, uint8_t pa
   (void) param_data_len;
   (void) nack_reason;
 
-  resp_data_list[0].data[0] = prop_data_.identifying ? 1 : 0;
+  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
+  {
+    resp_data_list[0].data[0] = prop_data_.identifying ? 1 : 0;
+    lwpa_rwlock_readunlock(&prop_lock);
+  }
   resp_data_list[0].datalen = 1;
   *num_responses = 1;
   return true;
@@ -2540,8 +2603,12 @@ bool RDMnetNetworkModel::getDeviceLabel(const uint8_t *param_data, uint8_t param
   (void) param_data_len;
   (void) nack_reason;
 
-  strncpy((char *) resp_data_list[0].data, prop_data_.device_label, DEVICE_LABEL_MAX_LEN);
-  resp_data_list[0].datalen = (uint8_t) strnlen(prop_data_.device_label, DEVICE_LABEL_MAX_LEN);
+  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
+  {
+    strncpy((char *) resp_data_list[0].data, prop_data_.device_label, DEVICE_LABEL_MAX_LEN);
+    resp_data_list[0].datalen = (uint8_t) strnlen(prop_data_.device_label, DEVICE_LABEL_MAX_LEN);
+    lwpa_rwlock_readunlock(&prop_lock);
+  }
   *num_responses = 1;
   return true;
 }
@@ -2551,48 +2618,60 @@ bool RDMnetNetworkModel::getComponentScope(const uint8_t *param_data, uint8_t pa
 {
   if (param_data_len >= 2)
   {
-    uint16_t slot = upack_16b(param_data);
-
-    if (slot == 0)
-    {
-      *nack_reason = E120_NR_DATA_OUT_OF_RANGE;
-    }
-    else
-    {
-      auto connectionIter = broker_connections_.find(slot - 1);
-
-      if (connectionIter == broker_connections_.end())
-      {
-        // Return the next highest Scope Slot that is not empty.
-        connectionIter = broker_connections_.upper_bound(slot - 1);
-
-        if (connectionIter != broker_connections_.end())
-        {
-          slot = connectionIter->first + 1;
-        }
-      }
-
-      if (slot <= MAX_SCOPE_SLOT_NUMBER)
-      {
-        pack_16b(resp_data_list[0].data, slot);
-        memset(&resp_data_list[0].data[2], 0, E133_SCOPE_STRING_PADDED_LENGTH);
-        if (connectionIter != broker_connections_.end())
-        {
-          std::string scope = connectionIter->second->scope();
-
-          strncpy((char *) &resp_data_list[0].data[2], scope.data(),
-            min(scope.length(), E133_SCOPE_STRING_PADDED_LENGTH - 1));
-        }
-        resp_data_list[0].datalen = 2 + E133_SCOPE_STRING_PADDED_LENGTH;
-        *num_responses = 1;
-        return true;
-      }
-      else
-        *nack_reason = E120_NR_DATA_OUT_OF_RANGE;
-    }
+    return getComponentScope(upack_16b(param_data), resp_data_list, num_responses, nack_reason);
   }
   else
     *nack_reason = E120_NR_FORMAT_ERROR;
+  return false;
+}
+
+bool RDMnetNetworkModel::getComponentScope(uint16_t slot, RdmParamData * resp_data_list, size_t * num_responses, uint16_t * nack_reason)
+{
+  if (slot == 0)
+  {
+    if (nack_reason != NULL)
+    {
+      *nack_reason = E120_NR_DATA_OUT_OF_RANGE;
+    }
+  }
+  else if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
+  {
+    auto connectionIter = broker_connections_.find(slot - 1);
+
+    if (connectionIter == broker_connections_.end())
+    {
+      // Return the next highest Scope Slot that is not empty.
+      connectionIter = broker_connections_.upper_bound(slot - 1);
+
+      if (connectionIter != broker_connections_.end())
+      {
+        slot = connectionIter->first + 1;
+      }
+    }
+
+    if (slot <= MAX_SCOPE_SLOT_NUMBER)
+    {
+      pack_16b(resp_data_list[0].data, slot);
+      memset(&resp_data_list[0].data[2], 0, E133_SCOPE_STRING_PADDED_LENGTH);
+      if (connectionIter != broker_connections_.end())
+      {
+        std::string scope = connectionIter->second->scope();
+
+        strncpy((char *) &resp_data_list[0].data[2], scope.data(),
+          min(scope.length(), E133_SCOPE_STRING_PADDED_LENGTH - 1));
+      }
+      resp_data_list[0].datalen = 2 + E133_SCOPE_STRING_PADDED_LENGTH;
+      *num_responses = 1;
+
+      lwpa_rwlock_readunlock(&prop_lock);
+      return true;
+    }
+    else if(nack_reason != NULL)
+      *nack_reason = E120_NR_DATA_OUT_OF_RANGE;
+
+    lwpa_rwlock_readunlock(&prop_lock);
+  }
+
   return false;
 }
 
@@ -2608,47 +2687,52 @@ bool RDMnetNetworkModel::getBrokerStaticConfigIPv4(const uint8_t *param_data, ui
 
   resp_data_list[currentListIndex].datalen = 0;
 
-  for (const auto &connection : broker_connections_)
+  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
   {
-    uint8_t *cur_ptr = NULL;
-    LwpaSockaddr saddr = connection.second->staticSockAddr();
-    std::string scope = connection.second->scope();
-
-    if (currentPDL > (BROKER_STATIC_CONFIG_IPV4_MAX_PDL - BROKER_STATIC_CONFIG_IPV4_MIN_PDL))
+    for (const auto &connection : broker_connections_)
     {
-      if (currentListIndex < (MAX_RESPONSES_IN_ACK_OVERFLOW - 1))
+      uint8_t *cur_ptr = NULL;
+      LwpaSockaddr saddr = connection.second->staticSockAddr();
+      std::string scope = connection.second->scope();
+
+      if (currentPDL > (BROKER_STATIC_CONFIG_IPV4_MAX_PDL - BROKER_STATIC_CONFIG_IPV4_MIN_PDL))
       {
-        ++currentListIndex;
-        resp_data_list[currentListIndex].datalen = 0;
-        currentPDL = 0;
+        if (currentListIndex < (MAX_RESPONSES_IN_ACK_OVERFLOW - 1))
+        {
+          ++currentListIndex;
+          resp_data_list[currentListIndex].datalen = 0;
+          currentPDL = 0;
+        }
+        else
+        {
+          break;
+        }
+      }
+
+      cur_ptr = resp_data_list[currentListIndex].data + currentPDL;
+
+      if (lwpaip_is_invalid(&saddr.ip))
+      {
+        /* Set all 0's for the static IPv4 address and port */
+        memset(cur_ptr, 0, 6);
+        cur_ptr += 6;
       }
       else
       {
-        break;
+        /* Copy the static IPv4 address and port */
+        pack_32b(cur_ptr, lwpaip_v4_address(&saddr.ip));
+        cur_ptr += 4;
+        pack_16b(cur_ptr, saddr.port);
+        cur_ptr += 2;
       }
+      /* Copy the scope string */
+      memset(cur_ptr, 0, E133_SCOPE_STRING_PADDED_LENGTH - 1);
+      strncpy((char *) cur_ptr, scope.data(), min(scope.length(), E133_SCOPE_STRING_PADDED_LENGTH - 1));
+      resp_data_list[currentListIndex].datalen += BROKER_STATIC_CONFIG_IPV4_MIN_PDL;
+      currentPDL += BROKER_STATIC_CONFIG_IPV4_MIN_PDL;
     }
 
-    cur_ptr = resp_data_list[currentListIndex].data + currentPDL;
-
-    if (lwpaip_is_invalid(&saddr.ip))
-    {
-      /* Set all 0's for the static IPv4 address and port */
-      memset(cur_ptr, 0, 6);
-      cur_ptr += 6;
-    }
-    else
-    {
-      /* Copy the static IPv4 address and port */
-      pack_32b(cur_ptr, lwpaip_v4_address(&saddr.ip));
-      cur_ptr += 4;
-      pack_16b(cur_ptr, saddr.port);
-      cur_ptr += 2;
-    }
-    /* Copy the scope string */
-    memset(cur_ptr, 0, E133_SCOPE_STRING_PADDED_LENGTH - 1);
-    strncpy((char *) cur_ptr, scope.data(), min(scope.length(), E133_SCOPE_STRING_PADDED_LENGTH - 1));
-    resp_data_list[currentListIndex].datalen += BROKER_STATIC_CONFIG_IPV4_MIN_PDL;
-    currentPDL += BROKER_STATIC_CONFIG_IPV4_MIN_PDL;
+    lwpa_rwlock_readunlock(&prop_lock);
   }
 
   *num_responses = (currentListIndex + 1);
@@ -2663,37 +2747,42 @@ bool RDMnetNetworkModel::getBrokerStaticConfigIPv6(const uint8_t *param_data, ui
   
   resp_data_list[currentListIndex].datalen = 0;
 
-  for (const auto &connection : broker_connections_)
+  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
   {
-    uint8_t *cur_ptr = NULL;
-    std::string scope = connection.second->scope();
-
-    if (currentPDL > (BROKER_STATIC_CONFIG_IPV6_MAX_PDL - BROKER_STATIC_CONFIG_IPV6_MIN_PDL))
+    for (const auto &connection : broker_connections_)
     {
-      if (currentListIndex < (MAX_RESPONSES_IN_ACK_OVERFLOW - 1))
+      uint8_t *cur_ptr = NULL;
+      std::string scope = connection.second->scope();
+
+      if (currentPDL > (BROKER_STATIC_CONFIG_IPV6_MAX_PDL - BROKER_STATIC_CONFIG_IPV6_MIN_PDL))
       {
-        ++currentListIndex; 
-        resp_data_list[currentListIndex].datalen = 0;
-        currentPDL = 0;
+        if (currentListIndex < (MAX_RESPONSES_IN_ACK_OVERFLOW - 1))
+        {
+          ++currentListIndex;
+          resp_data_list[currentListIndex].datalen = 0;
+          currentPDL = 0;
+        }
+        else
+        {
+          break;
+        }
       }
-      else
-      {
-        break;
-      }
+
+      cur_ptr = resp_data_list[currentListIndex].data + currentPDL;
+
+      // This function should actually be implemented once IPv6 is supported.
+      /* Set all 0's for the static IPv6 address and port */
+      memset(cur_ptr, 0, IPV6_BYTES + 2);
+      cur_ptr += (IPV6_BYTES + 2);
+
+      /* Copy the scope string */
+      memset(cur_ptr, 0, E133_SCOPE_STRING_PADDED_LENGTH - 1);
+      strncpy((char *) cur_ptr, scope.data(), min(scope.length(), E133_SCOPE_STRING_PADDED_LENGTH - 1));
+      resp_data_list[currentListIndex].datalen += BROKER_STATIC_CONFIG_IPV6_MIN_PDL;
+      currentPDL += BROKER_STATIC_CONFIG_IPV6_MIN_PDL;
     }
 
-    cur_ptr = resp_data_list[currentListIndex].data + currentPDL;
-
-    // This function should actually be implemented once IPv6 is supported.
-    /* Set all 0's for the static IPv6 address and port */
-    memset(cur_ptr, 0, IPV6_BYTES + 2);
-    cur_ptr += (IPV6_BYTES + 2);
-
-    /* Copy the scope string */
-    memset(cur_ptr, 0, E133_SCOPE_STRING_PADDED_LENGTH - 1);
-    strncpy((char *) cur_ptr, scope.data(), min(scope.length(), E133_SCOPE_STRING_PADDED_LENGTH - 1));
-    resp_data_list[currentListIndex].datalen += BROKER_STATIC_CONFIG_IPV6_MIN_PDL;
-    currentPDL += BROKER_STATIC_CONFIG_IPV6_MIN_PDL;
+    lwpa_rwlock_readunlock(&prop_lock);
   }
 
   *num_responses = (currentListIndex + 1);
@@ -2706,8 +2795,14 @@ bool RDMnetNetworkModel::getSearchDomain(const uint8_t *param_data, uint8_t para
   (void) param_data;
   (void) param_data_len;
   (void) nack_reason;
-  strncpy((char *) resp_data_list[0].data, prop_data_.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
-  resp_data_list[0].datalen = (uint8_t) strlen(prop_data_.search_domain);
+
+  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
+  {
+    strncpy((char *) resp_data_list[0].data, prop_data_.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
+    resp_data_list[0].datalen = (uint8_t) strlen(prop_data_.search_domain);
+
+    lwpa_rwlock_readunlock(&prop_lock);
+  }
   *num_responses = 1;
   return true;
 }
@@ -2721,49 +2816,54 @@ bool RDMnetNetworkModel::getTCPCommsStatus(const uint8_t *param_data, uint8_t pa
 
   int currentListIndex = 0;
 
-  for (const auto &connection : broker_connections_)
+  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
   {
-    uint8_t *cur_ptr = resp_data_list[currentListIndex].data;
-    LwpaSockaddr saddr = connection.second->currentSockAddr();
-    std::string scope = connection.second->scope();
-
-    memset(cur_ptr, 0, E133_SCOPE_STRING_PADDED_LENGTH);
-    memcpy(cur_ptr, scope.data(), min(scope.length(), E133_SCOPE_STRING_PADDED_LENGTH));
-    cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
-
-    if (lwpaip_is_invalid(&saddr.ip))
+    for (const auto &connection : broker_connections_)
     {
-      pack_32b(cur_ptr, 0);
-      cur_ptr += 4;
-      memset(cur_ptr, 0, IPV6_BYTES);
-      cur_ptr += IPV6_BYTES;
-    }
-    else if (lwpaip_is_v4(&saddr.ip))
-    {
-      pack_32b(cur_ptr, lwpaip_v4_address(&saddr.ip));
-      cur_ptr += 4;
-      memset(cur_ptr, 0, IPV6_BYTES);
-      cur_ptr += IPV6_BYTES;
-    }
-    else // IPv6
-    {
-      pack_32b(cur_ptr, 0);
-      cur_ptr += 4;
-      memcpy(cur_ptr, lwpaip_v6_address(&saddr.ip), IPV6_BYTES);
-      cur_ptr += IPV6_BYTES;
-    }
-    pack_16b(cur_ptr, saddr.port);
-    cur_ptr += 2;
-    pack_16b(cur_ptr, prop_data_.tcp_unhealthy_counter);
-    cur_ptr += 2;
-    resp_data_list[currentListIndex].datalen = (uint8_t) (cur_ptr - resp_data_list[currentListIndex].data);
+      uint8_t *cur_ptr = resp_data_list[currentListIndex].data;
+      LwpaSockaddr saddr = connection.second->currentSockAddr();
+      std::string scope = connection.second->scope();
 
-    ++currentListIndex;
+      memset(cur_ptr, 0, E133_SCOPE_STRING_PADDED_LENGTH);
+      memcpy(cur_ptr, scope.data(), min(scope.length(), E133_SCOPE_STRING_PADDED_LENGTH));
+      cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
 
-    if (currentListIndex == MAX_RESPONSES_IN_ACK_OVERFLOW)
-    {
-      break;
+      if (lwpaip_is_invalid(&saddr.ip))
+      {
+        pack_32b(cur_ptr, 0);
+        cur_ptr += 4;
+        memset(cur_ptr, 0, IPV6_BYTES);
+        cur_ptr += IPV6_BYTES;
+      }
+      else if (lwpaip_is_v4(&saddr.ip))
+      {
+        pack_32b(cur_ptr, lwpaip_v4_address(&saddr.ip));
+        cur_ptr += 4;
+        memset(cur_ptr, 0, IPV6_BYTES);
+        cur_ptr += IPV6_BYTES;
+      }
+      else // IPv6
+      {
+        pack_32b(cur_ptr, 0);
+        cur_ptr += 4;
+        memcpy(cur_ptr, lwpaip_v6_address(&saddr.ip), IPV6_BYTES);
+        cur_ptr += IPV6_BYTES;
+      }
+      pack_16b(cur_ptr, saddr.port);
+      cur_ptr += 2;
+      pack_16b(cur_ptr, prop_data_.tcp_unhealthy_counter);
+      cur_ptr += 2;
+      resp_data_list[currentListIndex].datalen = (uint8_t) (cur_ptr - resp_data_list[currentListIndex].data);
+
+      ++currentListIndex;
+
+      if (currentListIndex == MAX_RESPONSES_IN_ACK_OVERFLOW)
+      {
+        break;
+      }
     }
+
+    lwpa_rwlock_readunlock(&prop_lock);
   }
 
   *num_responses = currentListIndex;
@@ -2859,7 +2959,11 @@ bool RDMnetNetworkModel::getEndpointList(const uint8_t *param_data, uint8_t para
   /* Hardcoded: no endpoints other than NULL_ENDPOINT. NULL_ENDPOINT is not
   * reported in this response. */
   resp_data_list[0].datalen = 4;
-  pack_32b(cur_ptr, prop_data_.endpoint_list_change_number);
+  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
+  {
+    pack_32b(cur_ptr, prop_data_.endpoint_list_change_number);
+    lwpa_rwlock_readunlock(&prop_lock);
+  }
   *num_responses = 1;
   return true;
 }

@@ -162,6 +162,7 @@
     <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_pdu.c" />
     <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_rbtree.c" />
     <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_rootlayerpdu.c" />
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_uid.c" />
     <ClCompile Include="..\..\..\..\..\lwpa\src\md5c.c" />
     <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_lock.c" />
     <ClCompile Include="..\..\..\..\..\lwpa\src\windows\lwpa_netint.c" />

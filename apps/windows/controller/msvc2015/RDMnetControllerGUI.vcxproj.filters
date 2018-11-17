@@ -250,6 +250,9 @@
     <ClCompile Include="AboutGUI.cpp">
       <Filter>Source Files\GUI</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\..\lwpa\src\lwpa_uid.c">
+      <Filter>Source Files\lwpa_lib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\RDMnetClientItem.h">

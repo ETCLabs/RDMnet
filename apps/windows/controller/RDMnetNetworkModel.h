@@ -273,8 +273,12 @@ protected:
                                         uint16_t &destEndpoint);
 
   bool SendRDMCommand(const RdmCommand &cmd);
+  void SendRDMGetResponses(const LwpaUid & dest_uid, uint16_t dest_endpoint_id, uint16_t param_id,
+                        const RdmParamData *resp_data_list, size_t num_responses, uint32_t seqnum,
+                        uint8_t transaction_num);
   void SendNACK(const RptHeader *received_header, const RdmCommand *cmd_data, uint16_t nack_reason);
   void SendNotification(const RptHeader *received_header, const RdmCmdListEntry *cmd_list);
+  void SendNotification(const LwpaUid &dest_uid, uint16_t dest_endpoint_id, uint32_t seqnum, const RdmCmdListEntry *cmd_list);
 
   /* GET/SET PROCESSING */
 
@@ -284,6 +288,8 @@ protected:
                       size_t *num_responses, uint16_t *nack_reason);
   bool getComponentScope(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
                          size_t *num_responses, uint16_t *nack_reason);
+  bool getComponentScope(uint16_t slot, RdmParamData *resp_data_list, size_t *num_responses, 
+                         uint16_t *nack_reason = NULL);
   bool getBrokerStaticConfigIPv4(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
                                  size_t *num_responses, uint16_t *nack_reason);
   bool getBrokerStaticConfigIPv6(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
