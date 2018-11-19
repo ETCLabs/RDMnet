@@ -17,6 +17,6 @@ add_executable(${DEVICE_TARGET}
 target_include_directories(${DEVICE_TARGET} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(${DEVICE_TARGET} PRIVATE RDMnet)
 if(WIN32)
-  target_compile_definitions(${DEVICE_TARGET} PRIVATE UNICODE _UNICODE)
+  target_compile_definitions(${DEVICE_TARGET} PRIVATE UNICODE _UNICODE _CRT_SECURE_NO_WARNINGS)
   target_link_libraries(${DEVICE_TARGET} PRIVATE rpcrt4)
 endif()

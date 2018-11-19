@@ -73,6 +73,7 @@ add_executable(${CONTROLLER_TARGET}
 )
 target_link_libraries(${CONTROLLER_TARGET} PRIVATE Qt5::Widgets RDMnet)
 if(WIN32)
+  target_compile_definitions(${CONTROLLER_TARGET} PRIVATE UNICODE _UNICODE _CRT_SECURE_NO_WARNINGS)
   target_include_directories(${CONTROLLER_TARGET} PRIVATE windows)
   target_link_libraries(${CONTROLLER_TARGET} PRIVATE rpcrt4)
 endif()
