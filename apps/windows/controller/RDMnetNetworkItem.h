@@ -102,7 +102,8 @@ public:
   void enableChildrenSearch();
   void disableChildrenSearch();
   void enableFeature(SupportedDeviceFeature feature);
-  void completelyRemoveChildren(int row, int count = 1);
+  // alsoRemoveFromThis: For every child row removed, remove the child item from alsoRemoveFromThis as well.
+  void completelyRemoveChildren(int row, int count = 1, std::vector<class PropertyItem *> *alsoRemoveFromThis = NULL);
   void disableAllChildItems();
 
   virtual uint16_t getMan(void) const { return 0; };

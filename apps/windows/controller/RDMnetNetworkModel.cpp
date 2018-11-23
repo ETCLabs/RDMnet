@@ -569,9 +569,8 @@ void RDMnetNetworkModel::addScopeToMonitor(std::string scope)
 
     if (!scopeAlreadyAdded) // Scope must have been added
     {
-      // Broadcast GET_RESPONSE notification with newly added scope
-      // (broker_create_count_ = new scope slot number)
-      if (getComponentScope(broker_create_count_, resp_data_list, &num_responses))
+      // Broadcast GET_RESPONSE notification because of newly added scope
+      if (getComponentScope(0x0001, resp_data_list, &num_responses))
       {
         SendRDMGetResponses(kBroadcastUid, E133_BROADCAST_ENDPOINT, E133_COMPONENT_SCOPE,
                             resp_data_list, num_responses, 0, 0);
@@ -645,9 +644,8 @@ void RDMnetNetworkModel::addBrokerByIP(std::string scope, const LwpaSockaddr &ad
 
   if (!brokerAlreadyAdded) // Broker must have been added
   {
-    // Broadcast GET_RESPONSE notification with newly added scope
-    // (broker_create_count_ = new scope slot number)
-    if (getComponentScope(broker_create_count_, resp_data_list, &num_responses))
+    // Broadcast GET_RESPONSE notification because of newly added scope
+    if (getComponentScope(0x0001, resp_data_list, &num_responses))
     {
       SendRDMGetResponses(kBroadcastUid, E133_BROADCAST_ENDPOINT, E133_COMPONENT_SCOPE,
                           resp_data_list, num_responses, 0, 0);
@@ -980,6 +978,28 @@ void RDMnetNetworkModel::processSetPropertyData(RDMnetNetworkItem *parent, unsig
   }
 }
 
+void RDMnetNetworkModel::processRemovePropertiesInRange(RDMnetNetworkItem * parent, unsigned short pid, int role, 
+                                                        const QVariant &min, const QVariant &max)
+{
+  if (parent != NULL)
+  {
+    if (parent->isEnabled())
+    {
+      for(int i = parent->rowCount() - 1; i >= 0; --i)
+      {
+        QStandardItem *child = parent->child(i);
+        if (child != NULL)
+        {
+          if ((child->data(role) >= min) && (child->data(role) <= max))
+          {
+            parent->completelyRemoveChildren(i, 1, &parent->properties);
+          }
+        }
+      }
+    }
+  }
+}
+
 void RDMnetNetworkModel::processAddPropertyEntry(RDMnetNetworkItem *parent, unsigned short pid, const QString &name,
                                                  int role)
 {
@@ -1045,9 +1065,8 @@ void RDMnetNetworkModel::removeBroker(BrokerItem *brokerItem)
     }
   }
 
-  // Broadcast GET_RESPONSE notification with scope immediately before removed scope
-  // (connectionCookie = slot - 1)
-  if (getComponentScope(min(0xFFFF, max(0x0001, connectionCookie)), resp_data_list, &num_responses))
+  // Broadcast GET_RESPONSE notification because of removed scope
+  if (getComponentScope(0x0001, resp_data_list, &num_responses))
   {
     SendRDMGetResponses(kBroadcastUid, E133_BROADCAST_ENDPOINT, E133_COMPONENT_SCOPE,
                         resp_data_list, num_responses, 0, 0);
@@ -1323,6 +1342,10 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   connect(model, SIGNAL(setPropertyData(RDMnetNetworkItem *, unsigned short, const QString &, const QVariant &, int)),
           model,
           SLOT(processSetPropertyData(RDMnetNetworkItem *, unsigned short, const QString &, const QVariant &, int)),
+          Qt::AutoConnection);
+  connect(model, SIGNAL(removePropertiesInRange(RDMnetNetworkItem *, unsigned short, int, const QVariant &, const QVariant &)),
+          model,
+          SLOT(processRemovePropertiesInRange(RDMnetNetworkItem *, unsigned short, int, const QVariant &, const QVariant &)),
           Qt::AutoConnection);
   connect(model, SIGNAL(addPropertyEntry(RDMnetNetworkItem *, unsigned short, const QString &, int)), model,
           SLOT(processAddPropertyEntry(RDMnetNetworkItem *, unsigned short, const QString &, int)), Qt::AutoConnection);
@@ -2011,7 +2034,7 @@ void RDMnetNetworkModel::SendNotification(const RptHeader *received_header, cons
 void RDMnetNetworkModel::SendNotification(const LwpaUid &dest_uid, uint16_t dest_endpoint_id, uint32_t seqnum, const RdmCmdListEntry * cmd_list)
 {
   RptHeader header_to_send;
-  lwpa_error_t send_res;
+  int send_res = static_cast<int>(LWPA_OK);
   LwpaUid rpt_dest_uid;
   uint16_t dest_endpoint;
 
@@ -2023,21 +2046,44 @@ void RDMnetNetworkModel::SendNotification(const LwpaUid &dest_uid, uint16_t dest
   header_to_send.source_endpoint_id = E133_NULL_ENDPOINT;
   header_to_send.seqnum = seqnum;
 
-  connectionToUse = getBrokerConnection(header_to_send.dest_uid.manu, header_to_send.dest_uid.id, rpt_dest_uid,
-    dest_endpoint);
-
-  if (connectionToUse != NULL)
+  if ((dest_uid.manu != kBroadcastUid.manu) || (dest_uid.id != kBroadcastUid.id))
   {
-    if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
-    {
-      send_res = send_rpt_notification(connectionToUse->handle(), &BrokerConnection::getLocalCID(), &header_to_send,
-        cmd_list);
-
-      lwpa_rwlock_readunlock(&prop_lock);
-    }
+    connectionToUse = getBrokerConnection(header_to_send.dest_uid.manu, header_to_send.dest_uid.id, rpt_dest_uid,
+                                          dest_endpoint);
   }
 
-  if (send_res != LWPA_OK)
+  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
+  {
+    if ((dest_uid.manu == kBroadcastUid.manu) && (dest_uid.id == kBroadcastUid.id))
+    {
+      for (auto &brokerConnectionIter : broker_connections_)
+      {
+        connectionToUse = brokerConnectionIter.second.get();
+
+        if (connectionToUse != NULL)
+        {
+          if (connectionToUse->connected())
+          {
+            send_res |= static_cast<int>(send_rpt_notification(connectionToUse->handle(), &BrokerConnection::getLocalCID(),
+                                                               &header_to_send, cmd_list));
+          }
+        }
+      }
+    }
+    else if (connectionToUse != NULL)
+    {
+      send_res = static_cast<int>(send_rpt_notification(connectionToUse->handle(), &BrokerConnection::getLocalCID(),
+                                                        &header_to_send, cmd_list));
+    }
+    else
+    {
+      send_res = static_cast<int>(LWPA_NETERR);
+    }
+
+    lwpa_rwlock_readunlock(&prop_lock);
+  }
+
+  if (send_res != static_cast<int>(LWPA_OK))
   {
     log_.Log(LWPA_LOG_ERR, "Error sending RPT Notification message to Broker.");
   }
@@ -3104,6 +3150,7 @@ void RDMnetNetworkModel::nack(uint16_t reason, const RdmResponse *resp)
            && (reason == E120_NR_DATA_OUT_OF_RANGE))
   {
     // We have all of this controller's scope-slot pairs. Now request scope-specific properties.
+    previous_slot_[resp->src_uid] = 0;
     sendGetControllerScopeProperties(resp->src_uid.manu, resp->src_uid.id);
   }
 }
@@ -3343,9 +3390,17 @@ void RDMnetNetworkModel::componentScope(uint16_t scopeSlot, const char *scopeStr
 
   if (client != NULL)
   {
+    if (client->ClientType() == kRPTClientTypeController)
+    {
+      removeScopeSlotItemsInRange(client, previous_slot_[client->Uid()] + 1, scopeSlot - 1);
+    }
+
     if ((client->ClientType() == kRPTClientTypeController) && (strlen(scopeString) == 0))
     {
+      removeScopeSlotItemsInRange(client, scopeSlot, 0xFFFF);
+
       // We have all of this controller's scope-slot pairs. Now request scope-specific properties.
+      previous_slot_[client->Uid()] = 0;
       sendGetControllerScopeProperties(resp->src_uid.manu, resp->src_uid.id);
     }
     else
@@ -3370,6 +3425,7 @@ void RDMnetNetworkModel::componentScope(uint16_t scopeSlot, const char *scopeStr
 
       if (client->ClientType() == kRPTClientTypeController)
       {
+        previous_slot_[client->Uid()] = scopeSlot;
         sendGetNextControllerScope(resp->src_uid.manu, resp->src_uid.id, scopeSlot);
       }
     }
@@ -3979,6 +4035,14 @@ QString RDMnetNetworkModel::getScopeSubPropertyFullName(RDMnetClientItem * clien
   }
 
   return original;
+}
+
+void RDMnetNetworkModel::removeScopeSlotItemsInRange(RDMnetNetworkItem *parent, uint16_t firstSlot, uint16_t lastSlot)
+{
+  if (lastSlot >= firstSlot)
+  {
+    emit removePropertiesInRange(parent, E133_COMPONENT_SCOPE, RDMnetNetworkItem::ScopeSlotRole, firstSlot, lastSlot);
+  }
 }
 
 RDMnetNetworkModel::RDMnetNetworkModel() : log_("RDMnetController.log")

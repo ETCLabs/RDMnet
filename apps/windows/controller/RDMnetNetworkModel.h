@@ -173,6 +173,7 @@ signals:
   void newResponderList(EndpointItem *treeEndpointItem, const std::vector<LwpaUid> &list);
   void setPropertyData(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, const QVariant &value,
                        int role = Qt::DisplayRole);
+  void removePropertiesInRange(RDMnetNetworkItem *parent, unsigned short pid, int role, const QVariant &min, const QVariant &max);
   void brokerItemTextUpdated(const BrokerItem *item);
   void addPropertyEntry(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, int role);
   void featureSupportChanged(const class RDMnetNetworkItem *item, SupportedDeviceFeature feature);
@@ -193,6 +194,9 @@ private:
   // Protects prop_data_ and broker_connections_.
   lwpa_rwlock_t prop_lock;
 
+  // Keeps track of scope updates of other controllers
+  std::map<LwpaUid, uint16_t> previous_slot_;
+
   friend void broker_found(const char *scope, const BrokerDiscInfo *broker_info, void *context);
 
 public slots:
@@ -210,6 +214,7 @@ protected slots:
   void processNewResponderList(EndpointItem *treeEndpointItem, const std::vector<LwpaUid> &list);
   void processSetPropertyData(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, const QVariant &value,
                               int role);
+  void processRemovePropertiesInRange(RDMnetNetworkItem *parent, unsigned short pid, int role, const QVariant &min, const QVariant &max);
   void processAddPropertyEntry(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, int role);
   void processPropertyButtonClick(const QPersistentModelIndex &propertyIndex);
   void removeBroker(BrokerItem *brokerItem);
@@ -397,6 +402,8 @@ protected:
   class PropertyItem *createGroupingItem(RDMnetNetworkItem *parent, const QString & groupName);
   QString getChildPathName(const QString &superPathName);
   QString getScopeSubPropertyFullName(RDMnetClientItem *client, uint16_t pid, int32_t index, const char *scope);
+
+  void removeScopeSlotItemsInRange(RDMnetNetworkItem *parent, uint16_t firstSlot, uint16_t lastSlot);
 
 public:
   RDMnetNetworkModel();
