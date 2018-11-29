@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file broker/util.h
+/*! \file rdmnet/broker/util.h
  *
  */
 #ifndef _RDMNET_BROKER_UTIL_H_

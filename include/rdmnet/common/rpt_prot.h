@@ -25,12 +25,12 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet/rptprot.h
+/*! \file rdmnet/common/rpt_prot.h
  *  \brief Functions to pack, send and parse RPT PDUs and their encapsulated messages.
  *  \author Sam Kearney
  */
-#ifndef _RDMNET_RPTPROT_H_
-#define _RDMNET_RPTPROT_H_
+#ifndef _RDMNET_RPT_PROT_H_
+#define _RDMNET_RPT_PROT_H_
 
 #include <stddef.h>
 #include "lwpa/int.h"
@@ -196,4 +196,4 @@ lwpa_error_t send_rpt_notification(int handle, const LwpaUuid *local_cid, const 
 
 /*!@}*/
 
-#endif /* _RDMNET_RPTPROT_H_ */
+#endif /* _RDMNET_RPT_PROT_H_ */

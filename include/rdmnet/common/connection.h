@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file connection.h
+/*! \file rdmnet/common/connection.h
  *  \brief RDMnet Connection API definitions
  *
  *  Functions and definitions for the \ref rdmnet_conn "RDMnet Connection API" are contained in this

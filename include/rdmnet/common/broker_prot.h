@@ -25,12 +25,12 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet/brokerprot.h
+/*! \file rdmnet/common/broker_prot.h
  *  \brief Functions to pack, send, and parse %Broker PDUs and their encapsulated messages.
  *  \author Sam Kearney
  */
-#ifndef _RDMNET_BROKERPROT_H_
-#define _RDMNET_BROKERPROT_H_
+#ifndef _RDMNET_BROKER_PROT_H_
+#define _RDMNET_BROKER_PROT_H_
 
 #include "lwpa/int.h"
 #include "lwpa/bool.h"
@@ -268,4 +268,4 @@ lwpa_error_t send_fetch_client_list(int handle, const LwpaUuid *local_cid);
 
 /*!@}*/
 
-#endif /* _RDMNET_BROKERPROT_H_ */
+#endif /* _RDMNET_BROKER_PROT_H_ */

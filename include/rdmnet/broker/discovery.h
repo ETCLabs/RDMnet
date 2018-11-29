@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file broker/discovery.h
+/*! \file rdmnet/broker/discovery.h
  *  \brief Handles the Broker's DNS registration and discovery of other Brokers.
  *  \author Sam Kearney
  */

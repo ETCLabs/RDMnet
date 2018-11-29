@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet/message.h
+/*! \file rdmnet/common/message.h
  *  \brief Basic types for parsed RDMnet messages.
  *  \author Sam Kearney
  */
