@@ -396,9 +396,8 @@ void BrokerConnection::runConnectStateMachine()
   ClientConnectMsg connect_data;
   connect_data.connect_flags = CONNECTFLAG_INCREMENTAL_UPDATES;
   connect_data.e133_version = E133_VERSION;
-  QByteArray utf8_scope = scope_.toUtf8();
-  connect_data.scope = utf8_scope.constData();
-  connect_data.search_domain = E133_DEFAULT_DOMAIN;
+  client_connect_msg_set_scope(&connect_data, scope_.toUtf8().constData());
+  client_connect_msg_set_default_search_domain(&connect_data);
   create_rpt_client_entry(&local_cid_, &local_uid_, kRPTClientTypeController, nullptr, &connect_data.client_entry);
 
   RdmnetData result_data;
