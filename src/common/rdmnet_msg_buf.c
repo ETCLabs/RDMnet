@@ -28,10 +28,6 @@
 #include "rdmnet_msg_buf.h"
 
 #include <assert.h>
-#include "rdmnet/common/opts.h"
-#if RDMNET_DYNAMIC_MEM
-#include <stdlib.h>
-#endif
 #include "lwpa/pack.h"
 #include "lwpa/root_layer_pdu.h"
 #include "broker_prot_priv.h"

@@ -27,7 +27,7 @@
 
 #include "rdmnet/common/connection.h"
 
-#include "rdmnet/common/opts.h"
+#include "rdmnet_opts.h"
 #if RDMNET_DYNAMIC_MEM
 #include <stdlib.h>
 #else
