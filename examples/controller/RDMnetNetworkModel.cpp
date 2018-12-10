@@ -86,19 +86,20 @@ void broker_found(const char *scope, const BrokerDiscInfo *broker_info, void *co
   }
 }
 
-static void broker_lost(const char *service_name, void *context)
+static void broker_lost(const char * /*service_name*/, void * /*context*/)
 {
 }
 
-static void scope_monitor_error(const ScopeMonitorInfo *scope_info, int platform_error, void *context)
+static void scope_monitor_error(const ScopeMonitorInfo * /*scope_info*/, int /*platform_error*/, void * /*context*/)
 {
 }
 
-static void broker_registered(const BrokerDiscInfo *broker_info, const char *assigned_service_name, void *context)
+static void broker_registered(const BrokerDiscInfo * /*broker_info*/, const char * /*assigned_service_name*/,
+                              void * /*context*/)
 {
 }
 
-static void broker_register_error(const BrokerDiscInfo *broker_info, int platform_error, void *context)
+static void broker_register_error(const BrokerDiscInfo * /*broker_info*/, int /*platform_error*/, void * /*context*/)
 {
 }
 
@@ -131,7 +132,7 @@ static void unpackAndParseIPAddress(const uint8_t *addrData, lwpa_iptype_t addrT
   }
 }
 
-static lwpa_error_t parseAndPackIPAddress(lwpa_iptype_t addrType, const char *ipString, size_t ipStringLen,
+static lwpa_error_t parseAndPackIPAddress(lwpa_iptype_t addrType, const char *ipString, size_t /*ipStringLen*/,
                                           uint8_t *outBuf)
 {
   LwpaIpAddr ip;
@@ -231,7 +232,7 @@ void MyLog::removeCustomOutputStream(LogOutputStream *stream)
   }
 }
 
-int MyLog::getNumberOfCustomLogOutputStreams()
+size_t MyLog::getNumberOfCustomLogOutputStreams()
 {
   return customOutputStreams.size();
 }
@@ -1312,7 +1313,7 @@ void RDMnetNetworkModel::searchingItemRevealed(SearchingStatusItem *searchItem)
   }
 }
 
-int RDMnetNetworkModel::getNumberOfCustomLogOutputStreams()
+size_t RDMnetNetworkModel::getNumberOfCustomLogOutputStreams()
 {
   return log_.getNumberOfCustomLogOutputStreams();
 }
@@ -2261,7 +2262,7 @@ void RDMnetNetworkModel::responderListChange(uint32_t /*changeNumber*/, uint16_t
   SendRDMCommand(cmd);
 }
 
-void RDMnetNetworkModel::nack(uint16_t reason, const RdmResponse *resp)
+void RDMnetNetworkModel::nack(uint16_t /*reason*/, const RdmResponse *resp)
 {
   if ((resp->command_class == E120_SET_COMMAND_RESPONSE) && (PropertyValueItem::pidInfoExists(resp->param_id)))
   {
@@ -2519,7 +2520,7 @@ void RDMnetNetworkModel::personalityDescription(uint8_t personality, uint16_t fo
   }
 }
 
-void RDMnetNetworkModel::componentScope(uint16_t scopeSlot, const char *scopeString, RdmResponse *resp)
+void RDMnetNetworkModel::componentScope(uint16_t /*scopeSlot*/, const char *scopeString, RdmResponse *resp)
 {
   RDMnetClientItem *client = getClientItem(resp);
 
@@ -2530,7 +2531,7 @@ void RDMnetNetworkModel::componentScope(uint16_t scopeSlot, const char *scopeStr
   }
 }
 
-void RDMnetNetworkModel::brokerStaticConfigIPv4(const char *addrString, uint16_t port, const char *scopeString,
+void RDMnetNetworkModel::brokerStaticConfigIPv4(const char *addrString, uint16_t port, const char * /*scopeString*/,
                                                 RdmResponse *resp)
 {
   RDMnetClientItem *client = getClientItem(resp);
@@ -2552,7 +2553,7 @@ void RDMnetNetworkModel::brokerStaticConfigIPv4(const char *addrString, uint16_t
   }
 }
 
-void RDMnetNetworkModel::brokerStaticConfigIPv6(const char *addrString, uint16_t port, const char *scopeString,
+void RDMnetNetworkModel::brokerStaticConfigIPv6(const char *addrString, uint16_t port, const char * /*scopeString*/,
                                                 RdmResponse *resp)
 {
   RDMnetClientItem *client = getClientItem(resp);

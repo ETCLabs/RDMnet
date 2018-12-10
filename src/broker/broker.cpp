@@ -53,8 +53,7 @@
 
 /**************************** Private constants ******************************/
 
-// The amount of time we'll block until we get something to read from a
-// connection
+// The amount of time we'll block until we get something to read from a connection
 #define READ_TIMEOUT_MS 200
 
 /*************************** Function definitions ****************************/
