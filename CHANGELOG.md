@@ -11,10 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - RDMnet is now built with CMake. Documentation updated accordingly.
 - RDMnet example applications are now portable.
+- RDMnet compile-time config options no longer affect the contents of public headers
+  (correspondingly, rdmnet/opts.h moved from under include/ to src/)
 
 ### Removed
-- rdm* source files, which are now in the [RDM](https://github.com/ETCLabs/RDM) 
-  repository.
+- rdm* source files, which are now in the [RDM](https://github.com/ETCLabs/RDM) repository.
 - Visual Studio project files, as we now build with CMake.
 
 ## 0.1.0 - 2018-10-18
