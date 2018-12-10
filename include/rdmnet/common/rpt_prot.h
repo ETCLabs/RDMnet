@@ -40,7 +40,6 @@
 #include "lwpa/root_layer_pdu.h"
 #include "rdm/message.h"
 #include "rdmnet/defs.h"
-#include "rdmnet/common/opts.h"
 
 /* Suppress strncpy() warning on Windows/MSVC. */
 #ifdef _MSC_VER

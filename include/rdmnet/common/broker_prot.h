@@ -40,7 +40,6 @@
 #include "lwpa/root_layer_pdu.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
-#include "rdmnet/common/opts.h"
 #include "rdmnet/client.h"
 
 /* Suppress strncpy() warning on Windows/MSVC. */
