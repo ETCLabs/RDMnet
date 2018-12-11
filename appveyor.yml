@@ -1,0 +1,85 @@
+#---------------------------------#
+#      general configuration      #
+#---------------------------------#
+
+version: '{build}'
+
+branches:
+  only:
+    - develop
+    - master
+
+skip_commits:
+  files:
+    - '**/*.md'
+
+#---------------------------------#
+#    environment configuration    #
+#---------------------------------#
+
+image: Visual Studio 2017
+
+matrix:
+  fast_finish: true     # set this flag to immediately finish build once one of the jobs fails.
+
+#---------------------------------#
+#       build configuration       #
+#---------------------------------#
+
+platform: x64
+
+configuration:
+  - Debug
+  - Release
+
+before_build:
+  - cmd: |-
+      git clone -b %APPVEYOR_REPO_BRANCH% https://github.com/ETCLabs/lwpa ../lwpa
+      git clone -b %APPVEYOR_REPO_BRANCH% https://github.com/ETCLabs/RDM ../RDM
+      mkdir build
+      cd build
+      cmake --version
+      cmake -G "Visual Studio 15 2017 Win64" ..
+
+build:
+  parallel: true            # enable MSBuild parallel builds
+  project: build\RDMnet.sln # path to Visual Studio solution or project
+
+  # MSBuild verbosity level
+  verbosity: minimal
+
+#---------------------------------#
+#       tests configuration       #
+#---------------------------------#
+
+test_script:
+  - cmd: tests\unit\%configuration%\test_rdmnet_lib.exe
+
+# Custom build configuration for 'develop' branch: Create a versioned build.
+for:
+-
+  branches:
+    only:
+      -develop
+  
+  environment:
+    access_token:
+      secure: D2tJBo+pb7fiu19yt3FYK5QSqT9bnMdlBHEIWutil33+rKjt1cP5nnB0m1XMkTsM
+
+  before_build:
+    - cmd: |-
+        git clone -b %APPVEYOR_REPO_BRANCH% https://github.com/ETCLabs/lwpa ../lwpa
+        git clone -b %APPVEYOR_REPO_BRANCH% https://github.com/ETCLabs/RDM ../RDM
+        mkdir build
+        cd build
+        cmake --version
+        cmake -G "Visual Studio 15 2017 Win64" -DRDMNET_CREATE_VERSIONED_BUILD=ON -DRDMNET_VERSION_BUILD=%APPVEYOR_BUILD_NUMBER% ..
+
+  on_success:
+    - git config --global credential.helper store
+    - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
+    - git config --global user.email "appveyor@appveyor.com"
+    - git config --global user.name "AppVeyor CI"
+    - git add include/rdmnet/version.h
+    - git commit -m "Bump version header from AppVeyor CI. Build number: %APPVEYOR_BUILD_NUMBER%"
+    - git push origin develop

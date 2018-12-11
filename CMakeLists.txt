@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.3)
 
-project(RDMnet VERSION 0.1.0)
+set(RDMNET_VERSION_MAJOR 0)
+set(RDMNET_VERSION_MINOR 2)
+set(RDMNET_VERSION_PATCH 0)
+set(RDMNET_VERSION ${RDMNET_VERSION_MAJOR}.${RDMNET_VERSION_MINOR}.${RDMNET_VERSION_PATCH})
+project(RDMnet VERSION ${RDMNET_VERSION})
 
 if(PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   if (MSVC)
@@ -13,6 +17,24 @@ if(PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
       add_compile_options(-Wno-sign-compare)
     endif()
   endif()
+endif()
+
+############################### Versioned builds ############################## 
+
+option(RDMNET_CREATE_VERSIONED_BUILD "Create a new versioned build of RDMnet (should only be set by CI)" OFF)
+if(RDMNET_CREATE_VERSIONED_BUILD)
+  if(NOT RDMNET_VERSION_BUILD)
+    message(FATAL_ERROR "RDMNET_CREATE_VERSIONED_BUILD was specified but no RDMNET_VERSION_BUILD was supplied.")
+  endif()
+
+  # Build the variables we will need to configure the version header
+  set(RDMNET_VERSION_STRING_FULL ${RDMNET_VERSION}.${RDMNET_VERSION_BUILD})
+  string(TIMESTAMP CURRENT_YEAR "%Y")
+  string(TIMESTAMP RDMNET_VERSION_DATESTR "%Y-%m-%d")
+  set(RDMNET_VERSION_COPYRIGHT "Copyright ${CURRENT_YEAR} ETC Inc.")
+
+  # Configure the version header
+  configure_file(${CMAKE_CURRENT_LIST_DIR}/tools/ci/version.h.in ${CMAKE_CURRENT_LIST_DIR}/include/rdmnet/version.h)
 endif()
 
 ################################ Main libraries ###############################
