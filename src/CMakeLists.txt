@@ -35,36 +35,42 @@ endif()
 
 ################################ DNS-SD SUPPORT ###############################
 
-if(WIN32)
-  # The location of the Bonjour SDK
-  if(NOT DEFINED BONJOUR_SDK_ROOT)
-    set(BONJOUR_SDK_ROOT $ENV{BONJOUR_SDK_HOME})
-  endif()
+option(RDMNET_MOCK_DISCOVERY "Use the empty mock files for the DNS-SD provider" OFF)
 
-  # Find the Bonjour SDK lib
-  set(DNS_SD_ADDITIONAL_INCLUDE_DIRS ${BONJOUR_SDK_ROOT}/Include)
-  set(DNS_SD_ADDITIONAL_SOURCES
-    common/discovery/bonjour/rdmnet_discovery_bonjour.h
-    common/discovery/bonjour/rdmnet_discovery_bonjour.c
-  )
-  # Is this really the way to determine if we are 64-bit? Seems dumb...
-  if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    set(BONJOUR_LIB_DIR ${BONJOUR_SDK_ROOT}/Lib/x64)
-  else()
-    set(BONJOUR_LIB_DIR ${BONJOUR_SDK_ROOT}/Lib/Win32)
-  endif()
-  find_library(BONJOUR_LIB
-    NAMES dnssd
-    HINTS ${BONJOUR_LIB_DIR}
-  )
-
-  if(BONJOUR_LIB_NOTFOUND)
-    message(FATAL_ERROR "Make sure the Bonjour SDK is installed, and try again.")
-  endif()
-
-  set(DNS_SD_ADDITIONAL_LIBS ${BONJOUR_LIB})
+if(RDMNET_MOCK_DISCOVERY)
+  set(DNS_SD_ADDITIONAL_SOURCES common/discovery/mock/rdmnet_mock_discovery.c)
 else()
-  message(FATAL_ERROR "There is currently no DNS-SD provider supported for this platform.")
+  if(WIN32)
+    # The location of the Bonjour SDK
+    if(NOT DEFINED BONJOUR_SDK_ROOT)
+      set(BONJOUR_SDK_ROOT $ENV{BONJOUR_SDK_HOME})
+    endif()
+
+    # Find the Bonjour SDK lib
+    set(DNS_SD_ADDITIONAL_INCLUDE_DIRS ${BONJOUR_SDK_ROOT}/Include)
+    set(DNS_SD_ADDITIONAL_SOURCES
+      common/discovery/bonjour/rdmnet_discovery_bonjour.h
+      common/discovery/bonjour/rdmnet_discovery_bonjour.c
+    )
+    # Is this really the way to determine if we are 64-bit? Seems dumb...
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+      set(BONJOUR_LIB_DIR ${BONJOUR_SDK_ROOT}/Lib/x64)
+    else()
+      set(BONJOUR_LIB_DIR ${BONJOUR_SDK_ROOT}/Lib/Win32)
+    endif()
+    find_library(BONJOUR_LIB
+      NAMES dnssd
+      HINTS ${BONJOUR_LIB_DIR}
+    )
+
+    if(BONJOUR_LIB_NOTFOUND)
+      message(FATAL_ERROR "Make sure the Bonjour SDK is installed, and try again.")
+    endif()
+
+    set(DNS_SD_ADDITIONAL_LIBS ${BONJOUR_LIB})
+  else()
+    message(FATAL_ERROR "There is currently no DNS-SD provider supported for this platform.")
+  endif()
 endif()
 
 ################################### Library ###################################
