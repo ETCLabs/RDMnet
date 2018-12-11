@@ -626,6 +626,10 @@ bool get_broker_static_config_ipv6(const uint8_t *param_data, uint8_t param_data
 {
   uint8_t *cur_ptr = resp_data_list[0].data;
 
+  (void)param_data;
+  (void)param_data_len;
+  (void)nack_reason;
+
   // This function should actually be implemented once IPv6 is supported.
   /* Set all 0's for the static IPv6 address and port */
   memset(cur_ptr, 0, IPV6_BYTES + 2);

@@ -80,10 +80,10 @@ add_library(RDMnet
   ${RDMNET_INCLUDE}/rdmnet/common/discovery.h
   ${RDMNET_INCLUDE}/rdmnet/common/ept_prot.h
   ${RDMNET_INCLUDE}/rdmnet/common/message.h
-  ${RDMNET_INCLUDE}/rdmnet/common/opts.h
   ${RDMNET_INCLUDE}/rdmnet/common/rpt_prot.h
 
   # Private headers
+  common/rdmnet_opts.h
   common/broker_prot_priv.h
   common/llrp_priv.h
   common/llrp_prot_priv.h

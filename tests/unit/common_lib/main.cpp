@@ -24,49 +24,38 @@
 * This file is a part of RDMnet. For more information, go to:
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
+#include <iostream>
+#include "gtest/gtest.h"
+#include "lwpa/netint.h"
+#include "lwpa/socket.h"
 
-#ifndef _RDMNET_MESSAGE_PRIV_H_
-#define _RDMNET_MESSAGE_PRIV_H_
+// Need to pass this from the command line to a test case; there doesn't seem to be a better way to
+// do this than using a global variable.
+LwpaIpAddr g_netint;
 
-#include "lwpa/error.h"
-#include "rdmnet_opts.h"
-#if RDMNET_DYNAMIC_MEM
-#include <stdlib.h>
-#else
-#include "lwpa/mempool.h"
-#endif
-#include "rdmnet/common/message.h"
+int main(int argc, char **argv)
+{
+  testing::InitGoogleTest(&argc, argv);
 
-#if RDMNET_DYNAMIC_MEM
-#define alloc_client_entry() malloc(sizeof(ClientEntryData))
-#define alloc_ept_subprot() malloc(sizeof(EptSubProtocol))
-#define alloc_rdm_command() malloc(sizeof(RdmCmdListEntry))
-#define free_client_entry(ptr) free(ptr)
-#define free_ept_subprot(ptr) free(ptr)
-#define free_rdm_command(ptr) free(ptr)
-#else
-#define alloc_client_entry() lwpa_mempool_alloc(client_entries)
-#define alloc_ept_subprot() lwpa_mempool_alloc(ept_subprots)
-#define alloc_rdm_command() lwpa_mempool_alloc(rdm_commands)
-#define free_client_entry(ptr) lwpa_mempool_free(client_entries, ptr)
-#define free_ept_subprot(ptr) lwpa_mempool_free(ept_subprots, ptr)
-#define free_rdm_command(ptr) lwpa_mempool_free(rdm_commands, ptr)
-#endif
+  // Only check our custom argument if we haven't been given the "list_tests" flag
+  if (!testing::GTEST_FLAG(list_tests))
+  {
+    if (argc == 2)
+    {
+      if (0 >= lwpa_inet_pton(LWPA_IPV4, argv[1], &g_netint))
+      {
+        std::cout << "Usage: " << argv[0] << " <interface_addr>" << std::endl;
+        std::cout << "  interface_addr: IP address of network interface to use for test." << std::endl;
+        return 1;
+      }
+    }
+    else
+    {
+      LwpaNetintInfo default_netint;
+      netint_get_default_interface(&default_netint);
+      g_netint = default_netint.addr;
+    }
+  }
 
-#if !RDMNET_DYNAMIC_MEM
-LWPA_MEMPOOL_DECLARE(client_entries);
-LWPA_MEMPOOL_DECLARE(ept_subprots);
-LWPA_MEMPOOL_DECLARE(rdm_commands);
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-lwpa_error_t rdmnet_message_init();
-
-#ifdef __cplusplus
+  return RUN_ALL_TESTS();
 }
-#endif
-
-#endif /* _RDMNET_MESSAGE_PRIV_H_ */

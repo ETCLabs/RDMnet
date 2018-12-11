@@ -38,8 +38,8 @@
 #include "lwpa/log.h"
 #include "lwpa/uuid.h"
 #include "lwpa/socket.h"
-#include "rdmnet/common/opts.h"
 #include "rdmnet/common/message.h"
+#include "rdmnet_opts.h"
 
 typedef enum
 {

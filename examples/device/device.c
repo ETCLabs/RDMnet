@@ -383,8 +383,8 @@ bool connect_to_broker()
       break;
 
     /* Fill in the information used in the initial connection handshake. */
-    connect_msg.scope = connect_params.scope;
-    connect_msg.search_domain = connect_params.search_domain;
+    client_connect_msg_set_scope(&connect_msg, connect_params.scope);
+    client_connect_msg_set_search_domain(&connect_msg, connect_params.search_domain);
     connect_msg.e133_version = E133_VERSION;
     connect_msg.connect_flags = 0;
     create_rpt_client_entry(&device_state.my_cid, &device_state.my_uid, kRPTClientTypeDevice, NULL,
@@ -597,7 +597,7 @@ void send_status(uint16_t status_code, const RptHeader *received_header)
   swap_header_data(received_header, &header_to_send);
 
   status.status_code = status_code;
-  status.status_string = NULL;
+  rpt_status_msg_set_empty_status_str(&status);
   send_res = send_rpt_status(device_state.broker_conn, &device_state.my_cid, &header_to_send, &status);
   if (send_res != LWPA_OK)
   {

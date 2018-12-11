@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet/common/opts.h
+/*! \file rdmnet_opts.h
  *  \brief RDMnet configuration options.
  *
  *  Default values for all of RDMnet's \ref rdmnetopts "compile-time configuration options".

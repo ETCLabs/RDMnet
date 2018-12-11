@@ -95,23 +95,6 @@ void free_rdmnet_message(RdmnetMessage *msg)
             }
             break;
           }
-#if RDMNET_DYNAMIC_MEM
-          case VECTOR_BROKER_CONNECT:
-          {
-            ClientConnectMsg *connmsg = get_client_connect_msg(bmsg);
-            if (connmsg->scope)
-            {
-              free((char *)connmsg->scope);
-              connmsg->scope = NULL;
-            }
-            if (connmsg->search_domain)
-            {
-              free((char *)connmsg->search_domain);
-              connmsg->search_domain = NULL;
-            }
-            break;
-          }
-#endif
           default:
             break;
         }
@@ -136,18 +119,6 @@ void free_rdmnet_message(RdmnetMessage *msg)
             }
             break;
           }
-#if RDMNET_DYNAMIC_MEM
-          case VECTOR_RPT_STATUS:
-          {
-            RptStatusMsg *status = get_rpt_status_msg(rmsg);
-            if (status->status_string)
-            {
-              free((char *)status->status_string);
-              status->status_string = NULL;
-            }
-            break;
-          }
-#endif
           default:
             break;
         }

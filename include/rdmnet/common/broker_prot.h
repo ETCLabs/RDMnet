@@ -32,6 +32,7 @@
 #ifndef _RDMNET_BROKER_PROT_H_
 #define _RDMNET_BROKER_PROT_H_
 
+#include <string.h>
 #include "lwpa/int.h"
 #include "lwpa/bool.h"
 #include "lwpa/error.h"
@@ -39,8 +40,12 @@
 #include "lwpa/root_layer_pdu.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
-#include "rdmnet/common/opts.h"
 #include "rdmnet/client.h"
+
+/* Suppress strncpy() warning on Windows/MSVC. */
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
 
 /*! \addtogroup rdmnet_message
  *  @{
@@ -101,28 +106,49 @@ typedef enum
 /*! The Client Connect message in the %Broker protocol. */
 typedef struct ClientConnectMsg
 {
-#if RDMNET_DYNAMIC_MEM && !defined(__DOXYGEN__)
-  const char *scope;
-#else
   /*! The Client's configured scope. Maximum length #E133_SCOPE_STRING_PADDED_LENGTH, including null
-   *  terminator. If #RDMNET_DYNAMIC_MEM is defined nonzero, this field is of type const char *. */
+   *  terminator. */
   char scope[E133_SCOPE_STRING_PADDED_LENGTH];
-#endif
   /*! The maximum version of the standard supported by the Client. */
   uint16_t e133_version;
-#if RDMNET_DYNAMIC_MEM && !defined(__DOXYGEN__)
-  const char *search_domain;
-#else
   /*! The search domain of the Client. Maximum length #E133_DOMAIN_STRING_PADDED_LENGTH, including
-   *  null terminator. If #RDMNET_DYNAMIC_MEM is defined nonzero, this field is of type const
-   *  char *. */
+   *  null terminator. */
   char search_domain[E133_DOMAIN_STRING_PADDED_LENGTH];
-#endif
   /*! Configurable options for the connection. See CONNECTFLAG_*. */
   uint8_t connect_flags;
   /*! The Client's Client Entry. */
   ClientEntryData client_entry;
 } ClientConnectMsg;
+
+/*! \brief Safely copy a scope string to a ClientConnectMsg.
+ *  \param ccmsgptr Pointer to ClientConnectMsg.
+ *  \param scope_str String to copy to the ClientConnectMsg (const char *). */
+#define client_connect_msg_set_scope(ccmsgptr, scope_str)                       \
+  do                                                                            \
+  {                                                                             \
+    strncpy((ccmsgptr)->scope, scope_str, E133_SCOPE_STRING_PADDED_LENGTH - 1); \
+    (ccmsgptr)->scope[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';              \
+  } while (0)
+
+/*! \brief Copy the default scope string to a ClientConnectMsg.
+ *  \param ccmsgptr Pointer to ClientConnectMsg. */
+#define client_connect_msg_set_default_scope(ccmsgptr) \
+  strncpy((ccmsgptr)->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH)
+
+/*! \brief Safely copy a search domain string to a ClientConnectMsg.
+ *  \param ccmsgptr Pointer to ClientConnectMsg.
+ *  \param search_domain_str String to copy to the ClientConnectMsg (const char *). */
+#define client_connect_msg_set_search_domain(ccmsgptr, search_domain_str)                        \
+  do                                                                                             \
+  {                                                                                              \
+    strncpy((ccmsgptr)->search_domain, search_domain_str, E133_DOMAIN_STRING_PADDED_LENGTH - 1); \
+    (ccmsgptr)->search_domain[E133_DOMAIN_STRING_PADDED_LENGTH - 1] = '\0';                      \
+  } while (0)
+
+/*! \brief Copy the default search domain string to a ClientConnectMsg.
+ *  \param ccmsgptr Pointer to ClientConnectMsg. */
+#define client_connect_msg_set_default_search_domain(ccmsgptr) \
+  strncpy((ccmsgptr)->search_domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH)
 
 /*! The Connect Reply message in the %Broker protocol. */
 typedef struct ConnectReplyMsg
@@ -242,7 +268,7 @@ typedef struct BrokerMessage
 /*! \brief Determine whether a BrokerMessage contains a Disconnect message.
  *  \param brokermsgptr Pointer to BrokerMessage.
  *  \return (true or false) whether the message contains a Disconnect message. */
-#define is_disconnect(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_DISCONNECT)
+#define is_disconnect_msg(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_DISCONNECT)
 /*! \brief Get the encapsulated Disconnect message from a BrokerMessage.
  *  \param brokermsgptr Pointer to BrokerMessage.
  *  \return Pointer to encapsulated Disconnect message (ClientConnectMsg *). */

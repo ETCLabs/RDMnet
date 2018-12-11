@@ -27,10 +27,14 @@
 #include "rdmnet/llrp.h"
 #include "llrp_priv.h"
 
+#include "rdmnet_opts.h"
+#if RDMNET_DYNAMIC_MEM
+#include <stdlib.h>
+#else
 #include "lwpa/mempool.h"
+#endif
 #include "lwpa/socket.h"
 #include "rdmnet/defs.h"
-#include "rdmnet/common/opts.h"
 
 /***************************** Private macros ********************************/
 

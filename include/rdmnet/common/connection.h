@@ -42,7 +42,6 @@
 #include "lwpa/error.h"
 #include "lwpa/inet.h"
 #include "lwpa/socket.h"
-#include "rdmnet/common/opts.h"
 #include "rdmnet/common/message.h"
 
 /*! \defgroup rdmnet_conn Connection
@@ -158,9 +157,7 @@ lwpa_error_t rdmnet_recv(int handle, RdmnetData *data);
 
 int rdmnet_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_ms);
 
-#if !RDMNET_USE_TICK_THREAD || defined(__DOXYGEN__)
 void rdmnet_tick();
-#endif
 
 #ifdef __cplusplus
 }
