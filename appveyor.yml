@@ -60,7 +60,7 @@ for:
 -
   branches:
     only:
-      -develop
+      - develop
   
   environment:
     access_token:
