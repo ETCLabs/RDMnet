@@ -81,5 +81,5 @@ for:
     - git config --global user.email "appveyor@appveyor.com"
     - git config --global user.name "AppVeyor CI"
     - git add include/rdmnet/version.h
-    - git commit -m "Bump version header from AppVeyor CI. Build number: %APPVEYOR_BUILD_NUMBER%"
+    - git commit -m "Bump version header from AppVeyor CI. Build number %APPVEYOR_BUILD_NUMBER%"
     - git push origin develop
