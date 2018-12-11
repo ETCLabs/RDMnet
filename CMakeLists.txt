@@ -15,7 +15,7 @@ if(PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   endif()
 endif()
 
-# Main library
+################################ Main libraries ###############################
 
 add_subdirectory(src)
 
@@ -25,14 +25,14 @@ else()
   set(OPTION_DEFAULTS OFF)
 endif()
 
-# Tests
+#################################### Tests ####################################
 
-# option(RDMNET_BUILD_TESTS "Build the RDMnet unit tests" OFF)
-# if(RDMNET_BUILD_TESTS OR PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-#   add_subdirectory(tests)
-# endif()
+option(RDMNET_BUILD_TESTS "Build the RDMnet unit tests" ${OPTION_DEFAULTS})
+if(RDMNET_BUILD_TESTS)
+  add_subdirectory(tests)
+endif()
 
-# Examples
+################################### Examples ################################## 
 
 option(RDMNET_BUILD_EXAMPLES "Build the RDMnet example applications" ${OPTION_DEFAULTS})
 option(RDMNET_BUILD_CONSOLE_EXAMPLES "Build only the console RDMnet example applications" OFF)

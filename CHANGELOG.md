@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RDMnet example applications are now portable.
 - RDMnet compile-time config options no longer affect the contents of public headers
   (correspondingly, rdmnet/opts.h moved from under include/ to src/)
+- rdmnet/broker_prot.h: Renamed is_disconnect() to is_disconnect_msg() for consistency
 
 ### Removed
 - rdm* source files, which are now in the [RDM](https://github.com/ETCLabs/RDM) repository.
