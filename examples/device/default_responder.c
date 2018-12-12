@@ -54,7 +54,7 @@ static const uint8_t kDeviceInfo[] = {
 
     /* Software Version ID */
     RDMNET_VERSION_MAJOR, RDMNET_VERSION_MINOR,
-    RDMNET_VERSION_PATCH, RDMNET_VERSION_BUILD,
+    RDMNET_VERSION_PATCH, (RDMNET_VERSION_BUILD > 0xff ? 0xff : RDMNET_VERSION_BUILD),
 
     0x00, 0x00, /* DMX512 Footprint */
     0x00, 0x00, /* DMX512 Personality */

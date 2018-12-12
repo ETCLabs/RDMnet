@@ -34,6 +34,7 @@ if(RDMNET_CREATE_VERSIONED_BUILD)
   set(RDMNET_VERSION_COPYRIGHT "Copyright ${CURRENT_YEAR} ETC Inc.")
 
   # Configure the version header
+  message(STATUS "Configuring versioned build for ${RDMNET_VERSION_STRING_FULL}...")
   configure_file(${CMAKE_CURRENT_LIST_DIR}/tools/ci/version.h.in ${CMAKE_CURRENT_LIST_DIR}/include/rdmnet/version.h)
 endif()
 

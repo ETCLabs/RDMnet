@@ -39,7 +39,7 @@ before_build:
       mkdir build
       cd build
       cmake --version
-      cmake -G "Visual Studio 15 2017 Win64" ..
+      cmake -G "Visual Studio 15 2017 Win64" -DQTDIR=C:\Qt\5.9.7\msvc2017_64 -DRDMNET_MOCK_DISCOVERY=ON ..
 
 build:
   parallel: true            # enable MSBuild parallel builds
@@ -62,6 +62,20 @@ for:
     only:
       - develop
   
+  before_build:
+    - cmd: |-
+        git clone -b %APPVEYOR_REPO_BRANCH% https://github.com/ETCLabs/lwpa ../lwpa
+        git clone -b %APPVEYOR_REPO_BRANCH% https://github.com/ETCLabs/RDM ../RDM
+        mkdir build
+        cd build
+        cmake --version
+        cmake -G "Visual Studio 15 2017 Win64" -DQTDIR=C:\Qt\5.9.7\msvc2017_64 -DRDMNET_MOCK_DISCOVERY=ON -DRDMNET_CREATE_VERSIONED_BUILD=ON -DRDMNET_VERSION_BUILD=%APPVEYOR_BUILD_NUMBER% ..
+
+-
+  branches:
+    only:
+      - master
+
   environment:
     access_token:
       secure: D2tJBo+pb7fiu19yt3FYK5QSqT9bnMdlBHEIWutil33+rKjt1cP5nnB0m1XMkTsM
@@ -73,7 +87,7 @@ for:
         mkdir build
         cd build
         cmake --version
-        cmake -G "Visual Studio 15 2017 Win64" -DRDMNET_CREATE_VERSIONED_BUILD=ON -DRDMNET_VERSION_BUILD=%APPVEYOR_BUILD_NUMBER% ..
+        cmake -G "Visual Studio 15 2017 Win64" -DQTDIR=C:\Qt\5.9.7\msvc2017_64 -DRDMNET_MOCK_DISCOVERY=ON -DRDMNET_CREATE_VERSIONED_BUILD=ON -DRDMNET_VERSION_BUILD=%APPVEYOR_BUILD_NUMBER% ..
 
   on_success:
     - git config --global credential.helper store
@@ -82,4 +96,4 @@ for:
     - git config --global user.name "AppVeyor CI"
     - git add include/rdmnet/version.h
     - git commit -m "Bump version header from AppVeyor CI. Build number %APPVEYOR_BUILD_NUMBER%"
-    - git push origin develop
+    - git push origin master
