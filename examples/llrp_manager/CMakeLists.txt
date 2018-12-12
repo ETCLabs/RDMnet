@@ -1,6 +1,6 @@
 ################################ LLRP Manager #################################
 
-set(MANAGER_TARGET LLRPExampleManager)
+set(MANAGER_TARGET llrp_manager_example)
 
 add_executable(${MANAGER_TARGET}
   manager.cpp

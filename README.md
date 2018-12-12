@@ -46,7 +46,7 @@ The applications are available as a binary package
 [here](https://etclabs.github.io/RDMnet).
 
 The library and applications currently support Microsoft Windows, and are built
-using Microsoft's Visual Studio 2015 toolchain.
+using CMake and Microsoft's Visual Studio toolchain.
 
 ## Building
 
@@ -77,7 +77,6 @@ Other key items on the `TODO` list include:
 
 * Higher API layers to make library usage simpler
 * Platform ports for macOS, Linux, and several popular embedded platforms
-* Usage of a cross-platform build system
 * Tests and continuous integration
 
 ## Standard Version

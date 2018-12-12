@@ -1,6 +1,6 @@
 ################################ RDMnet Broker ################################
 
-set(BROKER_TARGET RDMnetExampleBroker)
+set(BROKER_TARGET rdmnet_broker_example)
 
 add_executable(${BROKER_TARGET}
   broker_log.h
