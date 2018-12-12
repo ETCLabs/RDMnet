@@ -24,42 +24,38 @@
 * This file is a part of RDMnet. For more information, go to:
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
+#include <iostream>
+#include "gtest/gtest.h"
+#include "lwpa/netint.h"
+#include "lwpa/socket.h"
 
-/*! \file rdmnet/version.h
- *  \brief Provides the current version of the RDMnet library and executables.
- *  \author Sam Kearney
- */
-#ifndef _RDMNET_VERSION_H_
-#define _RDMNET_VERSION_H_
+// Need to pass this from the command line to a test case; there doesn't seem to be a better way to
+// do this than using a global variable.
+LwpaIpAddr g_netint;
 
-/* clang-format off */
+int main(int argc, char **argv)
+{
+  testing::InitGoogleTest(&argc, argv);
 
-/*! \defgroup rdmnet_core_lib RDMnet Core Library
- *  \brief Implementation of the core functions of RDMnet.
- *
- *  This includes discovery, connections, and message packing and unpacking.
- *
- *  @{
- */
+  // Only check our custom argument if we haven't been given the "list_tests" flag
+  if (!testing::GTEST_FLAG(list_tests))
+  {
+    if (argc == 2)
+    {
+      if (0 >= lwpa_inet_pton(LWPA_IPV4, argv[1], &g_netint))
+      {
+        std::cout << "Usage: " << argv[0] << " <interface_addr>" << std::endl;
+        std::cout << "  interface_addr: IP address of network interface to use for test." << std::endl;
+        return 1;
+      }
+    }
+    else
+    {
+      LwpaNetintInfo default_netint;
+      netint_get_default_interface(&default_netint);
+      g_netint = default_netint.addr;
+    }
+  }
 
-/*! \name RDMnet version numbers
- *  @{
- */
-#define RDMNET_VERSION_MAJOR 0 /*!< The major version. */
-#define RDMNET_VERSION_MINOR 2 /*!< The minor version. */
-#define RDMNET_VERSION_PATCH 0 /*!< The patch version. */
-#define RDMNET_VERSION_BUILD 9999 /*!< The build number. */
-/*!@}*/
-
-/*! \name RDMnet version strings
- *  @{
- */
-#define RDMNET_VERSION_STRING "0.2.0.9999"
-#define RDMNET_VERSION_DATESTR "Today (Development Build)"
-#define RDMNET_VERSION_COPYRIGHT "Copyright 2018 ETC Inc."
-#define RDMNET_VERSION_PRODUCTNAME "RDMnet"
-/*!@}*/
-
-/*!@}*/
-
-#endif /* _RDMNET_VERSION_H_ */
+  return RUN_ALL_TESTS();
+}

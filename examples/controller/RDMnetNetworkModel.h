@@ -30,6 +30,7 @@
 #include <fstream>
 #include <map>
 #include <memory>
+#include <cstddef>
 #include <QStandardItemModel>
 #include "lwpa/log.h"
 #include "lwpa/thread.h"
@@ -68,7 +69,7 @@ public:
   void addCustomOutputStream(LogOutputStream *stream);
   void removeCustomOutputStream(LogOutputStream *stream);
 
-  int getNumberOfCustomLogOutputStreams();
+  size_t getNumberOfCustomLogOutputStreams();
 
 protected:
   std::fstream file_;
@@ -199,7 +200,7 @@ public:
 
   void searchingItemRevealed(SearchingStatusItem *searchItem);
 
-  int getNumberOfCustomLogOutputStreams();
+  size_t getNumberOfCustomLogOutputStreams();
 
   /******* QStandardItemModel overrides *******/
 

@@ -25,21 +25,26 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet/rptprot.h
+/*! \file rdmnet/common/rpt_prot.h
  *  \brief Functions to pack, send and parse RPT PDUs and their encapsulated messages.
  *  \author Sam Kearney
  */
-#ifndef _RDMNET_RPTPROT_H_
-#define _RDMNET_RPTPROT_H_
+#ifndef _RDMNET_RPT_PROT_H_
+#define _RDMNET_RPT_PROT_H_
 
 #include <stddef.h>
+#include <string.h>
 #include "lwpa/int.h"
 #include "lwpa/uuid.h"
 #include "lwpa/error.h"
 #include "lwpa/root_layer_pdu.h"
 #include "rdm/message.h"
 #include "rdmnet/defs.h"
-#include "rdmnet/common/opts.h"
+
+/* Suppress strncpy() warning on Windows/MSVC. */
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
 
 /*! \addtogroup rdmnet_message
  *  @{
@@ -103,13 +108,23 @@ typedef struct RptStatusMsg
 {
   /*! A status code that indicates the specific error or status condition. */
   rpt_status_code_t status_code;
-#if RDMNET_DYNAMIC_MEM && !defined(__DOXYGEN__)
-  const char *status_string;
-#else
   /*! An optional implementation-defined status string to accompany this status message. */
   char status_string[RPT_STATUS_STRING_MAXLEN + 1];
-#endif
 } RptStatusMsg;
+
+/*! \brief Safely copy a status string to an RptStatusMsg.
+ *  \param statusmsgptr Pointer to RptStatusMsg.
+ *  \param status_str String to copy to the RptStatusMsg (const char *). */
+#define rpt_status_msg_set_status_string(statusmsgptr, status_str)                    \
+  do                                                                                  \
+  {                                                                                   \
+    strncpy((statusmsgptr)->status_string, status_str, RPT_STATUS_STRING_MAXLEN - 1); \
+    (statusmsgptr)->status_string[RPT_STATUS_STRING_MAXLEN - 1] = '\0';               \
+  } while (0)
+
+/*! \brief Set an empty status string in an RptStatusMsg.
+ *  \param statusmsgptr Pointer to RptStatusMsg. */
+#define rpt_status_msg_set_empty_status_str(statusmsgptr) (statusmsgptr)->status_string[0] = '\0';
 
 typedef struct RdmCmdListEntry RdmCmdListEntry;
 
@@ -196,4 +211,4 @@ lwpa_error_t send_rpt_notification(int handle, const LwpaUuid *local_cid, const 
 
 /*!@}*/
 
-#endif /* _RDMNET_RPTPROT_H_ */
+#endif /* _RDMNET_RPT_PROT_H_ */

@@ -35,19 +35,54 @@ endif()
 
 ################################ DNS-SD SUPPORT ###############################
 
-if(WIN32)
+option(RDMNET_MOCK_DISCOVERY "Use the empty mock files for the DNS-SD provider" OFF)
+option(RDMNET_USE_BONJOUR_WIN_SDK "Use Apple's Bonjour SDK for Windows (LICENSING RESTRICTIONS MAY APPLY" ON)
 
-  #NB-W TESTING
-  add_subdirectory(c:/p4/nb-w_mdns/Bonjour c:/p4/nb-w_mdns/Bonjour/build)
-  set(DNS_SD_ADDITIONAL_INCLUDE_DIRS c:/p4/nb-w_mdns/Bonjour/mDNSShared)
-  set(DNS_SD_ADDITIONAL_SOURCES
-    common/discovery/bonjour/rdmnet_discovery_bonjour.h
-    common/discovery/bonjour/rdmnet_discovery_bonjour.c
-  )
-  set(DNS_SD_ADDITIONAL_LIBS C:/p4/nb-w_mdns/Bonjour/build/mDNSWindows/DLLStub/Release/dnssdStatic.lib)
-
+if(RDMNET_MOCK_DISCOVERY)
+  set(DNS_SD_ADDITIONAL_SOURCES common/discovery/mock/rdmnet_mock_discovery.c)
 else()
-  message(FATAL_ERROR "There is currently no DNS-SD provider supported for this platform.")
+  if(WIN32)
+    set(DNS_SD_ADDITIONAL_SOURCES
+      common/discovery/bonjour/rdmnet_discovery_bonjour.h
+      common/discovery/bonjour/rdmnet_discovery_bonjour.c
+    )
+    if(RDMNET_USE_BONJOUR_WIN_SDK)
+      # The location of the Bonjour SDK
+      if(NOT DEFINED BONJOUR_SDK_ROOT)
+        set(BONJOUR_SDK_ROOT $ENV{BONJOUR_SDK_HOME})
+      endif()
+
+      # Find the Bonjour SDK lib
+      set(DNS_SD_ADDITIONAL_INCLUDE_DIRS ${BONJOUR_SDK_ROOT}/Include)
+      # Is this really the way to determine if we are 64-bit? Seems dumb...
+      if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(BONJOUR_LIB_DIR ${BONJOUR_SDK_ROOT}/Lib/x64)
+      else()
+        set(BONJOUR_LIB_DIR ${BONJOUR_SDK_ROOT}/Lib/Win32)
+      endif()
+      find_library(BONJOUR_LIB
+        NAMES dnssd
+        HINTS ${BONJOUR_LIB_DIR}
+      )
+
+      if(BONJOUR_LIB_NOTFOUND)
+        message(FATAL_ERROR "Make sure the Bonjour SDK is installed, and try again.")
+      endif()
+
+      set(DNS_SD_ADDITIONAL_LIBS ${BONJOUR_LIB})
+    else()
+      #NB-W TESTING
+      add_subdirectory(c:/p4/nb-w_mdns/Bonjour c:/p4/nb-w_mdns/Bonjour/build)
+      set(DNS_SD_ADDITIONAL_INCLUDE_DIRS c:/p4/nb-w_mdns/Bonjour/mDNSShared)
+      set(DNS_SD_ADDITIONAL_SOURCES
+        common/discovery/bonjour/rdmnet_discovery_bonjour.h
+        common/discovery/bonjour/rdmnet_discovery_bonjour.c
+      )
+      set(DNS_SD_ADDITIONAL_LIBS C:/p4/nb-w_mdns/Bonjour/build/mDNSWindows/DLLStub/Release/dnssdStatic.lib)
+    endif()
+  else()
+    message(FATAL_ERROR "There is currently no DNS-SD provider supported for this platform.")
+  endif()
 endif()
 
 ################################### Library ###################################
@@ -63,10 +98,10 @@ add_library(RDMnet
   ${RDMNET_INCLUDE}/rdmnet/common/discovery.h
   ${RDMNET_INCLUDE}/rdmnet/common/ept_prot.h
   ${RDMNET_INCLUDE}/rdmnet/common/message.h
-  ${RDMNET_INCLUDE}/rdmnet/common/opts.h
   ${RDMNET_INCLUDE}/rdmnet/common/rpt_prot.h
 
   # Private headers
+  common/rdmnet_opts.h
   common/broker_prot_priv.h
   common/llrp_priv.h
   common/llrp_prot_priv.h

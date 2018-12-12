@@ -28,20 +28,11 @@
 #include "rdmnet_msg_buf.h"
 
 #include <assert.h>
-#include "rdmnet/common/opts.h"
-#if RDMNET_DYNAMIC_MEM
-#include <stdlib.h>
-#endif
 #include "lwpa/pack.h"
 #include "lwpa/root_layer_pdu.h"
 #include "broker_prot_priv.h"
 #include "rpt_prot_priv.h"
 #include "rdmnet_message_priv.h"
-
-/* Suppress strncpy() warning on Windows/MSVC. */
-#ifdef _MSC_VER
-#pragma warning(disable : 4996)
-#endif
 
 /*************************** Private constants *******************************/
 
@@ -518,49 +509,11 @@ void parse_client_connect_header(const uint8_t *data, ClientConnectMsg *ccmsg)
 {
   const uint8_t *cur_ptr = data;
 
-#if RDMNET_DYNAMIC_MEM
-  if (cur_ptr[E133_SCOPE_STRING_PADDED_LENGTH - 1] == '\0')
-  {
-    char *new_scope = (char *)malloc(strlen((char *)cur_ptr) + 1);
-    assert(new_scope);
-    strcpy(new_scope, (char *)cur_ptr);
-    ccmsg->scope = new_scope;
-  }
-  else
-  {
-    char *new_scope = (char *)malloc(E133_SCOPE_STRING_PADDED_LENGTH);
-    assert(new_scope);
-    memcpy(new_scope, cur_ptr, E133_SCOPE_STRING_PADDED_LENGTH - 1);
-    new_scope[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
-    ccmsg->scope = new_scope;
-  }
-#else
-  strncpy(ccmsg->scope, (char *)cur_ptr, E133_SCOPE_STRING_PADDED_LENGTH);
-  ccmsg->scope[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
-#endif
+  client_connect_msg_set_scope(ccmsg, (const char *)cur_ptr);
   cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
   ccmsg->e133_version = upack_16b(cur_ptr);
   cur_ptr += 2;
-#if RDMNET_DYNAMIC_MEM
-  if (cur_ptr[E133_DOMAIN_STRING_PADDED_LENGTH - 1] == '\0')
-  {
-    char *new_search_domain = (char *)malloc(strlen((char *)cur_ptr) + 1);
-    assert(new_search_domain);
-    strcpy(new_search_domain, (char *)cur_ptr);
-    ccmsg->search_domain = new_search_domain;
-  }
-  else
-  {
-    char *new_search_domain = (char *)malloc(E133_DOMAIN_STRING_PADDED_LENGTH);
-    assert(new_search_domain);
-    memcpy(new_search_domain, cur_ptr, E133_DOMAIN_STRING_PADDED_LENGTH - 1);
-    new_search_domain[E133_DOMAIN_STRING_PADDED_LENGTH - 1] = '\0';
-    ccmsg->search_domain = new_search_domain;
-  }
-#else
-  strncpy(ccmsg->search_domain, (char *)cur_ptr, E133_DOMAIN_STRING_PADDED_LENGTH);
-  ccmsg->search_domain[E133_DOMAIN_STRING_PADDED_LENGTH - 1] = '\0';
-#endif
+  client_connect_msg_set_search_domain(ccmsg, (const char *)cur_ptr);
   cur_ptr += E133_DOMAIN_STRING_PADDED_LENGTH;
   ccmsg->connect_flags = *cur_ptr;
 }
@@ -1097,9 +1050,7 @@ size_t parse_rpt_status(RptStatusState *rsstate, const uint8_t *data, size_t dat
         /* These status codes contain an optional status string */
         if (str_len == 0)
         {
-#if RDMNET_DYNAMIC_MEM
-          smsg->status_string = NULL;
-#endif
+          smsg->status_string[0] = '\0';
           res = kPSFullBlockParseOk;
         }
         else if (str_len > RPT_STATUS_STRING_MAXLEN)
@@ -1108,16 +1059,8 @@ size_t parse_rpt_status(RptStatusState *rsstate, const uint8_t *data, size_t dat
         }
         else if (remaining_len >= str_len)
         {
-#if RDMNET_DYNAMIC_MEM
-          char *new_status_string = (char *)malloc(str_len + 1);
-          assert(new_status_string);
-          memcpy(new_status_string, &data[bytes_parsed], str_len);
-          new_status_string[str_len] = '\0';
-          smsg->status_string = new_status_string;
-#else
           memcpy(smsg->status_string, &data[bytes_parsed], str_len);
           smsg->status_string[str_len] = '\0';
-#endif
           bytes_parsed += str_len;
           rsstate->block.size_parsed += str_len;
           res = kPSFullBlockParseOk;

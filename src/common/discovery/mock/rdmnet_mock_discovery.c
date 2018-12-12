@@ -25,41 +25,64 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet/version.h
- *  \brief Provides the current version of the RDMnet library and executables.
+/*! \file rdmnet_mock_discovery.c
+ *  \brief Provides a mock implementation of the discovery functions.
+ *  These are currently just empty shims to allow RDMnet to be built by CI.
  *  \author Sam Kearney
  */
-#ifndef _RDMNET_VERSION_H_
-#define _RDMNET_VERSION_H_
 
-/* clang-format off */
+#include "rdmnet/common/discovery.h"
 
-/*! \defgroup rdmnet_core_lib RDMnet Core Library
- *  \brief Implementation of the core functions of RDMnet.
- *
- *  This includes discovery, connections, and message packing and unpacking.
- *
- *  @{
- */
+lwpa_error_t rdmnetdisc_init(RdmnetDiscCallbacks *callbacks)
+{
+  (void)callbacks;
+  return LWPA_NOTIMPL;
+}
 
-/*! \name RDMnet version numbers
- *  @{
- */
-#define RDMNET_VERSION_MAJOR 0 /*!< The major version. */
-#define RDMNET_VERSION_MINOR 2 /*!< The minor version. */
-#define RDMNET_VERSION_PATCH 0 /*!< The patch version. */
-#define RDMNET_VERSION_BUILD 9999 /*!< The build number. */
-/*!@}*/
+void rdmnetdisc_deinit()
+{
+}
 
-/*! \name RDMnet version strings
- *  @{
- */
-#define RDMNET_VERSION_STRING "0.2.0.9999"
-#define RDMNET_VERSION_DATESTR "Today (Development Build)"
-#define RDMNET_VERSION_COPYRIGHT "Copyright 2018 ETC Inc."
-#define RDMNET_VERSION_PRODUCTNAME "RDMnet"
-/*!@}*/
+void fill_default_scope_info(ScopeMonitorInfo *scope_info)
+{
+  (void)scope_info;
+}
 
-/*!@}*/
+void fill_default_broker_info(BrokerDiscInfo *broker_info)
+{
+  (void)broker_info;
+}
 
-#endif /* _RDMNET_VERSION_H_ */
+lwpa_error_t rdmnetdisc_startmonitoring(const ScopeMonitorInfo *scope_info, int *platform_specific_error, void *context)
+{
+  (void)scope_info;
+  (void)platform_specific_error;
+  (void)context;
+  return LWPA_NOTIMPL;
+}
+
+void rdmnetdisc_stopmonitoring(const ScopeMonitorInfo *scope_info)
+{
+  (void)scope_info;
+}
+
+void rdmnetdisc_stopmonitoring_all_scopes()
+{
+}
+
+lwpa_error_t rdmnetdisc_registerbroker(const BrokerDiscInfo *broker_info, bool monitor_scope, void *context)
+{
+  (void)broker_info;
+  (void)monitor_scope;
+  (void)context;
+  return LWPA_NOTIMPL;
+}
+
+void rdmnetdisc_unregisterbroker(bool stop_monitoring_scope)
+{
+  (void)stop_monitoring_scope;
+}
+
+void rdmnetdisc_tick()
+{
+}

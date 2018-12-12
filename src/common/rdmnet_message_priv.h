@@ -29,7 +29,7 @@
 #define _RDMNET_MESSAGE_PRIV_H_
 
 #include "lwpa/error.h"
-#include "rdmnet/common/opts.h"
+#include "rdmnet_opts.h"
 #if RDMNET_DYNAMIC_MEM
 #include <stdlib.h>
 #else

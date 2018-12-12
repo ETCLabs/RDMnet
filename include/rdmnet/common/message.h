@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet/message.h
+/*! \file rdmnet/common/message.h
  *  \brief Basic types for parsed RDMnet messages.
  *  \author Sam Kearney
  */
@@ -42,8 +42,8 @@
 /*! \defgroup rdmnet_message Message
  *  \ingroup rdmnet_core_lib
  *
- *  Types to represent RDMnet messages, and functions to pack and unpack them.
- *  LLRP Messages are excluded, as they are handled by separate logic.
+ *  Types to represent RDMnet messages, and functions to pack and unpack them. LLRP Messages are
+ *  excluded, as they are handled by separate logic.
  *
  *  @{
  */

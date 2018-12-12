@@ -27,7 +27,7 @@
 
 #include "rdmnet/common/connection.h"
 
-#include "rdmnet/common/opts.h"
+#include "rdmnet_opts.h"
 #if RDMNET_DYNAMIC_MEM
 #include <stdlib.h>
 #else
@@ -125,7 +125,6 @@ static struct rc_state
 
 #if RDMNET_USE_TICK_THREAD
 static void rdmnet_tick_thread(void *arg);
-static void rdmnet_tick();
 #endif
 static LwpaRbNode *node_alloc();
 static void node_dealloc(LwpaRbNode *node);

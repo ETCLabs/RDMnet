@@ -37,8 +37,8 @@
 #include "lwpa/lock.h"
 #include "lwpa/timer.h"
 #include "lwpa/inet.h"
-#include "rdmnet/common/opts.h"
 #include "rdmnet/common/connection.h"
+#include "rdmnet_opts.h"
 #include "rdmnet_msg_buf.h"
 
 #define rdmnet_data_set_nodata(rdmnetdataptr) ((rdmnetdataptr)->type = kRDMnetNoData)

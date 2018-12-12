@@ -54,7 +54,7 @@ static const uint8_t kDeviceInfo[] = {
 
     /* Software Version ID */
     RDMNET_VERSION_MAJOR, RDMNET_VERSION_MINOR,
-    RDMNET_VERSION_PATCH, RDMNET_VERSION_BUILD,
+    RDMNET_VERSION_PATCH, (RDMNET_VERSION_BUILD > 0xff ? 0xff : RDMNET_VERSION_BUILD),
 
     0x00, 0x00, /* DMX512 Footprint */
     0x00, 0x00, /* DMX512 Personality */
@@ -625,6 +625,10 @@ bool get_broker_static_config_ipv6(const uint8_t *param_data, uint8_t param_data
                                    size_t *num_responses, uint16_t *nack_reason)
 {
   uint8_t *cur_ptr = resp_data_list[0].data;
+
+  (void)param_data;
+  (void)param_data_len;
+  (void)nack_reason;
 
   // This function should actually be implemented once IPv6 is supported.
   /* Set all 0's for the static IPv6 address and port */

@@ -1,11 +1,11 @@
 Third-Party Software
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Qt version 5.9.1
+Qt
 Copyright (c) 2015 The Qt Company Ltd., under the GNU LGPL v.3
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The controller application is dependent on Qt version 5.9.1.
+The controller application is dependent on the Qt framework.
 
 Qt binaries are distributed with the controller application under the terms of
 the GNU Lesser General Public License (LGPL) v.3. The Qt source code is
