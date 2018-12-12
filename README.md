@@ -32,15 +32,14 @@ This repository contains a C-language library for core RDMnet communication. It
 also contains example applications that demonstrate the roles of Components in
 RDMnet:
 
-* *RDMnetControllerGUI*: A Qt-based GUI application which does basic discovery,
+* *rdmnet_controller_example*: A Qt-based GUI application which does basic discovery,
 display and configuration of RDMnet Components.
-* *broker*: A console application (which can also be run as a Windows service)
-which implements an RDMnet Broker.
-* *device*: A console application which implements an RDMnet Device.
+* *rdmnet_broker_example*: A console application which implements an RDMnet Broker.
+* *rdmnet_device_example*: A console application which implements an RDMnet Device.
 * *fakeway* (binary only): A console application which implements an RDMnet
 Gateway, using one or more ETC [Gadget II](https://www.etcconnect.com/Products/Networking/Gadget-II/Features.aspx)
 devices to communicate with RDM fixtures.
-* *manager*: A console application which implements a basic LLRP Manager.
+* *llrp_manager_example*: A console application which implements a basic LLRP Manager.
 
 The applications are available as a binary package
 [here](https://etclabs.github.io/RDMnet).
