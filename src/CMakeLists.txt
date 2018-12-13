@@ -1,5 +1,6 @@
 set(RDMNET_ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
 set(RDMNET_INCLUDE ${RDMNET_ROOT}/include)
+set(RDMNET_SRC ${CMAKE_CURRENT_LIST_DIR})
 
 ################################# Dependencies ################################
 
@@ -36,17 +37,18 @@ endif()
 ################################ DNS-SD SUPPORT ###############################
 
 option(RDMNET_MOCK_DISCOVERY "Use the empty mock files for the DNS-SD provider" OFF)
-option(RDMNET_USE_BONJOUR_WIN_SDK "Use Apple's Bonjour SDK for Windows (LICENSING RESTRICTIONS MAY APPLY" ON)
+option(RDMNET_WINDOWS_USE_BONJOUR_SDK
+  "Use Apple's Bonjour SDK for Windows (LICENSING RESTRICTIONS MAY APPLY)" ON)
 
 if(RDMNET_MOCK_DISCOVERY)
-  set(DNS_SD_ADDITIONAL_SOURCES common/discovery/mock/rdmnet_mock_discovery.c)
+  set(DNS_SD_ADDITIONAL_SOURCES ${RDMNET_SRC}/common/discovery/mock/rdmnet_mock_discovery.c)
 else()
   if(WIN32)
     set(DNS_SD_ADDITIONAL_SOURCES
-      common/discovery/bonjour/rdmnet_discovery_bonjour.h
-      common/discovery/bonjour/rdmnet_discovery_bonjour.c
+      ${RDMNET_SRC}/common/discovery/bonjour/rdmnet_discovery_bonjour.h
+      ${RDMNET_SRC}/common/discovery/bonjour/rdmnet_discovery_bonjour.c
     )
-    if(RDMNET_USE_BONJOUR_WIN_SDK)
+    if(RDMNET_WINDOWS_USE_BONJOUR_SDK)
       # The location of the Bonjour SDK
       if(NOT DEFINED BONJOUR_SDK_ROOT)
         set(BONJOUR_SDK_ROOT $ENV{BONJOUR_SDK_HOME})
@@ -71,14 +73,20 @@ else()
 
       set(DNS_SD_ADDITIONAL_LIBS ${BONJOUR_LIB})
     else()
-      #NB-W TESTING
-      add_subdirectory(c:/p4/nb-w_mdns/Bonjour c:/p4/nb-w_mdns/Bonjour/build)
-      set(DNS_SD_ADDITIONAL_INCLUDE_DIRS c:/p4/nb-w_mdns/Bonjour/mDNSShared)
-      set(DNS_SD_ADDITIONAL_SOURCES
-        common/discovery/bonjour/rdmnet_discovery_bonjour.h
-        common/discovery/bonjour/rdmnet_discovery_bonjour.c
-      )
-      set(DNS_SD_ADDITIONAL_LIBS C:/p4/nb-w_mdns/Bonjour/build/mDNSWindows/DLLStub/Release/dnssdStatic.lib)
+      if(NOT RDMNET_WINDOWS_BONJOUR_SRC_LOC AND NOT RDMNET_WINDOWS_BONJOUR_INSTALL_LOC)
+        message(FATAL_ERROR
+          "You must provide Bonjour for Windows from source in one of the following ways:\n"
+          " - Use RDMNET_WINDOWS_BONJOUR_SRC_LOC to specify the location of the source repository\n"
+          " - Use RDMNET_WINDOWS_BONJOUR_INSTALL_LOC to specify the location of the installed binaries\n"
+        )
+      endif()
+
+      if (RDMNET_WINDOWS_BONJOUR_SRC_LOC)
+        add_subdirectory(${RDMNET_WINDOWS_BONJOUR_SRC_LOC}/mDNSWindows/DLLStub Bonjour)
+        set(DNS_SD_ADDITIONAL_LIBS dnssdStatic)
+      elseif(RDMNET_WINDOWS_BONJOUR_INSTALL_LOC)
+        message(FATAL_ERROR "This option is not yet implemented.")
+      endif()
     endif()
   else()
     message(FATAL_ERROR "There is currently no DNS-SD provider supported for this platform.")
@@ -101,24 +109,24 @@ add_library(RDMnet
   ${RDMNET_INCLUDE}/rdmnet/common/rpt_prot.h
 
   # Private headers
-  common/rdmnet_opts.h
-  common/broker_prot_priv.h
-  common/llrp_priv.h
-  common/llrp_prot_priv.h
-  common/rdmnet_conn_priv.h
-  common/rdmnet_message_priv.h
-  common/rdmnet_msg_buf.h
-  common/rpt_prot_priv.h
+  ${RDMNET_SRC}/common/rdmnet_opts.h
+  ${RDMNET_SRC}/common/broker_prot_priv.h
+  ${RDMNET_SRC}/common/llrp_priv.h
+  ${RDMNET_SRC}/common/llrp_prot_priv.h
+  ${RDMNET_SRC}/common/rdmnet_conn_priv.h
+  ${RDMNET_SRC}/common/rdmnet_message_priv.h
+  ${RDMNET_SRC}/common/rdmnet_msg_buf.h
+  ${RDMNET_SRC}/common/rpt_prot_priv.h
 
   # Sources
-  common/broker_prot.c
-  common/llrp_prot.c
-  common/llrp.c
-  common/rdmnet_client.c
-  common/rdmnet_connection.c
-  common/rdmnet_message.c
-  common/rdmnet_msg_buf.c
-  common/rpt_prot.c
+  ${RDMNET_SRC}/common/broker_prot.c
+  ${RDMNET_SRC}/common/llrp_prot.c
+  ${RDMNET_SRC}/common/llrp.c
+  ${RDMNET_SRC}/common/rdmnet_client.c
+  ${RDMNET_SRC}/common/rdmnet_connection.c
+  ${RDMNET_SRC}/common/rdmnet_message.c
+  ${RDMNET_SRC}/common/rdmnet_msg_buf.c
+  ${RDMNET_SRC}/common/rpt_prot.c
 
   ${DNS_SD_ADDITIONAL_SOURCES}
 )
