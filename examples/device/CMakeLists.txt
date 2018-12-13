@@ -1,6 +1,6 @@
 ################################ RDMnet Device ################################
 
-set(DEVICE_TARGET RDMnetExampleDevice)
+set(DEVICE_TARGET rdmnet_device_example)
 
 add_executable(${DEVICE_TARGET}
   device.h
