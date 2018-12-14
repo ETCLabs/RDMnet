@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <Product Name='RDMnet' Manufacturer='ETC Inc.'
+      Id='91BD3CF5-2115-4D03-8F6D-B213CF44A74E' 
+      UpgradeCode='91BD3CF5-2115-4D03-8F6D-B213CF44A74E'
+      Language='1033' Codepage='1252' Version='0.2.0'>
+
+    <Package Id='*' Keywords='Installer' Description='ETC RDMnet 0.2.0 Installer'
+        Manufacturer='ETC Inc.' InstallerVersion='100' Languages='1033'
+        Compressed='yes' SummaryCodepage='1252' />
+
+    <Media Id='1' Cabinet='Sample.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1' />
+    <Property Id='DiskPrompt' Value='ETC RDMnet 0.2 Installation [1]' />
+
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <Directory Id='ProgramFilesFolder' Name='PFiles'>
+        <Directory Id='ETC' Name='ETC'>
+          <Directory Id='INSTALLDIR' Name='RDMnet'>
+            <Component Id='Broker' Guid='91BD3CF5-2115-4D03-8F6D-B213CF44A74E'>
+              <File Id='BrokerExe' Name='rdmnet_broker_example.exe' DiskId='1'
+                  Source='rdmnet_broker_example.exe' KeyPath='yes' />
+            </Component>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <Feature Id='Complete' Title='RDMnet 0.2.0' Description='The RDMnet SDK and example apps.'
+        Display='expand' Level='1' ConfigurableDirectory='INSTALLDIR'>
+      <Feature Id='ExampleApps' Title='RDMnet Example Apps' Description='The RDMnet example apps.'
+          Display='expand' Level='1'>
+        <Feature Id='Broker' Title='RDMnet Broker App' Description='The RDMnet Broker example app.'
+            Level='1'>
+          <ComponentRef Id='Broker' />
+        </Feature>
+      </Feature>
+    </Feature>
+
+    <UIRef Id='WixUI_FeatureTree' />
+    <UIRef Id='WixUI_ErrorProgressText' />
+
+  </Product>
+</Wix>
