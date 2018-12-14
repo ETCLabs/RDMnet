@@ -19,6 +19,8 @@ if(PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   endif()
 endif()
 
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/tools/cmake)
+
 ############################### Versioned builds ############################## 
 
 option(RDMNET_CREATE_VERSIONED_BUILD "Create a new versioned build of RDMnet (should only be set by CI)" OFF)

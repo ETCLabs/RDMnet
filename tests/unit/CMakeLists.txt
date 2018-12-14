@@ -1,10 +1,6 @@
 ################################### testing ###################################
 
-enable_testing()
-
-# Get and build the Googletest library at configure time: 
-include(../../tools/cmake/get_googletest.cmake)
-get_googletest(${CMAKE_CURRENT_LIST_DIR}/../..)
+# RDMnet library unit tests
 
 add_executable(test_rdmnet_lib
   # lwpa unit test sources
