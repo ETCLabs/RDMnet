@@ -1,8 +1,26 @@
 Third-Party Software
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mDNSWindows
+Forked from Apple's mDNSResponder source repository 
+Copyright (c) various dates Apple Inc. All rights reserved.
+Used per the terms of the Apache License, Version 2.0, and the 3-clause BSD
+license.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following sources in this repository depend on headers exported from an
+installation of mDNSWindows, which is forked from Apple's mDNSResponder:
+
+src/common/discovery/bonjour/rdmnet_discovery_bonjour.h
+src/common/discovery/bonjour/rdmnet_discovery_bonjour.c
+
+A binary version of mDNSWindows is also distributed with the installer for the
+RDMnet library and example applications.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Qt
-Copyright (c) 2015 The Qt Company Ltd., under the GNU LGPL v.3
+Copyright (c) 2015 The Qt Company Ltd.
+Used per the terms of the GNU LGPL v.3
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The controller application is dependent on the Qt framework.
