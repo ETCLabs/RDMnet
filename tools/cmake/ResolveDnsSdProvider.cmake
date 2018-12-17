@@ -81,11 +81,8 @@ else()
 
         set(DNS_SD_ADDITIONAL_INCLUDE_DIRS ${RDMNET_WINDOWS_BONJOUR_INSTALL_LOC}/include)
         set(DNS_SD_ADDITIONAL_LIBS ${BONJOUR_LIB})
+        set(DNS_SD_DLL ${RDMNET_WINDOWS_BONJOUR_INSTALL_LOC}/dll/dnssd.dll PARENT_SCOPE)
 
-        # TODO DLL Debugging solution
-        # if(MSVC)
-        #   set(CMAKE_MSVCIDE_RUN_PATH ${RDMNET_WINDOWS_BONJOUR_INSTALL_LOC}/dll)
-        # endif()
       endif()
     endif()
   else()
