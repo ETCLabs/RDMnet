@@ -4,22 +4,9 @@ set(RDMNET_SRC ${CMAKE_CURRENT_LIST_DIR})
 
 ################################# Dependencies ################################
 
-if(NOT TARGET lwpa)
-  if(NOT DEFINED LWPA_DIR)
-    # Set a default for the lwpa location; assume it is named 'lwpa' and at the same level as
-    # RDMnet.
-    set(LWPA_DIR ${RDMNET_ROOT}/../lwpa)
-  endif()
-  add_subdirectory(${LWPA_DIR} lwpa)
-endif()
-
-if(NOT TARGET RDM)
-  if(NOT DEFINED RDM_DIR)
-    # Set a default for the RDM location; assume it is named 'RDM' and at the same level as RDMnet.
-    set(RDM_DIR ${RDMNET_ROOT}/../RDM)
-  endif()
-  add_subdirectory(${RDM_DIR} RDM)
-endif()
+include(AddDependency)
+rdmnet_add_dependency(lwpa LWPA_DIR)
+rdmnet_add_dependency(RDM RDM_DIR)
 
 ################################## Config file ################################
 
