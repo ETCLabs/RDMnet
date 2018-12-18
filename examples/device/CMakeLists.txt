@@ -14,6 +14,7 @@ add_executable(${DEVICE_TARGET}
   device_main.c
   default_responder.c
 )
+
 target_include_directories(${DEVICE_TARGET} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(${DEVICE_TARGET} PRIVATE RDMnet)
 if(WIN32)
@@ -28,3 +29,7 @@ if(WIN32)
     )
   endif()
 endif()
+
+install(TARGETS ${DEVICE_TARGET}
+  RUNTIME DESTINATION bin
+)

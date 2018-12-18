@@ -13,6 +13,7 @@ add_executable(${BROKER_TARGET}
   service_shell.cpp
   service_utils.cpp
 )
+
 target_include_directories(${BROKER_TARGET} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(${BROKER_TARGET} PRIVATE Broker)
 if(WIN32)
@@ -26,3 +27,7 @@ if(WIN32)
     )
   endif()
 endif()
+
+install(TARGETS ${BROKER_TARGET}
+  RUNTIME DESTINATION bin
+)
