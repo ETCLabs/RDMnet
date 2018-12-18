@@ -9,30 +9,30 @@
     <Package Id="*" Keywords="Installer" Description="$(var.PkgDescription)" Manufacturer="ETC Inc."
         InstallerVersion="200" Languages="1033" Compressed="yes" SummaryCodepage="1252" />
 
-		<MajorUpgrade
+    <MajorUpgrade
         DowngradeErrorMessage="A newer version of [ProductName] is already installed. If you are trying to downgrade your installation, first uninstall the newer version."
         AllowSameVersionUpgrades="yes" />
-		<MediaTemplate EmbedCab="yes" />
+    <MediaTemplate EmbedCab="yes" />
 
-		<Directory Id="TARGETDIR" Name="SourceDir">
-			<Directory Id="$(var.ProgramFilesFolder)">
-				<Directory Id="ETC" Name="ETC">
-					<Directory Id="INSTALLDIR" Name="RDMnet" FileSource="$(var.InstallSourceDir)">
-						<Directory Id="CommandLineRuntime" Name="bin">
-							<Component Id="Broker" Guid="CE63588F-0717-4D20-B0AB-D004975A5E38">
-								<File Id="BrokerExe" Name="rdmnet_broker_example.exe" DiskId="1" KeyPath="yes" />
-							</Component>
-							<Component Id="Device" Guid="0832714A-EC4C-4948-BB35-6F869B6566EC">
-								<File Id="DeviceExe" Name="rdmnet_device_example.exe" DiskId="1" KeyPath="yes" />
-							</Component>
-							<Component Id="LlrpManager" Guid="D5683599-6003-4CC6-A382-ECE7955EF102">
-								<File Id="LlrpManagerExe" Name="llrp_manager_example.exe" DiskId="1" KeyPath="yes" />
-							</Component>
-						</Directory>
-					</Directory>
-				</Directory>
-			</Directory>
-		</Directory>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="$(var.ProgramFilesFolder)">
+        <Directory Id="ETC" Name="ETC">
+          <Directory Id="INSTALLDIR" Name="RDMnet" FileSource="$(var.InstallSourceDir)">
+            <Directory Id="CommandLineRuntime" Name="bin">
+              <Component Id="Broker" Guid="CE63588F-0717-4D20-B0AB-D004975A5E38">
+                <File Id="BrokerExe" Name="rdmnet_broker_example.exe" DiskId="1" KeyPath="yes" />
+              </Component>
+              <Component Id="Device" Guid="0832714A-EC4C-4948-BB35-6F869B6566EC">
+                <File Id="DeviceExe" Name="rdmnet_device_example.exe" DiskId="1" KeyPath="yes" />
+              </Component>
+              <Component Id="LlrpManager" Guid="D5683599-6003-4CC6-A382-ECE7955EF102">
+                <File Id="LlrpManagerExe" Name="llrp_manager_example.exe" DiskId="1" KeyPath="yes" />
+              </Component>
+            </Directory>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
 
     <Feature Id="Complete" Title="RDMnet $(var.VersionNumber)" Description="The RDMnet SDK and example apps."
         Display="expand" Level="1" ConfigurableDirectory="INSTALLDIR">
@@ -61,5 +61,5 @@
     <UIRef Id="WixUI_ErrorProgressText" />
     <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
 
-	</Product>
+  </Product>
 </Wix>
