@@ -1,31 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" InitialTargets="EnsureWixToolsetInstalled" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <RDMnetVersion>0.2.0.1</RDMnetVersion>
     <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
     <ProductVersion>3.10</ProductVersion>
-    <ProjectGuid>6210b33c-8f93-4cb6-b35c-746015fe538e</ProjectGuid>
+    <ProjectGuid>{fea3dfbf-d80c-4cf8-a9a1-9c9205d9e55f}</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
     <OutputName>RDMnet</OutputName>
     <OutputType>Package</OutputType>
-    <InstallSourceDir>..\..\..\build\install</InstallSourceDir>
+    <InstallSourceDir>..\..\..\build\install_x86</InstallSourceDir>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <WixVariables>
     </WixVariables>
-    <DefineConstants>VersionNumber=$(RDMnetVersion);InstallSourceDir=$(InstallSourceDir);ControllerSourceDir=$(InstallSourceDir)\controller</DefineConstants>
+    <DefineConstants>InstallSourceDir=$(InstallSourceDir);ControllerSourceDir=$(InstallSourceDir)\controller</DefineConstants>
     <SuppressSpecificWarnings>5150</SuppressSpecificWarnings>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <InstallSourceDir>..\..\..\build\install_x86</InstallSourceDir>
     <WixVariables>
     </WixVariables>
-    <DefineConstants>Debug;VersionNumber=$(RDMnetVersion);InstallSourceDir=$(InstallSourceDir);ControllerSourceDir=$(InstallSourceDir)\controller</DefineConstants>
+    <DefineConstants>Debug;InstallSourceDir=$(InstallSourceDir);ControllerSourceDir=$(InstallSourceDir)\controller</DefineConstants>
     <SuppressSpecificWarnings>5150</SuppressSpecificWarnings>
   </PropertyGroup>
   <ItemGroup>

@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Name="RDMnet" Manufacturer="ETC Inc." Id="*"
-      UpgradeCode="86692D17-2011-4ECA-BDFC-0ACEE298FD04" Language="1033" Codepage="1252"
-      Version="$(var.VersionNumber)">
 
-    <Package Id="*" Keywords="Installer" Description="ETC RDMnet Installer" Manufacturer="ETC Inc."
-        InstallerVersion="100" Languages="1033" Compressed="yes" SummaryCodepage="1252" />
+  <?include vars.wxi ?>
+
+  <Product Name="RDMnet" Manufacturer="ETC Inc." Id="*" UpgradeCode="FF687C87-2E87-4D58-BE07-1759636A6DAE"
+      Language="1033" Codepage="1252" Version="$(var.VersionNumber)">
+
+    <Package Id="*" Keywords="Installer" Description="$(var.PkgDescription)" Manufacturer="ETC Inc."
+        InstallerVersion="200" Languages="1033" Compressed="yes" SummaryCodepage="1252" />
 
 		<MajorUpgrade
         DowngradeErrorMessage="A newer version of [ProductName] is already installed. If you are trying to downgrade your installation, first uninstall the newer version."
@@ -13,7 +15,7 @@
 		<MediaTemplate EmbedCab="yes" />
 
 		<Directory Id="TARGETDIR" Name="SourceDir">
-			<Directory Id="ProgramFilesFolder">
+			<Directory Id="$(var.ProgramFilesFolder)">
 				<Directory Id="ETC" Name="ETC">
 					<Directory Id="INSTALLDIR" Name="RDMnet" FileSource="$(var.InstallSourceDir)">
 						<Directory Id="CommandLineRuntime" Name="bin">
