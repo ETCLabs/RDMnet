@@ -1,28 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Name='RDMnet' Manufacturer='ETC Inc.' Id='*'
-      UpgradeCode='86692D17-2011-4ECA-BDFC-0ACEE298FD04' Language='1033' Codepage='1252'
-      Version='$(var.VersionNumber)'>
+  <Product Name="RDMnet" Manufacturer="ETC Inc." Id="*"
+      UpgradeCode="86692D17-2011-4ECA-BDFC-0ACEE298FD04" Language="1033" Codepage="1252"
+      Version="$(var.VersionNumber)">
 
-    <Package Id='*' Keywords='Installer' Description='ETC RDMnet Installer' Manufacturer='ETC Inc.'
-        InstallerVersion='100' Languages='1033' Compressed='yes' SummaryCodepage='1252' />
+    <Package Id="*" Keywords="Installer" Description="ETC RDMnet Installer" Manufacturer="ETC Inc."
+        InstallerVersion="100" Languages="1033" Compressed="yes" SummaryCodepage="1252" />
 
-		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
-		<MediaTemplate EmbedCab='yes' />
+		<MajorUpgrade
+        DowngradeErrorMessage="A newer version of [ProductName] is already installed. If you are trying to downgrade your installation, first uninstall the newer version."
+        AllowSameVersionUpgrades="yes" />
+		<MediaTemplate EmbedCab="yes" />
 
 		<Directory Id="TARGETDIR" Name="SourceDir">
 			<Directory Id="ProgramFilesFolder">
-				<Directory Id='ETC' Name='ETC'>
-					<Directory Id='INSTALLDIR' Name='RDMnet' FileSource='$(var.InstallSourceDir)'>
-						<Directory Id='CommandLineRuntime' Name='bin'>
-							<Component Id='Broker' Guid='CE63588F-0717-4D20-B0AB-D004975A5E38'>
-								<File Id='BrokerExe' Name='rdmnet_broker_example.exe' DiskId='1' KeyPath='yes' />
+				<Directory Id="ETC" Name="ETC">
+					<Directory Id="INSTALLDIR" Name="RDMnet" FileSource="$(var.InstallSourceDir)">
+						<Directory Id="CommandLineRuntime" Name="bin">
+							<Component Id="Broker" Guid="CE63588F-0717-4D20-B0AB-D004975A5E38">
+								<File Id="BrokerExe" Name="rdmnet_broker_example.exe" DiskId="1" KeyPath="yes" />
 							</Component>
-							<Component Id='Device' Guid='0832714A-EC4C-4948-BB35-6F869B6566EC'>
-								<File Id='DeviceExe' Name='rdmnet_device_example.exe' DiskId='1' KeyPath='yes' />
+							<Component Id="Device" Guid="0832714A-EC4C-4948-BB35-6F869B6566EC">
+								<File Id="DeviceExe" Name="rdmnet_device_example.exe" DiskId="1" KeyPath="yes" />
 							</Component>
-							<Component Id='LlrpManager' Guid='D5683599-6003-4CC6-A382-ECE7955EF102'>
-								<File Id='LlrpManagerExe' Name='llrp_manager_example.exe' DiskId='1' KeyPath='yes' />
+							<Component Id="LlrpManager" Guid="D5683599-6003-4CC6-A382-ECE7955EF102">
+								<File Id="LlrpManagerExe" Name="llrp_manager_example.exe" DiskId="1" KeyPath="yes" />
 							</Component>
 						</Directory>
 					</Directory>
@@ -30,31 +32,32 @@
 			</Directory>
 		</Directory>
 
-    <Feature Id='Complete' Title='RDMnet $(var.VersionNumber)' Description='The RDMnet SDK and example apps.'
-        Display='expand' Level='1' ConfigurableDirectory='INSTALLDIR'>
-      <Feature Id='ExampleApps' Title='RDMnet Example Apps' Description='The RDMnet example apps.'
-          Display='expand' Level='1'>
-        <Feature Id='Controller' Title='RDMnet Controller App'
-            Description='The RDMnet Controller Example GUI application.' Level='1'>
-          <ComponentGroupRef Id='Controller' />
+    <Feature Id="Complete" Title="RDMnet $(var.VersionNumber)" Description="The RDMnet SDK and example apps."
+        Display="expand" Level="1" ConfigurableDirectory="INSTALLDIR">
+      <Feature Id="ExampleApps" Title="RDMnet Example Apps" Description="The RDMnet example apps."
+          Display="expand" Level="1">
+        <Feature Id="Controller" Title="RDMnet Controller App"
+            Description="The RDMnet Controller Example GUI application." Level="1">
+          <ComponentGroupRef Id="Controller" />
         </Feature>
-        <Feature Id='Broker' Title='RDMnet Broker App' Description='The RDMnet Broker example app.'
-            Level='1'>
-          <ComponentRef Id='Broker' />
+        <Feature Id="Broker" Title="RDMnet Broker App" Description="The RDMnet Broker example app."
+            Level="1">
+          <ComponentRef Id="Broker" />
         </Feature>
-        <Feature Id='Device' Title='RDMnet Device App' Description='The RDMnet Device example app.'
-            Level='1'>
-          <ComponentRef Id='Device' />
+        <Feature Id="Device" Title="RDMnet Device App" Description="The RDMnet Device example app."
+            Level="1">
+          <ComponentRef Id="Device" />
         </Feature>
-        <Feature Id='LlrpManager' Title='LLRP Manager App'
-            Description='The LLRP Manager example app.' Level='1'>
-          <ComponentRef Id='LlrpManager' />
+        <Feature Id="LlrpManager" Title="LLRP Manager App"
+            Description="The LLRP Manager example app." Level="1">
+          <ComponentRef Id="LlrpManager" />
         </Feature>
       </Feature>
     </Feature>
 
-    <UIRef Id='WixUI_FeatureTree' />
-    <UIRef Id='WixUI_ErrorProgressText' />
+    <UIRef Id="WixUI_FeatureTree" />
+    <UIRef Id="WixUI_ErrorProgressText" />
+    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
 
 	</Product>
 </Wix>
