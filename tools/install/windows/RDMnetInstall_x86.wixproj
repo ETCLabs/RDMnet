@@ -2,32 +2,30 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" InitialTargets="EnsureWixToolsetInstalled" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>3.10</ProductVersion>
     <ProjectGuid>{fea3dfbf-d80c-4cf8-a9a1-9c9205d9e55f}</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
-    <OutputName>RDMnet</OutputName>
+    <OutputName>RDMnetInstall</OutputName>
     <OutputType>Package</OutputType>
     <InstallSourceDir>..\..\..\build\install_x86</InstallSourceDir>
+    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <WixVariables>
     </WixVariables>
     <DefineConstants>InstallSourceDir=$(InstallSourceDir);ControllerSourceDir=$(InstallSourceDir)\controller</DefineConstants>
     <SuppressSpecificWarnings>5150</SuppressSpecificWarnings>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <WixVariables>
     </WixVariables>
     <DefineConstants>Debug;InstallSourceDir=$(InstallSourceDir);ControllerSourceDir=$(InstallSourceDir)\controller</DefineConstants>
     <SuppressSpecificWarnings>5150</SuppressSpecificWarnings>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="RDMnet.wxs" />
+    <Compile Include="RDMnetInstall.wxs" />
     <HarvestDirectory Include="$(InstallSourceDir)\controller">
       <PreprocessorVariable>var.ControllerSourceDir</PreprocessorVariable>
       <DirectoryRefId>INSTALLDIR</DirectoryRefId>
@@ -37,6 +35,13 @@
       <HintPath>WixUIExtension</HintPath>
       <Name>WixUIExtension</Name>
     </WixExtension>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="..\" />
+    <Folder Include="..\..\" />
+    <Folder Include="..\..\..\" />
+    <Folder Include="..\..\..\build\" />
+    <Folder Include="..\..\..\build\install_x86\" />
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" Condition=" '$(WixTargetsPath)' != '' " />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets" Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') " />

@@ -7,7 +7,8 @@
       Language="1033" Codepage="1252" Version="$(var.VersionNumber)">
 
     <Package Id="*" Keywords="Installer" Description="$(var.PkgDescription)" Manufacturer="ETC Inc."
-        InstallerVersion="200" Languages="1033" Compressed="yes" SummaryCodepage="1252" />
+        InstallerVersion="200" Languages="1033" Compressed="yes" SummaryCodepage="1252"
+        InstallScope="perMachine" />
 
     <MajorUpgrade
         DowngradeErrorMessage="A newer version of [ProductName] is already installed. If you are trying to downgrade your installation, first uninstall the newer version."

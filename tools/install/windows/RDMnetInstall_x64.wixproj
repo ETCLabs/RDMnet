@@ -6,29 +6,25 @@
     <ProductVersion>3.10</ProductVersion>
     <ProjectGuid>6210b33c-8f93-4cb6-b35c-746015fe538e</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
-    <OutputName>RDMnet</OutputName>
+    <OutputName>RDMnetInstall</OutputName>
     <OutputType>Package</OutputType>
     <InstallSourceDir>..\..\..\build\install_x64</InstallSourceDir>
+    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
-    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <WixVariables>
     </WixVariables>
     <DefineConstants>InstallSourceDir=$(InstallSourceDir);ControllerSourceDir=$(InstallSourceDir)\controller</DefineConstants>
     <SuppressSpecificWarnings>5150</SuppressSpecificWarnings>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
-    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <InstallSourceDir>..\..\..\build\install_x86</InstallSourceDir>
     <WixVariables>
     </WixVariables>
     <DefineConstants>Debug;InstallSourceDir=$(InstallSourceDir);ControllerSourceDir=$(InstallSourceDir)\controller</DefineConstants>
     <SuppressSpecificWarnings>5150</SuppressSpecificWarnings>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="RDMnet.wxs" />
     <HarvestDirectory Include="$(InstallSourceDir)\controller">
       <PreprocessorVariable>var.ControllerSourceDir</PreprocessorVariable>
       <DirectoryRefId>INSTALLDIR</DirectoryRefId>
@@ -38,6 +34,16 @@
       <HintPath>WixUIExtension</HintPath>
       <Name>WixUIExtension</Name>
     </WixExtension>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="..\" />
+    <Folder Include="..\..\" />
+    <Folder Include="..\..\..\" />
+    <Folder Include="..\..\..\build\" />
+    <Folder Include="..\..\..\build\install_x64\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="RDMnetInstall.wxs" />
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" Condition=" '$(WixTargetsPath)' != '' " />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets" Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') " />

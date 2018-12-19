@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+    xmlns:bal="http://schemas.microsoft.com/wix/BalExtension">
+
+  <?include vars.wxi ?>
+
+  <Bundle Name="RDMnet Example Applications" Version="$(var.VersionNumber)" Manufacturer="ETC Inc."
+      AboutUrl="https://etclabs.github.io/RDMnet" UpgradeCode="f0e15fbf-fa9b-44a5-b493-328e46975632">
+    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.HyperlinkSidebarLicense">
+      <bal:WixStandardBootstrapperApplication LicenseUrl="" ShowVersion="yes"
+          SuppressOptionsUI="yes" />
+    </BootstrapperApplicationRef>
+
+    <Chain>
+      <!-- Install RDMnet Applications -->
+      <MsiPackage Id="RdmnetInstaller" SourceFile="$(var.RdmnetTargetPath)" DisplayInternalUI="yes" />
+
+      <!-- Install Visual C++ 2017 redistributable -->
+      <ExePackage Cache="no" Compressed="yes" PerMachine="yes" Permanent="yes" Vital="yes"
+          Name="$(var.VcRedistName)" SourceFile="$(var.VcRedistName)"
+          InstallCommand="/install /quiet /norestart">
+
+        <!-- Ignore "Newer version installed" error -->
+        <ExitCode Value="1638" Behavior="success" />
+      </ExePackage>
+    </Chain>
+  </Bundle>
+</Wix>
