@@ -29,6 +29,9 @@
               <Component Id="LlrpManager" Guid="D5683599-6003-4CC6-A382-ECE7955EF102">
                 <File Id="LlrpManagerExe" Name="llrp_manager_example.exe" DiskId="1" KeyPath="yes" />
               </Component>
+              <Component Id="DnsSdDll" Guid="997e9db8-712b-490b-b427-427018333f33">
+                <File Id="DnsSdDll" Name="dnssd.dll" DiskId="1" KeyPath="yes" />
+              </Component>
             </Directory>
           </Directory>
         </Directory>
@@ -46,10 +49,12 @@
         <Feature Id="Broker" Title="RDMnet Broker App" Description="The RDMnet Broker example app."
             Level="1">
           <ComponentRef Id="Broker" />
+          <ComponentRef Id="DnsSdDll" />
         </Feature>
         <Feature Id="Device" Title="RDMnet Device App" Description="The RDMnet Device example app."
             Level="1">
           <ComponentRef Id="Device" />
+          <ComponentRef Id="DnsSdDll" />
         </Feature>
         <Feature Id="LlrpManager" Title="LLRP Manager App"
             Description="The LLRP Manager example app." Level="1">

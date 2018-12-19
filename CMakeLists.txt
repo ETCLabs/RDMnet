@@ -68,3 +68,8 @@ endif()
 if(RDMNET_BUILD_EXAMPLES OR RDMNET_BUILD_CONSOLE_EXAMPLES)
   add_subdirectory(examples)
 endif()
+
+if(DEFINED DNS_SD_DLL)
+  install(FILES ${DNS_SD_DLL} DESTINATION bin)
+  install(FILES ${DNS_SD_DLL} DESTINATION controller)
+endif()

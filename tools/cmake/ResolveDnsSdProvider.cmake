@@ -71,6 +71,7 @@ else()
         add_subdirectory(${RDMNET_WINDOWS_BONJOUR_SRC_LOC}/mDNSWindows/DLLStub Bonjour)
         set(DNS_SD_ADDITIONAL_LIBS dnssdStatic)
       elseif(RDMNET_WINDOWS_BONJOUR_INSTALL_LOC)
+        file(TO_CMAKE_PATH ${RDMNET_WINDOWS_BONJOUR_INSTALL_LOC} RDMNET_WINDOWS_BONJOUR_INSTALL_LOC)
         find_library(BONJOUR_LIB
           NAMES dnssd
           HINTS ${RDMNET_WINDOWS_BONJOUR_INSTALL_LOC}/lib
