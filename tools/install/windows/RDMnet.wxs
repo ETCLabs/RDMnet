@@ -7,8 +7,8 @@
       Language="1033" Codepage="1252" Version="$(var.VersionNumber)">
 
     <Package Id="*" Keywords="Installer" Description="$(var.PkgDescription)" Manufacturer="ETC Inc."
-        InstallerVersion="200" Languages="1033" Compressed="yes" SummaryCodepage="1252"
-        InstallScope="perMachine" />
+        InstallerVersion="301" Languages="1033" Compressed="yes" SummaryCodepage="1252"
+        InstallScope="perMachine" InstallPrivileges="elevated" />
 
     <MajorUpgrade
         DowngradeErrorMessage="A newer version of [ProductName] is already installed. If you are trying to downgrade your installation, first uninstall the newer version."
@@ -36,6 +36,8 @@
           </Directory>
         </Directory>
       </Directory>
+
+      <Merge Id="VCRedist" SourceFile="$(var.VcRedistMergeModule)" DiskId="1" Language="0" />
     </Directory>
 
     <Feature Id="Complete" Title="RDMnet $(var.VersionNumber)" Description="The RDMnet SDK and example apps."
@@ -61,6 +63,10 @@
           <ComponentRef Id="LlrpManager" />
         </Feature>
       </Feature>
+    </Feature>
+
+    <Feature Id="VCRedist" Title="Visual C++ Runtime" AllowAdvertise="no" Display="hidden" Level="1">
+      <MergeRef Id="VCRedist" />
     </Feature>
 
     <UIRef Id="WixUI_FeatureTree" />

@@ -2,20 +2,16 @@
 <Include>
   <?define VersionNumber = "0.2.0.1" ?>
 
+  <?include GeneratedFiles\vcredist.wxi ?>
+
   <?if $(var.Platform) = x64 ?>
     <?define ProgramFilesFolder = "ProgramFiles64Folder" ?>
     <?define PkgDescription = "ETC RDMnet 64-bit Installer" ?>
-    <?define VcRedistName = "vcredist_x64.exe" ?>
-    <?ifdef RDMnetInstall_x64.TargetPath ?>
-      <?define RdmnetTargetPath = "$(var.RDMnetInstall_x64.TargetPath)" ?>
-    <?endif ?>
+    <?define VcRedistMergeModule = "$(var.VcRedistInstallLoc)\MergeModules\Microsoft_VC141_CRT_x64.msm" ?>
   <?else ?>
     <?define ProgramFilesFolder = "ProgramFilesFolder" ?>
     <?define PkgDescription = "ETC RDMnet 32-bit Installer" ?>
-    <?define VcRedistName = "vcredist_x86.exe" ?>
-    <?ifdef RDMnetInstall_x86.TargetPath ?>
-      <?define RdmnetTargetPath = "$(var.RDMnetInstall_x86.TargetPath)" ?>
-    <?endif ?>
+    <?define VcRedistMergeModule = "$(var.VcRedistInstallLoc)\MergeModules\Microsoft_VC141_CRT_x86.msm" ?>
   <?endif ?>
 
 </Include>
