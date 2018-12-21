@@ -33,6 +33,9 @@ dirs = [name for name in os.listdir(vc_redist_parent) if os.path.isdir(
 
 correct_dir_parts = None
 
+# The redist install directories are contained in a directory that is named with
+# a version number of the form x.y.z. We try to find the latest version number
+# of that form.
 for dirname in dirs:
     dir_parts = dirname.split('.')
     if len(dir_parts) != 3:

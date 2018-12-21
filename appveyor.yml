@@ -19,18 +19,57 @@ skip_commits:
 
 image: Visual Studio 2017
 
+
 matrix:
   fast_finish: true     # set this flag to immediately finish build once one of the jobs fails.
+
+environment:
+  MDNSWINDOWS_VERSION: v1.0.0
+
+install:
+  - ps: |-
+      mkdir mdns_install
+      (new-object net.webclient).DownloadFile('https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_Win32.zip' 'mdns_install\x86.zip')
+      (new-object net.webclient).DownloadFile('https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_x64.zip' 'mdns_install\x64.zip')
+
+for:
+-
+  matrix:
+    only:
+      - platform: x86
+  
+  environment:
+    CMAKE_GENERATOR: Visual Studio 15 2017 Win64
+    CMAKE_INSTALL: install_x86
+    QTDIR: C:\Qt\5.9.7\msvc2015
+
+  artifacts:
+    - path: tools/install/windows/bin/Release/RDMnetSetup_x86.msi
+      name: RDMnet 32-bit installer
+
+-
+  matrix:
+    only:
+      - platform: x64
+
+  environment:
+    CMAKE_GENERATOR: Visual Studio 15 2017
+    CMAKE_INSTALL: install_x64
+    QTDIR: C:\Qt\5.9.7\msvc2017_64
+
+  artifacts:
+    - path: tools/install/windows/bin/Release/RDMnetSetup_x64.msi
+      name: RDMnet 64-bit installer
 
 #---------------------------------#
 #       build configuration       #
 #---------------------------------#
 
-platform: x64
+platform:
+  - x86
+  - x64
 
-configuration:
-  - Debug
-  - Release
+configuration: Release
 
 before_build:
   - cmd: |-
@@ -39,7 +78,7 @@ before_build:
       mkdir build
       cd build
       cmake --version
-      cmake -G "Visual Studio 15 2017 Win64" -DQTDIR=C:\Qt\5.9.7\msvc2017_64 -DRDMNET_MOCK_DISCOVERY=ON ..
+      cmake -G "%CMAKE_GENERATOR%" -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL% -DRDMNET_MOCK_DISCOVERY=ON ..
 
 build:
   parallel: true            # enable MSBuild parallel builds
@@ -47,6 +86,9 @@ build:
 
   # MSBuild verbosity level
   verbosity: minimal
+
+after_build:
+
 
 #---------------------------------#
 #       tests configuration       #

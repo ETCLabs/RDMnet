@@ -29,7 +29,7 @@
               <Component Id="LlrpManager" Guid="D5683599-6003-4CC6-A382-ECE7955EF102">
                 <File Id="LlrpManagerExe" Name="llrp_manager_example.exe" DiskId="1" KeyPath="yes" />
               </Component>
-              <Component Id="DnsSdDll" Guid="997e9db8-712b-490b-b427-427018333f33">
+              <Component Id="DnsSdDll" Guid="997E9DB8-712B-490B-B427-427018333F33">
                 <File Id="DnsSdDll" Name="dnssd.dll" DiskId="1" KeyPath="yes" />
               </Component>
             </Directory>
@@ -38,6 +38,7 @@
       </Directory>
 
       <Merge Id="VCRedist" SourceFile="$(var.VcRedistMergeModule)" DiskId="1" Language="0" />
+      <Merge Id="mDNSResponder" SourceFile="$(var.mDNSMergeModule)" DiskId="1" Language="0" />
     </Directory>
 
     <Feature Id="Complete" Title="RDMnet $(var.VersionNumber)" Description="The RDMnet SDK and example apps."
@@ -67,6 +68,9 @@
 
     <Feature Id="VCRedist" Title="Visual C++ Runtime" AllowAdvertise="no" Display="hidden" Level="1">
       <MergeRef Id="VCRedist" />
+    </Feature>
+    <Feature Id="mDNSResponder" Title="DNS-SD service" AllowAdvertise="no" Display="hidden" Level="1">
+      <MergeRef Id="mDNSResponder" />
     </Feature>
 
     <UIRef Id="WixUI_FeatureTree" />

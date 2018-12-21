@@ -70,7 +70,15 @@ if(RDMNET_BUILD_EXAMPLES OR RDMNET_BUILD_CONSOLE_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
+##################################### Misc ####################################
+
+# On Windows, we put the DLL and mDNSResponder.exe in the install directory to
+# later be packaged with the installer.
 if(DEFINED DNS_SD_DLL)
   install(FILES ${DNS_SD_DLL} DESTINATION bin)
   install(FILES ${DNS_SD_DLL} DESTINATION controller)
+endif()
+
+if(DEFINED DNS_SD_MDNSRESPONDER)
+  install(FILES ${DNS_SD_MDNSRESPONDER} DESTINATION bin)
 endif()
