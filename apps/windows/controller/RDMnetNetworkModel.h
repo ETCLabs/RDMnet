@@ -173,7 +173,8 @@ signals:
   void newResponderList(EndpointItem *treeEndpointItem, const std::vector<LwpaUid> &list);
   void setPropertyData(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, const QVariant &value,
                        int role = Qt::DisplayRole);
-  void removePropertiesInRange(RDMnetNetworkItem *parent, unsigned short pid, int role, const QVariant &min, const QVariant &max);
+  void removePropertiesInRange(RDMnetNetworkItem * parent, std::vector<class PropertyItem *> *properties,
+                               unsigned short pid, int role, const QVariant &min, const QVariant &max);
   void brokerItemTextUpdated(const BrokerItem *item);
   void addPropertyEntry(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, int role);
   void featureSupportChanged(const class RDMnetNetworkItem *item, SupportedDeviceFeature feature);
@@ -214,7 +215,8 @@ protected slots:
   void processNewResponderList(EndpointItem *treeEndpointItem, const std::vector<LwpaUid> &list);
   void processSetPropertyData(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, const QVariant &value,
                               int role);
-  void processRemovePropertiesInRange(RDMnetNetworkItem *parent, unsigned short pid, int role, const QVariant &min, const QVariant &max);
+  void processRemovePropertiesInRange(RDMnetNetworkItem * parent, std::vector<class PropertyItem *> *properties,
+                                      unsigned short pid, int role, const QVariant &min, const QVariant &max);
   void processAddPropertyEntry(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, int role);
   void processPropertyButtonClick(const QPersistentModelIndex &propertyIndex);
   void removeBroker(BrokerItem *brokerItem);
@@ -403,7 +405,8 @@ protected:
   QString getChildPathName(const QString &superPathName);
   QString getScopeSubPropertyFullName(RDMnetClientItem *client, uint16_t pid, int32_t index, const char *scope);
 
-  void removeScopeSlotItemsInRange(RDMnetNetworkItem *parent, uint16_t firstSlot, uint16_t lastSlot);
+  void removeScopeSlotItemsInRange(RDMnetNetworkItem *parent, std::vector<class PropertyItem *> *properties, 
+                                   uint16_t firstSlot, uint16_t lastSlot);
 
 public:
   RDMnetNetworkModel();

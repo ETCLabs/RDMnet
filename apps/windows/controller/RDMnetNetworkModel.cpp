@@ -572,7 +572,7 @@ void RDMnetNetworkModel::addScopeToMonitor(std::string scope)
       // Broadcast GET_RESPONSE notification because of newly added scope
       if (getComponentScope(0x0001, resp_data_list, &num_responses))
       {
-        SendRDMGetResponses(kBroadcastUid, E133_BROADCAST_ENDPOINT, E133_COMPONENT_SCOPE,
+        SendRDMGetResponses(kRdmnetControllerBroadcastUid, E133_BROADCAST_ENDPOINT, E133_COMPONENT_SCOPE,
                             resp_data_list, num_responses, 0, 0);
       }
     }
@@ -647,7 +647,7 @@ void RDMnetNetworkModel::addBrokerByIP(std::string scope, const LwpaSockaddr &ad
     // Broadcast GET_RESPONSE notification because of newly added scope
     if (getComponentScope(0x0001, resp_data_list, &num_responses))
     {
-      SendRDMGetResponses(kBroadcastUid, E133_BROADCAST_ENDPOINT, E133_COMPONENT_SCOPE,
+      SendRDMGetResponses(kRdmnetControllerBroadcastUid, E133_BROADCAST_ENDPOINT, E133_COMPONENT_SCOPE,
                           resp_data_list, num_responses, 0, 0);
     }
   }
@@ -978,8 +978,8 @@ void RDMnetNetworkModel::processSetPropertyData(RDMnetNetworkItem *parent, unsig
   }
 }
 
-void RDMnetNetworkModel::processRemovePropertiesInRange(RDMnetNetworkItem * parent, unsigned short pid, int role, 
-                                                        const QVariant &min, const QVariant &max)
+void RDMnetNetworkModel::processRemovePropertiesInRange(RDMnetNetworkItem * parent, std::vector<PropertyItem *> *properties, 
+                                                        unsigned short pid, int role, const QVariant &min, const QVariant &max)
 {
   if (parent != NULL)
   {
@@ -987,12 +987,22 @@ void RDMnetNetworkModel::processRemovePropertiesInRange(RDMnetNetworkItem * pare
     {
       for(int i = parent->rowCount() - 1; i >= 0; --i)
       {
-        QStandardItem *child = parent->child(i);
-        if (child != NULL)
+        PropertyItem *child = dynamic_cast<PropertyItem *>(parent->child(i, 0));
+        PropertyValueItem *sibling = dynamic_cast<PropertyValueItem *>(parent->child(i, 1));
+
+        if ((child != NULL) && (sibling != NULL))
         {
-          if ((child->data(role) >= min) && (child->data(role) <= max))
+          if (sibling->getPID() == pid)
           {
-            parent->completelyRemoveChildren(i, 1, &parent->properties);
+            QVariant value = sibling->data(role);
+
+            if (value.isValid())
+            {
+              if ((value >= min) && (value <= max))
+              {
+                parent->completelyRemoveChildren(i, 1, properties);
+              }
+            }
           }
         }
       }
@@ -1068,7 +1078,7 @@ void RDMnetNetworkModel::removeBroker(BrokerItem *brokerItem)
   // Broadcast GET_RESPONSE notification because of removed scope
   if (getComponentScope(0x0001, resp_data_list, &num_responses))
   {
-    SendRDMGetResponses(kBroadcastUid, E133_BROADCAST_ENDPOINT, E133_COMPONENT_SCOPE,
+    SendRDMGetResponses(kRdmnetControllerBroadcastUid, E133_BROADCAST_ENDPOINT, E133_COMPONENT_SCOPE,
                         resp_data_list, num_responses, 0, 0);
   }
 }
@@ -1104,7 +1114,7 @@ void RDMnetNetworkModel::removeAllBrokers()
   // to show that there are no scopes left.
   if (getComponentScope(0x0001, resp_data_list, &num_responses))
   {
-    SendRDMGetResponses(kBroadcastUid, E133_BROADCAST_ENDPOINT, E133_COMPONENT_SCOPE,
+    SendRDMGetResponses(kRdmnetControllerBroadcastUid, E133_BROADCAST_ENDPOINT, E133_COMPONENT_SCOPE,
                         resp_data_list, num_responses, 0, 0);
   }
 }
@@ -1326,6 +1336,7 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   qRegisterMetaType<std::vector<ClientEntryData>>("std::vector<ClientEntryData>");
   qRegisterMetaType<std::vector<std::pair<uint16_t, uint8_t>>>("std::vector<std::pair<uint16_t, uint8_t>>");
   qRegisterMetaType<std::vector<LwpaUid>>("std::vector<LwpaUid>");
+  qRegisterMetaType<std::vector<PropertyItem*>*>("std::vector<PropertyItem*>*");
   qRegisterMetaType<QVector<int>>("QVector<int>");
   qRegisterMetaType<uint16_t>("uint16_t");
 
@@ -1343,9 +1354,11 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
           model,
           SLOT(processSetPropertyData(RDMnetNetworkItem *, unsigned short, const QString &, const QVariant &, int)),
           Qt::AutoConnection);
-  connect(model, SIGNAL(removePropertiesInRange(RDMnetNetworkItem *, unsigned short, int, const QVariant &, const QVariant &)),
+  connect(model, SIGNAL(removePropertiesInRange(RDMnetNetworkItem *, std::vector<PropertyItem *> *, 
+                                                unsigned short, int, const QVariant &, const QVariant &)),
           model,
-          SLOT(processRemovePropertiesInRange(RDMnetNetworkItem *, unsigned short, int, const QVariant &, const QVariant &)),
+          SLOT(processRemovePropertiesInRange(RDMnetNetworkItem *, std::vector<PropertyItem *> *, 
+                                              unsigned short, int, const QVariant &, const QVariant &)),
           Qt::AutoConnection);
   connect(model, SIGNAL(addPropertyEntry(RDMnetNetworkItem *, unsigned short, const QString &, int)), model,
           SLOT(processAddPropertyEntry(RDMnetNetworkItem *, unsigned short, const QString &, int)), Qt::AutoConnection);
@@ -2046,7 +2059,7 @@ void RDMnetNetworkModel::SendNotification(const LwpaUid &dest_uid, uint16_t dest
   header_to_send.source_endpoint_id = E133_NULL_ENDPOINT;
   header_to_send.seqnum = seqnum;
 
-  if ((dest_uid.manu != kBroadcastUid.manu) || (dest_uid.id != kBroadcastUid.id))
+  if ((dest_uid.manu != kRdmnetControllerBroadcastUid.manu) || (dest_uid.id != kRdmnetControllerBroadcastUid.id))
   {
     connectionToUse = getBrokerConnection(header_to_send.dest_uid.manu, header_to_send.dest_uid.id, rpt_dest_uid,
                                           dest_endpoint);
@@ -2054,7 +2067,7 @@ void RDMnetNetworkModel::SendNotification(const LwpaUid &dest_uid, uint16_t dest
 
   if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
   {
-    if ((dest_uid.manu == kBroadcastUid.manu) && (dest_uid.id == kBroadcastUid.id))
+    if ((dest_uid.manu == kRdmnetControllerBroadcastUid.manu) && (dest_uid.id == kRdmnetControllerBroadcastUid.id))
     {
       for (auto &brokerConnectionIter : broker_connections_)
       {
@@ -3390,14 +3403,18 @@ void RDMnetNetworkModel::componentScope(uint16_t scopeSlot, const char *scopeStr
 
   if (client != NULL)
   {
+    RDMnetNetworkItem *rdmNetGroup = dynamic_cast<RDMnetNetworkItem *>(
+      client->child(0)->data() == tr("RDMnet") ? client->child(0) : client->child(1)
+      );
+
     if (client->ClientType() == kRPTClientTypeController)
     {
-      removeScopeSlotItemsInRange(client, previous_slot_[client->Uid()] + 1, scopeSlot - 1);
+      removeScopeSlotItemsInRange(rdmNetGroup, &client->properties, previous_slot_[client->Uid()] + 1, scopeSlot - 1);
     }
 
     if ((client->ClientType() == kRPTClientTypeController) && (strlen(scopeString) == 0))
     {
-      removeScopeSlotItemsInRange(client, scopeSlot, 0xFFFF);
+      removeScopeSlotItemsInRange(rdmNetGroup, &client->properties, scopeSlot, 0xFFFF);
 
       // We have all of this controller's scope-slot pairs. Now request scope-specific properties.
       previous_slot_[client->Uid()] = 0;
@@ -4037,11 +4054,12 @@ QString RDMnetNetworkModel::getScopeSubPropertyFullName(RDMnetClientItem * clien
   return original;
 }
 
-void RDMnetNetworkModel::removeScopeSlotItemsInRange(RDMnetNetworkItem *parent, uint16_t firstSlot, uint16_t lastSlot)
+void RDMnetNetworkModel::removeScopeSlotItemsInRange(RDMnetNetworkItem *parent, std::vector<PropertyItem *> *properties, 
+                                                     uint16_t firstSlot, uint16_t lastSlot)
 {
   if (lastSlot >= firstSlot)
   {
-    emit removePropertiesInRange(parent, E133_COMPONENT_SCOPE, RDMnetNetworkItem::ScopeSlotRole, firstSlot, lastSlot);
+    emit removePropertiesInRange(parent, properties, E133_COMPONENT_SCOPE, RDMnetNetworkItem::ScopeSlotRole, firstSlot, lastSlot);
   }
 }
 
