@@ -3,6 +3,7 @@
   <?define VersionNumber = "0.2.0.1" ?>
 
   <?include GeneratedFiles\vcredist.wxi ?>
+  <?include GeneratedFiles\mdnsmerge.wxi ?>
 
   <?if $(var.Platform) = x64 ?>
     <?define ProgramFilesFolder = "ProgramFiles64Folder" ?>

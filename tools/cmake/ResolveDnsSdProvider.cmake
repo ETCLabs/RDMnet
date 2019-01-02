@@ -83,7 +83,10 @@ else()
         set(DNS_SD_ADDITIONAL_INCLUDE_DIRS ${RDMNET_WINDOWS_BONJOUR_INSTALL_LOC}/include)
         set(DNS_SD_ADDITIONAL_LIBS ${BONJOUR_LIB})
         set(DNS_SD_DLL ${RDMNET_WINDOWS_BONJOUR_INSTALL_LOC}/dll/dnssd.dll PARENT_SCOPE)
-        set(DNS_SD_MDNSRESPONDER ${RDMNET_WINDOWS_BONJOUR_INSTALL_LOC}/bin/mDNSResponder.exe PARENT_SCOPE)
+        file(TO_NATIVE_PATH "${RDMNET_WINDOWS_BONJOUR_INSTALL_LOC}/merge_module" MDNS_MERGE_MODULE_LOC)
+        configure_file(${RDMNET_ROOT}/tools/ci/mdnsmerge.wxi.in
+          ${RDMNET_ROOT}/tools/install/windows/GeneratedFiles/mdnsmerge.wxi
+        )
 
       endif()
     endif()
