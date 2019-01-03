@@ -49,41 +49,41 @@ else()
 
     else() # Using ETC's Bonjour fork
 
-      if(NOT DEFINED RDMNET_WINDOWS_BONJOUR_SRC_LOC AND NOT DEFINED RDMNET_WINDOWS_BONJOUR_INSTALL_LOC)
+      if(NOT DEFINED MDNSWINDOWS_SRC_LOC AND NOT DEFINED MDNSWINDOWS_INSTALL_LOC)
         message(STATUS
-          "Neither RDMNET_WINDOWS_BONJOUR_SRC_LOC or RRDMNET_WINDOWS_BONJOUR_INSTALL_LOC provided.\n"
+          "Neither MDNSWINDOWS_SRC_LOC or MDNSWINDOWS_INSTALL_LOC provided.\n"
           "Looking for source repository named 'mDNSWindows' at same level as RDMnet..."
         )
         if(EXISTS ${RDMNET_ROOT}/../mDNSWindows)
           message(STATUS "Found. Adding dependency from RDMNET_DIR/../mDNSWindows.")
-          set(RDMNET_WINDOWS_BONJOUR_SRC_LOC ${RDMNET_ROOT}/../mDNSWindows)
+          set(MDNSWINDOWS_SRC_LOC ${RDMNET_ROOT}/../mDNSWindows)
         else()
           message(FATAL_ERROR
             "You must provide ETC's Bonjour for Windows fork (mDNSWindows) in one of the following ways:\n"
-            " - Use RDMNET_WINDOWS_BONJOUR_SRC_LOC to specify the location of the source repository\n"
-            " - Use RDMNET_WINDOWS_BONJOUR_INSTALL_LOC to specify the location of the installed binaries\n"
+            " - Use MDNSWINDOWS_SRC_LOC to specify the location of the source repository\n"
+            " - Use MDNSWINDOWS_INSTALL_LOC to specify the location of the installed binaries\n"
             " - Clone the ETCLabs/mDNSWindows repository at the same directory level as the RDMnet repository\n"
           )
         endif()
       endif()
 
-      if(RDMNET_WINDOWS_BONJOUR_SRC_LOC)
-        add_subdirectory(${RDMNET_WINDOWS_BONJOUR_SRC_LOC}/mDNSWindows/DLLStub Bonjour)
+      if(MDNSWINDOWS_SRC_LOC)
+        add_subdirectory(${MDNSWINDOWS_SRC_LOC}/mDNSWindows/DLLStub Bonjour)
         set(DNS_SD_ADDITIONAL_LIBS dnssdStatic)
-      elseif(RDMNET_WINDOWS_BONJOUR_INSTALL_LOC)
-        file(TO_CMAKE_PATH ${RDMNET_WINDOWS_BONJOUR_INSTALL_LOC} RDMNET_WINDOWS_BONJOUR_INSTALL_LOC)
+      elseif(MDNSWINDOWS_INSTALL_LOC)
+        file(TO_CMAKE_PATH ${MDNSWINDOWS_INSTALL_LOC} MDNSWINDOWS_INSTALL_LOC)
         find_library(BONJOUR_LIB
           NAMES dnssd
-          HINTS ${RDMNET_WINDOWS_BONJOUR_INSTALL_LOC}/lib
+          HINTS ${MDNSWINDOWS_INSTALL_LOC}/lib
         )
         if(BONJOUR_LIB_NOTFOUND)
-          message(FATAL_ERROR "${RDMNET_WINDOWS_BONJOUR_INSTALL_LOC} does not seem to contain a valid installation.")
+          message(FATAL_ERROR "${MDNSWINDOWS_INSTALL_LOC} does not seem to contain a valid installation.")
         endif()
 
-        set(DNS_SD_ADDITIONAL_INCLUDE_DIRS ${RDMNET_WINDOWS_BONJOUR_INSTALL_LOC}/include)
+        set(DNS_SD_ADDITIONAL_INCLUDE_DIRS ${MDNSWINDOWS_INSTALL_LOC}/include)
         set(DNS_SD_ADDITIONAL_LIBS ${BONJOUR_LIB})
-        set(DNS_SD_DLL ${RDMNET_WINDOWS_BONJOUR_INSTALL_LOC}/dll/dnssd.dll PARENT_SCOPE)
-        file(TO_NATIVE_PATH "${RDMNET_WINDOWS_BONJOUR_INSTALL_LOC}/merge_module" MDNS_MERGE_MODULE_LOC)
+        set(DNS_SD_DLL ${MDNSWINDOWS_INSTALL_LOC}/dll/dnssd.dll PARENT_SCOPE)
+        file(TO_NATIVE_PATH "${MDNSWINDOWS_INSTALL_LOC}/merge_module" MDNS_MERGE_MODULE_LOC)
         configure_file(${RDMNET_ROOT}/tools/ci/mdnsmerge.wxi.in
           ${RDMNET_ROOT}/tools/install/windows/GeneratedFiles/mdnsmerge.wxi
         )

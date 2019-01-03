@@ -8,6 +8,8 @@ branches:
   only:
     - develop
     - master
+    # Temporary add for installer testing
+    - build-installer
 
 skip_commits:
   files:
@@ -24,13 +26,13 @@ matrix:
   fast_finish: true     # set this flag to immediately finish build once one of the jobs fails.
 
 environment:
-  MDNSWINDOWS_VERSION: v1.0.0
-
-install:
-  - ps: |-
-      mkdir mdns_install
-      (new-object net.webclient).DownloadFile('https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_Win32.zip' 'mdns_install\x86.zip')
-      (new-object net.webclient).DownloadFile('https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_x64.zip' 'mdns_install\x64.zip')
+  MDNSWINDOWS_VERSION: v1.1.0
+  
+  matrix:
+    - VERSIONED_BUILD: no
+      CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=ON
+    - VERSIONED_BUILD: yes
+      CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=OFF -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
 
 for:
 -
@@ -39,12 +41,19 @@ for:
       - platform: x86
   
   environment:
-    CMAKE_GENERATOR: Visual Studio 15 2017 Win64
+    CMAKE_GENERATOR: Visual Studio 15 2017
     CMAKE_INSTALL: install_x86
     QTDIR: C:\Qt\5.9.7\msvc2015
+    INSTALLER_PROJECT: tools\install\windows\RDMnetInstall_x86.wixproj
+    INSTALLER_PROJECT_PLATFORM: x86
+    INSTALLER_ARTIFACT: tools\install\windows\bin\Release\RDMnetSetup_x86.msi
+
+  install:
+    - ps: (new-object net.webclient).DownloadFile('https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_Win32.zip', 'mDNSWindows_Win32.zip')
+    - cmd: 7z x mDNSWindows_Win32.zip -omdns_install -y -r
 
   artifacts:
-    - path: tools/install/windows/bin/Release/RDMnetSetup_x86.msi
+    - path: RDMnetSetup_x86.msi
       name: RDMnet 32-bit installer
 
 -
@@ -53,16 +62,45 @@ for:
       - platform: x64
 
   environment:
-    CMAKE_GENERATOR: Visual Studio 15 2017
+    CMAKE_GENERATOR: Visual Studio 15 2017 Win64
     CMAKE_INSTALL: install_x64
     QTDIR: C:\Qt\5.9.7\msvc2017_64
+    INSTALLER_PROJECT: tools\install\windows\RDMnetInstall_x64.wixproj
+    INSTALLER_PROJECT_PLATFORM: x64
+    INSTALLER_ARTIFACT: tools\install\windows\bin\Release\RDMnetSetup_x64.msi
+
+  install:
+    - ps: (new-object net.webclient).DownloadFile('https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_x64.zip', 'mDNSWindows_x64.zip')
+    - cmd: 7z x mDNSWindows_x64.zip -omdns_install -y -r
 
   artifacts:
-    - path: tools/install/windows/bin/Release/RDMnetSetup_x64.msi
+    - path: RDMnetSetup_x64.msi
       name: RDMnet 64-bit installer
+  
+-
+  matrix:
+    only:
+      - VERSIONED_BUILD: yes
+
+  only_commits:
+    message: /<versioned-build>/
+
+  after_build:
+    - cmd: |-
+        cmake -P cmake_install.cmake
+        msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% ..\%INSTALLER_PROJECT%
+        copy ..\%INSTALLER_ARTIFACT% ..
+
+-
+  matrix:
+    only:
+      - VERSIONED_BUILD: no
+
+  test_script:
+    - cmd: tests\unit\%configuration%\test_rdmnet_lib.exe
 
 #---------------------------------#
-#       build configuration       #
+#    common build configuration   #
 #---------------------------------#
 
 platform:
@@ -78,7 +116,7 @@ before_build:
       mkdir build
       cd build
       cmake --version
-      cmake -G "%CMAKE_GENERATOR%" -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL% -DRDMNET_MOCK_DISCOVERY=ON ..
+      cmake -G "%CMAKE_GENERATOR%" -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL% %CMAKE_EXTRA_ARGS% ..
 
 build:
   parallel: true            # enable MSBuild parallel builds
@@ -86,56 +124,3 @@ build:
 
   # MSBuild verbosity level
   verbosity: minimal
-
-after_build:
-
-
-#---------------------------------#
-#       tests configuration       #
-#---------------------------------#
-
-test_script:
-  - cmd: tests\unit\%configuration%\test_rdmnet_lib.exe
-
-# Custom build configuration for 'develop' branch: Create a versioned build.
-# for:
-# -
-#   branches:
-#     only:
-#       - develop
-#   
-#   before_build:
-#     - cmd: |-
-#         git clone -b %APPVEYOR_REPO_BRANCH% https://github.com/ETCLabs/lwpa ../lwpa
-#         git clone -b %APPVEYOR_REPO_BRANCH% https://github.com/ETCLabs/RDM ../RDM
-#         mkdir build
-#         cd build
-#         cmake --version
-#         cmake -G "Visual Studio 15 2017 Win64" -DQTDIR=C:\Qt\5.9.7\msvc2017_64 -DRDMNET_MOCK_DISCOVERY=ON -DRDMNET_CREATE_VERSIONED_BUILD=ON -DRDMNET_VERSION_BUILD=%APPVEYOR_BUILD_NUMBER% ..
-# 
-# -
-#   branches:
-#     only:
-#       - master
-# 
-#   environment:
-#     access_token:
-#       secure: D2tJBo+pb7fiu19yt3FYK5QSqT9bnMdlBHEIWutil33+rKjt1cP5nnB0m1XMkTsM
-# 
-#   before_build:
-#     - cmd: |-
-#         git clone -b %APPVEYOR_REPO_BRANCH% https://github.com/ETCLabs/lwpa ../lwpa
-#         git clone -b %APPVEYOR_REPO_BRANCH% https://github.com/ETCLabs/RDM ../RDM
-#         mkdir build
-#         cd build
-#         cmake --version
-#         cmake -G "Visual Studio 15 2017 Win64" -DQTDIR=C:\Qt\5.9.7\msvc2017_64 -DRDMNET_MOCK_DISCOVERY=ON -DRDMNET_CREATE_VERSIONED_BUILD=ON -DRDMNET_VERSION_BUILD=%APPVEYOR_BUILD_NUMBER% ..
-# 
-#   on_success:
-#     - git config --global credential.helper store
-#     - ps: Add-Content "$HOME\.git-credentials" "https://$($env:access_token):x-oauth-basic@github.com`n"
-#     - git config --global user.email "appveyor@appveyor.com"
-#     - git config --global user.name "AppVeyor CI"
-#     - git add include/rdmnet/version.h
-#     - git commit -m "Bump version header from AppVeyor CI. Build number %APPVEYOR_BUILD_NUMBER%"
-#     - git push origin master
