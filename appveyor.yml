@@ -47,8 +47,12 @@ for:
     INSTALLER_ARTIFACT: tools\install\windows\bin\Release\RDMnetSetup_x86.msi
 
   install:
-    - ps: (new-object net.webclient).DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_Win32.zip", "mDNSWindows_Win32.zip")
-    - cmd: 7z x mDNSWindows_Win32.zip -omdns_install -y -r
+    - ps: |-
+        (new-object net.webclient).DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_Win32.zip", "mDNSWindows_Win32.zip")
+        dir
+    - cmd: |-
+        dir
+        7z x mDNSWindows_Win32.zip -omdns_install -y -r
 
   artifacts:
     - path: RDMnetSetup_x86.msi
