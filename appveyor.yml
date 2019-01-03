@@ -35,8 +35,8 @@ environment:
 for:
   -
     matrix:
-      only:
-        - platform: x86
+      except:
+        - platform: x64
     
     environment:
       CMAKE_GENERATOR: Visual Studio 15 2017
@@ -56,8 +56,8 @@ for:
 
   -
     matrix:
-      only:
-        - platform: x64
+      except:
+        - platform: x86
 
     environment:
       CMAKE_GENERATOR: Visual Studio 15 2017 Win64
@@ -77,8 +77,8 @@ for:
     
   -
     matrix:
-      only:
-        - RDMNET_BUILD_TYPE: versioned
+      except:
+        - RDMNET_BUILD_TYPE: test
 
     only_commits:
       message: /<versioned-build>/
@@ -94,8 +94,8 @@ for:
 
   -
     matrix:
-      only:
-        - RDMNET_BUILD_TYPE: test
+      except:
+        - RDMNET_BUILD_TYPE: versioned
 
     environment:
       CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=ON
