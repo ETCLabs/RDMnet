@@ -29,8 +29,8 @@ environment:
   MDNSWINDOWS_VERSION: v1.1.0
   
   matrix:
-    - VERSIONED_BUILD: 'no'
-    - VERSIONED_BUILD: 'yes'
+    - RDMNET_BUILD_TYPE: test
+    - RDMNET_BUILD_TYPE: versioned
 
 for:
   -
@@ -78,7 +78,7 @@ for:
   -
     matrix:
       only:
-        - VERSIONED_BUILD: 'yes'
+        - RDMNET_BUILD_TYPE: versioned
 
     only_commits:
       message: /<versioned-build>/
@@ -95,7 +95,7 @@ for:
   -
     matrix:
       only:
-        - VERSIONED_BUILD: 'no'
+        - RDMNET_BUILD_TYPE: test
 
     environment:
       CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=ON
