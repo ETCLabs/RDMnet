@@ -19,6 +19,8 @@ if(PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   endif()
 endif()
 
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/tools/cmake)
+
 ############################### Versioned builds ############################## 
 
 option(RDMNET_CREATE_VERSIONED_BUILD "Create a new versioned build of RDMnet (should only be set by CI)" OFF)
@@ -36,6 +38,7 @@ if(RDMNET_CREATE_VERSIONED_BUILD)
   # Configure the version header
   message(STATUS "Configuring versioned build for ${RDMNET_VERSION_STRING_FULL}...")
   configure_file(${CMAKE_CURRENT_LIST_DIR}/tools/ci/version.h.in ${CMAKE_CURRENT_LIST_DIR}/include/rdmnet/version.h)
+  configure_file(${CMAKE_CURRENT_LIST_DIR}/tools/ci/vars.wxi.in ${CMAKE_CURRENT_LIST_DIR}/tools/install/windows/vars.wxi)
 endif()
 
 ################################ Main libraries ###############################
@@ -65,4 +68,13 @@ endif()
 
 if(RDMNET_BUILD_EXAMPLES OR RDMNET_BUILD_CONSOLE_EXAMPLES)
   add_subdirectory(examples)
+endif()
+
+##################################### Misc ####################################
+
+# On Windows, we put the DLL in the install directory to later be packaged with
+# the installer.
+if(DEFINED DNS_SD_DLL)
+  install(FILES ${DNS_SD_DLL} DESTINATION bin)
+  install(FILES ${DNS_SD_DLL} DESTINATION controller)
 endif()

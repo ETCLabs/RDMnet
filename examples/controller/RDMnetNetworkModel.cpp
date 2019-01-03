@@ -358,8 +358,17 @@ void BrokerConnection::connect(const BrokerDiscInfo *broker_info)
 {
   if (broker_info->listen_addrs_count > 0)
   {
-    broker_addr_ = broker_info->listen_addrs[0];
-    connect();
+    // Temporary - until we add IPv6 support
+    lwpaip_set_invalid(&broker_addr_.ip);
+    for (size_t i = 0; i < broker_info->listen_addrs_count; ++i)
+    {
+      if (lwpaip_is_v4(&broker_info->listen_addrs[i].ip))
+      {
+        broker_addr_ = broker_info->listen_addrs[i];
+      }
+    }
+    if (!lwpaip_is_invalid(&broker_addr_.ip))
+      connect();
   }
 }
 

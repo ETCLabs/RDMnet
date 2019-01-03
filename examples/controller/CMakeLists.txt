@@ -30,7 +30,10 @@ set(CMAKE_AUTOUIC ON)
 
 set(CONTROLLER_TARGET rdmnet_controller_example)
 
-add_executable(${CONTROLLER_TARGET}
+# Note - "WIN32" argument signals to Windows that this app is linked as a
+# windowed (not console) executable, and has no effect on other platforms. This
+# is a cross-platform Qt app.
+add_executable(${CONTROLLER_TARGET} WIN32
   AboutGUI.cpp
   AboutGUI.h
   AboutGUI.ui
@@ -71,16 +74,34 @@ add_executable(${CONTROLLER_TARGET}
   SimpleNetworkProxyModel.cpp
   SimpleNetworkProxyModel.h
 )
+
 target_link_libraries(${CONTROLLER_TARGET} PRIVATE Qt5::Widgets RDMnet)
 if(WIN32)
   target_compile_definitions(${CONTROLLER_TARGET} PRIVATE UNICODE _UNICODE _CRT_SECURE_NO_WARNINGS)
   target_link_libraries(${CONTROLLER_TARGET} PRIVATE rpcrt4)
+  if(DEFINED DNS_SD_DLL)
+    add_custom_command(
+      TARGET ${CONTROLLER_TARGET}
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy ${DNS_SD_DLL} $<TARGET_FILE_DIR:${CONTROLLER_TARGET}>
+      COMMENT "Copying DNS-SD dll to executable directory..."
+    )
+  endif()
+endif()
+
+install(TARGETS ${CONTROLLER_TARGET}
+  RUNTIME DESTINATION controller
+)
+if(WIN32)
+  get_filename_component(QTDIR_ESCAPED ${QTDIR} ABSOLUTE)
+  install(CODE
+    "execute_process(COMMAND ${QTDIR_ESCAPED}/bin/windeployqt.exe --no-compiler-runtime ${CONTROLLER_TARGET}.exe WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/controller)"
+  )
 endif()
 
 ############################## Allow Qt Debugging #############################
 
-# Help out the Visual Studio debugging environment by pointing it at the Qt
-# DLLs.
+# Help out the Visual Studio debugging environment by pointing it at the Qt DLLs.
 if(MSVC)
   configure_file(
     ${CMAKE_CURRENT_LIST_DIR}/../../tools/cmake/ExampleController.vcxproj.user.in
