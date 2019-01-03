@@ -30,9 +30,7 @@ environment:
   
   matrix:
     - VERSIONED_BUILD: no
-      CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=ON
     - VERSIONED_BUILD: yes
-      CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=OFF -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
 
 for:
 -
@@ -85,6 +83,9 @@ for:
   only_commits:
     message: /<versioned-build>/
 
+  environment:
+    CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=OFF -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
+
   after_build:
     - cmd: |-
         cmake -P cmake_install.cmake
@@ -95,6 +96,9 @@ for:
   matrix:
     only:
       - VERSIONED_BUILD: no
+
+  environment:
+    CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=ON
 
   test_script:
     - cmd: tests\unit\%configuration%\test_rdmnet_lib.exe
