@@ -30,14 +30,6 @@ matrix:
 
 environment:
   MDNSWINDOWS_VERSION: v1.1.0
-  CMAKE_GENERATOR: Visual Studio 15 2017 Win64
-  CMAKE_INSTALL: install_x64
-  CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=ON
-  QTDIR: C:\Qt\5.9.7\msvc2017_64
-  INSTALLER_PROJECT: tools\install\windows\RDMnetInstall_x64.wixproj
-  INSTALLER_PROJECT_PLATFORM: x64
-  INSTALLER_ARTIFACT: tools\install\windows\bin\Release\RDMnetSetup_x64.msi
-  
   matrix:
     - RDMNET_BUILD_TYPE: test
     - RDMNET_BUILD_TYPE: versioned
@@ -78,7 +70,20 @@ for:
     environment:
       CMAKE_GENERATOR: Visual Studio 15 2017
       CMAKE_INSTALL: install_x86
+      CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=ON
       QTDIR: C:\Qt\5.9.7\msvc2015
+
+  -
+    matrix:
+      only:
+        - platform: x64
+        - RDMNET_BUILD_TYPE: test
+
+    environment:
+      CMAKE_GENERATOR: Visual Studio 15 2017 Win64
+      CMAKE_INSTALL: install_x64
+      CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=ON
+      QTDIR: C:\Qt\5.9.7\msvc2017_64
 
   -
     matrix:
@@ -92,11 +97,11 @@ for:
     environment:
       CMAKE_GENERATOR: Visual Studio 15 2017
       CMAKE_INSTALL: install_x86
+      CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=OFF -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
       QTDIR: C:\Qt\5.9.7\msvc2015
       INSTALLER_PROJECT: tools\install\windows\RDMnetInstall_x86.wixproj
       INSTALLER_PROJECT_PLATFORM: x86
       INSTALLER_ARTIFACT: tools\install\windows\bin\Release\RDMnetSetup_x86.msi
-      CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=OFF -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
 
     install:
       - ps: (new-object net.webclient).DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_Win32.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_Win32.zip")
@@ -124,7 +129,13 @@ for:
       message: /<versioned-build>/
 
     environment:
+      CMAKE_GENERATOR: Visual Studio 15 2017 Win64
+      CMAKE_INSTALL: install_x64
       CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=OFF -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
+      QTDIR: C:\Qt\5.9.7\msvc2017_64
+      INSTALLER_PROJECT: tools\install\windows\RDMnetInstall_x64.wixproj
+      INSTALLER_PROJECT_PLATFORM: x64
+      INSTALLER_ARTIFACT: tools\install\windows\bin\Release\RDMnetSetup_x64.msi
 
     install:
       - ps: (new-object net.webclient).DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_x64.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x64.zip")
