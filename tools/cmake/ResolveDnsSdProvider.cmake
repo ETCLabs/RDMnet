@@ -24,7 +24,12 @@ else()
     if(RDMNET_WINDOWS_USE_BONJOUR_SDK)
 
       # The location of the Bonjour SDK
-      if(NOT DEFINED BONJOUR_SDK_ROOT)
+      if(DEFINED BONJOUR_SDK_ROOT)
+        get_filename_component(BONJOUR_SDK_ROOT ${BONJOUR_SDK_ROOT}
+          ABSOLUTE
+          BASE_DIR ${CMAKE_BINARY_DIR}
+        )
+      else()
         set(BONJOUR_SDK_ROOT $ENV{BONJOUR_SDK_HOME})
       endif()
 
@@ -59,6 +64,7 @@ else()
           set(MDNSWINDOWS_SRC_LOC ${RDMNET_ROOT}/../mDNSWindows)
         else()
           message(FATAL_ERROR
+            "Not found.\n"
             "You must provide ETC's Bonjour for Windows fork (mDNSWindows) in one of the following ways:\n"
             " - Use MDNSWINDOWS_SRC_LOC to specify the location of the source repository\n"
             " - Use MDNSWINDOWS_INSTALL_LOC to specify the location of the installed binaries\n"
@@ -68,10 +74,17 @@ else()
       endif()
 
       if(MDNSWINDOWS_SRC_LOC)
+        get_filename_component(MDNSWINDOWS_SRC_LOC ${MDNSWINDOWS_SRC_LOC}
+          ABSOLUTE
+          BASE_DIR ${CMAKE_BINARY_DIR}
+        )
         add_subdirectory(${MDNSWINDOWS_SRC_LOC}/mDNSWindows/DLLStub Bonjour)
         set(DNS_SD_ADDITIONAL_LIBS dnssdStatic)
       elseif(MDNSWINDOWS_INSTALL_LOC)
-        file(TO_CMAKE_PATH ${MDNSWINDOWS_INSTALL_LOC} MDNSWINDOWS_INSTALL_LOC)
+        get_filename_component(MDNSWINDOWS_INSTALL_LOC ${MDNSWINDOWS_INSTALL_LOC}
+          ABSOLUTE
+          BASE_DIR ${CMAKE_BINARY_DIR}
+        )
         find_library(BONJOUR_LIB
           NAMES dnssd
           HINTS ${MDNSWINDOWS_INSTALL_LOC}/lib

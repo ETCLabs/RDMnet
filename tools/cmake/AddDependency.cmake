@@ -6,6 +6,10 @@ function(rdmnet_add_dependency target loc_variable)
     # Step 2 - if the user has provided a location for the dependency, use that
     if(DEFINED ${loc_variable})
       message(STATUS "Found. Adding dependency from ${${loc_variable}}.")
+      get_filename_component(${loc_variable} ${${loc_variable}}
+        ABSOLUTE
+        BASE_DIR ${CMAKE_BINARY_DIR}
+      )
       add_subdirectory(${${loc_variable}} ${target})
     else()
       message(STATUS "Not defined. Checking if already downloaded at the same level as this directory...")
