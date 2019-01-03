@@ -22,7 +22,7 @@ skip_commits:
 image: Visual Studio 2017
 
 platform:
-  - x86
+  - Win32
   - x64
 
 matrix:
@@ -72,7 +72,7 @@ for:
   -
     matrix:
       only:
-        - platform: x86
+        - platform: Win32
         - RDMNET_BUILD_TYPE: test
     
     environment:
@@ -83,7 +83,7 @@ for:
   -
     matrix:
       only:
-        - platform: x86
+        - platform: Win32
         - RDMNET_BUILD_TYPE: versioned
 
     only_commits:
@@ -101,6 +101,8 @@ for:
     install:
       - ps: (new-object net.webclient).DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_Win32.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_Win32.zip")
       - cmd: 7z x mDNSWindows_Win32.zip -omdns_install -y -r
+
+    test_script:
 
     after_build:
       - cmd: |-
@@ -127,6 +129,8 @@ for:
     install:
       - ps: (new-object net.webclient).DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_x64.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x64.zip")
       - cmd: 7z x mDNSWindows_x64.zip -omdns_install -y -r
+
+    test_script:
 
     after_build:
       - cmd: |-
