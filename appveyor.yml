@@ -115,13 +115,14 @@ for:
       - ps: (new-object net.webclient).DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_Win32.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_Win32.zip")
       - cmd: 7z x mDNSWindows_Win32.zip -omdns_install -y -r
 
-    test_script:
-
     after_build:
       - cmd: |-
           cmake -P cmake_install.cmake
           msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% ..\%INSTALLER_PROJECT%
           copy ..\%INSTALLER_ARTIFACT% ..
+
+    test_script:
+      - exit 0
 
     artifacts:
       - path: RDMnetSetup_x86.msi
@@ -149,13 +150,14 @@ for:
       - ps: (new-object net.webclient).DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_x64.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x64.zip")
       - cmd: 7z x mDNSWindows_x64.zip -omdns_install -y -r
 
-    test_script:
-
     after_build:
       - cmd: |-
           cmake -P cmake_install.cmake
           msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% ..\%INSTALLER_PROJECT%
           copy ..\%INSTALLER_ARTIFACT% ..
+
+    test_script:
+      - exit 0
 
     artifacts:
       - path: RDMnetSetup_x64.msi
