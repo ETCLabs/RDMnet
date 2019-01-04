@@ -61,6 +61,18 @@ build:
 test_script:
   - cmd: tests\unit\%configuration%\test_rdmnet_lib.exe
 
+deploy:
+  provider: FTP
+  on:
+    RDMNET_BUILD_TYPE: versioned
+  protocol: ftp
+  host: ftp.etcconnect.com
+  username:
+    secure: BiErkmxwLRLpjblGVyQ55Q==
+  password:
+    secure: HIkhutrZaicM4e263nkiXA==
+  folder: rdmnet_builds\0.2.0\$(APPVEYOR_BUILD_VERSION)\windows
+
 for:
   -
     matrix:
@@ -132,16 +144,6 @@ for:
       - path: RDMnetSetup_x86.msi
         name: RDMnet 32-bit installer
 
-    deploy:
-      provider: FTP
-      protocol: ftp
-      host: ftp.etcconnect.com
-      username:
-        secure: BiErkmxwLRLpjblGVyQ55Q==
-      password:
-        secure: HIkhutrZaicM4e263nkiXA==
-      folder: rdmnet_builds\0.2.0\%RDMNET_VERSION%\windows
-
   -
     matrix:
       only:
@@ -180,12 +182,7 @@ for:
       - path: RDMnetSetup_x64.msi
         name: RDMnet 64-bit installer
 
-    deploy:
-      provider: FTP
-      protocol: ftp
-      host: ftp.etcconnect.com
-      username:
-        secure: BiErkmxwLRLpjblGVyQ55Q==
-      password:
-        secure: HIkhutrZaicM4e263nkiXA==
-      folder: rdmnet_builds\0.2.0\%RDMNET_VERSION%\windows
+#    notifications:
+#      - provider: Slack
+#        incoming_webhook:
+#          secure: mmc+nEHnXGCwUvdD4qG3usIECTxCf86I1+DYO1hChDo4OLyU56a4qoquct4bTqtFBXlf0oc5HNLB7R11dHAOxeG8E3+ReVV0OU6R3DVLTpI=
