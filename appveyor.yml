@@ -71,7 +71,7 @@ deploy:
     secure: BiErkmxwLRLpjblGVyQ55Q==
   password:
     secure: HIkhutrZaicM4e263nkiXA==
-  folder: rdmnet_builds\0.2.0\windows
+  folder: rdmnet_builds\0.2.0\$(RDMNET_VERSION)
 
 for:
   -
@@ -135,13 +135,13 @@ for:
       - cmd: |-
           cmake -P cmake_install.cmake
           msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% ..\%INSTALLER_PROJECT%
-          copy ..\%INSTALLER_ARTIFACT% ..\RDMnetSetup_%RDMNET_VERSION%_x86.msi
+          copy ..\%INSTALLER_ARTIFACT% ..
 
     test_script:
       - exit 0
 
     artifacts:
-      - path: RDMnetSetup*x86.msi
+      - path: RDMnetSetup_x86.msi
         name: RDMnet 32-bit installer
 
   -
@@ -173,13 +173,13 @@ for:
       - cmd: |-
           cmake -P cmake_install.cmake
           msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% ..\%INSTALLER_PROJECT%
-          copy ..\%INSTALLER_ARTIFACT% ..\RDMnetSetup_%RDMNET_VERSION%_x64.msi
+          copy ..\%INSTALLER_ARTIFACT% ..
 
     test_script:
       - exit 0
 
     artifacts:
-      - path: RDMnetSetup*x64.msi
+      - path: RDMnetSetup_x64.msi
         name: RDMnet 64-bit installer
 
 #    notifications:
