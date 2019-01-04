@@ -178,9 +178,6 @@ for:
           cmake -P cmake_install.cmake
           msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% ..\%INSTALLER_PROJECT%
           copy ..\%INSTALLER_ARTIFACT% ..
-      - ps: |-
-          $vers = Get-Content $Env:APPVEYOR_BUILD_FOLDER\tools\version\current_version.txt
-          Add-AppveyorMessage "build $vers"
 
     test_script:
       - exit 0
@@ -190,4 +187,6 @@ for:
         name: RDMnet 64-bit installer
 
     after_deploy:
-      - ps: $Env:APPVEYOR_BUILD_FOLDER\tools\ci\slack_notify.ps1
+      - ps: |-
+          cd $Env:APPVEYOR_BUILD_FOLDER
+          .\tools\ci\slack_notify.ps1
