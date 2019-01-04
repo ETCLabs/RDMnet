@@ -1,6 +1,6 @@
 $body = @{
   username = "AppVeyor CI"
-  icon_url = "https://ci.appveyor.com/assets/images/appveyor-blud-144.png"
+  icon_url = "https://ci.appveyor.com/assets/images/appveyor-blue-144.png"
   attachments = @(
     @{
       fallback = "RDMnet build $Env:RDMNET_VERSION has been deployed to FTP: ftp://ftp.etcconnect.com"

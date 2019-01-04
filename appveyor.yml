@@ -8,8 +8,6 @@ branches:
   only:
     - develop
     - master
-    # Temporary add for installer testing
-    - build-installer
 
 skip_commits:
   files:
@@ -31,8 +29,7 @@ matrix:
 environment:
   MDNSWINDOWS_VERSION: v1.1.1
   SLACK_WEBHOOK:
-    secure: mmc+nEHnXGCwUvdD4qG3usIECTxCf86I1+DYO1hChDrRddKWHGVYqxlcjnTWo8YVGuku1jxYYhb1SfPgwIlY04eLlVitMgf5JlTwHZnNAHE=
-#    secure: mmc+nEHnXCwUvdD4qG3usIECTxCf86I1+DYO1hChDo4OLyU56a4qoquct4bTqtFBXlf0oc5HNLB7R11dHAOxeG8E3+ReVV0OU6R3DVLTpI=
+    secure: mmc+nEHnXCwUvdD4qG3usIECTxCf86I1+DYO1hChDo4OLyU56a4qoquct4bTqtFBXlf0oc5HNLB7R11dHAOxeG8E3+ReVV0OU6R3DVLTpI=
 
   matrix:
     - RDMNET_BUILD_TYPE: test
@@ -45,11 +42,10 @@ environment:
 configuration: Release
 
 before_build:
-  # TODO change branches back to %APPVEYOR_REPO_BRANCH%
   - cmd: |-
       set /P RDMNET_VERSION=< tools/version/current_version.txt
-      git clone -b develop https://github.com/ETCLabs/lwpa ../lwpa
-      git clone -b develop https://github.com/ETCLabs/RDM ../RDM
+      git clone -b %APPVEYOR_REPO_BRANCH% https://github.com/ETCLabs/lwpa ../lwpa
+      git clone -b %APPVEYOR_REPO_BRANCH% https://github.com/ETCLabs/RDM ../RDM
       mkdir build
       cd build
       cmake --version
@@ -83,10 +79,6 @@ for:
       only:
         - platform: Win32
           RDMNET_BUILD_TYPE: test
-    
-    # TODO remove after testing
-    skip_commits:
-      message: /\[versioned-build\]/
 
     environment:
       CMAKE_GENERATOR: Visual Studio 15 2017
@@ -99,10 +91,6 @@ for:
       only:
         - platform: x64
           RDMNET_BUILD_TYPE: test
-
-    # TODO remove after testing
-    skip_commits:
-      message: /\[versioned-build\]/
 
     environment:
       CMAKE_GENERATOR: Visual Studio 15 2017 Win64
