@@ -16,8 +16,9 @@ set(RDMNET_VERSION_COPYRIGHT "Copyright 2018 ETC Inc.")
 # Configure the version header
 message(STATUS "Configuring versioned build for ${RDMNET_VERSION_STRING}...")
 get_filename_component(VERSION_DIR ${CMAKE_SCRIPT_MODE_FILE} DIRECTORY)
-configure_file(${VERSION_DIR}/version.h.in ${VERSION_DIR}/../../include/rdmnet/version.h)
-configure_file(${VERSION_DIR}/vars.wxi.in ${VERSION_DIR}/../install/windows/vars.wxi)
+configure_file(${VERSION_DIR}/templates/version.h.in ${VERSION_DIR}/../../include/rdmnet/version.h)
+configure_file(${VERSION_DIR}/templates/vars.wxi.in ${VERSION_DIR}/../install/windows/vars.wxi)
+configure_file(${VERSION_DIR}/templates/current_version.txt.in ${VERSION_DIR}/current_version.txt)
 
 # Stage the changed files
 execute_process(COMMAND
@@ -28,4 +29,4 @@ execute_process(COMMAND
   git add tools/install/windows/vars.wxi
   WORKING_DIRECTORY ${VERSION_DIR}/../..
 )
-configure_file(${VERSION_DIR}/commit_msg.txt.in ${VERSION_DIR}/commit_msg.txt)
+configure_file(${VERSION_DIR}/templates/commit_msg.txt.in ${VERSION_DIR}/commit_msg.txt)
