@@ -11,6 +11,10 @@ rdmnet_add_dependency(RDM RDM_DIR)
 ################################## Config file ################################
 
 if(DEFINED RDMNET_CONFIG_LOC)
+  get_filename_component(RDMNET_CONFIG_LOC ${RDMNET_CONFIG_LOC}
+    ABSOLUTE
+    BASE_DIR ${CMAKE_BINARY_DIR}
+  )
 else()
   message("No rdmnet_config.h provided. Creating a default one in the build directory...")
   configure_file(${RDMNET_ROOT}/tools/cmake/rdmnet_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/rdmnet_config.h)

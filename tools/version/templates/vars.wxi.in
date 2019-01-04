@@ -1,6 +1,6 @@
 <!-- File to define build variables for the RDMnet installer project. -->
 <Include>
-  <?define VersionNumber = "@RDMNET_VERSION_STRING_FULL@" ?>
+  <?define VersionNumber = "@RDMNET_VERSION_STRING@" ?>
 
   <?include GeneratedFiles\vcredist.wxi ?>
   <?include GeneratedFiles\mdnsmerge.wxi ?>
@@ -12,7 +12,7 @@
   <?else ?>
     <?define ProgramFilesFolder = "ProgramFilesFolder" ?>
     <?define PkgDescription = "ETC RDMnet 32-bit Installer" ?>
-    <?define VcRedistMergeModule = "$(var.VCRedistInstallLoc)\MergeModules\Microsoft_VC141_CRT_x86.msm" ?>
+    <?define VcRedistMergeModule = "$(var.VcRedistInstallLoc)\MergeModules\Microsoft_VC141_CRT_x86.msm" ?>
   <?endif ?>
 
 </Include>
