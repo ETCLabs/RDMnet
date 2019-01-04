@@ -29,7 +29,7 @@ matrix:
   fast_finish: true     # set this flag to immediately finish build once one of the jobs fails.
 
 environment:
-  MDNSWINDOWS_VERSION: v1.1.0
+  MDNSWINDOWS_VERSION: v1.1.1
   matrix:
     - RDMNET_BUILD_TYPE: test
     - RDMNET_BUILD_TYPE: versioned
@@ -112,8 +112,11 @@ for:
       INSTALLER_ARTIFACT: tools\install\windows\bin\Release\RDMnetSetup_x86.msi
 
     install:
-      - ps: (new-object net.webclient).DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_Win32.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_Win32.zip")
-      - cmd: 7z x mDNSWindows_Win32.zip -omdns_install -y -r
+      - ps: |-
+          $wc = New-Object Net.WebClient
+          $wc.DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_x86.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x86.zip")
+          7z x mDNSWindows_x86.zip -omdns_install -y -r
+          $wc.DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/ETC_mDNSInstall.msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
 
     after_build:
       - cmd: |-
@@ -147,8 +150,11 @@ for:
       INSTALLER_ARTIFACT: tools\install\windows\bin\Release\RDMnetSetup_x64.msi
 
     install:
-      - ps: (new-object net.webclient).DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_x64.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x64.zip")
-      - cmd: 7z x mDNSWindows_x64.zip -omdns_install -y -r
+      - ps: |-
+          $wc = New-Object Net.WebClient
+          $wc.DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_x64.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x64.zip")
+          7z x mDNSWindows_x64.zip -omdns_install -y -r
+          $wc.DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/ETC_mDNSInstall.msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
 
     after_build:
       - cmd: |-

@@ -96,7 +96,6 @@ else()
         set(DNS_SD_ADDITIONAL_INCLUDE_DIRS ${MDNSWINDOWS_INSTALL_LOC}/include)
         set(DNS_SD_ADDITIONAL_LIBS ${BONJOUR_LIB})
         set(DNS_SD_DLL ${MDNSWINDOWS_INSTALL_LOC}/dll/dnssd.dll PARENT_SCOPE)
-        file(TO_NATIVE_PATH "${MDNSWINDOWS_INSTALL_LOC}/merge_module" MDNS_MERGE_MODULE_LOC)
         configure_file(${RDMNET_ROOT}/tools/ci/mdnsmerge.wxi.in
           ${RDMNET_ROOT}/tools/install/windows/GeneratedFiles/mdnsmerge.wxi
         )
