@@ -30,6 +30,10 @@ matrix:
 
 environment:
   MDNSWINDOWS_VERSION: v1.1.1
+  SLACK_WEBHOOK:
+    secure: mmc+nEHnXGCwUvdD4qG3usIECTxCf86I1+DYO1hChDrRddKWHGVYqxlcjnTWo8YVGuku1jxYYhb1SfPgwIlY04eLlVitMgf5JlTwHZnNAHE=
+#    secure: mmc+nEHnXCwUvdD4qG3usIECTxCf86I1+DYO1hChDo4OLyU56a4qoquct4bTqtFBXlf0oc5HNLB7R11dHAOxeG8E3+ReVV0OU6R3DVLTpI=
+
   matrix:
     - RDMNET_BUILD_TYPE: test
     - RDMNET_BUILD_TYPE: versioned
@@ -185,11 +189,5 @@ for:
       - path: RDMnetSetup_x64.msi
         name: RDMnet 64-bit installer
 
-    notifications:
-      - provider: Slack
-        incoming_webhook:
-          secure: mmc+nEHnXCwUvdD4qG3usIECTxCf86I1+DYO1hChDo4OLyU56a4qoquct4bTqtFBXlf0oc5HNLB7R11dHAOxeG8E3+ReVV0OU6R3DVLTpI=
-        on_build_success: true
-        on_build_failure: false
-        on_build_status_changed: false
-        template: "{{projectName}} {{#messages}}{{message}}{{/messages}} was deployed to FTP: ftp://ftp.etcconnect.com"
+    after_deploy:
+      - ps: $Env:APPVEYOR_BUILD_FOLDER\tools\ci\slack_notify.ps1
