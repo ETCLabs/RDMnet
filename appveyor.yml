@@ -43,7 +43,7 @@ configuration: Release
 before_build:
   # TODO change branches back to %APPVEYOR_REPO_BRANCH%
   - cmd: |-
-      setx RDMNET_VERSION /f tools/version/current_version.txt /a 0,0
+      set /P RDMNET_VERSION=< tools/version/current_version.txt
       git clone -b develop https://github.com/ETCLabs/lwpa ../lwpa
       git clone -b develop https://github.com/ETCLabs/RDM ../RDM
       mkdir build
