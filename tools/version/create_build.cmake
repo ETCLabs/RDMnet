@@ -33,4 +33,4 @@ execute_process(COMMAND
   git add tools/install/windows/vars.wxi
   WORKING_DIRECTORY ${VERSION_DIR}/../..
 )
-configure_file(${VERSION_DIR}/templates/commit_msg.txt.in ${VERSION_DIR}/commit_msg.txt)
+configure_file(${VERSION_DIR}/templates/commit_msg.txt.in ${VERSION_DIR}/tmp_commit_msg.txt)
