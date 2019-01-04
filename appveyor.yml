@@ -140,8 +140,7 @@ for:
         secure: BiErkmxwLRLpjblGVyQ55Q==
       password:
         secure: HIkhutrZaicM4e263nkiXA==
-      folder: builds\0.2.0\$(RDMNET_VERSION)\windows
-      artifact: /.*/
+      folder: rdmnet_builds\0.2.0\%RDMNET_VERSION%\windows
 
   -
     matrix:
@@ -189,5 +188,4 @@ for:
         secure: BiErkmxwLRLpjblGVyQ55Q==
       password:
         secure: HIkhutrZaicM4e263nkiXA==
-      folder: builds\0.2.0\$(RDMNET_VERSION)\windows
-      artifact: /.*/
+      folder: rdmnet_builds\0.2.0\%RDMNET_VERSION%\windows
