@@ -22,6 +22,10 @@ configure_file(${VERSION_DIR}/templates/current_version.txt.in ${VERSION_DIR}/cu
 
 # Stage the changed files
 execute_process(COMMAND
+  git add current_version.txt
+  WORKING_DIRECTORY ${VERSION_DIR}
+)
+execute_process(COMMAND
   git add include/rdmnet/version.h
   WORKING_DIRECTORY ${VERSION_DIR}/../..
 )

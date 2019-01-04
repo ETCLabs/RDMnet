@@ -174,6 +174,9 @@ for:
           cmake -P cmake_install.cmake
           msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% ..\%INSTALLER_PROJECT%
           copy ..\%INSTALLER_ARTIFACT% ..
+      - ps: |-
+          $vers = Get-Content $Env:APPVEYOR_BUILD_FOLDER\tools\version\current_version.txt
+          Add-AppveyorMessage "build $vers"
 
     test_script:
       - exit 0
@@ -182,7 +185,10 @@ for:
       - path: RDMnetSetup_x64.msi
         name: RDMnet 64-bit installer
 
-#    notifications:
-#      - provider: Slack
-#        incoming_webhook:
-#          secure: mmc+nEHnXGCwUvdD4qG3usIECTxCf86I1+DYO1hChDo4OLyU56a4qoquct4bTqtFBXlf0oc5HNLB7R11dHAOxeG8E3+ReVV0OU6R3DVLTpI=
+    notifications:
+      - provider: Slack
+        incoming_webhook:
+          secure: mmc+nEHnXGCwUvdD4qG3usIECTxCf86I1+DYO1hChDo4OLyU56a4qoquct4bTqtFBXlf0oc5HNLB7R11dHAOxeG8E3+ReVV0OU6R3DVLTpI=
+        on_build_failure: false
+        on_build_status_changed: false
+        template: "{{projectName}} {{#messages}}{{message}}{{/messages}} was deployed to FTP: ftp://ftp.etcconnect.com"
