@@ -188,7 +188,8 @@ for:
     notifications:
       - provider: Slack
         incoming_webhook:
-          secure: mmc+nEHnXGCwUvdD4qG3usIECTxCf86I1+DYO1hChDo4OLyU56a4qoquct4bTqtFBXlf0oc5HNLB7R11dHAOxeG8E3+ReVV0OU6R3DVLTpI=
+          secure: mmc+nEHnXCwUvdD4qG3usIECTxCf86I1+DYO1hChDo4OLyU56a4qoquct4bTqtFBXlf0oc5HNLB7R11dHAOxeG8E3+ReVV0OU6R3DVLTpI=
+        on_build_success: true
         on_build_failure: false
         on_build_status_changed: false
         template: "{{projectName}} {{#messages}}{{message}}{{/messages}} was deployed to FTP: ftp://ftp.etcconnect.com"
