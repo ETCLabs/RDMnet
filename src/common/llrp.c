@@ -25,12 +25,16 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 #include "rdmnet/llrp.h"
-#include "llrppriv.h"
+#include "llrp_priv.h"
 
-#include "lwpa_mempool.h"
-#include "lwpa_socket.h"
-#include "estardmnet.h"
-#include "rdmnet/opts.h"
+#include "rdmnet_opts.h"
+#if RDMNET_DYNAMIC_MEM
+#include <stdlib.h>
+#else
+#include "lwpa/mempool.h"
+#endif
+#include "lwpa/socket.h"
+#include "rdmnet/defs.h"
 
 /***************************** Private macros ********************************/
 
@@ -60,7 +64,7 @@ static LwpaIpAddr kLLRPIPv6RequestAddr;
 /*********************** Private function prototypes *************************/
 
 /* Helper functions for creating sockets */
-static llrp_socket_t llrp_create_base_socket(const LwpaIpAddr *net_interface_addr, const LwpaCid *owner_cid,
+static llrp_socket_t llrp_create_base_socket(const LwpaIpAddr *net_interface_addr, const LwpaUuid *owner_cid,
                                              llrp_socket_type_t socket_type);
 static void llrp_add_socket_to_list(llrp_socket_t socket, llrp_socket_t *list);
 static void llrp_remove_socket_from_list(llrp_socket_t socket, llrp_socket_t *list);
@@ -74,7 +78,7 @@ static int known_uid_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const
 static void known_uid_clear_cb(const LwpaRbTree *self, LwpaRbNode *node);
 
 /* Functions for Manager discovery */
-static void halve_range(LwpaUid *uid1, LwpaUid *uid2);
+static void halve_range(RdmUid *uid1, RdmUid *uid2);
 static bool update_probe_range(LlrpManagerSocketData *mgrdata, KnownUid **uid_list);
 static bool send_next_probe(LlrpBaseSocket *sock);
 
@@ -95,8 +99,7 @@ static llrp_socket_t llrp_close_socket_priv(llrp_socket_t socket, lwpa_error_t *
  *
  *  \return #LWPA_OK: Initialization successful.\n
  *          #LWPA_SYSERR: An internal library of system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket
- *          calls.\n
+ *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
 lwpa_error_t llrp_init()
 {
@@ -126,9 +129,9 @@ lwpa_error_t llrp_init()
 
 /*! \brief Deinitialize the LLRP module.
  *
- *  Set the LLRP module back to an uninitialized state. All existing
- *  connections will be closed/disconnected. Calls to other LLRP API functions
- *  will fail until llrp_init() is called again.
+ *  Set the LLRP module back to an uninitialized state. All existing connections will be
+ *  closed/disconnected. Calls to other LLRP API functions will fail until llrp_init() is called
+ *  again.
  */
 void llrp_deinit()
 {
@@ -146,15 +149,14 @@ void llrp_deinit()
 
 /*! \brief Create an LLRP socket to be used by an LLRP Manager.
  *
- *  LLRP Manager Sockets can only be created when #RDMNET_DYNAMIC_MEM is
- *  defined nonzero. Otherwise, this function will always fail.
+ *  LLRP Manager Sockets can only be created when #RDMNET_DYNAMIC_MEM is defined nonzero. Otherwise,
+ *  this function will always fail.
  *
- *  \param[in] netint The network interface this LLRP socket should send and
- *                    receive on.
+ *  \param[in] netint The network interface this LLRP socket should send and receive on.
  *  \param[in] manager_cid The CID of the LLRP Manager.
  *  \return A new LLRP socket (success) or #LLRP_SOCKET_INVALID (failure).
  */
-llrp_socket_t llrp_create_manager_socket(const LwpaIpAddr *netint, const LwpaCid *manager_cid)
+llrp_socket_t llrp_create_manager_socket(const LwpaIpAddr *netint, const LwpaUuid *manager_cid)
 {
 #if RDMNET_DYNAMIC_MEM
   llrp_socket_t sock = llrp_create_base_socket(netint, manager_cid, kLLRPSocketTypeManager);
@@ -176,20 +178,17 @@ llrp_socket_t llrp_create_manager_socket(const LwpaIpAddr *netint, const LwpaCid
 
 /*! \brief Create an LLRP socket to be used by an LLRP Target.
  *
- *  \param[in] netint The network interface this LLRP socket should send and
- *                    receive on.
+ *  \param[in] netint The network interface this LLRP socket should send and receive on.
  *  \param[in] target_cid The CID of the LLRP Target.
  *  \param[in] target_uid The UID of the LLRP Target.
- *  \param[in] hardware_address The hardware address of the LLRP Target
- *                              (typically the MAC address of the network
- *                              interface)
- *  \param[in] component_type The component type this LLRP Target is associated
- *                            with; pass kLLRPCompUnknown if the Target is not
- *                            associated with any other type of RDMnet
- *                            Component.
+ *  \param[in] hardware_address The hardware address of the LLRP Target (typically the MAC address
+ *                              of the network interface)
+ *  \param[in] component_type The component type this LLRP Target is associated with; pass
+ *                            kLLRPCompUnknown if the Target is not associated with any other type
+ *                            of RDMnet Component.
  *  \return A new LLRP socket (success) or #LLRP_SOCKET_INVALID (failure).
  */
-llrp_socket_t llrp_create_target_socket(const LwpaIpAddr *netint, const LwpaCid *target_cid, const LwpaUid *target_uid,
+llrp_socket_t llrp_create_target_socket(const LwpaIpAddr *netint, const LwpaUuid *target_cid, const RdmUid *target_uid,
                                         const uint8_t *hardware_address, llrp_component_t component_type)
 {
   LlrpTargetSocketData *targetdata;
@@ -235,15 +234,13 @@ bool llrp_close_socket(llrp_socket_t handle)
 
 /*! \brief Start discovery on an LLRP Manager socket.
  *
- *  Configure a Manager socket to start discovery and send the first discovery
- *  message. Fails if the socket is not a Manager socket, or if a previous
- *  discovery process is still ongoing.
+ *  Configure a Manager socket to start discovery and send the first discovery message. Fails if the
+ *  socket is not a Manager socket, or if a previous discovery process is still ongoing.
  *
  *  \param[in] handle LLRP socket on which to start discovery.
- *  \param[in] filter Discovery filter, made up of one or more of the
- *                    LLRP_FILTERVAL_* constants defined in estardmnet.h
- *  \return true (Discovery started successfully) or false (failed to start
- *          discovery).
+ *  \param[in] filter Discovery filter, made up of one or more of the LLRP_FILTERVAL_* constants
+ *                    defined in estardmnet.h
+ *  \return true (Discovery started successfully) or false (failed to start discovery).
  */
 bool llrp_start_discovery(llrp_socket_t handle, uint8_t filter)
 {
@@ -273,8 +270,8 @@ bool llrp_start_discovery(llrp_socket_t handle, uint8_t filter)
  *  Clears all discovery state and known UIDs.
  *
  *  \param[in] handle LLRP socket on which to stop discovery.
- *  \return true (Discovery stopped successfully) or false (invalid argument or
- *          discovery was not running).
+ *  \return true (Discovery stopped successfully) or false (invalid argument or discovery was not
+ *          running).
  */
 bool llrp_stop_discovery(llrp_socket_t handle)
 {
@@ -295,7 +292,7 @@ bool llrp_stop_discovery(llrp_socket_t handle)
   return false;
 }
 
-void halve_range(LwpaUid *uid1, LwpaUid *uid2)
+void halve_range(RdmUid *uid1, RdmUid *uid2)
 {
   uint64_t uval1 = ((((uint64_t)uid1->manu) << 32) | uid1->id);
   uint64_t uval2 = ((((uint64_t)uid2->manu) << 32) | uid2->id);
@@ -323,8 +320,7 @@ bool update_probe_range(LlrpManagerSocketData *mgrdata, KnownUid **uid_list)
     }
     else
     {
-      /* The new range starts at the old upper limit + 1, and ends at the top
-       * of the UID space. */
+      /* The new range starts at the old upper limit + 1, and ends at the top of the UID space. */
       if (mgrdata->cur_range_high.id == 0xffffffffu)
       {
         mgrdata->cur_range_low.manu = mgrdata->cur_range_high.manu + 1;
@@ -342,7 +338,7 @@ bool update_probe_range(LlrpManagerSocketData *mgrdata, KnownUid **uid_list)
 
   /* Determine how many known UIDs are in the current range */
   rb_iter_init(&iter);
-  cur_uid = rb_iter_first(&iter, &mgrdata->known_uids);
+  cur_uid = (KnownUid *)rb_iter_first(&iter, &mgrdata->known_uids);
   while (cur_uid && (uid_cmp(&cur_uid->uid, &mgrdata->cur_range_high) <= 0))
   {
     if (last_uid)
@@ -366,7 +362,7 @@ bool update_probe_range(LlrpManagerSocketData *mgrdata, KnownUid **uid_list)
       last_uid = cur_uid;
       ++uids_in_range;
     }
-    cur_uid = rb_iter_next(&iter);
+    cur_uid = (KnownUid *)rb_iter_next(&iter);
   }
   *uid_list = list_begin;
   return true;
@@ -513,9 +509,9 @@ bool process_parsed_msg(LlrpBaseSocket *sock, const LlrpMessage *msg, LlrpData *
     const LlrpTarget *new_target = llrp_msg_get_probe_reply(msg);
     LlrpManagerSocketData *mgrdata = get_manager_data(sock);
 
-    if (mgrdata->discovery_active && 0 == cidcmp(&msg->header.dest_cid, &sock->owner_cid))
+    if (mgrdata->discovery_active && 0 == uuidcmp(&msg->header.dest_cid, &sock->owner_cid))
     {
-      KnownUid *new_known_uid = malloc(sizeof(KnownUid));
+      KnownUid *new_known_uid = (KnownUid *)malloc(sizeof(KnownUid));
       if (new_known_uid)
       {
         new_known_uid->uid = new_target->target_uid;
@@ -558,8 +554,8 @@ bool process_parsed_msg(LlrpBaseSocket *sock, const LlrpMessage *msg, LlrpData *
       backoff_ms = (rand() * LLRP_MAX_BACKOFF_MS / RAND_MAX);
       lwpa_timer_start(&targetdata->reply_backoff, backoff_ms);
     }
-    /* Even if we got a valid probe request, we are starting a backoff timer,
-     * so there's nothing to report at this time. */
+    /* Even if we got a valid probe request, we are starting a backoff timer, so there's nothing to
+     * report at this time. */
     return false;
   }
   else
@@ -568,29 +564,26 @@ bool process_parsed_msg(LlrpBaseSocket *sock, const LlrpMessage *msg, LlrpData *
 
 /*! \brief Poll a set of LLRP sockets for updates.
  *
- *  Drives the discovery algorithm on Manager sockets, responds to discovery
- *  queries on Target sockets, and receives RDM messages on both types of
- *  socket.
+ *  Drives the discovery algorithm on Manager sockets, responds to discovery queries on Target
+ *  sockets, and receives RDM messages on both types of socket.
  *
- *  \param[in,out] poll_array Array of llrp_poll structs, each representing an
- *  LLRP socket to be polled. After this function returns, each structure's err
- *  member indicates the results of this poll:
+ *  \param[in,out] poll_array Array of llrp_poll structs, each representing an LLRP socket to be
+ *  polled. After this function returns, each structure's err member indicates the results of this
+ *  poll:
  *   * #LWPA_OK indicates that the data member contains valid data.
  *   * #LWPA_NODATA indicates that no activity occurred on this socket.
- *   * Any other value indicates a fatal error on this socket; the socket
- *     should be closed.
+ *   * Any other value indicates a fatal error on this socket; the socket should be closed.
+ *
  *  \param[in] poll_array_size Number of llrp_poll structs in the array.
- *  \param[in] timeout_ms Amount of time to wait for activity, in milliseconds.
- *  This value may be adjusted down to conform to various LLRP timeouts
- *  specified in E1.33.
+ *  \param[in] timeout_ms Amount of time to wait for activity, in milliseconds. This value may be
+ *                        adjusted down to conform to various LLRP timeouts specified in E1.33.
  *  \return Number of elements in poll_array which have data (success)\n
  *          #LWPA_TIMEDOUT: Timed out waiting for activity.\n
  *          #LWPA_INVALID: Invalid argument provided.\n
- *          #LWPA_NOMEM (only when #RDMNET_DYNAMIC_MEM is defined to 1): Unable
- *          to allocate memory for poll operation.\n
+ *          #LWPA_NOMEM (only when #RDMNET_DYNAMIC_MEM is defined to 1): Unable to allocate memory
+ *                      for poll operation.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
- *          Note: other error codes might be propagated from underlying socket
- *          calls.
+ *          Note: other error codes might be propagated from underlying socket calls.
  */
 int llrp_update(LlrpPoll *poll_array, size_t poll_array_size, int timeout_ms)
 {
@@ -607,7 +600,7 @@ int llrp_update(LlrpPoll *poll_array, size_t poll_array_size, int timeout_ms)
   int poll_timeout = timeout_ms;
 
 #if RDMNET_DYNAMIC_MEM
-  pfds = calloc(poll_array_size, sizeof(LwpaPollfd));
+  pfds = (LwpaPollfd *)calloc(poll_array_size, sizeof(LwpaPollfd));
   if (!pfds)
     return LWPA_NOMEM;
 #endif
@@ -686,7 +679,7 @@ int llrp_update(LlrpPoll *poll_array, size_t poll_array_size, int timeout_ms)
         }
         else
         {
-          cur_poll->err = recv_res;
+          cur_poll->err = (lwpa_error_t)recv_res;
           ++res;
         }
       }
@@ -706,14 +699,12 @@ int llrp_update(LlrpPoll *poll_array, size_t poll_array_size, int timeout_ms)
 
 /*! \brief Update the Broker connection state of an LLRP Target socket.
  *
- *  If an LLRP Target is associated with an RPT Client, this should be called
- *  each time the Client connects or disconnects from the Broker. This affects
- *  whether the LLRP Target responds to filtered LLRP probe requests.
+ *  If an LLRP Target is associated with an RPT Client, this should be called each time the Client
+ *  connects or disconnects from the Broker. This affects whether the LLRP Target responds to
+ *  filtered LLRP probe requests.
  *
- *  \param[in] handle LLRP Target socket for which to update the connection
- *                    state.
- *  \param[in] connected_to_broker Whether the LLRP Target is currently
- *                                 connected to a Broker.
+ *  \param[in] handle LLRP Target socket for which to update the connection state.
+ *  \param[in] connected_to_broker Whether the LLRP Target is currently connected to a Broker.
  */
 void llrp_target_update_connection_state(llrp_socket_t handle, bool connected_to_broker)
 {
@@ -726,18 +717,15 @@ void llrp_target_update_connection_state(llrp_socket_t handle, bool connected_to
  *
  *  On success, provides the transaction number to correlate with a response.
  *
- *  \param[in] handle LLRP manager socket handle on which to send an RDM
- *                    command.
+ *  \param[in] handle LLRP manager socket handle on which to send an RDM command.
  *  \param[in] destination CID of LLRP Target to which to send the command.
  *  \param[in] command RDM command to send.
- *  \param[out] transaction_number Filled in on success with the transaction
- *                                 number of the command.
+ *  \param[out] transaction_number Filled in on success with the transaction number of the command.
  *  \return #LWPA_OK: Command sent successfully.\n
  *          #LWPA_INVALID: Invalid argument provided.\n
- *          Note: other error codes might be propagated from underlying socket
- *          calls.
+ *          Note: other error codes might be propagated from underlying socket calls.
  */
-lwpa_error_t llrp_send_rdm_command(llrp_socket_t handle, const LwpaCid *destination, const RdmBuffer *command,
+lwpa_error_t llrp_send_rdm_command(llrp_socket_t handle, const LwpaUuid *destination, const RdmBuffer *command,
                                    uint32_t *transaction_number)
 {
   LlrpManagerSocketData *mgrdata;
@@ -767,18 +755,15 @@ lwpa_error_t llrp_send_rdm_command(llrp_socket_t handle, const LwpaCid *destinat
 
 /*! \brief Send an RDM response on an LLRP Target socket.
  *
- *  \param[in] handle LLRP manager socket handle on which to send an RDM
- *                    command.
+ *  \param[in] handle LLRP manager socket handle on which to send an RDM command.
  *  \param[in] destination CID of LLRP Manager to which to send the command.
  *  \param[in] command RDM response to send.
- *  \param[in] transaction_number Transaction number of the corresponding LLRP
- *                                RDM command.
+ *  \param[in] transaction_number Transaction number of the corresponding LLRP RDM command.
  *  \return #LWPA_OK: Command sent successfully.\n
  *          #LWPA_INVALID: Invalid argument provided.\n
- *          Note: other error codes might be propagated from underlying socket
- *          calls.
+ *          Note: other error codes might be propagated from underlying socket calls.
  */
-lwpa_error_t llrp_send_rdm_response(llrp_socket_t handle, const LwpaCid *destination, const RdmBuffer *command,
+lwpa_error_t llrp_send_rdm_response(llrp_socket_t handle, const LwpaUuid *destination, const RdmBuffer *command,
                                     uint32_t transaction_number)
 {
   LlrpHeader header;
@@ -816,13 +801,13 @@ llrp_socket_t llrp_close_socket_priv(llrp_socket_t socket, lwpa_error_t *result)
   return next;
 }
 
-llrp_socket_t llrp_create_base_socket(const LwpaIpAddr *net_interface_addr, const LwpaCid *owner_cid,
+llrp_socket_t llrp_create_base_socket(const LwpaIpAddr *net_interface_addr, const LwpaUuid *owner_cid,
                                       llrp_socket_type_t socket_type)
 {
   if ((net_interface_addr == NULL) || (owner_cid == NULL))
     return LLRP_SOCKET_INVALID;
 
-  llrp_socket_t sock = llrp_socket_alloc();
+  llrp_socket_t sock = (llrp_socket_t)llrp_socket_alloc();
 
   sock->net_int_addr = *net_interface_addr;
   sock->next = NULL;
@@ -925,8 +910,7 @@ lwpa_socket_t create_lwpa_socket(const LwpaSockaddr *saddr, const LwpaIpAddr *ne
 
   if (valid)
   {
-    // This one is critical for multicast sends to go over the correct
-    // interface.
+    // This one is critical for multicast sends to go over the correct interface.
     if (saddr->ip.type == LWPA_IPV4)
     {
       valid = (0 == lwpa_setsockopt(sock, LWPA_IPPROTO_IP, LWPA_IP_MULTICAST_IF, (const void *)(netint),
@@ -995,7 +979,7 @@ bool subscribe_multicast(lwpa_socket_t lwpa_sock, llrp_socket_type_t socket_type
 LwpaRbNode *node_alloc()
 {
 #if RDMNET_DYNAMIC_MEM
-  return malloc(sizeof(LwpaRbNode));
+  return (LwpaRbNode *)malloc(sizeof(LwpaRbNode));
 #else
   /* TODO */
   return NULL;
@@ -1014,7 +998,7 @@ void node_dealloc(LwpaRbNode *node)
 int known_uid_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const LwpaRbNode *node_b)
 {
   (void)self;
-  const LwpaUid *a = (const LwpaUid *)node_a->value;
-  const LwpaUid *b = (const LwpaUid *)node_b->value;
+  const RdmUid *a = (const RdmUid *)node_a->value;
+  const RdmUid *b = (const RdmUid *)node_b->value;
   return uid_cmp(a, b);
 }

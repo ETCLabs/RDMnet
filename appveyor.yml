@@ -1,0 +1,186 @@
+#---------------------------------#
+#      general configuration      #
+#---------------------------------#
+
+version: '{build}'
+
+branches:
+  only:
+    - develop
+    - master
+
+skip_commits:
+  files:
+    - '**/*.md'
+
+#---------------------------------#
+#    environment configuration    #
+#---------------------------------#
+
+image: Visual Studio 2017
+
+platform:
+  - Win32
+  - x64
+
+matrix:
+  fast_finish: true     # set this flag to immediately finish build once one of the jobs fails.
+
+environment:
+  MDNSWINDOWS_VERSION: v1.1.1
+  SLACK_WEBHOOK:
+    secure: mmc+nEHnXGCwUvdD4qG3usIECTxCf86I1+DYO1hChDo4OLyU56a4qoquct4bTqtFBXlf0oc5HNLB7R11dHAOxeG8E3+ReVV0OU6R3DVLTpI=
+
+  matrix:
+    - RDMNET_BUILD_TYPE: test
+    - RDMNET_BUILD_TYPE: versioned
+
+#---------------------------------#
+#   default build configuration   #
+#---------------------------------#
+
+configuration: Release
+
+before_build:
+  - cmd: |-
+      set /P RDMNET_VERSION=< tools/version/current_version.txt
+      git clone -b %APPVEYOR_REPO_BRANCH% https://github.com/ETCLabs/lwpa ../lwpa
+      git clone -b %APPVEYOR_REPO_BRANCH% https://github.com/ETCLabs/RDM ../RDM
+      mkdir build
+      cd build
+      cmake --version
+      cmake -G "%CMAKE_GENERATOR%" -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL% %CMAKE_EXTRA_ARGS% ..
+
+build:
+  parallel: true            # enable MSBuild parallel builds
+  project: build\RDMnet.sln # path to Visual Studio solution or project
+
+  # MSBuild verbosity level
+  verbosity: minimal
+
+test_script:
+  - cmd: tests\unit\%configuration%\test_rdmnet_lib.exe
+
+deploy:
+  provider: FTP
+  on:
+    RDMNET_BUILD_TYPE: versioned
+  protocol: ftp
+  host: ftp.etcconnect.com
+  username:
+    secure: BiErkmxwLRLpjblGVyQ55Q==
+  password:
+    secure: HIkhutrZaicM4e263nkiXA==
+  folder: rdmnet_builds\0.2.0\$(RDMNET_VERSION)
+
+for:
+  -
+    matrix:
+      only:
+        - platform: Win32
+          RDMNET_BUILD_TYPE: test
+
+    skip_commits:
+      message: /\[versioned-build\]/
+
+    environment:
+      CMAKE_GENERATOR: Visual Studio 15 2017
+      CMAKE_INSTALL: install_x86
+      CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=ON
+      QTDIR: C:\Qt\5.9.7\msvc2015
+
+  -
+    matrix:
+      only:
+        - platform: x64
+          RDMNET_BUILD_TYPE: test
+
+    skip_commits:
+      message: /\[versioned-build\]/
+
+    environment:
+      CMAKE_GENERATOR: Visual Studio 15 2017 Win64
+      CMAKE_INSTALL: install_x64
+      CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=ON
+      QTDIR: C:\Qt\5.9.7\msvc2017_64
+
+  -
+    matrix:
+      only:
+        - platform: Win32
+          RDMNET_BUILD_TYPE: versioned
+
+    only_commits:
+      message: /\[versioned-build\]/
+
+    environment:
+      CMAKE_GENERATOR: Visual Studio 15 2017
+      CMAKE_INSTALL: install_x86
+      CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=OFF -DRDMNET_BUILD_TESTS=OFF -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
+      QTDIR: C:\Qt\5.9.7\msvc2015
+      INSTALLER_PROJECT: tools\install\windows\RDMnetInstall_x86.wixproj
+      INSTALLER_PROJECT_PLATFORM: x86
+      INSTALLER_ARTIFACT: tools\install\windows\bin\Release\RDMnetSetup_x86.msi
+
+    install:
+      - ps: |-
+          $wc = New-Object Net.WebClient
+          $wc.DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_x86.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x86.zip")
+          7z x mDNSWindows_x86.zip -omdns_install -y -r
+          $wc.DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/ETC_mDNSInstall.msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
+
+    after_build:
+      - cmd: |-
+          cmake -P cmake_install.cmake
+          msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% ..\%INSTALLER_PROJECT%
+          copy ..\%INSTALLER_ARTIFACT% ..
+
+    test_script:
+      - exit 0
+
+    artifacts:
+      - path: RDMnetSetup_x86.msi
+        name: RDMnet 32-bit installer
+
+  -
+    matrix:
+      only:
+        - platform: x64
+          RDMNET_BUILD_TYPE: versioned
+
+    only_commits:
+      message: /\[versioned-build\]/
+
+    environment:
+      CMAKE_GENERATOR: Visual Studio 15 2017 Win64
+      CMAKE_INSTALL: install_x64
+      CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=OFF -DRDMNET_BUILD_TESTS=OFF -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
+      QTDIR: C:\Qt\5.9.7\msvc2017_64
+      INSTALLER_PROJECT: tools\install\windows\RDMnetInstall_x64.wixproj
+      INSTALLER_PROJECT_PLATFORM: x64
+      INSTALLER_ARTIFACT: tools\install\windows\bin\Release\RDMnetSetup_x64.msi
+
+    install:
+      - ps: |-
+          $wc = New-Object Net.WebClient
+          $wc.DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_x64.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x64.zip")
+          7z x mDNSWindows_x64.zip -omdns_install -y -r
+          $wc.DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/ETC_mDNSInstall.msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
+
+    after_build:
+      - cmd: |-
+          cmake -P cmake_install.cmake
+          msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% ..\%INSTALLER_PROJECT%
+          copy ..\%INSTALLER_ARTIFACT% ..
+
+    test_script:
+      - exit 0
+
+    artifacts:
+      - path: RDMnetSetup_x64.msi
+        name: RDMnet 64-bit installer
+
+    after_deploy:
+      - ps: |-
+          cd $Env:APPVEYOR_BUILD_FOLDER
+          .\tools\ci\slack_notify.ps1

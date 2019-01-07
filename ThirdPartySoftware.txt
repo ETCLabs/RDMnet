@@ -1,11 +1,50 @@
 Third-Party Software
 
+RDMnet incorporates components of the following third-party software, under the
+respective terms of the license of each third-party software component.
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Qt version 5.9.1
-Copyright (c) 2015 The Qt Company Ltd., under the GNU LGPL v.3
+lwpa (https://github.com/ETCLabs/lwpa)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The controller application is dependent on Qt version 5.9.1.
+RDMnet depends on the lwpa library, which is maintained by ETC but in turn
+incorporates components of third-party software. A listing of the third-party
+software incorporated by the lwpa library can be found at
+https://github.com/ETCLabs/lwpa/raw/master/ThirdPartySoftware.txt.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+RDM (https://github.com/ETCLabs/RDM)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+RDMnet depends on the RDM library, which is maintained by ETC but in turn
+incorporates components of third-party software. A listing of the third-party
+software incorporated by the RDM library can be found at
+https://github.com/ETCLabs/RDM/raw/master/ThirdPartySoftware.txt.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mDNSWindows (https://github.com/ETCLabs/mDNSWindows)
+Forked from Apple's mDNSResponder source repository 
+Copyright (c) various dates Apple Inc. All rights reserved.
+Used per the terms of the Apache License, Version 2.0, and the 3-clause BSD
+license.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following sources in this repository depend on headers exported from an
+installation of mDNSWindows, which is forked from Apple's mDNSResponder:
+
+src/common/discovery/bonjour/rdmnet_discovery_bonjour.h
+src/common/discovery/bonjour/rdmnet_discovery_bonjour.c
+
+A binary version of mDNSWindows is also distributed with the installer for the
+RDMnet library and example applications.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Qt
+Copyright (c) 2015 The Qt Company Ltd.
+Used per the terms of the GNU LGPL v.3
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The controller application is dependent on the Qt framework.
 
 Qt binaries are distributed with the controller application under the terms of
 the GNU Lesser General Public License (LGPL) v.3. The Qt source code is
