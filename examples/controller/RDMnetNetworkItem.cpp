@@ -159,7 +159,7 @@ void RDMnetNetworkItem::enableFeature(SupportedDeviceFeature feature)
   supportedFeatures |= feature;
 }
 
-void RDMnetNetworkItem::completelyRemoveChildren(int row, int count)
+void RDMnetNetworkItem::completelyRemoveChildren(int row, int count, std::vector<class PropertyItem *> *alsoRemoveFromThis)
 {
   for (int i = row; i < (row + count); ++i)
   {
@@ -167,7 +167,13 @@ void RDMnetNetworkItem::completelyRemoveChildren(int row, int count)
 
     if (c != NULL)
     {
-      c->completelyRemoveChildren(0, c->rowCount());
+      c->completelyRemoveChildren(0, c->rowCount(), alsoRemoveFromThis);
+    }
+
+    if (alsoRemoveFromThis != NULL)
+    {
+      class PropertyItem * toRemove = reinterpret_cast<class PropertyItem *>(c);
+      alsoRemoveFromThis->erase(std::remove(alsoRemoveFromThis->begin(), alsoRemoveFromThis->end(), toRemove), alsoRemoveFromThis->end());
     }
   }
 

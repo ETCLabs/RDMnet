@@ -61,3 +61,27 @@ int RDMnetClientItem::type() const
 {
   return RDMnetClientItemType;
 }
+
+void RDMnetClientItem::setScopeSlot(std::string scope, uint16_t slot)
+{
+  for (auto &i : scope_slots_)
+  {
+    if (i.second == slot)
+    {
+      removeScopeSlot(i.first);
+      break;
+    }
+  }
+
+  scope_slots_[scope] = slot;
+}
+
+uint16_t RDMnetClientItem::getScopeSlot(std::string scope)
+{
+  return scope_slots_[scope];
+}
+
+void RDMnetClientItem::removeScopeSlot(std::string scope)
+{
+  scope_slots_.erase(scope_slots_.find(scope));
+}

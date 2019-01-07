@@ -966,7 +966,7 @@ void Broker::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
           break;
 
         case VECTOR_RPT_NOTIFICATION:
-          if (rptcli->client_type == kRPTClientTypeDevice)
+          if (rptcli->client_type != kRPTClientTypeUnknown)
           {
             if (IsValidDeviceDestinationUID(rptmsg->header.dest_uid))
               route_msg = true;
@@ -979,7 +979,7 @@ void Broker::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
           }
           else
           {
-            log_->Log(LWPA_LOG_DEBUG, "Received Notification PDU from Client %d, which is not an RPT Device",
+            log_->Log(LWPA_LOG_DEBUG, "Received Notification PDU from Client %d of unknown client type",
                       rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
           }
           break;

@@ -44,7 +44,7 @@ public:
   void setScope(const QString &scope) { scope_ = scope; }
   QString scope() const { return scope_; }
 
-  std::vector<RDMnetClientItem *> rdmnet_devices_;
+  std::vector<RDMnetClientItem *> rdmnet_clients_;
 
 private:
   uint32_t connection_cookie_;
