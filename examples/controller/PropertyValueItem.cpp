@@ -46,12 +46,12 @@ bool PropertyValueItem::pidSupportsSet(uint16_t pid)
 
 bool PropertyValueItem::excludePIDFromModel(uint16_t pid)
 {
-  return pidInfo[pid].pidFlags & kExcludeFromModel;;
+  return pidInfo[pid].pidFlags & kExcludeFromModel;
 }
 
 bool PropertyValueItem::pidStartEnabled(uint16_t pid)
 {
-  return pidInfo[pid].pidFlags & kStartEnabled;;
+  return pidInfo[pid].pidFlags & kStartEnabled;
 }
 
 QVariant::Type PropertyValueItem::pidDataType(uint16_t pid)
@@ -74,7 +74,7 @@ int32_t PropertyValueItem::pidDomainMax(uint16_t pid)
   return pidInfo[pid].rangeMax;
 }
 
-int32_t PropertyValueItem::pidMaxBufferSize(uint16_t pid)
+uint8_t PropertyValueItem::pidMaxBufferSize(uint16_t pid)
 {
   return pidInfo[pid].maxBufferSize;
 }
@@ -110,7 +110,7 @@ void PropertyValueItem::setPIDNumericDomain(uint16_t pid, int32_t min, int32_t m
   pidInfo[pid].rangeMax = max;
 }
 
-void PropertyValueItem::setPIDMaxBufferSize(uint16_t pid, int32_t size)
+void PropertyValueItem::setPIDMaxBufferSize(uint16_t pid, uint8_t size)
 {
   pidInfo[pid].maxBufferSize = size;
 }

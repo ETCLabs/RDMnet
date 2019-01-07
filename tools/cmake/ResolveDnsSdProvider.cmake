@@ -46,7 +46,7 @@ else()
         HINTS ${BONJOUR_LIB_DIR}
       )
 
-      if(BONJOUR_LIB_NOTFOUND)
+      if(NOT BONJOUR_LIB)
         message(FATAL_ERROR "Make sure the Bonjour SDK is installed, and try again.")
       endif()
 

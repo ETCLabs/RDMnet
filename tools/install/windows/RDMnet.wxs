@@ -37,7 +37,8 @@
         </Directory>
       </Directory>
 
-      <Merge Id="VCRedist" SourceFile="$(var.VcRedistMergeModule)" DiskId="1" Language="0" />
+      <Merge Id="VCRedistx86" SourceFile="$(var.VcRedistMergeModulex86)" DiskId="1" Language="0" />
+      <Merge Id="VCRedistx64" SourceFile="$(var.VcRedistMergeModulex64)" DiskId="1" Language="0" />
       <Merge Id="mDNSResponder" SourceFile="$(var.mDNSMergeModule)" DiskId="1" Language="0" />
     </Directory>
 
@@ -66,9 +67,15 @@
       </Feature>
     </Feature>
 
-    <Feature Id="VCRedist" Title="Visual C++ Runtime" AllowAdvertise="no" Display="hidden" Level="1">
-      <MergeRef Id="VCRedist" />
+    <!-- Always install the x86 VCRedist to support mDNSResponder -->
+    <Feature Id="VCRedistx86" Title="Visual C++ 32-bit Runtime" AllowAdvertise="no" Display="hidden" Level="1">
+      <MergeRef Id="VCRedistx86" />
     </Feature>
+    <?if $(var.Platform) = x64 ?>
+      <Feature Id="VCRedistx64" Title="Visual C++ 64-bit Runtime" AllowAdvertise="no" Display="hidden" Level="1">
+        <MergeRef Id="VCRedistx64" />
+      </Feature>
+    <?endif ?>
     <Feature Id="mDNSResponder" Title="DNS-SD service" AllowAdvertise="no" Display="hidden" Level="1">
       <MergeRef Id="mDNSResponder" />
     </Feature>

@@ -27,7 +27,11 @@
 
 #pragma once
 
+#include "ControllerUtils.h"
+
+BEGIN_INCLUDE_QT_HEADERS()
 #include <QStandardItem>
+END_INCLUDE_QT_HEADERS()
 
 enum EditorWidgetType
 {

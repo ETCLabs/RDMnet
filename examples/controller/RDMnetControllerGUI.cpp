@@ -26,8 +26,11 @@
 ******************************************************************************/
 
 #include "RDMnetControllerGUI.h"
+#include "ControllerUtils.h"
 
-#include <qpalette.h>
+BEGIN_INCLUDE_QT_HEADERS()
+#include <QPalette>
+END_INCLUDE_QT_HEADERS()
 
 #include "RDMnetNetworkModel.h"
 #include "NetworkDetailsProxyModel.h"
@@ -125,7 +128,7 @@ RDMnetControllerGUI *RDMnetControllerGUI::makeRDMnetControllerGUI()
   connect(gui->main_network_model_, SIGNAL(brokerItemTextUpdated(const BrokerItem *)), gui,
           SLOT(processBrokerItemTextUpdate(const BrokerItem *)));
 
-  connect(gui->main_network_model_, 
+  connect(gui->main_network_model_,
           SIGNAL(featureSupportChanged(const class RDMnetNetworkItem *, SupportedDeviceFeature)), gui,
           SLOT(processFeatureSupportChange(const class RDMnetNetworkItem *, SupportedDeviceFeature)));
 
@@ -319,7 +322,7 @@ void RDMnetControllerGUI::openLogWindowDialog()
       LogWindowGUI *logWindowDialog = new LogWindowGUI(this, main_network_model_);
       logWindowDialog->setAttribute(Qt::WA_DeleteOnClose);
       logWindowDialog->setWindowTitle(tr("Log Window"));
-      logWindowDialog->resize(QSize(logWindowDialog->width() * 1.2, logWindowDialog->height()));
+      logWindowDialog->resize(QSize(static_cast<int>(logWindowDialog->width() * 1.2), logWindowDialog->height()));
       logWindowDialog->show();
     }
   }
@@ -365,15 +368,15 @@ void RDMnetControllerGUI::processFeatureSupportChange(const RDMnetNetworkItem *i
   }
 }
 
-void RDMnetControllerGUI::expandNewItem(const QModelIndex & index, int type)
+void RDMnetControllerGUI::expandNewItem(const QModelIndex &index, int type)
 {
   switch (type)
   {
-  case PropertyItem::PropertyItemType:
-    ui.detailsTreeView->expand(net_details_proxy_->mapFromSource(index));
-    break;
-  default:
-    ui.networkTreeView->expand(simple_net_proxy_->mapFromSource(index));
+    case PropertyItem::PropertyItemType:
+      ui.detailsTreeView->expand(net_details_proxy_->mapFromSource(index));
+      break;
+    default:
+      ui.networkTreeView->expand(simple_net_proxy_->mapFromSource(index));
   }
 }
 
