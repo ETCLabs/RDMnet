@@ -89,12 +89,12 @@ void PropertyEditorsDelegate::setEditorData(QWidget *editor, const QModelIndex &
 
   if ((comboBox != NULL) && (editorType == EditorWidgetType::kComboBox))
   {
-    uint8_t personality = index.data(RDMnetNetworkItem::PersonalityNumberRole).toInt();
+    uint8_t personality = static_cast<uint8_t>(index.data(RDMnetNetworkItem::PersonalityNumberRole).toInt());
     QStringList descriptions = index.data(RDMnetNetworkItem::PersonalityDescriptionListRole).toStringList();
 
     if (personality > descriptions.length())
     {
-      personality = descriptions.length();
+      personality = static_cast<uint8_t>(descriptions.length());
     }
 
     if (personality == 0)
@@ -124,7 +124,7 @@ void PropertyEditorsDelegate::setModelData(QWidget *editor, QAbstractItemModel *
   if ((comboBox != NULL) && (editorType == EditorWidgetType::kComboBox))
   {
     QStringList descriptions = index.data(RDMnetNetworkItem::PersonalityDescriptionListRole).toStringList();
-    uint16_t personality = comboBox->currentIndex() + 1;
+    uint16_t personality = static_cast<uint16_t>(comboBox->currentIndex() + 1);
     QString currentDescription;
     int currentIndex = comboBox->currentIndex();
 

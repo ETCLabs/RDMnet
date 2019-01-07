@@ -904,7 +904,7 @@ void RDMnetNetworkModel::processPropertyButtonClick(const QPersistentModelIndex 
     const char *scopeData = local8Bit.constData();
 
     RdmCommand setCmd;
-    int32_t maxBuffSize = PropertyValueItem::pidMaxBufferSize(E133_TCP_COMMS_STATUS);
+    uint8_t maxBuffSize = PropertyValueItem::pidMaxBufferSize(E133_TCP_COMMS_STATUS);
     QVariant manuVariant = propertyIndex.data(RDMnetNetworkItem::ClientManuRole);
     QVariant devVariant = propertyIndex.data(RDMnetNetworkItem::ClientDevRole);
 
@@ -1371,7 +1371,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
           else
           {
             RdmCommand setCmd;
-            int32_t maxBuffSize = PropertyValueItem::pidMaxBufferSize(pid);
+            uint8_t maxBuffSize = PropertyValueItem::pidMaxBufferSize(pid);
             QString qstr;
             std::string stdstr;
             uint8_t *packPtr;
@@ -1412,7 +1412,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
                 break;
               case QVariant::Type::String:
                 qstr = value.toString();
-                qstr.truncate(maxBuffSize - (packPtr - setCmd.data));
+                qstr.truncate(maxBuffSize - static_cast<uint8_t>((packPtr - setCmd.data)));
                 newValue = qstr;
                 stdstr = qstr.toStdString();
                 memcpy(packPtr, stdstr.data(), stdstr.length());
@@ -2511,8 +2511,8 @@ void RDMnetNetworkModel::personalityDescription(uint8_t personality, uint16_t fo
     if (device->allPersonalityDescriptionsFound())
     {
       QStringList personalityDescriptions = device->personalityDescriptionList();
-      uint8_t currentPersonality =
-          getPropertyData(device, E120_DMX_PERSONALITY, RDMnetNetworkItem::PersonalityNumberRole).toInt();
+      uint8_t currentPersonality = static_cast<uint8_t>(
+          getPropertyData(device, E120_DMX_PERSONALITY, RDMnetNetworkItem::PersonalityNumberRole).toInt());
 
       if (currentPersonality == 0)
       {

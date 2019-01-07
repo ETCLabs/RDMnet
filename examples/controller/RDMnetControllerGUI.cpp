@@ -322,7 +322,7 @@ void RDMnetControllerGUI::openLogWindowDialog()
       LogWindowGUI *logWindowDialog = new LogWindowGUI(this, main_network_model_);
       logWindowDialog->setAttribute(Qt::WA_DeleteOnClose);
       logWindowDialog->setWindowTitle(tr("Log Window"));
-      logWindowDialog->resize(QSize(logWindowDialog->width() * 1.2, logWindowDialog->height()));
+      logWindowDialog->resize(QSize(static_cast<int>(logWindowDialog->width() * 1.2), logWindowDialog->height()));
       logWindowDialog->show();
     }
   }

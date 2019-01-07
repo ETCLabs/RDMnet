@@ -67,7 +67,7 @@ struct PIDInfo
 
   int32_t rangeMin;
   int32_t rangeMax;
-  int32_t maxBufferSize;
+  uint8_t maxBufferSize;
 
   QStringList propertyDisplayNames;
 
@@ -91,13 +91,13 @@ public:
   static int32_t pidDataRole(uint16_t pid);
   static int32_t pidDomainMin(uint16_t pid);
   static int32_t pidDomainMax(uint16_t pid);
-  static int32_t pidMaxBufferSize(uint16_t pid);
+  static uint8_t pidMaxBufferSize(uint16_t pid);
   static QString pidPropertyDisplayName(uint16_t pid, int32_t index = 0);
   static PIDFlags pidFlags(uint16_t pid);
 
   static void setPIDInfo(uint16_t pid, PIDFlags flags, QVariant::Type dataType, int32_t role = Qt::EditRole);
   static void setPIDNumericDomain(uint16_t pid, int32_t min, int32_t max);
-  static void setPIDMaxBufferSize(uint16_t pid, int32_t size);
+  static void setPIDMaxBufferSize(uint16_t pid, uint8_t size);
   static void addPIDPropertyDisplayName(uint16_t pid, QString displayName);
 
   static PIDInfoIterator pidsBegin();
