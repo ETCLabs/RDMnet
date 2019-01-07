@@ -27,50 +27,17 @@
 
 #pragma once
 
-#include "ControllerUtils.h"
+// Macros to suppress warnings inside of Qt headers.
+#if defined(_MSC_VER) && defined(QT_NO_DEBUG)
 
-BEGIN_INCLUDE_QT_HEADERS()
-#include <QSortFilterProxyModel>
-END_INCLUDE_QT_HEADERS()
+#define BEGIN_INCLUDE_QT_HEADERS() \
+  __pragma(warning(push)) __pragma(warning(disable : 4127)) __pragma(warning(disable : 4251))
 
-#include "RDMnetNetworkModel.h"
+#define END_INCLUDE_QT_HEADERS() __pragma(warning(pop))
 
-class NetworkDetailsProxyModel : public QSortFilterProxyModel
-{
-  Q_OBJECT
+#else
 
-private:
-  RDMnetNetworkModel *sourceNetworkModel;
+#define BEGIN_INCLUDE_QT_HEADERS()
+#define END_INCLUDE_QT_HEADERS()
 
-public:
-  NetworkDetailsProxyModel();
-  ~NetworkDetailsProxyModel();
-
-  // QModelIndex mapToSource(const QModelIndex &proxyIndex) const Q_DECL_OVERRIDE;
-  // QModelIndex mapFromSource(const QModelIndex &sourceIndex) const Q_DECL_OVERRIDE;
-
-  // QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const
-  // Q_DECL_OVERRIDE; QModelIndex parent(const QModelIndex &child) const Q_DECL_OVERRIDE;
-
-  // int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
-  // int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
-
-  void setCurrentParentIndex(const QModelIndex &index);
-  void clearCurrentParentIndex();
-  void setCurrentParentItem(const QStandardItem *item);
-
-  bool currentParentIsChildOfOrEqualTo(const QStandardItem *item);
-
-  void setSourceModel(QAbstractItemModel *sourceModel) Q_DECL_OVERRIDE;
-
-  void setFilterEnabled(bool setting);
-
-protected:
-  virtual bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override;
-  virtual bool lessThan(const QModelIndex &left, const QModelIndex &right) const override;
-
-private:
-  const QPersistentModelIndex *currentParentIndex;
-  const QStandardItem *currentParentItem;
-  bool filterEnabled;
-};
+#endif

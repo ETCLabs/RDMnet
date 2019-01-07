@@ -31,7 +31,6 @@
 #include <map>
 #include <memory>
 #include <cstddef>
-#include <QStandardItemModel>
 #include "lwpa/log.h"
 #include "lwpa/thread.h"
 #include "lwpa/uuid.h"
@@ -42,6 +41,11 @@
 #include "BrokerItem.h"
 #include "SearchingStatusItem.h"
 #include "PropertyValueItem.h"
+#include "ControllerUtils.h"
+
+BEGIN_INCLUDE_QT_HEADERS()
+#include <QStandardItemModel>
+END_INCLUDE_QT_HEADERS()
 
 class BrokerConnection;
 

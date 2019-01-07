@@ -29,12 +29,16 @@
 
 #include <cassert>
 #include <cstdarg>
-#include <QDateTime>
-#include <QTimeZone>
-#include <QMessageBox>
 #include "lwpa/pack.h"
 #include "rdm/responder.h"
 #include "PropertyItem.h"
+#include "ControllerUtils.h"
+
+BEGIN_INCLUDE_QT_HEADERS()
+#include <QDateTime>
+#include <QTimeZone>
+#include <QMessageBox>
+END_INCLUDE_QT_HEADERS()
 
 LwpaUuid BrokerConnection::local_cid_;
 RdmUid BrokerConnection::local_uid_;

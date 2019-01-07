@@ -28,10 +28,13 @@
 #include "PropertyEditorsDelegate.h"
 #include "RDMnetNetworkItem.h"
 #include "PropertyPushButton.h"
+#include "ControllerUtils.h"
 
-#include <qstandarditemmodel.h>
-#include <qcombobox.h>
-#include <qapplication.h>
+BEGIN_INCLUDE_QT_HEADERS()
+#include <QStandardItemModel>
+#include <QComboBox>
+#include <QApplication>
+END_INCLUDE_QT_HEADERS()
 
 PropertyEditorsDelegate::PropertyEditorsDelegate(QObject *parent) : QStyledItemDelegate(parent)
 {
@@ -149,8 +152,8 @@ void PropertyEditorsDelegate::updateEditorGeometry(QWidget *editor, const QStyle
   editor->setGeometry(option.rect);
 }
 
-void PropertyEditorsDelegate::paint(QPainter * painter, const QStyleOptionViewItem & option, 
-                                    const QModelIndex & index) const
+void PropertyEditorsDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
+                                    const QModelIndex &index) const
 {
   if (static_cast<EditorWidgetType>(index.data(RDMnetNetworkItem::EditorWidgetTypeRole).toInt()) == kButton)
   {
@@ -158,8 +161,8 @@ void PropertyEditorsDelegate::paint(QPainter * painter, const QStyleOptionViewIt
 
     button.rect = option.rect;
     button.text = index.data().toString();
-    button.state = QStyle::State_ReadOnly; // A slightly different look to indicate that it should
-                                           // be double-clicked to actually open the editor.
+    button.state = QStyle::State_ReadOnly;  // A slightly different look to indicate that it should
+                                            // be double-clicked to actually open the editor.
 
     QApplication::style()->drawControl(QStyle::CE_PushButton, &button, painter);
   }
@@ -169,11 +172,11 @@ void PropertyEditorsDelegate::paint(QPainter * painter, const QStyleOptionViewIt
   }
 }
 
-bool PropertyEditorsDelegate::editorEvent(QEvent * event, QAbstractItemModel * model, const QStyleOptionViewItem & option, const QModelIndex & index)
+bool PropertyEditorsDelegate::editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option,
+                                          const QModelIndex &index)
 {
   if (static_cast<EditorWidgetType>(index.data(RDMnetNetworkItem::EditorWidgetTypeRole).toInt()) == kButton)
   {
-
   }
   else
   {

@@ -27,10 +27,13 @@
 
 #pragma once
 
-#include "RDMnetClientItem.h"
 #include <map>
+#include "RDMnetClientItem.h"
+#include "ControllerUtils.h"
 
+BEGIN_INCLUDE_QT_HEADERS()
 #include <QVariant>
+END_INCLUDE_QT_HEADERS()
 
 enum PIDFlags
 {
@@ -92,8 +95,7 @@ public:
   static QString pidPropertyDisplayName(uint16_t pid, int32_t index = 0);
   static PIDFlags pidFlags(uint16_t pid);
 
-  static void setPIDInfo(uint16_t pid, PIDFlags flags, QVariant::Type dataType, 
-                         int32_t role = Qt::EditRole);
+  static void setPIDInfo(uint16_t pid, PIDFlags flags, QVariant::Type dataType, int32_t role = Qt::EditRole);
   static void setPIDNumericDomain(uint16_t pid, int32_t min, int32_t max);
   static void setPIDMaxBufferSize(uint16_t pid, int32_t size);
   static void addPIDPropertyDisplayName(uint16_t pid, QString displayName);

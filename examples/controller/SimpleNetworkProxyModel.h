@@ -27,9 +27,12 @@
 
 #pragma once
 
-#include <QSortFilterProxyModel>
-
 #include "RDMnetNetworkModel.h"
+#include "ControllerUtils.h"
+
+BEGIN_INCLUDE_QT_HEADERS()
+#include <QSortFilterProxyModel>
+END_INCLUDE_QT_HEADERS()
 
 class SimpleNetworkProxyModel : public QSortFilterProxyModel
 {

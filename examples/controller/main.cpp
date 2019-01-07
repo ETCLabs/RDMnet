@@ -27,7 +27,11 @@
 
 #include "RDMnetControllerGUI.h"
 #include "RDMnetNetworkModel.h"
+#include "ControllerUtils.h"
+
+BEGIN_INCLUDE_QT_HEADERS()
 #include <QtWidgets/QApplication>
+END_INCLUDE_QT_HEADERS()
 
 int main(int argc, char *argv[])
 {

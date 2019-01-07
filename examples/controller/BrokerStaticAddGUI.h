@@ -27,8 +27,12 @@
 
 #pragma once
 
+#include "ControllerUtils.h"
+
+BEGIN_INCLUDE_QT_HEADERS()
 #include <QDialog>
 #include "ui_BrokerStaticAddGUI.h"
+END_INCLUDE_QT_HEADERS()
 
 #include "lwpa/inet.h"
 

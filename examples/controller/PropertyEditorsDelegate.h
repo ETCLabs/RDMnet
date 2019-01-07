@@ -27,7 +27,11 @@
 
 #pragma once
 
+#include "ControllerUtils.h"
+
+BEGIN_INCLUDE_QT_HEADERS()
 #include <QStyledItemDelegate>
+END_INCLUDE_QT_HEADERS()
 
 class PropertyEditorsDelegate : public QStyledItemDelegate
 {
@@ -46,6 +50,6 @@ public:
                             const QModelIndex &index) const override;
 
   void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
-  bool editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option, 
+  bool editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option,
                    const QModelIndex &index) override;
 };
