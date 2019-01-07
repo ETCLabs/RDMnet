@@ -28,14 +28,10 @@
 #include "rdmnet/common/rpt_prot.h"
 
 #include "lwpa/pack.h"
-#include "rdmnet/common/connection.h"
 #include "rdmnet/defs.h"
+#include "rdmnet/common/connection.h"
+#include "rdmnet/common/util.h"
 #include "rpt_prot_priv.h"
-
-/* Suppress strncpy() warning on Windows/MSVC. */
-#ifdef _MSC_VER
-#pragma warning(disable : 4996)
-#endif
 
 /***************************** Private macros ********************************/
 
@@ -327,7 +323,7 @@ size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, c
   cur_ptr += RPT_STATUS_HEADER_SIZE;
   if (status_pdu_size > RPT_STATUS_HEADER_SIZE)
   {
-    strncpy((char *)cur_ptr, status->status_string, RPT_STATUS_STRING_MAXLEN);
+    RDMNET_MSVC_NO_DEP_WRN strncpy((char *)cur_ptr, status->status_string, RPT_STATUS_STRING_MAXLEN);
     cur_ptr += (status_pdu_size - RPT_STATUS_HEADER_SIZE);
   }
   return cur_ptr - buf;

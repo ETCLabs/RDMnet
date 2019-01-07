@@ -557,7 +557,7 @@ lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const C
                 ConnectReplyMsg *reply = get_connect_reply_msg(bmsg);
                 switch (reply->connect_status)
                 {
-                  case kRDMnetConnectOk:
+                  case kRdmnetConnectOk:
                     /* TODO check version and Broker UID */
                     conn->state = kCSHeartbeat;
                     conn->rdmnet_conn_failed = false;

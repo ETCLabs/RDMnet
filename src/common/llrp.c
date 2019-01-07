@@ -313,7 +313,7 @@ bool update_probe_range(LlrpManagerSocketData *mgrdata, KnownUid **uid_list)
   if (mgrdata->num_clean_sends >= 3)
   {
     /* We are finished with a range; move on to the next range. */
-    if (uid_is_broadcast(&mgrdata->cur_range_high))
+    if (rdm_uid_is_broadcast(&mgrdata->cur_range_high))
     {
       /* We're done with discovery. */
       return false;
@@ -339,7 +339,7 @@ bool update_probe_range(LlrpManagerSocketData *mgrdata, KnownUid **uid_list)
   /* Determine how many known UIDs are in the current range */
   rb_iter_init(&iter);
   cur_uid = (KnownUid *)rb_iter_first(&iter, &mgrdata->known_uids);
-  while (cur_uid && (uid_cmp(&cur_uid->uid, &mgrdata->cur_range_high) <= 0))
+  while (cur_uid && (rdm_uid_cmp(&cur_uid->uid, &mgrdata->cur_range_high) <= 0))
   {
     if (last_uid)
     {
@@ -355,7 +355,7 @@ bool update_probe_range(LlrpManagerSocketData *mgrdata, KnownUid **uid_list)
         return update_probe_range(mgrdata, uid_list);
       }
     }
-    else if (uid_cmp(&cur_uid->uid, &mgrdata->cur_range_low) >= 0)
+    else if (rdm_uid_cmp(&cur_uid->uid, &mgrdata->cur_range_low) >= 0)
     {
       list_begin = cur_uid;
       cur_uid->next = NULL;
@@ -1000,5 +1000,5 @@ int known_uid_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const LwpaRb
   (void)self;
   const RdmUid *a = (const RdmUid *)node_a->value;
   const RdmUid *b = (const RdmUid *)node_b->value;
-  return uid_cmp(a, b);
+  return rdm_uid_cmp(a, b);
 }

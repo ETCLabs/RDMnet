@@ -224,7 +224,7 @@ protected:
   std::set<int> clients_to_destroy_;
 
   void MarkConnForDestruction(int conn, bool send_disconnect,
-                              rdmnet_disconnect_reason_t reason = kRDMnetDisconnectShutdown);
+                              rdmnet_disconnect_reason_t reason = kRdmnetDisconnectShutdown);
   void DestroyMarkedClientSockets();
   void RemoveConnections(const std::vector<int> &connections);
 

@@ -27,13 +27,9 @@
 
 #include "rdmnet/common/broker_prot.h"
 #include "rdmnet/common/connection.h"
+#include "rdmnet/common/util.h"
 #include "broker_prot_priv.h"
 #include "lwpa/pack.h"
-
-/* Suppress strncpy() warning on Windows/MSVC. */
-#ifdef _MSC_VER
-#pragma warning(disable : 4996)
-#endif
 
 /***************************** Private macros ********************************/
 
@@ -157,8 +153,10 @@ size_t calc_client_connect_len(const ClientConnectMsg *data)
     return res;
   }
   else
+  {
     /* Should never happen */
     return 0;
+  }
 }
 
 lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg *data)
@@ -182,6 +180,8 @@ lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg 
   if (res != LWPA_OK)
     return res;
 
+  RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
+
   /* Pack and send the common fields for the Client Connect message. */
   cur_ptr = buf;
   strncpy((char *)cur_ptr, data->scope, E133_SCOPE_STRING_PADDED_LENGTH);
@@ -196,6 +196,8 @@ lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg 
   send_res = lwpa_send(conn->sock, buf, cur_ptr - buf, 0);
   if (send_res < 0)
     return (lwpa_error_t)send_res;
+
+  RDMNET_MSVC_END_NO_DEP_WARNINGS()
 
   /* Pack and send the beginning of the Client Entry PDU */
   pack_client_entry_header(rlp.datalen - (BROKER_PDU_HEADER_SIZE + CLIENT_CONNECT_COMMON_FIELD_SIZE),
@@ -228,7 +230,7 @@ lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg 
       cur_ptr = buf;
       pack_32b(cur_ptr, prot->protocol_vector);
       cur_ptr += 4;
-      strncpy((char *)cur_ptr, prot->protocol_string, EPT_PROTOCOL_STRING_PADDED_LENGTH);
+      RDMNET_MSVC_NO_DEP_WRN strncpy((char *)cur_ptr, prot->protocol_string, EPT_PROTOCOL_STRING_PADDED_LENGTH);
       cur_ptr[EPT_PROTOCOL_STRING_PADDED_LENGTH - 1] = '\0';
       cur_ptr += EPT_PROTOCOL_STRING_PADDED_LENGTH;
       send_res = lwpa_send(conn->sock, buf, EPT_PROTOCOL_ENTRY_SIZE, 0);
@@ -278,6 +280,10 @@ size_t pack_connect_reply(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid
   cur_ptr += 2;
   pack_32b(cur_ptr, data->broker_uid.id);
   cur_ptr += 4;
+  pack_16b(cur_ptr, data->client_uid.manu);
+  cur_ptr += 2;
+  pack_32b(cur_ptr, data->client_uid.id);
+  cur_ptr += 4;
 
   return cur_ptr - buf;
 }
@@ -326,6 +332,10 @@ lwpa_error_t send_connect_reply(int handle, const LwpaUuid *local_cid, const Con
   pack_16b(cur_ptr, data->broker_uid.manu);
   cur_ptr += 2;
   pack_32b(cur_ptr, data->broker_uid.id);
+  cur_ptr += 4;
+  pack_16b(cur_ptr, data->client_uid.manu);
+  cur_ptr += 2;
+  pack_32b(cur_ptr, data->client_uid.id);
   cur_ptr += 4;
 
   send_res = do_send(handle, NULL, buf, cur_ptr - buf);

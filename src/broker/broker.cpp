@@ -755,7 +755,7 @@ void Broker::SendStatus(RPTController *controller, const RptHeader &header, rpt_
 void Broker::ProcessConnectRequest(int conn, const ClientConnectMsg *cmsg)
 {
   bool deny_connection = true;
-  rdmnet_connect_status_t connect_status = kRDMnetConnectScopeMismatch;
+  rdmnet_connect_status_t connect_status = kRdmnetConnectScopeMismatch;
 
   // TESTING
   // auto it =clients_.find(cookie);
@@ -775,7 +775,7 @@ void Broker::ProcessConnectRequest(int conn, const ClientConnectMsg *cmsg)
         deny_connection = !ProcessRPTConnectRequest(conn, cmsg->client_entry, connect_status);
         break;
       default:
-        connect_status = kRDMnetConnectInvalidClientEntry;
+        connect_status = kRdmnetConnectInvalidClientEntry;
         break;
     }
   }
@@ -812,7 +812,7 @@ bool Broker::ProcessRPTConnectRequest(int conn, const ClientEntryData &data, rdm
 
   if ((settings_.max_connections > 0) && (clients_.size() >= settings_.max_connections))
   {
-    connect_status = kRDMnetConnectCapacityExceeded;
+    connect_status = kRdmnetConnectCapacityExceeded;
     continue_adding = false;
   }
 
@@ -824,7 +824,7 @@ bool Broker::ProcessRPTConnectRequest(int conn, const ClientEntryData &data, rdm
     {
       if ((settings_.max_controllers > 0) && (controllers_.size() >= settings_.max_controllers))
       {
-        connect_status = kRDMnetConnectCapacityExceeded;
+        connect_status = kRdmnetConnectCapacityExceeded;
         continue_adding = false;
       }
       else
@@ -844,7 +844,7 @@ bool Broker::ProcessRPTConnectRequest(int conn, const ClientEntryData &data, rdm
     {
       if ((settings_.max_devices > 0) && (devices_.size() >= settings_.max_devices))
       {
-        connect_status = kRDMnetConnectCapacityExceeded;
+        connect_status = kRdmnetConnectCapacityExceeded;
         continue_adding = false;
       }
       else
@@ -875,7 +875,7 @@ bool Broker::ProcessRPTConnectRequest(int conn, const ClientEntryData &data, rdm
     BrokerMessage msg;
     msg.vector = VECTOR_BROKER_CONNECT_REPLY;
     ConnectReplyMsg *creply = get_connect_reply_msg(&msg);
-    creply->connect_status = kRDMnetConnectOk;
+    creply->connect_status = kRdmnetConnectOk;
     creply->e133_version = E133_VERSION;
     creply->broker_uid = settings_.uid;
     new_client->Push(settings_.cid, msg);
@@ -1096,7 +1096,7 @@ void Broker::StopBrokerServices()
   GetConnSnapshot(conns, true, true, true);
 
   for (auto &conn : conns)
-    MarkConnForDestruction(conn, true, kRDMnetDisconnectShutdown);
+    MarkConnForDestruction(conn, true, kRdmnetDisconnectShutdown);
 
   DestroyMarkedClientSockets();
 }
