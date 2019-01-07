@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - This CHANGELOG file.
+- Windows installers for example applications.
 
 ### Changed
 - RDMnet is now built with CMake. Documentation updated accordingly.
