@@ -45,8 +45,8 @@ static size_t locate_tcp_preamble(RdmnetMsgBuf *msg_buf);
 static size_t consume_bad_block(PduBlockState *block, size_t datalen, parse_result_t *parse_res);
 static parse_result_t check_for_full_parse(parse_result_t prev_res, PduBlockState *block);
 
-/* The parse functions are organized by protocol layer, and each one gets a
- * subset of the overall state structure. */
+/* The parse functions are organized by protocol layer, and each one gets a subset of the overall
+ * state structure. */
 
 /* Root layer */
 static size_t parse_rlp_block(RlpState *rlpstate, const uint8_t *data, size_t data_size, RdmnetMessage *msg,
@@ -101,16 +101,22 @@ lwpa_error_t rdmnet_msg_buf_recv(lwpa_socket_t sock, RdmnetMsgBuf *msg_buf)
   lwpa_error_t res;
 
   if (msg_buf->data_remaining)
+  {
     res = run_parse_state_machine(msg_buf);
+  }
   else
   {
     int recv_res =
         lwpa_recv(sock, &msg_buf->buf[msg_buf->cur_data_size], RDMNET_RECV_BUF_SIZE - msg_buf->cur_data_size, 0);
     if (recv_res < 0)
+    {
       return (lwpa_error_t)recv_res;
+    }
     else if (recv_res == 0)
+    {
       /* 0 indicates graceful close of connection by peer */
       return LWPA_CONNCLOSED;
+    }
     else
     {
       msg_buf->cur_data_size += recv_res;
@@ -122,8 +128,8 @@ lwpa_error_t rdmnet_msg_buf_recv(lwpa_socket_t sock, RdmnetMsgBuf *msg_buf)
 
 lwpa_error_t run_parse_state_machine(RdmnetMsgBuf *msg_buf)
 {
-  /* Unless we finish parsing a message in this function, we will return
-   * LWPA_NODATA to indicate that the parse is still in progress. */
+  /* Unless we finish parsing a message in this function, we will return LWPA_NODATA to indicate
+   * that the parse is still in progress. */
   lwpa_error_t res = LWPA_NODATA;
   size_t consumed;
   parse_result_t parse_res;
@@ -219,8 +225,8 @@ size_t parse_rlp_block(RlpState *rlpstate, const uint8_t *data, size_t datalen, 
   {
     bool parse_err = false;
 
-    /* If the size remaining in the Root Layer PDU block is not enough for
-     * another Root Layer PDU header, indicate a bad block condition. */
+    /* If the size remaining in the Root Layer PDU block is not enough for another Root Layer PDU
+     * header, indicate a bad block condition. */
     if ((rlpstate->block.block_size - rlpstate->block.size_parsed) < RLP_HEADER_SIZE_EXT_LEN)
     {
       parse_err = true;
@@ -236,12 +242,11 @@ size_t parse_rlp_block(RlpState *rlpstate, const uint8_t *data, size_t datalen, 
         bytes_parsed += RLP_HEADER_SIZE_EXT_LEN;
         rlpstate->block.size_parsed += RLP_HEADER_SIZE_EXT_LEN;
 
-        /* If this PDU indicates a length that takes it past the end of the
-         * block size from the preamble, it is an error. */
+        /* If this PDU indicates a length that takes it past the end of the block size from the
+         * preamble, it is an error. */
         if (rlpstate->block.size_parsed + rlp.datalen <= rlpstate->block.block_size)
         {
-          /* Fill in the root layer data in the overall rdmnet_message
-           * struct. */
+          /* Fill in the root layer data in the overall rdmnet_message struct. */
           msg->vector = rlp.vector;
           msg->sender_cid = rlp.sender_cid;
           rlpstate->block.parsed_header = true;
@@ -253,13 +258,12 @@ size_t parse_rlp_block(RlpState *rlpstate, const uint8_t *data, size_t datalen, 
       else
         parse_err = true;
     }
-    /* No else for this block - if there is not enough data yet to parse an RLP
-     * header, we simply indicate no data. */
+    /* No else for this block - if there is not enough data yet to parse an RLP header, we simply
+     * indicate no data. */
 
     if (parse_err)
     {
-      /* Parse error in the root layer header. We cannot keep parsing this
-       * block. */
+      /* Parse error in the root layer header. We cannot keep parsing this block. */
       bytes_parsed += consume_bad_block(&rlpstate->block, datalen, &res);
       lwpa_log(lparams, LWPA_LOG_WARNING,
                MODULE_NAME ": Protocol error encountered while parsing Root Layer PDU header.");
@@ -304,7 +308,9 @@ void initialize_broker_message(BrokerState *bstate, BrokerMessage *bmsg, size_t 
         init_client_connect_state(&bstate->data.client_connect, pdu_data_len, bmsg);
       }
       else
+      {
         bad_length = true;
+      }
       break;
     case VECTOR_BROKER_CONNECT_REPLY:
       if (pdu_data_len != CONNECT_REPLY_DATA_SIZE)
@@ -316,7 +322,9 @@ void initialize_broker_message(BrokerState *bstate, BrokerMessage *bmsg, size_t 
         init_client_entry_update_state(&bstate->data.update, pdu_data_len, bmsg);
       }
       else
+      {
         bad_length = true;
+      }
       break;
     case VECTOR_BROKER_REDIRECT_V4:
       if (pdu_data_len != REDIRECT_V4_DATA_SIZE)
@@ -351,8 +359,8 @@ void initialize_broker_message(BrokerState *bstate, BrokerMessage *bmsg, size_t 
   if (bad_length)
   {
     init_pdu_block_state(&bstate->data.unknown, pdu_data_len);
-    /* An artificial "unknown" vector value to flag the data parsing
-     * logic to consume the data section. */
+    /* An artificial "unknown" vector value to flag the data parsing logic to consume the data
+     * section. */
     bmsg->vector = 0xffff;
     lwpa_log(lparams, LWPA_LOG_WARNING, MODULE_NAME ": Dropping Broker PDU with vector %d and invalid length %zu",
              bmsg->vector, pdu_data_len + BROKER_PDU_HEADER_SIZE);
@@ -373,8 +381,8 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
   {
     bool parse_err = false;
 
-    /* If the size remaining in the Broker PDU block is not enough for another
-     * Broker PDU header, indicate a bad block condition. */
+    /* If the size remaining in the Broker PDU block is not enough for another Broker PDU header,
+     * indicate a bad block condition. */
     if ((bstate->block.block_size - bstate->block.size_parsed) < BROKER_PDU_HEADER_SIZE)
     {
       parse_err = true;
@@ -404,8 +412,7 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
 
     if (parse_err)
     {
-      /* Parse error in the Broker PDU header. We cannot keep parsing this
-       * block. */
+      /* Parse error in the Broker PDU header. We cannot keep parsing this block. */
       bytes_parsed += consume_bad_block(&bstate->block, datalen, &res);
       lwpa_log(lparams, LWPA_LOG_WARNING, MODULE_NAME ": Protocol error encountered while parsing Broker PDU header.");
     }
@@ -432,6 +439,10 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
           crmsg->broker_uid.manu = upack_16b(cur_ptr);
           cur_ptr += 2;
           crmsg->broker_uid.id = upack_32b(cur_ptr);
+          cur_ptr += 4;
+          crmsg->client_uid.manu = upack_16b(cur_ptr);
+          cur_ptr += 2;
+          crmsg->client_uid.id = upack_32b(cur_ptr);
           cur_ptr += 4;
           next_layer_bytes_parsed = cur_ptr - &data[bytes_parsed];
           res = kPSFullBlockParseOk;
@@ -476,8 +487,7 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
         break;
       case VECTOR_BROKER_NULL:
       case VECTOR_BROKER_FETCH_CLIENT_LIST:
-        /* These messages have no data, so we are at the end of the
-         * PDU. */
+        /* These messages have no data, so we are at the end of the PDU. */
         res = kPSFullBlockParseOk;
         break;
       case VECTOR_BROKER_DISCONNECT:
@@ -526,8 +536,7 @@ size_t parse_client_connect(ClientConnectState *ccstate, const uint8_t *data, si
 
   if (!ccstate->common_data_parsed)
   {
-    /* We want to wait until we can parse all of the Client Connect common data
-     * at once. */
+    /* We want to wait until we can parse all of the Client Connect common data at once. */
     if (datalen < CLIENT_CONNECT_COMMON_FIELD_SIZE)
     {
       *result = kPSNoData;
@@ -560,8 +569,7 @@ size_t parse_client_entry_update(ClientEntryUpdateState *ceustate, const uint8_t
 
   if (!ceustate->common_data_parsed)
   {
-    /* We want to wait until we can parse all of the Client Entry Update common
-     * data at once. */
+    /* We want to wait until we can parse all of the Client Entry Update common data at once. */
     if (datalen < CLIENT_ENTRY_UPDATE_COMMON_FIELD_SIZE)
     {
       *result = kPSNoData;
@@ -705,8 +713,7 @@ size_t parse_client_list(ClientListState *clstate, const uint8_t *data, size_t d
         *centry_ptr = (ClientEntryData *)alloc_client_entry();
         if (!(*centry_ptr))
         {
-          /* We've run out of space for client entries - send back up what we
-           * have now. */
+          /* We've run out of space for client entries - send back up what we have now. */
           if (clist->client_entry_list)
           {
             clist->partial = true;
@@ -757,8 +764,8 @@ void initialize_rpt_message(RptState *rstate, RptMessage *rmsg, size_t pdu_data_
       else
       {
         init_pdu_block_state(&rstate->data.unknown, pdu_data_len);
-        /* An artificial "unknown" vector value to flag the data parsing
-         * logic to consume the data section. */
+        /* An artificial "unknown" vector value to flag the data parsing logic to consume the data
+         * section. */
         rmsg->vector = 0xffffffff;
         lwpa_log(lparams, LWPA_LOG_WARNING, MODULE_NAME ": Dropping RPT PDU with invalid length %zu",
                  pdu_data_len + RPT_PDU_HEADER_SIZE);
@@ -770,8 +777,8 @@ void initialize_rpt_message(RptState *rstate, RptMessage *rmsg, size_t pdu_data_
       else
       {
         init_pdu_block_state(&rstate->data.unknown, pdu_data_len);
-        /* An artificial "unknown" vector value to flag the data parsing
-         * logic to consume the data section. */
+        /* An artificial "unknown" vector value to flag the data parsing logic to consume the data
+         * section. */
         rmsg->vector = 0xffffffff;
         lwpa_log(lparams, LWPA_LOG_WARNING, MODULE_NAME ": Dropping RPT PDU with invalid length %zu",
                  pdu_data_len + RPT_PDU_HEADER_SIZE);
@@ -796,8 +803,8 @@ size_t parse_rpt_block(RptState *rstate, const uint8_t *data, size_t datalen, Rp
   {
     bool parse_err = false;
 
-    /* If the size remaining in the RPT PDU block is not enough for another
-     * RPT PDU header, indicate a bad block condition. */
+    /* If the size remaining in the RPT PDU block is not enough for another RPT PDU header, indicate
+     * a bad block condition. */
     if ((rstate->block.block_size - rstate->block.size_parsed) < RPT_PDU_HEADER_SIZE)
     {
       parse_err = true;
@@ -934,8 +941,7 @@ size_t parse_rdm_list(RdmListState *rlstate, const uint8_t *data, size_t datalen
             *rdmcmd_ptr = (RdmCmdListEntry *)alloc_rdm_command();
             if (!(*rdmcmd_ptr))
             {
-              /* We've run out of space for RDM commands - send back up what
-               * we have now. */
+              /* We've run out of space for RDM commands - send back up what we have now. */
               if (cmd_list->list)
               {
                 cmd_list->partial = true;
@@ -987,8 +993,8 @@ size_t parse_rpt_status(RptStatusState *rsstate, const uint8_t *data, size_t dat
   {
     bool parse_err = false;
 
-    /* If the size remaining in the Broker PDU block is not enough for another
-     * RPT Status PDU header, indicate a bad block condition. */
+    /* If the size remaining in the Broker PDU block is not enough for another RPT Status PDU
+     * header, indicate a bad block condition. */
     if ((rsstate->block.block_size - rsstate->block.size_parsed) < RPT_STATUS_HEADER_SIZE)
     {
       parse_err = true;
@@ -1015,8 +1021,7 @@ size_t parse_rpt_status(RptStatusState *rsstate, const uint8_t *data, size_t dat
 
     if (parse_err)
     {
-      /* Parse error in the RPT Status PDU header. We cannot keep parsing this
-       * block. */
+      /* Parse error in the RPT Status PDU header. We cannot keep parsing this block. */
       bytes_parsed += consume_bad_block(&rsstate->block, datalen, &res);
       lwpa_log(lparams, LWPA_LOG_WARNING,
                MODULE_NAME ": Protocol error encountered while parsing RPT Status PDU header.");
@@ -1031,7 +1036,9 @@ size_t parse_rpt_status(RptStatusState *rsstate, const uint8_t *data, size_t dat
       case VECTOR_RPT_STATUS_INVALID_COMMAND_CLASS:
         /* These status codes have no additional data. */
         if (rsstate->block.size_parsed == rsstate->block.block_size)
+        {
           res = kPSFullBlockParseOk;
+        }
         else
         {
           bytes_parsed += consume_bad_block(&rsstate->block, remaining_len, &res);
@@ -1102,8 +1109,8 @@ size_t locate_tcp_preamble(RdmnetMsgBuf *msg_buf)
   }
   if (i > 0)
   {
-    /* Discard data from the range that has been determined definitively
-     * to not contain a TCP preamble. */
+    /* Discard data from the range that has been determined definitively to not contain a TCP
+     * preamble. */
     memmove(msg_buf->buf, &msg_buf->buf[i], msg_buf->cur_data_size - i);
     msg_buf->cur_data_size -= i;
   }
@@ -1135,8 +1142,7 @@ parse_result_t check_for_full_parse(parse_result_t prev_res, PduBlockState *bloc
   {
     case kPSFullBlockParseOk:
     case kPSFullBlockProtErr:
-      /* If we're not through the PDU block, need to indicate that to the
-       * higher layer. */
+      /* If we're not through the PDU block, need to indicate that to the higher layer. */
       if (block->size_parsed < block->block_size)
       {
         res = (prev_res == kPSFullBlockProtErr) ? kPSPartialBlockProtErr : kPSPartialBlockParseOk;

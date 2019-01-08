@@ -304,10 +304,6 @@ protected:
                          size_t *num_responses, uint16_t *nack_reason);
   bool getComponentScope(uint16_t slot, RdmParamData *resp_data_list, size_t *num_responses,
                          uint16_t *nack_reason = NULL);
-  bool getBrokerStaticConfigIPv4(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
-                                 size_t *num_responses, uint16_t *nack_reason);
-  bool getBrokerStaticConfigIPv6(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
-                                 size_t *num_responses, uint16_t *nack_reason);
   bool getSearchDomain(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
                        size_t *num_responses, uint16_t *nack_reason);
   bool getTCPCommsStatus(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
@@ -373,10 +369,6 @@ protected:
   // E1.33
   // COMPONENT_SCOPE
   void componentScope(uint16_t scopeSlot, const char *scopeString, const RdmResponse *resp);
-  // BROKER_STATIC_CONFIG_IPV4
-  void brokerStaticConfigIPv4(const char *addrString, uint16_t port, const char *scopeString, const RdmResponse *resp);
-  // BROKER_STATIC_CONFIG_IPV6
-  void brokerStaticConfigIPv6(const char *addrString, uint16_t port, const char *scopeString, const RdmResponse *resp);
   // SEARCH_DOMAIN
   void searchDomain(const char *domainNameString, const RdmResponse *resp);
   // TCP_COMMS_STATUS

@@ -28,7 +28,7 @@
 #pragma once
 
 // Macros to suppress warnings inside of Qt headers.
-#if defined(_MSC_VER) && defined(QT_NO_DEBUG)
+#if defined(_MSC_VER)
 
 #define BEGIN_INCLUDE_QT_HEADERS() \
   __pragma(warning(push)) __pragma(warning(disable : 4127)) __pragma(warning(disable : 4251))
