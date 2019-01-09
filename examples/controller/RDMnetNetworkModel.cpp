@@ -1242,10 +1242,17 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
 
   // E1.20
   // pid, get, set, type, role/included
-  PropertyValueItem::setPIDInfo(E120_SUPPORTED_PARAMETERS, rdmPIDFlags | kSupportsGet | kExcludeFromModel,
+  // clang-format off
+
+  // SUPPORTED_PARAMETERS
+  PropertyValueItem::setPIDInfo(E120_SUPPORTED_PARAMETERS,
+                                rdmPIDFlags | kSupportsGet | kExcludeFromModel,
                                 QVariant::Type::Invalid);
 
-  PropertyValueItem::setPIDInfo(E120_DEVICE_INFO, rdmPIDFlags | kSupportsGet, QVariant::Type::Invalid);
+  // DEVICE_INFO
+  PropertyValueItem::setPIDInfo(E120_DEVICE_INFO,
+                                rdmPIDFlags | kSupportsGet,
+                                QVariant::Type::Invalid);
   PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("RDM Protocol Version")));
   PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO,
@@ -1261,74 +1268,132 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Sensor Count")));
 
-  PropertyValueItem::setPIDInfo(E120_DEVICE_MODEL_DESCRIPTION, rdmPIDFlags | kSupportsGet, QVariant::Type::String);
+  // DEVICE_MODEL_DESCRIPTION
+  PropertyValueItem::setPIDInfo(E120_DEVICE_MODEL_DESCRIPTION,
+                                rdmPIDFlags | kSupportsGet,
+                                QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_MODEL_DESCRIPTION,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Device Model Description")));
 
-  PropertyValueItem::setPIDInfo(E120_MANUFACTURER_LABEL, rdmPIDFlags | kSupportsGet, QVariant::Type::String);
+  // MANUFACTURER_LABEL
+  PropertyValueItem::setPIDInfo(E120_MANUFACTURER_LABEL,
+                                rdmPIDFlags | kSupportsGet,
+                                QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E120_MANUFACTURER_LABEL,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Manufacturer Label")));
 
-  PropertyValueItem::setPIDInfo(E120_DEVICE_LABEL, rdmPIDFlags | kSupportsGet | kSupportsSet, QVariant::Type::String);
+  // DEVICE_LABEL
+  PropertyValueItem::setPIDInfo(E120_DEVICE_LABEL,
+                                rdmPIDFlags | kSupportsGet | kSupportsSet,
+                                QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_LABEL,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Device Label")));
   PropertyValueItem::setPIDMaxBufferSize(E120_DEVICE_LABEL, DEVICE_LABEL_MAX_LEN);
 
-  PropertyValueItem::setPIDInfo(E120_SOFTWARE_VERSION_LABEL, rdmPIDFlags | kSupportsGet, QVariant::Type::String);
+  // SOFTWARE_VERSION_LABEL
+  PropertyValueItem::setPIDInfo(E120_SOFTWARE_VERSION_LABEL,
+                                rdmPIDFlags | kSupportsGet,
+                                QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E120_SOFTWARE_VERSION_LABEL,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Software Label")));
 
-  PropertyValueItem::setPIDInfo(E120_BOOT_SOFTWARE_VERSION_ID, rdmPIDFlags | kSupportsGet, QVariant::Type::Int);
+  // BOOT_SOFTWARE_VERSION_ID
+  PropertyValueItem::setPIDInfo(E120_BOOT_SOFTWARE_VERSION_ID,
+                                rdmPIDFlags | kSupportsGet,
+                                QVariant::Type::Int);
   PropertyValueItem::addPIDPropertyDisplayName(E120_BOOT_SOFTWARE_VERSION_ID,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Boot Software ID")));
 
-  PropertyValueItem::setPIDInfo(E120_BOOT_SOFTWARE_VERSION_LABEL, rdmPIDFlags | kSupportsGet, QVariant::Type::String);
+  // BOOT_SOFTWARE_VERSION_LABEL
+  PropertyValueItem::setPIDInfo(E120_BOOT_SOFTWARE_VERSION_LABEL,
+                                rdmPIDFlags | kSupportsGet,
+                                QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E120_BOOT_SOFTWARE_VERSION_LABEL,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Boot Software Label")));
 
-  PropertyValueItem::setPIDInfo(E120_DMX_START_ADDRESS, rdmPIDFlags | kSupportsGet | kSupportsSet, QVariant::Type::Int);
+  // DMX_START_ADDRESS
+  PropertyValueItem::setPIDInfo(E120_DMX_START_ADDRESS,
+                                rdmPIDFlags | kSupportsGet | kSupportsSet,
+                                QVariant::Type::Int);
   PropertyValueItem::addPIDPropertyDisplayName(E120_DMX_START_ADDRESS,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("DMX512 Start Address")));
   PropertyValueItem::setPIDNumericDomain(E120_DMX_START_ADDRESS, 1, 512);
   PropertyValueItem::setPIDMaxBufferSize(E120_DMX_START_ADDRESS, 2);
 
-  PropertyValueItem::setPIDInfo(E120_IDENTIFY_DEVICE, rdmPIDFlags | kSupportsSet | kExcludeFromModel,
+  // IDENTIFY_DEVICE
+  PropertyValueItem::setPIDInfo(E120_IDENTIFY_DEVICE,
+                                rdmPIDFlags | kSupportsSet | kExcludeFromModel,
                                 QVariant::Type::Bool);
   PropertyValueItem::setPIDMaxBufferSize(E120_IDENTIFY_DEVICE, 1);
 
-  PropertyValueItem::setPIDInfo(E120_DMX_PERSONALITY, rdmPIDFlags | kSupportsGet | kSupportsSet, QVariant::Type::Char,
+  // DMX_PERSONALITY
+  PropertyValueItem::setPIDInfo(E120_DMX_PERSONALITY,
+                                rdmPIDFlags | kSupportsGet | kSupportsSet,
+                                QVariant::Type::Char,
                                 RDMnetNetworkItem::PersonalityNumberRole);
   PropertyValueItem::addPIDPropertyDisplayName(E120_DMX_PERSONALITY,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("DMX512 Personality")));
   PropertyValueItem::setPIDNumericDomain(E120_DMX_PERSONALITY, 1, 255);
   PropertyValueItem::setPIDMaxBufferSize(E120_DMX_PERSONALITY, 1);
 
-  PropertyValueItem::setPIDInfo(E120_RESET_DEVICE, rdmPIDFlags | kSupportsSet | kExcludeFromModel,
+  // RESET_DEVICE
+  PropertyValueItem::setPIDInfo(E120_RESET_DEVICE,
+                                rdmPIDFlags | kSupportsSet | kExcludeFromModel,
                                 QVariant::Type::Char);
   PropertyValueItem::setPIDMaxBufferSize(E120_RESET_DEVICE, 1);
 
-  // E1.33
-  PropertyValueItem::setPIDInfo(E133_COMPONENT_SCOPE, rdmNetPIDFlags | kSupportsGet | kSupportsSet,
+  // RDMnet
+  // COMPONENT_SCOPE
+  PropertyValueItem::setPIDInfo(E133_COMPONENT_SCOPE,
+                                rdmNetPIDFlags | kSupportsGet | kSupportsSet,
                                 QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E133_COMPONENT_SCOPE,
-                                               QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Component Scope")));
-  PropertyValueItem::setPIDMaxBufferSize(E133_COMPONENT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH + 2);
+                                               QString("%0\\%1")
+                                               .arg(rdmNetGroupName)
+                                               .arg(tr("Component Scope")));
+  PropertyValueItem::addPIDPropertyDisplayName(E133_COMPONENT_SCOPE,
+                                               QString("%0\\%1")
+                                               .arg(rdmNetGroupName)
+                                               .arg(tr("Static Broker IPv4 (Leave blank for dynamic)")));
+  PropertyValueItem::addPIDPropertyDisplayName(E133_COMPONENT_SCOPE,
+                                               QString("%0\\%1")
+                                               .arg(rdmNetGroupName)
+                                               .arg(tr("Static Broker IPv6 (Leave blank for dynamic)")));
+  PropertyValueItem::setPIDMaxBufferSize(E133_COMPONENT_SCOPE,
+                                         2 /* Scope Slot */ +
+                                         E133_SCOPE_STRING_PADDED_LENGTH /* Scope String */ +
+                                         1 /* Static Config Type */ +
+                                         4 /* Static IPv4 Address */ +
+                                         16 /* Static IPv6 Address */ +
+                                         2 /* Static Port */);
 
-  PropertyValueItem::setPIDInfo(E133_SEARCH_DOMAIN, rdmNetPIDFlags | kLocController | kSupportsGet | kSupportsSet,
+  // SEARCH_DOMAIN
+  PropertyValueItem::setPIDInfo(E133_SEARCH_DOMAIN,
+                                rdmNetPIDFlags | kLocController | kSupportsGet | kSupportsSet,
                                 QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E133_SEARCH_DOMAIN,
-                                               QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Search Domain")));
+                                               QString("%0\\%1")
+                                               .arg(rdmNetGroupName)
+                                               .arg(tr("Search Domain")));
   PropertyValueItem::setPIDMaxBufferSize(E133_SEARCH_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
 
-  PropertyValueItem::setPIDInfo(E133_TCP_COMMS_STATUS, rdmNetPIDFlags | kSupportsGet | kEnableButtons,
+  // TCP_COMMS_STATUS
+  PropertyValueItem::setPIDInfo(E133_TCP_COMMS_STATUS,
+                                rdmNetPIDFlags | kSupportsGet | kEnableButtons,
                                 QVariant::Type::Invalid);
   PropertyValueItem::addPIDPropertyDisplayName(
       E133_TCP_COMMS_STATUS, QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IP Address (Current)")));
   PropertyValueItem::addPIDPropertyDisplayName(E133_TCP_COMMS_STATUS,
-                                               QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Unhealthy TCP Events")));
-  PropertyValueItem::addPIDPropertyDisplayName(
-      E133_TCP_COMMS_STATUS, QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Unhealthy TCP Events\\Reset Counter")));
+                                               QString("%0\\%1")
+                                               .arg(rdmNetGroupName)
+                                               .arg(tr("Unhealthy TCP Events")));
+  PropertyValueItem::addPIDPropertyDisplayName(E133_TCP_COMMS_STATUS,
+                                               QString("%0\\%1")
+                                               .arg(rdmNetGroupName)
+                                               .arg(tr("Unhealthy TCP Events\\Reset Counter")));
   PropertyValueItem::setPIDMaxBufferSize(E133_TCP_COMMS_STATUS, E133_SCOPE_STRING_PADDED_LENGTH);
+
+  // clang-format on
 
   model->setColumnCount(2);
   model->setHeaderData(0, Qt::Orientation::Horizontal, tr("Property"));
@@ -2512,14 +2577,39 @@ void RDMnetNetworkModel::ProcessRDMGetSetData(uint16_t param_id, const uint8_t *
       {
         uint16_t scopeSlot;
         char scopeString[E133_SCOPE_STRING_PADDED_LENGTH];
+        char addrBuf[LWPA_INET6_ADDRSTRLEN] = {};
+        char *staticConfigV4 = nullptr;
+        char *staticConfigV6 = nullptr;
+        uint16_t port = 0;
+        const uint8_t *cur_ptr = data;
 
-        memset(scopeString, 0, E133_SCOPE_STRING_PADDED_LENGTH);
+        scopeSlot = upack_16b(cur_ptr);
+        cur_ptr += 2;
+        memcpy(scopeString, cur_ptr, E133_SCOPE_STRING_PADDED_LENGTH);
+        scopeString[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
+        cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
 
-        scopeSlot = upack_16b(data);
-        memcpy(scopeString, data + 2, E133_SCOPE_STRING_PADDED_LENGTH);
-
-        componentScope(scopeSlot, scopeString, firstResp);
-
+        uint8_t staticConfigType = *cur_ptr++;
+        switch (staticConfigType)
+        {
+          case E133_STATIC_CONFIG_IPV4:
+            unpackAndParseIPAddress(cur_ptr, LWPA_IPV4, addrBuf, LWPA_INET6_ADDRSTRLEN);
+            cur_ptr += 4 + 16;
+            port = upack_16b(cur_ptr);
+            staticConfigV4 = addrBuf;
+            break;
+          case E133_STATIC_CONFIG_IPV6:
+            cur_ptr += 4;
+            unpackAndParseIPAddress(cur_ptr, LWPA_IPV6, addrBuf, LWPA_INET6_ADDRSTRLEN);
+            cur_ptr += 16;
+            port = upack_16b(cur_ptr);
+            staticConfigV6 = addrBuf;
+            break;
+          case E133_NO_STATIC_CONFIG:
+          default:
+            break;
+        }
+        componentScope(scopeSlot, scopeString, staticConfigV4, staticConfigV6, port, firstResp);
         break;
       }
       case E133_SEARCH_DOMAIN:
@@ -2582,7 +2672,9 @@ bool RDMnetNetworkModel::getComponentScope(const uint8_t *param_data, uint8_t pa
     return getComponentScope(upack_16b(param_data), resp_data_list, num_responses, nack_reason);
   }
   else
+  {
     *nack_reason = E120_NR_FORMAT_ERROR;
+  }
   return false;
 }
 
@@ -2609,27 +2701,61 @@ bool RDMnetNetworkModel::getComponentScope(uint16_t slot, RdmParamData *resp_dat
       {
         slot = connectionIter->first + 1;
       }
+      else
+      {
+        slot = 0;
+      }
     }
 
-    if (slot <= MAX_SCOPE_SLOT_NUMBER)
+    if (slot != 0)
     {
-      pack_16b(resp_data_list[0].data, slot);
-      memset(&resp_data_list[0].data[2], 0, E133_SCOPE_STRING_PADDED_LENGTH);
-      if (connectionIter != broker_connections_.end())
-      {
-        std::string scope = connectionIter->second->scope();
+      uint8_t *cur_ptr = resp_data_list[0].data;
+      pack_16b(cur_ptr, slot);
+      cur_ptr += 2;
 
-        strncpy((char *)&resp_data_list[0].data[2], scope.data(),
-                min(scope.length(), E133_SCOPE_STRING_PADDED_LENGTH - 1));
+      std::string scope = connectionIter->second->scope();
+
+      strncpy((char *)cur_ptr, scope.data(), E133_SCOPE_STRING_PADDED_LENGTH);
+      cur_ptr[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
+      cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
+        
+      LwpaSockaddr saddr = connectionIter->second->staticSockAddr();
+      if (lwpaip_is_v4(&saddr.ip))
+      {
+        *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
+        pack_32b(cur_ptr, lwpaip_v4_address(&saddr.ip));
+        cur_ptr += 4;
+        /* Skip the IPv6 field */
+        cur_ptr += 16;
+        pack_16b(cur_ptr, saddr.port);
+        cur_ptr += 2;
       }
-      resp_data_list[0].datalen = 2 + E133_SCOPE_STRING_PADDED_LENGTH;
+      else if (lwpaip_is_v6(&saddr.ip))
+      {
+        *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
+        /* Skip the IPv4 field */
+        cur_ptr += 4;
+        memcpy(cur_ptr, lwpaip_v6_address(&saddr.ip), IPV6_BYTES);
+        cur_ptr += IPV6_BYTES;
+        pack_16b(cur_ptr, saddr.port);
+        cur_ptr += 2;
+      }
+      else
+      {
+        *cur_ptr++ = E133_NO_STATIC_CONFIG;
+        /* Skip the IPv4, IPv6 and port fields */
+        cur_ptr += 4 + 16 + 2;
+      }
+      resp_data_list[0].datalen = cur_ptr - resp_data_list[0].data;
       *num_responses = 1;
 
       lwpa_rwlock_readunlock(&prop_lock);
       return true;
     }
     else if (nack_reason != NULL)
+    {
       *nack_reason = E120_NR_DATA_OUT_OF_RANGE;
+    }
 
     lwpa_rwlock_readunlock(&prop_lock);
   }
@@ -3191,7 +3317,8 @@ void RDMnetNetworkModel::personalityDescription(uint8_t personality, uint16_t fo
   }
 }
 
-void RDMnetNetworkModel::componentScope(uint16_t scopeSlot, const char *scopeString, const RdmResponse *resp)
+void RDMnetNetworkModel::componentScope(uint16_t scopeSlot, const char *scopeString, const char *staticConfigV4,
+                                        const char *staticConfigV6, uint16_t port, const RdmResponse *resp)
 {
   RDMnetClientItem *client = getClientItem(resp);
 
@@ -3232,6 +3359,27 @@ void RDMnetNetworkModel::componentScope(uint16_t scopeSlot, const char *scopeStr
       emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeString);
       emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeString, RDMnetNetworkItem::ScopeDataRole);
       emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeSlot, RDMnetNetworkItem::ScopeSlotRole);
+
+      QString staticV4PropName = getScopeSubPropertyFullName(client, E133_COMPONENT_SCOPE, 1, scopeString);
+      QString staticV6PropName = getScopeSubPropertyFullName(client, E133_COMPONENT_SCOPE, 2, scopeString);
+
+      if (staticConfigV4)
+      {
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName,
+                             QString("%0:%1").arg(staticConfigV4).arg(port));
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""));
+      }
+      else if (staticConfigV6)
+      {
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""));
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName,
+                             QString("[%0]:%1").arg(staticConfigV6).arg(port));
+      }
+      else
+      {
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""));
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""));
+      }
 
       if (client->ClientType() == kRPTClientTypeController)
       {

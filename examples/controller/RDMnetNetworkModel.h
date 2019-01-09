@@ -368,7 +368,8 @@ protected:
 
   // E1.33
   // COMPONENT_SCOPE
-  void componentScope(uint16_t scopeSlot, const char *scopeString, const RdmResponse *resp);
+  void componentScope(uint16_t scopeSlot, const char *scopeString, const char *staticConfigV4,
+                      const char *staticConfigV6, uint16_t port, const RdmResponse *resp);
   // SEARCH_DOMAIN
   void searchDomain(const char *domainNameString, const RdmResponse *resp);
   // TCP_COMMS_STATUS

@@ -36,7 +36,7 @@
 #include "rdmnet/llrp.h"
 #include "device.h"
 
-#define rdm_uid_matches_mine(uidptr) (uid_equal(uidptr, &llrp_info.uid) || uid_is_broadcast(uidptr))
+#define rdm_uid_matches_mine(uidptr) (rdm_uid_equal(uidptr, &llrp_info.uid) || rdm_uid_is_broadcast(uidptr))
 
 static struct llrp_info
 {

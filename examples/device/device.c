@@ -41,11 +41,11 @@
 
 /***************************** Private macros ********************************/
 
-#define rpt_uid_matches_mine(uidptr)                                                    \
-  (uid_equal(uidptr, &device_state.my_uid) || uid_is_rdmnet_device_broadcast(uidptr) || \
-   (uid_is_rdmnet_device_manu_broadcast(uidptr) &&                                      \
+#define rpt_uid_matches_mine(uidptr)                                                        \
+  (rdm_uid_equal(uidptr, &device_state.my_uid) || rdmnet_uid_is_device_broadcast(uidptr) || \
+   (rdmnet_uid_is_device_manu_broadcast(uidptr) &&                                          \
     rdmnet_device_broadcast_manu_matches(uidptr, device_state.my_uid.manu)))
-#define rdm_uid_matches_mine(uidptr) (uid_equal(uidptr, &device_state.my_uid) || uid_is_broadcast(uidptr))
+#define rdm_uid_matches_mine(uidptr) (rdm_uid_equal(uidptr, &device_state.my_uid) || rdm_uid_is_broadcast(uidptr))
 
 #define swap_header_data(recvhdrptr, sendhdrptr)                       \
   do                                                                   \
@@ -153,7 +153,7 @@ void device_deinit()
   device_state.configuration_change = true;
   if (device_state.connected)
   {
-    rdmnet_disconnect(device_state.broker_conn, true, kRDMnetDisconnectShutdown);
+    rdmnet_disconnect(device_state.broker_conn, true, kRdmnetDisconnectShutdown);
   }
   rdmnet_deinit();
   rdmnetdisc_deinit();
@@ -174,8 +174,7 @@ void device_run()
       {
         lwpa_log(device_state.lparams, LWPA_LOG_INFO,
                  "Device received configuration message that requires re-connection to Broker. Disconnecting...");
-        /* Standard TODO, this needs a better reason */
-        rdmnet_disconnect(device_state.broker_conn, true, kRDMnetDisconnectLLRPReconfigure);
+        rdmnet_disconnect(device_state.broker_conn, true, kRdmnetDisconnectRptReconfigure);
         device_state.connected = false;
         device_llrp_set_connected(false);
       }
@@ -226,7 +225,7 @@ bool device_llrp_set(const RdmCommand *cmd_data, uint16_t *nack_reason)
         /* Disconnect from the Broker */
         lwpa_log(device_state.lparams, LWPA_LOG_INFO,
                  "A setting was changed using LLRP which requires re-connection to Broker. Disconnecting...");
-        rdmnet_disconnect(device_state.broker_conn, true, kRDMnetDisconnectLLRPReconfigure);
+        rdmnet_disconnect(device_state.broker_conn, true, kRdmnetDisconnectLlrpReconfigure);
         device_state.connected = false;
         device_llrp_set_connected(false);
       }
