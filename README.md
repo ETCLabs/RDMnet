@@ -9,6 +9,8 @@ WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.</mark>
 
 # RDMnet
 
+[![Build status](https://ci.appveyor.com/api/projects/status/76wa62avw50x7r9o?svg=true)](https://ci.appveyor.com/project/ETCLabs/rdmnet)
+
 *RDMnet* is an upcoming entertainment technology standard by
 [ESTA](http://tsp.esta.org) for transmission of [RDM](http://www.rdmprotocol.org)
 over IP networks. RDMnet leverages and extends the widely-adopted RDM message
