@@ -1345,7 +1345,7 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   // RDMnet
   // COMPONENT_SCOPE
   PropertyValueItem::setPIDInfo(E133_COMPONENT_SCOPE,
-                                rdmNetPIDFlags | kSupportsGet | kSupportsSet,
+                                rdmNetPIDFlags | kSupportsGet, // | kSupportsSet, TODO add this back
                                 QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E133_COMPONENT_SCOPE,
                                                QString("%0\\%1")
