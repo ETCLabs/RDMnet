@@ -41,7 +41,7 @@
 #include "iflist.h"
 
 // Discover the latest set of NICs.  Empties the vector before filling it
-void IFList::FindIFaces(BrokerLog &log, std::vector<iflist_entry> &ifaces)
+void IFList::FindIFaces(RDMnet::BrokerLog &log, std::vector<iflist_entry> &ifaces)
 {
   // We always clear the vector
   ifaces.clear();

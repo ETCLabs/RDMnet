@@ -25,25 +25,22 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet/broker/client.h
- *
- */
-#ifndef _RDMNET_BROKER_CLIENT_H_
-#define _RDMNET_BROKER_CLIENT_H_
+/// \file broker_client.h
+#ifndef _BROKER_CLIENT_H_
+#define _BROKER_CLIENT_H_
 
-#include <set>
 #include <queue>
 #include <memory>
 #include <map>
-#include <cassert>
 #include <stdexcept>
+
 #include "lwpa/lock.h"
 #include "lwpa/inet.h"
 #include "rdm/message.h"
 #include "rdmnet/client.h"
 #include "rdmnet/common/message.h"
 #include "rdmnet/common/rpt_prot.h"
-#include "rdmnet/broker/threads.h"
+#include "broker_threads.h"
 
 struct MessageRef
 {
@@ -220,4 +217,4 @@ protected:
   std::map<int, std::queue<MessageRef>> rpt_msgs_;
 };
 
-#endif  // _RDMNET_BROKER_CLIENT_H_
+#endif  // _BROKER_CLIENT_H_

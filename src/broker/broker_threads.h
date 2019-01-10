@@ -25,25 +25,25 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet/broker/threads.h
- * \brief Classes to represent threads used by the Broker.
- * \author Nick Ballhorn-Wagner and Sam Kearney
- */
-#ifndef _RDMNET_BROKER_THREADS_H_
-#define _RDMNET_BROKER_THREADS_H_
+/// \file broker_threads.h
+/// \brief Classes to represent threads used by the Broker.
+/// \author Nick Ballhorn-Wagner and Sam Kearney
+#ifndef _BROKER_THREADS_H_
+#define _BROKER_THREADS_H_
 
-#include <vector>
-#include <deque>
+#include <string>
 #include <memory>
+#include <vector>
+
 #include "lwpa/thread.h"
 #include "lwpa/lock.h"
 #include "lwpa/inet.h"
 #include "lwpa/socket.h"
 #include "rdmnet/common/connection.h"
-#include "rdmnet/broker/util.h"
+#include "broker_util.h"
 
 // The interface for the listener callback.
-class IListenThread_Notify
+class ListenThreadNotify
 {
 public:
   // Called when the listen thread gets a new connection.  If you return false,
@@ -62,7 +62,7 @@ public:
 class ListenThread
 {
 public:
-  ListenThread(const LwpaSockaddr &listen_addr, IListenThread_Notify *pnotify);
+  ListenThread(const LwpaSockaddr &listen_addr, ListenThreadNotify *pnotify);
   virtual ~ListenThread();
 
   // Creates the listening socket and starts the thread.
@@ -81,7 +81,7 @@ public:
 protected:
   LwpaSockaddr addr_;
   bool terminated_;
-  IListenThread_Notify *notify_;
+  ListenThreadNotify *notify_;
 
   lwpa_thread_t thread_handle_;
   lwpa_socket_t listen_socket_;
@@ -89,7 +89,7 @@ protected:
 
 /************************************/
 
-class IConnPollThread_Notify
+class ConnPollThreadNotify
 {
 public:
   virtual void PollConnections(const std::vector<int> &conn_handles, RdmnetPoll *poll_arr) = 0;
@@ -100,7 +100,7 @@ public:
 class ConnPollThread
 {
 public:
-  ConnPollThread(size_t max_sockets, IConnPollThread_Notify *pnotify);
+  ConnPollThread(size_t max_sockets, ConnPollThreadNotify *pnotify);
   virtual ~ConnPollThread();
 
   bool Start();
@@ -115,7 +115,7 @@ protected:
   bool terminated_;
   lwpa_thread_t thread_handle_;
   size_t max_count_;
-  IConnPollThread_Notify *notify_;
+  ConnPollThreadNotify *notify_;
 
   mutable lwpa_rwlock_t conn_lock_;
   std::vector<int> conns_;
@@ -124,7 +124,7 @@ protected:
 
 /************************************/
 
-class IClientServiceThread_Notify
+class ClientServiceThreadNotify
 {
 public:
   // Process each client queue, sending out the next message from each queue if
@@ -143,7 +143,7 @@ public:
   bool Start();
   void Stop();
 
-  void SetNotify(IClientServiceThread_Notify *pnotify) { notify_ = pnotify; }
+  void SetNotify(ClientServiceThreadNotify *pnotify) { notify_ = pnotify; }
 
   void Run();
 
@@ -151,7 +151,7 @@ protected:
   bool terminated_;
   lwpa_thread_t thread_handle_;
   int sleep_ms_;
-  IClientServiceThread_Notify *notify_;
+  ClientServiceThreadNotify *notify_;
 };
 
-#endif  // _RDMNET_BROKER_THREADS_H_
+#endif  // _BROKER_THREADS_H_

@@ -25,12 +25,11 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "rdmnet/broker/threads.h"
+#include "broker_threads.h"
 
-#include <map>
 #include "lwpa/socket.h"
 #include "rdmnet/common/connection.h"
-#include "rdmnet/broker/util.h"
+#include "broker_util.h"
 
 /**************************** Private constants ******************************/
 
@@ -48,7 +47,7 @@ static void listen_thread_fn(void *arg)
   }
 }
 
-ListenThread::ListenThread(const LwpaSockaddr &listen_addr, IListenThread_Notify *pnotify)
+ListenThread::ListenThread(const LwpaSockaddr &listen_addr, ListenThreadNotify *pnotify)
     : addr_(listen_addr), terminated_(true), notify_(pnotify), listen_socket_(LWPA_SOCKET_INVALID)
 {
 }
@@ -93,10 +92,10 @@ bool ListenThread::Start()
     lwpa_close(listen_socket_);
     listen_socket_ = LWPA_SOCKET_INVALID;
     if (notify_)
-      notify_->LogError(
-          "ListenThread: Listen failed on listen socket with "
-          "error: " +
-          std::string(lwpa_strerror(err)) + ".");
+    {
+      notify_->LogError("ListenThread: Listen failed on listen socket with error: " + std::string(lwpa_strerror(err)) +
+                        ".");
+    }
     return false;
   }
 
@@ -172,7 +171,7 @@ static void conn_poll_thread_fn(void *arg)
     cpt->Run();
 }
 
-ConnPollThread::ConnPollThread(size_t max_sockets, IConnPollThread_Notify *pnotify)
+ConnPollThread::ConnPollThread(size_t max_sockets, ConnPollThreadNotify *pnotify)
     : terminated_(true), max_count_(max_sockets), notify_(pnotify)
 {
   lwpa_rwlock_create(&conn_lock_);

@@ -25,29 +25,49 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "lwpa/int.h"
-#include "rdmnet/broker/client.h"
+/// \file rdmnet/broker/log.h
+#ifndef _RDMNET_BROKER_LOG_H_
+#define _RDMNET_BROKER_LOG_H_
 
-// The Broker's RDM responder.
-#ifndef _RDMNET_BROKER_RESPONDER_H_
-#define _RDMNET_BROKER_RESPONDER_H_
+#include <queue>
+#include <string>
 
-class BrokerResponder
+#include "lwpa/lock.h"
+#include "lwpa/log.h"
+#include "lwpa/thread.h"
+
+namespace RDMnet
 {
-  void ProcessRDMMessage(int conn, const RPTMessageRef &msg);
-  void SendRDMResponse(int conn, const RPTMessageRef &msg, uint8_t response_type, uint8_t command_class,
-                       uint16_t param_id, uint8_t packed_len, uint8_t *pdata);
+/// \brief A class for logging messages from the %Broker.
+class BrokerLog
+{
+public:
+  BrokerLog();
+  virtual ~BrokerLog();
+  void InitializeLogParams(int log_mask);
+  bool StartThread();
+  void StopThread();
 
-  // Returns packed length
-  uint8_t PackGetParamDescResponsePD(uint8_t *pdata, uint16_t parameter, uint8_t pid_pdl_size, uint8_t param_cc,
-                                     uint8_t param_data_type, const char *desc, uint32_t min_val, uint32_t max_val,
-                                     uint32_t default_val);
-  void ProcessGetSupportedParameters(int conn, const RPTMessageRef &msg);
-  void ProcessGetParameterDescription(int conn, const RPTMessageRef &msg);
-  void ProcessGetSoftwareVersionLabel(int conn, const RPTMessageRef &msg);
-  void ProcessGetComponentScope(int conn, const RPTMessageRef &msg);
-  void ProcessSetComponentScope(int conn, const RPTMessageRef &msg);
-  void SendNack(int conn, const RPTMessageRef &msg, uint16_t pid, uint16_t reason, bool set_response);
+  const LwpaLogParams *GetLogParams() const { return &log_params_; }
+  void Log(int pri, const char *format, ...);
+  bool CanLog(int pri) const { return lwpa_canlog(&log_params_, pri); }
+
+  void LogFromCallback(const std::string &str);
+  void LogThreadRun();
+
+  virtual void GetTimeFromCallback(LwpaLogTimeParams *time) = 0;
+  virtual void OutputLogMsg(const std::string &str) = 0;
+
+protected:
+  LwpaLogParams log_params_;
+
+  std::queue<std::string> msg_q_;
+  lwpa_signal_t signal_;
+  lwpa_thread_t thread_;
+  lwpa_mutex_t lock_;
+  bool keep_running_;
 };
 
-#endif  // _RDMNET_BROKER_RESPONDER_H_
+};  // namespace RDMnet
+
+#endif  // _RDMNET_BROKER_LOG_H_

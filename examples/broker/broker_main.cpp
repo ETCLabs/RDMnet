@@ -51,8 +51,8 @@ static bool debug = false;
 const LPWSTR SERVICE_NAME = L"ETC RDMnet Broker";
 const LPWSTR BROKER_SERVICE_DESCRIPTION = L"Provides basic RDMnet Broker functionality";
 
-static CServiceShell *g_shell = NULL;  // static global instance of the
-                                       // class associated with the service
+// static global instance of the class associated with the service
+static CServiceShell *g_shell = NULL;
 
 bool g_set_new_scope = false;
 std::string g_scope_to_set;
@@ -282,7 +282,7 @@ void SetPortKey(uint16_t port)
   SetPortKey(port_buffer);
 }
 
-class BrokerNotify : public IBrokerNotify
+class BrokerNotify : public RDMnet::BrokerNotify
 {
 public:
   // The scope has changed due to RDMnet messaging.
@@ -312,13 +312,13 @@ bool ShouldApplyChanges(HANDLE net_handle, LPOVERLAPPED net_overlap, bool &bOver
   return (bOverlapped || g_set_new_scope);
 }
 
-void PrepForSettingsChange(Broker &broker_core, BrokerSettings &settings)
+void PrepForSettingsChange(RDMnet::Broker &broker, RDMnet::BrokerSettings &settings)
 {
-  broker_core.Shutdown();
-  broker_core.GetSettings(settings);
+  broker.Shutdown();
+  broker.GetSettings(settings);
 }
 
-void ApplySettingsChanges(BrokerLog &log, bool bOverlapped, BrokerSettings &settings, HANDLE net_handle,
+void ApplySettingsChanges(RDMnet::BrokerLog &log, bool bOverlapped, RDMnet::BrokerSettings &settings, HANDLE net_handle,
                           LPOVERLAPPED net_overlap, std::vector<IFList::iflist_entry> &interfaces,
                           std::vector<LwpaIpAddr> &useaddrs)
 {
@@ -351,7 +351,7 @@ DWORD WINAPI ServiceThread(LPVOID /*param*/)
   broker_log.StartThread();
 
   BrokerNotify broker_notify;
-  BrokerSettings broker_settings;
+  RDMnet::BrokerSettings broker_settings;
   GetScopeKey(broker_settings.disc_attributes.scope);
   std::vector<IFList::iflist_entry> interfaces;
   IFList::FindIFaces(broker_log, interfaces);
@@ -359,8 +359,8 @@ DWORD WINAPI ServiceThread(LPVOID /*param*/)
   // Given the first network interface found, generate the cid and UID
   if (!interfaces.empty())
   {
-    // The cid will be based on the scope, in case we want to run different
-    // instances on the same machine
+    // The cid will be based on the scope, in case we want to run different instances on the same
+    // machine
     std::string cidstr("ETC E133 BROKER for scope: ");
     cidstr += broker_settings.disc_attributes.scope;
     generate_v3_uuid(&broker_settings.cid, cidstr.c_str(), interfaces.front().mac, 1);
@@ -374,8 +374,8 @@ DWORD WINAPI ServiceThread(LPVOID /*param*/)
   std::vector<LwpaIpAddr> useaddrs;
   GetMyIfaceKey(useaddrs, interfaces);
 
-  Broker broker_core(&broker_log, &broker_notify);
-  broker_core.Startup(broker_settings, GetPortKey(), useaddrs);
+  RDMnet::Broker broker(&broker_log, &broker_notify);
+  broker.Startup(broker_settings, GetPortKey(), useaddrs);
 
   // We want to detect network change as well
   OVERLAPPED net_overlap;
@@ -383,27 +383,27 @@ DWORD WINAPI ServiceThread(LPVOID /*param*/)
   HANDLE net_handle = NULL;
   NotifyAddrChange(&net_handle, &net_overlap);
 
-  // We want this to run forever if a console, otherwise run for how long the
-  // service manager allows it
+  // We want this to run forever if a console, otherwise run for how long the service manager allows
+  // it
   while (!g_shell || !g_shell->exitServiceThread)
   {
     // Do the main service work here
     bool bOverlapped = false;
 
-    broker_core.Tick();
+    broker.Tick();
 
     if (ShouldApplyChanges(net_handle, &net_overlap, bOverlapped))
     {
-      PrepForSettingsChange(broker_core, broker_settings);
+      PrepForSettingsChange(broker, broker_settings);
       ApplySettingsChanges(broker_log, bOverlapped, broker_settings, net_handle, &net_overlap, interfaces, useaddrs);
-      broker_core.Startup(broker_settings, GetPortKey(), useaddrs);
+      broker.Startup(broker_settings, GetPortKey(), useaddrs);
     }
 
     Sleep(300);
   }
 
   // deallocate any resources allocated in your thread here
-  broker_core.Shutdown();
+  broker.Shutdown();
   /* TESTING TODO REMOVE
   if(iface_lib)
   {
@@ -479,14 +479,14 @@ int wmain(int argc, wchar_t *argv[])
       {const_cast<LPWSTR>(SERVICE_NAME), (LPSERVICE_MAIN_FUNCTION)CallbackServiceMain}, {NULL, NULL}};
 
   bool should_exit = true;
-  // Because we are doing automatic and non-automatic installs, we need wait
-  // until the parse is complete
+  // Because we are doing automatic and non-automatic installs, we need wait until the parse is
+  // complete
   bool fAuto = false;
   bool should_install = false;
   bool should_run = false;
 
-  // handle any command line parsing for handling the install, remove
-  // or run functions for the service(s)
+  // handle any command line parsing for handling the install, remove or run functions for the
+  // service(s)
   if (argc > 1)
   {
     for (int i = 1; i < argc; ++i)

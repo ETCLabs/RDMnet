@@ -37,9 +37,9 @@
 #include "lwpa/log.h"
 #include "lwpa/thread.h"
 #include "lwpa/lock.h"
-#include "rdmnet/broker/util.h"
+#include "rdmnet/broker/log.h"
 
-class WindowsBrokerLog : public BrokerLog
+class WindowsBrokerLog : public RDMnet::BrokerLog
 {
 public:
   WindowsBrokerLog(bool debug, const std::string &file_name);

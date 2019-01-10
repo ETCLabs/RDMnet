@@ -73,18 +73,20 @@ target_link_libraries(RDMnet PUBLIC lwpa RDM ${DNS_SD_ADDITIONAL_LIBS})
 add_library(Broker
   # Broker public headers
   ${RDMNET_INCLUDE}/rdmnet/broker.h
-  ${RDMNET_INCLUDE}/rdmnet/broker/client.h
-  ${RDMNET_INCLUDE}/rdmnet/broker/discovery.h
-  ${RDMNET_INCLUDE}/rdmnet/broker/responder.h
-  ${RDMNET_INCLUDE}/rdmnet/broker/threads.h
-  ${RDMNET_INCLUDE}/rdmnet/broker/util.h
+  ${RDMNET_INCLUDE}/rdmnet/broker/log.h
 
-  broker/broker.cpp
+  broker/broker_core.h
+  broker/broker_core.cpp
+  broker/broker_client.h
   broker/broker_client.cpp
-  broker/broker_consts.h
+  broker/broker_discovery.h
   broker/broker_discovery.cpp
+  broker/broker_log.cpp
+  broker/broker_responder.h
   broker/broker_responder.cpp
+  broker/broker_threads.h
   broker/broker_threads.cpp
+  broker/broker_util.h
   broker/broker_util.cpp
 )
 target_include_directories(Broker PUBLIC ${RDMNET_INCLUDE})
