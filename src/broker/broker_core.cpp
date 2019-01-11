@@ -40,11 +40,6 @@
 #include "broker_responder.h"
 #include "broker_util.h"
 
-/* Suppress strncpy() warning on Windows/MSVC. */
-#ifdef _MSC_VER
-#pragma warning(disable : 4996)
-#endif
-
 /************************* The draft warning message *************************/
 
 /* clang-format off */
@@ -118,7 +113,8 @@ BrokerCore::~BrokerCore()
 /// \param[in] settings Settings for the Broker to use for this session.
 /// \param[in] listen_port Port
 /// \return true (started %Broker successfully) or false (an error occurred starting %Broker).
-bool BrokerCore::Startup(const RDMnet::BrokerSettings &settings, uint16_t listen_port, std::vector<LwpaIpAddr> &listen_addrs)
+bool BrokerCore::Startup(const RDMnet::BrokerSettings &settings, uint16_t listen_port,
+                         std::vector<LwpaIpAddr> &listen_addrs)
 {
   if (!started_)
   {
@@ -290,7 +286,7 @@ bool BrokerCore::UIDToHandle(const RdmUid &uid, int &conn_handle) const
 // The passed-in vector is cleared and filled with the cookies of connections that match the
 // criteria.
 void BrokerCore::GetConnSnapshot(std::vector<int> &conns, bool include_devices, bool include_controllers,
-                             bool include_unknown, uint16_t manufacturer_filter)
+                                 bool include_unknown, uint16_t manufacturer_filter)
 {
   conns.clear();
 
@@ -723,7 +719,8 @@ void BrokerCore::SendClientList(int conn)
   }
 }
 
-void BrokerCore::SendClientsAdded(client_protocol_t client_prot, int conn_to_ignore, std::vector<ClientEntryData> &entries)
+void BrokerCore::SendClientsAdded(client_protocol_t client_prot, int conn_to_ignore,
+                                  std::vector<ClientEntryData> &entries)
 {
   BrokerMessage bmsg;
   bmsg.vector = VECTOR_BROKER_CLIENT_ADD;
@@ -752,7 +749,7 @@ void BrokerCore::SendClientsRemoved(client_protocol_t client_prot, std::vector<C
 }
 
 void BrokerCore::SendStatus(RPTController *controller, const RptHeader &header, rpt_status_code_t status_code,
-                        const std::string &status_str)
+                            const std::string &status_str)
 {
   RptHeader new_header;
   new_header.dest_endpoint_id = header.source_endpoint_id;
@@ -827,7 +824,8 @@ void BrokerCore::ProcessConnectRequest(int conn, const ClientConnectMsg *cmsg)
   }
 }
 
-bool BrokerCore::ProcessRPTConnectRequest(int conn, const ClientEntryData &data, rdmnet_connect_status_t &connect_status)
+bool BrokerCore::ProcessRPTConnectRequest(int conn, const ClientEntryData &data,
+                                          rdmnet_connect_status_t &connect_status)
 {
   bool continue_adding = true;
   const ClientEntryDataRpt *rptdata = get_rpt_client_entry_data(&data);

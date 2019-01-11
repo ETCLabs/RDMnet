@@ -25,11 +25,6 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/* Suppress strncpy() warning on Windows/MSVC. */
-#ifdef _MSC_VER
-#pragma warning(disable : 4996)
-#endif
-
 #include "rdmnet/common/discovery.h"
 #include "rdmnet_discovery_bonjour.h"
 
@@ -39,6 +34,7 @@
 #include "lwpa/inet.h"
 #include "lwpa/bool.h"
 #include "lwpa/pack.h"
+#include "rdmnet/common/util.h"
 
 typedef struct DiscoveryState
 {
@@ -114,7 +110,7 @@ bool operation_insert(Operations *map, DNSServiceRef ref, DNSServiceRef search_r
     else
     {
       OperationData data;
-      strncpy(data.full_name, full_name, kDNSServiceMaxDomainName);
+      RDMNET_MSVC_NO_DEP_WRN strncpy(data.full_name, full_name, kDNSServiceMaxDomainName);
       data.search_ref = search_ref;
       data.socket = handle;
 
@@ -162,7 +158,8 @@ void broker_insert(const char *full_name, const BrokerDiscInfo *broker_info)
 {
   if (disc_state.brokers.count < ARRAY_SIZE_DEFAULT)
   {
-    strncpy(disc_state.brokers.fullnames[disc_state.brokers.count], full_name, kDNSServiceMaxDomainName);
+    RDMNET_MSVC_NO_DEP_WRN strncpy(disc_state.brokers.fullnames[disc_state.brokers.count], full_name,
+                                   kDNSServiceMaxDomainName);
     disc_state.brokers.info[disc_state.brokers.count] = *broker_info;
     disc_state.brokers.count++;
   }
@@ -199,7 +196,8 @@ void broker_erase(const char *full_name)
       for (unsigned int i = index; i < disc_state.brokers.count - 1; i++)
       {
         disc_state.brokers.info[i] = disc_state.brokers.info[i + 1];
-        strncpy(disc_state.brokers.fullnames[i], disc_state.brokers.fullnames[i + 1], kDNSServiceMaxDomainName);
+        RDMNET_MSVC_NO_DEP_WRN strncpy(disc_state.brokers.fullnames[i], disc_state.brokers.fullnames[i + 1],
+                                       kDNSServiceMaxDomainName);
       }
     }
 
@@ -284,11 +282,15 @@ bool push_query_operations(const Operations *map, DNSServiceRef *current_refs, L
 
 void get_registration_string(const char *srv_type, const char *scope, char *reg_str)
 {
+  RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
+
   /*Bonjour adds in the _sub. for us.*/
   strncpy(reg_str, srv_type, REGISTRATION_STRING_PADDED_LENGTH);
   strcat(reg_str, ",");
   strcat(reg_str, "_");
   strcat(reg_str, scope);
+
+  RDMNET_MSVC_END_NO_DEP_WARNINGS()
 }
 
 bool broker_info_is_valid(const BrokerDiscInfo *info)
@@ -552,7 +554,7 @@ void DNSSD_API process_DNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFla
 
           value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord, "ConfScope", &value_len));
           if (value && value_len)
-            strncpy(info->scope, value, value_len);
+            RDMNET_MSVC_NO_DEP_WRN strncpy(info->scope, value, value_len);
 
           // value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord,
           //                                            "E133Vers", &value_len));
@@ -611,7 +613,7 @@ void DNSSD_API process_DNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlag
   {
     /*Start the next part of the resolution*/
     BrokerDiscInfo info = {0};
-    strncpy(info.service_name, serviceName, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
+    RDMNET_MSVC_NO_DEP_WRN strncpy(info.service_name, serviceName, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
 
     /*In case we have an error, this will != 0*/
     int monitor_error = 0;
@@ -697,8 +699,10 @@ void rdmnetdisc_deinit()
 
 void fill_default_scope_info(ScopeMonitorInfo *scope_info)
 {
+  RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
   strncpy(scope_info->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH);
   strncpy(scope_info->domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
+  RDMNET_MSVC_END_NO_DEP_WARNINGS()
 }
 
 void fill_default_broker_info(BrokerDiscInfo *broker_info)
@@ -707,7 +711,7 @@ void fill_default_broker_info(BrokerDiscInfo *broker_info)
   broker_info->port = 0;
   memset(broker_info->listen_addrs, 0, sizeof(LwpaSockaddr) * ARRAY_SIZE_DEFAULT);
   broker_info->listen_addrs_count = 0;
-  strncpy(broker_info->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH);
+  RDMNET_MSVC_NO_DEP_WRN strncpy(broker_info->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH);
   memset(broker_info->model, 0, E133_MODEL_STRING_PADDED_LENGTH);
   memset(broker_info->manufacturer, 0, E133_MANUFACTURER_STRING_PADDED_LENGTH);
 }
@@ -797,8 +801,10 @@ void rdmnetdisc_unregisterbroker(bool stop_monitoring_scope)
       /* Since the broker only cares about scopes while it is running, shut down
        * any outstanding queries for that scope.*/
       ScopeMonitorInfo info = {0};
+      RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
       strncpy(info.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
       strncpy(info.scope, disc_state.info_to_register.scope, E133_SCOPE_STRING_PADDED_LENGTH);
+      RDMNET_MSVC_END_NO_DEP_WARNINGS()
       rdmnetdisc_stopmonitoring(&info);
     }
 
@@ -910,8 +916,10 @@ void rdmnetdisc_tick()
       {
         int mon_error = 0;
         ScopeMonitorInfo info;
+        RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
         strncpy(info.scope, disc_state.info_to_register.scope, E133_SCOPE_STRING_PADDED_LENGTH);
         strncpy(info.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
+        RDMNET_MSVC_END_NO_DEP_WARNINGS()
         if (rdmnetdisc_startmonitoring(&info, &mon_error, disc_state.broker_reg_context) != LWPA_OK)
         {
           if (disc_state.callbacks.scope_monitor_error != NULL)

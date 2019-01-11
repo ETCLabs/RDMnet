@@ -29,6 +29,7 @@
 #include <string.h>
 #include "lwpa/pack.h"
 #include "lwpa/socket.h"
+#include "rdm/uid.h"
 #include "rdmnet/defs.h"
 #include "llrp_priv.h"
 

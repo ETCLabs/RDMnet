@@ -44,10 +44,7 @@
 #include "rdm/defs.h"
 #include "rdm/controller.h"
 #include "rdmnet/defs.h"
-
-#ifdef _MSC_VER
-#pragma warning(disable : 4996)
-#endif
+#include "rdmnet/common/util.h"
 
 struct LLRPNetint
 {
@@ -624,7 +621,7 @@ void LLRPManager::SetDeviceLabel(int target_handle, const std::string &label)
       cmd_data.command_class = E120_SET_COMMAND;
       cmd_data.param_id = E120_DEVICE_LABEL;
       cmd_data.datalen = (uint8_t)label.length();
-      strncpy((char *)cmd_data.data, label.c_str(), RDM_MAX_PDL);
+      RDMNET_MSVC_NO_DEP_WRN strncpy((char *)cmd_data.data, label.c_str(), RDM_MAX_PDL);
 
       if (SendRDMAndGetResponse(netint_pair->second.sock, target->second.target_cid, cmd_data, resp_data))
         printf("Set device label successfully.\n");
@@ -667,7 +664,8 @@ void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std
       cmd_data.datalen = 2 + E133_SCOPE_STRING_PADDED_LENGTH;
       memset(cmd_data.data, 0, 2 + E133_SCOPE_STRING_PADDED_LENGTH);
       pack_16b(cmd_data.data, scope_slot);
-      strncpy((char *)&cmd_data.data[2], scope_utf8.c_str(), E133_SCOPE_STRING_PADDED_LENGTH - 1);
+      RDMNET_MSVC_NO_DEP_WRN strncpy((char *)&cmd_data.data[2], scope_utf8.c_str(),
+                                     E133_SCOPE_STRING_PADDED_LENGTH - 1);
 
       if (SendRDMAndGetResponse(netint_pair->second.sock, target->second.target_cid, cmd_data, resp_data))
         printf("Set scope successfully.\n");
@@ -764,7 +762,7 @@ const char *LLRPManager::LLRPComponentTypeToString(llrp_component_t type)
   }
 }
 
-int wmain(int /*argc*/, wchar_t * /*argv*/ [])
+int wmain(int /*argc*/, wchar_t * /*argv*/[])
 {
   LwpaUuid manager_cid;
   RdmUid manager_uid;
