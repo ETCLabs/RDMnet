@@ -285,7 +285,7 @@ void get_registration_string(const char *srv_type, const char *scope, char *reg_
   RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
 
   /*Bonjour adds in the _sub. for us.*/
-  strncpy(reg_str, srv_type, REGISTRATION_STRING_PADDED_LENGTH);
+  RDMNET_MSVC_NO_DEP_WRN strncpy(reg_str, srv_type, REGISTRATION_STRING_PADDED_LENGTH);
   strcat(reg_str, ",");
   strcat(reg_str, "_");
   strcat(reg_str, scope);
@@ -538,7 +538,7 @@ void DNSSD_API process_DNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFla
         if (broker_lookup(fullname, &info_index))
         {
           BrokerDiscInfo *info = &disc_state.brokers.info[info_index];
-          info->port = upack_16b(&port);
+          info->port = lwpa_upack_16b(&port);
 
           uint8_t value_len = 0;
           const char *value;
@@ -566,15 +566,15 @@ void DNSSD_API process_DNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFla
 
           value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord, "CID", &value_len));
           if (value && value_len)
-            string_to_uuid(&info->cid, value, value_len);
+            lwpa_string_to_uuid(&info->cid, value, value_len);
 
           value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord, "Model", &value_len));
           if (value && value_len)
-            strncpy(info->model, value, value_len);
+            RDMNET_MSVC_NO_DEP_WRN strncpy(info->model, value, value_len);
 
           value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord, "Manuf", &value_len));
           if (value && value_len)
-            strncpy(info->manufacturer, value, value_len);
+            RDMNET_MSVC_NO_DEP_WRN strncpy(info->manufacturer, value, value_len);
         }
 
         if (!operation_insert(&disc_state.addrs, addr_ref, op_data.search_ref, op_data.full_name))
@@ -823,7 +823,7 @@ DNSServiceErrorType send_registration(const BrokerDiscInfo *info, void *context)
 
   /*Before we start the registration, we have to massage a few parameters*/
   uint16_t net_port = 0;
-  pack_16b(&net_port, info->port);
+  lwpa_pack_16b(&net_port, info->port);
 
   char reg_str[REGISTRATION_STRING_PADDED_LENGTH];
   get_registration_string(E133_DNSSD_SRV_TYPE, info->scope, reg_str);
@@ -847,8 +847,8 @@ DNSServiceErrorType send_registration(const BrokerDiscInfo *info, void *context)
   if (result == kDNSServiceErr_NoError)
   {
     /*The CID can't have hyphens, so we'll strip them.*/
-    char cid_str[UUID_STRING_BYTES];
-    uuid_to_string(cid_str, &info->cid);
+    char cid_str[LWPA_UUID_STRING_BYTES];
+    lwpa_uuid_to_string(cid_str, &info->cid);
     char *src = cid_str;
     for (char *dst = src; *dst != 0; ++src, ++dst)
     {

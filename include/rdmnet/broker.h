@@ -72,45 +72,41 @@ struct BrokerDiscoveryAttributes
 /// A group of settings for Broker operation.
 struct BrokerSettings
 {
-  LwpaUuid cid;  ///< The Broker's CID.
-  RdmUid uid;    ///< The Broker's UID.
+  bool cid_valid{false};  ///< If false, the Broker core will generate a unique CID at startup.
+  LwpaUuid cid;           ///< The Broker's CID.
+  bool uid_valid{false};  ///< If false, the Broker core will assign itself a dynamic UID at startup.
+  RdmUid uid;             ///< The Broker's UID.
 
   BrokerDiscoveryAttributes disc_attributes;
 
   /// The maximum number of client connections supported. 0 means infinite.
-  unsigned int max_connections;
+  unsigned int max_connections{0};
 
   /// The maximum number of controllers allowed. 0 means infinite.
-  unsigned int max_controllers;
+  unsigned int max_controllers{0};
 
   /// The maximum number of queued messages per controller. 0 means infinite.
-  unsigned int max_controller_messages;
+  unsigned int max_controller_messages{500};
 
   /// The maximum number of devices allowed.  0 means infinite.
-  unsigned int max_devices;
+  unsigned int max_devices{0};
 
   /// The maximum number of queued messages per device. 0 means infinite.
-  unsigned int max_device_messages;
+  unsigned int max_device_messages{500};
 
-  /// If you reach the number of max connections, this number of tcp-level
-  /// connections are still supported to reject the connection request.
-  unsigned int max_reject_connections;
+  /// If you reach the number of max connections, this number of tcp-level connections are still
+  /// supported to reject the connection request.
+  unsigned int max_reject_connections{1000};
 
-  // THESE ARE FOR DEBUGGING PURPOSES ONLY. When not debugging, use the defaults
-  // provided by the constructor.
+  /// MODIFY FOR DEBUG PURPOSES ONLY: each read thread can support this many sockets, up to the
+  /// maximum allowed by your platform's socket implementation.
+  unsigned int max_socket_per_read_thread{LWPA_SOCKET_MAX_POLL_SIZE};
 
-  /// Each read thread can support many sockets, up to the maximum allowed by
-  /// your platform's socket implementation.
-  unsigned int max_socket_per_read_thread;
-
-  BrokerSettings()
-      : max_connections(0)
-      , max_controllers(0)
-      , max_controller_messages(500)
-      , max_devices(0)
-      , max_device_messages(500)
-      , max_reject_connections(1000)
-      , max_socket_per_read_thread(LWPA_SOCKET_MAX_POLL_SIZE)
+  BrokerSettings() {}
+  BrokerSettings(const LwpaUuid &broker_cid) : cid_valid(true), cid(broker_cid) {}
+  BrokerSettings(const RdmUid &broker_uid) : uid_valid(true), uid(broker_uid) {}
+  BrokerSettings(const LwpaUuid &broker_cid, const RdmUid &broker_uid)
+      : cid_valid(true), cid(broker_cid), uid_valid(true), uid(broker_uid)
   {
   }
 };

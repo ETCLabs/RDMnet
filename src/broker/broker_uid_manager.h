@@ -25,26 +25,26 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "rdmnet/client.h"
+/// \file broker_uid_manager.h
+#ifndef _BROKER_UID_MANAGER_H_
+#define _BROKER_UID_MANAGER_H_
 
-#include <string.h>
+#include <map>
+#include "rdm/uid.h"
 
-/*************************** Function definitions ****************************/
-
-bool create_rpt_client_entry(const LwpaUuid *cid, const RdmUid *uid, rpt_client_type_t client_type,
-                             const LwpaUuid *binding_cid, ClientEntryData *entry)
+/// \brief Keeps track of all UIDs tracked by this Broker, and generates new Dynamic UIDs upon
+///        request.
+class BrokerUidManager
 {
-  if (!cid || !uid || !entry)
-    return false;
+public:
+  bool AddStaticUid(int conn_handle, const RdmUid &static_uid);
+  bool AddDynamicUid(int conn_handle, RdmUid &new_dynamic_uid);
 
-  entry->client_protocol = (client_protocol_t)E133_CLIENT_PROTOCOL_RPT;
-  entry->client_cid = *cid;
-  entry->data.rpt_data.client_uid = *uid;
-  entry->data.rpt_data.client_type = client_type;
-  if (binding_cid)
-    entry->data.rpt_data.binding_cid = *binding_cid;
-  else
-    memset(entry->data.rpt_data.binding_cid.data, 0, LWPA_UUID_BYTES);
-  entry->next = NULL;
-  return true;
-}
+  bool UidToHandle(const RdmUid &uid, int &conn_handle) const;
+
+private:
+  // The uid->handle lookup table
+  std::map<RdmUid, int> uid_lookup_;
+};
+
+#endif  // _BROKER_UID_MANAGER_H_

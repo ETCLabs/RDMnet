@@ -97,7 +97,7 @@
 /* clang-format off */
 #if !RDMNET_DYNAMIC_MEM
 LWPA_MEMPOOL_DEFINE(rdmnet_connections, RdmnetConnection, RDMNET_MAX_CONNECTIONS);
-LWPA_MEMPOOL_DEFINE(rdmnet_rb_nodes, LwpaRbNode, RDMNET_MAX_CONNECTIONS);
+LWPA_MEMPOOL_DEFINE(rdmnet_lwpa_rbnodes, LwpaRbNode, RDMNET_MAX_CONNECTIONS);
 #endif
 /* clang-format on */
 
@@ -199,7 +199,7 @@ lwpa_error_t rdmnet_init(const LwpaLogParams *log_params)
     if (res == LWPA_OK)
     {
       /* Do all initialization that doesn't have a failure condition */
-      rb_tree_init(&rc_state.connections, conn_cmp, node_alloc, node_dealloc);
+      lwpa_rbtree_init(&rc_state.connections, conn_cmp, node_alloc, node_dealloc);
       rc_state.next_conn_handle = 0;
       rc_state.log_params = log_params;
       rc_state.initted = true;
@@ -249,7 +249,7 @@ void rdmnet_deinit()
 
   if (rdmnet_writelock())
   {
-    rb_tree_clear_with_cb(&rc_state.connections, conn_tree_dealloc);
+    lwpa_rbtree_clear_with_cb(&rc_state.connections, conn_tree_dealloc);
     lwpa_mutex_destroy(&rc_state.poll_lock);
     lwpa_socket_deinit();
     memset(&rc_state, 0, sizeof rc_state);
@@ -326,7 +326,7 @@ int rdmnet_new_connection(const LwpaUuid *local_cid)
         lwpa_mutex_destroy(&conn->send_lock);
       if (conn->sock != LWPA_SOCKET_INVALID)
         lwpa_close(conn->sock);
-      rb_tree_remove(&rc_state.connections, conn);
+      lwpa_rbtree_remove(&rc_state.connections, conn);
       free_rdmnet_connection(conn);
     }
   }
@@ -856,7 +856,7 @@ lwpa_error_t rdmnet_destroy_connection(int handle)
     lwpa_close(conn->sock);
   lwpa_mutex_destroy(&conn->lock);
   lwpa_mutex_destroy(&conn->send_lock);
-  rb_tree_remove(&rc_state.connections, conn);
+  lwpa_rbtree_remove(&rc_state.connections, conn);
   free_rdmnet_connection(conn);
 
   release_conn_and_writelock(conn);
@@ -933,7 +933,7 @@ int rdmnet_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_ms)
     RdmnetConnection conn_cmp;
 
     conn_cmp.handle = poll->handle;
-    conn = (RdmnetConnection *)rb_tree_find(&rc_state.connections, &conn_cmp);
+    conn = (RdmnetConnection *)lwpa_rbtree_find(&rc_state.connections, &conn_cmp);
     if (!conn)
     {
       ++res;
@@ -983,7 +983,7 @@ int rdmnet_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_ms)
           RdmnetConnection conn_cmp;
 
           conn_cmp.handle = poll_arr[i].handle;
-          conn = (RdmnetConnection *)rb_tree_find(&rc_state.connections, &conn_cmp);
+          conn = (RdmnetConnection *)lwpa_rbtree_find(&rc_state.connections, &conn_cmp);
           if (conn && lwpa_mutex_take(&conn->lock, LWPA_WAIT_FOREVER))
           {
             if (conn->state == kCSHeartbeat)
@@ -1275,7 +1275,7 @@ lwpa_error_t rdmnet_recv(int handle, RdmnetData *data)
     res = rdmnet_msg_buf_recv(recv_sock, msgbuf);
     if (res == LWPA_OK)
     {
-      if (msgbuf->msg.vector == VECTOR_ROOT_BROKER)
+      if (is_broker_msg(&msgbuf->msg))
       {
         BrokerMessage *bmsg = get_broker_msg(&msgbuf->msg);
         switch (bmsg->vector)
@@ -1350,8 +1350,8 @@ void rdmnet_tick()
 
   if (rdmnet_readlock())
   {
-    rb_iter_init(&iter);
-    conn = (RdmnetConnection *)rb_iter_first(&iter, &rc_state.connections);
+    lwpa_rbiter_init(&iter);
+    conn = (RdmnetConnection *)lwpa_rbiter_first(&iter, &rc_state.connections);
     while (conn)
     {
       if (lwpa_mutex_take(&conn->lock, LWPA_WAIT_FOREVER))
@@ -1385,7 +1385,7 @@ void rdmnet_tick()
         }
         lwpa_mutex_give(&conn->lock);
       }
-      conn = (RdmnetConnection *)rb_iter_next(&iter);
+      conn = (RdmnetConnection *)lwpa_rbiter_next(&iter);
     }
     rdmnet_readunlock();
   }
@@ -1410,7 +1410,7 @@ RdmnetConnection *create_new_connection()
   conn->handle = rc_state.next_conn_handle;
   if (++rc_state.next_conn_handle < 0)
     rc_state.next_conn_handle = 0;
-  while (rb_tree_find(&rc_state.connections, conn))
+  while (lwpa_rbtree_find(&rc_state.connections, conn))
   {
     if (rc_state.next_conn_handle == original_handle)
     {
@@ -1423,7 +1423,7 @@ RdmnetConnection *create_new_connection()
       rc_state.next_conn_handle = 0;
   }
 
-  if (0 == rb_tree_insert(&rc_state.connections, conn))
+  if (0 == lwpa_rbtree_insert(&rc_state.connections, conn))
   {
     free_rdmnet_connection(conn);
     return NULL;
@@ -1494,7 +1494,7 @@ LwpaRbNode *node_alloc()
 #if RDMNET_DYNAMIC_MEM
   return (LwpaRbNode *)malloc(sizeof(LwpaRbNode));
 #else
-  return lwpa_mempool_alloc(rdmnet_rb_nodes);
+  return lwpa_mempool_alloc(rdmnet_lwpa_rbnodes);
 #endif
 }
 
@@ -1503,7 +1503,7 @@ void node_dealloc(LwpaRbNode *node)
 #if RDMNET_DYNAMIC_MEM
   free(node);
 #else
-  lwpa_mempool_free(rdmnet_rb_nodes, node);
+  lwpa_mempool_free(rdmnet_lwpa_rbnodes, node);
 #endif
 }
 
@@ -1513,7 +1513,7 @@ lwpa_error_t get_conn(int handle, RdmnetConnection **conn_ptr)
   RdmnetConnection *conn;
 
   conn_to_find.handle = handle;
-  conn = (RdmnetConnection *)rb_tree_find(&rc_state.connections, &conn_to_find);
+  conn = (RdmnetConnection *)lwpa_rbtree_find(&rc_state.connections, &conn_to_find);
 
   if (!conn)
     return LWPA_NOTFOUND;
@@ -1550,7 +1550,7 @@ lwpa_error_t get_writelock_and_conn(int handle, RdmnetConnection **conn_ptr)
     return LWPA_SYSERR;
 
   conn_to_find.handle = handle;
-  conn = (RdmnetConnection *)rb_tree_find(&rc_state.connections, &conn_to_find);
+  conn = (RdmnetConnection *)lwpa_rbtree_find(&rc_state.connections, &conn_to_find);
 
   if (!conn)
   {

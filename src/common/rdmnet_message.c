@@ -62,7 +62,7 @@ void free_rdmnet_message(RdmnetMessage *msg)
   {
     switch (msg->vector)
     {
-      case VECTOR_ROOT_BROKER:
+      case ACN_VECTOR_ROOT_BROKER:
       {
         BrokerMessage *bmsg = get_broker_msg(msg);
         switch (bmsg->vector)
@@ -100,7 +100,7 @@ void free_rdmnet_message(RdmnetMessage *msg)
         }
         break;
       }
-      case VECTOR_ROOT_RPT:
+      case ACN_VECTOR_ROOT_RPT:
       {
         RptMessage *rmsg = get_rpt_msg(msg);
         switch (rmsg->vector)

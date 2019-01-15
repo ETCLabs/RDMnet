@@ -42,7 +42,7 @@ LwpaUuid kLLRPBroadcastCID;
 #define PROBE_REPLY_PDU_SIZE \
   (3 /* Flags + Length */ + 1 /* Vector */ + 6 /* UID */ + 6 /* Hardware Address */ + 1 /* Component Type */)
 #define LLRP_MIN_PDU_SIZE (LLRP_HEADER_SIZE + PROBE_REPLY_PDU_SIZE)
-#define LLRP_MIN_TOTAL_MESSAGE_SIZE (ACN_UDP_PREAMBLE_SIZE + RLP_HEADER_SIZE_EXT_LEN + LLRP_MIN_PDU_SIZE)
+#define LLRP_MIN_TOTAL_MESSAGE_SIZE (ACN_UDP_PREAMBLE_SIZE + ACN_RLP_HEADER_SIZE_EXT_LEN + LLRP_MIN_PDU_SIZE)
 #define LLRP_RDM_CMD_PDU_MIN_SIZE (3 /* Flags + Length */ + RDM_MIN_BYTES)
 #define LLRP_RDM_CMD_PDU_MAX_SIZE (3 /* Flags + Length */ + RDM_MAX_BYTES)
 
@@ -58,24 +58,24 @@ static bool parse_llrp_rdm_command(const uint8_t *buf, size_t buflen, RdmBuffer 
 
 void llrp_prot_init()
 {
-  string_to_uuid(&kLLRPBroadcastCID, LLRP_BROADCAST_CID, sizeof(LLRP_BROADCAST_CID));
+  lwpa_string_to_uuid(&kLLRPBroadcastCID, LLRP_BROADCAST_CID, sizeof(LLRP_BROADCAST_CID));
 }
 
 bool parse_llrp_message(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest, LlrpMessage *msg)
 {
-  UdpPreamble preamble;
-  RootLayerPdu rlp;
-  LwpaPdu last_pdu = PDU_INIT;
+  LwpaUdpPreamble preamble;
+  LwpaRootLayerPdu rlp;
+  LwpaPdu last_pdu = LWPA_PDU_INIT;
 
   if (!buf || !msg || buflen < LLRP_MIN_TOTAL_MESSAGE_SIZE)
     return false;
 
   /* Try to parse the UDP preamble. */
-  if (!parse_udp_preamble(buf, buflen, &preamble))
+  if (!lwpa_parse_udp_preamble(buf, buflen, &preamble))
     return false;
 
   /* Try to parse the Root Layer PDU header. */
-  if (!parse_root_layer_pdu(preamble.rlp_block, preamble.rlp_block_len, &rlp, &last_pdu))
+  if (!lwpa_parse_root_layer_pdu(preamble.rlp_block, preamble.rlp_block_len, &rlp, &last_pdu))
   {
     return false;
   }
@@ -94,21 +94,22 @@ bool parse_llrp_pdu(const uint8_t *buf, size_t buflen, const LlrpMessageInterest
     return false;
 
   /* Check the PDU length */
-  llrp_pdu_len = pdu_length(cur_ptr);
+  llrp_pdu_len = lwpa_pdu_length(cur_ptr);
   if (llrp_pdu_len > buflen || llrp_pdu_len < LLRP_MIN_PDU_SIZE)
     return false;
 
   /* Fill in the LLRP PDU header data */
   cur_ptr += 3;
-  msg->vector = upack_32b(cur_ptr);
+  msg->vector = lwpa_upack_32b(cur_ptr);
   cur_ptr += 4;
-  memcpy(msg->header.dest_cid.data, cur_ptr, UUID_BYTES);
-  cur_ptr += UUID_BYTES;
-  msg->header.transaction_number = upack_32b(cur_ptr);
+  memcpy(msg->header.dest_cid.data, cur_ptr, LWPA_UUID_BYTES);
+  cur_ptr += LWPA_UUID_BYTES;
+  msg->header.transaction_number = lwpa_upack_32b(cur_ptr);
   cur_ptr += 4;
 
   /* Parse the next layer, based on the vector value and what the caller has registered interest in */
-  if (0 == uuidcmp(&msg->header.dest_cid, &kLLRPBroadcastCID) || 0 == uuidcmp(&msg->header.dest_cid, &interest->my_cid))
+  if (0 == lwpa_uuid_cmp(&msg->header.dest_cid, &kLLRPBroadcastCID) ||
+      0 == lwpa_uuid_cmp(&msg->header.dest_cid, &interest->my_cid))
   {
     switch (msg->vector)
     {
@@ -150,7 +151,7 @@ bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessa
     return false;
 
   /* Check the PDU length */
-  pdu_len = pdu_length(cur_ptr);
+  pdu_len = lwpa_pdu_length(cur_ptr);
   if (pdu_len > buflen || pdu_len < PROBE_REQUEST_PDU_MIN_SIZE)
     return false;
   buf_end = cur_ptr + pdu_len;
@@ -160,13 +161,13 @@ bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessa
   vector = *cur_ptr++;
   if (vector != VECTOR_LLRP_PROBE_REQUEST)
     return false;
-  lower_uid_bound.manu = upack_16b(cur_ptr);
+  lower_uid_bound.manu = lwpa_upack_16b(cur_ptr);
   cur_ptr += 2;
-  lower_uid_bound.id = upack_32b(cur_ptr);
+  lower_uid_bound.id = lwpa_upack_32b(cur_ptr);
   cur_ptr += 4;
-  upper_uid_bound.manu = upack_16b(cur_ptr);
+  upper_uid_bound.manu = lwpa_upack_16b(cur_ptr);
   cur_ptr += 2;
-  upper_uid_bound.id = upack_32b(cur_ptr);
+  upper_uid_bound.id = lwpa_upack_32b(cur_ptr);
   cur_ptr += 4;
   request->filter = *cur_ptr++;
 
@@ -179,9 +180,9 @@ bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessa
     while (cur_ptr + 6 <= buf_end)
     {
       RdmUid cur_uid;
-      cur_uid.manu = upack_16b(cur_ptr);
+      cur_uid.manu = lwpa_upack_16b(cur_ptr);
       cur_ptr += 2;
-      cur_uid.id = upack_32b(cur_ptr);
+      cur_uid.id = lwpa_upack_32b(cur_ptr);
       cur_ptr += 4;
 
       if (rdm_uid_equal(&interest->my_uid, &cur_uid))
@@ -207,7 +208,7 @@ bool parse_llrp_probe_reply(const uint8_t *buf, size_t buflen, LlrpTarget *reply
   if (buflen < PROBE_REPLY_PDU_SIZE)
     return false;
 
-  pdu_len = pdu_length(buf);
+  pdu_len = lwpa_pdu_length(buf);
   if (pdu_len != PROBE_REPLY_PDU_SIZE)
     return false;
   cur_ptr += 3;
@@ -216,9 +217,9 @@ bool parse_llrp_probe_reply(const uint8_t *buf, size_t buflen, LlrpTarget *reply
   if (vector != VECTOR_LLRP_PROBE_REPLY)
     return false;
 
-  reply->target_uid.manu = upack_16b(cur_ptr);
+  reply->target_uid.manu = lwpa_upack_16b(cur_ptr);
   cur_ptr += 2;
-  reply->target_uid.id = upack_32b(cur_ptr);
+  reply->target_uid.id = lwpa_upack_32b(cur_ptr);
   cur_ptr += 4;
   memcpy(reply->hardware_address, cur_ptr, 6);
   cur_ptr += 6;
@@ -234,7 +235,7 @@ bool parse_llrp_rdm_command(const uint8_t *buf, size_t buflen, RdmBuffer *cmd)
   if (buflen < LLRP_RDM_CMD_PDU_MIN_SIZE)
     return false;
 
-  pdu_len = pdu_length(buf);
+  pdu_len = lwpa_pdu_length(buf);
   if (pdu_len > buflen || pdu_len > LLRP_RDM_CMD_PDU_MAX_SIZE || pdu_len < LLRP_RDM_CMD_PDU_MIN_SIZE)
   {
     return false;
@@ -249,18 +250,18 @@ bool parse_llrp_rdm_command(const uint8_t *buf, size_t buflen, RdmBuffer *cmd)
   return true;
 }
 
-size_t pack_llrp_header(uint8_t *buf, size_t pdu_len, uint32_t vector, const LlrpHeader *header)
+size_t lwpa_pack_llrp_header(uint8_t *buf, size_t pdu_len, uint32_t vector, const LlrpHeader *header)
 {
   uint8_t *cur_ptr = buf;
 
   *cur_ptr = 0xf0;
-  pdu_pack_ext_len(cur_ptr, pdu_len);
+  lwpa_pdu_pack_ext_len(cur_ptr, pdu_len);
   cur_ptr += 3;
-  pack_32b(cur_ptr, vector);
+  lwpa_pack_32b(cur_ptr, vector);
   cur_ptr += 4;
-  memcpy(cur_ptr, header->dest_cid.data, UUID_BYTES);
-  cur_ptr += UUID_BYTES;
-  pack_32b(cur_ptr, header->transaction_number);
+  memcpy(cur_ptr, header->dest_cid.data, LWPA_UUID_BYTES);
+  cur_ptr += LWPA_UUID_BYTES;
+  lwpa_pack_32b(cur_ptr, header->transaction_number);
   cur_ptr += 4;
   return cur_ptr - buf;
 }
@@ -273,14 +274,14 @@ lwpa_error_t send_llrp_probe_request(llrp_socket_t handle, const LwpaSockaddr *d
 {
   uint8_t *cur_ptr = handle->send_buf;
   uint8_t *buf_end = cur_ptr + LLRP_MAX_MESSAGE_SIZE;
-  RootLayerPdu rlp;
+  LwpaRootLayerPdu rlp;
   const KnownUid *cur_uid;
   int send_res;
 
   /* Pack the UDP Preamble */
-  cur_ptr += pack_udp_preamble(cur_ptr, buf_end - cur_ptr);
+  cur_ptr += lwpa_pack_udp_preamble(cur_ptr, buf_end - cur_ptr);
 
-  rlp.vector = VECTOR_ROOT_LLRP;
+  rlp.vector = ACN_VECTOR_ROOT_LLRP;
   rlp.sender_cid = header->sender_cid;
   rlp.datalen = PROBE_REQUEST_RLP_DATA_MIN_SIZE;
 
@@ -293,24 +294,24 @@ lwpa_error_t send_llrp_probe_request(llrp_socket_t handle, const LwpaSockaddr *d
   }
 
   /* Pack the Root Layer PDU header */
-  cur_ptr += pack_root_layer_header(cur_ptr, buf_end - cur_ptr, &rlp);
+  cur_ptr += lwpa_pack_root_layer_header(cur_ptr, buf_end - cur_ptr, &rlp);
 
   /* Pack the LLRP header */
-  cur_ptr += pack_llrp_header(cur_ptr, rlp.datalen, VECTOR_LLRP_PROBE_REQUEST, header);
+  cur_ptr += lwpa_pack_llrp_header(cur_ptr, rlp.datalen, VECTOR_LLRP_PROBE_REQUEST, header);
 
   /* Pack the Probe Request PDU header fields */
   *cur_ptr = 0xf0;
-  pdu_pack_ext_len(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
+  lwpa_pdu_pack_ext_len(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
   cur_ptr += 3;
   /* TODO bad standard! Will be corrected in next public review draft. */
   *cur_ptr++ = (uint8_t)VECTOR_LLRP_PROBE_REQUEST;
-  pack_16b(cur_ptr, probe_request->lower_uid.manu);
+  lwpa_pack_16b(cur_ptr, probe_request->lower_uid.manu);
   cur_ptr += 2;
-  pack_32b(cur_ptr, probe_request->lower_uid.id);
+  lwpa_pack_32b(cur_ptr, probe_request->lower_uid.id);
   cur_ptr += 4;
-  pack_16b(cur_ptr, probe_request->upper_uid.manu);
+  lwpa_pack_16b(cur_ptr, probe_request->upper_uid.manu);
   cur_ptr += 2;
-  pack_32b(cur_ptr, probe_request->upper_uid.id);
+  lwpa_pack_32b(cur_ptr, probe_request->upper_uid.id);
   cur_ptr += 4;
   *cur_ptr++ = probe_request->filter;
 
@@ -320,9 +321,9 @@ lwpa_error_t send_llrp_probe_request(llrp_socket_t handle, const LwpaSockaddr *d
   {
     if (cur_ptr + 6 > buf_end)
       break;
-    pack_16b(cur_ptr, cur_uid->uid.manu);
+    lwpa_pack_16b(cur_ptr, cur_uid->uid.manu);
     cur_ptr += 2;
-    pack_32b(cur_ptr, cur_uid->uid.id);
+    lwpa_pack_32b(cur_ptr, cur_uid->uid.id);
     cur_ptr += 4;
     cur_uid = cur_uid->next;
   }
@@ -341,31 +342,31 @@ lwpa_error_t send_llrp_probe_reply(llrp_socket_t handle, const LwpaSockaddr *des
 {
   uint8_t *cur_ptr = handle->send_buf;
   uint8_t *buf_end = cur_ptr + LLRP_MAX_MESSAGE_SIZE;
-  RootLayerPdu rlp;
+  LwpaRootLayerPdu rlp;
   int send_res;
 
   /* Pack the UDP Preamble */
-  cur_ptr += pack_udp_preamble(cur_ptr, buf_end - cur_ptr);
+  cur_ptr += lwpa_pack_udp_preamble(cur_ptr, buf_end - cur_ptr);
 
-  rlp.vector = VECTOR_ROOT_LLRP;
+  rlp.vector = ACN_VECTOR_ROOT_LLRP;
   rlp.sender_cid = header->sender_cid;
   rlp.datalen = PROBE_REPLY_RLP_DATA_SIZE;
 
   /* Pack the Root Layer PDU header */
-  cur_ptr += pack_root_layer_header(cur_ptr, buf_end - cur_ptr, &rlp);
+  cur_ptr += lwpa_pack_root_layer_header(cur_ptr, buf_end - cur_ptr, &rlp);
 
   /* Pack the LLRP header */
-  cur_ptr += pack_llrp_header(cur_ptr, rlp.datalen, VECTOR_LLRP_PROBE_REPLY, header);
+  cur_ptr += lwpa_pack_llrp_header(cur_ptr, rlp.datalen, VECTOR_LLRP_PROBE_REPLY, header);
 
   /* Pack the Probe Reply PDU */
   *cur_ptr = 0xf0;
-  pdu_pack_ext_len(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
+  lwpa_pdu_pack_ext_len(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
   cur_ptr += 3;
   /* TODO bad standard! Will be corrected in next public review draft. */
   *cur_ptr++ = (uint8_t)VECTOR_LLRP_PROBE_REPLY;
-  pack_16b(cur_ptr, probe_reply->target_uid.manu);
+  lwpa_pack_16b(cur_ptr, probe_reply->target_uid.manu);
   cur_ptr += 2;
-  pack_32b(cur_ptr, probe_reply->target_uid.id);
+  lwpa_pack_32b(cur_ptr, probe_reply->target_uid.id);
   cur_ptr += 4;
   memcpy(cur_ptr, probe_reply->hardware_address, 6);
   cur_ptr += 6;
@@ -385,25 +386,25 @@ lwpa_error_t send_llrp_rdm(llrp_socket_t handle, const LwpaSockaddr *dest_addr, 
 {
   uint8_t *cur_ptr = handle->send_buf;
   uint8_t *buf_end = cur_ptr + LLRP_MAX_MESSAGE_SIZE;
-  RootLayerPdu rlp;
+  LwpaRootLayerPdu rlp;
   int send_res;
 
   /* Pack the UDP Preamble */
-  cur_ptr += pack_udp_preamble(cur_ptr, buf_end - cur_ptr);
+  cur_ptr += lwpa_pack_udp_preamble(cur_ptr, buf_end - cur_ptr);
 
-  rlp.vector = VECTOR_ROOT_LLRP;
+  rlp.vector = ACN_VECTOR_ROOT_LLRP;
   rlp.sender_cid = header->sender_cid;
   rlp.datalen = RDM_CMD_RLP_DATA_MIN_SIZE + rdm_msg->datalen;
 
   /* Pack the Root Layer PDU header */
-  cur_ptr += pack_root_layer_header(cur_ptr, buf_end - cur_ptr, &rlp);
+  cur_ptr += lwpa_pack_root_layer_header(cur_ptr, buf_end - cur_ptr, &rlp);
 
   /* Pack the LLRP header */
-  cur_ptr += pack_llrp_header(cur_ptr, rlp.datalen, VECTOR_LLRP_RDM_CMD, header);
+  cur_ptr += lwpa_pack_llrp_header(cur_ptr, rlp.datalen, VECTOR_LLRP_RDM_CMD, header);
 
   /* Pack the RDM Command PDU */
   *cur_ptr = 0xf0;
-  pdu_pack_ext_len(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
+  lwpa_pdu_pack_ext_len(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
   cur_ptr += 3;
   memcpy(cur_ptr, rdm_msg->data, rdm_msg->datalen);
   cur_ptr += rdm_msg->datalen;

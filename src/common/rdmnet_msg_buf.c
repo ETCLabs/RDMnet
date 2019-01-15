@@ -198,10 +198,10 @@ void initialize_rdmnet_message(RlpState *rlpstate, RdmnetMessage *msg, size_t pd
 {
   switch (msg->vector)
   {
-    case VECTOR_ROOT_BROKER:
+    case ACN_VECTOR_ROOT_BROKER:
       init_broker_state(&rlpstate->data.broker, pdu_data_len, msg);
       break;
-    case VECTOR_ROOT_RPT:
+    case ACN_VECTOR_ROOT_RPT:
       init_rpt_state(&rlpstate->data.rpt, pdu_data_len);
       break;
     default:
@@ -227,20 +227,20 @@ size_t parse_rlp_block(RlpState *rlpstate, const uint8_t *data, size_t datalen, 
 
     /* If the size remaining in the Root Layer PDU block is not enough for another Root Layer PDU
      * header, indicate a bad block condition. */
-    if ((rlpstate->block.block_size - rlpstate->block.size_parsed) < RLP_HEADER_SIZE_EXT_LEN)
+    if ((rlpstate->block.block_size - rlpstate->block.size_parsed) < ACN_RLP_HEADER_SIZE_EXT_LEN)
     {
       parse_err = true;
     }
-    else if (datalen >= RLP_HEADER_SIZE_EXT_LEN)
+    else if (datalen >= ACN_RLP_HEADER_SIZE_EXT_LEN)
     {
-      RootLayerPdu rlp;
+      LwpaRootLayerPdu rlp;
 
       /* Inheritance at the root layer is disallowed by E1.33. */
-      if (parse_root_layer_header(data, datalen, &rlp, NULL))
+      if (lwpa_parse_root_layer_header(data, datalen, &rlp, NULL))
       {
         /* Update the data pointers and sizes. */
-        bytes_parsed += RLP_HEADER_SIZE_EXT_LEN;
-        rlpstate->block.size_parsed += RLP_HEADER_SIZE_EXT_LEN;
+        bytes_parsed += ACN_RLP_HEADER_SIZE_EXT_LEN;
+        rlpstate->block.size_parsed += ACN_RLP_HEADER_SIZE_EXT_LEN;
 
         /* If this PDU indicates a length that takes it past the end of the block size from the
          * preamble, it is an error. */
@@ -253,10 +253,14 @@ size_t parse_rlp_block(RlpState *rlpstate, const uint8_t *data, size_t datalen, 
           initialize_rdmnet_message(rlpstate, msg, rlp.datalen, lparams);
         }
         else
+        {
           parse_err = true;
+        }
       }
       else
+      {
         parse_err = true;
+      }
     }
     /* No else for this block - if there is not enough data yet to parse an RLP header, we simply
      * indicate no data. */
@@ -274,16 +278,17 @@ size_t parse_rlp_block(RlpState *rlpstate, const uint8_t *data, size_t datalen, 
     size_t next_layer_bytes_parsed;
     switch (msg->vector)
     {
-      case VECTOR_ROOT_BROKER:
+      case ACN_VECTOR_ROOT_BROKER:
         next_layer_bytes_parsed = parse_broker_block(&rlpstate->data.broker, &data[bytes_parsed],
                                                      datalen - bytes_parsed, get_broker_msg(msg), &res, lparams);
         break;
-      case VECTOR_ROOT_RPT:
+      case ACN_VECTOR_ROOT_RPT:
         next_layer_bytes_parsed = parse_rpt_block(&rlpstate->data.rpt, &data[bytes_parsed], datalen - bytes_parsed,
                                                   get_rpt_msg(msg), &res, lparams);
         break;
       default:
         next_layer_bytes_parsed = consume_bad_block(&rlpstate->data.unknown, datalen - bytes_parsed, &res);
+        break;
     }
     assert(next_layer_bytes_parsed <= (datalen - bytes_parsed));
     assert(rlpstate->block.size_parsed + next_layer_bytes_parsed <= rlpstate->block.block_size);
@@ -392,13 +397,13 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
       /* We can parse a Broker PDU header. */
       const uint8_t *cur_ptr = data;
 
-      size_t pdu_len = pdu_length(cur_ptr);
+      size_t pdu_len = lwpa_pdu_length(cur_ptr);
       if (pdu_len >= BROKER_PDU_HEADER_SIZE && bstate->block.size_parsed + pdu_len <= bstate->block.block_size)
       {
         size_t pdu_data_len = pdu_len - BROKER_PDU_HEADER_SIZE;
 
         cur_ptr += 3;
-        bmsg->vector = upack_16b(cur_ptr);
+        bmsg->vector = lwpa_upack_16b(cur_ptr);
         cur_ptr += 2;
         bytes_parsed += BROKER_PDU_HEADER_SIZE;
         bstate->block.size_parsed += BROKER_PDU_HEADER_SIZE;
@@ -432,17 +437,17 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
         {
           ConnectReplyMsg *crmsg = get_connect_reply_msg(bmsg);
           const uint8_t *cur_ptr = &data[bytes_parsed];
-          crmsg->connect_status = (rdmnet_connect_status_t)upack_16b(cur_ptr);
+          crmsg->connect_status = (rdmnet_connect_status_t)lwpa_upack_16b(cur_ptr);
           cur_ptr += 2;
-          crmsg->e133_version = upack_16b(cur_ptr);
+          crmsg->e133_version = lwpa_upack_16b(cur_ptr);
           cur_ptr += 2;
-          crmsg->broker_uid.manu = upack_16b(cur_ptr);
+          crmsg->broker_uid.manu = lwpa_upack_16b(cur_ptr);
           cur_ptr += 2;
-          crmsg->broker_uid.id = upack_32b(cur_ptr);
+          crmsg->broker_uid.id = lwpa_upack_32b(cur_ptr);
           cur_ptr += 4;
-          crmsg->client_uid.manu = upack_16b(cur_ptr);
+          crmsg->client_uid.manu = lwpa_upack_16b(cur_ptr);
           cur_ptr += 2;
-          crmsg->client_uid.id = upack_32b(cur_ptr);
+          crmsg->client_uid.id = lwpa_upack_32b(cur_ptr);
           cur_ptr += 4;
           next_layer_bytes_parsed = cur_ptr - &data[bytes_parsed];
           res = kPSFullBlockParseOk;
@@ -457,9 +462,9 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
         {
           ClientRedirectMsg *crmsg = get_client_redirect_msg(bmsg);
           const uint8_t *cur_ptr = &data[bytes_parsed];
-          lwpaip_set_v4_address(&crmsg->new_addr.ip, upack_32b(cur_ptr));
+          lwpaip_set_v4_address(&crmsg->new_addr.ip, lwpa_upack_32b(cur_ptr));
           cur_ptr += 4;
-          crmsg->new_addr.port = upack_16b(cur_ptr);
+          crmsg->new_addr.port = lwpa_upack_16b(cur_ptr);
           cur_ptr += 2;
           next_layer_bytes_parsed = cur_ptr - &data[bytes_parsed];
           res = kPSFullBlockParseOk;
@@ -472,7 +477,7 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
           const uint8_t *cur_ptr = &data[bytes_parsed];
           lwpaip_set_v6_address(&crmsg->new_addr.ip, cur_ptr);
           cur_ptr += 16;
-          crmsg->new_addr.port = upack_16b(cur_ptr);
+          crmsg->new_addr.port = lwpa_upack_16b(cur_ptr);
           cur_ptr += 2;
           next_layer_bytes_parsed = cur_ptr - &data[bytes_parsed];
           res = kPSFullBlockParseOk;
@@ -494,7 +499,7 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
         if (remaining_len >= DISCONNECT_DATA_SIZE)
         {
           const uint8_t *cur_ptr = &data[bytes_parsed];
-          get_disconnect_msg(bmsg)->disconnect_reason = (rdmnet_disconnect_reason_t)upack_16b(cur_ptr);
+          get_disconnect_msg(bmsg)->disconnect_reason = (rdmnet_disconnect_reason_t)lwpa_upack_16b(cur_ptr);
           cur_ptr += 2;
           next_layer_bytes_parsed = cur_ptr - &data[bytes_parsed];
           res = kPSFullBlockParseOk;
@@ -521,7 +526,7 @@ void parse_client_connect_header(const uint8_t *data, ClientConnectMsg *ccmsg)
 
   client_connect_msg_set_scope(ccmsg, (const char *)cur_ptr);
   cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
-  ccmsg->e133_version = upack_16b(cur_ptr);
+  ccmsg->e133_version = lwpa_upack_16b(cur_ptr);
   cur_ptr += 2;
   client_connect_msg_set_search_domain(ccmsg, (const char *)cur_ptr);
   cur_ptr += E133_DOMAIN_STRING_PADDED_LENGTH;
@@ -597,11 +602,11 @@ size_t parse_client_entry_update(ClientEntryUpdateState *ceustate, const uint8_t
 size_t parse_client_entry_header(const uint8_t *data, ClientEntryData *entry)
 {
   const uint8_t *cur_ptr = data;
-  size_t len = pdu_length(cur_ptr);
+  size_t len = lwpa_pdu_length(cur_ptr);
   cur_ptr += 3;
-  entry->client_protocol = (client_protocol_t)upack_32b(cur_ptr);
+  entry->client_protocol = (client_protocol_t)lwpa_upack_32b(cur_ptr);
   cur_ptr += 4;
-  memcpy(entry->client_cid.data, cur_ptr, UUID_BYTES);
+  memcpy(entry->client_cid.data, cur_ptr, LWPA_UUID_BYTES);
   entry->next = NULL;
   return len;
 }
@@ -651,12 +656,12 @@ size_t parse_single_client_entry(ClientEntryState *cstate, const uint8_t *data, 
           ClientEntryDataRpt *rpt_entry = get_rpt_client_entry_data(entry);
           const uint8_t *cur_ptr = &data[bytes_parsed];
 
-          rpt_entry->client_uid.manu = upack_16b(cur_ptr);
+          rpt_entry->client_uid.manu = lwpa_upack_16b(cur_ptr);
           cur_ptr += 2;
-          rpt_entry->client_uid.id = upack_32b(cur_ptr);
+          rpt_entry->client_uid.id = lwpa_upack_32b(cur_ptr);
           cur_ptr += 4;
           rpt_entry->client_type = (rpt_client_type_t)*cur_ptr++;
-          memcpy(rpt_entry->binding_cid.data, cur_ptr, UUID_BYTES);
+          memcpy(rpt_entry->binding_cid.data, cur_ptr, LWPA_UUID_BYTES);
           bytes_parsed += RPT_CLIENT_ENTRY_DATA_SIZE;
           cstate->entry_data.size_parsed += RPT_CLIENT_ENTRY_DATA_SIZE;
           res = kPSFullBlockParseOk;
@@ -813,26 +818,26 @@ size_t parse_rpt_block(RptState *rstate, const uint8_t *data, size_t datalen, Rp
     {
       /* We can parse an RPT PDU header. */
       const uint8_t *cur_ptr = data;
-      size_t pdu_len = pdu_length(cur_ptr);
+      size_t pdu_len = lwpa_pdu_length(cur_ptr);
       if (pdu_len >= RPT_PDU_HEADER_SIZE && rstate->block.size_parsed + pdu_len <= rstate->block.block_size)
       {
         size_t pdu_data_len = pdu_len - RPT_PDU_HEADER_SIZE;
         cur_ptr += 3;
-        rmsg->vector = upack_32b(cur_ptr);
+        rmsg->vector = lwpa_upack_32b(cur_ptr);
         cur_ptr += 4;
-        rmsg->header.source_uid.manu = upack_16b(cur_ptr);
+        rmsg->header.source_uid.manu = lwpa_upack_16b(cur_ptr);
         cur_ptr += 2;
-        rmsg->header.source_uid.id = upack_32b(cur_ptr);
+        rmsg->header.source_uid.id = lwpa_upack_32b(cur_ptr);
         cur_ptr += 4;
-        rmsg->header.source_endpoint_id = upack_16b(cur_ptr);
+        rmsg->header.source_endpoint_id = lwpa_upack_16b(cur_ptr);
         cur_ptr += 2;
-        rmsg->header.dest_uid.manu = upack_16b(cur_ptr);
+        rmsg->header.dest_uid.manu = lwpa_upack_16b(cur_ptr);
         cur_ptr += 2;
-        rmsg->header.dest_uid.id = upack_32b(cur_ptr);
+        rmsg->header.dest_uid.id = lwpa_upack_32b(cur_ptr);
         cur_ptr += 4;
-        rmsg->header.dest_endpoint_id = upack_16b(cur_ptr);
+        rmsg->header.dest_endpoint_id = lwpa_upack_16b(cur_ptr);
         cur_ptr += 2;
-        rmsg->header.seqnum = upack_32b(cur_ptr);
+        rmsg->header.seqnum = lwpa_upack_32b(cur_ptr);
         cur_ptr += 4;
         ++cur_ptr; /* 1-byte reserved field */
 
@@ -890,11 +895,11 @@ size_t parse_rdm_list(RdmListState *rlstate, const uint8_t *data, size_t datalen
   if (!rlstate->parsed_request_notif_header && datalen >= REQUEST_NOTIF_PDU_HEADER_SIZE)
   {
     const uint8_t *cur_ptr = data;
-    size_t pdu_len = pdu_length(cur_ptr);
+    size_t pdu_len = lwpa_pdu_length(cur_ptr);
     uint32_t vect;
 
     cur_ptr += 3;
-    vect = upack_32b(cur_ptr);
+    vect = lwpa_upack_32b(cur_ptr);
     cur_ptr += 4;
     if (pdu_len != rlstate->block.block_size || (vect != VECTOR_REQUEST_RDM_CMD && vect != VECTOR_NOTIFICATION_RDM_CMD))
     {
@@ -929,7 +934,7 @@ size_t parse_rdm_list(RdmListState *rlstate, const uint8_t *data, size_t datalen
         if (remaining_len >= RDM_CMD_PDU_MIN_SIZE)
         {
           const uint8_t *cur_ptr = &data[bytes_parsed];
-          size_t rdm_cmd_pdu_len = pdu_length(cur_ptr);
+          size_t rdm_cmd_pdu_len = lwpa_pdu_length(cur_ptr);
 
           if (rdm_cmd_pdu_len > rlstate->block.block_size || rdm_cmd_pdu_len > RDM_CMD_PDU_MAX_SIZE)
           {
@@ -1004,11 +1009,11 @@ size_t parse_rpt_status(RptStatusState *rsstate, const uint8_t *data, size_t dat
       /* We can parse an RPT Status PDU header. */
       const uint8_t *cur_ptr = data;
 
-      size_t pdu_len = pdu_length(cur_ptr);
+      size_t pdu_len = lwpa_pdu_length(cur_ptr);
       if (pdu_len >= RPT_STATUS_HEADER_SIZE && pdu_len >= rsstate->block.block_size)
       {
         cur_ptr += 3;
-        smsg->status_code = (rpt_status_code_t)upack_16b(cur_ptr);
+        smsg->status_code = (rpt_status_code_t)lwpa_upack_16b(cur_ptr);
         cur_ptr += 2;
         bytes_parsed += RPT_STATUS_HEADER_SIZE;
         rsstate->block.size_parsed += RPT_STATUS_HEADER_SIZE;
@@ -1088,14 +1093,14 @@ size_t parse_rpt_status(RptStatusState *rsstate, const uint8_t *data, size_t dat
 size_t locate_tcp_preamble(RdmnetMsgBuf *msg_buf)
 {
   size_t i;
-  TcpPreamble preamble;
+  LwpaTcpPreamble preamble;
 
   if (msg_buf->cur_data_size < ACN_TCP_PREAMBLE_SIZE)
     return 0;
 
   for (i = 0; i < (msg_buf->cur_data_size - ACN_TCP_PREAMBLE_SIZE); ++i)
   {
-    if (parse_tcp_preamble(&msg_buf->buf[i], msg_buf->cur_data_size - i, &preamble))
+    if (lwpa_parse_tcp_preamble(&msg_buf->buf[i], msg_buf->cur_data_size - i, &preamble))
     {
       /* Discard the data before and including the TCP preamble. */
       if (msg_buf->cur_data_size > i + ACN_TCP_PREAMBLE_SIZE)

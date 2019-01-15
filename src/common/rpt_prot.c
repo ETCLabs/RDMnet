@@ -41,39 +41,39 @@
   do                                                                    \
   {                                                                     \
     (buf)[0] = 0xf0;                                                    \
-    pdu_pack_ext_len(buf, rdm_cmd_pdu_len(rdmbufptr));                  \
+    lwpa_pdu_pack_ext_len(buf, rdm_cmd_pdu_len(rdmbufptr));             \
     (buf)[3] = VECTOR_RDM_CMD_RDM_DATA;                                 \
     memcpy(&(buf)[4], &(rdmbufptr)->data[1], (rdmbufptr)->datalen - 1); \
   } while (0)
 
 /* Helper macros to pack the various RPT headers */
-#define pack_request_header(length, buf)       \
-  do                                           \
-  {                                            \
-    (buf)[0] = 0xf0;                           \
-    pdu_pack_ext_len(buf, length);             \
-    pack_32b(&buf[3], VECTOR_REQUEST_RDM_CMD); \
+#define pack_request_header(length, buf)            \
+  do                                                \
+  {                                                 \
+    (buf)[0] = 0xf0;                                \
+    lwpa_pdu_pack_ext_len(buf, length);             \
+    lwpa_pack_32b(&buf[3], VECTOR_REQUEST_RDM_CMD); \
   } while (0)
 #define pack_status_header(length, vector, buf) \
   do                                            \
   {                                             \
     (buf)[0] = 0xf0;                            \
-    pdu_pack_ext_len(buf, length);              \
-    pack_16b(&buf[3], vector);                  \
+    lwpa_pdu_pack_ext_len(buf, length);         \
+    lwpa_pack_16b(&buf[3], vector);             \
   } while (0)
-#define pack_notification_header(length, buf)       \
-  do                                                \
-  {                                                 \
-    (buf)[0] = 0xf0;                                \
-    pdu_pack_ext_len(buf, length);                  \
-    pack_32b(&buf[3], VECTOR_NOTIFICATION_RDM_CMD); \
+#define pack_notification_header(length, buf)            \
+  do                                                     \
+  {                                                      \
+    (buf)[0] = 0xf0;                                     \
+    lwpa_pdu_pack_ext_len(buf, length);                  \
+    lwpa_pack_32b(&buf[3], VECTOR_NOTIFICATION_RDM_CMD); \
   } while (0)
 
 /*********************** Private function prototypes *************************/
 
 static void pack_rpt_header(size_t length, uint32_t vector, const RptHeader *header, uint8_t *buf);
-static lwpa_error_t send_rpt_header(int handle, const RootLayerPdu *rlp, uint32_t rpt_vector, const RptHeader *header,
-                                    uint8_t *buf, size_t buflen);
+static lwpa_error_t send_rpt_header(int handle, const LwpaRootLayerPdu *rlp, uint32_t rpt_vector,
+                                    const RptHeader *header, uint8_t *buf, size_t buflen);
 static size_t calc_rpt_request_len(const RdmBuffer *cmd);
 static size_t calc_status_pdu_size(const RptStatusMsg *status);
 
@@ -82,34 +82,34 @@ static size_t calc_status_pdu_size(const RptStatusMsg *status);
 void pack_rpt_header(size_t length, uint32_t vector, const RptHeader *header, uint8_t *buf)
 {
   buf[0] = 0xf0;
-  pdu_pack_ext_len(buf, length);
-  pack_32b(&buf[3], vector);
-  pack_16b(&buf[7], header->source_uid.manu);
-  pack_32b(&buf[9], header->source_uid.id);
-  pack_16b(&buf[13], header->source_endpoint_id);
-  pack_16b(&buf[15], header->dest_uid.manu);
-  pack_32b(&buf[17], header->dest_uid.id);
-  pack_16b(&buf[21], header->dest_endpoint_id);
-  pack_32b(&buf[23], header->seqnum);
+  lwpa_pdu_pack_ext_len(buf, length);
+  lwpa_pack_32b(&buf[3], vector);
+  lwpa_pack_16b(&buf[7], header->source_uid.manu);
+  lwpa_pack_32b(&buf[9], header->source_uid.id);
+  lwpa_pack_16b(&buf[13], header->source_endpoint_id);
+  lwpa_pack_16b(&buf[15], header->dest_uid.manu);
+  lwpa_pack_32b(&buf[17], header->dest_uid.id);
+  lwpa_pack_16b(&buf[21], header->dest_endpoint_id);
+  lwpa_pack_32b(&buf[23], header->seqnum);
   buf[27] = 0;
 }
 
-size_t pack_rpt_header_with_rlp(const RootLayerPdu *rlp, uint8_t *buf, size_t buflen, uint32_t vector,
+size_t pack_rpt_header_with_rlp(const LwpaRootLayerPdu *rlp, uint8_t *buf, size_t buflen, uint32_t vector,
                                 const RptHeader *header)
 {
   uint8_t *cur_ptr = buf;
-  size_t data_size = root_layer_buf_size(rlp, 1);
+  size_t data_size = lwpa_root_layer_buf_size(rlp, 1);
 
   if (data_size == 0)
     return 0;
 
-  data_size = pack_tcp_preamble(cur_ptr, buflen, data_size);
+  data_size = lwpa_pack_tcp_preamble(cur_ptr, buflen, data_size);
   if (data_size == 0)
     return 0;
   cur_ptr += data_size;
   buflen -= data_size;
 
-  data_size = pack_root_layer_header(cur_ptr, buflen, rlp);
+  data_size = lwpa_pack_root_layer_header(cur_ptr, buflen, rlp);
   if (data_size == 0)
     return 0;
   cur_ptr += data_size;
@@ -120,11 +120,11 @@ size_t pack_rpt_header_with_rlp(const RootLayerPdu *rlp, uint8_t *buf, size_t bu
   return cur_ptr - buf;
 }
 
-lwpa_error_t send_rpt_header(int handle, const RootLayerPdu *rlp, uint32_t rpt_vector, const RptHeader *header,
+lwpa_error_t send_rpt_header(int handle, const LwpaRootLayerPdu *rlp, uint32_t rpt_vector, const RptHeader *header,
                              uint8_t *buf, size_t buflen)
 {
   int send_res;
-  size_t data_size = root_layer_buf_size(rlp, 1);
+  size_t data_size = lwpa_root_layer_buf_size(rlp, 1);
   if (data_size == 0)
   {
     rdmnet_end_message(handle);
@@ -132,7 +132,7 @@ lwpa_error_t send_rpt_header(int handle, const RootLayerPdu *rlp, uint32_t rpt_v
   }
 
   /* Pack and send the TCP preamble. */
-  data_size = pack_tcp_preamble(buf, buflen, data_size);
+  data_size = lwpa_pack_tcp_preamble(buf, buflen, data_size);
   if (data_size == 0)
   {
     rdmnet_end_message(handle);
@@ -143,7 +143,7 @@ lwpa_error_t send_rpt_header(int handle, const RootLayerPdu *rlp, uint32_t rpt_v
     return (lwpa_error_t)send_res;
 
   /* Pack and send the Root Layer PDU header */
-  data_size = pack_root_layer_header(buf, buflen, rlp);
+  data_size = lwpa_pack_root_layer_header(buf, buflen, rlp);
   if (data_size == 0)
   {
     rdmnet_end_message(handle);
@@ -187,7 +187,7 @@ size_t bufsize_rpt_request(const RdmBuffer *cmd)
 size_t pack_rpt_request(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
                         const RdmBuffer *cmd)
 {
-  RootLayerPdu rlp;
+  LwpaRootLayerPdu rlp;
   uint8_t *cur_ptr = buf;
   size_t data_size;
   size_t request_pdu_size;
@@ -199,7 +199,7 @@ size_t pack_rpt_request(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, 
 
   request_pdu_size = calc_request_pdu_size(cmd);
   rlp.sender_cid = *local_cid;
-  rlp.vector = VECTOR_ROOT_RPT;
+  rlp.vector = ACN_VECTOR_ROOT_RPT;
   rlp.datalen = RPT_PDU_HEADER_SIZE + request_pdu_size;
 
   data_size = pack_rpt_header_with_rlp(&rlp, buf, buflen, VECTOR_RPT_REQUEST, header);
@@ -229,14 +229,14 @@ lwpa_error_t send_rpt_request(int handle, const LwpaUuid *local_cid, const RptHe
 {
   lwpa_error_t res;
   int send_res;
-  RootLayerPdu rlp;
+  LwpaRootLayerPdu rlp;
   uint8_t buf[RDM_CMD_PDU_MAX_SIZE];
 
   if (!local_cid || !header || !cmd)
     return LWPA_INVALID;
 
   rlp.sender_cid = *local_cid;
-  rlp.vector = VECTOR_ROOT_RPT;
+  rlp.vector = ACN_VECTOR_ROOT_RPT;
   rlp.datalen = RPT_PDU_HEADER_SIZE + calc_request_pdu_size(cmd);
 
   res = rdmnet_start_message(handle);
@@ -299,7 +299,7 @@ size_t bufsize_rpt_status(const RptStatusMsg *status)
 size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
                        const RptStatusMsg *status)
 {
-  RootLayerPdu rlp;
+  LwpaRootLayerPdu rlp;
   uint8_t *cur_ptr = buf;
   size_t data_size;
   size_t status_pdu_size;
@@ -311,7 +311,7 @@ size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, c
 
   status_pdu_size = calc_status_pdu_size(status);
   rlp.sender_cid = *local_cid;
-  rlp.vector = VECTOR_ROOT_RPT;
+  rlp.vector = ACN_VECTOR_ROOT_RPT;
   rlp.datalen = RPT_PDU_HEADER_SIZE + status_pdu_size;
 
   data_size = pack_rpt_header_with_rlp(&rlp, buf, buflen, VECTOR_RPT_STATUS, header);
@@ -344,7 +344,7 @@ lwpa_error_t send_rpt_status(int handle, const LwpaUuid *local_cid, const RptHea
 {
   lwpa_error_t res;
   int send_res;
-  RootLayerPdu rlp;
+  LwpaRootLayerPdu rlp;
   uint8_t buf[RPT_PDU_HEADER_SIZE];
   size_t status_pdu_size;
 
@@ -353,7 +353,7 @@ lwpa_error_t send_rpt_status(int handle, const LwpaUuid *local_cid, const RptHea
 
   status_pdu_size = calc_status_pdu_size(status);
   rlp.sender_cid = *local_cid;
-  rlp.vector = VECTOR_ROOT_RPT;
+  rlp.vector = ACN_VECTOR_ROOT_RPT;
   rlp.datalen = RPT_PDU_HEADER_SIZE + status_pdu_size;
 
   res = rdmnet_start_message(handle);
@@ -422,7 +422,7 @@ size_t bufsize_rpt_notification(const RdmCmdListEntry *cmd_list)
 size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
                              const RdmCmdListEntry *cmd_list)
 {
-  RootLayerPdu rlp;
+  LwpaRootLayerPdu rlp;
   uint8_t *cur_ptr = buf;
   size_t data_size;
   size_t notif_pdu_size;
@@ -435,7 +435,7 @@ size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaUuid *local_
 
   notif_pdu_size = calc_notification_pdu_size(cmd_list);
   rlp.sender_cid = *local_cid;
-  rlp.vector = VECTOR_ROOT_RPT;
+  rlp.vector = ACN_VECTOR_ROOT_RPT;
   rlp.datalen = RPT_PDU_HEADER_SIZE + notif_pdu_size;
 
   data_size = pack_rpt_header_with_rlp(&rlp, buf, buflen, VECTOR_RPT_NOTIFICATION, header);
@@ -470,7 +470,7 @@ lwpa_error_t send_rpt_notification(int handle, const LwpaUuid *local_cid, const 
 {
   lwpa_error_t res;
   int send_res;
-  RootLayerPdu rlp;
+  LwpaRootLayerPdu rlp;
   uint8_t buf[RDM_CMD_PDU_MAX_SIZE];
   size_t notif_pdu_size;
   const RdmCmdListEntry *cur_cmd;
@@ -480,7 +480,7 @@ lwpa_error_t send_rpt_notification(int handle, const LwpaUuid *local_cid, const 
 
   notif_pdu_size = calc_notification_pdu_size(cmd_list);
   rlp.sender_cid = *local_cid;
-  rlp.vector = VECTOR_ROOT_RPT;
+  rlp.vector = ACN_VECTOR_ROOT_RPT;
   rlp.datalen = RPT_PDU_HEADER_SIZE + notif_pdu_size;
 
   res = rdmnet_start_message(handle);

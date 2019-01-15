@@ -44,6 +44,7 @@
 #include "broker_responder.h"
 #include "broker_threads.h"
 #include "broker_discovery.h"
+#include "broker_uid_manager.h"
 
 class BrokerCore : public ListenThreadNotify,
                    public ConnPollThreadNotify,
@@ -115,12 +116,10 @@ private:
 
   // The list of connected clients, indexed by the connection handle
   std::map<int, std::shared_ptr<BrokerClient>> clients_;
-  // The uid->handle lookup table
-  std::map<RdmUid, int> uid_lookup_;
+  // Manages the UIDs of connected clients and generates new ones upon request
+  BrokerUidManager uid_manager_;
   // Protects the list of clients and uid lookup, but not the data in the clients themselves.
   mutable lwpa_rwlock_t client_lock_;
-
-  bool UIDToHandle(const RdmUid &uid, int &conn_handle) const;
 
   void GetConnSnapshot(std::vector<int> &conns, bool include_devices, bool include_controllers, bool include_unknown,
                        uint16_t manufacturer_filter = 0xffff);
@@ -154,4 +153,4 @@ private:
                   const std::string &status_str = std::string());
 };
 
-#endif // _BROKER_CORE_H_
+#endif  // _BROKER_CORE_H_

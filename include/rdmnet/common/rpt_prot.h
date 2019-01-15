@@ -52,7 +52,7 @@
    + 2 /* Source Endpoint ID */ + 6 /* Dest UID */ + 2 /* Dest Endpoint ID */ \
    + 4 /* Sequence Number */ + 1 /* Reserved */)
 /*! The header size of an RPT PDU, including encapsulating PDUs */
-#define RPT_PDU_FULL_HEADER_SIZE (RPT_PDU_HEADER_SIZE + RLP_HEADER_SIZE_EXT_LEN + ACN_TCP_PREAMBLE_SIZE)
+#define RPT_PDU_FULL_HEADER_SIZE (RPT_PDU_HEADER_SIZE + ACN_RLP_HEADER_SIZE_EXT_LEN + ACN_TCP_PREAMBLE_SIZE)
 
 /*! The header size of an RPT Status PDU (not including encapsulating PDUs) */
 #define RPT_STATUS_HEADER_SIZE (3 /* Flags + Length */ + 2 /* Vector */)

@@ -121,6 +121,13 @@ bool BrokerCore::Startup(const RDMnet::BrokerSettings &settings, uint16_t listen
     if (listen_addrs.empty() || ((listen_addrs.size() > 1) && (listen_port == 0)))
       return false;
 
+    // Check the settings for validity
+    if ((settings.cid_valid && lwpa_uuid_is_null(&settings.cid)) ||
+        (settings.uid_valid && rdmnet_uid_is_dynamic(&settings.uid)))
+    {
+      return false;
+    }
+
     settings_ = settings;
 
     BrokerDiscoveryManager::InitLibrary();
@@ -199,10 +206,6 @@ void BrokerCore::Shutdown()
     rdmnet_deinit();
 
     started_ = false;
-
-    // Shutdown LLRP socket and proxy
-    //   llrpSocketProxy_.StopProxy();
-    //   llrpSocket_.Shutdown();
   }
 }
 
@@ -471,160 +474,6 @@ void BrokerCore::PollConnections(const std::vector<int> &conn_handles, RdmnetPol
     }
   }
 }
-
-/* ILLRPSocketProxy_Notify messages */
-// llrp_data will point to the buffer data immediately after the UDP
-// preamble. /packet_data will point to the beginning of the packet. This
-// is the pointer you should call DeletePacket() on when finished.
-// /data_length will be the size of the buffer memory BELOW the UDP
-// preamble. /packet_length will be the size of the whole packet,
-// INCLUDING the UDP preamble. /Call E133::UnpackRoot with llrp_data to
-// start parsing the packet.
-// void BrokerCore::Received(const uint8_t* llrp_data, uint llrp_data_len,
-// uint8_t* packet_data, uint packet_len)
-//{
-//  CID sender_cid;
-//  uint32_t vector;
-//  const uint8_t *header_data;
-//  uint32_t header_data_len;
-//  const uint8_t *vector_data;
-//  uint32_t vector_data_len;
-//  LLRP::llrp_data_struct header;
-
-//  E133::UnpackRoot(llrp_data, llrp_data_len, sender_cid, vector,
-//  header_data, header_data_len); LLRP::UnpackLLRPHeader(header_data,
-//  header_data_len, header, vector_data, vector_data_len);
-
-//  if ((header.dest_cid == CID::StringToCID(LLRP_BROADCAST_CID)) ||
-//  (header.dest_cid ==settings_.cid))
-//  {
-//    if (header.vector == VECTOR_LLRP_PROBE_REQUEST)
-//    {
-//      E133_UID lower_uid;
-//      E133_UID upper_uid;
-//      uint8_t filter;
-//      std::vector<E133_UID> known_uids;
-
-//      // Process the probe request
-//      LLRP::UnpackProbeRequest(vector_data, vector_data_len, lower_uid,
-//      upper_uid, filter, known_uids);
-
-//      if (settings_.uid >= lower_uid) && settings_.uid <= upper_uid))
-//      {
-//        if (settings_.uid.PresentInVector(known_uids))
-//        {
-//          LLRP::llrp_data_struct llrp_data_response;
-
-//          if serv_)
-//          {
-//            IAsyncSocketServ::netintinfo info;
-//            netintid id =serv_->GetDefaultInterface();
-
-//            if serv_->CopyInterfaceInfo(id, info))
-//            {
-//              llrp_data_response.dest_cid = sender_cid;
-//              llrp_data_response.transaction_number =
-//              header.transaction_number; llrp_data_response.vector =
-//              VECTOR_LLRP_PROBE_REPLY;
-
-//              LLRP::SendProbeReply(llrpSocket_,settings_.cid,
-//              llrp_data_response,settings_.uid,
-//              reinterpret_cast<uint8_t*>(info.mac));
-
-//              if log_)
-//                lwpa_loglog_,log_context_, 2, LWPA_CAT_APP,
-//                LWPA_SEV_INF, "Got a Probe Request I can respond to! Sent
-//                a Probe Reply.");
-//            }
-//          }
-//        }
-//      }
-//    }
-//    else if (header.vector == VECTOR_LLRP_RDM_CMD)
-//    {
-//      rdmBuffer msg;
-//      uid dest_uid;
-
-//      // Process the LLRP RDM message
-
-//      LLRP::UnpackRDMCommand(vector_data, vector_data_len, msg);
-
-//      dest_uid = getDestinationId(const_cast<rdmBuffer*>(&msg));
-
-//      if (settings_.uid.Getuid().id == dest_uid.id) &&
-//      settings_.uid.Getuid().manu == dest_uid.manu))
-//      {
-//        printf("\nGot an LLRP RDM message.");
-
-//       llrp_msg_proc_.ProcessLLRPRDMMessage(msg, sender_cid,
-//        header.transaction_number);
-//      }
-//    }
-//  }
-
-// llrpSocket_.DeletePacket(packet_data, packet_len);
-//}
-
-// This means that the target reading socket has gone bad/closed. Call
-// Shutdown() on the LLRPSocket to make sure /that the bad socket is
-// destroyed. From there you can call Startup() again to recover with new
-// sockets.
-// void BrokerCore::TargetReadSocketBad()
-//{
-//  if log_)
-//  {
-//    lwpa_loglog_,log_context_, 1, LWPA_CAT_APP, LWPA_SEV_ERR, "Target
-//    read socket went bad!");
-//  }
-
-// llrpSocket_.Shutdown();
-//}
-
-// This means that the target writing socket has gone bad/closed. Call
-// Shutdown() on the LLRPSocket to make sure /that the bad socket is
-// destroyed. From there you can call Startup() again to recover with new
-// sockets.
-// void BrokerCore::TargetWriteSocketBad()
-//{
-//  if log_)
-//  {
-//    lwpa_loglog_,log_context_, 1, LWPA_CAT_APP, LWPA_SEV_ERR, "Target
-//    write socket went bad!");
-//  }
-
-// llrpSocket_.Shutdown();
-//}
-
-// This means that the  reading socket has gone bad/closed. Call
-// Shutdown()
-// on
-// the LLRPSocket to make sure /that the bad socket is destroyed. From
-// there you can call Startup() again to recover with new sockets.
-// void BrokerCore::ControllerReadSocketBad()
-//{
-//  if log_)
-//  {
-//    lwpa_loglog_,log_context_, 1, LWPA_CAT_APP, LWPA_SEV_ERR,
-//    "Controller read socket went bad!");
-//  }
-
-// llrpSocket_.Shutdown();
-//}
-
-// This means that the controller writing socket has gone bad/closed. Call
-// Shutdown() on the LLRPSocket to make sure /that the bad socket is
-// destroyed. From there you can call Startup() again to recover with new
-// sockets.
-// void BrokerCore::ControllerWriteSocketBad()
-//{
-//  if log_)
-//  {
-//    lwpa_loglog_,log_context_, 1, LWPA_CAT_APP, LWPA_SEV_ERR,
-//    "Controller write socket went bad!");
-//  }
-
-// llrpSocket_.Shutdown();
-//}
 
 // Process each controller queue, sending out the next message from each queue if devices are
 // available. Also sends connect reply, error and status messages generated asynchronously to
