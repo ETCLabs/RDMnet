@@ -79,6 +79,7 @@ private:
   RDMnet::BrokerLog *log_;
   RDMnet::BrokerNotify *notify_;
   RDMnet::BrokerSettings settings_;
+  RdmUid my_uid_;
   std::vector<std::unique_ptr<ListenThread>> listeners_;
 
   // The Broker's RDM responder

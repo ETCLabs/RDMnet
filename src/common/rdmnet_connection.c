@@ -493,7 +493,9 @@ lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const C
       block_timer = &conn->hb_timer;
     }
     else
+    {
       res = LWPA_INPROGRESS;
+    }
   }
   else if (res != LWPA_ISCONN)
   {
@@ -562,6 +564,7 @@ lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const C
                     conn->state = kCSHeartbeat;
                     conn->rdmnet_conn_failed = false;
                     lwpa_timer_start(&conn->backoff_timer, 0);
+                    rdmnet_data_set_msg(additional_data, *msg);
                     should_break = true;
                     break;
                   default:
@@ -591,7 +594,10 @@ lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const C
         release_conn_and_readlock(conn);
       }
       else
+      {
         should_break = true;
+      }
+
       if (should_break)
         break;
     }

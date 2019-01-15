@@ -122,12 +122,20 @@ bool BrokerCore::Startup(const RDMnet::BrokerSettings &settings, uint16_t listen
       return false;
 
     // Check the settings for validity
-    if ((settings.cid_valid && lwpa_uuid_is_null(&settings.cid)) ||
-        (settings.uid_valid && rdmnet_uid_is_dynamic(&settings.uid)))
+    if (lwpa_uuid_is_null(&settings.cid) ||
+        (settings.uid_type == RDMnet::BrokerSettings::kStaticUid && !rdmnet_uid_is_static(&settings.uid)) ||
+        (settings.uid_type == RDMnet::BrokerSettings::kDynamicUid && !rdmnet_uid_is_dynamic(&settings.uid)))
     {
       return false;
     }
 
+    // Generate IDs if necessary
+    my_uid_ = settings.uid;
+    if (settings.uid_type == RDMnet::BrokerSettings::kDynamicUid)
+    {
+      my_uid_.id = 1;
+      uid_manager_.SetNextDeviceId(2);
+    }
     settings_ = settings;
 
     BrokerDiscoveryManager::InitLibrary();
@@ -258,7 +266,7 @@ bool BrokerCore::IsValidControllerDestinationUID(const RdmUid &uid) const
 
   // TODO this should only check devices
   int tmp;
-  return UIDToHandle(uid, tmp);
+  return uid_manager_.UidToHandle(uid, tmp);
 }
 
 bool BrokerCore::IsValidDeviceDestinationUID(const RdmUid &uid) const
@@ -268,22 +276,7 @@ bool BrokerCore::IsValidDeviceDestinationUID(const RdmUid &uid) const
 
   // TODO this should only check controllers
   int tmp;
-  return UIDToHandle(uid, tmp);
-}
-
-// If the uid is in the map, this returns true and fills in the cookie.
-bool BrokerCore::UIDToHandle(const RdmUid &uid, int &conn_handle) const
-{
-  BrokerReadGuard client_read(client_lock_);
-
-  bool result = false;
-  auto it = uid_lookup_.find(uid);
-  if (it != uid_lookup_.end())
-  {
-    result = true;
-    conn_handle = it->second;
-  }
-  return result;
+  return uid_manager_.UidToHandle(uid, tmp);
 }
 
 // The passed-in vector is cleared and filled with the cookies of connections that match the
@@ -498,7 +491,7 @@ void BrokerCore::ProcessTCPMessage(int conn, const RdmnetMessage *msg)
 {
   switch (msg->vector)
   {
-    case VECTOR_ROOT_BROKER:
+    case ACN_VECTOR_ROOT_BROKER:
     {
       const BrokerMessage *bmsg = get_broker_msg(msg);
       switch (bmsg->vector)
@@ -517,7 +510,7 @@ void BrokerCore::ProcessTCPMessage(int conn, const RdmnetMessage *msg)
       break;
     }
 
-    case VECTOR_ROOT_RPT:
+    case ACN_VECTOR_ROOT_RPT:
       ProcessRPTMessage(conn, msg);
       break;
 
@@ -618,8 +611,8 @@ void BrokerCore::SendStatus(RPTController *controller, const RptHeader &header, 
   {
     if (log_->CanLog(LWPA_LOG_INFO))
     {
-      char cid_str[UUID_STRING_BYTES];
-      uuid_to_string(cid_str, &controller->cid);
+      char cid_str[LWPA_UUID_STRING_BYTES];
+      lwpa_uuid_to_string(cid_str, &controller->cid);
       log_->Log(LWPA_LOG_WARNING, "Sending RPT Status code %d to Controller %s", status_code, cid_str);
     }
   }
@@ -677,7 +670,9 @@ bool BrokerCore::ProcessRPTConnectRequest(int conn, const ClientEntryData &data,
                                           rdmnet_connect_status_t &connect_status)
 {
   bool continue_adding = true;
-  const ClientEntryDataRpt *rptdata = get_rpt_client_entry_data(&data);
+  // We need to make a copy of the data because we might be changing the UID value
+  ClientEntryData updated_data = data;
+  ClientEntryDataRpt *rptdata = get_rpt_client_entry_data(&updated_data);
 
   if (LWPA_OK != rdmnet_set_blocking(conn, false))
   {
@@ -694,6 +689,30 @@ bool BrokerCore::ProcessRPTConnectRequest(int conn, const ClientEntryData &data,
     continue_adding = false;
   }
 
+  // Resolve the Client's UID
+  if (rdmnet_uid_is_dynamic_uid_request(&rptdata->client_uid))
+  {
+    if (!uid_manager_.AddDynamicUid(conn, updated_data.client_cid, rptdata->client_uid))
+    {
+      connect_status = kRdmnetConnectCapacityExceeded;
+      continue_adding = false;
+    }
+  }
+  else if (rdmnet_uid_is_static(&rptdata->client_uid))
+  {
+    if (!uid_manager_.AddStaticUid(conn, rptdata->client_uid))
+    {
+      connect_status = kRdmnetConnectDuplicateUid;
+      continue_adding = false;
+    }
+  }
+  else
+  {
+    // Client sent an invalid UID of some kind, like a bad dynamic UID request or a broadcast value
+    connect_status = kRdmnetConnectInvalidUid;
+    continue_adding = false;
+  }
+
   if (continue_adding)
   {
     // If it's a controller, add it to the controller queues -- unless
@@ -704,10 +723,12 @@ bool BrokerCore::ProcessRPTConnectRequest(int conn, const ClientEntryData &data,
       {
         connect_status = kRdmnetConnectCapacityExceeded;
         continue_adding = false;
+        uid_manager_.RemoveUid(rptdata->client_uid);
       }
       else
       {
-        auto controller = std::make_shared<RPTController>(settings_.max_controller_messages, data, *clients_[conn]);
+        auto controller =
+            std::make_shared<RPTController>(settings_.max_controller_messages, updated_data, *clients_[conn]);
         if (controller)
         {
           new_client = controller.get();
@@ -724,10 +745,11 @@ bool BrokerCore::ProcessRPTConnectRequest(int conn, const ClientEntryData &data,
       {
         connect_status = kRdmnetConnectCapacityExceeded;
         continue_adding = false;
+        uid_manager_.RemoveUid(rptdata->client_uid);
       }
       else
       {
-        auto device = std::make_shared<RPTDevice>(settings_.max_device_messages, data, *clients_[conn]);
+        auto device = std::make_shared<RPTDevice>(settings_.max_device_messages, updated_data, *clients_[conn]);
         if (device)
         {
           new_client = device.get();
@@ -746,9 +768,6 @@ bool BrokerCore::ProcessRPTConnectRequest(int conn, const ClientEntryData &data,
     new_client->uid = rptdata->client_uid;
     new_client->binding_cid = rptdata->binding_cid;
 
-    // Update the UID lookup table
-    uid_lookup_[rptdata->client_uid] = conn;
-
     // Send the connect reply
     BrokerMessage msg;
     msg.vector = VECTOR_BROKER_CONNECT_REPLY;
@@ -756,6 +775,7 @@ bool BrokerCore::ProcessRPTConnectRequest(int conn, const ClientEntryData &data,
     creply->connect_status = kRdmnetConnectOk;
     creply->e133_version = E133_VERSION;
     creply->broker_uid = settings_.uid;
+    creply->client_uid = rptdata->client_uid;
     new_client->Push(settings_.cid, msg);
 
     if (log_->CanLog(LWPA_LOG_INFO))
@@ -767,7 +787,7 @@ bool BrokerCore::ProcessRPTConnectRequest(int conn, const ClientEntryData &data,
 
     // Update everyone
     std::vector<ClientEntryData> entries;
-    entries.push_back(data);
+    entries.push_back(updated_data);
     entries[0].next = nullptr;
     SendClientsAdded(kClientProtocolRPT, conn, entries);
   }
@@ -812,7 +832,9 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
                         conn);
             }
             else
+            {
               route_msg = true;
+            }
           }
           else
           {
@@ -847,7 +869,9 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
           if (rptcli->client_type != kRPTClientTypeUnknown)
           {
             if (IsValidDeviceDestinationUID(rptmsg->header.dest_uid))
+            {
               route_msg = true;
+            }
             else
             {
               log_->Log(LWPA_LOG_DEBUG,
@@ -926,7 +950,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
     else
     {
       bool found_dest_client = false;
-      if (UIDToHandle(rptmsg->header.dest_uid, dest_conn))
+      if (uid_manager_.UidToHandle(rptmsg->header.dest_uid, dest_conn))
       {
         auto dest_client = clients_.find(dest_conn);
         if (dest_client != clients_.end())
@@ -1114,7 +1138,7 @@ void BrokerCore::RemoveConnections(const std::vector<int> &connections)
         if (client->second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
         {
           RPTClient *rptcli = static_cast<RPTClient *>(client->second.get());
-          uid_lookup_.erase(rptcli->uid);
+          uid_manager_.RemoveUid(rptcli->uid);
           if (rptcli->client_type == kRPTClientTypeController)
             controllers_.erase(conn);
           else if (rptcli->client_type == kRPTClientTypeDevice)

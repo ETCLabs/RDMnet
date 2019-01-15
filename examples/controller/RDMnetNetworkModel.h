@@ -89,7 +89,7 @@ class BrokerConnection
 {
 private:
   static LwpaUuid local_cid_;
-  static RdmUid local_uid_;
+  RdmUid local_uid_;
 
   static MyLog *log_;
 
@@ -110,9 +110,9 @@ private:
   bool connect_in_progress_;
 
 public:
-  static bool initializeStaticConnectionInfo(const LwpaUuid &cid, const RdmUid &uid, MyLog *log);
+  static bool initializeStaticConnectionInfo(const LwpaUuid &cid, MyLog *log);
   static LwpaUuid getLocalCID() { return local_cid_; }
-  static RdmUid getLocalUID() { return local_uid_; }
+  RdmUid getLocalUID() { return local_uid_; }
 
   explicit BrokerConnection(std::string scope);
   BrokerConnection(std::string scope, const LwpaSockaddr &addr);
@@ -290,9 +290,8 @@ protected:
                            const RdmParamData *resp_data_list, size_t num_responses, uint32_t seqnum,
                            uint8_t transaction_num);
   void SendNACK(const RptHeader *received_header, const RdmCommand *cmd_data, uint16_t nack_reason);
-  void SendNotification(const RptHeader *received_header, const RdmCmdListEntry *cmd_list);
-  void SendNotification(const RdmUid &dest_uid, uint16_t dest_endpoint_id, uint32_t seqnum,
-                        const RdmCmdListEntry *cmd_list);
+  void SendNotification(const RptHeader *received_header, RdmCmdListEntry *cmd_list);
+  void SendNotification(const RdmUid &dest_uid, uint16_t dest_endpoint_id, uint32_t seqnum, RdmCmdListEntry *cmd_list);
 
   /* GET/SET PROCESSING */
 

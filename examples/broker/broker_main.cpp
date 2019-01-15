@@ -351,7 +351,7 @@ DWORD WINAPI ServiceThread(LPVOID /*param*/)
   broker_log.StartThread();
 
   BrokerNotify broker_notify;
-  RDMnet::BrokerSettings broker_settings;
+  RDMnet::BrokerSettings broker_settings(0x6574);
   GetScopeKey(broker_settings.disc_attributes.scope);
   std::vector<IFList::iflist_entry> interfaces;
   IFList::FindIFaces(broker_log, interfaces);
@@ -363,8 +363,7 @@ DWORD WINAPI ServiceThread(LPVOID /*param*/)
     // machine
     std::string cidstr("ETC E133 BROKER for scope: ");
     cidstr += broker_settings.disc_attributes.scope;
-    generate_v3_uuid(&broker_settings.cid, cidstr.c_str(), interfaces.front().mac, 1);
-    broker_settings.uid = {0x6574, upack_32b(interfaces.front().mac + 2)};
+    lwpa_generate_v3_uuid(&broker_settings.cid, cidstr.c_str(), interfaces.front().mac, 1);
   }
 
   broker_settings.disc_attributes.dns_manufacturer = "ETC";

@@ -25,36 +25,49 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/// \file broker_uid_manager.h
-#ifndef _BROKER_UID_MANAGER_H_
-#define _BROKER_UID_MANAGER_H_
+#include "broker_uid_manager.h"
 
-#include <map>
-#include "lwpa/uuid.h"
-#include "rdm/uid.h"
-
-/// \brief Keeps track of all UIDs tracked by this Broker, and generates new Dynamic UIDs upon
-///        request.
-class BrokerUidManager
+bool BrokerUidManager::AddStaticUid(int conn_handle, const RdmUid &static_uid)
 {
-public:
-  bool AddStaticUid(int conn_handle, const RdmUid &static_uid);
-  bool AddDynamicUid(int conn_handle, const LwpaUuid &cid_or_rid, RdmUid &new_dynamic_uid);
+  if (uid_lookup_.find(static_uid) != uid_lookup_.end())
+    return false;
 
-  void RemoveUid(const RdmUid &uid) { uid_lookup_.erase(uid); }
+  uid_lookup_.insert(std::make_pair(static_uid, conn_handle));
+  return true;
+}
 
-  bool UidToHandle(const RdmUid &uid, int &conn_handle) const;
+bool BrokerUidManager::AddDynamicUid(int conn_handle, const LwpaUuid &cid_or_rid, RdmUid &new_dynamic_uid)
+{
+  if (uid_lookup_.size() >= 0xffffffff)
+    return false;
 
-  void SetNextDeviceId(uint32_t next_device_id) {next_device_id_ = next_device_id; }
+  auto reservation = reservations_.find(cid_or_rid);
+  if (reservation != reservations_.end())
+  {
+    new_dynamic_uid = reservation->second;
+  }
+  else
+  {
+    do
+    {
+      new_dynamic_uid.id = next_device_id_++;
+    } while (uid_lookup_.find(new_dynamic_uid) != uid_lookup_.end());
+    reservations_.insert(std::make_pair(cid_or_rid, new_dynamic_uid));
+  }
+  uid_lookup_.insert(std::make_pair(new_dynamic_uid, conn_handle));
+  return true;
+}
 
-private:
-  // The uid->handle lookup table
-  std::map<RdmUid, int> uid_lookup_;
-  // We try to give the same components back their dynamic UIDs when they reconnect.
-  // TODO: scalability/flushing to disk.
-  std::map<LwpaUuid, RdmUid> reservations_;
-  // The next dynamic RDM Device ID that will be assigned
-  uint32_t next_device_id_{1};
-};
-
-#endif  // _BROKER_UID_MANAGER_H_
+bool BrokerUidManager::UidToHandle(const RdmUid &uid, int &conn_handle) const
+{
+  const auto handle_pair = uid_lookup_.find(uid);
+  if (handle_pair != uid_lookup_.end())
+  {
+    conn_handle = handle_pair->second;
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}

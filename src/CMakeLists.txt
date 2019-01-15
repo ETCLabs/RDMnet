@@ -86,6 +86,8 @@ add_library(Broker
   broker/broker_responder.cpp
   broker/broker_threads.h
   broker/broker_threads.cpp
+  broker/broker_uid_manager.h
+  broker/broker_uid_manager.cpp
   broker/broker_util.h
   broker/broker_util.cpp
 )

@@ -72,10 +72,25 @@ struct BrokerDiscoveryAttributes
 /// A group of settings for Broker operation.
 struct BrokerSettings
 {
-  bool cid_valid{false};  ///< If false, the Broker core will generate a unique CID at startup.
-  LwpaUuid cid;           ///< The Broker's CID.
-  bool uid_valid{false};  ///< If false, the Broker core will assign itself a dynamic UID at startup.
-  RdmUid uid;             ///< The Broker's UID.
+  LwpaUuid cid{};  ///< The Broker's CID.
+
+  enum UidType
+  {
+    kStaticUid,
+    kDynamicUid
+  } uid_type{kDynamicUid};
+  RdmUid uid{0, 0};  ///< The Broker's UID.
+
+  void SetDynamicUid(uint16_t manufacturer_id)
+  {
+    rdmnet_init_dynamic_uid_request(&uid, manufacturer_id);
+    uid_type = kDynamicUid;
+  }
+  void SetStaticUid(const RdmUid &uid_in)
+  {
+    uid = uid_in;
+    uid_type = kStaticUid;
+  }
 
   BrokerDiscoveryAttributes disc_attributes;
 
@@ -103,12 +118,8 @@ struct BrokerSettings
   unsigned int max_socket_per_read_thread{LWPA_SOCKET_MAX_POLL_SIZE};
 
   BrokerSettings() {}
-  BrokerSettings(const LwpaUuid &broker_cid) : cid_valid(true), cid(broker_cid) {}
-  BrokerSettings(const RdmUid &broker_uid) : uid_valid(true), uid(broker_uid) {}
-  BrokerSettings(const LwpaUuid &broker_cid, const RdmUid &broker_uid)
-      : cid_valid(true), cid(broker_cid), uid_valid(true), uid(broker_uid)
-  {
-  }
+  BrokerSettings(const RdmUid &static_uid) { SetStaticUid(static_uid); }
+  BrokerSettings(uint16_t rdm_manu_id) { SetDynamicUid(rdm_manu_id); }
 };
 
 /// A callback interface for notifications from the Broker.

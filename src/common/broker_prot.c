@@ -251,7 +251,7 @@ lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg 
  *  \param[in] data Connect Reply data to pack into the data segment.
  *  \return Number of bytes packed, or 0 on error.
  */
-size_t lwpa_pack_connect_reply(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const ConnectReplyMsg *data)
+size_t pack_connect_reply(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const ConnectReplyMsg *data)
 {
   LwpaRootLayerPdu rlp;
   uint8_t *cur_ptr = buf;
