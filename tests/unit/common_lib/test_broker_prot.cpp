@@ -90,8 +90,8 @@ TEST_F(TestBrokerProt, message_string_macros)
   }
 
   // Set custom scope outside length requirements
-  constexpr char *scope_too_long = "longlonglonglonglonglonglonglonglonglonglonglonglonglonglonglong";
-  constexpr char *scope_truncated = "longlonglonglonglonglonglonglonglonglonglonglonglonglonglonglon";
+  constexpr char *scope_too_long = "longlonglonglonglonglonglonglonglonglonglonglonglonglonglonglon";
+  constexpr char *scope_truncated = "longlonglonglonglonglonglonglonglonglonglonglonglonglonglonglo";
   client_connect_msg_set_scope(&ccmsg, scope_too_long);
   ASSERT_STREQ(ccmsg.scope, scope_truncated);
 
