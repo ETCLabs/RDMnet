@@ -59,7 +59,9 @@ build:
   verbosity: minimal
 
 test_script:
-  - cmd: tests\unit\%configuration%\test_rdmnet_lib.exe
+  - cmd: |-
+      tests\unit\%configuration%\test_rdmnet_lib.exe
+      tests\unit\%configuration%\test_broker_lib.exe
 
 deploy:
   provider: FTP

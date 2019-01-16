@@ -35,26 +35,56 @@
 
 /// \brief Keeps track of all UIDs tracked by this Broker, and generates new Dynamic UIDs upon
 ///        request.
+///
+/// This class does very little validation of UIDs - that is expected to be done before this class
+/// is used.
 class BrokerUidManager
 {
 public:
-  bool AddStaticUid(int conn_handle, const RdmUid &static_uid);
-  bool AddDynamicUid(int conn_handle, const LwpaUuid &cid_or_rid, RdmUid &new_dynamic_uid);
+  BrokerUidManager() {}
+  explicit BrokerUidManager(size_t max_uid_capacity) : max_uid_capacity_(max_uid_capacity) {}
 
-  void RemoveUid(const RdmUid &uid) { uid_lookup_.erase(uid); }
+  static constexpr size_t DEFAULT_MAX_UID_CAPACITY = 1000000;
+  enum class AddResult
+  {
+    kOk,
+    kCapacityExceeded,
+    kDuplicateId
+  };
+
+  AddResult AddStaticUid(int conn_handle, const RdmUid &static_uid);
+  AddResult AddDynamicUid(int conn_handle, const LwpaUuid &cid_or_rid, RdmUid &new_dynamic_uid);
+
+  void RemoveUid(const RdmUid &uid);
 
   bool UidToHandle(const RdmUid &uid, int &conn_handle) const;
 
   void SetNextDeviceId(uint32_t next_device_id) {next_device_id_ = next_device_id; }
 
 private:
-  // The uid->handle lookup table
-  std::map<RdmUid, int> uid_lookup_;
+  struct ReservationData
+  {
+    explicit ReservationData(const RdmUid &uid) : assigned_uid(uid) {}
+
+    RdmUid assigned_uid;
+    bool currently_connected{true};
+  };
+  struct UidData
+  {
+    explicit UidData(int conn_handle) : connection_handle(conn_handle) {}
+
+    int connection_handle;
+    ReservationData *reservation{nullptr};
+  };
+
+  // The uid-keyed lookup table
+  std::map<RdmUid, UidData> uid_lookup_;
   // We try to give the same components back their dynamic UIDs when they reconnect.
   // TODO: scalability/flushing to disk.
-  std::map<LwpaUuid, RdmUid> reservations_;
+  std::map<LwpaUuid, ReservationData> reservations_;
   // The next dynamic RDM Device ID that will be assigned
   uint32_t next_device_id_{1};
+  const size_t max_uid_capacity_{DEFAULT_MAX_UID_CAPACITY};
 };
 
 #endif  // _BROKER_UID_MANAGER_H_

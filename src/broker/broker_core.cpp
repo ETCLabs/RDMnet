@@ -692,18 +692,39 @@ bool BrokerCore::ProcessRPTConnectRequest(int conn, const ClientEntryData &data,
   // Resolve the Client's UID
   if (rdmnet_uid_is_dynamic_uid_request(&rptdata->client_uid))
   {
-    if (!uid_manager_.AddDynamicUid(conn, updated_data.client_cid, rptdata->client_uid))
+    BrokerUidManager::AddResult add_result =
+        uid_manager_.AddDynamicUid(conn, updated_data.client_cid, rptdata->client_uid);
+    switch (add_result)
     {
-      connect_status = kRdmnetConnectCapacityExceeded;
-      continue_adding = false;
+      case BrokerUidManager::AddResult::kOk:
+        break;
+      case BrokerUidManager::AddResult::kDuplicateId:
+        connect_status = kRdmnetConnectDuplicateUid;
+        continue_adding = false;
+        break;
+      case BrokerUidManager::AddResult::kCapacityExceeded:
+      default:
+        connect_status = kRdmnetConnectCapacityExceeded;
+        continue_adding = false;
+        break;
     }
   }
   else if (rdmnet_uid_is_static(&rptdata->client_uid))
   {
-    if (!uid_manager_.AddStaticUid(conn, rptdata->client_uid))
+    BrokerUidManager::AddResult add_result = uid_manager_.AddStaticUid(conn, rptdata->client_uid);
+    switch (add_result)
     {
-      connect_status = kRdmnetConnectDuplicateUid;
-      continue_adding = false;
+      case BrokerUidManager::AddResult::kOk:
+        break;
+      case BrokerUidManager::AddResult::kDuplicateId:
+        connect_status = kRdmnetConnectDuplicateUid;
+        continue_adding = false;
+        break;
+      case BrokerUidManager::AddResult::kCapacityExceeded:
+      default:
+        connect_status = kRdmnetConnectCapacityExceeded;
+        continue_adding = false;
+        break;
     }
   }
   else
