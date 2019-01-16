@@ -706,8 +706,10 @@ void RDMnetNetworkModel::processBrokerDisconnection(uint16_t conn)
   }
 }
 
-void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list)
+void RDMnetNetworkModel::processAddRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list)
 {
+  BrokerItem *treeBrokerItem = brokerConn->treeBrokerItem();
+
   // Update the Controller's discovered list to match
   if (list.size() > 0)
   {
@@ -719,7 +721,7 @@ void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem *treeBrokerItem, con
     if (!is_rpt_client_entry(&entry))
       continue;
 
-    bool is_me = (get_rpt_client_entry_data(&entry)->client_uid == BrokerConnection::getLocalUID());
+    bool is_me = (get_rpt_client_entry_data(&entry)->client_uid == brokerConn->getLocalUID());
     RDMnetClientItem *newRDMnetClientItem = new RDMnetClientItem(entry, is_me);
     bool itemAlreadyAdded = false;
 
@@ -759,9 +761,10 @@ void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem *treeBrokerItem, con
   }
 }
 
-void RDMnetNetworkModel::processRemoveRDMnetClients(BrokerItem *treeBrokerItem,
+void RDMnetNetworkModel::processRemoveRDMnetClients(BrokerConnection *brokerConn,
                                                     const std::vector<ClientEntryData> &list)
 {
+  BrokerItem *treeBrokerItem = brokerConn->treeBrokerItem();
   // Update the Controller's discovered list by removing these newly lost
   // clients
   for (int i = treeBrokerItem->rowCount() - 1; i >= 0; --i)
@@ -1403,10 +1406,11 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
 
   connect(model, SIGNAL(brokerDisconnection(uint16_t)), model, SLOT(processBrokerDisconnection(uint16_t)),
           Qt::AutoConnection);
-  connect(model, SIGNAL(addRDMnetClients(BrokerItem *, const std::vector<ClientEntryData> &)), model,
-          SLOT(processAddRDMnetClients(BrokerItem *, const std::vector<ClientEntryData> &)), Qt::AutoConnection);
-  connect(model, SIGNAL(removeRDMnetClients(BrokerItem *, const std::vector<ClientEntryData> &)), model,
-          SLOT(processRemoveRDMnetClients(BrokerItem *, const std::vector<ClientEntryData> &)), Qt::AutoConnection);
+  connect(model, SIGNAL(addRDMnetClients(BrokerConnection *, const std::vector<ClientEntryData> &)), model,
+          SLOT(processAddRDMnetClients(BrokerConnection *, const std::vector<ClientEntryData> &)), Qt::AutoConnection);
+  connect(model, SIGNAL(removeRDMnetClients(BrokerConnection *, const std::vector<ClientEntryData> &)), model,
+          SLOT(processRemoveRDMnetClients(BrokerConnection *, const std::vector<ClientEntryData> &)),
+          Qt::AutoConnection);
   connect(model, SIGNAL(newEndpointList(RDMnetClientItem *, const std::vector<std::pair<uint16_t, uint8_t>> &)), model,
           SLOT(processNewEndpointList(RDMnetClientItem *, const std::vector<std::pair<uint16_t, uint8_t>> &)),
           Qt::AutoConnection);
@@ -1801,11 +1805,11 @@ void RDMnetNetworkModel::ProcessBrokerMessage(uint16_t conn, const RdmnetMessage
 {
   const BrokerMessage *broker_msg = get_broker_msg(msg);
 
-  BrokerItem *treeBrokerItem = NULL;
+  BrokerConnection *brokerConn = NULL;
 
   if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
   {
-    treeBrokerItem = broker_connections_[conn]->treeBrokerItem();
+    brokerConn = broker_connections_[conn].get();
     lwpa_rwlock_readunlock(&prop_lock);
   }
 
@@ -1827,9 +1831,9 @@ void RDMnetNetworkModel::ProcessBrokerMessage(uint16_t conn, const RdmnetMessage
       }
 
       if (broker_msg->vector == VECTOR_BROKER_CLIENT_REMOVE)
-        emit removeRDMnetClients(treeBrokerItem, list);
+        emit removeRDMnetClients(brokerConn, list);
       else
-        emit addRDMnetClients(treeBrokerItem, list);
+        emit addRDMnetClients(brokerConn, list);
     }
     break;
     // case VECTOR_BROKER_DISCONNECT:
@@ -2044,7 +2048,6 @@ void RDMnetNetworkModel::SendRDMGetResponses(const RdmUid &dest_uid, uint16_t de
 
   RdmResponse resp_data;
 
-  resp_data.src_uid = BrokerConnection::getLocalUID();
   resp_data.dest_uid = dest_uid;
   resp_data.transaction_num = transaction_num;
   resp_data.resp_type = num_responses > 1 ? E120_RESPONSE_TYPE_ACK_OVERFLOW : E120_RESPONSE_TYPE_ACK;
@@ -2094,13 +2097,13 @@ void RDMnetNetworkModel::SendNACK(const RptHeader *received_header, const RdmCom
   }
 }
 
-void RDMnetNetworkModel::SendNotification(const RptHeader *received_header, const RdmCmdListEntry *cmd_list)
+void RDMnetNetworkModel::SendNotification(const RptHeader *received_header, RdmCmdListEntry *cmd_list)
 {
   SendNotification(received_header->source_uid, received_header->source_endpoint_id, received_header->seqnum, cmd_list);
 }
 
 void RDMnetNetworkModel::SendNotification(const RdmUid &dest_uid, uint16_t dest_endpoint_id, uint32_t seqnum,
-                                          const RdmCmdListEntry *cmd_list)
+                                          RdmCmdListEntry *cmd_list)
 {
   RptHeader header_to_send;
   int send_res = static_cast<int>(LWPA_OK);
@@ -2134,7 +2137,7 @@ void RDMnetNetworkModel::SendNotification(const RdmUid &dest_uid, uint16_t dest_
         {
           if (connectionToUse->connected())
           {
-            header_to_send.source_uid = connectionToUse->getLocalUid();
+            header_to_send.source_uid = connectionToUse->getLocalUID();
             for (const RdmCmdListEntry *cmd = cmd_list; cmd; cmd = cmd->next)
             {
               // This is kinda hacky, maybe there should be something in lib RDM for this
@@ -2149,7 +2152,7 @@ void RDMnetNetworkModel::SendNotification(const RdmUid &dest_uid, uint16_t dest_
     }
     else if (connectionToUse != NULL)
     {
-      header_to_send.source_uid = connectionToUse->getLocalUid();
+      header_to_send.source_uid = connectionToUse->getLocalUID();
       for (const RdmCmdListEntry *cmd = cmd_list; cmd; cmd = cmd->next)
       {
         // This is kinda hacky, maybe there should be something in lib RDM for this

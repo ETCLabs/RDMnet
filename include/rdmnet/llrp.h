@@ -165,7 +165,7 @@ bool llrp_stop_discovery(llrp_socket_t handle);
 
 int llrp_update(LlrpPoll *poll_array, size_t poll_array_size, int timeout_ms);
 
-void llrp_target_update_connection_state(llrp_socket_t handle, bool connected_to_broker);
+void llrp_target_update_connection_state(llrp_socket_t handle, bool connected_to_broker, const RdmUid *new_uid);
 
 lwpa_error_t llrp_send_rdm_command(llrp_socket_t handle, const LwpaUuid *destination, const RdmBuffer *command,
                                    uint32_t *transaction_num);

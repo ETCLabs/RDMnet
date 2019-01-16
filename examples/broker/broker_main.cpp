@@ -441,7 +441,7 @@ void PrintVersion()
 {
   printf("ETC Prototype RDMnet Broker\n");
   printf("Version %s\n\n", RDMNET_VERSION_STRING);
-  printf("Copyright (c) 2018 ETC Inc.\n");
+  printf("%s\n", RDMNET_VERSION_COPYRIGHT);
   printf("License: Apache License v2.0 <http://www.apache.org/licenses/LICENSE-2.0>\n");
   printf("Unless required by applicable law or agreed to in writing, this software is\n");
   printf("provided \"AS IS\", WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express\n");

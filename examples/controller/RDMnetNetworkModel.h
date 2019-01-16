@@ -172,8 +172,8 @@ public:
 
 signals:
   void brokerDisconnection(uint16_t conn);
-  void addRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list);
-  void removeRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list);
+  void addRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
+  void removeRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
   void newEndpointList(RDMnetClientItem *treeClientItem, const std::vector<std::pair<uint16_t, uint8_t>> &list);
   void newResponderList(EndpointItem *treeEndpointItem, const std::vector<RdmUid> &list);
   void setPropertyData(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, const QVariant &value,
@@ -214,8 +214,8 @@ public slots:
 
 protected slots:
   void processBrokerDisconnection(uint16_t conn);
-  void processAddRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list);
-  void processRemoveRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list);
+  void processAddRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
+  void processRemoveRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
   void processNewEndpointList(RDMnetClientItem *treeClientItem, const std::vector<std::pair<uint16_t, uint8_t>> &list);
   void processNewResponderList(EndpointItem *treeEndpointItem, const std::vector<RdmUid> &list);
   void processSetPropertyData(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, const QVariant &value,

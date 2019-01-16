@@ -84,7 +84,7 @@ static void broker_register_error(const BrokerDiscInfo *broker_info, int platfor
 static void mdns_dnssd_resolve_addr(RdmnetConnectParams *connect_params);
 
 /* Broker connection */
-static bool connect_to_broker();
+static bool connect_to_broker(RdmUid *assigned_uid);
 static void get_connect_params(RdmnetConnectParams *connect_params, LwpaSockaddr *broker_addr);
 
 /* RDM command handling */
@@ -135,14 +135,14 @@ lwpa_error_t device_init(const DeviceSettings *settings, const LwpaLogParams *lp
   }
 
   device_state.my_cid = settings->cid;
-  device_state.my_uid = settings->uid;
+  rdmnet_init_dynamic_uid_request(&device_state.my_uid, 0x6574);
   device_state.configuration_change = false;
   device_state.lparams = lparams;
 
-  device_state.connected = connect_to_broker();
+  device_state.connected = connect_to_broker(&device_state.my_uid);
   if (device_state.connected)
   {
-    device_llrp_set_connected(true);
+    device_llrp_set_connected(true, &device_state.my_uid);
     lwpa_log(lparams, LWPA_LOG_INFO, "Connected to Broker.");
   }
   return LWPA_OK;
@@ -176,14 +176,16 @@ void device_run()
                  "Device received configuration message that requires re-connection to Broker. Disconnecting...");
         rdmnet_disconnect(device_state.broker_conn, true, kRdmnetDisconnectRptReconfigure);
         device_state.connected = false;
-        device_llrp_set_connected(false);
+        rdmnet_init_dynamic_uid_request(&device_state.my_uid, 0x6574);
+        device_llrp_set_connected(false, &device_state.my_uid);
       }
     }
     else if (res != LWPA_NODATA && !device_state.configuration_change)
     {
       /* Disconnected from Broker. */
       device_state.connected = false;
-      device_llrp_set_connected(false);
+      rdmnet_init_dynamic_uid_request(&device_state.my_uid, 0x6574);
+      device_llrp_set_connected(false, &device_state.my_uid);
       lwpa_log(device_state.lparams, LWPA_LOG_INFO,
                "Disconnected from Broker with error: '%s'. Attempting to reconnect...", lwpa_strerror(res));
 
@@ -198,10 +200,10 @@ void device_run()
     Sleep(1000);
 
     /* Attempt to reconnect to the Broker using our most current connect parameters. */
-    if (connect_to_broker())
+    if (connect_to_broker(&device_state.my_uid))
     {
       device_state.connected = true;
-      device_llrp_set_connected(true);
+      device_llrp_set_connected(true, &device_state.my_uid);
       lwpa_log(device_state.lparams, LWPA_LOG_INFO, "Re-connected to Broker.");
     }
   }
@@ -366,7 +368,7 @@ void get_connect_params(RdmnetConnectParams *connect_params, LwpaSockaddr *broke
   }
 }
 
-bool connect_to_broker()
+bool connect_to_broker(RdmUid *assigned_uid)
 {
   static RdmnetData connect_data;
   ClientConnectMsg connect_msg;
@@ -420,7 +422,7 @@ bool connect_to_broker()
 
 void device_handle_message(const RdmnetMessage *msg, bool *requires_reconnect)
 {
-  if (msg->vector == VECTOR_ROOT_RPT)
+  if (msg->vector == ACN_VECTOR_ROOT_RPT)
   {
     const RptMessage *rptmsg = get_rpt_msg(msg);
     if (rptmsg->vector == VECTOR_RPT_REQUEST)
@@ -618,7 +620,7 @@ void send_nack(const RptHeader *received_header, const RdmCommand *cmd_data, uin
   resp_data.command_class = cmd_data->command_class + 1;
   resp_data.param_id = cmd_data->param_id;
   resp_data.datalen = 2;
-  pack_16b(resp_data.data, nack_reason);
+  lwpa_pack_16b(resp_data.data, nack_reason);
 
   if (LWPA_OK == rdmresp_create_response(&resp_data, &resp.msg))
   {

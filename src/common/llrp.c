@@ -706,11 +706,14 @@ int llrp_update(LlrpPoll *poll_array, size_t poll_array_size, int timeout_ms)
  *
  *  \param[in] handle LLRP Target socket for which to update the connection state.
  *  \param[in] connected_to_broker Whether the LLRP Target is currently connected to a Broker.
+ *  \param[in] new_uid The LLRP Target's new UID, if it is using a Dynamic UID, or NULL if the UID
+ *                     hasn't changed.
  */
-void llrp_target_update_connection_state(llrp_socket_t handle, bool connected_to_broker)
+void llrp_target_update_connection_state(llrp_socket_t handle, bool connected_to_broker, const RdmUid *new_uid)
 {
   (void)handle;
   (void)connected_to_broker;
+  (void)new_uid;
   /* TODO */
 }
 
