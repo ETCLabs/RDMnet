@@ -6,7 +6,6 @@
 *.exe
 *.o
 *.so
-bin/
 
 # CMake
 build*/
@@ -14,7 +13,7 @@ build*/
 # Version script
 tmp_commit_msg.txt
 
-# MSVC2015 and Qt
+# MSVC and Qt
 *.VC.db
 *.VC.opendb
 *.vcxproj.user
