@@ -1300,7 +1300,9 @@ lwpa_error_t rdmnet_recv(int handle, RdmnetData *data)
         }
       }
       else
+      {
         rdmnet_data_set_msg(data, msgbuf->msg);
+      }
     }
 
     find_res = get_readlock_and_conn(handle, &conn);

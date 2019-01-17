@@ -64,7 +64,7 @@ void llrp_send_nack(llrp_socket_t sock, const LlrpRdmMessage *llrp_msg, const Rd
   resp_data.command_class = cmd_data->command_class + 1;
   resp_data.param_id = cmd_data->param_id;
   resp_data.datalen = 2;
-  pack_16b(resp_data.data, nack_reason);
+  lwpa_pack_16b(resp_data.data, nack_reason);
 
   if (LWPA_OK == rdmresp_create_response(&resp_data, &resp))
   {
@@ -218,6 +218,8 @@ void device_llrp_update_thread(void *arg)
 void device_llrp_init(const LwpaUuid *my_cid, const LwpaLogParams *lparams)
 {
   size_t num_interfaces;
+  RdmUid my_uid;
+  rdmnet_init_dynamic_uid_request(&my_uid, 0x6574);
 
   if (!my_cid || !lparams)
     return;
@@ -228,17 +230,14 @@ void device_llrp_init(const LwpaUuid *my_cid, const LwpaLogParams *lparams)
     return;
   }
 
-  num_interfaces = netint_get_num_interfaces();
+  num_interfaces = lwpa_netint_get_num_interfaces();
   if (num_interfaces > 0)
   {
     size_t i;
-    LwpaUid my_uid;
     LwpaNetintInfo *netints = calloc(num_interfaces, sizeof(LwpaNetintInfo));
     llrp_info.target_socks = calloc(num_interfaces, sizeof(LlrpPoll));
 
-    rdmnet_init_dynamic_uid_request(&my_uid, 0x6574);
-
-    num_interfaces = netint_get_interfaces(netints, num_interfaces);
+    num_interfaces = lwpa_netint_get_interfaces(netints, num_interfaces);
     for (i = 0; i < num_interfaces; ++i)
     {
       LwpaNetintInfo *netint = &netints[i];
@@ -275,7 +274,7 @@ void device_llrp_init(const LwpaUuid *my_cid, const LwpaLogParams *lparams)
     if (lwpa_thread_create(&llrp_info.update_thread, &tparams, device_llrp_update_thread, NULL))
     {
       llrp_info.cid = *my_cid;
-      llrp_info.uid = *my_uid;
+      llrp_info.uid = my_uid;
       llrp_info.lparams = lparams;
     }
     else

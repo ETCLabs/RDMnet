@@ -229,7 +229,8 @@ bool device_llrp_set(const RdmCommand *cmd_data, uint16_t *nack_reason)
                  "A setting was changed using LLRP which requires re-connection to Broker. Disconnecting...");
         rdmnet_disconnect(device_state.broker_conn, true, kRdmnetDisconnectLlrpReconfigure);
         device_state.connected = false;
-        device_llrp_set_connected(false);
+        rdmnet_init_dynamic_uid_request(&device_state.my_uid, 0x6574);
+        device_llrp_set_connected(false, &device_state.my_uid);
       }
       else
       {
@@ -406,9 +407,7 @@ bool connect_to_broker(RdmUid *assigned_uid)
     }
     else
     {
-      /* If we were redirected, the data structure will tell us the new address. */
-      if (rdmnet_data_is_addr(&connect_data))
-        broker_addr = *(rdmnet_data_addr(&connect_data));
+      *assigned_uid = get_connect_reply_msg(get_broker_msg(rdmnet_data_msg(&connect_data)))->client_uid;
     }
   } while (!device_state.configuration_change && res != LWPA_OK);
 

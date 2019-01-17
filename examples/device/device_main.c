@@ -188,7 +188,7 @@ int wmain(int argc, wchar_t *argv[])
   memcpy(settings.cid.data, &uuid, LWPA_UUID_BYTES);
 
   /* Initialize LLRP */
-  device_llrp_init(&settings.cid, &settings.uid, lparams);
+  device_llrp_init(&settings.cid, lparams);
 
   /* Handle console signals */
   if (!SetConsoleCtrlHandler(console_handler, TRUE))

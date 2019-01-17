@@ -343,7 +343,7 @@ bool set_component_scope(const uint8_t *param_data, uint8_t param_data_len, uint
 {
   if (param_data_len == (2 + E133_SCOPE_STRING_PADDED_LENGTH + 1 + 4 + 16 + 2))
   {
-    if (upack_16b(param_data) == 1)
+    if (lwpa_upack_16b(param_data) == 1)
     {
       const uint8_t *cur_ptr = param_data + 2;
       char new_scope[E133_SCOPE_STRING_PADDED_LENGTH];
@@ -359,15 +359,15 @@ bool set_component_scope(const uint8_t *param_data, uint8_t param_data_len, uint
       switch (*cur_ptr++)
       {
         case E133_STATIC_CONFIG_IPV4:
-          lwpaip_set_v4_address(&new_static_config.ip, upack_32b(cur_ptr));
+          lwpaip_set_v4_address(&new_static_config.ip, lwpa_upack_32b(cur_ptr));
           cur_ptr += 4 + 16;
-          new_static_config.port = upack_16b(cur_ptr);
+          new_static_config.port = lwpa_upack_16b(cur_ptr);
           break;
         case E133_STATIC_CONFIG_IPV6:
           cur_ptr += 4;
           lwpaip_set_v6_address(&new_static_config.ip, cur_ptr);
           cur_ptr += 16;
-          new_static_config.port = upack_16b(cur_ptr);
+          new_static_config.port = lwpa_upack_16b(cur_ptr);
           break;
         case E133_NO_STATIC_CONFIG:
         default:
@@ -494,10 +494,10 @@ bool get_component_scope(const uint8_t *param_data, uint8_t param_data_len, para
 {
   if (param_data_len >= 2)
   {
-    if (upack_16b(param_data) == 1)
+    if (lwpa_upack_16b(param_data) == 1)
     {
       uint8_t *cur_ptr = resp_data_list[0].data;
-      pack_16b(cur_ptr, 1);
+      lwpa_pack_16b(cur_ptr, 1);
       cur_ptr += 2;
       strncpy((char *)cur_ptr, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH);
       cur_ptr[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
@@ -508,9 +508,9 @@ bool get_component_scope(const uint8_t *param_data, uint8_t param_data_len, para
       if (lwpaip_is_v4(&static_config->ip))
       {
         *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
-        pack_32b(cur_ptr, lwpaip_v4_address(&static_config->ip));
+        lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&static_config->ip));
         cur_ptr += 4 + 16;
-        pack_16b(cur_ptr, static_config->port);
+        lwpa_pack_16b(cur_ptr, static_config->port);
         cur_ptr += 2;
       }
       else if (lwpaip_is_v6(&static_config->ip))
@@ -519,7 +519,7 @@ bool get_component_scope(const uint8_t *param_data, uint8_t param_data_len, para
         cur_ptr += 4;
         memcpy(cur_ptr, lwpaip_v6_address(&static_config->ip), 16);
         cur_ptr += 16;
-        pack_16b(cur_ptr, static_config->port);
+        lwpa_pack_16b(cur_ptr, static_config->port);
         cur_ptr += 2;
       }
       else
@@ -568,21 +568,21 @@ bool get_tcp_comms_status(const uint8_t *param_data, uint8_t param_data_len, par
   cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
   if (lwpaip_is_v4(&prop_data.cur_broker_addr.ip))
   {
-    pack_32b(cur_ptr, lwpaip_v4_address(&prop_data.cur_broker_addr.ip));
+    lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&prop_data.cur_broker_addr.ip));
     cur_ptr += 4;
-    memset(cur_ptr, 0, IPV6_BYTES);
-    cur_ptr += IPV6_BYTES;
+    memset(cur_ptr, 0, LWPA_IPV6_BYTES);
+    cur_ptr += LWPA_IPV6_BYTES;
   }
   else
   {
-    pack_32b(cur_ptr, 0);
+    lwpa_pack_32b(cur_ptr, 0);
     cur_ptr += 4;
-    memcpy(cur_ptr, lwpaip_v6_address(&prop_data.cur_broker_addr.ip), IPV6_BYTES);
-    cur_ptr += IPV6_BYTES;
+    memcpy(cur_ptr, lwpaip_v6_address(&prop_data.cur_broker_addr.ip), LWPA_IPV6_BYTES);
+    cur_ptr += LWPA_IPV6_BYTES;
   }
-  pack_16b(cur_ptr, prop_data.cur_broker_addr.port);
+  lwpa_pack_16b(cur_ptr, prop_data.cur_broker_addr.port);
   cur_ptr += 2;
-  pack_16b(cur_ptr, prop_data.tcp_unhealthy_counter);
+  lwpa_pack_16b(cur_ptr, prop_data.tcp_unhealthy_counter);
   cur_ptr += 2;
   resp_data_list[0].datalen = (uint8_t)(cur_ptr - resp_data_list[0].data);
   *num_responses = 1;
@@ -602,7 +602,7 @@ bool get_supported_parameters(const uint8_t *param_data, uint8_t param_data_len,
 
   for (i = 0; i < NUM_SUPPORTED_PIDS; ++i)
   {
-    pack_16b(cur_ptr, kSupportedPIDList[i]);
+    lwpa_pack_16b(cur_ptr, kSupportedPIDList[i]);
     cur_ptr += 2;
     if ((cur_ptr - resp_data_list[list_index].data) >= RDM_MAX_PDL - 1)
     {
@@ -678,7 +678,7 @@ bool get_endpoint_list(const uint8_t *param_data, uint8_t param_data_len, param_
   /* Hardcoded: no endpoints other than NULL_ENDPOINT. NULL_ENDPOINT is not
    * reported in this response. */
   resp_data_list[0].datalen = 4;
-  pack_32b(cur_ptr, prop_data.endpoint_list_change_number);
+  lwpa_pack_32b(cur_ptr, prop_data.endpoint_list_change_number);
   *num_responses = 1;
   return true;
 }
