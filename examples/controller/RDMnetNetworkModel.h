@@ -30,6 +30,7 @@
 #include <fstream>
 #include <map>
 #include <memory>
+#include <vector>
 #include <cstddef>
 #include "lwpa/log.h"
 #include "lwpa/thread.h"
@@ -112,7 +113,7 @@ private:
 public:
   static bool initializeStaticConnectionInfo(const LwpaUuid &cid, MyLog *log);
   static LwpaUuid getLocalCID() { return local_cid_; }
-  RdmUid getLocalUID() { return local_uid_; }
+  RdmUid getLocalUID() const { return local_uid_; }
 
   explicit BrokerConnection(std::string scope);
   BrokerConnection(std::string scope, const LwpaSockaddr &addr);
@@ -290,8 +291,11 @@ protected:
                            const RdmParamData *resp_data_list, size_t num_responses, uint32_t seqnum,
                            uint8_t transaction_num);
   void SendNACK(const RptHeader *received_header, const RdmCommand *cmd_data, uint16_t nack_reason);
-  void SendNotification(const RptHeader *received_header, RdmCmdListEntry *cmd_list);
-  void SendNotification(const RdmUid &dest_uid, uint16_t dest_endpoint_id, uint32_t seqnum, RdmCmdListEntry *cmd_list);
+  void SendNotification(const RptHeader *received_header, const std::vector<RdmResponse> &resp_list);
+  void SendNotification(const RdmUid &dest_uid, uint16_t dest_endpoint_id, uint32_t seqnum,
+                        const std::vector<RdmResponse> &resp_list);
+  lwpa_error_t SendNotificationOnConnection(const BrokerConnection *connection, const RptHeader &header,
+                                            const std::vector<RdmResponse> &resp_list);
 
   /* GET/SET PROCESSING */
 

@@ -2044,10 +2044,10 @@ void RDMnetNetworkModel::SendRDMGetResponses(const RdmUid &dest_uid, uint16_t de
                                              const RdmParamData *resp_data_list, size_t num_responses, uint32_t seqnum,
                                              uint8_t transaction_num)
 {
-  static RdmCmdListEntry resp_list[MAX_RESPONSES_IN_ACK_OVERFLOW];
-
+  std::vector<RdmResponse> resp_list;
   RdmResponse resp_data;
 
+  // The source UID will be added later, right before sending.
   resp_data.dest_uid = dest_uid;
   resp_data.transaction_num = transaction_num;
   resp_data.resp_type = num_responses > 1 ? E120_RESPONSE_TYPE_ACK_OVERFLOW : E120_RESPONSE_TYPE_ACK;
@@ -2056,29 +2056,23 @@ void RDMnetNetworkModel::SendRDMGetResponses(const RdmUid &dest_uid, uint16_t de
   resp_data.command_class = E120_GET_COMMAND_RESPONSE;
   resp_data.param_id = param_id;
 
-  size_t i;
-  for (i = 0; i < num_responses; ++i)
+  for (size_t i = 0; i < num_responses; ++i)
   {
     memcpy(resp_data.data, resp_data_list[i].data, resp_data_list[i].datalen);
     resp_data.datalen = resp_data_list[i].datalen;
     if (i == num_responses - 1)
     {
       resp_data.resp_type = E120_RESPONSE_TYPE_ACK;
-      resp_list[i].next = NULL;
     }
-    else
-    {
-      resp_list[i].next = &resp_list[i + 1];
-    }
-    rdmresp_create_response(&resp_data, &resp_list[i].msg);
+    resp_list.push_back(resp_data);
   }
   SendNotification(dest_uid, dest_endpoint_id, seqnum, resp_list);
 }
 
 void RDMnetNetworkModel::SendNACK(const RptHeader *received_header, const RdmCommand *cmd_data, uint16_t nack_reason)
 {
+  std::vector<RdmResponse> resp_list;
   RdmResponse resp_data;
-  RdmCmdListEntry resp;
 
   resp_data.dest_uid = received_header->source_uid;
   resp_data.transaction_num = cmd_data->transaction_num;
@@ -2090,20 +2084,18 @@ void RDMnetNetworkModel::SendNACK(const RptHeader *received_header, const RdmCom
   resp_data.datalen = 2;
   lwpa_pack_16b(resp_data.data, nack_reason);
 
-  if (LWPA_OK == rdmresp_create_response(&resp_data, &resp.msg))
-  {
-    resp.next = NULL;
-    SendNotification(received_header, &resp);
-  }
+  resp_list.push_back(resp_data);
+  SendNotification(received_header, resp_list);
 }
 
-void RDMnetNetworkModel::SendNotification(const RptHeader *received_header, RdmCmdListEntry *cmd_list)
+void RDMnetNetworkModel::SendNotification(const RptHeader *received_header, const std::vector<RdmResponse> &resp_list)
 {
-  SendNotification(received_header->source_uid, received_header->source_endpoint_id, received_header->seqnum, cmd_list);
+  SendNotification(received_header->source_uid, received_header->source_endpoint_id, received_header->seqnum,
+                   resp_list);
 }
 
 void RDMnetNetworkModel::SendNotification(const RdmUid &dest_uid, uint16_t dest_endpoint_id, uint32_t seqnum,
-                                          RdmCmdListEntry *cmd_list)
+                                          const std::vector<RdmResponse> &resp_list)
 {
   RptHeader header_to_send;
   int send_res = static_cast<int>(LWPA_OK);
@@ -2133,33 +2125,17 @@ void RDMnetNetworkModel::SendNotification(const RdmUid &dest_uid, uint16_t dest_
       {
         connectionToUse = brokerConnectionIter.second.get();
 
-        if (connectionToUse != NULL)
+        if (connectionToUse != NULL && connectionToUse->connected())
         {
-          if (connectionToUse->connected())
-          {
-            header_to_send.source_uid = connectionToUse->getLocalUID();
-            for (const RdmCmdListEntry *cmd = cmd_list; cmd; cmd = cmd->next)
-            {
-              // This is kinda hacky, maybe there should be something in lib RDM for this
-              lwpa_pack_16b(&cmd->msg.data[RDM_OFFSET_SRC_MANUFACTURER], header_to_send.source_uid.manu);
-              lwpa_pack_32b(&cmd->msg.data[RDM_OFFSET_SRC_DEVICE], header_to_send.source_uid.id);
-            }
-            send_res |=
-                static_cast<int>(send_rpt_notification(connectionToUse->handle(), &my_cid, &header_to_send, cmd_list));
-          }
+          header_to_send.source_uid = connectionToUse->getLocalUID();
+          send_res |= static_cast<int>(SendNotificationOnConnection(connectionToUse, header_to_send, resp_list));
         }
       }
     }
     else if (connectionToUse != NULL)
     {
       header_to_send.source_uid = connectionToUse->getLocalUID();
-      for (const RdmCmdListEntry *cmd = cmd_list; cmd; cmd = cmd->next)
-      {
-        // This is kinda hacky, maybe there should be something in lib RDM for this
-        lwpa_pack_16b(&cmd->msg.data[RDM_OFFSET_SRC_MANUFACTURER], header_to_send.source_uid.manu);
-        lwpa_pack_32b(&cmd->msg.data[RDM_OFFSET_SRC_DEVICE], header_to_send.source_uid.id);
-      }
-      send_res = static_cast<int>(send_rpt_notification(connectionToUse->handle(), &my_cid, &header_to_send, cmd_list));
+      send_res = static_cast<int>(SendNotificationOnConnection(connectionToUse, header_to_send, resp_list));
     }
     else
     {
@@ -2173,6 +2149,42 @@ void RDMnetNetworkModel::SendNotification(const RdmUid &dest_uid, uint16_t dest_
   {
     log_.Log(LWPA_LOG_ERR, "Error sending RPT Notification message to Broker.");
   }
+}
+
+lwpa_error_t RDMnetNetworkModel::SendNotificationOnConnection(const BrokerConnection *connection,
+                                                              const RptHeader &header,
+                                                              const std::vector<RdmResponse> &resp_list)
+{
+  std::vector<RdmCmdListEntry> packed_resp_list;
+  if (resp_list.size() > 1 && resp_list[0].resp_type == E120_RESPONSE_TYPE_ACK_OVERFLOW)
+  {
+    for (size_t i = 0; i < resp_list.size(); ++i)
+    {
+      RdmResponse resp = resp_list[i];
+      RdmCmdListEntry packed_resp;
+
+      resp.src_uid = connection->getLocalUID();
+      rdmresp_create_response(&resp, &packed_resp.msg);
+      if (i == resp_list.size() - 1)
+        packed_resp.next = nullptr;
+      packed_resp_list.push_back(packed_resp);
+      if (i > 0)
+        packed_resp_list[i - 1].next = &packed_resp_list[i];
+    }
+  }
+  else
+  {
+    RdmResponse resp = resp_list[0];
+    RdmCmdListEntry packed_resp;
+
+    resp.src_uid = connection->getLocalUID();
+    rdmresp_create_response(&resp, &packed_resp.msg);
+    packed_resp.next = nullptr;
+    packed_resp_list.push_back(packed_resp);
+  }
+
+  LwpaUuid my_cid = BrokerConnection::getLocalCID();
+  return send_rpt_notification(connection->handle(), &my_cid, &header, &packed_resp_list[0]);
 }
 
 void RDMnetNetworkModel::ProcessRDMCommand(uint16_t /*conn*/, const RptHeader *header, const RdmCommand &cmd)
