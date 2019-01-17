@@ -94,13 +94,13 @@ LLRPManager::LLRPManager(const LwpaUuid &my_cid, const RdmUid &my_uid)
   llrp_init();
 
   int netint_handle = 0;
-  size_t num_interfaces = netint_get_num_interfaces();
+  size_t num_interfaces = lwpa_netint_get_num_interfaces();
   if (num_interfaces > 0)
   {
     size_t i;
     LwpaNetintInfo *netints = new LwpaNetintInfo[num_interfaces];
 
-    num_interfaces = netint_get_interfaces(netints, num_interfaces);
+    num_interfaces = lwpa_netint_get_interfaces(netints, num_interfaces);
     for (i = 0; i < num_interfaces; ++i)
     {
       LwpaNetintInfo *netint = &netints[i];
@@ -379,8 +379,8 @@ void LLRPManager::PrintTargets()
   printf("Handle %-13s %-36s %-15s\n", "UID", "CID", "Type");
   for (const auto &target : targets_)
   {
-    char cid_str[UUID_STRING_BYTES];
-    uuid_to_string(cid_str, &target.second.target_cid);
+    char cid_str[LWPA_UUID_STRING_BYTES];
+    lwpa_uuid_to_string(cid_str, &target.second.target_cid);
     printf("%-6d %04x:%08x %s %s\n", target.first, target.second.target_uid.manu, target.second.target_uid.id, cid_str,
            LLRPComponentTypeToString(target.second.component_type));
   }
@@ -427,19 +427,19 @@ void LLRPManager::GetDeviceInfo(int target_handle)
           printf("Device info:\n");
           printf("  RDM Protocol Version: %d.%d\n", cur_ptr[0], cur_ptr[1]);
           cur_ptr += 2;
-          printf("  Device Model ID: %d\n", upack_16b(cur_ptr));
+          printf("  Device Model ID: %d\n", lwpa_upack_16b(cur_ptr));
           cur_ptr += 2;
-          printf("  Product Category: %d\n", upack_16b(cur_ptr));
+          printf("  Product Category: %d\n", lwpa_upack_16b(cur_ptr));
           cur_ptr += 2;
-          printf("  Software Version ID: %d\n", upack_32b(cur_ptr));
+          printf("  Software Version ID: %d\n", lwpa_upack_32b(cur_ptr));
           cur_ptr += 4;
-          printf("  DMX512 Footprint: %d\n", upack_16b(cur_ptr));
+          printf("  DMX512 Footprint: %d\n", lwpa_upack_16b(cur_ptr));
           cur_ptr += 2;
-          printf("  DMX512 Personality: %d\n", upack_16b(cur_ptr));
+          printf("  DMX512 Personality: %d\n", lwpa_upack_16b(cur_ptr));
           cur_ptr += 2;
-          printf("  DMX512 Start Address: %d\n", upack_16b(cur_ptr));
+          printf("  DMX512 Start Address: %d\n", lwpa_upack_16b(cur_ptr));
           cur_ptr += 2;
-          printf("  Subdevice Count: %d\n", upack_16b(cur_ptr));
+          printf("  Subdevice Count: %d\n", lwpa_upack_16b(cur_ptr));
           cur_ptr += 2;
           printf("  Sensor Count: %d\n", *cur_ptr);
         }
@@ -581,7 +581,7 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
       cmd_data.command_class = E120_GET_COMMAND;
       cmd_data.param_id = E133_COMPONENT_SCOPE;
       cmd_data.datalen = 2;
-      pack_16b(cmd_data.data, scope_slot);
+      lwpa_pack_16b(cmd_data.data, scope_slot);
 
       if (SendRDMAndGetResponse(netint_pair->second.sock, target->second.target_cid, cmd_data, resp_data))
       {
@@ -589,7 +589,7 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
         {
           std::string scope;
           scope.assign(reinterpret_cast<char *>(&resp_data.data[2]), resp_data.datalen - 2);
-          printf("Scope for slot %d: %s\n", upack_16b(resp_data.data), scope.c_str());
+          printf("Scope for slot %d: %s\n", lwpa_upack_16b(resp_data.data), scope.c_str());
         }
         else
           printf("Malformed COMPONENT_SCOPE response.\n");
@@ -663,7 +663,7 @@ void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std
       cmd_data.param_id = E133_COMPONENT_SCOPE;
       cmd_data.datalen = 2 + E133_SCOPE_STRING_PADDED_LENGTH;
       memset(cmd_data.data, 0, 2 + E133_SCOPE_STRING_PADDED_LENGTH);
-      pack_16b(cmd_data.data, scope_slot);
+      lwpa_pack_16b(cmd_data.data, scope_slot);
       RDMNET_MSVC_NO_DEP_WRN strncpy((char *)&cmd_data.data[2], scope_utf8.c_str(),
                                      E133_SCOPE_STRING_PADDED_LENGTH - 1);
 
@@ -714,7 +714,7 @@ bool LLRPManager::SendRDMAndGetResponse(llrp_socket_t sock, const LwpaUuid &targ
               else if (resp_data.resp_type == E120_RESPONSE_TYPE_NACK_REASON)
               {
                 resp_timeout = false;
-                printf("Received RDM NACK with reason %d\n", upack_16b(resp_data.data));
+                printf("Received RDM NACK with reason %d\n", lwpa_upack_16b(resp_data.data));
               }
               else
               {
@@ -762,18 +762,18 @@ const char *LLRPManager::LLRPComponentTypeToString(llrp_component_t type)
   }
 }
 
-int wmain(int /*argc*/, wchar_t * /*argv*/[])
+int wmain(int /*argc*/, wchar_t * /*argv*/ [])
 {
   LwpaUuid manager_cid;
   RdmUid manager_uid;
 
   UUID uuid;
   UuidCreate(&uuid);
-  memcpy(manager_cid.data, &uuid, UUID_BYTES);
+  memcpy(manager_cid.data, &uuid, LWPA_UUID_BYTES);
 
   manager_uid.manu = 0xe574;
   /* Slight hack - using the last 32 bits of the CID as the UID. */
-  manager_uid.id = upack_32b(&manager_cid.data[12]);
+  manager_uid.id = lwpa_upack_32b(&manager_cid.data[12]);
 
   LLRPManager mgr(manager_cid, manager_uid);
   printf("Discovered network interfaces:\n");
