@@ -34,6 +34,7 @@
 #if !RDMNET_DYNAMIC_MEM
 LWPA_MEMPOOL_DEFINE(client_entries, ClientEntryData, RDMNET_MAX_CLIENT_ENTRIES);
 LWPA_MEMPOOL_DEFINE(ept_subprots, EptSubProtocol, RDMNET_MAX_EPT_SUBPROTS);
+/* TODO Dynamic UID pools */
 LWPA_MEMPOOL_DEFINE(rdm_commands, RdmCmdListEntry, RDMNET_MAX_RDM_COMMANDS);
 #endif
 /* clang-format on */
