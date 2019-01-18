@@ -337,8 +337,7 @@ size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, c
  *  \return #LWPA_OK: Send success.\n
  *          #LWPA_INVALID: Invalid argument provided.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket
- *          calls.\n
+ *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
 lwpa_error_t send_rpt_status(int handle, const LwpaUuid *local_cid, const RptHeader *header, const RptStatusMsg *status)
 {
@@ -402,8 +401,7 @@ size_t calc_notification_pdu_size(const RdmCmdListEntry *cmd_list)
 }
 
 /*! \brief Get the packed buffer size for an RPT Notification message.
- *  \param[in] cmd_list Encapsulated RDM Command List that will occupy the RPT
- *                      Notification message.
+ *  \param[in] cmd_list Encapsulated RDM Command List that will occupy the RPT Notification message.
  *  \return Required buffer size, or 0 on error.
  */
 size_t bufsize_rpt_notification(const RdmCmdListEntry *cmd_list)
@@ -462,8 +460,7 @@ size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaUuid *local_
  *  \return #LWPA_OK: Send success.\n
  *          #LWPA_INVALID: Invalid argument provided.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket
- *          calls.\n
+ *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
 lwpa_error_t send_rpt_notification(int handle, const LwpaUuid *local_cid, const RptHeader *header,
                                    const RdmCmdListEntry *cmd_list)

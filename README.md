@@ -66,11 +66,12 @@ closed-source application, subject to the terms of the Apache License 2.0.
 The current prototypes are mostly compliant with the current standard version,
 with a few exceptions:
 
-* The Broker and Controller have no RDM responder functionality and do not
-  implement LLRP Targets
+* The Broker has no RDM responder functionality and does not implement an LLRP 
+  Target
 * EPT is not implemented
 * IPv6 is not implemented
-* Device and Fakeway do not support all required RDM PIDs
+* The "Request Dynamic UID Assignment" and "Fetch Dynamic UID Assignment List"
+  Broker messages are not yet implemented
 
 Other key items on the `TODO` list include:
 
@@ -80,5 +81,6 @@ Other key items on the `TODO` list include:
 
 ## Standard Version
 
-The current version of this repository implements BSR E1.33 rev. 63, which was
-offered for public review by ESTA in the first quarter of 2018.
+The current version of this repository implements BSR E1.33 rev. 77, which is
+currently being offered to the ESTA Control Protocols Working Group for a
+publication vote.
