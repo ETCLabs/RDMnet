@@ -67,7 +67,7 @@ typedef struct RdmnetMessage
 /*! \brief Determine whether an RdmnetMessage contains a Broker message.
  *  \param msgptr Pointer to RdmnetMessage.
  *  \return (true or false) whether the message contains a Broker message. */
-#define is_broker_msg(msgptr) ((msgptr)->vector == VECTOR_ROOT_BROKER)
+#define is_broker_msg(msgptr) ((msgptr)->vector == ACN_VECTOR_ROOT_BROKER)
 /*! \brief Get the encapsulated Broker message from an RdmnetMessage.
  *  \param msgptr Pointer to RdmnetMessage.
  *  \return Pointer to encapsulated Broker message (BrokerMessage *). */
@@ -75,7 +75,7 @@ typedef struct RdmnetMessage
 /*! \brief Determine whether an RdmnetMessage contains a RPT message.
  *  \param msgptr Pointer to RdmnetMessage.
  *  \return (true or false) whether the message contains a RPT message. */
-#define is_rpt_msg(msgptr) ((msgptr)->vector == VECTOR_ROOT_RPT)
+#define is_rpt_msg(msgptr) ((msgptr)->vector == ACN_VECTOR_ROOT_RPT)
 /*! \brief Get the encapsulated RPT message from an RdmnetMessage.
  *  \param msgptr Pointer to RdmnetMessage.
  *  \return Pointer to encapsulated RPT message (RptMessage *). */
@@ -83,7 +83,7 @@ typedef struct RdmnetMessage
 /*! \brief Determine whether an RdmnetMessage contains a EPT message.
  *  \param msgptr Pointer to RdmnetMessage.
  *  \return (true or false) whether the message contains a EPT message. */
-#define is_ept_msg(msgptr) ((msgptr)->vector == VECTOR_ROOT_EPT)
+#define is_ept_msg(msgptr) ((msgptr)->vector == ACN_VECTOR_ROOT_EPT)
 /*! \brief Get the encapsulated EPT message from an RdmnetMessage.
  *  \param msgptr Pointer to RdmnetMessage.
  *  \return Pointer to encapsulated EPT message (EptMessage *). */

@@ -44,7 +44,7 @@ bool create_rpt_client_entry(const LwpaUuid *cid, const RdmUid *uid, rpt_client_
   if (binding_cid)
     entry->data.rpt_data.binding_cid = *binding_cid;
   else
-    memset(entry->data.rpt_data.binding_cid.data, 0, UUID_BYTES);
+    memset(entry->data.rpt_data.binding_cid.data, 0, LWPA_UUID_BYTES);
   entry->next = NULL;
   return true;
 }

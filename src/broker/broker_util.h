@@ -25,18 +25,14 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet/broker/util.h
- *
- */
-#ifndef _RDMNET_BROKER_UTIL_H_
-#define _RDMNET_BROKER_UTIL_H_
+/// \file broker_util.h
+#ifndef _BROKER_UTIL_H_
+#define _BROKER_UTIL_H_
 
 #include <stdexcept>
 #include <queue>
+
 #include "lwpa/lock.h"
-#include "lwpa/log.h"
-#include "lwpa/thread.h"
-#include "rdm/uid.h"
 #include "rdmnet/common/rpt_prot.h"
 
 // Guard classes for locking and unlocking mutexes and read-write locks
@@ -84,35 +80,5 @@ private:
 };
 
 RptHeader SwapHeaderData(const RptHeader &source);
-
-/*! \brief A class for logging messages from the %Broker. */
-class BrokerLog
-{
-public:
-  BrokerLog();
-  virtual ~BrokerLog();
-  void InitializeLogParams(int log_mask);
-  bool StartThread();
-  void StopThread();
-
-  const LwpaLogParams *GetLogParams() const { return &log_params_; }
-  void Log(int pri, const char *format, ...);
-  bool CanLog(int pri) const { return lwpa_canlog(&log_params_, pri); }
-
-  void LogFromCallback(const std::string &str);
-  void LogThreadRun();
-
-  virtual void GetTimeFromCallback(LwpaLogTimeParams *time) = 0;
-  virtual void OutputLogMsg(const std::string &str) = 0;
-
-protected:
-  LwpaLogParams log_params_;
-
-  std::queue<std::string> msg_q_;
-  lwpa_signal_t signal_;
-  lwpa_thread_t thread_;
-  lwpa_mutex_t lock_;
-  bool keep_running_;
-};
 
 #endif  // _BROKER_UTIL_H_

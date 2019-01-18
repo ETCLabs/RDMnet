@@ -25,19 +25,49 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#pragma once
+/// \file rdmnet/broker/log.h
+#ifndef _RDMNET_BROKER_LOG_H_
+#define _RDMNET_BROKER_LOG_H_
 
-// Macros to suppress warnings inside of Qt headers.
-#if defined(_MSC_VER)
+#include <queue>
+#include <string>
 
-#define BEGIN_INCLUDE_QT_HEADERS() \
-  __pragma(warning(push)) __pragma(warning(disable : 4127)) __pragma(warning(disable : 4251))
+#include "lwpa/lock.h"
+#include "lwpa/log.h"
+#include "lwpa/thread.h"
 
-#define END_INCLUDE_QT_HEADERS() __pragma(warning(pop))
+namespace RDMnet
+{
+/// \brief A class for logging messages from the %Broker.
+class BrokerLog
+{
+public:
+  BrokerLog();
+  virtual ~BrokerLog();
+  void InitializeLogParams(int log_mask);
+  bool StartThread();
+  void StopThread();
 
-#else
+  const LwpaLogParams *GetLogParams() const { return &log_params_; }
+  void Log(int pri, const char *format, ...);
+  bool CanLog(int pri) const { return lwpa_canlog(&log_params_, pri); }
 
-#define BEGIN_INCLUDE_QT_HEADERS()
-#define END_INCLUDE_QT_HEADERS()
+  void LogFromCallback(const std::string &str);
+  void LogThreadRun();
 
-#endif
+  virtual void GetTimeFromCallback(LwpaLogTimeParams *time) = 0;
+  virtual void OutputLogMsg(const std::string &str) = 0;
+
+protected:
+  LwpaLogParams log_params_;
+
+  std::queue<std::string> msg_q_;
+  lwpa_signal_t signal_;
+  lwpa_thread_t thread_;
+  lwpa_mutex_t lock_;
+  bool keep_running_;
+};
+
+};  // namespace RDMnet
+
+#endif  // _RDMNET_BROKER_LOG_H_

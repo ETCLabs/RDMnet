@@ -30,7 +30,8 @@
 #include <cstdarg>
 #include "service_shell.h"
 
-WindowsBrokerLog::WindowsBrokerLog(bool debug, const std::string &file_name) : BrokerLog(), debug_(debug), utcoffset_(0)
+WindowsBrokerLog::WindowsBrokerLog(bool debug, const std::string &file_name)
+    : RDMnet::BrokerLog(), debug_(debug), utcoffset_(0)
 {
   file_.open(file_name.c_str(), std::fstream::out);
   if (file_.fail())

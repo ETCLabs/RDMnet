@@ -36,7 +36,7 @@
 #include "rdmnet/llrp.h"
 #include "device.h"
 
-#define rdm_uid_matches_mine(uidptr) (uid_equal(uidptr, &llrp_info.uid) || uid_is_broadcast(uidptr))
+#define rdm_uid_matches_mine(uidptr) (rdm_uid_equal(uidptr, &llrp_info.uid) || rdm_uid_is_broadcast(uidptr))
 
 static struct llrp_info
 {
@@ -64,7 +64,7 @@ void llrp_send_nack(llrp_socket_t sock, const LlrpRdmMessage *llrp_msg, const Rd
   resp_data.command_class = cmd_data->command_class + 1;
   resp_data.param_id = cmd_data->param_id;
   resp_data.datalen = 2;
-  pack_16b(resp_data.data, nack_reason);
+  lwpa_pack_16b(resp_data.data, nack_reason);
 
   if (LWPA_OK == rdmresp_create_response(&resp_data, &resp))
   {
@@ -215,11 +215,13 @@ void device_llrp_update_thread(void *arg)
   }
 }
 
-void device_llrp_init(const LwpaUuid *my_cid, const RdmUid *my_uid, const LwpaLogParams *lparams)
+void device_llrp_init(const LwpaUuid *my_cid, const LwpaLogParams *lparams)
 {
   size_t num_interfaces;
+  RdmUid my_uid;
+  rdmnet_init_dynamic_uid_request(&my_uid, 0x6574);
 
-  if (!my_cid || !my_uid || !lparams)
+  if (!my_cid || !lparams)
     return;
 
   if (LWPA_OK != llrp_init())
@@ -228,20 +230,20 @@ void device_llrp_init(const LwpaUuid *my_cid, const RdmUid *my_uid, const LwpaLo
     return;
   }
 
-  num_interfaces = netint_get_num_interfaces();
+  num_interfaces = lwpa_netint_get_num_interfaces();
   if (num_interfaces > 0)
   {
     size_t i;
     LwpaNetintInfo *netints = calloc(num_interfaces, sizeof(LwpaNetintInfo));
     llrp_info.target_socks = calloc(num_interfaces, sizeof(LlrpPoll));
 
-    num_interfaces = netint_get_interfaces(netints, num_interfaces);
+    num_interfaces = lwpa_netint_get_interfaces(netints, num_interfaces);
     for (i = 0; i < num_interfaces; ++i)
     {
       LwpaNetintInfo *netint = &netints[i];
       LlrpPoll *cur_poll = &llrp_info.target_socks[llrp_info.num_target_socks];
 
-      cur_poll->handle = llrp_create_target_socket(&netint->addr, my_cid, my_uid, netint->mac, kLLRPCompRPTDevice);
+      cur_poll->handle = llrp_create_target_socket(&netint->addr, my_cid, &my_uid, netint->mac, kLLRPCompRPTDevice);
       if (cur_poll->handle != LLRP_SOCKET_INVALID)
       {
         ++llrp_info.num_target_socks;
@@ -272,7 +274,7 @@ void device_llrp_init(const LwpaUuid *my_cid, const RdmUid *my_uid, const LwpaLo
     if (lwpa_thread_create(&llrp_info.update_thread, &tparams, device_llrp_update_thread, NULL))
     {
       llrp_info.cid = *my_cid;
-      llrp_info.uid = *my_uid;
+      llrp_info.uid = my_uid;
       llrp_info.lparams = lparams;
     }
     else
@@ -307,11 +309,11 @@ void device_llrp_deinit()
   memset(&llrp_info, 0, sizeof llrp_info);
 }
 
-void device_llrp_set_connected(bool connected)
+void device_llrp_set_connected(bool connected, const RdmUid *new_uid)
 {
   size_t i;
   for (i = 0; i < llrp_info.num_target_socks; ++i)
   {
-    llrp_target_update_connection_state(llrp_info.target_socks[i].handle, connected);
+    llrp_target_update_connection_state(llrp_info.target_socks[i].handle, connected, new_uid);
   }
 }

@@ -38,7 +38,6 @@
 typedef struct DeviceSettings
 {
   LwpaUuid cid;
-  RdmUid uid;
   LwpaSockaddr static_broker_addr;
   const char *scope;
 } DeviceSettings;

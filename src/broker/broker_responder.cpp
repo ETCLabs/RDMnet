@@ -25,9 +25,18 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
+#include "broker_responder.h"
+
 #include "rdm/defs.h"
-#include "rdmnet/broker/responder.h"
 #include "rdmnet/common/connection.h"
+
+// Supported parameter descriptions
+// const char *SUPPORTED_PARAMETERS_DESCSTR = "List of supported parameters";
+// const char *PARAMETER_DESCRIPTION_DESCSTR = "Parameter description";
+// const char *SOFTWARE_VERSION_LABEL_DESCSTR = "Descriptive version label";
+// const char *RDMNET_CLIENT_SCOPE_DESCSTR = "Broker scope";
+//
+// const char *BROKER_SOFTWARE_VERSION_LABEL = "v1.0";
 
 void BrokerResponder::ProcessRDMMessage(int /*conn*/, const RPTMessageRef & /*msg*/)
 {

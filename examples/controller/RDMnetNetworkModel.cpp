@@ -42,7 +42,6 @@ BEGIN_INCLUDE_QT_HEADERS()
 END_INCLUDE_QT_HEADERS()
 
 LwpaUuid BrokerConnection::local_cid_;
-RdmUid BrokerConnection::local_uid_;
 MyLog *BrokerConnection::log_ = NULL;
 bool BrokerConnection::static_info_initialized_ = false;
 
@@ -56,10 +55,10 @@ lwpa_thread_t tick_thread_;
 
 #define NUM_SUPPORTED_PIDS 14
 static const uint16_t kSupportedPIDList[NUM_SUPPORTED_PIDS] = {
-    E120_IDENTIFY_DEVICE,           E120_SUPPORTED_PARAMETERS,   E120_DEVICE_INFO,      E120_MANUFACTURER_LABEL,
-    E120_DEVICE_MODEL_DESCRIPTION,  E120_SOFTWARE_VERSION_LABEL, E120_DEVICE_LABEL,     E133_COMPONENT_SCOPE,
-    E133_BROKER_STATIC_CONFIG_IPV4, E133_SEARCH_DOMAIN,          E133_TCP_COMMS_STATUS, E133_BROKER_STATIC_CONFIG_IPV6,
-    E137_7_ENDPOINT_RESPONDERS,     E137_7_ENDPOINT_LIST,
+    E120_IDENTIFY_DEVICE,    E120_SUPPORTED_PARAMETERS,     E120_DEVICE_INFO,
+    E120_MANUFACTURER_LABEL, E120_DEVICE_MODEL_DESCRIPTION, E120_SOFTWARE_VERSION_LABEL,
+    E120_DEVICE_LABEL,       E133_COMPONENT_SCOPE,          E133_SEARCH_DOMAIN,
+    E133_TCP_COMMS_STATUS,   E137_7_ENDPOINT_RESPONDERS,    E137_7_ENDPOINT_LIST,
 };
 
 /* clang-format off */
@@ -82,10 +81,6 @@ static const uint8_t kDeviceInfo[] = {
 
 #define MAX_SCOPE_SLOT_NUMBER 0xFFFF
 #define MAX_RESPONSES_IN_ACK_OVERFLOW (MAX_SCOPE_SLOT_NUMBER + 1)
-#define BROKER_STATIC_CONFIG_IPV4_MIN_PDL 0x46
-#define BROKER_STATIC_CONFIG_IPV4_MAX_PDL 0xD2
-#define BROKER_STATIC_CONFIG_IPV6_MIN_PDL 0x52
-#define BROKER_STATIC_CONFIG_IPV6_MAX_PDL 0xA4
 #define DEVICE_LABEL_MAX_LEN 32
 #define DEFAULT_DEVICE_LABEL "My ETC RDMnet Controller"
 #define SOFTWARE_VERSION_LABEL RDMNET_VERSION_STRING
@@ -158,17 +153,17 @@ static void unpackAndParseIPAddress(const uint8_t *addrData, lwpa_iptype_t addrT
 
   ip.type = addrType;
 
-  if (addrType == LWPA_IPV4)
+  if (addrType == kLwpaIpTypeV4)
   {
-    ip.addr.v4 = upack_32b(addrData);
+    ip.addr.v4 = lwpa_upack_32b(addrData);
     zeroedOut = (ip.addr.v4 == 0);
   }
-  else if (addrType == LWPA_IPV6)
+  else if (addrType == kLwpaIpTypeV6)
   {
-    memcpy(ip.addr.v6, addrData, IPV6_BYTES);
+    memcpy(ip.addr.v6, addrData, LWPA_IPV6_BYTES);
 
     zeroedOut = true;
-    for (int i = 0; (i < IPV6_BYTES) && zeroedOut; ++i)
+    for (int i = 0; (i < LWPA_IPV6_BYTES) && zeroedOut; ++i)
     {
       zeroedOut = zeroedOut && (ip.addr.v6[i] == 0);
     }
@@ -189,13 +184,13 @@ static lwpa_error_t parseAndPackIPAddress(lwpa_iptype_t addrType, const char *ip
 
   if (result == LWPA_OK)
   {
-    if (addrType == LWPA_IPV4)
+    if (addrType == kLwpaIpTypeV4)
     {
-      pack_32b(outBuf, ip.addr.v4);
+      lwpa_pack_32b(outBuf, ip.addr.v4);
     }
-    else if (addrType == LWPA_IPV6)
+    else if (addrType == kLwpaIpTypeV6)
     {
-      memcpy(outBuf, ip.addr.v6, IPV6_BYTES);
+      memcpy(outBuf, ip.addr.v6, LWPA_IPV6_BYTES);
     }
   }
 
@@ -333,12 +328,11 @@ static void rdmnetdisc_tick_thread_func(void *arg)
   }
 }
 
-bool BrokerConnection::initializeStaticConnectionInfo(const LwpaUuid &cid, const RdmUid &uid, MyLog *log)
+bool BrokerConnection::initializeStaticConnectionInfo(const LwpaUuid &cid, MyLog *log)
 {
   if (!static_info_initialized_)
   {
     local_cid_ = cid;
-    local_uid_ = uid;
 
     static_info_initialized_ = true;
 
@@ -439,7 +433,7 @@ void BrokerConnection::connect()
 void BrokerConnection::disconnect()
 {
   if (connected_)
-    rdmnet_disconnect(conn_, true, kRDMnetDisconnectUserReconfigure);
+    rdmnet_disconnect(conn_, true, kRdmnetDisconnectUserReconfigure);
   wasDisconnected();
 }
 
@@ -457,6 +451,8 @@ void BrokerConnection::runConnectStateMachine()
   connect_data.e133_version = E133_VERSION;
   client_connect_msg_set_scope(&connect_data, scope_.toUtf8().constData());
   client_connect_msg_set_default_search_domain(&connect_data);
+
+  rdmnet_init_dynamic_uid_request(&local_uid_, 0x6574);
   create_rpt_client_entry(&local_cid_, &local_uid_, kRPTClientTypeController, nullptr, &connect_data.client_entry);
 
   RdmnetData result_data;
@@ -470,8 +466,7 @@ void BrokerConnection::runConnectStateMachine()
       if (rdmnet_data_is_code(&result_data))
       {
         log_->Log(LWPA_LOG_WARNING,
-                  "Connection to Broker at address %s:%d failed with error: "
-                  "'%s' and additional RDMnet error code %d",
+                  "Connection to Broker at address %s:%d failed with error: '%s' and additional RDMnet error code %d",
                   addr_str, broker_addr_.port, lwpa_strerror(connect_result), rdmnet_data_code(&result_data));
       }
       else
@@ -487,6 +482,7 @@ void BrokerConnection::runConnectStateMachine()
   if (connect_result != LWPA_OK)
     return;
 
+  local_uid_ = get_connect_reply_msg(get_broker_msg(rdmnet_data_msg(&result_data)))->client_uid;
   send_fetch_client_list(conn_, &local_cid_);
   connected_ = true;
   connect_in_progress_ = false;
@@ -710,8 +706,10 @@ void RDMnetNetworkModel::processBrokerDisconnection(uint16_t conn)
   }
 }
 
-void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list)
+void RDMnetNetworkModel::processAddRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list)
 {
+  BrokerItem *treeBrokerItem = brokerConn->treeBrokerItem();
+
   // Update the Controller's discovered list to match
   if (list.size() > 0)
   {
@@ -723,7 +721,7 @@ void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem *treeBrokerItem, con
     if (!is_rpt_client_entry(&entry))
       continue;
 
-    bool is_me = (get_rpt_client_entry_data(&entry)->client_uid == BrokerConnection::getLocalUID());
+    bool is_me = (get_rpt_client_entry_data(&entry)->client_uid == brokerConn->getLocalUID());
     RDMnetClientItem *newRDMnetClientItem = new RDMnetClientItem(entry, is_me);
     bool itemAlreadyAdded = false;
 
@@ -763,9 +761,10 @@ void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem *treeBrokerItem, con
   }
 }
 
-void RDMnetNetworkModel::processRemoveRDMnetClients(BrokerItem *treeBrokerItem,
+void RDMnetNetworkModel::processRemoveRDMnetClients(BrokerConnection *brokerConn,
                                                     const std::vector<ClientEntryData> &list)
 {
+  BrokerItem *treeBrokerItem = brokerConn->treeBrokerItem();
   // Update the Controller's discovered list by removing these newly lost
   // clients
   for (int i = treeBrokerItem->rowCount() - 1; i >= 0; --i)
@@ -1203,19 +1202,14 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   UUID uuid;
 
   LwpaUuid my_cid;
-  RdmUid my_uid;
 
   model->InitRDMnet();
   model->StartRecvThread();
 
   UuidCreate(&uuid);
-  memcpy(my_cid.data, &uuid, UUID_BYTES);
+  memcpy(my_cid.data, &uuid, LWPA_UUID_BYTES);
 
-  srand(timeGetTime());
-  my_uid.manu = 0xe574;
-  my_uid.id = rand() & 0xFFFFFFFF;
-
-  BrokerConnection::initializeStaticConnectionInfo(my_cid, my_uid, &model->log_);
+  BrokerConnection::initializeStaticConnectionInfo(my_cid, &model->log_);
 
   // Use mDNS to discover the broker, an mDNS callback will do this connect
   RdmnetDiscCallbacks callbacks;
@@ -1246,10 +1240,17 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
 
   // E1.20
   // pid, get, set, type, role/included
-  PropertyValueItem::setPIDInfo(E120_SUPPORTED_PARAMETERS, rdmPIDFlags | kSupportsGet | kExcludeFromModel,
+  // clang-format off
+
+  // SUPPORTED_PARAMETERS
+  PropertyValueItem::setPIDInfo(E120_SUPPORTED_PARAMETERS,
+                                rdmPIDFlags | kSupportsGet | kExcludeFromModel,
                                 QVariant::Type::Invalid);
 
-  PropertyValueItem::setPIDInfo(E120_DEVICE_INFO, rdmPIDFlags | kSupportsGet, QVariant::Type::Invalid);
+  // DEVICE_INFO
+  PropertyValueItem::setPIDInfo(E120_DEVICE_INFO,
+                                rdmPIDFlags | kSupportsGet,
+                                QVariant::Type::Invalid);
   PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("RDM Protocol Version")));
   PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO,
@@ -1265,89 +1266,132 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_INFO,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Sensor Count")));
 
-  PropertyValueItem::setPIDInfo(E120_DEVICE_MODEL_DESCRIPTION, rdmPIDFlags | kSupportsGet, QVariant::Type::String);
+  // DEVICE_MODEL_DESCRIPTION
+  PropertyValueItem::setPIDInfo(E120_DEVICE_MODEL_DESCRIPTION,
+                                rdmPIDFlags | kSupportsGet,
+                                QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_MODEL_DESCRIPTION,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Device Model Description")));
 
-  PropertyValueItem::setPIDInfo(E120_MANUFACTURER_LABEL, rdmPIDFlags | kSupportsGet, QVariant::Type::String);
+  // MANUFACTURER_LABEL
+  PropertyValueItem::setPIDInfo(E120_MANUFACTURER_LABEL,
+                                rdmPIDFlags | kSupportsGet,
+                                QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E120_MANUFACTURER_LABEL,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Manufacturer Label")));
 
-  PropertyValueItem::setPIDInfo(E120_DEVICE_LABEL, rdmPIDFlags | kSupportsGet | kSupportsSet, QVariant::Type::String);
+  // DEVICE_LABEL
+  PropertyValueItem::setPIDInfo(E120_DEVICE_LABEL,
+                                rdmPIDFlags | kSupportsGet | kSupportsSet,
+                                QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E120_DEVICE_LABEL,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Device Label")));
   PropertyValueItem::setPIDMaxBufferSize(E120_DEVICE_LABEL, DEVICE_LABEL_MAX_LEN);
 
-  PropertyValueItem::setPIDInfo(E120_SOFTWARE_VERSION_LABEL, rdmPIDFlags | kSupportsGet, QVariant::Type::String);
+  // SOFTWARE_VERSION_LABEL
+  PropertyValueItem::setPIDInfo(E120_SOFTWARE_VERSION_LABEL,
+                                rdmPIDFlags | kSupportsGet,
+                                QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E120_SOFTWARE_VERSION_LABEL,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Software Label")));
 
-  PropertyValueItem::setPIDInfo(E120_BOOT_SOFTWARE_VERSION_ID, rdmPIDFlags | kSupportsGet, QVariant::Type::Int);
+  // BOOT_SOFTWARE_VERSION_ID
+  PropertyValueItem::setPIDInfo(E120_BOOT_SOFTWARE_VERSION_ID,
+                                rdmPIDFlags | kSupportsGet,
+                                QVariant::Type::Int);
   PropertyValueItem::addPIDPropertyDisplayName(E120_BOOT_SOFTWARE_VERSION_ID,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Boot Software ID")));
 
-  PropertyValueItem::setPIDInfo(E120_BOOT_SOFTWARE_VERSION_LABEL, rdmPIDFlags | kSupportsGet, QVariant::Type::String);
+  // BOOT_SOFTWARE_VERSION_LABEL
+  PropertyValueItem::setPIDInfo(E120_BOOT_SOFTWARE_VERSION_LABEL,
+                                rdmPIDFlags | kSupportsGet,
+                                QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E120_BOOT_SOFTWARE_VERSION_LABEL,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("Boot Software Label")));
 
-  PropertyValueItem::setPIDInfo(E120_DMX_START_ADDRESS, rdmPIDFlags | kSupportsGet | kSupportsSet, QVariant::Type::Int);
+  // DMX_START_ADDRESS
+  PropertyValueItem::setPIDInfo(E120_DMX_START_ADDRESS,
+                                rdmPIDFlags | kSupportsGet | kSupportsSet,
+                                QVariant::Type::Int);
   PropertyValueItem::addPIDPropertyDisplayName(E120_DMX_START_ADDRESS,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("DMX512 Start Address")));
   PropertyValueItem::setPIDNumericDomain(E120_DMX_START_ADDRESS, 1, 512);
   PropertyValueItem::setPIDMaxBufferSize(E120_DMX_START_ADDRESS, 2);
 
-  PropertyValueItem::setPIDInfo(E120_IDENTIFY_DEVICE, rdmPIDFlags | kSupportsSet | kExcludeFromModel,
+  // IDENTIFY_DEVICE
+  PropertyValueItem::setPIDInfo(E120_IDENTIFY_DEVICE,
+                                rdmPIDFlags | kSupportsSet | kExcludeFromModel,
                                 QVariant::Type::Bool);
   PropertyValueItem::setPIDMaxBufferSize(E120_IDENTIFY_DEVICE, 1);
 
-  PropertyValueItem::setPIDInfo(E120_DMX_PERSONALITY, rdmPIDFlags | kSupportsGet | kSupportsSet, QVariant::Type::Char,
+  // DMX_PERSONALITY
+  PropertyValueItem::setPIDInfo(E120_DMX_PERSONALITY,
+                                rdmPIDFlags | kSupportsGet | kSupportsSet,
+                                QVariant::Type::Char,
                                 RDMnetNetworkItem::PersonalityNumberRole);
   PropertyValueItem::addPIDPropertyDisplayName(E120_DMX_PERSONALITY,
                                                QString("%0\\%1").arg(rdmGroupName).arg(tr("DMX512 Personality")));
   PropertyValueItem::setPIDNumericDomain(E120_DMX_PERSONALITY, 1, 255);
   PropertyValueItem::setPIDMaxBufferSize(E120_DMX_PERSONALITY, 1);
 
-  PropertyValueItem::setPIDInfo(E120_RESET_DEVICE, rdmPIDFlags | kSupportsSet | kExcludeFromModel,
+  // RESET_DEVICE
+  PropertyValueItem::setPIDInfo(E120_RESET_DEVICE,
+                                rdmPIDFlags | kSupportsSet | kExcludeFromModel,
                                 QVariant::Type::Char);
   PropertyValueItem::setPIDMaxBufferSize(E120_RESET_DEVICE, 1);
 
-  // E1.33
-  PropertyValueItem::setPIDInfo(E133_COMPONENT_SCOPE, rdmNetPIDFlags | kSupportsGet | kSupportsSet,
+  // RDMnet
+  // COMPONENT_SCOPE
+  PropertyValueItem::setPIDInfo(E133_COMPONENT_SCOPE,
+                                rdmNetPIDFlags | kSupportsGet, // | kSupportsSet, TODO add this back
                                 QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E133_COMPONENT_SCOPE,
-                                               QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Component Scope")));
-  PropertyValueItem::setPIDMaxBufferSize(E133_COMPONENT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH + 2);
+                                               QString("%0\\%1")
+                                               .arg(rdmNetGroupName)
+                                               .arg(tr("Component Scope")));
+  PropertyValueItem::addPIDPropertyDisplayName(E133_COMPONENT_SCOPE,
+                                               QString("%0\\%1")
+                                               .arg(rdmNetGroupName)
+                                               .arg(tr("Static Broker IPv4 (Leave blank for dynamic)")));
+  PropertyValueItem::addPIDPropertyDisplayName(E133_COMPONENT_SCOPE,
+                                               QString("%0\\%1")
+                                               .arg(rdmNetGroupName)
+                                               .arg(tr("Static Broker IPv6 (Leave blank for dynamic)")));
+  PropertyValueItem::setPIDMaxBufferSize(E133_COMPONENT_SCOPE,
+                                         2 /* Scope Slot */ +
+                                         E133_SCOPE_STRING_PADDED_LENGTH /* Scope String */ +
+                                         1 /* Static Config Type */ +
+                                         4 /* Static IPv4 Address */ +
+                                         16 /* Static IPv6 Address */ +
+                                         2 /* Static Port */);
 
-  PropertyValueItem::setPIDInfo(E133_BROKER_STATIC_CONFIG_IPV4,
-                                rdmNetPIDFlags | kSupportsGet | kSupportsSet | kStartEnabled, QVariant::Type::Invalid);
-  PropertyValueItem::addPIDPropertyDisplayName(
-      E133_BROKER_STATIC_CONFIG_IPV4,
-      QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv4 Address (Leave blank for dynamic)")));
-  PropertyValueItem::setPIDMaxBufferSize(E133_BROKER_STATIC_CONFIG_IPV4, 4 + 2 + E133_SCOPE_STRING_PADDED_LENGTH);
-
-  PropertyValueItem::setPIDInfo(E133_BROKER_STATIC_CONFIG_IPV6,
-                                rdmNetPIDFlags | kSupportsGet | kSupportsSet | kStartEnabled, QVariant::Type::Invalid);
-  PropertyValueItem::addPIDPropertyDisplayName(
-      E133_BROKER_STATIC_CONFIG_IPV6,
-      QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IPv6 Address (Leave blank for dynamic)")));
-  PropertyValueItem::setPIDMaxBufferSize(E133_BROKER_STATIC_CONFIG_IPV6,
-                                         IPV6_BYTES + 2 + E133_SCOPE_STRING_PADDED_LENGTH);
-
-  PropertyValueItem::setPIDInfo(E133_SEARCH_DOMAIN, rdmNetPIDFlags | kLocController | kSupportsGet | kSupportsSet,
+  // SEARCH_DOMAIN
+  PropertyValueItem::setPIDInfo(E133_SEARCH_DOMAIN,
+                                rdmNetPIDFlags | kLocController | kSupportsGet | kSupportsSet,
                                 QVariant::Type::String);
   PropertyValueItem::addPIDPropertyDisplayName(E133_SEARCH_DOMAIN,
-                                               QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Search Domain")));
+                                               QString("%0\\%1")
+                                               .arg(rdmNetGroupName)
+                                               .arg(tr("Search Domain")));
   PropertyValueItem::setPIDMaxBufferSize(E133_SEARCH_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
 
-  PropertyValueItem::setPIDInfo(E133_TCP_COMMS_STATUS, rdmNetPIDFlags | kSupportsGet | kEnableButtons,
+  // TCP_COMMS_STATUS
+  PropertyValueItem::setPIDInfo(E133_TCP_COMMS_STATUS,
+                                rdmNetPIDFlags | kSupportsGet | kEnableButtons,
                                 QVariant::Type::Invalid);
   PropertyValueItem::addPIDPropertyDisplayName(
       E133_TCP_COMMS_STATUS, QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Broker IP Address (Current)")));
   PropertyValueItem::addPIDPropertyDisplayName(E133_TCP_COMMS_STATUS,
-                                               QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Unhealthy TCP Events")));
-  PropertyValueItem::addPIDPropertyDisplayName(
-      E133_TCP_COMMS_STATUS, QString("%0\\%1").arg(rdmNetGroupName).arg(tr("Unhealthy TCP Events\\Reset Counter")));
+                                               QString("%0\\%1")
+                                               .arg(rdmNetGroupName)
+                                               .arg(tr("Unhealthy TCP Events")));
+  PropertyValueItem::addPIDPropertyDisplayName(E133_TCP_COMMS_STATUS,
+                                               QString("%0\\%1")
+                                               .arg(rdmNetGroupName)
+                                               .arg(tr("Unhealthy TCP Events\\Reset Counter")));
   PropertyValueItem::setPIDMaxBufferSize(E133_TCP_COMMS_STATUS, E133_SCOPE_STRING_PADDED_LENGTH);
+
+  // clang-format on
 
   model->setColumnCount(2);
   model->setHeaderData(0, Qt::Orientation::Horizontal, tr("Property"));
@@ -1362,10 +1406,11 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
 
   connect(model, SIGNAL(brokerDisconnection(uint16_t)), model, SLOT(processBrokerDisconnection(uint16_t)),
           Qt::AutoConnection);
-  connect(model, SIGNAL(addRDMnetClients(BrokerItem *, const std::vector<ClientEntryData> &)), model,
-          SLOT(processAddRDMnetClients(BrokerItem *, const std::vector<ClientEntryData> &)), Qt::AutoConnection);
-  connect(model, SIGNAL(removeRDMnetClients(BrokerItem *, const std::vector<ClientEntryData> &)), model,
-          SLOT(processRemoveRDMnetClients(BrokerItem *, const std::vector<ClientEntryData> &)), Qt::AutoConnection);
+  connect(model, SIGNAL(addRDMnetClients(BrokerConnection *, const std::vector<ClientEntryData> &)), model,
+          SLOT(processAddRDMnetClients(BrokerConnection *, const std::vector<ClientEntryData> &)), Qt::AutoConnection);
+  connect(model, SIGNAL(removeRDMnetClients(BrokerConnection *, const std::vector<ClientEntryData> &)), model,
+          SLOT(processRemoveRDMnetClients(BrokerConnection *, const std::vector<ClientEntryData> &)),
+          Qt::AutoConnection);
   connect(model, SIGNAL(newEndpointList(RDMnetClientItem *, const std::vector<std::pair<uint16_t, uint8_t>> &)), model,
           SLOT(processNewEndpointList(RDMnetClientItem *, const std::vector<std::pair<uint16_t, uint8_t>> &)),
           Qt::AutoConnection);
@@ -1480,7 +1525,7 @@ void RDMnetNetworkModel::searchingItemRevealed(SearchingStatusItem *searchItem)
               cmd.command_class = E120_GET_COMMAND;
               cmd.param_id = E137_7_ENDPOINT_RESPONDERS;
               cmd.datalen = sizeof(uint16_t);
-              pack_16b(cmd.data, endpointItem->endpoint_);
+              lwpa_pack_16b(cmd.data, endpointItem->endpoint_);
 
               SendRDMCommand(cmd);
             }
@@ -1560,7 +1605,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
             if (pid == E133_COMPONENT_SCOPE)
             {
               // Scope slot (default to 1)
-              pack_16b(packPtr, index.data(RDMnetNetworkItem::ScopeSlotRole).toInt());
+              lwpa_pack_16b(packPtr, index.data(RDMnetNetworkItem::ScopeSlotRole).toInt());
               packPtr += 2;
             }
 
@@ -1570,10 +1615,10 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
                 switch (maxBuffSize - (packPtr - setCmd.data))
                 {
                   case 2:
-                    pack_16b(packPtr, value.toInt());
+                    lwpa_pack_16b(packPtr, value.toInt());
                     break;
                   case 4:
-                    pack_32b(packPtr, value.toInt());
+                    lwpa_pack_32b(packPtr, value.toInt());
                     break;
                 }
                 break;
@@ -1598,17 +1643,8 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
                 packPtr[0] = static_cast<uint8_t>(value.toInt());
                 break;
               default:
-                switch (pid)
-                {
-                  case E133_BROKER_STATIC_CONFIG_IPV4:
-                    packPtr = packStaticConfigItem(index, value, LWPA_IPV4, packPtr);
-                    break;
-                  case E133_BROKER_STATIC_CONFIG_IPV6:
-                    packPtr = packStaticConfigItem(index, value, LWPA_IPV6, packPtr);
-                    break;
-                  default:
-                    updateValue = false;
-                }
+                updateValue = false;
+                break;
             }
 
             updateValue = updateValue && (packPtr != NULL);
@@ -1733,10 +1769,10 @@ void RDMnetNetworkModel::ProcessMessage(uint16_t conn, const RdmnetMessage *msg)
 {
   switch (msg->vector)
   {
-    case VECTOR_ROOT_RPT:
+    case ACN_VECTOR_ROOT_RPT:
       ProcessRPTMessage(conn, msg);
       break;
-    case VECTOR_ROOT_BROKER:
+    case ACN_VECTOR_ROOT_BROKER:
       ProcessBrokerMessage(conn, msg);
       break;
     default:
@@ -1769,11 +1805,11 @@ void RDMnetNetworkModel::ProcessBrokerMessage(uint16_t conn, const RdmnetMessage
 {
   const BrokerMessage *broker_msg = get_broker_msg(msg);
 
-  BrokerItem *treeBrokerItem = NULL;
+  BrokerConnection *brokerConn = NULL;
 
   if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
   {
-    treeBrokerItem = broker_connections_[conn]->treeBrokerItem();
+    brokerConn = broker_connections_[conn].get();
     lwpa_rwlock_readunlock(&prop_lock);
   }
 
@@ -1795,9 +1831,9 @@ void RDMnetNetworkModel::ProcessBrokerMessage(uint16_t conn, const RdmnetMessage
       }
 
       if (broker_msg->vector == VECTOR_BROKER_CLIENT_REMOVE)
-        emit removeRDMnetClients(treeBrokerItem, list);
+        emit removeRDMnetClients(brokerConn, list);
       else
-        emit addRDMnetClients(treeBrokerItem, list);
+        emit addRDMnetClients(brokerConn, list);
     }
     break;
     // case VECTOR_BROKER_DISCONNECT:
@@ -1878,7 +1914,7 @@ void RDMnetNetworkModel::ProcessRPTNotificationOrRequest(uint16_t conn, const Rp
 
   for (RdmCmdListEntry *cmd_msg = cmd_list->list; cmd_msg; cmd_msg = cmd_msg->next)
   {
-    uint8_t cmd_class = get_command_class(&cmd_msg->msg);
+    uint8_t cmd_class = rdm_get_command_class(&cmd_msg->msg);
     if (is_first_message && (cmd_class == E120_GET_COMMAND || cmd_class == E120_SET_COMMAND))
     {
       rdmresp_unpack_command(&cmd_msg->msg, &command);
@@ -1970,7 +2006,7 @@ bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand &cmd)
   {
     if (connectionToUse != NULL)
     {
-      header.source_uid = BrokerConnection::getLocalUID();
+      header.source_uid = connectionToUse->getLocalUID();
       header.source_endpoint_id = 0;
       header.dest_uid = rpt_dest_uid;
       header.dest_endpoint_id = dest_endpoint;
@@ -2008,11 +2044,10 @@ void RDMnetNetworkModel::SendRDMGetResponses(const RdmUid &dest_uid, uint16_t de
                                              const RdmParamData *resp_data_list, size_t num_responses, uint32_t seqnum,
                                              uint8_t transaction_num)
 {
-  static RdmCmdListEntry resp_list[MAX_RESPONSES_IN_ACK_OVERFLOW];
-
+  std::vector<RdmResponse> resp_list;
   RdmResponse resp_data;
 
-  resp_data.src_uid = BrokerConnection::getLocalUID();
+  // The source UID will be added later, right before sending.
   resp_data.dest_uid = dest_uid;
   resp_data.transaction_num = transaction_num;
   resp_data.resp_type = num_responses > 1 ? E120_RESPONSE_TYPE_ACK_OVERFLOW : E120_RESPONSE_TYPE_ACK;
@@ -2021,29 +2056,24 @@ void RDMnetNetworkModel::SendRDMGetResponses(const RdmUid &dest_uid, uint16_t de
   resp_data.command_class = E120_GET_COMMAND_RESPONSE;
   resp_data.param_id = param_id;
 
-  size_t i;
-  for (i = 0; i < num_responses; ++i)
+  for (size_t i = 0; i < num_responses; ++i)
   {
     memcpy(resp_data.data, resp_data_list[i].data, resp_data_list[i].datalen);
     resp_data.datalen = resp_data_list[i].datalen;
     if (i == num_responses - 1)
     {
       resp_data.resp_type = E120_RESPONSE_TYPE_ACK;
-      resp_list[i].next = NULL;
     }
-    else
-      resp_list[i].next = &resp_list[i + 1];
-    rdmresp_create_response(&resp_data, &resp_list[i].msg);
+    resp_list.push_back(resp_data);
   }
   SendNotification(dest_uid, dest_endpoint_id, seqnum, resp_list);
 }
 
 void RDMnetNetworkModel::SendNACK(const RptHeader *received_header, const RdmCommand *cmd_data, uint16_t nack_reason)
 {
+  std::vector<RdmResponse> resp_list;
   RdmResponse resp_data;
-  RdmCmdListEntry resp;
 
-  resp_data.src_uid = BrokerConnection::getLocalUID();
   resp_data.dest_uid = received_header->source_uid;
   resp_data.transaction_num = cmd_data->transaction_num;
   resp_data.resp_type = E120_RESPONSE_TYPE_NACK_REASON;
@@ -2052,22 +2082,20 @@ void RDMnetNetworkModel::SendNACK(const RptHeader *received_header, const RdmCom
   resp_data.command_class = cmd_data->command_class + 1;
   resp_data.param_id = cmd_data->param_id;
   resp_data.datalen = 2;
-  pack_16b(resp_data.data, nack_reason);
+  lwpa_pack_16b(resp_data.data, nack_reason);
 
-  if (LWPA_OK == rdmresp_create_response(&resp_data, &resp.msg))
-  {
-    resp.next = NULL;
-    SendNotification(received_header, &resp);
-  }
+  resp_list.push_back(resp_data);
+  SendNotification(received_header, resp_list);
 }
 
-void RDMnetNetworkModel::SendNotification(const RptHeader *received_header, const RdmCmdListEntry *cmd_list)
+void RDMnetNetworkModel::SendNotification(const RptHeader *received_header, const std::vector<RdmResponse> &resp_list)
 {
-  SendNotification(received_header->source_uid, received_header->source_endpoint_id, received_header->seqnum, cmd_list);
+  SendNotification(received_header->source_uid, received_header->source_endpoint_id, received_header->seqnum,
+                   resp_list);
 }
 
 void RDMnetNetworkModel::SendNotification(const RdmUid &dest_uid, uint16_t dest_endpoint_id, uint32_t seqnum,
-                                          const RdmCmdListEntry *cmd_list)
+                                          const std::vector<RdmResponse> &resp_list)
 {
   RptHeader header_to_send;
   int send_res = static_cast<int>(LWPA_OK);
@@ -2078,7 +2106,6 @@ void RDMnetNetworkModel::SendNotification(const RdmUid &dest_uid, uint16_t dest_
 
   header_to_send.dest_uid = dest_uid;
   header_to_send.dest_endpoint_id = dest_endpoint_id;
-  header_to_send.source_uid = BrokerConnection::getLocalUID();
   header_to_send.source_endpoint_id = E133_NULL_ENDPOINT;
   header_to_send.seqnum = seqnum;
 
@@ -2098,19 +2125,17 @@ void RDMnetNetworkModel::SendNotification(const RdmUid &dest_uid, uint16_t dest_
       {
         connectionToUse = brokerConnectionIter.second.get();
 
-        if (connectionToUse != NULL)
+        if (connectionToUse != NULL && connectionToUse->connected())
         {
-          if (connectionToUse->connected())
-          {
-            send_res |=
-                static_cast<int>(send_rpt_notification(connectionToUse->handle(), &my_cid, &header_to_send, cmd_list));
-          }
+          header_to_send.source_uid = connectionToUse->getLocalUID();
+          send_res |= static_cast<int>(SendNotificationOnConnection(connectionToUse, header_to_send, resp_list));
         }
       }
     }
     else if (connectionToUse != NULL)
     {
-      send_res = static_cast<int>(send_rpt_notification(connectionToUse->handle(), &my_cid, &header_to_send, cmd_list));
+      header_to_send.source_uid = connectionToUse->getLocalUID();
+      send_res = static_cast<int>(SendNotificationOnConnection(connectionToUse, header_to_send, resp_list));
     }
     else
     {
@@ -2124,6 +2149,42 @@ void RDMnetNetworkModel::SendNotification(const RdmUid &dest_uid, uint16_t dest_
   {
     log_.Log(LWPA_LOG_ERR, "Error sending RPT Notification message to Broker.");
   }
+}
+
+lwpa_error_t RDMnetNetworkModel::SendNotificationOnConnection(const BrokerConnection *connection,
+                                                              const RptHeader &header,
+                                                              const std::vector<RdmResponse> &resp_list)
+{
+  std::vector<RdmCmdListEntry> packed_resp_list;
+  if (resp_list.size() > 1 && resp_list[0].resp_type == E120_RESPONSE_TYPE_ACK_OVERFLOW)
+  {
+    for (size_t i = 0; i < resp_list.size(); ++i)
+    {
+      RdmResponse resp = resp_list[i];
+      RdmCmdListEntry packed_resp;
+
+      resp.src_uid = connection->getLocalUID();
+      rdmresp_create_response(&resp, &packed_resp.msg);
+      if (i == resp_list.size() - 1)
+        packed_resp.next = nullptr;
+      packed_resp_list.push_back(packed_resp);
+      if (i > 0)
+        packed_resp_list[i - 1].next = &packed_resp_list[i];
+    }
+  }
+  else
+  {
+    RdmResponse resp = resp_list[0];
+    RdmCmdListEntry packed_resp;
+
+    resp.src_uid = connection->getLocalUID();
+    rdmresp_create_response(&resp, &packed_resp.msg);
+    packed_resp.next = nullptr;
+    packed_resp_list.push_back(packed_resp);
+  }
+
+  LwpaUuid my_cid = BrokerConnection::getLocalCID();
+  return send_rpt_notification(connection->handle(), &my_cid, &header, &packed_resp_list[0]);
 }
 
 void RDMnetNetworkModel::ProcessRDMCommand(uint16_t /*conn*/, const RptHeader *header, const RdmCommand &cmd)
@@ -2180,12 +2241,6 @@ bool RDMnetNetworkModel::DefaultResponderGet(uint16_t pid, const uint8_t *param_
       break;
     case E133_COMPONENT_SCOPE:
       res = getComponentScope(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E133_BROKER_STATIC_CONFIG_IPV4:
-      res = getBrokerStaticConfigIPv4(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E133_BROKER_STATIC_CONFIG_IPV6:
-      res = getBrokerStaticConfigIPv6(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
       break;
     case E133_SEARCH_DOMAIN:
       res = getSearchDomain(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
@@ -2245,7 +2300,7 @@ void RDMnetNetworkModel::ProcessRDMResponse(uint16_t /*conn*/, bool have_command
       uint16_t nackReason = 0xffff;
 
       if (first_resp.datalen == 2)
-        nackReason = upack_16b(first_resp.data);
+        nackReason = lwpa_upack_16b(first_resp.data);
       nack(nackReason, &first_resp);
       return;
     }
@@ -2284,7 +2339,7 @@ void RDMnetNetworkModel::ProcessRDMResponse(uint16_t /*conn*/, bool have_command
         for (auto resp_part : response)
         {
           for (size_t pos = 0; pos + 1 < resp_part.datalen; pos += 2)
-            list.push_back(upack_16b(&resp_part.data[pos]));
+            list.push_back(lwpa_upack_16b(&resp_part.data[pos]));
         }
 
         if (!list.empty())
@@ -2300,10 +2355,10 @@ void RDMnetNetworkModel::ProcessRDMResponse(uint16_t /*conn*/, bool have_command
           // Total personality is reset if current or total is less than 1
           uint8_t total_pers = ((first_resp.data[12] < 1 || first_resp.data[13] < 1) ? 1 : first_resp.data[13]);
 
-          deviceInfo(upack_16b(&first_resp.data[0]), upack_16b(&first_resp.data[2]), upack_16b(&first_resp.data[4]),
-                     upack_32b(&first_resp.data[6]), upack_16b(&first_resp.data[10]), cur_pers, total_pers,
-                     upack_16b(&first_resp.data[14]), upack_16b(&first_resp.data[16]), first_resp.data[18],
-                     &first_resp);
+          deviceInfo(lwpa_upack_16b(&first_resp.data[0]), lwpa_upack_16b(&first_resp.data[2]),
+                     lwpa_upack_16b(&first_resp.data[4]), lwpa_upack_32b(&first_resp.data[6]),
+                     lwpa_upack_16b(&first_resp.data[10]), cur_pers, total_pers, lwpa_upack_16b(&first_resp.data[14]),
+                     lwpa_upack_16b(&first_resp.data[16]), first_resp.data[18], &first_resp);
         }
         break;
       }
@@ -2343,7 +2398,7 @@ void RDMnetNetworkModel::ProcessRDMResponse(uint16_t /*conn*/, bool have_command
       case E120_BOOT_SOFTWARE_VERSION_ID:
       {
         if (first_resp.datalen >= 4)
-          bootSoftwareID(upack_32b(first_resp.data), &first_resp);
+          bootSoftwareID(lwpa_upack_32b(first_resp.data), &first_resp);
         break;
       }
       case E120_DMX_PERSONALITY:
@@ -2364,7 +2419,7 @@ void RDMnetNetworkModel::ProcessRDMResponse(uint16_t /*conn*/, bool have_command
           memcpy(description, &first_resp.data[3],
                  (descriptionLength > 32) ? 32 : descriptionLength);  // Max description length is 32
 
-          personalityDescription(first_resp.data[0], upack_16b(&first_resp.data[1]), description, &first_resp);
+          personalityDescription(first_resp.data[0], lwpa_upack_16b(&first_resp.data[1]), description, &first_resp);
         }
         break;
       }
@@ -2383,13 +2438,13 @@ void RDMnetNetworkModel::ProcessRDMResponse(uint16_t /*conn*/, bool have_command
             if (resp_part.datalen < 4)
               break;
             src_uid = resp_part.src_uid;
-            change_number = upack_32b(&resp_part.data[0]);
+            change_number = lwpa_upack_32b(&resp_part.data[0]);
             pos = 4;
           }
 
           for (; pos + 2 < resp_part.datalen; pos += 3)
           {
-            uint16_t endpoint_id = upack_16b(&resp_part.data[pos]);
+            uint16_t endpoint_id = lwpa_upack_16b(&resp_part.data[pos]);
             uint8_t endpoint_type = resp_part.data[pos + 2];
             list.push_back(std::make_pair(endpoint_id, endpoint_type));
           }
@@ -2414,16 +2469,16 @@ void RDMnetNetworkModel::ProcessRDMResponse(uint16_t /*conn*/, bool have_command
             if (resp_part.datalen < 6)
               break;
             src_uid = resp_part.src_uid;
-            endpoint_id = upack_16b(&resp_part.data[0]);
-            change_number = upack_32b(&resp_part.data[2]);
+            endpoint_id = lwpa_upack_16b(&resp_part.data[0]);
+            change_number = lwpa_upack_32b(&resp_part.data[2]);
             pos = 6;
           }
 
           for (; pos + 5 < resp_part.datalen; pos += 6)
           {
             RdmUid device;
-            device.manu = upack_16b(&resp_part.data[pos]);
-            device.id = upack_32b(&resp_part.data[pos + 2]);
+            device.manu = lwpa_upack_16b(&resp_part.data[pos]);
+            device.id = lwpa_upack_32b(&resp_part.data[pos + 2]);
             list.push_back(device);
           }
         }
@@ -2435,7 +2490,7 @@ void RDMnetNetworkModel::ProcessRDMResponse(uint16_t /*conn*/, bool have_command
       {
         if (first_resp.datalen >= 4)
         {
-          uint32_t change_number = upack_32b(first_resp.data);
+          uint32_t change_number = lwpa_upack_32b(first_resp.data);
           endpointListChange(change_number, first_resp.src_uid);
         }
         break;
@@ -2444,62 +2499,10 @@ void RDMnetNetworkModel::ProcessRDMResponse(uint16_t /*conn*/, bool have_command
       {
         if (first_resp.datalen >= 6)
         {
-          uint16_t endpoint_id = upack_16b(first_resp.data);
-          uint32_t change_num = upack_32b(&first_resp.data[2]);
+          uint16_t endpoint_id = lwpa_upack_16b(first_resp.data);
+          uint32_t change_num = lwpa_upack_32b(&first_resp.data[2]);
           responderListChange(change_num, endpoint_id, first_resp.src_uid);
         }
-        break;
-      }
-      case E133_BROKER_STATIC_CONFIG_IPV4:
-      {
-        char addrString[64];
-        uint16_t port;
-        char scopeString[E133_SCOPE_STRING_PADDED_LENGTH];
-
-        for (auto resp_part : response)
-        {
-          uint8_t *data = resp_part.data;
-          while (((data - resp_part.data) + BROKER_STATIC_CONFIG_IPV4_MIN_PDL) <= resp_part.datalen)
-          {
-            memset(addrString, 0, 64);
-            memset(scopeString, 0, E133_SCOPE_STRING_PADDED_LENGTH);
-
-            unpackAndParseIPAddress(data, LWPA_IPV4, addrString, 64);
-            port = upack_16b(data + 4);
-            memcpy(scopeString, data + 6, E133_SCOPE_STRING_PADDED_LENGTH - 1);
-
-            brokerStaticConfigIPv4(addrString, port, scopeString, &first_resp);
-
-            data += BROKER_STATIC_CONFIG_IPV4_MIN_PDL;
-          }
-        }
-
-        break;
-      }
-      case E133_BROKER_STATIC_CONFIG_IPV6:
-      {
-        char addrString[64];
-        uint16_t port;
-        char scopeString[E133_SCOPE_STRING_PADDED_LENGTH];
-
-        for (auto resp_part : response)
-        {
-          uint8_t *data = resp_part.data;
-          while (((data - resp_part.data) + BROKER_STATIC_CONFIG_IPV6_MIN_PDL) <= resp_part.datalen)
-          {
-            memset(addrString, 0, 64);
-            memset(scopeString, 0, E133_SCOPE_STRING_PADDED_LENGTH);
-
-            unpackAndParseIPAddress(data, LWPA_IPV6, addrString, 64);
-            port = upack_16b(data + IPV6_BYTES);
-            memcpy(scopeString, data + IPV6_BYTES + 2, E133_SCOPE_STRING_PADDED_LENGTH - 1);
-
-            brokerStaticConfigIPv6(addrString, port, scopeString, &first_resp);
-
-            data += BROKER_STATIC_CONFIG_IPV6_MIN_PDL;
-          }
-        }
-
         break;
       }
       case E133_TCP_COMMS_STATUS:
@@ -2517,10 +2520,12 @@ void RDMnetNetworkModel::ProcessRDMResponse(uint16_t /*conn*/, bool have_command
           memset(v6AddrString, 0, 64);
 
           memcpy(scopeString, resp_part.data, E133_SCOPE_STRING_PADDED_LENGTH);
-          unpackAndParseIPAddress(resp_part.data + E133_SCOPE_STRING_PADDED_LENGTH, LWPA_IPV4, v4AddrString, 64);
-          unpackAndParseIPAddress(resp_part.data + E133_SCOPE_STRING_PADDED_LENGTH + 4, LWPA_IPV6, v6AddrString, 64);
-          port = upack_16b(resp_part.data + E133_SCOPE_STRING_PADDED_LENGTH + 4 + IPV6_BYTES);
-          unhealthyTCPEvents = upack_16b(resp_part.data + E133_SCOPE_STRING_PADDED_LENGTH + 4 + IPV6_BYTES + 2);
+          unpackAndParseIPAddress(resp_part.data + E133_SCOPE_STRING_PADDED_LENGTH, kLwpaIpTypeV4, v4AddrString, 64);
+          unpackAndParseIPAddress(resp_part.data + E133_SCOPE_STRING_PADDED_LENGTH + 4, kLwpaIpTypeV6, v6AddrString,
+                                  64);
+          port = lwpa_upack_16b(resp_part.data + E133_SCOPE_STRING_PADDED_LENGTH + 4 + LWPA_IPV6_BYTES);
+          unhealthyTCPEvents =
+              lwpa_upack_16b(resp_part.data + E133_SCOPE_STRING_PADDED_LENGTH + 4 + LWPA_IPV6_BYTES + 2);
 
           tcpCommsStatus(scopeString, v4AddrString, v6AddrString, port, unhealthyTCPEvents, &first_resp);
         }
@@ -2548,40 +2553,6 @@ void RDMnetNetworkModel::ProcessRDMResponse(uint16_t /*conn*/, bool have_command
         {
           if (cmd.datalen >= 2)
             personality(cmd.data[0], 0, &first_resp);
-          break;
-        }
-        case E133_BROKER_STATIC_CONFIG_IPV4:
-        {
-          char addrString[64];
-          uint16_t port;
-          char scopeString[E133_SCOPE_STRING_PADDED_LENGTH];
-
-          memset(addrString, 0, 64);
-          memset(scopeString, 0, E133_SCOPE_STRING_PADDED_LENGTH);
-
-          unpackAndParseIPAddress(cmd.data, LWPA_IPV4, addrString, 64);
-          port = upack_16b(cmd.data + 4);
-          memcpy(scopeString, cmd.data + 6, E133_SCOPE_STRING_PADDED_LENGTH);
-
-          brokerStaticConfigIPv4(addrString, port, scopeString, &first_resp);
-
-          break;
-        }
-        case E133_BROKER_STATIC_CONFIG_IPV6:
-        {
-          char addrString[64];
-          uint16_t port;
-          char scopeString[E133_SCOPE_STRING_PADDED_LENGTH];
-
-          memset(addrString, 0, 64);
-          memset(scopeString, 0, E133_SCOPE_STRING_PADDED_LENGTH);
-
-          unpackAndParseIPAddress(cmd.data, LWPA_IPV6, addrString, 64);
-          port = upack_16b(cmd.data + IPV6_BYTES);
-          memcpy(scopeString, cmd.data + IPV6_BYTES + 2, E133_SCOPE_STRING_PADDED_LENGTH);
-
-          brokerStaticConfigIPv6(addrString, port, scopeString, &first_resp);
-
           break;
         }
         default:
@@ -2618,7 +2589,7 @@ void RDMnetNetworkModel::ProcessRDMGetSetData(uint16_t param_id, const uint8_t *
       {
         if (datalen >= 2)
         {
-          address(upack_16b(data), firstResp);
+          address(lwpa_upack_16b(data), firstResp);
         }
         break;
       }
@@ -2632,14 +2603,39 @@ void RDMnetNetworkModel::ProcessRDMGetSetData(uint16_t param_id, const uint8_t *
       {
         uint16_t scopeSlot;
         char scopeString[E133_SCOPE_STRING_PADDED_LENGTH];
+        char addrBuf[LWPA_INET6_ADDRSTRLEN] = {};
+        char *staticConfigV4 = nullptr;
+        char *staticConfigV6 = nullptr;
+        uint16_t port = 0;
+        const uint8_t *cur_ptr = data;
 
-        memset(scopeString, 0, E133_SCOPE_STRING_PADDED_LENGTH);
+        scopeSlot = lwpa_upack_16b(cur_ptr);
+        cur_ptr += 2;
+        memcpy(scopeString, cur_ptr, E133_SCOPE_STRING_PADDED_LENGTH);
+        scopeString[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
+        cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
 
-        scopeSlot = upack_16b(data);
-        memcpy(scopeString, data + 2, E133_SCOPE_STRING_PADDED_LENGTH);
-
-        componentScope(scopeSlot, scopeString, firstResp);
-
+        uint8_t staticConfigType = *cur_ptr++;
+        switch (staticConfigType)
+        {
+          case E133_STATIC_CONFIG_IPV4:
+            unpackAndParseIPAddress(cur_ptr, kLwpaIpTypeV4, addrBuf, LWPA_INET6_ADDRSTRLEN);
+            cur_ptr += 4 + 16;
+            port = lwpa_upack_16b(cur_ptr);
+            staticConfigV4 = addrBuf;
+            break;
+          case E133_STATIC_CONFIG_IPV6:
+            cur_ptr += 4;
+            unpackAndParseIPAddress(cur_ptr, kLwpaIpTypeV6, addrBuf, LWPA_INET6_ADDRSTRLEN);
+            cur_ptr += 16;
+            port = lwpa_upack_16b(cur_ptr);
+            staticConfigV6 = addrBuf;
+            break;
+          case E133_NO_STATIC_CONFIG:
+          default:
+            break;
+        }
+        componentScope(scopeSlot, scopeString, staticConfigV4, staticConfigV6, port, firstResp);
         break;
       }
       case E133_SEARCH_DOMAIN:
@@ -2699,10 +2695,12 @@ bool RDMnetNetworkModel::getComponentScope(const uint8_t *param_data, uint8_t pa
 {
   if (param_data_len >= 2)
   {
-    return getComponentScope(upack_16b(param_data), resp_data_list, num_responses, nack_reason);
+    return getComponentScope(lwpa_upack_16b(param_data), resp_data_list, num_responses, nack_reason);
   }
   else
+  {
     *nack_reason = E120_NR_FORMAT_ERROR;
+  }
   return false;
 }
 
@@ -2729,148 +2727,66 @@ bool RDMnetNetworkModel::getComponentScope(uint16_t slot, RdmParamData *resp_dat
       {
         slot = connectionIter->first + 1;
       }
+      else
+      {
+        slot = 0;
+      }
     }
 
-    if (slot <= MAX_SCOPE_SLOT_NUMBER)
+    if (slot != 0)
     {
-      pack_16b(resp_data_list[0].data, slot);
-      memset(&resp_data_list[0].data[2], 0, E133_SCOPE_STRING_PADDED_LENGTH);
-      if (connectionIter != broker_connections_.end())
-      {
-        std::string scope = connectionIter->second->scope();
+      uint8_t *cur_ptr = resp_data_list[0].data;
+      lwpa_pack_16b(cur_ptr, slot);
+      cur_ptr += 2;
 
-        strncpy((char *)&resp_data_list[0].data[2], scope.data(),
-                min(scope.length(), E133_SCOPE_STRING_PADDED_LENGTH - 1));
+      std::string scope = connectionIter->second->scope();
+
+      strncpy((char *)cur_ptr, scope.data(), E133_SCOPE_STRING_PADDED_LENGTH);
+      cur_ptr[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
+      cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
+
+      LwpaSockaddr saddr = connectionIter->second->staticSockAddr();
+      if (lwpaip_is_v4(&saddr.ip))
+      {
+        *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
+        lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&saddr.ip));
+        cur_ptr += 4;
+        /* Skip the IPv6 field */
+        cur_ptr += 16;
+        lwpa_pack_16b(cur_ptr, saddr.port);
+        cur_ptr += 2;
       }
-      resp_data_list[0].datalen = 2 + E133_SCOPE_STRING_PADDED_LENGTH;
+      else if (lwpaip_is_v6(&saddr.ip))
+      {
+        *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
+        /* Skip the IPv4 field */
+        cur_ptr += 4;
+        memcpy(cur_ptr, lwpaip_v6_address(&saddr.ip), LWPA_IPV6_BYTES);
+        cur_ptr += LWPA_IPV6_BYTES;
+        lwpa_pack_16b(cur_ptr, saddr.port);
+        cur_ptr += 2;
+      }
+      else
+      {
+        *cur_ptr++ = E133_NO_STATIC_CONFIG;
+        /* Skip the IPv4, IPv6 and port fields */
+        cur_ptr += 4 + 16 + 2;
+      }
+      resp_data_list[0].datalen = static_cast<uint8_t>(cur_ptr - resp_data_list[0].data);
       *num_responses = 1;
 
       lwpa_rwlock_readunlock(&prop_lock);
       return true;
     }
     else if (nack_reason != NULL)
+    {
       *nack_reason = E120_NR_DATA_OUT_OF_RANGE;
+    }
 
     lwpa_rwlock_readunlock(&prop_lock);
   }
 
   return false;
-}
-
-bool RDMnetNetworkModel::getBrokerStaticConfigIPv4(const uint8_t *param_data, uint8_t param_data_len,
-                                                   RdmParamData *resp_data_list, size_t *num_responses,
-                                                   uint16_t *nack_reason)
-{
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
-
-  int currentPDL = 0x0;
-  int currentListIndex = 0;
-
-  resp_data_list[currentListIndex].datalen = 0;
-
-  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
-  {
-    for (const auto &connection : broker_connections_)
-    {
-      uint8_t *cur_ptr = NULL;
-      LwpaSockaddr saddr = connection.second->staticSockAddr();
-      std::string scope = connection.second->scope();
-
-      if (currentPDL > (BROKER_STATIC_CONFIG_IPV4_MAX_PDL - BROKER_STATIC_CONFIG_IPV4_MIN_PDL))
-      {
-        if (currentListIndex < (MAX_RESPONSES_IN_ACK_OVERFLOW - 1))
-        {
-          ++currentListIndex;
-          resp_data_list[currentListIndex].datalen = 0;
-          currentPDL = 0;
-        }
-        else
-        {
-          break;
-        }
-      }
-
-      cur_ptr = resp_data_list[currentListIndex].data + currentPDL;
-
-      if (lwpaip_is_invalid(&saddr.ip))
-      {
-        /* Set all 0's for the static IPv4 address and port */
-        memset(cur_ptr, 0, 6);
-        cur_ptr += 6;
-      }
-      else
-      {
-        /* Copy the static IPv4 address and port */
-        pack_32b(cur_ptr, lwpaip_v4_address(&saddr.ip));
-        cur_ptr += 4;
-        pack_16b(cur_ptr, saddr.port);
-        cur_ptr += 2;
-      }
-      /* Copy the scope string */
-      memset(cur_ptr, 0, E133_SCOPE_STRING_PADDED_LENGTH - 1);
-      strncpy((char *)cur_ptr, scope.data(), min(scope.length(), E133_SCOPE_STRING_PADDED_LENGTH - 1));
-      resp_data_list[currentListIndex].datalen += BROKER_STATIC_CONFIG_IPV4_MIN_PDL;
-      currentPDL += BROKER_STATIC_CONFIG_IPV4_MIN_PDL;
-    }
-
-    lwpa_rwlock_readunlock(&prop_lock);
-  }
-
-  *num_responses = (currentListIndex + 1);
-  return true;
-}
-
-bool RDMnetNetworkModel::getBrokerStaticConfigIPv6(const uint8_t * /*param_data*/, uint8_t /*param_data_len*/,
-                                                   RdmParamData *resp_data_list, size_t *num_responses,
-                                                   uint16_t * /*nack_reason*/)
-{
-  int currentPDL = 0x0;
-  int currentListIndex = 0;
-
-  resp_data_list[currentListIndex].datalen = 0;
-
-  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
-  {
-    for (const auto &connection : broker_connections_)
-    {
-      uint8_t *cur_ptr = NULL;
-      std::string scope = connection.second->scope();
-
-      if (currentPDL > (BROKER_STATIC_CONFIG_IPV6_MAX_PDL - BROKER_STATIC_CONFIG_IPV6_MIN_PDL))
-      {
-        if (currentListIndex < (MAX_RESPONSES_IN_ACK_OVERFLOW - 1))
-        {
-          ++currentListIndex;
-          resp_data_list[currentListIndex].datalen = 0;
-          currentPDL = 0;
-        }
-        else
-        {
-          break;
-        }
-      }
-
-      cur_ptr = resp_data_list[currentListIndex].data + currentPDL;
-
-      // This function should actually be implemented once IPv6 is supported.
-      /* Set all 0's for the static IPv6 address and port */
-      memset(cur_ptr, 0, IPV6_BYTES + 2);
-      cur_ptr += (IPV6_BYTES + 2);
-
-      /* Copy the scope string */
-      memset(cur_ptr, 0, E133_SCOPE_STRING_PADDED_LENGTH - 1);
-      strncpy((char *)cur_ptr, scope.data(), min(scope.length(), E133_SCOPE_STRING_PADDED_LENGTH - 1));
-      resp_data_list[currentListIndex].datalen += BROKER_STATIC_CONFIG_IPV6_MIN_PDL;
-      currentPDL += BROKER_STATIC_CONFIG_IPV6_MIN_PDL;
-    }
-
-    lwpa_rwlock_readunlock(&prop_lock);
-  }
-
-  *num_responses = (currentListIndex + 1);
-  return true;
 }
 
 bool RDMnetNetworkModel::getSearchDomain(const uint8_t *param_data, uint8_t param_data_len,
@@ -2914,28 +2830,28 @@ bool RDMnetNetworkModel::getTCPCommsStatus(const uint8_t *param_data, uint8_t pa
 
       if (lwpaip_is_invalid(&saddr.ip))
       {
-        pack_32b(cur_ptr, 0);
+        lwpa_pack_32b(cur_ptr, 0);
         cur_ptr += 4;
-        memset(cur_ptr, 0, IPV6_BYTES);
-        cur_ptr += IPV6_BYTES;
+        memset(cur_ptr, 0, LWPA_IPV6_BYTES);
+        cur_ptr += LWPA_IPV6_BYTES;
       }
       else if (lwpaip_is_v4(&saddr.ip))
       {
-        pack_32b(cur_ptr, lwpaip_v4_address(&saddr.ip));
+        lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&saddr.ip));
         cur_ptr += 4;
-        memset(cur_ptr, 0, IPV6_BYTES);
-        cur_ptr += IPV6_BYTES;
+        memset(cur_ptr, 0, LWPA_IPV6_BYTES);
+        cur_ptr += LWPA_IPV6_BYTES;
       }
       else  // IPv6
       {
-        pack_32b(cur_ptr, 0);
+        lwpa_pack_32b(cur_ptr, 0);
         cur_ptr += 4;
-        memcpy(cur_ptr, lwpaip_v6_address(&saddr.ip), IPV6_BYTES);
-        cur_ptr += IPV6_BYTES;
+        memcpy(cur_ptr, lwpaip_v6_address(&saddr.ip), LWPA_IPV6_BYTES);
+        cur_ptr += LWPA_IPV6_BYTES;
       }
-      pack_16b(cur_ptr, saddr.port);
+      lwpa_pack_16b(cur_ptr, saddr.port);
       cur_ptr += 2;
-      pack_16b(cur_ptr, prop_data_.tcp_unhealthy_counter);
+      lwpa_pack_16b(cur_ptr, prop_data_.tcp_unhealthy_counter);
       cur_ptr += 2;
       resp_data_list[currentListIndex].datalen = (uint8_t)(cur_ptr - resp_data_list[currentListIndex].data);
 
@@ -2968,7 +2884,7 @@ bool RDMnetNetworkModel::getSupportedParameters(const uint8_t *param_data, uint8
 
   for (i = 0; i < NUM_SUPPORTED_PIDS; ++i)
   {
-    pack_16b(cur_ptr, kSupportedPIDList[i]);
+    lwpa_pack_16b(cur_ptr, kSupportedPIDList[i]);
     cur_ptr += 2;
     if ((cur_ptr - resp_data_list[list_index].data) >= RDM_MAX_PDL - 1)
     {
@@ -3049,7 +2965,7 @@ bool RDMnetNetworkModel::getEndpointList(const uint8_t *param_data, uint8_t para
   resp_data_list[0].datalen = 4;
   if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
   {
-    pack_32b(cur_ptr, prop_data_.endpoint_list_change_number);
+    lwpa_pack_32b(cur_ptr, prop_data_.endpoint_list_change_number);
     lwpa_rwlock_readunlock(&prop_lock);
   }
   *num_responses = 1;
@@ -3157,7 +3073,7 @@ void RDMnetNetworkModel::responderListChange(uint32_t /*changeNumber*/, uint16_t
   cmd.command_class = E120_GET_COMMAND;
   cmd.param_id = E137_7_ENDPOINT_RESPONDERS;
   cmd.datalen = sizeof(uint16_t);
-  pack_16b(cmd.data, endpoint);
+  lwpa_pack_16b(cmd.data, endpoint);
 
   SendRDMCommand(cmd);
 }
@@ -3180,7 +3096,7 @@ void RDMnetNetworkModel::nack(uint16_t reason, const RdmResponse *resp)
     if (cmd.param_id == E133_COMPONENT_SCOPE)
     {
       cmd.datalen = 2;
-      pack_16b(cmd.data, 0x0001);  // Scope slot, default to 1 for RPT Devices (non-controllers, non-brokers).
+      lwpa_pack_16b(cmd.data, 0x0001);  // Scope slot, default to 1 for RPT Devices (non-controllers, non-brokers).
     }
     else
     {
@@ -3427,7 +3343,8 @@ void RDMnetNetworkModel::personalityDescription(uint8_t personality, uint16_t fo
   }
 }
 
-void RDMnetNetworkModel::componentScope(uint16_t scopeSlot, const char *scopeString, const RdmResponse *resp)
+void RDMnetNetworkModel::componentScope(uint16_t scopeSlot, const char *scopeString, const char *staticConfigV4,
+                                        const char *staticConfigV6, uint16_t port, const RdmResponse *resp)
 {
   RDMnetClientItem *client = getClientItem(resp);
 
@@ -3469,67 +3386,32 @@ void RDMnetNetworkModel::componentScope(uint16_t scopeSlot, const char *scopeStr
       emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeString, RDMnetNetworkItem::ScopeDataRole);
       emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeSlot, RDMnetNetworkItem::ScopeSlotRole);
 
+      QString staticV4PropName = getScopeSubPropertyFullName(client, E133_COMPONENT_SCOPE, 1, scopeString);
+      QString staticV6PropName = getScopeSubPropertyFullName(client, E133_COMPONENT_SCOPE, 2, scopeString);
+
+      if (staticConfigV4)
+      {
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName,
+                             QString("%0:%1").arg(staticConfigV4).arg(port));
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""));
+      }
+      else if (staticConfigV6)
+      {
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""));
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName,
+                             QString("[%0]:%1").arg(staticConfigV6).arg(port));
+      }
+      else
+      {
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""));
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""));
+      }
+
       if (client->ClientType() == kRPTClientTypeController)
       {
         previous_slot_[client->Uid()] = scopeSlot;
         sendGetNextControllerScope(resp->src_uid.manu, resp->src_uid.id, scopeSlot);
       }
-    }
-  }
-}
-
-void RDMnetNetworkModel::brokerStaticConfigIPv4(const char *addrString, uint16_t port, const char *scopeString,
-                                                const RdmResponse *resp)
-{
-  RDMnetClientItem *client = getClientItem(resp);
-
-  if (client != NULL)
-  {
-    if (client->getScopeSlot(scopeString) != 0)
-    {
-      QString propertyName = getScopeSubPropertyFullName(client, E133_BROKER_STATIC_CONFIG_IPV4, 0, scopeString);
-
-      if ((strlen(addrString) == 0) && (port == 0))
-      {
-        // Empty data, empty property
-        emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV4, propertyName, QString(""));
-      }
-      else
-      {
-        emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV4, propertyName,
-                             QString("%0:%1").arg(addrString).arg(port));
-      }
-
-      emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV4, propertyName, tr(scopeString),
-                           RDMnetNetworkItem::ScopeDataRole);
-    }
-  }
-}
-
-void RDMnetNetworkModel::brokerStaticConfigIPv6(const char *addrString, uint16_t port, const char *scopeString,
-                                                const RdmResponse *resp)
-{
-  RDMnetClientItem *client = getClientItem(resp);
-
-  if (client != NULL)
-  {
-    if (client->getScopeSlot(scopeString) != 0)
-    {
-      QString propertyName = getScopeSubPropertyFullName(client, E133_BROKER_STATIC_CONFIG_IPV6, 0, scopeString);
-
-      if ((strlen(addrString) == 0) && (port == 0))
-      {
-        // Empty data, empty property
-        emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV6, propertyName, QString(""));
-      }
-      else
-      {
-        emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV6, propertyName,
-                             QString("[%0]:%1").arg(addrString).arg(port));
-      }
-
-      emit setPropertyData(client, E133_BROKER_STATIC_CONFIG_IPV6, propertyName, tr(scopeString),
-                           RDMnetNetworkItem::ScopeDataRole);
     }
   }
 }
@@ -3686,16 +3568,12 @@ void RDMnetNetworkModel::initializeRPTClientProperties(RDMnetClientItem *parent,
 
   if (clientType == kRPTClientTypeDevice)  // For controllers, we need to wait for all the scopes first.
   {
-    cmd.param_id = E133_BROKER_STATIC_CONFIG_IPV4;
-    SendRDMCommand(cmd);
-    cmd.param_id = E133_BROKER_STATIC_CONFIG_IPV6;
-    SendRDMCommand(cmd);
     cmd.param_id = E133_TCP_COMMS_STATUS;
     SendRDMCommand(cmd);
   }
 
   cmd.datalen = 2;
-  pack_16b(cmd.data, 0x0001);  // Scope slot, start with #1
+  lwpa_pack_16b(cmd.data, 0x0001);  // Scope slot, start with #1
   cmd.param_id = E133_COMPONENT_SCOPE;
   SendRDMCommand(cmd);
 }
@@ -3712,10 +3590,6 @@ void RDMnetNetworkModel::sendGetControllerScopeProperties(uint16_t manuID, uint3
   cmd.command_class = E120_GET_COMMAND;
   cmd.datalen = 0;
 
-  cmd.param_id = E133_BROKER_STATIC_CONFIG_IPV4;
-  SendRDMCommand(cmd);
-  cmd.param_id = E133_BROKER_STATIC_CONFIG_IPV6;
-  SendRDMCommand(cmd);
   cmd.param_id = E133_TCP_COMMS_STATUS;
   SendRDMCommand(cmd);
 }
@@ -3732,7 +3606,7 @@ void RDMnetNetworkModel::sendGetNextControllerScope(uint16_t manuID, uint32_t de
   cmd.command_class = E120_GET_COMMAND;
   cmd.datalen = 2;
 
-  pack_16b(cmd.data, min(currentSlot + 1, MAX_SCOPE_SLOT_NUMBER));  // Scope slot, start with #1
+  lwpa_pack_16b(cmd.data, min(currentSlot + 1, MAX_SCOPE_SLOT_NUMBER));  // Scope slot, start with #1
   cmd.param_id = E133_COMPONENT_SCOPE;
   SendRDMCommand(cmd);
 }
@@ -3755,7 +3629,7 @@ uint8_t *RDMnetNetworkModel::packIPAddressItem(const QVariant &value, lwpa_iptyp
 {
   char ipStrBuffer[64];
   unsigned int portNumber;
-  size_t memSize = (addrType == LWPA_IPV4) ? 6 : (IPV6_BYTES + 2);
+  size_t memSize = (addrType == kLwpaIpTypeV4) ? 6 : (LWPA_IPV6_BYTES + 2);
 
   if (packPtr == NULL)
   {
@@ -3770,7 +3644,7 @@ uint8_t *RDMnetNetworkModel::packIPAddressItem(const QVariant &value, lwpa_iptyp
   {
     memset(packPtr, 0, memSize);
   }
-  else if (sscanf(valueData, (addrType == LWPA_IPV4) ? "%63[1234567890.]:%u" : "[%63[1234567890:abcdefABCDEF]]:%u",
+  else if (sscanf(valueData, (addrType == kLwpaIpTypeV4) ? "%63[1234567890.]:%u" : "[%63[1234567890:abcdefABCDEF]]:%u",
                   ipStrBuffer, &portNumber) < 2)
   {
     // Incorrect format entered.
@@ -3786,7 +3660,7 @@ uint8_t *RDMnetNetworkModel::packIPAddressItem(const QVariant &value, lwpa_iptyp
   }
   else
   {
-    pack_16b(packPtr + memSize - 2, static_cast<uint16_t>(portNumber));
+    lwpa_pack_16b(packPtr + memSize - 2, static_cast<uint16_t>(portNumber));
   }
 
   return packPtr + memSize;

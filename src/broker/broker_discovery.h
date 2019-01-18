@@ -25,42 +25,21 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet/broker/discovery.h
- *  \brief Handles the Broker's DNS registration and discovery of other Brokers.
- *  \author Sam Kearney
- */
-#ifndef _RDMNET_BROKER_DISCOVERY_H_
-#define _RDMNET_BROKER_DISCOVERY_H_
+/// \file broker_discovery.h
+/// \brief Handles the Broker's DNS registration and discovery of other Brokers.
+/// \author Sam Kearney
+#ifndef _BROKER_DISCOVERY_H_
+#define _BROKER_DISCOVERY_H_
 
 #include <string>
 #include <vector>
 #include "lwpa/error.h"
 #include "lwpa/int.h"
-#include "rdmnet/defs.h"
+#include "rdmnet/broker.h"
 #include "rdmnet/common/discovery.h"
 
-/// Settings for the Broker's DNS Discovery functionality.
-struct BrokerDiscoveryAttributes
-{
-  /// Your unique name for this %Broker DNS-SD service instance. The discovery library uses
-  /// standard mechanisms to ensure that this service instance name is actually unique;
-  /// however, the application should make a reasonable effort to provide a name that will
-  /// not conflict with other %Brokers.
-  std::string dns_service_instance_name;
-
-  /// A string to identify the manufacturer of this %Broker instance.
-  std::string dns_manufacturer;
-  /// A string to identify the model of product in which the %Broker instance is included.
-  std::string dns_model;
-
-  /// The Scope on which this %Broker should operate. If empty, the default RDMnet scope is used.
-  std::string scope;
-
-  BrokerDiscoveryAttributes() : scope(E133_DEFAULT_SCOPE) {}
-};
-
 /// A callback interface for notifications from a BrokerDiscoveryManager.
-class IBrokerDiscoveryManager_Notify
+class BrokerDiscoveryManagerNotify
 {
 public:
   /// A %Broker was registered with the information indicated by broker_info.
@@ -77,14 +56,14 @@ public:
 class BrokerDiscoveryManager
 {
 public:
-  BrokerDiscoveryManager(IBrokerDiscoveryManager_Notify *notify);
+  BrokerDiscoveryManager(BrokerDiscoveryManagerNotify *notify);
   virtual ~BrokerDiscoveryManager();
 
   static lwpa_error_t InitLibrary();
   static void DeinitLibrary();
   static void LibraryTick();
 
-  lwpa_error_t RegisterBroker(const BrokerDiscoveryAttributes &disc_attributes, const LwpaUuid &local_cid,
+  lwpa_error_t RegisterBroker(const RDMnet::BrokerDiscoveryAttributes &disc_attributes, const LwpaUuid &local_cid,
                               const std::vector<LwpaIpAddr> &listen_addrs, uint16_t listen_port);
   void UnregisterBroker();
   void Standby();
@@ -97,7 +76,7 @@ protected:
   static void BrokerRegistered(const BrokerDiscInfo *broker_info, const char *assigned_service_name, void *context);
   static void BrokerRegisterError(const BrokerDiscInfo *broker_info, int platform_error, void *context);
 
-  IBrokerDiscoveryManager_Notify *notify_;
+  BrokerDiscoveryManagerNotify *notify_;
   BrokerDiscInfo cur_info_;
   bool cur_info_valid_;
 };

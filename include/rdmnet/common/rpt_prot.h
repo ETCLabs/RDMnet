@@ -40,11 +40,7 @@
 #include "lwpa/root_layer_pdu.h"
 #include "rdm/message.h"
 #include "rdmnet/defs.h"
-
-/* Suppress strncpy() warning on Windows/MSVC. */
-#ifdef _MSC_VER
-#pragma warning(disable : 4996)
-#endif
+#include "rdmnet/common/util.h"
 
 /*! \addtogroup rdmnet_message
  *  @{
@@ -56,7 +52,7 @@
    + 2 /* Source Endpoint ID */ + 6 /* Dest UID */ + 2 /* Dest Endpoint ID */ \
    + 4 /* Sequence Number */ + 1 /* Reserved */)
 /*! The header size of an RPT PDU, including encapsulating PDUs */
-#define RPT_PDU_FULL_HEADER_SIZE (RPT_PDU_HEADER_SIZE + RLP_HEADER_SIZE_EXT_LEN + ACN_TCP_PREAMBLE_SIZE)
+#define RPT_PDU_FULL_HEADER_SIZE (RPT_PDU_HEADER_SIZE + ACN_RLP_HEADER_SIZE_EXT_LEN + ACN_TCP_PREAMBLE_SIZE)
 
 /*! The header size of an RPT Status PDU (not including encapsulating PDUs) */
 #define RPT_STATUS_HEADER_SIZE (3 /* Flags + Length */ + 2 /* Vector */)
@@ -115,11 +111,11 @@ typedef struct RptStatusMsg
 /*! \brief Safely copy a status string to an RptStatusMsg.
  *  \param statusmsgptr Pointer to RptStatusMsg.
  *  \param status_str String to copy to the RptStatusMsg (const char *). */
-#define rpt_status_msg_set_status_string(statusmsgptr, status_str)                    \
-  do                                                                                  \
-  {                                                                                   \
-    strncpy((statusmsgptr)->status_string, status_str, RPT_STATUS_STRING_MAXLEN - 1); \
-    (statusmsgptr)->status_string[RPT_STATUS_STRING_MAXLEN - 1] = '\0';               \
+#define rpt_status_msg_set_status_string(statusmsgptr, status_str)                                           \
+  do                                                                                                         \
+  {                                                                                                          \
+    RDMNET_MSVC_NO_DEP_WRN strncpy((statusmsgptr)->status_string, status_str, RPT_STATUS_STRING_MAXLEN - 1); \
+    (statusmsgptr)->status_string[RPT_STATUS_STRING_MAXLEN - 1] = '\0';                                      \
   } while (0)
 
 /*! \brief Set an empty status string in an RptStatusMsg.
@@ -153,7 +149,7 @@ typedef struct RdmCmdList
 typedef struct RptMessage
 {
   /*! The vector indicates which type of message is present in the data section.
-   *  Valid values are indicated by VECTOR_RPT_* in estardmnet.h. */
+   *  Valid values are indicated by VECTOR_RPT_* in rdmnet/defs.h. */
   uint32_t vector;
   /*! The header contains routing information and metadata for the RPT message. */
   RptHeader header;

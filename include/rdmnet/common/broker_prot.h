@@ -38,23 +38,21 @@
 #include "lwpa/error.h"
 #include "lwpa/inet.h"
 #include "lwpa/root_layer_pdu.h"
+#include "lwpa/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/client.h"
-
-/* Suppress strncpy() warning on Windows/MSVC. */
-#ifdef _MSC_VER
-#pragma warning(disable : 4996)
-#endif
+#include "rdmnet/common/util.h"
 
 /*! \addtogroup rdmnet_message
  *  @{
  */
 
 #define BROKER_PDU_HEADER_SIZE 5
-#define BROKER_PDU_FULL_HEADER_SIZE (BROKER_PDU_HEADER_SIZE + RLP_HEADER_SIZE_EXT_LEN + ACN_TCP_PREAMBLE_SIZE)
+#define BROKER_PDU_FULL_HEADER_SIZE (BROKER_PDU_HEADER_SIZE + ACN_RLP_HEADER_SIZE_EXT_LEN + ACN_TCP_PREAMBLE_SIZE)
 
-#define CONNECT_REPLY_DATA_SIZE (2 /* Connection Code */ + 2 /* E1.33 Version */ + 6 /* %Broker's UID */)
+#define CONNECT_REPLY_DATA_SIZE \
+  (2 /* Connection Code */ + 2 /* E1.33 Version */ + 6 /* %Broker's UID */ + 6 /* Client's UID */)
 #define CONNECT_REPLY_FULL_MSG_SIZE (BROKER_PDU_FULL_HEADER_SIZE + CONNECT_REPLY_DATA_SIZE)
 
 /*! A flag to indicate whether a client would like to receive notifications when other clients
@@ -67,41 +65,61 @@
 typedef enum
 {
   /*! Connection completed successfully. */
-  kRDMnetConnectOk = E133_CONNECT_OK,
+  kRdmnetConnectOk = E133_CONNECT_OK,
   /*! The Client's scope does not match the %Broker's scope. */
-  kRDMnetConnectScopeMismatch = E133_CONNECT_SCOPE_MISMATCH,
+  kRdmnetConnectScopeMismatch = E133_CONNECT_SCOPE_MISMATCH,
   /*! The %Broker has no further capacity for new Clients. */
-  kRDMnetConnectCapacityExceeded = E133_CONNECT_CAPACITY_EXCEEDED,
-  /*! The Client's Dynamic UID matches another connected Client's Dynamic UID. */
-  kRDMnetConnectDuplicateUID = E133_CONNECT_DUPLICATE_UID,
+  kRdmnetConnectCapacityExceeded = E133_CONNECT_CAPACITY_EXCEEDED,
+  /*! The Client's Static UID matches another connected Client's Static UID. */
+  kRdmnetConnectDuplicateUid = E133_CONNECT_DUPLICATE_UID,
   /*! The Client's Client Entry is invalid. */
-  kRDMnetConnectInvalidClientEntry = E133_CONNECT_INVALID_CLIENT_ENTRY
+  kRdmnetConnectInvalidClientEntry = E133_CONNECT_INVALID_CLIENT_ENTRY,
+  /*! The UID sent in the Client Entry PDU is malformed. */
+  kRdmnetConnectInvalidUid = E133_CONNECT_INVALID_UID
 } rdmnet_connect_status_t;
 
 /*! Disconnect reason defines for the DisconnectMsg. */
 typedef enum
 {
   /*! The remote Component is shutting down. */
-  kRDMnetDisconnectShutdown = E133_DISCONNECT_SHUTDOWN,
+  kRdmnetDisconnectShutdown = E133_DISCONNECT_SHUTDOWN,
   /*! The remote Component no longer has the ability to support this connection. */
-  kRDMnetDisconnectCapacityExhausted = E133_DISCONNECT_CAPACITY_EXHAUSTED,
+  kRdmnetDisconnectCapacityExhausted = E133_DISCONNECT_CAPACITY_EXHAUSTED,
   /*! Not a valid reason, removed from next revision. */
-  kRDMnetDisconnectIncorrectClientType = E133_DISCONNECT_INCORRECT_CLIENT_TYPE,
+  kRdmnetDisconnectIncorrectClientType = E133_DISCONNECT_INCORRECT_CLIENT_TYPE,
   /*! The Component must disconnect due to an internal hardware fault. */
-  kRDMnetDisconnectHardwareFault = E133_DISCONNECT_HARDWARE_FAULT,
+  kRdmnetDisconnectHardwareFault = E133_DISCONNECT_HARDWARE_FAULT,
   /*! The Component must disconnect due to a software fault. */
-  kRDMnetDisconnectSoftwareFault = E133_DISCONNECT_SOFTWARE_FAULT,
+  kRdmnetDisconnectSoftwareFault = E133_DISCONNECT_SOFTWARE_FAULT,
   /*! The Component must terminated because of a software reset. */
-  kRDMnetDisconnectSoftwareReset = E133_DISCONNECT_SOFTWARE_RESET,
+  kRdmnetDisconnectSoftwareReset = E133_DISCONNECT_SOFTWARE_RESET,
   /*! Send by %Brokers that are not on the desired Scope. */
-  kRDMnetDisconnectIncorrectScope = E133_DISCONNECT_INCORRECT_SCOPE,
+  kRdmnetDisconnectIncorrectScope = E133_DISCONNECT_INCORRECT_SCOPE,
+  /*! The Component was reconfigured using RPT, and the new configuration requires connection
+   *  termination. */
+  kRdmnetDisconnectRptReconfigure = E133_DISCONNECT_RPT_RECONFIGURE,
   /*! The Component was reconfigured using LLRP, and the new configuration requires connection
    *  termination. */
-  kRDMnetDisconnectLLRPReconfigure = E133_DISCONNECT_LLRP_RECONFIGURE,
+  kRdmnetDisconnectLlrpReconfigure = E133_DISCONNECT_LLRP_RECONFIGURE,
   /*! The Component was reconfigured via some other means, and the new configuration requires
    *  connection termination. */
-  kRDMnetDisconnectUserReconfigure = E133_DISCONNECT_USER_RECONFIGURE
+  kRdmnetDisconnectUserReconfigure = E133_DISCONNECT_USER_RECONFIGURE
 } rdmnet_disconnect_reason_t;
+
+/*! Dynamic UID Status Codes for the DynamicUidMapping struct. */
+typedef enum
+{
+  /*! The Dynamic UID Mapping was fetched or assigned successfully. */
+  kDynamicUidStatusOk = E133_DYNAMIC_UID_STATUS_OK,
+  /*! The corresponding request contained a malformed UID value. */
+  kDynamicUidStatusInvalidRequest = E133_DYNAMIC_UID_STATUS_INVALID_REQUEST,
+  /*! The requested Dynamic UID was not found in the %Broker's Dynamic UID mapping table. */
+  kDynamicUidStatusUidNotFound = E133_DYNAMIC_UID_STATUS_UID_NOT_FOUND,
+  /*! This RID has already been assigned a Dynamic UID by this %Broker. */
+  kDynamicUidStatusDuplicateRid = E133_DYNAMIC_UID_STATUS_DUPLICATE_RID,
+  /*! The %Broker has exhausted its capacity to generate Dynamic UIDs. */
+  kDynamicUidStatusCapacityExhausted = E133_DYNAMIC_UID_STATUS_CAPACITY_EXHAUSTED
+} dynamic_uid_status_t;
 
 /*! The Client Connect message in the %Broker protocol. */
 typedef struct ClientConnectMsg
@@ -123,32 +141,33 @@ typedef struct ClientConnectMsg
 /*! \brief Safely copy a scope string to a ClientConnectMsg.
  *  \param ccmsgptr Pointer to ClientConnectMsg.
  *  \param scope_str String to copy to the ClientConnectMsg (const char *). */
-#define client_connect_msg_set_scope(ccmsgptr, scope_str)                       \
-  do                                                                            \
-  {                                                                             \
-    strncpy((ccmsgptr)->scope, scope_str, E133_SCOPE_STRING_PADDED_LENGTH - 1); \
-    (ccmsgptr)->scope[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';              \
+#define client_connect_msg_set_scope(ccmsgptr, scope_str)                                              \
+  do                                                                                                   \
+  {                                                                                                    \
+    RDMNET_MSVC_NO_DEP_WRN strncpy((ccmsgptr)->scope, scope_str, E133_SCOPE_STRING_PADDED_LENGTH - 1); \
+    (ccmsgptr)->scope[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';                                     \
   } while (0)
 
 /*! \brief Copy the default scope string to a ClientConnectMsg.
  *  \param ccmsgptr Pointer to ClientConnectMsg. */
 #define client_connect_msg_set_default_scope(ccmsgptr) \
-  strncpy((ccmsgptr)->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH)
+  RDMNET_MSVC_NO_DEP_WRN strncpy((ccmsgptr)->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH)
 
 /*! \brief Safely copy a search domain string to a ClientConnectMsg.
  *  \param ccmsgptr Pointer to ClientConnectMsg.
  *  \param search_domain_str String to copy to the ClientConnectMsg (const char *). */
-#define client_connect_msg_set_search_domain(ccmsgptr, search_domain_str)                        \
-  do                                                                                             \
-  {                                                                                              \
-    strncpy((ccmsgptr)->search_domain, search_domain_str, E133_DOMAIN_STRING_PADDED_LENGTH - 1); \
-    (ccmsgptr)->search_domain[E133_DOMAIN_STRING_PADDED_LENGTH - 1] = '\0';                      \
+#define client_connect_msg_set_search_domain(ccmsgptr, search_domain_str)        \
+  do                                                                             \
+  {                                                                              \
+    RDMNET_MSVC_NO_DEP_WRN strncpy((ccmsgptr)->search_domain, search_domain_str, \
+                                   E133_DOMAIN_STRING_PADDED_LENGTH - 1);        \
+    (ccmsgptr)->search_domain[E133_DOMAIN_STRING_PADDED_LENGTH - 1] = '\0';      \
   } while (0)
 
 /*! \brief Copy the default search domain string to a ClientConnectMsg.
  *  \param ccmsgptr Pointer to ClientConnectMsg. */
 #define client_connect_msg_set_default_search_domain(ccmsgptr) \
-  strncpy((ccmsgptr)->search_domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH)
+  RDMNET_MSVC_NO_DEP_WRN strncpy((ccmsgptr)->search_domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH)
 
 /*! The Connect Reply message in the %Broker protocol. */
 typedef struct ConnectReplyMsg
@@ -160,6 +179,9 @@ typedef struct ConnectReplyMsg
   uint16_t e133_version;
   /*! The %Broker's UID for use in RPT and LLRP. */
   RdmUid broker_uid;
+  /*! The Client's UID for use in RPT and LLRP, either echoed back (Static UID) or assigned by the
+   *  %Broker (Dynamic UID). Set to 0 for a non-RPT Client. */
+  RdmUid client_uid;
 } ConnectReplyMsg;
 
 /*! The Client Entry Update message in the %Broker protocol. */
@@ -195,6 +217,65 @@ typedef struct ClientList
   ClientEntryData *client_entry_list;
 } ClientList;
 
+typedef struct DynamicUidRequestListEntry DynamicUidRequestListEntry;
+/*! An entry in a linked list of Responder IDs (RIDs) which make up a Dynamic UID Request List. */
+struct DynamicUidRequestListEntry
+{
+  LwpaUuid rid;
+  DynamicUidRequestListEntry *next;
+};
+
+/*! A list of Responder IDs (RIDs) for which Dynamic UID assignment is requested. */
+typedef struct DynamicUidRequestList
+{
+  /*! This message contains a partial list. This can be set when the library runs out of static
+   *  memory in which to store DynamicUidRequestListEntrys and must deliver the partial list before
+   *  continuing. The application should store the entries in the list but should not act on the
+   *  list until another DynamicUidRequestList is received with partial set to false. */
+  bool partial;
+  /*! The head of a linked list of RIDs for which Dynamic UIDs are requested. */
+  DynamicUidRequestListEntry *request_list;
+} DynamicUidRequestList;
+
+typedef struct DynamicUidMapping DynamicUidMapping;
+
+struct DynamicUidMapping
+{
+  dynamic_uid_status_t status_code;
+  RdmUid uid;
+  LwpaUuid rid;
+  DynamicUidMapping *next;
+};
+
+typedef struct DynamicUidAssignmentList
+{
+  bool partial;
+  DynamicUidMapping *mapping_list;
+} DynamicUidAssignmentList;
+
+typedef struct FetchUidAssignmentListEntry FetchUidAssignmentListEntry;
+/*! An entry in a linked list of UIDs which make up the data of a Fetch Dynamic UID Assignment List
+ *  message. */
+struct FetchUidAssignmentListEntry
+{
+  RdmUid uid;
+  FetchUidAssignmentListEntry *next;
+};
+
+/*! A list of Dynamic UIDs for which the currently assigned Responder IDs (RIDs) are being
+ *  requested. */
+typedef struct FetchUidAssignmentList
+{
+  /*! This message contains a partial list. This can be set when the library runs out of static
+   *  memory in which to store FetchUidAssignmentListEntrys and must deliver the partial list before
+   *  continuing. The application should store the entries in the list but should not act on the
+   *  list until another DynamicUidRequestList is received with partial set to false. */
+  bool partial;
+  /*! The head of a linked list of Dynamic UIDs for which the currently assigned RIDs are being
+   *  requested. */
+  FetchUidAssignmentListEntry *assignment_list;
+} FetchUidAssignmentList;
+
 /*! The Disconnect message in the %Broker protocol. */
 typedef struct DisconnectMsg
 {
@@ -206,7 +287,7 @@ typedef struct DisconnectMsg
 typedef struct BrokerMessage
 {
   /*! The vector indicates which type of message is present in the data section. Valid values are
-   *  indicated by VECTOR_BROKER_* in estardmnet.h. */
+   *  indicated by VECTOR_BROKER_* in rdmnet/defs.h. */
   uint16_t vector;
   /*! The encapsulated message; use the helper macros to access it. */
   union
@@ -216,6 +297,9 @@ typedef struct BrokerMessage
     ClientEntryUpdateMsg client_entry_update;
     ClientRedirectMsg client_redirect;
     ClientList client_list;
+    DynamicUidRequestList dynamic_uid_request_list;
+    DynamicUidAssignmentList dynamic_uid_assignment_list;
+    FetchUidAssignmentList fetch_uid_assignment_list;
     DisconnectMsg disconnect;
   } data;
 } BrokerMessage;
@@ -265,6 +349,31 @@ typedef struct BrokerMessage
  *  \param brokermsgptr Pointer to BrokerMessage.
  *  \return Pointer to encapsulated Client List (ClientList *). */
 #define get_client_list(brokermsgptr) (&(brokermsgptr)->data.client_list)
+/*! \brief Determine whether a BrokerMessage contains a Request Dynamic UID Assignment message.
+ *  \param brokermsgptr Pointer to BrokerMessage.
+ *  \return (true or false) whether the message contains a Request Dynamic UID Assignment message. */
+#define is_request_dynamic_uid_assignment(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_REQUEST_DYNAMIC_UIDS)
+/*! \brief Get the encapsulated Dynamic UID Request List from a BrokerMessage.
+ *  \param brokermsgptr Pointer to BrokerMessage.
+ *  \return Pointer to encapsulated Dynamic UID Request List (DynamicUidRequestList *). */
+#define get_dynamic_uid_request_list(brokermsgptr) (&(brokermsgptr)->data.dynamic_uid_request_list)
+/*! \brief Determine whether a BrokerMessage contains a Dynamic UID Assignment List message.
+ *  \param brokermsgptr Pointer to BrokerMessage.
+ *  \return (true or false) whether the message contains a Dynamic UID Assignment List message. */
+#define is_dynamic_uid_assignment_list(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS)
+/*! \brief Get the encapsulated Dynamic UID Assignment List from a BrokerMessage.
+ *  \param brokermsgptr Pointer to BrokerMessage.
+ *  \return Pointer to encapsulated Dynamic UID Assignment List (DynamicUidAssignmentList *). */
+#define get_dynamic_uid_assignment_list(brokermsgptr) (&(brokermsgptr)->data.dynamic_uid_assignment_list)
+/*! \brief Determine whether a BrokerMessage contains a Fetch Dynamic UID Assignment List message.
+ *  \param brokermsgptr Pointer to BrokerMessage.
+ *  \return (true or false) whether the message contains a Fetch Dynamic UID Assignment List message. */
+#define is_fetch_dynamic_uid_assignment_list(brokermsgptr) \
+  ((brokermsgptr)->vector == VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST)
+/*! \brief Get the encapsulated Fetch Dynamic UID Assignment List from a BrokerMessage.
+ *  \param brokermsgptr Pointer to BrokerMessage.
+ *  \return Pointer to encapsulated Fetch Dynamic UID Assignment List (FetchUidAssignmentList *). */
+#define get_fetch_dynamic_uid_assignment_list(brokermsgptr) (&(brokermsgptr)->data.fetch_uid_assignment_list)
 /*! \brief Determine whether a BrokerMessage contains a Disconnect message.
  *  \param brokermsgptr Pointer to BrokerMessage.
  *  \return (true or false) whether the message contains a Disconnect message. */

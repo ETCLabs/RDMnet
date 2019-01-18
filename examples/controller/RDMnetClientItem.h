@@ -47,7 +47,7 @@ public:
   bool operator==(const RDMnetClientItem &other)
   {
     return (get_rpt_client_entry_data(&entry_)->client_type == get_rpt_client_entry_data(&other.entry_)->client_type) &&
-           (uid_equal(&(get_rpt_client_entry_data(&entry_)->client_uid), &(get_rpt_client_entry_data(&other.entry_)->client_uid)));
+           (get_rpt_client_entry_data(&entry_)->client_uid == get_rpt_client_entry_data(&other.entry_)->client_uid);
   }
 
   const RdmUid &Uid() const { return get_rpt_client_entry_data(&entry_)->client_uid; }

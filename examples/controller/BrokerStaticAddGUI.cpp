@@ -72,8 +72,8 @@ void BrokerStaticAddGUI::addBrokerTriggered()
   QByteArray ipBuf = ui.ipEdit->text().toUtf8();
   const char *ipStr = ipBuf.constData();
 
-  if ((LWPA_OK != lwpa_inet_pton(LWPA_IPV4, ipStr, &brokerAddr.ip) &&
-       LWPA_OK != lwpa_inet_pton(LWPA_IPV6, ipStr, &brokerAddr.ip))
+  if ((LWPA_OK != lwpa_inet_pton(kLwpaIpTypeV4, ipStr, &brokerAddr.ip) &&
+       LWPA_OK != lwpa_inet_pton(kLwpaIpTypeV6, ipStr, &brokerAddr.ip))
       // || ipEndString.contains( ":" ) || ipEndString.contains( "," )
   )
   {

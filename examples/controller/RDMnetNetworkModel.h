@@ -30,6 +30,7 @@
 #include <fstream>
 #include <map>
 #include <memory>
+#include <vector>
 #include <cstddef>
 #include "lwpa/log.h"
 #include "lwpa/thread.h"
@@ -89,7 +90,7 @@ class BrokerConnection
 {
 private:
   static LwpaUuid local_cid_;
-  static RdmUid local_uid_;
+  RdmUid local_uid_;
 
   static MyLog *log_;
 
@@ -110,9 +111,9 @@ private:
   bool connect_in_progress_;
 
 public:
-  static bool initializeStaticConnectionInfo(const LwpaUuid &cid, const RdmUid &uid, MyLog *log);
+  static bool initializeStaticConnectionInfo(const LwpaUuid &cid, MyLog *log);
   static LwpaUuid getLocalCID() { return local_cid_; }
-  static RdmUid getLocalUID() { return local_uid_; }
+  RdmUid getLocalUID() const { return local_uid_; }
 
   explicit BrokerConnection(std::string scope);
   BrokerConnection(std::string scope, const LwpaSockaddr &addr);
@@ -172,8 +173,8 @@ public:
 
 signals:
   void brokerDisconnection(uint16_t conn);
-  void addRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list);
-  void removeRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list);
+  void addRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
+  void removeRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
   void newEndpointList(RDMnetClientItem *treeClientItem, const std::vector<std::pair<uint16_t, uint8_t>> &list);
   void newResponderList(EndpointItem *treeEndpointItem, const std::vector<RdmUid> &list);
   void setPropertyData(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, const QVariant &value,
@@ -214,8 +215,8 @@ public slots:
 
 protected slots:
   void processBrokerDisconnection(uint16_t conn);
-  void processAddRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list);
-  void processRemoveRDMnetClients(BrokerItem *treeBrokerItem, const std::vector<ClientEntryData> &list);
+  void processAddRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
+  void processRemoveRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
   void processNewEndpointList(RDMnetClientItem *treeClientItem, const std::vector<std::pair<uint16_t, uint8_t>> &list);
   void processNewResponderList(EndpointItem *treeEndpointItem, const std::vector<RdmUid> &list);
   void processSetPropertyData(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, const QVariant &value,
@@ -290,9 +291,11 @@ protected:
                            const RdmParamData *resp_data_list, size_t num_responses, uint32_t seqnum,
                            uint8_t transaction_num);
   void SendNACK(const RptHeader *received_header, const RdmCommand *cmd_data, uint16_t nack_reason);
-  void SendNotification(const RptHeader *received_header, const RdmCmdListEntry *cmd_list);
+  void SendNotification(const RptHeader *received_header, const std::vector<RdmResponse> &resp_list);
   void SendNotification(const RdmUid &dest_uid, uint16_t dest_endpoint_id, uint32_t seqnum,
-                        const RdmCmdListEntry *cmd_list);
+                        const std::vector<RdmResponse> &resp_list);
+  lwpa_error_t SendNotificationOnConnection(const BrokerConnection *connection, const RptHeader &header,
+                                            const std::vector<RdmResponse> &resp_list);
 
   /* GET/SET PROCESSING */
 
@@ -304,10 +307,6 @@ protected:
                          size_t *num_responses, uint16_t *nack_reason);
   bool getComponentScope(uint16_t slot, RdmParamData *resp_data_list, size_t *num_responses,
                          uint16_t *nack_reason = NULL);
-  bool getBrokerStaticConfigIPv4(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
-                                 size_t *num_responses, uint16_t *nack_reason);
-  bool getBrokerStaticConfigIPv6(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
-                                 size_t *num_responses, uint16_t *nack_reason);
   bool getSearchDomain(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
                        size_t *num_responses, uint16_t *nack_reason);
   bool getTCPCommsStatus(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
@@ -372,11 +371,8 @@ protected:
 
   // E1.33
   // COMPONENT_SCOPE
-  void componentScope(uint16_t scopeSlot, const char *scopeString, const RdmResponse *resp);
-  // BROKER_STATIC_CONFIG_IPV4
-  void brokerStaticConfigIPv4(const char *addrString, uint16_t port, const char *scopeString, const RdmResponse *resp);
-  // BROKER_STATIC_CONFIG_IPV6
-  void brokerStaticConfigIPv6(const char *addrString, uint16_t port, const char *scopeString, const RdmResponse *resp);
+  void componentScope(uint16_t scopeSlot, const char *scopeString, const char *staticConfigV4,
+                      const char *staticConfigV6, uint16_t port, const RdmResponse *resp);
   // SEARCH_DOMAIN
   void searchDomain(const char *domainNameString, const RdmResponse *resp);
   // TCP_COMMS_STATUS

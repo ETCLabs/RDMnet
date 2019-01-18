@@ -46,7 +46,7 @@ public:
 
   bool operator==(const EndpointItem &other)
   {
-    return (uid_equal(&parent_uid_, &other.parent_uid_)) && (endpoint_ == other.endpoint_) && (type_ == other.type_);
+    return ((parent_uid_ == other.parent_uid_) && (endpoint_ == other.endpoint_) && (type_ == other.type_));
   }
 
   RdmUid parent_uid_;

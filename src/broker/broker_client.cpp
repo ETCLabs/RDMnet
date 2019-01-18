@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "rdmnet/broker/client.h"
+#include "broker_client.h"
 
 #include <cassert>
 #include "rdmnet/common/connection.h"

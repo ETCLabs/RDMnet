@@ -35,9 +35,9 @@
 extern "C" {
 #endif
 
-void device_llrp_init(const LwpaUuid *my_cid, const RdmUid *my_uid, const LwpaLogParams *lparams);
+void device_llrp_init(const LwpaUuid *my_cid, const LwpaLogParams *lparams);
 void device_llrp_deinit();
-void device_llrp_set_connected(bool connected);
+void device_llrp_set_connected(bool connected, const RdmUid *new_uid);
 
 #ifdef __cplusplus
 }

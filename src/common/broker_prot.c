@@ -27,13 +27,9 @@
 
 #include "rdmnet/common/broker_prot.h"
 #include "rdmnet/common/connection.h"
+#include "rdmnet/common/util.h"
 #include "broker_prot_priv.h"
 #include "lwpa/pack.h"
-
-/* Suppress strncpy() warning on Windows/MSVC. */
-#ifdef _MSC_VER
-#pragma warning(disable : 4996)
-#endif
 
 /***************************** Private macros ********************************/
 
@@ -41,27 +37,26 @@
   do                                            \
   {                                             \
     (buf)[0] = 0xf0;                            \
-    pdu_pack_ext_len(buf, length);              \
-    pack_16b(&(buf)[3], vector);                \
+    lwpa_pdu_pack_ext_len(buf, length);         \
+    lwpa_pack_16b(&(buf)[3], vector);           \
   } while (0)
 
 #define pack_client_entry_header(length, vector, cidptr, buf) \
   do                                                          \
   {                                                           \
     (buf)[0] = 0xf0;                                          \
-    pdu_pack_ext_len(buf, length);                            \
-    pack_32b(&(buf)[3], vector);                              \
-    memcpy(&(buf)[7], (cidptr)->data, UUID_BYTES);            \
+    lwpa_pdu_pack_ext_len(buf, length);                       \
+    lwpa_pack_32b(&(buf)[3], vector);                         \
+    memcpy(&(buf)[7], (cidptr)->data, LWPA_UUID_BYTES);       \
   } while (0)
 
 /*********************** Private function prototypes *************************/
 
 static size_t calc_client_connect_len(const ClientConnectMsg *data);
 static int do_send(int handle, RdmnetConnection *conn, const uint8_t *data, size_t datasize);
-static size_t pack_broker_header_with_rlp(const RootLayerPdu *rlp, uint8_t *buf, size_t buflen, uint32_t vector);
-static lwpa_error_t send_broker_header(int handle, RdmnetConnection *conn, const RootLayerPdu *rlp, uint8_t *buf,
+static size_t pack_broker_header_with_rlp(const LwpaRootLayerPdu *rlp, uint8_t *buf, size_t buflen, uint32_t vector);
+static lwpa_error_t send_broker_header(int handle, RdmnetConnection *conn, const LwpaRootLayerPdu *rlp, uint8_t *buf,
                                        size_t buflen, uint32_t vector);
-static lwpa_error_t send_connect_reply_internal(RdmnetConnection *conn, const ClientConnectMsg *data);
 
 /*************************** Function definitions ****************************/
 
@@ -75,21 +70,21 @@ int do_send(int handle, RdmnetConnection *conn, const uint8_t *data, size_t data
 
 /***************************** Broker PDU Header *****************************/
 
-size_t pack_broker_header_with_rlp(const RootLayerPdu *rlp, uint8_t *buf, size_t buflen, uint32_t vector)
+size_t pack_broker_header_with_rlp(const LwpaRootLayerPdu *rlp, uint8_t *buf, size_t buflen, uint32_t vector)
 {
   uint8_t *cur_ptr = buf;
-  size_t data_size = root_layer_buf_size(rlp, 1);
+  size_t data_size = lwpa_root_layer_buf_size(rlp, 1);
 
   if (data_size == 0)
     return 0;
 
-  data_size = pack_tcp_preamble(cur_ptr, buflen, data_size);
+  data_size = lwpa_pack_tcp_preamble(cur_ptr, buflen, data_size);
   if (data_size == 0)
     return 0;
   cur_ptr += data_size;
   buflen -= data_size;
 
-  data_size = pack_root_layer_header(cur_ptr, buflen, rlp);
+  data_size = lwpa_pack_root_layer_header(cur_ptr, buflen, rlp);
   if (data_size == 0)
     return 0;
   cur_ptr += data_size;
@@ -100,11 +95,11 @@ size_t pack_broker_header_with_rlp(const RootLayerPdu *rlp, uint8_t *buf, size_t
   return cur_ptr - buf;
 }
 
-lwpa_error_t send_broker_header(int handle, RdmnetConnection *conn, const RootLayerPdu *rlp, uint8_t *buf,
+lwpa_error_t send_broker_header(int handle, RdmnetConnection *conn, const LwpaRootLayerPdu *rlp, uint8_t *buf,
                                 size_t buflen, uint32_t vector)
 {
   int send_res;
-  size_t data_size = root_layer_buf_size(rlp, 1);
+  size_t data_size = lwpa_root_layer_buf_size(rlp, 1);
 
   if (data_size == 0)
   {
@@ -114,7 +109,7 @@ lwpa_error_t send_broker_header(int handle, RdmnetConnection *conn, const RootLa
   }
 
   /* Pack and send the TCP preamble. */
-  data_size = pack_tcp_preamble(buf, buflen, data_size);
+  data_size = lwpa_pack_tcp_preamble(buf, buflen, data_size);
   if (data_size == 0)
     return LWPA_PROTERR;
   send_res = do_send(handle, conn, buf, data_size);
@@ -122,7 +117,7 @@ lwpa_error_t send_broker_header(int handle, RdmnetConnection *conn, const RootLa
     return (lwpa_error_t)send_res;
 
   /* Pack and send the Root Layer PDU header */
-  data_size = pack_root_layer_header(buf, buflen, rlp);
+  data_size = lwpa_pack_root_layer_header(buf, buflen, rlp);
   if (data_size == 0)
     return LWPA_PROTERR;
   send_res = do_send(handle, conn, buf, data_size);
@@ -157,15 +152,17 @@ size_t calc_client_connect_len(const ClientConnectMsg *data)
     return res;
   }
   else
+  {
     /* Should never happen */
     return 0;
+  }
 }
 
 lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg *data)
 {
   lwpa_error_t res;
   int send_res;
-  RootLayerPdu rlp;
+  LwpaRootLayerPdu rlp;
   uint8_t buf[CLIENT_CONNECT_COMMON_FIELD_SIZE];
   uint8_t *cur_ptr;
 
@@ -175,19 +172,21 @@ lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg 
   }
 
   rlp.sender_cid = conn->local_cid;
-  rlp.vector = VECTOR_ROOT_BROKER;
+  rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = calc_client_connect_len(data);
 
   res = send_broker_header(-1, conn, &rlp, buf, CLIENT_CONNECT_COMMON_FIELD_SIZE, VECTOR_BROKER_CONNECT);
   if (res != LWPA_OK)
     return res;
 
+  RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
+
   /* Pack and send the common fields for the Client Connect message. */
   cur_ptr = buf;
   strncpy((char *)cur_ptr, data->scope, E133_SCOPE_STRING_PADDED_LENGTH);
   cur_ptr[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
   cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
-  pack_16b(cur_ptr, data->e133_version);
+  lwpa_pack_16b(cur_ptr, data->e133_version);
   cur_ptr += 2;
   strncpy((char *)cur_ptr, data->search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
   cur_ptr[E133_DOMAIN_STRING_PADDED_LENGTH - 1] = '\0';
@@ -196,6 +195,8 @@ lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg 
   send_res = lwpa_send(conn->sock, buf, cur_ptr - buf, 0);
   if (send_res < 0)
     return (lwpa_error_t)send_res;
+
+  RDMNET_MSVC_END_NO_DEP_WARNINGS()
 
   /* Pack and send the beginning of the Client Entry PDU */
   pack_client_entry_header(rlp.datalen - (BROKER_PDU_HEADER_SIZE + CLIENT_CONNECT_COMMON_FIELD_SIZE),
@@ -207,13 +208,13 @@ lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg 
     /* Pack and send the RPT client entry */
     const ClientEntryDataRpt *rpt_data = get_rpt_client_entry_data(&data->client_entry);
     cur_ptr = buf;
-    pack_16b(cur_ptr, rpt_data->client_uid.manu);
+    lwpa_pack_16b(cur_ptr, rpt_data->client_uid.manu);
     cur_ptr += 2;
-    pack_32b(cur_ptr, rpt_data->client_uid.id);
+    lwpa_pack_32b(cur_ptr, rpt_data->client_uid.id);
     cur_ptr += 4;
     *cur_ptr++ = rpt_data->client_type;
-    memcpy(cur_ptr, rpt_data->binding_cid.data, UUID_BYTES);
-    cur_ptr += UUID_BYTES;
+    memcpy(cur_ptr, rpt_data->binding_cid.data, LWPA_UUID_BYTES);
+    cur_ptr += LWPA_UUID_BYTES;
     send_res = lwpa_send(conn->sock, buf, RPT_CLIENT_ENTRY_DATA_SIZE, 0);
     if (send_res < 0)
       return (lwpa_error_t)send_res;
@@ -226,9 +227,9 @@ lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg 
     for (; prot; prot = prot->next)
     {
       cur_ptr = buf;
-      pack_32b(cur_ptr, prot->protocol_vector);
+      lwpa_pack_32b(cur_ptr, prot->protocol_vector);
       cur_ptr += 4;
-      strncpy((char *)cur_ptr, prot->protocol_string, EPT_PROTOCOL_STRING_PADDED_LENGTH);
+      RDMNET_MSVC_NO_DEP_WRN strncpy((char *)cur_ptr, prot->protocol_string, EPT_PROTOCOL_STRING_PADDED_LENGTH);
       cur_ptr[EPT_PROTOCOL_STRING_PADDED_LENGTH - 1] = '\0';
       cur_ptr += EPT_PROTOCOL_STRING_PADDED_LENGTH;
       send_res = lwpa_send(conn->sock, buf, EPT_PROTOCOL_ENTRY_SIZE, 0);
@@ -252,7 +253,7 @@ lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg 
  */
 size_t pack_connect_reply(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const ConnectReplyMsg *data)
 {
-  RootLayerPdu rlp;
+  LwpaRootLayerPdu rlp;
   uint8_t *cur_ptr = buf;
   size_t data_size;
 
@@ -260,7 +261,7 @@ size_t pack_connect_reply(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid
     return 0;
 
   rlp.sender_cid = *local_cid;
-  rlp.vector = VECTOR_ROOT_BROKER;
+  rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = BROKER_PDU_HEADER_SIZE + CONNECT_REPLY_DATA_SIZE;
 
   /* Try to pack all the header data */
@@ -270,13 +271,17 @@ size_t pack_connect_reply(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid
   cur_ptr += data_size;
 
   /* Pack the Connect Reply data fields */
-  pack_16b(cur_ptr, data->connect_status);
+  lwpa_pack_16b(cur_ptr, data->connect_status);
   cur_ptr += 2;
-  pack_16b(cur_ptr, data->e133_version);
+  lwpa_pack_16b(cur_ptr, data->e133_version);
   cur_ptr += 2;
-  pack_16b(cur_ptr, data->broker_uid.manu);
+  lwpa_pack_16b(cur_ptr, data->broker_uid.manu);
   cur_ptr += 2;
-  pack_32b(cur_ptr, data->broker_uid.id);
+  lwpa_pack_32b(cur_ptr, data->broker_uid.id);
+  cur_ptr += 4;
+  lwpa_pack_16b(cur_ptr, data->client_uid.manu);
+  cur_ptr += 2;
+  lwpa_pack_32b(cur_ptr, data->client_uid.id);
   cur_ptr += 4;
 
   return cur_ptr - buf;
@@ -295,22 +300,22 @@ lwpa_error_t send_connect_reply(int handle, const LwpaUuid *local_cid, const Con
 {
   lwpa_error_t res;
   int send_res;
-  RootLayerPdu rlp;
-  uint8_t buf[RLP_HEADER_SIZE_EXT_LEN];
+  LwpaRootLayerPdu rlp;
+  uint8_t buf[ACN_RLP_HEADER_SIZE_EXT_LEN];
   uint8_t *cur_ptr;
 
   if (!local_cid || !data)
     return LWPA_INVALID;
 
   rlp.sender_cid = *local_cid;
-  rlp.vector = VECTOR_ROOT_BROKER;
+  rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = BROKER_PDU_HEADER_SIZE + CONNECT_REPLY_DATA_SIZE;
 
   res = rdmnet_start_message(handle);
   if (res != LWPA_OK)
     return res;
 
-  res = send_broker_header(handle, NULL, &rlp, buf, RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_CONNECT_REPLY);
+  res = send_broker_header(handle, NULL, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_CONNECT_REPLY);
   if (res != LWPA_OK)
   {
     rdmnet_end_message(handle);
@@ -319,13 +324,17 @@ lwpa_error_t send_connect_reply(int handle, const LwpaUuid *local_cid, const Con
 
   /* Pack and send the Connect Reply data fields */
   cur_ptr = buf;
-  pack_16b(cur_ptr, data->connect_status);
+  lwpa_pack_16b(cur_ptr, data->connect_status);
   cur_ptr += 2;
-  pack_16b(cur_ptr, data->e133_version);
+  lwpa_pack_16b(cur_ptr, data->e133_version);
   cur_ptr += 2;
-  pack_16b(cur_ptr, data->broker_uid.manu);
+  lwpa_pack_16b(cur_ptr, data->broker_uid.manu);
   cur_ptr += 2;
-  pack_32b(cur_ptr, data->broker_uid.id);
+  lwpa_pack_32b(cur_ptr, data->broker_uid.id);
+  cur_ptr += 4;
+  lwpa_pack_16b(cur_ptr, data->client_uid.manu);
+  cur_ptr += 2;
+  lwpa_pack_32b(cur_ptr, data->client_uid.id);
   cur_ptr += 4;
 
   send_res = do_send(handle, NULL, buf, cur_ptr - buf);
@@ -351,21 +360,21 @@ lwpa_error_t send_connect_reply(int handle, const LwpaUuid *local_cid, const Con
 lwpa_error_t send_fetch_client_list(int handle, const LwpaUuid *local_cid)
 {
   lwpa_error_t res;
-  RootLayerPdu rlp;
-  uint8_t buf[RLP_HEADER_SIZE_EXT_LEN];
+  LwpaRootLayerPdu rlp;
+  uint8_t buf[ACN_RLP_HEADER_SIZE_EXT_LEN];
 
   if (!local_cid)
     return LWPA_INVALID;
 
   rlp.sender_cid = *local_cid;
-  rlp.vector = VECTOR_ROOT_BROKER;
+  rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = BROKER_PDU_HEADER_SIZE;
 
   res = rdmnet_start_message(handle);
   if (res != LWPA_OK)
     return res;
 
-  res = send_broker_header(handle, NULL, &rlp, buf, RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_FETCH_CLIENT_LIST);
+  res = send_broker_header(handle, NULL, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_FETCH_CLIENT_LIST);
   if (res != LWPA_OK)
     return res;
 
@@ -419,7 +428,7 @@ size_t bufsize_client_list(const ClientEntryData *client_entry_list)
 size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, uint16_t vector,
                         const ClientEntryData *client_entry_list)
 {
-  RootLayerPdu rlp;
+  LwpaRootLayerPdu rlp;
   uint8_t *cur_ptr = buf;
   uint8_t *buf_end = buf + buflen;
   size_t data_size;
@@ -433,7 +442,7 @@ size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, 
   }
 
   rlp.sender_cid = *local_cid;
-  rlp.vector = VECTOR_ROOT_BROKER;
+  rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = BROKER_PDU_HEADER_SIZE + calc_client_entry_buf_size(client_entry_list);
 
   /* Try to pack all the header data */
@@ -450,12 +459,12 @@ size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, 
 
     /* Pack the common client entry fields. */
     *cur_ptr = 0xf0;
-    pdu_pack_ext_len(cur_ptr, RPT_CLIENT_ENTRY_SIZE);
+    lwpa_pdu_pack_ext_len(cur_ptr, RPT_CLIENT_ENTRY_SIZE);
     cur_ptr += 3;
-    pack_32b(cur_ptr, cur_entry->client_protocol);
+    lwpa_pack_32b(cur_ptr, cur_entry->client_protocol);
     cur_ptr += 4;
-    memcpy(cur_ptr, cur_entry->client_cid.data, UUID_BYTES);
-    cur_ptr += UUID_BYTES;
+    memcpy(cur_ptr, cur_entry->client_cid.data, LWPA_UUID_BYTES);
+    cur_ptr += LWPA_UUID_BYTES;
 
     if (cur_entry->client_protocol == E133_CLIENT_PROTOCOL_RPT)
     {
@@ -466,13 +475,13 @@ size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, 
         return 0;
 
       /* Pack the RPT Client Entry data */
-      pack_16b(cur_ptr, rpt_data->client_uid.manu);
+      lwpa_pack_16b(cur_ptr, rpt_data->client_uid.manu);
       cur_ptr += 2;
-      pack_32b(cur_ptr, rpt_data->client_uid.id);
+      lwpa_pack_32b(cur_ptr, rpt_data->client_uid.id);
       cur_ptr += 4;
       *cur_ptr++ = rpt_data->client_type;
-      memcpy(cur_ptr, rpt_data->binding_cid.data, UUID_BYTES);
-      cur_ptr += UUID_BYTES;
+      memcpy(cur_ptr, rpt_data->binding_cid.data, LWPA_UUID_BYTES);
+      cur_ptr += LWPA_UUID_BYTES;
     }
     else
     {
@@ -489,18 +498,18 @@ lwpa_error_t send_disconnect(RdmnetConnection *conn, const DisconnectMsg *data)
 {
   lwpa_error_t res;
   int send_res;
-  RootLayerPdu rlp;
-  uint8_t buf[RLP_HEADER_SIZE_EXT_LEN];
+  LwpaRootLayerPdu rlp;
+  uint8_t buf[ACN_RLP_HEADER_SIZE_EXT_LEN];
 
   rlp.sender_cid = conn->local_cid;
-  rlp.vector = VECTOR_ROOT_BROKER;
+  rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = BROKER_DISCONNECT_MSG_SIZE;
 
-  res = send_broker_header(-1, conn, &rlp, buf, RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_DISCONNECT);
+  res = send_broker_header(-1, conn, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_DISCONNECT);
   if (res != LWPA_OK)
     return res;
 
-  pack_16b(buf, data->disconnect_reason);
+  lwpa_pack_16b(buf, data->disconnect_reason);
   send_res = lwpa_send(conn->sock, buf, 2, 0);
   if (send_res < 0)
     return (lwpa_error_t)send_res;
@@ -514,14 +523,14 @@ lwpa_error_t send_disconnect(RdmnetConnection *conn, const DisconnectMsg *data)
 lwpa_error_t send_null(RdmnetConnection *conn)
 {
   lwpa_error_t res;
-  RootLayerPdu rlp;
-  uint8_t buf[RLP_HEADER_SIZE_EXT_LEN];
+  LwpaRootLayerPdu rlp;
+  uint8_t buf[ACN_RLP_HEADER_SIZE_EXT_LEN];
 
   rlp.sender_cid = conn->local_cid;
-  rlp.vector = VECTOR_ROOT_BROKER;
+  rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = BROKER_NULL_MSG_SIZE;
 
-  res = send_broker_header(-1, conn, &rlp, buf, RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_NULL);
+  res = send_broker_header(-1, conn, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_NULL);
   if (res != LWPA_OK)
     return res;
 

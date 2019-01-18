@@ -47,7 +47,7 @@ void print_version()
 {
   printf("ETC Prototype RDMnet Device\n");
   printf("Version %s\n\n", RDMNET_VERSION_STRING);
-  printf("Copyright (c) 2018 ETC Inc.\n");
+  printf("%s\n", RDMNET_VERSION_COPYRIGHT);
   printf("License: Apache License v2.0 <http://www.apache.org/licenses/LICENSE-2.0>\n");
   printf("Unless required by applicable law or agreed to in writing, this software is\n");
   printf("provided \"AS IS\", WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express\n");
@@ -185,14 +185,10 @@ int wmain(int argc, wchar_t *argv[])
    * the fly. */
   // generate_cid(&my_cid, "ETC Prototype RDMnet Device", macaddr, 1);
   UuidCreate(&uuid);
-  memcpy(settings.cid.data, &uuid, UUID_BYTES);
-
-  settings.uid.manu = 0xe574;
-  /* Slight hack - using the last 32 bits of the CID as the UID. */
-  settings.uid.id = upack_32b(&settings.cid.data[12]);
+  memcpy(settings.cid.data, &uuid, LWPA_UUID_BYTES);
 
   /* Initialize LLRP */
-  device_llrp_init(&settings.cid, &settings.uid, lparams);
+  device_llrp_init(&settings.cid, lparams);
 
   /* Handle console signals */
   if (!SetConsoleCtrlHandler(console_handler, TRUE))

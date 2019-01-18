@@ -25,29 +25,30 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "lwpa/int.h"
-#include "rdmnet/broker/client.h"
+/*! \file rdmnet/common/util.h
+ *  \brief Utilities used throughout the RDMnet library.
+ *  \author Sam Kearney
+ */
+#ifndef _RDMNET_UTIL_H_
+#define _RDMNET_UTIL_H_
 
-// The Broker's RDM responder.
-#ifndef _RDMNET_BROKER_RESPONDER_H_
-#define _RDMNET_BROKER_RESPONDER_H_
+/* Suppress deprecated function warnings on Windows/MSVC. This is mostly used in situations where
+ * Microsoft warns us that a function like strncpy() could be unsafe, but we want to be portable
+ * and have made sure that we're using it in a safe way (e.g. by manually inserting null
+ * terminators). */
+#ifdef _MSC_VER
 
-class BrokerResponder
-{
-  void ProcessRDMMessage(int conn, const RPTMessageRef &msg);
-  void SendRDMResponse(int conn, const RPTMessageRef &msg, uint8_t response_type, uint8_t command_class,
-                       uint16_t param_id, uint8_t packed_len, uint8_t *pdata);
+#define RDMNET_MSVC_NO_DEP_WRN __pragma(warning(suppress : 4996))
 
-  // Returns packed length
-  uint8_t PackGetParamDescResponsePD(uint8_t *pdata, uint16_t parameter, uint8_t pid_pdl_size, uint8_t param_cc,
-                                     uint8_t param_data_type, const char *desc, uint32_t min_val, uint32_t max_val,
-                                     uint32_t default_val);
-  void ProcessGetSupportedParameters(int conn, const RPTMessageRef &msg);
-  void ProcessGetParameterDescription(int conn, const RPTMessageRef &msg);
-  void ProcessGetSoftwareVersionLabel(int conn, const RPTMessageRef &msg);
-  void ProcessGetComponentScope(int conn, const RPTMessageRef &msg);
-  void ProcessSetComponentScope(int conn, const RPTMessageRef &msg);
-  void SendNack(int conn, const RPTMessageRef &msg, uint16_t pid, uint16_t reason, bool set_response);
-};
+#define RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS() __pragma(warning(push)) __pragma(warning(disable : 4996))
+#define RDMNET_MSVC_END_NO_DEP_WARNINGS() __pragma(warning(pop))
 
-#endif  // _RDMNET_BROKER_RESPONDER_H_
+#else /* _MSC_VER */
+
+#define RDMNET_MSVC_NO_DEP_WRN
+#define RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
+#define RDMNET_MSVC_END_NO_DEP_WARNINGS()
+
+#endif /* _MSC_VER */
+
+#endif /* _RDMNET_UTIL_H_ */

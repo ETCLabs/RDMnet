@@ -118,10 +118,10 @@ lwpa_error_t llrp_init()
 
   if (res == LWPA_OK)
   {
-    lwpa_inet_pton(LWPA_IPV4, LLRP_MULTICAST_IPV4_ADDRESS_RESPONSE, &kLLRPIPv4RespAddr);
-    lwpa_inet_pton(LWPA_IPV4, LLRP_MULTICAST_IPV6_ADDRESS_RESPONSE, &kLLRPIPv6RespAddr);
-    lwpa_inet_pton(LWPA_IPV4, LLRP_MULTICAST_IPV4_ADDRESS_REQUEST, &kLLRPIPv4RequestAddr);
-    lwpa_inet_pton(LWPA_IPV4, LLRP_MULTICAST_IPV6_ADDRESS_REQUEST, &kLLRPIPv6RequestAddr);
+    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_RESPONSE, &kLLRPIPv4RespAddr);
+    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV6_ADDRESS_RESPONSE, &kLLRPIPv6RespAddr);
+    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_REQUEST, &kLLRPIPv4RequestAddr);
+    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV6_ADDRESS_REQUEST, &kLLRPIPv6RequestAddr);
     llrp_prot_init();
   }
   return res;
@@ -255,7 +255,7 @@ bool llrp_start_discovery(llrp_socket_t handle, uint8_t filter)
       mgrdata->num_clean_sends = 0;
       mgrdata->discovery_active = true;
       mgrdata->disc_filter = filter;
-      rb_tree_init(&mgrdata->known_uids, known_uid_cmp, node_alloc, node_dealloc);
+      lwpa_rbtree_init(&mgrdata->known_uids, known_uid_cmp, node_alloc, node_dealloc);
 
       send_next_probe(handle);
 
@@ -282,7 +282,7 @@ bool llrp_stop_discovery(llrp_socket_t handle)
       LlrpManagerSocketData *mgrdata = get_manager_data(handle);
       if (mgrdata->discovery_active)
       {
-        rb_tree_clear_with_cb(&mgrdata->known_uids, known_uid_clear_cb);
+        lwpa_rbtree_clear_with_cb(&mgrdata->known_uids, known_uid_clear_cb);
         mgrdata->discovery_active = false;
         return true;
       }
@@ -313,7 +313,7 @@ bool update_probe_range(LlrpManagerSocketData *mgrdata, KnownUid **uid_list)
   if (mgrdata->num_clean_sends >= 3)
   {
     /* We are finished with a range; move on to the next range. */
-    if (uid_is_broadcast(&mgrdata->cur_range_high))
+    if (rdm_uid_is_broadcast(&mgrdata->cur_range_high))
     {
       /* We're done with discovery. */
       return false;
@@ -337,9 +337,9 @@ bool update_probe_range(LlrpManagerSocketData *mgrdata, KnownUid **uid_list)
   }
 
   /* Determine how many known UIDs are in the current range */
-  rb_iter_init(&iter);
-  cur_uid = (KnownUid *)rb_iter_first(&iter, &mgrdata->known_uids);
-  while (cur_uid && (uid_cmp(&cur_uid->uid, &mgrdata->cur_range_high) <= 0))
+  lwpa_rbiter_init(&iter);
+  cur_uid = (KnownUid *)lwpa_rbiter_first(&iter, &mgrdata->known_uids);
+  while (cur_uid && (rdm_uid_cmp(&cur_uid->uid, &mgrdata->cur_range_high) <= 0))
   {
     if (last_uid)
     {
@@ -355,14 +355,14 @@ bool update_probe_range(LlrpManagerSocketData *mgrdata, KnownUid **uid_list)
         return update_probe_range(mgrdata, uid_list);
       }
     }
-    else if (uid_cmp(&cur_uid->uid, &mgrdata->cur_range_low) >= 0)
+    else if (rdm_uid_cmp(&cur_uid->uid, &mgrdata->cur_range_low) >= 0)
     {
       list_begin = cur_uid;
       cur_uid->next = NULL;
       last_uid = cur_uid;
       ++uids_in_range;
     }
-    cur_uid = (KnownUid *)rb_iter_next(&iter);
+    cur_uid = (KnownUid *)lwpa_rbiter_next(&iter);
   }
   *uid_list = list_begin;
   return true;
@@ -427,7 +427,7 @@ bool process_manager_state(LlrpBaseSocket *sock, int *timeout_ms, LlrpData *data
       else
       {
         llrp_data_set_disc_finished(data);
-        rb_tree_clear_with_cb(&mgrdata->known_uids, known_uid_clear_cb);
+        lwpa_rbtree_clear_with_cb(&mgrdata->known_uids, known_uid_clear_cb);
         mgrdata->discovery_active = false;
         return true;
       }
@@ -509,14 +509,15 @@ bool process_parsed_msg(LlrpBaseSocket *sock, const LlrpMessage *msg, LlrpData *
     const LlrpTarget *new_target = llrp_msg_get_probe_reply(msg);
     LlrpManagerSocketData *mgrdata = get_manager_data(sock);
 
-    if (mgrdata->discovery_active && 0 == uuidcmp(&msg->header.dest_cid, &sock->owner_cid))
+    if (mgrdata->discovery_active && 0 == lwpa_uuid_cmp(&msg->header.dest_cid, &sock->owner_cid))
     {
       KnownUid *new_known_uid = (KnownUid *)malloc(sizeof(KnownUid));
       if (new_known_uid)
       {
         new_known_uid->uid = new_target->target_uid;
         new_known_uid->next = NULL;
-        if (rb_tree_find(&mgrdata->known_uids, new_known_uid) || !rb_tree_insert(&mgrdata->known_uids, new_known_uid))
+        if (lwpa_rbtree_find(&mgrdata->known_uids, new_known_uid) ||
+            !lwpa_rbtree_insert(&mgrdata->known_uids, new_known_uid))
         {
           /* This Target was already in our known UIDs, but is replying anyway. */
           free(new_known_uid);
@@ -705,11 +706,14 @@ int llrp_update(LlrpPoll *poll_array, size_t poll_array_size, int timeout_ms)
  *
  *  \param[in] handle LLRP Target socket for which to update the connection state.
  *  \param[in] connected_to_broker Whether the LLRP Target is currently connected to a Broker.
+ *  \param[in] new_uid The LLRP Target's new UID, if it is using a Dynamic UID, or NULL if the UID
+ *                     hasn't changed.
  */
-void llrp_target_update_connection_state(llrp_socket_t handle, bool connected_to_broker)
+void llrp_target_update_connection_state(llrp_socket_t handle, bool connected_to_broker, const RdmUid *new_uid)
 {
   (void)handle;
   (void)connected_to_broker;
+  (void)new_uid;
   /* TODO */
 }
 
@@ -885,7 +889,7 @@ void llrp_remove_socket_from_list(llrp_socket_t socket, llrp_socket_t *list)
 
 lwpa_socket_t create_lwpa_socket(const LwpaSockaddr *saddr, const LwpaIpAddr *netint)
 {
-  lwpa_socket_t sock = lwpa_socket((saddr->ip.type == LWPA_IPV6) ? LWPA_AF_INET6 : LWPA_AF_INET, LWPA_DGRAM);
+  lwpa_socket_t sock = lwpa_socket((saddr->ip.type == kLwpaIpTypeV6) ? LWPA_AF_INET6 : LWPA_AF_INET, LWPA_DGRAM);
   bool valid = (sock != LWPA_SOCKET_INVALID);
 
   if (valid)
@@ -896,7 +900,7 @@ lwpa_socket_t create_lwpa_socket(const LwpaSockaddr *saddr, const LwpaIpAddr *ne
 
   if (valid)
   {
-    if (saddr->ip.type == LWPA_IPV4)
+    if (saddr->ip.type == kLwpaIpTypeV4)
     {
       int value = 20;  // A more reasonable TTL limit, but probably unnecessary
       valid =
@@ -911,7 +915,7 @@ lwpa_socket_t create_lwpa_socket(const LwpaSockaddr *saddr, const LwpaIpAddr *ne
   if (valid)
   {
     // This one is critical for multicast sends to go over the correct interface.
-    if (saddr->ip.type == LWPA_IPV4)
+    if (saddr->ip.type == kLwpaIpTypeV4)
     {
       valid = (0 == lwpa_setsockopt(sock, LWPA_IPPROTO_IP, LWPA_IP_MULTICAST_IF, (const void *)(netint),
                                     sizeof(LwpaIpAddr)));
@@ -924,7 +928,7 @@ lwpa_socket_t create_lwpa_socket(const LwpaSockaddr *saddr, const LwpaIpAddr *ne
 
   if (valid)
   {
-    if (saddr->ip.type == LWPA_IPV4)
+    if (saddr->ip.type == kLwpaIpTypeV4)
     {
 #if LLRP_BIND_TO_MCAST_ADDRESS
       // Bind socket to multicast address for IPv4
@@ -1000,5 +1004,5 @@ int known_uid_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const LwpaRb
   (void)self;
   const RdmUid *a = (const RdmUid *)node_a->value;
   const RdmUid *b = (const RdmUid *)node_b->value;
-  return uid_cmp(a, b);
+  return rdm_uid_cmp(a, b);
 }

@@ -55,7 +55,7 @@ struct iflist_entry
 };
 
 // Discover the latest set of NICs.  Empties the vector before filling it
-void FindIFaces(BrokerLog &log, std::vector<iflist_entry> &ifaces);
+void FindIFaces(RDMnet::BrokerLog &log, std::vector<iflist_entry> &ifaces);
 
 };  // namespace IFList
 
