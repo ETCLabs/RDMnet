@@ -30,14 +30,14 @@
 
 /**************************** Private variables ******************************/
 
-/* clang-format off */
 #if !RDMNET_DYNAMIC_MEM
 LWPA_MEMPOOL_DEFINE(client_entries, ClientEntryData, RDMNET_MAX_CLIENT_ENTRIES);
 LWPA_MEMPOOL_DEFINE(ept_subprots, EptSubProtocol, RDMNET_MAX_EPT_SUBPROTS);
-/* TODO Dynamic UID pools */
+LWPA_MEMPOOL_DECLARE(dynamic_uid_request_entries, DynamicUidRequestListEntry, RDM_MAX_DYNAMIC_UID_ENTRIES);
+LWPA_MEMPOOL_DECLARE(dynamic_uid_mappings, DynamicUidMapping, RDMNET_MAX_DYNAMIC_UID_ENTRIES);
+LWPA_MEMPOOL_DECLARE(fetch_uid_assignment_entries, FetchUidAssignmentListEntry, RDMNET_MAX_DYNAMIC_UID_ENTRIES);
 LWPA_MEMPOOL_DEFINE(rdm_commands, RdmCmdListEntry, RDMNET_MAX_RDM_COMMANDS);
 #endif
-/* clang-format on */
 
 /*************************** Function definitions ****************************/
 
@@ -47,14 +47,15 @@ lwpa_error_t rdmnet_message_init()
 #if !RDMNET_DYNAMIC_MEM
   res |= lwpa_mempool_init(client_entries);
   res |= lwpa_mempool_init(ept_subprots);
+  res |= lwpa_mempool_init(dynamic_uid_request_entries);
+  res |= lwpa_mempool_init(dynamic_uid_mappings);
+  res |= lwpa_mempool_init(fetch_uid_assignment_entries);
   res |= lwpa_mempool_init(rdm_commands);
 #endif
   return res;
 }
 
-/*! \brief Free the resources held by an RdmnetMessage returned from another
- *         API function.
- *
+/*! \brief Free the resources held by an RdmnetMessage returned from another API function.
  *  \param[in] msg Pointer to message to free.
  */
 void free_rdmnet_message(RdmnetMessage *msg)
@@ -92,6 +93,45 @@ void free_rdmnet_message(RdmnetMessage *msg)
               }
               next_entry = entry->next;
               free_client_entry(entry);
+              entry = next_entry;
+            }
+            break;
+          }
+          case VECTOR_BROKER_REQUEST_DYNAMIC_UIDS:
+          {
+            DynamicUidRequestList *list = get_dynamic_uid_request_list(bmsg);
+            DynamicUidRequestListEntry *entry = list->request_list;
+            DynamicUidRequestListEntry *next_entry;
+            while (entry)
+            {
+              next_entry = entry->next;
+              free_dynamic_uid_request_entry(entry);
+              entry = next_entry;
+            }
+            break;
+          }
+          case VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS:
+          {
+            DynamicUidAssignmentList *list = get_dynamic_uid_assignment_list(bmsg);
+            DynamicUidMapping *mapping = list->mapping_list;
+            DynamicUidMapping *next_mapping;
+            while (mapping)
+            {
+              next_mapping = mapping->next;
+              free_dynamic_uid_mapping(mapping);
+              mapping = next_mapping;
+            }
+            break;
+          }
+          case VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST:
+          {
+            FetchUidAssignmentList *list = get_fetch_dynamic_uid_assignment_list(bmsg);
+            FetchUidAssignmentListEntry *entry = list->assignment_list;
+            FetchUidAssignmentListEntry *next_entry;
+            while (entry)
+            {
+              next_entry = entry->next;
+              free_fetch_uid_assignment_entry(entry);
               entry = next_entry;
             }
             break;

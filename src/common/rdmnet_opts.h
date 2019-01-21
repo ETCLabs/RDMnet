@@ -75,12 +75,58 @@
 
 #endif
 
+/*! @} */
+
+/*! \defgroup rdmnetopts_core Core
+ *  \ingroup rdmnetopts
+ *
+ *  Options that affect the RDMnet core library.
+ *  @{
+ */
+
 /*! \brief The maximum number of RDMnet connections that can be created.
  *
  *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
  */
 #ifndef RDMNET_MAX_CONNECTIONS
 #define RDMNET_MAX_CONNECTIONS 2
+#endif
+
+/*! \brief The maximum number of ClientEntryData structures that can be returned with a parsed
+ *         message.
+ *
+ *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
+ */
+#ifndef RDMNET_MAX_CLIENT_ENTRIES
+#define RDMNET_MAX_CLIENT_ENTRIES 5
+#endif
+
+/*! \brief The maximum number of EptSubProtocol structures that can be returned with a parsed
+ *         message.
+ *
+ *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
+ */
+#ifndef RDMNET_MAX_EPT_SUBPROTS
+#define RDMNET_MAX_EPT_SUBPROTS 5
+#endif
+
+/*! \brief The maximum number of Dynamic-UID-related structures that can be returned with a parsed
+ *         message.
+ *
+ *  This option applies to DynamicUidRequestListEntry, DynamicUidMapping, and
+ *  FetchUidAssignmentListEntry structures. Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
+ */
+#ifndef RDMNET_MAX_DYNAMIC_UID_ENTRIES
+#define RDMNET_MAX_DYNAMIC_UID_ENTRIES 5
+#endif
+
+/*! \brief The maximum number of RdmCmdListEntry structures that can be returned with a parsed
+ *         message.
+ *
+ *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
+ */
+#ifndef RDMNET_MAX_RDM_COMMANDS
+#define RDMNET_MAX_RDM_COMMANDS 10
 #endif
 
 /*! \brief Spawn a thread internally to call rdmnet_tick().
@@ -127,7 +173,7 @@
 #endif
 #endif
 
-/*!@}*/
+/*! @} */
 
 /*! \defgroup rdmnetopts_llrp LLRP
  *  \ingroup rdmnetopts
@@ -162,6 +208,6 @@
 
 #endif
 
-/*!@} */
+/*! @} */
 
 #endif /* _RDMNET_OPTS_H_ */
