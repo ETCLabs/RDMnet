@@ -63,6 +63,14 @@
 #define REDIRECT_V4_DATA_SIZE (4 /* IPv4 address */ + 2 /* Port */)
 #define REDIRECT_V6_DATA_SIZE (16 /* IPv6 address */ + 2 /* Port */)
 
+/************************* Request Dynamic UIDs Sizes ************************/
+
+#define DYNAMIC_UID_REQUEST_PAIR_SIZE (6 /* Dynamic UID Request */ + 16 /* RID */)
+
+/********************* Dynamic UID Assignment List Sizes *********************/
+
+#define DYNAMIC_UID_MAPPING_SIZE (6 /* Dynamic UID */ + 16 /* RID */ + 2 /* Status Code */)
+
 /****************************** Disconnect Sizes *****************************/
 
 #define DISCONNECT_DATA_SIZE 2 /* Disconnect Reason */

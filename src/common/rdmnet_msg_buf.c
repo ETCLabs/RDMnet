@@ -82,6 +82,15 @@ static size_t parse_single_client_entry(ClientEntryState *cstate, const uint8_t 
                                         ClientEntryData *entry, parse_result_t *result, const LwpaLogParams *lparams);
 static size_t parse_client_list(ClientListState *clstate, const uint8_t *data, size_t datalen, ClientList *clist,
                                 parse_result_t *result, const LwpaLogParams *lparams);
+static size_t parse_request_dynamic_uid_assignment(GenericListState *lstate, const uint8_t *data, size_t datalen,
+                                                   DynamicUidRequestList *rlist, parse_result_t *result,
+                                                   const LwpaLogParams *lparams);
+static size_t parse_dynamic_uid_assignment_list(GenericListState *lstate, const uint8_t *data, size_t datalen,
+                                                DynamicUidAssignmentList *alist, parse_result_t *result,
+                                                const LwpaLogParams *lparams);
+static size_t parse_fetch_dynamic_uid_assignment_list(GenericListState *lstate, const uint8_t *data, size_t datalen,
+                                                      FetchUidAssignmentList *alist, parse_result_t *result,
+                                                      const LwpaLogParams *lparams);
 
 /*************************** Function definitions ****************************/
 
@@ -309,13 +318,9 @@ void initialize_broker_message(BrokerState *bstate, BrokerMessage *bmsg, size_t 
   {
     case VECTOR_BROKER_CONNECT:
       if (pdu_data_len >= CLIENT_CONNECT_DATA_MIN_SIZE)
-      {
         init_client_connect_state(&bstate->data.client_connect, pdu_data_len, bmsg);
-      }
       else
-      {
         bad_length = true;
-      }
       break;
     case VECTOR_BROKER_CONNECT_REPLY:
       if (pdu_data_len != CONNECT_REPLY_DATA_SIZE)
@@ -323,13 +328,9 @@ void initialize_broker_message(BrokerState *bstate, BrokerMessage *bmsg, size_t 
       break;
     case VECTOR_BROKER_CLIENT_ENTRY_UPDATE:
       if (pdu_data_len >= CLIENT_ENTRY_UPDATE_DATA_MIN_SIZE)
-      {
         init_client_entry_update_state(&bstate->data.update, pdu_data_len, bmsg);
-      }
       else
-      {
         bad_length = true;
-      }
       break;
     case VECTOR_BROKER_REDIRECT_V4:
       if (pdu_data_len != REDIRECT_V4_DATA_SIZE)
@@ -344,6 +345,49 @@ void initialize_broker_message(BrokerState *bstate, BrokerMessage *bmsg, size_t 
     case VECTOR_BROKER_CLIENT_REMOVE:
     case VECTOR_BROKER_CLIENT_ENTRY_CHANGE:
       init_client_list_state(&bstate->data.client_list, pdu_data_len, bmsg);
+      break;
+    /* For the generic list messages, the length must be a multiple of the list entry size. */
+    case VECTOR_BROKER_REQUEST_DYNAMIC_UIDS:
+      if (pdu_data_len > 0 && pdu_data_len % DYNAMIC_UID_REQUEST_PAIR_SIZE == 0)
+      {
+        DynamicUidRequestList *rlist = get_dynamic_uid_request_list(bmsg);
+        rlist->request_list = NULL;
+        rlist->partial = false;
+
+        init_generic_list_state(&bstate->data.data_list, pdu_data_len);
+      }
+      else
+      {
+        bad_length = true;
+      }
+      break;
+    case VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS:
+      if (pdu_data_len > 0 && pdu_data_len % DYNAMIC_UID_MAPPING_SIZE == 0)
+      {
+        DynamicUidAssignmentList *alist = get_dynamic_uid_assignment_list(bmsg);
+        alist->mapping_list = NULL;
+        alist->partial = false;
+
+        init_generic_list_state(&bstate->data.data_list, pdu_data_len);
+      }
+      else
+      {
+        bad_length = true;
+      }
+      break;
+    case VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST:
+      if (pdu_data_len > 0 && pdu_data_len % 6 /* Size of one packed UID */ == 0)
+      {
+        FetchUidAssignmentList *ulist = get_fetch_dynamic_uid_assignment_list(bmsg);
+        ulist->assignment_list = NULL;
+        ulist->partial = false;
+
+        init_generic_list_state(&bstate->data.data_list, pdu_data_len);
+      }
+      else
+      {
+        bad_length = true;
+      }
       break;
     case VECTOR_BROKER_NULL:
     case VECTOR_BROKER_FETCH_CLIENT_LIST:
@@ -411,7 +455,9 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
         initialize_broker_message(bstate, bmsg, pdu_data_len, lparams);
       }
       else
+      {
         parse_err = true;
+      }
     }
     /* Else we don't have enough data - return kPSNoData by default. */
 
@@ -489,6 +535,21 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
       case VECTOR_BROKER_CLIENT_ENTRY_CHANGE:
         next_layer_bytes_parsed = parse_client_list(&bstate->data.client_list, &data[bytes_parsed], remaining_len,
                                                     get_client_list(bmsg), &res, lparams);
+        break;
+      case VECTOR_BROKER_REQUEST_DYNAMIC_UIDS:
+        next_layer_bytes_parsed =
+            parse_request_dynamic_uid_assignment(&bstate->data.data_list, &data[bytes_parsed], remaining_len,
+                                                 get_dynamic_uid_request_list(bmsg), &res, lparams);
+        break;
+      case VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS:
+        next_layer_bytes_parsed =
+            parse_dynamic_uid_assignment_list(&bstate->data.data_list, &data[bytes_parsed], remaining_len,
+                                              get_dynamic_uid_assignment_list(bmsg), &res, lparams);
+        break;
+      case VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST:
+        next_layer_bytes_parsed =
+            parse_fetch_dynamic_uid_assignment_list(&bstate->data.data_list, &data[bytes_parsed], remaining_len,
+                                                    get_fetch_dynamic_uid_assignment_list(bmsg), &res, lparams);
         break;
       case VECTOR_BROKER_NULL:
       case VECTOR_BROKER_FETCH_CLIENT_LIST:
@@ -697,7 +758,9 @@ size_t parse_client_list(ClientListState *clstate, const uint8_t *data, size_t d
   ClientEntryData *centry = NULL;
 
   if (clstate->block.consuming_bad_block)
+  {
     bytes_parsed += consume_bad_block(&clstate->block, datalen, &res);
+  }
   else
   {
     ClientEntryData **centry_ptr;
@@ -725,7 +788,9 @@ size_t parse_client_list(ClientListState *clstate, const uint8_t *data, size_t d
             res = kPSPartialBlockParseOk;
           }
           else
+          {
             res = kPSNoData;
+          }
           break;
         }
         else
@@ -736,7 +801,9 @@ size_t parse_client_list(ClientListState *clstate, const uint8_t *data, size_t d
         }
       }
       else
+      {
         centry = *centry_ptr;
+      }
 
       if (clstate->block.parsed_header)
       {
@@ -758,6 +825,181 @@ size_t parse_client_list(ClientListState *clstate, const uint8_t *data, size_t d
   return bytes_parsed;
 }
 
+size_t parse_request_dynamic_uid_assignment(GenericListState *lstate, const uint8_t *data, size_t datalen,
+                                            DynamicUidRequestList *rlist, parse_result_t *result,
+                                            const LwpaLogParams *lparams)
+{
+  size_t bytes_parsed = 0;
+  parse_result_t res = kPSNoData;
+  DynamicUidRequestListEntry **lentry_ptr;
+
+  (void)lparams;
+
+  /* Navigate to the end of the request list */
+  for (lentry_ptr = &rlist->request_list; *lentry_ptr && (*lentry_ptr)->next; lentry_ptr = &(*lentry_ptr)->next)
+    ;
+  while (datalen - bytes_parsed >= DYNAMIC_UID_REQUEST_PAIR_SIZE)
+  {
+    /* We are starting at the beginning of a new Client Entry PDU. */
+    /* Allocate a new struct at the end of the list */
+    if (*lentry_ptr)
+      lentry_ptr = &(*lentry_ptr)->next;
+
+    *lentry_ptr = (DynamicUidRequestListEntry *)alloc_dynamic_uid_request_entry();
+    if (!(*lentry_ptr))
+    {
+      /* We've run out of space for client entries - send back up what we have now. */
+      if (rlist->request_list)
+      {
+        rlist->partial = true;
+        res = kPSPartialBlockParseOk;
+      }
+      else
+      {
+        res = kPSNoData;
+      }
+      break;
+    }
+    else
+    {
+      DynamicUidRequestListEntry *lentry = *lentry_ptr;
+
+      lentry->manu_id = lwpa_upack_16b(&data[bytes_parsed]) & 0x7fff;
+      memcpy(lentry->rid.data, &data[bytes_parsed + 6], LWPA_UUID_BYTES);
+      bytes_parsed += DYNAMIC_UID_REQUEST_PAIR_SIZE;
+      lstate->size_parsed += DYNAMIC_UID_REQUEST_PAIR_SIZE;
+
+      if (lstate->size_parsed >= lstate->full_list_size)
+      {
+        res = kPSFullBlockParseOk;
+        break;
+      }
+    }
+  }
+
+  *result = res;
+  return bytes_parsed;
+}
+
+size_t parse_dynamic_uid_assignment_list(GenericListState *lstate, const uint8_t *data, size_t datalen,
+                                         DynamicUidAssignmentList *alist, parse_result_t *result,
+                                         const LwpaLogParams *lparams)
+{
+  size_t bytes_parsed = 0;
+  parse_result_t res = kPSNoData;
+  DynamicUidMapping **mapping_ptr;
+
+  (void)lparams;
+
+  /* Navigate to the end of the request list */
+  for (mapping_ptr = &alist->mapping_list; *mapping_ptr && (*mapping_ptr)->next; mapping_ptr = &(*mapping_ptr)->next)
+    ;
+  while (datalen - bytes_parsed >= DYNAMIC_UID_MAPPING_SIZE)
+  {
+    /* We are starting at the beginning of a new Client Entry PDU. */
+    /* Allocate a new struct at the end of the list */
+    if (*mapping_ptr)
+      mapping_ptr = &(*mapping_ptr)->next;
+
+    *mapping_ptr = (DynamicUidMapping *)alloc_dynamic_uid_mapping();
+    if (!(*mapping_ptr))
+    {
+      /* We've run out of space for client entries - send back up what we have now. */
+      if (alist->mapping_list)
+      {
+        alist->partial = true;
+        res = kPSPartialBlockParseOk;
+      }
+      else
+      {
+        res = kPSNoData;
+      }
+      break;
+    }
+    else
+    {
+      DynamicUidMapping *mapping = *mapping_ptr;
+      const uint8_t *cur_ptr = &data[bytes_parsed];
+
+      mapping->uid.manu = lwpa_upack_16b(cur_ptr);
+      cur_ptr += 2;
+      mapping->uid.id = lwpa_upack_32b(cur_ptr);
+      cur_ptr += 4;
+      memcpy(mapping->rid.data, cur_ptr, LWPA_UUID_BYTES);
+      cur_ptr += LWPA_UUID_BYTES;
+      mapping->status_code = (dynamic_uid_status_t)lwpa_upack_16b(cur_ptr);
+      cur_ptr += 2;
+      bytes_parsed += (cur_ptr - &data[bytes_parsed]);
+      lstate->size_parsed += (cur_ptr - &data[bytes_parsed]);
+
+      if (lstate->size_parsed >= lstate->full_list_size)
+      {
+        res = kPSFullBlockParseOk;
+        break;
+      }
+    }
+  }
+
+  *result = res;
+  return bytes_parsed;
+}
+
+size_t parse_fetch_dynamic_uid_assignment_list(GenericListState *lstate, const uint8_t *data, size_t datalen,
+                                               FetchUidAssignmentList *alist, parse_result_t *result,
+                                               const LwpaLogParams *lparams)
+{
+  size_t bytes_parsed = 0;
+  parse_result_t res = kPSNoData;
+  FetchUidAssignmentListEntry **uid_ptr;
+
+  (void)lparams;
+
+  /* Navigate to the end of the request list */
+  for (uid_ptr = &alist->assignment_list; *uid_ptr && (*uid_ptr)->next; uid_ptr = &(*uid_ptr)->next)
+    ;
+  while (datalen - bytes_parsed >= 6)
+  {
+    /* We are starting at the beginning of a new Client Entry PDU. */
+    /* Allocate a new struct at the end of the list */
+    if (*uid_ptr)
+      uid_ptr = &(*uid_ptr)->next;
+
+    *uid_ptr = (FetchUidAssignmentListEntry *)alloc_fetch_uid_assignment_entry();
+    if (!(*uid_ptr))
+    {
+      /* We've run out of space for client entries - send back up what we have now. */
+      if (alist->assignment_list)
+      {
+        alist->partial = true;
+        res = kPSPartialBlockParseOk;
+      }
+      else
+      {
+        res = kPSNoData;
+      }
+      break;
+    }
+    else
+    {
+      FetchUidAssignmentListEntry *uid_entry = *uid_ptr;
+
+      uid_entry->uid.manu = lwpa_upack_16b(&data[bytes_parsed]);
+      uid_entry->uid.id = lwpa_upack_32b(&data[bytes_parsed + 2]);
+      bytes_parsed += 6;
+      lstate->size_parsed += 6;
+
+      if (lstate->size_parsed >= lstate->full_list_size)
+      {
+        res = kPSFullBlockParseOk;
+        break;
+      }
+    }
+  }
+
+  *result = res;
+  return bytes_parsed;
+}
+
 void initialize_rpt_message(RptState *rstate, RptMessage *rmsg, size_t pdu_data_len, const LwpaLogParams *lparams)
 {
   switch (rmsg->vector)
@@ -765,7 +1007,9 @@ void initialize_rpt_message(RptState *rstate, RptMessage *rmsg, size_t pdu_data_
     case VECTOR_RPT_REQUEST:
     case VECTOR_RPT_NOTIFICATION:
       if (pdu_data_len >= REQUEST_NOTIF_PDU_HEADER_SIZE)
+      {
         init_rdm_list_state(&rstate->data.rdm_list, pdu_data_len, rmsg);
+      }
       else
       {
         init_pdu_block_state(&rstate->data.unknown, pdu_data_len);
@@ -778,7 +1022,9 @@ void initialize_rpt_message(RptState *rstate, RptMessage *rmsg, size_t pdu_data_
       break;
     case VECTOR_RPT_STATUS:
       if (pdu_data_len >= RPT_STATUS_HEADER_SIZE)
+      {
         init_rpt_status_state(&rstate->data.status, pdu_data_len);
+      }
       else
       {
         init_pdu_block_state(&rstate->data.unknown, pdu_data_len);
@@ -803,7 +1049,9 @@ size_t parse_rpt_block(RptState *rstate, const uint8_t *data, size_t datalen, Rp
   parse_result_t res = kPSNoData;
 
   if (rstate->block.consuming_bad_block)
+  {
     bytes_parsed += consume_bad_block(&rstate->block, datalen, &res);
+  }
   else if (!rstate->block.parsed_header)
   {
     bool parse_err = false;
@@ -847,7 +1095,9 @@ size_t parse_rpt_block(RptState *rstate, const uint8_t *data, size_t datalen, Rp
         rstate->block.parsed_header = true;
       }
       else
+      {
         parse_err = true;
+      }
     }
     /* Else we don't have enough data - return kPSNoData by default. */
 
@@ -953,7 +1203,9 @@ size_t parse_rdm_list(RdmListState *rlstate, const uint8_t *data, size_t datalen
                 res = kPSPartialBlockParseOk;
               }
               else
+              {
                 res = kPSNoData;
+              }
               break;
             }
             else
@@ -973,10 +1225,14 @@ size_t parse_rdm_list(RdmListState *rlstate, const uint8_t *data, size_t datalen
             }
           }
           else
+          {
             break;
+          }
         }
         else
+        {
           break;
+        }
       }
     }
   }
@@ -1020,7 +1276,9 @@ size_t parse_rpt_status(RptStatusState *rsstate, const uint8_t *data, size_t dat
         rsstate->block.parsed_header = true;
       }
       else
+      {
         parse_err = true;
+      }
     }
     /* Else we don't have enough data - return kPSNoData by default. */
 

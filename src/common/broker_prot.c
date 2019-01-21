@@ -26,6 +26,8 @@
 ******************************************************************************/
 
 #include "rdmnet/common/broker_prot.h"
+
+#include <string.h>
 #include "rdmnet/common/connection.h"
 #include "rdmnet/common/util.h"
 #include "broker_prot_priv.h"
@@ -53,6 +55,9 @@
 /*********************** Private function prototypes *************************/
 
 static size_t calc_client_connect_len(const ClientConnectMsg *data);
+static size_t calc_request_dynamic_uids_len(const DynamicUidRequestListEntry *request_list);
+static size_t calc_requested_uids_len(const FetchUidAssignmentListEntry *uid_list);
+static size_t calc_dynamic_uid_mapping_list_len(const DynamicUidMapping *mapping_list);
 static int do_send(int handle, RdmnetConnection *conn, const uint8_t *data, size_t datasize);
 static size_t pack_broker_header_with_rlp(const LwpaRootLayerPdu *rlp, uint8_t *buf, size_t buflen, uint32_t vector);
 static lwpa_error_t send_broker_header(int handle, RdmnetConnection *conn, const LwpaRootLayerPdu *rlp, uint8_t *buf,
@@ -490,6 +495,213 @@ size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, 
     }
   }
   return cur_ptr - buf;
+}
+
+/**************************** Request Dynamic UIDs ***************************/
+
+size_t calc_request_dynamic_uids_len(const DynamicUidRequestListEntry *request_list)
+{
+  size_t res = BROKER_PDU_HEADER_SIZE;
+  const DynamicUidRequestListEntry *cur_request = request_list;
+
+  for (; cur_request; cur_request = cur_request->next)
+  {
+    res += DYNAMIC_UID_REQUEST_PAIR_SIZE;
+  }
+  return res;
+}
+
+/*! \brief Send a Request Dynamic UID Assignment message on an RDMnet connection.
+ *  \param[in] handle RDMnet connection handle on which to send the Request Dynamic UID Assignment
+ *                    message.
+ *  \param[in] local_cid CID of the Component sending the Request Dynamic UID Assignment message.
+ *  \param[in] request_list List of Dynamic UID Request Pairs, each indicating a request for a
+ *                          newly-assigned Dynamic UID.
+ *  \return #LWPA_OK: Send success.\n
+ *          #LWPA_INVALID: Invalid argument provided.\n
+ *          #LWPA_SYSERR: An internal library or system call error occurred.\n
+ *          Note: Other error codes might be propagated from underlying socket calls.\n
+ */
+lwpa_error_t send_request_dynamic_uids(int handle, const LwpaUuid *local_cid,
+                                       const DynamicUidRequestListEntry *request_list)
+{
+  lwpa_error_t res;
+  int send_res;
+  LwpaRootLayerPdu rlp;
+  uint8_t buf[ACN_RLP_HEADER_SIZE_EXT_LEN];
+  const DynamicUidRequestListEntry *cur_request;
+
+  if (!local_cid || !request_list)
+    return LWPA_INVALID;
+
+  rlp.sender_cid = *local_cid;
+  rlp.vector = ACN_VECTOR_ROOT_BROKER;
+  rlp.datalen = calc_request_dynamic_uids_len(request_list);
+
+  res = rdmnet_start_message(handle);
+  if (res != LWPA_OK)
+    return res;
+
+  res = send_broker_header(handle, NULL, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_REQUEST_DYNAMIC_UIDS);
+  if (res != LWPA_OK)
+  {
+    rdmnet_end_message(handle);
+    return res;
+  }
+
+  /* Pack and send each Dynamic UID Request Pair in turn */
+  for (cur_request = request_list; cur_request; cur_request = cur_request->next)
+  {
+    /* Pack the Dynamic UID Request Pair */
+    lwpa_pack_16b(&buf[0], cur_request->manu_id | 0x8000);
+    lwpa_pack_32b(&buf[2], 0);
+    memcpy(&buf[6], cur_request->rid.data, LWPA_UUID_BYTES);
+
+    /* Send the segment */
+    send_res = do_send(handle, NULL, buf, DYNAMIC_UID_REQUEST_PAIR_SIZE);
+    if (send_res < 0)
+    {
+      rdmnet_end_message(handle);
+      return (lwpa_error_t)send_res;
+    }
+  }
+
+  return rdmnet_end_message(handle);
+}
+
+/************************ Dynamic UID Assignment List ************************/
+
+size_t calc_dynamic_uid_mapping_list_len(const DynamicUidMapping *mapping_list)
+{
+  size_t res = BROKER_PDU_HEADER_SIZE;
+  const DynamicUidMapping *cur_mapping = mapping_list;
+
+  for (; cur_mapping; cur_mapping = cur_mapping->next)
+  {
+    res += DYNAMIC_UID_MAPPING_SIZE;
+  }
+  return res;
+}
+
+/*! \brief Get the packed buffer size for a Dynamic UID Assignment List message.
+ *  \param[in] mapping_list The Dynamic UID Mapping List that will occupy the data segment of the
+ *                          message.
+ *  \return Required buffer size, or 0 on error.
+ */
+size_t bufsize_dynamic_uid_assignment_list(const DynamicUidMapping *mapping_list)
+{
+  return (mapping_list ? (BROKER_PDU_FULL_HEADER_SIZE + calc_dynamic_uid_mapping_list_len(mapping_list)) : 0);
+}
+
+/*! \brief Pack a Dynamic UID Assignment List message into a buffer.
+ *
+ *  \param[out] buf Buffer into which to pack the Dynamic UID Assignment List message.
+ *  \param[in] buflen Length in bytes of buf.
+ *  \param[in] local_cid CID of the Component sending the Dynamic UID Assignment List message.
+ *  \param[in] mapping_list List of Dynamic UID Mappings to pack into the data segment.
+ *  \return Number of bytes packed, or 0 on error.
+ */
+size_t pack_dynamic_uid_assignment_list(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid,
+                                        const DynamicUidMapping *mapping_list)
+{
+  LwpaRootLayerPdu rlp;
+  uint8_t *cur_ptr = buf;
+  uint8_t *buf_end = buf + buflen;
+  size_t data_size;
+  const DynamicUidMapping *cur_mapping;
+
+  if (!buf || buflen < BROKER_PDU_FULL_HEADER_SIZE || !local_cid || !mapping_list)
+  {
+    return 0;
+  }
+
+  rlp.sender_cid = *local_cid;
+  rlp.vector = ACN_VECTOR_ROOT_BROKER;
+  rlp.datalen = BROKER_PDU_HEADER_SIZE + calc_dynamic_uid_mapping_list_len(mapping_list);
+
+  /* Try to pack all the header data */
+  data_size = pack_broker_header_with_rlp(&rlp, buf, buflen, VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS);
+  if (data_size == 0)
+    return 0;
+  cur_ptr += data_size;
+
+  for (cur_mapping = mapping_list; cur_mapping; cur_mapping = cur_mapping->next)
+  {
+    /* Check bounds */
+    if (cur_ptr + DYNAMIC_UID_MAPPING_SIZE > buf_end)
+      return 0;
+
+    /* Pack the Dynamic UID Mapping */
+    lwpa_pack_16b(cur_ptr, cur_mapping->uid.manu);
+    cur_ptr += 2;
+    lwpa_pack_32b(cur_ptr, cur_mapping->uid.id);
+    cur_ptr += 4;
+    memcpy(cur_ptr, cur_mapping->rid.data, LWPA_UUID_BYTES);
+    cur_ptr += LWPA_UUID_BYTES;
+    lwpa_pack_16b(cur_ptr, (uint16_t)cur_mapping->status_code);
+    cur_ptr += 2;
+  }
+  return cur_ptr - buf;
+}
+
+/********************* Fetch Dynamic UID Assignment List *********************/
+
+static size_t calc_requested_uids_len(const FetchUidAssignmentListEntry *uid_list)
+{
+  size_t res = BROKER_PDU_HEADER_SIZE;
+  const FetchUidAssignmentListEntry *cur_uid = uid_list;
+
+  for (; cur_uid; cur_uid = cur_uid->next)
+  {
+    res += 6; /* The size of a packed UID */
+  }
+  return res;
+}
+
+lwpa_error_t send_fetch_uid_assignment_list(int handle, const LwpaUuid *local_cid,
+                                            const FetchUidAssignmentListEntry *uid_list)
+{
+  lwpa_error_t res;
+  int send_res;
+  LwpaRootLayerPdu rlp;
+  uint8_t buf[ACN_RLP_HEADER_SIZE_EXT_LEN];
+  const FetchUidAssignmentListEntry *cur_uid;
+
+  if (!local_cid || !uid_list)
+    return LWPA_INVALID;
+
+  rlp.sender_cid = *local_cid;
+  rlp.vector = ACN_VECTOR_ROOT_BROKER;
+  rlp.datalen = calc_requested_uids_len(uid_list);
+
+  res = rdmnet_start_message(handle);
+  if (res != LWPA_OK)
+    return res;
+
+  res = send_broker_header(handle, NULL, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST);
+  if (res != LWPA_OK)
+  {
+    rdmnet_end_message(handle);
+    return res;
+  }
+
+  /* Pack and send each Dynamic UID Request Pair in turn */
+  for (cur_uid = uid_list; cur_uid; cur_uid = cur_uid->next)
+  {
+    /* Pack the Requested UID */
+    lwpa_pack_16b(&buf[0], cur_uid->uid.manu);
+    lwpa_pack_32b(&buf[2], cur_uid->uid.id);
+
+    /* Send the segment */
+    send_res = do_send(handle, NULL, buf, 6);
+    if (send_res < 0)
+    {
+      rdmnet_end_message(handle);
+      return (lwpa_error_t)send_res;
+    }
+  }
+
+  return rdmnet_end_message(handle);
 }
 
 /******************************** Disconnect *********************************/
