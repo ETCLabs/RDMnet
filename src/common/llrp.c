@@ -560,7 +560,9 @@ bool process_parsed_msg(LlrpBaseSocket *sock, const LlrpMessage *msg, LlrpData *
     return false;
   }
   else
+  {
     return false;
+  }
 }
 
 /*! \brief Poll a set of LLRP sockets for updates.
@@ -690,7 +692,9 @@ int llrp_update(LlrpPoll *poll_array, size_t poll_array_size, int timeout_ms)
       res = LWPA_TIMEDOUT;
   }
   else
+  {
     res = poll_res;
+  }
 
 #if RDMNET_DYNAMIC_MEM
   free(pfds);

@@ -76,9 +76,7 @@ bool parse_llrp_message(const uint8_t *buf, size_t buflen, const LlrpMessageInte
 
   /* Try to parse the Root Layer PDU header. */
   if (!lwpa_parse_root_layer_pdu(preamble.rlp_block, preamble.rlp_block_len, &rlp, &last_pdu))
-  {
     return false;
-  }
 
   /* Fill in the data we have and try to parse the LLRP PDU. */
   msg->header.sender_cid = rlp.sender_cid;
@@ -119,7 +117,9 @@ bool parse_llrp_pdu(const uint8_t *buf, size_t buflen, const LlrpMessageInterest
           return parse_llrp_probe_request(cur_ptr, llrp_pdu_len - LLRP_HEADER_SIZE, interest, &msg->data.probe_request);
         }
         else
+        {
           return false;
+        }
       case VECTOR_LLRP_PROBE_REPLY:
         if (interest->interested_in_probe_reply)
         {
@@ -127,7 +127,9 @@ bool parse_llrp_pdu(const uint8_t *buf, size_t buflen, const LlrpMessageInterest
           return parse_llrp_probe_reply(cur_ptr, llrp_pdu_len - LLRP_HEADER_SIZE, &msg->data.probe_reply);
         }
         else
+        {
           return false;
+        }
       case VECTOR_LLRP_RDM_CMD:
         return parse_llrp_rdm_command(cur_ptr, llrp_pdu_len - LLRP_HEADER_SIZE, &msg->data.rdm_cmd);
       default:
@@ -159,7 +161,7 @@ bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessa
   /* Fill in the rest of the Probe Request data */
   cur_ptr += 3;
   vector = *cur_ptr++;
-  if (vector != VECTOR_LLRP_PROBE_REQUEST)
+  if (vector != VECTOR_PROBE_REQUEST_DATA)
     return false;
   lower_uid_bound.manu = lwpa_upack_16b(cur_ptr);
   cur_ptr += 2;
@@ -169,7 +171,8 @@ bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessa
   cur_ptr += 2;
   upper_uid_bound.id = lwpa_upack_32b(cur_ptr);
   cur_ptr += 4;
-  request->filter = *cur_ptr++;
+  request->filter = lwpa_upack_16b(cur_ptr);
+  cur_ptr += 2;
 
   /* If our UID is not in the range, there is no need to check the Known UIDs. */
   if (rdm_uid_cmp(&interest->my_uid, &lower_uid_bound) >= 0 && rdm_uid_cmp(&interest->my_uid, &upper_uid_bound) <= 0)
@@ -194,7 +197,9 @@ bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessa
     }
   }
   else
+  {
     request->contains_my_uid = false;
+  }
 
   return true;
 }
@@ -214,7 +219,7 @@ bool parse_llrp_probe_reply(const uint8_t *buf, size_t buflen, LlrpTarget *reply
   cur_ptr += 3;
 
   vector = *cur_ptr++;
-  if (vector != VECTOR_LLRP_PROBE_REPLY)
+  if (vector != VECTOR_PROBE_REPLY_DATA)
     return false;
 
   reply->target_uid.manu = lwpa_upack_16b(cur_ptr);
@@ -237,9 +242,7 @@ bool parse_llrp_rdm_command(const uint8_t *buf, size_t buflen, RdmBuffer *cmd)
 
   pdu_len = lwpa_pdu_length(buf);
   if (pdu_len > buflen || pdu_len > LLRP_RDM_CMD_PDU_MAX_SIZE || pdu_len < LLRP_RDM_CMD_PDU_MIN_SIZE)
-  {
     return false;
-  }
   cur_ptr += 3;
 
   if (*cur_ptr != VECTOR_RDM_CMD_RDM_DATA)
@@ -303,8 +306,7 @@ lwpa_error_t send_llrp_probe_request(llrp_socket_t handle, const LwpaSockaddr *d
   *cur_ptr = 0xf0;
   lwpa_pdu_pack_ext_len(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
   cur_ptr += 3;
-  /* TODO bad standard! Will be corrected in next public review draft. */
-  *cur_ptr++ = (uint8_t)VECTOR_LLRP_PROBE_REQUEST;
+  *cur_ptr++ = VECTOR_PROBE_REQUEST_DATA;
   lwpa_pack_16b(cur_ptr, probe_request->lower_uid.manu);
   cur_ptr += 2;
   lwpa_pack_32b(cur_ptr, probe_request->lower_uid.id);
@@ -313,7 +315,8 @@ lwpa_error_t send_llrp_probe_request(llrp_socket_t handle, const LwpaSockaddr *d
   cur_ptr += 2;
   lwpa_pack_32b(cur_ptr, probe_request->upper_uid.id);
   cur_ptr += 4;
-  *cur_ptr++ = probe_request->filter;
+  lwpa_pack_16b(cur_ptr, probe_request->filter);
+  cur_ptr += 2;
 
   /* Pack the Known UIDs */
   cur_uid = probe_request->uid_list;
@@ -362,8 +365,7 @@ lwpa_error_t send_llrp_probe_reply(llrp_socket_t handle, const LwpaSockaddr *des
   *cur_ptr = 0xf0;
   lwpa_pdu_pack_ext_len(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
   cur_ptr += 3;
-  /* TODO bad standard! Will be corrected in next public review draft. */
-  *cur_ptr++ = (uint8_t)VECTOR_LLRP_PROBE_REPLY;
+  *cur_ptr++ = VECTOR_PROBE_REPLY_DATA;
   lwpa_pack_16b(cur_ptr, probe_reply->target_uid.manu);
   cur_ptr += 2;
   lwpa_pack_32b(cur_ptr, probe_reply->target_uid.id);

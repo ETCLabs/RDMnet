@@ -49,8 +49,8 @@
 #define E133_DEFAULT_SCOPE               "default"
 #define E133_DEFAULT_DOMAIN              "local."
 
-/* TODO: THIS IS A DRAFT type.  The SRV_TYPE includes the service protocol and
- * has the prepended '_' in all fields */
+/* TODO: THIS IS A DRAFT type.  The SRV_TYPE includes the service protocol and has the prepended '_'
+ * in all fields */
 #define E133_DNSSD_SRV_TYPE "_draft-e133._tcp."
 #define E133_DNSSD_TXTVERS  1
 #define E133_DNSSD_E133VERS 1
@@ -69,8 +69,8 @@
 #define E133_MODEL_STRING_PADDED_LENGTH           250 /* Section 7.2.1 */
 #define E133_MANUFACTURER_STRING_PADDED_LENGTH    250 /* Section 7.2.1 */
 
-#define LLRP_FILTERVAL_CLIENT_CONN_INACTIVE 0x01u
-#define LLRP_FILTERVAL_BROKERS_ONLY         0x02u
+#define LLRP_FILTERVAL_CLIENT_CONN_INACTIVE 0x0001u
+#define LLRP_FILTERVAL_BROKERS_ONLY         0x0002u
 
 /******************************************************************************
  * Table A-1: Broadcast UID Defines
