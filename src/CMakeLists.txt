@@ -67,6 +67,9 @@ target_include_directories(RDMnet
   PRIVATE ${DNS_SD_ADDITIONAL_INCLUDE_DIRS}
 )
 target_link_libraries(RDMnet PUBLIC lwpa RDM ${DNS_SD_ADDITIONAL_LIBS})
+if(DNS_SD_BUILD_DEPENDENCIES)
+  add_dependencies(RDMnet ${DNS_SD_BUILD_DEPENDENCIES})
+endif()
 
 #################################### Broker ###################################
 
