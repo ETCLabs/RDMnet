@@ -73,7 +73,7 @@ deploy:
   subject: etclabs
   repo: rdmnet_bin
   package: latest
-  version: %RDMNET_VERSION%
+  version: $(RDMNET_VERSION)
   publish: false
 
 for:
