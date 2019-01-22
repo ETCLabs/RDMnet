@@ -68,10 +68,10 @@ deploy:
   provider: BinTray
   on:
     RDMNET_BUILD_TYPE: versioned
-  username: etclabs
+  username: bootress
   api_key:
     secure: N7blYxy9CNkhOB0SasJxi8OyO7Zm6/F2RPOmgQi6IAwpTigH9klt6Cl++C2eGkbD
-  subject: etclabs
+  subject: bootress
   repo: rdmnet_bin
   package: latest
   version: $(RDMNET_VERSION)
