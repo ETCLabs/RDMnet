@@ -124,12 +124,12 @@ typedef enum
 /*! The Client Connect message in the %Broker protocol. */
 typedef struct ClientConnectMsg
 {
-  /*! The Client's configured scope. Maximum length #E133_SCOPE_STRING_PADDED_LENGTH, including null
+  /*! The Client's configured scope. Maximum length E133_SCOPE_STRING_PADDED_LENGTH, including null
    *  terminator. */
   char scope[E133_SCOPE_STRING_PADDED_LENGTH];
   /*! The maximum version of the standard supported by the Client. */
   uint16_t e133_version;
-  /*! The search domain of the Client. Maximum length #E133_DOMAIN_STRING_PADDED_LENGTH, including
+  /*! The search domain of the Client. Maximum length E133_DOMAIN_STRING_PADDED_LENGTH, including
    *  null terminator. */
   char search_domain[E133_DOMAIN_STRING_PADDED_LENGTH];
   /*! Configurable options for the connection. See CONNECTFLAG_*. */

@@ -63,6 +63,16 @@ RDMnet::Broker::~Broker()
 {
 }
 
+/// \brief Start all %Broker functionality and threads.
+///
+/// If listen_addrs is empty, this returns false.  Otherwise, the broker uss the address fields to
+/// set up the listening sockets. If the listen_port is 0 and their is only one listen_addr, an
+/// ephemeral port is chosen. If there are more listen_addrs, listen_port must not be 0.
+///
+/// \param[in] settings Settings for the Broker to use for this session.
+/// \param[in] listen_port Port for the Broker to listen on.
+/// \param[in] listen_addrs Addresses of network interfaces for the Broker to listen on.
+/// \return true (started %Broker successfully) or false (an error occurred starting %Broker).
 bool RDMnet::Broker::Startup(const BrokerSettings &settings, uint16_t listen_port,
                              std::vector<LwpaIpAddr> &listen_addrs)
 {
@@ -104,15 +114,6 @@ BrokerCore::~BrokerCore()
     Shutdown();
 }
 
-/// \brief Start all %Broker functionality and threads.
-///
-/// If listen_addrs is empty, this returns false.  Otherwise, the broker uss the address fields to
-/// set up the listening sockets. If the listen_port is 0 and their is only one listen_addr, an
-/// ephemeral port is chosen. If there are more listen_addrs, listen_port must not be 0.
-///
-/// \param[in] settings Settings for the Broker to use for this session.
-/// \param[in] listen_port Port
-/// \return true (started %Broker successfully) or false (an error occurred starting %Broker).
 bool BrokerCore::Startup(const RDMnet::BrokerSettings &settings, uint16_t listen_port,
                          std::vector<LwpaIpAddr> &listen_addrs)
 {

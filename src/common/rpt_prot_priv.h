@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rptprotpriv.h
+/*! \file rpt_prot_priv.h
  *  \brief Functions and definitions for RPT PDU messages that are only used internally.
  *  \author Sam Kearney
  */
