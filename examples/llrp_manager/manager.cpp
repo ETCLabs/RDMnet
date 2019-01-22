@@ -71,7 +71,8 @@ public:
   void GetComponentScope(int target_handle, int scope_slot);
 
   void SetDeviceLabel(int target_handle, const std::string &label);
-  void SetComponentScope(int target_handle, int scope_slot, const std::string &scope_utf8);
+  void SetComponentScope(int target_handle, int scope_slot, const std::string &scope_utf8,
+                         const LwpaSockaddr &static_config);
 
 protected:
   bool SendRDMAndGetResponse(llrp_socket_t sock, const LwpaUuid &target_cid, const RdmCommand &cmd_data,
@@ -148,8 +149,9 @@ void LLRPManager::PrintCommandList()
   printf("    c <target_handle>: Get DEVICE_MODEL_DESCRIPTION from Target <target_handle>\n");
   printf("    s <target_handle> <scope_slot>: Get COMPONENT_SCOPE for Scope Slot\n");
   printf("        <scope_slot> from Target <target_handle>\n");
-  printf("    ss <target_handle> <scope_slot> <scope>: Set COMPONENT_SCOPE to <scope>\n");
-  printf("        for Scope Slot <scope_slot> on Target <target_handle>\n");
+  printf("    ss <target_handle> <scope_slot> <scope> [ip:port]: Set COMPONENT_SCOPE to\n");
+  printf("        <scope> for Scope Slot <scope_slot> on Target <target_handle> with\n");
+  printf("        optional static Broker address ip:port\n");
   printf("    q: Quit\n");
 }
 
@@ -183,7 +185,9 @@ bool LLRPManager::ParseCommand(const std::wstring &line)
             printf("Unrecognized command.\n");
         }
         else
+        {
           printf("Unrecognized command.\n");
+        }
         break;
       case 'i':
         try
@@ -240,26 +244,62 @@ bool LLRPManager::ParseCommand(const std::wstring &line)
                 std::wstring args = line.substr(3);
                 size_t first_sp_pos = args.find_first_of(' ');
                 size_t second_sp_pos = args.find_first_of(' ', first_sp_pos + 1);
+                size_t third_sp_pos = args.find_first_of(' ', second_sp_pos + 1);
 
                 int target_handle = std::stoi(args);
-                int scope_slot = std::stoi(args.substr(first_sp_pos, second_sp_pos));
+                int scope_slot = std::stoi(args.substr(first_sp_pos + 1, second_sp_pos - (first_sp_pos + 1)));
+                LwpaSockaddr static_config;
+                lwpaip_set_invalid(&static_config.ip);
+                if (third_sp_pos != std::string::npos)
+                {
+                  std::wstring ip_port = args.substr(third_sp_pos + 1);
+                  size_t colon_pos = ip_port.find_first_of(':');
+                  if (colon_pos != std::string::npos)
+                  {
+                    char ip_utf8[LWPA_INET6_ADDRSTRLEN];
+                    if (WideCharToMultiByte(CP_UTF8, 0, ip_port.substr(0, colon_pos).c_str(), -1, ip_utf8,
+                                            LWPA_INET6_ADDRSTRLEN, NULL, NULL) > 0)
+                    {
+                      if ((LWPA_OK == lwpa_inet_pton(kLwpaIpTypeV4, ip_utf8, &static_config.ip)) ||
+                          (LWPA_OK == lwpa_inet_pton(kLwpaIpTypeV6, ip_utf8, &static_config.ip)))
+                      {
+                        static_config.port = static_cast<uint16_t>(std::stoi(ip_port.substr(colon_pos + 1)));
+                      }
+                      else
+                      {
+                        throw std::invalid_argument("Invalid static IP address.");
+                      }
+                    }
+                    else
+                    {
+                      throw std::invalid_argument("Invalid static IP/port combo.");
+                    }
+                  }
+                  else
+                  {
+                    throw std::invalid_argument("Invalid static IP/port combo.");
+                  }
+                }
 
                 // Get and convert the scope
-                std::wstring scope = args.substr(second_sp_pos + 1);
+                std::wstring scope = args.substr(
+                    second_sp_pos + 1,
+                    (third_sp_pos == std::string::npos ? third_sp_pos : third_sp_pos - (second_sp_pos + 1)));
                 char scope_utf8[E133_SCOPE_STRING_PADDED_LENGTH];
                 if (WideCharToMultiByte(CP_UTF8, 0, scope.c_str(), -1, scope_utf8, E133_SCOPE_STRING_PADDED_LENGTH,
                                         NULL, NULL) > 0)
                 {
-                  SetComponentScope(target_handle, scope_slot, scope_utf8);
+                  SetComponentScope(target_handle, scope_slot, scope_utf8, static_config);
                 }
                 else
                 {
-                  printf("Invalid scope.\n");
+                  throw std::invalid_argument("Invalid scope.");
                 }
               }
-              catch (std::exception)
+              catch (const std::exception &e)
               {
-                printf("Command syntax: ss <target_handle> <scope_slot> <scope>\n");
+                printf("Error occurred while parsing arguments: %s\n", e.what());
+                printf("Command syntax: ss <target_handle> <scope_slot> <scope> [ip:port]\n");
               }
               break;
             case 'l':
@@ -444,14 +484,20 @@ void LLRPManager::GetDeviceInfo(int target_handle)
           printf("  Sensor Count: %d\n", *cur_ptr);
         }
         else
+        {
           printf("Device info response malformed.\n");
+        }
       }
     }
     else
+    {
       printf("Target handle %d not found\n", target_handle);
+    }
   }
   else
+  {
     printf("Error sending DEVICE_INFO command.\n");
+  }
 }
 
 void LLRPManager::GetDeviceLabel(int target_handle)
@@ -482,10 +528,14 @@ void LLRPManager::GetDeviceLabel(int target_handle)
       }
     }
     else
+    {
       printf("Target handle %d not found\n", target_handle);
+    }
   }
   else
+  {
     printf("Error sending DEVICE_LABEL command.\n");
+  }
 }
 
 void LLRPManager::GetManufacturerLabel(int target_handle)
@@ -516,10 +566,14 @@ void LLRPManager::GetManufacturerLabel(int target_handle)
       }
     }
     else
+    {
       printf("Target handle %d not found\n", target_handle);
+    }
   }
   else
+  {
     printf("Error sending MANUFACTURER_LABEL command.\n");
+  }
 }
 
 void LLRPManager::GetDeviceModelDescription(int target_handle)
@@ -550,10 +604,14 @@ void LLRPManager::GetDeviceModelDescription(int target_handle)
       }
     }
     else
+    {
       printf("Target handle %d not found\n", target_handle);
+    }
   }
   else
+  {
     printf("Error sending DEVICE_MODEL_DESCRIPTION command.\n");
+  }
 }
 
 void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
@@ -585,21 +643,62 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
 
       if (SendRDMAndGetResponse(netint_pair->second.sock, target->second.target_cid, cmd_data, resp_data))
       {
-        if (resp_data.datalen > 2)
+        if (resp_data.datalen >= (2 + E133_SCOPE_STRING_PADDED_LENGTH + 1 + 4 + 16 + 2))
         {
+          const uint8_t *cur_ptr = resp_data.data;
+
+          uint16_t slot = lwpa_upack_16b(cur_ptr);
+          cur_ptr += 2;
+
           std::string scope;
-          scope.assign(reinterpret_cast<char *>(&resp_data.data[2]), resp_data.datalen - 2);
-          printf("Scope for slot %d: %s\n", lwpa_upack_16b(resp_data.data), scope.c_str());
+          char scope_string[E133_SCOPE_STRING_PADDED_LENGTH] = {};
+          memcpy(scope_string, cur_ptr, E133_SCOPE_STRING_PADDED_LENGTH - 1);
+          cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
+
+          uint8_t static_config_type = *cur_ptr++;
+          LwpaIpAddr ip;
+          char ip_string[LWPA_INET6_ADDRSTRLEN] = {};
+          uint8_t port = 0;
+
+          printf("Scope for slot %d: %s\n", slot, scope_string);
+          switch (static_config_type)
+          {
+            case E133_STATIC_CONFIG_IPV4:
+              lwpaip_set_v4_address(&ip, lwpa_upack_32b(cur_ptr));
+              lwpa_inet_ntop(&ip, ip_string, LWPA_INET6_ADDRSTRLEN);
+              cur_ptr += 4 + 16;
+              port = lwpa_upack_16b(cur_ptr);
+              printf("Static Broker IPv4 for slot %d: %s:%d\n", slot, ip_string, port);
+              break;
+            case E133_STATIC_CONFIG_IPV6:
+              cur_ptr += 4;
+              lwpaip_set_v6_address(&ip, cur_ptr);
+              lwpa_inet_ntop(&ip, ip_string, LWPA_INET6_ADDRSTRLEN);
+              cur_ptr += 16;
+              port = lwpa_upack_16b(cur_ptr);
+              printf("Static Broker IPv6 for slot %d: [%s]:%d\n", slot, ip_string, port);
+              break;
+            case E133_NO_STATIC_CONFIG:
+            default:
+              printf("No static Broker config.\n");
+              break;
+          }
         }
         else
+        {
           printf("Malformed COMPONENT_SCOPE response.\n");
+        }
       }
     }
     else
+    {
       printf("Target handle %d not found\n", target_handle);
+    }
   }
   else
+  {
     printf("Error sending COMPONENT_SCOPE command.\n");
+  }
 }
 
 void LLRPManager::SetDeviceLabel(int target_handle, const std::string &label)
@@ -637,7 +736,8 @@ void LLRPManager::SetDeviceLabel(int target_handle, const std::string &label)
   }
 }
 
-void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std::string &scope_utf8)
+void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std::string &scope_utf8,
+                                    const LwpaSockaddr &static_config)
 {
   if (scope_slot < 1 || scope_slot > 65535)
   {
@@ -654,6 +754,8 @@ void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std
       RdmCommand cmd_data;
       RdmResponse resp_data;
 
+#define COMPONENT_SCOPE_PDL (2 + E133_SCOPE_STRING_PADDED_LENGTH + 1 + 4 + 16 + 2)
+
       cmd_data.src_uid = uid_;
       cmd_data.dest_uid = target->second.target_uid;
       cmd_data.transaction_num = rdm_trans_num_++;
@@ -661,11 +763,33 @@ void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std
       cmd_data.subdevice = 0;
       cmd_data.command_class = E120_SET_COMMAND;
       cmd_data.param_id = E133_COMPONENT_SCOPE;
-      cmd_data.datalen = 2 + E133_SCOPE_STRING_PADDED_LENGTH;
-      memset(cmd_data.data, 0, 2 + E133_SCOPE_STRING_PADDED_LENGTH);
-      lwpa_pack_16b(cmd_data.data, scope_slot);
-      RDMNET_MSVC_NO_DEP_WRN strncpy((char *)&cmd_data.data[2], scope_utf8.c_str(),
-                                     E133_SCOPE_STRING_PADDED_LENGTH - 1);
+      cmd_data.datalen = COMPONENT_SCOPE_PDL;
+      memset(cmd_data.data, 0, COMPONENT_SCOPE_PDL);
+
+      uint8_t *cur_ptr = cmd_data.data;
+      lwpa_pack_16b(cur_ptr, scope_slot);
+      cur_ptr += 2;
+      RDMNET_MSVC_NO_DEP_WRN strncpy((char *)cur_ptr, scope_utf8.c_str(), E133_SCOPE_STRING_PADDED_LENGTH - 1);
+      cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
+      if (lwpaip_is_v4(&static_config.ip))
+      {
+        *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
+        lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&static_config.ip));
+        cur_ptr += 4 + 16;
+        lwpa_pack_16b(cur_ptr, static_config.port);
+      }
+      else if (lwpaip_is_v6(&static_config.ip))
+      {
+        *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
+        cur_ptr += 4;
+        memcpy(cur_ptr, lwpaip_v6_address(&static_config.ip), 16);
+        cur_ptr += 16;
+        lwpa_pack_16b(cur_ptr, static_config.port);
+      }
+      else
+      {
+        *cur_ptr = E133_NO_STATIC_CONFIG;
+      }
 
       if (SendRDMAndGetResponse(netint_pair->second.sock, target->second.target_cid, cmd_data, resp_data))
         printf("Set scope successfully.\n");
@@ -723,10 +847,14 @@ bool LLRPManager::SendRDMAndGetResponse(llrp_socket_t sock, const LwpaUuid &targ
               }
             }
             else
+            {
               printf("Received unexpected RDM response.\n");
+            }
           }
           else
+          {
             printf("Received malformed RDM response.\n");
+          }
         }
       }
       else if (update_res != LWPA_TIMEDOUT)
@@ -742,7 +870,9 @@ bool LLRPManager::SendRDMAndGetResponse(llrp_socket_t sock, const LwpaUuid &targ
     }
   }
   else
+  {
     printf("Error building RDM command.\n");
+  }
 
   return false;
 }
