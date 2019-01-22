@@ -35,6 +35,9 @@ jobs:
     - script: skip
     # Generate and deploy documentation
     - stage: docs
+      install:
+        - git clone -b $TRAVIS_BRANCH https://github.com/ETCLabs/lwpa ../lwpa
+        - git clone -b $TRAVIS_BRANCH https://github.com/ETCLabs/RDM ../RDM
       script:
         - cd $TRAVIS_BUILD_DIR/tools/ci
         - chmod +x publish_docs.sh
