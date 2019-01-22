@@ -71,7 +71,7 @@ deploy:
   username: bootress
   api_key:
     secure: N7blYxy9CNkhOB0SasJxi8OyO7Zm6/F2RPOmgQi6IAwpTigH9klt6Cl++C2eGkbD
-  subject: bootress
+  subject: etclabs
   repo: rdmnet_bin
   package: latest
   version: $(RDMNET_VERSION)
