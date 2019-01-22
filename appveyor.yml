@@ -45,8 +45,8 @@ configuration: Release
 before_build:
   - cmd: |-
       set /P RDMNET_VERSION=< tools/version/current_version.txt
-      git clone -b %APPVEYOR_REPO_BRANCH% https://github.com/ETCLabs/lwpa ../lwpa
-      git clone -b %APPVEYOR_REPO_BRANCH% https://github.com/ETCLabs/RDM ../RDM
+      git clone -b develop https://github.com/ETCLabs/lwpa ../lwpa
+      git clone -b develop https://github.com/ETCLabs/RDM ../RDM
       mkdir build
       cd build
       cmake --version
