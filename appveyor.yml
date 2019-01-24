@@ -4,10 +4,10 @@
 
 version: '{build}'
 
-branches:
-  only:
-    - develop
-    - master
+# branches:
+#   only:
+#     - develop
+#     - master
 
 skip_commits:
   files:
@@ -125,9 +125,9 @@ for:
       CMAKE_INSTALL: install_x86
       CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=OFF -DRDMNET_BUILD_TESTS=OFF -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
       QTDIR: C:\Qt\5.9.7\msvc2015
-      INSTALLER_PROJECT: tools\install\windows\RDMnetInstall_x86.wixproj
+      INSTALLER_PROJECT: RDMnetInstall_x86.wixproj
       INSTALLER_PROJECT_PLATFORM: x86
-      INSTALLER_ARTIFACT: tools\install\windows\bin\Release\RDMnetSetup_x86.msi
+      INSTALLER_ARTIFACT: bin\Release\RDMnetSetup_x86.msi
 
     install:
       - ps: |-
@@ -141,8 +141,11 @@ for:
     after_build:
       - cmd: |-
           cmake -P cmake_install.cmake
-          msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% ..\%INSTALLER_PROJECT%
-          copy ..\%INSTALLER_ARTIFACT% ..\RDMnetSetup_%RDMNET_VERSION%_x86.msi
+          cd ..\tools\install\windows
+          msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% %INSTALLER_PROJECT%
+          "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" x86
+          signtool.exe sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f codesign_cert_windows.pfx /p %CODESIGN_CERT_SECRET% %INSTALLER_ARTIFACT% > NUL
+          copy %INSTALLER_ARTIFACT% ..\..\..\RDMnetSetup_%RDMNET_VERSION%_x86.msi
 
     test_script:
       - exit 0
@@ -165,9 +168,9 @@ for:
       CMAKE_INSTALL: install_x64
       CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=OFF -DRDMNET_BUILD_TESTS=OFF -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
       QTDIR: C:\Qt\5.9.7\msvc2017_64
-      INSTALLER_PROJECT: tools\install\windows\RDMnetInstall_x64.wixproj
+      INSTALLER_PROJECT: RDMnetInstall_x64.wixproj
       INSTALLER_PROJECT_PLATFORM: x64
-      INSTALLER_ARTIFACT: tools\install\windows\bin\Release\RDMnetSetup_x64.msi
+      INSTALLER_ARTIFACT: bin\Release\RDMnetSetup_x64.msi
 
     install:
       - ps: |-
@@ -181,8 +184,11 @@ for:
     after_build:
       - cmd: |-
           cmake -P cmake_install.cmake
-          msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% ..\%INSTALLER_PROJECT%
-          copy ..\%INSTALLER_ARTIFACT% ..\RDMnetSetup_%RDMNET_VERSION%_x64.msi
+          cd ..\tools\install\windows
+          msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% %INSTALLER_PROJECT%
+          "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" amd64
+          signtool.exe sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f codesign_cert_windows.pfx /p %CODESIGN_CERT_SECRET% %INSTALLER_ARTIFACT% > NUL
+          copy %INSTALLER_ARTIFACT% ..\..\..\RDMnetSetup_%RDMNET_VERSION%_x64.msi
 
     test_script:
       - exit 0
@@ -191,7 +197,7 @@ for:
       - path: RDMnetSetup_%RDMNET_VERSION%_x64.msi
         name: RDMnet 64-bit installer
 
-    after_deploy:
-      - ps: |-
-          cd $Env:APPVEYOR_BUILD_FOLDER
-          .\tools\ci\slack_notify.ps1
+#    after_deploy:
+#      - ps: |-
+#          cd $Env:APPVEYOR_BUILD_FOLDER
+#          .\tools\ci\slack_notify.ps1
