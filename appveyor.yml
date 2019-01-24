@@ -30,6 +30,10 @@ environment:
   MDNSWINDOWS_VERSION: v1.1.1
   SLACK_WEBHOOK:
     secure: mmc+nEHnXGCwUvdD4qG3usIECTxCf86I1+DYO1hChDo4OLyU56a4qoquct4bTqtFBXlf0oc5HNLB7R11dHAOxeG8E3+ReVV0OU6R3DVLTpI=
+  CODESIGN_DECRYPT_SECRET:
+    secure: Z1VdvYVbzcA99+sBtiwEatQkNSMHCe5iGMVmqHuZd5o=
+  CODESIGN_CERT_SECRET:
+    secure: cLWx1U9DisHiA9zMooiMXQ==
 
   matrix:
     - RDMNET_BUILD_TYPE: test
@@ -131,6 +135,8 @@ for:
           $wc.DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_x86.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x86.zip")
           7z x mDNSWindows_x86.zip -omdns_install -y -r
           $wc.DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/ETC_mDNSInstall.msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
+          iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/appveyor/secure-file/master/install.ps1'))
+      - cmd: appveyor-tools\secure-file -decrypt tools\install\windows\codesign_cert_windows.pfx.enc -secret %CODESIGN_DECRYPT_SECRET%
 
     after_build:
       - cmd: |-
@@ -169,6 +175,8 @@ for:
           $wc.DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_x64.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x64.zip")
           7z x mDNSWindows_x64.zip -omdns_install -y -r
           $wc.DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/ETC_mDNSInstall.msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
+          iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/appveyor/secure-file/master/install.ps1'))
+      - cmd: appveyor-tools\secure-file -decrypt tools\install\windows\codesign_cert_windows.pfx.enc -secret %CODESIGN_DECRYPT_SECRET%
 
     after_build:
       - cmd: |-
