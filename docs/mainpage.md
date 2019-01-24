@@ -2,7 +2,7 @@
 
 ## Important Note: Read Me First
 
-THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 rev. 63. **UNDER NO
+THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 rev. 77. **UNDER NO
 CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR OR INCLUDED IN ANY PRODUCT
 AVAILABLE FOR GENERAL SALE TO THE PUBLIC.** DUE TO THE INEVITABLE CHANGE OF
 DRAFT PROTOCOL VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE
@@ -60,12 +60,19 @@ Prerequisites:
   is available [here](https://visualstudio.microsoft.com/downloads/). Make sure
   to install Visual C++ as part of the Visual Studio installation.
 
-* **For controller, broker and device: Bonjour SDK for Windows v3.0**. Apple's
-  Bonjour service implements RDMnet's discovery mechanism (mDNS/DNS-SD). Note
-  that you must have an Apple developer account to download the Bonjour SDK for
-  Windows. It is available [here](https://developer.apple.com/bonjour/).
-  Installation of the Bonjour SDK will set a system environment variable which
-  will enable the RDMnet projects to find the proper headers and libraries.
+* **For controller, broker and device: An implementation of DNS-SD/mDNS**.
+  There are two options for this:
+  + Apple's Bonjour service implements DNS-SD/mDNS. Note that you must have an
+    Apple developer account to download the Bonjour SDK for Windows, and that
+    bundling Bonjour with a Windows application may be subject to additional
+    licensing restrictions from Apple. The SDK is available
+    [here](https://developer.apple.com/bonjour/). Define
+    RDMNET_WINDOWS_USE_BONJOUR_SDK=ON at configure time to use the Bonjour SDK.
+  + ETC's fork of Bonjour, maintained
+    [here](https://github.com/ETCLabs/mDNSWindows). ETC maintains a fork of the
+    Apache-licensed Bonjour code which can be used as a DNS-SD/mDNS provider on
+    Windows. Download the binaries from the Github releases page and specify
+    their location with MDNSWINDOWS_INSTALL_LOC, or simply clone the mDNSWindows repository at the same directory level as RDMnet to build from source.
 
 * **For controller: Qt (>= 5.9.7) open-source**.  Qt installers are available
   [here](https://www.qt.io/download). To point CMake at the Qt dependency,
@@ -154,12 +161,11 @@ RDMnet depends on the ETC's RDM library for RDM protocol support. See the
 [documentation for RDM](https://etclabs.github.io/RDM) for details on how to
 include RDM in your project.
 
-### Bonjour SDK for Windows
+### Bonjour SDK for Windows or ETCLabs/mDNSWindows
 
-The Windows versions of the broker, controller and device applications depend
-on the [Bonjour SDK for Windows](https://developer.apple.com/bonjour/) v3.0.
-You must have an Apple developer account to download the Bonjour SDK for
-Windows.
+- If using the [Bonjour SDK for Windows](https://developer.apple.com/bonjour/):
+  v3.0.
+- If using ETCLabs/mDNSWindows: v1.1.1
 
 ### Qt
 

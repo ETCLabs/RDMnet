@@ -1,7 +1,7 @@
 ## Important Note: Read Me First
 
 THE SOFTWARE IN THIS REPOSITORY IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33
-rev. 63. <mark><b>UNDER NO CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR OR
+rev. 77. <mark><b>UNDER NO CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR OR
 INCLUDED IN ANY PRODUCT AVAILABLE FOR GENERAL SALE TO THE PUBLIC.</b></mark>
 DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL VALUES AND BEHAVIORAL
 REQUIREMENTS, <mark>PRODUCTS USING THIS SOFTWARE WILL **NOT** BE INTEROPERABLE
@@ -38,9 +38,6 @@ RDMnet:
 display and configuration of RDMnet Components.
 * *rdmnet_broker_example*: A console application which implements an RDMnet Broker.
 * *rdmnet_device_example*: A console application which implements an RDMnet Device.
-* *fakeway* (binary only): A console application which implements an RDMnet
-Gateway, using one or more ETC [Gadget II](https://www.etcconnect.com/Products/Networking/Gadget-II/Features.aspx)
-devices to communicate with RDM fixtures.
 * *llrp_manager_example*: A console application which implements a basic LLRP Manager.
 
 The applications are available as a binary package
