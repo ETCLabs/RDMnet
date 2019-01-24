@@ -4,10 +4,10 @@
 
 version: '{build}'
 
-# branches:
-#   only:
-#     - develop
-#     - master
+branches:
+  only:
+    - develop
+    - master
 
 skip_commits:
   files:
@@ -48,8 +48,8 @@ configuration: Release
 before_build:
   - cmd: |-
       set /P RDMNET_VERSION=< tools/version/current_version.txt
-      git clone -b develop https://github.com/ETCLabs/lwpa ../lwpa
-      git clone -b develop https://github.com/ETCLabs/RDM ../RDM
+      git clone -b %APPVEYOR_REPO_BRANCH% https://github.com/ETCLabs/lwpa ../lwpa
+      git clone -b %APPVEYOR_REPO_BRANCH% https://github.com/ETCLabs/RDM ../RDM
       mkdir build
       cd build
       cmake --version
@@ -197,7 +197,7 @@ for:
       - path: RDMnetSetup_%RDMNET_VERSION%_x64.msi
         name: RDMnet 64-bit installer
 
-#    after_deploy:
-#      - ps: |-
-#          cd $Env:APPVEYOR_BUILD_FOLDER
-#          .\tools\ci\slack_notify.ps1
+    after_deploy:
+      - ps: |-
+          cd $Env:APPVEYOR_BUILD_FOLDER
+          .\tools\ci\slack_notify.ps1
