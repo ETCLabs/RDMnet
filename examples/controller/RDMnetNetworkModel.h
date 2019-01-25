@@ -387,9 +387,7 @@ protected:
   void sendGetControllerScopeProperties(uint16_t manuID, uint32_t deviceID);
   void sendGetNextControllerScope(uint16_t manuID, uint32_t deviceID, uint16_t currentSlot);
   void sendGetCommand(uint16_t pid, uint16_t manu, uint32_t dev);
-  uint8_t *packIPAddressItem(const QVariant &value, lwpa_iptype_t addrType, uint8_t *packPtr);
-  uint8_t *packStaticConfigItem(const QModelIndex &valueIndex, const QVariant &value, lwpa_iptype_t addrType,
-                                uint8_t *packPtr);
+  uint8_t *packIPAddressItem(const QVariant &value, lwpa_iptype_t addrType, uint8_t *packPtr, bool packPort = true);
 
   // PID handling
   bool pidSupportedByGUI(uint16_t pid, bool checkSupportGet);

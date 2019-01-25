@@ -1343,8 +1343,8 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   // RDMnet
   // COMPONENT_SCOPE
   PropertyValueItem::setPIDInfo(E133_COMPONENT_SCOPE,
-                                rdmNetPIDFlags | kSupportsGet, // | kSupportsSet, TODO add this back
-                                QVariant::Type::String);
+                                rdmNetPIDFlags | kSupportsGet | kSupportsSet,
+                                QVariant::Type::Invalid);
   PropertyValueItem::addPIDPropertyDisplayName(E133_COMPONENT_SCOPE,
                                                QString("%0\\%1")
                                                .arg(rdmNetGroupName)
@@ -1643,7 +1643,62 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
                 packPtr[0] = static_cast<uint8_t>(value.toInt());
                 break;
               default:
-                updateValue = false;
+                if (pid == E133_COMPONENT_SCOPE)
+                {
+                  // Obtain the index of the property item display name (identifying the item)
+                  int displayNameIndex = index.data(RDMnetNetworkItem::DisplayNameIndexRole).toInt();
+
+                  QVariant &scopeString = index.data(RDMnetNetworkItem::ScopeDataRole);
+                  QVariant &ipv4String = index.data(RDMnetNetworkItem::StaticIPv4DataRole);
+                  QVariant &ipv6String = index.data(RDMnetNetworkItem::StaticIPv6DataRole);
+
+                  switch (displayNameIndex)
+                  {
+                  case 0: // scope
+                    scopeString = value;
+                    break;
+                  case 1: // ipv4
+                    newValue = ipv4String = value;
+                    break;
+                  case 2: // ipv6
+                    newValue = ipv6String = value;
+                    break;
+                  }
+
+                  qstr = scopeString.toString();
+                  qstr.truncate(E133_SCOPE_STRING_PADDED_LENGTH);
+                  if (displayNameIndex == 0)
+                  {
+                    newValue = qstr;
+                  }
+                  stdstr = qstr.toStdString();
+                  memcpy(packPtr, stdstr.data(), stdstr.length());
+                  packPtr += 63;
+
+                  if ((ipv4String.toString().length() > 0)
+                      && ((displayNameIndex != 2) || (ipv6String.toString().length() == 0)))
+                  {
+                    *packPtr = E133_STATIC_CONFIG_IPV4;
+                  }
+                  else if ((ipv6String.toString().length() > 0)
+                           && ((displayNameIndex != 1) || (ipv4String.toString().length() == 0)))
+                  {
+                    *packPtr = E133_STATIC_CONFIG_IPV6;
+                  }
+                  else
+                  {
+                    *packPtr = E133_NO_STATIC_CONFIG;
+                  }
+
+                  ++packPtr;
+
+                  packPtr = packIPAddressItem(ipv4String, kLwpaIpTypeV4, packPtr, false);
+                  packPtr = packIPAddressItem(ipv6String, kLwpaIpTypeV6, packPtr, true);
+                }
+                else
+                {
+                  updateValue = false;
+                }
                 break;
             }
 
@@ -3385,27 +3440,82 @@ void RDMnetNetworkModel::componentScope(uint16_t scopeSlot, const char *scopeStr
       emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeString);
       emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeString, RDMnetNetworkItem::ScopeDataRole);
       emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeSlot, RDMnetNetworkItem::ScopeSlotRole);
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, 0, RDMnetNetworkItem::DisplayNameIndexRole);
 
       QString staticV4PropName = getScopeSubPropertyFullName(client, E133_COMPONENT_SCOPE, 1, scopeString);
       QString staticV6PropName = getScopeSubPropertyFullName(client, E133_COMPONENT_SCOPE, 2, scopeString);
 
       if (staticConfigV4)
       {
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName,
-                             QString("%0:%1").arg(staticConfigV4).arg(port));
+        QString ipv4String = QString("%0:%1").arg(staticConfigV4).arg(port);
+
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, ipv4String);
         emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""));
+
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName,
+                             ipv4String, RDMnetNetworkItem::StaticIPv4DataRole);
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""),
+                             RDMnetNetworkItem::StaticIPv6DataRole);
+
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName,
+                             ipv4String, RDMnetNetworkItem::StaticIPv4DataRole);
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""),
+                             RDMnetNetworkItem::StaticIPv6DataRole);
+
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName,
+                             ipv4String, RDMnetNetworkItem::StaticIPv4DataRole);
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, QString(""),
+                             RDMnetNetworkItem::StaticIPv6DataRole);
       }
       else if (staticConfigV6)
       {
+        QString ipv6String = QString("[%0]:%1").arg(staticConfigV6).arg(port);
+
         emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""));
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName,
-                             QString("[%0]:%1").arg(staticConfigV6).arg(port));
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, ipv6String);
+
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""),
+                             RDMnetNetworkItem::StaticIPv4DataRole);
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, ipv6String,
+                             RDMnetNetworkItem::StaticIPv6DataRole);
+
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""),
+                             RDMnetNetworkItem::StaticIPv4DataRole);
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, ipv6String,
+                             RDMnetNetworkItem::StaticIPv6DataRole);
+
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, QString(""),
+                             RDMnetNetworkItem::StaticIPv4DataRole);
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, ipv6String,
+                             RDMnetNetworkItem::StaticIPv6DataRole);
       }
       else
       {
         emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""));
         emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""));
+
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""),
+                             RDMnetNetworkItem::StaticIPv4DataRole);
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""),
+                             RDMnetNetworkItem::StaticIPv6DataRole);
+
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""),
+                             RDMnetNetworkItem::StaticIPv4DataRole);
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""),
+                             RDMnetNetworkItem::StaticIPv6DataRole);
+
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, QString(""),
+                             RDMnetNetworkItem::StaticIPv4DataRole);
+        emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, QString(""),
+                             RDMnetNetworkItem::StaticIPv6DataRole);
       }
+
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, 1, RDMnetNetworkItem::DisplayNameIndexRole);
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, 2, RDMnetNetworkItem::DisplayNameIndexRole);
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, scopeString, 
+                           RDMnetNetworkItem::ScopeDataRole);
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, scopeString, 
+                           RDMnetNetworkItem::ScopeDataRole);
 
       if (client->ClientType() == kRPTClientTypeController)
       {
@@ -3625,11 +3735,11 @@ void RDMnetNetworkModel::sendGetCommand(uint16_t pid, uint16_t manu, uint32_t de
   SendRDMCommand(getCmd);
 }
 
-uint8_t *RDMnetNetworkModel::packIPAddressItem(const QVariant &value, lwpa_iptype_t addrType, uint8_t *packPtr)
+uint8_t *RDMnetNetworkModel::packIPAddressItem(const QVariant &value, lwpa_iptype_t addrType, uint8_t *packPtr, bool packPort)
 {
   char ipStrBuffer[64];
   unsigned int portNumber;
-  size_t memSize = (addrType == kLwpaIpTypeV4) ? 6 : (LWPA_IPV6_BYTES + 2);
+  size_t memSize = (addrType == kLwpaIpTypeV4) ? 4 : (LWPA_IPV6_BYTES) + (packPort ? 2 : 0);
 
   if (packPtr == NULL)
   {
@@ -3658,28 +3768,12 @@ uint8_t *RDMnetNetworkModel::packIPAddressItem(const QVariant &value, lwpa_iptyp
   {
     return NULL;
   }
-  else
+  else if(packPort)
   {
     lwpa_pack_16b(packPtr + memSize - 2, static_cast<uint16_t>(portNumber));
   }
 
   return packPtr + memSize;
-}
-
-uint8_t *RDMnetNetworkModel::packStaticConfigItem(const QModelIndex &valueIndex, const QVariant &value,
-                                                  lwpa_iptype_t addrType, uint8_t *packPtr)
-{
-  uint8_t *result = packIPAddressItem(value, addrType, packPtr);
-  if ((result != NULL) && valueIndex.isValid())
-  {
-    QString scope = valueIndex.data(RDMnetNetworkItem::ScopeDataRole).toString();
-    QByteArray local8Bit = scope.toLocal8Bit();
-    const char *scopeData = local8Bit.constData();
-    memcpy(result, scopeData, E133_SCOPE_STRING_PADDED_LENGTH);
-    result += E133_SCOPE_STRING_PADDED_LENGTH;
-  }
-
-  return result;
 }
 
 bool RDMnetNetworkModel::pidSupportedByGUI(uint16_t pid, bool checkSupportGet)

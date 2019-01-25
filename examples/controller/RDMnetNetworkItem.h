@@ -77,6 +77,9 @@ public:
   static const int ClientManuRole = Qt::UserRole + 7;
   static const int ClientDevRole = Qt::UserRole + 8;
   static const int ScopeSlotRole = Qt::UserRole + 9;
+  static const int DisplayNameIndexRole = Qt::UserRole + 10;
+  static const int StaticIPv4DataRole = Qt::UserRole + 11;
+  static const int StaticIPv6DataRole = Qt::UserRole + 12;
 
 protected:
   SupportedDeviceFeature supportedFeatures;
