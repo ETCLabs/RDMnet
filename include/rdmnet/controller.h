@@ -36,7 +36,7 @@
 #include "lwpa/uuid.h"
 #include "lwpa/inet.h"
 #include "rdm/uid.h"
-#include "rdmnet/common/broker_prot.h"
+#include "rdmnet/core/broker_prot.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,20 +53,20 @@ typedef struct RdmnetControllerCallbacks
   RdmnetControllerDisconnectedCb disconnected;
 } RdmnetControllerCallbacks;
 
-typedef struct RdmnetScopeListEntry RdmnetScopeListEntry;
-struct RdmnetScopeListEntry
+typedef struct RdmnetScopeConfig
 {
   char scope[E133_SCOPE_STRING_PADDED_LENGTH];
+  bool has_static_broker_addr;
   LwpaSockaddr broker_addr;
-  RdmnetScopeListEntry *next;
-};
+} RdmnetScopeConfig;
 
 typedef struct RdmnetControllerData
 {
   bool has_static_uid;
   RdmUid static_uid;
   LwpaUuid cid;
-  RdmnetScopeListEntry *scope_list;
+  RdmnetScopeConfig *scope_list;
+  size_t num_scopes;
   RdmnetControllerCallbacks cb;
 } RdmnetControllerData;
 

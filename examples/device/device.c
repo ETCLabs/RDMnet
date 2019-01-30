@@ -33,9 +33,9 @@
 #include "rdm/responder.h"
 #include "rdm/controller.h"
 #include "rdmnet/defs.h"
-#include "rdmnet/common/rpt_prot.h"
-#include "rdmnet/common/discovery.h"
-#include "rdmnet/common/connection.h"
+#include "rdmnet/core/rpt_prot.h"
+#include "rdmnet/core/discovery.h"
+#include "rdmnet/core/connection.h"
 #include "default_responder.h"
 #include "device_llrp.h"
 

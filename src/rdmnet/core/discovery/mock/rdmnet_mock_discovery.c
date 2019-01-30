@@ -25,35 +25,64 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#ifndef _DEVICE_H_
-#define _DEVICE_H_
+/*! \file rdmnet_mock_discovery.c
+ *  \brief Provides a mock implementation of the discovery functions.
+ *  These are currently just empty shims to allow RDMnet to be built by CI.
+ *  \author Sam Kearney
+ */
 
-#include "lwpa/int.h"
-#include "lwpa/log.h"
-#include "rdm/message.h"
-#include "rdmnet/defs.h"
-#include "rdmnet/core/message.h"
-#include "default_responder.h"
+#include "rdmnet/core/discovery.h"
 
-typedef struct DeviceSettings
+lwpa_error_t rdmnetdisc_init(RdmnetDiscCallbacks *callbacks)
 {
-  LwpaUuid cid;
-  LwpaSockaddr static_broker_addr;
-  const char *scope;
-} DeviceSettings;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-lwpa_error_t device_init(const DeviceSettings *settings, const LwpaLogParams *lparams);
-void device_deinit();
-void device_run();
-
-bool device_llrp_set(const RdmCommand *cmd_data, uint16_t *nack_reason);
-
-#ifdef __cplusplus
+  (void)callbacks;
+  return LWPA_NOTIMPL;
 }
-#endif
 
-#endif /* _DEVICE_H_ */
+void rdmnetdisc_deinit()
+{
+}
+
+void fill_default_scope_info(ScopeMonitorInfo *scope_info)
+{
+  (void)scope_info;
+}
+
+void fill_default_broker_info(BrokerDiscInfo *broker_info)
+{
+  (void)broker_info;
+}
+
+lwpa_error_t rdmnetdisc_startmonitoring(const ScopeMonitorInfo *scope_info, int *platform_specific_error, void *context)
+{
+  (void)scope_info;
+  (void)platform_specific_error;
+  (void)context;
+  return LWPA_NOTIMPL;
+}
+
+void rdmnetdisc_stopmonitoring(const ScopeMonitorInfo *scope_info)
+{
+  (void)scope_info;
+}
+
+void rdmnetdisc_stopmonitoring_all_scopes()
+{
+}
+
+lwpa_error_t rdmnetdisc_registerbroker(const BrokerDiscInfo *broker_info, bool monitor_scope, void *context)
+{
+  (void)broker_info;
+  (void)monitor_scope;
+  (void)context;
+  return LWPA_NOTIMPL;
+}
+
+void rdmnetdisc_unregisterbroker(bool stop_monitoring_scope)
+{
+  (void)stop_monitoring_scope;
+}
+
+void rdmnetdisc_tick()
+{
+}

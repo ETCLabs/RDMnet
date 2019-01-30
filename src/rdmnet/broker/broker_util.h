@@ -25,35 +25,60 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#ifndef _DEVICE_H_
-#define _DEVICE_H_
+/// \file broker_util.h
+#ifndef _BROKER_UTIL_H_
+#define _BROKER_UTIL_H_
 
-#include "lwpa/int.h"
-#include "lwpa/log.h"
-#include "rdm/message.h"
-#include "rdmnet/defs.h"
-#include "rdmnet/core/message.h"
-#include "default_responder.h"
+#include <stdexcept>
+#include <queue>
 
-typedef struct DeviceSettings
+#include "lwpa/lock.h"
+#include "rdmnet/core/rpt_prot.h"
+
+// Guard classes for locking and unlocking mutexes and read-write locks
+
+class BrokerMutexGuard
 {
-  LwpaUuid cid;
-  LwpaSockaddr static_broker_addr;
-  const char *scope;
-} DeviceSettings;
+public:
+  explicit BrokerMutexGuard(lwpa_mutex_t &mutex) : m_mutex(mutex)
+  {
+    if (!lwpa_mutex_take(&m_mutex, LWPA_WAIT_FOREVER))
+      throw std::runtime_error("Broker failed to take a mutex.");
+  }
+  ~BrokerMutexGuard() { lwpa_mutex_give(&m_mutex); }
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+private:
+  lwpa_mutex_t &m_mutex;
+};
 
-lwpa_error_t device_init(const DeviceSettings *settings, const LwpaLogParams *lparams);
-void device_deinit();
-void device_run();
+class BrokerReadGuard
+{
+public:
+  explicit BrokerReadGuard(lwpa_rwlock_t &rwlock) : m_rwlock(rwlock)
+  {
+    if (!lwpa_rwlock_readlock(&m_rwlock, LWPA_WAIT_FOREVER))
+      throw std::runtime_error("Broker failed to take a read lock.");
+  }
+  ~BrokerReadGuard() { lwpa_rwlock_readunlock(&m_rwlock); }
 
-bool device_llrp_set(const RdmCommand *cmd_data, uint16_t *nack_reason);
+private:
+  lwpa_rwlock_t &m_rwlock;
+};
 
-#ifdef __cplusplus
-}
-#endif
+class BrokerWriteGuard
+{
+public:
+  explicit BrokerWriteGuard(lwpa_rwlock_t &rwlock) : m_rwlock(rwlock)
+  {
+    if (!lwpa_rwlock_writelock(&m_rwlock, LWPA_WAIT_FOREVER))
+      throw std::runtime_error("Broker failed to take a write lock.");
+  }
+  ~BrokerWriteGuard() { lwpa_rwlock_writeunlock(&m_rwlock); }
 
-#endif /* _DEVICE_H_ */
+private:
+  lwpa_rwlock_t &m_rwlock;
+};
+
+RptHeader SwapHeaderData(const RptHeader &source);
+
+#endif  // _BROKER_UTIL_H_

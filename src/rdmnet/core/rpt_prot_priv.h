@@ -25,35 +25,18 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#ifndef _DEVICE_H_
-#define _DEVICE_H_
+/*! \file rpt_prot_priv.h
+ *  \brief Functions and definitions for RPT PDU messages that are only used internally.
+ *  \author Sam Kearney
+ */
+#ifndef _RPT_PROT_PRIV_H_
+#define _RPT_PROT_PRIV_H_
 
-#include "lwpa/int.h"
-#include "lwpa/log.h"
 #include "rdm/message.h"
-#include "rdmnet/defs.h"
-#include "rdmnet/core/message.h"
-#include "default_responder.h"
 
-typedef struct DeviceSettings
-{
-  LwpaUuid cid;
-  LwpaSockaddr static_broker_addr;
-  const char *scope;
-} DeviceSettings;
+#define REQUEST_NOTIF_PDU_HEADER_SIZE (3 /* Flags & Length */ + 4 /* Vector*/)
+#define RDM_CMD_PDU_MIN_SIZE (3 /* Flags & Length */ + RDM_MIN_BYTES)
+#define RDM_CMD_PDU_MAX_SIZE (3 /* Flags & Length */ + RDM_MAX_BYTES)
+#define REQUEST_PDU_MAX_SIZE (REQUEST_PDU_HEADER_SIZE + RDM_CMD_PDU_MAX_SIZE)
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-lwpa_error_t device_init(const DeviceSettings *settings, const LwpaLogParams *lparams);
-void device_deinit();
-void device_run();
-
-bool device_llrp_set(const RdmCommand *cmd_data, uint16_t *nack_reason);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* _DEVICE_H_ */
+#endif /* _RPT_PROT_PRIV_H_ */

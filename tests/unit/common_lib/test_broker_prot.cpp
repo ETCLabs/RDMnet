@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 #include "gtest/gtest.h"
-#include "rdmnet/common/broker_prot.h"
+#include "rdmnet/core/broker_prot.h"
 
 class TestBrokerProt : public ::testing::Test
 {

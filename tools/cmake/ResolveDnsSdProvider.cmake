@@ -16,8 +16,8 @@ else()
   if(WIN32)
     # On Windows, we use Bonjour for Windows, either through the Bonjour SDK or ETC's Bonjour fork.
     set(DNS_SD_ADDITIONAL_SOURCES
-      ${RDMNET_SRC}/common/discovery/bonjour/rdmnet_discovery_bonjour.h
-      ${RDMNET_SRC}/common/discovery/bonjour/rdmnet_discovery_bonjour.c
+      ${RDMNET_SRC}/rdmnet/core/discovery/bonjour/rdmnet_discovery_bonjour.h
+      ${RDMNET_SRC}/rdmnet/core/discovery/bonjour/rdmnet_discovery_bonjour.c
     )
 
     # Using Apple's Bonjour SDK for Windows

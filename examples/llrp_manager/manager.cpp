@@ -44,7 +44,7 @@
 #include "rdm/defs.h"
 #include "rdm/controller.h"
 #include "rdmnet/defs.h"
-#include "rdmnet/common/util.h"
+#include "rdmnet/core/util.h"
 
 struct LLRPNetint
 {

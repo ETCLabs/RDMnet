@@ -25,35 +25,30 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#ifndef _DEVICE_H_
-#define _DEVICE_H_
+/*! \file rdmnet/core/util.h
+ *  \brief Utilities used throughout the RDMnet library.
+ *  \author Sam Kearney
+ */
+#ifndef _RDMNET_UTIL_H_
+#define _RDMNET_UTIL_H_
 
-#include "lwpa/int.h"
-#include "lwpa/log.h"
-#include "rdm/message.h"
-#include "rdmnet/defs.h"
-#include "rdmnet/core/message.h"
-#include "default_responder.h"
+/* Suppress deprecated function warnings on Windows/MSVC. This is mostly used in situations where
+ * Microsoft warns us that a function like strncpy() could be unsafe, but we want to be portable
+ * and have made sure that we're using it in a safe way (e.g. by manually inserting null
+ * terminators). */
+#ifdef _MSC_VER
 
-typedef struct DeviceSettings
-{
-  LwpaUuid cid;
-  LwpaSockaddr static_broker_addr;
-  const char *scope;
-} DeviceSettings;
+#define RDMNET_MSVC_NO_DEP_WRN __pragma(warning(suppress : 4996))
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS() __pragma(warning(push)) __pragma(warning(disable : 4996))
+#define RDMNET_MSVC_END_NO_DEP_WARNINGS() __pragma(warning(pop))
 
-lwpa_error_t device_init(const DeviceSettings *settings, const LwpaLogParams *lparams);
-void device_deinit();
-void device_run();
+#else /* _MSC_VER */
 
-bool device_llrp_set(const RdmCommand *cmd_data, uint16_t *nack_reason);
+#define RDMNET_MSVC_NO_DEP_WRN
+#define RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
+#define RDMNET_MSVC_END_NO_DEP_WARNINGS()
 
-#ifdef __cplusplus
-}
-#endif
+#endif /* _MSC_VER */
 
-#endif /* _DEVICE_H_ */
+#endif /* _RDMNET_UTIL_H_ */

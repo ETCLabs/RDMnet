@@ -25,35 +25,23 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#ifndef _DEVICE_H_
-#define _DEVICE_H_
+/*! \file rdmnet/core/ept_prot.h
+ *  \brief Functions to pack, send, and parse EPT PDUs and their encapsulated messages.
+ *  \author Sam Kearney
+ */
+#ifndef _RDMNET_EPT_PROT_H_
+#define _RDMNET_EPT_PROT_H_
 
-#include "lwpa/int.h"
-#include "lwpa/log.h"
-#include "rdm/message.h"
-#include "rdmnet/defs.h"
-#include "rdmnet/core/message.h"
-#include "default_responder.h"
+/*! \addtogroup rdmnet_message
+ *  @{
+ */
 
-typedef struct DeviceSettings
+/*! An EPT message. */
+typedef struct EptMessage
 {
-  LwpaUuid cid;
-  LwpaSockaddr static_broker_addr;
-  const char *scope;
-} DeviceSettings;
+  int dummy; /* TODO placeholder */
+} EptMessage;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/*!@}*/
 
-lwpa_error_t device_init(const DeviceSettings *settings, const LwpaLogParams *lparams);
-void device_deinit();
-void device_run();
-
-bool device_llrp_set(const RdmCommand *cmd_data, uint16_t *nack_reason);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* _DEVICE_H_ */
+#endif /* _RDMNET_EPT_PROT_H_ */

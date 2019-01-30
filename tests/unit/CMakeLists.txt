@@ -18,5 +18,5 @@ add_executable(test_broker_lib
   broker_lib/main.cpp
   broker_lib/test_broker_uid_manager.cpp
 )
-target_include_directories(test_broker_lib PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../../src/broker)
+target_include_directories(test_broker_lib PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../../src/rdmnet/broker)
 target_link_libraries(test_broker_lib Broker gtest)

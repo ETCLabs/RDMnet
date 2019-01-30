@@ -28,7 +28,7 @@
 #ifndef _RDMNET_DISCOVERY_BONJOUR_H_
 #define _RDMNET_DISCOVERY_BONJOUR_H_
 
-#include "rdmnet/common/discovery.h"
+#include "rdmnet/core/discovery.h"
 
 #include "lwpa/lock.h"
 
