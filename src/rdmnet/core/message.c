@@ -26,7 +26,7 @@
 ******************************************************************************/
 
 #include "rdmnet/core/message.h"
-#include "message_priv.h"
+#include "rdmnet/core/message_priv.h"
 
 /**************************** Private variables ******************************/
 

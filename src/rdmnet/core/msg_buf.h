@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet_msg_buf.h
+/*! \file rdmnet_rdmnet/core/msg_buf.h
  *  \brief Helper functions and definitions to do piece-wise parsing of an RDMnet message.
  *  \author Sam Kearney
  */
@@ -39,7 +39,7 @@
 #include "lwpa/uuid.h"
 #include "lwpa/socket.h"
 #include "rdmnet/core/message.h"
-#include "rdmnet_opts.h"
+#include "rdmnet/core/opts.h"
 
 typedef enum
 {

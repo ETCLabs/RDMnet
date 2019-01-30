@@ -24,14 +24,14 @@
 * This file is a part of RDMnet. For more information, go to:
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
-#include "llrp_prot_priv.h"
+#include "rdmnet/core/llrp_prot_priv.h"
 
 #include <string.h>
 #include "lwpa/pack.h"
 #include "lwpa/socket.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
-#include "llrp_priv.h"
+#include "rdmnet/core/llrp_priv.h"
 
 /**************************** Global variables *******************************/
 

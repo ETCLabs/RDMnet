@@ -25,18 +25,10 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet/core/rpt_prot_priv.h
- *  \brief Functions and definitions for RPT PDU messages that are only used internally.
- *  \author Sam Kearney
- */
-#ifndef _RDMNET_CORE_RPT_PROT_PRIV_H_
-#define _RDMNET_CORE_RPT_PROT_PRIV_H_
+#include "rdmnet/controller.h"
 
-#include "rdm/message.h"
+#include "rdmnet/core/opts.h"
 
-#define REQUEST_NOTIF_PDU_HEADER_SIZE (3 /* Flags & Length */ + 4 /* Vector*/)
-#define RDM_CMD_PDU_MIN_SIZE (3 /* Flags & Length */ + RDM_MIN_BYTES)
-#define RDM_CMD_PDU_MAX_SIZE (3 /* Flags & Length */ + RDM_MAX_BYTES)
-#define REQUEST_PDU_MAX_SIZE (REQUEST_PDU_HEADER_SIZE + RDM_CMD_PDU_MAX_SIZE)
-
-#endif /* _RDMNET_CORE_RPT_PROT_PRIV_H_ */
+lwpa_error_t rdmnet_controller_create(const RdmnetControllerData *data, rdmnet_controller_t *handle)
+{
+}

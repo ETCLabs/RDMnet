@@ -41,7 +41,7 @@ add_library(RDMnet
   ${RDMNET_INCLUDE}/rdmnet/core/rpt_prot.h
 
   # Private headers
-  ${RDMNET_SRC}/rdmnet/core/rdmnet_opts.h
+  ${RDMNET_SRC}/rdmnet/core/opts.h
   ${RDMNET_SRC}/rdmnet/core/broker_prot_priv.h
   ${RDMNET_SRC}/rdmnet/core/llrp_priv.h
   ${RDMNET_SRC}/rdmnet/core/llrp_prot_priv.h
@@ -64,7 +64,7 @@ add_library(RDMnet
 )
 target_include_directories(RDMnet
   PUBLIC ${RDMNET_INCLUDE}
-  PRIVATE ${DNS_SD_ADDITIONAL_INCLUDE_DIRS}
+  PRIVATE ${RDMNET_SRC} ${DNS_SD_ADDITIONAL_INCLUDE_DIRS}
 )
 target_link_libraries(RDMnet PUBLIC lwpa RDM ${DNS_SD_ADDITIONAL_LIBS})
 if(DNS_SD_BUILD_DEPENDENCIES)

@@ -25,9 +25,9 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 #include "rdmnet/llrp.h"
-#include "llrp_priv.h"
+#include "rdmnet/core/llrp_priv.h"
 
-#include "rdmnet_opts.h"
+#include "rdmnet/core/opts.h"
 #if RDMNET_DYNAMIC_MEM
 #include <stdlib.h>
 #else

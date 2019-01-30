@@ -25,14 +25,14 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "msg_buf.h"
+#include "rdmnet/core/msg_buf.h"
 
 #include <assert.h>
 #include "lwpa/pack.h"
 #include "lwpa/root_layer_pdu.h"
-#include "broker_prot_priv.h"
-#include "rpt_prot_priv.h"
-#include "message_priv.h"
+#include "rdmnet/core/broker_prot_priv.h"
+#include "rdmnet/core/rpt_prot_priv.h"
+#include "rdmnet/core/message_priv.h"
 
 /*************************** Private constants *******************************/
 

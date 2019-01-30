@@ -27,7 +27,7 @@
 
 #include "rdmnet/core/connection.h"
 
-#include "rdmnet_opts.h"
+#include "rdmnet/core/opts.h"
 #if RDMNET_DYNAMIC_MEM
 #include <stdlib.h>
 #else
@@ -41,9 +41,9 @@
 #include "lwpa/socket.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/core/message.h"
-#include "message_priv.h"
-#include "connection_priv.h"
-#include "broker_prot_priv.h"
+#include "rdmnet/core/message_priv.h"
+#include "rdmnet/core/connection_priv.h"
+#include "rdmnet/core/broker_prot_priv.h"
 
 /************************* The draft warning message *************************/
 

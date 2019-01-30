@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file connection_priv.h
+/*! \file rdmnet/core/connection_priv.h
  *  \brief The internal definition for an RDMnet connection.
  *  \author Sam Kearney
  */
@@ -38,8 +38,8 @@
 #include "lwpa/timer.h"
 #include "lwpa/inet.h"
 #include "rdmnet/core/connection.h"
-#include "rdmnet_opts.h"
-#include "msg_buf.h"
+#include "rdmnet/core/opts.h"
+#include "rdmnet/core/msg_buf.h"
 
 #define rdmnet_data_set_nodata(rdmnetdataptr) ((rdmnetdataptr)->type = kRDMnetNoData)
 #define rdmnet_data_set_code(rdmnetdataptr, code_to_set) \

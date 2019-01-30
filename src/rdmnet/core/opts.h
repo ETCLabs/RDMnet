@@ -25,15 +25,15 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet_opts.h
+/*! \file rdmnet/core/opts.h
  *  \brief RDMnet configuration options.
  *
  *  Default values for all of RDMnet's \ref rdmnetopts "compile-time configuration options".
  *
  *  \author Sam Kearney
  */
-#ifndef _RDMNET_OPTS_H_
-#define _RDMNET_OPTS_H_
+#ifndef _RDMNET_CORE_OPTS_H_
+#define _RDMNET_CORE_OPTS_H_
 
 /*! \defgroup rdmnetopts RDMnet Configuration Options
  *  \brief Compile-time configuration options for RDMnet.
@@ -210,4 +210,4 @@
 
 /*! @} */
 
-#endif /* _RDMNET_OPTS_H_ */
+#endif /* _RDMNET_CORE_OPTS_H_ */

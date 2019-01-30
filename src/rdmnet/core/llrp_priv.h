@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file llrp_priv.h
+/*! \file rdmnet/core/llrp_priv.h
  *  \brief Private code used internally, including networking and protocol code.
  *  \author Sam Kearney, Christian Reese
  */
@@ -43,7 +43,7 @@
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/llrp.h"
-#include "llrp_prot_priv.h"
+#include "rdmnet/core/llrp_prot_priv.h"
 
 typedef enum
 {
