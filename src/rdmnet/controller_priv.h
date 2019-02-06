@@ -25,11 +25,11 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "rdmnet/controller.h"
+#ifndef _RDMNET_CONTROLLER_PRIV_H_
+#define _RDMNET_CONTROLLER_PRIV_H_
 
-#include "lwpa/mempool.h"
-#include "rdmnet/core/opts.h"
-
-lwpa_error_t rdmnet_controller_create(const RdmnetControllerData *data, rdmnet_controller_t *handle)
+typedef struct RdmnetControllerInternal
 {
-}
+} RdmnetControllerInternal;
+
+#endif /* _RDMNET_CONTROLLER_PRIV_H_ */
