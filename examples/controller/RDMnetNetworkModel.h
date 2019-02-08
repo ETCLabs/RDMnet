@@ -284,6 +284,8 @@ protected:
   void ProcessRDMGetSetData(uint16_t conn, uint16_t param_id, const uint8_t *data, uint8_t datalen, 
                             const RdmResponse *firstResp);
 
+  BrokerConnection *getBrokerConnection(const std::string &scope);
+
   bool SendRDMCommand(const RdmCommand &cmd, BrokerItem *brokerItem);
   bool SendRDMCommand(const RdmCommand &cmd, uint16_t conn);
   void SendRDMGetResponses(const RdmUid &dest_uid, uint16_t dest_endpoint_id, uint16_t param_id,

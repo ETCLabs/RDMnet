@@ -1033,10 +1033,8 @@ void RDMnetNetworkModel::processAddPropertyEntry(RDMnetNetworkItem *parent, unsi
 
 void RDMnetNetworkModel::processPropertyButtonClick(const QPersistentModelIndex &propertyIndex)
 {
-  QStandardItem *propertyItem = itemFromIndex(propertyIndex);
-
   // Assuming this is SET TCP_COMMS_STATUS for now.
-  if ((propertyItem != NULL) && propertyIndex.isValid())
+  if (propertyIndex.isValid())
   {
     QString scope = propertyIndex.data(RDMnetNetworkItem::ScopeDataRole).toString();
     QByteArray local8Bit = scope.toLocal8Bit();
@@ -1047,16 +1045,25 @@ void RDMnetNetworkModel::processPropertyButtonClick(const QPersistentModelIndex 
     QVariant manuVariant = propertyIndex.data(RDMnetNetworkItem::ClientManuRole);
     QVariant devVariant = propertyIndex.data(RDMnetNetworkItem::ClientDevRole);
 
-    setCmd.dest_uid.manu = static_cast<uint16_t>(manuVariant.toUInt());
-    setCmd.dest_uid.id = static_cast<uint32_t>(devVariant.toUInt());
-    setCmd.subdevice = 0;
-    setCmd.command_class = E120_SET_COMMAND;
-    setCmd.param_id = E133_TCP_COMMS_STATUS;
-    setCmd.datalen = maxBuffSize;
-    memset(setCmd.data, 0, maxBuffSize);
-    memcpy(setCmd.data, scopeData, min(scope.length(), maxBuffSize));
+    BrokerConnection *conn = getBrokerConnection(scopeData);
 
-    SendRDMCommand(setCmd, getNearestParentItemOfType<BrokerItem>(propertyItem));
+    if (conn == NULL)
+    {
+      log_.Log(LWPA_LOG_ERR, "Error: Cannot find broker connection for clicked button.");
+    }
+    else
+    {
+      setCmd.dest_uid.manu = static_cast<uint16_t>(manuVariant.toUInt());
+      setCmd.dest_uid.id = static_cast<uint32_t>(devVariant.toUInt());
+      setCmd.subdevice = 0;
+      setCmd.command_class = E120_SET_COMMAND;
+      setCmd.param_id = E133_TCP_COMMS_STATUS;
+      setCmd.datalen = maxBuffSize;
+      memset(setCmd.data, 0, maxBuffSize);
+      memcpy(setCmd.data, scopeData, min(scope.length(), maxBuffSize));
+
+      SendRDMCommand(setCmd, conn->handle());
+    }
   }
   else
   {
@@ -2689,6 +2696,19 @@ void RDMnetNetworkModel::ProcessRDMGetSetData(uint16_t conn, uint16_t param_id, 
         break;
     }
   }
+}
+
+BrokerConnection * RDMnetNetworkModel::getBrokerConnection(const std::string & scope)
+{
+  for (auto &brokerConnectionIter : broker_connections_)
+  {
+    if (brokerConnectionIter.second.get()->scope() == scope)
+    {
+      return brokerConnectionIter.second.get();
+    }
+  }
+
+  return NULL;
 }
 
 bool RDMnetNetworkModel::getIdentifyDevice(const uint8_t *param_data, uint8_t param_data_len,
