@@ -3176,6 +3176,12 @@ void RDMnetNetworkModel::nack(uint16_t conn, uint16_t reason, const RdmResponse 
   else if ((resp->command_class == E120_GET_COMMAND_RESPONSE) && (resp->param_id == E133_COMPONENT_SCOPE) &&
            (reason == E120_NR_DATA_OUT_OF_RANGE))
   {
+    RDMnetClientItem *client = getClientItem(conn, resp);
+    RDMnetNetworkItem *rdmNetGroup = dynamic_cast<RDMnetNetworkItem *>(
+        client->child(0)->data() == tr("RDMnet") ? client->child(0) : client->child(1));
+
+    removeScopeSlotItemsInRange(rdmNetGroup, &client->properties, previous_slot_[resp->src_uid] + 1, 0xFFFF);
+
     // We have all of this controller's scope-slot pairs. Now request scope-specific properties.
     previous_slot_[resp->src_uid] = 0;
     sendGetControllerScopeProperties(conn, resp->src_uid.manu, resp->src_uid.id);
@@ -3427,116 +3433,106 @@ void RDMnetNetworkModel::componentScope(uint16_t conn, uint16_t scopeSlot, const
       removeScopeSlotItemsInRange(rdmNetGroup, &client->properties, previous_slot_[client->Uid()] + 1, scopeSlot - 1);
     }
 
-    if ((client->ClientType() == kRPTClientTypeController) && (strlen(scopeString) == 0))
+    QString displayName;
+    if (client->ClientType() == kRPTClientTypeController)
     {
-      removeScopeSlotItemsInRange(rdmNetGroup, &client->properties, scopeSlot, 0xFFFF);
-
-      // We have all of this controller's scope-slot pairs. Now request scope-specific properties.
-      previous_slot_[client->Uid()] = 0;
-      sendGetControllerScopeProperties(conn, resp->src_uid.manu, resp->src_uid.id);
+      displayName = QString("%0 (Slot %1)")
+                        .arg(PropertyValueItem::pidPropertyDisplayName(E133_COMPONENT_SCOPE, 0))
+                        .arg(scopeSlot);
     }
     else
     {
-      QString displayName;
-      if (client->ClientType() == kRPTClientTypeController)
-      {
-        displayName = QString("%0 (Slot %1)")
-                          .arg(PropertyValueItem::pidPropertyDisplayName(E133_COMPONENT_SCOPE, 0))
-                          .arg(scopeSlot);
-      }
-      else
-      {
-        displayName = PropertyValueItem::pidPropertyDisplayName(E133_COMPONENT_SCOPE, 0);
-      }
-
-      client->setScopeSlot(scopeString, scopeSlot);
-
-      emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeString);
-      emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeString, RDMnetNetworkItem::ScopeDataRole);
-      emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeSlot, RDMnetNetworkItem::ScopeSlotRole);
-      emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, 0, RDMnetNetworkItem::DisplayNameIndexRole);
-
-      QString staticV4PropName = getScopeSubPropertyFullName(client, E133_COMPONENT_SCOPE, 1, scopeString);
-      QString staticV6PropName = getScopeSubPropertyFullName(client, E133_COMPONENT_SCOPE, 2, scopeString);
-
-      if (staticConfigV4)
-      {
-        QString ipv4String = QString("%0:%1").arg(staticConfigV4).arg(port);
-
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, ipv4String);
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""));
-
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName,
-                             ipv4String, RDMnetNetworkItem::StaticIPv4DataRole);
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""),
-                             RDMnetNetworkItem::StaticIPv6DataRole);
-
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName,
-                             ipv4String, RDMnetNetworkItem::StaticIPv4DataRole);
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""),
-                             RDMnetNetworkItem::StaticIPv6DataRole);
-
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName,
-                             ipv4String, RDMnetNetworkItem::StaticIPv4DataRole);
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, QString(""),
-                             RDMnetNetworkItem::StaticIPv6DataRole);
-      }
-      else if (staticConfigV6)
-      {
-        QString ipv6String = QString("[%0]:%1").arg(staticConfigV6).arg(port);
-
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""));
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, ipv6String);
-
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""),
-                             RDMnetNetworkItem::StaticIPv4DataRole);
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, ipv6String,
-                             RDMnetNetworkItem::StaticIPv6DataRole);
-
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""),
-                             RDMnetNetworkItem::StaticIPv4DataRole);
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, ipv6String,
-                             RDMnetNetworkItem::StaticIPv6DataRole);
-
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, QString(""),
-                             RDMnetNetworkItem::StaticIPv4DataRole);
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, ipv6String,
-                             RDMnetNetworkItem::StaticIPv6DataRole);
-      }
-      else
-      {
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""));
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""));
-
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""),
-                             RDMnetNetworkItem::StaticIPv4DataRole);
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""),
-                             RDMnetNetworkItem::StaticIPv6DataRole);
-
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""),
-                             RDMnetNetworkItem::StaticIPv4DataRole);
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""),
-                             RDMnetNetworkItem::StaticIPv6DataRole);
-
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, QString(""),
-                             RDMnetNetworkItem::StaticIPv4DataRole);
-        emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, QString(""),
-                             RDMnetNetworkItem::StaticIPv6DataRole);
-      }
-
-      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, 1, RDMnetNetworkItem::DisplayNameIndexRole);
-      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, 2, RDMnetNetworkItem::DisplayNameIndexRole);
-      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, scopeString, 
-                           RDMnetNetworkItem::ScopeDataRole);
-      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, scopeString, 
-                           RDMnetNetworkItem::ScopeDataRole);
-
-      if (client->ClientType() == kRPTClientTypeController)
-      {
-        previous_slot_[client->Uid()] = scopeSlot;
-        sendGetNextControllerScope(conn, resp->src_uid.manu, resp->src_uid.id, scopeSlot);
-      }
+      displayName = PropertyValueItem::pidPropertyDisplayName(E133_COMPONENT_SCOPE, 0);
     }
+
+    client->setScopeSlot(scopeString, scopeSlot);
+
+    emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeString);
+    emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeString, RDMnetNetworkItem::ScopeDataRole);
+    emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, scopeSlot, RDMnetNetworkItem::ScopeSlotRole);
+    emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, 0, RDMnetNetworkItem::DisplayNameIndexRole);
+
+    QString staticV4PropName = getScopeSubPropertyFullName(client, E133_COMPONENT_SCOPE, 1, scopeString);
+    QString staticV6PropName = getScopeSubPropertyFullName(client, E133_COMPONENT_SCOPE, 2, scopeString);
+
+    if (staticConfigV4)
+    {
+      QString ipv4String = QString("%0:%1").arg(staticConfigV4).arg(port);
+
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, ipv4String);
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""));
+
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName,
+                            ipv4String, RDMnetNetworkItem::StaticIPv4DataRole);
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""),
+                            RDMnetNetworkItem::StaticIPv6DataRole);
+
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName,
+                            ipv4String, RDMnetNetworkItem::StaticIPv4DataRole);
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""),
+                            RDMnetNetworkItem::StaticIPv6DataRole);
+
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName,
+                            ipv4String, RDMnetNetworkItem::StaticIPv4DataRole);
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, QString(""),
+                            RDMnetNetworkItem::StaticIPv6DataRole);
+    }
+    else if (staticConfigV6)
+    {
+      QString ipv6String = QString("[%0]:%1").arg(staticConfigV6).arg(port);
+
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""));
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, ipv6String);
+
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""),
+                            RDMnetNetworkItem::StaticIPv4DataRole);
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, ipv6String,
+                            RDMnetNetworkItem::StaticIPv6DataRole);
+
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""),
+                            RDMnetNetworkItem::StaticIPv4DataRole);
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, ipv6String,
+                            RDMnetNetworkItem::StaticIPv6DataRole);
+
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, QString(""),
+                            RDMnetNetworkItem::StaticIPv4DataRole);
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, ipv6String,
+                            RDMnetNetworkItem::StaticIPv6DataRole);
+    }
+    else
+    {
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""));
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""));
+
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""),
+                            RDMnetNetworkItem::StaticIPv4DataRole);
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, QString(""),
+                            RDMnetNetworkItem::StaticIPv6DataRole);
+
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""),
+                            RDMnetNetworkItem::StaticIPv4DataRole);
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, QString(""),
+                            RDMnetNetworkItem::StaticIPv6DataRole);
+
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, QString(""),
+                            RDMnetNetworkItem::StaticIPv4DataRole);
+      emit setPropertyData(client, E133_COMPONENT_SCOPE, displayName, QString(""),
+                            RDMnetNetworkItem::StaticIPv6DataRole);
+    }
+
+    emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, 1, RDMnetNetworkItem::DisplayNameIndexRole);
+    emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, 2, RDMnetNetworkItem::DisplayNameIndexRole);
+    emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, scopeString, 
+                          RDMnetNetworkItem::ScopeDataRole);
+    emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, scopeString, 
+                          RDMnetNetworkItem::ScopeDataRole);
+
+    if (client->ClientType() == kRPTClientTypeController)
+    {
+      previous_slot_[client->Uid()] = scopeSlot;
+      sendGetNextControllerScope(conn, resp->src_uid.manu, resp->src_uid.id, scopeSlot);
+    }
+    //}
   }
 }
 
@@ -4044,7 +4040,7 @@ PropertyItem *RDMnetNetworkModel::createGroupingItem(RDMnetNetworkItem *parent, 
   PropertyValueItem *valueItem = new PropertyValueItem(QVariant(), false);
   groupingItem->setValueItem(valueItem);
 
-  // emit expandNewItem(groupingItem->index(), PropertyItem::PropertyItemType);
+  emit expandNewItem(groupingItem->index(), PropertyItem::PropertyItemType);
 
   return groupingItem;
 }

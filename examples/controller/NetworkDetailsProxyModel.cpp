@@ -32,7 +32,6 @@
 NetworkDetailsProxyModel::NetworkDetailsProxyModel()
 {
   sourceNetworkModel = NULL;
-  currentParentIndex = NULL;
   currentParentItem = NULL;
   filterEnabled = true;
   setDynamicSortFilter(true);
@@ -40,52 +39,6 @@ NetworkDetailsProxyModel::NetworkDetailsProxyModel()
 
 NetworkDetailsProxyModel::~NetworkDetailsProxyModel()
 {
-}
-
-// QModelIndex NetworkDetailsProxyModel::mapToSource(const QModelIndex &proxyIndex) const
-//{
-//
-//}
-//
-// QModelIndex NetworkDetailsProxyModel::mapFromSource(const QModelIndex &sourceIndex) const
-//{
-//
-//}
-//
-// QModelIndex NetworkDetailsProxyModel::index(int row, int column, const QModelIndex &parent) const
-//{
-//
-//}
-//
-// QModelIndex NetworkDetailsProxyModel::parent(const QModelIndex &child) const
-//{
-//
-//}
-//
-// int NetworkDetailsProxyModel::rowCount(const QModelIndex &parent) const
-//{
-//
-//}
-//
-// int NetworkDetailsProxyModel::columnCount(const QModelIndex &parent) const
-//{
-//
-//}
-
-void NetworkDetailsProxyModel::setCurrentParentIndex(const QModelIndex &index)
-{
-  if (currentParentIndex != NULL)
-  {
-    delete currentParentIndex;
-  }
-
-  currentParentIndex = new QPersistentModelIndex(index);
-}
-
-void NetworkDetailsProxyModel::clearCurrentParentIndex()
-{
-  delete currentParentIndex;
-  currentParentIndex = NULL;
 }
 
 void NetworkDetailsProxyModel::setCurrentParentItem(const QStandardItem *item)
@@ -134,7 +87,17 @@ bool NetworkDetailsProxyModel::filterAcceptsRow(int source_row, const QModelInde
 
     if (currentParentItem)
     {
-      if (child == currentParentItem->index())
+      bool isChildOfCurrentParent = false;
+
+      for (QModelIndex i = child.parent(); i.isValid() && !isChildOfCurrentParent; i = i.parent())
+      {
+        if (i == currentParentItem->index())
+        {
+          isChildOfCurrentParent = true;
+        }
+      }
+
+      if (!isChildOfCurrentParent)
       {
         return true;
       }

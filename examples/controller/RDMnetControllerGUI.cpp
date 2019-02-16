@@ -96,8 +96,6 @@ RDMnetControllerGUI *RDMnetControllerGUI::makeRDMnetControllerGUI()
   connect(gui->ui.networkTreeView->selectionModel(),
           SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)), gui,
           SLOT(networkTreeViewSelectionChanged(const QItemSelection &, const QItemSelection &)));
-  // connect(gui->ui.detailsTreeView, SIGNAL(activated(const QModelIndex &)),
-  // gui, SLOT(detailsTreeViewActivated(const QModelIndex &)));
 
   connect(gui->ui.addBrokerByScopeButton, SIGNAL(clicked()), gui, SLOT(addScopeTriggered()));
   connect(gui->ui.newScopeNameEdit, SIGNAL(returnPressed()), gui, SLOT(addScopeTriggered()));
@@ -166,7 +164,6 @@ void RDMnetControllerGUI::networkTreeViewSelectionChanged(const QItemSelection &
       net_details_proxy_->setCurrentParentItem(selectedItem);
 
       proxyIndex = net_details_proxy_->mapFromSource(sourceIndex);
-      net_details_proxy_->setCurrentParentIndex(proxyIndex);
       ui.detailsTreeView->setRootIndex(proxyIndex);
 
       netItem = dynamic_cast<RDMnetNetworkItem *>(selectedItem);
@@ -208,29 +205,6 @@ void RDMnetControllerGUI::networkTreeViewSelectionChanged(const QItemSelection &
   }
 }
 
-void RDMnetControllerGUI::detailsTreeViewActivated(const QModelIndex &index)
-{
-  if (index.isValid())
-  {
-    QModelIndex sourceIndex = net_details_proxy_->mapToSource(index);
-    QModelIndex proxyIndex = simple_net_proxy_->mapFromSource(sourceIndex);
-    QStandardItem *item = main_network_model_->itemFromIndex(sourceIndex);
-
-    if (item != NULL)
-    {
-      if (item->flags() & Qt::ItemIsSelectable)
-      {
-        ui.networkTreeView->expand(proxyIndex.parent());
-        ui.networkTreeView->selectionModel()->select(proxyIndex, QItemSelectionModel::ClearAndSelect);
-
-        net_details_proxy_->setCurrentParentIndex(index);
-        ui.detailsTreeView->setRootIndex(index);
-        ui.detailsTreeView->clearSelection();
-      }
-    }
-  }
-}
-
 void RDMnetControllerGUI::addScopeTriggered()
 {
   QString scopeText = ui.newScopeNameEdit->text();
@@ -248,10 +222,10 @@ void RDMnetControllerGUI::removeSelectedBrokerTriggered()
     if (net_details_proxy_->currentParentIsChildOfOrEqualTo(currently_selected_broker_item_))
     {
       ui.detailsTreeView->clearSelection();
-      ui.detailsTreeView->setRootIndex(QModelIndex());
+      //ui.detailsTreeView->setRootIndex(QModelIndex());
+      ui.detailsTreeView->reset();
 
       net_details_proxy_->setFilterEnabled(false);
-      net_details_proxy_->clearCurrentParentIndex();
       net_details_proxy_->setCurrentParentItem(NULL);
     }
 
@@ -274,10 +248,10 @@ void RDMnetControllerGUI::removeAllBrokersTriggered()
 
   ui.networkTreeView->clearSelection();
   ui.detailsTreeView->clearSelection();
-  ui.detailsTreeView->setRootIndex(QModelIndex());
+  //ui.detailsTreeView->setRootIndex(QModelIndex());
+  ui.detailsTreeView->reset();
 
   net_details_proxy_->setFilterEnabled(false);
-  net_details_proxy_->clearCurrentParentIndex();
   net_details_proxy_->setCurrentParentItem(NULL);
 
   currently_selected_broker_item_ = NULL;

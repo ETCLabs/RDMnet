@@ -46,17 +46,6 @@ public:
   NetworkDetailsProxyModel();
   ~NetworkDetailsProxyModel();
 
-  // QModelIndex mapToSource(const QModelIndex &proxyIndex) const Q_DECL_OVERRIDE;
-  // QModelIndex mapFromSource(const QModelIndex &sourceIndex) const Q_DECL_OVERRIDE;
-
-  // QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const
-  // Q_DECL_OVERRIDE; QModelIndex parent(const QModelIndex &child) const Q_DECL_OVERRIDE;
-
-  // int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
-  // int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
-
-  void setCurrentParentIndex(const QModelIndex &index);
-  void clearCurrentParentIndex();
   void setCurrentParentItem(const QStandardItem *item);
 
   bool currentParentIsChildOfOrEqualTo(const QStandardItem *item);
@@ -70,7 +59,6 @@ protected:
   virtual bool lessThan(const QModelIndex &left, const QModelIndex &right) const override;
 
 private:
-  const QPersistentModelIndex *currentParentIndex;
   const QStandardItem *currentParentItem;
   bool filterEnabled;
 };
