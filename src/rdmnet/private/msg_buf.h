@@ -39,7 +39,7 @@
 #include "lwpa/uuid.h"
 #include "lwpa/socket.h"
 #include "rdmnet/core/message.h"
-#include "rdmnet/core/opts.h"
+#include "rdmnet/private/opts.h"
 
 typedef enum
 {

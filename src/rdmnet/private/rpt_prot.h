@@ -25,11 +25,18 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#ifndef _RDMNET_CONTROLLER_PRIV_H_
-#define _RDMNET_CONTROLLER_PRIV_H_
+/*! \file rdmnet/private/rpt_prot.h
+ *  \brief Functions and definitions for RPT PDU messages that are only used internally.
+ *  \author Sam Kearney
+ */
+#ifndef _RDMNET_PRIVATE_RPT_PROT_H_
+#define _RDMNET_PRIVATE_RPT_PROT_H_
 
-typedef struct RdmnetControllerInternal
-{
-} RdmnetControllerInternal;
+#include "rdm/message.h"
 
-#endif /* _RDMNET_CONTROLLER_PRIV_H_ */
+#define REQUEST_NOTIF_PDU_HEADER_SIZE (3 /* Flags & Length */ + 4 /* Vector*/)
+#define RDM_CMD_PDU_MIN_SIZE (3 /* Flags & Length */ + RDM_MIN_BYTES)
+#define RDM_CMD_PDU_MAX_SIZE (3 /* Flags & Length */ + RDM_MAX_BYTES)
+#define REQUEST_PDU_MAX_SIZE (REQUEST_PDU_HEADER_SIZE + RDM_CMD_PDU_MAX_SIZE)
+
+#endif /* _RDMNET_CORE_RPT_PROT_PRIV_H_ */

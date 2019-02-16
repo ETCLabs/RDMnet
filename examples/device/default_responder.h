@@ -33,6 +33,7 @@
 #include "lwpa/inet.h"
 #include "rdm/message.h"
 #include "rdmnet/defs.h"
+#include "rdmnet/client.h"
 
 #define MAX_RESPONSES_IN_ACK_OVERFLOW 2
 
@@ -55,7 +56,7 @@ typedef struct RdmnetConnectParams
 extern "C" {
 #endif
 
-void default_responder_init(const LwpaSockaddr *static_broker_addr, const char *scope);
+void default_responder_init(const RdmnetScopeConfig *scope_config);
 void default_responder_deinit();
 
 /* Interface between the E1.33 Device logic and the default responder */

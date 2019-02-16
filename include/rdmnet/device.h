@@ -25,26 +25,40 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
+/*! \file rdmnet/device.h
+ *  \brief Definitions for the RDMnet Device API
+ *  \author Sam Kearney
+ */
+#ifndef _RDMNET_DEVICE_H_
+#define _RDMNET_DEVICE_H_
+
+#include "lwpa/bool.h"
+#include "lwpa/uuid.h"
+#include "rdm/uid.h"
 #include "rdmnet/client.h"
 
-#include <string.h>
+typedef struct RdmnetDeviceInternal *rdmnet_device_t;
 
-/*************************** Function definitions ****************************/
+typedef void (*RdmnetDeviceConnectedCb)(rdmnet_device_t handle, const char *scope);
+typedef void (*RdmnetDeviceDisconnectedCb)(rdmnet_device_t handle, const char *scope);
 
-bool create_rpt_client_entry(const LwpaUuid *cid, const RdmUid *uid, rpt_client_type_t client_type,
-                             const LwpaUuid *binding_cid, ClientEntryData *entry)
+typedef struct RdmnetDeviceCallbacks
 {
-  if (!cid || !uid || !entry)
-    return false;
+  RdmnetDeviceConnectedCb connected;
+  RdmnetDeviceDisconnectedCb disconnected;
+} RdmnetDeviceCallbacks;
 
-  entry->client_protocol = (client_protocol_t)E133_CLIENT_PROTOCOL_RPT;
-  entry->client_cid = *cid;
-  entry->data.rpt_data.client_uid = *uid;
-  entry->data.rpt_data.client_type = client_type;
-  if (binding_cid)
-    entry->data.rpt_data.binding_cid = *binding_cid;
-  else
-    memset(entry->data.rpt_data.binding_cid.data, 0, LWPA_UUID_BYTES);
-  entry->next = NULL;
-  return true;
-}
+typedef struct RdmnetDeviceConfig
+{
+  bool has_static_uid;
+  RdmUid static_uid;
+  LwpaUuid cid;
+  RdmnetScopeConfig scope_config;
+  RdmnetDeviceCallbacks callbacks;
+  void *callback_context;
+} RdmnetDeviceConfig;
+
+lwpa_error_t rdmnet_device_create(const RdmnetDeviceConfig *config, rdmnet_device_t *handle);
+void rdmnet_device_destroy(rdmnet_device_t handle);
+
+#endif /* _RDMNET_DEVICE_H_ */

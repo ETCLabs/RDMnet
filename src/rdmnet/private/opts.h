@@ -41,7 +41,9 @@
  *  Default values can be overriden by defining the option in your project's rdmnet_config.h file.
  */
 
+#if RDMNET_HAVE_CONFIG_H
 #include "rdmnet_config.h"
+#endif
 
 #include "lwpa/thread.h"
 
@@ -77,6 +79,27 @@
 
 /*! @} */
 
+/*! \defgroup rdmnetopts_client Client
+ *  \ingroup rdmnetopts
+ *
+ *  Options that affect the RDMnet Client APIs.
+ *  @{
+ */
+
+#ifndef RDMNET_MAX_CONTROLLERS
+#define RDMNET_MAX_CONTROLLERS 0
+#endif
+
+#ifndef RDMNET_MAX_DEVICES
+#define RDMNET_MAX_DEVICES 1
+#endif
+
+#ifndef RDMNET_MAX_CLIENTS
+#define RDMNET_MAX_CLIENTS (RDMNET_MAX_CONTROLLERS + RDMNET_MAX_DEVICES)
+#endif
+
+/*! @} */
+
 /*! \defgroup rdmnetopts_core Core
  *  \ingroup rdmnetopts
  *
@@ -89,7 +112,7 @@
  *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
  */
 #ifndef RDMNET_MAX_CONNECTIONS
-#define RDMNET_MAX_CONNECTIONS 2
+#define RDMNET_MAX_CONNECTIONS RDMNET_MAX_CLIENTS
 #endif
 
 /*! \brief The maximum number of ClientEntryData structures that can be returned with a parsed

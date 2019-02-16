@@ -29,30 +29,16 @@
 #include <Windows.h>
 #include <ws2tcpip.h>
 #include <rpc.h>
+#include <stdio.h>
 #include <stdbool.h>
 #include <wchar.h>
 #include <string.h>
 #include "lwpa/pack.h"
 #include "lwpa/uuid.h"
 #include "lwpa/socket.h"
-#include "rdmnet/version.h"
+#include "rdmnet/device.h"
 #include "device.h"
 #include "device_log.h"
-#include "device_llrp.h"
-
-/* DEBUG */
-#include <stdio.h>
-
-void print_version()
-{
-  printf("ETC Prototype RDMnet Device\n");
-  printf("Version %s\n\n", RDMNET_VERSION_STRING);
-  printf("%s\n", RDMNET_VERSION_COPYRIGHT);
-  printf("License: Apache License v2.0 <http://www.apache.org/licenses/LICENSE-2.0>\n");
-  printf("Unless required by applicable law or agreed to in writing, this software is\n");
-  printf("provided \"AS IS\", WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express\n");
-  printf("or implied.\n");
-}
 
 void print_help(wchar_t *app_name)
 {
@@ -122,13 +108,14 @@ int wmain(int argc, wchar_t *argv[])
 {
   lwpa_error_t res = LWPA_OK;
   char scope[E133_SCOPE_STRING_PADDED_LENGTH];
+  LwpaSockaddr static_broker;
   bool should_exit = false;
   UUID uuid;
-  DeviceSettings settings;
+  RdmnetDeviceConfig config;
   const LwpaLogParams *lparams;
 
-  lwpaip_set_invalid(&settings.static_broker_addr.ip);
-  settings.scope = E133_DEFAULT_SCOPE;
+  strcpy_s(scope, E133_SCOPE_STRING_PADDED_LENGTH, E133_DEFAULT_SCOPE);
+  lwpaip_set_invalid(&static_broker.ip);
 
   if (argc > 1)
   {
@@ -136,11 +123,7 @@ int wmain(int argc, wchar_t *argv[])
     {
       if (_wcsnicmp(argv[i], L"--scope=", 8) == 0)
       {
-        if (set_scope(&argv[i][8], scope))
-        {
-          settings.scope = scope;
-        }
-        else
+        if (!set_scope(&argv[i][8], scope))
         {
           print_help(argv[0]);
           should_exit = true;
@@ -149,7 +132,7 @@ int wmain(int argc, wchar_t *argv[])
       }
       else if (_wcsnicmp(argv[i], L"--broker=", 9) == 0)
       {
-        if (!set_static_broker(&argv[i][9], &settings.static_broker_addr))
+        if (!set_static_broker(&argv[i][9], &static_broker))
         {
           print_help(argv[0]);
           should_exit = true;
@@ -175,20 +158,25 @@ int wmain(int argc, wchar_t *argv[])
 
   device_log_init("RDMnetDevice.log");
   lparams = device_get_log_params();
-  lwpa_log(lparams, LWPA_LOG_INFO, "ETC Prototype RDMnet Device Version " RDMNET_VERSION_STRING);
 
   /* Create the Device's CID */
-  /* Normally we would use lwpa_cid's generate_cid() function to lock a CID to
-   * the local MAC address. This conforms more closely to the CID requirements
-   * in E1.17 (and by extension E1.33). But we want to be able to create many
-   * ephemeral Devices on the same system. So we will just generate UUIDs on
-   * the fly. */
-  // generate_cid(&my_cid, "ETC Prototype RDMnet Device", macaddr, 1);
+  /* Normally we would use lwpa_cid's generate_cid() function to lock a CID to the local MAC
+   * address. This conforms more closely to the CID requirements in E1.17 (and by extension E1.33).
+   * But we want to be able to create many ephemeral Devices on the same system. So we will just
+   * generate UUIDs on the fly. */
   UuidCreate(&uuid);
-  memcpy(settings.cid.data, &uuid, LWPA_UUID_BYTES);
+  memcpy(config.cid.data, &uuid, LWPA_UUID_BYTES);
 
-  /* Initialize LLRP */
-  device_llrp_init(&settings.cid, lparams);
+  /* Fill in the rest of the config */
+  config.has_static_uid = false;
+  if (lwpaip_is_invalid(&static_broker.ip))
+  {
+    rdmnet_set_scope(&config.scope_config, scope);
+  }
+  else
+  {
+    rdmnet_set_static_scope(&config.scope_config, scope, static_broker);
+  }
 
   /* Handle console signals */
   if (!SetConsoleCtrlHandler(console_handler, TRUE))
@@ -198,7 +186,7 @@ int wmain(int argc, wchar_t *argv[])
   }
 
   /* Startup the device */
-  res = device_init(&settings, lparams);
+  res = device_init(&config, lparams);
   if (res != LWPA_OK)
   {
     lwpa_log(lparams, LWPA_LOG_ERR, "Device failed to initialize: '%s'", lwpa_strerror(res));
@@ -206,9 +194,11 @@ int wmain(int argc, wchar_t *argv[])
   }
 
   while (device_keep_running)
+  {
     device_run();
+  }
 
-  device_llrp_deinit();
+  device_deinit();
   device_log_deinit();
   return 0;
 }

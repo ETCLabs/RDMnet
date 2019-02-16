@@ -24,8 +24,8 @@
 * This file is a part of RDMnet. For more information, go to:
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
-#ifndef _LLRP_PROT_PRIV_H_
-#define _LLRP_PROT_PRIV_H_
+#ifndef _RDMNET_PRIVATE_LLRP_PROT_H_
+#define _RDMNET_PRIVATE_LLRP_PROT_H_
 
 #include "lwpa/int.h"
 #include "lwpa/bool.h"

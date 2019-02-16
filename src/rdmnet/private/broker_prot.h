@@ -25,16 +25,16 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet/core/broker_prot_priv.h
+/*! \file rdmnet/private/broker_prot.h
  *  \brief Functions and definitions for Broker PDU messages that are only used internally.
  *  \author Sam Kearney
  */
-#ifndef _BROKER_PROT_PRIV_H_
-#define _BROKER_PROT_PRIV_H_
+#ifndef _RDMNET_PRIVATE_BROKER_PROT_
+#define _RDMNET_PRIVATE_BROKER_PROT_
 
 #include "lwpa/error.h"
 #include "rdmnet/core/broker_prot.h"
-#include "rdmnet/core/connection_priv.h"
+#include "rdmnet/private/connection.h"
 
 #define BROKER_NULL_MSG_SIZE BROKER_PDU_HEADER_SIZE
 
@@ -89,4 +89,4 @@ lwpa_error_t send_null(RdmnetConnection *conn);
 }
 #endif
 
-#endif /* _BROKERPROT_PRIV_H_ */
+#endif /* _RDMNET_PRIVATE_BROKER_PROT_H_ */

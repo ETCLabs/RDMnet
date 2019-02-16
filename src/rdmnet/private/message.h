@@ -25,11 +25,11 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#ifndef _RDMNET_MESSAGE_PRIV_H_
-#define _RDMNET_MESSAGE_PRIV_H_
+#ifndef _RDMNET_PRIVATE_MESSAGE_H_
+#define _RDMNET_PRIVATE_MESSAGE_H_
 
 #include "lwpa/error.h"
-#include "rdmnet/core/opts.h"
+#include "rdmnet/private/opts.h"
 #if RDMNET_DYNAMIC_MEM
 #include <stdlib.h>
 #else

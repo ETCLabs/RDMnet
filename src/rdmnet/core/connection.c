@@ -41,9 +41,9 @@
 #include "lwpa/socket.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/core/message.h"
-#include "rdmnet/core/message_priv.h"
-#include "rdmnet/core/connection_priv.h"
-#include "rdmnet/core/broker_prot_priv.h"
+#include "rdmnet/private/message.h"
+#include "rdmnet/private/connection.h"
+#include "rdmnet/private/broker_prot.h"
 
 /************************* The draft warning message *************************/
 
@@ -94,12 +94,10 @@
 
 /**************************** Private variables ******************************/
 
-/* clang-format off */
 #if !RDMNET_DYNAMIC_MEM
 LWPA_MEMPOOL_DEFINE(rdmnet_connections, RdmnetConnection, RDMNET_MAX_CONNECTIONS);
 LWPA_MEMPOOL_DEFINE(rdmnet_lwpa_rbnodes, LwpaRbNode, RDMNET_MAX_CONNECTIONS);
 #endif
-/* clang-format on */
 
 static bool rdmnet_lock_initted = false;
 static lwpa_rwlock_t rdmnet_lock;

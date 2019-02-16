@@ -32,21 +32,16 @@
 #include "lwpa/log.h"
 #include "rdm/message.h"
 #include "rdmnet/defs.h"
-#include "rdmnet/core/message.h"
+#include "rdmnet/device.h"
 #include "default_responder.h"
-
-typedef struct DeviceSettings
-{
-  LwpaUuid cid;
-  LwpaSockaddr static_broker_addr;
-  const char *scope;
-} DeviceSettings;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-lwpa_error_t device_init(const DeviceSettings *settings, const LwpaLogParams *lparams);
+void device_print_version();
+
+lwpa_error_t device_init(const RdmnetDeviceConfig *config, const LwpaLogParams *lparams);
 void device_deinit();
 void device_run();
 

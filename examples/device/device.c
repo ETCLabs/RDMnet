@@ -26,18 +26,16 @@
 ******************************************************************************/
 
 #include "device.h"
+
+#include <stdio.h>
 #include "lwpa/int.h"
 #include "lwpa/pack.h"
 #include "rdm/uid.h"
 #include "rdm/defs.h"
 #include "rdm/responder.h"
 #include "rdm/controller.h"
-#include "rdmnet/defs.h"
-#include "rdmnet/core/rpt_prot.h"
-#include "rdmnet/core/discovery.h"
-#include "rdmnet/core/connection.h"
+#include "rdmnet/version.h"
 #include "default_responder.h"
-#include "device_llrp.h"
 
 /***************************** Private macros ********************************/
 
@@ -94,52 +92,47 @@ static void send_status(uint16_t status_code, const RptHeader *received_header);
 static void send_nack(const RptHeader *received_header, const RdmCommand *cmd_data, uint16_t nack_reason);
 static void send_notification(const RptHeader *received_header, const RdmCmdListEntry *cmd_list);
 
+/* Device callbacks */
+static void device_connected(rdmnet_device_t handle, const char *scope);
+static void device_disconnected(rdmnet_device_t handle, const char *scope);
+
 /*************************** Function definitions ****************************/
 
-lwpa_error_t device_init(const DeviceSettings *settings, const LwpaLogParams *lparams)
+void device_print_version()
+{
+  printf("ETC Prototype RDMnet Device\n");
+  printf("Version %s\n\n", RDMNET_VERSION_STRING);
+  printf("%s\n", RDMNET_VERSION_COPYRIGHT);
+  printf("License: Apache License v2.0 <http://www.apache.org/licenses/LICENSE-2.0>\n");
+  printf("Unless required by applicable law or agreed to in writing, this software is\n");
+  printf("provided \"AS IS\", WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express\n");
+  printf("or implied.\n");
+}
+
+
+lwpa_error_t device_init(const RdmnetDeviceConfig *config, const LwpaLogParams *lparams)
 {
   lwpa_error_t res;
-  RdmnetDiscCallbacks callbacks;
+  RdmnetDeviceCallbacks callbacks;
 
-  if (!settings)
+  lwpa_log(lparams, LWPA_LOG_INFO, "ETC Prototype RDMnet Device Version " RDMNET_VERSION_STRING);
+
+  if (!config)
     return LWPA_INVALID;
 
-  default_responder_init(&settings->static_broker_addr, settings->scope);
+  default_responder_init(&config->scope_config);
 
-  set_callback_functions(&callbacks);
-  res = rdmnetdisc_init(&callbacks);
-  if (res != LWPA_OK)
-  {
-    lwpa_log(lparams, LWPA_LOG_ERR, "Couldn't initialize RDMnet discovery due to error: '%s'.", lwpa_strerror(res));
-    return res;
-  }
+  callbacks.connected = device_connected;
+  callbacks.disconnected = device_disconnected;
 
-  /* Initialize the RDMnet library */
-  res = rdmnet_init(lparams);
-  if (res != LWPA_OK)
-  {
-    lwpa_log(lparams, LWPA_LOG_ERR, "Couldn't initialize RDMnet library due to error: '%s'.", lwpa_strerror(res));
-    rdmnetdisc_deinit();
-    return res;
-  }
-
-  /* Create a new connection handle */
-  device_state.broker_conn = rdmnet_new_connection(&settings->cid);
-  if (device_state.broker_conn < 0)
-  {
-    res = device_state.broker_conn;
-    lwpa_log(lparams, LWPA_LOG_ERR, "Couldn't create a new RDMnet Connection due to error: '%s'.", lwpa_strerror(res));
-    rdmnet_deinit();
-    rdmnetdisc_deinit();
-    return res;
-  }
-
-  device_state.my_cid = settings->cid;
+  device_state.my_cid = config->cid;
   rdmnet_init_dynamic_uid_request(&device_state.my_uid, 0x6574);
   device_state.configuration_change = false;
   device_state.lparams = lparams;
 
-  device_state.connected = connect_to_broker(&device_state.my_uid);
+  device_state.connected = false;
+
+  connect_to_broker(&device_state.my_uid);
   if (device_state.connected)
   {
     device_llrp_set_connected(true, &device_state.my_uid);

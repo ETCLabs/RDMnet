@@ -25,11 +25,12 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "rdmnet/controller.h"
+#include "rdmnet/device.h"
+#include "rdmnet/client.h"
 
-#include "lwpa/mempool.h"
-#include "rdmnet/private/opts.h"
-
-lwpa_error_t rdmnet_controller_create(const RdmnetControllerData *data, rdmnet_controller_t *handle)
+typedef struct RdmnetDeviceInternal
 {
-}
+  rdmnet_client_t client_handle;
+  RdmnetDeviceCallbacks callbacks;
+  void *callback_context;
+} RdmnetDeviceInternal;
