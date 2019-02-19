@@ -98,6 +98,10 @@
 #define RDMNET_MAX_CLIENTS (RDMNET_MAX_CONTROLLERS + RDMNET_MAX_DEVICES)
 #endif
 
+#ifndef RDMNET_MAX_SCOPES_PER_CONTROLLER
+#define RDMNET_MAX_SCOPES_PER_CONTROLLER 1
+#endif
+
 /*! @} */
 
 /*! \defgroup rdmnetopts_core Core

@@ -30,7 +30,7 @@
 #include <string.h>
 #include "rdmnet/core/connection.h"
 #include "rdmnet/core/util.h"
-#include "rdmnet/core/broker_prot_priv.h"
+#include "rdmnet/private/broker_prot.h"
 #include "lwpa/pack.h"
 
 /***************************** Private macros ********************************/

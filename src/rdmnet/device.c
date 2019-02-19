@@ -35,11 +35,6 @@
 #endif
 #include "rdmnet/private/device.h"
 
-static void client_connected(rdmnet_client_t handle, const char *scope, void *context);
-static void client_disconnected(rdmnet_client_t handle, const char *scope, void *context);
-
-static const RdmnetClientCallbacks client_callbacks = {client_connected, client_disconnected};
-
 /***************************** Private macros ********************************/
 
 /* Macros for dynamic vs static allocation. Static allocation is done using lwpa_mempool. */
@@ -56,6 +51,15 @@ static const RdmnetClientCallbacks client_callbacks = {client_connected, client_
 #if !RDMNET_DYNAMIC_MEM
 LWPA_MEMPOOL_DEFINE(rdmnet_devices, RdmnetDeviceInternal, RDMNET_MAX_DEVICES);
 #endif
+
+static const RdmnetClientCallbacks client_callbacks = {client_connected, client_disconnected};
+
+/*********************** Private function prototypes *************************/
+
+static void client_connected(rdmnet_client_t handle, const char *scope, void *context);
+static void client_disconnected(rdmnet_client_t handle, const char *scope, void *context);
+
+/*************************** Function definitions ****************************/
 
 lwpa_error_t rdmnet_device_create(const RdmnetDeviceConfig *config, rdmnet_device_t *handle)
 {

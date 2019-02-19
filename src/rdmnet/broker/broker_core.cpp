@@ -40,14 +40,6 @@
 #include "broker_responder.h"
 #include "broker_util.h"
 
-/************************* The draft warning message *************************/
-
-/* clang-format off */
-#pragma message("************ THIS CODE IMPLEMENTS A DRAFT STANDARD ************")
-#pragma message("*** PLEASE DO NOT INCLUDE THIS CODE IN ANY SHIPPING PRODUCT ***")
-#pragma message("************* SEE THE README FOR MORE INFORMATION *************")
-/* clang-format on */
-
 /**************************** Private constants ******************************/
 
 // The amount of time we'll block until we get something to read from a connection

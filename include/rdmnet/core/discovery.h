@@ -41,54 +41,70 @@
  * "_draft-e133._tcp." */
 #define SRV_TYPE_PADDED_LENGTH 32
 
-/* defines the size of the arrays, i.e. operation_map, m_brokers_being_discovered, etc */
-#define ARRAY_SIZE_DEFAULT 100
+#define RDMNET_DISC_MAX_BROKER_ADDRESSES 5
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct ScopeMonitorInfo
-{
-  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
-  char domain[E133_DOMAIN_STRING_PADDED_LENGTH];
-} ScopeMonitorInfo;
+typedef struct RdmnetScopeMonitorRef *rdmnet_scope_monitor_t;
+typedef struct RdmnetBrokerRegisterRef *rdmnet_registered_broker_t;
 
-typedef struct BrokerDiscInfo
+typedef struct RdmnetBrokerDiscInfo
 {
   LwpaUuid cid;
   char service_name[E133_SERVICE_NAME_STRING_PADDED_LENGTH];
   uint16_t port;
-  LwpaSockaddr listen_addrs[ARRAY_SIZE_DEFAULT];
+  LwpaSockaddr listen_addrs[RDMNET_DISC_MAX_BROKER_ADDRESSES];
   size_t listen_addrs_count;
   char scope[E133_SCOPE_STRING_PADDED_LENGTH];
   char model[E133_MODEL_STRING_PADDED_LENGTH];
   char manufacturer[E133_MANUFACTURER_STRING_PADDED_LENGTH];
-} BrokerDiscInfo;
+} RdmnetBrokerDiscInfo;
 
-typedef struct RdmnetDiscCallbacks
+typedef struct RdmnetScopeMonitorCallbacks
 {
-  void (*broker_found)(const char *scope, const BrokerDiscInfo *broker_info, void *context);
-  void (*broker_lost)(const char *service_name, void *context);
-  void (*scope_monitor_error)(const ScopeMonitorInfo *scope_info, int platform_error, void *context);
-  void (*broker_registered)(const BrokerDiscInfo *broker_info, const char *assigned_service_name, void *context);
-  void (*broker_register_error)(const BrokerDiscInfo *broker_info, int platform_error, void *context);
-} RdmnetDiscCallbacks;
+  void (*broker_found)(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo *broker_info, void *context);
+  void (*broker_lost)(rdmnet_scope_monitor_t handle, const char *scope, const char *service_name, void *context);
+  void (*scope_monitor_error)(rdmnet_scope_monitor_t handle, const char *scope, int platform_error, void *context);
+} RdmnetScopeMonitorCallbacks;
 
-lwpa_error_t rdmnetdisc_init(RdmnetDiscCallbacks *callbacks);
+typedef struct RdmnetScopeMonitorConfig
+{
+  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
+  char domain[E133_DOMAIN_STRING_PADDED_LENGTH];
+  RdmnetScopeMonitorCallbacks callbacks;
+  void *callback_context;
+} RdmnetScopeMonitorConfig;
+
+typedef struct RdmnetDiscBrokerCallbacks
+{
+  void (*broker_registered)(rdmnet_registered_broker_t handle, const char *assigned_service_name, void *context);
+  void (*broker_register_error)(rdmnet_registered_broker_t handle, int platform_error, void *context);
+  void (*broker_found)(rdmnet_registered_broker_t handle, const RdmnetBrokerDiscInfo *broker_info, void *context);
+  void (*broker_lost)(rdmnet_registered_broker_t handle, const char *scope, const char *service_name, void *context);
+  void (*scope_monitor_error)(rdmnet_registered_broker_t handle, const char *scope, int platform_error, void *context);
+} RdmnetDiscBrokerCallbacks;
+
+typedef struct RdmnetBrokerRegisterConfig
+{
+  RdmnetBrokerDiscInfo my_info;
+  RdmnetDiscBrokerCallbacks callbacks;
+  void *callback_context;
+} RdmnetBrokerRegisterConfig;
+
+lwpa_error_t rdmnetdisc_init();
 void rdmnetdisc_deinit();
 
-void fill_default_scope_info(ScopeMonitorInfo *scope_info);
-void fill_default_broker_info(BrokerDiscInfo *broker_info);
+void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo *broker_info);
 
-lwpa_error_t rdmnetdisc_startmonitoring(const ScopeMonitorInfo *scope_info, int *platform_specific_error,
-                                        void *context);
+lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig *config, int *platform_specific_error, void *);
 
-void rdmnetdisc_stopmonitoring(const ScopeMonitorInfo *scope_info);
-void rdmnetdisc_stopmonitoring_all_scopes();
+void rdmnetdisc_stop_monitoring(rdmnet_scope_monitor_t handle);
+void rdmnetdisc_stop_monitoring_all();
 
-lwpa_error_t rdmnetdisc_registerbroker(const BrokerDiscInfo *broker_info, bool monitor_scope, void *context);
-void rdmnetdisc_unregisterbroker(bool stop_monitoring_scope);
+lwpa_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig *config, rdmnet_registered_broker_t *handle);
+void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle);
 
 void rdmnetdisc_tick();
 

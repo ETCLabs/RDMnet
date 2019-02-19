@@ -27,9 +27,11 @@ include(ResolveDnsSdProvider)
 
 ################################### Library ###################################
 
-add_library(RDMnet
-  # Public headers
+set(RDMNET_LIB_PUBLIC_HEADERS 
   ${RDMNET_INCLUDE}/rdmnet/client.h
+  ${RDMNET_INCLUDE}/rdmnet/controller.h
+  ${RDMNET_INCLUDE}/rdmnet/defs.h
+  ${RDMNET_INCLUDE}/rdmnet/device.h
   ${RDMNET_INCLUDE}/rdmnet/llrp.h
   ${RDMNET_INCLUDE}/rdmnet/version.h
 
@@ -39,29 +41,52 @@ add_library(RDMnet
   ${RDMNET_INCLUDE}/rdmnet/core/ept_prot.h
   ${RDMNET_INCLUDE}/rdmnet/core/message.h
   ${RDMNET_INCLUDE}/rdmnet/core/rpt_prot.h
+  ${RDMNET_INCLUDE}/rdmnet/core/util.h
+)
 
-  # Private headers
-  ${RDMNET_SRC}/rdmnet/core/opts.h
-  ${RDMNET_SRC}/rdmnet/core/broker_prot_priv.h
-  ${RDMNET_SRC}/rdmnet/core/llrp_priv.h
-  ${RDMNET_SRC}/rdmnet/core/llrp_prot_priv.h
-  ${RDMNET_SRC}/rdmnet/core/connection_priv.h
-  ${RDMNET_SRC}/rdmnet/core/message_priv.h
-  ${RDMNET_SRC}/rdmnet/core/msg_buf.h
-  ${RDMNET_SRC}/rdmnet/core/rpt_prot_priv.h
+set(RDMNET_LIB_PRIVATE_HEADERS
+  ${RDMNET_SRC}/rdmnet/private/broker_prot.h
+  ${RDMNET_SRC}/rdmnet/private/client.h
+  ${RDMNET_SRC}/rdmnet/private/connection.h
+  ${RDMNET_SRC}/rdmnet/private/controller.h
+  ${RDMNET_SRC}/rdmnet/private/device.h
+  ${RDMNET_SRC}/rdmnet/private/llrp_prot.h
+  ${RDMNET_SRC}/rdmnet/private/llrp.h
+  ${RDMNET_SRC}/rdmnet/private/message.h
+  ${RDMNET_SRC}/rdmnet/private/msg_buf.h
+  ${RDMNET_SRC}/rdmnet/private/opts.h
+  ${RDMNET_SRC}/rdmnet/private/rpt_prot.h
+)
 
-  # Sources
+set(RDMNET_LIB_SOURCES
+  ${RDMNET_SRC}/rdmnet/client.c
+  ${RDMNET_SRC}/rdmnet/controller.c
+  ${RDMNET_SRC}/rdmnet/device.c
+
   ${RDMNET_SRC}/rdmnet/core/broker_prot.c
+  ${RDMNET_SRC}/rdmnet/core/connection.c
   ${RDMNET_SRC}/rdmnet/core/llrp_prot.c
   ${RDMNET_SRC}/rdmnet/core/llrp.c
-  ${RDMNET_SRC}/rdmnet/core/client.c
-  ${RDMNET_SRC}/rdmnet/core/connection.c
   ${RDMNET_SRC}/rdmnet/core/message.c
   ${RDMNET_SRC}/rdmnet/core/msg_buf.c
   ${RDMNET_SRC}/rdmnet/core/rpt_prot.c
+)
 
+add_library(RDMnet
+  ${RDMNET_LIB_PUBLIC_HEADERS}
+  ${RDMNET_LIB_PRIVATE_HEADERS}
+  ${RDMNET_LIB_SOURCES}
   ${DNS_SD_ADDITIONAL_SOURCES}
 )
+
+# Organize sources in IDEs
+source_group(TREE ${RDMNET_SRC}/rdmnet PREFIX src FILES
+  ${RDMNET_LIB_SOURCES}
+  ${DNS_SD_ADDITIONAL_SOURCES}
+)
+source_group(TREE ${RDMNET_INCLUDE}/rdmnet PREFIX include FILES ${RDMNET_LIB_PUBLIC_HEADERS})
+source_group(TREE ${RDMNET_SRC}/rdmnet PREFIX include FILES ${RDMNET_LIB_PRIVATE_HEADERS})
+
 target_include_directories(RDMnet
   PUBLIC ${RDMNET_INCLUDE}
   PRIVATE ${RDMNET_SRC} ${DNS_SD_ADDITIONAL_INCLUDE_DIRS}

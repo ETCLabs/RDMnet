@@ -109,4 +109,15 @@ typedef struct RdmnetConnection
   lwpa_mutex_t lock;
 } RdmnetConnection;
 
-#endif /* _RDMNET_CONN_PRIV_H_ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+lwpa_error_t rdmnet_connection_init(const LwpaLogParams *log_params);
+void rdmnet_connection_deinit();
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _RDMNET_PRIVATE_CONNECTION_H_ */

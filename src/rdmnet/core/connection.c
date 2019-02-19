@@ -27,7 +27,7 @@
 
 #include "rdmnet/core/connection.h"
 
-#include "rdmnet/core/opts.h"
+#include "rdmnet/private/opts.h"
 #if RDMNET_DYNAMIC_MEM
 #include <stdlib.h>
 #else
@@ -41,17 +41,10 @@
 #include "lwpa/socket.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/core/message.h"
+#include "rdmnet/private/core.h"
 #include "rdmnet/private/message.h"
 #include "rdmnet/private/connection.h"
 #include "rdmnet/private/broker_prot.h"
-
-/************************* The draft warning message *************************/
-
-/* clang-format off */
-#pragma message("************ THIS CODE IMPLEMENTS A DRAFT STANDARD ************")
-#pragma message("*** PLEASE DO NOT INCLUDE THIS CODE IN ANY SHIPPING PRODUCT ***")
-#pragma message("************* SEE THE README FOR MORE INFORMATION *************")
-/* clang-format on */
 
 /*************************** Private constants *******************************/
 
@@ -60,19 +53,6 @@
 #define BLOCKING_BACKOFF_WAIT_INTERVAL 500
 
 /***************************** Private macros ********************************/
-
-#define rdmnet_create_lock_or_die()       \
-  if (!rdmnet_lock_initted)               \
-  {                                       \
-    if (lwpa_rwlock_create(&rdmnet_lock)) \
-      rdmnet_lock_initted = true;         \
-    else                                  \
-      return LWPA_SYSERR;                 \
-  }
-#define rdmnet_readlock() lwpa_rwlock_readlock(&rdmnet_lock, LWPA_WAIT_FOREVER)
-#define rdmnet_readunlock() lwpa_rwlock_readunlock(&rdmnet_lock)
-#define rdmnet_writelock() lwpa_rwlock_writelock(&rdmnet_lock, LWPA_WAIT_FOREVER)
-#define rdmnet_writeunlock() lwpa_rwlock_writeunlock(&rdmnet_lock)
 
 #define release_conn_and_readlock(connptr) \
   do                                       \
@@ -99,13 +79,9 @@ LWPA_MEMPOOL_DEFINE(rdmnet_connections, RdmnetConnection, RDMNET_MAX_CONNECTIONS
 LWPA_MEMPOOL_DEFINE(rdmnet_lwpa_rbnodes, LwpaRbNode, RDMNET_MAX_CONNECTIONS);
 #endif
 
-static bool rdmnet_lock_initted = false;
-static lwpa_rwlock_t rdmnet_lock;
-
 static struct rc_state
 {
   bool initted;
-  const LwpaLogParams *log_params;
 
   LwpaRbTree connections;
   int next_conn_handle;
@@ -142,73 +118,55 @@ static lwpa_error_t handle_redirect(RdmnetConnection *conn, ClientRedirectMsg *r
  *
  *  Do all necessary initialization before other RDMnet Connection API functions can be called.
  *
- *  \param[in] log_params A struct used by the library to log messages, or NULL for no logging.
  *  \return #LWPA_OK: Initialization successful.\n
  *          #LWPA_SYSERR: An internal library of system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
-lwpa_error_t rdmnet_init(const LwpaLogParams *log_params)
+lwpa_error_t rdmnet_connection_init()
 {
-  lwpa_error_t res;
+  lwpa_error_t res = LWPA_OK;
+  bool poll_lock_created = false;
 
-  /* The lock is created only the first call to this function. */
-  rdmnet_create_lock_or_die();
-
-  res = LWPA_SYSERR;
-  if (rdmnet_writelock())
-  {
-    bool poll_lock_created = false;
-#if RDMNET_USE_TICK_THREAD
-    LwpaThreadParams thread_params;
-#endif
-
-    res = LWPA_OK;
 #if !RDMNET_DYNAMIC_MEM
-    /* Init memory pools */
-    res |= lwpa_mempool_init(rdmnet_connections);
+  /* Init memory pools */
+  res |= lwpa_mempool_init(rdmnet_connections);
 #endif
-    if (res == LWPA_OK)
-      res = rdmnet_message_init();
-    if (res == LWPA_OK)
-      res = lwpa_socket_init(NULL);
 
-    if (res == LWPA_OK)
-    {
-      poll_lock_created = lwpa_mutex_create(&rc_state.poll_lock);
-      if (!poll_lock_created)
-        res = LWPA_SYSERR;
-    }
+  if (res == LWPA_OK)
+  {
+    poll_lock_created = lwpa_mutex_create(&rc_state.poll_lock);
+    if (!poll_lock_created)
+      res = LWPA_SYSERR;
+  }
 
 #if RDMNET_USE_TICK_THREAD
-    if (res == LWPA_OK)
+  if (res == LWPA_OK)
+  {
+    LwpaThreadParams thread_params;
+    thread_params.thread_priority = RDMNET_TICK_THREAD_PRIORITY;
+    thread_params.stack_size = RDMNET_TICK_THREAD_STACK;
+    thread_params.thread_name = "rdmnet_tick";
+    thread_params.platform_data = NULL;
+    rc_state.tickthread_run = true;
+    if (!lwpa_thread_create(&rc_state.tick_thread, &thread_params, rdmnet_tick_thread, NULL))
     {
-      thread_params.thread_priority = RDMNET_TICK_THREAD_PRIORITY;
-      thread_params.stack_size = RDMNET_TICK_THREAD_STACK;
-      thread_params.thread_name = "rdmnet_tick";
-      thread_params.platform_data = NULL;
-      rc_state.tickthread_run = true;
-      if (!lwpa_thread_create(&rc_state.tick_thread, &thread_params, rdmnet_tick_thread, NULL))
-      {
-        res = LWPA_SYSERR;
-      }
+      res = LWPA_SYSERR;
     }
+  }
 #endif
 
-    if (res == LWPA_OK)
-    {
-      /* Do all initialization that doesn't have a failure condition */
-      lwpa_rbtree_init(&rc_state.connections, conn_cmp, node_alloc, node_dealloc);
-      rc_state.next_conn_handle = 0;
-      rc_state.log_params = log_params;
-      rc_state.initted = true;
-    }
-    else
-    {
-      if (poll_lock_created)
-        lwpa_mutex_destroy(&rc_state.poll_lock);
-      memset(&rc_state, 0, sizeof rc_state);
-    }
-    rdmnet_writeunlock();
+  if (res == LWPA_OK)
+  {
+    /* Do all initialization that doesn't have a failure condition */
+    lwpa_rbtree_init(&rc_state.connections, conn_cmp, node_alloc, node_dealloc);
+    rc_state.next_conn_handle = 0;
+    rc_state.initted = true;
+  }
+  else
+  {
+    if (poll_lock_created)
+      lwpa_mutex_destroy(&rc_state.poll_lock);
+    memset(&rc_state, 0, sizeof rc_state);
   }
   return res;
 }

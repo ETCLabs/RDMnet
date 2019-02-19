@@ -135,9 +135,6 @@ typedef struct RdmnetPoll
 extern "C" {
 #endif
 
-lwpa_error_t rdmnet_init(const LwpaLogParams *log_params);
-void rdmnet_deinit();
-
 int rdmnet_new_connection(const LwpaUuid *local_cid);
 lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const ClientConnectMsg *connect_data,
                             RdmnetData *additional_data);

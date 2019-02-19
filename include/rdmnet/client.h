@@ -38,6 +38,7 @@
 #include "lwpa/inet.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
+#include "rdmnet/core.h"
 #include "rdmnet/core/util.h"
 
 typedef enum

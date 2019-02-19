@@ -25,54 +25,28 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#ifndef _RDMNET_DISCOVERY_BONJOUR_H_
-#define _RDMNET_DISCOVERY_BONJOUR_H_
+#ifndef _RDMNET_PRIVATE_CORE_H_
+#define _RDMNET_PRIVATE_CORE_H_
 
 #include "lwpa/lock.h"
-#include "lwpa/socket.h"
-#include "dns_sd.h"
+#include "lwpa/log.h"
 
-/*From dns_sd.h :
- *  For most applications, DNS - SD TXT records are generally
- *  less than 100 bytes, so in most cases a simple fixed - sized
- *  256 - byte buffer will be more than sufficient.*/
-#define TXT_RECORD_BUFFER_LENGTH 256
-#define REGISTRATION_STRING_PADDED_LENGTH SRV_TYPE_PADDED_LENGTH + E133_SCOPE_STRING_PADDED_LENGTH + 4
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-enum BROKER_STATE
-{
-  kBrokerNotRegistered,
-  kBrokerInfoSet,
-  kBrokeRegisterStarted,
-  kBrokerRegistered
-};
+bool rdmnet_core_initialized();
 
-typedef struct OperationData
-{
-  lwpa_socket_t socket;
-  DNSServiceRef search_ref;
-  char full_name[kDNSServiceMaxDomainName];
-} OperationData;
+extern lwpa_rwlock_t rdmnet_lock;
+extern const LwpaLogParams *rdmnet_log_params;
 
-typedef struct Operations
-{
-  DNSServiceRef refs[ARRAY_SIZE_DEFAULT];
-  OperationData op_data[ARRAY_SIZE_DEFAULT];
-  size_t count;
-} Operations;
+#define rdmnet_readlock() lwpa_rwlock_readlock(&rdmnet_lock, LWPA_WAIT_FOREVER)
+#define rdmnet_readunlock() lwpa_rwlock_readunlock(&rdmnet_lock)
+#define rdmnet_writelock() lwpa_rwlock_writelock(&rdmnet_lock, LWPA_WAIT_FOREVER)
+#define rdmnet_writeunlock() lwpa_rwlock_writeunlock(&rdmnet_lock)
 
-typedef struct ScopesMonitored
-{
-  DNSServiceRef refs[ARRAY_SIZE_DEFAULT];
-  ScopeMonitorInfo monitor_info[ARRAY_SIZE_DEFAULT];
-  size_t count;
-} ScopesMonitored;
+#ifdef __cplusplus
+}
+#endif
 
-typedef struct BrokersBeingDiscovered
-{
-  char fullnames[ARRAY_SIZE_DEFAULT][kDNSServiceMaxDomainName];
-  BrokerDiscInfo info[ARRAY_SIZE_DEFAULT];
-  size_t count;
-} BrokersBeingDiscovered;
-
-#endif /* _RDMNET_DISCOVERY_BONJOUR_H_ */
+#endif /* _RDMNET_PRIVATE_CORE_H_ */

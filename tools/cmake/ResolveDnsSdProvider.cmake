@@ -11,13 +11,13 @@ option(RDMNET_WINDOWS_USE_BONJOUR_SDK
   "Use Apple's Bonjour SDK for Windows (LICENSING RESTRICTIONS MAY APPLY)" OFF)
 
 if(RDMNET_MOCK_DISCOVERY)
-  set(DNS_SD_ADDITIONAL_SOURCES ${RDMNET_SRC}/common/discovery/mock/rdmnet_mock_discovery.c)
+  set(DNS_SD_ADDITIONAL_SOURCES ${RDMNET_SRC}/rdmnet/discovery/mock.c)
 else()
   if(WIN32)
     # On Windows, we use Bonjour for Windows, either through the Bonjour SDK or ETC's Bonjour fork.
     set(DNS_SD_ADDITIONAL_SOURCES
-      ${RDMNET_SRC}/rdmnet/core/discovery/bonjour/rdmnet_discovery_bonjour.h
-      ${RDMNET_SRC}/rdmnet/core/discovery/bonjour/rdmnet_discovery_bonjour.c
+      ${RDMNET_SRC}/rdmnet/discovery/bonjour.h
+      ${RDMNET_SRC}/rdmnet/discovery/bonjour.c
     )
 
     # Using Apple's Bonjour SDK for Windows

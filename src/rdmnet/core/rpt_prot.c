@@ -31,7 +31,7 @@
 #include "rdmnet/defs.h"
 #include "rdmnet/core/connection.h"
 #include "rdmnet/core/util.h"
-#include "rdmnet/core/rpt_prot_priv.h"
+#include "rdmnet/private/rpt_prot.h"
 
 /***************************** Private macros ********************************/
 

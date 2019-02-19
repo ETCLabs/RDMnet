@@ -26,20 +26,42 @@
 ******************************************************************************/
 
 #include "rdmnet/core/discovery.h"
-#include "rdmnet_discovery_bonjour.h"
+#include "rdmnet/discovery/bonjour.h"
 
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include "rdmnet/private/opts.h"
+#if RDMNET_DYNAMIC_MEM
+#include "lwpa/mempool.h"
+#else
+#include <stdlib.h>
+#endif
 #include "lwpa/inet.h"
 #include "lwpa/bool.h"
 #include "lwpa/pack.h"
 #include "rdmnet/core/util.h"
 
+/***************************** Private macros ********************************/
+
+/* Macros for dynamic vs static allocation. Static allocation is done using lwpa_mempool. */
+#if RDMNET_DYNAMIC_MEM
+#define alloc_scope_monitor_ref() malloc(sizeof(RdmnetScopeMonitorRef))
+#define free_scope_monitor_ref(ptr) free(ptr)
+#else
+#define alloc_scope_monitor_ref() lwpa_mempool_alloc(scope_monitor_refs)
+#define free_scope_monitor_ref(ptr) lwpa_mempool_free(scope_monitor_refs, ptr)
+#endif
+
+/**************************** Private variables ******************************/
+
+#if !RDMNET_DYNAMIC_MEM
+LWPA_MEMPOOL_DEFINE(scope_monitor_refs, RdmnetScopeMonitorRef, MAX_SCOPES_MONITORED);
+#endif
+
 typedef struct DiscoveryState
 {
   lwpa_rwlock_t lock;
-  DNSServiceRef ref_list[ARRAY_SIZE_DEFAULT];
 
   char registered_fullname[kDNSServiceMaxDomainName];
 
@@ -52,8 +74,7 @@ typedef struct DiscoveryState
 
   BrokersBeingDiscovered brokers;
 
-  ScopesMonitored scopes;
-  RdmnetDiscCallbacks callbacks;
+  RdmnetScopeMonitorRef *scope_ref_list;
   BrokerDiscInfo info_to_register;
 
   enum BROKER_STATE broker_reg_state;
@@ -67,6 +88,8 @@ typedef struct DiscoveryState
 } DiscoveryState;
 
 static DiscoveryState disc_state;
+
+/*************************** Function definitions ****************************/
 
 /******************************************************************************
  * find/insert/delete functions for structs and arrays
@@ -205,23 +228,37 @@ void broker_erase(const char *full_name)
   }
 }
 
-/* TODO: check if there is a better way of discarding entries over array size*/
-/*Adds new scope info into scopes_monitered.
- *Assumes a lock is already taken.*/
-void scope_monitored_insert(DNSServiceRef ref, const ScopeMonitorInfo *monitor_info)
+/* Adds new scope info to the scope_ref_list.
+ * Assumes a lock is already taken.*/
+void scope_monitored_insert(DNSServiceRef dnssd_ref, const RdmnetScopeMonitorConfig *config)
 {
-  if (disc_state.scopes.count < ARRAY_SIZE_DEFAULT)
+  RdmnetScopeMonitorRef *new_scope = alloc_scope_monitor_ref();
+  if (new_scope)
   {
-    disc_state.scopes.refs[disc_state.scopes.count] = ref;
-    disc_state.scopes.monitor_info[disc_state.scopes.count] = *monitor_info;
-    disc_state.scopes.count++;
+    new_scope->dnssd_ref = dnssd_ref;
+    new_scope->config = *config;
+    new_scope->next = NULL;
+
+    if (!disc_state.scope_ref_list)
+    {
+      // Make the new scope the head of the list.
+      disc_state.scope_ref_list = new_scope;
+    }
+    else
+    {
+      // Insert the new scope at the end of the list.
+      RdmnetScopeMonitorRef *ref = disc_state.scope_ref_list;
+      for (; ref->next; ref = ref->next)
+        ;
+      ref->next = new_scope;
+    }
   }
 }
 
-/*Searches to see if a scope is being monitored.
- *Returns false if no match was found.
- *value at *ret is set as the index of the value, if found.
- *Assumes a lock is already taken.*/
+/* Searches to see if a scope is being monitored.
+ * Returns false if no match was found.
+ * value at *ret is set as the index of the value, if found.
+ * Assumes a lock is already taken. */
 bool scope_monitored_lookup(DNSServiceRef ref, int *ret)
 {
   for (unsigned int i = 0; i < disc_state.scopes.count; i++)

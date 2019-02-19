@@ -25,54 +25,60 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "rdmnet/client.h"
+#include "rdmnet/core.h"
 
-#include <string.h>
-#include "lwpa/lock.h"
-#include "rdmnet/core/init.h"
+#include "rdmnet/private/core.h"
+
+/************************* The draft warning message *************************/
+
+/* clang-format off */
+#pragma message("************ THIS CODE IMPLEMENTS A DRAFT STANDARD ************")
+#pragma message("*** PLEASE DO NOT INCLUDE THIS CODE IN ANY SHIPPING PRODUCT ***")
+#pragma message("************* SEE THE README FOR MORE INFORMATION *************")
+/* clang-format on */
+
+/***************************** Private macros ********************************/
+
+#define rdmnet_create_lock_or_die()       \
+  if (!rdmnet_lock_initted)               \
+  {                                       \
+    if (lwpa_rwlock_create(&rdmnet_lock)) \
+      rdmnet_lock_initted = true;         \
+    else                                  \
+      return LWPA_SYSERR;                 \
+  }
 
 /**************************** Private variables ******************************/
 
-static bool client_lock_initted = false;
-static lwpa_mutex_t client_lock;
+static bool rdmnet_lock_initted = false;
+lwpa_rwlock_t rdmnet_lock;
 
-/*************************** Function definitions ****************************/
-
-lwpa_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig *config, rdmnet_client_t *handle)
+lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
 {
-  // The lock is created only on the first call to this function.
-  if (!client_lock_initted)
-  {
-    if (lwpa_rwlock_create(&client_lock))
-      client_lock_initted = true;
-    else
-      return LWPA_SYSERR;
-  }
+  // The lock is created only the first call to this function.
+  rdmnet_create_lock_or_die();
 
-  //  /* Create a new connection handle */
-  //  device_state.broker_conn = rdmnet_new_connection(&settings->cid);
-  //  if (device_state.broker_conn < 0)
-  //  {
-  //    res = device_state.broker_conn;
-  //    lwpa_log(lparams, LWPA_LOG_ERR, "Couldn't create a new RDMnet Connection due to error: '%s'.",
-  //    lwpa_strerror(res)); rdmnet_deinit(); rdmnetdisc_deinit(); return res;
-  //  }
+  lwpa_error_t res = LWPA_SYSERR;
+  if (rdmnet_writelock())
+  {
+    if (res == LWPA_OK)
+      res = rdmnet_message_init();
+    if (res == LWPA_OK)
+      res = lwpa_socket_init(NULL);
+    if (res == LWPA_OK)
+    {
+      res = rdmnetdisc_init(&callbacks);
+      if (res != LWPA_OK)
+      {
+        lwpa_log(log_params, LWPA_LOG_ERR, "Couldn't initialize RDMnet discovery due to error: '%s'.",
+                 lwpa_strerror(res));
+        return res;
+      }
+    }
+  }
+  return res;
 }
 
-bool create_rpt_client_entry(const LwpaUuid *cid, const RdmUid *uid, rpt_client_type_t client_type,
-                             const LwpaUuid *binding_cid, ClientEntryData *entry)
+void rdmnet_core_deinit()
 {
-  if (!cid || !uid || !entry)
-    return false;
-
-  entry->client_protocol = (client_protocol_t)E133_CLIENT_PROTOCOL_RPT;
-  entry->client_cid = *cid;
-  entry->data.rpt_data.client_uid = *uid;
-  entry->data.rpt_data.client_type = client_type;
-  if (binding_cid)
-    entry->data.rpt_data.binding_cid = *binding_cid;
-  else
-    memset(entry->data.rpt_data.binding_cid.data, 0, LWPA_UUID_BYTES);
-  entry->next = NULL;
-  return true;
 }
