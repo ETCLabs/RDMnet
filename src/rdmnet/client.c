@@ -29,7 +29,7 @@
 
 #include <string.h>
 #include "lwpa/lock.h"
-#include "rdmnet/core/init.h"
+#include "rdmnet/core.h"
 
 /**************************** Private variables ******************************/
 

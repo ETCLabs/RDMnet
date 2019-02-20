@@ -98,7 +98,8 @@ void rdmnetdisc_deinit();
 
 void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo *broker_info);
 
-lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig *config, int *platform_specific_error, void *);
+lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig *config, rdmnet_scope_monitor_t *handle,
+                                         int *platform_specific_error);
 
 void rdmnetdisc_stop_monitoring(rdmnet_scope_monitor_t handle);
 void rdmnetdisc_stop_monitoring_all();

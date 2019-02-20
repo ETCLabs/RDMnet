@@ -50,13 +50,19 @@ struct RdmnetScopeMonitorRef
   RdmnetScopeMonitorRef *next;
 };
 
-enum BROKER_STATE
+typedef struct RdmnetBrokerRegisterRef
+{
+  RdmnetBrokerRegisterConfig config;
+  rdmnet_scope_monitor_t scope_monitor_handle;
+} RdmnetBrokerRegisterRef;
+
+typedef enum
 {
   kBrokerNotRegistered,
   kBrokerInfoSet,
   kBrokeRegisterStarted,
   kBrokerRegistered
-};
+} broker_state_t;
 
 typedef struct OperationData
 {

@@ -75,9 +75,10 @@ typedef struct DiscoveryState
   BrokersBeingDiscovered brokers;
 
   RdmnetScopeMonitorRef *scope_ref_list;
-  BrokerDiscInfo info_to_register;
+  RdmnetBrokerRegisterConfig registered_broker;
 
-  enum BROKER_STATE broker_reg_state;
+  rdmnet_registered_broker_t broker_handle;
+  broker_state_t broker_reg_state;
   void *broker_reg_context;
   bool broker_reg_monitor_scope;
 
@@ -177,7 +178,7 @@ bool operation_lookup_erase(Operations *map, DNSServiceRef ref, OperationData *d
 /* TODO: check if there is a better way of discarding entries over array size*/
 /*Adds broker discovery information into brokers.
  *Assumes a lock is already taken.*/
-void broker_insert(const char *full_name, const BrokerDiscInfo *broker_info)
+void broker_insert(const char *full_name, const RdmnetBrokerDiscInfo *broker_info)
 {
   if (disc_state.brokers.count < ARRAY_SIZE_DEFAULT)
   {
@@ -195,12 +196,14 @@ void broker_insert(const char *full_name, const BrokerDiscInfo *broker_info)
 bool broker_lookup(const char *full_name, unsigned int *ret)
 {
   for (unsigned int i = 0; i < disc_state.brokers.count; i++)
+  {
     if (strcmp(disc_state.brokers.fullnames[i], full_name) == 0)
     {
       if (ret != NULL)
         *ret = i;
       return true;
     }
+  }
   return false;
 }
 
@@ -230,19 +233,16 @@ void broker_erase(const char *full_name)
 
 /* Adds new scope info to the scope_ref_list.
  * Assumes a lock is already taken.*/
-void scope_monitored_insert(DNSServiceRef dnssd_ref, const RdmnetScopeMonitorConfig *config)
+void scope_monitored_insert(RdmnetScopeMonitorRef *scope_ref)
 {
-  RdmnetScopeMonitorRef *new_scope = alloc_scope_monitor_ref();
-  if (new_scope)
+  if (scope_ref)
   {
-    new_scope->dnssd_ref = dnssd_ref;
-    new_scope->config = *config;
-    new_scope->next = NULL;
+    scope_ref->next = NULL;
 
     if (!disc_state.scope_ref_list)
     {
       // Make the new scope the head of the list.
-      disc_state.scope_ref_list = new_scope;
+      disc_state.scope_ref_list = scope_ref;
     }
     else
     {
@@ -250,7 +250,7 @@ void scope_monitored_insert(DNSServiceRef dnssd_ref, const RdmnetScopeMonitorCon
       RdmnetScopeMonitorRef *ref = disc_state.scope_ref_list;
       for (; ref->next; ref = ref->next)
         ;
-      ref->next = new_scope;
+      ref->next = scope_ref;
     }
   }
 }
@@ -259,35 +259,42 @@ void scope_monitored_insert(DNSServiceRef dnssd_ref, const RdmnetScopeMonitorCon
  * Returns false if no match was found.
  * value at *ret is set as the index of the value, if found.
  * Assumes a lock is already taken. */
-bool scope_monitored_lookup(DNSServiceRef ref, int *ret)
+RdmnetScopeMonitorRef *scope_monitored_lookup(DNSServiceRef dnssd_ref)
 {
-  for (unsigned int i = 0; i < disc_state.scopes.count; i++)
-    if (disc_state.scopes.refs[i] == ref)
+  for (RdmnetScopeMonitorRef *ref = disc_state.scope_ref_list; ref; ref = ref->next)
+  {
+    if (ref->dnssd_ref == dnssd_ref)
     {
-      *ret = i;
-      return true;
+      return ref;
     }
-  return false;
+  }
+  return NULL;
 }
 
-/*Removes an entry from disc_state.scopes.
+/*Removes an entry from disc_state.scope_ref_list.
  *Returns false if no matching entry is found.
  *Assumes a lock is already taken.*/
-void scope_monitored_erase(unsigned int index)
+void scope_monitored_erase(RdmnetScopeMonitorRef *ref)
 {
-  if (index < disc_state.scopes.count)
+  if (!disc_state.scope_ref_list)
+    return;
+
+  if (ref == disc_state.scope_ref_list)
   {
-    if (index < disc_state.scopes.count - 1)
+    // Remove the element at the head of the list
+    disc_state.scope_ref_list = ref->next;
+  }
+  else
+  {
+    RdmnetScopeMonitorRef *prev_ref = disc_state.scope_ref_list;
+    for (; prev_ref->next; prev_ref = prev_ref->next)
     {
-      /*shift elements*/
-      for (unsigned int i = index; i < disc_state.scopes.count - 1; i++)
+      if (prev_ref->next = ref)
       {
-        disc_state.scopes.monitor_info[i] = disc_state.scopes.monitor_info[i + 1];
-        disc_state.scopes.refs[i] = disc_state.scopes.refs[i + 1];
+        prev_ref->next = ref->next;
+        break;
       }
     }
-
-    disc_state.scopes.count--;
   }
 }
 
@@ -330,17 +337,11 @@ void get_registration_string(const char *srv_type, const char *scope, char *reg_
   RDMNET_MSVC_END_NO_DEP_WARNINGS()
 }
 
-bool broker_info_is_valid(const BrokerDiscInfo *info)
+bool broker_info_is_valid(const RdmnetBrokerDiscInfo *info)
 {
   /*make sure none of the broker info's fields are empty*/
   return !(info->cid.data == 0 || strlen(info->service_name) == 0 || strlen(info->scope) == 0 ||
            strlen(info->model) == 0 || strlen(info->manufacturer) == 0);
-}
-
-bool create_socket_handle_from_raw_int(int raw_sock, lwpa_socket_t *new_handle)
-{
-  *new_handle = (lwpa_socket_t)raw_sock;
-  return true;
 }
 
 /* dest char* should have a size of kDNSServiceMaxDomainName*/
@@ -478,18 +479,22 @@ void DNSSD_API process_DNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServic
   (void)hostname;
   (void)ttl;
 
+  RdmnetScopeMonitorRef *ref = (RdmnetScopeMonitorRef *)context;
+  if (!ref)
+    return;
+
   if (errorCode != 0)
   {
-    notify_monitor_error(sdRef, errorCode, context);
+    ref->config.callbacks.scope_monitor_error(ref, ref->config.scope, errorCode, ref->config.callback_context);
     cancel_operation(sdRef);
   }
   else
   {
-    /*We got a response, but we'll only clean up at the end if the flags tell
-     * us we're done getting addrs.*/
+    /* We got a response, but we'll only clean up at the end if the flags tell us we're done getting
+     * addrs.*/
     bool addrs_done = !(flags & kDNSServiceFlagsMoreComing);
     /*Only copied to if addrs_done is true;*/
-    BrokerDiscInfo notify_info = {0};
+    RdmnetBrokerDiscInfo notify_info = {0};
 
     if (lwpa_rwlock_writelock(&disc_state.lock, LWPA_WAIT_FOREVER))
     {
@@ -500,7 +505,7 @@ void DNSSD_API process_DNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServic
         unsigned int index;
         if (broker_lookup(op_data.full_name, &index))
         {
-          BrokerDiscInfo *info = &disc_state.brokers.info[index];
+          RdmnetBrokerDiscInfo *info = &disc_state.brokers.info[index];
           LwpaSockaddr ip_addr = {0};
 
           sockaddr_plat_to_lwpa(&ip_addr, address);
@@ -720,9 +725,8 @@ DNSServiceErrorType send_query(const char *srv_type, const char *scope, const ch
  * public functions
  ******************************************************************************/
 
-lwpa_error_t rdmnetdisc_init(RdmnetDiscCallbacks *callbacks)
+lwpa_error_t rdmnetdisc_init()
 {
-  disc_state.callbacks = *callbacks;
   disc_state.broker_reg_state = kBrokerNotRegistered;
   lwpa_rwlock_create(&disc_state.lock);
 
@@ -734,67 +738,59 @@ void rdmnetdisc_deinit()
   rdmnetdisc_stopmonitoring_all_scopes();
 }
 
-void fill_default_scope_info(ScopeMonitorInfo *scope_info)
-{
-  RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
-  strncpy(scope_info->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH);
-  strncpy(scope_info->domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
-  RDMNET_MSVC_END_NO_DEP_WARNINGS()
-}
-
-void fill_default_broker_info(BrokerDiscInfo *broker_info)
+void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo *broker_info)
 {
   memset(broker_info->service_name, 0, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
   broker_info->port = 0;
-  memset(broker_info->listen_addrs, 0, sizeof(LwpaSockaddr) * ARRAY_SIZE_DEFAULT);
+  memset(broker_info->listen_addrs, 0, sizeof(LwpaSockaddr) * RDMNET_DISC_MAX_BROKER_ADDRESSES);
   broker_info->listen_addrs_count = 0;
   RDMNET_MSVC_NO_DEP_WRN strncpy(broker_info->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH);
   memset(broker_info->model, 0, E133_MODEL_STRING_PADDED_LENGTH);
   memset(broker_info->manufacturer, 0, E133_MANUFACTURER_STRING_PADDED_LENGTH);
 }
 
-lwpa_error_t rdmnetdisc_startmonitoring(const ScopeMonitorInfo *scope_info, int *platform_specific_error, void *context)
+lwpa_error_t rdmnetdisc_startmonitoring(const RdmnetScopeMonitorConfig *config, rdmnet_scope_monitor_t *handle,
+                                        int *platform_specific_error)
 {
-  (void)context;
+  if (!config || !handle || !platform_specific_error)
+    return LWPA_INVALID;
+
+  RdmnetScopeMonitorRef *new_monitor = alloc_scope_monitor_ref();
+  if (!new_monitor)
+    return LWPA_NOMEM;
 
   DNSServiceRef ref;
-  *platform_specific_error = send_query(E133_DNSSD_SRV_TYPE, scope_info->scope, scope_info->domain, &ref, context);
+  *platform_specific_error = send_query(E133_DNSSD_SRV_TYPE, config->scope, config->domain, &ref, new_monitor);
 
   if (*platform_specific_error == 0)
   {
     if (lwpa_rwlock_writelock(&disc_state.lock, LWPA_WAIT_FOREVER))
     {
-      scope_monitored_insert(ref, scope_info);
-
+      scope_monitored_insert(new_monitor);
       lwpa_rwlock_writeunlock(&disc_state.lock);
     }
+    return LWPA_OK;
   }
-
-  /* TODO: should have some kind of handling or reporting for errors from send_query */
-
-  return LWPA_OK;
+  else
+  {
+    free_scope_monitor_ref(new_monitor);
+    return LWPA_SYSERR;
+  }
 }
 
-void rdmnetdisc_stopmonitoring(const ScopeMonitorInfo *scope_info)
+void rdmnetdisc_stopmonitoring(rdmnet_scope_monitor_t handle)
 {
-  DNSServiceRef ref = NULL;
+  if (!handle)
+    return;
+
   if (lwpa_rwlock_writelock(&disc_state.lock, LWPA_WAIT_FOREVER))
   {
-    for (unsigned int i = 0; i < disc_state.scopes.count; i++)
-    {
-      if (0 == strncmp(disc_state.scopes.monitor_info[i].scope, scope_info->scope, E133_SCOPE_STRING_PADDED_LENGTH))
-      {
-        ref = disc_state.scopes.refs[i];
-        scope_monitored_erase(i);
-        break;
-      }
-    }
-
+    scope_monitored_erase(handle);
     lwpa_rwlock_writeunlock(&disc_state.lock);
   }
 
-  if (ref)
-    cancel_operation(ref);
+  cancel_operation(handle->dnssd_ref);
+  free_scope_monitor_ref(handle);
 }
 
 void rdmnetdisc_stopmonitoring_all_scopes()
@@ -823,7 +819,7 @@ lwpa_error_t rdmnetdisc_registerbroker(const BrokerDiscInfo *broker_info, bool m
   return LWPA_OK;
 }
 
-void rdmnetdisc_unregisterbroker(bool stop_monitoring_scope)
+void rdmnetdisc_unregisterbroker(rdmnet_registered_broker_t handle)
 {
   if (disc_state.broker_reg_state != kBrokerNotRegistered)
   {
@@ -833,17 +829,9 @@ void rdmnetdisc_unregisterbroker(bool stop_monitoring_scope)
       disc_state.dns_reg_ref = NULL;
     }
 
-    if (stop_monitoring_scope)
-    {
-      /* Since the broker only cares about scopes while it is running, shut down
-       * any outstanding queries for that scope.*/
-      ScopeMonitorInfo info = {0};
-      RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
-      strncpy(info.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
-      strncpy(info.scope, disc_state.info_to_register.scope, E133_SCOPE_STRING_PADDED_LENGTH);
-      RDMNET_MSVC_END_NO_DEP_WARNINGS()
-      rdmnetdisc_stopmonitoring(&info);
-    }
+    /* Since the broker only cares about scopes while it is running, shut down any outstanding
+     * queries for that scope.*/
+    rdmnetdisc_stopmonitoring(handle->scope_monitor_handle);
 
     /*Reset the state*/
     disc_state.broker_reg_state = kBrokerNotRegistered;
@@ -916,10 +904,7 @@ DNSServiceErrorType send_registration(const BrokerDiscInfo *info, void *context)
 
     if (result == kDNSServiceErr_NoError)
     {
-      result =
-          create_socket_handle_from_raw_int(DNSServiceRefSockFD(disc_state.dns_reg_ref), &disc_state.dns_reg_handle)
-              ? 0
-              : 1;
+      disc_state.dns_reg_handle = DNSServiceRefSockFD(disc_state.dns_reg_ref);
     }
   }
 
