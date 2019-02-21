@@ -24,41 +24,41 @@
 * This file is a part of RDMnet. For more information, go to:
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
+#include "rdmnet/core/discovery.h"
+#include "dns_sd.h"
 
-/*! \file rdmnet/core/util.h
- *  \brief Utilities used throughout the RDMnet library.
- *  \author Sam Kearney
- */
-#ifndef _RDMNET_UTIL_H_
-#define _RDMNET_UTIL_H_
+#include "gtest/gtest.h"
+#include "fff.h"
+DEFINE_FFF_GLOBALS;
 
-/* Suppress deprecated function warnings on Windows/MSVC. This is mostly used in situations where
- * Microsoft warns us that a function like strncpy() could be unsafe, but we want to be portable
- * and have made sure that we're using it in a safe way (e.g. by manually inserting null
- * terminators). */
-#ifdef _MSC_VER
+// Mocking the dns_sd.h interface
+FAKE_VALUE_FUNC(dnssd_sock_t, DNSServiceRefSockFD, DNSServiceRef);
+FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceProcessResult, DNSServiceRef);
+FAKE_VOID_FUNC(DNSServiceRefDeallocate, DNSServiceRef);
+FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceRegister, DNSServiceRef *, DNSServiceFlags, uint32_t, const char *,
+                const char *, const char *, const char *, uint16_t, uint16_t, const void *, DNSServiceRegisterReply,
+                void *);
 
-#define RDMNET_MSVC_NO_DEP_WRN __pragma(warning(suppress : 4996))
+class TestDiscoveryBonjour : public ::testing::Test
+{
+protected:
+  void SetUp() override
+  {
+    // Reset fff state
+    RESET_FAKE(DNSServiceRefSockFD);
+    RESET_FAKE(DNSServiceProcessResult);
+    RESET_FAKE(DNSServiceRefDeallocate);
+    FFF_RESET_HISTORY();
 
-#define RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS() __pragma(warning(push)) __pragma(warning(disable : 4996))
-#define RDMNET_MSVC_END_NO_DEP_WARNINGS() __pragma(warning(pop))
+    init_result_ = rdmnetdisc_init();
+  }
 
-#else /* _MSC_VER */
+  void TearDown() override { rdmnetdisc_deinit(); }
 
-#define RDMNET_MSVC_NO_DEP_WRN
-#define RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
-#define RDMNET_MSVC_END_NO_DEP_WARNINGS()
+  lwpa_error_t init_result_;
+};
 
-#endif /* _MSC_VER */
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-char *rdmnet_safe_strncpy(char *destination, const char *source, size_t num);
-
-#ifdef __cplusplus
+TEST_F(TestDiscoveryBonjour, init)
+{
+  ASSERT_EQ(init_result_, LWPA_OK);
 }
-#endif
-
-#endif /* _RDMNET_UTIL_H_ */

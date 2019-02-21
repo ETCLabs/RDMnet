@@ -37,10 +37,6 @@
 #include "lwpa/socket.h"
 #include "rdmnet/defs.h"
 
-/* Does not appear to have a standardized size in E133, current default value that is being used is
- * "_draft-e133._tcp." */
-#define SRV_TYPE_PADDED_LENGTH 32
-
 #define RDMNET_DISC_MAX_BROKER_ADDRESSES 5
 
 #ifdef __cplusplus

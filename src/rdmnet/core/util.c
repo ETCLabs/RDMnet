@@ -25,40 +25,24 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet/core/util.h
- *  \brief Utilities used throughout the RDMnet library.
- *  \author Sam Kearney
+#include "rdmnet/core/util.h"
+
+#include <string.h>
+
+/*! \brief An implementation of the C library function strncpy() which truncates safely.
+ *
+ *  Always puts a null character at destination[num - 1].
+ *  \param[out] destination Pointer to the destination array where the content is to be copied.
+ *  \param[in] source C string to be copied.
+ *  \param[in] num Maximum number of characters to be copied from source.
+ *  \return Destination.
  */
-#ifndef _RDMNET_UTIL_H_
-#define _RDMNET_UTIL_H_
+char *rdmnet_safe_strncpy(char *destination, const char *source, size_t num)
+{
+  if (!destination || num == 0)
+    return NULL;
 
-/* Suppress deprecated function warnings on Windows/MSVC. This is mostly used in situations where
- * Microsoft warns us that a function like strncpy() could be unsafe, but we want to be portable
- * and have made sure that we're using it in a safe way (e.g. by manually inserting null
- * terminators). */
-#ifdef _MSC_VER
-
-#define RDMNET_MSVC_NO_DEP_WRN __pragma(warning(suppress : 4996))
-
-#define RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS() __pragma(warning(push)) __pragma(warning(disable : 4996))
-#define RDMNET_MSVC_END_NO_DEP_WARNINGS() __pragma(warning(pop))
-
-#else /* _MSC_VER */
-
-#define RDMNET_MSVC_NO_DEP_WRN
-#define RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
-#define RDMNET_MSVC_END_NO_DEP_WARNINGS()
-
-#endif /* _MSC_VER */
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-char *rdmnet_safe_strncpy(char *destination, const char *source, size_t num);
-
-#ifdef __cplusplus
+  RDMNET_MSVC_NO_DEP_WRN strncpy(destination, source, num);
+  destination[num - 1] = '\0';
+  return destination;
 }
-#endif
-
-#endif /* _RDMNET_UTIL_H_ */

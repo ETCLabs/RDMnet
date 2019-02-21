@@ -52,6 +52,7 @@
 /* TODO: THIS IS A DRAFT type.  The SRV_TYPE includes the service protocol and has the prepended '_'
  * in all fields */
 #define E133_DNSSD_SRV_TYPE "_draft-e133._tcp."
+#define E133_DNSSD_SRV_TYPE_PADDED_LENGTH (sizeof(E133_DNSSD_SRV_TYPE))
 #define E133_DNSSD_TXTVERS  1
 #define E133_DNSSD_E133VERS 1
 

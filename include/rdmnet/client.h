@@ -33,7 +33,6 @@
 #ifndef _RDMNET_CLIENT_H_
 #define _RDMNET_CLIENT_H_
 
-#include <string.h>
 #include "lwpa/uuid.h"
 #include "lwpa/inet.h"
 #include "rdm/uid.h"
@@ -109,12 +108,11 @@ typedef struct RdmnetEptClientConfig
  *  \param configptr Pointer to RdmnetScopeConfig.
  *  \param scope_str UTF-8 scope string to copy to the RdmnetScopeConfig (const char *).
  */
-#define rdmnet_set_scope(configptr, scope_str)                                                      \
-  do                                                                                                \
-  {                                                                                                 \
-    RDMNET_MSVC_NO_DEP_WRN strncpy((configptr)->scope, scope_str, E133_SCOPE_STRING_PADDED_LENGTH); \
-    (configptr)->scope[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';                                 \
-    (configptr)->has_static_broker_addr = false;                                                    \
+#define rdmnet_set_scope(configptr, scope_str)                                           \
+  do                                                                                     \
+  {                                                                                      \
+    rdmnet_safe_strncpy((configptr)->scope, scope_str, E133_SCOPE_STRING_PADDED_LENGTH); \
+    (configptr)->has_static_broker_addr = false;                                         \
   } while (0)
 
 /*! \brief Initialize an RdmnetScopeConfig struct with a scope string and static broker address.
@@ -126,13 +124,12 @@ typedef struct RdmnetEptClientConfig
  *  \param scope_str UTF-8 scope string to copy to the RdmnetScopeConfig (const char *).
  *  \param broker_addr Address and port for a static broker (LwpaSockaddr).
  */
-#define rdmnet_set_static_scope(configptr, scope_str, broker_addr)                                  \
-  do                                                                                                \
-  {                                                                                                 \
-    RDMNET_MSVC_NO_DEP_WRN strncpy((configptr)->scope, scope_str, E133_SCOPE_STRING_PADDED_LENGTH); \
-    (configptr)->scope[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';                                 \
-    (configptr)->has_static_broker_addr = true;                                                     \
-    (configptr)->static_broker_addr = broker_addr;                                                  \
+#define rdmnet_set_static_scope(configptr, scope_str, broker_addr)                       \
+  do                                                                                     \
+  {                                                                                      \
+    rdmnet_safe_strncpy((configptr)->scope, scope_str, E133_SCOPE_STRING_PADDED_LENGTH); \
+    (configptr)->has_static_broker_addr = true;                                          \
+    (configptr)->static_broker_addr = broker_addr;                                       \
   } while (0)
 
 typedef struct ClientEntryDataRpt

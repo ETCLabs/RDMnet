@@ -70,6 +70,7 @@ set(RDMNET_LIB_SOURCES
   ${RDMNET_SRC}/rdmnet/core/message.c
   ${RDMNET_SRC}/rdmnet/core/msg_buf.c
   ${RDMNET_SRC}/rdmnet/core/rpt_prot.c
+  ${RDMNET_SRC}/rdmnet/core/util.c
 )
 
 add_library(RDMnet

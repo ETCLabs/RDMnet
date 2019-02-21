@@ -38,51 +38,65 @@
  *  less than 100 bytes, so in most cases a simple fixed - sized
  *  256 - byte buffer will be more than sufficient.*/
 #define TXT_RECORD_BUFFER_LENGTH 256
-#define REGISTRATION_STRING_PADDED_LENGTH SRV_TYPE_PADDED_LENGTH + E133_SCOPE_STRING_PADDED_LENGTH + 4
+#define REGISTRATION_STRING_PADDED_LENGTH E133_DNSSD_SRV_TYPE_PADDED_LENGTH + E133_SCOPE_STRING_PADDED_LENGTH + 4
 
 #define MAX_SCOPES_MONITORED ((RDMNET_MAX_SCOPES_PER_CONTROLLER * RDMNET_MAX_CONTROLLERS) + RDMNET_MAX_DEVICES)
+
+typedef enum
+{
+  kResolveStateServiceResolve,
+  kResolveStateGetAddrInfo,
+  kResolveStateDone
+} resolve_state_t;
+
+typedef struct DiscoveredBroker DiscoveredBroker;
+struct DiscoveredBroker
+{
+  char full_service_name[kDNSServiceMaxDomainName];
+  RdmnetBrokerDiscInfo info;
+
+  // State information for this broker.
+  resolve_state_t state;
+  lwpa_socket_t sock;
+  DNSServiceRef dnssd_ref;
+
+  DiscoveredBroker *next;
+};
 
 typedef struct RdmnetScopeMonitorRef RdmnetScopeMonitorRef;
 struct RdmnetScopeMonitorRef
 {
-  DNSServiceRef dnssd_ref;
+  // The configuration data that the user provided.
   RdmnetScopeMonitorConfig config;
+  // The Bonjour handle
+  DNSServiceRef dnssd_ref;
+  // If this ScopeMonitorRef is associated with a registered Broker, that is tracked here. Otherwise
+  // NULL.
+  rdmnet_registered_broker_t broker_handle;
+  // The list of Brokers discovered or being discovered on this scope.
+  DiscoveredBroker *broker_list;
+  // The next ref in the list of scopes being monitored.
   RdmnetScopeMonitorRef *next;
 };
+
+typedef enum
+{
+  kBrokerStateNotRegistered,
+  kBrokerStateInfoSet,
+  kBrokerStateRegisterStarted,
+  kBrokerStateRegistered
+} broker_state_t;
 
 typedef struct RdmnetBrokerRegisterRef
 {
   RdmnetBrokerRegisterConfig config;
   rdmnet_scope_monitor_t scope_monitor_handle;
-} RdmnetBrokerRegisterRef;
+  broker_state_t state;
+  char full_service_name[kDNSServiceMaxDomainName];
 
-typedef enum
-{
-  kBrokerNotRegistered,
-  kBrokerInfoSet,
-  kBrokeRegisterStarted,
-  kBrokerRegistered
-} broker_state_t;
-
-typedef struct OperationData
-{
+  // For hooking up to the DNS-SD API
+  DNSServiceRef dnssd_ref;
   lwpa_socket_t socket;
-  DNSServiceRef search_ref;
-  char full_name[kDNSServiceMaxDomainName];
-} OperationData;
-
-typedef struct Operations
-{
-  DNSServiceRef refs[ARRAY_SIZE_DEFAULT];
-  OperationData op_data[ARRAY_SIZE_DEFAULT];
-  size_t count;
-} Operations;
-
-typedef struct BrokersBeingDiscovered
-{
-  char fullnames[ARRAY_SIZE_DEFAULT][kDNSServiceMaxDomainName];
-  BrokerDiscInfo info[ARRAY_SIZE_DEFAULT];
-  size_t count;
-} BrokersBeingDiscovered;
+} RdmnetBrokerRegisterRef;
 
 #endif /* _RDMNET_DISCOVERY_BONJOUR_H_ */
