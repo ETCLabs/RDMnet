@@ -38,6 +38,12 @@ FAKE_VOID_FUNC(DNSServiceRefDeallocate, DNSServiceRef);
 FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceRegister, DNSServiceRef *, DNSServiceFlags, uint32_t, const char *,
                 const char *, const char *, const char *, uint16_t, uint16_t, const void *, DNSServiceRegisterReply,
                 void *);
+FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceBrowse, DNSServiceRef *, DNSServiceFlags, uint32_t, const char *,
+                const char *, DNSServiceBrowseReply, void *);
+FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceResolve, DNSServiceRef *, DNSServiceFlags, uint32_t, const char *,
+                const char *, const char *, DNSServiceResolveReply, void *);
+FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceGetAddrInfo, DNSServiceRef *, DNSServiceFlags, uint32_t,
+                DNSServiceProtocol, const char *, DNSServiceGetAddrInfoReply, void *);
 
 class TestDiscoveryBonjour : public ::testing::Test
 {

@@ -272,7 +272,7 @@ int rdmnet_new_connection(const LwpaUuid *local_cid)
     conn->rdmnet_conn_failed = false;
     conn->recv_disconn_err = LWPA_TIMEDOUT;
     conn->recv_waiting = false;
-    rdmnet_msg_buf_init(&conn->recv_buf, rc_state.log_params);
+    rdmnet_msg_buf_init(&conn->recv_buf, rdmnet_log_params);
   }
   else
   {

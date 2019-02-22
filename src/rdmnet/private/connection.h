@@ -113,7 +113,7 @@ typedef struct RdmnetConnection
 extern "C" {
 #endif
 
-lwpa_error_t rdmnet_connection_init(const LwpaLogParams *log_params);
+lwpa_error_t rdmnet_connection_init();
 void rdmnet_connection_deinit();
 
 #ifdef __cplusplus

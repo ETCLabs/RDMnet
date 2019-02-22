@@ -67,7 +67,7 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
       res = lwpa_socket_init(NULL);
     if (res == LWPA_OK)
     {
-      res = rdmnetdisc_init(&callbacks);
+      res = rdmnetdisc_init();
       if (res != LWPA_OK)
       {
         lwpa_log(log_params, LWPA_LOG_ERR, "Couldn't initialize RDMnet discovery due to error: '%s'.",

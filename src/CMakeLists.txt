@@ -15,10 +15,6 @@ if(DEFINED RDMNET_CONFIG_LOC)
     ABSOLUTE
     BASE_DIR ${CMAKE_BINARY_DIR}
   )
-else()
-  message("No rdmnet_config.h provided. Creating a default one in the build directory...")
-  configure_file(${RDMNET_ROOT}/tools/cmake/rdmnet_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/rdmnet_config.h)
-  set(CMAKE_INCLUDE_CURRENT_DIR ON)
 endif()
 
 ################################ DNS-SD SUPPORT ###############################
@@ -27,14 +23,50 @@ include(ResolveDnsSdProvider)
 
 ################################### Library ###################################
 
-set(RDMNET_LIB_PUBLIC_HEADERS 
+# RDMnet sources and headers are divided logically into groups - these groups
+# are used to create interface libraries which separate portions of RDMnet for
+# unit testing. They are then combined into the encompassing RDMnet library for
+# external consumption.
+
+# The "RDMnet API" layer: Top-level public API logic called by applications.
+
+set(RDMNET_API_PUBLIC_HEADERS
   ${RDMNET_INCLUDE}/rdmnet/client.h
   ${RDMNET_INCLUDE}/rdmnet/controller.h
   ${RDMNET_INCLUDE}/rdmnet/defs.h
   ${RDMNET_INCLUDE}/rdmnet/device.h
   ${RDMNET_INCLUDE}/rdmnet/llrp.h
   ${RDMNET_INCLUDE}/rdmnet/version.h
+)
+set(RDMNET_API_PRIVATE_HEADERS
+  ${RDMNET_SRC}/rdmnet/private/client.h
+  ${RDMNET_SRC}/rdmnet/private/controller.h
+  ${RDMNET_SRC}/rdmnet/private/device.h
+  ${RDMNET_SRC}/rdmnet/private/llrp.h
+)
+set(RDMNET_API_SOURCES
+  # ${RDMNET_SRC}/rdmnet/client.c
+  # ${RDMNET_SRC}/rdmnet/controller.c
+  # ${RDMNET_SRC}/rdmnet/device.c
+  ""
+)
 
+# This target should not be used externally - it is only for use by the automated tests.
+add_library(RDMnetApi INTERFACE)
+target_sources(RDMnetApi INTERFACE
+  ${RDMNET_API_PUBLIC_HEADERS}
+  ${RDMNET_API_PRIVATE_HEADERS}
+  ${RDMNET_API_SOURCES}
+)
+# target_include_directories(RDMnetApi
+#   PUBLIC ${RDMNET_INCLUDE}
+#   PRIVATE ${RDMNET_SRC}
+# )
+
+# The "RDMnet Core" layer: Lower-level logic shared by the Client APIs and the
+# Broker library.
+
+set(RDMNET_CORE_PUBLIC_HEADERS
   ${RDMNET_INCLUDE}/rdmnet/core/broker_prot.h
   ${RDMNET_INCLUDE}/rdmnet/core/connection.h
   ${RDMNET_INCLUDE}/rdmnet/core/discovery.h
@@ -43,26 +75,16 @@ set(RDMNET_LIB_PUBLIC_HEADERS
   ${RDMNET_INCLUDE}/rdmnet/core/rpt_prot.h
   ${RDMNET_INCLUDE}/rdmnet/core/util.h
 )
-
-set(RDMNET_LIB_PRIVATE_HEADERS
+set(RDMNET_CORE_PRIVATE_HEADERS
   ${RDMNET_SRC}/rdmnet/private/broker_prot.h
-  ${RDMNET_SRC}/rdmnet/private/client.h
   ${RDMNET_SRC}/rdmnet/private/connection.h
-  ${RDMNET_SRC}/rdmnet/private/controller.h
-  ${RDMNET_SRC}/rdmnet/private/device.h
   ${RDMNET_SRC}/rdmnet/private/llrp_prot.h
-  ${RDMNET_SRC}/rdmnet/private/llrp.h
   ${RDMNET_SRC}/rdmnet/private/message.h
   ${RDMNET_SRC}/rdmnet/private/msg_buf.h
   ${RDMNET_SRC}/rdmnet/private/opts.h
   ${RDMNET_SRC}/rdmnet/private/rpt_prot.h
 )
-
-set(RDMNET_LIB_SOURCES
-  ${RDMNET_SRC}/rdmnet/client.c
-  ${RDMNET_SRC}/rdmnet/controller.c
-  ${RDMNET_SRC}/rdmnet/device.c
-
+set(RDMNET_CORE_SOURCES
   ${RDMNET_SRC}/rdmnet/core/broker_prot.c
   ${RDMNET_SRC}/rdmnet/core/connection.c
   ${RDMNET_SRC}/rdmnet/core/llrp_prot.c
@@ -73,29 +95,54 @@ set(RDMNET_LIB_SOURCES
   ${RDMNET_SRC}/rdmnet/core/util.c
 )
 
+# This target should not be used externally - it is only for use by the automated tests.
+add_library(RDMnetCore INTERFACE)
+target_sources(RDMnetCore INTERFACE
+  ${RDMNET_CORE_PUBLIC_HEADERS}
+  ${RDMNET_CORE_PRIVATE_HEADERS}
+  ${RDMNET_CORE_SOURCES}
+)
+# target_include_directories(RDMnetCore
+#   PUBLIC ${RDMNET_INCLUDE}
+#   PRIVATE ${RDMNET_SRC}
+# )
+
+# Combination variables for convenience
+
+set(RDMNET_LIB_PUBLIC_HEADERS 
+  ${RDMNET_API_PUBLIC_HEADERS}
+  ${RDMNET_CORE_PUBLIC_HEADERS}
+)
+set(RDMNET_LIB_PRIVATE_HEADERS
+  ${RDMNET_API_PRIVATE_HEADERS}
+  ${RDMNET_CORE_PRIVATE_HEADERS}
+)
+set(RDMNET_LIB_SOURCES
+  ${RDMNET_API_SOURCES}
+  ${RDMNET_CORE_SOURCES}
+)
+
+# The main RDMnet library
 add_library(RDMnet
   ${RDMNET_LIB_PUBLIC_HEADERS}
   ${RDMNET_LIB_PRIVATE_HEADERS}
   ${RDMNET_LIB_SOURCES}
-  ${DNS_SD_ADDITIONAL_SOURCES}
+)
+target_include_directories(RDMnet
+  PUBLIC ${RDMNET_INCLUDE}
+  PRIVATE ${RDMNET_SRC}
+)
+target_link_libraries(RDMnet
+  PUBLIC lwpa RDM
+  PRIVATE RDMnetDiscovery dnssd
 )
 
 # Organize sources in IDEs
-source_group(TREE ${RDMNET_SRC}/rdmnet PREFIX src FILES
-  ${RDMNET_LIB_SOURCES}
-  ${DNS_SD_ADDITIONAL_SOURCES}
-)
-source_group(TREE ${RDMNET_INCLUDE}/rdmnet PREFIX include FILES ${RDMNET_LIB_PUBLIC_HEADERS})
-source_group(TREE ${RDMNET_SRC}/rdmnet PREFIX include FILES ${RDMNET_LIB_PRIVATE_HEADERS})
-
-target_include_directories(RDMnet
-  PUBLIC ${RDMNET_INCLUDE}
-  PRIVATE ${RDMNET_SRC} ${DNS_SD_ADDITIONAL_INCLUDE_DIRS}
-)
-target_link_libraries(RDMnet PUBLIC lwpa RDM ${DNS_SD_ADDITIONAL_LIBS})
-if(DNS_SD_BUILD_DEPENDENCIES)
-  add_dependencies(RDMnet ${DNS_SD_BUILD_DEPENDENCIES})
-endif()
+source_group(include FILES ${RDMNET_API_PUBLIC_HEADERS})
+source_group(src FILES ${RDMNET_API_SOURCES})
+source_group(src\\core FILES ${RDMNET_CORE_SOURCES})
+source_group(include\\core FILES ${RDMNET_CORE_PUBLIC_HEADERS})
+source_group(include\\private FILES ${RDMNET_CORE_PRIVATE_HEADERS} ${RDMNET_API_PRIVATE_HEADERS})
 
 #################################### Broker ###################################
 

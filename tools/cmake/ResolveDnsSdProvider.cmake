@@ -10,18 +10,24 @@ option(RDMNET_MOCK_DISCOVERY "Use the empty mock files for the DNS-SD provider" 
 option(RDMNET_WINDOWS_USE_BONJOUR_SDK
   "Use Apple's Bonjour SDK for Windows (LICENSING RESTRICTIONS MAY APPLY)" OFF)
 
+# The imported DNS-SD library. This will have its properties set by the various options below.
+add_library(dnssd INTERFACE)
+# The RDMnet discovery layer required to interface with the imported library.
+add_library(RDMnetDiscovery INTERFACE)
+
 if(RDMNET_MOCK_DISCOVERY)
   set(DNS_SD_ADDITIONAL_SOURCES ${RDMNET_SRC}/rdmnet/discovery/mock.c)
 else()
   if(WIN32)
     # On Windows, we use Bonjour for Windows, either through the Bonjour SDK or ETC's Bonjour fork.
-    set(DNS_SD_ADDITIONAL_SOURCES
+    set(RDMNET_DISCOVERY_SOURCES
       ${RDMNET_SRC}/rdmnet/discovery/bonjour.h
       ${RDMNET_SRC}/rdmnet/discovery/bonjour.c
     )
+    target_sources(RDMnetDiscovery INTERFACE ${RDMNET_DISCOVERY_SOURCES})
+    source_group(discovery FILES ${RDMNET_DISCOVERY_SOURCES})
 
-    # Using Apple's Bonjour SDK for Windows
-    if(RDMNET_WINDOWS_USE_BONJOUR_SDK)
+    if(RDMNET_WINDOWS_USE_BONJOUR_SDK) # Using Apple's Bonjour SDK for Windows
 
       # The location of the Bonjour SDK
       if(DEFINED BONJOUR_SDK_ROOT)
@@ -30,27 +36,25 @@ else()
           BASE_DIR ${CMAKE_BINARY_DIR}
         )
       else()
-        set(BONJOUR_SDK_ROOT $ENV{BONJOUR_SDK_HOME})
+        file(TO_CMAKE_PATH $ENV{BONJOUR_SDK_HOME} BONJOUR_SDK_ROOT)
       endif()
 
-      # Find the Bonjour SDK lib
-      set(DNS_SD_ADDITIONAL_INCLUDE_DIRS ${BONJOUR_SDK_ROOT}/Include)
+      # Setup the Bonjour SDK lib
+      add_library(bonjour_static STATIC IMPORTED)
+      target_include_directories(bonjour_static INTERFACE ${BONJOUR_SDK_ROOT}/Include)
       # Is this really the way to determine if we are 64-bit? Seems dumb...
       if(CMAKE_SIZEOF_VOID_P EQUAL 8)
         set(BONJOUR_LIB_DIR ${BONJOUR_SDK_ROOT}/Lib/x64)
       else()
         set(BONJOUR_LIB_DIR ${BONJOUR_SDK_ROOT}/Lib/Win32)
       endif()
-      find_library(BONJOUR_LIB
-        NAMES dnssd
-        HINTS ${BONJOUR_LIB_DIR}
-      )
-
-      if(NOT BONJOUR_LIB)
+      if(NOT EXISTS ${BONJOUR_LIB_DIR})
         message(FATAL_ERROR "Make sure the Bonjour SDK is installed, and try again.")
       endif()
-
-      set(DNS_SD_ADDITIONAL_LIBS ${BONJOUR_LIB})
+      set_target_properties(bonjour_static PROPERTIES
+        IMPORTED_LOCATION ${BONJOUR_LIB_DIR}/dnssd.lib
+      )
+      target_link_libraries(dnssd INTERFACE bonjour_static)
 
     else() # Using ETC's Bonjour fork
 
@@ -73,31 +77,42 @@ else()
         endif()
       endif()
 
-      if(MDNSWINDOWS_SRC_LOC)
+      if(MDNSWINDOWS_SRC_LOC) # Add mDNSWindows as a source dependency
+
         get_filename_component(MDNSWINDOWS_SRC_LOC ${MDNSWINDOWS_SRC_LOC}
           ABSOLUTE
           BASE_DIR ${CMAKE_BINARY_DIR}
         )
         add_subdirectory(${MDNSWINDOWS_SRC_LOC}/mDNSWindows/DLLStub mDNSWindows/static)
         add_subdirectory(${MDNSWINDOWS_SRC_LOC}/mDNSWindows/DLL mDNSWindows/DLL)
-        set(DNS_SD_BUILD_DEPENDENCIES dnssd_etc)
+        add_dependencies(dnssd dnssd_etc)
+        target_link_libraries(dnssd INTERFACE dnssdStatic)
+        # set_target_properties(dnssd PROPERTIES IMPORTED_LOCATION $<TARGET_FILE:dnssdStatic>)
         set(DNS_SD_DLL $<TARGET_FILE:dnssd_etc> PARENT_SCOPE)
-        set(DNS_SD_ADDITIONAL_LIBS dnssdStatic)
-      elseif(MDNSWINDOWS_INSTALL_LOC)
+
+      elseif(MDNSWINDOWS_INSTALL_LOC) # Add mDNSWindows as a downloaded binary package
+
         get_filename_component(MDNSWINDOWS_INSTALL_LOC ${MDNSWINDOWS_INSTALL_LOC}
           ABSOLUTE
           BASE_DIR ${CMAKE_BINARY_DIR}
         )
-        find_library(BONJOUR_LIB
-          NAMES dnssd
-          HINTS ${MDNSWINDOWS_INSTALL_LOC}/lib
-        )
-        if(BONJOUR_LIB_NOTFOUND)
+        if(NOT EXISTS ${MDNSWINDOWS_INSTALL_LOC}/lib)
           message(FATAL_ERROR "${MDNSWINDOWS_INSTALL_LOC} does not seem to contain a valid installation.")
         endif()
 
-        set(DNS_SD_ADDITIONAL_INCLUDE_DIRS ${MDNSWINDOWS_INSTALL_LOC}/include)
-        set(DNS_SD_ADDITIONAL_LIBS ${BONJOUR_LIB})
+        # Setup the imported mDNSWindows library
+        add_library(mdnswin STATIC IMPORTED)
+        set_target_properties(mdnswin PROPERTIES IMPORTED_LOCATION ${MDNSWINDOWS_INSTALL_LOC}/lib/dnssd.lib)
+        target_include_directories(mdnswin INTERFACE ${MDNSWINDOWS_INSTALL_LOC}/include)
+        target_link_libraries(dnssd INTERFACE mdnswin)
+
+        # mDNSWindows v1.2.0 and higher comes with a mock binary which is missing some symbols for
+        # unit testing
+        # find_library(BONJOUR_MOCK_LIB
+        #   NAMES dnssd_mock
+        #   HINTS ${MDNSWINDOWS_INSTALL_LOC}/lib
+        # )
+
         set(DNS_SD_DLL ${MDNSWINDOWS_INSTALL_LOC}/dll/dnssd.dll PARENT_SCOPE)
         configure_file(${RDMNET_ROOT}/tools/ci/mdnsmerge.wxi.in
           ${RDMNET_ROOT}/tools/install/windows/GeneratedFiles/mdnsmerge.wxi

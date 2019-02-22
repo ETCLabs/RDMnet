@@ -61,7 +61,7 @@ typedef struct RdmnetControllerConfig
   RdmnetScopeConfig *scope_list;
   size_t num_scopes;
   RdmnetControllerCallbacks callbacks;
-} RdmnetControllerData;
+} RdmnetControllerConfig;
 
 lwpa_error_t rdmnet_controller_create(const RdmnetControllerConfig *config, rdmnet_controller_t *handle);
 lwpa_error_t rdmnet_controller_destroy(rdmnet_controller_t handle);

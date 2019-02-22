@@ -70,6 +70,7 @@ struct RdmnetScopeMonitorRef
   RdmnetScopeMonitorConfig config;
   // The Bonjour handle
   DNSServiceRef dnssd_ref;
+  lwpa_socket_t socket;
   // If this ScopeMonitorRef is associated with a registered Broker, that is tracked here. Otherwise
   // NULL.
   rdmnet_registered_broker_t broker_handle;
