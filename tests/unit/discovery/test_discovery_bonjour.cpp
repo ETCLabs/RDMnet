@@ -28,21 +28,21 @@
 #include "dns_sd.h"
 
 #include "gtest/gtest.h"
-#include "fff.h"
+#include "fff_cc.h"
 DEFINE_FFF_GLOBALS;
 
 // Mocking the dns_sd.h interface
-FAKE_VALUE_FUNC(dnssd_sock_t, DNSServiceRefSockFD, DNSServiceRef);
-FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceProcessResult, DNSServiceRef);
-FAKE_VOID_FUNC(DNSServiceRefDeallocate, DNSServiceRef);
-FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceRegister, DNSServiceRef *, DNSServiceFlags, uint32_t, const char *,
-                const char *, const char *, const char *, uint16_t, uint16_t, const void *, DNSServiceRegisterReply,
-                void *);
-FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceBrowse, DNSServiceRef *, DNSServiceFlags, uint32_t, const char *,
-                const char *, DNSServiceBrowseReply, void *);
-FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceResolve, DNSServiceRef *, DNSServiceFlags, uint32_t, const char *,
-                const char *, const char *, DNSServiceResolveReply, void *);
-FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceGetAddrInfo, DNSServiceRef *, DNSServiceFlags, uint32_t,
+FAKE_VALUE_FUNC(dnssd_sock_t, __stdcall, DNSServiceRefSockFD, DNSServiceRef);
+FAKE_VALUE_FUNC(DNSServiceErrorType, __stdcall, DNSServiceProcessResult, DNSServiceRef);
+FAKE_VOID_FUNC(__stdcall, DNSServiceRefDeallocate, DNSServiceRef);
+FAKE_VALUE_FUNC(DNSServiceErrorType, __stdcall, DNSServiceRegister, DNSServiceRef *, DNSServiceFlags, uint32_t,
+                const char *, const char *, const char *, const char *, uint16_t, uint16_t, const void *,
+                DNSServiceRegisterReply, void *);
+FAKE_VALUE_FUNC(DNSServiceErrorType, __stdcall, DNSServiceBrowse, DNSServiceRef *, DNSServiceFlags, uint32_t,
+                const char *, const char *, DNSServiceBrowseReply, void *);
+FAKE_VALUE_FUNC(DNSServiceErrorType, __stdcall, DNSServiceResolve, DNSServiceRef *, DNSServiceFlags, uint32_t,
+                const char *, const char *, const char *, DNSServiceResolveReply, void *);
+FAKE_VALUE_FUNC(DNSServiceErrorType, __stdcall, DNSServiceGetAddrInfo, DNSServiceRef *, DNSServiceFlags, uint32_t,
                 DNSServiceProtocol, const char *, DNSServiceGetAddrInfoReply, void *);
 
 class TestDiscoveryBonjour : public ::testing::Test

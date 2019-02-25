@@ -29,15 +29,17 @@ target_link_libraries(test_rdmnet_broker Broker gtest)
 add_executable(test_rdmnet_discovery
   # RDMnet Discovery lib unit test sources
   discovery/test_discovery_bonjour.cpp
-
-  # A targeted subset of the library sources
-#  ${RDMNET_SRC}/rdmnet/core/util.c
-#  ${RDMNET_SRC}/rdmnet/discovery/bonjour.c
 )
 target_include_directories(test_rdmnet_discovery PRIVATE
-#  ${CMAKE_CURRENT_LIST_DIR}/discovery
   ${CMAKE_CURRENT_LIST_DIR}/c_mock
-  #${RDMNET_INCLUDE}
-#  ${RDMNET_SRC}
 )
-target_link_libraries(test_rdmnet_discovery RDMnet gtest_main)
+target_link_libraries(test_rdmnet_discovery PRIVATE RDMnetDiscovery dnssd_mock RDMnet gtest_main)
+
+if(DEFINED DNS_SD_DLL)
+  add_custom_command(
+    TARGET test_rdmnet_discovery
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${DNS_SD_DLL} $<TARGET_FILE_DIR:test_rdmnet_discovery>
+    COMMENT "Copying DNS-SD dll to executable directory..."
+  )
+endif()

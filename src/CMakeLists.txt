@@ -69,7 +69,6 @@ target_sources(RDMnetApi INTERFACE
 set(RDMNET_CORE_PUBLIC_HEADERS
   ${RDMNET_INCLUDE}/rdmnet/core/broker_prot.h
   ${RDMNET_INCLUDE}/rdmnet/core/connection.h
-  ${RDMNET_INCLUDE}/rdmnet/core/discovery.h
   ${RDMNET_INCLUDE}/rdmnet/core/ept_prot.h
   ${RDMNET_INCLUDE}/rdmnet/core/message.h
   ${RDMNET_INCLUDE}/rdmnet/core/rpt_prot.h

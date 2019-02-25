@@ -32,6 +32,8 @@
 #ifndef _RDMNET_UTIL_H_
 #define _RDMNET_UTIL_H_
 
+#include <stddef.h>
+
 /* Suppress deprecated function warnings on Windows/MSVC. This is mostly used in situations where
  * Microsoft warns us that a function like strncpy() could be unsafe, but we want to be portable
  * and have made sure that we're using it in a safe way (e.g. by manually inserting null

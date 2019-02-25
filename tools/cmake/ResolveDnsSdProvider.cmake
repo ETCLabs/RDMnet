@@ -12,20 +12,27 @@ option(RDMNET_WINDOWS_USE_BONJOUR_SDK
 
 # The imported DNS-SD library. This will have its properties set by the various options below.
 add_library(dnssd INTERFACE)
+
 # The RDMnet discovery layer required to interface with the imported library.
+set(RDMNET_DISCOVERY_SOURCES ${RDMNET_INCLUDE}/rdmnet/core/discovery.h)
+
 add_library(RDMnetDiscovery INTERFACE)
+target_sources(RDMnetDiscovery INTERFACE ${RDMNET_DISCOVERY_SOURCES})
+target_include_directories(RDMnetDiscovery INTERFACE ${RDMNET_INCLUDE} ${RDMNET_SRC})
+source_group(include\\core FILES ${RDMNET_DISCOVERY_SOURCES})
+
+# A version of the DNS-SD library with certain symbols removed for mocking.
+add_library(dnssd_mock INTERFACE)
 
 if(RDMNET_MOCK_DISCOVERY)
-  set(DNS_SD_ADDITIONAL_SOURCES ${RDMNET_SRC}/rdmnet/discovery/mock.c)
+  set(RDMNET_DISCOVERY_ADDITIONAL_SOURCES ${RDMNET_SRC}/rdmnet/discovery/mock.c)
 else()
   if(WIN32)
     # On Windows, we use Bonjour for Windows, either through the Bonjour SDK or ETC's Bonjour fork.
-    set(RDMNET_DISCOVERY_SOURCES
+    set(RDMNET_DISCOVERY_ADDITIONAL_SOURCES
       ${RDMNET_SRC}/rdmnet/discovery/bonjour.h
       ${RDMNET_SRC}/rdmnet/discovery/bonjour.c
     )
-    target_sources(RDMnetDiscovery INTERFACE ${RDMNET_DISCOVERY_SOURCES})
-    source_group(discovery FILES ${RDMNET_DISCOVERY_SOURCES})
 
     if(RDMNET_WINDOWS_USE_BONJOUR_SDK) # Using Apple's Bonjour SDK for Windows
 
@@ -87,6 +94,7 @@ else()
         add_subdirectory(${MDNSWINDOWS_SRC_LOC}/mDNSWindows/DLL mDNSWindows/DLL)
         add_dependencies(dnssd dnssd_etc)
         target_link_libraries(dnssd INTERFACE dnssdStatic)
+        target_link_libraries(dnssd_mock INTERFACE dnssdStaticMock)
         # set_target_properties(dnssd PROPERTIES IMPORTED_LOCATION $<TARGET_FILE:dnssdStatic>)
         set(DNS_SD_DLL $<TARGET_FILE:dnssd_etc> PARENT_SCOPE)
 
@@ -106,12 +114,11 @@ else()
         target_include_directories(mdnswin INTERFACE ${MDNSWINDOWS_INSTALL_LOC}/include)
         target_link_libraries(dnssd INTERFACE mdnswin)
 
-        # mDNSWindows v1.2.0 and higher comes with a mock binary which is missing some symbols for
-        # unit testing
-        # find_library(BONJOUR_MOCK_LIB
-        #   NAMES dnssd_mock
-        #   HINTS ${MDNSWINDOWS_INSTALL_LOC}/lib
-        # )
+        # Setup the mock mDNSWindows library
+        add_library(mdnswin_mock STATIC IMPORTED)
+        set_target_properties(mdnswin_mock PROPERTIES IMPORTED_LOCATION ${MDNSWINDOWS_INSTALL_LOC}/lib/dnssd_mock.lib)
+        target_include_directories(mdnswin_mock INTERFACE ${MDNSWINDOWS_INSTALL_LOC}/include)
+        target_link_libraries(dnssd_mock INTERFACE mdnswin_mock)
 
         set(DNS_SD_DLL ${MDNSWINDOWS_INSTALL_LOC}/dll/dnssd.dll PARENT_SCOPE)
         configure_file(${RDMNET_ROOT}/tools/ci/mdnsmerge.wxi.in
@@ -124,3 +131,6 @@ else()
     message(FATAL_ERROR "There is currently no DNS-SD provider supported for this platform.")
   endif()
 endif()
+
+target_sources(RDMnetDiscovery INTERFACE ${RDMNET_DISCOVERY_ADDITIONAL_SOURCES})
+source_group(discovery FILES ${RDMNET_DISCOVERY_ADDITIONAL_SOURCES})
