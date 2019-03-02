@@ -172,6 +172,7 @@ public:
   std::map<uint16_t, std::unique_ptr<BrokerConnection>> broker_connections_;
 
 signals:
+  void brokerConnection(uint16_t conn);
   void brokerDisconnection(uint16_t conn);
   void addRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
   void removeRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
@@ -204,8 +205,6 @@ private:
   // Keeps track of scope updates of other controllers
   std::map<RdmUid, uint16_t> previous_slot_;
 
-  friend void broker_found(const char *scope, const BrokerDiscInfo *broker_info, void *context);
-
 public slots:
   void addScopeToMonitor(std::string scope);
   void directChildrenRevealed(const QModelIndex &parentIndex);
@@ -214,6 +213,7 @@ public slots:
   void removeCustomLogOutputStream(LogOutputStream *stream);
 
 protected slots:
+  void processBrokerConnection(uint16_t conn);
   void processBrokerDisconnection(uint16_t conn);
   void processAddRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
   void processRemoveRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
@@ -239,6 +239,9 @@ public:
   void searchingItemRevealed(SearchingStatusItem *searchItem);
 
   size_t getNumberOfCustomLogOutputStreams();
+
+  void connectToBroker(const char *scope, const BrokerDiscInfo *broker_info);
+  void emitBrokerConnection(uint16_t conn);
 
   /******* QStandardItemModel overrides *******/
 

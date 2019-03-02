@@ -114,18 +114,7 @@ void broker_found(const char *scope, const BrokerDiscInfo *broker_info, void *co
   RDMnetNetworkModel *model = static_cast<RDMnetNetworkModel *>(context);
   if (model)
   {
-    if (lwpa_rwlock_writelock(&model->prop_lock, LWPA_WAIT_FOREVER))
-    {
-      for (auto iter = model->broker_connections_.begin(); iter != model->broker_connections_.end(); ++iter)
-      {
-        if (iter->second->scope() == scope)
-        {
-          iter->second->connect(broker_info);
-        }
-      }
-
-      lwpa_rwlock_writeunlock(&model->prop_lock);
-    }
+    model->connectToBroker(scope, broker_info);
   }
 }
 
@@ -488,6 +477,13 @@ void BrokerConnection::runConnectStateMachine()
   connect_in_progress_ = false;
   broker_item_->setText(generateBrokerItemText());
   broker_item_->setScope(scope_);
+
+  RDMnetNetworkModel *model = dynamic_cast<RDMnetNetworkModel *>(broker_item_->model());
+
+  if (model != NULL)
+  {
+    model->emitBrokerConnection(conn_);
+  }
 }
 
 void BrokerConnection::appendBrokerItemToTree(QStandardItem *invisibleRootItem, uint32_t connectionCookie)
@@ -674,6 +670,23 @@ void RDMnetNetworkModel::removeCustomLogOutputStream(LogOutputStream *stream)
   log_.removeCustomOutputStream(stream);
 }
 
+void RDMnetNetworkModel::processBrokerConnection(uint16_t conn)
+{
+  if (broker_connections_.find(conn) != broker_connections_.end())
+  {
+    static RdmParamData resp_data_list[MAX_RESPONSES_IN_ACK_OVERFLOW];
+    size_t num_responses;
+    uint16_t nack_reason;
+
+    // Broadcast GET_RESPONSE notification because of new connection
+    if (getTCPCommsStatus(NULL, 0, resp_data_list, &num_responses, &nack_reason))
+    {
+      SendRDMGetResponses(kRdmnetControllerBroadcastUid, E133_BROADCAST_ENDPOINT, E133_TCP_COMMS_STATUS, resp_data_list,
+                          num_responses, 0, 0);
+    }
+  }
+}
+
 void RDMnetNetworkModel::processBrokerDisconnection(uint16_t conn)
 {
   if (lwpa_rwlock_writelock(&prop_lock, LWPA_WAIT_FOREVER))
@@ -694,6 +707,17 @@ void RDMnetNetworkModel::processBrokerDisconnection(uint16_t conn)
         connection->treeBrokerItem()->rdmnet_clients_.clear();
         connection->treeBrokerItem()->completelyRemoveChildren(0, connection->treeBrokerItem()->rowCount());
         connection->treeBrokerItem()->enableChildrenSearch();
+
+        static RdmParamData resp_data_list[MAX_RESPONSES_IN_ACK_OVERFLOW];
+        size_t num_responses;
+        uint16_t nack_reason;
+
+        // Broadcast GET_RESPONSE notification because of lost connection
+        if (getTCPCommsStatus(NULL, 0, resp_data_list, &num_responses, &nack_reason))
+        {
+          SendRDMGetResponses(kRdmnetControllerBroadcastUid, E133_BROADCAST_ENDPOINT, E133_TCP_COMMS_STATUS, 
+            resp_data_list, num_responses, 0, 0);
+        }
       }
 
       if (!connection->isUsingMDNS())
@@ -1416,7 +1440,9 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel()
   qRegisterMetaType<std::vector<PropertyItem *> *>("std::vector<PropertyItem*>*");
   qRegisterMetaType<QVector<int>>("QVector<int>");
   qRegisterMetaType<uint16_t>("uint16_t");
-
+  
+  connect(model, SIGNAL(brokerConnection(uint16_t)), model, SLOT(processBrokerConnection(uint16_t)),
+          Qt::AutoConnection);
   connect(model, SIGNAL(brokerDisconnection(uint16_t)), model, SLOT(processBrokerDisconnection(uint16_t)),
           Qt::AutoConnection);
   connect(model, SIGNAL(addRDMnetClients(BrokerConnection *, const std::vector<ClientEntryData> &)), model,
@@ -1554,6 +1580,27 @@ void RDMnetNetworkModel::searchingItemRevealed(SearchingStatusItem *searchItem)
 size_t RDMnetNetworkModel::getNumberOfCustomLogOutputStreams()
 {
   return log_.getNumberOfCustomLogOutputStreams();
+}
+
+void RDMnetNetworkModel::connectToBroker(const char * scope, const BrokerDiscInfo * broker_info)
+{
+  if (lwpa_rwlock_writelock(&prop_lock, LWPA_WAIT_FOREVER))
+  {
+    for (auto iter = broker_connections_.begin(); iter != broker_connections_.end(); ++iter)
+    {
+      if (iter->second->scope() == scope)
+      {
+        iter->second->connect(broker_info);
+      }
+    }
+
+    lwpa_rwlock_writeunlock(&prop_lock);
+  }
+}
+
+void RDMnetNetworkModel::emitBrokerConnection(uint16_t conn)
+{
+  emit brokerConnection(conn);
 }
 
 bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value, int role)
@@ -2883,7 +2930,7 @@ bool RDMnetNetworkModel::getTCPCommsStatus(const uint8_t *param_data, uint8_t pa
       memcpy(cur_ptr, scope.data(), min(scope.length(), E133_SCOPE_STRING_PADDED_LENGTH));
       cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
 
-      if (lwpaip_is_invalid(&saddr.ip))
+      if (lwpaip_is_invalid(&saddr.ip) || !connection.second->connected())
       {
         lwpa_pack_32b(cur_ptr, 0);
         cur_ptr += 4;
@@ -3532,7 +3579,6 @@ void RDMnetNetworkModel::componentScope(uint16_t conn, uint16_t scopeSlot, const
       previous_slot_[client->Uid()] = scopeSlot;
       sendGetNextControllerScope(conn, resp->src_uid.manu, resp->src_uid.id, scopeSlot);
     }
-    //}
   }
 }
 

@@ -222,23 +222,15 @@ void RDMnetControllerGUI::removeSelectedBrokerTriggered()
     if (net_details_proxy_->currentParentIsChildOfOrEqualTo(currently_selected_broker_item_))
     {
       ui.detailsTreeView->clearSelection();
-      //ui.detailsTreeView->setRootIndex(QModelIndex());
-      ui.detailsTreeView->reset();
 
       net_details_proxy_->setFilterEnabled(false);
       net_details_proxy_->setCurrentParentItem(NULL);
     }
 
     emit removeSelectedBrokerActivated(currently_selected_broker_item_);
-    currently_selected_broker_item_ = NULL;
-
-    ui.removeSelectedBrokerButton->setEnabled(false);
-    ui.networkTreeView->clearSelection();
 
     net_details_proxy_->setFilterEnabled(true);
     net_details_proxy_->invalidate();
-
-    ui.currentSelectionLabel->setText(QString(""));
   }
 }
 
@@ -248,7 +240,6 @@ void RDMnetControllerGUI::removeAllBrokersTriggered()
 
   ui.networkTreeView->clearSelection();
   ui.detailsTreeView->clearSelection();
-  //ui.detailsTreeView->setRootIndex(QModelIndex());
   ui.detailsTreeView->reset();
 
   net_details_proxy_->setFilterEnabled(false);
