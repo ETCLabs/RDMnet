@@ -1665,6 +1665,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
             if (pid == E133_COMPONENT_SCOPE)
             {
               // Scope slot (default to 1)
+              int slot = index.data(RDMnetNetworkItem::ScopeSlotRole).toInt();
               lwpa_pack_16b(packPtr, index.data(RDMnetNetworkItem::ScopeSlotRole).toInt());
               packPtr += 2;
             }
@@ -1750,10 +1751,31 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
                     *packPtr = E133_NO_STATIC_CONFIG;
                   }
 
+                  uint8_t staticConfigType = *packPtr;
+                  uint16_t port = 0;
+
                   ++packPtr;
 
-                  packPtr = packIPAddressItem(ipv4String, kLwpaIpTypeV4, packPtr, false);
-                  packPtr = packIPAddressItem(ipv6String, kLwpaIpTypeV6, packPtr, true);
+                  packPtr = packIPAddressItem(ipv4String, kLwpaIpTypeV4, packPtr, 
+                                              (staticConfigType == E133_STATIC_CONFIG_IPV4));
+
+                  if (staticConfigType == E133_STATIC_CONFIG_IPV4)
+                  {
+                    // This way, packIPAddressItem obtained the port value for us.
+                    // Save the port value for later - we don't want it packed here.
+                    packPtr -= 2;
+                    port = lwpa_upack_16b(packPtr);
+                  }
+
+                  packPtr = packIPAddressItem(ipv6String, kLwpaIpTypeV6, packPtr, 
+                                              (staticConfigType != E133_STATIC_CONFIG_IPV4));
+
+                  if (staticConfigType == E133_STATIC_CONFIG_IPV4)
+                  {
+                    // Pack the port value saved from earlier.
+                    lwpa_pack_16b(packPtr, port);
+                    packPtr += 2;
+                  }
                 }
                 else
                 {
@@ -3573,6 +3595,8 @@ void RDMnetNetworkModel::componentScope(uint16_t conn, uint16_t scopeSlot, const
                           RDMnetNetworkItem::ScopeDataRole);
     emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, scopeString, 
                           RDMnetNetworkItem::ScopeDataRole);
+    emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV4PropName, scopeSlot, RDMnetNetworkItem::ScopeSlotRole);
+    emit setPropertyData(client, E133_COMPONENT_SCOPE, staticV6PropName, scopeSlot, RDMnetNetworkItem::ScopeSlotRole);
 
     if (client->ClientType() == kRPTClientTypeController)
     {
@@ -3798,7 +3822,7 @@ uint8_t *RDMnetNetworkModel::packIPAddressItem(const QVariant &value, lwpa_iptyp
 {
   char ipStrBuffer[64];
   unsigned int portNumber;
-  size_t memSize = (addrType == kLwpaIpTypeV4) ? 4 : (LWPA_IPV6_BYTES) + (packPort ? 2 : 0);
+  size_t memSize = ((addrType == kLwpaIpTypeV4) ? 4 : (LWPA_IPV6_BYTES)) + (packPort ? 2 : 0);
 
   if (packPtr == NULL)
   {
