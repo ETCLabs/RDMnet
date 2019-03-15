@@ -406,7 +406,7 @@ void BrokerConnection::connect(const BrokerDiscInfo *broker_info)
 
 void BrokerConnection::connect()
 {
-  if (static_info_initialized_)
+  if (static_info_initialized_ && !connected_)
   {
     LwpaThreadParams tparams;
     tparams.platform_data = NULL;
@@ -2421,7 +2421,8 @@ void RDMnetNetworkModel::ProcessRDMResponse(uint16_t conn, bool have_command, co
 
   if (first_resp.command_class == E120_GET_COMMAND_RESPONSE)
   {
-    log_.Log(LWPA_LOG_INFO, "Got GET_COMMAND_RESPONSE with PID %d", first_resp.param_id);
+    log_.Log(LWPA_LOG_INFO, "Got GET_COMMAND_RESPONSE with PID 0x%04x from Controller %04x:%08x", 
+             first_resp.param_id, first_resp.src_uid.manu, first_resp.src_uid.id);
 
     switch (first_resp.param_id)
     {
