@@ -45,6 +45,13 @@ FAKE_VALUE_FUNC(DNSServiceErrorType, __stdcall, DNSServiceResolve, DNSServiceRef
 FAKE_VALUE_FUNC(DNSServiceErrorType, __stdcall, DNSServiceGetAddrInfo, DNSServiceRef *, DNSServiceFlags, uint32_t,
                 DNSServiceProtocol, const char *, DNSServiceGetAddrInfoReply, void *);
 
+// Mocking the C callback function pointers
+FAKE_VOID_FUNC(__cdecl, broker_registered, rdmnet_registered_broker_t, const char *, void *);
+FAKE_VOID_FUNC(__cdecl, broker_register_error, rdmnet_registered_broker_t, int, void *);
+FAKE_VOID_FUNC(__cdecl, broker_found, rdmnet_registered_broker_t, const RdmnetBrokerDiscInfo *, void *);
+FAKE_VOID_FUNC(__cdecl, broker_lost, rdmnet_registered_broker_t, const char *, const char *, void *);
+FAKE_VOID_FUNC(__cdecl, scope_monitor_error, rdmnet_registered_broker_t, const char *, int, void *);
+
 class TestDiscoveryBonjour : public ::testing::Test
 {
 protected:
@@ -67,4 +74,21 @@ protected:
 TEST_F(TestDiscoveryBonjour, init)
 {
   ASSERT_EQ(init_result_, LWPA_OK);
+}
+
+TEST_F(TestDiscoveryBonjour, reg)
+{
+  RdmnetBrokerRegisterConfig config;
+
+  config.my_info.cid = LWPA_NULL_UUID;
+  config.my_info.service_name[0] = '\0';
+  config.my_info.scope[0] = '\0';
+  config.my_info.listen_addrs_count = 0;
+  config.callbacks = {broker_registered, broker_register_error, broker_found, broker_lost, scope_monitor_error};
+  config.callback_context = this;
+
+  rdmnet_registered_broker_t handle;
+  ASSERT_NE(LWPA_OK, rdmnetdisc_register_broker(&config, &handle));
+  ASSERT_EQ(broker_registered_fake.call_count, 0u);
+  ASSERT_EQ(DNSServiceRegister_fake.call_count, 0u);
 }

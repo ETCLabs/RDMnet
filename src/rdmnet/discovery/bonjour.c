@@ -29,14 +29,17 @@
 #include "rdmnet/discovery/bonjour.h"
 
 #include <string.h>
-#include <stdio.h>
-#include <time.h>
 #include <stdlib.h>
 #include "rdmnet/private/opts.h"
 #include "lwpa/inet.h"
 #include "lwpa/bool.h"
 #include "lwpa/pack.h"
 #include "rdmnet/core/util.h"
+
+// Compile time check of memory configuration
+#if !RDMNET_DYNAMIC_MEM
+#error "RDMnet Discovery using Bonjour requires RDMNET_DYNAMIC_MEM to be enabled (defined nonzero)."
+#endif
 
 /**************************** Private variables ******************************/
 
@@ -243,8 +246,7 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
         if (value && value_len)
           rdmnet_safe_strncpy(db->info.scope, value, value_len);
 
-        // value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord,
-        //                                            "E133Vers", &value_len));
+        // value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord, "E133Vers", &value_len));
         // if (value && value_len)
         //{
         //  rdmnet_safe_strncpy(sval, value, 16);
