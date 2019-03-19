@@ -108,7 +108,7 @@ typedef struct RdmnetEptClientConfig
  *  \param configptr Pointer to RdmnetScopeConfig.
  *  \param scope_str UTF-8 scope string to copy to the RdmnetScopeConfig (const char *).
  */
-#define rdmnet_set_scope(configptr, scope_str)                                           \
+#define rdmnet_client_set_scope(configptr, scope_str)                                    \
   do                                                                                     \
   {                                                                                      \
     rdmnet_safe_strncpy((configptr)->scope, scope_str, E133_SCOPE_STRING_PADDED_LENGTH); \
@@ -124,7 +124,7 @@ typedef struct RdmnetEptClientConfig
  *  \param scope_str UTF-8 scope string to copy to the RdmnetScopeConfig (const char *).
  *  \param broker_addr Address and port for a static broker (LwpaSockaddr).
  */
-#define rdmnet_set_static_scope(configptr, scope_str, broker_addr)                       \
+#define rdmnet_client_set_static_scope(configptr, scope_str, broker_addr)                \
   do                                                                                     \
   {                                                                                      \
     rdmnet_safe_strncpy((configptr)->scope, scope_str, E133_SCOPE_STRING_PADDED_LENGTH); \

@@ -29,11 +29,18 @@ target_link_libraries(test_rdmnet_broker Broker gtest)
 add_executable(test_rdmnet_discovery
   # RDMnet Discovery lib unit test sources
   discovery/test_discovery_bonjour.cpp
+
+  ${RDMNET_SRC}/rdmnet/core/util.c
 )
 target_include_directories(test_rdmnet_discovery PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/c_mock
 )
-target_link_libraries(test_rdmnet_discovery PRIVATE RDMnetDiscovery dnssd_mock RDMnet gtest_main)
+target_link_libraries(test_rdmnet_discovery PRIVATE
+  RDMnetDiscovery
+  dnssd_mock
+  lwpa_mock
+  gtest_main
+)
 
 if(DEFINED DNS_SD_DLL)
   add_custom_command(

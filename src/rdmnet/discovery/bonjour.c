@@ -156,17 +156,20 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceF
 
     if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
     {
-      // Update the broker info we're building
-      LwpaSockaddr ip_addr;
-      if (sockaddr_plat_to_lwpa(&ip_addr, address))
+      if (db->info.listen_addrs_count < RDMNET_DISC_MAX_BROKER_ADDRESSES)
       {
-        if ((lwpaip_is_v4(&ip_addr.ip) && lwpaip_v4_address(&ip_addr.ip) != 0) ||
-            (lwpaip_is_v6(&ip_addr.ip) && ipv6_valid(&ip_addr.ip)))
+        // Update the broker info we're building
+        LwpaSockaddr ip_addr;
+        if (sockaddr_plat_to_lwpa(&ip_addr, address))
         {
-          // Normalize the address and add it to the info.
-          if ((db->info.port != 0) && (ip_addr.port == 0))
-            ip_addr.port = db->info.port;
-          db->info.listen_addrs[db->info.listen_addrs_count++] = ip_addr;
+          if ((lwpaip_is_v4(&ip_addr.ip) && lwpaip_v4_address(&ip_addr.ip) != 0) ||
+              (lwpaip_is_v6(&ip_addr.ip) && ipv6_valid(&ip_addr.ip)))
+          {
+            // Normalize the address and add it to the info.
+            if ((db->info.port != 0) && (ip_addr.port == 0))
+              ip_addr.port = db->info.port;
+            db->info.listen_addrs[db->info.listen_addrs_count++] = ip_addr;
+          }
         }
       }
 
@@ -223,7 +226,7 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
     // ref to our map before it responds.
     if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
     {
-      DNSServiceRef addr_ref = {0};
+      DNSServiceRef addr_ref;
       getaddrinfo_err =
           DNSServiceGetAddrInfo(&addr_ref, 0, 0, 0, hosttarget, &HandleDNSServiceGetAddrInfoReply, context);
       if (getaddrinfo_err == kDNSServiceErr_NoError)
@@ -244,7 +247,11 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
 
         value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord, "ConfScope", &value_len));
         if (value && value_len)
-          rdmnet_safe_strncpy(db->info.scope, value, value_len);
+        {
+          rdmnet_safe_strncpy(
+              db->info.scope, value,
+              (value_len + 1 > E133_SCOPE_STRING_PADDED_LENGTH ? E133_SCOPE_STRING_PADDED_LENGTH : value_len + 1));
+        }
 
         // value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord, "E133Vers", &value_len));
         // if (value && value_len)
@@ -259,13 +266,24 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
 
         value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord, "Model", &value_len));
         if (value && value_len)
-          rdmnet_safe_strncpy(db->info.model, value, value_len);
+        {
+          rdmnet_safe_strncpy(
+              db->info.model, value,
+              (value_len + 1 > E133_MODEL_STRING_PADDED_LENGTH ? E133_MODEL_STRING_PADDED_LENGTH : value_len + 1));
+        }
 
         value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord, "Manuf", &value_len));
         if (value && value_len)
-          rdmnet_safe_strncpy(db->info.manufacturer, value, value_len);
+        {
+          rdmnet_safe_strncpy(
+              db->info.manufacturer, value,
+              (value_len + 1 > E133_MANUFACTURER_STRING_PADDED_LENGTH ? E133_MANUFACTURER_STRING_PADDED_LENGTH
+                                                                      : value_len + 1));
+        }
 
         db->state = kResolveStateGetAddrInfo;
+        db->sock = DNSServiceRefSockFD(addr_ref);
+        db->dnssd_ref = addr_ref;
       }
       lwpa_mutex_give(&disc_state.lock);
     }
@@ -279,6 +297,8 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
                                            DNSServiceErrorType errorCode, const char *serviceName, const char *regtype,
                                            const char *replyDomain, void *context)
 {
+  (void)interfaceIndex;
+
   RdmnetScopeMonitorRef *ref = (RdmnetScopeMonitorRef *)context;
   if (!ref)
     return;
@@ -390,12 +410,11 @@ lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig *config,
   lwpa_error_t res = LWPA_OK;
   if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
   {
-    DNSServiceRef dnssd_ref;
-    DNSServiceErrorType result =
-        DNSServiceBrowse(&dnssd_ref, 0, 0, reg_str, config->domain, &HandleDNSServiceBrowseReply, new_monitor);
+    DNSServiceErrorType result = DNSServiceBrowse(&new_monitor->dnssd_ref, 0, 0, reg_str, config->domain,
+                                                  &HandleDNSServiceBrowseReply, new_monitor);
     if (result == kDNSServiceErr_NoError)
     {
-      new_monitor->socket = DNSServiceRefSockFD(dnssd_ref);
+      new_monitor->socket = DNSServiceRefSockFD(new_monitor->dnssd_ref);
       scope_monitor_insert(new_monitor);
     }
     else
@@ -406,6 +425,9 @@ lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig *config,
     }
     lwpa_mutex_give(&disc_state.lock);
   }
+
+  if (res == LWPA_OK)
+    *handle = new_monitor;
 
   return res;
 }
@@ -608,9 +630,9 @@ void rdmnetdisc_tick()
   LwpaPollfd fds[LWPA_SOCKET_MAX_POLL_SIZE];
   size_t nfds = 0;
 
-  if (broker_ref->socket != LWPA_SOCKET_INVALID)
+  if (broker_ref->state == kBrokerStateRegisterStarted || broker_ref->state == kBrokerStateRegistered)
   {
-    // If the ref was created, the socket handle is initialized, too.
+    // Need to monitor registered Broker activity.
     current_refs[nfds] = broker_ref->dnssd_ref;
 
     fds[nfds].fd = broker_ref->socket;
@@ -716,7 +738,7 @@ void get_sockets_to_poll(DNSServiceRef *current_refs, LwpaPollfd *fds, size_t *n
         break;
 
       current_refs[*nfds] = db->dnssd_ref;
-      fds[*nfds].fd = ref->socket;
+      fds[*nfds].fd = db->sock;
       fds[*nfds].events |= LWPA_POLLIN;
       (*nfds)++;
     }

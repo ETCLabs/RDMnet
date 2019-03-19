@@ -5,6 +5,11 @@ set(RDMNET_SRC ${CMAKE_CURRENT_LIST_DIR})
 ################################# Dependencies ################################
 
 include(AddDependency)
+
+if(RDMNET_BUILD_TESTS)
+  set(LWPA_BUILD_MOCK_LIB ON)
+  # set(RDM_BUILD_MOCK_LIB ON)
+endif()
 rdmnet_add_dependency(lwpa LWPA_DIR)
 rdmnet_add_dependency(RDM RDM_DIR)
 

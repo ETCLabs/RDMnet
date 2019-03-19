@@ -141,12 +141,8 @@ typedef struct ClientConnectMsg
 /*! \brief Safely copy a scope string to a ClientConnectMsg.
  *  \param ccmsgptr Pointer to ClientConnectMsg.
  *  \param scope_str String to copy to the ClientConnectMsg (const char *). */
-#define client_connect_msg_set_scope(ccmsgptr, scope_str)                                              \
-  do                                                                                                   \
-  {                                                                                                    \
-    RDMNET_MSVC_NO_DEP_WRN strncpy((ccmsgptr)->scope, scope_str, E133_SCOPE_STRING_PADDED_LENGTH - 1); \
-    (ccmsgptr)->scope[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';                                     \
-  } while (0)
+#define client_connect_msg_set_scope(ccmsgptr, scope_str) \
+  rdmnet_safe_strncpy((ccmsgptr)->scope, scope_str, E133_SCOPE_STRING_PADDED_LENGTH)
 
 /*! \brief Copy the default scope string to a ClientConnectMsg.
  *  \param ccmsgptr Pointer to ClientConnectMsg. */
@@ -156,13 +152,8 @@ typedef struct ClientConnectMsg
 /*! \brief Safely copy a search domain string to a ClientConnectMsg.
  *  \param ccmsgptr Pointer to ClientConnectMsg.
  *  \param search_domain_str String to copy to the ClientConnectMsg (const char *). */
-#define client_connect_msg_set_search_domain(ccmsgptr, search_domain_str)        \
-  do                                                                             \
-  {                                                                              \
-    RDMNET_MSVC_NO_DEP_WRN strncpy((ccmsgptr)->search_domain, search_domain_str, \
-                                   E133_DOMAIN_STRING_PADDED_LENGTH - 1);        \
-    (ccmsgptr)->search_domain[E133_DOMAIN_STRING_PADDED_LENGTH - 1] = '\0';      \
-  } while (0)
+#define client_connect_msg_set_search_domain(ccmsgptr, search_domain_str) \
+  rdmnet_safe_strncpy((ccmsgptr)->search_domain, search_domain_str, E133_DOMAIN_STRING_PADDED_LENGTH)
 
 /*! \brief Copy the default search domain string to a ClientConnectMsg.
  *  \param ccmsgptr Pointer to ClientConnectMsg. */
