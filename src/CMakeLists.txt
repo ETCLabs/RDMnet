@@ -50,7 +50,7 @@ set(RDMNET_API_PRIVATE_HEADERS
   ${RDMNET_SRC}/rdmnet/private/llrp.h
 )
 set(RDMNET_API_SOURCES
-  # ${RDMNET_SRC}/rdmnet/client.c
+  ${RDMNET_SRC}/rdmnet/client.c
   # ${RDMNET_SRC}/rdmnet/controller.c
   # ${RDMNET_SRC}/rdmnet/device.c
   ""
@@ -147,6 +147,18 @@ source_group(src FILES ${RDMNET_API_SOURCES})
 source_group(src\\core FILES ${RDMNET_CORE_SOURCES})
 source_group(include\\core FILES ${RDMNET_CORE_PUBLIC_HEADERS})
 source_group(include\\private FILES ${RDMNET_CORE_PRIVATE_HEADERS} ${RDMNET_API_PRIVATE_HEADERS})
+
+################################ Mock Library #################################
+
+# RDMnet mock libraries, for unit testing
+option(RDMNET_BUILD_MOCK_LIB "Build the RDMnet mock libraries" ${RDMNET_BUILD_TESTS})
+if(RDMNET_BUILD_MOCK_LIB)
+  add_library(RDMnetCore_mock
+    ${RDMNET_INCLUDE}/rdmnet_mock/core/discovery.h
+    ${RDMNET_SRC}/rdmnet_mock/core/discovery.c
+  )
+  target_include_directories(RDMnetCore_mock PUBLIC ${RDMNET_INCLUDE})
+endif()
 
 #################################### Broker ###################################
 
