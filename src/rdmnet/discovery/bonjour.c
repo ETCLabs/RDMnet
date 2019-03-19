@@ -736,6 +736,8 @@ void get_sockets_to_poll(DNSServiceRef *current_refs, LwpaPollfd *fds, size_t *n
     {
       if (*nfds >= LWPA_SOCKET_MAX_POLL_SIZE)
         break;
+      if (db->state == kResolveStateDone)
+        continue;
 
       current_refs[*nfds] = db->dnssd_ref;
       fds[*nfds].fd = db->sock;

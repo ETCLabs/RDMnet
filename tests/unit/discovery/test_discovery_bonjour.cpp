@@ -90,6 +90,18 @@ protected:
     RESET_FAKE(DNSServiceBrowse);
     RESET_FAKE(DNSServiceResolve);
     RESET_FAKE(DNSServiceGetAddrInfo);
+
+    RESET_FAKE(regcb_broker_registered);
+    RESET_FAKE(regcb_broker_register_error);
+    RESET_FAKE(regcb_broker_found);
+    RESET_FAKE(regcb_broker_lost);
+    RESET_FAKE(regcb_scope_monitor_error);
+    RESET_FAKE(monitorcb_broker_found);
+    RESET_FAKE(monitorcb_broker_lost);
+    RESET_FAKE(monitorcb_scope_monitor_error);
+
+    LWPA_SOCKET_DO_FOR_ALL_FAKES(RESET_FAKE);
+
     FFF_RESET_HISTORY();
 
     init_result_ = rdmnetdisc_init();
@@ -117,6 +129,7 @@ protected:
   std::string default_full_service_name_;
   lwpa_error_t init_result_;
   TXTRecordRef txt_record_;
+  rdmnet_scope_monitor_t monitor_handle_;
 };
 
 // These need to be macros because of the way we are using non-capturing lambdas in various tests
@@ -142,9 +155,8 @@ void TestDiscoveryBonjour::MonitorDefaultScope()
     return kDNSServiceErr_NoError;
   };
 
-  rdmnet_scope_monitor_t handle;
   int platform_specific_err;
-  ASSERT_EQ(LWPA_OK, rdmnetdisc_start_monitoring(&config, &handle, &platform_specific_err));
+  ASSERT_EQ(LWPA_OK, rdmnetdisc_start_monitoring(&config, &monitor_handle_, &platform_specific_err));
   ASSERT_EQ(DNSServiceBrowse_fake.call_count, 1u);
   ASSERT_GE(DNSServiceRefSockFD_fake.call_count, 1u);
 }
@@ -251,6 +263,7 @@ TEST_F(TestDiscoveryBonjour, resolve_cleanup)
   browse_cb(DEFAULT_MONITOR_DNS_REF, kDNSServiceFlagsAdd, 0, kDNSServiceErr_NoError,
             default_discovered_broker_.service_name, E133_DNSSD_SRV_TYPE, E133_DEFAULT_DOMAIN,
             DNSServiceBrowse_fake.arg6_val);
+
   ASSERT_EQ(DNSServiceResolve_fake.call_count, 1u);
   ASSERT_EQ(DNSServiceResolve_fake.arg2_val, 0u);
   ASSERT_STREQ(DNSServiceResolve_fake.arg3_val, default_discovered_broker_.service_name);
@@ -269,5 +282,28 @@ TEST_F(TestDiscoveryBonjour, resolve_cleanup)
              reinterpret_cast<const unsigned char *>(TXTRecordGetBytesPtr(&txt_record_)),
              DNSServiceResolve_fake.arg7_val);
 
+  ASSERT_EQ(DNSServiceRefDeallocate_fake.call_count, 1u);
   ASSERT_EQ(DNSServiceGetAddrInfo_fake.call_count, 1u);
+  ASSERT_EQ(DNSServiceGetAddrInfo_fake.arg2_val, 0u);
+  ASSERT_STREQ(DNSServiceGetAddrInfo_fake.arg4_val, "testhost");
+
+  // DNSServiceGetAddrInfoReply
+  DNSServiceGetAddrInfoReply gai_cb = DNSServiceGetAddrInfo_fake.arg5_val;
+  struct sockaddr address;
+  sockaddr_lwpa_to_plat(&address, &default_discovered_broker_.listen_addrs[0]);
+  gai_cb(DEFAULT_MONITOR_DNS_REF, 0, 0, kDNSServiceErr_NoError, "testhost", &address, 10,
+         DNSServiceGetAddrInfo_fake.arg6_val);
+
+  ASSERT_EQ(DNSServiceRefDeallocate_fake.call_count, 2u);
+  ASSERT_EQ(monitorcb_broker_found_fake.call_count, 1u);
+  ASSERT_EQ(monitorcb_broker_found_fake.arg0_val, monitor_handle_);
+
+  // Make sure we are back to only one socket in the tick thread
+  lwpa_poll_fake.return_val = 0;
+  DNSServiceProcessResult_fake.return_val = kDNSServiceErr_NoError;
+
+  rdmnetdisc_tick();
+  ASSERT_EQ(lwpa_poll_fake.call_count, 1u);
+  ASSERT_EQ(lwpa_poll_fake.arg1_history[0], 1u);
+  ASSERT_EQ(DNSServiceProcessResult_fake.call_count, 0u);
 }
