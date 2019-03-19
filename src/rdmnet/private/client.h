@@ -27,3 +27,54 @@
 
 /*! \file rdmnet/private/client.h
  */
+
+#include "rdmnet/client.h"
+#include "rdmnet/defs.h"
+#include "rdmnet/core/discovery.h"
+
+typedef enum
+{
+  kScopeStateDiscovery,
+  kScopeStateConnecting,
+  kScopeStateConnected
+} scope_state_t;
+
+typedef struct ClientScopeListEntry ClientScopeListEntry;
+struct ClientScopeListEntry
+{
+  RdmnetScopeConfig scope_config;
+  int conn_handle;
+  scope_state_t state;
+  rdmnet_scope_monitor_t monitor_handle;
+  ClientScopeListEntry *next;
+};
+
+typedef struct RptClientData
+{
+  rpt_client_type_t type;
+  bool has_static_uid;
+  RdmUid static_uid;
+} RptClientData;
+
+typedef struct EptClientData
+{
+  int placeholder;  // TODO, to get it to compile for now
+} EptClientData;
+
+typedef struct RdmnetClientInternal RdmnetClientInternal;
+struct RdmnetClientInternal
+{
+  client_protocol_t type;
+  LwpaUuid cid;
+  RdmnetClientCallbacks callbacks;
+  void *callback_context;
+  ClientScopeListEntry *scope_list;
+
+  union
+  {
+    RptClientData rpt;
+    EptClientData ept;
+  } data;
+
+  RdmnetClientInternal *next;
+};
