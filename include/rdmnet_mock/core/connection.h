@@ -34,6 +34,10 @@
 #include "rdmnet/core/connection.h"
 #include "fff.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 DECLARE_FAKE_VALUE_FUNC(int, rdmnet_new_connection, const LwpaUuid *);
 DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_connect, int, const LwpaSockaddr *, const ClientConnectMsg *,
                         RdmnetData *);
@@ -49,5 +53,25 @@ DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_end_message, int);
 DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_recv, int, RdmnetData *);
 DECLARE_FAKE_VALUE_FUNC(int, rdmnet_poll, RdmnetPoll *, size_t, int);
 DECLARE_FAKE_VOID_FUNC(rdmnet_tick);
+
+#define RDMNET_CORE_CONNECTION_DO_FOR_ALL_FAKES(operation) \
+  operation(rdmnet_new_connection);                        \
+  operation(rdmnet_connect);                               \
+  operation(rdmnet_connect_poll);                          \
+  operation(rdmnet_set_blocking);                          \
+  operation(rdmnet_attach_existing_socket);                \
+  operation(rdmnet_disconnect);                            \
+  operation(rdmnet_destroy_connection);                    \
+  operation(rdmnet_send);                                  \
+  operation(rdmnet_start_message);                         \
+  operation(rdmnet_send_partial_message);                  \
+  operation(rdmnet_end_message);                           \
+  operation(rdmnet_recv);                                  \
+  operation(rdmnet_poll);                                  \
+  operation(rdmnet_tick);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _RDMNET_MOCK_CORE_CONNECTION_H_ */

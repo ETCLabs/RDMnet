@@ -24,6 +24,10 @@ option(RDMNET_BUILD_TESTS "Build the RDMnet unit tests" ${OPTION_DEFAULTS})
 option(RDMNET_BUILD_EXAMPLES "Build the RDMnet example applications" ${OPTION_DEFAULTS})
 option(RDMNET_BUILD_CONSOLE_EXAMPLES "Build only the console RDMnet example applications" OFF)
 
+if(RDMNET_BUILD_TESTS)
+  add_subdirectory(external/fff)
+endif()
+
 ################################ Main libraries ###############################
 
 add_subdirectory(src)
@@ -32,7 +36,6 @@ add_subdirectory(src)
 
 if(RDMNET_BUILD_TESTS)
   enable_testing()
-  add_subdirectory(external/fff)
   add_subdirectory(tests)
 endif()
 

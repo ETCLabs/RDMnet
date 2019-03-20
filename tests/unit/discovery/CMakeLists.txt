@@ -11,7 +11,7 @@ target_link_libraries(test_rdmnet_discovery PRIVATE
   dnssd_mock
   lwpa_mock
   gtest_main
-  fff
+  meekrosoft::fff
 )
 gtest_add_tests(TARGET test_rdmnet_discovery)
 

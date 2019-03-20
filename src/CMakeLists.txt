@@ -63,15 +63,13 @@ target_sources(RDMnetApi INTERFACE
   ${RDMNET_API_PRIVATE_HEADERS}
   ${RDMNET_API_SOURCES}
 )
-# target_include_directories(RDMnetApi
-#   PUBLIC ${RDMNET_INCLUDE}
-#   PRIVATE ${RDMNET_SRC}
-# )
+target_include_directories(RDMnetApi INTERFACE ${RDMNET_INCLUDE} ${RDMNET_SRC})
 
 # The "RDMnet Core" layer: Lower-level logic shared by the Client APIs and the
 # Broker library.
 
 set(RDMNET_CORE_PUBLIC_HEADERS
+  ${RDMNET_INCLUDE}/rdmnet/core.h
   ${RDMNET_INCLUDE}/rdmnet/core/broker_prot.h
   ${RDMNET_INCLUDE}/rdmnet/core/connection.h
   ${RDMNET_INCLUDE}/rdmnet/core/ept_prot.h
@@ -81,6 +79,7 @@ set(RDMNET_CORE_PUBLIC_HEADERS
 )
 set(RDMNET_CORE_PRIVATE_HEADERS
   ${RDMNET_SRC}/rdmnet/private/broker_prot.h
+  ${RDMNET_SRC}/rdmnet/private/core.h
   ${RDMNET_SRC}/rdmnet/private/connection.h
   ${RDMNET_SRC}/rdmnet/private/llrp_prot.h
   ${RDMNET_SRC}/rdmnet/private/message.h
@@ -89,6 +88,7 @@ set(RDMNET_CORE_PRIVATE_HEADERS
   ${RDMNET_SRC}/rdmnet/private/rpt_prot.h
 )
 set(RDMNET_CORE_SOURCES
+  ${RDMNET_SRC}/rdmnet/core.c
   ${RDMNET_SRC}/rdmnet/core/broker_prot.c
   ${RDMNET_SRC}/rdmnet/core/connection.c
   ${RDMNET_SRC}/rdmnet/core/llrp_prot.c
@@ -106,10 +106,7 @@ target_sources(RDMnetCore INTERFACE
   ${RDMNET_CORE_PRIVATE_HEADERS}
   ${RDMNET_CORE_SOURCES}
 )
-# target_include_directories(RDMnetCore
-#   PUBLIC ${RDMNET_INCLUDE}
-#   PRIVATE ${RDMNET_SRC}
-# )
+target_include_directories(RDMnetCore INTERFACE ${RDMNET_INCLUDE} ${RDMNET_SRC})
 
 # Combination variables for convenience
 
@@ -154,10 +151,20 @@ source_group(include\\private FILES ${RDMNET_CORE_PRIVATE_HEADERS} ${RDMNET_API_
 option(RDMNET_BUILD_MOCK_LIB "Build the RDMnet mock libraries" ${RDMNET_BUILD_TESTS})
 if(RDMNET_BUILD_MOCK_LIB)
   add_library(RDMnetCore_mock
+    # Mock sources
+    ${RDMNET_INCLUDE}/rdmnet_mock/core.h
     ${RDMNET_INCLUDE}/rdmnet_mock/core/discovery.h
+    ${RDMNET_INCLUDE}/rdmnet_mock/core/connection.h
+
+    ${RDMNET_SRC}/rdmnet_mock/core.c
     ${RDMNET_SRC}/rdmnet_mock/core/discovery.c
+    ${RDMNET_SRC}/rdmnet_mock/core/connection.c
+
+    # Real sources
+    ${RDMNET_SRC}/rdmnet/core/util.c
   )
   target_include_directories(RDMnetCore_mock PUBLIC ${RDMNET_INCLUDE})
+  target_link_libraries(RDMnetCore_mock PUBLIC meekrosoft::fff PRIVATE lwpa RDM)
 endif()
 
 #################################### Broker ###################################

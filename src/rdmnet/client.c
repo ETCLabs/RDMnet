@@ -38,6 +38,7 @@
 #include "rdmnet/core/connection.h"
 #include "rdmnet/core/discovery.h"
 #include "rdmnet/core/util.h"
+#include "rdmnet/private/core.h"
 #include "rdmnet/private/client.h"
 #include "rdmnet/private/opts.h"
 
@@ -95,6 +96,8 @@ lwpa_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig *config, rdmne
 {
   if (!config || !handle)
     return LWPA_INVALID;
+  if (!rdmnet_core_initialized())
+    return LWPA_NOTINIT;
 
   // The lock is created only on the first call to this function.
   if (!client_lock_initted)

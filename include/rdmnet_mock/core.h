@@ -25,44 +25,25 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/* rdmnet_mock/core/discovery.h
- * Mocking the functions of rdmnet/core/discovery.h
+/* rdmnet_mock/core.h
+ * Mocking the functions of rdmnet/core.h
  */
-#ifndef _RDMNET_MOCK_CORE_DISCOVERY_H_
-#define _RDMNET_MOCK_CORE_DISCOVERY_H_
+#ifndef _RDMNET_MOCK_CORE_H_
+#define _RDMNET_MOCK_CORE_H_
 
-#include "rdmnet/core/discovery.h"
+#include "rdmnet/core.h"
 #include "fff.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnetdisc_init);
-DECLARE_FAKE_VOID_FUNC(rdmnetdisc_deinit);
-DECLARE_FAKE_VOID_FUNC(rdmnetdisc_fill_default_broker_info, RdmnetBrokerDiscInfo *);
-DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnetdisc_start_monitoring, const RdmnetScopeMonitorConfig *,
-                        rdmnet_scope_monitor_t *, int *);
-DECLARE_FAKE_VOID_FUNC(rdmnetdisc_stop_monitoring, rdmnet_scope_monitor_t);
-DECLARE_FAKE_VOID_FUNC(rdmnetdisc_stop_monitoring_all);
-DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnetdisc_register_broker, const RdmnetBrokerRegisterConfig *,
-                        rdmnet_registered_broker_t *);
-DECLARE_FAKE_VOID_FUNC(rdmnetdisc_unregister_broker, rdmnet_registered_broker_t);
-DECLARE_FAKE_VOID_FUNC(rdmnetdisc_tick);
+DECLARE_FAKE_VALUE_FUNC(bool, rdmnet_core_initialized);
 
-#define RDMNET_CORE_DISCOVERY_DO_FOR_ALL_FAKES(operation) \
-  operation(rdmnetdisc_init);                             \
-  operation(rdmnetdisc_deinit);                           \
-  operation(rdmnetdisc_fill_default_broker_info);         \
-  operation(rdmnetdisc_start_monitoring);                 \
-  operation(rdmnetdisc_stop_monitoring);                  \
-  operation(rdmnetdisc_stop_monitoring_all);              \
-  operation(rdmnetdisc_register_broker);                  \
-  operation(rdmnetdisc_unregister_broker);                \
-  operation(rdmnetdisc_tick);
+#define RDMNET_CORE_DO_FOR_ALL_FAKES(operation) operation(rdmnet_core_initialized)
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _RDMNET_MOCK_CORE_DISCOVERY_H_ */
+#endif /* _RDMNET_MOCK_CORE_H_ */
