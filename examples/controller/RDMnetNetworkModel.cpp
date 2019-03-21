@@ -1745,6 +1745,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
                            && ((displayNameIndex != 1) || (ipv4String.toString().length() == 0)))
                   {
                     *packPtr = E133_STATIC_CONFIG_IPV6;
+                    updateValue = false; // IPv6 is still in development, so make this read-only for now.
                   }
                   else
                   {
