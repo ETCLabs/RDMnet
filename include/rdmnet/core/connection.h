@@ -60,89 +60,48 @@
  *  @{
  */
 
-/*! An identifier for the type of data contained in an RdmnetData structure. */
+typedef struct RdmnetConnectionInternal *rdmnet_conn_t;
+
 typedef enum
 {
-  kRDMnetNoData,          /*!< This RdmnetData contains no data. */
-  kRDMnetDataTypeCode,    /*!< This RdmnetData contains a status code. */
-  kRDMnetDataTypeMessage, /*!< This RdmnetData contains a message. */
-  kRDMnetDataTypeAddress  /*!< This RdmnetData contains a network address. */
-} rdmnet_data_t;
+  kRdmnetDisconnectSocketFailure,
+  kRdmnetDisconnectNoHeartbeat,
+  kRdmnetDisconnectGracefulRemoteInitiated,
+  kRdmnetDisconnectGracefulLocalInitiated
+} rdmnet_disconnect_type_t;
 
-/*! Holds additional data received from API functions. */
-typedef struct RdmnetData
+typedef struct RdmnetDisconnectInfo
 {
-  /*! The data type contained by this structure. This member can be inspected directly or you can
-   *  use the helper macros defined below. */
-  rdmnet_data_t type;
-  /*! A union containing the different types of possible data. */
-  union
-  {
-    uint32_t code;
-    RdmnetMessage msg;
-    LwpaSockaddr addr;
-  } data;
-} RdmnetData;
+  rdmnet_disconnect_type_t type;
+  lwpa_error_t socket_err;
+  rdmnet_disconnect_reason_t rdmnet_reason;
+} RdmnetDisconnectInfo;
 
-/*! \brief Determine if an RdmnetData structure contains no data.
- *  \param rdmnetdataptr Pointer to RdmnetData to inspect.
- *  \return true (rdmnetdataptr contains no data) or false (rdmnetdataptr contains a data value
- *          other than no data). */
-#define rdmnet_data_is_nodata(rdmnetdataptr) ((rdmnetdataptr)->type == kRDMnetNoData)
-/*! \brief Determine if an RdmnetData structure contains a status code.
- *  \param rdmnetdataptr Pointer to RdmnetData to inspect.
- *  \return true (rdmnetdataptr contains a status code) or false (rdmnetdataptr contains a data
- *          value other than a status code). */
-#define rdmnet_data_is_code(rdmnetdataptr) ((rdmnetdataptr)->type == kRDMnetDataTypeCode)
-/*! \brief Determine if an RdmnetData structure contains a message.
- *  \param rdmnetdataptr Pointer to RdmnetData to inspect.
- *  \return true (rdmnetdataptr contains a message) or false (rdmnetdataptr contains a data value
- *          other than a message). */
-#define rdmnet_data_is_msg(rdmnetdataptr) ((rdmnetdataptr)->type == kRDMnetDataTypeMessage)
-/*! \brief Determine if an RdmnetData structure contains a network address.
- *  \param rdmnetdataptr Pointer to RdmnetData to inspect.
- *  \return true (rdmnetdataptr contains a network address) or false (rdmnetdataptr contains a data
- *          value other than a network address).
- */
-#define rdmnet_data_is_addr(rdmnetdataptr) ((rdmnetdataptr)->type == kRDMnetDataTypeAddress)
-/*! \brief Get the status code from an RdmnetData structure.
- *  Use rdmnet_data_is_code() first to check if the status code is valid.
- *  \param rdmnetdataptr Pointer to RdmnetData from which to get the status code.
- *  \return The status code (uint32_t). */
-#define rdmnet_data_code(rdmnetdataptr) ((rdmnetdataptr)->data.code)
-/*! \brief Get the message from an RdmnetData structure.
- *  Use rdmnet_data_is_msg() first to check if the message is valid.
- *  \param rdmnetdataptr Pointer to RdmnetData from which to get the message.
- *  \return The message (RdmnetMessage *). */
-#define rdmnet_data_msg(rdmnetdataptr) (&(rdmnetdataptr)->data.msg)
-/*! \brief Get the network address from an RdmnetData structure.
- *  Use rdmnet_data_is_addr() first to check if the network address is valid.
- *  \param rdmnetdataptr Pointer to RdmnetData from which to get the network address.
- *  \return The network address (LwpaSockaddr *). */
-#define rdmnet_data_addr(rdmnetdataptr) (&(rdmnetdataptr)->data.addr)
-
-/*! An identifier for an RDMnet connection being polled. Used in rdmnet_poll() and
- *  rdmnet_connect_poll(). */
-typedef struct RdmnetPoll
+typedef struct RdmnetConnCallbacks
 {
-  /*! The connection handle. */
-  int handle;
-  /*! An error code for this connection, returned from the poll function. */
-  lwpa_error_t err;
-} RdmnetPoll;
+  void (*connected)(rdmnet_conn_t handle, void *context);
+  void (*disconnected)(rdmnet_conn_t handle, const RdmnetDisconnectInfo *disconn_info, void *context);
+  void (*msg_received)(rdmnet_conn_t handle, const RdmnetMessage *message, void *context);
+} RdmnetConnCallbacks;
+
+typedef struct RdmnetConnectionConfig
+{
+  LwpaUuid local_cid;
+  RdmnetConnCallbacks callbacks;
+  void *callback_context;
+} RdmnetConnectionConfig;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int rdmnet_new_connection(const LwpaUuid *local_cid);
-lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const ClientConnectMsg *connect_data,
-                            RdmnetData *additional_data);
-int rdmnet_connect_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_ms);
-lwpa_error_t rdmnet_set_blocking(int handle, bool blocking);
-lwpa_error_t rdmnet_attach_existing_socket(int handle, lwpa_socket_t sock, const LwpaSockaddr *remote_addr);
-lwpa_error_t rdmnet_disconnect(int handle, bool send_disconnect_msg, rdmnet_disconnect_reason_t disconnect_reason);
-lwpa_error_t rdmnet_destroy_connection(int handle);
+lwpa_error_t rdmnet_new_connection(const RdmnetConnectionConfig *config, rdmnet_conn_t *handle);
+lwpa_error_t rdmnet_connect(rdmnet_conn_t handle, const LwpaSockaddr *remote_addr,
+                            const ClientConnectMsg *connect_data);
+lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t sock, const LwpaSockaddr *remote_addr);
+lwpa_error_t rdmnet_disconnect(rdmnet_conn_t handle, bool send_disconnect_msg,
+                               rdmnet_disconnect_reason_t disconnect_reason);
+lwpa_error_t rdmnet_destroy_connection(rdmnet_conn_t handle);
 
 int rdmnet_send(int handle, const uint8_t *data, size_t size);
 
@@ -150,11 +109,7 @@ lwpa_error_t rdmnet_start_message(int handle);
 int rdmnet_send_partial_message(int handle, const uint8_t *data, size_t size);
 lwpa_error_t rdmnet_end_message(int handle);
 
-lwpa_error_t rdmnet_recv(int handle, RdmnetData *data);
-
-int rdmnet_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_ms);
-
-void rdmnet_tick();
+void rdmnet_conn_tick();
 
 #ifdef __cplusplus
 }

@@ -37,7 +37,6 @@
 #include "lwpa/thread.h"
 #endif
 #include "lwpa/lock.h"
-#include "lwpa/rbtree.h"
 #include "lwpa/socket.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/core/message.h"
@@ -65,7 +64,7 @@
 
 /* Macros for dynamic vs static allocation. Static allocation is done using lwpa_mempool. */
 #if RDMNET_DYNAMIC_MEM
-#define alloc_rdmnet_connection() malloc(sizeof(RdmnetConnection))
+#define alloc_rdmnet_connection() malloc(sizeof(RdmnetConnectionInternal))
 #define free_rdmnet_connection(ptr) free(ptr)
 #else
 #define alloc_rdmnet_connection() lwpa_mempool_alloc(rdmnet_connections)
@@ -75,42 +74,23 @@
 /**************************** Private variables ******************************/
 
 #if !RDMNET_DYNAMIC_MEM
-LWPA_MEMPOOL_DEFINE(rdmnet_connections, RdmnetConnection, RDMNET_MAX_CONNECTIONS);
-LWPA_MEMPOOL_DEFINE(rdmnet_lwpa_rbnodes, LwpaRbNode, RDMNET_MAX_CONNECTIONS);
+LWPA_MEMPOOL_DEFINE(rdmnet_connections, RdmnetConnectionInternal, RDMNET_MAX_CONNECTIONS);
 #endif
 
-static struct rc_state
+static struct ConnectionState
 {
-  bool initted;
-
-  LwpaRbTree connections;
-  int next_conn_handle;
-
-  lwpa_mutex_t poll_lock;
-  lwpa_signal_t conn_sig;
-
-#if RDMNET_USE_TICK_THREAD
-  bool tickthread_run;
-  lwpa_thread_t tick_thread;
-#endif
-} rc_state;
+  RdmnetConnectionInternal *connections;
+} conn_state;
 
 /*********************** Private function prototypes *************************/
 
-#if RDMNET_USE_TICK_THREAD
-static void rdmnet_tick_thread(void *arg);
-#endif
-static LwpaRbNode *node_alloc();
-static void node_dealloc(LwpaRbNode *node);
-static int conn_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const LwpaRbNode *node_b);
-static lwpa_error_t get_conn(int handle, RdmnetConnection **conn_ptr);
-static lwpa_error_t get_readlock_and_conn(int handle, RdmnetConnection **conn_ptr);
-static lwpa_error_t get_writelock_and_conn(int handle, RdmnetConnection **conn);
+static lwpa_error_t get_readlock_and_conn(int handle, RdmnetConnectionInternal **conn_ptr);
+static lwpa_error_t get_writelock_and_conn(int handle, RdmnetConnectionInternal **conn);
 
-static RdmnetConnection *create_new_connection();
+static RdmnetConnectionInternal *create_new_connection(const RdmnetConnectionConfig *config);
 
 static int update_backoff(int previous_backoff);
-static lwpa_error_t handle_redirect(RdmnetConnection *conn, ClientRedirectMsg *reply);
+static lwpa_error_t handle_redirect(RdmnetConnectionInternal *conn, ClientRedirectMsg *reply);
 
 /*************************** Function definitions ****************************/
 
@@ -125,55 +105,17 @@ static lwpa_error_t handle_redirect(RdmnetConnection *conn, ClientRedirectMsg *r
 lwpa_error_t rdmnet_connection_init()
 {
   lwpa_error_t res = LWPA_OK;
-  bool poll_lock_created = false;
 
 #if !RDMNET_DYNAMIC_MEM
   /* Init memory pools */
   res |= lwpa_mempool_init(rdmnet_connections);
 #endif
 
-  if (res == LWPA_OK)
-  {
-    poll_lock_created = lwpa_mutex_create(&rc_state.poll_lock);
-    if (!poll_lock_created)
-      res = LWPA_SYSERR;
-  }
-
-#if RDMNET_USE_TICK_THREAD
-  if (res == LWPA_OK)
-  {
-    LwpaThreadParams thread_params;
-    thread_params.thread_priority = RDMNET_TICK_THREAD_PRIORITY;
-    thread_params.stack_size = RDMNET_TICK_THREAD_STACK;
-    thread_params.thread_name = "rdmnet_tick";
-    thread_params.platform_data = NULL;
-    rc_state.tickthread_run = true;
-    if (!lwpa_thread_create(&rc_state.tick_thread, &thread_params, rdmnet_tick_thread, NULL))
-    {
-      res = LWPA_SYSERR;
-    }
-  }
-#endif
-
-  if (res == LWPA_OK)
-  {
-    /* Do all initialization that doesn't have a failure condition */
-    lwpa_rbtree_init(&rc_state.connections, conn_cmp, node_alloc, node_dealloc);
-    rc_state.next_conn_handle = 0;
-    rc_state.initted = true;
-  }
-  else
-  {
-    if (poll_lock_created)
-      lwpa_mutex_destroy(&rc_state.poll_lock);
-    memset(&rc_state, 0, sizeof rc_state);
-  }
   return res;
 }
 
-static void conn_tree_dealloc(const LwpaRbTree *self, LwpaRbNode *node)
+static void destroy_connection(RdmnetConnectionInternal *conn)
 {
-  RdmnetConnection *conn = (RdmnetConnection *)node->value;
   if (conn)
   {
     lwpa_close(conn->sock);
@@ -181,8 +123,6 @@ static void conn_tree_dealloc(const LwpaRbTree *self, LwpaRbNode *node)
     lwpa_mutex_destroy(&conn->send_lock);
     free_rdmnet_connection(conn);
   }
-  node_dealloc(node);
-  (void)self;
 }
 
 /*! \brief Deinitialize the RDMnet Connection module.
@@ -191,26 +131,17 @@ static void conn_tree_dealloc(const LwpaRbTree *self, LwpaRbNode *node)
  *  be closed/disconnected. Calls to other RDMnet Connection API functions will fail until
  *  rdmnet_init() is called again.
  */
-void rdmnet_deinit()
+void rdmnet_connection_deinit()
 {
-  if (!rc_state.initted)
-    return;
-
-  rc_state.initted = false;
-
-#if RDMNET_USE_TICK_THREAD
-  rc_state.tickthread_run = false;
-  lwpa_thread_stop(&rc_state.tick_thread, LWPA_WAIT_FOREVER);
-#endif
-
-  if (rdmnet_writelock())
+  RdmnetConnectionInternal *to_destroy = conn_state.connections;
+  RdmnetConnectionInternal *next;
+  while (to_destroy)
   {
-    lwpa_rbtree_clear_with_cb(&rc_state.connections, conn_tree_dealloc);
-    lwpa_mutex_destroy(&rc_state.poll_lock);
-    lwpa_socket_deinit();
-    memset(&rc_state, 0, sizeof rc_state);
-    rdmnet_writeunlock();
+    next = to_destroy->next;
+    destroy_connection(to_destroy);
+    to_destroy = next;
   }
+  memset(&conn_state, 0, sizeof conn_state);
 }
 
 /*! \brief Create a new handle to use for an RDMnet Connection.
@@ -218,76 +149,42 @@ void rdmnet_deinit()
  *  This function simply allocates a connection handle - use rdmnet_connect() to actually start the
  *  connection process.
  *
- *  \param[in] local_cid The CID of the local component using the connection.
- *  \return A new connection handle (valid values are >= 0) or an enumerated error value:\n
+ *  \param[in] config Configuration parameters for the connection to be created.
+ *  \param[out] handle Handle to the newly-created connection
+ *  \return #LWPA_OK: Handle created successfully.\n
  *          #LWPA_INVALID: Invalid argument provided.\n
  *          #LWPA_NOTINIT: Module not initialized.\n
  *          #LWPA_NOMEM: No room to allocate additional connection.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
  */
-int rdmnet_new_connection(const LwpaUuid *local_cid)
+lwpa_error_t rdmnet_new_connection(const RdmnetConnectionConfig *config, rdmnet_conn_t *handle)
 {
-  RdmnetConnection *conn;
-  bool send_lock_created = false;
-  bool lock_created = false;
-  lwpa_error_t res = LWPA_OK;
-
-  if (!local_cid)
+  if (!config || !handle)
     return LWPA_INVALID;
-  if (!rc_state.initted)
+  if (!rdmnet_core_initialized())
     return LWPA_NOTINIT;
-  if (!rdmnet_writelock())
-    return LWPA_SYSERR;
 
-  /* Passed the quick checks, try to create a struct to represent a new connection. This function
-   * creates the new connection, gives it a unique handle and inserts it into the connection map. */
-  conn = create_new_connection();
-  if (!conn)
-    res = LWPA_NOMEM;
+  lwpa_error_t res = LWPA_SYSERR;
+  if (rdmnet_writelock())
+  {
+    /* Passed the quick checks, try to create a struct to represent a new connection. This function
+     * creates the new connection, gives it a unique handle and inserts it into the connection map. */
+    RdmnetConnectionInternal *conn = create_new_connection(config);
+    if (!conn)
+      res = LWPA_NOMEM;
 
-  /* Try to create the locks and signal */
-  if (res == LWPA_OK)
-  {
-    lock_created = lwpa_mutex_create(&conn->lock);
-    if (!lock_created)
-      res = LWPA_SYSERR;
-  }
-  if (res == LWPA_OK)
-  {
-    send_lock_created = lwpa_mutex_create(&conn->send_lock);
-    if (!send_lock_created)
-      res = LWPA_SYSERR;
-  }
-
-  if (res == LWPA_OK)
-  {
-    conn->local_cid = *local_cid;
-    conn->sock = LWPA_SOCKET_INVALID;
-    lwpaip_set_v4_address(&conn->remote_addr.ip, 0);
-    conn->remote_addr.port = 0;
-    conn->is_blocking = true;
-    conn->state = kCSNotConnected;
-    conn->poll_list = NULL;
-    lwpa_timer_start(&conn->backoff_timer, 0);
-    conn->rdmnet_conn_failed = false;
-    conn->recv_disconn_err = LWPA_TIMEDOUT;
-    conn->recv_waiting = false;
-    rdmnet_msg_buf_init(&conn->recv_buf, rdmnet_log_params);
-  }
-  else
-  {
-    if (conn)
+    if (res == LWPA_OK)
     {
-      if (lock_created)
-        lwpa_mutex_destroy(&conn->send_lock);
-      if (conn->sock != LWPA_SOCKET_INVALID)
-        lwpa_close(conn->sock);
-      lwpa_rbtree_remove(&rc_state.connections, conn);
-      free_rdmnet_connection(conn);
+      // Append the new connection to the list
+      RdmnetConnectionInternal **conn_ptr = &conn_state.connections;
+      while (*conn_ptr)
+        conn_ptr = &(*conn_ptr)->next;
+      *conn_ptr = conn;
+      *handle = conn;
     }
+    rdmnet_writeunlock();
   }
-  rdmnet_writeunlock();
-  return (res == LWPA_OK ? conn->handle : (int)res);
+  return res;
 }
 
 /* Internal function to update the backoff timer. If the connection is a blocking connection,
@@ -295,7 +192,7 @@ int rdmnet_new_connection(const LwpaUuid *local_cid)
  * indicate that the timer has been started, LWPA_OK to indicate we waited successfully, or an error
  * code.
  */
-lwpa_error_t update_backoff_and_wait_if_blocking(RdmnetConnection *conn, const LwpaSockaddr *remote_addr)
+lwpa_error_t update_backoff_and_wait_if_blocking(RdmnetConnectionInternal *conn, const LwpaSockaddr *remote_addr)
 {
   int handle = conn->handle;
   lwpa_error_t res = LWPA_OK;
@@ -344,9 +241,6 @@ lwpa_error_t update_backoff_and_wait_if_blocking(RdmnetConnection *conn, const L
  *  \param[in] remote_addr %Broker's IP address and port.
  *  \param[in] connect_data The information about this client that will be sent to the %Broker as
  *                          part of the connection handshake. Caller maintains ownership.
- *  \param[out] additional_data If the connection was redirected to another network address, this
- *                              structure contains the new address. On error, additional error data
- *                              is stored in this structure.
  *  \return #LWPA_OK: Connection completed successfully.\n
  *          #LWPA_INPROGRESS: Non-blocking connection started.\n
  *          #LWPA_INVALID: Invalid argument provided.\n
@@ -359,11 +253,10 @@ lwpa_error_t update_backoff_and_wait_if_blocking(RdmnetConnection *conn, const L
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
-lwpa_error_t rdmnet_connect(int handle, const LwpaSockaddr *remote_addr, const ClientConnectMsg *connect_data,
-                            RdmnetData *additional_data)
+lwpa_error_t rdmnet_connect(rdmnet_conn_t handle, const LwpaSockaddr *remote_addr, const ClientConnectMsg *connect_data)
 {
   lwpa_error_t res;
-  RdmnetConnection *conn;
+  RdmnetConnectionInternal *conn;
   bool blocking_wait = false;
   lwpa_socket_t conn_sock = LWPA_SOCKET_INVALID;
   LwpaTimer *block_timer = NULL;
@@ -670,7 +563,7 @@ int rdmnet_connect_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_
  */
 lwpa_error_t rdmnet_set_blocking(int handle, bool blocking)
 {
-  RdmnetConnection *conn;
+  RdmnetConnectionInternal *conn;
   lwpa_error_t res;
 
   if (handle < 0)
@@ -719,7 +612,7 @@ lwpa_error_t rdmnet_set_blocking(int handle, bool blocking)
  */
 lwpa_error_t rdmnet_attach_existing_socket(int handle, lwpa_socket_t sock, const LwpaSockaddr *remote_addr)
 {
-  RdmnetConnection *conn;
+  RdmnetConnectionInternal *conn;
   lwpa_error_t res;
 
   if (handle < 0 || sock == LWPA_SOCKET_INVALID || !remote_addr)
@@ -762,7 +655,7 @@ lwpa_error_t rdmnet_attach_existing_socket(int handle, lwpa_socket_t sock, const
 lwpa_error_t rdmnet_disconnect(int handle, bool send_disconnect_msg, rdmnet_disconnect_reason_t disconnect_reason)
 {
   lwpa_error_t res;
-  RdmnetConnection *conn;
+  RdmnetConnectionInternal *conn;
 
   if (handle < 0)
     return LWPA_INVALID;
@@ -805,7 +698,7 @@ lwpa_error_t rdmnet_disconnect(int handle, bool send_disconnect_msg, rdmnet_disc
 lwpa_error_t rdmnet_destroy_connection(int handle)
 {
   lwpa_error_t res;
-  RdmnetConnection *conn;
+  RdmnetConnectionInternal *conn;
 
   if (handle < 0)
     return LWPA_INVALID;
@@ -818,7 +711,7 @@ lwpa_error_t rdmnet_destroy_connection(int handle)
     lwpa_close(conn->sock);
   lwpa_mutex_destroy(&conn->lock);
   lwpa_mutex_destroy(&conn->send_lock);
-  lwpa_rbtree_remove(&rc_state.connections, conn);
+  lwpa_rbtree_remove(&conn_state.connections, conn);
   free_rdmnet_connection(conn);
 
   release_conn_and_writelock(conn);
@@ -869,11 +762,11 @@ int rdmnet_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_ms)
     return LWPA_INVALID;
   }
   /* clang-format on */
-  if (!rc_state.initted)
+  if (!conn_state.initted)
     return LWPA_NOTINIT;
   if (!rdmnet_readlock())
     return LWPA_SYSERR;
-  if (!lwpa_mutex_take(&rc_state.poll_lock, LWPA_WAIT_FOREVER))
+  if (!lwpa_mutex_take(&conn_state.poll_lock, LWPA_WAIT_FOREVER))
   {
     rdmnet_readunlock();
     return LWPA_SYSERR;
@@ -883,7 +776,7 @@ int rdmnet_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_ms)
   pfds = (LwpaPollfd *)calloc(poll_arr_size, sizeof(LwpaPollfd));
   if (!pfds)
   {
-    lwpa_mutex_give(&rc_state.poll_lock);
+    lwpa_mutex_give(&conn_state.poll_lock);
     rdmnet_readunlock();
     return LWPA_NOMEM;
   }
@@ -891,11 +784,11 @@ int rdmnet_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_ms)
 
   for (poll = poll_arr; poll < poll_arr + poll_arr_size; ++poll)
   {
-    RdmnetConnection *conn;
-    RdmnetConnection conn_cmp;
+    RdmnetConnectionInternal *conn;
+    RdmnetConnectionInternal conn_cmp;
 
     conn_cmp.handle = poll->handle;
-    conn = (RdmnetConnection *)lwpa_rbtree_find(&rc_state.connections, &conn_cmp);
+    conn = (RdmnetConnectionInternal *)lwpa_rbtree_find(&conn_state.connections, &conn_cmp);
     if (!conn)
     {
       ++res;
@@ -941,11 +834,11 @@ int rdmnet_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_ms)
         if (pfds[i].revents)
         {
           /* We have some returned events. Find the socket */
-          RdmnetConnection *conn;
-          RdmnetConnection conn_cmp;
+          RdmnetConnectionInternal *conn;
+          RdmnetConnectionInternal conn_cmp;
 
           conn_cmp.handle = poll_arr[i].handle;
-          conn = (RdmnetConnection *)lwpa_rbtree_find(&rc_state.connections, &conn_cmp);
+          conn = (RdmnetConnectionInternal *)lwpa_rbtree_find(&conn_state.connections, &conn_cmp);
           if (conn && lwpa_mutex_take(&conn->lock, LWPA_WAIT_FOREVER))
           {
             if (conn->state == kCSHeartbeat)
@@ -984,7 +877,7 @@ int rdmnet_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_ms)
     free(pfds);
 #endif
 
-  lwpa_mutex_give(&rc_state.poll_lock);
+  lwpa_mutex_give(&conn_state.poll_lock);
   rdmnet_readunlock();
   return res;
 }
@@ -1007,11 +900,11 @@ int rdmnet_poll(RdmnetPoll *poll_arr, size_t poll_arr_size, int timeout_ms)
 int rdmnet_send(int handle, const uint8_t *data, size_t size)
 {
   int res;
-  RdmnetConnection *conn;
+  RdmnetConnectionInternal *conn;
 
   if (handle < 0 || !data || size == 0)
     return LWPA_INVALID;
-  if (!rc_state.initted)
+  if (!conn_state.initted)
     return LWPA_NOTINIT;
   if (!rdmnet_readlock())
     return LWPA_SYSERR;
@@ -1052,11 +945,11 @@ int rdmnet_send(int handle, const uint8_t *data, size_t size)
 lwpa_error_t rdmnet_start_message(int handle)
 {
   lwpa_error_t res;
-  RdmnetConnection *conn;
+  RdmnetConnectionInternal *conn;
 
   if (handle < 0)
     return LWPA_INVALID;
-  if (!rc_state.initted)
+  if (!conn_state.initted)
     return LWPA_NOTINIT;
   if (!rdmnet_readlock())
     return LWPA_SYSERR;
@@ -1104,11 +997,11 @@ lwpa_error_t rdmnet_start_message(int handle)
 int rdmnet_send_partial_message(int handle, const uint8_t *data, size_t size)
 {
   int res;
-  RdmnetConnection *conn;
+  RdmnetConnectionInternal *conn;
 
   if (handle < 0 || !data || size == 0)
     return LWPA_INVALID;
-  if (!rc_state.initted)
+  if (!conn_state.initted)
     return LWPA_NOTINIT;
   if (!rdmnet_readlock())
     return LWPA_SYSERR;
@@ -1145,11 +1038,11 @@ int rdmnet_send_partial_message(int handle, const uint8_t *data, size_t size)
 lwpa_error_t rdmnet_end_message(int handle)
 {
   lwpa_error_t res;
-  RdmnetConnection *conn;
+  RdmnetConnectionInternal *conn;
 
   if (handle < 0)
     return LWPA_INVALID;
-  if (!rc_state.initted)
+  if (!conn_state.initted)
     return LWPA_NOTINIT;
   if (!rdmnet_readlock())
     return LWPA_SYSERR;
@@ -1206,7 +1099,7 @@ lwpa_error_t rdmnet_end_message(int handle)
 lwpa_error_t rdmnet_recv(int handle, RdmnetData *data)
 {
   lwpa_error_t res;
-  RdmnetConnection *conn;
+  RdmnetConnectionInternal *conn;
   lwpa_socket_t recv_sock = LWPA_SOCKET_INVALID;
   RdmnetMsgBuf *msgbuf = NULL;
   bool do_recv = false;
@@ -1286,36 +1179,24 @@ lwpa_error_t rdmnet_recv(int handle, RdmnetData *data)
   return res;
 }
 
-#if RDMNET_USE_TICK_THREAD
-void rdmnet_tick_thread(void *arg)
-{
-  (void)arg;
-  while (rc_state.tickthread_run)
-  {
-    rdmnet_tick();
-    lwpa_thread_sleep(RDMNET_TICK_THREAD_SLEEP_MS);
-  }
-}
-#endif
-
 /*! \brief Handle periodic RDMnet functionality.
  *
  *  If #RDMNET_USE_TICK_THREAD is defined nonzero, this is an internal function called automatically
  *  by the library. Otherwise, it must be called by the application preiodically to handle
  *  health-checked TCP functionality. Recommended calling interval is ~1s.
  */
-void rdmnet_tick()
+void rdmnet_conn_tick()
 {
   LwpaRbIter iter;
-  RdmnetConnection *conn;
+  RdmnetConnectionInternal *conn;
 
-  if (!rc_state.initted)
+  if (!conn_state.initted)
     return;
 
   if (rdmnet_readlock())
   {
     lwpa_rbiter_init(&iter);
-    conn = (RdmnetConnection *)lwpa_rbiter_first(&iter, &rc_state.connections);
+    conn = (RdmnetConnectionInternal *)lwpa_rbiter_first(&iter, &conn_state.connections);
     while (conn)
     {
       if (lwpa_mutex_take(&conn->lock, LWPA_WAIT_FOREVER))
@@ -1349,10 +1230,14 @@ void rdmnet_tick()
         }
         lwpa_mutex_give(&conn->lock);
       }
-      conn = (RdmnetConnection *)lwpa_rbiter_next(&iter);
+      conn = (RdmnetConnectionInternal *)lwpa_rbiter_next(&iter);
     }
     rdmnet_readunlock();
   }
+}
+
+void rdmnet_connection_socket_activity(const RdmnetPollSocket *sock)
+{
 }
 
 /* Internal function which attempts to allocate and track a new connection, including allocating the
@@ -1360,37 +1245,47 @@ void rdmnet_tick()
  *
  *  Must have write lock.
  */
-RdmnetConnection *create_new_connection()
+RdmnetConnectionInternal *create_new_connection(const RdmnetConnectionConfig *config)
 {
-  RdmnetConnection *conn;
-  int original_handle = rc_state.next_conn_handle;
-
-  conn = (RdmnetConnection *)alloc_rdmnet_connection();
-  if (!conn)
-    return NULL;
-
-  /* Grab a new integer handle for this connection, making sure we don't overlap with one that's
-   * already in use. */
-  conn->handle = rc_state.next_conn_handle;
-  if (++rc_state.next_conn_handle < 0)
-    rc_state.next_conn_handle = 0;
-  while (lwpa_rbtree_find(&rc_state.connections, conn))
+  RdmnetConnectionInternal *conn = alloc_rdmnet_connection();
+  if (conn)
   {
-    if (rc_state.next_conn_handle == original_handle)
+    bool ok;
+    bool lock_created = false;
+    bool send_lock_created = false;
+
+    // Try to create the locks and signal
+    ok = lock_created = lwpa_mutex_create(&conn->lock);
+    if (ok)
+      ok = send_lock_created = lwpa_mutex_create(&conn->send_lock);
+    if (ok)
     {
-      /* Incredibly unlikely case of all handles used */
-      free_rdmnet_connection(conn);
-      return NULL;
+      conn->local_cid = config->local_cid;
+      conn->sock = LWPA_SOCKET_INVALID;
+      lwpaip_set_v4_address(&conn->remote_addr.ip, 0);
+      conn->remote_addr.port = 0;
+      conn->is_blocking = true;
+      conn->state = kCSNotConnected;
+      conn->poll_list = NULL;
+      lwpa_timer_start(&conn->backoff_timer, 0);
+      conn->rdmnet_conn_failed = false;
+      conn->recv_disconn_err = LWPA_TIMEDOUT;
+      conn->recv_waiting = false;
+      rdmnet_msg_buf_init(&conn->recv_buf, rdmnet_log_params);
+      conn->callbacks = config->callbacks;
+      conn->callback_context = config->callback_context;
+      conn->next = NULL;
     }
-    conn->handle = rc_state.next_conn_handle;
-    if (++rc_state.next_conn_handle < 0)
-      rc_state.next_conn_handle = 0;
-  }
-
-  if (0 == lwpa_rbtree_insert(&rc_state.connections, conn))
-  {
-    free_rdmnet_connection(conn);
-    return NULL;
+    else
+    {
+      // Clean up
+      if (send_lock_created)
+        lwpa_mutex_destroy(&conn->send_lock);
+      if (lock_created)
+        lwpa_mutex_destroy(&conn->lock);
+      free_rdmnet_connection(conn);
+      conn = NULL;
+    }
   }
   return conn;
 }
@@ -1409,7 +1304,7 @@ int update_backoff(int previous_backoff)
 
 /* Internal function to handle an RDMnet redirect. Attempts to connect to the new address and
  * returns the result. */
-lwpa_error_t handle_redirect(RdmnetConnection *conn, ClientRedirectMsg *reply)
+lwpa_error_t handle_redirect(RdmnetConnectionInternal *conn, ClientRedirectMsg *reply)
 {
   lwpa_error_t conn_res;
 
@@ -1445,54 +1340,11 @@ lwpa_error_t handle_redirect(RdmnetConnection *conn, ClientRedirectMsg *reply)
   return conn_res;
 }
 
-int conn_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const LwpaRbNode *node_b)
-{
-  (void)self;
-  RdmnetConnection *a = (RdmnetConnection *)node_a->value;
-  RdmnetConnection *b = (RdmnetConnection *)node_b->value;
-  return (a->handle - b->handle);
-}
-
-LwpaRbNode *node_alloc()
-{
-#if RDMNET_DYNAMIC_MEM
-  return (LwpaRbNode *)malloc(sizeof(LwpaRbNode));
-#else
-  return lwpa_mempool_alloc(rdmnet_lwpa_rbnodes);
-#endif
-}
-
-void node_dealloc(LwpaRbNode *node)
-{
-#if RDMNET_DYNAMIC_MEM
-  free(node);
-#else
-  lwpa_mempool_free(rdmnet_lwpa_rbnodes, node);
-#endif
-}
-
-lwpa_error_t get_conn(int handle, RdmnetConnection **conn_ptr)
-{
-  RdmnetConnection conn_to_find;
-  RdmnetConnection *conn;
-
-  conn_to_find.handle = handle;
-  conn = (RdmnetConnection *)lwpa_rbtree_find(&rc_state.connections, &conn_to_find);
-
-  if (!conn)
-    return LWPA_NOTFOUND;
-  if (!lwpa_mutex_take(&conn->lock, LWPA_WAIT_FOREVER))
-    return LWPA_SYSERR;
-
-  *conn_ptr = conn;
-  return LWPA_OK;
-}
-
-lwpa_error_t get_readlock_and_conn(int handle, RdmnetConnection **conn_ptr)
+lwpa_error_t get_readlock_and_conn(int handle, RdmnetConnectionInternal **conn_ptr)
 {
   lwpa_error_t res;
 
-  if (!rc_state.initted)
+  if (!rdmnet_core_initialized())
     return LWPA_NOTINIT;
   if (!rdmnet_readlock())
     return LWPA_SYSERR;
@@ -1503,18 +1355,18 @@ lwpa_error_t get_readlock_and_conn(int handle, RdmnetConnection **conn_ptr)
   return res;
 }
 
-lwpa_error_t get_writelock_and_conn(int handle, RdmnetConnection **conn_ptr)
+lwpa_error_t get_writelock_and_conn(int handle, RdmnetConnectionInternal **conn_ptr)
 {
-  RdmnetConnection conn_to_find;
-  RdmnetConnection *conn;
+  RdmnetConnectionInternal conn_to_find;
+  RdmnetConnectionInternal *conn;
 
-  if (!rc_state.initted)
+  if (!rdmnet_core_initialized())
     return LWPA_NOTINIT;
   if (!rdmnet_writelock())
     return LWPA_SYSERR;
 
   conn_to_find.handle = handle;
-  conn = (RdmnetConnection *)lwpa_rbtree_find(&rc_state.connections, &conn_to_find);
+  conn = (RdmnetConnectionInternal *)lwpa_rbtree_find(&conn_state.connections, &conn_to_find);
 
   if (!conn)
   {

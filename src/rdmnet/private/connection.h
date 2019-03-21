@@ -39,27 +39,10 @@
 #include "lwpa/inet.h"
 #include "rdmnet/core/connection.h"
 #include "rdmnet/private/opts.h"
+#include "rdmnet/private/core.h"
 #include "rdmnet/private/msg_buf.h"
 
-#define rdmnet_data_set_nodata(rdmnetdataptr) ((rdmnetdataptr)->type = kRDMnetNoData)
-#define rdmnet_data_set_code(rdmnetdataptr, code_to_set) \
-  do                                                     \
-  {                                                      \
-    (rdmnetdataptr)->type = kRDMnetDataTypeCode;         \
-    (rdmnetdataptr)->data.code = code_to_set;            \
-  } while (0)
-#define rdmnet_data_set_msg(rdmnetdataptr, msg_to_set) \
-  do                                                   \
-  {                                                    \
-    (rdmnetdataptr)->type = kRDMnetDataTypeMessage;    \
-    (rdmnetdataptr)->data.msg = msg_to_set;            \
-  } while (0)
-#define rdmnet_data_set_addr(rdmnetdataptr, addr_to_set) \
-  do                                                     \
-  {                                                      \
-    (rdmnetdataptr)->type = kRDMnetDataTypeAddress;      \
-    (rdmnetdataptr)->data.addr = addr_to_set;            \
-  } while (0)
+#define RDMNET_CONN_MAX_SOCKETS RDMNET_MAX_CONNECTIONS
 
 typedef enum
 {
@@ -70,16 +53,8 @@ typedef enum
   kCSHeartbeat
 } conn_state_t;
 
-typedef struct ConnPoll ConnPoll;
-struct ConnPoll
-{
-  lwpa_signal_t sig;
-  RdmnetPoll *poll_arr;
-  size_t poll_arr_size;
-  ConnPoll *next;
-};
-
-typedef struct RdmnetConnection
+typedef struct RdmnetConnectionInternal RdmnetConnectionInternal;
+struct RdmnetConnectionInternal
 {
   /* Identification */
   int handle;
@@ -107,7 +82,13 @@ typedef struct RdmnetConnection
 
   /* Synchronization */
   lwpa_mutex_t lock;
-} RdmnetConnection;
+
+  /* Callbacks */
+  RdmnetConnCallbacks callbacks;
+  void *callback_context;
+
+  RdmnetConnectionInternal *next;
+};
 
 #ifdef __cplusplus
 extern "C" {
@@ -115,6 +96,9 @@ extern "C" {
 
 lwpa_error_t rdmnet_connection_init();
 void rdmnet_connection_deinit();
+
+size_t rdmnet_connection_get_sockets(RdmnetPollSocket *sock_arr);
+void rdmnet_connection_socket_activity(const RdmnetPollSocket *sock);
 
 #ifdef __cplusplus
 }

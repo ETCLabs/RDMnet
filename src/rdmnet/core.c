@@ -27,7 +27,13 @@
 
 #include "rdmnet/core.h"
 
+#include "lwpa/socket.h"
+#include "lwpa/timer.h"
+#include "rdmnet/core/discovery.h"
+#include "rdmnet/private/message.h"
 #include "rdmnet/private/core.h"
+#include "rdmnet/private/connection.h"
+#include "rdmnet/private/opts.h"
 
 /************************* The draft warning message *************************/
 
@@ -37,13 +43,19 @@
 #pragma message("************* SEE THE README FOR MORE INFORMATION *************")
 /* clang-format on */
 
+/*************************** Private constants *******************************/
+
+#define RDMNET_TICK_PERIODIC_INTERVAL 100 /* ms */
+#define RDMNET_TICK_POLL_TIMEOUT 120      /* ms */
+#define RDMNET_TICK_MAX_SOCKETS (RDMNET_CONN_MAX_SOCKETS)
+
 /***************************** Private macros ********************************/
 
 #define rdmnet_create_lock_or_die()       \
-  if (!rdmnet_lock_initted)               \
+  if (!core_state.lock_initted)           \
   {                                       \
     if (lwpa_rwlock_create(&rdmnet_lock)) \
-      rdmnet_lock_initted = true;         \
+      core_state.lock_initted = true;     \
     else                                  \
       return LWPA_SYSERR;                 \
   }
@@ -55,9 +67,19 @@ const LwpaLogParams *rdmnet_log_params;
 
 /**************************** Private variables ******************************/
 
-static bool rdmnet_lock_initted = false;
-static bool rdmnet_initted = false;
-static LwpaLogParams rdmnet_log_params_cache;
+static struct CoreState
+{
+  bool lock_initted;
+  bool initted;
+
+  LwpaLogParams log_params;
+  LwpaTimer tick_timer;
+
+#if RDMNET_USE_TICK_THREAD
+  bool tickthread_run;
+  lwpa_thread_t tick_thread;
+#endif
+} core_state;
 
 /*************************** Function definitions ****************************/
 
@@ -70,31 +92,52 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
   if (rdmnet_writelock())
   {
     res = LWPA_OK;
-    if (!rdmnet_initted)
+    if (!core_state.initted)
     {
+      bool socket_initted = false;
+      bool disc_initted = false;
+
       if (res == LWPA_OK)
         res = rdmnet_message_init();
       if (res == LWPA_OK)
-        res = lwpa_socket_init(NULL);
+        socket_initted = ((res = lwpa_socket_init(NULL)) == LWPA_OK);
+      if (res == LWPA_OK)
+        disc_initted = ((res = rdmnetdisc_init()) == LWPA_OK);
+
+#if RDMNET_USE_TICK_THREAD
       if (res == LWPA_OK)
       {
-        res = rdmnetdisc_init();
-        if (res == LWPA_OK)
+        LwpaThreadParams thread_params;
+        thread_params.thread_priority = RDMNET_TICK_THREAD_PRIORITY;
+        thread_params.stack_size = RDMNET_TICK_THREAD_STACK;
+        thread_params.thread_name = "rdmnet_tick";
+        thread_params.platform_data = NULL;
+        core_state.tickthread_run = true;
+        if (!lwpa_thread_create(&core_state.tick_thread, &thread_params, rdmnet_tick_thread, NULL))
         {
-          // Do the initialization
-          if (log_params)
-          {
-            rdmnet_log_params_cache = *log_params;
-            rdmnet_log_params = &rdmnet_log_params_cache;
-          }
-          rdmnet_initted = true;
+          res = LWPA_SYSERR;
         }
-        else
+      }
+#endif
+
+      if (res == LWPA_OK)
+      {
+        // Do the initialization
+        if (log_params)
         {
-          lwpa_log(log_params, LWPA_LOG_ERR, "Couldn't initialize RDMnet discovery due to error: '%s'.",
-                   lwpa_strerror(res));
-          return res;
+          core_state.log_params = *log_params;
+          rdmnet_log_params = &core_state.log_params;
         }
+        lwpa_timer_start(&core_state.tick_timer, RDMNET_TICK_PERIODIC_INTERVAL);
+        core_state.initted = true;
+      }
+      else
+      {
+        // Clean up
+        if (disc_initted)
+          rdmnetdisc_deinit();
+        if (socket_initted)
+          lwpa_socket_deinit();
       }
     }
   }
@@ -106,7 +149,7 @@ void rdmnet_core_deinit()
   if (rdmnet_writelock())
   {
     rdmnet_log_params = NULL;
-    rdmnet_initted = false;
+    core_state.initted = false;
     rdmnet_writeunlock();
   }
 }
@@ -115,13 +158,75 @@ bool rdmnet_core_initialized()
 {
   bool result = false;
 
-  if (rdmnet_lock_initted)
+  if (core_state.lock_initted)
   {
     if (rdmnet_readlock())
     {
-      result = rdmnet_initted;
+      result = core_state.initted;
       rdmnet_readunlock();
     }
   }
   return result;
+}
+
+#if RDMNET_USE_TICK_THREAD
+void rdmnet_tick_thread(void *arg)
+{
+  (void)arg;
+  while (core_state.tickthread_run)
+  {
+    rdmnet_core_tick();
+  }
+}
+#endif
+
+static LwpaPollfd lwpa_poll_arr[RDMNET_TICK_MAX_SOCKETS];
+static RdmnetPollSocket poll_arr[RDMNET_TICK_MAX_SOCKETS];
+
+void rdmnet_core_tick()
+{
+  size_t conn_index = rdmnet_connection_get_sockets(poll_arr);
+
+  if (conn_index > 0)
+  {
+    for (size_t i = 0; i < conn_index; ++i)
+    {
+      LwpaPollfd *lwpa_poll = &lwpa_poll_arr[i];
+      RdmnetPollSocket *rdmnet_poll = &poll_arr[i];
+
+      lwpa_poll->events = LWPA_POLLIN;
+      lwpa_poll->fd = rdmnet_poll->sock;
+    }
+
+    int poll_res = lwpa_poll(lwpa_poll_arr, conn_index, RDMNET_TICK_POLL_TIMEOUT);
+    if (poll_res > 0)
+    {
+      size_t read_index = 0;
+      while (poll_res)
+      {
+        if (lwpa_poll_arr[read_index].revents & (LWPA_POLLIN | LWPA_POLLERR))
+        {
+          poll_arr[read_index].revents = lwpa_poll_arr[read_index].revents;
+          poll_arr[read_index].err = lwpa_poll_arr[read_index].err;
+          if (read_index < conn_index)
+          {
+            rdmnet_connection_socket_activity(&poll_arr[read_index]);
+          }
+        }
+      }
+    }
+    else if ((lwpa_error_t)poll_res != LWPA_TIMEDOUT)
+    {
+      lwpa_log(rdmnet_log_params, LWPA_LOG_ERR, "RDMnet: Error ('%s') while polling sockets.", lwpa_strerror(poll_res));
+      lwpa_thread_sleep(1000);  // Sleep to avoid spinning on errors
+    }
+  }
+
+  if (lwpa_timer_isexpired(&core_state.tick_timer))
+  {
+    rdmnetdisc_tick();
+    rdmnet_conn_tick();
+
+    lwpa_timer_reset(&core_state.tick_timer);
+  }
 }

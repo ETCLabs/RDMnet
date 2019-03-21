@@ -30,10 +30,19 @@
 
 #include "lwpa/lock.h"
 #include "lwpa/log.h"
+#include "lwpa/socket.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct RdmnetPollSocket
+{
+  lwpa_socket_t sock;
+  void *context;
+  short revents;
+  lwpa_error_t err;
+} RdmnetPollSocket;
 
 bool rdmnet_core_initialized();
 

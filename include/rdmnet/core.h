@@ -43,6 +43,8 @@ extern "C" {
 lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params);
 void rdmnet_core_deinit();
 
+void rdmnet_core_tick();
+
 #ifdef __cplusplus
 }
 #endif
