@@ -38,7 +38,9 @@
       </Directory>
 
       <Merge Id="VCRedistx86" SourceFile="$(var.VcRedistMergeModulex86)" DiskId="1" Language="0" />
-      <Merge Id="VCRedistx64" SourceFile="$(var.VcRedistMergeModulex64)" DiskId="1" Language="0" />
+      <?if $(var.Platform) = x64 ?>
+        <Merge Id="VCRedistx64" SourceFile="$(var.VcRedistMergeModulex64)" DiskId="1" Language="0" />
+      <?endif ?>
       <Merge Id="mDNSResponder" SourceFile="$(var.mDNSMergeModule)" DiskId="1" Language="0" />
     </Directory>
 

@@ -78,7 +78,10 @@ else()
           ABSOLUTE
           BASE_DIR ${CMAKE_BINARY_DIR}
         )
-        add_subdirectory(${MDNSWINDOWS_SRC_LOC}/mDNSWindows/DLLStub Bonjour)
+        add_subdirectory(${MDNSWINDOWS_SRC_LOC}/mDNSWindows/DLLStub mDNSWindows/static)
+        add_subdirectory(${MDNSWINDOWS_SRC_LOC}/mDNSWindows/DLL mDNSWindows/DLL)
+        set(DNS_SD_BUILD_DEPENDENCIES dnssd_etc)
+        set(DNS_SD_DLL $<TARGET_FILE:dnssd_etc> PARENT_SCOPE)
         set(DNS_SD_ADDITIONAL_LIBS dnssdStatic)
       elseif(MDNSWINDOWS_INSTALL_LOC)
         get_filename_component(MDNSWINDOWS_INSTALL_LOC ${MDNSWINDOWS_INSTALL_LOC}

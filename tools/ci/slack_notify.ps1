@@ -3,9 +3,9 @@ $body = @{
   icon_url = "https://ci.appveyor.com/assets/images/appveyor-blue-144.png"
   attachments = @(
     @{
-      fallback = "RDMnet build $Env:RDMNET_VERSION has been deployed to FTP: ftp://ftp.etcconnect.com"
+      fallback = "RDMnet build $Env:RDMNET_VERSION has been deployed to <https://bintray.com/etclabs/rdmnet_bin/latest/$Env:RDMNET_VERSION|Bintray>."
       color = "#5FE35F"
-      text = "RDMnet build $Env:RDMNET_VERSION has been deployed to FTP: ftp://ftp.etcconnect.com"
+      text = "RDMnet build $Env:RDMNET_VERSION has been deployed to <https://bintray.com/etclabs/rdmnet_bin/latest/$Env:RDMNET_VERSION|Bintray>."
       mrkdwn_in = @(
         "text"
       )

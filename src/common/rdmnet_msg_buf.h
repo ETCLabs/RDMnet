@@ -67,6 +67,19 @@ typedef struct PduBlockState
     (blockstateptr)->parsed_header = false;            \
   } while (0)
 
+typedef struct GenericListState
+{
+  size_t full_list_size;
+  size_t size_parsed;
+} GenericListState;
+
+#define init_generic_list_state(liststateptr, list_size) \
+  do                                                     \
+  {                                                      \
+    (liststateptr)->full_list_size = list_size;          \
+    (liststateptr)->size_parsed = 0;                     \
+  } while (0)
+
 typedef struct RdmListState
 {
   bool parsed_request_notif_header;
@@ -170,6 +183,7 @@ typedef struct BrokerState
   PduBlockState block;
   union
   {
+    GenericListState data_list;
     ClientListState client_list;
     ClientConnectState client_connect;
     ClientEntryUpdateState update;

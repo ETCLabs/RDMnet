@@ -40,13 +40,14 @@
 #include "rdmnet/defs.h"
 #include "rdmnet/broker/log.h"
 
+class BrokerCore;
+
 /// \defgroup rdmnet_broker Broker
 /// \brief A platform-neutral RDMnet %Broker implementation.
 /// @{
 ///
 
-class BrokerCore;
-
+/// A namespace to contain the public Broker classes
 namespace RDMnet
 {
 /// Settings for the Broker's DNS Discovery functionality.

@@ -55,6 +55,12 @@ TEST_F(TestBrokerProt, message_ident_macros)
   ASSERT_TRUE(is_client_list(&bmsg));
   bmsg.vector = VECTOR_BROKER_CLIENT_ENTRY_CHANGE;
   ASSERT_TRUE(is_client_list(&bmsg));
+  bmsg.vector = VECTOR_BROKER_REQUEST_DYNAMIC_UIDS;
+  ASSERT_TRUE(is_request_dynamic_uid_assignment(&bmsg));
+  bmsg.vector = VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS;
+  ASSERT_TRUE(is_dynamic_uid_assignment_list(&bmsg));
+  bmsg.vector = VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST;
+  ASSERT_TRUE(is_fetch_dynamic_uid_assignment_list(&bmsg));
   bmsg.vector = VECTOR_BROKER_DISCONNECT;
   ASSERT_TRUE(is_disconnect_msg(&bmsg));
 
@@ -63,6 +69,9 @@ TEST_F(TestBrokerProt, message_ident_macros)
   ASSERT_EQ(get_client_entry_update_msg(&bmsg), &bmsg.data.client_entry_update);
   ASSERT_EQ(get_client_redirect_msg(&bmsg), &bmsg.data.client_redirect);
   ASSERT_EQ(get_client_list(&bmsg), &bmsg.data.client_list);
+  ASSERT_EQ(get_dynamic_uid_request_list(&bmsg), &bmsg.data.dynamic_uid_request_list);
+  ASSERT_EQ(get_dynamic_uid_assignment_list(&bmsg), &bmsg.data.dynamic_uid_assignment_list);
+  ASSERT_EQ(get_fetch_dynamic_uid_assignment_list(&bmsg), &bmsg.data.fetch_uid_assignment_list);
   ASSERT_EQ(get_disconnect_msg(&bmsg), &bmsg.data.disconnect);
 }
 

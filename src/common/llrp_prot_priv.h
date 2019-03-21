@@ -38,7 +38,7 @@
 #define LLRP_HEADER_SIZE \
   (3 /* Flags + Length */ + 4 /* Vector */ + 16 /* Destination CID */ + 4 /* Transaction Number */)
 #define PROBE_REQUEST_PDU_MIN_SIZE \
-  (3 /* Flags + Length */ + 1 /* Vector */ + 6 /* Lower UID */ + 6 /* Upper UID */ + 1 /* Filter */)
+  (3 /* Flags + Length */ + 1 /* Vector */ + 6 /* Lower UID */ + 6 /* Upper UID */ + 2 /* Filter */)
 #define PROBE_REQUEST_PDU_MAX_SIZE (PROBE_REQUEST_PDU_MIN_SIZE + (6 * LLRP_KNOWN_UID_SIZE) /* Known UIDS */)
 #define LLRP_MAX_MESSAGE_SIZE \
   (ACN_UDP_PREAMBLE_SIZE + ACN_RLP_HEADER_SIZE_EXT_LEN + LLRP_HEADER_SIZE + PROBE_REQUEST_PDU_MAX_SIZE)
@@ -71,14 +71,14 @@ typedef struct ProbeRequestRecv
   /* True if this probe request contains my UID as registered in the LlrpMessageInterest struct, and
    * it is not suppressed by the Known UID list. */
   bool contains_my_uid;
-  uint8_t filter;
+  uint16_t filter;
 } ProbeRequestRecv;
 
 typedef struct ProbeRequestSend
 {
   RdmUid lower_uid;
   RdmUid upper_uid;
-  uint8_t filter;
+  uint16_t filter;
   KnownUid *uid_list;
 } ProbeRequestSend;
 

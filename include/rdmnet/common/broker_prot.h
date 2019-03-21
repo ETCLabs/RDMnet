@@ -124,12 +124,12 @@ typedef enum
 /*! The Client Connect message in the %Broker protocol. */
 typedef struct ClientConnectMsg
 {
-  /*! The Client's configured scope. Maximum length #E133_SCOPE_STRING_PADDED_LENGTH, including null
+  /*! The Client's configured scope. Maximum length E133_SCOPE_STRING_PADDED_LENGTH, including null
    *  terminator. */
   char scope[E133_SCOPE_STRING_PADDED_LENGTH];
   /*! The maximum version of the standard supported by the Client. */
   uint16_t e133_version;
-  /*! The search domain of the Client. Maximum length #E133_DOMAIN_STRING_PADDED_LENGTH, including
+  /*! The search domain of the Client. Maximum length E133_DOMAIN_STRING_PADDED_LENGTH, including
    *  null terminator. */
   char search_domain[E133_DOMAIN_STRING_PADDED_LENGTH];
   /*! Configurable options for the connection. See CONNECTFLAG_*. */
@@ -221,6 +221,7 @@ typedef struct DynamicUidRequestListEntry DynamicUidRequestListEntry;
 /*! An entry in a linked list of Responder IDs (RIDs) which make up a Dynamic UID Request List. */
 struct DynamicUidRequestListEntry
 {
+  uint16_t manu_id;
   LwpaUuid rid;
   DynamicUidRequestListEntry *next;
 };
@@ -388,14 +389,20 @@ extern "C" {
 #endif
 
 size_t bufsize_client_list(const ClientEntryData *client_entry_list);
+size_t bufsize_dynamic_uid_assignment_list(const DynamicUidMapping *mapping_list);
 
 size_t pack_connect_reply(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const ConnectReplyMsg *data);
 size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, uint16_t vector,
                         const ClientEntryData *client_entry_list);
+size_t pack_dynamic_uid_assignment_list(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid,
+                                        const DynamicUidMapping *mapping_list);
 
 lwpa_error_t send_connect_reply(int handle, const LwpaUuid *local_cid, const ConnectReplyMsg *data);
-
 lwpa_error_t send_fetch_client_list(int handle, const LwpaUuid *local_cid);
+lwpa_error_t send_request_dynamic_uids(int handle, const LwpaUuid *local_cid,
+                                       const DynamicUidRequestListEntry *request_list);
+lwpa_error_t send_fetch_uid_assignment_list(int handle, const LwpaUuid *local_cid,
+                                            const FetchUidAssignmentListEntry *uid_list);
 
 #ifdef __cplusplus
 }

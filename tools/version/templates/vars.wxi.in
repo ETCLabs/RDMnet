@@ -5,14 +5,15 @@
   <?include GeneratedFiles\vcredist.wxi ?>
   <?include GeneratedFiles\mdnsmerge.wxi ?>
 
+  <?define VcRedistMergeModulex64 = "$(var.VcRedistInstallLoc)\MergeModules\Microsoft_VC141_CRT_x64.msm" ?>
+  <?define VcRedistMergeModulex86 = "$(var.VcRedistInstallLoc)\MergeModules\Microsoft_VC141_CRT_x86.msm" ?>
+
   <?if $(var.Platform) = x64 ?>
     <?define ProgramFilesFolder = "ProgramFiles64Folder" ?>
     <?define PkgDescription = "ETC RDMnet 64-bit Installer" ?>
-    <?define VcRedistMergeModule = "$(var.VcRedistInstallLoc)\MergeModules\Microsoft_VC141_CRT_x64.msm" ?>
   <?else ?>
     <?define ProgramFilesFolder = "ProgramFilesFolder" ?>
     <?define PkgDescription = "ETC RDMnet 32-bit Installer" ?>
-    <?define VcRedistMergeModule = "$(var.VcRedistInstallLoc)\MergeModules\Microsoft_VC141_CRT_x86.msm" ?>
   <?endif ?>
 
 </Include>
