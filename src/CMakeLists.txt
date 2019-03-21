@@ -52,7 +52,7 @@ set(RDMNET_API_PRIVATE_HEADERS
 set(RDMNET_API_SOURCES
   ${RDMNET_SRC}/rdmnet/client.c
   # ${RDMNET_SRC}/rdmnet/controller.c
-  # ${RDMNET_SRC}/rdmnet/device.c
+  ${RDMNET_SRC}/rdmnet/device.c
   ""
 )
 

@@ -4,12 +4,10 @@ set(DEVICE_TARGET rdmnet_device_example)
 
 add_executable(${DEVICE_TARGET}
   device.h
-  device_llrp.h
   device_log.h
   default_responder.h
 
   device.c
-  device_llrp.c
   device_log.c
   default_responder.c
 )

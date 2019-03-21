@@ -111,7 +111,7 @@ int wmain(int argc, wchar_t *argv[])
   LwpaSockaddr static_broker;
   bool should_exit = false;
   UUID uuid;
-  RdmnetDeviceConfig config;
+  DeviceParams device_params;
   const LwpaLogParams *lparams;
 
   strcpy_s(scope, E133_SCOPE_STRING_PADDED_LENGTH, E133_DEFAULT_SCOPE);
@@ -141,7 +141,7 @@ int wmain(int argc, wchar_t *argv[])
       }
       else if (_wcsicmp(argv[i], L"--version") == 0)
       {
-        print_version();
+        device_print_version();
         should_exit = true;
         break;
       }
@@ -165,17 +165,16 @@ int wmain(int argc, wchar_t *argv[])
    * But we want to be able to create many ephemeral Devices on the same system. So we will just
    * generate UUIDs on the fly. */
   UuidCreate(&uuid);
-  memcpy(config.cid.data, &uuid, LWPA_UUID_BYTES);
+  memcpy(device_params.cid.data, &uuid, LWPA_UUID_BYTES);
 
   /* Fill in the rest of the config */
-  config.has_static_uid = false;
   if (lwpaip_is_invalid(&static_broker.ip))
   {
-    rdmnet_set_scope(&config.scope_config, scope);
+    rdmnet_client_set_scope(&device_params.scope_config, scope);
   }
   else
   {
-    rdmnet_set_static_scope(&config.scope_config, scope, static_broker);
+    rdmnet_client_set_static_scope(&device_params.scope_config, scope, static_broker);
   }
 
   /* Handle console signals */
@@ -186,7 +185,7 @@ int wmain(int argc, wchar_t *argv[])
   }
 
   /* Startup the device */
-  res = device_init(&config, lparams);
+  res = device_init(&device_params, lparams);
   if (res != LWPA_OK)
   {
     lwpa_log(lparams, LWPA_LOG_ERR, "Device failed to initialize: '%s'", lwpa_strerror(res));
@@ -195,7 +194,8 @@ int wmain(int argc, wchar_t *argv[])
 
   while (device_keep_running)
   {
-    device_run();
+    // device_run();
+    Sleep(100);
   }
 
   device_deinit();

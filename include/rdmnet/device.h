@@ -39,8 +39,8 @@
 
 typedef struct RdmnetDeviceInternal *rdmnet_device_t;
 
-typedef void (*RdmnetDeviceConnectedCb)(rdmnet_device_t handle, const char *scope);
-typedef void (*RdmnetDeviceDisconnectedCb)(rdmnet_device_t handle, const char *scope);
+typedef void (*RdmnetDeviceConnectedCb)(rdmnet_device_t handle, const char *scope, void *context);
+typedef void (*RdmnetDeviceDisconnectedCb)(rdmnet_device_t handle, const char *scope, void *context);
 
 typedef struct RdmnetDeviceCallbacks
 {

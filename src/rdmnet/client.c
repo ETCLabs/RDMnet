@@ -61,6 +61,9 @@
 #define free_client_scope(ptr) lwpa_mempool_free(client_scopes, ptr)
 #endif
 
+#define rdmnet_client_lock() lwpa_mutex_take(&client_lock, LWPA_WAIT_FOREVER)
+#define rdmnet_client_unlock() lwpa_mutex_give(&client_lock)
+
 /**************************** Private variables ******************************/
 
 #if !RDMNET_DYNAMIC_MEM
@@ -89,6 +92,8 @@ static void monitorcb_broker_lost(rdmnet_scope_monitor_t handle, const char *sco
                                   void *context);
 static void monitorcb_scope_monitor_error(rdmnet_scope_monitor_t handle, const char *scope, int platform_error,
                                           void *context);
+static bool client_in_list(const RdmnetClientInternal *client, const RdmnetClientInternal *list);
+static bool create_and_append_scope_entry(const RdmnetScopeConfig *config, RdmnetClientInternal *client);
 
 /*************************** Function definitions ****************************/
 
@@ -137,16 +142,12 @@ lwpa_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig *config, rdmne
     res = LWPA_SYSERR;
   }
 
-  //  /* Create a new connection handle */
-  //  device_state.broker_conn = rdmnet_new_connection(&settings->cid);
-  //  if (device_state.broker_conn < 0)
-  //  {
-  //    res = device_state.broker_conn;
-  //    lwpa_log(lparams, LWPA_LOG_ERR, "Couldn't create a new RDMnet Connection due to error: '%s'.",
-  //    lwpa_strerror(res)); rdmnet_deinit(); rdmnetdisc_deinit(); return res;
-  //  }
-
   return res;
+}
+
+void rdmnet_rpt_client_destroy(rdmnet_client_t handle)
+{
+  // TODO
 }
 
 bool create_rpt_client_entry(const LwpaUuid *cid, const RdmUid *uid, rpt_client_type_t client_type,
@@ -177,10 +178,12 @@ lwpa_error_t validate_rpt_client_config(const RdmnetRptClientConfig *config)
   {
     return LWPA_INVALID;
   }
+#if !RDMNET_DYNAMIC_MEM
   if (config->type == kRPTClientTypeController && config->num_scopes > RDMNET_MAX_SCOPES_PER_CONTROLLER)
   {
     return LWPA_NOMEM;
   }
+#endif
   return LWPA_OK;
 }
 
@@ -190,49 +193,28 @@ RdmnetClientInternal *rpt_client_new(const RdmnetRptClientConfig *config)
   RdmnetClientInternal *new_cli = alloc_rdmnet_client();
   if (new_cli)
   {
-    bool scope_alloc_successful = true;  // Set false if any scope initialization in the list fails.
-    ClientScopeListEntry **next_scope = &new_cli->scope_list;
+    // Init the client data
+    new_cli->type = kClientProtocolRPT;
+    new_cli->cid = config->cid;
+    new_cli->callbacks = config->callbacks;
+    new_cli->callback_context = config->callback_context;
+    new_cli->data.rpt.type = config->type;
+    new_cli->data.rpt.has_static_uid = config->has_static_uid;
+    new_cli->data.rpt.static_uid = config->static_uid;
+    new_cli->next = NULL;
 
-    // For each scope, we need to create a list entry and a connection handle.
+    bool scope_alloc_successful = true;  // Set false if any scope initialization in the list fails.
+    // Create an entry for each configured scope
     for (size_t i = 0; i < config->num_scopes; ++i)
     {
-      ClientScopeListEntry *new_scope = alloc_client_scope();
-      if (new_scope)
-      {
-        new_scope->conn_handle = rdmnet_new_connection(&config->cid);
-        if (new_scope->conn_handle < 0)
-        {
-          scope_alloc_successful = false;
-          break;
-        }
-        new_scope->scope_config = config->scope_list[i];
-        if (new_scope->scope_config.has_static_broker_addr)
-          new_scope->state = kScopeStateConnecting;
-        else
-          new_scope->state = kScopeStateDiscovery;
-        new_scope->next = NULL;
-        *next_scope = new_scope;
-        next_scope = &new_scope->next;
-      }
-      else
+      if (!create_and_append_scope_entry(&config->scope_list[i], new_cli))
       {
         scope_alloc_successful = false;
         break;
       }
     }
 
-    if (scope_alloc_successful)
-    {
-      // Init the rest of the data
-      new_cli->type = kClientProtocolRPT;
-      new_cli->cid = config->cid;
-      new_cli->callbacks = config->callbacks;
-      new_cli->callback_context = config->callback_context;
-      new_cli->data.rpt.type = config->type;
-      new_cli->data.rpt.has_static_uid = config->has_static_uid;
-      new_cli->data.rpt.static_uid = config->static_uid;
-    }
-    else
+    if (!scope_alloc_successful)
     {
       // Clean up
       ClientScopeListEntry *to_free = new_cli->scope_list;
@@ -252,6 +234,61 @@ RdmnetClientInternal *rpt_client_new(const RdmnetRptClientConfig *config)
     }
   }
   return new_cli;
+}
+
+/* Allocate a new scope list entry and append it to a client's scope list. If a scope string is
+ * already in the list, replaces the configuration for that scope. Creates a new connection handle
+ * to accompany the scope. Returns true if scope allocation was successful, false otherwise.
+ */
+bool create_and_append_scope_entry(const RdmnetScopeConfig *config, RdmnetClientInternal *client)
+{
+  // For each scope, we need to create a list entry and a connection handle.
+  ClientScopeListEntry **entry_ptr = &client->scope_list;
+  ClientScopeListEntry *new_scope = NULL;
+
+  for (; *entry_ptr; entry_ptr = &(*entry_ptr)->next)
+  {
+    if (strcmp((*entry_ptr)->scope_config.scope, config->scope) == 0)
+    {
+      break;
+    }
+  }
+
+  if (*entry_ptr)
+  {
+    // We will replace the configuration and reset the state below
+    new_scope = *entry_ptr;
+  }
+  else
+  {
+    // The scope string was not in the list, try to allocate it
+    new_scope = alloc_client_scope();
+    if (new_scope)
+    {
+      new_scope->conn_handle = rdmnet_new_connection(&client->cid);
+      if (new_scope->conn_handle >= 0)
+      {
+        new_scope->next = NULL;
+        *entry_ptr = new_scope;
+      }
+      else
+      {
+        free_client_scope(new_scope);
+      }
+    }
+  }
+
+  if (new_scope)
+  {
+    // Do the rest of the initialization
+    new_scope->scope_config = *config;
+    if (config->has_static_broker_addr)
+      new_scope->state = kScopeStateConnecting;
+    else
+      new_scope->state = kScopeStateDiscovery;
+    return true;
+  }
+  return false;
 }
 
 void append_to_client_list(RdmnetClientInternal *new_client)
@@ -282,7 +319,40 @@ void start_scope_discovery(ClientScopeListEntry *scope_entry)
 void start_connection_for_scope(ClientScopeListEntry *scope_entry)
 {
   // TODO
+
+  //  /* Create a new connection handle */
+  //  device_state.broker_conn = rdmnet_new_connection(&settings->cid);
+  //  if (device_state.broker_conn < 0)
+  //  {
+  //    res = device_state.broker_conn;
+  //    lwpa_log(lparams, LWPA_LOG_ERR, "Couldn't create a new RDMnet Connection due to error: '%s'.",
+  //    lwpa_strerror(res)); rdmnet_deinit(); rdmnetdisc_deinit(); return res;
+  //  }
   (void)scope_entry;
+}
+
+// ClientScopeListEntry *find_scope_in_list(const char *scope, ClientScopeListEntry *list)
+//{
+//  ClientScopeListEntry *entry;
+//  for (entry = list; entry; entry = entry->next)
+//  {
+//    if (strcmp(entry->scope_config.scope, scope) == 0)
+//    {
+//      // Found
+//      return entry;
+//    }
+//  }
+//  return NULL;
+//}
+
+bool client_in_list(const RdmnetClientInternal *client, const RdmnetClientInternal *list)
+{
+  for (const RdmnetClientInternal *entry = list; entry; entry = entry->next)
+  {
+    if (client == entry)
+      return true;
+  }
+  return false;
 }
 
 // Callback functions from the discovery interface
@@ -292,9 +362,13 @@ void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDis
   (void)handle;
   (void)broker_info;
 
-  RdmnetClientInternal *cli = (RdmnetClientInternal *)context;
-  if (cli)
+  if (rdmnet_client_lock())
   {
+    RdmnetClientInternal *cli = (RdmnetClientInternal *)context;
+    if (cli && client_in_list(cli, state.clients))
+    {
+    }
+    rdmnet_client_unlock();
   }
 }
 
@@ -304,9 +378,13 @@ void monitorcb_broker_lost(rdmnet_scope_monitor_t handle, const char *scope, con
   (void)scope;
   (void)service_name;
 
-  RdmnetClientInternal *cli = (RdmnetClientInternal *)context;
-  if (cli)
+  if (rdmnet_client_lock())
   {
+    RdmnetClientInternal *cli = (RdmnetClientInternal *)context;
+    if (cli && client_in_list(cli, state.clients))
+    {
+    }
+    rdmnet_client_unlock();
   }
 }
 
@@ -316,8 +394,12 @@ void monitorcb_scope_monitor_error(rdmnet_scope_monitor_t handle, const char *sc
   (void)scope;
   (void)platform_error;
 
-  RdmnetClientInternal *cli = (RdmnetClientInternal *)context;
-  if (cli)
+  if (rdmnet_client_lock())
   {
+    RdmnetClientInternal *cli = (RdmnetClientInternal *)context;
+    if (cli && client_in_list(cli, state.clients))
+    {
+    }
+    rdmnet_client_unlock();
   }
 }

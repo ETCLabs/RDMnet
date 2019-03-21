@@ -39,13 +39,17 @@
 extern "C" {
 #endif
 
+typedef struct DeviceParams
+{
+  LwpaUuid cid;
+  RdmnetScopeConfig scope_config;
+} DeviceParams;
+
 void device_print_version();
 
-lwpa_error_t device_init(const RdmnetDeviceConfig *config, const LwpaLogParams *lparams);
+lwpa_error_t device_init(const DeviceParams *params, const LwpaLogParams *lparams);
 void device_deinit();
 void device_run();
-
-bool device_llrp_set(const RdmCommand *cmd_data, uint16_t *nack_reason);
 
 #ifdef __cplusplus
 }

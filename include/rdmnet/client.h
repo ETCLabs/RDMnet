@@ -88,7 +88,7 @@ typedef struct RdmnetRptClientConfig
   bool has_static_uid;
   RdmUid static_uid;
   LwpaUuid cid;
-  RdmnetScopeConfig *scope_list;
+  const RdmnetScopeConfig *scope_list;
   size_t num_scopes;
   RdmnetClientCallbacks callbacks;
   void *callback_context;
