@@ -79,19 +79,29 @@ static struct RdmnetClientState
   RdmnetClientInternal *clients;
 } state;
 
-/*********************** Private function prototypes *************************/
-
-static RdmnetClientInternal *rpt_client_new(const RdmnetRptClientConfig *config);
-static lwpa_error_t validate_rpt_client_config(const RdmnetRptClientConfig *config);
-static void append_to_client_list(RdmnetClientInternal *new_client);
-static void start_scope_discovery(ClientScopeListEntry *scope_entry);
-static void start_connection_for_scope(ClientScopeListEntry *scope_entry);
 static void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo *broker_info,
                                    void *context);
 static void monitorcb_broker_lost(rdmnet_scope_monitor_t handle, const char *scope, const char *service_name,
                                   void *context);
 static void monitorcb_scope_monitor_error(rdmnet_scope_monitor_t handle, const char *scope, int platform_error,
                                           void *context);
+
+static const RdmnetScopeMonitorCallbacks disc_callbacks = {monitorcb_broker_found, monitorcb_broker_lost,
+                                                           monitorcb_scope_monitor_error};
+
+static void conncb_connected(rdmnet_conn_t handle, void *context);
+static void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectInfo *disconn_info, void *context);
+static void conncb_msg_received(rdmnet_conn_t handle, const RdmnetMessage *message, void *context);
+
+static const RdmnetConnCallbacks conn_callbacks = {conncb_connected, conncb_disconnected, conncb_msg_received};
+
+/*********************** Private function prototypes *************************/
+
+static RdmnetClientInternal *rpt_client_new(const RdmnetRptClientConfig *config);
+static lwpa_error_t validate_rpt_client_config(const RdmnetRptClientConfig *config);
+static void append_to_client_list(RdmnetClientInternal *new_client);
+static void start_scope_discovery(ClientScopeListEntry *scope_entry);
+static void start_connection_for_scope(ClientScopeListEntry *scope_entry, const LwpaSockaddr *broker_addr);
 static bool client_in_list(const RdmnetClientInternal *client, const RdmnetClientInternal *list);
 static bool create_and_append_scope_entry(const RdmnetScopeConfig *config, RdmnetClientInternal *client);
 
@@ -128,7 +138,7 @@ lwpa_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig *config, rdmne
         if (scope->state == kScopeStateDiscovery)
           start_scope_discovery(scope);
         else if (scope->state == kScopeStateConnecting)
-          start_connection_for_scope(scope);
+          start_connection_for_scope(scope, &scope->scope_config.static_broker_addr);
       }
     }
     else
@@ -147,6 +157,7 @@ lwpa_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig *config, rdmne
 
 void rdmnet_rpt_client_destroy(rdmnet_client_t handle)
 {
+  (void)handle;
   // TODO
 }
 
@@ -223,7 +234,7 @@ RdmnetClientInternal *rpt_client_new(const RdmnetRptClientConfig *config)
       {
         if (to_free->conn_handle >= 0)
         {
-          rdmnet_destroy_connection(to_free->conn_handle);
+          rdmnet_destroy_connection(to_free->conn_handle, NULL);
         }
         next = to_free->next;
         free_client_scope(to_free);
@@ -265,8 +276,12 @@ bool create_and_append_scope_entry(const RdmnetScopeConfig *config, RdmnetClient
     new_scope = alloc_client_scope();
     if (new_scope)
     {
-      new_scope->conn_handle = rdmnet_new_connection(&client->cid);
-      if (new_scope->conn_handle >= 0)
+      RdmnetConnectionConfig conn_config;
+      conn_config.local_cid = client->cid;
+      conn_config.callbacks = conn_callbacks;
+      conn_config.callback_context = new_scope;
+
+      if (rdmnet_new_connection(&conn_config, &new_scope->conn_handle) == LWPA_OK)
       {
         new_scope->next = NULL;
         *entry_ptr = new_scope;
@@ -274,6 +289,7 @@ bool create_and_append_scope_entry(const RdmnetScopeConfig *config, RdmnetClient
       else
       {
         free_client_scope(new_scope);
+        new_scope = NULL;
       }
     }
   }
@@ -282,6 +298,7 @@ bool create_and_append_scope_entry(const RdmnetScopeConfig *config, RdmnetClient
   {
     // Do the rest of the initialization
     new_scope->scope_config = *config;
+    new_scope->cli = client;
     if (config->has_static_broker_addr)
       new_scope->state = kScopeStateConnecting;
     else
@@ -306,9 +323,7 @@ void start_scope_discovery(ClientScopeListEntry *scope_entry)
   rdmnet_safe_strncpy(config.scope, scope_entry->scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH);
   // TODO expose to API
   rdmnet_safe_strncpy(config.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
-  config.callbacks.broker_found = monitorcb_broker_found;
-  config.callbacks.broker_lost = monitorcb_broker_lost;
-  config.callbacks.scope_monitor_error = monitorcb_scope_monitor_error;
+  config.callbacks = disc_callbacks;
   config.callback_context = scope_entry;
 
   // TODO capture errors
@@ -316,19 +331,42 @@ void start_scope_discovery(ClientScopeListEntry *scope_entry)
   rdmnetdisc_start_monitoring(&config, &scope_entry->monitor_handle, &platform_error);
 }
 
-void start_connection_for_scope(ClientScopeListEntry *scope_entry)
+void start_connection_for_scope(ClientScopeListEntry *scope_entry, const LwpaSockaddr *broker_addr)
 {
-  // TODO
+  ClientConnectMsg connect_msg;
+  RdmnetClientInternal *cli = scope_entry->cli;
 
-  //  /* Create a new connection handle */
-  //  device_state.broker_conn = rdmnet_new_connection(&settings->cid);
-  //  if (device_state.broker_conn < 0)
-  //  {
-  //    res = device_state.broker_conn;
-  //    lwpa_log(lparams, LWPA_LOG_ERR, "Couldn't create a new RDMnet Connection due to error: '%s'.",
-  //    lwpa_strerror(res)); rdmnet_deinit(); rdmnetdisc_deinit(); return res;
-  //  }
-  (void)scope_entry;
+  if (cli->type == kClientProtocolRPT)
+  {
+    RptClientData *rpt_data = &cli->data.rpt;
+    RdmUid my_uid;
+    if (rpt_data->has_static_uid)
+    {
+      my_uid = rpt_data->static_uid;
+    }
+    else
+    {
+      // TODO better interface for manufacturer ID
+      rdmnet_init_dynamic_uid_request(&my_uid, 0x6574);
+    }
+
+    rdmnet_safe_strncpy(connect_msg.scope, scope_entry->scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH);
+    connect_msg.e133_version = E133_VERSION;
+    // TODO expose to API
+    rdmnet_safe_strncpy(connect_msg.search_domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
+    if (rpt_data->type == kRPTClientTypeController)
+      connect_msg.connect_flags = CONNECTFLAG_INCREMENTAL_UPDATES;
+    else
+      connect_msg.connect_flags = 0;
+    create_rpt_client_entry(&cli->cid, &my_uid, rpt_data->type, NULL, &connect_msg.client_entry);
+  }
+  else
+  {
+    // TODO EPT
+    return;
+  }
+
+  rdmnet_connect(scope_entry->conn_handle, broker_addr, &connect_msg);
 }
 
 // ClientScopeListEntry *find_scope_in_list(const char *scope, ClientScopeListEntry *list)
@@ -364,9 +402,22 @@ void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDis
 
   if (rdmnet_client_lock())
   {
-    RdmnetClientInternal *cli = (RdmnetClientInternal *)context;
-    if (cli && client_in_list(cli, state.clients))
+    ClientScopeListEntry *scope_entry = (ClientScopeListEntry *)context;
+    if (scope_entry)
     {
+      RdmnetClientInternal *cli = scope_entry->cli;
+      if (client_in_list(cli, state.clients))
+      {
+        for (size_t i = 0; i < broker_info->listen_addrs_count; ++i)
+        {
+          // TODO temporary until we enable IPv6
+          if (lwpaip_is_v4(&broker_info->listen_addrs[i].ip))
+          {
+            start_connection_for_scope(scope_entry, &broker_info->listen_addrs[i]);
+            break;
+          }
+        }
+      }
     }
     rdmnet_client_unlock();
   }
@@ -377,7 +428,9 @@ void monitorcb_broker_lost(rdmnet_scope_monitor_t handle, const char *scope, con
   (void)handle;
   (void)scope;
   (void)service_name;
+  (void)context;
 
+  /*
   if (rdmnet_client_lock())
   {
     RdmnetClientInternal *cli = (RdmnetClientInternal *)context;
@@ -386,6 +439,7 @@ void monitorcb_broker_lost(rdmnet_scope_monitor_t handle, const char *scope, con
     }
     rdmnet_client_unlock();
   }
+  */
 }
 
 void monitorcb_scope_monitor_error(rdmnet_scope_monitor_t handle, const char *scope, int platform_error, void *context)
@@ -402,4 +456,79 @@ void monitorcb_scope_monitor_error(rdmnet_scope_monitor_t handle, const char *sc
     }
     rdmnet_client_unlock();
   }
+}
+
+void conncb_connected(rdmnet_conn_t handle, void *context)
+{
+  bool deliver_cb = false;
+  RdmnetClientConnectedCb cb;
+  rdmnet_client_t cb_handle;
+  char cb_scope[E133_SCOPE_STRING_PADDED_LENGTH];
+  void *cb_context = NULL;
+
+  if (rdmnet_client_lock())
+  {
+    ClientScopeListEntry *scope_entry = (ClientScopeListEntry *)context;
+    if (scope_entry)
+    {
+      RdmnetClientInternal *cli = scope_entry->cli;
+      if (client_in_list(cli, state.clients))
+      {
+        deliver_cb = true;
+        cb = cli->callbacks.connected;
+        cb_handle = cli;
+        rdmnet_safe_strncpy(cb_scope, scope_entry->scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH);
+        cb_context = cli->callback_context;
+      }
+    }
+    rdmnet_client_unlock();
+  }
+
+  if (deliver_cb)
+    cb(cb_handle, cb_scope, cb_context);
+}
+
+void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectInfo *disconn_info, void *context)
+{
+  bool deliver_cb = false;
+  RdmnetClientConnectedCb cb;
+  rdmnet_client_t cb_handle;
+  char cb_scope[E133_SCOPE_STRING_PADDED_LENGTH];
+  void *cb_context = NULL;
+
+  if (rdmnet_client_lock())
+  {
+    ClientScopeListEntry *scope_entry = (ClientScopeListEntry *)context;
+    if (scope_entry)
+    {
+      RdmnetClientInternal *cli = scope_entry->cli;
+      if (client_in_list(cli, state.clients))
+      {
+        deliver_cb = true;
+        cb = cli->callbacks.disconnected;
+        cb_handle = cli;
+        rdmnet_safe_strncpy(cb_scope, scope_entry->scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH);
+        cb_context = cli->callback_context;
+      }
+    }
+    rdmnet_client_unlock();
+  }
+
+  if (deliver_cb)
+    cb(cb_handle, cb_scope, cb_context);
+}
+
+void conncb_msg_received(rdmnet_conn_t handle, const RdmnetMessage *message, void *context)
+{
+  lwpa_log(rdmnet_log_params, LWPA_LOG_INFO, "Got message on connection %p", handle);
+  /* TODO
+  if (rdmnet_client_lock())
+  {
+    RdmnetClientInternal *cli = (RdmnetClientInternal *)context;
+    if (cli && client_in_list(cli, state.clients))
+    {
+    }
+    rdmnet_client_unlock();
+  }
+  */
 }

@@ -46,26 +46,27 @@
 
 typedef enum
 {
-  kCSNotConnected,
+  kCSConnectNotStarted,
+  kCSConnectPending,
   kCSBackoff,
   kCSTCPConnPending,
   kCSRDMnetConnPending,
-  kCSHeartbeat
+  kCSHeartbeat,
+  kCSMarkedForDestruction
 } conn_state_t;
 
 typedef struct RdmnetConnectionInternal RdmnetConnectionInternal;
 struct RdmnetConnectionInternal
 {
   /* Identification */
-  int handle;
   LwpaUuid local_cid;
   lwpa_socket_t sock;
   LwpaSockaddr remote_addr;
+  bool is_client;
   bool is_blocking;
 
   /* Connection state */
   conn_state_t state;
-  ConnPoll *poll_list;
   ClientConnectMsg conn_data;
   LwpaTimer send_timer;
   LwpaTimer hb_timer;
@@ -76,7 +77,6 @@ struct RdmnetConnectionInternal
   lwpa_mutex_t send_lock;
 
   /* Receive tracking */
-  bool recv_waiting;
   RdmnetMsgBuf recv_buf;
   lwpa_error_t recv_disconn_err;
 
@@ -90,6 +90,39 @@ struct RdmnetConnectionInternal
   RdmnetConnectionInternal *next;
 };
 
+typedef enum
+{
+  kConnCallbackNone,
+  kConnCallbackConnected,
+  kConnCallbackDisconnected,
+  kConnCallbackMsgReceived
+} conn_callback_t;
+
+typedef struct DisconnectedArgs
+{
+  RdmnetDisconnectInfo disconn_info;
+} DisconnectedArgs;
+
+typedef struct MsgReceivedArgs
+{
+  RdmnetMessage message;
+} MsgReceivedArgs;
+
+typedef struct CallbackDispatchInfo
+{
+  rdmnet_conn_t handle;
+  RdmnetConnCallbacks cbs;
+  void *context;
+
+  conn_callback_t which;
+  union
+  {
+    // No other args for Connected
+    DisconnectedArgs disconnected;
+    MsgReceivedArgs msg_received;
+  } args;
+} CallbackDispatchInfo;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -97,8 +130,8 @@ extern "C" {
 lwpa_error_t rdmnet_connection_init();
 void rdmnet_connection_deinit();
 
-size_t rdmnet_connection_get_sockets(RdmnetPollSocket *sock_arr);
-void rdmnet_connection_socket_activity(const RdmnetPollSocket *sock);
+size_t rdmnet_connection_get_sockets(LwpaPollfd *poll_arr, void **context_arr);
+void rdmnet_connection_socket_activity(const LwpaPollfd *poll, void *context);
 
 #ifdef __cplusplus
 }

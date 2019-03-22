@@ -87,9 +87,9 @@ void RDMnet::Broker::GetSettings(BrokerSettings &settings) const
 }
 
 BrokerCore::BrokerCore(RDMnet::BrokerLog *log, RDMnet::BrokerNotify *notify)
-    : ListenThreadNotify()
+    : RdmnetCoreLibraryNotify()
+    , ListenThreadNotify()
     , ClientServiceThreadNotify()
-    , ConnPollThreadNotify()
     , service_thread_(1)
     , started_(false)
     , service_registered_(false)
@@ -131,27 +131,25 @@ bool BrokerCore::Startup(const RDMnet::BrokerSettings &settings, uint16_t listen
     }
     settings_ = settings;
 
-    BrokerDiscoveryManager::InitLibrary();
-
-    if (LWPA_OK != rdmnet_init(log_->GetLogParams()))
+    if (LWPA_OK != rdmnet_core_init(log_->GetLogParams()))
       return false;
 
     if (!lwpa_rwlock_create(&client_lock_))
     {
-      rdmnet_deinit();
+      rdmnet_core_deinit();
       return false;
     }
     if (!lwpa_mutex_create(&poll_thread_lock_))
     {
       lwpa_rwlock_destroy(&client_lock_);
-      rdmnet_deinit();
+      rdmnet_core_deinit();
       return false;
     }
     if (!lwpa_mutex_create(&client_destroy_lock_))
     {
       lwpa_mutex_destroy(&poll_thread_lock_);
       lwpa_rwlock_destroy(&client_lock_);
-      rdmnet_deinit();
+      rdmnet_core_deinit();
       return false;
     }
 
@@ -196,7 +194,6 @@ void BrokerCore::Shutdown()
   if (started_)
   {
     disc_.UnregisterBroker();
-    BrokerDiscoveryManager::DeinitLibrary();
 
     StopBrokerServices();
     listeners_.clear();
@@ -204,7 +201,7 @@ void BrokerCore::Shutdown()
     service_thread_.Stop();
 
     lwpa_rwlock_destroy(&client_lock_);
-    rdmnet_deinit();
+    rdmnet_core_deinit();
 
     started_ = false;
   }
@@ -212,41 +209,22 @@ void BrokerCore::Shutdown()
 
 void BrokerCore::Tick()
 {
-  BrokerDiscoveryManager::LibraryTick();
-
   if (!other_brokers_found_)
     DestroyMarkedClientSockets();
 }
 
-// Fills in the current settings the broker is using.  Can be called even
-// after Shutdown. Useful if you want to shutdown & restart the broker for
-// any reason.
+// Fills in the current settings the broker is using.  Can be called even after Shutdown. Useful if
+// you want to shutdown & restart the broker for any reason.
 void BrokerCore::GetSettings(RDMnet::BrokerSettings &settings) const
 {
   settings = settings_;
 }
 
-constexpr bool BrokerCore::IsBroadcastUID(const RdmUid &uid)
-{
-  return uid.id == 0xffffffff;
-}
-
-constexpr bool BrokerCore::IsControllerBroadcastUID(const RdmUid &uid)
-{
-  return (((uint64_t)uid.manu << 32 | uid.id) == E133_RPT_ALL_CONTROLLERS);
-}
-
-constexpr bool BrokerCore::IsDeviceBroadcastUID(const RdmUid &uid)
-{
-  return (((uint64_t)uid.manu << 32 | uid.id) == E133_RPT_ALL_DEVICES);
-}
-
 bool BrokerCore::IsDeviceManuBroadcastUID(const RdmUid &uid, uint16_t &manu)
 {
-  if ((uid.manu == ((uint16_t)((E133_RPT_ALL_DEVICES >> 16) & 0xffffu))) &&
-      (((uint16_t)uid.id) == ((uint16_t)(E133_RPT_ALL_DEVICES & 0xffffu))) && (((uint16_t)(uid.id >> 16) != 0xffffu)))
+  if (rdmnet_uid_is_device_manu_broadcast(&uid))
   {
-    manu = uid.id >> 16;
+    manu = rdmnet_device_broadcast_manu_id(&uid);
     return true;
   }
   return false;
@@ -254,7 +232,7 @@ bool BrokerCore::IsDeviceManuBroadcastUID(const RdmUid &uid, uint16_t &manu)
 
 bool BrokerCore::IsValidControllerDestinationUID(const RdmUid &uid) const
 {
-  if (IsDeviceBroadcastUID(uid) || (uid == settings_.uid))
+  if (rdmnet_uid_is_controller_broadcast(&uid) || (uid == settings_.uid))
     return true;
 
   // TODO this should only check devices
@@ -264,7 +242,7 @@ bool BrokerCore::IsValidControllerDestinationUID(const RdmUid &uid) const
 
 bool BrokerCore::IsValidDeviceDestinationUID(const RdmUid &uid) const
 {
-  if (IsControllerBroadcastUID(uid))
+  if (rdmnet_uid_is_controller_broadcast(&uid))
     return true;
 
   // TODO this should only check controllers
@@ -313,25 +291,27 @@ bool BrokerCore::NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr &addr)
     log_->Log(LWPA_LOG_INFO, "Creating a new connection for ip addr %s", addrstr);
   }
 
-  int connhandle = -1;
-
+  rdmnet_conn_t connhandle;
   bool result = false;
+
   {  // Client write lock scope
     BrokerWriteGuard client_write(client_lock_);
 
-    connhandle = rdmnet_new_connection(&settings_.cid);
-    if (connhandle >= 0 && (settings_.max_connections == 0 ||
-                            (clients_.size() <= settings_.max_connections + settings_.max_reject_connections)))
+    if (settings_.max_connections == 0 ||
+        (clients_.size() <= settings_.max_connections + settings_.max_reject_connections))
     {
-      auto client = std::make_shared<BrokerClient>(connhandle);
-
-      // Before inserting the connection, make sure we can attach the socket.
-      if (client && LWPA_OK == rdmnet_attach_existing_socket(connhandle, new_sock, &addr))
+      lwpa_error_t create_res = rdmnet_new_connection(&new_conn_config_, &connhandle);
+      if (create_res == LWPA_OK)
       {
-        client->addr = addr;
-        AddConnToPollThread(connhandle, client->poll_thread);
-        clients_.insert(std::make_pair(connhandle, std::move(client)));
-        result = true;
+        auto client = std::make_shared<BrokerClient>(connhandle);
+
+        // Before inserting the connection, make sure we can attach the socket.
+        if (client && LWPA_OK == rdmnet_attach_existing_socket(connhandle, new_sock, &addr))
+        {
+          client->addr = addr;
+          clients_.insert(std::make_pair(connhandle, std::move(client)));
+          result = true;
+        }
       }
     }
   }
@@ -912,7 +892,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
     uint16_t device_manu;
     int dest_conn;
 
-    if (IsControllerBroadcastUID(rptmsg->header.dest_uid))
+    if (rdmnet_uid_is_controller_broadcast(&rptmsg->header.dest_uid))
     {
       log_->Log(LWPA_LOG_DEBUG, "Broadcasting RPT message from Device %04x:%08x to all Controllers",
                 rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id);
@@ -927,7 +907,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
         }
       }
     }
-    else if (IsDeviceBroadcastUID(rptmsg->header.dest_uid))
+    else if (rdmnet_uid_is_device_broadcast(&rptmsg->header.dest_uid))
     {
       log_->Log(LWPA_LOG_DEBUG, "Broadcasting RPT message from Controller %04x:%08x to all Devices",
                 rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id);

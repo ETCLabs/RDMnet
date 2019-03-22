@@ -42,6 +42,7 @@
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/client.h"
+#include "rdmnet/core.h"
 #include "rdmnet/core/util.h"
 
 /*! \addtogroup rdmnet_message
@@ -388,11 +389,11 @@ size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, 
 size_t pack_dynamic_uid_assignment_list(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid,
                                         const DynamicUidMapping *mapping_list);
 
-lwpa_error_t send_connect_reply(int handle, const LwpaUuid *local_cid, const ConnectReplyMsg *data);
-lwpa_error_t send_fetch_client_list(int handle, const LwpaUuid *local_cid);
-lwpa_error_t send_request_dynamic_uids(int handle, const LwpaUuid *local_cid,
+lwpa_error_t send_connect_reply(rdmnet_conn_t handle, const LwpaUuid *local_cid, const ConnectReplyMsg *data);
+lwpa_error_t send_fetch_client_list(rdmnet_conn_t handle, const LwpaUuid *local_cid);
+lwpa_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const LwpaUuid *local_cid,
                                        const DynamicUidRequestListEntry *request_list);
-lwpa_error_t send_fetch_uid_assignment_list(int handle, const LwpaUuid *local_cid,
+lwpa_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const LwpaUuid *local_cid,
                                             const FetchUidAssignmentListEntry *uid_list);
 
 #ifdef __cplusplus

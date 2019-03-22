@@ -36,6 +36,8 @@
 #include "lwpa/error.h"
 #include "lwpa/log.h"
 
+typedef struct RdmnetConnectionInternal *rdmnet_conn_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -81,6 +81,10 @@ static struct CoreState
 #endif
 } core_state;
 
+/*********************** Private function prototypes *************************/
+
+static void rdmnet_tick_thread(void *arg);
+
 /*************************** Function definitions ****************************/
 
 lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
@@ -180,37 +184,26 @@ void rdmnet_tick_thread(void *arg)
 }
 #endif
 
-static LwpaPollfd lwpa_poll_arr[RDMNET_TICK_MAX_SOCKETS];
-static RdmnetPollSocket poll_arr[RDMNET_TICK_MAX_SOCKETS];
+static LwpaPollfd poll_arr[RDMNET_TICK_MAX_SOCKETS];
+static void *context_ptrs[RDMNET_TICK_MAX_SOCKETS];
 
 void rdmnet_core_tick()
 {
-  size_t conn_index = rdmnet_connection_get_sockets(poll_arr);
+  size_t conn_index = rdmnet_connection_get_sockets(poll_arr, context_ptrs);
 
   if (conn_index > 0)
   {
-    for (size_t i = 0; i < conn_index; ++i)
-    {
-      LwpaPollfd *lwpa_poll = &lwpa_poll_arr[i];
-      RdmnetPollSocket *rdmnet_poll = &poll_arr[i];
-
-      lwpa_poll->events = LWPA_POLLIN;
-      lwpa_poll->fd = rdmnet_poll->sock;
-    }
-
-    int poll_res = lwpa_poll(lwpa_poll_arr, conn_index, RDMNET_TICK_POLL_TIMEOUT);
+    int poll_res = lwpa_poll(poll_arr, conn_index, RDMNET_TICK_POLL_TIMEOUT);
     if (poll_res > 0)
     {
       size_t read_index = 0;
       while (poll_res)
       {
-        if (lwpa_poll_arr[read_index].revents & (LWPA_POLLIN | LWPA_POLLERR))
+        if (poll_arr[read_index].revents)
         {
-          poll_arr[read_index].revents = lwpa_poll_arr[read_index].revents;
-          poll_arr[read_index].err = lwpa_poll_arr[read_index].err;
           if (read_index < conn_index)
           {
-            rdmnet_connection_socket_activity(&poll_arr[read_index]);
+            rdmnet_connection_socket_activity(&poll_arr[read_index], context_ptrs[read_index]);
           }
         }
       }

@@ -42,14 +42,14 @@
 #include "lwpa/error.h"
 #include "lwpa/inet.h"
 #include "lwpa/socket.h"
+#include "rdmnet/core.h"
 #include "rdmnet/core/message.h"
 
 /*! \defgroup rdmnet_conn Connection
  *  \ingroup rdmnet_core_lib
  *  \brief Handle a connection between a Client and a %Broker in RDMnet.
  *
- *  In E1.33, the behavior of this module is dictated by the %Broker Protocol
- *  (&sect; 6).
+ *  In E1.33, the behavior of this module is dictated by the %Broker Protocol (&sect; 6).
  *
  *  Basic functionality for an RDMnet Client: Initialize the library using rdmnet_init(). Create a
  *  new connection using rdmnet_new_connection(). Connect to a %Broker using rdmnet_connect().
@@ -60,27 +60,50 @@
  *  @{
  */
 
-typedef struct RdmnetConnectionInternal *rdmnet_conn_t;
-
 typedef enum
 {
   kRdmnetDisconnectSocketFailure,
   kRdmnetDisconnectNoHeartbeat,
   kRdmnetDisconnectGracefulRemoteInitiated,
   kRdmnetDisconnectGracefulLocalInitiated
-} rdmnet_disconnect_type_t;
+} rdmnet_disconnect_cause_t;
 
 typedef struct RdmnetDisconnectInfo
 {
-  rdmnet_disconnect_type_t type;
+  rdmnet_disconnect_cause_t cause;
   lwpa_error_t socket_err;
   rdmnet_disconnect_reason_t rdmnet_reason;
 } RdmnetDisconnectInfo;
 
+/*! A set of callbacks which are called with notifications about RDMnet connections. */
 typedef struct RdmnetConnCallbacks
 {
+  /*! \brief An RDMnet connection has connected successfully.
+   *
+   *  \param[in] handle Handle to connection which has connected.
+   *  \param[in] context Context pointer that was given at the creation of the connection.
+   */
   void (*connected)(rdmnet_conn_t handle, void *context);
+
+  /*! \brief An RDMnet connection has disconnected.
+   *
+   *  \param[in] handle Handle to connection which has been disconnected.
+   *  \param[in] disconn_info More information about the disconnect event.
+   *  \param[in] context Context pointer that was given at the creation of the connection.
+   */
   void (*disconnected)(rdmnet_conn_t handle, const RdmnetDisconnectInfo *disconn_info, void *context);
+
+  /*! \brief A message has been received on an RDMnet connection.
+   *
+   *  %Broker Protocol messages that affect connection status are consumed internally by the
+   *  connection library and thus will not result in this callback. All other valid messages will be
+   *  delivered.
+   *
+   *  \param[in] handle Handle to connection on which the message has been received.
+   *  \param[in] message Contains the message received. Use the macros in \ref rdmnet_message to
+   *                     decode.
+   *  \param[in] context Context pointer that was given at creation of the connection.
+   */
   void (*msg_received)(rdmnet_conn_t handle, const RdmnetMessage *message, void *context);
 } RdmnetConnCallbacks;
 
@@ -99,15 +122,13 @@ lwpa_error_t rdmnet_new_connection(const RdmnetConnectionConfig *config, rdmnet_
 lwpa_error_t rdmnet_connect(rdmnet_conn_t handle, const LwpaSockaddr *remote_addr,
                             const ClientConnectMsg *connect_data);
 lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t sock, const LwpaSockaddr *remote_addr);
-lwpa_error_t rdmnet_disconnect(rdmnet_conn_t handle, bool send_disconnect_msg,
-                               rdmnet_disconnect_reason_t disconnect_reason);
-lwpa_error_t rdmnet_destroy_connection(rdmnet_conn_t handle);
+lwpa_error_t rdmnet_destroy_connection(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t *disconnect_reason);
 
-int rdmnet_send(int handle, const uint8_t *data, size_t size);
+int rdmnet_send(rdmnet_conn_t handle, const uint8_t *data, size_t size);
 
-lwpa_error_t rdmnet_start_message(int handle);
-int rdmnet_send_partial_message(int handle, const uint8_t *data, size_t size);
-lwpa_error_t rdmnet_end_message(int handle);
+lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle);
+int rdmnet_send_partial_message(rdmnet_conn_t handle, const uint8_t *data, size_t size);
+lwpa_error_t rdmnet_end_message(rdmnet_conn_t handle);
 
 void rdmnet_conn_tick();
 

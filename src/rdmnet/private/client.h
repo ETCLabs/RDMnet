@@ -31,6 +31,9 @@
 #include "rdmnet/client.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/core/discovery.h"
+#include "rdmnet/core/connection.h"
+
+typedef struct RdmnetClientInternal RdmnetClientInternal;
 
 typedef enum
 {
@@ -43,9 +46,10 @@ typedef struct ClientScopeListEntry ClientScopeListEntry;
 struct ClientScopeListEntry
 {
   RdmnetScopeConfig scope_config;
-  int conn_handle;
+  rdmnet_conn_t conn_handle;
   scope_state_t state;
   rdmnet_scope_monitor_t monitor_handle;
+  RdmnetClientInternal *cli;
   ClientScopeListEntry *next;
 };
 
@@ -61,7 +65,6 @@ typedef struct EptClientData
   int placeholder;  // TODO, to get it to compile for now
 } EptClientData;
 
-typedef struct RdmnetClientInternal RdmnetClientInternal;
 struct RdmnetClientInternal
 {
   client_protocol_t type;

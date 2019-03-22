@@ -89,41 +89,6 @@ protected:
 
 /************************************/
 
-class ConnPollThreadNotify
-{
-public:
-  virtual void PollConnections(const std::vector<int> &conn_handles, RdmnetPoll *poll_arr) = 0;
-};
-
-// Used to poll RDMnet connections for incoming data.
-// You can add & remove as needed.
-class ConnPollThread
-{
-public:
-  ConnPollThread(size_t max_sockets, ConnPollThreadNotify *pnotify);
-  virtual ~ConnPollThread();
-
-  bool Start();
-  void Stop();
-
-  bool AddConnection(int conn);
-  size_t RemoveConnection(int conn);
-
-  void Run();
-
-protected:
-  bool terminated_;
-  lwpa_thread_t thread_handle_;
-  size_t max_count_;
-  ConnPollThreadNotify *notify_;
-
-  mutable lwpa_rwlock_t conn_lock_;
-  std::vector<int> conns_;
-  std::shared_ptr<std::vector<RdmnetPoll>> poll_arr_;
-};
-
-/************************************/
-
 class ClientServiceThreadNotify
 {
 public:

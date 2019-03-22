@@ -36,14 +36,6 @@
 extern "C" {
 #endif
 
-typedef struct RdmnetPollSocket
-{
-  lwpa_socket_t sock;
-  void *context;
-  short revents;
-  lwpa_error_t err;
-} RdmnetPollSocket;
-
 bool rdmnet_core_initialized();
 
 extern lwpa_rwlock_t rdmnet_lock;
