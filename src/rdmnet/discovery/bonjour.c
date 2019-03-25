@@ -646,7 +646,7 @@ void rdmnetdisc_tick()
     lwpa_mutex_give(&disc_state.lock);
   }
 
-  if (nfds > 0 && lwpa_poll(fds, nfds, 200) > 0)
+  if (nfds > 0 && lwpa_poll(fds, nfds, 0) > 0)
   {
     for (unsigned int i = 0; i < nfds; i++)
     {

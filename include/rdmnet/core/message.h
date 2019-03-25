@@ -29,10 +29,12 @@
  *  \brief Basic types for parsed RDMnet messages.
  *  \author Sam Kearney
  */
-#ifndef _RDMNET_MESSAGE_H_
-#define _RDMNET_MESSAGE_H_
+#ifndef _RDMNET_CORE_MESSAGE_H_
+#define _RDMNET_CORE_MESSAGE_H_
 
+#include <stddef.h>
 #include "lwpa/int.h"
+#include "lwpa/bool.h"
 #include "lwpa/root_layer_pdu.h"
 #include "lwpa/uuid.h"
 #include "rdmnet/core/broker_prot.h"
@@ -47,6 +49,100 @@
  *
  *  @{
  */
+
+typedef enum
+{
+  kRptClientMsgRdmCmd,
+  kRptClientMsgRdmResp,
+  kRptClientMsgStatus
+} rpt_client_msg_t;
+
+typedef struct DeviceRdmCommand
+{
+  RdmUid source_uid;
+  uint16_t dest_endpoint;
+  uint32_t seq_num;
+  RdmCommand rdm;
+} DeviceRdmCommand;
+
+typedef struct DeviceRdmResponse
+{
+  RdmUid dest_uid;
+  uint16_t source_endpoint;
+  uint32_t seq_num;
+  RdmResponse *rdm_arr;
+  size_t num_responses;
+} DeviceRdmResponse;
+
+typedef struct ControllerRdmCommand
+{
+  RdmUid dest_uid;
+  uint16_t dest_endpoint;
+  RdmCommand rdm;
+} ControllerRdmCommand;
+
+typedef struct ControllerRdmRespListEntry ControllerRdmRespListEntry;
+struct ControllerRdmRespListEntry
+{
+  RdmResponse msg;
+  ControllerRdmRespListEntry *next;
+};
+
+typedef struct ControllerRdmRespList
+{
+  /*! This message contains a partial list. This can be set when the library runs out of static
+   *  memory in which to store RDM Commands and must deliver the partial list before continuing.
+   *  The application should store the entries in the list but should not act on the list until
+   *  another RdmCmdList is received with partial set to false. */
+  bool partial;
+  /*! The head of a linked list of packed RDM Commands. */
+  ControllerRdmRespListEntry *list;
+} ControllerRdmRespList;
+
+typedef struct ControllerRdmResponse
+{
+  RdmUid source_uid;
+  uint16_t source_endpoint;
+  uint32_t seq_num;
+  ControllerRdmRespList resp_list;
+} ControllerRdmResponse;
+
+typedef struct RptClientMessage
+{
+  rpt_client_msg_t type;
+  union
+  {
+    DeviceRdmCommand cmd;
+    ControllerRdmResponse resp;
+    RptStatusMsg status;
+  } payload;
+} RptClientMessage;
+
+typedef enum
+{
+  kEptClientMsgData,
+  kEptClientMsgStatus
+} ept_client_msg_t;
+
+typedef struct EptClientMessage
+{
+  ept_client_msg_t type;
+  union
+  {
+    EptStatusMsg status;
+    EptDataMsg data;
+  } payload;
+} EptClientMessage;
+
+typedef struct RdmnetClientMessage
+{
+  rpt_client_type_t msg_type;
+  union
+  {
+    RptClientMessage rpt;
+    EptClientMessage ept;
+  } prot_msg;
+} RdmnetClientMessage;
 
 /*! A received RDMnet message. */
 typedef struct RdmnetMessage
@@ -101,4 +197,4 @@ void free_rdmnet_message(RdmnetMessage *msg);
 
 /*!@}*/
 
-#endif /* _RDMNET_MESSAGE_H_ */
+#endif /* _RDMNET_CORE_MESSAGE_H_ */

@@ -27,17 +27,14 @@
 
 #include "rdmnet_mock/core/connection.h"
 
-DEFINE_FAKE_VALUE_FUNC(int, rdmnet_new_connection, const LwpaUuid *);
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_connect, int, const LwpaSockaddr *, const ClientConnectMsg *, RdmnetData *);
-DEFINE_FAKE_VALUE_FUNC(int, rdmnet_connect_poll, RdmnetPoll *, size_t, int);
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_set_blocking, int, bool);
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_attach_existing_socket, int, lwpa_socket_t, const LwpaSockaddr *);
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_disconnect, int, bool, rdmnet_disconnect_reason_t);
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_destroy_connection, int);
-DEFINE_FAKE_VALUE_FUNC(int, rdmnet_send, int, const uint8_t *, size_t);
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_start_message, int);
-DEFINE_FAKE_VALUE_FUNC(int, rdmnet_send_partial_message, int, const uint8_t *, size_t);
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_end_message, int);
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_recv, int, RdmnetData *);
-DEFINE_FAKE_VALUE_FUNC(int, rdmnet_poll, RdmnetPoll *, size_t, int);
-DEFINE_FAKE_VOID_FUNC(rdmnet_tick);
+DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_new_connection, const RdmnetConnectionConfig *, rdmnet_conn_t *);
+DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_connect, rdmnet_conn_t, const LwpaSockaddr *, const ClientConnectMsg *);
+// DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_set_blocking, rdmnet_conn_t, bool);
+DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_attach_existing_socket, rdmnet_conn_t, lwpa_socket_t, const LwpaSockaddr *);
+DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_destroy_connection, rdmnet_conn_t, const rdmnet_disconnect_reason_t *);
+DEFINE_FAKE_VALUE_FUNC(int, rdmnet_send, rdmnet_conn_t, const uint8_t *, size_t);
+DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_start_message, rdmnet_conn_t);
+DEFINE_FAKE_VALUE_FUNC(int, rdmnet_send_partial_message, rdmnet_conn_t, const uint8_t *, size_t);
+DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_end_message, rdmnet_conn_t);
+DEFINE_FAKE_VOID_FUNC(rdmnet_conn_tick);
+DEFINE_FAKE_VOID_FUNC(rdmnet_conn_socket_activity, rdmnet_conn_t, const LwpaPollfd *);

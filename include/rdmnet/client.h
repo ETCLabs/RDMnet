@@ -36,44 +36,38 @@
 #include "lwpa/uuid.h"
 #include "lwpa/inet.h"
 #include "rdm/uid.h"
+#include "rdm/message.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/core.h"
+#include "rdmnet/core/message.h"
 #include "rdmnet/core/util.h"
-
-typedef enum
-{
-  kClientProtocolRPT = E133_CLIENT_PROTOCOL_RPT,
-  kClientProtocolEPT = E133_CLIENT_PROTOCOL_EPT,
-  kClientProtocolUnknown = 0xffffffff
-} client_protocol_t;
-
-typedef enum
-{
-  kRPTClientTypeDevice = E133_RPT_CLIENT_TYPE_DEVICE,
-  kRPTClientTypeController = E133_RPT_CLIENT_TYPE_CONTROLLER,
-  kRPTClientTypeUnknown = 0xff
-} rpt_client_type_t;
-
-#define EPT_PROTOCOL_STRING_PADDED_LENGTH 32
-
-typedef struct EptSubProtocol EptSubProtocol;
-struct EptSubProtocol
-{
-  uint32_t protocol_vector;
-  char protocol_string[EPT_PROTOCOL_STRING_PADDED_LENGTH];
-  EptSubProtocol *next;
-};
 
 typedef struct RdmnetClientInternal *rdmnet_client_t;
 
 typedef void (*RdmnetClientConnectedCb)(rdmnet_client_t handle, const char *scope, void *context);
 typedef void (*RdmnetClientDisconnectedCb)(rdmnet_client_t handle, const char *scope, void *context);
+typedef void (*RdmnetClientBrokerMsgReceivedCb)(rdmnet_client_t handle, const char *scope, const BrokerMessage *msg,
+                                                void *context);
+typedef void (*RptClientMsgReceivedCb)(rdmnet_client_t handle, const char *scope, const RptClientMessage *msg,
+                                       void *context);
+typedef void (*EptClientMsgReceivedCb)(rdmnet_client_t handle, const char *scope, const EptClientMessage *msg,
+                                       void *context);
 
-typedef struct RdmnetClientCallbacks
+typedef struct RptClientCallbacks
 {
   RdmnetClientConnectedCb connected;
   RdmnetClientDisconnectedCb disconnected;
-} RdmnetClientCallbacks;
+  RdmnetClientBrokerMsgReceivedCb broker_msg_received;
+  RptClientMsgReceivedCb msg_received;
+} RptClientCallbacks;
+
+typedef struct EptClientCallbacks
+{
+  RdmnetClientConnectedCb connected;
+  RdmnetClientDisconnectedCb disconnected;
+  RdmnetClientBrokerMsgReceivedCb broker_msg_received;
+  EptClientMsgReceivedCb msg_received;
+} EptClientCallbacks;
 
 typedef struct RdmnetScopeConfig
 {
@@ -90,7 +84,7 @@ typedef struct RdmnetRptClientConfig
   LwpaUuid cid;
   const RdmnetScopeConfig *scope_list;
   size_t num_scopes;
-  RdmnetClientCallbacks callbacks;
+  RptClientCallbacks callbacks;
   void *callback_context;
 } RdmnetRptClientConfig;
 
@@ -98,13 +92,9 @@ typedef struct RdmnetEptClientConfig
 {
   EptSubProtocol *protocol_list;
   size_t num_protocols;
+  EptClientCallbacks callbacks;
+  void *callback_context;
 } RdmnetEptClientConfig;
-
-typedef struct ClientRdmCommand
-{
-  RdmUid their_uid;
-  uint16_t endpoint;
-};
 
 /*! \brief Initialize an RdmnetScopeConfig struct with a scope string.
  *
@@ -138,37 +128,6 @@ typedef struct ClientRdmCommand
     (configptr)->static_broker_addr = broker_addr;                                       \
   } while (0)
 
-typedef struct ClientEntryDataRpt
-{
-  RdmUid client_uid;
-  rpt_client_type_t client_type;
-  LwpaUuid binding_cid;
-} ClientEntryDataRpt;
-
-typedef struct ClientEntryDataEpt
-{
-  bool partial;
-  EptSubProtocol *protocol_list;
-} ClientEntryDataEpt;
-
-typedef struct ClientEntryData ClientEntryData;
-struct ClientEntryData
-{
-  client_protocol_t client_protocol;
-  LwpaUuid client_cid;
-  union
-  {
-    ClientEntryDataRpt rpt_data;
-    ClientEntryDataEpt ept_data;
-  } data;
-  ClientEntryData *next;
-};
-
-#define is_rpt_client_entry(clientryptr) ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_RPT)
-#define get_rpt_client_entry_data(clientryptr) (&(clientryptr)->data.rpt_data)
-#define is_ept_client_entry(clientryptr) ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_EPT)
-#define get_ept_client_entry_data(clientryptr) (&(clientryptr)->data.ept_data)
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -176,13 +135,12 @@ extern "C" {
 lwpa_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig *config, rdmnet_client_t *handle);
 void rdmnet_rpt_client_destroy(rdmnet_client_t handle);
 
+lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, const ControllerRdmCommand *cmd);
+lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, const DeviceRdmResponse *resp);
+lwpa_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, const RptStatusMsg *status);
+
 lwpa_error_t rdmnet_ept_client_create(const RdmnetEptClientConfig *config, rdmnet_client_t *handle);
 void rdmnet_ept_client_destroy(rdmnet_client_t handle);
-
-bool create_rpt_client_entry(const LwpaUuid *cid, const RdmUid *uid, rpt_client_type_t client_type,
-                             const LwpaUuid *binding_cid, ClientEntryData *entry);
-bool create_ept_client_entry(const LwpaUuid *cid, const EptSubProtocol *protocol_arr, size_t protocol_arr_size,
-                             ClientEntryData *entry);
 
 #ifdef __cplusplus
 }

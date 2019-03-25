@@ -28,3 +28,5 @@
 #include "rdmnet_mock/core.h"
 
 DEFINE_FAKE_VALUE_FUNC(bool, rdmnet_core_initialized);
+
+const LwpaLogParams *rdmnet_log_params = NULL;

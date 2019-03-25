@@ -41,11 +41,14 @@ typedef struct RdmnetDeviceInternal *rdmnet_device_t;
 
 typedef void (*RdmnetDeviceConnectedCb)(rdmnet_device_t handle, const char *scope, void *context);
 typedef void (*RdmnetDeviceDisconnectedCb)(rdmnet_device_t handle, const char *scope, void *context);
+typedef void (*RdmnetDeviceRdmCmdReceivedCb)(rdmnet_device_t handle, const char *scope, const DeviceRdmCommand *cmd,
+                                             void *context);
 
 typedef struct RdmnetDeviceCallbacks
 {
   RdmnetDeviceConnectedCb connected;
   RdmnetDeviceDisconnectedCb disconnected;
+  RdmnetDeviceRdmCmdReceivedCb rdm_cmd_received;
 } RdmnetDeviceCallbacks;
 
 typedef struct RdmnetDeviceConfig
@@ -60,5 +63,8 @@ typedef struct RdmnetDeviceConfig
 
 lwpa_error_t rdmnet_device_create(const RdmnetDeviceConfig *config, rdmnet_device_t *handle);
 void rdmnet_device_destroy(rdmnet_device_t handle);
+
+lwpa_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const DeviceRdmResponse *resp);
+lwpa_error_t rdmnet_device_send_status(rdmnet_device_t handle, const RptStatusMsg *status);
 
 #endif /* _RDMNET_DEVICE_H_ */

@@ -29,8 +29,8 @@
  *  \brief Functions to pack, send and parse RPT PDUs and their encapsulated messages.
  *  \author Sam Kearney
  */
-#ifndef _RDMNET_RPT_PROT_H_
-#define _RDMNET_RPT_PROT_H_
+#ifndef _RDMNET_CORE_RPT_PROT_H_
+#define _RDMNET_CORE_RPT_PROT_H_
 
 #include <stddef.h>
 #include <string.h>
@@ -106,18 +106,14 @@ typedef struct RptStatusMsg
   /*! A status code that indicates the specific error or status condition. */
   rpt_status_code_t status_code;
   /*! An optional implementation-defined status string to accompany this status message. */
-  char status_string[RPT_STATUS_STRING_MAXLEN + 1];
+  char status_string[RPT_STATUS_STRING_MAXLEN];
 } RptStatusMsg;
 
 /*! \brief Safely copy a status string to an RptStatusMsg.
  *  \param statusmsgptr Pointer to RptStatusMsg.
  *  \param status_str String to copy to the RptStatusMsg (const char *). */
-#define rpt_status_msg_set_status_string(statusmsgptr, status_str)                                           \
-  do                                                                                                         \
-  {                                                                                                          \
-    RDMNET_MSVC_NO_DEP_WRN strncpy((statusmsgptr)->status_string, status_str, RPT_STATUS_STRING_MAXLEN - 1); \
-    (statusmsgptr)->status_string[RPT_STATUS_STRING_MAXLEN - 1] = '\0';                                      \
-  } while (0)
+#define rpt_status_msg_set_status_string(statusmsgptr, status_str) \
+  rdmnet_safe_strncpy((statusmsgptr)->status_string, status_str, RPT_STATUS_STRING_MAXLEN)
 
 /*! \brief Set an empty status string in an RptStatusMsg.
  *  \param statusmsgptr Pointer to RptStatusMsg. */
@@ -208,4 +204,4 @@ lwpa_error_t send_rpt_notification(rdmnet_conn_t handle, const LwpaUuid *local_c
 
 /*!@}*/
 
-#endif /* _RDMNET_RPT_PROT_H_ */
+#endif /* _RDMNET_CORE_RPT_PROT_H_ */

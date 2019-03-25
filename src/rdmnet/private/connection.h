@@ -37,12 +37,11 @@
 #include "lwpa/lock.h"
 #include "lwpa/timer.h"
 #include "lwpa/inet.h"
+#include "lwpa/socket.h"
 #include "rdmnet/core/connection.h"
 #include "rdmnet/private/opts.h"
 #include "rdmnet/private/core.h"
 #include "rdmnet/private/msg_buf.h"
-
-#define RDMNET_CONN_MAX_SOCKETS RDMNET_MAX_CONNECTIONS
 
 typedef enum
 {
@@ -98,17 +97,22 @@ typedef enum
   kConnCallbackMsgReceived
 } conn_callback_t;
 
-typedef struct DisconnectedArgs
+typedef struct ConnConnectedArgs
+{
+  ConnectReplyMsg connect_reply;
+} ConnConnectedArgs;
+
+typedef struct ConnDisconnectedArgs
 {
   RdmnetDisconnectInfo disconn_info;
-} DisconnectedArgs;
+} ConnDisconnectedArgs;
 
-typedef struct MsgReceivedArgs
+typedef struct ConnMsgReceivedArgs
 {
   RdmnetMessage message;
-} MsgReceivedArgs;
+} ConnMsgReceivedArgs;
 
-typedef struct CallbackDispatchInfo
+typedef struct ConnCallbackDispatchInfo
 {
   rdmnet_conn_t handle;
   RdmnetConnCallbacks cbs;
@@ -117,11 +121,11 @@ typedef struct CallbackDispatchInfo
   conn_callback_t which;
   union
   {
-    // No other args for Connected
-    DisconnectedArgs disconnected;
-    MsgReceivedArgs msg_received;
+    ConnConnectedArgs connected;
+    ConnDisconnectedArgs disconnected;
+    ConnMsgReceivedArgs msg_received;
   } args;
-} CallbackDispatchInfo;
+} ConnCallbackDispatchInfo;
 
 #ifdef __cplusplus
 extern "C" {
@@ -130,8 +134,9 @@ extern "C" {
 lwpa_error_t rdmnet_connection_init();
 void rdmnet_connection_deinit();
 
-size_t rdmnet_connection_get_sockets(LwpaPollfd *poll_arr, void **context_arr);
-void rdmnet_connection_socket_activity(const LwpaPollfd *poll, void *context);
+#if RDMNET_POLL_CONNECTIONS_INTERNALLY
+void rdmnet_connection_recv();
+#endif
 
 #ifdef __cplusplus
 }

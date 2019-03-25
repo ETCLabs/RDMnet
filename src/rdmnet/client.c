@@ -161,6 +161,70 @@ void rdmnet_rpt_client_destroy(rdmnet_client_t handle)
   // TODO
 }
 
+lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, const ControllerRdmCommand *cmd)
+{
+  if (!handle || !cmd)
+    return LWPA_INVALID;
+  if (!rdmnet_core_initialized())
+    return LWPA_NOTINIT;
+
+  lwpa_error_t res = LWPA_SYSERR;
+  if (rdmnet_client_lock())
+  {
+    res = LWPA_NOTFOUND;
+    if (client_in_list(handle, state.clients))
+    {
+      // TODO
+      res = LWPA_NOTIMPL;
+    }
+    rdmnet_client_unlock();
+  }
+  return res;
+}
+
+lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, const DeviceRdmResponse *resp)
+{
+  if (!handle || !resp)
+    return LWPA_INVALID;
+  if (!rdmnet_core_initialized())
+    return LWPA_NOTINIT;
+
+  lwpa_error_t res = LWPA_SYSERR;
+  if (rdmnet_client_lock())
+  {
+    res = LWPA_NOTFOUND;
+    if (client_in_list(handle, state.clients))
+    {
+      // TODO
+      res = LWPA_NOTIMPL;
+    }
+    rdmnet_client_unlock();
+  }
+  return res;
+}
+
+lwpa_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, const RptStatusMsg *status)
+{
+  if (!handle || !status)
+    return LWPA_INVALID;
+  if (!rdmnet_core_initialized())
+    return LWPA_NOTINIT;
+
+  lwpa_error_t res = LWPA_SYSERR;
+  if (rdmnet_client_lock())
+  {
+    res = LWPA_NOTFOUND;
+    if (client_in_list(handle, state.clients))
+    {
+      // TODO
+      (void)status;
+      res = LWPA_NOTIMPL;
+    }
+    rdmnet_client_unlock();
+  }
+  return res;
+}
+
 bool create_rpt_client_entry(const LwpaUuid *cid, const RdmUid *uid, rpt_client_type_t client_type,
                              const LwpaUuid *binding_cid, ClientEntryData *entry)
 {
@@ -207,7 +271,7 @@ RdmnetClientInternal *rpt_client_new(const RdmnetRptClientConfig *config)
     // Init the client data
     new_cli->type = kClientProtocolRPT;
     new_cli->cid = config->cid;
-    new_cli->callbacks = config->callbacks;
+    new_cli->data.rpt.callbacks = config->callbacks;
     new_cli->callback_context = config->callback_context;
     new_cli->data.rpt.type = config->type;
     new_cli->data.rpt.has_static_uid = config->has_static_uid;
@@ -480,7 +544,7 @@ void conncb_connected(rdmnet_conn_t handle, const ConnectReplyMsg *connect_reply
           scope_entry->uid = connect_reply->client_uid;
 
         deliver_cb = true;
-        cb = cli->callbacks.connected;
+        cb = cli->data.rpt.callbacks.connected;
         cb_handle = cli;
         rdmnet_safe_strncpy(cb_scope, scope_entry->scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH);
         cb_context = cli->callback_context;
@@ -510,7 +574,7 @@ void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectInfo *disco
       if (client_in_list(cli, state.clients))
       {
         deliver_cb = true;
-        cb = cli->callbacks.disconnected;
+        cb = cli->data.rpt.callbacks.disconnected;
         cb_handle = cli;
         rdmnet_safe_strncpy(cb_scope, scope_entry->scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH);
         cb_context = cli->callback_context;

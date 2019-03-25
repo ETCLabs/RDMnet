@@ -50,6 +50,8 @@
 /* When waiting on the backoff timer for a new connection, the interval at which to wake up and make
  * sure that we haven't been deinitted/closed. */
 #define BLOCKING_BACKOFF_WAIT_INTERVAL 500
+#define RDMNET_CONN_POLL_TIMEOUT 120 /* ms */
+#define RDMNET_CONN_MAX_SOCKETS LWPA_SOCKET_MAX_POLL_SIZE
 
 /***************************** Private macros ********************************/
 
@@ -85,12 +87,11 @@ static struct ConnectionState
 /*********************** Private function prototypes *************************/
 
 static lwpa_error_t get_readlock_and_conn(rdmnet_conn_t handle);
-static lwpa_error_t get_writelock_and_conn(rdmnet_conn_t handle);
 
 static RdmnetConnectionInternal *create_new_connection(const RdmnetConnectionConfig *config);
 
 static int update_backoff(int previous_backoff);
-static void deliver_callback(const CallbackDispatchInfo *info);
+static void deliver_callback(const ConnCallbackDispatchInfo *info);
 static void start_tcp_connection(RdmnetConnectionInternal *conn);
 static void start_rdmnet_connection(RdmnetConnectionInternal *conn);
 static void reset_connection(RdmnetConnectionInternal *conn);
@@ -608,7 +609,7 @@ void rdmnet_conn_tick()
     RdmnetConnectionInternal *conn = conn_state.connections;
     while (conn)
     {
-      CallbackDispatchInfo cb;
+      ConnCallbackDispatchInfo cb;
       cb.which = kConnCallbackNone;
 
       if (lwpa_mutex_take(&conn->lock, LWPA_WAIT_FOREVER))
@@ -642,7 +643,7 @@ void rdmnet_conn_tick()
           case kCSHeartbeat:
             if (lwpa_timer_isexpired(&conn->hb_timer))
             {
-              /* Heartbeat timeout! Disconnect the connection. */
+              // Heartbeat timeout! Disconnect the connection.
               reset_connection(conn);
               // TODO log
               cb.which = kConnCallbackDisconnected;
@@ -652,8 +653,8 @@ void rdmnet_conn_tick()
             }
             else if (lwpa_timer_isexpired(&conn->send_timer))
             {
-              /* Just poll the send lock. If another context is in the middle of a partial message,
-               * no need to block and send a heartbeat. */
+              // Just poll the send lock. If another context is in the middle of a partial message,
+              // no need to block and send a heartbeat.
               if (lwpa_mutex_take(&conn->send_lock, 0))
               {
                 send_null(conn);
@@ -679,7 +680,7 @@ void rdmnet_conn_tick()
   }
 }
 
-void handle_tcp_connect_result(RdmnetConnectionInternal *conn, const LwpaPollfd *result, CallbackDispatchInfo *cb)
+void handle_tcp_connect_result(RdmnetConnectionInternal *conn, const LwpaPollfd *result, ConnCallbackDispatchInfo *cb)
 {
   (void)cb;
 
@@ -695,7 +696,8 @@ void handle_tcp_connect_result(RdmnetConnectionInternal *conn, const LwpaPollfd 
   }
 }
 
-void handle_rdmnet_connect_result(RdmnetConnectionInternal *conn, const LwpaPollfd *result, CallbackDispatchInfo *cb)
+void handle_rdmnet_connect_result(RdmnetConnectionInternal *conn, const LwpaPollfd *result,
+                                  ConnCallbackDispatchInfo *cb)
 {
   if (result->revents & LWPA_POLLERR)
   {
@@ -721,6 +723,7 @@ void handle_rdmnet_connect_result(RdmnetConnectionInternal *conn, const LwpaPoll
               conn->state = kCSHeartbeat;
               lwpa_timer_start(&conn->backoff_timer, 0);
               cb->which = kConnCallbackConnected;
+              cb->args.connected.connect_reply = *reply;
               break;
             default:
               reset_connection(conn);
@@ -740,7 +743,7 @@ void handle_rdmnet_connect_result(RdmnetConnectionInternal *conn, const LwpaPoll
   }
 }
 
-void handle_rdmnet_data(RdmnetConnectionInternal *conn, const LwpaPollfd *result, CallbackDispatchInfo *cb)
+void handle_rdmnet_data(RdmnetConnectionInternal *conn, const LwpaPollfd *result, ConnCallbackDispatchInfo *cb)
 {
   if (result->revents & LWPA_POLLERR)
   {
@@ -810,12 +813,12 @@ void handle_rdmnet_data(RdmnetConnectionInternal *conn, const LwpaPollfd *result
   }
 }
 
-void deliver_callback(const CallbackDispatchInfo *info)
+void deliver_callback(const ConnCallbackDispatchInfo *info)
 {
   switch (info->which)
   {
     case kConnCallbackConnected:
-      info->cbs.connected(info->handle, info->context);
+      info->cbs.connected(info->handle, &info->args.connected.connect_reply, info->context);
       break;
     case kConnCallbackDisconnected:
       info->cbs.disconnected(info->handle, &info->args.disconnected.disconn_info, info->context);
@@ -829,9 +832,13 @@ void deliver_callback(const CallbackDispatchInfo *info)
   }
 }
 
-size_t rdmnet_connection_get_sockets(LwpaPollfd *poll_arr, void **context_arr)
+#if RDMNET_POLL_CONNECTIONS_INTERNALLY
+
+void rdmnet_connection_recv()
 {
-  size_t res = 0;
+  static LwpaPollfd poll_arr[RDMNET_CONN_MAX_SOCKETS];
+  static RdmnetConnectionInternal *conn_arr[RDMNET_CONN_MAX_SOCKETS];
+  size_t num_to_poll = 0;
 
   if (rdmnet_readlock())
   {
@@ -840,51 +847,84 @@ size_t rdmnet_connection_get_sockets(LwpaPollfd *poll_arr, void **context_arr)
       if (conn->state == kCSTCPConnPending || conn->state == kCSRDMnetConnPending || conn->state == kCSHeartbeat)
       {
         if (conn->state == kCSTCPConnPending)
-          poll_arr[res].events = LWPA_POLLOUT;
+          poll_arr[num_to_poll].events = LWPA_POLLOUT;
         else
-          poll_arr[res].events = LWPA_POLLIN;
-        poll_arr[res].fd = conn->sock;
-        context_arr[res] = conn;
-        ++res;
+          poll_arr[num_to_poll].events = LWPA_POLLIN;
+        poll_arr[num_to_poll].fd = conn->sock;
+        conn_arr[num_to_poll] = conn;
+        ++num_to_poll;
       }
     }
     rdmnet_readunlock();
   }
-  return res;
+
+  if (num_to_poll > 0)
+  {
+    int poll_res = lwpa_poll(poll_arr, num_to_poll, RDMNET_CONN_POLL_TIMEOUT);
+    if (poll_res > 0)
+    {
+      size_t read_index = 0;
+      while (poll_res > 0 && read_index < num_to_poll)
+      {
+        if (poll_arr[read_index].revents)
+        {
+          rdmnet_conn_socket_activity(conn_arr[read_index], &poll_arr[read_index]);
+          --poll_res;
+        }
+        ++read_index;
+      }
+    }
+    else if (poll_res != LWPA_TIMEDOUT)
+    {
+      lwpa_log(rdmnet_log_params, LWPA_LOG_ERR, "RDMnet: Error ('%s') while polling sockets.", lwpa_strerror(poll_res));
+      lwpa_thread_sleep(1000);  // Sleep to avoid spinning on errors
+    }
+  }
+  else
+  {
+    // Prevent the calling thread from spinning continuously
+    lwpa_thread_sleep(RDMNET_CONN_POLL_TIMEOUT);
+  }
 }
 
-void rdmnet_connection_socket_activity(const LwpaPollfd *poll, void *context)
+#endif
+
+void rdmnet_conn_socket_activity(rdmnet_conn_t handle, const LwpaPollfd *poll)
 {
-  RdmnetConnectionInternal *conn = (RdmnetConnectionInternal *)context;
-  if (!conn || LWPA_OK != get_readlock_and_conn(conn))
+  if (!handle || LWPA_OK != get_readlock_and_conn(handle))
     return;
 
-  static CallbackDispatchInfo callback_info;
+#if RDMNET_POLL_CONNECTIONS_INTERNALLY
+  static ConnCallbackDispatchInfo callback_info;
+#else
+  ConnCallbackDispatchInfo callback_info;
+#endif
   callback_info.which = kConnCallbackNone;
-  callback_info.handle = conn;
-  callback_info.cbs = conn->callbacks;
-  callback_info.context = conn->callback_context;
+  callback_info.handle = handle;
+  callback_info.cbs = handle->callbacks;
+  callback_info.context = handle->callback_context;
 
-  switch (conn->state)
+  switch (handle->state)
   {
     case kCSTCPConnPending:
-      handle_tcp_connect_result(conn, poll, &callback_info);
+      handle_tcp_connect_result(handle, poll, &callback_info);
       break;
     case kCSRDMnetConnPending:
-      handle_rdmnet_connect_result(conn, poll, &callback_info);
+      handle_rdmnet_connect_result(handle, poll, &callback_info);
       break;
     case kCSHeartbeat:
-      handle_rdmnet_data(conn, poll, &callback_info);
+      handle_rdmnet_data(handle, poll, &callback_info);
       break;
     case kCSConnectNotStarted:
     case kCSConnectPending:
     case kCSBackoff:
     case kCSMarkedForDestruction:
     default:
+      // States in which we are not waiting for socket activity
       break;
   }
 
-  release_conn_and_readlock(conn);
+  release_conn_and_readlock(handle);
   deliver_callback(&callback_info);
 }
 
@@ -987,31 +1027,5 @@ lwpa_error_t get_readlock_and_conn(RdmnetConnectionInternal *conn)
     rdmnet_readunlock();
     return LWPA_SYSERR;
   }
-  return LWPA_OK;
-}
-
-lwpa_error_t get_writelock_and_conn(RdmnetConnectionInternal *conn)
-{
-  if (!rdmnet_core_initialized())
-    return LWPA_NOTINIT;
-  if (!rdmnet_writelock())
-    return LWPA_SYSERR;
-
-  bool found = false;
-  for (RdmnetConnectionInternal *conn_entry = conn_state.connections; conn_entry; conn_entry = conn_entry->next)
-  {
-    if (conn_entry == conn)
-    {
-      found = true;
-      break;
-    }
-  }
-  if (!found)
-  {
-    rdmnet_writeunlock();
-    return LWPA_NOTFOUND;
-  }
-
-  /* Taking the global write lock means we don't have to take the conn mutex. */
   return LWPA_OK;
 }

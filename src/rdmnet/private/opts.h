@@ -164,6 +164,15 @@
 #define RDMNET_MAX_RDM_COMMANDS 10
 #endif
 
+/*! \brief Whether to automatically poll connections for activity as part of the core tick loop.
+ *
+ *  Most applications will want the default behavior, unless scaling the number of connections is a
+ *  concern. Broker applications will set this to 0.
+ */
+#ifndef RDMNET_POLL_CONNECTIONS_INTERNALLY
+#define RDMNET_POLL_CONNECTIONS_INTERNALLY 1
+#endif
+
 /*! \brief Spawn a thread internally to call rdmnet_tick().
  *
  *  If defined nonzero, rdmnet_init() will create a thread using \ref lwpa_thread which calls

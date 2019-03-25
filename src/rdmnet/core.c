@@ -46,8 +46,6 @@
 /*************************** Private constants *******************************/
 
 #define RDMNET_TICK_PERIODIC_INTERVAL 100 /* ms */
-#define RDMNET_TICK_POLL_TIMEOUT 120      /* ms */
-#define RDMNET_TICK_MAX_SOCKETS (RDMNET_CONN_MAX_SOCKETS)
 
 /***************************** Private macros ********************************/
 
@@ -185,37 +183,9 @@ void rdmnet_tick_thread(void *arg)
 }
 #endif
 
-static LwpaPollfd poll_arr[RDMNET_TICK_MAX_SOCKETS];
-static void *context_ptrs[RDMNET_TICK_MAX_SOCKETS];
-
 void rdmnet_core_tick()
 {
-  size_t conn_index = rdmnet_connection_get_sockets(poll_arr, context_ptrs);
-
-  if (conn_index > 0)
-  {
-    int poll_res = lwpa_poll(poll_arr, conn_index, RDMNET_TICK_POLL_TIMEOUT);
-    if (poll_res > 0)
-    {
-      size_t read_index = 0;
-      while (poll_res && read_index < conn_index)
-      {
-        if (poll_arr[read_index].revents)
-        {
-          if (read_index < conn_index)
-          {
-            rdmnet_connection_socket_activity(&poll_arr[read_index], context_ptrs[read_index]);
-          }
-          poll_res--;
-        }
-      }
-    }
-    else if ((lwpa_error_t)poll_res != LWPA_TIMEDOUT)
-    {
-      lwpa_log(rdmnet_log_params, LWPA_LOG_ERR, "RDMnet: Error ('%s') while polling sockets.", lwpa_strerror(poll_res));
-      lwpa_thread_sleep(1000);  // Sleep to avoid spinning on errors
-    }
-  }
+  rdmnet_connection_recv();
 
   if (lwpa_timer_isexpired(&core_state.tick_timer))
   {

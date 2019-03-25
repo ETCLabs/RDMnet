@@ -29,8 +29,8 @@
  *  \brief Functions to pack, send, and parse %Broker PDUs and their encapsulated messages.
  *  \author Sam Kearney
  */
-#ifndef _RDMNET_BROKER_PROT_H_
-#define _RDMNET_BROKER_PROT_H_
+#ifndef _RDMNET_CORE_BROKER_PROT_H_
+#define _RDMNET_CORE_BROKER_PROT_H_
 
 #include <string.h>
 #include "lwpa/int.h"
@@ -41,8 +41,8 @@
 #include "lwpa/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
-#include "rdmnet/client.h"
 #include "rdmnet/core.h"
+#include "rdmnet/core/client_entry.h"
 #include "rdmnet/core/util.h"
 
 /*! \addtogroup rdmnet_message
@@ -53,7 +53,7 @@
 #define BROKER_PDU_FULL_HEADER_SIZE (BROKER_PDU_HEADER_SIZE + ACN_RLP_HEADER_SIZE_EXT_LEN + ACN_TCP_PREAMBLE_SIZE)
 
 #define CONNECT_REPLY_DATA_SIZE \
-  (2 /* Connection Code */ + 2 /* E1.33 Version */ + 6 /* %Broker's UID */ + 6 /* Client's UID */)
+  (2 /* Connection Code */ + 2 /* E1.33 Version */ + 6 /* broker's UID */ + 6 /* Client's UID */)
 #define CONNECT_REPLY_FULL_MSG_SIZE (BROKER_PDU_FULL_HEADER_SIZE + CONNECT_REPLY_DATA_SIZE)
 
 /*! A flag to indicate whether a client would like to receive notifications when other clients
@@ -67,13 +67,13 @@ typedef enum
 {
   /*! Connection completed successfully. */
   kRdmnetConnectOk = E133_CONNECT_OK,
-  /*! The Client's scope does not match the %Broker's scope. */
+  /*! The client's scope does not match the broker's scope. */
   kRdmnetConnectScopeMismatch = E133_CONNECT_SCOPE_MISMATCH,
-  /*! The %Broker has no further capacity for new Clients. */
+  /*! The broker has no further capacity for new clients. */
   kRdmnetConnectCapacityExceeded = E133_CONNECT_CAPACITY_EXCEEDED,
-  /*! The Client's Static UID matches another connected Client's Static UID. */
+  /*! The client's static UID matches another connected client's static UID. */
   kRdmnetConnectDuplicateUid = E133_CONNECT_DUPLICATE_UID,
-  /*! The Client's Client Entry is invalid. */
+  /*! The client's Client Entry is invalid. */
   kRdmnetConnectInvalidClientEntry = E133_CONNECT_INVALID_CLIENT_ENTRY,
   /*! The UID sent in the Client Entry PDU is malformed. */
   kRdmnetConnectInvalidUid = E133_CONNECT_INVALID_UID
@@ -82,27 +82,27 @@ typedef enum
 /*! Disconnect reason defines for the DisconnectMsg. */
 typedef enum
 {
-  /*! The remote Component is shutting down. */
+  /*! The remote component is shutting down. */
   kRdmnetDisconnectShutdown = E133_DISCONNECT_SHUTDOWN,
-  /*! The remote Component no longer has the ability to support this connection. */
+  /*! The remote component no longer has the ability to support this connection. */
   kRdmnetDisconnectCapacityExhausted = E133_DISCONNECT_CAPACITY_EXHAUSTED,
   /*! Not a valid reason, removed from next revision. */
   kRdmnetDisconnectIncorrectClientType = E133_DISCONNECT_INCORRECT_CLIENT_TYPE,
-  /*! The Component must disconnect due to an internal hardware fault. */
+  /*! The component must disconnect due to an internal hardware fault. */
   kRdmnetDisconnectHardwareFault = E133_DISCONNECT_HARDWARE_FAULT,
-  /*! The Component must disconnect due to a software fault. */
+  /*! The component must disconnect due to a software fault. */
   kRdmnetDisconnectSoftwareFault = E133_DISCONNECT_SOFTWARE_FAULT,
-  /*! The Component must terminated because of a software reset. */
+  /*! The component must terminated because of a software reset. */
   kRdmnetDisconnectSoftwareReset = E133_DISCONNECT_SOFTWARE_RESET,
-  /*! Send by %Brokers that are not on the desired Scope. */
+  /*! Send by brokers that are not on the desired Scope. */
   kRdmnetDisconnectIncorrectScope = E133_DISCONNECT_INCORRECT_SCOPE,
-  /*! The Component was reconfigured using RPT, and the new configuration requires connection
+  /*! The component was reconfigured using RPT, and the new configuration requires connection
    *  termination. */
   kRdmnetDisconnectRptReconfigure = E133_DISCONNECT_RPT_RECONFIGURE,
-  /*! The Component was reconfigured using LLRP, and the new configuration requires connection
+  /*! The component was reconfigured using LLRP, and the new configuration requires connection
    *  termination. */
   kRdmnetDisconnectLlrpReconfigure = E133_DISCONNECT_LLRP_RECONFIGURE,
-  /*! The Component was reconfigured via some other means, and the new configuration requires
+  /*! The component was reconfigured via some other means, and the new configuration requires
    *  connection termination. */
   kRdmnetDisconnectUserReconfigure = E133_DISCONNECT_USER_RECONFIGURE
 } rdmnet_disconnect_reason_t;
@@ -114,28 +114,28 @@ typedef enum
   kDynamicUidStatusOk = E133_DYNAMIC_UID_STATUS_OK,
   /*! The corresponding request contained a malformed UID value. */
   kDynamicUidStatusInvalidRequest = E133_DYNAMIC_UID_STATUS_INVALID_REQUEST,
-  /*! The requested Dynamic UID was not found in the %Broker's Dynamic UID mapping table. */
+  /*! The requested Dynamic UID was not found in the broker's Dynamic UID mapping table. */
   kDynamicUidStatusUidNotFound = E133_DYNAMIC_UID_STATUS_UID_NOT_FOUND,
-  /*! This RID has already been assigned a Dynamic UID by this %Broker. */
+  /*! This RID has already been assigned a Dynamic UID by this broker. */
   kDynamicUidStatusDuplicateRid = E133_DYNAMIC_UID_STATUS_DUPLICATE_RID,
-  /*! The %Broker has exhausted its capacity to generate Dynamic UIDs. */
+  /*! The broker has exhausted its capacity to generate Dynamic UIDs. */
   kDynamicUidStatusCapacityExhausted = E133_DYNAMIC_UID_STATUS_CAPACITY_EXHAUSTED
 } dynamic_uid_status_t;
 
-/*! The Client Connect message in the %Broker protocol. */
+/*! The Client Connect message in the broker protocol. */
 typedef struct ClientConnectMsg
 {
-  /*! The Client's configured scope. Maximum length E133_SCOPE_STRING_PADDED_LENGTH, including null
+  /*! The client's configured scope. Maximum length E133_SCOPE_STRING_PADDED_LENGTH, including null
    *  terminator. */
   char scope[E133_SCOPE_STRING_PADDED_LENGTH];
-  /*! The maximum version of the standard supported by the Client. */
+  /*! The maximum version of the standard supported by the client. */
   uint16_t e133_version;
-  /*! The search domain of the Client. Maximum length E133_DOMAIN_STRING_PADDED_LENGTH, including
+  /*! The search domain of the client. Maximum length E133_DOMAIN_STRING_PADDED_LENGTH, including
    *  null terminator. */
   char search_domain[E133_DOMAIN_STRING_PADDED_LENGTH];
   /*! Configurable options for the connection. See CONNECTFLAG_*. */
   uint8_t connect_flags;
-  /*! The Client's Client Entry. */
+  /*! The client's Client Entry. */
   ClientEntryData client_entry;
 } ClientConnectMsg;
 
@@ -161,22 +161,22 @@ typedef struct ClientConnectMsg
 #define client_connect_msg_set_default_search_domain(ccmsgptr) \
   RDMNET_MSVC_NO_DEP_WRN strncpy((ccmsgptr)->search_domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH)
 
-/*! The Connect Reply message in the %Broker protocol. */
+/*! The Connect Reply message in the broker protocol. */
 typedef struct ConnectReplyMsg
 {
   /*! The connection status - kRdmnetConnectOk is the only one that indicates a successful
    *  connection. */
   rdmnet_connect_status_t connect_status;
-  /*! The maximum version of the standard supported by the %Broker. */
+  /*! The maximum version of the standard supported by the broker. */
   uint16_t e133_version;
-  /*! The %Broker's UID for use in RPT and LLRP. */
+  /*! The broker's UID for use in RPT and LLRP. */
   RdmUid broker_uid;
-  /*! The Client's UID for use in RPT and LLRP, either echoed back (Static UID) or assigned by the
-   *  %Broker (Dynamic UID). Set to 0 for a non-RPT Client. */
+  /*! The client's UID for use in RPT and LLRP, either echoed back (Static UID) or assigned by the
+   *  broker (Dynamic UID). Set to 0 for a non-RPT Client. */
   RdmUid client_uid;
 } ConnectReplyMsg;
 
-/*! The Client Entry Update message in the %Broker protocol. */
+/*! The Client Entry Update message in the broker protocol. */
 typedef struct ClientEntryUpdateMsg
 {
   /*! Configurable options for the connection. See CONNECTFLAG_*. */
@@ -187,7 +187,7 @@ typedef struct ClientEntryUpdateMsg
   ClientEntryData client_entry;
 } ClientEntryUpdateMsg;
 
-/*! The Client Redirect message in the %Broker protocol. This struture is used to represent both
+/*! The Client Redirect message in the broker protocol. This struture is used to represent both
  *  CLIENT_REDIRECT_IPV4 and CLIENT_REDIRECT_IPV6. */
 typedef struct ClientRedirectMsg
 {
@@ -195,7 +195,7 @@ typedef struct ClientRedirectMsg
   LwpaSockaddr new_addr;
 } ClientRedirectMsg;
 
-/*! A structure that represents a list of Client Entries. Represents the data for multiple %Broker
+/*! A structure that represents a list of Client Entries. Represents the data for multiple broker
  *  Protocol messages: Connected Client List, Client Incremental Addition, Client Incremental
  *  Deletion, and Client Entry Change. */
 typedef struct ClientList
@@ -269,14 +269,14 @@ typedef struct FetchUidAssignmentList
   FetchUidAssignmentListEntry *assignment_list;
 } FetchUidAssignmentList;
 
-/*! The Disconnect message in the %Broker protocol. */
+/*! The Disconnect message in the broker protocol. */
 typedef struct DisconnectMsg
 {
   /*! The reason for the disconnect event. */
   rdmnet_disconnect_reason_t disconnect_reason;
 } DisconnectMsg;
 
-/*! A %Broker message. */
+/*! A broker message. */
 typedef struct BrokerMessage
 {
   /*! The vector indicates which type of message is present in the data section. Valid values are
@@ -330,7 +330,7 @@ typedef struct BrokerMessage
  *  \param brokermsgptr Pointer to BrokerMessage.
  *  \return Pointer to encapsulated Client Redirect message (ClientRedirectMsg *). */
 #define get_client_redirect_msg(brokermsgptr) (&(brokermsgptr)->data.client_redirect)
-/*! \brief Determine whether a BrokerMessage contains a Client List. Multiple types of %Broker
+/*! \brief Determine whether a BrokerMessage contains a Client List. Multiple types of broker
  *         message can contain Client Lists.
  *  \param brokermsgptr Pointer to BrokerMessage.
  *  \return (true or false) whether the message contains a Client List. */
@@ -402,4 +402,4 @@ lwpa_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const LwpaUuid
 
 /*!@}*/
 
-#endif /* _RDMNET_BROKER_PROT_H_ */
+#endif /* _RDMNET_CORE_BROKER_PROT_H_ */

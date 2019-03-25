@@ -29,19 +29,51 @@
  *  \brief Functions to pack, send, and parse EPT PDUs and their encapsulated messages.
  *  \author Sam Kearney
  */
-#ifndef _RDMNET_EPT_PROT_H_
-#define _RDMNET_EPT_PROT_H_
+#ifndef _RDMNET_CORE_EPT_PROT_H_
+#define _RDMNET_CORE_EPT_PROT_H_
+
+#include "lwpa/int.h"
+#include "rdmnet/defs.h"
 
 /*! \addtogroup rdmnet_message
  *  @{
  */
 
+typedef struct EptDataMsg
+{
+  uint16_t manufacturer_id;
+  uint16_t protocol_id;
+  const uint8_t *data;
+  size_t data_len;
+} EptDataMsg;
+
+typedef enum
+{
+  kEptStatusUnknownCid = VECTOR_EPT_STATUS_UNKNOWN_CID,
+  kEptStatusUnknownVector = VECTOR_EPT_STATUS_UNKNOWN_VECTOR
+} ept_status_code_t;
+
+typedef struct EptStatusMsg
+{
+  /*! A status code that indicates the specific error or status condition. */
+  ept_status_code_t status_code;
+  /*! An optional implementation-defined status string to accompany this status message. */
+  const char *status_string;
+} EptStatusMsg;
+
 /*! An EPT message. */
 typedef struct EptMessage
 {
-  int dummy; /* TODO placeholder */
+  /*! The vector indicates which type of message is present in the data section. Valid values are
+   *  indicated by VECTOR_EPT_* in rdmnet/defs.h. */
+  uint32_t vector;
+  union
+  {
+    EptDataMsg ept_data;
+    EptStatusMsg ept_status;
+  } data;
 } EptMessage;
 
 /*!@}*/
 
-#endif /* _RDMNET_EPT_PROT_H_ */
+#endif /* _RDMNET_CORE_EPT_PROT_H_ */

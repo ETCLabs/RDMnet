@@ -33,6 +33,7 @@
 #else
 #include <stdlib.h>
 #endif
+#include "rdmnet/private/core.h"
 #include "rdmnet/private/device.h"
 
 /***************************** Private macros ********************************/
@@ -56,8 +57,11 @@ LWPA_MEMPOOL_DEFINE(rdmnet_devices, RdmnetDeviceInternal, RDMNET_MAX_DEVICES);
 
 static void client_connected(rdmnet_client_t handle, const char *scope, void *context);
 static void client_disconnected(rdmnet_client_t handle, const char *scope, void *context);
+static void client_broker_msg_received(rdmnet_client_t handle, const char *scope, const BrokerMessage *msg,
+                                       void *context);
+static void client_msg_received(rdmnet_client_t handle, const char *scope, const RptClientMessage *msg, void *context);
 
-static const RdmnetClientCallbacks client_callbacks = {client_connected, client_disconnected};
+static const RptClientCallbacks client_callbacks = {client_connected, client_disconnected};
 
 /*************************** Function definitions ****************************/
 
@@ -104,6 +108,16 @@ void rdmnet_device_destroy(rdmnet_device_t handle)
   free_rdmnet_device(handle);
 }
 
+lwpa_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const DeviceRdmResponse *resp)
+{
+  return rdmnet_rpt_client_send_rdm_response(handle->client_handle, resp);
+}
+
+lwpa_error_t rdmnet_device_send_status(rdmnet_device_t handle, const RptStatusMsg *status)
+{
+  return rdmnet_rpt_client_send_status(handle->client_handle, status);
+}
+
 void client_connected(rdmnet_client_t handle, const char *scope, void *context)
 {
   RdmnetDeviceInternal *device = (RdmnetDeviceInternal *)context;
@@ -119,5 +133,26 @@ void client_disconnected(rdmnet_client_t handle, const char *scope, void *contex
   if (device)
   {
     device->callbacks.disconnected(device, scope, device->callback_context);
+  }
+}
+
+void client_broker_msg_received(rdmnet_client_t handle, const char *scope, const BrokerMessage *msg, void *context)
+{
+  lwpa_log(rdmnet_log_params, LWPA_LOG_INFO, "Got Broker message with vector %d", msg->vector);
+}
+
+void client_msg_received(rdmnet_client_t handle, const char *scope, const RptClientMessage *msg, void *context)
+{
+  RdmnetDeviceInternal *device = (RdmnetDeviceInternal *)context;
+  if (device)
+  {
+    if (msg->type == kRptClientMsgRdmCmd)
+    {
+      device->callbacks.rdm_cmd_received(device, scope, &msg->payload.cmd, device->callback_context);
+    }
+    else
+    {
+      lwpa_log(rdmnet_log_params, LWPA_LOG_INFO, "Device incorrectly got non-RDM-command message.");
+    }
   }
 }

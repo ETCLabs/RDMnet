@@ -27,6 +27,8 @@
 
 /*! \file rdmnet/private/client.h
  */
+#ifndef _RDMNET_PRIVATE_CLIENT_H_
+#define _RDMNET_PRIVATE_CLIENT_H_
 
 #include "rdmnet/client.h"
 #include "rdmnet/defs.h"
@@ -59,18 +61,18 @@ typedef struct RptClientData
   rpt_client_type_t type;
   bool has_static_uid;
   RdmUid static_uid;
+  RptClientCallbacks callbacks;
 } RptClientData;
 
 typedef struct EptClientData
 {
-  int placeholder;  // TODO, to get it to compile for now
+  EptClientCallbacks callbacks;
 } EptClientData;
 
 struct RdmnetClientInternal
 {
   client_protocol_t type;
   LwpaUuid cid;
-  RdmnetClientCallbacks callbacks;
   void *callback_context;
   ClientScopeListEntry *scope_list;
 
@@ -82,3 +84,37 @@ struct RdmnetClientInternal
 
   RdmnetClientInternal *next;
 };
+
+typedef enum
+{
+  kClientCallbackNone,
+  kClientCallbackConnected,
+  kClientCallbackDisconnected,
+  kClientCallbackMsgReceived
+} client_callback_t;
+
+typedef struct ConnectedArgs
+{
+  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
+} ClientConnectedArgs;
+
+typedef struct DisconnectedArgs
+{
+  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
+} ClientDisconnectedArgs;
+
+typedef struct RptCallbackDispatchInfo
+{
+  rdmnet_client_t handle;
+  RptClientCallbacks cbs;
+  void *context;
+
+  client_callback_t which;
+  union
+  {
+    ClientConnectedArgs connected;
+    ClientDisconnectedArgs disconnected;
+  } args;
+} CallbackDispatchInfo;
+
+#endif /* _RDMNET_PRIVATE_CLIENT_H_ */

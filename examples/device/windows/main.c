@@ -38,6 +38,7 @@
 #include "lwpa/socket.h"
 #include "rdmnet/device.h"
 #include "device.h"
+#include "rdmnet/core/message.h"
 #include "device_log.h"
 
 void print_help(wchar_t *app_name)
@@ -117,6 +118,7 @@ int wmain(int argc, wchar_t *argv[])
   strcpy_s(scope, E133_SCOPE_STRING_PADDED_LENGTH, E133_DEFAULT_SCOPE);
   lwpaip_set_invalid(&static_broker.ip);
 
+  printf("%zu\n", sizeof(RdmnetMessage));
   if (argc > 1)
   {
     for (int i = 1; i < argc; ++i)
