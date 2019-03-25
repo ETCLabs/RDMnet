@@ -89,7 +89,7 @@ static void monitorcb_scope_monitor_error(rdmnet_scope_monitor_t handle, const c
 static const RdmnetScopeMonitorCallbacks disc_callbacks = {monitorcb_broker_found, monitorcb_broker_lost,
                                                            monitorcb_scope_monitor_error};
 
-static void conncb_connected(rdmnet_conn_t handle, void *context);
+static void conncb_connected(rdmnet_conn_t handle, const ConnectReplyMsg *connect_reply, void *context);
 static void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectInfo *disconn_info, void *context);
 static void conncb_msg_received(rdmnet_conn_t handle, const RdmnetMessage *message, void *context);
 
@@ -184,7 +184,7 @@ lwpa_error_t validate_rpt_client_config(const RdmnetRptClientConfig *config)
 {
   if ((config->type != kRPTClientTypeDevice && config->type != kRPTClientTypeController) ||
       (config->has_static_uid && (config->static_uid.manu & 0x8000)) ||
-      (lwpa_uuid_cmp(&config->cid, &LWPA_NULL_UUID) == 0) || (config->num_scopes == 0) ||
+      (lwpa_uuid_cmp(&config->cid, &LWPA_NULL_UUID) == 0) || (config->num_scopes == 0) || (!config->scope_list) ||
       (config->type == kRPTClientTypeDevice && config->num_scopes != 1))
   {
     return LWPA_INVALID;
@@ -212,6 +212,7 @@ RdmnetClientInternal *rpt_client_new(const RdmnetRptClientConfig *config)
     new_cli->data.rpt.type = config->type;
     new_cli->data.rpt.has_static_uid = config->has_static_uid;
     new_cli->data.rpt.static_uid = config->static_uid;
+    new_cli->scope_list = NULL;
     new_cli->next = NULL;
 
     bool scope_alloc_successful = true;  // Set false if any scope initialization in the list fails.
@@ -458,11 +459,11 @@ void monitorcb_scope_monitor_error(rdmnet_scope_monitor_t handle, const char *sc
   }
 }
 
-void conncb_connected(rdmnet_conn_t handle, void *context)
+void conncb_connected(rdmnet_conn_t handle, const ConnectReplyMsg *connect_reply, void *context)
 {
   bool deliver_cb = false;
-  RdmnetClientConnectedCb cb;
-  rdmnet_client_t cb_handle;
+  RdmnetClientConnectedCb cb = NULL;
+  rdmnet_client_t cb_handle = NULL;
   char cb_scope[E133_SCOPE_STRING_PADDED_LENGTH];
   void *cb_context = NULL;
 
@@ -474,6 +475,10 @@ void conncb_connected(rdmnet_conn_t handle, void *context)
       RdmnetClientInternal *cli = scope_entry->cli;
       if (client_in_list(cli, state.clients))
       {
+        scope_entry->state = kScopeStateConnected;
+        if (cli->type == kClientProtocolRPT && !cli->data.rpt.has_static_uid)
+          scope_entry->uid = connect_reply->client_uid;
+
         deliver_cb = true;
         cb = cli->callbacks.connected;
         cb_handle = cli;
@@ -491,8 +496,8 @@ void conncb_connected(rdmnet_conn_t handle, void *context)
 void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectInfo *disconn_info, void *context)
 {
   bool deliver_cb = false;
-  RdmnetClientConnectedCb cb;
-  rdmnet_client_t cb_handle;
+  RdmnetClientConnectedCb cb = NULL;
+  rdmnet_client_t cb_handle = NULL;
   char cb_scope[E133_SCOPE_STRING_PADDED_LENGTH];
   void *cb_context = NULL;
 

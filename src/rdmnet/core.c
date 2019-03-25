@@ -144,6 +144,7 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
           lwpa_socket_deinit();
       }
     }
+    rdmnet_writeunlock();
   }
   return res;
 }
@@ -197,7 +198,7 @@ void rdmnet_core_tick()
     if (poll_res > 0)
     {
       size_t read_index = 0;
-      while (poll_res)
+      while (poll_res && read_index < conn_index)
       {
         if (poll_arr[read_index].revents)
         {
@@ -205,6 +206,7 @@ void rdmnet_core_tick()
           {
             rdmnet_connection_socket_activity(&poll_arr[read_index], context_ptrs[read_index]);
           }
+          poll_res--;
         }
       }
     }

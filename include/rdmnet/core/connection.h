@@ -83,7 +83,7 @@ typedef struct RdmnetConnCallbacks
    *  \param[in] handle Handle to connection which has connected.
    *  \param[in] context Context pointer that was given at the creation of the connection.
    */
-  void (*connected)(rdmnet_conn_t handle, void *context);
+  void (*connected)(rdmnet_conn_t handle, const ConnectReplyMsg *connect_reply, void *context);
 
   /*! \brief An RDMnet connection has disconnected.
    *

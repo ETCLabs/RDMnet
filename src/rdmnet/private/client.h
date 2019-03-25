@@ -48,6 +48,7 @@ struct ClientScopeListEntry
   RdmnetScopeConfig scope_config;
   rdmnet_conn_t conn_handle;
   scope_state_t state;
+  RdmUid uid;
   rdmnet_scope_monitor_t monitor_handle;
   RdmnetClientInternal *cli;
   ClientScopeListEntry *next;

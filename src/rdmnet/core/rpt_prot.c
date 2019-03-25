@@ -72,7 +72,7 @@
 /*********************** Private function prototypes *************************/
 
 static void pack_rpt_header(size_t length, uint32_t vector, const RptHeader *header, uint8_t *buf);
-static lwpa_error_t send_rpt_header(int handle, const LwpaRootLayerPdu *rlp, uint32_t rpt_vector,
+static lwpa_error_t send_rpt_header(rdmnet_conn_t handle, const LwpaRootLayerPdu *rlp, uint32_t rpt_vector,
                                     const RptHeader *header, uint8_t *buf, size_t buflen);
 static size_t calc_rpt_request_len(const RdmBuffer *cmd);
 static size_t calc_status_pdu_size(const RptStatusMsg *status);
@@ -120,8 +120,8 @@ size_t pack_rpt_header_with_rlp(const LwpaRootLayerPdu *rlp, uint8_t *buf, size_
   return cur_ptr - buf;
 }
 
-lwpa_error_t send_rpt_header(int handle, const LwpaRootLayerPdu *rlp, uint32_t rpt_vector, const RptHeader *header,
-                             uint8_t *buf, size_t buflen)
+lwpa_error_t send_rpt_header(rdmnet_conn_t handle, const LwpaRootLayerPdu *rlp, uint32_t rpt_vector,
+                             const RptHeader *header, uint8_t *buf, size_t buflen)
 {
   int send_res;
   size_t data_size = lwpa_root_layer_buf_size(rlp, 1);
@@ -225,7 +225,8 @@ size_t pack_rpt_request(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, 
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
-lwpa_error_t send_rpt_request(int handle, const LwpaUuid *local_cid, const RptHeader *header, const RdmBuffer *cmd)
+lwpa_error_t send_rpt_request(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
+                              const RdmBuffer *cmd)
 {
   lwpa_error_t res;
   int send_res;
@@ -339,7 +340,8 @@ size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, c
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
-lwpa_error_t send_rpt_status(int handle, const LwpaUuid *local_cid, const RptHeader *header, const RptStatusMsg *status)
+lwpa_error_t send_rpt_status(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
+                             const RptStatusMsg *status)
 {
   lwpa_error_t res;
   int send_res;
@@ -462,7 +464,7 @@ size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaUuid *local_
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
-lwpa_error_t send_rpt_notification(int handle, const LwpaUuid *local_cid, const RptHeader *header,
+lwpa_error_t send_rpt_notification(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
                                    const RdmCmdListEntry *cmd_list)
 {
   lwpa_error_t res;

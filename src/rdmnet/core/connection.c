@@ -171,6 +171,7 @@ lwpa_error_t rdmnet_new_connection(const RdmnetConnectionConfig *config, rdmnet_
   lwpa_error_t res = LWPA_SYSERR;
   if (rdmnet_writelock())
   {
+    res = LWPA_OK;
     /* Passed the quick checks, try to create a struct to represent a new connection. This function
      * creates the new connection, gives it a unique handle and inserts it into the connection map. */
     RdmnetConnectionInternal *conn = create_new_connection(config);
@@ -826,6 +827,30 @@ void deliver_callback(const CallbackDispatchInfo *info)
     default:
       break;
   }
+}
+
+size_t rdmnet_connection_get_sockets(LwpaPollfd *poll_arr, void **context_arr)
+{
+  size_t res = 0;
+
+  if (rdmnet_readlock())
+  {
+    for (RdmnetConnectionInternal *conn = conn_state.connections; conn; conn = conn->next)
+    {
+      if (conn->state == kCSTCPConnPending || conn->state == kCSRDMnetConnPending || conn->state == kCSHeartbeat)
+      {
+        if (conn->state == kCSTCPConnPending)
+          poll_arr[res].events = LWPA_POLLOUT;
+        else
+          poll_arr[res].events = LWPA_POLLIN;
+        poll_arr[res].fd = conn->sock;
+        context_arr[res] = conn;
+        ++res;
+      }
+    }
+    rdmnet_readunlock();
+  }
+  return res;
 }
 
 void rdmnet_connection_socket_activity(const LwpaPollfd *poll, void *context)

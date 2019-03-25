@@ -40,6 +40,7 @@
 #include "lwpa/root_layer_pdu.h"
 #include "rdm/message.h"
 #include "rdmnet/defs.h"
+#include "rdmnet/core.h"
 #include "rdmnet/core/util.h"
 
 /*! \addtogroup rdmnet_message
@@ -131,15 +132,14 @@ struct RdmCmdListEntry
   RdmCmdListEntry *next;
 };
 
-/*! A list of packed RDM Commands. Two types of RPT messages contain an RdmCmdList:
- *  Request and Notification. */
+/*! A list of packed RDM Commands. Two types of RPT messages contain an RdmCmdList: Request and
+ *  Notification. */
 typedef struct RdmCmdList
 {
-  /*! This message contains a partial list. This can be set when the library runs out
-   *  of static memory in which to store RDM Commands and must deliver the partial
-   *  list before continuing. The application should store the entries in the list
-   *  but should not act on the list until another RdmCmdList is received with
-   *  partial set to false. */
+  /*! This message contains a partial list. This can be set when the library runs out of static
+   *  memory in which to store RDM Commands and must deliver the partial list before continuing.
+   *  The application should store the entries in the list but should not act on the list until
+   *  another RdmCmdList is received with partial set to false. */
   bool partial;
   /*! The head of a linked list of packed RDM Commands. */
   RdmCmdListEntry *list;
@@ -161,8 +161,8 @@ typedef struct RptMessage
   } data;
 } RptMessage;
 
-/*! \brief Determine whether an RptMessage contains an RDM Command List. Multiple types
- *         of RPT Messages can contain RDM Command Lists.
+/*! \brief Determine whether an RptMessage contains an RDM Command List. Multiple types of RPT
+ *         Messages can contain RDM Command Lists.
  *  \param rptmsgptr Pointer to RptMessage.
  *  \return (true or false) Whether the message contains an RDM Command List. */
 #define is_rdm_cmd_list(rptmsgptr) \
@@ -195,10 +195,11 @@ size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, c
 size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
                              const RdmCmdListEntry *cmd_list);
 
-lwpa_error_t send_rpt_request(int handle, const LwpaUuid *local_cid, const RptHeader *header, const RdmBuffer *cmd);
-lwpa_error_t send_rpt_status(int handle, const LwpaUuid *local_cid, const RptHeader *header,
+lwpa_error_t send_rpt_request(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
+                              const RdmBuffer *cmd);
+lwpa_error_t send_rpt_status(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
                              const RptStatusMsg *status);
-lwpa_error_t send_rpt_notification(int handle, const LwpaUuid *local_cid, const RptHeader *header,
+lwpa_error_t send_rpt_notification(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
                                    const RdmCmdListEntry *cmd_list);
 
 #ifdef __cplusplus

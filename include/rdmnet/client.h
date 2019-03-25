@@ -100,6 +100,12 @@ typedef struct RdmnetEptClientConfig
   size_t num_protocols;
 } RdmnetEptClientConfig;
 
+typedef struct ClientRdmCommand
+{
+  RdmUid their_uid;
+  uint16_t endpoint;
+};
+
 /*! \brief Initialize an RdmnetScopeConfig struct with a scope string.
  *
  *  Scopes are resolved using RDMnet discovery (DNS-SD) by default; to override this behavior with a
