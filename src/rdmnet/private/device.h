@@ -31,6 +31,7 @@
 typedef struct RdmnetDeviceInternal
 {
   rdmnet_client_t client_handle;
+  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
   RdmnetDeviceCallbacks callbacks;
   void *callback_context;
 } RdmnetDeviceInternal;

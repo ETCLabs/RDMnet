@@ -135,9 +135,11 @@ extern "C" {
 lwpa_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig *config, rdmnet_client_t *handle);
 void rdmnet_rpt_client_destroy(rdmnet_client_t handle);
 
-lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, const ControllerRdmCommand *cmd);
-lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, const DeviceRdmResponse *resp);
-lwpa_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, const RptStatusMsg *status);
+lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, const char *scope,
+                                                const ControllerRdmCommand *cmd);
+lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, const char *scope,
+                                                 const DeviceRdmResponse *resp);
+lwpa_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, const char *scope, const RptStatusMsg *status);
 
 lwpa_error_t rdmnet_ept_client_create(const RdmnetEptClientConfig *config, rdmnet_client_t *handle);
 void rdmnet_ept_client_destroy(rdmnet_client_t handle);

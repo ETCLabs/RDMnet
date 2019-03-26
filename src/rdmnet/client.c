@@ -104,6 +104,7 @@ static void start_scope_discovery(ClientScopeListEntry *scope_entry);
 static void start_connection_for_scope(ClientScopeListEntry *scope_entry, const LwpaSockaddr *broker_addr);
 static bool client_in_list(const RdmnetClientInternal *client, const RdmnetClientInternal *list);
 static bool create_and_append_scope_entry(const RdmnetScopeConfig *config, RdmnetClientInternal *client);
+static ClientScopeListEntry *find_scope_in_list(ClientScopeListEntry *list, const char *scope);
 
 /*************************** Function definitions ****************************/
 
@@ -182,7 +183,8 @@ lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, const Co
   return res;
 }
 
-lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, const DeviceRdmResponse *resp)
+lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, const char *scope,
+                                                 const DeviceRdmResponse *resp)
 {
   if (!handle || !resp)
     return LWPA_INVALID;
@@ -195,8 +197,19 @@ lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, const D
     res = LWPA_NOTFOUND;
     if (client_in_list(handle, state.clients))
     {
-      // TODO
-      res = LWPA_NOTIMPL;
+      ClientScopeListEntry *scope_entry = find_scope_in_list(handle->scope_list, scope);
+      if (scope_entry)
+      {
+        RptHeader header;
+        header.source_uid = scope_entry->uid;
+        header.source_endpoint_id = resp->source_endpoint;
+        header.dest_uid = resp->dest_uid;
+        header.dest_endpoint_id = E133_NULL_ENDPOINT;
+        header.seqnum = resp->seq_num;
+
+        // TODO
+        res = LWPA_NOTIMPL;
+      }
     }
     rdmnet_client_unlock();
   }
@@ -434,19 +447,19 @@ void start_connection_for_scope(ClientScopeListEntry *scope_entry, const LwpaSoc
   rdmnet_connect(scope_entry->conn_handle, broker_addr, &connect_msg);
 }
 
-// ClientScopeListEntry *find_scope_in_list(const char *scope, ClientScopeListEntry *list)
-//{
-//  ClientScopeListEntry *entry;
-//  for (entry = list; entry; entry = entry->next)
-//  {
-//    if (strcmp(entry->scope_config.scope, scope) == 0)
-//    {
-//      // Found
-//      return entry;
-//    }
-//  }
-//  return NULL;
-//}
+ClientScopeListEntry *find_scope_in_list(ClientScopeListEntry *list, const char *scope)
+{
+  ClientScopeListEntry *entry;
+  for (entry = list; entry; entry = entry->next)
+  {
+    if (strcmp(entry->scope_config.scope, scope) == 0)
+    {
+      // Found
+      return entry;
+    }
+  }
+  return NULL;
+}
 
 bool client_in_list(const RdmnetClientInternal *client, const RdmnetClientInternal *list)
 {

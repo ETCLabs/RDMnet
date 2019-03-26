@@ -74,6 +74,7 @@ lwpa_error_t rdmnet_device_create(const RdmnetDeviceConfig *config, rdmnet_devic
   if (!new_device)
     return LWPA_NOMEM;
 
+  rdmnet_safe_strncpy(new_device->scope, config->scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH);
   new_device->callbacks = config->callbacks;
   new_device->callback_context = config->callback_context;
 
@@ -110,12 +111,12 @@ void rdmnet_device_destroy(rdmnet_device_t handle)
 
 lwpa_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const DeviceRdmResponse *resp)
 {
-  return rdmnet_rpt_client_send_rdm_response(handle->client_handle, resp);
+  return rdmnet_rpt_client_send_rdm_response(handle->client_handle, handle->scope, resp);
 }
 
 lwpa_error_t rdmnet_device_send_status(rdmnet_device_t handle, const RptStatusMsg *status)
 {
-  return rdmnet_rpt_client_send_status(handle->client_handle, status);
+  return rdmnet_rpt_client_send_status(handle->client_handle, handle->scope, status);
 }
 
 void client_connected(rdmnet_client_t handle, const char *scope, void *context)

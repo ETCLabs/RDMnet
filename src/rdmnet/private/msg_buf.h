@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet_rdmnet/core/msg_buf.h
+/*! \file rdmnet/private/msg_buf.h
  *  \brief Helper functions and definitions to do piece-wise parsing of an RDMnet message.
  *  \author Sam Kearney
  */

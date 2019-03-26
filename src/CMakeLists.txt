@@ -133,10 +133,7 @@ target_include_directories(RDMnet
   PUBLIC ${RDMNET_INCLUDE}
   PRIVATE ${RDMNET_SRC}
 )
-target_link_libraries(RDMnet
-  PUBLIC lwpa RDM
-  PRIVATE RDMnetDiscovery dnssd
-)
+target_link_libraries(RDMnet PUBLIC lwpa RDM)
 
 # Organize sources in IDEs
 source_group(include FILES ${RDMNET_API_PUBLIC_HEADERS})
@@ -150,21 +147,36 @@ source_group(include\\private FILES ${RDMNET_CORE_PRIVATE_HEADERS} ${RDMNET_API_
 # RDMnet mock libraries, for unit testing
 option(RDMNET_BUILD_MOCK_LIB "Build the RDMnet mock libraries" ${RDMNET_BUILD_TESTS})
 if(RDMNET_BUILD_MOCK_LIB)
+  # Mock discovery library
+  add_library(RDMnetDiscovery_mock INTERFACE)
+  target_sources(RDMnetDiscovery_mock INTERFACE
+    ${RDMNET_INCLUDE}/rdmnet_mock/core/discovery.h
+    ${RDMNET_SRC}/rdmnet_mock/discovery/mock_discovery.c
+  )
+  target_include_directories(RDMnetDiscovery_mock INTERFACE ${RDMNET_INCLUDE})
+  target_link_libraries(RDMnetDiscovery_mock INTERFACE meekrosoft::fff)
+  source_group(src\\discovery FILES ${RDMNET_SRC}/rdmnet/discovery/mock.c)
+
   add_library(RDMnetCore_mock
     # Mock sources
     ${RDMNET_INCLUDE}/rdmnet_mock/core.h
-    ${RDMNET_INCLUDE}/rdmnet_mock/core/discovery.h
     ${RDMNET_INCLUDE}/rdmnet_mock/core/connection.h
 
     ${RDMNET_SRC}/rdmnet_mock/core.c
-    ${RDMNET_SRC}/rdmnet_mock/core/discovery.c
     ${RDMNET_SRC}/rdmnet_mock/core/connection.c
 
     # Real sources
     ${RDMNET_SRC}/rdmnet/core/util.c
   )
   target_include_directories(RDMnetCore_mock PUBLIC ${RDMNET_INCLUDE})
-  target_link_libraries(RDMnetCore_mock PUBLIC meekrosoft::fff PRIVATE lwpa RDM)
+  target_link_libraries(RDMnetCore_mock PUBLIC meekrosoft::fff RDMnetDiscovery_mock PRIVATE lwpa RDM)
+endif()
+
+option(RDMNET_MOCK_DISCOVERY "Link RDMnet to the mock discovery files instead of the real DNS-SD provider" OFF)
+if(RDMNET_MOCK_DISCOVERY)
+  target_link_libraries(RDMnet PRIVATE RDMnetDiscovery_mock)
+else()
+  target_link_libraries(RDMnet PRIVATE RDMnetDiscovery dnssd)
 endif()
 
 #################################### Broker ###################################
