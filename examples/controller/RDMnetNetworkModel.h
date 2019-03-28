@@ -172,6 +172,7 @@ public:
   std::map<uint16_t, std::unique_ptr<BrokerConnection>> broker_connections_;
 
 signals:
+  void brokerConnection(uint16_t conn);
   void brokerDisconnection(uint16_t conn);
   void addRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
   void removeRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
@@ -204,8 +205,6 @@ private:
   // Keeps track of scope updates of other controllers
   std::map<RdmUid, uint16_t> previous_slot_;
 
-  friend void broker_found(const char *scope, const BrokerDiscInfo *broker_info, void *context);
-
 public slots:
   void addScopeToMonitor(std::string scope);
   void directChildrenRevealed(const QModelIndex &parentIndex);
@@ -214,6 +213,7 @@ public slots:
   void removeCustomLogOutputStream(LogOutputStream *stream);
 
 protected slots:
+  void processBrokerConnection(uint16_t conn);
   void processBrokerDisconnection(uint16_t conn);
   void processAddRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
   void processRemoveRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
@@ -239,6 +239,9 @@ public:
   void searchingItemRevealed(SearchingStatusItem *searchItem);
 
   size_t getNumberOfCustomLogOutputStreams();
+
+  void connectToBroker(const char *scope, const BrokerDiscInfo *broker_info);
+  void emitBrokerConnection(uint16_t conn);
 
   /******* QStandardItemModel overrides *******/
 
@@ -281,18 +284,19 @@ protected:
                           const std::vector<RdmResponse> &response);
 
   // Use this with data that has identical GET_COMMAND_RESPONSE and SET_COMMAND forms.
-  void ProcessRDMGetSetData(uint16_t param_id, const uint8_t *data, uint8_t datalen, const RdmResponse *firstResp);
+  void ProcessRDMGetSetData(uint16_t conn, uint16_t param_id, const uint8_t *data, uint8_t datalen, 
+                            const RdmResponse *firstResp);
 
-  BrokerConnection *getBrokerConnection(uint16_t destManu, uint32_t destDeviceID, RdmUid &rptDestUID,
-                                        uint16_t &destEndpoint);
+  BrokerConnection *getBrokerConnection(const std::string &scope);
 
-  bool SendRDMCommand(const RdmCommand &cmd);
+  bool SendRDMCommand(const RdmCommand &cmd, BrokerItem *brokerItem);
+  bool SendRDMCommand(const RdmCommand &cmd, uint16_t conn);
   void SendRDMGetResponses(const RdmUid &dest_uid, uint16_t dest_endpoint_id, uint16_t param_id,
                            const RdmParamData *resp_data_list, size_t num_responses, uint32_t seqnum,
-                           uint8_t transaction_num);
-  void SendNACK(const RptHeader *received_header, const RdmCommand *cmd_data, uint16_t nack_reason);
-  void SendNotification(const RptHeader *received_header, const std::vector<RdmResponse> &resp_list);
-  void SendNotification(const RdmUid &dest_uid, uint16_t dest_endpoint_id, uint32_t seqnum,
+                           uint8_t transaction_num, uint16_t conn = 0xFFFF);
+  void SendNACK(uint16_t conn, const RptHeader *received_header, const RdmCommand *cmd_data, uint16_t nack_reason);
+  void SendNotification(uint16_t conn, const RptHeader *received_header, const std::vector<RdmResponse> &resp_list);
+  void SendNotification(uint16_t conn, const RdmUid &dest_uid, uint16_t dest_endpoint_id, uint32_t seqnum,
                         const std::vector<RdmResponse> &resp_list);
   lwpa_error_t SendNotificationOnConnection(const BrokerConnection *connection, const RptHeader &header,
                                             const std::vector<RdmResponse> &resp_list);
@@ -329,74 +333,72 @@ protected:
   /* GET/SET RESPONSE PROCESSING */
 
   // RDMnet messages
-  void endpointList(uint32_t changeNumber, const std::vector<std::pair<uint16_t, uint8_t>> &list,
+  void endpointList(uint16_t conn, uint32_t changeNumber, const std::vector<std::pair<uint16_t, uint8_t>> &list,
                     const RdmUid &src_uid);
-  void endpointResponders(uint16_t endpoint, uint32_t changeNumber, const std::vector<RdmUid> &list,
+  void endpointResponders(uint16_t conn, uint16_t endpoint, uint32_t changeNumber, const std::vector<RdmUid> &list,
                           const RdmUid &src_uid);
-  void endpointListChange(uint32_t changeNumber, const RdmUid &src_uid);
-  void responderListChange(uint32_t changeNumber, uint16_t endpoint, const RdmUid &src_uid);
+  void endpointListChange(uint16_t conn, uint32_t changeNumber, const RdmUid &src_uid);
+  void responderListChange(uint16_t conn, uint32_t changeNumber, uint16_t endpoint, const RdmUid &src_uid);
 
   // RDM PID GET responses/updates
-  void nack(uint16_t reason, const RdmResponse *resp);
+  void nack(uint16_t conn, uint16_t reason, const RdmResponse *resp);
   void status(uint8_t type, uint16_t messageId, uint16_t data1, uint16_t data2, const RdmResponse *resp);
 
   // E1.20
   // SUPPORTED_PARAMETERS
-  void commands(std::vector<uint16_t> list, const RdmResponse *resp);
+  void commands(uint16_t conn, std::vector<uint16_t> list, const RdmResponse *resp);
   // DEVICE_INFO
-  void deviceInfo(uint16_t protocolVersion, uint16_t modelId, uint16_t category, uint32_t swVersionId,
+  void deviceInfo(uint16_t conn, uint16_t protocolVersion, uint16_t modelId, uint16_t category, uint32_t swVersionId,
                   uint16_t footprint, uint8_t personality, uint8_t totalPersonality, uint16_t address,
                   uint16_t subdeviceCount, uint8_t sensorCount, const RdmResponse *resp);
   // DEVICE_MODEL_DESCRIPTION
-  void modelDesc(const char *label, const RdmResponse *resp);
+  void modelDesc(uint16_t conn, const char *label, const RdmResponse *resp);
   // MANUFACTURER_LABEL
-  void manufacturerLabel(const char *label, const RdmResponse *resp);
+  void manufacturerLabel(uint16_t conn, const char *label, const RdmResponse *resp);
   // DEVICE_LABEL
-  void deviceLabel(const char *label, const RdmResponse *resp);
+  void deviceLabel(uint16_t conn, const char *label, const RdmResponse *resp);
   // SOFTWARE_VERSION_LABEL
-  void softwareLabel(const char *label, const RdmResponse *resp);
+  void softwareLabel(uint16_t conn, const char *label, const RdmResponse *resp);
   // BOOT_SOFTWARE_VERSION_ID
-  void bootSoftwareID(uint32_t id, const RdmResponse *resp);
+  void bootSoftwareID(uint16_t conn, uint32_t id, const RdmResponse *resp);
   // BOOT_SOFTWARE_VERSION_LABEL
-  void bootSoftwareLabel(const char *label, const RdmResponse *resp);
+  void bootSoftwareLabel(uint16_t conn, const char *label, const RdmResponse *resp);
   // DMX_START_ADDRESS
-  void address(uint16_t address, const RdmResponse *resp);
+  void address(uint16_t conn, uint16_t address, const RdmResponse *resp);
   // IDENTIFY_DEVICE
-  void identify(bool enable, const RdmResponse *resp);
+  void identify(uint16_t conn, bool enable, const RdmResponse *resp);
   // DMX_PERSONALITY (number may equal zero if data is not provided)
-  void personality(uint8_t current, uint8_t number, const RdmResponse *resp);
+  void personality(uint16_t conn, uint8_t current, uint8_t number, const RdmResponse *resp);
   // DMX_PERSONALITY_DESCRIPTION
-  void personalityDescription(uint8_t personality, uint16_t footprint, const char *description,
-                              const RdmResponse *resp);
+  void personalityDescription(uint16_t conn, uint8_t personality, uint16_t footprint, 
+                              const char *description, const RdmResponse *resp);
 
   // E1.33
   // COMPONENT_SCOPE
-  void componentScope(uint16_t scopeSlot, const char *scopeString, const char *staticConfigV4,
+  void componentScope(uint16_t conn, uint16_t scopeSlot, const char *scopeString, const char *staticConfigV4,
                       const char *staticConfigV6, uint16_t port, const RdmResponse *resp);
   // SEARCH_DOMAIN
-  void searchDomain(const char *domainNameString, const RdmResponse *resp);
+  void searchDomain(uint16_t conn, const char *domainNameString, const RdmResponse *resp);
   // TCP_COMMS_STATUS
-  void tcpCommsStatus(const char *scopeString, const char *v4AddrString, const char *v6AddrString, uint16_t port,
-                      uint16_t unhealthyTCPEvents, const RdmResponse *resp);
+  void tcpCommsStatus(uint16_t conn, const char *scopeString, const char *v4AddrString, const char *v6AddrString, 
+                      uint16_t port,uint16_t unhealthyTCPEvents, const RdmResponse *resp);
 
   // Message sending
   void addPropertyEntries(RDMnetNetworkItem *parent, PIDFlags location);
   void initializeResponderProperties(ResponderItem *parent, uint16_t manuID, uint32_t deviceID);
   void initializeRPTClientProperties(RDMnetClientItem *parent, uint16_t manuID, uint32_t deviceID,
                                      rpt_client_type_t clientType);
-  void sendGetControllerScopeProperties(uint16_t manuID, uint32_t deviceID);
-  void sendGetNextControllerScope(uint16_t manuID, uint32_t deviceID, uint16_t currentSlot);
-  void sendGetCommand(uint16_t pid, uint16_t manu, uint32_t dev);
-  uint8_t *packIPAddressItem(const QVariant &value, lwpa_iptype_t addrType, uint8_t *packPtr);
-  uint8_t *packStaticConfigItem(const QModelIndex &valueIndex, const QVariant &value, lwpa_iptype_t addrType,
-                                uint8_t *packPtr);
+  void sendGetControllerScopeProperties(uint16_t conn, uint16_t manuID, uint32_t deviceID);
+  void sendGetNextControllerScope(uint16_t conn, uint16_t manuID, uint32_t deviceID, uint16_t currentSlot);
+  void sendGetCommand(BrokerItem *brokerItem, uint16_t pid, uint16_t manu, uint32_t dev);
+  uint8_t *packIPAddressItem(const QVariant &value, lwpa_iptype_t addrType, uint8_t *packPtr, bool packPort = true);
 
   // PID handling
   bool pidSupportedByGUI(uint16_t pid, bool checkSupportGet);
 
   // Item handling
-  RDMnetClientItem *getClientItem(const RdmResponse *resp);
-  RDMnetNetworkItem *getNetworkItem(const RdmResponse *resp);
+  RDMnetClientItem *getClientItem(uint16_t conn, const RdmResponse *resp);
+  RDMnetNetworkItem *getNetworkItem(uint16_t conn, const RdmResponse *resp);
   void checkPersonalityDescriptions(RDMnetNetworkItem *device, uint8_t numberOfPersonalities, const RdmResponse *resp);
   QVariant getPropertyData(RDMnetNetworkItem *parent, unsigned short pid, int role);
 

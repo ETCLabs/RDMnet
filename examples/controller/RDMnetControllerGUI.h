@@ -52,7 +52,6 @@ public:
 public slots:
 
   void networkTreeViewSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
-  void detailsTreeViewActivated(const QModelIndex &index);
   void addScopeTriggered();
   void removeSelectedBrokerTriggered();
   void removeAllBrokersTriggered();
