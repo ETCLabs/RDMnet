@@ -54,3 +54,86 @@ static void TimeCallback(void * /*context*/, LwpaLogTimeParams *time)
   time->msec = qtime.msec();
   time->utc_offset = (QTimeZone::systemTimeZone().offsetFromUtc(now) / 60);
 }
+
+ControllerLog::ControllerLog(const std::string &file_name) : file_name_(file_name)
+{
+  file_.open(file_name.c_str(), std::fstream::out);
+
+  params_.action = kLwpaLogCreateHumanReadableLog;
+  params_.log_fn = LogCallback;
+  params_.syslog_params.facility = LWPA_LOG_LOCAL1;
+  params_.syslog_params.app_name[0] = '\0';
+  params_.syslog_params.procid[0] = '\0';
+  params_.syslog_params.hostname[0] = '\0';
+  params_.log_mask = LWPA_LOG_UPTO(LWPA_LOG_DEBUG);
+  params_.time_fn = TimeCallback;
+  params_.context = this;
+  lwpa_validate_log_params(&params_);
+
+  Log(LWPA_LOG_INFO, "Starting RDMnet Controller...");
+}
+
+ControllerLog::~ControllerLog()
+{
+  file_.close();
+}
+
+void ControllerLog::Log(int pri, const char *format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  lwpa_vlog(&params_, pri, format, args);
+  va_end(args);
+}
+
+void ControllerLog::LogFromCallback(const std::string &str)
+{
+  if (file_.is_open())
+    file_ << str << std::endl;
+
+  for (LogOutputStream *stream : customOutputStreams)
+  {
+    if (stream != NULL)
+    {
+      (*stream) << str << "\n";
+    }
+  }
+}
+
+void ControllerLog::addCustomOutputStream(LogOutputStream *stream)
+{
+  if (stream != NULL)
+  {
+    if (std::find(customOutputStreams.begin(), customOutputStreams.end(), stream) == customOutputStreams.end())
+    {
+      // Reinitialize the stream's contents to the log file's contents.
+      stream->clear();
+
+      std::ifstream ifs(file_name_, std::ifstream::in);
+
+      std::string str((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+
+      (*stream) << str;
+
+      ifs.close();
+
+      customOutputStreams.push_back(stream);
+    }
+  }
+}
+
+void ControllerLog::removeCustomOutputStream(LogOutputStream *stream)
+{
+  for (int i = 0; i < customOutputStreams.size(); ++i)
+  {
+    if (customOutputStreams.at(i) == stream)
+    {
+      customOutputStreams.erase(customOutputStreams.begin() + i);
+    }
+  }
+}
+
+size_t ControllerLog::getNumberOfCustomLogOutputStreams()
+{
+  return customOutputStreams.size();
+}
