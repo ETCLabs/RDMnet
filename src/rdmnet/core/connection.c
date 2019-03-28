@@ -120,17 +120,6 @@ lwpa_error_t rdmnet_connection_init()
   return res;
 }
 
-void destroy_connection(RdmnetConnectionInternal *conn)
-{
-  if (conn)
-  {
-    lwpa_close(conn->sock);
-    lwpa_mutex_destroy(&conn->lock);
-    lwpa_mutex_destroy(&conn->send_lock);
-    free_rdmnet_connection(conn);
-  }
-}
-
 /*! \brief Deinitialize the RDMnet Connection module.
  *
  *  Set the RDMnet Connection module back to an uninitialized state. All existing connections will
@@ -579,7 +568,7 @@ void start_tcp_connection(RdmnetConnectionInternal *conn, ConnCallbackDispatchIn
   if (!ok)
   {
     cb->which = kConnCallbackConnectFailed;
-    failed_info->cause = kRdmnetConnectFailSocketError;
+    failed_info->cause = kRdmnetConnectFailSocketFailure;
     reset_connection(conn);
   }
 }
@@ -990,19 +979,20 @@ RdmnetConnectionInternal *create_new_connection(const RdmnetConnectionConfig *co
     // Try to create the locks and signal
     ok = lock_created = lwpa_mutex_create(&conn->lock);
     if (ok)
+    {
       ok = send_lock_created = lwpa_mutex_create(&conn->send_lock);
+    }
     if (ok)
     {
       conn->local_cid = config->local_cid;
       conn->sock = LWPA_SOCKET_INVALID;
-      lwpaip_set_v4_address(&conn->remote_addr.ip, 0);
+      lwpaip_set_invalid(&conn->remote_addr.ip);
       conn->remote_addr.port = 0;
       conn->is_client = true;
       conn->is_blocking = true;
       conn->state = kCSConnectNotStarted;
       lwpa_timer_start(&conn->backoff_timer, 0);
       conn->rdmnet_conn_failed = false;
-      conn->recv_disconn_err = LWPA_TIMEDOUT;
       rdmnet_msg_buf_init(&conn->recv_buf);
       conn->callbacks = config->callbacks;
       conn->callback_context = config->callback_context;
@@ -1052,6 +1042,18 @@ void retry_connection(RdmnetConnectionInternal *conn)
     conn->sock = LWPA_SOCKET_INVALID;
   }
   conn->state = kCSConnectPending;
+}
+
+void destroy_connection(RdmnetConnectionInternal *conn)
+{
+  if (conn)
+  {
+    if (conn->sock != LWPA_SOCKET_INVALID)
+      lwpa_close(conn->sock);
+    lwpa_mutex_destroy(&conn->lock);
+    lwpa_mutex_destroy(&conn->send_lock);
+    free_rdmnet_connection(conn);
+  }
 }
 
 lwpa_error_t get_readlock_and_conn(RdmnetConnectionInternal *conn)

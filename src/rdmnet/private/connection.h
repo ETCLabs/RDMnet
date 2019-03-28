@@ -77,7 +77,6 @@ struct RdmnetConnectionInternal
 
   /* Receive tracking */
   RdmnetMsgBuf recv_buf;
-  lwpa_error_t recv_disconn_err;
 
   /* Synchronization */
   lwpa_mutex_t lock;

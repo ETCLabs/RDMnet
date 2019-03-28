@@ -74,7 +74,7 @@ typedef struct RdmnetConnectedInfo
 
 typedef enum
 {
-  kRdmnetConnectFailSocketError,
+  kRdmnetConnectFailSocketFailure,
   kRdmnetConnectFailTcpLevel,
   kRdmnetConnectFailNoReply,
   kRdmnetConnectFailRejected

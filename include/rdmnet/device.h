@@ -53,8 +53,7 @@ typedef struct RdmnetDeviceCallbacks
 
 typedef struct RdmnetDeviceConfig
 {
-  bool has_static_uid;
-  RdmUid static_uid;
+  RdmUid uid;
   LwpaUuid cid;
   RdmnetScopeConfig scope_config;
   RdmnetDeviceCallbacks callbacks;

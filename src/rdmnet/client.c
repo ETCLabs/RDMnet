@@ -97,11 +97,13 @@ static void monitorcb_scope_monitor_error(rdmnet_scope_monitor_t handle, const c
 static const RdmnetScopeMonitorCallbacks disc_callbacks = {monitorcb_broker_found, monitorcb_broker_lost,
                                                            monitorcb_scope_monitor_error};
 
-static void conncb_connected(rdmnet_conn_t handle, const ConnectReplyMsg *connect_reply, void *context);
-static void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectInfo *disconn_info, void *context);
+static void conncb_connected(rdmnet_conn_t handle, const RdmnetConnectedInfo *connect_info, void *context);
+static void conncb_connect_failed(rdmnet_conn_t handle, const RdmnetConnectFailedInfo *failed_info, void *context);
+static void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo *disconn_info, void *context);
 static void conncb_msg_received(rdmnet_conn_t handle, const RdmnetMessage *message, void *context);
 
-static const RdmnetConnCallbacks conn_callbacks = {conncb_connected, conncb_disconnected, conncb_msg_received};
+static const RdmnetConnCallbacks conn_callbacks = {conncb_connected, conncb_connect_failed, conncb_disconnected,
+                                                   conncb_msg_received};
 
 /*********************** Private function prototypes *************************/
 
@@ -548,7 +550,7 @@ void monitorcb_scope_monitor_error(rdmnet_scope_monitor_t handle, const char *sc
   // TODO
 }
 
-void conncb_connected(rdmnet_conn_t handle, const ConnectReplyMsg *connect_reply, void *context)
+void conncb_connected(rdmnet_conn_t handle, const RdmnetConnectedInfo *connect_info, void *context)
 {
   CB_STORAGE_CLASS ClientCallbackDispatchInfo cb;
   init_callback_info(&cb);
@@ -561,7 +563,7 @@ void conncb_connected(rdmnet_conn_t handle, const ConnectReplyMsg *connect_reply
     {
       scope_entry->state = kScopeStateConnected;
       if (cli->type == kClientProtocolRPT && !cli->data.rpt.has_static_uid)
-        scope_entry->uid = connect_reply->client_uid;
+        scope_entry->uid = connect_info->client_uid;
 
       fill_callback_info(cli, &cb);
       cb.which = kClientCallbackConnected;
@@ -575,7 +577,11 @@ void conncb_connected(rdmnet_conn_t handle, const ConnectReplyMsg *connect_reply
   deliver_callback(&cb);
 }
 
-void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectInfo *disconn_info, void *context)
+void conncb_connect_failed(rdmnet_conn_t handle, const RdmnetConnectFailedInfo *failed_info, void *context)
+{
+}
+
+void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo *disconn_info, void *context)
 {
   CB_STORAGE_CLASS ClientCallbackDispatchInfo cb;
   init_callback_info(&cb);
@@ -590,18 +596,14 @@ void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectInfo *disco
       if (cli->type == kClientProtocolRPT && !cli->data.rpt.has_static_uid)
         rdmnet_init_dynamic_uid_request(&scope_entry->uid, 0x6574);  // TODO un-hardcode
 
-      fill_callback_info deliver_cb = true;
-      cb = cli->data.rpt.callbacks.disconnected;
-      cb_handle = cli;
-      rdmnet_safe_strncpy(cb_scope, scope_entry->scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH);
-      cb_context = cli->callback_context;
+      fill_callback_info(cli, &cb);
+      cb.which = kClientCallbackDisconnected;
 
       release_client(cli);
     }
   }
 
-  if (deliver_cb)
-    cb(cb_handle, cb_scope, cb_context);
+  deliver_callback(&cb);
 }
 
 void conncb_msg_received(rdmnet_conn_t handle, const RdmnetMessage *message, void *context)

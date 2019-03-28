@@ -44,10 +44,16 @@
 
 typedef struct RdmnetClientInternal *rdmnet_client_t;
 
+typedef struct RdmnetClientDisconnectInfo
+{
+  bool fatal;
+} RdmnetClientDisconnectInfo;
+
 typedef struct RptClientCallbacks
 {
   void (*connected)(rdmnet_client_t handle, const char *scope, void *context);
-  void (*disconnected)(rdmnet_client_t handle, const char *scope, void *context);
+  void (*disconnected)(rdmnet_client_t handle, const char *scope, const RdmnetClientDisconnectInfo *info,
+                       void *context);
   void (*broker_msg_received)(rdmnet_client_t handle, const char *scope, const BrokerMessage *msg, void *context);
   void (*msg_received)(rdmnet_client_t handle, const char *scope, const RptClientMessage *msg, void *context);
 } RptClientCallbacks;
@@ -67,11 +73,14 @@ typedef struct RdmnetScopeConfig
   LwpaSockaddr static_broker_addr;
 } RdmnetScopeConfig;
 
+/*! A set of information that defines the startup parameters of an RPT RDMnet Client. */
 typedef struct RdmnetRptClientConfig
 {
+  /*! The client type, either controller or device. */
   rpt_client_type_t type;
-  bool has_static_uid;
-  RdmUid static_uid;
+  /*! The ESTA manufacturer ID. All RDMnet components are required to have a valid ESTA manufacturer
+   *  ID. */
+  uint16_t manufacturer_id;
   LwpaUuid cid;
   const RdmnetScopeConfig *scope_list;
   size_t num_scopes;
