@@ -57,38 +57,38 @@ typedef enum
   kRptClientMsgStatus
 } rpt_client_msg_t;
 
-typedef struct DeviceRdmCommand
+typedef struct RemoteRdmCommand
 {
   RdmUid source_uid;
   uint16_t dest_endpoint;
   uint32_t seq_num;
   RdmCommand rdm;
-} DeviceRdmCommand;
+} RemoteRdmCommand;
 
-typedef struct DeviceRdmResponse
+typedef struct LocalRdmResponse
 {
   RdmUid dest_uid;
   uint16_t source_endpoint;
   uint32_t seq_num;
   RdmResponse *rdm_arr;
   size_t num_responses;
-} DeviceRdmResponse;
+} LocalRdmResponse;
 
-typedef struct ControllerRdmCommand
+typedef struct LocalRdmCommand
 {
   RdmUid dest_uid;
   uint16_t dest_endpoint;
   RdmCommand rdm;
 } ControllerRdmCommand;
 
-typedef struct ControllerRdmRespListEntry ControllerRdmRespListEntry;
-struct ControllerRdmRespListEntry
+typedef struct RemoteRdmRespListEntry RemoteRdmRespListEntry;
+struct RemoteRdmRespListEntry
 {
   RdmResponse msg;
-  ControllerRdmRespListEntry *next;
+  RemoteRdmRespListEntry *next;
 };
 
-typedef struct ControllerRdmRespList
+typedef struct RemoteRdmResponseList
 {
   /*! This message contains a partial list. This can be set when the library runs out of static
    *  memory in which to store RDM Commands and must deliver the partial list before continuing.
@@ -96,25 +96,43 @@ typedef struct ControllerRdmRespList
    *  another RdmCmdList is received with partial set to false. */
   bool partial;
   /*! The head of a linked list of packed RDM Commands. */
-  ControllerRdmRespListEntry *list;
-} ControllerRdmRespList;
+  RemoteRdmRespListEntry *list;
+} RemoteRdmResponseList;
 
-typedef struct ControllerRdmResponse
+typedef struct RemoteRdmResponse
 {
   RdmUid source_uid;
   uint16_t source_endpoint;
   uint32_t seq_num;
-  ControllerRdmRespList resp_list;
-} ControllerRdmResponse;
+  bool have_command;
+  RdmCommand cmd;
+  RemoteRdmResponseList resp_list;
+} RemoteRdmResponse;
+
+typedef struct LocalRptStatus
+{
+  RdmUid dest_uid;
+  uint16_t source_endpoint;
+  uint32_t seq_num;
+  RptStatusMsg msg;
+} LocalRptStatus;
+
+typedef struct RemoteRptStatus
+{
+  RdmUid source_uid;
+  uint16_t source_endpoint;
+  uint32_t seq_num;
+  RptStatusMsg msg;
+} RemoteRptStatus;
 
 typedef struct RptClientMessage
 {
   rpt_client_msg_t type;
   union
   {
-    DeviceRdmCommand cmd;
-    ControllerRdmResponse resp;
-    RptStatusMsg status;
+    RemoteRdmCommand cmd;
+    RemoteRdmResponse resp;
+    RemoteRptStatus status;
   } payload;
 } RptClientMessage;
 

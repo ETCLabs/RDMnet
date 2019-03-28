@@ -51,12 +51,20 @@ typedef struct RdmnetDeviceCallbacks
   RdmnetDeviceRdmCmdReceivedCb rdm_cmd_received;
 } RdmnetDeviceCallbacks;
 
+/*! A set of information that defines the startup parmaeters of an RDMnet Device. */
 typedef struct RdmnetDeviceConfig
 {
+  /*! The device's UID. If the device has a static UID, fill in the values normally. If a dynamic
+   *  UID is desired, assign using RPT_CLIENT_DYNAMIC_UID(manu_id), passing your ESTA manufacturer
+   *  ID. All RDMnet components are required to have a valid ESTA manufacturer ID. */
   RdmUid uid;
+  /*! The device's CID. */
   LwpaUuid cid;
+  /*! The device's configured RDMnet scope. */
   RdmnetScopeConfig scope_config;
+  /*! A set of callbacks for the device to receive RDMnet notifications. */
   RdmnetDeviceCallbacks callbacks;
+  /*! Pointer to opaque data passed back with each callback. Can be NULL. */
   void *callback_context;
 } RdmnetDeviceConfig;
 

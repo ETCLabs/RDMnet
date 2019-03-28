@@ -44,16 +44,21 @@
 
 typedef struct RdmnetClientInternal *rdmnet_client_t;
 
-typedef struct RdmnetClientDisconnectInfo
+typedef struct RdmnetClientConnectedInfo
 {
-  bool fatal;
+  LwpaSockaddr broker_addr;
+} RdmnetClientConnectedInfo;
+
+typedef struct RdmnetClientNotConnectedInfo
+{
+  bool will_retry;
 } RdmnetClientDisconnectInfo;
 
 typedef struct RptClientCallbacks
 {
-  void (*connected)(rdmnet_client_t handle, const char *scope, void *context);
-  void (*disconnected)(rdmnet_client_t handle, const char *scope, const RdmnetClientDisconnectInfo *info,
-                       void *context);
+  void (*connected)(rdmnet_client_t handle, const char *scope, const RdmnetClientConnectedInfo *info, void *context);
+  void (*not_connected)(rdmnet_client_t handle, const char *scope, const RdmnetClientNotConnectedInfo *info,
+                        void *context);
   void (*broker_msg_received)(rdmnet_client_t handle, const char *scope, const BrokerMessage *msg, void *context);
   void (*msg_received)(rdmnet_client_t handle, const char *scope, const RptClientMessage *msg, void *context);
 } RptClientCallbacks;
@@ -73,18 +78,39 @@ typedef struct RdmnetScopeConfig
   LwpaSockaddr static_broker_addr;
 } RdmnetScopeConfig;
 
+/*! \brief Initialization value for a dynamic UID.
+ *
+ *  Usage example:
+ *  ```
+ *  RdmnetRptClientConfig config;
+ *  config.uid = RPT_CLIENT_DYNAMIC_UID(0x6574);
+ *  ```
+ *
+ *  \param manu_id ESTA manufacturer ID. All RDMnet components must have one.
+ */
+#define RPT_CLIENT_DYNAMIC_UID(manu_id) \
+  {                                     \
+    manu_id, 0                          \
+  }
+
 /*! A set of information that defines the startup parameters of an RPT RDMnet Client. */
 typedef struct RdmnetRptClientConfig
 {
   /*! The client type, either controller or device. */
   rpt_client_type_t type;
-  /*! The ESTA manufacturer ID. All RDMnet components are required to have a valid ESTA manufacturer
-   *  ID. */
-  uint16_t manufacturer_id;
+  /*! The client's UID. If the client has a static UID, fill in the values normally. If a dynamic
+   *  UID is desired, assign using RPT_CLIENT_DYNAMIC_UID(manu_id), passing your ESTA manufacturer
+   *  ID. All RDMnet components are required to have a valid ESTA manufacturer ID. */
+  RdmUid uid;
+  /*! The client's CID. */
   LwpaUuid cid;
-  const RdmnetScopeConfig *scope_list;
+  /*! An array of configured scopes to which the client would like to connect. */
+  const RdmnetScopeConfig *scope_arr;
+  /*! The size of the scope array. */
   size_t num_scopes;
+  /*! A set of callbacks for the client to received RDMnet notifications. */
   RptClientCallbacks callbacks;
+  /*! Pointer to opaque data passed back with each callback. */
   void *callback_context;
 } RdmnetRptClientConfig;
 

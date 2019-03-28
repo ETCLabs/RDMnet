@@ -44,23 +44,45 @@ extern "C" {
 
 typedef struct RdmnetControllerInternal *rdmnet_controller_t;
 
-typedef void (*RdmnetControllerConnectedCb)(rdmnet_controller_t handle, const char *scope);
-typedef void (*RdmnetControllerDisconnectedCb)(rdmnet_controller_t handle, const char *scope);
+typedef enum
+{
+  kRdmnetClientListAppend,
+  kRdmnetClientListRemove,
+  kRdmnetClientListUpdate,
+  kRdmnetClientListReplace
+} client_list_action_t;
 
 typedef struct RdmnetControllerCallbacks
 {
-  RdmnetControllerConnectedCb connected;
-  RdmnetControllerDisconnectedCb disconnected;
+  void (*connected)(rdmnet_controller_t handle, const char *scope, const RdmnetClientConnectedInfo *info,
+                    void *context);
+  void (*not_connected)(rdmnet_controller_t handle, const char *scope, const RdmnetClientNotConnectedInfo *info,
+                        void *context);
+  void (*client_list_update)(rdmnet_controller_t handle, const char *scope, client_list_action_t list_action,
+                             const ClientList *list, void *context);
+  void (*rdm_response_received)(rdmnet_controller_t handle, const char *scope, const RemoteRdmResponse *resp,
+                                void *context);
+  void (*rdm_command_received)(rdmnet_controller_t handle, const char *scope, const RemoteRdmCommand *cmd,
+                               void *context);
+  void (*status_received)(rdmnet_controller_t handle, const char *scope, const RemoteRptStatus *status, void *context);
 } RdmnetControllerCallbacks;
 
 typedef struct RdmnetControllerConfig
 {
-  bool has_static_uid;
-  RdmUid static_uid;
+  /*! The controller's UID. If the controller has a static UID, fill in the values normally. If a dynamic
+   *  UID is desired, assign using RPT_CLIENT_DYNAMIC_UID(manu_id), passing your ESTA manufacturer
+   *  ID. All RDMnet components are required to have a valid ESTA manufacturer ID. */
+  RdmUid uid;
+  /*! The controller's CID. */
   LwpaUuid cid;
-  RdmnetScopeConfig *scope_list;
+  /*! An array of configured scopes to which the controller would like to connect. */
+  RdmnetScopeConfig *scope_arr;
+  /*! The size of the scope array. */
   size_t num_scopes;
+  /*! A set of callbacks for the controller to receive RDMnet notifications. */
   RdmnetControllerCallbacks callbacks;
+  /*! Pointer to opaque data passed back with each callback. Can be NULL. */
+  void *callback_context;
 } RdmnetControllerConfig;
 
 lwpa_error_t rdmnet_controller_create(const RdmnetControllerConfig *config, rdmnet_controller_t *handle);

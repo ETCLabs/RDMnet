@@ -40,7 +40,7 @@ END_INCLUDE_QT_HEADERS()
 #include "LogWindowGUI.h"
 #include "AboutGUI.h"
 
-#include "rdmnet\version.h"
+#include "rdmnet/version.h"
 
 RDMnetControllerGUI::~RDMnetControllerGUI()
 {

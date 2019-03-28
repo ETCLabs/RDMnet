@@ -35,15 +35,12 @@
 #include "lwpa/log.h"
 #include "lwpa/thread.h"
 #include "lwpa/lock.h"
-#include "lwpa/uuid.h"
-#include "rdm/uid.h"
-#include "rdm/controller.h"
-#include "rdmnet/core/connection.h"
-#include "rdmnet/core/discovery.h"
 #include "BrokerItem.h"
 #include "SearchingStatusItem.h"
 #include "PropertyValueItem.h"
 #include "ControllerUtils.h"
+#include "RDMnetLibWrapper.h"
+#include "ControllerLog.h"
 
 BEGIN_INCLUDE_QT_HEADERS()
 #include <QStandardItemModel>
@@ -55,47 +52,9 @@ class BrokerConnection;
 
 void appendRowToItem(QStandardItem *parent, QStandardItem *child);
 
-class LogOutputStream
-{
-public:
-  virtual LogOutputStream &operator<<(const std::string &str) = 0;
-  virtual void clear() = 0;
-};
-
-class MyLog
-{
-public:
-  explicit MyLog(const std::string &file_name);
-  virtual ~MyLog();
-
-  void Log(int pri, const char *format, ...);
-  bool CanLog(int pri) const { return lwpa_canlog(&params_, pri); }
-  const LwpaLogParams *GetLogParams() const { return &params_; }
-
-  void LogFromCallback(const std::string &str);
-
-  void addCustomOutputStream(LogOutputStream *stream);
-  void removeCustomOutputStream(LogOutputStream *stream);
-
-  size_t getNumberOfCustomLogOutputStreams();
-
-protected:
-  std::fstream file_;
-  std::string file_name_;
-  LwpaLogParams params_;
-  std::vector<LogOutputStream *> customOutputStreams;
-};
-
 class BrokerConnection
 {
 private:
-  static LwpaUuid local_cid_;
-  RdmUid local_uid_;
-
-  static MyLog *log_;
-
-  static bool static_info_initialized_;
-
   bool connected_;
   bool using_mdns_;
 
@@ -111,7 +70,6 @@ private:
   bool connect_in_progress_;
 
 public:
-  static bool initializeStaticConnectionInfo(const LwpaUuid &cid, MyLog *log);
   static LwpaUuid getLocalCID() { return local_cid_; }
   RdmUid getLocalUID() const { return local_uid_; }
 
@@ -164,7 +122,7 @@ typedef struct DefaultResponderPropertyData
   uint16_t tcp_unhealthy_counter;
 } DefaultResponderPropertyData;
 
-class RDMnetNetworkModel : public QStandardItemModel  //, public IRDMnet_MDNS_Notify
+class RDMnetNetworkModel : public QStandardItemModel, public RDMnetLibNotify
 {
   Q_OBJECT
 
@@ -189,10 +147,8 @@ signals:
   void identifyChanged(const RDMnetNetworkItem *item, bool identify);
 
 private:
-  static bool rdmnet_initialized_;
-
-  MyLog log_;
-  ScopeMonitorInfo scope_info_;
+  ControllerLog *log_;
+  RDMnetLibWrapper *rdmnet_;
   uint16_t broker_create_count_ = 0;
   bool recv_thread_run_;
   lwpa_thread_t recv_thread_;
@@ -233,7 +189,7 @@ public:
   void InitRDMnet();
   void ShutdownRDMnet();
 
-  static RDMnetNetworkModel *makeRDMnetNetworkModel();
+  static RDMnetNetworkModel *makeRDMnetNetworkModel(RDMnetLibWrapper *library, ControllerLog *log);
   static RDMnetNetworkModel *makeTestModel();
 
   void searchingItemRevealed(SearchingStatusItem *searchItem);
@@ -247,44 +203,26 @@ public:
 
   virtual bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
 
-  void StartRecvThread();
-  void RecvThreadRun();
-  void StopRecvThread();
-
-  /******* IRDMnet_MDNS_Notify overrides *******/
-
-  // Called whenever a broker was found. As this could be called multiple times
-  // for the same service (e.g. the ip address changes or more are discovered),
-  // you should always check the service_name field.  If you find more one
-  // broker for the scope, the user should be notified of an error!
-  // virtual void BrokerFound(const std::string &     scope,
-  //                          const mdns_broker_info &broker_found);
-
-  // Called whenever a broker went away.  The name corresponds to the
-  // service_name field given in BrokerFound.
-  // virtual void BrokerRemoved(const std::string &broker_service_name);
-
-  // Called when the query had a platform-specific error. Monitoring will
-  // attempt to continue.
-  // virtual void ScopeMonitorError(const mdns_monitor_info &info,
-  //                                int platform_specific_error);
-
 protected:
-  /******* RDM message handling functions *******/
-  void ProcessMessage(uint16_t conn, const RdmnetMessage *msg);
-  void ProcessRPTMessage(uint16_t conn, const RdmnetMessage *msg);
-  void ProcessBrokerMessage(uint16_t conn, const RdmnetMessage *msg);
+  // RDMnetLibNotify overrides
+  virtual void Connected(const std::string &scope) override;
+  virtual void NotConnected(const std::string &scope) override;
+  virtual void ClientListUpdate(const std::string &scope, client_list_action_t action, const ClientList &list) override;
+  virtual void RdmCmdReceived(const std::string &scope, const RemoteRdmCommand &cmd) override;
+  virtual void RdmRespReceived(const std::string &scope, const RemoteRdmResponse &resp) override;
+  virtual void StatusReceived(const std::string &scope, const RemoteRptStatus &status) override;
 
-  void ProcessRPTStatus(uint16_t conn, const RptHeader *header, const RptStatusMsg *status);
-  void ProcessRPTNotificationOrRequest(uint16_t conn, const RptHeader *header, const RdmCmdList *cmd_list);
+  /******* RDM message handling functions *******/
+  // void ProcessBrokerMessage(uint16_t conn, const RdmnetMessage *msg);
+
   void ProcessRDMCommand(uint16_t conn, const RptHeader *header, const RdmCommand &cmd);
-  bool DefaultResponderGet(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len,
-                           RdmParamData *resp_data_list, size_t *num_responses, uint16_t *nack_reason);
+  // bool DefaultResponderGet(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len,
+  //                         RdmParamData *resp_data_list, size_t *num_responses, uint16_t *nack_reason);
   void ProcessRDMResponse(uint16_t conn, bool have_command, const RdmCommand &cmd,
                           const std::vector<RdmResponse> &response);
 
   // Use this with data that has identical GET_COMMAND_RESPONSE and SET_COMMAND forms.
-  void ProcessRDMGetSetData(uint16_t conn, uint16_t param_id, const uint8_t *data, uint8_t datalen, 
+  void ProcessRDMGetSetData(uint16_t conn, uint16_t param_id, const uint8_t *data, uint8_t datalen,
                             const RdmResponse *firstResp);
 
   BrokerConnection *getBrokerConnection(const std::string &scope);
@@ -370,8 +308,8 @@ protected:
   // DMX_PERSONALITY (number may equal zero if data is not provided)
   void personality(uint16_t conn, uint8_t current, uint8_t number, const RdmResponse *resp);
   // DMX_PERSONALITY_DESCRIPTION
-  void personalityDescription(uint16_t conn, uint8_t personality, uint16_t footprint, 
-                              const char *description, const RdmResponse *resp);
+  void personalityDescription(uint16_t conn, uint8_t personality, uint16_t footprint, const char *description,
+                              const RdmResponse *resp);
 
   // E1.33
   // COMPONENT_SCOPE
@@ -380,8 +318,8 @@ protected:
   // SEARCH_DOMAIN
   void searchDomain(uint16_t conn, const char *domainNameString, const RdmResponse *resp);
   // TCP_COMMS_STATUS
-  void tcpCommsStatus(uint16_t conn, const char *scopeString, const char *v4AddrString, const char *v6AddrString, 
-                      uint16_t port,uint16_t unhealthyTCPEvents, const RdmResponse *resp);
+  void tcpCommsStatus(uint16_t conn, const char *scopeString, const char *v4AddrString, const char *v6AddrString,
+                      uint16_t port, uint16_t unhealthyTCPEvents, const RdmResponse *resp);
 
   // Message sending
   void addPropertyEntries(RDMnetNetworkItem *parent, PIDFlags location);
@@ -415,6 +353,6 @@ protected:
                                    uint16_t firstSlot, uint16_t lastSlot);
 
 public:
-  RDMnetNetworkModel();
+  RDMnetNetworkModel(RDMnetLibWrapper *library, ControllerLog *log);
   ~RDMnetNetworkModel();
 };
