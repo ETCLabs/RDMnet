@@ -42,7 +42,11 @@
 #include "rdmnet/core/message.h"
 #include "rdmnet/core/util.h"
 
-typedef struct RdmnetClientInternal *rdmnet_client_t;
+typedef int rdmnet_client_t;
+typedef int rdmnet_client_scope_t;
+
+#define RDMNET_CLIENT_INVALID -1
+#define RDMNET_CLIENT_SCOPE_INVALID -1
 
 typedef struct RdmnetClientConnectedInfo
 {
@@ -52,23 +56,25 @@ typedef struct RdmnetClientConnectedInfo
 typedef struct RdmnetClientNotConnectedInfo
 {
   bool will_retry;
-} RdmnetClientDisconnectInfo;
+} RdmnetClientNotConnectedInfo;
 
 typedef struct RptClientCallbacks
 {
-  void (*connected)(rdmnet_client_t handle, const char *scope, const RdmnetClientConnectedInfo *info, void *context);
-  void (*not_connected)(rdmnet_client_t handle, const char *scope, const RdmnetClientNotConnectedInfo *info,
+  void (*connected)(rdmnet_client_t handle, rdmnet_client_scope_t scope, const RdmnetClientConnectedInfo *info,
+                    void *context);
+  void (*not_connected)(rdmnet_client_t handle, rdmnet_client_scope_t scope, const RdmnetClientNotConnectedInfo *info,
                         void *context);
-  void (*broker_msg_received)(rdmnet_client_t handle, const char *scope, const BrokerMessage *msg, void *context);
-  void (*msg_received)(rdmnet_client_t handle, const char *scope, const RptClientMessage *msg, void *context);
+  void (*broker_msg_received)(rdmnet_client_t handle, rdmnet_client_scope_t, const BrokerMessage *msg, void *context);
+  void (*msg_received)(rdmnet_client_t handle, rdmnet_client_scope_t, const RptClientMessage *msg, void *context);
 } RptClientCallbacks;
 
 typedef struct EptClientCallbacks
 {
-  void (*connected)(rdmnet_client_t handle, const char *scope, void *context);
-  void (*disconnected)(rdmnet_client_t handle, const char *scope, void *context);
-  void (*broker_msg_received)(rdmnet_client_t handle, const char *scope, const BrokerMessage *msg, void *context);
-  void (*msg_received)(rdmnet_client_t handle, const char *scope, const EptClientMessage *msg, void *context);
+  void (*connected)(rdmnet_client_t handle, rdmnet_client_scope_t scope, void *context);
+  void (*disconnected)(rdmnet_client_t handle, rdmnet_client_scope_t scope, void *context);
+  void (*broker_msg_received)(rdmnet_client_t handle, rdmnet_client_scope_t scope, const BrokerMessage *msg,
+                              void *context);
+  void (*msg_received)(rdmnet_client_t handle, rdmnet_client_scope_t scope, const EptClientMessage *msg, void *context);
 } EptClientCallbacks;
 
 typedef struct RdmnetScopeConfig
@@ -104,10 +110,6 @@ typedef struct RdmnetRptClientConfig
   RdmUid uid;
   /*! The client's CID. */
   LwpaUuid cid;
-  /*! An array of configured scopes to which the client would like to connect. */
-  const RdmnetScopeConfig *scope_arr;
-  /*! The size of the scope array. */
-  size_t num_scopes;
   /*! A set of callbacks for the client to received RDMnet notifications. */
   RptClientCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. */
@@ -161,10 +163,15 @@ extern "C" {
 lwpa_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig *config, rdmnet_client_t *handle);
 void rdmnet_rpt_client_destroy(rdmnet_client_t handle);
 
-lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, const char *scope,
-                                                const ControllerRdmCommand *cmd);
+lwpa_error_t rdmnet_client_add_scope(rdmnet_client_t handle, const RdmnetScopeConfig *scope_config,
+                                     rdmnet_client_scope_t *scope_handle);
+lwpa_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle);
+lwpa_error_t rdmnet_client_change_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+                                        const RdmnetScopeConfig *new_config);
+
+lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, const char *scope, const LocalRdmCommand *cmd);
 lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, const char *scope,
-                                                 const DeviceRdmResponse *resp);
+                                                 const LocalRdmResponse *resp);
 lwpa_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, const char *scope, const RptStatusMsg *status);
 
 lwpa_error_t rdmnet_ept_client_create(const RdmnetEptClientConfig *config, rdmnet_client_t *handle);

@@ -115,7 +115,7 @@ static lwpa_error_t parseAndPackIPAddress(lwpa_iptype_t addrType, const char *ip
 
   lwpa_error_t result = lwpa_inet_pton(addrType, ipString, &ip);
 
-  if (result == LWPA_OK)
+  if (result == kLwpaErrOk)
   {
     if (addrType == kLwpaIpTypeV4)
     {
@@ -162,46 +162,6 @@ T *getNearestParentItemOfType(QStandardItem *child)
   return parent;
 }
 
-BrokerConnection::BrokerConnection(std::string scope)
-    : connected_(false)
-    , using_mdns_(true)
-    , scope_(QString::fromStdString(scope))
-    , broker_item_(NULL)
-    , sequence_(0)
-    , connect_in_progress_(false)
-{
-  LwpaUuid my_cid = getLocalCID();
-  memset(&broker_addr_, 0, sizeof(LwpaSockaddr));
-  conn_ = rdmnet_new_connection(&my_cid);
-  assert(conn_ >= 0);
-}
-
-BrokerConnection::BrokerConnection(std::string scope, const LwpaSockaddr &addr)
-    : connected_(false)
-    , using_mdns_(false)
-    , scope_(QString::fromStdString(scope))
-    , broker_addr_(addr)
-    , broker_item_(NULL)
-    , sequence_(0)
-    , connect_in_progress_(false)
-{
-  LwpaUuid my_cid = getLocalCID();
-  conn_ = rdmnet_new_connection(&my_cid);
-  assert(conn_ >= 0);
-}
-
-BrokerConnection::~BrokerConnection()
-{
-  if (connect_in_progress_)
-  {
-    connect_in_progress_ = false;
-    rdmnet_destroy_connection(conn_);
-    lwpa_thread_stop(&connect_thread_, 10000);
-  }
-  else
-    rdmnet_destroy_connection(conn_);
-}
-
 const QString BrokerConnection::generateBrokerItemText()
 {
   if (connected_ || !using_mdns_)
@@ -213,46 +173,6 @@ const QString BrokerConnection::generateBrokerItemText()
   }
 
   return QString("Broker for scope \"%1\"").arg(scope_);
-}
-
-void BrokerConnection::connect(const BrokerDiscInfo *broker_info)
-{
-  if (broker_info->listen_addrs_count > 0)
-  {
-    // Temporary - until we add IPv6 support
-    lwpaip_set_invalid(&broker_addr_.ip);
-    for (size_t i = 0; i < broker_info->listen_addrs_count; ++i)
-    {
-      if (lwpaip_is_v4(&broker_info->listen_addrs[i].ip))
-      {
-        broker_addr_ = broker_info->listen_addrs[i];
-      }
-    }
-    if (!lwpaip_is_invalid(&broker_addr_.ip))
-      connect();
-  }
-}
-
-void BrokerConnection::connect()
-{
-  if (static_info_initialized_ && !connected_)
-  {
-    LwpaThreadParams tparams;
-    tparams.platform_data = NULL;
-    tparams.stack_size = LWPA_THREAD_DEFAULT_STACK;
-    tparams.thread_name = "Broker Connect Thread";
-    tparams.thread_priority = LWPA_THREAD_DEFAULT_PRIORITY;
-
-    connect_in_progress_ = true;
-    lwpa_thread_create(&connect_thread_, &tparams, &broker_connect_thread_func, this);
-  }
-}
-
-void BrokerConnection::disconnect()
-{
-  if (connected_)
-    rdmnet_disconnect(conn_, true, kRdmnetDisconnectUserReconfigure);
-  wasDisconnected();
 }
 
 void BrokerConnection::wasDisconnected()
@@ -443,9 +363,9 @@ void RDMnetNetworkModel::removeCustomLogOutputStream(LogOutputStream *stream)
   log_->removeCustomOutputStream(stream);
 }
 
-void RDMnetNetworkModel::processBrokerConnection(uint16_t conn)
+void RDMnetNetworkModel::Connected(rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo &info)
 {
-  if (broker_connections_.find(conn) != broker_connections_.end())
+  if (broker_connections_.find(scope_handle) != broker_connections_.end())
   {
     static RdmParamData resp_data_list[MAX_RESPONSES_IN_ACK_OVERFLOW];
     size_t num_responses;
@@ -460,12 +380,11 @@ void RDMnetNetworkModel::processBrokerConnection(uint16_t conn)
   }
 }
 
-void RDMnetNetworkModel::processBrokerDisconnection(uint16_t conn)
+void RDMnetNetworkModel::NotConnected(rdmnet_client_scope_t scope_handle, const RdmnetClientNotConnectedInfo &info)
 {
   if (lwpa_rwlock_writelock(&prop_lock, LWPA_WAIT_FOREVER))
   {
-    BrokerConnection *connection = broker_connections_[conn].get();
-
+    BrokerConnection *connection = broker_connections_[scope_handle].get();
     if (connection)
     {
       if (connection->connected())
@@ -491,11 +410,6 @@ void RDMnetNetworkModel::processBrokerDisconnection(uint16_t conn)
           SendRDMGetResponses(kRdmnetControllerBroadcastUid, E133_BROADCAST_ENDPOINT, E133_TCP_COMMS_STATUS,
                               resp_data_list, num_responses, 0, 0);
         }
-      }
-
-      if (!connection->isUsingMDNS())
-      {
-        connection->connect();
       }
     }
 
@@ -1164,10 +1078,6 @@ RDMnetNetworkModel *RDMnetNetworkModel::makeRDMnetNetworkModel(RDMnetLibWrapper 
   qRegisterMetaType<QVector<int>>("QVector<int>");
   qRegisterMetaType<uint16_t>("uint16_t");
 
-  connect(model, SIGNAL(brokerConnection(uint16_t)), model, SLOT(processBrokerConnection(uint16_t)),
-          Qt::AutoConnection);
-  connect(model, SIGNAL(brokerDisconnection(uint16_t)), model, SLOT(processBrokerDisconnection(uint16_t)),
-          Qt::AutoConnection);
   connect(model, SIGNAL(addRDMnetClients(BrokerConnection *, const std::vector<ClientEntryData> &)), model,
           SLOT(processAddRDMnetClients(BrokerConnection *, const std::vector<ClientEntryData> &)), Qt::AutoConnection);
   connect(model, SIGNAL(removeRDMnetClients(BrokerConnection *, const std::vector<ClientEntryData> &)), model,
@@ -1228,8 +1138,7 @@ void RDMnetNetworkModel::searchingItemRevealed(SearchingStatusItem *searchItem)
   {
     if (!searchItem->wasSearchInitiated())
     {
-      // A search item was likely just revealed in the tree, starting a search
-      // process.
+      // A search item was likely just revealed in the tree, starting a search process.
       QStandardItem *searchItemParent = searchItem->parent();
 
       if (searchItemParent != NULL)
@@ -1303,27 +1212,6 @@ void RDMnetNetworkModel::searchingItemRevealed(SearchingStatusItem *searchItem)
 size_t RDMnetNetworkModel::getNumberOfCustomLogOutputStreams()
 {
   return log_->getNumberOfCustomLogOutputStreams();
-}
-
-void RDMnetNetworkModel::connectToBroker(const char *scope, const BrokerDiscInfo *broker_info)
-{
-  if (lwpa_rwlock_writelock(&prop_lock, LWPA_WAIT_FOREVER))
-  {
-    for (auto iter = broker_connections_.begin(); iter != broker_connections_.end(); ++iter)
-    {
-      if (iter->second->scope() == scope)
-      {
-        iter->second->connect(broker_info);
-      }
-    }
-
-    lwpa_rwlock_writeunlock(&prop_lock);
-  }
-}
-
-void RDMnetNetworkModel::emitBrokerConnection(uint16_t conn)
-{
-  emit brokerConnection(conn);
 }
 
 bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value, int role)
@@ -1662,14 +1550,14 @@ bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand &cmd, uint16_t conn)
       to_send.port_id = 1;
       to_send.transaction_num = static_cast<uint8_t>(header.seqnum & 0xffu);
       RdmBuffer rdmbuf;
-      if (LWPA_OK != rdmctl_create_command(&to_send, &rdmbuf))
+      if (kLwpaErrOk != rdmctl_create_command(&to_send, &rdmbuf))
       {
         lwpa_rwlock_writeunlock(&prop_lock);
         return false;
       }
 
       LwpaUuid my_cid = BrokerConnection::getLocalCID();
-      if (LWPA_OK != send_rpt_request(connectionToUse->handle(), &my_cid, &header, &rdmbuf))
+      if (kLwpaErrOk != send_rpt_request(connectionToUse->handle(), &my_cid, &header, &rdmbuf))
       {
         lwpa_rwlock_writeunlock(&prop_lock);
         return false;
@@ -1745,7 +1633,7 @@ void RDMnetNetworkModel::SendNotification(uint16_t conn, const RdmUid &dest_uid,
                                           uint32_t seqnum, const std::vector<RdmResponse> &resp_list)
 {
   RptHeader header_to_send;
-  int send_res = static_cast<int>(LWPA_OK);
+  int send_res = static_cast<int>(kLwpaErrOk);
   RdmUid rpt_dest_uid;
   uint16_t dest_endpoint;
 
@@ -1798,7 +1686,7 @@ void RDMnetNetworkModel::SendNotification(uint16_t conn, const RdmUid &dest_uid,
     lwpa_rwlock_readunlock(&prop_lock);
   }
 
-  if (send_res != static_cast<int>(LWPA_OK))
+  if (send_res != static_cast<int>(kLwpaErrOk))
   {
     log_->Log(LWPA_LOG_ERR, "Error sending RPT Notification message to Broker.");
   }
@@ -3389,7 +3277,7 @@ uint8_t *RDMnetNetworkModel::packIPAddressItem(const QVariant &value, lwpa_iptyp
     // Incorrect format entered.
     return NULL;
   }
-  else if (parseAndPackIPAddress(addrType, ipStrBuffer, strlen(ipStrBuffer), packPtr) != LWPA_OK)
+  else if (parseAndPackIPAddress(addrType, ipStrBuffer, strlen(ipStrBuffer), packPtr) != kLwpaErrOk)
   {
     return NULL;
   }

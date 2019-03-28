@@ -27,26 +27,36 @@
 
 #pragma once
 
+#include "RDMnetNetworkItem.h"
 #include "RDMnetClientItem.h"
+#include "ControllerUtils.h"
 
 class BrokerItem : public RDMnetNetworkItem
 {
 public:
   static const int BrokerItemType = QStandardItem::UserType + 2;
 
-  // BrokerItem();
-  BrokerItem(const QString &text, uint32_t connectionCookie);
+  BrokerItem(const QString &scope, rdmnet_client_scope_t scope_handle,
+             const StaticBrokerConfig &static_broker = StaticBrokerConfig());
   virtual ~BrokerItem();
 
   virtual int type() const override;
-  uint32_t getConnectionCookie() { return connection_cookie_; }
+  rdmnet_client_scope_t scope_handle() const { return scope_handle_; }
 
   void setScope(const QString &scope) { scope_ = scope; }
   QString scope() const { return scope_; }
 
+  void setConnected(bool connected, const LwpaSockaddr &broker_addr);
+
   std::vector<RDMnetClientItem *> rdmnet_clients_;
 
+protected:
+  void updateText();
+
 private:
-  uint32_t connection_cookie_;
+  rdmnet_client_scope_t scope_handle_;
+  StaticBrokerConfig static_broker;
+  LwpaSockaddr broker_addr_;
   QString scope_;
+  bool connected_;
 };

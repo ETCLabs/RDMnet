@@ -41,3 +41,10 @@
 #define END_INCLUDE_QT_HEADERS()
 
 #endif
+
+// A representation of an optional static Broker configuration.
+struct StaticBrokerConfig
+{
+  bool valid{false};
+  LwpaSockaddr addr;
+};

@@ -27,35 +27,64 @@
 
 #pragma once
 
-#include "rdmnet/controller.h"
+#include "RDMnetLibInterface.h"
 #include "ControllerLog.h"
 
 // RDMnetLibWrapper: C++ wrapper for the RDMnet Library interface.
 
-class RDMnetLibNotify
+// These functions mirror the callback functions from the C library exactly.
+class RDMnetLibNotifyInternal
 {
 public:
-  virtual void Connected(const std::string &scope) = 0;
-  virtual void NotConnected(const std::string &scope) = 0;
-  virtual void ClientListUpdate(const std::string &scope, client_list_action_t action, const ClientList &list) = 0;
-  virtual void RdmCmdReceived(const std::string &scope, const RemoteRdmCommand &cmd) = 0;
-  virtual void RdmRespReceived(const std::string &scope, const RemoteRdmResponse &resp) = 0;
-  virtual void StatusReceived(const std::string &scope, const RemoteRptStatus &status) = 0;
+  virtual void Connected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                         const RdmnetClientConnectedInfo *info) = 0;
+  virtual void NotConnected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                            const RdmnetClientNotConnectedInfo *info) = 0;
+  virtual void ClientListUpdate(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                                client_list_action_t list_action, const ClientList *list) = 0;
+  virtual void RdmResponseReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                                   const RemoteRdmResponse *resp) = 0;
+  virtual void RdmCommandReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                                  const RemoteRdmCommand *cmd) = 0;
+  virtual void StatusReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                              const RemoteRptStatus *status) = 0;
 };
 
-class RDMnetLibWrapper
+class RDMnetLibWrapper : public RDMnetLibInterface, public RDMnetLibNotifyInternal
 {
 public:
   RDMnetLibWrapper(ControllerLog *log);
-  ~RDMnetLibWrapper();
 
-  bool AddScope(const std::string &scope);
-  bool RemoveScope(const std::string &scope);
+  bool Startup(RDMnetLibNotify *notify) override;
+  void Shutdown() override;
 
-  bool SendRdmCommand(const std::string &scope, const RdmCommand &cmd);
+  rdmnet_client_scope_t AddScope(const std::string &scope,
+                                 StaticBrokerConfig static_broker = StaticBrokerConfig()) override;
+  bool RemoveScope(rdmnet_client_scope_t scope_handle) override;
+
+  bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const RdmCommand &cmd) override;
+
+protected:
+  // RDMnetLibNotifyInternal overrides
+  virtual void Connected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                         const RdmnetClientConnectedInfo *info) override;
+  virtual void NotConnected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                            const RdmnetClientNotConnectedInfo *info) override;
+  virtual void ClientListUpdate(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                                client_list_action_t list_action, const ClientList *list) override;
+  virtual void RdmResponseReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                                   const RemoteRdmResponse *resp) override;
+  virtual void RdmCommandReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                                  const RemoteRdmCommand *cmd) override;
+  virtual void StatusReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                              const RemoteRptStatus *status) override;
 
 private:
-  rdmnet_controller_t controller_handle_{nullptr};
-  ControllerLog *log_{nullptr};
   LwpaUuid my_cid_;
+
+  bool running_{false};
+  rdmnet_controller_t controller_handle_{nullptr};
+
+  ControllerLog *log_{nullptr};
+  RDMnetLibNotify *notify_{nullptr};
 };

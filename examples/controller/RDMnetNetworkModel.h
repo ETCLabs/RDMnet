@@ -55,32 +55,29 @@ void appendRowToItem(QStandardItem *parent, QStandardItem *child);
 class BrokerConnection
 {
 private:
-  bool connected_;
-  bool using_mdns_;
+  bool connected_{false};
+  bool using_mdns_{false};
 
-  uint16_t conn_;
+  rdmnet_client_scope_t conn_{RDMNET_CLIENT_SCOPE_INVALID};
   QString scope_;
   LwpaSockaddr broker_addr_;
 
-  BrokerItem *broker_item_;
+  BrokerItem *broker_item_{nullptr};
 
-  uint32_t sequence_;  // For RDM_AppCallbacks_Specific_C functions
+  uint32_t sequence_{0};
 
   lwpa_thread_t connect_thread_;
-  bool connect_in_progress_;
+  bool connect_in_progress_{false};
 
 public:
-  static LwpaUuid getLocalCID() { return local_cid_; }
-  RdmUid getLocalUID() const { return local_uid_; }
-
-  explicit BrokerConnection(std::string scope);
-  BrokerConnection(std::string scope, const LwpaSockaddr &addr);
-  ~BrokerConnection();
+  explicit BrokerConnection(const std::string &scope);
+  BrokerConnection(const std::string &scope, const LwpaSockaddr &addr);
+  ~BrokerConnection() {}
 
   // Accessors
   bool connected() const { return connected_; }
   const std::string scope() const { return scope_.toStdString(); }
-  uint16_t handle() const { return conn_; }
+  rdmnet_client_scope_t handle() const { return conn_; }
 
   BrokerItem *treeBrokerItem() const { return broker_item_; }
 
@@ -92,12 +89,7 @@ public:
 
   uint32_t sequencePreIncrement() { return ++sequence_; }
 
-  void connect(const BrokerDiscInfo *broker_info);
-  void connect();
-  void disconnect();
   void wasDisconnected();
-
-  void runConnectStateMachine();
 
   void appendBrokerItemToTree(QStandardItem *invisibleRootItem, uint32_t connectionCookie);
 
@@ -127,11 +119,9 @@ class RDMnetNetworkModel : public QStandardItemModel, public RDMnetLibNotify
   Q_OBJECT
 
 public:
-  std::map<uint16_t, std::unique_ptr<BrokerConnection>> broker_connections_;
+  std::map<rdmnet_client_scope_t, BrokerItem *> brokers_;
 
 signals:
-  void brokerConnection(uint16_t conn);
-  void brokerDisconnection(uint16_t conn);
   void addRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
   void removeRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
   void newEndpointList(RDMnetClientItem *treeClientItem, const std::vector<std::pair<uint16_t, uint8_t>> &list);
@@ -148,7 +138,7 @@ signals:
 
 private:
   ControllerLog *log_;
-  RDMnetLibWrapper *rdmnet_;
+  RDMnetLibInterface *rdmnet_;
   uint16_t broker_create_count_ = 0;
   bool recv_thread_run_;
   lwpa_thread_t recv_thread_;
@@ -169,8 +159,6 @@ public slots:
   void removeCustomLogOutputStream(LogOutputStream *stream);
 
 protected slots:
-  void processBrokerConnection(uint16_t conn);
-  void processBrokerDisconnection(uint16_t conn);
   void processAddRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
   void processRemoveRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
   void processNewEndpointList(RDMnetClientItem *treeClientItem, const std::vector<std::pair<uint16_t, uint8_t>> &list);
@@ -196,21 +184,19 @@ public:
 
   size_t getNumberOfCustomLogOutputStreams();
 
-  void connectToBroker(const char *scope, const BrokerDiscInfo *broker_info);
-  void emitBrokerConnection(uint16_t conn);
-
   /******* QStandardItemModel overrides *******/
 
   virtual bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
 
 protected:
   // RDMnetLibNotify overrides
-  virtual void Connected(const std::string &scope) override;
-  virtual void NotConnected(const std::string &scope) override;
-  virtual void ClientListUpdate(const std::string &scope, client_list_action_t action, const ClientList &list) override;
-  virtual void RdmCmdReceived(const std::string &scope, const RemoteRdmCommand &cmd) override;
-  virtual void RdmRespReceived(const std::string &scope, const RemoteRdmResponse &resp) override;
-  virtual void StatusReceived(const std::string &scope, const RemoteRptStatus &status) override;
+  virtual void Connected(rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo &info) override;
+  virtual void NotConnected(rdmnet_client_scope_t scope_handle, const RdmnetClientNotConnectedInfo &info) override;
+  virtual void ClientListUpdate(rdmnet_client_scope_t scope_handle, client_list_action_t action,
+                                const ClientList &list) override;
+  virtual void RdmCommandReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmCommand &cmd) override;
+  virtual void RdmResponseReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse &resp) override;
+  virtual void StatusReceived(rdmnet_client_scope_t scope_handle, const RemoteRptStatus &status) override;
 
   /******* RDM message handling functions *******/
   // void ProcessBrokerMessage(uint16_t conn, const RdmnetMessage *msg);
@@ -353,6 +339,6 @@ protected:
                                    uint16_t firstSlot, uint16_t lastSlot);
 
 public:
-  RDMnetNetworkModel(RDMnetLibWrapper *library, ControllerLog *log);
+  RDMnetNetworkModel(RDMnetLibInterface *library, ControllerLog *log);
   ~RDMnetNetworkModel();
 };

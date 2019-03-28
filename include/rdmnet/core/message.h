@@ -79,7 +79,7 @@ typedef struct LocalRdmCommand
   RdmUid dest_uid;
   uint16_t dest_endpoint;
   RdmCommand rdm;
-} ControllerRdmCommand;
+} LocalRdmCommand;
 
 typedef struct RemoteRdmRespListEntry RemoteRdmRespListEntry;
 struct RemoteRdmRespListEntry

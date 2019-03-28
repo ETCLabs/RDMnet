@@ -54,17 +54,18 @@ typedef enum
 
 typedef struct RdmnetControllerCallbacks
 {
-  void (*connected)(rdmnet_controller_t handle, const char *scope, const RdmnetClientConnectedInfo *info,
+  void (*connected)(rdmnet_controller_t handle, rdmnet_client_scope_t scope, const RdmnetClientConnectedInfo *info,
                     void *context);
-  void (*not_connected)(rdmnet_controller_t handle, const char *scope, const RdmnetClientNotConnectedInfo *info,
-                        void *context);
-  void (*client_list_update)(rdmnet_controller_t handle, const char *scope, client_list_action_t list_action,
+  void (*not_connected)(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                        const RdmnetClientNotConnectedInfo *info, void *context);
+  void (*client_list_update)(rdmnet_controller_t handle, rdmnet_client_scope_t scope, client_list_action_t list_action,
                              const ClientList *list, void *context);
-  void (*rdm_response_received)(rdmnet_controller_t handle, const char *scope, const RemoteRdmResponse *resp,
+  void (*rdm_response_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope, const RemoteRdmResponse *resp,
                                 void *context);
-  void (*rdm_command_received)(rdmnet_controller_t handle, const char *scope, const RemoteRdmCommand *cmd,
+  void (*rdm_command_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope, const RemoteRdmCommand *cmd,
                                void *context);
-  void (*status_received)(rdmnet_controller_t handle, const char *scope, const RemoteRptStatus *status, void *context);
+  void (*status_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope, const RemoteRptStatus *status,
+                          void *context);
 } RdmnetControllerCallbacks;
 
 typedef struct RdmnetControllerConfig
@@ -75,10 +76,6 @@ typedef struct RdmnetControllerConfig
   RdmUid uid;
   /*! The controller's CID. */
   LwpaUuid cid;
-  /*! An array of configured scopes to which the controller would like to connect. */
-  RdmnetScopeConfig *scope_arr;
-  /*! The size of the scope array. */
-  size_t num_scopes;
   /*! A set of callbacks for the controller to receive RDMnet notifications. */
   RdmnetControllerCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. Can be NULL. */
@@ -87,6 +84,16 @@ typedef struct RdmnetControllerConfig
 
 lwpa_error_t rdmnet_controller_create(const RdmnetControllerConfig *config, rdmnet_controller_t *handle);
 lwpa_error_t rdmnet_controller_destroy(rdmnet_controller_t handle);
+
+lwpa_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const RdmnetScopeConfig *scope_config,
+                                         rdmnet_client_scope_t *scope_handle);
+lwpa_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle);
+lwpa_error_t rdmnet_controller_change_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                                            const RdmnetScopeConfig *new_config);
+
+lwpa_error_t rdmnet_controller_send_rdm_command(rdmnet_client_t handle, rdmnet_client_scope_t scope,
+                                                const LocalRdmCommand *cmd);
+lwpa_error_t rdmnet_controller_request_client_list(rdmnet_client_t handle, rdmnet_client_scope_t scope);
 
 #ifdef __cplusplus
 };
