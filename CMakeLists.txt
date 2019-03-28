@@ -23,6 +23,7 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/tools/cmake)
 option(RDMNET_BUILD_TESTS "Build the RDMnet unit tests" ${OPTION_DEFAULTS})
 option(RDMNET_BUILD_EXAMPLES "Build the RDMnet example applications" ${OPTION_DEFAULTS})
 option(RDMNET_BUILD_CONSOLE_EXAMPLES "Build only the console RDMnet example applications" OFF)
+option(RDMNET_BUILD_TEST_TOOLS "Build the RDMnet test tools (typically used in development only)" OFF)
 
 if(RDMNET_BUILD_TESTS)
   add_subdirectory(external/fff)
@@ -50,6 +51,10 @@ if(RDMNET_BUILD_EXAMPLES OR RDMNET_BUILD_CONSOLE_EXAMPLES)
 endif()
 
 ##################################### Misc ####################################
+
+if(RDMNET_BUILD_TEST_TOOLS)
+  add_subdirectory(tools/test)
+endif()
 
 # On Windows, we put the DLL in the install directory to later be packaged with
 # the installer.

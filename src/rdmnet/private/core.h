@@ -31,6 +31,7 @@
 #include "lwpa/lock.h"
 #include "lwpa/log.h"
 #include "lwpa/socket.h"
+#include "rdmnet/private/opts.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,6 +41,8 @@ bool rdmnet_core_initialized();
 
 extern lwpa_rwlock_t rdmnet_lock;
 extern const LwpaLogParams *rdmnet_log_params;
+
+#define RDMNET_LOG_MSG(msg) RDMNET_LOG_MSG_PREFIX msg
 
 #define rdmnet_readlock() lwpa_rwlock_readlock(&rdmnet_lock, LWPA_WAIT_FOREVER)
 #define rdmnet_readunlock() lwpa_rwlock_readunlock(&rdmnet_lock)

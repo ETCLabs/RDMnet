@@ -44,12 +44,14 @@
 #define alloc_dynamic_uid_mapping() malloc(sizeof(DynamicUidMapping))
 #define alloc_fetch_uid_assignment_entry() malloc(sizeof(FetchUidAssignmentListEntry))
 #define alloc_rdm_command() malloc(sizeof(RdmCmdListEntry))
+#define alloc_rpt_status_str(size) malloc(size)
 #define free_client_entry(ptr) free(ptr)
 #define free_ept_subprot(ptr) free(ptr)
 #define free_dynamic_uid_request_entry(ptr) free(ptr)
 #define free_dynamic_uid_mapping(ptr) free(ptr)
 #define free_fetch_uid_assignment_entry(ptr) free(ptr)
 #define free_rdm_command(ptr) free(ptr)
+#define free_rpt_status_str(ptr) free(ptr)
 #else
 #define alloc_client_entry() lwpa_mempool_alloc(client_entries)
 #define alloc_ept_subprot() lwpa_mempool_alloc(ept_subprots)
@@ -57,12 +59,14 @@
 #define alloc_dynamic_uid_mapping() lwpa_mempool_alloc(dynamic_uid_mappings)
 #define alloc_fetch_uid_assignment_entry() lwpa_mempool_alloc(fetch_uid_assignment_entries)
 #define alloc_rdm_command() lwpa_mempool_alloc(rdm_commands)
+#define alloc_rpt_status_str(size) lwpa_mempool_alloc(rpt_status_strings, ptr)
 #define free_client_entry(ptr) lwpa_mempool_free(client_entries, ptr)
 #define free_ept_subprot(ptr) lwpa_mempool_free(ept_subprots, ptr)
 #define free_dynamic_uid_request_entry(ptr) lwpa_mempool_free(dynamic_uid_request_entries, ptr)
 #define free_dynamic_uid_mapping(ptr) lwpa_mempool_free(dynamic_uid_mappings, ptr)
 #define free_fetch_uid_assignment_entry(ptr) lwpa_mempool_free(fetch_uid_assignment_entries, ptr)
 #define free_rdm_command(ptr) lwpa_mempool_free(rdm_commands, ptr)
+#define free_rpt_status_str(size) lwpa_mempool_free(rpt_status_strings, ptr)
 #endif
 
 #if !RDMNET_DYNAMIC_MEM
@@ -72,6 +76,7 @@ LWPA_MEMPOOL_DECLARE(dynamic_uid_request_entries)
 LWPA_MEMPOOL_DECLARE(dynamic_uid_mappings)
 LWPA_MEMPOOL_DECLARE(fetch_uid_assignment_entries)
 LWPA_MEMPOOL_DECLARE(rdm_commands);
+LWPA_MEMPOOL_DECLARE(rpt_status_strings);
 #endif
 
 #ifdef __cplusplus

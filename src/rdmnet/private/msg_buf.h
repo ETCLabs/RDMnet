@@ -223,7 +223,7 @@ typedef struct RdmnetMsgBuf
 extern "C" {
 #endif
 
-void rdmnet_msg_buf_init(RdmnetMsgBuf *msg_buf, const LwpaLogParams *lparams);
+void rdmnet_msg_buf_init(RdmnetMsgBuf *msg_buf);
 lwpa_error_t rdmnet_msg_buf_recv(lwpa_socket_t sock, RdmnetMsgBuf *msg_buf);
 
 #ifdef __cplusplus

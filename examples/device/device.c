@@ -465,7 +465,7 @@ void send_status(rpt_status_code_t status_code, const DeviceRdmCommand *received
   lwpa_error_t send_res;
 
   status.status_code = status_code;
-  rpt_status_msg_set_empty_status_str(&status);
+  status.status_string = NULL;
   send_res = rdmnet_device_send_status(device_state.device_handle, &status);
   if (send_res != LWPA_OK)
   {

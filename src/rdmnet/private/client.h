@@ -90,6 +90,7 @@ typedef enum
   kClientCallbackNone,
   kClientCallbackConnected,
   kClientCallbackDisconnected,
+  kClientCallbackBrokerMsgReceived,
   kClientCallbackMsgReceived
 } client_callback_t;
 
@@ -103,18 +104,53 @@ typedef struct DisconnectedArgs
   char scope[E133_SCOPE_STRING_PADDED_LENGTH];
 } ClientDisconnectedArgs;
 
+typedef struct BrokerMsgReceivedArgs
+{
+  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
+  const BrokerMessage *msg;
+} BrokerMsgReceivedArgs;
+
+typedef struct RptMsgReceivedArgs
+{
+  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
+  const RptClientMessage msg;
+} RptMsgReceivedArgs;
+
+typedef struct EptMsgReceivedArgs
+{
+  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
+  const EptClientMessage msg;
+} EptMsgReceivedArgs;
+
 typedef struct RptCallbackDispatchInfo
 {
-  rdmnet_client_t handle;
   RptClientCallbacks cbs;
-  void *context;
+  RptMsgReceivedArgs msg_received;
+} RptCallbackDispatchInfo;
 
+typedef struct EptCallbackDispatchInfo
+{
+  EptClientCallbacks cbs;
+  EptMsgReceivedArgs msg_received;
+} EptCallbackDispatchInfo;
+
+typedef struct ClientCallbackDispatchInfo
+{
+  rdmnet_client_t handle;
+  client_protocol_t type;
   client_callback_t which;
+  void *context;
+  union
+  {
+    RptCallbackDispatchInfo rpt;
+    EptCallbackDispatchInfo ept;
+  } prot_info;
   union
   {
     ClientConnectedArgs connected;
     ClientDisconnectedArgs disconnected;
-  } args;
-} CallbackDispatchInfo;
+    BrokerMsgReceivedArgs broker_msg_received;
+  } common_args;
+} ClientCallbackDispatchInfo;
 
 #endif /* _RDMNET_PRIVATE_CLIENT_H_ */

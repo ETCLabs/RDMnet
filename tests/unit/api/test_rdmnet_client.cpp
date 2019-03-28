@@ -149,15 +149,17 @@ TEST_F(TestRdmnetClient, send_rdm_command)
   ControllerRdmCommand cmd;
   cmd.dest_endpoint = 0;
   cmd.dest_uid = {};
+  const char *scope = default_rpt_config_.scope_list[0].scope;
 
   // Core not initialized
   rdmnet_core_initialized_fake.return_val = false;
-  ASSERT_EQ(LWPA_NOTINIT, rdmnet_rpt_client_send_rdm_command(handle, &cmd));
+  ASSERT_EQ(LWPA_NOTINIT, rdmnet_rpt_client_send_rdm_command(handle, scope, &cmd));
 
   // Invalid parameters
   rdmnet_core_initialized_fake.return_val = true;
-  ASSERT_EQ(LWPA_INVALID, rdmnet_rpt_client_send_rdm_command(NULL, &cmd));
-  ASSERT_EQ(LWPA_INVALID, rdmnet_rpt_client_send_rdm_command(handle, NULL));
+  ASSERT_EQ(LWPA_INVALID, rdmnet_rpt_client_send_rdm_command(NULL, scope, &cmd));
+  ASSERT_EQ(LWPA_INVALID, rdmnet_rpt_client_send_rdm_command(handle, NULL, &cmd));
+  ASSERT_EQ(LWPA_INVALID, rdmnet_rpt_client_send_rdm_command(handle, scope, NULL));
 
   // TODO finish test
 }
@@ -169,15 +171,17 @@ TEST_F(TestRdmnetClient, send_rdm_response)
 
   // TODO valid initialization
   DeviceRdmResponse resp;
+  const char *scope = default_rpt_config_.scope_list[0].scope;
 
   // Core not initialized
   rdmnet_core_initialized_fake.return_val = false;
-  ASSERT_EQ(LWPA_NOTINIT, rdmnet_rpt_client_send_rdm_response(handle, &resp));
+  ASSERT_EQ(LWPA_NOTINIT, rdmnet_rpt_client_send_rdm_response(handle, scope, &resp));
 
   // Invalid parameters
   rdmnet_core_initialized_fake.return_val = true;
-  ASSERT_EQ(LWPA_INVALID, rdmnet_rpt_client_send_rdm_response(NULL, &resp));
-  ASSERT_EQ(LWPA_INVALID, rdmnet_rpt_client_send_rdm_response(handle, NULL));
+  ASSERT_EQ(LWPA_INVALID, rdmnet_rpt_client_send_rdm_response(NULL, scope, &resp));
+  ASSERT_EQ(LWPA_INVALID, rdmnet_rpt_client_send_rdm_response(handle, NULL, &resp));
+  ASSERT_EQ(LWPA_INVALID, rdmnet_rpt_client_send_rdm_response(handle, scope, NULL));
 
   // TODO finish test
 }
@@ -189,15 +193,17 @@ TEST_F(TestRdmnetClient, send_status)
 
   // TODO valid initialization
   RptStatusMsg status;
+  const char *scope = default_rpt_config_.scope_list[0].scope;
 
   // Core not initialized
   rdmnet_core_initialized_fake.return_val = false;
-  ASSERT_EQ(LWPA_NOTINIT, rdmnet_rpt_client_send_status(handle, &status));
+  ASSERT_EQ(LWPA_NOTINIT, rdmnet_rpt_client_send_status(handle, scope, &status));
 
   // Invalid parameters
   rdmnet_core_initialized_fake.return_val = true;
-  ASSERT_EQ(LWPA_INVALID, rdmnet_rpt_client_send_status(NULL, &status));
-  ASSERT_EQ(LWPA_INVALID, rdmnet_rpt_client_send_status(handle, NULL));
+  ASSERT_EQ(LWPA_INVALID, rdmnet_rpt_client_send_status(NULL, scope, &status));
+  ASSERT_EQ(LWPA_INVALID, rdmnet_rpt_client_send_status(handle, NULL, &status));
+  ASSERT_EQ(LWPA_INVALID, rdmnet_rpt_client_send_status(handle, scope, NULL));
 
   // TODO finish test
 }

@@ -893,7 +893,8 @@ void llrp_remove_socket_from_list(llrp_socket_t socket, llrp_socket_t *list)
 
 lwpa_socket_t create_lwpa_socket(const LwpaSockaddr *saddr, const LwpaIpAddr *netint)
 {
-  lwpa_socket_t sock = lwpa_socket((saddr->ip.type == kLwpaIpTypeV6) ? LWPA_AF_INET6 : LWPA_AF_INET, LWPA_DGRAM);
+  lwpa_socket_t sock = LWPA_SOCKET_INVALID;
+  lwpa_error_t res = lwpa_socket((saddr->ip.type == kLwpaIpTypeV6) ? LWPA_AF_INET6 : LWPA_AF_INET, LWPA_DGRAM, &sock);
   bool valid = (sock != LWPA_SOCKET_INVALID);
 
   if (valid)

@@ -75,6 +75,12 @@
 #define RDMNET_DYNAMIC_MEM 0
 #endif
 
+/*! \brief A string which will be prepended to all log messages from the RDMnet library.
+ */
+#ifndef RDMNET_LOG_MSG_PREFIX
+#define RDMNET_LOG_MSG_PREFIX "RDMnet: "
+#endif
+
 #endif
 
 /*! @} */
@@ -171,6 +177,15 @@
  */
 #ifndef RDMNET_POLL_CONNECTIONS_INTERNALLY
 #define RDMNET_POLL_CONNECTIONS_INTERNALLY 1
+#endif
+
+/* The library has some limitations around static memory allocation and how many message structures
+ * can be allocated at a time. If RDMNET_POLL_CONNECTIONS_INTERNALLY is false, the library has no
+ * guarantee as to how many threads could be receiving and allocating messages simultaneously;
+ * therefore, in this case, RDMNET_DYNAMIC_MEM must be enabled.
+ */
+#if (!RDMNET_POLL_CONNECTIONS_INTERNALLY && !RDMNET_DYNAMIC_MEM)
+#error "RDMNET_POLL_CONNECTIONS_INTERNALLY=0 requires RDMNET_DYNAMIC_MEM=1"
 #endif
 
 /*! \brief Spawn a thread internally to call rdmnet_tick().

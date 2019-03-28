@@ -93,18 +93,24 @@ typedef enum
 {
   kConnCallbackNone,
   kConnCallbackConnected,
+  kConnCallbackConnectFailed,
   kConnCallbackDisconnected,
   kConnCallbackMsgReceived
 } conn_callback_t;
 
 typedef struct ConnConnectedArgs
 {
-  ConnectReplyMsg connect_reply;
+  RdmnetConnectedInfo connect_info;
 } ConnConnectedArgs;
+
+typedef struct ConnConnectFailedArgs
+{
+  RdmnetConnectFailedInfo failed_info;
+} ConnConnectFailedArgs;
 
 typedef struct ConnDisconnectedArgs
 {
-  RdmnetDisconnectInfo disconn_info;
+  RdmnetDisconnectedInfo disconn_info;
 } ConnDisconnectedArgs;
 
 typedef struct ConnMsgReceivedArgs
@@ -122,6 +128,7 @@ typedef struct ConnCallbackDispatchInfo
   union
   {
     ConnConnectedArgs connected;
+    ConnConnectFailedArgs connect_failed;
     ConnDisconnectedArgs disconnected;
     ConnMsgReceivedArgs msg_received;
   } args;

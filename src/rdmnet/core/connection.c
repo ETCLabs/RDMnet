@@ -91,10 +91,11 @@ static lwpa_error_t get_readlock_and_conn(rdmnet_conn_t handle);
 static RdmnetConnectionInternal *create_new_connection(const RdmnetConnectionConfig *config);
 
 static int update_backoff(int previous_backoff);
-static void deliver_callback(const ConnCallbackDispatchInfo *info);
-static void start_tcp_connection(RdmnetConnectionInternal *conn);
+static void deliver_callback(ConnCallbackDispatchInfo *info);
+static void start_tcp_connection(RdmnetConnectionInternal *conn, ConnCallbackDispatchInfo *cb);
 static void start_rdmnet_connection(RdmnetConnectionInternal *conn);
 static void reset_connection(RdmnetConnectionInternal *conn);
+static void retry_connection(RdmnetConnectionInternal *conn);
 static void destroy_connection(RdmnetConnectionInternal *conn);
 
 /*************************** Function definitions ****************************/
@@ -533,36 +534,52 @@ void start_rdmnet_connection(RdmnetConnectionInternal *conn)
   lwpa_timer_start(&conn->send_timer, E133_TCP_HEARTBEAT_INTERVAL_SEC * 1000);
 }
 
-void start_tcp_connection(RdmnetConnectionInternal *conn)
+void start_tcp_connection(RdmnetConnectionInternal *conn, ConnCallbackDispatchInfo *cb)
 {
-  conn->sock = lwpa_socket(LWPA_AF_INET, LWPA_STREAM);
-  if (conn->sock == LWPA_SOCKET_INVALID)
-  {
-    // TODO log
-    return;
-  }
-  lwpa_error_t res = lwpa_setblocking(conn->sock, false);
+  bool ok = true;
+  RdmnetConnectFailedInfo *failed_info = &cb->args.connect_failed.failed_info;
+
+  lwpa_error_t res = lwpa_socket(LWPA_AF_INET, LWPA_STREAM, &conn->sock);
   if (res != LWPA_OK)
   {
-    // TODO log
-    lwpa_close(conn->sock);
-    return;
+    ok = false;
+    failed_info->socket_err = res;
   }
 
-  conn->rdmnet_conn_failed = false;
-  res = lwpa_connect(conn->sock, &conn->remote_addr);
-  if (res == LWPA_OK)
+  if (ok)
   {
-    // Fast connect condition
-    start_rdmnet_connection(conn);
+    res = lwpa_setblocking(conn->sock, false);
+    if (res != LWPA_OK)
+    {
+      ok = false;
+      failed_info->socket_err = res;
+    }
   }
-  else if (res == LWPA_INPROGRESS || res == LWPA_WOULDBLOCK)
+
+  if (ok)
   {
-    conn->state = kCSTCPConnPending;
+    conn->rdmnet_conn_failed = false;
+    res = lwpa_connect(conn->sock, &conn->remote_addr);
+    if (res == LWPA_OK)
+    {
+      // Fast connect condition
+      start_rdmnet_connection(conn);
+    }
+    else if (res == LWPA_INPROGRESS || res == LWPA_WOULDBLOCK)
+    {
+      conn->state = kCSTCPConnPending;
+    }
+    else
+    {
+      ok = false;
+      failed_info->socket_err = res;
+    }
   }
-  else
+
+  if (!ok)
   {
-    // TODO log
+    cb->which = kConnCallbackConnectFailed;
+    failed_info->cause = kRdmnetConnectFailSocketError;
     reset_connection(conn);
   }
 }
@@ -631,25 +648,25 @@ void rdmnet_conn_tick()
             }
             else
             {
-              start_tcp_connection(conn);
+              start_tcp_connection(conn, &cb);
             }
             break;
           case kCSBackoff:
             if (lwpa_timer_isexpired(&conn->backoff_timer))
             {
-              start_tcp_connection(conn);
+              start_tcp_connection(conn, &cb);
             }
             break;
           case kCSHeartbeat:
             if (lwpa_timer_isexpired(&conn->hb_timer))
             {
               // Heartbeat timeout! Disconnect the connection.
-              reset_connection(conn);
-              // TODO log
               cb.which = kConnCallbackDisconnected;
-              RdmnetDisconnectInfo *disconn_info = &cb.args.disconnected.disconn_info;
+              RdmnetDisconnectedInfo *disconn_info = &cb.args.disconnected.disconn_info;
               disconn_info->cause = kRdmnetDisconnectNoHeartbeat;
               disconn_info->socket_err = LWPA_OK;
+
+              reset_connection(conn);
             }
             else if (lwpa_timer_isexpired(&conn->send_timer))
             {
@@ -686,7 +703,12 @@ void handle_tcp_connect_result(RdmnetConnectionInternal *conn, const LwpaPollfd 
 
   if (result->revents & LWPA_POLLERR)
   {
-    // TODO Log
+    cb->which = kConnCallbackConnectFailed;
+
+    RdmnetConnectFailedInfo *failed_info = &cb->args.connect_failed.failed_info;
+    failed_info->cause = kRdmnetConnectFailTcpLevel;
+    failed_info->socket_err = result->err;
+
     reset_connection(conn);
   }
   else if (result->revents & LWPA_POLLOUT)
@@ -701,9 +723,14 @@ void handle_rdmnet_connect_result(RdmnetConnectionInternal *conn, const LwpaPoll
 {
   if (result->revents & LWPA_POLLERR)
   {
+    cb->which = kConnCallbackConnectFailed;
+
+    RdmnetConnectFailedInfo *failed_info = &cb->args.connect_failed.failed_info;
+    failed_info->cause = kRdmnetConnectFailTcpLevel;
+    failed_info->socket_err = result->err;
+
     reset_connection(conn);
     conn->rdmnet_conn_failed = true;
-    // TODO log
   }
   else if (result->revents & LWPA_POLLIN)
   {
@@ -719,26 +746,39 @@ void handle_rdmnet_connect_result(RdmnetConnectionInternal *conn, const LwpaPoll
           switch (reply->connect_status)
           {
             case kRdmnetConnectOk:
-              // TODO check version and Broker UID
+              // TODO check version
               conn->state = kCSHeartbeat;
               lwpa_timer_start(&conn->backoff_timer, 0);
               cb->which = kConnCallbackConnected;
-              cb->args.connected.connect_reply = *reply;
+
+              RdmnetConnectedInfo *connect_info = &cb->args.connected.connect_info;
+              connect_info->broker_uid = reply->broker_uid;
+              connect_info->client_uid = reply->client_uid;
+              connect_info->connected_addr = conn->remote_addr;
               break;
             default:
+            {
+              cb->which = kConnCallbackConnectFailed;
+
+              RdmnetConnectFailedInfo *failed_info = &cb->args.connect_failed.failed_info;
+              failed_info->cause = kRdmnetConnectFailRejected;
+              failed_info->socket_err = LWPA_OK;
+              failed_info->rdmnet_reason = reply->connect_status;
+
               reset_connection(conn);
               conn->rdmnet_conn_failed = true;
-              conn->state = kCSConnectPending;
-              // TODO Log
               break;
+            }
           }
         }
         else if (is_client_redirect_msg(bmsg))
         {
           conn->remote_addr = get_client_redirect_msg(bmsg)->new_addr;
-          reset_connection(conn);
+          retry_connection(conn);
         }
       }
+
+      free_rdmnet_message(msg);
     }
   }
 }
@@ -749,7 +789,7 @@ void handle_rdmnet_data(RdmnetConnectionInternal *conn, const LwpaPollfd *result
   {
     cb->which = kConnCallbackDisconnected;
 
-    RdmnetDisconnectInfo *disconn_info = &cb->args.disconnected.disconn_info;
+    RdmnetDisconnectedInfo *disconn_info = &cb->args.disconnected.disconn_info;
     disconn_info->cause = kRdmnetDisconnectSocketFailure;
     disconn_info->socket_err = result->err;
 
@@ -777,7 +817,7 @@ void handle_rdmnet_data(RdmnetConnectionInternal *conn, const LwpaPollfd *result
           case VECTOR_BROKER_DISCONNECT:
             cb->which = kConnCallbackDisconnected;
 
-            RdmnetDisconnectInfo *disconn_info = &cb->args.disconnected.disconn_info;
+            RdmnetDisconnectedInfo *disconn_info = &cb->args.disconnected.disconn_info;
             disconn_info->cause = kRdmnetDisconnectGracefulRemoteInitiated;
             disconn_info->socket_err = LWPA_OK;
             disconn_info->rdmnet_reason = get_disconnect_msg(bmsg)->disconnect_reason;
@@ -804,7 +844,7 @@ void handle_rdmnet_data(RdmnetConnectionInternal *conn, const LwpaPollfd *result
     {
       cb->which = kConnCallbackDisconnected;
 
-      RdmnetDisconnectInfo *disconn_info = &cb->args.disconnected.disconn_info;
+      RdmnetDisconnectedInfo *disconn_info = &cb->args.disconnected.disconn_info;
       disconn_info->cause = kRdmnetDisconnectSocketFailure;
       disconn_info->socket_err = res;
 
@@ -813,18 +853,22 @@ void handle_rdmnet_data(RdmnetConnectionInternal *conn, const LwpaPollfd *result
   }
 }
 
-void deliver_callback(const ConnCallbackDispatchInfo *info)
+void deliver_callback(ConnCallbackDispatchInfo *info)
 {
   switch (info->which)
   {
     case kConnCallbackConnected:
-      info->cbs.connected(info->handle, &info->args.connected.connect_reply, info->context);
+      info->cbs.connected(info->handle, &info->args.connected.connect_info, info->context);
+      break;
+    case kConnCallbackConnectFailed:
+      info->cbs.connect_failed(info->handle, &info->args.connect_failed.failed_info, info->context);
       break;
     case kConnCallbackDisconnected:
       info->cbs.disconnected(info->handle, &info->args.disconnected.disconn_info, info->context);
       break;
     case kConnCallbackMsgReceived:
       info->cbs.msg_received(info->handle, &info->args.msg_received.message, info->context);
+      free_rdmnet_message(&info->args.msg_received.message);
       break;
     case kConnCallbackNone:
     default:
@@ -876,7 +920,8 @@ void rdmnet_connection_recv()
     }
     else if (poll_res != LWPA_TIMEDOUT)
     {
-      lwpa_log(rdmnet_log_params, LWPA_LOG_ERR, "RDMnet: Error ('%s') while polling sockets.", lwpa_strerror(poll_res));
+      lwpa_log(rdmnet_log_params, LWPA_LOG_ERR, RDMNET_LOG_MSG("Error ('%s') while polling sockets."),
+               lwpa_strerror(poll_res));
       lwpa_thread_sleep(1000);  // Sleep to avoid spinning on errors
     }
   }
@@ -958,7 +1003,7 @@ RdmnetConnectionInternal *create_new_connection(const RdmnetConnectionConfig *co
       lwpa_timer_start(&conn->backoff_timer, 0);
       conn->rdmnet_conn_failed = false;
       conn->recv_disconn_err = LWPA_TIMEDOUT;
-      rdmnet_msg_buf_init(&conn->recv_buf, rdmnet_log_params);
+      rdmnet_msg_buf_init(&conn->recv_buf);
       conn->callbacks = config->callbacks;
       conn->callback_context = config->callback_context;
       conn->next = NULL;
@@ -990,6 +1035,16 @@ int update_backoff(int previous_backoff)
 }
 
 void reset_connection(RdmnetConnectionInternal *conn)
+{
+  if (conn->sock != LWPA_SOCKET_INVALID)
+  {
+    lwpa_close(conn->sock);
+    conn->sock = LWPA_SOCKET_INVALID;
+  }
+  conn->state = kCSConnectNotStarted;
+}
+
+void retry_connection(RdmnetConnectionInternal *conn)
 {
   if (conn->sock != LWPA_SOCKET_INVALID)
   {

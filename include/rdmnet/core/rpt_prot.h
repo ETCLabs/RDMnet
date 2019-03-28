@@ -106,18 +106,8 @@ typedef struct RptStatusMsg
   /*! A status code that indicates the specific error or status condition. */
   rpt_status_code_t status_code;
   /*! An optional implementation-defined status string to accompany this status message. */
-  char status_string[RPT_STATUS_STRING_MAXLEN];
+  const char *status_string;
 } RptStatusMsg;
-
-/*! \brief Safely copy a status string to an RptStatusMsg.
- *  \param statusmsgptr Pointer to RptStatusMsg.
- *  \param status_str String to copy to the RptStatusMsg (const char *). */
-#define rpt_status_msg_set_status_string(statusmsgptr, status_str) \
-  rdmnet_safe_strncpy((statusmsgptr)->status_string, status_str, RPT_STATUS_STRING_MAXLEN)
-
-/*! \brief Set an empty status string in an RptStatusMsg.
- *  \param statusmsgptr Pointer to RptStatusMsg. */
-#define rpt_status_msg_set_empty_status_str(statusmsgptr) (statusmsgptr)->status_string[0] = '\0';
 
 typedef struct RdmCmdListEntry RdmCmdListEntry;
 

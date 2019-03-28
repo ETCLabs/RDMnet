@@ -44,29 +44,20 @@
 
 typedef struct RdmnetClientInternal *rdmnet_client_t;
 
-typedef void (*RdmnetClientConnectedCb)(rdmnet_client_t handle, const char *scope, void *context);
-typedef void (*RdmnetClientDisconnectedCb)(rdmnet_client_t handle, const char *scope, void *context);
-typedef void (*RdmnetClientBrokerMsgReceivedCb)(rdmnet_client_t handle, const char *scope, const BrokerMessage *msg,
-                                                void *context);
-typedef void (*RptClientMsgReceivedCb)(rdmnet_client_t handle, const char *scope, const RptClientMessage *msg,
-                                       void *context);
-typedef void (*EptClientMsgReceivedCb)(rdmnet_client_t handle, const char *scope, const EptClientMessage *msg,
-                                       void *context);
-
 typedef struct RptClientCallbacks
 {
-  RdmnetClientConnectedCb connected;
-  RdmnetClientDisconnectedCb disconnected;
-  RdmnetClientBrokerMsgReceivedCb broker_msg_received;
-  RptClientMsgReceivedCb msg_received;
+  void (*connected)(rdmnet_client_t handle, const char *scope, void *context);
+  void (*disconnected)(rdmnet_client_t handle, const char *scope, void *context);
+  void (*broker_msg_received)(rdmnet_client_t handle, const char *scope, const BrokerMessage *msg, void *context);
+  void (*msg_received)(rdmnet_client_t handle, const char *scope, const RptClientMessage *msg, void *context);
 } RptClientCallbacks;
 
 typedef struct EptClientCallbacks
 {
-  RdmnetClientConnectedCb connected;
-  RdmnetClientDisconnectedCb disconnected;
-  RdmnetClientBrokerMsgReceivedCb broker_msg_received;
-  EptClientMsgReceivedCb msg_received;
+  void (*connected)(rdmnet_client_t handle, const char *scope, void *context);
+  void (*disconnected)(rdmnet_client_t handle, const char *scope, void *context);
+  void (*broker_msg_received)(rdmnet_client_t handle, const char *scope, const BrokerMessage *msg, void *context);
+  void (*msg_received)(rdmnet_client_t handle, const char *scope, const EptClientMessage *msg, void *context);
 } EptClientCallbacks;
 
 typedef struct RdmnetScopeConfig

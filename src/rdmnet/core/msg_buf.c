@@ -30,13 +30,10 @@
 #include <assert.h>
 #include "lwpa/pack.h"
 #include "lwpa/root_layer_pdu.h"
+#include "rdmnet/core.h"
 #include "rdmnet/private/broker_prot.h"
 #include "rdmnet/private/rpt_prot.h"
 #include "rdmnet/private/message.h"
-
-/*************************** Private constants *******************************/
-
-#define MODULE_NAME "RDMnetMsgBuf"
 
 /*********************** Private function prototypes *************************/
 
@@ -50,58 +47,50 @@ static parse_result_t check_for_full_parse(parse_result_t prev_res, PduBlockStat
 
 /* Root layer */
 static size_t parse_rlp_block(RlpState *rlpstate, const uint8_t *data, size_t data_size, RdmnetMessage *msg,
-                              parse_result_t *result, const LwpaLogParams *lparams);
+                              parse_result_t *result);
 
 /* RDMnet layer */
-static void initialize_rdmnet_message(RlpState *rlpstate, RdmnetMessage *msg, size_t pdu_data_len,
-                                      const LwpaLogParams *lparams);
+static void initialize_rdmnet_message(RlpState *rlpstate, RdmnetMessage *msg, size_t pdu_data_len);
 static size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datalen, BrokerMessage *bmsg,
-                                 parse_result_t *result, const LwpaLogParams *lparams);
+                                 parse_result_t *result);
 static size_t parse_rpt_block(RptState *rstate, const uint8_t *data, size_t datalen, RptMessage *rmsg,
-                              parse_result_t *result, const LwpaLogParams *lparams);
+                              parse_result_t *result);
 
 /* RPT layer */
-static void initialize_rpt_message(RptState *rstate, RptMessage *rmsg, size_t pdu_data_len,
-                                   const LwpaLogParams *lparams);
+static void initialize_rpt_message(RptState *rstate, RptMessage *rmsg, size_t pdu_data_len);
 static size_t parse_rdm_list(RdmListState *rlstate, const uint8_t *data, size_t datalen, RdmCmdList *cmd_list,
                              parse_result_t *result);
 static size_t parse_rpt_status(RptStatusState *rsstate, const uint8_t *data, size_t datalen, RptStatusMsg *smsg,
-                               parse_result_t *result, const LwpaLogParams *lparams);
+                               parse_result_t *result);
 
 /* Broker layer */
-static void initialize_broker_message(BrokerState *bstate, BrokerMessage *bmsg, size_t pdu_data_len,
-                                      const LwpaLogParams *lparams);
+static void initialize_broker_message(BrokerState *bstate, BrokerMessage *bmsg, size_t pdu_data_len);
 static void parse_client_connect_header(const uint8_t *data, ClientConnectMsg *ccmsg);
 static size_t parse_client_connect(ClientConnectState *ccstate, const uint8_t *data, size_t datalen,
-                                   ClientConnectMsg *ccmsg, parse_result_t *result, const LwpaLogParams *lparams);
+                                   ClientConnectMsg *ccmsg, parse_result_t *result);
 static size_t parse_client_entry_update(ClientEntryUpdateState *ceustate, const uint8_t *data, size_t datalen,
-                                        ClientEntryUpdateMsg *ceumsg, parse_result_t *result,
-                                        const LwpaLogParams *lparams);
+                                        ClientEntryUpdateMsg *ceumsg, parse_result_t *result);
 static size_t parse_client_entry_header(const uint8_t *data, ClientEntryData *entry);
 static size_t parse_single_client_entry(ClientEntryState *cstate, const uint8_t *data, size_t datalen,
-                                        ClientEntryData *entry, parse_result_t *result, const LwpaLogParams *lparams);
+                                        ClientEntryData *entry, parse_result_t *result);
 static size_t parse_client_list(ClientListState *clstate, const uint8_t *data, size_t datalen, ClientList *clist,
-                                parse_result_t *result, const LwpaLogParams *lparams);
+                                parse_result_t *result);
 static size_t parse_request_dynamic_uid_assignment(GenericListState *lstate, const uint8_t *data, size_t datalen,
-                                                   DynamicUidRequestList *rlist, parse_result_t *result,
-                                                   const LwpaLogParams *lparams);
+                                                   DynamicUidRequestList *rlist, parse_result_t *result);
 static size_t parse_dynamic_uid_assignment_list(GenericListState *lstate, const uint8_t *data, size_t datalen,
-                                                DynamicUidAssignmentList *alist, parse_result_t *result,
-                                                const LwpaLogParams *lparams);
+                                                DynamicUidAssignmentList *alist, parse_result_t *result);
 static size_t parse_fetch_dynamic_uid_assignment_list(GenericListState *lstate, const uint8_t *data, size_t datalen,
-                                                      FetchUidAssignmentList *alist, parse_result_t *result,
-                                                      const LwpaLogParams *lparams);
+                                                      FetchUidAssignmentList *alist, parse_result_t *result);
 
 /*************************** Function definitions ****************************/
 
-void rdmnet_msg_buf_init(RdmnetMsgBuf *msg_buf, const LwpaLogParams *lparams)
+void rdmnet_msg_buf_init(RdmnetMsgBuf *msg_buf)
 {
   if (msg_buf)
   {
     msg_buf->cur_data_size = 0;
     msg_buf->data_remaining = false;
     msg_buf->have_preamble = false;
-    msg_buf->lparams = lparams;
   }
 }
 
@@ -164,8 +153,7 @@ lwpa_error_t run_parse_state_machine(RdmnetMsgBuf *msg_buf)
     }
     if (msg_buf->have_preamble)
     {
-      consumed = parse_rlp_block(&msg_buf->rlp_state, msg_buf->buf, msg_buf->cur_data_size, &msg_buf->msg, &parse_res,
-                                 msg_buf->lparams);
+      consumed = parse_rlp_block(&msg_buf->rlp_state, msg_buf->buf, msg_buf->cur_data_size, &msg_buf->msg, &parse_res);
       switch (parse_res)
       {
         case kPSFullBlockParseOk:
@@ -202,8 +190,7 @@ lwpa_error_t run_parse_state_machine(RdmnetMsgBuf *msg_buf)
   return res;
 }
 
-void initialize_rdmnet_message(RlpState *rlpstate, RdmnetMessage *msg, size_t pdu_data_len,
-                               const LwpaLogParams *lparams)
+void initialize_rdmnet_message(RlpState *rlpstate, RdmnetMessage *msg, size_t pdu_data_len)
 {
   switch (msg->vector)
   {
@@ -215,13 +202,14 @@ void initialize_rdmnet_message(RlpState *rlpstate, RdmnetMessage *msg, size_t pd
       break;
     default:
       init_pdu_block_state(&rlpstate->data.unknown, pdu_data_len);
-      lwpa_log(lparams, LWPA_LOG_WARNING, MODULE_NAME ": Dropping Root Layer PDU with unknown vector %d.", msg->vector);
+      lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING, RDMNET_LOG_MSG("Dropping Root Layer PDU with unknown vector %d."),
+               msg->vector);
       break;
   }
 }
 
 size_t parse_rlp_block(RlpState *rlpstate, const uint8_t *data, size_t datalen, RdmnetMessage *msg,
-                       parse_result_t *result, const LwpaLogParams *lparams)
+                       parse_result_t *result)
 {
   parse_result_t res = kPSNoData;
   size_t bytes_parsed = 0;
@@ -259,7 +247,7 @@ size_t parse_rlp_block(RlpState *rlpstate, const uint8_t *data, size_t datalen, 
           msg->vector = rlp.vector;
           msg->sender_cid = rlp.sender_cid;
           rlpstate->block.parsed_header = true;
-          initialize_rdmnet_message(rlpstate, msg, rlp.datalen, lparams);
+          initialize_rdmnet_message(rlpstate, msg, rlp.datalen);
         }
         else
         {
@@ -278,8 +266,8 @@ size_t parse_rlp_block(RlpState *rlpstate, const uint8_t *data, size_t datalen, 
     {
       /* Parse error in the root layer header. We cannot keep parsing this block. */
       bytes_parsed += consume_bad_block(&rlpstate->block, datalen, &res);
-      lwpa_log(lparams, LWPA_LOG_WARNING,
-               MODULE_NAME ": Protocol error encountered while parsing Root Layer PDU header.");
+      lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
+               RDMNET_LOG_MSG("Protocol error encountered while parsing Root Layer PDU header."));
     }
   }
   if (rlpstate->block.parsed_header)
@@ -289,11 +277,11 @@ size_t parse_rlp_block(RlpState *rlpstate, const uint8_t *data, size_t datalen, 
     {
       case ACN_VECTOR_ROOT_BROKER:
         next_layer_bytes_parsed = parse_broker_block(&rlpstate->data.broker, &data[bytes_parsed],
-                                                     datalen - bytes_parsed, get_broker_msg(msg), &res, lparams);
+                                                     datalen - bytes_parsed, get_broker_msg(msg), &res);
         break;
       case ACN_VECTOR_ROOT_RPT:
-        next_layer_bytes_parsed = parse_rpt_block(&rlpstate->data.rpt, &data[bytes_parsed], datalen - bytes_parsed,
-                                                  get_rpt_msg(msg), &res, lparams);
+        next_layer_bytes_parsed =
+            parse_rpt_block(&rlpstate->data.rpt, &data[bytes_parsed], datalen - bytes_parsed, get_rpt_msg(msg), &res);
         break;
       default:
         next_layer_bytes_parsed = consume_bad_block(&rlpstate->data.unknown, datalen - bytes_parsed, &res);
@@ -309,8 +297,7 @@ size_t parse_rlp_block(RlpState *rlpstate, const uint8_t *data, size_t datalen, 
   return bytes_parsed;
 }
 
-void initialize_broker_message(BrokerState *bstate, BrokerMessage *bmsg, size_t pdu_data_len,
-                               const LwpaLogParams *lparams)
+void initialize_broker_message(BrokerState *bstate, BrokerMessage *bmsg, size_t pdu_data_len)
 {
   bool bad_length = false;
 
@@ -401,7 +388,8 @@ void initialize_broker_message(BrokerState *bstate, BrokerMessage *bmsg, size_t 
       break;
     default:
       init_pdu_block_state(&bstate->data.unknown, pdu_data_len);
-      lwpa_log(lparams, LWPA_LOG_WARNING, MODULE_NAME ": Dropping Broker PDU with unknown vector %d.", bmsg->vector);
+      lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING, RDMNET_LOG_MSG("Dropping Broker PDU with unknown vector %d."),
+               bmsg->vector);
       break;
   }
 
@@ -411,13 +399,14 @@ void initialize_broker_message(BrokerState *bstate, BrokerMessage *bmsg, size_t 
     /* An artificial "unknown" vector value to flag the data parsing logic to consume the data
      * section. */
     bmsg->vector = 0xffff;
-    lwpa_log(lparams, LWPA_LOG_WARNING, MODULE_NAME ": Dropping Broker PDU with vector %d and invalid length %zu",
-             bmsg->vector, pdu_data_len + BROKER_PDU_HEADER_SIZE);
+    lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
+             RDMNET_LOG_MSG("Dropping Broker PDU with vector %d and invalid length %zu"), bmsg->vector,
+             pdu_data_len + BROKER_PDU_HEADER_SIZE);
   }
 }
 
 size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datalen, BrokerMessage *bmsg,
-                          parse_result_t *result, const LwpaLogParams *lparams)
+                          parse_result_t *result)
 {
   parse_result_t res = kPSNoData;
   size_t bytes_parsed = 0;
@@ -452,7 +441,7 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
         bytes_parsed += BROKER_PDU_HEADER_SIZE;
         bstate->block.size_parsed += BROKER_PDU_HEADER_SIZE;
         bstate->block.parsed_header = true;
-        initialize_broker_message(bstate, bmsg, pdu_data_len, lparams);
+        initialize_broker_message(bstate, bmsg, pdu_data_len);
       }
       else
       {
@@ -465,7 +454,8 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
     {
       /* Parse error in the Broker PDU header. We cannot keep parsing this block. */
       bytes_parsed += consume_bad_block(&bstate->block, datalen, &res);
-      lwpa_log(lparams, LWPA_LOG_WARNING, MODULE_NAME ": Protocol error encountered while parsing Broker PDU header.");
+      lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
+               RDMNET_LOG_MSG("Protocol error encountered while parsing Broker PDU header."));
     }
   }
   if (bstate->block.parsed_header)
@@ -476,7 +466,7 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
     {
       case VECTOR_BROKER_CONNECT:
         next_layer_bytes_parsed = parse_client_connect(&bstate->data.client_connect, &data[bytes_parsed], remaining_len,
-                                                       get_client_connect_msg(bmsg), &res, lparams);
+                                                       get_client_connect_msg(bmsg), &res);
         break;
       case VECTOR_BROKER_CONNECT_REPLY:
         if (remaining_len >= CONNECT_REPLY_DATA_SIZE)
@@ -501,7 +491,7 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
         break;
       case VECTOR_BROKER_CLIENT_ENTRY_UPDATE:
         next_layer_bytes_parsed = parse_client_entry_update(&bstate->data.update, &data[bytes_parsed], remaining_len,
-                                                            get_client_entry_update_msg(bmsg), &res, lparams);
+                                                            get_client_entry_update_msg(bmsg), &res);
         break;
       case VECTOR_BROKER_REDIRECT_V4:
         if (remaining_len >= REDIRECT_V4_DATA_SIZE)
@@ -534,22 +524,20 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
       case VECTOR_BROKER_CLIENT_REMOVE:
       case VECTOR_BROKER_CLIENT_ENTRY_CHANGE:
         next_layer_bytes_parsed = parse_client_list(&bstate->data.client_list, &data[bytes_parsed], remaining_len,
-                                                    get_client_list(bmsg), &res, lparams);
+                                                    get_client_list(bmsg), &res);
         break;
       case VECTOR_BROKER_REQUEST_DYNAMIC_UIDS:
-        next_layer_bytes_parsed =
-            parse_request_dynamic_uid_assignment(&bstate->data.data_list, &data[bytes_parsed], remaining_len,
-                                                 get_dynamic_uid_request_list(bmsg), &res, lparams);
+        next_layer_bytes_parsed = parse_request_dynamic_uid_assignment(
+            &bstate->data.data_list, &data[bytes_parsed], remaining_len, get_dynamic_uid_request_list(bmsg), &res);
         break;
       case VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS:
-        next_layer_bytes_parsed =
-            parse_dynamic_uid_assignment_list(&bstate->data.data_list, &data[bytes_parsed], remaining_len,
-                                              get_dynamic_uid_assignment_list(bmsg), &res, lparams);
+        next_layer_bytes_parsed = parse_dynamic_uid_assignment_list(
+            &bstate->data.data_list, &data[bytes_parsed], remaining_len, get_dynamic_uid_assignment_list(bmsg), &res);
         break;
       case VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST:
         next_layer_bytes_parsed =
             parse_fetch_dynamic_uid_assignment_list(&bstate->data.data_list, &data[bytes_parsed], remaining_len,
-                                                    get_fetch_dynamic_uid_assignment_list(bmsg), &res, lparams);
+                                                    get_fetch_dynamic_uid_assignment_list(bmsg), &res);
         break;
       case VECTOR_BROKER_NULL:
       case VECTOR_BROKER_FETCH_CLIENT_LIST:
@@ -595,7 +583,7 @@ void parse_client_connect_header(const uint8_t *data, ClientConnectMsg *ccmsg)
 }
 
 size_t parse_client_connect(ClientConnectState *ccstate, const uint8_t *data, size_t datalen, ClientConnectMsg *ccmsg,
-                            parse_result_t *result, const LwpaLogParams *lparams)
+                            parse_result_t *result)
 {
   parse_result_t res = kPSNoData;
   size_t bytes_parsed = 0;
@@ -617,8 +605,8 @@ size_t parse_client_connect(ClientConnectState *ccstate, const uint8_t *data, si
   }
   if (ccstate->common_data_parsed)
   {
-    size_t next_layer_bytes_parsed = parse_single_client_entry(
-        &ccstate->entry, &data[bytes_parsed], datalen - bytes_parsed, &ccmsg->client_entry, &res, lparams);
+    size_t next_layer_bytes_parsed = parse_single_client_entry(&ccstate->entry, &data[bytes_parsed],
+                                                               datalen - bytes_parsed, &ccmsg->client_entry, &res);
     assert(next_layer_bytes_parsed <= (datalen - bytes_parsed));
     bytes_parsed += next_layer_bytes_parsed;
   }
@@ -628,7 +616,7 @@ size_t parse_client_connect(ClientConnectState *ccstate, const uint8_t *data, si
 }
 
 size_t parse_client_entry_update(ClientEntryUpdateState *ceustate, const uint8_t *data, size_t datalen,
-                                 ClientEntryUpdateMsg *ceumsg, parse_result_t *result, const LwpaLogParams *lparams)
+                                 ClientEntryUpdateMsg *ceumsg, parse_result_t *result)
 {
   parse_result_t res = kPSNoData;
   size_t bytes_parsed = 0;
@@ -650,8 +638,8 @@ size_t parse_client_entry_update(ClientEntryUpdateState *ceustate, const uint8_t
   }
   if (ceustate->common_data_parsed)
   {
-    size_t next_layer_bytes_parsed = parse_single_client_entry(
-        &ceustate->entry, &data[bytes_parsed], datalen - bytes_parsed, &ceumsg->client_entry, &res, lparams);
+    size_t next_layer_bytes_parsed = parse_single_client_entry(&ceustate->entry, &data[bytes_parsed],
+                                                               datalen - bytes_parsed, &ceumsg->client_entry, &res);
     assert(next_layer_bytes_parsed <= (datalen - bytes_parsed));
     bytes_parsed += next_layer_bytes_parsed;
   }
@@ -673,7 +661,7 @@ size_t parse_client_entry_header(const uint8_t *data, ClientEntryData *entry)
 }
 
 size_t parse_single_client_entry(ClientEntryState *cstate, const uint8_t *data, size_t datalen, ClientEntryData *entry,
-                                 parse_result_t *result, const LwpaLogParams *lparams)
+                                 parse_result_t *result)
 {
   size_t bytes_parsed = 0;
   parse_result_t res = kPSNoData;
@@ -733,7 +721,8 @@ size_t parse_single_client_entry(ClientEntryState *cstate, const uint8_t *data, 
       {
         /* PDU length mismatch */
         bytes_parsed += consume_bad_block(&cstate->entry_data, remaining_len, &res);
-        lwpa_log(lparams, LWPA_LOG_WARNING, MODULE_NAME ": Dropping RPT Client Entry with invalid length %zu",
+        lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
+                 RDMNET_LOG_MSG("Dropping RPT Client Entry with invalid length %zu"),
                  cstate->entry_data.block_size + CLIENT_ENTRY_HEADER_SIZE);
       }
     }
@@ -741,8 +730,8 @@ size_t parse_single_client_entry(ClientEntryState *cstate, const uint8_t *data, 
     {
       /* Unknown Client Protocol */
       bytes_parsed += consume_bad_block(&cstate->entry_data, remaining_len, &res);
-      lwpa_log(lparams, LWPA_LOG_WARNING, MODULE_NAME ": Dropping Client Entry with invalid client protocol %d",
-               entry->client_protocol);
+      lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
+               RDMNET_LOG_MSG("Dropping Client Entry with invalid client protocol %d"), entry->client_protocol);
     }
   }
 
@@ -751,7 +740,7 @@ size_t parse_single_client_entry(ClientEntryState *cstate, const uint8_t *data, 
 }
 
 size_t parse_client_list(ClientListState *clstate, const uint8_t *data, size_t datalen, ClientList *clist,
-                         parse_result_t *result, const LwpaLogParams *lparams)
+                         parse_result_t *result)
 {
   parse_result_t res = kPSNoData;
   size_t bytes_parsed = 0;
@@ -807,8 +796,8 @@ size_t parse_client_list(ClientListState *clstate, const uint8_t *data, size_t d
 
       if (clstate->block.parsed_header)
       {
-        size_t next_layer_bytes_parsed = parse_single_client_entry(&clstate->entry, &data[bytes_parsed],
-                                                                   datalen - bytes_parsed, centry, &res, lparams);
+        size_t next_layer_bytes_parsed =
+            parse_single_client_entry(&clstate->entry, &data[bytes_parsed], datalen - bytes_parsed, centry, &res);
         assert(next_layer_bytes_parsed <= (datalen - bytes_parsed));
         assert(clstate->block.size_parsed + next_layer_bytes_parsed <= clstate->block.block_size);
         bytes_parsed += next_layer_bytes_parsed;
@@ -826,14 +815,13 @@ size_t parse_client_list(ClientListState *clstate, const uint8_t *data, size_t d
 }
 
 size_t parse_request_dynamic_uid_assignment(GenericListState *lstate, const uint8_t *data, size_t datalen,
-                                            DynamicUidRequestList *rlist, parse_result_t *result,
-                                            const LwpaLogParams *lparams)
+                                            DynamicUidRequestList *rlist, parse_result_t *result)
 {
   size_t bytes_parsed = 0;
   parse_result_t res = kPSNoData;
   DynamicUidRequestListEntry **lentry_ptr;
 
-  (void)lparams;
+  (void)rdmnet_log_params;
 
   /* Navigate to the end of the request list */
   for (lentry_ptr = &rlist->request_list; *lentry_ptr && (*lentry_ptr)->next; lentry_ptr = &(*lentry_ptr)->next)
@@ -882,14 +870,13 @@ size_t parse_request_dynamic_uid_assignment(GenericListState *lstate, const uint
 }
 
 size_t parse_dynamic_uid_assignment_list(GenericListState *lstate, const uint8_t *data, size_t datalen,
-                                         DynamicUidAssignmentList *alist, parse_result_t *result,
-                                         const LwpaLogParams *lparams)
+                                         DynamicUidAssignmentList *alist, parse_result_t *result)
 {
   size_t bytes_parsed = 0;
   parse_result_t res = kPSNoData;
   DynamicUidMapping **mapping_ptr;
 
-  (void)lparams;
+  (void)rdmnet_log_params;
 
   /* Navigate to the end of the request list */
   for (mapping_ptr = &alist->mapping_list; *mapping_ptr && (*mapping_ptr)->next; mapping_ptr = &(*mapping_ptr)->next)
@@ -945,14 +932,13 @@ size_t parse_dynamic_uid_assignment_list(GenericListState *lstate, const uint8_t
 }
 
 size_t parse_fetch_dynamic_uid_assignment_list(GenericListState *lstate, const uint8_t *data, size_t datalen,
-                                               FetchUidAssignmentList *alist, parse_result_t *result,
-                                               const LwpaLogParams *lparams)
+                                               FetchUidAssignmentList *alist, parse_result_t *result)
 {
   size_t bytes_parsed = 0;
   parse_result_t res = kPSNoData;
   FetchUidAssignmentListEntry **uid_ptr;
 
-  (void)lparams;
+  (void)rdmnet_log_params;
 
   /* Navigate to the end of the request list */
   for (uid_ptr = &alist->assignment_list; *uid_ptr && (*uid_ptr)->next; uid_ptr = &(*uid_ptr)->next)
@@ -1000,7 +986,7 @@ size_t parse_fetch_dynamic_uid_assignment_list(GenericListState *lstate, const u
   return bytes_parsed;
 }
 
-void initialize_rpt_message(RptState *rstate, RptMessage *rmsg, size_t pdu_data_len, const LwpaLogParams *lparams)
+void initialize_rpt_message(RptState *rstate, RptMessage *rmsg, size_t pdu_data_len)
 {
   switch (rmsg->vector)
   {
@@ -1016,7 +1002,7 @@ void initialize_rpt_message(RptState *rstate, RptMessage *rmsg, size_t pdu_data_
         /* An artificial "unknown" vector value to flag the data parsing logic to consume the data
          * section. */
         rmsg->vector = 0xffffffff;
-        lwpa_log(lparams, LWPA_LOG_WARNING, MODULE_NAME ": Dropping RPT PDU with invalid length %zu",
+        lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING, RDMNET_LOG_MSG("Dropping RPT PDU with invalid length %zu"),
                  pdu_data_len + RPT_PDU_HEADER_SIZE);
       }
       break;
@@ -1031,19 +1017,19 @@ void initialize_rpt_message(RptState *rstate, RptMessage *rmsg, size_t pdu_data_
         /* An artificial "unknown" vector value to flag the data parsing logic to consume the data
          * section. */
         rmsg->vector = 0xffffffff;
-        lwpa_log(lparams, LWPA_LOG_WARNING, MODULE_NAME ": Dropping RPT PDU with invalid length %zu",
+        lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING, RDMNET_LOG_MSG("Dropping RPT PDU with invalid length %zu"),
                  pdu_data_len + RPT_PDU_HEADER_SIZE);
       }
       break;
     default:
       init_pdu_block_state(&rstate->data.unknown, pdu_data_len);
-      lwpa_log(lparams, LWPA_LOG_WARNING, MODULE_NAME ": Dropping RPT PDU with invalid vector %u", rmsg->vector);
+      lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING, RDMNET_LOG_MSG("Dropping RPT PDU with invalid vector %u"),
+               rmsg->vector);
       break;
   }
 }
 
-size_t parse_rpt_block(RptState *rstate, const uint8_t *data, size_t datalen, RptMessage *rmsg, parse_result_t *result,
-                       const LwpaLogParams *lparams)
+size_t parse_rpt_block(RptState *rstate, const uint8_t *data, size_t datalen, RptMessage *rmsg, parse_result_t *result)
 {
   size_t bytes_parsed = 0;
   parse_result_t res = kPSNoData;
@@ -1091,7 +1077,7 @@ size_t parse_rpt_block(RptState *rstate, const uint8_t *data, size_t datalen, Rp
 
         bytes_parsed += RPT_PDU_HEADER_SIZE;
         rstate->block.size_parsed += RPT_PDU_HEADER_SIZE;
-        initialize_rpt_message(rstate, rmsg, pdu_data_len, lparams);
+        initialize_rpt_message(rstate, rmsg, pdu_data_len);
         rstate->block.parsed_header = true;
       }
       else
@@ -1104,7 +1090,8 @@ size_t parse_rpt_block(RptState *rstate, const uint8_t *data, size_t datalen, Rp
     if (parse_err)
     {
       bytes_parsed += consume_bad_block(&rstate->block, datalen, &res);
-      lwpa_log(lparams, LWPA_LOG_WARNING, MODULE_NAME ": Protocol error encountered while parsing RPT PDU header.");
+      lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
+               RDMNET_LOG_MSG("Protocol error encountered while parsing RPT PDU header."));
     }
   }
   if (rstate->block.parsed_header)
@@ -1119,8 +1106,8 @@ size_t parse_rpt_block(RptState *rstate, const uint8_t *data, size_t datalen, Rp
             parse_rdm_list(&rstate->data.rdm_list, &data[bytes_parsed], remaining_len, get_rdm_cmd_list(rmsg), &res);
         break;
       case VECTOR_RPT_STATUS:
-        next_layer_bytes_parsed = parse_rpt_status(&rstate->data.status, &data[bytes_parsed], remaining_len,
-                                                   get_rpt_status_msg(rmsg), &res, lparams);
+        next_layer_bytes_parsed =
+            parse_rpt_status(&rstate->data.status, &data[bytes_parsed], remaining_len, get_rpt_status_msg(rmsg), &res);
         break;
       default:
         /* Unknown RPT vector - discard this RPT PDU. */
@@ -1241,7 +1228,7 @@ size_t parse_rdm_list(RdmListState *rlstate, const uint8_t *data, size_t datalen
 }
 
 size_t parse_rpt_status(RptStatusState *rsstate, const uint8_t *data, size_t datalen, RptStatusMsg *smsg,
-                        parse_result_t *result, const LwpaLogParams *lparams)
+                        parse_result_t *result)
 {
   parse_result_t res = kPSNoData;
   size_t bytes_parsed = 0;
@@ -1286,8 +1273,8 @@ size_t parse_rpt_status(RptStatusState *rsstate, const uint8_t *data, size_t dat
     {
       /* Parse error in the RPT Status PDU header. We cannot keep parsing this block. */
       bytes_parsed += consume_bad_block(&rsstate->block, datalen, &res);
-      lwpa_log(lparams, LWPA_LOG_WARNING,
-               MODULE_NAME ": Protocol error encountered while parsing RPT Status PDU header.");
+      lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
+               RDMNET_LOG_MSG("Protocol error encountered while parsing RPT Status PDU header."));
     }
   }
   if (rsstate->block.parsed_header)
@@ -1320,7 +1307,7 @@ size_t parse_rpt_status(RptStatusState *rsstate, const uint8_t *data, size_t dat
         /* These status codes contain an optional status string */
         if (str_len == 0)
         {
-          smsg->status_string[0] = '\0';
+          smsg->status_string = NULL;
           res = kPSFullBlockParseOk;
         }
         else if (str_len > RPT_STATUS_STRING_MAXLEN)
@@ -1329,8 +1316,17 @@ size_t parse_rpt_status(RptStatusState *rsstate, const uint8_t *data, size_t dat
         }
         else if (remaining_len >= str_len)
         {
-          memcpy(smsg->status_string, &data[bytes_parsed], str_len);
-          smsg->status_string[str_len] = '\0';
+          char *str_buf = alloc_rpt_status_str(str_len + 1);
+          if (str_buf)
+          {
+            memcpy(str_buf, &data[bytes_parsed], str_len);
+            str_buf[str_len] = '\0';
+            smsg->status_string = str_buf;
+          }
+          else
+          {
+            smsg->status_string = NULL;
+          }
           bytes_parsed += str_len;
           rsstate->block.size_parsed += str_len;
           res = kPSFullBlockParseOk;

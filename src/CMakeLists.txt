@@ -133,6 +133,10 @@ target_include_directories(RDMnet
   PUBLIC ${RDMNET_INCLUDE}
   PRIVATE ${RDMNET_SRC}
 )
+if(DEFINED RDMNET_CONFIG_LOC)
+  target_include_directories(RDMnet PRIVATE ${RDMNET_CONFIG_LOC})
+  target_compile_definitions(RDMnet PRIVATE RDMNET_HAVE_CONFIG_H)
+endif()
 target_link_libraries(RDMnet PUBLIC lwpa RDM)
 
 # Organize sources in IDEs

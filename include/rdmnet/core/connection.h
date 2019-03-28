@@ -60,20 +60,49 @@
  *  @{
  */
 
+/*! Information about a successful RDMnet connection. */
+typedef struct RdmnetConnectedInfo
+{
+  /*! The broker's UID. */
+  RdmUid broker_uid;
+  /*! The client's UID (relevant if assigned dynamically) */
+  RdmUid client_uid;
+  /*! The remote address to which we are connected. This could be different from the original
+   *  address requested in the case of a redirect. */
+  LwpaSockaddr connected_addr;
+} RdmnetConnectedInfo;
+
+typedef enum
+{
+  kRdmnetConnectFailSocketError,
+  kRdmnetConnectFailTcpLevel,
+  kRdmnetConnectFailNoReply,
+  kRdmnetConnectFailRejected
+} rdmnet_connect_fail_cause_t;
+
+typedef struct RdmnetConnectFailedInfo
+{
+  rdmnet_connect_fail_cause_t cause;
+  lwpa_error_t socket_err;
+  rdmnet_connect_status_t rdmnet_reason;
+} RdmnetConnectFailedInfo;
+
+/*! An enumeration of the possible reasons an RDMnet connection could be disconnected. */
 typedef enum
 {
   kRdmnetDisconnectSocketFailure,
   kRdmnetDisconnectNoHeartbeat,
+  kRdmnetDisconnectRedirected,
   kRdmnetDisconnectGracefulRemoteInitiated,
   kRdmnetDisconnectGracefulLocalInitiated
 } rdmnet_disconnect_cause_t;
 
-typedef struct RdmnetDisconnectInfo
+typedef struct RdmnetDisconnectedInfo
 {
   rdmnet_disconnect_cause_t cause;
   lwpa_error_t socket_err;
   rdmnet_disconnect_reason_t rdmnet_reason;
-} RdmnetDisconnectInfo;
+} RdmnetDisconnectedInfo;
 
 /*! A set of callbacks which are called with notifications about RDMnet connections. */
 typedef struct RdmnetConnCallbacks
@@ -81,17 +110,26 @@ typedef struct RdmnetConnCallbacks
   /*! \brief An RDMnet connection has connected successfully.
    *
    *  \param[in] handle Handle to connection which has connected.
+   *  \param[in] connect_info More information about the successful connection.
    *  \param[in] context Context pointer that was given at the creation of the connection.
    */
-  void (*connected)(rdmnet_conn_t handle, const ConnectReplyMsg *connect_reply, void *context);
+  void (*connected)(rdmnet_conn_t handle, const RdmnetConnectedInfo *connect_info, void *context);
 
-  /*! \brief An RDMnet connection has disconnected.
+  /*! \brief An RDMnet connection attempt failed.
+   *
+   *  \param[in] handle Handle to connection which has failed.
+   *  \param[in] failed_info More information about the connect failure event.
+   *  \param[in] context Context pointer that was given at the creation of the connection.
+   */
+  void (*connect_failed)(rdmnet_conn_t handle, const RdmnetConnectFailedInfo *failed_info, void *context);
+
+  /*! \brief A previously-connected RDMnet connection has disconnected.
    *
    *  \param[in] handle Handle to connection which has been disconnected.
    *  \param[in] disconn_info More information about the disconnect event.
    *  \param[in] context Context pointer that was given at the creation of the connection.
    */
-  void (*disconnected)(rdmnet_conn_t handle, const RdmnetDisconnectInfo *disconn_info, void *context);
+  void (*disconnected)(rdmnet_conn_t handle, const RdmnetDisconnectedInfo *disconn_info, void *context);
 
   /*! \brief A message has been received on an RDMnet connection.
    *
