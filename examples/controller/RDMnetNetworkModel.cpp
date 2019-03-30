@@ -72,7 +72,6 @@ static const uint8_t kDeviceInfo[] = {
 /* clang-format on */
 
 #define MAX_SCOPE_SLOT_NUMBER 0xFFFF
-#define MAX_RESPONSES_IN_ACK_OVERFLOW (MAX_SCOPE_SLOT_NUMBER + 1)
 #define DEVICE_LABEL_MAX_LEN 32
 #define DEFAULT_DEVICE_LABEL "My ETC RDMnet Controller"
 #define SOFTWARE_VERSION_LABEL RDMNET_VERSION_STRING
@@ -164,15 +163,6 @@ T *getNearestParentItemOfType(QStandardItem *child)
 
 const QString BrokerConnection::generateBrokerItemText()
 {
-  if (connected_ || !using_mdns_)
-  {
-    char addrString[LWPA_INET6_ADDRSTRLEN];
-    lwpa_inet_ntop(&broker_addr_.ip, addrString, LWPA_INET6_ADDRSTRLEN);
-
-    return QString("Broker for scope \"%1\" at %2:%3").arg(scope_, addrString, QString::number(broker_addr_.port));
-  }
-
-  return QString("Broker for scope \"%1\"").arg(scope_);
 }
 
 void BrokerConnection::wasDisconnected()
@@ -230,7 +220,7 @@ void RDMnetNetworkModel::addScopeToMonitor(std::string scope)
   {
     if (lwpa_rwlock_writelock(&prop_lock, LWPA_WAIT_FOREVER))
     {
-      for (auto iter = broker_connections_.begin(); (iter != broker_connections_.end()) && !scopeAlreadyAdded; ++iter)
+      for (auto iter = brokers_.begin(); (iter != brokers_.end()) && !scopeAlreadyAdded; ++iter)
       {
         if (iter->second->scope() == scope)
         {
@@ -242,8 +232,8 @@ void RDMnetNetworkModel::addScopeToMonitor(std::string scope)
       {
         QMessageBox errorMessageBox;
 
-        errorMessageBox.setText(tr("The broker for the scope \"%1\" has already been added to this tree. \
-             Duplicates with the same scope cannot be added.")
+        errorMessageBox.setText(tr("The broker for the scope \"%1\" has already been added to this tree. "
+                                   "Duplicates with the same scope cannot be added.")
                                     .arg(scope.c_str()));
         errorMessageBox.setIcon(QMessageBox::Icon::Critical);
         errorMessageBox.exec();
@@ -1583,10 +1573,10 @@ void RDMnetNetworkModel::SendRDMGetResponses(const RdmUid &dest_uid, uint16_t de
   // The source UID will be added later, right before sending.
   resp_data.dest_uid = dest_uid;
   resp_data.transaction_num = transaction_num;
-  resp_data.resp_type = num_responses > 1 ? E120_RESPONSE_TYPE_ACK_OVERFLOW : E120_RESPONSE_TYPE_ACK;
+  resp_data.resp_type = num_responses > 1 ? kRdmResponseTypeAckOverflow : kRdmResponseTypeAck;
   resp_data.msg_count = 0;
   resp_data.subdevice = 0;
-  resp_data.command_class = kRdmCCGetCommand_RESPONSE;
+  resp_data.command_class = kRdmCCGetCommandResponse;
   resp_data.param_id = param_id;
 
   for (size_t i = 0; i < num_responses; ++i)
@@ -1595,151 +1585,52 @@ void RDMnetNetworkModel::SendRDMGetResponses(const RdmUid &dest_uid, uint16_t de
     resp_data.datalen = resp_data_list[i].datalen;
     if (i == num_responses - 1)
     {
-      resp_data.resp_type = E120_RESPONSE_TYPE_ACK;
+      resp_data.resp_type = kRdmResponseTypeAck;
     }
     resp_list.push_back(resp_data);
   }
   SendNotification(conn, dest_uid, dest_endpoint_id, seqnum, resp_list);
 }
 
-void RDMnetNetworkModel::SendNACK(uint16_t conn, const RptHeader *received_header, const RdmCommand *cmd_data,
-                                  uint16_t nack_reason)
+void RDMnetNetworkModel::SendRDMNack(rdmnet_client_scope_t scope, const RptHeader *received_header,
+                                     const RdmCommand *cmd_data, uint16_t nack_reason)
 {
   std::vector<RdmResponse> resp_list;
   RdmResponse resp_data;
 
   resp_data.dest_uid = received_header->source_uid;
   resp_data.transaction_num = cmd_data->transaction_num;
-  resp_data.resp_type = E120_RESPONSE_TYPE_NACK_REASON;
+  resp_data.resp_type = kRdmResponseTypeNackReason;
   resp_data.msg_count = 0;
   resp_data.subdevice = 0;
-  resp_data.command_class = cmd_data->command_class + 1;
+  resp_data.command_class =
+      (cmd_data->command_class == kRdmCCSetCommand) ? kRdmCCSetCommandResponse : kRdmCCGetCommandResponse;
   resp_data.param_id = cmd_data->param_id;
   resp_data.datalen = 2;
   lwpa_pack_16b(resp_data.data, nack_reason);
 
   resp_list.push_back(resp_data);
-  SendNotification(conn, received_header, resp_list);
+
+  LocalRdmResponse resp;
+  resp.dest_uid = received_header->source_uid;
+  resp.num_responses = 1;
+  resp.rdm_arr = &resp_data;
+  resp.seq_num = received_header->seqnum;
+  resp.source_endpoint = E133_NULL_ENDPOINT;
+  rdmnet_->SendRdmResponse(scope, resp);
 }
 
-void RDMnetNetworkModel::SendNotification(uint16_t conn, const RptHeader *received_header,
-                                          const std::vector<RdmResponse> &resp_list)
-{
-  SendNotification(conn, received_header->source_uid, received_header->source_endpoint_id, received_header->seqnum,
-                   resp_list);
-}
-
-void RDMnetNetworkModel::SendNotification(uint16_t conn, const RdmUid &dest_uid, uint16_t dest_endpoint_id,
-                                          uint32_t seqnum, const std::vector<RdmResponse> &resp_list)
-{
-  RptHeader header_to_send;
-  int send_res = static_cast<int>(kLwpaErrOk);
-  RdmUid rpt_dest_uid;
-  uint16_t dest_endpoint;
-
-  BrokerConnection *connectionToUse = NULL;
-
-  header_to_send.dest_uid = dest_uid;
-  header_to_send.dest_endpoint_id = dest_endpoint_id;
-  header_to_send.source_endpoint_id = E133_NULL_ENDPOINT;
-  header_to_send.seqnum = seqnum;
-
-  LwpaUuid my_cid = BrokerConnection::getLocalCID();
-
-  if ((dest_uid.manu != kRdmnetControllerBroadcastUid.manu) || (dest_uid.id != kRdmnetControllerBroadcastUid.id))
-  {
-    if (broker_connections_.find(conn) == broker_connections_.end())
-    {
-      log_->Log(LWPA_LOG_ERR, "Error: SendNotification called with invalid connection cookie.");
-    }
-    else
-    {
-      connectionToUse = broker_connections_[conn].get();
-    }
-  }
-
-  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
-  {
-    if ((dest_uid.manu == kRdmnetControllerBroadcastUid.manu) && (dest_uid.id == kRdmnetControllerBroadcastUid.id))
-    {
-      for (auto &brokerConnectionIter : broker_connections_)
-      {
-        connectionToUse = brokerConnectionIter.second.get();
-
-        if (connectionToUse != NULL && connectionToUse->connected())
-        {
-          header_to_send.source_uid = connectionToUse->getLocalUID();
-          send_res |= static_cast<int>(SendNotificationOnConnection(connectionToUse, header_to_send, resp_list));
-        }
-      }
-    }
-    else if (connectionToUse != NULL)
-    {
-      header_to_send.source_uid = connectionToUse->getLocalUID();
-      send_res = static_cast<int>(SendNotificationOnConnection(connectionToUse, header_to_send, resp_list));
-    }
-    else
-    {
-      send_res = static_cast<int>(LWPA_NETERR);
-    }
-
-    lwpa_rwlock_readunlock(&prop_lock);
-  }
-
-  if (send_res != static_cast<int>(kLwpaErrOk))
-  {
-    log_->Log(LWPA_LOG_ERR, "Error sending RPT Notification message to Broker.");
-  }
-}
-
-lwpa_error_t RDMnetNetworkModel::SendNotificationOnConnection(const BrokerConnection *connection,
-                                                              const RptHeader &header,
-                                                              const std::vector<RdmResponse> &resp_list)
-{
-  std::vector<RdmCmdListEntry> packed_resp_list;
-  if (resp_list.size() > 1 && resp_list[0].resp_type == E120_RESPONSE_TYPE_ACK_OVERFLOW)
-  {
-    for (size_t i = 0; i < resp_list.size(); ++i)
-    {
-      RdmResponse resp = resp_list[i];
-      RdmCmdListEntry packed_resp;
-
-      resp.source_uid = connection->getLocalUID();
-      rdmresp_create_response(&resp, &packed_resp.msg);
-      if (i == resp_list.size() - 1)
-        packed_resp.next = nullptr;
-      packed_resp_list.push_back(packed_resp);
-      if (i > 0)
-        packed_resp_list[i - 1].next = &packed_resp_list[i];
-    }
-  }
-  else
-  {
-    RdmResponse resp = resp_list[0];
-    RdmCmdListEntry packed_resp;
-
-    resp.source_uid = connection->getLocalUID();
-    rdmresp_create_response(&resp, &packed_resp.msg);
-    packed_resp.next = nullptr;
-    packed_resp_list.push_back(packed_resp);
-  }
-
-  LwpaUuid my_cid = BrokerConnection::getLocalCID();
-  return send_rpt_notification(connection->handle(), &my_cid, &header, &packed_resp_list[0]);
-}
-
-void RDMnetNetworkModel::ProcessRDMCommand(uint16_t conn, const RptHeader *header, const RdmCommand &cmd)
+void RDMnetNetworkModel::RdmCommandReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmCommand &cmd)
 {
   bool should_nack = false;
   uint16_t nack_reason;
 
-  if (cmd.command_class == kRdmCCGetCommand)
+  const RdmCommand &rdm = cmd.rdm;
+  if (rdm.command_class == kRdmCCGetCommand)
   {
-    static RdmParamData resp_data_list[MAX_RESPONSES_IN_ACK_OVERFLOW];
-    static RdmCmdListEntry resp_list[MAX_RESPONSES_IN_ACK_OVERFLOW];
-    size_t num_responses;
+    std::vector<RdmParamData> resp_data_list;
 
-    if (DefaultResponderGet(cmd.param_id, cmd.data, cmd.datalen, resp_data_list, &num_responses, &nack_reason))
+    if (default_responder_.Get(rdm.param_id, rdm.data, rdm.datalen, resp_data_list, nack_reason))
     {
       SendRDMGetResponses(header->source_uid, header->source_endpoint_id, cmd.param_id, resp_data_list, num_responses,
                           header->seqnum, cmd.transaction_num, conn);
@@ -1761,65 +1652,13 @@ void RDMnetNetworkModel::ProcessRDMCommand(uint16_t conn, const RptHeader *heade
 
   if (should_nack)
   {
-    SendNACK(conn, header, &cmd, nack_reason);
-    log_->Log(LWPA_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
-              header->source_uid.manu, header->source_uid.id, cmd.param_id, nack_reason);
+    SendRDMNack(scope_handle, cmd, nack_reason);
+    log_->Log(LWPA_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for PID 0x%04x with reason 0x%04x",
+              cmd.source_uid.manu, cmd.source_uid.id, rdm.param_id, nack_reason);
   }
 }
 
-bool RDMnetNetworkModel::DefaultResponderGet(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len,
-                                             RdmParamData *resp_data_list, size_t *num_responses, uint16_t *nack_reason)
-{
-  bool res = false;
-
-  switch (pid)
-  {
-    case E120_IDENTIFY_DEVICE:
-      res = getIdentifyDevice(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E120_DEVICE_LABEL:
-      res = getDeviceLabel(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E133_COMPONENT_SCOPE:
-      res = getComponentScope(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E133_SEARCH_DOMAIN:
-      res = getSearchDomain(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E133_TCP_COMMS_STATUS:
-      res = getTCPCommsStatus(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E120_SUPPORTED_PARAMETERS:
-      res = getSupportedParameters(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E120_DEVICE_INFO:
-      res = getDeviceInfo(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E120_MANUFACTURER_LABEL:
-      res = getManufacturerLabel(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E120_DEVICE_MODEL_DESCRIPTION:
-      res = getDeviceModelDescription(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E120_SOFTWARE_VERSION_LABEL:
-      res = getSoftwareVersionLabel(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E137_7_ENDPOINT_LIST:
-      res = getEndpointList(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    case E137_7_ENDPOINT_RESPONDERS:
-      res = getEndpointResponders(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
-      break;
-    default:
-      *nack_reason = E120_NR_UNKNOWN_PID;
-      break;
-  }
-
-  return res;
-}
-
-void RDMnetNetworkModel::ProcessRDMResponse(uint16_t conn, bool have_command, const RdmCommand &cmd,
-                                            const std::vector<RdmResponse> &response)
+void RDMnetNetworkModel::RdmResponseReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse &resp)
 {
   if (response.size() == 0)
   {
@@ -1849,7 +1688,7 @@ void RDMnetNetworkModel::ProcessRDMResponse(uint16_t conn, bool have_command, co
       return;  // Unknown response type
   }
 
-  if (first_resp.command_class == kRdmCCGetCommand_RESPONSE)
+  if (first_resp.command_class == kRdmCCGetCommandResponse)
   {
     log_->Log(LWPA_LOG_INFO, "Got GET_COMMAND_RESPONSE with PID 0x%04x from Controller %04x:%08x", first_resp.param_id,
               first_resp.source_uid.manu, first_resp.source_uid.id);
@@ -2210,341 +2049,6 @@ BrokerConnection *RDMnetNetworkModel::getBrokerConnection(const std::string &sco
   }
 
   return NULL;
-}
-
-bool RDMnetNetworkModel::getIdentifyDevice(const uint8_t *param_data, uint8_t param_data_len,
-                                           RdmParamData *resp_data_list, size_t *num_responses, uint16_t *nack_reason)
-{
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
-
-  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
-  {
-    resp_data_list[0].data[0] = prop_data_.identifying ? 1 : 0;
-    lwpa_rwlock_readunlock(&prop_lock);
-  }
-  resp_data_list[0].datalen = 1;
-  *num_responses = 1;
-  return true;
-}
-
-bool RDMnetNetworkModel::getDeviceLabel(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
-                                        size_t *num_responses, uint16_t *nack_reason)
-{
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
-
-  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
-  {
-    strncpy((char *)resp_data_list[0].data, prop_data_.device_label, DEVICE_LABEL_MAX_LEN);
-    resp_data_list[0].datalen = (uint8_t)strnlen(prop_data_.device_label, DEVICE_LABEL_MAX_LEN);
-    lwpa_rwlock_readunlock(&prop_lock);
-  }
-  *num_responses = 1;
-  return true;
-}
-
-bool RDMnetNetworkModel::getComponentScope(const uint8_t *param_data, uint8_t param_data_len,
-                                           RdmParamData *resp_data_list, size_t *num_responses, uint16_t *nack_reason)
-{
-  if (param_data_len >= 2)
-  {
-    return getComponentScope(lwpa_upack_16b(param_data), resp_data_list, num_responses, nack_reason);
-  }
-  else
-  {
-    *nack_reason = E120_NR_FORMAT_ERROR;
-  }
-  return false;
-}
-
-bool RDMnetNetworkModel::getComponentScope(uint16_t slot, RdmParamData *resp_data_list, size_t *num_responses,
-                                           uint16_t *nack_reason)
-{
-  if (slot == 0)
-  {
-    if (nack_reason != NULL)
-    {
-      *nack_reason = E120_NR_DATA_OUT_OF_RANGE;
-    }
-  }
-  else if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
-  {
-    auto connectionIter = broker_connections_.find(slot - 1);
-
-    if (connectionIter == broker_connections_.end())
-    {
-      // Return the next highest Scope Slot that is not empty.
-      connectionIter = broker_connections_.upper_bound(slot - 1);
-
-      if (connectionIter != broker_connections_.end())
-      {
-        slot = connectionIter->first + 1;
-      }
-      else
-      {
-        slot = 0;
-      }
-    }
-
-    if (slot != 0)
-    {
-      uint8_t *cur_ptr = resp_data_list[0].data;
-      lwpa_pack_16b(cur_ptr, slot);
-      cur_ptr += 2;
-
-      std::string scope = connectionIter->second->scope();
-
-      strncpy((char *)cur_ptr, scope.data(), E133_SCOPE_STRING_PADDED_LENGTH);
-      cur_ptr[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
-      cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
-
-      LwpaSockaddr saddr = connectionIter->second->staticSockAddr();
-      if (lwpaip_is_v4(&saddr.ip))
-      {
-        *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
-        lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&saddr.ip));
-        cur_ptr += 4;
-        /* Skip the IPv6 field */
-        cur_ptr += 16;
-        lwpa_pack_16b(cur_ptr, saddr.port);
-        cur_ptr += 2;
-      }
-      else if (lwpaip_is_v6(&saddr.ip))
-      {
-        *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
-        /* Skip the IPv4 field */
-        cur_ptr += 4;
-        memcpy(cur_ptr, lwpaip_v6_address(&saddr.ip), LWPA_IPV6_BYTES);
-        cur_ptr += LWPA_IPV6_BYTES;
-        lwpa_pack_16b(cur_ptr, saddr.port);
-        cur_ptr += 2;
-      }
-      else
-      {
-        *cur_ptr++ = E133_NO_STATIC_CONFIG;
-        /* Skip the IPv4, IPv6 and port fields */
-        cur_ptr += 4 + 16 + 2;
-      }
-      resp_data_list[0].datalen = static_cast<uint8_t>(cur_ptr - resp_data_list[0].data);
-      *num_responses = 1;
-
-      lwpa_rwlock_readunlock(&prop_lock);
-      return true;
-    }
-    else if (nack_reason != NULL)
-    {
-      *nack_reason = E120_NR_DATA_OUT_OF_RANGE;
-    }
-
-    lwpa_rwlock_readunlock(&prop_lock);
-  }
-
-  return false;
-}
-
-bool RDMnetNetworkModel::getSearchDomain(const uint8_t *param_data, uint8_t param_data_len,
-                                         RdmParamData *resp_data_list, size_t *num_responses, uint16_t *nack_reason)
-{
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
-
-  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
-  {
-    strncpy((char *)resp_data_list[0].data, prop_data_.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
-    resp_data_list[0].datalen = (uint8_t)strlen(prop_data_.search_domain);
-
-    lwpa_rwlock_readunlock(&prop_lock);
-  }
-  *num_responses = 1;
-  return true;
-}
-
-bool RDMnetNetworkModel::getTCPCommsStatus(const uint8_t *param_data, uint8_t param_data_len,
-                                           RdmParamData *resp_data_list, size_t *num_responses, uint16_t *nack_reason)
-{
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
-
-  int currentListIndex = 0;
-
-  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
-  {
-    for (const auto &connection : broker_connections_)
-    {
-      uint8_t *cur_ptr = resp_data_list[currentListIndex].data;
-      LwpaSockaddr saddr = connection.second->currentSockAddr();
-      std::string scope = connection.second->scope();
-
-      memset(cur_ptr, 0, E133_SCOPE_STRING_PADDED_LENGTH);
-      memcpy(cur_ptr, scope.data(), min(scope.length(), E133_SCOPE_STRING_PADDED_LENGTH));
-      cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
-
-      if (lwpaip_is_invalid(&saddr.ip) || !connection.second->connected())
-      {
-        lwpa_pack_32b(cur_ptr, 0);
-        cur_ptr += 4;
-        memset(cur_ptr, 0, LWPA_IPV6_BYTES);
-        cur_ptr += LWPA_IPV6_BYTES;
-      }
-      else if (lwpaip_is_v4(&saddr.ip))
-      {
-        lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&saddr.ip));
-        cur_ptr += 4;
-        memset(cur_ptr, 0, LWPA_IPV6_BYTES);
-        cur_ptr += LWPA_IPV6_BYTES;
-      }
-      else  // IPv6
-      {
-        lwpa_pack_32b(cur_ptr, 0);
-        cur_ptr += 4;
-        memcpy(cur_ptr, lwpaip_v6_address(&saddr.ip), LWPA_IPV6_BYTES);
-        cur_ptr += LWPA_IPV6_BYTES;
-      }
-      lwpa_pack_16b(cur_ptr, saddr.port);
-      cur_ptr += 2;
-      lwpa_pack_16b(cur_ptr, prop_data_.tcp_unhealthy_counter);
-      cur_ptr += 2;
-      resp_data_list[currentListIndex].datalen = (uint8_t)(cur_ptr - resp_data_list[currentListIndex].data);
-
-      ++currentListIndex;
-
-      if (currentListIndex == MAX_RESPONSES_IN_ACK_OVERFLOW)
-      {
-        break;
-      }
-    }
-
-    lwpa_rwlock_readunlock(&prop_lock);
-  }
-
-  *num_responses = currentListIndex;
-  return true;
-}
-
-bool RDMnetNetworkModel::getSupportedParameters(const uint8_t *param_data, uint8_t param_data_len,
-                                                RdmParamData *resp_data_list, size_t *num_responses,
-                                                uint16_t *nack_reason)
-{
-  size_t list_index = 0;
-  uint8_t *cur_ptr = resp_data_list[0].data;
-  size_t i;
-
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
-
-  for (i = 0; i < NUM_SUPPORTED_PIDS; ++i)
-  {
-    lwpa_pack_16b(cur_ptr, kSupportedPIDList[i]);
-    cur_ptr += 2;
-    if ((cur_ptr - resp_data_list[list_index].data) >= RDM_MAX_PDL - 1)
-    {
-      resp_data_list[list_index].datalen = (uint8_t)(cur_ptr - resp_data_list[list_index].data);
-      cur_ptr = resp_data_list[++list_index].data;
-    }
-  }
-  resp_data_list[list_index].datalen = (uint8_t)(cur_ptr - resp_data_list[list_index].data);
-  *num_responses = list_index + 1;
-  return true;
-}
-
-bool RDMnetNetworkModel::getDeviceInfo(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
-                                       size_t *num_responses, uint16_t *nack_reason)
-{
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
-  memcpy(resp_data_list[0].data, kDeviceInfo, sizeof kDeviceInfo);
-  resp_data_list[0].datalen = sizeof kDeviceInfo;
-  *num_responses = 1;
-  return true;
-}
-
-bool RDMnetNetworkModel::getManufacturerLabel(const uint8_t *param_data, uint8_t param_data_len,
-                                              RdmParamData *resp_data_list, size_t *num_responses,
-                                              uint16_t *nack_reason)
-{
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
-
-  strcpy((char *)resp_data_list[0].data, MANUFACTURER_LABEL);
-  resp_data_list[0].datalen = sizeof(MANUFACTURER_LABEL) - 1;
-  *num_responses = 1;
-  return true;
-}
-
-bool RDMnetNetworkModel::getDeviceModelDescription(const uint8_t *param_data, uint8_t param_data_len,
-                                                   RdmParamData *resp_data_list, size_t *num_responses,
-                                                   uint16_t *nack_reason)
-{
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
-
-  strcpy((char *)resp_data_list[0].data, DEVICE_MODEL_DESCRIPTION);
-  resp_data_list[0].datalen = sizeof(DEVICE_MODEL_DESCRIPTION) - 1;
-  *num_responses = 1;
-  return true;
-}
-
-bool RDMnetNetworkModel::getSoftwareVersionLabel(const uint8_t *param_data, uint8_t param_data_len,
-                                                 RdmParamData *resp_data_list, size_t *num_responses,
-                                                 uint16_t *nack_reason)
-{
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
-
-  strcpy((char *)resp_data_list[0].data, SOFTWARE_VERSION_LABEL);
-  resp_data_list[0].datalen = sizeof(SOFTWARE_VERSION_LABEL) - 1;
-  *num_responses = 1;
-  return true;
-}
-
-bool RDMnetNetworkModel::getEndpointList(const uint8_t *param_data, uint8_t param_data_len,
-                                         RdmParamData *resp_data_list, size_t *num_responses, uint16_t *nack_reason)
-{
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
-
-  uint8_t *cur_ptr = resp_data_list[0].data;
-
-  /* Hardcoded: no endpoints other than NULL_ENDPOINT. NULL_ENDPOINT is not
-   * reported in this response. */
-  resp_data_list[0].datalen = 4;
-  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
-  {
-    lwpa_pack_32b(cur_ptr, prop_data_.endpoint_list_change_number);
-    lwpa_rwlock_readunlock(&prop_lock);
-  }
-  *num_responses = 1;
-  return true;
-}
-
-bool RDMnetNetworkModel::getEndpointResponders(const uint8_t *param_data, uint8_t param_data_len,
-                                               RdmParamData *resp_data_list, size_t *num_responses,
-                                               uint16_t *nack_reason)
-{
-  (void)param_data;
-  (void)param_data_len;
-  (void)resp_data_list;
-  (void)num_responses;
-
-  if (param_data_len >= 2)
-  {
-    /* We have no valid endpoints for this message */
-    *nack_reason = E137_7_NR_ENDPOINT_NUMBER_INVALID;
-  }
-  else
-    *nack_reason = E120_NR_FORMAT_ERROR;
-  return false;
 }
 
 void RDMnetNetworkModel::endpointList(uint16_t conn, uint32_t /*changeNumber*/,

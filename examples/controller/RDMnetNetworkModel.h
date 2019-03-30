@@ -40,13 +40,12 @@
 #include "PropertyValueItem.h"
 #include "ControllerUtils.h"
 #include "RDMnetLibWrapper.h"
+#include "ControllerDefaultResponder.h"
 #include "ControllerLog.h"
 
 BEGIN_INCLUDE_QT_HEADERS()
 #include <QStandardItemModel>
 END_INCLUDE_QT_HEADERS()
-
-#define DEVICE_LABEL_MAX_LEN 32
 
 class BrokerConnection;
 
@@ -99,21 +98,6 @@ public:
   LwpaSockaddr staticSockAddr();
 };
 
-typedef struct RdmParamData
-{
-  uint8_t datalen;
-  uint8_t data[RDM_MAX_PDL];
-} RdmParamData;
-
-typedef struct DefaultResponderPropertyData
-{
-  uint32_t endpoint_list_change_number;
-  bool identifying;
-  char device_label[DEVICE_LABEL_MAX_LEN + 1];
-  char search_domain[E133_DOMAIN_STRING_PADDED_LENGTH];
-  uint16_t tcp_unhealthy_counter;
-} DefaultResponderPropertyData;
-
 class RDMnetNetworkModel : public QStandardItemModel, public RDMnetLibNotify
 {
   Q_OBJECT
@@ -143,7 +127,7 @@ private:
   bool recv_thread_run_;
   lwpa_thread_t recv_thread_;
 
-  DefaultResponderPropertyData prop_data_;
+  ControllerDefaultResponder default_responder_;
 
   // Protects prop_data_ and broker_connections_.
   lwpa_rwlock_t prop_lock;
@@ -201,12 +185,6 @@ protected:
   /******* RDM message handling functions *******/
   // void ProcessBrokerMessage(uint16_t conn, const RdmnetMessage *msg);
 
-  void ProcessRDMCommand(uint16_t conn, const RptHeader *header, const RdmCommand &cmd);
-  // bool DefaultResponderGet(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len,
-  //                         RdmParamData *resp_data_list, size_t *num_responses, uint16_t *nack_reason);
-  void ProcessRDMResponse(uint16_t conn, bool have_command, const RdmCommand &cmd,
-                          const std::vector<RdmResponse> &response);
-
   // Use this with data that has identical GET_COMMAND_RESPONSE and SET_COMMAND forms.
   void ProcessRDMGetSetData(uint16_t conn, uint16_t param_id, const uint8_t *data, uint8_t datalen,
                             const RdmResponse *firstResp);
@@ -218,41 +196,7 @@ protected:
   void SendRDMGetResponses(const RdmUid &dest_uid, uint16_t dest_endpoint_id, uint16_t param_id,
                            const RdmParamData *resp_data_list, size_t num_responses, uint32_t seqnum,
                            uint8_t transaction_num, uint16_t conn = 0xFFFF);
-  void SendNACK(uint16_t conn, const RptHeader *received_header, const RdmCommand *cmd_data, uint16_t nack_reason);
-  void SendNotification(uint16_t conn, const RptHeader *received_header, const std::vector<RdmResponse> &resp_list);
-  void SendNotification(uint16_t conn, const RdmUid &dest_uid, uint16_t dest_endpoint_id, uint32_t seqnum,
-                        const std::vector<RdmResponse> &resp_list);
-  lwpa_error_t SendNotificationOnConnection(const BrokerConnection *connection, const RptHeader &header,
-                                            const std::vector<RdmResponse> &resp_list);
-
-  /* GET/SET PROCESSING */
-
-  bool getIdentifyDevice(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
-                         size_t *num_responses, uint16_t *nack_reason);
-  bool getDeviceLabel(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
-                      size_t *num_responses, uint16_t *nack_reason);
-  bool getComponentScope(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
-                         size_t *num_responses, uint16_t *nack_reason);
-  bool getComponentScope(uint16_t slot, RdmParamData *resp_data_list, size_t *num_responses,
-                         uint16_t *nack_reason = NULL);
-  bool getSearchDomain(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
-                       size_t *num_responses, uint16_t *nack_reason);
-  bool getTCPCommsStatus(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
-                         size_t *num_responses, uint16_t *nack_reason);
-  bool getSupportedParameters(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
-                              size_t *num_responses, uint16_t *nack_reason);
-  bool getDeviceInfo(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
-                     size_t *num_responses, uint16_t *nack_reason);
-  bool getManufacturerLabel(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
-                            size_t *num_responses, uint16_t *nack_reason);
-  bool getDeviceModelDescription(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
-                                 size_t *num_responses, uint16_t *nack_reason);
-  bool getSoftwareVersionLabel(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
-                               size_t *num_responses, uint16_t *nack_reason);
-  bool getEndpointList(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
-                       size_t *num_responses, uint16_t *nack_reason);
-  bool getEndpointResponders(const uint8_t *param_data, uint8_t param_data_len, RdmParamData *resp_data_list,
-                             size_t *num_responses, uint16_t *nack_reason);
+  void SendRDMNack(rdmnet_client_scope_t scope, const RemoteRdmCommand &received_cmd, uint16_t nack_reason);
 
   /* GET/SET RESPONSE PROCESSING */
 

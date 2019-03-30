@@ -51,5 +51,6 @@ public:
   virtual rdmnet_client_scope_t AddScope(const std::string &scope,
                                          StaticBrokerConfig static_broker = StaticBrokerConfig()) = 0;
   virtual bool RemoveScope(rdmnet_client_scope_t scope_handle) = 0;
-  virtual bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const RdmCommand &cmd) = 0;
+  virtual bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand &cmd) = 0;
+  virtual bool SendRdmResponse(rdmnet_client_scope_t scope_handle, const LocalRdmResponse &resp) = 0;
 };
