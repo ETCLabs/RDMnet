@@ -333,7 +333,7 @@ lwpa_error_t send_llrp_probe_request(llrp_socket_t handle, const LwpaSockaddr *d
 
   send_res = lwpa_sendto(handle->sys_sock, handle->send_buf, cur_ptr - handle->send_buf, 0, dest_addr);
   if (send_res >= 0)
-    return LWPA_OK;
+    return kLwpaErrOk;
   else
     return (lwpa_error_t)send_res;
 }
@@ -376,7 +376,7 @@ lwpa_error_t send_llrp_probe_reply(llrp_socket_t handle, const LwpaSockaddr *des
 
   send_res = lwpa_sendto(handle->sys_sock, handle->send_buf, cur_ptr - handle->send_buf, 0, dest_addr);
   if (send_res >= 0)
-    return LWPA_OK;
+    return kLwpaErrOk;
   else
     return (lwpa_error_t)send_res;
 }
@@ -413,7 +413,7 @@ lwpa_error_t send_llrp_rdm(llrp_socket_t handle, const LwpaSockaddr *dest_addr, 
 
   send_res = lwpa_sendto(handle->sys_sock, handle->send_buf, cur_ptr - handle->send_buf, 0, dest_addr);
   if (send_res >= 0)
-    return LWPA_OK;
+    return kLwpaErrOk;
   else
     return (lwpa_error_t)send_res;
 }

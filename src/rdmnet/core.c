@@ -55,7 +55,7 @@
     if (lwpa_rwlock_create(&rdmnet_lock)) \
       core_state.lock_initted = true;     \
     else                                  \
-      return LWPA_SYSERR;                 \
+      return kLwpaErrSys;                 \
   }
 
 /***************************** Global variables ******************************/
@@ -90,24 +90,24 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
   // The lock is created only the first call to this function.
   rdmnet_create_lock_or_die();
 
-  lwpa_error_t res = LWPA_SYSERR;
+  lwpa_error_t res = kLwpaErrSys;
   if (rdmnet_writelock())
   {
-    res = LWPA_OK;
+    res = kLwpaErrOk;
     if (!core_state.initted)
     {
       bool socket_initted = false;
       bool disc_initted = false;
 
-      if (res == LWPA_OK)
+      if (res == kLwpaErrOk)
         res = rdmnet_message_init();
-      if (res == LWPA_OK)
-        socket_initted = ((res = lwpa_socket_init(NULL)) == LWPA_OK);
-      if (res == LWPA_OK)
-        disc_initted = ((res = rdmnetdisc_init()) == LWPA_OK);
+      if (res == kLwpaErrOk)
+        socket_initted = ((res = lwpa_socket_init(NULL)) == kLwpaErrOk);
+      if (res == kLwpaErrOk)
+        disc_initted = ((res = rdmnetdisc_init()) == kLwpaErrOk);
 
 #if RDMNET_USE_TICK_THREAD
-      if (res == LWPA_OK)
+      if (res == kLwpaErrOk)
       {
         LwpaThreadParams thread_params;
         thread_params.thread_priority = RDMNET_TICK_THREAD_PRIORITY;
@@ -117,12 +117,12 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
         core_state.tickthread_run = true;
         if (!lwpa_thread_create(&core_state.tick_thread, &thread_params, rdmnet_tick_thread, NULL))
         {
-          res = LWPA_SYSERR;
+          res = kLwpaErrSys;
         }
       }
 #endif
 
-      if (res == LWPA_OK)
+      if (res == kLwpaErrOk)
       {
         // Do the initialization
         if (log_params)

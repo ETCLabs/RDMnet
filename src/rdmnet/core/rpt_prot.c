@@ -128,7 +128,7 @@ lwpa_error_t send_rpt_header(rdmnet_conn_t handle, const LwpaRootLayerPdu *rlp, 
   if (data_size == 0)
   {
     rdmnet_end_message(handle);
-    return LWPA_PROTERR;
+    return kLwpaErrProtocol;
   }
 
   /* Pack and send the TCP preamble. */
@@ -136,7 +136,7 @@ lwpa_error_t send_rpt_header(rdmnet_conn_t handle, const LwpaRootLayerPdu *rlp, 
   if (data_size == 0)
   {
     rdmnet_end_message(handle);
-    return LWPA_PROTERR;
+    return kLwpaErrProtocol;
   }
   send_res = rdmnet_send_partial_message(handle, buf, data_size);
   if (send_res < 0)
@@ -147,7 +147,7 @@ lwpa_error_t send_rpt_header(rdmnet_conn_t handle, const LwpaRootLayerPdu *rlp, 
   if (data_size == 0)
   {
     rdmnet_end_message(handle);
-    return LWPA_PROTERR;
+    return kLwpaErrProtocol;
   }
   send_res = rdmnet_send_partial_message(handle, buf, data_size);
   if (send_res < 0)
@@ -159,7 +159,7 @@ lwpa_error_t send_rpt_header(rdmnet_conn_t handle, const LwpaRootLayerPdu *rlp, 
   if (send_res < 0)
     return (lwpa_error_t)send_res;
 
-  return LWPA_OK;
+  return kLwpaErrOk;
 }
 
 size_t calc_request_pdu_size(const RdmBuffer *cmd)
@@ -220,9 +220,9 @@ size_t pack_rpt_request(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, 
  *  \param[in] local_cid CID of the Component sending the RPT Request message.
  *  \param[in] header Header data for the RPT PDU that encapsulates this RPT Request message.
  *  \param[in] cmd Encapsulated RDM Command that will occupy the RPT Request message.
- *  \return #LWPA_OK: Send success.\n
- *          #LWPA_INVALID: Invalid argument provided.\n
- *          #LWPA_SYSERR: An internal library or system call error occurred.\n
+ *  \return #kLwpaErrOk: Send success.\n
+ *          #kLwpaErrInvalid: Invalid argument provided.\n
+ *          #kLwpaErrSys: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
 lwpa_error_t send_rpt_request(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
@@ -234,18 +234,18 @@ lwpa_error_t send_rpt_request(rdmnet_conn_t handle, const LwpaUuid *local_cid, c
   uint8_t buf[RDM_CMD_PDU_MAX_SIZE];
 
   if (!local_cid || !header || !cmd)
-    return LWPA_INVALID;
+    return kLwpaErrInvalid;
 
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_RPT;
   rlp.datalen = RPT_PDU_HEADER_SIZE + calc_request_pdu_size(cmd);
 
   res = rdmnet_start_message(handle);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
     return res;
 
   res = send_rpt_header(handle, &rlp, VECTOR_RPT_REQUEST, header, buf, RDM_CMD_PDU_MAX_SIZE);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
   {
     rdmnet_end_message(handle);
     return res;
@@ -335,9 +335,9 @@ size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, c
  *  \param[in] local_cid CID of the Component sending the RPT Status message.
  *  \param[in] header Header data for the RPT PDU that encapsulates this Status message.
  *  \param[in] status RPT Status message data.
- *  \return #LWPA_OK: Send success.\n
- *          #LWPA_INVALID: Invalid argument provided.\n
- *          #LWPA_SYSERR: An internal library or system call error occurred.\n
+ *  \return #kLwpaErrOk: Send success.\n
+ *          #kLwpaErrInvalid: Invalid argument provided.\n
+ *          #kLwpaErrSys: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
 lwpa_error_t send_rpt_status(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
@@ -350,7 +350,7 @@ lwpa_error_t send_rpt_status(rdmnet_conn_t handle, const LwpaUuid *local_cid, co
   size_t status_pdu_size;
 
   if (!local_cid || !header || !status)
-    return LWPA_INVALID;
+    return kLwpaErrInvalid;
 
   status_pdu_size = calc_status_pdu_size(status);
   rlp.sender_cid = *local_cid;
@@ -358,11 +358,11 @@ lwpa_error_t send_rpt_status(rdmnet_conn_t handle, const LwpaUuid *local_cid, co
   rlp.datalen = RPT_PDU_HEADER_SIZE + status_pdu_size;
 
   res = rdmnet_start_message(handle);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
     return res;
 
   res = send_rpt_header(handle, &rlp, VECTOR_RPT_STATUS, header, buf, RPT_PDU_HEADER_SIZE);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
   {
     rdmnet_end_message(handle);
     return res;
@@ -459,9 +459,9 @@ size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaUuid *local_
  *  \param[in] local_cid CID of the Component sending the RPT Notification message.
  *  \param[in] header Header data for the RPT PDU that encapsulates this RPT Notification message.
  *  \param[in] cmd_list List of RDM Commands contained in this RPT Notification.
- *  \return #LWPA_OK: Send success.\n
- *          #LWPA_INVALID: Invalid argument provided.\n
- *          #LWPA_SYSERR: An internal library or system call error occurred.\n
+ *  \return #kLwpaErrOk: Send success.\n
+ *          #kLwpaErrInvalid: Invalid argument provided.\n
+ *          #kLwpaErrSys: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
 lwpa_error_t send_rpt_notification(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
@@ -475,7 +475,7 @@ lwpa_error_t send_rpt_notification(rdmnet_conn_t handle, const LwpaUuid *local_c
   const RdmCmdListEntry *cur_cmd;
 
   if (!local_cid || !header || !cmd_list)
-    return LWPA_INVALID;
+    return kLwpaErrInvalid;
 
   notif_pdu_size = calc_notification_pdu_size(cmd_list);
   rlp.sender_cid = *local_cid;
@@ -483,11 +483,11 @@ lwpa_error_t send_rpt_notification(rdmnet_conn_t handle, const LwpaUuid *local_c
   rlp.datalen = RPT_PDU_HEADER_SIZE + notif_pdu_size;
 
   res = rdmnet_start_message(handle);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
     return res;
 
   res = send_rpt_header(handle, &rlp, VECTOR_RPT_NOTIFICATION, header, buf, RDM_CMD_PDU_MAX_SIZE);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
   {
     rdmnet_end_message(handle);
     return res;

@@ -126,9 +126,9 @@ static void deliver_callback(const ClientCallbackDispatchInfo *info);
 lwpa_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig *config, rdmnet_client_t *handle)
 {
   if (!config || !handle)
-    return LWPA_INVALID;
+    return kLwpaErrInvalid;
   if (!rdmnet_core_initialized())
-    return LWPA_NOTINIT;
+    return kLwpaErrNotInit;
 
   // The lock is created only on the first call to this function.
   if (!client_lock_initted)
@@ -136,11 +136,11 @@ lwpa_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig *config, rdmne
     if (lwpa_mutex_create(&client_lock))
       client_lock_initted = true;
     else
-      return LWPA_SYSERR;
+      return kLwpaErrSys;
   }
 
   lwpa_error_t res = validate_rpt_client_config(config);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
     return res;
 
   if (lwpa_mutex_take(&client_lock, LWPA_WAIT_FOREVER))
@@ -159,13 +159,13 @@ lwpa_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig *config, rdmne
     }
     else
     {
-      res = LWPA_NOMEM;
+      res = kLwpaErrNoMem;
     }
     lwpa_mutex_give(&client_lock);
   }
   else
   {
-    res = LWPA_SYSERR;
+    res = kLwpaErrSys;
   }
 
   return res;
@@ -180,18 +180,18 @@ void rdmnet_rpt_client_destroy(rdmnet_client_t handle)
 lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, const ControllerRdmCommand *cmd)
 {
   if (!handle || !cmd)
-    return LWPA_INVALID;
+    return kLwpaErrInvalid;
   if (!rdmnet_core_initialized())
-    return LWPA_NOTINIT;
+    return kLwpaErrNotInit;
 
-  lwpa_error_t res = LWPA_SYSERR;
+  lwpa_error_t res = kLwpaErrSys;
   if (rdmnet_client_lock())
   {
-    res = LWPA_NOTFOUND;
+    res = kLwpaErrNotFound;
     if (client_in_list(handle, state.clients))
     {
       // TODO
-      res = LWPA_NOTIMPL;
+      res = kLwpaErrNotImpl;
     }
     rdmnet_client_unlock();
   }
@@ -202,14 +202,14 @@ lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, const c
                                                  const DeviceRdmResponse *resp)
 {
   if (!handle || !resp)
-    return LWPA_INVALID;
+    return kLwpaErrInvalid;
   if (!rdmnet_core_initialized())
-    return LWPA_NOTINIT;
+    return kLwpaErrNotInit;
 
-  lwpa_error_t res = LWPA_SYSERR;
+  lwpa_error_t res = kLwpaErrSys;
   if (rdmnet_client_lock())
   {
-    res = LWPA_NOTFOUND;
+    res = kLwpaErrNotFound;
     if (client_in_list(handle, state.clients))
     {
       ClientScopeListEntry *scope_entry = find_scope_in_list(handle->scope_list, scope);
@@ -223,7 +223,7 @@ lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, const c
         header.seqnum = resp->seq_num;
 
         // TODO
-        res = LWPA_NOTIMPL;
+        res = kLwpaErrNotImpl;
       }
     }
     rdmnet_client_unlock();
@@ -234,19 +234,19 @@ lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, const c
 lwpa_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, const RptStatusMsg *status)
 {
   if (!handle || !status)
-    return LWPA_INVALID;
+    return kLwpaErrInvalid;
   if (!rdmnet_core_initialized())
-    return LWPA_NOTINIT;
+    return kLwpaErrNotInit;
 
-  lwpa_error_t res = LWPA_SYSERR;
+  lwpa_error_t res = kLwpaErrSys;
   if (rdmnet_client_lock())
   {
-    res = LWPA_NOTFOUND;
+    res = kLwpaErrNotFound;
     if (client_in_list(handle, state.clients))
     {
       // TODO
       (void)status;
-      res = LWPA_NOTIMPL;
+      res = kLwpaErrNotImpl;
     }
     rdmnet_client_unlock();
   }
@@ -279,15 +279,15 @@ lwpa_error_t validate_rpt_client_config(const RdmnetRptClientConfig *config)
       (lwpa_uuid_cmp(&config->cid, &LWPA_NULL_UUID) == 0) || (config->num_scopes == 0) || (!config->scope_list) ||
       (config->type == kRPTClientTypeDevice && config->num_scopes != 1))
   {
-    return LWPA_INVALID;
+    return kLwpaErrInvalid;
   }
 #if !RDMNET_DYNAMIC_MEM
   if (config->type == kRPTClientTypeController && config->num_scopes > RDMNET_MAX_SCOPES_PER_CONTROLLER)
   {
-    return LWPA_NOMEM;
+    return kLwpaErrNoMem;
   }
 #endif
-  return LWPA_OK;
+  return kLwpaErrOk;
 }
 
 /* Create and initialize a new RdmnetClientInternal structure from a given config. */
@@ -374,7 +374,7 @@ bool create_and_append_scope_entry(const RdmnetScopeConfig *config, RdmnetClient
       conn_config.callbacks = conn_callbacks;
       conn_config.callback_context = new_scope;
 
-      if (rdmnet_new_connection(&conn_config, &new_scope->conn_handle) == LWPA_OK)
+      if (rdmnet_new_connection(&conn_config, &new_scope->conn_handle) == kLwpaErrOk)
       {
         new_scope->next = NULL;
         *entry_ptr = new_scope;

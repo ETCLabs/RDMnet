@@ -97,8 +97,8 @@ static llrp_socket_t llrp_close_socket_priv(llrp_socket_t socket, lwpa_error_t *
  *
  *  Do all necessary initialization before other LLRP functions can be called.
  *
- *  \return #LWPA_OK: Initialization successful.\n
- *          #LWPA_SYSERR: An internal library of system call error occurred.\n
+ *  \return #kLwpaErrOk: Initialization successful.\n
+ *          #kLwpaErrSys: An internal library of system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
 lwpa_error_t llrp_init()
@@ -108,7 +108,7 @@ lwpa_error_t llrp_init()
 #if !RDMNET_DYNAMIC_MEM
   /* Init memory pool */
   res = lwpa_mempool_init(llrp_sockets);
-  if (res == LWPA_OK)
+  if (res == kLwpaErrOk)
   {
 #endif
     res = lwpa_socket_init(NULL);
@@ -116,7 +116,7 @@ lwpa_error_t llrp_init()
   }
 #endif
 
-  if (res == LWPA_OK)
+  if (res == kLwpaErrOk)
   {
     lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_RESPONSE, &kLLRPIPv4RespAddr);
     lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV6_ADDRESS_RESPONSE, &kLLRPIPv6RespAddr);
@@ -229,7 +229,7 @@ bool llrp_close_socket(llrp_socket_t handle)
 
   lwpa_error_t result;
   llrp_close_socket_priv(handle, &result);
-  return (result == LWPA_OK);
+  return (result == kLwpaErrOk);
 }
 
 /*! \brief Start discovery on an LLRP Manager socket.
@@ -573,19 +573,19 @@ bool process_parsed_msg(LlrpBaseSocket *sock, const LlrpMessage *msg, LlrpData *
  *  \param[in,out] poll_array Array of llrp_poll structs, each representing an LLRP socket to be
  *  polled. After this function returns, each structure's err member indicates the results of this
  *  poll:
- *   * #LWPA_OK indicates that the data member contains valid data.
- *   * #LWPA_NODATA indicates that no activity occurred on this socket.
+ *   * #kLwpaErrOk indicates that the data member contains valid data.
+ *   * #kLwpaErrNoData indicates that no activity occurred on this socket.
  *   * Any other value indicates a fatal error on this socket; the socket should be closed.
  *
  *  \param[in] poll_array_size Number of llrp_poll structs in the array.
  *  \param[in] timeout_ms Amount of time to wait for activity, in milliseconds. This value may be
  *                        adjusted down to conform to various LLRP timeouts specified in E1.33.
  *  \return Number of elements in poll_array which have data (success)\n
- *          #LWPA_TIMEDOUT: Timed out waiting for activity.\n
- *          #LWPA_INVALID: Invalid argument provided.\n
- *          #LWPA_NOMEM (only when #RDMNET_DYNAMIC_MEM is defined to 1): Unable to allocate memory
- *                      for poll operation.\n
- *          #LWPA_SYSERR: An internal library or system call error occurred.\n
+ *          #kLwpaErrTimedOut: Timed out waiting for activity.\n
+ *          #kLwpaErrInvalid: Invalid argument provided.\n
+ *          #kLwpaErrNoMem (only when #RDMNET_DYNAMIC_MEM is defined to 1): Unable to allocate
+ *                         memory for poll operation.\n
+ *          #kLwpaErrSys: An internal library or system call error occurred.\n
  *          Note: other error codes might be propagated from underlying socket calls.
  */
 int llrp_update(LlrpPoll *poll_array, size_t poll_array_size, int timeout_ms)
@@ -605,7 +605,7 @@ int llrp_update(LlrpPoll *poll_array, size_t poll_array_size, int timeout_ms)
 #if RDMNET_DYNAMIC_MEM
   pfds = (LwpaPollfd *)calloc(poll_array_size, sizeof(LwpaPollfd));
   if (!pfds)
-    return LWPA_NOMEM;
+    return kLwpaErrNoMem;
 #endif
 
   for (i = 0; i < poll_array_size; ++i)
@@ -614,7 +614,7 @@ int llrp_update(LlrpPoll *poll_array, size_t poll_array_size, int timeout_ms)
     llrp_data_set_nodata(&cur_poll->data);
     if (cur_poll->handle != LLRP_SOCKET_INVALID)
     {
-      cur_poll->err = LWPA_NODATA;
+      cur_poll->err = kLwpaErrNoData;
       pfds[nfds].fd = cur_poll->handle->sys_sock;
       pfds[nfds].events = LWPA_POLLIN;
       ++nfds;
@@ -623,7 +623,7 @@ int llrp_update(LlrpPoll *poll_array, size_t poll_array_size, int timeout_ms)
       {
         if (process_manager_state(cur_poll->handle, &poll_timeout, &cur_poll->data))
         {
-          cur_poll->err = LWPA_OK;
+          cur_poll->err = kLwpaErrOk;
           ++res;
         }
       }
@@ -634,7 +634,7 @@ int llrp_update(LlrpPoll *poll_array, size_t poll_array_size, int timeout_ms)
     }
     else
     {
-      cur_poll->err = LWPA_INVALID;
+      cur_poll->err = kLwpaErrInvalid;
       ++res;
     }
   }
@@ -675,7 +675,7 @@ int llrp_update(LlrpPoll *poll_array, size_t poll_array_size, int timeout_ms)
           {
             if (process_parsed_msg(cur_poll->handle, &msg, &cur_poll->data))
             {
-              cur_poll->err = LWPA_OK;
+              cur_poll->err = kLwpaErrOk;
               ++res;
             }
           }
@@ -689,7 +689,7 @@ int llrp_update(LlrpPoll *poll_array, size_t poll_array_size, int timeout_ms)
     }
 
     if (res == 0)
-      res = LWPA_TIMEDOUT;
+      res = kLwpaErrTimedOut;
   }
   else
   {
@@ -729,8 +729,8 @@ void llrp_target_update_connection_state(llrp_socket_t handle, bool connected_to
  *  \param[in] destination CID of LLRP Target to which to send the command.
  *  \param[in] command RDM command to send.
  *  \param[out] transaction_number Filled in on success with the transaction number of the command.
- *  \return #LWPA_OK: Command sent successfully.\n
- *          #LWPA_INVALID: Invalid argument provided.\n
+ *  \return #kLwpaErrOk: Command sent successfully.\n
+ *          #kLwpaErrInvalid: Invalid argument provided.\n
  *          Note: other error codes might be propagated from underlying socket calls.
  */
 lwpa_error_t llrp_send_rdm_command(llrp_socket_t handle, const LwpaUuid *destination, const RdmBuffer *command,
@@ -743,7 +743,7 @@ lwpa_error_t llrp_send_rdm_command(llrp_socket_t handle, const LwpaUuid *destina
 
   if (!handle || !destination || !command || !transaction_number || handle->socket_type != kLLRPSocketTypeManager)
   {
-    return LWPA_INVALID;
+    return kLwpaErrInvalid;
   }
 
   mgrdata = get_manager_data(handle);
@@ -756,7 +756,7 @@ lwpa_error_t llrp_send_rdm_command(llrp_socket_t handle, const LwpaUuid *destina
   dest_addr.port = LLRP_PORT;
   res = send_llrp_rdm(handle, &dest_addr, &header, command);
 
-  if (res == LWPA_OK)
+  if (res == kLwpaErrOk)
     *transaction_number = mgrdata->transaction_number++;
   return res;
 }
@@ -767,8 +767,8 @@ lwpa_error_t llrp_send_rdm_command(llrp_socket_t handle, const LwpaUuid *destina
  *  \param[in] destination CID of LLRP Manager to which to send the command.
  *  \param[in] command RDM response to send.
  *  \param[in] transaction_number Transaction number of the corresponding LLRP RDM command.
- *  \return #LWPA_OK: Command sent successfully.\n
- *          #LWPA_INVALID: Invalid argument provided.\n
+ *  \return #kLwpaErrOk: Command sent successfully.\n
+ *          #kLwpaErrInvalid: Invalid argument provided.\n
  *          Note: other error codes might be propagated from underlying socket calls.
  */
 lwpa_error_t llrp_send_rdm_response(llrp_socket_t handle, const LwpaUuid *destination, const RdmBuffer *command,
@@ -779,7 +779,7 @@ lwpa_error_t llrp_send_rdm_response(llrp_socket_t handle, const LwpaUuid *destin
 
   if (!handle || !destination || !command || !transaction_number || handle->socket_type != kLLRPSocketTypeTarget)
   {
-    return LWPA_INVALID;
+    return kLwpaErrInvalid;
   }
 
   header.dest_cid = *destination;
@@ -799,7 +799,7 @@ llrp_socket_t llrp_close_socket_priv(llrp_socket_t socket, lwpa_error_t *result)
   if (socket->sys_sock != LWPA_SOCKET_INVALID)
     *result = lwpa_close(socket->sys_sock);
   else
-    *result = LWPA_OK;
+    *result = kLwpaErrOk;
 
   llrp_socket_t next = socket->next;
 

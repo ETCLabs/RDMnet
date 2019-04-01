@@ -94,6 +94,8 @@ bool ipv6_valid(LwpaIpAddr *ip);
 void DNSSD_API HandleDNSServiceRegisterReply(DNSServiceRef sdRef, DNSServiceFlags flags, DNSServiceErrorType errorCode,
                                              const char *name, const char *regtype, const char *domain, void *context)
 {
+  (void)context;
+
   rdmnet_registered_broker_t broker_handle = &disc_state.broker_ref;
   if (!broker_handle)
     return;
@@ -195,6 +197,10 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
                                             uint16_t port /* In network byte order */, uint16_t txtLen,
                                             const unsigned char *txtRecord, void *context)
 {
+  (void)flags;
+  (void)interfaceIndex;
+  (void)fullname;
+
   RdmnetScopeMonitorRef *ref = (RdmnetScopeMonitorRef *)context;
   if (!ref)
     return;
@@ -220,7 +226,6 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
     DNSServiceRefDeallocate(sdRef);
 
     DNSServiceErrorType getaddrinfo_err = kDNSServiceErr_NoError;
-    DNSServiceRef error_search_ref = {0};
 
     // We have to take the lock before the DNSServiceGetAddrInfo call, because we need to add the
     // ref to our map before it responds.
@@ -297,6 +302,7 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
                                            DNSServiceErrorType errorCode, const char *serviceName, const char *regtype,
                                            const char *replyDomain, void *context)
 {
+  (void)sdRef;
   (void)interfaceIndex;
 
   RdmnetScopeMonitorRef *ref = (RdmnetScopeMonitorRef *)context;
@@ -371,7 +377,7 @@ lwpa_error_t rdmnetdisc_init()
   disc_state.broker_ref.state = kBrokerStateNotRegistered;
   lwpa_mutex_create(&disc_state.lock);
 
-  return LWPA_OK;
+  return kLwpaErrOk;
 }
 
 void rdmnetdisc_deinit()
@@ -395,11 +401,11 @@ lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig *config,
                                          int *platform_specific_error)
 {
   if (!config || !handle || !platform_specific_error)
-    return LWPA_INVALID;
+    return kLwpaErrInvalid;
 
   RdmnetScopeMonitorRef *new_monitor = scope_monitor_new(config);
   if (!new_monitor)
-    return LWPA_NOMEM;
+    return kLwpaErrNoMem;
 
   // Start the browse operation in the Bonjour stack.
   char reg_str[REGISTRATION_STRING_PADDED_LENGTH];
@@ -407,7 +413,7 @@ lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig *config,
 
   // We have to take the lock before the DNSServiceBrowse call, because we need to add the ref to
   // our map before it responds.
-  lwpa_error_t res = LWPA_OK;
+  lwpa_error_t res = kLwpaErrOk;
   if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
   {
     DNSServiceErrorType result = DNSServiceBrowse(&new_monitor->dnssd_ref, 0, 0, reg_str, config->domain,
@@ -421,12 +427,12 @@ lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig *config,
     {
       *platform_specific_error = result;
       scope_monitor_delete(new_monitor);
-      res = LWPA_SYSERR;
+      res = kLwpaErrSys;
     }
     lwpa_mutex_give(&disc_state.lock);
   }
 
-  if (res == LWPA_OK)
+  if (res == kLwpaErrOk)
     *handle = new_monitor;
 
   return res;
@@ -478,14 +484,14 @@ lwpa_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig *config
   if (!config || !handle || disc_state.broker_ref.state != kBrokerStateNotRegistered ||
       !broker_info_is_valid(&config->my_info))
   {
-    return LWPA_INVALID;
+    return kLwpaErrInvalid;
   }
 
   disc_state.broker_ref.config = *config;
   disc_state.broker_ref.state = kBrokerStateInfoSet;
 
   *handle = &disc_state.broker_ref;
-  return LWPA_OK;
+  return kLwpaErrOk;
 }
 
 void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle)
@@ -596,7 +602,7 @@ void rdmnetdisc_tick()
 
         int mon_error;
         rdmnet_scope_monitor_t monitor_handle;
-        if (rdmnetdisc_start_monitoring(&config, &monitor_handle, &mon_error) == LWPA_OK)
+        if (rdmnetdisc_start_monitoring(&config, &monitor_handle, &mon_error) == kLwpaErrOk)
         {
           broker_ref->scope_monitor_handle = monitor_handle;
           monitor_handle->broker_handle = broker_ref;

@@ -110,13 +110,13 @@ lwpa_error_t send_broker_header(rdmnet_conn_t handle, RdmnetConnectionInternal *
   {
     if (!conn)
       rdmnet_end_message(handle);
-    return LWPA_PROTERR;
+    return kLwpaErrProtocol;
   }
 
   /* Pack and send the TCP preamble. */
   data_size = lwpa_pack_tcp_preamble(buf, buflen, data_size);
   if (data_size == 0)
-    return LWPA_PROTERR;
+    return kLwpaErrProtocol;
   send_res = do_send(handle, conn, buf, data_size);
   if (send_res < 0)
     return (lwpa_error_t)send_res;
@@ -124,7 +124,7 @@ lwpa_error_t send_broker_header(rdmnet_conn_t handle, RdmnetConnectionInternal *
   /* Pack and send the Root Layer PDU header */
   data_size = lwpa_pack_root_layer_header(buf, buflen, rlp);
   if (data_size == 0)
-    return LWPA_PROTERR;
+    return kLwpaErrProtocol;
   send_res = do_send(handle, conn, buf, data_size);
   if (send_res < 0)
     return (lwpa_error_t)send_res;
@@ -135,7 +135,7 @@ lwpa_error_t send_broker_header(rdmnet_conn_t handle, RdmnetConnectionInternal *
   if (send_res < 0)
     return (lwpa_error_t)send_res;
 
-  return LWPA_OK;
+  return kLwpaErrOk;
 }
 
 /******************************* Client Connect ******************************/
@@ -173,7 +173,7 @@ lwpa_error_t send_client_connect(RdmnetConnectionInternal *conn, const ClientCon
 
   if (!(is_rpt_client_entry(&data->client_entry) || is_ept_client_entry(&data->client_entry)))
   {
-    return LWPA_PROTERR;
+    return kLwpaErrProtocol;
   }
 
   rlp.sender_cid = conn->local_cid;
@@ -181,7 +181,7 @@ lwpa_error_t send_client_connect(RdmnetConnectionInternal *conn, const ClientCon
   rlp.datalen = calc_client_connect_len(data);
 
   res = send_broker_header(NULL, conn, &rlp, buf, CLIENT_CONNECT_COMMON_FIELD_SIZE, VECTOR_BROKER_CONNECT);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
     return res;
 
   RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
@@ -243,7 +243,7 @@ lwpa_error_t send_client_connect(RdmnetConnectionInternal *conn, const ClientCon
     }
   }
   lwpa_timer_reset(&conn->send_timer);
-  return LWPA_OK;
+  return kLwpaErrOk;
 }
 
 /******************************* Connect Reply *******************************/
@@ -296,8 +296,8 @@ size_t pack_connect_reply(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid
  *  \param[in] handle RDMnet connection handle on which to send the Connect Reply message.
  *  \param[in] local_cid CID of the Component sending the Connect Reply message.
  *  \param[in] data Connect Reply data.
- *  \return #LWPA_OK: Send success.\n
- *          #LWPA_INVALID: Invalid argument provided.\n
+ *  \return #kLwpaErrOk: Send success.\n
+ *          #kLwpaErrInvalid: Invalid argument provided.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
@@ -310,18 +310,18 @@ lwpa_error_t send_connect_reply(rdmnet_conn_t handle, const LwpaUuid *local_cid,
   uint8_t *cur_ptr;
 
   if (!local_cid || !data)
-    return LWPA_INVALID;
+    return kLwpaErrInvalid;
 
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = BROKER_PDU_HEADER_SIZE + CONNECT_REPLY_DATA_SIZE;
 
   res = rdmnet_start_message(handle);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
     return res;
 
   res = send_broker_header(handle, NULL, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_CONNECT_REPLY);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
   {
     rdmnet_end_message(handle);
     return res;
@@ -357,8 +357,8 @@ lwpa_error_t send_connect_reply(rdmnet_conn_t handle, const LwpaUuid *local_cid,
 /*! \brief Send a Fetch Client List message on an RDMnet connection.
  *  \param[in] handle RDMnet connection handle on which to send the Fetch Client List message.
  *  \param[in] local_cid CID of the Component sending the Fetch Client List message.
- *  \return #LWPA_OK: Send success.\n
- *          #LWPA_INVALID: Invalid argument provided.\n
+ *  \return #kLwpaErrOk: Send success.\n
+ *          #kLwpaErrInvalid: Invalid argument provided.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
@@ -369,18 +369,18 @@ lwpa_error_t send_fetch_client_list(rdmnet_conn_t handle, const LwpaUuid *local_
   uint8_t buf[ACN_RLP_HEADER_SIZE_EXT_LEN];
 
   if (!local_cid)
-    return LWPA_INVALID;
+    return kLwpaErrInvalid;
 
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = BROKER_PDU_HEADER_SIZE;
 
   res = rdmnet_start_message(handle);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
     return res;
 
   res = send_broker_header(handle, NULL, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_FETCH_CLIENT_LIST);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
     return res;
 
   return rdmnet_end_message(handle);
@@ -517,8 +517,8 @@ size_t calc_request_dynamic_uids_len(const DynamicUidRequestListEntry *request_l
  *  \param[in] local_cid CID of the Component sending the Request Dynamic UID Assignment message.
  *  \param[in] request_list List of Dynamic UID Request Pairs, each indicating a request for a
  *                          newly-assigned Dynamic UID.
- *  \return #LWPA_OK: Send success.\n
- *          #LWPA_INVALID: Invalid argument provided.\n
+ *  \return #kLwpaErrOk: Send success.\n
+ *          #kLwpaErrInvalid: Invalid argument provided.\n
  *          #LWPA_SYSERR: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
@@ -532,18 +532,18 @@ lwpa_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const LwpaUuid *loc
   const DynamicUidRequestListEntry *cur_request;
 
   if (!local_cid || !request_list)
-    return LWPA_INVALID;
+    return kLwpaErrInvalid;
 
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = calc_request_dynamic_uids_len(request_list);
 
   res = rdmnet_start_message(handle);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
     return res;
 
   res = send_broker_header(handle, NULL, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_REQUEST_DYNAMIC_UIDS);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
   {
     rdmnet_end_message(handle);
     return res;
@@ -668,18 +668,18 @@ lwpa_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const LwpaUuid
   const FetchUidAssignmentListEntry *cur_uid;
 
   if (!local_cid || !uid_list)
-    return LWPA_INVALID;
+    return kLwpaErrInvalid;
 
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = calc_requested_uids_len(uid_list);
 
   res = rdmnet_start_message(handle);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
     return res;
 
   res = send_broker_header(handle, NULL, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
   {
     rdmnet_end_message(handle);
     return res;
@@ -718,7 +718,7 @@ lwpa_error_t send_disconnect(RdmnetConnectionInternal *conn, const DisconnectMsg
   rlp.datalen = BROKER_DISCONNECT_MSG_SIZE;
 
   res = send_broker_header(NULL, conn, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_DISCONNECT);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
     return res;
 
   lwpa_pack_16b(buf, data->disconnect_reason);
@@ -727,7 +727,7 @@ lwpa_error_t send_disconnect(RdmnetConnectionInternal *conn, const DisconnectMsg
     return (lwpa_error_t)send_res;
 
   lwpa_timer_reset(&conn->send_timer);
-  return LWPA_OK;
+  return kLwpaErrOk;
 }
 
 /*********************************** Null ************************************/
@@ -743,9 +743,9 @@ lwpa_error_t send_null(RdmnetConnectionInternal *conn)
   rlp.datalen = BROKER_NULL_MSG_SIZE;
 
   res = send_broker_header(NULL, conn, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_NULL);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
     return res;
 
   lwpa_timer_reset(&conn->send_timer);
-  return LWPA_OK;
+  return kLwpaErrOk;
 }

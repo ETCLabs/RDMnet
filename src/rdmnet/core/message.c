@@ -49,7 +49,7 @@ static void free_rpt_message(RptMessage *rmsg);
 
 lwpa_error_t rdmnet_message_init()
 {
-  lwpa_error_t res = LWPA_OK;
+  lwpa_error_t res = kLwpaErrOk;
 #if !RDMNET_DYNAMIC_MEM
   res |= lwpa_mempool_init(client_entries);
   res |= lwpa_mempool_init(ept_subprots);

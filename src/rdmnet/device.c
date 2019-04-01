@@ -72,7 +72,7 @@ lwpa_error_t rdmnet_device_create(const RdmnetDeviceConfig *config, rdmnet_devic
 
   RdmnetDeviceInternal *new_device = alloc_rdmnet_device();
   if (!new_device)
-    return LWPA_NOMEM;
+    return kLwpaErrNoMem;
 
   rdmnet_safe_strncpy(new_device->scope, config->scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH);
   new_device->callbacks = config->callbacks;
@@ -89,7 +89,7 @@ lwpa_error_t rdmnet_device_create(const RdmnetDeviceConfig *config, rdmnet_devic
   client_config.callback_context = new_device;
 
   lwpa_error_t res = rdmnet_rpt_client_create(&client_config, &new_device->client_handle);
-  if (res == LWPA_OK)
+  if (res == kLwpaErrOk)
   {
     *handle = new_device;
   }

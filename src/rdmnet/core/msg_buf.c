@@ -113,7 +113,7 @@ lwpa_error_t rdmnet_msg_buf_recv(lwpa_socket_t sock, RdmnetMsgBuf *msg_buf)
     else if (recv_res == 0)
     {
       /* 0 indicates graceful close of connection by peer */
-      return LWPA_CONNCLOSED;
+      return kLwpaErrConnClosed;
     }
     else
     {
@@ -126,9 +126,9 @@ lwpa_error_t rdmnet_msg_buf_recv(lwpa_socket_t sock, RdmnetMsgBuf *msg_buf)
 
 lwpa_error_t run_parse_state_machine(RdmnetMsgBuf *msg_buf)
 {
-  /* Unless we finish parsing a message in this function, we will return LWPA_NODATA to indicate
+  /* Unless we finish parsing a message in this function, we will return kLwpaErrNoData to indicate
    * that the parse is still in progress. */
-  lwpa_error_t res = LWPA_NODATA;
+  lwpa_error_t res = kLwpaErrNoData;
   size_t consumed;
   parse_result_t parse_res;
 
@@ -146,7 +146,7 @@ lwpa_error_t run_parse_state_machine(RdmnetMsgBuf *msg_buf)
       }
       else
       {
-        res = LWPA_NODATA;
+        res = kLwpaErrNoData;
         msg_buf->data_remaining = false;
         break;
       }
@@ -159,17 +159,17 @@ lwpa_error_t run_parse_state_machine(RdmnetMsgBuf *msg_buf)
         case kPSFullBlockParseOk:
         case kPSFullBlockProtErr:
           msg_buf->have_preamble = false;
-          res = (parse_res == kPSFullBlockProtErr ? LWPA_PROTERR : LWPA_OK);
+          res = (parse_res == kPSFullBlockProtErr ? kLwpaErrProtocol : kLwpaErrOk);
           msg_buf->data_remaining = (consumed < msg_buf->cur_data_size);
           break;
         case kPSPartialBlockParseOk:
         case kPSPartialBlockProtErr:
-          res = (parse_res == kPSPartialBlockProtErr ? LWPA_PROTERR : LWPA_OK);
+          res = (parse_res == kPSPartialBlockProtErr ? kLwpaErrProtocol : kLwpaErrOk);
           msg_buf->data_remaining = (consumed < msg_buf->cur_data_size);
           break;
         case kPSNoData:
         default:
-          res = LWPA_NODATA;
+          res = kLwpaErrNoData;
           msg_buf->data_remaining = false;
           break;
       }
@@ -185,7 +185,7 @@ lwpa_error_t run_parse_state_machine(RdmnetMsgBuf *msg_buf)
       }
       msg_buf->cur_data_size -= consumed;
     }
-  } while (res == LWPA_PROTERR);
+  } while (res == kLwpaErrProtocol);
 
   return res;
 }
