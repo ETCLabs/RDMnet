@@ -27,10 +27,19 @@
 #include "ControllerDefaultResponder.h"
 
 #include <algorithm>
+#include <iterator>
+#include <cassert>
 #include "lwpa/pack.h"
 #include "rdm/defs.h"
 #include "rdmnet/defs.h"
 #include "ControllerUtils.h"
+
+static_assert(sizeof(kMyDeviceLabel) <= 33, "Defined Device Label is too long for RDM's requirements.");
+static_assert(sizeof(kMyManufacturerLabel) <= 33, "Defined Manufacturer Label is too long for RDM's requirements.");
+static_assert(sizeof(kMyDeviceModelDescription) <= 33,
+              "Defined Device Model Description is too long for RDM's requirements.");
+static_assert(sizeof(kMySoftwareVersionLabel) <= 33,
+              "Defined Software Version Label is too long for RDM's requirements.");
 
 /* clang-format off */
 const std::vector<uint16_t> ControllerDefaultResponder::supported_parameters_ = {
@@ -62,9 +71,6 @@ const std::vector<uint8_t> ControllerDefaultResponder::device_info_ = {
   0x00 /* Sensor count */
 };
 /* clang-format on */
-
-#define MAX_SCOPE_SLOT_NUMBER 0xFFFF
-#define DEVICE_LABEL_MAX_LEN 32
 
 bool ControllerDefaultResponder::Get(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len,
                                      std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason)
@@ -101,8 +107,10 @@ bool ControllerDefaultResponder::GetIdentifyDevice(const uint8_t * /*param_data*
                                                    std::vector<RdmParamData> &resp_data_list,
                                                    uint16_t & /*nack_reason*/) const
 {
-  ControllerReadGuard prop_read(prop_lock_);
-  resp_data_list.push_back({{identifying_ ? 1 : 0}, 1});
+  RdmParamData resp_data;
+  resp_data.data[0] = identifying_ ? 1 : 0;
+  resp_data.datalen = 1;
+  resp_data_list.push_back(resp_data);
   return true;
 }
 
@@ -112,16 +120,16 @@ bool ControllerDefaultResponder::GetDeviceLabel(const uint8_t * /*param_data*/, 
 {
   ControllerReadGuard prop_read(prop_lock_);
 
-  size_t label_len = std::min(device_label_.length(), DEVICE_LABEL_MAX_LEN);
+  size_t label_len = std::min(device_label_.length(), kRdmDeviceLabelMaxLength);
   RdmParamData resp_data;
-  memcpy(resp_data.data, 
-  strncpy((char *)resp_data_list[0].data, prop_data_.device_label, DEVICE_LABEL_MAX_LEN);
-  resp_data_list[0].datalen = (uint8_t)strnlen(prop_data_.device_label, DEVICE_LABEL_MAX_LEN);
+  memcpy(resp_data.data, device_label_.c_str(), label_len);
+  resp_data_list[0].datalen = static_cast<uint8_t>(label_len);
   return true;
 }
 
 bool ControllerDefaultResponder::GetComponentScope(const uint8_t *param_data, uint8_t param_data_len,
-                                                   std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason)
+                                                   std::vector<RdmParamData> &resp_data_list,
+                                                   uint16_t &nack_reason) const
 {
   if (param_data_len >= 2)
   {
@@ -135,137 +143,130 @@ bool ControllerDefaultResponder::GetComponentScope(const uint8_t *param_data, ui
 }
 
 bool ControllerDefaultResponder::GetComponentScope(uint16_t slot, std::vector<RdmParamData> &resp_data_list,
-                                                   uint16_t &nack_reason)
+                                                   uint16_t &nack_reason) const
 {
-  if (slot == 0)
-  {
-    nack_reason = E120_NR_DATA_OUT_OF_RANGE;
-  }
-  else
+  if (slot != 0)
   {
     ControllerReadGuard prop_read(prop_lock_);
 
-    auto connectionIter = broker_connections_.find(slot - 1);
-    if (connectionIter == broker_connections_.end())
+    if (slot - 1 < scopes_.size())
     {
-      // Return the next highest Scope Slot that is not empty.
-      connectionIter = broker_connections_.upper_bound(slot - 1);
-
-      if (connectionIter != broker_connections_.end())
+      auto scopeIter = scopes_.begin();
+      if (scopeIter != scopes_.end())
       {
-        slot = connectionIter->first + 1;
+        std::advance(scopeIter, slot - 1);
+
+        RdmParamData resp_data;
+
+        // Build the parameter data of the COMPONENT_SCOPE response.
+
+        // Scope slot
+        uint8_t *cur_ptr = resp_data.data;
+        lwpa_pack_16b(cur_ptr, slot);
+        cur_ptr += 2;
+
+        // Scope string
+        const std::string &scope_str = scopeIter->first;
+        strncpy((char *)cur_ptr, scope_str.c_str(), E133_SCOPE_STRING_PADDED_LENGTH);
+        cur_ptr[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
+        cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
+
+        // Static configuration
+        if (scopeIter->second.static_broker.valid)
+        {
+          const LwpaSockaddr &saddr = scopeIter->second.static_broker.addr;
+          if (lwpaip_is_v4(&saddr.ip))
+          {
+            *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
+            lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&saddr.ip));
+            cur_ptr += 4;
+            // Skip the IPv6 field
+            cur_ptr += 16;
+            lwpa_pack_16b(cur_ptr, saddr.port);
+            cur_ptr += 2;
+          }
+          else if (lwpaip_is_v6(&saddr.ip))
+          {
+            *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
+            // Skip the IPv4 field
+            cur_ptr += 4;
+            memcpy(cur_ptr, lwpaip_v6_address(&saddr.ip), LWPA_IPV6_BYTES);
+            cur_ptr += LWPA_IPV6_BYTES;
+            lwpa_pack_16b(cur_ptr, saddr.port);
+            cur_ptr += 2;
+          }
+        }
+        else
+        {
+          *cur_ptr++ = E133_NO_STATIC_CONFIG;
+          // Skip the IPv4, IPv6 and port fields
+          cur_ptr += 4 + 16 + 2;
+        }
+        resp_data.datalen = static_cast<uint8_t>(cur_ptr - resp_data.data);
+        resp_data_list.push_back(resp_data);
+        return true;
       }
       else
       {
-        slot = 0;
+        nack_reason = E120_NR_DATA_OUT_OF_RANGE;
       }
     }
-
-    if (slot != 0)
-    {
-      uint8_t *cur_ptr = resp_data_list[0].data;
-      lwpa_pack_16b(cur_ptr, slot);
-      cur_ptr += 2;
-
-      std::string scope = connectionIter->second->scope();
-
-      strncpy((char *)cur_ptr, scope.data(), E133_SCOPE_STRING_PADDED_LENGTH);
-      cur_ptr[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
-      cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
-
-      LwpaSockaddr saddr = connectionIter->second->staticSockAddr();
-      if (lwpaip_is_v4(&saddr.ip))
-      {
-        *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
-        lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&saddr.ip));
-        cur_ptr += 4;
-        /* Skip the IPv6 field */
-        cur_ptr += 16;
-        lwpa_pack_16b(cur_ptr, saddr.port);
-        cur_ptr += 2;
-      }
-      else if (lwpaip_is_v6(&saddr.ip))
-      {
-        *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
-        /* Skip the IPv4 field */
-        cur_ptr += 4;
-        memcpy(cur_ptr, lwpaip_v6_address(&saddr.ip), LWPA_IPV6_BYTES);
-        cur_ptr += LWPA_IPV6_BYTES;
-        lwpa_pack_16b(cur_ptr, saddr.port);
-        cur_ptr += 2;
-      }
-      else
-      {
-        *cur_ptr++ = E133_NO_STATIC_CONFIG;
-        /* Skip the IPv4, IPv6 and port fields */
-        cur_ptr += 4 + 16 + 2;
-      }
-      resp_data_list[0].datalen = static_cast<uint8_t>(cur_ptr - resp_data_list[0].data);
-      *num_responses = 1;
-
-      lwpa_rwlock_readunlock(&prop_lock);
-      return true;
-    }
-    else if (nack_reason != NULL)
+    else
     {
       nack_reason = E120_NR_DATA_OUT_OF_RANGE;
     }
-
-    lwpa_rwlock_readunlock(&prop_lock);
   }
-
+  else
+  {
+    nack_reason = E120_NR_DATA_OUT_OF_RANGE;
+  }
   return false;
 }
 
-bool ControllerDefaultResponder::GetSearchDomain(const uint8_t *param_data, uint8_t param_data_len,
-                                                 std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason)
+bool ControllerDefaultResponder::GetSearchDomain(const uint8_t * /*param_data*/, uint8_t /*param_data_len*/,
+                                                 std::vector<RdmParamData> &resp_data_list,
+                                                 uint16_t & /*nack_reason*/) const
 {
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
+  ControllerReadGuard prop_read(prop_lock_);
 
-  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
-  {
-    strncpy((char *)resp_data_list[0].data, prop_data_.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
-    resp_data_list[0].datalen = (uint8_t)strlen(prop_data_.search_domain);
-
-    lwpa_rwlock_readunlock(&prop_lock);
-  }
-  *num_responses = 1;
+  RdmParamData resp_data;
+  strncpy((char *)resp_data.data, search_domain_.c_str(), E133_DOMAIN_STRING_PADDED_LENGTH);
+  resp_data.datalen = static_cast<uint8_t>(search_domain_.length());
+  resp_data_list.push_back(resp_data);
   return true;
 }
 
-bool ControllerDefaultResponder::GetTCPCommsStatus(const uint8_t *param_data, uint8_t param_data_len,
-                                                   std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason)
+bool ControllerDefaultResponder::GetTCPCommsStatus(const uint8_t * /*param_data*/, uint8_t /*param_data_len*/,
+                                                   std::vector<RdmParamData> &resp_data_list,
+                                                   uint16_t & /*nack_reason*/) const
 {
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
+  ControllerReadGuard prop_read(prop_lock_);
 
-  int currentListIndex = 0;
-
-  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
+  for (const auto &scope_pair : scopes_)
   {
-    for (const auto &connection : broker_connections_)
+    RdmParamData resp_data;
+    uint8_t *cur_ptr = resp_data.data;
+
+    const std::string &scope_str = scope_pair.first;
+    memset(cur_ptr, 0, E133_SCOPE_STRING_PADDED_LENGTH);
+    memcpy(cur_ptr, scope_str.data(), std::min<size_t>(scope_str.length(), E133_SCOPE_STRING_PADDED_LENGTH));
+    cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
+
+    const ControllerScopeData &scope_data = scope_pair.second;
+    if (!scope_data.connected)
     {
-      uint8_t *cur_ptr = resp_data_list[currentListIndex].data;
-      LwpaSockaddr saddr = connection.second->currentSockAddr();
-      std::string scope = connection.second->scope();
-
-      memset(cur_ptr, 0, E133_SCOPE_STRING_PADDED_LENGTH);
-      memcpy(cur_ptr, scope.data(), min(scope.length(), E133_SCOPE_STRING_PADDED_LENGTH));
-      cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
-
-      if (lwpaip_is_invalid(&saddr.ip) || !connection.second->connected())
+      lwpa_pack_32b(cur_ptr, 0);
+      cur_ptr += 4;
+      memset(cur_ptr, 0, LWPA_IPV6_BYTES);
+      cur_ptr += LWPA_IPV6_BYTES;
+      lwpa_pack_16b(cur_ptr, 0);
+      cur_ptr += 2;
+    }
+    else
+    {
+      if (lwpaip_is_v4(&scope_data.current_broker.ip))
       {
-        lwpa_pack_32b(cur_ptr, 0);
-        cur_ptr += 4;
-        memset(cur_ptr, 0, LWPA_IPV6_BYTES);
-        cur_ptr += LWPA_IPV6_BYTES;
-      }
-      else if (lwpaip_is_v4(&saddr.ip))
-      {
-        lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&saddr.ip));
+        lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&scope_data.current_broker.ip));
         cur_ptr += 4;
         memset(cur_ptr, 0, LWPA_IPV6_BYTES);
         cur_ptr += LWPA_IPV6_BYTES;
@@ -274,103 +275,84 @@ bool ControllerDefaultResponder::GetTCPCommsStatus(const uint8_t *param_data, ui
       {
         lwpa_pack_32b(cur_ptr, 0);
         cur_ptr += 4;
-        memcpy(cur_ptr, lwpaip_v6_address(&saddr.ip), LWPA_IPV6_BYTES);
+        memcpy(cur_ptr, lwpaip_v6_address(&scope_data.current_broker.ip), LWPA_IPV6_BYTES);
         cur_ptr += LWPA_IPV6_BYTES;
       }
-      lwpa_pack_16b(cur_ptr, saddr.port);
+      lwpa_pack_16b(cur_ptr, scope_data.current_broker.port);
       cur_ptr += 2;
-      lwpa_pack_16b(cur_ptr, prop_data_.tcp_unhealthy_counter);
-      cur_ptr += 2;
-      resp_data_list[currentListIndex].datalen = (uint8_t)(cur_ptr - resp_data_list[currentListIndex].data);
-
-      ++currentListIndex;
-
-      if (currentListIndex == MAX_RESPONSES_IN_ACK_OVERFLOW)
-      {
-        break;
-      }
     }
-
-    lwpa_rwlock_readunlock(&prop_lock);
-  }
-
-  *num_responses = currentListIndex;
-  return true;
-}
-
-bool ControllerDefaultResponder::GetSupportedParameters(const uint8_t *param_data, uint8_t param_data_len,
-                                                        std::vector<RdmParamData> &resp_data_list,
-                                                        uint16_t &nack_reason)
-{
-  size_t list_index = 0;
-  uint8_t *cur_ptr = resp_data_list[0].data;
-  size_t i;
-
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
-
-  for (i = 0; i < NUM_SUPPORTED_PIDS; ++i)
-  {
-    lwpa_pack_16b(cur_ptr, kSupportedPIDList[i]);
+    lwpa_pack_16b(cur_ptr, scope_data.unhealthy_tcp_events);
     cur_ptr += 2;
-    if ((cur_ptr - resp_data_list[list_index].data) >= RDM_MAX_PDL - 1)
+    resp_data.datalen = (uint8_t)(cur_ptr - resp_data.data);
+    resp_data_list.push_back(resp_data);
+  }
+  return true;
+}
+
+bool ControllerDefaultResponder::GetSupportedParameters(const uint8_t * /*param_data*/, uint8_t /*param_data_len*/,
+                                                        std::vector<RdmParamData> &resp_data_list,
+                                                        uint16_t & /*nack_reason*/) const
+{
+  RdmParamData resp_data;
+  uint8_t *cur_ptr = resp_data.data;
+
+  for (uint16_t param : supported_parameters_)
+  {
+    lwpa_pack_16b(cur_ptr, param);
+    cur_ptr += 2;
+    if ((cur_ptr - resp_data.data) >= RDM_MAX_PDL - 1)
     {
-      resp_data_list[list_index].datalen = (uint8_t)(cur_ptr - resp_data_list[list_index].data);
-      cur_ptr = resp_data_list[++list_index].data;
+      resp_data.datalen = (uint8_t)(cur_ptr - resp_data.data);
+      resp_data_list.push_back(resp_data);
+      cur_ptr = resp_data.data;
     }
   }
-  resp_data_list[list_index].datalen = (uint8_t)(cur_ptr - resp_data_list[list_index].data);
-  *num_responses = list_index + 1;
+  resp_data.datalen = (uint8_t)(cur_ptr - resp_data.data);
+  resp_data_list.push_back(resp_data);
   return true;
 }
 
-bool ControllerDefaultResponder::GetDeviceInfo(const uint8_t *param_data, uint8_t param_data_len,
-                                               std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason)
+bool ControllerDefaultResponder::GetDeviceInfo(const uint8_t * /*param_data*/, uint8_t /*param_data_len*/,
+                                               std::vector<RdmParamData> &resp_data_list,
+                                               uint16_t & /*nack_reason*/) const
 {
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
-  memcpy(resp_data_list[0].data, kDeviceInfo, sizeof kDeviceInfo);
-  resp_data_list[0].datalen = sizeof kDeviceInfo;
-  *num_responses = 1;
+  RdmParamData resp_data;
+  memcpy(resp_data.data, device_info_.data(), device_info_.size());
+  resp_data.datalen = static_cast<uint8_t>(device_info_.size());
+  resp_data_list.push_back(resp_data);
   return true;
 }
 
-bool ControllerDefaultResponder::GetManufacturerLabel(const uint8_t *param_data, uint8_t param_data_len,
-                                                      std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason)
+bool ControllerDefaultResponder::GetManufacturerLabel(const uint8_t * /*param_data*/, uint8_t /*param_data_len*/,
+                                                      std::vector<RdmParamData> &resp_data_list,
+                                                      uint16_t & /*nack_reason*/) const
 {
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
-
-  strcpy((char *)resp_data_list[0].data, MANUFACTURER_LABEL);
-  resp_data_list[0].datalen = sizeof(MANUFACTURER_LABEL) - 1;
-  *num_responses = 1;
+  RdmParamData resp_data;
+  strcpy((char *)resp_data.data, manufacturer_label_.c_str());
+  resp_data.datalen = static_cast<uint8_t>(manufacturer_label_.length());
+  resp_data_list.push_back(resp_data);
   return true;
 }
 
-bool ControllerDefaultResponder::GetDeviceModelDescription(const uint8_t *param_data, uint8_t param_data_len,
+bool ControllerDefaultResponder::GetDeviceModelDescription(const uint8_t * /*param_data*/, uint8_t /*param_data_len*/,
                                                            std::vector<RdmParamData> &resp_data_list,
-                                                           uint16_t &nack_reason)
+                                                           uint16_t & /*nack_reason*/) const
 {
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
-
-  strcpy((char *)resp_data_list[0].data, DEVICE_MODEL_DESCRIPTION);
-  resp_data_list[0].datalen = sizeof(DEVICE_MODEL_DESCRIPTION) - 1;
-  *num_responses = 1;
+  RdmParamData resp_data;
+  strcpy((char *)resp_data.data, device_model_description_.c_str());
+  resp_data.datalen = static_cast<uint8_t>(device_model_description_.length());
+  resp_data_list.push_back(resp_data);
   return true;
 }
 
-bool ControllerDefaultResponder::GetSoftwareVersionLabel(const uint8_t *param_data, uint8_t param_data_len,
+bool ControllerDefaultResponder::GetSoftwareVersionLabel(const uint8_t * /*param_data*/, uint8_t /*param_data_len*/,
                                                          std::vector<RdmParamData> &resp_data_list,
-                                                         uint16_t &nack_reason) const
+                                                         uint16_t & /*nack_reason*/) const
 {
-  strcpy((char *)resp_data_list[0].data, SOFTWARE_VERSION_LABEL);
-  resp_data_list[0].datalen = sizeof(SOFTWARE_VERSION_LABEL) - 1;
-  *num_responses = 1;
+  RdmParamData resp_data;
+  strcpy((char *)resp_data.data, software_version_label_.c_str());
+  resp_data_list[0].datalen = static_cast<uint8_t>(software_version_label_.length());
+  resp_data_list.push_back(resp_data);
   return true;
 }
 
@@ -380,10 +362,11 @@ void ControllerDefaultResponder::UpdateSearchDomain(const std::string &new_searc
   search_domain_ = new_search_domain;
 }
 
-void ControllerDefaultResponder::AddScope(const std::string &new_scope)
+void ControllerDefaultResponder::AddScope(const std::string &new_scope, StaticBrokerConfig static_broker)
 {
   ControllerWriteGuard prop_write(prop_lock_);
-  scopes_.insert(std::make_pair(new_scope, 0));
+
+  scopes_.insert(std::make_pair(new_scope, ControllerScopeData(static_broker)));
 }
 
 void ControllerDefaultResponder::RemoveScope(const std::string &scope_to_remove)
@@ -398,7 +381,7 @@ void ControllerDefaultResponder::IncrementTcpUnhealthyCounter(const std::string 
   auto scope_entry = scopes_.find(scope);
   if (scope_entry != scopes_.end())
   {
-    ++scope_entry->second;
+    ++scope_entry->second.unhealthy_tcp_events;
   }
 }
 
@@ -408,6 +391,6 @@ void ControllerDefaultResponder::ResetTcpUnhealthyCounter(const std::string &sco
   auto scope_entry = scopes_.find(scope);
   if (scope_entry != scopes_.end())
   {
-    scope_entry->second = 0;
+    scope_entry->second.unhealthy_tcp_events = 0;
   }
 }

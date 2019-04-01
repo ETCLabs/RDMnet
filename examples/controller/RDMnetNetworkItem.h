@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include "rdm/uid.h"
 #include "ControllerUtils.h"
 
 BEGIN_INCLUDE_QT_HEADERS()
@@ -113,8 +114,7 @@ public:
   void completelyRemoveChildren(int row, int count = 1, std::vector<class PropertyItem *> *alsoRemoveFromThis = NULL);
   void disableAllChildItems();
 
-  virtual uint16_t getMan(void) const { return 0; };
-  virtual uint32_t getDev(void) const { return 0; };
+  virtual RdmUid uid() const { return {0, 0}; }
   virtual bool hasValidProperties(void) const;
 
   bool initiatePersonalityDescriptionSearch(uint8_t numberOfPersonalities);

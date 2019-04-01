@@ -34,14 +34,28 @@
 #include "rdm/responder.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/version.h"
-
-constexpr size_t kRdmDeviceLabelMaxLen = 32;
+#include "ControllerUtils.h"
 
 struct RdmParamData
 {
   uint8_t data[RDM_MAX_PDL];
   uint8_t datalen;
 };
+
+struct ControllerScopeData
+{
+  ControllerScopeData(StaticBrokerConfig sb) : static_broker(sb) {}
+
+  uint16_t unhealthy_tcp_events{0};
+  StaticBrokerConfig static_broker;
+  bool connected{false};
+  LwpaSockaddr current_broker;
+};
+
+constexpr char kMyDeviceLabel[] = "ETC Example RDMnet Controller";
+constexpr char kMyManufacturerLabel[] = "ETC";
+constexpr char kMyDeviceModelDescription[] = "ETC Example RDMnet Controller";
+constexpr char kMySoftwareVersionLabel[] = RDMNET_VERSION_STRING;
 
 class ControllerDefaultResponder
 {
@@ -58,6 +72,7 @@ public:
                       uint16_t &nack_reason) const;
   bool GetComponentScope(const uint8_t *param_data, uint8_t param_data_len, std::vector<RdmParamData> &resp_data_list,
                          uint16_t &nack_reason) const;
+  bool GetComponentScope(uint16_t slot, std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason) const;
   bool GetSearchDomain(const uint8_t *param_data, uint8_t param_data_len, std::vector<RdmParamData> &resp_data_list,
                        uint16_t &nack_reason) const;
   bool GetTCPCommsStatus(const uint8_t *param_data, uint8_t param_data_len, std::vector<RdmParamData> &resp_data_list,
@@ -74,24 +89,24 @@ public:
                                std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason) const;
 
   void UpdateSearchDomain(const std::string &new_search_domain);
-  void AddScope(const std::string &new_scope);
+  void AddScope(const std::string &new_scope, StaticBrokerConfig static_broker = StaticBrokerConfig());
   void RemoveScope(const std::string &scope_to_remove);
+  void UpdateScopeConnectionStatus(const std::string &scope, bool connected,
+                                   const LwpaSockaddr &broker_addr = LwpaSockaddr());
   void IncrementTcpUnhealthyCounter(const std::string &scope);
   void ResetTcpUnhealthyCounter(const std::string &scope);
 
 private:
-  bool GetComponentScope(uint16_t slot, std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason);
-
   mutable lwpa_rwlock_t prop_lock_;
 
   // Property data
   const bool identifying_{false};
-  const std::string device_label_{"ETC Example RDMnet Controller"};
-  std::map<std::string, uint16_t> scopes_;
+  const std::string device_label_{kMyDeviceLabel};
+  std::map<std::string, ControllerScopeData> scopes_;
   std::string search_domain_{E133_DEFAULT_DOMAIN};
   static const std::vector<uint16_t> supported_parameters_;
   static const std::vector<uint8_t> device_info_;
-  const std::string manufacturer_label_{"ETC"};
-  const std::string device_model_description_{"ETC Example RDMnet Controller"};
-  const std::string software_version_labe_{RDMNET_VERSION_STRING};
+  const std::string manufacturer_label_{kMyManufacturerLabel};
+  const std::string device_model_description_{kMyDeviceModelDescription};
+  const std::string software_version_label_{kMySoftwareVersionLabel};
 };

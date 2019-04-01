@@ -70,7 +70,11 @@ RDMnetControllerGUI *RDMnetControllerGUI::makeRDMnetControllerGUI()
   RDMnetControllerGUI *gui = new RDMnetControllerGUI;
   QHeaderView *networkTreeHeaderView = NULL;
 
-  gui->main_network_model_ = RDMnetNetworkModel::makeRDMnetNetworkModel();  // makeTestModel();
+  gui->log_ = new ControllerLog("RDMnetController.log");
+  gui->rdmnet_library_ = new RDMnetLibWrapper(gui->log_);
+
+  gui->main_network_model_ =
+      RDMnetNetworkModel::makeRDMnetNetworkModel(gui->rdmnet_library_, gui->log_);  // makeTestModel();
   gui->simple_net_proxy_ = new SimpleNetworkProxyModel;
   gui->net_details_proxy_ = new NetworkDetailsProxyModel;
 

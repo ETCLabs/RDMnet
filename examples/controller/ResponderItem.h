@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include "rdm/uid.h"
 #include "RDMnetNetworkItem.h"
 
 class ResponderItem : public RDMnetNetworkItem
@@ -37,14 +38,12 @@ public:
   // ResponderItem(uint16_t man, uint32_t dev) { m_Man = man; m_Dev = dev; m_HaveInfo = false; };
   ResponderItem(uint16_t man, uint32_t dev);
 
-  virtual uint16_t getMan(void) const { return m_Man; };
-  virtual uint32_t getDev(void) const { return m_Dev; };
+  RdmUid uid() const override { return uid_; }
 
   virtual int type() const override;
 
-  bool operator==(const ResponderItem &other) { return (m_Man == other.m_Man) && (m_Dev == other.m_Dev); }
+  bool operator==(const ResponderItem &other) { return uid_ == other.uid(); }
 
 private:
-  uint16_t m_Man;  // RDM Manufacturer ID
-  uint32_t m_Dev;  // RDM Device ID
+  RdmUid uid_;
 };

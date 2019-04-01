@@ -42,6 +42,9 @@ add_executable(${CONTROLLER_TARGET} WIN32
   BrokerStaticAddGUI.cpp
   BrokerStaticAddGUI.h
   BrokerStaticAddGUI.ui
+  ControllerDefaultResponder.h
+  ControllerDefaultResponder.cpp
+  ControllerUtils.h
   EndpointItem.cpp
   EndpointItem.h
   LogWindowGUI.cpp
@@ -63,6 +66,9 @@ add_executable(${CONTROLLER_TARGET} WIN32
   RDMnetControllerGUI.cpp
   RDMnetControllerGUI.h
   RDMnetControllerGUI.ui
+  RDMnetLibInterface.h
+  RDMnetLibWrapper.h
+  RDMnetLibWrapper.cpp
   RDMnetNetworkItem.cpp
   RDMnetNetworkItem.h
   RDMnetNetworkModel.cpp

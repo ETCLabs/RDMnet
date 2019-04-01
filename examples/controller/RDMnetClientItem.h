@@ -31,6 +31,10 @@
 #include "rdmnet/client.h"
 #include "EndpointItem.h"
 
+BEGIN_INCLUDE_QT_HEADERS()
+#include <QString>
+END_INCLUDE_QT_HEADERS()
+
 class RDMnetClientItem : public RDMnetNetworkItem
 {
 public:
@@ -39,7 +43,7 @@ public:
   static const char *clientType2String(rpt_client_type_t type);
 
   // RDMnetClientItem();
-  RDMnetClientItem(const ClientEntryData &entry, bool is_me);
+  RDMnetClientItem(const ClientEntryData &entry);
   virtual ~RDMnetClientItem();
 
   virtual int type() const override;
@@ -50,7 +54,7 @@ public:
            (get_rpt_client_entry_data(&entry_)->client_uid == get_rpt_client_entry_data(&other.entry_)->client_uid);
   }
 
-  const RdmUid &Uid() const { return get_rpt_client_entry_data(&entry_)->client_uid; }
+  RdmUid uid() const override { return get_rpt_client_entry_data(&entry_)->client_uid; }
   const rpt_client_type_t ClientType() const { return get_rpt_client_entry_data(&entry_)->client_type; }
 
   virtual uint16_t getMan(void) const { return get_rpt_client_entry_data(&entry_)->client_uid.manu; };
@@ -64,5 +68,5 @@ public:
   std::vector<EndpointItem *> endpoints_;
 
 protected:
-  std::map<std::string, uint16_t> scope_slots_;
+  std::map<QString, uint16_t> scope_slots_;
 };

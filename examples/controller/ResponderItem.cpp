@@ -30,8 +30,8 @@
 ResponderItem::ResponderItem(uint16_t man, uint32_t dev)
     : RDMnetNetworkItem(QString("Manu: 0x%0 | ID: 0x%1").arg(QString::number(man, 16)).arg(QString::number(dev, 16)))
 {
-  m_Man = man;
-  m_Dev = dev;
+  uid_.manu = man;
+  uid_.id = dev;
 }
 
 int ResponderItem::type() const

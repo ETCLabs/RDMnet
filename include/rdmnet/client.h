@@ -169,8 +169,9 @@ lwpa_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_sc
 lwpa_error_t rdmnet_client_change_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                         const RdmnetScopeConfig *new_config);
 
-lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, const char *scope, const LocalRdmCommand *cmd);
-lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, const char *scope,
+lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet_client_scope_t scope,
+                                                const LocalRdmCommand *cmd);
+lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_client_scope_t scope,
                                                  const LocalRdmResponse *resp);
 lwpa_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, const char *scope, const RptStatusMsg *status);
 

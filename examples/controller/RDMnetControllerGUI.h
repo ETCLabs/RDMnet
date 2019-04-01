@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include <memory>
 #include "ControllerUtils.h"
 
 BEGIN_INCLUDE_QT_HEADERS()
@@ -35,7 +36,12 @@ BEGIN_INCLUDE_QT_HEADERS()
 #include "ui_RDMnetControllerGUI.h"
 END_INCLUDE_QT_HEADERS()
 
+#include "ControllerLog.h"
+#include "RDMnetLibWrapper.h"
 #include "BrokerStaticAddGUI.h"
+#include "RDMnetNetworkModel.h"
+#include "SimpleNetworkProxyModel.h"
+#include "NetworkDetailsProxyModel.h"
 #include "RDMnetNetworkItem.h"
 
 class RDMnetControllerGUI : public QMainWindow, public IHandlesBrokerStaticAdd
@@ -79,9 +85,11 @@ private:
 
   Ui::RDMnetControllerGUIClass ui;
 
-  class RDMnetNetworkModel *main_network_model_;
-  class SimpleNetworkProxyModel *simple_net_proxy_;
-  class NetworkDetailsProxyModel *net_details_proxy_;
-  class BrokerItem *currently_selected_broker_item_;
-  class RDMnetNetworkItem *currently_selected_network_item_;
+  RDMnetNetworkModel *main_network_model_{nullptr};
+  SimpleNetworkProxyModel *simple_net_proxy_{nullptr};
+  NetworkDetailsProxyModel *net_details_proxy_{nullptr};
+  ControllerLog *log_{nullptr};
+  RDMnetLibWrapper *rdmnet_library_{nullptr};
+  BrokerItem *currently_selected_broker_item_{nullptr};
+  RDMnetNetworkItem *currently_selected_network_item_{nullptr};
 };

@@ -62,7 +62,8 @@ public:
                                  StaticBrokerConfig static_broker = StaticBrokerConfig()) override;
   bool RemoveScope(rdmnet_client_scope_t scope_handle) override;
 
-  bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const RdmCommand &cmd) override;
+  bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand &cmd) override;
+  bool SendRdmResponse(rdmnet_client_scope_t scope_handle, const LocalRdmResponse &resp) override;
 
 protected:
   // RDMnetLibNotifyInternal overrides

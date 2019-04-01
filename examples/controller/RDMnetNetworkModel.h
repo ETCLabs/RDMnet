@@ -52,8 +52,8 @@ class RDMnetNetworkModel : public QStandardItemModel, public RDMnetLibNotify
   Q_OBJECT
 
 signals:
-  void addRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
-  void removeRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
+  void addRDMnetClients(BrokerItem *brokerItem, const std::vector<ClientEntryData> &list);
+  void removeRDMnetClients(BrokerItem *brokerItem, const std::vector<ClientEntryData> &list);
   void newEndpointList(RDMnetClientItem *treeClientItem, const std::vector<std::pair<uint16_t, uint8_t>> &list);
   void newResponderList(EndpointItem *treeEndpointItem, const std::vector<RdmUid> &list);
   void setPropertyData(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, const QVariant &value,
@@ -86,8 +86,8 @@ public slots:
   void removeCustomLogOutputStream(LogOutputStream *stream);
 
 protected slots:
-  void processAddRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
-  void processRemoveRDMnetClients(BrokerConnection *brokerConn, const std::vector<ClientEntryData> &list);
+  void processAddRDMnetClients(BrokerItem *brokerItem, const std::vector<ClientEntryData> &list);
+  void processRemoveRDMnetClients(BrokerItem *brokerItem, const std::vector<ClientEntryData> &list);
   void processNewEndpointList(RDMnetClientItem *treeClientItem, const std::vector<std::pair<uint16_t, uint8_t>> &list);
   void processNewResponderList(EndpointItem *treeEndpointItem, const std::vector<RdmUid> &list);
   void processSetPropertyData(RDMnetNetworkItem *parent, unsigned short pid, const QString &name, const QVariant &value,
@@ -134,28 +134,42 @@ protected:
 
   BrokerConnection *getBrokerConnection(const std::string &scope);
 
-  bool SendRDMCommand(const RdmCommand &cmd, BrokerItem *brokerItem);
+  bool SendRDMCommand(const RdmCommand &cmd, const BrokerItem *brokerItem);
   bool SendRDMCommand(const RdmCommand &cmd, rdmnet_client_scope_t scope_handle);
-  void SendRDMGetResponses(const RdmUid &dest_uid, uint16_t dest_endpoint_id, uint16_t param_id,
-                           const RdmParamData *resp_data_list, size_t num_responses, uint32_t seqnum,
-                           uint8_t transaction_num, rdmnet_client_scope_t scope_handle = 0xFFFF);
+  void SendRDMGetResponses(rdmnet_client_scope_t scope_handle, const RdmUid &dest_uid, uint16_t param_id,
+                           const std::vector<RdmParamData> &resp_data_list, uint32_t seqnum = 0,
+                           uint8_t transaction_num = 0);
+  void SendRDMGetResponsesBroadcast(uint16_t param_id, const std::vector<RdmParamData> &resp_data_list);
   void SendRDMNack(rdmnet_client_scope_t scope, const RemoteRdmCommand &received_cmd, uint16_t nack_reason);
 
   /* GET/SET RESPONSE PROCESSING */
 
-  // RDMnet messages
-  void endpointList(rdmnet_client_scope_t scope_handle, uint32_t changeNumber,
-                    const std::vector<std::pair<uint16_t, uint8_t>> &list, const RdmUid &src_uid);
-  void endpointResponders(rdmnet_client_scope_t scope_handle, uint16_t endpoint, uint32_t changeNumber,
-                          const std::vector<RdmUid> &list, const RdmUid &src_uid);
-  void endpointListChange(rdmnet_client_scope_t scope_handle, uint32_t changeNumber, const RdmUid &src_uid);
-  void responderListChange(rdmnet_client_scope_t scope_handle, uint32_t changeNumber, uint16_t endpoint,
-                           const RdmUid &src_uid);
-
-  // RDM PID GET responses/updates
-  void HandleRdmNack(rdmnet_client_scope_t scope_handle, uint16_t reason, const RdmResponse &resp);
-  void HandleStatusMessagesResponse(uint8_t type, uint16_t messageId, uint16_t data1, uint16_t data2,
+  // E1.33
+  // COMPONENT_SCOPE
+  void HandleComponentScopeResponse(rdmnet_client_scope_t conn, uint16_t scopeSlot, const QString &scopeString,
+                                    const QString &staticConfigV4, const QString &staticConfigV6, uint16_t port,
                                     const RdmResponse &resp);
+  // SEARCH_DOMAIN
+  void HandleSearchDomainResponse(rdmnet_client_scope_t scope_handle, const QString &domainNameString,
+                                  const RdmResponse &resp);
+  // TCP_COMMS_STATUS
+  void HandleTcpCommsStatusResponse(rdmnet_client_scope_t scope_handle, const QString &scopeString,
+                                    const QString &v4AddrString, const QString &v6AddrString, uint16_t port,
+                                    uint16_t unhealthyTCPEvents, const RdmResponse &resp);
+
+  // E1.37-7
+  // ENDPOINT_LIST
+  void HandleEndpointListResponse(rdmnet_client_scope_t scope_handle, uint32_t changeNumber,
+                                  const std::vector<std::pair<uint16_t, uint8_t>> &list, const RdmUid &src_uid);
+  // ENDPOINT_RESPONDERS
+  void HandleEndpointRespondersResponse(rdmnet_client_scope_t scope_handle, uint16_t endpoint, uint32_t changeNumber,
+                                        const std::vector<RdmUid> &list, const RdmUid &src_uid);
+  // ENDPOINT_LIST_CHANGE
+  void HandleEndpointListChangeResponse(rdmnet_client_scope_t scope_handle, uint32_t changeNumber,
+                                        const RdmUid &src_uid);
+  // ENDPOINT_RESPONDER_LIST_CHANGE
+  void HandleResponderListChangeResponse(rdmnet_client_scope_t scope_handle, uint32_t changeNumber, uint16_t endpoint,
+                                         const RdmUid &src_uid);
 
   // E1.20
   // SUPPORTED_PARAMETERS
@@ -191,18 +205,10 @@ protected:
   void HandlePersonalityDescResponse(rdmnet_client_scope_t scope_handle, uint8_t personality, uint16_t footprint,
                                      const QString &description, const RdmResponse &resp);
 
-  // E1.33
-  // COMPONENT_SCOPE
-  void HandleComponentScopeResponse(rdmnet_client_scope_t conn, uint16_t scopeSlot, const QString &scopeString,
-                                    const QString &staticConfigV4, const QString &staticConfigV6, uint16_t port,
+  // RDM PID GET responses/updates
+  void HandleRdmNack(rdmnet_client_scope_t scope_handle, uint16_t reason, const RdmResponse &resp);
+  void HandleStatusMessagesResponse(uint8_t type, uint16_t messageId, uint16_t data1, uint16_t data2,
                                     const RdmResponse &resp);
-  // SEARCH_DOMAIN
-  void HandleSearchDomainResponse(rdmnet_client_scope_t scope_handle, const QString &domainNameString,
-                                  const RdmResponse &resp);
-  // TCP_COMMS_STATUS
-  void HandleTcpCommsStatusResponse(rdmnet_client_scope_t scope_handle, const QString &scopeString,
-                                    const QString &v4AddrString, const QString &v6AddrString, uint16_t port,
-                                    uint16_t unhealthyTCPEvents, const RdmResponse &resp);
 
   // Message sending
   void addPropertyEntries(RDMnetNetworkItem *parent, PIDFlags location);
@@ -212,7 +218,7 @@ protected:
   void sendGetControllerScopeProperties(rdmnet_client_scope_t scope_handle, uint16_t manuID, uint32_t deviceID);
   void sendGetNextControllerScope(rdmnet_client_scope_t scope_handle, uint16_t manuID, uint32_t deviceID,
                                   uint16_t currentSlot);
-  void sendGetCommand(BrokerItem *brokerItem, uint16_t pid, uint16_t manu, uint32_t dev);
+  void sendGetCommand(BrokerItem *brokerItem, uint16_t pid, const RdmUid &dest_uid);
   uint8_t *packIPAddressItem(const QVariant &value, lwpa_iptype_t addrType, uint8_t *packPtr, bool packPort = true);
 
   // PID handling

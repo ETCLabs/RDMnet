@@ -64,11 +64,11 @@
 #define E133_BROADCAST_ENDPOINT 0xFFFFu
 
 /* Not in tables, but defined elsewhere in the standard */
-#define E133_SCOPE_STRING_PADDED_LENGTH           63  /* Section 6.2.1, 6.3.1.2 */
-#define E133_DOMAIN_STRING_PADDED_LENGTH          231 /* Section 6.3.1.2 */
-#define E133_SERVICE_NAME_STRING_PADDED_LENGTH    64  /* RFC676 4.1.1 */
-#define E133_MODEL_STRING_PADDED_LENGTH           250 /* Section 7.2.1 */
-#define E133_MANUFACTURER_STRING_PADDED_LENGTH    250 /* Section 7.2.1 */
+#define E133_SCOPE_STRING_PADDED_LENGTH           63u  /* Section 6.2.1, 6.3.1.2 */
+#define E133_DOMAIN_STRING_PADDED_LENGTH          231u /* Section 6.3.1.2 */
+#define E133_SERVICE_NAME_STRING_PADDED_LENGTH    64u  /* RFC676 4.1.1 */
+#define E133_MODEL_STRING_PADDED_LENGTH           250u /* Section 7.2.1 */
+#define E133_MANUFACTURER_STRING_PADDED_LENGTH    250u /* Section 7.2.1 */
 
 #define LLRP_FILTERVAL_CLIENT_CONN_INACTIVE 0x0001u
 #define LLRP_FILTERVAL_BROKERS_ONLY         0x0002u

@@ -27,7 +27,11 @@
 
 #pragma once
 
+#include <stdexcept>
+#include <cstddef>
+#include "lwpa/int.h"
 #include "lwpa/lock.h"
+#include "lwpa/inet.h"
 
 // Macros to suppress warnings inside of Qt headers.
 #if defined(_MSC_VER)
@@ -50,6 +54,10 @@ struct StaticBrokerConfig
   bool valid{false};
   LwpaSockaddr addr;
 };
+
+// Some definitions that aren't provided elsewhere
+constexpr uint16_t kRdmnetMaxScopeSlotNumber = 0xFFFF;
+constexpr size_t kRdmDeviceLabelMaxLength = 32u;
 
 class ControllerReadGuard
 {

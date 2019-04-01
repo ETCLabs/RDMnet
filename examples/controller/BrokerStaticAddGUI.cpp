@@ -71,8 +71,8 @@ void BrokerStaticAddGUI::addBrokerTriggered()
   QByteArray ipBuf = ui.ipEdit->text().toUtf8();
   const char *ipStr = ipBuf.constData();
 
-  if ((LWPA_OK != lwpa_inet_pton(kLwpaIpTypeV4, ipStr, &brokerAddr.ip) &&
-       LWPA_OK != lwpa_inet_pton(kLwpaIpTypeV6, ipStr, &brokerAddr.ip))
+  if ((kLwpaErrOk != lwpa_inet_pton(kLwpaIpTypeV4, ipStr, &brokerAddr.ip) &&
+       kLwpaErrOk != lwpa_inet_pton(kLwpaIpTypeV6, ipStr, &brokerAddr.ip))
       // || ipEndString.contains( ":" ) || ipEndString.contains( "," )
   )
   {
@@ -85,7 +85,7 @@ void BrokerStaticAddGUI::addBrokerTriggered()
   //    errorMessageBox.setText(tr("Invalid port number. Please use a correct input format."));
   //    errorMessageBox.exec();
   //  }
-  else if (scopeString.empty())
+  else if (scopeString.isEmpty())
   {
     errorMessageBox.setText(tr("Invalid scope. Please use a correct input format."));
     errorMessageBox.exec();

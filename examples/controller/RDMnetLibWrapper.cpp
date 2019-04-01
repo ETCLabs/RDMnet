@@ -77,10 +77,6 @@ static void controllercb_status_received(rdmnet_controller_t handle, rdmnet_clie
 
 RDMnetLibWrapper::RDMnetLibWrapper(ControllerLog *log) : log_(log)
 {
-}
-
-RDMnetLibWrapper::RDMnetLibWrapper(ControllerLog *log) : log_(log)
-{
   lwpa_generate_v4_uuid(&my_cid_);
 }
 

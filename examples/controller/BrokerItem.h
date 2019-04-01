@@ -47,7 +47,8 @@ public:
   void setScope(const QString &scope) { scope_ = scope; }
   QString scope() const { return scope_; }
 
-  void setConnected(bool connected, const LwpaSockaddr &broker_addr);
+  void setConnected(bool connected, const LwpaSockaddr &broker_addr = LwpaSockaddr());
+  bool connected() const { return connected_; }
 
   std::vector<RDMnetClientItem *> rdmnet_clients_;
 
