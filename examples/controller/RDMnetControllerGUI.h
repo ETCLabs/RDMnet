@@ -47,7 +47,7 @@ public:
 
   ~RDMnetControllerGUI();
 
-  virtual void handleAddBrokerByIP(std::string scope, const LwpaSockaddr &addr);
+  virtual void handleAddBrokerByIP(QString scope, const LwpaSockaddr &addr);
 
 public slots:
 
@@ -72,7 +72,7 @@ signals:
   void removeSelectedBrokerActivated(class BrokerItem *brokerItem);
   void removeAllBrokersActivated();
   void featureActivated(class RDMnetNetworkItem *device, SupportedDeviceFeature feature);
-  void addBrokerByIPActivated(std::string scope, const LwpaSockaddr &addr);
+  void addBrokerByIPActivated(QString scope, const LwpaSockaddr &addr);
 
 private:
   explicit RDMnetControllerGUI(QWidget *parent = Q_NULLPTR);

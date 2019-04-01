@@ -60,7 +60,7 @@ RDMnetControllerGUI::~RDMnetControllerGUI()
   }
 }
 
-void RDMnetControllerGUI::handleAddBrokerByIP(std::string scope, const LwpaSockaddr &addr)
+void RDMnetControllerGUI::handleAddBrokerByIP(QString scope, const LwpaSockaddr &addr)
 {
   emit addBrokerByIPActivated(scope, addr);
 }
@@ -99,7 +99,7 @@ RDMnetControllerGUI *RDMnetControllerGUI::makeRDMnetControllerGUI()
 
   connect(gui->ui.addBrokerByScopeButton, SIGNAL(clicked()), gui, SLOT(addScopeTriggered()));
   connect(gui->ui.newScopeNameEdit, SIGNAL(returnPressed()), gui, SLOT(addScopeTriggered()));
-  connect(gui, SIGNAL(addScopeActivated(std::string)), gui->main_network_model_, SLOT(addScopeToMonitor(std::string)));
+  connect(gui, SIGNAL(addScopeActivated(QString)), gui->main_network_model_, SLOT(addScopeToMonitor(QString)));
 
   connect(gui->ui.removeSelectedBrokerButton, SIGNAL(clicked()), gui, SLOT(removeSelectedBrokerTriggered()));
   connect(gui, SIGNAL(removeSelectedBrokerActivated(BrokerItem *)), gui->main_network_model_,
@@ -120,8 +120,8 @@ RDMnetControllerGUI *RDMnetControllerGUI::makeRDMnetControllerGUI()
 
   connect(gui->ui.moreBrokerSettingsButton, SIGNAL(clicked()), gui, SLOT(openBrokerStaticAddDialog()));
 
-  connect(gui, SIGNAL(addBrokerByIPActivated(std::string, const LwpaSockaddr &)), gui->main_network_model_,
-          SLOT(addBrokerByIP(std::string, const LwpaSockaddr &)));
+  connect(gui, SIGNAL(addBrokerByIPActivated(QString, const LwpaSockaddr &)), gui->main_network_model_,
+          SLOT(addBrokerByIP(QString, const LwpaSockaddr &)));
 
   connect(gui->main_network_model_, SIGNAL(brokerItemTextUpdated(const BrokerItem *)), gui,
           SLOT(processBrokerItemTextUpdate(const BrokerItem *)));

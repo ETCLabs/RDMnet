@@ -29,57 +29,69 @@
 
 #include <string>
 #include <vector>
+#include <map>
+#include "lwpa/lock.h"
 #include "rdm/responder.h"
+#include "rdmnet/defs.h"
+#include "rdmnet/version.h"
 
 constexpr size_t kRdmDeviceLabelMaxLen = 32;
 
 struct RdmParamData
 {
-  uint8_t datalen;
   uint8_t data[RDM_MAX_PDL];
+  uint8_t datalen;
 };
-
-typedef struct DefaultResponderPropertyData
-{
-} DefaultResponderPropertyData;
 
 class ControllerDefaultResponder
 {
 public:
+  ControllerDefaultResponder() { lwpa_rwlock_create(&prop_lock_); }
+  virtual ~ControllerDefaultResponder() { lwpa_rwlock_destroy(&prop_lock_); }
+
   bool Get(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len, std::vector<RdmParamData> &resp_data_list,
            uint16_t &nack_reason);
 
   bool GetIdentifyDevice(const uint8_t *param_data, uint8_t param_data_len, std::vector<RdmParamData> &resp_data_list,
-                         uint16_t &nack_reason);
+                         uint16_t &nack_reason) const;
   bool GetDeviceLabel(const uint8_t *param_data, uint8_t param_data_len, std::vector<RdmParamData> &resp_data_list,
-                      uint16_t &nack_reason);
+                      uint16_t &nack_reason) const;
   bool GetComponentScope(const uint8_t *param_data, uint8_t param_data_len, std::vector<RdmParamData> &resp_data_list,
-                         uint16_t &nack_reason);
-  bool GetComponentScope(uint16_t slot, std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason);
+                         uint16_t &nack_reason) const;
   bool GetSearchDomain(const uint8_t *param_data, uint8_t param_data_len, std::vector<RdmParamData> &resp_data_list,
-                       uint16_t &nack_reason);
+                       uint16_t &nack_reason) const;
   bool GetTCPCommsStatus(const uint8_t *param_data, uint8_t param_data_len, std::vector<RdmParamData> &resp_data_list,
-                         uint16_t &nack_reason);
+                         uint16_t &nack_reason) const;
   bool GetSupportedParameters(const uint8_t *param_data, uint8_t param_data_len,
-                              std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason);
+                              std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason) const;
   bool GetDeviceInfo(const uint8_t *param_data, uint8_t param_data_len, std::vector<RdmParamData> &resp_data_list,
-                     uint16_t &nack_reason);
+                     uint16_t &nack_reason) const;
   bool GetManufacturerLabel(const uint8_t *param_data, uint8_t param_data_len,
-                            std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason);
+                            std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason) const;
   bool GetDeviceModelDescription(const uint8_t *param_data, uint8_t param_data_len,
-                                 std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason);
+                                 std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason) const;
   bool GetSoftwareVersionLabel(const uint8_t *param_data, uint8_t param_data_len,
-                               std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason);
-  bool GetEndpointList(const uint8_t *param_data, uint8_t param_data_len, std::vector<RdmParamData> &resp_data_list,
-                       uint16_t &nack_reason);
-  bool GetEndpointResponders(const uint8_t *param_data, uint8_t param_data_len,
-                             std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason);
+                               std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason) const;
+
+  void UpdateSearchDomain(const std::string &new_search_domain);
+  void AddScope(const std::string &new_scope);
+  void RemoveScope(const std::string &scope_to_remove);
+  void IncrementTcpUnhealthyCounter(const std::string &scope);
+  void ResetTcpUnhealthyCounter(const std::string &scope);
 
 private:
+  bool GetComponentScope(uint16_t slot, std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason);
+
+  mutable lwpa_rwlock_t prop_lock_;
+
   // Property data
-  uint32_t endpoint_list_change_number;
-  bool identifying;
-  std::string device_label;
-  std::string search_domain;
-  uint16_t tcp_unhealthy_counter;
+  const bool identifying_{false};
+  const std::string device_label_{"ETC Example RDMnet Controller"};
+  std::map<std::string, uint16_t> scopes_;
+  std::string search_domain_{E133_DEFAULT_DOMAIN};
+  static const std::vector<uint16_t> supported_parameters_;
+  static const std::vector<uint8_t> device_info_;
+  const std::string manufacturer_label_{"ETC"};
+  const std::string device_model_description_{"ETC Example RDMnet Controller"};
+  const std::string software_version_labe_{RDMNET_VERSION_STRING};
 };

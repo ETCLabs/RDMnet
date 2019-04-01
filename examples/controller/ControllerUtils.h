@@ -27,6 +27,8 @@
 
 #pragma once
 
+#include "lwpa/lock.h"
+
 // Macros to suppress warnings inside of Qt headers.
 #if defined(_MSC_VER)
 
@@ -47,4 +49,32 @@ struct StaticBrokerConfig
 {
   bool valid{false};
   LwpaSockaddr addr;
+};
+
+class ControllerReadGuard
+{
+public:
+  explicit ControllerReadGuard(lwpa_rwlock_t &rwlock) : m_rwlock(rwlock)
+  {
+    if (!lwpa_rwlock_readlock(&m_rwlock, LWPA_WAIT_FOREVER))
+      throw std::runtime_error("Controller failed to take a read lock.");
+  }
+  ~ControllerReadGuard() { lwpa_rwlock_readunlock(&m_rwlock); }
+
+private:
+  lwpa_rwlock_t &m_rwlock;
+};
+
+class ControllerWriteGuard
+{
+public:
+  explicit ControllerWriteGuard(lwpa_rwlock_t &rwlock) : m_rwlock(rwlock)
+  {
+    if (!lwpa_rwlock_writelock(&m_rwlock, LWPA_WAIT_FOREVER))
+      throw std::runtime_error("Controller failed to take a write lock.");
+  }
+  ~ControllerWriteGuard() { lwpa_rwlock_writeunlock(&m_rwlock); }
+
+private:
+  lwpa_rwlock_t &m_rwlock;
 };

@@ -56,9 +56,9 @@ public:
   virtual uint16_t getMan(void) const { return get_rpt_client_entry_data(&entry_)->client_uid.manu; };
   virtual uint32_t getDev(void) const { return get_rpt_client_entry_data(&entry_)->client_uid.id; };
 
-  void setScopeSlot(std::string scope, uint16_t slot);
-  uint16_t getScopeSlot(std::string scope);
-  void removeScopeSlot(std::string scope);
+  void setScopeSlot(const QString &scope, uint16_t slot);
+  uint16_t getScopeSlot(const QString &scope);
+  void removeScopeSlot(const QString &scope);
 
   ClientEntryData entry_;
   std::vector<EndpointItem *> endpoints_;

@@ -24,10 +24,47 @@
 * This file is a part of RDMnet. For more information, go to:
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
+#include "ControllerDefaultResponder.h"
 
+#include <algorithm>
+#include "lwpa/pack.h"
 #include "rdm/defs.h"
 #include "rdmnet/defs.h"
-#include "ControllerDefaultResponder.h"
+#include "ControllerUtils.h"
+
+/* clang-format off */
+const std::vector<uint16_t> ControllerDefaultResponder::supported_parameters_ = {
+  E120_IDENTIFY_DEVICE,
+  E120_SUPPORTED_PARAMETERS,
+  E120_DEVICE_INFO,
+  E120_MANUFACTURER_LABEL,
+  E120_DEVICE_MODEL_DESCRIPTION,
+  E120_SOFTWARE_VERSION_LABEL,
+  E120_DEVICE_LABEL,
+  E133_COMPONENT_SCOPE,
+  E133_SEARCH_DOMAIN,
+  E133_TCP_COMMS_STATUS
+};
+
+const std::vector<uint8_t> ControllerDefaultResponder::device_info_ = {
+  0x01, 0x00, /* RDM Protocol version */
+  0xe1, 0x33, /* Device Model ID */
+  0xe1, 0x33, /* Product Category */
+
+  /* Software Version ID */
+  RDMNET_VERSION_MAJOR, RDMNET_VERSION_MINOR,
+  RDMNET_VERSION_PATCH, RDMNET_VERSION_BUILD,
+
+  0x00, 0x00, /* DMX512 Footprint */
+  0x00, 0x00, /* DMX512 Personality */
+  0xff, 0xff, /* DMX512 Start Address */
+  0x00, 0x00, /* Sub-device count */
+  0x00 /* Sensor count */
+};
+/* clang-format on */
+
+#define MAX_SCOPE_SLOT_NUMBER 0xFFFF
+#define DEVICE_LABEL_MAX_LEN 32
 
 bool ControllerDefaultResponder::Get(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len,
                                      std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason)
@@ -54,43 +91,32 @@ bool ControllerDefaultResponder::Get(uint16_t pid, const uint8_t *param_data, ui
       return GetDeviceModelDescription(param_data, param_data_len, resp_data_list, nack_reason);
     case E120_SOFTWARE_VERSION_LABEL:
       return GetSoftwareVersionLabel(param_data, param_data_len, resp_data_list, nack_reason);
-    case E137_7_ENDPOINT_LIST:
-      return GetEndpointList(param_data, param_data_len, resp_data_list, nack_reason);
-    case E137_7_ENDPOINT_RESPONDERS:
-      return GetEndpointResponders(param_data, param_data_len, resp_data_list, nack_reason);
     default:
       nack_reason = E120_NR_UNKNOWN_PID;
       return false;
   }
 }
 
-bool ControllerDefaultResponder::GetIdentifyDevice(const uint8_t *param_data, uint8_t param_data_len,
-                                                   std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason)
+bool ControllerDefaultResponder::GetIdentifyDevice(const uint8_t * /*param_data*/, uint8_t /*param_data_len*/,
+                                                   std::vector<RdmParamData> &resp_data_list,
+                                                   uint16_t & /*nack_reason*/) const
 {
-  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
-  {
-    resp_data_list[0].data[0] = prop_data_.identifying ? 1 : 0;
-    lwpa_rwlock_readunlock(&prop_lock);
-  }
-  resp_data_list[0].datalen = 1;
-  *num_responses = 1;
+  ControllerReadGuard prop_read(prop_lock_);
+  resp_data_list.push_back({{identifying_ ? 1 : 0}, 1});
   return true;
 }
 
-bool ControllerDefaultResponder::GetDeviceLabel(const uint8_t *param_data, uint8_t param_data_len,
-                                                std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason)
+bool ControllerDefaultResponder::GetDeviceLabel(const uint8_t * /*param_data*/, uint8_t /*param_data_len*/,
+                                                std::vector<RdmParamData> &resp_data_list,
+                                                uint16_t & /*nack_reason*/) const
 {
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
+  ControllerReadGuard prop_read(prop_lock_);
 
-  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
-  {
-    strncpy((char *)resp_data_list[0].data, prop_data_.device_label, DEVICE_LABEL_MAX_LEN);
-    resp_data_list[0].datalen = (uint8_t)strnlen(prop_data_.device_label, DEVICE_LABEL_MAX_LEN);
-    lwpa_rwlock_readunlock(&prop_lock);
-  }
-  *num_responses = 1;
+  size_t label_len = std::min(device_label_.length(), DEVICE_LABEL_MAX_LEN);
+  RdmParamData resp_data;
+  memcpy(resp_data.data, 
+  strncpy((char *)resp_data_list[0].data, prop_data_.device_label, DEVICE_LABEL_MAX_LEN);
+  resp_data_list[0].datalen = (uint8_t)strnlen(prop_data_.device_label, DEVICE_LABEL_MAX_LEN);
   return true;
 }
 
@@ -99,13 +125,13 @@ bool ControllerDefaultResponder::GetComponentScope(const uint8_t *param_data, ui
 {
   if (param_data_len >= 2)
   {
-    return GetComponentScope(lwpa_upack_16b(param_data), resp_data_list, num_responses, nack_reason);
+    return GetComponentScope(lwpa_upack_16b(param_data), resp_data_list, nack_reason);
   }
   else
   {
-    &nack_reason = E120_NR_FORMAT_ERROR;
+    nack_reason = E120_NR_FORMAT_ERROR;
+    return false;
   }
-  return false;
 }
 
 bool ControllerDefaultResponder::GetComponentScope(uint16_t slot, std::vector<RdmParamData> &resp_data_list,
@@ -113,15 +139,13 @@ bool ControllerDefaultResponder::GetComponentScope(uint16_t slot, std::vector<Rd
 {
   if (slot == 0)
   {
-    if (nack_reason != NULL)
-    {
-      &nack_reason = E120_NR_DATA_OUT_OF_RANGE;
-    }
+    nack_reason = E120_NR_DATA_OUT_OF_RANGE;
   }
-  else if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
+  else
   {
-    auto connectionIter = broker_connections_.find(slot - 1);
+    ControllerReadGuard prop_read(prop_lock_);
 
+    auto connectionIter = broker_connections_.find(slot - 1);
     if (connectionIter == broker_connections_.end())
     {
       // Return the next highest Scope Slot that is not empty.
@@ -184,7 +208,7 @@ bool ControllerDefaultResponder::GetComponentScope(uint16_t slot, std::vector<Rd
     }
     else if (nack_reason != NULL)
     {
-      &nack_reason = E120_NR_DATA_OUT_OF_RANGE;
+      nack_reason = E120_NR_DATA_OUT_OF_RANGE;
     }
 
     lwpa_rwlock_readunlock(&prop_lock);
@@ -342,53 +366,48 @@ bool ControllerDefaultResponder::GetDeviceModelDescription(const uint8_t *param_
 
 bool ControllerDefaultResponder::GetSoftwareVersionLabel(const uint8_t *param_data, uint8_t param_data_len,
                                                          std::vector<RdmParamData> &resp_data_list,
-                                                         uint16_t &nack_reason)
+                                                         uint16_t &nack_reason) const
 {
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
-
   strcpy((char *)resp_data_list[0].data, SOFTWARE_VERSION_LABEL);
   resp_data_list[0].datalen = sizeof(SOFTWARE_VERSION_LABEL) - 1;
   *num_responses = 1;
   return true;
 }
 
-bool ControllerDefaultResponder::GetEndpointList(const uint8_t *param_data, uint8_t param_data_len,
-                                                 std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason)
+void ControllerDefaultResponder::UpdateSearchDomain(const std::string &new_search_domain)
 {
-  (void)param_data;
-  (void)param_data_len;
-  (void)nack_reason;
-
-  uint8_t *cur_ptr = resp_data_list[0].data;
-
-  /* Hardcoded: no endpoints other than NULL_ENDPOINT. NULL_ENDPOINT is not
-   * reported in this response. */
-  resp_data_list[0].datalen = 4;
-  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
-  {
-    lwpa_pack_32b(cur_ptr, prop_data_.endpoint_list_change_number);
-    lwpa_rwlock_readunlock(&prop_lock);
-  }
-  *num_responses = 1;
-  return true;
+  ControllerWriteGuard prop_write(prop_lock_);
+  search_domain_ = new_search_domain;
 }
 
-bool ControllerDefaultResponder::GetEndpointResponders(const uint8_t *param_data, uint8_t param_data_len,
-                                                       std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason)
+void ControllerDefaultResponder::AddScope(const std::string &new_scope)
 {
-  (void)param_data;
-  (void)param_data_len;
-  (void)resp_data_list;
-  (void)num_responses;
+  ControllerWriteGuard prop_write(prop_lock_);
+  scopes_.insert(std::make_pair(new_scope, 0));
+}
 
-  if (param_data_len >= 2)
+void ControllerDefaultResponder::RemoveScope(const std::string &scope_to_remove)
+{
+  ControllerWriteGuard prop_write(prop_lock_);
+  scopes_.erase(scope_to_remove);
+}
+
+void ControllerDefaultResponder::IncrementTcpUnhealthyCounter(const std::string &scope)
+{
+  ControllerWriteGuard prop_write(prop_lock_);
+  auto scope_entry = scopes_.find(scope);
+  if (scope_entry != scopes_.end())
   {
-    /* We have no valid endpoints for this message */
-    &nack_reason = E137_7_NR_ENDPOINT_NUMBER_INVALID;
+    ++scope_entry->second;
   }
-  else
-    &nack_reason = E120_NR_FORMAT_ERROR;
-  return false;
+}
+
+void ControllerDefaultResponder::ResetTcpUnhealthyCounter(const std::string &scope)
+{
+  ControllerWriteGuard prop_write(prop_lock_);
+  auto scope_entry = scopes_.find(scope);
+  if (scope_entry != scopes_.end())
+  {
+    scope_entry->second = 0;
+  }
 }

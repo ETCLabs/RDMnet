@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include "rdmnet/client.h"
 #include "RDMnetNetworkItem.h"
 #include "RDMnetClientItem.h"
 #include "ControllerUtils.h"
@@ -54,9 +55,9 @@ protected:
   void updateText();
 
 private:
-  rdmnet_client_scope_t scope_handle_;
-  StaticBrokerConfig static_broker;
-  LwpaSockaddr broker_addr_;
   QString scope_;
+  rdmnet_client_scope_t scope_handle_;
+  StaticBrokerConfig static_broker_;
+  LwpaSockaddr broker_addr_;
   bool connected_;
 };

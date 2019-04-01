@@ -24,17 +24,15 @@
 * This file is a part of RDMnet. For more information, go to:
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
-
 #include "BrokerItem.h"
 
-// BrokerItem::BrokerItem()
-//{
-//}
+#include "lwpa/socket.h"
 
 BrokerItem::BrokerItem(const QString &scope, rdmnet_client_scope_t scope_handle,
                        const StaticBrokerConfig &static_broker /* = StaticBrokerConfig() */)
-    : RDMnetNetworkItem(), scope_handle_(scope_handle)
+    : RDMnetNetworkItem(), scope_(scope), scope_handle_(scope_handle), static_broker_(static_broker)
 {
+  updateText();
 }
 
 BrokerItem::~BrokerItem()
@@ -46,15 +44,35 @@ int BrokerItem::type() const
   return BrokerItemType;
 }
 
+void BrokerItem::setConnected(bool connected, const LwpaSockaddr &broker_addr)
+{
+  connected_ = connected;
+  if (connected)
+  {
+    broker_addr_ = broker_addr;
+  }
+  updateText();
+}
+
 void BrokerItem::updateText()
 {
-  if (connected_ || static_broker.valid)
+  bool have_address = (connected_ || static_broker_.valid);
+  LwpaSockaddr address;
+
+  if (connected_)
+    address = broker_addr_;
+  else if (static_broker_.valid)
+    address = static_broker_.addr;
+
+  if (have_address)
   {
     char addrString[LWPA_INET6_ADDRSTRLEN];
-    lwpa_inet_ntop(&broker_addr_.ip, addrString, LWPA_INET6_ADDRSTRLEN);
+    lwpa_inet_ntop(&address.ip, addrString, LWPA_INET6_ADDRSTRLEN);
 
-    return QString("Broker for scope \"%1\" at %2:%3").arg(scope_, addrString, QString::number(broker_addr_.port));
+    setText(QString("Broker for scope \"%1\" at %2:%3").arg(scope_, addrString, QString::number(address.port)));
   }
-
-  return QString("Broker for scope \"%1\"").arg(scope_);
+  else
+  {
+    setText(QString("Broker for scope \"%1\"").arg(scope_));
+  }
 }

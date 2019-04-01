@@ -32,7 +32,7 @@
 
 // RDMnetLibWrapper: C++ wrapper for the RDMnet Library interface.
 
-// These functions mirror the callback functions from the C library exactly.
+// These functions mirror the callback functions from the C library.
 class RDMnetLibNotifyInternal
 {
 public:

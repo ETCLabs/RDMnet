@@ -39,7 +39,7 @@ END_INCLUDE_QT_HEADERS()
 class IHandlesBrokerStaticAdd
 {
 public:
-  virtual void handleAddBrokerByIP(std::string scope, const LwpaSockaddr &addr) = 0;
+  virtual void handleAddBrokerByIP(QString scope, const LwpaSockaddr &addr) = 0;
 };
 
 class BrokerStaticAddGUI : public QDialog
@@ -55,7 +55,7 @@ signals:
   void addBrokerByIP(LwpaSockaddr addr);
 
 public:
-  BrokerStaticAddGUI(QWidget *parent = Q_NULLPTR, IHandlesBrokerStaticAdd *handler = Q_NULLPTR);
+  BrokerStaticAddGUI(QWidget *parent = nullptr, IHandlesBrokerStaticAdd *handler = nullptr);
   ~BrokerStaticAddGUI();
 
 private:

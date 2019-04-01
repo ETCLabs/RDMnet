@@ -57,8 +57,7 @@ void BrokerStaticAddGUI::addBrokerTriggered()
   // std::string addrStdString = addrQString.toStdString();
   // const char *addrString = addrStdString.data();
 
-  QString scopeQString = ui.scopeEdit->text();
-  std::string scopeStdString = scopeQString.toStdString();
+  QString scopeString = ui.scopeEdit->text();
 
   // CIPAddr addr = CIPAddr::StringToAddr( addrString );
 
@@ -86,15 +85,15 @@ void BrokerStaticAddGUI::addBrokerTriggered()
   //    errorMessageBox.setText(tr("Invalid port number. Please use a correct input format."));
   //    errorMessageBox.exec();
   //  }
-  else if (scopeStdString.empty())
+  else if (scopeString.empty())
   {
     errorMessageBox.setText(tr("Invalid scope. Please use a correct input format."));
     errorMessageBox.exec();
   }
-  else if (m_Handler != Q_NULLPTR)
+  else if (m_Handler)
   {
     close();
     brokerAddr.port = static_cast<uint16_t>(ui.portEdit->text().toInt());
-    m_Handler->handleAddBrokerByIP(scopeStdString, brokerAddr);
+    m_Handler->handleAddBrokerByIP(scopeString, brokerAddr);
   }
 }
