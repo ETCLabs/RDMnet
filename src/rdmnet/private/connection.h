@@ -54,17 +54,21 @@ typedef enum
   kCSMarkedForDestruction
 } conn_state_t;
 
-typedef struct RdmnetConnectionInternal RdmnetConnectionInternal;
-struct RdmnetConnectionInternal
+typedef struct RdmnetConnection
 {
-  /* Identification */
+  // Identification
+  // Because of the way the comparisons are optimized, the handle MUST always be the first member
+  // of the struct.
+  rdmnet_conn_t handle;
   LwpaUuid local_cid;
+
+  // Underlying socket connection
   lwpa_socket_t sock;
   LwpaSockaddr remote_addr;
   bool is_client;
   bool is_blocking;
 
-  /* Connection state */
+  // Connection state
   conn_state_t state;
   ClientConnectMsg conn_data;
   LwpaTimer send_timer;
@@ -72,21 +76,19 @@ struct RdmnetConnectionInternal
   LwpaTimer backoff_timer;
   bool rdmnet_conn_failed;
 
-  /* Send tracking */
+  // Send tracking
   lwpa_mutex_t send_lock;
 
-  /* Receive tracking */
+  // Receive tracking
   RdmnetMsgBuf recv_buf;
 
-  /* Synchronization */
+  // Synchronization
   lwpa_mutex_t lock;
 
-  /* Callbacks */
+  // Callbacks
   RdmnetConnCallbacks callbacks;
   void *callback_context;
-
-  RdmnetConnectionInternal *next;
-};
+} RdmnetConnection;
 
 typedef enum
 {

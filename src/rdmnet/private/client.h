@@ -47,7 +47,8 @@ typedef enum
 typedef struct ClientScopeListEntry ClientScopeListEntry;
 struct ClientScopeListEntry
 {
-  RdmnetScopeConfig scope_config;
+  rdmnet_client_scope_t handle;
+  RdmnetScopeConfig config;
   rdmnet_conn_t conn_handle;
   scope_state_t state;
   RdmUid uid;
@@ -55,6 +56,8 @@ struct ClientScopeListEntry
   RdmnetClientInternal *cli;
   ClientScopeListEntry *next;
 };
+
+#define rpt_client_uid_is_dynamic(configuidptr) ((configuidptr)->id == 0)
 
 typedef struct RptClientData
 {
@@ -71,6 +74,7 @@ typedef struct EptClientData
 
 struct RdmnetClientInternal
 {
+  rdmnet_client_t handle;
   client_protocol_t type;
   LwpaUuid cid;
   void *callback_context;
@@ -96,29 +100,31 @@ typedef enum
 
 typedef struct ConnectedArgs
 {
-  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
-} ClientConnectedArgs;
+  rdmnet_client_scope_t scope_handle;
+  RdmnetClientConnectedInfo info;
+} ConnectedArgs;
 
-typedef struct DisconnectedArgs
+typedef struct NotConnectedArgs
 {
-  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
-} ClientDisconnectedArgs;
+  rdmnet_client_scope_t scope_handle;
+  RdmnetClientNotConnectedInfo info;
+} NotConnectedArgs;
 
 typedef struct BrokerMsgReceivedArgs
 {
-  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
+  rdmnet_client_scope_t scope_handle;
   const BrokerMessage *msg;
 } BrokerMsgReceivedArgs;
 
 typedef struct RptMsgReceivedArgs
 {
-  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
+  rdmnet_client_scope_t scope_handle;
   const RptClientMessage msg;
 } RptMsgReceivedArgs;
 
 typedef struct EptMsgReceivedArgs
 {
-  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
+  rdmnet_client_scope_t scope_handle;
   const EptClientMessage msg;
 } EptMsgReceivedArgs;
 
@@ -147,8 +153,8 @@ typedef struct ClientCallbackDispatchInfo
   } prot_info;
   union
   {
-    ClientConnectedArgs connected;
-    ClientDisconnectedArgs disconnected;
+    ConnectedArgs connected;
+    NotConnectedArgs not_connected;
     BrokerMsgReceivedArgs broker_msg_received;
   } common_args;
 } ClientCallbackDispatchInfo;

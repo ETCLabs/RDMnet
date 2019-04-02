@@ -34,6 +34,7 @@
 #include "lwpa/mempool.h"
 #endif
 #include "lwpa/lock.h"
+#include "lwpa/rbtree.h"
 #include "rdmnet/core.h"
 #include "rdmnet/core/connection.h"
 #include "rdmnet/core/discovery.h"
@@ -45,6 +46,7 @@
 /*************************** Private constants *******************************/
 
 #define RDMNET_MAX_CLIENT_SCOPES ((RDMNET_MAX_CONTROLLERS * RDMNET_MAX_SCOPES_PER_CONTROLLER) + RDMNET_MAX_DEVICES)
+#define MAX_CLIENT_RB_NODES (RDMNET_MAX_CLIENTS + RDMNET_MAX_CLIENT_SCOPES)
 
 #if RDMNET_POLL_CONNECTIONS_INTERNALLY
 #define CB_STORAGE_CLASS static
@@ -58,6 +60,7 @@
 #if RDMNET_DYNAMIC_MEM
 #define alloc_rdmnet_client() malloc(sizeof(RdmnetClientInternal))
 #define alloc_client_scope() malloc(sizeof(ClientScopeListEntry))
+#define alloc_client_rb_node()
 #define free_rdmnet_client(ptr) free(ptr)
 #define free_client_scope(ptr) free(ptr)
 #else
@@ -77,6 +80,7 @@
 #if !RDMNET_DYNAMIC_MEM
 LWPA_MEMPOOL_DEFINE(rdmnet_clients, RdmnetClientInternal, RDMNET_MAX_CLIENTS);
 LWPA_MEMPOOL_DEFINE(client_scopes, ClientScopeListEntry, RDMNET_MAX_CLIENT_SCOPES);
+LWPA_MEMPOOL_DEFINE(client_rb_nodes, LwpaRbNode, CLIENT_MAX_RB_NODES);
 #endif
 
 static bool client_lock_initted = false;
@@ -84,7 +88,9 @@ static lwpa_mutex_t client_lock;
 
 static struct RdmnetClientState
 {
-  RdmnetClientInternal *clients;
+  LwpaRbTree clients;
+  LwpaRbTree client_scopes;
+
 } state;
 
 static void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo *broker_info,
@@ -112,14 +118,19 @@ static lwpa_error_t validate_rpt_client_config(const RdmnetRptClientConfig *conf
 static void append_to_client_list(RdmnetClientInternal *new_client);
 static void start_scope_discovery(ClientScopeListEntry *scope_entry);
 static void start_connection_for_scope(ClientScopeListEntry *scope_entry, const LwpaSockaddr *broker_addr);
-static bool client_in_list(const RdmnetClientInternal *client, const RdmnetClientInternal *list);
-static bool get_client(const RdmnetClientInternal *client);
+static bool client_exists(rdmnet_client_t handle);
+static RdmnetClientInternal *get_client(rdmnet_client_t handle);
 static void release_client(const RdmnetClientInternal *client);
 static bool create_and_append_scope_entry(const RdmnetScopeConfig *config, RdmnetClientInternal *client);
 static ClientScopeListEntry *find_scope_in_list(ClientScopeListEntry *list, const char *scope);
 
 static void fill_callback_info(const RdmnetClientInternal *client, ClientCallbackDispatchInfo *cb);
 static void deliver_callback(const ClientCallbackDispatchInfo *info);
+
+int client_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const LwpaRbNode *node_b);
+int scope_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const LwpaRbNode *node_b);
+static LwpaRbNode *client_node_alloc();
+void client_node_free(LwpaRbNode *node);
 
 /*************************** Function definitions ****************************/
 
@@ -177,7 +188,7 @@ void rdmnet_rpt_client_destroy(rdmnet_client_t handle)
   // TODO
 }
 
-lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, const ControllerRdmCommand *cmd)
+lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, const LocalRdmCommand *cmd)
 {
   if (!handle || !cmd)
     return kLwpaErrInvalid;
@@ -199,7 +210,7 @@ lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, const Co
 }
 
 lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, const char *scope,
-                                                 const DeviceRdmResponse *resp)
+                                                 const LocalRdmResponse *resp)
 {
   if (!handle || !resp)
     return kLwpaErrInvalid;
@@ -275,18 +286,11 @@ bool create_rpt_client_entry(const LwpaUuid *cid, const RdmUid *uid, rpt_client_
 lwpa_error_t validate_rpt_client_config(const RdmnetRptClientConfig *config)
 {
   if ((config->type != kRPTClientTypeDevice && config->type != kRPTClientTypeController) ||
-      (config->has_static_uid && (config->static_uid.manu & 0x8000)) ||
-      (lwpa_uuid_cmp(&config->cid, &LWPA_NULL_UUID) == 0) || (config->num_scopes == 0) || (!config->scope_list) ||
-      (config->type == kRPTClientTypeDevice && config->num_scopes != 1))
+      (!rpt_client_uid_is_dynamic(&config->uid) && (config->uid.manu & 0x8000)) ||
+      (lwpa_uuid_cmp(&config->cid, &LWPA_NULL_UUID) == 0))
   {
     return kLwpaErrInvalid;
   }
-#if !RDMNET_DYNAMIC_MEM
-  if (config->type == kRPTClientTypeController && config->num_scopes > RDMNET_MAX_SCOPES_PER_CONTROLLER)
-  {
-    return kLwpaErrNoMem;
-  }
-#endif
   return kLwpaErrOk;
 }
 
@@ -302,41 +306,19 @@ RdmnetClientInternal *rpt_client_new(const RdmnetRptClientConfig *config)
     new_cli->data.rpt.callbacks = config->callbacks;
     new_cli->callback_context = config->callback_context;
     new_cli->data.rpt.type = config->type;
-    new_cli->data.rpt.has_static_uid = config->has_static_uid;
-    new_cli->data.rpt.static_uid = config->static_uid;
+    if (RPT_CLIENT_IS_DYNAMIC_UID(&config->uid))
+    {
+      new_cli->data.rpt.has_static_uid = false;
+    }
+    else
+    {
+      new_cli->data.rpt.has_static_uid = true;
+      new_cli->data.rpt.static_uid = config->uid;
+    }
     new_cli->scope_list = NULL;
     new_cli->next = NULL;
-
-    bool scope_alloc_successful = true;  // Set false if any scope initialization in the list fails.
-    // Create an entry for each configured scope
-    for (size_t i = 0; i < config->num_scopes; ++i)
-    {
-      if (!create_and_append_scope_entry(&config->scope_list[i], new_cli))
-      {
-        scope_alloc_successful = false;
-        break;
-      }
-    }
-
-    if (!scope_alloc_successful)
-    {
-      // Clean up
-      ClientScopeListEntry *to_free = new_cli->scope_list;
-      ClientScopeListEntry *next;
-      while (to_free)
-      {
-        if (to_free->conn_handle >= 0)
-        {
-          rdmnet_destroy_connection(to_free->conn_handle, NULL);
-        }
-        next = to_free->next;
-        free_client_scope(to_free);
-        to_free = next;
-      }
-      free_rdmnet_client(new_cli);
-      new_cli = NULL;
-    }
   }
+
   return new_cli;
 }
 
@@ -485,14 +467,17 @@ bool client_in_list(const RdmnetClientInternal *client, const RdmnetClientIntern
   return false;
 }
 
-static bool get_client(const RdmnetClientInternal *client)
+RdmnetClientInternal *get_client(rdmnet_client_t handle)
 {
   if (rdmnet_client_lock())
   {
-    if (client_in_list(client, state.clients))
+    for (RdmnetClientInternal *cli = state.clients; cli; cli = cli->next)
     {
-      // Return keeping the lock
-      return true;
+      if (cli->handle == handle)
+      {
+        // Return keeping the lock
+        return cli;
+      }
     }
     rdmnet_client_unlock();
   }
@@ -501,6 +486,8 @@ static bool get_client(const RdmnetClientInternal *client)
 
 static void release_client(const RdmnetClientInternal *client)
 {
+  (void)client;
+
   rdmnet_client_unlock();
 }
 
@@ -567,8 +554,7 @@ void conncb_connected(rdmnet_conn_t handle, const RdmnetConnectedInfo *connect_i
 
       fill_callback_info(cli, &cb);
       cb.which = kClientCallbackConnected;
-      rdmnet_safe_strncpy(cb.common_args.connected.scope, scope_entry->scope_config.scope,
-                          E133_SCOPE_STRING_PADDED_LENGTH);
+      cb.common_args.connected.scope_handle = scope_entry->handle;
 
       release_client(cli);
     }
@@ -644,17 +630,19 @@ void deliver_callback(const ClientCallbackDispatchInfo *info)
     switch (info->which)
     {
       case kClientCallbackConnected:
-        rpt_info->cbs.connected(info->handle, info->common_args.connected.scope, info->context);
+        rpt_info->cbs.connected(info->handle, info->common_args.connected.scope_handle,
+                                &info->common_args.connected.info, info->context);
         break;
       case kClientCallbackDisconnected:
-        rpt_info->cbs.disconnected(info->handle, info->common_args.disconnected.scope, info->context);
+        rpt_info->cbs.not_connected(info->handle, info->common_args.not_connected.scope_handle,
+                                    &info->common_args.not_connected.info, info->context);
         break;
       case kClientCallbackBrokerMsgReceived:
-        rpt_info->cbs.broker_msg_received(info->handle, info->common_args.broker_msg_received.scope,
+        rpt_info->cbs.broker_msg_received(info->handle, info->common_args.broker_msg_received.scope_handle,
                                           info->common_args.broker_msg_received.msg, info->context);
         break;
       case kClientCallbackMsgReceived:
-        rpt_info->cbs.msg_received(info->handle, rpt_info->msg_received.scope, &rpt_info->msg_received.msg,
+        rpt_info->cbs.msg_received(info->handle, rpt_info->msg_received.scope_handle, &rpt_info->msg_received.msg,
                                    info->context);
         break;
       case kClientCallbackNone:
@@ -668,17 +656,19 @@ void deliver_callback(const ClientCallbackDispatchInfo *info)
     switch (info->which)
     {
       case kClientCallbackConnected:
-        ept_info->cbs.connected(info->handle, info->common_args.connected.scope, info->context);
+        ept_info->cbs.connected(info->handle, info->common_args.connected.scope_handle,
+                                &info->common_args.connected.info, info->context);
         break;
       case kClientCallbackDisconnected:
-        ept_info->cbs.disconnected(info->handle, info->common_args.disconnected.scope, info->context);
+        ept_info->cbs.disconnected(info->handle, info->common_args.not_connected.scope_handle,
+                                   &info->common_args.not_connected.info, info->context);
         break;
       case kClientCallbackBrokerMsgReceived:
-        ept_info->cbs.broker_msg_received(info->handle, info->common_args.broker_msg_received.scope,
+        ept_info->cbs.broker_msg_received(info->handle, info->common_args.broker_msg_received.scope_handle,
                                           info->common_args.broker_msg_received.msg, info->context);
         break;
       case kClientCallbackMsgReceived:
-        ept_info->cbs.msg_received(info->handle, ept_info->msg_received.scope, &ept_info->msg_received.msg,
+        ept_info->cbs.msg_received(info->handle, ept_info->msg_received.scope_handle, &ept_info->msg_received.msg,
                                    info->context);
         break;
       case kClientCallbackNone:
