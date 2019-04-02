@@ -82,6 +82,9 @@ typedef struct RdmnetControllerConfig
   void *callback_context;
 } RdmnetControllerConfig;
 
+lwpa_error_t rdmnet_controller_init(const LwpaLogParams *lparams);
+void rdmnet_controller_deinit();
+
 lwpa_error_t rdmnet_controller_create(const RdmnetControllerConfig *config, rdmnet_controller_t *handle);
 lwpa_error_t rdmnet_controller_destroy(rdmnet_controller_t handle);
 

@@ -54,7 +54,8 @@ typedef enum
   kCSMarkedForDestruction
 } conn_state_t;
 
-typedef struct RdmnetConnection
+typedef struct RdmnetConnection RdmnetConnection;
+struct RdmnetConnection
 {
   // Identification
   // Because of the way the comparisons are optimized, the handle MUST always be the first member
@@ -76,10 +77,8 @@ typedef struct RdmnetConnection
   LwpaTimer backoff_timer;
   bool rdmnet_conn_failed;
 
-  // Send tracking
+  // Send and receive tracking
   lwpa_mutex_t send_lock;
-
-  // Receive tracking
   RdmnetMsgBuf recv_buf;
 
   // Synchronization
@@ -88,7 +87,10 @@ typedef struct RdmnetConnection
   // Callbacks
   RdmnetConnCallbacks callbacks;
   void *callback_context;
-} RdmnetConnection;
+
+  // Destruction
+  RdmnetConnection *next_to_destroy;
+};
 
 typedef enum
 {

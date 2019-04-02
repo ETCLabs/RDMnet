@@ -69,50 +69,73 @@ typedef struct RdmnetClientDisconnectedInfo
   bool will_retry;
 } RdmnetClientDisconnectedInfo;
 
+/*! \brief An RDMnet client has connected successfully to a broker on a scope.
+ *
+ *  Messages may now be sent using the relevant API functions, and messages may be received via
+ *  the msg_received callback.
+ *
+ *  \param[in] handle Handle to client which has connected.
+ *  \param[in] scope_handle Handle to scope on which the client has connected.
+ *  \param[in] info More information about the successful connection.
+ *  \param[in] context Context pointer that was given at the creation of the client.
+ */
+typedef void (*RdmnetClientConnectedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+                                        const RdmnetClientConnectedInfo *info, void *context);
+
+/*! \brief An RDMnet client experienced a failure while attempting to connect to a broker on a
+ *         scope.
+ *
+ *  Connection failures can be fatal or non-fatal; the will_retry member of the info struct
+ *  indicates whether the connection will be retried automatically. If will_retry is false, it
+ *  usually indicates a misconfiguration that needs to be resolved by an application user.
+ *
+ *  \param[in] handle Handle to client on which connection has failed.
+ *  \param[in] scope_handle Handle to scope on which connection has failed.
+ *  \param[in] info More information about the failed connection.
+ *  \param[in] context Context pointer that was given at the creation of the client.
+ */
+typedef void (*RdmnetClientConnectFailedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+                                            const RdmnetClientConnectFailedInfo *info, void *context);
+
+/*! \brief An RDMnet client disconnected from a broker on a scope.
+ *
+ *  Disconnection can be fatal or non-fatal; the will_retry member of the info struct indicates
+ *  whether the connection will be retried automatically. If will_retry is false, it usually
+ *  indicates a misconfiguration that needs to be resolved by an application user.
+ *
+ *  \param[in] handle Handle to client which has disconnected.
+ *  \param[in] scope_handle Handle to scope on which the disconnect occurred.
+ *  \param[in] info More information about the disconnect.
+ *  \param[in] context Context pointer that was given at the creation of the client.
+ */
+typedef void (*RdmnetClientDisconnectedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+                                           const RdmnetClientDisconnectedInfo *info, void *context);
+
+typedef void (*RdmnetClientBrokerMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+                                                const BrokerMessage *msg, void *context);
+
+typedef void (*RptClientMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+                                       const RptClientMessage *msg, void *context);
+
+typedef void (*EptClientMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope, const EptClientMessage *msg,
+                                       void *context);
+
 typedef struct RptClientCallbacks
 {
-  /*! \brief An RDMnet client has connected successfully to a broker on a scope.
-   *
-   *  Messages may now be sent using the relevant API functions, and messages may be received via
-   *  the msg_received callback.
-   *
-   *  \param[in] handle Handle to client which has connected.
-   *  \param[in] scope_handle Handle to scope on which the client has connected.
-   *  \param[in] info More information about the successful connection.
-   *  \param[in] context Context pointer that was given at the creation of the client.
-   */
-  void (*connected)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo *info,
-                    void *context);
-
-  /*! \brief An RDMnet client experienced a failure while attempting to connect to a broker on a
-   *         scope.
-   *
-   *  Connection failures can be fatal or non-fatal; the will_retry member of the info struct
-   *  indicates whether the connection will be retried automatically. If will_retry is false, it
-   *  usually indicates a misconfiguration that needs to be resolved by an application user.
-   *
-   *  \param[in] handle Handle to client on which connection has failed.
-   *  \param[in] scope_handle Handle to scope on which connection has failed.
-   *  \param[in] info More information about the failed connection.
-   *  \param[in] context Context pointer that was given at the creation of the client.
-   */
-  void (*connect_failed)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                         const RdmnetClientConnectFailedInfo *info, void *context);
-  void (*not_connected)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                        const RdmnetClientDisconnectedInfo *info, void *context);
-  void (*broker_msg_received)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const BrokerMessage *msg,
-                              void *context);
-  void (*msg_received)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptClientMessage *msg,
-                       void *context);
+  RdmnetClientConnectedCb connected;
+  RdmnetClientConnectFailedCb connect_failed;
+  RdmnetClientDisconnectedCb disconnected;
+  RdmnetClientBrokerMsgReceivedCb broker_msg_received;
+  RptClientMsgReceivedCb msg_received;
 } RptClientCallbacks;
 
 typedef struct EptClientCallbacks
 {
-  void (*connected)(rdmnet_client_t handle, rdmnet_client_scope_t scope, void *context);
-  void (*disconnected)(rdmnet_client_t handle, rdmnet_client_scope_t scope, void *context);
-  void (*broker_msg_received)(rdmnet_client_t handle, rdmnet_client_scope_t scope, const BrokerMessage *msg,
-                              void *context);
-  void (*msg_received)(rdmnet_client_t handle, rdmnet_client_scope_t scope, const EptClientMessage *msg, void *context);
+  RdmnetClientConnectedCb connected;
+  RdmnetClientConnectFailedCb connect_failed;
+  RdmnetClientDisconnectedCb disconnected;
+  RdmnetClientBrokerMsgReceivedCb broker_msg_received;
+  EptClientMsgReceivedCb msg_received;
 } EptClientCallbacks;
 
 typedef struct RdmnetScopeConfig
@@ -125,10 +148,10 @@ typedef struct RdmnetScopeConfig
 /*! \brief Initialization value for a dynamic UID.
  *
  *  Usage example:
- *  ```
+ *  \code
  *  RdmnetRptClientConfig config;
  *  config.uid = RPT_CLIENT_DYNAMIC_UID(0x6574);
- *  ```
+ *  \endcode
  *
  *  \param manu_id ESTA manufacturer ID. All RDMnet components must have one.
  */
@@ -197,6 +220,9 @@ typedef struct RdmnetEptClientConfig
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+lwpa_error_t rdmnet_client_init(const LwpaLogParams *lparams);
+void rdmnet_client_deinit();
 
 lwpa_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig *config, rdmnet_client_t *handle);
 void rdmnet_rpt_client_destroy(rdmnet_client_t handle);

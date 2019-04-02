@@ -378,18 +378,19 @@ int rdmnet_send(rdmnet_conn_t handle, const uint8_t *data, size_t size)
   if (data || size == 0)
     return kLwpaErrInvalid;
 
-  int res = get_conn(handle);
+  RdmnetConnection *conn;
+  int res = get_conn(handle, conn);
   if (res == kLwpaErrOk)
   {
-    if (handle->state != kCSHeartbeat)
+    if (conn->state != kCSHeartbeat)
       res = kLwpaErrNotConn;
-    lwpa_mutex_give(&handle->lock);
+    lwpa_mutex_give(&conn->lock);
   }
 
-  if (res == kLwpaErrOk && lwpa_mutex_take(&handle->send_lock, LWPA_WAIT_FOREVER))
+  if (res == kLwpaErrOk && lwpa_mutex_take(&conn->send_lock, LWPA_WAIT_FOREVER))
   {
-    res = lwpa_send(handle->sock, data, size, 0);
-    lwpa_mutex_give(&handle->send_lock);
+    res = lwpa_send(conn->sock, data, size, 0);
+    lwpa_mutex_give(&conn->send_lock);
   }
   rdmnet_readunlock();
   return res;
@@ -412,17 +413,18 @@ int rdmnet_send(rdmnet_conn_t handle, const uint8_t *data, size_t size)
  */
 lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle)
 {
-  lwpa_error_t res = get_conn(handle);
+  RdmnetConnection *conn;
+  lwpa_error_t res = get_conn(handle, conn);
   if (res == kLwpaErrOk)
   {
-    if (handle->state != kCSHeartbeat)
+    if (conn->state != kCSHeartbeat)
       res = kLwpaErrNotConn;
-    lwpa_mutex_give(&handle->lock);
+    lwpa_mutex_give(&conn->lock);
   }
 
   if (res == kLwpaErrOk)
   {
-    if (lwpa_mutex_take(&handle->send_lock, LWPA_WAIT_FOREVER))
+    if (lwpa_mutex_take(&conn->send_lock, LWPA_WAIT_FOREVER))
     {
       /* Return, keeping the readlock and the send lock. */
       return res;
@@ -459,16 +461,17 @@ int rdmnet_send_partial_message(rdmnet_conn_t handle, const uint8_t *data, size_
   if (!data || size == 0)
     return kLwpaErrInvalid;
 
-  int res = get_conn(handle);
+  RdmnetConnection *conn;
+  int res = get_conn(handle, conn);
   if (res == kLwpaErrOk)
   {
-    if (handle->state != kCSHeartbeat)
+    if (conn->state != kCSHeartbeat)
       res = kLwpaErrNotConn;
-    lwpa_mutex_give(&handle->lock);
+    lwpa_mutex_give(&conn->lock);
   }
 
   if (res == kLwpaErrOk)
-    res = lwpa_send(handle->sock, data, size, 0);
+    res = lwpa_send(conn->sock, data, size, 0);
 
   rdmnet_readunlock();
   return res;
@@ -490,12 +493,13 @@ int rdmnet_send_partial_message(rdmnet_conn_t handle, const uint8_t *data, size_
  */
 lwpa_error_t rdmnet_end_message(rdmnet_conn_t handle)
 {
-  lwpa_error_t res = get_conn(handle);
+  RdmnetConnection *conn;
+  lwpa_error_t res = get_conn(handle, conn);
   if (res == kLwpaErrOk)
   {
     /* Release the send lock and the read lock that we had before. */
-    lwpa_mutex_give(&handle->lock);
-    lwpa_mutex_give(&handle->send_lock);
+    lwpa_mutex_give(&conn->lock);
+    lwpa_mutex_give(&conn->send_lock);
     rdmnet_readunlock();
   }
   /* And release the read lock that we took at the beginning of this function. */
@@ -579,22 +583,36 @@ void rdmnet_conn_tick()
   // Remove any sockets marked for destruction.
   if (rdmnet_writelock())
   {
-    LwpaRbIter iter;
-    RdmnetConnection *conn;
+    RdmnetConnection *destroy_list = NULL;
+    RdmnetConnection **next_destroy_list_entry = &destroy_list;
 
-    lwpa_rbiter_init(&iter);
-    conn = (RdmnetConnection *)lwpa_rbiter_first(&iter, &state.connections);
+    LwpaRbIter conn_iter;
+    lwpa_rbiter_init(&conn_iter);
+
+    RdmnetConnection *conn = (RdmnetConnection *)lwpa_rbiter_first(&conn_iter, &state.connections);
     while (conn)
     {
+      // Can't destroy while iterating as that would invalidate the iterator
+      // So the connections are added to a linked list of connections pending destruction
       if (conn->state == kCSMarkedForDestruction)
       {
-        destroy_connection(conn);
+        *next_destroy_list_entry = conn;
+        conn->next_to_destroy = NULL;
+        next_destroy_list_entry = &conn->next_to_destroy;
       }
-      else
+      conn = lwpa_rbiter_next(&conn_iter);
+    }
+
+    // Now do the actual destruction
+    if (destroy_list)
+    {
+      RdmnetConnection *to_destroy = destroy_list;
+      while (to_destroy)
       {
-        prev_conn = conn;
+        RdmnetConnection *next = to_destroy->next_to_destroy;
+        destroy_connection(to_destroy);
+        to_destroy = next;
       }
-      conn = next_conn;
     }
     rdmnet_writeunlock();
   }
@@ -602,7 +620,9 @@ void rdmnet_conn_tick()
   // Do the rest of the periodic functionality with a read lock
   if (rdmnet_readlock())
   {
-    RdmnetConnection *conn = conn_state.connections;
+    LwpaRbIter conn_iter;
+    lwpa_rbiter_init(&conn_iter);
+    RdmnetConnection *conn = (RdmnetConnection *)lwpa_rbiter_first(&conn_iter, &state.connections);
     while (conn)
     {
       ConnCallbackDispatchInfo cb;
@@ -670,7 +690,7 @@ void rdmnet_conn_tick()
         // Calling back inside the read lock is OK because API functions only take the read lock
         deliver_callback(&cb);
       }
-      conn = conn->next;
+      conn = lwpa_rbiter_next(&conn_iter);
     }
     rdmnet_readunlock();
   }
@@ -864,7 +884,11 @@ void rdmnet_connection_recv()
 
   if (rdmnet_readlock())
   {
-    for (RdmnetConnection *conn = conn_state.connections; conn; conn = conn->next)
+    LwpaRbIter iter;
+    lwpa_rbiter_init(&iter);
+
+    RdmnetConnection *conn = lwpa_rbiter_first(&iter, &state.connections);
+    while (conn)
     {
       if (conn->state == kCSTCPConnPending || conn->state == kCSRDMnetConnPending || conn->state == kCSHeartbeat)
       {
@@ -876,6 +900,7 @@ void rdmnet_connection_recv()
         conn_arr[num_to_poll] = conn;
         ++num_to_poll;
       }
+      conn = lwpa_rbiter_next(&iter);
     }
     rdmnet_readunlock();
   }
@@ -914,7 +939,8 @@ void rdmnet_connection_recv()
 
 void rdmnet_conn_socket_activity(rdmnet_conn_t handle, const LwpaPollfd *poll)
 {
-  if (!handle || kLwpaErrOk != get_conn(handle))
+  RdmnetConnection *conn;
+  if (!handle || kLwpaErrOk != get_conn(handle, &conn))
     return;
 
 #if RDMNET_POLL_CONNECTIONS_INTERNALLY
@@ -924,10 +950,10 @@ void rdmnet_conn_socket_activity(rdmnet_conn_t handle, const LwpaPollfd *poll)
 #endif
   callback_info.which = kConnCallbackNone;
   callback_info.handle = handle;
-  callback_info.cbs = handle->callbacks;
-  callback_info.context = handle->callback_context;
+  callback_info.cbs = conn->callbacks;
+  callback_info.context = conn->callback_context;
 
-  switch (handle->state)
+  switch (conn->state)
   {
     case kCSTCPConnPending:
       handle_tcp_connect_result(handle, poll, &callback_info);
@@ -947,7 +973,7 @@ void rdmnet_conn_socket_activity(rdmnet_conn_t handle, const LwpaPollfd *poll)
       break;
   }
 
-  release_conn_and_readlock(handle);
+  release_conn(conn);
   deliver_callback(&callback_info);
 }
 
@@ -1027,6 +1053,7 @@ RdmnetConnection *create_new_connection(const RdmnetConnectionConfig *config)
       rdmnet_msg_buf_init(&conn->recv_buf);
       conn->callbacks = config->callbacks;
       conn->callback_context = config->callback_context;
+      conn->next_to_destroy = NULL;
     }
     else
     {
@@ -1088,8 +1115,6 @@ void destroy_connection(RdmnetConnection *conn)
 
 lwpa_error_t get_conn(rdmnet_conn_t handle, RdmnetConnection **conn)
 {
-  if (!conn)
-    return kLwpaErrInvalid;
   if (!rdmnet_core_initialized())
     return kLwpaErrNotInit;
   if (!rdmnet_readlock())

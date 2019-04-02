@@ -49,7 +49,6 @@ struct ClientScopeListEntry
 {
   rdmnet_client_scope_t handle;
   RdmnetScopeConfig config;
-  rdmnet_conn_t conn_handle;
   scope_state_t state;
   RdmUid uid;
   rdmnet_scope_monitor_t monitor_handle;
@@ -72,7 +71,7 @@ typedef struct EptClientData
   EptClientCallbacks callbacks;
 } EptClientData;
 
-struct RdmnetClientInternal
+typedef struct RdmnetClient
 {
   rdmnet_client_t handle;
   client_protocol_t type;
@@ -85,14 +84,13 @@ struct RdmnetClientInternal
     RptClientData rpt;
     EptClientData ept;
   } data;
-
-  RdmnetClientInternal *next;
-};
+} RdmnetClient;
 
 typedef enum
 {
   kClientCallbackNone,
   kClientCallbackConnected,
+  kClientCallbackConnectFailed,
   kClientCallbackDisconnected,
   kClientCallbackBrokerMsgReceived,
   kClientCallbackMsgReceived
@@ -104,11 +102,17 @@ typedef struct ConnectedArgs
   RdmnetClientConnectedInfo info;
 } ConnectedArgs;
 
-typedef struct NotConnectedArgs
+typedef struct ConnectFailedArgs
 {
   rdmnet_client_scope_t scope_handle;
-  RdmnetClientNotConnectedInfo info;
-} NotConnectedArgs;
+  RdmnetConnectFailedInfo info;
+} ConnectFailedArgs;
+
+typedef struct DisconnectedArgs
+{
+  rdmnet_client_scope_t scope_handle;
+  RdmnetDisconnectedInfo info;
+} DisconnectedArgs;
 
 typedef struct BrokerMsgReceivedArgs
 {
@@ -154,7 +158,8 @@ typedef struct ClientCallbackDispatchInfo
   union
   {
     ConnectedArgs connected;
-    NotConnectedArgs not_connected;
+    ConnectFailedArgs connect_failed;
+    DisconnectedArgs disconnected;
     BrokerMsgReceivedArgs broker_msg_received;
   } common_args;
 } ClientCallbackDispatchInfo;

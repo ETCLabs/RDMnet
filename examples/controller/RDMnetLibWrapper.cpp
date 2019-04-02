@@ -86,8 +86,8 @@ bool RDMnetLibWrapper::Startup(RDMnetLibNotify *notify)
   {
     notify_ = notify;
 
-    // Initialize the RDMnet core library
-    lwpa_error_t res = rdmnet_core_init(log_ ? log_->GetLogParams() : nullptr);
+    // Initialize the RDMnet controller library
+    lwpa_error_t res = rdmnet_controller_init(log_ ? log_->GetLogParams() : nullptr);
     if (res != kLwpaErrOk)
     {
       if (log_)
@@ -112,7 +112,7 @@ bool RDMnetLibWrapper::Startup(RDMnetLibNotify *notify)
     {
       if (log_)
         log_->Log(LWPA_LOG_ERR, "Error creating an RDMnet Controller handle: '%s'", lwpa_strerror(res));
-      rdmnet_core_deinit();
+      rdmnet_controller_deinit();
       return false;
     }
 
@@ -126,7 +126,7 @@ void RDMnetLibWrapper::Shutdown()
   if (running_)
   {
     rdmnet_controller_destroy(controller_handle_);
-    rdmnet_core_deinit();
+    rdmnet_controller_deinit();
     running_ = false;
   }
 }
