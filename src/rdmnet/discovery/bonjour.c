@@ -30,6 +30,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "rdmnet/private/opts.h"
 #include "lwpa/inet.h"
 #include "lwpa/bool.h"

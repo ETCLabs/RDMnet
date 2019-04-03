@@ -44,6 +44,8 @@ add_executable(${CONTROLLER_TARGET} WIN32
   BrokerStaticAddGUI.ui
   ControllerDefaultResponder.h
   ControllerDefaultResponder.cpp
+  ControllerLog.h
+  ControllerLog.cpp
   ControllerUtils.h
   EndpointItem.cpp
   EndpointItem.h

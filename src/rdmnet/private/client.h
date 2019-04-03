@@ -35,14 +35,14 @@
 #include "rdmnet/core/discovery.h"
 #include "rdmnet/core/connection.h"
 
-typedef struct RdmnetClientInternal RdmnetClientInternal;
-
 typedef enum
 {
   kScopeStateDiscovery,
   kScopeStateConnecting,
   kScopeStateConnected
 } scope_state_t;
+
+typedef struct RdmnetClient RdmnetClient;
 
 typedef struct ClientScopeListEntry ClientScopeListEntry;
 struct ClientScopeListEntry
@@ -55,7 +55,7 @@ struct ClientScopeListEntry
 
   rdmnet_scope_monitor_t monitor_handle;
 
-  RdmnetClientInternal *client;
+  RdmnetClient *client;
   ClientScopeListEntry *next;
 };
 
@@ -74,7 +74,7 @@ typedef struct EptClientData
   EptClientCallbacks callbacks;
 } EptClientData;
 
-typedef struct RdmnetClient
+struct RdmnetClient
 {
   rdmnet_client_t handle;
   client_protocol_t type;
@@ -87,7 +87,7 @@ typedef struct RdmnetClient
     RptClientData rpt;
     EptClientData ept;
   } data;
-} RdmnetClient;
+};
 
 typedef enum
 {
@@ -108,13 +108,13 @@ typedef struct ConnectedArgs
 typedef struct ConnectFailedArgs
 {
   rdmnet_client_scope_t scope_handle;
-  RdmnetConnectFailedInfo info;
+  RdmnetClientConnectFailedInfo info;
 } ConnectFailedArgs;
 
 typedef struct DisconnectedArgs
 {
   rdmnet_client_scope_t scope_handle;
-  RdmnetDisconnectedInfo info;
+  RdmnetClientDisconnectedInfo info;
 } DisconnectedArgs;
 
 typedef struct BrokerMsgReceivedArgs

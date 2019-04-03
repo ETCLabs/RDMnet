@@ -25,37 +25,33 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet/core.h
- *  \brief Functions to init, deinit and drive the rdmnet/core modules.
- *  \author Sam Kearney
- */
+#include "rdmnet/core/client_entry.h"
 
-#ifndef _RDMNET_CORE_H_
-#define _RDMNET_CORE_H_
+bool create_rpt_client_entry(const LwpaUuid *cid, const RdmUid *uid, rpt_client_type_t client_type,
+                             const LwpaUuid *binding_cid, ClientEntryData *entry)
+{
+  if (!cid || !uid || !entry)
+    return false;
 
-#include "lwpa/error.h"
-#include "lwpa/log.h"
-
-/*! \addtogroup rdmnet_conn
- *  @{
- */
-
-typedef int rdmnet_conn_t;
-#define RDMNET_CONN_INVALID -1
-
-/*! @} */
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params);
-void rdmnet_core_deinit();
-
-void rdmnet_core_tick();
-
-#ifdef __cplusplus
+  entry->client_protocol = kClientProtocolRPT;
+  entry->client_cid = *cid;
+  entry->data.rpt_data.client_uid = *uid;
+  entry->data.rpt_data.client_type = client_type;
+  if (binding_cid)
+    entry->data.rpt_data.binding_cid = *binding_cid;
+  else
+    memset(entry->data.rpt_data.binding_cid.data, 0, LWPA_UUID_BYTES);
+  entry->next = NULL;
+  return true;
 }
-#endif
 
-#endif /* _RDMNET_CORE_H_ */
+bool create_ept_client_entry(const LwpaUuid *cid, const EptSubProtocol *protocol_arr, size_t protocol_arr_size,
+                             ClientEntryData *entry)
+{
+  (void)cid;
+  (void)protocol_arr;
+  (void)protocol_arr_size;
+  (void)entry;
+  // TODO
+  return false;
+}

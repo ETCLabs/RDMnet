@@ -36,7 +36,7 @@ LWPA_MEMPOOL_DEFINE(ept_subprots, EptSubProtocol, RDMNET_MAX_EPT_SUBPROTS);
 LWPA_MEMPOOL_DEFINE(dynamic_uid_request_entries, DynamicUidRequestListEntry, RDM_MAX_DYNAMIC_UID_ENTRIES);
 LWPA_MEMPOOL_DEFINE(dynamic_uid_mappings, DynamicUidMapping, RDMNET_MAX_DYNAMIC_UID_ENTRIES);
 LWPA_MEMPOOL_DEFINE(fetch_uid_assignment_entries, FetchUidAssignmentListEntry, RDMNET_MAX_DYNAMIC_UID_ENTRIES);
-LWPA_MEMPOOL_DEFINE(rdm_commands, RdmCmdListEntry, RDMNET_MAX_RDM_COMMANDS);
+LWPA_MEMPOOL_DEFINE(rdm_commands, RdmBufListEntry, RDMNET_MAX_RDM_COMMANDS);
 LWPA_MEMPOOL_DEFINE_ARRAY(rpt_status_strings, char, RPT_STATUS_STRING_MAXLEN + 1, 1);
 #endif
 
@@ -166,9 +166,9 @@ void free_rpt_message(RptMessage *rmsg)
     case VECTOR_RPT_REQUEST:
     case VECTOR_RPT_NOTIFICATION:
     {
-      RdmCmdList *rlist = get_rdm_cmd_list(rmsg);
-      RdmCmdListEntry *rdmcmd = rlist->list;
-      RdmCmdListEntry *next_rdmcmd;
+      RdmBufList *rlist = get_rdm_buf_list(rmsg);
+      RdmBufListEntry *rdmcmd = rlist->list;
+      RdmBufListEntry *next_rdmcmd;
       while (rdmcmd)
       {
         next_rdmcmd = rdmcmd->next;

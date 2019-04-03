@@ -37,18 +37,18 @@
 #include "rdm/uid.h"
 #include "rdmnet/client.h"
 
-typedef struct RdmnetDeviceInternal *rdmnet_device_t;
-
-typedef void (*RdmnetDeviceConnectedCb)(rdmnet_device_t handle, const char *scope, void *context);
-typedef void (*RdmnetDeviceDisconnectedCb)(rdmnet_device_t handle, const char *scope, void *context);
-typedef void (*RdmnetDeviceRdmCmdReceivedCb)(rdmnet_device_t handle, const char *scope, const DeviceRdmCommand *cmd,
-                                             void *context);
+typedef struct RdmnetDevice *rdmnet_device_t;
 
 typedef struct RdmnetDeviceCallbacks
 {
-  RdmnetDeviceConnectedCb connected;
-  RdmnetDeviceDisconnectedCb disconnected;
-  RdmnetDeviceRdmCmdReceivedCb rdm_cmd_received;
+  void (*connected)(rdmnet_device_t handle, rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo *info,
+                    void *context);
+  void (*connect_failed)(rdmnet_device_t handle, rdmnet_client_scope_t scope_handle,
+                         const RdmnetClientConnectFailedInfo *info, void *context);
+  void (*disconnected)(rdmnet_device_t handle, rdmnet_client_scope_t scope_handle,
+                       const RdmnetClientDisconnectedInfo *info, void *context);
+  void (*rdm_command_received)(rdmnet_device_t handle, rdmnet_client_scope_t scope_handle, const RemoteRdmCommand *cmd,
+                               void *context);
 } RdmnetDeviceCallbacks;
 
 /*! A set of information that defines the startup parmaeters of an RDMnet Device. */
@@ -69,9 +69,9 @@ typedef struct RdmnetDeviceConfig
 } RdmnetDeviceConfig;
 
 lwpa_error_t rdmnet_device_create(const RdmnetDeviceConfig *config, rdmnet_device_t *handle);
-void rdmnet_device_destroy(rdmnet_device_t handle);
+lwpa_error_t rdmnet_device_destroy(rdmnet_device_t handle);
 
-lwpa_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const DeviceRdmResponse *resp);
+lwpa_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const LocalRdmResponse *resp);
 lwpa_error_t rdmnet_device_send_status(rdmnet_device_t handle, const RptStatusMsg *status);
 
 #endif /* _RDMNET_DEVICE_H_ */

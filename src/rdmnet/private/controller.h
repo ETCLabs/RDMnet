@@ -28,8 +28,14 @@
 #ifndef _RDMNET_PRIVATE_CONTROLLER_H_
 #define _RDMNET_PRIVATE_CONTROLLER_H_
 
-typedef struct RdmnetControllerInternal
+#include "rdmnet/controller.h"
+#include "rdmnet/client.h"
+
+typedef struct RdmnetController
 {
-} RdmnetControllerInternal;
+  rdmnet_client_t client_handle;
+  RdmnetControllerCallbacks callbacks;
+  void *callback_context;
+} RdmnetController;
 
 #endif /* _RDMNET_PRIVATE_CONTROLLER_H_ */

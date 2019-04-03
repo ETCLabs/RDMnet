@@ -42,7 +42,7 @@
 extern "C" {
 #endif
 
-typedef struct RdmnetControllerInternal *rdmnet_controller_t;
+typedef struct RdmnetController *rdmnet_controller_t;
 
 typedef enum
 {
@@ -54,19 +54,19 @@ typedef enum
 
 typedef struct RdmnetControllerCallbacks
 {
-  void (*connected)(rdmnet_controller_t handle, rdmnet_client_scope_t scope, const RdmnetClientConnectedInfo *info,
-                    void *context);
-  void (*connect_failed)(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+  void (*connected)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                    const RdmnetClientConnectedInfo *info, void *context);
+  void (*connect_failed)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                          const RdmnetClientConnectFailedInfo *info, void *context);
-  void (*disconnected)(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+  void (*disconnected)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                        const RdmnetClientDisconnectedInfo *info, void *context);
-  void (*client_list_update)(rdmnet_controller_t handle, rdmnet_client_scope_t scope, client_list_action_t list_action,
-                             const ClientList *list, void *context);
-  void (*rdm_response_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope, const RemoteRdmResponse *resp,
-                                void *context);
-  void (*rdm_command_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope, const RemoteRdmCommand *cmd,
-                               void *context);
-  void (*status_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope, const RemoteRptStatus *status,
+  void (*client_list_update)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                             client_list_action_t list_action, const ClientList *list, void *context);
+  void (*rdm_response_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                                const RemoteRdmResponse *resp, void *context);
+  void (*rdm_command_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                               const RemoteRdmCommand *cmd, void *context);
+  void (*status_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle, const RemoteRptStatus *status,
                           void *context);
 } RdmnetControllerCallbacks;
 
@@ -92,13 +92,16 @@ lwpa_error_t rdmnet_controller_destroy(rdmnet_controller_t handle);
 
 lwpa_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const RdmnetScopeConfig *scope_config,
                                          rdmnet_client_scope_t *scope_handle);
-lwpa_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle);
+lwpa_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                                            rdmnet_disconnect_reason_t reason);
 lwpa_error_t rdmnet_controller_change_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                            const RdmnetScopeConfig *new_config);
+                                            const RdmnetScopeConfig *new_config, rdmnet_disconnect_reason_t reason);
 
-lwpa_error_t rdmnet_controller_send_rdm_command(rdmnet_client_t handle, rdmnet_client_scope_t scope,
-                                                const LocalRdmCommand *cmd);
-lwpa_error_t rdmnet_controller_request_client_list(rdmnet_client_t handle, rdmnet_client_scope_t scope);
+lwpa_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                                                const LocalRdmCommand *cmd, uint32_t *seq_num);
+lwpa_error_t rdmnet_controller_send_rdm_response(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                                                 const LocalRdmResponse *resp);
+lwpa_error_t rdmnet_controller_request_client_list(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle);
 
 #ifdef __cplusplus
 };

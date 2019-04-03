@@ -895,7 +895,7 @@ lwpa_socket_t create_lwpa_socket(const LwpaSockaddr *saddr, const LwpaIpAddr *ne
 {
   lwpa_socket_t sock = LWPA_SOCKET_INVALID;
   lwpa_error_t res = lwpa_socket((saddr->ip.type == kLwpaIpTypeV6) ? LWPA_AF_INET6 : LWPA_AF_INET, LWPA_DGRAM, &sock);
-  bool valid = (sock != LWPA_SOCKET_INVALID);
+  bool valid = (res == kLwpaErrOk);
 
   if (valid)
   {

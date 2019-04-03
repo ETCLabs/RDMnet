@@ -25,13 +25,19 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
+#ifndef _RDMNET_PRIVATE_DEVICE_H_
+#define _RDMNET_PRIVATE_DEVICE_H_
+
 #include "rdmnet/device.h"
 #include "rdmnet/client.h"
 
-typedef struct RdmnetDeviceInternal
+typedef struct RdmnetDevice
 {
   rdmnet_client_t client_handle;
-  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
+  rdmnet_client_scope_t scope_handle;
+  // char scope[E133_SCOPE_STRING_PADDED_LENGTH];
   RdmnetDeviceCallbacks callbacks;
   void *callback_context;
-} RdmnetDeviceInternal;
+} RdmnetDevice;
+
+#endif /* _RDMNET_PRIVATE_DEVICE_H_ */

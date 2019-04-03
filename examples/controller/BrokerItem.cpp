@@ -64,11 +64,9 @@ void BrokerItem::updateText()
   else if (static_broker_.valid)
     address = static_broker_.addr;
 
-  if (have_address)
+  char addrString[LWPA_INET6_ADDRSTRLEN];
+  if (have_address && kLwpaErrOk == lwpa_inet_ntop(&address.ip, addrString, LWPA_INET6_ADDRSTRLEN))
   {
-    char addrString[LWPA_INET6_ADDRSTRLEN];
-    lwpa_inet_ntop(&address.ip, addrString, LWPA_INET6_ADDRSTRLEN);
-
     setText(QString("Broker for scope \"%1\" at %2:%3").arg(scope_, addrString, QString::number(address.port)));
   }
   else

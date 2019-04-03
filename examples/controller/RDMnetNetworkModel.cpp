@@ -271,8 +271,9 @@ void RDMnetNetworkModel::Connected(rdmnet_client_scope_t scope_handle, const Rdm
   auto brokerItemIter = broker_connections_.find(scope_handle);
   if (brokerItemIter != broker_connections_.end())
   {
+    // Update relevant data
+    brokerItemIter->second->setConnected(true, info.broker_addr);
     std::string utf8_scope = brokerItemIter->second->scope().toStdString();
-
     default_responder_.UpdateScopeConnectionStatus(utf8_scope, true, info.broker_addr);
 
     // Broadcast GET_RESPONSE notification because of new connection
@@ -295,7 +296,7 @@ void RDMnetNetworkModel::ConnectFailed(rdmnet_client_scope_t /*scope_handle*/,
   // display user-facing information accordingly.
 }
 
-void RDMnetNetworkModel::Disconnected(rdmnet_client_scope_t scope_handle, const RdmnetClientDisconnectedInfo &info)
+void RDMnetNetworkModel::Disconnected(rdmnet_client_scope_t scope_handle, const RdmnetClientDisconnectedInfo & /*info*/)
 {
   ControllerWriteGuard conn_write(conn_lock_);
 
@@ -1849,7 +1850,7 @@ void RDMnetNetworkModel::RdmResponseReceived(rdmnet_client_scope_t scope_handle,
   {
     log_->Log(LWPA_LOG_INFO, "Got SET_COMMAND_RESPONSE with PID %d", first_resp.param_id);
 
-    if (resp.have_command)
+    if (resp.command_included)
     {
       // Make sure this Controller is up-to-date with data that was set on a Device.
       switch (first_resp.param_id)

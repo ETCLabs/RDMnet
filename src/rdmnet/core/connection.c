@@ -72,7 +72,7 @@ LWPA_MEMPOOL_DEFINE(rdmnet_connections, RdmnetConnection, RDMNET_MAX_CONNECTIONS
 LWPA_MEMPOOL_DEFINE(rdmnet_conn_rb_nodes, LwpaRbNode, RDMNET_MAX_CONNECTIONS);
 #endif
 
-static struct ConnectionState
+static struct RdmnetConnectionState
 {
   LwpaRbTree connections;
   rdmnet_conn_t next_handle;
@@ -92,7 +92,7 @@ static void retry_connection(RdmnetConnection *conn);
 static rdmnet_conn_t get_new_conn_handle();
 static RdmnetConnection *create_new_connection(const RdmnetConnectionConfig *config);
 static void destroy_connection(RdmnetConnection *conn);
-static lwpa_error_t get_conn(rdmnet_conn_t handle);
+static lwpa_error_t get_conn(rdmnet_conn_t handle, RdmnetConnection **conn);
 static void release_conn(RdmnetConnection *conn);
 static int conn_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const LwpaRbNode *node_b);
 static LwpaRbNode *conn_node_alloc();
@@ -120,6 +120,9 @@ lwpa_error_t rdmnet_connection_init()
   if (res == kLwpaErrOk)
   {
     lwpa_rbtree_init(&state.connections, conn_cmp, conn_node_alloc, conn_node_free);
+
+    state.next_handle = 0;
+    state.handle_has_wrapped_around = false;
   }
 
   return res;
@@ -127,6 +130,8 @@ lwpa_error_t rdmnet_connection_init()
 
 static void conn_dealloc(const LwpaRbTree *self, LwpaRbNode *node)
 {
+  (void)self;
+
   RdmnetConnection *conn = (RdmnetConnection *)node->value;
   if (conn)
     destroy_connection(conn);
@@ -177,7 +182,7 @@ lwpa_error_t rdmnet_new_connection(const RdmnetConnectionConfig *config, rdmnet_
 
     if (res == kLwpaErrOk)
     {
-      *handle = conn;
+      *handle = conn->handle;
     }
     rdmnet_writeunlock();
   }
@@ -263,7 +268,7 @@ lwpa_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking)
   if (!(conn->state == kCSConnectNotStarted || conn->state == kCSHeartbeat))
   {
     /* Can't change the blocking state while a connection is in progress. */
-    release_conn_and_readlock(conn);
+    release_conn(conn);
     return kLwpaErrBusy;
   }
 
@@ -379,7 +384,7 @@ int rdmnet_send(rdmnet_conn_t handle, const uint8_t *data, size_t size)
     return kLwpaErrInvalid;
 
   RdmnetConnection *conn;
-  int res = get_conn(handle, conn);
+  int res = get_conn(handle, &conn);
   if (res == kLwpaErrOk)
   {
     if (conn->state != kCSHeartbeat)
@@ -414,7 +419,7 @@ int rdmnet_send(rdmnet_conn_t handle, const uint8_t *data, size_t size)
 lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle)
 {
   RdmnetConnection *conn;
-  lwpa_error_t res = get_conn(handle, conn);
+  lwpa_error_t res = get_conn(handle, &conn);
   if (res == kLwpaErrOk)
   {
     if (conn->state != kCSHeartbeat)
@@ -462,7 +467,7 @@ int rdmnet_send_partial_message(rdmnet_conn_t handle, const uint8_t *data, size_
     return kLwpaErrInvalid;
 
   RdmnetConnection *conn;
-  int res = get_conn(handle, conn);
+  int res = get_conn(handle, &conn);
   if (res == kLwpaErrOk)
   {
     if (conn->state != kCSHeartbeat)
@@ -494,7 +499,7 @@ int rdmnet_send_partial_message(rdmnet_conn_t handle, const uint8_t *data, size_
 lwpa_error_t rdmnet_end_message(rdmnet_conn_t handle)
 {
   RdmnetConnection *conn;
-  lwpa_error_t res = get_conn(handle, conn);
+  lwpa_error_t res = get_conn(handle, &conn);
   if (res == kLwpaErrOk)
   {
     /* Release the send lock and the read lock that we had before. */
@@ -564,7 +569,7 @@ void start_tcp_connection(RdmnetConnection *conn, ConnCallbackDispatchInfo *cb)
   if (!ok)
   {
     cb->which = kConnCallbackConnectFailed;
-    failed_info->cause = kRdmnetConnectFailSocketFailure;
+    failed_info->event = kRdmnetConnectFailSocketFailure;
     reset_connection(conn);
   }
 }
@@ -630,7 +635,7 @@ void rdmnet_conn_tick()
 
       if (lwpa_mutex_take(&conn->lock, LWPA_WAIT_FOREVER))
       {
-        cb.handle = conn;
+        cb.handle = conn->handle;
         cb.cbs = conn->callbacks;
         cb.context = conn->callback_context;
 
@@ -662,7 +667,7 @@ void rdmnet_conn_tick()
               // Heartbeat timeout! Disconnect the connection.
               cb.which = kConnCallbackDisconnected;
               RdmnetDisconnectedInfo *disconn_info = &cb.args.disconnected.disconn_info;
-              disconn_info->cause = kRdmnetDisconnectNoHeartbeat;
+              disconn_info->event = kRdmnetDisconnectNoHeartbeat;
               disconn_info->socket_err = kLwpaErrOk;
 
               reset_connection(conn);
@@ -705,7 +710,7 @@ void handle_tcp_connect_result(RdmnetConnection *conn, const LwpaPollfd *result,
     cb->which = kConnCallbackConnectFailed;
 
     RdmnetConnectFailedInfo *failed_info = &cb->args.connect_failed.failed_info;
-    failed_info->cause = kRdmnetConnectFailTcpLevel;
+    failed_info->event = kRdmnetConnectFailTcpLevel;
     failed_info->socket_err = result->err;
 
     reset_connection(conn);
@@ -724,7 +729,7 @@ void handle_rdmnet_connect_result(RdmnetConnection *conn, const LwpaPollfd *resu
     cb->which = kConnCallbackConnectFailed;
 
     RdmnetConnectFailedInfo *failed_info = &cb->args.connect_failed.failed_info;
-    failed_info->cause = kRdmnetConnectFailTcpLevel;
+    failed_info->event = kRdmnetConnectFailTcpLevel;
     failed_info->socket_err = result->err;
 
     reset_connection(conn);
@@ -759,7 +764,7 @@ void handle_rdmnet_connect_result(RdmnetConnection *conn, const LwpaPollfd *resu
               cb->which = kConnCallbackConnectFailed;
 
               RdmnetConnectFailedInfo *failed_info = &cb->args.connect_failed.failed_info;
-              failed_info->cause = kRdmnetConnectFailRejected;
+              failed_info->event = kRdmnetConnectFailRejected;
               failed_info->socket_err = kLwpaErrOk;
               failed_info->rdmnet_reason = reply->connect_status;
 
@@ -788,7 +793,7 @@ void handle_rdmnet_data(RdmnetConnection *conn, const LwpaPollfd *result, ConnCa
     cb->which = kConnCallbackDisconnected;
 
     RdmnetDisconnectedInfo *disconn_info = &cb->args.disconnected.disconn_info;
-    disconn_info->cause = kRdmnetDisconnectSocketFailure;
+    disconn_info->event = kRdmnetDisconnectSocketFailure;
     disconn_info->socket_err = result->err;
 
     reset_connection(conn);
@@ -816,7 +821,7 @@ void handle_rdmnet_data(RdmnetConnection *conn, const LwpaPollfd *result, ConnCa
             cb->which = kConnCallbackDisconnected;
 
             RdmnetDisconnectedInfo *disconn_info = &cb->args.disconnected.disconn_info;
-            disconn_info->cause = kRdmnetDisconnectGracefulRemoteInitiated;
+            disconn_info->event = kRdmnetDisconnectGracefulRemoteInitiated;
             disconn_info->socket_err = kLwpaErrOk;
             disconn_info->rdmnet_reason = get_disconnect_msg(bmsg)->disconnect_reason;
 
@@ -843,7 +848,7 @@ void handle_rdmnet_data(RdmnetConnection *conn, const LwpaPollfd *result, ConnCa
       cb->which = kConnCallbackDisconnected;
 
       RdmnetDisconnectedInfo *disconn_info = &cb->args.disconnected.disconn_info;
-      disconn_info->cause = kRdmnetDisconnectSocketFailure;
+      disconn_info->event = kRdmnetDisconnectSocketFailure;
       disconn_info->socket_err = res;
 
       reset_connection(conn);
@@ -879,7 +884,7 @@ void deliver_callback(ConnCallbackDispatchInfo *info)
 void rdmnet_connection_recv()
 {
   static LwpaPollfd poll_arr[RDMNET_CONN_MAX_SOCKETS];
-  static RdmnetConnection *conn_arr[RDMNET_CONN_MAX_SOCKETS];
+  static rdmnet_conn_t conn_arr[RDMNET_CONN_MAX_SOCKETS];
   size_t num_to_poll = 0;
 
   if (rdmnet_readlock())
@@ -897,7 +902,7 @@ void rdmnet_connection_recv()
         else
           poll_arr[num_to_poll].events = LWPA_POLLIN;
         poll_arr[num_to_poll].fd = conn->sock;
-        conn_arr[num_to_poll] = conn;
+        conn_arr[num_to_poll] = conn->handle;
         ++num_to_poll;
       }
       conn = lwpa_rbiter_next(&iter);
@@ -940,7 +945,7 @@ void rdmnet_connection_recv()
 void rdmnet_conn_socket_activity(rdmnet_conn_t handle, const LwpaPollfd *poll)
 {
   RdmnetConnection *conn;
-  if (!handle || kLwpaErrOk != get_conn(handle, &conn))
+  if (handle < 0 || kLwpaErrOk != get_conn(handle, &conn))
     return;
 
 #if RDMNET_POLL_CONNECTIONS_INTERNALLY
@@ -956,13 +961,13 @@ void rdmnet_conn_socket_activity(rdmnet_conn_t handle, const LwpaPollfd *poll)
   switch (conn->state)
   {
     case kCSTCPConnPending:
-      handle_tcp_connect_result(handle, poll, &callback_info);
+      handle_tcp_connect_result(conn, poll, &callback_info);
       break;
     case kCSRDMnetConnPending:
-      handle_rdmnet_connect_result(handle, poll, &callback_info);
+      handle_rdmnet_connect_result(conn, poll, &callback_info);
       break;
     case kCSHeartbeat:
-      handle_rdmnet_data(handle, poll, &callback_info);
+      handle_rdmnet_data(conn, poll, &callback_info);
       break;
     case kCSConnectNotStarted:
     case kCSConnectPending:
@@ -1143,6 +1148,8 @@ void release_conn(RdmnetConnection *conn)
 
 int conn_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const LwpaRbNode *node_b)
 {
+  (void)self;
+
   RdmnetConnection *a = (RdmnetConnection *)node_a->value;
   RdmnetConnection *b = (RdmnetConnection *)node_b->value;
 

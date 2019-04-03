@@ -74,8 +74,9 @@
 static void pack_rpt_header(size_t length, uint32_t vector, const RptHeader *header, uint8_t *buf);
 static lwpa_error_t send_rpt_header(rdmnet_conn_t handle, const LwpaRootLayerPdu *rlp, uint32_t rpt_vector,
                                     const RptHeader *header, uint8_t *buf, size_t buflen);
-static size_t calc_rpt_request_len(const RdmBuffer *cmd);
+static size_t calc_request_pdu_size(const RdmBuffer *cmd);
 static size_t calc_status_pdu_size(const RptStatusMsg *status);
+static size_t calc_notification_pdu_size(const RdmBuffer *cmd_arr, size_t num_cmds);
 
 /*************************** Function definitions ****************************/
 
@@ -390,25 +391,25 @@ lwpa_error_t send_rpt_status(rdmnet_conn_t handle, const LwpaUuid *local_cid, co
   return rdmnet_end_message(handle);
 }
 
-size_t calc_notification_pdu_size(const RdmCmdListEntry *cmd_list)
+size_t calc_notification_pdu_size(const RdmBuffer *cmd_arr, size_t cmd_arr_size)
 {
   size_t res = REQUEST_NOTIF_PDU_HEADER_SIZE;
-  const RdmCmdListEntry *cur_cmd = cmd_list;
 
-  for (; cur_cmd; cur_cmd = cur_cmd->next)
+  for (const RdmBuffer *cur_cmd = cmd_arr; cur_cmd < cmd_arr + cmd_arr_size; ++cur_cmd)
   {
-    res += rdm_cmd_pdu_len(&cur_cmd->msg);
+    res += rdm_cmd_pdu_len(cur_cmd);
   }
   return res;
 }
 
 /*! \brief Get the packed buffer size for an RPT Notification message.
- *  \param[in] cmd_list Encapsulated RDM Command List that will occupy the RPT Notification message.
+ *  \param[in] cmd_arr Array of packed RDM Commands that will occupy the RPT Notification message.
+ *  \param[in] cmd_arr_size Size of packed RDM Command array.
  *  \return Required buffer size, or 0 on error.
  */
-size_t bufsize_rpt_notification(const RdmCmdListEntry *cmd_list)
+size_t bufsize_rpt_notification(const RdmBuffer *cmd_arr, size_t cmd_arr_size)
 {
-  return (cmd_list ? (RPT_PDU_FULL_HEADER_SIZE + calc_notification_pdu_size(cmd_list)) : 0);
+  return (cmd_arr ? (RPT_PDU_FULL_HEADER_SIZE + calc_notification_pdu_size(cmd_arr, cmd_arr_size)) : 0);
 }
 
 /*! \brief Pack an RPT Notification message into a buffer.
@@ -416,24 +417,25 @@ size_t bufsize_rpt_notification(const RdmCmdListEntry *cmd_list)
  *  \param[in] buflen Length in bytes of buf.
  *  \param[in] local_cid CID of the Component sending the RPT Notification message.
  *  \param[in] header Header data for the RPT PDU that encapsulates this RPT Notification message.
- *  \param[in] cmd_list List of RDM Commands contained in this RPT Notification.
+ *  \param[in] cmd_arr Array of packed RDM Commands contained in this RPT Notification.
+ *  \param[in] cmd_arr_size Size of packed RDM Command array.
  *  \return Number of bytes packed, or 0 on error.
  */
 size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
-                             const RdmCmdListEntry *cmd_list)
+                             const RdmBuffer *cmd_arr, size_t cmd_arr_size)
 {
   LwpaRootLayerPdu rlp;
   uint8_t *cur_ptr = buf;
   size_t data_size;
   size_t notif_pdu_size;
-  const RdmCmdListEntry *cur_cmd;
 
-  if (!buf || !local_cid || !header || !cmd_list || buflen < bufsize_rpt_notification(cmd_list))
+  if (!buf || !local_cid || !header || !cmd_arr || cmd_arr_size == 0 ||
+      buflen < bufsize_rpt_notification(cmd_arr, cmd_arr_size))
   {
     return 0;
   }
 
-  notif_pdu_size = calc_notification_pdu_size(cmd_list);
+  notif_pdu_size = calc_notification_pdu_size(cmd_arr, cmd_arr_size);
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_RPT;
   rlp.datalen = RPT_PDU_HEADER_SIZE + notif_pdu_size;
@@ -446,10 +448,10 @@ size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaUuid *local_
   pack_notification_header(notif_pdu_size, cur_ptr);
   cur_ptr += REQUEST_NOTIF_PDU_HEADER_SIZE;
 
-  for (cur_cmd = cmd_list; cur_cmd; cur_cmd = cur_cmd->next)
+  for (const RdmBuffer *cur_cmd = cmd_arr; cur_cmd < cmd_arr + cmd_arr_size; ++cur_cmd)
   {
-    pack_rdm_cmd_pdu(&cur_cmd->msg, cur_ptr);
-    cur_ptr += rdm_cmd_pdu_len(&cur_cmd->msg);
+    pack_rdm_cmd_pdu(cur_cmd, cur_ptr);
+    cur_ptr += rdm_cmd_pdu_len(cur_cmd);
   }
   return cur_ptr - buf;
 }
@@ -458,26 +460,26 @@ size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaUuid *local_
  *  \param[in] handle RDMnet connection handle on which to send the RPT Notification message.
  *  \param[in] local_cid CID of the Component sending the RPT Notification message.
  *  \param[in] header Header data for the RPT PDU that encapsulates this RPT Notification message.
- *  \param[in] cmd_list List of RDM Commands contained in this RPT Notification.
+ *  \param[in] cmd_arr Array of packed RDM Commands contained in this RPT Notification.
+ *  \param[in] cmd_arr_size Size of packed RDM Command array.
  *  \return #kLwpaErrOk: Send success.\n
  *          #kLwpaErrInvalid: Invalid argument provided.\n
  *          #kLwpaErrSys: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
 lwpa_error_t send_rpt_notification(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
-                                   const RdmCmdListEntry *cmd_list)
+                                   const RdmBuffer *cmd_arr, size_t cmd_arr_size)
 {
   lwpa_error_t res;
   int send_res;
   LwpaRootLayerPdu rlp;
   uint8_t buf[RDM_CMD_PDU_MAX_SIZE];
   size_t notif_pdu_size;
-  const RdmCmdListEntry *cur_cmd;
 
-  if (!local_cid || !header || !cmd_list)
+  if (!local_cid || !header || !cmd_arr || cmd_arr_size == 0)
     return kLwpaErrInvalid;
 
-  notif_pdu_size = calc_notification_pdu_size(cmd_list);
+  notif_pdu_size = calc_notification_pdu_size(cmd_arr, cmd_arr_size);
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_RPT;
   rlp.datalen = RPT_PDU_HEADER_SIZE + notif_pdu_size;
@@ -501,10 +503,10 @@ lwpa_error_t send_rpt_notification(rdmnet_conn_t handle, const LwpaUuid *local_c
     return (lwpa_error_t)send_res;
   }
 
-  for (cur_cmd = cmd_list; cur_cmd; cur_cmd = cur_cmd->next)
+  for (const RdmBuffer *cur_cmd = cmd_arr; cur_cmd < cmd_arr + cmd_arr_size; ++cur_cmd)
   {
-    pack_rdm_cmd_pdu(&cur_cmd->msg, buf);
-    send_res = rdmnet_send_partial_message(handle, buf, rdm_cmd_pdu_len(&cur_cmd->msg));
+    pack_rdm_cmd_pdu(cur_cmd, buf);
+    send_res = rdmnet_send_partial_message(handle, buf, rdm_cmd_pdu_len(cur_cmd));
   }
 
   return rdmnet_end_message(handle);

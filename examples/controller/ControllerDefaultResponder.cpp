@@ -375,6 +375,19 @@ void ControllerDefaultResponder::RemoveScope(const std::string &scope_to_remove)
   scopes_.erase(scope_to_remove);
 }
 
+void ControllerDefaultResponder::UpdateScopeConnectionStatus(const std::string &scope, bool connected,
+                                                             const LwpaSockaddr &broker_addr)
+{
+  ControllerWriteGuard prop_write(prop_lock_);
+  auto scope_entry = scopes_.find(scope);
+  if (scope_entry != scopes_.end())
+  {
+    scope_entry->second.connected = connected;
+    if (connected)
+      scope_entry->second.current_broker = broker_addr;
+  }
+}
+
 void ControllerDefaultResponder::IncrementTcpUnhealthyCounter(const std::string &scope)
 {
   ControllerWriteGuard prop_write(prop_lock_);

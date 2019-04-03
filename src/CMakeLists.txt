@@ -51,9 +51,8 @@ set(RDMNET_API_PRIVATE_HEADERS
 )
 set(RDMNET_API_SOURCES
   ${RDMNET_SRC}/rdmnet/client.c
-  # ${RDMNET_SRC}/rdmnet/controller.c
+  ${RDMNET_SRC}/rdmnet/controller.c
   ${RDMNET_SRC}/rdmnet/device.c
-  ""
 )
 
 # This target should not be used externally - it is only for use by the automated tests.
@@ -90,6 +89,7 @@ set(RDMNET_CORE_PRIVATE_HEADERS
 set(RDMNET_CORE_SOURCES
   ${RDMNET_SRC}/rdmnet/core.c
   ${RDMNET_SRC}/rdmnet/core/broker_prot.c
+  ${RDMNET_SRC}/rdmnet/core/client_entry.c
   ${RDMNET_SRC}/rdmnet/core/connection.c
   ${RDMNET_SRC}/rdmnet/core/llrp_prot.c
   ${RDMNET_SRC}/rdmnet/core/llrp.c

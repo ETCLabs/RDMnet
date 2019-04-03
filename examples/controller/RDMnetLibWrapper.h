@@ -62,9 +62,10 @@ public:
 
   rdmnet_client_scope_t AddScope(const std::string &scope,
                                  StaticBrokerConfig static_broker = StaticBrokerConfig()) override;
-  bool RemoveScope(rdmnet_client_scope_t scope_handle) override;
+  bool RemoveScope(rdmnet_client_scope_t scope_handle, rdmnet_disconnect_reason_t reason) override;
 
   bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand &cmd) override;
+  bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand &cmd, uint32_t &seq_num) override;
   bool SendRdmResponse(rdmnet_client_scope_t scope_handle, const LocalRdmResponse &resp) override;
 
 protected:

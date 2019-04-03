@@ -109,18 +109,18 @@ typedef struct RptStatusMsg
   const char *status_string;
 } RptStatusMsg;
 
-typedef struct RdmCmdListEntry RdmCmdListEntry;
+typedef struct RdmBufListEntry RdmBufListEntry;
 
 /*! An entry in a linked list of packed RDM commands. */
-struct RdmCmdListEntry
+struct RdmBufListEntry
 {
   RdmBuffer msg;
-  RdmCmdListEntry *next;
+  RdmBufListEntry *next;
 };
 
 /*! A list of packed RDM Commands. Two types of RPT messages contain an RdmCmdList: Request and
  *  Notification. */
-typedef struct RdmCmdList
+typedef struct RdmBufList
 {
   /*! This message contains a partial list. This can be set when the library runs out of static
    *  memory in which to store RDM Commands and must deliver the partial list before continuing.
@@ -128,8 +128,8 @@ typedef struct RdmCmdList
    *  another RdmCmdList is received with partial set to false. */
   bool partial;
   /*! The head of a linked list of packed RDM Commands. */
-  RdmCmdListEntry *list;
-} RdmCmdList;
+  RdmBufListEntry *list;
+} RdmBufList;
 
 /*! An RPT message. */
 typedef struct RptMessage
@@ -143,20 +143,20 @@ typedef struct RptMessage
   union
   {
     RptStatusMsg status;
-    RdmCmdList rdm;
+    RdmBufList rdm;
   } data;
 } RptMessage;
 
-/*! \brief Determine whether an RptMessage contains an RDM Command List. Multiple types of RPT
- *         Messages can contain RDM Command Lists.
+/*! \brief Determine whether an RptMessage contains an RDM Buffer List. Multiple types of RPT
+ *         Messages can contain RDM Buffer Lists.
  *  \param rptmsgptr Pointer to RptMessage.
- *  \return (true or false) Whether the message contains an RDM Command List. */
-#define is_rdm_cmd_list(rptmsgptr) \
+ *  \return (true or false) Whether the message contains an RDM Buffer List. */
+#define is_rdm_buf_list(rptmsgptr) \
   ((rptmsgptr)->vector == VECTOR_RPT_REQUEST || (rptmsgptr)->vector == VECTOR_RPT_NOTIFICATION)
-/*! \brief Get the encapsulated RDM Command List from an RptMessage.
+/*! \brief Get the encapsulated RDM Buffer List from an RptMessage.
  *  \param rptmsgptr Pointer to RptMessage.
- *  \return Pointer to encapsulated RDM Command List (RdmCmdList *). */
-#define get_rdm_cmd_list(rptmsgptr) (&(rptmsgptr)->data.rdm)
+ *  \return Pointer to encapsulated RDM Buffer List (RdmBufList *). */
+#define get_rdm_buf_list(rptmsgptr) (&(rptmsgptr)->data.rdm)
 /*! \brief Determine whether an RptMessage contains an RPT Status Message.
  *  \param rptmsgptr Pointer to RptMessage.
  *  \return (true or false) Whether the message contains an RPT Status Message. */
@@ -172,21 +172,21 @@ extern "C" {
 
 size_t bufsize_rpt_request(const RdmBuffer *cmd);
 size_t bufsize_rpt_status(const RptStatusMsg *status);
-size_t bufsize_rpt_notification(const RdmCmdListEntry *cmd_list);
+size_t bufsize_rpt_notification(const RdmBuffer *cmd_arr, size_t cmd_arr_size);
 
 size_t pack_rpt_request(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
                         const RdmBuffer *cmd);
 size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
                        const RptStatusMsg *status);
 size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
-                             const RdmCmdListEntry *cmd_list);
+                             const RdmBuffer *cmd_arr, size_t cmd_arr_size);
 
 lwpa_error_t send_rpt_request(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
                               const RdmBuffer *cmd);
 lwpa_error_t send_rpt_status(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
                              const RptStatusMsg *status);
 lwpa_error_t send_rpt_notification(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
-                                   const RdmCmdListEntry *cmd_list);
+                                   const RdmBuffer *cmd_arr, size_t cmd_arr_size);
 
 #ifdef __cplusplus
 }

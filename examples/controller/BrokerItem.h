@@ -57,8 +57,8 @@ protected:
 
 private:
   QString scope_;
-  rdmnet_client_scope_t scope_handle_;
+  rdmnet_client_scope_t scope_handle_{RDMNET_CLIENT_SCOPE_INVALID};
   StaticBrokerConfig static_broker_;
-  LwpaSockaddr broker_addr_;
-  bool connected_;
+  LwpaSockaddr broker_addr_{};
+  bool connected_{false};
 };

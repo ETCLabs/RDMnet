@@ -91,8 +91,8 @@ typedef struct RdmListState
   {                                                         \
     (rlstateptr)->parsed_request_notif_header = false;      \
     init_pdu_block_state(&(rlstateptr)->block, blocksize);  \
-    get_rdm_cmd_list(rmsgptr)->list = NULL;                 \
-    get_rdm_cmd_list(rmsgptr)->partial = false;             \
+    get_rdm_buf_list(rmsgptr)->list = NULL;                 \
+    get_rdm_buf_list(rmsgptr)->partial = false;             \
   } while (0)
 
 typedef struct RptStatusState

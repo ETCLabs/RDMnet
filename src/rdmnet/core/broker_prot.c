@@ -28,10 +28,10 @@
 #include "rdmnet/core/broker_prot.h"
 
 #include <string.h>
+#include "lwpa/pack.h"
 #include "rdmnet/core/connection.h"
 #include "rdmnet/core/util.h"
 #include "rdmnet/private/broker_prot.h"
-#include "lwpa/pack.h"
 
 /***************************** Private macros ********************************/
 
@@ -58,14 +58,14 @@ static size_t calc_client_connect_len(const ClientConnectMsg *data);
 static size_t calc_request_dynamic_uids_len(const DynamicUidRequestListEntry *request_list);
 static size_t calc_requested_uids_len(const FetchUidAssignmentListEntry *uid_list);
 static size_t calc_dynamic_uid_mapping_list_len(const DynamicUidMapping *mapping_list);
-static int do_send(rdmnet_conn_t handle, RdmnetConnectionInternal *conn, const uint8_t *data, size_t datasize);
+static int do_send(rdmnet_conn_t handle, RdmnetConnection *conn, const uint8_t *data, size_t datasize);
 static size_t pack_broker_header_with_rlp(const LwpaRootLayerPdu *rlp, uint8_t *buf, size_t buflen, uint32_t vector);
-static lwpa_error_t send_broker_header(rdmnet_conn_t handle, RdmnetConnectionInternal *conn,
-                                       const LwpaRootLayerPdu *rlp, uint8_t *buf, size_t buflen, uint32_t vector);
+static lwpa_error_t send_broker_header(rdmnet_conn_t handle, RdmnetConnection *conn, const LwpaRootLayerPdu *rlp,
+                                       uint8_t *buf, size_t buflen, uint32_t vector);
 
 /*************************** Function definitions ****************************/
 
-int do_send(rdmnet_conn_t handle, RdmnetConnectionInternal *conn, const uint8_t *data, size_t datasize)
+int do_send(rdmnet_conn_t handle, RdmnetConnection *conn, const uint8_t *data, size_t datasize)
 {
   if (conn)
     return lwpa_send(conn->sock, data, datasize, 0);
@@ -100,8 +100,8 @@ size_t pack_broker_header_with_rlp(const LwpaRootLayerPdu *rlp, uint8_t *buf, si
   return cur_ptr - buf;
 }
 
-lwpa_error_t send_broker_header(rdmnet_conn_t handle, RdmnetConnectionInternal *conn, const LwpaRootLayerPdu *rlp,
-                                uint8_t *buf, size_t buflen, uint32_t vector)
+lwpa_error_t send_broker_header(rdmnet_conn_t handle, RdmnetConnection *conn, const LwpaRootLayerPdu *rlp, uint8_t *buf,
+                                size_t buflen, uint32_t vector)
 {
   int send_res;
   size_t data_size = lwpa_root_layer_buf_size(rlp, 1);
@@ -163,7 +163,7 @@ size_t calc_client_connect_len(const ClientConnectMsg *data)
   }
 }
 
-lwpa_error_t send_client_connect(RdmnetConnectionInternal *conn, const ClientConnectMsg *data)
+lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg *data)
 {
   lwpa_error_t res;
   int send_res;
@@ -180,7 +180,8 @@ lwpa_error_t send_client_connect(RdmnetConnectionInternal *conn, const ClientCon
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = calc_client_connect_len(data);
 
-  res = send_broker_header(NULL, conn, &rlp, buf, CLIENT_CONNECT_COMMON_FIELD_SIZE, VECTOR_BROKER_CONNECT);
+  res =
+      send_broker_header(RDMNET_CONN_INVALID, conn, &rlp, buf, CLIENT_CONNECT_COMMON_FIELD_SIZE, VECTOR_BROKER_CONNECT);
   if (res != kLwpaErrOk)
     return res;
 
@@ -706,7 +707,7 @@ lwpa_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const LwpaUuid
 
 /******************************** Disconnect *********************************/
 
-lwpa_error_t send_disconnect(RdmnetConnectionInternal *conn, const DisconnectMsg *data)
+lwpa_error_t send_disconnect(RdmnetConnection *conn, const DisconnectMsg *data)
 {
   lwpa_error_t res;
   int send_res;
@@ -717,7 +718,7 @@ lwpa_error_t send_disconnect(RdmnetConnectionInternal *conn, const DisconnectMsg
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = BROKER_DISCONNECT_MSG_SIZE;
 
-  res = send_broker_header(NULL, conn, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_DISCONNECT);
+  res = send_broker_header(RDMNET_CONN_INVALID, conn, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_DISCONNECT);
   if (res != kLwpaErrOk)
     return res;
 
@@ -732,7 +733,7 @@ lwpa_error_t send_disconnect(RdmnetConnectionInternal *conn, const DisconnectMsg
 
 /*********************************** Null ************************************/
 
-lwpa_error_t send_null(RdmnetConnectionInternal *conn)
+lwpa_error_t send_null(RdmnetConnection *conn)
 {
   lwpa_error_t res;
   LwpaRootLayerPdu rlp;
@@ -742,7 +743,7 @@ lwpa_error_t send_null(RdmnetConnectionInternal *conn)
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = BROKER_NULL_MSG_SIZE;
 
-  res = send_broker_header(NULL, conn, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_NULL);
+  res = send_broker_header(RDMNET_CONN_INVALID, conn, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_NULL);
   if (res != kLwpaErrOk)
     return res;
 

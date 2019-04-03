@@ -58,7 +58,7 @@ static size_t parse_rpt_block(RptState *rstate, const uint8_t *data, size_t data
 
 /* RPT layer */
 static void initialize_rpt_message(RptState *rstate, RptMessage *rmsg, size_t pdu_data_len);
-static size_t parse_rdm_list(RdmListState *rlstate, const uint8_t *data, size_t datalen, RdmCmdList *cmd_list,
+static size_t parse_rdm_list(RdmListState *rlstate, const uint8_t *data, size_t datalen, RdmBufList *cmd_list,
                              parse_result_t *result);
 static size_t parse_rpt_status(RptStatusState *rsstate, const uint8_t *data, size_t datalen, RptStatusMsg *smsg,
                                parse_result_t *result);
@@ -1103,7 +1103,7 @@ size_t parse_rpt_block(RptState *rstate, const uint8_t *data, size_t datalen, Rp
       case VECTOR_RPT_REQUEST:
       case VECTOR_RPT_NOTIFICATION:
         next_layer_bytes_parsed =
-            parse_rdm_list(&rstate->data.rdm_list, &data[bytes_parsed], remaining_len, get_rdm_cmd_list(rmsg), &res);
+            parse_rdm_list(&rstate->data.rdm_list, &data[bytes_parsed], remaining_len, get_rdm_buf_list(rmsg), &res);
         break;
       case VECTOR_RPT_STATUS:
         next_layer_bytes_parsed =
@@ -1123,7 +1123,7 @@ size_t parse_rpt_block(RptState *rstate, const uint8_t *data, size_t datalen, Rp
   return bytes_parsed;
 }
 
-size_t parse_rdm_list(RdmListState *rlstate, const uint8_t *data, size_t datalen, RdmCmdList *cmd_list,
+size_t parse_rdm_list(RdmListState *rlstate, const uint8_t *data, size_t datalen, RdmBufList *cmd_list,
                       parse_result_t *result)
 {
   parse_result_t res = kPSNoData;
@@ -1157,7 +1157,7 @@ size_t parse_rdm_list(RdmListState *rlstate, const uint8_t *data, size_t datalen
     }
     else
     {
-      RdmCmdListEntry **rdmcmd_ptr;
+      RdmBufListEntry **rdmcmd_ptr;
 
       /* Navigate to the end of the RDM Command list */
       for (rdmcmd_ptr = &cmd_list->list; *rdmcmd_ptr; rdmcmd_ptr = &(*rdmcmd_ptr)->next)
@@ -1180,7 +1180,7 @@ size_t parse_rdm_list(RdmListState *rlstate, const uint8_t *data, size_t datalen
           else if (remaining_len >= rdm_cmd_pdu_len)
           {
             /* Allocate a new struct at the end of the list */
-            *rdmcmd_ptr = (RdmCmdListEntry *)alloc_rdm_command();
+            *rdmcmd_ptr = (RdmBufListEntry *)alloc_rdm_command();
             if (!(*rdmcmd_ptr))
             {
               /* We've run out of space for RDM commands - send back up what we have now. */
@@ -1198,7 +1198,7 @@ size_t parse_rdm_list(RdmListState *rlstate, const uint8_t *data, size_t datalen
             else
             {
               /* Unpack the RDM Command PDU. */
-              RdmCmdListEntry *rdmcmd = *rdmcmd_ptr;
+              RdmBufListEntry *rdmcmd = *rdmcmd_ptr;
               rdmcmd->next = NULL;
               cur_ptr += 3;
               memcpy(rdmcmd->msg.data, cur_ptr, rdm_cmd_pdu_len - 3);

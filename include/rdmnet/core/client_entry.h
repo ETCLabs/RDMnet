@@ -32,6 +32,9 @@
 #ifndef _RDMNET_CORE_CLIENT_ENTRY_H_
 #define _RDMNET_CORE_CLIENT_ENTRY_H_
 
+#include "lwpa/bool.h"
+#include "lwpa/uuid.h"
+#include "rdm/uid.h"
 #include "rdmnet/defs.h"
 
 typedef enum

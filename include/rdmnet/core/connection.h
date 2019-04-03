@@ -33,8 +33,8 @@
  *
  *  \author Sam Kearney
  */
-#ifndef _RDMNET_CONNECTION_H_
-#define _RDMNET_CONNECTION_H_
+#ifndef _RDMNET_CORE_CONNECTION_H_
+#define _RDMNET_CORE_CONNECTION_H_
 
 #include <stddef.h>
 #include "lwpa/bool.h"
@@ -78,11 +78,11 @@ typedef enum
   kRdmnetConnectFailTcpLevel,
   kRdmnetConnectFailNoReply,
   kRdmnetConnectFailRejected
-} rdmnet_connect_fail_cause_t;
+} rdmnet_connect_fail_event_t;
 
 typedef struct RdmnetConnectFailedInfo
 {
-  rdmnet_connect_fail_cause_t cause;
+  rdmnet_connect_fail_event_t event;
   lwpa_error_t socket_err;
   rdmnet_connect_status_t rdmnet_reason;
 } RdmnetConnectFailedInfo;
@@ -95,11 +95,11 @@ typedef enum
   kRdmnetDisconnectRedirected,
   kRdmnetDisconnectGracefulRemoteInitiated,
   kRdmnetDisconnectGracefulLocalInitiated
-} rdmnet_disconnect_cause_t;
+} rdmnet_disconnect_event_t;
 
 typedef struct RdmnetDisconnectedInfo
 {
-  rdmnet_disconnect_cause_t cause;
+  rdmnet_disconnect_event_t event;
   lwpa_error_t socket_err;
   rdmnet_disconnect_reason_t rdmnet_reason;
 } RdmnetDisconnectedInfo;
@@ -178,4 +178,4 @@ void rdmnet_conn_socket_activity(rdmnet_conn_t handle, const LwpaPollfd *poll);
 
 /*!@}*/
 
-#endif /* _RDMNET_CONNECTION_H_ */
+#endif /* _RDMNET_CORE_CONNECTION_H_ */

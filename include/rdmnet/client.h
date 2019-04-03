@@ -40,6 +40,7 @@
 #include "rdmnet/defs.h"
 #include "rdmnet/core.h"
 #include "rdmnet/core/message.h"
+#include "rdmnet/core/connection.h"
 #include "rdmnet/core/util.h"
 
 typedef int rdmnet_client_t;
@@ -55,7 +56,7 @@ typedef struct RdmnetClientConnectedInfo
 
 typedef struct RdmnetClientConnectFailedInfo
 {
-  rdmnet_connect_fail_cause_t cause;
+  rdmnet_connect_fail_event_t event;
   lwpa_error_t socket_err;
   rdmnet_connect_status_t rdmnet_reason;
   bool will_retry;
@@ -63,7 +64,7 @@ typedef struct RdmnetClientConnectFailedInfo
 
 typedef struct RdmnetClientDisconnectedInfo
 {
-  rdmnet_disconnect_cause_t cause;
+  rdmnet_disconnect_event_t event;
   lwpa_error_t socket_err;
   rdmnet_disconnect_reason_t rdmnet_reason;
   bool will_retry;
@@ -225,23 +226,27 @@ lwpa_error_t rdmnet_client_init(const LwpaLogParams *lparams);
 void rdmnet_client_deinit();
 
 lwpa_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig *config, rdmnet_client_t *handle);
-void rdmnet_rpt_client_destroy(rdmnet_client_t handle);
+lwpa_error_t rdmnet_ept_client_create(const RdmnetEptClientConfig *config, rdmnet_client_t *handle);
+lwpa_error_t rdmnet_client_destroy(rdmnet_client_t handle);
 
 lwpa_error_t rdmnet_client_add_scope(rdmnet_client_t handle, const RdmnetScopeConfig *scope_config,
                                      rdmnet_client_scope_t *scope_handle);
 lwpa_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                         rdmnet_disconnect_reason_t reason);
 lwpa_error_t rdmnet_client_change_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                        const RdmnetScopeConfig *new_config);
+                                        const RdmnetScopeConfig *new_config, rdmnet_disconnect_reason_t reason);
 
-lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet_client_scope_t scope,
+lwpa_error_t rdmnet_client_request_client_list(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle);
+// lwpa_error_t rdmnet_client_request_dynamic_uids(rdmnet_conn_t handle, rdmnet_client_scope_t scope_handle,
+//                                            const DynamicUidRequestListEntry *request_list);
+// lwpa_error_t rdmnet_client_request_uid_assignment_list(rdmnet_conn_t handle, rdmnet_client_scope_t scope_handle,
+//                                                   const FetchUidAssignmentListEntry *uid_list);
+
+lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                                 const LocalRdmCommand *cmd, uint32_t *seq_num);
-lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_client_scope_t scope,
+lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                                  const LocalRdmResponse *resp);
-lwpa_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, const char *scope, const RptStatusMsg *status);
-
-lwpa_error_t rdmnet_ept_client_create(const RdmnetEptClientConfig *config, rdmnet_client_t *handle);
-void rdmnet_ept_client_destroy(rdmnet_client_t handle);
+lwpa_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptStatusMsg *status);
 
 #ifdef __cplusplus
 }

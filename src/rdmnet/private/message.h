@@ -43,7 +43,7 @@
 #define alloc_dynamic_uid_request_entry() malloc(sizeof(DynamicUidRequestListEntry))
 #define alloc_dynamic_uid_mapping() malloc(sizeof(DynamicUidMapping))
 #define alloc_fetch_uid_assignment_entry() malloc(sizeof(FetchUidAssignmentListEntry))
-#define alloc_rdm_command() malloc(sizeof(RdmCmdListEntry))
+#define alloc_rdm_command() malloc(sizeof(RdmBufListEntry))
 #define alloc_rpt_status_str(size) malloc(size)
 #define free_client_entry(ptr) free(ptr)
 #define free_ept_subprot(ptr) free(ptr)

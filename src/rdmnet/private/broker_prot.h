@@ -81,9 +81,9 @@ extern "C" {
 #endif
 
 /* All functions must be called from inside the relevant send locks. */
-lwpa_error_t send_client_connect(RdmnetConnectionInternal *conn, const ClientConnectMsg *data);
-lwpa_error_t send_disconnect(RdmnetConnectionInternal *conn, const DisconnectMsg *data);
-lwpa_error_t send_null(RdmnetConnectionInternal *conn);
+lwpa_error_t send_client_connect(RdmnetConnection *conn, const ClientConnectMsg *data);
+lwpa_error_t send_disconnect(RdmnetConnection *conn, const DisconnectMsg *data);
+lwpa_error_t send_null(RdmnetConnection *conn);
 
 #ifdef __cplusplus
 }

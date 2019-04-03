@@ -53,5 +53,6 @@ public:
                                          StaticBrokerConfig static_broker = StaticBrokerConfig()) = 0;
   virtual bool RemoveScope(rdmnet_client_scope_t scope_handle, rdmnet_disconnect_reason_t reason) = 0;
   virtual bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand &cmd) = 0;
+  virtual bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand &cmd, uint32_t &seq_num) = 0;
   virtual bool SendRdmResponse(rdmnet_client_scope_t scope_handle, const LocalRdmResponse &resp) = 0;
 };

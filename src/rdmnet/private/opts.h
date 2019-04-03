@@ -88,7 +88,9 @@
 /*! \defgroup rdmnetopts_client Client
  *  \ingroup rdmnetopts
  *
- *  Options that affect the RDMnet Client APIs.
+ *  Options that affect the RDMnet Client APIs. Any options with MAX_* in the name are applicable
+ *  only to compilations with dynamic memory disabled (#RDMNET_DYNAMIC_MEM = 0, most common in
+ *  embedded toolchains).
  *  @{
  */
 
@@ -116,12 +118,23 @@
 #define RDMNET_MAX_SCOPES_PER_CONTROLLER 1
 #endif
 
+/*! \brief The maximum number of RDM responses that can be sent from an RPT Client at once in an
+ *         ACK_OVERFLOW response.
+ *
+ *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
+ */
+#ifndef RDMNET_MAX_SENT_ACK_OVERFLOW_RESPONSES
+#define RDMNET_MAX_SENT_ACK_OVERFLOW_RESPONSES 5
+#endif
+
 /*! @} */
 
 /*! \defgroup rdmnetopts_core Core
  *  \ingroup rdmnetopts
  *
- *  Options that affect the RDMnet core library.
+ *  Options that affect the RDMnet core library. Any options with MAX_* in the name are applicable
+ *  only to compilations with dynamic memory disabled (#RDMNET_DYNAMIC_MEM = 0, most common in
+ *  embedded toolchains).
  *  @{
  */
 
@@ -162,12 +175,12 @@
 #endif
 
 /*! \brief The maximum number of RdmCmdListEntry structures that can be returned with a parsed
- *         message.
+ *         ACK_OVERFLOW response (e.g. from an RPT Notification message).
  *
  *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
  */
-#ifndef RDMNET_MAX_RDM_COMMANDS
-#define RDMNET_MAX_RDM_COMMANDS 10
+#ifndef RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES
+#define RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES 10
 #endif
 
 /*! \brief Whether to automatically poll connections for activity as part of the core tick loop.

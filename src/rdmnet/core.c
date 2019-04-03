@@ -98,9 +98,12 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
     {
       bool socket_initted = false;
       bool disc_initted = false;
+      bool conn_initted = false;
 
       if (res == kLwpaErrOk)
         res = rdmnet_message_init();
+      if (res == kLwpaErrOk)
+        conn_initted = ((res = rdmnet_connection_init()) == kLwpaErrOk);
       if (res == kLwpaErrOk)
         socket_initted = ((res = lwpa_socket_init(NULL)) == kLwpaErrOk);
       if (res == kLwpaErrOk)
@@ -140,6 +143,8 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
           rdmnetdisc_deinit();
         if (socket_initted)
           lwpa_socket_deinit();
+        if (conn_initted)
+          rdmnet_connection_deinit();
       }
     }
     rdmnet_writeunlock();
