@@ -51,8 +51,11 @@ struct ClientScopeListEntry
   RdmnetScopeConfig config;
   scope_state_t state;
   RdmUid uid;
+  uint32_t send_seq_num;
+
   rdmnet_scope_monitor_t monitor_handle;
-  RdmnetClientInternal *cli;
+
+  RdmnetClientInternal *client;
   ClientScopeListEntry *next;
 };
 
@@ -62,7 +65,7 @@ typedef struct RptClientData
 {
   rpt_client_type_t type;
   bool has_static_uid;
-  RdmUid static_uid;
+  RdmUid uid;
   RptClientCallbacks callbacks;
 } RptClientData;
 

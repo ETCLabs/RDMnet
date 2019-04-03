@@ -118,7 +118,8 @@ public:
 protected:
   // RDMnetLibNotify overrides
   virtual void Connected(rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo &info) override;
-  virtual void NotConnected(rdmnet_client_scope_t scope_handle, const RdmnetClientNotConnectedInfo &info) override;
+  virtual void ConnectFailed(rdmnet_client_scope_t scope_handle, const RdmnetClientConnectFailedInfo &info) override;
+  virtual void Disconnected(rdmnet_client_scope_t scope_handle, const RdmnetClientDisconnectedInfo &info) override;
   virtual void ClientListUpdate(rdmnet_client_scope_t scope_handle, client_list_action_t action,
                                 const ClientList &list) override;
   virtual void RdmCommandReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmCommand &cmd) override;

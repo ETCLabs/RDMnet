@@ -46,7 +46,7 @@ typedef int rdmnet_client_t;
 typedef rdmnet_conn_t rdmnet_client_scope_t;
 
 #define RDMNET_CLIENT_INVALID -1
-#define RDMNET_CLIENT_SCOPE_INVALID -1
+#define RDMNET_CLIENT_SCOPE_INVALID RDMNET_CONN_INVALID
 
 typedef struct RdmnetClientConnectedInfo
 {
@@ -229,12 +229,13 @@ void rdmnet_rpt_client_destroy(rdmnet_client_t handle);
 
 lwpa_error_t rdmnet_client_add_scope(rdmnet_client_t handle, const RdmnetScopeConfig *scope_config,
                                      rdmnet_client_scope_t *scope_handle);
-lwpa_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle);
+lwpa_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+                                        rdmnet_disconnect_reason_t reason);
 lwpa_error_t rdmnet_client_change_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                         const RdmnetScopeConfig *new_config);
 
 lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet_client_scope_t scope,
-                                                const LocalRdmCommand *cmd);
+                                                const LocalRdmCommand *cmd, uint32_t *seq_num);
 lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_client_scope_t scope,
                                                  const LocalRdmResponse *resp);
 lwpa_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, const char *scope, const RptStatusMsg *status);

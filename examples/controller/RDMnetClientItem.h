@@ -57,9 +57,6 @@ public:
   RdmUid uid() const override { return get_rpt_client_entry_data(&entry_)->client_uid; }
   const rpt_client_type_t ClientType() const { return get_rpt_client_entry_data(&entry_)->client_type; }
 
-  virtual uint16_t getMan(void) const { return get_rpt_client_entry_data(&entry_)->client_uid.manu; };
-  virtual uint32_t getDev(void) const { return get_rpt_client_entry_data(&entry_)->client_uid.id; };
-
   void setScopeSlot(const QString &scope, uint16_t slot);
   uint16_t getScopeSlot(const QString &scope);
   void removeScopeSlot(const QString &scope);

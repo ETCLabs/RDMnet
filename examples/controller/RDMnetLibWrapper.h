@@ -38,8 +38,10 @@ class RDMnetLibNotifyInternal
 public:
   virtual void Connected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
                          const RdmnetClientConnectedInfo *info) = 0;
-  virtual void NotConnected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                            const RdmnetClientNotConnectedInfo *info) = 0;
+  virtual void ConnectFailed(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                             const RdmnetClientConnectFailedInfo *info) = 0;
+  virtual void Disconnected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                            const RdmnetClientDisconnectedInfo *info) = 0;
   virtual void ClientListUpdate(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
                                 client_list_action_t list_action, const ClientList *list) = 0;
   virtual void RdmResponseReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
@@ -69,8 +71,10 @@ protected:
   // RDMnetLibNotifyInternal overrides
   virtual void Connected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
                          const RdmnetClientConnectedInfo *info) override;
-  virtual void NotConnected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                            const RdmnetClientNotConnectedInfo *info) override;
+  virtual void ConnectFailed(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                             const RdmnetClientConnectFailedInfo *info) override;
+  virtual void Disconnected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                            const RdmnetClientDisconnectedInfo *info) override;
   virtual void ClientListUpdate(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
                                 client_list_action_t list_action, const ClientList *list) override;
   virtual void RdmResponseReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,

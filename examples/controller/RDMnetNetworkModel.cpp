@@ -287,7 +287,15 @@ void RDMnetNetworkModel::Connected(rdmnet_client_scope_t scope_handle, const Rdm
   }
 }
 
-void RDMnetNetworkModel::NotConnected(rdmnet_client_scope_t scope_handle, const RdmnetClientNotConnectedInfo &info)
+void RDMnetNetworkModel::ConnectFailed(rdmnet_client_scope_t /*scope_handle*/,
+                                       const RdmnetClientConnectFailedInfo & /*info*/)
+{
+  // TODO log once string functions are implemented
+  // TODO: Inspect info.will_retry to determine if this is a fatal disconnect.
+  // display user-facing information accordingly.
+}
+
+void RDMnetNetworkModel::Disconnected(rdmnet_client_scope_t scope_handle, const RdmnetClientDisconnectedInfo &info)
 {
   ControllerWriteGuard conn_write(conn_lock_);
 
@@ -297,6 +305,10 @@ void RDMnetNetworkModel::NotConnected(rdmnet_client_scope_t scope_handle, const 
     if (brokerItem->connected())
     {
       brokerItem->setConnected(false);
+
+      // TODO log once string functions are implemented
+      // TODO: Inspect info.will_retry to determine if this is a fatal disconnect.
+      // display user-facing information accordingly.
 
       emit brokerItemTextUpdated(brokerItem);
 
@@ -696,7 +708,7 @@ void RDMnetNetworkModel::removeBroker(BrokerItem *brokerItem)
   }
 
   rdmnet_client_scope_t scope_handle = brokerItem->scope_handle();
-  rdmnet_->RemoveScope(scope_handle);
+  rdmnet_->RemoveScope(scope_handle, kRdmnetDisconnectUserReconfigure);
   {  // Write lock scope
     ControllerWriteGuard conn_write(conn_lock_);
     broker_connections_.erase(scope_handle);
@@ -737,7 +749,7 @@ void RDMnetNetworkModel::removeAllBrokers()
     {
       if (broker_iter->second->scope().toStdString() != E133_DEFAULT_SCOPE)
       {
-        rdmnet_->RemoveScope(broker_iter->second->scope_handle());
+        rdmnet_->RemoveScope(broker_iter->second->scope_handle(), kRdmnetDisconnectUserReconfigure);
         default_responder_.RemoveScope(broker_iter->second->scope().toStdString());
         broker_iter = broker_connections_.erase(broker_iter);
       }
@@ -2731,7 +2743,7 @@ RDMnetClientItem *RDMnetNetworkModel::GetClientItem(rdmnet_client_scope_t scope_
     {
       for (auto i : brokerItem->rdmnet_clients_)
       {
-        if ((i->getMan() == resp.source_uid.manu) && (i->getDev() == resp.source_uid.id))
+        if (i->uid() == resp.source_uid)
         {
           return i;
         }
@@ -2757,7 +2769,7 @@ RDMnetNetworkItem *RDMnetNetworkModel::GetNetworkItem(rdmnet_client_scope_t scop
     {
       for (auto client : brokerItem->rdmnet_clients_)
       {
-        if ((client->getMan() == resp.source_uid.manu) && (client->getDev() == resp.source_uid.id))
+        if (client->uid() == resp.source_uid)
         {
           return client;
         }
@@ -2993,7 +3005,7 @@ RDMnetNetworkModel::~RDMnetNetworkModel()
     ControllerWriteGuard conn_write(conn_lock_);
 
     for (auto &connection : broker_connections_)
-      rdmnet_->RemoveScope(connection.first);
+      rdmnet_->RemoveScope(connection.first, kRdmnetDisconnectShutdown);
 
     broker_connections_.clear();
   }

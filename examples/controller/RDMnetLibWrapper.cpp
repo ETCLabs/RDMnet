@@ -35,12 +35,20 @@ static void controllercb_connected(rdmnet_controller_t handle, rdmnet_client_sco
     notify->Connected(handle, scope, info);
 }
 
-static void controllercb_not_connected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                       const RdmnetClientNotConnectedInfo *info, void *context)
+static void controllercb_connect_failed(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                                        const RdmnetClientConnectFailedInfo *info, void *context)
 {
   RDMnetLibNotifyInternal *notify = static_cast<RDMnetLibNotifyInternal *>(context);
   if (notify)
-    notify->NotConnected(handle, scope, info);
+    notify->ConnectFailed(handle, scope, info);
+}
+
+static void controllercb_disconnected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                                      const RdmnetClientDisconnectedInfo *info, void *context)
+{
+  RDMnetLibNotifyInternal *notify = static_cast<RDMnetLibNotifyInternal *>(context);
+  if (notify)
+    notify->Disconnected(handle, scope, info);
 }
 
 static void controllercb_client_list_update(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
@@ -99,12 +107,10 @@ bool RDMnetLibWrapper::Startup(RDMnetLibNotify *notify)
     RdmnetControllerConfig config;
     config.uid = RPT_CLIENT_DYNAMIC_UID(0x6574);
     config.cid = my_cid_;
-    config.callbacks = {controllercb_connected,
-                        controllercb_not_connected,
-                        controllercb_client_list_update,
-                        controllercb_rdm_response_received,
-                        controllercb_rdm_command_received,
-                        controllercb_status_received};
+    config.callbacks = {
+        controllercb_connected,          controllercb_connect_failed,        controllercb_disconnected,
+        controllercb_client_list_update, controllercb_rdm_response_received, controllercb_rdm_command_received,
+        controllercb_status_received};
     config.callback_context = this;
 
     res = rdmnet_controller_create(&config, &controller_handle_);
@@ -169,12 +175,21 @@ void RDMnetLibWrapper::Connected(rdmnet_controller_t handle, rdmnet_client_scope
   }
 }
 
-void RDMnetLibWrapper::NotConnected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                    const RdmnetClientNotConnectedInfo *info)
+void RDMnetLibWrapper::ConnectFailed(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                                     const RdmnetClientConnectFailedInfo *info)
 {
   if (notify_ && handle == controller_handle_ && info)
   {
-    notify_->NotConnected(scope, *info);
+    notify_->ConnectFailed(scope, *info);
+  }
+}
+
+void RDMnetLibWrapper::Disconnected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
+                                    const RdmnetClientDisconnectedInfo *info)
+{
+  if (notify_ && handle == controller_handle_ && info)
+  {
+    notify_->Disconnected(scope, *info);
   }
 }
 
