@@ -34,55 +34,59 @@ set(CONTROLLER_TARGET rdmnet_controller_example)
 # windowed (not console) executable, and has no effect on other platforms. This
 # is a cross-platform Qt app.
 add_executable(${CONTROLLER_TARGET} WIN32
-  AboutGUI.cpp
-  AboutGUI.h
-  AboutGUI.ui
-  BrokerItem.cpp
-  BrokerItem.h
-  BrokerStaticAddGUI.cpp
-  BrokerStaticAddGUI.h
-  BrokerStaticAddGUI.ui
-  ControllerDefaultResponder.h
-  ControllerDefaultResponder.cpp
-  ControllerLog.h
-  ControllerLog.cpp
-  ControllerUtils.h
-  EndpointItem.cpp
-  EndpointItem.h
-  LogWindowGUI.cpp
-  LogWindowGUI.h
-  LogWindowGUI.ui
-  main.cpp
-  NetworkDetailsProxyModel.cpp
-  NetworkDetailsProxyModel.h
-  PropertyEditorsDelegate.cpp
-  PropertyEditorsDelegate.h
-  PropertyItem.cpp
-  PropertyItem.h
-  PropertyPushButton.cpp
-  PropertyPushButton.h
-  PropertyValueItem.cpp
-  PropertyValueItem.h
-  RDMnetClientItem.cpp
-  RDMnetClientItem.h
-  RDMnetControllerGUI.cpp
-  RDMnetControllerGUI.h
-  RDMnetControllerGUI.ui
-  RDMnetLibInterface.h
-  RDMnetLibWrapper.h
-  RDMnetLibWrapper.cpp
-  RDMnetNetworkItem.cpp
-  RDMnetNetworkItem.h
-  RDMnetNetworkModel.cpp
-  RDMnetNetworkModel.h
-  ResponderItem.cpp
-  ResponderItem.h
-  SearchingStatusItem.cpp
-  SearchingStatusItem.h
-  SimpleNetworkProxyModel.cpp
-  SimpleNetworkProxyModel.h
+  src/AboutGUI.cpp
+  src/AboutGUI.h
+  src/BrokerItem.cpp
+  src/BrokerItem.h
+  src/BrokerStaticAddGUI.cpp
+  src/BrokerStaticAddGUI.h
+  src/ControllerDefaultResponder.h
+  src/ControllerDefaultResponder.cpp
+  src/ControllerLog.h
+  src/ControllerLog.cpp
+  src/ControllerUtils.h
+  src/EndpointItem.cpp
+  src/EndpointItem.h
+  src/LogWindowGUI.cpp
+  src/LogWindowGUI.h
+  src/main.cpp
+  src/NetworkDetailsProxyModel.cpp
+  src/NetworkDetailsProxyModel.h
+  src/PropertyEditorsDelegate.cpp
+  src/PropertyEditorsDelegate.h
+  src/PropertyItem.cpp
+  src/PropertyItem.h
+  src/PropertyPushButton.cpp
+  src/PropertyPushButton.h
+  src/PropertyValueItem.cpp
+  src/PropertyValueItem.h
+  src/RDMnetClientItem.cpp
+  src/RDMnetClientItem.h
+  src/RDMnetControllerGUI.cpp
+  src/RDMnetControllerGUI.h
+  src/RDMnetLibInterface.h
+  src/RDMnetLibWrapper.h
+  src/RDMnetLibWrapper.cpp
+  src/RDMnetNetworkItem.cpp
+  src/RDMnetNetworkItem.h
+  src/RDMnetNetworkModel.cpp
+  src/RDMnetNetworkModel.h
+  src/ResponderItem.cpp
+  src/ResponderItem.h
+  src/SearchingStatusItem.cpp
+  src/SearchingStatusItem.h
+  src/SimpleNetworkProxyModel.cpp
+  src/SimpleNetworkProxyModel.h
+
+  ui/AboutGUI.ui
+  ui/BrokerStaticAddGUI.ui
+  ui/LogWindowGUI.ui
+  ui/RDMnetControllerGUI.ui
+
+  res/RDMnetControllerGUI.qrc
 )
 
+set_target_properties(${CONTROLLER_TARGET} PROPERTIES AUTOUIC_SEARCH_PATHS ${CMAKE_CURRENT_LIST_DIR}/ui)
 target_link_libraries(${CONTROLLER_TARGET} PRIVATE Qt5::Widgets RDMnet)
 if(WIN32)
   target_compile_definitions(${CONTROLLER_TARGET} PRIVATE UNICODE _UNICODE _CRT_SECURE_NO_WARNINGS)

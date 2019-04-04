@@ -3,19 +3,19 @@
 set(DEVICE_TARGET rdmnet_device_example)
 
 add_executable(${DEVICE_TARGET}
-  device.h
-  device_log.h
-  default_responder.h
+  src/device.h
+  src/device_log.h
+  src/default_responder.h
 
-  device.c
-  device_log.c
-  default_responder.c
+  src/device.c
+  src/device_log.c
+  src/default_responder.c
 )
 
-target_include_directories(${DEVICE_TARGET} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(${DEVICE_TARGET} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src)
 target_link_libraries(${DEVICE_TARGET} PRIVATE RDMnet)
 if(WIN32)
-  target_sources(${DEVICE_TARGET} PRIVATE windows/main.c)
+  target_sources(${DEVICE_TARGET} PRIVATE src/windows/main.c)
   target_compile_definitions(${DEVICE_TARGET} PRIVATE UNICODE _UNICODE _CRT_SECURE_NO_WARNINGS)
   target_link_libraries(${DEVICE_TARGET} PRIVATE rpcrt4)
   if(DEFINED DNS_SD_DLL)
