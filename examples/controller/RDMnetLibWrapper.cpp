@@ -111,7 +111,7 @@ bool RDMnetLibWrapper::Startup(RDMnetLibNotify *notify)
         controllercb_connected,          controllercb_connect_failed,        controllercb_disconnected,
         controllercb_client_list_update, controllercb_rdm_response_received, controllercb_rdm_command_received,
         controllercb_status_received};
-    config.callback_context = this;
+    config.callback_context = static_cast<RDMnetLibNotifyInternal *>(this);
 
     res = rdmnet_controller_create(&config, &controller_handle_);
     if (res != kLwpaErrOk)
