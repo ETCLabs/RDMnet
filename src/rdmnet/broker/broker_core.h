@@ -38,6 +38,7 @@
 #include "lwpa/socket.h"
 #include "rdmnet/broker.h"
 #include "rdmnet/client.h"
+#include "rdmnet/core/connection.h"
 #include "rdmnet/core/broker_prot.h"
 #include "rdmnet/core/rpt_prot.h"
 #include "broker_client.h"
@@ -48,8 +49,7 @@
 
 class RdmnetCoreLibraryNotify
 {
-  virtual void RdmnetConnected(rdmnet_conn_t handle) = 0;
-  virtual void RdmnetDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectInfo &disconn_info) = 0;
+  virtual void RdmnetDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo &disconn_info) = 0;
   virtual void RdmnetMsgReceived(rdmnet_conn_t handle, const RdmnetMessage &msg) = 0;
 };
 
@@ -59,7 +59,7 @@ class BrokerCore : public RdmnetCoreLibraryNotify,
                    public BrokerDiscoveryManagerNotify
 {
 public:
-  BrokerCore(RDMnet::BrokerLog *log, RDMnet::BrokerNotify *notify);
+  BrokerCore(RDMnet::BrokerLog *log, RDMnet::BrokerSocketManager *socket_manager, RDMnet::BrokerNotify *notify);
   virtual ~BrokerCore();
 
   // Some utility functions
@@ -82,10 +82,11 @@ public:
 
 private:
   // These are never modified between startup and shutdown, so they don't need to be locked.
-  bool started_;
-  bool service_registered_;
-  int other_brokers_found_;
+  bool started_{false};
+  bool service_registered_{false};
+  int other_brokers_found_{0};
   RDMnet::BrokerLog *log_;
+  RDMnet::BrokerSocketManager *socket_manager_;
   RDMnet::BrokerNotify *notify_;
   RDMnet::BrokerSettings settings_;
   RdmUid my_uid_;
@@ -104,8 +105,7 @@ private:
   void StopBrokerServices();
 
   // RdmnetCoreLibraryNotify messages
-  virtual void RdmnetConnected(rdmnet_conn_t handle) override;
-  virtual void RdmnetDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectInfo &disconn_info) override;
+  virtual void RdmnetDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo &disconn_info) override;
   virtual void RdmnetMsgReceived(rdmnet_conn_t handle, const RdmnetMessage &msg) override;
 
   // ListenThreadNotify messages
@@ -122,12 +122,6 @@ private:
   virtual void OtherBrokerLost(const std::string &service_name) override;
   virtual void BrokerRegisterError(const RdmnetBrokerDiscInfo &broker_info, int platform_error) override;
 
-  // The poll operation has a maximum size, so we need a pool of threads to do the poll operation.
-  //  lwpa_mutex_t poll_thread_lock_;
-  //  std::set<std::shared_ptr<ConnPollThread>> poll_threads_;
-  //
-  //  void AddConnToPollThread(rdmnet_conn_t conn, std::shared_ptr<ConnPollThread> &thread);
-
   // The list of connected clients, indexed by the connection handle
   std::map<rdmnet_conn_t, std::shared_ptr<BrokerClient>> clients_;
   // Manages the UIDs of connected clients and generates new ones upon request
@@ -143,16 +137,13 @@ private:
   // The set of devices, indexed by the connection handle.
   std::map<rdmnet_conn_t, std::shared_ptr<RPTDevice>> devices_;
 
-  lwpa_mutex_t client_destroy_lock_;
   std::set<rdmnet_conn_t> clients_to_destroy_;
 
   void MarkConnForDestruction(rdmnet_conn_t conn, bool send_disconnect,
                               rdmnet_disconnect_reason_t reason = kRdmnetDisconnectShutdown);
   void DestroyMarkedClientSockets();
-  void RemoveConnections(const std::vector<int> &connections);
 
   // Message processing and sending functions
-  void ProcessTCPMessage(rdmnet_conn_t conn, const RdmnetMessage *msg);
   void ProcessRPTMessage(rdmnet_conn_t conn, const RdmnetMessage *msg);
   void ProcessConnectRequest(rdmnet_conn_t conn, const ClientConnectMsg *cmsg);
   bool ProcessRPTConnectRequest(rdmnet_conn_t conn, const ClientEntryData &data,

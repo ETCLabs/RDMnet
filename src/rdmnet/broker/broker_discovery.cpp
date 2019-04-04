@@ -30,25 +30,7 @@
 
 /*************************** Function definitions ****************************/
 
-lwpa_error_t BrokerDiscoveryManager::InitLibrary()
-{
-  RdmnetDiscCallbacks callbacks = {BrokerFound, BrokerLost, ScopeMonitorError, BrokerRegistered, BrokerRegisterError};
-
-  return rdmnetdisc_init(&callbacks);
-}
-
-void BrokerDiscoveryManager::DeinitLibrary()
-{
-  rdmnetdisc_deinit();
-}
-
-void BrokerDiscoveryManager::LibraryTick()
-{
-  rdmnetdisc_tick();
-}
-
-BrokerDiscoveryManager::BrokerDiscoveryManager(BrokerDiscoveryManagerNotify *notify)
-    : notify_(notify), cur_info_valid_(false)
+BrokerDiscoveryManager::BrokerDiscoveryManager(BrokerDiscoveryManagerNotify *notify) : notify_(notify)
 {
 }
 
@@ -61,7 +43,7 @@ lwpa_error_t BrokerDiscoveryManager::RegisterBroker(const RDMnet::BrokerDiscover
                                                     const std::vector<LwpaIpAddr> &listen_addrs, uint16_t listen_port)
 {
   // Start with the default information.
-  fill_default_broker_info(&cur_info_);
+  rdmnetdisc_fill_default_broker_info(&cur_info_);
 
   cur_info_.cid = local_cid;
   for (size_t i = 0; i < listen_addrs.size(); i++)
@@ -80,8 +62,8 @@ lwpa_error_t BrokerDiscoveryManager::RegisterBroker(const RDMnet::BrokerDiscover
           E133_SERVICE_NAME_STRING_PADDED_LENGTH);
   RDMNET_MSVC_END_NO_DEP_WARNINGS()
 
-  lwpa_error_t res = rdmnetdisc_registerbroker(&cur_info_, true, notify_);
-  if (res == LWPA_OK)
+  lwpa_error_t res = rdmnetdisc_register_broker(&cur_info_, true, notify_);
+  if (res == kLwpaErrOk)
     cur_info_valid_ = true;
   return res;
 }
@@ -89,20 +71,20 @@ lwpa_error_t BrokerDiscoveryManager::RegisterBroker(const RDMnet::BrokerDiscover
 void BrokerDiscoveryManager::UnregisterBroker()
 {
   cur_info_valid_ = false;
-  rdmnetdisc_unregisterbroker(true);
+  rdmnetdisc_unregister_broker(true);
 }
 
 void BrokerDiscoveryManager::Standby()
 {
-  rdmnetdisc_unregisterbroker(false);
+  rdmnetdisc_unregister_broker(false);
 }
 
 lwpa_error_t BrokerDiscoveryManager::Resume()
 {
-  return rdmnetdisc_registerbroker(&cur_info_, false, notify_);
+  return rdmnetdisc_register_broker(&cur_info_, false, notify_);
 }
 
-void BrokerDiscoveryManager::BrokerFound(const char * /*scope*/, const BrokerDiscInfo *broker_info, void *context)
+void BrokerDiscoveryManager::BrokerFound(const char * /*scope*/, const RdmnetBrokerDiscInfo *broker_info, void *context)
 {
   BrokerDiscoveryManagerNotify *notify = static_cast<BrokerDiscoveryManagerNotify *>(context);
   if (notify && broker_info)
@@ -116,13 +98,13 @@ void BrokerDiscoveryManager::BrokerLost(const char *service_name, void *context)
     notify->OtherBrokerLost(service_name);
 }
 
-void BrokerDiscoveryManager::ScopeMonitorError(const ScopeMonitorInfo * /*scope_info*/, int /*platform_error*/,
+void BrokerDiscoveryManager::ScopeMonitorError(const RdmnetScopeMonitorInfo * /*scope_info*/, int /*platform_error*/,
                                                void * /*context*/)
 {
 }
 
-void BrokerDiscoveryManager::BrokerRegistered(const BrokerDiscInfo *broker_info, const char *assigned_service_name,
-                                              void *context)
+void BrokerDiscoveryManager::BrokerRegistered(const RdmnetBrokerDiscInfo *broker_info,
+                                              const char *assigned_service_name, void *context)
 {
   BrokerDiscoveryManagerNotify *notify = static_cast<BrokerDiscoveryManagerNotify *>(context);
   if (notify && broker_info)

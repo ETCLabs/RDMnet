@@ -39,6 +39,7 @@
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/broker/log.h"
+#include "rdmnet/broker/socket_manager.h"
 
 class BrokerCore;
 
@@ -141,7 +142,7 @@ public:
 class Broker
 {
 public:
-  Broker(BrokerLog *log, BrokerNotify *notify);
+  Broker(BrokerLog *log, BrokerSocketManager *socket_manager, BrokerNotify *notify);
   virtual ~Broker();
 
   bool Startup(const BrokerSettings &settings, uint16_t listen_port, std::vector<LwpaIpAddr> &listen_addrs);

@@ -32,6 +32,7 @@
 #include <map>
 #include "lwpa/uuid.h"
 #include "rdm/uid.h"
+#include "rdmnet/core/connection.h"
 
 /// \brief Keeps track of all UIDs tracked by this Broker, and generates new Dynamic UIDs upon
 ///        request.
@@ -52,14 +53,14 @@ public:
     kDuplicateId
   };
 
-  AddResult AddStaticUid(int conn_handle, const RdmUid &static_uid);
-  AddResult AddDynamicUid(int conn_handle, const LwpaUuid &cid_or_rid, RdmUid &new_dynamic_uid);
+  AddResult AddStaticUid(rdmnet_conn_t conn_handle, const RdmUid &static_uid);
+  AddResult AddDynamicUid(rdmnet_conn_t conn_handle, const LwpaUuid &cid_or_rid, RdmUid &new_dynamic_uid);
 
   void RemoveUid(const RdmUid &uid);
 
-  bool UidToHandle(const RdmUid &uid, int &conn_handle) const;
+  bool UidToHandle(const RdmUid &uid, rdmnet_conn_t &conn_handle) const;
 
-  void SetNextDeviceId(uint32_t next_device_id) {next_device_id_ = next_device_id; }
+  void SetNextDeviceId(uint32_t next_device_id) { next_device_id_ = next_device_id; }
 
 private:
   struct ReservationData
@@ -71,9 +72,9 @@ private:
   };
   struct UidData
   {
-    explicit UidData(int conn_handle) : connection_handle(conn_handle) {}
+    explicit UidData(rdmnet_conn_t conn_handle) : connection_handle(conn_handle) {}
 
-    int connection_handle;
+    rdmnet_conn_t connection_handle;
     ReservationData *reservation{nullptr};
   };
 

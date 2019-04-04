@@ -73,9 +73,9 @@ protected:
                                void *context);
   static void BrokerRegisterError(const RdmnetBrokerDiscInfo *broker_info, int platform_error, void *context);
 
-  BrokerDiscoveryManagerNotify *notify_;
+  BrokerDiscoveryManagerNotify *notify_{nullptr};
   RdmnetBrokerDiscInfo cur_info_;
-  bool cur_info_valid_;
+  bool cur_info_valid_{false};
 };
 
 #endif  // _BROKER_DISCOVERY_H_

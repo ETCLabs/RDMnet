@@ -159,6 +159,7 @@ extern "C" {
 lwpa_error_t rdmnet_new_connection(const RdmnetConnectionConfig *config, rdmnet_conn_t *handle);
 lwpa_error_t rdmnet_connect(rdmnet_conn_t handle, const LwpaSockaddr *remote_addr,
                             const ClientConnectMsg *connect_data);
+lwpa_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking);
 lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t sock, const LwpaSockaddr *remote_addr);
 lwpa_error_t rdmnet_destroy_connection(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t *disconnect_reason);
 
