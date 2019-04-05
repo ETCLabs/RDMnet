@@ -127,8 +127,7 @@ protected:
   virtual void StatusReceived(rdmnet_client_scope_t scope_handle, const RemoteRptStatus &status) override;
 
   /******* RDM message handling functions *******/
-  // void ProcessBrokerMessage(rdmnet_client_scope_t scope_handle, const RdmnetMessage *msg);
-
+  void HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse &resp);
   // Use this with data that has identical GET_COMMAND_RESPONSE and SET_COMMAND forms.
   void ProcessRDMGetSetData(rdmnet_client_scope_t scope_handle, uint16_t param_id, const uint8_t *data, uint8_t datalen,
                             const RdmResponse &firstResp);
@@ -207,7 +206,7 @@ protected:
                                      const QString &description, const RdmResponse &resp);
 
   // RDM PID GET responses/updates
-  void HandleRdmNack(rdmnet_client_scope_t scope_handle, uint16_t reason, const RdmResponse &resp);
+  void HandleRDMNack(rdmnet_client_scope_t scope_handle, uint16_t reason, const RdmResponse &resp);
   void HandleStatusMessagesResponse(uint8_t type, uint16_t messageId, uint16_t data1, uint16_t data2,
                                     const RdmResponse &resp);
 

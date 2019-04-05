@@ -1581,20 +1581,19 @@ void RDMnetNetworkModel::RdmResponseReceived(rdmnet_client_scope_t scope_handle,
 {
   // Since we are compiling with RDMNET_DYNAMIC_MEM, we should never get partial responses.
   assert(!resp.more_coming);
+  assert(resp.resp_list);
 
-  const RemoteRdmRespListEntry *resp_entry = resp.resp_list;
-  if (!resp_entry)
-    return;
-
-  const RdmResponse &first_resp = resp_entry->msg;
+  const RdmResponse &first_resp = resp.resp_list->msg;
   switch (first_resp.resp_type)
   {
-    case E120_RESPONSE_TYPE_ACK_TIMER:
+    case kRdmResponseTypeAckTimer:
     {
       return;
     }
-    case E120_RESPONSE_TYPE_ACK:
-    case E120_RESPONSE_TYPE_ACK_OVERFLOW:
+    case kRdmResponseTypeAck:
+    case kRdmResponseTypeAckOverflow:
+      HandleRDMAckOrAckOverflow(scope_handle, resp);
+      // Continue processing below
       break;
     case E120_RESPONSE_TYPE_NACK_REASON:
     {
@@ -1602,12 +1601,21 @@ void RDMnetNetworkModel::RdmResponseReceived(rdmnet_client_scope_t scope_handle,
 
       if (first_resp.datalen == 2)
         nackReason = lwpa_upack_16b(first_resp.data);
-      HandleRdmNack(scope_handle, nackReason, first_resp);
+      HandleRDMNack(scope_handle, nackReason, first_resp);
       return;
     }
     default:
       return;  // Unknown response type
   }
+}
+
+void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse &resp)
+{
+  const RemoteRdmRespListEntry *resp_entry = resp.resp_list;
+  if (!resp_entry)
+    return;
+
+  const RdmResponse &first_resp = resp_entry->msg;
 
   if (first_resp.command_class == kRdmCCGetCommandResponse)
   {
@@ -2060,7 +2068,7 @@ void RDMnetNetworkModel::HandleResponderListChangeResponse(rdmnet_client_scope_t
   rdmnet_->SendRdmCommand(scope_handle, cmd);
 }
 
-void RDMnetNetworkModel::HandleRdmNack(rdmnet_client_scope_t scope_handle, uint16_t reason, const RdmResponse &resp)
+void RDMnetNetworkModel::HandleRDMNack(rdmnet_client_scope_t scope_handle, uint16_t reason, const RdmResponse &resp)
 {
   if ((resp.command_class == E120_SET_COMMAND_RESPONSE) && PropertyValueItem::pidInfoExists(resp.param_id))
   {
