@@ -137,8 +137,8 @@ protected:
   bool SendRDMCommand(const RdmCommand &cmd, const BrokerItem *brokerItem);
   bool SendRDMCommand(const RdmCommand &cmd, rdmnet_client_scope_t scope_handle);
   void SendRDMGetResponses(rdmnet_client_scope_t scope_handle, const RdmUid &dest_uid, uint16_t param_id,
-                           const std::vector<RdmParamData> &resp_data_list, uint32_t seqnum = 0,
-                           uint8_t transaction_num = 0);
+                           const std::vector<RdmParamData> &resp_data_list, bool have_command = false,
+                           const RemoteRdmCommand &cmd = RemoteRdmCommand());
   void SendRDMGetResponsesBroadcast(uint16_t param_id, const std::vector<RdmParamData> &resp_data_list);
   void SendRDMNack(rdmnet_client_scope_t scope, const RemoteRdmCommand &received_cmd, uint16_t nack_reason);
 

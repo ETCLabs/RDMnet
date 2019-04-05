@@ -454,7 +454,7 @@ lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_
       size_t out_buf_offset = resp->command_included ? i + 1 : i;
       RdmResponse resp_data = resp->rdm_arr[i];
       resp_data.source_uid = scope_entry->uid;
-      res = rdmresp_create_response(&resp->rdm_arr[i], &resp_buf[out_buf_offset]);
+      res = rdmresp_create_response(&resp_data, &resp_buf[out_buf_offset]);
       if (res != kLwpaErrOk)
         break;
     }

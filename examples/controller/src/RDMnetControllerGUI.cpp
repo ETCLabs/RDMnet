@@ -211,12 +211,8 @@ void RDMnetControllerGUI::networkTreeViewSelectionChanged(const QItemSelection &
 
 void RDMnetControllerGUI::addScopeTriggered()
 {
-  QString scopeText = ui.newScopeNameEdit->text();
-  QByteArray utf8 = scopeText.toUtf8();
-  const char *scopeData = utf8.constData();
-
+  emit addScopeActivated(ui.newScopeNameEdit->text());
   ui.newScopeNameEdit->clear();
-  emit addScopeActivated(scopeData);
 }
 
 void RDMnetControllerGUI::removeSelectedBrokerTriggered()

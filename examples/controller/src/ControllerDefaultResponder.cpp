@@ -123,7 +123,8 @@ bool ControllerDefaultResponder::GetDeviceLabel(const uint8_t * /*param_data*/, 
   size_t label_len = std::min(device_label_.length(), kRdmDeviceLabelMaxLength);
   RdmParamData resp_data;
   memcpy(resp_data.data, device_label_.c_str(), label_len);
-  resp_data_list[0].datalen = static_cast<uint8_t>(label_len);
+  resp_data.datalen = static_cast<uint8_t>(label_len);
+  resp_data_list.push_back(resp_data);
   return true;
 }
 

@@ -1466,19 +1466,22 @@ bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand &cmd, rdmnet_client_sco
 
 void RDMnetNetworkModel::SendRDMGetResponses(rdmnet_client_scope_t scope_handle, const RdmUid &dest_uid,
                                              uint16_t param_id, const std::vector<RdmParamData> &resp_data_list,
-                                             uint32_t seqnum, uint8_t transaction_num)
+                                             bool have_command, const RemoteRdmCommand &cmd)
 {
   std::vector<RdmResponse> resp_list;
   RdmResponse resp_data;
   LocalRdmResponse resp;
 
   resp.dest_uid = dest_uid;
-  resp.seq_num = seqnum;
+  resp.seq_num = have_command ? cmd.seq_num : 0;
   resp.source_endpoint = E133_NULL_ENDPOINT;
+  resp.command_included = have_command;
+  if (have_command)
+    resp.cmd = cmd.rdm;
 
   // The source UID is added by the library right before sending.
   resp_data.dest_uid = dest_uid;
-  resp_data.transaction_num = transaction_num;
+  resp_data.transaction_num = have_command ? cmd.rdm.transaction_num : 0;
   resp_data.resp_type = resp_data_list.size() > 1 ? kRdmResponseTypeAckOverflow : kRdmResponseTypeAck;
   resp_data.msg_count = 0;
   resp_data.subdevice = 0;
@@ -1536,6 +1539,8 @@ void RDMnetNetworkModel::SendRDMNack(rdmnet_client_scope_t scope, const RemoteRd
   resp.rdm_arr = &rdm_resp;
   resp.seq_num = received_cmd.seq_num;
   resp.source_endpoint = E133_NULL_ENDPOINT;
+  resp.command_included = true;
+  resp.cmd = received_cmd.rdm;
   rdmnet_->SendRdmResponse(scope, resp);
 }
 
@@ -1551,8 +1556,7 @@ void RDMnetNetworkModel::RdmCommandReceived(rdmnet_client_scope_t scope_handle, 
 
     if (default_responder_.Get(rdm.param_id, rdm.data, rdm.datalen, resp_data_list, nack_reason))
     {
-      SendRDMGetResponses(scope_handle, cmd.source_uid, rdm.param_id, resp_data_list, cmd.seq_num,
-                          cmd.rdm.transaction_num);
+      SendRDMGetResponses(scope_handle, cmd.source_uid, rdm.param_id, resp_data_list, true, cmd);
 
       log_->Log(LWPA_LOG_DEBUG, "ACK'ing GET_COMMAND for PID 0x%04x from Controller %04x:%08x", rdm.param_id,
                 cmd.source_uid.manu, cmd.source_uid.id);

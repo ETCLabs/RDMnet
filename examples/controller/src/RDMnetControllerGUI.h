@@ -74,7 +74,7 @@ public slots:
 
 signals:
 
-  void addScopeActivated(std::string scope);
+  void addScopeActivated(QString scope);
   void removeSelectedBrokerActivated(class BrokerItem *brokerItem);
   void removeAllBrokersActivated();
   void featureActivated(class RDMnetNetworkItem *device, SupportedDeviceFeature feature);
