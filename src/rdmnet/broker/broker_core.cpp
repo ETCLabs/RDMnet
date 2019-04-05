@@ -229,7 +229,7 @@ bool BrokerCore::IsDeviceManuBroadcastUID(const RdmUid &uid, uint16_t &manu)
 
 bool BrokerCore::IsValidControllerDestinationUID(const RdmUid &uid) const
 {
-  if (rdmnet_uid_is_controller_broadcast(&uid) || (uid == settings_.uid))
+  if (rdmnet_uid_is_controller_broadcast(&uid) || (uid == my_uid_))
     return true;
 
   // TODO this should only check devices
@@ -528,7 +528,7 @@ void BrokerCore::ProcessConnectRequest(int conn, const ClientConnectMsg *cmsg)
     auto it = clients_.find(conn);
     if (it != clients_.end() && it->second)
     {
-      ConnectReplyMsg creply = {connect_status, E133_VERSION, settings_.uid};
+      ConnectReplyMsg creply = {connect_status, E133_VERSION, my_uid_, {}};
       send_connect_reply(conn, &settings_.cid, &creply);
     }
 
@@ -666,7 +666,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
     ConnectReplyMsg *creply = get_connect_reply_msg(&msg);
     creply->connect_status = kRdmnetConnectOk;
     creply->e133_version = E133_VERSION;
-    creply->broker_uid = settings_.uid;
+    creply->broker_uid = my_uid_;
     creply->client_uid = rptdata->client_uid;
     new_client->Push(settings_.cid, msg);
 

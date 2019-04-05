@@ -121,7 +121,12 @@
 /*! \brief The maximum number of RDM responses that can be sent from an RPT Client at once in an
  *         ACK_OVERFLOW response.
  *
- *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
+ *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0. For applications which desire static
+ *  memory, this parameter should be set to the maximum number of RDM ACK_OVERFLOW responses the
+ *  application ever anticipates generating in response to an RDMnet request, based on the client's
+ *  parameter data. Since RDMnet gateways cannot anticipate how many ACK_OVERFLOW responses will be
+ *  received from a downstream RDM responder, a reasonable guess may need to be made based on the
+ *  RDM standard.
  */
 #ifndef RDMNET_MAX_SENT_ACK_OVERFLOW_RESPONSES
 #define RDMNET_MAX_SENT_ACK_OVERFLOW_RESPONSES 5
@@ -177,7 +182,9 @@
 /*! \brief The maximum number of RdmCmdListEntry structures that can be returned with a parsed
  *         ACK_OVERFLOW response (e.g. from an RPT Notification message).
  *
- *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
+ *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0. If an RDMnet response is received with
+ *  more ACK_OVERFLOW responses than this number, they will be delivered in batches of this number
+ *  with the "partial" flag set to true on all but the last batch.
  */
 #ifndef RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES
 #define RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES 10

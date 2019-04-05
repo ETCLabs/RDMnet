@@ -55,4 +55,5 @@ public:
   virtual bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand &cmd) = 0;
   virtual bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand &cmd, uint32_t &seq_num) = 0;
   virtual bool SendRdmResponse(rdmnet_client_scope_t scope_handle, const LocalRdmResponse &resp) = 0;
+  virtual bool RequestClientList(rdmnet_client_scope_t scope_handle) = 0;
 };

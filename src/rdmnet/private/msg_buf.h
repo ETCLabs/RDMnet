@@ -92,7 +92,7 @@ typedef struct RdmListState
     (rlstateptr)->parsed_request_notif_header = false;      \
     init_pdu_block_state(&(rlstateptr)->block, blocksize);  \
     get_rdm_buf_list(rmsgptr)->list = NULL;                 \
-    get_rdm_buf_list(rmsgptr)->partial = false;             \
+    get_rdm_buf_list(rmsgptr)->more_coming = false;         \
   } while (0)
 
 typedef struct RptStatusState
@@ -147,7 +147,7 @@ typedef struct ClientListState
   {                                                            \
     init_pdu_block_state(&(clstateptr)->block, blocksize);     \
     get_client_list(bmsgptr)->client_entry_list = NULL;        \
-    get_client_list(bmsgptr)->partial = false;                 \
+    get_client_list(bmsgptr)->more_coming = false;             \
   } while (0)
 
 typedef struct ClientConnectState

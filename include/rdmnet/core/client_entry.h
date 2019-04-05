@@ -70,7 +70,7 @@ typedef struct ClientEntryDataRpt
 
 typedef struct ClientEntryDataEpt
 {
-  bool partial;
+  bool more_coming;
   EptSubProtocol *protocol_list;
 } ClientEntryDataEpt;
 

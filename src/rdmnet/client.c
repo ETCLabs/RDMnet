@@ -63,14 +63,17 @@
 #if RDMNET_DYNAMIC_MEM
 #define alloc_rdmnet_client() malloc(sizeof(RdmnetClient))
 #define alloc_client_scope() malloc(sizeof(ClientScopeListEntry))
-#define alloc_client_rb_node()
+#define alloc_client_rdm_response() malloc(sizeof(RemoteRdmRespListEntry))
 #define free_rdmnet_client(ptr) free(ptr)
 #define free_client_scope(ptr) free(ptr)
+#define free_client_rdm_response(ptr) free(ptr)
 #else
 #define alloc_rdmnet_client() lwpa_mempool_alloc(rdmnet_clients)
 #define alloc_client_scope() lwpa_mempool_alloc(client_scopes)
+#define alloc_client_rdm_response() lwpa_mempool_alloc(client_rdm_responses)
 #define free_rdmnet_client(ptr) lwpa_mempool_free(rdmnet_clients, ptr)
 #define free_client_scope(ptr) lwpa_mempool_free(client_scopes, ptr)
+#define free_client_rdm_response(ptr) lwpa_mempool_free(client_rdm_responses, ptr)
 #endif
 
 #define rdmnet_client_lock() lwpa_mutex_take(&client_lock, LWPA_WAIT_FOREVER)
@@ -84,6 +87,7 @@
 LWPA_MEMPOOL_DEFINE(rdmnet_clients, RdmnetClient, RDMNET_MAX_CLIENTS);
 LWPA_MEMPOOL_DEFINE(client_scopes, ClientScopeListEntry, RDMNET_MAX_CLIENT_SCOPES);
 LWPA_MEMPOOL_DEFINE(client_rb_nodes, LwpaRbNode, CLIENT_MAX_RB_NODES);
+LWPA_MEMPOOL_DEFINE(client_rdm_responses, RemoteRdmRespListEntry, RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES);
 #endif
 
 static bool client_lock_initted = false;
@@ -157,9 +161,18 @@ static void release_client_and_scope(const RdmnetClient *client, const ClientSco
 
 // Manage callbacks
 static void fill_callback_info(const RdmnetClient *client, ClientCallbackDispatchInfo *cb);
-static void deliver_callback(const ClientCallbackDispatchInfo *info);
+static void deliver_callback(ClientCallbackDispatchInfo *info);
 static bool connect_failed_will_retry(rdmnet_connect_fail_event_t event);
 static bool disconnected_will_retry(rdmnet_connect_fail_event_t event);
+
+// Message handling
+static void free_rpt_client_message(RptClientMessage *msg);
+static void free_ept_client_message(EptClientMessage *msg);
+static bool handle_rpt_request(const RptMessage *rmsg, RptClientMessage *msg_out);
+static bool handle_rpt_notification(const RptMessage *rmsg, RptClientMessage *msg_out);
+static bool handle_rpt_status(const RptMessage *rmsg, RptClientMessage *msg_out);
+static bool handle_rpt_message(const RdmnetClient *cli, const ClientScopeListEntry *scope_entry, const RptMessage *rmsg,
+                               RptMsgReceivedArgs *cb_args);
 
 // Red-black tree management
 static int client_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const LwpaRbNode *node_b);
@@ -198,6 +211,7 @@ lwpa_error_t rdmnet_client_init(const LwpaLogParams *lparams)
       res |= lwpa_mempool_init(rdmnet_clients);
       res |= lwpa_mempool_init(client_scopes);
       res |= lwpa_mempool_init(client_rb_nodes);
+      res |= lwpa_mempool_init(client_rdm_responses);
     }
 
     if (res != kLwpaErrOk)
@@ -438,6 +452,8 @@ lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_
     for (size_t i = 0; i < resp->num_responses; ++i)
     {
       size_t out_buf_offset = resp->command_included ? i + 1 : i;
+      RdmResponse resp_data = resp->rdm_arr[i];
+      resp_data.source_uid = scope_entry->uid;
       res = rdmresp_create_response(&resp->rdm_arr[i], &resp_buf[out_buf_offset]);
       if (res != kLwpaErrOk)
         break;
@@ -535,6 +551,7 @@ void conncb_connected(rdmnet_conn_t handle, const RdmnetConnectedInfo *connect_i
     fill_callback_info(cli, &cb);
     cb.which = kClientCallbackConnected;
     cb.common_args.connected.scope_handle = scope_entry->handle;
+    cb.common_args.connected.info.broker_addr = connect_info->connected_addr;
 
     release_scope(scope_entry);
   }
@@ -610,20 +627,197 @@ void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo *dis
 void conncb_msg_received(rdmnet_conn_t handle, const RdmnetMessage *message, void *context)
 {
   (void)context;
-  (void)handle;
-  (void)message;
 
-  lwpa_log(rdmnet_log_params, LWPA_LOG_INFO, RDMNET_LOG_MSG("Got message on connection %p"), handle);
-  /* TODO
-  if (rdmnet_client_lock())
+  CB_STORAGE_CLASS ClientCallbackDispatchInfo cb;
+  init_callback_info(&cb);
+
+  ClientScopeListEntry *scope_entry = get_scope(handle);
+  if (scope_entry)
   {
-    RdmnetClient *cli = (RdmnetClient *)context;
-    if (cli && client_in_list(cli, state.clients))
+    RdmnetClient *cli = scope_entry->client;
+
+    fill_callback_info(cli, &cb);
+
+    switch (message->vector)
     {
+      case ACN_VECTOR_ROOT_BROKER:
+        cb.which = kClientCallbackBrokerMsgReceived;
+        cb.common_args.broker_msg_received.scope_handle = handle;
+        cb.common_args.broker_msg_received.msg = get_broker_msg(message);
+        break;
+      case ACN_VECTOR_ROOT_RPT:
+        if (cli->type == kClientProtocolRPT)
+        {
+          if (handle_rpt_message(cli, scope_entry, get_rpt_msg(message), &cb.prot_info.rpt.msg_received))
+          {
+            cb.which = kClientCallbackMsgReceived;
+          }
+        }
+        else
+        {
+          lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
+                   RDMNET_LOG_MSG("Incorrectly got RPT message for non-RPT client %d on scope %d"), cli->handle,
+                   handle);
+        }
+        break;
+      case ACN_VECTOR_ROOT_EPT:
+        // TODO, for now fall through
+      default:
+        lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
+                 RDMNET_LOG_MSG("Got message with unhandled vector type %u on scope %d"), message->vector, handle);
+        break;
     }
-    rdmnet_client_unlock();
+    release_scope(scope_entry);
   }
-  */
+
+  deliver_callback(&cb);
+}
+
+bool handle_rpt_message(const RdmnetClient *cli, const ClientScopeListEntry *scope_entry, const RptMessage *rmsg,
+                        RptMsgReceivedArgs *cb_args)
+{
+  (void)cli;
+  bool res = false;
+
+  switch (rmsg->vector)
+  {
+    case VECTOR_RPT_REQUEST:
+      res = handle_rpt_request(rmsg, &cb_args->msg);
+      break;
+    case VECTOR_RPT_NOTIFICATION:
+      res = handle_rpt_notification(rmsg, &cb_args->msg);
+      break;
+    case VECTOR_RPT_STATUS:
+      res = handle_rpt_status(rmsg, &cb_args->msg);
+      break;
+  }
+
+  if (res)
+    cb_args->scope_handle = scope_entry->handle;
+  return res;
+}
+
+bool handle_rpt_request(const RptMessage *rmsg, RptClientMessage *msg_out)
+{
+  RemoteRdmCommand *cmd = &msg_out->payload.cmd;
+  const RdmBufListEntry *list = get_rdm_buf_list(rmsg)->list;
+
+  if (!list->next)  // Only one RDM command allowed in an RPT request
+  {
+    lwpa_error_t unpack_res = rdmresp_unpack_command(&list->msg, &cmd->rdm);
+    if (unpack_res == kLwpaErrOk)
+    {
+      msg_out->type = kRptClientMsgRdmCmd;
+      cmd->source_uid = rmsg->header.source_uid;
+      cmd->dest_endpoint = rmsg->header.dest_endpoint_id;
+      cmd->seq_num = rmsg->header.seqnum;
+      return true;
+    }
+  }
+  return false;
+}
+
+bool handle_rpt_notification(const RptMessage *rmsg, RptClientMessage *msg_out)
+{
+  RemoteRdmResponse *resp = &msg_out->payload.resp;
+
+  // Do some initialization
+  msg_out->type = kRptClientMsgRdmResp;
+  resp->command_included = false;
+  resp->more_coming = get_rdm_buf_list(rmsg)->more_coming;
+  resp->resp_list = NULL;
+  RemoteRdmRespListEntry **next_entry = &resp->resp_list;
+
+  bool good_parse = true;
+  bool first_msg = true;
+  for (const RdmBufListEntry *buf_entry = get_rdm_buf_list(rmsg)->list; buf_entry && good_parse;
+       buf_entry = buf_entry->next)
+  {
+    if (first_msg)
+    {
+      if (rdmresp_is_non_disc_command(&buf_entry->msg))
+      {
+        // The command is included.
+        lwpa_error_t unpack_res = rdmresp_unpack_command(&buf_entry->msg, &resp->cmd);
+        if (unpack_res == kLwpaErrOk)
+        {
+          resp->command_included = true;
+        }
+        else
+        {
+          good_parse = false;
+        }
+        continue;
+      }
+      first_msg = false;
+    }
+    *next_entry = alloc_client_rdm_response();
+    if (next_entry)
+    {
+      lwpa_error_t unpack_res = rdmctl_unpack_response(&buf_entry->msg, &(*next_entry)->msg);
+      if (unpack_res == kLwpaErrOk)
+      {
+        (*next_entry)->next = NULL;
+        next_entry = &(*next_entry)->next;
+      }
+      else
+      {
+        good_parse = false;
+      }
+    }
+    else
+    {
+      good_parse = false;
+    }
+  }
+
+  if (good_parse)
+  {
+    // Fill in the rest of the info
+    resp->source_uid = rmsg->header.source_uid;
+    resp->source_endpoint = rmsg->header.source_endpoint_id;
+    resp->seq_num = rmsg->header.seqnum;
+    return true;
+  }
+  else
+  {
+    // Clean up
+    free_rpt_client_message(msg_out);
+    return false;
+  }
+}
+
+bool handle_rpt_status(const RptMessage *rmsg, RptClientMessage *msg_out)
+{
+  RemoteRptStatus *status_out = &msg_out->payload.status;
+  const RptStatusMsg *status = get_rpt_status_msg(rmsg);
+
+  // This one is quick and simple with no failure condition
+  msg_out->type = kRptClientMsgStatus;
+  status_out->source_uid = rmsg->header.source_uid;
+  status_out->source_endpoint = rmsg->header.source_endpoint_id;
+  status_out->seq_num = rmsg->header.seqnum;
+  status_out->msg = *status;
+  return true;
+}
+
+void free_rpt_client_message(RptClientMessage *msg)
+{
+  if (msg->type == kRptClientMsgRdmResp)
+  {
+    RemoteRdmRespListEntry *next;
+    for (RemoteRdmRespListEntry *to_free = get_remote_rdm_response(msg)->resp_list; to_free; to_free = next)
+    {
+      next = to_free->next;
+      free_client_rdm_response(to_free);
+    }
+  }
+}
+
+void free_ept_client_message(EptClientMessage *msg)
+{
+  (void)msg;
+  // TODO
 }
 
 void fill_callback_info(const RdmnetClient *client, ClientCallbackDispatchInfo *cb)
@@ -641,11 +835,11 @@ void fill_callback_info(const RdmnetClient *client, ClientCallbackDispatchInfo *
   }
 }
 
-void deliver_callback(const ClientCallbackDispatchInfo *info)
+void deliver_callback(ClientCallbackDispatchInfo *info)
 {
   if (info->type == kClientProtocolRPT)
   {
-    const RptCallbackDispatchInfo *rpt_info = &info->prot_info.rpt;
+    RptCallbackDispatchInfo *rpt_info = &info->prot_info.rpt;
     switch (info->which)
     {
       case kClientCallbackConnected:
@@ -667,6 +861,7 @@ void deliver_callback(const ClientCallbackDispatchInfo *info)
       case kClientCallbackMsgReceived:
         rpt_info->cbs.msg_received(info->handle, rpt_info->msg_received.scope_handle, &rpt_info->msg_received.msg,
                                    info->context);
+        free_rpt_client_message(&rpt_info->msg_received.msg);
         break;
       case kClientCallbackNone:
       default:
@@ -675,7 +870,7 @@ void deliver_callback(const ClientCallbackDispatchInfo *info)
   }
   else if (info->type == kClientProtocolEPT)
   {
-    const EptCallbackDispatchInfo *ept_info = &info->prot_info.ept;
+    EptCallbackDispatchInfo *ept_info = &info->prot_info.ept;
     switch (info->which)
     {
       case kClientCallbackConnected:
@@ -697,6 +892,7 @@ void deliver_callback(const ClientCallbackDispatchInfo *info)
       case kClientCallbackMsgReceived:
         ept_info->cbs.msg_received(info->handle, ept_info->msg_received.scope_handle, &ept_info->msg_received.msg,
                                    info->context);
+        free_ept_client_message(&ept_info->msg_received.msg);
         break;
       case kClientCallbackNone:
       default:

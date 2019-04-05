@@ -126,13 +126,13 @@ typedef struct BrokerMsgReceivedArgs
 typedef struct RptMsgReceivedArgs
 {
   rdmnet_client_scope_t scope_handle;
-  const RptClientMessage msg;
+  RptClientMessage msg;
 } RptMsgReceivedArgs;
 
 typedef struct EptMsgReceivedArgs
 {
   rdmnet_client_scope_t scope_handle;
-  const EptClientMessage msg;
+  EptClientMessage msg;
 } EptMsgReceivedArgs;
 
 typedef struct RptCallbackDispatchInfo

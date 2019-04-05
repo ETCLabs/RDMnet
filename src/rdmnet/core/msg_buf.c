@@ -339,7 +339,7 @@ void initialize_broker_message(BrokerState *bstate, BrokerMessage *bmsg, size_t 
       {
         DynamicUidRequestList *rlist = get_dynamic_uid_request_list(bmsg);
         rlist->request_list = NULL;
-        rlist->partial = false;
+        rlist->more_coming = false;
 
         init_generic_list_state(&bstate->data.data_list, pdu_data_len);
       }
@@ -353,7 +353,7 @@ void initialize_broker_message(BrokerState *bstate, BrokerMessage *bmsg, size_t 
       {
         DynamicUidAssignmentList *alist = get_dynamic_uid_assignment_list(bmsg);
         alist->mapping_list = NULL;
-        alist->partial = false;
+        alist->more_coming = false;
 
         init_generic_list_state(&bstate->data.data_list, pdu_data_len);
       }
@@ -367,7 +367,7 @@ void initialize_broker_message(BrokerState *bstate, BrokerMessage *bmsg, size_t 
       {
         FetchUidAssignmentList *ulist = get_fetch_dynamic_uid_assignment_list(bmsg);
         ulist->assignment_list = NULL;
-        ulist->partial = false;
+        ulist->more_coming = false;
 
         init_generic_list_state(&bstate->data.data_list, pdu_data_len);
       }
@@ -773,7 +773,7 @@ size_t parse_client_list(ClientListState *clstate, const uint8_t *data, size_t d
           /* We've run out of space for client entries - send back up what we have now. */
           if (clist->client_entry_list)
           {
-            clist->partial = true;
+            clist->more_coming = true;
             res = kPSPartialBlockParseOk;
           }
           else
@@ -839,7 +839,7 @@ size_t parse_request_dynamic_uid_assignment(GenericListState *lstate, const uint
       /* We've run out of space for client entries - send back up what we have now. */
       if (rlist->request_list)
       {
-        rlist->partial = true;
+        rlist->more_coming = true;
         res = kPSPartialBlockParseOk;
       }
       else
@@ -894,7 +894,7 @@ size_t parse_dynamic_uid_assignment_list(GenericListState *lstate, const uint8_t
       /* We've run out of space for client entries - send back up what we have now. */
       if (alist->mapping_list)
       {
-        alist->partial = true;
+        alist->more_coming = true;
         res = kPSPartialBlockParseOk;
       }
       else
@@ -956,7 +956,7 @@ size_t parse_fetch_dynamic_uid_assignment_list(GenericListState *lstate, const u
       /* We've run out of space for client entries - send back up what we have now. */
       if (alist->assignment_list)
       {
-        alist->partial = true;
+        alist->more_coming = true;
         res = kPSPartialBlockParseOk;
       }
       else
@@ -1186,7 +1186,7 @@ size_t parse_rdm_list(RdmListState *rlstate, const uint8_t *data, size_t datalen
               /* We've run out of space for RDM commands - send back up what we have now. */
               if (cmd_list->list)
               {
-                cmd_list->partial = true;
+                cmd_list->more_coming = true;
                 res = kPSPartialBlockParseOk;
               }
               else

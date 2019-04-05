@@ -67,6 +67,7 @@ public:
   bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand &cmd) override;
   bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand &cmd, uint32_t &seq_num) override;
   bool SendRdmResponse(rdmnet_client_scope_t scope_handle, const LocalRdmResponse &resp) override;
+  bool RequestClientList(rdmnet_client_scope_t scope_handle) override;
 
 protected:
   // RDMnetLibNotifyInternal overrides

@@ -204,7 +204,7 @@ typedef struct ClientList
    *  memory in which to store Client Entries and must deliver the partial list before continuing.
    *  The application should store the entries in the list but should not act on the list until
    *  another ClientList is received with partial set to false. */
-  bool partial;
+  bool more_coming;
   /*! The head of a linked list of Client Entries. */
   ClientEntryData *client_entry_list;
 } ClientList;
@@ -225,7 +225,7 @@ typedef struct DynamicUidRequestList
    *  memory in which to store DynamicUidRequestListEntrys and must deliver the partial list before
    *  continuing. The application should store the entries in the list but should not act on the
    *  list until another DynamicUidRequestList is received with partial set to false. */
-  bool partial;
+  bool more_coming;
   /*! The head of a linked list of RIDs for which Dynamic UIDs are requested. */
   DynamicUidRequestListEntry *request_list;
 } DynamicUidRequestList;
@@ -242,7 +242,7 @@ struct DynamicUidMapping
 
 typedef struct DynamicUidAssignmentList
 {
-  bool partial;
+  bool more_coming;
   DynamicUidMapping *mapping_list;
 } DynamicUidAssignmentList;
 
@@ -263,7 +263,7 @@ typedef struct FetchUidAssignmentList
    *  memory in which to store FetchUidAssignmentListEntrys and must deliver the partial list before
    *  continuing. The application should store the entries in the list but should not act on the
    *  list until another DynamicUidRequestList is received with partial set to false. */
-  bool partial;
+  bool more_coming;
   /*! The head of a linked list of Dynamic UIDs for which the currently assigned RIDs are being
    *  requested. */
   FetchUidAssignmentListEntry *assignment_list;

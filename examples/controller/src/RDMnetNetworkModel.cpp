@@ -115,7 +115,7 @@ T *getNearestParentItemOfType(QStandardItem *child)
   T *parent = nullptr;
   QStandardItem *current = child;
 
-  while (parent && current)
+  while (!parent && current)
   {
     current = current->parent();
 
@@ -285,6 +285,7 @@ void RDMnetNetworkModel::Connected(rdmnet_client_scope_t scope_handle, const Rdm
     }
 
     log_->Log(LWPA_LOG_INFO, "Connected to broker on scope %s", utf8_scope.c_str());
+    rdmnet_->RequestClientList(scope_handle);
   }
 }
 
@@ -1579,9 +1580,9 @@ void RDMnetNetworkModel::RdmCommandReceived(rdmnet_client_scope_t scope_handle, 
 void RDMnetNetworkModel::RdmResponseReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse &resp)
 {
   // Since we are compiling with RDMNET_DYNAMIC_MEM, we should never get partial responses.
-  assert(!resp.resp_list.partial);
+  assert(!resp.more_coming);
 
-  const RemoteRdmRespListEntry *resp_entry = resp.resp_list.list;
+  const RemoteRdmRespListEntry *resp_entry = resp.resp_list;
   if (!resp_entry)
     return;
 
@@ -1816,7 +1817,6 @@ void RDMnetNetworkModel::RdmResponseReceived(rdmnet_client_scope_t scope_handle,
       case E133_TCP_COMMS_STATUS:
       {
         for (; resp_entry; resp_entry = resp_entry->next)
-          ;
         {
           const RdmResponse &resp_part = resp_entry->msg;
 

@@ -231,20 +231,49 @@ void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t sc
                                 void *context)
 {
   (void)handle;
-  (void)scope_handle;
-  (void)msg;
-  (void)context;
 
-  // TODO
+  RdmnetController *controller = (RdmnetController *)context;
+  if (controller)
+  {
+    switch (msg->vector)
+    {
+      case VECTOR_BROKER_CONNECTED_CLIENT_LIST:
+      case VECTOR_BROKER_CLIENT_ADD:
+      case VECTOR_BROKER_CLIENT_REMOVE:
+      case VECTOR_BROKER_CLIENT_ENTRY_CHANGE:
+        controller->callbacks.client_list_update(controller, scope_handle, (client_list_action_t)msg->vector,
+                                                 get_client_list(msg), controller->callback_context);
+        break;
+      default:
+        break;
+    }
+  }
 }
 
 static void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptClientMessage *msg,
                                 void *context)
 {
   (void)handle;
-  (void)scope_handle;
-  (void)msg;
-  (void)context;
 
-  // TODO
+  RdmnetController *controller = (RdmnetController *)context;
+  if (controller)
+  {
+    switch (msg->type)
+    {
+      case kRptClientMsgRdmCmd:
+        controller->callbacks.rdm_command_received(controller, scope_handle, get_remote_rdm_command(msg),
+                                                   controller->callback_context);
+        break;
+      case kRptClientMsgRdmResp:
+        controller->callbacks.rdm_response_received(controller, scope_handle, get_remote_rdm_response(msg),
+                                                    controller->callback_context);
+        break;
+      case kRptClientMsgStatus:
+        controller->callbacks.status_received(controller, scope_handle, get_remote_rpt_status(msg),
+                                              controller->callback_context);
+        break;
+      default:
+        break;
+    }
+  }
 }

@@ -46,10 +46,10 @@ typedef struct RdmnetController *rdmnet_controller_t;
 
 typedef enum
 {
-  kRdmnetClientListAppend,
-  kRdmnetClientListRemove,
-  kRdmnetClientListUpdate,
-  kRdmnetClientListReplace
+  kRdmnetClientListAppend = VECTOR_BROKER_CLIENT_ADD,
+  kRdmnetClientListRemove = VECTOR_BROKER_CLIENT_REMOVE,
+  kRdmnetClientListUpdate = VECTOR_BROKER_CLIENT_ENTRY_CHANGE,
+  kRdmnetClientListReplace = VECTOR_BROKER_CONNECTED_CLIENT_LIST
 } client_list_action_t;
 
 typedef struct RdmnetControllerCallbacks

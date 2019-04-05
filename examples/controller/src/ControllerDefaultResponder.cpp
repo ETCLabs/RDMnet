@@ -351,7 +351,7 @@ bool ControllerDefaultResponder::GetSoftwareVersionLabel(const uint8_t * /*param
 {
   RdmParamData resp_data;
   strcpy((char *)resp_data.data, software_version_label_.c_str());
-  resp_data_list[0].datalen = static_cast<uint8_t>(software_version_label_.length());
+  resp_data.datalen = static_cast<uint8_t>(software_version_label_.length());
   resp_data_list.push_back(resp_data);
   return true;
 }

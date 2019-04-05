@@ -126,7 +126,7 @@ typedef struct RdmBufList
    *  memory in which to store RDM Commands and must deliver the partial list before continuing.
    *  The application should store the entries in the list but should not act on the list until
    *  another RdmCmdList is received with partial set to false. */
-  bool partial;
+  bool more_coming;
   /*! The head of a linked list of packed RDM Commands. */
   RdmBufListEntry *list;
 } RdmBufList;

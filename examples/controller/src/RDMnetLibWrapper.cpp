@@ -27,6 +27,8 @@
 
 #include "RDMnetLibWrapper.h"
 
+extern "C" {
+
 static void controllercb_connected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
                                    const RdmnetClientConnectedInfo *info, void *context)
 {
@@ -82,6 +84,7 @@ static void controllercb_status_received(rdmnet_controller_t handle, rdmnet_clie
   if (notify)
     notify->StatusReceived(handle, scope, status);
 }
+}  // extern "C"
 
 RDMnetLibWrapper::RDMnetLibWrapper(ControllerLog *log) : log_(log)
 {
@@ -107,10 +110,17 @@ bool RDMnetLibWrapper::Startup(RDMnetLibNotify *notify)
     RdmnetControllerConfig config;
     config.uid = RPT_CLIENT_DYNAMIC_UID(0x6574);
     config.cid = my_cid_;
+    // clang-format off
     config.callbacks = {
-        controllercb_connected,          controllercb_connect_failed,        controllercb_disconnected,
-        controllercb_client_list_update, controllercb_rdm_response_received, controllercb_rdm_command_received,
-        controllercb_status_received};
+      controllercb_connected,
+      controllercb_connect_failed,
+      controllercb_disconnected,
+      controllercb_client_list_update,
+      controllercb_rdm_response_received,
+      controllercb_rdm_command_received,
+      controllercb_status_received
+    };
+    // clang-format on
     config.callback_context = static_cast<RDMnetLibNotifyInternal *>(this);
 
     res = rdmnet_controller_create(&config, &controller_handle_);
@@ -201,6 +211,11 @@ bool RDMnetLibWrapper::SendRdmCommand(rdmnet_client_scope_t scope_handle, const 
 bool RDMnetLibWrapper::SendRdmResponse(rdmnet_client_scope_t scope_handle, const LocalRdmResponse &resp)
 {
   return (kLwpaErrOk == rdmnet_controller_send_rdm_response(controller_handle_, scope_handle, &resp));
+}
+
+bool RDMnetLibWrapper::RequestClientList(rdmnet_client_scope_t scope_handle)
+{
+  return (kLwpaErrOk == rdmnet_controller_request_client_list(controller_handle_, scope_handle));
 }
 
 void RDMnetLibWrapper::Connected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
