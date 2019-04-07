@@ -25,38 +25,50 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-// iflist.h: Get the list of network interfaces on your machine.
-//
-// OF COURSE-- YAAYY IPV6 isn't working on my machine right now, so this isn't
-// actually tested in ipv6!!
-//
-//////////////////////////////////////////////////////////////////////
+#ifndef _BROKER_SHELL_H_
+#define _BROKER_SHELL_H_
 
-#ifndef IFLIST_H
-#define IFLIST_H
-
+#include <string>
 #include <vector>
-#include "lwpa/log.h"
+#include <array>
 #include "lwpa/inet.h"
-#include "broker_log.h"
+#include "lwpa/log.h"
+#include "rdmnet/broker.h"
 
-namespace IFList
+// BrokerShell : Platform-neutral wrapper around the Broker library from a generic console
+// application. Instantiates and drives the Broker library.
+
+class BrokerShell : public RDMnet::BrokerNotify
 {
-enum
-{
-  kMACLen = 6
+public:
+  typedef std::array<uint8_t, LWPA_NETINTINFO_MAC_LEN> MacAddr;
+
+  void Run(RDMnet::BrokerLog *log, RDMnet::BrokerSocketManager *socket_mgr);
+  static void PrintVersion();
+
+  // Options to set from the command line; must be set BEFORE Run() is called.
+  void SetInitialScope(const std::string &scope);
+  void SetInitialIfaceList(const std::vector<LwpaIpAddr> &ifaces);
+  void SetInitialMacList(const std::vector<MacAddr> &macs);
+  void SetInitialPort(uint16_t port);
+  void SetInitialLogLevel(int level);
+
+private:
+  void ScopeChanged(const std::string &new_scope) override;
+  void PrintWarningMessage();
+  std::vector<LwpaIpAddr> ConvertMacsToInterfaces(const std::vector<MacAddr> &macs);
+
+  struct InitialData
+  {
+    std::string scope;
+    std::vector<LwpaIpAddr> ifaces;
+    std::vector<MacAddr> macs;
+    uint16_t port{0};
+    int log_level{LWPA_LOG_INFO};
+  } initial_data_;
+
+  bool scope_changed_{false};
+  std::string new_scope_;
 };
 
-// Note that multiple addresses can be on the same interface/mac address!
-struct iflist_entry
-{
-  LwpaIpAddr addr;       // The address field is filled in, port and net_interface are ignored
-  uint8_t mac[kMACLen];  // The mac address
-};
-
-// Discover the latest set of NICs.  Empties the vector before filling it
-void FindIFaces(RDMnet::BrokerLog &log, std::vector<iflist_entry> &ifaces);
-
-};  // namespace IFList
-
-#endif
+#endif  // _BROKER_SHELL_H_

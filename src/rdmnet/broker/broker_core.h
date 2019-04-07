@@ -54,6 +54,7 @@ class RdmnetCoreLibraryNotify
 };
 
 class BrokerCore : public RdmnetCoreLibraryNotify,
+                   public RDMnet::BrokerSocketManagerNotify,
                    public ListenThreadNotify,
                    public ClientServiceThreadNotify,
                    public BrokerDiscoveryManagerNotify
@@ -63,7 +64,6 @@ public:
   virtual ~BrokerCore();
 
   // Some utility functions
-  static constexpr bool IsBroadcastUID(const RdmUid &uid);
   static constexpr bool IsControllerBroadcastUID(const RdmUid &uid);
   static constexpr bool IsDeviceBroadcastUID(const RdmUid &uid);
   static bool IsDeviceManuBroadcastUID(const RdmUid &uid, uint16_t &manu);
@@ -85,12 +85,12 @@ private:
   bool started_{false};
   bool service_registered_{false};
   int other_brokers_found_{0};
-  RDMnet::BrokerLog *log_;
-  RDMnet::BrokerSocketManager *socket_manager_;
-  RDMnet::BrokerNotify *notify_;
+  RDMnet::BrokerLog *log_{nullptr};
+  RDMnet::BrokerSocketManager *socket_manager_{nullptr};
+  RDMnet::BrokerNotify *notify_{nullptr};
   RDMnet::BrokerSettings settings_;
-  RdmUid my_uid_;
-  RdmnetConnectionConfig new_conn_config_;
+  RdmUid my_uid_{};
+  RdmnetConnectionConfig new_conn_config_{};
   std::vector<std::unique_ptr<ListenThread>> listeners_;
 
   // The Broker's RDM responder

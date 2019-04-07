@@ -920,7 +920,7 @@ lwpa_error_t validate_rpt_client_config(const RdmnetRptClientConfig *config)
 {
   if ((config->type != kRPTClientTypeDevice && config->type != kRPTClientTypeController) ||
       (!rpt_client_uid_is_dynamic(&config->uid) && (config->uid.manu & 0x8000)) ||
-      (lwpa_uuid_cmp(&config->cid, &LWPA_NULL_UUID) == 0))
+      (lwpa_uuid_is_null(&config->cid)))
   {
     return kLwpaErrInvalid;
   }

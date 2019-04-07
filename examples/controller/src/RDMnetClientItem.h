@@ -43,7 +43,7 @@ public:
   static const char *clientType2String(rpt_client_type_t type);
 
   // RDMnetClientItem();
-  RDMnetClientItem(const ClientEntryData &entry);
+  RDMnetClientItem(const ClientEntryData &entry, bool is_me);
   virtual ~RDMnetClientItem();
 
   virtual int type() const override;

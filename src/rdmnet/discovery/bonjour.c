@@ -388,7 +388,7 @@ void rdmnetdisc_deinit()
 
 void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo *broker_info)
 {
-  broker_info->cid = LWPA_NULL_UUID;
+  broker_info->cid = kLwpaNullUuid;
   memset(broker_info->service_name, 0, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
   broker_info->port = 0;
   memset(broker_info->listen_addrs, 0, sizeof(LwpaSockaddr) * RDMNET_DISC_MAX_BROKER_ADDRESSES);

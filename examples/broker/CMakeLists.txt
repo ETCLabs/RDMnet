@@ -14,9 +14,14 @@ add_executable(${BROKER_TARGET}
   src/service_utils.cpp
 )
 
-# target_include_directories(${BROKER_TARGET} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src)
+target_include_directories(${BROKER_TARGET} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src)
 target_link_libraries(${BROKER_TARGET} PRIVATE Broker)
 if(WIN32)
+  target_sources(${BROKER_TARGET} PRIVATE
+    src/windows/main.cpp
+    src/windows/win_socket_manager.h
+    src/windows/win_socket_manager.cpp
+  )
   target_compile_definitions(${BROKER_TARGET} PRIVATE UNICODE _UNICODE)
   if(DEFINED DNS_SD_DLL)
     add_custom_command(

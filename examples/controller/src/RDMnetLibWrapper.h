@@ -57,7 +57,7 @@ class RDMnetLibWrapper : public RDMnetLibInterface, public RDMnetLibNotifyIntern
 public:
   RDMnetLibWrapper(ControllerLog *log);
 
-  bool Startup(RDMnetLibNotify *notify) override;
+  bool Startup(const LwpaUuid &cid, RDMnetLibNotify *notify) override;
   void Shutdown() override;
 
   rdmnet_client_scope_t AddScope(const std::string &scope,

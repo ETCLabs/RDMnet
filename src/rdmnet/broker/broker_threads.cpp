@@ -63,16 +63,20 @@ bool ListenThread::Start()
   if (listen_socket_ != LWPA_SOCKET_INVALID)
     return false;
 
-  listen_socket_ = lwpa_socket(lwpaip_is_v4(&addr_.ip) ? LWPA_AF_INET : LWPA_AF_INET6, LWPA_STREAM);
-  if (listen_socket_ == LWPA_SOCKET_INVALID)
+  listen_socket_;
+  lwpa_error_t err = lwpa_socket(lwpaip_is_v4(&addr_.ip) ? LWPA_AF_INET : LWPA_AF_INET6, LWPA_STREAM, &listen_socket_);
+  if (err != kLwpaErrOk)
   {
     if (notify_)
-      notify_->LogError("ListenThread: Failed to create listen socket.");
+    {
+      notify_->LogError("ListenThread: Failed to create listen socket with error: " + std::string(lwpa_strerror(err)) +
+                        ".");
+    }
     return false;
   }
 
-  lwpa_error_t err = lwpa_bind(listen_socket_, &addr_);
-  if (err != LWPA_OK)
+  err = lwpa_bind(listen_socket_, &addr_);
+  if (err != kLwpaErrOk)
   {
     lwpa_close(listen_socket_);
     listen_socket_ = LWPA_SOCKET_INVALID;
@@ -87,7 +91,7 @@ bool ListenThread::Start()
   }
 
   err = lwpa_listen(listen_socket_, 0);
-  if (err != LWPA_OK)
+  if (err != kLwpaErrOk)
   {
     lwpa_close(listen_socket_);
     listen_socket_ = LWPA_SOCKET_INVALID;
@@ -144,7 +148,7 @@ void ListenThread::Run()
 
       lwpa_error_t err = lwpa_accept(listen_socket_, &new_addr, &conn_sock);
 
-      if (err != LWPA_OK)
+      if (err != kLwpaErrOk)
       {
         notify_->LogError("ListenThread: Accept failed with error: " + std::string(lwpa_strerror(err)) + ".");
         terminated_ = true;
@@ -159,106 +163,6 @@ void ListenThread::Run()
     }
     else
       lwpa_thread_sleep(10);
-  }
-}
-
-/************************************/
-
-static void conn_poll_thread_fn(void *arg)
-{
-  ConnPollThread *cpt = static_cast<ConnPollThread *>(arg);
-  if (cpt)
-    cpt->Run();
-}
-
-ConnPollThread::ConnPollThread(size_t max_sockets, ConnPollThreadNotify *pnotify)
-    : terminated_(true), max_count_(max_sockets), notify_(pnotify)
-{
-  lwpa_rwlock_create(&conn_lock_);
-}
-
-ConnPollThread::~ConnPollThread()
-{
-  Stop();
-  lwpa_rwlock_destroy(&conn_lock_);
-}
-
-bool ConnPollThread::Start()
-{
-  terminated_ = false;
-  LwpaThreadParams tparams = {LWPA_THREAD_DEFAULT_PRIORITY, LWPA_THREAD_DEFAULT_STACK, "ConnPollThread", NULL};
-  return lwpa_thread_create(&thread_handle_, &tparams, conn_poll_thread_fn, this);
-}
-
-void ConnPollThread::Stop()
-{
-  if (!terminated_)
-  {
-    terminated_ = true;
-    lwpa_thread_stop(&thread_handle_, 10000);
-  }
-}
-
-// Use this to add a connection to the next run of rdmnet_poll().
-// Returns false if the maximum count has already been reached
-bool ConnPollThread::AddConnection(int conn)
-{
-  BrokerWriteGuard conns_write(conn_lock_);
-  if (conns_.size() < max_count_)
-  {
-    conns_.push_back(conn);
-    if (!poll_arr_ || conns_.size() > poll_arr_->size())
-    {
-      poll_arr_ = std::make_shared<std::vector<RdmnetPoll>>(conns_.size());
-    }
-    return true;
-  }
-  return false;
-}
-
-// Use this to remove a socket from the next run of rdmnet_poll().
-// Returns the number of sockets left in the list, and whether or not
-// the cookie was in this object.
-// If there are no sockets left, this thread should probably be shut down.
-size_t ConnPollThread::RemoveConnection(int conn)
-{
-  BrokerWriteGuard conns_write(conn_lock_);
-  for (auto it = conns_.begin(); it != conns_.end(); ++it)
-  {
-    if (*it == conn)
-    {
-      conns_.erase(it);
-      break;
-    }
-  }
-  return conns_.size();
-}
-
-// The thread function
-void ConnPollThread::Run()
-{
-  if (!notify_)
-    return;
-
-  // Because select does our sleeping for us, there is no need to sleep as
-  // long as we have sockets.
-  while (!terminated_)
-  {
-    bool do_poll = false;
-    std::vector<int> conn_snapshot;
-    std::shared_ptr<std::vector<RdmnetPoll>> poll_arr_snapshot;
-
-    {
-      BrokerReadGuard conns_read(conn_lock_);
-      do_poll = (conns_.size() != 0);
-      conn_snapshot = conns_;
-      poll_arr_snapshot = poll_arr_;
-    }
-
-    if (do_poll)
-      notify_->PollConnections(conn_snapshot, poll_arr_snapshot->data());
-    else
-      lwpa_thread_sleep(50);
   }
 }
 

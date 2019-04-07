@@ -25,9 +25,9 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-// A class for logging messages from the Broker.
-#ifndef _BROKERLOG_H_
-#define _BROKERLOG_H_
+// A class for logging messages from the Broker on Windows.
+#ifndef _WIN_BROKER_LOG_H_
+#define _WIN_BROKER_LOG_H_
 
 #include <WinSock2.h>
 #include <Windows.h>
@@ -42,16 +42,16 @@
 class WindowsBrokerLog : public RDMnet::BrokerLog
 {
 public:
-  WindowsBrokerLog(bool debug, const std::string &file_name);
+  WindowsBrokerLog(const std::string &file_name);
   virtual ~WindowsBrokerLog();
 
   void OutputLogMsg(const std::string &str) override;
   virtual void GetTimeFromCallback(LwpaLogTimeParams *time) override;
 
 private:
-  bool debug_;
   std::fstream file_;
-  long utcoffset_;
+  long utcoffset_{0};
+  int log_level_{LWPA_LOG_INFO};
 };
 
-#endif  // _BROKERLOG_H_
+#endif  // _WIN_BROKER_LOG_

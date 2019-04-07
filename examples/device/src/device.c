@@ -39,21 +39,7 @@
 
 /***************************** Private macros ********************************/
 
-#define rpt_uid_matches_mine(uidptr)                                                        \
-  (rdm_uid_equal(uidptr, &device_state.my_uid) || rdmnet_uid_is_device_broadcast(uidptr) || \
-   (rdmnet_uid_is_device_manu_broadcast(uidptr) &&                                          \
-    rdmnet_device_broadcast_manu_matches(uidptr, device_state.my_uid.manu)))
 #define rdm_uid_matches_mine(uidptr) (rdm_uid_equal(uidptr, &device_state.my_uid) || rdm_uid_is_broadcast(uidptr))
-
-#define swap_header_data(recvhdrptr, sendhdrptr)                       \
-  do                                                                   \
-  {                                                                    \
-    (sendhdrptr)->dest_uid = (recvhdrptr)->source_uid;                 \
-    (sendhdrptr)->dest_endpoint_id = (recvhdrptr)->source_endpoint_id; \
-    (sendhdrptr)->source_uid = device_state.my_uid;                    \
-    (sendhdrptr)->source_endpoint_id = E133_NULL_ENDPOINT;             \
-    (sendhdrptr)->seqnum = (recvhdrptr)->seqnum;                       \
-  } while (0)
 
 /**************************** Private variables ******************************/
 
@@ -72,20 +58,16 @@ static struct device_state
 
 /*********************** Private function prototypes *************************/
 
-/* Broker connection */
-// static bool connect_to_broker(RdmUid *assigned_uid);
-// static void get_connect_params(RdmnetConnectParams *connect_params, LwpaSockaddr *broker_addr);
-
 /* RDM command handling */
-static void device_handle_rdm_command(const DeviceRdmCommand *cmd, bool *requires_reconnect);
-static void send_status(rpt_status_code_t status_code, const DeviceRdmCommand *received_cmd);
-static void send_nack(uint16_t nack_reason, const DeviceRdmCommand *received_cmd);
-static void send_response(const RdmResponse *resp_list, size_t num_responses, const DeviceRdmCommand *received_cmd);
+static void device_handle_rdm_command(const RemoteRdmCommand *cmd, bool *requires_reconnect);
+static void send_status(rpt_status_code_t status_code, const RemoteRdmCommand *received_cmd);
+static void send_nack(uint16_t nack_reason, const RemoteRdmCommand *received_cmd);
+static void send_response(RdmResponse *resp_list, size_t num_responses, const RemoteRdmCommand *received_cmd);
 
 /* Device callbacks */
 static void device_connected(rdmnet_device_t handle, const char *scope, void *context);
 static void device_disconnected(rdmnet_device_t handle, const char *scope, void *context);
-static void device_rdm_cmd_received(rdmnet_device_t handle, const char *scope, const DeviceRdmCommand *cmd,
+static void device_rdm_cmd_received(rdmnet_device_t handle, const char *scope, const RemoteRdmCommand *cmd,
                                     void *context);
 
 /*************************** Function definitions ****************************/
@@ -104,7 +86,7 @@ void device_print_version()
 lwpa_error_t device_init(const DeviceParams *params, const LwpaLogParams *lparams)
 {
   if (!params)
-    return LWPA_INVALID;
+    return kLwpaErrInvalid;
 
   device_state.lparams = lparams;
 
@@ -113,14 +95,14 @@ lwpa_error_t device_init(const DeviceParams *params, const LwpaLogParams *lparam
   default_responder_init(&params->scope_config);
 
   lwpa_error_t res = rdmnet_core_init(lparams);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
   {
     lwpa_log(lparams, LWPA_LOG_ERR, "RDMnet initialization failed with error: '%s'", lwpa_strerror(res));
     return res;
   }
 
   RdmnetDeviceConfig config;
-  config.has_static_uid = false;
+  config.uid = RPT_CLIENT_DYNAMIC_UID(0x6574);
   config.cid = params->cid;
   config.scope_config = params->scope_config;
   config.callbacks.connected = device_connected;
@@ -128,7 +110,7 @@ lwpa_error_t device_init(const DeviceParams *params, const LwpaLogParams *lparam
   config.callback_context = NULL;
 
   res = rdmnet_device_create(&config, &device_state.device_handle);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
   {
     lwpa_log(lparams, LWPA_LOG_ERR, "Device initialization failed with error: '%s'", lwpa_strerror(res));
     rdmnet_core_deinit();
@@ -168,7 +150,7 @@ void device_disconnected(rdmnet_device_t handle, const char *scope, void *contex
   lwpa_log(device_state.lparams, LWPA_LOG_INFO, "Device disconnected from Broker on scope '%s'.", scope);
 }
 
-void device_rdm_cmd_received(rdmnet_device_t handle, const char *scope, const DeviceRdmCommand *cmd, void *context)
+void device_rdm_cmd_received(rdmnet_device_t handle, const char *scope, const RemoteRdmCommand *cmd, void *context)
 {
   (void)handle;
   (void)context;
@@ -177,197 +159,8 @@ void device_rdm_cmd_received(rdmnet_device_t handle, const char *scope, const De
   device_handle_rdm_command(cmd, &requires_reconnect);
 }
 
-// void device_run()
-//{
-//  if (device_state.connected)
-//  {
-//    static RdmnetData recv_data;
-//    lwpa_error_t res = rdmnet_recv(device_state.broker_conn, &recv_data);
-//    if (res == LWPA_OK)
-//    {
-//      bool reconnect_required = false;
-//      device_handle_message(rdmnet_data_msg(&recv_data), &reconnect_required);
-//      if (reconnect_required)
-//      {
-//        lwpa_log(device_state.lparams, LWPA_LOG_INFO,
-//                 "Device received configuration message that requires re-connection to Broker. Disconnecting...");
-//        rdmnet_disconnect(device_state.broker_conn, true, kRdmnetDisconnectRptReconfigure);
-//        device_state.connected = false;
-//        rdmnet_init_dynamic_uid_request(&device_state.my_uid, 0x6574);
-//        device_llrp_set_connected(false, &device_state.my_uid);
-//      }
-//    }
-//    else if (res != LWPA_NODATA && !device_state.configuration_change)
-//    {
-//      /* Disconnected from Broker. */
-//      device_state.connected = false;
-//      rdmnet_init_dynamic_uid_request(&device_state.my_uid, 0x6574);
-//      device_llrp_set_connected(false, &device_state.my_uid);
-//      lwpa_log(device_state.lparams, LWPA_LOG_INFO,
-//               "Disconnected from Broker with error: '%s'. Attempting to reconnect...", lwpa_strerror(res));
-//
-//      /* On an unhealthy TCP event, increment our internal counter. */
-//      if (res == LWPA_TIMEDOUT)
-//        default_responder_incr_unhealthy_count();
-//    }
-//  }
-//  else
-//  {
-//    /* Temporary hack - give the old Broker's DNS entry some time to be removed from the Bonjour cache. */
-//    Sleep(1000);
-//
-//    /* Attempt to reconnect to the Broker using our most current connect parameters. */
-//    if (connect_to_broker(&device_state.my_uid))
-//    {
-//      device_state.connected = true;
-//      device_llrp_set_connected(true, &device_state.my_uid);
-//      lwpa_log(device_state.lparams, LWPA_LOG_INFO, "Re-connected to Broker.");
-//    }
-//  }
-//}
-//
-// bool device_llrp_set(const RdmCommand *cmd_data, uint16_t *nack_reason)
-//{
-//  bool reconnect_required;
-//
-//  lwpa_log(device_state.lparams, LWPA_LOG_INFO, "Handling LLRP SET command...");
-//
-//  bool set_res =
-//      default_responder_set(cmd_data->param_id, cmd_data->data, cmd_data->datalen, nack_reason, &reconnect_required);
-//  if (set_res)
-//  {
-//    device_state.configuration_change = true;
-//    if (device_state.connected)
-//    {
-//      if (reconnect_required)
-//      {
-//        /* Disconnect from the Broker */
-//        lwpa_log(device_state.lparams, LWPA_LOG_INFO,
-//                 "A setting was changed using LLRP which requires re-connection to Broker. Disconnecting...");
-//        rdmnet_disconnect(device_state.broker_conn, true, kRdmnetDisconnectLlrpReconfigure);
-//        device_state.connected = false;
-//        rdmnet_init_dynamic_uid_request(&device_state.my_uid, 0x6574);
-//        device_llrp_set_connected(false, &device_state.my_uid);
-//      }
-//      else
-//      {
-//        /* Send the result of the LLRP change to Controllers */
-//        RdmResponse resp_data;
-//        RdmCmdListEntry resp;
-//        RptHeader header;
-//
-//        resp_data.source_uid = device_state.my_uid;
-//        resp_data.dest_uid = kBroadcastUid;
-//        resp_data.transaction_num = cmd_data->transaction_num;
-//        resp_data.resp_type = E120_RESPONSE_TYPE_ACK;
-//        resp_data.msg_count = 0;
-//        resp_data.subdevice = 0;
-//        resp_data.command_class = E120_SET_COMMAND_RESPONSE;
-//        resp_data.param_id = cmd_data->param_id;
-//        resp_data.datalen = 0;
-//
-//        if (LWPA_OK == rdmresp_create_response(&resp_data, &resp.msg))
-//        {
-//          RdmCmdListEntry orig_cmd;
-//
-//          if (LWPA_OK == rdmctl_create_command(cmd_data, &orig_cmd.msg))
-//          {
-//            orig_cmd.next = &resp;
-//            resp.next = NULL;
-//            header.source_uid = kRdmnetControllerBroadcastUid;
-//            header.source_endpoint_id = E133_NULL_ENDPOINT;
-//            header.dest_uid = device_state.my_uid;
-//            header.dest_endpoint_id = E133_NULL_ENDPOINT;
-//            header.seqnum = 0;
-//
-//            send_notification(&header, &orig_cmd);
-//          }
-//        }
-//      }
-//    }
-//  }
-//
-//  return set_res;
-//}
-//
-///****************************************************************************/
-//
-// void get_connect_params(RdmnetConnectParams *connect_params, LwpaSockaddr *broker_addr)
-//{
-//  default_responder_get_e133_params(connect_params);
-//
-//  /* If we have a static configuration, use it to connect to the Broker. */
-//  if (lwpaip_is_invalid(&connect_params->broker_static_addr.ip))
-//  {
-//    lwpaip_set_invalid(&mdns_broker_addr.ip);
-//    mdns_dnssd_resolve_addr(connect_params);
-//    *broker_addr = mdns_broker_addr;
-//  }
-//  else
-//  {
-//    *broker_addr = connect_params->broker_static_addr;
-//  }
-//}
-//
-// bool connect_to_broker(RdmUid *assigned_uid)
-//{
-//  static RdmnetData connect_data;
-//  ClientConnectMsg connect_msg;
-//  RdmnetConnectParams connect_params;
-//  LwpaSockaddr broker_addr;
-//  lwpa_error_t res = LWPA_NOTCONN;
-//
-//  do
-//  {
-//    get_connect_params(&connect_params, &broker_addr);
-//
-//    if (device_state.configuration_change)
-//      break;
-//
-//    /* Fill in the information used in the initial connection handshake. */
-//    client_connect_msg_set_scope(&connect_msg, connect_params.scope);
-//    client_connect_msg_set_search_domain(&connect_msg, connect_params.search_domain);
-//    connect_msg.e133_version = E133_VERSION;
-//    connect_msg.connect_flags = 0;
-//    create_rpt_client_entry(&device_state.my_cid, &device_state.my_uid, kRPTClientTypeDevice, NULL,
-//                            &connect_msg.client_entry);
-//
-//    /* Attempt to connect. */
-//    res = rdmnet_connect(device_state.broker_conn, &broker_addr, &connect_msg, &connect_data);
-//    if (res != LWPA_OK)
-//    {
-//      if (lwpa_canlog(device_state.lparams, LWPA_LOG_WARNING))
-//      {
-//        char addr_str[LWPA_INET6_ADDRSTRLEN];
-//        lwpa_inet_ntop(&broker_addr.ip, addr_str, LWPA_INET6_ADDRSTRLEN);
-//        lwpa_log(device_state.lparams, LWPA_LOG_WARNING,
-//                 "Connection to Broker at address %s:%d failed with error: '%s'. Retrying...", addr_str,
-//                 broker_addr.port, lwpa_strerror(res));
-//      }
-//    }
-//    else
-//    {
-//      *assigned_uid = get_connect_reply_msg(get_broker_msg(rdmnet_data_msg(&connect_data)))->client_uid;
-//    }
-//  } while (!device_state.configuration_change && res != LWPA_OK);
-//
-//  if (device_state.configuration_change)
-//    device_state.configuration_change = false;
-//  else
-//    default_responder_set_tcp_status(&broker_addr);
-//
-//  return (res == LWPA_OK);
-//}
-
-void device_handle_rdm_command(const DeviceRdmCommand *cmd, bool *requires_reconnect)
+void device_handle_rdm_command(const RemoteRdmCommand *cmd, bool *requires_reconnect)
 {
-  //  if (!rdm_uid_matches_mine(&cmd_data.dest_uid))
-  //  {
-  //    send_status(VECTOR_RPT_STATUS_UNKNOWN_RDM_UID, received_header);
-  //    lwpa_log(device_state.lparams, LWPA_LOG_WARNING, "Device received RDM command addressed to unknown UID
-  //    %04x:%08x",
-  //             cmd_data.dest_uid.manu, cmd_data.dest_uid.id);
-  //  }
   const RdmCommand *rdm_cmd = &cmd->rdm;
   if (rdm_cmd->command_class != kRdmCCGetCommand && rdm_cmd->command_class != kRdmCCSetCommand)
   {
@@ -458,7 +251,7 @@ void device_handle_rdm_command(const DeviceRdmCommand *cmd, bool *requires_recon
   }
 }
 
-void send_status(rpt_status_code_t status_code, const DeviceRdmCommand *received_cmd)
+void send_status(rpt_status_code_t status_code, const RemoteRdmCommand *received_cmd)
 {
   RptHeader header_to_send;
   RptStatusMsg status;
@@ -467,14 +260,14 @@ void send_status(rpt_status_code_t status_code, const DeviceRdmCommand *received
   status.status_code = status_code;
   status.status_string = NULL;
   send_res = rdmnet_device_send_status(device_state.device_handle, &status);
-  if (send_res != LWPA_OK)
+  if (send_res != kLwpaErrOk)
   {
     lwpa_log(device_state.lparams, LWPA_LOG_ERR, "Error sending RPT Status message to Broker: '%s'.",
              lwpa_strerror(send_res));
   }
 }
 
-void send_nack(uint16_t nack_reason, const DeviceRdmCommand *received_cmd)
+void send_nack(uint16_t nack_reason, const RemoteRdmCommand *received_cmd)
 {
   RdmResponse resp;
 
@@ -495,9 +288,9 @@ void send_nack(uint16_t nack_reason, const DeviceRdmCommand *received_cmd)
   send_response(&resp, 1, received_cmd);
 }
 
-void send_response(const RdmResponse *resp_list, size_t num_responses, const DeviceRdmCommand *received_cmd)
+void send_response(RdmResponse *resp_list, size_t num_responses, const RemoteRdmCommand *received_cmd)
 {
-  DeviceRdmResponse resp_to_send;
+  LocalRdmResponse resp_to_send;
   resp_to_send.dest_uid = received_cmd->source_uid;
   resp_to_send.source_endpoint = received_cmd->dest_endpoint;
   resp_to_send.seq_num = received_cmd->seq_num;
@@ -507,7 +300,7 @@ void send_response(const RdmResponse *resp_list, size_t num_responses, const Dev
   lwpa_error_t send_res;
 
   send_res = rdmnet_device_send_rdm_response(device_state.device_handle, &resp_to_send);
-  if (send_res != LWPA_OK)
+  if (send_res != kLwpaErrOk)
   {
     lwpa_log(device_state.lparams, LWPA_LOG_ERR, "Error sending RPT Notification message to Broker: '%s.",
              lwpa_strerror(send_res));

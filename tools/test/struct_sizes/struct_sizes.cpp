@@ -69,26 +69,23 @@ void PrintAllSizes()
   PRINT_SIZE(EptMessage);
 
   PRINT_HEADER_NAME("rdmnet/core/message.h");
-  PRINT_SIZE(DeviceRdmCommand);
-  PRINT_SIZE(DeviceRdmResponse);
-  PRINT_SIZE(ControllerRdmCommand);
-  PRINT_SIZE(ControllerRdmRespListEntry);
-  PRINT_SIZE(ControllerRdmRespList);
-  PRINT_SIZE(ControllerRdmResponse);
+  PRINT_SIZE(LocalRdmCommand);
+  PRINT_SIZE(RemoteRdmCommand);
+  PRINT_SIZE(LocalRdmResponse);
+  PRINT_SIZE(RemoteRdmRespListEntry);
+  PRINT_SIZE(RemoteRdmResponse);
   PRINT_SIZE(RptClientMessage);
   PRINT_SIZE(EptClientMessage);
-  PRINT_SIZE(RdmnetClientMessage);
   PRINT_SIZE(RdmnetMessage);
 
   PRINT_HEADER_NAME("rdmnet/core/rpt_prot.h");
   PRINT_SIZE(RptHeader);
   PRINT_SIZE(RptStatusMsg);
-  PRINT_SIZE(RdmCmdListEntry);
-  PRINT_SIZE(RdmCmdList);
+  PRINT_SIZE(RdmBufListEntry);
+  PRINT_SIZE(RdmBufList);
   PRINT_SIZE(RptMessage);
 
   PRINT_HEADER_NAME("rdmnet/client.h");
-  PRINT_SIZE(RdmnetClientMessage);
   PRINT_SIZE(RdmnetRptClientConfig);
   PRINT_SIZE(ClientCallbackDispatchInfo);
 }

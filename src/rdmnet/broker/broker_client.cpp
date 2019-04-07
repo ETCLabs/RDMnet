@@ -111,7 +111,7 @@ bool RPTClient::PushPostSizeCheck(const LwpaUuid &sender_cid, const RptHeader &h
   return res;
 }
 
-bool RPTController::Push(int /*from_conn*/, const LwpaUuid &sender_cid, const RptMessage &msg)
+bool RPTController::Push(rdmnet_conn_t /*from_conn*/, const LwpaUuid &sender_cid, const RptMessage &msg)
 {
   bool res = false;
   if ((status_msgs_.size() + broker_msgs_.size() + rpt_msgs_.size()) >= max_q_size_)
@@ -124,12 +124,12 @@ bool RPTController::Push(int /*from_conn*/, const LwpaUuid &sender_cid, const Rp
     case VECTOR_RPT_REQUEST:  // Controllers should respond to requests like devices do.
     {
       MessageRef to_push;
-      size_t bufsize = bufsize_rpt_request(&(get_rdm_cmd_list(&msg)->list->msg));
+      size_t bufsize = bufsize_rpt_request(&(get_rdm_buf_list(&msg)->list->msg));
       to_push.data = std::make_unique<uint8_t[]>(bufsize);
       if (to_push.data)
       {
         to_push.size = pack_rpt_request(to_push.data.get(), bufsize, &sender_cid, &msg.header,
-                                        &(get_rdm_cmd_list(&msg)->list->msg));
+                                        &(get_rdm_buf_list(&msg)->list->msg));
         if (to_push.size)
         {
           rpt_msgs_.push(std::move(to_push));
@@ -146,12 +146,13 @@ bool RPTController::Push(int /*from_conn*/, const LwpaUuid &sender_cid, const Rp
     case VECTOR_RPT_NOTIFICATION:
     {
       MessageRef to_push;
-      size_t bufsize = bufsize_rpt_notification(get_rdm_cmd_list(&msg)->list);
+      std::vector<RdmBuffer> resp_list = RdmBufListToVect(get_rdm_buf_list(&msg)->list);
+      size_t bufsize = bufsize_rpt_notification(resp_list.data(), resp_list.size());
       to_push.data = std::make_unique<uint8_t[]>(bufsize);
       if (to_push.data)
       {
-        to_push.size =
-            pack_rpt_notification(to_push.data.get(), bufsize, &sender_cid, &msg.header, get_rdm_cmd_list(&msg)->list);
+        to_push.size = pack_rpt_notification(to_push.data.get(), bufsize, &sender_cid, &msg.header, resp_list.data(),
+                                             resp_list.size());
         if (to_push.size)
         {
           rpt_msgs_.push(std::move(to_push));
@@ -225,7 +226,7 @@ bool RPTController::Send()
   return false;
 }
 
-bool RPTDevice::Push(int from_conn, const LwpaUuid &sender_cid, const RptMessage &msg)
+bool RPTDevice::Push(rdmnet_conn_t from_conn, const LwpaUuid &sender_cid, const RptMessage &msg)
 {
   bool res = false;
   if ((status_msgs_.size() + broker_msgs_.size() + rpt_msgs_total_size_) >= max_q_size_)
@@ -242,12 +243,12 @@ bool RPTDevice::Push(int from_conn, const LwpaUuid &sender_cid, const RptMessage
     case VECTOR_RPT_REQUEST:
     {
       MessageRef to_push;
-      size_t bufsize = bufsize_rpt_request(&(get_rdm_cmd_list(&msg)->list->msg));
+      size_t bufsize = bufsize_rpt_request(&(get_rdm_buf_list(&msg)->list->msg));
       to_push.data = std::make_unique<uint8_t[]>(bufsize);
       if (to_push.data)
       {
         to_push.size = pack_rpt_request(to_push.data.get(), bufsize, &sender_cid, &msg.header,
-                                        &(get_rdm_cmd_list(&msg)->list->msg));
+                                        &(get_rdm_buf_list(&msg)->list->msg));
         if (to_push.size)
         {
           rpt_msgs_[from_conn].push(std::move(to_push));
@@ -290,16 +291,18 @@ bool RPTDevice::Send()
   }
   else if (!rpt_msgs_.empty())
   {
-    // Fair scheduler - we iterate through the controller map in order,
-    // starting from the last controller serviced.
+    // Fair scheduler - we iterate through the controller map in order, starting from the last
+    // controller serviced.
     auto con_pair = rpt_msgs_.upper_bound(last_controller_serviced_);
     if (con_pair == rpt_msgs_.end())
       con_pair = rpt_msgs_.begin();
     while (con_pair->first != last_controller_serviced_)
     {
       if (!con_pair->second.empty())
+      {
         // Found a controller ready to service.
         break;
+      }
 
       if (++con_pair == rpt_msgs_.end())
         con_pair = rpt_msgs_.begin();
@@ -326,10 +329,10 @@ bool RPTDevice::Send()
       }
       return true;
     }
-    else if (res != LWPA_WOULDBLOCK)
+    else if (res != kLwpaErrWouldBlock)
     {
-      // Error in sending. If this is an RPT message, delete the reference to
-      // this controller (and clear out the queue)
+      // Error in sending. If this is an RPT message, delete the reference to this controller (and
+      // clear out the queue)
       if (is_rpt)
         rpt_msgs_.erase(last_controller_serviced_);
     }

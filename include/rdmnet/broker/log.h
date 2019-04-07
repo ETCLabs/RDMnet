@@ -44,9 +44,8 @@ class BrokerLog
 public:
   BrokerLog();
   virtual ~BrokerLog();
-  void InitializeLogParams(int log_mask);
-  bool StartThread();
-  void StopThread();
+  bool Startup(int log_mask);
+  void Shutdown();
 
   const LwpaLogParams *GetLogParams() const { return &log_params_; }
   void Log(int pri, const char *format, ...);

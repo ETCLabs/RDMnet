@@ -141,7 +141,7 @@ bool BrokerCore::Startup(const RDMnet::BrokerSettings &settings, uint16_t listen
       return false;
     }
 
-    if (!socket_manager_->Startup())
+    if (!socket_manager_->Startup(this))
     {
       lwpa_rwlock_destroy(&client_lock_);
       rdmnet_core_deinit();

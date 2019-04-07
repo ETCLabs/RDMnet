@@ -34,13 +34,19 @@
 
 namespace RDMnet
 {
+class BrokerSocketManagerNotify
+{
+public:
+  virtual void SocketClosed(bool graceful) = 0;
+};
+
 class BrokerSocketManager
 {
 public:
-  virtual bool Startup() = 0;
+  virtual bool Startup(BrokerSocketManagerNotify *notify) = 0;
   virtual bool Shutdown() = 0;
 
-  virtual void AddSocket(rdmnet_conn_t conn_handle, lwpa_socket_t sock) = 0;
+  virtual bool AddSocket(rdmnet_conn_t conn_handle, lwpa_socket_t sock) = 0;
   virtual void RemoveSocket(rdmnet_conn_t conn_handle) = 0;
 };
 

@@ -61,13 +61,14 @@ RDMnet::BrokerLog::BrokerLog() : keep_running_(false)
 
 RDMnet::BrokerLog::~BrokerLog()
 {
-  StopThread();
+  Shutdown();
   lwpa_mutex_destroy(&lock_);
   lwpa_signal_destroy(&signal_);
 }
 
-void RDMnet::BrokerLog::InitializeLogParams(int log_mask)
+bool RDMnet::BrokerLog::Startup(int log_mask)
 {
+  // Set up the log params
   log_params_.action = kLwpaLogCreateHumanReadableLog;
   log_params_.log_fn = BrokerLogCallback;
   log_params_.log_mask = log_mask;
@@ -75,16 +76,14 @@ void RDMnet::BrokerLog::InitializeLogParams(int log_mask)
   log_params_.context = this;
 
   lwpa_validate_log_params(&log_params_);
-}
 
-bool RDMnet::BrokerLog::StartThread()
-{
+  // Start the log dispatch thread
   keep_running_ = true;
   LwpaThreadParams tparams = {LWPA_THREAD_DEFAULT_PRIORITY, LWPA_THREAD_DEFAULT_STACK, "RDMnet::BrokerLogThread", NULL};
   return lwpa_thread_create(&thread_, &tparams, log_thread_fn, this);
 }
 
-void RDMnet::BrokerLog::StopThread()
+void RDMnet::BrokerLog::Shutdown()
 {
   if (keep_running_)
   {

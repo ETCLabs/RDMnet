@@ -88,13 +88,13 @@ static void controllercb_status_received(rdmnet_controller_t handle, rdmnet_clie
 
 RDMnetLibWrapper::RDMnetLibWrapper(ControllerLog *log) : log_(log)
 {
-  lwpa_generate_v4_uuid(&my_cid_);
 }
 
-bool RDMnetLibWrapper::Startup(RDMnetLibNotify *notify)
+bool RDMnetLibWrapper::Startup(const LwpaUuid &cid, RDMnetLibNotify *notify)
 {
   if (!running_)
   {
+    my_cid_ = cid;
     notify_ = notify;
 
     // Initialize the RDMnet controller library
@@ -144,6 +144,8 @@ void RDMnetLibWrapper::Shutdown()
     rdmnet_controller_destroy(controller_handle_);
     rdmnet_controller_deinit();
     running_ = false;
+    notify_ = nullptr;
+    my_cid_ = kLwpaNullUuid;
   }
 }
 

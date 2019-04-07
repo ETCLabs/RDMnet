@@ -25,13 +25,11 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "broker_log.h"
+#include "win_broker_log.h"
 #include <iostream>
 #include <cstdarg>
-#include "service_shell.h"
 
-WindowsBrokerLog::WindowsBrokerLog(bool debug, const std::string &file_name)
-    : RDMnet::BrokerLog(), debug_(debug), utcoffset_(0)
+WindowsBrokerLog::WindowsBrokerLog(const std::string &file_name) : RDMnet::BrokerLog(), utcoffset_(0)
 {
   file_.open(file_name.c_str(), std::fstream::out);
   if (file_.fail())
@@ -54,8 +52,6 @@ WindowsBrokerLog::WindowsBrokerLog(bool debug, const std::string &file_name)
       std::cout << "BrokerLog couldn't get time zone info." << std::endl;
       break;
   }
-
-  InitializeLogParams(debug ? LWPA_LOG_UPTO(LWPA_LOG_DEBUG) : LWPA_LOG_UPTO(LWPA_LOG_INFO));
 }
 
 WindowsBrokerLog::~WindowsBrokerLog()
@@ -80,22 +76,19 @@ void WindowsBrokerLog::GetTimeFromCallback(LwpaLogTimeParams *time)
 
 void WindowsBrokerLog::OutputLogMsg(const std::string &str)
 {
-  if (debug_)
-  {
-    // Haven't figured out the secret recipe for UTF-8 -> Windows Console yet.
-    //    WCHAR wmsg[LWPA_LOG_MSG_MAX_LEN + 1];
-    //    if (MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, wmsg,
-    //                            LWPA_LOG_MSG_MAX_LEN + 1) != 0)
-    //    {
-    //      char final_msg[LWPA_LOG_MSG_MAX_LEN + 1];
-    //      if (WideCharToMultiByte(CP_OEMCP, 0, wmsg, -1, final_msg,
-    //                              LWPA_LOG_MSG_MAX_LEN + 1, NULL, NULL) != 0)
-    //      {
-    //        std::cout << final_msg << std::endl;
-    //      }
-    //    }
-    std::cout << str << std::endl;
-  }
+  // Haven't figured out the secret recipe for UTF-8 -> Windows Console yet.
+  //    WCHAR wmsg[LWPA_LOG_MSG_MAX_LEN + 1];
+  //    if (MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, wmsg,
+  //                            LWPA_LOG_MSG_MAX_LEN + 1) != 0)
+  //    {
+  //      char final_msg[LWPA_LOG_MSG_MAX_LEN + 1];
+  //      if (WideCharToMultiByte(CP_OEMCP, 0, wmsg, -1, final_msg,
+  //                              LWPA_LOG_MSG_MAX_LEN + 1, NULL, NULL) != 0)
+  //      {
+  //        std::cout << final_msg << std::endl;
+  //      }
+  //    }
+  std::cout << str << "\n";
   if (file_.is_open())
     file_ << str << std::endl;
 }

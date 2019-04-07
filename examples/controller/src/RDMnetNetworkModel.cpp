@@ -342,7 +342,8 @@ void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem *brokerItem, const s
     if (!is_rpt_client_entry(&entry))
       continue;
 
-    RDMnetClientItem *newRDMnetClientItem = new RDMnetClientItem(entry);
+    bool is_me = (0 == lwpa_uuid_cmp(&entry.client_cid, &my_cid_));
+    RDMnetClientItem *newRDMnetClientItem = new RDMnetClientItem(entry, is_me);
     bool itemAlreadyAdded = false;
 
     for (auto clientIter = brokerItem->rdmnet_clients_.begin();
@@ -1983,12 +1984,12 @@ void RDMnetNetworkModel::HandleEndpointListResponse(rdmnet_client_scope_t scope_
     BrokerItem *brokerItem = broker_connections_[scope_handle];
     if (brokerItem)
     {
-      for (auto i : brokerItem->rdmnet_clients_)
+      for (auto client : brokerItem->rdmnet_clients_)
       {
-        if (i->uid() == source_uid)
+        if (client->uid() == source_uid)
         {
           // Found a matching discovered client
-          emit newEndpointList(i, list);
+          emit newEndpointList(client, list);
 
           break;
         }
@@ -2010,19 +2011,19 @@ void RDMnetNetworkModel::HandleEndpointRespondersResponse(rdmnet_client_scope_t 
     BrokerItem *brokerItem = broker_connections_[scope_handle];
     if (brokerItem)
     {
-      for (auto i : brokerItem->rdmnet_clients_)
+      for (auto client : brokerItem->rdmnet_clients_)
       {
-        if (i->uid() == source_uid)
+        if (client->uid() == source_uid)
         {
           // Found a matching discovered client
 
           // Now find the matching endpoint
-          for (auto j : i->endpoints_)
+          for (auto endpt : client->endpoints_)
           {
-            if (j->id() == endpoint)
+            if (endpt->id() == endpoint)
             {
               // Found a matching endpoint
-              emit newResponderList(j, list);
+              emit newResponderList(endpt, list);
               break;
             }
           }
@@ -2559,10 +2560,9 @@ void RDMnetNetworkModel::addPropertyEntries(RDMnetNetworkItem *parent, PIDFlags 
 
     if (!excludeFromModel && ((i->second.pidFlags & location) == location))
     {
-      for (QStringList::iterator j = i->second.propertyDisplayNames.begin(); j != i->second.propertyDisplayNames.end();
-           ++j)
+      for (const QString &j : i->second.propertyDisplayNames)
       {
-        emit addPropertyEntry(parent, i->first, *j, i->second.role);
+        emit addPropertyEntry(parent, i->first, j, i->second.role);
       }
     }
   }
@@ -2754,11 +2754,11 @@ RDMnetClientItem *RDMnetNetworkModel::GetClientItem(rdmnet_client_scope_t scope_
     BrokerItem *brokerItem = broker_connections_[scope_handle];
     if (brokerItem)
     {
-      for (auto i : brokerItem->rdmnet_clients_)
+      for (auto client : brokerItem->rdmnet_clients_)
       {
-        if (i->uid() == resp.source_uid)
+        if (client->uid() == resp.source_uid)
         {
-          return i;
+          return client;
         }
       }
     }
@@ -3009,7 +3009,8 @@ RDMnetNetworkModel::RDMnetNetworkModel(RDMnetLibInterface *library, ControllerLo
 {
   lwpa_rwlock_create(&conn_lock_);
 
-  rdmnet_->Startup(this);
+  lwpa_generate_v4_uuid(&my_cid_);
+  rdmnet_->Startup(my_cid_, this);
 }
 
 RDMnetNetworkModel::~RDMnetNetworkModel()

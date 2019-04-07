@@ -69,6 +69,7 @@ signals:
 private:
   ControllerLog *log_{nullptr};
   RDMnetLibInterface *rdmnet_{nullptr};
+  LwpaUuid my_cid_;
 
   ControllerDefaultResponder default_responder_;
 

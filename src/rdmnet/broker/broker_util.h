@@ -79,6 +79,8 @@ private:
   lwpa_rwlock_t &m_rwlock;
 };
 
+// Utility functions for manipulating messages
 RptHeader SwapHeaderData(const RptHeader &source);
+std::vector<RdmBuffer> RdmBufListToVect(const RdmBufListEntry *list_head);
 
 #endif  // _BROKER_UTIL_H_

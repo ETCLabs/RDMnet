@@ -107,7 +107,7 @@ BOOL WINAPI console_handler(DWORD signal)
 
 int wmain(int argc, wchar_t *argv[])
 {
-  lwpa_error_t res = LWPA_OK;
+  lwpa_error_t res = kLwpaErrOk;
   char scope[E133_SCOPE_STRING_PADDED_LENGTH];
   LwpaSockaddr static_broker;
   bool should_exit = false;
@@ -188,7 +188,7 @@ int wmain(int argc, wchar_t *argv[])
 
   /* Startup the device */
   res = device_init(&device_params, lparams);
-  if (res != LWPA_OK)
+  if (res != kLwpaErrOk)
   {
     lwpa_log(lparams, LWPA_LOG_ERR, "Device failed to initialize: '%s'", lwpa_strerror(res));
     return 1;
