@@ -28,54 +28,78 @@
 #include "broker_shell.h"
 
 #include <iostream>
+#include <cstring>
+#include "lwpa/netint.h"
+#include "lwpa/thread.h"
 #include "rdmnet/version.h"
-
-bool g_set_new_scope = false;
-std::string g_scope_to_set;
 
 void BrokerShell::ScopeChanged(const std::string &new_scope)
 {
-  scope_changed_ = true;
+  if (log_)
+    log_->Log(LWPA_LOG_INFO, "Scope change detected, restarting broker and applying changes");
+
   new_scope_ = new_scope;
+  restart_required_ = true;
 }
 
-bool ShouldApplyChanges(HANDLE net_handle, LPOVERLAPPED net_overlap, bool &bOverlapped)
+void BrokerShell::NetworkChanged()
 {
-  DWORD temp;
-  bOverlapped = (GetOverlappedResult(net_handle, net_overlap, &temp, false) ? true : false);
-  return (bOverlapped || g_set_new_scope);
+  if (log_)
+    log_->Log(LWPA_LOG_INFO, "Network change detected, restarting broker and applying changes");
+
+  restart_required_ = true;
 }
 
-void PrepForSettingsChange(RDMnet::Broker &broker, RDMnet::BrokerSettings &settings)
+void BrokerShell::ApplySettingsChanges(RDMnet::BrokerSettings &settings, std::vector<LwpaIpAddr> &new_addrs)
 {
-  broker.Shutdown();
-  broker.GetSettings(settings);
-}
+  new_addrs = GetInterfacesToListen();
 
-void ApplySettingsChanges(RDMnet::BrokerLog &log, bool bOverlapped, RDMnet::BrokerSettings &settings, HANDLE net_handle,
-                          LPOVERLAPPED net_overlap, std::vector<IFList::iflist_entry> &interfaces,
-                          std::vector<LwpaIpAddr> &useaddrs)
-{
-  // If we detect the network changed, restart the broker core
-  if (bOverlapped)
+  if (!new_scope_.empty())
   {
-    log.Log(LWPA_LOG_INFO, "Network change detected, restarting broker and applying changes");
+    settings.disc_attributes.scope = new_scope_;
+    new_scope_.clear();
+  }
+}
 
-    // We need to reset the useaddrs vector
-    IFList::FindIFaces(log, interfaces);
-    GetMyIfaceKey(useaddrs, interfaces);
-    memset(net_overlap, 0, sizeof(OVERLAPPED));
-    net_handle = NULL;
-    NotifyAddrChange(&net_handle, net_overlap);
+std::vector<LwpaIpAddr> BrokerShell::GetInterfacesToListen()
+{
+  if (!initial_data_.macs.empty())
+  {
+    return ConvertMacsToInterfaces(initial_data_.macs);
+  }
+  else if (!initial_data_.ifaces.empty())
+  {
+    return initial_data_.ifaces;
+  }
+  else
+  {
+    return std::vector<LwpaIpAddr>();
+  }
+}
+
+std::vector<LwpaIpAddr> BrokerShell::ConvertMacsToInterfaces(const std::vector<MacAddr> &macs)
+{
+  std::vector<LwpaIpAddr> to_return;
+
+  size_t num_netints = lwpa_netint_get_num_interfaces();
+  auto netints = std::make_unique<LwpaNetintInfo[]>(num_netints);
+  if (netints)
+  {
+    size_t netints_retrieved = lwpa_netint_get_interfaces(netints.get(), num_netints);
+    for (const auto &mac : macs)
+    {
+      for (size_t i = 0; i < netints_retrieved; ++i)
+      {
+        if (0 == memcmp(netints[i].mac, mac.data(), LWPA_NETINTINFO_MAC_LEN))
+        {
+          to_return.push_back(netints[i].addr);
+          break;
+        }
+      }
+    }
   }
 
-  // If there are other new settings, apply them here.
-  if (g_set_new_scope)
-  {
-    g_set_new_scope = false;
-    log.Log(LWPA_LOG_INFO, "Scope change detected, restarting broker and applying changes");
-    settings.disc_attributes.scope = g_scope_to_set;
-  }
+  return to_return;
 }
 
 void BrokerShell::Run(RDMnet::BrokerLog *log, RDMnet::BrokerSocketManager *sock_mgr)
@@ -85,56 +109,34 @@ void BrokerShell::Run(RDMnet::BrokerLog *log, RDMnet::BrokerSocketManager *sock_
   RDMnet::BrokerSettings broker_settings(0x6574);
   broker_settings.disc_attributes.scope = initial_data_.scope;
 
-  std::vector<LwpaIpAddr> ifaces;
-  if (!initial_data_.macs.empty())
-  {
-    ifaces = ConvertMacsToInterfaces(
-  }
-  else if (!initial_data_.ifaces.empty())
-  {
-  }
-  std::vector<IFList::iflist_entry> interfaces;
-  IFList::FindIFaces(broker_log, interfaces);
+  std::vector<LwpaIpAddr> ifaces = GetInterfacesToListen();
 
-  // Given the first network interface found, generate the cid and UID
-  if (!interfaces.empty())
-  {
-    // The cid will be based on the scope, in case we want to run different instances on the same
-    // machine
-    std::string cidstr("ETC E133 BROKER for scope: ");
-    cidstr += broker_settings.disc_attributes.scope;
-    lwpa_generate_v3_uuid(&broker_settings.cid, cidstr.c_str(), interfaces.front().mac, 1);
-  }
+  lwpa_generate_v4_uuid(&broker_settings.cid);
 
   broker_settings.disc_attributes.dns_manufacturer = "ETC";
   broker_settings.disc_attributes.dns_service_instance_name = "UNIQUE NAME";
   broker_settings.disc_attributes.dns_model = "E1.33 Broker Prototype";
 
-  std::vector<LwpaIpAddr> useaddrs;
-  GetMyIfaceKey(useaddrs, interfaces);
-
   RDMnet::Broker broker(log, sock_mgr, this);
-  broker.Startup(broker_settings, initial_data_.port, initial_data_.ifaces);
+  broker.Startup(broker_settings, initial_data_.port, ifaces);
 
   PrintWarningMessage();
 
-  // We want this to run forever if a console, otherwise run for how long the service manager allows
-  // it
-  while (!g_shell || !g_shell->exitServiceThread)
+  // We want this to run forever if a console
+  while (true)
   {
-    // Do the main service work here
-    bool bOverlapped = false;
-
     broker.Tick();
 
-    if (ShouldApplyChanges(net_handle, &net_overlap, bOverlapped))
+    if (restart_required_)
     {
-      PrepForSettingsChange(broker, broker_settings);
-      ApplySettingsChanges(broker_log, bOverlapped, broker_settings, net_handle, &net_overlap, interfaces, useaddrs);
-      broker.Startup(broker_settings, GetPortKey(), useaddrs);
+      broker.GetSettings(broker_settings);
+      broker.Shutdown();
+
+      ApplySettingsChanges(broker_settings, ifaces);
+      broker.Startup(broker_settings, initial_data_.port, ifaces);
     }
 
-    Sleep(300);
+    lwpa_thread_sleep(300);
   }
 
   broker.Shutdown();

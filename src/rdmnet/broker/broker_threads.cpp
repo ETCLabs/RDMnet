@@ -47,8 +47,8 @@ static void listen_thread_fn(void *arg)
   }
 }
 
-ListenThread::ListenThread(const LwpaSockaddr &listen_addr, ListenThreadNotify *pnotify)
-    : addr_(listen_addr), terminated_(true), notify_(pnotify), listen_socket_(LWPA_SOCKET_INVALID)
+ListenThread::ListenThread(lwpa_socket_t listen_sock, ListenThreadNotify *pnotify, RDMnet::BrokerLog *log)
+    : notify_(pnotify), listen_socket_(listen_sock), log_(log)
 {
 }
 
@@ -57,51 +57,10 @@ ListenThread::~ListenThread()
   Stop();
 }
 
-// Creates the listening socket.
 bool ListenThread::Start()
 {
-  if (listen_socket_ != LWPA_SOCKET_INVALID)
+  if (listen_socket_ == LWPA_SOCKET_INVALID)
     return false;
-
-  listen_socket_;
-  lwpa_error_t err = lwpa_socket(lwpaip_is_v4(&addr_.ip) ? LWPA_AF_INET : LWPA_AF_INET6, LWPA_STREAM, &listen_socket_);
-  if (err != kLwpaErrOk)
-  {
-    if (notify_)
-    {
-      notify_->LogError("ListenThread: Failed to create listen socket with error: " + std::string(lwpa_strerror(err)) +
-                        ".");
-    }
-    return false;
-  }
-
-  err = lwpa_bind(listen_socket_, &addr_);
-  if (err != kLwpaErrOk)
-  {
-    lwpa_close(listen_socket_);
-    listen_socket_ = LWPA_SOCKET_INVALID;
-    if (notify_)
-    {
-      char addrstr[LWPA_INET6_ADDRSTRLEN];
-      lwpa_inet_ntop(&addr_.ip, addrstr, LWPA_INET6_ADDRSTRLEN);
-      notify_->LogError("ListenThread: Bind to " + std::string(addrstr) +
-                        " failed on listen socket with error: " + std::string(lwpa_strerror(err)) + ".");
-    }
-    return false;
-  }
-
-  err = lwpa_listen(listen_socket_, 0);
-  if (err != kLwpaErrOk)
-  {
-    lwpa_close(listen_socket_);
-    listen_socket_ = LWPA_SOCKET_INVALID;
-    if (notify_)
-    {
-      notify_->LogError("ListenThread: Listen failed on listen socket with error: " + std::string(lwpa_strerror(err)) +
-                        ".");
-    }
-    return false;
-  }
 
   terminated_ = false;
   LwpaThreadParams tparams = {LWPA_THREAD_DEFAULT_PRIORITY, LWPA_THREAD_DEFAULT_STACK, "ListenThread", NULL};
@@ -109,8 +68,8 @@ bool ListenThread::Start()
   {
     lwpa_close(listen_socket_);
     listen_socket_ = LWPA_SOCKET_INVALID;
-    if (notify_)
-      notify_->LogError("ListenThread: Failed to start thread.");
+    if (log_)
+      log_->Log(LWPA_LOG_ERR, "ListenThread: Failed to start thread.");
     return false;
   }
 
@@ -135,22 +94,21 @@ void ListenThread::Stop()
 
 void ListenThread::Run()
 {
-  // Wait on our listening thread for new sockets or timeout. Since we heavily
-  // block on the accept, we'll keep accepting as long as the listen socket is
-  // valid.
+  // Wait on our listening thread for new sockets or timeout. Since we heavily block on the accept,
+  // we'll keep accepting as long as the listen socket is valid.
   while (!terminated_)
   {
     if (listen_socket_ != LWPA_SOCKET_INVALID)
     {
       lwpa_socket_t conn_sock;
       LwpaSockaddr new_addr;
-      std::string error_str;
 
       lwpa_error_t err = lwpa_accept(listen_socket_, &new_addr, &conn_sock);
 
       if (err != kLwpaErrOk)
       {
-        notify_->LogError("ListenThread: Accept failed with error: " + std::string(lwpa_strerror(err)) + ".");
+        if (log_)
+          log_->Log(LWPA_LOG_ERR, "ListenThread: Accept failed with error: %s.", lwpa_strerror(err));
         terminated_ = true;
         return;
       }
@@ -162,7 +120,9 @@ void ListenThread::Run()
         lwpa_close(conn_sock);
     }
     else
+    {
       lwpa_thread_sleep(10);
+    }
   }
 }
 

@@ -40,11 +40,6 @@
 #include "broker_responder.h"
 #include "broker_util.h"
 
-/**************************** Private constants ******************************/
-
-// The amount of time we'll block until we get something to read from a connection
-#define READ_TIMEOUT_MS 200
-
 /*************************** Function definitions ****************************/
 
 RDMnet::Broker::Broker(BrokerLog *log, BrokerSocketManager *socket_manager, BrokerNotify *notify)
@@ -87,6 +82,11 @@ void RDMnet::Broker::GetSettings(BrokerSettings &settings) const
   core_->GetSettings(settings);
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Begin BrokerCore Functions
+// BrokerCore: Private implementation of Broker functionality.
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 BrokerCore::BrokerCore(RDMnet::BrokerLog *log, RDMnet::BrokerSocketManager *socket_manager,
                        RDMnet::BrokerNotify *notify)
     : RdmnetCoreLibraryNotify()
@@ -99,22 +99,22 @@ BrokerCore::BrokerCore(RDMnet::BrokerLog *log, RDMnet::BrokerSocketManager *sock
     , service_thread_(1)
     , disc_(this)
 {
+  lwpa_rwlock_create(&client_lock_);
 }
 
 BrokerCore::~BrokerCore()
 {
   if (started_)
     Shutdown();
+
+  lwpa_rwlock_destroy(&client_lock_);
 }
 
 bool BrokerCore::Startup(const RDMnet::BrokerSettings &settings, uint16_t listen_port,
-                         std::vector<LwpaIpAddr> &listen_addrs)
+                         const std::vector<LwpaIpAddr> &listen_addrs)
 {
   if (!started_)
   {
-    if (listen_addrs.empty() || ((listen_addrs.size() > 1) && (listen_port == 0)))
-      return false;
-
     // Check the settings for validity
     if (lwpa_uuid_is_null(&settings.cid) ||
         (settings.uid_type == RDMnet::BrokerSettings::kStaticUid && !rdmnet_uid_is_static(&settings.uid)) ||
@@ -133,50 +133,46 @@ bool BrokerCore::Startup(const RDMnet::BrokerSettings &settings, uint16_t listen
     settings_ = settings;
 
     if (kLwpaErrOk != rdmnet_core_init(log_->GetLogParams()))
-      return false;
-
-    if (!lwpa_rwlock_create(&client_lock_))
     {
-      rdmnet_core_deinit();
       return false;
     }
 
     if (!socket_manager_->Startup(this))
     {
-      lwpa_rwlock_destroy(&client_lock_);
       rdmnet_core_deinit();
       return false;
     }
 
-    for (const auto &ip : listen_addrs)
+    listen_addrs_ = listen_addrs;
+    listen_port_ = listen_port;
+    if (!StartBrokerServices())
     {
-      LwpaSockaddr addr;
-      addr.ip = ip;
-      addr.port = listen_port;
-      auto p = std::make_unique<ListenThread>(addr, this);
-      if (p)
-        listeners_.push_back(std::move(p));
+      socket_manager_->Shutdown();
+      rdmnet_core_deinit();
+      return false;
     }
 
     started_ = true;
-
-    StartBrokerServices();
 
     service_thread_.SetNotify(this);
     service_thread_.Start();
 
     disc_.RegisterBroker(settings_.disc_attributes, settings_.cid, listen_addrs, listen_port);
 
-    log_->Log(LWPA_LOG_INFO, std::string(settings_.disc_attributes.dns_manufacturer +
-                                         " Prototype RDMnet Broker Version " + RDMNET_VERSION_STRING)
-                                 .c_str());
-    log_->Log(LWPA_LOG_INFO, "Broker starting at scope \"%s\", listening on port %d, using network interfaces:",
+    log_->Log(LWPA_LOG_INFO, "%s Prototype RDMnet Broker Version %s", settings.disc_attributes.dns_manufacturer.c_str(),
+              RDMNET_VERSION_STRING);
+    log_->Log(LWPA_LOG_INFO, "Broker starting at scope \"%s\", listening on port %d.",
               settings.disc_attributes.scope.c_str(), listen_port);
-    for (auto addr : listen_addrs)
+
+    if (!listen_addrs.empty())
     {
-      char addrbuf[LWPA_INET6_ADDRSTRLEN];
-      lwpa_inet_ntop(&addr, addrbuf, LWPA_INET6_ADDRSTRLEN);
-      log_->Log(LWPA_LOG_INFO, "%s", addrbuf);
+      log_->Log(LWPA_LOG_INFO, "Listening on manually-specified network interfaces:");
+      for (auto addr : listen_addrs)
+      {
+        char addrbuf[LWPA_INET6_ADDRSTRLEN];
+        lwpa_inet_ntop(&addr, addrbuf, LWPA_INET6_ADDRSTRLEN);
+        log_->Log(LWPA_LOG_INFO, "%s", addrbuf);
+      }
     }
   }
 
@@ -197,7 +193,6 @@ void BrokerCore::Shutdown()
 
     socket_manager_->Shutdown();
 
-    lwpa_rwlock_destroy(&client_lock_);
     rdmnet_core_deinit();
 
     started_ = false;
@@ -328,15 +323,6 @@ bool BrokerCore::NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr &addr)
   }
 
   return result;
-}
-
-// Called to log an error.  You may want to stop the listening thread if errors keep occurring, but
-// you should NOT do it in this callback!
-void BrokerCore::LogError(const std::string &err)
-{
-  // TESTING TODO: For now, we'll just log, but we may want to mark this listener for later
-  // stopping?
-  log_->Log(LWPA_LOG_ERR, "%s", err.c_str());
 }
 
 // Process each controller queue, sending out the next message from each queue if devices are
@@ -874,10 +860,137 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
   }
 }
 
-void BrokerCore::StartBrokerServices()
+lwpa_socket_t BrokerCore::StartListening(const LwpaIpAddr &ip, uint16_t &port)
 {
-  for (const auto &listener : listeners_)
-    listener->Start();
+  LwpaSockaddr addr;
+  addr.ip = ip;
+  addr.port = port;
+
+  lwpa_socket_t listen_sock;
+  lwpa_error_t err = lwpa_socket(lwpaip_is_v4(&addr.ip) ? LWPA_AF_INET : LWPA_AF_INET6, LWPA_STREAM, &listen_sock);
+  if (err != kLwpaErrOk)
+  {
+    if (log_)
+    {
+      log_->Log(LWPA_LOG_WARNING, "Broker: Failed to create listen socket with error: %s.", lwpa_strerror(err));
+    }
+    return LWPA_SOCKET_INVALID;
+  }
+
+  int sockopt_val = 0;
+  err = lwpa_setsockopt(listen_sock, LWPA_IPPROTO_IPV6, LWPA_IPV6_V6ONLY, &sockopt_val, sizeof(int));
+  if (err != kLwpaErrOk)
+  {
+    lwpa_close(listen_sock);
+    if (log_)
+    {
+      log_->Log(LWPA_LOG_WARNING, "Broker: Failed to set V6ONLY socket option on listen socket: %s.",
+                lwpa_strerror(err));
+    }
+    return LWPA_SOCKET_INVALID;
+  }
+
+  err = lwpa_bind(listen_sock, &addr);
+  if (err != kLwpaErrOk)
+  {
+    lwpa_close(listen_sock);
+    if (log_ && log_->CanLog(LWPA_LOG_WARNING))
+    {
+      char addrstr[LWPA_INET6_ADDRSTRLEN];
+      lwpa_inet_ntop(&addr.ip, addrstr, LWPA_INET6_ADDRSTRLEN);
+      log_->Log(LWPA_LOG_WARNING, "Broker: Bind to %s failed on listen socket with error: %s.", addrstr,
+                lwpa_strerror(err));
+    }
+    return LWPA_SOCKET_INVALID;
+  }
+
+  if (port == 0)
+  {
+    // Get the ephemeral port number we were assigned and which we will use for all other
+    // applicable network interfaces.
+    err = lwpa_getsockname(listen_sock, &addr);
+    if (err == kLwpaErrOk)
+    {
+      port = addr.port;
+    }
+    else
+    {
+      lwpa_close(listen_sock);
+      if (log_)
+      {
+        log_->Log(LWPA_LOG_WARNING, "Broker: Failed to get ephemeral port assigned to listen socket: %s",
+                  lwpa_strerror(err));
+      }
+      return LWPA_SOCKET_INVALID;
+    }
+  }
+
+  err = lwpa_listen(listen_sock, 0);
+  if (err != kLwpaErrOk)
+  {
+    lwpa_close(listen_sock);
+    if (log_)
+    {
+      log_->Log(LWPA_LOG_WARNING, "Broker: Listen failed on listen socket with error: %s.", lwpa_strerror(err));
+    }
+    return LWPA_SOCKET_INVALID;
+  }
+}
+
+bool BrokerCore::StartBrokerServices()
+{
+  bool success = true;
+
+  if (listen_addrs_.empty())
+  {
+    // Listen on in6addr_any
+    LwpaIpAddr any_addr;
+    lwpaip_make_any_v6(&any_addr);
+
+    lwpa_socket_t listen_sock = StartListening(any_addr, listen_port_);
+    if (listen_sock != LWPA_SOCKET_INVALID)
+    {
+      auto p = std::make_unique<ListenThread>(listen_sock, this);
+      listeners_.push_back(std::move(p));
+    }
+    else
+    {
+      success = false;
+    }
+  }
+  else
+  {
+    // Listen on a specific set of interfaces supplied by the library user
+    auto addr_iter = listen_addrs_.begin();
+    while (addr_iter != listen_addrs_.end())
+    {
+      lwpa_socket_t listen_sock = StartListening(*addr_iter, listen_port_);
+      if (listen_sock != LWPA_SOCKET_INVALID)
+      {
+        auto p = std::make_unique<ListenThread>(listen_sock, this);
+        listeners_.push_back(std::move(p));
+        ++addr_iter;
+      }
+      else
+      {
+        addr_iter = listen_addrs_.erase(addr_iter);
+      }
+    }
+
+    // Errors on some interfaces are tolerated as long as we have at least one to listen on.
+    success = (!listen_addrs_.empty());
+  }
+
+  if (success)
+  {
+    for (const auto &listener : listeners_)
+      listener->Start();
+  }
+  else
+  {
+    listeners_.clear();
+  }
+  return success;
 }
 
 void BrokerCore::StopBrokerServices()
@@ -1018,7 +1131,9 @@ void BrokerCore::OtherBrokerLost(const std::string &service_name)
 {
   log_->Log(LWPA_LOG_WARNING, "Broker %s left", service_name.c_str());
   if (other_brokers_found_ > 0)
+  {
     --other_brokers_found_;
+  }
   if (other_brokers_found_ == 0)
   {
     log_->Log(LWPA_LOG_INFO, "All conflicting Brokers gone. Resuming Broker services.");

@@ -72,7 +72,8 @@ public:
 
   RDMnet::BrokerLog *GetLog() { return log_; }
 
-  bool Startup(const RDMnet::BrokerSettings &settings, uint16_t listen_port, std::vector<LwpaIpAddr> &listen_addrs);
+  bool Startup(const RDMnet::BrokerSettings &settings, uint16_t listen_port,
+               const std::vector<LwpaIpAddr> &listen_addrs);
   void Shutdown();
   void Tick();
 
@@ -85,13 +86,19 @@ private:
   bool started_{false};
   bool service_registered_{false};
   int other_brokers_found_{0};
+
   RDMnet::BrokerLog *log_{nullptr};
   RDMnet::BrokerSocketManager *socket_manager_{nullptr};
   RDMnet::BrokerNotify *notify_{nullptr};
+
   RDMnet::BrokerSettings settings_;
   RdmUid my_uid_{};
+
   RdmnetConnectionConfig new_conn_config_{};
+
   std::vector<std::unique_ptr<ListenThread>> listeners_;
+  std::vector<LwpaIpAddr> listen_addrs_;
+  uint16_t listen_port_;
 
   // The Broker's RDM responder
   BrokerResponder responder_;
@@ -99,9 +106,8 @@ private:
   ClientServiceThread service_thread_;
   BrokerDiscoveryManager disc_;
 
-  // If you have a maximum number of connections, we may be stopping and starting the listen
-  // threads.
-  void StartBrokerServices();
+  lwpa_socket_t StartListening(const LwpaIpAddr &ip, uint16_t &port);
+  bool StartBrokerServices();
   void StopBrokerServices();
 
   // RdmnetCoreLibraryNotify messages
@@ -110,7 +116,6 @@ private:
 
   // ListenThreadNotify messages
   virtual bool NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr &addr) override;
-  virtual void LogError(const std::string &err) override;
 
   // ClientServiceThreadNotify messages
   virtual bool ServiceClients() override;

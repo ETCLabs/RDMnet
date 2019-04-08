@@ -25,15 +25,22 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
+// main.cpp: The Windows console entry point for the Broker example application.
+
+#include <winsock2.h>
+#include <ws2ipdef.h>
+#include <iphlpapi.h>
+#include <WS2tcpip.h>
 #include <iostream>
-#include <windows.h>
+#include <map>
 #include "broker_shell.h"
 #include "win_socket_manager.h"
 #include "win_broker_log.h"
 
+// Print the command-line usage details.
 void PrintHelp(wchar_t *app_name)
 {
-  std::cout << "Usage: " << app_name << " [OPTION]...\n";
+  std::wcout << L"Usage: " << app_name << L" [OPTION]...\n";
   std::cout << "\n";
   std::cout << "Options:\n";
   std::cout << "  --scope=SCOPE         Configures the RDMnet Scope this Broker runs on to\n";
@@ -56,7 +63,8 @@ void PrintHelp(wchar_t *app_name)
   std::cout << "  --version             Output version information and exit.\n";
 }
 
-void ParseAndSetScope(const LPWSTR scope_str, BrokerShell &broker_shell)
+// Parse the --scope=SCOPE command line option and transfer it to the BrokerShell instance.
+bool ParseAndSetScope(const LPWSTR scope_str, BrokerShell &broker_shell)
 {
   if (wcslen(scope_str) != 0)
   {
@@ -64,12 +72,51 @@ void ParseAndSetScope(const LPWSTR scope_str, BrokerShell &broker_shell)
     if (0 != WideCharToMultiByte(CP_UTF8, 0, scope_str, -1, val_utf8, 256, NULL, NULL))
     {
       broker_shell.SetInitialScope(val_utf8);
+      return true;
     }
   }
+  return false;
 }
 
-void ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell &broker_shell)
+// Parse the --ifaces=IFACE_LIST command line option and transfer it to the BrokerShell instance.
+bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell &broker_shell)
 {
+  std::vector<LwpaIpAddr> addrs;
+
+  if (wcslen(iface_list_str) != 0)
+  {
+    WCHAR *context;
+    for (WCHAR *p = wcstok_s(iface_list_str, L",", &context); p != NULL; p = wcstok_s(NULL, L",", &context))
+    {
+      LwpaIpAddr addr;
+
+      struct in_addr tst_addr;
+      INT res = InetPtonW(AF_INET, p, &tst_addr);
+      if (res == 1)
+      {
+        ip_plat_to_lwpa_v4(&addr, &tst_addr);
+      }
+      else
+      {
+        struct in6_addr tst_addr6;
+        res = InetPtonW(AF_INET6, p, &tst_addr6);
+        if (res == 1)
+          ip_plat_to_lwpa_v6(&addr, &tst_addr6);
+      }
+      if (res == 1)
+      {
+        addrs.push_back(addr);
+        break;
+      }
+    }
+  }
+
+  if (!addrs.empty())
+  {
+    broker_shell.SetInitialIfaceList(addrs);
+    return true;
+  }
+  return false;
 }
 
 // Given a pointer to a string, parses out a mac addr
@@ -84,7 +131,8 @@ void ParseMac(WCHAR *s, BrokerShell::MacAddr &mac_buf)
   }
 }
 
-void ParseAndSetMacList(const LPWSTR mac_list_str, BrokerShell &broker_shell)
+// Parse the --macs=MAC_LIST command line option and transfer it to the BrokerShell instance.
+bool ParseAndSetMacList(const LPWSTR mac_list_str, BrokerShell &broker_shell)
 {
   std::vector<BrokerShell::MacAddr> macs;
 
@@ -98,22 +146,63 @@ void ParseAndSetMacList(const LPWSTR mac_list_str, BrokerShell &broker_shell)
       macs.push_back(mac_buf);
     }
   }
+
+  if (!macs.empty())
+  {
+    broker_shell.SetInitialMacList(macs);
+    return true;
+  }
+  return false;
 }
 
-void ParseAndSetPort(const LPWSTR port_str, BrokerShell &broker_shell)
+// Parse the --port=PORT command line option and transfer it to the BrokerShell instance.
+bool ParseAndSetPort(const LPWSTR port_str, BrokerShell &broker_shell)
 {
   if (wcslen(port_str) != 0)
   {
     uint16_t port = static_cast<uint16_t>(_wtoi(port_str));
     broker_shell.SetInitialPort(port);
+    return true;
   }
+  return false;
 }
 
-void ParseAndSetLogLevel(const LPWSTR log_level_str, BrokerShell &broker_shell)
+// clang-format off
+static const std::map<std::wstring, int> log_levels = {
+  {L"EMERG", LWPA_LOG_EMERG},
+  {L"ALERT", LWPA_LOG_ALERT},
+  {L"CRIT", LWPA_LOG_CRIT},
+  {L"ERR", LWPA_LOG_ERR},
+  {L"WARNING", LWPA_LOG_WARNING},
+  {L"NOTICE", LWPA_LOG_NOTICE},
+  {L"INFO", LWPA_LOG_INFO},
+  {L"DEBUG", LWPA_LOG_DEBUG}
+};
+// clang-format on
+
+// Parse the --log-level=LOG_LEVEL command line option and transfer it to the BrokerShell instance.
+bool ParseAndSetLogLevel(const LPWSTR log_level_str, BrokerShell &broker_shell)
 {
+  auto level = log_levels.find(log_level_str);
+  if (level != log_levels.end())
+  {
+    broker_shell.SetInitialLogLevel(level->second);
+    return true;
+  }
+  return false;
 }
 
-void ParseArgs(int argc, wchar_t *argv[], BrokerShell &broker_shell, bool &should_run, int &exit_code)
+// Possible results of parsing the command-line arguments.
+enum class ParseResult
+{
+  kGoodParse,    // Arguments were parsed OK.
+  kParseErr,     // Error while parsing arguments - should print usage and exit error.
+  kPrintHelp,    // A help argument was passed - should print usage and exit success.
+  kPrintVersion  // A version argument was passed - should print version and exit success.
+};
+
+// Parse the command-line arguments.
+ParseResult ParseArgs(int argc, wchar_t *argv[], BrokerShell &broker_shell)
 {
   if (argc > 1)
   {
@@ -123,58 +212,74 @@ void ParseArgs(int argc, wchar_t *argv[], BrokerShell &broker_shell, bool &shoul
     {
       if (_wcsnicmp(argv[i], L"--scope=", 8) == 0)
       {
-        ParseAndSetScope(argv[i] + 8, broker_shell);
+        if (!ParseAndSetScope(argv[i] + 8, broker_shell))
+        {
+          return ParseResult::kParseErr;
+        }
       }
       else if (_wcsnicmp(argv[i], L"--ifaces=", 9) == 0)
       {
         if (iface_key_encountered)
         {
-          PrintHelp(argv[0]);
-          should_run = false;
-          exit_code = 1;
+          return ParseResult::kParseErr;
         }
         else
         {
-          ParseAndSetIfaceList(argv[i] + 9, broker_shell);
-          iface_key_encountered = true;
+          if (ParseAndSetIfaceList(argv[i] + 9, broker_shell))
+            iface_key_encountered = true;
+          else
+            return ParseResult::kParseErr;
         }
       }
       else if (_wcsnicmp(argv[i], L"--macs=", 7) == 0)
       {
         if (iface_key_encountered)
         {
-          PrintHelp(argv[0]);
-          should_run = false;
-          exit_code = 1;
+          return ParseResult::kParseErr;
         }
         else
         {
-          ParseAndSetMacList(argv[i] + 9, broker_shell);
-          iface_key_encountered = true;
+          if (ParseAndSetMacList(argv[i] + 9, broker_shell))
+            iface_key_encountered = true;
+          else
+            return ParseResult::kParseErr;
         }
       }
       else if (_wcsnicmp(argv[i], L"--port=", 7) == 0)
       {
-        ParseAndSetPort(argv[i] + 7, broker_shell);
+        if (!ParseAndSetPort(argv[i] + 7, broker_shell))
+          return ParseResult::kParseErr;
       }
       else if (_wcsnicmp(argv[i], L"--log-level=", 12) == 0)
       {
-        ParseAndSetLogLevel(argv[i] + 12, broker_shell);
+        if (!ParseAndSetLogLevel(argv[i] + 12, broker_shell))
+          return ParseResult::kParseErr;
       }
-      else if (_wcsicmp(argv[i], L"--version") == 0)
+      else if (_wcsicmp(argv[i], L"--version") == 0 || _wcsicmp(argv[i], L"-v") == 0)
       {
-        BrokerShell::PrintVersion();
-        should_run = false;
-        break;
+        return ParseResult::kPrintVersion;
+      }
+      else if (_wcsicmp(argv[i], L"--help") == 0 || _wcsicmp(argv[i], L"-?") == 0)
+      {
+        return ParseResult::kPrintHelp;
       }
       else
       {
-        PrintHelp(argv[0]);
-        should_run = false;
-        exit_code = 1;
-        break;
+        return ParseResult::kParseErr;
       }
     }
+  }
+}
+
+// The system will deliver this callback when an IPv4 or IPv6 network adapter changes state. This
+// event is passed along to the BrokerShell instance, which restarts the broker.
+void InterfaceChangeCallback(PVOID CallerContext, PMIB_IPINTERFACE_ROW /*Row*/,
+                             MIB_NOTIFICATION_TYPE /*NotificationType*/)
+{
+  BrokerShell *shell = static_cast<BrokerShell *>(CallerContext);
+  if (shell)
+  {
+    shell->NetworkChanged();
   }
 }
 
@@ -186,19 +291,39 @@ int wmain(int argc, wchar_t *argv[])
   bool should_run = true;
   int exit_code = 0;
 
-  ParseArgs(argc, argv, broker_shell, should_run, exit_code);
+  switch (ParseArgs(argc, argv, broker_shell))
+  {
+    case ParseResult::kParseErr:
+      PrintHelp(argv[0]);
+      should_run = false;
+      exit_code = 1;
+      break;
+    case ParseResult::kPrintHelp:
+      PrintHelp(argv[0]);
+      should_run = false;
+      break;
+    case ParseResult::kPrintVersion:
+      BrokerShell::PrintVersion();
+      should_run = false;
+      break;
+    case ParseResult::kGoodParse:
+    default:
+      break;
+  }
 
   if (should_run)
   {
-    // We want to detect network change as well
-    OVERLAPPED net_overlap;
-    memset(&net_overlap, 0, sizeof(OVERLAPPED));
-    HANDLE net_handle = NULL;
-    NotifyAddrChange(&net_handle, &net_overlap);
+    // Register with Windows for network change detection.
+    HANDLE change_notif_handle = nullptr;
+    NotifyIpInterfaceChange(AF_UNSPEC, InterfaceChangeCallback, &broker_shell, FALSE, &change_notif_handle);
 
+    // Startup and run the Broker.
     WinBrokerSocketManager socket_mgr;
     WindowsBrokerLog log("RDMnetBroker.log");
     broker_shell.Run(&log, &socket_mgr);
+
+    // Unregister/cleanup the network change detection.
+    CancelMibChangeNotify2(change_notif_handle);
   }
 
   return exit_code;

@@ -40,6 +40,7 @@
 #include "lwpa/inet.h"
 #include "lwpa/socket.h"
 #include "rdmnet/core/connection.h"
+#include "rdmnet/broker.h"
 #include "broker_util.h"
 
 // The interface for the listener callback.
@@ -52,17 +53,13 @@ public:
   // The address & port fields of addr are used.
   // Do NOT stop the listening thread in this callback!
   virtual bool NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr &remote_addr) = 0;
-
-  // Called to log an error. You may want to stop the listening thread if
-  // errors keep occurring, but you should NOT do it in this callback!
-  virtual void LogError(const std::string &err) = 0;
 };
 
 // Listens for TCP connections
 class ListenThread
 {
 public:
-  ListenThread(const LwpaSockaddr &listen_addr, ListenThreadNotify *pnotify);
+  ListenThread(lwpa_socket_t listen_sock, ListenThreadNotify *pnotify, RDMnet::BrokerLog *log);
   virtual ~ListenThread();
 
   // Creates the listening socket and starts the thread.
@@ -71,20 +68,17 @@ public:
   // Destroys the listening socket and stops the thread.
   void Stop();
 
-  // Returns the address and port we were requested to listen to (not the bound
-  // port)
-  LwpaSockaddr GetAddr() const { return addr_; }
-
   // The thread function
   void Run();
 
 protected:
-  LwpaSockaddr addr_;
-  bool terminated_;
-  ListenThreadNotify *notify_;
+  bool terminated_{true};
+  ListenThreadNotify *notify_{nullptr};
 
   lwpa_thread_t thread_handle_;
-  lwpa_socket_t listen_socket_;
+  lwpa_socket_t listen_socket_{LWPA_SOCKET_INVALID};
+
+  RDMnet::BrokerLog *log_{nullptr};
 };
 
 /************************************/

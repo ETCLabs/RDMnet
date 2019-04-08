@@ -47,16 +47,21 @@ public:
   static void PrintVersion();
 
   // Options to set from the command line; must be set BEFORE Run() is called.
-  void SetInitialScope(const std::string &scope);
-  void SetInitialIfaceList(const std::vector<LwpaIpAddr> &ifaces);
-  void SetInitialMacList(const std::vector<MacAddr> &macs);
-  void SetInitialPort(uint16_t port);
-  void SetInitialLogLevel(int level);
+  void SetInitialScope(const std::string &scope) { initial_data_.scope = scope; }
+  void SetInitialIfaceList(const std::vector<LwpaIpAddr> &ifaces) { initial_data_.ifaces = ifaces; }
+  void SetInitialMacList(const std::vector<MacAddr> &macs) { initial_data_.macs = macs; }
+  void SetInitialPort(uint16_t port) { initial_data_.port = port; }
+  void SetInitialLogLevel(int level) { initial_data_.log_level = level; }
+
+  void NetworkChanged();
 
 private:
   void ScopeChanged(const std::string &new_scope) override;
   void PrintWarningMessage();
+
+  std::vector<LwpaIpAddr> GetInterfacesToListen();
   std::vector<LwpaIpAddr> ConvertMacsToInterfaces(const std::vector<MacAddr> &macs);
+  void ApplySettingsChanges(RDMnet::BrokerSettings &settings, std::vector<LwpaIpAddr> &new_addrs);
 
   struct InitialData
   {
@@ -67,7 +72,8 @@ private:
     int log_level{LWPA_LOG_INFO};
   } initial_data_;
 
-  bool scope_changed_{false};
+  RDMnet::BrokerLog *log_{nullptr};
+  bool restart_required_{false};
   std::string new_scope_;
 };
 
