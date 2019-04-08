@@ -98,7 +98,7 @@ unsigned __stdcall SocketWorkerThread(void *arg)
       else
       {
         // Error occurred on the socket.
-        sock_mgr->WorkerNotifySocketError(sock_data->conn_handle);
+        sock_mgr->WorkerNotifySocketBad(sock_data->conn_handle, false);
       }
     }
     else
@@ -116,7 +116,7 @@ unsigned __stdcall SocketWorkerThread(void *arg)
           {
             if (bytes_read == 0)
             {
-              sock_mgr->WorkerNotifySocketGracefulClose(sock_data->conn_handle);
+              sock_mgr->WorkerNotifySocketBad(sock_data->conn_handle, true);
               break;
             }
             else
@@ -136,7 +136,7 @@ unsigned __stdcall SocketWorkerThread(void *arg)
             // completion port.
             if (recv_result != 0 && WSA_IO_PENDING != WSAGetLastError())
             {
-              sock_mgr->WorkerNotifySocketError(sock_data->conn_handle);
+              sock_mgr->WorkerNotifySocketBad(sock_data->conn_handle, false);
             }
           }
           break;
@@ -200,4 +200,85 @@ bool WinBrokerSocketManager::Shutdown()
 
 bool WinBrokerSocketManager::AddSocket(rdmnet_conn_t conn_handle, lwpa_socket_t socket)
 {
+  lwpa::WriteGuard socket_write(socket_lock_);
+
+  // Create the data structure for the new socket
+  SocketData new_sock_data = SocketData(conn_handle, socket);
+  // Add it to the socket map
+  auto result = sockets_.insert(std::make_pair(conn_handle, new_sock_data));
+  if (result.second)
+  {
+    // Add the socket to our I/O completion port
+    if (NULL != CreateIoCompletionPort((HANDLE)socket, iocp_, static_cast<ULONG_PTR>(MessageKey::kNormalRecv), 0))
+    {
+      // Notify a worker thread to begin a receive operation
+      if (PostQueuedCompletionStatus(iocp_, 0, static_cast<ULONG_PTR>(MessageKey::kStartRecv),
+                                     &result.first->second.overlapped))
+      {
+        return true;
+      }
+      else
+      {
+        sockets_.erase(conn_handle);
+      }
+    }
+    else
+    {
+      sockets_.erase(conn_handle);
+    }
+  }
+  return false;
+}
+
+void WinBrokerSocketManager::RemoveSocket(rdmnet_conn_t conn_handle)
+{
+  lwpa::ReadGuard socket_read(socket_lock_);
+
+  auto sock_data = sockets_.find(conn_handle);
+  if (sock_data != sockets_.end())
+  {
+    if (!sock_data->second.close_requested)
+    {
+      sock_data->second.close_requested = true;
+      // This will cause a worker to wake up and notify that the socket was closed,
+      // triggering the rest of the destruction.
+      closesocket(sock_data->second.socket);
+    }
+  }
+}
+
+void WinBrokerSocketManager::WorkerNotifySocketBad(rdmnet_conn_t conn_handle, bool graceful)
+{
+  bool notify_socket_closed = false;
+
+  {  // Write lock scope
+    lwpa::WriteGuard socket_write(socket_lock_);
+
+    auto sock_data = sockets_.find(conn_handle);
+    if (sock_data != sockets_.end())
+    {
+      if (!sock_data->second.close_requested)
+      {
+        notify_socket_closed = true;
+      }
+      closesocket(sock_data->second.socket);
+      sockets_.erase(sock_data);
+    }
+  }
+
+  if (notify_socket_closed && notify_)
+    notify_->SocketClosed(conn_handle, graceful);
+}
+
+void WinBrokerSocketManager::WorkerNotifyRecvData(rdmnet_conn_t conn_handle)
+{
+  lwpa::ReadGuard socket_read(socket_lock_);
+
+  auto sock_data = sockets_.find(conn_handle);
+  if (sock_data != sockets_.end())
+  {
+    if (!sock_data->second.close_requested)
+    {
+    }
+  }
 }

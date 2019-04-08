@@ -171,6 +171,7 @@ lwpa_error_t rdmnet_end_message(rdmnet_conn_t handle);
 
 void rdmnet_conn_tick();
 
+// Advanced usage
 void rdmnet_conn_socket_activity(rdmnet_conn_t handle, const LwpaPollfd *poll);
 
 #ifdef __cplusplus

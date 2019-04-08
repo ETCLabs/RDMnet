@@ -40,6 +40,7 @@
 #include <vector>
 #include <memory>
 
+#include "lwpa/lock.h"
 #include "rdmnet/broker/socket_manager.h"
 
 // Wrapper around Windows thread functions to increase the testability of this module.
@@ -63,21 +64,22 @@ public:
 // The set of data allocated per-socket.
 struct SocketData
 {
-  SocketData()
+  SocketData(rdmnet_conn_t conn_handle_in, lwpa_socket_t socket_in) : conn_handle(conn_handle_in), socket(socket_in)
   {
-    ws_recv_buf.buf = reinterpret_cast<char *>(recv_buf.get());
+    ws_recv_buf.buf = reinterpret_cast<char *>(&recv_buf);
     ws_recv_buf.len = kRecvBufSize;
   }
 
+  rdmnet_conn_t conn_handle{RDMNET_CONN_INVALID};
   WSAOVERLAPPED overlapped{};
   SOCKET socket{INVALID_SOCKET};
-  rdmnet_conn_t conn_handle{RDMNET_CONN_INVALID};
+  bool close_requested{false};
 
   // Socket receive data
   WSABUF ws_recv_buf;                           // The variable Winsock uses for receive buffers
   static constexpr size_t kRecvBufSize = 1000;  // TODO get constant
   // Receive buffer for socket recv operations
-  std::unique_ptr<uint8_t[]> recv_buf{std::make_unique<uint8_t[]>(kRecvBufSize)};
+  uint8_t recv_buf[kRecvBufSize];
 };
 
 // A class to manage RDMnet Broker sockets on Windows.
@@ -100,9 +102,8 @@ public:
   void RemoveSocket(rdmnet_conn_t conn_handle) override;
 
   // Callback functions called from worker threads
-  void WorkerNotifySocketError(rdmnet_conn_t conn_handle);
   void WorkerNotifyRecvData(rdmnet_conn_t conn_handle);
-  void WorkerNotifySocketGracefulClose(rdmnet_conn_t handle);
+  void WorkerNotifySocketBad(rdmnet_conn_t conn_handle, bool graceful);
 
   // Accessors
   HANDLE iocp() { return iocp_; }
@@ -114,7 +115,8 @@ private:
   std::unique_ptr<WindowsThreadInterface> thread_interface_;
 
   // The set of sockets being managed
-  std::map<rdmnet_conn_t, std::unique_ptr<SocketData>> sockets_;
+  std::map<rdmnet_conn_t, SocketData> sockets_;
+  lwpa_rwlock_t socket_lock_;
 
   // The callback instance
   RDMnet::BrokerSocketManagerNotify *notify_{nullptr};
