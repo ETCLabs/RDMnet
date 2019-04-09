@@ -752,7 +752,7 @@ bool handle_rpt_notification(const RptMessage *rmsg, RptClientMessage *msg_out)
       first_msg = false;
     }
     *next_entry = alloc_client_rdm_response();
-    if (next_entry)
+    if (*next_entry)
     {
       lwpa_error_t unpack_res = rdmctl_unpack_response(&buf_entry->msg, &(*next_entry)->msg);
       if (unpack_res == kLwpaErrOk)

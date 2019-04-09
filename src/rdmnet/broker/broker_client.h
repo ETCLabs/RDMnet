@@ -78,7 +78,6 @@ public:
       : cid(other.cid)
       , client_protocol(other.client_protocol)
       , addr(other.addr)
-      , marked_for_destruction(other.marked_for_destruction)
       , conn_(other.conn_)
       , max_q_size_(other.max_q_size_)
   {
@@ -99,7 +98,6 @@ public:
   LwpaUuid cid{};
   client_protocol_t client_protocol{kClientProtocolUnknown};
   LwpaSockaddr addr{};
-  bool marked_for_destruction{false};
 
 protected:
   bool PushPostSizeCheck(const LwpaUuid &sender_cid, const BrokerMessage &msg);

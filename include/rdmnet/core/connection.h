@@ -90,7 +90,7 @@ typedef struct RdmnetConnectFailedInfo
 /*! An enumeration of the possible reasons an RDMnet connection could be disconnected. */
 typedef enum
 {
-  kRdmnetDisconnectSocketFailure,
+  kRdmnetDisconnectAbruptClose,
   kRdmnetDisconnectNoHeartbeat,
   kRdmnetDisconnectRedirected,
   kRdmnetDisconnectGracefulRemoteInitiated,
@@ -172,7 +172,8 @@ lwpa_error_t rdmnet_end_message(rdmnet_conn_t handle);
 void rdmnet_conn_tick();
 
 // Advanced usage
-void rdmnet_conn_socket_activity(rdmnet_conn_t handle, const LwpaPollfd *poll);
+void rdmnet_conn_sock_data_received(rdmnet_conn_t handle, const LwpaPollfd *poll);
+void rdmnet_conn_sock_closed(rdmnet_conn_t handle, lwpa_error_t socket_err);
 
 #ifdef __cplusplus
 }

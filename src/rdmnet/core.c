@@ -33,6 +33,7 @@
 #include "rdmnet/private/message.h"
 #include "rdmnet/private/core.h"
 #include "rdmnet/private/connection.h"
+#include "rdmnet/private/discovery.h"
 #include "rdmnet/private/opts.h"
 
 /************************* The draft warning message *************************/

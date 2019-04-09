@@ -49,8 +49,8 @@
 
 class RdmnetCoreLibraryNotify
 {
-  virtual void RdmnetDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo &disconn_info) = 0;
   virtual void RdmnetMsgReceived(rdmnet_conn_t handle, const RdmnetMessage &msg) = 0;
+  virtual void RdmnetDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo &disconn_info) = 0;
 };
 
 class BrokerCore : public RdmnetCoreLibraryNotify,
@@ -114,6 +114,10 @@ private:
   virtual void RdmnetDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo &disconn_info) override;
   virtual void RdmnetMsgReceived(rdmnet_conn_t handle, const RdmnetMessage &msg) override;
 
+  // RDMnet::BrokerSocketManagerNotify messages
+  virtual void SocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t *data, size_t data_size) override;
+  virtual void SocketClosed(rdmnet_conn_t conn_handle, bool graceful) override;
+
   // ListenThreadNotify messages
   virtual bool NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr &addr) override;
 
@@ -121,11 +125,10 @@ private:
   virtual bool ServiceClients() override;
 
   // BrokerDiscoveryManagerNotify messages
-  virtual void BrokerRegistered(const RdmnetBrokerDiscInfo &broker_info,
-                                const std::string &assigned_service_name) override;
+  virtual void BrokerRegistered(const std::string &assigned_service_name) override;
   virtual void OtherBrokerFound(const RdmnetBrokerDiscInfo &broker_info) override;
   virtual void OtherBrokerLost(const std::string &service_name) override;
-  virtual void BrokerRegisterError(const RdmnetBrokerDiscInfo &broker_info, int platform_error) override;
+  virtual void BrokerRegisterError(int platform_error) override;
 
   // The list of connected clients, indexed by the connection handle
   std::map<rdmnet_conn_t, std::shared_ptr<BrokerClient>> clients_;

@@ -43,13 +43,13 @@ class BrokerDiscoveryManagerNotify
 {
 public:
   /// A %Broker was registered with the information indicated by broker_info.
-  virtual void BrokerRegistered(const RdmnetBrokerDiscInfo &broker_info, const std::string &assigned_service_name) = 0;
+  virtual void BrokerRegistered(const std::string &assigned_service_name) = 0;
   /// A %Broker was found at the same scope as the one which was previously registered.
   virtual void OtherBrokerFound(const RdmnetBrokerDiscInfo &broker_info) = 0;
   /// A previously-found non-local %Broker has gone away.
   virtual void OtherBrokerLost(const std::string &service_name) = 0;
   /// An error occurred while registering a %Broker's service instance.
-  virtual void BrokerRegisterError(const RdmnetBrokerDiscInfo &broker_info, int platform_error) = 0;
+  virtual void BrokerRegisterError(int platform_error) = 0;
 };
 
 /// A wrapper for the RDMnet Discovery library for use by Brokers.
@@ -59,23 +59,30 @@ public:
   BrokerDiscoveryManager(BrokerDiscoveryManagerNotify *notify);
   virtual ~BrokerDiscoveryManager();
 
+  // Registration actions
   lwpa_error_t RegisterBroker(const RDMnet::BrokerDiscoveryAttributes &disc_attributes, const LwpaUuid &local_cid,
                               const std::vector<LwpaIpAddr> &listen_addrs, uint16_t listen_port);
   void UnregisterBroker();
   void Standby();
   lwpa_error_t Resume();
 
-protected:
-  static void BrokerFound(const char *scope, const RdmnetBrokerDiscInfo *broker_info, void *context);
-  static void BrokerLost(const char *service_name, void *context);
-  static void ScopeMonitorError(const RdmnetScopeMonitorInfo *scope_info, int platform_error, void *context);
-  static void BrokerRegistered(const RdmnetBrokerDiscInfo *broker_info, const char *assigned_service_name,
-                               void *context);
-  static void BrokerRegisterError(const RdmnetBrokerDiscInfo *broker_info, int platform_error, void *context);
+  // Accessors
+  std::string scope() const { return cur_config_valid_ ? cur_config_.my_info.scope : std::string(); }
+  std::string requested_service_name() const { return cur_config_valid_ ? cur_config_.my_info.service_name : std::string(); }
+  std::string assigned_service_name() const { return assigned_service_name_; }
+
+  // Callbacks from the C library, do not call directly.
+  void LibNotifyBrokerRegistered(rdmnet_registered_broker_t handle, const char* assigned_service_name);
+  void LibNotifyBrokerRegisterError(rdmnet_registered_broker_t handle, int platform_error);
+  void LibNotifyBrokerFound(rdmnet_registered_broker_t handle, const RdmnetBrokerDiscInfo *broker_info);
+  void LibNotifyBrokerLost(rdmnet_registered_broker_t handle, const char *scope, const char *service_name);
+  void LibNotifyScopeMonitorError(rdmnet_registered_broker_t handle, const char *scope, int platform_error);
 
   BrokerDiscoveryManagerNotify *notify_{nullptr};
-  RdmnetBrokerDiscInfo cur_info_;
-  bool cur_info_valid_{false};
+  RdmnetBrokerRegisterConfig cur_config_;
+  bool cur_config_valid_{false};
+  rdmnet_registered_broker_t handle_{RDMNET_REGISTERED_BROKER_INVALID};
+  std::string assigned_service_name_;
 };
 
 #endif  // _BROKER_DISCOVERY_H_

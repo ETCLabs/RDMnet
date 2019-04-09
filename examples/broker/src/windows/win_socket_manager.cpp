@@ -121,7 +121,7 @@ unsigned __stdcall SocketWorkerThread(void *arg)
             }
             else
             {
-              sock_mgr->WorkerNotifyRecvData(sock_data->conn_handle);
+              sock_mgr->WorkerNotifyRecvData(sock_data->conn_handle, bytes_read);
               // Intentional fallthrough to start an overlapped receive operation again
             }
           }
@@ -194,7 +194,37 @@ bool WinBrokerSocketManager::Startup(RDMnet::BrokerSocketManagerNotify *notify)
 
 bool WinBrokerSocketManager::Shutdown()
 {
-  // TODO
+  shutting_down_ = true;
+
+  {  // Read lock scope
+    lwpa::ReadGuard socket_read(socket_lock_);
+    for (auto &sock_data : sockets_)
+    {
+      // Trigger the worker thread to stop processing each socket.
+      sock_data.second.close_requested = true;
+      closesocket(sock_data.second.socket);
+    }
+  }
+
+  // Shutdown the worker threads
+  for (size_t i = 0; i < worker_threads_.size(); ++i)
+  {
+    PostQueuedCompletionStatus(iocp_, 0, static_cast<ULONG_PTR>(MessageKey::kShutdown), NULL);
+  }
+  thread_interface_->WaitForThreadsCompletion(static_cast<DWORD>(worker_threads_.size()), worker_threads_.data(), TRUE, 500);
+  for (const auto &thread : worker_threads_)
+    thread_interface_->CleanupThread(thread);
+  worker_threads_.clear();
+
+  {  // Write lock scope
+    lwpa::WriteGuard socket_write(socket_lock_);
+    sockets_.clear();
+  }
+
+  CloseHandle(iocp_);
+  iocp_ = NULL;
+  WSACleanup();
+
   return true;
 }
 
@@ -257,7 +287,7 @@ void WinBrokerSocketManager::WorkerNotifySocketBad(rdmnet_conn_t conn_handle, bo
     auto sock_data = sockets_.find(conn_handle);
     if (sock_data != sockets_.end())
     {
-      if (!sock_data->second.close_requested)
+      if (!sock_data->second.close_requested && !shutting_down_)
       {
         notify_socket_closed = true;
       }
@@ -270,15 +300,16 @@ void WinBrokerSocketManager::WorkerNotifySocketBad(rdmnet_conn_t conn_handle, bo
     notify_->SocketClosed(conn_handle, graceful);
 }
 
-void WinBrokerSocketManager::WorkerNotifyRecvData(rdmnet_conn_t conn_handle)
+void WinBrokerSocketManager::WorkerNotifyRecvData(rdmnet_conn_t conn_handle, size_t size)
 {
   lwpa::ReadGuard socket_read(socket_lock_);
 
   auto sock_data = sockets_.find(conn_handle);
   if (sock_data != sockets_.end())
   {
-    if (!sock_data->second.close_requested)
+    if (!sock_data->second.close_requested && notify_)
     {
+      notify_->SocketDataReceived(conn_handle, sock_data->second.recv_buf, size);
     }
   }
 }

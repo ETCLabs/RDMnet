@@ -66,7 +66,7 @@ struct RdmnetConnection
   // Underlying socket connection
   lwpa_socket_t sock;
   LwpaSockaddr remote_addr;
-  bool is_client;
+  bool external_socket_attached;
   bool is_blocking;
 
   // Connection state

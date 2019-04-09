@@ -321,7 +321,7 @@ lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t s
       conn->sock = sock;
       conn->remote_addr = *remote_addr;
       conn->state = kCSHeartbeat;
-      conn->is_client = false;
+      conn->external_socket_attached = true;
       lwpa_timer_start(&conn->send_timer, E133_TCP_HEARTBEAT_INTERVAL_SEC * 1000);
       lwpa_timer_start(&conn->hb_timer, E133_HEARTBEAT_TIMEOUT_SEC * 1000);
     }
@@ -1050,7 +1050,7 @@ RdmnetConnection *create_new_connection(const RdmnetConnectionConfig *config)
       conn->sock = LWPA_SOCKET_INVALID;
       lwpaip_set_invalid(&conn->remote_addr.ip);
       conn->remote_addr.port = 0;
-      conn->is_client = true;
+      conn->external_socket_attached = false;
       conn->is_blocking = true;
       conn->state = kCSConnectNotStarted;
       lwpa_timer_start(&conn->backoff_timer, 0);
@@ -1110,7 +1110,7 @@ void destroy_connection(RdmnetConnection *conn)
 {
   if (conn)
   {
-    if (conn->sock != LWPA_SOCKET_INVALID)
+    if (!conn->external_socket_attached && conn->sock != LWPA_SOCKET_INVALID)
       lwpa_close(conn->sock);
     lwpa_mutex_destroy(&conn->lock);
     lwpa_mutex_destroy(&conn->send_lock);

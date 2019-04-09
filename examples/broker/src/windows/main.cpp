@@ -269,6 +269,9 @@ ParseResult ParseArgs(int argc, wchar_t *argv[], BrokerShell &broker_shell)
       }
     }
   }
+
+  // Handles the (valid) case of no args, or all args parsed successfully.
+  return ParseResult::kGoodParse;
 }
 
 // The system will deliver this callback when an IPv4 or IPv6 network adapter changes state. This

@@ -46,6 +46,9 @@ extern "C" {
 typedef struct RdmnetScopeMonitorRef *rdmnet_scope_monitor_t;
 typedef struct RdmnetBrokerRegisterRef *rdmnet_registered_broker_t;
 
+#define RDMNET_SCOPE_MONITOR_INVALID NULL
+#define RDMNET_REGISTERED_BROKER_INVALID NULL
+
 typedef struct RdmnetBrokerDiscInfo
 {
   LwpaUuid cid;
@@ -88,9 +91,6 @@ typedef struct RdmnetBrokerRegisterConfig
   RdmnetDiscBrokerCallbacks callbacks;
   void *callback_context;
 } RdmnetBrokerRegisterConfig;
-
-lwpa_error_t rdmnetdisc_init();
-void rdmnetdisc_deinit();
 
 void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo *broker_info);
 

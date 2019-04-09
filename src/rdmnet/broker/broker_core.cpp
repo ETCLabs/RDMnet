@@ -283,7 +283,7 @@ bool BrokerCore::NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr &addr)
     log_->Log(LWPA_LOG_INFO, "Creating a new connection for ip addr %s", addrstr);
   }
 
-  rdmnet_conn_t connhandle;
+  rdmnet_conn_t connhandle = RDMNET_CONN_INVALID;
   bool result = false;
 
   {  // Client write lock scope
@@ -323,6 +323,16 @@ bool BrokerCore::NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr &addr)
   }
 
   return result;
+}
+
+void BrokerCore::SocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t *data, size_t data_size)
+{
+}
+
+void BrokerCore::SocketClosed(rdmnet_conn_t conn_handle, bool /*graceful*/)
+{
+  log_->Log(LWPA_LOG_INFO, "Client %d disconnected.");
+  rdmnet_conn_sock_closed(handle);
 }
 
 // Process each controller queue, sending out the next message from each queue if devices are
@@ -375,6 +385,10 @@ void BrokerCore::RdmnetMsgReceived(rdmnet_conn_t handle, const RdmnetMessage &ms
       log_->Log(LWPA_LOG_WARNING, "Received Root Layer PDU with unknown or unhandled vector %d", msg.vector);
       break;
   }
+}
+
+void BrokerCore::RdmnetDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo &disconn_info)
+{
 }
 
 void BrokerCore::SendClientList(int conn)
@@ -935,6 +949,7 @@ lwpa_socket_t BrokerCore::StartListening(const LwpaIpAddr &ip, uint16_t &port)
     }
     return LWPA_SOCKET_INVALID;
   }
+  return listen_sock;
 }
 
 bool BrokerCore::StartBrokerServices()
@@ -950,7 +965,7 @@ bool BrokerCore::StartBrokerServices()
     lwpa_socket_t listen_sock = StartListening(any_addr, listen_port_);
     if (listen_sock != LWPA_SOCKET_INVALID)
     {
-      auto p = std::make_unique<ListenThread>(listen_sock, this);
+      auto p = std::make_unique<ListenThread>(listen_sock, this, log_);
       listeners_.push_back(std::move(p));
     }
     else
@@ -967,7 +982,7 @@ bool BrokerCore::StartBrokerServices()
       lwpa_socket_t listen_sock = StartListening(*addr_iter, listen_port_);
       if (listen_sock != LWPA_SOCKET_INVALID)
       {
-        auto p = std::make_unique<ListenThread>(listen_sock, this);
+        auto p = std::make_unique<ListenThread>(listen_sock, this, log_);
         listeners_.push_back(std::move(p));
         ++addr_iter;
       }
@@ -1021,7 +1036,6 @@ void BrokerCore::MarkConnForDestruction(rdmnet_conn_t conn, bool send_disconnect
     if ((client != clients_.end()) && client->second)
     {
       ClientWriteGuard client_write(*client->second);
-      client->second->marked_for_destruction = true;
       found = true;
       clients_to_destroy_.insert(client->first);
     }
@@ -1029,7 +1043,6 @@ void BrokerCore::MarkConnForDestruction(rdmnet_conn_t conn, bool send_disconnect
 
   if (found)
   {
-    socket_manager_->RemoveSocket(conn);
     rdmnet_destroy_connection(conn, send_disconnect ? &reason : nullptr);
     log_->Log(LWPA_LOG_DEBUG, "Connection %d marked for destruction", conn);
   }
@@ -1086,17 +1099,17 @@ void BrokerCore::DestroyMarkedClientSockets()
     SendClientsRemoved(entries[0].client_protocol, entries);
 }
 
-void BrokerCore::BrokerRegistered(const RdmnetBrokerDiscInfo &broker_info, const std::string &assigned_service_name)
+void BrokerCore::BrokerRegistered(const std::string &assigned_service_name)
 {
   service_registered_ = true;
   log_->Log(LWPA_LOG_INFO, "Broker \"%s\" (now named \"%s\") successfully registered at scope \"%s\"",
-            broker_info.service_name, assigned_service_name.c_str(), broker_info.scope);
+            disc_.requested_service_name().c_str(), assigned_service_name.c_str(), disc_.scope().c_str());
 }
 
-void BrokerCore::BrokerRegisterError(const RdmnetBrokerDiscInfo &broker_info, int platform_specific_error)
+void BrokerCore::BrokerRegisterError(int platform_specific_error)
 {
-  log_->Log(LWPA_LOG_ERR, "Broker \"%s\" register error %d at scope \"%s\"", broker_info.service_name,
-            platform_specific_error, broker_info.scope);
+  log_->Log(LWPA_LOG_ERR, "Broker \"%s\" register error %d at scope \"%s\"", disc_.requested_service_name().c_str(),
+            platform_specific_error, disc_.scope().c_str());
 }
 
 void BrokerCore::OtherBrokerFound(const RdmnetBrokerDiscInfo &broker_info)

@@ -48,6 +48,7 @@ class WindowsThreadInterface
 {
 public:
   virtual HANDLE StartThread(_beginthreadex_proc_type start_address, void *arg_list) = 0;
+  virtual DWORD WaitForThreadsCompletion(DWORD count, const HANDLE *handle_arr, BOOL wait_all, DWORD milliseconds) = 0;
   virtual BOOL CleanupThread(HANDLE thread_handle) = 0;
 };
 
@@ -57,6 +58,10 @@ public:
   virtual HANDLE StartThread(_beginthreadex_proc_type start_address, void *arg_list) override
   {
     return reinterpret_cast<HANDLE>(_beginthreadex(NULL, 0, start_address, arg_list, 0, NULL));
+  }
+  virtual DWORD WaitForThreadsCompletion(DWORD count, const HANDLE *handle_arr, BOOL wait_all, DWORD milliseconds)
+  {
+    return WaitForMultipleObjects(count, handle_arr, wait_all, milliseconds);
   }
   virtual BOOL CleanupThread(HANDLE thread_handle) override { return CloseHandle(thread_handle); }
 };
@@ -102,13 +107,15 @@ public:
   void RemoveSocket(rdmnet_conn_t conn_handle) override;
 
   // Callback functions called from worker threads
-  void WorkerNotifyRecvData(rdmnet_conn_t conn_handle);
+  void WorkerNotifyRecvData(rdmnet_conn_t conn_handle, size_t size);
   void WorkerNotifySocketBad(rdmnet_conn_t conn_handle, bool graceful);
 
   // Accessors
-  HANDLE iocp() { return iocp_; }
+  HANDLE iocp() const { return iocp_; }
 
 private:
+  bool shutting_down_{false};
+
   // Thread pool management
   HANDLE iocp_{nullptr};
   std::vector<HANDLE> worker_threads_;

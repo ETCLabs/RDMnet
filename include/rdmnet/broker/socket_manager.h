@@ -37,16 +37,6 @@ namespace RDMnet
 class BrokerSocketManagerNotify
 {
 public:
-  /// \brief A socket was closed remotely.
-  ///
-  /// The socket is no longer valid after this callback finishes. Do not call
-  /// BrokerSocketManager::RemoveSocket() or any other API function from this callback as it is
-  /// unnecessary and may cause a deadlock.
-  ///
-  /// \param[in] conn_handle The RDMnet connection handle for which the socket was closed.
-  /// \param[in] graceful Whether the TCP connection was closed gracefully.
-  virtual void SocketClosed(rdmnet_conn_t conn_handle, bool graceful) = 0;
-
   /// \brief Data was received on a socket.
   ///
   /// The data should be handled immediately - the socket manager keeps ownership of the data buffer
@@ -56,6 +46,16 @@ public:
   /// \param[in] data Pointer to received data buffer.
   /// \param[in] data_size Size of received data buffer.
   virtual void SocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t *data, size_t data_size) = 0;
+
+  /// \brief A socket was closed remotely.
+  ///
+  /// The socket is no longer valid after this callback finishes. Do not call
+  /// BrokerSocketManager::RemoveSocket() or any other API function from this callback as it is
+  /// unnecessary and may cause a deadlock.
+  ///
+  /// \param[in] conn_handle The RDMnet connection handle for which the socket was closed.
+  /// \param[in] graceful Whether the TCP connection was closed gracefully.
+  virtual void SocketClosed(rdmnet_conn_t conn_handle, bool graceful) = 0;
 };
 
 class BrokerSocketManager
