@@ -102,7 +102,7 @@ static void deliver_callback(ConnCallbackDispatchInfo *info);
 // Connection management, lookup, destruction
 static rdmnet_conn_t get_new_conn_handle();
 static RdmnetConnection *create_new_connection(const RdmnetConnectionConfig *config);
-static void destroy_connection(RdmnetConnection *conn);
+static void destroy_connection(RdmnetConnection *conn, bool remove_from_tree);
 static lwpa_error_t get_conn(rdmnet_conn_t handle, RdmnetConnection **conn);
 static void release_conn(RdmnetConnection *conn);
 static int conn_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const LwpaRbNode *node_b);
@@ -140,7 +140,7 @@ static void conn_dealloc(const LwpaRbTree *self, LwpaRbNode *node)
 
   RdmnetConnection *conn = (RdmnetConnection *)node->value;
   if (conn)
-    destroy_connection(conn);
+    destroy_connection(conn, false);
   conn_node_free(node);
 }
 
@@ -629,7 +629,7 @@ void rdmnet_conn_tick()
       while (to_destroy)
       {
         RdmnetConnection *next = to_destroy->next_to_destroy;
-        destroy_connection(to_destroy);
+        destroy_connection(to_destroy, true);
         to_destroy = next;
       }
     }
@@ -1138,7 +1138,7 @@ void retry_connection(RdmnetConnection *conn)
   conn->state = kCSConnectPending;
 }
 
-void destroy_connection(RdmnetConnection *conn)
+void destroy_connection(RdmnetConnection *conn, bool remove_from_tree)
 {
   if (conn)
   {
@@ -1146,7 +1146,8 @@ void destroy_connection(RdmnetConnection *conn)
       lwpa_close(conn->sock);
     lwpa_mutex_destroy(&conn->lock);
     lwpa_mutex_destroy(&conn->send_lock);
-    lwpa_rbtree_remove(&state.connections, conn);
+    if (remove_from_tree)
+      lwpa_rbtree_remove(&state.connections, conn);
     free_rdmnet_connection(conn);
   }
 }
