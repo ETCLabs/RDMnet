@@ -107,6 +107,7 @@ lwpa_error_t rdmnet_controller_create(const RdmnetControllerConfig *config, rdmn
   client_config.type = kRPTClientTypeController;
   client_config.uid = config->uid;
   client_config.cid = config->cid;
+  client_config.search_domain = config->search_domain;
   client_config.callbacks = client_callbacks;
   client_config.callback_context = new_controller;
 

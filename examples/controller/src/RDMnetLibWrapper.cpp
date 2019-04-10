@@ -108,8 +108,9 @@ bool RDMnetLibWrapper::Startup(const LwpaUuid &cid, RDMnetLibNotify *notify)
 
     // Create our controller handle in the RDMnet library
     RdmnetControllerConfig config;
-    config.uid = RPT_CLIENT_DYNAMIC_UID(0x6574);
+    rdmnet_client_set_dynamic_uid(&config, 0x6574);
     config.cid = my_cid_;
+    config.search_domain = E133_DEFAULT_DOMAIN;
     // clang-format off
     config.callbacks = {
       controllercb_connected,

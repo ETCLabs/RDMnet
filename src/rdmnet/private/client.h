@@ -81,6 +81,7 @@ struct RdmnetClient
   LwpaUuid cid;
   void *callback_context;
   ClientScopeListEntry *scope_list;
+  char search_domain[E133_DOMAIN_STRING_PADDED_LENGTH];
 
   union
   {

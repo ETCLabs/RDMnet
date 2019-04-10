@@ -47,9 +47,9 @@ static struct device_state
 {
   bool configuration_change;
 
-  // LwpaUuid my_cid;
-  // RdmUid my_uid;
   rdmnet_device_t device_handle;
+  RdmnetScopeConfig cur_scope_config;
+  char cur_search_domain[E133_DOMAIN_STRING_PADDED_LENGTH];
 
   bool connected;
 
@@ -59,16 +59,16 @@ static struct device_state
 /*********************** Private function prototypes *************************/
 
 /* RDM command handling */
-static void device_handle_rdm_command(const RemoteRdmCommand *cmd, bool *requires_reconnect);
+static void device_handle_rdm_command(const RemoteRdmCommand *cmd, rdmnet_data_changed_t *data_changed);
 static void send_status(rpt_status_code_t status_code, const RemoteRdmCommand *received_cmd);
 static void send_nack(uint16_t nack_reason, const RemoteRdmCommand *received_cmd);
 static void send_response(RdmResponse *resp_list, size_t num_responses, const RemoteRdmCommand *received_cmd);
 
 /* Device callbacks */
-static void device_connected(rdmnet_device_t handle, const char *scope, void *context);
-static void device_disconnected(rdmnet_device_t handle, const char *scope, void *context);
-static void device_rdm_cmd_received(rdmnet_device_t handle, const char *scope, const RemoteRdmCommand *cmd,
-                                    void *context);
+static void device_connected(rdmnet_device_t handle, const RdmnetClientConnectedInfo *info, void *context);
+static void device_connect_failed(rdmnet_device_t handle, const RdmnetClientConnectFailedInfo *info, void *context);
+static void device_disconnected(rdmnet_device_t handle, const RdmnetClientDisconnectedInfo *info, void *context);
+static void device_rdm_cmd_received(rdmnet_device_t handle, const RemoteRdmCommand *cmd, void *context);
 
 /*************************** Function definitions ****************************/
 
@@ -92,7 +92,9 @@ lwpa_error_t device_init(const DeviceParams *params, const LwpaLogParams *lparam
 
   lwpa_log(lparams, LWPA_LOG_INFO, "ETC Prototype RDMnet Device Version " RDMNET_VERSION_STRING);
 
-  default_responder_init(&params->scope_config);
+  rdmnet_safe_strncpy(device_state.cur_search_domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
+  device_state.cur_scope_config = params->scope_config;
+  default_responder_init(&params->scope_config, device_state.cur_search_domain);
 
   lwpa_error_t res = rdmnet_core_init(lparams);
   if (res != kLwpaErrOk)
@@ -102,11 +104,13 @@ lwpa_error_t device_init(const DeviceParams *params, const LwpaLogParams *lparam
   }
 
   RdmnetDeviceConfig config;
-  config.uid = RPT_CLIENT_DYNAMIC_UID(0x6574);
+  rdmnet_client_set_dynamic_uid(&config, 0x6574);
   config.cid = params->cid;
   config.scope_config = params->scope_config;
   config.callbacks.connected = device_connected;
+  config.callbacks.connect_failed = device_connect_failed;
   config.callbacks.disconnected = device_disconnected;
+  config.callbacks.rdm_command_received = device_rdm_cmd_received;
   config.callback_context = NULL;
 
   res = rdmnet_device_create(&config, &device_state.device_handle);
@@ -120,25 +124,26 @@ lwpa_error_t device_init(const DeviceParams *params, const LwpaLogParams *lparam
 
 void device_deinit()
 {
-  /*
-  device_state.configuration_change = true;
-  if (device_state.connected)
-  {
-    rdmnet_disconnect(device_state.broker_conn, true, kRdmnetDisconnectShutdown);
-  }
-  rdmnet_deinit();
-  rdmnetdisc_deinit();
+  rdmnet_device_destroy(device_state.device_handle);
+  rdmnet_core_deinit();
   default_responder_deinit();
-  */
 }
 
-void device_connected(rdmnet_device_t handle, const char *scope, void *context)
+void device_connected(rdmnet_device_t handle, const RdmnetClientConnectedInfo *info, void *context)
 {
   (void)handle;
   (void)context;
 
-  device_state.connected = true;
-  lwpa_log(device_state.lparams, LWPA_LOG_INFO, "Device connected to Broker on scope '%s'.", scope);
+  default_responder_update_connection_status(true, &info->broker_addr);
+  lwpa_log(device_state.lparams, LWPA_LOG_INFO, "Device connected to Broker on scope '%s'.",
+           device_state.cur_scope_config.scope);
+}
+
+void device_connect_failed(rdmnet_device_t handle, const RdmnetClientConnectFailedInfo *info, void *context)
+{
+  (void)handle;
+  (void)info;
+  (void)context;
 }
 
 void device_disconnected(rdmnet_device_t handle, const char *scope, void *context)
@@ -146,7 +151,7 @@ void device_disconnected(rdmnet_device_t handle, const char *scope, void *contex
   (void)handle;
   (void)context;
 
-  device_state.connected = false;
+  default_responder_update_connection_status(false, NULL);
   lwpa_log(device_state.lparams, LWPA_LOG_INFO, "Device disconnected from Broker on scope '%s'.", scope);
 }
 
@@ -155,11 +160,21 @@ void device_rdm_cmd_received(rdmnet_device_t handle, const char *scope, const Re
   (void)handle;
   (void)context;
 
-  bool requires_reconnect = false;
-  device_handle_rdm_command(cmd, &requires_reconnect);
+  rdmnet_data_changed_t data_changed = kNoRdmnetDataChanged;
+  device_handle_rdm_command(cmd, &data_changed);
+  if (data_changed == kRdmnetScopeConfigChanged)
+  {
+    default_responder_get_scope_config(&device_state.cur_scope_config);
+    rdmnet_device_change_scope(handle, &device_state.cur_scope_config, kRdmnetDisconnectRptReconfigure);
+  }
+  else if (data_changed == kRdmnetSearchDomainChanged)
+  {
+    default_responder_get_search_domain(device_state.cur_search_domain);
+    rdmnet_device_change_search_domain(handle, device_state.cur_search_domain, kRdmnetDisconnectRptReconfigure);
+  }
 }
 
-void device_handle_rdm_command(const RemoteRdmCommand *cmd, bool *requires_reconnect)
+void device_handle_rdm_command(const RemoteRdmCommand *cmd, rdmnet_data_changed_t *data_changed)
 {
   const RdmCommand *rdm_cmd = &cmd->rdm;
   if (rdm_cmd->command_class != kRdmCCGetCommand && rdm_cmd->command_class != kRdmCCSetCommand)
@@ -181,7 +196,7 @@ void device_handle_rdm_command(const RemoteRdmCommand *cmd, bool *requires_recon
       case kRdmCCSetCommand:
       {
         uint16_t nack_reason;
-        if (default_responder_set(rdm_cmd->param_id, rdm_cmd->data, rdm_cmd->datalen, &nack_reason, requires_reconnect))
+        if (default_responder_set(rdm_cmd->param_id, rdm_cmd->data, rdm_cmd->datalen, &nack_reason, data_changed))
         {
           RdmResponse resp;
 

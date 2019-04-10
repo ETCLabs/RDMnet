@@ -146,21 +146,6 @@ typedef struct RdmnetScopeConfig
   LwpaSockaddr static_broker_addr;
 } RdmnetScopeConfig;
 
-/*! \brief Initialization value for a dynamic UID.
- *
- *  Usage example:
- *  \code
- *  RdmnetRptClientConfig config;
- *  config.uid = RPT_CLIENT_DYNAMIC_UID(0x6574);
- *  \endcode
- *
- *  \param manu_id ESTA manufacturer ID. All RDMnet components must have one.
- */
-#define RPT_CLIENT_DYNAMIC_UID(manu_id) \
-  {                                     \
-    manu_id, 0                          \
-  }
-
 /*! A set of information that defines the startup parameters of an RPT RDMnet Client. */
 typedef struct RdmnetRptClientConfig
 {
@@ -172,11 +157,31 @@ typedef struct RdmnetRptClientConfig
   RdmUid uid;
   /*! The client's CID. */
   LwpaUuid cid;
+  /*! The client's configured search domain for discovery. */
+  const char *search_domain;
   /*! A set of callbacks for the client to received RDMnet notifications. */
   RptClientCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. */
   void *callback_context;
 } RdmnetRptClientConfig;
+
+/*! \brief Initialize an RPT Client Config with a dynamic UID.
+ *
+ *  Usage example:
+ *  \code
+ *  RdmnetRptClientConfig config;
+ *  rdmnet_client_set_dynamic_uid(&config, 0x6574);
+ *  \endcode
+ *
+ *  \param configptr Pointer to RdmnetRptClientConfig, RdmnetDeviceConfig or RdmnetControllerConfig.
+ *  \param manu_id ESTA manufacturer ID. All RDMnet RPT components must have one.
+ */
+#define rdmnet_client_set_dynamic_uid(configptr, manu_id) \
+  do                                                      \
+  {                                                       \
+    (configptr)->uid.manu = manu_id;                      \
+    (configptr)->uid.id = 0;                              \
+  } while (0)
 
 typedef struct RdmnetEptClientConfig
 {
@@ -236,6 +241,9 @@ lwpa_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_sc
 lwpa_error_t rdmnet_client_change_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                         const RdmnetScopeConfig *new_config, rdmnet_disconnect_reason_t reason);
 
+lwpa_error_t rdmnet_client_change_search_domain(rdmnet_client_t handle, const char *new_search_domain,
+                                                rdmnet_disconnect_reason_t reason);
+
 lwpa_error_t rdmnet_client_request_client_list(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle);
 // lwpa_error_t rdmnet_client_request_dynamic_uids(rdmnet_conn_t handle, rdmnet_client_scope_t scope_handle,
 //                                            const DynamicUidRequestListEntry *request_list);
@@ -246,7 +254,8 @@ lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet_c
                                                 const LocalRdmCommand *cmd, uint32_t *seq_num);
 lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                                  const LocalRdmResponse *resp);
-lwpa_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptStatusMsg *status);
+lwpa_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+                                           const RptStatusMsg *status);
 
 #ifdef __cplusplus
 }

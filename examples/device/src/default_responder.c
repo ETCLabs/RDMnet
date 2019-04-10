@@ -78,7 +78,8 @@ static struct DefaultResponderPropertyData
   lwpa_thread_t identify_thread;
   bool identifying;
   char device_label[DEVICE_LABEL_MAX_LEN + 1];
-  RdmnetConnectParams rdmnet_params;
+  RdmnetScopeConfig scope_config;
+  char search_domain[E133_DOMAIN_STRING_PADDED_LENGTH];
   uint16_t tcp_unhealthy_counter;
   LwpaSockaddr cur_broker_addr;
 } prop_data;
@@ -89,15 +90,15 @@ static lwpa_rwlock_t prop_lock;
 
 /* SET COMMANDS */
 bool set_identify_device(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                         bool *requires_reconnect);
+                         rdmnet_data_changed_t *data_changed);
 bool set_device_label(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                      bool *requires_reconnect);
+                      rdmnet_data_changed_t *data_changed);
 bool set_component_scope(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                         bool *requires_reconnect);
+                         rdmnet_data_changed_t *data_changed);
 bool set_search_domain(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                       bool *requires_reconnect);
+                       rdmnet_data_changed_t *data_changed);
 bool set_tcp_comms_status(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                          bool *requires_reconnect);
+                          rdmnet_data_changed_t *data_changed);
 
 /* GET COMMANDS */
 bool get_identify_device(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
@@ -127,14 +128,13 @@ bool get_endpoint_responders(const uint8_t *param_data, uint8_t param_data_len, 
 
 /*************************** Function definitions ****************************/
 
-void default_responder_init(const LwpaSockaddr *static_broker_addr, const char *scope)
+void default_responder_init(const RdmnetScopeConfig *scope_config, const char *search_domain)
 {
   lwpa_rwlock_create(&prop_lock);
 
-  strncpy(prop_data.device_label, DEFAULT_DEVICE_LABEL, DEVICE_LABEL_MAX_LEN);
-  strncpy(prop_data.rdmnet_params.scope, scope, E133_SCOPE_STRING_PADDED_LENGTH - 1);
-  strncpy(prop_data.rdmnet_params.search_domain, E133_DEFAULT_DOMAIN, 64);
-  prop_data.rdmnet_params.broker_static_addr = *static_broker_addr;
+  rdmnet_safe_strncpy(prop_data.device_label, DEFAULT_DEVICE_LABEL, DEVICE_LABEL_MAX_LEN);
+  rdmnet_safe_strncpy(prop_data.search_domain, search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
+  prop_data.scope_config = *scope_config;
 }
 
 void default_responder_deinit()
@@ -144,14 +144,15 @@ void default_responder_deinit()
     prop_data.identifying = false;
     lwpa_thread_stop(&prop_data.identify_thread, 5000);
   }
+  memset(&prop_data, 0, sizeof(prop_data));
   lwpa_rwlock_destroy(&prop_lock);
 }
 
-void default_responder_get_e133_params(RdmnetConnectParams *params)
+void default_responder_get_scope_config(RdmnetScopeConfig *scope_config)
 {
   if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
   {
-    *params = prop_data.rdmnet_params;
+    *scope_config = prop_data.scope_config;
     lwpa_rwlock_readunlock(&prop_lock);
   }
 }
@@ -186,7 +187,7 @@ bool default_responder_supports_pid(uint16_t pid)
 }
 
 bool default_responder_set(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                           bool *requires_reconnect)
+                           rdmnet_data_changed_t *data_changed)
 {
   bool res = false;
   if (lwpa_rwlock_writelock(&prop_lock, LWPA_WAIT_FOREVER))
@@ -194,19 +195,19 @@ bool default_responder_set(uint16_t pid, const uint8_t *param_data, uint8_t para
     switch (pid)
     {
       case E120_IDENTIFY_DEVICE:
-        res = set_identify_device(param_data, param_data_len, nack_reason, requires_reconnect);
+        res = set_identify_device(param_data, param_data_len, nack_reason, data_changed);
         break;
       case E120_DEVICE_LABEL:
-        res = set_device_label(param_data, param_data_len, nack_reason, requires_reconnect);
+        res = set_device_label(param_data, param_data_len, nack_reason, data_changed);
         break;
       case E133_COMPONENT_SCOPE:
-        res = set_component_scope(param_data, param_data_len, nack_reason, requires_reconnect);
+        res = set_component_scope(param_data, param_data_len, nack_reason, data_changed);
         break;
       case E133_SEARCH_DOMAIN:
-        res = set_search_domain(param_data, param_data_len, nack_reason, requires_reconnect);
+        res = set_search_domain(param_data, param_data_len, nack_reason, data_changed);
         break;
       case E133_TCP_COMMS_STATUS:
-        res = set_tcp_comms_status(param_data, param_data_len, nack_reason, requires_reconnect);
+        res = set_tcp_comms_status(param_data, param_data_len, nack_reason, data_changed);
         break;
       case E120_SUPPORTED_PARAMETERS:
       case E120_MANUFACTURER_LABEL:
@@ -215,11 +216,11 @@ bool default_responder_set(uint16_t pid, const uint8_t *param_data, uint8_t para
       case E137_7_ENDPOINT_LIST:
       case E137_7_ENDPOINT_RESPONDERS:
         *nack_reason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
-        *requires_reconnect = false;
+        *data_changed = kNoRdmnetDataChanged;
         break;
       default:
         *nack_reason = E120_NR_UNKNOWN_PID;
-        *requires_reconnect = false;
+        *data_changed = kNoRdmnetDataChanged;
         break;
     }
     lwpa_rwlock_writeunlock(&prop_lock);
@@ -292,7 +293,7 @@ void identify_thread(void *arg)
 }
 
 bool set_identify_device(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                         bool *requires_reconnect)
+                         rdmnet_data_changed_t *data_changed)
 {
   if (param_data_len >= 1)
   {
@@ -309,7 +310,7 @@ bool set_identify_device(const uint8_t *param_data, uint8_t param_data_len, uint
       lwpa_thread_create(&prop_data.identify_thread, &ithread_params, identify_thread, NULL);
     }
     prop_data.identifying = new_identify_setting;
-    *requires_reconnect = false;
+    *data_changed = kNoRdmnetDataChanged;
     return true;
   }
   else
@@ -320,7 +321,7 @@ bool set_identify_device(const uint8_t *param_data, uint8_t param_data_len, uint
 }
 
 bool set_device_label(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                      bool *requires_reconnect)
+                      rdmnet_data_changed_t *data_changed)
 {
   if (param_data_len >= 1)
   {
@@ -328,7 +329,7 @@ bool set_device_label(const uint8_t *param_data, uint8_t param_data_len, uint16_
       param_data_len = DEVICE_LABEL_MAX_LEN;
     memcpy(prop_data.device_label, param_data, param_data_len);
     prop_data.device_label[param_data_len] = '\0';
-    *requires_reconnect = false;
+    *data_changed = kNoRdmnetDataChanged;
     return true;
   }
   else
@@ -339,7 +340,7 @@ bool set_device_label(const uint8_t *param_data, uint8_t param_data_len, uint16_
 }
 
 bool set_component_scope(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                         bool *requires_reconnect)
+                         rdmnet_data_changed_t *data_changed)
 {
   if (param_data_len == (2 + E133_SCOPE_STRING_PADDED_LENGTH + 1 + 4 + 16 + 2))
   {
@@ -347,10 +348,8 @@ bool set_component_scope(const uint8_t *param_data, uint8_t param_data_len, uint
     {
       const uint8_t *cur_ptr = param_data + 2;
       char new_scope[E133_SCOPE_STRING_PADDED_LENGTH];
-      LwpaSockaddr new_static_config;
-
-      lwpaip_set_invalid(&new_static_config.ip);
-      new_static_config.port = 0;
+      bool have_new_static_broker = false;
+      LwpaSockaddr new_static_broker;
 
       strncpy(new_scope, (const char *)cur_ptr, E133_SCOPE_STRING_PADDED_LENGTH);
       new_scope[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
@@ -359,36 +358,38 @@ bool set_component_scope(const uint8_t *param_data, uint8_t param_data_len, uint
       switch (*cur_ptr++)
       {
         case E133_STATIC_CONFIG_IPV4:
-          lwpaip_set_v4_address(&new_static_config.ip, lwpa_upack_32b(cur_ptr));
+          lwpaip_set_v4_address(&new_static_broker.ip, lwpa_upack_32b(cur_ptr));
           cur_ptr += 4 + 16;
-          new_static_config.port = lwpa_upack_16b(cur_ptr);
+          new_static_broker.port = lwpa_upack_16b(cur_ptr);
+          have_new_static_broker = true;
           break;
         case E133_STATIC_CONFIG_IPV6:
           cur_ptr += 4;
-          lwpaip_set_v6_address(&new_static_config.ip, cur_ptr);
+          lwpaip_set_v6_address(&new_static_broker.ip, cur_ptr);
           cur_ptr += 16;
-          new_static_config.port = lwpa_upack_16b(cur_ptr);
+          new_static_broker.port = lwpa_upack_16b(cur_ptr);
+          have_new_static_broker = true;
           break;
         case E133_NO_STATIC_CONFIG:
         default:
           break;
       }
 
-      LwpaSockaddr *existing_static_config = &prop_data.rdmnet_params.broker_static_addr;
-      if (param_data_len == strlen(prop_data.rdmnet_params.scope) &&
-          strncmp((char *)&param_data[2], prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0 &&
-          ((lwpaip_is_invalid(&new_static_config.ip) && lwpaip_is_invalid(&existing_static_config->ip)) ||
-           (lwpaip_equal(&new_static_config.ip, &existing_static_config->ip) &&
-            new_static_config.port == existing_static_config->port)))
+      RdmnetScopeConfig *existing_scope_config = &prop_data.scope_config;
+      if (strncmp((char *)&param_data[2], existing_scope_config->scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0 &&
+          ((!have_new_static_broker && !existing_scope_config->has_static_broker_addr) ||
+           (lwpaip_equal(&new_static_broker.ip, &existing_scope_config->static_broker_addr.ip) &&
+            new_static_broker.port == existing_scope_config->static_broker_addr.port)))
       {
         /* Same settings as current */
-        *requires_reconnect = false;
+        *data_changed = kNoRdmnetDataChanged;
       }
       else
       {
-        strncpy(prop_data.rdmnet_params.scope, new_scope, E133_SCOPE_STRING_PADDED_LENGTH);
-        *existing_static_config = new_static_config;
-        *requires_reconnect = true;
+        rdmnet_safe_strncpy(existing_scope_config->scope, new_scope, E133_SCOPE_STRING_PADDED_LENGTH);
+        existing_scope_config->has_static_broker_addr = have_new_static_broker;
+        existing_scope_config->static_broker_addr = new_static_broker;
+        *data_changed = kRdmnetScopeConfigChanged;
       }
       return true;
     }
@@ -405,27 +406,26 @@ bool set_component_scope(const uint8_t *param_data, uint8_t param_data_len, uint
 }
 
 bool set_search_domain(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                       bool *requires_reconnect)
+                       rdmnet_data_changed_t *data_changed)
 {
   if (param_data_len <= E133_DOMAIN_STRING_PADDED_LENGTH)
   {
     if (param_data_len > 0 || strcmp("", (char *)param_data) != 0)
     {
-      if (strncmp(prop_data.rdmnet_params.search_domain, (char *)param_data, E133_DOMAIN_STRING_PADDED_LENGTH) == 0)
+      if (strncmp(prop_data.search_domain, (char *)param_data, E133_DOMAIN_STRING_PADDED_LENGTH) == 0)
       {
         /* Same domain as current */
-        *requires_reconnect = false;
+        *data_changed = kNoRdmnetDataChanged;
       }
       else
       {
-        strncpy(prop_data.rdmnet_params.search_domain, (char *)param_data, E133_DOMAIN_STRING_PADDED_LENGTH);
-        *requires_reconnect = true;
+        strncpy(prop_data.search_domain, (char *)param_data, E133_DOMAIN_STRING_PADDED_LENGTH);
+        *data_changed = kRdmnetSearchDomainChanged;
       }
     }
     else
     {
-      lwpaip_set_invalid(&prop_data.rdmnet_params.broker_static_addr.ip);
-      *requires_reconnect = true;
+      *nack_reason = E120_NR_DATA_OUT_OF_RANGE;
     }
     return true;
   }
@@ -438,13 +438,13 @@ bool set_search_domain(const uint8_t *param_data, uint8_t param_data_len, uint16
 }
 
 bool set_tcp_comms_status(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                          bool *requires_reconnect)
+                          rdmnet_data_changed_t *data_changed)
 {
-  *requires_reconnect = false;
+  *data_changed = kNoRdmnetDataChanged;
 
   if (param_data_len == E133_SCOPE_STRING_PADDED_LENGTH)
   {
-    if (strncmp((char *)param_data, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
+    if (strncmp((char *)param_data, prop_data.scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
     {
       /* Same scope as current */
       prop_data.tcp_unhealthy_counter = 0;
@@ -496,31 +496,35 @@ bool get_component_scope(const uint8_t *param_data, uint8_t param_data_len, para
   {
     if (lwpa_upack_16b(param_data) == 1)
     {
+      const RdmnetScopeConfig *scope_config = &prop_data.scope_config;
+
+      // Pack the scope
       uint8_t *cur_ptr = resp_data_list[0].data;
       lwpa_pack_16b(cur_ptr, 1);
       cur_ptr += 2;
-      strncpy((char *)cur_ptr, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH);
-      cur_ptr[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
+      rdmnet_safe_strncpy((char *)cur_ptr, scope_config->scope, E133_SCOPE_STRING_PADDED_LENGTH);
       cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
 
-      /* Pack the static config data */
-      const LwpaSockaddr *static_config = &prop_data.rdmnet_params.broker_static_addr;
-      if (lwpaip_is_v4(&static_config->ip))
+      // Pack the static config data
+      if (scope_config->has_static_broker_addr)
       {
-        *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
-        lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&static_config->ip));
-        cur_ptr += 4 + 16;
-        lwpa_pack_16b(cur_ptr, static_config->port);
-        cur_ptr += 2;
-      }
-      else if (lwpaip_is_v6(&static_config->ip))
-      {
-        *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
-        cur_ptr += 4;
-        memcpy(cur_ptr, lwpaip_v6_address(&static_config->ip), 16);
-        cur_ptr += 16;
-        lwpa_pack_16b(cur_ptr, static_config->port);
-        cur_ptr += 2;
+        if (lwpaip_is_v4(&scope_config->static_broker_addr.ip))
+        {
+          *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
+          lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&scope_config->static_broker_addr.ip));
+          cur_ptr += 4 + 16;
+          lwpa_pack_16b(cur_ptr, scope_config->static_broker_addr.port);
+          cur_ptr += 2;
+        }
+        else  // V6
+        {
+          *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
+          cur_ptr += 4;
+          memcpy(cur_ptr, lwpaip_v6_address(&scope_config->static_broker_addr.ip), 16);
+          cur_ptr += 16;
+          lwpa_pack_16b(cur_ptr, scope_config->static_broker_addr.port);
+          cur_ptr += 2;
+        }
       }
       else
       {
@@ -550,8 +554,8 @@ bool get_search_domain(const uint8_t *param_data, uint8_t param_data_len, param_
   (void)param_data;
   (void)param_data_len;
   (void)nack_reason;
-  strncpy((char *)resp_data_list[0].data, prop_data.rdmnet_params.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
-  resp_data_list[0].datalen = (uint8_t)strlen(prop_data.rdmnet_params.search_domain);
+  strncpy((char *)resp_data_list[0].data, prop_data.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
+  resp_data_list[0].datalen = (uint8_t)strlen(prop_data.search_domain);
   *num_responses = 1;
   return true;
 }
@@ -564,7 +568,7 @@ bool get_tcp_comms_status(const uint8_t *param_data, uint8_t param_data_len, par
   (void)nack_reason;
   uint8_t *cur_ptr = resp_data_list[0].data;
 
-  memcpy(cur_ptr, prop_data.rdmnet_params.scope, E133_SCOPE_STRING_PADDED_LENGTH);
+  memcpy(cur_ptr, prop_data.scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH);
   cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
   if (lwpaip_is_v4(&prop_data.cur_broker_addr.ip))
   {

@@ -78,6 +78,8 @@ typedef struct RdmnetControllerConfig
   RdmUid uid;
   /*! The controller's CID. */
   LwpaUuid cid;
+  /*! The controller's configured RDMnet search domain. */
+  const char *search_domain;
   /*! A set of callbacks for the controller to receive RDMnet notifications. */
   RdmnetControllerCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. Can be NULL. */

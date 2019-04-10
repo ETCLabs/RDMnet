@@ -92,6 +92,7 @@ lwpa_error_t rdmnet_device_create(const RdmnetDeviceConfig *config, rdmnet_devic
   client_config.type = kRPTClientTypeDevice;
   client_config.uid = config->uid;
   client_config.cid = config->cid;
+  client_config.search_domain = config->search_domain;
   client_config.callbacks = client_callbacks;
   client_config.callback_context = new_device;
 
@@ -155,9 +156,9 @@ void client_connected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle
   (void)handle;
 
   RdmnetDevice *device = (RdmnetDevice *)context;
-  if (device)
+  if (device && scope_handle == device->scope_handle)
   {
-    device->callbacks.connected(device, scope_handle, info, device->callback_context);
+    device->callbacks.connected(device, info, device->callback_context);
   }
 }
 
@@ -167,9 +168,9 @@ void client_connect_failed(rdmnet_client_t handle, rdmnet_client_scope_t scope_h
   (void)handle;
 
   RdmnetDevice *device = (RdmnetDevice *)context;
-  if (device)
+  if (device && scope_handle == device->scope_handle)
   {
-    device->callbacks.connect_failed(device, scope_handle, info, device->callback_context);
+    device->callbacks.connect_failed(device, info, device->callback_context);
   }
 }
 
@@ -179,9 +180,9 @@ void client_disconnected(rdmnet_client_t handle, rdmnet_client_scope_t scope_han
   (void)handle;
 
   RdmnetDevice *device = (RdmnetDevice *)context;
-  if (device)
+  if (device && scope_handle == device->scope_handle)
   {
-    device->callbacks.disconnected(device, scope_handle, info, device->callback_context);
+    device->callbacks.disconnected(device, info, device->callback_context);
   }
 }
 
@@ -201,11 +202,11 @@ void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_han
   (void)handle;
 
   RdmnetDevice *device = (RdmnetDevice *)context;
-  if (device)
+  if (device && scope_handle == device->scope_handle)
   {
     if (msg->type == kRptClientMsgRdmCmd)
     {
-      device->callbacks.rdm_command_received(device, scope_handle, &msg->payload.cmd, device->callback_context);
+      device->callbacks.rdm_command_received(device, &msg->payload.cmd, device->callback_context);
     }
     else
     {

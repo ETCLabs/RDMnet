@@ -146,7 +146,7 @@ static lwpa_error_t create_and_append_scope_entry(const RdmnetScopeConfig *confi
 static ClientScopeListEntry *find_scope_in_list(ClientScopeListEntry *list, const char *scope);
 static void remove_scope_from_list(ClientScopeListEntry **list, ClientScopeListEntry *entry);
 
-static void start_scope_discovery(ClientScopeListEntry *scope_entry);
+static void start_scope_discovery(ClientScopeListEntry *scope_entry, const char *search_domain);
 static void start_connection_for_scope(ClientScopeListEntry *scope_entry, const LwpaSockaddr *broker_addr);
 
 // Find clients and scopes
@@ -307,7 +307,7 @@ lwpa_error_t rdmnet_client_add_scope(rdmnet_client_t handle, const RdmnetScopeCo
     // Start discovery or connection on the new scope (depending on whether a static broker was
     // configured)
     if (new_entry->state == kScopeStateDiscovery)
-      start_scope_discovery(new_entry);
+      start_scope_discovery(new_entry, cli->search_domain);
     else if (new_entry->state == kScopeStateConnecting)
       start_connection_for_scope(new_entry, &new_entry->config.static_broker_addr);
   }
@@ -348,6 +348,16 @@ lwpa_error_t rdmnet_client_change_scope(rdmnet_client_t handle, rdmnet_client_sc
   (void)handle;
   (void)scope_handle;
   (void)new_config;
+  (void)reason;
+  // TODO
+  return kLwpaErrNotImpl;
+}
+
+lwpa_error_t rdmnet_client_change_search_domain(rdmnet_client_t handle, const char *new_search_domain,
+                                                rdmnet_disconnect_reason_t reason)
+{
+  (void)handle;
+  (void)new_search_domain;
   (void)reason;
   // TODO
   return kLwpaErrNotImpl;
@@ -941,6 +951,7 @@ RdmnetClient *rpt_client_new(const RdmnetRptClientConfig *config)
       new_cli->cid = config->cid;
       new_cli->data.rpt.callbacks = config->callbacks;
       new_cli->callback_context = config->callback_context;
+      rdmnet_safe_strncpy(new_cli->search_domain, config->search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
       new_cli->data.rpt.type = config->type;
       if (rpt_client_uid_is_dynamic(&config->uid))
       {
@@ -1095,13 +1106,12 @@ void remove_scope_from_list(ClientScopeListEntry **list, ClientScopeListEntry *e
   }
 }
 
-void start_scope_discovery(ClientScopeListEntry *scope_entry)
+void start_scope_discovery(ClientScopeListEntry *scope_entry, const char *search_domain)
 {
   RdmnetScopeMonitorConfig config;
 
   rdmnet_safe_strncpy(config.scope, scope_entry->config.scope, E133_SCOPE_STRING_PADDED_LENGTH);
-  // TODO expose domain to API
-  rdmnet_safe_strncpy(config.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
+  rdmnet_safe_strncpy(config.domain, search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
   config.callbacks = disc_callbacks;
   config.callback_context = NULL;
 
@@ -1133,8 +1143,7 @@ void start_connection_for_scope(ClientScopeListEntry *scope_entry, const LwpaSoc
 
     rdmnet_safe_strncpy(connect_msg.scope, scope_entry->config.scope, E133_SCOPE_STRING_PADDED_LENGTH);
     connect_msg.e133_version = E133_VERSION;
-    // TODO expose to API
-    rdmnet_safe_strncpy(connect_msg.search_domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
+    rdmnet_safe_strncpy(connect_msg.search_domain, cli->search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
     if (rpt_data->type == kRPTClientTypeController)
       connect_msg.connect_flags = CONNECTFLAG_INCREMENTAL_UPDATES;
     else
