@@ -394,7 +394,7 @@ lwpa_error_t rdmnet_destroy_connection(rdmnet_conn_t handle, const rdmnet_discon
  */
 int rdmnet_send(rdmnet_conn_t handle, const uint8_t *data, size_t size)
 {
-  if (data || size == 0)
+  if (!data || size == 0)
     return kLwpaErrInvalid;
 
   RdmnetConnection *conn;
@@ -637,6 +637,10 @@ void rdmnet_conn_tick()
   }
 
   // Do the rest of the periodic functionality with a read lock
+
+  ConnCallbackDispatchInfo cb;
+  init_callback_info(&cb);
+
   if (rdmnet_readlock())
   {
     LwpaRbIter conn_iter;
@@ -644,15 +648,8 @@ void rdmnet_conn_tick()
     RdmnetConnection *conn = (RdmnetConnection *)lwpa_rbiter_first(&conn_iter, &state.connections);
     while (conn)
     {
-      ConnCallbackDispatchInfo cb;
-      cb.which = kConnCallbackNone;
-
       if (lwpa_mutex_take(&conn->lock, LWPA_WAIT_FOREVER))
       {
-        cb.handle = conn->handle;
-        cb.cbs = conn->callbacks;
-        cb.context = conn->callback_context;
-
         switch (conn->state)
         {
           case kCSConnectPending:
@@ -679,12 +676,23 @@ void rdmnet_conn_tick()
             if (lwpa_timer_isexpired(&conn->hb_timer))
             {
               // Heartbeat timeout! Disconnect the connection.
-              cb.which = kConnCallbackDisconnected;
-              RdmnetDisconnectedInfo *disconn_info = &cb.args.disconnected.disconn_info;
-              disconn_info->event = kRdmnetDisconnectNoHeartbeat;
-              disconn_info->socket_err = kLwpaErrOk;
+              if (cb.which == kConnCallbackNone)
+              {
+                // Currently we have a limit of processing one heartbeat timeout per tick. This
+                // helps simplify the implementation, since heartbeat timeouts aren't anticipated
+                // to come in big bursts.
 
-              reset_connection(conn);
+                // If it causes performance issues, it should be revisited.
+
+                cb.which = kConnCallbackDisconnected;
+                fill_callback_info(conn, &cb);
+
+                RdmnetDisconnectedInfo *disconn_info = &cb.args.disconnected.disconn_info;
+                disconn_info->event = kRdmnetDisconnectNoHeartbeat;
+                disconn_info->socket_err = kLwpaErrOk;
+
+                reset_connection(conn);
+              }
             }
             else if (lwpa_timer_isexpired(&conn->send_timer))
             {
@@ -704,15 +712,11 @@ void rdmnet_conn_tick()
         lwpa_mutex_give(&conn->lock);
       }
 
-      if (cb.which != kConnCallbackNone)
-      {
-        // Calling back inside the read lock is OK because API functions only take the read lock
-        deliver_callback(&cb);
-      }
       conn = lwpa_rbiter_next(&conn_iter);
     }
     rdmnet_readunlock();
   }
+  deliver_callback(&cb);
 }
 
 void tcp_connection_established(rdmnet_conn_t handle)
@@ -856,6 +860,7 @@ lwpa_error_t rdmnet_do_recv(rdmnet_conn_t handle, const uint8_t *data, size_t da
   lwpa_error_t res = get_conn(handle, &conn);
   if (res == kLwpaErrOk)
   {
+    fill_callback_info(conn, cb);
     if (conn->state == kCSHeartbeat || conn->state == kCSRDMnetConnPending)
     {
       RdmnetMsgBuf *msgbuf = &conn->recv_buf;
@@ -905,16 +910,20 @@ void deliver_callback(ConnCallbackDispatchInfo *info)
   switch (info->which)
   {
     case kConnCallbackConnected:
-      info->cbs.connected(info->handle, &info->args.connected.connect_info, info->context);
+      if (info->cbs.connected)
+        info->cbs.connected(info->handle, &info->args.connected.connect_info, info->context);
       break;
     case kConnCallbackConnectFailed:
-      info->cbs.connect_failed(info->handle, &info->args.connect_failed.failed_info, info->context);
+      if (info->cbs.connect_failed)
+        info->cbs.connect_failed(info->handle, &info->args.connect_failed.failed_info, info->context);
       break;
     case kConnCallbackDisconnected:
-      info->cbs.disconnected(info->handle, &info->args.disconnected.disconn_info, info->context);
+      if (info->cbs.disconnected)
+        info->cbs.disconnected(info->handle, &info->args.disconnected.disconn_info, info->context);
       break;
     case kConnCallbackMsgReceived:
-      info->cbs.msg_received(info->handle, &info->args.msg_received.message, info->context);
+      if (info->cbs.msg_received)
+        info->cbs.msg_received(info->handle, &info->args.msg_received.message, info->context);
       free_rdmnet_message(&info->args.msg_received.message);
       break;
     case kConnCallbackNone:
@@ -1137,6 +1146,7 @@ void destroy_connection(RdmnetConnection *conn)
       lwpa_close(conn->sock);
     lwpa_mutex_destroy(&conn->lock);
     lwpa_mutex_destroy(&conn->send_lock);
+    lwpa_rbtree_remove(&state.connections, conn);
     free_rdmnet_connection(conn);
   }
 }

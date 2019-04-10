@@ -123,8 +123,8 @@ private:
   std::vector<HANDLE> worker_threads_;
   std::unique_ptr<WindowsThreadInterface> thread_interface_;
 
-  // The set of sockets being managed
-  std::map<rdmnet_conn_t, SocketData> sockets_;
+  // The set of sockets being managed.
+  std::map<rdmnet_conn_t, std::unique_ptr<SocketData>> sockets_;
   lwpa_rwlock_t socket_lock_;
 
   // The callback instance

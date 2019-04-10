@@ -65,7 +65,7 @@ private:
 
   struct InitialData
   {
-    std::string scope;
+    std::string scope{E133_DEFAULT_SCOPE};
     std::vector<LwpaIpAddr> ifaces;
     std::vector<MacAddr> macs;
     uint16_t port{0};

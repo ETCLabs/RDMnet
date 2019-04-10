@@ -37,30 +37,22 @@
 
 #include "lwpa/socket.h"
 #include "rdmnet/broker.h"
-#include "rdmnet/client.h"
-#include "rdmnet/core/connection.h"
-#include "rdmnet/core/broker_prot.h"
-#include "rdmnet/core/rpt_prot.h"
 #include "broker_client.h"
 #include "broker_responder.h"
 #include "broker_threads.h"
 #include "broker_discovery.h"
 #include "broker_uid_manager.h"
+#include "rdmnet_conn_wrapper.h"
 
-class RdmnetCoreLibraryNotify
-{
-  virtual void RdmnetMsgReceived(rdmnet_conn_t handle, const RdmnetMessage &msg) = 0;
-  virtual void RdmnetDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo &disconn_info) = 0;
-};
-
-class BrokerCore : public RdmnetCoreLibraryNotify,
+class BrokerCore : public RdmnetConnNotify,
                    public RDMnet::BrokerSocketManagerNotify,
                    public ListenThreadNotify,
                    public ClientServiceThreadNotify,
                    public BrokerDiscoveryManagerNotify
 {
 public:
-  BrokerCore(RDMnet::BrokerLog *log, RDMnet::BrokerSocketManager *socket_manager, RDMnet::BrokerNotify *notify);
+  BrokerCore(RDMnet::BrokerLog *log, RDMnet::BrokerSocketManager *socket_manager, RDMnet::BrokerNotify *notify,
+             std::unique_ptr<RdmnetConnInterface> conn);
   virtual ~BrokerCore();
 
   // Some utility functions
@@ -90,11 +82,10 @@ private:
   RDMnet::BrokerLog *log_{nullptr};
   RDMnet::BrokerSocketManager *socket_manager_{nullptr};
   RDMnet::BrokerNotify *notify_{nullptr};
+  std::unique_ptr<RdmnetConnInterface> conn_interface_;
 
   RDMnet::BrokerSettings settings_;
   RdmUid my_uid_{};
-
-  RdmnetConnectionConfig new_conn_config_{};
 
   std::vector<std::unique_ptr<ListenThread>> listeners_;
   std::vector<LwpaIpAddr> listen_addrs_;
@@ -111,8 +102,8 @@ private:
   void StopBrokerServices();
 
   // RdmnetCoreLibraryNotify messages
-  virtual void RdmnetDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo &disconn_info) override;
-  virtual void RdmnetMsgReceived(rdmnet_conn_t handle, const RdmnetMessage &msg) override;
+  virtual void RdmnetConnDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo &disconn_info) override;
+  virtual void RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage &msg) override;
 
   // RDMnet::BrokerSocketManagerNotify messages
   virtual void SocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t *data, size_t data_size) override;
@@ -147,8 +138,7 @@ private:
 
   std::set<rdmnet_conn_t> clients_to_destroy_;
 
-  void MarkConnForDestruction(rdmnet_conn_t conn, bool send_disconnect,
-                              rdmnet_disconnect_reason_t reason = kRdmnetDisconnectShutdown);
+  void MarkConnForDestruction(rdmnet_conn_t conn, SendDisconnect send_disconnect = SendDisconnect());
   void DestroyMarkedClientSockets();
 
   // Message processing and sending functions

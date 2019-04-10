@@ -205,6 +205,8 @@ add_library(Broker
   rdmnet/broker/broker_uid_manager.cpp
   rdmnet/broker/broker_util.h
   rdmnet/broker/broker_util.cpp
+  rdmnet/broker/rdmnet_conn_wrapper.h
+  rdmnet/broker/rdmnet_conn_wrapper.cpp
 )
 target_include_directories(Broker PUBLIC ${RDMNET_INCLUDE})
 target_link_libraries(Broker PUBLIC RDMnet)

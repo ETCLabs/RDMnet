@@ -32,6 +32,7 @@
 #define _RDMNET_BROKER_H_
 
 #include <memory>
+#include <string>
 
 #include "lwpa/int.h"
 #include "lwpa/uuid.h"
@@ -61,14 +62,12 @@ struct BrokerDiscoveryAttributes
   std::string dns_service_instance_name;
 
   /// A string to identify the manufacturer of this %Broker instance.
-  std::string dns_manufacturer;
+  std::string dns_manufacturer{"Generic Manufacturer"};
   /// A string to identify the model of product in which the %Broker instance is included.
-  std::string dns_model;
+  std::string dns_model{"Generic RDMnet Broker"};
 
   /// The Scope on which this %Broker should operate. If empty, the default RDMnet scope is used.
-  std::string scope;
-
-  BrokerDiscoveryAttributes() : scope(E133_DEFAULT_SCOPE) {}
+  std::string scope{E133_DEFAULT_SCOPE};
 };
 
 /// A group of settings for Broker operation.

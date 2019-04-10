@@ -1,5 +1,4 @@
 /******************************************************************************
-************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
 * THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
@@ -27,7 +26,6 @@
 
 // The generic broker implementation
 
-#include "rdmnet/broker.h"
 #include "broker_core.h"
 
 #include <cstring>
@@ -43,7 +41,7 @@
 /*************************** Function definitions ****************************/
 
 RDMnet::Broker::Broker(BrokerLog *log, BrokerSocketManager *socket_manager, BrokerNotify *notify)
-    : core_(std::make_unique<BrokerCore>(log, socket_manager, notify))
+    : core_(std::make_unique<BrokerCore>(log, socket_manager, notify, std::unique_ptr<RdmnetConnInterface>(new RdmnetConnWrapper)))
 {
 }
 
@@ -88,14 +86,15 @@ void RDMnet::Broker::GetSettings(BrokerSettings &settings) const
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 BrokerCore::BrokerCore(RDMnet::BrokerLog *log, RDMnet::BrokerSocketManager *socket_manager,
-                       RDMnet::BrokerNotify *notify)
-    : RdmnetCoreLibraryNotify()
+                       RDMnet::BrokerNotify *notify, std::unique_ptr<RdmnetConnInterface> conn)
+    : RdmnetConnNotify()
     , ListenThreadNotify()
     , ClientServiceThreadNotify()
     , BrokerDiscoveryManagerNotify()
     , log_(log)
     , socket_manager_(socket_manager)
     , notify_(notify)
+    , conn_interface_(std::move(conn))
     , service_thread_(1)
     , disc_(this)
 {
@@ -132,7 +131,7 @@ bool BrokerCore::Startup(const RDMnet::BrokerSettings &settings, uint16_t listen
     }
     settings_ = settings;
 
-    if (kLwpaErrOk != rdmnet_core_init(log_->GetLogParams()))
+    if (kLwpaErrOk != conn_interface_->Startup(settings.cid, log_->GetLogParams(), this))
     {
       return false;
     }
@@ -193,7 +192,7 @@ void BrokerCore::Shutdown()
 
     socket_manager_->Shutdown();
 
-    rdmnet_core_deinit();
+    conn_interface_->Shutdown();
 
     started_ = false;
   }
@@ -292,13 +291,13 @@ bool BrokerCore::NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr &addr)
     if (settings_.max_connections == 0 ||
         (clients_.size() <= settings_.max_connections + settings_.max_reject_connections))
     {
-      lwpa_error_t create_res = rdmnet_new_connection(&new_conn_config_, &connhandle);
+      lwpa_error_t create_res = conn_interface_->CreateNewConnectionForSocket(new_sock, addr, connhandle);
       if (create_res == kLwpaErrOk)
       {
         auto client = std::make_shared<BrokerClient>(connhandle);
 
         // Before inserting the connection, make sure we can attach the socket.
-        if (client && kLwpaErrOk == rdmnet_attach_existing_socket(connhandle, new_sock, &addr))
+        if (client)
         {
           client->addr = addr;
           clients_.insert(std::make_pair(connhandle, std::move(client)));
@@ -307,7 +306,7 @@ bool BrokerCore::NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr &addr)
         }
         else
         {
-          rdmnet_destroy_connection(connhandle, nullptr);
+          conn_interface_->DestroyConnection(connhandle);
         }
       }
     }
@@ -327,13 +326,12 @@ bool BrokerCore::NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr &addr)
 
 void BrokerCore::SocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t *data, size_t data_size)
 {
-  rdmnet_socket_data_received(conn_handle, data, data_size);
+  conn_interface_->SocketDataReceived(conn_handle, data, data_size);
 }
 
 void BrokerCore::SocketClosed(rdmnet_conn_t conn_handle, bool /*graceful*/)
 {
-  log_->Log(LWPA_LOG_INFO, "Client %d disconnected.");
-  rdmnet_socket_error(conn_handle, kLwpaErrOk);
+  conn_interface_->SocketError(conn_handle, kLwpaErrOk);
 }
 
 // Process each controller queue, sending out the next message from each queue if devices are
@@ -355,7 +353,7 @@ bool BrokerCore::ServiceClients()
 }
 
 // Message processing functions
-void BrokerCore::RdmnetMsgReceived(rdmnet_conn_t handle, const RdmnetMessage &msg)
+void BrokerCore::RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage &msg)
 {
   switch (msg.vector)
   {
@@ -388,9 +386,9 @@ void BrokerCore::RdmnetMsgReceived(rdmnet_conn_t handle, const RdmnetMessage &ms
   }
 }
 
-void BrokerCore::RdmnetDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo &disconn_info)
+void BrokerCore::RdmnetConnDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo &disconn_info)
 {
-  MarkConnForDestruction(handle, false);
+  MarkConnForDestruction(handle);
 }
 
 void BrokerCore::SendClientList(int conn)
@@ -547,7 +545,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
   ClientEntryData updated_data = data;
   ClientEntryDataRpt *rptdata = get_rpt_client_entry_data(&updated_data);
 
-  if (kLwpaErrOk != rdmnet_set_blocking(handle, false))
+  if (kLwpaErrOk != conn_interface_->SetBlocking(handle, false))
   {
     log_->Log(LWPA_LOG_INFO, "Error translating socket into non-blocking socket for Client %d", handle);
     return false;
@@ -1020,14 +1018,14 @@ void BrokerCore::StopBrokerServices()
   GetConnSnapshot(conns, true, true, true);
 
   for (auto &conn : conns)
-    MarkConnForDestruction(conn, true, kRdmnetDisconnectShutdown);
+    MarkConnForDestruction(conn, SendDisconnect(kRdmnetDisconnectShutdown));
 
   DestroyMarkedClientSockets();
 }
 
 // This function grabs a read lock on client_lock_.
 // Optionally sends a RDMnet-level disconnect message.
-void BrokerCore::MarkConnForDestruction(rdmnet_conn_t conn, bool send_disconnect, rdmnet_disconnect_reason_t reason)
+void BrokerCore::MarkConnForDestruction(rdmnet_conn_t conn, SendDisconnect send_disconnect)
 {
   bool found = false;
 
@@ -1045,7 +1043,7 @@ void BrokerCore::MarkConnForDestruction(rdmnet_conn_t conn, bool send_disconnect
 
   if (found)
   {
-    rdmnet_destroy_connection(conn, send_disconnect ? &reason : nullptr);
+    conn_interface_->DestroyConnection(conn, send_disconnect);
     log_->Log(LWPA_LOG_DEBUG, "Connection %d marked for destruction", conn);
   }
 }

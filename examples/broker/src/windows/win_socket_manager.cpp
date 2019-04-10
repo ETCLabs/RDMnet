@@ -201,8 +201,8 @@ bool WinBrokerSocketManager::Shutdown()
     for (auto &sock_data : sockets_)
     {
       // Trigger the worker thread to stop processing each socket.
-      sock_data.second.close_requested = true;
-      closesocket(sock_data.second.socket);
+      sock_data.second->close_requested = true;
+      closesocket(sock_data.second->socket);
     }
   }
 
@@ -211,7 +211,8 @@ bool WinBrokerSocketManager::Shutdown()
   {
     PostQueuedCompletionStatus(iocp_, 0, static_cast<ULONG_PTR>(MessageKey::kShutdown), NULL);
   }
-  thread_interface_->WaitForThreadsCompletion(static_cast<DWORD>(worker_threads_.size()), worker_threads_.data(), TRUE, 500);
+  thread_interface_->WaitForThreadsCompletion(static_cast<DWORD>(worker_threads_.size()), worker_threads_.data(), TRUE,
+                                              500);
   for (const auto &thread : worker_threads_)
     thread_interface_->CleanupThread(thread);
   worker_threads_.clear();
@@ -233,28 +234,31 @@ bool WinBrokerSocketManager::AddSocket(rdmnet_conn_t conn_handle, lwpa_socket_t 
   lwpa::WriteGuard socket_write(socket_lock_);
 
   // Create the data structure for the new socket
-  SocketData new_sock_data = SocketData(conn_handle, socket);
-  // Add it to the socket map
-  auto result = sockets_.insert(std::make_pair(conn_handle, new_sock_data));
-  if (result.second)
+  auto new_sock_data = std::make_unique<SocketData>(conn_handle, socket);
+  if (new_sock_data)
   {
-    // Add the socket to our I/O completion port
-    if (NULL != CreateIoCompletionPort((HANDLE)socket, iocp_, static_cast<ULONG_PTR>(MessageKey::kNormalRecv), 0))
+    // Add it to the socket map
+    auto result = sockets_.insert(std::make_pair(conn_handle, std::move(new_sock_data)));
+    if (result.second)
     {
-      // Notify a worker thread to begin a receive operation
-      if (PostQueuedCompletionStatus(iocp_, 0, static_cast<ULONG_PTR>(MessageKey::kStartRecv),
-                                     &result.first->second.overlapped))
+      // Add the socket to our I/O completion port
+      if (NULL != CreateIoCompletionPort((HANDLE)socket, iocp_, static_cast<ULONG_PTR>(MessageKey::kNormalRecv), 0))
       {
-        return true;
+        // Notify a worker thread to begin a receive operation
+        if (PostQueuedCompletionStatus(iocp_, 0, static_cast<ULONG_PTR>(MessageKey::kStartRecv),
+                                       &result.first->second->overlapped))
+        {
+          return true;
+        }
+        else
+        {
+          sockets_.erase(conn_handle);
+        }
       }
       else
       {
         sockets_.erase(conn_handle);
       }
-    }
-    else
-    {
-      sockets_.erase(conn_handle);
     }
   }
   return false;
@@ -267,12 +271,12 @@ void WinBrokerSocketManager::RemoveSocket(rdmnet_conn_t conn_handle)
   auto sock_data = sockets_.find(conn_handle);
   if (sock_data != sockets_.end())
   {
-    if (!sock_data->second.close_requested)
+    if (!sock_data->second->close_requested)
     {
-      sock_data->second.close_requested = true;
+      sock_data->second->close_requested = true;
       // This will cause a worker to wake up and notify that the socket was closed,
       // triggering the rest of the destruction.
-      closesocket(sock_data->second.socket);
+      closesocket(sock_data->second->socket);
     }
   }
 }
@@ -287,11 +291,11 @@ void WinBrokerSocketManager::WorkerNotifySocketBad(rdmnet_conn_t conn_handle, bo
     auto sock_data = sockets_.find(conn_handle);
     if (sock_data != sockets_.end())
     {
-      if (!sock_data->second.close_requested && !shutting_down_)
+      if (!sock_data->second->close_requested && !shutting_down_)
       {
         notify_socket_closed = true;
       }
-      closesocket(sock_data->second.socket);
+      closesocket(sock_data->second->socket);
       sockets_.erase(sock_data);
     }
   }
@@ -307,9 +311,9 @@ void WinBrokerSocketManager::WorkerNotifyRecvData(rdmnet_conn_t conn_handle, siz
   auto sock_data = sockets_.find(conn_handle);
   if (sock_data != sockets_.end())
   {
-    if (!sock_data->second.close_requested && notify_)
+    if (!sock_data->second->close_requested && notify_)
     {
-      notify_->SocketDataReceived(conn_handle, sock_data->second.recv_buf, size);
+      notify_->SocketDataReceived(conn_handle, sock_data->second->recv_buf, size);
     }
   }
 }
