@@ -54,6 +54,7 @@ public:
   void SetInitialLogLevel(int level) { initial_data_.log_mask = LWPA_LOG_UPTO(level); }
 
   void NetworkChanged();
+  void AsyncShutdown();
 
 private:
   void ScopeChanged(const std::string &new_scope) override;
@@ -73,7 +74,8 @@ private:
   } initial_data_;
 
   RDMnet::BrokerLog *log_{nullptr};
-  bool restart_required_{false};
+  bool restart_requested_{false};
+  bool shutdown_requested_{false};
   std::string new_scope_;
 };
 

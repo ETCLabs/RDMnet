@@ -41,7 +41,8 @@
 /*************************** Function definitions ****************************/
 
 RDMnet::Broker::Broker(BrokerLog *log, BrokerSocketManager *socket_manager, BrokerNotify *notify)
-    : core_(std::make_unique<BrokerCore>(log, socket_manager, notify, std::unique_ptr<RdmnetConnInterface>(new RdmnetConnWrapper)))
+    : core_(std::make_unique<BrokerCore>(log, socket_manager, notify,
+                                         std::unique_ptr<RdmnetConnInterface>(new RdmnetConnWrapper)))
 {
 }
 
@@ -243,14 +244,14 @@ bool BrokerCore::IsValidDeviceDestinationUID(const RdmUid &uid) const
 
 // The passed-in vector is cleared and filled with the cookies of connections that match the
 // criteria.
-void BrokerCore::GetConnSnapshot(std::vector<int> &conns, bool include_devices, bool include_controllers,
+void BrokerCore::GetConnSnapshot(std::vector<rdmnet_conn_t> &conns, bool include_devices, bool include_controllers,
                                  bool include_unknown, uint16_t manufacturer_filter)
 {
   conns.clear();
 
   BrokerReadGuard client_read(client_lock_);
 
-  if (clients_.empty())
+  if (!clients_.empty())
   {
     // We'll just do a bulk reserve.  The actual vector may take up less.
     conns.reserve(clients_.size());
@@ -1014,7 +1015,7 @@ void BrokerCore::StopBrokerServices()
     listener->Stop();
 
   // No new connections coming in, manually shut down the existing ones.
-  std::vector<int> conns;
+  std::vector<rdmnet_conn_t> conns;
   GetConnSnapshot(conns, true, true, true);
 
   for (auto &conn : conns)

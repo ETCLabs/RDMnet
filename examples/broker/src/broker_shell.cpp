@@ -39,7 +39,7 @@ void BrokerShell::ScopeChanged(const std::string &new_scope)
     log_->Log(LWPA_LOG_INFO, "Scope change detected, restarting broker and applying changes");
 
   new_scope_ = new_scope;
-  restart_required_ = true;
+  restart_requested_ = true;
 }
 
 void BrokerShell::NetworkChanged()
@@ -47,7 +47,15 @@ void BrokerShell::NetworkChanged()
   if (log_)
     log_->Log(LWPA_LOG_INFO, "Network change detected, restarting broker and applying changes");
 
-  restart_required_ = true;
+  restart_requested_ = true;
+}
+
+void BrokerShell::AsyncShutdown()
+{
+  if (log_)
+    log_->Log(LWPA_LOG_INFO, "Shutdown requested, Broker shutting down...");
+
+  shutdown_requested_ = true;
 }
 
 void BrokerShell::ApplySettingsChanges(RDMnet::BrokerSettings &settings, std::vector<LwpaIpAddr> &new_addrs)
@@ -106,7 +114,8 @@ void BrokerShell::Run(RDMnet::BrokerLog *log, RDMnet::BrokerSocketManager *sock_
 {
   PrintWarningMessage();
 
-  log->Startup(initial_data_.log_mask);
+  log_ = log;
+  log_->Startup(initial_data_.log_mask);
 
   RDMnet::BrokerSettings broker_settings(0x6574);
   broker_settings.disc_attributes.scope = initial_data_.scope;
@@ -127,7 +136,11 @@ void BrokerShell::Run(RDMnet::BrokerLog *log, RDMnet::BrokerSocketManager *sock_
   {
     broker.Tick();
 
-    if (restart_required_)
+    if (shutdown_requested_)
+    {
+      break;
+    }
+    else if (restart_requested_)
     {
       broker.GetSettings(broker_settings);
       broker.Shutdown();
@@ -140,6 +153,7 @@ void BrokerShell::Run(RDMnet::BrokerLog *log, RDMnet::BrokerSocketManager *sock_
   }
 
   broker.Shutdown();
+  log_->Shutdown();
 }
 
 void BrokerShell::PrintVersion()

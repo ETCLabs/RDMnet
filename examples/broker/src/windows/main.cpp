@@ -286,11 +286,22 @@ void InterfaceChangeCallback(PVOID CallerContext, PMIB_IPINTERFACE_ROW /*Row*/,
   }
 }
 
+BrokerShell broker_shell;
+
+BOOL WINAPI ConsoleSignalHandler(DWORD signal)
+{
+  if (signal == CTRL_C_EVENT)
+  {
+    broker_shell.AsyncShutdown();
+    return TRUE;
+  }
+  return FALSE;
+}
+
 // Windows console entry point for the example broker app.
 // Parse command-line arguments and then run the platform-neutral Broker shell.
 int wmain(int argc, wchar_t *argv[])
 {
-  BrokerShell broker_shell;
   bool should_run = true;
   int exit_code = 0;
 
@@ -319,6 +330,9 @@ int wmain(int argc, wchar_t *argv[])
     // Register with Windows for network change detection.
     HANDLE change_notif_handle = nullptr;
     NotifyIpInterfaceChange(AF_UNSPEC, InterfaceChangeCallback, &broker_shell, FALSE, &change_notif_handle);
+
+    // Handle Ctrl+C and gracefully shutdown.
+    SetConsoleCtrlHandler(ConsoleSignalHandler, TRUE);
 
     // Startup and run the Broker.
     WinBrokerSocketManager socket_mgr;
