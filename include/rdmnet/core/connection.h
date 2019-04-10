@@ -152,6 +152,10 @@ typedef struct RdmnetConnectionConfig
   void *callback_context;
 } RdmnetConnectionConfig;
 
+/*! If using the externally-managed socket functions (advanced usage), this is the maximum data
+ *  length that can be given in one call to rdmnet_conn_sock_data_received(). */
+#define RDMNET_RECV_DATA_MAX_SIZE 1200
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -160,7 +164,6 @@ lwpa_error_t rdmnet_new_connection(const RdmnetConnectionConfig *config, rdmnet_
 lwpa_error_t rdmnet_connect(rdmnet_conn_t handle, const LwpaSockaddr *remote_addr,
                             const ClientConnectMsg *connect_data);
 lwpa_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking);
-lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t sock, const LwpaSockaddr *remote_addr);
 lwpa_error_t rdmnet_destroy_connection(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t *disconnect_reason);
 
 int rdmnet_send(rdmnet_conn_t handle, const uint8_t *data, size_t size);
@@ -171,9 +174,15 @@ lwpa_error_t rdmnet_end_message(rdmnet_conn_t handle);
 
 void rdmnet_conn_tick();
 
-// Advanced usage
-void rdmnet_conn_sock_data_received(rdmnet_conn_t handle, const LwpaPollfd *poll);
-void rdmnet_conn_sock_closed(rdmnet_conn_t handle, lwpa_error_t socket_err);
+/*! \name Externally managed socket functions.
+ *
+ *  These functions are for advanced usage and are generally only used by broker apps.
+ *  @{
+ */
+lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t sock, const LwpaSockaddr *remote_addr);
+void rdmnet_socket_data_received(rdmnet_conn_t handle, const uint8_t *data, size_t data_size);
+void rdmnet_socket_error(rdmnet_conn_t handle, lwpa_error_t socket_err);
+/*! @} */
 
 #ifdef __cplusplus
 }

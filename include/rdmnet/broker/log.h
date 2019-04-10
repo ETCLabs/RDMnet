@@ -58,13 +58,13 @@ public:
   virtual void OutputLogMsg(const std::string &str) = 0;
 
 protected:
-  LwpaLogParams log_params_;
+  LwpaLogParams log_params_{};
 
   std::queue<std::string> msg_q_;
   lwpa_signal_t signal_;
   lwpa_thread_t thread_;
   lwpa_mutex_t lock_;
-  bool keep_running_;
+  bool keep_running_{false};
 };
 
 };  // namespace RDMnet

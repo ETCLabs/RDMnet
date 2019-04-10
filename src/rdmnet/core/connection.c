@@ -54,6 +54,12 @@
 #define RDMNET_CONN_POLL_TIMEOUT 120 /* ms */
 #define RDMNET_CONN_MAX_SOCKETS LWPA_SOCKET_MAX_POLL_SIZE
 
+#if RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
+#define CB_STORAGE_CLASS
+#else
+#define CB_STORAGE_CLASS static
+#endif
+
 /***************************** Private macros ********************************/
 
 /* Macros for dynamic vs static allocation. Static allocation is done using lwpa_mempool. */
@@ -64,6 +70,8 @@
 #define alloc_rdmnet_connection() lwpa_mempool_alloc(rdmnet_connections)
 #define free_rdmnet_connection(ptr) lwpa_mempool_free(rdmnet_connections, ptr)
 #endif
+
+#define init_callback_info(cbptr) ((cbptr)->which = kConnCallbackNone)
 
 /**************************** Private variables ******************************/
 
@@ -82,11 +90,14 @@ static struct RdmnetConnectionState
 /*********************** Private function prototypes *************************/
 
 static int update_backoff(int previous_backoff);
-static void deliver_callback(ConnCallbackDispatchInfo *info);
 static void start_tcp_connection(RdmnetConnection *conn, ConnCallbackDispatchInfo *cb);
 static void start_rdmnet_connection(RdmnetConnection *conn);
 static void reset_connection(RdmnetConnection *conn);
 static void retry_connection(RdmnetConnection *conn);
+
+static void rdmnet_conn_socket_activity(rdmnet_conn_t conn_handle, const LwpaPollfd *poll);
+static void fill_callback_info(const RdmnetConnection *conn, ConnCallbackDispatchInfo *info);
+static void deliver_callback(ConnCallbackDispatchInfo *info);
 
 // Connection management, lookup, destruction
 static rdmnet_conn_t get_new_conn_handle();
@@ -100,15 +111,10 @@ static void conn_node_free(LwpaRbNode *node);
 
 /*************************** Function definitions ****************************/
 
-/*! \brief Initialize the RDMnet Connection module.
- *
- *  Do all necessary initialization before other RDMnet Connection API functions can be called.
- *
- *  \return #kLwpaErrOk: Initialization successful.\n
- *          #kLwpaErrSys: An internal library of system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket calls.\n
+/* Initialize the RDMnet Connection module. Do all necessary initialization before other RDMnet
+ * Connection API functions can be called. This private function is called from rdmnet_core_init().
  */
-lwpa_error_t rdmnet_connection_init()
+lwpa_error_t rdmnet_conn_init()
 {
   lwpa_error_t res = kLwpaErrOk;
 
@@ -138,13 +144,12 @@ static void conn_dealloc(const LwpaRbTree *self, LwpaRbNode *node)
   conn_node_free(node);
 }
 
-/*! \brief Deinitialize the RDMnet Connection module.
- *
- *  Set the RDMnet Connection module back to an uninitialized state. All existing connections will
- *  be closed/disconnected. Calls to other RDMnet Connection API functions will fail until
- *  rdmnet_init() is called again.
+/* Deinitialize the RDMnet Connection module, setting it back to an uninitialized state. All
+ * existing connections will be closed/disconnected. Calls to other RDMnet Connection API
+ * functions will fail until rdmnet_init() is called again. This private function is called from
+ * rdmnet_core_deinit().
  */
-void rdmnet_connection_deinit()
+void rdmnet_conn_deinit()
 {
   lwpa_rbtree_clear_with_cb(&state.connections, conn_dealloc);
   memset(&state, 0, sizeof state);
@@ -301,10 +306,13 @@ lwpa_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking)
  *          #kLwpaErrInvalid: Invalid argument provided.\n
  *          #kLwpaErrNotInit: Module not initialized.\n
  *          #kLwpaErrIsConn: The connection handle provided is already connected using another socket.\n
+ *          #kLwpaErrNotImpl: RDMnet has been compiled with #RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS=0
+ *                            and thus this function is not available.\n
  *          #kLwpaErrSys: An internal library or system call error occurred.\n
  */
 lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t sock, const LwpaSockaddr *remote_addr)
 {
+#if RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
   if (sock == LWPA_SOCKET_INVALID || !remote_addr)
     return kLwpaErrInvalid;
 
@@ -328,6 +336,12 @@ lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t s
     release_conn(conn);
   }
   return res;
+#else   // RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
+  (void)handle;
+  (void)sock;
+  (void)remote_addr;
+  return kLwpaErrNotImpl;
+#endif  // RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
 }
 
 /*! \brief Destroy an RDMnet connection handle.
@@ -701,159 +715,189 @@ void rdmnet_conn_tick()
   }
 }
 
-void handle_tcp_connect_result(RdmnetConnection *conn, const LwpaPollfd *result, ConnCallbackDispatchInfo *cb)
+void tcp_connection_established(rdmnet_conn_t handle)
 {
-  (void)cb;
+  if (handle < 0)
+    return;
 
-  if (result->revents & LWPA_POLLERR)
-  {
-    cb->which = kConnCallbackConnectFailed;
-
-    RdmnetConnectFailedInfo *failed_info = &cb->args.connect_failed.failed_info;
-    failed_info->event = kRdmnetConnectFailTcpLevel;
-    failed_info->socket_err = result->err;
-
-    reset_connection(conn);
-  }
-  else if (result->revents & LWPA_POLLOUT)
+  RdmnetConnection *conn;
+  if (kLwpaErrOk == get_conn(handle, &conn))
   {
     // connected successfully!
     start_rdmnet_connection(conn);
+    release_conn(conn);
   }
 }
 
-void handle_rdmnet_connect_result(RdmnetConnection *conn, const LwpaPollfd *result, ConnCallbackDispatchInfo *cb)
+void rdmnet_socket_error(rdmnet_conn_t handle, lwpa_error_t socket_err)
 {
-  if (result->revents & LWPA_POLLERR)
-  {
-    cb->which = kConnCallbackConnectFailed;
+  if (handle < 0)
+    return;
 
-    RdmnetConnectFailedInfo *failed_info = &cb->args.connect_failed.failed_info;
-    failed_info->event = kRdmnetConnectFailTcpLevel;
-    failed_info->socket_err = result->err;
+  CB_STORAGE_CLASS ConnCallbackDispatchInfo cb;
+  init_callback_info(&cb);
 
-    reset_connection(conn);
-    conn->rdmnet_conn_failed = true;
-  }
-  else if (result->revents & LWPA_POLLIN)
+  RdmnetConnection *conn;
+  if (kLwpaErrOk == get_conn(handle, &conn))
   {
-    if (kLwpaErrOk == rdmnet_msg_buf_recv(conn->sock, &conn->recv_buf))
+    if (conn->state == kCSConnectPending || conn->state == kCSRDMnetConnPending)
     {
-      RdmnetMessage *msg = &conn->recv_buf.msg;
-      if (is_broker_msg(msg))
-      {
-        BrokerMessage *bmsg = get_broker_msg(msg);
-        if (is_connect_reply_msg(bmsg))
-        {
-          ConnectReplyMsg *reply = get_connect_reply_msg(bmsg);
-          switch (reply->connect_status)
-          {
-            case kRdmnetConnectOk:
-              // TODO check version
-              conn->state = kCSHeartbeat;
-              lwpa_timer_start(&conn->backoff_timer, 0);
-              cb->which = kConnCallbackConnected;
+      cb.which = kConnCallbackConnectFailed;
 
-              RdmnetConnectedInfo *connect_info = &cb->args.connected.connect_info;
-              connect_info->broker_uid = reply->broker_uid;
-              connect_info->client_uid = reply->client_uid;
-              connect_info->connected_addr = conn->remote_addr;
-              break;
-            default:
-            {
-              cb->which = kConnCallbackConnectFailed;
-
-              RdmnetConnectFailedInfo *failed_info = &cb->args.connect_failed.failed_info;
-              failed_info->event = kRdmnetConnectFailRejected;
-              failed_info->socket_err = kLwpaErrOk;
-              failed_info->rdmnet_reason = reply->connect_status;
-
-              reset_connection(conn);
-              conn->rdmnet_conn_failed = true;
-              break;
-            }
-          }
-        }
-        else if (is_client_redirect_msg(bmsg))
-        {
-          conn->remote_addr = get_client_redirect_msg(bmsg)->new_addr;
-          retry_connection(conn);
-        }
-      }
-
-      free_rdmnet_message(msg);
-    }
-  }
-}
-
-void handle_rdmnet_data(RdmnetConnection *conn, const LwpaPollfd *result, ConnCallbackDispatchInfo *cb)
-{
-  if (result->revents & LWPA_POLLERR)
-  {
-    cb->which = kConnCallbackDisconnected;
-
-    RdmnetDisconnectedInfo *disconn_info = &cb->args.disconnected.disconn_info;
-    disconn_info->event = kRdmnetDisconnectSocketFailure;
-    disconn_info->socket_err = result->err;
-
-    reset_connection(conn);
-  }
-  else if (result->revents & LWPA_POLLIN)
-  {
-    RdmnetMsgBuf *msgbuf = &conn->recv_buf;
-    lwpa_error_t res = rdmnet_msg_buf_recv(conn->sock, msgbuf);
-    if (res == kLwpaErrOk)
-    {
-      // We've received something on this connection. Reset the heartbeat timer.
-      lwpa_timer_reset(&conn->hb_timer);
-
-      // We handle some Broker messages internally
-      bool deliver_message = false;
-      if (is_broker_msg(&msgbuf->msg))
-      {
-        BrokerMessage *bmsg = get_broker_msg(&msgbuf->msg);
-        switch (bmsg->vector)
-        {
-          case VECTOR_BROKER_CONNECT_REPLY:
-          case VECTOR_BROKER_NULL:
-            break;
-          case VECTOR_BROKER_DISCONNECT:
-            cb->which = kConnCallbackDisconnected;
-
-            RdmnetDisconnectedInfo *disconn_info = &cb->args.disconnected.disconn_info;
-            disconn_info->event = kRdmnetDisconnectGracefulRemoteInitiated;
-            disconn_info->socket_err = kLwpaErrOk;
-            disconn_info->rdmnet_reason = get_disconnect_msg(bmsg)->disconnect_reason;
-
-            reset_connection(conn);
-            break;
-          default:
-            deliver_message = true;
-            break;
-        }
-      }
-      else
-      {
-        deliver_message = true;
-      }
-
-      if (deliver_message)
-      {
-        cb->which = kConnCallbackMsgReceived;
-        cb->args.msg_received.message = msgbuf->msg;
-      }
-    }
-    else if (res != kLwpaErrNoData)
-    {
-      cb->which = kConnCallbackDisconnected;
-
-      RdmnetDisconnectedInfo *disconn_info = &cb->args.disconnected.disconn_info;
-      disconn_info->event = kRdmnetDisconnectSocketFailure;
-      disconn_info->socket_err = res;
+      RdmnetConnectFailedInfo *failed_info = &cb.args.connect_failed.failed_info;
+      failed_info->event = kRdmnetConnectFailTcpLevel;
+      failed_info->socket_err = socket_err;
+      if (conn->state == kCSRDMnetConnPending)
+        conn->rdmnet_conn_failed = true;
 
       reset_connection(conn);
     }
+    release_conn(conn);
   }
+
+  deliver_callback(&cb);
+}
+
+void handle_rdmnet_connect_result(RdmnetConnection *conn, RdmnetMessage *msg, ConnCallbackDispatchInfo *cb)
+{
+  if (is_broker_msg(msg))
+  {
+    BrokerMessage *bmsg = get_broker_msg(msg);
+    if (is_connect_reply_msg(bmsg))
+    {
+      ConnectReplyMsg *reply = get_connect_reply_msg(bmsg);
+      switch (reply->connect_status)
+      {
+        case kRdmnetConnectOk:
+          // TODO check version
+          conn->state = kCSHeartbeat;
+          lwpa_timer_start(&conn->backoff_timer, 0);
+          cb->which = kConnCallbackConnected;
+
+          RdmnetConnectedInfo *connect_info = &cb->args.connected.connect_info;
+          connect_info->broker_uid = reply->broker_uid;
+          connect_info->client_uid = reply->client_uid;
+          connect_info->connected_addr = conn->remote_addr;
+          break;
+        default:
+        {
+          cb->which = kConnCallbackConnectFailed;
+
+          RdmnetConnectFailedInfo *failed_info = &cb->args.connect_failed.failed_info;
+          failed_info->event = kRdmnetConnectFailRejected;
+          failed_info->socket_err = kLwpaErrOk;
+          failed_info->rdmnet_reason = reply->connect_status;
+
+          reset_connection(conn);
+          conn->rdmnet_conn_failed = true;
+          break;
+        }
+      }
+    }
+    else if (is_client_redirect_msg(bmsg))
+    {
+      conn->remote_addr = get_client_redirect_msg(bmsg)->new_addr;
+      retry_connection(conn);
+    }
+  }
+  free_rdmnet_message(msg);
+}
+
+void handle_rdmnet_message(RdmnetConnection *conn, RdmnetMessage *msg, ConnCallbackDispatchInfo *cb)
+{
+  // We've received something on this connection. Reset the heartbeat timer.
+  lwpa_timer_reset(&conn->hb_timer);
+
+  // We handle some Broker messages internally
+  bool deliver_message = false;
+  if (is_broker_msg(msg))
+  {
+    BrokerMessage *bmsg = get_broker_msg(msg);
+    switch (bmsg->vector)
+    {
+      case VECTOR_BROKER_CONNECT_REPLY:
+      case VECTOR_BROKER_NULL:
+        break;
+      case VECTOR_BROKER_DISCONNECT:
+        fill_callback_info(conn, cb);
+        cb->which = kConnCallbackDisconnected;
+
+        RdmnetDisconnectedInfo *disconn_info = &cb->args.disconnected.disconn_info;
+        disconn_info->event = kRdmnetDisconnectGracefulRemoteInitiated;
+        disconn_info->socket_err = kLwpaErrOk;
+        disconn_info->rdmnet_reason = get_disconnect_msg(bmsg)->disconnect_reason;
+
+        reset_connection(conn);
+        break;
+      default:
+        deliver_message = true;
+        break;
+    }
+  }
+  else
+  {
+    deliver_message = true;
+  }
+
+  if (deliver_message)
+  {
+    cb->which = kConnCallbackMsgReceived;
+    cb->args.msg_received.message = *msg;
+  }
+  else
+  {
+    free_rdmnet_message(msg);
+  }
+}
+
+lwpa_error_t rdmnet_do_recv(rdmnet_conn_t handle, const uint8_t *data, size_t data_size, ConnCallbackDispatchInfo *cb)
+{
+  RdmnetConnection *conn;
+  lwpa_error_t res = get_conn(handle, &conn);
+  if (res == kLwpaErrOk)
+  {
+    if (conn->state == kCSHeartbeat || conn->state == kCSRDMnetConnPending)
+    {
+      RdmnetMsgBuf *msgbuf = &conn->recv_buf;
+      res = rdmnet_msg_buf_recv(msgbuf, data, data_size);
+      if (res == kLwpaErrOk)
+      {
+        if (conn->state == kCSRDMnetConnPending)
+        {
+          handle_rdmnet_connect_result(conn, &msgbuf->msg, cb);
+        }
+        else
+        {
+          handle_rdmnet_message(conn, &msgbuf->msg, cb);
+        }
+      }
+    }
+    release_conn(conn);
+  }
+  return res;
+}
+
+void rdmnet_socket_data_received(rdmnet_conn_t handle, const uint8_t *data, size_t data_size)
+{
+  if (handle < 0 || !data || !data_size)
+    return;
+
+  CB_STORAGE_CLASS ConnCallbackDispatchInfo cb;
+  init_callback_info(&cb);
+
+  lwpa_error_t res = rdmnet_do_recv(handle, data, data_size, &cb);
+  while (res == kLwpaErrOk)
+  {
+    deliver_callback(&cb);
+    res = rdmnet_do_recv(handle, NULL, 0, &cb);
+  }
+}
+
+void fill_callback_info(const RdmnetConnection *conn, ConnCallbackDispatchInfo *info)
+{
+  info->handle = conn->handle;
+  info->cbs = conn->callbacks;
+  info->context = conn->callback_context;
 }
 
 void deliver_callback(ConnCallbackDispatchInfo *info)
@@ -879,9 +923,7 @@ void deliver_callback(ConnCallbackDispatchInfo *info)
   }
 }
 
-#if RDMNET_POLL_CONNECTIONS_INTERNALLY
-
-void rdmnet_connection_recv()
+void rdmnet_conn_poll()
 {
   static LwpaPollfd poll_arr[RDMNET_CONN_MAX_SOCKETS];
   static rdmnet_conn_t conn_arr[RDMNET_CONN_MAX_SOCKETS];
@@ -895,7 +937,8 @@ void rdmnet_connection_recv()
     RdmnetConnection *conn = lwpa_rbiter_first(&iter, &state.connections);
     while (conn)
     {
-      if (conn->state == kCSTCPConnPending || conn->state == kCSRDMnetConnPending || conn->state == kCSHeartbeat)
+      if (!conn->external_socket_attached &&
+          (conn->state == kCSTCPConnPending || conn->state == kCSRDMnetConnPending || conn->state == kCSHeartbeat))
       {
         if (conn->state == kCSTCPConnPending)
           poll_arr[num_to_poll].events = LWPA_POLLOUT;
@@ -940,46 +983,26 @@ void rdmnet_connection_recv()
   }
 }
 
-#endif
-
 void rdmnet_conn_socket_activity(rdmnet_conn_t handle, const LwpaPollfd *poll)
 {
-  RdmnetConnection *conn;
-  if (handle < 0 || kLwpaErrOk != get_conn(handle, &conn))
-    return;
+  static uint8_t rdmnet_poll_recv_buf[RDMNET_RECV_DATA_MAX_SIZE];
 
-#if RDMNET_POLL_CONNECTIONS_INTERNALLY
-  static ConnCallbackDispatchInfo callback_info;
-#else
-  ConnCallbackDispatchInfo callback_info;
-#endif
-  callback_info.which = kConnCallbackNone;
-  callback_info.handle = handle;
-  callback_info.cbs = conn->callbacks;
-  callback_info.context = conn->callback_context;
-
-  switch (conn->state)
+  if (poll->revents & LWPA_POLLERR)
   {
-    case kCSTCPConnPending:
-      handle_tcp_connect_result(conn, poll, &callback_info);
-      break;
-    case kCSRDMnetConnPending:
-      handle_rdmnet_connect_result(conn, poll, &callback_info);
-      break;
-    case kCSHeartbeat:
-      handle_rdmnet_data(conn, poll, &callback_info);
-      break;
-    case kCSConnectNotStarted:
-    case kCSConnectPending:
-    case kCSBackoff:
-    case kCSMarkedForDestruction:
-    default:
-      // States in which we are not waiting for socket activity
-      break;
+    rdmnet_socket_error(handle, poll->err);
   }
-
-  release_conn(conn);
-  deliver_callback(&callback_info);
+  else if (poll->revents & LWPA_POLLIN)
+  {
+    int recv_res = lwpa_recv(poll->fd, rdmnet_poll_recv_buf, RDMNET_RECV_DATA_MAX_SIZE, 0);
+    if (recv_res <= 0)
+      rdmnet_socket_error(handle, recv_res);
+    else
+      rdmnet_socket_data_received(handle, rdmnet_poll_recv_buf, recv_res);
+  }
+  else if (poll->revents & LWPA_POLLOUT)
+  {
+    tcp_connection_established(handle);
+  }
 }
 
 /* Get a new connection handle to assign to a new connection.

@@ -141,12 +141,10 @@ typedef struct ConnCallbackDispatchInfo
 extern "C" {
 #endif
 
-lwpa_error_t rdmnet_connection_init();
-void rdmnet_connection_deinit();
+lwpa_error_t rdmnet_conn_init();
+void rdmnet_conn_deinit();
 
-#if RDMNET_POLL_CONNECTIONS_INTERNALLY
-void rdmnet_connection_recv();
-#endif
+void rdmnet_conn_poll();
 
 #ifdef __cplusplus
 }

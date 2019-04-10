@@ -104,7 +104,9 @@ std::vector<LwpaIpAddr> BrokerShell::ConvertMacsToInterfaces(const std::vector<M
 
 void BrokerShell::Run(RDMnet::BrokerLog *log, RDMnet::BrokerSocketManager *sock_mgr)
 {
-  log->Startup(initial_data_.log_level);
+  PrintWarningMessage();
+
+  log->Startup(initial_data_.log_mask);
 
   RDMnet::BrokerSettings broker_settings(0x6574);
   broker_settings.disc_attributes.scope = initial_data_.scope;
@@ -119,8 +121,6 @@ void BrokerShell::Run(RDMnet::BrokerLog *log, RDMnet::BrokerSocketManager *sock_
 
   RDMnet::Broker broker(log, sock_mgr, this);
   broker.Startup(broker_settings, initial_data_.port, ifaces);
-
-  PrintWarningMessage();
 
   // We want this to run forever if a console
   while (true)

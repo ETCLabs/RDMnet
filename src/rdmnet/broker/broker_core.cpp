@@ -157,12 +157,12 @@ bool BrokerCore::Startup(const RDMnet::BrokerSettings &settings, uint16_t listen
     service_thread_.SetNotify(this);
     service_thread_.Start();
 
-    disc_.RegisterBroker(settings_.disc_attributes, settings_.cid, listen_addrs, listen_port);
+    disc_.RegisterBroker(settings_.disc_attributes, settings_.cid, listen_addrs, listen_port_);
 
     log_->Log(LWPA_LOG_INFO, "%s Prototype RDMnet Broker Version %s", settings.disc_attributes.dns_manufacturer.c_str(),
               RDMNET_VERSION_STRING);
-    log_->Log(LWPA_LOG_INFO, "Broker starting at scope \"%s\", listening on port %d.",
-              settings.disc_attributes.scope.c_str(), listen_port);
+    log_->Log(LWPA_LOG_INFO, "Broker starting at scope \"%s\", listening on port %d.", disc_.scope().c_str(),
+              listen_port_);
 
     if (!listen_addrs.empty())
     {
@@ -327,12 +327,13 @@ bool BrokerCore::NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr &addr)
 
 void BrokerCore::SocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t *data, size_t data_size)
 {
+  rdmnet_socket_data_received(conn_handle, data, data_size);
 }
 
 void BrokerCore::SocketClosed(rdmnet_conn_t conn_handle, bool /*graceful*/)
 {
   log_->Log(LWPA_LOG_INFO, "Client %d disconnected.");
-  rdmnet_conn_sock_closed(handle);
+  rdmnet_socket_error(conn_handle, kLwpaErrOk);
 }
 
 // Process each controller queue, sending out the next message from each queue if devices are
@@ -389,6 +390,7 @@ void BrokerCore::RdmnetMsgReceived(rdmnet_conn_t handle, const RdmnetMessage &ms
 
 void BrokerCore::RdmnetDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo &disconn_info)
 {
+  MarkConnForDestruction(handle, false);
 }
 
 void BrokerCore::SendClientList(int conn)

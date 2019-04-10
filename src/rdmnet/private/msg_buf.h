@@ -38,6 +38,7 @@
 #include "lwpa/log.h"
 #include "lwpa/uuid.h"
 #include "lwpa/socket.h"
+#include "rdmnet/core/connection.h"
 #include "rdmnet/core/message.h"
 #include "rdmnet/private/opts.h"
 
@@ -208,11 +209,10 @@ typedef struct RlpState
 
 typedef struct RdmnetMsgBuf
 {
-  uint8_t buf[RDMNET_RECV_BUF_SIZE];
+  uint8_t buf[RDMNET_RECV_DATA_MAX_SIZE * 2];
   size_t cur_data_size;
   RdmnetMessage msg;
 
-  bool data_remaining;
   bool have_preamble;
   RlpState rlp_state;
 
@@ -224,7 +224,7 @@ extern "C" {
 #endif
 
 void rdmnet_msg_buf_init(RdmnetMsgBuf *msg_buf);
-lwpa_error_t rdmnet_msg_buf_recv(lwpa_socket_t sock, RdmnetMsgBuf *msg_buf);
+lwpa_error_t rdmnet_msg_buf_recv(RdmnetMsgBuf *msg_buf, const uint8_t *data, size_t data_size);
 
 #ifdef __cplusplus
 }

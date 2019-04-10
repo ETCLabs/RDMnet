@@ -104,7 +104,7 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
       if (res == kLwpaErrOk)
         res = rdmnet_message_init();
       if (res == kLwpaErrOk)
-        conn_initted = ((res = rdmnet_connection_init()) == kLwpaErrOk);
+        conn_initted = ((res = rdmnet_conn_init()) == kLwpaErrOk);
       if (res == kLwpaErrOk)
         socket_initted = ((res = lwpa_socket_init(NULL)) == kLwpaErrOk);
       if (res == kLwpaErrOk)
@@ -145,7 +145,7 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
         if (socket_initted)
           lwpa_socket_deinit();
         if (conn_initted)
-          rdmnet_connection_deinit();
+          rdmnet_conn_deinit();
       }
     }
     rdmnet_writeunlock();
@@ -157,8 +157,15 @@ void rdmnet_core_deinit()
 {
   if (rdmnet_writelock())
   {
-    rdmnet_log_params = NULL;
-    core_state.initted = false;
+    if (core_state.initted)
+    {
+      core_state.initted = false;
+      rdmnet_log_params = NULL;
+
+      rdmnetdisc_deinit();
+      lwpa_socket_deinit();
+      rdmnet_conn_deinit();
+    }
     rdmnet_writeunlock();
   }
 }
@@ -191,7 +198,7 @@ void rdmnet_tick_thread(void *arg)
 
 void rdmnet_core_tick()
 {
-  rdmnet_connection_recv();
+  rdmnet_conn_poll();
 
   if (lwpa_timer_isexpired(&core_state.tick_timer))
   {

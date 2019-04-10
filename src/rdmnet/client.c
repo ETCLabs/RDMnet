@@ -51,10 +51,10 @@
 #define RDMNET_MAX_CLIENT_SCOPES ((RDMNET_MAX_CONTROLLERS * RDMNET_MAX_SCOPES_PER_CONTROLLER) + RDMNET_MAX_DEVICES)
 #define MAX_CLIENT_RB_NODES (RDMNET_MAX_CLIENTS + (RDMNET_MAX_CLIENT_SCOPES * 2))
 
-#if RDMNET_POLL_CONNECTIONS_INTERNALLY
-#define CB_STORAGE_CLASS static
-#else
+#if RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
 #define CB_STORAGE_CLASS
+#else
+#define CB_STORAGE_CLASS static
 #endif
 
 /***************************** Private macros ********************************/
@@ -604,9 +604,6 @@ void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo *dis
 
     scope_entry->state = kScopeStateDiscovery;
 
-    fill_callback_info(cli, &cb);
-    cb.which = kClientCallbackDisconnected;
-
     RdmnetClientDisconnectedInfo info;
     info.event = disconn_info->event;
     info.socket_err = disconn_info->socket_err;
@@ -919,8 +916,7 @@ bool disconnected_will_retry(rdmnet_connect_fail_event_t event)
 lwpa_error_t validate_rpt_client_config(const RdmnetRptClientConfig *config)
 {
   if ((config->type != kRPTClientTypeDevice && config->type != kRPTClientTypeController) ||
-      (!rpt_client_uid_is_dynamic(&config->uid) && (config->uid.manu & 0x8000)) ||
-      (lwpa_uuid_is_null(&config->cid)))
+      (!rpt_client_uid_is_dynamic(&config->uid) && (config->uid.manu & 0x8000)) || (lwpa_uuid_is_null(&config->cid)))
   {
     return kLwpaErrInvalid;
   }

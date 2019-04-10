@@ -47,6 +47,13 @@
 
 #include "lwpa/thread.h"
 
+/* Are we being compiled for a full-featured OS? */
+#if defined(_WIN32) || defined(__APPLE__) || defined(__linux__) || defined(__unix__) || defined(_POSIX_VERSION)
+#define RDMNET_FULL_OS_AVAILABLE_HINT 1
+#else
+#define RDMNET_FULL_OS_AVAILABLE_HINT 0
+#endif
+
 /********************************* Global ************************************/
 
 /*! \defgroup rdmnetopts_global Global
@@ -67,20 +74,13 @@
  *  to 1 (otherwise an embedded application is assumed and it is defined to 0).
  */
 #ifndef RDMNET_DYNAMIC_MEM
-
-/* Are we being compiled for a full-featured OS? */
-#if defined(_WIN32) || defined(__APPLE__) || defined(__linux__) || defined(__unix__) || defined(_POSIX_VERSION)
-#define RDMNET_DYNAMIC_MEM 1
-#else
-#define RDMNET_DYNAMIC_MEM 0
+#define RDMNET_DYNAMIC_MEM RDMNET_FULL_OS_AVAILABLE_HINT
 #endif
 
 /*! \brief A string which will be prepended to all log messages from the RDMnet library.
  */
 #ifndef RDMNET_LOG_MSG_PREFIX
 #define RDMNET_LOG_MSG_PREFIX "RDMnet: "
-#endif
-
 #endif
 
 /*! @} */
@@ -195,8 +195,8 @@
  *  Most applications will want the default behavior, unless scaling the number of connections is a
  *  concern. Broker applications will set this to 0.
  */
-#ifndef RDMNET_POLL_CONNECTIONS_INTERNALLY
-#define RDMNET_POLL_CONNECTIONS_INTERNALLY 1
+#ifndef RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
+#define RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS RDMNET_FULL_OS_AVAILABLE_HINT
 #endif
 
 /* The library has some limitations around static memory allocation and how many message structures
@@ -204,7 +204,7 @@
  * guarantee as to how many threads could be receiving and allocating messages simultaneously;
  * therefore, in this case, RDMNET_DYNAMIC_MEM must be enabled.
  */
-#if (!RDMNET_POLL_CONNECTIONS_INTERNALLY && !RDMNET_DYNAMIC_MEM)
+#if (RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS && !RDMNET_DYNAMIC_MEM)
 #error "RDMNET_POLL_CONNECTIONS_INTERNALLY=0 requires RDMNET_DYNAMIC_MEM=1"
 #endif
 
@@ -240,16 +240,6 @@
  *  It's usually only necessary to worry about this on real-time or embedded systems. */
 #ifndef RDMNET_TICK_THREAD_STACK
 #define RDMNET_TICK_THREAD_STACK LWPA_THREAD_DEFAULT_STACK
-#endif
-
-/*! \brief The size of the internal receive buffer used by the RDMnet stream parser. */
-#ifndef RDMNET_RECV_BUF_SIZE
-#define RDMNET_RECV_BUF_SIZE 1000 /* TODO find the real number */
-#else
-#if (RDMNET_RECV_BUF_SIZE < 1000) /* TODO find the real number */
-#undef RDMNET_RECV_BUF_SIZE
-#define RDMNET_RECV_BUF_SIZE 1000
-#endif
 #endif
 
 /*! @} */

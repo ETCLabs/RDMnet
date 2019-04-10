@@ -51,7 +51,7 @@ public:
   void SetInitialIfaceList(const std::vector<LwpaIpAddr> &ifaces) { initial_data_.ifaces = ifaces; }
   void SetInitialMacList(const std::vector<MacAddr> &macs) { initial_data_.macs = macs; }
   void SetInitialPort(uint16_t port) { initial_data_.port = port; }
-  void SetInitialLogLevel(int level) { initial_data_.log_level = level; }
+  void SetInitialLogLevel(int level) { initial_data_.log_mask = LWPA_LOG_UPTO(level); }
 
   void NetworkChanged();
 
@@ -69,7 +69,7 @@ private:
     std::vector<LwpaIpAddr> ifaces;
     std::vector<MacAddr> macs;
     uint16_t port{0};
-    int log_level{LWPA_LOG_INFO};
+    int log_mask{LWPA_LOG_UPTO(LWPA_LOG_INFO)};
   } initial_data_;
 
   RDMnet::BrokerLog *log_{nullptr};

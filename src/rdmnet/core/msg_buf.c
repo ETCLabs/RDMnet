@@ -89,39 +89,22 @@ void rdmnet_msg_buf_init(RdmnetMsgBuf *msg_buf)
   if (msg_buf)
   {
     msg_buf->cur_data_size = 0;
-    msg_buf->data_remaining = false;
     msg_buf->have_preamble = false;
   }
 }
 
-lwpa_error_t rdmnet_msg_buf_recv(lwpa_socket_t sock, RdmnetMsgBuf *msg_buf)
+lwpa_error_t rdmnet_msg_buf_recv(RdmnetMsgBuf *msg_buf, const uint8_t *data, size_t data_size)
 {
-  lwpa_error_t res;
-
-  if (msg_buf->data_remaining)
+  if (data && data_size)
   {
-    res = run_parse_state_machine(msg_buf);
+    if (msg_buf->cur_data_size)
+    {
+      assert(msg_buf->cur_data_size + data_size < RDMNET_RECV_DATA_MAX_SIZE * 2);
+    }
+    memcpy(&msg_buf->buf[msg_buf->cur_data_size], data, data_size);
+    msg_buf->cur_data_size += data_size;
   }
-  else
-  {
-    int recv_res =
-        lwpa_recv(sock, &msg_buf->buf[msg_buf->cur_data_size], RDMNET_RECV_BUF_SIZE - msg_buf->cur_data_size, 0);
-    if (recv_res < 0)
-    {
-      return (lwpa_error_t)recv_res;
-    }
-    else if (recv_res == 0)
-    {
-      /* 0 indicates graceful close of connection by peer */
-      return kLwpaErrConnClosed;
-    }
-    else
-    {
-      msg_buf->cur_data_size += recv_res;
-      res = run_parse_state_machine(msg_buf);
-    }
-  }
-  return res;
+  return run_parse_state_machine(msg_buf);
 }
 
 lwpa_error_t run_parse_state_machine(RdmnetMsgBuf *msg_buf)
@@ -147,7 +130,6 @@ lwpa_error_t run_parse_state_machine(RdmnetMsgBuf *msg_buf)
       else
       {
         res = kLwpaErrNoData;
-        msg_buf->data_remaining = false;
         break;
       }
     }
@@ -160,17 +142,14 @@ lwpa_error_t run_parse_state_machine(RdmnetMsgBuf *msg_buf)
         case kPSFullBlockProtErr:
           msg_buf->have_preamble = false;
           res = (parse_res == kPSFullBlockProtErr ? kLwpaErrProtocol : kLwpaErrOk);
-          msg_buf->data_remaining = (consumed < msg_buf->cur_data_size);
           break;
         case kPSPartialBlockParseOk:
         case kPSPartialBlockProtErr:
           res = (parse_res == kPSPartialBlockProtErr ? kLwpaErrProtocol : kLwpaErrOk);
-          msg_buf->data_remaining = (consumed < msg_buf->cur_data_size);
           break;
         case kPSNoData:
         default:
           res = kLwpaErrNoData;
-          msg_buf->data_remaining = false;
           break;
       }
     }

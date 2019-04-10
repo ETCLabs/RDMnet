@@ -98,7 +98,9 @@ public:
   WinBrokerSocketManager(WindowsThreadInterface *thread_interface = new DefaultWindowsThreads)
       : thread_interface_(thread_interface)
   {
+    lwpa_rwlock_create(&socket_lock_);
   }
+  virtual ~WinBrokerSocketManager() { lwpa_rwlock_destroy(&socket_lock_); }
 
   // RDMnet::BrokerSocketManager interface
   bool Startup(RDMnet::BrokerSocketManagerNotify *notify) override;
