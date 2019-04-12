@@ -23,6 +23,13 @@ jobs:
         CMAKE_GENERATOR: 'Visual Studio 15 2017 Win64'
   steps:
     - script: |
+        git clone -b develop https://github.com/ETCLabs/lwpa ../lwpa 
+        git clone -b develop https://github.com/ETCLabs/RDM ../RDM
+        cd ..\lwpa
+        git checkout 0aa3362
+        cd ..\RDM
+        git checkout dd850f2
+        cd $(Build.SourcesDirectory)
         mkdir build
         cd build
         cmake --version
