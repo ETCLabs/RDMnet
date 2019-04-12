@@ -268,8 +268,8 @@ bool LLRPManager::ParseCommand(const std::wstring &line)
                     if (WideCharToMultiByte(CP_UTF8, 0, ip_port.substr(0, colon_pos).c_str(), -1, ip_utf8,
                                             LWPA_INET6_ADDRSTRLEN, NULL, NULL) > 0)
                     {
-                      if ((LWPA_OK == lwpa_inet_pton(kLwpaIpTypeV4, ip_utf8, &static_config.ip)) ||
-                          (LWPA_OK == lwpa_inet_pton(kLwpaIpTypeV6, ip_utf8, &static_config.ip)))
+                      if ((kLwpaErrOk == lwpa_inet_pton(kLwpaIpTypeV4, ip_utf8, &static_config.ip)) ||
+                          (kLwpaErrOk == lwpa_inet_pton(kLwpaIpTypeV6, ip_utf8, &static_config.ip)))
                       {
                         static_config.port = static_cast<uint16_t>(std::stoi(ip_port.substr(colon_pos + 1)));
                       }
@@ -412,7 +412,7 @@ void LLRPManager::Discover(int netint_handle)
     {
       // Error handling
     }
-    else if (poll.err != LWPA_OK)
+    else if (poll.err != kLwpaErrOk)
     {
       // Error handling
     }
@@ -432,7 +432,7 @@ void LLRPManager::Discover(int netint_handle)
       break;
     }
 
-  } while (update_status >= 0 || update_status == LWPA_TIMEDOUT);
+  } while (update_status >= 0 || update_status == kLwpaErrTimedOut);
 }
 
 void LLRPManager::PrintTargets()
@@ -472,12 +472,12 @@ void LLRPManager::GetDeviceInfo(int target_handle)
       RdmCommand cmd_data;
       RdmResponse resp_data;
 
-      cmd_data.src_uid = uid_;
+      cmd_data.source_uid = uid_;
       cmd_data.dest_uid = target->second.prot_info.target_uid;
       cmd_data.transaction_num = rdm_trans_num_++;
       cmd_data.port_id = 0;
       cmd_data.subdevice = 0;
-      cmd_data.command_class = E120_GET_COMMAND;
+      cmd_data.command_class = kRdmCCGetCommand;
       cmd_data.param_id = E120_DEVICE_INFO;
       cmd_data.datalen = 0;
 
@@ -533,12 +533,12 @@ void LLRPManager::GetDeviceLabel(int target_handle)
       RdmCommand cmd_data;
       RdmResponse resp_data;
 
-      cmd_data.src_uid = uid_;
+      cmd_data.source_uid = uid_;
       cmd_data.dest_uid = target->second.prot_info.target_uid;
       cmd_data.transaction_num = rdm_trans_num_++;
       cmd_data.port_id = 0;
       cmd_data.subdevice = 0;
-      cmd_data.command_class = E120_GET_COMMAND;
+      cmd_data.command_class = kRdmCCGetCommand;
       cmd_data.param_id = E120_DEVICE_LABEL;
       cmd_data.datalen = 0;
 
@@ -571,12 +571,12 @@ void LLRPManager::GetManufacturerLabel(int target_handle)
       RdmCommand cmd_data;
       RdmResponse resp_data;
 
-      cmd_data.src_uid = uid_;
+      cmd_data.source_uid = uid_;
       cmd_data.dest_uid = target->second.prot_info.target_uid;
       cmd_data.transaction_num = rdm_trans_num_++;
       cmd_data.port_id = 0;
       cmd_data.subdevice = 0;
-      cmd_data.command_class = E120_GET_COMMAND;
+      cmd_data.command_class = kRdmCCGetCommand;
       cmd_data.param_id = E120_MANUFACTURER_LABEL;
       cmd_data.datalen = 0;
 
@@ -609,12 +609,12 @@ void LLRPManager::GetDeviceModelDescription(int target_handle)
       RdmCommand cmd_data;
       RdmResponse resp_data;
 
-      cmd_data.src_uid = uid_;
+      cmd_data.source_uid = uid_;
       cmd_data.dest_uid = target->second.prot_info.target_uid;
       cmd_data.transaction_num = rdm_trans_num_++;
       cmd_data.port_id = 0;
       cmd_data.subdevice = 0;
-      cmd_data.command_class = E120_GET_COMMAND;
+      cmd_data.command_class = kRdmCCGetCommand;
       cmd_data.param_id = E120_DEVICE_MODEL_DESCRIPTION;
       cmd_data.datalen = 0;
 
@@ -653,12 +653,12 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
       RdmCommand cmd_data;
       RdmResponse resp_data;
 
-      cmd_data.src_uid = uid_;
+      cmd_data.source_uid = uid_;
       cmd_data.dest_uid = target->second.prot_info.target_uid;
       cmd_data.transaction_num = rdm_trans_num_++;
       cmd_data.port_id = 0;
       cmd_data.subdevice = 0;
-      cmd_data.command_class = E120_GET_COMMAND;
+      cmd_data.command_class = kRdmCCGetCommand;
       cmd_data.param_id = E133_COMPONENT_SCOPE;
       cmd_data.datalen = 2;
       lwpa_pack_16b(cmd_data.data, scope_slot);
@@ -734,12 +734,12 @@ void LLRPManager::IdentifyDevice(int target_handle)
       RdmCommand cmd_data;
       RdmResponse resp_data;
 
-      cmd_data.src_uid = uid_;
+      cmd_data.source_uid = uid_;
       cmd_data.dest_uid = target->second.prot_info.target_uid;
       cmd_data.transaction_num = rdm_trans_num_++;
       cmd_data.port_id = 0;
       cmd_data.subdevice = 0;
-      cmd_data.command_class = E120_SET_COMMAND;
+      cmd_data.command_class = kRdmCCSetCommand;
       cmd_data.param_id = E120_IDENTIFY_DEVICE;
       cmd_data.datalen = 1;
       cmd_data.data[0] = target->second.identifying ? 0 : 1;
@@ -768,12 +768,12 @@ void LLRPManager::SetDeviceLabel(int target_handle, const std::string &label)
       RdmCommand cmd_data;
       RdmResponse resp_data;
 
-      cmd_data.src_uid = uid_;
+      cmd_data.source_uid = uid_;
       cmd_data.dest_uid = target->second.prot_info.target_uid;
       cmd_data.transaction_num = rdm_trans_num_++;
       cmd_data.port_id = 0;
       cmd_data.subdevice = 0;
-      cmd_data.command_class = E120_SET_COMMAND;
+      cmd_data.command_class = kRdmCCSetCommand;
       cmd_data.param_id = E120_DEVICE_LABEL;
       cmd_data.datalen = (uint8_t)label.length();
       RDMNET_MSVC_NO_DEP_WRN strncpy((char *)cmd_data.data, label.c_str(), RDM_MAX_PDL);
@@ -812,12 +812,12 @@ void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std
 
 #define COMPONENT_SCOPE_PDL (2 + E133_SCOPE_STRING_PADDED_LENGTH + 1 + 4 + 16 + 2)
 
-      cmd_data.src_uid = uid_;
+      cmd_data.source_uid = uid_;
       cmd_data.dest_uid = target->second.prot_info.target_uid;
       cmd_data.transaction_num = rdm_trans_num_++;
       cmd_data.port_id = 0;
       cmd_data.subdevice = 0;
-      cmd_data.command_class = E120_SET_COMMAND;
+      cmd_data.command_class = kRdmCCSetCommand;
       cmd_data.param_id = E133_COMPONENT_SCOPE;
       cmd_data.datalen = COMPONENT_SCOPE_PDL;
       memset(cmd_data.data, 0, COMPONENT_SCOPE_PDL);
@@ -865,7 +865,7 @@ bool LLRPManager::SendRDMAndGetResponse(llrp_socket_t sock, const LwpaUuid &targ
                                         RdmResponse &resp_data)
 {
   RdmBuffer cmd;
-  if (LWPA_OK == rdmctl_create_command(&cmd_data, &cmd))
+  if (kLwpaErrOk == rdmctl_create_command(&cmd_data, &cmd))
   {
     uint32_t trans_num;
     LwpaTimer resp_timer;
@@ -878,12 +878,12 @@ bool LLRPManager::SendRDMAndGetResponse(llrp_socket_t sock, const LwpaUuid &targ
       LlrpPoll poll;
       poll.handle = sock;
       int update_res = llrp_update(&poll, 1, lwpa_timer_remaining(&resp_timer));
-      if (update_res >= 1 && poll.err == LWPA_OK && llrp_data_is_rdm(&poll.data))
+      if (update_res >= 1 && poll.err == kLwpaErrOk && llrp_data_is_rdm(&poll.data))
       {
         LlrpRdmMessage *llrp_rdm = llrp_data_rdm(&poll.data);
         if (llrp_rdm->transaction_num == trans_num)
         {
-          if (LWPA_OK == rdmctl_unpack_response(&llrp_rdm->msg, &resp_data))
+          if (kLwpaErrOk == rdmctl_unpack_response(&llrp_rdm->msg, &resp_data))
           {
             if (resp_data.command_class == cmd_data.command_class + 1 && resp_data.param_id == cmd_data.param_id)
             {
@@ -913,7 +913,7 @@ bool LLRPManager::SendRDMAndGetResponse(llrp_socket_t sock, const LwpaUuid &targ
           }
         }
       }
-      else if (update_res != LWPA_TIMEDOUT)
+      else if (update_res != kLwpaErrTimedOut)
       {
         resp_timeout = false;
         printf("Error receiving response to RDM command.\n");

@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
     config.callback_context = NULL;
 
     rdmnet_registered_broker_t handle;
-    if (LWPA_OK == rdmnetdisc_register_broker(&config, &handle))
+    if (kLwpaErrOk == rdmnetdisc_register_broker(&config, &handle))
     {
       printf("RDMnet Broker registration started; assigned handle %p\n", handle);
       printf("  Service Name: %s\n", config.my_info.service_name);
@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
     // start discovery
     rdmnet_scope_monitor_t handle;
     int platform_specific_error;
-    if (LWPA_OK == rdmnetdisc_start_monitoring(&config, &handle, &platform_specific_error))
+    if (kLwpaErrOk == rdmnetdisc_start_monitoring(&config, &handle, &platform_specific_error))
     {
       printf("Monitoring of scope %s started.\n", config.scope);
     }
