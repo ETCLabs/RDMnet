@@ -25,17 +25,16 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "rdmnet/core/discovery.h"
 #include "rdmnet/discovery/bonjour.h"
 
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "rdmnet/private/opts.h"
 #include "lwpa/inet.h"
 #include "lwpa/bool.h"
 #include "lwpa/pack.h"
 #include "rdmnet/core/util.h"
+#include "rdmnet/private/opts.h"
 
 // Compile time check of memory configuration
 #if !RDMNET_DYNAMIC_MEM
@@ -437,6 +436,45 @@ lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig *config,
     *handle = new_monitor;
 
   return res;
+}
+
+lwpa_error_t rdmnetdisc_change_monitored_scope(rdmnet_scope_monitor_t handle,
+                                               const RdmnetScopeMonitorConfig *new_config)
+{
+  // TODO reevaluate if this is necessary.
+  (void)handle;
+  (void)new_config;
+  return kLwpaErrNotImpl;
+  /*
+    lwpa_error_t res = kLwpaErrSys;
+    if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
+    {
+      // Stop the existing browse operation
+      DNSServiceRefDeallocate(handle->dnssd_ref);
+      handle->socket = LWPA_SOCKET_INVALID;
+
+      // Copy in the new config
+      handle->config = *new_config;
+
+      // Start the new browse operation in the Bonjour stack.
+      char reg_str[REGISTRATION_STRING_PADDED_LENGTH];
+      get_registration_string(E133_DNSSD_SRV_TYPE, new_config->scope, reg_str);
+
+      DNSServiceErrorType result =
+          DNSServiceBrowse(&handle->dnssd_ref, 0, 0, reg_str, new_config->domain, &HandleDNSServiceBrowseReply, handle);
+      if (result == kDNSServiceErr_NoError)
+      {
+        handle->socket = DNSServiceRefSockFD(handle->dnssd_ref);
+        res = kLwpaErrOk;
+      }
+      else
+      {
+        res = kLwpaErrSys;
+      }
+      lwpa_mutex_give(&disc_state.lock);
+    }
+    return res;
+    */
 }
 
 void rdmnetdisc_stop_monitoring(rdmnet_scope_monitor_t handle)
@@ -946,8 +984,7 @@ void scope_monitor_insert(RdmnetScopeMonitorRef *scope_ref)
 }
 
 /* Searches to see if a scope is being monitored.
- * Returns false if no match was found.
- * value at *ret is set as the index of the value, if found.
+ * Returns NULL if no match was found.
  * Assumes a lock is already taken. */
 RdmnetScopeMonitorRef *scope_monitor_lookup(DNSServiceRef dnssd_ref)
 {
@@ -962,7 +999,6 @@ RdmnetScopeMonitorRef *scope_monitor_lookup(DNSServiceRef dnssd_ref)
 }
 
 /* Removes an entry from disc_state.scope_ref_list.
- * Returns false if no matching entry is found.
  * Assumes a lock is already taken. */
 void scope_monitor_remove(const RdmnetScopeMonitorRef *ref)
 {

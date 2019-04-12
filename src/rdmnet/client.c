@@ -482,7 +482,7 @@ lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_
 }
 
 lwpa_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                           const RptStatusMsg *status)
+                                           const LocalRptStatus *status)
 {
   if (handle < 0 || scope_handle < 0 || !status)
     return kLwpaErrInvalid;
@@ -493,9 +493,14 @@ lwpa_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, rdmnet_client
   if (res != kLwpaErrOk)
     return res;
 
-  // TODO
-  (void)status;
-  res = kLwpaErrNotImpl;
+  RptHeader header;
+  header.source_uid = scope_entry->uid;
+  header.source_endpoint_id = status->source_endpoint;
+  header.dest_uid = status->dest_uid;
+  header.dest_endpoint_id = E133_NULL_ENDPOINT;
+  header.seqnum = status->seq_num;
+
+  res = send_rpt_status(scope_handle, &cli->cid, &header, &status->msg);
 
   release_client(cli);
   return res;

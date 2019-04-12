@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "device_log.h"
+#include "win_device_log.h"
 
 #include <WinSock2.h>
 #include <Windows.h>
@@ -34,31 +34,6 @@
 static LwpaLogParams s_device_log_params;
 static FILE *s_log_file;
 static int s_utc_offset;
-
-/*-----------------------------------------------------------------
-  Function: GetLastErrorMessage
-
-    Input:  - Pointer to the buffer where the descriptive message about
-      the last error is returned.
-      - Maximum number of characters that can be copied into
-      the error message buffer (including the terminating
-      NULL character)
------------------------------------------------------------------*/
-static void GetLastErrorMessage(LPWSTR lpszerr, unsigned int nSize)
-{
-  LPWSTR lpMsgBuf;
-  FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
-                 GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&lpMsgBuf, 0, NULL);
-
-  if (wcslen(lpMsgBuf) >= nSize)
-  {
-    // truncate the message if it is longer than the supplied
-    // size
-    lpMsgBuf[nSize] = 0;
-  }
-  wcsncpy_s(lpszerr, nSize, lpMsgBuf, _TRUNCATE);
-  LocalFree(lpMsgBuf);
-}
 
 static void device_log_callback(void *context, const char *syslog_str, const char *human_str, const char *raw_str)
 {
@@ -111,26 +86,9 @@ void device_log_init(const char *file_name)
 
   s_device_log_params.action = kLwpaLogCreateHumanReadableLog;
   s_device_log_params.log_fn = device_log_callback;
-  strncpy_s(s_device_log_params.syslog_params.app_name, LWPA_LOG_APP_NAME_MAX_LEN, "RDMnet Device", _TRUNCATE);
-  s_device_log_params.syslog_params.facility = LWPA_LOG_LOCAL1;
   s_device_log_params.log_mask = LWPA_LOG_UPTO(LWPA_LOG_DEBUG);
   s_device_log_params.time_fn = device_time_callback;
   s_device_log_params.context = NULL;
-
-  DWORD procid = GetCurrentProcessId();
-  snprintf(s_device_log_params.syslog_params.procid, LWPA_LOG_PROCID_MAX_LEN, "%d", procid);
-
-  if (0 != gethostname(s_device_log_params.syslog_params.hostname, LWPA_LOG_HOSTNAME_MAX_LEN))
-  {
-    WCHAR error_text[128];
-    char error_text_utf8[256] = "Unknown Error";
-
-    GetLastErrorMessage(error_text, 128);
-    WideCharToMultiByte(CP_UTF8, 0, error_text, -1, error_text_utf8, 256, NULL, NULL);
-    device_log_callback(NULL, NULL, "Device Log: Couldn't get hostname due to error:\n", NULL);
-    device_log_callback(NULL, NULL, error_text_utf8, NULL);
-    s_device_log_params.syslog_params.hostname[0] = '\0';
-  }
 
   lwpa_validate_log_params(&s_device_log_params);
 }

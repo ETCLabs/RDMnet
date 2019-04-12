@@ -28,18 +28,14 @@
 #include <WinSock2.h>
 #include <Windows.h>
 #include <ws2tcpip.h>
-#include <rpc.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <wchar.h>
 #include <string.h>
-#include "lwpa/pack.h"
-#include "lwpa/uuid.h"
 #include "lwpa/socket.h"
 #include "rdmnet/device.h"
-#include "device.h"
-#include "rdmnet/core/message.h"
-#include "device_log.h"
+#include "example_device.h"
+#include "win_device_log.h"
 
 void print_help(wchar_t *app_name)
 {
@@ -108,24 +104,19 @@ BOOL WINAPI console_handler(DWORD signal)
 int wmain(int argc, wchar_t *argv[])
 {
   lwpa_error_t res = kLwpaErrOk;
-  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
-  LwpaSockaddr static_broker;
   bool should_exit = false;
-  UUID uuid;
-  DeviceParams device_params;
+  RdmnetScopeConfig scope_config;
   const LwpaLogParams *lparams;
 
-  strcpy_s(scope, E133_SCOPE_STRING_PADDED_LENGTH, E133_DEFAULT_SCOPE);
-  lwpaip_set_invalid(&static_broker.ip);
+  rdmnet_client_set_default_scope(&scope_config);
 
-  printf("%zu\n", sizeof(RdmnetMessage));
   if (argc > 1)
   {
     for (int i = 1; i < argc; ++i)
     {
       if (_wcsnicmp(argv[i], L"--scope=", 8) == 0)
       {
-        if (!set_scope(&argv[i][8], scope))
+        if (!set_scope(&argv[i][8], scope_config.scope))
         {
           print_help(argv[0]);
           should_exit = true;
@@ -134,7 +125,11 @@ int wmain(int argc, wchar_t *argv[])
       }
       else if (_wcsnicmp(argv[i], L"--broker=", 9) == 0)
       {
-        if (!set_static_broker(&argv[i][9], &static_broker))
+        if (set_static_broker(&argv[i][9], &scope_config.static_broker_addr))
+        {
+          scope_config.has_static_broker_addr = true;
+        }
+        else
         {
           print_help(argv[0]);
           should_exit = true;
@@ -161,24 +156,6 @@ int wmain(int argc, wchar_t *argv[])
   device_log_init("RDMnetDevice.log");
   lparams = device_get_log_params();
 
-  /* Create the Device's CID */
-  /* Normally we would use lwpa_cid's generate_cid() function to lock a CID to the local MAC
-   * address. This conforms more closely to the CID requirements in E1.17 (and by extension E1.33).
-   * But we want to be able to create many ephemeral Devices on the same system. So we will just
-   * generate UUIDs on the fly. */
-  UuidCreate(&uuid);
-  memcpy(device_params.cid.data, &uuid, LWPA_UUID_BYTES);
-
-  /* Fill in the rest of the config */
-  if (lwpaip_is_invalid(&static_broker.ip))
-  {
-    rdmnet_client_set_scope(&device_params.scope_config, scope);
-  }
-  else
-  {
-    rdmnet_client_set_static_scope(&device_params.scope_config, scope, static_broker);
-  }
-
   /* Handle console signals */
   if (!SetConsoleCtrlHandler(console_handler, TRUE))
   {
@@ -187,7 +164,7 @@ int wmain(int argc, wchar_t *argv[])
   }
 
   /* Startup the device */
-  res = device_init(&device_params, lparams);
+  res = device_init(&scope_config, lparams);
   if (res != kLwpaErrOk)
   {
     lwpa_log(lparams, LWPA_LOG_ERR, "Device failed to initialize: '%s'", lwpa_strerror(res));
@@ -196,7 +173,6 @@ int wmain(int argc, wchar_t *argv[])
 
   while (device_keep_running)
   {
-    // device_run();
     Sleep(100);
   }
 

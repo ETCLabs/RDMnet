@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "device.h"
+#include "example_device.h"
 
 #include <stdio.h>
 #include "lwpa/int.h"
@@ -83,9 +83,9 @@ void device_print_version()
   printf("or implied.\n");
 }
 
-lwpa_error_t device_init(const DeviceParams *params, const LwpaLogParams *lparams)
+lwpa_error_t device_init(const RdmnetScopeConfig *scope_config, const LwpaLogParams *lparams)
 {
-  if (!params)
+  if (!scope_config)
     return kLwpaErrInvalid;
 
   device_state.lparams = lparams;
@@ -93,10 +93,10 @@ lwpa_error_t device_init(const DeviceParams *params, const LwpaLogParams *lparam
   lwpa_log(lparams, LWPA_LOG_INFO, "ETC Prototype RDMnet Device Version " RDMNET_VERSION_STRING);
 
   rdmnet_safe_strncpy(device_state.cur_search_domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
-  device_state.cur_scope_config = params->scope_config;
-  default_responder_init(&params->scope_config, device_state.cur_search_domain);
+  device_state.cur_scope_config = *scope_config;
+  default_responder_init(scope_config, device_state.cur_search_domain);
 
-  lwpa_error_t res = rdmnet_core_init(lparams);
+  lwpa_error_t res = rdmnet_device_init(lparams);
   if (res != kLwpaErrOk)
   {
     lwpa_log(lparams, LWPA_LOG_ERR, "RDMnet initialization failed with error: '%s'", lwpa_strerror(res));
@@ -105,8 +105,12 @@ lwpa_error_t device_init(const DeviceParams *params, const LwpaLogParams *lparam
 
   RdmnetDeviceConfig config;
   rdmnet_client_set_dynamic_uid(&config, 0x6574);
-  config.cid = params->cid;
-  config.scope_config = params->scope_config;
+  // A typical hardware-locked device would use lwpa_generate_v3_uuid() to generate a CID that is
+  // the same every time. But this example device is not locked to hardware, so a V4 UUID makes
+  // more sense.
+  lwpa_generate_v4_uuid(&config.cid);
+  config.scope_config = *scope_config;
+  config.search_domain = E133_DEFAULT_DOMAIN;
   config.callbacks.connected = device_connected;
   config.callbacks.connect_failed = device_connect_failed;
   config.callbacks.disconnected = device_disconnected;
@@ -146,16 +150,18 @@ void device_connect_failed(rdmnet_device_t handle, const RdmnetClientConnectFail
   (void)context;
 }
 
-void device_disconnected(rdmnet_device_t handle, const char *scope, void *context)
+void device_disconnected(rdmnet_device_t handle, const RdmnetClientDisconnectedInfo *info, void *context)
 {
   (void)handle;
   (void)context;
+  (void)info;
 
   default_responder_update_connection_status(false, NULL);
-  lwpa_log(device_state.lparams, LWPA_LOG_INFO, "Device disconnected from Broker on scope '%s'.", scope);
+  lwpa_log(device_state.lparams, LWPA_LOG_INFO, "Device disconnected from Broker on scope '%s'.",
+           device_state.cur_scope_config.scope);
 }
 
-void device_rdm_cmd_received(rdmnet_device_t handle, const char *scope, const RemoteRdmCommand *cmd, void *context)
+void device_rdm_cmd_received(rdmnet_device_t handle, const RemoteRdmCommand *cmd, void *context)
 {
   (void)handle;
   (void)context;
@@ -268,13 +274,14 @@ void device_handle_rdm_command(const RemoteRdmCommand *cmd, rdmnet_data_changed_
 
 void send_status(rpt_status_code_t status_code, const RemoteRdmCommand *received_cmd)
 {
-  RptHeader header_to_send;
-  RptStatusMsg status;
-  lwpa_error_t send_res;
+  LocalRptStatus status;
 
-  status.status_code = status_code;
-  status.status_string = NULL;
-  send_res = rdmnet_device_send_status(device_state.device_handle, &status);
+  status.dest_uid = received_cmd->source_uid;
+  status.source_endpoint = received_cmd->dest_endpoint;
+  status.seq_num = received_cmd->seq_num;
+  status.msg.status_code = status_code;
+  status.msg.status_string = NULL;
+  lwpa_error_t send_res = rdmnet_device_send_status(device_state.device_handle, &status);
   if (send_res != kLwpaErrOk)
   {
     lwpa_log(device_state.lparams, LWPA_LOG_ERR, "Error sending RPT Status message to Broker: '%s'.",
@@ -309,6 +316,8 @@ void send_response(RdmResponse *resp_list, size_t num_responses, const RemoteRdm
   resp_to_send.dest_uid = received_cmd->source_uid;
   resp_to_send.source_endpoint = received_cmd->dest_endpoint;
   resp_to_send.seq_num = received_cmd->seq_num;
+  resp_to_send.command_included = true;
+  resp_to_send.cmd = received_cmd->rdm;
   resp_to_send.rdm_arr = resp_list;
   resp_to_send.num_responses = num_responses;
 

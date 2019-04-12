@@ -25,22 +25,28 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#ifndef _DEVICE_LOG_H_
-#define _DEVICE_LOG_H_
+#ifndef _DEVICE_H_
+#define _DEVICE_H_
 
-#include "lwpa/bool.h"
+#include "lwpa/int.h"
 #include "lwpa/log.h"
+#include "rdm/message.h"
+#include "rdmnet/defs.h"
+#include "rdmnet/device.h"
+#include "default_responder.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void device_log_init(const char *file_name);
-const LwpaLogParams *device_get_log_params();
-void device_log_deinit();
+void device_print_version();
+
+lwpa_error_t device_init(const RdmnetScopeConfig *scope_config, const LwpaLogParams *lparams);
+void device_deinit();
+void device_run();
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _DEVICE_LOG_H_ */
+#endif /* _DEVICE_H_ */

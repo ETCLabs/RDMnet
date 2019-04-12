@@ -81,6 +81,7 @@ static struct DefaultResponderPropertyData
   RdmnetScopeConfig scope_config;
   char search_domain[E133_DOMAIN_STRING_PADDED_LENGTH];
   uint16_t tcp_unhealthy_counter;
+  bool connected;
   LwpaSockaddr cur_broker_addr;
 } prop_data;
 
@@ -153,6 +154,25 @@ void default_responder_get_scope_config(RdmnetScopeConfig *scope_config)
   if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
   {
     *scope_config = prop_data.scope_config;
+    lwpa_rwlock_readunlock(&prop_lock);
+  }
+}
+
+void default_responder_get_search_domain(char *search_domain)
+{
+  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
+  {
+    rdmnet_safe_strncpy(search_domain, prop_data.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
+    lwpa_rwlock_readunlock(&prop_lock);
+  }
+}
+
+void default_responder_update_connection_status(bool connected, const LwpaSockaddr *broker_addr)
+{
+  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
+  {
+    prop_data.connected = connected;
+    prop_data.cur_broker_addr = *broker_addr;
     lwpa_rwlock_readunlock(&prop_lock);
   }
 }
@@ -349,7 +369,7 @@ bool set_component_scope(const uint8_t *param_data, uint8_t param_data_len, uint
       const uint8_t *cur_ptr = param_data + 2;
       char new_scope[E133_SCOPE_STRING_PADDED_LENGTH];
       bool have_new_static_broker = false;
-      LwpaSockaddr new_static_broker;
+      LwpaSockaddr new_static_broker = {0};
 
       strncpy(new_scope, (const char *)cur_ptr, E133_SCOPE_STRING_PADDED_LENGTH);
       new_scope[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
@@ -570,22 +590,30 @@ bool get_tcp_comms_status(const uint8_t *param_data, uint8_t param_data_len, par
 
   memcpy(cur_ptr, prop_data.scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH);
   cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
-  if (lwpaip_is_v4(&prop_data.cur_broker_addr.ip))
+  if (prop_data.connected)
   {
-    lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&prop_data.cur_broker_addr.ip));
-    cur_ptr += 4;
-    memset(cur_ptr, 0, LWPA_IPV6_BYTES);
-    cur_ptr += LWPA_IPV6_BYTES;
+    if (lwpaip_is_v4(&prop_data.cur_broker_addr.ip))
+    {
+      lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&prop_data.cur_broker_addr.ip));
+      cur_ptr += 4;
+      memset(cur_ptr, 0, LWPA_IPV6_BYTES);
+      cur_ptr += LWPA_IPV6_BYTES;
+    }
+    else
+    {
+      lwpa_pack_32b(cur_ptr, 0);
+      cur_ptr += 4;
+      memcpy(cur_ptr, lwpaip_v6_address(&prop_data.cur_broker_addr.ip), LWPA_IPV6_BYTES);
+      cur_ptr += LWPA_IPV6_BYTES;
+    }
+    lwpa_pack_16b(cur_ptr, prop_data.cur_broker_addr.port);
+    cur_ptr += 2;
   }
   else
   {
-    lwpa_pack_32b(cur_ptr, 0);
-    cur_ptr += 4;
-    memcpy(cur_ptr, lwpaip_v6_address(&prop_data.cur_broker_addr.ip), LWPA_IPV6_BYTES);
-    cur_ptr += LWPA_IPV6_BYTES;
+    memset(cur_ptr, 0, 22);
+    cur_ptr += 22;
   }
-  lwpa_pack_16b(cur_ptr, prop_data.cur_broker_addr.port);
-  cur_ptr += 2;
   lwpa_pack_16b(cur_ptr, prop_data.tcp_unhealthy_counter);
   cur_ptr += 2;
   resp_data_list[0].datalen = (uint8_t)(cur_ptr - resp_data_list[0].data);

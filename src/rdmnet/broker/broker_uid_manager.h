@@ -45,7 +45,7 @@ public:
   BrokerUidManager() {}
   explicit BrokerUidManager(size_t max_uid_capacity) : max_uid_capacity_(max_uid_capacity) {}
 
-  static constexpr size_t DEFAULT_MAX_UID_CAPACITY = 1000000;
+  static constexpr size_t kDefaultMaxUidCapacity = 1000000;
   enum class AddResult
   {
     kOk,
@@ -85,7 +85,7 @@ private:
   std::map<LwpaUuid, ReservationData> reservations_;
   // The next dynamic RDM Device ID that will be assigned
   uint32_t next_device_id_{1};
-  const size_t max_uid_capacity_{DEFAULT_MAX_UID_CAPACITY};
+  const size_t max_uid_capacity_{kDefaultMaxUidCapacity};
 };
 
 #endif  // _BROKER_UID_MANAGER_H_

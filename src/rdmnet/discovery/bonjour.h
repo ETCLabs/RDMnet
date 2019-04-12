@@ -32,6 +32,7 @@
 #include "lwpa/lock.h"
 #include "lwpa/socket.h"
 #include "rdmnet/private/opts.h"
+#include "rdmnet/core/discovery.h"
 
 /*From dns_sd.h :
  *  For most applications, DNS - SD TXT records are generally
