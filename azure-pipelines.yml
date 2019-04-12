@@ -4,16 +4,38 @@
 # https://aka.ms/yaml
 
 trigger:
-- master
+- develop
 
-pool:
-  vmImage: 'Ubuntu-16.04'
+pr:
+- develop
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+jobs:
+# Build and test RDMnet on Windows using CMake and Visual Studio 2017.
+- job: windows_build
+  displayName: 'Windows Build and Test'
+  pool:
+    vmImage: 'vs2017-win2016'
+  strategy:
+    matrix:
+      Win32:
+        CMAKE_GENERATOR: 'Visual Studio 15 2017'
+      x64:
+        CMAKE_GENERATOR: 'Visual Studio 15 2017 Win64'
+  steps:
+    - script: |
+        mkdir build
+        cd build
+        cmake --version
+        cmake -G "%CMAKE_GENERATOR%" -DCMAKE_INSTALL_PREFIX=install -DRDMNET_BUILD_CONSOLE_EXAMPLES=ON ..
+        cmake --build . --config Release
+        cmake -P cmake_install.cmake
+      displayName: 'RDMnet Windows build'
+    - script: ctest -C Release
+      displayName: 'RDMnet Windows test'
+      env:
+        CTEST_OUTPUT_ON_FAILURE: '1'
+    - task: PublishPipelineArtifact@0
+      inputs:
+        artifactName: 'rdmnet_built_artifacts'
+        targetPath: 'build/install'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
