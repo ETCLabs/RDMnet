@@ -124,7 +124,7 @@ void ControllerLog::addCustomOutputStream(LogOutputStream *stream)
 
 void ControllerLog::removeCustomOutputStream(LogOutputStream *stream)
 {
-  for (int i = 0; i < customOutputStreams.size(); ++i)
+  for (size_t i = 0; i < customOutputStreams.size(); ++i)
   {
     if (customOutputStreams.at(i) == stream)
     {

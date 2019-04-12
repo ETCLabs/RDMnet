@@ -150,7 +150,7 @@ bool ControllerDefaultResponder::GetComponentScope(uint16_t slot, std::vector<Rd
   {
     ControllerReadGuard prop_read(prop_lock_);
 
-    if (slot - 1 < scopes_.size())
+    if (slot - 1u < scopes_.size())
     {
       auto scopeIter = scopes_.begin();
       if (scopeIter != scopes_.end())
