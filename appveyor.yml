@@ -27,6 +27,7 @@ matrix:
   fast_finish: true     # set this flag to immediately finish build once one of the jobs fails.
 
 environment:
+  CTEST_OUTPUT_ON_FAILURE: 1
   MDNSWINDOWS_VERSION: v1.1.1
   SLACK_WEBHOOK:
     secure: mmc+nEHnXGCwUvdD4qG3usIECTxCf86I1+DYO1hChDo6BBxKquCLLL+bTI3E1Di2/yS3CvCISXeKBC7RRrdSRfo+0Ej1Llp/oHDTTC5loSc=
@@ -63,9 +64,7 @@ build:
   verbosity: minimal
 
 test_script:
-  - cmd: |-
-      tests\unit\%configuration%\test_rdmnet_lib.exe
-      tests\unit\%configuration%\test_broker_lib.exe
+  - cmd: ctest -C Release
 
 deploy:
   provider: BinTray
