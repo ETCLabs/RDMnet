@@ -307,7 +307,7 @@ void identify_thread(void *arg)
 
   while (prop_data.identifying)
   {
-    Beep(440, 1000);
+    printf("I AM IDENTIFYING!!!\n");
     lwpa_thread_sleep(1000);
   }
 }

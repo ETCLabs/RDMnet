@@ -877,6 +877,10 @@ lwpa_error_t rdmnet_do_recv(rdmnet_conn_t handle, const uint8_t *data, size_t da
         }
       }
     }
+    else
+    {
+      res = kLwpaErrInvalid;
+    }
     release_conn(conn);
   }
   return res;
@@ -894,6 +898,7 @@ void rdmnet_socket_data_received(rdmnet_conn_t handle, const uint8_t *data, size
   while (res == kLwpaErrOk)
   {
     deliver_callback(&cb);
+    init_callback_info(&cb);
     res = rdmnet_do_recv(handle, NULL, 0, &cb);
   }
 }
@@ -1169,6 +1174,12 @@ lwpa_error_t get_conn(rdmnet_conn_t handle, RdmnetConnection **conn)
   {
     rdmnet_readunlock();
     return kLwpaErrSys;
+  }
+  if (found_conn->state == kCSMarkedForDestruction)
+  {
+    lwpa_mutex_give(&found_conn->lock);
+    rdmnet_readunlock();
+    return kLwpaErrNotFound;
   }
   *conn = found_conn;
   return kLwpaErrOk;
