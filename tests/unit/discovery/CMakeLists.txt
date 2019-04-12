@@ -6,6 +6,7 @@ add_executable(test_rdmnet_discovery
 
   ${RDMNET_SRC}/rdmnet/core/util.c
 )
+target_include_directories(test_rdmnet_discovery PRIVATE ${RDMNET_SRC})
 target_link_libraries(test_rdmnet_discovery PRIVATE
   RDMnetDiscovery
   dnssd_mock

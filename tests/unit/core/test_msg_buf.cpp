@@ -32,20 +32,12 @@
 
 #include "gtest/gtest.h"
 #include "rdmnet/private/msg_buf.h"
-#include "lwpa_mock/socket.h"
 #include "test_msg_buf_input_data.h"
-
-DEFINE_FFF_GLOBALS;
 
 class TestMsgBuf : public testing::Test
 {
 protected:
-  TestMsgBuf()
-  {
-    LWPA_SOCKET_DO_FOR_ALL_FAKES(RESET_FAKE);
-
-    rdmnet_msg_buf_init(&buf_, NULL);
-  }
+  TestMsgBuf() { rdmnet_msg_buf_init(&buf_); }
 
   RdmnetMsgBuf buf_;
 };
@@ -53,13 +45,8 @@ protected:
 // Test parsing a fully-formed RPT Notification PDU
 TEST_F(TestMsgBuf, rpt_notification_full)
 {
-  lwpa_socket_t socket_handle = 1;
-
-  lwpa_recv_fake.custom_fake = [](lwpa_socket_t, void *buffer, size_t, int) -> int {
-    memcpy((uint8_t *)buffer, RptNotificationPduFullValid::buf, sizeof(RptNotificationPduFullValid::buf));
-    return sizeof(RptNotificationPduFullValid::buf);
-  };
-  ASSERT_EQ(LWPA_OK, rdmnet_msg_buf_recv(socket_handle, &buf_));
+  ASSERT_EQ(kLwpaErrOk,
+            rdmnet_msg_buf_recv(&buf_, RptNotificationPduFullValid::buf, sizeof(RptNotificationPduFullValid::buf)));
 
   // Test each field of the parsed message
   RdmnetMessage &msg = buf_.msg;
@@ -74,10 +61,10 @@ TEST_F(TestMsgBuf, rpt_notification_full)
   ASSERT_EQ(rpt->header.dest_endpoint_id, RptNotificationPduFullValid::rpt_dest_endpoint);
   ASSERT_EQ(rpt->header.seqnum, RptNotificationPduFullValid::seq_num);
 
-  RdmCmdList *cmd_list = get_rdm_cmd_list(rpt);
-  ASSERT_FALSE(cmd_list->partial);
+  RdmBufList *buf_list = get_rdm_buf_list(rpt);
+  ASSERT_FALSE(buf_list->more_coming);
 
-  RdmCmdListEntry *entry = cmd_list->list;
+  RdmBufListEntry *entry = buf_list->list;
   ASSERT_NE(entry->next, nullptr);
   ASSERT_EQ(entry->msg.datalen, RptNotificationPduFullValid::first_cmd.datalen);
   ASSERT_EQ(0, memcmp(entry->msg.data, RptNotificationPduFullValid::first_cmd.data,

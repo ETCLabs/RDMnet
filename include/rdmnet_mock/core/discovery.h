@@ -59,7 +59,7 @@ DECLARE_FAKE_VOID_FUNC(rdmnetdisc_tick);
   operation(rdmnetdisc_stop_monitoring_all);              \
   operation(rdmnetdisc_register_broker);                  \
   operation(rdmnetdisc_unregister_broker);                \
-  operation(rdmnetdisc_tick);
+  operation(rdmnetdisc_tick)
 
 #ifdef __cplusplus
 }

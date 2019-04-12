@@ -27,6 +27,7 @@
 
 // bonjour_register: Test app which attempts to register a service with Bonjour.
 
+#include "rdmnet/core.h"
 #include "rdmnet/core/discovery.h"
 #include "rdmnet/core/util.h"
 #include <stdio.h>
@@ -109,7 +110,7 @@ void set_reg_callback_functions(RdmnetDiscBrokerCallbacks *callbacks)
 
 int main(int argc, char *argv[])
 {
-  rdmnetdisc_init();
+  rdmnet_core_init(NULL);
 
   if (argc == 2 && strcmp("broker", argv[1]) == 0)
   {
@@ -166,6 +167,6 @@ int main(int argc, char *argv[])
     Sleep(500);
   }
 
-  rdmnetdisc_deinit();
+  rdmnet_core_deinit();
   return 0;
 }

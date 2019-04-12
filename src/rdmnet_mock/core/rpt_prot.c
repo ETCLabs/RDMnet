@@ -25,11 +25,20 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "rdmnet_mock/core.h"
+#include "rdmnet_mock/core/rpt_prot.h"
 
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_core_init, const LwpaLogParams *);
-DEFINE_FAKE_VOID_FUNC(rdmnet_core_deinit);
-DEFINE_FAKE_VOID_FUNC(rdmnet_core_tick);
-DEFINE_FAKE_VALUE_FUNC(bool, rdmnet_core_initialized);
-
-const LwpaLogParams *rdmnet_log_params = NULL;
+DEFINE_FAKE_VALUE_FUNC(size_t, bufsize_rpt_request, const RdmBuffer *);
+DEFINE_FAKE_VALUE_FUNC(size_t, bufsize_rpt_status, const RptStatusMsg *);
+DEFINE_FAKE_VALUE_FUNC(size_t, bufsize_rpt_notification, const RdmBuffer *, size_t);
+DEFINE_FAKE_VALUE_FUNC(size_t, pack_rpt_request, uint8_t *, size_t, const LwpaUuid *, const RptHeader *,
+                       const RdmBuffer *);
+DEFINE_FAKE_VALUE_FUNC(size_t, pack_rpt_status, uint8_t *, size_t, const LwpaUuid *, const RptHeader *,
+                       const RptStatusMsg *);
+DEFINE_FAKE_VALUE_FUNC(size_t, pack_rpt_notification, uint8_t *, size_t, const LwpaUuid *, const RptHeader *,
+                       const RdmBuffer *, size_t);
+DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, send_rpt_request, rdmnet_conn_t, const LwpaUuid *, const RptHeader *,
+                       const RdmBuffer *);
+DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, send_rpt_status, rdmnet_conn_t, const LwpaUuid *, const RptHeader *,
+                       const RptStatusMsg *);
+DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, send_rpt_notification, rdmnet_conn_t, const LwpaUuid *, const RptHeader *,
+                       const RdmBuffer *, size_t);

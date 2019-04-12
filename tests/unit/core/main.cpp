@@ -25,11 +25,15 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "rdmnet_mock/core.h"
+// The entry point for the RDMnet Core unit tests.
 
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_core_init, const LwpaLogParams *);
-DEFINE_FAKE_VOID_FUNC(rdmnet_core_deinit);
-DEFINE_FAKE_VOID_FUNC(rdmnet_core_tick);
-DEFINE_FAKE_VALUE_FUNC(bool, rdmnet_core_initialized);
+#include "gtest/gtest.h"
+#include "fff.h"
 
-const LwpaLogParams *rdmnet_log_params = NULL;
+DEFINE_FFF_GLOBALS;
+
+int main(int argc, char *argv[])
+{
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

@@ -27,7 +27,7 @@
 #include <string>
 #include <algorithm>
 
-#include "rdmnet/core/discovery.h"
+#include "rdmnet/private/discovery.h"
 #include "rdmnet/core/util.h"
 #include "dns_sd.h"
 #include "lwpa_mock/socket.h"
@@ -156,7 +156,7 @@ void TestDiscoveryBonjour::MonitorDefaultScope()
   };
 
   int platform_specific_err;
-  ASSERT_EQ(LWPA_OK, rdmnetdisc_start_monitoring(&config, &monitor_handle_, &platform_specific_err));
+  ASSERT_EQ(kLwpaErrOk, rdmnetdisc_start_monitoring(&config, &monitor_handle_, &platform_specific_err));
   ASSERT_EQ(DNSServiceBrowse_fake.call_count, 1u);
   ASSERT_GE(DNSServiceRefSockFD_fake.call_count, 1u);
 }
@@ -169,25 +169,30 @@ void TestDiscoveryBonjour::CreateDefaultBroker()
 
   TXTRecordCreate(&txt_record_, 0, nullptr);
   std::string txtvers = std::to_string(E133_DNSSD_TXTVERS);
-  ASSERT_EQ(kDNSServiceErr_NoError, TXTRecordSetValue(&txt_record_, "TxtVers", txtvers.length(), txtvers.c_str()));
+  ASSERT_EQ(kDNSServiceErr_NoError,
+            TXTRecordSetValue(&txt_record_, "TxtVers", static_cast<uint8_t>(txtvers.length()), txtvers.c_str()));
   std::string e133vers = std::to_string(E133_DNSSD_E133VERS);
-  ASSERT_EQ(kDNSServiceErr_NoError, TXTRecordSetValue(&txt_record_, "E133Vers", e133vers.length(), e133vers.c_str()));
+  ASSERT_EQ(kDNSServiceErr_NoError,
+            TXTRecordSetValue(&txt_record_, "E133Vers", static_cast<uint8_t>(e133vers.length()), e133vers.c_str()));
 
   // CID with the hyphens removed
   char cid_buf[LWPA_UUID_STRING_BYTES];
   lwpa_uuid_to_string(cid_buf, &default_discovered_broker_.cid);
   std::string cid_str(cid_buf);
   cid_str.erase(std::remove(cid_str.begin(), cid_str.end(), '-'), cid_str.end());
-  ASSERT_EQ(kDNSServiceErr_NoError, TXTRecordSetValue(&txt_record_, "CID", cid_str.length(), cid_str.c_str()));
+  ASSERT_EQ(kDNSServiceErr_NoError,
+            TXTRecordSetValue(&txt_record_, "CID", static_cast<uint8_t>(cid_str.length()), cid_str.c_str()));
 
   ASSERT_EQ(kDNSServiceErr_NoError,
-            TXTRecordSetValue(&txt_record_, "ConfScope", strlen(default_discovered_broker_.scope),
+            TXTRecordSetValue(&txt_record_, "ConfScope", static_cast<uint8_t>(strlen(default_discovered_broker_.scope)),
                               default_discovered_broker_.scope));
-  ASSERT_EQ(kDNSServiceErr_NoError, TXTRecordSetValue(&txt_record_, "Model", strlen(default_discovered_broker_.model),
-                                                      default_discovered_broker_.model));
   ASSERT_EQ(kDNSServiceErr_NoError,
-            TXTRecordSetValue(&txt_record_, "Manuf", strlen(default_discovered_broker_.manufacturer),
-                              default_discovered_broker_.manufacturer));
+            TXTRecordSetValue(&txt_record_, "Model", static_cast<uint8_t>(strlen(default_discovered_broker_.model)),
+                              default_discovered_broker_.model));
+  ASSERT_EQ(
+      kDNSServiceErr_NoError,
+      TXTRecordSetValue(&txt_record_, "Manuf", static_cast<uint8_t>(strlen(default_discovered_broker_.manufacturer)),
+                        default_discovered_broker_.manufacturer));
 
   default_full_service_name_ = "Test Service Name.";
   default_full_service_name_ += E133_DNSSD_SRV_TYPE;
@@ -196,7 +201,7 @@ void TestDiscoveryBonjour::CreateDefaultBroker()
 
 TEST_F(TestDiscoveryBonjour, init)
 {
-  ASSERT_EQ(init_result_, LWPA_OK);
+  ASSERT_EQ(init_result_, kLwpaErrOk);
 }
 
 // Test that rdmnetdisc_register_broker() behaves propertly with both valid and invalid input data.
@@ -204,7 +209,7 @@ TEST_F(TestDiscoveryBonjour, reg)
 {
   RdmnetBrokerRegisterConfig config;
 
-  config.my_info.cid = LWPA_NULL_UUID;
+  config.my_info.cid = kLwpaNullUuid;
   config.my_info.service_name[0] = '\0';
   config.my_info.scope[0] = '\0';
   config.my_info.listen_addrs_count = 0;
@@ -212,7 +217,7 @@ TEST_F(TestDiscoveryBonjour, reg)
   config.callback_context = this;
 
   rdmnet_registered_broker_t handle;
-  ASSERT_NE(LWPA_OK, rdmnetdisc_register_broker(&config, &handle));
+  ASSERT_NE(kLwpaErrOk, rdmnetdisc_register_broker(&config, &handle));
   ASSERT_EQ(regcb_broker_registered_fake.call_count, 0u);
   ASSERT_EQ(DNSServiceRegister_fake.call_count, 0u);
 }
@@ -237,7 +242,7 @@ TEST_F(TestDiscoveryBonjour, monitor_tick_sockets)
     EXPECT_EQ(nfds, 1u);
     EXPECT_EQ(fds[0].fd, DEFAULT_MONITOR_SOCKET_VAL);
     fds[0].revents = LWPA_POLLIN;
-    fds[0].err = LWPA_OK;
+    fds[0].err = kLwpaErrOk;
     return 1;
   };
   rdmnetdisc_tick();

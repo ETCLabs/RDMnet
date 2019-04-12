@@ -30,7 +30,15 @@
 
 #include "rdmnet/core/discovery.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 lwpa_error_t rdmnetdisc_init();
 void rdmnetdisc_deinit();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _RDMNET_PRIVATE_DISCOVERY_H_ */

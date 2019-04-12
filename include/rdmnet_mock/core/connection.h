@@ -62,7 +62,7 @@ DECLARE_FAKE_VOID_FUNC(rdmnet_conn_socket_activity, rdmnet_conn_t, const LwpaPol
   operation(rdmnet_send_partial_message);                  \
   operation(rdmnet_end_message);                           \
   operation(rdmnet_conn_tick);                             \
-  operation(rdmnet_conn_socket_activity);
+  operation(rdmnet_conn_socket_activity)
 
 #ifdef __cplusplus
 }

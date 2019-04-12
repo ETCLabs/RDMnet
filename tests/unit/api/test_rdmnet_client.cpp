@@ -33,41 +33,45 @@
 
 #include "rdmnet/client.h"
 
-#include "rdmnet_mock/core/connection.h"
-#include "rdmnet_mock/core/discovery.h"
 #include "rdmnet_mock/core.h"
 #include "rdmnet/core/util.h"
 
 DEFINE_FFF_GLOBALS;
 
-FAKE_VOID_FUNC(rdmnet_client_connected, rdmnet_client_t, rdmnet_client_scope_t, const RdmnetClientConnectedInfo *, void *);
-FAKE_VOID_FUNC(rdmnet_client_connect_failed, rdmnet_client_t, rdmnet_client_scope_t, const RdmnetClientConnectFailedInfo *, void *);
-FAKE_VOID_FUNC(rdmnet_client_disconnected, rdmnet_client_t, rdmnet_client_scope_t, const RdmnetClientDisconnectedInfo *, void *);
-FAKE_VOID_FUNC(rdmnet_client_broker_msg_received, rdmnet_client_t, rdmnet_client_scope_t, const BrokerMessage *, void *);
+FAKE_VOID_FUNC(rdmnet_client_connected, rdmnet_client_t, rdmnet_client_scope_t, const RdmnetClientConnectedInfo *,
+               void *);
+FAKE_VOID_FUNC(rdmnet_client_connect_failed, rdmnet_client_t, rdmnet_client_scope_t,
+               const RdmnetClientConnectFailedInfo *, void *);
+FAKE_VOID_FUNC(rdmnet_client_disconnected, rdmnet_client_t, rdmnet_client_scope_t, const RdmnetClientDisconnectedInfo *,
+               void *);
+FAKE_VOID_FUNC(rdmnet_client_broker_msg_received, rdmnet_client_t, rdmnet_client_scope_t, const BrokerMessage *,
+               void *);
 FAKE_VOID_FUNC(rpt_client_msg_received, rdmnet_client_t, rdmnet_client_scope_t, const RptClientMessage *, void *);
 FAKE_VOID_FUNC(ept_client_msg_received, rdmnet_client_t, rdmnet_client_scope_t, const EptClientMessage *, void *);
+
+rdmnet_conn_t g_next_conn_handle;
+
+extern "C" lwpa_error_t custom_new_connection(const RdmnetConnectionConfig *config, rdmnet_conn_t *handle)
+{
+  (void)config;
+  *handle = g_next_conn_handle++;
+  return kLwpaErrOk;
+}
 
 class TestRdmnetClient : public testing::Test
 {
 protected:
   TestRdmnetClient()
   {
-    // Reset the fakes
-    RESET_FAKE(rdmnet_client_connected);
-    RESET_FAKE(rdmnet_client_disconnected);
+    g_next_conn_handle = 0;
 
-    RDMNET_CORE_DO_FOR_ALL_FAKES(RESET_FAKE);
-    RDMNET_CORE_DISCOVERY_DO_FOR_ALL_FAKES(RESET_FAKE);
-    RDMNET_CORE_CONNECTION_DO_FOR_ALL_FAKES(RESET_FAKE);
-    rdmnet_core_initialized_fake.return_val = true;
+    rdmnet_safe_strncpy(default_dynamic_scope_.scope, "default", E133_SCOPE_STRING_PADDED_LENGTH);
+    default_dynamic_scope_.has_static_broker_addr = false;
 
-    rdmnet_safe_strncpy(scope_1_.scope, "default", E133_SCOPE_STRING_PADDED_LENGTH);
-    scope_1_.has_static_broker_addr = false;
-
-    rdmnet_safe_strncpy(scope_2_.scope, "not_default", E133_SCOPE_STRING_PADDED_LENGTH);
-    scope_2_.has_static_broker_addr = true;
-    lwpaip_set_v4_address(&scope_2_.static_broker_addr.ip, 0x0a650101);
-    scope_2_.static_broker_addr.port = 8888;
+    rdmnet_safe_strncpy(default_static_scope_.scope, "not_default", E133_SCOPE_STRING_PADDED_LENGTH);
+    default_static_scope_.has_static_broker_addr = true;
+    lwpaip_set_v4_address(&default_static_scope_.static_broker_addr.ip, 0x0a650101);
+    default_static_scope_.static_broker_addr.port = 8888;
 
     rpt_callbacks_.connected = rdmnet_client_connected;
     rpt_callbacks_.disconnected = rdmnet_client_disconnected;
@@ -75,16 +79,39 @@ protected:
     rpt_callbacks_.msg_received = rpt_client_msg_received;
 
     default_rpt_config_.type = kRPTClientTypeController;
-    rdmnet_client_set_dynamic_uid(&default_rpt_config_.uid, 0x6574);
+    rdmnet_client_set_dynamic_uid(&default_rpt_config_, 0x6574);
     default_rpt_config_.cid = {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}};
+    default_rpt_config_.search_domain = E133_DEFAULT_DOMAIN;
     default_rpt_config_.callbacks = rpt_callbacks_;
     default_rpt_config_.callback_context = this;
   }
 
-  RdmnetScopeConfig scope_1_;
-  RdmnetScopeConfig scope_2_;
-  RptClientCallbacks rpt_callbacks_;
-  RdmnetRptClientConfig default_rpt_config_;
+  void SetUp() override
+  {
+    // Reset the fakes
+    RESET_FAKE(rdmnet_client_connected);
+    RESET_FAKE(rdmnet_client_disconnected);
+
+    RDMNET_CORE_DO_FOR_ALL_FAKES(RESET_FAKE);
+
+    // Init
+    rdmnet_core_init_fake.return_val = kLwpaErrOk;
+    ASSERT_EQ(kLwpaErrOk, rdmnet_client_init(NULL));
+    ASSERT_EQ(rdmnet_core_init_fake.call_count, 1u);
+    rdmnet_core_initialized_fake.return_val = true;
+
+    // New connection
+    rdmnet_new_connection_fake.custom_fake = custom_new_connection;
+  }
+
+  void TearDown() override { rdmnet_client_deinit(); }
+
+  void PrimeNewConnection();
+
+  RdmnetScopeConfig default_dynamic_scope_{};
+  RdmnetScopeConfig default_static_scope_{};
+  RptClientCallbacks rpt_callbacks_{};
+  RdmnetRptClientConfig default_rpt_config_{};
 };
 
 // Test the rdmnet_rpt_client_create() function in valid and invalid scenarios
@@ -93,43 +120,46 @@ TEST_F(TestRdmnetClient, create)
   rdmnet_client_t handle_1;
 
   // Invalid arguments
-  ASSERT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_create(NULL, NULL));
-  ASSERT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_create(&default_rpt_config_, NULL));
-  ASSERT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_create(NULL, &handle_1));
+  EXPECT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_create(NULL, NULL));
+  EXPECT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_create(&default_rpt_config_, NULL));
+  EXPECT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_create(NULL, &handle_1));
 
   // Valid config, but core is not initialized
   rdmnet_core_initialized_fake.return_val = false;
-  ASSERT_EQ(kLwpaErrNotInit, rdmnet_rpt_client_create(&default_rpt_config_, &handle_1));
+  EXPECT_EQ(kLwpaErrNotInit, rdmnet_rpt_client_create(&default_rpt_config_, &handle_1));
 
   // Valid create with one scope
   rdmnet_core_initialized_fake.return_val = true;
   ASSERT_EQ(kLwpaErrOk, rdmnet_rpt_client_create(&default_rpt_config_, &handle_1));
 
   rdmnet_client_scope_t scope_handle;
-  ASSERT_EQ(kLwpaErrOk, rdmnet_client_add_scope(handle_1, &scope_1_, &scope_handle));
+  ASSERT_EQ(kLwpaErrOk, rdmnet_client_add_scope(handle_1, &default_dynamic_scope_, &scope_handle));
 
   // Valid create with 100 different scopes
   rdmnet_client_t handle_2;
   ASSERT_EQ(kLwpaErrOk, rdmnet_rpt_client_create(&default_rpt_config_, &handle_2));
 
   RdmnetRptClientConfig handle_2_config = default_rpt_config_;
-  std::vector<RdmnetScopeConfig> lots_of_scopes(100, scope_1_);
   for (size_t i = 0; i < 100; ++i)
   {
-    strcat(lots_of_scopes[i].scope, std::to_string(i).c_str());
-    ASSERT_EQ(kLwpaErrOk, rdmnet_client_add_scope(handle_2, &lots_of_scopes[i], ))
+    RdmnetScopeConfig tmp_scope = default_dynamic_scope_;
+    rdmnet_client_scope_t tmp_handle;
+    RDMNET_MSVC_NO_DEP_WRN strcat(tmp_scope.scope, std::to_string(i).c_str());
+    ASSERT_EQ(kLwpaErrOk, rdmnet_client_add_scope(handle_2, &tmp_scope, &tmp_handle));
   }
-  handle_2_config.scope_list = lots_of_scopes.data();
-  handle_2_config.num_scopes = 100;
 }
 
 // Test that the rdmnet_rpt_client_create() function has the correct side-effects
-TEST_F(TestRdmnetClient, create_sideeffects)
+TEST_F(TestRdmnetClient, add_scope_side_effects)
 {
-  rdmnet_client_t handle_1;
+  // Create a new client
+  rdmnet_client_t client_handle;
+  ASSERT_EQ(kLwpaErrOk, rdmnet_rpt_client_create(&default_rpt_config_, &client_handle));
 
-  // Create a client with one scope, dynamic discovery
-  ASSERT_EQ(kLwpaErrOk, rdmnet_rpt_client_create(&default_rpt_config_, &handle_1));
+  // Add a scope with default settings
+  rdmnet_client_scope_t scope_handle;
+  ASSERT_EQ(kLwpaErrOk, rdmnet_client_add_scope(client_handle, &default_dynamic_scope_, &scope_handle));
+  // Make sure the correct underlying functions were called
   ASSERT_EQ(rdmnetdisc_start_monitoring_fake.call_count, 1u);
   ASSERT_EQ(rdmnet_connect_fake.call_count, 0u);
 
@@ -137,9 +167,7 @@ TEST_F(TestRdmnetClient, create_sideeffects)
   RESET_FAKE(rdmnet_connect);
 
   // Create another client with one scope and a static broker address
-  RdmnetRptClientConfig config_2 = default_rpt_config_;
-  config_2.scope_list = &scope_2_;
-  ASSERT_EQ(kLwpaErrOk, rdmnet_rpt_client_create(&config_2, &handle_1));
+  ASSERT_EQ(kLwpaErrOk, rdmnet_client_add_scope(client_handle, &default_static_scope_, &scope_handle));
   ASSERT_EQ(rdmnetdisc_start_monitoring_fake.call_count, 0u);
   ASSERT_EQ(rdmnet_connect_fake.call_count, 1u);
 }
@@ -147,23 +175,25 @@ TEST_F(TestRdmnetClient, create_sideeffects)
 TEST_F(TestRdmnetClient, send_rdm_command)
 {
   rdmnet_client_t handle;
+  rdmnet_client_scope_t scope_handle;
   ASSERT_EQ(kLwpaErrOk, rdmnet_rpt_client_create(&default_rpt_config_, &handle));
+  ASSERT_EQ(kLwpaErrOk, rdmnet_client_add_scope(handle, &default_dynamic_scope_, &scope_handle));
 
   // TODO valid initialization
-  ControllerRdmCommand cmd;
+  LocalRdmCommand cmd;
   cmd.dest_endpoint = 0;
   cmd.dest_uid = {};
-  const char *scope = default_rpt_config_.scope_list[0].scope;
+  uint32_t seq_num = 0;
 
   // Core not initialized
   rdmnet_core_initialized_fake.return_val = false;
-  ASSERT_EQ(kLwpaErrNotInit, rdmnet_rpt_client_send_rdm_command(handle, scope, &cmd));
+  EXPECT_EQ(kLwpaErrNotInit, rdmnet_rpt_client_send_rdm_command(handle, scope_handle, &cmd, &seq_num));
 
   // Invalid parameters
   rdmnet_core_initialized_fake.return_val = true;
-  ASSERT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_send_rdm_command(NULL, scope, &cmd));
-  ASSERT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_send_rdm_command(handle, NULL, &cmd));
-  ASSERT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_send_rdm_command(handle, scope, NULL));
+  EXPECT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_send_rdm_command(RDMNET_CLIENT_INVALID, scope_handle, &cmd, &seq_num));
+  EXPECT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_send_rdm_command(handle, RDMNET_CLIENT_SCOPE_INVALID, &cmd, &seq_num));
+  EXPECT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_send_rdm_command(handle, scope_handle, NULL, &seq_num));
 
   // TODO finish test
 }
@@ -171,21 +201,22 @@ TEST_F(TestRdmnetClient, send_rdm_command)
 TEST_F(TestRdmnetClient, send_rdm_response)
 {
   rdmnet_client_t handle;
+  rdmnet_client_scope_t scope_handle;
   ASSERT_EQ(kLwpaErrOk, rdmnet_rpt_client_create(&default_rpt_config_, &handle));
+  ASSERT_EQ(kLwpaErrOk, rdmnet_client_add_scope(handle, &default_dynamic_scope_, &scope_handle));
 
   // TODO valid initialization
-  DeviceRdmResponse resp;
-  const char *scope = default_rpt_config_.scope_list[0].scope;
+  LocalRdmResponse resp;
 
   // Core not initialized
   rdmnet_core_initialized_fake.return_val = false;
-  ASSERT_EQ(kLwpaErrNotInit, rdmnet_rpt_client_send_rdm_response(handle, scope, &resp));
+  ASSERT_EQ(kLwpaErrNotInit, rdmnet_rpt_client_send_rdm_response(handle, scope_handle, &resp));
 
   // Invalid parameters
   rdmnet_core_initialized_fake.return_val = true;
-  ASSERT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_send_rdm_response(NULL, scope, &resp));
-  ASSERT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_send_rdm_response(handle, NULL, &resp));
-  ASSERT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_send_rdm_response(handle, scope, NULL));
+  ASSERT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_send_rdm_response(RDMNET_CLIENT_INVALID, scope_handle, &resp));
+  ASSERT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_send_rdm_response(handle, RDMNET_CLIENT_SCOPE_INVALID, &resp));
+  ASSERT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_send_rdm_response(handle, scope_handle, NULL));
 
   // TODO finish test
 }
@@ -193,21 +224,22 @@ TEST_F(TestRdmnetClient, send_rdm_response)
 TEST_F(TestRdmnetClient, send_status)
 {
   rdmnet_client_t handle;
+  rdmnet_client_scope_t scope_handle;
   ASSERT_EQ(kLwpaErrOk, rdmnet_rpt_client_create(&default_rpt_config_, &handle));
+  ASSERT_EQ(kLwpaErrOk, rdmnet_client_add_scope(handle, &default_dynamic_scope_, &scope_handle));
 
   // TODO valid initialization
-  RptStatusMsg status;
-  const char *scope = default_rpt_config_.scope_list[0].scope;
+  LocalRptStatus status;
 
   // Core not initialized
   rdmnet_core_initialized_fake.return_val = false;
-  ASSERT_EQ(kLwpaErrNotInit, rdmnet_rpt_client_send_status(handle, scope, &status));
+  ASSERT_EQ(kLwpaErrNotInit, rdmnet_rpt_client_send_status(handle, scope_handle, &status));
 
   // Invalid parameters
   rdmnet_core_initialized_fake.return_val = true;
-  ASSERT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_send_status(NULL, scope, &status));
-  ASSERT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_send_status(handle, NULL, &status));
-  ASSERT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_send_status(handle, scope, NULL));
+  ASSERT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_send_status(RDMNET_CLIENT_INVALID, scope_handle, &status));
+  ASSERT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_send_status(handle, RDMNET_CLIENT_SCOPE_INVALID, &status));
+  ASSERT_EQ(kLwpaErrInvalid, rdmnet_rpt_client_send_status(handle, scope_handle, NULL));
 
   // TODO finish test
 }
