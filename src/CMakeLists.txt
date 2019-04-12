@@ -7,7 +7,7 @@ set(RDMNET_SRC ${CMAKE_CURRENT_LIST_DIR})
 include(AddDependency)
 
 if(RDMNET_BUILD_TESTS)
-  set(LWPA_BUILD_MOCK_LIB ON)
+  set(LWPA_BUILD_MOCK_LIB ON CACHE BOOL "Build the lwpa mock library" FORCE)
   # set(RDM_BUILD_MOCK_LIB ON)
 endif()
 rdmnet_add_dependency(lwpa LWPA_DIR)

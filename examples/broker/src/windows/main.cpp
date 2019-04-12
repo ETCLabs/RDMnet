@@ -276,9 +276,12 @@ ParseResult ParseArgs(int argc, wchar_t *argv[], BrokerShell &broker_shell)
 
 // The system will deliver this callback when an IPv4 or IPv6 network adapter changes state. This
 // event is passed along to the BrokerShell instance, which restarts the broker.
-void InterfaceChangeCallback(PVOID CallerContext, PMIB_IPINTERFACE_ROW /*Row*/,
-                             MIB_NOTIFICATION_TYPE /*NotificationType*/)
+VOID NETIOAPI_API_ InterfaceChangeCallback(IN PVOID CallerContext, IN PMIB_IPINTERFACE_ROW Row,
+                                           IN MIB_NOTIFICATION_TYPE NotificationType)
 {
+  (void)Row;
+  (void)NotificationType;
+
   BrokerShell *shell = static_cast<BrokerShell *>(CallerContext);
   if (shell)
   {
