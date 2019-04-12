@@ -133,12 +133,7 @@ source_group(src\\core FILES ${RDMNET_CORE_SOURCES})
 source_group(include\\core FILES ${RDMNET_CORE_PUBLIC_HEADERS})
 source_group(include\\private FILES ${RDMNET_CORE_PRIVATE_HEADERS} ${RDMNET_API_PRIVATE_HEADERS})
 
-option(RDMNET_MOCK_DISCOVERY "Link RDMnet to the mock discovery files instead of the real DNS-SD provider" OFF)
-if(RDMNET_MOCK_DISCOVERY)
-  target_link_libraries(RDMnet PRIVATE RDMnetDiscovery_mock)
-else()
-  target_link_libraries(RDMnet PRIVATE RDMnetDiscovery dnssd)
-endif()
+target_link_libraries(RDMnet PRIVATE RDMnetDiscovery dnssd)
 
 #################################### Broker ###################################
 

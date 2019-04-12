@@ -92,8 +92,14 @@ for:
     environment:
       CMAKE_GENERATOR: Visual Studio 15 2017
       CMAKE_INSTALL: install_x86
-      CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=ON
+      CMAKE_EXTRA_ARGS: -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
       QTDIR: C:\Qt\5.9.7\msvc2015
+
+    install:
+      - ps: |-
+          $wc = New-Object Net.WebClient
+          $wc.DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_x86.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x86.zip")
+          7z x mDNSWindows_x86.zip -omdns_install -y -r
 
   -
     matrix:
@@ -107,8 +113,14 @@ for:
     environment:
       CMAKE_GENERATOR: Visual Studio 15 2017 Win64
       CMAKE_INSTALL: install_x64
-      CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=ON
+      CMAKE_EXTRA_ARGS: -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
       QTDIR: C:\Qt\5.9.7\msvc2017_64
+
+    install:
+      - ps: |-
+          $wc = New-Object Net.WebClient
+          $wc.DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_x64.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x64.zip")
+          7z x mDNSWindows_x64.zip -omdns_install -y -r
 
   -
     matrix:
@@ -122,7 +134,7 @@ for:
     environment:
       CMAKE_GENERATOR: Visual Studio 15 2017
       CMAKE_INSTALL: install_x86
-      CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=OFF -DRDMNET_BUILD_TESTS=OFF -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
+      CMAKE_EXTRA_ARGS: -DRDMNET_BUILD_TESTS=OFF -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
       QTDIR: C:\Qt\5.9.7\msvc2015
       INSTALLER_PROJECT: RDMnetInstall_x86.wixproj
       INSTALLER_PROJECT_PLATFORM: x86
