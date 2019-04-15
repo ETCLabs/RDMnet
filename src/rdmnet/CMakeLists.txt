@@ -9,10 +9,6 @@ if(DEFINED RDMNET_CONFIG_LOC)
   )
 endif()
 
-################################ DNS-SD SUPPORT ###############################
-
-include(ResolveDnsSdProvider)
-
 ################################### Library ###################################
 
 # RDMnet sources and headers are divided logically into groups - these groups

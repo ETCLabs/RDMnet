@@ -2,6 +2,10 @@ set(RDMNET_ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
 set(RDMNET_INCLUDE ${RDMNET_ROOT}/include)
 set(RDMNET_SRC ${CMAKE_CURRENT_LIST_DIR})
 
+################################ DNS-SD SUPPORT ###############################
+
+include(ResolveDnsSdProvider)
+
 ################################# Dependencies ################################
 
 include(AddDependency)
@@ -12,6 +16,8 @@ if(RDMNET_BUILD_TESTS)
 endif()
 rdmnet_add_dependency(lwpa LWPA_DIR)
 rdmnet_add_dependency(RDM RDM_DIR)
+
+################################## Libraries ##################################
 
 # The main library
 add_subdirectory(rdmnet)
