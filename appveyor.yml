@@ -98,7 +98,7 @@ for:
     install:
       - ps: |-
           $wc = New-Object Net.WebClient
-          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_$Env:MDNSWINDOWS_VERSION_x86.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x86.zip")
+          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_$($Env:MDNSWINDOWS_VERSION)_x86.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x86.zip")
           7z x mDNSWindows_x86.zip -omdns_install -y -r
 
   -
@@ -119,7 +119,7 @@ for:
     install:
       - ps: |-
           $wc = New-Object Net.WebClient
-          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_$Env:MDNSWINDOWS_VERSION_x64.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x64.zip")
+          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_$($Env:MDNSWINDOWS_VERSION)_x64.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x64.zip")
           7z x mDNSWindows_x64.zip -omdns_install -y -r
 
   -
