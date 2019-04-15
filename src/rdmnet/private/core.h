@@ -49,6 +49,15 @@ extern const LwpaLogParams *rdmnet_log_params;
 #define rdmnet_writelock() lwpa_rwlock_writelock(&rdmnet_lock, LWPA_WAIT_FOREVER)
 #define rdmnet_writeunlock() lwpa_rwlock_writeunlock(&rdmnet_lock)
 
+typedef enum
+{
+  kRdmnetPolledSocketConnection = 0,
+  kRdmnetPolledSocketLlrp = 1
+} rdmnet_polled_socket_t;
+
+lwpa_error_t rdmnet_core_add_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, rdmnet_polled_socket_t type);
+lwpa_error_t rdmnet_core_remove_polled_socket(lwpa_socket_t socket);
+
 #ifdef __cplusplus
 }
 #endif

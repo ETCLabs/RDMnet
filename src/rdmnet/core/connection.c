@@ -95,7 +95,6 @@ static void start_rdmnet_connection(RdmnetConnection *conn);
 static void reset_connection(RdmnetConnection *conn);
 static void retry_connection(RdmnetConnection *conn);
 
-static void rdmnet_conn_socket_activity(rdmnet_conn_t conn_handle, const LwpaPollfd *poll);
 static void fill_callback_info(const RdmnetConnection *conn, ConnCallbackDispatchInfo *info);
 static void deliver_callback(ConnCallbackDispatchInfo *info);
 
@@ -572,6 +571,12 @@ void start_tcp_connection(RdmnetConnection *conn, ConnCallbackDispatchInfo *cb)
     else if (res == kLwpaErrInProgress || res == kLwpaErrWouldBlock)
     {
       conn->state = kCSTCPConnPending;
+      lwpa_error_t add_res = rdmnet_core_add_polled_socket(conn->sock, LWPA_POLL_CONNECT, kRdmnetPolledSocketConnection);
+      if (add_res != kLwpaErrOk)
+      {
+        ok = false;
+        failed_info->socket_err = add_res;
+      }
     }
     else
     {
@@ -1127,6 +1132,8 @@ void reset_connection(RdmnetConnection *conn)
 {
   if (conn->sock != LWPA_SOCKET_INVALID)
   {
+    if (!conn->external_socket_attached)
+      rdmnet_core_remove_polled_socket(conn->sock);
     lwpa_close(conn->sock);
     conn->sock = LWPA_SOCKET_INVALID;
   }

@@ -48,6 +48,8 @@
 
 #define RDMNET_TICK_PERIODIC_INTERVAL 100 /* ms */
 
+#define RDMNET_LWPA_FEATURES (LWPA_FEATURE_SOCKETS | LWPA_FEATURE_TIMERS)
+
 /***************************** Private macros ********************************/
 
 #define rdmnet_create_lock_or_die()       \
@@ -73,6 +75,7 @@ static struct CoreState
 
   LwpaLogParams log_params;
   LwpaTimer tick_timer;
+  LwpaPollContext poll_context;
 
 #if RDMNET_USE_TICK_THREAD
   bool tickthread_run;
@@ -97,16 +100,19 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
     res = kLwpaErrOk;
     if (!core_state.initted)
     {
-      bool socket_initted = false;
+      bool lwpa_initted = false;
+      bool poll_initted = false;
       bool disc_initted = false;
       bool conn_initted = false;
 
       if (res == kLwpaErrOk)
+        lwpa_initted = ((res = lwpa_init(RDMNET_LWPA_FEATURES)) == kLwpaErrOk);
+      if (res == kLwpaErrOk)
+        poll_initted = ((res = lwpa_poll_context_init(&core_state.poll_context)) == kLwpaErrOk);
+      if (res == kLwpaErrOk)
         res = rdmnet_message_init();
       if (res == kLwpaErrOk)
         conn_initted = ((res = rdmnet_conn_init()) == kLwpaErrOk);
-      if (res == kLwpaErrOk)
-        socket_initted = ((res = lwpa_socket_init(NULL)) == kLwpaErrOk);
       if (res == kLwpaErrOk)
         disc_initted = ((res = rdmnetdisc_init()) == kLwpaErrOk);
 
@@ -142,10 +148,12 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
         // Clean up
         if (disc_initted)
           rdmnetdisc_deinit();
-        if (socket_initted)
-          lwpa_socket_deinit();
         if (conn_initted)
           rdmnet_conn_deinit();
+        if (poll_initted)
+          lwpa_poll_context_deinit(&core_state.poll_context);
+        if (lwpa_initted)
+          lwpa_deinit(RDMNET_LWPA_FEATURES);
       }
     }
     rdmnet_writeunlock();
@@ -163,8 +171,8 @@ void rdmnet_core_deinit()
       rdmnet_log_params = NULL;
 
       rdmnetdisc_deinit();
-      lwpa_socket_deinit();
       rdmnet_conn_deinit();
+      lwpa_deinit(RDMNET_LWPA_FEATURES);
     }
     rdmnet_writeunlock();
   }
@@ -183,6 +191,16 @@ bool rdmnet_core_initialized()
     }
   }
   return result;
+}
+
+lwpa_error_t rdmnet_core_add_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, rdmnet_polled_socket_t type)
+{
+  return lwpa_poll_add_socket(&core_state.context, socket, events, (void *)type);
+}
+
+lwpa_error_t rdmnet_core_remove_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, rdmnet_polled_socket_t type)
+{
+  return lwpa_poll_remove_socket(&core_state.context, socket);
 }
 
 #if RDMNET_USE_TICK_THREAD
