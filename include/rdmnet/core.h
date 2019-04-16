@@ -40,8 +40,22 @@
  *  @{
  */
 
+/*! A handle to an RDMnet connection. */
 typedef int rdmnet_conn_t;
+/*! An invalid RDMnet connection handle value. */
 #define RDMNET_CONN_INVALID -1
+
+/*! @} */
+
+/*! \addtogroup llrp
+ *  @{
+ */
+
+/*! \brief A handle for an instance of LLRP Manager or Target functionality. */
+typedef int llrp_socket_t;
+
+/*! An invalid LLRP socket value. */
+#define LLRP_SOCKET_INVALID -1
 
 /*! @} */
 

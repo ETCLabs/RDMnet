@@ -40,6 +40,7 @@
 #include "lwpa/inet.h"
 #include "rdm/uid.h"
 #include "rdm/message.h"
+#include "rdmnet/core.h"
 
 /*! \defgroup llrp LLRP
  *  \ingroup rdmnet_core_lib
@@ -47,12 +48,6 @@
  *
  *  @{
  */
-
-/*! \brief A handle for an instance of LLRP Manager or Target functionality. */
-typedef struct LlrpBaseSocket *llrp_socket_t;
-
-/*! An invalid LLRP socket value. */
-#define LLRP_SOCKET_INVALID NULL
 
 /*! Identifies the type of data contained in a struct llrp_data. */
 typedef enum

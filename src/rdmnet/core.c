@@ -172,6 +172,7 @@ void rdmnet_core_deinit()
 
       rdmnetdisc_deinit();
       rdmnet_conn_deinit();
+      lwpa_poll_context_deinit(&core_state.poll_context);
       lwpa_deinit(RDMNET_LWPA_FEATURES);
     }
     rdmnet_writeunlock();
@@ -198,9 +199,14 @@ lwpa_error_t rdmnet_core_add_polled_socket(lwpa_socket_t socket, lwpa_poll_event
   return lwpa_poll_add_socket(&core_state.context, socket, events, (void *)type);
 }
 
-lwpa_error_t rdmnet_core_remove_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, rdmnet_polled_socket_t type)
+lwpa_error_t rdmnet_core_modify_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, rdmnet_polled_socket_t type)
 {
-  return lwpa_poll_remove_socket(&core_state.context, socket);
+  return lwpa_poll_modify_socket(&core_state.context, socket, events, (void *)type);
+}
+
+void rdmnet_core_remove_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, rdmnet_polled_socket_t type)
+{
+  lwpa_poll_remove_socket(&core_state.context, socket);
 }
 
 #if RDMNET_USE_TICK_THREAD
@@ -216,7 +222,25 @@ void rdmnet_tick_thread(void *arg)
 
 void rdmnet_core_tick()
 {
-  rdmnet_conn_poll();
+  LwpaPollEvent event;
+  lwpa_error_t poll_res = lwpa_poll(&core_state.poll_context, &event, RDMNET_CONN_POLL_TIMEOUT);
+  if (poll_res == kLwpaErrOk)
+  {
+    PolledSocketInfo *info = (PolledSocketInfo *)event.user_data;
+    if (info)
+    {
+      info->callback(&event, info->data);
+    }
+  }
+  else if (poll_res != kLwpaErrTimedOut)
+  {
+    if (poll_res != kLwpaErrNoSockets)
+    {
+      lwpa_log(rdmnet_log_params, LWPA_LOG_ERR, RDMNET_LOG_MSG("Error ('%s') while polling sockets."),
+               lwpa_strerror(poll_res));
+    }
+    lwpa_thread_sleep(100);  // Sleep to avoid spinning on errors
+  }
 
   if (lwpa_timer_isexpired(&core_state.tick_timer))
   {

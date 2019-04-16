@@ -31,6 +31,7 @@
 #include "lwpa/lock.h"
 #include "lwpa/log.h"
 #include "lwpa/socket.h"
+#include "rdmnet/core.h"
 #include "rdmnet/private/opts.h"
 
 #ifdef __cplusplus
@@ -49,14 +50,25 @@ extern const LwpaLogParams *rdmnet_log_params;
 #define rdmnet_writelock() lwpa_rwlock_writelock(&rdmnet_lock, LWPA_WAIT_FOREVER)
 #define rdmnet_writeunlock() lwpa_rwlock_writeunlock(&rdmnet_lock)
 
-typedef enum
+typedef union PolledSocketOpaqueData
 {
-  kRdmnetPolledSocketConnection = 0,
-  kRdmnetPolledSocketLlrp = 1
-} rdmnet_polled_socket_t;
+  rdmnet_conn_t conn_handle;
+  llrp_socket_t llrp_sock;
+  void *ptr;
+} PolledSocketOpaqueData;
 
-lwpa_error_t rdmnet_core_add_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, rdmnet_polled_socket_t type);
-lwpa_error_t rdmnet_core_remove_polled_socket(lwpa_socket_t socket);
+typedef void (*PolledSocketActivityCallback)(const LwpaPollEvent *event, PolledSocketOpaqueData data);
+
+typedef struct PolledSocketInfo
+{
+  PolledSocketActivityCallback callback;
+  PolledSocketOpaqueData data;
+} PolledSocketInfo;
+
+lwpa_error_t rdmnet_core_add_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, PolledSocketData *data);
+lwpa_error_t rdmnet_core_modify_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events,
+                                              rdmnet_polled_socket_t type);
+void rdmnet_core_remove_polled_socket(lwpa_socket_t socket);
 
 #ifdef __cplusplus
 }
