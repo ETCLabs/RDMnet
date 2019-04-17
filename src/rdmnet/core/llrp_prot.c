@@ -35,7 +35,7 @@
 
 /**************************** Global variables *******************************/
 
-LwpaUuid kLLRPBroadcastCID;
+LwpaUuid kLlrpBroadcastCid;
 
 /*************************** Private constants *******************************/
 
@@ -58,7 +58,7 @@ static bool parse_llrp_rdm_command(const uint8_t *buf, size_t buflen, RdmBuffer 
 
 void llrp_prot_init()
 {
-  lwpa_string_to_uuid(&kLLRPBroadcastCID, LLRP_BROADCAST_CID, sizeof(LLRP_BROADCAST_CID));
+  lwpa_string_to_uuid(&kLlrpBroadcastCid, LLRP_BROADCAST_CID, sizeof(LLRP_BROADCAST_CID));
 }
 
 bool parse_llrp_message(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest, LlrpMessage *msg)
@@ -106,7 +106,7 @@ bool parse_llrp_pdu(const uint8_t *buf, size_t buflen, const LlrpMessageInterest
   cur_ptr += 4;
 
   /* Parse the next layer, based on the vector value and what the caller has registered interest in */
-  if (0 == lwpa_uuid_cmp(&msg->header.dest_cid, &kLLRPBroadcastCID) ||
+  if (0 == lwpa_uuid_cmp(&msg->header.dest_cid, &kLlrpBroadcastCid) ||
       0 == lwpa_uuid_cmp(&msg->header.dest_cid, &interest->my_cid))
   {
     switch (msg->vector)
@@ -272,10 +272,10 @@ size_t lwpa_pack_llrp_header(uint8_t *buf, size_t pdu_len, uint32_t vector, cons
 #define PROBE_REQUEST_RLP_DATA_MIN_SIZE (LLRP_HEADER_SIZE + PROBE_REQUEST_PDU_MIN_SIZE)
 #define PROBE_REQUEST_RLP_DATA_MAX_SIZE (PROBE_REQUEST_RLP_DATA_MIN_SIZE + (6 * LLRP_KNOWN_UID_SIZE))
 
-lwpa_error_t send_llrp_probe_request(llrp_socket_t handle, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
+lwpa_error_t send_llrp_probe_request(LlrpSocket *llrp_sock, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
                                      const ProbeRequestSend *probe_request)
 {
-  uint8_t *cur_ptr = handle->send_buf;
+  uint8_t *cur_ptr = llrp_sock->send_buf;
   uint8_t *buf_end = cur_ptr + LLRP_MAX_MESSAGE_SIZE;
   LwpaRootLayerPdu rlp;
   const KnownUid *cur_uid;
@@ -331,7 +331,7 @@ lwpa_error_t send_llrp_probe_request(llrp_socket_t handle, const LwpaSockaddr *d
     cur_uid = cur_uid->next;
   }
 
-  send_res = lwpa_sendto(handle->sys_sock, handle->send_buf, cur_ptr - handle->send_buf, 0, dest_addr);
+  send_res = lwpa_sendto(llrp_sock->sys_sock, llrp_sock->send_buf, cur_ptr - llrp_sock->send_buf, 0, dest_addr);
   if (send_res >= 0)
     return kLwpaErrOk;
   else
@@ -340,10 +340,10 @@ lwpa_error_t send_llrp_probe_request(llrp_socket_t handle, const LwpaSockaddr *d
 
 #define PROBE_REPLY_RLP_DATA_SIZE (LLRP_HEADER_SIZE + PROBE_REPLY_PDU_SIZE)
 
-lwpa_error_t send_llrp_probe_reply(llrp_socket_t handle, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
+lwpa_error_t send_llrp_probe_reply(LlrpSocket *llrp_sock, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
                                    const LlrpTarget *probe_reply)
 {
-  uint8_t *cur_ptr = handle->send_buf;
+  uint8_t *cur_ptr = llrp_sock->send_buf;
   uint8_t *buf_end = cur_ptr + LLRP_MAX_MESSAGE_SIZE;
   LwpaRootLayerPdu rlp;
   int send_res;
@@ -374,7 +374,7 @@ lwpa_error_t send_llrp_probe_reply(llrp_socket_t handle, const LwpaSockaddr *des
   cur_ptr += 6;
   *cur_ptr++ = (uint8_t)probe_reply->component_type;
 
-  send_res = lwpa_sendto(handle->sys_sock, handle->send_buf, cur_ptr - handle->send_buf, 0, dest_addr);
+  send_res = lwpa_sendto(llrp_sock->sys_sock, llrp_sock->send_buf, cur_ptr - llrp_sock->send_buf, 0, dest_addr);
   if (send_res >= 0)
     return kLwpaErrOk;
   else
@@ -383,10 +383,10 @@ lwpa_error_t send_llrp_probe_reply(llrp_socket_t handle, const LwpaSockaddr *des
 
 #define RDM_CMD_RLP_DATA_MIN_SIZE (LLRP_HEADER_SIZE + 3 /* RDM cmd PDU Flags + Length */)
 
-lwpa_error_t send_llrp_rdm(llrp_socket_t handle, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
+lwpa_error_t send_llrp_rdm(LlrpSocket *llrp_sock, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
                            const RdmBuffer *rdm_msg)
 {
-  uint8_t *cur_ptr = handle->send_buf;
+  uint8_t *cur_ptr = llrp_sock->send_buf;
   uint8_t *buf_end = cur_ptr + LLRP_MAX_MESSAGE_SIZE;
   LwpaRootLayerPdu rlp;
   int send_res;
@@ -411,7 +411,7 @@ lwpa_error_t send_llrp_rdm(llrp_socket_t handle, const LwpaSockaddr *dest_addr, 
   memcpy(cur_ptr, rdm_msg->data, rdm_msg->datalen);
   cur_ptr += rdm_msg->datalen;
 
-  send_res = lwpa_sendto(handle->sys_sock, handle->send_buf, cur_ptr - handle->send_buf, 0, dest_addr);
+  send_res = lwpa_sendto(llrp_sock->sys_sock, llrp_sock->send_buf, cur_ptr - llrp_sock->send_buf, 0, dest_addr);
   if (send_res >= 0)
     return kLwpaErrOk;
   else

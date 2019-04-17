@@ -34,6 +34,7 @@
 #include "rdmnet/private/core.h"
 #include "rdmnet/private/connection.h"
 #include "rdmnet/private/discovery.h"
+#include "rdmnet/private/llrp.h"
 #include "rdmnet/private/opts.h"
 
 /************************* The draft warning message *************************/
@@ -47,12 +48,13 @@
 /*************************** Private constants *******************************/
 
 #define RDMNET_TICK_PERIODIC_INTERVAL 100 /* ms */
+#define RDMNET_POLL_TIMEOUT 120           /* ms */
 
 #define RDMNET_LWPA_FEATURES (LWPA_FEATURE_SOCKETS | LWPA_FEATURE_TIMERS)
 
 /***************************** Private macros ********************************/
 
-#define rdmnet_create_lock_or_die()       \
+#define RDMNET_CREATE_LOCK_OR_DIE()       \
   if (!core_state.lock_initted)           \
   {                                       \
     if (lwpa_rwlock_create(&rdmnet_lock)) \
@@ -92,7 +94,7 @@ static void rdmnet_tick_thread(void *arg);
 lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
 {
   // The lock is created only the first call to this function.
-  rdmnet_create_lock_or_die();
+  RDMNET_CREATE_LOCK_OR_DIE();
 
   lwpa_error_t res = kLwpaErrSys;
   if (rdmnet_writelock())
@@ -102,8 +104,9 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
     {
       bool lwpa_initted = false;
       bool poll_initted = false;
-      bool disc_initted = false;
       bool conn_initted = false;
+      bool disc_initted = false;
+      bool llrp_initted = false;
 
       if (res == kLwpaErrOk)
         lwpa_initted = ((res = lwpa_init(RDMNET_LWPA_FEATURES)) == kLwpaErrOk);
@@ -115,6 +118,8 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
         conn_initted = ((res = rdmnet_conn_init()) == kLwpaErrOk);
       if (res == kLwpaErrOk)
         disc_initted = ((res = rdmnetdisc_init()) == kLwpaErrOk);
+      if (res == kLwpaErrOk)
+        llrp_initted = ((res = rdmnet_llrp_init()) == kLwpaErrOk);
 
 #if RDMNET_USE_TICK_THREAD
       if (res == kLwpaErrOk)
@@ -146,6 +151,8 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
       else
       {
         // Clean up
+        if (llrp_initted)
+          rdmnet_llrp_deinit();
         if (disc_initted)
           rdmnetdisc_deinit();
         if (conn_initted)
@@ -170,6 +177,7 @@ void rdmnet_core_deinit()
       core_state.initted = false;
       rdmnet_log_params = NULL;
 
+      llrp_deinit();
       rdmnetdisc_deinit();
       rdmnet_conn_deinit();
       lwpa_poll_context_deinit(&core_state.poll_context);
@@ -194,19 +202,19 @@ bool rdmnet_core_initialized()
   return result;
 }
 
-lwpa_error_t rdmnet_core_add_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, rdmnet_polled_socket_t type)
+lwpa_error_t rdmnet_core_add_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, PolledSocketInfo *info)
 {
-  return lwpa_poll_add_socket(&core_state.context, socket, events, (void *)type);
+  return lwpa_poll_add_socket(&core_state.poll_context, socket, events, info);
 }
 
-lwpa_error_t rdmnet_core_modify_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, rdmnet_polled_socket_t type)
+lwpa_error_t rdmnet_core_modify_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, PolledSocketInfo *info)
 {
-  return lwpa_poll_modify_socket(&core_state.context, socket, events, (void *)type);
+  return lwpa_poll_modify_socket(&core_state.poll_context, socket, events, info);
 }
 
-void rdmnet_core_remove_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, rdmnet_polled_socket_t type)
+void rdmnet_core_remove_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events)
 {
-  lwpa_poll_remove_socket(&core_state.context, socket);
+  lwpa_poll_remove_socket(&core_state.poll_context, socket);
 }
 
 #if RDMNET_USE_TICK_THREAD
@@ -223,7 +231,7 @@ void rdmnet_tick_thread(void *arg)
 void rdmnet_core_tick()
 {
   LwpaPollEvent event;
-  lwpa_error_t poll_res = lwpa_poll(&core_state.poll_context, &event, RDMNET_CONN_POLL_TIMEOUT);
+  lwpa_error_t poll_res = lwpa_poll_wait(&core_state.poll_context, &event, RDMNET_POLL_TIMEOUT);
   if (poll_res == kLwpaErrOk)
   {
     PolledSocketInfo *info = (PolledSocketInfo *)event.user_data;

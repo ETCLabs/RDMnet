@@ -33,7 +33,7 @@
 #include "lwpa/root_layer_pdu.h"
 #include "rdm/uid.h"
 #include "rdm/message.h"
-#include "rdmnet/llrp.h"
+#include "rdmnet/core/llrp.h"
 
 #define LLRP_HEADER_SIZE \
   (3 /* Flags + Length */ + 4 /* Vector */ + 16 /* Destination CID */ + 4 /* Transaction Number */)
@@ -90,13 +90,13 @@ typedef struct LlrpMessage
   {
     ProbeRequestRecv probe_request;
     LlrpTarget probe_reply;
-    RdmBuffer rdm_cmd;
+    RdmBuffer rdm;
   } data;
 } LlrpMessage;
 
-#define llrp_msg_get_rdm_cmd(llrpmsgptr) (&(llrpmsgptr)->data.rdm_cmd)
-#define llrp_msg_get_probe_reply(llrpmsgptr) (&(llrpmsgptr)->data.probe_reply)
-#define llrp_msg_get_probe_request(llrpmsgptr) (&(llrpmsgptr)->data.probe_request)
+#define LLRP_MSG_GET_RDM(llrpmsgptr) (&(llrpmsgptr)->data.rdm)
+#define LLRP_MSG_GET_PROBE_REPLY(llrpmsgptr) (&(llrpmsgptr)->data.probe_reply)
+#define LLRP_MSG_GET_PROBE_REQUEST(llrpmsgptr) (&(llrpmsgptr)->data.probe_request)
 
 #ifdef __cplusplus
 extern "C" {
@@ -108,13 +108,13 @@ void llrp_prot_init();
 
 bool parse_llrp_message(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest, LlrpMessage *msg);
 
-lwpa_error_t send_llrp_probe_request(llrp_socket_t handle, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
+lwpa_error_t send_llrp_probe_request(LlrpSocket *llrp_sock, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
                                      const ProbeRequestSend *probe_request);
 
-lwpa_error_t send_llrp_probe_reply(llrp_socket_t handle, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
+lwpa_error_t send_llrp_probe_reply(LlrpSocket *llrp_sock, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
                                    const LlrpTarget *probe_reply);
 
-lwpa_error_t send_llrp_rdm(llrp_socket_t handle, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
+lwpa_error_t send_llrp_rdm(LlrpSocket *llrp_sock, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
                            const RdmBuffer *rdm_msg);
 
 #ifdef __cplusplus

@@ -42,14 +42,18 @@
 #include "lwpa/root_layer_pdu.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
-#include "rdmnet/llrp.h"
+#include "rdmnet/core/llrp.h"
 #include "rdmnet/private/llrp_prot.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum
 {
-  kLLRPSocketTypeNone,
-  kLLRPSocketTypeTarget,
-  kLLRPSocketTypeManager
+  kLlrpSocketTypeNone,
+  kLlrpSocketTypeTarget,
+  kLlrpSocketTypeManager
 } llrp_socket_type_t;
 
 typedef struct LlrpTargetSocketData
@@ -77,10 +81,11 @@ typedef struct LlrpManagerSocketData
   RdmUid cur_range_high;
 } LlrpManagerSocketData;
 
-typedef struct LlrpBaseSocket LlrpBaseSocket;
-struct LlrpBaseSocket
+typedef struct LlrpSocket LlrpSocket;
+struct LlrpSocket
 {
-  LwpaIpAddr net_int_addr;
+  lwpa_socket_t handle;
+  LwpaIpAddr netint;
   LwpaUuid owner_cid;
 
   lwpa_socket_t sys_sock;
@@ -89,7 +94,7 @@ struct LlrpBaseSocket
   uint8_t recv_buf[LLRP_MAX_MESSAGE_SIZE];
   uint8_t send_buf[LLRP_MAX_MESSAGE_SIZE];
 
-  LlrpBaseSocket *next;
+  LlrpSocket *next;
 
   llrp_socket_type_t socket_type;
 
@@ -100,7 +105,14 @@ struct LlrpBaseSocket
   } role;
 };
 
-#define get_manager_data(llrpsockptr) (&(llrpsockptr)->role.manager)
-#define get_target_data(llrpsockptr) (&(llrpsockptr)->role.target)
+#define GET_MANAGER_DATA(llrpsockptr) (&(llrpsockptr)->role.manager)
+#define GET_TARGET_DATA(llrpsockptr) (&(llrpsockptr)->role.target)
+
+lwpa_error_t rdmnet_llrp_init();
+void rdmnet_llrp_deinit();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _LLRP_PRIV_H_ */

@@ -51,7 +51,6 @@
 /* When waiting on the backoff timer for a new connection, the interval at which to wake up and make
  * sure that we haven't been deinitted/closed. */
 #define BLOCKING_BACKOFF_WAIT_INTERVAL 500
-#define RDMNET_CONN_POLL_TIMEOUT 120 /* ms */
 #define RDMNET_CONN_MAX_SOCKETS LWPA_SOCKET_MAX_POLL_SIZE
 
 #if RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
@@ -71,7 +70,7 @@
 #define free_rdmnet_connection(ptr) lwpa_mempool_free(rdmnet_connections, ptr)
 #endif
 
-#define init_callback_info(cbptr) ((cbptr)->which = kConnCallbackNone)
+#define INIT_CALLBACK_INFO(cbptr) ((cbptr)->which = kConnCallbackNone)
 
 /**************************** Private variables ******************************/
 
@@ -97,6 +96,8 @@ static void retry_connection(RdmnetConnection *conn);
 
 static void fill_callback_info(const RdmnetConnection *conn, ConnCallbackDispatchInfo *info);
 static void deliver_callback(ConnCallbackDispatchInfo *info);
+
+static void rdmnet_conn_socket_activity(const LwpaPollEvent *event, PolledSocketOpaqueData data);
 
 // Connection management, lookup, destruction
 static rdmnet_conn_t get_new_conn_handle();
@@ -532,7 +533,7 @@ void start_rdmnet_connection(RdmnetConnection *conn)
 
   // Update state
   conn->state = kCSRDMnetConnPending;
-  rdmnet_core_modify_polled_socket(conn->sock, LWPA_POLL_IN, kRdmnetPolledSocketConnection);
+  rdmnet_core_modify_polled_socket(conn->sock, LWPA_POLL_IN, &conn->poll_info);
   send_client_connect(conn, &conn->conn_data);
   lwpa_timer_start(&conn->hb_timer, E133_HEARTBEAT_TIMEOUT_SEC * 1000);
   lwpa_timer_start(&conn->send_timer, E133_TCP_HEARTBEAT_INTERVAL_SEC * 1000);
@@ -572,7 +573,7 @@ void start_tcp_connection(RdmnetConnection *conn, ConnCallbackDispatchInfo *cb)
     else if (res == kLwpaErrInProgress || res == kLwpaErrWouldBlock)
     {
       conn->state = kCSTCPConnPending;
-      lwpa_error_t add_res = rdmnet_core_add_polled_socket(conn->sock, LWPA_POLL_CONNECT, kRdmnetPolledSocketConnection);
+      lwpa_error_t add_res = rdmnet_core_add_polled_socket(conn->sock, LWPA_POLL_CONNECT, &conn->poll_info);
       if (add_res != kLwpaErrOk)
       {
         ok = false;
@@ -645,7 +646,7 @@ void rdmnet_conn_tick()
   // Do the rest of the periodic functionality with a read lock
 
   ConnCallbackDispatchInfo cb;
-  init_callback_info(&cb);
+  INIT_CALLBACK_INFO(&cb);
 
   if (rdmnet_readlock())
   {
@@ -745,7 +746,7 @@ void rdmnet_socket_error(rdmnet_conn_t handle, lwpa_error_t socket_err)
     return;
 
   CB_STORAGE_CLASS ConnCallbackDispatchInfo cb;
-  init_callback_info(&cb);
+  INIT_CALLBACK_INFO(&cb);
 
   RdmnetConnection *conn;
   if (kLwpaErrOk == get_conn(handle, &conn))
@@ -898,13 +899,13 @@ void rdmnet_socket_data_received(rdmnet_conn_t handle, const uint8_t *data, size
     return;
 
   CB_STORAGE_CLASS ConnCallbackDispatchInfo cb;
-  init_callback_info(&cb);
+  INIT_CALLBACK_INFO(&cb);
 
   lwpa_error_t res = rdmnet_do_recv(handle, data, data_size, &cb);
   while (res == kLwpaErrOk)
   {
     deliver_callback(&cb);
-    init_callback_info(&cb);
+    INIT_CALLBACK_INFO(&cb);
     res = rdmnet_do_recv(handle, NULL, 0, &cb);
   }
 }
@@ -943,25 +944,25 @@ void deliver_callback(ConnCallbackDispatchInfo *info)
   }
 }
 
-void rdmnet_conn_socket_activity(rdmnet_conn_t handle, const LwpaPollfd *poll)
+void rdmnet_conn_socket_activity(const LwpaPollEvent *event, PolledSocketOpaqueData data)
 {
   static uint8_t rdmnet_poll_recv_buf[RDMNET_RECV_DATA_MAX_SIZE];
 
-  if (poll->revents & LWPA_POLLERR)
+  if (event->events & LWPA_POLL_ERR)
   {
-    rdmnet_socket_error(handle, poll->err);
+    rdmnet_socket_error(data.conn_handle, event->err);
   }
-  else if (poll->revents & LWPA_POLLIN)
+  else if (event->events & LWPA_POLL_IN)
   {
-    int recv_res = lwpa_recv(poll->fd, rdmnet_poll_recv_buf, RDMNET_RECV_DATA_MAX_SIZE, 0);
+    int recv_res = lwpa_recv(event->socket, rdmnet_poll_recv_buf, RDMNET_RECV_DATA_MAX_SIZE, 0);
     if (recv_res <= 0)
-      rdmnet_socket_error(handle, recv_res);
+      rdmnet_socket_error(data.conn_handle, recv_res);
     else
-      rdmnet_socket_data_received(handle, rdmnet_poll_recv_buf, recv_res);
+      rdmnet_socket_data_received(data.conn_handle, rdmnet_poll_recv_buf, recv_res);
   }
-  else if (poll->revents & LWPA_POLLOUT)
+  else if (event->events & LWPA_POLL_CONNECT)
   {
-    tcp_connection_established(handle);
+    tcp_connection_established(data.conn_handle);
   }
 }
 
@@ -1030,17 +1031,24 @@ RdmnetConnection *create_new_connection(const RdmnetConnectionConfig *config)
     if (ok)
     {
       conn->local_cid = config->local_cid;
+
       conn->sock = LWPA_SOCKET_INVALID;
       lwpaip_set_invalid(&conn->remote_addr.ip);
       conn->remote_addr.port = 0;
       conn->external_socket_attached = false;
       conn->is_blocking = true;
+      conn->poll_info.callback = rdmnet_conn_socket_activity;
+      conn->poll_info.data.conn_handle = conn->handle;
+
       conn->state = kCSConnectNotStarted;
       lwpa_timer_start(&conn->backoff_timer, 0);
       conn->rdmnet_conn_failed = false;
+
       rdmnet_msg_buf_init(&conn->recv_buf);
+
       conn->callbacks = config->callbacks;
       conn->callback_context = config->callback_context;
+
       conn->next_to_destroy = NULL;
     }
     else
@@ -1098,7 +1106,10 @@ void destroy_connection(RdmnetConnection *conn, bool remove_from_tree)
   if (conn)
   {
     if (!conn->external_socket_attached && conn->sock != LWPA_SOCKET_INVALID)
+    {
+      rdmnet_core_remove_polled_socket(conn->sock);
       lwpa_close(conn->sock);
+    }
     lwpa_mutex_destroy(&conn->lock);
     lwpa_mutex_destroy(&conn->send_lock);
     if (remove_from_tree)

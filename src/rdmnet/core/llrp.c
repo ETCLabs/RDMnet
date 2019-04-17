@@ -24,7 +24,8 @@
 * This file is a part of RDMnet. For more information, go to:
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
-#include "rdmnet/llrp.h"
+
+#include "rdmnet/core/llrp.h"
 #include "rdmnet/private/llrp.h"
 
 #include "rdmnet/private/opts.h"
@@ -39,7 +40,7 @@
 /***************************** Private macros ********************************/
 
 #if RDMNET_DYNAMIC_MEM
-#define llrp_socket_alloc() malloc(sizeof(LlrpBaseSocket))
+#define llrp_socket_alloc() malloc(sizeof(LlrpSocket))
 #define llrp_socket_dealloc(socket) free(socket)
 #else
 #define llrp_socket_alloc() lwpa_mempool_alloc(llrp_sockets)
@@ -50,26 +51,28 @@
 
 /* clang-format off */
 #if !RDMNET_DYNAMIC_MEM
-LWPA_MEMPOOL_DEFINE(llrp_sockets, LlrpBaseSocket, LLRP_MAX_SOCKETS);
+LWPA_MEMPOOL_DEFINE(llrp_sockets, LlrpSocket, LLRP_MAX_SOCKETS);
+LWPA_MEMPOOL_DEFINE(llrp_socket_rb_nodes, LwpaRbNode, LLRP_MAX_SOCKETS);
 #endif
 /* clang-format on */
 
-static LlrpBaseSocket *socket_list = NULL;
+static LlrpSocket *socket_list = NULL;
 
-static LwpaIpAddr kLLRPIPv4RespAddr;
-static LwpaIpAddr kLLRPIPv6RespAddr;
-static LwpaIpAddr kLLRPIPv4RequestAddr;
-static LwpaIpAddr kLLRPIPv6RequestAddr;
+static LwpaIpAddr kLlrpIpv4RespAddr;
+static LwpaIpAddr kLlrpIpv6RespAddr;
+static LwpaIpAddr kLlrpIpv4RequestAddr;
+static LwpaIpAddr kLlrpIpv6RequestAddr;
 
 /*********************** Private function prototypes *************************/
 
 /* Helper functions for creating sockets */
-static llrp_socket_t llrp_create_base_socket(const LwpaIpAddr *net_interface_addr, const LwpaUuid *owner_cid,
-                                             llrp_socket_type_t socket_type);
-static void llrp_add_socket_to_list(llrp_socket_t socket, llrp_socket_t *list);
-static void llrp_remove_socket_from_list(llrp_socket_t socket, llrp_socket_t *list);
+static LlrpSocket *llrp_create_base_socket(const LwpaIpAddr *netint, const LwpaUuid *owner_cid,
+                                           llrp_socket_type_t socket_type);
 static lwpa_socket_t create_lwpa_socket(const LwpaSockaddr *saddr, const LwpaIpAddr *netint);
 static bool subscribe_multicast(lwpa_socket_t lwpa_sock, llrp_socket_type_t socket_type, const LwpaIpAddr *netint);
+
+static LwpaRbNode *llrp_sock_node_alloc();
+static void llrp_sock_node_free();
 
 /* Functions for the known_uids tree in a Manager socket */
 static LwpaRbNode *node_alloc();
@@ -80,13 +83,13 @@ static void known_uid_clear_cb(const LwpaRbTree *self, LwpaRbNode *node);
 /* Functions for Manager discovery */
 static void halve_range(RdmUid *uid1, RdmUid *uid2);
 static bool update_probe_range(LlrpManagerSocketData *mgrdata, KnownUid **uid_list);
-static bool send_next_probe(LlrpBaseSocket *sock);
+static bool send_next_probe(LlrpSocket *sock);
 
-/* Helper functions for llrp_udpate() */
-static bool process_manager_state(LlrpBaseSocket *sock, int *timeout_ms, LlrpData *data);
-static void process_target_state(LlrpBaseSocket *sock, int *timeout_ms);
-static void register_message_interest(LlrpBaseSocket *sock, LlrpMessageInterest *interest);
-static bool process_parsed_msg(LlrpBaseSocket *sock, const LlrpMessage *msg, LlrpData *data);
+/* Helper functions for rdmnet_llrp_udpate() */
+static bool process_manager_state(LlrpSocket *sock, int *timeout_ms, LlrpData *data);
+static void process_target_state(LlrpSocket *sock, int *timeout_ms);
+static void register_message_interest(LlrpSocket *sock, LlrpMessageInterest *interest);
+static bool process_parsed_msg(LlrpSocket *sock, const LlrpMessage *msg, LlrpData *data);
 
 /* Helper function for closing sockets */
 static llrp_socket_t llrp_close_socket_priv(llrp_socket_t socket, lwpa_error_t *result);
@@ -101,7 +104,7 @@ static llrp_socket_t llrp_close_socket_priv(llrp_socket_t socket, lwpa_error_t *
  *          #kLwpaErrSys: An internal library of system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
-lwpa_error_t llrp_init()
+lwpa_error_t rdmnet_llrp_init()
 {
   lwpa_error_t res;
 
@@ -118,10 +121,10 @@ lwpa_error_t llrp_init()
 
   if (res == kLwpaErrOk)
   {
-    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_RESPONSE, &kLLRPIPv4RespAddr);
-    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV6_ADDRESS_RESPONSE, &kLLRPIPv6RespAddr);
-    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_REQUEST, &kLLRPIPv4RequestAddr);
-    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV6_ADDRESS_REQUEST, &kLLRPIPv6RequestAddr);
+    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_RESPONSE, &kLlrpIpv4RespAddr);
+    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV6_ADDRESS_RESPONSE, &kLlrpIpv6RespAddr);
+    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_REQUEST, &kLlrpIpv4RequestAddr);
+    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV6_ADDRESS_REQUEST, &kLlrpIpv6RequestAddr);
     llrp_prot_init();
   }
   return res;
@@ -130,12 +133,12 @@ lwpa_error_t llrp_init()
 /*! \brief Deinitialize the LLRP module.
  *
  *  Set the LLRP module back to an uninitialized state. All existing connections will be
- *  closed/disconnected. Calls to other LLRP API functions will fail until llrp_init() is called
+ *  closed/disconnected. Calls to other LLRP API functions will fail until rdmnet_llrp_init() is called
  *  again.
  */
-void llrp_deinit()
+void rdmnet_llrp_deinit()
 {
-  LlrpBaseSocket *iter = socket_list;
+  LlrpSocket *iter = socket_list;
 
   // Close all sockets
   while (iter != NULL)
@@ -149,6 +152,8 @@ void llrp_deinit()
 
 /*! \brief Create an LLRP socket to be used by an LLRP Manager.
  *
+ *  <b>TODO stale docs</b>
+ *
  *  LLRP Manager Sockets can only be created when #RDMNET_DYNAMIC_MEM is defined nonzero. Otherwise,
  *  this function will always fail.
  *
@@ -156,27 +161,30 @@ void llrp_deinit()
  *  \param[in] manager_cid The CID of the LLRP Manager.
  *  \return A new LLRP socket (success) or #LLRP_SOCKET_INVALID (failure).
  */
-llrp_socket_t llrp_create_manager_socket(const LwpaIpAddr *netint, const LwpaUuid *manager_cid)
+lwpa_error_t rdmnet_llrp_create_manager_socket(const LlrpManagerConfig *config, llrp_socket_t *handle)
 {
 #if RDMNET_DYNAMIC_MEM
-  llrp_socket_t sock = llrp_create_base_socket(netint, manager_cid, kLLRPSocketTypeManager);
+  LlrpSocket *sock = llrp_create_base_socket(&config->netint, &config->cid, kLlrpSocketTypeManager);
 
-  if (sock == LLRP_SOCKET_INVALID)
-    return sock;
+  if (!sock)
+    return kLwpaErrNoMem;
 
   // Initialize manager-specific info
   sock->role.manager.transaction_number = 0;
   sock->role.manager.discovery_active = false;
+  *handle = sock->handle;
 
-  llrp_add_socket_to_list(sock, &socket_list);
-
-  return sock;
+  return kLwpaErrOk;
 #else
-  return LLRP_SOCKET_INVALID;
+  (void)config;
+  (void)handle;
+  return kLwpaErrNotImpl;
 #endif
 }
 
 /*! \brief Create an LLRP socket to be used by an LLRP Target.
+ *
+ *  <b>TODO stale docs</b>
  *
  *  \param[in] netint The network interface this LLRP socket should send and receive on.
  *  \param[in] target_cid The CID of the LLRP Target.
@@ -184,25 +192,24 @@ llrp_socket_t llrp_create_manager_socket(const LwpaIpAddr *netint, const LwpaUui
  *  \param[in] hardware_address The hardware address of the LLRP Target (typically the MAC address
  *                              of the network interface)
  *  \param[in] component_type The component type this LLRP Target is associated with; pass
- *                            kLLRPCompUnknown if the Target is not associated with any other type
+ *                            kLlrpCompUnknown if the Target is not associated with any other type
  *                            of RDMnet Component.
  *  \return A new LLRP socket (success) or #LLRP_SOCKET_INVALID (failure).
  */
-llrp_socket_t llrp_create_target_socket(const LwpaIpAddr *netint, const LwpaUuid *target_cid, const RdmUid *target_uid,
-                                        const uint8_t *hardware_address, llrp_component_t component_type)
+lwpa_error_t rdmnet_llrp_create_target_socket(const LlrpTargetConfig *config, llrp_socket_t *handle)
 {
   LlrpTargetSocketData *targetdata;
 
-  if (!target_uid || !hardware_address)
-    return LLRP_SOCKET_INVALID;
+  if (!config || !handle)
+    return kLwpaErrInvalid;
 
-  llrp_socket_t sock = llrp_create_base_socket(netint, target_cid, kLLRPSocketTypeTarget);
+  LlrpSocket *sock = llrp_create_base_socket(&config->netint, &config->cid, kLlrpSocketTypeTarget);
 
-  if (sock == LLRP_SOCKET_INVALID)
-    return sock;
+  if (!sock)
+    return kLwpaErrNoMem;
 
   // Initialize target-specific info
-  targetdata = get_target_data(sock);
+  targetdata = GET_TARGET_DATA(sock);
   targetdata->target_info.component_type = component_type;
   memcpy(targetdata->target_info.hardware_address, hardware_address, 6);
   targetdata->target_info.target_uid = *target_uid;
@@ -222,7 +229,7 @@ llrp_socket_t llrp_create_target_socket(const LwpaIpAddr *netint, const LwpaUuid
  *  \param[in] handle LLRP socket to close.
  *  \return true (closed successfully) or false (not closed successfully).
  */
-bool llrp_close_socket(llrp_socket_t handle)
+bool rdmnet_llrp_close_socket(llrp_socket_t handle)
 {
   if (handle == LLRP_SOCKET_INVALID)
     return false;
@@ -242,11 +249,11 @@ bool llrp_close_socket(llrp_socket_t handle)
  *                    defined in estardmnet.h
  *  \return true (Discovery started successfully) or false (failed to start discovery).
  */
-bool llrp_start_discovery(llrp_socket_t handle, uint8_t filter)
+bool rdmnet_llrp_start_discovery(llrp_socket_t handle, uint8_t filter)
 {
-  if (handle && handle->socket_type == kLLRPSocketTypeManager)
+  if (handle && handle->socket_type == kLlrpSocketTypeManager)
   {
-    LlrpManagerSocketData *mgrdata = get_manager_data(handle);
+    LlrpManagerSocketData *mgrdata = GET_MANAGER_DATA(handle);
     if (!mgrdata->discovery_active)
     {
       mgrdata->cur_range_low.manu = 0;
@@ -273,13 +280,13 @@ bool llrp_start_discovery(llrp_socket_t handle, uint8_t filter)
  *  \return true (Discovery stopped successfully) or false (invalid argument or discovery was not
  *          running).
  */
-bool llrp_stop_discovery(llrp_socket_t handle)
+bool rdmnet_llrp_stop_discovery(llrp_socket_t handle)
 {
   if (handle != NULL)
   {
-    if (handle->socket_type == kLLRPSocketTypeManager)
+    if (handle->socket_type == kLlrpSocketTypeManager)
     {
-      LlrpManagerSocketData *mgrdata = get_manager_data(handle);
+      LlrpManagerSocketData *mgrdata = GET_MANAGER_DATA(handle);
       if (mgrdata->discovery_active)
       {
         lwpa_rbtree_clear_with_cb(&mgrdata->known_uids, known_uid_clear_cb);
@@ -368,9 +375,9 @@ bool update_probe_range(LlrpManagerSocketData *mgrdata, KnownUid **uid_list)
   return true;
 }
 
-bool send_next_probe(LlrpBaseSocket *sock)
+bool send_next_probe(LlrpSocket *sock)
 {
-  LlrpManagerSocketData *mgrdata = get_manager_data(sock);
+  LlrpManagerSocketData *mgrdata = GET_MANAGER_DATA(sock);
   KnownUid *list_head;
 
   if (update_probe_range(mgrdata, &list_head))
@@ -380,7 +387,7 @@ bool send_next_probe(LlrpBaseSocket *sock)
     LwpaSockaddr dest_addr;
 
     header.sender_cid = sock->owner_cid;
-    header.dest_cid = kLLRPBroadcastCID;
+    header.dest_cid = kLlrpBroadcastCID;
     header.transaction_number = mgrdata->transaction_number++;
 
     request.filter = mgrdata->disc_filter;
@@ -388,7 +395,7 @@ bool send_next_probe(LlrpBaseSocket *sock)
     request.upper_uid = mgrdata->cur_range_high;
     request.uid_list = list_head;
 
-    dest_addr.ip = kLLRPIPv4RequestAddr;
+    dest_addr.ip = kLlrpIpv4RequestAddr;
     dest_addr.port = LLRP_PORT;
     send_llrp_probe_request(sock, &dest_addr, &header, &request);
     lwpa_timer_start(&mgrdata->disc_timer, LLRP_TIMEOUT_MS);
@@ -411,9 +418,9 @@ void known_uid_clear_cb(const LwpaRbTree *self, LwpaRbNode *node)
   (void)self;
 }
 
-bool process_manager_state(LlrpBaseSocket *sock, int *timeout_ms, LlrpData *data)
+bool process_manager_state(LlrpSocket *sock, int *timeout_ms, LlrpData *data)
 {
-  LlrpManagerSocketData *mgrdata = get_manager_data(sock);
+  LlrpManagerSocketData *mgrdata = GET_MANAGER_DATA(sock);
 
   if (mgrdata->discovery_active)
   {
@@ -444,9 +451,9 @@ bool process_manager_state(LlrpBaseSocket *sock, int *timeout_ms, LlrpData *data
   return false;
 }
 
-void process_target_state(LlrpBaseSocket *sock, int *timeout_ms)
+void process_target_state(LlrpSocket *sock, int *timeout_ms)
 {
-  LlrpTargetSocketData *targetdata = get_target_data(sock);
+  LlrpTargetSocketData *targetdata = GET_TARGET_DATA(sock);
 
   if (targetdata->reply_pending)
   {
@@ -459,7 +466,7 @@ void process_target_state(LlrpBaseSocket *sock, int *timeout_ms)
       header.dest_cid = targetdata->pending_reply_cid;
       header.transaction_number = targetdata->pending_reply_trans_num;
 
-      dest_addr.ip = kLLRPIPv4RespAddr;
+      dest_addr.ip = kLlrpIpv4RespAddr;
       dest_addr.port = LLRP_PORT;
       send_llrp_probe_reply(sock, &dest_addr, &header, &targetdata->target_info);
 
@@ -474,40 +481,40 @@ void process_target_state(LlrpBaseSocket *sock, int *timeout_ms)
   }
 }
 
-void register_message_interest(LlrpBaseSocket *sock, LlrpMessageInterest *interest)
+void register_message_interest(LlrpSocket *sock, LlrpMessageInterest *interest)
 {
   interest->my_cid = sock->owner_cid;
-  if (sock->socket_type == kLLRPSocketTypeManager)
+  if (sock->socket_type == kLlrpSocketTypeManager)
   {
     interest->interested_in_probe_request = false;
-    if (get_manager_data(sock)->discovery_active)
+    if (GET_MANAGER_DATA(sock)->discovery_active)
       interest->interested_in_probe_reply = true;
     else
       interest->interested_in_probe_reply = false;
   }
-  else  // socket_type == kLLRPSocketTypeTarget
+  else  // socket_type == kLlrpSocketTypeTarget
   {
     interest->interested_in_probe_reply = false;
     interest->interested_in_probe_request = true;
-    interest->my_uid = get_target_data(sock)->target_info.target_uid;
+    interest->my_uid = GET_TARGET_DATA(sock)->target_info.target_uid;
   }
 }
 
-bool process_parsed_msg(LlrpBaseSocket *sock, const LlrpMessage *msg, LlrpData *data)
+bool process_parsed_msg(LlrpSocket *sock, const LlrpMessage *msg, LlrpData *data)
 {
   if (msg->vector == VECTOR_LLRP_RDM_CMD)
   {
     LlrpRdmMessage rdm_msg;
     rdm_msg.transaction_num = msg->header.transaction_number;
     rdm_msg.source_cid = msg->header.sender_cid;
-    rdm_msg.msg = *(llrp_msg_get_rdm_cmd(msg));
+    rdm_msg.msg = *(LLRP_MSG_GET_RDM(msg));
     llrp_data_set_rdm(data, rdm_msg);
     return true;
   }
-  else if (sock->socket_type == kLLRPSocketTypeManager && msg->vector == VECTOR_LLRP_PROBE_REPLY)
+  else if (sock->socket_type == kLlrpSocketTypeManager && msg->vector == VECTOR_LLRP_PROBE_REPLY)
   {
-    const LlrpTarget *new_target = llrp_msg_get_probe_reply(msg);
-    LlrpManagerSocketData *mgrdata = get_manager_data(sock);
+    const LlrpTarget *new_target = LLRP_MSG_GET_PROBE_REPLY(msg);
+    LlrpManagerSocketData *mgrdata = GET_MANAGER_DATA(sock);
 
     if (mgrdata->discovery_active && 0 == lwpa_uuid_cmp(&msg->header.dest_cid, &sock->owner_cid))
     {
@@ -533,10 +540,10 @@ bool process_parsed_msg(LlrpBaseSocket *sock, const LlrpMessage *msg, LlrpData *
     }
     return false;
   }
-  else if (sock->socket_type == kLLRPSocketTypeTarget && msg->vector == VECTOR_LLRP_PROBE_REQUEST)
+  else if (sock->socket_type == kLlrpSocketTypeTarget && msg->vector == VECTOR_LLRP_PROBE_REQUEST)
   {
     const ProbeRequestRecv *request = llrp_msg_get_probe_request(msg);
-    LlrpTargetSocketData *targetdata = get_target_data(sock);
+    LlrpTargetSocketData *targetdata = GET_TARGET_DATA(sock);
     /* TODO allow multiple probe replies to be queued */
     if (request->contains_my_uid && !targetdata->reply_pending)
     {
@@ -544,7 +551,7 @@ bool process_parsed_msg(LlrpBaseSocket *sock, const LlrpMessage *msg, LlrpData *
 
       /* Check the filter values. */
       if (((request->filter & LLRP_FILTERVAL_BROKERS_ONLY) &&
-           targetdata->target_info.component_type != kLLRPCompBroker) ||
+           targetdata->target_info.component_type != kLlrpCompBroker) ||
           (request->filter & LLRP_FILTERVAL_CLIENT_CONN_INACTIVE && targetdata->connected_to_broker))
       {
         return false;
@@ -619,7 +626,7 @@ int llrp_update(LlrpPoll *poll_array, size_t poll_array_size, int timeout_ms)
       pfds[nfds].events = LWPA_POLLIN;
       ++nfds;
 
-      if (cur_poll->handle->socket_type == kLLRPSocketTypeManager)
+      if (cur_poll->handle->socket_type == kLlrpSocketTypeManager)
       {
         if (process_manager_state(cur_poll->handle, &poll_timeout, &cur_poll->data))
         {
@@ -713,7 +720,7 @@ int llrp_update(LlrpPoll *poll_array, size_t poll_array_size, int timeout_ms)
  *  \param[in] new_uid The LLRP Target's new UID, if it is using a Dynamic UID, or NULL if the UID
  *                     hasn't changed.
  */
-void llrp_target_update_connection_state(llrp_socket_t handle, bool connected_to_broker, const RdmUid *new_uid)
+void rdmnet_llrp_update_target_connection_state(llrp_socket_t handle, bool connected_to_broker, const RdmUid *new_uid)
 {
   (void)handle;
   (void)connected_to_broker;
@@ -733,26 +740,26 @@ void llrp_target_update_connection_state(llrp_socket_t handle, bool connected_to
  *          #kLwpaErrInvalid: Invalid argument provided.\n
  *          Note: other error codes might be propagated from underlying socket calls.
  */
-lwpa_error_t llrp_send_rdm_command(llrp_socket_t handle, const LwpaUuid *destination, const RdmBuffer *command,
-                                   uint32_t *transaction_number)
+lwpa_error_t rdmnet_llrp_send_rdm_command(llrp_socket_t handle, const LwpaUuid *destination, const RdmBuffer *command,
+                                          uint32_t *transaction_number)
 {
   LlrpManagerSocketData *mgrdata;
   LlrpHeader header;
   LwpaSockaddr dest_addr;
   lwpa_error_t res;
 
-  if (!handle || !destination || !command || !transaction_number || handle->socket_type != kLLRPSocketTypeManager)
+  if (!handle || !destination || !command || !transaction_number || handle->socket_type != kLlrpSocketTypeManager)
   {
     return kLwpaErrInvalid;
   }
 
-  mgrdata = get_manager_data(handle);
+  mgrdata = GET_MANAGER_DATA(handle);
 
   header.dest_cid = *destination;
   header.sender_cid = handle->owner_cid;
   header.transaction_number = mgrdata->transaction_number;
 
-  dest_addr.ip = kLLRPIPv4RequestAddr;
+  dest_addr.ip = kLlrpIpv4RequestAddr;
   dest_addr.port = LLRP_PORT;
   res = send_llrp_rdm(handle, &dest_addr, &header, command);
 
@@ -771,13 +778,13 @@ lwpa_error_t llrp_send_rdm_command(llrp_socket_t handle, const LwpaUuid *destina
  *          #kLwpaErrInvalid: Invalid argument provided.\n
  *          Note: other error codes might be propagated from underlying socket calls.
  */
-lwpa_error_t llrp_send_rdm_response(llrp_socket_t handle, const LwpaUuid *destination, const RdmBuffer *command,
-                                    uint32_t transaction_number)
+lwpa_error_t rdmnet_llrp_send_rdm_response(llrp_socket_t handle, const LwpaUuid *destination, const RdmBuffer *command,
+                                           uint32_t transaction_number)
 {
   LlrpHeader header;
   LwpaSockaddr dest_addr;
 
-  if (!handle || !destination || !command || !transaction_number || handle->socket_type != kLLRPSocketTypeTarget)
+  if (!handle || !destination || !command || !transaction_number || handle->socket_type != kLlrpSocketTypeTarget)
   {
     return kLwpaErrInvalid;
   }
@@ -786,7 +793,7 @@ lwpa_error_t llrp_send_rdm_response(llrp_socket_t handle, const LwpaUuid *destin
   header.sender_cid = handle->owner_cid;
   header.transaction_number = transaction_number;
 
-  dest_addr.ip = kLLRPIPv4RespAddr;
+  dest_addr.ip = kLlrpIpv4RespAddr;
   dest_addr.port = LLRP_PORT;
   return send_llrp_rdm(handle, &dest_addr, &header, command);
 }
@@ -809,25 +816,24 @@ llrp_socket_t llrp_close_socket_priv(llrp_socket_t socket, lwpa_error_t *result)
   return next;
 }
 
-llrp_socket_t llrp_create_base_socket(const LwpaIpAddr *net_interface_addr, const LwpaUuid *owner_cid,
-                                      llrp_socket_type_t socket_type)
+LlrpSocket *llrp_create_base_socket(const LwpaIpAddr *netint, const LwpaUuid *owner_cid, llrp_socket_type_t socket_type)
 {
-  if ((net_interface_addr == NULL) || (owner_cid == NULL))
+  if (!netint || !owner_cid)
     return LLRP_SOCKET_INVALID;
 
-  llrp_socket_t sock = (llrp_socket_t)llrp_socket_alloc();
+  LlrpSocket *sock = (llrp_socket_t)llrp_socket_alloc();
 
-  sock->net_int_addr = *net_interface_addr;
+  sock->netint = *netint;
   sock->next = NULL;
   sock->owner_cid = *owner_cid;
   sock->socket_type = socket_type;
 
   // Initialize LWPA sockets
   LwpaSockaddr saddr;
-  saddr.ip = (socket_type == kLLRPSocketTypeManager ? kLLRPIPv4RespAddr : kLLRPIPv4RequestAddr);
+  saddr.ip = (socket_type == kLlrpSocketTypeManager ? kLlrpIpv4RespAddr : kLlrpIpv4RequestAddr);
   saddr.port = LLRP_PORT;
 
-  sock->sys_sock = create_lwpa_socket(&saddr, net_interface_addr);
+  sock->sys_sock = create_lwpa_socket(&saddr, netint);
 
   if (sock->sys_sock == LWPA_SOCKET_INVALID)
   {
@@ -835,7 +841,7 @@ llrp_socket_t llrp_create_base_socket(const LwpaIpAddr *net_interface_addr, cons
     return LLRP_SOCKET_INVALID;
   }
 
-  if (!subscribe_multicast(sock->sys_sock, socket_type, &sock->net_int_addr))
+  if (!subscribe_multicast(sock->sys_sock, socket_type, &sock->netint))
   {
     lwpa_close(sock->sys_sock);
     llrp_socket_dealloc(sock);
@@ -843,52 +849,6 @@ llrp_socket_t llrp_create_base_socket(const LwpaIpAddr *net_interface_addr, cons
   }
 
   return sock;
-}
-
-void llrp_add_socket_to_list(llrp_socket_t socket, llrp_socket_t *list)
-{
-  if (list)
-  {
-    if (!(*list))
-    {
-      *list = socket;
-    }
-    else
-    {
-      llrp_socket_t iter = *list;
-
-      while (iter->next)
-        iter = iter->next;
-
-      socket->next = NULL;
-      iter->next = socket;
-    }
-  }
-}
-
-void llrp_remove_socket_from_list(llrp_socket_t socket, llrp_socket_t *list)
-{
-  if (list)
-  {
-    llrp_socket_t iter = *list;
-    llrp_socket_t prev = NULL;
-
-    while (iter && (iter != socket))
-    {
-      prev = iter;
-      iter = iter->next;
-    }
-
-    if (iter)
-    {
-      if (!prev)
-        *list = iter->next;
-      else
-        prev->next = iter->next;
-
-      iter->next = NULL;
-    }
-  }
 }
 
 lwpa_socket_t create_lwpa_socket(const LwpaSockaddr *saddr, const LwpaIpAddr *netint)
@@ -913,7 +873,7 @@ lwpa_socket_t create_lwpa_socket(const LwpaSockaddr *saddr, const LwpaIpAddr *ne
     }
     else
     {
-      // TODO: add IPv6 support
+      // TODO: add Ipv6 support
     }
   }
 
@@ -927,7 +887,7 @@ lwpa_socket_t create_lwpa_socket(const LwpaSockaddr *saddr, const LwpaIpAddr *ne
     }
     else
     {
-      // TODO: add IPv6 support
+      // TODO: add Ipv6 support
     }
   }
 
@@ -936,7 +896,7 @@ lwpa_socket_t create_lwpa_socket(const LwpaSockaddr *saddr, const LwpaIpAddr *ne
     if (saddr->ip.type == kLwpaIpTypeV4)
     {
 #if LLRP_BIND_TO_MCAST_ADDRESS
-      // Bind socket to multicast address for IPv4
+      // Bind socket to multicast address for Ipv4
       valid = (0 == lwpa_bind(sock, saddr));
 #else
       // Bind socket to INADDR_ANY and the LLRP port
@@ -948,7 +908,7 @@ lwpa_socket_t create_lwpa_socket(const LwpaSockaddr *saddr, const LwpaIpAddr *ne
     }
     else
     {
-      // TODO: add IPv6 support
+      // TODO: add Ipv6 support
     }
   }
 
@@ -972,14 +932,14 @@ bool subscribe_multicast(lwpa_socket_t lwpa_sock, llrp_socket_type_t socket_type
   {
     LwpaMreq multireq;
 
-    multireq.group = (socket_type == kLLRPSocketTypeTarget ? kLLRPIPv4RequestAddr : kLLRPIPv4RespAddr);
+    multireq.group = (socket_type == kLlrpSocketTypeTarget ? kLlrpIpv4RequestAddr : kLlrpIpv4RespAddr);
     multireq.netint = *netint;
     result = (0 == lwpa_setsockopt(lwpa_sock, LWPA_IPPROTO_IP, LWPA_MCAST_JOIN_GROUP, (const void *)&multireq,
                                    sizeof(multireq)));
   }
   else
   {
-    // TODO: add IPv6 support
+    // TODO: add Ipv6 support
   }
 
   return result;
@@ -1010,4 +970,22 @@ int known_uid_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const LwpaRb
   const RdmUid *a = (const RdmUid *)node_a->value;
   const RdmUid *b = (const RdmUid *)node_b->value;
   return rdm_uid_cmp(a, b);
+}
+
+LwpaRbNode *llrp_sock_node_alloc()
+{
+#if RDMNET_DYNAMIC_MEM
+  return (LwpaRbNode *)malloc(sizeof(LwpaRbNode));
+#else
+  return lwpa_mempool_alloc(llrp_socket_rb_nodes);
+#endif
+}
+
+void llrp_sock_node_free(LwpaRbNode *node)
+{
+#if RDMNET_DYNAMIC_MEM
+  free(node);
+#else
+  lwpa_mempool_free(llrp_socket_rb_nodes, node);
+#endif
 }

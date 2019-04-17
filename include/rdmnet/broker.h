@@ -44,7 +44,7 @@
 
 class BrokerCore;
 
-/// \defgroup rdmnet_broker Broker
+/// \defgroup rdmnet_broker RDMnet Broker Library
 /// \brief A platform-neutral RDMnet %Broker implementation.
 /// @{
 ///

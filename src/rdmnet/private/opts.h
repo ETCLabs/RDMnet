@@ -47,11 +47,20 @@
 
 #include "lwpa/thread.h"
 
+/* Some option hints based on well-known compile definitions */
+
 /* Are we being compiled for a full-featured OS? */
 #if defined(_WIN32) || defined(__APPLE__) || defined(__linux__) || defined(__unix__) || defined(_POSIX_VERSION)
 #define RDMNET_FULL_OS_AVAILABLE_HINT 1
 #else
 #define RDMNET_FULL_OS_AVAILABLE_HINT 0
+#endif
+
+/* Are we being compiled in/for a Microsoft Windows environment? */
+#ifdef _WIN32
+#define RDMNET_WINDOWS_HINT 1
+#else
+#define RDMNET_WINDOWS_HINT 0
 #endif
 
 /********************************* Global ************************************/
@@ -137,9 +146,11 @@
 /*! \defgroup rdmnetopts_core Core
  *  \ingroup rdmnetopts
  *
- *  Options that affect the RDMnet core library. Any options with MAX_* in the name are applicable
+ *  Options that affect the RDMnet core library. Any options with *_MAX_* in the name are applicable
  *  only to compilations with dynamic memory disabled (#RDMNET_DYNAMIC_MEM = 0, most common in
  *  embedded toolchains).
+ *
+ *  If using the Client
  *  @{
  */
 
@@ -221,13 +232,6 @@
 #define RDMNET_USE_TICK_THREAD 1
 #endif
 
-/*! \brief The amount of time the tick thread sleeps between calls to rdmnet_tick().
- *
- *  Meaningful only if #RDMNET_USE_TICK_THREAD is defined to 1. */
-#ifndef RDMNET_TICK_THREAD_SLEEP_MS
-#define RDMNET_TICK_THREAD_SLEEP_MS 1000
-#endif
-
 /*! \brief The priority of the tick thread.
  *
  *  This is usually only meaningful on real-time systems. */
@@ -255,8 +259,8 @@
  *
  *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
  */
-#ifndef LLRP_MAX_SOCKETS
-#define LLRP_MAX_SOCKETS 2
+#ifndef RDMNET_LLRP_MAX_SOCKETS
+#define RDMNET_LLRP_MAX_SOCKETS RDMNET_MAX_CLIENTS
 #endif
 
 /*! \brief In LLRP, whether to bind the underlying network socket directly to the LLRP multicast
@@ -266,15 +270,8 @@
  *  address decreases traffic duplication. On other systems, it's not even allowed. Leave this
  *  option at its default value unless you REALLY know what you're doing.
  */
-#ifndef LLRP_BIND_TO_MCAST_ADDRESS
-
-/* Determine default based on OS platform */
-#ifdef _WIN32
-#define LLRP_BIND_TO_MCAST_ADDRESS 0
-#else
-#define LLRP_BIND_TO_MCAST_ADDRESS 1
-#endif
-
+#ifndef RDMNET_LLRP_BIND_TO_MCAST_ADDRESS
+#define RDMNET_LLRP_BIND_TO_MCAST_ADDRESS !RDMNET_WINDOWS_HINT
 #endif
 
 /*! @} */

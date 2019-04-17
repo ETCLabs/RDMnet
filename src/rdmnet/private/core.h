@@ -65,9 +65,9 @@ typedef struct PolledSocketInfo
   PolledSocketOpaqueData data;
 } PolledSocketInfo;
 
-lwpa_error_t rdmnet_core_add_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, PolledSocketData *data);
+lwpa_error_t rdmnet_core_add_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, PolledSocketInfo *info);
 lwpa_error_t rdmnet_core_modify_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events,
-                                              rdmnet_polled_socket_t type);
+                                              PolledSocketInfo *info);
 void rdmnet_core_remove_polled_socket(lwpa_socket_t socket);
 
 #ifdef __cplusplus

@@ -43,6 +43,19 @@
 #include "rdmnet/core/connection.h"
 #include "rdmnet/core/util.h"
 
+/*!
+ * \defgroup rdmnet_client RDMnet Client Library
+ * \brief Implementation of RDMnet client functionality
+ *
+ * RDMnet clients encompass controllers (which originate RDM commands on the network and receive
+ * responses) and devices (which receive RDM commands and respond to them), as well as EPT clients,
+ * which use the Extensible Packet Transport feature of RDMnet to transport opaque data through a
+ * broker.
+ *
+ * Clients and the scopes they participate in are tracked by handles. Management of connections to
+ * brokers, as well as LLRP functionality, is handled under the hood.
+ */
+
 typedef int rdmnet_client_t;
 typedef rdmnet_conn_t rdmnet_client_scope_t;
 
@@ -170,13 +183,13 @@ typedef struct RdmnetRptClientConfig
  *  Usage example:
  *  \code
  *  RdmnetRptClientConfig config;
- *  rdmnet_client_set_dynamic_uid(&config, 0x6574);
+ *  RDMNET_CLIENT_SET_DYNAMIC_UID(&config, 0x6574);
  *  \endcode
  *
  *  \param configptr Pointer to RdmnetRptClientConfig, RdmnetDeviceConfig or RdmnetControllerConfig.
  *  \param manu_id ESTA manufacturer ID. All RDMnet RPT components must have one.
  */
-#define rdmnet_client_set_dynamic_uid(configptr, manu_id) \
+#define RDMNET_CLIENT_SET_DYNAMIC_UID(configptr, manu_id) \
   do                                                      \
   {                                                       \
     (configptr)->uid.manu = manu_id;                      \
@@ -199,7 +212,7 @@ typedef struct RdmnetEptClientConfig
  *  \param configptr Pointer to RdmnetScopeConfig.
  *  \param scope_str UTF-8 scope string to copy to the RdmnetScopeConfig (const char *).
  */
-#define rdmnet_client_set_scope(configptr, scope_str)                                      \
+#define RDMNET_CLIENT_SET_SCOPE(configptr, scope_str)                                      \
   do                                                                                       \
   {                                                                                        \
     rdmnet_safe_strncpy((configptr)->scope, (scope_str), E133_SCOPE_STRING_PADDED_LENGTH); \
@@ -213,7 +226,7 @@ typedef struct RdmnetEptClientConfig
  *
  *  \param configptr Pointer to RdmnetScopeConfig.
  */
-#define rdmnet_client_set_default_scope(configptr)                                                           \
+#define RDMNET_CLIENT_SET_DEFAULT_SCOPE(configptr)                                                           \
   do                                                                                                         \
   {                                                                                                          \
     RDMNET_MSVC_NO_DEP_WRN strncpy((configptr)->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH); \
@@ -229,7 +242,7 @@ typedef struct RdmnetEptClientConfig
  *  \param scope_str UTF-8 scope string to copy to the RdmnetScopeConfig (const char *).
  *  \param broker_addr Address and port for a static broker (LwpaSockaddr).
  */
-#define rdmnet_client_set_static_scope(configptr, scope_str, broker_addr)                  \
+#define RDMNET_CLIENT_SET_STATIC_SCOPE(configptr, scope_str, broker_addr)                  \
   do                                                                                       \
   {                                                                                        \
     rdmnet_safe_strncpy((configptr)->scope, (scope_str), E133_SCOPE_STRING_PADDED_LENGTH); \
@@ -246,7 +259,7 @@ typedef struct RdmnetEptClientConfig
  *  \param configptr Pointer to RdmnetScopeConfig.
  *  \param broker_addr Address and port for a static broker (LwpaSockaddr)
  */
-#define rdmnet_client_set_static_default_scope(configptr, broker_addr)                                       \
+#define RDMNET_CLIENT_SET_STATIC_DEFAULT_SCOPE(configptr, broker_addr)                                       \
   do                                                                                                         \
   {                                                                                                          \
     RDMNET_MSVC_NO_DEP_WRN strncpy((configptr)->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH); \

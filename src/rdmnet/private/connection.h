@@ -68,6 +68,7 @@ struct RdmnetConnection
   LwpaSockaddr remote_addr;
   bool external_socket_attached;
   bool is_blocking;
+  PolledSocketInfo poll_info;
 
   // Connection state
   conn_state_t state;

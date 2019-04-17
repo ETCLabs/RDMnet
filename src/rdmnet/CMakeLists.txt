@@ -23,14 +23,12 @@ set(RDMNET_API_PUBLIC_HEADERS
   ${RDMNET_INCLUDE}/rdmnet/controller.h
   ${RDMNET_INCLUDE}/rdmnet/defs.h
   ${RDMNET_INCLUDE}/rdmnet/device.h
-  ${RDMNET_INCLUDE}/rdmnet/llrp.h
   ${RDMNET_INCLUDE}/rdmnet/version.h
 )
 set(RDMNET_API_PRIVATE_HEADERS
   ${RDMNET_SRC}/rdmnet/private/client.h
   ${RDMNET_SRC}/rdmnet/private/controller.h
   ${RDMNET_SRC}/rdmnet/private/device.h
-  ${RDMNET_SRC}/rdmnet/private/llrp.h
 )
 set(RDMNET_API_SOURCES
   ${RDMNET_SRC}/rdmnet/client.c
@@ -55,6 +53,7 @@ set(RDMNET_CORE_PUBLIC_HEADERS
   ${RDMNET_INCLUDE}/rdmnet/core/broker_prot.h
   ${RDMNET_INCLUDE}/rdmnet/core/connection.h
   ${RDMNET_INCLUDE}/rdmnet/core/ept_prot.h
+  ${RDMNET_INCLUDE}/rdmnet/core/llrp.h
   ${RDMNET_INCLUDE}/rdmnet/core/message.h
   ${RDMNET_INCLUDE}/rdmnet/core/rpt_prot.h
   ${RDMNET_INCLUDE}/rdmnet/core/util.h
@@ -63,6 +62,7 @@ set(RDMNET_CORE_PRIVATE_HEADERS
   ${RDMNET_SRC}/rdmnet/private/broker_prot.h
   ${RDMNET_SRC}/rdmnet/private/core.h
   ${RDMNET_SRC}/rdmnet/private/connection.h
+  ${RDMNET_SRC}/rdmnet/private/llrp.h
   ${RDMNET_SRC}/rdmnet/private/llrp_prot.h
   ${RDMNET_SRC}/rdmnet/private/message.h
   ${RDMNET_SRC}/rdmnet/private/msg_buf.h

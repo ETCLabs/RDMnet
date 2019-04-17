@@ -42,6 +42,7 @@
 
 /*! A handle to an RDMnet connection. */
 typedef int rdmnet_conn_t;
+
 /*! An invalid RDMnet connection handle value. */
 #define RDMNET_CONN_INVALID -1
 
@@ -59,6 +60,19 @@ typedef int llrp_socket_t;
 
 /*! @} */
 
+/*! \defgroup rdmnet_core_lib RDMnet Core Library
+ *  \brief Implementation of the core functions of RDMnet.
+ *
+ *  The core library sits underneath the higher-level \ref rdmnet_client "client" and
+ *  \ref rdmnet_broker "broker" APIs, and contains the functionality that every component of RDMnet
+ *  needs. This includes discovery, connections, and LLRP, as well as message packing and unpacking.
+ *
+ *  Most applications will not need to interact with the API functions in the core library directly,
+ *  although it does define types that are exposed through the higher-level APIs.
+ *
+ *  @{
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -71,5 +85,7 @@ void rdmnet_core_tick();
 #ifdef __cplusplus
 }
 #endif
+
+/*! @} */
 
 #endif /* _RDMNET_CORE_H_ */
