@@ -68,6 +68,7 @@ set(RDMNET_CORE_PRIVATE_HEADERS
   ${RDMNET_SRC}/rdmnet/private/msg_buf.h
   ${RDMNET_SRC}/rdmnet/private/opts.h
   ${RDMNET_SRC}/rdmnet/private/rpt_prot.h
+  ${RDMNET_SRC}/rdmnet/private/util.h
 )
 set(RDMNET_CORE_SOURCES
   ${RDMNET_SRC}/rdmnet/core.c

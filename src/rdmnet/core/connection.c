@@ -45,6 +45,7 @@
 #include "rdmnet/private/message.h"
 #include "rdmnet/private/connection.h"
 #include "rdmnet/private/broker_prot.h"
+#include "rdmnet/private/util.h"
 
 /*************************** Private constants *******************************/
 
@@ -82,8 +83,7 @@ LWPA_MEMPOOL_DEFINE(rdmnet_conn_rb_nodes, LwpaRbNode, RDMNET_MAX_CONNECTIONS);
 static struct RdmnetConnectionState
 {
   LwpaRbTree connections;
-  rdmnet_conn_t next_handle;
-  bool handle_has_wrapped_around;
+  IntHandleManager handle_mgr;
 } state;
 
 /*********************** Private function prototypes *************************/
@@ -100,7 +100,7 @@ static void deliver_callback(ConnCallbackDispatchInfo *info);
 static void rdmnet_conn_socket_activity(const LwpaPollEvent *event, PolledSocketOpaqueData data);
 
 // Connection management, lookup, destruction
-static rdmnet_conn_t get_new_conn_handle();
+static bool conn_handle_in_use(int handle_val);
 static RdmnetConnection *create_new_connection(const RdmnetConnectionConfig *config);
 static void destroy_connection(RdmnetConnection *conn, bool remove_from_tree);
 static lwpa_error_t get_conn(rdmnet_conn_t handle, RdmnetConnection **conn);
@@ -126,9 +126,7 @@ lwpa_error_t rdmnet_conn_init()
   if (res == kLwpaErrOk)
   {
     lwpa_rbtree_init(&state.connections, conn_cmp, conn_node_alloc, conn_node_free);
-
-    state.next_handle = 0;
-    state.handle_has_wrapped_around = false;
+    init_int_handle_manager(&state.handle_mgr, conn_handle_in_use);
   }
 
   return res;
@@ -966,37 +964,10 @@ void rdmnet_conn_socket_activity(const LwpaPollEvent *event, PolledSocketOpaqueD
   }
 }
 
-/* Get a new connection handle to assign to a new connection.
- * Must have write lock.
- */
-rdmnet_conn_t get_new_conn_handle()
+/* Callback for IntHandleManager to determine whether a handle is in use. */
+bool conn_handle_in_use(int handle_val)
 {
-  rdmnet_conn_t new_handle = state.next_handle;
-  if (++state.next_handle < 0)
-  {
-    state.next_handle = 0;
-    state.handle_has_wrapped_around = true;
-  }
-  // Optimization - keep track of whether the handle counter has wrapped around.
-  // If not, we don't need to check if the new handle is in use.
-  if (state.handle_has_wrapped_around)
-  {
-    // We have wrapped around at least once, we need to check for handles in use
-    rdmnet_conn_t original = new_handle;
-    while (lwpa_rbtree_find(&state.connections, &new_handle))
-    {
-      if (state.next_handle == original)
-      {
-        // Incredibly unlikely case of all handles used
-        new_handle = RDMNET_CONN_INVALID;
-        break;
-      }
-      new_handle = state.next_handle;
-      if (++state.next_handle < 0)
-        state.next_handle = 0;
-    }
-  }
-  return new_handle;
+  return lwpa_rbtree_find(&state.connections, &handle_val);
 }
 
 /* Internal function which attempts to allocate and track a new connection, including allocating the
@@ -1006,7 +977,7 @@ rdmnet_conn_t get_new_conn_handle()
  */
 RdmnetConnection *create_new_connection(const RdmnetConnectionConfig *config)
 {
-  rdmnet_conn_t new_handle = get_new_conn_handle();
+  rdmnet_conn_t new_handle = get_next_int_handle(&state.handle_mgr);
   if (new_handle == RDMNET_CONN_INVALID)
     return NULL;
 

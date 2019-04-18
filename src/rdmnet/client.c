@@ -45,6 +45,7 @@
 #include "rdmnet/private/core.h"
 #include "rdmnet/private/client.h"
 #include "rdmnet/private/opts.h"
+#include "rdmnet/private/util.h"
 
 /*************************** Private constants *******************************/
 
@@ -100,8 +101,7 @@ static struct RdmnetClientState
   LwpaRbTree scopes_by_handle;
   LwpaRbTree scopes_by_disc_handle;
 
-  rdmnet_client_t next_handle;
-  bool handle_has_wrapped_around;
+  IntHandleManager handle_mgr;
 } state;
 
 static void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo *broker_info,
@@ -140,7 +140,7 @@ static const RdmnetConnCallbacks conn_callbacks =
 // Create and destroy clients and scopes
 static lwpa_error_t validate_rpt_client_config(const RdmnetRptClientConfig *config);
 static RdmnetClient *rpt_client_new(const RdmnetRptClientConfig *config);
-static rdmnet_client_t get_new_client_handle();
+static bool client_handle_in_use(int handle_val);
 static lwpa_error_t create_and_append_scope_entry(const RdmnetScopeConfig *config, RdmnetClient *client,
                                                   ClientScopeListEntry **new_entry);
 static ClientScopeListEntry *find_scope_in_list(ClientScopeListEntry *list, const char *scope);
@@ -226,8 +226,7 @@ lwpa_error_t rdmnet_client_init(const LwpaLogParams *lparams)
       lwpa_rbtree_init(&state.scopes_by_handle, scope_cmp, client_node_alloc, client_node_free);
       lwpa_rbtree_init(&state.scopes_by_disc_handle, scope_disc_handle_cmp, client_node_alloc, client_node_free);
 
-      state.next_handle = 0;
-      state.handle_has_wrapped_around = false;
+      init_int_handle_manager(&state.handle_mgr, client_handle_in_use);
     }
     rdmnet_client_unlock();
   }
@@ -980,37 +979,10 @@ RdmnetClient *rpt_client_new(const RdmnetRptClientConfig *config)
   return new_cli;
 }
 
-/* Get a new client handle to assign to a new client.
- * Must have lock.
- */
-rdmnet_client_t get_new_client_handle()
+/* Callback for IntHandleManager to determine whether a handle is in use. */
+bool client_handle_in_use(int handle_val)
 {
-  rdmnet_client_t new_handle = state.next_handle;
-  if (++state.next_handle < 0)
-  {
-    state.next_handle = 0;
-    state.handle_has_wrapped_around = true;
-  }
-  // Optimization - keep track of whether the handle counter has wrapped around.
-  // If not, we don't need to check if the new handle is in use.
-  if (state.handle_has_wrapped_around)
-  {
-    // We have wrapped around at least once, we need to check for handles in use
-    rdmnet_client_t original = new_handle;
-    while (lwpa_rbtree_find(&state.clients, &new_handle))
-    {
-      if (state.next_handle == original)
-      {
-        // Incredibly unlikely case of all handles used
-        new_handle = RDMNET_CLIENT_INVALID;
-        break;
-      }
-      new_handle = state.next_handle;
-      if (++state.next_handle < 0)
-        state.next_handle = 0;
-    }
-  }
-  return new_handle;
+  return lwpa_rbtree_find(&state.clients, &handle_val);
 }
 
 /* Allocate a new scope list entry and append it to a client's scope list. If a scope string is

@@ -64,7 +64,6 @@ typedef struct LlrpTarget
   // Identifying info
   LwpaUuid cid;
   RdmUid uid;
-  uint8_t hardware_address[6];
   llrp_component_t component_type;
 
   // Network interfaces
@@ -73,6 +72,7 @@ typedef struct LlrpTarget
 #else
   LlrpTargetNetintInfo netints[RDMNET_LLRP_MAX_TARGET_NETINTS];
 #endif
+  size_t num_netints;
 
   bool connected_to_broker;
   bool reply_pending;
@@ -83,6 +83,8 @@ typedef struct LlrpTarget
 
 typedef struct LlrpManager
 {
+  llrp_manager_t handle;
+
   LwpaIpAddr netint;
   uint8_t send_buf[LLRP_MANAGER_MAX_MESSAGE_SIZE];
   lwpa_socket_t sys_sock;
@@ -92,7 +94,7 @@ typedef struct LlrpManager
 
   unsigned int num_clean_sends;
   LwpaTimer disc_timer;
-  uint8_t disc_filter;
+  uint16_t disc_filter;
 
   LwpaRbTree known_uids;
   RdmUid cur_range_low;

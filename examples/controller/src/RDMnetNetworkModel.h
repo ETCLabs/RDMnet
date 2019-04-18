@@ -43,8 +43,6 @@ BEGIN_INCLUDE_QT_HEADERS()
 #include <QStandardItemModel>
 END_INCLUDE_QT_HEADERS()
 
-class BrokerConnection;
-
 void appendRowToItem(QStandardItem *parent, QStandardItem *child);
 
 class RDMnetNetworkModel : public QStandardItemModel, public RDMnetLibNotify

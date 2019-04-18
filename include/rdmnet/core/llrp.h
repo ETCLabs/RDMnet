@@ -149,7 +149,6 @@ typedef struct LlrpTargetConfig
   size_t num_netints;
   LwpaUuid cid;
   RdmUid uid;
-  uint8_t hardware_addr[6];
   llrp_component_t component_type;
   LlrpTargetCallbacks callbacks;
   void *callback_context;
