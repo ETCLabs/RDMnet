@@ -52,11 +52,15 @@ typedef int rdmnet_conn_t;
  *  @{
  */
 
-/*! \brief A handle for an instance of LLRP Manager or Target functionality. */
-typedef int llrp_socket_t;
+/*! A handle for an instance of LLRP Manager functionality. */
+typedef int llrp_manager_t;
+/*! An invalid LLRP manager handle value. */
+#define LLRP_MANAGER_INVALID -1
 
-/*! An invalid LLRP socket value. */
-#define LLRP_SOCKET_INVALID -1
+/*! A handle for an instance of LLRP Target functionality. */
+typedef int llrp_target_t;
+/*! An invalid LLRP target handle value. */
+#define LLRP_TARGET_INVALID -1
 
 /*! @} */
 

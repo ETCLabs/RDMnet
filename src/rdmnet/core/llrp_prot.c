@@ -44,13 +44,12 @@ LwpaUuid kLlrpBroadcastCid;
 #define LLRP_MIN_PDU_SIZE (LLRP_HEADER_SIZE + PROBE_REPLY_PDU_SIZE)
 #define LLRP_MIN_TOTAL_MESSAGE_SIZE (ACN_UDP_PREAMBLE_SIZE + ACN_RLP_HEADER_SIZE_EXT_LEN + LLRP_MIN_PDU_SIZE)
 #define LLRP_RDM_CMD_PDU_MIN_SIZE (3 /* Flags + Length */ + RDM_MIN_BYTES)
-#define LLRP_RDM_CMD_PDU_MAX_SIZE (3 /* Flags + Length */ + RDM_MAX_BYTES)
 
 /*********************** Private function prototypes *************************/
 
 static bool parse_llrp_pdu(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest, LlrpMessage *msg);
 static bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest,
-                                     ProbeRequestRecv *request);
+                                     RemoteProbeRequest *request);
 static bool parse_llrp_probe_reply(const uint8_t *buf, size_t buflen, LlrpTarget *reply);
 static bool parse_llrp_rdm_command(const uint8_t *buf, size_t buflen, RdmBuffer *cmd);
 
@@ -131,7 +130,7 @@ bool parse_llrp_pdu(const uint8_t *buf, size_t buflen, const LlrpMessageInterest
           return false;
         }
       case VECTOR_LLRP_RDM_CMD:
-        return parse_llrp_rdm_command(cur_ptr, llrp_pdu_len - LLRP_HEADER_SIZE, &msg->data.rdm_cmd);
+        return parse_llrp_rdm_command(cur_ptr, llrp_pdu_len - LLRP_HEADER_SIZE, &msg->data.rdm);
       default:
         return false;
     }
@@ -140,7 +139,7 @@ bool parse_llrp_pdu(const uint8_t *buf, size_t buflen, const LlrpMessageInterest
 }
 
 bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest,
-                              ProbeRequestRecv *request)
+                              RemoteProbeRequest *request)
 {
   const uint8_t *cur_ptr = buf;
   const uint8_t *buf_end;
@@ -204,7 +203,7 @@ bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessa
   return true;
 }
 
-bool parse_llrp_probe_reply(const uint8_t *buf, size_t buflen, LlrpTarget *reply)
+bool parse_llrp_probe_reply(const uint8_t *buf, size_t buflen, DiscoveredLlrpTarget *reply)
 {
   const uint8_t *cur_ptr = buf;
   size_t pdu_len;
@@ -272,11 +271,11 @@ size_t lwpa_pack_llrp_header(uint8_t *buf, size_t pdu_len, uint32_t vector, cons
 #define PROBE_REQUEST_RLP_DATA_MIN_SIZE (LLRP_HEADER_SIZE + PROBE_REQUEST_PDU_MIN_SIZE)
 #define PROBE_REQUEST_RLP_DATA_MAX_SIZE (PROBE_REQUEST_RLP_DATA_MIN_SIZE + (6 * LLRP_KNOWN_UID_SIZE))
 
-lwpa_error_t send_llrp_probe_request(LlrpSocket *llrp_sock, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
-                                     const ProbeRequestSend *probe_request)
+lwpa_error_t send_llrp_probe_request(LlrpManager *mgr, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
+                                     const LocalProbeRequest *probe_request)
 {
-  uint8_t *cur_ptr = llrp_sock->send_buf;
-  uint8_t *buf_end = cur_ptr + LLRP_MAX_MESSAGE_SIZE;
+  uint8_t *cur_ptr = mgr->send_buf;
+  uint8_t *buf_end = cur_ptr + LLRP_MANAGER_MAX_MESSAGE_SIZE;
   LwpaRootLayerPdu rlp;
   const KnownUid *cur_uid;
   int send_res;
@@ -331,7 +330,7 @@ lwpa_error_t send_llrp_probe_request(LlrpSocket *llrp_sock, const LwpaSockaddr *
     cur_uid = cur_uid->next;
   }
 
-  send_res = lwpa_sendto(llrp_sock->sys_sock, llrp_sock->send_buf, cur_ptr - llrp_sock->send_buf, 0, dest_addr);
+  send_res = lwpa_sendto(mgr->sys_sock, mgr->send_buf, cur_ptr - mgr->send_buf, 0, dest_addr);
   if (send_res >= 0)
     return kLwpaErrOk;
   else
@@ -340,11 +339,12 @@ lwpa_error_t send_llrp_probe_request(LlrpSocket *llrp_sock, const LwpaSockaddr *
 
 #define PROBE_REPLY_RLP_DATA_SIZE (LLRP_HEADER_SIZE + PROBE_REPLY_PDU_SIZE)
 
-lwpa_error_t send_llrp_probe_reply(LlrpSocket *llrp_sock, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
-                                   const LlrpTarget *probe_reply)
+lwpa_error_t send_llrp_probe_reply(LlrpTarget *tgt, size_t interface_index, const LwpaSockaddr *dest_addr,
+                                   const LlrpHeader *header)
 {
-  uint8_t *cur_ptr = llrp_sock->send_buf;
-  uint8_t *buf_end = cur_ptr + LLRP_MAX_MESSAGE_SIZE;
+  LlrpTargetNetintInfo *netint = &tgt->netints[interface_index];
+  uint8_t *cur_ptr = netint->send_buf;
+  uint8_t *buf_end = cur_ptr + LLRP_TARGET_MAX_MESSAGE_SIZE;
   LwpaRootLayerPdu rlp;
   int send_res;
 
@@ -366,15 +366,15 @@ lwpa_error_t send_llrp_probe_reply(LlrpSocket *llrp_sock, const LwpaSockaddr *de
   lwpa_pdu_pack_ext_len(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
   cur_ptr += 3;
   *cur_ptr++ = VECTOR_PROBE_REPLY_DATA;
-  lwpa_pack_16b(cur_ptr, probe_reply->target_uid.manu);
+  lwpa_pack_16b(cur_ptr, tgt->uid.manu);
   cur_ptr += 2;
-  lwpa_pack_32b(cur_ptr, probe_reply->target_uid.id);
+  lwpa_pack_32b(cur_ptr, tgt->uid.id);
   cur_ptr += 4;
-  memcpy(cur_ptr, probe_reply->hardware_address, 6);
+  memcpy(cur_ptr, tgt->hardware_address, 6);
   cur_ptr += 6;
-  *cur_ptr++ = (uint8_t)probe_reply->component_type;
+  *cur_ptr++ = (uint8_t)tgt->component_type;
 
-  send_res = lwpa_sendto(llrp_sock->sys_sock, llrp_sock->send_buf, cur_ptr - llrp_sock->send_buf, 0, dest_addr);
+  send_res = lwpa_sendto(netint->sys_sock, netint->send_buf, cur_ptr - netint->send_buf, 0, dest_addr);
   if (send_res >= 0)
     return kLwpaErrOk;
   else

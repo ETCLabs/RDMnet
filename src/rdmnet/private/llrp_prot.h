@@ -40,7 +40,10 @@
 #define PROBE_REQUEST_PDU_MIN_SIZE \
   (3 /* Flags + Length */ + 1 /* Vector */ + 6 /* Lower UID */ + 6 /* Upper UID */ + 2 /* Filter */)
 #define PROBE_REQUEST_PDU_MAX_SIZE (PROBE_REQUEST_PDU_MIN_SIZE + (6 * LLRP_KNOWN_UID_SIZE) /* Known UIDS */)
-#define LLRP_MAX_MESSAGE_SIZE \
+#define LLRP_RDM_CMD_PDU_MAX_SIZE (3 /* Flags + Length */ + RDM_MAX_BYTES)
+#define LLRP_TARGET_MAX_MESSAGE_SIZE \
+  (ACN_UDP_PREAMBLE_SIZE + ACN_RLP_HEADER_SIZE_EXT_LEN + LLRP_HEADER_SIZE + LLRP_RDM_CMD_PDU_MAX_SIZE)
+#define LLRP_MANAGER_MAX_MESSAGE_SIZE \
   (ACN_UDP_PREAMBLE_SIZE + ACN_RLP_HEADER_SIZE_EXT_LEN + LLRP_HEADER_SIZE + PROBE_REQUEST_PDU_MAX_SIZE)
 
 typedef struct LlrpHeader
@@ -66,21 +69,21 @@ struct KnownUid
   KnownUid *next;
 };
 
-typedef struct ProbeRequestRecv
+typedef struct RemoteProbeRequest
 {
   /* True if this probe request contains my UID as registered in the LlrpMessageInterest struct, and
    * it is not suppressed by the Known UID list. */
   bool contains_my_uid;
   uint16_t filter;
-} ProbeRequestRecv;
+} RemoteProbeRequest;
 
-typedef struct ProbeRequestSend
+typedef struct LocalProbeRequest
 {
   RdmUid lower_uid;
   RdmUid upper_uid;
   uint16_t filter;
   KnownUid *uid_list;
-} ProbeRequestSend;
+} LocalProbeRequest;
 
 typedef struct LlrpMessage
 {
@@ -88,8 +91,8 @@ typedef struct LlrpMessage
   LlrpHeader header;
   union
   {
-    ProbeRequestRecv probe_request;
-    LlrpTarget probe_reply;
+    RemoteProbeRequest probe_request;
+    DiscoveredLlrpTarget probe_reply;
     RdmBuffer rdm;
   } data;
 } LlrpMessage;
@@ -108,14 +111,14 @@ void llrp_prot_init();
 
 bool parse_llrp_message(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest, LlrpMessage *msg);
 
-lwpa_error_t send_llrp_probe_request(LlrpSocket *llrp_sock, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
-                                     const ProbeRequestSend *probe_request);
-
-lwpa_error_t send_llrp_probe_reply(LlrpSocket *llrp_sock, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
-                                   const LlrpTarget *probe_reply);
-
-lwpa_error_t send_llrp_rdm(LlrpSocket *llrp_sock, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
-                           const RdmBuffer *rdm_msg);
+lwpa_error_t send_llrp_probe_request(LlrpManager *mgr, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
+                                     const LocalProbeRequest *probe_request);
+lwpa_error_t send_llrp_probe_reply(LlrpTarget *tgt, size_t interface_index, const LwpaSockaddr *dest_addr,
+                                   const LlrpHeader *header);
+lwpa_error_t send_llrp_rdm_command(LlrpManager *mgr, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
+                                   const RdmCommand *cmd);
+lwpa_error_t send_llrp_rdm_response(LlrpTarget *tgt, size_t interface_index, const LwpaSockaddr *dest_addr,
+                                    const LlrpHeader *header, const RdmResponse *resp);
 
 #ifdef __cplusplus
 }

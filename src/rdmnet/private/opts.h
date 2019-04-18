@@ -25,20 +25,22 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet/core/opts.h
+/*! \file rdmnet/private/opts.h
  *  \brief RDMnet configuration options.
  *
  *  Default values for all of RDMnet's \ref rdmnetopts "compile-time configuration options".
  *
  *  \author Sam Kearney
  */
-#ifndef _RDMNET_CORE_OPTS_H_
-#define _RDMNET_CORE_OPTS_H_
+#ifndef _RDMNET_PRIVATE_OPTS_H_
+#define _RDMNET_PRIVATE_OPTS_H_
 
 /*! \defgroup rdmnetopts RDMnet Configuration Options
  *  \brief Compile-time configuration options for RDMnet.
  *
- *  Default values can be overriden by defining the option in your project's rdmnet_config.h file.
+ *  Default values can be overriden in the compiler settings, or by defining RDMNET_HAVE_CONFIG_H in
+ *  the compiler settings and providing a file called rdmnet_config.h with overridden definitions in
+ *  it.
  */
 
 #if RDMNET_HAVE_CONFIG_H
@@ -68,7 +70,10 @@
 /*! \defgroup rdmnetopts_global Global
  *  \ingroup rdmnetopts
  *
- *  Global or library-wide configuration options.
+ *  Global or library-wide configuration options. Any options with *_MAX_* in the name are
+ *  applicable only to compilations with dynamic memory disabled (#RDMNET_DYNAMIC_MEM = 0, most
+ *  common in embedded toolchains).
+ *
  *  @{
  */
 
@@ -97,9 +102,10 @@
 /*! \defgroup rdmnetopts_client Client
  *  \ingroup rdmnetopts
  *
- *  Options that affect the RDMnet Client APIs. Any options with MAX_* in the name are applicable
+ *  Options that affect the RDMnet Client APIs. Any options with *_MAX_* in the name are applicable
  *  only to compilations with dynamic memory disabled (#RDMNET_DYNAMIC_MEM = 0, most common in
  *  embedded toolchains).
+ *
  *  @{
  */
 
@@ -150,7 +156,6 @@
  *  only to compilations with dynamic memory disabled (#RDMNET_DYNAMIC_MEM = 0, most common in
  *  embedded toolchains).
  *
- *  If using the Client
  *  @{
  */
 
@@ -255,12 +260,20 @@
  *  @{
  */
 
-/*! \brief The maximum number of LLRP sockets that can be created.
+/*! \brief The maximum number of LLRP targets that can be created.
  *
  *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
  */
-#ifndef RDMNET_LLRP_MAX_SOCKETS
-#define RDMNET_LLRP_MAX_SOCKETS RDMNET_MAX_CLIENTS
+#ifndef RDMNET_LLRP_MAX_TARGETS
+#define RDMNET_LLRP_MAX_TARGETS RDMNET_MAX_CLIENTS
+#endif
+
+/*! \brief The maximum number of network interfaces on which each LLRP Target can operate.
+ *
+ *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
+ */
+#ifndef RDMNET_LLRP_MAX_TARGET_NETINTS
+#define RDMNET_LLRP_MAX_TARGET_NETINTS 1
 #endif
 
 /*! \brief In LLRP, whether to bind the underlying network socket directly to the LLRP multicast

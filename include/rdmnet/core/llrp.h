@@ -62,19 +62,56 @@ typedef enum
   kLlrpCompUnknown = 255
 } llrp_component_t;
 
-/*! An RDM command or response sent over LLRP. */
-typedef struct LlrpRdmMessage
+/*! An RDM command to be sent from a local LLRP Manager. */
+typedef struct LlrpLocalRdmCommand
 {
-  /*! The CID of the LLRP Component sending this message. */
-  LwpaUuid source_cid;
-  /*! The LLRP transaction number of this message. */
-  uint32_t transaction_num;
-  /*! The RDM message. */
-  RdmBuffer msg;
-} LlrpRdmMessage;
+  /*! The CID of the LLRP Target to which this command is addressed. */
+  LwpaUuid dest_cid;
+  /*! The RDM command. */
+  RdmCommand rdm;
+} LlrpLocalRdmCommand;
+
+/*! An RDM command to be sent from a local LLRP Target. */
+typedef struct LlrpLocalRdmResponse
+{
+  /*! The CID of the LLRP Manager to which this response is addressed. */
+  LwpaUuid dest_cid;
+  /*! The sequence number received in the corresponding LlrpRemoteRdmCommand. */
+  uint32_t seq_num;
+  /*! The interface index in the corresponding LlrpRemoteRdmCommand. */
+  size_t interface_index;
+  /*! The RDM response. */
+  RdmResponse rdm;
+} LlrpLocalRdmResponse;
+
+/*! An RDM command received from a remote LLRP Manager. */
+typedef struct LlrpRemoteRdmCommand
+{
+  /*! The CID of the LLRP Mangaer from which this command was received. */
+  LwpaUuid src_cid;
+  /*! The sequence number received with this command, to be echoed in the corresponding
+   *  LlrpLocalRdmResponse. */
+  uint32_t seq_num;
+  /*! The interface index on which this command was received, to be echoed in the corresponding
+   *  LlrpLocalRdmResponse. */
+  size_t interface_index;
+  /*! The RDM command. */
+  RdmCommand rdm;
+} LlrpRemoteRdmCommand;
+
+/*! An RDM response received from a remote LLRP Target. */
+typedef struct LlrpRemoteRdmResponse
+{
+  /*! The CID of the LLRP Target from which this command was received. */
+  LwpaUuid src_cid;
+  /*! The sequence number of this response (to be associated with a previously-sent command). */
+  uint32_t seq_num;
+  /*! The RDM response. */
+  RdmResponse rdm;
+} LlrpRemoteRdmResponse;
 
 /*! A set of information associated with an LLRP Target. */
-typedef struct LlrpTarget
+typedef struct DiscoveredLlrpTarget
 {
   /*! The LLRP Target's CID. */
   LwpaUuid target_cid;
@@ -84,52 +121,57 @@ typedef struct LlrpTarget
   uint8_t hardware_address[6];
   /*! The type of RPT Component this LLRP Target is associated with. */
   llrp_component_t component_type;
-} LlrpTarget;
+} DiscoveredLlrpTarget;
 
 typedef struct LlrpManagerCallbacks
 {
-  void (*target_discovered)(llrp_socket_t handle, const LlrpTarget *target, void *context);
-  void (*discovery_finished)(llrp_socket_t handle, void *context);
-  void (*rdm_received)(llrp_socket_t handle, const LlrpRdmMessage *msg, void *context);
+  void (*target_discovered)(llrp_manager_t handle, const DiscoveredLlrpTarget *target, void *context);
+  void (*discovery_finished)(llrp_manager_t handle, void *context);
+  void (*rdm_resp_received)(llrp_manager_t handle, const LlrpRemoteRdmResponse *resp, void *context);
 } LlrpManagerCallbacks;
 
 typedef struct LlrpTargetCallbacks
 {
-  void (*rdm_received)(llrp_socket_t handle, const LlrpRdmMessage *msg, void *context);
+  void (*rdm_cmd_received)(llrp_target_t handle, const LlrpRemoteRdmCommand *cmd, void *context);
 } LlrpTargetCallbacks;
 
 typedef struct LlrpManagerConfig
 {
   LwpaIpAddr netint;
   LwpaUuid cid;
+  LlrpManagerCallbacks callbacks;
+  void *callback_context;
 } LlrpManagerConfig;
 
 typedef struct LlrpTargetConfig
 {
-  LwpaIpAddr netint;
+  LwpaIpAddr *netint_arr;
+  size_t num_netints;
   LwpaUuid cid;
   RdmUid uid;
   uint8_t hardware_addr[6];
   llrp_component_t component_type;
+  LlrpTargetCallbacks callbacks;
+  void *callback_context;
 } LlrpTargetConfig;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-lwpa_error_t rdmnet_llrp_create_manager_socket(const LlrpManagerConfig *config, llrp_socket_t *handle);
-lwpa_error_t rdmnet_llrp_create_target_socket(const LlrpTargetConfig *config, llrp_socket_t *handle);
-bool rdmnet_llrp_close_socket(llrp_socket_t handle);
-bool rdmnet_llrp_start_discovery(llrp_socket_t handle, uint8_t filter);
-bool rdmnet_llrp_stop_discovery(llrp_socket_t handle);
+lwpa_error_t rdmnet_llrp_manager_create(const LlrpManagerConfig *config, llrp_manager_t *handle);
+lwpa_error_t rdmnet_llrp_target_create(const LlrpTargetConfig *config, llrp_target_t *handle);
+void rdmnet_llrp_destroy_manager(llrp_manager_t handle);
+void rdmnet_llrp_destroy_target(llrp_target_t handle);
 
-void rdmnet_llrp_update_target_connection_state(llrp_socket_t handle, bool connected_to_broker, const RdmUid *new_uid);
+lwpa_error_t rdmnet_llrp_start_discovery(llrp_manager_t handle, uint16_t filter);
+lwpa_error_t rdmnet_llrp_stop_discovery(llrp_manager_t handle);
 
-lwpa_error_t rdmnet_llrp_send_rdm_command(llrp_socket_t handle, const LwpaUuid *destination, const RdmBuffer *command,
+void rdmnet_llrp_update_target_connection_state(llrp_target_t handle, bool connected_to_broker, const RdmUid *new_uid);
+
+lwpa_error_t rdmnet_llrp_send_rdm_command(llrp_manager_t handle, const LlrpLocalRdmCommand *cmd,
                                           uint32_t *transaction_num);
-
-lwpa_error_t rdmnet_llrp_send_rdm_response(llrp_socket_t handle, const LwpaUuid *destination, const RdmBuffer *response,
-                                           uint32_t transaction_num);
+lwpa_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLocalRdmResponse *resp);
 
 #ifdef __cplusplus
 }

@@ -51,8 +51,8 @@
 
 /* clang-format off */
 #if !RDMNET_DYNAMIC_MEM
-LWPA_MEMPOOL_DEFINE(llrp_sockets, LlrpSocket, LLRP_MAX_SOCKETS);
-LWPA_MEMPOOL_DEFINE(llrp_socket_rb_nodes, LwpaRbNode, LLRP_MAX_SOCKETS);
+LWPA_MEMPOOL_DEFINE(llrp_targets, LlrpTarget, RDMNET_LLRP_MAX_TARGETS);
+LWPA_MEMPOOL_DEFINE(llrp_target_rb_nodes, LwpaRbNode, RDMNET_LLRP_MAX_SOCKETS);
 #endif
 /* clang-format on */
 
@@ -241,15 +241,17 @@ bool rdmnet_llrp_close_socket(llrp_socket_t handle)
 
 /*! \brief Start discovery on an LLRP Manager socket.
  *
+ *  <b>TODO stale docs</b>
+ *
  *  Configure a Manager socket to start discovery and send the first discovery message. Fails if the
  *  socket is not a Manager socket, or if a previous discovery process is still ongoing.
  *
  *  \param[in] handle LLRP socket on which to start discovery.
  *  \param[in] filter Discovery filter, made up of one or more of the LLRP_FILTERVAL_* constants
- *                    defined in estardmnet.h
+ *                    defined in rdmnet/defs.h
  *  \return true (Discovery started successfully) or false (failed to start discovery).
  */
-bool rdmnet_llrp_start_discovery(llrp_socket_t handle, uint8_t filter)
+lwpa_error_t rdmnet_llrp_start_discovery(llrp_manager_t handle, uint16_t filter)
 {
   if (handle && handle->socket_type == kLlrpSocketTypeManager)
   {
@@ -280,7 +282,7 @@ bool rdmnet_llrp_start_discovery(llrp_socket_t handle, uint8_t filter)
  *  \return true (Discovery stopped successfully) or false (invalid argument or discovery was not
  *          running).
  */
-bool rdmnet_llrp_stop_discovery(llrp_socket_t handle)
+bool rdmnet_llrp_stop_discovery(llrp_manager_t handle)
 {
   if (handle != NULL)
   {

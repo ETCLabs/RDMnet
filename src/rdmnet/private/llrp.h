@@ -43,32 +43,50 @@
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/core/llrp.h"
+#include "rdmnet/private/opts.h"
 #include "rdmnet/private/llrp_prot.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef enum
+typedef struct LlrpTargetNetintInfo
 {
-  kLlrpSocketTypeNone,
-  kLlrpSocketTypeTarget,
-  kLlrpSocketTypeManager
-} llrp_socket_type_t;
+  LwpaIpAddr netint;
+  lwpa_socket_t sys_sock;
+  uint8_t send_buf[LLRP_TARGET_MAX_MESSAGE_SIZE];
+} LlrpTargetNetintInfo;
 
-typedef struct LlrpTargetSocketData
+typedef struct LlrpTarget
 {
-  LlrpTarget target_info;
+  llrp_target_t handle;
+
+  // Identifying info
+  LwpaUuid cid;
+  RdmUid uid;
+  uint8_t hardware_address[6];
+  llrp_component_t component_type;
+
+  // Network interfaces
+#if RDMNET_DYNAMIC_MEM
+  LlrpTargetNetintInfo *netints;
+#else
+  LlrpTargetNetintInfo netints[RDMNET_LLRP_MAX_TARGET_NETINTS];
+#endif
 
   bool connected_to_broker;
   bool reply_pending;
   LwpaUuid pending_reply_cid;
   uint32_t pending_reply_trans_num;
   LwpaTimer reply_backoff;
-} LlrpTargetSocketData;
+} LlrpTarget;
 
-typedef struct LlrpManagerSocketData
+typedef struct LlrpManager
 {
+  LwpaIpAddr netint;
+  uint8_t send_buf[LLRP_MANAGER_MAX_MESSAGE_SIZE];
+  lwpa_socket_t sys_sock;
+
   uint32_t transaction_number;
   bool discovery_active;
 
@@ -79,34 +97,7 @@ typedef struct LlrpManagerSocketData
   LwpaRbTree known_uids;
   RdmUid cur_range_low;
   RdmUid cur_range_high;
-} LlrpManagerSocketData;
-
-typedef struct LlrpSocket LlrpSocket;
-struct LlrpSocket
-{
-  lwpa_socket_t handle;
-  LwpaIpAddr netint;
-  LwpaUuid owner_cid;
-
-  lwpa_socket_t sys_sock;
-
-  bool data_received;
-  uint8_t recv_buf[LLRP_MAX_MESSAGE_SIZE];
-  uint8_t send_buf[LLRP_MAX_MESSAGE_SIZE];
-
-  LlrpSocket *next;
-
-  llrp_socket_type_t socket_type;
-
-  union
-  {
-    LlrpTargetSocketData target;
-    LlrpManagerSocketData manager;
-  } role;
-};
-
-#define GET_MANAGER_DATA(llrpsockptr) (&(llrpsockptr)->role.manager)
-#define GET_TARGET_DATA(llrpsockptr) (&(llrpsockptr)->role.target)
+} LlrpManager;
 
 lwpa_error_t rdmnet_llrp_init();
 void rdmnet_llrp_deinit();
