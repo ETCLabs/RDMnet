@@ -25,51 +25,78 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#ifndef _RDMNET_PRIVATE_CORE_H_
-#define _RDMNET_PRIVATE_CORE_H_
+#ifndef _RDMNET_PRIVATE_LLRP_MANAGER_H_
+#define _RDMNET_PRIVATE_LLRP_MANAGER_H_
 
-#include "lwpa/lock.h"
-#include "lwpa/log.h"
+#include "lwpa/inet.h"
 #include "lwpa/socket.h"
-#include "rdmnet/core.h"
-#include "rdmnet/private/opts.h"
+#include "lwpa/timer.h"
+#include "lwpa/rbtree.h"
+#include "rdm/uid.h"
+#include "rdmnet/core/llrp_manager.h"
+#include "rdmnet/private/llrp_prot.h"
+
+typedef struct LlrpManager
+{
+  llrp_manager_t handle;
+
+  LwpaIpAddr netint;
+  uint8_t send_buf[LLRP_MANAGER_MAX_MESSAGE_SIZE];
+  lwpa_socket_t sys_sock;
+
+  uint32_t transaction_number;
+  bool discovery_active;
+
+  unsigned int num_clean_sends;
+  LwpaTimer disc_timer;
+  uint16_t disc_filter;
+
+  LwpaRbTree known_uids;
+  RdmUid cur_range_low;
+  RdmUid cur_range_high;
+} LlrpManager;
+
+typedef enum
+{
+  kManagerCallbackNone,
+  kManagerCallbackTargetDiscovered,
+  kManagerCallbackDiscoveryFinished,
+  kManagerCallbackRdmRespReceived
+} manager_callback_t;
+
+typedef struct TargetDiscoveredArgs
+{
+  DiscoveredLlrpTarget target;
+} TargetDiscoveredArgs;
+
+typedef struct RdmRespReceivedArgs
+{
+  LlrpRemoteRdmResponse resp;
+} RdmRespReceivedArgs;
+
+typedef struct ManagerCallbackDispatchInfo
+{
+  llrp_manager_t handle;
+  LlrpManagerCallbacks cbs;
+  void *context;
+
+  manager_callback_t which;
+  union
+  {
+    TargetDiscoveredArgs target_discovered;
+    RdmRespReceivedArgs resp_received;
+  } args;
+} ManagerCallbackDispatchInfo;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-bool rdmnet_core_initialized();
-
-extern lwpa_rwlock_t rdmnet_lock;
-extern const LwpaLogParams *rdmnet_log_params;
-
-#define RDMNET_LOG_MSG(msg) RDMNET_LOG_MSG_PREFIX msg
-
-#define rdmnet_readlock() lwpa_rwlock_readlock(&rdmnet_lock, LWPA_WAIT_FOREVER)
-#define rdmnet_readunlock() lwpa_rwlock_readunlock(&rdmnet_lock)
-#define rdmnet_writelock() lwpa_rwlock_writelock(&rdmnet_lock, LWPA_WAIT_FOREVER)
-#define rdmnet_writeunlock() lwpa_rwlock_writeunlock(&rdmnet_lock)
-
-typedef union PolledSocketOpaqueData
-{
-  rdmnet_conn_t conn_handle;
-  void *ptr;
-} PolledSocketOpaqueData;
-
-typedef void (*PolledSocketActivityCallback)(const LwpaPollEvent *event, PolledSocketOpaqueData data);
-
-typedef struct PolledSocketInfo
-{
-  PolledSocketActivityCallback callback;
-  PolledSocketOpaqueData data;
-} PolledSocketInfo;
-
-lwpa_error_t rdmnet_core_add_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, PolledSocketInfo *info);
-lwpa_error_t rdmnet_core_modify_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, PolledSocketInfo *info);
-void rdmnet_core_remove_polled_socket(lwpa_socket_t socket);
+lwpa_error_t rdmnet_llrp_manager_init();
+void rdmnet_llrp_manager_deinit();
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _RDMNET_PRIVATE_CORE_H_ */
+#endif /* _RDMNET_PRIVATE_LLRP_MANAGER_H_ */

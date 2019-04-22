@@ -604,7 +604,7 @@ void rdmnet_conn_tick()
   if (!rdmnet_core_initialized())
     return;
 
-  // Remove any sockets marked for destruction.
+  // Remove any connections marked for destruction.
   if (rdmnet_writelock())
   {
     RdmnetConnection *destroy_list = NULL;

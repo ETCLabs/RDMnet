@@ -177,7 +177,7 @@ void rdmnet_core_deinit()
       core_state.initted = false;
       rdmnet_log_params = NULL;
 
-      llrp_deinit();
+      rdmnet_llrp_deinit();
       rdmnetdisc_deinit();
       rdmnet_conn_deinit();
       lwpa_poll_context_deinit(&core_state.poll_context);
@@ -212,7 +212,7 @@ lwpa_error_t rdmnet_core_modify_polled_socket(lwpa_socket_t socket, lwpa_poll_ev
   return lwpa_poll_modify_socket(&core_state.poll_context, socket, events, info);
 }
 
-void rdmnet_core_remove_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events)
+void rdmnet_core_remove_polled_socket(lwpa_socket_t socket)
 {
   lwpa_poll_remove_socket(&core_state.poll_context, socket);
 }
@@ -254,6 +254,7 @@ void rdmnet_core_tick()
   {
     rdmnetdisc_tick();
     rdmnet_conn_tick();
+    rdmnet_llrp_tick();
 
     lwpa_timer_reset(&core_state.tick_timer);
   }

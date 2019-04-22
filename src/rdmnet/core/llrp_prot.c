@@ -50,8 +50,11 @@ LwpaUuid kLlrpBroadcastCid;
 static bool parse_llrp_pdu(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest, LlrpMessage *msg);
 static bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest,
                                      RemoteProbeRequest *request);
-static bool parse_llrp_probe_reply(const uint8_t *buf, size_t buflen, LlrpTarget *reply);
+static bool parse_llrp_probe_reply(const uint8_t *buf, size_t buflen, DiscoveredLlrpTarget *reply);
 static bool parse_llrp_rdm_command(const uint8_t *buf, size_t buflen, RdmBuffer *cmd);
+
+static lwpa_error_t send_llrp_rdm(lwpa_socket_t sock, uint8_t *buf, const LwpaSockaddr *dest_addr,
+                                  const LlrpHeader *header, const RdmBuffer *rdm_msg);
 
 /*************************** Function definitions ****************************/
 
@@ -62,40 +65,37 @@ void llrp_prot_init()
 
 bool parse_llrp_message(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest, LlrpMessage *msg)
 {
-  LwpaUdpPreamble preamble;
-  LwpaRootLayerPdu rlp;
-  LwpaPdu last_pdu = LWPA_PDU_INIT;
-
   if (!buf || !msg || buflen < LLRP_MIN_TOTAL_MESSAGE_SIZE)
     return false;
 
-  /* Try to parse the UDP preamble. */
+  // Try to parse the UDP preamble.
+  LwpaUdpPreamble preamble;
   if (!lwpa_parse_udp_preamble(buf, buflen, &preamble))
     return false;
 
-  /* Try to parse the Root Layer PDU header. */
+  // Try to parse the Root Layer PDU header.
+  LwpaRootLayerPdu rlp;
+  LwpaPdu last_pdu = LWPA_PDU_INIT;
   if (!lwpa_parse_root_layer_pdu(preamble.rlp_block, preamble.rlp_block_len, &rlp, &last_pdu))
     return false;
 
-  /* Fill in the data we have and try to parse the LLRP PDU. */
+  // Fill in the data we have and try to parse the LLRP PDU.
   msg->header.sender_cid = rlp.sender_cid;
   return parse_llrp_pdu(rlp.pdata, rlp.datalen, interest, msg);
 }
 
 bool parse_llrp_pdu(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest, LlrpMessage *msg)
 {
-  const uint8_t *cur_ptr = buf;
-  size_t llrp_pdu_len;
-
   if (buflen < LLRP_MIN_PDU_SIZE)
     return false;
 
-  /* Check the PDU length */
-  llrp_pdu_len = lwpa_pdu_length(cur_ptr);
+  // Check the PDU length
+  const uint8_t *cur_ptr = buf;
+  size_t llrp_pdu_len = lwpa_pdu_length(cur_ptr);
   if (llrp_pdu_len > buflen || llrp_pdu_len < LLRP_MIN_PDU_SIZE)
     return false;
 
-  /* Fill in the LLRP PDU header data */
+  // Fill in the LLRP PDU header data
   cur_ptr += 3;
   msg->vector = lwpa_upack_32b(cur_ptr);
   cur_ptr += 4;
@@ -104,7 +104,7 @@ bool parse_llrp_pdu(const uint8_t *buf, size_t buflen, const LlrpMessageInterest
   msg->header.transaction_number = lwpa_upack_32b(cur_ptr);
   cur_ptr += 4;
 
-  /* Parse the next layer, based on the vector value and what the caller has registered interest in */
+  // Parse the next layer, based on the vector value and what the caller has registered interest in
   if (0 == lwpa_uuid_cmp(&msg->header.dest_cid, &kLlrpBroadcastCid) ||
       0 == lwpa_uuid_cmp(&msg->header.dest_cid, &interest->my_cid))
   {
@@ -141,31 +141,29 @@ bool parse_llrp_pdu(const uint8_t *buf, size_t buflen, const LlrpMessageInterest
 bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest,
                               RemoteProbeRequest *request)
 {
-  const uint8_t *cur_ptr = buf;
-  const uint8_t *buf_end;
-  size_t pdu_len;
-  uint8_t vector;
-  RdmUid lower_uid_bound;
-  RdmUid upper_uid_bound;
-
   if (buflen < PROBE_REQUEST_PDU_MIN_SIZE)
     return false;
 
-  /* Check the PDU length */
-  pdu_len = lwpa_pdu_length(cur_ptr);
+  // Check the PDU length
+  const uint8_t *cur_ptr = buf;
+  size_t pdu_len = lwpa_pdu_length(cur_ptr);
   if (pdu_len > buflen || pdu_len < PROBE_REQUEST_PDU_MIN_SIZE)
     return false;
-  buf_end = cur_ptr + pdu_len;
+  const uint8_t *buf_end = cur_ptr + pdu_len;
 
-  /* Fill in the rest of the Probe Request data */
+  // Fill in the rest of the Probe Request data
   cur_ptr += 3;
-  vector = *cur_ptr++;
+  uint8_t vector = *cur_ptr++;
   if (vector != VECTOR_PROBE_REQUEST_DATA)
     return false;
+
+  RdmUid lower_uid_bound;
   lower_uid_bound.manu = lwpa_upack_16b(cur_ptr);
   cur_ptr += 2;
   lower_uid_bound.id = lwpa_upack_32b(cur_ptr);
   cur_ptr += 4;
+
+  RdmUid upper_uid_bound;
   upper_uid_bound.manu = lwpa_upack_16b(cur_ptr);
   cur_ptr += 2;
   upper_uid_bound.id = lwpa_upack_32b(cur_ptr);
@@ -173,12 +171,12 @@ bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessa
   request->filter = lwpa_upack_16b(cur_ptr);
   cur_ptr += 2;
 
-  /* If our UID is not in the range, there is no need to check the Known UIDs. */
+  // If our UID is not in the range, there is no need to check the Known UIDs.
   if (rdm_uid_cmp(&interest->my_uid, &lower_uid_bound) >= 0 && rdm_uid_cmp(&interest->my_uid, &upper_uid_bound) <= 0)
   {
     request->contains_my_uid = true;
 
-    /* Check the Known UIDs to see if the registered UID is in it. */
+    // Check the Known UIDs to see if the registered UID is in it.
     while (cur_ptr + 6 <= buf_end)
     {
       RdmUid cur_uid;
@@ -189,7 +187,7 @@ bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessa
 
       if (rdm_uid_equal(&interest->my_uid, &cur_uid))
       {
-        /* The registered uid is suppressed. */
+        // The registered uid is suppressed.
         request->contains_my_uid = false;
         break;
       }
@@ -205,19 +203,16 @@ bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessa
 
 bool parse_llrp_probe_reply(const uint8_t *buf, size_t buflen, DiscoveredLlrpTarget *reply)
 {
-  const uint8_t *cur_ptr = buf;
-  size_t pdu_len;
-  uint8_t vector;
-
   if (buflen < PROBE_REPLY_PDU_SIZE)
     return false;
 
-  pdu_len = lwpa_pdu_length(buf);
+  const uint8_t *cur_ptr = buf;
+  size_t pdu_len = lwpa_pdu_length(cur_ptr);
   if (pdu_len != PROBE_REPLY_PDU_SIZE)
     return false;
   cur_ptr += 3;
 
-  vector = *cur_ptr++;
+  uint8_t vector = *cur_ptr++;
   if (vector != VECTOR_PROBE_REPLY_DATA)
     return false;
 
@@ -233,13 +228,11 @@ bool parse_llrp_probe_reply(const uint8_t *buf, size_t buflen, DiscoveredLlrpTar
 
 bool parse_llrp_rdm_command(const uint8_t *buf, size_t buflen, RdmBuffer *cmd)
 {
-  const uint8_t *cur_ptr = buf;
-  size_t pdu_len;
-
   if (buflen < LLRP_RDM_CMD_PDU_MIN_SIZE)
     return false;
 
-  pdu_len = lwpa_pdu_length(buf);
+  const uint8_t *cur_ptr = buf;
+  size_t pdu_len = lwpa_pdu_length(cur_ptr);
   if (pdu_len > buflen || pdu_len > LLRP_RDM_CMD_PDU_MAX_SIZE || pdu_len < LLRP_RDM_CMD_PDU_MIN_SIZE)
     return false;
   cur_ptr += 3;
@@ -271,37 +264,35 @@ size_t lwpa_pack_llrp_header(uint8_t *buf, size_t pdu_len, uint32_t vector, cons
 #define PROBE_REQUEST_RLP_DATA_MIN_SIZE (LLRP_HEADER_SIZE + PROBE_REQUEST_PDU_MIN_SIZE)
 #define PROBE_REQUEST_RLP_DATA_MAX_SIZE (PROBE_REQUEST_RLP_DATA_MIN_SIZE + (6 * LLRP_KNOWN_UID_SIZE))
 
-lwpa_error_t send_llrp_probe_request(LlrpManager *mgr, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
+lwpa_error_t send_llrp_probe_request(lwpa_socket_t sock, uint8_t *buf, bool ipv6, const LlrpHeader *header,
                                      const LocalProbeRequest *probe_request)
 {
-  uint8_t *cur_ptr = mgr->send_buf;
+  uint8_t *cur_ptr = buf;
   uint8_t *buf_end = cur_ptr + LLRP_MANAGER_MAX_MESSAGE_SIZE;
-  LwpaRootLayerPdu rlp;
-  const KnownUid *cur_uid;
-  int send_res;
 
-  /* Pack the UDP Preamble */
+  // Pack the UDP Preamble
   cur_ptr += lwpa_pack_udp_preamble(cur_ptr, buf_end - cur_ptr);
 
+  LwpaRootLayerPdu rlp;
   rlp.vector = ACN_VECTOR_ROOT_LLRP;
   rlp.sender_cid = header->sender_cid;
   rlp.datalen = PROBE_REQUEST_RLP_DATA_MIN_SIZE;
 
-  /* Calculate the data length */
-  cur_uid = probe_request->uid_list;
+  // Calculate the data length
+  const KnownUid *cur_uid = probe_request->uid_list;
   while (cur_uid && rlp.datalen < PROBE_REQUEST_RLP_DATA_MAX_SIZE)
   {
     rlp.datalen += 6;
     cur_uid = cur_uid->next;
   }
 
-  /* Pack the Root Layer PDU header */
+  // Pack the Root Layer PDU header0
   cur_ptr += lwpa_pack_root_layer_header(cur_ptr, buf_end - cur_ptr, &rlp);
 
-  /* Pack the LLRP header */
+  // Pack the LLRP header
   cur_ptr += lwpa_pack_llrp_header(cur_ptr, rlp.datalen, VECTOR_LLRP_PROBE_REQUEST, header);
 
-  /* Pack the Probe Request PDU header fields */
+  // Pack the Probe Request PDU header fields
   *cur_ptr = 0xf0;
   lwpa_pdu_pack_ext_len(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
   cur_ptr += 3;
@@ -317,7 +308,7 @@ lwpa_error_t send_llrp_probe_request(LlrpManager *mgr, const LwpaSockaddr *dest_
   lwpa_pack_16b(cur_ptr, probe_request->filter);
   cur_ptr += 2;
 
-  /* Pack the Known UIDs */
+  // Pack the Known UIDs
   cur_uid = probe_request->uid_list;
   while (cur_uid)
   {
@@ -330,7 +321,7 @@ lwpa_error_t send_llrp_probe_request(LlrpManager *mgr, const LwpaSockaddr *dest_
     cur_uid = cur_uid->next;
   }
 
-  send_res = lwpa_sendto(mgr->sys_sock, mgr->send_buf, cur_ptr - mgr->send_buf, 0, dest_addr);
+  int send_res = lwpa_sendto(sock, buf, cur_ptr - buf, 0, ipv6 ? &kLlrpIpv6RequestAddr : &kLlrpIpv4RequestAddr);
   if (send_res >= 0)
     return kLwpaErrOk;
   else
@@ -339,42 +330,40 @@ lwpa_error_t send_llrp_probe_request(LlrpManager *mgr, const LwpaSockaddr *dest_
 
 #define PROBE_REPLY_RLP_DATA_SIZE (LLRP_HEADER_SIZE + PROBE_REPLY_PDU_SIZE)
 
-lwpa_error_t send_llrp_probe_reply(LlrpTarget *tgt, size_t interface_index, const LwpaSockaddr *dest_addr,
-                                   const LlrpHeader *header)
+lwpa_error_t send_llrp_probe_reply(uint8_t *buf, lwpa_socket_t sock, bool ipv6, const LlrpHeader *header,
+                                   const DiscoveredLlrpTarget *target_info)
 {
-  LlrpTargetNetintInfo *netint = &tgt->netints[interface_index];
-  uint8_t *cur_ptr = netint->send_buf;
+  uint8_t *cur_ptr = buf;
   uint8_t *buf_end = cur_ptr + LLRP_TARGET_MAX_MESSAGE_SIZE;
-  LwpaRootLayerPdu rlp;
-  int send_res;
 
-  /* Pack the UDP Preamble */
+  // Pack the UDP Preamble
   cur_ptr += lwpa_pack_udp_preamble(cur_ptr, buf_end - cur_ptr);
 
+  LwpaRootLayerPdu rlp;
   rlp.vector = ACN_VECTOR_ROOT_LLRP;
   rlp.sender_cid = header->sender_cid;
   rlp.datalen = PROBE_REPLY_RLP_DATA_SIZE;
 
-  /* Pack the Root Layer PDU header */
+  // Pack the Root Layer PDU header
   cur_ptr += lwpa_pack_root_layer_header(cur_ptr, buf_end - cur_ptr, &rlp);
 
-  /* Pack the LLRP header */
+  // Pack the LLRP header
   cur_ptr += lwpa_pack_llrp_header(cur_ptr, rlp.datalen, VECTOR_LLRP_PROBE_REPLY, header);
 
-  /* Pack the Probe Reply PDU */
+  // Pack the Probe Reply PDU
   *cur_ptr = 0xf0;
   lwpa_pdu_pack_ext_len(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
   cur_ptr += 3;
   *cur_ptr++ = VECTOR_PROBE_REPLY_DATA;
-  lwpa_pack_16b(cur_ptr, tgt->uid.manu);
+  lwpa_pack_16b(cur_ptr, target_info->target_uid.manu);
   cur_ptr += 2;
-  lwpa_pack_32b(cur_ptr, tgt->uid.id);
+  lwpa_pack_32b(cur_ptr, target_info->target_uid.id);
   cur_ptr += 4;
-  memcpy(cur_ptr, tgt->hardware_address, 6);
+  memcpy(cur_ptr, target_info->hardware_address, 6);
   cur_ptr += 6;
-  *cur_ptr++ = (uint8_t)tgt->component_type;
+  *cur_ptr++ = (uint8_t)target_info->component_type;
 
-  send_res = lwpa_sendto(netint->sys_sock, netint->send_buf, cur_ptr - netint->send_buf, 0, dest_addr);
+  int send_res = lwpa_sendto(sock, buf, cur_ptr - buf, 0, ipv6 ? &kLlrpIpv6RespAddr : &kLlrpIpv4RespAddr);
   if (send_res >= 0)
     return kLwpaErrOk;
   else
@@ -383,37 +372,48 @@ lwpa_error_t send_llrp_probe_reply(LlrpTarget *tgt, size_t interface_index, cons
 
 #define RDM_CMD_RLP_DATA_MIN_SIZE (LLRP_HEADER_SIZE + 3 /* RDM cmd PDU Flags + Length */)
 
-lwpa_error_t send_llrp_rdm(LlrpSocket *llrp_sock, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
+lwpa_error_t send_llrp_rdm(lwpa_socket_t sock, uint8_t *buf, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
                            const RdmBuffer *rdm_msg)
 {
-  uint8_t *cur_ptr = llrp_sock->send_buf;
+  uint8_t *cur_ptr = buf;
   uint8_t *buf_end = cur_ptr + LLRP_MAX_MESSAGE_SIZE;
-  LwpaRootLayerPdu rlp;
-  int send_res;
 
-  /* Pack the UDP Preamble */
+  // Pack the UDP Preamble
   cur_ptr += lwpa_pack_udp_preamble(cur_ptr, buf_end - cur_ptr);
 
+  LwpaRootLayerPdu rlp;
   rlp.vector = ACN_VECTOR_ROOT_LLRP;
   rlp.sender_cid = header->sender_cid;
   rlp.datalen = RDM_CMD_RLP_DATA_MIN_SIZE + rdm_msg->datalen;
 
-  /* Pack the Root Layer PDU header */
+  // Pack the Root Layer PDU header
   cur_ptr += lwpa_pack_root_layer_header(cur_ptr, buf_end - cur_ptr, &rlp);
 
-  /* Pack the LLRP header */
+  // Pack the LLRP header
   cur_ptr += lwpa_pack_llrp_header(cur_ptr, rlp.datalen, VECTOR_LLRP_RDM_CMD, header);
 
-  /* Pack the RDM Command PDU */
+  // Pack the RDM Command PDU
   *cur_ptr = 0xf0;
   lwpa_pdu_pack_ext_len(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
   cur_ptr += 3;
   memcpy(cur_ptr, rdm_msg->data, rdm_msg->datalen);
   cur_ptr += rdm_msg->datalen;
 
-  send_res = lwpa_sendto(llrp_sock->sys_sock, llrp_sock->send_buf, cur_ptr - llrp_sock->send_buf, 0, dest_addr);
+  int send_res = lwpa_sendto(sock, buf, cur_ptr - buf, 0, dest_addr);
   if (send_res >= 0)
     return kLwpaErrOk;
   else
     return (lwpa_error_t)send_res;
+}
+
+lwpa_error_t send_llrp_rdm_command(lwpa_socket_t sock, uint8_t *buf, bool ipv6, const LlrpHeader *header,
+                                   const RdmBuffer *cmd)
+{
+  return send_llrp_rdm(sock, buf, ipv6 ? &kLlrpIpv6RequestAddr : &kLlrpIpv4RequestAddr, header, cmd);
+}
+
+lwpa_error_t send_llrp_rdm_response(lwpa_socket_t sock, uint8_t *buf, bool ipv6, const LlrpHeader *header,
+                                    const RdmBuffer *resp)
+{
+  return send_llrp_rdm(sock, buf, ipv6 ? &kLlrpIpv6RespAddr : &kLlrpIpv4RespAddr, header, resp);
 }

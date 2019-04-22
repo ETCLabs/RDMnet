@@ -48,22 +48,6 @@ typedef int rdmnet_conn_t;
 
 /*! @} */
 
-/*! \addtogroup llrp
- *  @{
- */
-
-/*! A handle for an instance of LLRP Manager functionality. */
-typedef int llrp_manager_t;
-/*! An invalid LLRP manager handle value. */
-#define LLRP_MANAGER_INVALID -1
-
-/*! A handle for an instance of LLRP Target functionality. */
-typedef int llrp_target_t;
-/*! An invalid LLRP target handle value. */
-#define LLRP_TARGET_INVALID -1
-
-/*! @} */
-
 /*! \defgroup rdmnet_core_lib RDMnet Core Library
  *  \brief Implementation of the core functions of RDMnet.
  *

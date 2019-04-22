@@ -54,6 +54,8 @@ set(RDMNET_CORE_PUBLIC_HEADERS
   ${RDMNET_INCLUDE}/rdmnet/core/connection.h
   ${RDMNET_INCLUDE}/rdmnet/core/ept_prot.h
   ${RDMNET_INCLUDE}/rdmnet/core/llrp.h
+  # ${RDMNET_INCLUDE}/rdmnet/core/llrp_manager.h
+  ${RDMNET_INCLUDE}/rdmnet/core/llrp_target.h
   ${RDMNET_INCLUDE}/rdmnet/core/message.h
   ${RDMNET_INCLUDE}/rdmnet/core/rpt_prot.h
   ${RDMNET_INCLUDE}/rdmnet/core/util.h
@@ -63,7 +65,9 @@ set(RDMNET_CORE_PRIVATE_HEADERS
   ${RDMNET_SRC}/rdmnet/private/core.h
   ${RDMNET_SRC}/rdmnet/private/connection.h
   ${RDMNET_SRC}/rdmnet/private/llrp.h
+  # ${RDMNET_SRC}/rdmnet/private/llrp_manager.h
   ${RDMNET_SRC}/rdmnet/private/llrp_prot.h
+  ${RDMNET_SRC}/rdmnet/private/llrp_target.h
   ${RDMNET_SRC}/rdmnet/private/message.h
   ${RDMNET_SRC}/rdmnet/private/msg_buf.h
   ${RDMNET_SRC}/rdmnet/private/opts.h
@@ -75,8 +79,10 @@ set(RDMNET_CORE_SOURCES
   ${RDMNET_SRC}/rdmnet/core/broker_prot.c
   ${RDMNET_SRC}/rdmnet/core/client_entry.c
   ${RDMNET_SRC}/rdmnet/core/connection.c
-  ${RDMNET_SRC}/rdmnet/core/llrp_prot.c
   ${RDMNET_SRC}/rdmnet/core/llrp.c
+  # ${RDMNET_SRC}/rdmnet/core/llrp_manager.c
+  ${RDMNET_SRC}/rdmnet/core/llrp_prot.c
+  ${RDMNET_SRC}/rdmnet/core/llrp_target.c
   ${RDMNET_SRC}/rdmnet/core/message.c
   ${RDMNET_SRC}/rdmnet/core/msg_buf.c
   ${RDMNET_SRC}/rdmnet/core/rpt_prot.c
