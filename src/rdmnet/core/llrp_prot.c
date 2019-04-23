@@ -321,7 +321,7 @@ lwpa_error_t send_llrp_probe_request(lwpa_socket_t sock, uint8_t *buf, bool ipv6
     cur_uid = cur_uid->next;
   }
 
-  int send_res = lwpa_sendto(sock, buf, cur_ptr - buf, 0, ipv6 ? &kLlrpIpv6RequestAddr : &kLlrpIpv4RequestAddr);
+  int send_res = lwpa_sendto(sock, buf, cur_ptr - buf, 0, ipv6 ? kLlrpIpv6RequestAddr : kLlrpIpv4RequestAddr);
   if (send_res >= 0)
     return kLwpaErrOk;
   else
@@ -330,7 +330,7 @@ lwpa_error_t send_llrp_probe_request(lwpa_socket_t sock, uint8_t *buf, bool ipv6
 
 #define PROBE_REPLY_RLP_DATA_SIZE (LLRP_HEADER_SIZE + PROBE_REPLY_PDU_SIZE)
 
-lwpa_error_t send_llrp_probe_reply(uint8_t *buf, lwpa_socket_t sock, bool ipv6, const LlrpHeader *header,
+lwpa_error_t send_llrp_probe_reply(lwpa_socket_t sock, uint8_t *buf, bool ipv6, const LlrpHeader *header,
                                    const DiscoveredLlrpTarget *target_info)
 {
   uint8_t *cur_ptr = buf;
@@ -363,7 +363,7 @@ lwpa_error_t send_llrp_probe_reply(uint8_t *buf, lwpa_socket_t sock, bool ipv6, 
   cur_ptr += 6;
   *cur_ptr++ = (uint8_t)target_info->component_type;
 
-  int send_res = lwpa_sendto(sock, buf, cur_ptr - buf, 0, ipv6 ? &kLlrpIpv6RespAddr : &kLlrpIpv4RespAddr);
+  int send_res = lwpa_sendto(sock, buf, cur_ptr - buf, 0, ipv6 ? kLlrpIpv6RespAddr : kLlrpIpv4RespAddr);
   if (send_res >= 0)
     return kLwpaErrOk;
   else
@@ -409,11 +409,11 @@ lwpa_error_t send_llrp_rdm(lwpa_socket_t sock, uint8_t *buf, const LwpaSockaddr 
 lwpa_error_t send_llrp_rdm_command(lwpa_socket_t sock, uint8_t *buf, bool ipv6, const LlrpHeader *header,
                                    const RdmBuffer *cmd)
 {
-  return send_llrp_rdm(sock, buf, ipv6 ? &kLlrpIpv6RequestAddr : &kLlrpIpv4RequestAddr, header, cmd);
+  return send_llrp_rdm(sock, buf, ipv6 ? kLlrpIpv6RequestAddr : kLlrpIpv4RequestAddr, header, cmd);
 }
 
 lwpa_error_t send_llrp_rdm_response(lwpa_socket_t sock, uint8_t *buf, bool ipv6, const LlrpHeader *header,
                                     const RdmBuffer *resp)
 {
-  return send_llrp_rdm(sock, buf, ipv6 ? &kLlrpIpv6RespAddr : &kLlrpIpv4RespAddr, header, resp);
+  return send_llrp_rdm(sock, buf, ipv6 ? kLlrpIpv6RespAddr : kLlrpIpv4RespAddr, header, resp);
 }

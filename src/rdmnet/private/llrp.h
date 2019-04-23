@@ -38,10 +38,10 @@
 extern "C" {
 #endif
 
-extern const LwpaIpAddr kLlrpIpv4RespAddr;
-extern const LwpaIpAddr kLlrpIpv6RespAddr;
-extern const LwpaIpAddr kLlrpIpv4RequestAddr;
-extern const LwpaIpAddr kLlrpIpv6RequestAddr;
+extern const LwpaSockaddr *kLlrpIpv4RespAddr;
+extern const LwpaSockaddr *kLlrpIpv6RespAddr;
+extern const LwpaSockaddr *kLlrpIpv4RequestAddr;
+extern const LwpaSockaddr *kLlrpIpv6RequestAddr;
 
 lwpa_error_t rdmnet_llrp_init();
 void rdmnet_llrp_deinit();

@@ -139,13 +139,22 @@ lwpa_error_t rdmnet_llrp_target_init()
 lwpa_error_t init_sys_netints()
 {
   state.num_sys_netints = lwpa_netint_get_num_interfaces();
+  if (state.num_sys_netints == 0)
+    return kLwpaErrNoNetints;
+
 #if RDMNET_DYNAMIC_MEM
   state.sys_netints = calloc(state.num_sys_netints, sizeof(LwpaNetintInfo));
   if (!state.sys_netints)
-    return false;
+  {
+    state.num_sys_netints = 0;
+    return kLwpaErrNoMem;
+  }
 #else
   if (state.num_sys_netints > RDMNET_LLRP_MAX_TARGET_NETINTS)
-    return false;
+  {
+    state.num_sys_netints = 0;
+    return kLwpaErrNoMem;
+  }
 #endif
   state.num_sys_netints = lwpa_netint_get_interfaces(state.sys_netints, state.num_sys_netints);
 
@@ -163,6 +172,7 @@ lwpa_error_t init_sys_netints()
       }
     }
   }
+  return kLwpaErrOk;
 }
 
 static void target_dealloc(const LwpaRbTree *self, LwpaRbNode *node)
@@ -273,7 +283,7 @@ void process_target_state(LlrpTarget *target)
   }
 }
 
-void llrp_target_tick()
+void rdmnet_llrp_target_tick()
 {
   if (!rdmnet_core_initialized())
     return;

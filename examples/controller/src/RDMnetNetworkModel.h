@@ -131,8 +131,6 @@ protected:
   void ProcessRDMGetSetData(rdmnet_client_scope_t scope_handle, uint16_t param_id, const uint8_t *data, uint8_t datalen,
                             const RdmResponse &firstResp);
 
-  BrokerConnection *getBrokerConnection(const std::string &scope);
-
   bool SendRDMCommand(const RdmCommand &cmd, const BrokerItem *brokerItem);
   bool SendRDMCommand(const RdmCommand &cmd, rdmnet_client_scope_t scope_handle);
   void SendRDMGetResponses(rdmnet_client_scope_t scope_handle, const RdmUid &dest_uid, uint16_t param_id,

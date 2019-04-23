@@ -41,28 +41,33 @@ extern "C" {
 DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_new_connection, const RdmnetConnectionConfig *, rdmnet_conn_t *);
 DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_connect, rdmnet_conn_t, const LwpaSockaddr *, const ClientConnectMsg *);
 // DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_set_blocking, rdmnet_conn_t, bool);
-DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_attach_existing_socket, rdmnet_conn_t, lwpa_socket_t,
-                        const LwpaSockaddr *);
 DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_destroy_connection, rdmnet_conn_t, const rdmnet_disconnect_reason_t *);
+
 DECLARE_FAKE_VALUE_FUNC(int, rdmnet_send, rdmnet_conn_t, const uint8_t *, size_t);
 DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_start_message, rdmnet_conn_t);
 DECLARE_FAKE_VALUE_FUNC(int, rdmnet_send_partial_message, rdmnet_conn_t, const uint8_t *, size_t);
 DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_end_message, rdmnet_conn_t);
+
 DECLARE_FAKE_VOID_FUNC(rdmnet_conn_tick);
-DECLARE_FAKE_VOID_FUNC(rdmnet_conn_socket_activity, rdmnet_conn_t, const LwpaPollfd *);
+
+DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_attach_existing_socket, rdmnet_conn_t, lwpa_socket_t,
+                        const LwpaSockaddr *);
+DECLARE_FAKE_VOID_FUNC(rdmnet_socket_data_received, rdmnet_conn_t, const uint8_t *, size_t);
+DECLARE_FAKE_VOID_FUNC(rdmnet_socket_error, rdmnet_conn_t, lwpa_error_t);
 
 #define RDMNET_CORE_CONNECTION_DO_FOR_ALL_FAKES(operation) \
   operation(rdmnet_new_connection);                        \
   operation(rdmnet_connect);                               \
   /* operation(rdmnet_set_blocking); */                    \
-  operation(rdmnet_attach_existing_socket);                \
   operation(rdmnet_destroy_connection);                    \
   operation(rdmnet_send);                                  \
   operation(rdmnet_start_message);                         \
   operation(rdmnet_send_partial_message);                  \
   operation(rdmnet_end_message);                           \
   operation(rdmnet_conn_tick);                             \
-  operation(rdmnet_conn_socket_activity)
+  operation(rdmnet_attach_existing_socket);                \
+  operation(rdmnet_socket_data_received);                  \
+  operation(rdmnet_socket_error)
 
 #ifdef __cplusplus
 }

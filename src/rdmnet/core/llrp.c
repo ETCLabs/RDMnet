@@ -33,10 +33,15 @@
 
 /**************************** Global variables *******************************/
 
-const LwpaIpAddr kLlrpIpv4RespAddr;
-const LwpaIpAddr kLlrpIpv6RespAddr;
-const LwpaIpAddr kLlrpIpv4RequestAddr;
-const LwpaIpAddr kLlrpIpv6RequestAddr;
+LwpaSockaddr kLlrpIpv4RespAddrInternal;
+LwpaSockaddr kLlrpIpv6RespAddrInternal;
+LwpaSockaddr kLlrpIpv4RequestAddrInternal;
+LwpaSockaddr kLlrpIpv6RequestAddrInternal;
+
+const LwpaSockaddr *kLlrpIpv4RespAddr = &kLlrpIpv4RespAddrInternal;
+const LwpaSockaddr *kLlrpIpv6RespAddr = &kLlrpIpv6RespAddrInternal;
+const LwpaSockaddr *kLlrpIpv4RequestAddr = &kLlrpIpv4RequestAddrInternal;
+const LwpaSockaddr *kLlrpIpv6RequestAddr = &kLlrpIpv6RequestAddrInternal;
 
 /*********************** Private function prototypes *************************/
 
@@ -48,12 +53,12 @@ lwpa_error_t subscribe_multicast(lwpa_socket_t socket, const LwpaIpAddr *netint,
 lwpa_error_t rdmnet_llrp_init()
 {
   lwpa_error_t res = kLwpaErrOk;
-  bool manager_initted = false;
+  //bool manager_initted = false;
   bool target_initted = false;
 
-#if RDMNET_DYNAMIC_MEM
-  manager_initted = ((res = rdmnet_llrp_manager_init()) == kLwpaErrOk);
-#endif
+//#if RDMNET_DYNAMIC_MEM
+//  manager_initted = ((res = rdmnet_llrp_manager_init()) == kLwpaErrOk);
+//#endif
 
   if (res == kLwpaErrOk)
   {
@@ -62,16 +67,20 @@ lwpa_error_t rdmnet_llrp_init()
 
   if (res == kLwpaErrOk)
   {
-    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_RESPONSE, &kLlrpIpv4RespAddr);
-    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV6_ADDRESS_RESPONSE, &kLlrpIpv6RespAddr);
-    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_REQUEST, &kLlrpIpv4RequestAddr);
-    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV6_ADDRESS_REQUEST, &kLlrpIpv6RequestAddr);
+    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_RESPONSE, &kLlrpIpv4RespAddrInternal.ip);
+    kLlrpIpv4RespAddrInternal.port = LLRP_PORT;
+    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV6_ADDRESS_RESPONSE, &kLlrpIpv6RespAddrInternal.ip);
+    kLlrpIpv6RespAddrInternal.port = LLRP_PORT;
+    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_REQUEST, &kLlrpIpv4RequestAddrInternal.ip);
+    kLlrpIpv4RequestAddrInternal.port = LLRP_PORT;
+    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV6_ADDRESS_REQUEST, &kLlrpIpv6RequestAddrInternal.ip);
+    kLlrpIpv6RequestAddrInternal.port = LLRP_PORT;
     llrp_prot_init();
   }
   else
   {
-    if (manager_initted)
-      rdmnet_llrp_manager_deinit();
+//    if (manager_initted)
+//      rdmnet_llrp_manager_deinit();
     if (target_initted)
       rdmnet_llrp_target_deinit();
   }
@@ -83,7 +92,7 @@ void rdmnet_llrp_deinit()
 {
   rdmnet_llrp_target_deinit();
 #if RDMNET_DYNAMIC_MEM
-  rdmnet_llrp_manager_deinit();
+  //rdmnet_llrp_manager_deinit();
 #endif
 }
 
@@ -146,7 +155,7 @@ lwpa_error_t create_sys_socket(const LwpaIpAddr *netint, bool manager, lwpa_sock
       LwpaSockaddr bind_addr;
 #if RDMNET_LLRP_BIND_TO_MCAST_ADDRESS
       // Bind socket to multicast address for IPv4
-      bind_addr.ip = (manager ? kLlrpIpv4RespAddr : kLlrpIpv4RequestAddr);
+      bind_addr.ip = (manager ? kLlrpIpv4RespAddrInternal.ip : kLlrpIpv4RequestAddrInternal.ip);
 #else
       (void)manager;
       // Bind socket to INADDR_ANY
@@ -181,7 +190,7 @@ lwpa_error_t subscribe_multicast(lwpa_socket_t socket, const LwpaIpAddr *netint,
   {
     LwpaMreq multireq;
 
-    multireq.group = (manager ? kLlrpIpv4RespAddr : kLlrpIpv4RequestAddr);
+    multireq.group = (manager ? kLlrpIpv4RespAddrInternal.ip : kLlrpIpv4RequestAddrInternal.ip);
     multireq.netint = *netint;
     res = lwpa_setsockopt(socket, LWPA_IPPROTO_IP, LWPA_MCAST_JOIN_GROUP, (const void *)&multireq, sizeof(multireq));
   }
@@ -191,4 +200,9 @@ lwpa_error_t subscribe_multicast(lwpa_socket_t socket, const LwpaIpAddr *netint,
   }
 
   return res;
+}
+
+void rdmnet_llrp_tick()
+{
+  rdmnet_llrp_target_tick();
 }

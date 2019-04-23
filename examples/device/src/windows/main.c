@@ -108,7 +108,7 @@ int wmain(int argc, wchar_t *argv[])
   RdmnetScopeConfig scope_config;
   const LwpaLogParams *lparams;
 
-  rdmnet_client_set_default_scope(&scope_config);
+  RDMNET_CLIENT_SET_DEFAULT_SCOPE(&scope_config);
 
   if (argc > 1)
   {

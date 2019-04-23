@@ -79,7 +79,7 @@ protected:
     rpt_callbacks_.msg_received = rpt_client_msg_received;
 
     default_rpt_config_.type = kRPTClientTypeController;
-    rdmnet_client_set_dynamic_uid(&default_rpt_config_, 0x6574);
+    RDMNET_CLIENT_SET_DYNAMIC_UID(&default_rpt_config_, 0x6574);
     default_rpt_config_.cid = {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}};
     default_rpt_config_.search_domain = E133_DEFAULT_DOMAIN;
     default_rpt_config_.callbacks = rpt_callbacks_;

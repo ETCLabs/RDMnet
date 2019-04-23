@@ -104,7 +104,7 @@ lwpa_error_t device_init(const RdmnetScopeConfig *scope_config, const LwpaLogPar
   }
 
   RdmnetDeviceConfig config;
-  rdmnet_client_set_dynamic_uid(&config, 0x6574);
+  RDMNET_CLIENT_SET_DYNAMIC_UID(&config, 0x6574);
   // A typical hardware-locked device would use lwpa_generate_v3_uuid() to generate a CID that is
   // the same every time. But this example device is not locked to hardware, so a V4 UUID makes
   // more sense.

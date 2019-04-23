@@ -389,7 +389,6 @@ void register_message_interest(LlrpSocket *sock, LlrpMessageInterest *interest)
 
 bool process_parsed_msg(LlrpManager *manager, const LlrpMessage *msg, LlrpData *data)
 {
-  switch(
   if (msg->vector == VECTOR_LLRP_RDM_CMD)
   {
     LlrpRdmMessage rdm_msg;

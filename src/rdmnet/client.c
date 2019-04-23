@@ -940,7 +940,7 @@ lwpa_error_t validate_rpt_client_config(const RdmnetRptClientConfig *config)
 /* Create and initialize a new RdmnetClient structure from a given config. */
 RdmnetClient *rpt_client_new(const RdmnetRptClientConfig *config)
 {
-  rdmnet_client_t new_handle = get_new_client_handle();
+  rdmnet_client_t new_handle = get_next_int_handle(&state.handle_mgr);
   if (new_handle == RDMNET_CLIENT_INVALID)
     return NULL;
 

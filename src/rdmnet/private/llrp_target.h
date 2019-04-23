@@ -117,6 +117,8 @@ extern "C" {
 lwpa_error_t rdmnet_llrp_target_init();
 void rdmnet_llrp_target_deinit();
 
+void rdmnet_llrp_target_tick();
+
 #ifdef __cplusplus
 }
 #endif

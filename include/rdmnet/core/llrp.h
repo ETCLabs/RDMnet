@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/*! \file rdmnet/core/llrp_target.h
+/*! \file rdmnet/core/llrp.h
  *  \brief Functions and definitions common to LLRP Managers and Targets.
  *  \author Christian Reese and Sam Kearney
  */

@@ -108,7 +108,7 @@ bool RDMnetLibWrapper::Startup(const LwpaUuid &cid, RDMnetLibNotify *notify)
 
     // Create our controller handle in the RDMnet library
     RdmnetControllerConfig config;
-    rdmnet_client_set_dynamic_uid(&config, 0x6574);
+    RDMNET_CLIENT_SET_DYNAMIC_UID(&config, 0x6574);
     config.cid = my_cid_;
     config.search_domain = E133_DEFAULT_DOMAIN;
     // clang-format off
@@ -157,7 +157,7 @@ rdmnet_client_scope_t RDMnetLibWrapper::AddScope(const std::string &scope, Stati
     return RDMNET_CLIENT_SCOPE_INVALID;
 
   RdmnetScopeConfig config;
-  rdmnet_client_set_scope(&config, scope.c_str());
+  RDMNET_CLIENT_SET_SCOPE(&config, scope.c_str());
   if (static_broker.valid)
   {
     config.has_static_broker_addr = true;

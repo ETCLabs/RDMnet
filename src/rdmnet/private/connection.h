@@ -145,8 +145,6 @@ extern "C" {
 lwpa_error_t rdmnet_conn_init();
 void rdmnet_conn_deinit();
 
-void rdmnet_conn_socket_activity(rdmnet_conn_t conn_handle, const LwpaPollEvent *event);
-
 #ifdef __cplusplus
 }
 #endif

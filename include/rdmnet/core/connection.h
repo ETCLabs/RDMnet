@@ -167,7 +167,6 @@ lwpa_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking);
 lwpa_error_t rdmnet_destroy_connection(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t *disconnect_reason);
 
 int rdmnet_send(rdmnet_conn_t handle, const uint8_t *data, size_t size);
-
 lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle);
 int rdmnet_send_partial_message(rdmnet_conn_t handle, const uint8_t *data, size_t size);
 lwpa_error_t rdmnet_end_message(rdmnet_conn_t handle);

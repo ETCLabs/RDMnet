@@ -34,6 +34,7 @@
 #include "lwpa/bool.h"
 #include "lwpa/pack.h"
 #include "rdmnet/core/util.h"
+#include "rdmnet/private/core.h"
 #include "rdmnet/private/opts.h"
 
 // Compile time check of memory configuration
@@ -51,6 +52,8 @@ typedef struct DiscoveryState
   RdmnetBrokerRegisterConfig registered_broker;
 
   RdmnetBrokerRegisterRef broker_ref;
+
+  LwpaPollContext poll_context;
 } DiscoveryState;
 
 static DiscoveryState disc_state;
@@ -80,7 +83,6 @@ void notify_broker_lost(rdmnet_scope_monitor_t handle, const char *service_name)
 void notify_scope_monitor_error(rdmnet_scope_monitor_t handle, int platform_error);
 
 // Other helpers
-void get_sockets_to_poll(DNSServiceRef *current_refs, LwpaPollfd *fds, size_t *nfds);
 void get_registration_string(const char *srv_type, const char *scope, char *reg_str);
 bool broker_info_is_valid(const RdmnetBrokerDiscInfo *info);
 bool ipv6_valid(LwpaIpAddr *ip);
@@ -178,6 +180,9 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceF
       if (addrs_done)
       {
         db->state = kResolveStateDone;
+        lwpa_poll_remove_socket(&disc_state.poll_context, db->sock);
+        lwpa_close(db->sock);
+        db->sock = LWPA_SOCKET_INVALID;
         notify_info = db->info;
       }
       lwpa_mutex_give(&disc_state.lock);
@@ -287,8 +292,15 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
         }
 
         db->state = kResolveStateGetAddrInfo;
-        db->sock = DNSServiceRefSockFD(addr_ref);
         db->dnssd_ref = addr_ref;
+        lwpa_socket_t new_sock = DNSServiceRefSockFD(addr_ref);
+        if (new_sock != db->sock)
+        {
+          lwpa_poll_remove_socket(&disc_state.poll_context, db->sock);
+          lwpa_close(db->sock);
+          db->sock = new_sock;
+          lwpa_poll_add_socket(&disc_state.poll_context, db->sock, LWPA_POLL_IN, db->dnssd_ref);
+        }
       }
       lwpa_mutex_give(&disc_state.lock);
     }
@@ -352,6 +364,7 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
           db->state = kResolveStateServiceResolve;
           db->sock = DNSServiceRefSockFD(resolve_ref);
           db->dnssd_ref = resolve_ref;
+          lwpa_poll_add_socket(&disc_state.poll_context, db->sock, LWPA_POLL_IN, db->dnssd_ref);
         }
       }
 
@@ -374,15 +387,25 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
 
 lwpa_error_t rdmnetdisc_init()
 {
-  disc_state.broker_ref.state = kBrokerStateNotRegistered;
-  lwpa_mutex_create(&disc_state.lock);
+  lwpa_error_t res = kLwpaErrOk;
 
-  return kLwpaErrOk;
+  if (!lwpa_mutex_create(&disc_state.lock))
+    res = kLwpaErrSys;
+
+  if (res == kLwpaErrOk)
+    res = lwpa_poll_context_init(&disc_state.poll_context);
+
+  if (res == kLwpaErrOk)
+    disc_state.broker_ref.state = kBrokerStateNotRegistered;
+
+  return res;
 }
 
 void rdmnetdisc_deinit()
 {
   rdmnetdisc_stop_monitoring_all();
+  lwpa_poll_context_deinit(&disc_state.poll_context);
+  lwpa_mutex_destroy(&disc_state.lock);
 }
 
 void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo *broker_info)
@@ -402,6 +425,8 @@ lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig *config,
 {
   if (!config || !handle || !platform_specific_error)
     return kLwpaErrInvalid;
+  if (!rdmnet_core_initialized())
+    return kLwpaErrNotInit;
 
   RdmnetScopeMonitorRef *new_monitor = scope_monitor_new(config);
   if (!new_monitor)
@@ -421,6 +446,7 @@ lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig *config,
     if (result == kDNSServiceErr_NoError)
     {
       new_monitor->socket = DNSServiceRefSockFD(new_monitor->dnssd_ref);
+      lwpa_poll_add_socket(&disc_state.poll_context, new_monitor->socket, LWPA_POLL_IN, new_monitor->dnssd_ref);
       scope_monitor_insert(new_monitor);
     }
     else
@@ -479,7 +505,7 @@ lwpa_error_t rdmnetdisc_change_monitored_scope(rdmnet_scope_monitor_t handle,
 
 void rdmnetdisc_stop_monitoring(rdmnet_scope_monitor_t handle)
 {
-  if (!handle)
+  if (!handle || !rdmnet_core_initialized())
     return;
 
   if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
@@ -492,6 +518,9 @@ void rdmnetdisc_stop_monitoring(rdmnet_scope_monitor_t handle)
 
 void rdmnetdisc_stop_monitoring_all()
 {
+  if (!rdmnet_core_initialized())
+    return;
+
   if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
   {
     if (disc_state.scope_ref_list)
@@ -525,6 +554,8 @@ lwpa_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig *config
   {
     return kLwpaErrInvalid;
   }
+  if (!rdmnet_core_initialized())
+    return kLwpaErrNotInit;
 
   disc_state.broker_ref.config = *config;
   disc_state.broker_ref.state = kBrokerStateInfoSet;
@@ -535,6 +566,9 @@ lwpa_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig *config
 
 void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle)
 {
+  if (!handle || !rdmnet_core_initialized())
+    return;
+
   if (disc_state.broker_ref.state != kBrokerStateNotRegistered)
   {
     DNSServiceRefDeallocate(disc_state.broker_ref.dnssd_ref);
@@ -617,6 +651,9 @@ DNSServiceErrorType send_registration(const RdmnetBrokerDiscInfo *info, DNSServi
 
 void rdmnetdisc_tick()
 {
+  if (!rdmnet_core_initialized())
+    return;
+
   // TODO: For now, we are only allowing one registered broker. This should be able to be expanded
   // to allow up to n brokers, however.
   RdmnetBrokerRegisterRef *broker_ref = &disc_state.broker_ref;
@@ -633,6 +670,7 @@ void rdmnetdisc_tick()
       if (reg_result == kDNSServiceErr_NoError)
       {
         broker_ref->socket = DNSServiceRefSockFD(broker_ref->dnssd_ref);
+        lwpa_poll_add_socket(&disc_state.poll_context, broker_ref->socket, LWPA_POLL_IN, broker_ref->dnssd_ref);
 
         // Begin monitoring the broker's scope for other brokers
         RdmnetScopeMonitorConfig config;
@@ -671,41 +709,22 @@ void rdmnetdisc_tick()
       break;
   }
 
-  DNSServiceRef current_refs[LWPA_SOCKET_MAX_POLL_SIZE];
-  LwpaPollfd fds[LWPA_SOCKET_MAX_POLL_SIZE];
-  size_t nfds = 0;
-
-  if (broker_ref->state == kBrokerStateRegisterStarted || broker_ref->state == kBrokerStateRegistered)
+  LwpaPollEvent event;
+  lwpa_error_t poll_res = lwpa_poll_wait(&disc_state.poll_context, &event, 0);
+  if (poll_res == kLwpaErrOk && event.events & LWPA_POLL_IN)
   {
-    // Need to monitor registered Broker activity.
-    current_refs[nfds] = broker_ref->dnssd_ref;
+    DNSServiceErrorType process_error;
+    process_error = DNSServiceProcessResult((DNSServiceRef)event.user_data);
 
-    fds[nfds].fd = broker_ref->socket;
-    fds[nfds].events |= LWPA_POLLIN;
-    nfds++;
-  }
-
-  if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
-  {
-    get_sockets_to_poll(current_refs, fds, &nfds);
-    lwpa_mutex_give(&disc_state.lock);
-  }
-
-  if (nfds > 0 && lwpa_poll(fds, nfds, 0) > 0)
-  {
-    for (unsigned int i = 0; i < nfds; i++)
+    if (process_error != kDNSServiceErr_NoError)
     {
-      if (!(fds[i].revents & LWPA_POLLIN))
-        continue;
-
-      DNSServiceErrorType process_error;
-      process_error = DNSServiceProcessResult(current_refs[i]);
-
-      if (process_error != kDNSServiceErr_NoError)
-      {
-        // For now, do nothing and keep processing.  We may want to kill the socket later.
-      }
+      lwpa_poll_remove_socket(&disc_state.poll_context, event.socket);
+      lwpa_close(event.socket);
     }
+  }
+  else
+  {
+    // TODO error handling
   }
 }
 
@@ -761,36 +780,6 @@ void notify_scope_monitor_error(rdmnet_scope_monitor_t handle, int platform_erro
 /******************************************************************************
  * helper functions
  ******************************************************************************/
-
-void get_sockets_to_poll(DNSServiceRef *current_refs, LwpaPollfd *fds, size_t *nfds)
-{
-  for (RdmnetScopeMonitorRef *ref = disc_state.scope_ref_list; ref; ref = ref->next)
-  {
-    // Get the ref and socket for the browse operation on each scope.
-    // TODO: something more dynamic with extra entries discard any entry over array size for now
-    if (*nfds >= LWPA_SOCKET_MAX_POLL_SIZE)
-      break;
-
-    current_refs[*nfds] = ref->dnssd_ref;
-    fds[*nfds].fd = ref->socket;
-    fds[*nfds].events |= LWPA_POLLIN;
-    (*nfds)++;
-
-    // Now get the refs and sockets for any pending discovered brokers on this scope.
-    for (DiscoveredBroker *db = ref->broker_list; db; db = db->next)
-    {
-      if (*nfds >= LWPA_SOCKET_MAX_POLL_SIZE)
-        break;
-      if (db->state == kResolveStateDone)
-        continue;
-
-      current_refs[*nfds] = db->dnssd_ref;
-      fds[*nfds].fd = db->sock;
-      fds[*nfds].events |= LWPA_POLLIN;
-      (*nfds)++;
-    }
-  }
-}
 
 void get_registration_string(const char *srv_type, const char *scope, char *reg_str)
 {
@@ -851,6 +840,8 @@ DiscoveredBroker *discovered_broker_new(const char *service_name, const char *fu
     rdmnet_safe_strncpy(new_db->info.service_name, service_name, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
     rdmnet_safe_strncpy(new_db->full_service_name, full_service_name, kDNSServiceMaxDomainName);
     new_db->state = kResolveStateServiceResolve;
+    new_db->sock = LWPA_SOCKET_INVALID;
+    new_db->dnssd_ref = NULL;
     new_db->next = NULL;
   }
   return new_db;
@@ -858,6 +849,11 @@ DiscoveredBroker *discovered_broker_new(const char *service_name, const char *fu
 
 void discovered_broker_delete(DiscoveredBroker *db)
 {
+  if (db->sock != LWPA_SOCKET_INVALID)
+  {
+    lwpa_poll_remove_socket(&disc_state.poll_context, db->sock);
+    lwpa_close(db->sock);
+  }
   if (db->state != kResolveStateDone)
     DNSServiceRefDeallocate(db->dnssd_ref);
   free(db);
