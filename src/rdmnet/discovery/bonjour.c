@@ -301,6 +301,10 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
           db->sock = new_sock;
           lwpa_poll_add_socket(&disc_state.poll_context, db->sock, LWPA_POLL_IN, db->dnssd_ref);
         }
+        else
+        {
+          lwpa_poll_modify_socket(&disc_state.poll_context, db->sock, LWPA_POLL_IN, db->dnssd_ref);
+        }
       }
       lwpa_mutex_give(&disc_state.lock);
     }
@@ -710,7 +714,15 @@ void rdmnetdisc_tick()
   }
 
   LwpaPollEvent event;
-  lwpa_error_t poll_res = lwpa_poll_wait(&disc_state.poll_context, &event, 0);
+  lwpa_error_t poll_res = kLwpaErrSys;
+
+  // Do the poll inside the mutex so that sockets can't be added and removed during poll
+  // Since we are using an immediate timeout, this is not a big deal
+  if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
+  {
+    poll_res = lwpa_poll_wait(&disc_state.poll_context, &event, 0);
+    lwpa_mutex_give(&disc_state.lock);
+  }
   if (poll_res == kLwpaErrOk && event.events & LWPA_POLL_IN)
   {
     DNSServiceErrorType process_error;

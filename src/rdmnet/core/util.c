@@ -30,7 +30,7 @@
 
 #include <string.h>
 
-/*! \brief An implementation of the C library function strncpy() which truncates safely.
+/*! \brief A wrapper for the C library function strncpy() which truncates safely.
  *
  *  Always puts a null character at destination[num - 1].
  *  \param[out] destination Pointer to the destination array where the content is to be copied.

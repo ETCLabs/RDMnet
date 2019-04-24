@@ -29,8 +29,8 @@
  *  \brief Utilities used throughout the RDMnet library.
  *  \author Sam Kearney
  */
-#ifndef _RDMNET_UTIL_H_
-#define _RDMNET_UTIL_H_
+#ifndef _RDMNET_CORE_UTIL_H_
+#define _RDMNET_CORE_UTIL_H_
 
 #include <stddef.h>
 
@@ -63,4 +63,4 @@ char *rdmnet_safe_strncpy(char *destination, const char *source, size_t num);
 }
 #endif
 
-#endif /* _RDMNET_UTIL_H_ */
+#endif /* _RDMNET_CORE_UTIL_H_ */
