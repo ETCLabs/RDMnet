@@ -81,16 +81,33 @@ typedef struct LlrpTargetCallbacks
   void (*rdm_cmd_received)(llrp_target_t handle, const LlrpRemoteRdmCommand *cmd, void *context);
 } LlrpTargetCallbacks;
 
-typedef struct LlrpTargetConfig
+typedef struct LlrpTargetOptionalConfig
 {
   LwpaIpAddr *netint_arr;
   size_t num_netints;
-  LwpaUuid cid;
   RdmUid uid;
+} LlrpTargetOptionalConfig;
+
+#define LLRP_TARGET_INIT_OPTIONAL_CONFIG_VALUES(optionalcfgptr, manu_id) \
+  do                                                                     \
+  {                                                                      \
+    (optionalcfgptr)->netint_arr = NULL;                                 \
+    (optionalcfgptr)->num_netints = 0;                                   \
+    rdmnet_init_dynamic_uid_request(&(optionalcfgptr)->uid, (manu_id));  \
+  } while (0)
+
+typedef struct LlrpTargetConfig
+{
+  LlrpTargetOptionalConfig optional;
+
+  LwpaUuid cid;
   llrp_component_t component_type;
   LlrpTargetCallbacks callbacks;
   void *callback_context;
 } LlrpTargetConfig;
+
+#define LLRP_TARGET_CONFIG_INIT(targetcfgptr, manu_id) \
+  LLRP_TARGET_INIT_OPTIONAL_CONFIG_VALUES(&(targetcfgptr)->optional, manu_id)
 
 #ifdef __cplusplus
 extern "C" {
@@ -99,7 +116,7 @@ extern "C" {
 lwpa_error_t rdmnet_llrp_target_create(const LlrpTargetConfig *config, llrp_target_t *handle);
 void rdmnet_llrp_target_destroy(llrp_target_t handle);
 
-void rdmnet_llrp_target_update_connection_state(llrp_target_t handle, bool connected_to_broker, const RdmUid *new_uid);
+void rdmnet_llrp_target_update_connection_state(llrp_target_t handle, bool connected_to_broker);
 
 lwpa_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLocalRdmResponse *resp);
 

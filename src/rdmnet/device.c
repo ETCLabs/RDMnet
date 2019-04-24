@@ -63,6 +63,7 @@ static void client_disconnected(rdmnet_client_t handle, rdmnet_client_scope_t sc
                                 const RdmnetClientDisconnectedInfo *info, void *context);
 static void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                        const BrokerMessage *msg, void *context);
+static void client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand *cmd, void *context);
 static void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptClientMessage *msg,
                                 void *context);
 
@@ -73,6 +74,7 @@ static const RptClientCallbacks client_callbacks =
   client_connect_failed,
   client_disconnected,
   client_broker_msg_received,
+  client_llrp_msg_received,
   client_msg_received
 };
 // clang-format on
@@ -106,11 +108,11 @@ lwpa_error_t rdmnet_device_create(const RdmnetDeviceConfig *config, rdmnet_devic
 
   RdmnetRptClientConfig client_config;
   client_config.type = kRPTClientTypeDevice;
-  client_config.uid = config->uid;
   client_config.cid = config->cid;
-  client_config.search_domain = config->search_domain;
   client_config.callbacks = client_callbacks;
   client_config.callback_context = new_device;
+  client_config.optional = config->optional;
+  client_config.llrp_optional = config->llrp_optional;
 
   lwpa_error_t res = rdmnet_rpt_client_create(&client_config, &new_device->client_handle);
   if (res == kLwpaErrOk)
@@ -229,6 +231,17 @@ void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t sc
   (void)context;
 
   lwpa_log(rdmnet_log_params, LWPA_LOG_INFO, "Got Broker message with vector %d", msg->vector);
+}
+
+void client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand *cmd, void *context)
+{
+  (void)handle;
+
+  RdmnetDevice *device = (RdmnetDevice *)context;
+  if (device)
+  {
+    device->callbacks.llrp_rdm_command_received(device, cmd, device->callback_context);
+  }
 }
 
 void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptClientMessage *msg,

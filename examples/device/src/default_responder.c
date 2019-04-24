@@ -172,7 +172,8 @@ void default_responder_update_connection_status(bool connected, const LwpaSockad
   if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
   {
     prop_data.connected = connected;
-    prop_data.cur_broker_addr = *broker_addr;
+    if (prop_data.connected)
+      prop_data.cur_broker_addr = *broker_addr;
     lwpa_rwlock_readunlock(&prop_lock);
   }
 }

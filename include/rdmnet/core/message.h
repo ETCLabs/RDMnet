@@ -139,9 +139,9 @@ typedef struct RptClientMessage
   } payload;
 } RptClientMessage;
 
-#define get_remote_rdm_command(rptclimsgptr) (&(rptclimsgptr)->payload.cmd)
-#define get_remote_rdm_response(rptclimsgptr) (&(rptclimsgptr)->payload.resp)
-#define get_remote_rpt_status(rptclimsgptr) (&(rptclimsgptr)->payload.status)
+#define GET_REMOTE_RDM_COMMAND(rptclimsgptr) (&(rptclimsgptr)->payload.cmd)
+#define GET_REMOTE_RDM_RESPONSE(rptclimsgptr) (&(rptclimsgptr)->payload.resp)
+#define GET_REMOTE_RPT_STATUS(rptclimsgptr) (&(rptclimsgptr)->payload.status)
 
 typedef enum
 {

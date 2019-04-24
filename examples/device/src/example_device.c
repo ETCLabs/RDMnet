@@ -69,6 +69,7 @@ static void device_connected(rdmnet_device_t handle, const RdmnetClientConnected
 static void device_connect_failed(rdmnet_device_t handle, const RdmnetClientConnectFailedInfo *info, void *context);
 static void device_disconnected(rdmnet_device_t handle, const RdmnetClientDisconnectedInfo *info, void *context);
 static void device_rdm_cmd_received(rdmnet_device_t handle, const RemoteRdmCommand *cmd, void *context);
+static void device_llrp_rdm_cmd_received(rdmnet_device_t handle, const LlrpRemoteRdmCommand *cmd, void *context);
 
 /*************************** Function definitions ****************************/
 
@@ -104,17 +105,17 @@ lwpa_error_t device_init(const RdmnetScopeConfig *scope_config, const LwpaLogPar
   }
 
   RdmnetDeviceConfig config;
-  RDMNET_CLIENT_SET_DYNAMIC_UID(&config, 0x6574);
+  RDMNET_DEVICE_CONFIG_INIT(&config, 0x6574);
   // A typical hardware-locked device would use lwpa_generate_v3_uuid() to generate a CID that is
   // the same every time. But this example device is not locked to hardware, so a V4 UUID makes
   // more sense.
   lwpa_generate_v4_uuid(&config.cid);
   config.scope_config = *scope_config;
-  config.search_domain = E133_DEFAULT_DOMAIN;
   config.callbacks.connected = device_connected;
   config.callbacks.connect_failed = device_connect_failed;
   config.callbacks.disconnected = device_disconnected;
   config.callbacks.rdm_command_received = device_rdm_cmd_received;
+  config.callbacks.llrp_rdm_command_received = device_llrp_rdm_cmd_received;
   config.callback_context = NULL;
 
   res = rdmnet_device_create(&config, &device_state.device_handle);
@@ -178,6 +179,28 @@ void device_rdm_cmd_received(rdmnet_device_t handle, const RemoteRdmCommand *cmd
     default_responder_get_search_domain(device_state.cur_search_domain);
     rdmnet_device_change_search_domain(handle, device_state.cur_search_domain, kRdmnetDisconnectRptReconfigure);
   }
+}
+
+void device_llrp_rdm_cmd_received(rdmnet_device_t handle, const LlrpRemoteRdmCommand *cmd, void *context)
+{
+  (void)handle;
+  (void)context;
+  (void)cmd;
+
+  lwpa_log(device_state.lparams, LWPA_LOG_INFO, "LLRP RDM command received!");
+  // TODO
+//  rdmnet_data_changed_t data_changed = kNoRdmnetDataChanged;
+//  device_handle_rdm_command(cmd, &data_changed);
+//  if (data_changed == kRdmnetScopeConfigChanged)
+//  {
+//    default_responder_get_scope_config(&device_state.cur_scope_config);
+//    rdmnet_device_change_scope(handle, &device_state.cur_scope_config, kRdmnetDisconnectRptReconfigure);
+//  }
+//  else if (data_changed == kRdmnetSearchDomainChanged)
+//  {
+//    default_responder_get_search_domain(device_state.cur_search_domain);
+//    rdmnet_device_change_search_domain(handle, device_state.cur_search_domain, kRdmnetDisconnectRptReconfigure);
+//  }
 }
 
 void device_handle_rdm_command(const RemoteRdmCommand *cmd, rdmnet_data_changed_t *data_changed)

@@ -62,6 +62,7 @@ static void client_disconnected(rdmnet_client_t handle, rdmnet_client_scope_t sc
                                 const RdmnetClientDisconnectedInfo *info, void *context);
 static void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                        const BrokerMessage *msg, void *context);
+static void client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand *cmd, void *context);
 static void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptClientMessage *msg,
                                 void *context);
 
@@ -72,6 +73,7 @@ static const RptClientCallbacks client_callbacks =
   client_connect_failed,
   client_disconnected,
   client_broker_msg_received,
+  client_llrp_msg_received,
   client_msg_received
 };
 // clang-format on
@@ -105,11 +107,11 @@ lwpa_error_t rdmnet_controller_create(const RdmnetControllerConfig *config, rdmn
 
   RdmnetRptClientConfig client_config;
   client_config.type = kRPTClientTypeController;
-  client_config.uid = config->uid;
   client_config.cid = config->cid;
-  client_config.search_domain = config->search_domain;
   client_config.callbacks = client_callbacks;
   client_config.callback_context = new_controller;
+  client_config.optional = config->optional;
+  client_config.llrp_optional = config->llrp_optional;
 
   lwpa_error_t res = rdmnet_rpt_client_create(&client_config, &new_controller->client_handle);
   if (res == kLwpaErrOk)
@@ -251,7 +253,18 @@ void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t sc
   }
 }
 
-static void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptClientMessage *msg,
+void client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand *cmd, void *context)
+{
+  (void)handle;
+
+  RdmnetController *controller = (RdmnetController *)context;
+  if (controller)
+  {
+    controller->callbacks.llrp_rdm_command_received(controller, cmd, controller->callback_context);
+  }
+}
+
+void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptClientMessage *msg,
                                 void *context)
 {
   (void)handle;
@@ -262,15 +275,15 @@ static void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t sc
     switch (msg->type)
     {
       case kRptClientMsgRdmCmd:
-        controller->callbacks.rdm_command_received(controller, scope_handle, get_remote_rdm_command(msg),
+        controller->callbacks.rdm_command_received(controller, scope_handle, GET_REMOTE_RDM_COMMAND(msg),
                                                    controller->callback_context);
         break;
       case kRptClientMsgRdmResp:
-        controller->callbacks.rdm_response_received(controller, scope_handle, get_remote_rdm_response(msg),
+        controller->callbacks.rdm_response_received(controller, scope_handle, GET_REMOTE_RDM_RESPONSE(msg),
                                                     controller->callback_context);
         break;
       case kRptClientMsgStatus:
-        controller->callbacks.status_received(controller, scope_handle, get_remote_rpt_status(msg),
+        controller->callbacks.status_received(controller, scope_handle, GET_REMOTE_RPT_STATUS(msg),
                                               controller->callback_context);
         break;
       default:

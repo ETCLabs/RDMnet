@@ -83,6 +83,8 @@ struct RdmnetClient
   ClientScopeListEntry *scope_list;
   char search_domain[E133_DOMAIN_STRING_PADDED_LENGTH];
 
+  llrp_target_t llrp_handle;
+
   union
   {
     RptClientData rpt;
@@ -97,6 +99,7 @@ typedef enum
   kClientCallbackConnectFailed,
   kClientCallbackDisconnected,
   kClientCallbackBrokerMsgReceived,
+  kClientCallbackLlrpMsgReceived,
   kClientCallbackMsgReceived
 } client_callback_t;
 
@@ -124,6 +127,11 @@ typedef struct BrokerMsgReceivedArgs
   const BrokerMessage *msg;
 } BrokerMsgReceivedArgs;
 
+typedef struct LlrpMsgReceivedArgs
+{
+  const LlrpRemoteRdmCommand *cmd;
+} LlrpMsgReceivedArgs;
+
 typedef struct RptMsgReceivedArgs
 {
   rdmnet_client_scope_t scope_handle;
@@ -139,7 +147,11 @@ typedef struct EptMsgReceivedArgs
 typedef struct RptCallbackDispatchInfo
 {
   RptClientCallbacks cbs;
-  RptMsgReceivedArgs msg_received;
+  union
+  {
+    RptMsgReceivedArgs msg_received;
+    LlrpMsgReceivedArgs llrp_msg_received;
+  } args;
 } RptCallbackDispatchInfo;
 
 typedef struct EptCallbackDispatchInfo

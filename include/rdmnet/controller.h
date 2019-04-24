@@ -68,22 +68,20 @@ typedef struct RdmnetControllerCallbacks
                                const RemoteRdmCommand *cmd, void *context);
   void (*status_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle, const RemoteRptStatus *status,
                           void *context);
+  void (*llrp_rdm_command_received)(rdmnet_controller_t handle, const LlrpRemoteRdmCommand *cmd, void *context);
 } RdmnetControllerCallbacks;
 
 typedef struct RdmnetControllerConfig
 {
-  /*! The controller's UID. If the controller has a static UID, fill in the values normally. If a dynamic
-   *  UID is desired, assign using RPT_CLIENT_DYNAMIC_UID(manu_id), passing your ESTA manufacturer
-   *  ID. All RDMnet components are required to have a valid ESTA manufacturer ID. */
-  RdmUid uid;
   /*! The controller's CID. */
   LwpaUuid cid;
-  /*! The controller's configured RDMnet search domain. */
-  const char *search_domain;
   /*! A set of callbacks for the controller to receive RDMnet notifications. */
   RdmnetControllerCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. Can be NULL. */
   void *callback_context;
+
+  RptClientOptionalConfig optional;
+  LlrpTargetOptionalConfig llrp_optional;
 } RdmnetControllerConfig;
 
 lwpa_error_t rdmnet_controller_init(const LwpaLogParams *lparams);

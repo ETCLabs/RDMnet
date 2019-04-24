@@ -28,10 +28,9 @@
 #include "rdmnet/core/llrp_target.h"
 
 #include <string.h>
-#include "rdmnet/private/opts.h"
-#if RDMNET_DYNAMIC_MEM
 #include <stdlib.h>
-#else
+#include "rdmnet/private/opts.h"
+#if !RDMNET_DYNAMIC_MEM
 #include "lwpa/mempool.h"
 #endif
 #include "lwpa/rbtree.h"
@@ -351,14 +350,11 @@ void rdmnet_llrp_target_tick()
  *
  *  \param[in] handle Handle to LLRP Target for which to update the connection state.
  *  \param[in] connected_to_broker Whether the LLRP Target is currently connected to a Broker.
- *  \param[in] new_uid The LLRP Target's new UID, if it is using a Dynamic UID, or NULL if the UID
- *                     hasn't changed.
  */
-void rdmnet_llrp_target_update_connection_state(llrp_target_t handle, bool connected_to_broker, const RdmUid *new_uid)
+void rdmnet_llrp_target_update_connection_state(llrp_target_t handle, bool connected_to_broker)
 {
   (void)handle;
   (void)connected_to_broker;
-  (void)new_uid;
   /* TODO */
 }
 
@@ -538,10 +534,9 @@ lwpa_error_t setup_target_netint(const LwpaIpAddr *netint_addr, LlrpTarget *targ
   if (res != kLwpaErrOk)
     return res;
 
-  PolledSocketInfo ps_info;
-  ps_info.callback = llrp_target_socket_activity;
-  ps_info.data.ptr = netint_info;
-  res = rdmnet_core_add_polled_socket(netint_info->sys_sock, LWPA_POLL_IN, &ps_info);
+  netint_info->poll_info.callback = llrp_target_socket_activity;
+  netint_info->poll_info.data.ptr = netint_info;
+  res = rdmnet_core_add_polled_socket(netint_info->sys_sock, LWPA_POLL_IN, &netint_info->poll_info);
 
   if (res == kLwpaErrOk)
   {
@@ -563,7 +558,7 @@ void cleanup_target_netint(LlrpTargetNetintInfo *netint_info)
   lwpa_close(netint_info->sys_sock);
 }
 
-lwpa_error_t setup_target_netints(const LlrpTargetConfig *config, LlrpTarget *target)
+lwpa_error_t setup_target_netints(const LlrpTargetOptionalConfig *config, LlrpTarget *target)
 {
   lwpa_error_t res = kLwpaErrOk;
   target->num_netints = 0;
@@ -645,20 +640,42 @@ lwpa_error_t create_new_target(const LlrpTargetConfig *config, LlrpTarget **new_
   LlrpTarget *target = llrp_target_alloc();
   if (target)
   {
-    res = setup_target_netints(config, target);
+    res = setup_target_netints(&config->optional, target);
 
     if (res == kLwpaErrOk)
     {
-      target->cid = config->cid;
-      target->uid = config->uid;
-      target->component_type = config->component_type;
-      target->connected_to_broker = false;
-      target->callbacks = config->callbacks;
-      target->callback_context = config->callback_context;
-      target->marked_for_destruction = false;
-      target->next_to_destroy = NULL;
+      if (0 != lwpa_rbtree_insert(&state.targets, target))
+      {
+        target->cid = config->cid;
+        if (rdmnet_uid_is_dynamic_uid_request(&config->optional.uid))
+        {
+          // This is a hack around a hole in the standard. TODO add a more explanatory comment once
+          // this has been further explored.
+          target->uid.manu = config->optional.uid.manu;
+          target->uid.id = (uint32_t)rand();
+        }
+        else
+        {
+          target->uid = config->optional.uid;
+        }
+        target->component_type = config->component_type;
+        target->connected_to_broker = false;
+        target->callbacks = config->callbacks;
+        target->callback_context = config->callback_context;
+        target->marked_for_destruction = false;
+        target->next_to_destroy = NULL;
 
-      *new_target = target;
+        *new_target = target;
+      }
+      else
+      {
+        llrp_target_dealloc(target);
+        res = kLwpaErrNoMem;
+      }
+    }
+    else
+    {
+      llrp_target_dealloc(target);
     }
   }
 

@@ -39,6 +39,7 @@
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/core/llrp_target.h"
+#include "rdmnet/private/core.h"
 #include "rdmnet/private/opts.h"
 #include "rdmnet/private/llrp_prot.h"
 
@@ -49,6 +50,7 @@ typedef struct LlrpTargetNetintInfo
   LwpaIpAddr ip;
   lwpa_socket_t sys_sock;
   uint8_t send_buf[LLRP_TARGET_MAX_MESSAGE_SIZE];
+  PolledSocketInfo poll_info;
 
   bool reply_pending;
   LwpaUuid pending_reply_cid;

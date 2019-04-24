@@ -41,6 +41,7 @@
 #include "rdmnet/core.h"
 #include "rdmnet/core/message.h"
 #include "rdmnet/core/connection.h"
+#include "rdmnet/core/llrp_target.h"
 #include "rdmnet/core/util.h"
 
 /*!
@@ -128,6 +129,8 @@ typedef void (*RdmnetClientDisconnectedCb)(rdmnet_client_t handle, rdmnet_client
 typedef void (*RdmnetClientBrokerMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                                 const BrokerMessage *msg, void *context);
 
+typedef void (*RdmnetClientLlrpMsgReceivedCb)(rdmnet_client_t handle, const LlrpRemoteRdmCommand *cmd, void *context);
+
 typedef void (*RptClientMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                        const RptClientMessage *msg, void *context);
 
@@ -140,6 +143,7 @@ typedef struct RptClientCallbacks
   RdmnetClientConnectFailedCb connect_failed;
   RdmnetClientDisconnectedCb disconnected;
   RdmnetClientBrokerMsgReceivedCb broker_msg_received;
+  RdmnetClientLlrpMsgReceivedCb llrp_msg_received;
   RptClientMsgReceivedCb msg_received;
 } RptClientCallbacks;
 
@@ -159,41 +163,62 @@ typedef struct RdmnetScopeConfig
   LwpaSockaddr static_broker_addr;
 } RdmnetScopeConfig;
 
+/*! The optional values contained in an RPT Client configuration. These values have defaults that
+ *  can be initialized using the appropriate initialization macros.
+ */
+typedef struct RptClientOptionalConfig
+{
+  /*! The client's UID. If the client has a static UID, fill in the values normally. If a dynamic
+   *  UID is desired, assign using RPT_CLIENT_DYNAMIC_UID(manu_id), passing your ESTA manufacturer
+   *  ID. All RDMnet components are required to have a valid ESTA manufacturer ID. */
+  RdmUid uid;
+  /*! The client's configured search domain for discovery. */
+  const char *search_domain;
+} RptClientOptionalConfig;
+
+#define RPT_CLIENT_INIT_OPTIONAL_CONFIG_VALUES(optionalcfgptr, manu_id) \
+  do                                                                    \
+  {                                                                     \
+    rdmnet_init_dynamic_uid_request(&(optionalcfgptr)->uid, (manu_id)); \
+    (optionalcfgptr)->search_domain = E133_DEFAULT_DOMAIN;              \
+  } while (0)
+
 /*! A set of information that defines the startup parameters of an RPT RDMnet Client. */
 typedef struct RdmnetRptClientConfig
 {
   /*! The client type, either controller or device. */
   rpt_client_type_t type;
-  /*! The client's UID. If the client has a static UID, fill in the values normally. If a dynamic
-   *  UID is desired, assign using RPT_CLIENT_DYNAMIC_UID(manu_id), passing your ESTA manufacturer
-   *  ID. All RDMnet components are required to have a valid ESTA manufacturer ID. */
-  RdmUid uid;
   /*! The client's CID. */
   LwpaUuid cid;
-  /*! The client's configured search domain for discovery. */
-  const char *search_domain;
-  /*! A set of callbacks for the client to received RDMnet notifications. */
+  /*! A set of callbacks for the client to receive RDMnet notifications. */
   RptClientCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. */
   void *callback_context;
+
+  LlrpTargetOptionalConfig llrp_optional;
+  RptClientOptionalConfig optional;
 } RdmnetRptClientConfig;
 
-/*! \brief Initialize an RPT Client Config with a dynamic UID.
+/*! \brief Initialize an RPT Client Config with default values for the optional config options.
+ *
+ *  The config struct members not marked 'optional' are not initialized by this macro. Those
+ *  members do not have default values and must be initialized manually before passing the config
+ *  struct to an API function.
  *
  *  Usage example:
  *  \code
  *  RdmnetRptClientConfig config;
- *  RDMNET_CLIENT_SET_DYNAMIC_UID(&config, 0x6574);
+ *  RPT_CLIENT_CONFIG_INIT(&config, 0x6574);
  *  \endcode
  *
  *  \param configptr Pointer to RdmnetRptClientConfig, RdmnetDeviceConfig or RdmnetControllerConfig.
  *  \param manu_id ESTA manufacturer ID. All RDMnet RPT components must have one.
  */
-#define RDMNET_CLIENT_SET_DYNAMIC_UID(configptr, manu_id) \
-  do                                                      \
-  {                                                       \
-    (configptr)->uid.manu = manu_id;                      \
-    (configptr)->uid.id = 0;                              \
+#define RPT_CLIENT_CONFIG_INIT(clientcfgptr, manu_id)                                 \
+  do                                                                                  \
+  {                                                                                   \
+    RPT_CLIENT_INIT_OPTIONAL_CONFIG_VALUES(&(clientcfgptr)->optional, manu_id);       \
+    LLRP_TARGET_INIT_OPTIONAL_CONFIG_VALUES(&(clientcfgptr)->llrp_optional, manu_id); \
   } while (0)
 
 typedef struct RdmnetEptClientConfig

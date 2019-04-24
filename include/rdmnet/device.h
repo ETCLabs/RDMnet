@@ -45,26 +45,26 @@ typedef struct RdmnetDeviceCallbacks
   void (*connect_failed)(rdmnet_device_t handle, const RdmnetClientConnectFailedInfo *info, void *context);
   void (*disconnected)(rdmnet_device_t handle, const RdmnetClientDisconnectedInfo *info, void *context);
   void (*rdm_command_received)(rdmnet_device_t handle, const RemoteRdmCommand *cmd, void *context);
+  void (*llrp_rdm_command_received)(rdmnet_device_t handle, const LlrpRemoteRdmCommand *cmd, void *context);
 } RdmnetDeviceCallbacks;
 
 /*! A set of information that defines the startup parmaeters of an RDMnet Device. */
 typedef struct RdmnetDeviceConfig
 {
-  /*! The device's UID. If the device has a static UID, fill in the values normally. If a dynamic
-   *  UID is desired, assign using RPT_CLIENT_DYNAMIC_UID(manu_id), passing your ESTA manufacturer
-   *  ID. All RDMnet components are required to have a valid ESTA manufacturer ID. */
-  RdmUid uid;
   /*! The device's CID. */
   LwpaUuid cid;
   /*! The device's configured RDMnet scope. */
   RdmnetScopeConfig scope_config;
-  /*! The device's configured RDMnet search domain. */
-  const char *search_domain;
   /*! A set of callbacks for the device to receive RDMnet notifications. */
   RdmnetDeviceCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. Can be NULL. */
   void *callback_context;
+
+  RptClientOptionalConfig optional;
+  LlrpTargetOptionalConfig llrp_optional;
 } RdmnetDeviceConfig;
+
+#define RDMNET_DEVICE_CONFIG_INIT(devicecfgptr, manu_id) RPT_CLIENT_CONFIG_INIT(devicecfgptr, manu_id)
 
 lwpa_error_t rdmnet_device_init(const LwpaLogParams *lparams);
 void rdmnet_device_deinit();
