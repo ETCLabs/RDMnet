@@ -50,6 +50,7 @@ public:
                                   const RemoteRdmCommand *cmd) = 0;
   virtual void StatusReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
                               const RemoteRptStatus *status) = 0;
+  virtual void LlrpRdmCommandReceived(rdmnet_controller_t handle, const LlrpRemoteRdmCommand *cmd) = 0;
 };
 
 class RDMnetLibWrapper : public RDMnetLibInterface, public RDMnetLibNotifyInternal
@@ -85,6 +86,7 @@ protected:
                                   const RemoteRdmCommand *cmd) override;
   virtual void StatusReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
                               const RemoteRptStatus *status) override;
+  virtual void LlrpRdmCommandReceived(rdmnet_controller_t handle, const LlrpRemoteRdmCommand *cmd) override;
 
 private:
   LwpaUuid my_cid_;

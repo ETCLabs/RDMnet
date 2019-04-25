@@ -108,6 +108,13 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
       bool disc_initted = false;
       bool llrp_initted = false;
 
+      // Init the log params early so the other modules can log things on initialization
+      if (log_params)
+      {
+        core_state.log_params = *log_params;
+        rdmnet_log_params = &core_state.log_params;
+      }
+
       if (res == kLwpaErrOk)
         lwpa_initted = ((res = lwpa_init(RDMNET_LWPA_FEATURES)) == kLwpaErrOk);
       if (res == kLwpaErrOk)
@@ -139,18 +146,14 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
 
       if (res == kLwpaErrOk)
       {
-        // Do the initialization
-        if (log_params)
-        {
-          core_state.log_params = *log_params;
-          rdmnet_log_params = &core_state.log_params;
-        }
+        // Do the rest of the initialization
         lwpa_timer_start(&core_state.tick_timer, RDMNET_TICK_PERIODIC_INTERVAL);
         core_state.initted = true;
       }
       else
       {
-        // Clean up
+        // Clean up. Starting the thread is the last thing with a failure condition, so if we get
+        // here it has not been started.
         if (llrp_initted)
           rdmnet_llrp_deinit();
         if (disc_initted)
@@ -161,6 +164,8 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
           lwpa_poll_context_deinit(&core_state.poll_context);
         if (lwpa_initted)
           lwpa_deinit(RDMNET_LWPA_FEATURES);
+
+        rdmnet_log_params = NULL;
       }
     }
     rdmnet_writeunlock();

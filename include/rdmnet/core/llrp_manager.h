@@ -33,6 +33,7 @@
 #define _RDMNET_CORE_LLRP_MANAGER_H_
 
 #include "lwpa/uuid.h"
+#include "lwpa/inet.h"
 #include "rdm/message.h"
 #include "rdmnet/core/llrp.h"
 
@@ -74,6 +75,7 @@ typedef struct LlrpManagerConfig
 {
   LwpaIpAddr netint;
   LwpaUuid cid;
+  uint16_t manu_id;
   LlrpManagerCallbacks callbacks;
   void *callback_context;
 } LlrpManagerConfig;

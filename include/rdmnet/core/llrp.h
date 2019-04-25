@@ -58,9 +58,9 @@ typedef int llrp_target_t;
 typedef enum
 {
   /*! This LLRP Target is associated with an RPT Device. */
-  kLlrpCompRPTDevice = LLRP_COMPONENT_TYPE_RPT_DEVICE,
+  kLlrpCompRptDevice = LLRP_COMPONENT_TYPE_RPT_DEVICE,
   /*! This LLRP Target is associated with an RPT Controller. */
-  kLlrpCompRPTController = LLRP_COMPONENT_TYPE_RPT_CONTROLLER,
+  kLlrpCompRptController = LLRP_COMPONENT_TYPE_RPT_CONTROLLER,
   /*! This LLRP Target is associated with a Broker. */
   kLlrpCompBroker = LLRP_COMPONENT_TYPE_BROKER,
   /*! This LLRP Target is standalone or associated with an unknown Component type. */
@@ -71,9 +71,9 @@ typedef enum
 typedef struct DiscoveredLlrpTarget
 {
   /*! The LLRP Target's CID. */
-  LwpaUuid target_cid;
+  LwpaUuid cid;
   /*! The LLRP Target's UID. */
-  RdmUid target_uid;
+  RdmUid uid;
   /*! The LLRP Target's hardware address (usually the MAC address) */
   uint8_t hardware_address[6];
   /*! The type of RPT Component this LLRP Target is associated with. */

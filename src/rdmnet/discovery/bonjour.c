@@ -160,19 +160,32 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceF
 
     if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
     {
-      if (db->info.listen_addrs_count < RDMNET_DISC_MAX_BROKER_ADDRESSES)
+      // Update the broker info we're building
+      LwpaSockaddr ip_addr;
+      if (sockaddr_plat_to_lwpa(&ip_addr, address))
       {
-        // Update the broker info we're building
-        LwpaSockaddr ip_addr;
-        if (sockaddr_plat_to_lwpa(&ip_addr, address))
+        if ((lwpaip_is_v4(&ip_addr.ip) && lwpaip_v4_address(&ip_addr.ip) != 0) ||
+            (lwpaip_is_v6(&ip_addr.ip) && ipv6_valid(&ip_addr.ip)))
         {
-          if ((lwpaip_is_v4(&ip_addr.ip) && lwpaip_v4_address(&ip_addr.ip) != 0) ||
-              (lwpaip_is_v6(&ip_addr.ip) && ipv6_valid(&ip_addr.ip)))
+          // Normalize the address
+          if ((db->info.port != 0) && (ip_addr.port == 0))
+            ip_addr.port = db->info.port;
+
+          // Add it to the info structure
+          BrokerListenAddr *new_addr = malloc(sizeof(BrokerListenAddr));
+          new_addr->addr = ip_addr;
+          new_addr->next = NULL;
+
+          if (!db->info.listen_addr_list)
           {
-            // Normalize the address and add it to the info.
-            if ((db->info.port != 0) && (ip_addr.port == 0))
-              ip_addr.port = db->info.port;
-            db->info.listen_addrs[db->info.listen_addrs_count++] = ip_addr;
+            db->info.listen_addr_list = new_addr;
+          }
+          else
+          {
+            BrokerListenAddr *cur_addr = db->info.listen_addr_list;
+            while (cur_addr->next)
+              cur_addr = cur_addr->next;
+            cur_addr->next = new_addr;
           }
         }
       }
@@ -417,8 +430,7 @@ void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo *broker_info)
   broker_info->cid = kLwpaNullUuid;
   memset(broker_info->service_name, 0, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
   broker_info->port = 0;
-  memset(broker_info->listen_addrs, 0, sizeof(LwpaSockaddr) * RDMNET_DISC_MAX_BROKER_ADDRESSES);
-  broker_info->listen_addrs_count = 0;
+  broker_info->listen_addr_list = NULL;
   rdmnet_safe_strncpy(broker_info->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH);
   memset(broker_info->model, 0, E133_MODEL_STRING_PADDED_LENGTH);
   memset(broker_info->manufacturer, 0, E133_MANUFACTURER_STRING_PADDED_LENGTH);
@@ -868,6 +880,13 @@ void discovered_broker_delete(DiscoveredBroker *db)
   }
   if (db->state != kResolveStateDone)
     DNSServiceRefDeallocate(db->dnssd_ref);
+  BrokerListenAddr *listen_addr = db->info.listen_addr_list;
+  while (listen_addr)
+  {
+    BrokerListenAddr *next_listen_addr = listen_addr->next;
+    free(listen_addr);
+    listen_addr = next_listen_addr;
+  }
   free(db);
 }
 

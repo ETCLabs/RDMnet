@@ -54,7 +54,7 @@ set(RDMNET_CORE_PUBLIC_HEADERS
   ${RDMNET_INCLUDE}/rdmnet/core/connection.h
   ${RDMNET_INCLUDE}/rdmnet/core/ept_prot.h
   ${RDMNET_INCLUDE}/rdmnet/core/llrp.h
-  # ${RDMNET_INCLUDE}/rdmnet/core/llrp_manager.h
+  ${RDMNET_INCLUDE}/rdmnet/core/llrp_manager.h
   ${RDMNET_INCLUDE}/rdmnet/core/llrp_target.h
   ${RDMNET_INCLUDE}/rdmnet/core/message.h
   ${RDMNET_INCLUDE}/rdmnet/core/rpt_prot.h
@@ -65,7 +65,7 @@ set(RDMNET_CORE_PRIVATE_HEADERS
   ${RDMNET_SRC}/rdmnet/private/core.h
   ${RDMNET_SRC}/rdmnet/private/connection.h
   ${RDMNET_SRC}/rdmnet/private/llrp.h
-  # ${RDMNET_SRC}/rdmnet/private/llrp_manager.h
+  ${RDMNET_SRC}/rdmnet/private/llrp_manager.h
   ${RDMNET_SRC}/rdmnet/private/llrp_prot.h
   ${RDMNET_SRC}/rdmnet/private/llrp_target.h
   ${RDMNET_SRC}/rdmnet/private/message.h
@@ -80,7 +80,7 @@ set(RDMNET_CORE_SOURCES
   ${RDMNET_SRC}/rdmnet/core/client_entry.c
   ${RDMNET_SRC}/rdmnet/core/connection.c
   ${RDMNET_SRC}/rdmnet/core/llrp.c
-  # ${RDMNET_SRC}/rdmnet/core/llrp_manager.c
+  ${RDMNET_SRC}/rdmnet/core/llrp_manager.c
   ${RDMNET_SRC}/rdmnet/core/llrp_prot.c
   ${RDMNET_SRC}/rdmnet/core/llrp_target.c
   ${RDMNET_SRC}/rdmnet/core/message.c
@@ -130,11 +130,18 @@ endif()
 target_link_libraries(RDMnet PUBLIC lwpa RDM)
 
 # Organize sources in IDEs
-source_group(include FILES ${RDMNET_API_PUBLIC_HEADERS})
-source_group(src FILES ${RDMNET_API_SOURCES})
-source_group(src\\core FILES ${RDMNET_CORE_SOURCES})
-source_group(include\\core FILES ${RDMNET_CORE_PUBLIC_HEADERS})
-source_group(include\\private FILES ${RDMNET_CORE_PRIVATE_HEADERS} ${RDMNET_API_PRIVATE_HEADERS})
+source_group(TREE ${RDMNET_SRC}/rdmnet PREFIX src FILES
+  ${RDMNET_API_SOURCES}
+  ${RDMNET_CORE_SOURCES}
+  ${RDMNET_API_PRIVATE_HEADERS}
+  ${RDMNET_CORE_PRIVATE_HEADERS}
+  ${RDMNET_DISCOVERY_ADDITIONAL_SOURCES}
+)
+source_group(TREE ${RDMNET_INCLUDE}/rdmnet PREFIX include FILES
+  ${RDMNET_API_PUBLIC_HEADERS}
+  ${RDMNET_CORE_PUBLIC_HEADERS}
+  ${RDMNET_DISCOVERY_HEADERS}
+)
 
 target_link_libraries(RDMnet PRIVATE RDMnetDiscovery dnssd)
 

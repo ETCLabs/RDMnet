@@ -122,7 +122,7 @@ bool parse_llrp_pdu(const uint8_t *buf, size_t buflen, const LlrpMessageInterest
       case VECTOR_LLRP_PROBE_REPLY:
         if (interest->interested_in_probe_reply)
         {
-          msg->data.probe_reply.target_cid = msg->header.sender_cid;
+          msg->data.probe_reply.cid = msg->header.sender_cid;
           return parse_llrp_probe_reply(cur_ptr, llrp_pdu_len - LLRP_HEADER_SIZE, &msg->data.probe_reply);
         }
         else
@@ -216,9 +216,9 @@ bool parse_llrp_probe_reply(const uint8_t *buf, size_t buflen, DiscoveredLlrpTar
   if (vector != VECTOR_PROBE_REPLY_DATA)
     return false;
 
-  reply->target_uid.manu = lwpa_upack_16b(cur_ptr);
+  reply->uid.manu = lwpa_upack_16b(cur_ptr);
   cur_ptr += 2;
-  reply->target_uid.id = lwpa_upack_32b(cur_ptr);
+  reply->uid.id = lwpa_upack_32b(cur_ptr);
   cur_ptr += 4;
   memcpy(reply->hardware_address, cur_ptr, 6);
   cur_ptr += 6;
@@ -355,9 +355,9 @@ lwpa_error_t send_llrp_probe_reply(lwpa_socket_t sock, uint8_t *buf, bool ipv6, 
   lwpa_pdu_pack_ext_len(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
   cur_ptr += 3;
   *cur_ptr++ = VECTOR_PROBE_REPLY_DATA;
-  lwpa_pack_16b(cur_ptr, target_info->target_uid.manu);
+  lwpa_pack_16b(cur_ptr, target_info->uid.manu);
   cur_ptr += 2;
-  lwpa_pack_32b(cur_ptr, target_info->target_uid.id);
+  lwpa_pack_32b(cur_ptr, target_info->uid.id);
   cur_ptr += 4;
   memcpy(cur_ptr, target_info->hardware_address, 6);
   cur_ptr += 6;

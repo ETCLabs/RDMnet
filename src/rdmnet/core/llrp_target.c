@@ -80,30 +80,27 @@ static struct LlrpTargetState
 
 static lwpa_error_t init_sys_netints();
 
-// Helper functions for creating managers and targets
-static bool target_handle_in_use(int handle_val);
+// Creating, destroying, and finding targets
 static lwpa_error_t create_new_target(const LlrpTargetConfig *config, LlrpTarget **new_target);
 static lwpa_error_t get_target(llrp_target_t handle, LlrpTarget **target);
 static void release_target(LlrpTarget *target);
 static void destroy_target(LlrpTarget *target, bool remove_from_tree);
-static lwpa_socket_t create_sys_socket(const LwpaSockaddr *saddr, const LwpaIpAddr *netint);
-static bool subscribe_multicast(lwpa_socket_t lwpa_sock, bool manager, const LwpaIpAddr *netint);
+static bool target_handle_in_use(int handle_val);
 
-static void llrp_target_socket_activity(const LwpaPollEvent *event, PolledSocketOpaqueData data);
-static void llrp_target_socket_error(LlrpTargetNetintInfo *target_netint, lwpa_error_t err);
-static void llrp_target_data_received(LlrpTargetNetintInfo *target_netint, const uint8_t *data, size_t size);
+// Target state processing
+static void target_socket_activity(const LwpaPollEvent *event, PolledSocketOpaqueData data);
+static void target_socket_error(LlrpTargetNetintInfo *target_netint, lwpa_error_t err);
+static void target_data_received(LlrpTargetNetintInfo *target_netint, const uint8_t *data, size_t size);
+static void handle_llrp_message(LlrpTarget *target, LlrpTargetNetintInfo *netint, const LlrpMessage *msg,
+                                TargetCallbackDispatchInfo *cb);
 static void fill_callback_info(const LlrpTarget *target, TargetCallbackDispatchInfo *info);
 static void deliver_callback(TargetCallbackDispatchInfo *info);
+static void process_target_state(LlrpTarget *target);
 
+// Target tracking using LwpaRbTrees
 static LwpaRbNode *target_node_alloc();
 static void target_node_free(LwpaRbNode *node);
 static int target_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const LwpaRbNode *node_b);
-
-// Helper functions for rdmnet_llrp_udpate()
-static void process_target_state(LlrpTarget *target);
-static void register_message_interest(LlrpTarget *target, LlrpMessageInterest *interest);
-static void handle_llrp_message(LlrpTarget *target, LlrpTargetNetintInfo *netint, const LlrpMessage *msg,
-                                TargetCallbackDispatchInfo *cb);
 
 /*************************** Function definitions ****************************/
 
@@ -157,17 +154,31 @@ lwpa_error_t init_sys_netints()
 #endif
   state.num_sys_netints = lwpa_netint_get_interfaces(state.sys_netints, state.num_sys_netints);
 
+  uint8_t null_mac[6];
+  memset(null_mac, 0, sizeof null_mac);
+
+  lwpa_log(rdmnet_log_params, LWPA_LOG_INFO,
+           RDMNET_LOG_MSG("LLRP listening initialized on the following network interfaces:"));
   for (const LwpaNetintInfo *netint = state.sys_netints; netint < state.sys_netints + state.num_sys_netints; ++netint)
   {
-    if (netint == state.sys_netints)
+    char addr_str[LWPA_INET6_ADDRSTRLEN];
+    if (kLwpaErrOk == lwpa_inet_ntop(&netint->addr, addr_str, LWPA_INET6_ADDRSTRLEN))
     {
-      memcpy(state.lowest_hardware_addr, netint->mac, 6);
+      lwpa_log(rdmnet_log_params, LWPA_LOG_INFO, RDMNET_LOG_MSG("  %s"), addr_str);
     }
-    else
+
+    if (memcmp(netint->mac, null_mac, 6) != 0)
     {
-      if (memcmp(netint->mac, state.lowest_hardware_addr, 6) < 0)
+      if (netint == state.sys_netints)
       {
         memcpy(state.lowest_hardware_addr, netint->mac, 6);
+      }
+      else
+      {
+        if (memcmp(netint->mac, state.lowest_hardware_addr, 6) < 0)
+        {
+          memcpy(state.lowest_hardware_addr, netint->mac, 6);
+        }
       }
     }
   }
@@ -255,6 +266,71 @@ void rdmnet_llrp_target_destroy(llrp_target_t handle)
   release_target(target);
 }
 
+/*! \brief Update the Broker connection state of an LLRP Target socket.
+ *
+ *  If an LLRP Target is associated with an RPT Client, this should be called each time the Client
+ *  connects or disconnects from the Broker. This affects whether the LLRP Target responds to
+ *  filtered LLRP probe requests.
+ *
+ *  \param[in] handle Handle to LLRP Target for which to update the connection state.
+ *  \param[in] connected_to_broker Whether the LLRP Target is currently connected to a Broker.
+ */
+void rdmnet_llrp_target_update_connection_state(llrp_target_t handle, bool connected_to_broker)
+{
+  LlrpTarget *target;
+  lwpa_error_t res = get_target(handle, &target);
+  if (res == kLwpaErrOk)
+  {
+    target->connected_to_broker = connected_to_broker;
+    release_target(target);
+  }
+}
+
+/*! \brief Send an RDM response on an LLRP Target socket.
+ *
+ *  \param[in] handle LLRP manager socket handle on which to send an RDM command.
+ *  \param[in] destination CID of LLRP Manager to which to send the command.
+ *  \param[in] command RDM response to send.
+ *  \param[in] transaction_number Transaction number of the corresponding LLRP RDM command.
+ *  \return #kLwpaErrOk: Command sent successfully.\n
+ *          #kLwpaErrInvalid: Invalid argument provided.\n
+ *          Note: other error codes might be propagated from underlying socket calls.
+ */
+lwpa_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLocalRdmResponse *resp)
+{
+  if (!resp)
+    return kLwpaErrInvalid;
+
+  RdmBuffer resp_buf;
+  lwpa_error_t res = rdmresp_create_response(&resp->rdm, &resp_buf);
+  if (res != kLwpaErrOk)
+    return res;
+
+  LlrpTarget *target;
+  res = get_target(handle, &target);
+  if (res == kLwpaErrOk)
+  {
+    if (resp->interface_index < target->num_netints)
+    {
+      LlrpTargetNetintInfo *netint = &target->netints[resp->interface_index];
+      LlrpHeader header;
+
+      header.dest_cid = resp->dest_cid;
+      header.sender_cid = target->cid;
+      header.transaction_number = resp->seq_num;
+
+      res = send_llrp_rdm_response(netint->sys_sock, netint->send_buf, lwpaip_is_v6(&netint->ip), &header, &resp_buf);
+    }
+    else
+    {
+      // Something has changed about the system network interfaces since this command was received.
+      res = kLwpaErrSys;
+    }
+    release_target(target);
+  }
+  return res;
+}
+
 void process_target_state(LlrpTarget *target)
 {
   for (LlrpTargetNetintInfo *netint = target->netints; netint < target->netints + target->num_netints; ++netint)
@@ -269,8 +345,8 @@ void process_target_state(LlrpTarget *target)
         header.transaction_number = netint->pending_reply_trans_num;
 
         DiscoveredLlrpTarget target_info;
-        target_info.target_cid = target->cid;
-        target_info.target_uid = target->uid;
+        target_info.cid = target->cid;
+        target_info.uid = target->uid;
         memcpy(target_info.hardware_address, state.lowest_hardware_addr, 6);
         target_info.component_type = target->component_type;
 
@@ -342,73 +418,13 @@ void rdmnet_llrp_target_tick()
   }
 }
 
-/*! \brief Update the Broker connection state of an LLRP Target socket.
- *
- *  If an LLRP Target is associated with an RPT Client, this should be called each time the Client
- *  connects or disconnects from the Broker. This affects whether the LLRP Target responds to
- *  filtered LLRP probe requests.
- *
- *  \param[in] handle Handle to LLRP Target for which to update the connection state.
- *  \param[in] connected_to_broker Whether the LLRP Target is currently connected to a Broker.
- */
-void rdmnet_llrp_target_update_connection_state(llrp_target_t handle, bool connected_to_broker)
-{
-  (void)handle;
-  (void)connected_to_broker;
-  /* TODO */
-}
-
-/*! \brief Send an RDM response on an LLRP Target socket.
- *
- *  \param[in] handle LLRP manager socket handle on which to send an RDM command.
- *  \param[in] destination CID of LLRP Manager to which to send the command.
- *  \param[in] command RDM response to send.
- *  \param[in] transaction_number Transaction number of the corresponding LLRP RDM command.
- *  \return #kLwpaErrOk: Command sent successfully.\n
- *          #kLwpaErrInvalid: Invalid argument provided.\n
- *          Note: other error codes might be propagated from underlying socket calls.
- */
-lwpa_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLocalRdmResponse *resp)
-{
-  if (!resp)
-    return kLwpaErrInvalid;
-
-  RdmBuffer resp_buf;
-  lwpa_error_t res = rdmresp_create_response(&resp->rdm, &resp_buf);
-  if (res != kLwpaErrOk)
-    return res;
-
-  LlrpTarget *target;
-  res = get_target(handle, &target);
-  if (res == kLwpaErrOk)
-  {
-    if (resp->interface_index < target->num_netints)
-    {
-      LlrpTargetNetintInfo *netint = &target->netints[resp->interface_index];
-      LlrpHeader header;
-
-      header.dest_cid = resp->dest_cid;
-      header.sender_cid = target->cid;
-      header.transaction_number = resp->seq_num;
-
-      res = send_llrp_rdm_response(netint->sys_sock, netint->send_buf, lwpaip_is_v6(&netint->ip), &header, &resp_buf);
-    }
-    else
-    {
-      // Something has changed about the system network interfaces since this command was received.
-      res = kLwpaErrSys;
-    }
-  }
-  return res;
-}
-
-void llrp_target_socket_activity(const LwpaPollEvent *event, PolledSocketOpaqueData data)
+void target_socket_activity(const LwpaPollEvent *event, PolledSocketOpaqueData data)
 {
   static uint8_t llrp_target_recv_buf[LLRP_MAX_MESSAGE_SIZE];
 
   if (event->events & LWPA_POLL_ERR)
   {
-    llrp_target_socket_error((LlrpTargetNetintInfo *)data.ptr, event->err);
+    target_socket_error((LlrpTargetNetintInfo *)data.ptr, event->err);
   }
   else if (event->events & LWPA_POLL_IN)
   {
@@ -417,22 +433,24 @@ void llrp_target_socket_activity(const LwpaPollEvent *event, PolledSocketOpaqueD
     {
       if (recv_res != kLwpaErrMsgSize)
       {
-        llrp_target_socket_error((LlrpTargetNetintInfo *)data.ptr, event->err);
+        target_socket_error((LlrpTargetNetintInfo *)data.ptr, event->err);
       }
     }
     else
     {
-      llrp_target_data_received((LlrpTargetNetintInfo *)data.ptr, llrp_target_recv_buf, recv_res);
+      target_data_received((LlrpTargetNetintInfo *)data.ptr, llrp_target_recv_buf, recv_res);
     }
   }
 }
 
-void llrp_target_socket_error(LlrpTargetNetintInfo *target_netint, lwpa_error_t err)
+void target_socket_error(LlrpTargetNetintInfo *target_netint, lwpa_error_t err)
 {
+  (void)target_netint;
+  (void)err;
   // TODO
 }
 
-void llrp_target_data_received(LlrpTargetNetintInfo *target_netint, const uint8_t *data, size_t size)
+void target_data_received(LlrpTargetNetintInfo *target_netint, const uint8_t *data, size_t size)
 {
   TargetCallbackDispatchInfo cb;
   INIT_CALLBACK_INFO(&cb);
@@ -441,7 +459,10 @@ void llrp_target_data_received(LlrpTargetNetintInfo *target_netint, const uint8_
   {
     LlrpMessage msg;
     LlrpMessageInterest interest;
-    register_message_interest(target_netint->target, &interest);
+    interest.my_cid = target_netint->target->cid;
+    interest.interested_in_probe_reply = false;
+    interest.interested_in_probe_request = true;
+    interest.my_uid = target_netint->target->uid;
 
     if (parse_llrp_message(data, size, &interest, &msg))
     {
@@ -451,14 +472,6 @@ void llrp_target_data_received(LlrpTargetNetintInfo *target_netint, const uint8_
   }
 
   deliver_callback(&cb);
-}
-
-void register_message_interest(LlrpTarget *target, LlrpMessageInterest *interest)
-{
-  interest->my_cid = target->cid;
-  interest->interested_in_probe_reply = false;
-  interest->interested_in_probe_request = true;
-  interest->my_uid = target->uid;
 }
 
 void handle_llrp_message(LlrpTarget *target, LlrpTargetNetintInfo *netint, const LlrpMessage *msg,
@@ -534,7 +547,7 @@ lwpa_error_t setup_target_netint(const LwpaIpAddr *netint_addr, LlrpTarget *targ
   if (res != kLwpaErrOk)
     return res;
 
-  netint_info->poll_info.callback = llrp_target_socket_activity;
+  netint_info->poll_info.callback = target_socket_activity;
   netint_info->poll_info.data.ptr = netint_info;
   res = rdmnet_core_add_polled_socket(netint_info->sys_sock, LWPA_POLL_IN, &netint_info->poll_info);
 
@@ -621,12 +634,6 @@ lwpa_error_t setup_target_netints(const LlrpTargetOptionalConfig *config, LlrpTa
 #endif
   }
   return res;
-}
-
-/* Callback for IntHandleManager to determine whether a handle is in use */
-bool target_handle_in_use(int handle_val)
-{
-  return lwpa_rbtree_find(&state.targets, &handle_val);
 }
 
 lwpa_error_t create_new_target(const LlrpTargetConfig *config, LlrpTarget **new_target)
@@ -719,12 +726,18 @@ void destroy_target(LlrpTarget *target, bool remove_from_tree)
   }
 }
 
+/* Callback for IntHandleManager to determine whether a handle is in use */
+bool target_handle_in_use(int handle_val)
+{
+  return lwpa_rbtree_find(&state.targets, &handle_val);
+}
+
 int target_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const LwpaRbNode *node_b)
 {
   (void)self;
 
-  LlrpTarget *a = (LlrpTarget *)node_a->value;
-  LlrpTarget *b = (LlrpTarget *)node_b->value;
+  const LlrpTarget *a = (const LlrpTarget *)node_a->value;
+  const LlrpTarget *b = (const LlrpTarget *)node_b->value;
 
   return a->handle - b->handle;
 }

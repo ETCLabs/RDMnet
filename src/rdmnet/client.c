@@ -521,12 +521,12 @@ void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDis
   ClientScopeListEntry *scope_entry = get_scope_by_disc_handle(handle);
   if (scope_entry)
   {
-    for (size_t i = 0; i < broker_info->listen_addrs_count; ++i)
+    for (BrokerListenAddr *listen_addr = broker_info->listen_addr_list; listen_addr; listen_addr = listen_addr->next)
     {
       // TODO temporary until we enable IPv6
-      if (lwpaip_is_v4(&broker_info->listen_addrs[i].ip))
+      if (lwpaip_is_v4(&listen_addr->addr.ip))
       {
-        start_connection_for_scope(scope_entry, &broker_info->listen_addrs[i]);
+        start_connection_for_scope(scope_entry, &listen_addr->addr);
         break;
       }
     }
@@ -1061,7 +1061,7 @@ lwpa_error_t create_llrp_handle_for_client(const RdmnetRptClientConfig *config, 
   target_config.optional = config->llrp_optional;
   target_config.cid = config->cid;
   target_config.component_type =
-      (config->type == kRPTClientTypeController ? kLlrpCompRPTController : kLlrpCompRPTDevice);
+      (config->type == kRPTClientTypeController ? kLlrpCompRptController : kLlrpCompRptDevice);
   target_config.callbacks = llrp_callbacks;
   target_config.callback_context = NULL;
   lwpa_error_t res = rdmnet_llrp_target_create(&target_config, &cli->llrp_handle);

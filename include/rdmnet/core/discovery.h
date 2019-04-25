@@ -37,8 +37,6 @@
 #include "lwpa/socket.h"
 #include "rdmnet/defs.h"
 
-#define RDMNET_DISC_MAX_BROKER_ADDRESSES 5
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -49,13 +47,19 @@ typedef struct RdmnetBrokerRegisterRef *rdmnet_registered_broker_t;
 #define RDMNET_SCOPE_MONITOR_INVALID NULL
 #define RDMNET_REGISTERED_BROKER_INVALID NULL
 
+typedef struct BrokerListenAddr BrokerListenAddr;
+struct BrokerListenAddr
+{
+  LwpaSockaddr addr;
+  BrokerListenAddr *next;
+};
+
 typedef struct RdmnetBrokerDiscInfo
 {
   LwpaUuid cid;
   char service_name[E133_SERVICE_NAME_STRING_PADDED_LENGTH];
   uint16_t port;
-  LwpaSockaddr listen_addrs[RDMNET_DISC_MAX_BROKER_ADDRESSES];
-  size_t listen_addrs_count;
+  BrokerListenAddr *listen_addr_list;
   char scope[E133_SCOPE_STRING_PADDED_LENGTH];
   char model[E133_MODEL_STRING_PADDED_LENGTH];
   char manufacturer[E133_MANUFACTURER_STRING_PADDED_LENGTH];

@@ -124,6 +124,7 @@ protected:
   virtual void RdmCommandReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmCommand &cmd) override;
   virtual void RdmResponseReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse &resp) override;
   virtual void StatusReceived(rdmnet_client_scope_t scope_handle, const RemoteRptStatus &status) override;
+  virtual void LlrpRdmCommandReceived(const LlrpRemoteRdmCommand &cmd) override;
 
   /******* RDM message handling functions *******/
   void HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse &resp);

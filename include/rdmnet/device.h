@@ -59,8 +59,9 @@ typedef struct RdmnetDeviceConfig
   RdmnetDeviceCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. Can be NULL. */
   void *callback_context;
-
+  /*! Optional configuration data for the device's RPT Client functionality. */
   RptClientOptionalConfig optional;
+  /*! Optional configuration data for the device's LLRP Target functionality. */
   LlrpTargetOptionalConfig llrp_optional;
 } RdmnetDeviceConfig;
 

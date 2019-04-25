@@ -84,6 +84,14 @@ static void controllercb_status_received(rdmnet_controller_t handle, rdmnet_clie
   if (notify)
     notify->StatusReceived(handle, scope, status);
 }
+
+static void controllercb_llrp_rdm_command_received(rdmnet_controller_t handle, const LlrpRemoteRdmCommand *cmd,
+                                                   void *context)
+{
+  RDMnetLibNotifyInternal *notify = static_cast<RDMnetLibNotifyInternal *>(context);
+  if (notify)
+    notify->LlrpRdmCommandReceived(handle, cmd);
+}
 }  // extern "C"
 
 RDMnetLibWrapper::RDMnetLibWrapper(ControllerLog *log) : log_(log)
@@ -108,9 +116,8 @@ bool RDMnetLibWrapper::Startup(const LwpaUuid &cid, RDMnetLibNotify *notify)
 
     // Create our controller handle in the RDMnet library
     RdmnetControllerConfig config;
-    RDMNET_CLIENT_SET_DYNAMIC_UID(&config, 0x6574);
+    RDMNET_CONTROLLER_CONFIG_INIT(&config, 0x6574);
     config.cid = my_cid_;
-    config.search_domain = E133_DEFAULT_DOMAIN;
     // clang-format off
     config.callbacks = {
       controllercb_connected,
@@ -119,7 +126,8 @@ bool RDMnetLibWrapper::Startup(const LwpaUuid &cid, RDMnetLibNotify *notify)
       controllercb_client_list_update,
       controllercb_rdm_response_received,
       controllercb_rdm_command_received,
-      controllercb_status_received
+      controllercb_status_received,
+      controllercb_llrp_rdm_command_received
     };
     // clang-format on
     config.callback_context = static_cast<RDMnetLibNotifyInternal *>(this);
@@ -281,5 +289,13 @@ void RDMnetLibWrapper::StatusReceived(rdmnet_controller_t handle, rdmnet_client_
   if (notify_ && handle == controller_handle_ && status)
   {
     notify_->StatusReceived(scope, *status);
+  }
+}
+
+void RDMnetLibWrapper::LlrpRdmCommandReceived(rdmnet_controller_t handle, const LlrpRemoteRdmCommand *cmd)
+{
+  if (notify_ && handle == controller_handle_ && cmd)
+  {
+    notify_->LlrpRdmCommandReceived(*cmd);
   }
 }

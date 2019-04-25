@@ -83,7 +83,7 @@ struct LlrpTarget
   LlrpTargetCallbacks callbacks;
   void *callback_context;
 
-  // Tracking synchronized destruction
+  // Synchronized destruction tracking
   bool marked_for_destruction;
   LlrpTarget *next_to_destroy;
 };

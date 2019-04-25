@@ -194,8 +194,9 @@ typedef struct RdmnetRptClientConfig
   RptClientCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. */
   void *callback_context;
-
+  /*! Optional configuration data for the client's LLRP Target functionality. */
   LlrpTargetOptionalConfig llrp_optional;
+  /*! Optional configuration data for the client. */
   RptClientOptionalConfig optional;
 } RdmnetRptClientConfig;
 

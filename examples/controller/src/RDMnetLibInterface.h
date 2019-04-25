@@ -41,6 +41,7 @@ public:
   virtual void RdmCommandReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmCommand &cmd) = 0;
   virtual void RdmResponseReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse &resp) = 0;
   virtual void StatusReceived(rdmnet_client_scope_t scope_handle, const RemoteRptStatus &status) = 0;
+  virtual void LlrpRdmCommandReceived(const LlrpRemoteRdmCommand &cmd) = 0;
 };
 
 class RDMnetLibInterface

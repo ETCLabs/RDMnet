@@ -107,7 +107,7 @@ typedef struct LlrpMessage
 extern "C" {
 #endif
 
-extern LwpaUuid kLLRPBroadcastCID;
+extern LwpaUuid kLlrpBroadcastCid;
 
 void llrp_prot_init();
 

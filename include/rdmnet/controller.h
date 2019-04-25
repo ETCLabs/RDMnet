@@ -79,10 +79,13 @@ typedef struct RdmnetControllerConfig
   RdmnetControllerCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. Can be NULL. */
   void *callback_context;
-
+  /*! Optional configuration data for the controller's RPT Client functionality. */
   RptClientOptionalConfig optional;
+  /*! Optional configuration data for the controller's LLRP Target functionality. */
   LlrpTargetOptionalConfig llrp_optional;
 } RdmnetControllerConfig;
+
+#define RDMNET_CONTROLLER_CONFIG_INIT(controllercfgptr, manu_id) RPT_CLIENT_CONFIG_INIT(controllercfgptr, manu_id)
 
 lwpa_error_t rdmnet_controller_init(const LwpaLogParams *lparams);
 void rdmnet_controller_deinit();

@@ -13,12 +13,11 @@ option(RDMNET_WINDOWS_USE_BONJOUR_SDK
 add_library(dnssd INTERFACE)
 
 # The RDMnet discovery layer required to interface with the imported library.
-set(RDMNET_DISCOVERY_SOURCES ${RDMNET_INCLUDE}/rdmnet/core/discovery.h)
+set(RDMNET_DISCOVERY_HEADERS ${RDMNET_INCLUDE}/rdmnet/core/discovery.h)
 
 add_library(RDMnetDiscovery INTERFACE)
-target_sources(RDMnetDiscovery INTERFACE ${RDMNET_DISCOVERY_SOURCES})
+target_sources(RDMnetDiscovery INTERFACE ${RDMNET_DISCOVERY_HEADERS})
 target_include_directories(RDMnetDiscovery INTERFACE ${RDMNET_INCLUDE} ${RDMNET_SRC})
-source_group(include\\core FILES ${RDMNET_DISCOVERY_SOURCES})
 
 # A version of the DNS-SD library with certain symbols removed for mocking.
 add_library(dnssd_mock INTERFACE)
@@ -128,4 +127,3 @@ else()
 endif()
 
 target_sources(RDMnetDiscovery INTERFACE ${RDMNET_DISCOVERY_ADDITIONAL_SOURCES})
-source_group(discovery FILES ${RDMNET_DISCOVERY_ADDITIONAL_SOURCES})

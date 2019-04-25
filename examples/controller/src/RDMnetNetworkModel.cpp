@@ -1403,6 +1403,12 @@ void RDMnetNetworkModel::StatusReceived(rdmnet_client_scope_t /* scope_handle */
   }
 }
 
+void RDMnetNetworkModel::LlrpRdmCommandReceived(const LlrpRemoteRdmCommand & /*cmd*/)
+{
+  // TODO
+  log_->Log(LWPA_LOG_INFO, "Got LLRP RDM Command");
+}
+
 bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand &cmd, const BrokerItem *brokerItem)
 {
   if (!brokerItem)

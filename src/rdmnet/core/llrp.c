@@ -53,12 +53,14 @@ lwpa_error_t subscribe_multicast(lwpa_socket_t socket, const LwpaIpAddr *netint,
 lwpa_error_t rdmnet_llrp_init()
 {
   lwpa_error_t res = kLwpaErrOk;
-  //bool manager_initted = false;
+#if RDMNET_DYNAMIC_MEM
+  bool manager_initted = false;
+#endif
   bool target_initted = false;
 
-//#if RDMNET_DYNAMIC_MEM
-//  manager_initted = ((res = rdmnet_llrp_manager_init()) == kLwpaErrOk);
-//#endif
+#if RDMNET_DYNAMIC_MEM
+  manager_initted = ((res = rdmnet_llrp_manager_init()) == kLwpaErrOk);
+#endif
 
   if (res == kLwpaErrOk)
   {
@@ -79,10 +81,12 @@ lwpa_error_t rdmnet_llrp_init()
   }
   else
   {
-//    if (manager_initted)
-//      rdmnet_llrp_manager_deinit();
     if (target_initted)
       rdmnet_llrp_target_deinit();
+#if RDMNET_DYNAMIC_MEM
+    if (manager_initted)
+      rdmnet_llrp_manager_deinit();
+#endif
   }
 
   return res;
@@ -92,7 +96,7 @@ void rdmnet_llrp_deinit()
 {
   rdmnet_llrp_target_deinit();
 #if RDMNET_DYNAMIC_MEM
-  //rdmnet_llrp_manager_deinit();
+  rdmnet_llrp_manager_deinit();
 #endif
 }
 
@@ -204,5 +208,8 @@ lwpa_error_t subscribe_multicast(lwpa_socket_t socket, const LwpaIpAddr *netint,
 
 void rdmnet_llrp_tick()
 {
+#if RDMNET_DYNAMIC_MEM
+  rdmnet_llrp_manager_tick();
+#endif
   rdmnet_llrp_target_tick();
 }
