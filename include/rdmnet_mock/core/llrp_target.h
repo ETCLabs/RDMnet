@@ -25,42 +25,32 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/* rdmnet_mock/core.h
- * Mocking the functions of rdmnet/core.h
+/* rdmnet_mock/core/llrp_target.h
+ * Mocking the functions of rdmnet/core/llrp_target.h
  */
-#ifndef _RDMNET_MOCK_CORE_H_
-#define _RDMNET_MOCK_CORE_H_
+#ifndef _RDMNET_MOCK_CORE_LLRP_TARGET_H_
+#define _RDMNET_MOCK_CORE_LLRP_TARGET_H_
 
-#include "rdmnet/core.h"
+#include "rdmnet/core/llrp_target.h"
 #include "fff.h"
-
-#include "rdmnet_mock/core/broker_prot.h"
-#include "rdmnet_mock/core/connection.h"
-#include "rdmnet_mock/core/discovery.h"
-#include "rdmnet_mock/core/rpt_prot.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_core_init, const LwpaLogParams *);
-DECLARE_FAKE_VOID_FUNC(rdmnet_core_deinit);
-DECLARE_FAKE_VOID_FUNC(rdmnet_core_tick);
-DECLARE_FAKE_VALUE_FUNC(bool, rdmnet_core_initialized);
+DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_llrp_target_create, const LlrpTargetConfig *, llrp_target_t *);
+DECLARE_FAKE_VOID_FUNC(rdmnet_llrp_target_destroy, llrp_target_t);
+DECLARE_FAKE_VOID_FUNC(rdmnet_llrp_target_update_connection_state, llrp_target_t, bool);
+DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_llrp_send_rdm_response, llrp_target_t, const LlrpLocalRdmResponse *);
 
-#define RDMNET_CORE_DO_FOR_ALL_FAKES(operation)        \
-  operation(rdmnet_core_init);                         \
-  operation(rdmnet_core_deinit);                       \
-  operation(rdmnet_core_tick);                         \
-  operation(rdmnet_core_initialized);                  \
-  RDMNET_CORE_BROKER_PROT_DO_FOR_ALL_FAKES(operation); \
-  RDMNET_CORE_CONNECTION_DO_FOR_ALL_FAKES(operation);  \
-  RDMNET_CORE_DISCOVERY_DO_FOR_ALL_FAKES(operation);   \
-  RDMNET_CORE_LLRP_TARGET_DO_FOR_ALL_FAKES(operation); \
-  RDMNET_CORE_RPT_PROT_DO_FOR_ALL_FAKES(operation)
+#define RDMNET_CORE_LLRP_TARGET_DO_FOR_ALL_FAKES(operation) \
+  operation(rdmnet_llrp_target_create); \
+  operation(rdmnet_llrp_target_destroy); \
+  operation(rdmnet_llrp_target_update_connection_state); \
+  operation(rdmnet_llrp_send_rdm_response)
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _RDMNET_MOCK_CORE_H_ */
+#endif /* _RDMNET_MOCK_CORE_LLRP_TARGET_H_ */

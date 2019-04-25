@@ -50,7 +50,7 @@ typedef struct RdmnetBrokerRegisterRef *rdmnet_registered_broker_t;
 typedef struct BrokerListenAddr BrokerListenAddr;
 struct BrokerListenAddr
 {
-  LwpaSockaddr addr;
+  LwpaIpAddr addr;
   BrokerListenAddr *next;
 };
 

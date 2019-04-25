@@ -117,7 +117,6 @@ lwpa_error_t rdmnet_llrp_target_create(const LlrpTargetConfig *config, llrp_targ
 void rdmnet_llrp_target_destroy(llrp_target_t handle);
 
 void rdmnet_llrp_target_update_connection_state(llrp_target_t handle, bool connected_to_broker);
-
 lwpa_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLocalRdmResponse *resp);
 
 #ifdef __cplusplus

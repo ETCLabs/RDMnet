@@ -524,9 +524,12 @@ void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDis
     for (BrokerListenAddr *listen_addr = broker_info->listen_addr_list; listen_addr; listen_addr = listen_addr->next)
     {
       // TODO temporary until we enable IPv6
-      if (lwpaip_is_v4(&listen_addr->addr.ip))
+      if (lwpaip_is_v4(&listen_addr->addr))
       {
-        start_connection_for_scope(scope_entry, &listen_addr->addr);
+        LwpaSockaddr connect_addr;
+        connect_addr.ip = listen_addr->addr;
+        connect_addr.port = broker_info->port;
+        start_connection_for_scope(scope_entry, &connect_addr);
         break;
       }
     }

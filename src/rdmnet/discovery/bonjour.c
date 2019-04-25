@@ -167,13 +167,9 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceF
         if ((lwpaip_is_v4(&ip_addr.ip) && lwpaip_v4_address(&ip_addr.ip) != 0) ||
             (lwpaip_is_v6(&ip_addr.ip) && ipv6_valid(&ip_addr.ip)))
         {
-          // Normalize the address
-          if ((db->info.port != 0) && (ip_addr.port == 0))
-            ip_addr.port = db->info.port;
-
           // Add it to the info structure
           BrokerListenAddr *new_addr = malloc(sizeof(BrokerListenAddr));
-          new_addr->addr = ip_addr;
+          new_addr->addr = ip_addr.ip;
           new_addr->next = NULL;
 
           if (!db->info.listen_addr_list)

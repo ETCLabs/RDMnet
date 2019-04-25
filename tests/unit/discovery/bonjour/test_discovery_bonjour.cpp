@@ -120,18 +120,24 @@ protected:
   void MonitorDefaultScope();
   void CreateDefaultBroker();
 
-  RdmnetBrokerDiscInfo default_discovered_broker_ = {{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}},
-                                                     "Test Service Name",
-                                                     8888,
-                                                     {},
-                                                     0,
-                                                     "default",
-                                                     "Test Broker",
-                                                     "ETC"};
+  // clang-format off
+  RdmnetBrokerDiscInfo default_discovered_broker_ =
+  {
+    {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}},
+    "Test Service Name",
+    8888,
+    nullptr,
+    "default",
+    "Test Broker",
+    "ETC"
+  };
+  // clang-format on
   std::string default_full_service_name_;
   lwpa_error_t init_result_;
   TXTRecordRef txt_record_;
   rdmnet_scope_monitor_t monitor_handle_;
+
+  std::unique_ptr<BrokerListenAddr> default_listen_addr_;
 };
 
 // These need to be macros because of the way we are using non-capturing lambdas in various tests
@@ -167,9 +173,10 @@ void TestDiscoveryBonjour::MonitorDefaultScope()
 
 void TestDiscoveryBonjour::CreateDefaultBroker()
 {
-  lwpaip_set_v4_address(&default_discovered_broker_.listen_addrs[0].ip, 0x0a650101);
-  default_discovered_broker_.listen_addrs[0].port = 8888;
-  default_discovered_broker_.listen_addrs_count = 1;
+  default_listen_addr_ = std::make_unique<BrokerListenAddr>();
+  lwpaip_set_v4_address(&default_listen_addr_->addr, 0x0a650101);
+  default_listen_addr_->next = nullptr;
+  default_discovered_broker_.listen_addr_list = default_listen_addr_.get();
 
   TXTRecordCreate(&txt_record_, 0, nullptr);
   std::string txtvers = std::to_string(E133_DNSSD_TXTVERS);
@@ -216,7 +223,7 @@ TEST_F(TestDiscoveryBonjour, reg)
   config.my_info.cid = kLwpaNullUuid;
   config.my_info.service_name[0] = '\0';
   config.my_info.scope[0] = '\0';
-  config.my_info.listen_addrs_count = 0;
+  config.my_info.listen_addr_list = nullptr;
   set_reg_callbacks(&config.callbacks);
   config.callback_context = this;
 
@@ -303,7 +310,10 @@ TEST_F(TestDiscoveryBonjour, resolve_cleanup)
   // DNSServiceGetAddrInfoReply
   DNSServiceGetAddrInfoReply gai_cb = DNSServiceGetAddrInfo_fake.arg5_val;
   struct sockaddr address;
-  sockaddr_lwpa_to_plat(&address, &default_discovered_broker_.listen_addrs[0]);
+  LwpaSockaddr discovered_addr;
+  discovered_addr.ip = default_listen_addr_->addr;
+  discovered_addr.port = 0;
+  sockaddr_lwpa_to_plat(&address, &discovered_addr);
   gai_cb(DEFAULT_MONITOR_DNS_REF, 0, 0, kDNSServiceErr_NoError, "testhost", &address, 10,
          DNSServiceGetAddrInfo_fake.arg6_val);
 

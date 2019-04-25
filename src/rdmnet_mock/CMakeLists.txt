@@ -17,11 +17,13 @@ add_library(RDMnetCore_mock
   ${RDMNET_INCLUDE}/rdmnet_mock/core.h
   ${RDMNET_INCLUDE}/rdmnet_mock/core/broker_prot.h
   ${RDMNET_INCLUDE}/rdmnet_mock/core/connection.h
+  ${RDMNET_INCLUDE}/rdmnet_mock/core/llrp_target.h
   ${RDMNET_INCLUDE}/rdmnet_mock/core/rpt_prot.h
 
   ${RDMNET_SRC}/rdmnet_mock/core.c
   ${RDMNET_SRC}/rdmnet_mock/core/broker_prot.c
   ${RDMNET_SRC}/rdmnet_mock/core/connection.c
+  ${RDMNET_SRC}/rdmnet_mock/core/llrp_target.c
   ${RDMNET_SRC}/rdmnet_mock/core/rpt_prot.c
 
   # Real sources

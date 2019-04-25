@@ -52,7 +52,7 @@ RDMnet::Broker::~Broker()
 
 /// \brief Start all %Broker functionality and threads.
 ///
-/// If listen_addrs is empty, this returns false.  Otherwise, the broker uss the address fields to
+/// If listen_addrs is empty, this returns false.  Otherwise, the broker uses the address fields to
 /// set up the listening sockets. If the listen_port is 0 and their is only one listen_addr, an
 /// ephemeral port is chosen. If there are more listen_addrs, listen_port must not be 0.
 ///
@@ -157,7 +157,7 @@ bool BrokerCore::Startup(const RDMnet::BrokerSettings &settings, uint16_t listen
     service_thread_.SetNotify(this);
     service_thread_.Start();
 
-    disc_.RegisterBroker(settings_.disc_attributes, settings_.cid, listen_addrs, listen_port_);
+    disc_.RegisterBroker(settings_.disc_attributes, settings_.cid, listen_addrs_, listen_port_);
 
     log_->Log(LWPA_LOG_INFO, "%s Prototype RDMnet Broker Version %s", settings.disc_attributes.dns_manufacturer.c_str(),
               RDMNET_VERSION_STRING);
@@ -1119,13 +1119,13 @@ void BrokerCore::OtherBrokerFound(const RdmnetBrokerDiscInfo &broker_info)
   if (log_->CanLog(LWPA_LOG_WARNING))
   {
     std::string addrs;
-    for (size_t i = 0; i < broker_info.listen_addrs_count; i++)
+    for (const BrokerListenAddr *listen_addr = broker_info.listen_addr_list; listen_addr; listen_addr = listen_addr->next)
     {
       char addr_string[LWPA_INET6_ADDRSTRLEN];
-      if (kLwpaErrOk == lwpa_inet_ntop(&broker_info.listen_addrs[i].ip, addr_string, LWPA_INET6_ADDRSTRLEN))
+      if (kLwpaErrOk == lwpa_inet_ntop(&listen_addr->addr, addr_string, LWPA_INET6_ADDRSTRLEN))
       {
         addrs.append(addr_string);
-        if (i + 1 < broker_info.listen_addrs_count)
+        if (listen_addr->next)
           addrs.append(", ");
       }
     }

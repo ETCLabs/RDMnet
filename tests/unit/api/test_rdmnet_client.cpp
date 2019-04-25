@@ -34,6 +34,7 @@
 #include "rdmnet/client.h"
 
 #include "rdmnet_mock/core.h"
+#include "rdmnet_mock/core/llrp_target.h"
 #include "rdmnet/core/util.h"
 
 DEFINE_FFF_GLOBALS;
@@ -78,10 +79,9 @@ protected:
     rpt_callbacks_.broker_msg_received = rdmnet_client_broker_msg_received;
     rpt_callbacks_.msg_received = rpt_client_msg_received;
 
+    RPT_CLIENT_CONFIG_INIT(&default_rpt_config_, 0x6574);
     default_rpt_config_.type = kRPTClientTypeController;
-    RDMNET_CLIENT_SET_DYNAMIC_UID(&default_rpt_config_, 0x6574);
     default_rpt_config_.cid = {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}};
-    default_rpt_config_.search_domain = E133_DEFAULT_DOMAIN;
     default_rpt_config_.callbacks = rpt_callbacks_;
     default_rpt_config_.callback_context = this;
   }
@@ -96,6 +96,7 @@ protected:
 
     // Init
     rdmnet_core_init_fake.return_val = kLwpaErrOk;
+    rdmnet_llrp_target_create_fake.return_val = kLwpaErrOk;
     ASSERT_EQ(kLwpaErrOk, rdmnet_client_init(NULL));
     ASSERT_EQ(rdmnet_core_init_fake.call_count, 1u);
     rdmnet_core_initialized_fake.return_val = true;
@@ -105,8 +106,6 @@ protected:
   }
 
   void TearDown() override { rdmnet_client_deinit(); }
-
-  void PrimeNewConnection();
 
   RdmnetScopeConfig default_dynamic_scope_{};
   RdmnetScopeConfig default_static_scope_{};

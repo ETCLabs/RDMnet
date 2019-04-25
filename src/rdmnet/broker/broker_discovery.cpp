@@ -106,12 +106,20 @@ lwpa_error_t BrokerDiscoveryManager::RegisterBroker(const RDMnet::BrokerDiscover
   rdmnetdisc_fill_default_broker_info(my_info);
 
   my_info->cid = local_cid;
-  for (size_t i = 0; i < listen_addrs.size(); i++)
+  std::vector<BrokerListenAddr> listen_addr_list;
+  listen_addr_list.reserve(listen_addrs.size());
+  for (const auto &listen_addr : listen_addrs)
   {
-    // TODO: make sure lwpa_sockaddr is what we want on the library's side of things
-    my_info->listen_addrs[i].ip = listen_addrs[i];
+    BrokerListenAddr to_add;
+    to_add.addr = listen_addr;
+    to_add.next = nullptr;
+    listen_addr_list.push_back(to_add);
+    if (listen_addr_list.size() > 1)
+    {
+      listen_addr_list[listen_addr_list.size() - 2].next = &listen_addr_list[listen_addr_list.size() - 1];
+    }
   }
-  my_info->listen_addrs_count = listen_addrs.size();
+  my_info->listen_addr_list = listen_addr_list.data();
   my_info->port = listen_port;
 
   RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
