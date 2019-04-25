@@ -75,6 +75,7 @@ lwpa_error_t rdmnet_device_destroy(rdmnet_device_t handle);
 
 lwpa_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const LocalRdmResponse *resp);
 lwpa_error_t rdmnet_device_send_status(rdmnet_device_t handle, const LocalRptStatus *status);
+lwpa_error_t rdmnet_device_send_llrp_response(rdmnet_device_t handle, const LlrpLocalRdmResponse *resp);
 
 lwpa_error_t rdmnet_device_change_scope(rdmnet_device_t handle, const RdmnetScopeConfig *new_scope_config,
                                         rdmnet_disconnect_reason_t reason);

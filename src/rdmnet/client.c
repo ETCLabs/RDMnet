@@ -512,6 +512,22 @@ lwpa_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, rdmnet_client
   return res;
 }
 
+lwpa_error_t rdmnet_rpt_client_send_llrp_response(rdmnet_client_t handle, const LlrpLocalRdmResponse *resp)
+{
+  if (handle < 0 || !resp)
+    return kLwpaErrInvalid;
+
+  RdmnetClient *cli;
+  lwpa_error_t res = get_client(handle, &cli);
+  if (res != kLwpaErrOk)
+    return res;
+
+  res = rdmnet_llrp_send_rdm_response(cli->llrp_handle, resp);
+
+  release_client(cli);
+  return res;
+}
+
 // Callback functions from the discovery interface
 
 void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo *broker_info, void *context)
@@ -526,6 +542,16 @@ void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDis
       // TODO temporary until we enable IPv6
       if (lwpaip_is_v4(&listen_addr->addr))
       {
+        if (lwpa_canlog(rdmnet_log_params, LWPA_LOG_INFO))
+        {
+          char addr_str[LWPA_INET6_ADDRSTRLEN];
+          if (lwpa_inet_ntop(&listen_addr->addr, addr_str, LWPA_INET6_ADDRSTRLEN) == kLwpaErrOk)
+          {
+            lwpa_log(rdmnet_log_params, LWPA_LOG_INFO,
+                     RDMNET_LOG_MSG("Broker for scope '%s' discovered at address %s:%d. Starting connection..."),
+                     scope_entry->config.scope, addr_str, broker_info->port);
+          }
+        }
         LwpaSockaddr connect_addr;
         connect_addr.ip = listen_addr->addr;
         connect_addr.port = broker_info->port;

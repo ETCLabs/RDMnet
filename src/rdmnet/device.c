@@ -168,6 +168,14 @@ lwpa_error_t rdmnet_device_send_status(rdmnet_device_t handle, const LocalRptSta
   return rdmnet_rpt_client_send_status(handle->client_handle, handle->scope_handle, status);
 }
 
+lwpa_error_t rdmnet_device_send_llrp_response(rdmnet_device_t handle, const LlrpLocalRdmResponse *resp)
+{
+  if (!handle)
+    return kLwpaErrInvalid;
+
+  return rdmnet_rpt_client_send_llrp_response(handle->client_handle, resp);
+}
+
 lwpa_error_t rdmnet_device_change_scope(rdmnet_device_t handle, const RdmnetScopeConfig *new_scope_config,
                                         rdmnet_disconnect_reason_t reason)
 {
