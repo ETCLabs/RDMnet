@@ -95,7 +95,6 @@ BOOL WINAPI console_handler(DWORD signal)
   {
     printf("Stopping Device...\n");
     device_keep_running = false;
-    device_deinit();
   }
 
   return TRUE;

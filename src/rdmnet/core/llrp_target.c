@@ -711,8 +711,7 @@ void destroy_target(LlrpTarget *target, bool remove_from_tree)
   {
     for (LlrpTargetNetintInfo *netint = target->netints; netint < target->netints + target->num_netints; ++netint)
     {
-      rdmnet_core_remove_polled_socket(netint->sys_sock);
-      lwpa_close(netint->sys_sock);
+      cleanup_target_netint(netint);
     }
     if (remove_from_tree)
       lwpa_rbtree_remove(&state.targets, target);

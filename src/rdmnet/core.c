@@ -170,11 +170,15 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
 
 void rdmnet_core_deinit()
 {
-  if (rdmnet_writelock())
+  if (core_state.initted)
   {
-    if (core_state.initted)
+    core_state.initted = false;
+#if RDMNET_USE_TICK_THREAD
+    core_state.tickthread_run = false;
+    lwpa_thread_stop(&core_state.tick_thread, LWPA_WAIT_FOREVER);
+#endif
+    if (rdmnet_writelock())
     {
-      core_state.initted = false;
       rdmnet_log_params = NULL;
 
       rdmnet_llrp_deinit();
@@ -182,8 +186,8 @@ void rdmnet_core_deinit()
       rdmnet_conn_deinit();
       lwpa_poll_context_deinit(&core_state.poll_context);
       lwpa_deinit(RDMNET_LWPA_FEATURES);
+      rdmnet_writeunlock();
     }
-    rdmnet_writeunlock();
   }
 }
 
