@@ -143,9 +143,9 @@ for:
     install:
       - ps: |-
           $wc = New-Object Net.WebClient
-          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_$Env:MDNSWINDOWS_VERSION_x86.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x86.zip")
+          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_$($Env:MDNSWINDOWS_VERSION)_x86.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x86.zip")
           7z x mDNSWindows_x86.zip -omdns_install -y -r
-          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_Merge_$Env:MDNSWINDOWS_VERSION.msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
+          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_Merge_$($Env:MDNSWINDOWS_VERSION).msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
           iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/appveyor/secure-file/master/install.ps1'))
       - cmd: appveyor-tools\secure-file -decrypt tools\install\windows\codesign_cert_windows.pfx.enc -secret %CODESIGN_DECRYPT_SECRET%
 
@@ -186,9 +186,9 @@ for:
     install:
       - ps: |-
           $wc = New-Object Net.WebClient
-          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_$Env:MDNSWINDOWS_VERSION_x64.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x64.zip")
+          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_$($Env:MDNSWINDOWS_VERSION)_x64.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x64.zip")
           7z x mDNSWindows_x64.zip -omdns_install -y -r
-          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_Merge_$Env:MDNSWINDOWS_VERSION.msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
+          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_Merge_$($Env:MDNSWINDOWS_VERSION).msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
           iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/appveyor/secure-file/master/install.ps1'))
       - cmd: appveyor-tools\secure-file -decrypt tools\install\windows\codesign_cert_windows.pfx.enc -secret %CODESIGN_DECRYPT_SECRET%
 
