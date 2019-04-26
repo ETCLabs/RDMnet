@@ -186,6 +186,14 @@ lwpa_error_t rdmnet_controller_send_rdm_response(rdmnet_controller_t handle, rdm
   return rdmnet_rpt_client_send_rdm_response(handle->client_handle, scope_handle, resp);
 }
 
+lwpa_error_t rdmnet_controller_send_llrp_response(rdmnet_controller_t handle, const LlrpLocalRdmResponse *resp)
+{
+  if (!handle)
+    return kLwpaErrInvalid;
+
+  return rdmnet_rpt_client_send_llrp_response(handle->client_handle, resp);
+}
+
 lwpa_error_t rdmnet_controller_request_client_list(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle)
 {
   if (!handle)
@@ -265,7 +273,7 @@ void client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand
 }
 
 void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptClientMessage *msg,
-                                void *context)
+                         void *context)
 {
   (void)handle;
 

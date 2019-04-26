@@ -1403,10 +1403,49 @@ void RDMnetNetworkModel::StatusReceived(rdmnet_client_scope_t /* scope_handle */
   }
 }
 
-void RDMnetNetworkModel::LlrpRdmCommandReceived(const LlrpRemoteRdmCommand & /*cmd*/)
+void RDMnetNetworkModel::LlrpRdmCommandReceived(const LlrpRemoteRdmCommand &cmd)
 {
-  // TODO
-  log_->Log(LWPA_LOG_INFO, "Got LLRP RDM Command");
+  bool should_nack = false;
+  uint16_t nack_reason;
+
+  const RdmCommand &rdm = cmd.rdm;
+  if (rdm.command_class == kRdmCCGetCommand)
+  {
+    std::vector<RdmParamData> resp_data_list;
+
+    if (default_responder_.Get(rdm.param_id, rdm.data, rdm.datalen, resp_data_list, nack_reason))
+    {
+      if (resp_data_list.size() == 1)
+      {
+        SendLlrpGetResponse(cmd, resp_data_list);
+
+        log_->Log(LWPA_LOG_DEBUG, "ACK'ing GET_COMMAND for PID 0x%04x from LLRP Manager %04x:%08x", rdm.param_id,
+                  rdm.source_uid.manu, rdm.source_uid.id);
+      }
+      else
+      {
+        should_nack = true;
+        nack_reason = E137_7_NR_ACTION_NOT_SUPPORTED;
+      }
+    }
+    else
+    {
+      should_nack = true;
+    }
+  }
+  else
+  {
+    // This controller is currently read-only.
+    should_nack = true;
+    nack_reason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
+  }
+
+  if (should_nack)
+  {
+    SendLlrpNack(cmd, nack_reason);
+    log_->Log(LWPA_LOG_DEBUG, "Sending NACK to LLRP Manager %04x:%08x for PID 0x%04x with reason 0x%04x",
+              rdm.source_uid.manu, rdm.source_uid.id, rdm.param_id, nack_reason);
+  }
 }
 
 bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand &cmd, const BrokerItem *brokerItem)
@@ -1549,6 +1588,53 @@ void RDMnetNetworkModel::SendRDMNack(rdmnet_client_scope_t scope, const RemoteRd
   resp.command_included = true;
   resp.cmd = received_cmd.rdm;
   rdmnet_->SendRdmResponse(scope, resp);
+}
+
+void RDMnetNetworkModel::SendLlrpGetResponse(const LlrpRemoteRdmCommand &received_cmd,
+                                             const std::vector<RdmParamData> &resp_data_list)
+{
+  if (resp_data_list.size() != 1)
+    return;
+
+  LlrpLocalRdmResponse resp;
+  resp.dest_cid = received_cmd.src_cid;
+  resp.interface_index = received_cmd.interface_index;
+  resp.seq_num = received_cmd.seq_num;
+
+  // The source UID is added by the library right before sending.
+  resp.rdm.dest_uid = received_cmd.rdm.source_uid;
+  resp.rdm.transaction_num = received_cmd.rdm.transaction_num;
+  resp.rdm.resp_type = kRdmResponseTypeAck;
+  resp.rdm.msg_count = 0;
+  resp.rdm.subdevice = 0;
+  resp.rdm.command_class = kRdmCCGetCommandResponse;
+  resp.rdm.param_id = received_cmd.rdm.param_id;
+
+  memcpy(resp.rdm.data, resp_data_list[0].data, resp_data_list[0].datalen);
+  resp.rdm.datalen = resp_data_list[0].datalen;
+
+  rdmnet_->SendLlrpResponse(resp);
+}
+
+void RDMnetNetworkModel::SendLlrpNack(const LlrpRemoteRdmCommand &received_cmd, uint16_t nack_reason)
+{
+  LlrpLocalRdmResponse resp;
+  resp.dest_cid = received_cmd.src_cid;
+  resp.interface_index = received_cmd.interface_index;
+  resp.seq_num = received_cmd.seq_num;
+
+  resp.rdm.dest_uid = received_cmd.rdm.source_uid;
+  resp.rdm.transaction_num = received_cmd.rdm.transaction_num;
+  resp.rdm.resp_type = kRdmResponseTypeNackReason;
+  resp.rdm.msg_count = 0;
+  resp.rdm.subdevice = 0;
+  resp.rdm.command_class =
+      (received_cmd.rdm.command_class == kRdmCCSetCommand) ? kRdmCCSetCommandResponse : kRdmCCGetCommandResponse;
+  resp.rdm.param_id = received_cmd.rdm.param_id;
+  resp.rdm.datalen = 2;
+  lwpa_pack_16b(resp.rdm.data, nack_reason);
+
+  rdmnet_->SendLlrpResponse(resp);
 }
 
 void RDMnetNetworkModel::RdmCommandReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmCommand &cmd)

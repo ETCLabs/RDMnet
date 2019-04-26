@@ -139,6 +139,8 @@ protected:
                            const RemoteRdmCommand &cmd = RemoteRdmCommand());
   void SendRDMGetResponsesBroadcast(uint16_t param_id, const std::vector<RdmParamData> &resp_data_list);
   void SendRDMNack(rdmnet_client_scope_t scope, const RemoteRdmCommand &received_cmd, uint16_t nack_reason);
+  void SendLlrpGetResponse(const LlrpRemoteRdmCommand &received_cmd, const std::vector<RdmParamData> &resp_data_list);
+  void SendLlrpNack(const LlrpRemoteRdmCommand &received_cmd, uint16_t nack_reason);
 
   /* GET/SET RESPONSE PROCESSING */
 

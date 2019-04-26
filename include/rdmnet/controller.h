@@ -104,6 +104,7 @@ lwpa_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rdmn
                                                 const LocalRdmCommand *cmd, uint32_t *seq_num);
 lwpa_error_t rdmnet_controller_send_rdm_response(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                                  const LocalRdmResponse *resp);
+lwpa_error_t rdmnet_controller_send_llrp_response(rdmnet_controller_t handle, const LlrpLocalRdmResponse *resp);
 lwpa_error_t rdmnet_controller_request_client_list(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle);
 
 #ifdef __cplusplus

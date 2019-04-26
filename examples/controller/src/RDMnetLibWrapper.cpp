@@ -224,6 +224,11 @@ bool RDMnetLibWrapper::SendRdmResponse(rdmnet_client_scope_t scope_handle, const
   return (kLwpaErrOk == rdmnet_controller_send_rdm_response(controller_handle_, scope_handle, &resp));
 }
 
+bool RDMnetLibWrapper::SendLlrpResponse(const LlrpLocalRdmResponse &resp)
+{
+  return (kLwpaErrOk == rdmnet_controller_send_llrp_response(controller_handle_, &resp));
+}
+
 bool RDMnetLibWrapper::RequestClientList(rdmnet_client_scope_t scope_handle)
 {
   return (kLwpaErrOk == rdmnet_controller_request_client_list(controller_handle_, scope_handle));
