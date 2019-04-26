@@ -27,9 +27,10 @@ matrix:
   fast_finish: true     # set this flag to immediately finish build once one of the jobs fails.
 
 environment:
-  MDNSWINDOWS_VERSION: v1.1.1
+  CTEST_OUTPUT_ON_FAILURE: 1
+  MDNSWINDOWS_VERSION: '1.2.0.3'
   SLACK_WEBHOOK:
-    secure: mmc+nEHnXGCwUvdD4qG3usIECTxCf86I1+DYO1hChDo4OLyU56a4qoquct4bTqtFBXlf0oc5HNLB7R11dHAOxeG8E3+ReVV0OU6R3DVLTpI=
+    secure: mmc+nEHnXGCwUvdD4qG3usIECTxCf86I1+DYO1hChDo6BBxKquCLLL+bTI3E1Di2/yS3CvCISXeKBC7RRrdSRfo+0Ej1Llp/oHDTTC5loSc=
   CODESIGN_DECRYPT_SECRET:
     secure: Z1VdvYVbzcA99+sBtiwEatQkNSMHCe5iGMVmqHuZd5o=
   CODESIGN_CERT_SECRET:
@@ -63,9 +64,7 @@ build:
   verbosity: minimal
 
 test_script:
-  - cmd: |-
-      tests\unit\%configuration%\test_rdmnet_lib.exe
-      tests\unit\%configuration%\test_broker_lib.exe
+  - cmd: ctest -C Release
 
 deploy:
   provider: BinTray
@@ -93,8 +92,14 @@ for:
     environment:
       CMAKE_GENERATOR: Visual Studio 15 2017
       CMAKE_INSTALL: install_x86
-      CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=ON
+      CMAKE_EXTRA_ARGS: -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
       QTDIR: C:\Qt\5.9.7\msvc2015
+
+    install:
+      - ps: |-
+          $wc = New-Object Net.WebClient
+          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_$($Env:MDNSWINDOWS_VERSION)_x86.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x86.zip")
+          7z x mDNSWindows_x86.zip -omdns_install -y -r
 
   -
     matrix:
@@ -108,8 +113,14 @@ for:
     environment:
       CMAKE_GENERATOR: Visual Studio 15 2017 Win64
       CMAKE_INSTALL: install_x64
-      CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=ON
+      CMAKE_EXTRA_ARGS: -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
       QTDIR: C:\Qt\5.9.7\msvc2017_64
+
+    install:
+      - ps: |-
+          $wc = New-Object Net.WebClient
+          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_$($Env:MDNSWINDOWS_VERSION)_x64.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x64.zip")
+          7z x mDNSWindows_x64.zip -omdns_install -y -r
 
   -
     matrix:
@@ -123,7 +134,7 @@ for:
     environment:
       CMAKE_GENERATOR: Visual Studio 15 2017
       CMAKE_INSTALL: install_x86
-      CMAKE_EXTRA_ARGS: -DRDMNET_MOCK_DISCOVERY=OFF -DRDMNET_BUILD_TESTS=OFF -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
+      CMAKE_EXTRA_ARGS: -DRDMNET_BUILD_TESTS=OFF -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
       QTDIR: C:\Qt\5.9.7\msvc2015
       INSTALLER_PROJECT: RDMnetInstall_x86.wixproj
       INSTALLER_PROJECT_PLATFORM: x86
@@ -132,9 +143,9 @@ for:
     install:
       - ps: |-
           $wc = New-Object Net.WebClient
-          $wc.DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_x86.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x86.zip")
+          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_$Env:MDNSWINDOWS_VERSION_x86.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x86.zip")
           7z x mDNSWindows_x86.zip -omdns_install -y -r
-          $wc.DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/ETC_mDNSInstall.msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
+          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_Merge_$Env:MDNSWINDOWS_VERSION.msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
           iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/appveyor/secure-file/master/install.ps1'))
       - cmd: appveyor-tools\secure-file -decrypt tools\install\windows\codesign_cert_windows.pfx.enc -secret %CODESIGN_DECRYPT_SECRET%
 
@@ -175,9 +186,9 @@ for:
     install:
       - ps: |-
           $wc = New-Object Net.WebClient
-          $wc.DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/mDNSWindows_x64.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x64.zip")
+          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_$Env:MDNSWINDOWS_VERSION_x64.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x64.zip")
           7z x mDNSWindows_x64.zip -omdns_install -y -r
-          $wc.DownloadFile("https://github.com/ETCLabs/mDNSWindows/releases/download/$Env:MDNSWINDOWS_VERSION/ETC_mDNSInstall.msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
+          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_Merge_$Env:MDNSWINDOWS_VERSION.msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
           iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/appveyor/secure-file/master/install.ps1'))
       - cmd: appveyor-tools\secure-file -decrypt tools\install\windows\codesign_cert_windows.pfx.enc -secret %CODESIGN_DECRYPT_SECRET%
 

@@ -11,7 +11,8 @@ list(GET RDMNET_VERSION_LIST 1 RDMNET_VERSION_MINOR)
 list(GET RDMNET_VERSION_LIST 2 RDMNET_VERSION_PATCH)
 list(GET RDMNET_VERSION_LIST 3 RDMNET_VERSION_BUILD)
 string(TIMESTAMP RDMNET_VERSION_DATESTR "%Y-%m-%d")
-set(RDMNET_VERSION_COPYRIGHT "Copyright 2019 ETC Inc.")
+string(TIMESTAMP CURRENT_YEAR "%Y")
+set(RDMNET_VERSION_COPYRIGHT "Copyright ${CURRENT_YEAR} ETC Inc.")
 
 # Configure the version header
 message(STATUS "Configuring versioned build for ${RDMNET_VERSION_STRING}...")
@@ -34,3 +35,7 @@ execute_process(COMMAND
   WORKING_DIRECTORY ${VERSION_DIR}/../..
 )
 configure_file(${VERSION_DIR}/templates/commit_msg.txt.in ${VERSION_DIR}/tmp_commit_msg.txt)
+
+message(STATUS "Versioned files updated. Now commit and push your changes to do the build, e.g.:")
+message(STATUS "    git commit -F tmp_commit_msg.txt")
+message(STATUS "    git push origin")
