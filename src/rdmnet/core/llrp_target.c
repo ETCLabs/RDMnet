@@ -157,30 +157,65 @@ lwpa_error_t init_sys_netints()
   uint8_t null_mac[6];
   memset(null_mac, 0, sizeof null_mac);
 
-  lwpa_log(rdmnet_log_params, LWPA_LOG_INFO,
-           RDMNET_LOG_MSG("LLRP listening initialized on the following network interfaces:"));
-  for (const LwpaNetintInfo *netint = state.sys_netints; netint < state.sys_netints + state.num_sys_netints; ++netint)
+  lwpa_log(rdmnet_log_params, LWPA_LOG_INFO, RDMNET_LOG_MSG("Initializing network interfaces for LLRP..."));
+  size_t i = 0;
+  while (i < state.num_sys_netints)
   {
+    const LwpaNetintInfo *netint = &state.sys_netints[i];
     char addr_str[LWPA_INET6_ADDRSTRLEN];
-    if (kLwpaErrOk == lwpa_inet_ntop(&netint->addr, addr_str, LWPA_INET6_ADDRSTRLEN))
+    addr_str[0] = '\0';
+    if (lwpa_canlog(rdmnet_log_params, LWPA_LOG_WARNING))
     {
-      lwpa_log(rdmnet_log_params, LWPA_LOG_INFO, RDMNET_LOG_MSG("  %s"), addr_str);
+      lwpa_inet_ntop(&netint->addr, addr_str, LWPA_INET6_ADDRSTRLEN);
     }
 
-    if (memcmp(netint->mac, null_mac, 6) != 0)
+    // Create a test socket on each network interface. If the socket create fails, we remove that
+    // interface from the set that LLRP targets listen on.
+    lwpa_socket_t test_socket;
+    lwpa_error_t test_res = create_llrp_socket(&netint->addr, false, &test_socket);
+    if (test_res == kLwpaErrOk)
     {
-      if (netint == state.sys_netints)
+      lwpa_close(test_socket);
+
+      lwpa_log(rdmnet_log_params, LWPA_LOG_INFO, RDMNET_LOG_MSG("  Set up LLRP network interface %s for listening."),
+               addr_str);
+
+      if (memcmp(netint->mac, null_mac, 6) != 0)
       {
-        memcpy(state.lowest_hardware_addr, netint->mac, 6);
-      }
-      else
-      {
-        if (memcmp(netint->mac, state.lowest_hardware_addr, 6) < 0)
+        if (netint == state.sys_netints)
         {
           memcpy(state.lowest_hardware_addr, netint->mac, 6);
         }
+        else
+        {
+          if (memcmp(netint->mac, state.lowest_hardware_addr, 6) < 0)
+          {
+            memcpy(state.lowest_hardware_addr, netint->mac, 6);
+          }
+        }
       }
+
+      ++i;
     }
+    else
+    {
+      // Remove the network interface from the array.
+      if (i < state.num_sys_netints - 1)
+      {
+        memmove(&state.sys_netints[i], &state.sys_netints[i + 1],
+                sizeof(LwpaNetintInfo) * (state.num_sys_netints - (i + 1)));
+      }
+      --state.num_sys_netints;
+      lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
+               RDMNET_LOG_MSG("  Error creating test socket on LLRP network interface %s: '%s'. Skipping!"), addr_str,
+               lwpa_strerror(test_res));
+    }
+  }
+
+  if (state.num_sys_netints == 0)
+  {
+    lwpa_log(rdmnet_log_params, LWPA_LOG_ERR, RDMNET_LOG_MSG("No usable LLRP interfaces found."));
+    return kLwpaErrNoNetints;
   }
   return kLwpaErrOk;
 }

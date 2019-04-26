@@ -58,6 +58,16 @@ lwpa_error_t rdmnet_llrp_init()
 #endif
   bool target_initted = false;
 
+  lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_RESPONSE, &kLlrpIpv4RespAddrInternal.ip);
+  kLlrpIpv4RespAddrInternal.port = LLRP_PORT;
+  lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV6_ADDRESS_RESPONSE, &kLlrpIpv6RespAddrInternal.ip);
+  kLlrpIpv6RespAddrInternal.port = LLRP_PORT;
+  lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_REQUEST, &kLlrpIpv4RequestAddrInternal.ip);
+  kLlrpIpv4RequestAddrInternal.port = LLRP_PORT;
+  lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV6_ADDRESS_REQUEST, &kLlrpIpv6RequestAddrInternal.ip);
+  kLlrpIpv6RequestAddrInternal.port = LLRP_PORT;
+  llrp_prot_init();
+
 #if RDMNET_DYNAMIC_MEM
   manager_initted = ((res = rdmnet_llrp_manager_init()) == kLwpaErrOk);
 #endif
@@ -67,19 +77,7 @@ lwpa_error_t rdmnet_llrp_init()
     target_initted = ((res = rdmnet_llrp_target_init()) == kLwpaErrOk);
   }
 
-  if (res == kLwpaErrOk)
-  {
-    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_RESPONSE, &kLlrpIpv4RespAddrInternal.ip);
-    kLlrpIpv4RespAddrInternal.port = LLRP_PORT;
-    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV6_ADDRESS_RESPONSE, &kLlrpIpv6RespAddrInternal.ip);
-    kLlrpIpv6RespAddrInternal.port = LLRP_PORT;
-    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_REQUEST, &kLlrpIpv4RequestAddrInternal.ip);
-    kLlrpIpv4RequestAddrInternal.port = LLRP_PORT;
-    lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV6_ADDRESS_REQUEST, &kLlrpIpv6RequestAddrInternal.ip);
-    kLlrpIpv6RequestAddrInternal.port = LLRP_PORT;
-    llrp_prot_init();
-  }
-  else
+  if (res != kLwpaErrOk)
   {
     if (target_initted)
       rdmnet_llrp_target_deinit();

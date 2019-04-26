@@ -58,7 +58,6 @@ struct DiscoveredBroker
 
   // State information for this broker.
   resolve_state_t state;
-  lwpa_socket_t sock;
   DNSServiceRef dnssd_ref;
 
   DiscoveredBroker *next;
@@ -71,7 +70,6 @@ struct RdmnetScopeMonitorRef
   RdmnetScopeMonitorConfig config;
   // The Bonjour handle
   DNSServiceRef dnssd_ref;
-  lwpa_socket_t socket;
   // If this ScopeMonitorRef is associated with a registered Broker, that is tracked here. Otherwise
   // NULL.
   rdmnet_registered_broker_t broker_handle;
@@ -98,7 +96,6 @@ typedef struct RdmnetBrokerRegisterRef
 
   // For hooking up to the DNS-SD API
   DNSServiceRef dnssd_ref;
-  lwpa_socket_t socket;
 } RdmnetBrokerRegisterRef;
 
 #endif /* _RDMNET_DISCOVERY_BONJOUR_H_ */
