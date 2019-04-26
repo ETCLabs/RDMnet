@@ -34,22 +34,32 @@
 
 /* clang-format off */
 
+/*! \defgroup rdmnet_core_lib RDMnet Core Library
+ *  \brief Implementation of the core functions of RDMnet.
+ *
+ *  This includes discovery, connections, and message packing and unpacking.
+ *
+ *  @{
+ */
+
 /*! \name RDMnet version numbers
  *  @{
  */
 #define RDMNET_VERSION_MAJOR 0 /*!< The major version. */
 #define RDMNET_VERSION_MINOR 2 /*!< The minor version. */
 #define RDMNET_VERSION_PATCH 0 /*!< The patch version. */
-#define RDMNET_VERSION_BUILD 5 /*!< The build number. */
-/*! @} */
+#define RDMNET_VERSION_BUILD 6 /*!< The build number. */
+/*!@}*/
 
 /*! \name RDMnet version strings
  *  @{
  */
-#define RDMNET_VERSION_STRING "0.2.0.5"
-#define RDMNET_VERSION_DATESTR "2019-03-21"
+#define RDMNET_VERSION_STRING "0.2.0.6"
+#define RDMNET_VERSION_DATESTR "2019-04-26"
 #define RDMNET_VERSION_COPYRIGHT "Copyright 2019 ETC Inc."
 #define RDMNET_VERSION_PRODUCTNAME "RDMnet"
-/*! @} */
+/*!@}*/
+
+/*!@}*/
 
 #endif /* _RDMNET_VERSION_H_ */
