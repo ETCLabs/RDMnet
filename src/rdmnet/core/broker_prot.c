@@ -297,10 +297,10 @@ size_t pack_connect_reply(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid
  *  \param[in] handle RDMnet connection handle on which to send the Connect Reply message.
  *  \param[in] local_cid CID of the Component sending the Connect Reply message.
  *  \param[in] data Connect Reply data.
- *  \return #kLwpaErrOk: Send success.\n
- *          #kLwpaErrInvalid: Invalid argument provided.\n
- *          #LWPA_SYSERR: An internal library or system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket calls.\n
+ *  \return #kLwpaErrOk: Send success.
+ *  \return #kLwpaErrInvalid: Invalid argument provided.
+ *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
 lwpa_error_t send_connect_reply(rdmnet_conn_t handle, const LwpaUuid *local_cid, const ConnectReplyMsg *data)
 {
@@ -358,10 +358,10 @@ lwpa_error_t send_connect_reply(rdmnet_conn_t handle, const LwpaUuid *local_cid,
 /*! \brief Send a Fetch Client List message on an RDMnet connection.
  *  \param[in] handle RDMnet connection handle on which to send the Fetch Client List message.
  *  \param[in] local_cid CID of the Component sending the Fetch Client List message.
- *  \return #kLwpaErrOk: Send success.\n
- *          #kLwpaErrInvalid: Invalid argument provided.\n
- *          #LWPA_SYSERR: An internal library or system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket calls.\n
+ *  \return #kLwpaErrOk: Send success.
+ *  \return #kLwpaErrInvalid: Invalid argument provided.
+ *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
 lwpa_error_t send_fetch_client_list(rdmnet_conn_t handle, const LwpaUuid *local_cid)
 {
@@ -518,10 +518,10 @@ size_t calc_request_dynamic_uids_len(const DynamicUidRequestListEntry *request_l
  *  \param[in] local_cid CID of the Component sending the Request Dynamic UID Assignment message.
  *  \param[in] request_list List of Dynamic UID Request Pairs, each indicating a request for a
  *                          newly-assigned Dynamic UID.
- *  \return #kLwpaErrOk: Send success.\n
- *          #kLwpaErrInvalid: Invalid argument provided.\n
- *          #LWPA_SYSERR: An internal library or system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket calls.\n
+ *  \return #kLwpaErrOk: Send success.
+ *  \return #kLwpaErrInvalid: Invalid argument provided.
+ *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
 lwpa_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const LwpaUuid *local_cid,
                                        const DynamicUidRequestListEntry *request_list)

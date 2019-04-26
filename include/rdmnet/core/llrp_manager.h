@@ -38,7 +38,7 @@
 #include "rdmnet/core/llrp.h"
 
 /*! \defgroup llrp_manager LLRP Manager
- *  \ingroup rdmnet_core_lib
+ *  \ingroup llrp
  *  \brief Implement the functionality required by an LLRP Manager in E1.33.
  *
  *  @{

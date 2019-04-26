@@ -703,7 +703,7 @@ void rdmnetdisc_tick()
       break;
   }
 
-  LwpaPollEvent event;
+  LwpaPollEvent event = { LWPA_SOCKET_INVALID };
   lwpa_error_t poll_res = kLwpaErrSys;
 
   // Do the poll inside the mutex so that sockets can't be added and removed during poll

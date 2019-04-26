@@ -52,7 +52,7 @@ FAKE_VOID_FUNC(ept_client_msg_received, rdmnet_client_t, rdmnet_client_scope_t, 
 
 rdmnet_conn_t g_next_conn_handle;
 
-extern "C" lwpa_error_t custom_new_connection(const RdmnetConnectionConfig *config, rdmnet_conn_t *handle)
+extern "C" lwpa_error_t custom_connection_create(const RdmnetConnectionConfig *config, rdmnet_conn_t *handle)
 {
   (void)config;
   *handle = g_next_conn_handle++;
@@ -102,7 +102,7 @@ protected:
     rdmnet_core_initialized_fake.return_val = true;
 
     // New connection
-    rdmnet_new_connection_fake.custom_fake = custom_new_connection;
+    rdmnet_connection_create_fake.custom_fake = custom_connection_create;
   }
 
   void TearDown() override { rdmnet_client_deinit(); }

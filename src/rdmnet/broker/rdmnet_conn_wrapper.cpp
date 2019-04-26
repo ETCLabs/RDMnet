@@ -74,13 +74,13 @@ void RdmnetConnWrapper::Shutdown()
 lwpa_error_t RdmnetConnWrapper::CreateNewConnectionForSocket(lwpa_socket_t sock, const LwpaSockaddr &addr,
                                                              rdmnet_conn_t &new_handle)
 {
-  lwpa_error_t create_res = rdmnet_new_connection(&new_conn_config_, &new_handle);
+  lwpa_error_t create_res = rdmnet_connection_create(&new_conn_config_, &new_handle);
   if (create_res == kLwpaErrOk)
   {
     create_res = rdmnet_attach_existing_socket(new_handle, sock, &addr);
     if (create_res != kLwpaErrOk)
     {
-      rdmnet_destroy_connection(new_handle, nullptr);
+      rdmnet_connection_destroy(new_handle, nullptr);
     }
   }
   return create_res;
@@ -88,7 +88,7 @@ lwpa_error_t RdmnetConnWrapper::CreateNewConnectionForSocket(lwpa_socket_t sock,
 
 void RdmnetConnWrapper::DestroyConnection(rdmnet_conn_t handle, SendDisconnect send_disconnect)
 {
-  rdmnet_destroy_connection(handle, send_disconnect.valid ? &send_disconnect.reason : nullptr);
+  rdmnet_connection_destroy(handle, send_disconnect.valid ? &send_disconnect.reason : nullptr);
 }
 
 lwpa_error_t RdmnetConnWrapper::SetBlocking(rdmnet_conn_t handle, bool blocking)

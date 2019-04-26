@@ -339,7 +339,7 @@ lwpa_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_sc
     rdmnetdisc_stop_monitoring(scope_entry->monitor_handle);
     lwpa_rbtree_remove(&state.scopes_by_disc_handle, scope_entry);
   }
-  rdmnet_destroy_connection(scope_entry->handle, &reason);
+  rdmnet_connection_destroy(scope_entry->handle, &reason);
   remove_scope_from_list(&cli->scope_list, scope_entry);
   lwpa_rbtree_remove(&state.scopes_by_handle, scope_entry);
   free_client_scope(scope_entry);
@@ -1137,7 +1137,7 @@ lwpa_error_t create_and_append_scope_entry(const RdmnetScopeConfig *config, Rdmn
     conn_config.callbacks = conn_callbacks;
     conn_config.callback_context = NULL;
 
-    res = rdmnet_new_connection(&conn_config, &new_scope->handle);
+    res = rdmnet_connection_create(&conn_config, &new_scope->handle);
     if (res == kLwpaErrOk)
     {
       if (0 != lwpa_rbtree_insert(&state.scopes_by_handle, new_scope))
@@ -1149,7 +1149,7 @@ lwpa_error_t create_and_append_scope_entry(const RdmnetScopeConfig *config, Rdmn
       else
       {
         res = kLwpaErrNoMem;
-        rdmnet_destroy_connection(new_scope->handle, NULL);
+        rdmnet_connection_destroy(new_scope->handle, NULL);
         free_client_scope(new_scope);
         new_scope = NULL;
       }

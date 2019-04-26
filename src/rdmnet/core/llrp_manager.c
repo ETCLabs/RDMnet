@@ -112,16 +112,19 @@ void rdmnet_llrp_manager_deinit()
   memset(&state, 0, sizeof state);
 }
 
-/*! \brief Create an LLRP socket to be used by an LLRP Manager.
+/*! \brief Create a new LLRP manager instance.
  *
- *  <b>TODO stale docs</b>
+ *  LLRP managers can only be created when #RDMNET_DYNAMIC_MEM is defined nonzero. Otherwise, this
+ *  function will always fail.
  *
- *  LLRP Manager Sockets can only be created when #RDMNET_DYNAMIC_MEM is defined nonzero. Otherwise,
- *  this function will always fail.
- *
- *  \param[in] netint The network interface this LLRP socket should send and receive on.
- *  \param[in] manager_cid The CID of the LLRP Manager.
- *  \return A new LLRP socket (success) or #LLRP_SOCKET_INVALID (failure).
+ *  \param[in] config Configuration parameters for the LLRP manager to be created.
+ *  \param[out] handle Handle to the newly-created manager instance.
+ *  \return #kLwpaErrOk: Manager created successfully.
+ *  \return #kLwpaErrInvalid: Invalid argument provided.
+ *  \return #kLwpaErrNotInit: Module not initialized.
+ *  \return #kLwpaErrNoMem: No memory to allocate additional manager instance.
+ *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
 lwpa_error_t rdmnet_llrp_manager_create(const LlrpManagerConfig *config, llrp_manager_t *handle)
 {
@@ -144,6 +147,12 @@ lwpa_error_t rdmnet_llrp_manager_create(const LlrpManagerConfig *config, llrp_ma
   return res;
 }
 
+/*! \brief Destroy an LLRP manager instance.
+ *
+ *  The handle will be invalidated for any future calls to API functions.
+ * 
+ *  \param[in] handle Handle to manager to destroy.
+ */ 
 void rdmnet_llrp_manager_destroy(llrp_manager_t handle)
 {
   LlrpManager *manager;
@@ -155,17 +164,20 @@ void rdmnet_llrp_manager_destroy(llrp_manager_t handle)
   release_manager(manager);
 }
 
-/*! \brief Start discovery on an LLRP Manager socket.
+/*! \brief Start discovery on an LLRP manager.
  *
- *  <b>TODO stale docs</b>
+ *  Configure a manager to start discovery and send the first discovery message. Fails if a previous
+ *  discovery process is still ongoing.
  *
- *  Configure a Manager socket to start discovery and send the first discovery message. Fails if the
- *  socket is not a Manager socket, or if a previous discovery process is still ongoing.
- *
- *  \param[in] handle LLRP socket on which to start discovery.
+ *  \param[in] handle Handle to LLRP manager on which to start discovery.
  *  \param[in] filter Discovery filter, made up of one or more of the LLRP_FILTERVAL_* constants
  *                    defined in rdmnet/defs.h
- *  \return true (Discovery started successfully) or false (failed to start discovery).
+ *  \return #kLwpaErrOk: Discovery started successfully.
+ *  \return #kLwpaErrInvalid: Invalid argument provided.
+ *  \return #kLwpaErrNotInit: Module not initialized.
+ *  \return #kLwpaErrNotFound: Handle is not associated with a valid LLRP manager instance.
+ *  \return #kLwpaErrAlready: A discovery operation is already in progress.
+ *  \return #kLwpaErrSys: An internal library or system call error occurred.
  */
 lwpa_error_t rdmnet_llrp_start_discovery(llrp_manager_t handle, uint16_t filter)
 {
@@ -194,13 +206,15 @@ lwpa_error_t rdmnet_llrp_start_discovery(llrp_manager_t handle, uint16_t filter)
   return res;
 }
 
-/*! \brief Stop discovery on an LLRP Manager socket.
+/*! \brief Stop discovery on an LLRP manager.
  *
- *  Clears all discovery state and known UIDs.
+ *  Clears all discovery state and known discovered targets.
  *
- *  \param[in] handle LLRP socket on which to stop discovery.
- *  \return true (Discovery stopped successfully) or false (invalid argument or discovery was not
- *          running).
+ *  \param[in] handle Handle to LLRP manager on which to stop discovery.
+ *  \return #kLwpaErrOk: Discovery stopped successfully.
+ *  \return #kLwpaErrInvalid: Invalid argument provided.
+ *  \return #kLwpaErrNotInit: Module not initialized.
+ *  \return #kLwpaErrNotFound: Handle is not associated with a valid LLRP manager instance.
  */
 lwpa_error_t rdmnet_llrp_stop_discovery(llrp_manager_t handle)
 {
@@ -218,17 +232,18 @@ lwpa_error_t rdmnet_llrp_stop_discovery(llrp_manager_t handle)
   return res;
 }
 
-/*! \brief Send an RDM command on an LLRP Manager socket.
+/*! \brief Send an RDM command from an LLRP manager.
  *
  *  On success, provides the transaction number to correlate with a response.
  *
- *  \param[in] handle LLRP manager socket handle on which to send an RDM command.
- *  \param[in] destination CID of LLRP Target to which to send the command.
- *  \param[in] command RDM command to send.
- *  \param[out] transaction_number Filled in on success with the transaction number of the command.
- *  \return #kLwpaErrOk: Command sent successfully.\n
- *          #kLwpaErrInvalid: Invalid argument provided.\n
- *          Note: other error codes might be propagated from underlying socket calls.
+ *  \param[in] handle Handle to LLRP manager from which to send an RDM command.
+ *  \param[in] command Command to send.
+ *  \param[out] transaction_num Filled in on success with the transaction number of the command.
+ *  \return #kLwpaErrOk: Command sent successfully.
+ *  \return #kLwpaErrInvalid: Invalid argument provided.
+ *  \return #kLwpaErrNotInit: Module not initialized.
+ *  \return #kLwpaErrNotFound: Handle is not associated with a valid LLRP manager instance.
+ *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
 lwpa_error_t rdmnet_llrp_send_rdm_command(llrp_manager_t handle, const LlrpLocalRdmCommand *command,
                                           uint32_t *transaction_num)

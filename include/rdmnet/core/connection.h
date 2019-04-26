@@ -52,7 +52,7 @@
  *  In E1.33, the behavior of this module is dictated by the %Broker Protocol (&sect; 6).
  *
  *  Basic functionality for an RDMnet Client: Initialize the library using rdmnet_init(). Create a
- *  new connection using rdmnet_new_connection(). Connect to a %Broker using rdmnet_connect().
+ *  new connection using rdmnet_connection_create(). Connect to a %Broker using rdmnet_connect().
  *  Depending on the value of #RDMNET_USE_TICK_THREAD, may need to call rdmnet_tick() at regular
  *  intervals. Send data over the %Broker connection using rdmnet_send(), and receive data over the
  *  %Broker connection using rdmnet_recv().
@@ -72,22 +72,37 @@ typedef struct RdmnetConnectedInfo
   LwpaSockaddr connected_addr;
 } RdmnetConnectedInfo;
 
+/*! A high-level reason for RDMnet connection failure. */
 typedef enum
 {
+  /*! The connection was unable to be started because of an error returned from the system during
+   *  a lower-level socket call. */ 
   kRdmnetConnectFailSocketFailure,
+  /*! The connection started but the TCP connection was never established. This could be because of
+   *  an incorrect address or port for the remote host or a network issue. */
   kRdmnetConnectFailTcpLevel,
+  /*! The TCP connection was established, but no reply was received from the RDMnet protocol
+   *  handshake. This probably indicates an error in the remote broker. */
   kRdmnetConnectFailNoReply,
+  /*! The remote broker rejected the connection at the RDMnet protocol level. A reason is provided
+   *  in the form of an rdmnet_connect_status_t. */
   kRdmnetConnectFailRejected
 } rdmnet_connect_fail_event_t;
 
+/*! Information about an unsuccessful RDMnet connection. */
 typedef struct RdmnetConnectFailedInfo
 {
+  /*! The high-level reason that this connection failed. */
   rdmnet_connect_fail_event_t event;
+  /*! The system error code associated with the failure; valid if event is
+   *  kRdmnetConnectFailSocketFailure or kRdmnetConnectFailTcpLevel. */
   lwpa_error_t socket_err;
+  /*! The reason given in the RDMnet-level connection refuse message. Valid if event is 
+   *  kRdmnetConnectFailRejected. */
   rdmnet_connect_status_t rdmnet_reason;
 } RdmnetConnectFailedInfo;
 
-/*! An enumeration of the possible reasons an RDMnet connection could be disconnected. */
+/*! A high-level reason for RDMnet connection to be disconnected after successful connection. */
 typedef enum
 {
   kRdmnetDisconnectAbruptClose,
@@ -97,10 +112,16 @@ typedef enum
   kRdmnetDisconnectGracefulLocalInitiated
 } rdmnet_disconnect_event_t;
 
+/*! Information about an RDMnet connection that disconnected after a successful connection. */
 typedef struct RdmnetDisconnectedInfo
 {
+  /*! The high-level reason for the disconnect. */
   rdmnet_disconnect_event_t event;
+  /*! The system error code associated with the disconnect; valid if event is
+   *  kRdmnetDisconnectAbruptClose. */
   lwpa_error_t socket_err;
+  /*! The reason given in the RDMnet-level disconnect message. Valid if event is
+   *  kRdmnetDisconnectGracefulRemoteInitiated. */
   rdmnet_disconnect_reason_t rdmnet_reason;
 } RdmnetDisconnectedInfo;
 
@@ -145,10 +166,14 @@ typedef struct RdmnetConnCallbacks
   void (*msg_received)(rdmnet_conn_t handle, const RdmnetMessage *message, void *context);
 } RdmnetConnCallbacks;
 
+/*! A set of configuration information for a new RDMnet connection. */
 typedef struct RdmnetConnectionConfig
 {
+  /*! The CID of the local component that will be using this connection. */
   LwpaUuid local_cid;
+  /*! A set of callbacks to receive asynchronous notifications of connection events. */
   RdmnetConnCallbacks callbacks;
+  /*! Pointer to opaque data passed back with each callback. */
   void *callback_context;
 } RdmnetConnectionConfig;
 
@@ -160,11 +185,11 @@ typedef struct RdmnetConnectionConfig
 extern "C" {
 #endif
 
-lwpa_error_t rdmnet_new_connection(const RdmnetConnectionConfig *config, rdmnet_conn_t *handle);
+lwpa_error_t rdmnet_connection_create(const RdmnetConnectionConfig *config, rdmnet_conn_t *handle);
 lwpa_error_t rdmnet_connect(rdmnet_conn_t handle, const LwpaSockaddr *remote_addr,
                             const ClientConnectMsg *connect_data);
 lwpa_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking);
-lwpa_error_t rdmnet_destroy_connection(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t *disconnect_reason);
+lwpa_error_t rdmnet_connection_destroy(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t *disconnect_reason);
 
 int rdmnet_send(rdmnet_conn_t handle, const uint8_t *data, size_t size);
 lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle);

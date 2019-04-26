@@ -27,10 +27,10 @@
 
 #include "rdmnet_mock/core/connection.h"
 
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_new_connection, const RdmnetConnectionConfig *, rdmnet_conn_t *);
+DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_connection_create, const RdmnetConnectionConfig *, rdmnet_conn_t *);
 DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_connect, rdmnet_conn_t, const LwpaSockaddr *, const ClientConnectMsg *);
 // DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_set_blocking, rdmnet_conn_t, bool);
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_destroy_connection, rdmnet_conn_t, const rdmnet_disconnect_reason_t *);
+DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_connection_destroy, rdmnet_conn_t, const rdmnet_disconnect_reason_t *);
 
 DEFINE_FAKE_VALUE_FUNC(int, rdmnet_send, rdmnet_conn_t, const uint8_t *, size_t);
 DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_start_message, rdmnet_conn_t);

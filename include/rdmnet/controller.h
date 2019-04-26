@@ -42,6 +42,19 @@
 extern "C" {
 #endif
 
+/*! \defgroup rdmnet_controller Controller API
+ *  \ingroup rdmnet_client
+ *  \brief Implementation of RDMnet controller functionality.
+ * 
+ *  RDMnet controllers are clients which originate RDM commands and receive responses. Controllers
+ *  can participate in multiple scopes; the default scope string "default" must be configured as a
+ *  default setting. This API wraps the RDMnet Client API and provides functions tailored
+ *  specifically to the usage concerns of an RDMnet controller.
+ * 
+ *  @{
+ */
+
+/*! A handle to an RDMnet controller. */
 typedef struct RdmnetController *rdmnet_controller_t;
 
 typedef enum
@@ -71,6 +84,7 @@ typedef struct RdmnetControllerCallbacks
   void (*llrp_rdm_command_received)(rdmnet_controller_t handle, const LlrpRemoteRdmCommand *cmd, void *context);
 } RdmnetControllerCallbacks;
 
+/*! A set of information that defines the startup parameters of an RDMnet Controller. */
 typedef struct RdmnetControllerConfig
 {
   /*! The controller's CID. */
@@ -85,6 +99,21 @@ typedef struct RdmnetControllerConfig
   LlrpTargetOptionalConfig llrp_optional;
 } RdmnetControllerConfig;
 
+/*! \brief Initialize an RDMnet Controller Config with default values for the optional config options.
+ *
+ *  The config struct members not marked 'optional' are not initialized by this macro. Those members
+ *  do not have default values and must be initialized manually before passing the config struct to
+ *  an API function.
+ * 
+ *  Usage example:
+ *  \code
+ *  RdmnetControllerConfig config;
+ *  RDMNET_CONTROLLER_CONFIG_INIT(&config, 0x6574);
+ *  \endcode
+ * 
+ *  \param controllercfgptr Pointer to RdmnetControllerConfig.
+ *  \param manu_id ESTA manufacturer ID. All RDMnet Controllers must have one.
+ */
 #define RDMNET_CONTROLLER_CONFIG_INIT(controllercfgptr, manu_id) RPT_CLIENT_CONFIG_INIT(controllercfgptr, manu_id)
 
 lwpa_error_t rdmnet_controller_init(const LwpaLogParams *lparams);
@@ -110,5 +139,7 @@ lwpa_error_t rdmnet_controller_request_client_list(rdmnet_controller_t handle, r
 #ifdef __cplusplus
 };
 #endif
+
+/*! @} */
 
 #endif /* _RDMNET_CONTROLLER_H_ */

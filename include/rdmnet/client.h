@@ -26,8 +26,7 @@
 ******************************************************************************/
 
 /*! \file rdmnet/client.h
- *  \brief Defining information about an RDMnet Client, including all information that is sent on
- *         initial connection to a Broker.
+ *  \brief An API for RDMnet Client functionality.
  *  \author Sam Kearney
  */
 #ifndef _RDMNET_CLIENT_H_
@@ -55,34 +54,76 @@
  *
  * Clients and the scopes they participate in are tracked by handles. Management of connections to
  * brokers, as well as LLRP functionality, is handled under the hood.
+ * 
+ * @{
  */
 
+/*! A handle to an RDMnet client. */
 typedef int rdmnet_client_t;
-typedef rdmnet_conn_t rdmnet_client_scope_t;
-
+/*! An invalid RDMnet client handle value. */
 #define RDMNET_CLIENT_INVALID -1
+
+/*! A handle to a scope that an RDMnet client participates in. */
+typedef rdmnet_conn_t rdmnet_client_scope_t;
+/*! An invalid RDMnet client scope handle value. */
 #define RDMNET_CLIENT_SCOPE_INVALID RDMNET_CONN_INVALID
 
+/*! Information provided by the library about a successful RDMnet client connection. */
 typedef struct RdmnetClientConnectedInfo
 {
+  /*! The IP address and port of the remote broker to which we have connected. */
   LwpaSockaddr broker_addr;
 } RdmnetClientConnectedInfo;
 
+/*! Information provided by the library about an unsuccessful RDMnet client connection. */
 typedef struct RdmnetClientConnectFailedInfo
 {
+  /*! The high-level reason that this connection failed. */
   rdmnet_connect_fail_event_t event;
+  /*! The system error code associated with the failure; valid if event is
+   *  kRdmnetConnectFailSocketFailure or kRdmnetConnectFailTcpLevel. */
   lwpa_error_t socket_err;
+  /*! The reason given in the RDMnet-level connection refuse message. Valid if event is
+   *  kRdmnetConnectFailRejected. */
   rdmnet_connect_status_t rdmnet_reason;
+  /*! \brief Whether the connection will be retried automatically.
+   * 
+   *  If this is true, the connection will be retried on the relevant scope; expect further
+   *  notifications of connection success or failure. If false, the rdmnet_client_scope_t handle
+   *  associated with the scope is invalidated, and the scope must be created again. This indicates
+   *  that the connection failed for a reason that usually must be corrected by a user or
+   *  application developer. Some possible reasons for this to be false include:
+   *  - The wrong scope was specified for a statically-configured broker
+   *  - A static UID was given that was invalid or duplicate with another UID in the system
+   */
   bool will_retry;
 } RdmnetClientConnectFailedInfo;
 
+/*! Information provided by the library about an RDMnet client connection that disconnected after a
+ *  successful connection. */
 typedef struct RdmnetClientDisconnectedInfo
 {
+  /*! The high-level reason for the disconnect. */
   rdmnet_disconnect_event_t event;
+  /*! The system error code associated with the disconnect; valid if event is
+   *  kRdmnetDisconnectAbruptClose. */
   lwpa_error_t socket_err;
+  /*! The reason given in the RDMnet-level disconnect message. Valid if event is
+   *  kRdmnetDisconnectGracefulRemoteInitiated. */
   rdmnet_disconnect_reason_t rdmnet_reason;
+  /*! \brief Whether the connection will be retried automatically.
+   * 
+   *  There are currently no conditions that will cause this to be false; therefore, disconnection
+   *  events after a successful connection will always lead to the connection being retried
+   *  automatically. This field exists for potential future usage.
+   */
   bool will_retry;
 } RdmnetClientDisconnectedInfo;
+
+/*! \name Client Callback Functions
+ *  \brief Function types used as callbacks for RPT and EPT clients.
+ *  @{
+ */
 
 /*! \brief An RDMnet client has connected successfully to a broker on a scope.
  *
@@ -126,17 +167,63 @@ typedef void (*RdmnetClientConnectFailedCb)(rdmnet_client_t handle, rdmnet_clien
 typedef void (*RdmnetClientDisconnectedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                            const RdmnetClientDisconnectedInfo *info, void *context);
 
+/*! \brief A broker message has been received on an RDMnet client connection.
+ *
+ *  Broker messages are exchanged between an RDMnet client and broker to setup and faciliate RDMnet
+ *  communication. If using the \ref rdmnet_device "Device" or \ref rdmnet_controller "Controller"
+ *  API, this callback will be consumed internally and propagated to callbacks specific to those
+ *  client types.
+ * 
+ * \param[in] handle Handle to client which has received a broker message.
+ * \param[in] scope_handle Handle to scope on which the broker message was received.
+ * \param[in] msg The broker message.
+ * \param[in] context Context pointer that was given at the creation of the client.
+ */
 typedef void (*RdmnetClientBrokerMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                                 const BrokerMessage *msg, void *context);
 
+/*! \brief An LLRP message has been received by an RDMnet client.
+ *
+ *  RPT clients (controllers and devices) automatically listen for LLRP messages as required by
+ *  E1.33. This callback is called when an LLRP RDM command is received.
+ * 
+ *  \param[in] handle Handle to client which has received an LLRP message.
+ *  \param[in] cmd The LLRP RDM command.
+ *  \param[in] context Context pointer that was given at the creation of the client.
+ */
 typedef void (*RdmnetClientLlrpMsgReceivedCb)(rdmnet_client_t handle, const LlrpRemoteRdmCommand *cmd, void *context);
 
+/*! \brief An RPT message was received on an RPT client connection.
+ *
+ *  RPT messages include Request and Notification, which wrap RDM commands and responses, as well as
+ *  Status, which informs of exceptional conditions in response to a Request. If using the
+ *  \ref rdmnet_device "Device" or \ref rdmnet_controller "Controller" API, this callback will be
+ *  consumed internally and propagated to callbacks specific to those client types.
+ * 
+ * \param[in] handle Handle to client which has received an RPT message.
+ * \param[in] scope_handle Handle to scope on which the RPT message was received.
+ * \param[in] msg The RPT message.
+ * \param[in] context Context pointer that was given at the creation of the client.
+ */
 typedef void (*RptClientMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                        const RptClientMessage *msg, void *context);
 
+/*! \brief An EPT message was received on an EPT client connection.
+ *
+ *  EPT messages include Data, which wraps opaque data, and Status, which informs of exceptional
+ *  conditions in response to Data.
+ * 
+ * \param[in] handle Handle to client which has received an EPT message.
+ * \param[in] scope_handle Handle to scope on which the EPT message was received.
+ * \param[in] msg The EPT message.
+ * \param[in] context Context pointer that was given at the creation of the client.
+ */
 typedef void (*EptClientMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope, const EptClientMessage *msg,
                                        void *context);
 
+/*! @} */
+
+/*! The set of possible callbacks that are delivered to an RPT client. */
 typedef struct RptClientCallbacks
 {
   RdmnetClientConnectedCb connected;
@@ -147,6 +234,7 @@ typedef struct RptClientCallbacks
   RptClientMsgReceivedCb msg_received;
 } RptClientCallbacks;
 
+/*! The set of possible callbacks that are delivered to an EPT client. */
 typedef struct EptClientCallbacks
 {
   RdmnetClientConnectedCb connected;
@@ -156,10 +244,18 @@ typedef struct EptClientCallbacks
   EptClientMsgReceivedCb msg_received;
 } EptClientCallbacks;
 
+/*! A set of configuration information for a single scope in which an RDMnet client is
+ *  participating. */
 typedef struct RdmnetScopeConfig
 {
+  /*! The scope string. Scope strings are UTF-8, and their maximum length is derived from the
+   *  requirements of DNS and DNS-SD. */
   char scope[E133_SCOPE_STRING_PADDED_LENGTH];
+  /*! Whether a static broker address has been configured on this scope. If this is true, discovery
+   *  using DNS-SD will be bypassed and a connection will be attempted directly to the address
+   *  indicated in static_broker_addr. */
   bool has_static_broker_addr;
+  /*! The broker address to which to connect, if a static broker has been configured. */
   LwpaSockaddr static_broker_addr;
 } RdmnetScopeConfig;
 
@@ -202,9 +298,9 @@ typedef struct RdmnetRptClientConfig
 
 /*! \brief Initialize an RPT Client Config with default values for the optional config options.
  *
- *  The config struct members not marked 'optional' are not initialized by this macro. Those
- *  members do not have default values and must be initialized manually before passing the config
- *  struct to an API function.
+ *  The config struct members not marked 'optional' are not initialized by this macro. Those members
+ *  do not have default values and must be initialized manually before passing the config struct to
+ *  an API function.
  *
  *  Usage example:
  *  \code
@@ -212,7 +308,7 @@ typedef struct RdmnetRptClientConfig
  *  RPT_CLIENT_CONFIG_INIT(&config, 0x6574);
  *  \endcode
  *
- *  \param configptr Pointer to RdmnetRptClientConfig, RdmnetDeviceConfig or RdmnetControllerConfig.
+ *  \param clientcfgptr Pointer to RdmnetRptClientConfig.
  *  \param manu_id ESTA manufacturer ID. All RDMnet RPT components must have one.
  */
 #define RPT_CLIENT_CONFIG_INIT(clientcfgptr, manu_id)                                 \
@@ -277,7 +373,7 @@ typedef struct RdmnetEptClientConfig
   } while (0)
 
 /*! \brief Initialize an RdmnetScopeConfig struct with the default RDMnet scope and a static broker
- *         address..
+ *         address.
  *
  *  DNS-SD discovery will be bypassed and broker connection will be attempted using the address and
  *  port given.
@@ -331,5 +427,7 @@ lwpa_error_t rdmnet_rpt_client_send_llrp_response(rdmnet_client_t handle, const 
 #ifdef __cplusplus
 }
 #endif
+
+/*! @} */
 
 #endif /* _RDMNET_CLIENT_H_ */

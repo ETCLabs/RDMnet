@@ -109,26 +109,36 @@
  *  @{
  */
 
+/*! \brief The maximum number of RDMnet Controller instances that an application can create.
+ *
+ *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0. A typical application will only need one
+ *  controller instance (which can communicate on an arbitrary number of scopes).
+ */
 #ifndef RDMNET_MAX_CONTROLLERS
 #define RDMNET_MAX_CONTROLLERS 0
 #endif
 
+/*! \brief The maximum number of RDMnet Device instances that an application can create.
+ *
+ *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0. A typical application will only need one
+ *  device instance.
+ */
 #ifndef RDMNET_MAX_DEVICES
 #define RDMNET_MAX_DEVICES 1
 #endif
 
-#ifndef RDMNET_MAX_RPT_CLIENTS
-#define RDMNET_MAX_RPT_CLIENTS (RDMNET_MAX_CONTROLLERS + RDMNET_MAX_DEVICES)
-#endif
-
+/*! \brief The maximum number of EPT Client instances that an application can create.
+ *
+ *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
+ */
 #ifndef RDMNET_MAX_EPT_CLIENTS
 #define RDMNET_MAX_EPT_CLIENTS 0
 #endif
 
-#ifndef RDMNET_MAX_CLIENTS
-#define RDMNET_MAX_CLIENTS (RDMNET_MAX_RPT_CLIENTS + RDMNET_MAX_EPT_CLIENTS)
-#endif
-
+/*! \brief The maximum number of scopes on which each controller instance can communicate.
+ *
+ *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
+ */
 #ifndef RDMNET_MAX_SCOPES_PER_CONTROLLER
 #define RDMNET_MAX_SCOPES_PER_CONTROLLER 1
 #endif
@@ -149,6 +159,16 @@
 
 /*! @} */
 
+#ifdef RDMNET_MAX_RPT_CLIENTS
+#undef RDMNET_MAX_RPT_CLIENTS
+#endif
+#define RDMNET_MAX_RPT_CLIENTS (RDMNET_MAX_CONTROLLERS + RDMNET_MAX_DEVICES)
+
+#ifdef RDMNET_MAX_CLIENTS
+#undef RDMNET_MAX_CLIENTS
+#endif
+#define RDMNET_MAX_CLIENTS (RDMNET_MAX_RPT_CLIENTS + RDMNET_MAX_EPT_CLIENTS)
+
 /*! \defgroup rdmnetopts_core Core
  *  \ingroup rdmnetopts
  *
@@ -161,7 +181,9 @@
 
 /*! \brief The maximum number of RDMnet connections that can be created.
  *
- *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
+ *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0. This setting should be left at default
+ *  if you have configured #RDMNET_MAX_CONTROLLERS, #RDMNET_MAX_DEVICES and/or
+ *  #RDMNET_MAX_EPT_CLIENTS, as those settings will propagate to this one appropriately.
  */
 #ifndef RDMNET_MAX_CONNECTIONS
 #define RDMNET_MAX_CONNECTIONS RDMNET_MAX_CLIENTS
@@ -206,10 +228,12 @@
 #define RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES 10
 #endif
 
-/*! \brief Whether to automatically poll connections for activity as part of the core tick loop.
+/*! \brief Whether to allow sockets associated with connections to be polled externally.
  *
- *  Most applications will want the default behavior, unless scaling the number of connections is a
- *  concern. Broker applications will set this to 0.
+ *  If this option is defined to 0, the externally-managed-socket functions in the
+ *  \ref rdmnet_conn "Connection API" will not be implemented. Most applications will want the
+ *  default behavior, unless scaling the number of connections is a concern. Broker applications
+ *  will set this to 1.
  */
 #ifndef RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
 #define RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS RDMNET_FULL_OS_AVAILABLE_HINT

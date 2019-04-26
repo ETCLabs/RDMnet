@@ -160,13 +160,13 @@ void rdmnet_conn_deinit()
  *
  *  \param[in] config Configuration parameters for the connection to be created.
  *  \param[out] handle Handle to the newly-created connection
- *  \return #kLwpaErrOk: Handle created successfully.\n
- *          #kLwpaErrInvalid: Invalid argument provided.\n
- *          #kLwpaErrNotInit: Module not initialized.\n
- *          #kLwpaErrNoMem: No room to allocate additional connection.\n
- *          #kLwpaErrSys: An internal library or system call error occurred.\n
+ *  \return #kLwpaErrOk: Handle created successfully.
+ *  \return #kLwpaErrInvalid: Invalid argument provided.
+ *  \return #kLwpaErrNotInit: Module not initialized.
+ *  \return #kLwpaErrNoMem: No room to allocate additional connection.
+ *  \return #kLwpaErrSys: An internal library or system call error occurred.
  */
-lwpa_error_t rdmnet_new_connection(const RdmnetConnectionConfig *config, rdmnet_conn_t *handle)
+lwpa_error_t rdmnet_connection_create(const RdmnetConnectionConfig *config, rdmnet_conn_t *handle)
 {
   if (!config || !handle)
     return kLwpaErrInvalid;
@@ -177,8 +177,8 @@ lwpa_error_t rdmnet_new_connection(const RdmnetConnectionConfig *config, rdmnet_
   if (rdmnet_writelock())
   {
     res = kLwpaErrOk;
-    /* Passed the quick checks, try to create a struct to represent a new connection. This function
-     * creates the new connection, gives it a unique handle and inserts it into the connection map. */
+    // Passed the quick checks, try to create a struct to represent a new connection. This function
+    // creates the new connection, gives it a unique handle and inserts it into the connection map.
     RdmnetConnection *conn = create_new_connection(config);
     if (!conn)
       res = kLwpaErrNoMem;
@@ -202,21 +202,21 @@ lwpa_error_t rdmnet_new_connection(const RdmnetConnectionConfig *config, rdmnet_
  *  blocking time for blocking connections, or run in the background for nonblocking connections.
  *
  *  \param[in] handle Connection handle to connect. Must have been previously created using
- *                    rdmnet_new_connection().
+ *                    rdmnet_connection_create().
  *  \param[in] remote_addr %Broker's IP address and port.
  *  \param[in] connect_data The information about this client that will be sent to the %Broker as
  *                          part of the connection handshake. Caller maintains ownership.
- *  \return #kLwpaErrOk: Connection completed successfully.\n
- *          #kLwpaErrInProgress: Non-blocking connection started.\n
- *          #kLwpaErrInvalid: Invalid argument provided.\n
- *          #kLwpaErrNotInit: Module not initialized.\n
- *          #kLwpaErrNotFound: Connection handle not previously created.\n
- *          #kLwpaErrIsConn: Already connected on this handle.\n
- *          #kLwpaErrTimedOut: Timed out waiting for connection handshake to complete.\n
- *          #kLwpaConnRefused: Connection refused either at the TCP or RDMnet level. additional_data
- *                             may contain a reason code.\n
- *          #kLwpaErrSys: An internal library or system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket calls.\n
+ *  \return #kLwpaErrOk: Connection completed successfully.
+ *  \return #kLwpaErrInProgress: Non-blocking connection started.
+ *  \return #kLwpaErrInvalid: Invalid argument provided.
+ *  \return #kLwpaErrNotInit: Module not initialized.
+ *  \return #kLwpaErrNotFound: Connection handle not previously created.
+ *  \return #kLwpaErrIsConn: Already connected on this handle.
+ *  \return #kLwpaErrTimedOut: Timed out waiting for connection handshake to complete.
+ *  \return #kLwpaErrConnRefused: Connection refused either at the TCP or RDMnet level.
+ *                                additional_data may contain a reason code.
+ *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
 lwpa_error_t rdmnet_connect(rdmnet_conn_t handle, const LwpaSockaddr *remote_addr, const ClientConnectMsg *connect_data)
 {
@@ -254,12 +254,12 @@ lwpa_error_t rdmnet_connect(rdmnet_conn_t handle, const LwpaSockaddr *remote_add
  *
  *  \param[in] handle Connection handle for which to change blocking state.
  *  \param[in] blocking Whether the connection should be blocking.
- *  \return #kLwpaErrOk: Blocking state was changed successfully.\n
- *          #kLwpaErrInvalid: Invalid connection handle.\n
- *          #kLwpaErrNotInit: Module not initialized.\n
- *          #kLwpaErrBusy: A connection is currently in progress.\n
- *          #kLwpaErrSys: An internal library or system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket calls.\n
+ *  \return #kLwpaErrOk: Blocking state was changed successfully.
+ *  \return #kLwpaErrInvalid: Invalid connection handle.
+ *  \return #kLwpaErrNotInit: Module not initialized.
+ *  \return #kLwpaErrBusy: A connection is currently in progress.
+ *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
 lwpa_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking)
 {
@@ -270,7 +270,7 @@ lwpa_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking)
 
   if (!(conn->state == kCSConnectNotStarted || conn->state == kCSHeartbeat))
   {
-    /* Can't change the blocking state while a connection is in progress. */
+    // Can't change the blocking state while a connection is in progress.
     release_conn(conn);
     return kLwpaErrBusy;
   }
@@ -283,7 +283,7 @@ lwpa_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking)
   }
   else
   {
-    /* State is NotConnected, just change the flag */
+    // State is NotConnected, just change the flag
     conn->is_blocking = blocking;
   }
   release_conn(conn);
@@ -296,17 +296,17 @@ lwpa_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking)
  *  already completed and be at the Heartbeat stage.
  *
  *  \param[in] handle Connection handle to attach the socket to. Must have been previously created
- *                    using rdmnet_new_connection().
+ *                    using rdmnet_connection_create().
  *  \param[in] sock System socket to attach to the connection handle. Must be an already-connected
  *                  stream socket.
  *  \param[in] remote_addr The remote network address to which the socket is currently connected.
- *  \return #kLwpaErrOk: Socket was attached successfully.\n
- *          #kLwpaErrInvalid: Invalid argument provided.\n
- *          #kLwpaErrNotInit: Module not initialized.\n
- *          #kLwpaErrIsConn: The connection handle provided is already connected using another socket.\n
- *          #kLwpaErrNotImpl: RDMnet has been compiled with #RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS=0
- *                            and thus this function is not available.\n
- *          #kLwpaErrSys: An internal library or system call error occurred.\n
+ *  \return #kLwpaErrOk: Socket was attached successfully.
+ *  \return #kLwpaErrInvalid: Invalid argument provided.
+ *  \return #kLwpaErrNotInit: Module not initialized.
+ *  \return #kLwpaErrIsConn: The connection handle provided is already connected using another socket.
+ *  \return #kLwpaErrNotImpl: RDMnet has been compiled with #RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS=0
+ *          and thus this function is not available.
+ *  \return #kLwpaErrSys: An internal library or system call error occurred.
  */
 lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t sock, const LwpaSockaddr *remote_addr)
 {
@@ -351,12 +351,12 @@ lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t s
  *  \param[in] disconnect_reason If not NULL, an RDMnet Disconnect message will be sent with this
  *                               reason code. This is the proper way to gracefully close a
  *                               connection in RDMnet.
- *  \return #kLwpaErrOk: Connection was successfully destroyed\n
- *          #kLwpaErrInvalid: Invalid argument provided.\n
- *          #kLwpaErrNotInit: Module not initialized.\n
- *          #kLwpaErrSys: An internal library or system call error occurred.\n
+ *  \return #kLwpaErrOk: Connection was successfully destroyed
+ *  \return #kLwpaErrInvalid: Invalid argument provided.
+ *  \return #kLwpaErrNotInit: Module not initialized.
+ *  \return #kLwpaErrSys: An internal library or system call error occurred.
  */
-lwpa_error_t rdmnet_destroy_connection(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t *disconnect_reason)
+lwpa_error_t rdmnet_connection_destroy(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t *disconnect_reason)
 {
   RdmnetConnection *conn;
   lwpa_error_t res = get_conn(handle, &conn);
@@ -383,12 +383,12 @@ lwpa_error_t rdmnet_destroy_connection(rdmnet_conn_t handle, const rdmnet_discon
  *  \param[in] handle Connection handle on which to send.
  *  \param[in] data Data buffer to send.
  *  \param[in] size Size of data buffer.
- *  \return Number of bytes sent (success)\n
- *          #kLwpaErrInvalid: Invalid argument provided.\n
- *          #kLwpaErrNotInit: Module not initialized.\n
- *          #kLwpaErrNotConn: The connection handle has not been successfully connected.\n
- *          #kLwpaErrSys: An internal library or system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket calls.\n
+ *  \return Number of bytes sent (success)
+ *  \return #kLwpaErrInvalid: Invalid argument provided.
+ *  \return #kLwpaErrNotInit: Module not initialized.
+ *  \return #kLwpaErrNotConn: The connection handle has not been successfully connected.
+ *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
 int rdmnet_send(rdmnet_conn_t handle, const uint8_t *data, size_t size)
 {
@@ -422,11 +422,11 @@ int rdmnet_send(rdmnet_conn_t handle, const uint8_t *data, size_t size)
  *  to end using rdmnet_end_message().
  *
  *  \param[in] handle Connection handle on which to start an atomic send operation.
- *  \return #kLwpaErrOk: Send operation started successfully.\n
- *          #kLwpaErrInvalid: Invalid argument provided.\n
- *          #kLwpaErrNotInit: Module not initialized.\n
- *          #kLwpaErrNotConn: The connection handle has not been successfully connected.\n
- *          #kLwpaErrSys: An internal library or system call error occurred.\n
+ *  \return #kLwpaErrOk: Send operation started successfully.
+ *  \return #kLwpaErrInvalid: Invalid argument provided.
+ *  \return #kLwpaErrNotInit: Module not initialized.
+ *  \return #kLwpaErrNotConn: The connection handle has not been successfully connected.
+ *  \return #kLwpaErrSys: An internal library or system call error occurred.
  */
 lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle)
 {
@@ -443,7 +443,7 @@ lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle)
   {
     if (lwpa_mutex_take(&conn->send_lock, LWPA_WAIT_FOREVER))
     {
-      /* Return, keeping the readlock and the send lock. */
+      // Return, keeping the readlock and the send lock.
       return res;
     }
     else
@@ -466,12 +466,12 @@ lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle)
  *  \param[in] handle Connection handle on which to send a partial message.
  *  \param[in] data Data buffer to send.
  *  \param[in] size Size of data buffer.
- *  \return Number of bytes sent (success)\n
- *          #kLwpaErrInvalid: Invalid argument provided.\n
- *          #kLwpaErrNotInit: Module not initialized.\n
- *          #kLwpaErrNotConn: The connection handle has not been successfully connected.\n
- *          #kLwpaErrSys: An internal library or system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket calls.\n
+ *  \return Number of bytes sent (success)
+ *  \return #kLwpaErrInvalid: Invalid argument provided.
+ *  \return #kLwpaErrNotInit: Module not initialized.
+ *  \return #kLwpaErrNotConn: The connection handle has not been successfully connected.
+ *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
 int rdmnet_send_partial_message(rdmnet_conn_t handle, const uint8_t *data, size_t size)
 {
@@ -503,10 +503,10 @@ int rdmnet_send_partial_message(rdmnet_conn_t handle, const uint8_t *data, size_
  *  used to guarantee an atomic piece-wise send operation in a multithreaded environment.
  *
  *  \param[in] handle Connection handle on which to end an atomic send operation.
- *  \return #kLwpaErrOk: Send operation ended successfully.\n
- *          #kLwpaErrInvalid: Invalid argument provided.\n
- *          #kLwpaErrNotInit: Module not initialized.\n
- *          #kLwpaErrSys: An internal library or system call error occurred.\n
+ *  \return #kLwpaErrOk: Send operation ended successfully.
+ *  \return #kLwpaErrInvalid: Invalid argument provided.
+ *  \return #kLwpaErrNotInit: Module not initialized.
+ *  \return #kLwpaErrSys: An internal library or system call error occurred.
  */
 lwpa_error_t rdmnet_end_message(rdmnet_conn_t handle)
 {
@@ -514,12 +514,12 @@ lwpa_error_t rdmnet_end_message(rdmnet_conn_t handle)
   lwpa_error_t res = get_conn(handle, &conn);
   if (res == kLwpaErrOk)
   {
-    /* Release the send lock and the read lock that we had before. */
+    // Release the send lock and the read lock that we had before.
     lwpa_mutex_give(&conn->lock);
     lwpa_mutex_give(&conn->send_lock);
     rdmnet_readunlock();
   }
-  /* And release the read lock that we took at the beginning of this function. */
+  // And release the read lock that we took at the beginning of this function.
   rdmnet_readunlock();
   return res;
 }

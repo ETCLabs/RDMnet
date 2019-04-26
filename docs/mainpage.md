@@ -165,7 +165,7 @@ include RDM in your project.
 
 - If using the [Bonjour SDK for Windows](https://developer.apple.com/bonjour/):
   v3.0.
-- If using ETCLabs/mDNSWindows: v1.1.1
+- If using ETCLabs/mDNSWindows: v1.2.0
 
 ### Qt
 

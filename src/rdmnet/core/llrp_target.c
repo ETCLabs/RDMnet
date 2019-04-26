@@ -104,14 +104,6 @@ static int target_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const Lw
 
 /*************************** Function definitions ****************************/
 
-/*! \brief Initialize the LLRP module.
- *
- *  Do all necessary initialization before other LLRP functions can be called.
- *
- *  \return #kLwpaErrOk: Initialization successful.\n
- *          #kLwpaErrSys: An internal library of system call error occurred.\n
- *          Note: Other error codes might be propagated from underlying socket calls.\n
- */
 lwpa_error_t rdmnet_llrp_target_init()
 {
   lwpa_error_t res = kLwpaErrOk;
@@ -230,12 +222,6 @@ static void target_dealloc(const LwpaRbTree *self, LwpaRbNode *node)
   target_node_free(node);
 }
 
-/*! \brief Deinitialize the LLRP module.
- *
- *  Set the LLRP module back to an uninitialized state. All existing connections will be
- *  closed/disconnected. Calls to other LLRP API functions will fail until rdmnet_llrp_init() is called
- *  again.
- */
 void rdmnet_llrp_target_deinit()
 {
   lwpa_rbtree_clear_with_cb(&state.targets, target_dealloc);
@@ -245,19 +231,16 @@ void rdmnet_llrp_target_deinit()
   memset(&state, 0, sizeof state);
 }
 
-/*! \brief Create an LLRP socket to be used by an LLRP Target.
+/*! \brief Create a new LLRP target instance.
  *
- *  <b>TODO stale docs</b>
- *
- *  \param[in] netint The network interface this LLRP socket should send and receive on.
- *  \param[in] target_cid The CID of the LLRP Target.
- *  \param[in] target_uid The UID of the LLRP Target.
- *  \param[in] hardware_address The hardware address of the LLRP Target (typically the MAC address
- *                              of the network interface)
- *  \param[in] component_type The component type this LLRP Target is associated with; pass
- *                            kLlrpCompUnknown if the Target is not associated with any other type
- *                            of RDMnet Component.
- *  \return A new LLRP socket (success) or #LLRP_SOCKET_INVALID (failure).
+ *  \param[in] config Configuration parameters for the LLRP target to be created.
+ *  \param[out] handle Handle to the newly-created target instance.
+ *  \return #kLwpaErrOk: Target created successfully.
+ *  \return #kLwpaErrInvalid: Invalid argument provided.
+ *  \return #kLwpaErrNotInit: Module not initialized.
+ *  \return #kLwpaErrNoMem: No memory to allocate additional target instance.
+ *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
 lwpa_error_t rdmnet_llrp_target_create(const LlrpTargetConfig *config, llrp_target_t *handle)
 {
@@ -283,12 +266,11 @@ lwpa_error_t rdmnet_llrp_target_create(const LlrpTargetConfig *config, llrp_targ
   return res;
 }
 
-/*! \brief Close and deallocate an LLRP socket.
+/*! \brief Destroy an LLRP target instance.
  *
- *  Also closes the underlying system sockets.
+ *  The handle will be invalidated for any future calls to API functions.
  *
- *  \param[in] handle LLRP socket to close.
- *  \return true (closed successfully) or false (not closed successfully).
+ *  \param[in] handle Handle to target to destroy.
  */
 void rdmnet_llrp_target_destroy(llrp_target_t handle)
 {
@@ -301,14 +283,15 @@ void rdmnet_llrp_target_destroy(llrp_target_t handle)
   release_target(target);
 }
 
-/*! \brief Update the Broker connection state of an LLRP Target socket.
+/*! \brief Update the Broker connection state of an LLRP target.
  *
- *  If an LLRP Target is associated with an RPT Client, this should be called each time the Client
- *  connects or disconnects from the Broker. This affects whether the LLRP Target responds to
- *  filtered LLRP probe requests.
+ *  If an LLRP target is associated with an RPT client, this should be called each time the client
+ *  connects or disconnects from a broker. Controllers are considered not connected when they are
+ *  not connected to any broker. This affects whether the LLRP target responds to filtered LLRP
+ *  probe requests.
  *
- *  \param[in] handle Handle to LLRP Target for which to update the connection state.
- *  \param[in] connected_to_broker Whether the LLRP Target is currently connected to a Broker.
+ *  \param[in] handle Handle to LLRP target for which to update the connection state.
+ *  \param[in] connected_to_broker Whether the LLRP target is currently connected to a broker.
  */
 void rdmnet_llrp_target_update_connection_state(llrp_target_t handle, bool connected_to_broker)
 {
@@ -321,15 +304,15 @@ void rdmnet_llrp_target_update_connection_state(llrp_target_t handle, bool conne
   }
 }
 
-/*! \brief Send an RDM response on an LLRP Target socket.
+/*! \brief Send an RDM response from an LLRP target.
  *
- *  \param[in] handle LLRP manager socket handle on which to send an RDM command.
- *  \param[in] destination CID of LLRP Manager to which to send the command.
- *  \param[in] command RDM response to send.
- *  \param[in] transaction_number Transaction number of the corresponding LLRP RDM command.
- *  \return #kLwpaErrOk: Command sent successfully.\n
- *          #kLwpaErrInvalid: Invalid argument provided.\n
- *          Note: other error codes might be propagated from underlying socket calls.
+ *  \param[in] handle Handle to LLRP target from which to send an RDM response.
+ *  \param[in] resp Response to send.
+ *  \return #kLwpaErrOk: Response sent successfully.
+ *  \return #kLwpaErrInvalid: Invalid argument provided.
+ *  \return #kLwpaErrNotInit: Module not initialized.
+ *  \return #kLwpaErrNotFound: Handle is not associated with a valid LLRP target instance.
+ *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
 lwpa_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLocalRdmResponse *resp)
 {
