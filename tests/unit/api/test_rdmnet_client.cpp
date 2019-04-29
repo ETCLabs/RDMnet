@@ -92,7 +92,7 @@ protected:
     RESET_FAKE(rdmnet_client_connected);
     RESET_FAKE(rdmnet_client_disconnected);
 
-    RDMNET_CORE_DO_FOR_ALL_FAKES(RESET_FAKE);
+    RDMNET_CORE_LIB_DO_FOR_ALL_FAKES(RESET_FAKE);
 
     // Init
     rdmnet_core_init_fake.return_val = kLwpaErrOk;

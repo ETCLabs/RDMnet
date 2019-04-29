@@ -749,6 +749,8 @@ void rdmnet_socket_error(rdmnet_conn_t handle, lwpa_error_t socket_err)
   RdmnetConnection *conn;
   if (kLwpaErrOk == get_conn(handle, &conn))
   {
+    fill_callback_info(conn, &cb);
+
     if (conn->state == kCSConnectPending || conn->state == kCSRDMnetConnPending)
     {
       cb.which = kConnCallbackConnectFailed;
@@ -758,6 +760,16 @@ void rdmnet_socket_error(rdmnet_conn_t handle, lwpa_error_t socket_err)
       failed_info->socket_err = socket_err;
       if (conn->state == kCSRDMnetConnPending)
         conn->rdmnet_conn_failed = true;
+
+      reset_connection(conn);
+    }
+    else if (conn->state == kCSHeartbeat)
+    {
+      cb.which = kConnCallbackDisconnected;
+
+      RdmnetDisconnectedInfo *disconn_info = &cb.args.disconnected.disconn_info;
+      disconn_info->event = kRdmnetDisconnectAbruptClose;
+      disconn_info->socket_err = socket_err;
 
       reset_connection(conn);
     }

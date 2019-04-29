@@ -25,45 +25,15 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/* rdmnet_mock/core.h
- * Mocking the functions of rdmnet/core.h
- */
-#ifndef _RDMNET_MOCK_CORE_H_
-#define _RDMNET_MOCK_CORE_H_
+// The entry point for the RDMnet Connection unit tests.
 
-#include "rdmnet/core.h"
+#include "gtest/gtest.h"
 #include "fff.h"
 
-#include "rdmnet_mock/core/broker_prot.h"
-#include "rdmnet_mock/core/connection.h"
-#include "rdmnet_mock/core/discovery.h"
-#include "rdmnet_mock/core/rpt_prot.h"
+DEFINE_FFF_GLOBALS;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_core_init, const LwpaLogParams *);
-DECLARE_FAKE_VOID_FUNC(rdmnet_core_deinit);
-DECLARE_FAKE_VOID_FUNC(rdmnet_core_tick);
-DECLARE_FAKE_VALUE_FUNC(bool, rdmnet_core_initialized);
-
-#define RDMNET_CORE_DO_FOR_ALL_FAKES(operation) \
-  operation(rdmnet_core_init);                  \
-  operation(rdmnet_core_deinit);                \
-  operation(rdmnet_core_tick);                  \
-  operation(rdmnet_core_initialized);
-
-#define RDMNET_CORE_LIB_DO_FOR_ALL_FAKES(operation)    \
-  RDMNET_CORE_DO_FOR_ALL_FAKES(operation);             \
-  RDMNET_CORE_BROKER_PROT_DO_FOR_ALL_FAKES(operation); \
-  RDMNET_CORE_CONNECTION_DO_FOR_ALL_FAKES(operation);  \
-  RDMNET_CORE_DISCOVERY_DO_FOR_ALL_FAKES(operation);   \
-  RDMNET_CORE_LLRP_TARGET_DO_FOR_ALL_FAKES(operation); \
-  RDMNET_CORE_RPT_PROT_DO_FOR_ALL_FAKES(operation)
-
-#ifdef __cplusplus
+int main(int argc, char *argv[])
+{
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
-#endif
-
-#endif /* _RDMNET_MOCK_CORE_H_ */

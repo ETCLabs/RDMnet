@@ -72,7 +72,7 @@ struct SocketData
   SocketData(rdmnet_conn_t conn_handle_in, lwpa_socket_t socket_in) : conn_handle(conn_handle_in), socket(socket_in)
   {
     ws_recv_buf.buf = reinterpret_cast<char *>(&recv_buf);
-    ws_recv_buf.len = kRecvBufSize;
+    ws_recv_buf.len = RDMNET_RECV_DATA_MAX_SIZE;
   }
 
   rdmnet_conn_t conn_handle{RDMNET_CONN_INVALID};
@@ -81,10 +81,9 @@ struct SocketData
   bool close_requested{false};
 
   // Socket receive data
-  WSABUF ws_recv_buf;                           // The variable Winsock uses for receive buffers
-  static constexpr size_t kRecvBufSize = 1000;  // TODO get constant
+  WSABUF ws_recv_buf;  // The variable Winsock uses for receive buffers
   // Receive buffer for socket recv operations
-  uint8_t recv_buf[kRecvBufSize];
+  uint8_t recv_buf[RDMNET_RECV_DATA_MAX_SIZE];
 };
 
 // A class to manage RDMnet Broker sockets on Windows.

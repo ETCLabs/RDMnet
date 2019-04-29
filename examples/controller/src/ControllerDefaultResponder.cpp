@@ -118,7 +118,7 @@ bool ControllerDefaultResponder::GetDeviceLabel(const uint8_t * /*param_data*/, 
                                                 std::vector<RdmParamData> &resp_data_list,
                                                 uint16_t & /*nack_reason*/) const
 {
-  ControllerReadGuard prop_read(prop_lock_);
+  lwpa::ReadGuard prop_read(prop_lock_);
 
   size_t label_len = std::min(device_label_.length(), kRdmDeviceLabelMaxLength);
   RdmParamData resp_data;
@@ -148,7 +148,7 @@ bool ControllerDefaultResponder::GetComponentScope(uint16_t slot, std::vector<Rd
 {
   if (slot != 0)
   {
-    ControllerReadGuard prop_read(prop_lock_);
+    lwpa::ReadGuard prop_read(prop_lock_);
 
     if (slot - 1u < scopes_.size())
     {
@@ -228,7 +228,7 @@ bool ControllerDefaultResponder::GetSearchDomain(const uint8_t * /*param_data*/,
                                                  std::vector<RdmParamData> &resp_data_list,
                                                  uint16_t & /*nack_reason*/) const
 {
-  ControllerReadGuard prop_read(prop_lock_);
+  lwpa::ReadGuard prop_read(prop_lock_);
 
   RdmParamData resp_data;
   strncpy((char *)resp_data.data, search_domain_.c_str(), E133_DOMAIN_STRING_PADDED_LENGTH);
@@ -241,7 +241,7 @@ bool ControllerDefaultResponder::GetTCPCommsStatus(const uint8_t * /*param_data*
                                                    std::vector<RdmParamData> &resp_data_list,
                                                    uint16_t & /*nack_reason*/) const
 {
-  ControllerReadGuard prop_read(prop_lock_);
+  lwpa::ReadGuard prop_read(prop_lock_);
 
   for (const auto &scope_pair : scopes_)
   {

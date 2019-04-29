@@ -25,45 +25,32 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/* rdmnet_mock/core.h
- * Mocking the functions of rdmnet/core.h
- */
-#ifndef _RDMNET_MOCK_CORE_H_
-#define _RDMNET_MOCK_CORE_H_
+#include "gtest/gtest.h"
+#include "rdmnet/core/connection.h"
+#include "rdmnet_mock/core.h"
 
-#include "rdmnet/core.h"
-#include "fff.h"
+FAKE_VOID_FUNC(conncb_connected, rdmnet_conn_t, const RdmnetConnectedInfo *, void *);
+FAKE_VOID_FUNC(conncb_connect_failed, rdmnet_conn_t, const RdmnetConnectFailedInfo *, void *);
+FAKE_VOID_FUNC(conncb_disconnected, rdmnet_conn_t, const RdmnetDisconnectedInfo *, void *);
+FAKE_VOID_FUNC(conncb_msg_received, rdmnet_conn_t, const RdmnetMessage *, void *);
 
-#include "rdmnet_mock/core/broker_prot.h"
-#include "rdmnet_mock/core/connection.h"
-#include "rdmnet_mock/core/discovery.h"
-#include "rdmnet_mock/core/rpt_prot.h"
+class TestConnection : public testing::Test
+{
+protected:
+  TestConnection()
+  {
+    RESET_FAKE(conncb_connected);
+    RESET_FAKE(conncb_connect_failed);
+    RESET_FAKE(conncb_disconnected);
+    RESET_FAKE(conncb_msg_received);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+    RDMNET_CORE_DO_FOR_ALL_FAKES(RESET_FAKE);
 
-DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_core_init, const LwpaLogParams *);
-DECLARE_FAKE_VOID_FUNC(rdmnet_core_deinit);
-DECLARE_FAKE_VOID_FUNC(rdmnet_core_tick);
-DECLARE_FAKE_VALUE_FUNC(bool, rdmnet_core_initialized);
+    rdmnet_core_initialized_fake.return_val = true;
+  }
 
-#define RDMNET_CORE_DO_FOR_ALL_FAKES(operation) \
-  operation(rdmnet_core_init);                  \
-  operation(rdmnet_core_deinit);                \
-  operation(rdmnet_core_tick);                  \
-  operation(rdmnet_core_initialized);
-
-#define RDMNET_CORE_LIB_DO_FOR_ALL_FAKES(operation)    \
-  RDMNET_CORE_DO_FOR_ALL_FAKES(operation);             \
-  RDMNET_CORE_BROKER_PROT_DO_FOR_ALL_FAKES(operation); \
-  RDMNET_CORE_CONNECTION_DO_FOR_ALL_FAKES(operation);  \
-  RDMNET_CORE_DISCOVERY_DO_FOR_ALL_FAKES(operation);   \
-  RDMNET_CORE_LLRP_TARGET_DO_FOR_ALL_FAKES(operation); \
-  RDMNET_CORE_RPT_PROT_DO_FOR_ALL_FAKES(operation)
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* _RDMNET_MOCK_CORE_H_ */
+  RdmnetConnectionConfig default_config_{
+      {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}},
+      {conncb_connected, conncb_connect_failed, conncb_disconnected, conncb_msg_received},
+      nullptr};
+};
