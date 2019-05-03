@@ -27,7 +27,9 @@
 
 #include "gtest/gtest.h"
 #include "rdmnet/core/connection.h"
+#include "rdmnet/private/connection.h"
 #include "rdmnet_mock/core.h"
+#include "rdmnet_mock/private/core.h"
 
 FAKE_VOID_FUNC(conncb_connected, rdmnet_conn_t, const RdmnetConnectedInfo *, void *);
 FAKE_VOID_FUNC(conncb_connect_failed, rdmnet_conn_t, const RdmnetConnectFailedInfo *, void *);
@@ -37,20 +39,41 @@ FAKE_VOID_FUNC(conncb_msg_received, rdmnet_conn_t, const RdmnetMessage *, void *
 class TestConnection : public testing::Test
 {
 protected:
-  TestConnection()
+  void SetUp() override
   {
     RESET_FAKE(conncb_connected);
     RESET_FAKE(conncb_connect_failed);
     RESET_FAKE(conncb_disconnected);
     RESET_FAKE(conncb_msg_received);
 
-    RDMNET_CORE_DO_FOR_ALL_FAKES(RESET_FAKE);
+    rdmnet_mock_core_reset_and_init();
 
-    rdmnet_core_initialized_fake.return_val = true;
+    ASSERT_EQ(kLwpaErrOk, rdmnet_conn_init());
   }
+
+  void TearDown() override { rdmnet_conn_deinit(); }
 
   RdmnetConnectionConfig default_config_{
       {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}},
       {conncb_connected, conncb_connect_failed, conncb_disconnected, conncb_msg_received},
       nullptr};
 };
+
+TEST_F(TestConnection, socket_error)
+{
+  rdmnet_conn_t conn;
+  ASSERT_EQ(kLwpaErrOk, rdmnet_connection_create(&default_config_, &conn));
+
+  // This allows us to skip the connection process and go straight to a connected state.
+  lwpa_socket_t fake_socket = 0;
+  LwpaSockaddr remote_addr{};
+  ASSERT_EQ(kLwpaErrOk, rdmnet_attach_existing_socket(conn, fake_socket, &remote_addr));
+
+  // Simulate an error on a socket, make sure it is marked disconnected.
+  rdmnet_socket_error(conn, kLwpaErrConnReset);
+
+  ASSERT_EQ(conncb_disconnected_fake.call_count, 1u);
+  ASSERT_EQ(conncb_disconnected_fake.arg0_val, conn);
+  ASSERT_EQ(conncb_disconnected_fake.arg1_val->socket_err, kLwpaErrConnReset);
+  ASSERT_EQ(conncb_disconnected_fake.arg1_val->event, kRdmnetDisconnectAbruptClose);
+}

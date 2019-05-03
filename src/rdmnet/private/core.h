@@ -38,17 +38,7 @@
 extern "C" {
 #endif
 
-bool rdmnet_core_initialized();
-
-extern lwpa_rwlock_t rdmnet_lock;
-extern const LwpaLogParams *rdmnet_log_params;
-
 #define RDMNET_LOG_MSG(msg) RDMNET_LOG_MSG_PREFIX msg
-
-#define rdmnet_readlock() lwpa_rwlock_readlock(&rdmnet_lock, LWPA_WAIT_FOREVER)
-#define rdmnet_readunlock() lwpa_rwlock_readunlock(&rdmnet_lock)
-#define rdmnet_writelock() lwpa_rwlock_writelock(&rdmnet_lock, LWPA_WAIT_FOREVER)
-#define rdmnet_writeunlock() lwpa_rwlock_writeunlock(&rdmnet_lock)
 
 typedef union PolledSocketOpaqueData
 {
@@ -63,6 +53,15 @@ typedef struct PolledSocketInfo
   PolledSocketActivityCallback callback;
   PolledSocketOpaqueData data;
 } PolledSocketInfo;
+
+extern const LwpaLogParams *rdmnet_log_params;
+
+bool rdmnet_core_initialized();
+
+bool rdmnet_readlock();
+void rdmnet_readunlock();
+bool rdmnet_writelock();
+void rdmnet_writeunlock();
 
 lwpa_error_t rdmnet_core_add_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, PolledSocketInfo *info);
 lwpa_error_t rdmnet_core_modify_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, PolledSocketInfo *info);

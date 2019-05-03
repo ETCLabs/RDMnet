@@ -65,7 +65,6 @@
 
 /***************************** Global variables ******************************/
 
-lwpa_rwlock_t rdmnet_lock;
 const LwpaLogParams *rdmnet_log_params;
 
 /**************************** Private variables ******************************/
@@ -84,6 +83,8 @@ static struct CoreState
   lwpa_thread_t tick_thread;
 #endif
 } core_state;
+
+static lwpa_rwlock_t rdmnet_lock;
 
 /*********************** Private function prototypes *************************/
 
@@ -267,4 +268,24 @@ void rdmnet_core_tick()
 
     lwpa_timer_reset(&core_state.tick_timer);
   }
+}
+
+bool rdmnet_readlock()
+{
+  return lwpa_rwlock_readlock(&rdmnet_lock, LWPA_WAIT_FOREVER);
+}
+
+void rdmnet_readunlock()
+{
+  lwpa_rwlock_readunlock(&rdmnet_lock);
+}
+
+bool rdmnet_writelock()
+{
+  return lwpa_rwlock_writelock(&rdmnet_lock, LWPA_WAIT_FOREVER);
+}
+
+void rdmnet_writeunlock()
+{
+  lwpa_rwlock_writeunlock(&rdmnet_lock);
 }

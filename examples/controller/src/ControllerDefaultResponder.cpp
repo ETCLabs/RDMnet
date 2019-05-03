@@ -359,27 +359,27 @@ bool ControllerDefaultResponder::GetSoftwareVersionLabel(const uint8_t * /*param
 
 void ControllerDefaultResponder::UpdateSearchDomain(const std::string &new_search_domain)
 {
-  ControllerWriteGuard prop_write(prop_lock_);
+  lwpa::WriteGuard prop_write(prop_lock_);
   search_domain_ = new_search_domain;
 }
 
 void ControllerDefaultResponder::AddScope(const std::string &new_scope, StaticBrokerConfig static_broker)
 {
-  ControllerWriteGuard prop_write(prop_lock_);
+  lwpa::WriteGuard prop_write(prop_lock_);
 
   scopes_.insert(std::make_pair(new_scope, ControllerScopeData(static_broker)));
 }
 
 void ControllerDefaultResponder::RemoveScope(const std::string &scope_to_remove)
 {
-  ControllerWriteGuard prop_write(prop_lock_);
+  lwpa::WriteGuard prop_write(prop_lock_);
   scopes_.erase(scope_to_remove);
 }
 
 void ControllerDefaultResponder::UpdateScopeConnectionStatus(const std::string &scope, bool connected,
                                                              const LwpaSockaddr &broker_addr)
 {
-  ControllerWriteGuard prop_write(prop_lock_);
+  lwpa::WriteGuard prop_write(prop_lock_);
   auto scope_entry = scopes_.find(scope);
   if (scope_entry != scopes_.end())
   {
@@ -391,7 +391,7 @@ void ControllerDefaultResponder::UpdateScopeConnectionStatus(const std::string &
 
 void ControllerDefaultResponder::IncrementTcpUnhealthyCounter(const std::string &scope)
 {
-  ControllerWriteGuard prop_write(prop_lock_);
+  lwpa::WriteGuard prop_write(prop_lock_);
   auto scope_entry = scopes_.find(scope);
   if (scope_entry != scopes_.end())
   {
@@ -401,7 +401,7 @@ void ControllerDefaultResponder::IncrementTcpUnhealthyCounter(const std::string 
 
 void ControllerDefaultResponder::ResetTcpUnhealthyCounter(const std::string &scope)
 {
-  ControllerWriteGuard prop_write(prop_lock_);
+  lwpa::WriteGuard prop_write(prop_lock_);
   auto scope_entry = scopes_.find(scope);
   if (scope_entry != scopes_.end())
   {

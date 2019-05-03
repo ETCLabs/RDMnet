@@ -25,27 +25,33 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-/* rdmnet_mock/core.h
- * Mocking the functions of rdmnet/core.h
+/* rdmnet_mock/private/core.h
+ * Mocking the functions of rdmnet/private/core.h
  */
-#ifndef _RDMNET_MOCK_CORE_H_
-#define _RDMNET_MOCK_CORE_H_
+#ifndef _RDMNET_MOCK_PRIVATE_CORE_H_
+#define _RDMNET_MOCK_PRIVATE_CORE_H_
 
-#include "rdmnet/core.h"
+#include "rdmnet/private/core.h"
 #include "fff.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_core_init, const LwpaLogParams *);
-DECLARE_FAKE_VOID_FUNC(rdmnet_core_deinit);
-DECLARE_FAKE_VOID_FUNC(rdmnet_core_tick);
+DECLARE_FAKE_VALUE_FUNC(bool, rdmnet_core_initialized);
+DECLARE_FAKE_VALUE_FUNC(bool, rdmnet_readlock);
+DECLARE_FAKE_VOID_FUNC(rdmnet_readunlock);
+DECLARE_FAKE_VALUE_FUNC(bool, rdmnet_writelock);
+DECLARE_FAKE_VOID_FUNC(rdmnet_writeunlock);
 
-void rdmnet_mock_core_reset_and_init();
+DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_core_add_polled_socket, lwpa_socket_t, lwpa_poll_events_t,
+                        PolledSocketInfo *);
+DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_core_modify_polled_socket, lwpa_socket_t, lwpa_poll_events_t,
+                        PolledSocketInfo *);
+DECLARE_FAKE_VOID_FUNC(rdmnet_core_remove_polled_socket, lwpa_socket_t);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _RDMNET_MOCK_CORE_H_ */
+#endif /* _RDMNET_MOCK_PRIVATE_CORE_H_ */

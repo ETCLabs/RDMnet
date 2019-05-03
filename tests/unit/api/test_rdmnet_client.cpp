@@ -34,6 +34,9 @@
 #include "rdmnet/client.h"
 
 #include "rdmnet_mock/core.h"
+#include "rdmnet_mock/core/connection.h"
+#include "rdmnet_mock/core/discovery.h"
+#include "rdmnet_mock/private/core.h"
 #include "rdmnet_mock/core/llrp_target.h"
 #include "rdmnet/core/util.h"
 
@@ -92,9 +95,10 @@ protected:
     RESET_FAKE(rdmnet_client_connected);
     RESET_FAKE(rdmnet_client_disconnected);
 
-    RDMNET_CORE_LIB_DO_FOR_ALL_FAKES(RESET_FAKE);
+    rdmnet_mock_core_reset_and_init();
 
     // Init
+    rdmnet_core_initialized_fake.return_val = false;
     rdmnet_core_init_fake.return_val = kLwpaErrOk;
     rdmnet_llrp_target_create_fake.return_val = kLwpaErrOk;
     ASSERT_EQ(kLwpaErrOk, rdmnet_client_init(NULL));

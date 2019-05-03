@@ -145,6 +145,8 @@ extern "C" {
 lwpa_error_t rdmnet_conn_init();
 void rdmnet_conn_deinit();
 
+void rdmnet_conn_tick();
+
 #ifdef __cplusplus
 }
 #endif

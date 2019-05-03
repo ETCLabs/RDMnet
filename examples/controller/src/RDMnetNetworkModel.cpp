@@ -134,7 +134,7 @@ void RDMnetNetworkModel::addScopeToMonitor(QString scope)
 
   if (scope.length() > 0)
   {
-    ControllerWriteGuard conn_write(conn_lock_);
+    lwpa::WriteGuard conn_write(conn_lock_);
 
     for (auto iter = broker_connections_.begin(); (iter != broker_connections_.end()) && !scopeAlreadyAdded; ++iter)
     {
@@ -205,7 +205,7 @@ void RDMnetNetworkModel::addBrokerByIP(QString scope, const LwpaSockaddr &addr)
 {
   bool brokerAlreadyAdded = false;
 
-  ControllerWriteGuard conn_write(conn_lock_);
+  lwpa::WriteGuard conn_write(conn_lock_);
   for (const auto &broker_pair : broker_connections_)
   {
     if (broker_pair.second->scope() == scope)
@@ -299,7 +299,7 @@ void RDMnetNetworkModel::ConnectFailed(rdmnet_client_scope_t /*scope_handle*/,
 
 void RDMnetNetworkModel::Disconnected(rdmnet_client_scope_t scope_handle, const RdmnetClientDisconnectedInfo & /*info*/)
 {
-  ControllerWriteGuard conn_write(conn_lock_);
+  lwpa::WriteGuard conn_write(conn_lock_);
 
   BrokerItem *brokerItem = broker_connections_[scope_handle];
   if (brokerItem)
@@ -713,7 +713,7 @@ void RDMnetNetworkModel::removeBroker(BrokerItem *brokerItem)
   rdmnet_client_scope_t scope_handle = brokerItem->scope_handle();
   rdmnet_->RemoveScope(scope_handle, kRdmnetDisconnectUserReconfigure);
   {  // Write lock scope
-    ControllerWriteGuard conn_write(conn_lock_);
+    lwpa::WriteGuard conn_write(conn_lock_);
     broker_connections_.erase(scope_handle);
   }
   default_responder_.RemoveScope(brokerItem->scope().toStdString());
@@ -745,7 +745,7 @@ void RDMnetNetworkModel::removeBroker(BrokerItem *brokerItem)
 void RDMnetNetworkModel::removeAllBrokers()
 {
   {  // Write lock scope
-    ControllerWriteGuard conn_write(conn_lock_);
+    lwpa::WriteGuard conn_write(conn_lock_);
 
     auto broker_iter = broker_connections_.begin();
     while (broker_iter != broker_connections_.end())
@@ -3108,7 +3108,7 @@ RDMnetNetworkModel::RDMnetNetworkModel(RDMnetLibInterface *library, ControllerLo
 RDMnetNetworkModel::~RDMnetNetworkModel()
 {
   {  // Write lock scope
-    ControllerWriteGuard conn_write(conn_lock_);
+    lwpa::WriteGuard conn_write(conn_lock_);
 
     for (auto &connection : broker_connections_)
       rdmnet_->RemoveScope(connection.first, kRdmnetDisconnectShutdown);

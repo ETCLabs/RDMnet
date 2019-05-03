@@ -30,6 +30,7 @@
 #include "rdmnet/private/discovery.h"
 #include "rdmnet/core/util.h"
 #include "rdmnet_mock/core.h"
+#include "rdmnet_mock/private/core.h"
 #include "dns_sd.h"
 #include "lwpa_mock/socket.h"
 
