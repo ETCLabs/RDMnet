@@ -8,6 +8,7 @@ branches:
   only:
     - develop
     - master
+    - /release\/.+/
 
 skip_commits:
   files:
