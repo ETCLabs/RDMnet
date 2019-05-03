@@ -34,11 +34,6 @@
 #include "rdmnet/core.h"
 #include "fff.h"
 
-#include "rdmnet_mock/core/broker_prot.h"
-#include "rdmnet_mock/core/connection.h"
-#include "rdmnet_mock/core/discovery.h"
-#include "rdmnet_mock/core/rpt_prot.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -46,18 +41,8 @@ extern "C" {
 DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_core_init, const LwpaLogParams *);
 DECLARE_FAKE_VOID_FUNC(rdmnet_core_deinit);
 DECLARE_FAKE_VOID_FUNC(rdmnet_core_tick);
-DECLARE_FAKE_VALUE_FUNC(bool, rdmnet_core_initialized);
 
-#define RDMNET_CORE_DO_FOR_ALL_FAKES(operation)        \
-  operation(rdmnet_core_init);                         \
-  operation(rdmnet_core_deinit);                       \
-  operation(rdmnet_core_tick);                         \
-  operation(rdmnet_core_initialized);                  \
-  RDMNET_CORE_BROKER_PROT_DO_FOR_ALL_FAKES(operation); \
-  RDMNET_CORE_CONNECTION_DO_FOR_ALL_FAKES(operation);  \
-  RDMNET_CORE_DISCOVERY_DO_FOR_ALL_FAKES(operation);   \
-  RDMNET_CORE_LLRP_TARGET_DO_FOR_ALL_FAKES(operation); \
-  RDMNET_CORE_RPT_PROT_DO_FOR_ALL_FAKES(operation)
+void rdmnet_mock_core_reset_and_init();
 
 #ifdef __cplusplus
 }

@@ -330,9 +330,9 @@ void BrokerCore::SocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t *da
   conn_interface_->SocketDataReceived(conn_handle, data, data_size);
 }
 
-void BrokerCore::SocketClosed(rdmnet_conn_t conn_handle, bool /*graceful*/)
+void BrokerCore::SocketClosed(rdmnet_conn_t conn_handle, bool graceful)
 {
-  conn_interface_->SocketError(conn_handle, kLwpaErrOk);
+  conn_interface_->SocketError(conn_handle, graceful ? kLwpaErrConnClosed : kLwpaErrConnReset);
 }
 
 // Process each controller queue, sending out the next message from each queue if devices are
@@ -387,7 +387,7 @@ void BrokerCore::RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage
   }
 }
 
-void BrokerCore::RdmnetConnDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo &/*disconn_info*/)
+void BrokerCore::RdmnetConnDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo & /*disconn_info*/)
 {
   MarkConnForDestruction(handle);
 }
@@ -1119,7 +1119,8 @@ void BrokerCore::OtherBrokerFound(const RdmnetBrokerDiscInfo &broker_info)
   if (log_->CanLog(LWPA_LOG_WARNING))
   {
     std::string addrs;
-    for (const BrokerListenAddr *listen_addr = broker_info.listen_addr_list; listen_addr; listen_addr = listen_addr->next)
+    for (const BrokerListenAddr *listen_addr = broker_info.listen_addr_list; listen_addr;
+         listen_addr = listen_addr->next)
     {
       char addr_string[LWPA_INET6_ADDRSTRLEN];
       if (kLwpaErrOk == lwpa_inet_ntop(&listen_addr->addr, addr_string, LWPA_INET6_ADDRSTRLEN))

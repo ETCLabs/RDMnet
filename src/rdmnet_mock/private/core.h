@@ -25,35 +25,33 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#pragma once
+/* rdmnet_mock/private/core.h
+ * Mocking the functions of rdmnet/private/core.h
+ */
+#ifndef _RDMNET_MOCK_PRIVATE_CORE_H_
+#define _RDMNET_MOCK_PRIVATE_CORE_H_
 
-#include <stdexcept>
-#include <cstddef>
-#include "lwpa/int.h"
-#include "lwpa/inet.h"
+#include "rdmnet/private/core.h"
+#include "fff.h"
 
-// Macros to suppress warnings inside of Qt headers.
-#if defined(_MSC_VER)
-
-#define BEGIN_INCLUDE_QT_HEADERS() \
-  __pragma(warning(push)) __pragma(warning(disable : 4127)) __pragma(warning(disable : 4251))
-
-#define END_INCLUDE_QT_HEADERS() __pragma(warning(pop))
-
-#else
-
-#define BEGIN_INCLUDE_QT_HEADERS()
-#define END_INCLUDE_QT_HEADERS()
-
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-// A representation of an optional static Broker configuration.
-struct StaticBrokerConfig
-{
-  bool valid{false};
-  LwpaSockaddr addr;
-};
+DECLARE_FAKE_VALUE_FUNC(bool, rdmnet_core_initialized);
+DECLARE_FAKE_VALUE_FUNC(bool, rdmnet_readlock);
+DECLARE_FAKE_VOID_FUNC(rdmnet_readunlock);
+DECLARE_FAKE_VALUE_FUNC(bool, rdmnet_writelock);
+DECLARE_FAKE_VOID_FUNC(rdmnet_writeunlock);
 
-// Some definitions that aren't provided elsewhere
-constexpr uint16_t kRdmnetMaxScopeSlotNumber = 0xFFFF;
-constexpr size_t kRdmDeviceLabelMaxLength = 32u;
+DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_core_add_polled_socket, lwpa_socket_t, lwpa_poll_events_t,
+                        PolledSocketInfo *);
+DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_core_modify_polled_socket, lwpa_socket_t, lwpa_poll_events_t,
+                        PolledSocketInfo *);
+DECLARE_FAKE_VOID_FUNC(rdmnet_core_remove_polled_socket, lwpa_socket_t);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _RDMNET_MOCK_PRIVATE_CORE_H_ */

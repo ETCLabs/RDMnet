@@ -134,7 +134,7 @@ void RDMnetNetworkModel::addScopeToMonitor(QString scope)
 
   if (scope.length() > 0)
   {
-    ControllerWriteGuard conn_write(conn_lock_);
+    lwpa::WriteGuard conn_write(conn_lock_);
 
     for (auto iter = broker_connections_.begin(); (iter != broker_connections_.end()) && !scopeAlreadyAdded; ++iter)
     {
@@ -205,7 +205,7 @@ void RDMnetNetworkModel::addBrokerByIP(QString scope, const LwpaSockaddr &addr)
 {
   bool brokerAlreadyAdded = false;
 
-  ControllerWriteGuard conn_write(conn_lock_);
+  lwpa::WriteGuard conn_write(conn_lock_);
   for (const auto &broker_pair : broker_connections_)
   {
     if (broker_pair.second->scope() == scope)
@@ -266,7 +266,7 @@ void RDMnetNetworkModel::removeCustomLogOutputStream(LogOutputStream *stream)
 
 void RDMnetNetworkModel::Connected(rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo &info)
 {
-  ControllerReadGuard conn_read(conn_lock_);
+  lwpa::ReadGuard conn_read(conn_lock_);
 
   auto brokerItemIter = broker_connections_.find(scope_handle);
   if (brokerItemIter != broker_connections_.end())
@@ -299,7 +299,7 @@ void RDMnetNetworkModel::ConnectFailed(rdmnet_client_scope_t /*scope_handle*/,
 
 void RDMnetNetworkModel::Disconnected(rdmnet_client_scope_t scope_handle, const RdmnetClientDisconnectedInfo & /*info*/)
 {
-  ControllerWriteGuard conn_write(conn_lock_);
+  lwpa::WriteGuard conn_write(conn_lock_);
 
   BrokerItem *brokerItem = broker_connections_[scope_handle];
   if (brokerItem)
@@ -665,7 +665,7 @@ void RDMnetNetworkModel::processPropertyButtonClick(const QPersistentModelIndex 
     // parent items from the model index instead of finding it by scope string.
     rdmnet_client_scope_t scope_handle = RDMNET_CLIENT_SCOPE_INVALID;
     {
-      ControllerReadGuard conn_read(conn_lock_);
+      lwpa::ReadGuard conn_read(conn_lock_);
       for (const auto &broker_pair : broker_connections_)
       {
         if (broker_pair.second->scope() == scope)
@@ -713,7 +713,7 @@ void RDMnetNetworkModel::removeBroker(BrokerItem *brokerItem)
   rdmnet_client_scope_t scope_handle = brokerItem->scope_handle();
   rdmnet_->RemoveScope(scope_handle, kRdmnetDisconnectUserReconfigure);
   {  // Write lock scope
-    ControllerWriteGuard conn_write(conn_lock_);
+    lwpa::WriteGuard conn_write(conn_lock_);
     broker_connections_.erase(scope_handle);
   }
   default_responder_.RemoveScope(brokerItem->scope().toStdString());
@@ -745,7 +745,7 @@ void RDMnetNetworkModel::removeBroker(BrokerItem *brokerItem)
 void RDMnetNetworkModel::removeAllBrokers()
 {
   {  // Write lock scope
-    ControllerWriteGuard conn_write(conn_lock_);
+    lwpa::WriteGuard conn_write(conn_lock_);
 
     auto broker_iter = broker_connections_.begin();
     while (broker_iter != broker_connections_.end())
@@ -1338,7 +1338,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex &index, const QVariant &value
 void RDMnetNetworkModel::ClientListUpdate(rdmnet_client_scope_t scope_handle, client_list_action_t action,
                                           const ClientList &list)
 {
-  ControllerReadGuard conn_read(conn_lock_);
+  lwpa::ReadGuard conn_read(conn_lock_);
 
   BrokerItem *brokerItem = broker_connections_[scope_handle];
 
@@ -1497,7 +1497,7 @@ bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand &cmd, const BrokerItem 
 
 bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand &cmd, rdmnet_client_scope_t scope_handle)
 {
-  ControllerReadGuard conn_read(conn_lock_);
+  lwpa::ReadGuard conn_read(conn_lock_);
 
   if (broker_connections_.find(scope_handle) != broker_connections_.end())
   {
@@ -1553,7 +1553,7 @@ void RDMnetNetworkModel::SendRDMGetResponses(rdmnet_client_scope_t scope_handle,
 void RDMnetNetworkModel::SendRDMGetResponsesBroadcast(uint16_t param_id,
                                                       const std::vector<RdmParamData> &resp_data_list)
 {
-  ControllerReadGuard conn_read(conn_lock_);
+  lwpa::ReadGuard conn_read(conn_lock_);
 
   for (const auto &broker_pair : broker_connections_)
   {
@@ -2835,7 +2835,7 @@ bool RDMnetNetworkModel::pidSupportedByGUI(uint16_t pid, bool checkSupportGet)
 
 RDMnetClientItem *RDMnetNetworkModel::GetClientItem(rdmnet_client_scope_t scope_handle, const RdmResponse &resp)
 {
-  ControllerReadGuard conn_read(conn_lock_);
+  lwpa::ReadGuard conn_read(conn_lock_);
 
   if (broker_connections_.find(scope_handle) == broker_connections_.end())
   {
@@ -2861,7 +2861,7 @@ RDMnetClientItem *RDMnetNetworkModel::GetClientItem(rdmnet_client_scope_t scope_
 
 RDMnetNetworkItem *RDMnetNetworkModel::GetNetworkItem(rdmnet_client_scope_t scope_handle, const RdmResponse &resp)
 {
-  ControllerReadGuard conn_read(conn_lock_);
+  lwpa::ReadGuard conn_read(conn_lock_);
 
   if (broker_connections_.find(scope_handle) == broker_connections_.end())
   {
@@ -3108,7 +3108,7 @@ RDMnetNetworkModel::RDMnetNetworkModel(RDMnetLibInterface *library, ControllerLo
 RDMnetNetworkModel::~RDMnetNetworkModel()
 {
   {  // Write lock scope
-    ControllerWriteGuard conn_write(conn_lock_);
+    lwpa::WriteGuard conn_write(conn_lock_);
 
     for (auto &connection : broker_connections_)
       rdmnet_->RemoveScope(connection.first, kRdmnetDisconnectShutdown);

@@ -76,7 +76,7 @@ typedef struct RdmnetConnectedInfo
 typedef enum
 {
   /*! The connection was unable to be started because of an error returned from the system during
-   *  a lower-level socket call. */ 
+   *  a lower-level socket call. */
   kRdmnetConnectFailSocketFailure,
   /*! The connection started but the TCP connection was never established. This could be because of
    *  an incorrect address or port for the remote host or a network issue. */
@@ -97,7 +97,7 @@ typedef struct RdmnetConnectFailedInfo
   /*! The system error code associated with the failure; valid if event is
    *  kRdmnetConnectFailSocketFailure or kRdmnetConnectFailTcpLevel. */
   lwpa_error_t socket_err;
-  /*! The reason given in the RDMnet-level connection refuse message. Valid if event is 
+  /*! The reason given in the RDMnet-level connection refuse message. Valid if event is
    *  kRdmnetConnectFailRejected. */
   rdmnet_connect_status_t rdmnet_reason;
 } RdmnetConnectFailedInfo;
@@ -195,8 +195,6 @@ int rdmnet_send(rdmnet_conn_t handle, const uint8_t *data, size_t size);
 lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle);
 int rdmnet_send_partial_message(rdmnet_conn_t handle, const uint8_t *data, size_t size);
 lwpa_error_t rdmnet_end_message(rdmnet_conn_t handle);
-
-void rdmnet_conn_tick();
 
 /*! \name Externally managed socket functions.
  *

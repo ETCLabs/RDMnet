@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-// The entry point for the RDMnet Core unit tests.
+// The entry point for the RDMnet core support modules unit tests.
 
 #include "gtest/gtest.h"
 #include "fff.h"

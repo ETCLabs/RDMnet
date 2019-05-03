@@ -25,35 +25,15 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#pragma once
+// The entry point for the RDMnet Connection unit tests.
 
-#include <stdexcept>
-#include <cstddef>
-#include "lwpa/int.h"
-#include "lwpa/inet.h"
+#include "gtest/gtest.h"
+#include "fff.h"
 
-// Macros to suppress warnings inside of Qt headers.
-#if defined(_MSC_VER)
+DEFINE_FFF_GLOBALS;
 
-#define BEGIN_INCLUDE_QT_HEADERS() \
-  __pragma(warning(push)) __pragma(warning(disable : 4127)) __pragma(warning(disable : 4251))
-
-#define END_INCLUDE_QT_HEADERS() __pragma(warning(pop))
-
-#else
-
-#define BEGIN_INCLUDE_QT_HEADERS()
-#define END_INCLUDE_QT_HEADERS()
-
-#endif
-
-// A representation of an optional static Broker configuration.
-struct StaticBrokerConfig
+int main(int argc, char *argv[])
 {
-  bool valid{false};
-  LwpaSockaddr addr;
-};
-
-// Some definitions that aren't provided elsewhere
-constexpr uint16_t kRdmnetMaxScopeSlotNumber = 0xFFFF;
-constexpr size_t kRdmDeviceLabelMaxLength = 32u;
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

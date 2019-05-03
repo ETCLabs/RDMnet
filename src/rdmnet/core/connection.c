@@ -94,6 +94,9 @@ static void start_rdmnet_connection(RdmnetConnection *conn);
 static void reset_connection(RdmnetConnection *conn);
 static void retry_connection(RdmnetConnection *conn);
 
+static void destroy_marked_connections();
+static void process_all_connection_state(ConnCallbackDispatchInfo *cb);
+
 static void fill_callback_info(const RdmnetConnection *conn, ConnCallbackDispatchInfo *info);
 static void deliver_callback(ConnCallbackDispatchInfo *info);
 
@@ -607,37 +610,7 @@ void rdmnet_conn_tick()
   // Remove any connections marked for destruction.
   if (rdmnet_writelock())
   {
-    RdmnetConnection *destroy_list = NULL;
-    RdmnetConnection **next_destroy_list_entry = &destroy_list;
-
-    LwpaRbIter conn_iter;
-    lwpa_rbiter_init(&conn_iter);
-
-    RdmnetConnection *conn = (RdmnetConnection *)lwpa_rbiter_first(&conn_iter, &state.connections);
-    while (conn)
-    {
-      // Can't destroy while iterating as that would invalidate the iterator
-      // So the connections are added to a linked list of connections pending destruction
-      if (conn->state == kCSMarkedForDestruction)
-      {
-        *next_destroy_list_entry = conn;
-        conn->next_to_destroy = NULL;
-        next_destroy_list_entry = &conn->next_to_destroy;
-      }
-      conn = lwpa_rbiter_next(&conn_iter);
-    }
-
-    // Now do the actual destruction
-    if (destroy_list)
-    {
-      RdmnetConnection *to_destroy = destroy_list;
-      while (to_destroy)
-      {
-        RdmnetConnection *next = to_destroy->next_to_destroy;
-        destroy_connection(to_destroy, true);
-        to_destroy = next;
-      }
-    }
+    destroy_marked_connections();
     rdmnet_writeunlock();
   }
 
@@ -648,80 +621,120 @@ void rdmnet_conn_tick()
 
   if (rdmnet_readlock())
   {
-    LwpaRbIter conn_iter;
-    lwpa_rbiter_init(&conn_iter);
-    RdmnetConnection *conn = (RdmnetConnection *)lwpa_rbiter_first(&conn_iter, &state.connections);
-    while (conn)
-    {
-      if (lwpa_mutex_take(&conn->lock, LWPA_WAIT_FOREVER))
-      {
-        switch (conn->state)
-        {
-          case kCSConnectPending:
-            if (conn->rdmnet_conn_failed || conn->backoff_timer.interval != 0)
-            {
-              if (conn->rdmnet_conn_failed)
-              {
-                lwpa_timer_start(&conn->backoff_timer, update_backoff(conn->backoff_timer.interval));
-              }
-              conn->state = kCSBackoff;
-            }
-            else
-            {
-              start_tcp_connection(conn, &cb);
-            }
-            break;
-          case kCSBackoff:
-            if (lwpa_timer_isexpired(&conn->backoff_timer))
-            {
-              start_tcp_connection(conn, &cb);
-            }
-            break;
-          case kCSHeartbeat:
-            if (lwpa_timer_isexpired(&conn->hb_timer))
-            {
-              // Heartbeat timeout! Disconnect the connection.
-              if (cb.which == kConnCallbackNone)
-              {
-                // Currently we have a limit of processing one heartbeat timeout per tick. This
-                // helps simplify the implementation, since heartbeat timeouts aren't anticipated
-                // to come in big bursts.
-
-                // If it causes performance issues, it should be revisited.
-
-                cb.which = kConnCallbackDisconnected;
-                fill_callback_info(conn, &cb);
-
-                RdmnetDisconnectedInfo *disconn_info = &cb.args.disconnected.disconn_info;
-                disconn_info->event = kRdmnetDisconnectNoHeartbeat;
-                disconn_info->socket_err = kLwpaErrOk;
-
-                reset_connection(conn);
-              }
-            }
-            else if (lwpa_timer_isexpired(&conn->send_timer))
-            {
-              // Just poll the send lock. If another context is in the middle of a partial message,
-              // no need to block and send a heartbeat.
-              if (lwpa_mutex_take(&conn->send_lock, 0))
-              {
-                send_null(conn);
-                lwpa_timer_reset(&conn->send_timer);
-                lwpa_mutex_give(&conn->send_lock);
-              }
-            }
-            break;
-          default:
-            break;
-        }
-        lwpa_mutex_give(&conn->lock);
-      }
-
-      conn = lwpa_rbiter_next(&conn_iter);
-    }
+    process_all_connection_state(&cb);
     rdmnet_readunlock();
   }
   deliver_callback(&cb);
+}
+
+void destroy_marked_connections()
+{
+  RdmnetConnection *destroy_list = NULL;
+  RdmnetConnection **next_destroy_list_entry = &destroy_list;
+
+  LwpaRbIter conn_iter;
+  lwpa_rbiter_init(&conn_iter);
+
+  RdmnetConnection *conn = (RdmnetConnection *)lwpa_rbiter_first(&conn_iter, &state.connections);
+  while (conn)
+  {
+    // Can't destroy while iterating as that would invalidate the iterator
+    // So the connections are added to a linked list of connections pending destruction
+    if (conn->state == kCSMarkedForDestruction)
+    {
+      *next_destroy_list_entry = conn;
+      conn->next_to_destroy = NULL;
+      next_destroy_list_entry = &conn->next_to_destroy;
+    }
+    conn = lwpa_rbiter_next(&conn_iter);
+  }
+
+  // Now do the actual destruction
+  if (destroy_list)
+  {
+    RdmnetConnection *to_destroy = destroy_list;
+    while (to_destroy)
+    {
+      RdmnetConnection *next = to_destroy->next_to_destroy;
+      destroy_connection(to_destroy, true);
+      to_destroy = next;
+    }
+  }
+}
+
+void process_all_connection_state(ConnCallbackDispatchInfo *cb)
+{
+  LwpaRbIter conn_iter;
+  lwpa_rbiter_init(&conn_iter);
+  RdmnetConnection *conn = (RdmnetConnection *)lwpa_rbiter_first(&conn_iter, &state.connections);
+  while (conn)
+  {
+    if (lwpa_mutex_take(&conn->lock, LWPA_WAIT_FOREVER))
+    {
+      switch (conn->state)
+      {
+        case kCSConnectPending:
+          if (conn->rdmnet_conn_failed || conn->backoff_timer.interval != 0)
+          {
+            if (conn->rdmnet_conn_failed)
+            {
+              lwpa_timer_start(&conn->backoff_timer, update_backoff(conn->backoff_timer.interval));
+            }
+            conn->state = kCSBackoff;
+          }
+          else
+          {
+            start_tcp_connection(conn, cb);
+          }
+          break;
+        case kCSBackoff:
+          if (lwpa_timer_isexpired(&conn->backoff_timer))
+          {
+            start_tcp_connection(conn, cb);
+          }
+          break;
+        case kCSHeartbeat:
+          if (lwpa_timer_isexpired(&conn->hb_timer))
+          {
+            // Heartbeat timeout! Disconnect the connection.
+            if (cb->which == kConnCallbackNone)
+            {
+              // Currently we have a limit of processing one heartbeat timeout per tick. This
+              // helps simplify the implementation, since heartbeat timeouts aren't anticipated
+              // to come in big bursts.
+
+              // If it causes performance issues, it should be revisited.
+
+              cb->which = kConnCallbackDisconnected;
+              fill_callback_info(conn, cb);
+
+              RdmnetDisconnectedInfo *disconn_info = &cb->args.disconnected.disconn_info;
+              disconn_info->event = kRdmnetDisconnectNoHeartbeat;
+              disconn_info->socket_err = kLwpaErrOk;
+
+              reset_connection(conn);
+            }
+          }
+          else if (lwpa_timer_isexpired(&conn->send_timer))
+          {
+            // Just poll the send lock. If another context is in the middle of a partial message,
+            // no need to block and send a heartbeat.
+            if (lwpa_mutex_take(&conn->send_lock, 0))
+            {
+              send_null(conn);
+              lwpa_timer_reset(&conn->send_timer);
+              lwpa_mutex_give(&conn->send_lock);
+            }
+          }
+          break;
+        default:
+          break;
+      }
+      lwpa_mutex_give(&conn->lock);
+    }
+
+    conn = lwpa_rbiter_next(&conn_iter);
+  }
 }
 
 void tcp_connection_established(rdmnet_conn_t handle)
@@ -749,6 +762,8 @@ void rdmnet_socket_error(rdmnet_conn_t handle, lwpa_error_t socket_err)
   RdmnetConnection *conn;
   if (kLwpaErrOk == get_conn(handle, &conn))
   {
+    fill_callback_info(conn, &cb);
+
     if (conn->state == kCSConnectPending || conn->state == kCSRDMnetConnPending)
     {
       cb.which = kConnCallbackConnectFailed;
@@ -758,6 +773,16 @@ void rdmnet_socket_error(rdmnet_conn_t handle, lwpa_error_t socket_err)
       failed_info->socket_err = socket_err;
       if (conn->state == kCSRDMnetConnPending)
         conn->rdmnet_conn_failed = true;
+
+      reset_connection(conn);
+    }
+    else if (conn->state == kCSHeartbeat)
+    {
+      cb.which = kConnCallbackDisconnected;
+
+      RdmnetDisconnectedInfo *disconn_info = &cb.args.disconnected.disconn_info;
+      disconn_info->event = kRdmnetDisconnectAbruptClose;
+      disconn_info->socket_err = socket_err;
 
       reset_connection(conn);
     }
