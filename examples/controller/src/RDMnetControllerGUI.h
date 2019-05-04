@@ -63,6 +63,7 @@ public slots:
   void removeAllBrokersTriggered();
   void resetDeviceTriggered();
   void identifyDeviceTriggered();
+  void refreshTriggered();
   void openBrokerStaticAddDialog();
   void openLogWindowDialog();
   void openAboutDialog();

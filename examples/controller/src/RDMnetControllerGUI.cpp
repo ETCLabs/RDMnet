@@ -114,6 +114,7 @@ RDMnetControllerGUI *RDMnetControllerGUI::makeRDMnetControllerGUI()
 
   connect(gui->ui.resetDeviceButton, SIGNAL(clicked()), gui, SLOT(resetDeviceTriggered()));
   connect(gui->ui.identifyDeviceButton, SIGNAL(clicked()), gui, SLOT(identifyDeviceTriggered()));
+  connect(gui->ui.refreshButton, SIGNAL(clicked()), gui, SLOT(refreshTriggered()));
   connect(gui, SIGNAL(featureActivated(RDMnetNetworkItem *, SupportedDeviceFeature)), gui->main_network_model_,
           SLOT(activateFeature(RDMnetNetworkItem *, SupportedDeviceFeature)));
 
@@ -177,6 +178,7 @@ void RDMnetControllerGUI::networkTreeViewSelectionChanged(const QItemSelection &
         currently_selected_network_item_ = netItem;
         ui.resetDeviceButton->setEnabled(netItem->supportsFeature(kResetDevice));
         ui.identifyDeviceButton->setEnabled(netItem->supportsFeature(kIdentifyDevice));
+        ui.refreshButton->setEnabled(netItem->supportsFeature(kRefreshProperties));
 
         identifyChanged(netItem, netItem->identifying());
       }
@@ -269,6 +271,14 @@ void RDMnetControllerGUI::identifyDeviceTriggered()
   }
 }
 
+void RDMnetControllerGUI::refreshTriggered()
+{
+  if (currently_selected_network_item_ != NULL)
+  {
+    emit featureActivated(currently_selected_network_item_, kRefreshProperties);
+  }
+}
+
 void RDMnetControllerGUI::openBrokerStaticAddDialog()
 {
   BrokerStaticAddGUI *brokerStaticAddDialog = new BrokerStaticAddGUI(this, this);
@@ -328,6 +338,11 @@ void RDMnetControllerGUI::processFeatureSupportChange(const RDMnetNetworkItem *i
       if (feature & kIdentifyDevice)
       {
         ui.identifyDeviceButton->setEnabled(item->supportsFeature(kIdentifyDevice) && item->isEnabled());
+      }
+
+      if (feature & kRefreshProperties)
+      {
+        ui.refreshButton->setEnabled(item->supportsFeature(kRefreshProperties) && item->isEnabled());
       }
     }
   }

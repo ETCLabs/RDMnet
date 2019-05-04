@@ -374,7 +374,8 @@ void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem *brokerItem, const s
                                       get_rpt_client_entry_data(&entry)->client_type);
 
         newRDMnetClientItem->enableFeature(kIdentifyDevice);
-        emit featureSupportChanged(newRDMnetClientItem, kIdentifyDevice);
+        newRDMnetClientItem->enableFeature(kRefreshProperties);
+        emit featureSupportChanged(newRDMnetClientItem, kIdentifyDevice | kRefreshProperties);
       }
 
       newRDMnetClientItem->enableChildrenSearch();
@@ -523,7 +524,8 @@ void RDMnetNetworkModel::processNewResponderList(EndpointItem *treeEndpointItem,
       initializeResponderProperties(newResponderItem, resp_uid.manu, resp_uid.id);
 
       newResponderItem->enableFeature(kIdentifyDevice);
-      emit featureSupportChanged(newResponderItem, kIdentifyDevice);
+      newResponderItem->enableFeature(kRefreshProperties);
+      emit featureSupportChanged(newResponderItem, kIdentifyDevice | kRefreshProperties);
     }
   }
 
@@ -790,40 +792,65 @@ void RDMnetNetworkModel::activateFeature(RDMnetNetworkItem *device, SupportedDev
 {
   if (device)
   {
-    RdmCommand setCmd;
-
-    setCmd.dest_uid = device->uid();
-    setCmd.subdevice = 0;
-    setCmd.command_class = kRdmCCSetCommand;
-
     if (feature & kResetDevice)
     {
       if (device->hasValidProperties())  // Means device wasn't reset
       {
+        RdmCommand setCmd;
+
+        setCmd.dest_uid = device->uid();
+        setCmd.subdevice = 0;
+        setCmd.command_class = kRdmCCSetCommand;
+
         device->disableAllChildItems();
         device->setDeviceWasReset(true);
         device->setEnabled(false);
 
-        emit featureSupportChanged(device, kResetDevice | kIdentifyDevice);
+        emit featureSupportChanged(device, kResetDevice | kIdentifyDevice | kRefreshProperties);
 
         setCmd.param_id = E120_RESET_DEVICE;
         setCmd.datalen = PropertyValueItem::pidMaxBufferSize(E120_RESET_DEVICE);
 
         memset(setCmd.data, 0, setCmd.datalen);
         setCmd.data[0] = 0xFF;  // Default to cold reset
+
+        SendRDMCommand(setCmd, getNearestParentItemOfType<BrokerItem>(device));
       }
     }
 
     if (feature & kIdentifyDevice)
     {
+      RdmCommand setCmd;
+
+      setCmd.dest_uid = device->uid();
+      setCmd.subdevice = 0;
+      setCmd.command_class = kRdmCCSetCommand;
+
       setCmd.param_id = E120_IDENTIFY_DEVICE;
       setCmd.datalen = PropertyValueItem::pidMaxBufferSize(E120_IDENTIFY_DEVICE);
 
       memset(setCmd.data, 0, setCmd.datalen);
       setCmd.data[0] = device->identifying() ? 0x00 : 0x01;
+
+      SendRDMCommand(setCmd, getNearestParentItemOfType<BrokerItem>(device));
     }
 
-    SendRDMCommand(setCmd, getNearestParentItemOfType<BrokerItem>(device));
+    if (feature & kRefreshProperties)
+    {
+      RDMnetClientItem *client = dynamic_cast<RDMnetClientItem *>(device);
+      ResponderItem *responder = dynamic_cast<ResponderItem *>(device);
+
+      if (client)
+      {
+        initializeRPTClientProperties(client, get_rpt_client_entry_data(&client->entry_)->client_uid.manu,
+                                      get_rpt_client_entry_data(&client->entry_)->client_uid.id,
+                                      get_rpt_client_entry_data(&client->entry_)->client_type);
+      }
+      else if (responder)
+      {
+        initializeResponderProperties(responder, responder->uid().manu, responder->uid().id);
+      }
+    }
   }
 }
 
