@@ -1,22 +1,11 @@
 ################################### testing ###################################
 
-# RDMnet core library unit tests
+set(RDMNET_INCLUDE ${CMAKE_CURRENT_LIST_DIR}/../../include)
+set(RDMNET_SRC ${CMAKE_CURRENT_LIST_DIR}/../../src)
 
-add_executable(test_rdmnet_lib
-  # RDMnet core lib unit test sources
-  common_lib/main.cpp
-  common_lib/test_broker_prot.cpp
-)
+include(GoogleTest)
 
-target_include_directories(test_rdmnet_lib PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../../src/common)
-target_link_libraries(test_rdmnet_lib RDMnet gtest)
-
-# RDMnet Broker library unit tests
-
-add_executable(test_broker_lib
-  # RDMnet Broker lib unit test sources
-  broker_lib/main.cpp
-  broker_lib/test_broker_uid_manager.cpp
-)
-target_include_directories(test_broker_lib PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../../src/broker)
-target_link_libraries(test_broker_lib Broker gtest)
+add_subdirectory(core)
+add_subdirectory(api)
+add_subdirectory(broker)
+add_subdirectory(discovery)

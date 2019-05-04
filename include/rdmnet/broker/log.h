@@ -44,9 +44,8 @@ class BrokerLog
 public:
   BrokerLog();
   virtual ~BrokerLog();
-  void InitializeLogParams(int log_mask);
-  bool StartThread();
-  void StopThread();
+  bool Startup(int log_mask);
+  void Shutdown();
 
   const LwpaLogParams *GetLogParams() const { return &log_params_; }
   void Log(int pri, const char *format, ...);
@@ -59,13 +58,13 @@ public:
   virtual void OutputLogMsg(const std::string &str) = 0;
 
 protected:
-  LwpaLogParams log_params_;
+  LwpaLogParams log_params_{};
 
   std::queue<std::string> msg_q_;
   lwpa_signal_t signal_;
   lwpa_thread_t thread_;
   lwpa_mutex_t lock_;
-  bool keep_running_;
+  bool keep_running_{false};
 };
 
 };  // namespace RDMnet

@@ -3,20 +3,20 @@
 set(BROKER_TARGET rdmnet_broker_example)
 
 add_executable(${BROKER_TARGET}
-  broker_log.h
-  iflist.h
-  service_shell.h
-
-  broker_main.cpp
-  broker_log.cpp
-  iflist.cpp
-  service_shell.cpp
-  service_utils.cpp
+  src/broker_shell.h
+  src/broker_shell.cpp
 )
 
-target_include_directories(${BROKER_TARGET} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(${BROKER_TARGET} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src)
 target_link_libraries(${BROKER_TARGET} PRIVATE Broker)
 if(WIN32)
+  target_sources(${BROKER_TARGET} PRIVATE
+    src/windows/main.cpp
+    src/windows/win_broker_log.h
+    src/windows/win_broker_log.cpp
+    src/windows/win_socket_manager.h
+    src/windows/win_socket_manager.cpp
+  )
   target_compile_definitions(${BROKER_TARGET} PRIVATE UNICODE _UNICODE)
   if(DEFINED DNS_SD_DLL)
     add_custom_command(

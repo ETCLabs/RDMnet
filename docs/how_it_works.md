@@ -114,9 +114,9 @@ tens of thousands of Devices.
 
 ### Simplicity
 
-Having a %Broker makes implementing Controllers and Devices easy. You'll notice
-that in the example Device application, the RDMnet connection is handled in
-about 100 lines of C. The startup steps are simple:
+Having a %Broker makes implementing Controllers and Devices easy. Take a look at
+`example_device.c` in the example Device application for proof of this. The
+startup steps for a Device are simple:
 
 * Discover a %Broker
 * Connect using TCP

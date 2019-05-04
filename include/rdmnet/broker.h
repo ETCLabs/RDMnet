@@ -32,6 +32,7 @@
 #define _RDMNET_BROKER_H_
 
 #include <memory>
+#include <string>
 
 #include "lwpa/int.h"
 #include "lwpa/uuid.h"
@@ -39,10 +40,11 @@
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/broker/log.h"
+#include "rdmnet/broker/socket_manager.h"
 
 class BrokerCore;
 
-/// \defgroup rdmnet_broker Broker
+/// \defgroup rdmnet_broker RDMnet Broker Library
 /// \brief A platform-neutral RDMnet %Broker implementation.
 /// @{
 ///
@@ -60,14 +62,12 @@ struct BrokerDiscoveryAttributes
   std::string dns_service_instance_name;
 
   /// A string to identify the manufacturer of this %Broker instance.
-  std::string dns_manufacturer;
+  std::string dns_manufacturer{"Generic Manufacturer"};
   /// A string to identify the model of product in which the %Broker instance is included.
-  std::string dns_model;
+  std::string dns_model{"Generic RDMnet Broker"};
 
   /// The Scope on which this %Broker should operate. If empty, the default RDMnet scope is used.
-  std::string scope;
-
-  BrokerDiscoveryAttributes() : scope(E133_DEFAULT_SCOPE) {}
+  std::string scope{E133_DEFAULT_SCOPE};
 };
 
 /// A group of settings for Broker operation.
@@ -141,7 +141,7 @@ public:
 class Broker
 {
 public:
-  Broker(BrokerLog *log, BrokerNotify *notify);
+  Broker(BrokerLog *log, BrokerSocketManager *socket_manager, BrokerNotify *notify);
   virtual ~Broker();
 
   bool Startup(const BrokerSettings &settings, uint16_t listen_port, std::vector<LwpaIpAddr> &listen_addrs);
