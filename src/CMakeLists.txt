@@ -8,7 +8,7 @@ include(ResolveDnsSdProvider)
 
 ################################# Dependencies ################################
 
-include(AddDependency)
+include(RdmnetAddDependency)
 
 if(RDMNET_BUILD_TESTS)
   set(LWPA_BUILD_MOCK_LIB ON CACHE BOOL "Build the lwpa mock library" FORCE)
