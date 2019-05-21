@@ -18,7 +18,7 @@ else()
   set(OPTION_DEFAULTS OFF)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/tools/cmake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/tools/cmake)
 
 option(RDMNET_BUILD_TESTS "Build the RDMnet unit tests" ${OPTION_DEFAULTS})
 option(RDMNET_BUILD_EXAMPLES "Build the RDMnet example applications" ${OPTION_DEFAULTS})
