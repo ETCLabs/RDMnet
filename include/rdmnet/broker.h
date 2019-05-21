@@ -84,7 +84,7 @@ struct BrokerSettings
 
   void SetDynamicUid(uint16_t manufacturer_id)
   {
-    rdmnet_init_dynamic_uid_request(&uid, manufacturer_id);
+    RDMNET_INIT_DYNAMIC_UID_REQUEST(&uid, manufacturer_id);
     uid_type = kDynamicUid;
   }
   void SetStaticUid(const RdmUid &uid_in)

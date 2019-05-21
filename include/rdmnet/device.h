@@ -37,14 +37,18 @@
 #include "rdm/uid.h"
 #include "rdmnet/client.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \defgroup rdmnet_device Device API
  *  \ingroup rdmnet_client
  *  \brief Implementation of RDMnet device functionality.
- * 
+ *
  *  RDMnet devices are clients which exclusively receive and respond to RDM commands. Devices
  *  operate on only one scope at a time. This API wraps the RDMnet Client API and provides functions
  *  tailored specifically to the usage concerns of an RDMnet device.
- * 
+ *
  *  @{
  */
 
@@ -82,13 +86,13 @@ typedef struct RdmnetDeviceConfig
  *  The config struct members not marked 'optional' are not initialized by this macro. Those members
  *  do not have default values and must be initialized manually before passing the config struct to
  *  an API function.
- * 
+ *
  *  Usage example:
  *  \code
  *  RdmnetDeviceConfig config;
  *  RDMNET_DEVICE_CONFIG_INIT(&config, 0x6574);
  *  \endcode
- * 
+ *
  *  \param devicecfgptr Pointer to RdmnetDeviceConfig.
  *  \param manu_id ESTA manufacturer ID. All RDMnet Devices must have one.
  */
@@ -110,5 +114,9 @@ lwpa_error_t rdmnet_device_change_search_domain(rdmnet_device_t handle, const ch
                                                 rdmnet_disconnect_reason_t reason);
 
 /*! @} */
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif /* _RDMNET_DEVICE_H_ */

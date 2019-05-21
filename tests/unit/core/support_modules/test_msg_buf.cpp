@@ -55,9 +55,9 @@ TEST_F(TestMsgBuf, rpt_notification_full)
 
   RptMessage *rpt = get_rpt_msg(&msg);
   ASSERT_EQ(rpt->vector, RptNotificationPduFullValid::rpt_vector);
-  ASSERT_TRUE(rdm_uid_equal(&rpt->header.source_uid, &RptNotificationPduFullValid::rpt_src_uid));
+  ASSERT_TRUE(RDM_UID_EQUAL(&rpt->header.source_uid, &RptNotificationPduFullValid::rpt_src_uid));
   ASSERT_EQ(rpt->header.source_endpoint_id, RptNotificationPduFullValid::rpt_src_endpoint);
-  ASSERT_TRUE(rdm_uid_equal(&rpt->header.dest_uid, &RptNotificationPduFullValid::rpt_dest_uid));
+  ASSERT_TRUE(RDM_UID_EQUAL(&rpt->header.dest_uid, &RptNotificationPduFullValid::rpt_dest_uid));
   ASSERT_EQ(rpt->header.dest_endpoint_id, RptNotificationPduFullValid::rpt_dest_endpoint);
   ASSERT_EQ(rpt->header.seqnum, RptNotificationPduFullValid::seq_num);
 

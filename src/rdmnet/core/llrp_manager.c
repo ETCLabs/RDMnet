@@ -261,7 +261,7 @@ lwpa_error_t rdmnet_llrp_send_rdm_command(llrp_manager_t handle, const LlrpLocal
     rdm_to_send.transaction_num = (uint8_t)(manager->transaction_number & 0xffu);
 
     RdmBuffer cmd_buf;
-    res = rdmctl_create_command(&rdm_to_send, &cmd_buf);
+    res = rdmctl_pack_command(&rdm_to_send, &cmd_buf);
     if (res == kLwpaErrOk)
     {
       LlrpHeader header;
@@ -361,7 +361,7 @@ bool update_probe_range(LlrpManager *manager, KnownUid **uid_list)
   if (manager->num_clean_sends >= 3)
   {
     // We are finished with a range; move on to the next range.
-    if (rdm_uid_is_broadcast(&manager->cur_range_high))
+    if (RDM_UID_IS_BROADCAST(&manager->cur_range_high))
     {
       // We're done with discovery.
       return false;
@@ -393,7 +393,7 @@ bool update_probe_range(LlrpManager *manager, KnownUid **uid_list)
   lwpa_rbiter_init(&iter);
   DiscoveredTargetInternal *cur_target =
       (DiscoveredTargetInternal *)lwpa_rbiter_first(&iter, &manager->discovered_targets);
-  while (cur_target && (rdm_uid_cmp(&cur_target->known_uid.uid, &manager->cur_range_high) <= 0))
+  while (cur_target && (RDM_UID_CMP(&cur_target->known_uid.uid, &manager->cur_range_high) <= 0))
   {
     if (last_uid)
     {
@@ -409,7 +409,7 @@ bool update_probe_range(LlrpManager *manager, KnownUid **uid_list)
         return update_probe_range(manager, uid_list);
       }
     }
-    else if (rdm_uid_cmp(&cur_target->known_uid.uid, &manager->cur_range_low) >= 0)
+    else if (RDM_UID_CMP(&cur_target->known_uid.uid, &manager->cur_range_low) >= 0)
     {
       list_begin = &cur_target->known_uid;
       cur_target->known_uid.next = NULL;
@@ -760,7 +760,7 @@ int discovered_target_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, cons
   (void)self;
   const DiscoveredTargetInternal *a = (const DiscoveredTargetInternal *)node_a->value;
   const DiscoveredTargetInternal *b = (const DiscoveredTargetInternal *)node_b->value;
-  return rdm_uid_cmp(&a->known_uid.uid, &b->known_uid.uid);
+  return RDM_UID_CMP(&a->known_uid.uid, &b->known_uid.uid);
 }
 
 LwpaRbNode *manager_node_alloc()

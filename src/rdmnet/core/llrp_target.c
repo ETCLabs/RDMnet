@@ -320,7 +320,7 @@ lwpa_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLocal
     return kLwpaErrInvalid;
 
   RdmBuffer resp_buf;
-  lwpa_error_t res = rdmresp_create_response(&resp->rdm, &resp_buf);
+  lwpa_error_t res = rdmresp_pack_response(&resp->rdm, &resp_buf);
   if (res != kLwpaErrOk)
     return res;
 
@@ -672,7 +672,7 @@ lwpa_error_t create_new_target(const LlrpTargetConfig *config, LlrpTarget **new_
       if (0 != lwpa_rbtree_insert(&state.targets, target))
       {
         target->cid = config->cid;
-        if (rdmnet_uid_is_dynamic_uid_request(&config->optional.uid))
+        if (RDMNET_UID_IS_DYNAMIC_UID_REQUEST(&config->optional.uid))
         {
           // This is a hack around a hole in the standard. TODO add a more explanatory comment once
           // this has been further explored.

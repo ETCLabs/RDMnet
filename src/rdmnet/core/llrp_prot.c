@@ -172,7 +172,7 @@ bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessa
   cur_ptr += 2;
 
   // If our UID is not in the range, there is no need to check the Known UIDs.
-  if (rdm_uid_cmp(&interest->my_uid, &lower_uid_bound) >= 0 && rdm_uid_cmp(&interest->my_uid, &upper_uid_bound) <= 0)
+  if (RDM_UID_CMP(&interest->my_uid, &lower_uid_bound) >= 0 && RDM_UID_CMP(&interest->my_uid, &upper_uid_bound) <= 0)
   {
     request->contains_my_uid = true;
 
@@ -185,7 +185,7 @@ bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessa
       cur_uid.id = lwpa_upack_32b(cur_ptr);
       cur_ptr += 4;
 
-      if (rdm_uid_equal(&interest->my_uid, &cur_uid))
+      if (RDM_UID_EQUAL(&interest->my_uid, &cur_uid))
       {
         // The registered uid is suppressed.
         request->contains_my_uid = false;
