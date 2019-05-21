@@ -411,7 +411,7 @@ lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet_c
   rdm_to_send.transaction_num = (uint8_t)(header.seqnum & 0xffu);
 
   RdmBuffer buf_to_send;
-  res = rdmctl_create_command(&rdm_to_send, &buf_to_send);
+  res = rdmctl_pack_command(&rdm_to_send, &buf_to_send);
   if (res == kLwpaErrOk)
   {
     res = send_rpt_request(scope_handle, &cli->cid, &header, &buf_to_send);
@@ -461,7 +461,7 @@ lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_
 
   if (resp->command_included)
   {
-    res = rdmctl_create_command(&resp->cmd, &resp_buf[0]);
+    res = rdmctl_pack_command(&resp->cmd, &resp_buf[0]);
   }
   if (res == kLwpaErrOk)
   {
@@ -470,7 +470,7 @@ lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_
       size_t out_buf_offset = resp->command_included ? i + 1 : i;
       RdmResponse resp_data = resp->rdm_arr[i];
       resp_data.source_uid = scope_entry->uid;
-      res = rdmresp_create_response(&resp_data, &resp_buf[out_buf_offset]);
+      res = rdmresp_pack_response(&resp_data, &resp_buf[out_buf_offset]);
       if (res != kLwpaErrOk)
         break;
     }
@@ -1022,7 +1022,7 @@ lwpa_error_t validate_rpt_client_config(const RdmnetRptClientConfig *config)
 {
   if ((config->type != kRPTClientTypeDevice && config->type != kRPTClientTypeController) ||
       (lwpa_uuid_is_null(&config->cid)) ||
-      (!rdmnet_uid_is_dynamic_uid_request(&config->optional.uid) && (config->optional.uid.manu & 0x8000)) ||
+      (!RDMNET_UID_IS_DYNAMIC_UID_REQUEST(&config->optional.uid) && (config->optional.uid.manu & 0x8000)) ||
       !config->optional.search_domain)
   {
     return kLwpaErrInvalid;
@@ -1055,7 +1055,7 @@ lwpa_error_t rpt_client_new(const RdmnetRptClientConfig *config, rdmnet_client_t
         new_cli->callback_context = config->callback_context;
         rdmnet_safe_strncpy(new_cli->search_domain, config->optional.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
         new_cli->data.rpt.type = config->type;
-        if (rdmnet_uid_is_dynamic_uid_request(&config->optional.uid))
+        if (RDMNET_UID_IS_DYNAMIC_UID_REQUEST(&config->optional.uid))
         {
           new_cli->data.rpt.has_static_uid = false;
           new_cli->data.rpt.uid.manu = config->optional.uid.manu;
@@ -1242,7 +1242,7 @@ void start_connection_for_scope(ClientScopeListEntry *scope_entry, const LwpaSoc
     }
     else
     {
-      rdmnet_init_dynamic_uid_request(&my_uid, rpt_data->uid.manu);
+      RDMNET_INIT_DYNAMIC_UID_REQUEST(&my_uid, rpt_data->uid.manu);
     }
 
     rdmnet_safe_strncpy(connect_msg.scope, scope_entry->config.scope, E133_SCOPE_STRING_PADDED_LENGTH);

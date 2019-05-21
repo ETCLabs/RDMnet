@@ -54,7 +54,7 @@
  *
  * Clients and the scopes they participate in are tracked by handles. Management of connections to
  * brokers, as well as LLRP functionality, is handled under the hood.
- * 
+ *
  * @{
  */
 
@@ -87,7 +87,7 @@ typedef struct RdmnetClientConnectFailedInfo
    *  kRdmnetConnectFailRejected. */
   rdmnet_connect_status_t rdmnet_reason;
   /*! \brief Whether the connection will be retried automatically.
-   * 
+   *
    *  If this is true, the connection will be retried on the relevant scope; expect further
    *  notifications of connection success or failure. If false, the rdmnet_client_scope_t handle
    *  associated with the scope is invalidated, and the scope must be created again. This indicates
@@ -112,7 +112,7 @@ typedef struct RdmnetClientDisconnectedInfo
    *  kRdmnetDisconnectGracefulRemoteInitiated. */
   rdmnet_disconnect_reason_t rdmnet_reason;
   /*! \brief Whether the connection will be retried automatically.
-   * 
+   *
    *  There are currently no conditions that will cause this to be false; therefore, disconnection
    *  events after a successful connection will always lead to the connection being retried
    *  automatically. This field exists for potential future usage.
@@ -173,7 +173,7 @@ typedef void (*RdmnetClientDisconnectedCb)(rdmnet_client_t handle, rdmnet_client
  *  communication. If using the \ref rdmnet_device "Device" or \ref rdmnet_controller "Controller"
  *  API, this callback will be consumed internally and propagated to callbacks specific to those
  *  client types.
- * 
+ *
  * \param[in] handle Handle to client which has received a broker message.
  * \param[in] scope_handle Handle to scope on which the broker message was received.
  * \param[in] msg The broker message.
@@ -186,7 +186,7 @@ typedef void (*RdmnetClientBrokerMsgReceivedCb)(rdmnet_client_t handle, rdmnet_c
  *
  *  RPT clients (controllers and devices) automatically listen for LLRP messages as required by
  *  E1.33. This callback is called when an LLRP RDM command is received.
- * 
+ *
  *  \param[in] handle Handle to client which has received an LLRP message.
  *  \param[in] cmd The LLRP RDM command.
  *  \param[in] context Context pointer that was given at the creation of the client.
@@ -199,7 +199,7 @@ typedef void (*RdmnetClientLlrpMsgReceivedCb)(rdmnet_client_t handle, const Llrp
  *  Status, which informs of exceptional conditions in response to a Request. If using the
  *  \ref rdmnet_device "Device" or \ref rdmnet_controller "Controller" API, this callback will be
  *  consumed internally and propagated to callbacks specific to those client types.
- * 
+ *
  * \param[in] handle Handle to client which has received an RPT message.
  * \param[in] scope_handle Handle to scope on which the RPT message was received.
  * \param[in] msg The RPT message.
@@ -212,7 +212,7 @@ typedef void (*RptClientMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_sco
  *
  *  EPT messages include Data, which wraps opaque data, and Status, which informs of exceptional
  *  conditions in response to Data.
- * 
+ *
  * \param[in] handle Handle to client which has received an EPT message.
  * \param[in] scope_handle Handle to scope on which the EPT message was received.
  * \param[in] msg The EPT message.
@@ -275,7 +275,7 @@ typedef struct RptClientOptionalConfig
 #define RPT_CLIENT_INIT_OPTIONAL_CONFIG_VALUES(optionalcfgptr, manu_id) \
   do                                                                    \
   {                                                                     \
-    rdmnet_init_dynamic_uid_request(&(optionalcfgptr)->uid, (manu_id)); \
+    RDMNET_INIT_DYNAMIC_UID_REQUEST(&(optionalcfgptr)->uid, (manu_id)); \
     (optionalcfgptr)->search_domain = E133_DEFAULT_DOMAIN;              \
   } while (0)
 

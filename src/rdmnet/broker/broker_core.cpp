@@ -117,8 +117,8 @@ bool BrokerCore::Startup(const RDMnet::BrokerSettings &settings, uint16_t listen
   {
     // Check the settings for validity
     if (lwpa_uuid_is_null(&settings.cid) ||
-        (settings.uid_type == RDMnet::BrokerSettings::kStaticUid && !rdmnet_uid_is_static(&settings.uid)) ||
-        (settings.uid_type == RDMnet::BrokerSettings::kDynamicUid && !rdmnet_uid_is_dynamic(&settings.uid)))
+        (settings.uid_type == RDMnet::BrokerSettings::kStaticUid && !RDMNET_UID_IS_STATIC(&settings.uid)) ||
+        (settings.uid_type == RDMnet::BrokerSettings::kDynamicUid && !RDMNET_UID_IS_DYNAMIC(&settings.uid)))
     {
       return false;
     }
@@ -214,9 +214,9 @@ void BrokerCore::GetSettings(RDMnet::BrokerSettings &settings) const
 
 bool BrokerCore::IsDeviceManuBroadcastUID(const RdmUid &uid, uint16_t &manu)
 {
-  if (rdmnet_uid_is_device_manu_broadcast(&uid))
+  if (RDMNET_UID_IS_DEVICE_MANU_BROADCAST(&uid))
   {
-    manu = rdmnet_device_broadcast_manu_id(&uid);
+    manu = RDMNET_DEVICE_BROADCAST_MANU_ID(&uid);
     return true;
   }
   return false;
@@ -224,7 +224,7 @@ bool BrokerCore::IsDeviceManuBroadcastUID(const RdmUid &uid, uint16_t &manu)
 
 bool BrokerCore::IsValidControllerDestinationUID(const RdmUid &uid) const
 {
-  if (rdmnet_uid_is_controller_broadcast(&uid) || (uid == my_uid_))
+  if (RDMNET_UID_IS_CONTROLLER_BROADCAST(&uid) || (uid == my_uid_))
     return true;
 
   // TODO this should only check devices
@@ -234,7 +234,7 @@ bool BrokerCore::IsValidControllerDestinationUID(const RdmUid &uid) const
 
 bool BrokerCore::IsValidDeviceDestinationUID(const RdmUid &uid) const
 {
-  if (rdmnet_uid_is_controller_broadcast(&uid))
+  if (RDMNET_UID_IS_CONTROLLER_BROADCAST(&uid))
     return true;
 
   // TODO this should only check controllers
@@ -562,7 +562,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
   }
 
   // Resolve the Client's UID
-  if (rdmnet_uid_is_dynamic_uid_request(&rptdata->client_uid))
+  if (RDMNET_UID_IS_DYNAMIC_UID_REQUEST(&rptdata->client_uid))
   {
     BrokerUidManager::AddResult add_result =
         uid_manager_.AddDynamicUid(handle, updated_data.client_cid, rptdata->client_uid);
@@ -581,7 +581,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
         break;
     }
   }
-  else if (rdmnet_uid_is_static(&rptdata->client_uid))
+  else if (RDMNET_UID_IS_STATIC(&rptdata->client_uid))
   {
     BrokerUidManager::AddResult add_result = uid_manager_.AddStaticUid(handle, rptdata->client_uid);
     switch (add_result)
@@ -791,7 +791,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
     uint16_t device_manu;
     int dest_conn;
 
-    if (rdmnet_uid_is_controller_broadcast(&rptmsg->header.dest_uid))
+    if (RDMNET_UID_IS_CONTROLLER_BROADCAST(&rptmsg->header.dest_uid))
     {
       log_->Log(LWPA_LOG_DEBUG, "Broadcasting RPT message from Device %04x:%08x to all Controllers",
                 rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id);
@@ -806,7 +806,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
         }
       }
     }
-    else if (rdmnet_uid_is_device_broadcast(&rptmsg->header.dest_uid))
+    else if (RDMNET_UID_IS_DEVICE_BROADCAST(&rptmsg->header.dest_uid))
     {
       log_->Log(LWPA_LOG_DEBUG, "Broadcasting RPT message from Controller %04x:%08x to all Devices",
                 rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id);
