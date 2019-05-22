@@ -79,7 +79,6 @@ struct RdmnetConnection
   bool rdmnet_conn_failed;
 
   // Send and receive tracking
-  lwpa_mutex_t send_lock;
   RdmnetMsgBuf recv_buf;
 
   // Synchronization
@@ -144,6 +143,9 @@ extern "C" {
 
 lwpa_error_t rdmnet_conn_init();
 void rdmnet_conn_deinit();
+
+lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle, RdmnetConnection **conn_out);
+lwpa_error_t rdmnet_end_message(RdmnetConnection *conn);
 
 void rdmnet_conn_tick();
 
