@@ -591,6 +591,7 @@ void start_tcp_connection(RdmnetConnection *conn, ConnCallbackDispatchInfo *cb)
   if (!ok)
   {
     cb->which = kConnCallbackConnectFailed;
+    fill_callback_info(conn, cb);
     failed_info->event = kRdmnetConnectFailSocketFailure;
     reset_connection(conn);
   }
