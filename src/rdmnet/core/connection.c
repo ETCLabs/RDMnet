@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -404,127 +404,73 @@ int rdmnet_send(rdmnet_conn_t handle, const uint8_t *data, size_t size)
   {
     if (conn->state != kCSHeartbeat)
       res = kLwpaErrNotConn;
-    lwpa_mutex_give(&conn->lock);
+    else
+      res = lwpa_send(conn->sock, data, size, 0);
+
+    release_conn(conn);
   }
 
-  if (res == kLwpaErrOk && lwpa_mutex_take(&conn->send_lock, LWPA_WAIT_FOREVER))
-  {
-    res = lwpa_send(conn->sock, data, size, 0);
-    lwpa_mutex_give(&conn->send_lock);
-  }
-  rdmnet_readunlock();
   return res;
 }
 
-/*! \brief Start an atomic send operation on an RDMnet connection.
+/* Internal function to start an atomic send operation on an RDMnet connection.
  *
- *  Because RDMnet uses stream sockets, it is sometimes convenient to send messages piece by piece.
- *  This function, together with rdmnet_send_partial_message() and rdmnet_end_message(), can be used
- *  to guarantee an atomic piece-wise send operation in a multithreaded environment. Once started,
- *  any other calls to rdmnet_send() or rdmnet_start_message() will block waiting for this operation
- *  to end using rdmnet_end_message().
+ * Because RDMnet uses stream sockets, it is sometimes convenient to send messages piece by piece.
+ * This function, together with rdmnet_end_message(), can be used to guarantee an atomic piece-wise
+ * send operation in a multithreaded environment. Once started, any other calls to rdmnet_send() or
+ * rdmnet_start_message() will block waiting for this operation to end using rdmnet_end_message().
  *
- *  \param[in] handle Connection handle on which to start an atomic send operation.
- *  \return #kLwpaErrOk: Send operation started successfully.
- *  \return #kLwpaErrInvalid: Invalid argument provided.
- *  \return #kLwpaErrNotInit: Module not initialized.
- *  \return #kLwpaErrNotConn: The connection handle has not been successfully connected.
- *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ * \param[in] handle Connection handle on which to start an atomic send operation.
+ * \param[out] conn_out Filled in on success with a pointer to the underlying connection structure.
+ *                      Its socket can be used to send using lwpa_send() and it should be passed
+ *                      back with a subsequent call to rdmnet_end_message().
+ * \return #kLwpaErrOk: Send operation started successfully.
+ * \return #kLwpaErrInvalid: Invalid argument provided.
+ * \return #kLwpaErrNotInit: Module not initialized.
+ * \return #kLwpaErrNotConn: The connection handle has not been successfully connected.
+ * \return #kLwpaErrSys: An internal library or system call error occurred.
  */
-lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle)
+lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle, RdmnetConnection **conn_out)
 {
   RdmnetConnection *conn;
   lwpa_error_t res = get_conn(handle, &conn);
   if (res == kLwpaErrOk)
   {
     if (conn->state != kCSHeartbeat)
-      res = kLwpaErrNotConn;
-    lwpa_mutex_give(&conn->lock);
-  }
-
-  if (res == kLwpaErrOk)
-  {
-    if (lwpa_mutex_take(&conn->send_lock, LWPA_WAIT_FOREVER))
     {
-      // Return, keeping the readlock and the send lock.
-      return res;
+      res = kLwpaErrNotConn;
+      release_conn(conn);
     }
     else
     {
-      res = kLwpaErrSys;
+      // Intentionally keep the conn locked after returning
+      *conn_out = conn;
     }
   }
-  rdmnet_readunlock();
+
   return res;
 }
 
-/*! \brief Send a partial message as part of an atomic send operation on an RDMnet connection.
+/* Internal function to end an atomic send operation on an RDMnet connection.
  *
- *  MUST call rdmnet_start_message() first to begin an atomic send operation.
+ * MUST call rdmnet_start_message() first to begin an atomic send operation.
  *
- *  Because RDMnet uses stream sockets, it is sometimes convenient to send messages piece-by-piece.
- *  This function, together with rdmnet_start_message() and rdmnet_end_message(), can be used to
- *  guarantee an atomic piece-wise send operation in a multithreaded environment.
+ * Because RDMnet uses stream sockets, it is sometimes convenient to send messages piece by piece.
+ * This function, together with rdmnet_start_message() and rdmnet_send_partial_message(), can be
+ * used to guarantee an atomic piece-wise send operation in a multithreaded environment.
  *
- *  \param[in] handle Connection handle on which to send a partial message.
- *  \param[in] data Data buffer to send.
- *  \param[in] size Size of data buffer.
- *  \return Number of bytes sent (success)
- *  \return #kLwpaErrInvalid: Invalid argument provided.
- *  \return #kLwpaErrNotInit: Module not initialized.
- *  \return #kLwpaErrNotConn: The connection handle has not been successfully connected.
- *  \return #kLwpaErrSys: An internal library or system call error occurred.
- *  \return Note: Other error codes might be propagated from underlying socket calls.
+ * \param[in] handle Connection handle on which to end an atomic send operation.
+ * \return #kLwpaErrOk: Send operation ended successfully.
+ * \return #kLwpaErrInvalid: Invalid argument provided.
+ * \return #kLwpaErrSys: An internal library or system call error occurred.
  */
-int rdmnet_send_partial_message(rdmnet_conn_t handle, const uint8_t *data, size_t size)
+lwpa_error_t rdmnet_end_message(RdmnetConnection *conn)
 {
-  if (!data || size == 0)
+  if (!conn)
     return kLwpaErrInvalid;
 
-  RdmnetConnection *conn;
-  int res = get_conn(handle, &conn);
-  if (res == kLwpaErrOk)
-  {
-    if (conn->state != kCSHeartbeat)
-      res = kLwpaErrNotConn;
-    lwpa_mutex_give(&conn->lock);
-  }
-
-  if (res == kLwpaErrOk)
-    res = lwpa_send(conn->sock, data, size, 0);
-
-  rdmnet_readunlock();
-  return res;
-}
-
-/*! \brief End an atomic send operation on an RDMnet connection.
- *
- *  MUST call rdmnet_start_message() first to begin an atomic send operation.
- *
- *  Because RDMnet uses stream sockets, it is sometimes convenient to send messages piece by piece.
- *  This function, together with rdmnet_start_message() and rdmnet_send_partial_message(), can be
- *  used to guarantee an atomic piece-wise send operation in a multithreaded environment.
- *
- *  \param[in] handle Connection handle on which to end an atomic send operation.
- *  \return #kLwpaErrOk: Send operation ended successfully.
- *  \return #kLwpaErrInvalid: Invalid argument provided.
- *  \return #kLwpaErrNotInit: Module not initialized.
- *  \return #kLwpaErrSys: An internal library or system call error occurred.
- */
-lwpa_error_t rdmnet_end_message(rdmnet_conn_t handle)
-{
-  RdmnetConnection *conn;
-  lwpa_error_t res = get_conn(handle, &conn);
-  if (res == kLwpaErrOk)
-  {
-    // Release the send lock and the read lock that we had before.
-    lwpa_mutex_give(&conn->lock);
-    lwpa_mutex_give(&conn->send_lock);
-    rdmnet_readunlock();
-  }
-  // And release the read lock that we took at the beginning of this function.
-  rdmnet_readunlock();
-  return res;
+  release_conn(conn);
+  return kLwpaErrOk;
 }
 
 void start_rdmnet_connection(RdmnetConnection *conn)
@@ -591,6 +537,7 @@ void start_tcp_connection(RdmnetConnection *conn, ConnCallbackDispatchInfo *cb)
   if (!ok)
   {
     cb->which = kConnCallbackConnectFailed;
+    fill_callback_info(conn, cb);
     failed_info->event = kRdmnetConnectFailSocketFailure;
     reset_connection(conn);
   }
@@ -717,14 +664,8 @@ void process_all_connection_state(ConnCallbackDispatchInfo *cb)
           }
           else if (lwpa_timer_isexpired(&conn->send_timer))
           {
-            // Just poll the send lock. If another context is in the middle of a partial message,
-            // no need to block and send a heartbeat.
-            if (lwpa_mutex_take(&conn->send_lock, 0))
-            {
-              send_null(conn);
-              lwpa_timer_reset(&conn->send_timer);
-              lwpa_mutex_give(&conn->send_lock);
-            }
+            send_null(conn);
+            lwpa_timer_reset(&conn->send_timer);
           }
           break;
         default:
@@ -1011,14 +952,9 @@ RdmnetConnection *create_new_connection(const RdmnetConnectionConfig *config)
   {
     bool ok;
     bool lock_created = false;
-    bool send_lock_created = false;
 
     // Try to create the locks and signal
     ok = lock_created = lwpa_mutex_create(&conn->lock);
-    if (ok)
-    {
-      ok = send_lock_created = lwpa_mutex_create(&conn->send_lock);
-    }
     if (ok)
     {
       conn->handle = new_handle;
@@ -1050,8 +986,6 @@ RdmnetConnection *create_new_connection(const RdmnetConnectionConfig *config)
     else
     {
       // Clean up
-      if (send_lock_created)
-        lwpa_mutex_destroy(&conn->send_lock);
       if (lock_created)
         lwpa_mutex_destroy(&conn->lock);
       free_rdmnet_connection(conn);
@@ -1107,7 +1041,6 @@ void destroy_connection(RdmnetConnection *conn, bool remove_from_tree)
       lwpa_close(conn->sock);
     }
     lwpa_mutex_destroy(&conn->lock);
-    lwpa_mutex_destroy(&conn->send_lock);
     if (remove_from_tree)
       lwpa_rbtree_remove(&state.connections, conn);
     free_rdmnet_connection(conn);
