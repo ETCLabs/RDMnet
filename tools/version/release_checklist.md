@@ -1,11 +1,14 @@
 ## Making a release of RDMnet
 
 - [ ] Make sure submodule dependencies are up-to-date.
-- [ ] Make sure copyright year is up-to-date in all source files.
+- [ ] Make sure copyright year is up-to-date:
+  * in all source files
+  * in `tools/install/windows/license.rtf`
 - [ ] Review and update `CHANGELOG.md`
 - [ ] Check `docs/mainpage.md` and `README.md` to make sure they are still accurate
 - [ ] Check `ThirdPartySoftware.txt` to make sure it is still accurate and doesn't need any
       additions
+- [ ] Check the Github page and make sure it still has accurate information
 
 ### After making any changes necessary to address the above:
 
