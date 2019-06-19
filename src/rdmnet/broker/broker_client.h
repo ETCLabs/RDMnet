@@ -90,9 +90,9 @@ public:
 
   // Read/write lock functions. Prefer use of ClientReadGuard and
   // ClientWriteGuard to these functions where possible.
-  bool ReadLock() const { return lwpa_rwlock_readlock(&lock_, LWPA_WAIT_FOREVER); }
+  bool ReadLock() const { return lwpa_rwlock_readlock(&lock_); }
   void ReadUnlock() const { lwpa_rwlock_readunlock(&lock_); }
-  bool WriteLock() const { return lwpa_rwlock_writelock(&lock_, LWPA_WAIT_FOREVER); }
+  bool WriteLock() const { return lwpa_rwlock_writelock(&lock_); }
   void WriteUnlock() const { lwpa_rwlock_writeunlock(&lock_); }
 
   LwpaUuid cid{};

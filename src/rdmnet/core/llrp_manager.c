@@ -269,7 +269,7 @@ lwpa_error_t rdmnet_llrp_send_rdm_command(llrp_manager_t handle, const LlrpLocal
       header.sender_cid = manager->cid;
       header.transaction_number = manager->transaction_number;
 
-      res = send_llrp_rdm_command(manager->sys_sock, manager->send_buf, lwpaip_is_v6(&manager->netint), &header,
+      res = send_llrp_rdm_command(manager->sys_sock, manager->send_buf, LWPA_IP_IS_V6(&manager->netint), &header,
                                   &cmd_buf);
       if (res == kLwpaErrOk && transaction_num)
         *transaction_num = manager->transaction_number++;
@@ -439,7 +439,7 @@ bool send_next_probe(LlrpManager *manager)
     request.upper_uid = manager->cur_range_high;
     request.uid_list = list_head;
 
-    send_llrp_probe_request(manager->sys_sock, manager->send_buf, lwpaip_is_v6(&manager->netint), &header, &request);
+    send_llrp_probe_request(manager->sys_sock, manager->send_buf, LWPA_IP_IS_V6(&manager->netint), &header, &request);
     lwpa_timer_start(&manager->disc_timer, LLRP_TIMEOUT_MS);
     ++manager->num_clean_sends;
     return true;

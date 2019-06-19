@@ -49,7 +49,7 @@ public:
 
   const LwpaLogParams *GetLogParams() const { return &log_params_; }
   void Log(int pri, const char *format, ...);
-  bool CanLog(int pri) const { return lwpa_canlog(&log_params_, pri); }
+  bool CanLog(int pri) const { return LWPA_CAN_LOG(&log_params_, pri); }
 
   void LogFromCallback(const std::string &str);
   void LogThreadRun();

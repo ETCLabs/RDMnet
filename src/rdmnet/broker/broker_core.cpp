@@ -250,7 +250,7 @@ void BrokerCore::GetConnSnapshot(std::vector<rdmnet_conn_t> &conns, bool include
 {
   conns.clear();
 
-  BrokerReadGuard client_read(client_lock_);
+  lwpa::ReadGuard client_read(client_lock_);
 
   if (!clients_.empty())
   {
@@ -288,7 +288,7 @@ bool BrokerCore::NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr &addr)
   bool result = false;
 
   {  // Client write lock scope
-    BrokerWriteGuard client_write(client_lock_);
+    lwpa::WriteGuard client_write(client_lock_);
 
     if (settings_.max_connections == 0 ||
         (clients_.size() <= settings_.max_connections + settings_.max_reject_connections))
@@ -344,7 +344,7 @@ bool BrokerCore::ServiceClients()
   bool result = false;
   std::vector<int> client_conns;
 
-  BrokerReadGuard clients_read(client_lock_);
+  lwpa::ReadGuard clients_read(client_lock_);
 
   for (auto client : clients_)
   {
@@ -398,7 +398,7 @@ void BrokerCore::SendClientList(int conn)
   BrokerMessage bmsg;
   bmsg.vector = VECTOR_BROKER_CONNECTED_CLIENT_LIST;
 
-  BrokerReadGuard clients_read(client_lock_);
+  lwpa::ReadGuard clients_read(client_lock_);
   auto to_client = clients_.find(conn);
   if (to_client != clients_.end())
   {
@@ -441,7 +441,7 @@ void BrokerCore::SendClientsAdded(client_protocol_t client_prot, int conn_to_ign
   bmsg.vector = VECTOR_BROKER_CLIENT_ADD;
   get_client_list(&bmsg)->client_entry_list = entries.data();
 
-  BrokerReadGuard controllers_read(client_lock_);
+  lwpa::ReadGuard controllers_read(client_lock_);
   for (const auto controller : controllers_)
   {
     if (controller.second->client_protocol == client_prot && controller.first != conn_to_ignore)
@@ -455,7 +455,7 @@ void BrokerCore::SendClientsRemoved(client_protocol_t client_prot, std::vector<C
   bmsg.vector = VECTOR_BROKER_CLIENT_REMOVE;
   get_client_list(&bmsg)->client_entry_list = entries.data();
 
-  BrokerReadGuard controllers_read(client_lock_);
+  lwpa::ReadGuard controllers_read(client_lock_);
   for (const auto controller : controllers_)
   {
     if (controller.second->client_protocol == client_prot)
@@ -525,7 +525,7 @@ void BrokerCore::ProcessConnectRequest(int conn, const ClientConnectMsg *cmsg)
 
   if (deny_connection)
   {
-    BrokerReadGuard client_read(client_lock_);
+    lwpa::ReadGuard client_read(client_lock_);
 
     auto it = clients_.find(conn);
     if (it != clients_.end() && it->second)
@@ -553,7 +553,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
     return false;
   }
 
-  BrokerWriteGuard clients_write(client_lock_);
+  lwpa::WriteGuard clients_write(client_lock_);
   RPTClient *new_client = nullptr;
 
   if ((settings_.max_connections > 0) && (clients_.size() >= settings_.max_connections))
@@ -690,7 +690,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
 
 void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
 {
-  BrokerReadGuard clients_read(client_lock_);
+  lwpa::ReadGuard clients_read(client_lock_);
 
   const RptMessage *rptmsg = get_rpt_msg(msg);
   bool route_msg = false;
@@ -883,7 +883,7 @@ lwpa_socket_t BrokerCore::StartListening(const LwpaIpAddr &ip, uint16_t &port)
   addr.port = port;
 
   lwpa_socket_t listen_sock;
-  lwpa_error_t err = lwpa_socket(lwpaip_is_v4(&addr.ip) ? LWPA_AF_INET : LWPA_AF_INET6, LWPA_STREAM, &listen_sock);
+  lwpa_error_t err = lwpa_socket(LWPA_IP_IS_V4(&addr.ip) ? LWPA_AF_INET : LWPA_AF_INET6, LWPA_STREAM, &listen_sock);
   if (err != kLwpaErrOk)
   {
     if (log_)
@@ -962,7 +962,7 @@ bool BrokerCore::StartBrokerServices()
   {
     // Listen on in6addr_any
     LwpaIpAddr any_addr;
-    lwpaip_make_any_v6(&any_addr);
+    lwpa_ip_set_wildcard(kLwpaIpTypeV6, &any_addr);
 
     lwpa_socket_t listen_sock = StartListening(any_addr, listen_port_);
     if (listen_sock != LWPA_SOCKET_INVALID)
@@ -1032,7 +1032,7 @@ void BrokerCore::MarkConnForDestruction(rdmnet_conn_t conn, SendDisconnect send_
   bool found = false;
 
   {  // Client read lock and destroy lock scope
-    BrokerReadGuard clients_read(client_lock_);
+    lwpa::ReadGuard clients_read(client_lock_);
 
     auto client = clients_.find(conn);
     if ((client != clients_.end()) && client->second)
@@ -1056,7 +1056,7 @@ void BrokerCore::DestroyMarkedClientSockets()
   std::vector<ClientEntryData> entries;
 
   {  // write lock scope
-    BrokerWriteGuard clients_write(client_lock_);
+    lwpa::WriteGuard clients_write(client_lock_);
     if (!clients_to_destroy_.empty())
     {
       for (auto to_destroy : clients_to_destroy_)

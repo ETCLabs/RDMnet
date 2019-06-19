@@ -77,7 +77,7 @@
 #define free_client_rdm_response(ptr) lwpa_mempool_free(client_rdm_responses, ptr)
 #endif
 
-#define rdmnet_client_lock() lwpa_mutex_take(&client_lock, LWPA_WAIT_FOREVER)
+#define rdmnet_client_lock() lwpa_mutex_take(&client_lock)
 #define rdmnet_client_unlock() lwpa_mutex_give(&client_lock)
 
 #define init_callback_info(cbptr) ((cbptr)->which = kClientCallbackNone)
@@ -541,9 +541,9 @@ void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDis
     for (BrokerListenAddr *listen_addr = broker_info->listen_addr_list; listen_addr; listen_addr = listen_addr->next)
     {
       // TODO temporary until we enable IPv6
-      if (lwpaip_is_v4(&listen_addr->addr))
+      if (LWPA_IP_IS_V4(&listen_addr->addr))
       {
-        if (lwpa_canlog(rdmnet_log_params, LWPA_LOG_INFO))
+        if (LWPA_CAN_LOG(rdmnet_log_params, LWPA_LOG_INFO))
         {
           char addr_str[LWPA_INET6_ADDRSTRLEN];
           if (lwpa_inet_ntop(&listen_addr->addr, addr_str, LWPA_INET6_ADDRSTRLEN) == kLwpaErrOk)

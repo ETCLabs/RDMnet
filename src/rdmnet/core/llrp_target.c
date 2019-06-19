@@ -156,7 +156,7 @@ lwpa_error_t init_sys_netints()
     const LwpaNetintInfo *netint = &state.sys_netints[i];
     char addr_str[LWPA_INET6_ADDRSTRLEN];
     addr_str[0] = '\0';
-    if (lwpa_canlog(rdmnet_log_params, LWPA_LOG_WARNING))
+    if (LWPA_CAN_LOG(rdmnet_log_params, LWPA_LOG_WARNING))
     {
       lwpa_inet_ntop(&netint->addr, addr_str, LWPA_INET6_ADDRSTRLEN);
     }
@@ -337,7 +337,7 @@ lwpa_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLocal
       header.sender_cid = target->cid;
       header.transaction_number = resp->seq_num;
 
-      res = send_llrp_rdm_response(netint->sys_sock, netint->send_buf, lwpaip_is_v6(&netint->ip), &header, &resp_buf);
+      res = send_llrp_rdm_response(netint->sys_sock, netint->send_buf, LWPA_IP_IS_V6(&netint->ip), &header, &resp_buf);
     }
     else
     {
@@ -368,7 +368,7 @@ void process_target_state(LlrpTarget *target)
         memcpy(target_info.hardware_address, state.lowest_hardware_addr, 6);
         target_info.component_type = target->component_type;
 
-        send_llrp_probe_reply(netint->sys_sock, netint->send_buf, lwpaip_is_v6(&netint->ip), &header, &target_info);
+        send_llrp_probe_reply(netint->sys_sock, netint->send_buf, LWPA_IP_IS_V6(&netint->ip), &header, &target_info);
 
         netint->reply_pending = false;
       }

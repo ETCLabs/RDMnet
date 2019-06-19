@@ -89,7 +89,7 @@ void RDMnet::BrokerLog::Shutdown()
   {
     keep_running_ = false;
     lwpa_signal_post(&signal_);
-    lwpa_thread_stop(&thread_, 10000);
+    lwpa_thread_join(&thread_);
   }
 }
 
@@ -104,7 +104,7 @@ void RDMnet::BrokerLog::Log(int pri, const char *format, ...)
 void RDMnet::BrokerLog::LogFromCallback(const std::string &str)
 {
   {
-    BrokerMutexGuard guard(lock_);
+    lwpa::MutexGuard guard(lock_);
     msg_q_.push(str);
   }
   lwpa_signal_post(&signal_);
@@ -114,13 +114,13 @@ void RDMnet::BrokerLog::LogThreadRun()
 {
   while (keep_running_)
   {
-    lwpa_signal_wait(&signal_, LWPA_WAIT_FOREVER);
+    lwpa_signal_wait(&signal_);
     if (keep_running_)
     {
       std::vector<std::string> to_log;
 
       {
-        BrokerMutexGuard guard(lock_);
+        lwpa::MutexGuard guard(lock_);
         to_log.reserve(msg_q_.size());
         while (!msg_q_.empty())
         {

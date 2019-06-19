@@ -88,7 +88,7 @@ void ListenThread::Stop()
     }
 
     terminated_ = true;
-    lwpa_thread_stop(&thread_handle_, 10000);
+    lwpa_thread_join(&thread_handle_);
   }
 }
 
@@ -157,7 +157,7 @@ void ClientServiceThread::Stop()
   if (!terminated_)
   {
     terminated_ = true;
-    lwpa_thread_stop(&thread_handle_, 10000);
+    lwpa_thread_join(&thread_handle_);
   }
 }
 

@@ -616,7 +616,7 @@ void process_all_connection_state(ConnCallbackDispatchInfo *cb)
   RdmnetConnection *conn = (RdmnetConnection *)lwpa_rbiter_first(&conn_iter, &state.connections);
   while (conn)
   {
-    if (lwpa_mutex_take(&conn->lock, LWPA_WAIT_FOREVER))
+    if (lwpa_mutex_take(&conn->lock))
     {
       switch (conn->state)
       {
@@ -965,7 +965,7 @@ RdmnetConnection *create_new_connection(const RdmnetConnectionConfig *config)
       conn->local_cid = config->local_cid;
 
       conn->sock = LWPA_SOCKET_INVALID;
-      lwpaip_set_invalid(&conn->remote_addr.ip);
+      LWPA_IP_SET_INVALID(&conn->remote_addr.ip);
       conn->remote_addr.port = 0;
       conn->external_socket_attached = false;
       conn->is_blocking = true;
@@ -1060,7 +1060,7 @@ lwpa_error_t get_conn(rdmnet_conn_t handle, RdmnetConnection **conn)
     rdmnet_readunlock();
     return kLwpaErrNotFound;
   }
-  if (!lwpa_mutex_take(&found_conn->lock, LWPA_WAIT_FOREVER))
+  if (!lwpa_mutex_take(&found_conn->lock))
   {
     rdmnet_readunlock();
     return kLwpaErrSys;

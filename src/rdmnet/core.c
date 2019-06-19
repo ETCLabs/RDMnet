@@ -181,7 +181,7 @@ void rdmnet_core_deinit()
     core_state.initted = false;
 #if RDMNET_USE_TICK_THREAD
     core_state.tickthread_run = false;
-    lwpa_thread_stop(&core_state.tick_thread, LWPA_WAIT_FOREVER);
+    lwpa_thread_join(&core_state.tick_thread);
 #endif
     if (rdmnet_writelock())
     {
@@ -272,7 +272,7 @@ void rdmnet_core_tick()
 
 bool rdmnet_readlock()
 {
-  return lwpa_rwlock_readlock(&rdmnet_lock, LWPA_WAIT_FOREVER);
+  return lwpa_rwlock_readlock(&rdmnet_lock);
 }
 
 void rdmnet_readunlock()
@@ -282,7 +282,7 @@ void rdmnet_readunlock()
 
 bool rdmnet_writelock()
 {
-  return lwpa_rwlock_writelock(&rdmnet_lock, LWPA_WAIT_FOREVER);
+  return lwpa_rwlock_writelock(&rdmnet_lock);
 }
 
 void rdmnet_writeunlock()
