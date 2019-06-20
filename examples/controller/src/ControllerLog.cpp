@@ -33,14 +33,15 @@ BEGIN_INCLUDE_QT_HEADERS()
 #include <QTimeZone>
 END_INCLUDE_QT_HEADERS()
 
-static void LogCallback(void *context, const char * /*syslog_str*/, const char *human_str, const char * /*raw_str*/)
+extern "C" {
+static void log_callback(void *context, const LwpaLogStrings *strings)
 {
   ControllerLog *log = static_cast<ControllerLog *>(context);
   if (log)
-    log->LogFromCallback(human_str);
+    log->LogFromCallback(strings->human_readable);
 }
 
-static void TimeCallback(void * /*context*/, LwpaLogTimeParams *time)
+static void time_callback(void * /*context*/, LwpaLogTimeParams *time)
 {
   QDateTime now = QDateTime::currentDateTime();
   QDate qdate = now.date();
@@ -54,19 +55,16 @@ static void TimeCallback(void * /*context*/, LwpaLogTimeParams *time)
   time->msec = qtime.msec();
   time->utc_offset = (QTimeZone::systemTimeZone().offsetFromUtc(now) / 60);
 }
+} // extern "C"
 
 ControllerLog::ControllerLog(const std::string &file_name) : file_name_(file_name)
 {
   file_.open(file_name.c_str(), std::fstream::out);
 
   params_.action = kLwpaLogCreateHumanReadableLog;
-  params_.log_fn = LogCallback;
-  params_.syslog_params.facility = LWPA_LOG_LOCAL1;
-  params_.syslog_params.app_name[0] = '\0';
-  params_.syslog_params.procid[0] = '\0';
-  params_.syslog_params.hostname[0] = '\0';
+  params_.log_fn = log_callback;
   params_.log_mask = LWPA_LOG_UPTO(LWPA_LOG_DEBUG);
-  params_.time_fn = TimeCallback;
+  params_.time_fn = time_callback;
   params_.context = this;
   lwpa_validate_log_params(&params_);
 

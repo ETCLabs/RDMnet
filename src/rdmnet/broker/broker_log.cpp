@@ -30,16 +30,17 @@
 #include <cassert>
 #include "broker_util.h"
 
-static void BrokerLogCallback(void *context, const char * /*syslog_str*/, const char *human_str,
-                              const char * /*raw_str*/)
+extern "C" {
+static void broker_log_callback(void *context, const LwpaLogStrings *strings)
 {
-  assert(human_str);
+  assert(strings);
+  assert(strings->human_readable);
   RDMnet::BrokerLog *bl = static_cast<RDMnet::BrokerLog *>(context);
   if (bl)
-    bl->LogFromCallback(human_str);
+    bl->LogFromCallback(strings->human_readable);
 }
 
-static void BrokerTimeCallback(void *context, LwpaLogTimeParams *time)
+static void broker_time_callback(void *context, LwpaLogTimeParams *time)
 {
   RDMnet::BrokerLog *bl = static_cast<RDMnet::BrokerLog *>(context);
   if (bl)
@@ -52,6 +53,7 @@ static void log_thread_fn(void *arg)
   if (bl)
     bl->LogThreadRun();
 }
+} // extern "C"
 
 RDMnet::BrokerLog::BrokerLog() : keep_running_(false)
 {
@@ -70,9 +72,9 @@ bool RDMnet::BrokerLog::Startup(int log_mask)
 {
   // Set up the log params
   log_params_.action = kLwpaLogCreateHumanReadableLog;
-  log_params_.log_fn = BrokerLogCallback;
+  log_params_.log_fn = broker_log_callback;
   log_params_.log_mask = log_mask;
-  log_params_.time_fn = BrokerTimeCallback;
+  log_params_.time_fn = broker_time_callback;
   log_params_.context = this;
 
   lwpa_validate_log_params(&log_params_);
