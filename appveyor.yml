@@ -46,6 +46,11 @@ configuration: Release
 before_build:
   - cmd: |-
       set /P RDMNET_VERSION=< tools/version/current_version.txt
+      if "%APPVEYOR_REPO_TAG%" == "true" (
+        set RDMNET_ARTIFACT_VERSION=%RDMNET_VERSION%
+      ) else (
+        set RDMNET_ARTIFACT_VERSION=%APPVEYOR_REPO_COMMIT%
+      )
       mkdir build
       cd build
       cmake --version
@@ -59,7 +64,9 @@ build:
   verbosity: minimal
 
 test_script:
-  - cmd: ctest -C Release
+  - cmd: |-
+      cd %APPVEYOR_BUILD_FOLDER%\build
+      ctest -C Release
 
 deploy:
   provider: BinTray
@@ -106,10 +113,10 @@ for:
           msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% %INSTALLER_PROJECT%
           "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" x86
           signtool.exe sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f codesign_cert_windows.pfx /p %CODESIGN_CERT_SECRET% %INSTALLER_ARTIFACT% > NUL
-          copy %INSTALLER_ARTIFACT% ..\..\..\RDMnetSetup_%RDMNET_VERSION%_x86.msi
+          copy %INSTALLER_ARTIFACT% ..\..\..\RDMnetSetup_%RDMNET_ARTIFACT_VERSION%_x86.msi
 
     artifacts:
-      - path: RDMnetSetup_%RDMNET_VERSION%_x86.msi
+      - path: RDMnetSetup_%RDMNET_ARTIFACT_VERSION%_x86.msi
         name: RDMnet 32-bit installer
 
   -
@@ -142,8 +149,8 @@ for:
           msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% %INSTALLER_PROJECT%
           "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" amd64
           signtool.exe sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f codesign_cert_windows.pfx /p %CODESIGN_CERT_SECRET% %INSTALLER_ARTIFACT% > NUL
-          copy %INSTALLER_ARTIFACT% ..\..\..\RDMnetSetup_%RDMNET_VERSION%_x64.msi
+          copy %INSTALLER_ARTIFACT% ..\..\..\RDMnetSetup_%RDMNET_ARTIFACT_VERSION%_x64.msi
 
     artifacts:
-      - path: RDMnetSetup_%RDMNET_VERSION%_x64.msi
+      - path: RDMnetSetup_%RDMNET_ARTIFACT_VERSION%_x64.msi
         name: RDMnet 64-bit installer
