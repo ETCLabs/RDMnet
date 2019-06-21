@@ -44,14 +44,18 @@ environment:
 configuration: Release
 
 before_build:
-  - cmd: |-
-      set /P RDMNET_VERSION=< tools/version/current_version.txt
-      if "%APPVEYOR_REPO_TAG%" == "true" ( set RDMNET_ARTIFACT_VERSION=%RDMNET_VERSION%) else ( set RDMNET_ARTIFACT_VERSION=%APPVEYOR_REPO_COMMIT% )
-      echo Artifact version is %RDMNET_ARTIFACT_VERSION%
+  - ps: |-
+      $Env:RDMNET_VERSION = (Get-Content .\tools\version\current_version.txt)
+      if ($Env:APPVEYOR_REPO_TAG -Match "true") {
+        $Env:RDMNET_ARTIFACT_VERSION=$Env:RDMNET_VERSION
+      } else {
+        $Env:RDMNET_ARTIFACT_VERSION=$Env:APPVEYOR_REPO_COMMIT
+      }
+      echo Artifact version is $Env:RDMNET_ARTIFACT_VERSION
       mkdir build
       cd build
       cmake --version
-      cmake -G "%CMAKE_GENERATOR%" -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL% %CMAKE_EXTRA_ARGS% ..
+      cmake -G "$Env:CMAKE_GENERATOR" -DCMAKE_INSTALL_PREFIX=$Env:CMAKE_INSTALL $Env:CMAKE_EXTRA_ARGS ..
 
 build:
   parallel: true            # enable MSBuild parallel builds
