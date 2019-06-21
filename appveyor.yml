@@ -9,6 +9,7 @@ branches:
     - develop
     - master
     - /release\/.+/
+    - /v\d+\.\d+\.\d+\.\d+/
 
 skip_commits:
   files:
@@ -91,7 +92,6 @@ deploy:
   provider: BinTray
   on:
     APPVEYOR_REPO_TAG: true
-    APPVEYOR_REPO_TAG_NAME: /v\d+\.\d+\.\d+\.\d+/
   username: bootress
   api_key:
     secure: N7blYxy9CNkhOB0SasJxi8OyO7Zm6/F2RPOmgQi6IAwpTigH9klt6Cl++C2eGkbD
