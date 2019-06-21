@@ -47,6 +47,7 @@ before_build:
   - cmd: |-
       set /P RDMNET_VERSION=< tools/version/current_version.txt
       if "%APPVEYOR_REPO_TAG%" == "true" ( set RDMNET_ARTIFACT_VERSION=%RDMNET_VERSION%) else ( set RDMNET_ARTIFACT_VERSION=%APPVEYOR_REPO_COMMIT% )
+      echo Artifact version is %RDMNET_ARTIFACT_VERSION%
       mkdir build
       cd build
       cmake --version
@@ -95,6 +96,7 @@ for:
 
     install:
       - ps: |-
+          echo Artifact version is $Env:RDMNET_ARTIFACT_VERSION
           $wc = New-Object Net.WebClient
           $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_$($Env:MDNSWINDOWS_VERSION)_x86.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x86.zip")
           7z x mDNSWindows_x86.zip -omdns_install -y -r
@@ -104,6 +106,7 @@ for:
 
     after_build:
       - cmd: |-
+          echo Artifact version is %RDMNET_ARTIFACT_VERSION%
           cmake -P cmake_install.cmake
           cd ..\tools\install\windows
           msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% %INSTALLER_PROJECT%
