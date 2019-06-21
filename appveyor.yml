@@ -43,6 +43,15 @@ environment:
 
 configuration: Release
 
+install:
+  - ps: |-
+      $wc = New-Object Net.WebClient
+      $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_$($Env:MDNSWINDOWS_VERSION)_$Env:INSTALLER_PROJECT_PLATFORM.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows.zip")
+      7z x mDNSWindows.zip -omdns_install -y -r
+      $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_Merge_$($Env:MDNSWINDOWS_VERSION).msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
+      iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/appveyor/secure-file/master/install.ps1'))
+  - cmd: appveyor-tools\secure-file -decrypt tools\install\windows\codesign_cert_windows.pfx.enc -secret %CODESIGN_DECRYPT_SECRET%
+
 before_build:
   - ps: |-
       $Env:RDMNET_VERSION = (Get-Content .\tools\version\current_version.txt)
@@ -51,11 +60,11 @@ before_build:
       } else {
         $Env:RDMNET_ARTIFACT_VERSION=$Env:APPVEYOR_REPO_COMMIT
       }
-      echo Artifact version is $Env:RDMNET_ARTIFACT_VERSION
+  - cmd: |-
       mkdir build
       cd build
       cmake --version
-  - cmd: cmake -G "%CMAKE_GENERATOR%" -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL% %CMAKE_EXTRA_ARGS% ..
+      cmake -G "%CMAKE_GENERATOR%" -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL% %CMAKE_EXTRA_ARGS% ..
 
 build:
   parallel: true            # enable MSBuild parallel builds
@@ -63,6 +72,15 @@ build:
 
   # MSBuild verbosity level
   verbosity: minimal
+
+after_build:
+  - cmd: |-
+      cmake -P cmake_install.cmake
+      cd ..\tools\install\windows
+      msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% %INSTALLER_PROJECT%
+      "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" %VCVARSALL_PLATFORM% 
+      signtool.exe sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f codesign_cert_windows.pfx /p %CODESIGN_CERT_SECRET% %INSTALLER_ARTIFACT% > NUL
+      copy %INSTALLER_ARTIFACT% ..\..\..\RDMnetSetup_%RDMNET_ARTIFACT_VERSION%_%INSTALLER_PROJECT_PLATFORM%.msi
 
 test_script:
   - cmd: |-
@@ -96,30 +114,11 @@ for:
       QTDIR: C:\Qt\5.9.7\msvc2015
       INSTALLER_PROJECT: RDMnetInstall_x86.wixproj
       INSTALLER_PROJECT_PLATFORM: x86
+      VCVARSALL_PLATFORM: x86
       INSTALLER_ARTIFACT: bin\Release\RDMnetSetup_x86.msi
 
-    install:
-      - ps: |-
-          echo Artifact version is $Env:RDMNET_ARTIFACT_VERSION
-          $wc = New-Object Net.WebClient
-          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_$($Env:MDNSWINDOWS_VERSION)_x86.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x86.zip")
-          7z x mDNSWindows_x86.zip -omdns_install -y -r
-          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_Merge_$($Env:MDNSWINDOWS_VERSION).msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
-          iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/appveyor/secure-file/master/install.ps1'))
-      - cmd: appveyor-tools\secure-file -decrypt tools\install\windows\codesign_cert_windows.pfx.enc -secret %CODESIGN_DECRYPT_SECRET%
-
-    after_build:
-      - cmd: |-
-          echo Artifact version is %RDMNET_ARTIFACT_VERSION%
-          cmake -P cmake_install.cmake
-          cd ..\tools\install\windows
-          msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% %INSTALLER_PROJECT%
-          "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" x86
-          signtool.exe sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f codesign_cert_windows.pfx /p %CODESIGN_CERT_SECRET% %INSTALLER_ARTIFACT% > NUL
-          copy %INSTALLER_ARTIFACT% ..\..\..\RDMnetSetup_%RDMNET_ARTIFACT_VERSION%_x86.msi
-
     artifacts:
-      - path: RDMnetSetup_%RDMNET_ARTIFACT_VERSION%_x86.msi
+      - path: RDMnetSetup_%RDMNET_ARTIFACT_VERSION%_%INSTALLER_PROJECT_PLATFORM%.msi
         name: RDMnet 32-bit installer
 
   -
@@ -134,26 +133,9 @@ for:
       QTDIR: C:\Qt\5.9.7\msvc2017_64
       INSTALLER_PROJECT: RDMnetInstall_x64.wixproj
       INSTALLER_PROJECT_PLATFORM: x64
+      VCVARSALL_PLATFORM: amd64
       INSTALLER_ARTIFACT: bin\Release\RDMnetSetup_x64.msi
 
-    install:
-      - ps: |-
-          $wc = New-Object Net.WebClient
-          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_$($Env:MDNSWINDOWS_VERSION)_x64.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows_x64.zip")
-          7z x mDNSWindows_x64.zip -omdns_install -y -r
-          $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_Merge_$($Env:MDNSWINDOWS_VERSION).msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
-          iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/appveyor/secure-file/master/install.ps1'))
-      - cmd: appveyor-tools\secure-file -decrypt tools\install\windows\codesign_cert_windows.pfx.enc -secret %CODESIGN_DECRYPT_SECRET%
-
-    after_build:
-      - cmd: |-
-          cmake -P cmake_install.cmake
-          cd ..\tools\install\windows
-          msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% %INSTALLER_PROJECT%
-          "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" amd64
-          signtool.exe sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f codesign_cert_windows.pfx /p %CODESIGN_CERT_SECRET% %INSTALLER_ARTIFACT% > NUL
-          copy %INSTALLER_ARTIFACT% ..\..\..\RDMnetSetup_%RDMNET_ARTIFACT_VERSION%_x64.msi
-
     artifacts:
-      - path: RDMnetSetup_%RDMNET_ARTIFACT_VERSION%_x64.msi
+      - path: RDMnetSetup_%RDMNET_ARTIFACT_VERSION%_%INSTALLER_PROJECT_PLATFORM%.msi
         name: RDMnet 64-bit installer
