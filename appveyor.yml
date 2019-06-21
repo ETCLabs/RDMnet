@@ -55,7 +55,7 @@ before_build:
       mkdir build
       cd build
       cmake --version
-      cmake -G "$Env:CMAKE_GENERATOR" -DCMAKE_INSTALL_PREFIX=$Env:CMAKE_INSTALL $Env:CMAKE_EXTRA_ARGS ..
+  - cmd: cmake -G "%CMAKE_GENERATOR%" -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL% %CMAKE_EXTRA_ARGS% ..
 
 build:
   parallel: true            # enable MSBuild parallel builds
