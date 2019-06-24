@@ -13,6 +13,10 @@
 ### After making any changes necessary to address the above:
 
 - [ ] Make sure there is a clean/working build on the `develop` or `release/v*` branch.
+- [ ] Create a new version in the "rdmnet_bin/stable" repository on Bintray.
+  * Copy the files from the latest development build to the new stable version, renaming them to
+    remove the build number.
+  * Publish the files and enable them to be shown in the download list.
 - [ ] Generate docs for the version
   * Update `TAGFILES` in Doxyfile to refer to correct versions of dependencies
     - You will want to reference the appropriate released versions of the lwpa and RDM dependencies
