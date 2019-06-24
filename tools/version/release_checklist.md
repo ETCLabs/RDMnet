@@ -15,6 +15,9 @@
 - [ ] Make sure there is a clean/working build on the `develop` or `release/v*` branch.
 - [ ] Generate docs for the version
   * Update `TAGFILES` in Doxyfile to refer to correct versions of dependencies
+    - You will want to reference the appropriate released versions of the lwpa and RDM dependencies
+      for this generation, but don't check in that change - it should reference "head" for the
+      auto-deployed docs.
   * Follow `tools/ci/publish_docs.sh` manually, except replace "head" with version number in the
     form "vM.m"
   * Add the version number to `versions.txt` on the `gh-pages` branch and mark it as latest
