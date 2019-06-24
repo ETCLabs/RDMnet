@@ -26,8 +26,8 @@
 - [ ] Merge changes to `master`
   * `git checkout master`
   * `git merge --no-ff [develop|release/v*]`
-- [ ] Create build and tag with `tools/version/create_build.py`
-  * Include `-r` flag to specify a release build
+- [ ] Create the release tag in the form `vM.m.p`
+  * `git tag -a vM.m.p -m "RDMnet release version M.m.p"`
 - [ ] Mark as release on the releases page
 - [ ] Create build report
 - [ ] Merge `master` back into `develop`
