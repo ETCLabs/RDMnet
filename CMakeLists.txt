@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.3)
 
-project(RDMnet VERSION 0.2.0)
+project(RDMnet VERSION 0.3.0)
 
 if(PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   set(OPTION_DEFAULTS ON)
