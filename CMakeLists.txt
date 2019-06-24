@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.3)
 
-project(RDMnet VERSION 0.2.0)
+project(RDMnet VERSION 0.3.0)
 
 # Sometimes the seems to be some weirdness with drive letter capitalization on Windows, so do a
 # case-insensitive comparision

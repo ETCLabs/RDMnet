@@ -1,6 +1,6 @@
 <!-- File to define build variables for the RDMnet installer project. -->
 <Include>
-  <?define VersionNumber = "0.2.0.6" ?>
+  <?define VersionNumber = "0.2.0.7" ?>
 
   <?include GeneratedFiles\vcredist.wxi ?>
   <?include GeneratedFiles\mdnsmerge.wxi ?>
