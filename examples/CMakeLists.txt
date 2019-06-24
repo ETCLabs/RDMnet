@@ -1,0 +1,13 @@
+
+if(RDMNET_BUILD_EXAMPLES)
+  add_subdirectory(controller)
+endif()
+
+if(RDMNET_BUILD_EXAMPLES OR RDMNET_BUILD_CONSOLE_EXAMPLES)
+   add_subdirectory(broker)
+   add_subdirectory(device)
+   add_subdirectory(llrp_manager)
+   if(WIN32)
+    add_subdirectory(discovery)
+   endif()
+endif()

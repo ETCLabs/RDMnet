@@ -6,9 +6,11 @@
 *.exe
 *.o
 *.so
-bin/
 
-# MSVC2015 and Qt
+# CMake
+build*/
+
+# MSVC and Qt
 *.VC.db
 *.VC.opendb
 *.vcxproj.user

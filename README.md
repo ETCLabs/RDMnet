@@ -1,13 +1,15 @@
 ## Important Note: Read Me First
 
 THE SOFTWARE IN THIS REPOSITORY IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33
-rev. 63. <mark><b>UNDER NO CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR OR
+rev. 77. <mark><b>UNDER NO CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR OR
 INCLUDED IN ANY PRODUCT AVAILABLE FOR GENERAL SALE TO THE PUBLIC.</b></mark>
 DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL VALUES AND BEHAVIORAL
 REQUIREMENTS, <mark>PRODUCTS USING THIS SOFTWARE WILL **NOT** BE INTEROPERABLE
 WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.</mark>
 
 # RDMnet
+
+[![Build status](https://ci.appveyor.com/api/projects/status/76wa62avw50x7r9o?svg=true)](https://ci.appveyor.com/project/ETCLabs/rdmnet)
 
 *RDMnet* is an upcoming entertainment technology standard by
 [ESTA](http://tsp.esta.org) for transmission of [RDM](http://www.rdmprotocol.org)
@@ -32,21 +34,17 @@ This repository contains a C-language library for core RDMnet communication. It
 also contains example applications that demonstrate the roles of Components in
 RDMnet:
 
-* *RDMnetControllerGUI*: A Qt-based GUI application which does basic discovery,
+* *rdmnet_controller_example*: A Qt-based GUI application which does basic discovery,
 display and configuration of RDMnet Components.
-* *broker*: A console application (which can also be run as a Windows service)
-which implements an RDMnet Broker.
-* *device*: A console application which implements an RDMnet Device.
-* *fakeway* (binary only): A console application which implements an RDMnet
-Gateway, using one or more ETC [Gadget II](https://www.etcconnect.com/Products/Networking/Gadget-II/Features.aspx)
-devices to communicate with RDM fixtures.
-* *manager*: A console application which implements a basic LLRP Manager.
+* *rdmnet_broker_example*: A console application which implements an RDMnet Broker.
+* *rdmnet_device_example*: A console application which implements an RDMnet Device.
+* *llrp_manager_example*: A console application which implements a basic LLRP Manager.
 
 The applications are available as a binary package
 [here](https://etclabs.github.io/RDMnet).
 
 The library and applications currently support Microsoft Windows, and are built
-using Microsoft's Visual Studio 2015 toolchain.
+using CMake and Microsoft's Visual Studio toolchain.
 
 ## Building
 
@@ -67,20 +65,19 @@ closed-source application, subject to the terms of the Apache License 2.0.
 The current prototypes are mostly compliant with the current standard version,
 with a few exceptions:
 
-* The Broker and Controller have no RDM responder functionality and do not
-  implement LLRP Targets
+* The Broker has no RDM responder functionality and does not implement an LLRP 
+  Target
 * EPT is not implemented
 * IPv6 is not implemented
-* Device and Fakeway do not support all required RDM PIDs
+* The "Request Dynamic UID Assignment" and "Fetch Dynamic UID Assignment List"
+  Broker messages are not yet implemented
 
 Other key items on the `TODO` list include:
 
-* Higher API layers to make library usage simpler
 * Platform ports for macOS, Linux, and several popular embedded platforms
-* Usage of a cross-platform build system
-* Tests and continuous integration
 
 ## Standard Version
 
-The current version of this repository implements BSR E1.33 rev. 63, which was
-offered for public review by ESTA in the first quarter of 2018.
+The current version of this repository implements BSR E1.33 rev. 77, which is
+currently being offered to the ESTA Control Protocols Working Group for a
+publication vote.

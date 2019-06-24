@@ -1,0 +1,107 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen $doxygenversion" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!--BEGIN PROJECT_NAME-->
+  <title>$projectname: $title</title>
+  <!--END PROJECT_NAME-->
+  <!--BEGIN !PROJECT_NAME-->
+  <title>$title</title>
+  <!--END !PROJECT_NAME-->
+  <link href="$relpath^tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="$relpath^jquery.js"></script>
+  <script type="text/javascript" src="$relpath^dynsections.js"></script>
+  $treeview
+  $search
+  $mathjax
+  <link href="$relpath^$stylesheet" rel="stylesheet" type="text/css" />
+  $extrastylesheet
+  <!--BEGIN CUSTOM SCRIPT-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+
+    <!--BEGIN TITLEAREA-->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <!--BEGIN PROJECT_LOGO-->
+            <td id="projectlogo"><img alt="Logo" src="$relpath^$projectlogo" /></td>
+            <!--END PROJECT_LOGO-->
+            <!--BEGIN PROJECT_NAME-->
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">$projectname
+                <!--BEGIN PROJECT_NUMBER-->&#160;<span id="projectnumber">$projectnumber</span>
+                <!--END PROJECT_NUMBER-->
+              </div>
+              <!--BEGIN PROJECT_BRIEF-->
+              <div id="projectbrief">$projectbrief</div>
+              <!--END PROJECT_BRIEF-->
+            </td>
+            <!--END PROJECT_NAME-->
+            <!--BEGIN !PROJECT_NAME-->
+            <!--BEGIN PROJECT_BRIEF-->
+            <td style="padding-left: 0.5em;">
+              <div id="projectbrief">$projectbrief</div>
+            </td>
+            <!--END PROJECT_BRIEF-->
+            <!--END !PROJECT_NAME-->
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+            <!--BEGIN DISABLE_INDEX-->
+            <!--BEGIN SEARCHENGINE-->
+            <td>$searchbox</td>
+            <!--END SEARCHENGINE-->
+            <!--END DISABLE_INDEX-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!--END TITLEAREA-->
+    <!-- end header part -->
