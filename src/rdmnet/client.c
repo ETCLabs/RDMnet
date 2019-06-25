@@ -175,7 +175,7 @@ static void release_client_and_scope(const RdmnetClient *client, const ClientSco
 static void fill_callback_info(const RdmnetClient *client, ClientCallbackDispatchInfo *cb);
 static void deliver_callback(ClientCallbackDispatchInfo *info);
 static bool connect_failed_will_retry(rdmnet_connect_fail_event_t event);
-static bool disconnected_will_retry(rdmnet_connect_fail_event_t event);
+static bool disconnected_will_retry(rdmnet_disconnect_event_t event);
 
 // Message handling
 static void free_rpt_client_message(RptClientMessage *msg);
@@ -382,7 +382,7 @@ lwpa_error_t rdmnet_client_request_client_list(rdmnet_client_t handle, rdmnet_cl
 
   res = send_fetch_client_list(scope_handle, &cli->cid);
 
-  release_client(cli);
+  release_client_and_scope(cli, scope_entry);
   return res;
 }
 
@@ -419,7 +419,7 @@ lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet_c
       *seq_num = header.seqnum;
   }
 
-  release_client(cli);
+  release_client_and_scope(cli, scope_entry);
   return res;
 }
 
@@ -437,17 +437,17 @@ lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_
 
   size_t resp_buf_size = (resp->command_included ? resp->num_responses + 1 : resp->num_responses);
 #if RDMNET_DYNAMIC_MEM
-  RdmBuffer *resp_buf = calloc(resp_buf_size, sizeof(RdmBuffer));
+  RdmBuffer *resp_buf = (RdmBuffer*)calloc(resp_buf_size, sizeof(RdmBuffer));
   if (!resp_buf)
   {
-    release_client(cli);
+    release_client_and_scope(cli, scope_entry);
     return kLwpaErrNoMem;
   }
 #else
   static RdmBuffer resp_buf[RDMNET_MAX_SENT_ACK_OVERFLOW_RESPONSES + 1];
   if (resp->num_responses > RDMNET_MAX_SENT_ACK_OVERFLOW_RESPONSES)
   {
-    release_client(cli);
+    release_client_and_scope(cli, scope_entry);
     return kLwpaErrMsgSize;
   }
 #endif
@@ -484,7 +484,7 @@ lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_
 #if RDMNET_DYNAMIC_MEM
   free(resp_buf);
 #endif
-  release_client(cli);
+  release_client_and_scope(cli, scope_entry);
   return res;
 }
 
@@ -509,7 +509,7 @@ lwpa_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, rdmnet_client
 
   res = send_rpt_status(scope_handle, &cli->cid, &header, &status->msg);
 
-  release_client(cli);
+  release_client_and_scope(cli, scope_entry);
   return res;
 }
 
@@ -799,7 +799,7 @@ bool handle_rpt_notification(const RptMessage *rmsg, RptClientMessage *msg_out)
       }
       first_msg = false;
     }
-    *next_entry = alloc_client_rdm_response();
+    *next_entry = (RemoteRdmRespListEntry*)alloc_client_rdm_response();
     if (*next_entry)
     {
       lwpa_error_t unpack_res = rdmctl_unpack_response(&buf_entry->msg, &(*next_entry)->msg);
@@ -1011,7 +1011,7 @@ bool connect_failed_will_retry(rdmnet_connect_fail_event_t event)
   return true;
 }
 
-bool disconnected_will_retry(rdmnet_connect_fail_event_t event)
+bool disconnected_will_retry(rdmnet_disconnect_event_t event)
 {
   (void)event;
   // TODO
@@ -1040,7 +1040,7 @@ lwpa_error_t rpt_client_new(const RdmnetRptClientConfig *config, rdmnet_client_t
   if (new_handle == RDMNET_CLIENT_INVALID)
     return res;
 
-  RdmnetClient *new_cli = alloc_rdmnet_client();
+  RdmnetClient *new_cli = (RdmnetClient*)alloc_rdmnet_client();
   if (new_cli)
   {
     res = create_llrp_handle_for_client(config, new_cli);
@@ -1130,7 +1130,7 @@ lwpa_error_t create_and_append_scope_entry(const RdmnetScopeConfig *config, Rdmn
 
   // The scope string was not in the list, try to allocate it
   lwpa_error_t res = kLwpaErrNoMem;
-  ClientScopeListEntry *new_scope = alloc_client_scope();
+  ClientScopeListEntry *new_scope = (ClientScopeListEntry*)alloc_client_scope();
   if (new_scope)
   {
     RdmnetConnectionConfig conn_config;

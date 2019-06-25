@@ -173,3 +173,4 @@ add_library(Broker
 )
 target_include_directories(Broker PUBLIC ${RDMNET_INCLUDE})
 target_link_libraries(Broker PUBLIC RDMnet)
+set_target_properties(Broker PROPERTIES CXX_STANDARD 14)

@@ -59,6 +59,14 @@ protected:
       nullptr};
 };
 
+// Need to test the value of disconn_info inside a custom fake, because only the pointer is saved
+// (which is invalid after the function returns)
+extern "C" void conncb_socket_error(rdmnet_conn_t, const RdmnetDisconnectedInfo* disconn_info, void* context)
+{
+  EXPECT_EQ(disconn_info->socket_err, kLwpaErrConnReset);
+  EXPECT_EQ(disconn_info->event, kRdmnetDisconnectAbruptClose);
+}
+
 TEST_F(TestConnection, socket_error)
 {
   rdmnet_conn_t conn;
@@ -69,11 +77,11 @@ TEST_F(TestConnection, socket_error)
   LwpaSockaddr remote_addr{};
   ASSERT_EQ(kLwpaErrOk, rdmnet_attach_existing_socket(conn, fake_socket, &remote_addr));
 
+  conncb_disconnected_fake.custom_fake = conncb_socket_error;
+
   // Simulate an error on a socket, make sure it is marked disconnected.
   rdmnet_socket_error(conn, kLwpaErrConnReset);
 
   ASSERT_EQ(conncb_disconnected_fake.call_count, 1u);
   ASSERT_EQ(conncb_disconnected_fake.arg0_val, conn);
-  ASSERT_EQ(conncb_disconnected_fake.arg1_val->socket_err, kLwpaErrConnReset);
-  ASSERT_EQ(conncb_disconnected_fake.arg1_val->event, kRdmnetDisconnectAbruptClose);
 }

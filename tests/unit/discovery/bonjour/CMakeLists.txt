@@ -16,6 +16,7 @@ target_link_libraries(test_discovery_bonjour PRIVATE
   gtest_main
   meekrosoft::fff
 )
+set_target_properties(test_discovery_bonjour PROPERTIES CXX_STANDARD 11)
 gtest_add_tests(TARGET test_discovery_bonjour)
 
 if(DEFINED DNS_SD_DLL)

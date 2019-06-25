@@ -142,7 +142,6 @@ TEST_F(TestRdmnetClient, create)
   rdmnet_client_t handle_2;
   ASSERT_EQ(kLwpaErrOk, rdmnet_rpt_client_create(&default_rpt_config_, &handle_2));
 
-  RdmnetRptClientConfig handle_2_config = default_rpt_config_;
   for (size_t i = 0; i < 100; ++i)
   {
     RdmnetScopeConfig tmp_scope = default_dynamic_scope_;

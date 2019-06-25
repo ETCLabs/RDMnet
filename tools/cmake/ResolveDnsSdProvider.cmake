@@ -122,6 +122,7 @@ if(WIN32)
 
     endif()
   endif()
+elseif(APPLE)
 else()
   message(FATAL_ERROR "There is currently no DNS-SD provider supported for this platform.")
 endif()
