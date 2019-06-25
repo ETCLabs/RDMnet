@@ -38,7 +38,7 @@
 #include "rdmnet/private/opts.h"
 
 // DEBUG REMOVEME
-#include <intrin.h>
+//#include <intrin.h>
 
 // Compile time check of memory configuration
 #if !RDMNET_DYNAMIC_MEM
@@ -171,7 +171,7 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceF
             (LWPA_IP_IS_V6(&ip_addr.ip) && ipv6_valid(&ip_addr.ip)))
         {
           // Add it to the info structure
-          BrokerListenAddr *new_addr = (BrokerListenAddr*)malloc(sizeof(BrokerListenAddr));
+          BrokerListenAddr *new_addr = (BrokerListenAddr *)malloc(sizeof(BrokerListenAddr));
           new_addr->addr = ip_addr.ip;
           new_addr->next = NULL;
 
@@ -799,7 +799,7 @@ void get_registration_string(const char *srv_type, const char *scope, char *reg_
 bool broker_info_is_valid(const RdmnetBrokerDiscInfo *info)
 {
   // Make sure none of the broker info's fields are empty
-  return !(info->cid.data == 0 || strlen(info->service_name) == 0 || strlen(info->scope) == 0 ||
+  return !(lwpa_uuid_is_null(&info->cid) || strlen(info->service_name) == 0 || strlen(info->scope) == 0 ||
            strlen(info->model) == 0 || strlen(info->manufacturer) == 0);
 }
 
@@ -812,7 +812,7 @@ bool ipv6_valid(LwpaIpAddr *ip)
 
 RdmnetScopeMonitorRef *scope_monitor_new(const RdmnetScopeMonitorConfig *config)
 {
-  RdmnetScopeMonitorRef *new_monitor = (RdmnetScopeMonitorRef*)malloc(sizeof(RdmnetScopeMonitorRef));
+  RdmnetScopeMonitorRef *new_monitor = (RdmnetScopeMonitorRef *)malloc(sizeof(RdmnetScopeMonitorRef));
   if (new_monitor)
   {
     new_monitor->config = *config;
@@ -840,7 +840,7 @@ void scope_monitor_delete(RdmnetScopeMonitorRef *ref)
 
 DiscoveredBroker *discovered_broker_new(const char *service_name, const char *full_service_name)
 {
-  DiscoveredBroker *new_db = (DiscoveredBroker*)malloc(sizeof(DiscoveredBroker));
+  DiscoveredBroker *new_db = (DiscoveredBroker *)malloc(sizeof(DiscoveredBroker));
   if (new_db)
   {
     rdmnetdisc_fill_default_broker_info(&new_db->info);
@@ -872,7 +872,7 @@ void discovered_broker_delete(DiscoveredBroker *db)
 
 RdmnetBrokerRegisterRef *registered_broker_new(const RdmnetBrokerRegisterConfig *config)
 {
-  RdmnetBrokerRegisterRef *new_rb = (RdmnetBrokerRegisterRef*)malloc(sizeof(RdmnetBrokerRegisterRef));
+  RdmnetBrokerRegisterRef *new_rb = (RdmnetBrokerRegisterRef *)malloc(sizeof(RdmnetBrokerRegisterRef));
   if (new_rb)
   {
     new_rb->config = *config;
