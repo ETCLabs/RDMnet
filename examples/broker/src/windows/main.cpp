@@ -90,18 +90,21 @@ bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell &broker_shell
     {
       LwpaIpAddr addr;
 
-      struct in_addr tst_addr;
-      INT res = InetPtonW(AF_INET, p, &tst_addr);
+      struct sockaddr_storage tst_addr;
+      INT res = InetPtonW(AF_INET, p, &((struct sockaddr_in*)&tst_addr)->sin_addr);
       if (res == 1)
       {
-        ip_plat_to_lwpa_v4(&addr, &tst_addr);
+        tst_addr.ss_family = AF_INET;
+        ip_os_to_lwpa((lwpa_os_ipaddr_t*)&tst_addr, &addr);
       }
       else
       {
-        struct in6_addr tst_addr6;
-        res = InetPtonW(AF_INET6, p, &tst_addr6);
+        res = InetPtonW(AF_INET6, p, &((struct sockaddr_in6*)&tst_addr)->sin6_addr);
         if (res == 1)
-          ip_plat_to_lwpa_v6(&addr, &tst_addr6);
+        {
+          tst_addr.ss_family = AF_INET6;
+          ip_os_to_lwpa((lwpa_os_ipaddr_t*)&tst_addr, &addr);
+        }
       }
       if (res == 1)
       {

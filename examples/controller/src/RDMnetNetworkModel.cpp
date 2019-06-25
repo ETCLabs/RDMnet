@@ -47,25 +47,17 @@ static QString UnpackAndParseIPAddress(const uint8_t *addrData, lwpa_iptype_t ad
 {
   char ip_str_buf[LWPA_INET6_ADDRSTRLEN];
   LwpaIpAddr ip;
-  bool zeroedOut = false;
 
   if (addrType == kLwpaIpTypeV4)
   {
-    lwpaip_set_v4_address(&ip, lwpa_upack_32b(addrData));
-    zeroedOut = (ip.addr.v4 == 0);
+    LWPA_IP_SET_V4_ADDRESS(&ip, lwpa_upack_32b(addrData));
   }
   else if (addrType == kLwpaIpTypeV6)
   {
-    lwpaip_set_v6_address(&ip, addrData);
-
-    zeroedOut = true;
-    for (int i = 0; (i < LWPA_IPV6_BYTES) && zeroedOut; ++i)
-    {
-      zeroedOut = zeroedOut && (ip.addr.v6[i] == 0);
-    }
+    LWPA_IP_SET_V6_ADDRESS(&ip, addrData);
   }
 
-  if (!zeroedOut)
+  if (!lwpa_ip_is_wildcard(&ip))
   {
     lwpa_inet_ntop(&ip, ip_str_buf, LWPA_INET6_ADDRSTRLEN);
     return QString::fromUtf8(ip_str_buf);
@@ -85,11 +77,11 @@ static lwpa_error_t ParseAndPackIPAddress(lwpa_iptype_t addrType, const std::str
   {
     if (addrType == kLwpaIpTypeV4)
     {
-      lwpa_pack_32b(outBuf, ip.addr.v4);
+      lwpa_pack_32b(outBuf, LWPA_IP_V4_ADDRESS(&ip));
     }
     else if (addrType == kLwpaIpTypeV6)
     {
-      memcpy(outBuf, ip.addr.v6, LWPA_IPV6_BYTES);
+      memcpy(outBuf, LWPA_IP_V6_ADDRESS(&ip), LWPA_IPV6_BYTES);
     }
   }
 

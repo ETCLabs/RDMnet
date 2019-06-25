@@ -31,31 +31,31 @@
 
 // Need to pass this from the command line to a test case; there doesn't seem to be a better way to
 // do this than using a global variable.
-LwpaIpAddr g_netint;
+//LwpaIpAddr g_netint;
 
 int main(int argc, char **argv)
 {
   testing::InitGoogleTest(&argc, argv);
 
   // Only check our custom argument if we haven't been given the "list_tests" flag
-  if (!testing::GTEST_FLAG(list_tests))
-  {
-    if (argc == 2)
-    {
-      if (0 >= lwpa_inet_pton(kLwpaIpTypeV4, argv[1], &g_netint))
-      {
-        std::cout << "Usage: " << argv[0] << " <interface_addr>" << std::endl;
-        std::cout << "  interface_addr: IP address of network interface to use for test." << std::endl;
-        return 1;
-      }
-    }
-    else
-    {
-      LwpaNetintInfo default_netint;
-      lwpa_netint_get_default_interface(&default_netint);
-      g_netint = default_netint.addr;
-    }
-  }
+//  if (!testing::GTEST_FLAG(list_tests))
+//  {
+//    if (argc == 2)
+//    {
+//      if (0 >= lwpa_inet_pton(kLwpaIpTypeV4, argv[1], &g_netint))
+//      {
+//        std::cout << "Usage: " << argv[0] << " <interface_addr>" << std::endl;
+//        std::cout << "  interface_addr: IP address of network interface to use for test." << std::endl;
+//        return 1;
+//      }
+//    }
+//    else
+//    {
+//      LwpaNetintInfo default_netint;
+//      lwpa_netint_get_default_interface(&default_netint);
+//      g_netint = default_netint.addr;
+//    }
+//  }
 
   return RUN_ALL_TESTS();
 }

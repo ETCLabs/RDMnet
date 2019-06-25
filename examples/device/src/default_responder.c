@@ -143,7 +143,7 @@ void default_responder_deinit()
   if (prop_data.identifying)
   {
     prop_data.identifying = false;
-    lwpa_thread_stop(&prop_data.identify_thread, 5000);
+    lwpa_thread_join(&prop_data.identify_thread);
   }
   memset(&prop_data, 0, sizeof(prop_data));
   lwpa_rwlock_destroy(&prop_lock);
@@ -151,7 +151,7 @@ void default_responder_deinit()
 
 void default_responder_get_scope_config(RdmnetScopeConfig *scope_config)
 {
-  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
+  if (lwpa_rwlock_readlock(&prop_lock))
   {
     *scope_config = prop_data.scope_config;
     lwpa_rwlock_readunlock(&prop_lock);
@@ -160,7 +160,7 @@ void default_responder_get_scope_config(RdmnetScopeConfig *scope_config)
 
 void default_responder_get_search_domain(char *search_domain)
 {
-  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
+  if (lwpa_rwlock_readlock(&prop_lock))
   {
     rdmnet_safe_strncpy(search_domain, prop_data.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
     lwpa_rwlock_readunlock(&prop_lock);
@@ -169,7 +169,7 @@ void default_responder_get_search_domain(char *search_domain)
 
 void default_responder_update_connection_status(bool connected, const LwpaSockaddr *broker_addr)
 {
-  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
+  if (lwpa_rwlock_readlock(&prop_lock))
   {
     prop_data.connected = connected;
     if (prop_data.connected)
@@ -180,7 +180,7 @@ void default_responder_update_connection_status(bool connected, const LwpaSockad
 
 void default_responder_incr_unhealthy_count()
 {
-  if (lwpa_rwlock_writelock(&prop_lock, LWPA_WAIT_FOREVER))
+  if (lwpa_rwlock_writelock(&prop_lock))
   {
     ++prop_data.tcp_unhealthy_counter;
     lwpa_rwlock_writeunlock(&prop_lock);
@@ -189,7 +189,7 @@ void default_responder_incr_unhealthy_count()
 
 void default_responder_set_tcp_status(LwpaSockaddr *broker_addr)
 {
-  if (lwpa_rwlock_writelock(&prop_lock, LWPA_WAIT_FOREVER))
+  if (lwpa_rwlock_writelock(&prop_lock))
   {
     prop_data.cur_broker_addr = *broker_addr;
     lwpa_rwlock_writeunlock(&prop_lock);
@@ -211,7 +211,7 @@ bool default_responder_set(uint16_t pid, const uint8_t *param_data, uint8_t para
                            rdmnet_data_changed_t *data_changed)
 {
   bool res = false;
-  if (lwpa_rwlock_writelock(&prop_lock, LWPA_WAIT_FOREVER))
+  if (lwpa_rwlock_writelock(&prop_lock))
   {
     switch (pid)
     {
@@ -253,7 +253,7 @@ bool default_responder_get(uint16_t pid, const uint8_t *param_data, uint8_t para
                            param_data_list_t resp_data_list, size_t *num_responses, uint16_t *nack_reason)
 {
   bool res = false;
-  if (lwpa_rwlock_readlock(&prop_lock, LWPA_WAIT_FOREVER))
+  if (lwpa_rwlock_readlock(&prop_lock))
   {
     switch (pid)
     {
@@ -379,14 +379,14 @@ bool set_component_scope(const uint8_t *param_data, uint8_t param_data_len, uint
       switch (*cur_ptr++)
       {
         case E133_STATIC_CONFIG_IPV4:
-          lwpaip_set_v4_address(&new_static_broker.ip, lwpa_upack_32b(cur_ptr));
+          LWPA_IP_SET_V4_ADDRESS(&new_static_broker.ip, lwpa_upack_32b(cur_ptr));
           cur_ptr += 4 + 16;
           new_static_broker.port = lwpa_upack_16b(cur_ptr);
           have_new_static_broker = true;
           break;
         case E133_STATIC_CONFIG_IPV6:
           cur_ptr += 4;
-          lwpaip_set_v6_address(&new_static_broker.ip, cur_ptr);
+          LWPA_IP_SET_V6_ADDRESS(&new_static_broker.ip, cur_ptr);
           cur_ptr += 16;
           new_static_broker.port = lwpa_upack_16b(cur_ptr);
           have_new_static_broker = true;
@@ -399,7 +399,7 @@ bool set_component_scope(const uint8_t *param_data, uint8_t param_data_len, uint
       RdmnetScopeConfig *existing_scope_config = &prop_data.scope_config;
       if (strncmp((char *)&param_data[2], existing_scope_config->scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0 &&
           ((!have_new_static_broker && !existing_scope_config->has_static_broker_addr) ||
-           (lwpaip_equal(&new_static_broker.ip, &existing_scope_config->static_broker_addr.ip) &&
+           (lwpa_ip_equal(&new_static_broker.ip, &existing_scope_config->static_broker_addr.ip) &&
             new_static_broker.port == existing_scope_config->static_broker_addr.port)))
       {
         /* Same settings as current */
@@ -529,10 +529,10 @@ bool get_component_scope(const uint8_t *param_data, uint8_t param_data_len, para
       // Pack the static config data
       if (scope_config->has_static_broker_addr)
       {
-        if (lwpaip_is_v4(&scope_config->static_broker_addr.ip))
+        if (LWPA_IP_IS_V4(&scope_config->static_broker_addr.ip))
         {
           *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
-          lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&scope_config->static_broker_addr.ip));
+          lwpa_pack_32b(cur_ptr, LWPA_IP_V4_ADDRESS(&scope_config->static_broker_addr.ip));
           cur_ptr += 4 + 16;
           lwpa_pack_16b(cur_ptr, scope_config->static_broker_addr.port);
           cur_ptr += 2;
@@ -541,7 +541,7 @@ bool get_component_scope(const uint8_t *param_data, uint8_t param_data_len, para
         {
           *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
           cur_ptr += 4;
-          memcpy(cur_ptr, lwpaip_v6_address(&scope_config->static_broker_addr.ip), 16);
+          memcpy(cur_ptr, LWPA_IP_V6_ADDRESS(&scope_config->static_broker_addr.ip), 16);
           cur_ptr += 16;
           lwpa_pack_16b(cur_ptr, scope_config->static_broker_addr.port);
           cur_ptr += 2;
@@ -593,9 +593,9 @@ bool get_tcp_comms_status(const uint8_t *param_data, uint8_t param_data_len, par
   cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
   if (prop_data.connected)
   {
-    if (lwpaip_is_v4(&prop_data.cur_broker_addr.ip))
+    if (LWPA_IP_IS_V4(&prop_data.cur_broker_addr.ip))
     {
-      lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&prop_data.cur_broker_addr.ip));
+      lwpa_pack_32b(cur_ptr, LWPA_IP_V4_ADDRESS(&prop_data.cur_broker_addr.ip));
       cur_ptr += 4;
       memset(cur_ptr, 0, LWPA_IPV6_BYTES);
       cur_ptr += LWPA_IPV6_BYTES;
@@ -604,7 +604,7 @@ bool get_tcp_comms_status(const uint8_t *param_data, uint8_t param_data_len, par
     {
       lwpa_pack_32b(cur_ptr, 0);
       cur_ptr += 4;
-      memcpy(cur_ptr, lwpaip_v6_address(&prop_data.cur_broker_addr.ip), LWPA_IPV6_BYTES);
+      memcpy(cur_ptr, LWPA_IP_V6_ADDRESS(&prop_data.cur_broker_addr.ip), LWPA_IPV6_BYTES);
       cur_ptr += LWPA_IPV6_BYTES;
     }
     lwpa_pack_16b(cur_ptr, prop_data.cur_broker_addr.port);

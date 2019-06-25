@@ -113,7 +113,7 @@ lwpa_error_t create_llrp_socket(const LwpaIpAddr *netint, bool manager, lwpa_soc
 lwpa_error_t create_sys_socket(const LwpaIpAddr *netint, bool manager, lwpa_socket_t *socket)
 {
   lwpa_socket_t sock = LWPA_SOCKET_INVALID;
-  lwpa_error_t res = lwpa_socket(lwpaip_is_v6(netint) ? LWPA_AF_INET6 : LWPA_AF_INET, LWPA_DGRAM, &sock);
+  lwpa_error_t res = lwpa_socket(LWPA_IP_IS_V6(netint) ? LWPA_AF_INET6 : LWPA_AF_INET, LWPA_DGRAM, &sock);
 
   if (res == kLwpaErrOk)
   {
@@ -126,7 +126,7 @@ lwpa_error_t create_sys_socket(const LwpaIpAddr *netint, bool manager, lwpa_sock
   if (res == kLwpaErrOk)
   {
     // MULTICAST_TTL controls the TTL field in outgoing multicast datagrams.
-    if (lwpaip_is_v4(netint))
+    if (LWPA_IP_IS_V4(netint))
     {
       int value = LLRP_MULTICAST_TTL_VAL;
       res = lwpa_setsockopt(sock, LWPA_IPPROTO_IP, LWPA_IP_MULTICAST_TTL, (const void *)(&value), sizeof(value));
@@ -140,7 +140,7 @@ lwpa_error_t create_sys_socket(const LwpaIpAddr *netint, bool manager, lwpa_sock
   if (res == kLwpaErrOk)
   {
     // MULTICAST_IF is critical for multicast sends to go over the correct interface.
-    if (lwpaip_is_v4(netint))
+    if (LWPA_IP_IS_V4(netint))
     {
       res = lwpa_setsockopt(sock, LWPA_IPPROTO_IP, LWPA_IP_MULTICAST_IF, (const void *)(netint), sizeof(LwpaIpAddr));
     }
@@ -152,7 +152,7 @@ lwpa_error_t create_sys_socket(const LwpaIpAddr *netint, bool manager, lwpa_sock
 
   if (res == kLwpaErrOk)
   {
-    if (lwpaip_is_v4(netint))
+    if (LWPA_IP_IS_V4(netint))
     {
       LwpaSockaddr bind_addr;
 #if RDMNET_LLRP_BIND_TO_MCAST_ADDRESS
@@ -161,7 +161,7 @@ lwpa_error_t create_sys_socket(const LwpaIpAddr *netint, bool manager, lwpa_sock
 #else
       (void)manager;
       // Bind socket to INADDR_ANY
-      lwpaip_make_any_v4(&bind_addr.ip);
+      lwpa_ip_set_wildcard(kLwpaIpTypeV4, &bind_addr.ip);
 #endif
       bind_addr.port = LLRP_PORT;
       res = lwpa_bind(sock, &bind_addr);
@@ -188,7 +188,7 @@ lwpa_error_t subscribe_multicast(lwpa_socket_t socket, const LwpaIpAddr *netint,
 {
   lwpa_error_t res = kLwpaErrNotImpl;
 
-  if (lwpaip_is_v4(netint))
+  if (LWPA_IP_IS_V4(netint))
   {
     LwpaMreq multireq;
 

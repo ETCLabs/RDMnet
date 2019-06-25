@@ -48,7 +48,7 @@ public:
   virtual ~ControllerLog();
 
   void Log(int pri, const char *format, ...);
-  bool CanLog(int pri) const { return lwpa_canlog(&params_, pri); }
+  bool CanLog(int pri) const { return LWPA_CAN_LOG(&params_, pri); }
   const LwpaLogParams *GetLogParams() const { return &params_; }
 
   void LogFromCallback(const std::string &str);

@@ -74,7 +74,7 @@ protected:
 
     rdmnet_safe_strncpy(default_static_scope_.scope, "not_default", E133_SCOPE_STRING_PADDED_LENGTH);
     default_static_scope_.has_static_broker_addr = true;
-    lwpaip_set_v4_address(&default_static_scope_.static_broker_addr.ip, 0x0a650101);
+    LWPA_IP_SET_V4_ADDRESS(&default_static_scope_.static_broker_addr.ip, 0x0a650101);
     default_static_scope_.static_broker_addr.port = 8888;
 
     rpt_callbacks_.connected = rdmnet_client_connected;

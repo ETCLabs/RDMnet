@@ -2,7 +2,17 @@ cmake_minimum_required(VERSION 3.3)
 
 project(RDMnet VERSION 0.3.0)
 
-if(PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+# Sometimes the seems to be some weirdness with drive letter capitalization on Windows, so do a
+# case-insensitive comparision
+if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL Windows)
+  string(TOLOWER ${PROJECT_SOURCE_DIR} PROJECT_SOURCE_DIR_LC)
+  string(TOLOWER ${CMAKE_SOURCE_DIR} CMAKE_SOURCE_DIR_LC)
+else()
+  set(PROJECT_SOURCE_DIR_LC ${PROJECT_SOURCE_DIR})
+  set(CMAKE_SOURCE_DIR_LC ${CMAKE_SOURCE_DIR})
+endif()
+
+if(PROJECT_SOURCE_DIR_LC STREQUAL CMAKE_SOURCE_DIR_LC)
   set(OPTION_DEFAULTS ON)
   if (MSVC)
     add_compile_options(/W4)

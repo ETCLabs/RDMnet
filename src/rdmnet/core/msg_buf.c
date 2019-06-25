@@ -477,7 +477,7 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
         {
           ClientRedirectMsg *crmsg = get_client_redirect_msg(bmsg);
           const uint8_t *cur_ptr = &data[bytes_parsed];
-          lwpaip_set_v4_address(&crmsg->new_addr.ip, lwpa_upack_32b(cur_ptr));
+          LWPA_IP_SET_V4_ADDRESS(&crmsg->new_addr.ip, lwpa_upack_32b(cur_ptr));
           cur_ptr += 4;
           crmsg->new_addr.port = lwpa_upack_16b(cur_ptr);
           cur_ptr += 2;
@@ -490,7 +490,7 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
         {
           ClientRedirectMsg *crmsg = get_client_redirect_msg(bmsg);
           const uint8_t *cur_ptr = &data[bytes_parsed];
-          lwpaip_set_v6_address(&crmsg->new_addr.ip, cur_ptr);
+          LWPA_IP_SET_V6_ADDRESS(&crmsg->new_addr.ip, cur_ptr);
           cur_ptr += 16;
           crmsg->new_addr.port = lwpa_upack_16b(cur_ptr);
           cur_ptr += 2;
