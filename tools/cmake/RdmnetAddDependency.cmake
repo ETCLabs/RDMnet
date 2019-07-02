@@ -17,7 +17,7 @@ function(rdmnet_add_dependency target loc_variable)
 
     # Step 3 - look for the dependency in a folder with the same name as the
     # target, at the same level as this folder
-    elseif(NOT ${RDMNET_FORCE_SUBMODULE_DEPS} AND EXISTS ${RDMNET_ROOT}/../${target})
+    elseif(NOT RDMNET_FORCE_SUBMODULE_DEPS AND EXISTS "${RDMNET_ROOT}/../${target}")
 
       message(STATUS "Found directory for ${target} at same level as RDMnet. Overriding submodule dependency with that directory.")
       add_subdirectory(${RDMNET_ROOT}/../${target} ${target})
