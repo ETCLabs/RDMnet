@@ -55,8 +55,8 @@ typedef struct LlrpLocalRdmResponse
   LwpaUuid dest_cid;
   /*! The sequence number received in the corresponding LlrpRemoteRdmCommand. */
   uint32_t seq_num;
-  /*! The interface index in the corresponding LlrpRemoteRdmCommand. */
-  size_t interface_index;
+  /*! The interface ID in the corresponding LlrpRemoteRdmCommand. */
+  size_t interface_id;
   /*! The RDM response. */
   RdmResponse rdm;
 } LlrpLocalRdmResponse;
@@ -69,9 +69,10 @@ typedef struct LlrpRemoteRdmCommand
   /*! The sequence number received with this command, to be echoed in the corresponding
    *  LlrpLocalRdmResponse. */
   uint32_t seq_num;
-  /*! The interface index on which this command was received, to be echoed in the corresponding
-   *  LlrpLocalRdmResponse. */
-  size_t interface_index;
+  /*! An internal ID for the interface on which this command was received, to be echoed in the
+   *  corresponding LlrpLocalRdmResponse. Should not be used for any other purpose; in particular,
+   *  this is NOT compatible with lwpa netint indexes. */
+  size_t interface_id;
   /*! The RDM command. */
   RdmCommand rdm;
 } LlrpRemoteRdmCommand;
@@ -100,7 +101,7 @@ typedef struct LlrpTargetCallbacks
 
 typedef struct LlrpTargetOptionalConfig
 {
-  LwpaIpAddr *netint_arr;
+  unsigned int *netint_index_arr;
   size_t num_netints;
   RdmUid uid;
 } LlrpTargetOptionalConfig;
@@ -108,7 +109,7 @@ typedef struct LlrpTargetOptionalConfig
 #define LLRP_TARGET_INIT_OPTIONAL_CONFIG_VALUES(optionalcfgptr, manu_id) \
   do                                                                     \
   {                                                                      \
-    (optionalcfgptr)->netint_arr = NULL;                                 \
+    (optionalcfgptr)->netint_index_arr = NULL;                           \
     (optionalcfgptr)->num_netints = 0;                                   \
     RDMNET_INIT_DYNAMIC_UID_REQUEST(&(optionalcfgptr)->uid, (manu_id));  \
   } while (0)

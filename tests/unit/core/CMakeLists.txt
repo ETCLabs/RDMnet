@@ -6,3 +6,4 @@
 
 add_subdirectory(support_modules)
 add_subdirectory(connection)
+add_subdirectory(llrp)

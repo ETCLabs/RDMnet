@@ -25,53 +25,15 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include <cwchar>
-#include <iostream>
+// The entry point for the RDMnet Connection unit tests.
 
-#include <WinSock2.h>
-#include <Windows.h>
-#include <WS2tcpip.h>
+#include "gtest/gtest.h"
+#include "fff.h"
 
-#include "lwpa/uuid.h"
-#include "manager.h"
+DEFINE_FFF_GLOBALS;
 
-std::string ConsoleInputToUtf8(const std::wstring &input)
+int main(int argc, char *argv[])
 {
-  if (!input.empty())
-  {
-    int size_needed = WideCharToMultiByte(CP_UTF8, 0, input.c_str(), -1, NULL, 0, NULL, NULL);
-    if (size_needed > 0)
-    {
-      std::string str_res(size_needed, '\0');
-      int convert_res = WideCharToMultiByte(CP_UTF8, 0, input.c_str(), -1, &str_res[0], size_needed, NULL, NULL);
-      if (convert_res > 0)
-      {
-        return str_res;
-      }
-    }
-  }
-
-  return std::string();
-}
-
-int wmain(int /*argc*/, wchar_t * /*argv*/ [])
-{
-  LwpaUuid manager_cid;
-
-  UUID uuid;
-  UuidCreate(&uuid);
-  memcpy(manager_cid.data, &uuid, LWPA_UUID_BYTES);
-
-  LLRPManager mgr(manager_cid);
-  printf("Discovered network interfaces:\n");
-  mgr.PrintNetints();
-  mgr.PrintCommandList();
-
-  std::wstring input;
-  do
-  {
-    std::getline(std::wcin, input);
-  } while (mgr.ParseCommand(ConsoleInputToUtf8(input)));
-
-  return 0;
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

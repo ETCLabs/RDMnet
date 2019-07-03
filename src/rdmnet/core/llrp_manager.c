@@ -150,9 +150,9 @@ lwpa_error_t rdmnet_llrp_manager_create(const LlrpManagerConfig *config, llrp_ma
 /*! \brief Destroy an LLRP manager instance.
  *
  *  The handle will be invalidated for any future calls to API functions.
- * 
+ *
  *  \param[in] handle Handle to manager to destroy.
- */ 
+ */
 void rdmnet_llrp_manager_destroy(llrp_manager_t handle)
 {
   LlrpManager *manager;
@@ -664,7 +664,7 @@ lwpa_error_t create_new_manager(const LlrpManagerConfig *config, LlrpManager **n
   LlrpManager *manager = llrp_manager_alloc();
   if (manager)
   {
-    manager->netint = config->netint;
+    manager->netint_index = config->netint_index;
     res = setup_manager_socket(manager);
     if (res == kLwpaErrOk)
     {

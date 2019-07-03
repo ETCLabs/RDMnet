@@ -25,53 +25,22 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include <cwchar>
-#include <iostream>
+#include "gtest/gtest.h"
+#include "rdmnet/core/llrp_target.h"
 
-#include <WinSock2.h>
-#include <Windows.h>
-#include <WS2tcpip.h>
-
-#include "lwpa/uuid.h"
-#include "manager.h"
-
-std::string ConsoleInputToUtf8(const std::wstring &input)
+class TestLlrpTarget : public testing::Test
 {
-  if (!input.empty())
-  {
-    int size_needed = WideCharToMultiByte(CP_UTF8, 0, input.c_str(), -1, NULL, 0, NULL, NULL);
-    if (size_needed > 0)
-    {
-      std::string str_res(size_needed, '\0');
-      int convert_res = WideCharToMultiByte(CP_UTF8, 0, input.c_str(), -1, &str_res[0], size_needed, NULL, NULL);
-      if (convert_res > 0)
-      {
-        return str_res;
-      }
-    }
-  }
 
-  return std::string();
-}
+};
 
-int wmain(int /*argc*/, wchar_t * /*argv*/ [])
+// Test the macros that init LlrpTargetConfig structures.
+TEST_F(TestLlrpTarget, init_macros)
 {
-  LwpaUuid manager_cid;
+  LlrpTargetConfig test_config;
 
-  UUID uuid;
-  UuidCreate(&uuid);
-  memcpy(manager_cid.data, &uuid, LWPA_UUID_BYTES);
-
-  LLRPManager mgr(manager_cid);
-  printf("Discovered network interfaces:\n");
-  mgr.PrintNetints();
-  mgr.PrintCommandList();
-
-  std::wstring input;
-  do
-  {
-    std::getline(std::wcin, input);
-  } while (mgr.ParseCommand(ConsoleInputToUtf8(input)));
-
-  return 0;
+  LLRP_TARGET_CONFIG_INIT(&test_config, 0x1234);
+  EXPECT_EQ(test_config.optional.netint_index_arr, nullptr);
+  EXPECT_EQ(test_config.optional.num_netints, 0u);
+  EXPECT_TRUE(RDMNET_IS_DYNAMIC_UID_REQUEST(&test_config.optional.uid));
+  EXPECT_EQ(RDM_GET_MANUFACTURER_ID(&test_config.optional.uid, 0x1234));
 }

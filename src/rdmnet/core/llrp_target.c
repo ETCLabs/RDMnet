@@ -328,9 +328,9 @@ lwpa_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLocal
   res = get_target(handle, &target);
   if (res == kLwpaErrOk)
   {
-    if (resp->interface_index < target->num_netints)
+    if (resp->interface_id < target->num_netints)
     {
-      LlrpTargetNetintInfo *netint = &target->netints[resp->interface_index];
+      LlrpTargetNetintInfo *netint = &target->netints[resp->interface_id];
       LlrpHeader header;
 
       header.dest_cid = resp->dest_cid;
@@ -527,7 +527,7 @@ void handle_llrp_message(LlrpTarget *target, LlrpTargetNetintInfo *netint, const
       {
         remote_cmd->src_cid = msg->header.sender_cid;
         remote_cmd->seq_num = msg->header.transaction_number;
-        remote_cmd->interface_index = netint - target->netints;
+        remote_cmd->interface_id = netint - target->netints;
 
         cb->which = kTargetCallbackRdmCmdReceived;
         fill_callback_info(target, cb);
@@ -594,7 +594,7 @@ lwpa_error_t setup_target_netints(const LlrpTargetOptionalConfig *config, LlrpTa
   lwpa_error_t res = kLwpaErrOk;
   target->num_netints = 0;
 
-  if (config->netint_arr && config->num_netints > 0)
+  if (config->netint_index_arr && config->num_netints > 0)
   {
 #if RDMNET_DYNAMIC_MEM
     target->netints = calloc(config->num_netints, sizeof(LlrpTargetNetintInfo));
@@ -608,7 +608,7 @@ lwpa_error_t setup_target_netints(const LlrpTargetOptionalConfig *config, LlrpTa
     {
       for (size_t i = 0; i < config->num_netints; ++i)
       {
-        res = setup_target_netint(&config->netint_arr[i], target, &target->netints[i]);
+        res = setup_target_netint(&config->netint_index_arr[i], target, &target->netints[i]);
         if (res == kLwpaErrOk)
           ++target->num_netints;
         else

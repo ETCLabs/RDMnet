@@ -27,6 +27,7 @@
 
 #include "rdmnet/core.h"
 
+#include "lwpa/common.h"
 #include "lwpa/socket.h"
 #include "lwpa/timer.h"
 #include "rdmnet/core/discovery.h"
@@ -50,7 +51,7 @@
 #define RDMNET_TICK_PERIODIC_INTERVAL 100 /* ms */
 #define RDMNET_POLL_TIMEOUT 120           /* ms */
 
-#define RDMNET_LWPA_FEATURES (LWPA_FEATURE_SOCKETS | LWPA_FEATURE_TIMERS)
+#define RDMNET_LWPA_FEATURES (LWPA_FEATURE_SOCKETS | LWPA_FEATURE_TIMERS | LWPA_FEATURE_NETINTS | LWPA_FEATURE_LOGGING)
 
 /***************************** Private macros ********************************/
 

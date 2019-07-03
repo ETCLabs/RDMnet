@@ -29,6 +29,7 @@
 
 #include <cstring>
 #include <cstdio>
+#include <memory>
 
 #include "lwpa/netint.h"
 #include "lwpa/pack.h"
@@ -84,7 +85,7 @@ LLRPManager::LLRPManager(const LwpaUuid &my_cid) : cid_(my_cid)
     {
       LwpaNetintInfo *netint = &netints[i];
 
-      config.netint = netint->addr;
+      config.netint_index = netint->index;
       llrp_manager_t handle;
       lwpa_error_t res = rdmnet_llrp_manager_create(&config, &handle);
       if (res == kLwpaErrOk)
