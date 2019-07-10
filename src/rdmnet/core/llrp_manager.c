@@ -57,6 +57,7 @@ static struct LlrpManagerState
 /*********************** Private function prototypes *************************/
 
 // Creating, destroying, and finding managers
+static lwpa_error_t validate_llrp_manager_config(const LlrpManagerConfig *config);
 static lwpa_error_t create_new_manager(const LlrpManagerConfig *config, LlrpManager **new_manager);
 static lwpa_error_t get_manager(llrp_manager_t handle, LlrpManager **manager);
 static void release_manager(LlrpManager *manager);
@@ -133,7 +134,10 @@ lwpa_error_t rdmnet_llrp_manager_create(const LlrpManagerConfig *config, llrp_ma
   if (!rdmnet_core_initialized())
     return kLwpaErrNotInit;
 
-  lwpa_error_t res = kLwpaErrSys;
+  lwpa_error_t res = validate_llrp_manager_config(config);
+  if (res != kLwpaErrOk)
+    return res;
+
   if (rdmnet_writelock())
   {
     // Attempt to create the LLRP manager, give it a unique handle and add it to the map.
@@ -143,6 +147,10 @@ lwpa_error_t rdmnet_llrp_manager_create(const LlrpManagerConfig *config, llrp_ma
       *handle = manager->handle;
 
     rdmnet_writeunlock();
+  }
+  else
+  {
+    res = kLwpaErrSys;
   }
   return res;
 }
@@ -269,7 +277,7 @@ lwpa_error_t rdmnet_llrp_send_rdm_command(llrp_manager_t handle, const LlrpLocal
       header.sender_cid = manager->cid;
       header.transaction_number = manager->transaction_number;
 
-      res = send_llrp_rdm_command(manager->sys_sock, manager->send_buf, LWPA_IP_IS_V6(&manager->netint), &header,
+      res = send_llrp_rdm_command(manager->sys_sock, manager->send_buf, (manager->ip_type == kLwpaIpTypeV6), &header,
                                   &cmd_buf);
       if (res == kLwpaErrOk && transaction_num)
         *transaction_num = manager->transaction_number++;
@@ -439,7 +447,8 @@ bool send_next_probe(LlrpManager *manager)
     request.upper_uid = manager->cur_range_high;
     request.uid_list = list_head;
 
-    send_llrp_probe_request(manager->sys_sock, manager->send_buf, LWPA_IP_IS_V6(&manager->netint), &header, &request);
+    send_llrp_probe_request(manager->sys_sock, manager->send_buf, (manager->ip_type == kLwpaIpTypeV6), &header,
+                            &request);
     lwpa_timer_start(&manager->disc_timer, LLRP_TIMEOUT_MS);
     ++manager->num_clean_sends;
     return true;
@@ -468,7 +477,7 @@ void process_manager_state(LlrpManager *manager, ManagerCallbackDispatchInfo *cb
 {
   if (manager->discovery_active)
   {
-    if (lwpa_timer_isexpired(&manager->disc_timer))
+    if (lwpa_timer_is_expired(&manager->disc_timer))
     {
       if (!send_next_probe(manager))
       {
@@ -544,7 +553,7 @@ void handle_llrp_message(LlrpManager *manager, const LlrpMessage *msg, ManagerCa
     {
       const DiscoveredLlrpTarget *target = LLRP_MSG_GET_PROBE_REPLY(msg);
 
-      if (manager->discovery_active && lwpa_uuid_cmp(&msg->header.dest_cid, &manager->cid) == 0)
+      if (manager->discovery_active && LWPA_UUID_CMP(&msg->header.dest_cid, &manager->cid) == 0)
       {
         DiscoveredTargetInternal *new_target = (DiscoveredTargetInternal *)malloc(sizeof(DiscoveredTargetInternal));
         if (new_target)
@@ -561,7 +570,7 @@ void handle_llrp_message(LlrpManager *manager, const LlrpMessage *msg, ManagerCa
             // necessarily an error in LLRP if it has a different CID.
             while (true)
             {
-              if (lwpa_uuid_cmp(&found->cid, &new_target->cid) == 0)
+              if (LWPA_UUID_CMP(&found->cid, &new_target->cid) == 0)
               {
                 // This target has already responded. It is not new.
                 free(new_target);
@@ -641,7 +650,7 @@ void deliver_callback(ManagerCallbackDispatchInfo *info)
 
 lwpa_error_t setup_manager_socket(LlrpManager *manager)
 {
-  lwpa_error_t res = create_llrp_socket(&manager->netint, true, &manager->sys_sock);
+  lwpa_error_t res = create_llrp_socket(manager->ip_type, manager->netint_index, true, &manager->sys_sock);
   if (res != kLwpaErrOk)
     return res;
 
@@ -651,6 +660,13 @@ lwpa_error_t setup_manager_socket(LlrpManager *manager)
   if (res != kLwpaErrOk)
     lwpa_close(manager->sys_sock);
   return res;
+}
+
+lwpa_error_t validate_llrp_manager_config(const LlrpManagerConfig *config)
+{
+  if ((config->ip_type != kLwpaIpTypeV4 && config->ip_type != kLwpaIpTypeV6) || LWPA_UUID_IS_NULL(&config->cid))
+    return kLwpaErrInvalid;
+  return kLwpaErrOk;
 }
 
 lwpa_error_t create_new_manager(const LlrpManagerConfig *config, LlrpManager **new_manager)
@@ -664,6 +680,7 @@ lwpa_error_t create_new_manager(const LlrpManagerConfig *config, LlrpManager **n
   LlrpManager *manager = llrp_manager_alloc();
   if (manager)
   {
+    manager->ip_type = config->ip_type;
     manager->netint_index = config->netint_index;
     res = setup_manager_socket(manager);
     if (res == kLwpaErrOk)

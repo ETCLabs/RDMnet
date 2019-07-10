@@ -164,7 +164,7 @@ lwpa_error_t init_sys_netints()
     // Create a test socket on each network interface. If the socket create fails, we remove that
     // interface from the set that LLRP targets listen on.
     lwpa_socket_t test_socket;
-    lwpa_error_t test_res = create_llrp_socket(&netint->addr, false, &test_socket);
+    lwpa_error_t test_res = create_llrp_socket(netint->addr.type, netint->index, false, &test_socket);
     if (test_res == kLwpaErrOk)
     {
       lwpa_close(test_socket);
@@ -337,7 +337,8 @@ lwpa_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLocal
       header.sender_cid = target->cid;
       header.transaction_number = resp->seq_num;
 
-      res = send_llrp_rdm_response(netint->sys_sock, netint->send_buf, LWPA_IP_IS_V6(&netint->ip), &header, &resp_buf);
+      res = send_llrp_rdm_response(netint->sys_sock, netint->send_buf, (netint->ip_type == kLwpaIpTypeV6), &header,
+                                   &resp_buf);
     }
     else
     {
@@ -355,7 +356,7 @@ void process_target_state(LlrpTarget *target)
   {
     if (netint->reply_pending)
     {
-      if (lwpa_timer_isexpired(&netint->reply_backoff))
+      if (lwpa_timer_is_expired(&netint->reply_backoff))
       {
         LlrpHeader header;
         header.sender_cid = target->cid;
@@ -368,7 +369,8 @@ void process_target_state(LlrpTarget *target)
         memcpy(target_info.hardware_address, state.lowest_hardware_addr, 6);
         target_info.component_type = target->component_type;
 
-        send_llrp_probe_reply(netint->sys_sock, netint->send_buf, LWPA_IP_IS_V6(&netint->ip), &header, &target_info);
+        send_llrp_probe_reply(netint->sys_sock, netint->send_buf, (netint->ip_type == kLwpaIpTypeV6), &header,
+                              &target_info);
 
         netint->reply_pending = false;
       }
@@ -559,9 +561,10 @@ void deliver_callback(TargetCallbackDispatchInfo *info)
   }
 }
 
-lwpa_error_t setup_target_netint(const LwpaIpAddr *netint_addr, LlrpTarget *target, LlrpTargetNetintInfo *netint_info)
+lwpa_error_t setup_target_netint(lwpa_iptype_t ip_type, unsigned int netint_index, LlrpTarget *target,
+                                 LlrpTargetNetintInfo *netint_info)
 {
-  lwpa_error_t res = create_llrp_socket(netint_addr, false, &netint_info->sys_sock);
+  lwpa_error_t res = create_llrp_socket(ip_type, netint_index, false, &netint_info->sys_sock);
   if (res != kLwpaErrOk)
     return res;
 
@@ -571,7 +574,8 @@ lwpa_error_t setup_target_netint(const LwpaIpAddr *netint_addr, LlrpTarget *targ
 
   if (res == kLwpaErrOk)
   {
-    netint_info->ip = *netint_addr;
+    netint_info->ip_type = ip_type;
+    netint_info->index = netint_index;
     netint_info->reply_pending = false;
     netint_info->target = target;
   }
@@ -594,7 +598,7 @@ lwpa_error_t setup_target_netints(const LlrpTargetOptionalConfig *config, LlrpTa
   lwpa_error_t res = kLwpaErrOk;
   target->num_netints = 0;
 
-  if (config->netint_index_arr && config->num_netints > 0)
+  if (config->netint_arr && config->num_netints > 0)
   {
 #if RDMNET_DYNAMIC_MEM
     target->netints = calloc(config->num_netints, sizeof(LlrpTargetNetintInfo));
@@ -608,7 +612,8 @@ lwpa_error_t setup_target_netints(const LlrpTargetOptionalConfig *config, LlrpTa
     {
       for (size_t i = 0; i < config->num_netints; ++i)
       {
-        res = setup_target_netint(&config->netint_index_arr[i], target, &target->netints[i]);
+        res = setup_target_netint(config->netint_arr[i].ip_type, config->netint_arr[i].index, target,
+                                  &target->netints[i]);
         if (res == kLwpaErrOk)
           ++target->num_netints;
         else
@@ -627,7 +632,8 @@ lwpa_error_t setup_target_netints(const LlrpTargetOptionalConfig *config, LlrpTa
     {
       for (size_t i = 0; i < state.num_sys_netints; ++i)
       {
-        res = setup_target_netint(&state.sys_netints[i].addr, target, &target->netints[i]);
+        res = setup_target_netint(state.sys_netints[i].addr.type, state.sys_netints[i].index, target,
+                                  &target->netints[i]);
         if (res == kLwpaErrOk)
           ++target->num_netints;
         else

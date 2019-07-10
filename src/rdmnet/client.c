@@ -1022,7 +1022,7 @@ bool disconnected_will_retry(rdmnet_disconnect_event_t event)
 lwpa_error_t validate_rpt_client_config(const RdmnetRptClientConfig *config)
 {
   if ((config->type != kRPTClientTypeDevice && config->type != kRPTClientTypeController) ||
-      (lwpa_uuid_is_null(&config->cid)) ||
+      (LWPA_UUID_IS_NULL(&config->cid)) ||
       (!RDMNET_UID_IS_DYNAMIC_UID_REQUEST(&config->optional.uid) && (config->optional.uid.manu & 0x8000)) ||
       !config->optional.search_domain)
   {

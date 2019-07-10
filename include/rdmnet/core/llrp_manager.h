@@ -73,6 +73,7 @@ typedef struct LlrpManagerCallbacks
 
 typedef struct LlrpManagerConfig
 {
+  lwpa_iptype_t ip_type;
   unsigned int netint_index;
   LwpaUuid cid;
   uint16_t manu_id;

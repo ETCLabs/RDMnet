@@ -28,6 +28,7 @@
 #include <map>
 #include <string>
 
+#include "lwpa/log.h"
 #include "lwpa/uuid.h"
 #include "rdm/message.h"
 #include "rdmnet/core/llrp_manager.h"
@@ -41,7 +42,7 @@ struct LLRPTargetInfo
 class LLRPManager
 {
 public:
-  LLRPManager(const LwpaUuid &my_cid);
+  LLRPManager(const LwpaUuid &my_cid, const LwpaLogParams *log_params = nullptr);
   virtual ~LLRPManager();
 
   void PrintCommandList();

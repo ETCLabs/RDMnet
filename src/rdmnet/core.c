@@ -261,7 +261,7 @@ void rdmnet_core_tick()
     lwpa_thread_sleep(100);  // Sleep to avoid spinning on errors
   }
 
-  if (lwpa_timer_isexpired(&core_state.tick_timer))
+  if (lwpa_timer_is_expired(&core_state.tick_timer))
   {
     rdmnetdisc_tick();
     rdmnet_conn_tick();

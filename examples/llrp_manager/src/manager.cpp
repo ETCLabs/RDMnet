@@ -62,9 +62,9 @@ void llrpcb_rdm_resp_received(llrp_manager_t /*handle*/, const LlrpRemoteRdmResp
 }
 }
 
-LLRPManager::LLRPManager(const LwpaUuid &my_cid) : cid_(my_cid)
+LLRPManager::LLRPManager(const LwpaUuid &my_cid, const LwpaLogParams *log_params) : cid_(my_cid)
 {
-  rdmnet_core_init(nullptr);
+  rdmnet_core_init(log_params);
 
   size_t num_interfaces = lwpa_netint_get_num_interfaces();
   if (num_interfaces > 0)
@@ -788,7 +788,7 @@ void LLRPManager::DiscoveryFinished()
 
 void LLRPManager::RdmRespReceived(const LlrpRemoteRdmResponse &resp)
 {
-  if (pending_command_response_ && lwpa_uuid_cmp(&resp.src_cid, &pending_resp_cid_) == 0 &&
+  if (pending_command_response_ && LWPA_UUID_CMP(&resp.src_cid, &pending_resp_cid_) == 0 &&
       resp.seq_num == pending_resp_seq_num_)
   {
     resp_received_ = resp.rdm;
@@ -810,7 +810,7 @@ bool LLRPManager::SendRDMAndGetResponse(llrp_manager_t manager, const LwpaUuid &
   {
     LwpaTimer resp_timer;
     lwpa_timer_start(&resp_timer, LLRP_TIMEOUT_MS);
-    while (pending_command_response_ && !lwpa_timer_isexpired(&resp_timer))
+    while (pending_command_response_ && !lwpa_timer_is_expired(&resp_timer))
     {
       lwpa_thread_sleep(100);
     }

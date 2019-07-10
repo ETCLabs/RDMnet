@@ -47,7 +47,8 @@ typedef struct LlrpTarget LlrpTarget;
 
 typedef struct LlrpTargetNetintInfo
 {
-  LwpaIpAddr ip;
+  lwpa_iptype_t ip_type;
+  unsigned int index;
   lwpa_socket_t sys_sock;
   uint8_t send_buf[LLRP_TARGET_MAX_MESSAGE_SIZE];
   PolledSocketInfo poll_info;

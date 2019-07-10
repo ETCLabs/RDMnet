@@ -48,7 +48,7 @@ void rdmnet_llrp_deinit();
 
 void rdmnet_llrp_tick();
 
-lwpa_error_t create_llrp_socket(const LwpaIpAddr *netint, bool manager, lwpa_socket_t *socket);
+lwpa_error_t create_llrp_socket(lwpa_iptype_t ip_type, unsigned int netint_index, bool manager, lwpa_socket_t *socket);
 
 #ifdef __cplusplus
 }

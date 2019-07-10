@@ -54,6 +54,7 @@ struct LlrpManager
   RdmUid uid;
 
   // Underlying networking info
+  lwpa_iptype_t ip_type;
   unsigned int netint_index;
   lwpa_socket_t sys_sock;
   PolledSocketInfo poll_info;

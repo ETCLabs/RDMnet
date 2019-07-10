@@ -90,7 +90,7 @@ typedef struct LlrpRemoteRdmCommand
   {                                                                     \
     (resp)->dest_cid = (received_cmd)->src_cid;                         \
     (resp)->seq_num = (received_cmd)->seq_num;                          \
-    (resp)->interface_index = (received_cmd)->interface_index;          \
+    (resp)->interface_id = (received_cmd)->interface_id;                \
     (resp)->rdm = *(rdm_resp);                                          \
   } while (0)
 
@@ -99,9 +99,18 @@ typedef struct LlrpTargetCallbacks
   void (*rdm_cmd_received)(llrp_target_t handle, const LlrpRemoteRdmCommand *cmd, void *context);
 } LlrpTargetCallbacks;
 
+/*! A set of configuration  */
+typedef struct LlrpTargetNetintConfig
+{
+  /*! Whether to create an IPv4 or IPv6 socket on this network interface. */
+  lwpa_iptype_t ip_type;
+  /*! The index for this network interface. See \ref interface_indexes for more information. */
+  unsigned int index;
+} LlrpTargetNetintConfig;
+
 typedef struct LlrpTargetOptionalConfig
 {
-  unsigned int *netint_index_arr;
+  LlrpTargetNetintConfig *netint_arr;
   size_t num_netints;
   RdmUid uid;
 } LlrpTargetOptionalConfig;
@@ -109,7 +118,7 @@ typedef struct LlrpTargetOptionalConfig
 #define LLRP_TARGET_INIT_OPTIONAL_CONFIG_VALUES(optionalcfgptr, manu_id) \
   do                                                                     \
   {                                                                      \
-    (optionalcfgptr)->netint_index_arr = NULL;                           \
+    (optionalcfgptr)->netint_arr = NULL;                                 \
     (optionalcfgptr)->num_netints = 0;                                   \
     RDMNET_INIT_DYNAMIC_UID_REQUEST(&(optionalcfgptr)->uid, (manu_id));  \
   } while (0)

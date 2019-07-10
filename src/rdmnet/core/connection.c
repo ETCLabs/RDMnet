@@ -635,13 +635,13 @@ void process_all_connection_state(ConnCallbackDispatchInfo *cb)
           }
           break;
         case kCSBackoff:
-          if (lwpa_timer_isexpired(&conn->backoff_timer))
+          if (lwpa_timer_is_expired(&conn->backoff_timer))
           {
             start_tcp_connection(conn, cb);
           }
           break;
         case kCSHeartbeat:
-          if (lwpa_timer_isexpired(&conn->hb_timer))
+          if (lwpa_timer_is_expired(&conn->hb_timer))
           {
             // Heartbeat timeout! Disconnect the connection.
             if (cb->which == kConnCallbackNone)
@@ -662,7 +662,7 @@ void process_all_connection_state(ConnCallbackDispatchInfo *cb)
               reset_connection(conn);
             }
           }
-          else if (lwpa_timer_isexpired(&conn->send_timer))
+          else if (lwpa_timer_is_expired(&conn->send_timer))
           {
             send_null(conn);
             lwpa_timer_reset(&conn->send_timer);

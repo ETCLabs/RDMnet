@@ -39,8 +39,8 @@ TEST_F(TestLlrpTarget, init_macros)
   LlrpTargetConfig test_config;
 
   LLRP_TARGET_CONFIG_INIT(&test_config, 0x1234);
-  EXPECT_EQ(test_config.optional.netint_index_arr, nullptr);
+  EXPECT_EQ(test_config.optional.netint_arr, nullptr);
   EXPECT_EQ(test_config.optional.num_netints, 0u);
-  EXPECT_TRUE(RDMNET_IS_DYNAMIC_UID_REQUEST(&test_config.optional.uid));
-  EXPECT_EQ(RDM_GET_MANUFACTURER_ID(&test_config.optional.uid, 0x1234));
+  EXPECT_TRUE(RDMNET_UID_IS_DYNAMIC_UID_REQUEST(&test_config.optional.uid));
+  EXPECT_EQ(RDM_GET_MANUFACTURER_ID(&test_config.optional.uid), 0x1234u);
 }

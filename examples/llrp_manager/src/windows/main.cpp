@@ -32,8 +32,34 @@
 #include <Windows.h>
 #include <WS2tcpip.h>
 
+#include "lwpa/log.h"
 #include "lwpa/uuid.h"
 #include "manager.h"
+
+static int s_utc_offset;
+
+extern "C" {
+static void manager_log_callback(void *context, const LwpaLogStrings *strings)
+{
+  (void)context;
+  std::cout << strings->human_readable << "\n";
+}
+
+static void manager_time_callback(void *context, LwpaLogTimeParams *time)
+{
+  SYSTEMTIME win_time;
+  (void)context;
+  GetLocalTime(&win_time);
+  time->year = win_time.wYear;
+  time->month = win_time.wMonth;
+  time->day = win_time.wDay;
+  time->hour = win_time.wHour;
+  time->minute = win_time.wMinute;
+  time->second = win_time.wSecond;
+  time->msec = win_time.wMilliseconds;
+  time->utc_offset = s_utc_offset;
+}
+}
 
 std::string ConsoleInputToUtf8(const std::wstring &input)
 {
@@ -62,7 +88,29 @@ int wmain(int /*argc*/, wchar_t * /*argv*/ [])
   UuidCreate(&uuid);
   memcpy(manager_cid.data, &uuid, LWPA_UUID_BYTES);
 
-  LLRPManager mgr(manager_cid);
+  TIME_ZONE_INFORMATION tzinfo;
+  switch(GetTimeZoneInformation(&tzinfo))
+  {
+    case TIME_ZONE_ID_UNKNOWN:
+    case TIME_ZONE_ID_STANDARD:
+      s_utc_offset = -(tzinfo.Bias + tzinfo.StandardBias);
+      break;
+    case TIME_ZONE_ID_DAYLIGHT:
+      s_utc_offset = -(tzinfo.Bias + tzinfo.DaylightBias);
+      break;
+    default:
+      break;
+  }
+
+  LwpaLogParams params;
+  params.action = kLwpaLogCreateHumanReadableLog;
+  params.log_fn = manager_log_callback;
+  params.log_mask = LWPA_LOG_UPTO(LWPA_LOG_INFO);
+  params.time_fn = manager_time_callback;
+  params.context = nullptr;
+  lwpa_validate_log_params(&params);
+
+  LLRPManager mgr(manager_cid, &params);
   printf("Discovered network interfaces:\n");
   mgr.PrintNetints();
   mgr.PrintCommandList();

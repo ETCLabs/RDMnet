@@ -334,7 +334,7 @@ void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem *brokerItem, const s
     if (!is_rpt_client_entry(&entry))
       continue;
 
-    bool is_me = (0 == lwpa_uuid_cmp(&entry.client_cid, &my_cid_));
+    bool is_me = (0 == LWPA_UUID_CMP(&entry.client_cid, &my_cid_));
     RDMnetClientItem *newRDMnetClientItem = new RDMnetClientItem(entry, is_me);
     bool itemAlreadyAdded = false;
 
@@ -1588,44 +1588,39 @@ void RDMnetNetworkModel::SendLlrpGetResponse(const LlrpRemoteRdmCommand &receive
   if (resp_data_list.size() != 1)
     return;
 
+  RdmResponse rdm_resp;
+  rdm_resp.source_uid = received_cmd.rdm.dest_uid;
+  rdm_resp.dest_uid = received_cmd.rdm.source_uid;
+  rdm_resp.transaction_num = received_cmd.rdm.transaction_num;
+  rdm_resp.resp_type = kRdmResponseTypeAck;
+  rdm_resp.msg_count = 0;
+  rdm_resp.subdevice = 0;
+  rdm_resp.command_class = kRdmCCGetCommandResponse;
+  rdm_resp.param_id = received_cmd.rdm.param_id;
+  memcpy(rdm_resp.data, resp_data_list[0].data, resp_data_list[0].datalen);
+  rdm_resp.datalen = resp_data_list[0].datalen;
+
   LlrpLocalRdmResponse resp;
-  resp.dest_cid = received_cmd.src_cid;
-  resp.interface_index = received_cmd.interface_index;
-  resp.seq_num = received_cmd.seq_num;
-
-  // The source UID is added by the library right before sending.
-  resp.rdm.dest_uid = received_cmd.rdm.source_uid;
-  resp.rdm.transaction_num = received_cmd.rdm.transaction_num;
-  resp.rdm.resp_type = kRdmResponseTypeAck;
-  resp.rdm.msg_count = 0;
-  resp.rdm.subdevice = 0;
-  resp.rdm.command_class = kRdmCCGetCommandResponse;
-  resp.rdm.param_id = received_cmd.rdm.param_id;
-
-  memcpy(resp.rdm.data, resp_data_list[0].data, resp_data_list[0].datalen);
-  resp.rdm.datalen = resp_data_list[0].datalen;
-
+  LLRP_CREATE_RESPONSE_FROM_COMMAND(&resp, &received_cmd, &rdm_resp);
   rdmnet_->SendLlrpResponse(resp);
 }
 
 void RDMnetNetworkModel::SendLlrpNack(const LlrpRemoteRdmCommand &received_cmd, uint16_t nack_reason)
 {
-  LlrpLocalRdmResponse resp;
-  resp.dest_cid = received_cmd.src_cid;
-  resp.interface_index = received_cmd.interface_index;
-  resp.seq_num = received_cmd.seq_num;
-
-  resp.rdm.dest_uid = received_cmd.rdm.source_uid;
-  resp.rdm.transaction_num = received_cmd.rdm.transaction_num;
-  resp.rdm.resp_type = kRdmResponseTypeNackReason;
-  resp.rdm.msg_count = 0;
-  resp.rdm.subdevice = 0;
-  resp.rdm.command_class =
+  RdmResponse rdm_resp;
+  rdm_resp.dest_uid = received_cmd.rdm.source_uid;
+  rdm_resp.transaction_num = received_cmd.rdm.transaction_num;
+  rdm_resp.resp_type = kRdmResponseTypeNackReason;
+  rdm_resp.msg_count = 0;
+  rdm_resp.subdevice = 0;
+  rdm_resp.command_class =
       (received_cmd.rdm.command_class == kRdmCCSetCommand) ? kRdmCCSetCommandResponse : kRdmCCGetCommandResponse;
-  resp.rdm.param_id = received_cmd.rdm.param_id;
-  resp.rdm.datalen = 2;
-  lwpa_pack_16b(resp.rdm.data, nack_reason);
+  rdm_resp.param_id = received_cmd.rdm.param_id;
+  rdm_resp.datalen = 2;
+  lwpa_pack_16b(rdm_resp.data, nack_reason);
 
+  LlrpLocalRdmResponse resp;
+  LLRP_CREATE_RESPONSE_FROM_COMMAND(&resp, &received_cmd, &rdm_resp);
   rdmnet_->SendLlrpResponse(resp);
 }
 

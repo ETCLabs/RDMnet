@@ -9,9 +9,13 @@ add_executable(test_llrp
   ${RDMNET_SRC}/rdmnet/core/llrp.c
   ${RDMNET_SRC}/rdmnet/core/llrp_target.c
   ${RDMNET_SRC}/rdmnet/core/llrp_manager.c
+  ${RDMNET_SRC}/rdmnet/core/llrp_prot.c
 
   # Mock dependencies
   ${RDMNET_SRC}/rdmnet_mock/core.c
+
+  # Real dependencies
+  ${RDMNET_SRC}/rdmnet/core/util.c
 )
 
 target_include_directories(test_llrp PRIVATE ${RDMNET_INCLUDE} ${RDMNET_SRC})

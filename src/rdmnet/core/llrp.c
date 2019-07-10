@@ -45,8 +45,11 @@ const LwpaSockaddr *kLlrpIpv6RequestAddr = &kLlrpIpv6RequestAddrInternal;
 
 /*********************** Private function prototypes *************************/
 
-lwpa_error_t create_sys_socket(const LwpaIpAddr *netint, bool manager, lwpa_socket_t *socket);
-lwpa_error_t subscribe_multicast(lwpa_socket_t socket, const LwpaIpAddr *netint, bool manager);
+static LwpaIpAddr get_llrp_mcast_addr(bool manager, lwpa_iptype_t ip_type);
+static lwpa_error_t create_sys_socket(lwpa_iptype_t ip_type, unsigned int netint_index, bool manager,
+                                      lwpa_socket_t *socket);
+static lwpa_error_t subscribe_multicast(lwpa_socket_t socket, lwpa_iptype_t ip_type, unsigned int netint_index,
+                                        bool manager);
 
 /*************************** Function definitions ****************************/
 
@@ -98,22 +101,25 @@ void rdmnet_llrp_deinit()
 #endif
 }
 
-lwpa_error_t create_llrp_socket(const LwpaIpAddr *netint, bool manager, lwpa_socket_t *socket)
+lwpa_error_t create_llrp_socket(lwpa_iptype_t ip_type, unsigned int netint_index, bool manager, lwpa_socket_t *socket)
 {
   lwpa_socket_t socket_out;
 
-  lwpa_error_t res = create_sys_socket(netint, manager, &socket_out);
+  lwpa_error_t res = create_sys_socket(ip_type, netint_index, manager, &socket_out);
   if (res == kLwpaErrOk)
-    res = subscribe_multicast(socket_out, netint, manager);
+    res = subscribe_multicast(socket_out, ip_type, netint_index, manager);
   if (res == kLwpaErrOk)
     *socket = socket_out;
   return res;
 }
 
-lwpa_error_t create_sys_socket(const LwpaIpAddr *netint, bool manager, lwpa_socket_t *socket)
+lwpa_error_t create_sys_socket(lwpa_iptype_t ip_type, unsigned int netint_index, bool manager,
+                               lwpa_socket_t *socket)
 {
   lwpa_socket_t sock = LWPA_SOCKET_INVALID;
-  lwpa_error_t res = lwpa_socket(LWPA_IP_IS_V6(netint) ? LWPA_AF_INET6 : LWPA_AF_INET, LWPA_DGRAM, &sock);
+  int sockopt_ip_level = (ip_type == kLwpaIpTypeV6 ? LWPA_IPPROTO_IPV6 : LWPA_IPPROTO_IP);
+
+  lwpa_error_t res = lwpa_socket(ip_type == kLwpaIpTypeV6 ? LWPA_AF_INET6 : LWPA_AF_INET, LWPA_DGRAM, &sock);
 
   if (res == kLwpaErrOk)
   {
@@ -126,50 +132,30 @@ lwpa_error_t create_sys_socket(const LwpaIpAddr *netint, bool manager, lwpa_sock
   if (res == kLwpaErrOk)
   {
     // MULTICAST_TTL controls the TTL field in outgoing multicast datagrams.
-    if (LWPA_IP_IS_V4(netint))
-    {
-      int value = LLRP_MULTICAST_TTL_VAL;
-      res = lwpa_setsockopt(sock, LWPA_IPPROTO_IP, LWPA_IP_MULTICAST_TTL, (const void *)(&value), sizeof(value));
-    }
-    else
-    {
-      // TODO: add Ipv6 support
-    }
+    int value = LLRP_MULTICAST_TTL_VAL;
+    res = lwpa_setsockopt(sock, sockopt_ip_level, LWPA_IP_MULTICAST_TTL, (const void *)(&value), sizeof(value));
   }
 
   if (res == kLwpaErrOk)
   {
     // MULTICAST_IF is critical for multicast sends to go over the correct interface.
-    if (LWPA_IP_IS_V4(netint))
-    {
-      res = lwpa_setsockopt(sock, LWPA_IPPROTO_IP, LWPA_IP_MULTICAST_IF, (const void *)(netint), sizeof(LwpaIpAddr));
-    }
-    else
-    {
-      // TODO: add Ipv6 support
-    }
+    res = lwpa_setsockopt(sock, sockopt_ip_level, LWPA_IP_MULTICAST_IF, (const void *)(&netint_index),
+                          sizeof netint_index);
   }
 
   if (res == kLwpaErrOk)
   {
-    if (LWPA_IP_IS_V4(netint))
-    {
-      LwpaSockaddr bind_addr;
+    LwpaSockaddr bind_addr;
 #if RDMNET_LLRP_BIND_TO_MCAST_ADDRESS
-      // Bind socket to multicast address for IPv4
-      bind_addr.ip = (manager ? kLlrpIpv4RespAddrInternal.ip : kLlrpIpv4RequestAddrInternal.ip);
+    // Bind socket to multicast address
+    bind_addr.ip = get_llrp_mcast_addr(manager, ip_type);
 #else
-      (void)manager;
-      // Bind socket to INADDR_ANY
-      lwpa_ip_set_wildcard(kLwpaIpTypeV4, &bind_addr.ip);
+    (void)manager;
+    // Bind socket to the wildcard address
+    lwpa_ip_set_wildcard(ip_type, &bind_addr.ip);
 #endif
-      bind_addr.port = LLRP_PORT;
-      res = lwpa_bind(sock, &bind_addr);
-    }
-    else
-    {
-      // TODO: add Ipv6 support
-    }
+    bind_addr.port = LLRP_PORT;
+    res = lwpa_bind(sock, &bind_addr);
   }
 
   if (res == kLwpaErrOk)
@@ -184,24 +170,33 @@ lwpa_error_t create_sys_socket(const LwpaIpAddr *netint, bool manager, lwpa_sock
   return res;
 }
 
-lwpa_error_t subscribe_multicast(lwpa_socket_t socket, const LwpaIpAddr *netint, bool manager)
+lwpa_error_t subscribe_multicast(lwpa_socket_t socket, lwpa_iptype_t ip_type, unsigned int netint_index, bool manager)
 {
-  lwpa_error_t res = kLwpaErrNotImpl;
+  LwpaGroupReq group_req;
+  group_req.ifindex = netint_index;
+  group_req.group = get_llrp_mcast_addr(manager, ip_type);
+  lwpa_error_t res = lwpa_setsockopt(socket, ip_type == kLwpaIpTypeV6 ? LWPA_IPPROTO_IPV6 : LWPA_IPPROTO_IP,
+                                     LWPA_MCAST_JOIN_GROUP, (const void *)&group_req, sizeof(group_req));
 
-  if (LWPA_IP_IS_V4(netint))
+  return res;
+}
+
+LwpaIpAddr get_llrp_mcast_addr(bool manager, lwpa_iptype_t ip_type)
+{
+  if (manager)
   {
-    LwpaMreq multireq;
-
-    multireq.group = (manager ? kLlrpIpv4RespAddrInternal.ip : kLlrpIpv4RequestAddrInternal.ip);
-    multireq.netint = *netint;
-    res = lwpa_setsockopt(socket, LWPA_IPPROTO_IP, LWPA_MCAST_JOIN_GROUP, (const void *)&multireq, sizeof(multireq));
+    if (ip_type == kLwpaIpTypeV6)
+      return kLlrpIpv6RespAddrInternal.ip;
+    else
+      return kLlrpIpv4RespAddrInternal.ip;
   }
   else
   {
-    // TODO: add Ipv6 support
+    if (ip_type == kLwpaIpTypeV6)
+      return kLlrpIpv6RequestAddrInternal.ip;
+    else
+      return kLlrpIpv4RequestAddrInternal.ip;
   }
-
-  return res;
 }
 
 void rdmnet_llrp_tick()
