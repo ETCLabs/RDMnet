@@ -85,6 +85,7 @@ LLRPManager::LLRPManager(const LwpaUuid &my_cid, const LwpaLogParams *log_params
     {
       LwpaNetintInfo *netint = &netints[i];
 
+      config.ip_type = netint->addr.type;
       config.netint_index = netint->index;
       llrp_manager_t handle;
       lwpa_error_t res = rdmnet_llrp_manager_create(&config, &handle);
@@ -381,14 +382,14 @@ void LLRPManager::PrintTargets()
 
 void LLRPManager::PrintNetints()
 {
-  printf("Handle %-15s %-17s Name\n", "Address", "MAC");
+  printf("Handle %-30s %-17s Name\n", "Address", "MAC");
   for (const auto &sock_pair : managers_)
   {
     char addr_str[LWPA_INET6_ADDRSTRLEN];
     const LwpaNetintInfo &info = sock_pair.second;
     lwpa_inet_ntop(&info.addr, addr_str, LWPA_INET6_ADDRSTRLEN);
-    printf("%-6d %-15s %02x:%02x:%02x:%02x:%02x:%02x %s\n", sock_pair.first, addr_str, info.mac[0], info.mac[1],
-           info.mac[2], info.mac[3], info.mac[4], info.mac[5], info.name);
+    printf("%-6d %-30s %02x:%02x:%02x:%02x:%02x:%02x %s\n", sock_pair.first, addr_str, info.mac[0], info.mac[1],
+           info.mac[2], info.mac[3], info.mac[4], info.mac[5], info.friendly_name);
   }
 }
 
@@ -577,7 +578,7 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
       cmd_data.command_class = kRdmCCGetCommand;
       cmd_data.param_id = E133_COMPONENT_SCOPE;
       cmd_data.datalen = 2;
-      lwpa_pack_16b(cmd_data.data, scope_slot);
+      lwpa_pack_16b(cmd_data.data, static_cast<uint16_t>(scope_slot));
 
       if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
       {
@@ -596,7 +597,7 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
           uint8_t static_config_type = *cur_ptr++;
           LwpaIpAddr ip;
           char ip_string[LWPA_INET6_ADDRSTRLEN] = {};
-          uint8_t port = 0;
+          uint16_t port = 0;
 
           printf("Scope for slot %d: %s\n", slot, scope_string);
           switch (static_config_type)
@@ -606,7 +607,7 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
               lwpa_inet_ntop(&ip, ip_string, LWPA_INET6_ADDRSTRLEN);
               cur_ptr += 4 + 16;
               port = lwpa_upack_16b(cur_ptr);
-              printf("Static Broker IPv4 for slot %d: %s:%d\n", slot, ip_string, port);
+              printf("Static Broker IPv4 for slot %d: %s:%u\n", slot, ip_string, port);
               break;
             case E133_STATIC_CONFIG_IPV6:
               cur_ptr += 4;
@@ -614,7 +615,7 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
               lwpa_inet_ntop(&ip, ip_string, LWPA_INET6_ADDRSTRLEN);
               cur_ptr += 16;
               port = lwpa_upack_16b(cur_ptr);
-              printf("Static Broker IPv6 for slot %d: [%s]:%d\n", slot, ip_string, port);
+              printf("Static Broker IPv6 for slot %d: [%s]:%u\n", slot, ip_string, port);
               break;
             case E133_NO_STATIC_CONFIG:
             default:
@@ -730,7 +731,7 @@ void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std
       memset(cmd_data.data, 0, COMPONENT_SCOPE_PDL);
 
       uint8_t *cur_ptr = cmd_data.data;
-      lwpa_pack_16b(cur_ptr, scope_slot);
+      lwpa_pack_16b(cur_ptr, static_cast<uint16_t>(scope_slot));
       cur_ptr += 2;
       RDMNET_MSVC_NO_DEP_WRN strncpy((char *)cur_ptr, scope_utf8.c_str(), E133_SCOPE_STRING_PADDED_LENGTH - 1);
       cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;

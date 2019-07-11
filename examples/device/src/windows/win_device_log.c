@@ -75,7 +75,7 @@ void device_log_init(const char *file_name)
       s_utc_offset = -(tzinfo.Bias + tzinfo.DaylightBias);
       break;
     default:
-      device_log_callback(NULL, NULL, "Device Log: Couldn't get time zone info.\n", NULL);
+      printf("Device Log: Couldn't get time zone info.\n");
       break;
   }
 

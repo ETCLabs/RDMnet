@@ -63,11 +63,11 @@ lwpa_error_t rdmnet_llrp_init()
 
   lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_RESPONSE, &kLlrpIpv4RespAddrInternal.ip);
   kLlrpIpv4RespAddrInternal.port = LLRP_PORT;
-  lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV6_ADDRESS_RESPONSE, &kLlrpIpv6RespAddrInternal.ip);
+  lwpa_inet_pton(kLwpaIpTypeV6, LLRP_MULTICAST_IPV6_ADDRESS_RESPONSE, &kLlrpIpv6RespAddrInternal.ip);
   kLlrpIpv6RespAddrInternal.port = LLRP_PORT;
   lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_REQUEST, &kLlrpIpv4RequestAddrInternal.ip);
   kLlrpIpv4RequestAddrInternal.port = LLRP_PORT;
-  lwpa_inet_pton(kLwpaIpTypeV4, LLRP_MULTICAST_IPV6_ADDRESS_REQUEST, &kLlrpIpv6RequestAddrInternal.ip);
+  lwpa_inet_pton(kLwpaIpTypeV6, LLRP_MULTICAST_IPV6_ADDRESS_REQUEST, &kLlrpIpv6RequestAddrInternal.ip);
   kLlrpIpv6RequestAddrInternal.port = LLRP_PORT;
   llrp_prot_init();
 
