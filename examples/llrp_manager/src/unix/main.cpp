@@ -27,16 +27,47 @@
 
 #include <string>
 #include <iostream>
+#include <ctime>
 
 #include "lwpa/uuid.h"
 #include "manager.h"
+
+extern "C" {
+static void manager_log_callback(void *context, const LwpaLogStrings *strings)
+{
+  (void)context;
+  std::cout << strings->human_readable << "\n";
+}
+
+static void manager_time_callback(void *context, LwpaLogTimeParams *time_params)
+{
+  time_t t = time(NULL);
+  struct tm *local_time = localtime(&t);
+  time_params->year = local_time->tm_year + 1900;
+  time_params->month = local_time->tm_mon + 1;
+  time_params->day = local_time->tm_mday;
+  time_params->hour = local_time->tm_hour;
+  time_params->minute = local_time->tm_min;
+  time_params->second = local_time->tm_sec;
+  time_params->msec = 0;
+  time_params->utc_offset = (int)(local_time->tm_gmtoff / 60);
+}
+}
 
 int main(int /*argc*/, char * /*argv*/ [])
 {
   LwpaUuid manager_cid;
   lwpa_generate_os_preferred_uuid(&manager_cid);
 
-  LLRPManager mgr(manager_cid);
+  LwpaLogParams params;
+  params.action = kLwpaLogCreateHumanReadableLog;
+  params.log_fn = manager_log_callback;
+  params.log_mask = LWPA_LOG_UPTO(LWPA_LOG_INFO);
+  params.time_fn = manager_time_callback;
+  params.context = nullptr;
+
+  lwpa_validate_log_params(&params);
+  LLRPManager mgr(manager_cid, &params);
   printf("Discovered network interfaces:\n");
   mgr.PrintNetints();
   mgr.PrintCommandList();

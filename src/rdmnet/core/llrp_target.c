@@ -131,7 +131,7 @@ lwpa_error_t init_sys_netints()
     return kLwpaErrNoNetints;
 
 #if RDMNET_DYNAMIC_MEM
-  state.sys_netints = calloc(state.num_sys_netints, sizeof(LwpaNetintInfo));
+  state.sys_netints = (LwpaNetintInfo *)calloc(state.num_sys_netints, sizeof(LwpaNetintInfo));
   if (!state.sys_netints)
   {
     state.num_sys_netints = 0;
@@ -369,8 +369,16 @@ void process_target_state(LlrpTarget *target)
         memcpy(target_info.hardware_address, state.lowest_hardware_addr, 6);
         target_info.component_type = target->component_type;
 
-        send_llrp_probe_reply(netint->sys_sock, netint->send_buf, (netint->ip_type == kLwpaIpTypeV6), &header,
-                              &target_info);
+        lwpa_error_t send_res = send_llrp_probe_reply(netint->sys_sock, netint->send_buf,
+                                                      (netint->ip_type == kLwpaIpTypeV6), &header, &target_info);
+        if (send_res != kLwpaErrOk && LWPA_CAN_LOG(rdmnet_log_params, LWPA_LOG_WARNING))
+        {
+          char cid_str[LWPA_UUID_STRING_BYTES];
+          lwpa_uuid_to_string(cid_str, &header.dest_cid);
+          lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
+                   RDMNET_LOG_MSG("Error sending probe reply to manager CID %s on interface index %u"), cid_str,
+                   netint->index);
+        }
 
         netint->reply_pending = false;
       }
@@ -403,7 +411,7 @@ void rdmnet_llrp_target_tick()
         target->next_to_destroy = NULL;
         next_destroy_list_entry = &target->next_to_destroy;
       }
-      target = lwpa_rbiter_next(&target_iter);
+      target = (LlrpTarget *)lwpa_rbiter_next(&target_iter);
     }
 
     // Now do the actual destruction
@@ -431,7 +439,7 @@ void rdmnet_llrp_target_tick()
     while (target)
     {
       process_target_state(target);
-      target = lwpa_rbiter_next(&target_iter);
+      target = (LlrpTarget *)lwpa_rbiter_next(&target_iter);
     }
 
     rdmnet_readunlock();
@@ -601,7 +609,7 @@ lwpa_error_t setup_target_netints(const LlrpTargetOptionalConfig *config, LlrpTa
   if (config->netint_arr && config->num_netints > 0)
   {
 #if RDMNET_DYNAMIC_MEM
-    target->netints = calloc(config->num_netints, sizeof(LlrpTargetNetintInfo));
+    target->netints = (LlrpTargetNetintInfo *)calloc(config->num_netints, sizeof(LlrpTargetNetintInfo));
     if (!target->netints)
       res = kLwpaErrNoMem;
 #else
@@ -624,7 +632,7 @@ lwpa_error_t setup_target_netints(const LlrpTargetOptionalConfig *config, LlrpTa
   else
   {
 #if RDMNET_DYNAMIC_MEM
-    target->netints = calloc(state.num_sys_netints, sizeof(LlrpTargetNetintInfo));
+    target->netints = (LlrpTargetNetintInfo *)calloc(state.num_sys_netints, sizeof(LlrpTargetNetintInfo));
     if (!target->netints)
       res = kLwpaErrNoMem;
 #endif
@@ -668,7 +676,7 @@ lwpa_error_t create_new_target(const LlrpTargetConfig *config, LlrpTarget **new_
   if (new_handle == LLRP_TARGET_INVALID)
     return res;
 
-  LlrpTarget *target = llrp_target_alloc();
+  LlrpTarget *target = (LlrpTarget *)llrp_target_alloc();
   if (target)
   {
     res = setup_target_netints(&config->optional, target);

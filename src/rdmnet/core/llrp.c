@@ -113,8 +113,7 @@ lwpa_error_t create_llrp_socket(lwpa_iptype_t ip_type, unsigned int netint_index
   return res;
 }
 
-lwpa_error_t create_sys_socket(lwpa_iptype_t ip_type, unsigned int netint_index, bool manager,
-                               lwpa_socket_t *socket)
+lwpa_error_t create_sys_socket(lwpa_iptype_t ip_type, unsigned int netint_index, bool manager, lwpa_socket_t *socket)
 {
   lwpa_socket_t sock = LWPA_SOCKET_INVALID;
   int sockopt_ip_level = (ip_type == kLwpaIpTypeV6 ? LWPA_IPPROTO_IPV6 : LWPA_IPPROTO_IP);
@@ -125,14 +124,18 @@ lwpa_error_t create_sys_socket(lwpa_iptype_t ip_type, unsigned int netint_index,
   {
     // SO_REUSEADDR allows multiple sockets to bind to LLRP_PORT, which is very important for our
     // multicast needs.
-    int option = 1;
-    res = lwpa_setsockopt(sock, LWPA_SOL_SOCKET, LWPA_SO_REUSEADDR, (const void *)(&option), sizeof(option));
+    int value = 1;
+    res = lwpa_setsockopt(sock, LWPA_SOL_SOCKET, LWPA_SO_REUSEADDR, (const void *)(&value), sizeof(value));
   }
 
   if (res == kLwpaErrOk)
   {
+    // We also set SO_REUSEPORT but don't check the return, because it is not applicable on all platforms
+    int value = 1;
+    lwpa_setsockopt(sock, LWPA_SOL_SOCKET, LWPA_SO_REUSEPORT, (const void *)(&value), sizeof(value));
+
     // MULTICAST_TTL controls the TTL field in outgoing multicast datagrams.
-    int value = LLRP_MULTICAST_TTL_VAL;
+    value = LLRP_MULTICAST_TTL_VAL;
     res = lwpa_setsockopt(sock, sockopt_ip_level, LWPA_IP_MULTICAST_TTL, (const void *)(&value), sizeof(value));
   }
 
@@ -146,7 +149,7 @@ lwpa_error_t create_sys_socket(lwpa_iptype_t ip_type, unsigned int netint_index,
   if (res == kLwpaErrOk)
   {
     LwpaSockaddr bind_addr;
-#if RDMNET_LLRP_BIND_TO_MCAST_ADDRESS
+#if 0  // RDMNET_LLRP_BIND_TO_MCAST_ADDRESS
     // Bind socket to multicast address
     bind_addr.ip = get_llrp_mcast_addr(manager, ip_type);
 #else

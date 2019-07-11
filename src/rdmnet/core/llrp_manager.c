@@ -203,7 +203,11 @@ lwpa_error_t rdmnet_llrp_start_discovery(llrp_manager_t handle, uint16_t filter)
       manager->disc_filter = filter;
       lwpa_rbtree_init(&manager->discovered_targets, discovered_target_cmp, manager_node_alloc, manager_node_dealloc);
 
-      send_next_probe(manager);
+      if (!send_next_probe(manager))
+      {
+        manager->discovery_active = false;
+        res = kLwpaErrSys;
+      }
     }
     else
     {
@@ -312,7 +316,7 @@ void rdmnet_llrp_manager_tick()
         manager->next_to_destroy = NULL;
         next_destroy_list_entry = &manager->next_to_destroy;
       }
-      manager = lwpa_rbiter_next(&manager_iter);
+      manager = (LlrpManager *)lwpa_rbiter_next(&manager_iter);
     }
 
     // Now do the actual destruction
@@ -345,7 +349,7 @@ void rdmnet_llrp_manager_tick()
       process_manager_state(manager, &cb);
       if (cb.which != kManagerCallbackNone)
         break;
-      manager = lwpa_rbiter_next(&manager_iter);
+      manager = (LlrpManager *)lwpa_rbiter_next(&manager_iter);
     }
 
     rdmnet_readunlock();
@@ -447,11 +451,20 @@ bool send_next_probe(LlrpManager *manager)
     request.upper_uid = manager->cur_range_high;
     request.uid_list = list_head;
 
-    send_llrp_probe_request(manager->sys_sock, manager->send_buf, (manager->ip_type == kLwpaIpTypeV6), &header,
-                            &request);
-    lwpa_timer_start(&manager->disc_timer, LLRP_TIMEOUT_MS);
-    ++manager->num_clean_sends;
-    return true;
+    lwpa_error_t send_res = send_llrp_probe_request(manager->sys_sock, manager->send_buf,
+                                                    (manager->ip_type == kLwpaIpTypeV6), &header, &request);
+    if (send_res == kLwpaErrOk)
+    {
+      lwpa_timer_start(&manager->disc_timer, LLRP_TIMEOUT_MS);
+      ++manager->num_clean_sends;
+      return true;
+    }
+    else
+    {
+      lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
+               RDMNET_LOG_MSG("Sending LLRP probe request failed with error: '%s'"), lwpa_strerror(send_res));
+      return false;
+    }
   }
   else
   {
@@ -563,7 +576,8 @@ void handle_llrp_message(LlrpManager *manager, const LlrpMessage *msg, ManagerCa
           new_target->cid = msg->header.sender_cid;
           new_target->next = NULL;
 
-          DiscoveredTargetInternal *found = lwpa_rbtree_find(&manager->discovered_targets, new_target);
+          DiscoveredTargetInternal *found =
+              (DiscoveredTargetInternal *)lwpa_rbtree_find(&manager->discovered_targets, new_target);
           if (found)
           {
             // A target has responded that has the same UID as one already in our tree. This is not
@@ -677,7 +691,7 @@ lwpa_error_t create_new_manager(const LlrpManagerConfig *config, LlrpManager **n
   if (new_handle == LLRP_MANAGER_INVALID)
     return res;
 
-  LlrpManager *manager = llrp_manager_alloc();
+  LlrpManager *manager = (LlrpManager *)llrp_manager_alloc();
   if (manager)
   {
     manager->ip_type = config->ip_type;

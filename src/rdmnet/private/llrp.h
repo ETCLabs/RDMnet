@@ -34,6 +34,12 @@
 
 #define LLRP_MULTICAST_TTL_VAL 20
 
+typedef enum
+{
+  kLlrpSocketAddrManager,
+  kLlrpSocketAddrTarget
+} llrp_socket_addr_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -48,7 +54,9 @@ void rdmnet_llrp_deinit();
 
 void rdmnet_llrp_tick();
 
-lwpa_error_t create_llrp_socket(lwpa_iptype_t ip_type, unsigned int netint_index, bool manager, lwpa_socket_t *socket);
+lwpa_error_t create_llrp_send_socket(lwpa_iptype_t ip_type, unsigned int netint_index, llrp_socket_addr_t llrp_addr,
+                                     lwpa_socket_t *socket);
+lwpa_error_t create_llrp_recv_socket(lwpa_iptype_t ip_type, llrp_socket_addr_t llrp_addr, lwpa_socket_t *socket);
 
 #ifdef __cplusplus
 }
