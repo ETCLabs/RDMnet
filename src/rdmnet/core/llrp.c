@@ -43,6 +43,11 @@ const LwpaSockaddr* kLlrpIpv6RespAddr = &kLlrpIpv6RespAddrInternal;
 const LwpaSockaddr* kLlrpIpv4RequestAddr = &kLlrpIpv4RequestAddrInternal;
 const LwpaSockaddr* kLlrpIpv6RequestAddr = &kLlrpIpv6RequestAddrInternal;
 
+/**************************** Private variables ******************************/
+
+static lwpa_socket_t manager_recv_sock = LWPA_SOCKET_INVALID;
+static lwpa_socket_t target_recv_sock = LWPA_SOCKET_INVALID;
+
 /*********************** Private function prototypes *************************/
 
 static LwpaIpAddr get_llrp_mcast_addr(bool manager, lwpa_iptype_t ip_type);
@@ -99,6 +104,15 @@ void rdmnet_llrp_deinit()
 #if RDMNET_DYNAMIC_MEM
   rdmnet_llrp_manager_deinit();
 #endif
+
+  if (manager_recv_sock != LWPA_SOCKET_INVALID)
+  {
+    lwpa_close(manager_recv_sock);
+  }
+  if (target_recv_sock != LWPA_SOCKET_INVALID)
+  {
+    lwpa_close(target_recv_sock);
+  }
 }
 
 lwpa_error_t create_llrp_socket(lwpa_iptype_t ip_type, unsigned int netint_index, bool manager, lwpa_socket_t* socket)

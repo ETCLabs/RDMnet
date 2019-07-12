@@ -55,8 +55,8 @@ typedef struct LlrpLocalRdmResponse
   LwpaUuid dest_cid;
   /*! The sequence number received in the corresponding LlrpRemoteRdmCommand. */
   uint32_t seq_num;
-  /*! The interface ID in the corresponding LlrpRemoteRdmCommand. */
-  size_t interface_id;
+  /*! The network interface ID in the corresponding LlrpRemoteRdmCommand. */
+  LlrpNetintId netint_id;
   /*! The RDM response. */
   RdmResponse rdm;
 } LlrpLocalRdmResponse;
@@ -69,10 +69,10 @@ typedef struct LlrpRemoteRdmCommand
   /*! The sequence number received with this command, to be echoed in the corresponding
    *  LlrpLocalRdmResponse. */
   uint32_t seq_num;
-  /*! An internal ID for the interface on which this command was received, to be echoed in the
-   *  corresponding LlrpLocalRdmResponse. Should not be used for any other purpose; in particular,
-   *  this is NOT compatible with lwpa netint indexes. */
-  size_t interface_id;
+  /*! An ID for the network interface on which this command was received, to be echoed in the
+   *  corresponding LlrpLocalRdmResponse. This helps the LLRP library send the response on the same
+   *  interface on which it was received. */
+  LlrpNetintId netint_id;
   /*! The RDM command. */
   RdmCommand rdm;
 } LlrpRemoteRdmCommand;
@@ -90,7 +90,7 @@ typedef struct LlrpRemoteRdmCommand
   {                                                                     \
     (resp)->dest_cid = (received_cmd)->src_cid;                         \
     (resp)->seq_num = (received_cmd)->seq_num;                          \
-    (resp)->interface_id = (received_cmd)->interface_id;                \
+    (resp)->netint_id = (received_cmd)->netint_id;                      \
     (resp)->rdm = *(rdm_resp);                                          \
   } while (0)
 
@@ -98,15 +98,6 @@ typedef struct LlrpTargetCallbacks
 {
   void (*rdm_cmd_received)(llrp_target_t handle, const LlrpRemoteRdmCommand* cmd, void* context);
 } LlrpTargetCallbacks;
-
-/*! A set of configuration  */
-typedef struct LlrpTargetNetintConfig
-{
-  /*! Whether to create an IPv4 or IPv6 socket on this network interface. */
-  lwpa_iptype_t ip_type;
-  /*! The index for this network interface. See \ref interface_indexes for more information. */
-  unsigned int index;
-} LlrpTargetNetintConfig;
 
 typedef struct LlrpTargetOptionalConfig
 {

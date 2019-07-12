@@ -80,6 +80,18 @@ typedef struct DiscoveredLlrpTarget
   llrp_component_t component_type;
 } DiscoveredLlrpTarget;
 
+/*! A set of identifying information for a network interface, for LLRP's purposes. All messages in
+ *  LLRP are sent over multicast. This means that interface IP addresses don't matter and that for
+ *  the purposes of LLRP, the primary key for a network interface should simply be a combination of
+ *  the interface index and the IP protocol used. */
+typedef struct LlrpNetintId
+{
+  /*! The IP protocol used on the network interface. */
+  lwpa_iptype_t ip_type;
+  /*! The index of the network interface. See \ref interface_indexes for more information. */
+  unsigned int index;
+} LlrpNetintId;
+
 /*! @} */
 
 #endif /* _RDMNET_CORE_LLRP_H_ */

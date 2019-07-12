@@ -47,11 +47,10 @@ typedef struct LlrpTarget LlrpTarget;
 
 typedef struct LlrpTargetNetintInfo
 {
-  lwpa_iptype_t ip_type;
-  unsigned int index;
+  LlrpNetintId id;
   lwpa_socket_t sys_sock;
   uint8_t send_buf[LLRP_TARGET_MAX_MESSAGE_SIZE];
-  PolledSocketInfo poll_info;
+  //PolledSocketInfo poll_info;
 
   bool reply_pending;
   LwpaUuid pending_reply_cid;
@@ -70,14 +69,10 @@ struct LlrpTarget
   RdmUid uid;
   llrp_component_t component_type;
 
-  // Network interfaces
-#if RDMNET_DYNAMIC_MEM
-  LlrpTargetNetintInfo* netints;
-#else
-  LlrpTargetNetintInfo netints[RDMNET_LLRP_MAX_TARGET_NETINTS];
-#endif
-  size_t num_netints;
+  // Network interfaces on which the target is operating (value type is LlrpTargetNetintInfo)
+  LwpaRbTree netints;
 
+  // Global target state info
   bool connected_to_broker;
 
   // Callback dispatch info

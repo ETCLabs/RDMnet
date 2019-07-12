@@ -43,6 +43,12 @@
 #include "rdmnet/private/llrp.h"
 #include "rdmnet/private/util.h"
 
+/**************************** Private constants ******************************/
+
+#define LLRP_TARGET_MAX_RB_NODES                              \
+  (RDMNET_LLRP_MAX_TARGETS + RDMNET_LLRP_MAX_TARGET_NETINTS + \
+   (RDMNET_LLRP_MAX_TARGETS + RDMNET_LLRP_MAX_TARGET_NETINTS))
+
 /***************************** Private macros ********************************/
 
 #if RDMNET_DYNAMIC_MEM
@@ -59,7 +65,7 @@
 
 #if !RDMNET_DYNAMIC_MEM
 LWPA_MEMPOOL_DEFINE(llrp_targets, LlrpTarget, RDMNET_LLRP_MAX_TARGETS);
-LWPA_MEMPOOL_DEFINE(llrp_target_rb_nodes, LwpaRbNode, RDMNET_LLRP_MAX_TARGETS);
+LWPA_MEMPOOL_DEFINE(llrp_target_rb_nodes, LwpaRbNode, RDMNET_LLRP_MAX_RB_NODES);
 #endif
 
 static struct LlrpTargetState
@@ -67,12 +73,8 @@ static struct LlrpTargetState
   LwpaRbTree targets;
   IntHandleManager handle_mgr;
 
-#if RDMNET_DYNAMIC_MEM
-  LwpaNetintInfo* sys_netints;
-#else
-  LwpaNetintInfo sys_netints[RDMNET_LLRP_MAX_NETWORK_INTERFACES];
-#endif
-  size_t num_sys_netints;
+  LwpaRbTree sys_netints;
+
   uint8_t lowest_hardware_addr[6];
 } state;
 
@@ -101,6 +103,7 @@ static void process_target_state(LlrpTarget* target);
 static LwpaRbNode* target_node_alloc();
 static void target_node_free(LwpaRbNode* node);
 static int target_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b);
+static int netint_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b);
 
 /*************************** Function definitions ****************************/
 
@@ -119,6 +122,7 @@ lwpa_error_t rdmnet_llrp_target_init()
   if (res == kLwpaErrOk)
   {
     lwpa_rbtree_init(&state.targets, target_cmp, target_node_alloc, target_node_free);
+    lwpa_rbtree_init(&state.sys_netints, netint_cmp, target_node_alloc, target_node_free);
     init_int_handle_manager(&state.handle_mgr, target_handle_in_use);
   }
   return res;
@@ -126,34 +130,20 @@ lwpa_error_t rdmnet_llrp_target_init()
 
 lwpa_error_t init_sys_netints()
 {
-  state.num_sys_netints = lwpa_netint_get_num_interfaces();
-  if (state.num_sys_netints == 0)
+  size_t num_sys_netints = lwpa_netint_get_num_interfaces();
+  if (num_sys_netints == 0)
     return kLwpaErrNoNetints;
 
-#if RDMNET_DYNAMIC_MEM
-  state.sys_netints = (LwpaNetintInfo *)calloc(state.num_sys_netints, sizeof(LwpaNetintInfo));
-  if (!state.sys_netints)
-  {
-    state.num_sys_netints = 0;
-    return kLwpaErrNoMem;
-  }
-#else
-  if (state.num_sys_netints > RDMNET_LLRP_MAX_TARGET_NETINTS)
-  {
-    state.num_sys_netints = 0;
-    return kLwpaErrNoMem;
-  }
-#endif
-  state.num_sys_netints = lwpa_netint_get_interfaces(state.sys_netints, state.num_sys_netints);
+  const LwpaNetintInfo* netint_list = lwpa_netint_get_interfaces();
 
   uint8_t null_mac[6];
   memset(null_mac, 0, sizeof null_mac);
 
   lwpa_log(rdmnet_log_params, LWPA_LOG_INFO, RDMNET_LOG_MSG("Initializing network interfaces for LLRP..."));
   size_t i = 0;
-  while (i < state.num_sys_netints)
+  while (i < num_sys_netints)
   {
-    const LwpaNetintInfo* netint = &state.sys_netints[i];
+    const LwpaNetintInfo* netint = &netint_list[i];
     char addr_str[LWPA_INET6_ADDRSTRLEN];
     addr_str[0] = '\0';
     if (LWPA_CAN_LOG(rdmnet_log_params, LWPA_LOG_WARNING))
@@ -411,7 +401,7 @@ void rdmnet_llrp_target_tick()
         target->next_to_destroy = NULL;
         next_destroy_list_entry = &target->next_to_destroy;
       }
-      target = (LlrpTarget *)lwpa_rbiter_next(&target_iter);
+      target = (LlrpTarget*)lwpa_rbiter_next(&target_iter);
     }
 
     // Now do the actual destruction
@@ -439,7 +429,7 @@ void rdmnet_llrp_target_tick()
     while (target)
     {
       process_target_state(target);
-      target = (LlrpTarget *)lwpa_rbiter_next(&target_iter);
+      target = (LlrpTarget*)lwpa_rbiter_next(&target_iter);
     }
 
     rdmnet_readunlock();
@@ -515,7 +505,7 @@ void handle_llrp_message(LlrpTarget* target, LlrpTargetNetintInfo* netint, const
       {
         int backoff_ms;
 
-        /* Check the filter values. */
+        // Check the filter values.
         if (!((request->filter & LLRP_FILTERVAL_BROKERS_ONLY) && target->component_type != kLlrpCompBroker) &&
             !(request->filter & LLRP_FILTERVAL_CLIENT_CONN_INACTIVE && target->connected_to_broker))
         {
@@ -527,7 +517,7 @@ void handle_llrp_message(LlrpTarget* target, LlrpTargetNetintInfo* netint, const
         }
       }
       // Even if we got a valid probe request, we are starting a backoff timer, so there's nothing
-      // to report at this time.
+      // else to do at this time.
       break;
     }
     case VECTOR_LLRP_RDM_CMD:
@@ -609,7 +599,7 @@ lwpa_error_t setup_target_netints(const LlrpTargetOptionalConfig* config, LlrpTa
   if (config->netint_arr && config->num_netints > 0)
   {
 #if RDMNET_DYNAMIC_MEM
-    target->netints = (LlrpTargetNetintInfo *)calloc(config->num_netints, sizeof(LlrpTargetNetintInfo));
+    target->netints = (LlrpTargetNetintInfo*)calloc(config->num_netints, sizeof(LlrpTargetNetintInfo));
     if (!target->netints)
       res = kLwpaErrNoMem;
 #else
@@ -632,7 +622,7 @@ lwpa_error_t setup_target_netints(const LlrpTargetOptionalConfig* config, LlrpTa
   else
   {
 #if RDMNET_DYNAMIC_MEM
-    target->netints = (LlrpTargetNetintInfo *)calloc(state.num_sys_netints, sizeof(LlrpTargetNetintInfo));
+    target->netints = (LlrpTargetNetintInfo*)calloc(state.num_sys_netints, sizeof(LlrpTargetNetintInfo));
     if (!target->netints)
       res = kLwpaErrNoMem;
 #endif
