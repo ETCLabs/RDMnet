@@ -38,16 +38,16 @@
 
 /*************************** Function definitions ****************************/
 
-static void listen_thread_fn(void *arg)
+static void listen_thread_fn(void* arg)
 {
-  ListenThread *lt = static_cast<ListenThread *>(arg);
+  ListenThread* lt = static_cast<ListenThread*>(arg);
   if (lt)
   {
     lt->Run();
   }
 }
 
-ListenThread::ListenThread(lwpa_socket_t listen_sock, ListenThreadNotify *pnotify, RDMnet::BrokerLog *log)
+ListenThread::ListenThread(lwpa_socket_t listen_sock, ListenThreadNotify* pnotify, RDMnet::BrokerLog* log)
     : notify_(pnotify), listen_socket_(listen_sock), log_(log)
 {
 }
@@ -128,9 +128,9 @@ void ListenThread::Run()
 
 /************************************/
 
-static void controller_device_service_thread_fn(void *arg)
+static void controller_device_service_thread_fn(void* arg)
 {
-  ClientServiceThread *cdt = static_cast<ClientServiceThread *>(arg);
+  ClientServiceThread* cdt = static_cast<ClientServiceThread*>(arg);
   if (cdt)
     cdt->Run();
 }

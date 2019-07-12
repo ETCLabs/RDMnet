@@ -33,7 +33,7 @@
 #include <stdio.h>
 #include <windows.h>
 
-void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo *broker_info, void *context)
+void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info, void* context)
 {
   (void)handle;
   (void)context;
@@ -42,21 +42,21 @@ void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDis
   printf("Port: %d\n", broker_info->port);
 }
 
-void monitorcb_broker_lost(rdmnet_scope_monitor_t handle, const char *scope, const char *service_name, void *context)
+void monitorcb_broker_lost(rdmnet_scope_monitor_t handle, const char* scope, const char* service_name, void* context)
 {
   (void)handle;
   (void)context;
   printf("Previously found Broker on scope %s with service name %s has been lost.\n", scope, service_name);
 }
 
-void monitorcb_scope_monitor_error(rdmnet_scope_monitor_t handle, const char *scope, int platform_error, void *context)
+void monitorcb_scope_monitor_error(rdmnet_scope_monitor_t handle, const char* scope, int platform_error, void* context)
 {
   (void)handle;
   (void)context;
   printf("Scope monitor error %d on scope %s\n", platform_error, scope);
 }
 
-void regcb_broker_found(rdmnet_registered_broker_t handle, const RdmnetBrokerDiscInfo *broker_info, void *context)
+void regcb_broker_found(rdmnet_registered_broker_t handle, const RdmnetBrokerDiscInfo* broker_info, void* context)
 {
   (void)handle;
   (void)context;
@@ -65,41 +65,41 @@ void regcb_broker_found(rdmnet_registered_broker_t handle, const RdmnetBrokerDis
   printf("Port: %d\n", broker_info->port);
 }
 
-void regcb_broker_lost(rdmnet_registered_broker_t handle, const char *scope, const char *service_name, void *context)
+void regcb_broker_lost(rdmnet_registered_broker_t handle, const char* scope, const char* service_name, void* context)
 {
   (void)handle;
   (void)context;
   printf("Previously found conflicting Broker on scope %s with service name %s has been lost.\n", scope, service_name);
 }
 
-void regcb_scope_monitor_error(rdmnet_registered_broker_t handle, const char *scope, int platform_error, void *context)
+void regcb_scope_monitor_error(rdmnet_registered_broker_t handle, const char* scope, int platform_error, void* context)
 {
   (void)handle;
   (void)context;
   printf("Scope monitor error %d on scope %s\n", platform_error, scope);
 }
 
-void regcb_broker_registered(rdmnet_registered_broker_t handle, const char *assigned_service_name, void *context)
+void regcb_broker_registered(rdmnet_registered_broker_t handle, const char* assigned_service_name, void* context)
 {
   (void)context;
   printf("Broker %p registered, assigned service name %s\n", handle, assigned_service_name);
 }
 
-void regcb_broker_register_error(rdmnet_registered_broker_t handle, int platform_error, void *context)
+void regcb_broker_register_error(rdmnet_registered_broker_t handle, int platform_error, void* context)
 {
   (void)platform_error;
   (void)context;
   printf("Broker %p register error %d!\n", handle, platform_error);
 }
 
-void set_monitor_callback_functions(RdmnetScopeMonitorCallbacks *callbacks)
+void set_monitor_callback_functions(RdmnetScopeMonitorCallbacks* callbacks)
 {
   callbacks->broker_found = monitorcb_broker_found;
   callbacks->broker_lost = monitorcb_broker_lost;
   callbacks->scope_monitor_error = monitorcb_scope_monitor_error;
 }
 
-void set_reg_callback_functions(RdmnetDiscBrokerCallbacks *callbacks)
+void set_reg_callback_functions(RdmnetDiscBrokerCallbacks* callbacks)
 {
   callbacks->broker_found = regcb_broker_found;
   callbacks->broker_lost = regcb_broker_lost;
@@ -108,7 +108,7 @@ void set_reg_callback_functions(RdmnetDiscBrokerCallbacks *callbacks)
   callbacks->broker_register_error = regcb_broker_register_error;
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
   rdmnet_core_init(NULL);
 

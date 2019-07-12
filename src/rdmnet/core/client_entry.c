@@ -27,8 +27,8 @@
 
 #include "rdmnet/core/client_entry.h"
 
-bool create_rpt_client_entry(const LwpaUuid *cid, const RdmUid *uid, rpt_client_type_t client_type,
-                             const LwpaUuid *binding_cid, ClientEntryData *entry)
+bool create_rpt_client_entry(const LwpaUuid* cid, const RdmUid* uid, rpt_client_type_t client_type,
+                             const LwpaUuid* binding_cid, ClientEntryData* entry)
 {
   if (!cid || !uid || !entry)
     return false;
@@ -45,8 +45,8 @@ bool create_rpt_client_entry(const LwpaUuid *cid, const RdmUid *uid, rpt_client_
   return true;
 }
 
-bool create_ept_client_entry(const LwpaUuid *cid, const EptSubProtocol *protocol_arr, size_t protocol_arr_size,
-                             ClientEntryData *entry)
+bool create_ept_client_entry(const LwpaUuid* cid, const EptSubProtocol* protocol_arr, size_t protocol_arr_size,
+                             ClientEntryData* entry)
 {
   (void)cid;
   (void)protocol_arr;

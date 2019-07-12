@@ -49,11 +49,11 @@ TEST_F(TestMsgBuf, rpt_notification_full)
             rdmnet_msg_buf_recv(&buf_, RptNotificationPduFullValid::buf, sizeof(RptNotificationPduFullValid::buf)));
 
   // Test each field of the parsed message
-  RdmnetMessage &msg = buf_.msg;
+  RdmnetMessage& msg = buf_.msg;
   ASSERT_EQ(msg.vector, RptNotificationPduFullValid::root_vector);
   ASSERT_EQ(0, LWPA_UUID_CMP(&msg.sender_cid, &RptNotificationPduFullValid::sender_cid));
 
-  RptMessage *rpt = get_rpt_msg(&msg);
+  RptMessage* rpt = get_rpt_msg(&msg);
   ASSERT_EQ(rpt->vector, RptNotificationPduFullValid::rpt_vector);
   ASSERT_TRUE(RDM_UID_EQUAL(&rpt->header.source_uid, &RptNotificationPduFullValid::rpt_src_uid));
   ASSERT_EQ(rpt->header.source_endpoint_id, RptNotificationPduFullValid::rpt_src_endpoint);
@@ -61,10 +61,10 @@ TEST_F(TestMsgBuf, rpt_notification_full)
   ASSERT_EQ(rpt->header.dest_endpoint_id, RptNotificationPduFullValid::rpt_dest_endpoint);
   ASSERT_EQ(rpt->header.seqnum, RptNotificationPduFullValid::seq_num);
 
-  RdmBufList *buf_list = get_rdm_buf_list(rpt);
+  RdmBufList* buf_list = get_rdm_buf_list(rpt);
   ASSERT_FALSE(buf_list->more_coming);
 
-  RdmBufListEntry *entry = buf_list->list;
+  RdmBufListEntry* entry = buf_list->list;
   ASSERT_NE(entry->next, nullptr);
   ASSERT_EQ(entry->msg.datalen, RptNotificationPduFullValid::first_cmd.datalen);
   ASSERT_EQ(0, memcmp(entry->msg.data, RptNotificationPduFullValid::first_cmd.data,

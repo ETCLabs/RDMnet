@@ -32,12 +32,12 @@ BEGIN_INCLUDE_QT_HEADERS()
 #include <QtWidgets/QApplication>
 END_INCLUDE_QT_HEADERS()
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
   int retVal = 0;
 
   QApplication a(argc, argv);
-  RDMnetControllerGUI *w = RDMnetControllerGUI::makeRDMnetControllerGUI();
+  RDMnetControllerGUI* w = RDMnetControllerGUI::makeRDMnetControllerGUI();
 
   w->show();
   retVal = a.exec();

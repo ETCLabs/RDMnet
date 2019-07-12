@@ -30,75 +30,75 @@
 extern "C" {
 
 static void controllercb_connected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                   const RdmnetClientConnectedInfo *info, void *context)
+                                   const RdmnetClientConnectedInfo* info, void* context)
 {
-  RDMnetLibNotifyInternal *notify = static_cast<RDMnetLibNotifyInternal *>(context);
+  RDMnetLibNotifyInternal* notify = static_cast<RDMnetLibNotifyInternal*>(context);
   if (notify)
     notify->Connected(handle, scope, info);
 }
 
 static void controllercb_connect_failed(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                        const RdmnetClientConnectFailedInfo *info, void *context)
+                                        const RdmnetClientConnectFailedInfo* info, void* context)
 {
-  RDMnetLibNotifyInternal *notify = static_cast<RDMnetLibNotifyInternal *>(context);
+  RDMnetLibNotifyInternal* notify = static_cast<RDMnetLibNotifyInternal*>(context);
   if (notify)
     notify->ConnectFailed(handle, scope, info);
 }
 
 static void controllercb_disconnected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                      const RdmnetClientDisconnectedInfo *info, void *context)
+                                      const RdmnetClientDisconnectedInfo* info, void* context)
 {
-  RDMnetLibNotifyInternal *notify = static_cast<RDMnetLibNotifyInternal *>(context);
+  RDMnetLibNotifyInternal* notify = static_cast<RDMnetLibNotifyInternal*>(context);
   if (notify)
     notify->Disconnected(handle, scope, info);
 }
 
 static void controllercb_client_list_update(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                            client_list_action_t list_action, const ClientList *list, void *context)
+                                            client_list_action_t list_action, const ClientList* list, void* context)
 {
-  RDMnetLibNotifyInternal *notify = static_cast<RDMnetLibNotifyInternal *>(context);
+  RDMnetLibNotifyInternal* notify = static_cast<RDMnetLibNotifyInternal*>(context);
   if (notify)
     notify->ClientListUpdate(handle, scope, list_action, list);
 }
 
 static void controllercb_rdm_response_received(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                               const RemoteRdmResponse *resp, void *context)
+                                               const RemoteRdmResponse* resp, void* context)
 {
-  RDMnetLibNotifyInternal *notify = static_cast<RDMnetLibNotifyInternal *>(context);
+  RDMnetLibNotifyInternal* notify = static_cast<RDMnetLibNotifyInternal*>(context);
   if (notify)
     notify->RdmResponseReceived(handle, scope, resp);
 }
 
 static void controllercb_rdm_command_received(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                              const RemoteRdmCommand *cmd, void *context)
+                                              const RemoteRdmCommand* cmd, void* context)
 {
-  RDMnetLibNotifyInternal *notify = static_cast<RDMnetLibNotifyInternal *>(context);
+  RDMnetLibNotifyInternal* notify = static_cast<RDMnetLibNotifyInternal*>(context);
   if (notify)
     notify->RdmCommandReceived(handle, scope, cmd);
 }
 
 static void controllercb_status_received(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                         const RemoteRptStatus *status, void *context)
+                                         const RemoteRptStatus* status, void* context)
 {
-  RDMnetLibNotifyInternal *notify = static_cast<RDMnetLibNotifyInternal *>(context);
+  RDMnetLibNotifyInternal* notify = static_cast<RDMnetLibNotifyInternal*>(context);
   if (notify)
     notify->StatusReceived(handle, scope, status);
 }
 
-static void controllercb_llrp_rdm_command_received(rdmnet_controller_t handle, const LlrpRemoteRdmCommand *cmd,
-                                                   void *context)
+static void controllercb_llrp_rdm_command_received(rdmnet_controller_t handle, const LlrpRemoteRdmCommand* cmd,
+                                                   void* context)
 {
-  RDMnetLibNotifyInternal *notify = static_cast<RDMnetLibNotifyInternal *>(context);
+  RDMnetLibNotifyInternal* notify = static_cast<RDMnetLibNotifyInternal*>(context);
   if (notify)
     notify->LlrpRdmCommandReceived(handle, cmd);
 }
 }  // extern "C"
 
-RDMnetLibWrapper::RDMnetLibWrapper(ControllerLog *log) : log_(log)
+RDMnetLibWrapper::RDMnetLibWrapper(ControllerLog* log) : log_(log)
 {
 }
 
-bool RDMnetLibWrapper::Startup(const LwpaUuid &cid, RDMnetLibNotify *notify)
+bool RDMnetLibWrapper::Startup(const LwpaUuid& cid, RDMnetLibNotify* notify)
 {
   if (!running_)
   {
@@ -130,7 +130,7 @@ bool RDMnetLibWrapper::Startup(const LwpaUuid &cid, RDMnetLibNotify *notify)
       controllercb_llrp_rdm_command_received
     };
     // clang-format on
-    config.callback_context = static_cast<RDMnetLibNotifyInternal *>(this);
+    config.callback_context = static_cast<RDMnetLibNotifyInternal*>(this);
 
     res = rdmnet_controller_create(&config, &controller_handle_);
     if (res != kLwpaErrOk)
@@ -158,7 +158,7 @@ void RDMnetLibWrapper::Shutdown()
   }
 }
 
-rdmnet_client_scope_t RDMnetLibWrapper::AddScope(const std::string &scope, StaticBrokerConfig static_broker)
+rdmnet_client_scope_t RDMnetLibWrapper::AddScope(const std::string& scope, StaticBrokerConfig static_broker)
 {
   // Check if the scope is too long
   if (scope.length() >= E133_SCOPE_STRING_PADDED_LENGTH)
@@ -209,22 +209,22 @@ bool RDMnetLibWrapper::RemoveScope(rdmnet_client_scope_t scope_handle, rdmnet_di
   }
 }
 
-bool RDMnetLibWrapper::SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand &cmd)
+bool RDMnetLibWrapper::SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand& cmd)
 {
   return (kLwpaErrOk == rdmnet_controller_send_rdm_command(controller_handle_, scope_handle, &cmd, nullptr));
 }
 
-bool RDMnetLibWrapper::SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand &cmd, uint32_t &seq_num)
+bool RDMnetLibWrapper::SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand& cmd, uint32_t& seq_num)
 {
   return (kLwpaErrOk == rdmnet_controller_send_rdm_command(controller_handle_, scope_handle, &cmd, &seq_num));
 }
 
-bool RDMnetLibWrapper::SendRdmResponse(rdmnet_client_scope_t scope_handle, const LocalRdmResponse &resp)
+bool RDMnetLibWrapper::SendRdmResponse(rdmnet_client_scope_t scope_handle, const LocalRdmResponse& resp)
 {
   return (kLwpaErrOk == rdmnet_controller_send_rdm_response(controller_handle_, scope_handle, &resp));
 }
 
-bool RDMnetLibWrapper::SendLlrpResponse(const LlrpLocalRdmResponse &resp)
+bool RDMnetLibWrapper::SendLlrpResponse(const LlrpLocalRdmResponse& resp)
 {
   return (kLwpaErrOk == rdmnet_controller_send_llrp_response(controller_handle_, &resp));
 }
@@ -235,7 +235,7 @@ bool RDMnetLibWrapper::RequestClientList(rdmnet_client_scope_t scope_handle)
 }
 
 void RDMnetLibWrapper::Connected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                 const RdmnetClientConnectedInfo *info)
+                                 const RdmnetClientConnectedInfo* info)
 {
   if (notify_ && handle == controller_handle_ && info)
   {
@@ -244,7 +244,7 @@ void RDMnetLibWrapper::Connected(rdmnet_controller_t handle, rdmnet_client_scope
 }
 
 void RDMnetLibWrapper::ConnectFailed(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                     const RdmnetClientConnectFailedInfo *info)
+                                     const RdmnetClientConnectFailedInfo* info)
 {
   if (notify_ && handle == controller_handle_ && info)
   {
@@ -253,7 +253,7 @@ void RDMnetLibWrapper::ConnectFailed(rdmnet_controller_t handle, rdmnet_client_s
 }
 
 void RDMnetLibWrapper::Disconnected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                    const RdmnetClientDisconnectedInfo *info)
+                                    const RdmnetClientDisconnectedInfo* info)
 {
   if (notify_ && handle == controller_handle_ && info)
   {
@@ -262,7 +262,7 @@ void RDMnetLibWrapper::Disconnected(rdmnet_controller_t handle, rdmnet_client_sc
 }
 
 void RDMnetLibWrapper::ClientListUpdate(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                        client_list_action_t list_action, const ClientList *list)
+                                        client_list_action_t list_action, const ClientList* list)
 {
   if (notify_ && handle == controller_handle_ && list)
   {
@@ -271,7 +271,7 @@ void RDMnetLibWrapper::ClientListUpdate(rdmnet_controller_t handle, rdmnet_clien
 }
 
 void RDMnetLibWrapper::RdmResponseReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                           const RemoteRdmResponse *resp)
+                                           const RemoteRdmResponse* resp)
 {
   if (notify_ && handle == controller_handle_ && resp)
   {
@@ -280,7 +280,7 @@ void RDMnetLibWrapper::RdmResponseReceived(rdmnet_controller_t handle, rdmnet_cl
 }
 
 void RDMnetLibWrapper::RdmCommandReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                          const RemoteRdmCommand *cmd)
+                                          const RemoteRdmCommand* cmd)
 {
   if (notify_ && handle == controller_handle_ && cmd)
   {
@@ -289,7 +289,7 @@ void RDMnetLibWrapper::RdmCommandReceived(rdmnet_controller_t handle, rdmnet_cli
 }
 
 void RDMnetLibWrapper::StatusReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                      const RemoteRptStatus *status)
+                                      const RemoteRptStatus* status)
 {
   if (notify_ && handle == controller_handle_ && status)
   {
@@ -297,7 +297,7 @@ void RDMnetLibWrapper::StatusReceived(rdmnet_controller_t handle, rdmnet_client_
   }
 }
 
-void RDMnetLibWrapper::LlrpRdmCommandReceived(rdmnet_controller_t handle, const LlrpRemoteRdmCommand *cmd)
+void RDMnetLibWrapper::LlrpRdmCommandReceived(rdmnet_controller_t handle, const LlrpRemoteRdmCommand* cmd)
 {
   if (notify_ && handle == controller_handle_ && cmd)
   {

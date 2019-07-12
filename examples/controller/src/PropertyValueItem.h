@@ -103,8 +103,8 @@ public:
   static PIDInfoIterator pidsBegin();
   static PIDInfoIterator pidsEnd();
 
-  PropertyValueItem(const QVariant &value, bool writable = true);
-  PropertyValueItem(const QVariant &value, int role, bool writable = true);
+  PropertyValueItem(const QVariant& value, bool writable = true);
+  PropertyValueItem(const QVariant& value, int role, bool writable = true);
   virtual ~PropertyValueItem();
 
   virtual int type() const override;

@@ -90,46 +90,46 @@ static lwpa_rwlock_t prop_lock;
 /*********************** Private function prototypes *************************/
 
 /* SET COMMANDS */
-bool set_identify_device(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                         rdmnet_data_changed_t *data_changed);
-bool set_device_label(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                      rdmnet_data_changed_t *data_changed);
-bool set_component_scope(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                         rdmnet_data_changed_t *data_changed);
-bool set_search_domain(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                       rdmnet_data_changed_t *data_changed);
-bool set_tcp_comms_status(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                          rdmnet_data_changed_t *data_changed);
+bool set_identify_device(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
+                         rdmnet_data_changed_t* data_changed);
+bool set_device_label(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
+                      rdmnet_data_changed_t* data_changed);
+bool set_component_scope(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
+                         rdmnet_data_changed_t* data_changed);
+bool set_search_domain(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
+                       rdmnet_data_changed_t* data_changed);
+bool set_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
+                          rdmnet_data_changed_t* data_changed);
 
 /* GET COMMANDS */
-bool get_identify_device(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                         size_t *num_responses, uint16_t *nack_reason);
-bool get_device_label(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                      size_t *num_responses, uint16_t *nack_reason);
-bool get_component_scope(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                         size_t *num_responses, uint16_t *nack_reason);
-bool get_search_domain(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                       size_t *num_responses, uint16_t *nack_reason);
-bool get_tcp_comms_status(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                          size_t *num_responses, uint16_t *nack_reason);
-bool get_supported_parameters(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                              size_t *num_responses, uint16_t *nack_reason);
-bool get_device_info(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                     size_t *num_responses, uint16_t *nack_reason);
-bool get_manufacturer_label(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                            size_t *num_responses, uint16_t *nack_reason);
-bool get_device_model_description(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                                  size_t *num_responses, uint16_t *nack_reason);
-bool get_software_version_label(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                                size_t *num_responses, uint16_t *nack_reason);
-bool get_endpoint_list(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                       size_t *num_responses, uint16_t *nack_reason);
-bool get_endpoint_responders(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                             size_t *num_responses, uint16_t *nack_reason);
+bool get_identify_device(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                         size_t* num_responses, uint16_t* nack_reason);
+bool get_device_label(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                      size_t* num_responses, uint16_t* nack_reason);
+bool get_component_scope(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                         size_t* num_responses, uint16_t* nack_reason);
+bool get_search_domain(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                       size_t* num_responses, uint16_t* nack_reason);
+bool get_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                          size_t* num_responses, uint16_t* nack_reason);
+bool get_supported_parameters(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                              size_t* num_responses, uint16_t* nack_reason);
+bool get_device_info(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                     size_t* num_responses, uint16_t* nack_reason);
+bool get_manufacturer_label(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                            size_t* num_responses, uint16_t* nack_reason);
+bool get_device_model_description(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                                  size_t* num_responses, uint16_t* nack_reason);
+bool get_software_version_label(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                                size_t* num_responses, uint16_t* nack_reason);
+bool get_endpoint_list(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                       size_t* num_responses, uint16_t* nack_reason);
+bool get_endpoint_responders(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                             size_t* num_responses, uint16_t* nack_reason);
 
 /*************************** Function definitions ****************************/
 
-void default_responder_init(const RdmnetScopeConfig *scope_config, const char *search_domain)
+void default_responder_init(const RdmnetScopeConfig* scope_config, const char* search_domain)
 {
   lwpa_rwlock_create(&prop_lock);
 
@@ -149,7 +149,7 @@ void default_responder_deinit()
   lwpa_rwlock_destroy(&prop_lock);
 }
 
-void default_responder_get_scope_config(RdmnetScopeConfig *scope_config)
+void default_responder_get_scope_config(RdmnetScopeConfig* scope_config)
 {
   if (lwpa_rwlock_readlock(&prop_lock))
   {
@@ -158,7 +158,7 @@ void default_responder_get_scope_config(RdmnetScopeConfig *scope_config)
   }
 }
 
-void default_responder_get_search_domain(char *search_domain)
+void default_responder_get_search_domain(char* search_domain)
 {
   if (lwpa_rwlock_readlock(&prop_lock))
   {
@@ -167,7 +167,7 @@ void default_responder_get_search_domain(char *search_domain)
   }
 }
 
-void default_responder_update_connection_status(bool connected, const LwpaSockaddr *broker_addr)
+void default_responder_update_connection_status(bool connected, const LwpaSockaddr* broker_addr)
 {
   if (lwpa_rwlock_readlock(&prop_lock))
   {
@@ -187,7 +187,7 @@ void default_responder_incr_unhealthy_count()
   }
 }
 
-void default_responder_set_tcp_status(LwpaSockaddr *broker_addr)
+void default_responder_set_tcp_status(LwpaSockaddr* broker_addr)
 {
   if (lwpa_rwlock_writelock(&prop_lock))
   {
@@ -207,8 +207,8 @@ bool default_responder_supports_pid(uint16_t pid)
   return false;
 }
 
-bool default_responder_set(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                           rdmnet_data_changed_t *data_changed)
+bool default_responder_set(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
+                           rdmnet_data_changed_t* data_changed)
 {
   bool res = false;
   if (lwpa_rwlock_writelock(&prop_lock))
@@ -249,8 +249,8 @@ bool default_responder_set(uint16_t pid, const uint8_t *param_data, uint8_t para
   return res;
 }
 
-bool default_responder_get(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len,
-                           param_data_list_t resp_data_list, size_t *num_responses, uint16_t *nack_reason)
+bool default_responder_get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len,
+                           param_data_list_t resp_data_list, size_t* num_responses, uint16_t* nack_reason)
 {
   bool res = false;
   if (lwpa_rwlock_readlock(&prop_lock))
@@ -302,7 +302,7 @@ bool default_responder_get(uint16_t pid, const uint8_t *param_data, uint8_t para
   return res;
 }
 
-void identify_thread(void *arg)
+void identify_thread(void* arg)
 {
   (void)arg;
 
@@ -313,8 +313,8 @@ void identify_thread(void *arg)
   }
 }
 
-bool set_identify_device(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                         rdmnet_data_changed_t *data_changed)
+bool set_identify_device(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
+                         rdmnet_data_changed_t* data_changed)
 {
   if (param_data_len >= 1)
   {
@@ -341,8 +341,8 @@ bool set_identify_device(const uint8_t *param_data, uint8_t param_data_len, uint
   }
 }
 
-bool set_device_label(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                      rdmnet_data_changed_t *data_changed)
+bool set_device_label(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
+                      rdmnet_data_changed_t* data_changed)
 {
   if (param_data_len >= 1)
   {
@@ -360,19 +360,19 @@ bool set_device_label(const uint8_t *param_data, uint8_t param_data_len, uint16_
   }
 }
 
-bool set_component_scope(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                         rdmnet_data_changed_t *data_changed)
+bool set_component_scope(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
+                         rdmnet_data_changed_t* data_changed)
 {
   if (param_data_len == (2 + E133_SCOPE_STRING_PADDED_LENGTH + 1 + 4 + 16 + 2))
   {
     if (lwpa_upack_16b(param_data) == 1)
     {
-      const uint8_t *cur_ptr = param_data + 2;
+      const uint8_t* cur_ptr = param_data + 2;
       char new_scope[E133_SCOPE_STRING_PADDED_LENGTH];
       bool have_new_static_broker = false;
       LwpaSockaddr new_static_broker = {0};
 
-      strncpy(new_scope, (const char *)cur_ptr, E133_SCOPE_STRING_PADDED_LENGTH);
+      strncpy(new_scope, (const char*)cur_ptr, E133_SCOPE_STRING_PADDED_LENGTH);
       new_scope[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
       cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
 
@@ -396,8 +396,8 @@ bool set_component_scope(const uint8_t *param_data, uint8_t param_data_len, uint
           break;
       }
 
-      RdmnetScopeConfig *existing_scope_config = &prop_data.scope_config;
-      if (strncmp((char *)&param_data[2], existing_scope_config->scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0 &&
+      RdmnetScopeConfig* existing_scope_config = &prop_data.scope_config;
+      if (strncmp((char*)&param_data[2], existing_scope_config->scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0 &&
           ((!have_new_static_broker && !existing_scope_config->has_static_broker_addr) ||
            (lwpa_ip_equal(&new_static_broker.ip, &existing_scope_config->static_broker_addr.ip) &&
             new_static_broker.port == existing_scope_config->static_broker_addr.port)))
@@ -426,21 +426,21 @@ bool set_component_scope(const uint8_t *param_data, uint8_t param_data_len, uint
   return false;
 }
 
-bool set_search_domain(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                       rdmnet_data_changed_t *data_changed)
+bool set_search_domain(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
+                       rdmnet_data_changed_t* data_changed)
 {
   if (param_data_len <= E133_DOMAIN_STRING_PADDED_LENGTH)
   {
-    if (param_data_len > 0 || strcmp("", (char *)param_data) != 0)
+    if (param_data_len > 0 || strcmp("", (char*)param_data) != 0)
     {
-      if (strncmp(prop_data.search_domain, (char *)param_data, E133_DOMAIN_STRING_PADDED_LENGTH) == 0)
+      if (strncmp(prop_data.search_domain, (char*)param_data, E133_DOMAIN_STRING_PADDED_LENGTH) == 0)
       {
         /* Same domain as current */
         *data_changed = kNoRdmnetDataChanged;
       }
       else
       {
-        strncpy(prop_data.search_domain, (char *)param_data, E133_DOMAIN_STRING_PADDED_LENGTH);
+        strncpy(prop_data.search_domain, (char*)param_data, E133_DOMAIN_STRING_PADDED_LENGTH);
         *data_changed = kRdmnetSearchDomainChanged;
       }
     }
@@ -458,14 +458,14 @@ bool set_search_domain(const uint8_t *param_data, uint8_t param_data_len, uint16
   return false;
 }
 
-bool set_tcp_comms_status(const uint8_t *param_data, uint8_t param_data_len, uint16_t *nack_reason,
-                          rdmnet_data_changed_t *data_changed)
+bool set_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
+                          rdmnet_data_changed_t* data_changed)
 {
   *data_changed = kNoRdmnetDataChanged;
 
   if (param_data_len == E133_SCOPE_STRING_PADDED_LENGTH)
   {
-    if (strncmp((char *)param_data, prop_data.scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
+    if (strncmp((char*)param_data, prop_data.scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
     {
       /* Same scope as current */
       prop_data.tcp_unhealthy_counter = 0;
@@ -484,8 +484,8 @@ bool set_tcp_comms_status(const uint8_t *param_data, uint8_t param_data_len, uin
   return false;
 }
 
-bool get_identify_device(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                         size_t *num_responses, uint16_t *nack_reason)
+bool get_identify_device(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                         size_t* num_responses, uint16_t* nack_reason)
 {
   (void)param_data;
   (void)param_data_len;
@@ -497,33 +497,33 @@ bool get_identify_device(const uint8_t *param_data, uint8_t param_data_len, para
   return true;
 }
 
-bool get_device_label(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                      size_t *num_responses, uint16_t *nack_reason)
+bool get_device_label(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                      size_t* num_responses, uint16_t* nack_reason)
 {
   (void)param_data;
   (void)param_data_len;
   (void)nack_reason;
 
-  strncpy((char *)resp_data_list[0].data, prop_data.device_label, DEVICE_LABEL_MAX_LEN);
+  strncpy((char*)resp_data_list[0].data, prop_data.device_label, DEVICE_LABEL_MAX_LEN);
   resp_data_list[0].datalen = (uint8_t)strnlen(prop_data.device_label, DEVICE_LABEL_MAX_LEN);
   *num_responses = 1;
   return true;
 }
 
-bool get_component_scope(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                         size_t *num_responses, uint16_t *nack_reason)
+bool get_component_scope(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                         size_t* num_responses, uint16_t* nack_reason)
 {
   if (param_data_len >= 2)
   {
     if (lwpa_upack_16b(param_data) == 1)
     {
-      const RdmnetScopeConfig *scope_config = &prop_data.scope_config;
+      const RdmnetScopeConfig* scope_config = &prop_data.scope_config;
 
       // Pack the scope
-      uint8_t *cur_ptr = resp_data_list[0].data;
+      uint8_t* cur_ptr = resp_data_list[0].data;
       lwpa_pack_16b(cur_ptr, 1);
       cur_ptr += 2;
-      rdmnet_safe_strncpy((char *)cur_ptr, scope_config->scope, E133_SCOPE_STRING_PADDED_LENGTH);
+      rdmnet_safe_strncpy((char*)cur_ptr, scope_config->scope, E133_SCOPE_STRING_PADDED_LENGTH);
       cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
 
       // Pack the static config data
@@ -569,25 +569,25 @@ bool get_component_scope(const uint8_t *param_data, uint8_t param_data_len, para
   return false;
 }
 
-bool get_search_domain(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                       size_t *num_responses, uint16_t *nack_reason)
+bool get_search_domain(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                       size_t* num_responses, uint16_t* nack_reason)
 {
   (void)param_data;
   (void)param_data_len;
   (void)nack_reason;
-  strncpy((char *)resp_data_list[0].data, prop_data.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
+  strncpy((char*)resp_data_list[0].data, prop_data.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
   resp_data_list[0].datalen = (uint8_t)strlen(prop_data.search_domain);
   *num_responses = 1;
   return true;
 }
 
-bool get_tcp_comms_status(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                          size_t *num_responses, uint16_t *nack_reason)
+bool get_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                          size_t* num_responses, uint16_t* nack_reason)
 {
   (void)param_data;
   (void)param_data_len;
   (void)nack_reason;
-  uint8_t *cur_ptr = resp_data_list[0].data;
+  uint8_t* cur_ptr = resp_data_list[0].data;
 
   memcpy(cur_ptr, prop_data.scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH);
   cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
@@ -622,11 +622,11 @@ bool get_tcp_comms_status(const uint8_t *param_data, uint8_t param_data_len, par
   return true;
 }
 
-bool get_supported_parameters(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                              size_t *num_responses, uint16_t *nack_reason)
+bool get_supported_parameters(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                              size_t* num_responses, uint16_t* nack_reason)
 {
   size_t list_index = 0;
-  uint8_t *cur_ptr = resp_data_list[0].data;
+  uint8_t* cur_ptr = resp_data_list[0].data;
   size_t i;
 
   (void)param_data;
@@ -648,8 +648,8 @@ bool get_supported_parameters(const uint8_t *param_data, uint8_t param_data_len,
   return true;
 }
 
-bool get_device_info(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                     size_t *num_responses, uint16_t *nack_reason)
+bool get_device_info(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                     size_t* num_responses, uint16_t* nack_reason)
 {
   (void)param_data;
   (void)param_data_len;
@@ -660,53 +660,53 @@ bool get_device_info(const uint8_t *param_data, uint8_t param_data_len, param_da
   return true;
 }
 
-bool get_manufacturer_label(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                            size_t *num_responses, uint16_t *nack_reason)
+bool get_manufacturer_label(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                            size_t* num_responses, uint16_t* nack_reason)
 {
   (void)param_data;
   (void)param_data_len;
   (void)nack_reason;
 
-  strcpy((char *)resp_data_list[0].data, MANUFACTURER_LABEL);
+  strcpy((char*)resp_data_list[0].data, MANUFACTURER_LABEL);
   resp_data_list[0].datalen = sizeof(MANUFACTURER_LABEL) - 1;
   *num_responses = 1;
   return true;
 }
 
-bool get_device_model_description(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                                  size_t *num_responses, uint16_t *nack_reason)
+bool get_device_model_description(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                                  size_t* num_responses, uint16_t* nack_reason)
 {
   (void)param_data;
   (void)param_data_len;
   (void)nack_reason;
 
-  strcpy((char *)resp_data_list[0].data, DEVICE_MODEL_DESCRIPTION);
+  strcpy((char*)resp_data_list[0].data, DEVICE_MODEL_DESCRIPTION);
   resp_data_list[0].datalen = sizeof(DEVICE_MODEL_DESCRIPTION) - 1;
   *num_responses = 1;
   return true;
 }
 
-bool get_software_version_label(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                                size_t *num_responses, uint16_t *nack_reason)
+bool get_software_version_label(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                                size_t* num_responses, uint16_t* nack_reason)
 {
   (void)param_data;
   (void)param_data_len;
   (void)nack_reason;
 
-  strcpy((char *)resp_data_list[0].data, SOFTWARE_VERSION_LABEL);
+  strcpy((char*)resp_data_list[0].data, SOFTWARE_VERSION_LABEL);
   resp_data_list[0].datalen = sizeof(SOFTWARE_VERSION_LABEL) - 1;
   *num_responses = 1;
   return true;
 }
 
-bool get_endpoint_list(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                       size_t *num_responses, uint16_t *nack_reason)
+bool get_endpoint_list(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                       size_t* num_responses, uint16_t* nack_reason)
 {
   (void)param_data;
   (void)param_data_len;
   (void)nack_reason;
 
-  uint8_t *cur_ptr = resp_data_list[0].data;
+  uint8_t* cur_ptr = resp_data_list[0].data;
 
   /* Hardcoded: no endpoints other than NULL_ENDPOINT. NULL_ENDPOINT is not
    * reported in this response. */
@@ -716,8 +716,8 @@ bool get_endpoint_list(const uint8_t *param_data, uint8_t param_data_len, param_
   return true;
 }
 
-bool get_endpoint_responders(const uint8_t *param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                             size_t *num_responses, uint16_t *nack_reason)
+bool get_endpoint_responders(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
+                             size_t* num_responses, uint16_t* nack_reason)
 {
   (void)param_data;
   (void)param_data_len;

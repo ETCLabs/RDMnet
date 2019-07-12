@@ -29,7 +29,7 @@
 
 #include "rdmnet/client.h"
 
-const char *RDMnetClientItem::clientType2String(rpt_client_type_t type)
+const char* RDMnetClientItem::clientType2String(rpt_client_type_t type)
 {
   switch (type)
   {
@@ -43,7 +43,7 @@ const char *RDMnetClientItem::clientType2String(rpt_client_type_t type)
   }
 }
 
-RDMnetClientItem::RDMnetClientItem(const ClientEntryData &entry, bool is_me)
+RDMnetClientItem::RDMnetClientItem(const ClientEntryData& entry, bool is_me)
     : RDMnetNetworkItem(QString("%0%1 | Manu: 0x%2 | ID: 0x%3")
                             .arg(QString(clientType2String(get_rpt_client_entry_data(&entry)->client_type)))
                             .arg(is_me ? QString::fromUtf8(" (me)") : QString())
@@ -62,9 +62,9 @@ int RDMnetClientItem::type() const
   return RDMnetClientItemType;
 }
 
-void RDMnetClientItem::setScopeSlot(const QString &scope, uint16_t slot)
+void RDMnetClientItem::setScopeSlot(const QString& scope, uint16_t slot)
 {
-  for (auto &i : scope_slots_)
+  for (auto& i : scope_slots_)
   {
     if (i.second == slot)
     {
@@ -76,12 +76,12 @@ void RDMnetClientItem::setScopeSlot(const QString &scope, uint16_t slot)
   scope_slots_[scope] = slot;
 }
 
-uint16_t RDMnetClientItem::getScopeSlot(const QString &scope)
+uint16_t RDMnetClientItem::getScopeSlot(const QString& scope)
 {
   return scope_slots_[scope];
 }
 
-void RDMnetClientItem::removeScopeSlot(const QString &scope)
+void RDMnetClientItem::removeScopeSlot(const QString& scope)
 {
   scope_slots_.erase(scope_slots_.find(scope));
 }

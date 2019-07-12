@@ -47,15 +47,15 @@ public:
   bool Startup(int log_mask);
   void Shutdown();
 
-  const LwpaLogParams *GetLogParams() const { return &log_params_; }
-  void Log(int pri, const char *format, ...);
+  const LwpaLogParams* GetLogParams() const { return &log_params_; }
+  void Log(int pri, const char* format, ...);
   bool CanLog(int pri) const { return LWPA_CAN_LOG(&log_params_, pri); }
 
-  void LogFromCallback(const std::string &str);
+  void LogFromCallback(const std::string& str);
   void LogThreadRun();
 
-  virtual void GetTimeFromCallback(LwpaLogTimeParams *time) = 0;
-  virtual void OutputLogMsg(const std::string &str) = 0;
+  virtual void GetTimeFromCallback(LwpaLogTimeParams* time) = 0;
+  virtual void OutputLogMsg(const std::string& str) = 0;
 
 protected:
   LwpaLogParams log_params_{};

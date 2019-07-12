@@ -27,7 +27,7 @@
 
 #include "rdmnet_mock/core/llrp_target.h"
 
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_llrp_target_create, const LlrpTargetConfig *, llrp_target_t *);
+DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_llrp_target_create, const LlrpTargetConfig*, llrp_target_t*);
 DEFINE_FAKE_VOID_FUNC(rdmnet_llrp_target_destroy, llrp_target_t);
 DEFINE_FAKE_VOID_FUNC(rdmnet_llrp_target_update_connection_state, llrp_target_t, bool);
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_llrp_send_rdm_response, llrp_target_t, const LlrpLocalRdmResponse *);
+DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_llrp_send_rdm_response, llrp_target_t, const LlrpLocalRdmResponse*);

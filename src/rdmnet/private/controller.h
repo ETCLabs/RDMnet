@@ -35,7 +35,7 @@ typedef struct RdmnetController
 {
   rdmnet_client_t client_handle;
   RdmnetControllerCallbacks callbacks;
-  void *callback_context;
+  void* callback_context;
 } RdmnetController;
 
 #endif /* _RDMNET_PRIVATE_CONTROLLER_H_ */

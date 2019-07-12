@@ -66,7 +66,7 @@
 
 /***************************** Global variables ******************************/
 
-const LwpaLogParams *rdmnet_log_params;
+const LwpaLogParams* rdmnet_log_params;
 
 /**************************** Private variables ******************************/
 
@@ -89,11 +89,11 @@ static lwpa_rwlock_t rdmnet_lock;
 
 /*********************** Private function prototypes *************************/
 
-static void rdmnet_tick_thread(void *arg);
+static void rdmnet_tick_thread(void* arg);
 
 /*************************** Function definitions ****************************/
 
-lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params)
+lwpa_error_t rdmnet_core_init(const LwpaLogParams* log_params)
 {
   // The lock is created only the first call to this function.
   RDMNET_CREATE_LOCK_OR_DIE();
@@ -213,12 +213,12 @@ bool rdmnet_core_initialized()
   return result;
 }
 
-lwpa_error_t rdmnet_core_add_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, PolledSocketInfo *info)
+lwpa_error_t rdmnet_core_add_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, PolledSocketInfo* info)
 {
   return lwpa_poll_add_socket(&core_state.poll_context, socket, events, info);
 }
 
-lwpa_error_t rdmnet_core_modify_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, PolledSocketInfo *info)
+lwpa_error_t rdmnet_core_modify_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, PolledSocketInfo* info)
 {
   return lwpa_poll_modify_socket(&core_state.poll_context, socket, events, info);
 }
@@ -229,7 +229,7 @@ void rdmnet_core_remove_polled_socket(lwpa_socket_t socket)
 }
 
 #if RDMNET_USE_TICK_THREAD
-void rdmnet_tick_thread(void *arg)
+void rdmnet_tick_thread(void* arg)
 {
   (void)arg;
   while (core_state.tickthread_run)
@@ -245,7 +245,7 @@ void rdmnet_core_tick()
   lwpa_error_t poll_res = lwpa_poll_wait(&core_state.poll_context, &event, RDMNET_POLL_TIMEOUT);
   if (poll_res == kLwpaErrOk)
   {
-    PolledSocketInfo *info = (PolledSocketInfo *)event.user_data;
+    PolledSocketInfo* info = (PolledSocketInfo*)event.user_data;
     if (info)
     {
       info->callback(&event, info->data);

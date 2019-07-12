@@ -51,5 +51,5 @@ public:
 
   virtual int type() const override;
 
-  void setData(const QVariant &value, int role = Qt::UserRole + 1) Q_DECL_OVERRIDE;
+  void setData(const QVariant& value, int role = Qt::UserRole + 1) Q_DECL_OVERRIDE;
 };

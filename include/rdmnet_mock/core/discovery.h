@@ -40,13 +40,13 @@ extern "C" {
 
 DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnetdisc_init);
 DECLARE_FAKE_VOID_FUNC(rdmnetdisc_deinit);
-DECLARE_FAKE_VOID_FUNC(rdmnetdisc_fill_default_broker_info, RdmnetBrokerDiscInfo *);
-DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnetdisc_start_monitoring, const RdmnetScopeMonitorConfig *,
-                        rdmnet_scope_monitor_t *, int *);
+DECLARE_FAKE_VOID_FUNC(rdmnetdisc_fill_default_broker_info, RdmnetBrokerDiscInfo*);
+DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnetdisc_start_monitoring, const RdmnetScopeMonitorConfig*,
+                        rdmnet_scope_monitor_t*, int*);
 DECLARE_FAKE_VOID_FUNC(rdmnetdisc_stop_monitoring, rdmnet_scope_monitor_t);
 DECLARE_FAKE_VOID_FUNC(rdmnetdisc_stop_monitoring_all);
-DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnetdisc_register_broker, const RdmnetBrokerRegisterConfig *,
-                        rdmnet_registered_broker_t *);
+DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnetdisc_register_broker, const RdmnetBrokerRegisterConfig*,
+                        rdmnet_registered_broker_t*);
 DECLARE_FAKE_VOID_FUNC(rdmnetdisc_unregister_broker, rdmnet_registered_broker_t);
 DECLARE_FAKE_VOID_FUNC(rdmnetdisc_tick);
 

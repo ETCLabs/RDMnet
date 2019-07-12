@@ -26,8 +26,7 @@
 ******************************************************************************/
 #include "AboutGUI.h"
 
-AboutGUI::AboutGUI(QWidget *parent, QString qtVersion, QString rdmNetVersion)
-    : QDialog(parent)
+AboutGUI::AboutGUI(QWidget* parent, QString qtVersion, QString rdmNetVersion) : QDialog(parent)
 {
   QFont titleFont("Arial", 18, QFont::Bold);
   QFont versionFont("Arial", 14, QFont::Bold);

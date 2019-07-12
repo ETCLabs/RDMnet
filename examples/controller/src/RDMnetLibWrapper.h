@@ -37,57 +37,57 @@ class RDMnetLibNotifyInternal
 {
 public:
   virtual void Connected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                         const RdmnetClientConnectedInfo *info) = 0;
+                         const RdmnetClientConnectedInfo* info) = 0;
   virtual void ConnectFailed(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                             const RdmnetClientConnectFailedInfo *info) = 0;
+                             const RdmnetClientConnectFailedInfo* info) = 0;
   virtual void Disconnected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                            const RdmnetClientDisconnectedInfo *info) = 0;
+                            const RdmnetClientDisconnectedInfo* info) = 0;
   virtual void ClientListUpdate(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                client_list_action_t list_action, const ClientList *list) = 0;
+                                client_list_action_t list_action, const ClientList* list) = 0;
   virtual void RdmResponseReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                   const RemoteRdmResponse *resp) = 0;
+                                   const RemoteRdmResponse* resp) = 0;
   virtual void RdmCommandReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                  const RemoteRdmCommand *cmd) = 0;
+                                  const RemoteRdmCommand* cmd) = 0;
   virtual void StatusReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                              const RemoteRptStatus *status) = 0;
-  virtual void LlrpRdmCommandReceived(rdmnet_controller_t handle, const LlrpRemoteRdmCommand *cmd) = 0;
+                              const RemoteRptStatus* status) = 0;
+  virtual void LlrpRdmCommandReceived(rdmnet_controller_t handle, const LlrpRemoteRdmCommand* cmd) = 0;
 };
 
 class RDMnetLibWrapper : public RDMnetLibInterface, public RDMnetLibNotifyInternal
 {
 public:
-  RDMnetLibWrapper(ControllerLog *log);
+  RDMnetLibWrapper(ControllerLog* log);
 
-  bool Startup(const LwpaUuid &cid, RDMnetLibNotify *notify) override;
+  bool Startup(const LwpaUuid& cid, RDMnetLibNotify* notify) override;
   void Shutdown() override;
 
-  rdmnet_client_scope_t AddScope(const std::string &scope,
+  rdmnet_client_scope_t AddScope(const std::string& scope,
                                  StaticBrokerConfig static_broker = StaticBrokerConfig()) override;
   bool RemoveScope(rdmnet_client_scope_t scope_handle, rdmnet_disconnect_reason_t reason) override;
 
-  bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand &cmd) override;
-  bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand &cmd, uint32_t &seq_num) override;
-  bool SendRdmResponse(rdmnet_client_scope_t scope_handle, const LocalRdmResponse &resp) override;
-  bool SendLlrpResponse(const LlrpLocalRdmResponse &resp) override;
+  bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand& cmd) override;
+  bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand& cmd, uint32_t& seq_num) override;
+  bool SendRdmResponse(rdmnet_client_scope_t scope_handle, const LocalRdmResponse& resp) override;
+  bool SendLlrpResponse(const LlrpLocalRdmResponse& resp) override;
   bool RequestClientList(rdmnet_client_scope_t scope_handle) override;
 
 protected:
   // RDMnetLibNotifyInternal overrides
   virtual void Connected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                         const RdmnetClientConnectedInfo *info) override;
+                         const RdmnetClientConnectedInfo* info) override;
   virtual void ConnectFailed(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                             const RdmnetClientConnectFailedInfo *info) override;
+                             const RdmnetClientConnectFailedInfo* info) override;
   virtual void Disconnected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                            const RdmnetClientDisconnectedInfo *info) override;
+                            const RdmnetClientDisconnectedInfo* info) override;
   virtual void ClientListUpdate(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                client_list_action_t list_action, const ClientList *list) override;
+                                client_list_action_t list_action, const ClientList* list) override;
   virtual void RdmResponseReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                   const RemoteRdmResponse *resp) override;
+                                   const RemoteRdmResponse* resp) override;
   virtual void RdmCommandReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                  const RemoteRdmCommand *cmd) override;
+                                  const RemoteRdmCommand* cmd) override;
   virtual void StatusReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                              const RemoteRptStatus *status) override;
-  virtual void LlrpRdmCommandReceived(rdmnet_controller_t handle, const LlrpRemoteRdmCommand *cmd) override;
+                              const RemoteRptStatus* status) override;
+  virtual void LlrpRdmCommandReceived(rdmnet_controller_t handle, const LlrpRemoteRdmCommand* cmd) override;
 
 private:
   LwpaUuid my_cid_;
@@ -95,6 +95,6 @@ private:
   bool running_{false};
   rdmnet_controller_t controller_handle_{nullptr};
 
-  ControllerLog *log_{nullptr};
-  RDMnetLibNotify *notify_{nullptr};
+  ControllerLog* log_{nullptr};
+  RDMnetLibNotify* notify_{nullptr};
 };

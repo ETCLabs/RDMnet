@@ -38,7 +38,7 @@
 //
 // const char *BROKER_SOFTWARE_VERSION_LABEL = "v1.0";
 
-void BrokerResponder::ProcessRDMMessage(int /*conn*/, const RPTMessageRef & /*msg*/)
+void BrokerResponder::ProcessRDMMessage(int /*conn*/, const RPTMessageRef& /*msg*/)
 {
   //  uint16_t pid =
   //      static_cast<uint16_t>(getParameterId(const_cast<rdmBuffer *>(&msg.msg)));

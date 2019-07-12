@@ -87,7 +87,7 @@ struct BrokerSettings
     RDMNET_INIT_DYNAMIC_UID_REQUEST(&uid, manufacturer_id);
     uid_type = kDynamicUid;
   }
-  void SetStaticUid(const RdmUid &uid_in)
+  void SetStaticUid(const RdmUid& uid_in)
   {
     uid = uid_in;
     uid_type = kStaticUid;
@@ -119,7 +119,7 @@ struct BrokerSettings
   //unsigned int max_socket_per_read_thread{LWPA_SOCKET_MAX_POLL_SIZE};
 
   BrokerSettings() {}
-  BrokerSettings(const RdmUid &static_uid) { SetStaticUid(static_uid); }
+  BrokerSettings(const RdmUid& static_uid) { SetStaticUid(static_uid); }
   BrokerSettings(uint16_t rdm_manu_id) { SetDynamicUid(rdm_manu_id); }
 };
 
@@ -128,7 +128,7 @@ class BrokerNotify
 {
 public:
   /// The Scope of the Broker has changed via RDMnet configuration. The Broker should be restarted.
-  virtual void ScopeChanged(const std::string &new_scope) = 0;
+  virtual void ScopeChanged(const std::string& new_scope) = 0;
 };
 
 /// \brief Defines an instance of RDMnet %Broker functionality.
@@ -141,14 +141,14 @@ public:
 class Broker
 {
 public:
-  Broker(BrokerLog *log, BrokerSocketManager *socket_manager, BrokerNotify *notify);
+  Broker(BrokerLog* log, BrokerSocketManager* socket_manager, BrokerNotify* notify);
   virtual ~Broker();
 
-  bool Startup(const BrokerSettings &settings, uint16_t listen_port, std::vector<LwpaIpAddr> &listen_addrs);
+  bool Startup(const BrokerSettings& settings, uint16_t listen_port, std::vector<LwpaIpAddr>& listen_addrs);
   void Shutdown();
   void Tick();
 
-  void GetSettings(BrokerSettings &settings) const;
+  void GetSettings(BrokerSettings& settings) const;
 
 private:
   std::unique_ptr<BrokerCore> core_;

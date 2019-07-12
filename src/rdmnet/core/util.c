@@ -38,7 +38,7 @@
  *  \param[in] num Maximum number of characters to be copied from source.
  *  \return Destination.
  */
-char *rdmnet_safe_strncpy(char *destination, const char *source, size_t num)
+char* rdmnet_safe_strncpy(char* destination, const char* source, size_t num)
 {
   if (!destination || num == 0)
     return NULL;
@@ -50,14 +50,14 @@ char *rdmnet_safe_strncpy(char *destination, const char *source, size_t num)
 
 /* IntHandleManager functions */
 
-void init_int_handle_manager(IntHandleManager *manager, HandleValueInUseFunction value_in_use_func)
+void init_int_handle_manager(IntHandleManager* manager, HandleValueInUseFunction value_in_use_func)
 {
   manager->next_handle = 0;
   manager->handle_has_wrapped_around = false;
   manager->value_in_use = value_in_use_func;
 }
 
-int get_next_int_handle(IntHandleManager *manager)
+int get_next_int_handle(IntHandleManager* manager)
 {
   int new_handle = manager->next_handle;
   if (++manager->next_handle < 0)

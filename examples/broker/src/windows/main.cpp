@@ -38,7 +38,7 @@
 #include "win_broker_log.h"
 
 // Print the command-line usage details.
-void PrintHelp(wchar_t *app_name)
+void PrintHelp(wchar_t* app_name)
 {
   std::wcout << L"Usage: " << app_name << L" [OPTION]...\n";
   std::cout << "\n";
@@ -64,7 +64,7 @@ void PrintHelp(wchar_t *app_name)
 }
 
 // Parse the --scope=SCOPE command line option and transfer it to the BrokerShell instance.
-bool ParseAndSetScope(const LPWSTR scope_str, BrokerShell &broker_shell)
+bool ParseAndSetScope(const LPWSTR scope_str, BrokerShell& broker_shell)
 {
   if (wcslen(scope_str) != 0)
   {
@@ -79,14 +79,14 @@ bool ParseAndSetScope(const LPWSTR scope_str, BrokerShell &broker_shell)
 }
 
 // Parse the --ifaces=IFACE_LIST command line option and transfer it to the BrokerShell instance.
-bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell &broker_shell)
+bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell& broker_shell)
 {
   std::vector<LwpaIpAddr> addrs;
 
   if (wcslen(iface_list_str) != 0)
   {
-    WCHAR *context;
-    for (WCHAR *p = wcstok_s(iface_list_str, L",", &context); p != NULL; p = wcstok_s(NULL, L",", &context))
+    WCHAR* context;
+    for (WCHAR* p = wcstok_s(iface_list_str, L",", &context); p != NULL; p = wcstok_s(NULL, L",", &context))
     {
       LwpaIpAddr addr;
 
@@ -123,9 +123,9 @@ bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell &broker_shell
 }
 
 // Given a pointer to a string, parses out a mac addr
-void ParseMac(WCHAR *s, BrokerShell::MacAddr &mac_buf)
+void ParseMac(WCHAR* s, BrokerShell::MacAddr& mac_buf)
 {
-  WCHAR *p = s;
+  WCHAR* p = s;
 
   for (int index = 0; index < LWPA_NETINTINFO_MAC_LEN; ++index)
   {
@@ -135,14 +135,14 @@ void ParseMac(WCHAR *s, BrokerShell::MacAddr &mac_buf)
 }
 
 // Parse the --macs=MAC_LIST command line option and transfer it to the BrokerShell instance.
-bool ParseAndSetMacList(const LPWSTR mac_list_str, BrokerShell &broker_shell)
+bool ParseAndSetMacList(const LPWSTR mac_list_str, BrokerShell& broker_shell)
 {
   std::vector<BrokerShell::MacAddr> macs;
 
   if (wcslen(mac_list_str) != 0)
   {
-    WCHAR *context;
-    for (WCHAR *p = wcstok_s(mac_list_str, L",", &context); p != NULL; p = wcstok_s(NULL, L",", &context))
+    WCHAR* context;
+    for (WCHAR* p = wcstok_s(mac_list_str, L",", &context); p != NULL; p = wcstok_s(NULL, L",", &context))
     {
       BrokerShell::MacAddr mac_buf;
       ParseMac(p, mac_buf);
@@ -159,7 +159,7 @@ bool ParseAndSetMacList(const LPWSTR mac_list_str, BrokerShell &broker_shell)
 }
 
 // Parse the --port=PORT command line option and transfer it to the BrokerShell instance.
-bool ParseAndSetPort(const LPWSTR port_str, BrokerShell &broker_shell)
+bool ParseAndSetPort(const LPWSTR port_str, BrokerShell& broker_shell)
 {
   if (wcslen(port_str) != 0)
   {
@@ -184,7 +184,7 @@ static const std::map<std::wstring, int> log_levels = {
 // clang-format on
 
 // Parse the --log-level=LOG_LEVEL command line option and transfer it to the BrokerShell instance.
-bool ParseAndSetLogLevel(const LPWSTR log_level_str, BrokerShell &broker_shell)
+bool ParseAndSetLogLevel(const LPWSTR log_level_str, BrokerShell& broker_shell)
 {
   auto level = log_levels.find(log_level_str);
   if (level != log_levels.end())
@@ -205,7 +205,7 @@ enum class ParseResult
 };
 
 // Parse the command-line arguments.
-ParseResult ParseArgs(int argc, wchar_t *argv[], BrokerShell &broker_shell)
+ParseResult ParseArgs(int argc, wchar_t* argv[], BrokerShell& broker_shell)
 {
   if (argc > 1)
   {
@@ -285,7 +285,7 @@ VOID NETIOAPI_API_ InterfaceChangeCallback(IN PVOID CallerContext, IN PMIB_IPINT
   (void)Row;
   (void)NotificationType;
 
-  BrokerShell *shell = static_cast<BrokerShell *>(CallerContext);
+  BrokerShell* shell = static_cast<BrokerShell*>(CallerContext);
   if (shell)
   {
     shell->NetworkChanged();
@@ -306,7 +306,7 @@ BOOL WINAPI ConsoleSignalHandler(DWORD signal)
 
 // Windows console entry point for the example broker app.
 // Parse command-line arguments and then run the platform-neutral Broker shell.
-int wmain(int argc, wchar_t *argv[])
+int wmain(int argc, wchar_t* argv[])
 {
   bool should_run = true;
   int exit_code = 0;

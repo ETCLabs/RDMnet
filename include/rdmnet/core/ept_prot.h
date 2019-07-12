@@ -43,7 +43,7 @@ typedef struct EptDataMsg
 {
   uint16_t manufacturer_id;
   uint16_t protocol_id;
-  const uint8_t *data;
+  const uint8_t* data;
   size_t data_len;
 } EptDataMsg;
 
@@ -58,7 +58,7 @@ typedef struct EptStatusMsg
   /*! A status code that indicates the specific error or status condition. */
   ept_status_code_t status_code;
   /*! An optional implementation-defined status string to accompany this status message. */
-  const char *status_string;
+  const char* status_string;
 } EptStatusMsg;
 
 /*! An EPT message. */

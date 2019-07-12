@@ -58,7 +58,7 @@ typedef struct LlrpTargetNetintInfo
   uint32_t pending_reply_trans_num;
   LwpaTimer reply_backoff;
 
-  LlrpTarget *target;
+  LlrpTarget* target;
 } LlrpTargetNetintInfo;
 
 struct LlrpTarget
@@ -72,7 +72,7 @@ struct LlrpTarget
 
   // Network interfaces
 #if RDMNET_DYNAMIC_MEM
-  LlrpTargetNetintInfo *netints;
+  LlrpTargetNetintInfo* netints;
 #else
   LlrpTargetNetintInfo netints[RDMNET_LLRP_MAX_TARGET_NETINTS];
 #endif
@@ -82,11 +82,11 @@ struct LlrpTarget
 
   // Callback dispatch info
   LlrpTargetCallbacks callbacks;
-  void *callback_context;
+  void* callback_context;
 
   // Synchronized destruction tracking
   bool marked_for_destruction;
-  LlrpTarget *next_to_destroy;
+  LlrpTarget* next_to_destroy;
 };
 
 typedef enum
@@ -104,7 +104,7 @@ typedef struct TargetCallbackDispatchInfo
 {
   llrp_target_t handle;
   LlrpTargetCallbacks cbs;
-  void *context;
+  void* context;
 
   target_callback_t which;
   union

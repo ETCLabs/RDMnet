@@ -37,20 +37,20 @@ class BrokerItem : public RDMnetNetworkItem
 public:
   static const int BrokerItemType = QStandardItem::UserType + 2;
 
-  BrokerItem(const QString &scope, rdmnet_client_scope_t scope_handle,
-             const StaticBrokerConfig &static_broker = StaticBrokerConfig());
+  BrokerItem(const QString& scope, rdmnet_client_scope_t scope_handle,
+             const StaticBrokerConfig& static_broker = StaticBrokerConfig());
   virtual ~BrokerItem();
 
   virtual int type() const override;
   rdmnet_client_scope_t scope_handle() const { return scope_handle_; }
 
-  void setScope(const QString &scope) { scope_ = scope; }
+  void setScope(const QString& scope) { scope_ = scope; }
   QString scope() const { return scope_; }
 
-  void setConnected(bool connected, const LwpaSockaddr &broker_addr = LwpaSockaddr());
+  void setConnected(bool connected, const LwpaSockaddr& broker_addr = LwpaSockaddr());
   bool connected() const { return connected_; }
 
-  std::vector<RDMnetClientItem *> rdmnet_clients_;
+  std::vector<RDMnetClientItem*> rdmnet_clients_;
 
 protected:
   void updateText();

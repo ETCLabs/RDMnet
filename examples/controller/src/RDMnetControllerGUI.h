@@ -49,15 +49,15 @@ class RDMnetControllerGUI : public QMainWindow, public IHandlesBrokerStaticAdd
   Q_OBJECT
 
 public:
-  static RDMnetControllerGUI *makeRDMnetControllerGUI();
+  static RDMnetControllerGUI* makeRDMnetControllerGUI();
 
   ~RDMnetControllerGUI();
 
-  virtual void handleAddBrokerByIP(QString scope, const LwpaSockaddr &addr);
+  virtual void handleAddBrokerByIP(QString scope, const LwpaSockaddr& addr);
 
 public slots:
 
-  void networkTreeViewSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
+  void networkTreeViewSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
   void addScopeTriggered();
   void removeSelectedBrokerTriggered();
   void removeAllBrokersTriggered();
@@ -66,30 +66,30 @@ public slots:
   void openBrokerStaticAddDialog();
   void openLogWindowDialog();
   void openAboutDialog();
-  void processBrokerItemTextUpdate(const class BrokerItem *item);
-  void processFeatureSupportChange(const class RDMnetNetworkItem *item, SupportedDeviceFeature feature);
-  void expandNewItem(const QModelIndex &index, int type);
-  void identifyChanged(const RDMnetNetworkItem *item, bool identify);
+  void processBrokerItemTextUpdate(const class BrokerItem* item);
+  void processFeatureSupportChange(const class RDMnetNetworkItem* item, SupportedDeviceFeature feature);
+  void expandNewItem(const QModelIndex& index, int type);
+  void identifyChanged(const RDMnetNetworkItem* item, bool identify);
   void exitApplication();
 
 signals:
 
   void addScopeActivated(QString scope);
-  void removeSelectedBrokerActivated(class BrokerItem *brokerItem);
+  void removeSelectedBrokerActivated(class BrokerItem* brokerItem);
   void removeAllBrokersActivated();
-  void featureActivated(class RDMnetNetworkItem *device, SupportedDeviceFeature feature);
-  void addBrokerByIPActivated(QString scope, const LwpaSockaddr &addr);
+  void featureActivated(class RDMnetNetworkItem* device, SupportedDeviceFeature feature);
+  void addBrokerByIPActivated(QString scope, const LwpaSockaddr& addr);
 
 private:
-  explicit RDMnetControllerGUI(QWidget *parent = Q_NULLPTR);
+  explicit RDMnetControllerGUI(QWidget* parent = Q_NULLPTR);
 
   Ui::RDMnetControllerGUIClass ui;
 
-  RDMnetNetworkModel *main_network_model_{nullptr};
-  SimpleNetworkProxyModel *simple_net_proxy_{nullptr};
-  NetworkDetailsProxyModel *net_details_proxy_{nullptr};
-  ControllerLog *log_{nullptr};
-  RDMnetLibWrapper *rdmnet_library_{nullptr};
-  BrokerItem *currently_selected_broker_item_{nullptr};
-  RDMnetNetworkItem *currently_selected_network_item_{nullptr};
+  RDMnetNetworkModel* main_network_model_{nullptr};
+  SimpleNetworkProxyModel* simple_net_proxy_{nullptr};
+  NetworkDetailsProxyModel* net_details_proxy_{nullptr};
+  ControllerLog* log_{nullptr};
+  RDMnetLibWrapper* rdmnet_library_{nullptr};
+  BrokerItem* currently_selected_broker_item_{nullptr};
+  RDMnetNetworkItem* currently_selected_network_item_{nullptr};
 };

@@ -42,28 +42,27 @@ DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(dnssd_sock_t, DNSServiceRefSockFD, DNSServiceRef);
 FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceProcessResult, DNSServiceRef);
 FAKE_VOID_FUNC(DNSServiceRefDeallocate, DNSServiceRef);
-FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceRegister, DNSServiceRef *, DNSServiceFlags, uint32_t, const char *,
-                const char *, const char *, const char *, uint16_t, uint16_t, const void *, DNSServiceRegisterReply,
-                void *);
-FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceBrowse, DNSServiceRef *, DNSServiceFlags, uint32_t, const char *,
-                const char *, DNSServiceBrowseReply, void *);
-FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceResolve, DNSServiceRef *, DNSServiceFlags, uint32_t, const char *,
-                const char *, const char *, DNSServiceResolveReply, void *);
-FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceGetAddrInfo, DNSServiceRef *, DNSServiceFlags, uint32_t,
-                DNSServiceProtocol, const char *, DNSServiceGetAddrInfoReply, void *);
+FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceRegister, DNSServiceRef*, DNSServiceFlags, uint32_t, const char*,
+                const char*, const char*, const char*, uint16_t, uint16_t, const void*, DNSServiceRegisterReply, void*);
+FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceBrowse, DNSServiceRef*, DNSServiceFlags, uint32_t, const char*,
+                const char*, DNSServiceBrowseReply, void*);
+FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceResolve, DNSServiceRef*, DNSServiceFlags, uint32_t, const char*,
+                const char*, const char*, DNSServiceResolveReply, void*);
+FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceGetAddrInfo, DNSServiceRef*, DNSServiceFlags, uint32_t,
+                DNSServiceProtocol, const char*, DNSServiceGetAddrInfoReply, void*);
 
 // Mocking the C callback function pointers
-FAKE_VOID_FUNC(regcb_broker_registered, rdmnet_registered_broker_t, const char *, void *);
-FAKE_VOID_FUNC(regcb_broker_register_error, rdmnet_registered_broker_t, int, void *);
-FAKE_VOID_FUNC(regcb_broker_found, rdmnet_registered_broker_t, const RdmnetBrokerDiscInfo *, void *);
-FAKE_VOID_FUNC(regcb_broker_lost, rdmnet_registered_broker_t, const char *, const char *, void *);
-FAKE_VOID_FUNC(regcb_scope_monitor_error, rdmnet_registered_broker_t, const char *, int, void *);
+FAKE_VOID_FUNC(regcb_broker_registered, rdmnet_registered_broker_t, const char*, void*);
+FAKE_VOID_FUNC(regcb_broker_register_error, rdmnet_registered_broker_t, int, void*);
+FAKE_VOID_FUNC(regcb_broker_found, rdmnet_registered_broker_t, const RdmnetBrokerDiscInfo*, void*);
+FAKE_VOID_FUNC(regcb_broker_lost, rdmnet_registered_broker_t, const char*, const char*, void*);
+FAKE_VOID_FUNC(regcb_scope_monitor_error, rdmnet_registered_broker_t, const char*, int, void*);
 
-FAKE_VOID_FUNC(monitorcb_broker_found, rdmnet_scope_monitor_t, const RdmnetBrokerDiscInfo *, void *);
-FAKE_VOID_FUNC(monitorcb_broker_lost, rdmnet_scope_monitor_t, const char *, const char *, void *);
-FAKE_VOID_FUNC(monitorcb_scope_monitor_error, rdmnet_scope_monitor_t, const char *, int, void *);
+FAKE_VOID_FUNC(monitorcb_broker_found, rdmnet_scope_monitor_t, const RdmnetBrokerDiscInfo*, void*);
+FAKE_VOID_FUNC(monitorcb_broker_lost, rdmnet_scope_monitor_t, const char*, const char*, void*);
+FAKE_VOID_FUNC(monitorcb_scope_monitor_error, rdmnet_scope_monitor_t, const char*, int, void*);
 
-static void set_reg_callbacks(RdmnetDiscBrokerCallbacks *callbacks)
+static void set_reg_callbacks(RdmnetDiscBrokerCallbacks* callbacks)
 {
   callbacks->broker_found = regcb_broker_found;
   callbacks->broker_lost = regcb_broker_lost;
@@ -72,7 +71,7 @@ static void set_reg_callbacks(RdmnetDiscBrokerCallbacks *callbacks)
   callbacks->broker_register_error = regcb_broker_register_error;
 }
 
-static void set_monitor_callbacks(RdmnetScopeMonitorCallbacks *callbacks)
+static void set_monitor_callbacks(RdmnetScopeMonitorCallbacks* callbacks)
 {
   callbacks->broker_found = monitorcb_broker_found;
   callbacks->broker_lost = monitorcb_broker_lost;
@@ -158,8 +157,8 @@ void TestDiscoveryBonjour::MonitorDefaultScope()
 
   // Set up the fakes called by rdmnetdisc_start_monitoring
   DNSServiceRefSockFD_fake.return_val = DEFAULT_MONITOR_SOCKET_VAL;
-  DNSServiceBrowse_fake.custom_fake = [](DNSServiceRef *ref, DNSServiceFlags, uint32_t, const char *, const char *,
-                                         DNSServiceBrowseReply, void *) -> DNSServiceErrorType {
+  DNSServiceBrowse_fake.custom_fake = [](DNSServiceRef* ref, DNSServiceFlags, uint32_t, const char*, const char*,
+                                         DNSServiceBrowseReply, void*) -> DNSServiceErrorType {
     *ref = DEFAULT_MONITOR_DNS_REF;
     return kDNSServiceErr_NoError;
   };
@@ -249,7 +248,7 @@ TEST_F(TestDiscoveryBonjour, monitor_tick_sockets)
   ASSERT_EQ(DNSServiceProcessResult_fake.call_count, 0u);
 
   // If a socket has activity, DNSServiceProcessResult should be called with that socket.
-  lwpa_poll_wait_fake.custom_fake = [](LwpaPollContext *context, LwpaPollEvent *event, int) -> lwpa_error_t {
+  lwpa_poll_wait_fake.custom_fake = [](LwpaPollContext* context, LwpaPollEvent* event, int) -> lwpa_error_t {
     EXPECT_NE(context, nullptr);
     EXPECT_NE(event, nullptr);
     if (event)
@@ -275,8 +274,8 @@ TEST_F(TestDiscoveryBonjour, resolve_cleanup)
   // Drive the state machine by calling the appropriate callbacks
 
   // DNSServiceBrowseReply
-  DNSServiceResolve_fake.custom_fake = [](DNSServiceRef *ref, DNSServiceFlags, uint32_t, const char *, const char *,
-                                          const char *, DNSServiceResolveReply, void *) -> DNSServiceErrorType {
+  DNSServiceResolve_fake.custom_fake = [](DNSServiceRef* ref, DNSServiceFlags, uint32_t, const char*, const char*,
+                                          const char*, DNSServiceResolveReply, void*) -> DNSServiceErrorType {
     *ref = DEFAULT_MONITOR_DNS_REF;
     return kDNSServiceErr_NoError;
   };
@@ -292,15 +291,15 @@ TEST_F(TestDiscoveryBonjour, resolve_cleanup)
   ASSERT_STREQ(DNSServiceResolve_fake.arg5_val, E133_DEFAULT_DOMAIN);
 
   // DNSServiceResolveReply
-  DNSServiceGetAddrInfo_fake.custom_fake = [](DNSServiceRef *ref, DNSServiceFlags, uint32_t, DNSServiceProtocol,
-                                              const char *, DNSServiceGetAddrInfoReply, void *) -> DNSServiceErrorType {
+  DNSServiceGetAddrInfo_fake.custom_fake = [](DNSServiceRef* ref, DNSServiceFlags, uint32_t, DNSServiceProtocol,
+                                              const char*, DNSServiceGetAddrInfoReply, void*) -> DNSServiceErrorType {
     *ref = DEFAULT_MONITOR_DNS_REF;
     return kDNSServiceErr_NoError;
   };
   DNSServiceResolveReply resolve_cb = DNSServiceResolve_fake.arg6_val;
   resolve_cb(DEFAULT_MONITOR_DNS_REF, 0, 0, kDNSServiceErr_NoError, default_full_service_name_.c_str(), "testhost",
              default_discovered_broker_.port, TXTRecordGetLength(&txt_record_),
-             reinterpret_cast<const unsigned char *>(TXTRecordGetBytesPtr(&txt_record_)),
+             reinterpret_cast<const unsigned char*>(TXTRecordGetBytesPtr(&txt_record_)),
              DNSServiceResolve_fake.arg7_val);
 
   ASSERT_EQ(DNSServiceRefDeallocate_fake.call_count, 1u);

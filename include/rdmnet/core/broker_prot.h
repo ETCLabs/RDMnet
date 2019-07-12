@@ -206,7 +206,7 @@ typedef struct ClientList
    *  another ClientList is received with partial set to false. */
   bool more_coming;
   /*! The head of a linked list of Client Entries. */
-  ClientEntryData *client_entry_list;
+  ClientEntryData* client_entry_list;
 } ClientList;
 
 typedef struct DynamicUidRequestListEntry DynamicUidRequestListEntry;
@@ -215,7 +215,7 @@ struct DynamicUidRequestListEntry
 {
   uint16_t manu_id;
   LwpaUuid rid;
-  DynamicUidRequestListEntry *next;
+  DynamicUidRequestListEntry* next;
 };
 
 /*! A list of Responder IDs (RIDs) for which Dynamic UID assignment is requested. */
@@ -227,7 +227,7 @@ typedef struct DynamicUidRequestList
    *  list until another DynamicUidRequestList is received with partial set to false. */
   bool more_coming;
   /*! The head of a linked list of RIDs for which Dynamic UIDs are requested. */
-  DynamicUidRequestListEntry *request_list;
+  DynamicUidRequestListEntry* request_list;
 } DynamicUidRequestList;
 
 typedef struct DynamicUidMapping DynamicUidMapping;
@@ -237,13 +237,13 @@ struct DynamicUidMapping
   dynamic_uid_status_t status_code;
   RdmUid uid;
   LwpaUuid rid;
-  DynamicUidMapping *next;
+  DynamicUidMapping* next;
 };
 
 typedef struct DynamicUidAssignmentList
 {
   bool more_coming;
-  DynamicUidMapping *mapping_list;
+  DynamicUidMapping* mapping_list;
 } DynamicUidAssignmentList;
 
 typedef struct FetchUidAssignmentListEntry FetchUidAssignmentListEntry;
@@ -252,7 +252,7 @@ typedef struct FetchUidAssignmentListEntry FetchUidAssignmentListEntry;
 struct FetchUidAssignmentListEntry
 {
   RdmUid uid;
-  FetchUidAssignmentListEntry *next;
+  FetchUidAssignmentListEntry* next;
 };
 
 /*! A list of Dynamic UIDs for which the currently assigned Responder IDs (RIDs) are being
@@ -266,7 +266,7 @@ typedef struct FetchUidAssignmentList
   bool more_coming;
   /*! The head of a linked list of Dynamic UIDs for which the currently assigned RIDs are being
    *  requested. */
-  FetchUidAssignmentListEntry *assignment_list;
+  FetchUidAssignmentListEntry* assignment_list;
 } FetchUidAssignmentList;
 
 /*! The Disconnect message in the broker protocol. */
@@ -397,21 +397,21 @@ typedef struct BrokerMessage
 extern "C" {
 #endif
 
-size_t bufsize_client_list(const ClientEntryData *client_entry_list);
-size_t bufsize_dynamic_uid_assignment_list(const DynamicUidMapping *mapping_list);
+size_t bufsize_client_list(const ClientEntryData* client_entry_list);
+size_t bufsize_dynamic_uid_assignment_list(const DynamicUidMapping* mapping_list);
 
-size_t pack_connect_reply(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const ConnectReplyMsg *data);
-size_t pack_client_list(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, uint16_t vector,
-                        const ClientEntryData *client_entry_list);
-size_t pack_dynamic_uid_assignment_list(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid,
-                                        const DynamicUidMapping *mapping_list);
+size_t pack_connect_reply(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, const ConnectReplyMsg* data);
+size_t pack_client_list(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, uint16_t vector,
+                        const ClientEntryData* client_entry_list);
+size_t pack_dynamic_uid_assignment_list(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid,
+                                        const DynamicUidMapping* mapping_list);
 
-lwpa_error_t send_connect_reply(rdmnet_conn_t handle, const LwpaUuid *local_cid, const ConnectReplyMsg *data);
-lwpa_error_t send_fetch_client_list(rdmnet_conn_t handle, const LwpaUuid *local_cid);
-lwpa_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const LwpaUuid *local_cid,
-                                       const DynamicUidRequestListEntry *request_list);
-lwpa_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const LwpaUuid *local_cid,
-                                            const FetchUidAssignmentListEntry *uid_list);
+lwpa_error_t send_connect_reply(rdmnet_conn_t handle, const LwpaUuid* local_cid, const ConnectReplyMsg* data);
+lwpa_error_t send_fetch_client_list(rdmnet_conn_t handle, const LwpaUuid* local_cid);
+lwpa_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const LwpaUuid* local_cid,
+                                       const DynamicUidRequestListEntry* request_list);
+lwpa_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const LwpaUuid* local_cid,
+                                            const FetchUidAssignmentListEntry* uid_list);
 
 #ifdef __cplusplus
 }

@@ -55,8 +55,8 @@ struct ClientScopeListEntry
 
   rdmnet_scope_monitor_t monitor_handle;
 
-  RdmnetClient *client;
-  ClientScopeListEntry *next;
+  RdmnetClient* client;
+  ClientScopeListEntry* next;
 };
 
 #define rpt_client_uid_is_dynamic(configuidptr) ((configuidptr)->id == 0)
@@ -79,8 +79,8 @@ struct RdmnetClient
   rdmnet_client_t handle;
   client_protocol_t type;
   LwpaUuid cid;
-  void *callback_context;
-  ClientScopeListEntry *scope_list;
+  void* callback_context;
+  ClientScopeListEntry* scope_list;
   char search_domain[E133_DOMAIN_STRING_PADDED_LENGTH];
 
   llrp_target_t llrp_handle;
@@ -124,12 +124,12 @@ typedef struct DisconnectedArgs
 typedef struct BrokerMsgReceivedArgs
 {
   rdmnet_client_scope_t scope_handle;
-  const BrokerMessage *msg;
+  const BrokerMessage* msg;
 } BrokerMsgReceivedArgs;
 
 typedef struct LlrpMsgReceivedArgs
 {
-  const LlrpRemoteRdmCommand *cmd;
+  const LlrpRemoteRdmCommand* cmd;
 } LlrpMsgReceivedArgs;
 
 typedef struct RptMsgReceivedArgs
@@ -165,7 +165,7 @@ typedef struct ClientCallbackDispatchInfo
   rdmnet_client_t handle;
   client_protocol_t type;
   client_callback_t which;
-  void *context;
+  void* context;
   union
   {
     RptCallbackDispatchInfo rpt;

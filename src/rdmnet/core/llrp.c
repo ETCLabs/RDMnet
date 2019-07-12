@@ -38,16 +38,16 @@ LwpaSockaddr kLlrpIpv6RespAddrInternal;
 LwpaSockaddr kLlrpIpv4RequestAddrInternal;
 LwpaSockaddr kLlrpIpv6RequestAddrInternal;
 
-const LwpaSockaddr *kLlrpIpv4RespAddr = &kLlrpIpv4RespAddrInternal;
-const LwpaSockaddr *kLlrpIpv6RespAddr = &kLlrpIpv6RespAddrInternal;
-const LwpaSockaddr *kLlrpIpv4RequestAddr = &kLlrpIpv4RequestAddrInternal;
-const LwpaSockaddr *kLlrpIpv6RequestAddr = &kLlrpIpv6RequestAddrInternal;
+const LwpaSockaddr* kLlrpIpv4RespAddr = &kLlrpIpv4RespAddrInternal;
+const LwpaSockaddr* kLlrpIpv6RespAddr = &kLlrpIpv6RespAddrInternal;
+const LwpaSockaddr* kLlrpIpv4RequestAddr = &kLlrpIpv4RequestAddrInternal;
+const LwpaSockaddr* kLlrpIpv6RequestAddr = &kLlrpIpv6RequestAddrInternal;
 
 /*********************** Private function prototypes *************************/
 
 static LwpaIpAddr get_llrp_mcast_addr(bool manager, lwpa_iptype_t ip_type);
 static lwpa_error_t create_sys_socket(lwpa_iptype_t ip_type, unsigned int netint_index, bool manager,
-                                      lwpa_socket_t *socket);
+                                      lwpa_socket_t* socket);
 static lwpa_error_t subscribe_multicast(lwpa_socket_t socket, lwpa_iptype_t ip_type, unsigned int netint_index,
                                         bool manager);
 
@@ -101,7 +101,7 @@ void rdmnet_llrp_deinit()
 #endif
 }
 
-lwpa_error_t create_llrp_socket(lwpa_iptype_t ip_type, unsigned int netint_index, bool manager, lwpa_socket_t *socket)
+lwpa_error_t create_llrp_socket(lwpa_iptype_t ip_type, unsigned int netint_index, bool manager, lwpa_socket_t* socket)
 {
   lwpa_socket_t socket_out;
 
@@ -113,7 +113,7 @@ lwpa_error_t create_llrp_socket(lwpa_iptype_t ip_type, unsigned int netint_index
   return res;
 }
 
-lwpa_error_t create_sys_socket(lwpa_iptype_t ip_type, unsigned int netint_index, bool manager, lwpa_socket_t *socket)
+lwpa_error_t create_sys_socket(lwpa_iptype_t ip_type, unsigned int netint_index, bool manager, lwpa_socket_t* socket)
 {
   lwpa_socket_t sock = LWPA_SOCKET_INVALID;
   int sockopt_ip_level = (ip_type == kLwpaIpTypeV6 ? LWPA_IPPROTO_IPV6 : LWPA_IPPROTO_IP);
@@ -125,24 +125,24 @@ lwpa_error_t create_sys_socket(lwpa_iptype_t ip_type, unsigned int netint_index,
     // SO_REUSEADDR allows multiple sockets to bind to LLRP_PORT, which is very important for our
     // multicast needs.
     int value = 1;
-    res = lwpa_setsockopt(sock, LWPA_SOL_SOCKET, LWPA_SO_REUSEADDR, (const void *)(&value), sizeof(value));
+    res = lwpa_setsockopt(sock, LWPA_SOL_SOCKET, LWPA_SO_REUSEADDR, (const void*)(&value), sizeof(value));
   }
 
   if (res == kLwpaErrOk)
   {
     // We also set SO_REUSEPORT but don't check the return, because it is not applicable on all platforms
     int value = 1;
-    lwpa_setsockopt(sock, LWPA_SOL_SOCKET, LWPA_SO_REUSEPORT, (const void *)(&value), sizeof(value));
+    lwpa_setsockopt(sock, LWPA_SOL_SOCKET, LWPA_SO_REUSEPORT, (const void*)(&value), sizeof(value));
 
     // MULTICAST_TTL controls the TTL field in outgoing multicast datagrams.
     value = LLRP_MULTICAST_TTL_VAL;
-    res = lwpa_setsockopt(sock, sockopt_ip_level, LWPA_IP_MULTICAST_TTL, (const void *)(&value), sizeof(value));
+    res = lwpa_setsockopt(sock, sockopt_ip_level, LWPA_IP_MULTICAST_TTL, (const void*)(&value), sizeof(value));
   }
 
   if (res == kLwpaErrOk)
   {
     // MULTICAST_IF is critical for multicast sends to go over the correct interface.
-    res = lwpa_setsockopt(sock, sockopt_ip_level, LWPA_IP_MULTICAST_IF, (const void *)(&netint_index),
+    res = lwpa_setsockopt(sock, sockopt_ip_level, LWPA_IP_MULTICAST_IF, (const void*)(&netint_index),
                           sizeof netint_index);
   }
 

@@ -53,19 +53,19 @@ public:
     kDuplicateId
   };
 
-  AddResult AddStaticUid(rdmnet_conn_t conn_handle, const RdmUid &static_uid);
-  AddResult AddDynamicUid(rdmnet_conn_t conn_handle, const LwpaUuid &cid_or_rid, RdmUid &new_dynamic_uid);
+  AddResult AddStaticUid(rdmnet_conn_t conn_handle, const RdmUid& static_uid);
+  AddResult AddDynamicUid(rdmnet_conn_t conn_handle, const LwpaUuid& cid_or_rid, RdmUid& new_dynamic_uid);
 
-  void RemoveUid(const RdmUid &uid);
+  void RemoveUid(const RdmUid& uid);
 
-  bool UidToHandle(const RdmUid &uid, rdmnet_conn_t &conn_handle) const;
+  bool UidToHandle(const RdmUid& uid, rdmnet_conn_t& conn_handle) const;
 
   void SetNextDeviceId(uint32_t next_device_id) { next_device_id_ = next_device_id; }
 
 private:
   struct ReservationData
   {
-    explicit ReservationData(const RdmUid &uid) : assigned_uid(uid) {}
+    explicit ReservationData(const RdmUid& uid) : assigned_uid(uid) {}
 
     RdmUid assigned_uid;
     bool currently_connected{true};
@@ -75,7 +75,7 @@ private:
     explicit UidData(rdmnet_conn_t conn_handle) : connection_handle(conn_handle) {}
 
     rdmnet_conn_t connection_handle;
-    ReservationData *reservation{nullptr};
+    ReservationData* reservation{nullptr};
   };
 
   // The uid-keyed lookup table

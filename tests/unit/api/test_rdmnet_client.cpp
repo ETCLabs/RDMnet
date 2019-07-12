@@ -42,20 +42,19 @@
 
 DEFINE_FFF_GLOBALS;
 
-FAKE_VOID_FUNC(rdmnet_client_connected, rdmnet_client_t, rdmnet_client_scope_t, const RdmnetClientConnectedInfo *,
-               void *);
+FAKE_VOID_FUNC(rdmnet_client_connected, rdmnet_client_t, rdmnet_client_scope_t, const RdmnetClientConnectedInfo*,
+               void*);
 FAKE_VOID_FUNC(rdmnet_client_connect_failed, rdmnet_client_t, rdmnet_client_scope_t,
-               const RdmnetClientConnectFailedInfo *, void *);
-FAKE_VOID_FUNC(rdmnet_client_disconnected, rdmnet_client_t, rdmnet_client_scope_t, const RdmnetClientDisconnectedInfo *,
-               void *);
-FAKE_VOID_FUNC(rdmnet_client_broker_msg_received, rdmnet_client_t, rdmnet_client_scope_t, const BrokerMessage *,
-               void *);
-FAKE_VOID_FUNC(rpt_client_msg_received, rdmnet_client_t, rdmnet_client_scope_t, const RptClientMessage *, void *);
-FAKE_VOID_FUNC(ept_client_msg_received, rdmnet_client_t, rdmnet_client_scope_t, const EptClientMessage *, void *);
+               const RdmnetClientConnectFailedInfo*, void*);
+FAKE_VOID_FUNC(rdmnet_client_disconnected, rdmnet_client_t, rdmnet_client_scope_t, const RdmnetClientDisconnectedInfo*,
+               void*);
+FAKE_VOID_FUNC(rdmnet_client_broker_msg_received, rdmnet_client_t, rdmnet_client_scope_t, const BrokerMessage*, void*);
+FAKE_VOID_FUNC(rpt_client_msg_received, rdmnet_client_t, rdmnet_client_scope_t, const RptClientMessage*, void*);
+FAKE_VOID_FUNC(ept_client_msg_received, rdmnet_client_t, rdmnet_client_scope_t, const EptClientMessage*, void*);
 
 rdmnet_conn_t g_next_conn_handle;
 
-extern "C" lwpa_error_t custom_connection_create(const RdmnetConnectionConfig *config, rdmnet_conn_t *handle)
+extern "C" lwpa_error_t custom_connection_create(const RdmnetConnectionConfig* config, rdmnet_conn_t* handle)
 {
   (void)config;
   *handle = g_next_conn_handle++;

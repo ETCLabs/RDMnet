@@ -36,7 +36,7 @@ BEGIN_INCLUDE_QT_HEADERS()
 #include <QApplication>
 END_INCLUDE_QT_HEADERS()
 
-PropertyEditorsDelegate::PropertyEditorsDelegate(QObject *parent) : QStyledItemDelegate(parent)
+PropertyEditorsDelegate::PropertyEditorsDelegate(QObject* parent) : QStyledItemDelegate(parent)
 {
 }
 
@@ -44,16 +44,16 @@ PropertyEditorsDelegate::~PropertyEditorsDelegate()
 {
 }
 
-QWidget *PropertyEditorsDelegate::createEditor(QWidget *parent, const QStyleOptionViewItem &option,
-                                               const QModelIndex &index) const
+QWidget* PropertyEditorsDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option,
+                                               const QModelIndex& index) const
 {
-  QWidget *result = NULL;
+  QWidget* result = NULL;
   EditorWidgetType editorType =
       static_cast<EditorWidgetType>(index.data(RDMnetNetworkItem::EditorWidgetTypeRole).toInt());
 
   if (editorType == EditorWidgetType::kComboBox)
   {
-    QComboBox *editor = new QComboBox(parent);
+    QComboBox* editor = new QComboBox(parent);
 
     editor->setFrame(false);
     editor->setEditable(false);
@@ -61,13 +61,13 @@ QWidget *PropertyEditorsDelegate::createEditor(QWidget *parent, const QStyleOpti
   }
   else if (editorType == EditorWidgetType::kButton)
   {
-    PropertyPushButton *button = new PropertyPushButton(parent, QPersistentModelIndex(index));
-    QObject *callbackObject = index.data(RDMnetNetworkItem::CallbackObjectRole).value<QObject *>();
+    PropertyPushButton* button = new PropertyPushButton(parent, QPersistentModelIndex(index));
+    QObject* callbackObject = index.data(RDMnetNetworkItem::CallbackObjectRole).value<QObject*>();
     QString callbackSlotQString = index.data(RDMnetNetworkItem::CallbackSlotRole).toString();
     QByteArray local8Bit = callbackSlotQString.toLocal8Bit();
-    const char *callbackSlot = local8Bit.constData();
+    const char* callbackSlot = local8Bit.constData();
 
-    connect(button, SIGNAL(clicked(const QPersistentModelIndex &)), callbackObject, callbackSlot, Qt::AutoConnection);
+    connect(button, SIGNAL(clicked(const QPersistentModelIndex&)), callbackObject, callbackSlot, Qt::AutoConnection);
 
     button->setEnabled(true);
     result = button;
@@ -80,10 +80,10 @@ QWidget *PropertyEditorsDelegate::createEditor(QWidget *parent, const QStyleOpti
   return result;
 }
 
-void PropertyEditorsDelegate::setEditorData(QWidget *editor, const QModelIndex &index) const
+void PropertyEditorsDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const
 {
-  QComboBox *comboBox = dynamic_cast<QComboBox *>(editor);
-  QPushButton *pushButton = dynamic_cast<QPushButton *>(editor);
+  QComboBox* comboBox = dynamic_cast<QComboBox*>(editor);
+  QPushButton* pushButton = dynamic_cast<QPushButton*>(editor);
   EditorWidgetType editorType =
       static_cast<EditorWidgetType>(index.data(RDMnetNetworkItem::EditorWidgetTypeRole).toInt());
 
@@ -115,9 +115,9 @@ void PropertyEditorsDelegate::setEditorData(QWidget *editor, const QModelIndex &
   }
 }
 
-void PropertyEditorsDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const
+void PropertyEditorsDelegate::setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const
 {
-  QComboBox *comboBox = dynamic_cast<QComboBox *>(editor);
+  QComboBox* comboBox = dynamic_cast<QComboBox*>(editor);
   EditorWidgetType editorType =
       static_cast<EditorWidgetType>(index.data(RDMnetNetworkItem::EditorWidgetTypeRole).toInt());
 
@@ -146,14 +146,14 @@ void PropertyEditorsDelegate::setModelData(QWidget *editor, QAbstractItemModel *
   }
 }
 
-void PropertyEditorsDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option,
-                                                   const QModelIndex & /*index*/) const
+void PropertyEditorsDelegate::updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option,
+                                                   const QModelIndex& /*index*/) const
 {
   editor->setGeometry(option.rect);
 }
 
-void PropertyEditorsDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
-                                    const QModelIndex &index) const
+void PropertyEditorsDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
+                                    const QModelIndex& index) const
 {
   if (static_cast<EditorWidgetType>(index.data(RDMnetNetworkItem::EditorWidgetTypeRole).toInt()) == kButton)
   {
@@ -172,8 +172,8 @@ void PropertyEditorsDelegate::paint(QPainter *painter, const QStyleOptionViewIte
   }
 }
 
-bool PropertyEditorsDelegate::editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option,
-                                          const QModelIndex &index)
+bool PropertyEditorsDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option,
+                                          const QModelIndex& index)
 {
   if (static_cast<EditorWidgetType>(index.data(RDMnetNetworkItem::EditorWidgetTypeRole).toInt()) == kButton)
   {

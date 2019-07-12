@@ -31,10 +31,10 @@
 #include "rdmnet_mock/core.h"
 #include "rdmnet_mock/private/core.h"
 
-FAKE_VOID_FUNC(conncb_connected, rdmnet_conn_t, const RdmnetConnectedInfo *, void *);
-FAKE_VOID_FUNC(conncb_connect_failed, rdmnet_conn_t, const RdmnetConnectFailedInfo *, void *);
-FAKE_VOID_FUNC(conncb_disconnected, rdmnet_conn_t, const RdmnetDisconnectedInfo *, void *);
-FAKE_VOID_FUNC(conncb_msg_received, rdmnet_conn_t, const RdmnetMessage *, void *);
+FAKE_VOID_FUNC(conncb_connected, rdmnet_conn_t, const RdmnetConnectedInfo*, void*);
+FAKE_VOID_FUNC(conncb_connect_failed, rdmnet_conn_t, const RdmnetConnectFailedInfo*, void*);
+FAKE_VOID_FUNC(conncb_disconnected, rdmnet_conn_t, const RdmnetDisconnectedInfo*, void*);
+FAKE_VOID_FUNC(conncb_msg_received, rdmnet_conn_t, const RdmnetMessage*, void*);
 
 class TestConnection : public testing::Test
 {

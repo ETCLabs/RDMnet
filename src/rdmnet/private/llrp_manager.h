@@ -42,7 +42,7 @@ struct DiscoveredTargetInternal
 {
   KnownUid known_uid;
   LwpaUuid cid;
-  DiscoveredTargetInternal *next;
+  DiscoveredTargetInternal* next;
 };
 
 typedef struct LlrpManager LlrpManager;
@@ -74,11 +74,11 @@ struct LlrpManager
 
   // Callback dispatch info
   LlrpManagerCallbacks callbacks;
-  void *callback_context;
+  void* callback_context;
 
   // Synchronized destruction tracking
   bool marked_for_destruction;
-  LlrpManager *next_to_destroy;
+  LlrpManager* next_to_destroy;
 };
 
 typedef enum
@@ -91,7 +91,7 @@ typedef enum
 
 typedef struct TargetDiscoveredArgs
 {
-  const DiscoveredLlrpTarget *target;
+  const DiscoveredLlrpTarget* target;
 } TargetDiscoveredArgs;
 
 typedef struct RdmRespReceivedArgs
@@ -103,7 +103,7 @@ typedef struct ManagerCallbackDispatchInfo
 {
   llrp_manager_t handle;
   LlrpManagerCallbacks cbs;
-  void *context;
+  void* context;
 
   manager_callback_t which;
   union

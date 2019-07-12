@@ -66,9 +66,9 @@ typedef struct LlrpRemoteRdmResponse
 
 typedef struct LlrpManagerCallbacks
 {
-  void (*target_discovered)(llrp_manager_t handle, const DiscoveredLlrpTarget *target, void *context);
-  void (*discovery_finished)(llrp_manager_t handle, void *context);
-  void (*rdm_resp_received)(llrp_manager_t handle, const LlrpRemoteRdmResponse *resp, void *context);
+  void (*target_discovered)(llrp_manager_t handle, const DiscoveredLlrpTarget* target, void* context);
+  void (*discovery_finished)(llrp_manager_t handle, void* context);
+  void (*rdm_resp_received)(llrp_manager_t handle, const LlrpRemoteRdmResponse* resp, void* context);
 } LlrpManagerCallbacks;
 
 typedef struct LlrpManagerConfig
@@ -78,21 +78,21 @@ typedef struct LlrpManagerConfig
   LwpaUuid cid;
   uint16_t manu_id;
   LlrpManagerCallbacks callbacks;
-  void *callback_context;
+  void* callback_context;
 } LlrpManagerConfig;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-lwpa_error_t rdmnet_llrp_manager_create(const LlrpManagerConfig *config, llrp_manager_t *handle);
+lwpa_error_t rdmnet_llrp_manager_create(const LlrpManagerConfig* config, llrp_manager_t* handle);
 void rdmnet_llrp_manager_destroy(llrp_manager_t handle);
 
 lwpa_error_t rdmnet_llrp_start_discovery(llrp_manager_t handle, uint16_t filter);
 lwpa_error_t rdmnet_llrp_stop_discovery(llrp_manager_t handle);
 
-lwpa_error_t rdmnet_llrp_send_rdm_command(llrp_manager_t handle, const LlrpLocalRdmCommand *cmd,
-                                          uint32_t *transaction_num);
+lwpa_error_t rdmnet_llrp_send_rdm_command(llrp_manager_t handle, const LlrpLocalRdmCommand* cmd,
+                                          uint32_t* transaction_num);
 
 #ifdef __cplusplus
 }

@@ -35,17 +35,17 @@ class PropertyItem : public RDMnetNetworkItem
 public:
   static const int PropertyItemType = QStandardItem::UserType + 6;
 
-  PropertyItem(const QString &fullName, const QString &displayText);
+  PropertyItem(const QString& fullName, const QString& displayText);
   virtual ~PropertyItem();
 
   virtual int type() const override;
 
-  PropertyValueItem *getValueItem();
-  void setValueItem(PropertyValueItem *item, bool deleteItemArgumentIfCopied = true);
+  PropertyValueItem* getValueItem();
+  void setValueItem(PropertyValueItem* item, bool deleteItemArgumentIfCopied = true);
 
   QString getFullName();
 
 protected:
-  PropertyValueItem *m_ValueItem;
+  PropertyValueItem* m_ValueItem;
   QString m_FullName;
 };

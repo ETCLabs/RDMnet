@@ -28,7 +28,7 @@
 #include "SimpleNetworkProxyModel.h"
 #include "PropertyItem.h"
 
-void SimpleNetworkProxyModel::directChildrenRevealed(const QModelIndex &parentIndex)
+void SimpleNetworkProxyModel::directChildrenRevealed(const QModelIndex& parentIndex)
 {
   emit expanded(mapToSource(parentIndex));
 }
@@ -77,24 +77,24 @@ SimpleNetworkProxyModel::~SimpleNetworkProxyModel()
 //	return QSortFilterProxyModel::hasChildren(parent);// return true;
 //}
 
-void SimpleNetworkProxyModel::setSourceModel(QAbstractItemModel *sourceModel)
+void SimpleNetworkProxyModel::setSourceModel(QAbstractItemModel* sourceModel)
 {
   QSortFilterProxyModel::setSourceModel(sourceModel);
 
-  sourceNetworkModel = dynamic_cast<RDMnetNetworkModel *>(sourceModel);
+  sourceNetworkModel = dynamic_cast<RDMnetNetworkModel*>(sourceModel);
 }
 
-bool SimpleNetworkProxyModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const
+bool SimpleNetworkProxyModel::filterAcceptsRow(int source_row, const QModelIndex& source_parent) const
 {
   if (source_parent.isValid())
   {
     if (sourceNetworkModel)
     {
-      QStandardItem *item = sourceNetworkModel->itemFromIndex(source_parent);
+      QStandardItem* item = sourceNetworkModel->itemFromIndex(source_parent);
 
       if (item)
       {
-        QStandardItem *child = item->child(source_row);
+        QStandardItem* child = item->child(source_row);
 
         if (child)
         {

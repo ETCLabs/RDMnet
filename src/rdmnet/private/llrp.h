@@ -44,10 +44,10 @@ typedef enum
 extern "C" {
 #endif
 
-extern const LwpaSockaddr *kLlrpIpv4RespAddr;
-extern const LwpaSockaddr *kLlrpIpv6RespAddr;
-extern const LwpaSockaddr *kLlrpIpv4RequestAddr;
-extern const LwpaSockaddr *kLlrpIpv6RequestAddr;
+extern const LwpaSockaddr* kLlrpIpv4RespAddr;
+extern const LwpaSockaddr* kLlrpIpv6RespAddr;
+extern const LwpaSockaddr* kLlrpIpv4RequestAddr;
+extern const LwpaSockaddr* kLlrpIpv6RequestAddr;
 
 lwpa_error_t rdmnet_llrp_init();
 void rdmnet_llrp_deinit();
@@ -55,8 +55,8 @@ void rdmnet_llrp_deinit();
 void rdmnet_llrp_tick();
 
 lwpa_error_t create_llrp_send_socket(lwpa_iptype_t ip_type, unsigned int netint_index, llrp_socket_addr_t llrp_addr,
-                                     lwpa_socket_t *socket);
-lwpa_error_t create_llrp_recv_socket(lwpa_iptype_t ip_type, llrp_socket_addr_t llrp_addr, lwpa_socket_t *socket);
+                                     lwpa_socket_t* socket);
+lwpa_error_t create_llrp_recv_socket(lwpa_iptype_t ip_type, llrp_socket_addr_t llrp_addr, lwpa_socket_t* socket);
 
 #ifdef __cplusplus
 }

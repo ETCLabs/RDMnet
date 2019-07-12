@@ -106,7 +106,7 @@ typedef struct RptStatusMsg
   /*! A status code that indicates the specific error or status condition. */
   rpt_status_code_t status_code;
   /*! An optional implementation-defined status string to accompany this status message. */
-  const char *status_string;
+  const char* status_string;
 } RptStatusMsg;
 
 typedef struct RdmBufListEntry RdmBufListEntry;
@@ -115,7 +115,7 @@ typedef struct RdmBufListEntry RdmBufListEntry;
 struct RdmBufListEntry
 {
   RdmBuffer msg;
-  RdmBufListEntry *next;
+  RdmBufListEntry* next;
 };
 
 /*! A list of packed RDM Commands. Two types of RPT messages contain an RdmCmdList: Request and
@@ -128,7 +128,7 @@ typedef struct RdmBufList
    *  another RdmCmdList is received with partial set to false. */
   bool more_coming;
   /*! The head of a linked list of packed RDM Commands. */
-  RdmBufListEntry *list;
+  RdmBufListEntry* list;
 } RdmBufList;
 
 /*! An RPT message. */
@@ -170,23 +170,23 @@ typedef struct RptMessage
 extern "C" {
 #endif
 
-size_t bufsize_rpt_request(const RdmBuffer *cmd);
-size_t bufsize_rpt_status(const RptStatusMsg *status);
-size_t bufsize_rpt_notification(const RdmBuffer *cmd_arr, size_t cmd_arr_size);
+size_t bufsize_rpt_request(const RdmBuffer* cmd);
+size_t bufsize_rpt_status(const RptStatusMsg* status);
+size_t bufsize_rpt_notification(const RdmBuffer* cmd_arr, size_t cmd_arr_size);
 
-size_t pack_rpt_request(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
-                        const RdmBuffer *cmd);
-size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
-                       const RptStatusMsg *status);
-size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
-                             const RdmBuffer *cmd_arr, size_t cmd_arr_size);
+size_t pack_rpt_request(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, const RptHeader* header,
+                        const RdmBuffer* cmd);
+size_t pack_rpt_status(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, const RptHeader* header,
+                       const RptStatusMsg* status);
+size_t pack_rpt_notification(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, const RptHeader* header,
+                             const RdmBuffer* cmd_arr, size_t cmd_arr_size);
 
-lwpa_error_t send_rpt_request(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
-                              const RdmBuffer *cmd);
-lwpa_error_t send_rpt_status(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
-                             const RptStatusMsg *status);
-lwpa_error_t send_rpt_notification(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
-                                   const RdmBuffer *cmd_arr, size_t cmd_arr_size);
+lwpa_error_t send_rpt_request(rdmnet_conn_t handle, const LwpaUuid* local_cid, const RptHeader* header,
+                              const RdmBuffer* cmd);
+lwpa_error_t send_rpt_status(rdmnet_conn_t handle, const LwpaUuid* local_cid, const RptHeader* header,
+                             const RptStatusMsg* status);
+lwpa_error_t send_rpt_notification(rdmnet_conn_t handle, const LwpaUuid* local_cid, const RptHeader* header,
+                                   const RdmBuffer* cmd_arr, size_t cmd_arr_size);
 
 #ifdef __cplusplus
 }

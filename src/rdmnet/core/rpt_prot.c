@@ -71,16 +71,16 @@
 
 /*********************** Private function prototypes *************************/
 
-static void pack_rpt_header(size_t length, uint32_t vector, const RptHeader *header, uint8_t *buf);
-static lwpa_error_t send_rpt_header(RdmnetConnection *conn, const LwpaRootLayerPdu *rlp, uint32_t rpt_vector,
-                                    const RptHeader *header, uint8_t *buf, size_t buflen);
-static size_t calc_request_pdu_size(const RdmBuffer *cmd);
-static size_t calc_status_pdu_size(const RptStatusMsg *status);
-static size_t calc_notification_pdu_size(const RdmBuffer *cmd_arr, size_t num_cmds);
+static void pack_rpt_header(size_t length, uint32_t vector, const RptHeader* header, uint8_t* buf);
+static lwpa_error_t send_rpt_header(RdmnetConnection* conn, const LwpaRootLayerPdu* rlp, uint32_t rpt_vector,
+                                    const RptHeader* header, uint8_t* buf, size_t buflen);
+static size_t calc_request_pdu_size(const RdmBuffer* cmd);
+static size_t calc_status_pdu_size(const RptStatusMsg* status);
+static size_t calc_notification_pdu_size(const RdmBuffer* cmd_arr, size_t num_cmds);
 
 /*************************** Function definitions ****************************/
 
-void pack_rpt_header(size_t length, uint32_t vector, const RptHeader *header, uint8_t *buf)
+void pack_rpt_header(size_t length, uint32_t vector, const RptHeader* header, uint8_t* buf)
 {
   buf[0] = 0xf0;
   LWPA_PDU_PACK_EXT_LEN(buf, length);
@@ -95,10 +95,10 @@ void pack_rpt_header(size_t length, uint32_t vector, const RptHeader *header, ui
   buf[27] = 0;
 }
 
-size_t pack_rpt_header_with_rlp(const LwpaRootLayerPdu *rlp, uint8_t *buf, size_t buflen, uint32_t vector,
-                                const RptHeader *header)
+size_t pack_rpt_header_with_rlp(const LwpaRootLayerPdu* rlp, uint8_t* buf, size_t buflen, uint32_t vector,
+                                const RptHeader* header)
 {
-  uint8_t *cur_ptr = buf;
+  uint8_t* cur_ptr = buf;
   size_t data_size = lwpa_root_layer_buf_size(rlp, 1);
 
   if (data_size == 0)
@@ -121,8 +121,8 @@ size_t pack_rpt_header_with_rlp(const LwpaRootLayerPdu *rlp, uint8_t *buf, size_
   return cur_ptr - buf;
 }
 
-lwpa_error_t send_rpt_header(RdmnetConnection *conn, const LwpaRootLayerPdu *rlp, uint32_t rpt_vector,
-                             const RptHeader *header, uint8_t *buf, size_t buflen)
+lwpa_error_t send_rpt_header(RdmnetConnection* conn, const LwpaRootLayerPdu* rlp, uint32_t rpt_vector,
+                             const RptHeader* header, uint8_t* buf, size_t buflen)
 {
   size_t data_size = lwpa_root_layer_buf_size(rlp, 1);
   if (data_size == 0)
@@ -155,7 +155,7 @@ lwpa_error_t send_rpt_header(RdmnetConnection *conn, const LwpaRootLayerPdu *rlp
   return kLwpaErrOk;
 }
 
-size_t calc_request_pdu_size(const RdmBuffer *cmd)
+size_t calc_request_pdu_size(const RdmBuffer* cmd)
 {
   return REQUEST_NOTIF_PDU_HEADER_SIZE + RDM_CMD_PDU_LEN(cmd);
 }
@@ -164,7 +164,7 @@ size_t calc_request_pdu_size(const RdmBuffer *cmd)
  *  \param[in] cmd Encapsulated RDM Command that will occupy the RPT Request message.
  *  \return Required buffer size, or 0 on error.
  */
-size_t bufsize_rpt_request(const RdmBuffer *cmd)
+size_t bufsize_rpt_request(const RdmBuffer* cmd)
 {
   return (cmd ? (RPT_PDU_FULL_HEADER_SIZE + calc_request_pdu_size(cmd)) : 0);
 }
@@ -177,8 +177,8 @@ size_t bufsize_rpt_request(const RdmBuffer *cmd)
  *  \param[in] cmd Encapsulated RDM Command that will occupy the RPT Request message.
  *  \return Number of bytes packed, or 0 on error.
  */
-size_t pack_rpt_request(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
-                        const RdmBuffer *cmd)
+size_t pack_rpt_request(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, const RptHeader* header,
+                        const RdmBuffer* cmd)
 {
   if (!buf || !local_cid || !header || !cmd || buflen < bufsize_rpt_request(cmd))
   {
@@ -192,7 +192,7 @@ size_t pack_rpt_request(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, 
   rlp.vector = ACN_VECTOR_ROOT_RPT;
   rlp.datalen = RPT_PDU_HEADER_SIZE + request_pdu_size;
 
-  uint8_t *cur_ptr = buf;
+  uint8_t* cur_ptr = buf;
   size_t data_size = pack_rpt_header_with_rlp(&rlp, buf, buflen, VECTOR_RPT_REQUEST, header);
   if (data_size == 0)
     return 0;
@@ -216,8 +216,8 @@ size_t pack_rpt_request(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, 
  *          #kLwpaErrSys: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
-lwpa_error_t send_rpt_request(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
-                              const RdmBuffer *cmd)
+lwpa_error_t send_rpt_request(rdmnet_conn_t handle, const LwpaUuid* local_cid, const RptHeader* header,
+                              const RdmBuffer* cmd)
 {
   if (!local_cid || !header || !cmd)
     return kLwpaErrInvalid;
@@ -227,7 +227,7 @@ lwpa_error_t send_rpt_request(rdmnet_conn_t handle, const LwpaUuid *local_cid, c
   rlp.vector = ACN_VECTOR_ROOT_RPT;
   rlp.datalen = RPT_PDU_HEADER_SIZE + calc_request_pdu_size(cmd);
 
-  RdmnetConnection *conn;
+  RdmnetConnection* conn;
   lwpa_error_t res = rdmnet_start_message(handle, &conn);
   if (res != kLwpaErrOk)
     return res;
@@ -259,7 +259,7 @@ lwpa_error_t send_rpt_request(rdmnet_conn_t handle, const LwpaUuid *local_cid, c
   return rdmnet_end_message(conn);
 }
 
-size_t calc_status_pdu_size(const RptStatusMsg *status)
+size_t calc_status_pdu_size(const RptStatusMsg* status)
 {
 #if RDMNET_DYNAMIC_MEM
   return (RPT_STATUS_HEADER_SIZE +
@@ -273,7 +273,7 @@ size_t calc_status_pdu_size(const RptStatusMsg *status)
  *  \param[in] status RPT Status message data.
  *  \return Required buffer size, or 0 on error.
  */
-size_t bufsize_rpt_status(const RptStatusMsg *status)
+size_t bufsize_rpt_status(const RptStatusMsg* status)
 {
   return (status ? RPT_PDU_FULL_HEADER_SIZE + calc_status_pdu_size(status) : 0);
 }
@@ -286,8 +286,8 @@ size_t bufsize_rpt_status(const RptStatusMsg *status)
  *  \param[in] status RPT Status message data.
  *  \return Number of bytes packed, or 0 on error.
  */
-size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
-                       const RptStatusMsg *status)
+size_t pack_rpt_status(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, const RptHeader* header,
+                       const RptStatusMsg* status)
 {
   if (!buf || !local_cid || !header || !status || buflen < bufsize_rpt_status(status))
   {
@@ -301,7 +301,7 @@ size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, c
   rlp.vector = ACN_VECTOR_ROOT_RPT;
   rlp.datalen = RPT_PDU_HEADER_SIZE + status_pdu_size;
 
-  uint8_t *cur_ptr = buf;
+  uint8_t* cur_ptr = buf;
   size_t data_size = pack_rpt_header_with_rlp(&rlp, buf, buflen, VECTOR_RPT_STATUS, header);
   if (data_size == 0)
     return 0;
@@ -311,7 +311,7 @@ size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, c
   cur_ptr += RPT_STATUS_HEADER_SIZE;
   if (status_pdu_size > RPT_STATUS_HEADER_SIZE)
   {
-    RDMNET_MSVC_NO_DEP_WRN strncpy((char *)cur_ptr, status->status_string, RPT_STATUS_STRING_MAXLEN);
+    RDMNET_MSVC_NO_DEP_WRN strncpy((char*)cur_ptr, status->status_string, RPT_STATUS_STRING_MAXLEN);
     cur_ptr += (status_pdu_size - RPT_STATUS_HEADER_SIZE);
   }
   return cur_ptr - buf;
@@ -327,8 +327,8 @@ size_t pack_rpt_status(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, c
  *          #kLwpaErrSys: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
-lwpa_error_t send_rpt_status(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
-                             const RptStatusMsg *status)
+lwpa_error_t send_rpt_status(rdmnet_conn_t handle, const LwpaUuid* local_cid, const RptHeader* header,
+                             const RptStatusMsg* status)
 {
   if (!local_cid || !header || !status)
     return kLwpaErrInvalid;
@@ -340,7 +340,7 @@ lwpa_error_t send_rpt_status(rdmnet_conn_t handle, const LwpaUuid *local_cid, co
   rlp.vector = ACN_VECTOR_ROOT_RPT;
   rlp.datalen = RPT_PDU_HEADER_SIZE + status_pdu_size;
 
-  RdmnetConnection *conn;
+  RdmnetConnection* conn;
   lwpa_error_t res = rdmnet_start_message(handle, &conn);
   if (res != kLwpaErrOk)
     return res;
@@ -363,7 +363,7 @@ lwpa_error_t send_rpt_status(rdmnet_conn_t handle, const LwpaUuid *local_cid, co
 
   if (status_pdu_size > RPT_STATUS_HEADER_SIZE)
   {
-    send_res = lwpa_send(conn->sock, (uint8_t *)status->status_string, status_pdu_size - RPT_STATUS_HEADER_SIZE, 0);
+    send_res = lwpa_send(conn->sock, (uint8_t*)status->status_string, status_pdu_size - RPT_STATUS_HEADER_SIZE, 0);
     if (send_res < 0)
     {
       rdmnet_end_message(conn);
@@ -374,11 +374,11 @@ lwpa_error_t send_rpt_status(rdmnet_conn_t handle, const LwpaUuid *local_cid, co
   return rdmnet_end_message(conn);
 }
 
-size_t calc_notification_pdu_size(const RdmBuffer *cmd_arr, size_t cmd_arr_size)
+size_t calc_notification_pdu_size(const RdmBuffer* cmd_arr, size_t cmd_arr_size)
 {
   size_t res = REQUEST_NOTIF_PDU_HEADER_SIZE;
 
-  for (const RdmBuffer *cur_cmd = cmd_arr; cur_cmd < cmd_arr + cmd_arr_size; ++cur_cmd)
+  for (const RdmBuffer* cur_cmd = cmd_arr; cur_cmd < cmd_arr + cmd_arr_size; ++cur_cmd)
   {
     res += RDM_CMD_PDU_LEN(cur_cmd);
   }
@@ -390,7 +390,7 @@ size_t calc_notification_pdu_size(const RdmBuffer *cmd_arr, size_t cmd_arr_size)
  *  \param[in] cmd_arr_size Size of packed RDM Command array.
  *  \return Required buffer size, or 0 on error.
  */
-size_t bufsize_rpt_notification(const RdmBuffer *cmd_arr, size_t cmd_arr_size)
+size_t bufsize_rpt_notification(const RdmBuffer* cmd_arr, size_t cmd_arr_size)
 {
   return (cmd_arr ? (RPT_PDU_FULL_HEADER_SIZE + calc_notification_pdu_size(cmd_arr, cmd_arr_size)) : 0);
 }
@@ -404,8 +404,8 @@ size_t bufsize_rpt_notification(const RdmBuffer *cmd_arr, size_t cmd_arr_size)
  *  \param[in] cmd_arr_size Size of packed RDM Command array.
  *  \return Number of bytes packed, or 0 on error.
  */
-size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaUuid *local_cid, const RptHeader *header,
-                             const RdmBuffer *cmd_arr, size_t cmd_arr_size)
+size_t pack_rpt_notification(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, const RptHeader* header,
+                             const RdmBuffer* cmd_arr, size_t cmd_arr_size)
 {
   if (!buf || !local_cid || !header || !cmd_arr || cmd_arr_size == 0 ||
       buflen < bufsize_rpt_notification(cmd_arr, cmd_arr_size))
@@ -420,7 +420,7 @@ size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaUuid *local_
   rlp.vector = ACN_VECTOR_ROOT_RPT;
   rlp.datalen = RPT_PDU_HEADER_SIZE + notif_pdu_size;
 
-  uint8_t *cur_ptr = buf;
+  uint8_t* cur_ptr = buf;
   size_t data_size = pack_rpt_header_with_rlp(&rlp, buf, buflen, VECTOR_RPT_NOTIFICATION, header);
   if (data_size == 0)
     return 0;
@@ -429,7 +429,7 @@ size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaUuid *local_
   PACK_NOTIFICATION_HEADER(notif_pdu_size, cur_ptr);
   cur_ptr += REQUEST_NOTIF_PDU_HEADER_SIZE;
 
-  for (const RdmBuffer *cur_cmd = cmd_arr; cur_cmd < cmd_arr + cmd_arr_size; ++cur_cmd)
+  for (const RdmBuffer* cur_cmd = cmd_arr; cur_cmd < cmd_arr + cmd_arr_size; ++cur_cmd)
   {
     PACK_RDM_CMD_PDU(cur_cmd, cur_ptr);
     cur_ptr += RDM_CMD_PDU_LEN(cur_cmd);
@@ -448,8 +448,8 @@ size_t pack_rpt_notification(uint8_t *buf, size_t buflen, const LwpaUuid *local_
  *          #kLwpaErrSys: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
-lwpa_error_t send_rpt_notification(rdmnet_conn_t handle, const LwpaUuid *local_cid, const RptHeader *header,
-                                   const RdmBuffer *cmd_arr, size_t cmd_arr_size)
+lwpa_error_t send_rpt_notification(rdmnet_conn_t handle, const LwpaUuid* local_cid, const RptHeader* header,
+                                   const RdmBuffer* cmd_arr, size_t cmd_arr_size)
 {
   if (!local_cid || !header || !cmd_arr || cmd_arr_size == 0)
     return kLwpaErrInvalid;
@@ -461,7 +461,7 @@ lwpa_error_t send_rpt_notification(rdmnet_conn_t handle, const LwpaUuid *local_c
   rlp.vector = ACN_VECTOR_ROOT_RPT;
   rlp.datalen = RPT_PDU_HEADER_SIZE + notif_pdu_size;
 
-  RdmnetConnection *conn;
+  RdmnetConnection* conn;
   lwpa_error_t res = rdmnet_start_message(handle, &conn);
   if (res != kLwpaErrOk)
     return res;
@@ -482,7 +482,7 @@ lwpa_error_t send_rpt_notification(rdmnet_conn_t handle, const LwpaUuid *local_c
     return (lwpa_error_t)send_res;
   }
 
-  for (const RdmBuffer *cur_cmd = cmd_arr; cur_cmd < cmd_arr + cmd_arr_size; ++cur_cmd)
+  for (const RdmBuffer* cur_cmd = cmd_arr; cur_cmd < cmd_arr + cmd_arr_size; ++cur_cmd)
   {
     PACK_RDM_CMD_PDU(cur_cmd, buf);
     send_res = lwpa_send(conn->sock, buf, RDM_CMD_PDU_LEN(cur_cmd), 0);

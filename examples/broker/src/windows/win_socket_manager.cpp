@@ -50,9 +50,9 @@ enum class MessageKey
 };
 
 // Function for the worker threads which make up the thread pool.
-unsigned __stdcall SocketWorkerThread(void *arg)
+unsigned __stdcall SocketWorkerThread(void* arg)
 {
-  WinBrokerSocketManager *sock_mgr = reinterpret_cast<WinBrokerSocketManager *>(arg);
+  WinBrokerSocketManager* sock_mgr = reinterpret_cast<WinBrokerSocketManager*>(arg);
   if (!sock_mgr)
     return 1;
 
@@ -61,11 +61,11 @@ unsigned __stdcall SocketWorkerThread(void *arg)
   {
     DWORD bytes_read = 0;
     ULONG_PTR cmd;
-    OVERLAPPED *overlapped = nullptr;
+    OVERLAPPED* overlapped = nullptr;
 
     BOOL result = GetQueuedCompletionStatus(sock_mgr->iocp(), &bytes_read, &cmd, &overlapped, INFINITE);
 
-    SocketData *sock_data = nullptr;
+    SocketData* sock_data = nullptr;
     if (overlapped)
       sock_data = CONTAINING_RECORD(overlapped, SocketData, overlapped);
 
@@ -151,7 +151,7 @@ unsigned __stdcall SocketWorkerThread(void *arg)
   return 0;
 }
 
-bool WinBrokerSocketManager::Startup(RDMnet::BrokerSocketManagerNotify *notify)
+bool WinBrokerSocketManager::Startup(RDMnet::BrokerSocketManagerNotify* notify)
 {
   bool ok = true;
   notify_ = notify;
@@ -198,7 +198,7 @@ bool WinBrokerSocketManager::Shutdown()
 
   {  // Read lock scope
     lwpa::ReadGuard socket_read(socket_lock_);
-    for (auto &sock_data : sockets_)
+    for (auto& sock_data : sockets_)
     {
       // Trigger the worker thread to stop processing each socket.
       sock_data.second->close_requested = true;
@@ -213,7 +213,7 @@ bool WinBrokerSocketManager::Shutdown()
   }
   thread_interface_->WaitForThreadsCompletion(static_cast<DWORD>(worker_threads_.size()), worker_threads_.data(), TRUE,
                                               500);
-  for (const auto &thread : worker_threads_)
+  for (const auto& thread : worker_threads_)
     thread_interface_->CleanupThread(thread);
   worker_threads_.clear();
 

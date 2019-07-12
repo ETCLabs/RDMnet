@@ -216,15 +216,15 @@ typedef struct RdmnetMsgBuf
   bool have_preamble;
   RlpState rlp_state;
 
-  const LwpaLogParams *lparams;
+  const LwpaLogParams* lparams;
 } RdmnetMsgBuf;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void rdmnet_msg_buf_init(RdmnetMsgBuf *msg_buf);
-lwpa_error_t rdmnet_msg_buf_recv(RdmnetMsgBuf *msg_buf, const uint8_t *data, size_t data_size);
+void rdmnet_msg_buf_init(RdmnetMsgBuf* msg_buf);
+lwpa_error_t rdmnet_msg_buf_recv(RdmnetMsgBuf* msg_buf, const uint8_t* data, size_t data_size);
 
 #ifdef __cplusplus
 }

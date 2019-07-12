@@ -65,7 +65,7 @@ typedef int rdmnet_conn_t;
 extern "C" {
 #endif
 
-lwpa_error_t rdmnet_core_init(const LwpaLogParams *log_params);
+lwpa_error_t rdmnet_core_init(const LwpaLogParams* log_params);
 void rdmnet_core_deinit();
 
 void rdmnet_core_tick();

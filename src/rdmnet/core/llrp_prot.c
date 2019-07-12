@@ -47,14 +47,14 @@ LwpaUuid kLlrpBroadcastCid;
 
 /*********************** Private function prototypes *************************/
 
-static bool parse_llrp_pdu(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest, LlrpMessage *msg);
-static bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest,
-                                     RemoteProbeRequest *request);
-static bool parse_llrp_probe_reply(const uint8_t *buf, size_t buflen, DiscoveredLlrpTarget *reply);
-static bool parse_llrp_rdm_command(const uint8_t *buf, size_t buflen, RdmBuffer *cmd);
+static bool parse_llrp_pdu(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest, LlrpMessage* msg);
+static bool parse_llrp_probe_request(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest,
+                                     RemoteProbeRequest* request);
+static bool parse_llrp_probe_reply(const uint8_t* buf, size_t buflen, DiscoveredLlrpTarget* reply);
+static bool parse_llrp_rdm_command(const uint8_t* buf, size_t buflen, RdmBuffer* cmd);
 
-static lwpa_error_t send_llrp_rdm(lwpa_socket_t sock, uint8_t *buf, const LwpaSockaddr *dest_addr,
-                                  const LlrpHeader *header, const RdmBuffer *rdm_msg);
+static lwpa_error_t send_llrp_rdm(lwpa_socket_t sock, uint8_t* buf, const LwpaSockaddr* dest_addr,
+                                  const LlrpHeader* header, const RdmBuffer* rdm_msg);
 
 /*************************** Function definitions ****************************/
 
@@ -63,7 +63,7 @@ void llrp_prot_init()
   lwpa_string_to_uuid(&kLlrpBroadcastCid, LLRP_BROADCAST_CID, sizeof(LLRP_BROADCAST_CID));
 }
 
-bool parse_llrp_message(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest, LlrpMessage *msg)
+bool parse_llrp_message(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest, LlrpMessage* msg)
 {
   if (!buf || !msg || buflen < LLRP_MIN_TOTAL_MESSAGE_SIZE)
     return false;
@@ -84,13 +84,13 @@ bool parse_llrp_message(const uint8_t *buf, size_t buflen, const LlrpMessageInte
   return parse_llrp_pdu(rlp.pdata, rlp.datalen, interest, msg);
 }
 
-bool parse_llrp_pdu(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest, LlrpMessage *msg)
+bool parse_llrp_pdu(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest, LlrpMessage* msg)
 {
   if (buflen < LLRP_MIN_PDU_SIZE)
     return false;
 
   // Check the PDU length
-  const uint8_t *cur_ptr = buf;
+  const uint8_t* cur_ptr = buf;
   size_t llrp_pdu_len = LWPA_PDU_LENGTH(cur_ptr);
   if (llrp_pdu_len > buflen || llrp_pdu_len < LLRP_MIN_PDU_SIZE)
     return false;
@@ -138,18 +138,18 @@ bool parse_llrp_pdu(const uint8_t *buf, size_t buflen, const LlrpMessageInterest
   return false;
 }
 
-bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest,
-                              RemoteProbeRequest *request)
+bool parse_llrp_probe_request(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest,
+                              RemoteProbeRequest* request)
 {
   if (buflen < PROBE_REQUEST_PDU_MIN_SIZE)
     return false;
 
   // Check the PDU length
-  const uint8_t *cur_ptr = buf;
+  const uint8_t* cur_ptr = buf;
   size_t pdu_len = LWPA_PDU_LENGTH(cur_ptr);
   if (pdu_len > buflen || pdu_len < PROBE_REQUEST_PDU_MIN_SIZE)
     return false;
-  const uint8_t *buf_end = cur_ptr + pdu_len;
+  const uint8_t* buf_end = cur_ptr + pdu_len;
 
   // Fill in the rest of the Probe Request data
   cur_ptr += 3;
@@ -201,12 +201,12 @@ bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessa
   return true;
 }
 
-bool parse_llrp_probe_reply(const uint8_t *buf, size_t buflen, DiscoveredLlrpTarget *reply)
+bool parse_llrp_probe_reply(const uint8_t* buf, size_t buflen, DiscoveredLlrpTarget* reply)
 {
   if (buflen < PROBE_REPLY_PDU_SIZE)
     return false;
 
-  const uint8_t *cur_ptr = buf;
+  const uint8_t* cur_ptr = buf;
   size_t pdu_len = LWPA_PDU_LENGTH(cur_ptr);
   if (pdu_len != PROBE_REPLY_PDU_SIZE)
     return false;
@@ -226,12 +226,12 @@ bool parse_llrp_probe_reply(const uint8_t *buf, size_t buflen, DiscoveredLlrpTar
   return true;
 }
 
-bool parse_llrp_rdm_command(const uint8_t *buf, size_t buflen, RdmBuffer *cmd)
+bool parse_llrp_rdm_command(const uint8_t* buf, size_t buflen, RdmBuffer* cmd)
 {
   if (buflen < LLRP_RDM_CMD_PDU_MIN_SIZE)
     return false;
 
-  const uint8_t *cur_ptr = buf;
+  const uint8_t* cur_ptr = buf;
   size_t pdu_len = LWPA_PDU_LENGTH(cur_ptr);
   if (pdu_len > buflen || pdu_len > LLRP_RDM_CMD_PDU_MAX_SIZE || pdu_len < LLRP_RDM_CMD_PDU_MIN_SIZE)
     return false;
@@ -245,9 +245,9 @@ bool parse_llrp_rdm_command(const uint8_t *buf, size_t buflen, RdmBuffer *cmd)
   return true;
 }
 
-size_t lwpa_pack_llrp_header(uint8_t *buf, size_t pdu_len, uint32_t vector, const LlrpHeader *header)
+size_t lwpa_pack_llrp_header(uint8_t* buf, size_t pdu_len, uint32_t vector, const LlrpHeader* header)
 {
-  uint8_t *cur_ptr = buf;
+  uint8_t* cur_ptr = buf;
 
   *cur_ptr = 0xf0;
   LWPA_PDU_PACK_EXT_LEN(cur_ptr, pdu_len);
@@ -264,11 +264,11 @@ size_t lwpa_pack_llrp_header(uint8_t *buf, size_t pdu_len, uint32_t vector, cons
 #define PROBE_REQUEST_RLP_DATA_MIN_SIZE (LLRP_HEADER_SIZE + PROBE_REQUEST_PDU_MIN_SIZE)
 #define PROBE_REQUEST_RLP_DATA_MAX_SIZE (PROBE_REQUEST_RLP_DATA_MIN_SIZE + (6 * LLRP_KNOWN_UID_SIZE))
 
-lwpa_error_t send_llrp_probe_request(lwpa_socket_t sock, uint8_t *buf, bool ipv6, const LlrpHeader *header,
-                                     const LocalProbeRequest *probe_request)
+lwpa_error_t send_llrp_probe_request(lwpa_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
+                                     const LocalProbeRequest* probe_request)
 {
-  uint8_t *cur_ptr = buf;
-  uint8_t *buf_end = cur_ptr + LLRP_MANAGER_MAX_MESSAGE_SIZE;
+  uint8_t* cur_ptr = buf;
+  uint8_t* buf_end = cur_ptr + LLRP_MANAGER_MAX_MESSAGE_SIZE;
 
   // Pack the UDP Preamble
   cur_ptr += lwpa_pack_udp_preamble(cur_ptr, buf_end - cur_ptr);
@@ -279,7 +279,7 @@ lwpa_error_t send_llrp_probe_request(lwpa_socket_t sock, uint8_t *buf, bool ipv6
   rlp.datalen = PROBE_REQUEST_RLP_DATA_MIN_SIZE;
 
   // Calculate the data length
-  const KnownUid *cur_uid = probe_request->uid_list;
+  const KnownUid* cur_uid = probe_request->uid_list;
   while (cur_uid && rlp.datalen < PROBE_REQUEST_RLP_DATA_MAX_SIZE)
   {
     rlp.datalen += 6;
@@ -330,11 +330,11 @@ lwpa_error_t send_llrp_probe_request(lwpa_socket_t sock, uint8_t *buf, bool ipv6
 
 #define PROBE_REPLY_RLP_DATA_SIZE (LLRP_HEADER_SIZE + PROBE_REPLY_PDU_SIZE)
 
-lwpa_error_t send_llrp_probe_reply(lwpa_socket_t sock, uint8_t *buf, bool ipv6, const LlrpHeader *header,
-                                   const DiscoveredLlrpTarget *target_info)
+lwpa_error_t send_llrp_probe_reply(lwpa_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
+                                   const DiscoveredLlrpTarget* target_info)
 {
-  uint8_t *cur_ptr = buf;
-  uint8_t *buf_end = cur_ptr + LLRP_TARGET_MAX_MESSAGE_SIZE;
+  uint8_t* cur_ptr = buf;
+  uint8_t* buf_end = cur_ptr + LLRP_TARGET_MAX_MESSAGE_SIZE;
 
   // Pack the UDP Preamble
   cur_ptr += lwpa_pack_udp_preamble(cur_ptr, buf_end - cur_ptr);
@@ -372,11 +372,11 @@ lwpa_error_t send_llrp_probe_reply(lwpa_socket_t sock, uint8_t *buf, bool ipv6, 
 
 #define RDM_CMD_RLP_DATA_MIN_SIZE (LLRP_HEADER_SIZE + 3 /* RDM cmd PDU Flags + Length */)
 
-lwpa_error_t send_llrp_rdm(lwpa_socket_t sock, uint8_t *buf, const LwpaSockaddr *dest_addr, const LlrpHeader *header,
-                           const RdmBuffer *rdm_msg)
+lwpa_error_t send_llrp_rdm(lwpa_socket_t sock, uint8_t* buf, const LwpaSockaddr* dest_addr, const LlrpHeader* header,
+                           const RdmBuffer* rdm_msg)
 {
-  uint8_t *cur_ptr = buf;
-  uint8_t *buf_end = cur_ptr + LLRP_MAX_MESSAGE_SIZE;
+  uint8_t* cur_ptr = buf;
+  uint8_t* buf_end = cur_ptr + LLRP_MAX_MESSAGE_SIZE;
 
   // Pack the UDP Preamble
   cur_ptr += lwpa_pack_udp_preamble(cur_ptr, buf_end - cur_ptr);
@@ -406,14 +406,14 @@ lwpa_error_t send_llrp_rdm(lwpa_socket_t sock, uint8_t *buf, const LwpaSockaddr 
     return (lwpa_error_t)send_res;
 }
 
-lwpa_error_t send_llrp_rdm_command(lwpa_socket_t sock, uint8_t *buf, bool ipv6, const LlrpHeader *header,
-                                   const RdmBuffer *cmd)
+lwpa_error_t send_llrp_rdm_command(lwpa_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
+                                   const RdmBuffer* cmd)
 {
   return send_llrp_rdm(sock, buf, ipv6 ? kLlrpIpv6RequestAddr : kLlrpIpv4RequestAddr, header, cmd);
 }
 
-lwpa_error_t send_llrp_rdm_response(lwpa_socket_t sock, uint8_t *buf, bool ipv6, const LlrpHeader *header,
-                                    const RdmBuffer *resp)
+lwpa_error_t send_llrp_rdm_response(lwpa_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
+                                    const RdmBuffer* resp)
 {
   return send_llrp_rdm(sock, buf, ipv6 ? kLlrpIpv6RespAddr : kLlrpIpv4RespAddr, header, resp);
 }

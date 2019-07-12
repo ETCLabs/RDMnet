@@ -90,7 +90,7 @@ void PrintAllSizes()
   PRINT_SIZE(ClientCallbackDispatchInfo);
 }
 
-int main(int /*argc*/, char * /*argv*/ [])
+int main(int /*argc*/, char* /*argv*/[])
 {
   PrintAllSizes();
   return 0;

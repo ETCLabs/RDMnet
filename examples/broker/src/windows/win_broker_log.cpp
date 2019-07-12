@@ -29,7 +29,7 @@
 #include <iostream>
 #include <cstdarg>
 
-WindowsBrokerLog::WindowsBrokerLog(const std::string &file_name) : RDMnet::BrokerLog(), utcoffset_(0)
+WindowsBrokerLog::WindowsBrokerLog(const std::string& file_name) : RDMnet::BrokerLog(), utcoffset_(0)
 {
   file_.open(file_name.c_str(), std::fstream::out);
   if (file_.fail())
@@ -60,7 +60,7 @@ WindowsBrokerLog::~WindowsBrokerLog()
   file_.close();
 }
 
-void WindowsBrokerLog::GetTimeFromCallback(LwpaLogTimeParams *time)
+void WindowsBrokerLog::GetTimeFromCallback(LwpaLogTimeParams* time)
 {
   SYSTEMTIME win_time;
   GetLocalTime(&win_time);
@@ -74,7 +74,7 @@ void WindowsBrokerLog::GetTimeFromCallback(LwpaLogTimeParams *time)
   time->utc_offset = utcoffset_;
 }
 
-void WindowsBrokerLog::OutputLogMsg(const std::string &str)
+void WindowsBrokerLog::OutputLogMsg(const std::string& str)
 {
   // Haven't figured out the secret recipe for UTF-8 -> Windows Console yet.
   //    WCHAR wmsg[LWPA_LOG_MSG_MAX_LEN + 1];

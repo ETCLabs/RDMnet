@@ -41,15 +41,15 @@ NetworkDetailsProxyModel::~NetworkDetailsProxyModel()
 {
 }
 
-void NetworkDetailsProxyModel::setCurrentParentItem(const QStandardItem *item)
+void NetworkDetailsProxyModel::setCurrentParentItem(const QStandardItem* item)
 {
   currentParentItem = item;
   invalidate();  // invalidateFilter();
 }
 
-bool NetworkDetailsProxyModel::currentParentIsChildOfOrEqualTo(const QStandardItem *item)
+bool NetworkDetailsProxyModel::currentParentIsChildOfOrEqualTo(const QStandardItem* item)
 {
-  const QStandardItem *currentItem = currentParentItem;
+  const QStandardItem* currentItem = currentParentItem;
 
   if ((item != NULL) && (currentParentItem != NULL))
   {
@@ -67,11 +67,11 @@ bool NetworkDetailsProxyModel::currentParentIsChildOfOrEqualTo(const QStandardIt
   return false;
 }
 
-void NetworkDetailsProxyModel::setSourceModel(QAbstractItemModel *sourceModel)
+void NetworkDetailsProxyModel::setSourceModel(QAbstractItemModel* sourceModel)
 {
   QSortFilterProxyModel::setSourceModel(sourceModel);
 
-  sourceNetworkModel = dynamic_cast<RDMnetNetworkModel *>(sourceModel);
+  sourceNetworkModel = dynamic_cast<RDMnetNetworkModel*>(sourceModel);
 }
 
 void NetworkDetailsProxyModel::setFilterEnabled(bool setting)
@@ -79,7 +79,7 @@ void NetworkDetailsProxyModel::setFilterEnabled(bool setting)
   filterEnabled = setting;
 }
 
-bool NetworkDetailsProxyModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const
+bool NetworkDetailsProxyModel::filterAcceptsRow(int source_row, const QModelIndex& source_parent) const
 {
   if (filterEnabled)
   {
@@ -105,7 +105,7 @@ bool NetworkDetailsProxyModel::filterAcceptsRow(int source_row, const QModelInde
 
     if (sourceNetworkModel)
     {
-      QStandardItem *childItem = sourceNetworkModel->itemFromIndex(child);
+      QStandardItem* childItem = sourceNetworkModel->itemFromIndex(child);
 
       if (childItem)
       {
@@ -117,7 +117,7 @@ bool NetworkDetailsProxyModel::filterAcceptsRow(int source_row, const QModelInde
   return !filterEnabled;
 }
 
-bool NetworkDetailsProxyModel::lessThan(const QModelIndex &left, const QModelIndex &right) const
+bool NetworkDetailsProxyModel::lessThan(const QModelIndex& left, const QModelIndex& right) const
 {
   QVariant leftData = sourceModel()->data(left);
   QVariant rightData = sourceModel()->data(right);

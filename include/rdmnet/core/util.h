@@ -57,7 +57,7 @@
 extern "C" {
 #endif
 
-char *rdmnet_safe_strncpy(char *destination, const char *source, size_t num);
+char* rdmnet_safe_strncpy(char* destination, const char* source, size_t num);
 
 #ifdef __cplusplus
 }

@@ -47,19 +47,19 @@
 class WindowsThreadInterface
 {
 public:
-  virtual HANDLE StartThread(_beginthreadex_proc_type start_address, void *arg_list) = 0;
-  virtual DWORD WaitForThreadsCompletion(DWORD count, const HANDLE *handle_arr, BOOL wait_all, DWORD milliseconds) = 0;
+  virtual HANDLE StartThread(_beginthreadex_proc_type start_address, void* arg_list) = 0;
+  virtual DWORD WaitForThreadsCompletion(DWORD count, const HANDLE* handle_arr, BOOL wait_all, DWORD milliseconds) = 0;
   virtual BOOL CleanupThread(HANDLE thread_handle) = 0;
 };
 
 class DefaultWindowsThreads : public WindowsThreadInterface
 {
 public:
-  virtual HANDLE StartThread(_beginthreadex_proc_type start_address, void *arg_list) override
+  virtual HANDLE StartThread(_beginthreadex_proc_type start_address, void* arg_list) override
   {
     return reinterpret_cast<HANDLE>(_beginthreadex(NULL, 0, start_address, arg_list, 0, NULL));
   }
-  virtual DWORD WaitForThreadsCompletion(DWORD count, const HANDLE *handle_arr, BOOL wait_all, DWORD milliseconds)
+  virtual DWORD WaitForThreadsCompletion(DWORD count, const HANDLE* handle_arr, BOOL wait_all, DWORD milliseconds)
   {
     return WaitForMultipleObjects(count, handle_arr, wait_all, milliseconds);
   }
@@ -71,7 +71,7 @@ struct SocketData
 {
   SocketData(rdmnet_conn_t conn_handle_in, lwpa_socket_t socket_in) : conn_handle(conn_handle_in), socket(socket_in)
   {
-    ws_recv_buf.buf = reinterpret_cast<char *>(&recv_buf);
+    ws_recv_buf.buf = reinterpret_cast<char*>(&recv_buf);
     ws_recv_buf.len = RDMNET_RECV_DATA_MAX_SIZE;
   }
 
@@ -94,7 +94,7 @@ struct SocketData
 class WinBrokerSocketManager : public RDMnet::BrokerSocketManager
 {
 public:
-  WinBrokerSocketManager(WindowsThreadInterface *thread_interface = new DefaultWindowsThreads)
+  WinBrokerSocketManager(WindowsThreadInterface* thread_interface = new DefaultWindowsThreads)
       : thread_interface_(thread_interface)
   {
     lwpa_rwlock_create(&socket_lock_);
@@ -102,7 +102,7 @@ public:
   virtual ~WinBrokerSocketManager() { lwpa_rwlock_destroy(&socket_lock_); }
 
   // RDMnet::BrokerSocketManager interface
-  bool Startup(RDMnet::BrokerSocketManagerNotify *notify) override;
+  bool Startup(RDMnet::BrokerSocketManagerNotify* notify) override;
   bool Shutdown() override;
   bool AddSocket(rdmnet_conn_t conn_handle, lwpa_socket_t socket) override;
   void RemoveSocket(rdmnet_conn_t conn_handle) override;
@@ -127,7 +127,7 @@ private:
   lwpa_rwlock_t socket_lock_;
 
   // The callback instance
-  RDMnet::BrokerSocketManagerNotify *notify_{nullptr};
+  RDMnet::BrokerSocketManagerNotify* notify_{nullptr};
 };
 
 #endif  // _WIN_SOCKET_MANAGER_H_

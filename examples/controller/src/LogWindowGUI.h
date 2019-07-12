@@ -40,22 +40,22 @@ class LogWindowGUI : public QDialog, public LogOutputStream
   Q_OBJECT
 
 public:
-  LogWindowGUI(QWidget *parent, RDMnetNetworkModel *model);
+  LogWindowGUI(QWidget* parent, RDMnetNetworkModel* model);
   ~LogWindowGUI();
 
   // LogOutputStream implementation
-  virtual LogOutputStream &operator<<(const std::string &str) override;
+  virtual LogOutputStream& operator<<(const std::string& str) override;
   virtual void clear() override;
 
 signals:
-  void appendText(const QString &text);
+  void appendText(const QString& text);
   void clearText();
 
 private slots:
-  void processAppendText(const QString &text);
+  void processAppendText(const QString& text);
   void processClearText();
 
 private:
   Ui::LogWindowGUI ui;
-  RDMnetNetworkModel *model_;
+  RDMnetNetworkModel* model_;
 };

@@ -26,7 +26,7 @@
 ******************************************************************************/
 #include "PropertyPushButton.h"
 
-PropertyPushButton::PropertyPushButton(QWidget *parent, const QPersistentModelIndex &propertyIndex)
+PropertyPushButton::PropertyPushButton(QWidget* parent, const QPersistentModelIndex& propertyIndex)
     : QPushButton(parent), idx(propertyIndex)
 {
   connect(this, SIGNAL(clicked()), this, SLOT(forwardClicked()));

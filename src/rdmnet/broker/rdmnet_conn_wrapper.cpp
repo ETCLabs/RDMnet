@@ -29,18 +29,18 @@
 
 extern "C" {
 
-void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo *disconn_info, void *context)
+void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo* disconn_info, void* context)
 {
-  RdmnetConnWrapper *conn_wrapper = static_cast<RdmnetConnWrapper *>(context);
+  RdmnetConnWrapper* conn_wrapper = static_cast<RdmnetConnWrapper*>(context);
   if (conn_wrapper)
   {
     conn_wrapper->LibNotifyDisconnected(handle, disconn_info);
   }
 }
 
-void conncb_msg_received(rdmnet_conn_t handle, const RdmnetMessage *msg, void *context)
+void conncb_msg_received(rdmnet_conn_t handle, const RdmnetMessage* msg, void* context)
 {
-  RdmnetConnWrapper *conn_wrapper = static_cast<RdmnetConnWrapper *>(context);
+  RdmnetConnWrapper* conn_wrapper = static_cast<RdmnetConnWrapper*>(context);
   if (conn_wrapper)
   {
     conn_wrapper->LibNotifyMsgReceived(handle, msg);
@@ -59,7 +59,7 @@ RdmnetConnWrapper::RdmnetConnWrapper()
   new_conn_config_.callbacks.msg_received = conncb_msg_received;
 }
 
-lwpa_error_t RdmnetConnWrapper::Startup(const LwpaUuid &cid, const LwpaLogParams *log_params, RdmnetConnNotify *notify)
+lwpa_error_t RdmnetConnWrapper::Startup(const LwpaUuid& cid, const LwpaLogParams* log_params, RdmnetConnNotify* notify)
 {
   notify_ = notify;
   new_conn_config_.local_cid = cid;
@@ -71,8 +71,8 @@ void RdmnetConnWrapper::Shutdown()
   rdmnet_core_deinit();
 }
 
-lwpa_error_t RdmnetConnWrapper::CreateNewConnectionForSocket(lwpa_socket_t sock, const LwpaSockaddr &addr,
-                                                             rdmnet_conn_t &new_handle)
+lwpa_error_t RdmnetConnWrapper::CreateNewConnectionForSocket(lwpa_socket_t sock, const LwpaSockaddr& addr,
+                                                             rdmnet_conn_t& new_handle)
 {
   lwpa_error_t create_res = rdmnet_connection_create(&new_conn_config_, &new_handle);
   if (create_res == kLwpaErrOk)
@@ -96,7 +96,7 @@ lwpa_error_t RdmnetConnWrapper::SetBlocking(rdmnet_conn_t handle, bool blocking)
   return rdmnet_set_blocking(handle, blocking);
 }
 
-void RdmnetConnWrapper::SocketDataReceived(rdmnet_conn_t handle, const uint8_t *data, size_t data_size)
+void RdmnetConnWrapper::SocketDataReceived(rdmnet_conn_t handle, const uint8_t* data, size_t data_size)
 {
   rdmnet_socket_data_received(handle, data, data_size);
 }
@@ -106,7 +106,7 @@ void RdmnetConnWrapper::SocketError(rdmnet_conn_t handle, lwpa_error_t err)
   rdmnet_socket_error(handle, err);
 }
 
-void RdmnetConnWrapper::LibNotifyMsgReceived(rdmnet_conn_t handle, const RdmnetMessage *msg)
+void RdmnetConnWrapper::LibNotifyMsgReceived(rdmnet_conn_t handle, const RdmnetMessage* msg)
 {
   if (notify_ && msg)
   {
@@ -114,7 +114,7 @@ void RdmnetConnWrapper::LibNotifyMsgReceived(rdmnet_conn_t handle, const RdmnetM
   }
 }
 
-void RdmnetConnWrapper::LibNotifyDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo *disconn_info)
+void RdmnetConnWrapper::LibNotifyDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo* disconn_info)
 {
   if (notify_ && disconn_info)
   {

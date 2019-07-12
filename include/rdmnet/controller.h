@@ -45,17 +45,17 @@ extern "C" {
 /*! \defgroup rdmnet_controller Controller API
  *  \ingroup rdmnet_client
  *  \brief Implementation of RDMnet controller functionality.
- * 
+ *
  *  RDMnet controllers are clients which originate RDM commands and receive responses. Controllers
  *  can participate in multiple scopes; the default scope string "default" must be configured as a
  *  default setting. This API wraps the RDMnet Client API and provides functions tailored
  *  specifically to the usage concerns of an RDMnet controller.
- * 
+ *
  *  @{
  */
 
 /*! A handle to an RDMnet controller. */
-typedef struct RdmnetController *rdmnet_controller_t;
+typedef struct RdmnetController* rdmnet_controller_t;
 
 typedef enum
 {
@@ -68,20 +68,20 @@ typedef enum
 typedef struct RdmnetControllerCallbacks
 {
   void (*connected)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                    const RdmnetClientConnectedInfo *info, void *context);
+                    const RdmnetClientConnectedInfo* info, void* context);
   void (*connect_failed)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                         const RdmnetClientConnectFailedInfo *info, void *context);
+                         const RdmnetClientConnectFailedInfo* info, void* context);
   void (*disconnected)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                       const RdmnetClientDisconnectedInfo *info, void *context);
+                       const RdmnetClientDisconnectedInfo* info, void* context);
   void (*client_list_update)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                             client_list_action_t list_action, const ClientList *list, void *context);
+                             client_list_action_t list_action, const ClientList* list, void* context);
   void (*rdm_response_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                const RemoteRdmResponse *resp, void *context);
+                                const RemoteRdmResponse* resp, void* context);
   void (*rdm_command_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                               const RemoteRdmCommand *cmd, void *context);
-  void (*status_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle, const RemoteRptStatus *status,
-                          void *context);
-  void (*llrp_rdm_command_received)(rdmnet_controller_t handle, const LlrpRemoteRdmCommand *cmd, void *context);
+                               const RemoteRdmCommand* cmd, void* context);
+  void (*status_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle, const RemoteRptStatus* status,
+                          void* context);
+  void (*llrp_rdm_command_received)(rdmnet_controller_t handle, const LlrpRemoteRdmCommand* cmd, void* context);
 } RdmnetControllerCallbacks;
 
 /*! A set of information that defines the startup parameters of an RDMnet Controller. */
@@ -92,7 +92,7 @@ typedef struct RdmnetControllerConfig
   /*! A set of callbacks for the controller to receive RDMnet notifications. */
   RdmnetControllerCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. Can be NULL. */
-  void *callback_context;
+  void* callback_context;
   /*! Optional configuration data for the controller's RPT Client functionality. */
   RptClientOptionalConfig optional;
   /*! Optional configuration data for the controller's LLRP Target functionality. */
@@ -104,36 +104,36 @@ typedef struct RdmnetControllerConfig
  *  The config struct members not marked 'optional' are not initialized by this macro. Those members
  *  do not have default values and must be initialized manually before passing the config struct to
  *  an API function.
- * 
+ *
  *  Usage example:
  *  \code
  *  RdmnetControllerConfig config;
  *  RDMNET_CONTROLLER_CONFIG_INIT(&config, 0x6574);
  *  \endcode
- * 
+ *
  *  \param controllercfgptr Pointer to RdmnetControllerConfig.
  *  \param manu_id ESTA manufacturer ID. All RDMnet Controllers must have one.
  */
 #define RDMNET_CONTROLLER_CONFIG_INIT(controllercfgptr, manu_id) RPT_CLIENT_CONFIG_INIT(controllercfgptr, manu_id)
 
-lwpa_error_t rdmnet_controller_init(const LwpaLogParams *lparams);
+lwpa_error_t rdmnet_controller_init(const LwpaLogParams* lparams);
 void rdmnet_controller_deinit();
 
-lwpa_error_t rdmnet_controller_create(const RdmnetControllerConfig *config, rdmnet_controller_t *handle);
+lwpa_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rdmnet_controller_t* handle);
 lwpa_error_t rdmnet_controller_destroy(rdmnet_controller_t handle);
 
-lwpa_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const RdmnetScopeConfig *scope_config,
-                                         rdmnet_client_scope_t *scope_handle);
+lwpa_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const RdmnetScopeConfig* scope_config,
+                                         rdmnet_client_scope_t* scope_handle);
 lwpa_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                             rdmnet_disconnect_reason_t reason);
 lwpa_error_t rdmnet_controller_change_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                            const RdmnetScopeConfig *new_config, rdmnet_disconnect_reason_t reason);
+                                            const RdmnetScopeConfig* new_config, rdmnet_disconnect_reason_t reason);
 
 lwpa_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                const LocalRdmCommand *cmd, uint32_t *seq_num);
+                                                const LocalRdmCommand* cmd, uint32_t* seq_num);
 lwpa_error_t rdmnet_controller_send_rdm_response(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                 const LocalRdmResponse *resp);
-lwpa_error_t rdmnet_controller_send_llrp_response(rdmnet_controller_t handle, const LlrpLocalRdmResponse *resp);
+                                                 const LocalRdmResponse* resp);
+lwpa_error_t rdmnet_controller_send_llrp_response(rdmnet_controller_t handle, const LlrpLocalRdmResponse* resp);
 lwpa_error_t rdmnet_controller_request_client_list(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle);
 
 #ifdef __cplusplus
