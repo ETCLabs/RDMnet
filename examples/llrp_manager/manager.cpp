@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -286,7 +286,7 @@ bool LLRPManager::ParseCommand(const std::wstring &line)
                 int target_handle = std::stoi(args);
                 int scope_slot = std::stoi(args.substr(first_sp_pos + 1, second_sp_pos - (first_sp_pos + 1)));
                 LwpaSockaddr static_config;
-                lwpaip_set_invalid(&static_config.ip);
+                LWPA_IP_SET_INVALID(&static_config.ip);
                 if (third_sp_pos != std::string::npos)
                 {
                   std::wstring ip_port = args.substr(third_sp_pos + 1);
@@ -683,7 +683,7 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
           switch (static_config_type)
           {
             case E133_STATIC_CONFIG_IPV4:
-              lwpaip_set_v4_address(&ip, lwpa_upack_32b(cur_ptr));
+              LWPA_IP_SET_V4_ADDRESS(&ip, lwpa_upack_32b(cur_ptr));
               lwpa_inet_ntop(&ip, ip_string, LWPA_INET6_ADDRSTRLEN);
               cur_ptr += 4 + 16;
               port = lwpa_upack_16b(cur_ptr);
@@ -691,7 +691,7 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
               break;
             case E133_STATIC_CONFIG_IPV6:
               cur_ptr += 4;
-              lwpaip_set_v6_address(&ip, cur_ptr);
+              LWPA_IP_SET_V6_ADDRESS(&ip, cur_ptr);
               lwpa_inet_ntop(&ip, ip_string, LWPA_INET6_ADDRSTRLEN);
               cur_ptr += 16;
               port = lwpa_upack_16b(cur_ptr);
@@ -815,18 +815,18 @@ void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std
       cur_ptr += 2;
       RDMNET_MSVC_NO_DEP_WRN strncpy((char *)cur_ptr, scope_utf8.c_str(), E133_SCOPE_STRING_PADDED_LENGTH - 1);
       cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
-      if (lwpaip_is_v4(&static_config.ip))
+      if (LWPA_IP_IS_V4(&static_config.ip))
       {
         *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
-        lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&static_config.ip));
+        lwpa_pack_32b(cur_ptr, LWPA_IP_V4_ADDRESS(&static_config.ip));
         cur_ptr += 4 + 16;
         lwpa_pack_16b(cur_ptr, static_config.port);
       }
-      else if (lwpaip_is_v6(&static_config.ip))
+      else if (LWPA_IP_IS_V6(&static_config.ip))
       {
         *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
         cur_ptr += 4;
-        memcpy(cur_ptr, lwpaip_v6_address(&static_config.ip), 16);
+        memcpy(cur_ptr, LWPA_IP_V6_ADDRESS(&static_config.ip), 16);
         cur_ptr += 16;
         lwpa_pack_16b(cur_ptr, static_config.port);
       }

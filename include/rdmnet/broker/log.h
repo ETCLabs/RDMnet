@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ public:
 
   const LwpaLogParams *GetLogParams() const { return &log_params_; }
   void Log(int pri, const char *format, ...);
-  bool CanLog(int pri) const { return lwpa_canlog(&log_params_, pri); }
+  bool CanLog(int pri) const { return LWPA_CAN_LOG(&log_params_, pri); }
 
   void LogFromCallback(const std::string &str);
   void LogThreadRun();

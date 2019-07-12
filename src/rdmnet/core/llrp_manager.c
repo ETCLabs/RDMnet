@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -261,7 +261,7 @@ lwpa_error_t rdmnet_llrp_send_rdm_command(llrp_manager_t handle, const LlrpLocal
     rdm_to_send.transaction_num = (uint8_t)(manager->transaction_number & 0xffu);
 
     RdmBuffer cmd_buf;
-    res = rdmctl_create_command(&rdm_to_send, &cmd_buf);
+    res = rdmctl_pack_command(&rdm_to_send, &cmd_buf);
     if (res == kLwpaErrOk)
     {
       LlrpHeader header;
@@ -269,7 +269,7 @@ lwpa_error_t rdmnet_llrp_send_rdm_command(llrp_manager_t handle, const LlrpLocal
       header.sender_cid = manager->cid;
       header.transaction_number = manager->transaction_number;
 
-      res = send_llrp_rdm_command(manager->sys_sock, manager->send_buf, lwpaip_is_v6(&manager->netint), &header,
+      res = send_llrp_rdm_command(manager->sys_sock, manager->send_buf, LWPA_IP_IS_V6(&manager->netint), &header,
                                   &cmd_buf);
       if (res == kLwpaErrOk && transaction_num)
         *transaction_num = manager->transaction_number++;
@@ -361,7 +361,7 @@ bool update_probe_range(LlrpManager *manager, KnownUid **uid_list)
   if (manager->num_clean_sends >= 3)
   {
     // We are finished with a range; move on to the next range.
-    if (rdm_uid_is_broadcast(&manager->cur_range_high))
+    if (RDM_UID_IS_BROADCAST(&manager->cur_range_high))
     {
       // We're done with discovery.
       return false;
@@ -393,7 +393,7 @@ bool update_probe_range(LlrpManager *manager, KnownUid **uid_list)
   lwpa_rbiter_init(&iter);
   DiscoveredTargetInternal *cur_target =
       (DiscoveredTargetInternal *)lwpa_rbiter_first(&iter, &manager->discovered_targets);
-  while (cur_target && (rdm_uid_cmp(&cur_target->known_uid.uid, &manager->cur_range_high) <= 0))
+  while (cur_target && (RDM_UID_CMP(&cur_target->known_uid.uid, &manager->cur_range_high) <= 0))
   {
     if (last_uid)
     {
@@ -409,7 +409,7 @@ bool update_probe_range(LlrpManager *manager, KnownUid **uid_list)
         return update_probe_range(manager, uid_list);
       }
     }
-    else if (rdm_uid_cmp(&cur_target->known_uid.uid, &manager->cur_range_low) >= 0)
+    else if (RDM_UID_CMP(&cur_target->known_uid.uid, &manager->cur_range_low) >= 0)
     {
       list_begin = &cur_target->known_uid;
       cur_target->known_uid.next = NULL;
@@ -439,7 +439,7 @@ bool send_next_probe(LlrpManager *manager)
     request.upper_uid = manager->cur_range_high;
     request.uid_list = list_head;
 
-    send_llrp_probe_request(manager->sys_sock, manager->send_buf, lwpaip_is_v6(&manager->netint), &header, &request);
+    send_llrp_probe_request(manager->sys_sock, manager->send_buf, LWPA_IP_IS_V6(&manager->netint), &header, &request);
     lwpa_timer_start(&manager->disc_timer, LLRP_TIMEOUT_MS);
     ++manager->num_clean_sends;
     return true;
@@ -760,7 +760,7 @@ int discovered_target_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, cons
   (void)self;
   const DiscoveredTargetInternal *a = (const DiscoveredTargetInternal *)node_a->value;
   const DiscoveredTargetInternal *b = (const DiscoveredTargetInternal *)node_b->value;
-  return rdm_uid_cmp(&a->known_uid.uid, &b->known_uid.uid);
+  return RDM_UID_CMP(&a->known_uid.uid, &b->known_uid.uid);
 }
 
 LwpaRbNode *manager_node_alloc()

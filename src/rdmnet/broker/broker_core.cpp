@@ -1,12 +1,13 @@
 /******************************************************************************
+************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -117,8 +118,8 @@ bool BrokerCore::Startup(const RDMnet::BrokerSettings &settings, uint16_t listen
   {
     // Check the settings for validity
     if (lwpa_uuid_is_null(&settings.cid) ||
-        (settings.uid_type == RDMnet::BrokerSettings::kStaticUid && !rdmnet_uid_is_static(&settings.uid)) ||
-        (settings.uid_type == RDMnet::BrokerSettings::kDynamicUid && !rdmnet_uid_is_dynamic(&settings.uid)))
+        (settings.uid_type == RDMnet::BrokerSettings::kStaticUid && !RDMNET_UID_IS_STATIC(&settings.uid)) ||
+        (settings.uid_type == RDMnet::BrokerSettings::kDynamicUid && !RDMNET_UID_IS_DYNAMIC(&settings.uid)))
     {
       return false;
     }
@@ -214,9 +215,9 @@ void BrokerCore::GetSettings(RDMnet::BrokerSettings &settings) const
 
 bool BrokerCore::IsDeviceManuBroadcastUID(const RdmUid &uid, uint16_t &manu)
 {
-  if (rdmnet_uid_is_device_manu_broadcast(&uid))
+  if (RDMNET_UID_IS_DEVICE_MANU_BROADCAST(&uid))
   {
-    manu = rdmnet_device_broadcast_manu_id(&uid);
+    manu = RDMNET_DEVICE_BROADCAST_MANU_ID(&uid);
     return true;
   }
   return false;
@@ -224,7 +225,7 @@ bool BrokerCore::IsDeviceManuBroadcastUID(const RdmUid &uid, uint16_t &manu)
 
 bool BrokerCore::IsValidControllerDestinationUID(const RdmUid &uid) const
 {
-  if (rdmnet_uid_is_controller_broadcast(&uid) || (uid == my_uid_))
+  if (RDMNET_UID_IS_CONTROLLER_BROADCAST(&uid) || (uid == my_uid_))
     return true;
 
   // TODO this should only check devices
@@ -234,7 +235,7 @@ bool BrokerCore::IsValidControllerDestinationUID(const RdmUid &uid) const
 
 bool BrokerCore::IsValidDeviceDestinationUID(const RdmUid &uid) const
 {
-  if (rdmnet_uid_is_controller_broadcast(&uid))
+  if (RDMNET_UID_IS_CONTROLLER_BROADCAST(&uid))
     return true;
 
   // TODO this should only check controllers
@@ -249,7 +250,7 @@ void BrokerCore::GetConnSnapshot(std::vector<rdmnet_conn_t> &conns, bool include
 {
   conns.clear();
 
-  BrokerReadGuard client_read(client_lock_);
+  lwpa::ReadGuard client_read(client_lock_);
 
   if (!clients_.empty())
   {
@@ -287,7 +288,7 @@ bool BrokerCore::NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr &addr)
   bool result = false;
 
   {  // Client write lock scope
-    BrokerWriteGuard client_write(client_lock_);
+    lwpa::WriteGuard client_write(client_lock_);
 
     if (settings_.max_connections == 0 ||
         (clients_.size() <= settings_.max_connections + settings_.max_reject_connections))
@@ -343,7 +344,7 @@ bool BrokerCore::ServiceClients()
   bool result = false;
   std::vector<int> client_conns;
 
-  BrokerReadGuard clients_read(client_lock_);
+  lwpa::ReadGuard clients_read(client_lock_);
 
   for (auto client : clients_)
   {
@@ -397,7 +398,7 @@ void BrokerCore::SendClientList(int conn)
   BrokerMessage bmsg;
   bmsg.vector = VECTOR_BROKER_CONNECTED_CLIENT_LIST;
 
-  BrokerReadGuard clients_read(client_lock_);
+  lwpa::ReadGuard clients_read(client_lock_);
   auto to_client = clients_.find(conn);
   if (to_client != clients_.end())
   {
@@ -440,7 +441,7 @@ void BrokerCore::SendClientsAdded(client_protocol_t client_prot, int conn_to_ign
   bmsg.vector = VECTOR_BROKER_CLIENT_ADD;
   get_client_list(&bmsg)->client_entry_list = entries.data();
 
-  BrokerReadGuard controllers_read(client_lock_);
+  lwpa::ReadGuard controllers_read(client_lock_);
   for (const auto controller : controllers_)
   {
     if (controller.second->client_protocol == client_prot && controller.first != conn_to_ignore)
@@ -454,7 +455,7 @@ void BrokerCore::SendClientsRemoved(client_protocol_t client_prot, std::vector<C
   bmsg.vector = VECTOR_BROKER_CLIENT_REMOVE;
   get_client_list(&bmsg)->client_entry_list = entries.data();
 
-  BrokerReadGuard controllers_read(client_lock_);
+  lwpa::ReadGuard controllers_read(client_lock_);
   for (const auto controller : controllers_)
   {
     if (controller.second->client_protocol == client_prot)
@@ -524,7 +525,7 @@ void BrokerCore::ProcessConnectRequest(int conn, const ClientConnectMsg *cmsg)
 
   if (deny_connection)
   {
-    BrokerReadGuard client_read(client_lock_);
+    lwpa::ReadGuard client_read(client_lock_);
 
     auto it = clients_.find(conn);
     if (it != clients_.end() && it->second)
@@ -552,7 +553,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
     return false;
   }
 
-  BrokerWriteGuard clients_write(client_lock_);
+  lwpa::WriteGuard clients_write(client_lock_);
   RPTClient *new_client = nullptr;
 
   if ((settings_.max_connections > 0) && (clients_.size() >= settings_.max_connections))
@@ -562,7 +563,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
   }
 
   // Resolve the Client's UID
-  if (rdmnet_uid_is_dynamic_uid_request(&rptdata->client_uid))
+  if (RDMNET_UID_IS_DYNAMIC_UID_REQUEST(&rptdata->client_uid))
   {
     BrokerUidManager::AddResult add_result =
         uid_manager_.AddDynamicUid(handle, updated_data.client_cid, rptdata->client_uid);
@@ -581,7 +582,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
         break;
     }
   }
-  else if (rdmnet_uid_is_static(&rptdata->client_uid))
+  else if (RDMNET_UID_IS_STATIC(&rptdata->client_uid))
   {
     BrokerUidManager::AddResult add_result = uid_manager_.AddStaticUid(handle, rptdata->client_uid);
     switch (add_result)
@@ -689,7 +690,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
 
 void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
 {
-  BrokerReadGuard clients_read(client_lock_);
+  lwpa::ReadGuard clients_read(client_lock_);
 
   const RptMessage *rptmsg = get_rpt_msg(msg);
   bool route_msg = false;
@@ -791,7 +792,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
     uint16_t device_manu;
     int dest_conn;
 
-    if (rdmnet_uid_is_controller_broadcast(&rptmsg->header.dest_uid))
+    if (RDMNET_UID_IS_CONTROLLER_BROADCAST(&rptmsg->header.dest_uid))
     {
       log_->Log(LWPA_LOG_DEBUG, "Broadcasting RPT message from Device %04x:%08x to all Controllers",
                 rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id);
@@ -806,7 +807,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
         }
       }
     }
-    else if (rdmnet_uid_is_device_broadcast(&rptmsg->header.dest_uid))
+    else if (RDMNET_UID_IS_DEVICE_BROADCAST(&rptmsg->header.dest_uid))
     {
       log_->Log(LWPA_LOG_DEBUG, "Broadcasting RPT message from Controller %04x:%08x to all Devices",
                 rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id);
@@ -882,7 +883,7 @@ lwpa_socket_t BrokerCore::StartListening(const LwpaIpAddr &ip, uint16_t &port)
   addr.port = port;
 
   lwpa_socket_t listen_sock;
-  lwpa_error_t err = lwpa_socket(lwpaip_is_v4(&addr.ip) ? LWPA_AF_INET : LWPA_AF_INET6, LWPA_STREAM, &listen_sock);
+  lwpa_error_t err = lwpa_socket(LWPA_IP_IS_V4(&addr.ip) ? LWPA_AF_INET : LWPA_AF_INET6, LWPA_STREAM, &listen_sock);
   if (err != kLwpaErrOk)
   {
     if (log_)
@@ -961,7 +962,7 @@ bool BrokerCore::StartBrokerServices()
   {
     // Listen on in6addr_any
     LwpaIpAddr any_addr;
-    lwpaip_make_any_v6(&any_addr);
+    lwpa_ip_set_wildcard(kLwpaIpTypeV6, &any_addr);
 
     lwpa_socket_t listen_sock = StartListening(any_addr, listen_port_);
     if (listen_sock != LWPA_SOCKET_INVALID)
@@ -1031,7 +1032,7 @@ void BrokerCore::MarkConnForDestruction(rdmnet_conn_t conn, SendDisconnect send_
   bool found = false;
 
   {  // Client read lock and destroy lock scope
-    BrokerReadGuard clients_read(client_lock_);
+    lwpa::ReadGuard clients_read(client_lock_);
 
     auto client = clients_.find(conn);
     if ((client != clients_.end()) && client->second)
@@ -1055,7 +1056,7 @@ void BrokerCore::DestroyMarkedClientSockets()
   std::vector<ClientEntryData> entries;
 
   {  // write lock scope
-    BrokerWriteGuard clients_write(client_lock_);
+    lwpa::WriteGuard clients_write(client_lock_);
     if (!clients_to_destroy_.empty())
     {
       for (auto to_destroy : clients_to_destroy_)

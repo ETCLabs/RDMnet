@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -35,14 +35,12 @@ static LwpaLogParams s_device_log_params;
 static FILE *s_log_file;
 static int s_utc_offset;
 
-static void device_log_callback(void *context, const char *syslog_str, const char *human_str, const char *raw_str)
+static void device_log_callback(void *context, const LwpaLogStrings *strings)
 {
   (void)context;
-  (void)syslog_str;
-  (void)raw_str;
-  printf("%s\n", human_str);
+  printf("%s\n", strings->human_readable);
   if (s_log_file)
-    fprintf(s_log_file, "%s\n", human_str);
+    fprintf(s_log_file, "%s\n", strings->human_readable);
 }
 
 static void device_time_callback(void *context, LwpaLogTimeParams *time)
@@ -65,9 +63,6 @@ void device_log_init(const char *file_name)
   s_log_file = fopen(file_name, "w");
   if (!s_log_file)
     printf("Device Log: Couldn't open log file %s\n", file_name);
-
-  WSADATA wsdata;
-  WSAStartup(MAKEWORD(2, 2), &wsdata);
 
   TIME_ZONE_INFORMATION tzinfo;
   switch (GetTimeZoneInformation(&tzinfo))
@@ -100,6 +95,5 @@ const LwpaLogParams *device_get_log_params()
 
 void device_log_deinit()
 {
-  WSACleanup();
   fclose(s_log_file);
 }

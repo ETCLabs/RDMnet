@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -145,7 +145,7 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceF
   if (errorCode != kDNSServiceErr_NoError)
   {
     notify_scope_monitor_error(ref, errorCode);
-    if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
+    if (lwpa_mutex_take(&disc_state.lock))
     {
       // Remove the DiscoveredBroker from the list
       discovered_broker_remove(&ref->broker_list, db);
@@ -161,17 +161,17 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceF
     // Only copied to if addrs_done is true;
     RdmnetBrokerDiscInfo notify_info;
 
-    if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
+    if (lwpa_mutex_take(&disc_state.lock))
     {
       // Update the broker info we're building
       LwpaSockaddr ip_addr;
-      if (sockaddr_plat_to_lwpa(&ip_addr, address))
+      if (sockaddr_os_to_lwpa(address, &ip_addr))
       {
-        if ((lwpaip_is_v4(&ip_addr.ip) && lwpaip_v4_address(&ip_addr.ip) != 0) ||
-            (lwpaip_is_v6(&ip_addr.ip) && ipv6_valid(&ip_addr.ip)))
+        if ((LWPA_IP_IS_V4(&ip_addr.ip) && LWPA_IP_V4_ADDRESS(&ip_addr.ip) != 0) ||
+            (LWPA_IP_IS_V6(&ip_addr.ip) && ipv6_valid(&ip_addr.ip)))
         {
           // Add it to the info structure
-          BrokerListenAddr *new_addr = malloc(sizeof(BrokerListenAddr));
+          BrokerListenAddr *new_addr = (BrokerListenAddr*)malloc(sizeof(BrokerListenAddr));
           new_addr->addr = ip_addr.ip;
           new_addr->next = NULL;
 
@@ -227,7 +227,7 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
   if (errorCode != kDNSServiceErr_NoError)
   {
     notify_scope_monitor_error(ref, errorCode);
-    if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
+    if (lwpa_mutex_take(&disc_state.lock))
     {
       // Remove the DiscoveredBroker from the list
       discovered_broker_remove(&ref->broker_list, db);
@@ -241,7 +241,7 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
 
     // We have to take the lock before the DNSServiceGetAddrInfo call, because we need to add the
     // ref to our map before it responds.
-    if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
+    if (lwpa_mutex_take(&disc_state.lock))
     {
       // We got a response, clean up.  We don't need to keep resolving.
       lwpa_poll_remove_socket(&disc_state.poll_context, DNSServiceRefSockFD(sdRef));
@@ -345,7 +345,7 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
     // We have to take the lock before the DNSServiceResolve call, because we need to add the ref to
     // our map before it responds.
     DNSServiceErrorType resolve_err = kDNSServiceErr_NoError;
-    if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
+    if (lwpa_mutex_take(&disc_state.lock))
     {
       // Start the next part of the resolution.
       DNSServiceRef resolve_ref;
@@ -441,7 +441,7 @@ lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig *config,
   // We have to take the lock before the DNSServiceBrowse call, because we need to add the ref to
   // our map before it responds.
   lwpa_error_t res = kLwpaErrOk;
-  if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
+  if (lwpa_mutex_take(&disc_state.lock))
   {
     DNSServiceErrorType result = DNSServiceBrowse(&new_monitor->dnssd_ref, 0, 0, reg_str, config->domain,
                                                   &HandleDNSServiceBrowseReply, new_monitor);
@@ -510,7 +510,7 @@ void rdmnetdisc_stop_monitoring(rdmnet_scope_monitor_t handle)
   if (!handle || !rdmnet_core_initialized())
     return;
 
-  if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
+  if (lwpa_mutex_take(&disc_state.lock))
   {
     scope_monitor_remove(handle);
     scope_monitor_delete(handle);
@@ -523,7 +523,7 @@ void rdmnetdisc_stop_monitoring_all()
   if (!rdmnet_core_initialized())
     return;
 
-  if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
+  if (lwpa_mutex_take(&disc_state.lock))
   {
     if (disc_state.scope_ref_list)
     {
@@ -708,7 +708,7 @@ void rdmnetdisc_tick()
 
   // Do the poll inside the mutex so that sockets can't be added and removed during poll
   // Since we are using an immediate timeout, this is not a big deal
-  if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
+  if (lwpa_mutex_take(&disc_state.lock))
   {
     poll_res = lwpa_poll_wait(&disc_state.poll_context, &event, 0);
     lwpa_mutex_give(&disc_state.lock);
@@ -807,16 +807,12 @@ bool broker_info_is_valid(const RdmnetBrokerDiscInfo *info)
  * 0000:0000:0000:0000:0000:0000:0000:0000 is not valid */
 bool ipv6_valid(LwpaIpAddr *ip)
 {
-  uint8_t *v6_buf = lwpaip_v6_address(ip);
-  uint8_t loopback[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
-  uint8_t null[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
-  return ((memcmp(v6_buf, loopback, 16) != 0) && (memcmp(v6_buf, null, 16) != 0));
+  return (!lwpa_ip_is_loopback(ip) && !lwpa_ip_is_wildcard(ip));
 }
 
 RdmnetScopeMonitorRef *scope_monitor_new(const RdmnetScopeMonitorConfig *config)
 {
-  RdmnetScopeMonitorRef *new_monitor = malloc(sizeof(RdmnetScopeMonitorRef));
+  RdmnetScopeMonitorRef *new_monitor = (RdmnetScopeMonitorRef*)malloc(sizeof(RdmnetScopeMonitorRef));
   if (new_monitor)
   {
     new_monitor->config = *config;
@@ -844,7 +840,7 @@ void scope_monitor_delete(RdmnetScopeMonitorRef *ref)
 
 DiscoveredBroker *discovered_broker_new(const char *service_name, const char *full_service_name)
 {
-  DiscoveredBroker *new_db = malloc(sizeof(DiscoveredBroker));
+  DiscoveredBroker *new_db = (DiscoveredBroker*)malloc(sizeof(DiscoveredBroker));
   if (new_db)
   {
     rdmnetdisc_fill_default_broker_info(&new_db->info);
@@ -876,7 +872,7 @@ void discovered_broker_delete(DiscoveredBroker *db)
 
 RdmnetBrokerRegisterRef *registered_broker_new(const RdmnetBrokerRegisterConfig *config)
 {
-  RdmnetBrokerRegisterRef *new_rb = malloc(sizeof(RdmnetBrokerRegisterRef));
+  RdmnetBrokerRegisterRef *new_rb = (RdmnetBrokerRegisterRef*)malloc(sizeof(RdmnetBrokerRegisterRef));
   if (new_rb)
   {
     new_rb->config = *config;

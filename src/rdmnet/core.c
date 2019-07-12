@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -181,7 +181,7 @@ void rdmnet_core_deinit()
     core_state.initted = false;
 #if RDMNET_USE_TICK_THREAD
     core_state.tickthread_run = false;
-    lwpa_thread_stop(&core_state.tick_thread, LWPA_WAIT_FOREVER);
+    lwpa_thread_join(&core_state.tick_thread);
 #endif
     if (rdmnet_writelock())
     {
@@ -272,7 +272,7 @@ void rdmnet_core_tick()
 
 bool rdmnet_readlock()
 {
-  return lwpa_rwlock_readlock(&rdmnet_lock, LWPA_WAIT_FOREVER);
+  return lwpa_rwlock_readlock(&rdmnet_lock);
 }
 
 void rdmnet_readunlock()
@@ -282,7 +282,7 @@ void rdmnet_readunlock()
 
 bool rdmnet_writelock()
 {
-  return lwpa_rwlock_writelock(&rdmnet_lock, LWPA_WAIT_FOREVER);
+  return lwpa_rwlock_writelock(&rdmnet_lock);
 }
 
 void rdmnet_writeunlock()

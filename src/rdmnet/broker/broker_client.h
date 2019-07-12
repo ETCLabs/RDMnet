@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -90,9 +90,9 @@ public:
 
   // Read/write lock functions. Prefer use of ClientReadGuard and
   // ClientWriteGuard to these functions where possible.
-  bool ReadLock() const { return lwpa_rwlock_readlock(&lock_, LWPA_WAIT_FOREVER); }
+  bool ReadLock() const { return lwpa_rwlock_readlock(&lock_); }
   void ReadUnlock() const { lwpa_rwlock_readunlock(&lock_); }
-  bool WriteLock() const { return lwpa_rwlock_writelock(&lock_, LWPA_WAIT_FOREVER); }
+  bool WriteLock() const { return lwpa_rwlock_writelock(&lock_); }
   void WriteUnlock() const { lwpa_rwlock_writeunlock(&lock_); }
 
   LwpaUuid cid{};

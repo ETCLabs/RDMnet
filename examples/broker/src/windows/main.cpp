@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -90,18 +90,21 @@ bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell &broker_shell
     {
       LwpaIpAddr addr;
 
-      struct in_addr tst_addr;
-      INT res = InetPtonW(AF_INET, p, &tst_addr);
+      struct sockaddr_storage tst_addr;
+      INT res = InetPtonW(AF_INET, p, &((struct sockaddr_in*)&tst_addr)->sin_addr);
       if (res == 1)
       {
-        ip_plat_to_lwpa_v4(&addr, &tst_addr);
+        tst_addr.ss_family = AF_INET;
+        ip_os_to_lwpa((lwpa_os_ipaddr_t*)&tst_addr, &addr);
       }
       else
       {
-        struct in6_addr tst_addr6;
-        res = InetPtonW(AF_INET6, p, &tst_addr6);
+        res = InetPtonW(AF_INET6, p, &((struct sockaddr_in6*)&tst_addr)->sin6_addr);
         if (res == 1)
-          ip_plat_to_lwpa_v6(&addr, &tst_addr6);
+        {
+          tst_addr.ss_family = AF_INET6;
+          ip_os_to_lwpa((lwpa_os_ipaddr_t*)&tst_addr, &addr);
+        }
       }
       if (res == 1)
       {

@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -76,6 +76,23 @@ typedef struct LlrpRemoteRdmCommand
   RdmCommand rdm;
 } LlrpRemoteRdmCommand;
 
+/*! \brief Initialize a LlrpLocalRdmResponse to a received LlrpRemoteRdmCommand.
+ *
+ *  Provide the received command and the RdmResponse to be sent in response.
+ *
+ *  \param resp Response to initialize (LlrpLocalRdmResponse *).
+ *  \param received_cmd Received command (LlrpRemoteRdmCommand *).
+ *  \param rdm_resp RDM response to send (RdmResponse *).
+ */
+#define LLRP_CREATE_RESPONSE_FROM_COMMAND(resp, received_cmd, rdm_resp) \
+  do                                                                    \
+  {                                                                     \
+    (resp)->dest_cid = (received_cmd)->src_cid;                         \
+    (resp)->seq_num = (received_cmd)->seq_num;                          \
+    (resp)->interface_index = (received_cmd)->interface_index;          \
+    (resp)->rdm = *(rdm_resp);                                          \
+  } while (0)
+
 typedef struct LlrpTargetCallbacks
 {
   void (*rdm_cmd_received)(llrp_target_t handle, const LlrpRemoteRdmCommand *cmd, void *context);
@@ -93,7 +110,7 @@ typedef struct LlrpTargetOptionalConfig
   {                                                                      \
     (optionalcfgptr)->netint_arr = NULL;                                 \
     (optionalcfgptr)->num_netints = 0;                                   \
-    rdmnet_init_dynamic_uid_request(&(optionalcfgptr)->uid, (manu_id));  \
+    RDMNET_INIT_DYNAMIC_UID_REQUEST(&(optionalcfgptr)->uid, (manu_id));  \
   } while (0)
 
 typedef struct LlrpTargetConfig

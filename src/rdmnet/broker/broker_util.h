@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -34,50 +34,6 @@
 
 #include "lwpa/lock.h"
 #include "rdmnet/core/rpt_prot.h"
-
-// Guard classes for locking and unlocking mutexes and read-write locks
-
-class BrokerMutexGuard
-{
-public:
-  explicit BrokerMutexGuard(lwpa_mutex_t &mutex) : m_mutex(mutex)
-  {
-    if (!lwpa_mutex_take(&m_mutex, LWPA_WAIT_FOREVER))
-      throw std::runtime_error("Broker failed to take a mutex.");
-  }
-  ~BrokerMutexGuard() { lwpa_mutex_give(&m_mutex); }
-
-private:
-  lwpa_mutex_t &m_mutex;
-};
-
-class BrokerReadGuard
-{
-public:
-  explicit BrokerReadGuard(lwpa_rwlock_t &rwlock) : m_rwlock(rwlock)
-  {
-    if (!lwpa_rwlock_readlock(&m_rwlock, LWPA_WAIT_FOREVER))
-      throw std::runtime_error("Broker failed to take a read lock.");
-  }
-  ~BrokerReadGuard() { lwpa_rwlock_readunlock(&m_rwlock); }
-
-private:
-  lwpa_rwlock_t &m_rwlock;
-};
-
-class BrokerWriteGuard
-{
-public:
-  explicit BrokerWriteGuard(lwpa_rwlock_t &rwlock) : m_rwlock(rwlock)
-  {
-    if (!lwpa_rwlock_writelock(&m_rwlock, LWPA_WAIT_FOREVER))
-      throw std::runtime_error("Broker failed to take a write lock.");
-  }
-  ~BrokerWriteGuard() { lwpa_rwlock_writeunlock(&m_rwlock); }
-
-private:
-  lwpa_rwlock_t &m_rwlock;
-};
 
 // Utility functions for manipulating messages
 RptHeader SwapHeaderData(const RptHeader &source);

@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -175,7 +175,7 @@ void TestDiscoveryBonjour::MonitorDefaultScope()
 void TestDiscoveryBonjour::CreateDefaultBroker()
 {
   default_listen_addr_ = std::make_unique<BrokerListenAddr>();
-  lwpaip_set_v4_address(&default_listen_addr_->addr, 0x0a650101);
+  LWPA_IP_SET_V4_ADDRESS(&default_listen_addr_->addr, 0x0a650101);
   default_listen_addr_->next = nullptr;
   default_discovered_broker_.listen_addr_list = default_listen_addr_.get();
 
@@ -314,7 +314,7 @@ TEST_F(TestDiscoveryBonjour, resolve_cleanup)
   LwpaSockaddr discovered_addr;
   discovered_addr.ip = default_listen_addr_->addr;
   discovered_addr.port = 0;
-  sockaddr_lwpa_to_plat(&address, &discovered_addr);
+  sockaddr_lwpa_to_os(&discovered_addr, &address);
   gai_cb(DEFAULT_MONITOR_DNS_REF, 0, 0, kDNSServiceErr_NoError, "testhost", &address, 10,
          DNSServiceGetAddrInfo_fake.arg6_val);
 

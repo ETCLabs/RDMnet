@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -172,7 +172,7 @@ bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessa
   cur_ptr += 2;
 
   // If our UID is not in the range, there is no need to check the Known UIDs.
-  if (rdm_uid_cmp(&interest->my_uid, &lower_uid_bound) >= 0 && rdm_uid_cmp(&interest->my_uid, &upper_uid_bound) <= 0)
+  if (RDM_UID_CMP(&interest->my_uid, &lower_uid_bound) >= 0 && RDM_UID_CMP(&interest->my_uid, &upper_uid_bound) <= 0)
   {
     request->contains_my_uid = true;
 
@@ -185,7 +185,7 @@ bool parse_llrp_probe_request(const uint8_t *buf, size_t buflen, const LlrpMessa
       cur_uid.id = lwpa_upack_32b(cur_ptr);
       cur_ptr += 4;
 
-      if (rdm_uid_equal(&interest->my_uid, &cur_uid))
+      if (RDM_UID_EQUAL(&interest->my_uid, &cur_uid))
       {
         // The registered uid is suppressed.
         request->contains_my_uid = false;

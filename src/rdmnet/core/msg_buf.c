@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -477,7 +477,7 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
         {
           ClientRedirectMsg *crmsg = get_client_redirect_msg(bmsg);
           const uint8_t *cur_ptr = &data[bytes_parsed];
-          lwpaip_set_v4_address(&crmsg->new_addr.ip, lwpa_upack_32b(cur_ptr));
+          LWPA_IP_SET_V4_ADDRESS(&crmsg->new_addr.ip, lwpa_upack_32b(cur_ptr));
           cur_ptr += 4;
           crmsg->new_addr.port = lwpa_upack_16b(cur_ptr);
           cur_ptr += 2;
@@ -490,7 +490,7 @@ size_t parse_broker_block(BrokerState *bstate, const uint8_t *data, size_t datal
         {
           ClientRedirectMsg *crmsg = get_client_redirect_msg(bmsg);
           const uint8_t *cur_ptr = &data[bytes_parsed];
-          lwpaip_set_v6_address(&crmsg->new_addr.ip, cur_ptr);
+          LWPA_IP_SET_V6_ADDRESS(&crmsg->new_addr.ip, cur_ptr);
           cur_ptr += 16;
           crmsg->new_addr.port = lwpa_upack_16b(cur_ptr);
           cur_ptr += 2;

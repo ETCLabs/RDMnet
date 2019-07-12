@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -176,22 +176,22 @@ bool ControllerDefaultResponder::GetComponentScope(uint16_t slot, std::vector<Rd
         if (scopeIter->second.static_broker.valid)
         {
           const LwpaSockaddr &saddr = scopeIter->second.static_broker.addr;
-          if (lwpaip_is_v4(&saddr.ip))
+          if (LWPA_IP_IS_V4(&saddr.ip))
           {
             *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
-            lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&saddr.ip));
+            lwpa_pack_32b(cur_ptr, LWPA_IP_V4_ADDRESS(&saddr.ip));
             cur_ptr += 4;
             // Skip the IPv6 field
             cur_ptr += 16;
             lwpa_pack_16b(cur_ptr, saddr.port);
             cur_ptr += 2;
           }
-          else if (lwpaip_is_v6(&saddr.ip))
+          else if (LWPA_IP_IS_V6(&saddr.ip))
           {
             *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
             // Skip the IPv4 field
             cur_ptr += 4;
-            memcpy(cur_ptr, lwpaip_v6_address(&saddr.ip), LWPA_IPV6_BYTES);
+            memcpy(cur_ptr, LWPA_IP_V6_ADDRESS(&saddr.ip), LWPA_IPV6_BYTES);
             cur_ptr += LWPA_IPV6_BYTES;
             lwpa_pack_16b(cur_ptr, saddr.port);
             cur_ptr += 2;
@@ -265,9 +265,9 @@ bool ControllerDefaultResponder::GetTCPCommsStatus(const uint8_t * /*param_data*
     }
     else
     {
-      if (lwpaip_is_v4(&scope_data.current_broker.ip))
+      if (LWPA_IP_IS_V4(&scope_data.current_broker.ip))
       {
-        lwpa_pack_32b(cur_ptr, lwpaip_v4_address(&scope_data.current_broker.ip));
+        lwpa_pack_32b(cur_ptr, LWPA_IP_V4_ADDRESS(&scope_data.current_broker.ip));
         cur_ptr += 4;
         memset(cur_ptr, 0, LWPA_IPV6_BYTES);
         cur_ptr += LWPA_IPV6_BYTES;
@@ -276,7 +276,7 @@ bool ControllerDefaultResponder::GetTCPCommsStatus(const uint8_t * /*param_data*
       {
         lwpa_pack_32b(cur_ptr, 0);
         cur_ptr += 4;
-        memcpy(cur_ptr, lwpaip_v6_address(&scope_data.current_broker.ip), LWPA_IPV6_BYTES);
+        memcpy(cur_ptr, LWPA_IP_V6_ADDRESS(&scope_data.current_broker.ip), LWPA_IPV6_BYTES);
         cur_ptr += LWPA_IPV6_BYTES;
       }
       lwpa_pack_16b(cur_ptr, scope_data.current_broker.port);

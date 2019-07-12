@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -352,12 +352,8 @@ bool device_handle_rdm_command(const RdmCommand *rdm_cmd, RdmResponse *resp_list
 void device_send_rpt_status(rpt_status_code_t status_code, const RemoteRdmCommand *received_cmd)
 {
   LocalRptStatus status;
+  RDMNET_CREATE_STATUS_FROM_COMMAND(&status, received_cmd, status_code);
 
-  status.dest_uid = received_cmd->source_uid;
-  status.source_endpoint = received_cmd->dest_endpoint;
-  status.seq_num = received_cmd->seq_num;
-  status.msg.status_code = status_code;
-  status.msg.status_string = NULL;
   lwpa_error_t send_res = rdmnet_device_send_status(device_state.device_handle, &status);
   if (send_res != kLwpaErrOk)
   {
@@ -369,38 +365,16 @@ void device_send_rpt_status(rpt_status_code_t status_code, const RemoteRdmComman
 void device_send_rpt_nack(uint16_t nack_reason, const RemoteRdmCommand *received_cmd)
 {
   RdmResponse resp;
-
-  resp.source_uid = received_cmd->rdm.dest_uid;
-  resp.dest_uid = received_cmd->rdm.source_uid;
-  resp.transaction_num = received_cmd->rdm.transaction_num;
-  resp.resp_type = kRdmResponseTypeNackReason;
-  resp.msg_count = 0;
-  resp.subdevice = 0;
-  if (received_cmd->rdm.command_class == kRdmCCGetCommand)
-    resp.command_class = kRdmCCGetCommandResponse;
-  else
-    resp.command_class = kRdmCCSetCommandResponse;
-  resp.param_id = received_cmd->rdm.param_id;
-  resp.datalen = 2;
-  lwpa_pack_16b(resp.data, nack_reason);
-
+  RDM_CREATE_NACK_FROM_COMMAND(&resp, &received_cmd->rdm, nack_reason);
   device_send_rpt_response(&resp, 1, received_cmd);
 }
 
 void device_send_rpt_response(RdmResponse *resp_list, size_t num_responses, const RemoteRdmCommand *received_cmd)
 {
   LocalRdmResponse resp_to_send;
-  resp_to_send.dest_uid = received_cmd->source_uid;
-  resp_to_send.source_endpoint = received_cmd->dest_endpoint;
-  resp_to_send.seq_num = received_cmd->seq_num;
-  resp_to_send.command_included = true;
-  resp_to_send.cmd = received_cmd->rdm;
-  resp_to_send.rdm_arr = resp_list;
-  resp_to_send.num_responses = num_responses;
+  RDMNET_CREATE_RESPONSE_FROM_COMMAND(&resp_to_send, received_cmd, resp_list, num_responses);
 
-  lwpa_error_t send_res;
-
-  send_res = rdmnet_device_send_rdm_response(device_state.device_handle, &resp_to_send);
+  lwpa_error_t send_res = rdmnet_device_send_rdm_response(device_state.device_handle, &resp_to_send);
   if (send_res != kLwpaErrOk)
   {
     lwpa_log(device_state.lparams, LWPA_LOG_ERR, "Error sending RPT RDM response: '%s.", lwpa_strerror(send_res));
@@ -410,31 +384,14 @@ void device_send_rpt_response(RdmResponse *resp_list, size_t num_responses, cons
 void device_send_llrp_nack(uint16_t nack_reason, const LlrpRemoteRdmCommand *received_cmd)
 {
   RdmResponse resp;
-
-  resp.source_uid = received_cmd->rdm.dest_uid;
-  resp.dest_uid = received_cmd->rdm.source_uid;
-  resp.transaction_num = received_cmd->rdm.transaction_num;
-  resp.resp_type = kRdmResponseTypeNackReason;
-  resp.msg_count = 0;
-  resp.subdevice = 0;
-  if (received_cmd->rdm.command_class == kRdmCCGetCommand)
-    resp.command_class = kRdmCCGetCommandResponse;
-  else
-    resp.command_class = kRdmCCSetCommandResponse;
-  resp.param_id = received_cmd->rdm.param_id;
-  resp.datalen = 2;
-  lwpa_pack_16b(resp.data, nack_reason);
-
+  RDM_CREATE_NACK_FROM_COMMAND(&resp, &received_cmd->rdm, nack_reason);
   device_send_llrp_response(&resp, received_cmd);
 }
 
 void device_send_llrp_response(RdmResponse *resp, const LlrpRemoteRdmCommand *received_cmd)
 {
   LlrpLocalRdmResponse resp_to_send;
-  resp_to_send.dest_cid = received_cmd->src_cid;
-  resp_to_send.seq_num = received_cmd->seq_num;
-  resp_to_send.interface_index = received_cmd->interface_index;
-  resp_to_send.rdm = *resp;
+  LLRP_CREATE_RESPONSE_FROM_COMMAND(&resp_to_send, received_cmd, resp);
 
   lwpa_error_t send_res = rdmnet_device_send_llrp_response(device_state.device_handle, &resp_to_send);
   if (send_res != kLwpaErrOk)

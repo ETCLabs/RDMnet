@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -37,14 +37,18 @@
 #include "rdm/uid.h"
 #include "rdmnet/client.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \defgroup rdmnet_device Device API
  *  \ingroup rdmnet_client
  *  \brief Implementation of RDMnet device functionality.
- * 
+ *
  *  RDMnet devices are clients which exclusively receive and respond to RDM commands. Devices
  *  operate on only one scope at a time. This API wraps the RDMnet Client API and provides functions
  *  tailored specifically to the usage concerns of an RDMnet device.
- * 
+ *
  *  @{
  */
 
@@ -82,13 +86,13 @@ typedef struct RdmnetDeviceConfig
  *  The config struct members not marked 'optional' are not initialized by this macro. Those members
  *  do not have default values and must be initialized manually before passing the config struct to
  *  an API function.
- * 
+ *
  *  Usage example:
  *  \code
  *  RdmnetDeviceConfig config;
  *  RDMNET_DEVICE_CONFIG_INIT(&config, 0x6574);
  *  \endcode
- * 
+ *
  *  \param devicecfgptr Pointer to RdmnetDeviceConfig.
  *  \param manu_id ESTA manufacturer ID. All RDMnet Devices must have one.
  */
@@ -110,5 +114,9 @@ lwpa_error_t rdmnet_device_change_search_domain(rdmnet_device_t handle, const ch
                                                 rdmnet_disconnect_reason_t reason);
 
 /*! @} */
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif /* _RDMNET_DEVICE_H_ */

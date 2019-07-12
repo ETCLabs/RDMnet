@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -62,24 +62,30 @@ bool set_static_broker(wchar_t *arg, LwpaSockaddr *static_broker_addr)
   {
     wchar_t ip_str[LWPA_INET6_ADDRSTRLEN];
     ptrdiff_t ip_str_len = sep - arg;
-    struct in_addr tst_addr;
-    struct in6_addr tst_addr6;
+    struct sockaddr_storage tst_addr;
+
+//    struct in_addr tst_addr;
+//    struct in6_addr tst_addr6;
     INT convert_res;
 
     wmemcpy(ip_str, arg, ip_str_len);
     ip_str[ip_str_len] = '\0';
 
     /* Try to convert the address in both IPv4 and IPv6 forms. */
-    convert_res = InetPtonW(AF_INET, ip_str, &tst_addr);
+    convert_res = InetPtonW(AF_INET, ip_str, &((struct sockaddr_in *)&tst_addr)->sin_addr);
     if (convert_res == 1)
     {
-      ip_plat_to_lwpa_v4(&static_broker_addr->ip, &tst_addr);
+      tst_addr.ss_family = AF_INET;
+      ip_os_to_lwpa((lwpa_os_ipaddr_t*)&tst_addr, &static_broker_addr->ip);
     }
     else
     {
-      convert_res = InetPtonW(AF_INET6, ip_str, &tst_addr6);
+      convert_res = InetPtonW(AF_INET6, ip_str, &((struct sockaddr_in6*)&tst_addr)->sin6_addr);
       if (convert_res == 1)
-        ip_plat_to_lwpa_v6(&static_broker_addr->ip, &tst_addr6);
+      {
+        tst_addr.ss_family = AF_INET6;
+        ip_os_to_lwpa((lwpa_os_ipaddr_t*)&tst_addr, &static_broker_addr->ip);
+      }
     }
     if (convert_res == 1 && 1 == swscanf(sep + 1, L"%hu", &static_broker_addr->port))
       return true;
