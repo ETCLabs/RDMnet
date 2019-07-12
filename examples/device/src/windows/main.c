@@ -37,7 +37,7 @@
 #include "example_device.h"
 #include "win_device_log.h"
 
-void print_help(wchar_t *app_name)
+void print_help(wchar_t* app_name)
 {
   printf("Usage: %ls [OPTION]...\n\n", app_name);
   printf("  --scope=SCOPE     Configures the RDMnet Scope to SCOPE. Enter nothing after\n");
@@ -48,31 +48,31 @@ void print_help(wchar_t *app_name)
   printf("  --version         Output version information and exit.\n");
 }
 
-bool set_scope(wchar_t *arg, char *scope_buf)
+bool set_scope(wchar_t* arg, char* scope_buf)
 {
   if (WideCharToMultiByte(CP_UTF8, 0, arg, -1, scope_buf, E133_SCOPE_STRING_PADDED_LENGTH, NULL, NULL) > 0)
     return true;
   return false;
 }
 
-bool set_static_broker(wchar_t *arg, LwpaSockaddr *static_broker_addr)
+bool set_static_broker(wchar_t* arg, LwpaSockaddr* static_broker_addr)
 {
-  wchar_t *sep = wcschr(arg, ':');
+  wchar_t* sep = wcschr(arg, ':');
   if (sep != NULL && sep - arg < LWPA_INET6_ADDRSTRLEN)
   {
     wchar_t ip_str[LWPA_INET6_ADDRSTRLEN];
     ptrdiff_t ip_str_len = sep - arg;
     struct sockaddr_storage tst_addr;
 
-//    struct in_addr tst_addr;
-//    struct in6_addr tst_addr6;
+    //    struct in_addr tst_addr;
+    //    struct in6_addr tst_addr6;
     INT convert_res;
 
     wmemcpy(ip_str, arg, ip_str_len);
     ip_str[ip_str_len] = '\0';
 
     /* Try to convert the address in both IPv4 and IPv6 forms. */
-    convert_res = InetPtonW(AF_INET, ip_str, &((struct sockaddr_in *)&tst_addr)->sin_addr);
+    convert_res = InetPtonW(AF_INET, ip_str, &((struct sockaddr_in*)&tst_addr)->sin_addr);
     if (convert_res == 1)
     {
       tst_addr.ss_family = AF_INET;
@@ -106,12 +106,12 @@ BOOL WINAPI console_handler(DWORD signal)
   return TRUE;
 }
 
-int wmain(int argc, wchar_t *argv[])
+int wmain(int argc, wchar_t* argv[])
 {
   lwpa_error_t res = kLwpaErrOk;
   bool should_exit = false;
   RdmnetScopeConfig scope_config;
-  const LwpaLogParams *lparams;
+  const LwpaLogParams* lparams;
 
   RDMNET_CLIENT_SET_DEFAULT_SCOPE(&scope_config);
 

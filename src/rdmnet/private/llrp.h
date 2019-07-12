@@ -38,17 +38,17 @@
 extern "C" {
 #endif
 
-extern const LwpaSockaddr *kLlrpIpv4RespAddr;
-extern const LwpaSockaddr *kLlrpIpv6RespAddr;
-extern const LwpaSockaddr *kLlrpIpv4RequestAddr;
-extern const LwpaSockaddr *kLlrpIpv6RequestAddr;
+extern const LwpaSockaddr* kLlrpIpv4RespAddr;
+extern const LwpaSockaddr* kLlrpIpv6RespAddr;
+extern const LwpaSockaddr* kLlrpIpv4RequestAddr;
+extern const LwpaSockaddr* kLlrpIpv6RequestAddr;
 
 lwpa_error_t rdmnet_llrp_init();
 void rdmnet_llrp_deinit();
 
 void rdmnet_llrp_tick();
 
-lwpa_error_t create_llrp_socket(const LwpaIpAddr *netint, bool manager, lwpa_socket_t *socket);
+lwpa_error_t create_llrp_socket(const LwpaIpAddr* netint, bool manager, lwpa_socket_t* socket);
 
 #ifdef __cplusplus
 }

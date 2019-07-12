@@ -36,19 +36,19 @@ class EndpointItem : public RDMnetNetworkItem
 public:
   static const int EndpointItemType = QStandardItem::UserType + 4;
 
-  EndpointItem(const RdmUid &parent_uid, uint16_t endpoint = 0, uint8_t type = E137_7_ENDPOINT_TYPE_VIRTUAL);
+  EndpointItem(const RdmUid& parent_uid, uint16_t endpoint = 0, uint8_t type = E137_7_ENDPOINT_TYPE_VIRTUAL);
   virtual ~EndpointItem();
 
   virtual int type() const override;
   uint16_t id() const { return endpoint_; }
   RdmUid parent_uid() const { return parent_uid_; }
 
-  bool operator==(const EndpointItem &other)
+  bool operator==(const EndpointItem& other)
   {
     return ((parent_uid_ == other.parent_uid_) && (endpoint_ == other.endpoint_) && (type_ == other.type_));
   }
 
-  std::vector<ResponderItem *> responders_;
+  std::vector<ResponderItem*> responders_;
 
 private:
   RdmUid parent_uid_;

@@ -42,11 +42,11 @@
 class WindowsBrokerLog : public RDMnet::BrokerLog
 {
 public:
-  WindowsBrokerLog(const std::string &file_name);
+  WindowsBrokerLog(const std::string& file_name);
   virtual ~WindowsBrokerLog();
 
-  void OutputLogMsg(const std::string &str) override;
-  virtual void GetTimeFromCallback(LwpaLogTimeParams *time) override;
+  void OutputLogMsg(const std::string& str) override;
+  virtual void GetTimeFromCallback(LwpaLogTimeParams* time) override;
 
 private:
   std::fstream file_;

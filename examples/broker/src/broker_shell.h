@@ -43,13 +43,13 @@ class BrokerShell : public RDMnet::BrokerNotify
 public:
   typedef std::array<uint8_t, LWPA_NETINTINFO_MAC_LEN> MacAddr;
 
-  void Run(RDMnet::BrokerLog *log, RDMnet::BrokerSocketManager *socket_mgr);
+  void Run(RDMnet::BrokerLog* log, RDMnet::BrokerSocketManager* socket_mgr);
   static void PrintVersion();
 
   // Options to set from the command line; must be set BEFORE Run() is called.
-  void SetInitialScope(const std::string &scope) { initial_data_.scope = scope; }
-  void SetInitialIfaceList(const std::vector<LwpaIpAddr> &ifaces) { initial_data_.ifaces = ifaces; }
-  void SetInitialMacList(const std::vector<MacAddr> &macs) { initial_data_.macs = macs; }
+  void SetInitialScope(const std::string& scope) { initial_data_.scope = scope; }
+  void SetInitialIfaceList(const std::vector<LwpaIpAddr>& ifaces) { initial_data_.ifaces = ifaces; }
+  void SetInitialMacList(const std::vector<MacAddr>& macs) { initial_data_.macs = macs; }
   void SetInitialPort(uint16_t port) { initial_data_.port = port; }
   void SetInitialLogLevel(int level) { initial_data_.log_mask = LWPA_LOG_UPTO(level); }
 
@@ -57,12 +57,12 @@ public:
   void AsyncShutdown();
 
 private:
-  void ScopeChanged(const std::string &new_scope) override;
+  void ScopeChanged(const std::string& new_scope) override;
   void PrintWarningMessage();
 
   std::vector<LwpaIpAddr> GetInterfacesToListen();
-  std::vector<LwpaIpAddr> ConvertMacsToInterfaces(const std::vector<MacAddr> &macs);
-  void ApplySettingsChanges(RDMnet::BrokerSettings &settings, std::vector<LwpaIpAddr> &new_addrs);
+  std::vector<LwpaIpAddr> ConvertMacsToInterfaces(const std::vector<MacAddr>& macs);
+  void ApplySettingsChanges(RDMnet::BrokerSettings& settings, std::vector<LwpaIpAddr>& new_addrs);
 
   struct InitialData
   {
@@ -73,7 +73,7 @@ private:
     int log_mask{LWPA_LOG_UPTO(LWPA_LOG_INFO)};
   } initial_data_;
 
-  RDMnet::BrokerLog *log_{nullptr};
+  RDMnet::BrokerLog* log_{nullptr};
   bool restart_requested_{false};
   bool shutdown_requested_{false};
   std::string new_scope_;

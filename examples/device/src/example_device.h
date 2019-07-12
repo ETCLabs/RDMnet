@@ -41,7 +41,7 @@ extern "C" {
 
 void device_print_version();
 
-lwpa_error_t device_init(const RdmnetScopeConfig *scope_config, const LwpaLogParams *lparams);
+lwpa_error_t device_init(const RdmnetScopeConfig* scope_config, const LwpaLogParams* lparams);
 void device_deinit();
 void device_run();
 

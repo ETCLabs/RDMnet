@@ -38,15 +38,15 @@ LwpaSockaddr kLlrpIpv6RespAddrInternal;
 LwpaSockaddr kLlrpIpv4RequestAddrInternal;
 LwpaSockaddr kLlrpIpv6RequestAddrInternal;
 
-const LwpaSockaddr *kLlrpIpv4RespAddr = &kLlrpIpv4RespAddrInternal;
-const LwpaSockaddr *kLlrpIpv6RespAddr = &kLlrpIpv6RespAddrInternal;
-const LwpaSockaddr *kLlrpIpv4RequestAddr = &kLlrpIpv4RequestAddrInternal;
-const LwpaSockaddr *kLlrpIpv6RequestAddr = &kLlrpIpv6RequestAddrInternal;
+const LwpaSockaddr* kLlrpIpv4RespAddr = &kLlrpIpv4RespAddrInternal;
+const LwpaSockaddr* kLlrpIpv6RespAddr = &kLlrpIpv6RespAddrInternal;
+const LwpaSockaddr* kLlrpIpv4RequestAddr = &kLlrpIpv4RequestAddrInternal;
+const LwpaSockaddr* kLlrpIpv6RequestAddr = &kLlrpIpv6RequestAddrInternal;
 
 /*********************** Private function prototypes *************************/
 
-lwpa_error_t create_sys_socket(const LwpaIpAddr *netint, bool manager, lwpa_socket_t *socket);
-lwpa_error_t subscribe_multicast(lwpa_socket_t socket, const LwpaIpAddr *netint, bool manager);
+lwpa_error_t create_sys_socket(const LwpaIpAddr* netint, bool manager, lwpa_socket_t* socket);
+lwpa_error_t subscribe_multicast(lwpa_socket_t socket, const LwpaIpAddr* netint, bool manager);
 
 /*************************** Function definitions ****************************/
 
@@ -98,7 +98,7 @@ void rdmnet_llrp_deinit()
 #endif
 }
 
-lwpa_error_t create_llrp_socket(const LwpaIpAddr *netint, bool manager, lwpa_socket_t *socket)
+lwpa_error_t create_llrp_socket(const LwpaIpAddr* netint, bool manager, lwpa_socket_t* socket)
 {
   lwpa_socket_t socket_out;
 
@@ -110,7 +110,7 @@ lwpa_error_t create_llrp_socket(const LwpaIpAddr *netint, bool manager, lwpa_soc
   return res;
 }
 
-lwpa_error_t create_sys_socket(const LwpaIpAddr *netint, bool manager, lwpa_socket_t *socket)
+lwpa_error_t create_sys_socket(const LwpaIpAddr* netint, bool manager, lwpa_socket_t* socket)
 {
   lwpa_socket_t sock = LWPA_SOCKET_INVALID;
   lwpa_error_t res = lwpa_socket(LWPA_IP_IS_V6(netint) ? LWPA_AF_INET6 : LWPA_AF_INET, LWPA_DGRAM, &sock);
@@ -120,7 +120,7 @@ lwpa_error_t create_sys_socket(const LwpaIpAddr *netint, bool manager, lwpa_sock
     // SO_REUSEADDR allows multiple sockets to bind to LLRP_PORT, which is very important for our
     // multicast needs.
     int option = 1;
-    res = lwpa_setsockopt(sock, LWPA_SOL_SOCKET, LWPA_SO_REUSEADDR, (const void *)(&option), sizeof(option));
+    res = lwpa_setsockopt(sock, LWPA_SOL_SOCKET, LWPA_SO_REUSEADDR, (const void*)(&option), sizeof(option));
   }
 
   if (res == kLwpaErrOk)
@@ -129,7 +129,7 @@ lwpa_error_t create_sys_socket(const LwpaIpAddr *netint, bool manager, lwpa_sock
     if (LWPA_IP_IS_V4(netint))
     {
       int value = LLRP_MULTICAST_TTL_VAL;
-      res = lwpa_setsockopt(sock, LWPA_IPPROTO_IP, LWPA_IP_MULTICAST_TTL, (const void *)(&value), sizeof(value));
+      res = lwpa_setsockopt(sock, LWPA_IPPROTO_IP, LWPA_IP_MULTICAST_TTL, (const void*)(&value), sizeof(value));
     }
     else
     {
@@ -142,7 +142,7 @@ lwpa_error_t create_sys_socket(const LwpaIpAddr *netint, bool manager, lwpa_sock
     // MULTICAST_IF is critical for multicast sends to go over the correct interface.
     if (LWPA_IP_IS_V4(netint))
     {
-      res = lwpa_setsockopt(sock, LWPA_IPPROTO_IP, LWPA_IP_MULTICAST_IF, (const void *)(netint), sizeof(LwpaIpAddr));
+      res = lwpa_setsockopt(sock, LWPA_IPPROTO_IP, LWPA_IP_MULTICAST_IF, (const void*)(netint), sizeof(LwpaIpAddr));
     }
     else
     {
@@ -184,7 +184,7 @@ lwpa_error_t create_sys_socket(const LwpaIpAddr *netint, bool manager, lwpa_sock
   return res;
 }
 
-lwpa_error_t subscribe_multicast(lwpa_socket_t socket, const LwpaIpAddr *netint, bool manager)
+lwpa_error_t subscribe_multicast(lwpa_socket_t socket, const LwpaIpAddr* netint, bool manager)
 {
   lwpa_error_t res = kLwpaErrNotImpl;
 
@@ -194,7 +194,7 @@ lwpa_error_t subscribe_multicast(lwpa_socket_t socket, const LwpaIpAddr *netint,
 
     multireq.group = (manager ? kLlrpIpv4RespAddrInternal.ip : kLlrpIpv4RequestAddrInternal.ip);
     multireq.netint = *netint;
-    res = lwpa_setsockopt(socket, LWPA_IPPROTO_IP, LWPA_MCAST_JOIN_GROUP, (const void *)&multireq, sizeof(multireq));
+    res = lwpa_setsockopt(socket, LWPA_IPPROTO_IP, LWPA_MCAST_JOIN_GROUP, (const void*)&multireq, sizeof(multireq));
   }
   else
   {

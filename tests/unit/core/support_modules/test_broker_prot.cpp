@@ -89,7 +89,7 @@ TEST_F(TestBrokerProt, message_string_macros)
   }
 
   // Set custom scope within length requirements
-  constexpr char *test_scope = u8"照明让我感觉很好";
+  constexpr char* test_scope = u8"照明让我感觉很好";
   client_connect_msg_set_scope(&ccmsg, test_scope);
   ASSERT_STREQ(ccmsg.scope, test_scope);
   // We should be null-padded to the full length of the array.
@@ -99,8 +99,8 @@ TEST_F(TestBrokerProt, message_string_macros)
   }
 
   // Set custom scope outside length requirements
-  constexpr char *scope_too_long = "longlonglonglonglonglonglonglonglonglonglonglonglonglonglonglon";
-  constexpr char *scope_truncated = "longlonglonglonglonglonglonglonglonglonglonglonglonglonglonglo";
+  constexpr char* scope_too_long = "longlonglonglonglonglonglonglonglonglonglonglonglonglonglonglon";
+  constexpr char* scope_truncated = "longlonglonglonglonglonglonglonglonglonglonglonglonglonglonglo";
   client_connect_msg_set_scope(&ccmsg, scope_too_long);
   ASSERT_STREQ(ccmsg.scope, scope_truncated);
 
@@ -114,7 +114,7 @@ TEST_F(TestBrokerProt, message_string_macros)
   }
 
   // Set custom search domain within length requirements
-  constexpr char *test_domain = "test.pepperoni.pizza.";
+  constexpr char* test_domain = "test.pepperoni.pizza.";
   client_connect_msg_set_search_domain(&ccmsg, test_domain);
   ASSERT_STREQ(ccmsg.search_domain, test_domain);
   for (size_t i = strlen(test_domain); i < E133_DOMAIN_STRING_PADDED_LENGTH; ++i)
@@ -123,11 +123,11 @@ TEST_F(TestBrokerProt, message_string_macros)
   }
 
   // Set custom search domain outside length requirements
-  constexpr char *domain_too_long =
+  constexpr char* domain_too_long =
       "this.is.a.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very."
       "very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very."
       "long.domain.";
-  constexpr char *domain_truncated =
+  constexpr char* domain_truncated =
       "this.is.a.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very."
       "very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very.very."
       "long.domai";

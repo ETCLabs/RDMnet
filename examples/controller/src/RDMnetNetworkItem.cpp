@@ -30,7 +30,7 @@
 
 bool RDMnetNetworkItem::rowHasSearchingStatusItem(int row)
 {
-  QStandardItem *current = this->child(row);
+  QStandardItem* current = this->child(row);
 
   if (current != NULL)
   {
@@ -54,7 +54,7 @@ RDMnetNetworkItem::RDMnetNetworkItem()
   setData(EditorWidgetType::kDefault, EditorWidgetTypeRole);
 }
 
-RDMnetNetworkItem::RDMnetNetworkItem(const QVariant &data)
+RDMnetNetworkItem::RDMnetNetworkItem(const QVariant& data)
     : QStandardItem()
     , children_search_running_(false)
     , supportedFeatures(kNoSupport)
@@ -78,7 +78,7 @@ RDMnetNetworkItem::RDMnetNetworkItem(const QVariant &data)
   setData(EditorWidgetType::kDefault, EditorWidgetTypeRole);
 }
 
-RDMnetNetworkItem::RDMnetNetworkItem(const QVariant &data, int role)
+RDMnetNetworkItem::RDMnetNetworkItem(const QVariant& data, int role)
     : QStandardItem()
     , children_search_running_(false)
     , supportedFeatures(kNoSupport)
@@ -159,11 +159,12 @@ void RDMnetNetworkItem::enableFeature(SupportedDeviceFeature feature)
   supportedFeatures |= feature;
 }
 
-void RDMnetNetworkItem::completelyRemoveChildren(int row, int count, std::vector<class PropertyItem *> *alsoRemoveFromThis)
+void RDMnetNetworkItem::completelyRemoveChildren(int row, int count,
+                                                 std::vector<class PropertyItem*>* alsoRemoveFromThis)
 {
   for (int i = row; i < (row + count); ++i)
   {
-    RDMnetNetworkItem *c = dynamic_cast<RDMnetNetworkItem *>(child(i));
+    RDMnetNetworkItem* c = dynamic_cast<RDMnetNetworkItem*>(child(i));
 
     if (c != NULL)
     {
@@ -172,8 +173,9 @@ void RDMnetNetworkItem::completelyRemoveChildren(int row, int count, std::vector
 
     if (alsoRemoveFromThis != NULL)
     {
-      class PropertyItem * toRemove = reinterpret_cast<class PropertyItem *>(c);
-      alsoRemoveFromThis->erase(std::remove(alsoRemoveFromThis->begin(), alsoRemoveFromThis->end(), toRemove), alsoRemoveFromThis->end());
+      class PropertyItem* toRemove = reinterpret_cast<class PropertyItem*>(c);
+      alsoRemoveFromThis->erase(std::remove(alsoRemoveFromThis->begin(), alsoRemoveFromThis->end(), toRemove),
+                                alsoRemoveFromThis->end());
     }
   }
 
@@ -186,7 +188,7 @@ void RDMnetNetworkItem::disableAllChildItems()
   {
     for (int j = 0; j < columnCount(); ++j)
     {
-      RDMnetNetworkItem *c = dynamic_cast<RDMnetNetworkItem *>(child(i, j));
+      RDMnetNetworkItem* c = dynamic_cast<RDMnetNetworkItem*>(child(i, j));
 
       if (c != NULL)
       {
@@ -214,7 +216,8 @@ bool RDMnetNetworkItem::initiatePersonalityDescriptionSearch(uint8_t numberOfPer
   return false;
 }
 
-void RDMnetNetworkItem::personalityDescriptionFound(uint8_t personality, uint16_t /*footprint*/, const QString &description)
+void RDMnetNetworkItem::personalityDescriptionFound(uint8_t personality, uint16_t /*footprint*/,
+                                                    const QString& description)
 {
   if (personality <= totalNumberOfDescriptions)
   {

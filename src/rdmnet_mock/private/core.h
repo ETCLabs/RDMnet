@@ -45,9 +45,9 @@ DECLARE_FAKE_VALUE_FUNC(bool, rdmnet_writelock);
 DECLARE_FAKE_VOID_FUNC(rdmnet_writeunlock);
 
 DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_core_add_polled_socket, lwpa_socket_t, lwpa_poll_events_t,
-                        PolledSocketInfo *);
+                        PolledSocketInfo*);
 DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_core_modify_polled_socket, lwpa_socket_t, lwpa_poll_events_t,
-                        PolledSocketInfo *);
+                        PolledSocketInfo*);
 DECLARE_FAKE_VOID_FUNC(rdmnet_core_remove_polled_socket, lwpa_socket_t);
 
 #ifdef __cplusplus

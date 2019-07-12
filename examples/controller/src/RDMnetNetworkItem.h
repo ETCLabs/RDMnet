@@ -53,7 +53,7 @@ inline SupportedDeviceFeature operator|(SupportedDeviceFeature a, SupportedDevic
   return static_cast<SupportedDeviceFeature>(static_cast<int>(a) | static_cast<int>(b));
 }
 
-inline SupportedDeviceFeature operator|=(SupportedDeviceFeature &a, SupportedDeviceFeature b)
+inline SupportedDeviceFeature operator|=(SupportedDeviceFeature& a, SupportedDeviceFeature b)
 {
   return a = (a | b);
 }
@@ -87,7 +87,7 @@ protected:
 
   bool children_search_running_;
 
-  QString *personalityDescriptions;
+  QString* personalityDescriptions;
   uint8_t numberOfDescriptionsFound;
   uint8_t totalNumberOfDescriptions;
 
@@ -98,8 +98,8 @@ protected:
 
 public:
   RDMnetNetworkItem();
-  explicit RDMnetNetworkItem(const QVariant &data);
-  RDMnetNetworkItem(const QVariant &data, int role);
+  explicit RDMnetNetworkItem(const QVariant& data);
+  RDMnetNetworkItem(const QVariant& data, int role);
   virtual ~RDMnetNetworkItem();
 
   virtual int type() const override;
@@ -111,14 +111,14 @@ public:
   void disableChildrenSearch();
   void enableFeature(SupportedDeviceFeature feature);
   // alsoRemoveFromThis: For every child row removed, remove the child item from alsoRemoveFromThis as well.
-  void completelyRemoveChildren(int row, int count = 1, std::vector<class PropertyItem *> *alsoRemoveFromThis = NULL);
+  void completelyRemoveChildren(int row, int count = 1, std::vector<class PropertyItem*>* alsoRemoveFromThis = NULL);
   void disableAllChildItems();
 
   virtual RdmUid uid() const { return {0, 0}; }
   virtual bool hasValidProperties(void) const;
 
   bool initiatePersonalityDescriptionSearch(uint8_t numberOfPersonalities);
-  void personalityDescriptionFound(uint8_t personality, uint16_t footprint, const QString &description);
+  void personalityDescriptionFound(uint8_t personality, uint16_t footprint, const QString& description);
   bool allPersonalityDescriptionsFound();
   QStringList personalityDescriptionList();
   QString personalityDescriptionAt(int i);
@@ -126,5 +126,5 @@ public:
   void setDeviceIdentifying(bool identifying);
   bool identifying();
 
-  std::vector<class PropertyItem *> properties;
+  std::vector<class PropertyItem*> properties;
 };

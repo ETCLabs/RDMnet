@@ -42,8 +42,8 @@ LWPA_MEMPOOL_DEFINE_ARRAY(rpt_status_strings, char, RPT_STATUS_STRING_MAXLEN + 1
 
 /*********************** Private function prototypes *************************/
 
-static void free_broker_message(BrokerMessage *bmsg);
-static void free_rpt_message(RptMessage *rmsg);
+static void free_broker_message(BrokerMessage* bmsg);
+static void free_rpt_message(RptMessage* rmsg);
 
 /*************************** Function definitions ****************************/
 
@@ -65,7 +65,7 @@ lwpa_error_t rdmnet_message_init()
 /*! \brief Free the resources held by an RdmnetMessage returned from another API function.
  *  \param[in] msg Pointer to message to free.
  */
-void free_rdmnet_message(RdmnetMessage *msg)
+void free_rdmnet_message(RdmnetMessage* msg)
 {
   if (msg)
   {
@@ -83,7 +83,7 @@ void free_rdmnet_message(RdmnetMessage *msg)
   }
 }
 
-void free_broker_message(BrokerMessage *bmsg)
+void free_broker_message(BrokerMessage* bmsg)
 {
   switch (bmsg->vector)
   {
@@ -92,16 +92,16 @@ void free_broker_message(BrokerMessage *bmsg)
     case VECTOR_BROKER_CLIENT_ENTRY_CHANGE:
     case VECTOR_BROKER_CONNECTED_CLIENT_LIST:
     {
-      ClientList *clist = get_client_list(bmsg);
-      ClientEntryData *entry = clist->client_entry_list;
-      ClientEntryData *next_entry;
+      ClientList* clist = get_client_list(bmsg);
+      ClientEntryData* entry = clist->client_entry_list;
+      ClientEntryData* next_entry;
       while (entry)
       {
         if (entry->client_protocol == E133_CLIENT_PROTOCOL_EPT)
         {
-          ClientEntryDataEpt *eptdata = get_ept_client_entry_data(entry);
-          EptSubProtocol *subprot = eptdata->protocol_list;
-          EptSubProtocol *next_subprot;
+          ClientEntryDataEpt* eptdata = get_ept_client_entry_data(entry);
+          EptSubProtocol* subprot = eptdata->protocol_list;
+          EptSubProtocol* next_subprot;
           while (subprot)
           {
             next_subprot = subprot->next;
@@ -117,9 +117,9 @@ void free_broker_message(BrokerMessage *bmsg)
     }
     case VECTOR_BROKER_REQUEST_DYNAMIC_UIDS:
     {
-      DynamicUidRequestList *list = get_dynamic_uid_request_list(bmsg);
-      DynamicUidRequestListEntry *entry = list->request_list;
-      DynamicUidRequestListEntry *next_entry;
+      DynamicUidRequestList* list = get_dynamic_uid_request_list(bmsg);
+      DynamicUidRequestListEntry* entry = list->request_list;
+      DynamicUidRequestListEntry* next_entry;
       while (entry)
       {
         next_entry = entry->next;
@@ -130,9 +130,9 @@ void free_broker_message(BrokerMessage *bmsg)
     }
     case VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS:
     {
-      DynamicUidAssignmentList *list = get_dynamic_uid_assignment_list(bmsg);
-      DynamicUidMapping *mapping = list->mapping_list;
-      DynamicUidMapping *next_mapping;
+      DynamicUidAssignmentList* list = get_dynamic_uid_assignment_list(bmsg);
+      DynamicUidMapping* mapping = list->mapping_list;
+      DynamicUidMapping* next_mapping;
       while (mapping)
       {
         next_mapping = mapping->next;
@@ -143,9 +143,9 @@ void free_broker_message(BrokerMessage *bmsg)
     }
     case VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST:
     {
-      FetchUidAssignmentList *list = get_fetch_dynamic_uid_assignment_list(bmsg);
-      FetchUidAssignmentListEntry *entry = list->assignment_list;
-      FetchUidAssignmentListEntry *next_entry;
+      FetchUidAssignmentList* list = get_fetch_dynamic_uid_assignment_list(bmsg);
+      FetchUidAssignmentListEntry* entry = list->assignment_list;
+      FetchUidAssignmentListEntry* next_entry;
       while (entry)
       {
         next_entry = entry->next;
@@ -159,16 +159,16 @@ void free_broker_message(BrokerMessage *bmsg)
   }
 }
 
-void free_rpt_message(RptMessage *rmsg)
+void free_rpt_message(RptMessage* rmsg)
 {
   switch (rmsg->vector)
   {
     case VECTOR_RPT_REQUEST:
     case VECTOR_RPT_NOTIFICATION:
     {
-      RdmBufList *rlist = get_rdm_buf_list(rmsg);
-      RdmBufListEntry *rdmcmd = rlist->list;
-      RdmBufListEntry *next_rdmcmd;
+      RdmBufList* rlist = get_rdm_buf_list(rmsg);
+      RdmBufListEntry* rdmcmd = rlist->list;
+      RdmBufListEntry* next_rdmcmd;
       while (rdmcmd)
       {
         next_rdmcmd = rdmcmd->next;
@@ -179,10 +179,10 @@ void free_rpt_message(RptMessage *rmsg)
     }
     case VECTOR_RPT_STATUS:
     {
-      RptStatusMsg *status = get_rpt_status_msg(rmsg);
+      RptStatusMsg* status = get_rpt_status_msg(rmsg);
       if (status->status_string)
       {
-        free_rpt_status_str((char *)status->status_string);
+        free_rpt_status_str((char*)status->status_string);
         status->status_string = NULL;
       }
       break;

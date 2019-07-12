@@ -68,7 +68,7 @@ typedef struct KnownUid KnownUid;
 struct KnownUid
 {
   RdmUid uid;
-  KnownUid *next;
+  KnownUid* next;
 };
 
 typedef struct RemoteProbeRequest
@@ -84,7 +84,7 @@ typedef struct LocalProbeRequest
   RdmUid lower_uid;
   RdmUid upper_uid;
   uint16_t filter;
-  KnownUid *uid_list;
+  KnownUid* uid_list;
 } LocalProbeRequest;
 
 typedef struct LlrpMessage
@@ -111,16 +111,16 @@ extern LwpaUuid kLlrpBroadcastCid;
 
 void llrp_prot_init();
 
-bool parse_llrp_message(const uint8_t *buf, size_t buflen, const LlrpMessageInterest *interest, LlrpMessage *msg);
+bool parse_llrp_message(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest, LlrpMessage* msg);
 
-lwpa_error_t send_llrp_probe_request(lwpa_socket_t sock, uint8_t *buf, bool ipv6, const LlrpHeader *header,
-                                     const LocalProbeRequest *probe_request);
-lwpa_error_t send_llrp_probe_reply(lwpa_socket_t sock, uint8_t *buf, bool ipv6, const LlrpHeader *header,
-                                   const DiscoveredLlrpTarget *target_info);
-lwpa_error_t send_llrp_rdm_command(lwpa_socket_t sock, uint8_t *buf, bool ipv6, const LlrpHeader *header,
-                                   const RdmBuffer *cmd);
-lwpa_error_t send_llrp_rdm_response(lwpa_socket_t sock, uint8_t *buf, bool ipv6, const LlrpHeader *header,
-                                    const RdmBuffer *resp);
+lwpa_error_t send_llrp_probe_request(lwpa_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
+                                     const LocalProbeRequest* probe_request);
+lwpa_error_t send_llrp_probe_reply(lwpa_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
+                                   const DiscoveredLlrpTarget* target_info);
+lwpa_error_t send_llrp_rdm_command(lwpa_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
+                                   const RdmBuffer* cmd);
+lwpa_error_t send_llrp_rdm_response(lwpa_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
+                                    const RdmBuffer* resp);
 
 #ifdef __cplusplus
 }

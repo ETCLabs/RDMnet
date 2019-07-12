@@ -28,8 +28,8 @@
 
 #include "lwpa/socket.h"
 
-BrokerItem::BrokerItem(const QString &scope, rdmnet_client_scope_t scope_handle,
-                       const StaticBrokerConfig &static_broker /* = StaticBrokerConfig() */)
+BrokerItem::BrokerItem(const QString& scope, rdmnet_client_scope_t scope_handle,
+                       const StaticBrokerConfig& static_broker /* = StaticBrokerConfig() */)
     : RDMnetNetworkItem(), scope_(scope), scope_handle_(scope_handle), static_broker_(static_broker)
 {
   updateText();
@@ -44,7 +44,7 @@ int BrokerItem::type() const
   return BrokerItemType;
 }
 
-void BrokerItem::setConnected(bool connected, const LwpaSockaddr &broker_addr)
+void BrokerItem::setConnected(bool connected, const LwpaSockaddr& broker_addr)
 {
   connected_ = connected;
   if (connected)

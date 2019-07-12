@@ -56,16 +56,16 @@ LWPA_MEMPOOL_DEFINE(rdmnet_devices, RdmnetDevice, RDMNET_MAX_DEVICES);
 /*********************** Private function prototypes *************************/
 
 static void client_connected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                             const RdmnetClientConnectedInfo *info, void *context);
+                             const RdmnetClientConnectedInfo* info, void* context);
 static void client_connect_failed(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                  const RdmnetClientConnectFailedInfo *info, void *context);
+                                  const RdmnetClientConnectFailedInfo* info, void* context);
 static void client_disconnected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                const RdmnetClientDisconnectedInfo *info, void *context);
+                                const RdmnetClientDisconnectedInfo* info, void* context);
 static void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                       const BrokerMessage *msg, void *context);
-static void client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand *cmd, void *context);
-static void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptClientMessage *msg,
-                                void *context);
+                                       const BrokerMessage* msg, void* context);
+static void client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand* cmd, void* context);
+static void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptClientMessage* msg,
+                                void* context);
 
 // clang-format off
 static const RptClientCallbacks client_callbacks =
@@ -81,7 +81,7 @@ static const RptClientCallbacks client_callbacks =
 
 /*************************** Function definitions ****************************/
 
-lwpa_error_t rdmnet_device_init(const LwpaLogParams *lparams)
+lwpa_error_t rdmnet_device_init(const LwpaLogParams* lparams)
 {
 #if !RDMNET_DYNAMIC_MEM
   lwpa_error_t res = lwpa_mempool_init(rdmnet_devices);
@@ -97,12 +97,12 @@ void rdmnet_device_deinit()
   rdmnet_client_deinit();
 }
 
-lwpa_error_t rdmnet_device_create(const RdmnetDeviceConfig *config, rdmnet_device_t *handle)
+lwpa_error_t rdmnet_device_create(const RdmnetDeviceConfig* config, rdmnet_device_t* handle)
 {
   if (!config || !handle)
     return kLwpaErrInvalid;
 
-  RdmnetDevice *new_device = alloc_rdmnet_device();
+  RdmnetDevice* new_device = alloc_rdmnet_device();
   if (!new_device)
     return kLwpaErrNoMem;
 
@@ -152,7 +152,7 @@ lwpa_error_t rdmnet_device_destroy(rdmnet_device_t handle)
   return res;
 }
 
-lwpa_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const LocalRdmResponse *resp)
+lwpa_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const LocalRdmResponse* resp)
 {
   if (!handle)
     return kLwpaErrInvalid;
@@ -160,7 +160,7 @@ lwpa_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const Local
   return rdmnet_rpt_client_send_rdm_response(handle->client_handle, handle->scope_handle, resp);
 }
 
-lwpa_error_t rdmnet_device_send_status(rdmnet_device_t handle, const LocalRptStatus *status)
+lwpa_error_t rdmnet_device_send_status(rdmnet_device_t handle, const LocalRptStatus* status)
 {
   if (!handle)
     return kLwpaErrInvalid;
@@ -168,7 +168,7 @@ lwpa_error_t rdmnet_device_send_status(rdmnet_device_t handle, const LocalRptSta
   return rdmnet_rpt_client_send_status(handle->client_handle, handle->scope_handle, status);
 }
 
-lwpa_error_t rdmnet_device_send_llrp_response(rdmnet_device_t handle, const LlrpLocalRdmResponse *resp)
+lwpa_error_t rdmnet_device_send_llrp_response(rdmnet_device_t handle, const LlrpLocalRdmResponse* resp)
 {
   if (!handle)
     return kLwpaErrInvalid;
@@ -176,7 +176,7 @@ lwpa_error_t rdmnet_device_send_llrp_response(rdmnet_device_t handle, const Llrp
   return rdmnet_rpt_client_send_llrp_response(handle->client_handle, resp);
 }
 
-lwpa_error_t rdmnet_device_change_scope(rdmnet_device_t handle, const RdmnetScopeConfig *new_scope_config,
+lwpa_error_t rdmnet_device_change_scope(rdmnet_device_t handle, const RdmnetScopeConfig* new_scope_config,
                                         rdmnet_disconnect_reason_t reason)
 {
   if (!handle)
@@ -186,7 +186,7 @@ lwpa_error_t rdmnet_device_change_scope(rdmnet_device_t handle, const RdmnetScop
   return rdmnet_client_add_scope(handle->client_handle, new_scope_config, &handle->scope_handle);
 }
 
-lwpa_error_t rdmnet_device_change_search_domain(rdmnet_device_t handle, const char *new_search_domain,
+lwpa_error_t rdmnet_device_change_search_domain(rdmnet_device_t handle, const char* new_search_domain,
                                                 rdmnet_disconnect_reason_t reason)
 {
   if (!handle)
@@ -195,12 +195,12 @@ lwpa_error_t rdmnet_device_change_search_domain(rdmnet_device_t handle, const ch
   return rdmnet_client_change_search_domain(handle->client_handle, new_search_domain, reason);
 }
 
-void client_connected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo *info,
-                      void *context)
+void client_connected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo* info,
+                      void* context)
 {
   (void)handle;
 
-  RdmnetDevice *device = (RdmnetDevice *)context;
+  RdmnetDevice* device = (RdmnetDevice*)context;
   if (device && scope_handle == device->scope_handle)
   {
     device->callbacks.connected(device, info, device->callback_context);
@@ -208,11 +208,11 @@ void client_connected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle
 }
 
 void client_connect_failed(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                           const RdmnetClientConnectFailedInfo *info, void *context)
+                           const RdmnetClientConnectFailedInfo* info, void* context)
 {
   (void)handle;
 
-  RdmnetDevice *device = (RdmnetDevice *)context;
+  RdmnetDevice* device = (RdmnetDevice*)context;
   if (device && scope_handle == device->scope_handle)
   {
     device->callbacks.connect_failed(device, info, device->callback_context);
@@ -220,19 +220,19 @@ void client_connect_failed(rdmnet_client_t handle, rdmnet_client_scope_t scope_h
 }
 
 void client_disconnected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                         const RdmnetClientDisconnectedInfo *info, void *context)
+                         const RdmnetClientDisconnectedInfo* info, void* context)
 {
   (void)handle;
 
-  RdmnetDevice *device = (RdmnetDevice *)context;
+  RdmnetDevice* device = (RdmnetDevice*)context;
   if (device && scope_handle == device->scope_handle)
   {
     device->callbacks.disconnected(device, info, device->callback_context);
   }
 }
 
-void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const BrokerMessage *msg,
-                                void *context)
+void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const BrokerMessage* msg,
+                                void* context)
 {
   (void)handle;
   (void)scope_handle;
@@ -241,23 +241,23 @@ void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t sc
   lwpa_log(rdmnet_log_params, LWPA_LOG_INFO, "Got Broker message with vector %d", msg->vector);
 }
 
-void client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand *cmd, void *context)
+void client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand* cmd, void* context)
 {
   (void)handle;
 
-  RdmnetDevice *device = (RdmnetDevice *)context;
+  RdmnetDevice* device = (RdmnetDevice*)context;
   if (device)
   {
     device->callbacks.llrp_rdm_command_received(device, cmd, device->callback_context);
   }
 }
 
-void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptClientMessage *msg,
-                         void *context)
+void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptClientMessage* msg,
+                         void* context)
 {
   (void)handle;
 
-  RdmnetDevice *device = (RdmnetDevice *)context;
+  RdmnetDevice* device = (RdmnetDevice*)context;
   if (device && scope_handle == device->scope_handle)
   {
     if (msg->type == kRptClientMsgRdmCmd)

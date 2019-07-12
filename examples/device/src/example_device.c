@@ -53,29 +53,29 @@ static struct device_state
 
   bool connected;
 
-  const LwpaLogParams *lparams;
+  const LwpaLogParams* lparams;
 } device_state;
 
 /*********************** Private function prototypes *************************/
 
 /* RDM command handling */
-static void device_handle_rpt_command(const RemoteRdmCommand *cmd, rdmnet_data_changed_t *data_changed);
-static void device_handle_llrp_command(const LlrpRemoteRdmCommand *cmd, rdmnet_data_changed_t *data_changed);
-static bool device_handle_rdm_command(const RdmCommand *rdm_cmd, RdmResponse *resp_list, size_t *resp_list_size,
-                                      uint16_t *nack_reason, rdmnet_data_changed_t *data_changed);
-static void device_send_rpt_status(rpt_status_code_t status_code, const RemoteRdmCommand *received_cmd);
-static void device_send_rpt_nack(uint16_t nack_reason, const RemoteRdmCommand *received_cmd);
-static void device_send_rpt_response(RdmResponse *resp_list, size_t num_responses,
-                                     const RemoteRdmCommand *received_cmd);
-static void device_send_llrp_nack(uint16_t nack_reason, const LlrpRemoteRdmCommand *received_cmd);
-static void device_send_llrp_response(RdmResponse *resp, const LlrpRemoteRdmCommand *received_cmd);
+static void device_handle_rpt_command(const RemoteRdmCommand* cmd, rdmnet_data_changed_t* data_changed);
+static void device_handle_llrp_command(const LlrpRemoteRdmCommand* cmd, rdmnet_data_changed_t* data_changed);
+static bool device_handle_rdm_command(const RdmCommand* rdm_cmd, RdmResponse* resp_list, size_t* resp_list_size,
+                                      uint16_t* nack_reason, rdmnet_data_changed_t* data_changed);
+static void device_send_rpt_status(rpt_status_code_t status_code, const RemoteRdmCommand* received_cmd);
+static void device_send_rpt_nack(uint16_t nack_reason, const RemoteRdmCommand* received_cmd);
+static void device_send_rpt_response(RdmResponse* resp_list, size_t num_responses,
+                                     const RemoteRdmCommand* received_cmd);
+static void device_send_llrp_nack(uint16_t nack_reason, const LlrpRemoteRdmCommand* received_cmd);
+static void device_send_llrp_response(RdmResponse* resp, const LlrpRemoteRdmCommand* received_cmd);
 
 /* Device callbacks */
-static void device_connected(rdmnet_device_t handle, const RdmnetClientConnectedInfo *info, void *context);
-static void device_connect_failed(rdmnet_device_t handle, const RdmnetClientConnectFailedInfo *info, void *context);
-static void device_disconnected(rdmnet_device_t handle, const RdmnetClientDisconnectedInfo *info, void *context);
-static void device_rdm_cmd_received(rdmnet_device_t handle, const RemoteRdmCommand *cmd, void *context);
-static void device_llrp_rdm_cmd_received(rdmnet_device_t handle, const LlrpRemoteRdmCommand *cmd, void *context);
+static void device_connected(rdmnet_device_t handle, const RdmnetClientConnectedInfo* info, void* context);
+static void device_connect_failed(rdmnet_device_t handle, const RdmnetClientConnectFailedInfo* info, void* context);
+static void device_disconnected(rdmnet_device_t handle, const RdmnetClientDisconnectedInfo* info, void* context);
+static void device_rdm_cmd_received(rdmnet_device_t handle, const RemoteRdmCommand* cmd, void* context);
+static void device_llrp_rdm_cmd_received(rdmnet_device_t handle, const LlrpRemoteRdmCommand* cmd, void* context);
 
 /*************************** Function definitions ****************************/
 
@@ -90,7 +90,7 @@ void device_print_version()
   printf("or implied.\n");
 }
 
-lwpa_error_t device_init(const RdmnetScopeConfig *scope_config, const LwpaLogParams *lparams)
+lwpa_error_t device_init(const RdmnetScopeConfig* scope_config, const LwpaLogParams* lparams)
 {
   if (!scope_config)
     return kLwpaErrInvalid;
@@ -140,7 +140,7 @@ void device_deinit()
   default_responder_deinit();
 }
 
-void device_connected(rdmnet_device_t handle, const RdmnetClientConnectedInfo *info, void *context)
+void device_connected(rdmnet_device_t handle, const RdmnetClientConnectedInfo* info, void* context)
 {
   (void)handle;
   (void)context;
@@ -150,14 +150,14 @@ void device_connected(rdmnet_device_t handle, const RdmnetClientConnectedInfo *i
            device_state.cur_scope_config.scope);
 }
 
-void device_connect_failed(rdmnet_device_t handle, const RdmnetClientConnectFailedInfo *info, void *context)
+void device_connect_failed(rdmnet_device_t handle, const RdmnetClientConnectFailedInfo* info, void* context)
 {
   (void)handle;
   (void)info;
   (void)context;
 }
 
-void device_disconnected(rdmnet_device_t handle, const RdmnetClientDisconnectedInfo *info, void *context)
+void device_disconnected(rdmnet_device_t handle, const RdmnetClientDisconnectedInfo* info, void* context)
 {
   (void)handle;
   (void)context;
@@ -168,7 +168,7 @@ void device_disconnected(rdmnet_device_t handle, const RdmnetClientDisconnectedI
            device_state.cur_scope_config.scope);
 }
 
-void device_rdm_cmd_received(rdmnet_device_t handle, const RemoteRdmCommand *cmd, void *context)
+void device_rdm_cmd_received(rdmnet_device_t handle, const RemoteRdmCommand* cmd, void* context)
 {
   (void)handle;
   (void)context;
@@ -187,7 +187,7 @@ void device_rdm_cmd_received(rdmnet_device_t handle, const RemoteRdmCommand *cmd
   }
 }
 
-void device_llrp_rdm_cmd_received(rdmnet_device_t handle, const LlrpRemoteRdmCommand *cmd, void *context)
+void device_llrp_rdm_cmd_received(rdmnet_device_t handle, const LlrpRemoteRdmCommand* cmd, void* context)
 {
   (void)handle;
   (void)context;
@@ -207,9 +207,9 @@ void device_llrp_rdm_cmd_received(rdmnet_device_t handle, const LlrpRemoteRdmCom
   }
 }
 
-void device_handle_rpt_command(const RemoteRdmCommand *cmd, rdmnet_data_changed_t *data_changed)
+void device_handle_rpt_command(const RemoteRdmCommand* cmd, rdmnet_data_changed_t* data_changed)
 {
-  const RdmCommand *rdm_cmd = &cmd->rdm;
+  const RdmCommand* rdm_cmd = &cmd->rdm;
   if (rdm_cmd->command_class != kRdmCCGetCommand && rdm_cmd->command_class != kRdmCCSetCommand)
   {
     device_send_rpt_status(VECTOR_RPT_STATUS_INVALID_COMMAND_CLASS, cmd);
@@ -245,9 +245,9 @@ void device_handle_rpt_command(const RemoteRdmCommand *cmd, rdmnet_data_changed_
   }
 }
 
-void device_handle_llrp_command(const LlrpRemoteRdmCommand *cmd, rdmnet_data_changed_t *data_changed)
+void device_handle_llrp_command(const LlrpRemoteRdmCommand* cmd, rdmnet_data_changed_t* data_changed)
 {
-  const RdmCommand *rdm_cmd = &cmd->rdm;
+  const RdmCommand* rdm_cmd = &cmd->rdm;
   if (rdm_cmd->command_class != kRdmCCGetCommand && rdm_cmd->command_class != kRdmCCSetCommand)
   {
     device_send_llrp_nack(E120_NR_UNSUPPORTED_COMMAND_CLASS, cmd);
@@ -294,8 +294,8 @@ void device_handle_llrp_command(const LlrpRemoteRdmCommand *cmd, rdmnet_data_cha
   }
 }
 
-bool device_handle_rdm_command(const RdmCommand *rdm_cmd, RdmResponse *resp_list, size_t *resp_list_size,
-                               uint16_t *nack_reason, rdmnet_data_changed_t *data_changed)
+bool device_handle_rdm_command(const RdmCommand* rdm_cmd, RdmResponse* resp_list, size_t* resp_list_size,
+                               uint16_t* nack_reason, rdmnet_data_changed_t* data_changed)
 {
   bool res = false;
   switch (rdm_cmd->command_class)
@@ -349,7 +349,7 @@ bool device_handle_rdm_command(const RdmCommand *rdm_cmd, RdmResponse *resp_list
   return res;
 }
 
-void device_send_rpt_status(rpt_status_code_t status_code, const RemoteRdmCommand *received_cmd)
+void device_send_rpt_status(rpt_status_code_t status_code, const RemoteRdmCommand* received_cmd)
 {
   LocalRptStatus status;
   RDMNET_CREATE_STATUS_FROM_COMMAND(&status, received_cmd, status_code);
@@ -362,14 +362,14 @@ void device_send_rpt_status(rpt_status_code_t status_code, const RemoteRdmComman
   }
 }
 
-void device_send_rpt_nack(uint16_t nack_reason, const RemoteRdmCommand *received_cmd)
+void device_send_rpt_nack(uint16_t nack_reason, const RemoteRdmCommand* received_cmd)
 {
   RdmResponse resp;
   RDM_CREATE_NACK_FROM_COMMAND(&resp, &received_cmd->rdm, nack_reason);
   device_send_rpt_response(&resp, 1, received_cmd);
 }
 
-void device_send_rpt_response(RdmResponse *resp_list, size_t num_responses, const RemoteRdmCommand *received_cmd)
+void device_send_rpt_response(RdmResponse* resp_list, size_t num_responses, const RemoteRdmCommand* received_cmd)
 {
   LocalRdmResponse resp_to_send;
   RDMNET_CREATE_RESPONSE_FROM_COMMAND(&resp_to_send, received_cmd, resp_list, num_responses);
@@ -381,14 +381,14 @@ void device_send_rpt_response(RdmResponse *resp_list, size_t num_responses, cons
   }
 }
 
-void device_send_llrp_nack(uint16_t nack_reason, const LlrpRemoteRdmCommand *received_cmd)
+void device_send_llrp_nack(uint16_t nack_reason, const LlrpRemoteRdmCommand* received_cmd)
 {
   RdmResponse resp;
   RDM_CREATE_NACK_FROM_COMMAND(&resp, &received_cmd->rdm, nack_reason);
   device_send_llrp_response(&resp, received_cmd);
 }
 
-void device_send_llrp_response(RdmResponse *resp, const LlrpRemoteRdmCommand *received_cmd)
+void device_send_llrp_response(RdmResponse* resp, const LlrpRemoteRdmCommand* received_cmd)
 {
   LlrpLocalRdmResponse resp_to_send;
   LLRP_CREATE_RESPONSE_FROM_COMMAND(&resp_to_send, received_cmd, resp);

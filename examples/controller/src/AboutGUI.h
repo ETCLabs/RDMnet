@@ -38,7 +38,7 @@ class AboutGUI : public QDialog
   Q_OBJECT
 
 public:
-  AboutGUI(QWidget *parent, QString qtVersion, QString rdmNetVersion);
+  AboutGUI(QWidget* parent, QString qtVersion, QString rdmNetVersion);
   ~AboutGUI();
 
 protected slots:

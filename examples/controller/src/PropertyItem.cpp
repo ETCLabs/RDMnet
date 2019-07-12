@@ -27,7 +27,8 @@
 
 #include "PropertyItem.h"
 
-PropertyItem::PropertyItem(const QString &fullName, const QString &displayText) : RDMnetNetworkItem(displayText), m_ValueItem(NULL)
+PropertyItem::PropertyItem(const QString& fullName, const QString& displayText)
+    : RDMnetNetworkItem(displayText), m_ValueItem(NULL)
 {
   m_FullName = fullName;
 }
@@ -41,12 +42,12 @@ int PropertyItem::type() const
   return PropertyItemType;
 }
 
-PropertyValueItem *PropertyItem::getValueItem()
+PropertyValueItem* PropertyItem::getValueItem()
 {
   return m_ValueItem;
 }
 
-void PropertyItem::setValueItem(PropertyValueItem *item, bool deleteItemArgumentIfCopied)
+void PropertyItem::setValueItem(PropertyValueItem* item, bool deleteItemArgumentIfCopied)
 {
   if (item != NULL)
   {

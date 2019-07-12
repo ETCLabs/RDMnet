@@ -36,7 +36,7 @@
 #include "rdmnet/core/rpt_prot.h"
 
 // Utility functions for manipulating messages
-RptHeader SwapHeaderData(const RptHeader &source);
-std::vector<RdmBuffer> RdmBufListToVect(const RdmBufListEntry *list_head);
+RptHeader SwapHeaderData(const RptHeader& source);
+std::vector<RdmBuffer> RdmBufListToVect(const RdmBufListEntry* list_head);
 
 #endif  // _BROKER_UTIL_H_

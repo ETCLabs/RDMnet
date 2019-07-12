@@ -41,7 +41,7 @@
 
 /*************************** Function definitions ****************************/
 
-RDMnet::Broker::Broker(BrokerLog *log, BrokerSocketManager *socket_manager, BrokerNotify *notify)
+RDMnet::Broker::Broker(BrokerLog* log, BrokerSocketManager* socket_manager, BrokerNotify* notify)
     : core_(std::make_unique<BrokerCore>(log, socket_manager, notify,
                                          std::unique_ptr<RdmnetConnInterface>(new RdmnetConnWrapper)))
 {
@@ -61,8 +61,8 @@ RDMnet::Broker::~Broker()
 /// \param[in] listen_port Port for the Broker to listen on.
 /// \param[in] listen_addrs Addresses of network interfaces for the Broker to listen on.
 /// \return true (started %Broker successfully) or false (an error occurred starting %Broker).
-bool RDMnet::Broker::Startup(const BrokerSettings &settings, uint16_t listen_port,
-                             std::vector<LwpaIpAddr> &listen_addrs)
+bool RDMnet::Broker::Startup(const BrokerSettings& settings, uint16_t listen_port,
+                             std::vector<LwpaIpAddr>& listen_addrs)
 {
   return core_->Startup(settings, listen_port, listen_addrs);
 }
@@ -77,7 +77,7 @@ void RDMnet::Broker::Tick()
   core_->Tick();
 }
 
-void RDMnet::Broker::GetSettings(BrokerSettings &settings) const
+void RDMnet::Broker::GetSettings(BrokerSettings& settings) const
 {
   core_->GetSettings(settings);
 }
@@ -87,8 +87,8 @@ void RDMnet::Broker::GetSettings(BrokerSettings &settings) const
 // BrokerCore: Private implementation of Broker functionality.
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-BrokerCore::BrokerCore(RDMnet::BrokerLog *log, RDMnet::BrokerSocketManager *socket_manager,
-                       RDMnet::BrokerNotify *notify, std::unique_ptr<RdmnetConnInterface> conn)
+BrokerCore::BrokerCore(RDMnet::BrokerLog* log, RDMnet::BrokerSocketManager* socket_manager,
+                       RDMnet::BrokerNotify* notify, std::unique_ptr<RdmnetConnInterface> conn)
     : RdmnetConnNotify()
     , ListenThreadNotify()
     , ClientServiceThreadNotify()
@@ -111,8 +111,8 @@ BrokerCore::~BrokerCore()
   lwpa_rwlock_destroy(&client_lock_);
 }
 
-bool BrokerCore::Startup(const RDMnet::BrokerSettings &settings, uint16_t listen_port,
-                         const std::vector<LwpaIpAddr> &listen_addrs)
+bool BrokerCore::Startup(const RDMnet::BrokerSettings& settings, uint16_t listen_port,
+                         const std::vector<LwpaIpAddr>& listen_addrs)
 {
   if (!started_)
   {
@@ -208,12 +208,12 @@ void BrokerCore::Tick()
 
 // Fills in the current settings the broker is using.  Can be called even after Shutdown. Useful if
 // you want to shutdown & restart the broker for any reason.
-void BrokerCore::GetSettings(RDMnet::BrokerSettings &settings) const
+void BrokerCore::GetSettings(RDMnet::BrokerSettings& settings) const
 {
   settings = settings_;
 }
 
-bool BrokerCore::IsDeviceManuBroadcastUID(const RdmUid &uid, uint16_t &manu)
+bool BrokerCore::IsDeviceManuBroadcastUID(const RdmUid& uid, uint16_t& manu)
 {
   if (RDMNET_UID_IS_DEVICE_MANU_BROADCAST(&uid))
   {
@@ -223,7 +223,7 @@ bool BrokerCore::IsDeviceManuBroadcastUID(const RdmUid &uid, uint16_t &manu)
   return false;
 }
 
-bool BrokerCore::IsValidControllerDestinationUID(const RdmUid &uid) const
+bool BrokerCore::IsValidControllerDestinationUID(const RdmUid& uid) const
 {
   if (RDMNET_UID_IS_CONTROLLER_BROADCAST(&uid) || (uid == my_uid_))
     return true;
@@ -233,7 +233,7 @@ bool BrokerCore::IsValidControllerDestinationUID(const RdmUid &uid) const
   return uid_manager_.UidToHandle(uid, tmp);
 }
 
-bool BrokerCore::IsValidDeviceDestinationUID(const RdmUid &uid) const
+bool BrokerCore::IsValidDeviceDestinationUID(const RdmUid& uid) const
 {
   if (RDMNET_UID_IS_CONTROLLER_BROADCAST(&uid))
     return true;
@@ -245,7 +245,7 @@ bool BrokerCore::IsValidDeviceDestinationUID(const RdmUid &uid) const
 
 // The passed-in vector is cleared and filled with the cookies of connections that match the
 // criteria.
-void BrokerCore::GetConnSnapshot(std::vector<rdmnet_conn_t> &conns, bool include_devices, bool include_controllers,
+void BrokerCore::GetConnSnapshot(std::vector<rdmnet_conn_t>& conns, bool include_devices, bool include_controllers,
                                  bool include_unknown, uint16_t manufacturer_filter)
 {
   conns.clear();
@@ -257,12 +257,12 @@ void BrokerCore::GetConnSnapshot(std::vector<rdmnet_conn_t> &conns, bool include
     // We'll just do a bulk reserve.  The actual vector may take up less.
     conns.reserve(clients_.size());
 
-    for (const auto &client : clients_)
+    for (const auto& client : clients_)
     {
       // TODO EPT
       if (client.second)
       {
-        RPTClient *rpt = static_cast<RPTClient *>(client.second.get());
+        RPTClient* rpt = static_cast<RPTClient*>(client.second.get());
         if (((include_devices && (rpt->client_type == kRPTClientTypeDevice)) ||
              (include_controllers && (rpt->client_type == kRPTClientTypeController)) ||
              (include_unknown && (rpt->client_type == kRPTClientTypeUnknown))) &&
@@ -275,7 +275,7 @@ void BrokerCore::GetConnSnapshot(std::vector<rdmnet_conn_t> &conns, bool include
   }
 }
 
-bool BrokerCore::NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr &addr)
+bool BrokerCore::NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr& addr)
 {
   if (log_->CanLog(LWPA_LOG_INFO))
   {
@@ -326,7 +326,7 @@ bool BrokerCore::NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr &addr)
   return result;
 }
 
-void BrokerCore::SocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t *data, size_t data_size)
+void BrokerCore::SocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t* data, size_t data_size)
 {
   conn_interface_->SocketDataReceived(conn_handle, data, data_size);
 }
@@ -355,13 +355,13 @@ bool BrokerCore::ServiceClients()
 }
 
 // Message processing functions
-void BrokerCore::RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage &msg)
+void BrokerCore::RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage& msg)
 {
   switch (msg.vector)
   {
     case ACN_VECTOR_ROOT_BROKER:
     {
-      const BrokerMessage *bmsg = get_broker_msg(&msg);
+      const BrokerMessage* bmsg = get_broker_msg(&msg);
       switch (bmsg->vector)
       {
         case VECTOR_BROKER_CONNECT:
@@ -388,7 +388,7 @@ void BrokerCore::RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage
   }
 }
 
-void BrokerCore::RdmnetConnDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo & /*disconn_info*/)
+void BrokerCore::RdmnetConnDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo& /*disconn_info*/)
 {
   MarkConnForDestruction(handle);
 }
@@ -413,8 +413,8 @@ void BrokerCore::SendClientList(int conn)
         cli_data.client_protocol = client.second->client_protocol;
         if (client.second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
         {
-          ClientEntryDataRpt *rpt_cli_data = get_rpt_client_entry_data(&cli_data);
-          RPTClient *rptcli = static_cast<RPTClient *>(client.second.get());
+          ClientEntryDataRpt* rpt_cli_data = get_rpt_client_entry_data(&cli_data);
+          RPTClient* rptcli = static_cast<RPTClient*>(client.second.get());
           rpt_cli_data->client_uid = rptcli->uid;
           rpt_cli_data->client_type = rptcli->client_type;
           rpt_cli_data->binding_cid = rptcli->binding_cid;
@@ -435,7 +435,7 @@ void BrokerCore::SendClientList(int conn)
 }
 
 void BrokerCore::SendClientsAdded(client_protocol_t client_prot, int conn_to_ignore,
-                                  std::vector<ClientEntryData> &entries)
+                                  std::vector<ClientEntryData>& entries)
 {
   BrokerMessage bmsg;
   bmsg.vector = VECTOR_BROKER_CLIENT_ADD;
@@ -449,7 +449,7 @@ void BrokerCore::SendClientsAdded(client_protocol_t client_prot, int conn_to_ign
   }
 }
 
-void BrokerCore::SendClientsRemoved(client_protocol_t client_prot, std::vector<ClientEntryData> &entries)
+void BrokerCore::SendClientsRemoved(client_protocol_t client_prot, std::vector<ClientEntryData>& entries)
 {
   BrokerMessage bmsg;
   bmsg.vector = VECTOR_BROKER_CLIENT_REMOVE;
@@ -463,8 +463,8 @@ void BrokerCore::SendClientsRemoved(client_protocol_t client_prot, std::vector<C
   }
 }
 
-void BrokerCore::SendStatus(RPTController *controller, const RptHeader &header, rpt_status_code_t status_code,
-                            const std::string &status_str)
+void BrokerCore::SendStatus(RPTController* controller, const RptHeader& header, rpt_status_code_t status_code,
+                            const std::string& status_str)
 {
   RptHeader new_header;
   new_header.dest_endpoint_id = header.source_endpoint_id;
@@ -495,7 +495,7 @@ void BrokerCore::SendStatus(RPTController *controller, const RptHeader &header, 
   }
 }
 
-void BrokerCore::ProcessConnectRequest(int conn, const ClientConnectMsg *cmsg)
+void BrokerCore::ProcessConnectRequest(int conn, const ClientConnectMsg* cmsg)
 {
   bool deny_connection = true;
   rdmnet_connect_status_t connect_status = kRdmnetConnectScopeMismatch;
@@ -539,13 +539,13 @@ void BrokerCore::ProcessConnectRequest(int conn, const ClientConnectMsg *cmsg)
   }
 }
 
-bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntryData &data,
-                                          rdmnet_connect_status_t &connect_status)
+bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntryData& data,
+                                          rdmnet_connect_status_t& connect_status)
 {
   bool continue_adding = true;
   // We need to make a copy of the data because we might be changing the UID value
   ClientEntryData updated_data = data;
-  ClientEntryDataRpt *rptdata = get_rpt_client_entry_data(&updated_data);
+  ClientEntryDataRpt* rptdata = get_rpt_client_entry_data(&updated_data);
 
   if (kLwpaErrOk != conn_interface_->SetBlocking(handle, false))
   {
@@ -554,7 +554,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
   }
 
   lwpa::WriteGuard clients_write(client_lock_);
-  RPTClient *new_client = nullptr;
+  RPTClient* new_client = nullptr;
 
   if ((settings_.max_connections > 0) && (clients_.size() >= settings_.max_connections))
   {
@@ -665,7 +665,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
     // Send the connect reply
     BrokerMessage msg;
     msg.vector = VECTOR_BROKER_CONNECT_REPLY;
-    ConnectReplyMsg *creply = get_connect_reply_msg(&msg);
+    ConnectReplyMsg* creply = get_connect_reply_msg(&msg);
     creply->connect_status = kRdmnetConnectOk;
     creply->e133_version = E133_VERSION;
     creply->broker_uid = my_uid_;
@@ -688,11 +688,11 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
   return continue_adding;
 }
 
-void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
+void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
 {
   lwpa::ReadGuard clients_read(client_lock_);
 
-  const RptMessage *rptmsg = get_rpt_msg(msg);
+  const RptMessage* rptmsg = get_rpt_msg(msg);
   bool route_msg = false;
   auto client = clients_.find(conn);
 
@@ -702,14 +702,14 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
 
     if (client->second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
     {
-      RPTClient *rptcli = static_cast<RPTClient *>(client->second.get());
+      RPTClient* rptcli = static_cast<RPTClient*>(client->second.get());
 
       switch (rptmsg->vector)
       {
         case VECTOR_RPT_REQUEST:
           if (rptcli->client_type == kRPTClientTypeController)
           {
-            RPTController *controller = static_cast<RPTController *>(rptcli);
+            RPTController* controller = static_cast<RPTController*>(rptcli);
             if (!IsValidControllerDestinationUID(rptmsg->header.dest_uid))
             {
               SendStatus(controller, rptmsg->header, kRptStatusUnknownRptUid);
@@ -850,7 +850,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
         if (dest_client != clients_.end())
         {
           ClientWriteGuard client_write(*dest_client->second);
-          if (static_cast<RPTClient *>(dest_client->second.get())->Push(conn, msg->sender_cid, *rptmsg))
+          if (static_cast<RPTClient*>(dest_client->second.get())->Push(conn, msg->sender_cid, *rptmsg))
           {
             found_dest_client = true;
             log_->Log(LWPA_LOG_DEBUG, "Routing RPT PDU from Client %04x:%08x to Client %04x:%08x",
@@ -876,7 +876,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage *msg)
   }
 }
 
-lwpa_socket_t BrokerCore::StartListening(const LwpaIpAddr &ip, uint16_t &port)
+lwpa_socket_t BrokerCore::StartListening(const LwpaIpAddr& ip, uint16_t& port)
 {
   LwpaSockaddr addr;
   addr.ip = ip;
@@ -1000,7 +1000,7 @@ bool BrokerCore::StartBrokerServices()
 
   if (success)
   {
-    for (const auto &listener : listeners_)
+    for (const auto& listener : listeners_)
       listener->Start();
   }
   else
@@ -1012,14 +1012,14 @@ bool BrokerCore::StartBrokerServices()
 
 void BrokerCore::StopBrokerServices()
 {
-  for (const auto &listener : listeners_)
+  for (const auto& listener : listeners_)
     listener->Stop();
 
   // No new connections coming in, manually shut down the existing ones.
   std::vector<rdmnet_conn_t> conns;
   GetConnSnapshot(conns, true, true, true);
 
-  for (auto &conn : conns)
+  for (auto& conn : conns)
     MarkConnForDestruction(conn, SendDisconnect(kRdmnetDisconnectShutdown));
 
   DestroyMarkedClientSockets();
@@ -1070,14 +1070,14 @@ void BrokerCore::DestroyMarkedClientSockets()
 
           if (client->second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
           {
-            RPTClient *rptcli = static_cast<RPTClient *>(client->second.get());
+            RPTClient* rptcli = static_cast<RPTClient*>(client->second.get());
             uid_manager_.RemoveUid(rptcli->uid);
             if (rptcli->client_type == kRPTClientTypeController)
               controllers_.erase(to_destroy);
             else if (rptcli->client_type == kRPTClientTypeDevice)
               devices_.erase(to_destroy);
 
-            ClientEntryDataRpt *rptdata = get_rpt_client_entry_data(&entry);
+            ClientEntryDataRpt* rptdata = get_rpt_client_entry_data(&entry);
             rptdata->client_uid = rptcli->uid;
             rptdata->client_type = rptcli->client_type;
             rptdata->binding_cid = rptcli->binding_cid;
@@ -1101,7 +1101,7 @@ void BrokerCore::DestroyMarkedClientSockets()
     SendClientsRemoved(entries[0].client_protocol, entries);
 }
 
-void BrokerCore::BrokerRegistered(const std::string &assigned_service_name)
+void BrokerCore::BrokerRegistered(const std::string& assigned_service_name)
 {
   service_registered_ = true;
   log_->Log(LWPA_LOG_INFO, "Broker \"%s\" (now named \"%s\") successfully registered at scope \"%s\"",
@@ -1114,13 +1114,13 @@ void BrokerCore::BrokerRegisterError(int platform_specific_error)
             platform_specific_error, disc_.scope().c_str());
 }
 
-void BrokerCore::OtherBrokerFound(const RdmnetBrokerDiscInfo &broker_info)
+void BrokerCore::OtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
 {
   ++other_brokers_found_;
   if (log_->CanLog(LWPA_LOG_WARNING))
   {
     std::string addrs;
-    for (const BrokerListenAddr *listen_addr = broker_info.listen_addr_list; listen_addr;
+    for (const BrokerListenAddr* listen_addr = broker_info.listen_addr_list; listen_addr;
          listen_addr = listen_addr->next)
     {
       char addr_string[LWPA_INET6_ADDRSTRLEN];
@@ -1143,7 +1143,7 @@ void BrokerCore::OtherBrokerFound(const RdmnetBrokerDiscInfo &broker_info)
   }
 }
 
-void BrokerCore::OtherBrokerLost(const std::string &service_name)
+void BrokerCore::OtherBrokerLost(const std::string& service_name)
 {
   log_->Log(LWPA_LOG_WARNING, "Broker %s left", service_name.c_str());
   if (other_brokers_found_ > 0)

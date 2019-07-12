@@ -55,16 +55,16 @@ LWPA_MEMPOOL_DEFINE(rdmnet_controllers, RdmnetController, RDMNET_MAX_CONTROLLERS
 /*********************** Private function prototypes *************************/
 
 static void client_connected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                             const RdmnetClientConnectedInfo *info, void *context);
+                             const RdmnetClientConnectedInfo* info, void* context);
 static void client_connect_failed(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                  const RdmnetClientConnectFailedInfo *info, void *context);
+                                  const RdmnetClientConnectFailedInfo* info, void* context);
 static void client_disconnected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                const RdmnetClientDisconnectedInfo *info, void *context);
+                                const RdmnetClientDisconnectedInfo* info, void* context);
 static void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                       const BrokerMessage *msg, void *context);
-static void client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand *cmd, void *context);
-static void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptClientMessage *msg,
-                                void *context);
+                                       const BrokerMessage* msg, void* context);
+static void client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand* cmd, void* context);
+static void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptClientMessage* msg,
+                                void* context);
 
 // clang-format off
 static const RptClientCallbacks client_callbacks =
@@ -80,7 +80,7 @@ static const RptClientCallbacks client_callbacks =
 
 /*************************** Function definitions ****************************/
 
-lwpa_error_t rdmnet_controller_init(const LwpaLogParams *lparams)
+lwpa_error_t rdmnet_controller_init(const LwpaLogParams* lparams)
 {
 #if !RDMNET_DYNAMIC_MEM
   lwpa_error_t res = lwpa_mempool_init(rdmnet_controllers);
@@ -96,12 +96,12 @@ void rdmnet_controller_deinit()
   rdmnet_client_deinit();
 }
 
-lwpa_error_t rdmnet_controller_create(const RdmnetControllerConfig *config, rdmnet_controller_t *handle)
+lwpa_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rdmnet_controller_t* handle)
 {
   if (!config || !handle)
     return kLwpaErrInvalid;
 
-  RdmnetController *new_controller = alloc_rdmnet_controller();
+  RdmnetController* new_controller = alloc_rdmnet_controller();
   if (!new_controller)
     return kLwpaErrNoMem;
 
@@ -141,8 +141,8 @@ lwpa_error_t rdmnet_controller_destroy(rdmnet_controller_t handle)
   return res;
 }
 
-lwpa_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const RdmnetScopeConfig *scope_config,
-                                         rdmnet_client_scope_t *scope_handle)
+lwpa_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const RdmnetScopeConfig* scope_config,
+                                         rdmnet_client_scope_t* scope_handle)
 {
   if (!handle)
     return kLwpaErrInvalid;
@@ -160,7 +160,7 @@ lwpa_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet_c
 }
 
 lwpa_error_t rdmnet_controller_change_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                            const RdmnetScopeConfig *new_config, rdmnet_disconnect_reason_t reason)
+                                            const RdmnetScopeConfig* new_config, rdmnet_disconnect_reason_t reason)
 {
   if (!handle)
     return kLwpaErrInvalid;
@@ -169,7 +169,7 @@ lwpa_error_t rdmnet_controller_change_scope(rdmnet_controller_t handle, rdmnet_c
 }
 
 lwpa_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                const LocalRdmCommand *cmd, uint32_t *seq_num)
+                                                const LocalRdmCommand* cmd, uint32_t* seq_num)
 {
   if (!handle)
     return kLwpaErrInvalid;
@@ -178,7 +178,7 @@ lwpa_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rdmn
 }
 
 lwpa_error_t rdmnet_controller_send_rdm_response(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                 const LocalRdmResponse *resp)
+                                                 const LocalRdmResponse* resp)
 {
   if (!handle)
     return kLwpaErrInvalid;
@@ -186,7 +186,7 @@ lwpa_error_t rdmnet_controller_send_rdm_response(rdmnet_controller_t handle, rdm
   return rdmnet_rpt_client_send_rdm_response(handle->client_handle, scope_handle, resp);
 }
 
-lwpa_error_t rdmnet_controller_send_llrp_response(rdmnet_controller_t handle, const LlrpLocalRdmResponse *resp)
+lwpa_error_t rdmnet_controller_send_llrp_response(rdmnet_controller_t handle, const LlrpLocalRdmResponse* resp)
 {
   if (!handle)
     return kLwpaErrInvalid;
@@ -202,12 +202,12 @@ lwpa_error_t rdmnet_controller_request_client_list(rdmnet_controller_t handle, r
   return rdmnet_client_request_client_list(handle->client_handle, scope_handle);
 }
 
-void client_connected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo *info,
-                      void *context)
+void client_connected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo* info,
+                      void* context)
 {
   (void)handle;
 
-  RdmnetController *controller = (RdmnetController *)context;
+  RdmnetController* controller = (RdmnetController*)context;
   if (controller)
   {
     controller->callbacks.connected(controller, scope_handle, info, controller->callback_context);
@@ -215,11 +215,11 @@ void client_connected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle
 }
 
 void client_connect_failed(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                           const RdmnetClientConnectFailedInfo *info, void *context)
+                           const RdmnetClientConnectFailedInfo* info, void* context)
 {
   (void)handle;
 
-  RdmnetController *controller = (RdmnetController *)context;
+  RdmnetController* controller = (RdmnetController*)context;
   if (controller)
   {
     controller->callbacks.connect_failed(controller, scope_handle, info, controller->callback_context);
@@ -227,23 +227,23 @@ void client_connect_failed(rdmnet_client_t handle, rdmnet_client_scope_t scope_h
 }
 
 void client_disconnected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                         const RdmnetClientDisconnectedInfo *info, void *context)
+                         const RdmnetClientDisconnectedInfo* info, void* context)
 {
   (void)handle;
 
-  RdmnetController *controller = (RdmnetController *)context;
+  RdmnetController* controller = (RdmnetController*)context;
   if (controller)
   {
     controller->callbacks.disconnected(controller, scope_handle, info, controller->callback_context);
   }
 }
 
-void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const BrokerMessage *msg,
-                                void *context)
+void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const BrokerMessage* msg,
+                                void* context)
 {
   (void)handle;
 
-  RdmnetController *controller = (RdmnetController *)context;
+  RdmnetController* controller = (RdmnetController*)context;
   if (controller)
   {
     switch (msg->vector)
@@ -261,23 +261,23 @@ void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t sc
   }
 }
 
-void client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand *cmd, void *context)
+void client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand* cmd, void* context)
 {
   (void)handle;
 
-  RdmnetController *controller = (RdmnetController *)context;
+  RdmnetController* controller = (RdmnetController*)context;
   if (controller)
   {
     controller->callbacks.llrp_rdm_command_received(controller, cmd, controller->callback_context);
   }
 }
 
-void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptClientMessage *msg,
-                         void *context)
+void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptClientMessage* msg,
+                         void* context)
 {
   (void)handle;
 
-  RdmnetController *controller = (RdmnetController *)context;
+  RdmnetController* controller = (RdmnetController*)context;
   if (controller)
   {
     switch (msg->type)

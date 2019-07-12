@@ -27,7 +27,7 @@
 
 #include "broker_uid_manager.h"
 
-BrokerUidManager::AddResult BrokerUidManager::AddStaticUid(int conn_handle, const RdmUid &static_uid)
+BrokerUidManager::AddResult BrokerUidManager::AddStaticUid(int conn_handle, const RdmUid& static_uid)
 {
   if (uid_lookup_.size() >= max_uid_capacity_)
     return AddResult::kCapacityExceeded;
@@ -39,8 +39,8 @@ BrokerUidManager::AddResult BrokerUidManager::AddStaticUid(int conn_handle, cons
   return AddResult::kOk;
 }
 
-BrokerUidManager::AddResult BrokerUidManager::AddDynamicUid(int conn_handle, const LwpaUuid &cid_or_rid,
-                                                            RdmUid &new_dynamic_uid)
+BrokerUidManager::AddResult BrokerUidManager::AddDynamicUid(int conn_handle, const LwpaUuid& cid_or_rid,
+                                                            RdmUid& new_dynamic_uid)
 {
   if (uid_lookup_.size() >= max_uid_capacity_)
     return AddResult::kCapacityExceeded;
@@ -75,7 +75,7 @@ BrokerUidManager::AddResult BrokerUidManager::AddDynamicUid(int conn_handle, con
   return AddResult::kOk;
 }
 
-void BrokerUidManager::RemoveUid(const RdmUid &uid)
+void BrokerUidManager::RemoveUid(const RdmUid& uid)
 {
   auto uid_data = uid_lookup_.find(uid);
   if (uid_data != uid_lookup_.end())
@@ -88,7 +88,7 @@ void BrokerUidManager::RemoveUid(const RdmUid &uid)
   }
 }
 
-bool BrokerUidManager::UidToHandle(const RdmUid &uid, int &conn_handle) const
+bool BrokerUidManager::UidToHandle(const RdmUid& uid, int& conn_handle) const
 {
   const auto uid_data = uid_lookup_.find(uid);
   if (uid_data != uid_lookup_.end())

@@ -34,14 +34,14 @@ BEGIN_INCLUDE_QT_HEADERS()
 END_INCLUDE_QT_HEADERS()
 
 extern "C" {
-static void log_callback(void *context, const LwpaLogStrings *strings)
+static void log_callback(void* context, const LwpaLogStrings* strings)
 {
-  ControllerLog *log = static_cast<ControllerLog *>(context);
+  ControllerLog* log = static_cast<ControllerLog*>(context);
   if (log)
     log->LogFromCallback(strings->human_readable);
 }
 
-static void time_callback(void * /*context*/, LwpaLogTimeParams *time)
+static void time_callback(void* /*context*/, LwpaLogTimeParams* time)
 {
   QDateTime now = QDateTime::currentDateTime();
   QDate qdate = now.date();
@@ -55,9 +55,9 @@ static void time_callback(void * /*context*/, LwpaLogTimeParams *time)
   time->msec = qtime.msec();
   time->utc_offset = (QTimeZone::systemTimeZone().offsetFromUtc(now) / 60);
 }
-} // extern "C"
+}  // extern "C"
 
-ControllerLog::ControllerLog(const std::string &file_name) : file_name_(file_name)
+ControllerLog::ControllerLog(const std::string& file_name) : file_name_(file_name)
 {
   file_.open(file_name.c_str(), std::fstream::out);
 
@@ -76,7 +76,7 @@ ControllerLog::~ControllerLog()
   file_.close();
 }
 
-void ControllerLog::Log(int pri, const char *format, ...)
+void ControllerLog::Log(int pri, const char* format, ...)
 {
   va_list args;
   va_start(args, format);
@@ -84,12 +84,12 @@ void ControllerLog::Log(int pri, const char *format, ...)
   va_end(args);
 }
 
-void ControllerLog::LogFromCallback(const std::string &str)
+void ControllerLog::LogFromCallback(const std::string& str)
 {
   if (file_.is_open())
     file_ << str << std::endl;
 
-  for (LogOutputStream *stream : customOutputStreams)
+  for (LogOutputStream* stream : customOutputStreams)
   {
     if (stream != NULL)
     {
@@ -98,7 +98,7 @@ void ControllerLog::LogFromCallback(const std::string &str)
   }
 }
 
-void ControllerLog::addCustomOutputStream(LogOutputStream *stream)
+void ControllerLog::addCustomOutputStream(LogOutputStream* stream)
 {
   if (stream != NULL)
   {
@@ -120,7 +120,7 @@ void ControllerLog::addCustomOutputStream(LogOutputStream *stream)
   }
 }
 
-void ControllerLog::removeCustomOutputStream(LogOutputStream *stream)
+void ControllerLog::removeCustomOutputStream(LogOutputStream* stream)
 {
   for (size_t i = 0; i < customOutputStreams.size(); ++i)
   {

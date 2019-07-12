@@ -53,11 +53,11 @@ struct LLRPTargetInfo
 class LLRPManager
 {
 public:
-  LLRPManager(const LwpaUuid &my_cid);
+  LLRPManager(const LwpaUuid& my_cid);
   virtual ~LLRPManager();
 
   void PrintCommandList();
-  bool ParseCommand(const std::wstring &line);
+  bool ParseCommand(const std::wstring& line);
 
   void Discover(llrp_manager_t manager_handle);
   void PrintTargets();
@@ -69,18 +69,18 @@ public:
   void GetComponentScope(int target_handle, int scope_slot);
 
   void IdentifyDevice(int target_handle);
-  void SetDeviceLabel(int target_handle, const std::string &label);
-  void SetComponentScope(int target_handle, int scope_slot, const std::string &scope_utf8,
-                         const LwpaSockaddr &static_config);
+  void SetDeviceLabel(int target_handle, const std::string& label);
+  void SetComponentScope(int target_handle, int scope_slot, const std::string& scope_utf8,
+                         const LwpaSockaddr& static_config);
 
-  void TargetDiscovered(const DiscoveredLlrpTarget &target);
+  void TargetDiscovered(const DiscoveredLlrpTarget& target);
   void DiscoveryFinished();
-  void RdmRespReceived(const LlrpRemoteRdmResponse &resp);
+  void RdmRespReceived(const LlrpRemoteRdmResponse& resp);
 
 private:
-  bool SendRDMAndGetResponse(llrp_manager_t manager, const LwpaUuid &target_cid, const RdmCommand &cmd_data,
-                             RdmResponse &resp_data);
-  static const char *LLRPComponentTypeToString(llrp_component_t type);
+  bool SendRDMAndGetResponse(llrp_manager_t manager, const LwpaUuid& target_cid, const RdmCommand& cmd_data,
+                             RdmResponse& resp_data);
+  static const char* LLRPComponentTypeToString(llrp_component_t type);
 
   std::map<llrp_manager_t, LwpaNetintInfo> managers_;
   LwpaUuid cid_{};
@@ -97,29 +97,29 @@ private:
 };
 
 extern "C" {
-void llrpcb_target_discovered(llrp_manager_t /*handle*/, const DiscoveredLlrpTarget *target, void *context)
+void llrpcb_target_discovered(llrp_manager_t /*handle*/, const DiscoveredLlrpTarget* target, void* context)
 {
-  LLRPManager *mgr = static_cast<LLRPManager *>(context);
+  LLRPManager* mgr = static_cast<LLRPManager*>(context);
   if (mgr && target)
     mgr->TargetDiscovered(*target);
 }
 
-void llrpcb_discovery_finished(llrp_manager_t /*handle*/, void *context)
+void llrpcb_discovery_finished(llrp_manager_t /*handle*/, void* context)
 {
-  LLRPManager *mgr = static_cast<LLRPManager *>(context);
+  LLRPManager* mgr = static_cast<LLRPManager*>(context);
   if (mgr)
     mgr->DiscoveryFinished();
 }
 
-void llrpcb_rdm_resp_received(llrp_manager_t /*handle*/, const LlrpRemoteRdmResponse *resp, void *context)
+void llrpcb_rdm_resp_received(llrp_manager_t /*handle*/, const LlrpRemoteRdmResponse* resp, void* context)
 {
-  LLRPManager *mgr = static_cast<LLRPManager *>(context);
+  LLRPManager* mgr = static_cast<LLRPManager*>(context);
   if (mgr && resp)
     mgr->RdmRespReceived(*resp);
 }
 }
 
-LLRPManager::LLRPManager(const LwpaUuid &my_cid) : cid_(my_cid)
+LLRPManager::LLRPManager(const LwpaUuid& my_cid) : cid_(my_cid)
 {
   rdmnet_core_init(nullptr);
 
@@ -140,7 +140,7 @@ LLRPManager::LLRPManager(const LwpaUuid &my_cid) : cid_(my_cid)
     config.callback_context = this;
     for (i = 0; i < num_interfaces; ++i)
     {
-      LwpaNetintInfo *netint = &netints[i];
+      LwpaNetintInfo* netint = &netints[i];
 
       config.netint = netint->addr;
       llrp_manager_t handle;
@@ -162,7 +162,7 @@ LLRPManager::LLRPManager(const LwpaUuid &my_cid) : cid_(my_cid)
 
 LLRPManager::~LLRPManager()
 {
-  for (const auto &netint : managers_)
+  for (const auto& netint : managers_)
   {
     rdmnet_llrp_manager_destroy(netint.first);
   }
@@ -192,7 +192,7 @@ void LLRPManager::PrintCommandList()
   printf("    q: Quit\n");
 }
 
-bool LLRPManager::ParseCommand(const std::wstring &line)
+bool LLRPManager::ParseCommand(const std::wstring& line)
 {
   bool res = true;
 
@@ -333,7 +333,7 @@ bool LLRPManager::ParseCommand(const std::wstring &line)
                   throw std::invalid_argument("Invalid scope.");
                 }
               }
-              catch (const std::exception &e)
+              catch (const std::exception& e)
               {
                 printf("Error occurred while parsing arguments: %s\n", e.what());
                 printf("Command syntax: ss <target_handle> <scope_slot> <scope> [ip:port]\n");
@@ -445,28 +445,29 @@ void LLRPManager::Discover(llrp_manager_t manager_handle)
 void LLRPManager::PrintTargets()
 {
   printf("Handle %-13s %-36s %-15s %s\n", "UID", "CID", "Type", "Hardware ID");
-  for (const auto &target : targets_)
+  for (const auto& target : targets_)
   {
     char cid_str[LWPA_UUID_STRING_BYTES];
     lwpa_uuid_to_string(cid_str, &target.second.prot_info.cid);
 
     char mac_str[21];
-    const uint8_t *mac_bytes = target.second.prot_info.hardware_address;
+    const uint8_t* mac_bytes = target.second.prot_info.hardware_address;
     snprintf(mac_str, 21, "%02x:%02x:%02x:%02x:%02x:%02x", mac_bytes[0], mac_bytes[1], mac_bytes[2], mac_bytes[3],
              mac_bytes[4], mac_bytes[5]);
 
-    printf("%-6d %04x:%08x %s %-15s %s\n", target.first, target.second.prot_info.uid.manu, target.second.prot_info.uid.id,
-           cid_str, LLRPComponentTypeToString(target.second.prot_info.component_type), mac_str);
+    printf("%-6d %04x:%08x %s %-15s %s\n", target.first, target.second.prot_info.uid.manu,
+           target.second.prot_info.uid.id, cid_str, LLRPComponentTypeToString(target.second.prot_info.component_type),
+           mac_str);
   }
 }
 
 void LLRPManager::PrintNetints()
 {
   printf("Handle %-15s %-17s Name\n", "Address", "MAC");
-  for (const auto &sock_pair : managers_)
+  for (const auto& sock_pair : managers_)
   {
     char addr_str[LWPA_INET6_ADDRSTRLEN];
-    const LwpaNetintInfo &info = sock_pair.second;
+    const LwpaNetintInfo& info = sock_pair.second;
     lwpa_inet_ntop(&info.addr, addr_str, LWPA_INET6_ADDRSTRLEN);
     printf("%-6d %-15s %02x:%02x:%02x:%02x:%02x:%02x %s\n", sock_pair.first, addr_str, info.mac[0], info.mac[1],
            info.mac[2], info.mac[3], info.mac[4], info.mac[5], info.name);
@@ -494,7 +495,7 @@ void LLRPManager::GetDeviceInfo(int target_handle)
       {
         if (resp_data.datalen == 19)
         {
-          const uint8_t *cur_ptr = resp_data.data;
+          const uint8_t* cur_ptr = resp_data.data;
           printf("Device info:\n");
           printf("  RDM Protocol Version: %d.%d\n", cur_ptr[0], cur_ptr[1]);
           cur_ptr += 2;
@@ -551,7 +552,7 @@ void LLRPManager::GetDeviceLabel(int target_handle)
       if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
       {
         std::string dev_label;
-        dev_label.assign(reinterpret_cast<char *>(resp_data.data), resp_data.datalen);
+        dev_label.assign(reinterpret_cast<char*>(resp_data.data), resp_data.datalen);
         printf("Device label: %s\n", dev_label.c_str());
       }
     }
@@ -586,7 +587,7 @@ void LLRPManager::GetManufacturerLabel(int target_handle)
       if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
       {
         std::string manu_label;
-        manu_label.assign(reinterpret_cast<char *>(resp_data.data), resp_data.datalen);
+        manu_label.assign(reinterpret_cast<char*>(resp_data.data), resp_data.datalen);
         printf("Manufacturer label: %s\n", manu_label.c_str());
       }
     }
@@ -621,7 +622,7 @@ void LLRPManager::GetDeviceModelDescription(int target_handle)
       if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
       {
         std::string dev_model_desc;
-        dev_model_desc.assign(reinterpret_cast<char *>(resp_data.data), resp_data.datalen);
+        dev_model_desc.assign(reinterpret_cast<char*>(resp_data.data), resp_data.datalen);
         printf("Device model description: %s\n", dev_model_desc.c_str());
       }
     }
@@ -664,7 +665,7 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
       {
         if (resp_data.datalen >= (2 + E133_SCOPE_STRING_PADDED_LENGTH + 1 + 4 + 16 + 2))
         {
-          const uint8_t *cur_ptr = resp_data.data;
+          const uint8_t* cur_ptr = resp_data.data;
 
           uint16_t slot = lwpa_upack_16b(cur_ptr);
           cur_ptr += 2;
@@ -751,7 +752,7 @@ void LLRPManager::IdentifyDevice(int target_handle)
   }
 }
 
-void LLRPManager::SetDeviceLabel(int target_handle, const std::string &label)
+void LLRPManager::SetDeviceLabel(int target_handle, const std::string& label)
 {
   auto mgr_pair = managers_.find(active_manager_);
   if (mgr_pair != managers_.end())
@@ -767,7 +768,7 @@ void LLRPManager::SetDeviceLabel(int target_handle, const std::string &label)
       cmd_data.command_class = kRdmCCSetCommand;
       cmd_data.param_id = E120_DEVICE_LABEL;
       cmd_data.datalen = (uint8_t)label.length();
-      rdmnet_safe_strncpy((char *)cmd_data.data, label.c_str(), RDM_MAX_PDL);
+      rdmnet_safe_strncpy((char*)cmd_data.data, label.c_str(), RDM_MAX_PDL);
 
       if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
         printf("Set device label successfully.\n");
@@ -783,8 +784,8 @@ void LLRPManager::SetDeviceLabel(int target_handle, const std::string &label)
   }
 }
 
-void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std::string &scope_utf8,
-                                    const LwpaSockaddr &static_config)
+void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std::string& scope_utf8,
+                                    const LwpaSockaddr& static_config)
 {
   if (scope_slot < 1 || scope_slot > 65535)
   {
@@ -810,10 +811,10 @@ void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std
       cmd_data.datalen = COMPONENT_SCOPE_PDL;
       memset(cmd_data.data, 0, COMPONENT_SCOPE_PDL);
 
-      uint8_t *cur_ptr = cmd_data.data;
+      uint8_t* cur_ptr = cmd_data.data;
       lwpa_pack_16b(cur_ptr, scope_slot);
       cur_ptr += 2;
-      RDMNET_MSVC_NO_DEP_WRN strncpy((char *)cur_ptr, scope_utf8.c_str(), E133_SCOPE_STRING_PADDED_LENGTH - 1);
+      RDMNET_MSVC_NO_DEP_WRN strncpy((char*)cur_ptr, scope_utf8.c_str(), E133_SCOPE_STRING_PADDED_LENGTH - 1);
       cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
       if (LWPA_IP_IS_V4(&static_config.ip))
       {
@@ -849,7 +850,7 @@ void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std
   }
 }
 
-void LLRPManager::TargetDiscovered(const DiscoveredLlrpTarget &target)
+void LLRPManager::TargetDiscovered(const DiscoveredLlrpTarget& target)
 {
   if (discovery_active_)
   {
@@ -867,7 +868,7 @@ void LLRPManager::DiscoveryFinished()
   discovery_active_ = false;
 }
 
-void LLRPManager::RdmRespReceived(const LlrpRemoteRdmResponse &resp)
+void LLRPManager::RdmRespReceived(const LlrpRemoteRdmResponse& resp)
 {
   if (pending_command_response_ && lwpa_uuid_cmp(&resp.src_cid, &pending_resp_cid_) == 0 &&
       resp.seq_num == pending_resp_seq_num_)
@@ -877,8 +878,8 @@ void LLRPManager::RdmRespReceived(const LlrpRemoteRdmResponse &resp)
   }
 }
 
-bool LLRPManager::SendRDMAndGetResponse(llrp_manager_t manager, const LwpaUuid &target_cid, const RdmCommand &cmd_data,
-                                        RdmResponse &resp_data)
+bool LLRPManager::SendRDMAndGetResponse(llrp_manager_t manager, const LwpaUuid& target_cid, const RdmCommand& cmd_data,
+                                        RdmResponse& resp_data)
 {
   LlrpLocalRdmCommand cmd;
   cmd.rdm = cmd_data;
@@ -935,7 +936,7 @@ bool LLRPManager::SendRDMAndGetResponse(llrp_manager_t manager, const LwpaUuid &
   return false;
 }
 
-const char *LLRPManager::LLRPComponentTypeToString(llrp_component_t type)
+const char* LLRPManager::LLRPComponentTypeToString(llrp_component_t type)
 {
   switch (type)
   {
@@ -950,7 +951,7 @@ const char *LLRPManager::LLRPComponentTypeToString(llrp_component_t type)
   }
 }
 
-int wmain(int /*argc*/, wchar_t * /*argv*/ [])
+int wmain(int /*argc*/, wchar_t* /*argv*/[])
 {
   LwpaUuid manager_cid;
 

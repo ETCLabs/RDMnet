@@ -27,7 +27,7 @@
 
 #include "broker_util.h"
 
-RptHeader SwapHeaderData(const RptHeader &source)
+RptHeader SwapHeaderData(const RptHeader& source)
 {
   RptHeader swapped_header;
 
@@ -39,10 +39,10 @@ RptHeader SwapHeaderData(const RptHeader &source)
   return swapped_header;
 }
 
-std::vector<RdmBuffer> RdmBufListToVect(const RdmBufListEntry *list_head)
+std::vector<RdmBuffer> RdmBufListToVect(const RdmBufListEntry* list_head)
 {
   std::vector<RdmBuffer> res;
-  for (const RdmBufListEntry *entry = list_head; entry; entry = entry->next)
+  for (const RdmBufListEntry* entry = list_head; entry; entry = entry->next)
   {
     res.push_back(entry->msg);
   }

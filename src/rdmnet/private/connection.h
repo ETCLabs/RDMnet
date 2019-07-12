@@ -86,10 +86,10 @@ struct RdmnetConnection
 
   // Callbacks
   RdmnetConnCallbacks callbacks;
-  void *callback_context;
+  void* callback_context;
 
   // Destruction
-  RdmnetConnection *next_to_destroy;
+  RdmnetConnection* next_to_destroy;
 };
 
 typedef enum
@@ -125,7 +125,7 @@ typedef struct ConnCallbackDispatchInfo
 {
   rdmnet_conn_t handle;
   RdmnetConnCallbacks cbs;
-  void *context;
+  void* context;
 
   conn_callback_t which;
   union
@@ -144,8 +144,8 @@ extern "C" {
 lwpa_error_t rdmnet_conn_init();
 void rdmnet_conn_deinit();
 
-lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle, RdmnetConnection **conn_out);
-lwpa_error_t rdmnet_end_message(RdmnetConnection *conn);
+lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle, RdmnetConnection** conn_out);
+lwpa_error_t rdmnet_end_message(RdmnetConnection* conn);
 
 void rdmnet_conn_tick();
 

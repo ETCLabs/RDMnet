@@ -136,7 +136,7 @@ typedef struct RdmnetClientDisconnectedInfo
  *  \param[in] context Context pointer that was given at the creation of the client.
  */
 typedef void (*RdmnetClientConnectedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                        const RdmnetClientConnectedInfo *info, void *context);
+                                        const RdmnetClientConnectedInfo* info, void* context);
 
 /*! \brief An RDMnet client experienced a failure while attempting to connect to a broker on a
  *         scope.
@@ -151,7 +151,7 @@ typedef void (*RdmnetClientConnectedCb)(rdmnet_client_t handle, rdmnet_client_sc
  *  \param[in] context Context pointer that was given at the creation of the client.
  */
 typedef void (*RdmnetClientConnectFailedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                            const RdmnetClientConnectFailedInfo *info, void *context);
+                                            const RdmnetClientConnectFailedInfo* info, void* context);
 
 /*! \brief An RDMnet client disconnected from a broker on a scope.
  *
@@ -165,7 +165,7 @@ typedef void (*RdmnetClientConnectFailedCb)(rdmnet_client_t handle, rdmnet_clien
  *  \param[in] context Context pointer that was given at the creation of the client.
  */
 typedef void (*RdmnetClientDisconnectedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                           const RdmnetClientDisconnectedInfo *info, void *context);
+                                           const RdmnetClientDisconnectedInfo* info, void* context);
 
 /*! \brief A broker message has been received on an RDMnet client connection.
  *
@@ -180,7 +180,7 @@ typedef void (*RdmnetClientDisconnectedCb)(rdmnet_client_t handle, rdmnet_client
  * \param[in] context Context pointer that was given at the creation of the client.
  */
 typedef void (*RdmnetClientBrokerMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                                const BrokerMessage *msg, void *context);
+                                                const BrokerMessage* msg, void* context);
 
 /*! \brief An LLRP message has been received by an RDMnet client.
  *
@@ -191,7 +191,7 @@ typedef void (*RdmnetClientBrokerMsgReceivedCb)(rdmnet_client_t handle, rdmnet_c
  *  \param[in] cmd The LLRP RDM command.
  *  \param[in] context Context pointer that was given at the creation of the client.
  */
-typedef void (*RdmnetClientLlrpMsgReceivedCb)(rdmnet_client_t handle, const LlrpRemoteRdmCommand *cmd, void *context);
+typedef void (*RdmnetClientLlrpMsgReceivedCb)(rdmnet_client_t handle, const LlrpRemoteRdmCommand* cmd, void* context);
 
 /*! \brief An RPT message was received on an RPT client connection.
  *
@@ -206,7 +206,7 @@ typedef void (*RdmnetClientLlrpMsgReceivedCb)(rdmnet_client_t handle, const Llrp
  * \param[in] context Context pointer that was given at the creation of the client.
  */
 typedef void (*RptClientMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                       const RptClientMessage *msg, void *context);
+                                       const RptClientMessage* msg, void* context);
 
 /*! \brief An EPT message was received on an EPT client connection.
  *
@@ -218,8 +218,8 @@ typedef void (*RptClientMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_sco
  * \param[in] msg The EPT message.
  * \param[in] context Context pointer that was given at the creation of the client.
  */
-typedef void (*EptClientMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope, const EptClientMessage *msg,
-                                       void *context);
+typedef void (*EptClientMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope, const EptClientMessage* msg,
+                                       void* context);
 
 /*! @} */
 
@@ -269,7 +269,7 @@ typedef struct RptClientOptionalConfig
    *  ID. All RDMnet components are required to have a valid ESTA manufacturer ID. */
   RdmUid uid;
   /*! The client's configured search domain for discovery. */
-  const char *search_domain;
+  const char* search_domain;
 } RptClientOptionalConfig;
 
 #define RPT_CLIENT_INIT_OPTIONAL_CONFIG_VALUES(optionalcfgptr, manu_id) \
@@ -289,7 +289,7 @@ typedef struct RdmnetRptClientConfig
   /*! A set of callbacks for the client to receive RDMnet notifications. */
   RptClientCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. */
-  void *callback_context;
+  void* callback_context;
   /*! Optional configuration data for the client's LLRP Target functionality. */
   LlrpTargetOptionalConfig llrp_optional;
   /*! Optional configuration data for the client. */
@@ -320,10 +320,10 @@ typedef struct RdmnetRptClientConfig
 
 typedef struct RdmnetEptClientConfig
 {
-  EptSubProtocol *protocol_list;
+  EptSubProtocol* protocol_list;
   size_t num_protocols;
   EptClientCallbacks callbacks;
-  void *callback_context;
+  void* callback_context;
 } RdmnetEptClientConfig;
 
 /*! \brief Initialize an RdmnetScopeConfig struct with a scope string.
@@ -393,21 +393,21 @@ typedef struct RdmnetEptClientConfig
 extern "C" {
 #endif
 
-lwpa_error_t rdmnet_client_init(const LwpaLogParams *lparams);
+lwpa_error_t rdmnet_client_init(const LwpaLogParams* lparams);
 void rdmnet_client_deinit();
 
-lwpa_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig *config, rdmnet_client_t *handle);
-lwpa_error_t rdmnet_ept_client_create(const RdmnetEptClientConfig *config, rdmnet_client_t *handle);
+lwpa_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig* config, rdmnet_client_t* handle);
+lwpa_error_t rdmnet_ept_client_create(const RdmnetEptClientConfig* config, rdmnet_client_t* handle);
 lwpa_error_t rdmnet_client_destroy(rdmnet_client_t handle);
 
-lwpa_error_t rdmnet_client_add_scope(rdmnet_client_t handle, const RdmnetScopeConfig *scope_config,
-                                     rdmnet_client_scope_t *scope_handle);
+lwpa_error_t rdmnet_client_add_scope(rdmnet_client_t handle, const RdmnetScopeConfig* scope_config,
+                                     rdmnet_client_scope_t* scope_handle);
 lwpa_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                         rdmnet_disconnect_reason_t reason);
 lwpa_error_t rdmnet_client_change_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                        const RdmnetScopeConfig *new_config, rdmnet_disconnect_reason_t reason);
+                                        const RdmnetScopeConfig* new_config, rdmnet_disconnect_reason_t reason);
 
-lwpa_error_t rdmnet_client_change_search_domain(rdmnet_client_t handle, const char *new_search_domain,
+lwpa_error_t rdmnet_client_change_search_domain(rdmnet_client_t handle, const char* new_search_domain,
                                                 rdmnet_disconnect_reason_t reason);
 
 lwpa_error_t rdmnet_client_request_client_list(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle);
@@ -417,12 +417,12 @@ lwpa_error_t rdmnet_client_request_client_list(rdmnet_client_t handle, rdmnet_cl
 //                                                   const FetchUidAssignmentListEntry *uid_list);
 
 lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                                const LocalRdmCommand *cmd, uint32_t *seq_num);
+                                                const LocalRdmCommand* cmd, uint32_t* seq_num);
 lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                                 const LocalRdmResponse *resp);
+                                                 const LocalRdmResponse* resp);
 lwpa_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                           const LocalRptStatus *status);
-lwpa_error_t rdmnet_rpt_client_send_llrp_response(rdmnet_client_t handle, const LlrpLocalRdmResponse *resp);
+                                           const LocalRptStatus* status);
+lwpa_error_t rdmnet_rpt_client_send_llrp_response(rdmnet_client_t handle, const LlrpLocalRdmResponse* resp);
 
 #ifdef __cplusplus
 }

@@ -52,14 +52,14 @@ public:
   // listener threads anyway...
   // The address & port fields of addr are used.
   // Do NOT stop the listening thread in this callback!
-  virtual bool NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr &remote_addr) = 0;
+  virtual bool NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr& remote_addr) = 0;
 };
 
 // Listens for TCP connections
 class ListenThread
 {
 public:
-  ListenThread(lwpa_socket_t listen_sock, ListenThreadNotify *pnotify, RDMnet::BrokerLog *log);
+  ListenThread(lwpa_socket_t listen_sock, ListenThreadNotify* pnotify, RDMnet::BrokerLog* log);
   virtual ~ListenThread();
 
   // Creates the listening socket and starts the thread.
@@ -73,12 +73,12 @@ public:
 
 protected:
   bool terminated_{true};
-  ListenThreadNotify *notify_{nullptr};
+  ListenThreadNotify* notify_{nullptr};
 
   lwpa_thread_t thread_handle_;
   lwpa_socket_t listen_socket_{LWPA_SOCKET_INVALID};
 
-  RDMnet::BrokerLog *log_{nullptr};
+  RDMnet::BrokerLog* log_{nullptr};
 };
 
 /************************************/
@@ -102,7 +102,7 @@ public:
   bool Start();
   void Stop();
 
-  void SetNotify(ClientServiceThreadNotify *pnotify) { notify_ = pnotify; }
+  void SetNotify(ClientServiceThreadNotify* pnotify) { notify_ = pnotify; }
 
   void Run();
 
@@ -110,7 +110,7 @@ protected:
   bool terminated_;
   lwpa_thread_t thread_handle_;
   int sleep_ms_;
-  ClientServiceThreadNotify *notify_;
+  ClientServiceThreadNotify* notify_;
 };
 
 #endif  // _BROKER_THREADS_H_

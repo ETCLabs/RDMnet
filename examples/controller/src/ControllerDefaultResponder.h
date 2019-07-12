@@ -63,38 +63,38 @@ public:
   ControllerDefaultResponder() { lwpa_rwlock_create(&prop_lock_); }
   virtual ~ControllerDefaultResponder() { lwpa_rwlock_destroy(&prop_lock_); }
 
-  bool Get(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len, std::vector<RdmParamData> &resp_data_list,
-           uint16_t &nack_reason);
+  bool Get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len, std::vector<RdmParamData>& resp_data_list,
+           uint16_t& nack_reason);
 
-  bool GetIdentifyDevice(const uint8_t *param_data, uint8_t param_data_len, std::vector<RdmParamData> &resp_data_list,
-                         uint16_t &nack_reason) const;
-  bool GetDeviceLabel(const uint8_t *param_data, uint8_t param_data_len, std::vector<RdmParamData> &resp_data_list,
-                      uint16_t &nack_reason) const;
-  bool GetComponentScope(const uint8_t *param_data, uint8_t param_data_len, std::vector<RdmParamData> &resp_data_list,
-                         uint16_t &nack_reason) const;
-  bool GetComponentScope(uint16_t slot, std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason) const;
-  bool GetSearchDomain(const uint8_t *param_data, uint8_t param_data_len, std::vector<RdmParamData> &resp_data_list,
-                       uint16_t &nack_reason) const;
-  bool GetTCPCommsStatus(const uint8_t *param_data, uint8_t param_data_len, std::vector<RdmParamData> &resp_data_list,
-                         uint16_t &nack_reason) const;
-  bool GetSupportedParameters(const uint8_t *param_data, uint8_t param_data_len,
-                              std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason) const;
-  bool GetDeviceInfo(const uint8_t *param_data, uint8_t param_data_len, std::vector<RdmParamData> &resp_data_list,
-                     uint16_t &nack_reason) const;
-  bool GetManufacturerLabel(const uint8_t *param_data, uint8_t param_data_len,
-                            std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason) const;
-  bool GetDeviceModelDescription(const uint8_t *param_data, uint8_t param_data_len,
-                                 std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason) const;
-  bool GetSoftwareVersionLabel(const uint8_t *param_data, uint8_t param_data_len,
-                               std::vector<RdmParamData> &resp_data_list, uint16_t &nack_reason) const;
+  bool GetIdentifyDevice(const uint8_t* param_data, uint8_t param_data_len, std::vector<RdmParamData>& resp_data_list,
+                         uint16_t& nack_reason) const;
+  bool GetDeviceLabel(const uint8_t* param_data, uint8_t param_data_len, std::vector<RdmParamData>& resp_data_list,
+                      uint16_t& nack_reason) const;
+  bool GetComponentScope(const uint8_t* param_data, uint8_t param_data_len, std::vector<RdmParamData>& resp_data_list,
+                         uint16_t& nack_reason) const;
+  bool GetComponentScope(uint16_t slot, std::vector<RdmParamData>& resp_data_list, uint16_t& nack_reason) const;
+  bool GetSearchDomain(const uint8_t* param_data, uint8_t param_data_len, std::vector<RdmParamData>& resp_data_list,
+                       uint16_t& nack_reason) const;
+  bool GetTCPCommsStatus(const uint8_t* param_data, uint8_t param_data_len, std::vector<RdmParamData>& resp_data_list,
+                         uint16_t& nack_reason) const;
+  bool GetSupportedParameters(const uint8_t* param_data, uint8_t param_data_len,
+                              std::vector<RdmParamData>& resp_data_list, uint16_t& nack_reason) const;
+  bool GetDeviceInfo(const uint8_t* param_data, uint8_t param_data_len, std::vector<RdmParamData>& resp_data_list,
+                     uint16_t& nack_reason) const;
+  bool GetManufacturerLabel(const uint8_t* param_data, uint8_t param_data_len,
+                            std::vector<RdmParamData>& resp_data_list, uint16_t& nack_reason) const;
+  bool GetDeviceModelDescription(const uint8_t* param_data, uint8_t param_data_len,
+                                 std::vector<RdmParamData>& resp_data_list, uint16_t& nack_reason) const;
+  bool GetSoftwareVersionLabel(const uint8_t* param_data, uint8_t param_data_len,
+                               std::vector<RdmParamData>& resp_data_list, uint16_t& nack_reason) const;
 
-  void UpdateSearchDomain(const std::string &new_search_domain);
-  void AddScope(const std::string &new_scope, StaticBrokerConfig static_broker = StaticBrokerConfig());
-  void RemoveScope(const std::string &scope_to_remove);
-  void UpdateScopeConnectionStatus(const std::string &scope, bool connected,
-                                   const LwpaSockaddr &broker_addr = LwpaSockaddr());
-  void IncrementTcpUnhealthyCounter(const std::string &scope);
-  void ResetTcpUnhealthyCounter(const std::string &scope);
+  void UpdateSearchDomain(const std::string& new_search_domain);
+  void AddScope(const std::string& new_scope, StaticBrokerConfig static_broker = StaticBrokerConfig());
+  void RemoveScope(const std::string& scope_to_remove);
+  void UpdateScopeConnectionStatus(const std::string& scope, bool connected,
+                                   const LwpaSockaddr& broker_addr = LwpaSockaddr());
+  void IncrementTcpUnhealthyCounter(const std::string& scope);
+  void ResetTcpUnhealthyCounter(const std::string& scope);
 
 private:
   mutable lwpa_rwlock_t prop_lock_;

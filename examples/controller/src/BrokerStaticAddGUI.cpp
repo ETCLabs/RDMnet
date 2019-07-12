@@ -34,7 +34,7 @@ END_INCLUDE_QT_HEADERS()
 
 #include "lwpa/socket.h"
 
-BrokerStaticAddGUI::BrokerStaticAddGUI(QWidget *parent, IHandlesBrokerStaticAdd *handler) : QDialog(parent)
+BrokerStaticAddGUI::BrokerStaticAddGUI(QWidget* parent, IHandlesBrokerStaticAdd* handler) : QDialog(parent)
 {
   ui.setupUi(this);
 
@@ -69,7 +69,7 @@ void BrokerStaticAddGUI::addBrokerTriggered()
 
   LwpaSockaddr brokerAddr;
   QByteArray ipBuf = ui.ipEdit->text().toUtf8();
-  const char *ipStr = ipBuf.constData();
+  const char* ipStr = ipBuf.constData();
 
   if ((kLwpaErrOk != lwpa_inet_pton(kLwpaIpTypeV4, ipStr, &brokerAddr.ip) &&
        kLwpaErrOk != lwpa_inet_pton(kLwpaIpTypeV6, ipStr, &brokerAddr.ip))

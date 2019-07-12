@@ -55,7 +55,7 @@ struct MessageRef
 struct RPTMessageRef
 {
   RPTMessageRef() {}
-  RPTMessageRef(const RptHeader &new_header, const RdmBuffer &new_msg) : header(new_header), msg(new_msg) {}
+  RPTMessageRef(const RptHeader& new_header, const RdmBuffer& new_msg) : header(new_header), msg(new_msg) {}
 
   RptHeader header;
   RdmBuffer msg;
@@ -74,7 +74,7 @@ public:
     lwpa_rwlock_create(&lock_);
   }
   // Non-default copy constructor to avoid copying the message queue and lock.
-  BrokerClient(const BrokerClient &other)
+  BrokerClient(const BrokerClient& other)
       : cid(other.cid)
       , client_protocol(other.client_protocol)
       , addr(other.addr)
@@ -85,7 +85,7 @@ public:
   }
   virtual ~BrokerClient() { lwpa_rwlock_destroy(&lock_); }
 
-  virtual bool Push(const LwpaUuid &sender_cid, const BrokerMessage &msg);
+  virtual bool Push(const LwpaUuid& sender_cid, const BrokerMessage& msg);
   virtual bool Send() { return false; }
 
   // Read/write lock functions. Prefer use of ClientReadGuard and
@@ -100,7 +100,7 @@ public:
   LwpaSockaddr addr{};
 
 protected:
-  bool PushPostSizeCheck(const LwpaUuid &sender_cid, const BrokerMessage &msg);
+  bool PushPostSizeCheck(const LwpaUuid& sender_cid, const BrokerMessage& msg);
 
   mutable lwpa_rwlock_t lock_;
   rdmnet_conn_t conn_{RDMNET_CONN_INVALID};
@@ -111,7 +111,7 @@ protected:
 class ClientReadGuard
 {
 public:
-  explicit ClientReadGuard(BrokerClient &client) : client_(client)
+  explicit ClientReadGuard(BrokerClient& client) : client_(client)
   {
     if (!client_.ReadLock())
     {
@@ -121,13 +121,13 @@ public:
   ~ClientReadGuard() { client_.ReadUnlock(); }
 
 private:
-  BrokerClient &client_;
+  BrokerClient& client_;
 };
 
 class ClientWriteGuard
 {
 public:
-  explicit ClientWriteGuard(BrokerClient &client) : client_(client)
+  explicit ClientWriteGuard(BrokerClient& client) : client_(client)
   {
     if (!client_.WriteLock())
     {
@@ -137,30 +137,30 @@ public:
   ~ClientWriteGuard() { client_.WriteUnlock(); }
 
 private:
-  BrokerClient &client_;
+  BrokerClient& client_;
 };
 
 class RPTClient : public BrokerClient
 {
 public:
-  RPTClient(rpt_client_type_t new_ctype, const RdmUid &new_uid, const BrokerClient &prev_client)
+  RPTClient(rpt_client_type_t new_ctype, const RdmUid& new_uid, const BrokerClient& prev_client)
       : BrokerClient(prev_client), uid(new_uid), client_type(new_ctype)
   {
   }
   virtual ~RPTClient() {}
 
-  virtual bool Push(rdmnet_conn_t /*from_conn*/, const LwpaUuid & /*sender_cid*/, const RptMessage & /*msg*/)
+  virtual bool Push(rdmnet_conn_t /*from_conn*/, const LwpaUuid& /*sender_cid*/, const RptMessage& /*msg*/)
   {
     return false;
   }
-  virtual bool Push(const LwpaUuid &sender_cid, const BrokerMessage &msg) override;
+  virtual bool Push(const LwpaUuid& sender_cid, const BrokerMessage& msg) override;
 
   RdmUid uid{};
   rpt_client_type_t client_type{kRPTClientTypeUnknown};
   LwpaUuid binding_cid{};
 
 protected:
-  bool PushPostSizeCheck(const LwpaUuid &sender_cid, const RptHeader &header, const RptStatusMsg &msg);
+  bool PushPostSizeCheck(const LwpaUuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg);
 
   std::queue<MessageRef> status_msgs_;
 };
@@ -174,7 +174,7 @@ class RPTController : public RPTClient
 {
 public:
   // TODO max queue size
-  RPTController(size_t max_q_size, const ClientEntryData &cli_entry, const BrokerClient &prev_client)
+  RPTController(size_t max_q_size, const ClientEntryData& cli_entry, const BrokerClient& prev_client)
       : RPTClient(cli_entry.data.rpt_data.client_type, cli_entry.data.rpt_data.client_uid, prev_client)
   {
     max_q_size_ = max_q_size;
@@ -183,9 +183,9 @@ public:
   }
   virtual ~RPTController() {}
 
-  virtual bool Push(rdmnet_conn_t from_conn, const LwpaUuid &sender_cid, const RptMessage &msg) override;
-  virtual bool Push(const LwpaUuid &sender_cid, const BrokerMessage &msg) override;
-  virtual bool Push(const LwpaUuid &sender_cid, const RptHeader &header, const RptStatusMsg &msg);
+  virtual bool Push(rdmnet_conn_t from_conn, const LwpaUuid& sender_cid, const RptMessage& msg) override;
+  virtual bool Push(const LwpaUuid& sender_cid, const BrokerMessage& msg) override;
+  virtual bool Push(const LwpaUuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg);
   virtual bool Send() override;
 
   std::queue<MessageRef> rpt_msgs_;
@@ -195,7 +195,7 @@ public:
 class RPTDevice : public RPTClient
 {
 public:
-  RPTDevice(size_t max_q_size, const ClientEntryData &cli_entry, const BrokerClient &prev_client)
+  RPTDevice(size_t max_q_size, const ClientEntryData& cli_entry, const BrokerClient& prev_client)
       : RPTClient(cli_entry.data.rpt_data.client_type, cli_entry.data.rpt_data.client_uid, prev_client)
   {
     max_q_size_ = max_q_size;
@@ -204,8 +204,8 @@ public:
   }
   virtual ~RPTDevice() {}
 
-  virtual bool Push(rdmnet_conn_t from_conn, const LwpaUuid &sender_cid, const RptMessage &msg) override;
-  virtual bool Push(const LwpaUuid &sender_cid, const BrokerMessage &msg) override;
+  virtual bool Push(rdmnet_conn_t from_conn, const LwpaUuid& sender_cid, const RptMessage& msg) override;
+  virtual bool Push(const LwpaUuid& sender_cid, const BrokerMessage& msg) override;
   virtual bool Send() override;
 
 protected:

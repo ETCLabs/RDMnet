@@ -40,15 +40,15 @@ class RDMnetClientItem : public RDMnetNetworkItem
 public:
   static const int RDMnetClientItemType = QStandardItem::UserType + 3;
 
-  static const char *clientType2String(rpt_client_type_t type);
+  static const char* clientType2String(rpt_client_type_t type);
 
   // RDMnetClientItem();
-  RDMnetClientItem(const ClientEntryData &entry, bool is_me);
+  RDMnetClientItem(const ClientEntryData& entry, bool is_me);
   virtual ~RDMnetClientItem();
 
   virtual int type() const override;
 
-  bool operator==(const RDMnetClientItem &other)
+  bool operator==(const RDMnetClientItem& other)
   {
     return (get_rpt_client_entry_data(&entry_)->client_type == get_rpt_client_entry_data(&other.entry_)->client_type) &&
            (get_rpt_client_entry_data(&entry_)->client_uid == get_rpt_client_entry_data(&other.entry_)->client_uid);
@@ -57,12 +57,12 @@ public:
   RdmUid uid() const override { return get_rpt_client_entry_data(&entry_)->client_uid; }
   const rpt_client_type_t ClientType() const { return get_rpt_client_entry_data(&entry_)->client_type; }
 
-  void setScopeSlot(const QString &scope, uint16_t slot);
-  uint16_t getScopeSlot(const QString &scope);
-  void removeScopeSlot(const QString &scope);
+  void setScopeSlot(const QString& scope, uint16_t slot);
+  uint16_t getScopeSlot(const QString& scope);
+  void removeScopeSlot(const QString& scope);
 
   ClientEntryData entry_;
-  std::vector<EndpointItem *> endpoints_;
+  std::vector<EndpointItem*> endpoints_;
 
 protected:
   std::map<QString, uint16_t> scope_slots_;

@@ -134,7 +134,7 @@ typedef struct RdmnetConnCallbacks
    *  \param[in] connect_info More information about the successful connection.
    *  \param[in] context Context pointer that was given at the creation of the connection.
    */
-  void (*connected)(rdmnet_conn_t handle, const RdmnetConnectedInfo *connect_info, void *context);
+  void (*connected)(rdmnet_conn_t handle, const RdmnetConnectedInfo* connect_info, void* context);
 
   /*! \brief An RDMnet connection attempt failed.
    *
@@ -142,7 +142,7 @@ typedef struct RdmnetConnCallbacks
    *  \param[in] failed_info More information about the connect failure event.
    *  \param[in] context Context pointer that was given at the creation of the connection.
    */
-  void (*connect_failed)(rdmnet_conn_t handle, const RdmnetConnectFailedInfo *failed_info, void *context);
+  void (*connect_failed)(rdmnet_conn_t handle, const RdmnetConnectFailedInfo* failed_info, void* context);
 
   /*! \brief A previously-connected RDMnet connection has disconnected.
    *
@@ -150,7 +150,7 @@ typedef struct RdmnetConnCallbacks
    *  \param[in] disconn_info More information about the disconnect event.
    *  \param[in] context Context pointer that was given at the creation of the connection.
    */
-  void (*disconnected)(rdmnet_conn_t handle, const RdmnetDisconnectedInfo *disconn_info, void *context);
+  void (*disconnected)(rdmnet_conn_t handle, const RdmnetDisconnectedInfo* disconn_info, void* context);
 
   /*! \brief A message has been received on an RDMnet connection.
    *
@@ -163,7 +163,7 @@ typedef struct RdmnetConnCallbacks
    *                     decode.
    *  \param[in] context Context pointer that was given at creation of the connection.
    */
-  void (*msg_received)(rdmnet_conn_t handle, const RdmnetMessage *message, void *context);
+  void (*msg_received)(rdmnet_conn_t handle, const RdmnetMessage* message, void* context);
 } RdmnetConnCallbacks;
 
 /*! A set of configuration information for a new RDMnet connection. */
@@ -174,7 +174,7 @@ typedef struct RdmnetConnectionConfig
   /*! A set of callbacks to receive asynchronous notifications of connection events. */
   RdmnetConnCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. */
-  void *callback_context;
+  void* callback_context;
 } RdmnetConnectionConfig;
 
 /*! If using the externally-managed socket functions (advanced usage), this is the maximum data
@@ -185,21 +185,21 @@ typedef struct RdmnetConnectionConfig
 extern "C" {
 #endif
 
-lwpa_error_t rdmnet_connection_create(const RdmnetConnectionConfig *config, rdmnet_conn_t *handle);
-lwpa_error_t rdmnet_connect(rdmnet_conn_t handle, const LwpaSockaddr *remote_addr,
-                            const ClientConnectMsg *connect_data);
+lwpa_error_t rdmnet_connection_create(const RdmnetConnectionConfig* config, rdmnet_conn_t* handle);
+lwpa_error_t rdmnet_connect(rdmnet_conn_t handle, const LwpaSockaddr* remote_addr,
+                            const ClientConnectMsg* connect_data);
 lwpa_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking);
-lwpa_error_t rdmnet_connection_destroy(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t *disconnect_reason);
+lwpa_error_t rdmnet_connection_destroy(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t* disconnect_reason);
 
-int rdmnet_send(rdmnet_conn_t handle, const uint8_t *data, size_t size);
+int rdmnet_send(rdmnet_conn_t handle, const uint8_t* data, size_t size);
 
 /*! \name Externally managed socket functions.
  *
  *  These functions are for advanced usage and are generally only used by broker apps.
  *  @{
  */
-lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t sock, const LwpaSockaddr *remote_addr);
-void rdmnet_socket_data_received(rdmnet_conn_t handle, const uint8_t *data, size_t data_size);
+lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t sock, const LwpaSockaddr* remote_addr);
+void rdmnet_socket_data_received(rdmnet_conn_t handle, const uint8_t* data, size_t data_size);
 void rdmnet_socket_error(rdmnet_conn_t handle, lwpa_error_t socket_err);
 /*! @} */
 

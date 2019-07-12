@@ -31,29 +31,29 @@
 #include "broker_util.h"
 
 extern "C" {
-static void broker_log_callback(void *context, const LwpaLogStrings *strings)
+static void broker_log_callback(void* context, const LwpaLogStrings* strings)
 {
   assert(strings);
   assert(strings->human_readable);
-  RDMnet::BrokerLog *bl = static_cast<RDMnet::BrokerLog *>(context);
+  RDMnet::BrokerLog* bl = static_cast<RDMnet::BrokerLog*>(context);
   if (bl)
     bl->LogFromCallback(strings->human_readable);
 }
 
-static void broker_time_callback(void *context, LwpaLogTimeParams *time)
+static void broker_time_callback(void* context, LwpaLogTimeParams* time)
 {
-  RDMnet::BrokerLog *bl = static_cast<RDMnet::BrokerLog *>(context);
+  RDMnet::BrokerLog* bl = static_cast<RDMnet::BrokerLog*>(context);
   if (bl)
     bl->GetTimeFromCallback(time);
 }
 
-static void log_thread_fn(void *arg)
+static void log_thread_fn(void* arg)
 {
-  RDMnet::BrokerLog *bl = static_cast<RDMnet::BrokerLog *>(arg);
+  RDMnet::BrokerLog* bl = static_cast<RDMnet::BrokerLog*>(arg);
   if (bl)
     bl->LogThreadRun();
 }
-} // extern "C"
+}  // extern "C"
 
 RDMnet::BrokerLog::BrokerLog() : keep_running_(false)
 {
@@ -95,7 +95,7 @@ void RDMnet::BrokerLog::Shutdown()
   }
 }
 
-void RDMnet::BrokerLog::Log(int pri, const char *format, ...)
+void RDMnet::BrokerLog::Log(int pri, const char* format, ...)
 {
   va_list args;
   va_start(args, format);
@@ -103,7 +103,7 @@ void RDMnet::BrokerLog::Log(int pri, const char *format, ...)
   va_end(args);
 }
 
-void RDMnet::BrokerLog::LogFromCallback(const std::string &str)
+void RDMnet::BrokerLog::LogFromCallback(const std::string& str)
 {
   {
     lwpa::MutexGuard guard(lock_);

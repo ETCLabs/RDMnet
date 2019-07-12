@@ -31,7 +31,7 @@
 //{
 //}
 
-EndpointItem::EndpointItem(const RdmUid &parent_uid, uint16_t endpoint, uint8_t type)
+EndpointItem::EndpointItem(const RdmUid& parent_uid, uint16_t endpoint, uint8_t type)
     : RDMnetNetworkItem(QString("%0 (%1)").arg(endpoint).arg(
           (endpoint == 0) ? "Default Responder" : ((type == E137_7_ENDPOINT_TYPE_VIRTUAL) ? "virtual" : "physical")))
     , parent_uid_(parent_uid)

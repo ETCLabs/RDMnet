@@ -39,13 +39,13 @@ class SimpleNetworkProxyModel : public QSortFilterProxyModel
   Q_OBJECT
 
 private:
-  RDMnetNetworkModel *sourceNetworkModel;
+  RDMnetNetworkModel* sourceNetworkModel;
 
 public slots:
-  void directChildrenRevealed(const QModelIndex &parentIndex);
+  void directChildrenRevealed(const QModelIndex& parentIndex);
 
 signals:
-  void expanded(const QModelIndex &sourceModelIndex);
+  void expanded(const QModelIndex& sourceModelIndex);
 
 public:
   SimpleNetworkProxyModel();
@@ -62,10 +62,10 @@ public:
 
   // bool hasChildren(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
 
-  void setSourceModel(QAbstractItemModel *sourceModel) Q_DECL_OVERRIDE;
+  void setSourceModel(QAbstractItemModel* sourceModel) Q_DECL_OVERRIDE;
 
 protected:
-  bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const Q_DECL_OVERRIDE;
+  bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const Q_DECL_OVERRIDE;
 
 private:
   // Q_DECLARE_PRIVATE(QIdentityProxyModel)

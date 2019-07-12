@@ -51,7 +51,7 @@ typedef struct DiscoveryState
 {
   lwpa_mutex_t lock;
 
-  RdmnetScopeMonitorRef *scope_ref_list;
+  RdmnetScopeMonitorRef* scope_ref_list;
   RdmnetBrokerRegisterConfig registered_broker;
 
   RdmnetBrokerRegisterRef broker_ref;
@@ -64,31 +64,31 @@ static DiscoveryState disc_state;
 /*********************** Private function prototypes *************************/
 
 // Allocation and deallocation
-RdmnetScopeMonitorRef *scope_monitor_new(const RdmnetScopeMonitorConfig *config);
-void scope_monitor_delete(RdmnetScopeMonitorRef *ref);
-DiscoveredBroker *discovered_broker_new(const char *service_name, const char *full_service_name);
-void discovered_broker_delete(DiscoveredBroker *db);
-RdmnetBrokerRegisterRef *registered_broker_new();
-void registered_broker_delete(RdmnetBrokerRegisterRef *rb);
+RdmnetScopeMonitorRef* scope_monitor_new(const RdmnetScopeMonitorConfig* config);
+void scope_monitor_delete(RdmnetScopeMonitorRef* ref);
+DiscoveredBroker* discovered_broker_new(const char* service_name, const char* full_service_name);
+void discovered_broker_delete(DiscoveredBroker* db);
+RdmnetBrokerRegisterRef* registered_broker_new();
+void registered_broker_delete(RdmnetBrokerRegisterRef* rb);
 
 // Add and remove from appropriate lists
-void discovered_broker_insert(DiscoveredBroker **list_head_ptr, DiscoveredBroker *new);
-DiscoveredBroker *discovered_broker_lookup_by_name(DiscoveredBroker *list_head, const char *full_name);
-DiscoveredBroker *discovered_broker_lookup_by_ref(DiscoveredBroker *list_head, DNSServiceRef dnssd_ref);
-void discovered_broker_remove(DiscoveredBroker **list_head_ptr, const DiscoveredBroker *db);
-void scope_monitor_insert(RdmnetScopeMonitorRef *scope_ref);
-RdmnetScopeMonitorRef *scope_monitor_lookup(DNSServiceRef dnssd_ref);
-void scope_monitor_remove(const RdmnetScopeMonitorRef *ref);
+void discovered_broker_insert(DiscoveredBroker** list_head_ptr, DiscoveredBroker* new);
+DiscoveredBroker* discovered_broker_lookup_by_name(DiscoveredBroker* list_head, const char* full_name);
+DiscoveredBroker* discovered_broker_lookup_by_ref(DiscoveredBroker* list_head, DNSServiceRef dnssd_ref);
+void discovered_broker_remove(DiscoveredBroker** list_head_ptr, const DiscoveredBroker* db);
+void scope_monitor_insert(RdmnetScopeMonitorRef* scope_ref);
+RdmnetScopeMonitorRef* scope_monitor_lookup(DNSServiceRef dnssd_ref);
+void scope_monitor_remove(const RdmnetScopeMonitorRef* ref);
 
 // Notify the appropriate callbacks
-void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo *broker_info);
-void notify_broker_lost(rdmnet_scope_monitor_t handle, const char *service_name);
+void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info);
+void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name);
 void notify_scope_monitor_error(rdmnet_scope_monitor_t handle, int platform_error);
 
 // Other helpers
-void get_registration_string(const char *srv_type, const char *scope, char *reg_str);
-bool broker_info_is_valid(const RdmnetBrokerDiscInfo *info);
-bool ipv6_valid(LwpaIpAddr *ip);
+void get_registration_string(const char* srv_type, const char* scope, char* reg_str);
+bool broker_info_is_valid(const RdmnetBrokerDiscInfo* info);
+bool ipv6_valid(LwpaIpAddr* ip);
 
 /*************************** Function definitions ****************************/
 
@@ -97,7 +97,7 @@ bool ipv6_valid(LwpaIpAddr *ip);
  ******************************************************************************/
 
 void DNSSD_API HandleDNSServiceRegisterReply(DNSServiceRef sdRef, DNSServiceFlags flags, DNSServiceErrorType errorCode,
-                                             const char *name, const char *regtype, const char *domain, void *context)
+                                             const char* name, const char* regtype, const char* domain, void* context)
 {
   (void)context;
 
@@ -127,18 +127,18 @@ void DNSSD_API HandleDNSServiceRegisterReply(DNSServiceRef sdRef, DNSServiceFlag
 }
 
 void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex,
-                                                DNSServiceErrorType errorCode, const char *hostname,
-                                                const struct sockaddr *address, uint32_t ttl, void *context)
+                                                DNSServiceErrorType errorCode, const char* hostname,
+                                                const struct sockaddr* address, uint32_t ttl, void* context)
 {
   (void)interfaceIndex;
   (void)hostname;
   (void)ttl;
 
-  RdmnetScopeMonitorRef *ref = (RdmnetScopeMonitorRef *)context;
+  RdmnetScopeMonitorRef* ref = (RdmnetScopeMonitorRef*)context;
   if (!ref)
     return;
 
-  DiscoveredBroker *db = discovered_broker_lookup_by_ref(ref->broker_list, sdRef);
+  DiscoveredBroker* db = discovered_broker_lookup_by_ref(ref->broker_list, sdRef);
   if (!db || db->state != kResolveStateGetAddrInfo)
     return;
 
@@ -171,7 +171,7 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceF
             (LWPA_IP_IS_V6(&ip_addr.ip) && ipv6_valid(&ip_addr.ip)))
         {
           // Add it to the info structure
-          BrokerListenAddr *new_addr = (BrokerListenAddr*)malloc(sizeof(BrokerListenAddr));
+          BrokerListenAddr* new_addr = (BrokerListenAddr*)malloc(sizeof(BrokerListenAddr));
           new_addr->addr = ip_addr.ip;
           new_addr->next = NULL;
 
@@ -181,7 +181,7 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceF
           }
           else
           {
-            BrokerListenAddr *cur_addr = db->info.listen_addr_list;
+            BrokerListenAddr* cur_addr = db->info.listen_addr_list;
             while (cur_addr->next)
               cur_addr = cur_addr->next;
             cur_addr->next = new_addr;
@@ -208,19 +208,19 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceF
 }
 
 void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex,
-                                            DNSServiceErrorType errorCode, const char *fullname, const char *hosttarget,
+                                            DNSServiceErrorType errorCode, const char* fullname, const char* hosttarget,
                                             uint16_t port /* In network byte order */, uint16_t txtLen,
-                                            const unsigned char *txtRecord, void *context)
+                                            const unsigned char* txtRecord, void* context)
 {
   (void)flags;
   (void)interfaceIndex;
   (void)fullname;
 
-  RdmnetScopeMonitorRef *ref = (RdmnetScopeMonitorRef *)context;
+  RdmnetScopeMonitorRef* ref = (RdmnetScopeMonitorRef*)context;
   if (!ref)
     return;
 
-  DiscoveredBroker *db = discovered_broker_lookup_by_ref(ref->broker_list, sdRef);
+  DiscoveredBroker* db = discovered_broker_lookup_by_ref(ref->broker_list, sdRef);
   if (!db || db->state != kResolveStateServiceResolve)
     return;
 
@@ -256,7 +256,7 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
         db->info.port = lwpa_upack_16b(&port);
 
         uint8_t value_len = 0;
-        const char *value;
+        const char* value;
         // char sval[16];
 
         // value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord, "TxtVers", &value_len));
@@ -266,7 +266,7 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
         //  info->txt_vers = atoi(sval);
         //}
 
-        value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord, "ConfScope", &value_len));
+        value = (const char*)(TXTRecordGetValuePtr(txtLen, txtRecord, "ConfScope", &value_len));
         if (value && value_len)
         {
           rdmnet_safe_strncpy(
@@ -281,11 +281,11 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
         //  info->e133_vers = atoi(sval);
         //}
 
-        value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord, "CID", &value_len));
+        value = (const char*)(TXTRecordGetValuePtr(txtLen, txtRecord, "CID", &value_len));
         if (value && value_len)
           lwpa_string_to_uuid(&db->info.cid, value, value_len);
 
-        value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord, "Model", &value_len));
+        value = (const char*)(TXTRecordGetValuePtr(txtLen, txtRecord, "Model", &value_len));
         if (value && value_len)
         {
           rdmnet_safe_strncpy(
@@ -293,7 +293,7 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
               (value_len + 1 > E133_MODEL_STRING_PADDED_LENGTH ? E133_MODEL_STRING_PADDED_LENGTH : value_len + 1));
         }
 
-        value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord, "Manuf", &value_len));
+        value = (const char*)(TXTRecordGetValuePtr(txtLen, txtRecord, "Manuf", &value_len));
         if (value && value_len)
         {
           rdmnet_safe_strncpy(
@@ -315,13 +315,13 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
 }
 
 void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex,
-                                           DNSServiceErrorType errorCode, const char *serviceName, const char *regtype,
-                                           const char *replyDomain, void *context)
+                                           DNSServiceErrorType errorCode, const char* serviceName, const char* regtype,
+                                           const char* replyDomain, void* context)
 {
   (void)sdRef;
   (void)interfaceIndex;
 
-  RdmnetScopeMonitorRef *ref = (RdmnetScopeMonitorRef *)context;
+  RdmnetScopeMonitorRef* ref = (RdmnetScopeMonitorRef*)context;
   if (!ref)
     return;
 
@@ -355,7 +355,7 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
       if (resolve_err == kDNSServiceErr_NoError)
       {
         // Track this resolve operation
-        DiscoveredBroker *db = discovered_broker_lookup_by_name(ref->broker_list, full_name);
+        DiscoveredBroker* db = discovered_broker_lookup_by_name(ref->broker_list, full_name);
         if (!db)
         {
           // Allocate a new DiscoveredBroker to track info as it comes in.
@@ -411,7 +411,7 @@ void rdmnetdisc_deinit()
   lwpa_mutex_destroy(&disc_state.lock);
 }
 
-void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo *broker_info)
+void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo* broker_info)
 {
   broker_info->cid = kLwpaNullUuid;
   memset(broker_info->service_name, 0, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
@@ -422,15 +422,15 @@ void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo *broker_info)
   memset(broker_info->manufacturer, 0, E133_MANUFACTURER_STRING_PADDED_LENGTH);
 }
 
-lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig *config, rdmnet_scope_monitor_t *handle,
-                                         int *platform_specific_error)
+lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
+                                         int* platform_specific_error)
 {
   if (!config || !handle || !platform_specific_error)
     return kLwpaErrInvalid;
   if (!rdmnet_core_initialized())
     return kLwpaErrNotInit;
 
-  RdmnetScopeMonitorRef *new_monitor = scope_monitor_new(config);
+  RdmnetScopeMonitorRef* new_monitor = scope_monitor_new(config);
   if (!new_monitor)
     return kLwpaErrNoMem;
 
@@ -467,7 +467,7 @@ lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig *config,
 }
 
 lwpa_error_t rdmnetdisc_change_monitored_scope(rdmnet_scope_monitor_t handle,
-                                               const RdmnetScopeMonitorConfig *new_config)
+                                               const RdmnetScopeMonitorConfig* new_config)
 {
   // TODO reevaluate if this is necessary.
   (void)handle;
@@ -527,8 +527,8 @@ void rdmnetdisc_stop_monitoring_all()
   {
     if (disc_state.scope_ref_list)
     {
-      RdmnetScopeMonitorRef *ref = disc_state.scope_ref_list;
-      RdmnetScopeMonitorRef *next_ref;
+      RdmnetScopeMonitorRef* ref = disc_state.scope_ref_list;
+      RdmnetScopeMonitorRef* next_ref;
       while (ref)
       {
         next_ref = ref->next;
@@ -541,7 +541,7 @@ void rdmnetdisc_stop_monitoring_all()
   }
 }
 
-lwpa_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig *config, rdmnet_registered_broker_t *handle)
+lwpa_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config, rdmnet_registered_broker_t* handle)
 {
   if (!config || !handle || disc_state.broker_ref.state != kBrokerStateNotRegistered ||
       !broker_info_is_valid(&config->my_info))
@@ -577,7 +577,7 @@ void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle)
 }
 
 /* If returns !0, this was an error from Bonjour.  Reset the state and notify the callback.*/
-DNSServiceErrorType send_registration(const RdmnetBrokerDiscInfo *info, DNSServiceRef *created_ref, void *context)
+DNSServiceErrorType send_registration(const RdmnetBrokerDiscInfo* info, DNSServiceRef* created_ref, void* context)
 {
   DNSServiceErrorType result = kDNSServiceErr_NoError;
 
@@ -609,8 +609,8 @@ DNSServiceErrorType send_registration(const RdmnetBrokerDiscInfo *info, DNSServi
     /*The CID can't have hyphens, so we'll strip them.*/
     char cid_str[LWPA_UUID_STRING_BYTES];
     lwpa_uuid_to_string(cid_str, &info->cid);
-    char *src = cid_str;
-    for (char *dst = src; *dst != 0; ++src, ++dst)
+    char* src = cid_str;
+    for (char* dst = src; *dst != 0; ++src, ++dst)
     {
       if (*src == '-')
         ++src;
@@ -650,7 +650,7 @@ void rdmnetdisc_tick()
 
   // TODO: For now, we are only allowing one registered broker. This should be able to be expanded
   // to allow up to n brokers, however.
-  RdmnetBrokerRegisterRef *broker_ref = &disc_state.broker_ref;
+  RdmnetBrokerRegisterRef* broker_ref = &disc_state.broker_ref;
   switch (broker_ref->state)
   {
     case kBrokerStateInfoSet:
@@ -730,7 +730,7 @@ void rdmnetdisc_tick()
   }
 }
 
-void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo *broker_info)
+void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info)
 {
   if (handle->broker_handle)
   {
@@ -746,7 +746,7 @@ void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscIn
   }
 }
 
-void notify_broker_lost(rdmnet_scope_monitor_t handle, const char *service_name)
+void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name)
 {
   if (handle->broker_handle)
   {
@@ -783,7 +783,7 @@ void notify_scope_monitor_error(rdmnet_scope_monitor_t handle, int platform_erro
  * helper functions
  ******************************************************************************/
 
-void get_registration_string(const char *srv_type, const char *scope, char *reg_str)
+void get_registration_string(const char* srv_type, const char* scope, char* reg_str)
 {
   RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
 
@@ -796,7 +796,7 @@ void get_registration_string(const char *srv_type, const char *scope, char *reg_
   RDMNET_MSVC_END_NO_DEP_WARNINGS()
 }
 
-bool broker_info_is_valid(const RdmnetBrokerDiscInfo *info)
+bool broker_info_is_valid(const RdmnetBrokerDiscInfo* info)
 {
   // Make sure none of the broker info's fields are empty
   return !(info->cid.data == 0 || strlen(info->service_name) == 0 || strlen(info->scope) == 0 ||
@@ -805,14 +805,14 @@ bool broker_info_is_valid(const RdmnetBrokerDiscInfo *info)
 
 /* 0000:0000:0000:0000:0000:0000:0000:0001 is a loopback address
  * 0000:0000:0000:0000:0000:0000:0000:0000 is not valid */
-bool ipv6_valid(LwpaIpAddr *ip)
+bool ipv6_valid(LwpaIpAddr* ip)
 {
   return (!lwpa_ip_is_loopback(ip) && !lwpa_ip_is_wildcard(ip));
 }
 
-RdmnetScopeMonitorRef *scope_monitor_new(const RdmnetScopeMonitorConfig *config)
+RdmnetScopeMonitorRef* scope_monitor_new(const RdmnetScopeMonitorConfig* config)
 {
-  RdmnetScopeMonitorRef *new_monitor = (RdmnetScopeMonitorRef*)malloc(sizeof(RdmnetScopeMonitorRef));
+  RdmnetScopeMonitorRef* new_monitor = (RdmnetScopeMonitorRef*)malloc(sizeof(RdmnetScopeMonitorRef));
   if (new_monitor)
   {
     new_monitor->config = *config;
@@ -823,10 +823,10 @@ RdmnetScopeMonitorRef *scope_monitor_new(const RdmnetScopeMonitorConfig *config)
   return new_monitor;
 }
 
-void scope_monitor_delete(RdmnetScopeMonitorRef *ref)
+void scope_monitor_delete(RdmnetScopeMonitorRef* ref)
 {
-  DiscoveredBroker *db = ref->broker_list;
-  DiscoveredBroker *next_db;
+  DiscoveredBroker* db = ref->broker_list;
+  DiscoveredBroker* next_db;
   while (db)
   {
     next_db = db->next;
@@ -838,9 +838,9 @@ void scope_monitor_delete(RdmnetScopeMonitorRef *ref)
   free(ref);
 }
 
-DiscoveredBroker *discovered_broker_new(const char *service_name, const char *full_service_name)
+DiscoveredBroker* discovered_broker_new(const char* service_name, const char* full_service_name)
 {
-  DiscoveredBroker *new_db = (DiscoveredBroker*)malloc(sizeof(DiscoveredBroker));
+  DiscoveredBroker* new_db = (DiscoveredBroker*)malloc(sizeof(DiscoveredBroker));
   if (new_db)
   {
     rdmnetdisc_fill_default_broker_info(&new_db->info);
@@ -853,26 +853,26 @@ DiscoveredBroker *discovered_broker_new(const char *service_name, const char *fu
   return new_db;
 }
 
-void discovered_broker_delete(DiscoveredBroker *db)
+void discovered_broker_delete(DiscoveredBroker* db)
 {
   if (db->state != kResolveStateDone)
   {
     lwpa_poll_remove_socket(&disc_state.poll_context, DNSServiceRefSockFD(db->dnssd_ref));
     DNSServiceRefDeallocate(db->dnssd_ref);
   }
-  BrokerListenAddr *listen_addr = db->info.listen_addr_list;
+  BrokerListenAddr* listen_addr = db->info.listen_addr_list;
   while (listen_addr)
   {
-    BrokerListenAddr *next_listen_addr = listen_addr->next;
+    BrokerListenAddr* next_listen_addr = listen_addr->next;
     free(listen_addr);
     listen_addr = next_listen_addr;
   }
   free(db);
 }
 
-RdmnetBrokerRegisterRef *registered_broker_new(const RdmnetBrokerRegisterConfig *config)
+RdmnetBrokerRegisterRef* registered_broker_new(const RdmnetBrokerRegisterConfig* config)
 {
-  RdmnetBrokerRegisterRef *new_rb = (RdmnetBrokerRegisterRef*)malloc(sizeof(RdmnetBrokerRegisterRef));
+  RdmnetBrokerRegisterRef* new_rb = (RdmnetBrokerRegisterRef*)malloc(sizeof(RdmnetBrokerRegisterRef));
   if (new_rb)
   {
     new_rb->config = *config;
@@ -884,18 +884,18 @@ RdmnetBrokerRegisterRef *registered_broker_new(const RdmnetBrokerRegisterConfig 
   return new_rb;
 }
 
-void registered_broker_delete(RdmnetBrokerRegisterRef *rb)
+void registered_broker_delete(RdmnetBrokerRegisterRef* rb)
 {
   free(rb);
 }
 
 /* Adds broker discovery information into brokers.
  * Assumes a lock is already taken.*/
-void discovered_broker_insert(DiscoveredBroker **list_head_ptr, DiscoveredBroker *new)
+void discovered_broker_insert(DiscoveredBroker** list_head_ptr, DiscoveredBroker* new)
 {
   if (*list_head_ptr)
   {
-    DiscoveredBroker *cur = *list_head_ptr;
+    DiscoveredBroker* cur = *list_head_ptr;
     for (; cur->next; cur = cur->next)
       ;
     cur->next = new;
@@ -910,9 +910,9 @@ void discovered_broker_insert(DiscoveredBroker **list_head_ptr, DiscoveredBroker
  * Returns the found instance or NULL if no match was found.
  * Assumes a lock is already taken.
  */
-DiscoveredBroker *discovered_broker_lookup_by_name(DiscoveredBroker *list_head, const char *full_name)
+DiscoveredBroker* discovered_broker_lookup_by_name(DiscoveredBroker* list_head, const char* full_name)
 {
-  for (DiscoveredBroker *current = list_head; current; current = current->next)
+  for (DiscoveredBroker* current = list_head; current; current = current->next)
   {
     if (strcmp(current->full_service_name, full_name) == 0)
     {
@@ -926,9 +926,9 @@ DiscoveredBroker *discovered_broker_lookup_by_name(DiscoveredBroker *list_head, 
  * Returns the found instance or NULL if no match was found.
  * Assumes a lock is already taken.
  */
-DiscoveredBroker *discovered_broker_lookup_by_ref(DiscoveredBroker *list_head, DNSServiceRef dnssd_ref)
+DiscoveredBroker* discovered_broker_lookup_by_ref(DiscoveredBroker* list_head, DNSServiceRef dnssd_ref)
 {
-  for (DiscoveredBroker *current = list_head; current; current = current->next)
+  for (DiscoveredBroker* current = list_head; current; current = current->next)
   {
     if (current->dnssd_ref == dnssd_ref)
     {
@@ -940,7 +940,7 @@ DiscoveredBroker *discovered_broker_lookup_by_ref(DiscoveredBroker *list_head, D
 
 /* Removes a DiscoveredBroker instance from a list.
  * Assumes a lock is already taken.*/
-void discovered_broker_remove(DiscoveredBroker **list_head_ptr, const DiscoveredBroker *db)
+void discovered_broker_remove(DiscoveredBroker** list_head_ptr, const DiscoveredBroker* db)
 {
   if (!(*list_head_ptr))
     return;
@@ -953,7 +953,7 @@ void discovered_broker_remove(DiscoveredBroker **list_head_ptr, const Discovered
   else
   {
     // Find in the list and remove.
-    DiscoveredBroker *prev_db = *list_head_ptr;
+    DiscoveredBroker* prev_db = *list_head_ptr;
     for (; prev_db->next; prev_db = prev_db->next)
     {
       if (prev_db->next == db)
@@ -967,7 +967,7 @@ void discovered_broker_remove(DiscoveredBroker **list_head_ptr, const Discovered
 
 /* Adds new scope info to the scope_ref_list.
  * Assumes a lock is already taken.*/
-void scope_monitor_insert(RdmnetScopeMonitorRef *scope_ref)
+void scope_monitor_insert(RdmnetScopeMonitorRef* scope_ref)
 {
   if (scope_ref)
   {
@@ -981,7 +981,7 @@ void scope_monitor_insert(RdmnetScopeMonitorRef *scope_ref)
     else
     {
       // Insert the new scope at the end of the list.
-      RdmnetScopeMonitorRef *ref = disc_state.scope_ref_list;
+      RdmnetScopeMonitorRef* ref = disc_state.scope_ref_list;
       for (; ref->next; ref = ref->next)
         ;
       ref->next = scope_ref;
@@ -992,9 +992,9 @@ void scope_monitor_insert(RdmnetScopeMonitorRef *scope_ref)
 /* Searches to see if a scope is being monitored.
  * Returns NULL if no match was found.
  * Assumes a lock is already taken. */
-RdmnetScopeMonitorRef *scope_monitor_lookup(DNSServiceRef dnssd_ref)
+RdmnetScopeMonitorRef* scope_monitor_lookup(DNSServiceRef dnssd_ref)
 {
-  for (RdmnetScopeMonitorRef *ref = disc_state.scope_ref_list; ref; ref = ref->next)
+  for (RdmnetScopeMonitorRef* ref = disc_state.scope_ref_list; ref; ref = ref->next)
   {
     if (ref->dnssd_ref == dnssd_ref)
     {
@@ -1006,7 +1006,7 @@ RdmnetScopeMonitorRef *scope_monitor_lookup(DNSServiceRef dnssd_ref)
 
 /* Removes an entry from disc_state.scope_ref_list.
  * Assumes a lock is already taken. */
-void scope_monitor_remove(const RdmnetScopeMonitorRef *ref)
+void scope_monitor_remove(const RdmnetScopeMonitorRef* ref)
 {
   if (!disc_state.scope_ref_list)
     return;
@@ -1018,7 +1018,7 @@ void scope_monitor_remove(const RdmnetScopeMonitorRef *ref)
   }
   else
   {
-    RdmnetScopeMonitorRef *prev_ref = disc_state.scope_ref_list;
+    RdmnetScopeMonitorRef* prev_ref = disc_state.scope_ref_list;
     for (; prev_ref->next; prev_ref = prev_ref->next)
     {
       if (prev_ref->next == ref)

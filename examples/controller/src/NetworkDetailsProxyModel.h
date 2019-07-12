@@ -40,25 +40,25 @@ class NetworkDetailsProxyModel : public QSortFilterProxyModel
   Q_OBJECT
 
 private:
-  RDMnetNetworkModel *sourceNetworkModel;
+  RDMnetNetworkModel* sourceNetworkModel;
 
 public:
   NetworkDetailsProxyModel();
   ~NetworkDetailsProxyModel();
 
-  void setCurrentParentItem(const QStandardItem *item);
+  void setCurrentParentItem(const QStandardItem* item);
 
-  bool currentParentIsChildOfOrEqualTo(const QStandardItem *item);
+  bool currentParentIsChildOfOrEqualTo(const QStandardItem* item);
 
-  void setSourceModel(QAbstractItemModel *sourceModel) Q_DECL_OVERRIDE;
+  void setSourceModel(QAbstractItemModel* sourceModel) Q_DECL_OVERRIDE;
 
   void setFilterEnabled(bool setting);
 
 protected:
-  virtual bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override;
-  virtual bool lessThan(const QModelIndex &left, const QModelIndex &right) const override;
+  virtual bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const override;
+  virtual bool lessThan(const QModelIndex& left, const QModelIndex& right) const override;
 
 private:
-  const QStandardItem *currentParentItem;
+  const QStandardItem* currentParentItem;
   bool filterEnabled;
 };

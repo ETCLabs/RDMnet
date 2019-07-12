@@ -54,7 +54,7 @@ typedef struct IntHandleManager
   HandleValueInUseFunction value_in_use;
 } IntHandleManager;
 
-void init_int_handle_manager(IntHandleManager *manager, HandleValueInUseFunction value_in_use_func);
-int get_next_int_handle(IntHandleManager *manager);
+void init_int_handle_manager(IntHandleManager* manager, HandleValueInUseFunction value_in_use_func);
+int get_next_int_handle(IntHandleManager* manager);
 
 #endif /* _RDMNET_PRIVATE_UTIL_H_ */

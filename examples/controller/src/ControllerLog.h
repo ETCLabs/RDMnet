@@ -37,24 +37,24 @@
 class LogOutputStream
 {
 public:
-  virtual LogOutputStream &operator<<(const std::string &str) = 0;
+  virtual LogOutputStream& operator<<(const std::string& str) = 0;
   virtual void clear() = 0;
 };
 
 class ControllerLog
 {
 public:
-  explicit ControllerLog(const std::string &file_name);
+  explicit ControllerLog(const std::string& file_name);
   virtual ~ControllerLog();
 
-  void Log(int pri, const char *format, ...);
+  void Log(int pri, const char* format, ...);
   bool CanLog(int pri) const { return LWPA_CAN_LOG(&params_, pri); }
-  const LwpaLogParams *GetLogParams() const { return &params_; }
+  const LwpaLogParams* GetLogParams() const { return &params_; }
 
-  void LogFromCallback(const std::string &str);
+  void LogFromCallback(const std::string& str);
 
-  void addCustomOutputStream(LogOutputStream *stream);
-  void removeCustomOutputStream(LogOutputStream *stream);
+  void addCustomOutputStream(LogOutputStream* stream);
+  void removeCustomOutputStream(LogOutputStream* stream);
 
   size_t getNumberOfCustomLogOutputStreams();
 
@@ -62,5 +62,5 @@ protected:
   std::fstream file_;
   std::string file_name_;
   LwpaLogParams params_;
-  std::vector<LogOutputStream *> customOutputStreams;
+  std::vector<LogOutputStream*> customOutputStreams;
 };

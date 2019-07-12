@@ -60,7 +60,7 @@ struct DiscoveredBroker
   resolve_state_t state;
   DNSServiceRef dnssd_ref;
 
-  DiscoveredBroker *next;
+  DiscoveredBroker* next;
 };
 
 typedef struct RdmnetScopeMonitorRef RdmnetScopeMonitorRef;
@@ -74,9 +74,9 @@ struct RdmnetScopeMonitorRef
   // NULL.
   rdmnet_registered_broker_t broker_handle;
   // The list of Brokers discovered or being discovered on this scope.
-  DiscoveredBroker *broker_list;
+  DiscoveredBroker* broker_list;
   // The next ref in the list of scopes being monitored.
-  RdmnetScopeMonitorRef *next;
+  RdmnetScopeMonitorRef* next;
 };
 
 typedef enum

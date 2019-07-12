@@ -58,7 +58,7 @@ struct EptSubProtocol
 {
   uint32_t protocol_vector;
   char protocol_string[EPT_PROTOCOL_STRING_PADDED_LENGTH];
-  EptSubProtocol *next;
+  EptSubProtocol* next;
 };
 
 typedef struct ClientEntryDataRpt
@@ -71,7 +71,7 @@ typedef struct ClientEntryDataRpt
 typedef struct ClientEntryDataEpt
 {
   bool more_coming;
-  EptSubProtocol *protocol_list;
+  EptSubProtocol* protocol_list;
 } ClientEntryDataEpt;
 
 typedef struct ClientEntryData ClientEntryData;
@@ -84,7 +84,7 @@ struct ClientEntryData
     ClientEntryDataRpt rpt_data;
     ClientEntryDataEpt ept_data;
   } data;
-  ClientEntryData *next;
+  ClientEntryData* next;
 };
 
 #define is_rpt_client_entry(clientryptr) ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_RPT)
@@ -96,10 +96,10 @@ struct ClientEntryData
 extern "C" {
 #endif
 
-bool create_rpt_client_entry(const LwpaUuid *cid, const RdmUid *uid, rpt_client_type_t client_type,
-                             const LwpaUuid *binding_cid, ClientEntryData *entry);
-bool create_ept_client_entry(const LwpaUuid *cid, const EptSubProtocol *protocol_arr, size_t protocol_arr_size,
-                             ClientEntryData *entry);
+bool create_rpt_client_entry(const LwpaUuid* cid, const RdmUid* uid, rpt_client_type_t client_type,
+                             const LwpaUuid* binding_cid, ClientEntryData* entry);
+bool create_ept_client_entry(const LwpaUuid* cid, const EptSubProtocol* protocol_arr, size_t protocol_arr_size,
+                             ClientEntryData* entry);
 
 #ifdef __cplusplus
 }

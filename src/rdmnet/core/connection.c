@@ -89,28 +89,28 @@ static struct RdmnetConnectionState
 /*********************** Private function prototypes *************************/
 
 static int update_backoff(int previous_backoff);
-static void start_tcp_connection(RdmnetConnection *conn, ConnCallbackDispatchInfo *cb);
-static void start_rdmnet_connection(RdmnetConnection *conn);
-static void reset_connection(RdmnetConnection *conn);
-static void retry_connection(RdmnetConnection *conn);
+static void start_tcp_connection(RdmnetConnection* conn, ConnCallbackDispatchInfo* cb);
+static void start_rdmnet_connection(RdmnetConnection* conn);
+static void reset_connection(RdmnetConnection* conn);
+static void retry_connection(RdmnetConnection* conn);
 
 static void destroy_marked_connections();
-static void process_all_connection_state(ConnCallbackDispatchInfo *cb);
+static void process_all_connection_state(ConnCallbackDispatchInfo* cb);
 
-static void fill_callback_info(const RdmnetConnection *conn, ConnCallbackDispatchInfo *info);
-static void deliver_callback(ConnCallbackDispatchInfo *info);
+static void fill_callback_info(const RdmnetConnection* conn, ConnCallbackDispatchInfo* info);
+static void deliver_callback(ConnCallbackDispatchInfo* info);
 
-static void rdmnet_conn_socket_activity(const LwpaPollEvent *event, PolledSocketOpaqueData data);
+static void rdmnet_conn_socket_activity(const LwpaPollEvent* event, PolledSocketOpaqueData data);
 
 // Connection management, lookup, destruction
 static bool conn_handle_in_use(int handle_val);
-static RdmnetConnection *create_new_connection(const RdmnetConnectionConfig *config);
-static void destroy_connection(RdmnetConnection *conn, bool remove_from_tree);
-static lwpa_error_t get_conn(rdmnet_conn_t handle, RdmnetConnection **conn);
-static void release_conn(RdmnetConnection *conn);
-static int conn_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const LwpaRbNode *node_b);
-static LwpaRbNode *conn_node_alloc();
-static void conn_node_free(LwpaRbNode *node);
+static RdmnetConnection* create_new_connection(const RdmnetConnectionConfig* config);
+static void destroy_connection(RdmnetConnection* conn, bool remove_from_tree);
+static lwpa_error_t get_conn(rdmnet_conn_t handle, RdmnetConnection** conn);
+static void release_conn(RdmnetConnection* conn);
+static int conn_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b);
+static LwpaRbNode* conn_node_alloc();
+static void conn_node_free(LwpaRbNode* node);
 
 /*************************** Function definitions ****************************/
 
@@ -135,11 +135,11 @@ lwpa_error_t rdmnet_conn_init()
   return res;
 }
 
-static void conn_dealloc(const LwpaRbTree *self, LwpaRbNode *node)
+static void conn_dealloc(const LwpaRbTree* self, LwpaRbNode* node)
 {
   (void)self;
 
-  RdmnetConnection *conn = (RdmnetConnection *)node->value;
+  RdmnetConnection* conn = (RdmnetConnection*)node->value;
   if (conn)
     destroy_connection(conn, false);
   conn_node_free(node);
@@ -169,7 +169,7 @@ void rdmnet_conn_deinit()
  *  \return #kLwpaErrNoMem: No room to allocate additional connection.
  *  \return #kLwpaErrSys: An internal library or system call error occurred.
  */
-lwpa_error_t rdmnet_connection_create(const RdmnetConnectionConfig *config, rdmnet_conn_t *handle)
+lwpa_error_t rdmnet_connection_create(const RdmnetConnectionConfig* config, rdmnet_conn_t* handle)
 {
   if (!config || !handle)
     return kLwpaErrInvalid;
@@ -182,7 +182,7 @@ lwpa_error_t rdmnet_connection_create(const RdmnetConnectionConfig *config, rdmn
     res = kLwpaErrOk;
     // Passed the quick checks, try to create a struct to represent a new connection. This function
     // creates the new connection, gives it a unique handle and inserts it into the connection map.
-    RdmnetConnection *conn = create_new_connection(config);
+    RdmnetConnection* conn = create_new_connection(config);
     if (!conn)
       res = kLwpaErrNoMem;
 
@@ -221,12 +221,12 @@ lwpa_error_t rdmnet_connection_create(const RdmnetConnectionConfig *config, rdmn
  *  \return #kLwpaErrSys: An internal library or system call error occurred.
  *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
-lwpa_error_t rdmnet_connect(rdmnet_conn_t handle, const LwpaSockaddr *remote_addr, const ClientConnectMsg *connect_data)
+lwpa_error_t rdmnet_connect(rdmnet_conn_t handle, const LwpaSockaddr* remote_addr, const ClientConnectMsg* connect_data)
 {
   if (!remote_addr || !connect_data)
     return kLwpaErrInvalid;
 
-  RdmnetConnection *conn;
+  RdmnetConnection* conn;
   lwpa_error_t res = get_conn(handle, &conn);
   if (res != kLwpaErrOk)
     return res;
@@ -266,7 +266,7 @@ lwpa_error_t rdmnet_connect(rdmnet_conn_t handle, const LwpaSockaddr *remote_add
  */
 lwpa_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking)
 {
-  RdmnetConnection *conn;
+  RdmnetConnection* conn;
   lwpa_error_t res = get_conn(handle, &conn);
   if (res != kLwpaErrOk)
     return res;
@@ -311,13 +311,13 @@ lwpa_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking)
  *          and thus this function is not available.
  *  \return #kLwpaErrSys: An internal library or system call error occurred.
  */
-lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t sock, const LwpaSockaddr *remote_addr)
+lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t sock, const LwpaSockaddr* remote_addr)
 {
 #if RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
   if (sock == LWPA_SOCKET_INVALID || !remote_addr)
     return kLwpaErrInvalid;
 
-  RdmnetConnection *conn;
+  RdmnetConnection* conn;
   lwpa_error_t res = get_conn(handle, &conn);
   if (res == kLwpaErrOk)
   {
@@ -359,9 +359,9 @@ lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t s
  *  \return #kLwpaErrNotInit: Module not initialized.
  *  \return #kLwpaErrSys: An internal library or system call error occurred.
  */
-lwpa_error_t rdmnet_connection_destroy(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t *disconnect_reason)
+lwpa_error_t rdmnet_connection_destroy(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t* disconnect_reason)
 {
-  RdmnetConnection *conn;
+  RdmnetConnection* conn;
   lwpa_error_t res = get_conn(handle, &conn);
   if (res != kLwpaErrOk)
     return res;
@@ -393,12 +393,12 @@ lwpa_error_t rdmnet_connection_destroy(rdmnet_conn_t handle, const rdmnet_discon
  *  \return #kLwpaErrSys: An internal library or system call error occurred.
  *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
-int rdmnet_send(rdmnet_conn_t handle, const uint8_t *data, size_t size)
+int rdmnet_send(rdmnet_conn_t handle, const uint8_t* data, size_t size)
 {
   if (!data || size == 0)
     return kLwpaErrInvalid;
 
-  RdmnetConnection *conn;
+  RdmnetConnection* conn;
   int res = get_conn(handle, &conn);
   if (res == kLwpaErrOk)
   {
@@ -430,9 +430,9 @@ int rdmnet_send(rdmnet_conn_t handle, const uint8_t *data, size_t size)
  * \return #kLwpaErrNotConn: The connection handle has not been successfully connected.
  * \return #kLwpaErrSys: An internal library or system call error occurred.
  */
-lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle, RdmnetConnection **conn_out)
+lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle, RdmnetConnection** conn_out)
 {
-  RdmnetConnection *conn;
+  RdmnetConnection* conn;
   lwpa_error_t res = get_conn(handle, &conn);
   if (res == kLwpaErrOk)
   {
@@ -464,7 +464,7 @@ lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle, RdmnetConnection **conn_
  * \return #kLwpaErrInvalid: Invalid argument provided.
  * \return #kLwpaErrSys: An internal library or system call error occurred.
  */
-lwpa_error_t rdmnet_end_message(RdmnetConnection *conn)
+lwpa_error_t rdmnet_end_message(RdmnetConnection* conn)
 {
   if (!conn)
     return kLwpaErrInvalid;
@@ -473,7 +473,7 @@ lwpa_error_t rdmnet_end_message(RdmnetConnection *conn)
   return kLwpaErrOk;
 }
 
-void start_rdmnet_connection(RdmnetConnection *conn)
+void start_rdmnet_connection(RdmnetConnection* conn)
 {
   if (conn->is_blocking)
     lwpa_setblocking(conn->sock, true);
@@ -486,10 +486,10 @@ void start_rdmnet_connection(RdmnetConnection *conn)
   lwpa_timer_start(&conn->send_timer, E133_TCP_HEARTBEAT_INTERVAL_SEC * 1000);
 }
 
-void start_tcp_connection(RdmnetConnection *conn, ConnCallbackDispatchInfo *cb)
+void start_tcp_connection(RdmnetConnection* conn, ConnCallbackDispatchInfo* cb)
 {
   bool ok = true;
-  RdmnetConnectFailedInfo *failed_info = &cb->args.connect_failed.failed_info;
+  RdmnetConnectFailedInfo* failed_info = &cb->args.connect_failed.failed_info;
 
   lwpa_error_t res = lwpa_socket(LWPA_AF_INET, LWPA_STREAM, &conn->sock);
   if (res != kLwpaErrOk)
@@ -576,13 +576,13 @@ void rdmnet_conn_tick()
 
 void destroy_marked_connections()
 {
-  RdmnetConnection *destroy_list = NULL;
-  RdmnetConnection **next_destroy_list_entry = &destroy_list;
+  RdmnetConnection* destroy_list = NULL;
+  RdmnetConnection** next_destroy_list_entry = &destroy_list;
 
   LwpaRbIter conn_iter;
   lwpa_rbiter_init(&conn_iter);
 
-  RdmnetConnection *conn = (RdmnetConnection *)lwpa_rbiter_first(&conn_iter, &state.connections);
+  RdmnetConnection* conn = (RdmnetConnection*)lwpa_rbiter_first(&conn_iter, &state.connections);
   while (conn)
   {
     // Can't destroy while iterating as that would invalidate the iterator
@@ -599,21 +599,21 @@ void destroy_marked_connections()
   // Now do the actual destruction
   if (destroy_list)
   {
-    RdmnetConnection *to_destroy = destroy_list;
+    RdmnetConnection* to_destroy = destroy_list;
     while (to_destroy)
     {
-      RdmnetConnection *next = to_destroy->next_to_destroy;
+      RdmnetConnection* next = to_destroy->next_to_destroy;
       destroy_connection(to_destroy, true);
       to_destroy = next;
     }
   }
 }
 
-void process_all_connection_state(ConnCallbackDispatchInfo *cb)
+void process_all_connection_state(ConnCallbackDispatchInfo* cb)
 {
   LwpaRbIter conn_iter;
   lwpa_rbiter_init(&conn_iter);
-  RdmnetConnection *conn = (RdmnetConnection *)lwpa_rbiter_first(&conn_iter, &state.connections);
+  RdmnetConnection* conn = (RdmnetConnection*)lwpa_rbiter_first(&conn_iter, &state.connections);
   while (conn)
   {
     if (lwpa_mutex_take(&conn->lock))
@@ -655,7 +655,7 @@ void process_all_connection_state(ConnCallbackDispatchInfo *cb)
               cb->which = kConnCallbackDisconnected;
               fill_callback_info(conn, cb);
 
-              RdmnetDisconnectedInfo *disconn_info = &cb->args.disconnected.disconn_info;
+              RdmnetDisconnectedInfo* disconn_info = &cb->args.disconnected.disconn_info;
               disconn_info->event = kRdmnetDisconnectNoHeartbeat;
               disconn_info->socket_err = kLwpaErrOk;
 
@@ -683,7 +683,7 @@ void tcp_connection_established(rdmnet_conn_t handle)
   if (handle < 0)
     return;
 
-  RdmnetConnection *conn;
+  RdmnetConnection* conn;
   if (kLwpaErrOk == get_conn(handle, &conn))
   {
     // connected successfully!
@@ -700,7 +700,7 @@ void rdmnet_socket_error(rdmnet_conn_t handle, lwpa_error_t socket_err)
   CB_STORAGE_CLASS ConnCallbackDispatchInfo cb;
   INIT_CALLBACK_INFO(&cb);
 
-  RdmnetConnection *conn;
+  RdmnetConnection* conn;
   if (kLwpaErrOk == get_conn(handle, &conn))
   {
     fill_callback_info(conn, &cb);
@@ -709,7 +709,7 @@ void rdmnet_socket_error(rdmnet_conn_t handle, lwpa_error_t socket_err)
     {
       cb.which = kConnCallbackConnectFailed;
 
-      RdmnetConnectFailedInfo *failed_info = &cb.args.connect_failed.failed_info;
+      RdmnetConnectFailedInfo* failed_info = &cb.args.connect_failed.failed_info;
       failed_info->event = kRdmnetConnectFailTcpLevel;
       failed_info->socket_err = socket_err;
       if (conn->state == kCSRDMnetConnPending)
@@ -721,7 +721,7 @@ void rdmnet_socket_error(rdmnet_conn_t handle, lwpa_error_t socket_err)
     {
       cb.which = kConnCallbackDisconnected;
 
-      RdmnetDisconnectedInfo *disconn_info = &cb.args.disconnected.disconn_info;
+      RdmnetDisconnectedInfo* disconn_info = &cb.args.disconnected.disconn_info;
       disconn_info->event = kRdmnetDisconnectAbruptClose;
       disconn_info->socket_err = socket_err;
 
@@ -733,14 +733,14 @@ void rdmnet_socket_error(rdmnet_conn_t handle, lwpa_error_t socket_err)
   deliver_callback(&cb);
 }
 
-void handle_rdmnet_connect_result(RdmnetConnection *conn, RdmnetMessage *msg, ConnCallbackDispatchInfo *cb)
+void handle_rdmnet_connect_result(RdmnetConnection* conn, RdmnetMessage* msg, ConnCallbackDispatchInfo* cb)
 {
   if (is_broker_msg(msg))
   {
-    BrokerMessage *bmsg = get_broker_msg(msg);
+    BrokerMessage* bmsg = get_broker_msg(msg);
     if (is_connect_reply_msg(bmsg))
     {
-      ConnectReplyMsg *reply = get_connect_reply_msg(bmsg);
+      ConnectReplyMsg* reply = get_connect_reply_msg(bmsg);
       switch (reply->connect_status)
       {
         case kRdmnetConnectOk:
@@ -749,7 +749,7 @@ void handle_rdmnet_connect_result(RdmnetConnection *conn, RdmnetMessage *msg, Co
           lwpa_timer_start(&conn->backoff_timer, 0);
           cb->which = kConnCallbackConnected;
 
-          RdmnetConnectedInfo *connect_info = &cb->args.connected.connect_info;
+          RdmnetConnectedInfo* connect_info = &cb->args.connected.connect_info;
           connect_info->broker_uid = reply->broker_uid;
           connect_info->client_uid = reply->client_uid;
           connect_info->connected_addr = conn->remote_addr;
@@ -758,7 +758,7 @@ void handle_rdmnet_connect_result(RdmnetConnection *conn, RdmnetMessage *msg, Co
         {
           cb->which = kConnCallbackConnectFailed;
 
-          RdmnetConnectFailedInfo *failed_info = &cb->args.connect_failed.failed_info;
+          RdmnetConnectFailedInfo* failed_info = &cb->args.connect_failed.failed_info;
           failed_info->event = kRdmnetConnectFailRejected;
           failed_info->socket_err = kLwpaErrOk;
           failed_info->rdmnet_reason = reply->connect_status;
@@ -778,7 +778,7 @@ void handle_rdmnet_connect_result(RdmnetConnection *conn, RdmnetMessage *msg, Co
   free_rdmnet_message(msg);
 }
 
-void handle_rdmnet_message(RdmnetConnection *conn, RdmnetMessage *msg, ConnCallbackDispatchInfo *cb)
+void handle_rdmnet_message(RdmnetConnection* conn, RdmnetMessage* msg, ConnCallbackDispatchInfo* cb)
 {
   // We've received something on this connection. Reset the heartbeat timer.
   lwpa_timer_reset(&conn->hb_timer);
@@ -787,7 +787,7 @@ void handle_rdmnet_message(RdmnetConnection *conn, RdmnetMessage *msg, ConnCallb
   bool deliver_message = false;
   if (is_broker_msg(msg))
   {
-    BrokerMessage *bmsg = get_broker_msg(msg);
+    BrokerMessage* bmsg = get_broker_msg(msg);
     switch (bmsg->vector)
     {
       case VECTOR_BROKER_CONNECT_REPLY:
@@ -797,7 +797,7 @@ void handle_rdmnet_message(RdmnetConnection *conn, RdmnetMessage *msg, ConnCallb
         fill_callback_info(conn, cb);
         cb->which = kConnCallbackDisconnected;
 
-        RdmnetDisconnectedInfo *disconn_info = &cb->args.disconnected.disconn_info;
+        RdmnetDisconnectedInfo* disconn_info = &cb->args.disconnected.disconn_info;
         disconn_info->event = kRdmnetDisconnectGracefulRemoteInitiated;
         disconn_info->socket_err = kLwpaErrOk;
         disconn_info->rdmnet_reason = get_disconnect_msg(bmsg)->disconnect_reason;
@@ -825,16 +825,16 @@ void handle_rdmnet_message(RdmnetConnection *conn, RdmnetMessage *msg, ConnCallb
   }
 }
 
-lwpa_error_t rdmnet_do_recv(rdmnet_conn_t handle, const uint8_t *data, size_t data_size, ConnCallbackDispatchInfo *cb)
+lwpa_error_t rdmnet_do_recv(rdmnet_conn_t handle, const uint8_t* data, size_t data_size, ConnCallbackDispatchInfo* cb)
 {
-  RdmnetConnection *conn;
+  RdmnetConnection* conn;
   lwpa_error_t res = get_conn(handle, &conn);
   if (res == kLwpaErrOk)
   {
     fill_callback_info(conn, cb);
     if (conn->state == kCSHeartbeat || conn->state == kCSRDMnetConnPending)
     {
-      RdmnetMsgBuf *msgbuf = &conn->recv_buf;
+      RdmnetMsgBuf* msgbuf = &conn->recv_buf;
       res = rdmnet_msg_buf_recv(msgbuf, data, data_size);
       if (res == kLwpaErrOk)
       {
@@ -857,7 +857,7 @@ lwpa_error_t rdmnet_do_recv(rdmnet_conn_t handle, const uint8_t *data, size_t da
   return res;
 }
 
-void rdmnet_socket_data_received(rdmnet_conn_t handle, const uint8_t *data, size_t data_size)
+void rdmnet_socket_data_received(rdmnet_conn_t handle, const uint8_t* data, size_t data_size)
 {
   if (handle < 0 || !data || !data_size)
     return;
@@ -874,14 +874,14 @@ void rdmnet_socket_data_received(rdmnet_conn_t handle, const uint8_t *data, size
   }
 }
 
-void fill_callback_info(const RdmnetConnection *conn, ConnCallbackDispatchInfo *info)
+void fill_callback_info(const RdmnetConnection* conn, ConnCallbackDispatchInfo* info)
 {
   info->handle = conn->handle;
   info->cbs = conn->callbacks;
   info->context = conn->callback_context;
 }
 
-void deliver_callback(ConnCallbackDispatchInfo *info)
+void deliver_callback(ConnCallbackDispatchInfo* info)
 {
   switch (info->which)
   {
@@ -908,7 +908,7 @@ void deliver_callback(ConnCallbackDispatchInfo *info)
   }
 }
 
-void rdmnet_conn_socket_activity(const LwpaPollEvent *event, PolledSocketOpaqueData data)
+void rdmnet_conn_socket_activity(const LwpaPollEvent* event, PolledSocketOpaqueData data)
 {
   static uint8_t rdmnet_poll_recv_buf[RDMNET_RECV_DATA_MAX_SIZE];
 
@@ -941,13 +941,13 @@ bool conn_handle_in_use(int handle_val)
  *
  *  Must have write lock.
  */
-RdmnetConnection *create_new_connection(const RdmnetConnectionConfig *config)
+RdmnetConnection* create_new_connection(const RdmnetConnectionConfig* config)
 {
   rdmnet_conn_t new_handle = get_next_int_handle(&state.handle_mgr);
   if (new_handle == RDMNET_CONN_INVALID)
     return NULL;
 
-  RdmnetConnection *conn = alloc_rdmnet_connection();
+  RdmnetConnection* conn = alloc_rdmnet_connection();
   if (conn)
   {
     bool ok;
@@ -1007,7 +1007,7 @@ int update_backoff(int previous_backoff)
   return result;
 }
 
-void reset_connection(RdmnetConnection *conn)
+void reset_connection(RdmnetConnection* conn)
 {
   if (conn->sock != LWPA_SOCKET_INVALID)
   {
@@ -1021,7 +1021,7 @@ void reset_connection(RdmnetConnection *conn)
   conn->state = kCSConnectNotStarted;
 }
 
-void retry_connection(RdmnetConnection *conn)
+void retry_connection(RdmnetConnection* conn)
 {
   if (conn->sock != LWPA_SOCKET_INVALID)
   {
@@ -1031,7 +1031,7 @@ void retry_connection(RdmnetConnection *conn)
   conn->state = kCSConnectPending;
 }
 
-void destroy_connection(RdmnetConnection *conn, bool remove_from_tree)
+void destroy_connection(RdmnetConnection* conn, bool remove_from_tree)
 {
   if (conn)
   {
@@ -1047,14 +1047,14 @@ void destroy_connection(RdmnetConnection *conn, bool remove_from_tree)
   }
 }
 
-lwpa_error_t get_conn(rdmnet_conn_t handle, RdmnetConnection **conn)
+lwpa_error_t get_conn(rdmnet_conn_t handle, RdmnetConnection** conn)
 {
   if (!rdmnet_core_initialized())
     return kLwpaErrNotInit;
   if (!rdmnet_readlock())
     return kLwpaErrSys;
 
-  RdmnetConnection *found_conn = (RdmnetConnection *)lwpa_rbtree_find(&state.connections, &handle);
+  RdmnetConnection* found_conn = (RdmnetConnection*)lwpa_rbtree_find(&state.connections, &handle);
   if (!found_conn)
   {
     rdmnet_readunlock();
@@ -1075,32 +1075,32 @@ lwpa_error_t get_conn(rdmnet_conn_t handle, RdmnetConnection **conn)
   return kLwpaErrOk;
 }
 
-void release_conn(RdmnetConnection *conn)
+void release_conn(RdmnetConnection* conn)
 {
   lwpa_mutex_give(&conn->lock);
   rdmnet_readunlock();
 }
 
-int conn_cmp(const LwpaRbTree *self, const LwpaRbNode *node_a, const LwpaRbNode *node_b)
+int conn_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b)
 {
   (void)self;
 
-  RdmnetConnection *a = (RdmnetConnection *)node_a->value;
-  RdmnetConnection *b = (RdmnetConnection *)node_b->value;
+  RdmnetConnection* a = (RdmnetConnection*)node_a->value;
+  RdmnetConnection* b = (RdmnetConnection*)node_b->value;
 
   return a->handle - b->handle;
 }
 
-LwpaRbNode *conn_node_alloc()
+LwpaRbNode* conn_node_alloc()
 {
 #if RDMNET_DYNAMIC_MEM
-  return (LwpaRbNode *)malloc(sizeof(LwpaRbNode));
+  return (LwpaRbNode*)malloc(sizeof(LwpaRbNode));
 #else
   return lwpa_mempool_alloc(rdmnet_conn_rb_nodes);
 #endif
 }
 
-void conn_node_free(LwpaRbNode *node)
+void conn_node_free(LwpaRbNode* node)
 {
 #if RDMNET_DYNAMIC_MEM
   free(node);

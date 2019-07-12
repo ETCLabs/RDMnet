@@ -42,7 +42,7 @@ public:
 
   virtual int type() const override;
 
-  bool operator==(const ResponderItem &other) { return uid_ == other.uid(); }
+  bool operator==(const ResponderItem& other) { return uid_ == other.uid(); }
 
 private:
   RdmUid uid_;

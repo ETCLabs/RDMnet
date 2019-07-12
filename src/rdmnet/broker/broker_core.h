@@ -51,25 +51,25 @@ class BrokerCore : public RdmnetConnNotify,
                    public BrokerDiscoveryManagerNotify
 {
 public:
-  BrokerCore(RDMnet::BrokerLog *log, RDMnet::BrokerSocketManager *socket_manager, RDMnet::BrokerNotify *notify,
+  BrokerCore(RDMnet::BrokerLog* log, RDMnet::BrokerSocketManager* socket_manager, RDMnet::BrokerNotify* notify,
              std::unique_ptr<RdmnetConnInterface> conn);
   virtual ~BrokerCore();
 
   // Some utility functions
-  static constexpr bool IsControllerBroadcastUID(const RdmUid &uid);
-  static constexpr bool IsDeviceBroadcastUID(const RdmUid &uid);
-  static bool IsDeviceManuBroadcastUID(const RdmUid &uid, uint16_t &manu);
-  bool IsValidControllerDestinationUID(const RdmUid &uid) const;
-  bool IsValidDeviceDestinationUID(const RdmUid &uid) const;
+  static constexpr bool IsControllerBroadcastUID(const RdmUid& uid);
+  static constexpr bool IsDeviceBroadcastUID(const RdmUid& uid);
+  static bool IsDeviceManuBroadcastUID(const RdmUid& uid, uint16_t& manu);
+  bool IsValidControllerDestinationUID(const RdmUid& uid) const;
+  bool IsValidDeviceDestinationUID(const RdmUid& uid) const;
 
-  RDMnet::BrokerLog *GetLog() { return log_; }
+  RDMnet::BrokerLog* GetLog() { return log_; }
 
-  bool Startup(const RDMnet::BrokerSettings &settings, uint16_t listen_port,
-               const std::vector<LwpaIpAddr> &listen_addrs);
+  bool Startup(const RDMnet::BrokerSettings& settings, uint16_t listen_port,
+               const std::vector<LwpaIpAddr>& listen_addrs);
   void Shutdown();
   void Tick();
 
-  void GetSettings(RDMnet::BrokerSettings &settings) const;
+  void GetSettings(RDMnet::BrokerSettings& settings) const;
 
   // Notification messages from the RDMnet core library
 
@@ -79,9 +79,9 @@ private:
   bool service_registered_{false};
   int other_brokers_found_{0};
 
-  RDMnet::BrokerLog *log_{nullptr};
-  RDMnet::BrokerSocketManager *socket_manager_{nullptr};
-  RDMnet::BrokerNotify *notify_{nullptr};
+  RDMnet::BrokerLog* log_{nullptr};
+  RDMnet::BrokerSocketManager* socket_manager_{nullptr};
+  RDMnet::BrokerNotify* notify_{nullptr};
   std::unique_ptr<RdmnetConnInterface> conn_interface_;
 
   RDMnet::BrokerSettings settings_;
@@ -97,28 +97,28 @@ private:
   ClientServiceThread service_thread_;
   BrokerDiscoveryManager disc_;
 
-  lwpa_socket_t StartListening(const LwpaIpAddr &ip, uint16_t &port);
+  lwpa_socket_t StartListening(const LwpaIpAddr& ip, uint16_t& port);
   bool StartBrokerServices();
   void StopBrokerServices();
 
   // RdmnetCoreLibraryNotify messages
-  virtual void RdmnetConnDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo &disconn_info) override;
-  virtual void RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage &msg) override;
+  virtual void RdmnetConnDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo& disconn_info) override;
+  virtual void RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage& msg) override;
 
   // RDMnet::BrokerSocketManagerNotify messages
-  virtual void SocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t *data, size_t data_size) override;
+  virtual void SocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t* data, size_t data_size) override;
   virtual void SocketClosed(rdmnet_conn_t conn_handle, bool graceful) override;
 
   // ListenThreadNotify messages
-  virtual bool NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr &addr) override;
+  virtual bool NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr& addr) override;
 
   // ClientServiceThreadNotify messages
   virtual bool ServiceClients() override;
 
   // BrokerDiscoveryManagerNotify messages
-  virtual void BrokerRegistered(const std::string &assigned_service_name) override;
-  virtual void OtherBrokerFound(const RdmnetBrokerDiscInfo &broker_info) override;
-  virtual void OtherBrokerLost(const std::string &service_name) override;
+  virtual void BrokerRegistered(const std::string& assigned_service_name) override;
+  virtual void OtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info) override;
+  virtual void OtherBrokerLost(const std::string& service_name) override;
   virtual void BrokerRegisterError(int platform_error) override;
 
   // The list of connected clients, indexed by the connection handle
@@ -128,7 +128,7 @@ private:
   // Protects the list of clients and uid lookup, but not the data in the clients themselves.
   mutable lwpa_rwlock_t client_lock_;
 
-  void GetConnSnapshot(std::vector<rdmnet_conn_t> &conns, bool include_devices, bool include_controllers,
+  void GetConnSnapshot(std::vector<rdmnet_conn_t>& conns, bool include_devices, bool include_controllers,
                        bool include_unknown, uint16_t manufacturer_filter = 0xffff);
 
   // The state data for each controller, indexed by its connection handle.
@@ -142,20 +142,20 @@ private:
   void DestroyMarkedClientSockets();
 
   // Message processing and sending functions
-  void ProcessRPTMessage(rdmnet_conn_t conn, const RdmnetMessage *msg);
-  void ProcessConnectRequest(rdmnet_conn_t conn, const ClientConnectMsg *cmsg);
-  bool ProcessRPTConnectRequest(rdmnet_conn_t conn, const ClientEntryData &data,
-                                rdmnet_connect_status_t &connect_status);
+  void ProcessRPTMessage(rdmnet_conn_t conn, const RdmnetMessage* msg);
+  void ProcessConnectRequest(rdmnet_conn_t conn, const ClientConnectMsg* cmsg);
+  bool ProcessRPTConnectRequest(rdmnet_conn_t conn, const ClientEntryData& data,
+                                rdmnet_connect_status_t& connect_status);
 
-  void SendRDMBrokerResponse(rdmnet_conn_t conn, const RPTMessageRef &msg, uint8_t response_type, uint8_t command_class,
-                             uint16_t param_id, uint8_t packedlen, uint8_t *pdata);
+  void SendRDMBrokerResponse(rdmnet_conn_t conn, const RPTMessageRef& msg, uint8_t response_type, uint8_t command_class,
+                             uint16_t param_id, uint8_t packedlen, uint8_t* pdata);
 
   void SendClientList(rdmnet_conn_t conn);
   void SendClientsAdded(client_protocol_t client_prot, rdmnet_conn_t conn_to_ignore,
-                        std::vector<ClientEntryData> &entries);
-  void SendClientsRemoved(client_protocol_t client_prot, std::vector<ClientEntryData> &entries);
-  void SendStatus(RPTController *controller, const RptHeader &header, rpt_status_code_t status_code,
-                  const std::string &status_str = std::string());
+                        std::vector<ClientEntryData>& entries);
+  void SendClientsRemoved(client_protocol_t client_prot, std::vector<ClientEntryData>& entries);
+  void SendStatus(RPTController* controller, const RptHeader& header, rpt_status_code_t status_code,
+                  const std::string& status_str = std::string());
 };
 
 #endif  // _BROKER_CORE_H_

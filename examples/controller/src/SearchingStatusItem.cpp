@@ -48,7 +48,7 @@ int SearchingStatusItem::type() const
   return SearchingStatusItemType;
 }
 
-void SearchingStatusItem::setData(const QVariant &value, int role)
+void SearchingStatusItem::setData(const QVariant& value, int role)
 {
   if (allowDataChanges)
   {

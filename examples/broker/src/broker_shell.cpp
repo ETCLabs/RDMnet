@@ -33,7 +33,7 @@
 #include "lwpa/thread.h"
 #include "rdmnet/version.h"
 
-void BrokerShell::ScopeChanged(const std::string &new_scope)
+void BrokerShell::ScopeChanged(const std::string& new_scope)
 {
   if (log_)
     log_->Log(LWPA_LOG_INFO, "Scope change detected, restarting broker and applying changes");
@@ -58,7 +58,7 @@ void BrokerShell::AsyncShutdown()
   shutdown_requested_ = true;
 }
 
-void BrokerShell::ApplySettingsChanges(RDMnet::BrokerSettings &settings, std::vector<LwpaIpAddr> &new_addrs)
+void BrokerShell::ApplySettingsChanges(RDMnet::BrokerSettings& settings, std::vector<LwpaIpAddr>& new_addrs)
 {
   new_addrs = GetInterfacesToListen();
 
@@ -85,7 +85,7 @@ std::vector<LwpaIpAddr> BrokerShell::GetInterfacesToListen()
   }
 }
 
-std::vector<LwpaIpAddr> BrokerShell::ConvertMacsToInterfaces(const std::vector<MacAddr> &macs)
+std::vector<LwpaIpAddr> BrokerShell::ConvertMacsToInterfaces(const std::vector<MacAddr>& macs)
 {
   std::vector<LwpaIpAddr> to_return;
 
@@ -94,7 +94,7 @@ std::vector<LwpaIpAddr> BrokerShell::ConvertMacsToInterfaces(const std::vector<M
   if (netints)
   {
     size_t netints_retrieved = lwpa_netint_get_interfaces(netints.get(), num_netints);
-    for (const auto &mac : macs)
+    for (const auto& mac : macs)
     {
       for (size_t i = 0; i < netints_retrieved; ++i)
       {
@@ -110,7 +110,7 @@ std::vector<LwpaIpAddr> BrokerShell::ConvertMacsToInterfaces(const std::vector<M
   return to_return;
 }
 
-void BrokerShell::Run(RDMnet::BrokerLog *log, RDMnet::BrokerSocketManager *sock_mgr)
+void BrokerShell::Run(RDMnet::BrokerLog* log, RDMnet::BrokerSocketManager* sock_mgr)
 {
   PrintWarningMessage();
 

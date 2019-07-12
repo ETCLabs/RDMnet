@@ -33,53 +33,53 @@
 // C library callback shims
 extern "C" {
 
-void disccb_broker_registered(rdmnet_registered_broker_t handle, const char *assigned_service_name, void *context)
+void disccb_broker_registered(rdmnet_registered_broker_t handle, const char* assigned_service_name, void* context)
 {
-  BrokerDiscoveryManager *disc = static_cast<BrokerDiscoveryManager *>(context);
+  BrokerDiscoveryManager* disc = static_cast<BrokerDiscoveryManager*>(context);
   if (disc)
   {
     disc->LibNotifyBrokerRegistered(handle, assigned_service_name);
   }
 }
 
-void disccb_broker_register_error(rdmnet_registered_broker_t handle, int platform_error, void *context)
+void disccb_broker_register_error(rdmnet_registered_broker_t handle, int platform_error, void* context)
 {
-  BrokerDiscoveryManager *disc = static_cast<BrokerDiscoveryManager *>(context);
+  BrokerDiscoveryManager* disc = static_cast<BrokerDiscoveryManager*>(context);
   if (disc)
   {
     disc->LibNotifyBrokerRegisterError(handle, platform_error);
   }
 }
 
-void disccb_broker_found(rdmnet_registered_broker_t handle, const RdmnetBrokerDiscInfo *broker_info, void *context)
+void disccb_broker_found(rdmnet_registered_broker_t handle, const RdmnetBrokerDiscInfo* broker_info, void* context)
 {
-  BrokerDiscoveryManager *disc = static_cast<BrokerDiscoveryManager *>(context);
+  BrokerDiscoveryManager* disc = static_cast<BrokerDiscoveryManager*>(context);
   if (disc)
   {
     disc->LibNotifyBrokerFound(handle, broker_info);
   }
 }
 
-void disccb_broker_lost(rdmnet_registered_broker_t handle, const char *scope, const char *service_name, void *context)
+void disccb_broker_lost(rdmnet_registered_broker_t handle, const char* scope, const char* service_name, void* context)
 {
-  BrokerDiscoveryManager *disc = static_cast<BrokerDiscoveryManager *>(context);
+  BrokerDiscoveryManager* disc = static_cast<BrokerDiscoveryManager*>(context);
   if (disc)
   {
     disc->LibNotifyBrokerLost(handle, scope, service_name);
   }
 }
 
-void disccb_scope_monitor_error(rdmnet_registered_broker_t handle, const char *scope, int platform_error, void *context)
+void disccb_scope_monitor_error(rdmnet_registered_broker_t handle, const char* scope, int platform_error, void* context)
 {
-  BrokerDiscoveryManager *disc = static_cast<BrokerDiscoveryManager *>(context);
+  BrokerDiscoveryManager* disc = static_cast<BrokerDiscoveryManager*>(context);
   if (disc)
   {
     disc->LibNotifyScopeMonitorError(handle, scope, platform_error);
   }
 }
-} // extern "C"
+}  // extern "C"
 
-BrokerDiscoveryManager::BrokerDiscoveryManager(BrokerDiscoveryManagerNotify *notify) : notify_(notify)
+BrokerDiscoveryManager::BrokerDiscoveryManager(BrokerDiscoveryManagerNotify* notify) : notify_(notify)
 {
   // clang-format off
   cur_config_.callbacks = {
@@ -97,18 +97,18 @@ BrokerDiscoveryManager::~BrokerDiscoveryManager()
 {
 }
 
-lwpa_error_t BrokerDiscoveryManager::RegisterBroker(const RDMnet::BrokerDiscoveryAttributes &disc_attributes,
-                                                    const LwpaUuid &local_cid,
-                                                    const std::vector<LwpaIpAddr> &listen_addrs, uint16_t listen_port)
+lwpa_error_t BrokerDiscoveryManager::RegisterBroker(const RDMnet::BrokerDiscoveryAttributes& disc_attributes,
+                                                    const LwpaUuid& local_cid,
+                                                    const std::vector<LwpaIpAddr>& listen_addrs, uint16_t listen_port)
 {
   // Start with the default information.
-  RdmnetBrokerDiscInfo *my_info = &cur_config_.my_info;
+  RdmnetBrokerDiscInfo* my_info = &cur_config_.my_info;
   rdmnetdisc_fill_default_broker_info(my_info);
 
   my_info->cid = local_cid;
   std::vector<BrokerListenAddr> listen_addr_list;
   listen_addr_list.reserve(listen_addrs.size());
-  for (const auto &listen_addr : listen_addrs)
+  for (const auto& listen_addr : listen_addrs)
   {
     BrokerListenAddr to_add;
     to_add.addr = listen_addr;
@@ -160,7 +160,7 @@ lwpa_error_t BrokerDiscoveryManager::Resume()
 }
 
 void BrokerDiscoveryManager::LibNotifyBrokerRegistered(rdmnet_registered_broker_t handle,
-                                                       const char *assigned_service_name)
+                                                       const char* assigned_service_name)
 {
   if (handle == handle_ && assigned_service_name)
   {
@@ -177,20 +177,20 @@ void BrokerDiscoveryManager::LibNotifyBrokerRegisterError(rdmnet_registered_brok
 }
 
 void BrokerDiscoveryManager::LibNotifyBrokerFound(rdmnet_registered_broker_t handle,
-                                                  const RdmnetBrokerDiscInfo *broker_info)
+                                                  const RdmnetBrokerDiscInfo* broker_info)
 {
   if (handle == handle_ && notify_ && broker_info)
     notify_->OtherBrokerFound(*broker_info);
 }
 
-void BrokerDiscoveryManager::LibNotifyBrokerLost(rdmnet_registered_broker_t handle, const char * /*scope*/,
-                                                 const char *service_name)
+void BrokerDiscoveryManager::LibNotifyBrokerLost(rdmnet_registered_broker_t handle, const char* /*scope*/,
+                                                 const char* service_name)
 {
   if (handle == handle_ && notify_ && service_name)
     notify_->OtherBrokerLost(service_name);
 }
 
-void BrokerDiscoveryManager::LibNotifyScopeMonitorError(rdmnet_registered_broker_t /*handle*/, const char * /*scope*/,
+void BrokerDiscoveryManager::LibNotifyScopeMonitorError(rdmnet_registered_broker_t /*handle*/, const char* /*scope*/,
                                                         int /*platform_error*/)
 {
 }

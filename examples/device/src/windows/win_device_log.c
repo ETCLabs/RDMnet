@@ -32,10 +32,10 @@
 #include <stdio.h>
 
 static LwpaLogParams s_device_log_params;
-static FILE *s_log_file;
+static FILE* s_log_file;
 static int s_utc_offset;
 
-static void device_log_callback(void *context, const LwpaLogStrings *strings)
+static void device_log_callback(void* context, const LwpaLogStrings* strings)
 {
   (void)context;
   printf("%s\n", strings->human_readable);
@@ -43,7 +43,7 @@ static void device_log_callback(void *context, const LwpaLogStrings *strings)
     fprintf(s_log_file, "%s\n", strings->human_readable);
 }
 
-static void device_time_callback(void *context, LwpaLogTimeParams *time)
+static void device_time_callback(void* context, LwpaLogTimeParams* time)
 {
   SYSTEMTIME win_time;
   (void)context;
@@ -58,7 +58,7 @@ static void device_time_callback(void *context, LwpaLogTimeParams *time)
   time->utc_offset = s_utc_offset;
 }
 
-void device_log_init(const char *file_name)
+void device_log_init(const char* file_name)
 {
   s_log_file = fopen(file_name, "w");
   if (!s_log_file)
@@ -88,7 +88,7 @@ void device_log_init(const char *file_name)
   lwpa_validate_log_params(&s_device_log_params);
 }
 
-const LwpaLogParams *device_get_log_params()
+const LwpaLogParams* device_get_log_params()
 {
   return &s_device_log_params;
 }
