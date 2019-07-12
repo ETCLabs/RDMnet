@@ -35,7 +35,7 @@ AllowShortLoopsOnASingleLine: false
 BreakConstructorInitializers: BeforeComma
 ColumnLimit: 120
 DerivePointerAlignment: false
-PointerAlignment: Right
+PointerAlignment: Left
 SortIncludes: false
 
 # Leave Doxygen directives alone
