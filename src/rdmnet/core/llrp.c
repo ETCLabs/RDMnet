@@ -197,6 +197,7 @@ lwpa_error_t init_sys_netints()
 
   uint8_t null_mac[6];
   memset(null_mac, 0, sizeof null_mac);
+  memset(kLlrpLowestHardwareAddr, 0xff, sizeof kLlrpLowestHardwareAddr);
 
   lwpa_log(rdmnet_log_params, LWPA_LOG_INFO, RDMNET_LOG_MSG("Initializing network interfaces for LLRP..."));
   for (const LwpaNetintInfo* netint = netint_list; netint < netint_list + num_sys_netints; ++netint)
