@@ -38,7 +38,7 @@ PROJECT_NAME           = RDMnet
 # could be handy for archiving the generated documentation or if some version
 # control system is used.
 
-PROJECT_NUMBER         = 0.1.0
+PROJECT_NUMBER         = 0.3.0
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
 # for a project that appears at the top of each page and should give viewer a
@@ -2164,8 +2164,8 @@ SKIP_FUNCTION_MACROS   = YES
 # the path). If a tag file is not located in the directory in which doxygen is
 # run, you must also specify the path to the tagfile here.
 
-TAGFILES               = ../../lwpa/docs/lwpa.tag=../../../lwpa/docs/head \
-                         ../../RDM/docs/RDM.tag=../../../RDM/docs/head
+TAGFILES               = ../external/lwpa/docs/lwpa.tag=https://etclabs.github.io/lwpa/docs/head \
+                         ../external/RDM/docs/RDM.tag=https://etclabs.github.io/RDM/docs/head
 
 # When a file name is specified after GENERATE_TAGFILE, doxygen will create a
 # tag file that is based on the input files it reads. See section "Linking to

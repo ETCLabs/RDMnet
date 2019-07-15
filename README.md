@@ -74,9 +74,7 @@ with a few exceptions:
 
 Other key items on the `TODO` list include:
 
-* Higher API layers to make library usage simpler
 * Platform ports for macOS, Linux, and several popular embedded platforms
-* Tests and continuous integration
 
 ## Standard Version
 

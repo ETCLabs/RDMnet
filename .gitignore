@@ -10,9 +10,6 @@
 # CMake
 build*/
 
-# Version script
-tmp_commit_msg.txt
-
 # MSVC and Qt
 *.VC.db
 *.VC.opendb

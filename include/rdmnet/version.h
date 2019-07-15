@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -48,14 +48,14 @@
 #define RDMNET_VERSION_MAJOR 0 /*!< The major version. */
 #define RDMNET_VERSION_MINOR 2 /*!< The minor version. */
 #define RDMNET_VERSION_PATCH 0 /*!< The patch version. */
-#define RDMNET_VERSION_BUILD 5 /*!< The build number. */
+#define RDMNET_VERSION_BUILD 7 /*!< The build number. */
 /*!@}*/
 
 /*! \name RDMnet version strings
  *  @{
  */
-#define RDMNET_VERSION_STRING "0.2.0.5"
-#define RDMNET_VERSION_DATESTR "2019-03-21"
+#define RDMNET_VERSION_STRING "0.2.0.7"
+#define RDMNET_VERSION_DATESTR "2019-05-29"
 #define RDMNET_VERSION_COPYRIGHT "Copyright 2019 ETC Inc."
 #define RDMNET_VERSION_PRODUCTNAME "RDMnet"
 /*!@}*/

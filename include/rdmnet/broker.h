@@ -1,13 +1,13 @@
 /******************************************************************************
 ************************* IMPORTANT NOTE -- READ ME!!! ************************
 *******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 63. UNDER NO
+* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
 * CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
 * GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
 * VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
 * BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
 *******************************************************************************
-* Copyright 2018 ETC Inc.
+* Copyright 2019 ETC Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@
 #define _RDMNET_BROKER_H_
 
 #include <memory>
+#include <string>
 
 #include "lwpa/int.h"
 #include "lwpa/uuid.h"
@@ -39,10 +40,11 @@
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/broker/log.h"
+#include "rdmnet/broker/socket_manager.h"
 
 class BrokerCore;
 
-/// \defgroup rdmnet_broker Broker
+/// \defgroup rdmnet_broker RDMnet Broker Library
 /// \brief A platform-neutral RDMnet %Broker implementation.
 /// @{
 ///
@@ -60,14 +62,12 @@ struct BrokerDiscoveryAttributes
   std::string dns_service_instance_name;
 
   /// A string to identify the manufacturer of this %Broker instance.
-  std::string dns_manufacturer;
+  std::string dns_manufacturer{"Generic Manufacturer"};
   /// A string to identify the model of product in which the %Broker instance is included.
-  std::string dns_model;
+  std::string dns_model{"Generic RDMnet Broker"};
 
   /// The Scope on which this %Broker should operate. If empty, the default RDMnet scope is used.
-  std::string scope;
-
-  BrokerDiscoveryAttributes() : scope(E133_DEFAULT_SCOPE) {}
+  std::string scope{E133_DEFAULT_SCOPE};
 };
 
 /// A group of settings for Broker operation.
@@ -84,10 +84,10 @@ struct BrokerSettings
 
   void SetDynamicUid(uint16_t manufacturer_id)
   {
-    rdmnet_init_dynamic_uid_request(&uid, manufacturer_id);
+    RDMNET_INIT_DYNAMIC_UID_REQUEST(&uid, manufacturer_id);
     uid_type = kDynamicUid;
   }
-  void SetStaticUid(const RdmUid &uid_in)
+  void SetStaticUid(const RdmUid& uid_in)
   {
     uid = uid_in;
     uid_type = kStaticUid;
@@ -119,7 +119,7 @@ struct BrokerSettings
   unsigned int max_socket_per_read_thread{LWPA_SOCKET_MAX_POLL_SIZE};
 
   BrokerSettings() {}
-  BrokerSettings(const RdmUid &static_uid) { SetStaticUid(static_uid); }
+  BrokerSettings(const RdmUid& static_uid) { SetStaticUid(static_uid); }
   BrokerSettings(uint16_t rdm_manu_id) { SetDynamicUid(rdm_manu_id); }
 };
 
@@ -128,7 +128,7 @@ class BrokerNotify
 {
 public:
   /// The Scope of the Broker has changed via RDMnet configuration. The Broker should be restarted.
-  virtual void ScopeChanged(const std::string &new_scope) = 0;
+  virtual void ScopeChanged(const std::string& new_scope) = 0;
 };
 
 /// \brief Defines an instance of RDMnet %Broker functionality.
@@ -141,14 +141,14 @@ public:
 class Broker
 {
 public:
-  Broker(BrokerLog *log, BrokerNotify *notify);
+  Broker(BrokerLog* log, BrokerSocketManager* socket_manager, BrokerNotify* notify);
   virtual ~Broker();
 
-  bool Startup(const BrokerSettings &settings, uint16_t listen_port, std::vector<LwpaIpAddr> &listen_addrs);
+  bool Startup(const BrokerSettings& settings, uint16_t listen_port, std::vector<LwpaIpAddr>& listen_addrs);
   void Shutdown();
   void Tick();
 
-  void GetSettings(BrokerSettings &settings) const;
+  void GetSettings(BrokerSettings& settings) const;
 
 private:
   std::unique_ptr<BrokerCore> core_;

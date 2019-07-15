@@ -96,23 +96,13 @@ To configure and build RDMnet on its own using CMake, follow these steps:
    ```
    $ git clone https://github.com/ETCLabs/RDMnet
    ```
-3. Clone (or download and extract) the lwpa repository at the same level as the
-   RDMnet repository:
-   ```
-   $ git clone https://github.com/ETCLabs/lwpa
-   ```
-4. Clone (or download and extract) the RDM repository at the same level as the
-   RDMnet repository:
-   ```
-   $ git clone https://github.com/ETCLabs/RDM
-   ```
-5. Create a directory in your location of choice (a directory called 'build' at
+3. Create a directory in your location of choice (a directory called 'build' at
    the repository root is recommended) to hold your build projects or
    Makefiles:
    ```
    $ mkdir build && cd build
    ```
-6. Run CMake to configure the RDMnet project:
+4. Run CMake to configure the RDMnet project:
    ```
    $ cmake .. [or cmake path/to/RDMnet/root as applicable]
    ```
@@ -126,7 +116,7 @@ To configure and build RDMnet on its own using CMake, follow these steps:
    $ cmake -DRDMNET_BUILD_CONSOLE_EXAMPLES=ON .. # Exclude the Qt example app
    $ cmake -DRDMNET_BUILD_EXAMPLES=OFF .. # Do not build any examples
    ```
-7. Use CMake to invoke the genreated build system to build the RDMnet library
+5. Use CMake to invoke the genreated build system to build the RDMnet library
    and example applications (if applicable):
    ```
    $ cmake --build .
@@ -139,7 +129,7 @@ To configure and build RDMnet on its own using CMake, follow these steps:
 
 #### Controller only:
 
-8. To run or distribute the controller executable outside of Visual Studio, run
+6. To run or distribute the controller executable outside of Visual Studio, run
    the `windeployqt` application on the `RDMnetControllerGUI.exe` binary in its
    final location; e.g.
    ```
@@ -151,21 +141,20 @@ To configure and build RDMnet on its own using CMake, follow these steps:
 ### lwpa
 
 RDMnet depends on the LightWeight Platform Abstraction (lwpa) library for
-platform abstraction. See the
-[documentation for lwpa](https://etclabs.github.io/lwpa) for details on how to
-include lwpa in your project.
+platform abstraction. lwpa is automatically included as a submodule for RDMnet
+source builds. See the [documentation for lwpa](https://etclabs.github.io/lwpa).
 
 ### RDM
 
-RDMnet depends on the ETC's RDM library for RDM protocol support. See the
-[documentation for RDM](https://etclabs.github.io/RDM) for details on how to
-include RDM in your project.
+RDMnet depends on the ETC's RDM library for RDM protocol support. RDM is
+automatically included as a submodule for RDMnet source builds. See the
+[documentation for RDM](https://etclabs.github.io/RDM).
 
 ### Bonjour SDK for Windows or ETCLabs/mDNSWindows
 
 - If using the [Bonjour SDK for Windows](https://developer.apple.com/bonjour/):
   v3.0.
-- If using ETCLabs/mDNSWindows: v1.1.1
+- If using ETCLabs/mDNSWindows: v1.2.0
 
 ### Qt
 
@@ -176,4 +165,4 @@ version of Qt without an account [here](https://www.qt.io/download).
 
 The platform ports of RDMnet have the following dependencies:
 * Windows
-  + Windows XP or higher
+  + Windows XP SP1 or higher
