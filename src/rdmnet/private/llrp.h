@@ -36,9 +36,9 @@
 
 typedef enum
 {
-  kLlrpSocketAddrManager,
-  kLlrpSocketAddrTarget
-} llrp_socket_addr_t;
+  kLlrpSocketTypeManager,
+  kLlrpSocketTypeTarget
+} llrp_socket_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,9 +54,11 @@ void rdmnet_llrp_deinit();
 
 void rdmnet_llrp_tick();
 
-lwpa_error_t create_llrp_send_socket(lwpa_iptype_t ip_type, unsigned int netint_index, llrp_socket_addr_t llrp_addr,
-                                     lwpa_socket_t* socket);
-lwpa_error_t create_llrp_recv_socket(lwpa_iptype_t ip_type, llrp_socket_addr_t llrp_addr, lwpa_socket_t* socket);
+lwpa_error_t get_llrp_send_socket(const LlrpNetintId* netint, llrp_socket_t llrp_type, lwpa_socket_t* socket);
+void release_llrp_send_socket(const LlrpNetintId* netint);
+
+lwpa_error_t get_llrp_recv_socket(const LlrpNetintId* netint, llrp_socket_t llrp_type, lwpa_socket_t* socket);
+void release_llrp_recv_socket(const LlrpNetintId* netint);
 
 #ifdef __cplusplus
 }

@@ -45,9 +45,7 @@
 
 /**************************** Private constants ******************************/
 
-#define LLRP_TARGET_MAX_RB_NODES                              \
-  (RDMNET_LLRP_MAX_TARGETS + RDMNET_LLRP_MAX_TARGET_NETINTS + \
-   (RDMNET_LLRP_MAX_TARGETS + RDMNET_LLRP_MAX_TARGET_NETINTS))
+#define LLRP_TARGET_MAX_RB_NODES (RDMNET_LLRP_MAX_TARGETS + (RDMNET_LLRP_MAX_TARGETS * RDMNET_LLRP_MAX_TARGET_NETINTS))
 
 /***************************** Private macros ********************************/
 
@@ -65,22 +63,16 @@
 
 #if !RDMNET_DYNAMIC_MEM
 LWPA_MEMPOOL_DEFINE(llrp_targets, LlrpTarget, RDMNET_LLRP_MAX_TARGETS);
-LWPA_MEMPOOL_DEFINE(llrp_target_rb_nodes, LwpaRbNode, RDMNET_LLRP_MAX_RB_NODES);
+LWPA_MEMPOOL_DEFINE(llrp_target_rb_nodes, LwpaRbNode, LLRP_TARGET_MAX_RB_NODES);
 #endif
 
 static struct LlrpTargetState
 {
   LwpaRbTree targets;
   IntHandleManager handle_mgr;
-
-  LwpaRbTree sys_netints;
-
-  uint8_t lowest_hardware_addr[6];
 } state;
 
 /*********************** Private function prototypes *************************/
-
-static lwpa_error_t init_sys_netints();
 
 // Creating, destroying, and finding targets
 static lwpa_error_t create_new_target(const LlrpTargetConfig* config, LlrpTarget** new_target);
@@ -103,7 +95,6 @@ static void process_target_state(LlrpTarget* target);
 static LwpaRbNode* target_node_alloc();
 static void target_node_free(LwpaRbNode* node);
 static int target_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b);
-static int netint_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b);
 
 /*************************** Function definitions ****************************/
 
@@ -113,93 +104,16 @@ lwpa_error_t rdmnet_llrp_target_init()
 
 #if !RDMNET_DYNAMIC_MEM
   /* Init memory pool */
-  res = lwpa_mempool_init(llrp_sockets);
+  res = lwpa_mempool_init(llrp_targets);
+  res = lwpa_mempool_init(llrp_target_rb_nodes);
 #endif
-
-  if (res == kLwpaErrOk)
-    res = init_sys_netints();
 
   if (res == kLwpaErrOk)
   {
     lwpa_rbtree_init(&state.targets, target_cmp, target_node_alloc, target_node_free);
-    lwpa_rbtree_init(&state.sys_netints, netint_cmp, target_node_alloc, target_node_free);
     init_int_handle_manager(&state.handle_mgr, target_handle_in_use);
   }
   return res;
-}
-
-lwpa_error_t init_sys_netints()
-{
-  size_t num_sys_netints = lwpa_netint_get_num_interfaces();
-  if (num_sys_netints == 0)
-    return kLwpaErrNoNetints;
-
-  const LwpaNetintInfo* netint_list = lwpa_netint_get_interfaces();
-
-  uint8_t null_mac[6];
-  memset(null_mac, 0, sizeof null_mac);
-
-  lwpa_log(rdmnet_log_params, LWPA_LOG_INFO, RDMNET_LOG_MSG("Initializing network interfaces for LLRP..."));
-  size_t i = 0;
-  while (i < num_sys_netints)
-  {
-    const LwpaNetintInfo* netint = &netint_list[i];
-    char addr_str[LWPA_INET6_ADDRSTRLEN];
-    addr_str[0] = '\0';
-    if (LWPA_CAN_LOG(rdmnet_log_params, LWPA_LOG_WARNING))
-    {
-      lwpa_inet_ntop(&netint->addr, addr_str, LWPA_INET6_ADDRSTRLEN);
-    }
-
-    // Create a test socket on each network interface. If the socket create fails, we remove that
-    // interface from the set that LLRP targets listen on.
-    lwpa_socket_t test_socket;
-    lwpa_error_t test_res = create_llrp_socket(netint->addr.type, netint->index, false, &test_socket);
-    if (test_res == kLwpaErrOk)
-    {
-      lwpa_close(test_socket);
-
-      lwpa_log(rdmnet_log_params, LWPA_LOG_INFO, RDMNET_LOG_MSG("  Set up LLRP network interface %s for listening."),
-               addr_str);
-
-      if (memcmp(netint->mac, null_mac, 6) != 0)
-      {
-        if (netint == state.sys_netints)
-        {
-          memcpy(state.lowest_hardware_addr, netint->mac, 6);
-        }
-        else
-        {
-          if (memcmp(netint->mac, state.lowest_hardware_addr, 6) < 0)
-          {
-            memcpy(state.lowest_hardware_addr, netint->mac, 6);
-          }
-        }
-      }
-
-      ++i;
-    }
-    else
-    {
-      // Remove the network interface from the array.
-      if (i < state.num_sys_netints - 1)
-      {
-        memmove(&state.sys_netints[i], &state.sys_netints[i + 1],
-                sizeof(LwpaNetintInfo) * (state.num_sys_netints - (i + 1)));
-      }
-      --state.num_sys_netints;
-      lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
-               RDMNET_LOG_MSG("  Error creating test socket on LLRP network interface %s: '%s'. Skipping!"), addr_str,
-               lwpa_strerror(test_res));
-    }
-  }
-
-  if (state.num_sys_netints == 0)
-  {
-    lwpa_log(rdmnet_log_params, LWPA_LOG_ERR, RDMNET_LOG_MSG("No usable LLRP interfaces found."));
-    return kLwpaErrNoNetints;
-  }
-  return kLwpaErrOk;
 }
 
 static void target_dealloc(const LwpaRbTree* self, LwpaRbNode* node)
@@ -761,7 +675,7 @@ int target_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNod
   const LlrpTarget* a = (const LlrpTarget*)node_a->value;
   const LlrpTarget* b = (const LlrpTarget*)node_b->value;
 
-  return a->handle - b->handle;
+  return (a->handle > b->handle) - (a->handle < b->handle);
 }
 
 LwpaRbNode* target_node_alloc()
