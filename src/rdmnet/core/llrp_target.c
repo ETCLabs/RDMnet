@@ -89,7 +89,7 @@ static void destroy_target(LlrpTarget* target, bool remove_from_tree);
 static bool target_handle_in_use(int handle_val);
 
 // Target state processing
-static void handle_llrp_message(LlrpTarget* target, LlrpTargetNetintInfo* netint, const LlrpMessage* msg,
+static void handle_llrp_message(const uint8_t* data, size_t data_size, LlrpTarget* target, LlrpTargetNetintInfo* netint,
                                 TargetCallbackDispatchInfo* cb);
 static void fill_callback_info(const LlrpTarget* target, TargetCallbackDispatchInfo* info);
 static void deliver_callback(TargetCallbackDispatchInfo* info);
@@ -371,24 +371,36 @@ void target_data_received(const uint8_t* data, size_t data_size, const LlrpNetin
 
     if (rdmnet_readlock())
     {
-      LlrpTarget* target = (LlrpTarget*)lwpa_rbtree_find(&state.targets_by_cid, &keys);
-      if (target)
+      if (0 == LWPA_UUID_CMP(&keys.cid, &kLlrpBroadcastCid))
       {
+        // Broadcast LLRP message - handle with all targets
         target_found = true;
 
-        LlrpTargetNetintInfo* target_netint = (LlrpTargetNetintInfo*)lwpa_rbtree_find(&target->netints, (void*)netint);
-        if (target_netint)
+        LwpaRbIter target_iter;
+        lwpa_rbiter_init(&target_iter);
+        for (LlrpTarget* target = (LlrpTarget*)lwpa_rbiter_first(&target_iter, &state.targets); target;
+             target = (LlrpTarget*)lwpa_rbiter_next(&target_iter))
         {
-          LlrpMessage msg;
-          LlrpMessageInterest interest;
-          interest.my_cid = keys.cid;
-          interest.interested_in_probe_reply = false;
-          interest.interested_in_probe_request = true;
-          interest.my_uid = target->uid;
-
-          if (parse_llrp_message(data, data_size, &interest, &msg))
+          LlrpTargetNetintInfo* target_netint =
+              (LlrpTargetNetintInfo*)lwpa_rbtree_find(&target->netints, (void*)netint);
+          if (target_netint)
           {
-            handle_llrp_message(target, target_netint, &msg, &cb);
+            handle_llrp_message(data, data_size, target, target_netint, &cb);
+          }
+        }
+      }
+      else
+      {
+        LlrpTarget* target = (LlrpTarget*)lwpa_rbtree_find(&state.targets_by_cid, &keys);
+        if (target)
+        {
+          target_found = true;
+
+          LlrpTargetNetintInfo* target_netint =
+              (LlrpTargetNetintInfo*)lwpa_rbtree_find(&target->netints, (void*)netint);
+          if (target_netint)
+          {
+            handle_llrp_message(data, data_size, target, target_netint, &cb);
           }
         }
       }
@@ -399,56 +411,67 @@ void target_data_received(const uint8_t* data, size_t data_size, const LlrpNetin
     {
       char cid_str[LWPA_UUID_STRING_BYTES];
       lwpa_uuid_to_string(cid_str, &keys.cid);
-      lwpa_log(rdmnet_log_params, LWPA_LOG_DEBUG, "Ignoring LLRP message addressed to unknown LLRP Target %s", cid_str);
+      lwpa_log(rdmnet_log_params, LWPA_LOG_DEBUG,
+               RDMNET_LOG_MSG("Ignoring LLRP message addressed to unknown LLRP Target %s"), cid_str);
     }
   }
 
   deliver_callback(&cb);
 }
 
-void handle_llrp_message(LlrpTarget* target, LlrpTargetNetintInfo* netint, const LlrpMessage* msg,
+void handle_llrp_message(const uint8_t* data, size_t data_size, LlrpTarget* target, LlrpTargetNetintInfo* netint,
                          TargetCallbackDispatchInfo* cb)
 {
-  switch (msg->vector)
-  {
-    case VECTOR_LLRP_PROBE_REQUEST:
-    {
-      const RemoteProbeRequest* request = LLRP_MSG_GET_PROBE_REQUEST(msg);
-      // TODO allow multiple probe replies to be queued
-      if (request->contains_my_uid && !netint->reply_pending)
-      {
-        int backoff_ms;
+  LlrpMessage msg;
+  LlrpMessageInterest interest;
+  interest.my_cid = target->keys.cid;
+  interest.interested_in_probe_reply = false;
+  interest.interested_in_probe_request = true;
+  interest.my_uid = target->uid;
 
-        // Check the filter values.
-        if (!((request->filter & LLRP_FILTERVAL_BROKERS_ONLY) && target->component_type != kLlrpCompBroker) &&
-            !(request->filter & LLRP_FILTERVAL_CLIENT_CONN_INACTIVE && target->connected_to_broker))
+  if (parse_llrp_message(data, data_size, &interest, &msg))
+  {
+    switch (msg.vector)
+    {
+      case VECTOR_LLRP_PROBE_REQUEST:
+      {
+        const RemoteProbeRequest* request = LLRP_MSG_GET_PROBE_REQUEST(&msg);
+        // TODO allow multiple probe replies to be queued
+        if (request->contains_my_uid && !netint->reply_pending)
         {
-          netint->reply_pending = true;
-          netint->pending_reply_cid = msg->header.sender_cid;
-          netint->pending_reply_trans_num = msg->header.transaction_number;
-          backoff_ms = (rand() * LLRP_MAX_BACKOFF_MS / RAND_MAX);
-          lwpa_timer_start(&netint->reply_backoff, backoff_ms);
+          int backoff_ms;
+
+          // Check the filter values.
+          if (!((request->filter & LLRP_FILTERVAL_BROKERS_ONLY) && target->component_type != kLlrpCompBroker) &&
+              !(request->filter & LLRP_FILTERVAL_CLIENT_CONN_INACTIVE && target->connected_to_broker))
+          {
+            netint->reply_pending = true;
+            netint->pending_reply_cid = msg.header.sender_cid;
+            netint->pending_reply_trans_num = msg.header.transaction_number;
+            backoff_ms = (rand() * LLRP_MAX_BACKOFF_MS / RAND_MAX);
+            lwpa_timer_start(&netint->reply_backoff, backoff_ms);
+          }
+        }
+        // Even if we got a valid probe request, we are starting a backoff timer, so there's nothing
+        // else to do at this time.
+        break;
+      }
+      case VECTOR_LLRP_RDM_CMD:
+      {
+        LlrpRemoteRdmCommand* remote_cmd = &cb->args.cmd_received.cmd;
+        if (kLwpaErrOk == rdmresp_unpack_command(LLRP_MSG_GET_RDM(&msg), &remote_cmd->rdm))
+        {
+          remote_cmd->src_cid = msg.header.sender_cid;
+          remote_cmd->seq_num = msg.header.transaction_number;
+          remote_cmd->netint_id = netint->id;
+
+          cb->which = kTargetCallbackRdmCmdReceived;
+          fill_callback_info(target, cb);
         }
       }
-      // Even if we got a valid probe request, we are starting a backoff timer, so there's nothing
-      // else to do at this time.
-      break;
+      default:
+        break;
     }
-    case VECTOR_LLRP_RDM_CMD:
-    {
-      LlrpRemoteRdmCommand* remote_cmd = &cb->args.cmd_received.cmd;
-      if (kLwpaErrOk == rdmresp_unpack_command(LLRP_MSG_GET_RDM(msg), &remote_cmd->rdm))
-      {
-        remote_cmd->src_cid = msg->header.sender_cid;
-        remote_cmd->seq_num = msg->header.transaction_number;
-        remote_cmd->netint_id = netint->id;
-
-        cb->which = kTargetCallbackRdmCmdReceived;
-        fill_callback_info(target, cb);
-      }
-    }
-    default:
-      break;
   }
 }
 

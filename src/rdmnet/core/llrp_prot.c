@@ -80,9 +80,9 @@ bool get_llrp_destination_cid(const uint8_t* buf, size_t buflen, LwpaUuid* dest_
     return false;
 
   // Check the PDU length
-  const uint8_t* cur_ptr = buf;
+  const uint8_t* cur_ptr = rlp.pdata;
   size_t llrp_pdu_len = LWPA_PDU_LENGTH(cur_ptr);
-  if (llrp_pdu_len > buflen || llrp_pdu_len < LLRP_MIN_PDU_SIZE)
+  if (llrp_pdu_len > rlp.datalen || llrp_pdu_len < LLRP_MIN_PDU_SIZE)
     return false;
 
   // Jump to the position of the LLRP destination CID and fill it in
