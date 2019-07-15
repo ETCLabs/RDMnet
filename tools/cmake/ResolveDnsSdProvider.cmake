@@ -6,8 +6,17 @@
 # - DNS_SD_ADDITIONAL_INCLUDE_DIRS: Include directories to be added to the RDMnet library compilation
 # - DNS_SD_ADDITIONAL_LIBS: Static libs to be added to the RDMnet library compilation
 
+set(MDNSWINDOWS_VERSION 1.2.0.3)
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  set(MDNSWINDOWS_DOWNLOAD_URL "https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_${MDNSWINDOWS_VERSION}_x64.zip")
+else()
+  set(MDNSWINDOWS_DOWNLOAD_URL "https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_${MDNSWINDOWS_VERSION}_x86.zip")
+endif()
+
 option(RDMNET_WINDOWS_USE_BONJOUR_SDK
   "Use Apple's Bonjour SDK for Windows (LICENSING RESTRICTIONS MAY APPLY)" OFF)
+set(MDNSWINDOWS_INSTALL_LOC "" CACHE STRING "Override location for installed mDNSWindows binaries on Windows")
+set(MDNSWINDOWS_SRC_LOC "" CACHE STRING "Override location for mDNSWindows to build from source on Windows")
 
 # The imported DNS-SD library. This will have its properties set by the various options below.
 add_library(dnssd INTERFACE)
@@ -60,23 +69,25 @@ if(WIN32)
 
   else() # Using ETC's Bonjour fork
 
-    if(NOT DEFINED MDNSWINDOWS_SRC_LOC AND NOT DEFINED MDNSWINDOWS_INSTALL_LOC)
-      message(STATUS
-        "Neither MDNSWINDOWS_SRC_LOC or MDNSWINDOWS_INSTALL_LOC provided.\n"
-        "Looking for source repository named 'mDNSWindows' at same level as RDMnet..."
-      )
-      if(EXISTS ${RDMNET_ROOT}/../mDNSWindows)
-        message(STATUS "Found. Adding dependency from RDMNET_DIR/../mDNSWindows.")
-        set(MDNSWINDOWS_SRC_LOC ${RDMNET_ROOT}/../mDNSWindows)
-      else()
-        message(FATAL_ERROR
-          "Not found.\n"
-          "You must provide ETC's Bonjour for Windows fork (mDNSWindows) in one of the following ways:\n"
-          " - Use MDNSWINDOWS_SRC_LOC to specify the location of the source repository\n"
-          " - Use MDNSWINDOWS_INSTALL_LOC to specify the location of the installed binaries\n"
-          " - Clone the ETCLabs/mDNSWindows repository at the same directory level as the RDMnet repository\n"
-        )
+    if(NOT MDNSWINDOWS_SRC_LOC AND NOT MDNSWINDOWS_INSTALL_LOC)
+      message(STATUS "Neither MDNSWINDOWS_SRC_LOC or MDNSWINDOWS_INSTALL_LOC overrides provided.")
+      message(STATUS "Downloading the latest release from Bintray...")
+
+      file(DOWNLOAD ${MDNSWINDOWS_DOWNLOAD_URL} ${CMAKE_BINARY_DIR}/mdnswindows.zip STATUS DOWNLOAD_STATUS)
+      list(GET DOWNLOAD_STATUS 0 DOWNLOAD_STATUS_CODE)
+      list(GET DOWNLOAD_STATUS 1 DOWNLOAD_STATUS_STR)
+      if(NOT DOWNLOAD_STATUS_CODE EQUAL 0)
+        message(FATAL_ERROR "Error downloading from ${MDNSWINDOWS_DOWNLOAD_URL}: '${DOWNLOAD_STATUS_STR}'")
       endif()
+
+      message(STATUS "Done. Extracting...")
+
+      file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/mdnswindows_install)
+      execute_process(COMMAND ${CMAKE_COMMAND} -E tar -xzf ${CMAKE_BINARY_DIR}/mdnswindows.zip WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/mdnswindows_install)
+      set(MDNSWINDOWS_INSTALL_LOC ${CMAKE_BINARY_DIR}/mdnswindows_install CACHE STRING "Override location for mDNSWindows to build from source on Windows" FORCE)
+
+      message(STATUS "Done.")
+
     endif()
 
     if(MDNSWINDOWS_SRC_LOC) # Add mDNSWindows as a source dependency

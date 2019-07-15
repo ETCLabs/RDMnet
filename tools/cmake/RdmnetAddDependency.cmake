@@ -1,5 +1,7 @@
 find_package(Git QUIET)
 
+option(RDMNET_FORCE_SUBMODULE_DEPS "Disable overriding of submodule dependencies with clones at same level as RDMnet" OFF)
+
 function(rdmnet_add_dependency target loc_variable)
 
   # Step 1 - see if the target has already been included

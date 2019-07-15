@@ -31,8 +31,6 @@ matrix:
 environment:
   CTEST_OUTPUT_ON_FAILURE: 1
   MDNSWINDOWS_VERSION: '1.2.0.3'
-  SLACK_WEBHOOK:
-    secure: mmc+nEHnXGCwUvdD4qG3usIECTxCf86I1+DYO1hChDo6BBxKquCLLL+bTI3E1Di2/yS3CvCISXeKBC7RRrdSRfo+0Ej1Llp/oHDTTC5loSc=
   CODESIGN_DECRYPT_SECRET:
     secure: Z1VdvYVbzcA99+sBtiwEatQkNSMHCe5iGMVmqHuZd5o=
   CODESIGN_CERT_SECRET:
@@ -47,8 +45,6 @@ configuration: Release
 install:
   - ps: |-
       $wc = New-Object Net.WebClient
-      $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_$($Env:MDNSWINDOWS_VERSION)_$Env:INSTALLER_PROJECT_PLATFORM.zip", "$Env:APPVEYOR_BUILD_FOLDER\mDNSWindows.zip")
-      7z x mDNSWindows.zip -omdns_install -y -r
       $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_Merge_$($Env:MDNSWINDOWS_VERSION).msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
       iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/appveyor/secure-file/master/install.ps1'))
   - cmd: appveyor-tools\secure-file -decrypt tools\install\windows\codesign_cert_windows.pfx.enc -secret %CODESIGN_DECRYPT_SECRET%
@@ -65,7 +61,7 @@ before_build:
       mkdir build
       cd build
       cmake --version
-      cmake -G "%CMAKE_GENERATOR%" -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL% %CMAKE_EXTRA_ARGS% ..
+      cmake -G "%CMAKE_GENERATOR%" -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL% ..
 
 build:
   parallel: true            # enable MSBuild parallel builds
@@ -110,7 +106,6 @@ for:
     environment:
       CMAKE_GENERATOR: Visual Studio 15 2017
       CMAKE_INSTALL: install_x86
-      CMAKE_EXTRA_ARGS: -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
       QTDIR: C:\Qt\5.9.7\msvc2015
       INSTALLER_PROJECT: RDMnetInstall_x86.wixproj
       INSTALLER_PROJECT_PLATFORM: x86
@@ -129,7 +124,6 @@ for:
     environment:
       CMAKE_GENERATOR: Visual Studio 15 2017 Win64
       CMAKE_INSTALL: install_x64
-      CMAKE_EXTRA_ARGS: -DMDNSWINDOWS_INSTALL_LOC=../mdns_install
       QTDIR: C:\Qt\5.9.7\msvc2017_64
       INSTALLER_PROJECT: RDMnetInstall_x64.wixproj
       INSTALLER_PROJECT_PLATFORM: x64
