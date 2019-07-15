@@ -35,19 +35,19 @@
 
 /***************************** Private macros ********************************/
 
-#define pack_broker_header(length, vector, buf) \
+#define PACK_BROKER_HEADER(length, vector, buf) \
   do                                            \
   {                                             \
     (buf)[0] = 0xf0;                            \
-    lwpa_pdu_pack_ext_len(buf, length);         \
+    LWPA_PDU_PACK_EXT_LEN(buf, length);         \
     lwpa_pack_16b(&(buf)[3], vector);           \
   } while (0)
 
-#define pack_client_entry_header(length, vector, cidptr, buf) \
+#define PACK_CLIENT_ENTRY_HEADER(length, vector, cidptr, buf) \
   do                                                          \
   {                                                           \
     (buf)[0] = 0xf0;                                          \
-    lwpa_pdu_pack_ext_len(buf, length);                       \
+    LWPA_PDU_PACK_EXT_LEN(buf, length);                       \
     lwpa_pack_32b(&(buf)[3], vector);                         \
     memcpy(&(buf)[7], (cidptr)->data, LWPA_UUID_BYTES);       \
   } while (0)
@@ -58,15 +58,15 @@ static size_t calc_client_connect_len(const ClientConnectMsg* data);
 static size_t calc_request_dynamic_uids_len(const DynamicUidRequestListEntry* request_list);
 static size_t calc_requested_uids_len(const FetchUidAssignmentListEntry* uid_list);
 static size_t calc_dynamic_uid_mapping_list_len(const DynamicUidMapping* mapping_list);
-static size_t pack_broker_header_with_rlp(const LwpaRootLayerPdu* rlp, uint8_t* buf, size_t buflen, uint32_t vector);
+static size_t pack_broker_header_with_rlp(const LwpaRootLayerPdu* rlp, uint8_t* buf, size_t buflen, uint16_t vector);
 static lwpa_error_t send_broker_header(RdmnetConnection* conn, const LwpaRootLayerPdu* rlp, uint8_t* buf, size_t buflen,
-                                       uint32_t vector);
+                                       uint16_t vector);
 
 /*************************** Function definitions ****************************/
 
 /***************************** Broker PDU Header *****************************/
 
-size_t pack_broker_header_with_rlp(const LwpaRootLayerPdu* rlp, uint8_t* buf, size_t buflen, uint32_t vector)
+size_t pack_broker_header_with_rlp(const LwpaRootLayerPdu* rlp, uint8_t* buf, size_t buflen, uint16_t vector)
 {
   uint8_t* cur_ptr = buf;
   size_t data_size = lwpa_root_layer_buf_size(rlp, 1);
@@ -86,13 +86,13 @@ size_t pack_broker_header_with_rlp(const LwpaRootLayerPdu* rlp, uint8_t* buf, si
   cur_ptr += data_size;
   buflen -= data_size;
 
-  pack_broker_header(rlp->datalen, vector, cur_ptr);
+  PACK_BROKER_HEADER(rlp->datalen, vector, cur_ptr);
   cur_ptr += BROKER_PDU_HEADER_SIZE;
   return cur_ptr - buf;
 }
 
 lwpa_error_t send_broker_header(RdmnetConnection* conn, const LwpaRootLayerPdu* rlp, uint8_t* buf, size_t buflen,
-                                uint32_t vector)
+                                uint16_t vector)
 {
   size_t data_size = lwpa_root_layer_buf_size(rlp, 1);
   if (data_size == 0)
@@ -115,7 +115,7 @@ lwpa_error_t send_broker_header(RdmnetConnection* conn, const LwpaRootLayerPdu* 
     return (lwpa_error_t)send_res;
 
   // Pack and send the Broker PDU header
-  pack_broker_header(rlp->datalen, vector, buf);
+  PACK_BROKER_HEADER(rlp->datalen, vector, buf);
   send_res = lwpa_send(conn->sock, buf, BROKER_PDU_HEADER_SIZE, 0);
   if (send_res < 0)
     return (lwpa_error_t)send_res;
@@ -179,7 +179,7 @@ lwpa_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMsg*
     return (lwpa_error_t)send_res;
 
   // Pack and send the beginning of the Client Entry PDU
-  pack_client_entry_header(rlp.datalen - (BROKER_PDU_HEADER_SIZE + CLIENT_CONNECT_COMMON_FIELD_SIZE),
+  PACK_CLIENT_ENTRY_HEADER(rlp.datalen - (BROKER_PDU_HEADER_SIZE + CLIENT_CONNECT_COMMON_FIELD_SIZE),
                            data->client_entry.client_protocol, &data->client_entry.client_cid, buf);
   send_res = lwpa_send(conn->sock, buf, CLIENT_ENTRY_HEADER_SIZE, 0);
 
@@ -388,8 +388,8 @@ size_t bufsize_client_list(const ClientEntryData* client_entry_list)
 /*! \brief Pack a Client List message into a buffer.
  *
  *  Multiple types of Broker messages can contain a Client List; indicate which type this should be
- *  with the vector field. Valid values are #VECTOR_BROKER_CONNECTED_CLIENT_LIST,
- *  #VECTOR_BROKER_CLIENT_ADD, #VECTOR_BROKER_CLIENT_REMOVE and #VECTOR_BROKER_CLIENT_ENTRY_CHANGE.
+ *  with the vector field. Valid values are VECTOR_BROKER_CONNECTED_CLIENT_LIST,
+ *  VECTOR_BROKER_CLIENT_ADD, VECTOR_BROKER_CLIENT_REMOVE and VECTOR_BROKER_CLIENT_ENTRY_CHANGE.
  *
  *  \param[out] buf Buffer into which to pack the Client List message.
  *  \param[in] buflen Length in bytes of buf.
@@ -430,7 +430,7 @@ size_t pack_client_list(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, 
 
     // Pack the common client entry fields.
     *cur_ptr = 0xf0;
-    lwpa_pdu_pack_ext_len(cur_ptr, RPT_CLIENT_ENTRY_SIZE);
+    LWPA_PDU_PACK_EXT_LEN(cur_ptr, RPT_CLIENT_ENTRY_SIZE);
     cur_ptr += 3;
     lwpa_pack_32b(cur_ptr, cur_entry->client_protocol);
     cur_ptr += 4;

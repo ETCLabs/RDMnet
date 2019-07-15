@@ -133,6 +133,11 @@ if(WIN32)
 
     endif()
   endif()
+elseif(APPLE)
+  set(RDMNET_DISCOVERY_ADDITIONAL_SOURCES
+    ${RDMNET_SRC}/rdmnet/discovery/bonjour.h
+    ${RDMNET_SRC}/rdmnet/discovery/bonjour.c
+  )
 else()
   message(FATAL_ERROR "There is currently no DNS-SD provider supported for this platform.")
 endif()

@@ -73,7 +73,7 @@ typedef struct LlrpManagerCallbacks
 
 typedef struct LlrpManagerConfig
 {
-  LwpaIpAddr netint;
+  LlrpNetintId netint;
   LwpaUuid cid;
   uint16_t manu_id;
   LlrpManagerCallbacks callbacks;

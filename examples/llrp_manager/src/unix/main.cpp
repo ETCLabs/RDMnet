@@ -24,58 +24,60 @@
 * This file is a part of RDMnet. For more information, go to:
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
-#ifndef _RDMNET_PRIVATE_LLRP_H_
-#define _RDMNET_PRIVATE_LLRP_H_
 
-#include "lwpa/bool.h"
-#include "lwpa/error.h"
-#include "lwpa/inet.h"
-#include "lwpa/rbtree.h"
-#include "lwpa/socket.h"
-#include "rdmnet/core/llrp.h"
+#include <string>
+#include <iostream>
+#include <ctime>
 
-#define LLRP_MULTICAST_TTL_VAL 20
+#include "lwpa/uuid.h"
+#include "manager.h"
 
-typedef enum
-{
-  kLlrpSocketTypeManager,
-  kLlrpSocketTypeTarget
-} llrp_socket_t;
-
-typedef struct LlrpNetint
-{
-  LlrpNetintId id;
-  lwpa_socket_t send_sock;
-  size_t send_ref_count;
-  size_t recv_ref_count;
-} LlrpNetint;
-
-#ifdef __cplusplus
 extern "C" {
-#endif
-
-extern const LwpaSockaddr* kLlrpIpv4RespAddr;
-extern const LwpaSockaddr* kLlrpIpv6RespAddr;
-extern const LwpaSockaddr* kLlrpIpv4RequestAddr;
-extern const LwpaSockaddr* kLlrpIpv6RequestAddr;
-
-extern uint8_t kLlrpLowestHardwareAddr[6];
-
-lwpa_error_t rdmnet_llrp_init();
-void rdmnet_llrp_deinit();
-
-void rdmnet_llrp_tick();
-
-void get_llrp_netint_list(LwpaRbIter* list_iter);
-
-lwpa_error_t get_llrp_send_socket(const LlrpNetintId* netint, lwpa_socket_t* socket);
-void release_llrp_send_socket(const LlrpNetintId* netint);
-
-lwpa_error_t llrp_recv_netint_add(const LlrpNetintId* netint, llrp_socket_t llrp_type);
-void llrp_recv_netint_remove(const LlrpNetintId* netint, llrp_socket_t llrp_type);
-
-#ifdef __cplusplus
+static void manager_log_callback(void *context, const LwpaLogStrings *strings)
+{
+  (void)context;
+  std::cout << strings->human_readable << "\n";
 }
-#endif
 
-#endif /* _RDMNET_PRIVATE_LLRP_H_ */
+static void manager_time_callback(void *context, LwpaLogTimeParams *time_params)
+{
+  time_t t = time(NULL);
+  struct tm *local_time = localtime(&t);
+  time_params->year = local_time->tm_year + 1900;
+  time_params->month = local_time->tm_mon + 1;
+  time_params->day = local_time->tm_mday;
+  time_params->hour = local_time->tm_hour;
+  time_params->minute = local_time->tm_min;
+  time_params->second = local_time->tm_sec;
+  time_params->msec = 0;
+  time_params->utc_offset = (int)(local_time->tm_gmtoff / 60);
+}
+}
+
+int main(int /*argc*/, char * /*argv*/ [])
+{
+  LwpaUuid manager_cid;
+  lwpa_generate_os_preferred_uuid(&manager_cid);
+
+  LwpaLogParams params;
+  params.action = kLwpaLogCreateHumanReadableLog;
+  params.log_fn = manager_log_callback;
+  params.log_mask = LWPA_LOG_UPTO(LWPA_LOG_INFO);
+  params.time_fn = manager_time_callback;
+  params.context = nullptr;
+
+  lwpa_validate_log_params(&params);
+  LLRPManager mgr(manager_cid, &params);
+  printf("Discovered network interfaces:\n");
+  mgr.PrintNetints();
+  mgr.PrintCommandList();
+
+  std::string input;
+  while (true)
+  {
+    std::getline(std::cin, input);
+    if (!mgr.ParseCommand(input))
+      break;
+  }
+  return 0;
+}

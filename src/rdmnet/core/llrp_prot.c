@@ -63,6 +63,34 @@ void llrp_prot_init()
   lwpa_string_to_uuid(&kLlrpBroadcastCid, LLRP_BROADCAST_CID, sizeof(LLRP_BROADCAST_CID));
 }
 
+bool get_llrp_destination_cid(const uint8_t* buf, size_t buflen, LwpaUuid* dest_cid)
+{
+  if (!buf || !dest_cid || buflen < LLRP_MIN_TOTAL_MESSAGE_SIZE)
+    return false;
+
+  // Try to parse the UDP preamble.
+  LwpaUdpPreamble preamble;
+  if (!lwpa_parse_udp_preamble(buf, buflen, &preamble))
+    return false;
+
+  // Try to parse the Root Layer PDU header.
+  LwpaRootLayerPdu rlp;
+  LwpaPdu last_pdu = LWPA_PDU_INIT;
+  if (!lwpa_parse_root_layer_pdu(preamble.rlp_block, preamble.rlp_block_len, &rlp, &last_pdu))
+    return false;
+
+  // Check the PDU length
+  const uint8_t* cur_ptr = rlp.pdata;
+  size_t llrp_pdu_len = LWPA_PDU_LENGTH(cur_ptr);
+  if (llrp_pdu_len > rlp.datalen || llrp_pdu_len < LLRP_MIN_PDU_SIZE)
+    return false;
+
+  // Jump to the position of the LLRP destination CID and fill it in
+  cur_ptr += 7;
+  memcpy(dest_cid->data, cur_ptr, LWPA_UUID_BYTES);
+  return true;
+}
+
 bool parse_llrp_message(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest, LlrpMessage* msg)
 {
   if (!buf || !msg || buflen < LLRP_MIN_TOTAL_MESSAGE_SIZE)
@@ -91,7 +119,7 @@ bool parse_llrp_pdu(const uint8_t* buf, size_t buflen, const LlrpMessageInterest
 
   // Check the PDU length
   const uint8_t* cur_ptr = buf;
-  size_t llrp_pdu_len = lwpa_pdu_length(cur_ptr);
+  size_t llrp_pdu_len = LWPA_PDU_LENGTH(cur_ptr);
   if (llrp_pdu_len > buflen || llrp_pdu_len < LLRP_MIN_PDU_SIZE)
     return false;
 
@@ -105,8 +133,8 @@ bool parse_llrp_pdu(const uint8_t* buf, size_t buflen, const LlrpMessageInterest
   cur_ptr += 4;
 
   // Parse the next layer, based on the vector value and what the caller has registered interest in
-  if (0 == lwpa_uuid_cmp(&msg->header.dest_cid, &kLlrpBroadcastCid) ||
-      0 == lwpa_uuid_cmp(&msg->header.dest_cid, &interest->my_cid))
+  if (0 == LWPA_UUID_CMP(&msg->header.dest_cid, &kLlrpBroadcastCid) ||
+      0 == LWPA_UUID_CMP(&msg->header.dest_cid, &interest->my_cid))
   {
     switch (msg->vector)
     {
@@ -146,7 +174,7 @@ bool parse_llrp_probe_request(const uint8_t* buf, size_t buflen, const LlrpMessa
 
   // Check the PDU length
   const uint8_t* cur_ptr = buf;
-  size_t pdu_len = lwpa_pdu_length(cur_ptr);
+  size_t pdu_len = LWPA_PDU_LENGTH(cur_ptr);
   if (pdu_len > buflen || pdu_len < PROBE_REQUEST_PDU_MIN_SIZE)
     return false;
   const uint8_t* buf_end = cur_ptr + pdu_len;
@@ -207,7 +235,7 @@ bool parse_llrp_probe_reply(const uint8_t* buf, size_t buflen, DiscoveredLlrpTar
     return false;
 
   const uint8_t* cur_ptr = buf;
-  size_t pdu_len = lwpa_pdu_length(cur_ptr);
+  size_t pdu_len = LWPA_PDU_LENGTH(cur_ptr);
   if (pdu_len != PROBE_REPLY_PDU_SIZE)
     return false;
   cur_ptr += 3;
@@ -232,7 +260,7 @@ bool parse_llrp_rdm_command(const uint8_t* buf, size_t buflen, RdmBuffer* cmd)
     return false;
 
   const uint8_t* cur_ptr = buf;
-  size_t pdu_len = lwpa_pdu_length(cur_ptr);
+  size_t pdu_len = LWPA_PDU_LENGTH(cur_ptr);
   if (pdu_len > buflen || pdu_len > LLRP_RDM_CMD_PDU_MAX_SIZE || pdu_len < LLRP_RDM_CMD_PDU_MIN_SIZE)
     return false;
   cur_ptr += 3;
@@ -250,7 +278,7 @@ size_t lwpa_pack_llrp_header(uint8_t* buf, size_t pdu_len, uint32_t vector, cons
   uint8_t* cur_ptr = buf;
 
   *cur_ptr = 0xf0;
-  lwpa_pdu_pack_ext_len(cur_ptr, pdu_len);
+  LWPA_PDU_PACK_EXT_LEN(cur_ptr, pdu_len);
   cur_ptr += 3;
   lwpa_pack_32b(cur_ptr, vector);
   cur_ptr += 4;
@@ -294,7 +322,7 @@ lwpa_error_t send_llrp_probe_request(lwpa_socket_t sock, uint8_t* buf, bool ipv6
 
   // Pack the Probe Request PDU header fields
   *cur_ptr = 0xf0;
-  lwpa_pdu_pack_ext_len(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
+  LWPA_PDU_PACK_EXT_LEN(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
   cur_ptr += 3;
   *cur_ptr++ = VECTOR_PROBE_REQUEST_DATA;
   lwpa_pack_16b(cur_ptr, probe_request->lower_uid.manu);
@@ -352,7 +380,7 @@ lwpa_error_t send_llrp_probe_reply(lwpa_socket_t sock, uint8_t* buf, bool ipv6, 
 
   // Pack the Probe Reply PDU
   *cur_ptr = 0xf0;
-  lwpa_pdu_pack_ext_len(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
+  LWPA_PDU_PACK_EXT_LEN(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
   cur_ptr += 3;
   *cur_ptr++ = VECTOR_PROBE_REPLY_DATA;
   lwpa_pack_16b(cur_ptr, target_info->uid.manu);
@@ -394,7 +422,7 @@ lwpa_error_t send_llrp_rdm(lwpa_socket_t sock, uint8_t* buf, const LwpaSockaddr*
 
   // Pack the RDM Command PDU
   *cur_ptr = 0xf0;
-  lwpa_pdu_pack_ext_len(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
+  LWPA_PDU_PACK_EXT_LEN(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
   cur_ptr += 3;
   memcpy(cur_ptr, rdm_msg->data, rdm_msg->datalen);
   cur_ptr += rdm_msg->datalen;

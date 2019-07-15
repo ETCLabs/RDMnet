@@ -38,7 +38,7 @@
 #include "rdmnet/private/opts.h"
 
 // DEBUG REMOVEME
-#include <intrin.h>
+//#include <intrin.h>
 
 // Compile time check of memory configuration
 #if !RDMNET_DYNAMIC_MEM
@@ -253,7 +253,8 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
       if (getaddrinfo_err == kDNSServiceErr_NoError)
       {
         // Update the broker info.
-        db->info.port = lwpa_upack_16b(&port);
+        // TODO revisit using this as a "ntohl" type function, might be buggy...
+        db->info.port = lwpa_upack_16b((const uint8_t*)&port);
 
         uint8_t value_len = 0;
         const char* value;
@@ -582,8 +583,9 @@ DNSServiceErrorType send_registration(const RdmnetBrokerDiscInfo* info, DNSServi
   DNSServiceErrorType result = kDNSServiceErr_NoError;
 
   /*Before we start the registration, we have to massage a few parameters*/
+  // TODO revisit this hacked version of "htonl", might be buggy
   uint16_t net_port = 0;
-  lwpa_pack_16b(&net_port, info->port);
+  lwpa_pack_16b((uint8_t*)&net_port, info->port);
 
   char reg_str[REGISTRATION_STRING_PADDED_LENGTH];
   get_registration_string(E133_DNSSD_SRV_TYPE, info->scope, reg_str);
@@ -799,7 +801,7 @@ void get_registration_string(const char* srv_type, const char* scope, char* reg_
 bool broker_info_is_valid(const RdmnetBrokerDiscInfo* info)
 {
   // Make sure none of the broker info's fields are empty
-  return !(info->cid.data == 0 || strlen(info->service_name) == 0 || strlen(info->scope) == 0 ||
+  return !(LWPA_UUID_IS_NULL(&info->cid) || strlen(info->service_name) == 0 || strlen(info->scope) == 0 ||
            strlen(info->model) == 0 || strlen(info->manufacturer) == 0);
 }
 

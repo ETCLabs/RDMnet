@@ -55,8 +55,8 @@ typedef struct LlrpLocalRdmResponse
   LwpaUuid dest_cid;
   /*! The sequence number received in the corresponding LlrpRemoteRdmCommand. */
   uint32_t seq_num;
-  /*! The interface index in the corresponding LlrpRemoteRdmCommand. */
-  size_t interface_index;
+  /*! The network interface ID in the corresponding LlrpRemoteRdmCommand. */
+  LlrpNetintId netint_id;
   /*! The RDM response. */
   RdmResponse rdm;
 } LlrpLocalRdmResponse;
@@ -69,9 +69,10 @@ typedef struct LlrpRemoteRdmCommand
   /*! The sequence number received with this command, to be echoed in the corresponding
    *  LlrpLocalRdmResponse. */
   uint32_t seq_num;
-  /*! The interface index on which this command was received, to be echoed in the corresponding
-   *  LlrpLocalRdmResponse. */
-  size_t interface_index;
+  /*! An ID for the network interface on which this command was received, to be echoed in the
+   *  corresponding LlrpLocalRdmResponse. This helps the LLRP library send the response on the same
+   *  interface on which it was received. */
+  LlrpNetintId netint_id;
   /*! The RDM command. */
   RdmCommand rdm;
 } LlrpRemoteRdmCommand;
@@ -89,7 +90,7 @@ typedef struct LlrpRemoteRdmCommand
   {                                                                     \
     (resp)->dest_cid = (received_cmd)->src_cid;                         \
     (resp)->seq_num = (received_cmd)->seq_num;                          \
-    (resp)->interface_index = (received_cmd)->interface_index;          \
+    (resp)->netint_id = (received_cmd)->netint_id;                      \
     (resp)->rdm = *(rdm_resp);                                          \
   } while (0)
 
@@ -100,7 +101,7 @@ typedef struct LlrpTargetCallbacks
 
 typedef struct LlrpTargetOptionalConfig
 {
-  LwpaIpAddr* netint_arr;
+  LlrpNetintId* netint_arr;
   size_t num_netints;
   RdmUid uid;
 } LlrpTargetOptionalConfig;

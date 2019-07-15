@@ -47,10 +47,9 @@ typedef struct LlrpTarget LlrpTarget;
 
 typedef struct LlrpTargetNetintInfo
 {
-  LwpaIpAddr ip;
-  lwpa_socket_t sys_sock;
+  LlrpNetintId id;
+  lwpa_socket_t send_sock;
   uint8_t send_buf[LLRP_TARGET_MAX_MESSAGE_SIZE];
-  PolledSocketInfo poll_info;
 
   bool reply_pending;
   LwpaUuid pending_reply_cid;
@@ -60,23 +59,24 @@ typedef struct LlrpTargetNetintInfo
   LlrpTarget* target;
 } LlrpTargetNetintInfo;
 
-struct LlrpTarget
+// A struct containing the map keys we use for LLRP targets.
+typedef struct LlrpTargetKeys
 {
   llrp_target_t handle;
-
-  // Identifying info
   LwpaUuid cid;
+} LlrpTargetKeys;
+
+struct LlrpTarget
+{
+  // Identifying info
+  LlrpTargetKeys keys;
   RdmUid uid;
   llrp_component_t component_type;
 
-  // Network interfaces
-#if RDMNET_DYNAMIC_MEM
-  LlrpTargetNetintInfo* netints;
-#else
-  LlrpTargetNetintInfo netints[RDMNET_LLRP_MAX_TARGET_NETINTS];
-#endif
-  size_t num_netints;
+  // Network interfaces on which the target is operating (value type is LlrpTargetNetintInfo)
+  LwpaRbTree netints;
 
+  // Global target state info
   bool connected_to_broker;
 
   // Callback dispatch info
@@ -120,6 +120,8 @@ lwpa_error_t rdmnet_llrp_target_init();
 void rdmnet_llrp_target_deinit();
 
 void rdmnet_llrp_target_tick();
+
+void target_data_received(const uint8_t* data, size_t data_size, const LlrpNetintId* netint);
 
 #ifdef __cplusplus
 }

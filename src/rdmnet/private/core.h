@@ -42,6 +42,7 @@ extern "C" {
 
 typedef union PolledSocketOpaqueData
 {
+  int int_val;
   rdmnet_conn_t conn_handle;
   void* ptr;
 } PolledSocketOpaqueData;

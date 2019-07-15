@@ -24,58 +24,16 @@
 * This file is a part of RDMnet. For more information, go to:
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
-#ifndef _RDMNET_PRIVATE_LLRP_H_
-#define _RDMNET_PRIVATE_LLRP_H_
 
-#include "lwpa/bool.h"
-#include "lwpa/error.h"
-#include "lwpa/inet.h"
-#include "lwpa/rbtree.h"
-#include "lwpa/socket.h"
-#include "rdmnet/core/llrp.h"
+// The entry point for the RDMnet Connection unit tests.
 
-#define LLRP_MULTICAST_TTL_VAL 20
+#include "gtest/gtest.h"
+#include "fff.h"
 
-typedef enum
+DEFINE_FFF_GLOBALS;
+
+int main(int argc, char *argv[])
 {
-  kLlrpSocketTypeManager,
-  kLlrpSocketTypeTarget
-} llrp_socket_t;
-
-typedef struct LlrpNetint
-{
-  LlrpNetintId id;
-  lwpa_socket_t send_sock;
-  size_t send_ref_count;
-  size_t recv_ref_count;
-} LlrpNetint;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-extern const LwpaSockaddr* kLlrpIpv4RespAddr;
-extern const LwpaSockaddr* kLlrpIpv6RespAddr;
-extern const LwpaSockaddr* kLlrpIpv4RequestAddr;
-extern const LwpaSockaddr* kLlrpIpv6RequestAddr;
-
-extern uint8_t kLlrpLowestHardwareAddr[6];
-
-lwpa_error_t rdmnet_llrp_init();
-void rdmnet_llrp_deinit();
-
-void rdmnet_llrp_tick();
-
-void get_llrp_netint_list(LwpaRbIter* list_iter);
-
-lwpa_error_t get_llrp_send_socket(const LlrpNetintId* netint, lwpa_socket_t* socket);
-void release_llrp_send_socket(const LlrpNetintId* netint);
-
-lwpa_error_t llrp_recv_netint_add(const LlrpNetintId* netint, llrp_socket_t llrp_type);
-void llrp_recv_netint_remove(const LlrpNetintId* netint, llrp_socket_t llrp_type);
-
-#ifdef __cplusplus
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
-#endif
-
-#endif /* _RDMNET_PRIVATE_LLRP_H_ */
