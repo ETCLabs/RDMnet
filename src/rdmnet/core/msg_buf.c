@@ -409,7 +409,7 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
       /* We can parse a Broker PDU header. */
       const uint8_t* cur_ptr = data;
 
-      size_t pdu_len = lwpa_pdu_length(cur_ptr);
+      size_t pdu_len = LWPA_PDU_LENGTH(cur_ptr);
       if (pdu_len >= BROKER_PDU_HEADER_SIZE && bstate->block.size_parsed + pdu_len <= bstate->block.block_size)
       {
         size_t pdu_data_len = pdu_len - BROKER_PDU_HEADER_SIZE;
@@ -630,7 +630,7 @@ size_t parse_client_entry_update(ClientEntryUpdateState* ceustate, const uint8_t
 size_t parse_client_entry_header(const uint8_t* data, ClientEntryData* entry)
 {
   const uint8_t* cur_ptr = data;
-  size_t len = lwpa_pdu_length(cur_ptr);
+  size_t len = LWPA_PDU_LENGTH(cur_ptr);
   cur_ptr += 3;
   entry->client_protocol = (client_protocol_t)lwpa_upack_32b(cur_ptr);
   cur_ptr += 4;
@@ -1031,7 +1031,7 @@ size_t parse_rpt_block(RptState* rstate, const uint8_t* data, size_t datalen, Rp
     {
       /* We can parse an RPT PDU header. */
       const uint8_t* cur_ptr = data;
-      size_t pdu_len = lwpa_pdu_length(cur_ptr);
+      size_t pdu_len = LWPA_PDU_LENGTH(cur_ptr);
       if (pdu_len >= RPT_PDU_HEADER_SIZE && rstate->block.size_parsed + pdu_len <= rstate->block.block_size)
       {
         size_t pdu_data_len = pdu_len - RPT_PDU_HEADER_SIZE;
@@ -1111,7 +1111,7 @@ size_t parse_rdm_list(RdmListState* rlstate, const uint8_t* data, size_t datalen
   if (!rlstate->parsed_request_notif_header && datalen >= REQUEST_NOTIF_PDU_HEADER_SIZE)
   {
     const uint8_t* cur_ptr = data;
-    size_t pdu_len = lwpa_pdu_length(cur_ptr);
+    size_t pdu_len = LWPA_PDU_LENGTH(cur_ptr);
     uint32_t vect;
 
     cur_ptr += 3;
@@ -1150,7 +1150,7 @@ size_t parse_rdm_list(RdmListState* rlstate, const uint8_t* data, size_t datalen
         if (remaining_len >= RDM_CMD_PDU_MIN_SIZE)
         {
           const uint8_t* cur_ptr = &data[bytes_parsed];
-          size_t rdm_cmd_pdu_len = lwpa_pdu_length(cur_ptr);
+          size_t rdm_cmd_pdu_len = LWPA_PDU_LENGTH(cur_ptr);
 
           if (rdm_cmd_pdu_len > rlstate->block.block_size || rdm_cmd_pdu_len > RDM_CMD_PDU_MAX_SIZE)
           {
@@ -1231,7 +1231,7 @@ size_t parse_rpt_status(RptStatusState* rsstate, const uint8_t* data, size_t dat
       /* We can parse an RPT Status PDU header. */
       const uint8_t* cur_ptr = data;
 
-      size_t pdu_len = lwpa_pdu_length(cur_ptr);
+      size_t pdu_len = LWPA_PDU_LENGTH(cur_ptr);
       if (pdu_len >= RPT_STATUS_HEADER_SIZE && pdu_len >= rsstate->block.block_size)
       {
         cur_ptr += 3;

@@ -59,6 +59,8 @@ public:
 
   virtual void SocketDataReceived(rdmnet_conn_t handle, const uint8_t* data, size_t data_size) = 0;
   virtual void SocketError(rdmnet_conn_t handle, lwpa_error_t err) = 0;
+
+  virtual ~RdmnetConnInterface() {}
 };
 
 class RdmnetConnWrapper : public RdmnetConnInterface

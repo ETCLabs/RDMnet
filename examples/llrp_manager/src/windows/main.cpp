@@ -25,25 +25,27 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "win_device_log.h"
+#include <cwchar>
+#include <iostream>
 
 #include <WinSock2.h>
 #include <Windows.h>
-#include <stdio.h>
+#include <WS2tcpip.h>
 
-static LwpaLogParams s_device_log_params;
-static FILE* s_log_file;
+#include "lwpa/log.h"
+#include "lwpa/uuid.h"
+#include "manager.h"
+
 static int s_utc_offset;
 
-static void device_log_callback(void* context, const LwpaLogStrings* strings)
+extern "C" {
+static void manager_log_callback(void *context, const LwpaLogStrings *strings)
 {
   (void)context;
-  printf("%s\n", strings->human_readable);
-  if (s_log_file)
-    fprintf(s_log_file, "%s\n", strings->human_readable);
+  std::cout << strings->human_readable << "\n";
 }
 
-static void device_time_callback(void* context, LwpaLogTimeParams* time)
+static void manager_time_callback(void *context, LwpaLogTimeParams *time)
 {
   SYSTEMTIME win_time;
   (void)context;
@@ -57,15 +59,37 @@ static void device_time_callback(void* context, LwpaLogTimeParams* time)
   time->msec = win_time.wMilliseconds;
   time->utc_offset = s_utc_offset;
 }
+}
 
-void device_log_init(const char* file_name)
+std::string ConsoleInputToUtf8(const std::wstring &input)
 {
-  s_log_file = fopen(file_name, "w");
-  if (!s_log_file)
-    printf("Device Log: Couldn't open log file %s\n", file_name);
+  if (!input.empty())
+  {
+    int size_needed = WideCharToMultiByte(CP_UTF8, 0, input.c_str(), -1, NULL, 0, NULL, NULL);
+    if (size_needed > 0)
+    {
+      std::string str_res(size_needed, '\0');
+      int convert_res = WideCharToMultiByte(CP_UTF8, 0, input.c_str(), -1, &str_res[0], size_needed, NULL, NULL);
+      if (convert_res > 0)
+      {
+        return str_res;
+      }
+    }
+  }
+
+  return std::string();
+}
+
+int wmain(int /*argc*/, wchar_t * /*argv*/ [])
+{
+  LwpaUuid manager_cid;
+
+  UUID uuid;
+  UuidCreate(&uuid);
+  memcpy(manager_cid.data, &uuid, LWPA_UUID_BYTES);
 
   TIME_ZONE_INFORMATION tzinfo;
-  switch (GetTimeZoneInformation(&tzinfo))
+  switch(GetTimeZoneInformation(&tzinfo))
   {
     case TIME_ZONE_ID_UNKNOWN:
     case TIME_ZONE_ID_STANDARD:
@@ -75,25 +99,27 @@ void device_log_init(const char* file_name)
       s_utc_offset = -(tzinfo.Bias + tzinfo.DaylightBias);
       break;
     default:
-      printf("Device Log: Couldn't get time zone info.\n");
       break;
   }
 
-  s_device_log_params.action = kLwpaLogCreateHumanReadableLog;
-  s_device_log_params.log_fn = device_log_callback;
-  s_device_log_params.log_mask = LWPA_LOG_UPTO(LWPA_LOG_DEBUG);
-  s_device_log_params.time_fn = device_time_callback;
-  s_device_log_params.context = NULL;
+  LwpaLogParams params;
+  params.action = kLwpaLogCreateHumanReadableLog;
+  params.log_fn = manager_log_callback;
+  params.log_mask = LWPA_LOG_UPTO(LWPA_LOG_INFO);
+  params.time_fn = manager_time_callback;
+  params.context = nullptr;
+  lwpa_validate_log_params(&params);
 
-  lwpa_validate_log_params(&s_device_log_params);
-}
+  LLRPManager mgr(manager_cid, &params);
+  printf("Discovered network interfaces:\n");
+  mgr.PrintNetints();
+  mgr.PrintCommandList();
 
-const LwpaLogParams* device_get_log_params()
-{
-  return &s_device_log_params;
-}
+  std::wstring input;
+  do
+  {
+    std::getline(std::wcin, input);
+  } while (mgr.ParseCommand(ConsoleInputToUtf8(input)));
 
-void device_log_deinit()
-{
-  fclose(s_log_file);
+  return 0;
 }

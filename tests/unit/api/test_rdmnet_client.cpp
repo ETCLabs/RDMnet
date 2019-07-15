@@ -53,12 +53,22 @@ FAKE_VOID_FUNC(rpt_client_msg_received, rdmnet_client_t, rdmnet_client_scope_t, 
 FAKE_VOID_FUNC(ept_client_msg_received, rdmnet_client_t, rdmnet_client_scope_t, const EptClientMessage*, void*);
 
 rdmnet_conn_t g_next_conn_handle;
+llrp_target_t g_next_target_handle;
 
-extern "C" lwpa_error_t custom_connection_create(const RdmnetConnectionConfig* config, rdmnet_conn_t* handle)
+extern "C" {
+lwpa_error_t custom_connection_create(const RdmnetConnectionConfig* config, rdmnet_conn_t* handle)
 {
   (void)config;
   *handle = g_next_conn_handle++;
   return kLwpaErrOk;
+}
+
+lwpa_error_t custom_llrp_target_create(const LlrpTargetConfig* config, llrp_target_t* handle)
+{
+  (void)config;
+  *handle = g_next_target_handle++;
+  return kLwpaErrOk;
+}
 }
 
 class TestRdmnetClient : public testing::Test
@@ -106,6 +116,7 @@ protected:
 
     // New connection
     rdmnet_connection_create_fake.custom_fake = custom_connection_create;
+    rdmnet_llrp_target_create_fake.custom_fake = custom_llrp_target_create;
   }
 
   void TearDown() override { rdmnet_client_deinit(); }
@@ -141,7 +152,6 @@ TEST_F(TestRdmnetClient, create)
   rdmnet_client_t handle_2;
   ASSERT_EQ(kLwpaErrOk, rdmnet_rpt_client_create(&default_rpt_config_, &handle_2));
 
-  RdmnetRptClientConfig handle_2_config = default_rpt_config_;
   for (size_t i = 0; i < 100; ++i)
   {
     RdmnetScopeConfig tmp_scope = default_dynamic_scope_;

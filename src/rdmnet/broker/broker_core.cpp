@@ -117,7 +117,7 @@ bool BrokerCore::Startup(const RDMnet::BrokerSettings& settings, uint16_t listen
   if (!started_)
   {
     // Check the settings for validity
-    if (lwpa_uuid_is_null(&settings.cid) ||
+    if (LWPA_UUID_IS_NULL(&settings.cid) ||
         (settings.uid_type == RDMnet::BrokerSettings::kStaticUid && !RDMNET_UID_IS_STATIC(&settings.uid)) ||
         (settings.uid_type == RDMnet::BrokerSettings::kDynamicUid && !RDMNET_UID_IS_DYNAMIC(&settings.uid)))
     {

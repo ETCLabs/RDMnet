@@ -90,19 +90,15 @@ std::vector<LwpaIpAddr> BrokerShell::ConvertMacsToInterfaces(const std::vector<M
   std::vector<LwpaIpAddr> to_return;
 
   size_t num_netints = lwpa_netint_get_num_interfaces();
-  auto netints = std::make_unique<LwpaNetintInfo[]>(num_netints);
-  if (netints)
+  for (const auto& mac : macs)
   {
-    size_t netints_retrieved = lwpa_netint_get_interfaces(netints.get(), num_netints);
-    for (const auto& mac : macs)
+    const LwpaNetintInfo* netint_list = lwpa_netint_get_interfaces();
+    for (const LwpaNetintInfo* netint = netint_list; netint < netint_list + num_netints; ++netint)
     {
-      for (size_t i = 0; i < netints_retrieved; ++i)
+      if (0 == memcmp(netint->mac, mac.data(), LWPA_NETINTINFO_MAC_LEN))
       {
-        if (0 == memcmp(netints[i].mac, mac.data(), LWPA_NETINTINFO_MAC_LEN))
-        {
-          to_return.push_back(netints[i].addr);
-          break;
-        }
+        to_return.push_back(netint->addr);
+        break;
       }
     }
   }

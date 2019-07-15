@@ -25,15 +25,11 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include <WinSock2.h>
-#include <Windows.h>
-#include <WS2tcpip.h>
+#include "manager.h"
+
 #include <cstring>
-#include <cwchar>
 #include <cstdio>
-#include <string>
-#include <iostream>
-#include <map>
+#include <memory>
 
 #include "lwpa/netint.h"
 #include "lwpa/pack.h"
@@ -41,60 +37,7 @@
 #include "lwpa/thread.h"
 #include "lwpa/timer.h"
 #include "rdmnet/core.h"
-#include "rdmnet/core/llrp_manager.h"
 #include "rdmnet/core/util.h"
-
-struct LLRPTargetInfo
-{
-  DiscoveredLlrpTarget prot_info;
-  bool identifying{false};
-};
-
-class LLRPManager
-{
-public:
-  LLRPManager(const LwpaUuid& my_cid);
-  virtual ~LLRPManager();
-
-  void PrintCommandList();
-  bool ParseCommand(const std::wstring& line);
-
-  void Discover(llrp_manager_t manager_handle);
-  void PrintTargets();
-  void PrintNetints();
-  void GetDeviceInfo(int target_handle);
-  void GetDeviceLabel(int target_handle);
-  void GetManufacturerLabel(int target_handle);
-  void GetDeviceModelDescription(int target_handle);
-  void GetComponentScope(int target_handle, int scope_slot);
-
-  void IdentifyDevice(int target_handle);
-  void SetDeviceLabel(int target_handle, const std::string& label);
-  void SetComponentScope(int target_handle, int scope_slot, const std::string& scope_utf8,
-                         const LwpaSockaddr& static_config);
-
-  void TargetDiscovered(const DiscoveredLlrpTarget& target);
-  void DiscoveryFinished();
-  void RdmRespReceived(const LlrpRemoteRdmResponse& resp);
-
-private:
-  bool SendRDMAndGetResponse(llrp_manager_t manager, const LwpaUuid& target_cid, const RdmCommand& cmd_data,
-                             RdmResponse& resp_data);
-  static const char* LLRPComponentTypeToString(llrp_component_t type);
-
-  std::map<llrp_manager_t, LwpaNetintInfo> managers_;
-  LwpaUuid cid_{};
-
-  std::map<int, LLRPTargetInfo> targets_;
-  llrp_manager_t active_manager_{LLRP_MANAGER_INVALID};
-
-  bool discovery_active_{false};
-
-  bool pending_command_response_{false};
-  LwpaUuid pending_resp_cid_{};
-  uint32_t pending_resp_seq_num_{0};
-  RdmResponse resp_received_{};
-};
 
 extern "C" {
 void llrpcb_target_discovered(llrp_manager_t /*handle*/, const DiscoveredLlrpTarget* target, void* context)
@@ -119,18 +62,13 @@ void llrpcb_rdm_resp_received(llrp_manager_t /*handle*/, const LlrpRemoteRdmResp
 }
 }
 
-LLRPManager::LLRPManager(const LwpaUuid& my_cid) : cid_(my_cid)
+LLRPManager::LLRPManager(const LwpaUuid& my_cid, const LwpaLogParams* log_params) : cid_(my_cid)
 {
-  rdmnet_core_init(nullptr);
+  rdmnet_core_init(log_params);
 
   size_t num_interfaces = lwpa_netint_get_num_interfaces();
   if (num_interfaces > 0)
   {
-    size_t i;
-    auto netints = std::make_unique<LwpaNetintInfo[]>(num_interfaces);
-
-    num_interfaces = lwpa_netint_get_interfaces(netints.get(), num_interfaces);
-
     LlrpManagerConfig config;
     config.cid = cid_;
     config.manu_id = 0x6574;
@@ -138,11 +76,12 @@ LLRPManager::LLRPManager(const LwpaUuid& my_cid) : cid_(my_cid)
     config.callbacks.discovery_finished = llrpcb_discovery_finished;
     config.callbacks.rdm_resp_received = llrpcb_rdm_resp_received;
     config.callback_context = this;
-    for (i = 0; i < num_interfaces; ++i)
-    {
-      LwpaNetintInfo* netint = &netints[i];
 
-      config.netint = netint->addr;
+    const LwpaNetintInfo* netint_list = lwpa_netint_get_interfaces();
+    for (const LwpaNetintInfo* netint = netint_list; netint < netint_list + num_interfaces; ++netint)
+    {
+      config.netint.ip_type = netint->addr.type;
+      config.netint.index = netint->index;
       llrp_manager_t handle;
       lwpa_error_t res = rdmnet_llrp_manager_create(&config, &handle);
       if (res == kLwpaErrOk)
@@ -192,7 +131,7 @@ void LLRPManager::PrintCommandList()
   printf("    q: Quit\n");
 }
 
-bool LLRPManager::ParseCommand(const std::wstring& line)
+bool LLRPManager::ParseCommand(const std::string& line)
 {
   bool res = true;
 
@@ -278,7 +217,7 @@ bool LLRPManager::ParseCommand(const std::wstring& line)
             case 's':
               try
               {
-                std::wstring args = line.substr(3);
+                std::string args = line.substr(3);
                 size_t first_sp_pos = args.find_first_of(' ');
                 size_t second_sp_pos = args.find_first_of(' ', first_sp_pos + 1);
                 size_t third_sp_pos = args.find_first_of(' ', second_sp_pos + 1);
@@ -289,27 +228,19 @@ bool LLRPManager::ParseCommand(const std::wstring& line)
                 LWPA_IP_SET_INVALID(&static_config.ip);
                 if (third_sp_pos != std::string::npos)
                 {
-                  std::wstring ip_port = args.substr(third_sp_pos + 1);
+                  std::string ip_port = args.substr(third_sp_pos + 1);
                   size_t colon_pos = ip_port.find_first_of(':');
                   if (colon_pos != std::string::npos)
                   {
                     char ip_utf8[LWPA_INET6_ADDRSTRLEN];
-                    if (WideCharToMultiByte(CP_UTF8, 0, ip_port.substr(0, colon_pos).c_str(), -1, ip_utf8,
-                                            LWPA_INET6_ADDRSTRLEN, NULL, NULL) > 0)
+                    if ((kLwpaErrOk == lwpa_inet_pton(kLwpaIpTypeV4, ip_utf8, &static_config.ip)) ||
+                        (kLwpaErrOk == lwpa_inet_pton(kLwpaIpTypeV6, ip_utf8, &static_config.ip)))
                     {
-                      if ((kLwpaErrOk == lwpa_inet_pton(kLwpaIpTypeV4, ip_utf8, &static_config.ip)) ||
-                          (kLwpaErrOk == lwpa_inet_pton(kLwpaIpTypeV6, ip_utf8, &static_config.ip)))
-                      {
-                        static_config.port = static_cast<uint16_t>(std::stoi(ip_port.substr(colon_pos + 1)));
-                      }
-                      else
-                      {
-                        throw std::invalid_argument("Invalid static IP address.");
-                      }
+                      static_config.port = static_cast<uint16_t>(std::stoi(ip_port.substr(colon_pos + 1)));
                     }
                     else
                     {
-                      throw std::invalid_argument("Invalid static IP/port combo.");
+                      throw std::invalid_argument("Invalid static IP address.");
                     }
                   }
                   else
@@ -319,19 +250,11 @@ bool LLRPManager::ParseCommand(const std::wstring& line)
                 }
 
                 // Get and convert the scope
-                std::wstring scope = args.substr(
+                std::string scope = args.substr(
                     second_sp_pos + 1,
                     (third_sp_pos == std::string::npos ? third_sp_pos : third_sp_pos - (second_sp_pos + 1)));
                 char scope_utf8[E133_SCOPE_STRING_PADDED_LENGTH];
-                if (WideCharToMultiByte(CP_UTF8, 0, scope.c_str(), -1, scope_utf8, E133_SCOPE_STRING_PADDED_LENGTH,
-                                        NULL, NULL) > 0)
-                {
-                  SetComponentScope(target_handle, scope_slot, scope_utf8, static_config);
-                }
-                else
-                {
-                  throw std::invalid_argument("Invalid scope.");
-                }
+                SetComponentScope(target_handle, scope_slot, scope_utf8, static_config);
               }
               catch (const std::exception& e)
               {
@@ -353,21 +276,12 @@ bool LLRPManager::ParseCommand(const std::wstring& line)
             case 'l':
               try
               {
-                std::wstring args = line.substr(3);
+                std::string args = line.substr(3);
                 size_t sp_pos = args.find_first_of(' ');
 
                 int target_handle = std::stoi(args);
-                std::wstring label = args.substr(sp_pos + 1);
-                // Yes, yes, the device label is supposed to be ASCII. This is easier on unicode Windows for now.
-                char label_utf8[32];
-                if (WideCharToMultiByte(CP_UTF8, 0, label.c_str(), -1, label_utf8, 32, NULL, NULL) > 0)
-                {
-                  SetDeviceLabel(target_handle, label_utf8);
-                }
-                else
-                {
-                  printf("Invalid Device Label.\n");
-                }
+                std::string label = args.substr(sp_pos + 1);
+                SetDeviceLabel(target_handle, label.c_str());
               }
               catch (std::exception)
               {
@@ -377,7 +291,7 @@ bool LLRPManager::ParseCommand(const std::wstring& line)
             case ' ':
               try
               {
-                std::wstring args = line.substr(2);
+                std::string args = line.substr(2);
                 size_t sp_pos = args.find_first_of(' ');
                 int target_handle = std::stoi(args);
                 int scope_slot = std::stoi(args.substr(sp_pos));
@@ -463,14 +377,14 @@ void LLRPManager::PrintTargets()
 
 void LLRPManager::PrintNetints()
 {
-  printf("Handle %-15s %-17s Name\n", "Address", "MAC");
+  printf("Handle %-30s %-17s Name\n", "Address", "MAC");
   for (const auto& sock_pair : managers_)
   {
     char addr_str[LWPA_INET6_ADDRSTRLEN];
     const LwpaNetintInfo& info = sock_pair.second;
     lwpa_inet_ntop(&info.addr, addr_str, LWPA_INET6_ADDRSTRLEN);
-    printf("%-6d %-15s %02x:%02x:%02x:%02x:%02x:%02x %s\n", sock_pair.first, addr_str, info.mac[0], info.mac[1],
-           info.mac[2], info.mac[3], info.mac[4], info.mac[5], info.name);
+    printf("%-6d %-30s %02x:%02x:%02x:%02x:%02x:%02x %s\n", sock_pair.first, addr_str, info.mac[0], info.mac[1],
+           info.mac[2], info.mac[3], info.mac[4], info.mac[5], info.friendly_name);
   }
 }
 
@@ -659,7 +573,7 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
       cmd_data.command_class = kRdmCCGetCommand;
       cmd_data.param_id = E133_COMPONENT_SCOPE;
       cmd_data.datalen = 2;
-      lwpa_pack_16b(cmd_data.data, scope_slot);
+      lwpa_pack_16b(cmd_data.data, static_cast<uint16_t>(scope_slot));
 
       if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
       {
@@ -678,7 +592,7 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
           uint8_t static_config_type = *cur_ptr++;
           LwpaIpAddr ip;
           char ip_string[LWPA_INET6_ADDRSTRLEN] = {};
-          uint8_t port = 0;
+          uint16_t port = 0;
 
           printf("Scope for slot %d: %s\n", slot, scope_string);
           switch (static_config_type)
@@ -688,7 +602,7 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
               lwpa_inet_ntop(&ip, ip_string, LWPA_INET6_ADDRSTRLEN);
               cur_ptr += 4 + 16;
               port = lwpa_upack_16b(cur_ptr);
-              printf("Static Broker IPv4 for slot %d: %s:%d\n", slot, ip_string, port);
+              printf("Static Broker IPv4 for slot %d: %s:%u\n", slot, ip_string, port);
               break;
             case E133_STATIC_CONFIG_IPV6:
               cur_ptr += 4;
@@ -696,7 +610,7 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
               lwpa_inet_ntop(&ip, ip_string, LWPA_INET6_ADDRSTRLEN);
               cur_ptr += 16;
               port = lwpa_upack_16b(cur_ptr);
-              printf("Static Broker IPv6 for slot %d: [%s]:%d\n", slot, ip_string, port);
+              printf("Static Broker IPv6 for slot %d: [%s]:%u\n", slot, ip_string, port);
               break;
             case E133_NO_STATIC_CONFIG:
             default:
@@ -812,7 +726,7 @@ void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std
       memset(cmd_data.data, 0, COMPONENT_SCOPE_PDL);
 
       uint8_t* cur_ptr = cmd_data.data;
-      lwpa_pack_16b(cur_ptr, scope_slot);
+      lwpa_pack_16b(cur_ptr, static_cast<uint16_t>(scope_slot));
       cur_ptr += 2;
       RDMNET_MSVC_NO_DEP_WRN strncpy((char*)cur_ptr, scope_utf8.c_str(), E133_SCOPE_STRING_PADDED_LENGTH - 1);
       cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
@@ -870,7 +784,7 @@ void LLRPManager::DiscoveryFinished()
 
 void LLRPManager::RdmRespReceived(const LlrpRemoteRdmResponse& resp)
 {
-  if (pending_command_response_ && lwpa_uuid_cmp(&resp.src_cid, &pending_resp_cid_) == 0 &&
+  if (pending_command_response_ && LWPA_UUID_CMP(&resp.src_cid, &pending_resp_cid_) == 0 &&
       resp.seq_num == pending_resp_seq_num_)
   {
     resp_received_ = resp.rdm;
@@ -892,7 +806,7 @@ bool LLRPManager::SendRDMAndGetResponse(llrp_manager_t manager, const LwpaUuid& 
   {
     LwpaTimer resp_timer;
     lwpa_timer_start(&resp_timer, LLRP_TIMEOUT_MS);
-    while (pending_command_response_ && !lwpa_timer_isexpired(&resp_timer))
+    while (pending_command_response_ && !lwpa_timer_is_expired(&resp_timer))
     {
       lwpa_thread_sleep(100);
     }
@@ -949,27 +863,4 @@ const char* LLRPManager::LLRPComponentTypeToString(llrp_component_t type)
     default:
       return "Unknown";
   }
-}
-
-int wmain(int /*argc*/, wchar_t* /*argv*/[])
-{
-  LwpaUuid manager_cid;
-
-  UUID uuid;
-  UuidCreate(&uuid);
-  memcpy(manager_cid.data, &uuid, LWPA_UUID_BYTES);
-
-  LLRPManager mgr(manager_cid);
-  printf("Discovered network interfaces:\n");
-  mgr.PrintNetints();
-  mgr.PrintCommandList();
-
-  std::wstring input;
-  while (true)
-  {
-    std::getline(std::wcin, input);
-    if (!mgr.ParseCommand(input))
-      break;
-  }
-  return 0;
 }

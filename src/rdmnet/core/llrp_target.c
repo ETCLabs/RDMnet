@@ -43,14 +43,23 @@
 #include "rdmnet/private/llrp.h"
 #include "rdmnet/private/util.h"
 
+/**************************** Private constants ******************************/
+
+#define LLRP_MAX_TARGET_NETINTS (RDMNET_LLRP_MAX_TARGETS * RDMNET_LLRP_MAX_NETINTS_PER_TARGET)
+#define LLRP_TARGET_MAX_RB_NODES ((RDMNET_LLRP_MAX_TARGETS * 2) + LLRP_TOTAL_MAX_TARGET_NETINTS)
+
 /***************************** Private macros ********************************/
 
 #if RDMNET_DYNAMIC_MEM
-#define llrp_target_alloc() malloc(sizeof(LlrpTarget))
+#define llrp_target_alloc() (LlrpTarget*)malloc(sizeof(LlrpTarget))
+#define llrp_target_netint_alloc() (LlrpTargetNetintInfo*)malloc(sizeof(LlrpTargetNetintInfo))
 #define llrp_target_dealloc(ptr) free(ptr)
+#define llrp_target_netint_dealloc(ptr) free(ptr)
 #else
-#define llrp_target_alloc() lwpa_mempool_alloc(llrp_targets)
+#define llrp_target_alloc() (LlrpTarget*)lwpa_mempool_alloc(llrp_targets)
+#define llrp_target_netint_alloc() (LlrpTargetNetintInfo*)lwpa_mempool_alloc(llrp_targets_netints)
 #define llrp_target_dealloc(ptr) lwpa_mempool_free(llrp_targets, ptr)
+#define llrp_target_netint_dealloc(ptr) lwpa_mempool_free(llrp_target_netints, ptr)
 #endif
 
 #define INIT_CALLBACK_INFO(cbptr) ((cbptr)->which = kTargetCallbackNone)
@@ -59,26 +68,18 @@
 
 #if !RDMNET_DYNAMIC_MEM
 LWPA_MEMPOOL_DEFINE(llrp_targets, LlrpTarget, RDMNET_LLRP_MAX_TARGETS);
-LWPA_MEMPOOL_DEFINE(llrp_target_rb_nodes, LwpaRbNode, RDMNET_LLRP_MAX_TARGETS);
+LWPA_MEMPOOL_DEFINE(llrp_target_netints, LlrpTargetNetintInfo, LLRP_MAX_TARGET_NETINTS);
+LWPA_MEMPOOL_DEFINE(llrp_target_rb_nodes, LwpaRbNode, LLRP_TARGET_MAX_RB_NODES);
 #endif
 
 static struct LlrpTargetState
 {
   LwpaRbTree targets;
+  LwpaRbTree targets_by_cid;
   IntHandleManager handle_mgr;
-
-#if RDMNET_DYNAMIC_MEM
-  LwpaNetintInfo* sys_netints;
-#else
-  LwpaNetintInfo sys_netints[RDMNET_LLRP_MAX_NETWORK_INTERFACES];
-#endif
-  size_t num_sys_netints;
-  uint8_t lowest_hardware_addr[6];
 } state;
 
 /*********************** Private function prototypes *************************/
-
-static lwpa_error_t init_sys_netints();
 
 // Creating, destroying, and finding targets
 static lwpa_error_t create_new_target(const LlrpTargetConfig* config, LlrpTarget** new_target);
@@ -88,10 +89,7 @@ static void destroy_target(LlrpTarget* target, bool remove_from_tree);
 static bool target_handle_in_use(int handle_val);
 
 // Target state processing
-static void target_socket_activity(const LwpaPollEvent* event, PolledSocketOpaqueData data);
-static void target_socket_error(LlrpTargetNetintInfo* target_netint, lwpa_error_t err);
-static void target_data_received(LlrpTargetNetintInfo* target_netint, const uint8_t* data, size_t size);
-static void handle_llrp_message(LlrpTarget* target, LlrpTargetNetintInfo* netint, const LlrpMessage* msg,
+static void handle_llrp_message(const uint8_t* data, size_t data_size, LlrpTarget* target, LlrpTargetNetintInfo* netint,
                                 TargetCallbackDispatchInfo* cb);
 static void fill_callback_info(const LlrpTarget* target, TargetCallbackDispatchInfo* info);
 static void deliver_callback(TargetCallbackDispatchInfo* info);
@@ -100,7 +98,9 @@ static void process_target_state(LlrpTarget* target);
 // Target tracking using LwpaRbTrees
 static LwpaRbNode* target_node_alloc();
 static void target_node_free(LwpaRbNode* node);
-static int target_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b);
+static int target_cmp_by_handle(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b);
+static int target_cmp_by_cid(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b);
+static int target_netint_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b);
 
 /*************************** Function definitions ****************************/
 
@@ -110,106 +110,18 @@ lwpa_error_t rdmnet_llrp_target_init()
 
 #if !RDMNET_DYNAMIC_MEM
   /* Init memory pool */
-  res = lwpa_mempool_init(llrp_sockets);
+  res |= lwpa_mempool_init(llrp_targets);
+  res |= lwpa_mempool_init(llrp_target_netints);
+  res |= lwpa_mempool_init(llrp_target_rb_nodes);
 #endif
 
   if (res == kLwpaErrOk)
-    res = init_sys_netints();
-
-  if (res == kLwpaErrOk)
   {
-    lwpa_rbtree_init(&state.targets, target_cmp, target_node_alloc, target_node_free);
+    lwpa_rbtree_init(&state.targets, target_cmp_by_handle, target_node_alloc, target_node_free);
+    lwpa_rbtree_init(&state.targets_by_cid, target_cmp_by_cid, target_node_alloc, target_node_free);
     init_int_handle_manager(&state.handle_mgr, target_handle_in_use);
   }
   return res;
-}
-
-lwpa_error_t init_sys_netints()
-{
-  state.num_sys_netints = lwpa_netint_get_num_interfaces();
-  if (state.num_sys_netints == 0)
-    return kLwpaErrNoNetints;
-
-#if RDMNET_DYNAMIC_MEM
-  state.sys_netints = calloc(state.num_sys_netints, sizeof(LwpaNetintInfo));
-  if (!state.sys_netints)
-  {
-    state.num_sys_netints = 0;
-    return kLwpaErrNoMem;
-  }
-#else
-  if (state.num_sys_netints > RDMNET_LLRP_MAX_TARGET_NETINTS)
-  {
-    state.num_sys_netints = 0;
-    return kLwpaErrNoMem;
-  }
-#endif
-  state.num_sys_netints = lwpa_netint_get_interfaces(state.sys_netints, state.num_sys_netints);
-
-  uint8_t null_mac[6];
-  memset(null_mac, 0, sizeof null_mac);
-
-  lwpa_log(rdmnet_log_params, LWPA_LOG_INFO, RDMNET_LOG_MSG("Initializing network interfaces for LLRP..."));
-  size_t i = 0;
-  while (i < state.num_sys_netints)
-  {
-    const LwpaNetintInfo* netint = &state.sys_netints[i];
-    char addr_str[LWPA_INET6_ADDRSTRLEN];
-    addr_str[0] = '\0';
-    if (LWPA_CAN_LOG(rdmnet_log_params, LWPA_LOG_WARNING))
-    {
-      lwpa_inet_ntop(&netint->addr, addr_str, LWPA_INET6_ADDRSTRLEN);
-    }
-
-    // Create a test socket on each network interface. If the socket create fails, we remove that
-    // interface from the set that LLRP targets listen on.
-    lwpa_socket_t test_socket;
-    lwpa_error_t test_res = create_llrp_socket(&netint->addr, false, &test_socket);
-    if (test_res == kLwpaErrOk)
-    {
-      lwpa_close(test_socket);
-
-      lwpa_log(rdmnet_log_params, LWPA_LOG_INFO, RDMNET_LOG_MSG("  Set up LLRP network interface %s for listening."),
-               addr_str);
-
-      if (memcmp(netint->mac, null_mac, 6) != 0)
-      {
-        if (netint == state.sys_netints)
-        {
-          memcpy(state.lowest_hardware_addr, netint->mac, 6);
-        }
-        else
-        {
-          if (memcmp(netint->mac, state.lowest_hardware_addr, 6) < 0)
-          {
-            memcpy(state.lowest_hardware_addr, netint->mac, 6);
-          }
-        }
-      }
-
-      ++i;
-    }
-    else
-    {
-      // Remove the network interface from the array.
-      if (i < state.num_sys_netints - 1)
-      {
-        memmove(&state.sys_netints[i], &state.sys_netints[i + 1],
-                sizeof(LwpaNetintInfo) * (state.num_sys_netints - (i + 1)));
-      }
-      --state.num_sys_netints;
-      lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
-               RDMNET_LOG_MSG("  Error creating test socket on LLRP network interface %s: '%s'. Skipping!"), addr_str,
-               lwpa_strerror(test_res));
-    }
-  }
-
-  if (state.num_sys_netints == 0)
-  {
-    lwpa_log(rdmnet_log_params, LWPA_LOG_ERR, RDMNET_LOG_MSG("No usable LLRP interfaces found."));
-    return kLwpaErrNoNetints;
-  }
-  return kLwpaErrOk;
 }
 
 static void target_dealloc(const LwpaRbTree* self, LwpaRbNode* node)
@@ -225,9 +137,6 @@ static void target_dealloc(const LwpaRbTree* self, LwpaRbNode* node)
 void rdmnet_llrp_target_deinit()
 {
   lwpa_rbtree_clear_with_cb(&state.targets, target_dealloc);
-#if RDMNET_DYNAMIC_MEM
-  free(state.sys_netints);
-#endif
   memset(&state, 0, sizeof state);
 }
 
@@ -258,7 +167,7 @@ lwpa_error_t rdmnet_llrp_target_create(const LlrpTargetConfig* config, llrp_targ
 
     if (res == kLwpaErrOk)
     {
-      *handle = target->handle;
+      *handle = target->keys.handle;
     }
     rdmnet_writeunlock();
   }
@@ -328,16 +237,17 @@ lwpa_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLocal
   res = get_target(handle, &target);
   if (res == kLwpaErrOk)
   {
-    if (resp->interface_index < target->num_netints)
+    LlrpTargetNetintInfo* netint = (LlrpTargetNetintInfo*)lwpa_rbtree_find(&target->netints, (void*)&resp->netint_id);
+    if (netint)
     {
-      LlrpTargetNetintInfo* netint = &target->netints[resp->interface_index];
       LlrpHeader header;
 
       header.dest_cid = resp->dest_cid;
-      header.sender_cid = target->cid;
+      header.sender_cid = target->keys.cid;
       header.transaction_number = resp->seq_num;
 
-      res = send_llrp_rdm_response(netint->sys_sock, netint->send_buf, LWPA_IP_IS_V6(&netint->ip), &header, &resp_buf);
+      res = send_llrp_rdm_response(netint->send_sock, netint->send_buf, (netint->id.ip_type == kLwpaIpTypeV6), &header,
+                                   &resp_buf);
     }
     else
     {
@@ -351,24 +261,37 @@ lwpa_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLocal
 
 void process_target_state(LlrpTarget* target)
 {
-  for (LlrpTargetNetintInfo* netint = target->netints; netint < target->netints + target->num_netints; ++netint)
+  LwpaRbIter netint_iter;
+  lwpa_rbiter_init(&netint_iter);
+
+  for (LlrpTargetNetintInfo* netint = (LlrpTargetNetintInfo*)lwpa_rbiter_first(&netint_iter, &target->netints); netint;
+       netint = (LlrpTargetNetintInfo*)lwpa_rbiter_next(&netint_iter))
   {
     if (netint->reply_pending)
     {
-      if (lwpa_timer_isexpired(&netint->reply_backoff))
+      if (lwpa_timer_is_expired(&netint->reply_backoff))
       {
         LlrpHeader header;
-        header.sender_cid = target->cid;
+        header.sender_cid = target->keys.cid;
         header.dest_cid = netint->pending_reply_cid;
         header.transaction_number = netint->pending_reply_trans_num;
 
         DiscoveredLlrpTarget target_info;
-        target_info.cid = target->cid;
+        target_info.cid = target->keys.cid;
         target_info.uid = target->uid;
-        memcpy(target_info.hardware_address, state.lowest_hardware_addr, 6);
+        memcpy(target_info.hardware_address, kLlrpLowestHardwareAddr, 6);
         target_info.component_type = target->component_type;
 
-        send_llrp_probe_reply(netint->sys_sock, netint->send_buf, LWPA_IP_IS_V6(&netint->ip), &header, &target_info);
+        lwpa_error_t send_res = send_llrp_probe_reply(netint->send_sock, netint->send_buf,
+                                                      (netint->id.ip_type == kLwpaIpTypeV6), &header, &target_info);
+        if (send_res != kLwpaErrOk && LWPA_CAN_LOG(rdmnet_log_params, LWPA_LOG_WARNING))
+        {
+          char cid_str[LWPA_UUID_STRING_BYTES];
+          lwpa_uuid_to_string(cid_str, &header.dest_cid);
+          lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
+                   RDMNET_LOG_MSG("Error sending probe reply to manager CID %s on interface index %u"), cid_str,
+                   netint->id.index);
+        }
 
         netint->reply_pending = false;
       }
@@ -401,7 +324,7 @@ void rdmnet_llrp_target_tick()
         target->next_to_destroy = NULL;
         next_destroy_list_entry = &target->next_to_destroy;
       }
-      target = lwpa_rbiter_next(&target_iter);
+      target = (LlrpTarget*)lwpa_rbiter_next(&target_iter);
     }
 
     // Now do the actual destruction
@@ -429,118 +352,132 @@ void rdmnet_llrp_target_tick()
     while (target)
     {
       process_target_state(target);
-      target = lwpa_rbiter_next(&target_iter);
+      target = (LlrpTarget*)lwpa_rbiter_next(&target_iter);
     }
 
     rdmnet_readunlock();
   }
 }
 
-void target_socket_activity(const LwpaPollEvent* event, PolledSocketOpaqueData data)
-{
-  static uint8_t llrp_target_recv_buf[LLRP_MAX_MESSAGE_SIZE];
-
-  if (event->events & LWPA_POLL_ERR)
-  {
-    target_socket_error((LlrpTargetNetintInfo*)data.ptr, event->err);
-  }
-  else if (event->events & LWPA_POLL_IN)
-  {
-    int recv_res = lwpa_recv(event->socket, llrp_target_recv_buf, LLRP_MAX_MESSAGE_SIZE, 0);
-    if (recv_res <= 0)
-    {
-      if (recv_res != kLwpaErrMsgSize)
-      {
-        target_socket_error((LlrpTargetNetintInfo*)data.ptr, event->err);
-      }
-    }
-    else
-    {
-      target_data_received((LlrpTargetNetintInfo*)data.ptr, llrp_target_recv_buf, recv_res);
-    }
-  }
-}
-
-void target_socket_error(LlrpTargetNetintInfo* target_netint, lwpa_error_t err)
-{
-  (void)target_netint;
-  (void)err;
-  // TODO
-}
-
-void target_data_received(LlrpTargetNetintInfo* target_netint, const uint8_t* data, size_t size)
+void target_data_received(const uint8_t* data, size_t data_size, const LlrpNetintId* netint)
 {
   TargetCallbackDispatchInfo cb;
   INIT_CALLBACK_INFO(&cb);
 
-  if (rdmnet_readlock())
+  LlrpTargetKeys keys;
+  if (get_llrp_destination_cid(data, data_size, &keys.cid))
   {
-    LlrpMessage msg;
-    LlrpMessageInterest interest;
-    interest.my_cid = target_netint->target->cid;
-    interest.interested_in_probe_reply = false;
-    interest.interested_in_probe_request = true;
-    interest.my_uid = target_netint->target->uid;
+    bool target_found = false;
 
-    if (parse_llrp_message(data, size, &interest, &msg))
+    if (rdmnet_readlock())
     {
-      handle_llrp_message(target_netint->target, target_netint, &msg, &cb);
+      if (0 == LWPA_UUID_CMP(&keys.cid, &kLlrpBroadcastCid))
+      {
+        // Broadcast LLRP message - handle with all targets
+        target_found = true;
+
+        LwpaRbIter target_iter;
+        lwpa_rbiter_init(&target_iter);
+        for (LlrpTarget* target = (LlrpTarget*)lwpa_rbiter_first(&target_iter, &state.targets); target;
+             target = (LlrpTarget*)lwpa_rbiter_next(&target_iter))
+        {
+          LlrpTargetNetintInfo* target_netint =
+              (LlrpTargetNetintInfo*)lwpa_rbtree_find(&target->netints, (void*)netint);
+          if (target_netint)
+          {
+            handle_llrp_message(data, data_size, target, target_netint, &cb);
+          }
+        }
+      }
+      else
+      {
+        LlrpTarget* target = (LlrpTarget*)lwpa_rbtree_find(&state.targets_by_cid, &keys);
+        if (target)
+        {
+          target_found = true;
+
+          LlrpTargetNetintInfo* target_netint =
+              (LlrpTargetNetintInfo*)lwpa_rbtree_find(&target->netints, (void*)netint);
+          if (target_netint)
+          {
+            handle_llrp_message(data, data_size, target, target_netint, &cb);
+          }
+        }
+      }
+      rdmnet_readunlock();
     }
-    rdmnet_readunlock();
+
+    if (!target_found && LWPA_CAN_LOG(rdmnet_log_params, LWPA_LOG_DEBUG))
+    {
+      char cid_str[LWPA_UUID_STRING_BYTES];
+      lwpa_uuid_to_string(cid_str, &keys.cid);
+      lwpa_log(rdmnet_log_params, LWPA_LOG_DEBUG,
+               RDMNET_LOG_MSG("Ignoring LLRP message addressed to unknown LLRP Target %s"), cid_str);
+    }
   }
 
   deliver_callback(&cb);
 }
 
-void handle_llrp_message(LlrpTarget* target, LlrpTargetNetintInfo* netint, const LlrpMessage* msg,
+void handle_llrp_message(const uint8_t* data, size_t data_size, LlrpTarget* target, LlrpTargetNetintInfo* netint,
                          TargetCallbackDispatchInfo* cb)
 {
-  switch (msg->vector)
-  {
-    case VECTOR_LLRP_PROBE_REQUEST:
-    {
-      const RemoteProbeRequest* request = LLRP_MSG_GET_PROBE_REQUEST(msg);
-      // TODO allow multiple probe replies to be queued
-      if (request->contains_my_uid && !netint->reply_pending)
-      {
-        int backoff_ms;
+  LlrpMessage msg;
+  LlrpMessageInterest interest;
+  interest.my_cid = target->keys.cid;
+  interest.interested_in_probe_reply = false;
+  interest.interested_in_probe_request = true;
+  interest.my_uid = target->uid;
 
-        /* Check the filter values. */
-        if (!((request->filter & LLRP_FILTERVAL_BROKERS_ONLY) && target->component_type != kLlrpCompBroker) &&
-            !(request->filter & LLRP_FILTERVAL_CLIENT_CONN_INACTIVE && target->connected_to_broker))
+  if (parse_llrp_message(data, data_size, &interest, &msg))
+  {
+    switch (msg.vector)
+    {
+      case VECTOR_LLRP_PROBE_REQUEST:
+      {
+        const RemoteProbeRequest* request = LLRP_MSG_GET_PROBE_REQUEST(&msg);
+        // TODO allow multiple probe replies to be queued
+        if (request->contains_my_uid && !netint->reply_pending)
         {
-          netint->reply_pending = true;
-          netint->pending_reply_cid = msg->header.sender_cid;
-          netint->pending_reply_trans_num = msg->header.transaction_number;
-          backoff_ms = (rand() * LLRP_MAX_BACKOFF_MS / RAND_MAX);
-          lwpa_timer_start(&netint->reply_backoff, backoff_ms);
+          int backoff_ms;
+
+          // Check the filter values.
+          if (!((request->filter & LLRP_FILTERVAL_BROKERS_ONLY) && target->component_type != kLlrpCompBroker) &&
+              !(request->filter & LLRP_FILTERVAL_CLIENT_CONN_INACTIVE && target->connected_to_broker))
+          {
+            netint->reply_pending = true;
+            netint->pending_reply_cid = msg.header.sender_cid;
+            netint->pending_reply_trans_num = msg.header.transaction_number;
+            backoff_ms = (rand() * LLRP_MAX_BACKOFF_MS / RAND_MAX);
+            lwpa_timer_start(&netint->reply_backoff, backoff_ms);
+          }
+        }
+        // Even if we got a valid probe request, we are starting a backoff timer, so there's nothing
+        // else to do at this time.
+        break;
+      }
+      case VECTOR_LLRP_RDM_CMD:
+      {
+        LlrpRemoteRdmCommand* remote_cmd = &cb->args.cmd_received.cmd;
+        if (kLwpaErrOk == rdmresp_unpack_command(LLRP_MSG_GET_RDM(&msg), &remote_cmd->rdm))
+        {
+          remote_cmd->src_cid = msg.header.sender_cid;
+          remote_cmd->seq_num = msg.header.transaction_number;
+          remote_cmd->netint_id = netint->id;
+
+          cb->which = kTargetCallbackRdmCmdReceived;
+          fill_callback_info(target, cb);
         }
       }
-      // Even if we got a valid probe request, we are starting a backoff timer, so there's nothing
-      // to report at this time.
-      break;
+      default:
+        break;
     }
-    case VECTOR_LLRP_RDM_CMD:
-    {
-      LlrpRemoteRdmCommand* remote_cmd = &cb->args.cmd_received.cmd;
-      if (kLwpaErrOk == rdmresp_unpack_command(LLRP_MSG_GET_RDM(msg), &remote_cmd->rdm))
-      {
-        remote_cmd->src_cid = msg->header.sender_cid;
-        remote_cmd->seq_num = msg->header.transaction_number;
-        remote_cmd->interface_index = netint - target->netints;
-
-        cb->which = kTargetCallbackRdmCmdReceived;
-        fill_callback_info(target, cb);
-      }
-    }
-    default:
-      break;
   }
 }
 
 void fill_callback_info(const LlrpTarget* target, TargetCallbackDispatchInfo* info)
 {
-  info->handle = target->handle;
+  info->handle = target->keys.handle;
   info->cbs = target->callbacks;
   info->context = target->callback_context;
 }
@@ -559,97 +496,100 @@ void deliver_callback(TargetCallbackDispatchInfo* info)
   }
 }
 
-lwpa_error_t setup_target_netint(const LwpaIpAddr* netint_addr, LlrpTarget* target, LlrpTargetNetintInfo* netint_info)
+lwpa_error_t setup_target_netint(const LlrpNetintId* netint_id, LlrpTarget* target)
 {
-  lwpa_error_t res = create_llrp_socket(netint_addr, false, &netint_info->sys_sock);
-  if (res != kLwpaErrOk)
-    return res;
+  lwpa_error_t res = kLwpaErrNoMem;
 
-  netint_info->poll_info.callback = target_socket_activity;
-  netint_info->poll_info.data.ptr = netint_info;
-  res = rdmnet_core_add_polled_socket(netint_info->sys_sock, LWPA_POLL_IN, &netint_info->poll_info);
+  LlrpTargetNetintInfo* new_netint_info = llrp_target_netint_alloc();
+  if (new_netint_info)
+  {
+    res = get_llrp_send_socket(netint_id, &new_netint_info->send_sock);
+    if (res != kLwpaErrOk)
+    {
+      llrp_target_netint_dealloc(new_netint_info);
+      return res;
+    }
 
-  if (res == kLwpaErrOk)
-  {
-    netint_info->ip = *netint_addr;
-    netint_info->reply_pending = false;
-    netint_info->target = target;
-  }
-  else
-  {
-    lwpa_close(netint_info->sys_sock);
+    res = llrp_recv_netint_add(netint_id, kLlrpSocketTypeTarget);
+    if (res != kLwpaErrOk)
+    {
+      release_llrp_send_socket(netint_id);
+      llrp_target_netint_dealloc(new_netint_info);
+      return res;
+    }
+
+    new_netint_info->id = *netint_id;
+    res = lwpa_rbtree_insert(&target->netints, new_netint_info);
+
+    if (res != kLwpaErrOk)
+    {
+      llrp_recv_netint_remove(netint_id, kLlrpSocketTypeTarget);
+      release_llrp_send_socket(netint_id);
+      llrp_target_netint_dealloc(new_netint_info);
+      return res;
+    }
+
+    // Remaining initialization
+    new_netint_info->reply_pending = false;
+    new_netint_info->target = target;
   }
 
   return res;
 }
 
-void cleanup_target_netint(LlrpTargetNetintInfo* netint_info)
+void cleanup_target_netint(const LwpaRbTree* self, LwpaRbNode* node)
 {
-  rdmnet_core_remove_polled_socket(netint_info->sys_sock);
-  lwpa_close(netint_info->sys_sock);
+  (void)self;
+
+  LlrpTargetNetintInfo* netint_info = (LlrpTargetNetintInfo*)node->value;
+  if (netint_info)
+  {
+    release_llrp_send_socket(&netint_info->id);
+    llrp_recv_netint_remove(&netint_info->id, kLlrpSocketTypeTarget);
+    llrp_target_netint_dealloc(netint_info);
+    target_node_free(node);
+  }
 }
 
 lwpa_error_t setup_target_netints(const LlrpTargetOptionalConfig* config, LlrpTarget* target)
 {
   lwpa_error_t res = kLwpaErrOk;
-  target->num_netints = 0;
+  lwpa_rbtree_init(&target->netints, target_netint_cmp, target_node_alloc, target_node_free);
 
   if (config->netint_arr && config->num_netints > 0)
   {
-#if RDMNET_DYNAMIC_MEM
-    target->netints = calloc(config->num_netints, sizeof(LlrpTargetNetintInfo));
-    if (!target->netints)
-      res = kLwpaErrNoMem;
-#else
-    if (config->num_netints > RDMNET_LLRP_MAX_TARGET_NETINTS)
+#if !RDMNET_DYNAMIC_MEM
+    if (config->num_netints > RDMNET_LLRP_MAX_NETINTS_PER_TARGET)
       res = kLwpaErrNoMem;
 #endif
+
     if (res == kLwpaErrOk)
     {
-      for (size_t i = 0; i < config->num_netints; ++i)
+      for (const LlrpNetintId* netint_id = config->netint_arr; netint_id < config->netint_arr + config->num_netints;
+           ++netint_id)
       {
-        res = setup_target_netint(&config->netint_arr[i], target, &target->netints[i]);
-        if (res == kLwpaErrOk)
-          ++target->num_netints;
-        else
+        res = setup_target_netint(netint_id, target);
+        if (res != kLwpaErrOk)
           break;
       }
     }
   }
   else
   {
-#if RDMNET_DYNAMIC_MEM
-    target->netints = calloc(state.num_sys_netints, sizeof(LlrpTargetNetintInfo));
-    if (!target->netints)
-      res = kLwpaErrNoMem;
-#endif
-    if (res == kLwpaErrOk)
+    LwpaRbIter netint_iter;
+    get_llrp_netint_list(&netint_iter);
+    for (LlrpNetint* netint = (LlrpNetint*)netint_iter.node->value; netint;
+         netint = (LlrpNetint*)lwpa_rbiter_next(&netint_iter))
     {
-      for (size_t i = 0; i < state.num_sys_netints; ++i)
-      {
-        res = setup_target_netint(&state.sys_netints[i].addr, target, &target->netints[i]);
-        if (res == kLwpaErrOk)
-          ++target->num_netints;
-        else
-          break;
-      }
+      res = setup_target_netint(&netint->id, target);
+      if (res != kLwpaErrOk)
+        break;
     }
   }
 
   if (res != kLwpaErrOk)
   {
-#if RDMNET_DYNAMIC_MEM
-    if (target->netints)
-    {
-#endif
-      for (LlrpTargetNetintInfo* netint = target->netints; netint < target->netints + target->num_netints; ++netint)
-      {
-        cleanup_target_netint(netint);
-      }
-#if RDMNET_DYNAMIC_MEM
-      free(target->netints);
-    }
-#endif
+    lwpa_rbtree_clear_with_cb(&target->netints, cleanup_target_netint);
   }
   return res;
 }
@@ -669,33 +609,45 @@ lwpa_error_t create_new_target(const LlrpTargetConfig* config, LlrpTarget** new_
 
     if (res == kLwpaErrOk)
     {
-      if (0 != lwpa_rbtree_insert(&state.targets, target))
+      target->keys.handle = new_handle;
+      target->keys.cid = config->cid;
+      res = lwpa_rbtree_insert(&state.targets, target);
+      if (res == kLwpaErrOk)
       {
-        target->cid = config->cid;
-        if (RDMNET_UID_IS_DYNAMIC_UID_REQUEST(&config->optional.uid))
+        res = lwpa_rbtree_insert(&state.targets_by_cid, target);
+        if (res == kLwpaErrOk)
         {
-          // This is a hack around a hole in the standard. TODO add a more explanatory comment once
-          // this has been further explored.
-          target->uid.manu = config->optional.uid.manu;
-          target->uid.id = (uint32_t)rand();
+          if (RDMNET_UID_IS_DYNAMIC_UID_REQUEST(&config->optional.uid))
+          {
+            // This is a hack around a hole in the standard. TODO add a more explanatory comment once
+            // this has been further explored.
+            target->uid.manu = config->optional.uid.manu;
+            target->uid.id = (uint32_t)rand();
+          }
+          else
+          {
+            target->uid = config->optional.uid;
+          }
+          target->component_type = config->component_type;
+          target->connected_to_broker = false;
+          target->callbacks = config->callbacks;
+          target->callback_context = config->callback_context;
+          target->marked_for_destruction = false;
+          target->next_to_destroy = NULL;
+
+          *new_target = target;
         }
         else
         {
-          target->uid = config->optional.uid;
+          lwpa_rbtree_remove(&state.targets, target);
+          lwpa_rbtree_clear_with_cb(&target->netints, cleanup_target_netint);
+          llrp_target_dealloc(target);
         }
-        target->component_type = config->component_type;
-        target->connected_to_broker = false;
-        target->callbacks = config->callbacks;
-        target->callback_context = config->callback_context;
-        target->marked_for_destruction = false;
-        target->next_to_destroy = NULL;
-
-        *new_target = target;
       }
       else
       {
+        lwpa_rbtree_clear_with_cb(&target->netints, cleanup_target_netint);
         llrp_target_dealloc(target);
-        res = kLwpaErrNoMem;
       }
     }
     else
@@ -734,10 +686,7 @@ void destroy_target(LlrpTarget* target, bool remove_from_tree)
 {
   if (target)
   {
-    for (LlrpTargetNetintInfo* netint = target->netints; netint < target->netints + target->num_netints; ++netint)
-    {
-      cleanup_target_netint(netint);
-    }
+    lwpa_rbtree_clear_with_cb(&target->netints, cleanup_target_netint);
     if (remove_from_tree)
       lwpa_rbtree_remove(&state.targets, target);
     llrp_target_dealloc(target);
@@ -750,14 +699,41 @@ bool target_handle_in_use(int handle_val)
   return lwpa_rbtree_find(&state.targets, &handle_val);
 }
 
-int target_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b)
+int target_cmp_by_handle(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b)
 {
   (void)self;
 
   const LlrpTarget* a = (const LlrpTarget*)node_a->value;
   const LlrpTarget* b = (const LlrpTarget*)node_b->value;
 
-  return a->handle - b->handle;
+  return (a->keys.handle > b->keys.handle) - (a->keys.handle < b->keys.handle);
+}
+
+int target_cmp_by_cid(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b)
+{
+  (void)self;
+
+  const LlrpTarget* a = (const LlrpTarget*)node_a->value;
+  const LlrpTarget* b = (const LlrpTarget*)node_b->value;
+
+  return LWPA_UUID_CMP(&a->keys.cid, &b->keys.cid);
+}
+
+int target_netint_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b)
+{
+  (void)self;
+
+  const LlrpTargetNetintInfo* a = (const LlrpTargetNetintInfo*)node_a->value;
+  const LlrpTargetNetintInfo* b = (const LlrpTargetNetintInfo*)node_b->value;
+
+  if (a->id.ip_type == b->id.ip_type)
+  {
+    return (a->id.index > b->id.index) - (a->id.index < b->id.index);
+  }
+  else
+  {
+    return (a->id.ip_type == kLwpaIpTypeV6) ? 1 : -1;
+  }
 }
 
 LwpaRbNode* target_node_alloc()

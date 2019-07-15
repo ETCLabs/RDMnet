@@ -45,18 +45,23 @@ struct DiscoveredTargetInternal
   DiscoveredTargetInternal* next;
 };
 
+// A struct containing the map keys we use for LLRP managers.
+typedef struct LlrpManagerKeys
+{
+  llrp_manager_t handle;
+  LwpaUuid cid;
+  LlrpNetintId netint;
+} LlrpManagerKeys;
+
 typedef struct LlrpManager LlrpManager;
 struct LlrpManager
 {
   // Identification
-  llrp_manager_t handle;
-  LwpaUuid cid;
+  LlrpManagerKeys keys;
   RdmUid uid;
 
   // Underlying networking info
-  LwpaIpAddr netint;
-  lwpa_socket_t sys_sock;
-  PolledSocketInfo poll_info;
+  lwpa_socket_t send_sock;
 
   // Send tracking
   uint8_t send_buf[LLRP_MANAGER_MAX_MESSAGE_SIZE];
@@ -120,6 +125,8 @@ lwpa_error_t rdmnet_llrp_manager_init();
 void rdmnet_llrp_manager_deinit();
 
 void rdmnet_llrp_manager_tick();
+
+void manager_data_received(const uint8_t* data, size_t data_size, const LlrpNetintId* netint);
 
 #ifdef __cplusplus
 }

@@ -296,16 +296,16 @@
  *
  *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
  */
-#ifndef RDMNET_LLRP_MAX_TARGET_NETINTS
-#define RDMNET_LLRP_MAX_TARGET_NETINTS 1
+#ifndef RDMNET_LLRP_MAX_NETINTS_PER_TARGET
+#define RDMNET_LLRP_MAX_NETINTS_PER_TARGET 1
 #endif
 
 /*! \brief In LLRP, whether to bind the underlying network socket directly to the LLRP multicast
  *         address.
  *
- *  Otherwise, the socket is bound to INADDR_ANY. On some systems, binding directly to a multicast
- *  address decreases traffic duplication. On other systems, it's not even allowed. Leave this
- *  option at its default value unless you REALLY know what you're doing.
+ *  Otherwise, the socket is bound to the wildcard address. On some systems, binding directly to a
+ *  multicast address decreases traffic duplication. On other systems, it's not even allowed. Leave
+ *  this option at its default value unless you REALLY know what you're doing.
  */
 #ifndef RDMNET_LLRP_BIND_TO_MCAST_ADDRESS
 #define RDMNET_LLRP_BIND_TO_MCAST_ADDRESS !RDMNET_WINDOWS_HINT
