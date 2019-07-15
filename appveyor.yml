@@ -43,10 +43,7 @@ environment:
 configuration: Release
 
 install:
-  - ps: |-
-      $wc = New-Object Net.WebClient
-      $wc.DownloadFile("https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_Merge_$($Env:MDNSWINDOWS_VERSION).msm", "$Env:APPVEYOR_BUILD_FOLDER\mdns_install\ETC_mDNSInstall.msm")
-      iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/appveyor/secure-file/master/install.ps1'))
+  - ps: iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/appveyor/secure-file/master/install.ps1'))
   - cmd: appveyor-tools\secure-file -decrypt tools\install\windows\codesign_cert_windows.pfx.enc -secret %CODESIGN_DECRYPT_SECRET%
 
 before_build:

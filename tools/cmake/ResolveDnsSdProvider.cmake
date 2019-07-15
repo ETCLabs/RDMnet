@@ -7,6 +7,7 @@
 # - DNS_SD_ADDITIONAL_LIBS: Static libs to be added to the RDMnet library compilation
 
 set(MDNSWINDOWS_VERSION 1.2.0.3)
+set(MDNSWINDOWS_MERGE_DOWNLOAD_URL "https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_Merge_${MDNSWINDOWS_VERSION}.msm")
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   set(MDNSWINDOWS_DOWNLOAD_URL "https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_${MDNSWINDOWS_VERSION}_x64.zip")
 else()
@@ -71,7 +72,7 @@ if(WIN32)
 
     if(NOT MDNSWINDOWS_SRC_LOC AND NOT MDNSWINDOWS_INSTALL_LOC)
       message(STATUS "Neither MDNSWINDOWS_SRC_LOC or MDNSWINDOWS_INSTALL_LOC overrides provided.")
-      message(STATUS "Downloading the latest release from Bintray...")
+      message(STATUS "Downloading the correct release from Bintray...")
 
       file(DOWNLOAD ${MDNSWINDOWS_DOWNLOAD_URL} ${CMAKE_BINARY_DIR}/mdnswindows.zip STATUS DOWNLOAD_STATUS)
       list(GET DOWNLOAD_STATUS 0 DOWNLOAD_STATUS_CODE)
@@ -86,7 +87,16 @@ if(WIN32)
       execute_process(COMMAND ${CMAKE_COMMAND} -E tar -xzf ${CMAKE_BINARY_DIR}/mdnswindows.zip WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/mdnswindows_install)
       set(MDNSWINDOWS_INSTALL_LOC ${CMAKE_BINARY_DIR}/mdnswindows_install CACHE STRING "Override location for mDNSWindows to build from source on Windows" FORCE)
 
-      message(STATUS "Done.")
+      message(STATUS "Done. Downloading merge module...")
+
+      file(DOWNLOAD ${MDNSWINDOWS_MERGE_DOWNLOAD_URL} ${CMAKE_BINARY_DIR}/mdnswindows_install/ETC_mDNSInstall.msm STATUS DOWNLOAD_STATUS)
+      list(GET DOWNLOAD_STATUS 0 DOWNLOAD_STATUS_CODE)
+      list(GET DOWNLOAD_STATUS 1 DOWNLOAD_STATUS_STR)
+      if(DOWNLOAD_STATUS_CODE EQUAL 0)
+        message(STATUS "Done.")
+      else()
+        message(FATAL_ERROR "Error downloading from ${MDNSWINDOWS_MERGE_DOWNLOAD_URL}: '${DOWNLOAD_STATUS_STR}'")
+      endif()
 
     endif()
 
