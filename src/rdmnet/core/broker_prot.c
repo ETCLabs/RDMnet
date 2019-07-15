@@ -58,7 +58,7 @@ static size_t calc_client_connect_len(const ClientConnectMsg* data);
 static size_t calc_request_dynamic_uids_len(const DynamicUidRequestListEntry* request_list);
 static size_t calc_requested_uids_len(const FetchUidAssignmentListEntry* uid_list);
 static size_t calc_dynamic_uid_mapping_list_len(const DynamicUidMapping* mapping_list);
-static size_t pack_broker_header_with_rlp(const LwpaRootLayerPdu* rlp, uint8_t* buf, size_t buflen, uint32_t vector);
+static size_t pack_broker_header_with_rlp(const LwpaRootLayerPdu* rlp, uint8_t* buf, size_t buflen, uint16_t vector);
 static lwpa_error_t send_broker_header(RdmnetConnection* conn, const LwpaRootLayerPdu* rlp, uint8_t* buf, size_t buflen,
                                        uint16_t vector);
 

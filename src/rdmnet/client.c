@@ -1047,7 +1047,7 @@ lwpa_error_t rpt_client_new(const RdmnetRptClientConfig* config, rdmnet_client_t
     if (res == kLwpaErrOk)
     {
       new_cli->handle = new_handle;
-      if (0 != lwpa_rbtree_insert(&state.clients, new_cli))
+      if (kLwpaErrOk == lwpa_rbtree_insert(&state.clients, new_cli))
       {
         // Init the client data
         new_cli->type = kClientProtocolRPT;
@@ -1098,7 +1098,7 @@ lwpa_error_t create_llrp_handle_for_client(const RdmnetRptClientConfig* config, 
 
   if (res == kLwpaErrOk)
   {
-    if (0 == lwpa_rbtree_insert(&state.clients_by_llrp_handle, cli))
+    if (kLwpaErrOk != lwpa_rbtree_insert(&state.clients_by_llrp_handle, cli))
     {
       rdmnet_llrp_target_destroy(cli->llrp_handle);
       res = kLwpaErrNoMem;
@@ -1141,7 +1141,7 @@ lwpa_error_t create_and_append_scope_entry(const RdmnetScopeConfig* config, Rdmn
     res = rdmnet_connection_create(&conn_config, &new_scope->handle);
     if (res == kLwpaErrOk)
     {
-      if (0 != lwpa_rbtree_insert(&state.scopes_by_handle, new_scope))
+      if (kLwpaErrOk == lwpa_rbtree_insert(&state.scopes_by_handle, new_scope))
       {
         res = kLwpaErrOk;
         new_scope->next = NULL;

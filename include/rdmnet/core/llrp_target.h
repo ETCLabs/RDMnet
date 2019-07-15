@@ -101,7 +101,7 @@ typedef struct LlrpTargetCallbacks
 
 typedef struct LlrpTargetOptionalConfig
 {
-  LlrpTargetNetintConfig* netint_arr;
+  LlrpNetintId* netint_arr;
   size_t num_netints;
   RdmUid uid;
 } LlrpTargetOptionalConfig;

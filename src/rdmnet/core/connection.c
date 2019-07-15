@@ -958,7 +958,7 @@ RdmnetConnection* create_new_connection(const RdmnetConnectionConfig* config)
     if (ok)
     {
       conn->handle = new_handle;
-      ok = (0 != lwpa_rbtree_insert(&state.connections, conn));
+      ok = (kLwpaErrOk == lwpa_rbtree_insert(&state.connections, conn));
     }
     if (ok)
     {

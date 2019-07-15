@@ -32,6 +32,7 @@
 #ifndef _RDMNET_CORE_LLRP_H_
 #define _RDMNET_CORE_LLRP_H_
 
+#include "lwpa/inet.h"
 #include "lwpa/int.h"
 #include "lwpa/uuid.h"
 #include "rdm/uid.h"

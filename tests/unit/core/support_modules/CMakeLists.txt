@@ -10,4 +10,4 @@ add_executable(test_rdmnet_core_support_modules
 target_include_directories(test_rdmnet_core_support_modules PRIVATE ${RDMNET_SRC})
 target_link_libraries(test_rdmnet_core_support_modules RDMnetCore RDMnetDiscovery_mock RDM gtest)
 set_target_properties(test_rdmnet_core_support_modules PROPERTIES CXX_STANDARD 11)
-gtest_add_tests(TARGET test_rdmnet_core_support_modules)
+gtest_add_tests(TARGET test_rdmnet_core_support_modules SKIP_DEPENDENCY)

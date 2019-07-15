@@ -51,6 +51,7 @@
 static struct LlrpManagerState
 {
   LwpaRbTree managers;
+  LwpaRbTree managers_by_cid_and_netint;
   IntHandleManager handle_mgr;
 } state;
 
@@ -59,15 +60,14 @@ static struct LlrpManagerState
 // Creating, destroying, and finding managers
 static lwpa_error_t validate_llrp_manager_config(const LlrpManagerConfig* config);
 static lwpa_error_t create_new_manager(const LlrpManagerConfig* config, LlrpManager** new_manager);
+static lwpa_error_t setup_manager_socket(LlrpManager* manager);
 static lwpa_error_t get_manager(llrp_manager_t handle, LlrpManager** manager);
 static void release_manager(LlrpManager* manager);
 static void destroy_manager(LlrpManager* manager, bool remove_from_tree);
+static void destroy_manager_socket(LlrpManager* manager);
 static bool manager_handle_in_use(int handle_val);
 
 // Manager state processing
-static void manager_socket_activity(const LwpaPollEvent* event, PolledSocketOpaqueData data);
-static void manager_socket_error(LlrpManager* manager, lwpa_error_t err);
-static void manager_data_received(LlrpManager* manager, const uint8_t* data, size_t size);
 static void handle_llrp_message(LlrpManager* manager, const LlrpMessage* msg, ManagerCallbackDispatchInfo* cb);
 static void process_manager_state(LlrpManager* manager, ManagerCallbackDispatchInfo* info);
 static void fill_callback_info(const LlrpManager* manager, ManagerCallbackDispatchInfo* info);
@@ -76,7 +76,8 @@ static void deliver_callback(ManagerCallbackDispatchInfo* info);
 // Functions for the known_uids tree in a manager
 static LwpaRbNode* manager_node_alloc();
 static void manager_node_dealloc(LwpaRbNode* node);
-static int manager_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b);
+static int manager_cmp_by_handle(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b);
+static int manager_cmp_by_cid_and_netint(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b);
 static int discovered_target_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b);
 static void discovered_target_clear_cb(const LwpaRbTree* self, LwpaRbNode* node);
 
@@ -89,7 +90,9 @@ static bool send_next_probe(LlrpManager* manager);
 
 lwpa_error_t rdmnet_llrp_manager_init()
 {
-  lwpa_rbtree_init(&state.managers, manager_cmp, manager_node_alloc, manager_node_dealloc);
+  lwpa_rbtree_init(&state.managers, manager_cmp_by_handle, manager_node_alloc, manager_node_dealloc);
+  lwpa_rbtree_init(&state.managers_by_cid_and_netint, manager_cmp_by_cid_and_netint, manager_node_alloc,
+                   manager_node_dealloc);
   init_int_handle_manager(&state.handle_mgr, manager_handle_in_use);
   return kLwpaErrOk;
 }
@@ -144,7 +147,7 @@ lwpa_error_t rdmnet_llrp_manager_create(const LlrpManagerConfig* config, llrp_ma
     LlrpManager* manager;
     res = create_new_manager(config, &manager);
     if (res == kLwpaErrOk)
-      *handle = manager->handle;
+      *handle = manager->keys.handle;
 
     rdmnet_writeunlock();
   }
@@ -278,11 +281,11 @@ lwpa_error_t rdmnet_llrp_send_rdm_command(llrp_manager_t handle, const LlrpLocal
     {
       LlrpHeader header;
       header.dest_cid = command->dest_cid;
-      header.sender_cid = manager->cid;
+      header.sender_cid = manager->keys.cid;
       header.transaction_number = manager->transaction_number;
 
-      res = send_llrp_rdm_command(manager->sys_sock, manager->send_buf, (manager->ip_type == kLwpaIpTypeV6), &header,
-                                  &cmd_buf);
+      res = send_llrp_rdm_command(manager->send_sock, manager->send_buf,
+                                  (manager->keys.netint.ip_type == kLwpaIpTypeV6), &header, &cmd_buf);
       if (res == kLwpaErrOk && transaction_num)
         *transaction_num = manager->transaction_number++;
     }
@@ -316,7 +319,7 @@ void rdmnet_llrp_manager_tick()
         manager->next_to_destroy = NULL;
         next_destroy_list_entry = &manager->next_to_destroy;
       }
-      manager = (LlrpManager *)lwpa_rbiter_next(&manager_iter);
+      manager = (LlrpManager*)lwpa_rbiter_next(&manager_iter);
     }
 
     // Now do the actual destruction
@@ -349,7 +352,7 @@ void rdmnet_llrp_manager_tick()
       process_manager_state(manager, &cb);
       if (cb.which != kManagerCallbackNone)
         break;
-      manager = (LlrpManager *)lwpa_rbiter_next(&manager_iter);
+      manager = (LlrpManager*)lwpa_rbiter_next(&manager_iter);
     }
 
     rdmnet_readunlock();
@@ -441,7 +444,7 @@ bool send_next_probe(LlrpManager* manager)
   if (update_probe_range(manager, &list_head))
   {
     LlrpHeader header;
-    header.sender_cid = manager->cid;
+    header.sender_cid = manager->keys.cid;
     header.dest_cid = kLlrpBroadcastCid;
     header.transaction_number = manager->transaction_number++;
 
@@ -451,8 +454,8 @@ bool send_next_probe(LlrpManager* manager)
     request.upper_uid = manager->cur_range_high;
     request.uid_list = list_head;
 
-    lwpa_error_t send_res = send_llrp_probe_request(manager->sys_sock, manager->send_buf,
-                                                    (manager->ip_type == kLwpaIpTypeV6), &header, &request);
+    lwpa_error_t send_res = send_llrp_probe_request(manager->send_sock, manager->send_buf,
+                                                    (manager->keys.netint.ip_type == kLwpaIpTypeV6), &header, &request);
     if (send_res == kLwpaErrOk)
     {
       lwpa_timer_start(&manager->disc_timer, LLRP_TIMEOUT_MS);
@@ -503,56 +506,47 @@ void process_manager_state(LlrpManager* manager, ManagerCallbackDispatchInfo* cb
   }
 }
 
-void manager_socket_activity(const LwpaPollEvent* event, PolledSocketOpaqueData data)
+void manager_data_received(const uint8_t* data, size_t data_size, const LlrpNetintId* netint)
 {
-  static uint8_t llrp_manager_recv_buf[LLRP_MAX_MESSAGE_SIZE];
+  (void)netint;
 
-  if (event->events & LWPA_POLL_ERR)
-  {
-    manager_socket_error((LlrpManager*)data.ptr, event->err);
-  }
-  else if (event->events & LWPA_POLL_IN)
-  {
-    int recv_res = lwpa_recv(event->socket, llrp_manager_recv_buf, LLRP_MAX_MESSAGE_SIZE, 0);
-    if (recv_res <= 0)
-    {
-      if (recv_res != kLwpaErrMsgSize)
-      {
-        manager_socket_error((LlrpManager*)data.ptr, event->err);
-      }
-    }
-    else
-    {
-      manager_data_received((LlrpManager*)data.ptr, llrp_manager_recv_buf, recv_res);
-    }
-  }
-}
-
-void manager_socket_error(LlrpManager* manager, lwpa_error_t err)
-{
-  (void)manager;
-  (void)err;
-  // TODO
-}
-
-void manager_data_received(LlrpManager* manager, const uint8_t* data, size_t size)
-{
   ManagerCallbackDispatchInfo cb;
   INIT_CALLBACK_INFO(&cb);
 
-  if (rdmnet_readlock())
+  LlrpManagerKeys keys;
+  if (get_llrp_destination_cid(data, data_size, &keys.cid))
   {
-    LlrpMessage msg;
-    LlrpMessageInterest interest;
-    interest.my_cid = manager->cid;
-    interest.interested_in_probe_reply = true;
-    interest.interested_in_probe_request = false;
+    keys.netint = *netint;
+    bool manager_found = false;
 
-    if (parse_llrp_message(data, size, &interest, &msg))
+    if (rdmnet_readlock())
     {
-      handle_llrp_message(manager, &msg, &cb);
+      LlrpManager* manager = (LlrpManager*)lwpa_rbtree_find(&state.managers_by_cid_and_netint, &keys);
+      if (manager)
+      {
+        manager_found = true;
+
+        LlrpMessage msg;
+        LlrpMessageInterest interest;
+        interest.my_cid = keys.cid;
+        interest.interested_in_probe_reply = true;
+        interest.interested_in_probe_request = false;
+
+        if (parse_llrp_message(data, data_size, &interest, &msg))
+        {
+          handle_llrp_message(manager, &msg, &cb);
+        }
+      }
+      rdmnet_readunlock();
     }
-    rdmnet_readunlock();
+
+    if (!manager_found && LWPA_CAN_LOG(rdmnet_log_params, LWPA_LOG_DEBUG))
+    {
+      char cid_str[LWPA_UUID_STRING_BYTES];
+      lwpa_uuid_to_string(cid_str, &keys.cid);
+      lwpa_log(rdmnet_log_params, LWPA_LOG_DEBUG, "Ignoring LLRP message addressed to unknown LLRP Manager %s",
+               cid_str);
+    }
   }
 
   deliver_callback(&cb);
@@ -566,7 +560,7 @@ void handle_llrp_message(LlrpManager* manager, const LlrpMessage* msg, ManagerCa
     {
       const DiscoveredLlrpTarget* target = LLRP_MSG_GET_PROBE_REPLY(msg);
 
-      if (manager->discovery_active && LWPA_UUID_CMP(&msg->header.dest_cid, &manager->cid) == 0)
+      if (manager->discovery_active && LWPA_UUID_CMP(&msg->header.dest_cid, &manager->keys.cid) == 0)
       {
         DiscoveredTargetInternal* new_target = (DiscoveredTargetInternal*)malloc(sizeof(DiscoveredTargetInternal));
         if (new_target)
@@ -577,7 +571,7 @@ void handle_llrp_message(LlrpManager* manager, const LlrpMessage* msg, ManagerCa
           new_target->next = NULL;
 
           DiscoveredTargetInternal* found =
-              (DiscoveredTargetInternal* )lwpa_rbtree_find(&manager->discovered_targets, new_target);
+              (DiscoveredTargetInternal*)lwpa_rbtree_find(&manager->discovered_targets, new_target);
           if (found)
           {
             // A target has responded that has the same UID as one already in our tree. This is not
@@ -635,7 +629,7 @@ void handle_llrp_message(LlrpManager* manager, const LlrpMessage* msg, ManagerCa
 
 void fill_callback_info(const LlrpManager* manager, ManagerCallbackDispatchInfo* info)
 {
-  info->handle = manager->handle;
+  info->handle = manager->keys.handle;
   info->cbs = manager->callbacks;
   info->context = manager->callback_context;
 }
@@ -664,26 +658,27 @@ void deliver_callback(ManagerCallbackDispatchInfo* info)
 
 lwpa_error_t setup_manager_socket(LlrpManager* manager)
 {
-  lwpa_error_t res = create_llrp_socket(manager->ip_type, manager->netint_index, true, &manager->sys_sock);
-  if (res != kLwpaErrOk)
-    return res;
-
-  manager->poll_info.callback = manager_socket_activity;
-  manager->poll_info.data.ptr = manager;
-  res = rdmnet_core_add_polled_socket(manager->sys_sock, LWPA_POLL_IN, &manager->poll_info);
-  if (res != kLwpaErrOk)
-    lwpa_close(manager->sys_sock);
+  lwpa_error_t res = get_llrp_send_socket(&manager->keys.netint, &manager->send_sock);
+  if (res == kLwpaErrOk)
+  {
+    res = llrp_recv_netint_add(&manager->keys.netint, kLlrpSocketTypeManager);
+    if (res != kLwpaErrOk)
+      release_llrp_send_socket(&manager->keys.netint);
+  }
   return res;
 }
 
 lwpa_error_t validate_llrp_manager_config(const LlrpManagerConfig* config)
 {
-  if ((config->ip_type != kLwpaIpTypeV4 && config->ip_type != kLwpaIpTypeV6) || LWPA_UUID_IS_NULL(&config->cid))
+  if ((config->netint.ip_type != kLwpaIpTypeV4 && config->netint.ip_type != kLwpaIpTypeV6) ||
+      LWPA_UUID_IS_NULL(&config->cid))
+  {
     return kLwpaErrInvalid;
+  }
   return kLwpaErrOk;
 }
 
-lwpa_error_t create_new_manager(const LlrpManagerConfig *config, LlrpManager **new_manager)
+lwpa_error_t create_new_manager(const LlrpManagerConfig* config, LlrpManager** new_manager)
 {
   lwpa_error_t res = kLwpaErrNoMem;
 
@@ -694,31 +689,42 @@ lwpa_error_t create_new_manager(const LlrpManagerConfig *config, LlrpManager **n
   LlrpManager* manager = (LlrpManager*)llrp_manager_alloc();
   if (manager)
   {
-    manager->ip_type = config->ip_type;
-    manager->netint_index = config->netint_index;
+    manager->keys.netint = config->netint;
     res = setup_manager_socket(manager);
     if (res == kLwpaErrOk)
     {
-      manager->handle = new_handle;
-      if (0 != lwpa_rbtree_insert(&state.managers, manager))
+      manager->keys.handle = new_handle;
+      manager->keys.cid = config->cid;
+      res = lwpa_rbtree_insert(&state.managers, manager);
+      if (res == kLwpaErrOk)
       {
-        manager->cid = config->cid;
-        manager->uid.manu = 0x8000 | config->manu_id;
-        manager->uid.id = (uint32_t)rand();
+        res = lwpa_rbtree_insert(&state.managers_by_cid_and_netint, manager);
+        if (res == kLwpaErrOk)
+        {
+          manager->uid.manu = 0x8000 | config->manu_id;
+          manager->uid.id = (uint32_t)rand();
 
-        manager->transaction_number = 0;
-        manager->discovery_active = false;
+          manager->transaction_number = 0;
+          manager->discovery_active = false;
 
-        manager->callbacks = config->callbacks;
-        manager->callback_context = config->callback_context;
+          manager->callbacks = config->callbacks;
+          manager->callback_context = config->callback_context;
 
-        manager->marked_for_destruction = false;
-        manager->next_to_destroy = NULL;
+          manager->marked_for_destruction = false;
+          manager->next_to_destroy = NULL;
 
-        *new_manager = manager;
+          *new_manager = manager;
+        }
+        else
+        {
+          lwpa_rbtree_remove(&state.managers, manager);
+          destroy_manager_socket(manager);
+          llrp_manager_dealloc(manager);
+        }
       }
       else
       {
+        destroy_manager_socket(manager);
         llrp_manager_dealloc(manager);
         res = kLwpaErrNoMem;
       }
@@ -758,8 +764,7 @@ void destroy_manager(LlrpManager* manager, bool remove_from_tree)
 {
   if (manager)
   {
-    rdmnet_core_remove_polled_socket(manager->sys_sock);
-    lwpa_close(manager->sys_sock);
+    destroy_manager_socket(manager);
     if (manager->discovery_active)
     {
       lwpa_rbtree_clear_with_cb(&manager->discovered_targets, discovered_target_clear_cb);
@@ -772,18 +777,50 @@ void destroy_manager(LlrpManager* manager, bool remove_from_tree)
   }
 }
 
+void destroy_manager_socket(LlrpManager* manager)
+{
+  llrp_recv_netint_remove(&manager->keys.netint, kLlrpSocketTypeManager);
+  release_llrp_send_socket(&manager->keys.netint);
+}
+
 /* Callback for IntHandleManager to determine whether a handle is in use */
 bool manager_handle_in_use(int handle_val)
 {
   return lwpa_rbtree_find(&state.managers, &handle_val);
 }
 
-int manager_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b)
+int manager_cmp_by_handle(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b)
 {
   (void)self;
+
   const LlrpManager* a = (const LlrpManager*)node_a->value;
   const LlrpManager* b = (const LlrpManager*)node_b->value;
-  return a->handle - b->handle;
+
+  return (a->keys.handle > b->keys.handle) - (a->keys.handle < b->keys.handle);
+}
+
+int manager_cmp_by_cid_and_netint(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b)
+{
+  (void)self;
+
+  const LlrpManager* a = (const LlrpManager*)node_a->value;
+  const LlrpManager* b = (const LlrpManager*)node_b->value;
+
+  if (a->keys.netint.ip_type == b->keys.netint.ip_type)
+  {
+    if (a->keys.netint.index == b->keys.netint.index)
+    {
+      return LWPA_UUID_CMP(&a->keys.cid, &b->keys.cid);
+    }
+    else
+    {
+      return (a->keys.netint.index > b->keys.netint.index) - (a->keys.netint.index < b->keys.netint.index);
+    }
+  }
+  else
+  {
+    return (a->keys.netint.ip_type == kLwpaIpTypeV6) ? 1 : -1;
+  }
 }
 
 int discovered_target_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b)

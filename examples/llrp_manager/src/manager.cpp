@@ -69,11 +69,6 @@ LLRPManager::LLRPManager(const LwpaUuid& my_cid, const LwpaLogParams* log_params
   size_t num_interfaces = lwpa_netint_get_num_interfaces();
   if (num_interfaces > 0)
   {
-    size_t i;
-    auto netints = std::make_unique<LwpaNetintInfo[]>(num_interfaces);
-
-    num_interfaces = lwpa_netint_get_interfaces(netints.get(), num_interfaces);
-
     LlrpManagerConfig config;
     config.cid = cid_;
     config.manu_id = 0x6574;
@@ -81,12 +76,12 @@ LLRPManager::LLRPManager(const LwpaUuid& my_cid, const LwpaLogParams* log_params
     config.callbacks.discovery_finished = llrpcb_discovery_finished;
     config.callbacks.rdm_resp_received = llrpcb_rdm_resp_received;
     config.callback_context = this;
-    for (i = 0; i < num_interfaces; ++i)
-    {
-      LwpaNetintInfo* netint = &netints[i];
 
-      config.ip_type = netint->addr.type;
-      config.netint_index = netint->index;
+    const LwpaNetintInfo* netint_list = lwpa_netint_get_interfaces();
+    for (const LwpaNetintInfo* netint = netint_list; netint < netint_list + num_interfaces; ++netint)
+    {
+      config.netint.ip_type = netint->addr.type;
+      config.netint.index = netint->index;
       llrp_manager_t handle;
       lwpa_error_t res = rdmnet_llrp_manager_create(&config, &handle);
       if (res == kLwpaErrOk)

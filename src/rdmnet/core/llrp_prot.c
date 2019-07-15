@@ -63,6 +63,34 @@ void llrp_prot_init()
   lwpa_string_to_uuid(&kLlrpBroadcastCid, LLRP_BROADCAST_CID, sizeof(LLRP_BROADCAST_CID));
 }
 
+bool get_llrp_destination_cid(const uint8_t* buf, size_t buflen, LwpaUuid* dest_cid)
+{
+  if (!buf || !dest_cid || buflen < LLRP_MIN_TOTAL_MESSAGE_SIZE)
+    return false;
+
+  // Try to parse the UDP preamble.
+  LwpaUdpPreamble preamble;
+  if (!lwpa_parse_udp_preamble(buf, buflen, &preamble))
+    return false;
+
+  // Try to parse the Root Layer PDU header.
+  LwpaRootLayerPdu rlp;
+  LwpaPdu last_pdu = LWPA_PDU_INIT;
+  if (!lwpa_parse_root_layer_pdu(preamble.rlp_block, preamble.rlp_block_len, &rlp, &last_pdu))
+    return false;
+
+  // Check the PDU length
+  const uint8_t* cur_ptr = buf;
+  size_t llrp_pdu_len = LWPA_PDU_LENGTH(cur_ptr);
+  if (llrp_pdu_len > buflen || llrp_pdu_len < LLRP_MIN_PDU_SIZE)
+    return false;
+
+  // Jump to the position of the LLRP destination CID and fill it in
+  cur_ptr += 7;
+  memcpy(dest_cid->data, cur_ptr, LWPA_UUID_BYTES);
+  return true;
+}
+
 bool parse_llrp_message(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest, LlrpMessage* msg)
 {
   if (!buf || !msg || buflen < LLRP_MIN_TOTAL_MESSAGE_SIZE)

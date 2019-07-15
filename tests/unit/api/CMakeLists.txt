@@ -12,5 +12,5 @@ target_link_libraries(test_rdmnet_api PRIVATE
   meekrosoft::fff
 )
 set_target_properties(test_rdmnet_api PROPERTIES CXX_STANDARD 11)
-gtest_add_tests(TARGET test_rdmnet_api)
+gtest_add_tests(TARGET test_rdmnet_api SKIP_DEPENDENCY)
 

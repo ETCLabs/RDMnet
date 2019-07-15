@@ -111,6 +111,7 @@ extern LwpaUuid kLlrpBroadcastCid;
 
 void llrp_prot_init();
 
+bool get_llrp_destination_cid(const uint8_t* buf, size_t buflen, LwpaUuid* dest_cid);
 bool parse_llrp_message(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest, LlrpMessage* msg);
 
 lwpa_error_t send_llrp_probe_request(lwpa_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,

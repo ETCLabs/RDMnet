@@ -296,8 +296,8 @@
  *
  *  Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
  */
-#ifndef RDMNET_LLRP_MAX_TARGET_NETINTS
-#define RDMNET_LLRP_MAX_TARGET_NETINTS 1
+#ifndef RDMNET_LLRP_MAX_NETINTS_PER_TARGET
+#define RDMNET_LLRP_MAX_NETINTS_PER_TARGET 1
 #endif
 
 /*! \brief In LLRP, whether to bind the underlying network socket directly to the LLRP multicast

@@ -30,7 +30,9 @@
 #include "lwpa/bool.h"
 #include "lwpa/error.h"
 #include "lwpa/inet.h"
+#include "lwpa/rbtree.h"
 #include "lwpa/socket.h"
+#include "rdmnet/core/llrp.h"
 
 #define LLRP_MULTICAST_TTL_VAL 20
 
@@ -39,6 +41,14 @@ typedef enum
   kLlrpSocketTypeManager,
   kLlrpSocketTypeTarget
 } llrp_socket_t;
+
+typedef struct LlrpNetint
+{
+  LlrpNetintId id;
+  lwpa_socket_t send_sock;
+  size_t send_ref_count;
+  size_t recv_ref_count;
+} LlrpNetint;
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,16 +59,20 @@ extern const LwpaSockaddr* kLlrpIpv6RespAddr;
 extern const LwpaSockaddr* kLlrpIpv4RequestAddr;
 extern const LwpaSockaddr* kLlrpIpv6RequestAddr;
 
+extern uint8_t kLlrpLowestHardwareAddr[6];
+
 lwpa_error_t rdmnet_llrp_init();
 void rdmnet_llrp_deinit();
 
 void rdmnet_llrp_tick();
 
-lwpa_error_t get_llrp_send_socket(const LlrpNetintId* netint, llrp_socket_t llrp_type, lwpa_socket_t* socket);
+void get_llrp_netint_list(LwpaRbIter* list_iter);
+
+lwpa_error_t get_llrp_send_socket(const LlrpNetintId* netint, lwpa_socket_t* socket);
 void release_llrp_send_socket(const LlrpNetintId* netint);
 
-lwpa_error_t get_llrp_recv_socket(const LlrpNetintId* netint, llrp_socket_t llrp_type, lwpa_socket_t* socket);
-void release_llrp_recv_socket(const LlrpNetintId* netint);
+lwpa_error_t llrp_recv_netint_add(const LlrpNetintId* netint, llrp_socket_t llrp_type);
+void llrp_recv_netint_remove(const LlrpNetintId* netint, llrp_socket_t llrp_type);
 
 #ifdef __cplusplus
 }

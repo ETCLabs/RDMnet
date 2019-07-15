@@ -32,6 +32,7 @@
 #else
 #include "lwpa/mempool.h"
 #endif
+#include "lwpa/netint.h"
 #include "lwpa/rbtree.h"
 #include "rdmnet/private/llrp.h"
 #include "rdmnet/private/llrp_manager.h"
@@ -50,9 +51,11 @@ const LwpaSockaddr* kLlrpIpv6RespAddr = &kLlrpIpv6RespAddrInternal;
 const LwpaSockaddr* kLlrpIpv4RequestAddr = &kLlrpIpv4RequestAddrInternal;
 const LwpaSockaddr* kLlrpIpv6RequestAddr = &kLlrpIpv6RequestAddrInternal;
 
+uint8_t kLlrpLowestHardwareAddr[6];
+
 /**************************** Private constants ******************************/
 
-#define LLRP_MAX_RB_NODES (RDMNET_LLRP_MAX_TARGET_NETINTS)
+#define LLRP_MAX_RB_NODES (RDMNET_LLRP_MAX_NETINTS_PER_TARGET)
 
 /***************************** Private macros ********************************/
 
@@ -66,14 +69,6 @@ const LwpaSockaddr* kLlrpIpv6RequestAddr = &kLlrpIpv6RequestAddrInternal;
 
 /****************************** Private types ********************************/
 
-typedef struct LlrpNetint
-{
-  LlrpNetintId id;
-  lwpa_socket_t send_sock;
-  size_t send_ref_count;
-  size_t recv_ref_count;
-} LlrpNetint;
-
 typedef struct LlrpRecvSocket
 {
   bool initted;
@@ -83,7 +78,7 @@ typedef struct LlrpRecvSocket
 /**************************** Private variables ******************************/
 
 #if !RDMNET_DYNAMIC_MEM
-LWPA_MEMPOOL_DEFINE(llrp_netints, LlrpNetint, RDMNET_LLRP_MAX_TARGET_NETINTS);
+LWPA_MEMPOOL_DEFINE(llrp_netints, LlrpNetint, RDMNET_LLRP_MAX_NETINTS_PER_TARGET);
 LWPA_MEMPOOL_DEFINE(llrp_rb_nodes, LwpaRbNode, LLRP_MAX_RB_NODES);
 #endif
 
@@ -95,8 +90,6 @@ static struct LlrpState
   LlrpRecvSocket target_recvsock_ipv6;
 
   LwpaRbTree sys_netints;
-
-  uint8_t lowest_hardware_addr[6];
 } state;
 
 /*********************** Private function prototypes *************************/
@@ -107,9 +100,17 @@ static void deinit_sys_netints();
 static void deinit_sys_netint(const LwpaRbTree* self, LwpaRbNode* node);
 
 static LwpaIpAddr get_llrp_mcast_addr(llrp_socket_t llrp_type, lwpa_iptype_t ip_type);
+static LlrpRecvSocket* get_llrp_recv_sock(llrp_socket_t llrp_type, lwpa_iptype_t ip_type);
 static lwpa_error_t create_send_socket(const LlrpNetintId* netint, lwpa_socket_t* socket);
-static lwpa_error_t subscribe_recv_socket(const LlrpNetintId* netint, llrp_socket_t llrp_type);
 static lwpa_error_t create_recv_socket(llrp_socket_t llrp_type, lwpa_iptype_t ip_type, LlrpRecvSocket* sock_struct);
+static lwpa_error_t subscribe_recv_socket(const LlrpNetintId* netint, llrp_socket_t llrp_type,
+                                          LlrpRecvSocket* sock_struct);
+static lwpa_error_t unsubscribe_recv_socket(const LlrpNetintId* netint, llrp_socket_t llrp_type,
+                                            LlrpRecvSocket* sock_struct);
+static void destroy_recv_socket(LlrpRecvSocket* sock_struct);
+
+static void llrp_socket_activity(const LwpaPollEvent* event, PolledSocketOpaqueData data);
+static void llrp_socket_error(lwpa_error_t err);
 
 static int netint_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b);
 static LwpaRbNode* llrp_node_alloc();
@@ -134,9 +135,10 @@ lwpa_error_t rdmnet_llrp_init()
   lwpa_inet_pton(kLwpaIpTypeV6, LLRP_MULTICAST_IPV6_ADDRESS_REQUEST, &kLlrpIpv6RequestAddrInternal.ip);
   kLlrpIpv6RequestAddrInternal.port = LLRP_PORT;
   llrp_prot_init();
-  lwpa_rbtree_init(&state.sys_netints, netint_cmp, target_node_alloc, target_node_free);
+  lwpa_rbtree_init(&state.sys_netints, netint_cmp, llrp_node_alloc, llrp_node_free);
 
-  lwpa_error_t res = init_sys_netints();
+  lwpa_error_t res;
+  netints_initted = ((res = init_sys_netints()) == kLwpaErrOk);
 
 #if RDMNET_DYNAMIC_MEM
   if (res == kLwpaErrOk)
@@ -154,6 +156,8 @@ lwpa_error_t rdmnet_llrp_init()
     if (manager_initted)
       rdmnet_llrp_manager_deinit();
 #endif
+    if (netints_initted)
+      deinit_sys_netints();
   }
 
   return res;
@@ -168,22 +172,10 @@ void rdmnet_llrp_deinit()
 
   deinit_sys_netints();
 
-  if (state.manager_recvsock_ipv4.initted)
-  {
-    lwpa_close(state.manager_recvsock_ipv4.socket);
-  }
-  if (state.manager_recvsock_ipv6.initted)
-  {
-    lwpa_close(state.manager_recvsock_ipv6);
-  }
-  if (state.target_recvsock_ipv6.initted)
-  {
-    lwpa_close(state.target_recvsock_ipv6);
-  }
-  if (state.target_recvsock_ipv6.initted)
-  {
-    lwpa_close(state.target_recvsock_ipv6);
-  }
+  destroy_recv_socket(&state.manager_recvsock_ipv4);
+  destroy_recv_socket(&state.manager_recvsock_ipv6);
+  destroy_recv_socket(&state.target_recvsock_ipv4);
+  destroy_recv_socket(&state.target_recvsock_ipv6);
 }
 
 void rdmnet_llrp_tick()
@@ -222,16 +214,11 @@ lwpa_error_t init_sys_netints()
     netint_id.ip_type = netint->addr.type;
 
     lwpa_socket_t test_socket;
-    lwpa_error_t test_res = create_send_socket(&netint_id, kLlrpSocketTypeTarget, &test_socket);
+    lwpa_error_t test_res = create_send_socket(&netint_id, &test_socket);
     if (test_res == kLwpaErrOk)
     {
       lwpa_close(test_socket);
-      test_res = create_send_socket(&netint_id, kLlrpSocketTypeManager, &test_socket);
-      if (test_res == kLwpaErrOk)
-      {
-        lwpa_close(test_socket);
-        test_res = init_sys_netint(&netint_id);
-      }
+      test_res = init_sys_netint(&netint_id);
     }
 
     if (test_res == kLwpaErrOk)
@@ -244,12 +231,12 @@ lwpa_error_t init_sys_netints()
       {
         if (netint == netint_list)
         {
-          memcpy(state.lowest_hardware_addr, netint->mac, 6);
+          memcpy(kLlrpLowestHardwareAddr, netint->mac, 6);
         }
         else
         {
-          if (memcmp(netint->mac, state.lowest_hardware_addr, 6) < 0)
-            memcpy(state.lowest_hardware_addr, netint->mac, 6);
+          if (memcmp(netint->mac, kLlrpLowestHardwareAddr, 6) < 0)
+            memcpy(kLlrpLowestHardwareAddr, netint->mac, 6);
         }
       }
     }
@@ -272,7 +259,7 @@ lwpa_error_t init_sys_netints()
 lwpa_error_t init_sys_netint(const LlrpNetintId* id)
 {
   lwpa_error_t res = kLwpaErrNoMem;
-  LlrpNetint* new_netint = llrp_netint_alloc();
+  LlrpNetint* new_netint = (LlrpNetint*)llrp_netint_alloc();
   if (new_netint)
   {
     // Member initialization
@@ -304,6 +291,8 @@ void deinit_sys_netints()
 
 void deinit_sys_netint(const LwpaRbTree* self, LwpaRbNode* node)
 {
+  (void)self;
+
   LlrpNetint* netint = (LlrpNetint*)node->value;
   if (netint->send_ref_count)
     lwpa_close(netint->send_sock);
@@ -311,17 +300,23 @@ void deinit_sys_netint(const LwpaRbTree* self, LwpaRbNode* node)
   llrp_node_free(node);
 }
 
-lwpa_error_t get_llrp_send_socket(const LlrpNetintId* netint, llrp_socket_t llrp_type, lwpa_socket_t* socket)
+void get_llrp_netint_list(LwpaRbIter* list_iter)
+{
+  lwpa_rbiter_init(list_iter);
+  lwpa_rbiter_first(list_iter, &state.sys_netints);
+}
+
+lwpa_error_t get_llrp_send_socket(const LlrpNetintId* netint, lwpa_socket_t* socket)
 {
   lwpa_error_t res = kLwpaErrNotFound;
 
-  LlrpNetint* netint_info = lwpa_rbtree_find(&state.sys_netints, netint);
+  LlrpNetint* netint_info = (LlrpNetint*)lwpa_rbtree_find(&state.sys_netints, (void*)netint);
   if (netint_info)
   {
     res = kLwpaErrOk;
     if (netint_info->send_ref_count == 0)
     {
-      res = create_send_socket(netint_info, &netint_info->send_sock);
+      res = create_send_socket(netint, &netint_info->send_sock);
     }
 
     if (res == kLwpaErrOk)
@@ -336,7 +331,7 @@ lwpa_error_t get_llrp_send_socket(const LlrpNetintId* netint, llrp_socket_t llrp
 
 void release_llrp_send_socket(const LlrpNetintId* netint)
 {
-  LlrpNetint* netint_info = lwpa_rbtree_find(&state.sys_netints, netint);
+  LlrpNetint* netint_info = (LlrpNetint*)lwpa_rbtree_find(&state.sys_netints, (void*)netint);
   if (netint_info && netint_info->send_ref_count > 0)
   {
     if (--netint_info->send_ref_count == 0)
@@ -347,31 +342,52 @@ void release_llrp_send_socket(const LlrpNetintId* netint)
   }
 }
 
-lwpa_error_t get_llrp_recv_socket(const LlrpNetintId* netint, llrp_socket_t llrp_type, lwpa_socket_t* socket)
+lwpa_error_t llrp_recv_netint_add(const LlrpNetintId* netint, llrp_socket_t llrp_type)
 {
   lwpa_error_t res = kLwpaErrNotFound;
 
-  LlrpNetint* netint_info = lwpa_rbtree_find(&state.sys_netints, netint);
+  LlrpNetint* netint_info = (LlrpNetint*)lwpa_rbtree_find(&state.sys_netints, (void*)netint);
   if (netint_info)
   {
     res = kLwpaErrOk;
-    if (netint_info->recv_ref_count == 0)
+    LlrpRecvSocket* recv_sock = get_llrp_recv_sock(llrp_type, netint->ip_type);
+    bool sock_created = false;
+
+    if (!recv_sock->initted)
     {
-      res = create_recv_socket();
+      sock_created = ((res = create_recv_socket(llrp_type, netint->ip_type, recv_sock)) == kLwpaErrOk);
     }
 
     if (res == kLwpaErrOk)
     {
-      ++netint_info->send_ref_count;
-      *socket = netint_info->send_sock;
+      res = subscribe_recv_socket(netint, llrp_type, recv_sock);
+    }
+
+    if (res == kLwpaErrOk)
+    {
+      ++netint_info->recv_ref_count;
+    }
+    else if (sock_created)
+    {
+      lwpa_close(recv_sock->socket);
+      recv_sock->initted = false;
     }
   }
 
   return res;
 }
 
-void release_llrp_recv_socket(const LlrpNetintId* netint)
+void llrp_recv_netint_remove(const LlrpNetintId* netint, llrp_socket_t llrp_type)
 {
+  LlrpNetint* netint_info = (LlrpNetint*)lwpa_rbtree_find(&state.sys_netints, (void*)netint);
+  if (netint_info && netint_info->recv_ref_count > 0)
+  {
+    if (--netint_info->send_ref_count == 0)
+    {
+      LlrpRecvSocket* recv_sock = get_llrp_recv_sock(llrp_type, netint->ip_type);
+      unsubscribe_recv_socket(netint, llrp_type, recv_sock);
+    }
+  }
 }
 
 lwpa_error_t create_send_socket(const LlrpNetintId* netint, lwpa_socket_t* socket)
@@ -384,15 +400,14 @@ lwpa_error_t create_send_socket(const LlrpNetintId* netint, lwpa_socket_t* socke
   if (res == kLwpaErrOk)
   {
     // MULTICAST_TTL controls the TTL field in outgoing multicast datagrams.
-    value = LLRP_MULTICAST_TTL_VAL;
-    res = lwpa_setsockopt(sock, sockopt_ip_level, LWPA_IP_MULTICAST_TTL, (const void*)(&value), sizeof(value));
+    const int value = LLRP_MULTICAST_TTL_VAL;
+    res = lwpa_setsockopt(sock, sockopt_ip_level, LWPA_IP_MULTICAST_TTL, &value, sizeof value);
   }
 
   if (res == kLwpaErrOk)
   {
     // MULTICAST_IF is critical for multicast sends to go over the correct interface.
-    res = lwpa_setsockopt(sock, sockopt_ip_level, LWPA_IP_MULTICAST_IF, (const void*)(&netint_index),
-                          sizeof netint_index);
+    res = lwpa_setsockopt(sock, sockopt_ip_level, LWPA_IP_MULTICAST_IF, &netint->index, sizeof netint->index);
   }
 
   if (res == kLwpaErrOk)
@@ -409,37 +424,49 @@ lwpa_error_t create_send_socket(const LlrpNetintId* netint, lwpa_socket_t* socke
 
 lwpa_error_t create_recv_socket(llrp_socket_t llrp_type, lwpa_iptype_t ip_type, LlrpRecvSocket* sock_struct)
 {
-  int sockopt_ip_level = (ip_type == kLwpaIpTypeV6 ? LWPA_IPPROTO_IPV6 : LWPA_IPPROTO_IP);
-
   lwpa_error_t res =
       lwpa_socket(ip_type == kLwpaIpTypeV6 ? LWPA_AF_INET6 : LWPA_AF_INET, LWPA_DGRAM, &sock_struct->socket);
+
+  // Since we create separate sockets for IPv4 and IPv6, we don't want to receive IPv4 traffic on
+  // the IPv6 socket.
+  if (res == kLwpaErrOk && ip_type == kLwpaIpTypeV6)
+  {
+    const int value = 1;
+    lwpa_setsockopt(sock_struct->socket, LWPA_IPPROTO_IPV6, LWPA_IPV6_V6ONLY, &value, sizeof value);
+  }
 
   if (res == kLwpaErrOk)
   {
     // SO_REUSEADDR allows multiple sockets to bind to LLRP_PORT, which is very important for our
     // multicast needs.
-    int value = 1;
-    res =
-        lwpa_setsockopt(sock_struct->socket, LWPA_SOL_SOCKET, LWPA_SO_REUSEADDR, (const void*)(&value), sizeof(value));
+    const int value = 1;
+    res = lwpa_setsockopt(sock_struct->socket, LWPA_SOL_SOCKET, LWPA_SO_REUSEADDR, &value, sizeof value);
   }
 
   if (res == kLwpaErrOk)
   {
     // We also set SO_REUSEPORT but don't check the return, because it is not applicable on all platforms
-    int value = 1;
-    lwpa_setsockopt(sock_struct->socket, LWPA_SOL_SOCKET, LWPA_SO_REUSEPORT, (const void*)(&value), sizeof(value));
+    const int value = 1;
+    lwpa_setsockopt(sock_struct->socket, LWPA_SOL_SOCKET, LWPA_SO_REUSEPORT, &value, sizeof value);
 
     LwpaSockaddr bind_addr;
 #if RDMNET_LLRP_BIND_TO_MCAST_ADDRESS
     // Bind socket to multicast address
     bind_addr.ip = get_llrp_mcast_addr(llrp_type, ip_type);
 #else
-    (void)manager;
     // Bind socket to the wildcard address
-    lwpa_ip_set_wildcard(netint->ip_type, &bind_addr.ip);
+    lwpa_ip_set_wildcard(ip_type, &bind_addr.ip);
 #endif
     bind_addr.port = LLRP_PORT;
     res = lwpa_bind(sock_struct->socket, &bind_addr);
+  }
+
+  if (res == kLwpaErrOk)
+  {
+    PolledSocketInfo info;
+    info.callback = llrp_socket_activity;
+    info.data.int_val = (int)llrp_type;
+    res = rdmnet_core_add_polled_socket(sock_struct->socket, LWPA_POLL_IN, &info);
   }
 
   if (res == kLwpaErrOk)
@@ -454,20 +481,90 @@ lwpa_error_t create_recv_socket(llrp_socket_t llrp_type, lwpa_iptype_t ip_type, 
   return res;
 }
 
-lwpa_error_t subscribe_recv_socket(const LlrpNetintId* netint, llrp_socket_t llrp_type)
+lwpa_error_t subscribe_recv_socket(const LlrpNetintId* netint, llrp_socket_t llrp_type, LlrpRecvSocket* sock_struct)
 {
   LwpaGroupReq group_req;
-  group_req.ifindex = netint_index;
+  group_req.ifindex = netint->index;
   group_req.group = get_llrp_mcast_addr(llrp_type, netint->ip_type);
-  lwpa_error_t res = lwpa_setsockopt(socket, ip_type == kLwpaIpTypeV6 ? LWPA_IPPROTO_IPV6 : LWPA_IPPROTO_IP,
-                                     LWPA_MCAST_JOIN_GROUP, (const void*)&group_req, sizeof(group_req));
 
-  return res;
+  return lwpa_setsockopt(sock_struct->socket, netint->ip_type == kLwpaIpTypeV6 ? LWPA_IPPROTO_IPV6 : LWPA_IPPROTO_IP,
+                         LWPA_MCAST_JOIN_GROUP, (const void*)&group_req, sizeof(group_req));
+}
+
+lwpa_error_t unsubscribe_recv_socket(const LlrpNetintId* netint, llrp_socket_t llrp_type, LlrpRecvSocket* sock_struct)
+{
+  LwpaGroupReq group_req;
+  group_req.ifindex = netint->index;
+  group_req.group = get_llrp_mcast_addr(llrp_type, netint->ip_type);
+
+  return lwpa_setsockopt(sock_struct->socket, netint->ip_type == kLwpaIpTypeV6 ? LWPA_IPPROTO_IPV6 : LWPA_IPPROTO_IP,
+                         LWPA_MCAST_LEAVE_GROUP, (const void*)&group_req, sizeof(group_req));
+}
+
+void destroy_recv_socket(LlrpRecvSocket* sock_struct)
+{
+  if (sock_struct->initted)
+  {
+    rdmnet_core_remove_polled_socket(sock_struct->socket);
+    lwpa_close(sock_struct->socket);
+    sock_struct->initted = false;
+  }
+}
+
+void llrp_socket_activity(const LwpaPollEvent* event, PolledSocketOpaqueData data)
+{
+  static uint8_t llrp_recv_buf[LLRP_MAX_MESSAGE_SIZE];
+
+  if (event->events & LWPA_POLL_ERR)
+  {
+    llrp_socket_error(event->err);
+  }
+  else if (event->events & LWPA_POLL_IN)
+  {
+    LwpaSockaddr from_addr;
+    int recv_res = lwpa_recvfrom(event->socket, llrp_recv_buf, LLRP_MAX_MESSAGE_SIZE, 0, &from_addr);
+    if (recv_res <= 0)
+    {
+      if (recv_res != kLwpaErrMsgSize)
+      {
+        llrp_socket_error(recv_res);
+      }
+    }
+    else
+    {
+      LwpaNetintInfo reply_netint;
+      if (kLwpaErrOk == lwpa_netint_get_interface_for_dest(&from_addr.ip, &reply_netint))
+      {
+        LlrpNetintId netint_id;
+        netint_id.index = reply_netint.index;
+        netint_id.ip_type = reply_netint.addr.type;
+
+        if ((llrp_socket_t)data.int_val == kLlrpSocketTypeManager)
+          manager_data_received(llrp_recv_buf, (size_t)recv_res, &netint_id);
+        else
+          target_data_received(llrp_recv_buf, (size_t)recv_res, &netint_id);
+      }
+      else if (LWPA_CAN_LOG(rdmnet_log_params, LWPA_LOG_WARNING))
+      {
+        char addr_str[LWPA_INET6_ADDRSTRLEN];
+        lwpa_inet_ntop(&from_addr.ip, addr_str, LWPA_INET6_ADDRSTRLEN);
+
+        lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
+                 "Couldn't reply to LLRP message from %s:%u because no reply route could be found.", addr_str,
+                 from_addr.port);
+      }
+    }
+  }
+}
+
+void llrp_socket_error(lwpa_error_t err)
+{
+  lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING, "Error receiving on an LLRP socket: '%s'", lwpa_strerror(err));
 }
 
 LwpaIpAddr get_llrp_mcast_addr(llrp_socket_t llrp_type, lwpa_iptype_t ip_type)
 {
-  if (manager)
+  if (llrp_type == kLlrpSocketTypeManager)
   {
     if (ip_type == kLwpaIpTypeV6)
       return kLlrpIpv6RespAddrInternal.ip;
@@ -480,6 +577,24 @@ LwpaIpAddr get_llrp_mcast_addr(llrp_socket_t llrp_type, lwpa_iptype_t ip_type)
       return kLlrpIpv6RequestAddrInternal.ip;
     else
       return kLlrpIpv4RequestAddrInternal.ip;
+  }
+}
+
+LlrpRecvSocket* get_llrp_recv_sock(llrp_socket_t llrp_type, lwpa_iptype_t ip_type)
+{
+  if (llrp_type == kLlrpSocketTypeManager)
+  {
+    if (ip_type == kLwpaIpTypeV6)
+      return &state.manager_recvsock_ipv6;
+    else
+      return &state.manager_recvsock_ipv4;
+  }
+  else
+  {
+    if (ip_type == kLwpaIpTypeV6)
+      return &state.target_recvsock_ipv6;
+    else
+      return &state.target_recvsock_ipv4;
   }
 }
 
