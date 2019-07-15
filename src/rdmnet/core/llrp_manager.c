@@ -544,8 +544,8 @@ void manager_data_received(const uint8_t* data, size_t data_size, const LlrpNeti
     {
       char cid_str[LWPA_UUID_STRING_BYTES];
       lwpa_uuid_to_string(cid_str, &keys.cid);
-      lwpa_log(rdmnet_log_params, LWPA_LOG_DEBUG, "Ignoring LLRP message addressed to unknown LLRP Manager %s",
-               cid_str);
+      lwpa_log(rdmnet_log_params, LWPA_LOG_DEBUG,
+               RDMNET_LOG_MSG("Ignoring LLRP message addressed to unknown LLRP Manager %s"), cid_str);
     }
   }
 

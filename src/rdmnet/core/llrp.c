@@ -73,6 +73,7 @@ typedef struct LlrpRecvSocket
 {
   bool initted;
   lwpa_socket_t socket;
+  PolledSocketInfo poll_info;
 } LlrpRecvSocket;
 
 /**************************** Private variables ******************************/
@@ -463,10 +464,9 @@ lwpa_error_t create_recv_socket(llrp_socket_t llrp_type, lwpa_iptype_t ip_type, 
 
   if (res == kLwpaErrOk)
   {
-    PolledSocketInfo info;
-    info.callback = llrp_socket_activity;
-    info.data.int_val = (int)llrp_type;
-    res = rdmnet_core_add_polled_socket(sock_struct->socket, LWPA_POLL_IN, &info);
+    sock_struct->poll_info.callback = llrp_socket_activity;
+    sock_struct->poll_info.data.int_val = (int)llrp_type;
+    res = rdmnet_core_add_polled_socket(sock_struct->socket, LWPA_POLL_IN, &sock_struct->poll_info);
   }
 
   if (res == kLwpaErrOk)
@@ -550,8 +550,8 @@ void llrp_socket_activity(const LwpaPollEvent* event, PolledSocketOpaqueData dat
         lwpa_inet_ntop(&from_addr.ip, addr_str, LWPA_INET6_ADDRSTRLEN);
 
         lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
-                 "Couldn't reply to LLRP message from %s:%u because no reply route could be found.", addr_str,
-                 from_addr.port);
+                 RDMNET_LOG_MSG("Couldn't reply to LLRP message from %s:%u because no reply route could be found."),
+                 addr_str, from_addr.port);
       }
     }
   }
@@ -559,7 +559,8 @@ void llrp_socket_activity(const LwpaPollEvent* event, PolledSocketOpaqueData dat
 
 void llrp_socket_error(lwpa_error_t err)
 {
-  lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING, "Error receiving on an LLRP socket: '%s'", lwpa_strerror(err));
+  lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING, RDMNET_LOG_MSG("Error receiving on an LLRP socket: '%s'"),
+           lwpa_strerror(err));
 }
 
 LwpaIpAddr get_llrp_mcast_addr(llrp_socket_t llrp_type, lwpa_iptype_t ip_type)
