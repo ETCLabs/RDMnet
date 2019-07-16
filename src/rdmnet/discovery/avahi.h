@@ -31,23 +31,29 @@
 #include <avahi-client/client.h>
 #include <avahi-client/lookup.h>
 #include <avahi-client/publish.h>
+#include <avahi-common/domain.h>
 
+#include "lwpa/timer.h"
 #include "rdmnet/core/discovery.h"
+
+#define SERVICE_STR_PADDED_LENGTH E133_DNSSD_SRV_TYPE_PADDED_LENGTH + E133_SCOPE_STRING_PADDED_LENGTH + 10
+
+typedef struct RdmnetScopeMonitorRef RdmnetScopeMonitorRef;
 
 typedef struct DiscoveredBroker DiscoveredBroker;
 struct DiscoveredBroker
 {
-  char full_service_name[kDNSServiceMaxDomainName];
+  char full_service_name[AVAHI_DOMAIN_NAME_MAX];
   RdmnetBrokerDiscInfo info;
+  RdmnetScopeMonitorRef* monitor_ref;
 
   // State information for this broker.
-  resolve_state_t state;
-  //DNSServiceRef dnssd_ref;
+  int num_outstanding_resolves;
+  int num_successful_resolves;
 
   DiscoveredBroker* next;
 };
 
-typedef struct RdmnetScopeMonitorRef RdmnetScopeMonitorRef;
 struct RdmnetScopeMonitorRef
 {
   // The configuration data that the user provided.
@@ -66,7 +72,7 @@ struct RdmnetScopeMonitorRef
 typedef enum
 {
   kBrokerStateNotRegistered,
-  kBrokerStateInfoSet,
+  kBrokerStateQuerying,
   kBrokerStateRegisterStarted,
   kBrokerStateRegistered
 } broker_state_t;
@@ -76,11 +82,13 @@ typedef struct RdmnetBrokerRegisterRef
   RdmnetBrokerRegisterConfig config;
   rdmnet_scope_monitor_t scope_monitor_handle;
   broker_state_t state;
-  char full_service_name[kDNSServiceMaxDomainName];
+  char full_service_name[AVAHI_DOMAIN_NAME_MAX];
+
+  LwpaTimer query_timer;
+  bool query_timeout_expired;
 
   // For hooking up to the DNS-SD API
-  DNSServiceRef dnssd_ref;
+  AvahiEntryGroup* avahi_entry_group;
 } RdmnetBrokerRegisterRef;
 
 #endif /* _RDMNET_DISCOVERY_AVAHI_H_ */
-

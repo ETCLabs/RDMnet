@@ -27,13 +27,27 @@
 
 #include "rdmnet/discovery/avahi.h"
 
-#include <avahi-client/simple-watch.h>
+#include <assert.h>
+#include <stdio.h>
+#include <arpa/inet.h>
+#include <avahi-common/alternative.h>
+#include <avahi-common/error.h>
+#include <avahi-common/malloc.h>
+#include <avahi-common/simple-watch.h>
+
+#include "lwpa/lock.h"
+#include "rdmnet/core/util.h"
+#include "rdmnet/private/core.h"
 #include "rdmnet/private/opts.h"
 
 // Compile time check of memory configuration
 #if !RDMNET_DYNAMIC_MEM
 #error "RDMnet Discovery using Avahi requires RDMNET_DYNAMIC_MEM to be enabled (defined nonzero)."
 #endif
+
+/**************************** Private constants ******************************/
+
+#define DISCOVERY_QUERY_TIMEOUT 3000
 
 /**************************** Private variables ******************************/
 
@@ -46,8 +60,8 @@ typedef struct DiscoveryState
 
   RdmnetBrokerRegisterRef broker_ref;
 
-  AvahiSimplePoll *avahi_simple_poll;
-  AvahiClient *avahi_client;
+  AvahiSimplePoll* avahi_simple_poll;
+  AvahiClient* avahi_client;
 } DiscoveryState;
 
 static DiscoveryState disc_state;
@@ -55,31 +69,35 @@ static DiscoveryState disc_state;
 /*********************** Private function prototypes *************************/
 
 // Allocation and deallocation
-RdmnetScopeMonitorRef* scope_monitor_new(const RdmnetScopeMonitorConfig* config);
-void scope_monitor_delete(RdmnetScopeMonitorRef* ref);
-DiscoveredBroker* discovered_broker_new(const char* service_name, const char* full_service_name);
-void discovered_broker_delete(DiscoveredBroker* db);
-RdmnetBrokerRegisterRef* registered_broker_new();
-void registered_broker_delete(RdmnetBrokerRegisterRef* rb);
+static RdmnetScopeMonitorRef* scope_monitor_new(const RdmnetScopeMonitorConfig* config);
+static void scope_monitor_delete(RdmnetScopeMonitorRef* ref);
+static DiscoveredBroker* discovered_broker_new(RdmnetScopeMonitorRef* ref, const char* service_name,
+                                               const char* full_service_name);
+static void discovered_broker_delete(DiscoveredBroker* db);
+// static RdmnetBrokerRegisterRef* registered_broker_new();
+// static void registered_broker_delete(RdmnetBrokerRegisterRef* rb);
 
 // Add and remove from appropriate lists
-void discovered_broker_insert(DiscoveredBroker** list_head_ptr, DiscoveredBroker* new);
-DiscoveredBroker* discovered_broker_lookup_by_name(DiscoveredBroker* list_head, const char* full_name);
-DiscoveredBroker* discovered_broker_lookup_by_ref(DiscoveredBroker* list_head, DNSServiceRef dnssd_ref);
-void discovered_broker_remove(DiscoveredBroker** list_head_ptr, const DiscoveredBroker* db);
-void scope_monitor_insert(RdmnetScopeMonitorRef* scope_ref);
-RdmnetScopeMonitorRef* scope_monitor_lookup(DNSServiceRef dnssd_ref);
-void scope_monitor_remove(const RdmnetScopeMonitorRef* ref);
+static void discovered_broker_insert(DiscoveredBroker** list_head_ptr, DiscoveredBroker* new);
+static DiscoveredBroker* discovered_broker_lookup_by_name(DiscoveredBroker* list_head, const char* full_name);
+static void discovered_broker_remove(DiscoveredBroker** list_head_ptr, const DiscoveredBroker* db);
+static void scope_monitor_insert(RdmnetScopeMonitorRef* scope_ref);
+static void scope_monitor_remove(const RdmnetScopeMonitorRef* ref);
 
 // Notify the appropriate callbacks
-void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info);
-void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name);
-void notify_scope_monitor_error(rdmnet_scope_monitor_t handle, int platform_error);
+static void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info);
+static void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name);
+static void notify_scope_monitor_error(rdmnet_scope_monitor_t handle, int platform_error);
 
 // Other helpers
-void get_registration_string(const char* srv_type, const char* scope, char* reg_str);
-bool broker_info_is_valid(const RdmnetBrokerDiscInfo* info);
-bool ipv6_valid(LwpaIpAddr* ip);
+static AvahiStringList* build_txt_record(const RdmnetBrokerDiscInfo* info);
+static int send_registration(const RdmnetBrokerDiscInfo* info, AvahiEntryGroup** entry_group, void* context);
+static void ip_avahi_to_lwpa(const AvahiAddress* avahi_ip, LwpaIpAddr* lwpa_ip);
+static bool resolved_instance_matches_us(const RdmnetBrokerDiscInfo* their_info, const RdmnetBrokerDiscInfo* our_info);
+static bool avahi_txt_record_find(AvahiStringList* txt_list, const char* key, char** value, size_t* value_len);
+static void get_full_service_type(const char* scope, char* type_str);
+static bool broker_info_is_valid(const RdmnetBrokerDiscInfo* info);
+static bool ipv6_valid(LwpaIpAddr* ip);
 
 /*************************** Function definitions ****************************/
 
@@ -87,83 +105,138 @@ bool ipv6_valid(LwpaIpAddr* ip);
  * DNS-SD / Bonjour functions
  ******************************************************************************/
 
-void DNSSD_API HandleDNSServiceRegisterReply(DNSServiceRef sdRef, DNSServiceFlags flags, DNSServiceErrorType errorCode,
-                                             const char* name, const char* regtype, const char* domain, void* context)
+static void entry_group_callback(AvahiEntryGroup* g, AvahiEntryGroupState state, void* userdata)
 {
-  (void)context;
+  (void)userdata;
 
   rdmnet_registered_broker_t broker_handle = &disc_state.broker_ref;
   if (!broker_handle)
     return;
 
-  if (sdRef == disc_state.broker_ref.dnssd_ref)
+  if (g == disc_state.broker_ref.avahi_entry_group)
   {
-    if (flags & kDNSServiceFlagsAdd)
+    if (state == AVAHI_ENTRY_GROUP_ESTABLISHED)
     {
       if (broker_handle && broker_handle->config.callbacks.broker_registered)
       {
-        broker_handle->config.callbacks.broker_registered(broker_handle, name, broker_handle->config.callback_context);
+        broker_handle->config.callbacks.broker_registered(broker_handle, broker_handle->config.my_info.service_name,
+                                                          broker_handle->config.callback_context);
       }
-      DNSServiceConstructFullName(disc_state.broker_ref.full_service_name, name, regtype, domain);
     }
-    else
+    else if (state == AVAHI_ENTRY_GROUP_COLLISION)
+    {
+      char* new_name = avahi_alternative_service_name(broker_handle->config.my_info.service_name);
+      if (new_name)
+      {
+        rdmnet_safe_strncpy(broker_handle->config.my_info.service_name, new_name,
+                            E133_SERVICE_NAME_STRING_PADDED_LENGTH);
+        avahi_free(new_name);
+      }
+      send_registration(&broker_handle->config.my_info, &broker_handle->avahi_entry_group, broker_handle);
+    }
+    else if (state == AVAHI_ENTRY_GROUP_FAILURE)
     {
       if (broker_handle->config.callbacks.broker_register_error)
       {
-        broker_handle->config.callbacks.broker_register_error(broker_handle, errorCode,
-                                                              broker_handle->config.callback_context);
+        broker_handle->config.callbacks.broker_register_error(
+            broker_handle, avahi_client_errno(disc_state.avahi_client), broker_handle->config.callback_context);
       }
     }
   }
 }
 
-void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex,
-                                                DNSServiceErrorType errorCode, const char* hostname,
-                                                const struct sockaddr* address, uint32_t ttl, void* context)
+static void resolve_callback(AvahiServiceResolver* r, AvahiIfIndex interface, AvahiProtocol protocol,
+                             AvahiResolverEvent event, const char* name, const char* type, const char* domain,
+                             const char* host_name, const AvahiAddress* address, uint16_t port, AvahiStringList* txt,
+                             AvahiLookupResultFlags flags, void* userdata)
 {
-  (void)interfaceIndex;
-  (void)hostname;
-  (void)ttl;
+  char addr_str[AVAHI_ADDRESS_STR_MAX] = {0};
+  if (address)
+    avahi_address_snprint(addr_str, AVAHI_ADDRESS_STR_MAX, address);
+  DiscoveredBroker* db = (DiscoveredBroker*)userdata;
+  assert(db);
 
-  RdmnetScopeMonitorRef* ref = (RdmnetScopeMonitorRef*)context;
-  if (!ref)
-    return;
+  RdmnetScopeMonitorRef* ref = db->monitor_ref;
+  assert(ref);
 
-  DiscoveredBroker* db = discovered_broker_lookup_by_ref(ref->broker_list, sdRef);
-  if (!db || db->state != kResolveStateGetAddrInfo)
-    return;
-
-  if (errorCode != kDNSServiceErr_NoError)
+  if (event == AVAHI_RESOLVER_FAILURE)
   {
-    notify_scope_monitor_error(ref, errorCode);
+    notify_scope_monitor_error(db->monitor_ref, avahi_client_errno(disc_state.avahi_client));
     if (lwpa_mutex_take(&disc_state.lock))
     {
-      // Remove the DiscoveredBroker from the list
-      discovered_broker_remove(&ref->broker_list, db);
-      discovered_broker_delete(db);
+      if (--db->num_outstanding_resolves <= 0 && db->num_successful_resolves == 0)
+      {
+        // Remove the DiscoveredBroker from the list
+        discovered_broker_remove(&ref->broker_list, db);
+        discovered_broker_delete(db);
+      }
       lwpa_mutex_give(&disc_state.lock);
     }
   }
   else
   {
-    // We got a response, but we'll only clean up at the end if the flags tell us we're done getting
-    // addrs.
-    bool addrs_done = !(flags & kDNSServiceFlagsMoreComing);
-    // Only copied to if addrs_done is true;
+    bool notify = false;
     RdmnetBrokerDiscInfo notify_info;
 
     if (lwpa_mutex_take(&disc_state.lock))
     {
       // Update the broker info we're building
-      LwpaSockaddr ip_addr;
-      if (sockaddr_os_to_lwpa(address, &ip_addr))
+      db->info.port = port;
+
+      // Parse the TXT record
+      char* value;
+      size_t value_len;
+
+      if (avahi_txt_record_find(txt, "ConfScope", &value, &value_len))
       {
-        if ((LWPA_IP_IS_V4(&ip_addr.ip) && LWPA_IP_V4_ADDRESS(&ip_addr.ip) != 0) ||
-            (LWPA_IP_IS_V6(&ip_addr.ip) && ipv6_valid(&ip_addr.ip)))
+        rdmnet_safe_strncpy(
+            db->info.scope, value,
+            (value_len + 1 > E133_SCOPE_STRING_PADDED_LENGTH ? E133_SCOPE_STRING_PADDED_LENGTH : value_len + 1));
+        avahi_free(value);
+      }
+
+      if (avahi_txt_record_find(txt, "CID", &value, &value_len))
+      {
+        lwpa_string_to_uuid(&db->info.cid, value, value_len);
+        avahi_free(value);
+      }
+
+      if (avahi_txt_record_find(txt, "Model", &value, &value_len))
+      {
+        rdmnet_safe_strncpy(
+            db->info.model, value,
+            (value_len + 1 > E133_MODEL_STRING_PADDED_LENGTH ? E133_MODEL_STRING_PADDED_LENGTH : value_len + 1));
+        avahi_free(value);
+      }
+
+      if (avahi_txt_record_find(txt, "Manuf", &value, &value_len))
+      {
+        rdmnet_safe_strncpy(
+            db->info.manufacturer, value,
+            (value_len + 1 > E133_MANUFACTURER_STRING_PADDED_LENGTH ? E133_MANUFACTURER_STRING_PADDED_LENGTH
+                                                                    : value_len + 1));
+        avahi_free(value);
+      }
+
+      if (ref->broker_handle && resolved_instance_matches_us(&db->info, &ref->broker_handle->config.my_info))
+      {
+        if (--db->num_outstanding_resolves <= 0 && db->num_successful_resolves == 0)
+        {
+          discovered_broker_remove(&ref->broker_list, db);
+          discovered_broker_delete(db);
+        }
+      }
+      else
+      {
+        LwpaIpAddr ip_addr;
+        ip_avahi_to_lwpa(address, &ip_addr);
+
+        if ((LWPA_IP_IS_V4(&ip_addr) && LWPA_IP_V4_ADDRESS(&ip_addr) != 0) ||
+            (LWPA_IP_IS_V6(&ip_addr) && ipv6_valid(&ip_addr)))
         {
           // Add it to the info structure
           BrokerListenAddr* new_addr = (BrokerListenAddr*)malloc(sizeof(BrokerListenAddr));
-          new_addr->addr = ip_addr.ip;
+          new_addr->addr = ip_addr;
           new_addr->next = NULL;
 
           if (!db->info.listen_addr_list)
@@ -178,201 +251,108 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceF
             cur_addr->next = new_addr;
           }
         }
-      }
 
-      if (addrs_done)
-      {
-        db->state = kResolveStateDone;
-        lwpa_poll_remove_socket(&disc_state.poll_context, DNSServiceRefSockFD(sdRef));
         notify_info = db->info;
+        notify = true;
+        --db->num_outstanding_resolves;
+        ++db->num_successful_resolves;
       }
       lwpa_mutex_give(&disc_state.lock);
     }
 
-    /*No more addresses, clean up.*/
-    if (addrs_done)
-    {
-      DNSServiceRefDeallocate(sdRef);
+    if (notify)
       notify_broker_found(ref, &notify_info);
-    }
   }
+  avahi_service_resolver_free(r);
 }
 
-void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex,
-                                            DNSServiceErrorType errorCode, const char* fullname, const char* hosttarget,
-                                            uint16_t port /* In network byte order */, uint16_t txtLen,
-                                            const unsigned char* txtRecord, void* context)
+static void browse_callback(AvahiServiceBrowser* b, AvahiIfIndex interface, AvahiProtocol protocol,
+                            AvahiBrowserEvent event, const char* name, const char* type, const char* domain,
+                            AVAHI_GCC_UNUSED AvahiLookupResultFlags flags, void* userdata)
 {
-  (void)flags;
-  (void)interfaceIndex;
-  (void)fullname;
+  RdmnetScopeMonitorRef* ref = (RdmnetScopeMonitorRef*)userdata;
+  assert(ref);
 
-  RdmnetScopeMonitorRef* ref = (RdmnetScopeMonitorRef*)context;
-  if (!ref)
-    return;
-
-  DiscoveredBroker* db = discovered_broker_lookup_by_ref(ref->broker_list, sdRef);
-  if (!db || db->state != kResolveStateServiceResolve)
-    return;
-
-  if (errorCode != kDNSServiceErr_NoError)
+  if (event == AVAHI_BROWSER_FAILURE)
   {
-    notify_scope_monitor_error(ref, errorCode);
-    if (lwpa_mutex_take(&disc_state.lock))
-    {
-      // Remove the DiscoveredBroker from the list
-      discovered_broker_remove(&ref->broker_list, db);
-      discovered_broker_delete(db);
-      lwpa_mutex_give(&disc_state.lock);
-    }
+    notify_scope_monitor_error(ref, avahi_client_errno(disc_state.avahi_client));
   }
-  else
+  else if (event == AVAHI_BROWSER_NEW || event == AVAHI_BROWSER_REMOVE)
   {
-    DNSServiceErrorType getaddrinfo_err = kDNSServiceErr_NoError;
-
-    // We have to take the lock before the DNSServiceGetAddrInfo call, because we need to add the
-    // ref to our map before it responds.
-    if (lwpa_mutex_take(&disc_state.lock))
-    {
-      // We got a response, clean up.  We don't need to keep resolving.
-      lwpa_poll_remove_socket(&disc_state.poll_context, DNSServiceRefSockFD(sdRef));
-      DNSServiceRefDeallocate(sdRef);
-
-      DNSServiceRef addr_ref;
-      getaddrinfo_err =
-          DNSServiceGetAddrInfo(&addr_ref, 0, 0, 0, hosttarget, &HandleDNSServiceGetAddrInfoReply, context);
-      if (getaddrinfo_err == kDNSServiceErr_NoError)
-      {
-        // Update the broker info.
-        // TODO revisit using this as a "ntohl" type function, might be buggy...
-        db->info.port = lwpa_upack_16b((const uint8_t*)&port);
-
-        uint8_t value_len = 0;
-        const char* value;
-        // char sval[16];
-
-        // value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord, "TxtVers", &value_len));
-        // if (value && value_len)
-        //{
-        //  rdmnet_safe_strncpy(sval, value, 16);
-        //  info->txt_vers = atoi(sval);
-        //}
-
-        value = (const char*)(TXTRecordGetValuePtr(txtLen, txtRecord, "ConfScope", &value_len));
-        if (value && value_len)
-        {
-          rdmnet_safe_strncpy(
-              db->info.scope, value,
-              (value_len + 1 > E133_SCOPE_STRING_PADDED_LENGTH ? E133_SCOPE_STRING_PADDED_LENGTH : value_len + 1));
-        }
-
-        // value = (const char *)(TXTRecordGetValuePtr(txtLen, txtRecord, "E133Vers", &value_len));
-        // if (value && value_len)
-        //{
-        //  rdmnet_safe_strncpy(sval, value, 16);
-        //  info->e133_vers = atoi(sval);
-        //}
-
-        value = (const char*)(TXTRecordGetValuePtr(txtLen, txtRecord, "CID", &value_len));
-        if (value && value_len)
-          lwpa_string_to_uuid(&db->info.cid, value, value_len);
-
-        value = (const char*)(TXTRecordGetValuePtr(txtLen, txtRecord, "Model", &value_len));
-        if (value && value_len)
-        {
-          rdmnet_safe_strncpy(
-              db->info.model, value,
-              (value_len + 1 > E133_MODEL_STRING_PADDED_LENGTH ? E133_MODEL_STRING_PADDED_LENGTH : value_len + 1));
-        }
-
-        value = (const char*)(TXTRecordGetValuePtr(txtLen, txtRecord, "Manuf", &value_len));
-        if (value && value_len)
-        {
-          rdmnet_safe_strncpy(
-              db->info.manufacturer, value,
-              (value_len + 1 > E133_MANUFACTURER_STRING_PADDED_LENGTH ? E133_MANUFACTURER_STRING_PADDED_LENGTH
-                                                                      : value_len + 1));
-        }
-
-        db->state = kResolveStateGetAddrInfo;
-        db->dnssd_ref = addr_ref;
-        lwpa_poll_add_socket(&disc_state.poll_context, DNSServiceRefSockFD(addr_ref), LWPA_POLL_IN, db->dnssd_ref);
-      }
-      lwpa_mutex_give(&disc_state.lock);
-    }
-
-    if (getaddrinfo_err != kDNSServiceErr_NoError)
-      notify_scope_monitor_error(ref, getaddrinfo_err);
-  }
-}
-
-void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex,
-                                           DNSServiceErrorType errorCode, const char* serviceName, const char* regtype,
-                                           const char* replyDomain, void* context)
-{
-  (void)sdRef;
-  (void)interfaceIndex;
-
-  RdmnetScopeMonitorRef* ref = (RdmnetScopeMonitorRef*)context;
-  if (!ref)
-    return;
-
-  char full_name[kDNSServiceMaxDomainName] = {0};
-  if (DNSServiceConstructFullName(full_name, serviceName, regtype, replyDomain) != kDNSServiceErr_NoError)
-    return;
-
-  if (ref->broker_handle)
-  {
-    // Filter out the service name if it matches our broker instance name.
-    if (strcmp(full_name, ref->broker_handle->full_service_name) == 0)
+    char full_name[AVAHI_DOMAIN_NAME_MAX] = {0};
+    if (0 != avahi_service_name_join(full_name, AVAHI_DOMAIN_NAME_MAX, name, type, domain))
       return;
-  }
 
-  if (errorCode != kDNSServiceErr_NoError)
-  {
-    notify_scope_monitor_error(ref, errorCode);
-  }
-  else if (flags & kDNSServiceFlagsAdd)
-  {
-    // We have to take the lock before the DNSServiceResolve call, because we need to add the ref to
-    // our map before it responds.
-    DNSServiceErrorType resolve_err = kDNSServiceErr_NoError;
-    if (lwpa_mutex_take(&disc_state.lock))
+    if (event == AVAHI_BROWSER_NEW)
     {
-      // Start the next part of the resolution.
-      DNSServiceRef resolve_ref;
-      resolve_err = DNSServiceResolve(&resolve_ref, 0, interfaceIndex, serviceName, regtype, replyDomain,
-                                      HandleDNSServiceResolveReply, context);
-
-      if (resolve_err == kDNSServiceErr_NoError)
+      // We have to take the lock before the DNSServiceResolve call, because we need to add the ref to
+      // our map before it responds.
+      int resolve_err = 0;
+      if (lwpa_mutex_take(&disc_state.lock))
       {
         // Track this resolve operation
         DiscoveredBroker* db = discovered_broker_lookup_by_name(ref->broker_list, full_name);
         if (!db)
         {
           // Allocate a new DiscoveredBroker to track info as it comes in.
-          db = discovered_broker_new(serviceName, full_name);
+          db = discovered_broker_new(ref, name, full_name);
           if (db)
+          {
             discovered_broker_insert(&ref->broker_list, db);
+          }
         }
         if (db)
         {
-          db->state = kResolveStateServiceResolve;
-          db->dnssd_ref = resolve_ref;
-          lwpa_poll_add_socket(&disc_state.poll_context, DNSServiceRefSockFD(resolve_ref), LWPA_POLL_IN, db->dnssd_ref);
+          // Start the next part of the resolution.
+          if (avahi_service_resolver_new(disc_state.avahi_client, interface, protocol, name, type, domain,
+                                         AVAHI_PROTO_UNSPEC, 0, resolve_callback, db))
+          {
+            ++db->num_outstanding_resolves;
+          }
+          else
+          {
+            if (db->num_outstanding_resolves <= 0 && db->num_successful_resolves == 0)
+            {
+              discovered_broker_remove(&ref->broker_list, db);
+              discovered_broker_delete(db);
+            }
+            resolve_err = avahi_client_errno(disc_state.avahi_client);
+          }
         }
+
+        lwpa_mutex_give(&disc_state.lock);
       }
 
-      lwpa_mutex_give(&disc_state.lock);
+      if (resolve_err != 0)
+        notify_scope_monitor_error(ref, resolve_err);
     }
-
-    if (resolve_err != kDNSServiceErr_NoError)
-      notify_scope_monitor_error(ref, resolve_err);
+    else
+    {
+      /*Service removal*/
+      if (lwpa_mutex_take(&disc_state.lock))
+      {
+        DiscoveredBroker* db = discovered_broker_lookup_by_name(ref->broker_list, full_name);
+        if (db)
+        {
+          discovered_broker_remove(&ref->broker_list, db);
+          discovered_broker_delete(db);
+        }
+        lwpa_mutex_give(&disc_state.lock);
+      }
+      notify_broker_lost(ref, name);
+    }
   }
-  else
+}
+
+static void client_callback(AvahiClient* c, AvahiClientState state, AVAHI_GCC_UNUSED void* userdata)
+{
+  assert(c);
+  /* Called whenever the client or server state changes */
+  if (state == AVAHI_CLIENT_FAILURE)
   {
-    /*Service removal*/
-    notify_broker_lost(ref, serviceName);
+    lwpa_log(rdmnet_log_params, LWPA_LOG_ERR, RDMNET_LOG_MSG("Avahi server connection failure: %s"),
+             avahi_strerror(avahi_client_errno(c)));
+    // avahi_simple_poll_quit(disc_state.avahi_simple_poll);
   }
 }
 
@@ -382,36 +362,29 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
 
 lwpa_error_t rdmnetdisc_init()
 {
-  lwpa_error_t res = kLwpaErrOk;
-
   if (!lwpa_mutex_create(&disc_state.lock))
-    res = kLwpaErrSys;
+    return kLwpaErrSys;
 
-  if (res == kLwpaErrOk)
-    disc_state.broker_ref.state = kBrokerStateNotRegistered;
-
-  if (!(disc_state.simple_poll = avahi_simple_poll_new()))
+  if (!(disc_state.avahi_simple_poll = avahi_simple_poll_new()))
   {
-    res = kLwpaErrSys;
+    lwpa_mutex_destroy(&disc_state.lock);
+    return kLwpaErrSys;
   }
 
-  disc_state.avahi_client = avahi_client_new(avahi_simple_poll_get(simple_poll), 0, client_callback, NULL, &error);
-
-  /* Check wether creating the client object succeeded */
-  if (!client) {
-      fprintf(stderr, "Failed to create client: %s\n", avahi_strerror(error));
-      goto fail;
+  int error;
+  disc_state.avahi_client =
+      avahi_client_new(avahi_simple_poll_get(disc_state.avahi_simple_poll), 0, client_callback, NULL, &error);
+  if (!disc_state.avahi_client)
+  {
+    lwpa_log(rdmnet_log_params, LWPA_LOG_ERR, RDMNET_LOG_MSG("Failed to create Avahi client instance: %s"),
+             avahi_strerror(error));
+    avahi_simple_poll_free(disc_state.avahi_simple_poll);
+    lwpa_mutex_destroy(&disc_state.lock);
+    return kLwpaErrSys;
   }
-  /* Create the service browser */
-  if (!(sb = avahi_service_browser_new(client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, "_http._tcp", NULL, 0, browse_callback, client))) {
-      fprintf(stderr, "Failed to create service browser: %s\n", avahi_strerror(avahi_client_errno(client)));
-      goto fail;
-  }
-  /* Run the main loop */
-  avahi_simple_poll_loop(simple_poll);
-  ret = 0;
 
-  return res;
+  disc_state.broker_ref.state = kBrokerStateNotRegistered;
+  return kLwpaErrOk;
 }
 
 void rdmnetdisc_deinit()
@@ -419,9 +392,15 @@ void rdmnetdisc_deinit()
   rdmnetdisc_stop_monitoring_all();
 
   if (disc_state.avahi_client)
+  {
     avahi_client_free(disc_state.avahi_client);
+    disc_state.avahi_client = NULL;
+  }
   if (disc_state.avahi_simple_poll)
+  {
     avahi_simple_poll_free(disc_state.avahi_simple_poll);
+    disc_state.avahi_simple_poll = NULL;
+  }
 
   lwpa_mutex_destroy(&disc_state.lock);
 }
@@ -429,7 +408,7 @@ void rdmnetdisc_deinit()
 void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo* broker_info)
 {
   broker_info->cid = kLwpaNullUuid;
-  memset(broker_info->service_name, 0, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
+  rdmnet_safe_strncpy(broker_info->service_name, "RDMnet Broker", E133_SERVICE_NAME_STRING_PADDED_LENGTH);
   broker_info->port = 0;
   broker_info->listen_addr_list = NULL;
   rdmnet_safe_strncpy(broker_info->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH);
@@ -450,25 +429,25 @@ lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* config,
     return kLwpaErrNoMem;
 
   // Start the browse operation in the Bonjour stack.
-  char reg_str[REGISTRATION_STRING_PADDED_LENGTH];
-  get_registration_string(E133_DNSSD_SRV_TYPE, config->scope, reg_str);
+  char service_str[SERVICE_STR_PADDED_LENGTH];
+  get_full_service_type(config->scope, service_str);
 
   // We have to take the lock before the DNSServiceBrowse call, because we need to add the ref to
   // our map before it responds.
   lwpa_error_t res = kLwpaErrOk;
   if (lwpa_mutex_take(&disc_state.lock))
   {
-    DNSServiceErrorType result = DNSServiceBrowse(&new_monitor->dnssd_ref, 0, 0, reg_str, config->domain,
-                                                  &HandleDNSServiceBrowseReply, new_monitor);
-    if (result == kDNSServiceErr_NoError)
+    /* Create the service browser */
+    new_monitor->avahi_browser =
+        avahi_service_browser_new(disc_state.avahi_client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, service_str,
+                                  config->domain, 0, browse_callback, new_monitor);
+    if (new_monitor->avahi_browser)
     {
-      lwpa_poll_add_socket(&disc_state.poll_context, DNSServiceRefSockFD(new_monitor->dnssd_ref), LWPA_POLL_IN,
-                           new_monitor->dnssd_ref);
       scope_monitor_insert(new_monitor);
     }
     else
     {
-      *platform_specific_error = result;
+      *platform_specific_error = avahi_client_errno(disc_state.avahi_client);
       scope_monitor_delete(new_monitor);
       res = kLwpaErrSys;
     }
@@ -536,10 +515,32 @@ lwpa_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config
   if (!rdmnet_core_initialized())
     return kLwpaErrNotInit;
 
-  disc_state.broker_ref.config = *config;
-  disc_state.broker_ref.state = kBrokerStateInfoSet;
+  RdmnetBrokerRegisterRef* broker_ref = &disc_state.broker_ref;
 
-  *handle = &disc_state.broker_ref;
+  // Begin monitoring the broker's scope for other brokers
+  RdmnetScopeMonitorConfig monitor_config;
+  rdmnet_safe_strncpy(monitor_config.scope, config->my_info.scope, E133_SCOPE_STRING_PADDED_LENGTH);
+  rdmnet_safe_strncpy(monitor_config.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
+
+  int mon_error;
+  rdmnet_scope_monitor_t monitor_handle;
+  if (rdmnetdisc_start_monitoring(&monitor_config, &monitor_handle, &mon_error) == kLwpaErrOk)
+  {
+    broker_ref->scope_monitor_handle = monitor_handle;
+    monitor_handle->broker_handle = broker_ref;
+
+    broker_ref->config = *config;
+    broker_ref->state = kBrokerStateQuerying;
+    broker_ref->query_timeout_expired = false;
+    lwpa_timer_start(&broker_ref->query_timer, DISCOVERY_QUERY_TIMEOUT);
+  }
+  else if (broker_ref->config.callbacks.scope_monitor_error)
+  {
+    broker_ref->config.callbacks.scope_monitor_error(broker_ref, monitor_config.scope, mon_error,
+                                                     broker_ref->config.callback_context);
+  }
+
+  *handle = broker_ref;
   return kLwpaErrOk;
 }
 
@@ -550,7 +551,11 @@ void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle)
 
   if (disc_state.broker_ref.state != kBrokerStateNotRegistered)
   {
-    DNSServiceRefDeallocate(disc_state.broker_ref.dnssd_ref);
+    if (disc_state.broker_ref.avahi_entry_group)
+    {
+      avahi_entry_group_free(disc_state.broker_ref.avahi_entry_group);
+      disc_state.broker_ref.avahi_entry_group = NULL;
+    }
 
     /* Since the broker only cares about scopes while it is running, shut down any outstanding
      * queries for that scope.*/
@@ -561,36 +566,24 @@ void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle)
   }
 }
 
-/* If returns !0, this was an error from Bonjour.  Reset the state and notify the callback.*/
-DNSServiceErrorType send_registration(const RdmnetBrokerDiscInfo* info, DNSServiceRef* created_ref, void* context)
+AvahiStringList* build_txt_record(const RdmnetBrokerDiscInfo* info)
 {
-  DNSServiceErrorType result = kDNSServiceErr_NoError;
-
-  /*Before we start the registration, we have to massage a few parameters*/
-  // TODO revisit this hacked version of "htonl", might be buggy
-  uint16_t net_port = 0;
-  lwpa_pack_16b((uint8_t*)&net_port, info->port);
-
-  char reg_str[REGISTRATION_STRING_PADDED_LENGTH];
-  get_registration_string(E133_DNSSD_SRV_TYPE, info->scope, reg_str);
-
-  u_int txt_buffer[TXT_RECORD_BUFFER_LENGTH];
-  TXTRecordRef txt;
-  TXTRecordCreate(&txt, TXT_RECORD_BUFFER_LENGTH, txt_buffer);
+  AvahiStringList* txt_list = NULL;
 
   char int_conversion[16];
   snprintf(int_conversion, 16, "%d", E133_DNSSD_TXTVERS);
-  result = TXTRecordSetValue(&txt, "TxtVers", (uint8_t)(strlen(int_conversion)), int_conversion);
-  if (result == kDNSServiceErr_NoError)
-  {
-    result = TXTRecordSetValue(&txt, "ConfScope", (uint8_t)(strlen(info->scope)), info->scope);
-  }
-  if (result == kDNSServiceErr_NoError)
+  txt_list = avahi_string_list_add_pair(NULL, "TxtVers", int_conversion);
+
+  if (txt_list)
+    txt_list = avahi_string_list_add_pair(txt_list, "ConfScope", info->scope);
+
+  if (txt_list)
   {
     snprintf(int_conversion, 16, "%d", E133_DNSSD_E133VERS);
-    result = TXTRecordSetValue(&txt, "E133Vers", (uint8_t)(strlen(int_conversion)), int_conversion);
+    txt_list = avahi_string_list_add_pair(txt_list, "E133Vers", int_conversion);
   }
-  if (result == kDNSServiceErr_NoError)
+
+  if (txt_list)
   {
     /*The CID can't have hyphens, so we'll strip them.*/
     char cid_str[LWPA_UUID_STRING_BYTES];
@@ -603,30 +596,63 @@ DNSServiceErrorType send_registration(const RdmnetBrokerDiscInfo* info, DNSServi
 
       *dst = *src;
     }
-    result = TXTRecordSetValue(&txt, "CID", (uint8_t)(strlen(cid_str)), cid_str);
-  }
-  if (result == kDNSServiceErr_NoError)
-  {
-    result = TXTRecordSetValue(&txt, "Model", (uint8_t)(strlen(info->model)), info->model);
-  }
-  if (result == kDNSServiceErr_NoError)
-  {
-    result = TXTRecordSetValue(&txt, "Manuf", (uint8_t)(strlen(info->manufacturer)), info->manufacturer);
+    txt_list = avahi_string_list_add_pair(txt_list, "CID", cid_str);
   }
 
-  if (result == kDNSServiceErr_NoError)
+  if (txt_list)
+    txt_list = avahi_string_list_add_pair(txt_list, "Model", info->model);
+
+  if (txt_list)
+    txt_list = avahi_string_list_add_pair(txt_list, "Manuf", info->manufacturer);
+
+  return txt_list;
+}
+
+/* If returns !0, this was an error from Avahi.  Reset the state and notify the callback.*/
+int send_registration(const RdmnetBrokerDiscInfo* info, AvahiEntryGroup** entry_group, void* context)
+{
+  int res = 0;
+
+  if (!(*entry_group))
   {
-    // TODO: If we want to register a device on a particular interface instead of all interfaces,
-    // we'll have to have multiple reg_refs and do a DNSServiceRegister on each interface. Not
-    // ideal.
-    result = DNSServiceRegister(created_ref, 0, 0, info->service_name, reg_str, NULL, NULL, net_port,
-                                TXTRecordGetLength(&txt), TXTRecordGetBytesPtr(&txt), HandleDNSServiceRegisterReply,
-                                context);
+    *entry_group = avahi_entry_group_new(disc_state.avahi_client, entry_group_callback, context);
+    if (!(*entry_group))
+    {
+      return avahi_client_errno(disc_state.avahi_client);
+    }
   }
 
-  TXTRecordDeallocate(&txt);
+  AvahiEntryGroup* group = *entry_group;
+  if (avahi_entry_group_is_empty(group))
+  {
+    char service_type[E133_DNSSD_SRV_TYPE_PADDED_LENGTH];
+    rdmnet_safe_strncpy(service_type, E133_DNSSD_SRV_TYPE, E133_DNSSD_SRV_TYPE_PADDED_LENGTH);
 
-  return result;
+    char full_service_type[SERVICE_STR_PADDED_LENGTH];
+    get_full_service_type(info->scope, full_service_type);
+
+    AvahiStringList* txt_list = build_txt_record(info);
+    assert(txt_list);
+
+    // Add the unqualified service type
+    res = avahi_entry_group_add_service_strlst(group, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, 0, info->service_name,
+                                               service_type, NULL, NULL, info->port, txt_list);
+    if (res < 0)
+      return res;
+
+    avahi_string_list_free(txt_list);
+
+    // Add the subtype
+    res = avahi_entry_group_add_service_subtype(group, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, 0, info->service_name,
+                                                service_type, NULL, full_service_type);
+    if (res < 0)
+      return res;
+
+    // Commit the result
+    res = avahi_entry_group_commit(group);
+  }
+
+  return res;
 }
 
 void rdmnetdisc_tick()
@@ -639,44 +665,26 @@ void rdmnetdisc_tick()
   RdmnetBrokerRegisterRef* broker_ref = &disc_state.broker_ref;
   switch (broker_ref->state)
   {
-    case kBrokerStateInfoSet:
+    case kBrokerStateQuerying:
     {
-      // The info was set. Start the registration and monitoring
-      broker_ref->state = kBrokerStateRegisterStarted;
+      if (!broker_ref->query_timeout_expired && lwpa_timer_is_expired(&broker_ref->query_timer))
+        broker_ref->query_timeout_expired = true;
 
-      DNSServiceErrorType reg_result =
-          send_registration(&broker_ref->config.my_info, &broker_ref->dnssd_ref, broker_ref);
-
-      if (reg_result == kDNSServiceErr_NoError)
+      if (broker_ref->query_timeout_expired && !broker_ref->scope_monitor_handle->broker_list)
       {
-        lwpa_poll_add_socket(&disc_state.poll_context, DNSServiceRefSockFD(broker_ref->dnssd_ref), LWPA_POLL_IN,
-                             broker_ref->dnssd_ref);
+        // If the initial query timeout is expired and we haven't discovered any conflicting brokers,
+        // we can proceed.
+        broker_ref->state = kBrokerStateRegisterStarted;
 
-        // Begin monitoring the broker's scope for other brokers
-        RdmnetScopeMonitorConfig config;
-        rdmnet_safe_strncpy(config.scope, broker_ref->config.my_info.scope, E133_SCOPE_STRING_PADDED_LENGTH);
-        rdmnet_safe_strncpy(config.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
-
-        int mon_error;
-        rdmnet_scope_monitor_t monitor_handle;
-        if (rdmnetdisc_start_monitoring(&config, &monitor_handle, &mon_error) == kLwpaErrOk)
+        int reg_result = send_registration(&broker_ref->config.my_info, &broker_ref->avahi_entry_group, broker_ref);
+        if (reg_result != 0)
         {
-          broker_ref->scope_monitor_handle = monitor_handle;
-          monitor_handle->broker_handle = broker_ref;
-        }
-        else if (broker_ref->config.callbacks.scope_monitor_error)
-        {
-          broker_ref->config.callbacks.scope_monitor_error(broker_ref, config.scope, mon_error,
-                                                           broker_ref->config.callback_context);
-        }
-      }
-      else
-      {
-        broker_ref->state = kBrokerStateNotRegistered;
-        if (broker_ref->config.callbacks.broker_register_error != NULL)
-        {
-          broker_ref->config.callbacks.broker_register_error(broker_ref, reg_result,
-                                                             broker_ref->config.callback_context);
+          broker_ref->state = kBrokerStateNotRegistered;
+          if (broker_ref->config.callbacks.broker_register_error != NULL)
+          {
+            broker_ref->config.callbacks.broker_register_error(broker_ref, reg_result,
+                                                               broker_ref->config.callback_context);
+          }
         }
       }
     }
@@ -689,31 +697,7 @@ void rdmnetdisc_tick()
       break;
   }
 
-  LwpaPollEvent event = {LWPA_SOCKET_INVALID};
-  lwpa_error_t poll_res = kLwpaErrSys;
-
-  // Do the poll inside the mutex so that sockets can't be added and removed during poll
-  // Since we are using an immediate timeout, this is not a big deal
-  if (lwpa_mutex_take(&disc_state.lock))
-  {
-    poll_res = lwpa_poll_wait(&disc_state.poll_context, &event, 0);
-    lwpa_mutex_give(&disc_state.lock);
-  }
-  if (poll_res == kLwpaErrOk && event.events & LWPA_POLL_IN)
-  {
-    DNSServiceErrorType process_error;
-    process_error = DNSServiceProcessResult((DNSServiceRef)event.user_data);
-
-    if (process_error != kDNSServiceErr_NoError)
-    {
-      lwpa_poll_remove_socket(&disc_state.poll_context, event.socket);
-      lwpa_close(event.socket);
-    }
-  }
-  else if (poll_res != kLwpaErrTimedOut)
-  {
-    // TODO error handling
-  }
+  avahi_simple_poll_iterate(disc_state.avahi_simple_poll, 0);
 }
 
 void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info)
@@ -769,17 +753,50 @@ void notify_scope_monitor_error(rdmnet_scope_monitor_t handle, int platform_erro
  * helper functions
  ******************************************************************************/
 
-void get_registration_string(const char* srv_type, const char* scope, char* reg_str)
+void ip_avahi_to_lwpa(const AvahiAddress* avahi_ip, LwpaIpAddr* lwpa_ip)
 {
-  RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
+  if (avahi_ip->proto == AVAHI_PROTO_INET)
+  {
+    LWPA_IP_SET_V4_ADDRESS(lwpa_ip, ntohl(avahi_ip->data.ipv4.address));
+  }
+  else if (avahi_ip->proto == AVAHI_PROTO_INET6)
+  {
+    LWPA_IP_SET_V6_ADDRESS(lwpa_ip, avahi_ip->data.ipv6.address);
+  }
+  else
+  {
+    LWPA_IP_SET_INVALID(lwpa_ip);
+  }
+}
 
-  // Bonjour adds in the _sub. for us.
-  RDMNET_MSVC_NO_DEP_WRN strncpy(reg_str, srv_type, REGISTRATION_STRING_PADDED_LENGTH);
-  strcat(reg_str, ",");
-  strcat(reg_str, "_");
-  strcat(reg_str, scope);
+// Determine if a resolved service instance matches our locally-registered broker, per the method
+// described in ANSI E1.33 Section 9.1.4.
+bool resolved_instance_matches_us(const RdmnetBrokerDiscInfo* their_info, const RdmnetBrokerDiscInfo* our_info)
+{
+  // TODO: host name must also be included in this comparison.
+  return ((their_info->port == our_info->port) && (0 == strcmp(their_info->scope, our_info->scope)) &&
+          (0 == LWPA_UUID_CMP(&their_info->cid, &our_info->cid)));
+}
 
-  RDMNET_MSVC_END_NO_DEP_WARNINGS()
+bool avahi_txt_record_find(AvahiStringList* txt_list, const char* key, char** value, size_t* value_len)
+{
+  AvahiStringList* found = avahi_string_list_find(txt_list, key);
+  if (found)
+  {
+    char* tmp_key;
+    if (0 == avahi_string_list_get_pair(found, &tmp_key, value, value_len))
+    {
+      // We don't need the key, free immediately. The value will be freed by the user
+      avahi_free(tmp_key);
+      return true;
+    }
+  }
+  return false;
+}
+
+void get_full_service_type(const char* scope, char* reg_str)
+{
+  sprintf(reg_str, "_%s._sub.%s", scope, E133_DNSSD_SRV_TYPE);
 }
 
 bool broker_info_is_valid(const RdmnetBrokerDiscInfo* info)
@@ -802,6 +819,7 @@ RdmnetScopeMonitorRef* scope_monitor_new(const RdmnetScopeMonitorConfig* config)
   if (new_monitor)
   {
     new_monitor->config = *config;
+    new_monitor->avahi_browser = NULL;
     new_monitor->broker_handle = NULL;
     new_monitor->broker_list = NULL;
     new_monitor->next = NULL;
@@ -819,21 +837,23 @@ void scope_monitor_delete(RdmnetScopeMonitorRef* ref)
     discovered_broker_delete(db);
     db = next_db;
   }
-  lwpa_poll_remove_socket(&disc_state.poll_context, DNSServiceRefSockFD(ref->dnssd_ref));
-  DNSServiceRefDeallocate(ref->dnssd_ref);
+  if (ref->avahi_browser)
+    avahi_service_browser_free(ref->avahi_browser);
   free(ref);
 }
 
-DiscoveredBroker* discovered_broker_new(const char* service_name, const char* full_service_name)
+DiscoveredBroker* discovered_broker_new(RdmnetScopeMonitorRef* ref, const char* service_name,
+                                        const char* full_service_name)
 {
   DiscoveredBroker* new_db = (DiscoveredBroker*)malloc(sizeof(DiscoveredBroker));
   if (new_db)
   {
     rdmnetdisc_fill_default_broker_info(&new_db->info);
     rdmnet_safe_strncpy(new_db->info.service_name, service_name, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
-    rdmnet_safe_strncpy(new_db->full_service_name, full_service_name, kDNSServiceMaxDomainName);
-    new_db->state = kResolveStateServiceResolve;
-    new_db->dnssd_ref = NULL;
+    rdmnet_safe_strncpy(new_db->full_service_name, full_service_name, AVAHI_DOMAIN_NAME_MAX);
+    new_db->monitor_ref = ref;
+    new_db->num_outstanding_resolves = 0;
+    new_db->num_successful_resolves = 0;
     new_db->next = NULL;
   }
   return new_db;
@@ -841,11 +861,6 @@ DiscoveredBroker* discovered_broker_new(const char* service_name, const char* fu
 
 void discovered_broker_delete(DiscoveredBroker* db)
 {
-  if (db->state != kResolveStateDone)
-  {
-    lwpa_poll_remove_socket(&disc_state.poll_context, DNSServiceRefSockFD(db->dnssd_ref));
-    DNSServiceRefDeallocate(db->dnssd_ref);
-  }
   BrokerListenAddr* listen_addr = db->info.listen_addr_list;
   while (listen_addr)
   {
@@ -856,24 +871,24 @@ void discovered_broker_delete(DiscoveredBroker* db)
   free(db);
 }
 
-RdmnetBrokerRegisterRef* registered_broker_new(const RdmnetBrokerRegisterConfig* config)
-{
-  RdmnetBrokerRegisterRef* new_rb = (RdmnetBrokerRegisterRef*)malloc(sizeof(RdmnetBrokerRegisterRef));
-  if (new_rb)
-  {
-    new_rb->config = *config;
-    new_rb->scope_monitor_handle = NULL;
-    new_rb->state = kBrokerStateNotRegistered;
-    new_rb->full_service_name[0] = '\0';
-    new_rb->dnssd_ref = NULL;
-  }
-  return new_rb;
-}
-
-void registered_broker_delete(RdmnetBrokerRegisterRef* rb)
-{
-  free(rb);
-}
+// RdmnetBrokerRegisterRef* registered_broker_new(const RdmnetBrokerRegisterConfig* config)
+//{
+//  RdmnetBrokerRegisterRef* new_rb = (RdmnetBrokerRegisterRef*)malloc(sizeof(RdmnetBrokerRegisterRef));
+//  if (new_rb)
+//  {
+//    new_rb->config = *config;
+//    new_rb->scope_monitor_handle = NULL;
+//    new_rb->state = kBrokerStateNotRegistered;
+//    new_rb->full_service_name[0] = '\0';
+//    new_rb->avahi_entry_group = NULL;
+//  }
+//  return new_rb;
+//}
+//
+// void registered_broker_delete(RdmnetBrokerRegisterRef* rb)
+//{
+//  free(rb);
+//}
 
 /* Adds broker discovery information into brokers.
  * Assumes a lock is already taken.*/
@@ -901,22 +916,6 @@ DiscoveredBroker* discovered_broker_lookup_by_name(DiscoveredBroker* list_head, 
   for (DiscoveredBroker* current = list_head; current; current = current->next)
   {
     if (strcmp(current->full_service_name, full_name) == 0)
-    {
-      return current;
-    }
-  }
-  return NULL;
-}
-
-/* Searches for a DiscoveredBroker instance by associated DNSServiceRef in a list.
- * Returns the found instance or NULL if no match was found.
- * Assumes a lock is already taken.
- */
-DiscoveredBroker* discovered_broker_lookup_by_ref(DiscoveredBroker* list_head, DNSServiceRef dnssd_ref)
-{
-  for (DiscoveredBroker* current = list_head; current; current = current->next)
-  {
-    if (current->dnssd_ref == dnssd_ref)
     {
       return current;
     }
@@ -975,21 +974,6 @@ void scope_monitor_insert(RdmnetScopeMonitorRef* scope_ref)
   }
 }
 
-/* Searches to see if a scope is being monitored.
- * Returns NULL if no match was found.
- * Assumes a lock is already taken. */
-RdmnetScopeMonitorRef* scope_monitor_lookup(DNSServiceRef dnssd_ref)
-{
-  for (RdmnetScopeMonitorRef* ref = disc_state.scope_ref_list; ref; ref = ref->next)
-  {
-    if (ref->dnssd_ref == dnssd_ref)
-    {
-      return ref;
-    }
-  }
-  return NULL;
-}
-
 /* Removes an entry from disc_state.scope_ref_list.
  * Assumes a lock is already taken. */
 void scope_monitor_remove(const RdmnetScopeMonitorRef* ref)
@@ -1015,4 +999,3 @@ void scope_monitor_remove(const RdmnetScopeMonitorRef* ref)
     }
   }
 }
-

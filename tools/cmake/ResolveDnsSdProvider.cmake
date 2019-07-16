@@ -156,7 +156,7 @@ elseif(UNIX)
     ${RDMNET_SRC}/rdmnet/discovery/avahi.c
   )
 
-  target_link_libraries(dnssd INTERFACE avahi-client)
+  target_link_libraries(dnssd INTERFACE avahi-client avahi-common)
 else()
   message(FATAL_ERROR "There is currently no DNS-SD provider supported for this platform.")
 endif()
