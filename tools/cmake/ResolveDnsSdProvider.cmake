@@ -123,10 +123,19 @@ if(WIN32)
     endif()
   endif()
 elseif(APPLE)
+  # On Apple platforms, use native Bonjour.
   set(RDMNET_DISCOVERY_ADDITIONAL_SOURCES
     ${RDMNET_SRC}/rdmnet/discovery/bonjour.h
     ${RDMNET_SRC}/rdmnet/discovery/bonjour.c
   )
+elseif(UNIX)
+  # On Unix-like platforms, use Avahi.
+  set(RDMNET_DISCOVERY_ADDITIONAL_SOURCES
+    ${RDMNET_SRC}/rdmnet/discovery/avahi.h
+    ${RDMNET_SRC}/rdmnet/discovery/avahi.c
+  )
+
+  target_link_libraries(dnssd INTERFACE avahi-client)
 else()
   message(FATAL_ERROR "There is currently no DNS-SD provider supported for this platform.")
 endif()
