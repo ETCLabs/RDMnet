@@ -440,7 +440,6 @@ void BrokerCore::SendClientsAdded(client_protocol_t client_prot, int conn_to_ign
   bmsg.vector = VECTOR_BROKER_CLIENT_ADD;
   get_client_list(&bmsg)->client_entry_list = entries.data();
 
-  lwpa::ReadGuard controllers_read(client_lock_);
   for (const auto controller : controllers_)
   {
     if (controller.second->client_protocol == client_prot && controller.first != conn_to_ignore)
@@ -454,7 +453,6 @@ void BrokerCore::SendClientsRemoved(client_protocol_t client_prot, std::vector<C
   bmsg.vector = VECTOR_BROKER_CLIENT_REMOVE;
   get_client_list(&bmsg)->client_entry_list = entries.data();
 
-  lwpa::ReadGuard controllers_read(client_lock_);
   for (const auto controller : controllers_)
   {
     if (controller.second->client_protocol == client_prot)
@@ -1052,48 +1050,46 @@ void BrokerCore::MarkConnForDestruction(rdmnet_conn_t conn, SendDisconnect send_
 // These functions will take a write lock on client_lock_ and client_destroy_lock_.
 void BrokerCore::DestroyMarkedClientSockets()
 {
+  lwpa::WriteGuard clients_write(client_lock_);
   std::vector<ClientEntryData> entries;
 
-  {  // write lock scope
-    lwpa::WriteGuard clients_write(client_lock_);
-    if (!clients_to_destroy_.empty())
+  if (!clients_to_destroy_.empty())
+  {
+    for (auto to_destroy : clients_to_destroy_)
     {
-      for (auto to_destroy : clients_to_destroy_)
+      auto client = clients_.find(to_destroy);
+      if (client != clients_.end())
       {
-        auto client = clients_.find(to_destroy);
-        if (client != clients_.end())
+        ClientEntryData entry;
+        entry.client_protocol = client->second->client_protocol;
+        entry.client_cid = client->second->cid;
+
+        if (client->second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
         {
-          ClientEntryData entry;
-          entry.client_protocol = client->second->client_protocol;
-          entry.client_cid = client->second->cid;
+          RPTClient* rptcli = static_cast<RPTClient*>(client->second.get());
+          uid_manager_.RemoveUid(rptcli->uid);
+          if (rptcli->client_type == kRPTClientTypeController)
+            controllers_.erase(to_destroy);
+          else if (rptcli->client_type == kRPTClientTypeDevice)
+            devices_.erase(to_destroy);
 
-          if (client->second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
-          {
-            RPTClient* rptcli = static_cast<RPTClient*>(client->second.get());
-            uid_manager_.RemoveUid(rptcli->uid);
-            if (rptcli->client_type == kRPTClientTypeController)
-              controllers_.erase(to_destroy);
-            else if (rptcli->client_type == kRPTClientTypeDevice)
-              devices_.erase(to_destroy);
-
-            ClientEntryDataRpt* rptdata = get_rpt_client_entry_data(&entry);
-            rptdata->client_uid = rptcli->uid;
-            rptdata->client_type = rptcli->client_type;
-            rptdata->binding_cid = rptcli->binding_cid;
-          }
-          entries.push_back(entry);
-          entries[entries.size() - 1].next = nullptr;
-          if (entries.size() > 1)
-            entries[entries.size() - 2].next = &entries[entries.size() - 1];
-          clients_.erase(client);
-
-          log_->Log(LWPA_LOG_INFO, "Removing connection %d marked for destruction.", to_destroy);
-          log_->Log(LWPA_LOG_DEBUG, "Clients: %zu Controllers: %zu Devices: %zu", clients_.size(), controllers_.size(),
-                    devices_.size());
+          ClientEntryDataRpt* rptdata = get_rpt_client_entry_data(&entry);
+          rptdata->client_uid = rptcli->uid;
+          rptdata->client_type = rptcli->client_type;
+          rptdata->binding_cid = rptcli->binding_cid;
         }
+        entries.push_back(entry);
+        entries[entries.size() - 1].next = nullptr;
+        if (entries.size() > 1)
+          entries[entries.size() - 2].next = &entries[entries.size() - 1];
+        clients_.erase(client);
+
+        log_->Log(LWPA_LOG_INFO, "Removing connection %d marked for destruction.", to_destroy);
+        log_->Log(LWPA_LOG_DEBUG, "Clients: %zu Controllers: %zu Devices: %zu", clients_.size(), controllers_.size(),
+                  devices_.size());
       }
-      clients_to_destroy_.clear();
     }
+    clients_to_destroy_.clear();
   }
 
   if (!entries.empty())

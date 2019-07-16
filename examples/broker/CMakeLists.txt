@@ -26,6 +26,15 @@ if(WIN32)
       COMMENT "Copying DNS-SD dll to executable directory..."
     )
   endif()
+elseif(UNIX AND NOT APPLE)
+  target_sources(${BROKER_TARGET} PRIVATE
+    src/linux/main.cpp
+    src/linux/linux_broker_log.h
+    src/linux/linux_broker_log.cpp
+    src/linux/linux_socket_manager.h
+    src/linux/linux_socket_manager.cpp
+  )
+  target_link_libraries(${BROKER_TARGET} PRIVATE pthread)
 endif()
 
 install(TARGETS ${BROKER_TARGET}
