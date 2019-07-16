@@ -136,17 +136,19 @@ typedef struct RemoteRptStatus
  *  \param received_cmd Received command (RemoteRdmCommand *).
  *  \param resp_rdm_arr Array of RDM responses to the command (RdmResponse *).
  *  \param resp_num_responses Number of RDM responses in the array (size_t).
+ *  \param broadcast_response Broadcast the response to all controllers. You must set this to true
+ *                            if acknowledging a SET_COMMAND.
  */
-#define RDMNET_CREATE_RESPONSE_FROM_COMMAND(resp, received_cmd, resp_rdm_arr, resp_num_responses) \
-  do                                                                                              \
-  {                                                                                               \
-    (resp)->dest_uid = (received_cmd)->source_uid;                                                \
-    (resp)->source_endpoint = (received_cmd)->dest_endpoint;                                      \
-    (resp)->seq_num = (received_cmd)->seq_num;                                                    \
-    (resp)->command_included = true;                                                              \
-    (resp)->cmd = (received_cmd)->rdm;                                                            \
-    (resp)->rdm_arr = (resp_rdm_arr);                                                             \
-    (resp)->num_responses = (resp_num_responses);                                                 \
+#define RDMNET_CREATE_RESPONSE_FROM_COMMAND(resp, received_cmd, resp_rdm_arr, resp_num_responses, broadcast_response) \
+  do                                                                                                                  \
+  {                                                                                                                   \
+    (resp)->dest_uid = broadcast_response ? kRdmnetControllerBroadcastUid : (received_cmd)->source_uid;               \
+    (resp)->source_endpoint = (received_cmd)->dest_endpoint;                                                          \
+    (resp)->seq_num = (received_cmd)->seq_num;                                                                        \
+    (resp)->command_included = true;                                                                                  \
+    (resp)->cmd = (received_cmd)->rdm;                                                                                \
+    (resp)->rdm_arr = (resp_rdm_arr);                                                                                 \
+    (resp)->num_responses = (resp_num_responses);                                                                     \
   } while (0)
 
 /*! \brief Initialize an unsolicited LocalRdmResponse (without an associated command).

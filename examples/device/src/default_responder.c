@@ -211,6 +211,7 @@ bool default_responder_set(uint16_t pid, const uint8_t* param_data, uint8_t para
                            rdmnet_data_changed_t* data_changed)
 {
   bool res = false;
+  *data_changed = kRdmnetSetCommandAcknowledged;
   if (lwpa_rwlock_writelock(&prop_lock))
   {
     switch (pid)
@@ -316,6 +317,8 @@ void identify_thread(void* arg)
 bool set_identify_device(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
                          rdmnet_data_changed_t* data_changed)
 {
+  (void)data_changed;
+
   if (param_data_len >= 1)
   {
     bool new_identify_setting = (bool)(*param_data);
@@ -331,7 +334,6 @@ bool set_identify_device(const uint8_t* param_data, uint8_t param_data_len, uint
       lwpa_thread_create(&prop_data.identify_thread, &ithread_params, identify_thread, NULL);
     }
     prop_data.identifying = new_identify_setting;
-    *data_changed = kNoRdmnetDataChanged;
     return true;
   }
   else
@@ -344,13 +346,14 @@ bool set_identify_device(const uint8_t* param_data, uint8_t param_data_len, uint
 bool set_device_label(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
                       rdmnet_data_changed_t* data_changed)
 {
+  (void)data_changed;
+
   if (param_data_len >= 1)
   {
     if (param_data_len > DEVICE_LABEL_MAX_LEN)
       param_data_len = DEVICE_LABEL_MAX_LEN;
     memcpy(prop_data.device_label, param_data, param_data_len);
     prop_data.device_label[param_data_len] = '\0';
-    *data_changed = kNoRdmnetDataChanged;
     return true;
   }
   else
@@ -403,7 +406,6 @@ bool set_component_scope(const uint8_t* param_data, uint8_t param_data_len, uint
             new_static_broker.port == existing_scope_config->static_broker_addr.port)))
       {
         /* Same settings as current */
-        *data_changed = kNoRdmnetDataChanged;
       }
       else
       {
@@ -436,7 +438,6 @@ bool set_search_domain(const uint8_t* param_data, uint8_t param_data_len, uint16
       if (strncmp(prop_data.search_domain, (char*)param_data, E133_DOMAIN_STRING_PADDED_LENGTH) == 0)
       {
         /* Same domain as current */
-        *data_changed = kNoRdmnetDataChanged;
       }
       else
       {
@@ -461,7 +462,7 @@ bool set_search_domain(const uint8_t* param_data, uint8_t param_data_len, uint16
 bool set_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
                           rdmnet_data_changed_t* data_changed)
 {
-  *data_changed = kNoRdmnetDataChanged;
+  (void)data_changed;
 
   if (param_data_len == E133_SCOPE_STRING_PADDED_LENGTH)
   {
