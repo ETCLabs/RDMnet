@@ -37,9 +37,6 @@
 #include "rdmnet/private/core.h"
 #include "rdmnet/private/opts.h"
 
-// DEBUG REMOVEME
-//#include <intrin.h>
-
 // Compile time check of memory configuration
 #if !RDMNET_DYNAMIC_MEM
 #error "RDMnet Discovery using Bonjour requires RDMNET_DYNAMIC_MEM to be enabled (defined nonzero)."
