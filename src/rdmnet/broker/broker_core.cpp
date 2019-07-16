@@ -202,8 +202,7 @@ void BrokerCore::Shutdown()
 
 void BrokerCore::Tick()
 {
-  if (!other_brokers_found_)
-    DestroyMarkedClientSockets();
+  DestroyMarkedClientSockets();
 }
 
 // Fills in the current settings the broker is using.  Can be called even after Shutdown. Useful if
@@ -1116,7 +1115,6 @@ void BrokerCore::BrokerRegisterError(int platform_specific_error)
 
 void BrokerCore::OtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
 {
-  ++other_brokers_found_;
   if (log_->CanLog(LWPA_LOG_WARNING))
   {
     std::string addrs;
@@ -1137,23 +1135,13 @@ void BrokerCore::OtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
   }
   if (!service_registered_)
   {
-    log_->Log(LWPA_LOG_WARNING, "Entering Standby mode.");
-    disc_.Standby();
-    StopBrokerServices();
+    log_->Log(LWPA_LOG_WARNING,
+              "This broker will remain unregistered with DNS-SD until all conflicting brokers are removed.");
+    // StopBrokerServices();
   }
 }
 
 void BrokerCore::OtherBrokerLost(const std::string& service_name)
 {
-  log_->Log(LWPA_LOG_WARNING, "Broker %s left", service_name.c_str());
-  if (other_brokers_found_ > 0)
-  {
-    --other_brokers_found_;
-  }
-  if (other_brokers_found_ == 0)
-  {
-    log_->Log(LWPA_LOG_INFO, "All conflicting Brokers gone. Resuming Broker services.");
-    StartBrokerServices();
-    disc_.Resume();
-  }
+  log_->Log(LWPA_LOG_WARNING, "Conflicting broker %s no longer discovered.", service_name.c_str());
 }

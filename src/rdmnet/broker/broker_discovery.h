@@ -63,8 +63,6 @@ public:
   lwpa_error_t RegisterBroker(const RDMnet::BrokerDiscoveryAttributes& disc_attributes, const LwpaUuid& local_cid,
                               const std::vector<LwpaIpAddr>& listen_addrs, uint16_t listen_port);
   void UnregisterBroker();
-  void Standby();
-  lwpa_error_t Resume();
 
   // Accessors
   std::string scope() const { return cur_config_valid_ ? cur_config_.my_info.scope : std::string(); }

@@ -31,6 +31,7 @@
 #include "dns_sd.h"
 #include "lwpa/lock.h"
 #include "lwpa/socket.h"
+#include "lwpa/timer.h"
 #include "rdmnet/private/opts.h"
 #include "rdmnet/core/discovery.h"
 
@@ -82,7 +83,7 @@ struct RdmnetScopeMonitorRef
 typedef enum
 {
   kBrokerStateNotRegistered,
-  kBrokerStateInfoSet,
+  kBrokerStateQuerying,
   kBrokerStateRegisterStarted,
   kBrokerStateRegistered
 } broker_state_t;
@@ -93,6 +94,9 @@ typedef struct RdmnetBrokerRegisterRef
   rdmnet_scope_monitor_t scope_monitor_handle;
   broker_state_t state;
   char full_service_name[kDNSServiceMaxDomainName];
+
+  LwpaTimer query_timer;
+  bool query_timeout_expired;
 
   // For hooking up to the DNS-SD API
   DNSServiceRef dnssd_ref;

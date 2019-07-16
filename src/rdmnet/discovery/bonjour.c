@@ -30,8 +30,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "lwpa/inet.h"
 #include "lwpa/bool.h"
+#include "lwpa/inet.h"
 #include "lwpa/pack.h"
 #include "rdmnet/core/util.h"
 #include "rdmnet/private/core.h"
@@ -41,6 +41,10 @@
 #if !RDMNET_DYNAMIC_MEM
 #error "RDMnet Discovery using Bonjour requires RDMNET_DYNAMIC_MEM to be enabled (defined nonzero)."
 #endif
+
+/**************************** Private constants ******************************/
+
+#define DISCOVERY_QUERY_TIMEOUT 3000
 
 /**************************** Private variables ******************************/
 
@@ -61,31 +65,33 @@ static DiscoveryState disc_state;
 /*********************** Private function prototypes *************************/
 
 // Allocation and deallocation
-RdmnetScopeMonitorRef* scope_monitor_new(const RdmnetScopeMonitorConfig* config);
-void scope_monitor_delete(RdmnetScopeMonitorRef* ref);
-DiscoveredBroker* discovered_broker_new(const char* service_name, const char* full_service_name);
-void discovered_broker_delete(DiscoveredBroker* db);
-RdmnetBrokerRegisterRef* registered_broker_new();
-void registered_broker_delete(RdmnetBrokerRegisterRef* rb);
+static RdmnetScopeMonitorRef* scope_monitor_new(const RdmnetScopeMonitorConfig* config);
+static void scope_monitor_delete(RdmnetScopeMonitorRef* ref);
+static DiscoveredBroker* discovered_broker_new(const char* service_name, const char* full_service_name);
+static void discovered_broker_delete(DiscoveredBroker* db);
+static RdmnetBrokerRegisterRef* registered_broker_new();
+static void registered_broker_delete(RdmnetBrokerRegisterRef* rb);
 
 // Add and remove from appropriate lists
-void discovered_broker_insert(DiscoveredBroker** list_head_ptr, DiscoveredBroker* new);
-DiscoveredBroker* discovered_broker_lookup_by_name(DiscoveredBroker* list_head, const char* full_name);
-DiscoveredBroker* discovered_broker_lookup_by_ref(DiscoveredBroker* list_head, DNSServiceRef dnssd_ref);
-void discovered_broker_remove(DiscoveredBroker** list_head_ptr, const DiscoveredBroker* db);
-void scope_monitor_insert(RdmnetScopeMonitorRef* scope_ref);
-RdmnetScopeMonitorRef* scope_monitor_lookup(DNSServiceRef dnssd_ref);
-void scope_monitor_remove(const RdmnetScopeMonitorRef* ref);
+static void discovered_broker_insert(DiscoveredBroker** list_head_ptr, DiscoveredBroker* new);
+static DiscoveredBroker* discovered_broker_lookup_by_name(DiscoveredBroker* list_head, const char* full_name);
+static DiscoveredBroker* discovered_broker_lookup_by_ref(DiscoveredBroker* list_head, DNSServiceRef dnssd_ref);
+static void discovered_broker_remove(DiscoveredBroker** list_head_ptr, const DiscoveredBroker* db);
+static void scope_monitor_insert(RdmnetScopeMonitorRef* scope_ref);
+static RdmnetScopeMonitorRef* scope_monitor_lookup(DNSServiceRef dnssd_ref);
+static void scope_monitor_remove(const RdmnetScopeMonitorRef* ref);
 
 // Notify the appropriate callbacks
-void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info);
-void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name);
-void notify_scope_monitor_error(rdmnet_scope_monitor_t handle, int platform_error);
+static void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info);
+static void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name);
+static void notify_scope_monitor_error(rdmnet_scope_monitor_t handle, int platform_error);
 
 // Other helpers
-void get_registration_string(const char* srv_type, const char* scope, char* reg_str);
-bool broker_info_is_valid(const RdmnetBrokerDiscInfo* info);
-bool ipv6_valid(LwpaIpAddr* ip);
+static DNSServiceErrorType send_registration(const RdmnetBrokerDiscInfo* info, DNSServiceRef* created_ref,
+                                             void* context);
+static void get_registration_string(const char* srv_type, const char* scope, char* reg_str);
+static bool broker_info_is_valid(const RdmnetBrokerDiscInfo* info);
+static bool ipv6_valid(LwpaIpAddr* ip);
 
 /*************************** Function definitions ****************************/
 
@@ -378,6 +384,16 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
   else
   {
     /*Service removal*/
+    if (lwpa_mutex_take(&disc_state.lock))
+    {
+      DiscoveredBroker* db = discovered_broker_lookup_by_name(ref->broker_list, full_name);
+      if (db)
+      {
+        discovered_broker_remove(&ref->broker_list, db);
+        discovered_broker_delete(db);
+      }
+      lwpa_mutex_give(&disc_state.lock);
+    }
     notify_broker_lost(ref, serviceName);
   }
 }
@@ -549,10 +565,32 @@ lwpa_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config
   if (!rdmnet_core_initialized())
     return kLwpaErrNotInit;
 
-  disc_state.broker_ref.config = *config;
-  disc_state.broker_ref.state = kBrokerStateInfoSet;
+  RdmnetBrokerRegisterRef* broker_ref = &disc_state.broker_ref;
 
-  *handle = &disc_state.broker_ref;
+  // Begin monitoring the broker's scope for other brokers
+  RdmnetScopeMonitorConfig monitor_config;
+  rdmnet_safe_strncpy(monitor_config.scope, config->my_info.scope, E133_SCOPE_STRING_PADDED_LENGTH);
+  rdmnet_safe_strncpy(monitor_config.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
+
+  int mon_error;
+  rdmnet_scope_monitor_t monitor_handle;
+  if (rdmnetdisc_start_monitoring(&monitor_config, &monitor_handle, &mon_error) == kLwpaErrOk)
+  {
+    broker_ref->scope_monitor_handle = monitor_handle;
+    monitor_handle->broker_handle = broker_ref;
+
+    broker_ref->config = *config;
+    broker_ref->state = kBrokerStateQuerying;
+    broker_ref->query_timeout_expired = false;
+    lwpa_timer_start(&broker_ref->query_timer, DISCOVERY_QUERY_TIMEOUT);
+  }
+  else if (broker_ref->config.callbacks.scope_monitor_error)
+  {
+    broker_ref->config.callbacks.scope_monitor_error(broker_ref, monitor_config.scope, mon_error,
+                                                     broker_ref->config.callback_context);
+  }
+
+  *handle = broker_ref;
   return kLwpaErrOk;
 }
 
@@ -563,6 +601,7 @@ void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle)
 
   if (disc_state.broker_ref.state != kBrokerStateNotRegistered)
   {
+    lwpa_poll_remove_socket(&disc_state.poll_context, DNSServiceRefSockFD(disc_state.broker_ref.dnssd_ref));
     DNSServiceRefDeallocate(disc_state.broker_ref.dnssd_ref);
 
     /* Since the broker only cares about scopes while it is running, shut down any outstanding
@@ -652,44 +691,33 @@ void rdmnetdisc_tick()
   RdmnetBrokerRegisterRef* broker_ref = &disc_state.broker_ref;
   switch (broker_ref->state)
   {
-    case kBrokerStateInfoSet:
+    case kBrokerStateQuerying:
     {
-      // The info was set. Start the registration and monitoring
-      broker_ref->state = kBrokerStateRegisterStarted;
+      if (!broker_ref->query_timeout_expired && lwpa_timer_is_expired(&broker_ref->query_timer))
+        broker_ref->query_timeout_expired = true;
 
-      DNSServiceErrorType reg_result =
-          send_registration(&broker_ref->config.my_info, &broker_ref->dnssd_ref, broker_ref);
-
-      if (reg_result == kDNSServiceErr_NoError)
+      if (broker_ref->query_timeout_expired && !broker_ref->scope_monitor_handle->broker_list)
       {
-        lwpa_poll_add_socket(&disc_state.poll_context, DNSServiceRefSockFD(broker_ref->dnssd_ref), LWPA_POLL_IN,
-                             broker_ref->dnssd_ref);
+        // If the initial query timeout is expired and we haven't discovered any conflicting brokers,
+        // we can proceed.
+        broker_ref->state = kBrokerStateRegisterStarted;
 
-        // Begin monitoring the broker's scope for other brokers
-        RdmnetScopeMonitorConfig config;
-        rdmnet_safe_strncpy(config.scope, broker_ref->config.my_info.scope, E133_SCOPE_STRING_PADDED_LENGTH);
-        rdmnet_safe_strncpy(config.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
+        DNSServiceErrorType reg_result =
+            send_registration(&broker_ref->config.my_info, &broker_ref->dnssd_ref, broker_ref);
 
-        int mon_error;
-        rdmnet_scope_monitor_t monitor_handle;
-        if (rdmnetdisc_start_monitoring(&config, &monitor_handle, &mon_error) == kLwpaErrOk)
+        if (reg_result == kDNSServiceErr_NoError)
         {
-          broker_ref->scope_monitor_handle = monitor_handle;
-          monitor_handle->broker_handle = broker_ref;
+          lwpa_poll_add_socket(&disc_state.poll_context, DNSServiceRefSockFD(broker_ref->dnssd_ref), LWPA_POLL_IN,
+                               broker_ref->dnssd_ref);
         }
-        else if (broker_ref->config.callbacks.scope_monitor_error)
+        else
         {
-          broker_ref->config.callbacks.scope_monitor_error(broker_ref, config.scope, mon_error,
-                                                           broker_ref->config.callback_context);
-        }
-      }
-      else
-      {
-        broker_ref->state = kBrokerStateNotRegistered;
-        if (broker_ref->config.callbacks.broker_register_error != NULL)
-        {
-          broker_ref->config.callbacks.broker_register_error(broker_ref, reg_result,
-                                                             broker_ref->config.callback_context);
+          broker_ref->state = kBrokerStateNotRegistered;
+          if (broker_ref->config.callbacks.broker_register_error != NULL)
+          {
+            broker_ref->config.callbacks.broker_register_error(broker_ref, reg_result,
+                                                               broker_ref->config.callback_context);
+          }
         }
       }
     }
