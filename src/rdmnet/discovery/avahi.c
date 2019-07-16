@@ -396,6 +396,7 @@ lwpa_error_t rdmnetdisc_init()
   }
 
   disc_state.avahi_client = avahi_client_new(avahi_simple_poll_get(simple_poll), 0, client_callback, NULL, &error);
+
   /* Check wether creating the client object succeeded */
   if (!client) {
       fprintf(stderr, "Failed to create client: %s\n", avahi_strerror(error));
