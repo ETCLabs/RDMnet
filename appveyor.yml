@@ -10,6 +10,7 @@ branches:
     - master
     - /release\/.+/
     - /v\d+\.\d+\.\d+\.\d+/
+    - macos-port # Temporary
 
 skip_commits:
   files:
