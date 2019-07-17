@@ -85,6 +85,7 @@ void ListenThread::Stop()
 
     if (listen_socket_ != LWPA_SOCKET_INVALID)
     {
+      lwpa_shutdown(listen_socket_, LWPA_SHUT_RD);
       lwpa_close(listen_socket_);
       listen_socket_ = LWPA_SOCKET_INVALID;
     }

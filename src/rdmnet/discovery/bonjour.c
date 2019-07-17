@@ -87,6 +87,7 @@ static void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* servic
 static void notify_scope_monitor_error(rdmnet_scope_monitor_t handle, int platform_error);
 
 // Other helpers
+static void stop_monitoring_all_internal();
 static DNSServiceErrorType send_registration(const RdmnetBrokerDiscInfo* info, DNSServiceRef* created_ref,
                                              void* context);
 static void get_registration_string(const char* srv_type, const char* scope, char* reg_str);
@@ -420,7 +421,7 @@ lwpa_error_t rdmnetdisc_init()
 
 void rdmnetdisc_deinit()
 {
-  rdmnetdisc_stop_monitoring_all();
+  stop_monitoring_all_internal();
   lwpa_poll_context_deinit(&disc_state.poll_context);
   lwpa_mutex_destroy(&disc_state.lock);
 }
@@ -537,6 +538,11 @@ void rdmnetdisc_stop_monitoring_all()
   if (!rdmnet_core_initialized())
     return;
 
+  stop_monitoring_all_internal();
+}
+
+void stop_monitoring_all_internal()
+{
   if (lwpa_mutex_take(&disc_state.lock))
   {
     if (disc_state.scope_ref_list)
