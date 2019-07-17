@@ -1,31 +1,31 @@
 find_package(Git QUIET)
 
-option(RDMNET_FORCE_SUBMODULE_DEPS "Disable overriding of submodule dependencies with clones at same level as RDMnet" OFF)
+option(RDMNET_ENABLE_DEPENDENCY_OVERRIDES "Enable overriding of submodule dependencies with clones at same level as RDMnet" OFF)
 
 function(rdmnet_add_dependency target loc_variable)
-
   # Step 1 - see if the target has already been included
   if(NOT TARGET ${target})
+    # If the user has asked to override with another copy, check for it first
+    if(RDMNET_ENABLE_DEPENDENCY_OVERRIDES)
+      # Step 2 - if the user has provided a location for the dependency, use that
+      if(DEFINED ${loc_variable})
+        message(STATUS "${loc_variable} provided; attempting to add ${target} from ${${loc_variable}}...")
+        get_filename_component(${loc_variable} ${${loc_variable}}
+          ABSOLUTE
+          BASE_DIR ${CMAKE_BINARY_DIR}
+        )
+        add_subdirectory(${${loc_variable}} ${target})
 
-    # Step 2 - if the user has provided a location for the dependency, use that
-    if(DEFINED ${loc_variable})
-
-      message(STATUS "${loc_variable} provided; attempting to add ${target} from ${${loc_variable}}...")
-      get_filename_component(${loc_variable} ${${loc_variable}}
-        ABSOLUTE
-        BASE_DIR ${CMAKE_BINARY_DIR}
-      )
-      add_subdirectory(${${loc_variable}} ${target})
-
-    # Step 3 - look for the dependency in a folder with the same name as the
-    # target, at the same level as this folder
-    elseif(NOT RDMNET_FORCE_SUBMODULE_DEPS AND EXISTS "${RDMNET_ROOT}/../${target}")
-
-      message(STATUS "Found directory for ${target} at same level as RDMnet. Overriding submodule dependency with that directory.")
-      add_subdirectory(${RDMNET_ROOT}/../${target} ${target})
-
-    else()
-
+      # Step 3 - look for the dependency in a folder with the same name as the
+      # target, at the same level as this folder
+      elseif(EXISTS "${RDMNET_ROOT}/../${target}")
+        message(STATUS "Found directory for ${target} at same level as RDMnet. Overriding submodule dependency with that directory.")
+        add_subdirectory(${RDMNET_ROOT}/../${target} ${target})
+      endif()
+    endif()
+    
+    # If we still haven't gotten the target by here, grab the submodule
+    if(NOT TARGET ${target})
       if(GIT_FOUND AND EXISTS ${RDMNET_ROOT}/.git)
         # Update submodules as needed
         option(GIT_SUBMODULE "Check submodules during build" ON)
