@@ -36,6 +36,7 @@
 #if RDMNET_USE_TICK_THREAD
 #include "lwpa/thread.h"
 #endif
+#include "lwpa/int.h"
 #include "lwpa/lock.h"
 #include "lwpa/socket.h"
 #include "lwpa/rbtree.h"
@@ -88,7 +89,7 @@ static struct RdmnetConnectionState
 
 /*********************** Private function prototypes *************************/
 
-static int update_backoff(int previous_backoff);
+static uint32_t update_backoff(uint32_t previous_backoff);
 static void start_tcp_connection(RdmnetConnection* conn, ConnCallbackDispatchInfo* cb);
 static void start_rdmnet_connection(RdmnetConnection* conn);
 static void reset_connection(RdmnetConnection* conn);
@@ -922,7 +923,7 @@ void rdmnet_conn_socket_activity(const LwpaPollEvent* event, PolledSocketOpaqueD
     if (recv_res <= 0)
       rdmnet_socket_error(data.conn_handle, recv_res);
     else
-      rdmnet_socket_data_received(data.conn_handle, rdmnet_poll_recv_buf, recv_res);
+      rdmnet_socket_data_received(data.conn_handle, rdmnet_poll_recv_buf, (size_t)recv_res);
   }
   else if (event->events & LWPA_POLL_CONNECT)
   {
@@ -997,13 +998,13 @@ RdmnetConnection* create_new_connection(const RdmnetConnectionConfig* config)
 
 /* Internal function to update a backoff timer value using the algorithm specified in E1.33. Returns
  * the new value. */
-int update_backoff(int previous_backoff)
+uint32_t update_backoff(uint32_t previous_backoff)
 {
-  int result = ((rand() % 4001) + 1000);
+  uint32_t result = (uint32_t)(((rand() % 4001) + 1000));
   result += previous_backoff;
   /* 30 second interval is the max */
-  if (result > 30000)
-    return 30000;
+  if (result > 30000u)
+    return 30000u;
   return result;
 }
 

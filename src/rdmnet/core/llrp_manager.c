@@ -386,13 +386,13 @@ bool update_probe_range(LlrpManager* manager, KnownUid** uid_list)
       // The new range starts at the old upper limit + 1, and ends at the top of the UID space.
       if (manager->cur_range_high.id == 0xffffffffu)
       {
-        manager->cur_range_low.manu = manager->cur_range_high.manu + 1;
+        manager->cur_range_low.manu = (uint16_t)(manager->cur_range_high.manu + 1u);
         manager->cur_range_low.id = 0;
       }
       else
       {
         manager->cur_range_low.manu = manager->cur_range_high.manu;
-        manager->cur_range_low.id = manager->cur_range_high.id + 1;
+        manager->cur_range_low.id = (uint32_t)(manager->cur_range_high.id + 1u);
       }
       manager->cur_range_high = kBroadcastUid;
       manager->num_clean_sends = 0;

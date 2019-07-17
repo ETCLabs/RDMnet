@@ -118,7 +118,7 @@ size_t pack_rpt_header_with_rlp(const LwpaRootLayerPdu* rlp, uint8_t* buf, size_
 
   pack_rpt_header(rlp->datalen, vector, header, cur_ptr);
   cur_ptr += RPT_PDU_HEADER_SIZE;
-  return cur_ptr - buf;
+  return (size_t)(cur_ptr - buf);
 }
 
 lwpa_error_t send_rpt_header(RdmnetConnection* conn, const LwpaRootLayerPdu* rlp, uint32_t rpt_vector,
@@ -203,7 +203,7 @@ size_t pack_rpt_request(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, 
 
   PACK_RDM_CMD_PDU(cmd, cur_ptr);
   cur_ptr += request_pdu_size - REQUEST_NOTIF_PDU_HEADER_SIZE;
-  return cur_ptr - buf;
+  return (size_t)(cur_ptr - buf);
 }
 
 /*! \brief Send an RPT Request message on an RDMnet connection.
@@ -314,7 +314,7 @@ size_t pack_rpt_status(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, c
     RDMNET_MSVC_NO_DEP_WRN strncpy((char*)cur_ptr, status->status_string, RPT_STATUS_STRING_MAXLEN);
     cur_ptr += (status_pdu_size - RPT_STATUS_HEADER_SIZE);
   }
-  return cur_ptr - buf;
+  return (size_t)(cur_ptr - buf);
 }
 
 /*! \brief Send an RPT Status message on an RDMnet connection.
@@ -434,7 +434,7 @@ size_t pack_rpt_notification(uint8_t* buf, size_t buflen, const LwpaUuid* local_
     PACK_RDM_CMD_PDU(cur_cmd, cur_ptr);
     cur_ptr += RDM_CMD_PDU_LEN(cur_cmd);
   }
-  return cur_ptr - buf;
+  return (size_t)(cur_ptr - buf);
 }
 
 /*! \brief Send an RPT Notification message on an RDMnet connection.
