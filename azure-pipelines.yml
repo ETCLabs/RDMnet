@@ -4,10 +4,10 @@
 # https://aka.ms/yaml
 
 trigger:
-- develop
+- azure-pipelines
 
 pr:
-- develop
+- azure-pipelines
 
 jobs:
 # Build and test RDMnet on Windows using CMake and Visual Studio 2017.
