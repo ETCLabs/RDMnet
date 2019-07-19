@@ -26,9 +26,9 @@ jobs:
   steps:
     - script: |
         echo '##vso[task.setvariable variable=WinArtifactType]%ARTIFACT_TYPE%'
-        git clone -b develop https://github.com/ETCLabs/lwpa ../lwpa 
-        git clone -b develop https://github.com/ETCLabs/RDM ../RDM
-        cd ..\lwpa
+        git clone -b develop https://github.com/ETCLabs/lwpa ../RDMnet/external/lwpa
+        git clone -b develop https://github.com/ETCLabs/RDM ../RDMnet/external/RDM
+        cd ..\RDMnet\external\lwpa
         git checkout 0aa3362
         cd ..\RDM
         git checkout dd850f2
