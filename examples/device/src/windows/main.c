@@ -176,6 +176,8 @@ int wmain(int argc, wchar_t* argv[])
     return 1;
   }
 
+  lwpa_log(lparams, LWPA_LOG_INFO, "Device initialized.");
+
   while (device_keep_running)
   {
     Sleep(100);

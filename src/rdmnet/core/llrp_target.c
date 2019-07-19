@@ -573,6 +573,11 @@ lwpa_error_t setup_target_netints(const LlrpTargetOptionalConfig* config, LlrpTa
           break;
       }
     }
+
+    if (res != kLwpaErrOk)
+    {
+      lwpa_rbtree_clear_with_cb(&target->netints, cleanup_target_netint);
+    }
   }
   else
   {
@@ -581,16 +586,19 @@ lwpa_error_t setup_target_netints(const LlrpTargetOptionalConfig* config, LlrpTa
     for (LlrpNetint* netint = (LlrpNetint*)netint_iter.node->value; netint;
          netint = (LlrpNetint*)lwpa_rbiter_next(&netint_iter))
     {
+      // If the user hasn't provided a list of network interfaces to operate on, failing to
+      // intialize on a network interface will be non-fatal and we will log it.
       res = setup_target_netint(&netint->id, target);
       if (res != kLwpaErrOk)
-        break;
+      {
+        lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
+                 RDMNET_LOG_MSG("Failed to intiailize LLRP target for listening on network interface index %d: '%s'"),
+                 netint->id.index, lwpa_strerror(res));
+        res = kLwpaErrOk;
+      }
     }
   }
 
-  if (res != kLwpaErrOk)
-  {
-    lwpa_rbtree_clear_with_cb(&target->netints, cleanup_target_netint);
-  }
   return res;
 }
 
