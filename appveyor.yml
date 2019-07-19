@@ -31,7 +31,7 @@ matrix:
 
 environment:
   CTEST_OUTPUT_ON_FAILURE: 1
-  MDNSWINDOWS_VERSION: '1.2.0.3'
+  CMAKE_EXTRA_ARGS: '-DRDMNET_BUILD_GUI_EXAMPLES=ON -DRDMNET_BUILD_CONSOLE_EXAMPLES=ON'
   CODESIGN_DECRYPT_SECRET:
     secure: Z1VdvYVbzcA99+sBtiwEatQkNSMHCe5iGMVmqHuZd5o=
   CODESIGN_CERT_SECRET:
@@ -59,7 +59,7 @@ before_build:
       mkdir build
       cd build
       cmake --version
-      cmake -G "%CMAKE_GENERATOR%" -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL% ..
+      cmake -G "%CMAKE_GENERATOR%" -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL% %CMAKE_EXTRA_ARGS% ..
 
 build:
   parallel: true            # enable MSBuild parallel builds
