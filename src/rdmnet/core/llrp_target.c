@@ -439,7 +439,7 @@ void handle_llrp_message(const uint8_t* data, size_t data_size, LlrpTarget* targ
         // TODO allow multiple probe replies to be queued
         if (request->contains_my_uid && !netint->reply_pending)
         {
-          int backoff_ms;
+          uint32_t backoff_ms;
 
           // Check the filter values.
           if (!((request->filter & LLRP_FILTERVAL_BROKERS_ONLY) && target->component_type != kLlrpCompBroker) &&
@@ -448,7 +448,7 @@ void handle_llrp_message(const uint8_t* data, size_t data_size, LlrpTarget* targ
             netint->reply_pending = true;
             netint->pending_reply_cid = msg.header.sender_cid;
             netint->pending_reply_trans_num = msg.header.transaction_number;
-            backoff_ms = (rand() * LLRP_MAX_BACKOFF_MS / RAND_MAX);
+            backoff_ms = (uint32_t)(rand() * LLRP_MAX_BACKOFF_MS / RAND_MAX);
             lwpa_timer_start(&netint->reply_backoff, backoff_ms);
           }
         }

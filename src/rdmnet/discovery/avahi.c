@@ -90,6 +90,7 @@ static void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* servic
 static void notify_scope_monitor_error(rdmnet_scope_monitor_t handle, int platform_error);
 
 // Other helpers
+static void stop_monitoring_all_internal();
 static AvahiStringList* build_txt_record(const RdmnetBrokerDiscInfo* info);
 static int send_registration(const RdmnetBrokerDiscInfo* info, AvahiEntryGroup** entry_group, void* context);
 static void ip_avahi_to_lwpa(const AvahiAddress* avahi_ip, LwpaIpAddr* lwpa_ip);
@@ -389,7 +390,7 @@ lwpa_error_t rdmnetdisc_init()
 
 void rdmnetdisc_deinit()
 {
-  rdmnetdisc_stop_monitoring_all();
+  stop_monitoring_all_internal();
 
   if (disc_state.avahi_client)
   {
@@ -487,6 +488,11 @@ void rdmnetdisc_stop_monitoring_all()
   if (!rdmnet_core_initialized())
     return;
 
+  stop_monitoring_all_internal();
+}
+
+void stop_monitoring_all_internal()
+{
   if (lwpa_mutex_take(&disc_state.lock))
   {
     if (disc_state.scope_ref_list)

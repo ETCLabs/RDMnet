@@ -286,7 +286,7 @@ size_t lwpa_pack_llrp_header(uint8_t* buf, size_t pdu_len, uint32_t vector, cons
   cur_ptr += LWPA_UUID_BYTES;
   lwpa_pack_32b(cur_ptr, header->transaction_number);
   cur_ptr += 4;
-  return cur_ptr - buf;
+  return (size_t)(cur_ptr - buf);
 }
 
 #define PROBE_REQUEST_RLP_DATA_MIN_SIZE (LLRP_HEADER_SIZE + PROBE_REQUEST_PDU_MIN_SIZE)
@@ -299,7 +299,7 @@ lwpa_error_t send_llrp_probe_request(lwpa_socket_t sock, uint8_t* buf, bool ipv6
   uint8_t* buf_end = cur_ptr + LLRP_MANAGER_MAX_MESSAGE_SIZE;
 
   // Pack the UDP Preamble
-  cur_ptr += lwpa_pack_udp_preamble(cur_ptr, buf_end - cur_ptr);
+  cur_ptr += lwpa_pack_udp_preamble(cur_ptr, (size_t)(buf_end - cur_ptr));
 
   LwpaRootLayerPdu rlp;
   rlp.vector = ACN_VECTOR_ROOT_LLRP;
@@ -315,7 +315,7 @@ lwpa_error_t send_llrp_probe_request(lwpa_socket_t sock, uint8_t* buf, bool ipv6
   }
 
   // Pack the Root Layer PDU header0
-  cur_ptr += lwpa_pack_root_layer_header(cur_ptr, buf_end - cur_ptr, &rlp);
+  cur_ptr += lwpa_pack_root_layer_header(cur_ptr, (size_t)(buf_end - cur_ptr), &rlp);
 
   // Pack the LLRP header
   cur_ptr += lwpa_pack_llrp_header(cur_ptr, rlp.datalen, VECTOR_LLRP_PROBE_REQUEST, header);
@@ -349,7 +349,7 @@ lwpa_error_t send_llrp_probe_request(lwpa_socket_t sock, uint8_t* buf, bool ipv6
     cur_uid = cur_uid->next;
   }
 
-  int send_res = lwpa_sendto(sock, buf, cur_ptr - buf, 0, ipv6 ? kLlrpIpv6RequestAddr : kLlrpIpv4RequestAddr);
+  int send_res = lwpa_sendto(sock, buf, (size_t)(cur_ptr - buf), 0, ipv6 ? kLlrpIpv6RequestAddr : kLlrpIpv4RequestAddr);
   if (send_res >= 0)
     return kLwpaErrOk;
   else
@@ -365,7 +365,7 @@ lwpa_error_t send_llrp_probe_reply(lwpa_socket_t sock, uint8_t* buf, bool ipv6, 
   uint8_t* buf_end = cur_ptr + LLRP_TARGET_MAX_MESSAGE_SIZE;
 
   // Pack the UDP Preamble
-  cur_ptr += lwpa_pack_udp_preamble(cur_ptr, buf_end - cur_ptr);
+  cur_ptr += lwpa_pack_udp_preamble(cur_ptr, (size_t)(buf_end - cur_ptr));
 
   LwpaRootLayerPdu rlp;
   rlp.vector = ACN_VECTOR_ROOT_LLRP;
@@ -373,7 +373,7 @@ lwpa_error_t send_llrp_probe_reply(lwpa_socket_t sock, uint8_t* buf, bool ipv6, 
   rlp.datalen = PROBE_REPLY_RLP_DATA_SIZE;
 
   // Pack the Root Layer PDU header
-  cur_ptr += lwpa_pack_root_layer_header(cur_ptr, buf_end - cur_ptr, &rlp);
+  cur_ptr += lwpa_pack_root_layer_header(cur_ptr, (size_t)(buf_end - cur_ptr), &rlp);
 
   // Pack the LLRP header
   cur_ptr += lwpa_pack_llrp_header(cur_ptr, rlp.datalen, VECTOR_LLRP_PROBE_REPLY, header);
@@ -391,7 +391,7 @@ lwpa_error_t send_llrp_probe_reply(lwpa_socket_t sock, uint8_t* buf, bool ipv6, 
   cur_ptr += 6;
   *cur_ptr++ = (uint8_t)target_info->component_type;
 
-  int send_res = lwpa_sendto(sock, buf, cur_ptr - buf, 0, ipv6 ? kLlrpIpv6RespAddr : kLlrpIpv4RespAddr);
+  int send_res = lwpa_sendto(sock, buf, (size_t)(cur_ptr - buf), 0, ipv6 ? kLlrpIpv6RespAddr : kLlrpIpv4RespAddr);
   if (send_res >= 0)
     return kLwpaErrOk;
   else
@@ -407,7 +407,7 @@ lwpa_error_t send_llrp_rdm(lwpa_socket_t sock, uint8_t* buf, const LwpaSockaddr*
   uint8_t* buf_end = cur_ptr + LLRP_MAX_MESSAGE_SIZE;
 
   // Pack the UDP Preamble
-  cur_ptr += lwpa_pack_udp_preamble(cur_ptr, buf_end - cur_ptr);
+  cur_ptr += lwpa_pack_udp_preamble(cur_ptr, (size_t)(buf_end - cur_ptr));
 
   LwpaRootLayerPdu rlp;
   rlp.vector = ACN_VECTOR_ROOT_LLRP;
@@ -415,7 +415,7 @@ lwpa_error_t send_llrp_rdm(lwpa_socket_t sock, uint8_t* buf, const LwpaSockaddr*
   rlp.datalen = RDM_CMD_RLP_DATA_MIN_SIZE + rdm_msg->datalen;
 
   // Pack the Root Layer PDU header
-  cur_ptr += lwpa_pack_root_layer_header(cur_ptr, buf_end - cur_ptr, &rlp);
+  cur_ptr += lwpa_pack_root_layer_header(cur_ptr, (size_t)(buf_end - cur_ptr), &rlp);
 
   // Pack the LLRP header
   cur_ptr += lwpa_pack_llrp_header(cur_ptr, rlp.datalen, VECTOR_LLRP_RDM_CMD, header);
@@ -427,7 +427,7 @@ lwpa_error_t send_llrp_rdm(lwpa_socket_t sock, uint8_t* buf, const LwpaSockaddr*
   memcpy(cur_ptr, rdm_msg->data, rdm_msg->datalen);
   cur_ptr += rdm_msg->datalen;
 
-  int send_res = lwpa_sendto(sock, buf, cur_ptr - buf, 0, dest_addr);
+  int send_res = lwpa_sendto(sock, buf, (size_t)(cur_ptr - buf), 0, dest_addr);
   if (send_res >= 0)
     return kLwpaErrOk;
   else

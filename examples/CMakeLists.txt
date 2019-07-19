@@ -1,9 +1,9 @@
 
-if(RDMNET_BUILD_EXAMPLES)
+if(RDMNET_BUILD_GUI_EXAMPLES)
   add_subdirectory(controller)
 endif()
 
-if(RDMNET_BUILD_EXAMPLES OR RDMNET_BUILD_CONSOLE_EXAMPLES)
+if(RDMNET_BUILD_CONSOLE_EXAMPLES)
   if(WIN32)
     add_subdirectory(broker)
     add_subdirectory(device)

@@ -48,13 +48,15 @@ void LinuxBrokerLog::GetTimeFromCallback(LwpaLogTimeParams* time_params)
   time(&cur_time);
 
   // Determine the UTC offset
+  // A bit of naive time zone code that probably misses tons of edge cases.
+  // After all, it's just an example app...
   struct tm* timeinfo = gmtime(&cur_time);
   time_t utc = mktime(timeinfo);
   timeinfo = localtime(&cur_time);
   time_t local = mktime(timeinfo);
-  double utc_offset = difftime(utc, local) / 60.0;
+  double utc_offset = difftime(local, utc) / 60.0;
   if (timeinfo->tm_isdst)
-    utc_offset -= 1;
+    utc_offset += 60;
 
   time_params->year = timeinfo->tm_year + 1900;
   time_params->month = timeinfo->tm_mon + 1;

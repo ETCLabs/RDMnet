@@ -123,6 +123,7 @@ T* getNearestParentItemOfType(QStandardItem* child)
 void RDMnetNetworkModel::addScopeToMonitor(QString scope)
 {
   bool scopeAlreadyAdded = false;
+  bool newScopeAdded = false;
 
   if (scope.length() > 0)
   {
@@ -160,14 +161,19 @@ void RDMnetNetworkModel::addScopeToMonitor(QString scope)
         broker_connections_.insert(std::make_pair(new_scope_handle, broker));
 
         default_responder_.AddScope(scope.toStdString());
-        // Broadcast GET_RESPONSE notification because of newly added scope
-        std::vector<RdmParamData> resp_data_list;
-        uint16_t nack_reason;
-        if (default_responder_.GetComponentScope(0x0001, resp_data_list, nack_reason))
-        {
-          SendRDMGetResponsesBroadcast(E133_COMPONENT_SCOPE, resp_data_list);
-        }
+        newScopeAdded = true;
       }
+    }
+  }
+
+  if (newScopeAdded)
+  {
+    // Broadcast GET_RESPONSE notification because of newly added scope
+    std::vector<RdmParamData> resp_data_list;
+    uint16_t nack_reason;
+    if (default_responder_.GetComponentScope(0x0001, resp_data_list, nack_reason))
+    {
+      SendRDMGetResponsesBroadcast(E133_COMPONENT_SCOPE, resp_data_list);
     }
   }
 }
