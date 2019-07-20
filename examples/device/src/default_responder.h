@@ -48,7 +48,6 @@ typedef RdmParamData param_data_list_t[MAX_RESPONSES_IN_ACK_OVERFLOW];
 typedef enum
 {
   kNoRdmnetDataChanged,
-  kRdmnetSetCommandAcknowledged,
   kRdmnetScopeConfigChanged,
   kRdmnetSearchDomainChanged
 } rdmnet_data_changed_t;
