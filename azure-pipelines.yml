@@ -71,9 +71,10 @@ jobs:
       displayName: 'RDMnet Windows test'
       env:
         CTEST_OUTPUT_ON_FAILURE: '1'
-    - script: |
-        cd $(Build.SourcesDirectory)\tools\install\windows
-        msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% %INSTALLER_PROJECT%
+    - task: MSBuild@1
+      inputs:
+        solution: $(Build.SourcesDirectory)\tools\install\windows\%INSTALLER_PROJECT%
+        platform: %INSTALLER_PROJECT_PLATFORM%
       displayName: 'RDMnet Installer Windows build'
     - task: PublishPipelineArtifact@0
       inputs:
