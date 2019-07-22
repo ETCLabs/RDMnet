@@ -21,10 +21,14 @@ jobs:
         CMAKE_GENERATOR: 'Visual Studio 15 2017'
         QT_DIRECTORY: C:\Qt\5.9.7\msvc2015
         ARTIFACT_TYPE: x86
+        INSTALLER_PROJECT: RDMnetInstall_x86.wixproj
+        INSTALLER_PROJECT_PLATFORM: x86
       x64:
         CMAKE_GENERATOR: 'Visual Studio 15 2017 Win64'
         QT_DIRECTORY: C:\Qt\5.9.7\msvc2017_64
         ARTIFACT_TYPE: x64
+        INSTALLER_PROJECT: RDMnetInstall_x64.wixproj
+        INSTALLER_PROJECT_PLATFORM: x64
   steps:
     - task: CacheBeta@0
       inputs:
@@ -67,6 +71,10 @@ jobs:
       displayName: 'RDMnet Windows test'
       env:
         CTEST_OUTPUT_ON_FAILURE: '1'
+    - script: |
+        cd $(Build.SourcesDirectory)\tools\install\windows
+        msbuild /m /p:Platform=%INSTALLER_PROJECT_PLATFORM% %INSTALLER_PROJECT%
+      displayName: 'RDMnet Installer Windows build'
     - task: PublishPipelineArtifact@0
       inputs:
         artifactName: 'rdmnet_windows_$(WinArtifactType)'
