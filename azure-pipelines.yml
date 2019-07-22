@@ -19,9 +19,11 @@ jobs:
     matrix:
       Win32:
         CMAKE_GENERATOR: 'Visual Studio 15 2017'
+        QT_DIRECTORY: C:\Qt\5.9.7\msvc2015
         ARTIFACT_TYPE: x86
       x64:
         CMAKE_GENERATOR: 'Visual Studio 15 2017 Win64'
+        QT_DIRECTORY: C:\Qt\5.9.7\msvc2017_64
         ARTIFACT_TYPE: x64
   steps:
     - task: PowerShell@2
@@ -43,7 +45,7 @@ jobs:
         mkdir build
         cd build
         cmake --version
-        cmake -G "%CMAKE_GENERATOR%" -DCMAKE_INSTALL_PREFIX=install -DRDMNET_BUILD_EXAMPLES=ON -DRDMNET_BUILD_TESTS=ON -DRDMNET_MOCK_DISCOVERY=ON ..
+        cmake -G "%CMAKE_GENERATOR%" -DQTDIR=%QT_DIRECTORY% -DCMAKE_INSTALL_PREFIX=install -DRDMNET_BUILD_EXAMPLES=ON -DRDMNET_BUILD_TESTS=ON -DRDMNET_MOCK_DISCOVERY=ON ..
         cmake --build . --config Release
         cmake -P cmake_install.cmake
       displayName: 'RDMnet Windows build'
