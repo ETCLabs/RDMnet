@@ -61,7 +61,9 @@ jobs:
         cmake --build . --config Release
         cmake -P cmake_install.cmake
       displayName: 'RDMnet Windows build'
-    - script: ctest -C Release
+    - script: |
+        cd $(Build.SourcesDirectory)\build
+        ctest -C Release
       displayName: 'RDMnet Windows test'
       env:
         CTEST_OUTPUT_ON_FAILURE: '1'
