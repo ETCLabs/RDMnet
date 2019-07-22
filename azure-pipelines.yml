@@ -36,7 +36,7 @@ jobs:
         mkdir build
         cd build
         cmake --version
-        cmake -G "%CMAKE_GENERATOR%" -DCMAKE_INSTALL_PREFIX=install -DRDMNET_BUILD_CONSOLE_EXAMPLES=ON -DRDMNET_MOCK_DISCOVERY=ON ..
+        cmake -G "%CMAKE_GENERATOR%" -DCMAKE_INSTALL_PREFIX=install -DRDMNET_BUILD_EXAMPLES=ON -DRDMNET_BUILD_TESTS=ON -DRDMNET_MOCK_DISCOVERY=ON ..
         cmake --build . --config Release
         cmake -P cmake_install.cmake
       displayName: 'RDMnet Windows build'
