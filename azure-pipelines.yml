@@ -26,14 +26,26 @@ jobs:
         QT_DIRECTORY: C:\Qt\5.9.7\msvc2017_64
         ARTIFACT_TYPE: x64
   steps:
+    - task: CacheBeta@0
+      inputs:
+        key: |
+          qt597
+          $(Agent.OS)
+        path: C:/Qt
+        cacheHitVar: CACHE_RESTORED
+      displayName: 'Qt 5.9.7 Cache'
     - task: PowerShell@2
       inputs:
         targetType: 'inline'
         script: |
           $client = new-object System.Net.WebClient
           $client.DownloadFile("http://download.qt-project.org/official_releases/qt/5.9/5.9.7/qt-opensource-windows-x86-5.9.7.exe", "install-qt-5.9.7.exe")
+      condition: ne(variables.CACHE_RESTORED, 'true')
+      displayName: 'Download Qt 5.9.7 Installer'
+    - script: install-qt-5.9.7 --verbose --script qt-installer-noninteractive.qs
+      condition: ne(variables.CACHE_RESTORED, 'true')
+      displayName: 'Install Qt 5.9.7'
     - script: |
-        install-qt-5.9.7 --verbose --script qt-installer-noninteractive.qs
         echo '##vso[task.setvariable variable=WinArtifactType]%ARTIFACT_TYPE%'
         git clone -b develop https://github.com/ETCLabs/lwpa ../RDMnet/external/lwpa
         git clone -b develop https://github.com/ETCLabs/RDM ../RDMnet/external/RDM
