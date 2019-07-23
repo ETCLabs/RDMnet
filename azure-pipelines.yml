@@ -22,13 +22,17 @@ jobs:
         QT_DIRECTORY: C:\Qt\5.9.7\msvc2015
         ARTIFACT_TYPE: x86
         INSTALLER_PROJECT: RDMnetInstall_x86.wixproj
+        INSTALLER_ARTIFACT: bin\Release\RDMnetSetup_x86.msi
         CMAKE_INSTALL: install_x86
+        VCVARSALL_PLATFORM: x86
       x64:
         CMAKE_GENERATOR: 'Visual Studio 15 2017 Win64'
         QT_DIRECTORY: C:\Qt\5.9.7\msvc2017_64
         ARTIFACT_TYPE: x64
         INSTALLER_PROJECT: RDMnetInstall_x64.wixproj
+        INSTALLER_ARTIFACT: bin\Release\RDMnetSetup_x64.msi
         CMAKE_INSTALL: install_x64
+        VCVARSALL_PLATFORM: amd64
   steps:
     - task: CacheBeta@0
       inputs:
@@ -77,8 +81,17 @@ jobs:
         platform: $(WinArtifactType)
         msbuildArguments: /p:RunWixToolsOutOfProc=true
       displayName: 'RDMnet Installer Windows build'
+    - task: DownloadSecureFile@1
+      name: codeSignCertWindows
+      displayName: 'Download Code Signature Certificate'
+      inputs:
+        secureFile: 'codesign_cert_windows.pfx'
+    - script: |
+        cd $(Build.SourcesDirectory)\tools\install\windows
+        "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" %VCVARSALL_PLATFORM% 
+        signtool.exe sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f $(codeSignCertWindows.secureFilePath) /p %CODESIGN-CERT-SECRET% %INSTALLER_ARTIFACT% > NUL
     - task: PublishPipelineArtifact@0
       inputs:
         artifactName: 'rdmnet_windows_$(WinArtifactType)'
-        targetPath: 'build/install'
+        targetPath: 'tools/install/windows/bin/Release'
 
