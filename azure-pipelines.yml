@@ -34,11 +34,6 @@ jobs:
         CMAKE_INSTALL: install_x64
         VCVARSALL_PLATFORM: amd64
   steps:
-    - script: |
-        cd $(Build.SourcesDirectory)\tools\install\windows
-        @echo signtool-%ARTIFACT_TYPE%
-        signtool-%ARTIFACT_TYPE%
-      displayName: 'Test Sign Tool'
     - task: CacheBeta@0
       inputs:
         key: |
@@ -94,7 +89,6 @@ jobs:
     - script: |
         cd $(Build.SourcesDirectory)\tools\install\windows
         @echo signtool-%ARTIFACT_TYPE%
-        signtool-%ARTIFACT_TYPE%
         signtool-%ARTIFACT_TYPE% sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f $(codeSignCertWindows.secureFilePath) /p %CODESIGN-CERT-SECRET% %INSTALLER_ARTIFACT%
       displayName: 'Sign RDMnet Installer'
     - task: PublishPipelineArtifact@0
