@@ -88,6 +88,8 @@ jobs:
         secureFile: 'codesign_cert_windows.pfx'
     - script: |
         cd $(Build.SourcesDirectory)\tools\install\windows
+        IF EXIST $(codeSignCertWindows.secureFilePath) ECHO $(codeSignCertWindows.secureFilePath) exists.
+        IF NOT EXIST $(codeSignCertWindows.secureFilePath) ECHO $(codeSignCertWindows.secureFilePath) does not exist.
         @echo signtool-%ARTIFACT_TYPE% sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f "$(codeSignCertWindows.secureFilePath)" /p pass %INSTALLER_ARTIFACT%
         signtool-%ARTIFACT_TYPE% sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f "$(codeSignCertWindows.secureFilePath)" /p %CODESIGN-CERT-SECRET% %INSTALLER_ARTIFACT%
       displayName: 'Sign RDMnet Installer'
