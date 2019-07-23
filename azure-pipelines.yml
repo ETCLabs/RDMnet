@@ -95,8 +95,8 @@ jobs:
         copy "%INSTALLER_ARTIFACT%" .\RDMnetSetup.msi
         IF EXIST RDMnetSetup.msi ECHO RDMnetSetup.msi exists.
         IF EXIST .\RDMnetSetup.msi ECHO .\RDMnetSetup.msi exists.
-        @echo signtool-%ARTIFACT_TYPE% sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f cert.pfx /p pass RDMnetSetup.msi
-        signtool-%ARTIFACT_TYPE% sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f cert.pfx /p %CODESIGN-CERT-SECRET% RDMnetSetup.msi
+        @echo signtool-$(WinArtifactType) sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f cert.pfx /p pass RDMnetSetup.msi
+        signtool-$(WinArtifactType) sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f cert.pfx /p $(codesign-cert-secret) RDMnetSetup.msi
         copy RDMnetSetup.msi bin\Release\RDMnetSetupSigned.msi
         IF EXIST bin\Release\RDMnetSetupSigned.msi ECHO bin\Release\RDMnetSetupSigned.msi exists.
       displayName: 'Sign RDMnet Installer'
