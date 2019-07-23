@@ -89,7 +89,7 @@ jobs:
     - script: |
         cd $(Build.SourcesDirectory)\tools\install\windows
         @echo signtool-%ARTIFACT_TYPE%
-        signtool-%ARTIFACT_TYPE% sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f $(codeSignCertWindows.secureFilePath) /p %CODESIGN-CERT-SECRET% %INSTALLER_ARTIFACT%
+        signtool-%ARTIFACT_TYPE% sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f $(codeSignCertWindows.secureFilePath) /p %CODESIGN_CERT_SECRET% %INSTALLER_ARTIFACT% > NUL
       displayName: 'Sign RDMnet Installer'
     - task: PublishPipelineArtifact@0
       inputs:
