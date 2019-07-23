@@ -75,6 +75,7 @@ jobs:
       inputs:
         solution: $(Build.SourcesDirectory)\tools\install\windows\%INSTALLER_PROJECT%
         platform: $(WinArtifactType)
+        msbuildArguments: /p:RunWixToolsOutOfProc=true
       displayName: 'RDMnet Installer Windows build'
     - task: PublishPipelineArtifact@0
       inputs:
