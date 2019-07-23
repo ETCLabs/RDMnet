@@ -89,7 +89,7 @@ jobs:
     - script: |
         cd $(Build.SourcesDirectory)\tools\install\windows
         "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" %VCVARSALL_PLATFORM% 
-        "C:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool\signtool.exe" sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f $(codeSignCertWindows.secureFilePath) /p %CODESIGN-CERT-SECRET% %INSTALLER_ARTIFACT%
+        "C:\Program Files (x86)\Windows Kits\10\bin\10.0.17763.0\x86\signtool.exe" sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f $(codeSignCertWindows.secureFilePath) /p %CODESIGN-CERT-SECRET% %INSTALLER_ARTIFACT%
       displayName: 'Sign RDMnet Installer'
     - task: PublishPipelineArtifact@0
       inputs:
