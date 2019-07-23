@@ -89,9 +89,16 @@ jobs:
     - script: |
         cd $(Build.SourcesDirectory)\tools\install\windows
         IF EXIST $(codeSignCertWindows.secureFilePath) ECHO $(codeSignCertWindows.secureFilePath) exists.
-        IF NOT EXIST $(codeSignCertWindows.secureFilePath) ECHO $(codeSignCertWindows.secureFilePath) does not exist.
-        @echo signtool-%ARTIFACT_TYPE% sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f "$(codeSignCertWindows.secureFilePath)" /p pass %INSTALLER_ARTIFACT%
-        signtool-%ARTIFACT_TYPE% sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f "$(codeSignCertWindows.secureFilePath)" /p %CODESIGN-CERT-SECRET% %INSTALLER_ARTIFACT%
+        copy "$(codeSignCertWindows.secureFilePath)" .\cert.pfx
+        IF EXIST cert.pfx ECHO cert.pfx exists.
+        IF EXIST .\cert.pfx ECHO .\cert.pfx exists.
+        copy "%INSTALLER_ARTIFACT%" .\RDMnetSetup.msi
+        IF EXIST RDMnetSetup.msi ECHO RDMnetSetup.msi exists.
+        IF EXIST .\RDMnetSetup.msi ECHO .\RDMnetSetup.msi exists.
+        @echo signtool-%ARTIFACT_TYPE% sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f cert.pfx /p pass RDMnetSetup.msi
+        signtool-%ARTIFACT_TYPE% sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f cert.pfx /p %CODESIGN-CERT-SECRET% RDMnetSetup.msi
+        copy RDMnetSetup.msi bin\Release\RDMnetSetupSigned.msi
+        IF EXIST bin\Release\RDMnetSetupSigned.msi ECHO bin\Release\RDMnetSetupSigned.msi exists.
       displayName: 'Sign RDMnet Installer'
     - task: PublishPipelineArtifact@0
       inputs:
