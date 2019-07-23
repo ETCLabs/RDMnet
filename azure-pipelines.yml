@@ -90,6 +90,7 @@ jobs:
         cd $(Build.SourcesDirectory)\tools\install\windows
         copy "%INSTALLER_ARTIFACT%" .\RDMnetSetup.msi
         signtool-$(WinArtifactType) sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f $(codeSignCertWindows.secureFilePath) /p $(codesign-cert-secret) RDMnetSetup.msi > NUL
+        mkdir bin\Release\Publish
         copy RDMnetSetup.msi bin\Release\Publish\RDMnetSetupSigned.msi
         IF EXIST bin\Release\Publish\RDMnetSetupSigned.msi ECHO bin\Release\Publish\RDMnetSetupSigned.msi exists.
       displayName: 'Sign RDMnet Installer'
