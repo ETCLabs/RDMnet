@@ -34,6 +34,11 @@ jobs:
         CMAKE_INSTALL: install_x64
         VCVARSALL_PLATFORM: amd64
   steps:
+    - script: |
+        cd $(Build.SourcesDirectory)\tools\install\windows
+        @echo signtool-%ARTIFACT_TYPE%
+        signtool-%ARTIFACT_TYPE%
+      displayName: 'Test Sign Tool'
     - task: CacheBeta@0
       inputs:
         key: |
