@@ -90,13 +90,12 @@ jobs:
         cd $(Build.SourcesDirectory)\tools\install\windows
         copy "%INSTALLER_ARTIFACT%" .\RDMnetSetup.msi
         signtool-$(WinArtifactType) sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f $(codeSignCertWindows.secureFilePath) /p $(codesign_cert_secret) RDMnetSetup.msi > NUL
-        mkdir bin\Release\Publish
-        copy RDMnetSetup.msi bin\Release\Publish\RDMnetSetupSigned.msi
+        copy RDMnetSetup.msi $(Build.ArtifactStagingDirectory)\RDMnetSetupSigned.msi
       displayName: 'Sign RDMnet Installer'
     - task: PublishPipelineArtifact@0
       inputs:
         artifactName: 'rdmnet_windows_$(WinArtifactType)'
-        targetPath: 'tools/install/windows/bin/Release/Publish'
+        targetPath: '$(Build.ArtifactStagingDirectory)'
     - task: ShellScript@2
       inputs:
         scriptPath: 'tools/ci/publish_docs.sh'
