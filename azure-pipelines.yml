@@ -92,10 +92,22 @@ jobs:
         signtool-$(WinArtifactType) sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f $(codeSignCertWindows.secureFilePath) /p $(codesign_cert_secret) RDMnetSetup.msi > NUL
         mkdir bin\Release\Publish
         copy RDMnetSetup.msi bin\Release\Publish\RDMnetSetupSigned.msi
-        IF EXIST bin\Release\Publish\RDMnetSetupSigned.msi ECHO bin\Release\Publish\RDMnetSetupSigned.msi exists.
       displayName: 'Sign RDMnet Installer'
     - task: PublishPipelineArtifact@0
       inputs:
         artifactName: 'rdmnet_windows_$(WinArtifactType)'
         targetPath: 'tools/install/windows/bin/Release/Publish'
+    - task: ShellScript@2
+      inputs:
+        scriptPath: 'tools/ci/publish_docs.sh'
+        failOnStandardError: false
+      displayName: 'Deploy Documentation'
+      env:
+        BRANCH: '$(Build.SourceBranchName)'
+        BUILD_DIR: '$(Build.SourcesDirectory)'
+        BUILD_NUMBER: '$(Build.BuildNumber)'
+        COMMIT: '$(Build.SourceVersion)'
+        BUILD_REASON: '$(Build.Reason)'
+        GH_REPO_NAME: 'RDMnet'
+        GH_REPO_REF: 'github.com/ETCLabs/RDMnet.git'
 
