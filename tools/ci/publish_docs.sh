@@ -12,13 +12,21 @@
 
 ################################################################################
 ##### Setup this script and get the current gh-pages branch.               #####
-echo 'Publishing documentation...'
+
 # Exit with nonzero exit code if anything fails
 set -e
 
-if [ "$BUILD_REASON" == "PullRequest" ] || [ "$BRANCH" != "develop" ]; then
+if [ "$BUILD_REASON" == "PullRequest" ]; then
+  echo 'Documentation will not be published because this is a pull request build.'
   exit 0
 fi
+
+if [ "$BRANCH" != "develop" ]; then
+  echo 'Documentation will not be published because this is not a develop branch build.'
+  exit 0
+fi
+
+echo 'Publishing documentation...'
 
 # Create a clean working directory for this script.
 cd $BUILD_DIR/docs
