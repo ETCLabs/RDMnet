@@ -42,7 +42,7 @@ jobs:
           if ([regex]::IsMatch($Env:BUILD_SOURCEBRANCH, "^(refs\/tags\/)")) {
             $Env:RDMNET_ARTIFACT_VERSION=$Env:RDMNET_VERSION
           } else {
-            $Env:RDMNET_ARTIFACT_VERSION=$(Build.SourceVersion)
+            $Env:RDMNET_ARTIFACT_VERSION=$Env:BUILD_SOURCEVERSION
           }
           Write-Host $Env:RDMNET_ARTIFACT_VERSION
       displayName: 'Initialize Installer Name Info'
