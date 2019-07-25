@@ -43,9 +43,9 @@ jobs:
         script: |
           $Env:RDMNET_VERSION = (Get-Content .\tools\version\current_version.txt)
           if ([regex]::IsMatch($Env:BUILD_SOURCEBRANCH, "^(refs\/tags\/)")) {
-            [System.Environment]::SetEnvironmentVariable('RDMNET_ARTIFACT_VERSION', $Env:RDMNET_VERSION, [System.EnvironmentVariableTarget]::Machine)
+            Write-Host ##vso[task.setvariable variable=rdmnet_artifact_version]$Env:RDMNET_VERSION
           } else {
-            [System.Environment]::SetEnvironmentVariable('RDMNET_ARTIFACT_VERSION', $Env:BUILD_SOURCEVERSION, [System.EnvironmentVariableTarget]::Machine)
+            Write-Host ##vso[task.setvariable variable=rdmnet_artifact_version]$Env:BUILD_SOURCEVERSION
           }
           Write-Host $Env:RDMNET_ARTIFACT_VERSION
       displayName: 'Initialize RDMnet Artifact Version'
