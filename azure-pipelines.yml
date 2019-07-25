@@ -9,9 +9,6 @@ trigger:
 pr:
 - azure-pipelines
 
-variables:
-  rdmnet_artifact_version: 'not_initialized'
-
 jobs:
 # Build and test RDMnet on Windows using CMake and Visual Studio 2017.
 - job: windows_build
@@ -43,9 +40,9 @@ jobs:
         script: |
           $Env:RDMNET_VERSION = (Get-Content .\tools\version\current_version.txt)
           if ([regex]::IsMatch($Env:BUILD_SOURCEBRANCH, "^(refs\/tags\/)")) {
-            $Env:RDMNET_ARTIFACT_VERSION=$Env:RDMNET_VERSION
+            [System.Environment]::SetEnvironmentVariable('RDMNET_ARTIFACT_VERSION', $Env:RDMNET_VERSION, [System.EnvironmentVariableTarget]::User)
           } else {
-            $Env:RDMNET_ARTIFACT_VERSION=$Env:BUILD_SOURCEVERSION
+            [System.Environment]::SetEnvironmentVariable('RDMNET_ARTIFACT_VERSION', $Env:BUILD_SOURCEVERSION, [System.EnvironmentVariableTarget]::User)
           }
           Write-Host $Env:RDMNET_ARTIFACT_VERSION
       displayName: 'Initialize Installer Name Info'
