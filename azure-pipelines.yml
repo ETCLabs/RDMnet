@@ -45,7 +45,7 @@ jobs:
             [System.Environment]::SetEnvironmentVariable('RDMNET_ARTIFACT_VERSION', $Env:BUILD_SOURCEVERSION, [System.EnvironmentVariableTarget]::User)
           }
           Write-Host $Env:RDMNET_ARTIFACT_VERSION
-      displayName: 'Initialize Installer Name Info'
+      displayName: 'Initialize RDMnet Artifact Version'
     - task: PowerShell@2
       inputs:
         targetType: 'inline'
