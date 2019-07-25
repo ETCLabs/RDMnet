@@ -37,23 +37,6 @@ jobs:
         CMAKE_INSTALL: install_x64
         VCVARSALL_PLATFORM: amd64
   steps:
-    - task: PowerShell@2
-      inputs:
-        targetType: 'inline'
-        script: |
-          $Env:RDMNET_VERSION = (Get-Content .\tools\version\current_version.txt)
-          if ([regex]::IsMatch($Env:BUILD_SOURCEBRANCH, "^(refs\/tags\/)")) {
-            Write-Host "##vso[task.setvariable variable=rdmnet_artifact_version]$Env:RDMNET_VERSION"
-          } else {
-            Write-Host "##vso[task.setvariable variable=rdmnet_artifact_version]$Env:BUILD_SOURCEVERSION"
-          }
-          Write-Host $Env:RDMNET_ARTIFACT_VERSION
-      displayName: 'Initialize RDMnet Artifact Version'
-    - task: PowerShell@2
-      inputs:
-        targetType: 'inline'
-        script: Write-Host $Env:RDMNET_ARTIFACT_VERSION
-      displayName: 'Print Installer Name Info'
     - task: CacheBeta@0
       inputs:
         key: |
@@ -106,6 +89,17 @@ jobs:
       displayName: 'Download Code Signature Certificate'
       inputs:
         secureFile: 'codesign_cert_windows.pfx'
+    - task: PowerShell@2
+      inputs:
+        targetType: 'inline'
+        script: |
+          $Env:RDMNET_VERSION = (Get-Content .\tools\version\current_version.txt)
+          if ([regex]::IsMatch($Env:BUILD_SOURCEBRANCH, "^(refs\/tags\/)")) {
+            Write-Host "##vso[task.setvariable variable=rdmnet_artifact_version]$Env:RDMNET_VERSION"
+          } else {
+            Write-Host "##vso[task.setvariable variable=rdmnet_artifact_version]$Env:BUILD_SOURCEVERSION"
+          }
+      displayName: 'Initialize RDMnet Artifact Version'
     - script: |
         cd $(Build.SourcesDirectory)\tools\install\windows
         copy "%INSTALLER_ARTIFACT%" .\RDMnetSetup.msi
