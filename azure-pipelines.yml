@@ -46,6 +46,11 @@ jobs:
           }
           Write-Host $Env:RDMNET_ARTIFACT_VERSION
       displayName: 'Initialize Installer Name Info'
+    - task: PowerShell@2
+      inputs:
+        targetType: 'inline'
+        script: Write-Host $Env:RDMNET_ARTIFACT_VERSION
+      displayName: 'Print Installer Name Info'
     - task: CacheBeta@0
       inputs:
         key: |
