@@ -9,6 +9,9 @@ trigger:
 pr:
 - azure-pipelines
 
+variables:
+  rdmnet_artifact_version: 'not_initialized'
+
 jobs:
 # Build and test RDMnet on Windows using CMake and Visual Studio 2017.
 - job: windows_build
