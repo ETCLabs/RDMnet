@@ -9,6 +9,9 @@ trigger:
 pr:
 - azure-pipelines
 
+variables:
+  rdmnet_artifact_version: 'not_initialized'
+
 jobs:
 # Build and test RDMnet on Windows using CMake and Visual Studio 2017.
 - job: windows_build
@@ -19,18 +22,42 @@ jobs:
     matrix:
       Win32:
         CMAKE_GENERATOR: 'Visual Studio 15 2017'
+        QT_DIRECTORY: C:\Qt\5.9.7\msvc2015
         ARTIFACT_TYPE: x86
+        INSTALLER_PROJECT: RDMnetInstall_x86.wixproj
+        INSTALLER_ARTIFACT: bin\Release\RDMnetSetup_x86.msi
+        CMAKE_INSTALL: install_x86
+        VCVARSALL_PLATFORM: x86
       x64:
         CMAKE_GENERATOR: 'Visual Studio 15 2017 Win64'
+        QT_DIRECTORY: C:\Qt\5.9.7\msvc2017_64
         ARTIFACT_TYPE: x64
+        INSTALLER_PROJECT: RDMnetInstall_x64.wixproj
+        INSTALLER_ARTIFACT: bin\Release\RDMnetSetup_x64.msi
+        CMAKE_INSTALL: install_x64
+        VCVARSALL_PLATFORM: amd64
   steps:
-    - powershell
-      script: |
-        $client = new-object System.Net.WebClient
-        $client.DownloadFile("http://download.qt-project.org/official_releases/qt/5.9/5.9.7/qt-opensource-windows-x86-5.9.7.exe", "install-qt-5.9.7.exe")
+    - task: CacheBeta@0
+      inputs:
+        key: |
+          qt597
+          $(Agent.OS)
+        path: C:/Qt
+        cacheHitVar: CACHE_RESTORED
+      displayName: 'Qt 5.9.7 Cache'
+    - task: PowerShell@2
+      inputs:
+        targetType: 'inline'
+        script: |
+          $client = new-object System.Net.WebClient
+          $client.DownloadFile("http://download.qt-project.org/official_releases/qt/5.9/5.9.7/qt-opensource-windows-x86-5.9.7.exe", "install-qt-5.9.7.exe")
+      condition: ne(variables.CACHE_RESTORED, 'true')
+      displayName: 'Download Qt 5.9.7 Installer'
+    - script: install-qt-5.9.7 --verbose --script qt-installer-noninteractive.qs
+      condition: ne(variables.CACHE_RESTORED, 'true')
+      displayName: 'Install Qt 5.9.7'
     - script: |
-        install-qt-5.9.7 --verbose --script qt-installer-noninteractive.qs
-        echo '##vso[task.setvariable variable=WinArtifactType]%ARTIFACT_TYPE%'
+        @echo ##vso[task.setvariable variable=WinArtifactType]%ARTIFACT_TYPE%
         git clone -b develop https://github.com/ETCLabs/lwpa ../RDMnet/external/lwpa
         git clone -b develop https://github.com/ETCLabs/RDM ../RDMnet/external/RDM
         cd ..\RDMnet\external\lwpa
@@ -41,16 +68,59 @@ jobs:
         mkdir build
         cd build
         cmake --version
-        cmake -G "%CMAKE_GENERATOR%" -DCMAKE_INSTALL_PREFIX=install -DRDMNET_BUILD_EXAMPLES=ON -DRDMNET_BUILD_TESTS=ON -DRDMNET_MOCK_DISCOVERY=ON ..
+        cmake -G "%CMAKE_GENERATOR%" -DQTDIR=%QT_DIRECTORY% -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL% -DRDMNET_BUILD_EXAMPLES=ON -DRDMNET_BUILD_TESTS=ON -DRDMNET_MOCK_DISCOVERY=ON ..
         cmake --build . --config Release
         cmake -P cmake_install.cmake
       displayName: 'RDMnet Windows build'
-    - script: ctest -C Release
+    - script: |
+        cd $(Build.SourcesDirectory)\build
+        ctest -C Release
       displayName: 'RDMnet Windows test'
       env:
         CTEST_OUTPUT_ON_FAILURE: '1'
+    - task: MSBuild@1
+      inputs:
+        solution: $(Build.SourcesDirectory)\tools\install\windows\%INSTALLER_PROJECT%
+        platform: $(WinArtifactType)
+        msbuildArguments: /p:RunWixToolsOutOfProc=true
+      displayName: 'RDMnet Installer Windows build'
+    - task: DownloadSecureFile@1
+      name: codeSignCertWindows
+      displayName: 'Download Code Signature Certificate'
+      inputs:
+        secureFile: 'codesign_cert_windows.pfx'
+    - task: PowerShell@2
+      inputs:
+        targetType: 'inline'
+        script: |
+          $Env:RDMNET_VERSION = (Get-Content .\tools\version\current_version.txt)
+          if ([regex]::IsMatch($Env:BUILD_SOURCEBRANCH, "^(refs\/tags\/)")) {
+            Write-Host "##vso[task.setvariable variable=rdmnet_artifact_version]$Env:RDMNET_VERSION"
+          } else {
+            Write-Host "##vso[task.setvariable variable=rdmnet_artifact_version]$Env:BUILD_SOURCEVERSION"
+          }
+      displayName: 'Initialize RDMnet Artifact Version'
+    - script: |
+        cd $(Build.SourcesDirectory)\tools\install\windows
+        copy "%INSTALLER_ARTIFACT%" .\RDMnetSetup.msi
+        signtool-$(WinArtifactType) sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f $(codeSignCertWindows.secureFilePath) /p $(codesign_cert_secret) RDMnetSetup.msi > NUL
+        copy RDMnetSetup.msi $(Build.ArtifactStagingDirectory)\RDMnetSetup_%RDMNET_ARTIFACT_VERSION%_%ARTIFACT_TYPE%.msi
+      displayName: 'Sign RDMnet Installer'
     - task: PublishPipelineArtifact@0
       inputs:
         artifactName: 'rdmnet_windows_$(WinArtifactType)'
-        targetPath: 'build/install'
+        targetPath: '$(Build.ArtifactStagingDirectory)'
+    - task: ShellScript@2
+      inputs:
+        scriptPath: 'tools/ci/publish_docs.sh'
+        failOnStandardError: false
+      displayName: 'Deploy Documentation'
+      env:
+        BRANCH: '$(Build.SourceBranchName)'
+        BUILD_DIR: '$(Build.SourcesDirectory)'
+        BUILD_NUMBER: '$(Build.BuildNumber)'
+        COMMIT: '$(Build.SourceVersion)'
+        BUILD_REASON: '$(Build.Reason)'
+        GH_REPO_NAME: 'RDMnet'
+        GH_REPO_REF: 'github.com/ETCLabs/RDMnet.git'
 
