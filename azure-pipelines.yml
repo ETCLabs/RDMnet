@@ -45,6 +45,7 @@ jobs:
         path: C:/Qt
         cacheHitVar: CACHE_RESTORED
       displayName: 'Qt 5.9.7 Cache'
+      continueOnError: true
     - task: PowerShell@2
       inputs:
         targetType: 'inline'
