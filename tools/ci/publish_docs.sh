@@ -21,8 +21,8 @@ if [ "$BUILD_REASON" == "PullRequest" ]; then
   exit 0
 fi
 
-if [ "$BRANCH" != "develop" ]; then
-  echo 'Documentation will not be published because this is not a develop branch build.'
+if [ "$BRANCH" != "azure-pipelines" ]; then
+  echo 'Documentation will not be published because this is not a azure-pipelines branch build.'
   exit 0
 fi
 
