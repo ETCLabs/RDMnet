@@ -104,7 +104,8 @@ jobs:
     - script: |
         cd $(Build.SourcesDirectory)\tools\install\windows
         copy "%INSTALLER_ARTIFACT%" .\RDMnetSetup.msi
-        signtool-$(WinArtifactType) sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f $(codeSignCertWindows.secureFilePath) /p $(codesign_cert_secret) RDMnetSetup.msi > NUL
+        call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" %VCVARSALL_PLATFORM%
+        signtool.exe sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f $(codeSignCertWindows.secureFilePath) /p $(codesign_cert_secret) RDMnetSetup.msi > NUL
         copy RDMnetSetup.msi $(Build.ArtifactStagingDirectory)\RDMnetSetup_%RDMNET_ARTIFACT_VERSION%_%ARTIFACT_TYPE%.msi
       displayName: 'Sign RDMnet Installer'
     - task: PublishPipelineArtifact@0
