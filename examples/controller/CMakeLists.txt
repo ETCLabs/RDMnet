@@ -1,9 +1,10 @@
 
-if(NOT DEFINED QTDIR)
+set(QT_REQUIRED_VERSION 5.9.7)
+set(QTDIR "" CACHE STRING "Qt (>= ${QT_REQUIRED_VERSION}) installation directory for building GUI examples")
+if(NOT QTDIR)
   set(QTDIR $ENV{QTDIR})
 endif()
 set(CMAKE_PREFIX_PATH ${QTDIR})
-set(QT_REQUIRED_VERSION 5.9.7)
 
 find_package(Qt5Widgets ${QT_REQUIRED_VERSION} CONFIG)
 
