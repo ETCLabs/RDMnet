@@ -125,4 +125,38 @@ jobs:
         BUILD_REASON: '$(Build.Reason)'
         GH_REPO_NAME: 'RDMnet'
         GH_REPO_REF: 'github.com/ETCLabs/RDMnet.git'
-
+- job: bintray_deploy
+  pool:
+    vmImage: 'ubuntu-16.04'
+  steps:
+  - checkout: none #skip checking out the default repository resource
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download x86 Build Artifact'
+    inputs:
+      artifactName: 'rdmnet_windows_x86'
+      downloadPath: $(System.DefaultWorkingDirectory)/artifacts
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download x64 Build Artifact'
+    inputs:
+      artifactName: 'rdmnet_windows_x64'
+      downloadPath: $(System.DefaultWorkingDirectory)/artifacts
+  - task: cURLUploader@2
+    displayName: 'Upload x86 Build Artifact to BinTray'
+    inputs:
+      files: $(System.DefaultWorkingDirectory)/artifacts/rdmnet_windows_x86/RDMnetSetup_$(rdmnet_artifact_version)_x86.msi
+      authType: 'UserAndPass'
+      username: 'ChristianReese'
+      password: '$(reese_bintray_api_key)'
+      url: 'https://api.bintray.com/content/creeseorg/bintray_test/latest/$(rdmnet_artifact_version)/RDMnetSetup_$(rdmnet_artifact_version)_x86.msi'
+      options: '-G -d publish=0'
+  - task: cURLUploader@2
+    displayName: 'Upload x64 Build Artifact to BinTray'
+    inputs:
+      files: $(System.DefaultWorkingDirectory)/artifacts/rdmnet_windows_x64/RDMnetSetup_$(rdmnet_artifact_version)_x64.msi
+      authType: 'UserAndPass'
+      username: 'ChristianReese'
+      password: '$(reese_bintray_api_key)'
+      url: 'https://api.bintray.com/content/creeseorg/bintray_test/latest/$(rdmnet_artifact_version)/RDMnetSetup_$(rdmnet_artifact_version)_x64.msi'
+      options: '-G -d publish=0'
+  dependsOn: windows_build
+  condition: succeeded()
