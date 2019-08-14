@@ -130,7 +130,6 @@ jobs:
   pool:
     vmImage: 'ubuntu-16.04'
   steps:
-  - checkout: none #skip checking out the default repository resource
   - task: DownloadBuildArtifacts@0
     displayName: 'Download x86 Build Artifact'
     inputs:
@@ -143,25 +142,28 @@ jobs:
       downloadPath: $(System.DefaultWorkingDirectory)
   - script: |
       sudo apt-get install tree
-      tree $(System.DefaultWorkingDirectory)
-    displayName: 'Scout Artifacts Directory'
+      tree
+      cd .\tools\version\
+      version=$(<current_version.txt)
+      echo "##vso[task.setvariable variable=RDMnetVersion]$version"
+    displayName: 'Obtain RDMnet Version'
   - task: cURLUploader@2
     displayName: 'Upload x86 Build Artifact to BinTray'
     inputs:
-      files: $(System.DefaultWorkingDirectory)/rdmnet_windows_x86/RDMnetSetup_$(Build.SourceVersion)_x86.msi
+      files: $(System.DefaultWorkingDirectory)/rdmnet_windows_x86/RDMnetSetup_$(RDMnetVersion)_x86.msi
       authType: 'UserAndPass'
       username: 'ChristianReese'
       password: '$(reese_bintray_api_key)'
-      url: 'https://api.bintray.com/content/creeseorg/bintray_test/latest/$(Build.SourceVersion)/RDMnetSetup_$(Build.SourceVersion)_x86.msi'
+      url: 'https://api.bintray.com/content/creeseorg/bintray_test/latest/$(RDMnetVersion)/RDMnetSetup_$(RDMnetVersion)_x86.msi'
       options: '-G -d publish=0'
   - task: cURLUploader@2
     displayName: 'Upload x64 Build Artifact to BinTray'
     inputs:
-      files: $(System.DefaultWorkingDirectory)/rdmnet_windows_x64/RDMnetSetup_$(Build.SourceVersion)_x64.msi
+      files: $(System.DefaultWorkingDirectory)/rdmnet_windows_x64/RDMnetSetup_$(RDMnetVersion)_x64.msi
       authType: 'UserAndPass'
       username: 'ChristianReese'
       password: '$(reese_bintray_api_key)'
-      url: 'https://api.bintray.com/content/creeseorg/bintray_test/latest/$(Build.SourceVersion)/RDMnetSetup_$(Build.SourceVersion)_x64.msi'
-      options: '-G -d publish=1'
+      url: 'https://api.bintray.com/content/creeseorg/bintray_test/latest/$(RDMnetVersion)/RDMnetSetup_$(RDMnetVersion)_x64.msi'
+      options: '-G -d publish=0'
   dependsOn: windows_build
-  condition: succeeded()
+  condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
