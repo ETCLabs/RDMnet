@@ -108,10 +108,10 @@ jobs:
         signtool.exe sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f $(codeSignCertWindows.secureFilePath) /p $(codesign_cert_secret) RDMnetSetup.msi > NUL
         copy RDMnetSetup.msi $(Build.ArtifactStagingDirectory)\RDMnetSetup_%RDMNET_ARTIFACT_VERSION%_%ARTIFACT_TYPE%.msi
       displayName: 'Sign RDMnet Installer'
-    - task: PublishPipelineArtifact@0
+    - task: PublishBuildArtifacts@1
       inputs:
+        pathtoPublish: '$(Build.ArtifactStagingDirectory)'
         artifactName: 'rdmnet_windows_$(WinArtifactType)'
-        targetPath: '$(Build.ArtifactStagingDirectory)'
     - task: ShellScript@2
       inputs:
         scriptPath: 'tools/ci/publish_docs.sh'
@@ -134,12 +134,12 @@ jobs:
     displayName: 'Download x86 Build Artifact'
     inputs:
       artifactName: 'rdmnet_windows_x86'
-      downloadPath: $(System.DefaultWorkingDirectory)/artifacts
+      downloadPath: $(System.DefaultWorkingDirectory)
   - task: DownloadBuildArtifacts@0
     displayName: 'Download x64 Build Artifact'
     inputs:
       artifactName: 'rdmnet_windows_x64'
-      downloadPath: $(System.DefaultWorkingDirectory)/artifacts
+      downloadPath: $(System.DefaultWorkingDirectory)
   - script: |
       sudo apt-get install tree
       tree $(System.DefaultWorkingDirectory)
