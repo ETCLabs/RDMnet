@@ -146,13 +146,8 @@ jobs:
       artifactName: 'rdmnet_windows_x64'
       downloadPath: $(System.DefaultWorkingDirectory)
   - script: |
-      sudo apt-get install tree
-      tree
-      ls
       cd tools
-      ls
       cd version
-      ls
       version=$(<current_version.txt)
       echo "##vso[task.setvariable variable=RDMnetVersion]$version"
     displayName: 'Obtain RDMnet Version'
