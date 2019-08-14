@@ -152,7 +152,7 @@ jobs:
       authType: 'UserAndPass'
       username: 'ChristianReese'
       password: '$(reese_bintray_api_key)'
-      url: 'https://api.bintray.com/content/creeseorg/bintray_test/latest/$(Build.SourceVersion)'
+      url: 'https://api.bintray.com/content/creeseorg/bintray_test/latest/$(Build.SourceVersion)/RDMnetSetup_$(Build.SourceVersion)_x86.msi'
       options: '-G -d publish=0'
   - task: cURLUploader@2
     displayName: 'Upload x64 Build Artifact to BinTray'
@@ -161,7 +161,7 @@ jobs:
       authType: 'UserAndPass'
       username: 'ChristianReese'
       password: '$(reese_bintray_api_key)'
-      url: 'https://api.bintray.com/content/creeseorg/bintray_test/latest/$(Build.SourceVersion)'
-      options: '-G -d publish=0'
+      url: 'https://api.bintray.com/content/creeseorg/bintray_test/latest/$(Build.SourceVersion)/RDMnetSetup_$(Build.SourceVersion)_x64.msi'
+      options: '-G -d publish=1'
   dependsOn: windows_build
   condition: succeeded()
