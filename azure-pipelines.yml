@@ -141,14 +141,8 @@ jobs:
       artifactName: 'rdmnet_windows_x64'
       downloadPath: $(System.DefaultWorkingDirectory)/artifacts
   - script: |
-      cd $(System.DefaultWorkingDirectory)
-      cd artifacts
-      ls
-      cd rdmnet_windows_x86
-      ls
-      cd ..
-      cd rdmnet_windows_x64
-      ls
+      sudo apt-get install tree
+      tree $(System.DefaultWorkingDirectory)
     displayName: 'Scout Artifacts Directory'
   - task: cURLUploader@2
     displayName: 'Upload x86 Build Artifact to BinTray'
