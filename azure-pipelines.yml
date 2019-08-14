@@ -143,7 +143,7 @@ jobs:
   - task: cURLUploader@2
     displayName: 'Upload x86 Build Artifact to BinTray'
     inputs:
-      files: $(System.DefaultWorkingDirectory)/artifacts/rdmnet_windows_x86/RDMnetSetup_$(rdmnet_artifact_version)_x86.msi
+      files: $(System.DefaultWorkingDirectory)/artifacts/rdmnet_windows_x86/RDMnetSetup_$(Build.SourceVersion)_x86.msi
       authType: 'UserAndPass'
       username: 'ChristianReese'
       password: '$(reese_bintray_api_key)'
@@ -152,7 +152,7 @@ jobs:
   - task: cURLUploader@2
     displayName: 'Upload x64 Build Artifact to BinTray'
     inputs:
-      files: $(System.DefaultWorkingDirectory)/artifacts/rdmnet_windows_x64/RDMnetSetup_$(rdmnet_artifact_version)_x64.msi
+      files: $(System.DefaultWorkingDirectory)/artifacts/rdmnet_windows_x64/RDMnetSetup_$(Build.SourceVersion)_x64.msi
       authType: 'UserAndPass'
       username: 'ChristianReese'
       password: '$(reese_bintray_api_key)'
