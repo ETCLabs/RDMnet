@@ -4,7 +4,12 @@
 # https://aka.ms/yaml
 
 trigger:
-- azure-pipelines
+  branches:
+    include:
+    - azure-pipelines
+  tags:
+    include:
+    - '*'
 
 pr:
 - azure-pipelines
