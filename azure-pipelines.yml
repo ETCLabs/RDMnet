@@ -148,8 +148,11 @@ jobs:
   - script: |
       sudo apt-get install tree
       tree
-      cd .\tools\version\
-      tree
+      ls
+      cd tools
+      ls
+      cd version
+      ls
       version=$(<current_version.txt)
       echo "##vso[task.setvariable variable=RDMnetVersion]$version"
     displayName: 'Obtain RDMnet Version'
