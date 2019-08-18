@@ -25,9 +25,9 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-// A class for logging messages from the Broker on Linux.
-#ifndef _LINUX_BROKER_LOG_H_
-#define _LINUX_BROKER_LOG_H_
+// A class for logging messages from the Broker on macOS.
+#ifndef _MACOS_BROKER_LOG_H_
+#define _MACOS_BROKER_LOG_H_
 
 #include <fstream>
 #include <string>
@@ -37,11 +37,11 @@
 #include "lwpa/lock.h"
 #include "rdmnet/broker/log.h"
 
-class LinuxBrokerLog : public RDMnet::BrokerLog
+class MacBrokerLog : public RDMnet::BrokerLog
 {
 public:
-  LinuxBrokerLog(const std::string& file_name);
-  virtual ~LinuxBrokerLog();
+  MacBrokerLog(const std::string& file_name);
+  virtual ~MacBrokerLog();
 
   void OutputLogMsg(const std::string& str) override;
   virtual void GetTimeFromCallback(LwpaLogTimeParams* time) override;
@@ -51,4 +51,4 @@ private:
   int log_level_{LWPA_LOG_INFO};
 };
 
-#endif  // _LINUX_BROKER_LOG_
+#endif  // _MACOS_BROKER_LOG_

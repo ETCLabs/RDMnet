@@ -7,6 +7,7 @@ add_executable(${BROKER_TARGET}
   src/broker_shell.cpp
 )
 
+set_target_properties(${BROKER_TARGET} PROPERTIES CXX_STANDARD 14)
 target_include_directories(${BROKER_TARGET} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src)
 target_link_libraries(${BROKER_TARGET} PRIVATE Broker)
 if(WIN32)
@@ -26,7 +27,16 @@ if(WIN32)
       COMMENT "Copying DNS-SD dll to executable directory..."
     )
   endif()
-elseif(UNIX AND NOT APPLE)
+elseif(APPLE)
+  target_sources(${BROKER_TARGET} PRIVATE
+    src/macos/main.cpp
+    src/macos/macos_broker_log.h
+    src/macos/macos_broker_log.cpp
+    src/macos/macos_socket_manager.h
+    src/macos/macos_socket_manager.cpp
+  )
+  target_link_libraries(${BROKER_TARGET} PRIVATE pthread)
+elseif(UNIX)
   target_sources(${BROKER_TARGET} PRIVATE
     src/linux/main.cpp
     src/linux/linux_broker_log.h

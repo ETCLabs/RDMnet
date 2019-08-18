@@ -25,30 +25,52 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-// A class for logging messages from the Broker on Linux.
-#ifndef _LINUX_BROKER_LOG_H_
-#define _LINUX_BROKER_LOG_H_
+#include "macos_broker_log.h"
+#include <ctime>
+#include <iostream>
+#include <cstdarg>
 
-#include <fstream>
-#include <string>
-#include <queue>
-#include "lwpa/log.h"
-#include "lwpa/thread.h"
-#include "lwpa/lock.h"
-#include "rdmnet/broker/log.h"
-
-class LinuxBrokerLog : public RDMnet::BrokerLog
+MacBrokerLog::MacBrokerLog(const std::string& file_name) : RDMnet::BrokerLog()
 {
-public:
-  LinuxBrokerLog(const std::string& file_name);
-  virtual ~LinuxBrokerLog();
+  file_.open(file_name.c_str(), std::fstream::out);
+  if (file_.fail())
+    std::cout << "BrokerLog couldn't open log file '" << file_name << "'." << std::endl;
+}
 
-  void OutputLogMsg(const std::string& str) override;
-  virtual void GetTimeFromCallback(LwpaLogTimeParams* time) override;
+MacBrokerLog::~MacBrokerLog()
+{
+  file_.close();
+}
 
-private:
-  std::fstream file_;
-  int log_level_{LWPA_LOG_INFO};
-};
+void MacBrokerLog::GetTimeFromCallback(LwpaLogTimeParams* time_params)
+{
+  time_t cur_time;
+  time(&cur_time);
 
-#endif  // _LINUX_BROKER_LOG_
+  // Determine the UTC offset
+  // A bit of naive time zone code that probably misses tons of edge cases.
+  // After all, it's just an example app...
+  struct tm* timeinfo = gmtime(&cur_time);
+  time_t utc = mktime(timeinfo);
+  timeinfo = localtime(&cur_time);
+  time_t local = mktime(timeinfo);
+  double utc_offset = difftime(local, utc) / 60.0;
+  if (timeinfo->tm_isdst)
+    utc_offset += 60;
+
+  time_params->year = timeinfo->tm_year + 1900;
+  time_params->month = timeinfo->tm_mon + 1;
+  time_params->day = timeinfo->tm_mday;
+  time_params->hour = timeinfo->tm_hour;
+  time_params->minute = timeinfo->tm_min;
+  time_params->second = timeinfo->tm_sec;
+  time_params->msec = 0;
+  time_params->utc_offset = static_cast<int>(utc_offset);
+}
+
+void MacBrokerLog::OutputLogMsg(const std::string& str)
+{
+  std::cout << str << "\n";
+  if (file_.is_open())
+    file_ << str << std::endl;
+}
