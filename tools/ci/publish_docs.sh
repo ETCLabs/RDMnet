@@ -51,6 +51,9 @@ git config user.email "azure@microsoft.com"
 # later is the new documentation.
 rm -rf docs/head/*
 
+# Allow access to lwpa and RDM repositories
+git submodule update --init
+
 ################################################################################
 ##### Generate the Doxygen code documentation and log the output.          #####
 echo 'Generating Doxygen code documentation...'
