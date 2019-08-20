@@ -26,10 +26,17 @@ if [ "$BRANCH" != "azure-pipelines" ]; then
   exit 0
 fi
 
+# Allow access to lwpa and RDM repositories
+cd $BUILD_DIR
+echo 'Submodule init'
+git submodule init
+echo 'Submodule update'
+git submodule update
+
 echo 'Publishing documentation...'
 
 # Create a clean working directory for this script.
-cd $BUILD_DIR/docs
+cd docs
 mkdir output
 cd output
 
@@ -50,10 +57,6 @@ git config user.email "azure@microsoft.com"
 # the directory can be safely cleaned, and it is sure that everything pushed
 # later is the new documentation.
 rm -rf docs/head/*
-
-# Allow access to lwpa and RDM repositories
-git submodule init
-git submodule update
 
 ################################################################################
 ##### Generate the Doxygen code documentation and log the output.          #####
