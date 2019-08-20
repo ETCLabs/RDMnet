@@ -156,18 +156,18 @@ jobs:
     inputs:
       files: $(System.DefaultWorkingDirectory)/rdmnet_windows_x86/RDMnetSetup_$(RDMnetVersion)_x86.msi
       authType: 'UserAndPass'
-      username: 'ChristianReese'
-      password: '$(reese_bintray_api_key)'
-      url: 'https://api.bintray.com/content/creeseorg/bintray_test/latest/$(RDMnetVersion)/RDMnetSetup_$(RDMnetVersion)_x86.msi'
+      username: 'svc-etclabs'
+      password: '$(svc-etclabs_bintray_api_key)'
+      url: 'https://api.bintray.com/content/etclabs/rdmnet_bin/latest/$(RDMnetVersion)/RDMnetSetup_$(RDMnetVersion)_x86.msi'
       options: '-G -d publish=0'
   - task: cURLUploader@2
     displayName: 'Upload x64 Build Artifact to BinTray'
     inputs:
       files: $(System.DefaultWorkingDirectory)/rdmnet_windows_x64/RDMnetSetup_$(RDMnetVersion)_x64.msi
       authType: 'UserAndPass'
-      username: 'ChristianReese'
-      password: '$(reese_bintray_api_key)'
-      url: 'https://api.bintray.com/content/creeseorg/bintray_test/latest/$(RDMnetVersion)/RDMnetSetup_$(RDMnetVersion)_x64.msi'
+      username: 'svc-etclabs'
+      password: '$(svc-etclabs_bintray_api_key)'
+      url: 'https://api.bintray.com/content/etclabs/rdmnet_bin/latest/$(RDMnetVersion)/RDMnetSetup_$(RDMnetVersion)_x64.msi'
       options: '-G -d publish=0'
   dependsOn: windows_build
   condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
