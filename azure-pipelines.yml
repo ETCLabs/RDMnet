@@ -117,19 +117,6 @@ jobs:
       inputs:
         pathtoPublish: '$(Build.ArtifactStagingDirectory)'
         artifactName: 'rdmnet_windows_$(WinArtifactType)'
-    - task: ShellScript@2
-      inputs:
-        scriptPath: 'tools/ci/publish_docs.sh'
-        failOnStandardError: false
-      displayName: 'Deploy Documentation'
-      env:
-        BRANCH: '$(Build.SourceBranchName)'
-        BUILD_DIR: '$(Build.SourcesDirectory)'
-        BUILD_NUMBER: '$(Build.BuildNumber)'
-        COMMIT: '$(Build.SourceVersion)'
-        BUILD_REASON: '$(Build.Reason)'
-        GH_REPO_NAME: 'RDMnet'
-        GH_REPO_REF: 'github.com/ETCLabs/RDMnet.git'
 - job: bintray_deploy
   displayName: 'BinTray Deploy'
   pool:
@@ -171,3 +158,24 @@ jobs:
       options: '-G -d publish=0'
   dependsOn: windows_build
   condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+- job: documentation_deploy
+  displayName: 'Documentation Deploy'
+  pool:
+    vmImage: 'ubuntu-16.04'
+  steps:
+  - script: |
+      sudo apt-get install doxygen
+    displayName: 'Install Doxygen'
+  - task: ShellScript@2
+    inputs:
+      scriptPath: 'tools/ci/publish_docs.sh'
+      failOnStandardError: false
+    displayName: 'Generate and Push Documentation'
+    env:
+      BRANCH: '$(Build.SourceBranchName)'
+      BUILD_DIR: '$(Build.SourcesDirectory)'
+      BUILD_NUMBER: '$(Build.BuildNumber)'
+      COMMIT: '$(Build.SourceVersion)'
+      BUILD_REASON: '$(Build.Reason)'
+      GH_REPO_NAME: 'RDMnet'
+      GH_REPO_REF: 'github.com/ETCLabs/RDMnet.git'
