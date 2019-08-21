@@ -26,8 +26,6 @@ if [ "$BRANCH" != "azure-pipelines" ]; then
   exit 0
 fi
 
-echo "${HELLO_WORLD}"
-
 # Allow access to lwpa and RDM repositories
 cd $BUILD_DIR
 echo 'Submodule init'
@@ -95,7 +93,7 @@ if [ -d "docs/head" ] && [ -f "docs/head/index.html" ]; then
       # Force push to the remote gh-pages branch.
       # The ouput is redirected to /dev/null to hide any sensitive credential data
       # that might otherwise be exposed.
-      git push --force "https://${GH_REPO_TOKEN}@${GH_REPO_REF}" > /dev/null 2>&1
+      git push --force "https://svc-etclabs:${SVC-ETCLABS_PASSWORD}@${GH_REPO_REF}" > /dev/null 2>&1
     else
       echo 'No documentation changes. Doing nothing.'
     fi
