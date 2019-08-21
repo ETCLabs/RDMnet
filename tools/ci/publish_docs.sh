@@ -26,6 +26,8 @@ if [ "$BRANCH" != "azure-pipelines" ]; then
   exit 0
 fi
 
+echo '$HELLO_WORLD'
+
 # Allow access to lwpa and RDM repositories
 cd $BUILD_DIR
 echo 'Submodule init'
