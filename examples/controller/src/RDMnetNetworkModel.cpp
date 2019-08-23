@@ -1280,7 +1280,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex& index, const QVariant& value
                   packPtr = packIPAddressItem(ipv4String, kLwpaIpTypeV4, packPtr,
                                               (staticConfigType == E133_STATIC_CONFIG_IPV4));
 
-                  if (staticConfigType == E133_STATIC_CONFIG_IPV4)
+                  if ((staticConfigType == E133_STATIC_CONFIG_IPV4) && (packPtr != nullptr))
                   {
                     // This way, packIPAddressItem obtained the port value for us.
                     // Save the port value for later - we don't want it packed here.
@@ -1291,7 +1291,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex& index, const QVariant& value
                   packPtr = packIPAddressItem(ipv6String, kLwpaIpTypeV6, packPtr,
                                               (staticConfigType != E133_STATIC_CONFIG_IPV4));
 
-                  if (staticConfigType == E133_STATIC_CONFIG_IPV4)
+                  if ((staticConfigType == E133_STATIC_CONFIG_IPV4) && (packPtr != nullptr))
                   {
                     // Pack the port value saved from earlier.
                     lwpa_pack_16b(packPtr, port);
