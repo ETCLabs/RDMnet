@@ -44,19 +44,29 @@ END_INCLUDE_QT_HEADERS()
 
 RDMnetControllerGUI::~RDMnetControllerGUI()
 {
-  if (main_network_model_ != NULL)
+  if (net_details_proxy_ != nullptr)
   {
-    delete main_network_model_;
+    delete net_details_proxy_;
   }
 
-  if (simple_net_proxy_ != NULL)
+  if (simple_net_proxy_ != nullptr)
   {
     delete simple_net_proxy_;
   }
 
-  if (net_details_proxy_ != NULL)
+  if (main_network_model_ != nullptr)
   {
-    delete net_details_proxy_;
+    delete main_network_model_;
+  }
+
+  if (rdmnet_library_ != nullptr)
+  {
+    delete rdmnet_library_;
+  }
+
+  if (log_ != nullptr)
+  {
+    delete log_;
   }
 }
 
@@ -284,11 +294,13 @@ void RDMnetControllerGUI::openLogWindowDialog()
   {
     if (main_network_model_->getNumberOfCustomLogOutputStreams() == 0)
     {
-      LogWindowGUI* logWindowDialog = new LogWindowGUI(this, main_network_model_);
+      LogWindowGUI* logWindowDialog = new LogWindowGUI(this);
       logWindowDialog->setAttribute(Qt::WA_DeleteOnClose);
       logWindowDialog->setWindowTitle(tr("Log Window"));
       logWindowDialog->resize(QSize(static_cast<int>(logWindowDialog->width() * 1.2), logWindowDialog->height()));
       logWindowDialog->show();
+
+      log_->addCustomOutputStream(logWindowDialog);
     }
   }
 }
