@@ -31,6 +31,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <atomic>
 #include "lwpa/inet.h"
 #include "lwpa/log.h"
 #include "rdmnet/broker.h"
@@ -74,7 +75,7 @@ private:
   } initial_data_;
 
   RDMnet::BrokerLog* log_{nullptr};
-  bool restart_requested_{false};
+  std::atomic<bool> restart_requested_{false};
   bool shutdown_requested_{false};
   std::string new_scope_;
 };
