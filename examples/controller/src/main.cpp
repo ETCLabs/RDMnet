@@ -39,9 +39,11 @@ int main(int argc, char* argv[])
   QApplication a(argc, argv);
   RDMnetControllerGUI* w = RDMnetControllerGUI::makeRDMnetControllerGUI();
 
+  a.connect(&a, &QApplication::lastWindowClosed, w, &RDMnetControllerGUI::Shutdown);
+
   w->show();
   retVal = a.exec();
 
-  delete w;
+  delete w; // w->deleteLater() won't work because a's event loop has ended.
   return retVal;
 }

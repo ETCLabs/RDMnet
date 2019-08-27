@@ -99,12 +99,15 @@ protected slots:
   void removeAllBrokers();
   void activateFeature(RDMnetNetworkItem* device, SupportedDeviceFeature feature);
 
-public:
-  void InitRDMnet();
-  void ShutdownRDMnet();
+protected:
+  RDMnetNetworkModel(RDMnetLibInterface* library, ControllerLog* log);
 
+public:
   static RDMnetNetworkModel* makeRDMnetNetworkModel(RDMnetLibInterface* library, ControllerLog* log);
   static RDMnetNetworkModel* makeTestModel();
+
+  RDMnetNetworkModel() = delete;
+  void Shutdown();
 
   void searchingItemRevealed(SearchingStatusItem* searchItem);
 
@@ -241,8 +244,4 @@ protected:
 
   void removeScopeSlotItemsInRange(RDMnetNetworkItem* parent, std::vector<class PropertyItem*>* properties,
                                    uint16_t firstSlot, uint16_t lastSlot);
-
-public:
-  RDMnetNetworkModel(RDMnetLibInterface* library, ControllerLog* log);
-  ~RDMnetNetworkModel();
 };

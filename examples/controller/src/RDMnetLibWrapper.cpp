@@ -155,6 +155,7 @@ void RDMnetLibWrapper::Shutdown()
     running_ = false;
     notify_ = nullptr;
     my_cid_ = kLwpaNullUuid;
+    log_ = nullptr;
   }
 }
 
