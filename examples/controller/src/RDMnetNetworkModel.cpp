@@ -819,9 +819,18 @@ void RDMnetNetworkModel::activateFeature(RDMnetNetworkItem* device, SupportedDev
   }
 }
 
+RDMnetNetworkModel::RDMnetNetworkModel(RDMnetLibInterface* library, ControllerLog* log) : rdmnet_(library), log_(log)
+{
+}
+
 RDMnetNetworkModel* RDMnetNetworkModel::makeRDMnetNetworkModel(RDMnetLibInterface* library, ControllerLog* log)
 {
   RDMnetNetworkModel* model = new RDMnetNetworkModel(library, log);
+
+  lwpa_rwlock_create(&model->conn_lock_);
+
+  lwpa_generate_v4_uuid(&model->my_cid_);
+  model->rdmnet_->Startup(model->my_cid_, model);
 
   // Initialize GUI-supported PID information
   QString rdmGroupName("RDM");
@@ -1043,6 +1052,24 @@ RDMnetNetworkModel* RDMnetNetworkModel::makeTestModel()
     dynamic_cast<RDMnetNetworkItem*>(parentItem)->enableChildrenSearch();
 
   return model;
+}
+
+void RDMnetNetworkModel::Shutdown()
+{
+  {  // Write lock scope
+    lwpa::WriteGuard conn_write(conn_lock_);
+
+    for (auto& connection : broker_connections_)
+      rdmnet_->RemoveScope(connection.first, kRdmnetDisconnectShutdown);
+
+    broker_connections_.clear();
+  }
+
+  rdmnet_->Shutdown();
+  lwpa_rwlock_destroy(&conn_lock_);
+
+  rdmnet_ = nullptr;
+  log_ = nullptr;
 }
 
 void RDMnetNetworkModel::searchingItemRevealed(SearchingStatusItem* searchItem)
@@ -3081,27 +3108,4 @@ void RDMnetNetworkModel::removeScopeSlotItemsInRange(RDMnetNetworkItem* parent, 
     emit removePropertiesInRange(parent, properties, E133_COMPONENT_SCOPE, RDMnetNetworkItem::ScopeSlotRole, firstSlot,
                                  lastSlot);
   }
-}
-
-RDMnetNetworkModel::RDMnetNetworkModel(RDMnetLibInterface* library, ControllerLog* log) : rdmnet_(library), log_(log)
-{
-  lwpa_rwlock_create(&conn_lock_);
-
-  lwpa_generate_v4_uuid(&my_cid_);
-  rdmnet_->Startup(my_cid_, this);
-}
-
-RDMnetNetworkModel::~RDMnetNetworkModel()
-{
-  {  // Write lock scope
-    lwpa::WriteGuard conn_write(conn_lock_);
-
-    for (auto& connection : broker_connections_)
-      rdmnet_->RemoveScope(connection.first, kRdmnetDisconnectShutdown);
-
-    broker_connections_.clear();
-  }
-
-  rdmnet_->Shutdown();
-  lwpa_rwlock_destroy(&conn_lock_);
 }

@@ -51,11 +51,11 @@ class RDMnetControllerGUI : public QMainWindow, public IHandlesBrokerStaticAdd
 public:
   static RDMnetControllerGUI* makeRDMnetControllerGUI();
 
-  ~RDMnetControllerGUI();
-
   virtual void handleAddBrokerByIP(QString scope, const LwpaSockaddr& addr);
 
 public slots:
+
+  void Shutdown();
 
   void networkTreeViewSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
   void addScopeTriggered();
@@ -88,8 +88,8 @@ private:
   RDMnetNetworkModel* main_network_model_{nullptr};
   SimpleNetworkProxyModel* simple_net_proxy_{nullptr};
   NetworkDetailsProxyModel* net_details_proxy_{nullptr};
-  ControllerLog* log_{nullptr};
-  RDMnetLibWrapper* rdmnet_library_{nullptr};
+  std::unique_ptr<ControllerLog> log_;
+  std::unique_ptr<RDMnetLibWrapper> rdmnet_library_;
   BrokerItem* currently_selected_broker_item_{nullptr};
   RDMnetNetworkItem* currently_selected_network_item_{nullptr};
 };
