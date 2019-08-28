@@ -94,8 +94,8 @@ if [ -d "docs/head" ] && [ -f "docs/head/index.html" ]; then
       # The ouput is redirected to /dev/null to hide any sensitive credential data
       # that might otherwise be exposed.
       echo 'Printing git push URL: '
-      echo "https://svc-etclabs:${SVC_ETCLABS_PASSWORD}@${GH_REPO_REF}"
-      git push --force "https://svc-etclabs:${SVC_ETCLABS_PASSWORD}@${GH_REPO_REF}"
+      echo "${GIT_PUSH_URL}"
+      git push --force "${GIT_PUSH_URL}"
     else
       echo 'No documentation changes. Doing nothing.'
     fi
