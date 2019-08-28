@@ -179,4 +179,4 @@ jobs:
       BUILD_REASON: '$(Build.Reason)'
       GH_REPO_NAME: 'RDMnet'
       GH_REPO_REF: 'github.com/ETCLabs/RDMnet.git'
-      GIT_PUSH_URL: 'https://svc-etclabs:$(svc_etclabs_password)@github.com/ETCLabs/RDMnet.git'
+      SVC_ETCLABS_CREDENTIALS: 'svc-etclabs:$(svc_etclabs_password)'
