@@ -93,9 +93,7 @@ if [ -d "docs/head" ] && [ -f "docs/head/index.html" ]; then
       # Force push to the remote gh-pages branch.
       # The ouput is redirected to /dev/null to hide any sensitive credential data
       # that might otherwise be exposed.
-      echo 'Printing git push URL: '
-      echo "${GIT_PUSH_URL}"
-      git push --force "${GIT_PUSH_URL}"
+      git push --force "https://${SVC_ETCLABS_CREDENTIALS}@${GH_REPO_REF}" > /dev/null 2>&1
     else
       echo 'No documentation changes. Doing nothing.'
     fi
