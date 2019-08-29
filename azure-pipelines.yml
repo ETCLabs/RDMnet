@@ -174,4 +174,4 @@ jobs:
       GH_REPO_NAME: 'RDMnet'
       GH_REPO_REF: 'github.com/ETCLabs/RDMnet.git'
       SVC_ETCLABS_CREDENTIALS: 'svc-etclabs:$(svc_etclabs_password)'
-  condition: eq(variables['Build.SourceBranch'], 'develop')
+  condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
