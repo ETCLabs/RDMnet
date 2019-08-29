@@ -6,13 +6,13 @@
 trigger:
   branches:
     include:
-    - azure-pipelines
-  tags:
-    include:
-    - '*'
+    - develop
+    - master
+    - release/*
+    - refs/tags/v*.*.*.*
 
 pr:
-- azure-pipelines
+- develop
 
 variables:
   rdmnet_artifact_version: 'not_initialized'
@@ -180,3 +180,4 @@ jobs:
       GH_REPO_NAME: 'RDMnet'
       GH_REPO_REF: 'github.com/ETCLabs/RDMnet.git'
       SVC_ETCLABS_CREDENTIALS: 'svc-etclabs:$(svc_etclabs_password)'
+  condition: eq(variables['Build.SourceBranch'], 'develop')
