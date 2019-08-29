@@ -59,7 +59,7 @@ jobs:
           $client.DownloadFile("http://download.qt-project.org/official_releases/qt/5.9/5.9.7/qt-opensource-windows-x86-5.9.7.exe", "install-qt-5.9.7.exe")
       condition: ne(variables.CACHE_RESTORED, 'true')
       displayName: 'Download Qt 5.9.7 Installer'
-    - script: install-qt-5.9.7 --verbose --script qt-installer-noninteractive.qs
+    - script: install-qt-5.9.7 --verbose --script tools/ci/qt-installer-noninteractive.qs
       condition: ne(variables.CACHE_RESTORED, 'true')
       displayName: 'Install Qt 5.9.7'
     - script: |

@@ -16,18 +16,18 @@
 # Exit with nonzero exit code if anything fails
 set -e
 
-if [ "$BUILD_REASON" == "PullRequest" ]; then
+if [ "${BUILD_REASON}" == "PullRequest" ]; then
   echo 'Documentation will not be published because this is a pull request build.'
   exit 0
 fi
 
-if [ "$BRANCH" != "develop" ]; then
+if [ "${BRANCH}" != "develop" ]; then
   echo 'Documentation will not be published because this is not a develop branch build.'
   exit 0
 fi
 
 # Allow access to lwpa and RDM repositories
-cd $BUILD_DIR
+cd ${BUILD_DIR}
 git submodule init
 git submodule update
 
@@ -39,8 +39,8 @@ mkdir output
 cd output
 
 # Get the current gh-pages branch
-git clone -b gh-pages https://git@$GH_REPO_REF
-cd $GH_REPO_NAME
+git clone -b gh-pages https://git@${GH_REPO_REF}
+cd ${GH_REPO_NAME}
 
 ##### Configure git.
 # Set the push default to simple i.e. push only the current branch.
@@ -66,7 +66,7 @@ cd ../..
                  echo "HTML_OUTPUT=." ) \
                  | doxygen - 2>&1 | tee doxygen.log
 
-cd output/$GH_REPO_NAME
+cd output/${GH_REPO_NAME}
 
 ################################################################################
 ##### Upload the documentation to the gh-pages branch of the repository.   #####
