@@ -21,16 +21,14 @@ if [ "$BUILD_REASON" == "PullRequest" ]; then
   exit 0
 fi
 
-if [ "$BRANCH" != "azure-pipelines" ]; then
-  echo 'Documentation will not be published because this is not a azure-pipelines branch build.'
+if [ "$BRANCH" != "develop" ]; then
+  echo 'Documentation will not be published because this is not a develop branch build.'
   exit 0
 fi
 
 # Allow access to lwpa and RDM repositories
 cd $BUILD_DIR
-echo 'Submodule init'
 git submodule init
-echo 'Submodule update'
 git submodule update
 
 echo 'Publishing documentation...'
