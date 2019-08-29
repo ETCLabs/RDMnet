@@ -42,15 +42,15 @@ jobs:
         CMAKE_INSTALL: install_x64
         VCVARSALL_PLATFORM: amd64
   steps:
-    - task: CacheBeta@0
-      inputs:
-        key: |
-          qt597
-          $(Agent.OS)
-        path: C:/Qt
-        cacheHitVar: CACHE_RESTORED
-      displayName: 'Qt 5.9.7 Cache'
-      continueOnError: true
+#    - task: CacheBeta@0
+#      inputs:
+#        key: |
+#          qt597
+#          $(Agent.OS)
+#        path: C:/Qt
+#        cacheHitVar: CACHE_RESTORED
+#      displayName: 'Qt 5.9.7 Cache'
+#      continueOnError: true
     - task: PowerShell@2
       inputs:
         targetType: 'inline'
