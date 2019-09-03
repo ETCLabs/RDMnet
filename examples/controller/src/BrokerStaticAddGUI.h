@@ -49,6 +49,7 @@ class BrokerStaticAddGUI : public QDialog
 public slots:
 
   void addBrokerTriggered();
+  void cancelTriggered();
 
 signals:
 
