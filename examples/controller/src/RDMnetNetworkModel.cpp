@@ -696,12 +696,6 @@ void RDMnetNetworkModel::removeBroker(BrokerItem* brokerItem)
 {
   bool removeComplete = false;
 
-  if (brokerItem->scope().toStdString() == E133_DEFAULT_SCOPE)
-  {
-    // TODO dialog saying the default scope cannot be removed
-    return;
-  }
-
   rdmnet_client_scope_t scope_handle = brokerItem->scope_handle();
   rdmnet_->RemoveScope(scope_handle, kRdmnetDisconnectUserReconfigure);
   {  // Write lock scope
@@ -742,17 +736,9 @@ void RDMnetNetworkModel::removeAllBrokers()
     auto broker_iter = broker_connections_.begin();
     while (broker_iter != broker_connections_.end())
     {
-      if (broker_iter->second->scope().toStdString() != E133_DEFAULT_SCOPE)
-      {
-        rdmnet_->RemoveScope(broker_iter->second->scope_handle(), kRdmnetDisconnectUserReconfigure);
-        default_responder_.RemoveScope(broker_iter->second->scope().toStdString());
-        broker_iter = broker_connections_.erase(broker_iter);
-      }
-      else
-      {
-        // Skip the default scope
-        ++broker_iter;
-      }
+      rdmnet_->RemoveScope(broker_iter->second->scope_handle(), kRdmnetDisconnectUserReconfigure);
+      default_responder_.RemoveScope(broker_iter->second->scope().toStdString());
+      broker_iter = broker_connections_.erase(broker_iter);
     }
   }
 
@@ -760,7 +746,7 @@ void RDMnetNetworkModel::removeAllBrokers()
   {
     BrokerItem* currentItem = dynamic_cast<BrokerItem*>(invisibleRootItem()->child(i));
 
-    if (currentItem && currentItem->scope().toStdString() != E133_DEFAULT_SCOPE)
+    if (currentItem)
     {
       currentItem->completelyRemoveChildren(0, currentItem->rowCount());
       invisibleRootItem()->removeRow(i);
