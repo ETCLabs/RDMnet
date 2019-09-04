@@ -196,53 +196,61 @@ void RDMnetNetworkModel::directChildrenRevealed(const QModelIndex& parentIndex)
 void RDMnetNetworkModel::addBrokerByIP(QString scope, const LwpaSockaddr& addr)
 {
   bool brokerAlreadyAdded = false;
+  bool shouldSendRDMGetResponsesBroadcast = false;
+  std::vector<RdmParamData> resp_data_list;
 
-  lwpa::WriteGuard conn_write(conn_lock_);
-  for (const auto& broker_pair : broker_connections_)
   {
-    if (broker_pair.second->scope() == scope)
+    lwpa::WriteGuard conn_write(conn_lock_);
+    for (const auto& broker_pair : broker_connections_)
     {
-      brokerAlreadyAdded = true;
-      break;
-    }
-  }
-
-  if (brokerAlreadyAdded)
-  {
-    QMessageBox errorMessageBox;
-
-    errorMessageBox.setText(tr("The broker for the scope \"%1\" has already been added to this "
-                               "tree. Duplicates with the same scope cannot be added.")
-                                .arg(scope));
-    errorMessageBox.setIcon(QMessageBox::Icon::Critical);
-    errorMessageBox.exec();
-  }
-  else
-  {
-    StaticBrokerConfig static_broker;
-    static_broker.valid = true;
-    static_broker.addr = addr;
-
-    rdmnet_client_scope_t new_scope_handle = rdmnet_->AddScope(scope.toStdString(), static_broker);
-    if (new_scope_handle != RDMNET_CLIENT_SCOPE_INVALID)
-    {
-      BrokerItem* broker = new BrokerItem(scope, new_scope_handle, static_broker);
-      appendRowToItem(invisibleRootItem(), broker);
-      broker->enableChildrenSearch();
-
-      emit expandNewItem(broker->index(), BrokerItem::BrokerItemType);
-
-      broker_connections_.insert(std::make_pair(new_scope_handle, broker));
-
-      default_responder_.AddScope(scope.toStdString(), static_broker);
-      // Broadcast GET_RESPONSE notification because of newly added scope
-      std::vector<RdmParamData> resp_data_list;
-      uint16_t nack_reason;
-      if (default_responder_.GetComponentScope(0x0001, resp_data_list, nack_reason))
+      if (broker_pair.second->scope() == scope)
       {
-        SendRDMGetResponsesBroadcast(E133_COMPONENT_SCOPE, resp_data_list);
+        brokerAlreadyAdded = true;
+        break;
       }
     }
+
+    if (brokerAlreadyAdded)
+    {
+      QMessageBox errorMessageBox;
+
+      errorMessageBox.setText(tr("The broker for the scope \"%1\" has already been added to this "
+                                 "tree. Duplicates with the same scope cannot be added.")
+                                  .arg(scope));
+      errorMessageBox.setIcon(QMessageBox::Icon::Critical);
+      errorMessageBox.exec();
+    }
+    else
+    {
+      StaticBrokerConfig static_broker;
+      static_broker.valid = true;
+      static_broker.addr = addr;
+
+      rdmnet_client_scope_t new_scope_handle = rdmnet_->AddScope(scope.toStdString(), static_broker);
+      if (new_scope_handle != RDMNET_CLIENT_SCOPE_INVALID)
+      {
+        BrokerItem* broker = new BrokerItem(scope, new_scope_handle, static_broker);
+        appendRowToItem(invisibleRootItem(), broker);
+        broker->enableChildrenSearch();
+
+        emit expandNewItem(broker->index(), BrokerItem::BrokerItemType);
+
+        broker_connections_.insert(std::make_pair(new_scope_handle, broker));
+
+        default_responder_.AddScope(scope.toStdString(), static_broker);
+        // Broadcast GET_RESPONSE notification because of newly added scope
+        uint16_t nack_reason;
+        if (default_responder_.GetComponentScope(0x0001, resp_data_list, nack_reason))
+        {
+          shouldSendRDMGetResponsesBroadcast = true;
+        }
+      }
+    }
+  }
+
+  if (shouldSendRDMGetResponsesBroadcast)
+  {
+    SendRDMGetResponsesBroadcast(E133_COMPONENT_SCOPE, resp_data_list);
   }
 }
 
