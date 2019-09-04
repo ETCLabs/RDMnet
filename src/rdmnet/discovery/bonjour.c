@@ -613,6 +613,7 @@ void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle)
     /* Since the broker only cares about scopes while it is running, shut down any outstanding
      * queries for that scope.*/
     rdmnetdisc_stop_monitoring(handle->scope_monitor_handle);
+    handle->scope_monitor_handle = NULL;
 
     /*Reset the state*/
     disc_state.broker_ref.state = kBrokerStateNotRegistered;

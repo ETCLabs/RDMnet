@@ -9,7 +9,7 @@ WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.</mark>
 
 # RDMnet
 
-[![Build status](https://ci.appveyor.com/api/projects/status/76wa62avw50x7r9o?svg=true)](https://ci.appveyor.com/project/ETCLabs/rdmnet)
+[![Build Status](https://dev.azure.com/ETCLabs/RDMnet/_apis/build/status/ETCLabs.RDMnet?branchName=develop)](https://dev.azure.com/ETCLabs/RDMnet/_build/latest?definitionId=2&branchName=develop)
 
 *RDMnet* is an upcoming entertainment technology standard by
 [ESTA](http://tsp.esta.org) for transmission of [RDM](http://www.rdmprotocol.org)

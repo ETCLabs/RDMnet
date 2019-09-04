@@ -42,24 +42,6 @@ END_INCLUDE_QT_HEADERS()
 
 #include "rdmnet/version.h"
 
-RDMnetControllerGUI::~RDMnetControllerGUI()
-{
-  if (main_network_model_ != NULL)
-  {
-    delete main_network_model_;
-  }
-
-  if (simple_net_proxy_ != NULL)
-  {
-    delete simple_net_proxy_;
-  }
-
-  if (net_details_proxy_ != NULL)
-  {
-    delete net_details_proxy_;
-  }
-}
-
 void RDMnetControllerGUI::handleAddBrokerByIP(QString scope, const LwpaSockaddr& addr)
 {
   emit addBrokerByIPActivated(scope, addr);
@@ -70,11 +52,11 @@ RDMnetControllerGUI* RDMnetControllerGUI::makeRDMnetControllerGUI()
   RDMnetControllerGUI* gui = new RDMnetControllerGUI;
   QHeaderView* networkTreeHeaderView = NULL;
 
-  gui->log_ = new ControllerLog("RDMnetController.log");
-  gui->rdmnet_library_ = new RDMnetLibWrapper(gui->log_);
+  gui->log_ = std::make_unique<ControllerLog>("RDMnetController.log");
+  gui->rdmnet_library_ = std::make_unique<RDMnetLibWrapper>(gui->log_.get());
 
   gui->main_network_model_ =
-      RDMnetNetworkModel::makeRDMnetNetworkModel(gui->rdmnet_library_, gui->log_);  // makeTestModel();
+      RDMnetNetworkModel::makeRDMnetNetworkModel(gui->rdmnet_library_.get(), gui->log_.get());  // makeTestModel();
   gui->simple_net_proxy_ = new SimpleNetworkProxyModel;
   gui->net_details_proxy_ = new NetworkDetailsProxyModel;
 
@@ -147,6 +129,30 @@ RDMnetControllerGUI* RDMnetControllerGUI::makeRDMnetControllerGUI()
   gui->main_network_model_->addScopeToMonitor(E133_DEFAULT_SCOPE);
 
   return gui;
+}
+
+void RDMnetControllerGUI::Shutdown()
+{
+  if (net_details_proxy_)
+  {
+    net_details_proxy_->deleteLater();
+  }
+
+  if (simple_net_proxy_)
+  {
+    simple_net_proxy_->deleteLater();
+  }
+
+  if (main_network_model_)
+  {
+    main_network_model_->Shutdown();
+    main_network_model_->deleteLater();
+  }
+
+  if (rdmnet_library_)
+  {
+    rdmnet_library_->Shutdown();
+  }
 }
 
 void RDMnetControllerGUI::networkTreeViewSelectionChanged(const QItemSelection& selected,
@@ -284,11 +290,13 @@ void RDMnetControllerGUI::openLogWindowDialog()
   {
     if (main_network_model_->getNumberOfCustomLogOutputStreams() == 0)
     {
-      LogWindowGUI* logWindowDialog = new LogWindowGUI(this, main_network_model_);
+      LogWindowGUI* logWindowDialog = new LogWindowGUI(this);
       logWindowDialog->setAttribute(Qt::WA_DeleteOnClose);
       logWindowDialog->setWindowTitle(tr("Log Window"));
       logWindowDialog->resize(QSize(static_cast<int>(logWindowDialog->width() * 1.2), logWindowDialog->height()));
       logWindowDialog->show();
+
+      log_->addCustomOutputStream(logWindowDialog);
     }
   }
 }

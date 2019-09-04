@@ -202,53 +202,61 @@ void RDMnetNetworkModel::directChildrenRevealed(const QModelIndex& parentIndex)
 void RDMnetNetworkModel::addBrokerByIP(QString scope, const LwpaSockaddr& addr)
 {
   bool brokerAlreadyAdded = false;
+  bool shouldSendRDMGetResponsesBroadcast = false;
+  std::vector<RdmParamData> resp_data_list;
 
-  lwpa::WriteGuard conn_write(conn_lock_);
-  for (const auto& broker_pair : broker_connections_)
   {
-    if (broker_pair.second->scope() == scope)
+    lwpa::WriteGuard conn_write(conn_lock_);
+    for (const auto& broker_pair : broker_connections_)
     {
-      brokerAlreadyAdded = true;
-      break;
-    }
-  }
-
-  if (brokerAlreadyAdded)
-  {
-    QMessageBox errorMessageBox;
-
-    errorMessageBox.setText(tr("The broker for the scope \"%1\" has already been added to this "
-                               "tree. Duplicates with the same scope cannot be added.")
-                                .arg(scope));
-    errorMessageBox.setIcon(QMessageBox::Icon::Critical);
-    errorMessageBox.exec();
-  }
-  else
-  {
-    StaticBrokerConfig static_broker;
-    static_broker.valid = true;
-    static_broker.addr = addr;
-
-    rdmnet_client_scope_t new_scope_handle = rdmnet_->AddScope(scope.toStdString(), static_broker);
-    if (new_scope_handle != RDMNET_CLIENT_SCOPE_INVALID)
-    {
-      BrokerItem* broker = new BrokerItem(scope, new_scope_handle, static_broker);
-      appendRowToItem(invisibleRootItem(), broker);
-      broker->enableChildrenSearch();
-
-      emit expandNewItem(broker->index(), BrokerItem::BrokerItemType);
-
-      broker_connections_.insert(std::make_pair(new_scope_handle, broker));
-
-      default_responder_.AddScope(scope.toStdString(), static_broker);
-      // Broadcast GET_RESPONSE notification because of newly added scope
-      std::vector<RdmParamData> resp_data_list;
-      uint16_t nack_reason;
-      if (default_responder_.GetComponentScope(0x0001, resp_data_list, nack_reason))
+      if (broker_pair.second->scope() == scope)
       {
-        SendRDMGetResponsesBroadcast(E133_COMPONENT_SCOPE, resp_data_list);
+        brokerAlreadyAdded = true;
+        break;
       }
     }
+
+    if (brokerAlreadyAdded)
+    {
+      QMessageBox errorMessageBox;
+
+      errorMessageBox.setText(tr("The broker for the scope \"%1\" has already been added to this "
+                                 "tree. Duplicates with the same scope cannot be added.")
+                                  .arg(scope));
+      errorMessageBox.setIcon(QMessageBox::Icon::Critical);
+      errorMessageBox.exec();
+    }
+    else
+    {
+      StaticBrokerConfig static_broker;
+      static_broker.valid = true;
+      static_broker.addr = addr;
+
+      rdmnet_client_scope_t new_scope_handle = rdmnet_->AddScope(scope.toStdString(), static_broker);
+      if (new_scope_handle != RDMNET_CLIENT_SCOPE_INVALID)
+      {
+        BrokerItem* broker = new BrokerItem(scope, new_scope_handle, static_broker);
+        appendRowToItem(invisibleRootItem(), broker);
+        broker->enableChildrenSearch();
+
+        emit expandNewItem(broker->index(), BrokerItem::BrokerItemType);
+
+        broker_connections_.insert(std::make_pair(new_scope_handle, broker));
+
+        default_responder_.AddScope(scope.toStdString(), static_broker);
+        // Broadcast GET_RESPONSE notification because of newly added scope
+        uint16_t nack_reason;
+        if (default_responder_.GetComponentScope(0x0001, resp_data_list, nack_reason))
+        {
+          shouldSendRDMGetResponsesBroadcast = true;
+        }
+      }
+    }
+  }
+
+  if (shouldSendRDMGetResponsesBroadcast)
+  {
+    SendRDMGetResponsesBroadcast(E133_COMPONENT_SCOPE, resp_data_list);
   }
 }
 
@@ -811,9 +819,18 @@ void RDMnetNetworkModel::activateFeature(RDMnetNetworkItem* device, SupportedDev
   }
 }
 
+RDMnetNetworkModel::RDMnetNetworkModel(RDMnetLibInterface* library, ControllerLog* log) : rdmnet_(library), log_(log)
+{
+}
+
 RDMnetNetworkModel* RDMnetNetworkModel::makeRDMnetNetworkModel(RDMnetLibInterface* library, ControllerLog* log)
 {
   RDMnetNetworkModel* model = new RDMnetNetworkModel(library, log);
+
+  lwpa_rwlock_create(&model->conn_lock_);
+
+  lwpa_generate_v4_uuid(&model->my_cid_);
+  model->rdmnet_->Startup(model->my_cid_, model);
 
   // Initialize GUI-supported PID information
   QString rdmGroupName("RDM");
@@ -1035,6 +1052,24 @@ RDMnetNetworkModel* RDMnetNetworkModel::makeTestModel()
     dynamic_cast<RDMnetNetworkItem*>(parentItem)->enableChildrenSearch();
 
   return model;
+}
+
+void RDMnetNetworkModel::Shutdown()
+{
+  {  // Write lock scope
+    lwpa::WriteGuard conn_write(conn_lock_);
+
+    for (auto& connection : broker_connections_)
+      rdmnet_->RemoveScope(connection.first, kRdmnetDisconnectShutdown);
+
+    broker_connections_.clear();
+  }
+
+  rdmnet_->Shutdown();
+  lwpa_rwlock_destroy(&conn_lock_);
+
+  rdmnet_ = nullptr;
+  log_ = nullptr;
 }
 
 void RDMnetNetworkModel::searchingItemRevealed(SearchingStatusItem* searchItem)
@@ -1272,7 +1307,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex& index, const QVariant& value
                   packPtr = packIPAddressItem(ipv4String, kLwpaIpTypeV4, packPtr,
                                               (staticConfigType == E133_STATIC_CONFIG_IPV4));
 
-                  if (staticConfigType == E133_STATIC_CONFIG_IPV4)
+                  if ((staticConfigType == E133_STATIC_CONFIG_IPV4) && (packPtr != nullptr))
                   {
                     // This way, packIPAddressItem obtained the port value for us.
                     // Save the port value for later - we don't want it packed here.
@@ -1283,7 +1318,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex& index, const QVariant& value
                   packPtr = packIPAddressItem(ipv6String, kLwpaIpTypeV6, packPtr,
                                               (staticConfigType != E133_STATIC_CONFIG_IPV4));
 
-                  if (staticConfigType == E133_STATIC_CONFIG_IPV4)
+                  if ((staticConfigType == E133_STATIC_CONFIG_IPV4) && (packPtr != nullptr))
                   {
                     // Pack the port value saved from earlier.
                     lwpa_pack_16b(packPtr, port);
@@ -3073,27 +3108,4 @@ void RDMnetNetworkModel::removeScopeSlotItemsInRange(RDMnetNetworkItem* parent, 
     emit removePropertiesInRange(parent, properties, E133_COMPONENT_SCOPE, RDMnetNetworkItem::ScopeSlotRole, firstSlot,
                                  lastSlot);
   }
-}
-
-RDMnetNetworkModel::RDMnetNetworkModel(RDMnetLibInterface* library, ControllerLog* log) : rdmnet_(library), log_(log)
-{
-  lwpa_rwlock_create(&conn_lock_);
-
-  lwpa_generate_v4_uuid(&my_cid_);
-  rdmnet_->Startup(my_cid_, this);
-}
-
-RDMnetNetworkModel::~RDMnetNetworkModel()
-{
-  {  // Write lock scope
-    lwpa::WriteGuard conn_write(conn_lock_);
-
-    for (auto& connection : broker_connections_)
-      rdmnet_->RemoveScope(connection.first, kRdmnetDisconnectShutdown);
-
-    broker_connections_.clear();
-  }
-
-  rdmnet_->Shutdown();
-  lwpa_rwlock_destroy(&conn_lock_);
 }
