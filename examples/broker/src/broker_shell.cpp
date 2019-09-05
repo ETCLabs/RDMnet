@@ -29,14 +29,14 @@
 
 #include <iostream>
 #include <cstring>
-#include "lwpa/netint.h"
-#include "lwpa/thread.h"
+#include "etcpal/netint.h"
+#include "etcpal/thread.h"
 #include "rdmnet/version.h"
 
 void BrokerShell::ScopeChanged(const std::string& new_scope)
 {
   if (log_)
-    log_->Log(LWPA_LOG_INFO, "Scope change detected, restarting broker and applying changes");
+    log_->Log(ETCPAL_LOG_INFO, "Scope change detected, restarting broker and applying changes");
 
   new_scope_ = new_scope;
   restart_requested_ = true;
@@ -45,7 +45,7 @@ void BrokerShell::ScopeChanged(const std::string& new_scope)
 void BrokerShell::NetworkChanged()
 {
   if (log_)
-    log_->Log(LWPA_LOG_INFO, "Network change detected, restarting broker and applying changes");
+    log_->Log(ETCPAL_LOG_INFO, "Network change detected, restarting broker and applying changes");
 
   restart_requested_ = true;
 }
@@ -53,12 +53,12 @@ void BrokerShell::NetworkChanged()
 void BrokerShell::AsyncShutdown()
 {
   if (log_)
-    log_->Log(LWPA_LOG_INFO, "Shutdown requested, Broker shutting down...");
+    log_->Log(ETCPAL_LOG_INFO, "Shutdown requested, Broker shutting down...");
 
   shutdown_requested_ = true;
 }
 
-void BrokerShell::ApplySettingsChanges(RDMnet::BrokerSettings& settings, std::vector<LwpaIpAddr>& new_addrs)
+void BrokerShell::ApplySettingsChanges(RDMnet::BrokerSettings& settings, std::vector<EtcPalIpAddr>& new_addrs)
 {
   new_addrs = GetInterfacesToListen();
 
@@ -69,7 +69,7 @@ void BrokerShell::ApplySettingsChanges(RDMnet::BrokerSettings& settings, std::ve
   }
 }
 
-std::vector<LwpaIpAddr> BrokerShell::GetInterfacesToListen()
+std::vector<EtcPalIpAddr> BrokerShell::GetInterfacesToListen()
 {
   if (!initial_data_.macs.empty())
   {
@@ -81,21 +81,21 @@ std::vector<LwpaIpAddr> BrokerShell::GetInterfacesToListen()
   }
   else
   {
-    return std::vector<LwpaIpAddr>();
+    return std::vector<EtcPalIpAddr>();
   }
 }
 
-std::vector<LwpaIpAddr> BrokerShell::ConvertMacsToInterfaces(const std::vector<MacAddr>& macs)
+std::vector<EtcPalIpAddr> BrokerShell::ConvertMacsToInterfaces(const std::vector<MacAddr>& macs)
 {
-  std::vector<LwpaIpAddr> to_return;
+  std::vector<EtcPalIpAddr> to_return;
 
-  size_t num_netints = lwpa_netint_get_num_interfaces();
+  size_t num_netints = etcpal_netint_get_num_interfaces();
   for (const auto& mac : macs)
   {
-    const LwpaNetintInfo* netint_list = lwpa_netint_get_interfaces();
-    for (const LwpaNetintInfo* netint = netint_list; netint < netint_list + num_netints; ++netint)
+    const EtcPalNetintInfo* netint_list = etcpal_netint_get_interfaces();
+    for (const EtcPalNetintInfo* netint = netint_list; netint < netint_list + num_netints; ++netint)
     {
-      if (0 == memcmp(netint->mac, mac.data(), LWPA_NETINTINFO_MAC_LEN))
+      if (0 == memcmp(netint->mac, mac.data(), ETCPAL_NETINTINFO_MAC_LEN))
       {
         to_return.push_back(netint->addr);
         break;
@@ -116,9 +116,9 @@ void BrokerShell::Run(RDMnet::BrokerLog* log, RDMnet::BrokerSocketManager* sock_
   RDMnet::BrokerSettings broker_settings(0x6574);
   broker_settings.disc_attributes.scope = initial_data_.scope;
 
-  std::vector<LwpaIpAddr> ifaces = GetInterfacesToListen();
+  std::vector<EtcPalIpAddr> ifaces = GetInterfacesToListen();
 
-  lwpa_generate_v4_uuid(&broker_settings.cid);
+  etcpal_generate_v4_uuid(&broker_settings.cid);
 
   broker_settings.disc_attributes.dns_manufacturer = "ETC";
   broker_settings.disc_attributes.dns_service_instance_name = "UNIQUE NAME";
@@ -148,7 +148,7 @@ void BrokerShell::Run(RDMnet::BrokerLog* log, RDMnet::BrokerSocketManager* sock_
       restart_requested_ = false;
     }
 
-    lwpa_thread_sleep(300);
+    etcpal_thread_sleep(300);
   }
 
   broker.Shutdown();

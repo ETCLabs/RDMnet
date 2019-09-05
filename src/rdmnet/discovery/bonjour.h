@@ -29,9 +29,9 @@
 #define _RDMNET_DISCOVERY_BONJOUR_H_
 
 #include "dns_sd.h"
-#include "lwpa/lock.h"
-#include "lwpa/socket.h"
-#include "lwpa/timer.h"
+#include "etcpal/lock.h"
+#include "etcpal/socket.h"
+#include "etcpal/timer.h"
 #include "rdmnet/private/opts.h"
 #include "rdmnet/core/discovery.h"
 
@@ -95,7 +95,7 @@ typedef struct RdmnetBrokerRegisterRef
   broker_state_t state;
   char full_service_name[kDNSServiceMaxDomainName];
 
-  LwpaTimer query_timer;
+  EtcPalTimer query_timer;
   bool query_timeout_expired;
 
   // For hooking up to the DNS-SD API

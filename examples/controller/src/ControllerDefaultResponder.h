@@ -30,7 +30,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#include "lwpa/lock.h"
+#include "etcpal/lock.h"
 #include "rdm/responder.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/version.h"
@@ -49,7 +49,7 @@ struct ControllerScopeData
   uint16_t unhealthy_tcp_events{0};
   StaticBrokerConfig static_broker;
   bool connected{false};
-  LwpaSockaddr current_broker;
+  EtcPalSockaddr current_broker;
 };
 
 constexpr char kMyDeviceLabel[] = "ETC Example RDMnet Controller";
@@ -60,8 +60,8 @@ constexpr char kMySoftwareVersionLabel[] = RDMNET_VERSION_STRING;
 class ControllerDefaultResponder
 {
 public:
-  ControllerDefaultResponder() { lwpa_rwlock_create(&prop_lock_); }
-  virtual ~ControllerDefaultResponder() { lwpa_rwlock_destroy(&prop_lock_); }
+  ControllerDefaultResponder() { etcpal_rwlock_create(&prop_lock_); }
+  virtual ~ControllerDefaultResponder() { etcpal_rwlock_destroy(&prop_lock_); }
 
   bool Get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len, std::vector<RdmParamData>& resp_data_list,
            uint16_t& nack_reason);
@@ -92,12 +92,12 @@ public:
   void AddScope(const std::string& new_scope, StaticBrokerConfig static_broker = StaticBrokerConfig());
   void RemoveScope(const std::string& scope_to_remove);
   void UpdateScopeConnectionStatus(const std::string& scope, bool connected,
-                                   const LwpaSockaddr& broker_addr = LwpaSockaddr());
+                                   const EtcPalSockaddr& broker_addr = EtcPalSockaddr());
   void IncrementTcpUnhealthyCounter(const std::string& scope);
   void ResetTcpUnhealthyCounter(const std::string& scope);
 
 private:
-  mutable lwpa_rwlock_t prop_lock_;
+  mutable etcpal_rwlock_t prop_lock_;
 
   // Property data
   const bool identifying_{false};

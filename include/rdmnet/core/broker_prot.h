@@ -33,12 +33,12 @@
 #define _RDMNET_CORE_BROKER_PROT_H_
 
 #include <string.h>
-#include "lwpa/int.h"
-#include "lwpa/bool.h"
-#include "lwpa/error.h"
-#include "lwpa/inet.h"
-#include "lwpa/root_layer_pdu.h"
-#include "lwpa/uuid.h"
+#include "etcpal/int.h"
+#include "etcpal/bool.h"
+#include "etcpal/error.h"
+#include "etcpal/inet.h"
+#include "etcpal/root_layer_pdu.h"
+#include "etcpal/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/core.h"
@@ -192,7 +192,7 @@ typedef struct ClientEntryUpdateMsg
 typedef struct ClientRedirectMsg
 {
   /*! The new IPv4 or IPv6 address to which to connect. */
-  LwpaSockaddr new_addr;
+  EtcPalSockaddr new_addr;
 } ClientRedirectMsg;
 
 /*! A structure that represents a list of Client Entries. Represents the data for multiple broker
@@ -214,7 +214,7 @@ typedef struct DynamicUidRequestListEntry DynamicUidRequestListEntry;
 struct DynamicUidRequestListEntry
 {
   uint16_t manu_id;
-  LwpaUuid rid;
+  EtcPalUuid rid;
   DynamicUidRequestListEntry* next;
 };
 
@@ -236,7 +236,7 @@ struct DynamicUidMapping
 {
   dynamic_uid_status_t status_code;
   RdmUid uid;
-  LwpaUuid rid;
+  EtcPalUuid rid;
   DynamicUidMapping* next;
 };
 
@@ -400,17 +400,17 @@ extern "C" {
 size_t bufsize_client_list(const ClientEntryData* client_entry_list);
 size_t bufsize_dynamic_uid_assignment_list(const DynamicUidMapping* mapping_list);
 
-size_t pack_connect_reply(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, const ConnectReplyMsg* data);
-size_t pack_client_list(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, uint16_t vector,
+size_t pack_connect_reply(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const ConnectReplyMsg* data);
+size_t pack_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
                         const ClientEntryData* client_entry_list);
-size_t pack_dynamic_uid_assignment_list(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid,
+size_t pack_dynamic_uid_assignment_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid,
                                         const DynamicUidMapping* mapping_list);
 
-lwpa_error_t send_connect_reply(rdmnet_conn_t handle, const LwpaUuid* local_cid, const ConnectReplyMsg* data);
-lwpa_error_t send_fetch_client_list(rdmnet_conn_t handle, const LwpaUuid* local_cid);
-lwpa_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const LwpaUuid* local_cid,
+etcpal_error_t send_connect_reply(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const ConnectReplyMsg* data);
+etcpal_error_t send_fetch_client_list(rdmnet_conn_t handle, const EtcPalUuid* local_cid);
+etcpal_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const EtcPalUuid* local_cid,
                                        const DynamicUidRequestListEntry* request_list);
-lwpa_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const LwpaUuid* local_cid,
+etcpal_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const EtcPalUuid* local_cid,
                                             const FetchUidAssignmentListEntry* uid_list);
 
 #ifdef __cplusplus

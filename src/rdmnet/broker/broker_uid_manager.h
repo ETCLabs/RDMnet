@@ -30,7 +30,7 @@
 #define _BROKER_UID_MANAGER_H_
 
 #include <map>
-#include "lwpa/uuid.h"
+#include "etcpal/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/core/connection.h"
 
@@ -54,7 +54,7 @@ public:
   };
 
   AddResult AddStaticUid(rdmnet_conn_t conn_handle, const RdmUid& static_uid);
-  AddResult AddDynamicUid(rdmnet_conn_t conn_handle, const LwpaUuid& cid_or_rid, RdmUid& new_dynamic_uid);
+  AddResult AddDynamicUid(rdmnet_conn_t conn_handle, const EtcPalUuid& cid_or_rid, RdmUid& new_dynamic_uid);
 
   void RemoveUid(const RdmUid& uid);
 
@@ -82,7 +82,7 @@ private:
   std::map<RdmUid, UidData> uid_lookup_;
   // We try to give the same components back their dynamic UIDs when they reconnect.
   // TODO: scalability/flushing to disk.
-  std::map<LwpaUuid, ReservationData> reservations_;
+  std::map<EtcPalUuid, ReservationData> reservations_;
   // The next dynamic RDM Device ID that will be assigned
   uint32_t next_device_id_{1};
   const size_t max_uid_capacity_{kDefaultMaxUidCapacity};

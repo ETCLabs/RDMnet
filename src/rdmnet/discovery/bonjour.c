@@ -30,9 +30,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "lwpa/bool.h"
-#include "lwpa/inet.h"
-#include "lwpa/pack.h"
+#include "etcpal/bool.h"
+#include "etcpal/inet.h"
+#include "etcpal/pack.h"
 #include "rdmnet/core/util.h"
 #include "rdmnet/private/core.h"
 #include "rdmnet/private/opts.h"
@@ -50,14 +50,14 @@
 
 typedef struct DiscoveryState
 {
-  lwpa_mutex_t lock;
+  etcpal_mutex_t lock;
 
   RdmnetScopeMonitorRef* scope_ref_list;
   RdmnetBrokerRegisterConfig registered_broker;
 
   RdmnetBrokerRegisterRef broker_ref;
 
-  LwpaPollContext poll_context;
+  EtcPalPollContext poll_context;
 } DiscoveryState;
 
 static DiscoveryState disc_state;
@@ -92,7 +92,7 @@ static DNSServiceErrorType send_registration(const RdmnetBrokerDiscInfo* info, D
                                              void* context);
 static void get_registration_string(const char* srv_type, const char* scope, char* reg_str);
 static bool broker_info_is_valid(const RdmnetBrokerDiscInfo* info);
-static bool ipv6_valid(LwpaIpAddr* ip);
+static bool ipv6_valid(EtcPalIpAddr* ip);
 
 /*************************** Function definitions ****************************/
 
@@ -149,12 +149,12 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceF
   if (errorCode != kDNSServiceErr_NoError)
   {
     notify_scope_monitor_error(ref, errorCode);
-    if (lwpa_mutex_take(&disc_state.lock))
+    if (etcpal_mutex_take(&disc_state.lock))
     {
       // Remove the DiscoveredBroker from the list
       discovered_broker_remove(&ref->broker_list, db);
       discovered_broker_delete(db);
-      lwpa_mutex_give(&disc_state.lock);
+      etcpal_mutex_give(&disc_state.lock);
     }
   }
   else
@@ -165,14 +165,14 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceF
     // Only copied to if addrs_done is true;
     RdmnetBrokerDiscInfo notify_info;
 
-    if (lwpa_mutex_take(&disc_state.lock))
+    if (etcpal_mutex_take(&disc_state.lock))
     {
       // Update the broker info we're building
-      LwpaSockaddr ip_addr;
-      if (sockaddr_os_to_lwpa(address, &ip_addr))
+      EtcPalSockaddr ip_addr;
+      if (sockaddr_os_to_etcpal(address, &ip_addr))
       {
-        if ((LWPA_IP_IS_V4(&ip_addr.ip) && LWPA_IP_V4_ADDRESS(&ip_addr.ip) != 0) ||
-            (LWPA_IP_IS_V6(&ip_addr.ip) && ipv6_valid(&ip_addr.ip)))
+        if ((ETCPAL_IP_IS_V4(&ip_addr.ip) && ETCPAL_IP_V4_ADDRESS(&ip_addr.ip) != 0) ||
+            (ETCPAL_IP_IS_V6(&ip_addr.ip) && ipv6_valid(&ip_addr.ip)))
         {
           // Add it to the info structure
           BrokerListenAddr* new_addr = (BrokerListenAddr*)malloc(sizeof(BrokerListenAddr));
@@ -196,10 +196,10 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceF
       if (addrs_done)
       {
         db->state = kResolveStateDone;
-        lwpa_poll_remove_socket(&disc_state.poll_context, DNSServiceRefSockFD(sdRef));
+        etcpal_poll_remove_socket(&disc_state.poll_context, DNSServiceRefSockFD(sdRef));
         notify_info = db->info;
       }
-      lwpa_mutex_give(&disc_state.lock);
+      etcpal_mutex_give(&disc_state.lock);
     }
 
     /*No more addresses, clean up.*/
@@ -231,12 +231,12 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
   if (errorCode != kDNSServiceErr_NoError)
   {
     notify_scope_monitor_error(ref, errorCode);
-    if (lwpa_mutex_take(&disc_state.lock))
+    if (etcpal_mutex_take(&disc_state.lock))
     {
       // Remove the DiscoveredBroker from the list
       discovered_broker_remove(&ref->broker_list, db);
       discovered_broker_delete(db);
-      lwpa_mutex_give(&disc_state.lock);
+      etcpal_mutex_give(&disc_state.lock);
     }
   }
   else
@@ -245,10 +245,10 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
 
     // We have to take the lock before the DNSServiceGetAddrInfo call, because we need to add the
     // ref to our map before it responds.
-    if (lwpa_mutex_take(&disc_state.lock))
+    if (etcpal_mutex_take(&disc_state.lock))
     {
       // We got a response, clean up.  We don't need to keep resolving.
-      lwpa_poll_remove_socket(&disc_state.poll_context, DNSServiceRefSockFD(sdRef));
+      etcpal_poll_remove_socket(&disc_state.poll_context, DNSServiceRefSockFD(sdRef));
       DNSServiceRefDeallocate(sdRef);
 
       DNSServiceRef addr_ref;
@@ -258,7 +258,7 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
       {
         // Update the broker info.
         // TODO revisit using this as a "ntohl" type function, might be buggy...
-        db->info.port = lwpa_upack_16b((const uint8_t*)&port);
+        db->info.port = etcpal_upack_16b((const uint8_t*)&port);
 
         uint8_t value_len = 0;
         const char* value;
@@ -288,7 +288,7 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
 
         value = (const char*)(TXTRecordGetValuePtr(txtLen, txtRecord, "CID", &value_len));
         if (value && value_len)
-          lwpa_string_to_uuid(&db->info.cid, value, value_len);
+          etcpal_string_to_uuid(&db->info.cid, value, value_len);
 
         value = (const char*)(TXTRecordGetValuePtr(txtLen, txtRecord, "Model", &value_len));
         if (value && value_len)
@@ -309,9 +309,9 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
 
         db->state = kResolveStateGetAddrInfo;
         db->dnssd_ref = addr_ref;
-        lwpa_poll_add_socket(&disc_state.poll_context, DNSServiceRefSockFD(addr_ref), LWPA_POLL_IN, db->dnssd_ref);
+        etcpal_poll_add_socket(&disc_state.poll_context, DNSServiceRefSockFD(addr_ref), ETCPAL_POLL_IN, db->dnssd_ref);
       }
-      lwpa_mutex_give(&disc_state.lock);
+      etcpal_mutex_give(&disc_state.lock);
     }
 
     if (getaddrinfo_err != kDNSServiceErr_NoError)
@@ -350,7 +350,7 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
     // We have to take the lock before the DNSServiceResolve call, because we need to add the ref to
     // our map before it responds.
     DNSServiceErrorType resolve_err = kDNSServiceErr_NoError;
-    if (lwpa_mutex_take(&disc_state.lock))
+    if (etcpal_mutex_take(&disc_state.lock))
     {
       // Start the next part of the resolution.
       DNSServiceRef resolve_ref;
@@ -372,11 +372,11 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
         {
           db->state = kResolveStateServiceResolve;
           db->dnssd_ref = resolve_ref;
-          lwpa_poll_add_socket(&disc_state.poll_context, DNSServiceRefSockFD(resolve_ref), LWPA_POLL_IN, db->dnssd_ref);
+          etcpal_poll_add_socket(&disc_state.poll_context, DNSServiceRefSockFD(resolve_ref), ETCPAL_POLL_IN, db->dnssd_ref);
         }
       }
 
-      lwpa_mutex_give(&disc_state.lock);
+      etcpal_mutex_give(&disc_state.lock);
     }
 
     if (resolve_err != kDNSServiceErr_NoError)
@@ -385,7 +385,7 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
   else
   {
     /*Service removal*/
-    if (lwpa_mutex_take(&disc_state.lock))
+    if (etcpal_mutex_take(&disc_state.lock))
     {
       DiscoveredBroker* db = discovered_broker_lookup_by_name(ref->broker_list, full_name);
       if (db)
@@ -393,7 +393,7 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
         discovered_broker_remove(&ref->broker_list, db);
         discovered_broker_delete(db);
       }
-      lwpa_mutex_give(&disc_state.lock);
+      etcpal_mutex_give(&disc_state.lock);
     }
     notify_broker_lost(ref, serviceName);
   }
@@ -403,17 +403,17 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
  * public functions
  ******************************************************************************/
 
-lwpa_error_t rdmnetdisc_init()
+etcpal_error_t rdmnetdisc_init()
 {
-  lwpa_error_t res = kLwpaErrOk;
+  etcpal_error_t res = kEtcPalErrOk;
 
-  if (!lwpa_mutex_create(&disc_state.lock))
-    res = kLwpaErrSys;
+  if (!etcpal_mutex_create(&disc_state.lock))
+    res = kEtcPalErrSys;
 
-  if (res == kLwpaErrOk)
-    res = lwpa_poll_context_init(&disc_state.poll_context);
+  if (res == kEtcPalErrOk)
+    res = etcpal_poll_context_init(&disc_state.poll_context);
 
-  if (res == kLwpaErrOk)
+  if (res == kEtcPalErrOk)
     disc_state.broker_ref.state = kBrokerStateNotRegistered;
 
   return res;
@@ -422,13 +422,13 @@ lwpa_error_t rdmnetdisc_init()
 void rdmnetdisc_deinit()
 {
   stop_monitoring_all_internal();
-  lwpa_poll_context_deinit(&disc_state.poll_context);
-  lwpa_mutex_destroy(&disc_state.lock);
+  etcpal_poll_context_deinit(&disc_state.poll_context);
+  etcpal_mutex_destroy(&disc_state.lock);
 }
 
 void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo* broker_info)
 {
-  broker_info->cid = kLwpaNullUuid;
+  broker_info->cid = kEtcPalNullUuid;
   memset(broker_info->service_name, 0, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
   broker_info->port = 0;
   broker_info->listen_addr_list = NULL;
@@ -437,17 +437,17 @@ void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo* broker_info)
   memset(broker_info->manufacturer, 0, E133_MANUFACTURER_STRING_PADDED_LENGTH);
 }
 
-lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
+etcpal_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
                                          int* platform_specific_error)
 {
   if (!config || !handle || !platform_specific_error)
-    return kLwpaErrInvalid;
+    return kEtcPalErrInvalid;
   if (!rdmnet_core_initialized())
-    return kLwpaErrNotInit;
+    return kEtcPalErrNotInit;
 
   RdmnetScopeMonitorRef* new_monitor = scope_monitor_new(config);
   if (!new_monitor)
-    return kLwpaErrNoMem;
+    return kEtcPalErrNoMem;
 
   // Start the browse operation in the Bonjour stack.
   char reg_str[REGISTRATION_STRING_PADDED_LENGTH];
@@ -455,14 +455,14 @@ lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* config,
 
   // We have to take the lock before the DNSServiceBrowse call, because we need to add the ref to
   // our map before it responds.
-  lwpa_error_t res = kLwpaErrOk;
-  if (lwpa_mutex_take(&disc_state.lock))
+  etcpal_error_t res = kEtcPalErrOk;
+  if (etcpal_mutex_take(&disc_state.lock))
   {
     DNSServiceErrorType result = DNSServiceBrowse(&new_monitor->dnssd_ref, 0, 0, reg_str, config->domain,
                                                   &HandleDNSServiceBrowseReply, new_monitor);
     if (result == kDNSServiceErr_NoError)
     {
-      lwpa_poll_add_socket(&disc_state.poll_context, DNSServiceRefSockFD(new_monitor->dnssd_ref), LWPA_POLL_IN,
+      etcpal_poll_add_socket(&disc_state.poll_context, DNSServiceRefSockFD(new_monitor->dnssd_ref), ETCPAL_POLL_IN,
                            new_monitor->dnssd_ref);
       scope_monitor_insert(new_monitor);
     }
@@ -470,31 +470,31 @@ lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* config,
     {
       *platform_specific_error = result;
       scope_monitor_delete(new_monitor);
-      res = kLwpaErrSys;
+      res = kEtcPalErrSys;
     }
-    lwpa_mutex_give(&disc_state.lock);
+    etcpal_mutex_give(&disc_state.lock);
   }
 
-  if (res == kLwpaErrOk)
+  if (res == kEtcPalErrOk)
     *handle = new_monitor;
 
   return res;
 }
 
-lwpa_error_t rdmnetdisc_change_monitored_scope(rdmnet_scope_monitor_t handle,
+etcpal_error_t rdmnetdisc_change_monitored_scope(rdmnet_scope_monitor_t handle,
                                                const RdmnetScopeMonitorConfig* new_config)
 {
   // TODO reevaluate if this is necessary.
   (void)handle;
   (void)new_config;
-  return kLwpaErrNotImpl;
+  return kEtcPalErrNotImpl;
   /*
-    lwpa_error_t res = kLwpaErrSys;
-    if (lwpa_mutex_take(&disc_state.lock, LWPA_WAIT_FOREVER))
+    etcpal_error_t res = kEtcPalErrSys;
+    if (etcpal_mutex_take(&disc_state.lock, ETCPAL_WAIT_FOREVER))
     {
       // Stop the existing browse operation
       DNSServiceRefDeallocate(handle->dnssd_ref);
-      handle->socket = LWPA_SOCKET_INVALID;
+      handle->socket = ETCPAL_SOCKET_INVALID;
 
       // Copy in the new config
       handle->config = *new_config;
@@ -508,13 +508,13 @@ lwpa_error_t rdmnetdisc_change_monitored_scope(rdmnet_scope_monitor_t handle,
       if (result == kDNSServiceErr_NoError)
       {
         handle->socket = DNSServiceRefSockFD(handle->dnssd_ref);
-        res = kLwpaErrOk;
+        res = kEtcPalErrOk;
       }
       else
       {
-        res = kLwpaErrSys;
+        res = kEtcPalErrSys;
       }
-      lwpa_mutex_give(&disc_state.lock);
+      etcpal_mutex_give(&disc_state.lock);
     }
     return res;
     */
@@ -525,11 +525,11 @@ void rdmnetdisc_stop_monitoring(rdmnet_scope_monitor_t handle)
   if (!handle || !rdmnet_core_initialized())
     return;
 
-  if (lwpa_mutex_take(&disc_state.lock))
+  if (etcpal_mutex_take(&disc_state.lock))
   {
     scope_monitor_remove(handle);
     scope_monitor_delete(handle);
-    lwpa_mutex_give(&disc_state.lock);
+    etcpal_mutex_give(&disc_state.lock);
   }
 }
 
@@ -543,7 +543,7 @@ void rdmnetdisc_stop_monitoring_all()
 
 void stop_monitoring_all_internal()
 {
-  if (lwpa_mutex_take(&disc_state.lock))
+  if (etcpal_mutex_take(&disc_state.lock))
   {
     if (disc_state.scope_ref_list)
     {
@@ -557,19 +557,19 @@ void stop_monitoring_all_internal()
       }
       disc_state.scope_ref_list = NULL;
     }
-    lwpa_mutex_give(&disc_state.lock);
+    etcpal_mutex_give(&disc_state.lock);
   }
 }
 
-lwpa_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config, rdmnet_registered_broker_t* handle)
+etcpal_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config, rdmnet_registered_broker_t* handle)
 {
   if (!config || !handle || disc_state.broker_ref.state != kBrokerStateNotRegistered ||
       !broker_info_is_valid(&config->my_info))
   {
-    return kLwpaErrInvalid;
+    return kEtcPalErrInvalid;
   }
   if (!rdmnet_core_initialized())
-    return kLwpaErrNotInit;
+    return kEtcPalErrNotInit;
 
   RdmnetBrokerRegisterRef* broker_ref = &disc_state.broker_ref;
 
@@ -580,7 +580,7 @@ lwpa_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config
 
   int mon_error;
   rdmnet_scope_monitor_t monitor_handle;
-  if (rdmnetdisc_start_monitoring(&monitor_config, &monitor_handle, &mon_error) == kLwpaErrOk)
+  if (rdmnetdisc_start_monitoring(&monitor_config, &monitor_handle, &mon_error) == kEtcPalErrOk)
   {
     broker_ref->scope_monitor_handle = monitor_handle;
     monitor_handle->broker_handle = broker_ref;
@@ -588,7 +588,7 @@ lwpa_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config
     broker_ref->config = *config;
     broker_ref->state = kBrokerStateQuerying;
     broker_ref->query_timeout_expired = false;
-    lwpa_timer_start(&broker_ref->query_timer, DISCOVERY_QUERY_TIMEOUT);
+    etcpal_timer_start(&broker_ref->query_timer, DISCOVERY_QUERY_TIMEOUT);
   }
   else if (broker_ref->config.callbacks.scope_monitor_error)
   {
@@ -597,7 +597,7 @@ lwpa_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config
   }
 
   *handle = broker_ref;
-  return kLwpaErrOk;
+  return kEtcPalErrOk;
 }
 
 void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle)
@@ -607,7 +607,7 @@ void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle)
 
   if (disc_state.broker_ref.state != kBrokerStateNotRegistered)
   {
-    lwpa_poll_remove_socket(&disc_state.poll_context, DNSServiceRefSockFD(disc_state.broker_ref.dnssd_ref));
+    etcpal_poll_remove_socket(&disc_state.poll_context, DNSServiceRefSockFD(disc_state.broker_ref.dnssd_ref));
     DNSServiceRefDeallocate(disc_state.broker_ref.dnssd_ref);
 
     /* Since the broker only cares about scopes while it is running, shut down any outstanding
@@ -628,7 +628,7 @@ DNSServiceErrorType send_registration(const RdmnetBrokerDiscInfo* info, DNSServi
   /*Before we start the registration, we have to massage a few parameters*/
   // TODO revisit this hacked version of "htonl", might be buggy
   uint16_t net_port = 0;
-  lwpa_pack_16b((uint8_t*)&net_port, info->port);
+  etcpal_pack_16b((uint8_t*)&net_port, info->port);
 
   char reg_str[REGISTRATION_STRING_PADDED_LENGTH];
   get_registration_string(E133_DNSSD_SRV_TYPE, info->scope, reg_str);
@@ -652,8 +652,8 @@ DNSServiceErrorType send_registration(const RdmnetBrokerDiscInfo* info, DNSServi
   if (result == kDNSServiceErr_NoError)
   {
     /*The CID can't have hyphens, so we'll strip them.*/
-    char cid_str[LWPA_UUID_STRING_BYTES];
-    lwpa_uuid_to_string(cid_str, &info->cid);
+    char cid_str[ETCPAL_UUID_STRING_BYTES];
+    etcpal_uuid_to_string(cid_str, &info->cid);
     char* src = cid_str;
     for (char* dst = src; *dst != 0; ++src, ++dst)
     {
@@ -700,7 +700,7 @@ void rdmnetdisc_tick()
   {
     case kBrokerStateQuerying:
     {
-      if (!broker_ref->query_timeout_expired && lwpa_timer_is_expired(&broker_ref->query_timer))
+      if (!broker_ref->query_timeout_expired && etcpal_timer_is_expired(&broker_ref->query_timer))
         broker_ref->query_timeout_expired = true;
 
       if (broker_ref->query_timeout_expired && !broker_ref->scope_monitor_handle->broker_list)
@@ -714,7 +714,7 @@ void rdmnetdisc_tick()
 
         if (reg_result == kDNSServiceErr_NoError)
         {
-          lwpa_poll_add_socket(&disc_state.poll_context, DNSServiceRefSockFD(broker_ref->dnssd_ref), LWPA_POLL_IN,
+          etcpal_poll_add_socket(&disc_state.poll_context, DNSServiceRefSockFD(broker_ref->dnssd_ref), ETCPAL_POLL_IN,
                                broker_ref->dnssd_ref);
         }
         else
@@ -737,28 +737,28 @@ void rdmnetdisc_tick()
       break;
   }
 
-  LwpaPollEvent event = {LWPA_SOCKET_INVALID};
-  lwpa_error_t poll_res = kLwpaErrSys;
+  EtcPalPollEvent event = {ETCPAL_SOCKET_INVALID};
+  etcpal_error_t poll_res = kEtcPalErrSys;
 
   // Do the poll inside the mutex so that sockets can't be added and removed during poll
   // Since we are using an immediate timeout, this is not a big deal
-  if (lwpa_mutex_take(&disc_state.lock))
+  if (etcpal_mutex_take(&disc_state.lock))
   {
-    poll_res = lwpa_poll_wait(&disc_state.poll_context, &event, 0);
-    lwpa_mutex_give(&disc_state.lock);
+    poll_res = etcpal_poll_wait(&disc_state.poll_context, &event, 0);
+    etcpal_mutex_give(&disc_state.lock);
   }
-  if (poll_res == kLwpaErrOk && event.events & LWPA_POLL_IN)
+  if (poll_res == kEtcPalErrOk && event.events & ETCPAL_POLL_IN)
   {
     DNSServiceErrorType process_error;
     process_error = DNSServiceProcessResult((DNSServiceRef)event.user_data);
 
     if (process_error != kDNSServiceErr_NoError)
     {
-      lwpa_poll_remove_socket(&disc_state.poll_context, event.socket);
-      lwpa_close(event.socket);
+      etcpal_poll_remove_socket(&disc_state.poll_context, event.socket);
+      etcpal_close(event.socket);
     }
   }
-  else if (poll_res != kLwpaErrTimedOut)
+  else if (poll_res != kEtcPalErrTimedOut)
   {
     // TODO error handling
   }
@@ -833,15 +833,15 @@ void get_registration_string(const char* srv_type, const char* scope, char* reg_
 bool broker_info_is_valid(const RdmnetBrokerDiscInfo* info)
 {
   // Make sure none of the broker info's fields are empty
-  return !(LWPA_UUID_IS_NULL(&info->cid) || strlen(info->service_name) == 0 || strlen(info->scope) == 0 ||
+  return !(ETCPAL_UUID_IS_NULL(&info->cid) || strlen(info->service_name) == 0 || strlen(info->scope) == 0 ||
            strlen(info->model) == 0 || strlen(info->manufacturer) == 0);
 }
 
 /* 0000:0000:0000:0000:0000:0000:0000:0001 is a loopback address
  * 0000:0000:0000:0000:0000:0000:0000:0000 is not valid */
-bool ipv6_valid(LwpaIpAddr* ip)
+bool ipv6_valid(EtcPalIpAddr* ip)
 {
-  return (!lwpa_ip_is_loopback(ip) && !lwpa_ip_is_wildcard(ip));
+  return (!etcpal_ip_is_loopback(ip) && !etcpal_ip_is_wildcard(ip));
 }
 
 RdmnetScopeMonitorRef* scope_monitor_new(const RdmnetScopeMonitorConfig* config)
@@ -867,7 +867,7 @@ void scope_monitor_delete(RdmnetScopeMonitorRef* ref)
     discovered_broker_delete(db);
     db = next_db;
   }
-  lwpa_poll_remove_socket(&disc_state.poll_context, DNSServiceRefSockFD(ref->dnssd_ref));
+  etcpal_poll_remove_socket(&disc_state.poll_context, DNSServiceRefSockFD(ref->dnssd_ref));
   DNSServiceRefDeallocate(ref->dnssd_ref);
   free(ref);
 }
@@ -891,7 +891,7 @@ void discovered_broker_delete(DiscoveredBroker* db)
 {
   if (db->state != kResolveStateDone)
   {
-    lwpa_poll_remove_socket(&disc_state.poll_context, DNSServiceRefSockFD(db->dnssd_ref));
+    etcpal_poll_remove_socket(&disc_state.poll_context, DNSServiceRefSockFD(db->dnssd_ref));
     DNSServiceRefDeallocate(db->dnssd_ref);
   }
   BrokerListenAddr* listen_addr = db->info.listen_addr_list;

@@ -26,7 +26,7 @@
 ******************************************************************************/
 #include "BrokerItem.h"
 
-#include "lwpa/socket.h"
+#include "etcpal/socket.h"
 
 BrokerItem::BrokerItem(const QString& scope, rdmnet_client_scope_t scope_handle,
                        const StaticBrokerConfig& static_broker /* = StaticBrokerConfig() */)
@@ -44,7 +44,7 @@ int BrokerItem::type() const
   return BrokerItemType;
 }
 
-void BrokerItem::setConnected(bool connected, const LwpaSockaddr& broker_addr)
+void BrokerItem::setConnected(bool connected, const EtcPalSockaddr& broker_addr)
 {
   connected_ = connected;
   if (connected)
@@ -57,15 +57,15 @@ void BrokerItem::setConnected(bool connected, const LwpaSockaddr& broker_addr)
 void BrokerItem::updateText()
 {
   bool have_address = (connected_ || static_broker_.valid);
-  LwpaSockaddr address;
+  EtcPalSockaddr address;
 
   if (connected_)
     address = broker_addr_;
   else if (static_broker_.valid)
     address = static_broker_.addr;
 
-  char addrString[LWPA_INET6_ADDRSTRLEN];
-  if (have_address && kLwpaErrOk == lwpa_inet_ntop(&address.ip, addrString, LWPA_INET6_ADDRSTRLEN))
+  char addrString[ETCPAL_INET6_ADDRSTRLEN];
+  if (have_address && kEtcPalErrOk == etcpal_inet_ntop(&address.ip, addrString, ETCPAL_INET6_ADDRSTRLEN))
   {
     setText(QString("Broker for scope \"%1\" at %2:%3").arg(scope_, addrString, QString::number(address.port)));
   }

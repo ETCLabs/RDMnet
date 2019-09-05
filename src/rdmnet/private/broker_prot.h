@@ -32,7 +32,7 @@
 #ifndef _RDMNET_PRIVATE_BROKER_PROT_
 #define _RDMNET_PRIVATE_BROKER_PROT_
 
-#include "lwpa/error.h"
+#include "etcpal/error.h"
 #include "rdmnet/core/broker_prot.h"
 #include "rdmnet/private/connection.h"
 
@@ -81,9 +81,9 @@ extern "C" {
 #endif
 
 /* All functions must be called from inside the relevant send locks. */
-lwpa_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMsg* data);
-lwpa_error_t send_disconnect(RdmnetConnection* conn, const DisconnectMsg* data);
-lwpa_error_t send_null(RdmnetConnection* conn);
+etcpal_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMsg* data);
+etcpal_error_t send_disconnect(RdmnetConnection* conn, const DisconnectMsg* data);
+etcpal_error_t send_null(RdmnetConnection* conn);
 
 #ifdef __cplusplus
 }

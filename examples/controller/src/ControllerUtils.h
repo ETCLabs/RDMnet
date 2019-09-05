@@ -29,8 +29,8 @@
 
 #include <stdexcept>
 #include <cstddef>
-#include "lwpa/int.h"
-#include "lwpa/inet.h"
+#include "etcpal/int.h"
+#include "etcpal/inet.h"
 
 // Macros to suppress warnings inside of Qt headers.
 #if defined(_MSC_VER)
@@ -51,7 +51,7 @@
 struct StaticBrokerConfig
 {
   bool valid{false};
-  LwpaSockaddr addr;
+  EtcPalSockaddr addr;
 };
 
 // Some definitions that aren't provided elsewhere

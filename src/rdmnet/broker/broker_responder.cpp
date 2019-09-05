@@ -104,7 +104,7 @@ void BrokerResponder::ProcessRDMMessage(int /*conn*/, const RPTMessageRef& /*msg
 //       if (!RDMnet::SendRDMMessages(psock, m_settings.cid, resp_end_data,
 //                                    msgs) &&
 //           m_log)
-//         lwpa_log(m_log, m_log_context, 1, LWPA_CAT_APP, LWPA_SEV_ERR,
+//         etcpal_log(m_log, m_log_context, 1, ETCPAL_CAT_APP, ETCPAL_SEV_ERR,
 //                  "Couldn't send a change notification -- how is psock
 //                  null?");
 //       ReleaseControllerSocket(psock);

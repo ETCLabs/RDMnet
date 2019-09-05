@@ -28,11 +28,11 @@
 #ifndef _WIN_DEVICE_LOG_H_
 #define _WIN_DEVICE_LOG_H_
 
-#include "lwpa/bool.h"
-#include "lwpa/log.h"
+#include "etcpal/bool.h"
+#include "etcpal/log.h"
 
 void device_log_init(const char* file_name);
-const LwpaLogParams* device_get_log_params();
+const EtcPalLogParams* device_get_log_params();
 void device_log_deinit();
 
 #endif /* _WIN_DEVICE_LOG_H_ */

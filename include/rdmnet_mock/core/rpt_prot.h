@@ -41,17 +41,17 @@ extern "C" {
 DECLARE_FAKE_VALUE_FUNC(size_t, bufsize_rpt_request, const RdmBuffer*);
 DECLARE_FAKE_VALUE_FUNC(size_t, bufsize_rpt_status, const RptStatusMsg*);
 DECLARE_FAKE_VALUE_FUNC(size_t, bufsize_rpt_notification, const RdmBuffer*, size_t);
-DECLARE_FAKE_VALUE_FUNC(size_t, pack_rpt_request, uint8_t*, size_t, const LwpaUuid*, const RptHeader*,
+DECLARE_FAKE_VALUE_FUNC(size_t, pack_rpt_request, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*,
                         const RdmBuffer*);
-DECLARE_FAKE_VALUE_FUNC(size_t, pack_rpt_status, uint8_t*, size_t, const LwpaUuid*, const RptHeader*,
+DECLARE_FAKE_VALUE_FUNC(size_t, pack_rpt_status, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*,
                         const RptStatusMsg*);
-DECLARE_FAKE_VALUE_FUNC(size_t, pack_rpt_notification, uint8_t*, size_t, const LwpaUuid*, const RptHeader*,
+DECLARE_FAKE_VALUE_FUNC(size_t, pack_rpt_notification, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*,
                         const RdmBuffer*, size_t);
-DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, send_rpt_request, rdmnet_conn_t, const LwpaUuid*, const RptHeader*,
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, send_rpt_request, rdmnet_conn_t, const EtcPalUuid*, const RptHeader*,
                         const RdmBuffer*);
-DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, send_rpt_status, rdmnet_conn_t, const LwpaUuid*, const RptHeader*,
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, send_rpt_status, rdmnet_conn_t, const EtcPalUuid*, const RptHeader*,
                         const RptStatusMsg*);
-DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, send_rpt_notification, rdmnet_conn_t, const LwpaUuid*, const RptHeader*,
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, send_rpt_notification, rdmnet_conn_t, const EtcPalUuid*, const RptHeader*,
                         const RdmBuffer*, size_t);
 
 #define RDMNET_CORE_RPT_PROT_DO_FOR_ALL_FAKES(operation) \

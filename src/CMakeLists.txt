@@ -11,11 +11,13 @@ include(ResolveDnsSdProvider)
 include(RdmnetAddDependency)
 
 if(RDMNET_BUILD_TESTS)
-  set(LWPA_BUILD_MOCK_LIB ON CACHE BOOL "Build the lwpa mock library" FORCE)
+  set(ETCPAL_BUILD_MOCK_LIB ON CACHE BOOL "Build the EtcPal mock library" FORCE)
   # set(RDM_BUILD_MOCK_LIB ON)
 endif()
-rdmnet_add_dependency(lwpa LWPA_DIR)
+rdmnet_add_dependency(EtcPal ETCPAL_DIR)
 rdmnet_add_dependency(RDM RDM_DIR)
+
+set_target_properties(EtcPalMock PROPERTIES FOLDER dependencies)
 
 ################################## Libraries ##################################
 

@@ -76,16 +76,16 @@ bool ParseAndSetScope(const char* scope_str, BrokerShell& broker_shell)
 // Parse the --ifaces=IFACE_LIST command line option and transfer it to the BrokerShell instance.
 bool ParseAndSetIfaceList(char* iface_list_str, BrokerShell& broker_shell)
 {
-  std::vector<LwpaIpAddr> addrs;
+  std::vector<EtcPalIpAddr> addrs;
 
   if (strlen(iface_list_str) != 0)
   {
     char* context;
     for (char* p = strtok_r(iface_list_str, ",", &context); p != NULL; p = strtok_r(NULL, ",", &context))
     {
-      LwpaIpAddr addr;
-      if ((lwpa_inet_pton(kLwpaIpTypeV4, p, &addr) == kLwpaErrOk) ||
-          lwpa_inet_pton(kLwpaIpTypeV6, p, &addr) == kLwpaErrOk)
+      EtcPalIpAddr addr;
+      if ((etcpal_inet_pton(kEtcPalIpTypeV4, p, &addr) == kEtcPalErrOk) ||
+          etcpal_inet_pton(kEtcPalIpTypeV6, p, &addr) == kEtcPalErrOk)
       {
         addrs.push_back(addr);
       }
@@ -105,7 +105,7 @@ void ParseMac(char* s, BrokerShell::MacAddr& mac_buf)
 {
   char* p = s;
 
-  for (int index = 0; index < LWPA_NETINTINFO_MAC_LEN; ++index)
+  for (int index = 0; index < ETCPAL_NETINTINFO_MAC_LEN; ++index)
   {
     mac_buf[index] = static_cast<uint8_t>(strtol(p, &p, 16));
     ++p;  // P points at the :
@@ -150,14 +150,14 @@ bool ParseAndSetPort(const char* port_str, BrokerShell& broker_shell)
 
 // clang-format off
 static const std::map<std::string, int> log_levels = {
-  {"EMERG", LWPA_LOG_EMERG},
-  {"ALERT", LWPA_LOG_ALERT},
-  {"CRIT", LWPA_LOG_CRIT},
-  {"ERR", LWPA_LOG_ERR},
-  {"WARNING", LWPA_LOG_WARNING},
-  {"NOTICE", LWPA_LOG_NOTICE},
-  {"INFO", LWPA_LOG_INFO},
-  {"DEBUG", LWPA_LOG_DEBUG}
+  {"EMERG", ETCPAL_LOG_EMERG},
+  {"ALERT", ETCPAL_LOG_ALERT},
+  {"CRIT", ETCPAL_LOG_CRIT},
+  {"ERR", ETCPAL_LOG_ERR},
+  {"WARNING", ETCPAL_LOG_WARNING},
+  {"NOTICE", ETCPAL_LOG_NOTICE},
+  {"INFO", ETCPAL_LOG_INFO},
+  {"DEBUG", ETCPAL_LOG_DEBUG}
 };
 // clang-format on
 

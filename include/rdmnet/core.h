@@ -33,8 +33,8 @@
 #ifndef _RDMNET_CORE_H_
 #define _RDMNET_CORE_H_
 
-#include "lwpa/error.h"
-#include "lwpa/log.h"
+#include "etcpal/error.h"
+#include "etcpal/log.h"
 
 /*! \addtogroup rdmnet_conn
  *  @{
@@ -65,7 +65,7 @@ typedef int rdmnet_conn_t;
 extern "C" {
 #endif
 
-lwpa_error_t rdmnet_core_init(const LwpaLogParams* log_params);
+etcpal_error_t rdmnet_core_init(const EtcPalLogParams* log_params);
 void rdmnet_core_deinit();
 
 void rdmnet_core_tick();

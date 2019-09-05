@@ -51,7 +51,7 @@ void* SocketWorkerThread(void* arg)
     struct timespec tv;
     tv.tv_sec = 0;
     tv.tv_nsec = kEventTimeout * 1000;
-    
+
     int kevent_result = kevent(sock_mgr->kqueue_fd(), NULL, 0, kevent_list.get(), kMaxEvents, &tv);
     for (int i = 0; i < kevent_result && sock_mgr->keep_running(); ++i)
     {
@@ -96,7 +96,7 @@ bool MacBrokerSocketManager::Shutdown()
   shutting_down_ = true;
 
   {  // Read lock scope
-    lwpa::ReadGuard socket_read(socket_lock_);
+    etcpal::ReadGuard socket_read(socket_lock_);
     for (auto& sock_data : sockets_)
     {
       // Close each socket. Doesn't affect the epoll operation.
@@ -111,16 +111,16 @@ bool MacBrokerSocketManager::Shutdown()
   pthread_join(thread_handle_, NULL);
 
   {  // Write lock scope
-    lwpa::WriteGuard socket_write(socket_lock_);
+    etcpal::WriteGuard socket_write(socket_lock_);
     sockets_.clear();
   }
 
   return true;
 }
 
-bool MacBrokerSocketManager::AddSocket(rdmnet_conn_t conn_handle, lwpa_socket_t socket)
+bool MacBrokerSocketManager::AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t socket)
 {
-  lwpa::WriteGuard socket_write(socket_lock_);
+  etcpal::WriteGuard socket_write(socket_lock_);
 
   // Create the data structure for the new socket
   auto new_sock_data = std::make_unique<SocketData>(conn_handle, socket);
@@ -149,7 +149,7 @@ bool MacBrokerSocketManager::AddSocket(rdmnet_conn_t conn_handle, lwpa_socket_t 
 
 void MacBrokerSocketManager::RemoveSocket(rdmnet_conn_t conn_handle)
 {
-  lwpa::ReadGuard socket_write(socket_lock_);
+  etcpal::ReadGuard socket_write(socket_lock_);
 
   auto sock_data = sockets_.find(conn_handle);
   if (sock_data != sockets_.end())
@@ -165,7 +165,7 @@ void MacBrokerSocketManager::RemoveSocket(rdmnet_conn_t conn_handle)
 void MacBrokerSocketManager::WorkerNotifySocketBad(rdmnet_conn_t conn_handle)
 {
   {  // Write lock scope
-    lwpa::WriteGuard socket_write(socket_lock_);
+    etcpal::WriteGuard socket_write(socket_lock_);
 
     auto sock_data = sockets_.find(conn_handle);
     if (sock_data != sockets_.end())
@@ -181,7 +181,7 @@ void MacBrokerSocketManager::WorkerNotifySocketBad(rdmnet_conn_t conn_handle)
 
 void MacBrokerSocketManager::WorkerNotifySocketReadEvent(rdmnet_conn_t conn_handle)
 {
-  lwpa::ReadGuard socket_read(socket_lock_);
+  etcpal::ReadGuard socket_read(socket_lock_);
 
   auto sock_data = sockets_.find(conn_handle);
   if (sock_data != sockets_.end())

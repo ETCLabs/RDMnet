@@ -28,7 +28,7 @@
 #include "rdmnet/core/broker_prot.h"
 
 #include <string.h>
-#include "lwpa/pack.h"
+#include "etcpal/pack.h"
 #include "rdmnet/core/util.h"
 #include "rdmnet/private/connection.h"
 #include "rdmnet/private/broker_prot.h"
@@ -39,17 +39,17 @@
   do                                            \
   {                                             \
     (buf)[0] = 0xf0;                            \
-    LWPA_PDU_PACK_EXT_LEN(buf, length);         \
-    lwpa_pack_16b(&(buf)[3], vector);           \
+    ETCPAL_PDU_PACK_EXT_LEN(buf, length);         \
+    etcpal_pack_16b(&(buf)[3], vector);           \
   } while (0)
 
 #define PACK_CLIENT_ENTRY_HEADER(length, vector, cidptr, buf) \
   do                                                          \
   {                                                           \
     (buf)[0] = 0xf0;                                          \
-    LWPA_PDU_PACK_EXT_LEN(buf, length);                       \
-    lwpa_pack_32b(&(buf)[3], vector);                         \
-    memcpy(&(buf)[7], (cidptr)->data, LWPA_UUID_BYTES);       \
+    ETCPAL_PDU_PACK_EXT_LEN(buf, length);                       \
+    etcpal_pack_32b(&(buf)[3], vector);                         \
+    memcpy(&(buf)[7], (cidptr)->data, ETCPAL_UUID_BYTES);       \
   } while (0)
 
 /*********************** Private function prototypes *************************/
@@ -58,29 +58,29 @@ static size_t calc_client_connect_len(const ClientConnectMsg* data);
 static size_t calc_request_dynamic_uids_len(const DynamicUidRequestListEntry* request_list);
 static size_t calc_requested_uids_len(const FetchUidAssignmentListEntry* uid_list);
 static size_t calc_dynamic_uid_mapping_list_len(const DynamicUidMapping* mapping_list);
-static size_t pack_broker_header_with_rlp(const LwpaRootLayerPdu* rlp, uint8_t* buf, size_t buflen, uint16_t vector);
-static lwpa_error_t send_broker_header(RdmnetConnection* conn, const LwpaRootLayerPdu* rlp, uint8_t* buf, size_t buflen,
+static size_t pack_broker_header_with_rlp(const EtcPalRootLayerPdu* rlp, uint8_t* buf, size_t buflen, uint16_t vector);
+static etcpal_error_t send_broker_header(RdmnetConnection* conn, const EtcPalRootLayerPdu* rlp, uint8_t* buf, size_t buflen,
                                        uint16_t vector);
 
 /*************************** Function definitions ****************************/
 
 /***************************** Broker PDU Header *****************************/
 
-size_t pack_broker_header_with_rlp(const LwpaRootLayerPdu* rlp, uint8_t* buf, size_t buflen, uint16_t vector)
+size_t pack_broker_header_with_rlp(const EtcPalRootLayerPdu* rlp, uint8_t* buf, size_t buflen, uint16_t vector)
 {
   uint8_t* cur_ptr = buf;
-  size_t data_size = lwpa_root_layer_buf_size(rlp, 1);
+  size_t data_size = etcpal_root_layer_buf_size(rlp, 1);
 
   if (data_size == 0)
     return 0;
 
-  data_size = lwpa_pack_tcp_preamble(cur_ptr, buflen, data_size);
+  data_size = etcpal_pack_tcp_preamble(cur_ptr, buflen, data_size);
   if (data_size == 0)
     return 0;
   cur_ptr += data_size;
   buflen -= data_size;
 
-  data_size = lwpa_pack_root_layer_header(cur_ptr, buflen, rlp);
+  data_size = etcpal_pack_root_layer_header(cur_ptr, buflen, rlp);
   if (data_size == 0)
     return 0;
   cur_ptr += data_size;
@@ -91,36 +91,36 @@ size_t pack_broker_header_with_rlp(const LwpaRootLayerPdu* rlp, uint8_t* buf, si
   return (size_t)(cur_ptr - buf);
 }
 
-lwpa_error_t send_broker_header(RdmnetConnection* conn, const LwpaRootLayerPdu* rlp, uint8_t* buf, size_t buflen,
+etcpal_error_t send_broker_header(RdmnetConnection* conn, const EtcPalRootLayerPdu* rlp, uint8_t* buf, size_t buflen,
                                 uint16_t vector)
 {
-  size_t data_size = lwpa_root_layer_buf_size(rlp, 1);
+  size_t data_size = etcpal_root_layer_buf_size(rlp, 1);
   if (data_size == 0)
-    return kLwpaErrProtocol;
+    return kEtcPalErrProtocol;
 
   // Pack and send the TCP preamble.
-  data_size = lwpa_pack_tcp_preamble(buf, buflen, data_size);
+  data_size = etcpal_pack_tcp_preamble(buf, buflen, data_size);
   if (data_size == 0)
-    return kLwpaErrProtocol;
-  int send_res = lwpa_send(conn->sock, buf, data_size, 0);
+    return kEtcPalErrProtocol;
+  int send_res = etcpal_send(conn->sock, buf, data_size, 0);
   if (send_res < 0)
-    return (lwpa_error_t)send_res;
+    return (etcpal_error_t)send_res;
 
   // Pack and send the Root Layer PDU header.
-  data_size = lwpa_pack_root_layer_header(buf, buflen, rlp);
+  data_size = etcpal_pack_root_layer_header(buf, buflen, rlp);
   if (data_size == 0)
-    return kLwpaErrProtocol;
-  send_res = lwpa_send(conn->sock, buf, data_size, 0);
+    return kEtcPalErrProtocol;
+  send_res = etcpal_send(conn->sock, buf, data_size, 0);
   if (send_res < 0)
-    return (lwpa_error_t)send_res;
+    return (etcpal_error_t)send_res;
 
   // Pack and send the Broker PDU header
   PACK_BROKER_HEADER(rlp->datalen, vector, buf);
-  send_res = lwpa_send(conn->sock, buf, BROKER_PDU_HEADER_SIZE, 0);
+  send_res = etcpal_send(conn->sock, buf, BROKER_PDU_HEADER_SIZE, 0);
   if (send_res < 0)
-    return (lwpa_error_t)send_res;
+    return (etcpal_error_t)send_res;
 
-  return kLwpaErrOk;
+  return kEtcPalErrOk;
 }
 
 /******************************* Client Connect ******************************/
@@ -148,56 +148,56 @@ size_t calc_client_connect_len(const ClientConnectMsg* data)
   }
 }
 
-lwpa_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMsg* data)
+etcpal_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMsg* data)
 {
   if (!(is_rpt_client_entry(&data->client_entry) || is_ept_client_entry(&data->client_entry)))
   {
-    return kLwpaErrProtocol;
+    return kEtcPalErrProtocol;
   }
 
   uint8_t buf[CLIENT_CONNECT_COMMON_FIELD_SIZE];
-  LwpaRootLayerPdu rlp;
+  EtcPalRootLayerPdu rlp;
   rlp.sender_cid = conn->local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = calc_client_connect_len(data);
 
-  lwpa_error_t res = send_broker_header(conn, &rlp, buf, CLIENT_CONNECT_COMMON_FIELD_SIZE, VECTOR_BROKER_CONNECT);
-  if (res != kLwpaErrOk)
+  etcpal_error_t res = send_broker_header(conn, &rlp, buf, CLIENT_CONNECT_COMMON_FIELD_SIZE, VECTOR_BROKER_CONNECT);
+  if (res != kEtcPalErrOk)
     return res;
 
   // Pack and send the common fields for the Client Connect message
   uint8_t* cur_ptr = buf;
   rdmnet_safe_strncpy((char*)cur_ptr, data->scope, E133_SCOPE_STRING_PADDED_LENGTH);
   cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
-  lwpa_pack_16b(cur_ptr, data->e133_version);
+  etcpal_pack_16b(cur_ptr, data->e133_version);
   cur_ptr += 2;
   rdmnet_safe_strncpy((char*)cur_ptr, data->search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
   cur_ptr += E133_DOMAIN_STRING_PADDED_LENGTH;
   *cur_ptr++ = data->connect_flags;
-  int send_res = lwpa_send(conn->sock, buf, (size_t)(cur_ptr - buf), 0);
+  int send_res = etcpal_send(conn->sock, buf, (size_t)(cur_ptr - buf), 0);
   if (send_res < 0)
-    return (lwpa_error_t)send_res;
+    return (etcpal_error_t)send_res;
 
   // Pack and send the beginning of the Client Entry PDU
   PACK_CLIENT_ENTRY_HEADER(rlp.datalen - (BROKER_PDU_HEADER_SIZE + CLIENT_CONNECT_COMMON_FIELD_SIZE),
                            data->client_entry.client_protocol, &data->client_entry.client_cid, buf);
-  send_res = lwpa_send(conn->sock, buf, CLIENT_ENTRY_HEADER_SIZE, 0);
+  send_res = etcpal_send(conn->sock, buf, CLIENT_ENTRY_HEADER_SIZE, 0);
 
   if (is_rpt_client_entry(&data->client_entry))
   {
     // Pack and send the RPT client entry
     const ClientEntryDataRpt* rpt_data = get_rpt_client_entry_data(&data->client_entry);
     cur_ptr = buf;
-    lwpa_pack_16b(cur_ptr, rpt_data->client_uid.manu);
+    etcpal_pack_16b(cur_ptr, rpt_data->client_uid.manu);
     cur_ptr += 2;
-    lwpa_pack_32b(cur_ptr, rpt_data->client_uid.id);
+    etcpal_pack_32b(cur_ptr, rpt_data->client_uid.id);
     cur_ptr += 4;
     *cur_ptr++ = rpt_data->client_type;
-    memcpy(cur_ptr, rpt_data->binding_cid.data, LWPA_UUID_BYTES);
-    cur_ptr += LWPA_UUID_BYTES;
-    send_res = lwpa_send(conn->sock, buf, RPT_CLIENT_ENTRY_DATA_SIZE, 0);
+    memcpy(cur_ptr, rpt_data->binding_cid.data, ETCPAL_UUID_BYTES);
+    cur_ptr += ETCPAL_UUID_BYTES;
+    send_res = etcpal_send(conn->sock, buf, RPT_CLIENT_ENTRY_DATA_SIZE, 0);
     if (send_res < 0)
-      return (lwpa_error_t)send_res;
+      return (etcpal_error_t)send_res;
   }
   else  // is EPT client entry
   {
@@ -207,17 +207,17 @@ lwpa_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMsg*
     for (; prot; prot = prot->next)
     {
       cur_ptr = buf;
-      lwpa_pack_32b(cur_ptr, prot->protocol_vector);
+      etcpal_pack_32b(cur_ptr, prot->protocol_vector);
       cur_ptr += 4;
       rdmnet_safe_strncpy((char*)cur_ptr, prot->protocol_string, EPT_PROTOCOL_STRING_PADDED_LENGTH);
       cur_ptr += EPT_PROTOCOL_STRING_PADDED_LENGTH;
-      send_res = lwpa_send(conn->sock, buf, EPT_PROTOCOL_ENTRY_SIZE, 0);
+      send_res = etcpal_send(conn->sock, buf, EPT_PROTOCOL_ENTRY_SIZE, 0);
       if (send_res < 0)
-        return (lwpa_error_t)send_res;
+        return (etcpal_error_t)send_res;
     }
   }
-  lwpa_timer_reset(&conn->send_timer);
-  return kLwpaErrOk;
+  etcpal_timer_reset(&conn->send_timer);
+  return kEtcPalErrOk;
 }
 
 /******************************* Connect Reply *******************************/
@@ -230,12 +230,12 @@ lwpa_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMsg*
  *  \param[in] data Connect Reply data to pack into the data segment.
  *  \return Number of bytes packed, or 0 on error.
  */
-size_t pack_connect_reply(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, const ConnectReplyMsg* data)
+size_t pack_connect_reply(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const ConnectReplyMsg* data)
 {
   if (!buf || buflen < CONNECT_REPLY_FULL_MSG_SIZE || !local_cid || !data)
     return 0;
 
-  LwpaRootLayerPdu rlp;
+  EtcPalRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = BROKER_PDU_HEADER_SIZE + CONNECT_REPLY_DATA_SIZE;
@@ -248,17 +248,17 @@ size_t pack_connect_reply(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid
   cur_ptr += data_size;
 
   /* Pack the Connect Reply data fields */
-  lwpa_pack_16b(cur_ptr, data->connect_status);
+  etcpal_pack_16b(cur_ptr, data->connect_status);
   cur_ptr += 2;
-  lwpa_pack_16b(cur_ptr, data->e133_version);
+  etcpal_pack_16b(cur_ptr, data->e133_version);
   cur_ptr += 2;
-  lwpa_pack_16b(cur_ptr, data->broker_uid.manu);
+  etcpal_pack_16b(cur_ptr, data->broker_uid.manu);
   cur_ptr += 2;
-  lwpa_pack_32b(cur_ptr, data->broker_uid.id);
+  etcpal_pack_32b(cur_ptr, data->broker_uid.id);
   cur_ptr += 4;
-  lwpa_pack_16b(cur_ptr, data->client_uid.manu);
+  etcpal_pack_16b(cur_ptr, data->client_uid.manu);
   cur_ptr += 2;
-  lwpa_pack_32b(cur_ptr, data->client_uid.id);
+  etcpal_pack_32b(cur_ptr, data->client_uid.id);
   cur_ptr += 4;
 
   return (size_t)(cur_ptr - buf);
@@ -268,29 +268,29 @@ size_t pack_connect_reply(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid
  *  \param[in] handle RDMnet connection handle on which to send the Connect Reply message.
  *  \param[in] local_cid CID of the Component sending the Connect Reply message.
  *  \param[in] data Connect Reply data.
- *  \return #kLwpaErrOk: Send success.
- *  \return #kLwpaErrInvalid: Invalid argument provided.
- *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return #kEtcPalErrOk: Send success.
+ *  \return #kEtcPalErrInvalid: Invalid argument provided.
+ *  \return #kEtcPalErrSys: An internal library or system call error occurred.
  *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
-lwpa_error_t send_connect_reply(rdmnet_conn_t handle, const LwpaUuid* local_cid, const ConnectReplyMsg* data)
+etcpal_error_t send_connect_reply(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const ConnectReplyMsg* data)
 {
   if (!local_cid || !data)
-    return kLwpaErrInvalid;
+    return kEtcPalErrInvalid;
 
-  LwpaRootLayerPdu rlp;
+  EtcPalRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = BROKER_PDU_HEADER_SIZE + CONNECT_REPLY_DATA_SIZE;
 
   RdmnetConnection* conn;
-  lwpa_error_t res = rdmnet_start_message(handle, &conn);
-  if (res != kLwpaErrOk)
+  etcpal_error_t res = rdmnet_start_message(handle, &conn);
+  if (res != kEtcPalErrOk)
     return res;
 
   uint8_t buf[ACN_RLP_HEADER_SIZE_EXT_LEN];
   res = send_broker_header(conn, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_CONNECT_REPLY);
-  if (res != kLwpaErrOk)
+  if (res != kEtcPalErrOk)
   {
     rdmnet_end_message(conn);
     return res;
@@ -298,24 +298,24 @@ lwpa_error_t send_connect_reply(rdmnet_conn_t handle, const LwpaUuid* local_cid,
 
   // Pack and send the Connect Reply data fields
   uint8_t* cur_ptr = buf;
-  lwpa_pack_16b(cur_ptr, data->connect_status);
+  etcpal_pack_16b(cur_ptr, data->connect_status);
   cur_ptr += 2;
-  lwpa_pack_16b(cur_ptr, data->e133_version);
+  etcpal_pack_16b(cur_ptr, data->e133_version);
   cur_ptr += 2;
-  lwpa_pack_16b(cur_ptr, data->broker_uid.manu);
+  etcpal_pack_16b(cur_ptr, data->broker_uid.manu);
   cur_ptr += 2;
-  lwpa_pack_32b(cur_ptr, data->broker_uid.id);
+  etcpal_pack_32b(cur_ptr, data->broker_uid.id);
   cur_ptr += 4;
-  lwpa_pack_16b(cur_ptr, data->client_uid.manu);
+  etcpal_pack_16b(cur_ptr, data->client_uid.manu);
   cur_ptr += 2;
-  lwpa_pack_32b(cur_ptr, data->client_uid.id);
+  etcpal_pack_32b(cur_ptr, data->client_uid.id);
   cur_ptr += 4;
 
-  int send_res = lwpa_send(conn->sock, buf, (size_t)(cur_ptr - buf), 0);
+  int send_res = etcpal_send(conn->sock, buf, (size_t)(cur_ptr - buf), 0);
   if (send_res < 0)
   {
     rdmnet_end_message(conn);
-    return (lwpa_error_t)send_res;
+    return (etcpal_error_t)send_res;
   }
 
   return rdmnet_end_message(conn);
@@ -326,29 +326,29 @@ lwpa_error_t send_connect_reply(rdmnet_conn_t handle, const LwpaUuid* local_cid,
 /*! \brief Send a Fetch Client List message on an RDMnet connection.
  *  \param[in] handle RDMnet connection handle on which to send the Fetch Client List message.
  *  \param[in] local_cid CID of the Component sending the Fetch Client List message.
- *  \return #kLwpaErrOk: Send success.
- *  \return #kLwpaErrInvalid: Invalid argument provided.
- *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return #kEtcPalErrOk: Send success.
+ *  \return #kEtcPalErrInvalid: Invalid argument provided.
+ *  \return #kEtcPalErrSys: An internal library or system call error occurred.
  *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
-lwpa_error_t send_fetch_client_list(rdmnet_conn_t handle, const LwpaUuid* local_cid)
+etcpal_error_t send_fetch_client_list(rdmnet_conn_t handle, const EtcPalUuid* local_cid)
 {
   if (!local_cid)
-    return kLwpaErrInvalid;
+    return kEtcPalErrInvalid;
 
-  LwpaRootLayerPdu rlp;
+  EtcPalRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = BROKER_PDU_HEADER_SIZE;
 
   RdmnetConnection* conn;
-  lwpa_error_t res = rdmnet_start_message(handle, &conn);
-  if (res != kLwpaErrOk)
+  etcpal_error_t res = rdmnet_start_message(handle, &conn);
+  if (res != kEtcPalErrOk)
     return res;
 
   uint8_t buf[ACN_RLP_HEADER_SIZE_EXT_LEN];
   res = send_broker_header(conn, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_FETCH_CLIENT_LIST);
-  if (res != kLwpaErrOk)
+  if (res != kEtcPalErrOk)
     return res;
 
   return rdmnet_end_message(conn);
@@ -398,7 +398,7 @@ size_t bufsize_client_list(const ClientEntryData* client_entry_list)
  *  \param[in] client_entry_list Client List to pack into the data segment.
  *  \return Number of bytes packed, or 0 on error.
  */
-size_t pack_client_list(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, uint16_t vector,
+size_t pack_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
                         const ClientEntryData* client_entry_list)
 {
   if (!buf || buflen < BROKER_PDU_FULL_HEADER_SIZE || !local_cid || !client_entry_list ||
@@ -408,7 +408,7 @@ size_t pack_client_list(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, 
     return 0;
   }
 
-  LwpaRootLayerPdu rlp;
+  EtcPalRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = BROKER_PDU_HEADER_SIZE + calc_client_entry_buf_size(client_entry_list);
@@ -430,12 +430,12 @@ size_t pack_client_list(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, 
 
     // Pack the common client entry fields.
     *cur_ptr = 0xf0;
-    LWPA_PDU_PACK_EXT_LEN(cur_ptr, RPT_CLIENT_ENTRY_SIZE);
+    ETCPAL_PDU_PACK_EXT_LEN(cur_ptr, RPT_CLIENT_ENTRY_SIZE);
     cur_ptr += 3;
-    lwpa_pack_32b(cur_ptr, cur_entry->client_protocol);
+    etcpal_pack_32b(cur_ptr, cur_entry->client_protocol);
     cur_ptr += 4;
-    memcpy(cur_ptr, cur_entry->client_cid.data, LWPA_UUID_BYTES);
-    cur_ptr += LWPA_UUID_BYTES;
+    memcpy(cur_ptr, cur_entry->client_cid.data, ETCPAL_UUID_BYTES);
+    cur_ptr += ETCPAL_UUID_BYTES;
 
     if (cur_entry->client_protocol == E133_CLIENT_PROTOCOL_RPT)
     {
@@ -446,13 +446,13 @@ size_t pack_client_list(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, 
         return 0;
 
       // Pack the RPT Client Entry data
-      lwpa_pack_16b(cur_ptr, rpt_data->client_uid.manu);
+      etcpal_pack_16b(cur_ptr, rpt_data->client_uid.manu);
       cur_ptr += 2;
-      lwpa_pack_32b(cur_ptr, rpt_data->client_uid.id);
+      etcpal_pack_32b(cur_ptr, rpt_data->client_uid.id);
       cur_ptr += 4;
       *cur_ptr++ = rpt_data->client_type;
-      memcpy(cur_ptr, rpt_data->binding_cid.data, LWPA_UUID_BYTES);
-      cur_ptr += LWPA_UUID_BYTES;
+      memcpy(cur_ptr, rpt_data->binding_cid.data, ETCPAL_UUID_BYTES);
+      cur_ptr += ETCPAL_UUID_BYTES;
     }
     else
     {
@@ -482,32 +482,32 @@ size_t calc_request_dynamic_uids_len(const DynamicUidRequestListEntry* request_l
  *  \param[in] local_cid CID of the Component sending the Request Dynamic UID Assignment message.
  *  \param[in] request_list List of Dynamic UID Request Pairs, each indicating a request for a
  *                          newly-assigned Dynamic UID.
- *  \return #kLwpaErrOk: Send success.
- *  \return #kLwpaErrInvalid: Invalid argument provided.
- *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return #kEtcPalErrOk: Send success.
+ *  \return #kEtcPalErrInvalid: Invalid argument provided.
+ *  \return #kEtcPalErrSys: An internal library or system call error occurred.
  *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
-lwpa_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const LwpaUuid* local_cid,
+etcpal_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const EtcPalUuid* local_cid,
                                        const DynamicUidRequestListEntry* request_list)
 {
   const DynamicUidRequestListEntry* cur_request;
 
   if (!local_cid || !request_list)
-    return kLwpaErrInvalid;
+    return kEtcPalErrInvalid;
 
-  LwpaRootLayerPdu rlp;
+  EtcPalRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = calc_request_dynamic_uids_len(request_list);
 
   RdmnetConnection* conn;
-  lwpa_error_t res = rdmnet_start_message(handle, &conn);
-  if (res != kLwpaErrOk)
+  etcpal_error_t res = rdmnet_start_message(handle, &conn);
+  if (res != kEtcPalErrOk)
     return res;
 
   uint8_t buf[ACN_RLP_HEADER_SIZE_EXT_LEN];
   res = send_broker_header(conn, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_REQUEST_DYNAMIC_UIDS);
-  if (res != kLwpaErrOk)
+  if (res != kEtcPalErrOk)
   {
     rdmnet_end_message(conn);
     return res;
@@ -517,16 +517,16 @@ lwpa_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const LwpaUuid* loc
   for (cur_request = request_list; cur_request; cur_request = cur_request->next)
   {
     /* Pack the Dynamic UID Request Pair */
-    lwpa_pack_16b(&buf[0], cur_request->manu_id | 0x8000);
-    lwpa_pack_32b(&buf[2], 0);
-    memcpy(&buf[6], cur_request->rid.data, LWPA_UUID_BYTES);
+    etcpal_pack_16b(&buf[0], cur_request->manu_id | 0x8000);
+    etcpal_pack_32b(&buf[2], 0);
+    memcpy(&buf[6], cur_request->rid.data, ETCPAL_UUID_BYTES);
 
     // Send the segment
-    int send_res = lwpa_send(conn->sock, buf, DYNAMIC_UID_REQUEST_PAIR_SIZE, 0);
+    int send_res = etcpal_send(conn->sock, buf, DYNAMIC_UID_REQUEST_PAIR_SIZE, 0);
     if (send_res < 0)
     {
       rdmnet_end_message(conn);
-      return (lwpa_error_t)send_res;
+      return (etcpal_error_t)send_res;
     }
   }
 
@@ -564,7 +564,7 @@ size_t bufsize_dynamic_uid_assignment_list(const DynamicUidMapping* mapping_list
  *  \param[in] mapping_list List of Dynamic UID Mappings to pack into the data segment.
  *  \return Number of bytes packed, or 0 on error.
  */
-size_t pack_dynamic_uid_assignment_list(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid,
+size_t pack_dynamic_uid_assignment_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid,
                                         const DynamicUidMapping* mapping_list)
 {
   if (!buf || buflen < BROKER_PDU_FULL_HEADER_SIZE || !local_cid || !mapping_list)
@@ -572,7 +572,7 @@ size_t pack_dynamic_uid_assignment_list(uint8_t* buf, size_t buflen, const LwpaU
     return 0;
   }
 
-  LwpaRootLayerPdu rlp;
+  EtcPalRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = BROKER_PDU_HEADER_SIZE + calc_dynamic_uid_mapping_list_len(mapping_list);
@@ -593,13 +593,13 @@ size_t pack_dynamic_uid_assignment_list(uint8_t* buf, size_t buflen, const LwpaU
       return 0;
 
     // Pack the Dynamic UID Mapping
-    lwpa_pack_16b(cur_ptr, cur_mapping->uid.manu);
+    etcpal_pack_16b(cur_ptr, cur_mapping->uid.manu);
     cur_ptr += 2;
-    lwpa_pack_32b(cur_ptr, cur_mapping->uid.id);
+    etcpal_pack_32b(cur_ptr, cur_mapping->uid.id);
     cur_ptr += 4;
-    memcpy(cur_ptr, cur_mapping->rid.data, LWPA_UUID_BYTES);
-    cur_ptr += LWPA_UUID_BYTES;
-    lwpa_pack_16b(cur_ptr, (uint16_t)cur_mapping->status_code);
+    memcpy(cur_ptr, cur_mapping->rid.data, ETCPAL_UUID_BYTES);
+    cur_ptr += ETCPAL_UUID_BYTES;
+    etcpal_pack_16b(cur_ptr, (uint16_t)cur_mapping->status_code);
     cur_ptr += 2;
   }
   return (size_t)(cur_ptr - buf);
@@ -618,25 +618,25 @@ static size_t calc_requested_uids_len(const FetchUidAssignmentListEntry* uid_lis
   return res;
 }
 
-lwpa_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const LwpaUuid* local_cid,
+etcpal_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const EtcPalUuid* local_cid,
                                             const FetchUidAssignmentListEntry* uid_list)
 {
   if (!local_cid || !uid_list)
-    return kLwpaErrInvalid;
+    return kEtcPalErrInvalid;
 
-  LwpaRootLayerPdu rlp;
+  EtcPalRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = calc_requested_uids_len(uid_list);
 
   RdmnetConnection* conn;
-  lwpa_error_t res = rdmnet_start_message(handle, &conn);
-  if (res != kLwpaErrOk)
+  etcpal_error_t res = rdmnet_start_message(handle, &conn);
+  if (res != kEtcPalErrOk)
     return res;
 
   uint8_t buf[ACN_RLP_HEADER_SIZE_EXT_LEN];
   res = send_broker_header(conn, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST);
-  if (res != kLwpaErrOk)
+  if (res != kEtcPalErrOk)
   {
     rdmnet_end_message(conn);
     return res;
@@ -646,15 +646,15 @@ lwpa_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const LwpaUuid
   for (const FetchUidAssignmentListEntry* cur_uid = uid_list; cur_uid; cur_uid = cur_uid->next)
   {
     // Pack the Requested UID
-    lwpa_pack_16b(&buf[0], cur_uid->uid.manu);
-    lwpa_pack_32b(&buf[2], cur_uid->uid.id);
+    etcpal_pack_16b(&buf[0], cur_uid->uid.manu);
+    etcpal_pack_32b(&buf[2], cur_uid->uid.id);
 
     // Send the segment
-    int send_res = lwpa_send(conn->sock, buf, 6, 0);
+    int send_res = etcpal_send(conn->sock, buf, 6, 0);
     if (send_res < 0)
     {
       rdmnet_end_message(conn);
-      return (lwpa_error_t)send_res;
+      return (etcpal_error_t)send_res;
     }
   }
 
@@ -663,41 +663,41 @@ lwpa_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const LwpaUuid
 
 /******************************** Disconnect *********************************/
 
-lwpa_error_t send_disconnect(RdmnetConnection* conn, const DisconnectMsg* data)
+etcpal_error_t send_disconnect(RdmnetConnection* conn, const DisconnectMsg* data)
 {
-  LwpaRootLayerPdu rlp;
+  EtcPalRootLayerPdu rlp;
   rlp.sender_cid = conn->local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = BROKER_DISCONNECT_MSG_SIZE;
 
   uint8_t buf[ACN_RLP_HEADER_SIZE_EXT_LEN];
-  lwpa_error_t res = send_broker_header(conn, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_DISCONNECT);
-  if (res != kLwpaErrOk)
+  etcpal_error_t res = send_broker_header(conn, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_DISCONNECT);
+  if (res != kEtcPalErrOk)
     return res;
 
-  lwpa_pack_16b(buf, data->disconnect_reason);
-  int send_res = lwpa_send(conn->sock, buf, 2, 0);
+  etcpal_pack_16b(buf, data->disconnect_reason);
+  int send_res = etcpal_send(conn->sock, buf, 2, 0);
   if (send_res < 0)
-    return (lwpa_error_t)send_res;
+    return (etcpal_error_t)send_res;
 
-  lwpa_timer_reset(&conn->send_timer);
-  return kLwpaErrOk;
+  etcpal_timer_reset(&conn->send_timer);
+  return kEtcPalErrOk;
 }
 
 /*********************************** Null ************************************/
 
-lwpa_error_t send_null(RdmnetConnection* conn)
+etcpal_error_t send_null(RdmnetConnection* conn)
 {
-  LwpaRootLayerPdu rlp;
+  EtcPalRootLayerPdu rlp;
   rlp.sender_cid = conn->local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
   rlp.datalen = BROKER_NULL_MSG_SIZE;
 
   uint8_t buf[ACN_RLP_HEADER_SIZE_EXT_LEN];
-  lwpa_error_t res = send_broker_header(conn, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_NULL);
+  etcpal_error_t res = send_broker_header(conn, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_NULL);
 
-  if (res == kLwpaErrOk)
-    lwpa_timer_reset(&conn->send_timer);
+  if (res == kEtcPalErrOk)
+    etcpal_timer_reset(&conn->send_timer);
 
   return res;
 }

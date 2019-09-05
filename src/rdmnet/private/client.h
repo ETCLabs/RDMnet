@@ -78,7 +78,7 @@ struct RdmnetClient
 {
   rdmnet_client_t handle;
   client_protocol_t type;
-  LwpaUuid cid;
+  EtcPalUuid cid;
   void* callback_context;
   ClientScopeListEntry* scope_list;
   char search_domain[E133_DOMAIN_STRING_PADDED_LENGTH];

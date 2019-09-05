@@ -35,7 +35,7 @@
 #include <avahi-common/malloc.h>
 #include <avahi-common/simple-watch.h>
 
-#include "lwpa/lock.h"
+#include "etcpal/lock.h"
 #include "rdmnet/core/util.h"
 #include "rdmnet/private/core.h"
 #include "rdmnet/private/opts.h"
@@ -53,7 +53,7 @@
 
 typedef struct DiscoveryState
 {
-  lwpa_mutex_t lock;
+  etcpal_mutex_t lock;
 
   RdmnetScopeMonitorRef* scope_ref_list;
   RdmnetBrokerRegisterConfig registered_broker;
@@ -93,12 +93,12 @@ static void notify_scope_monitor_error(rdmnet_scope_monitor_t handle, int platfo
 static void stop_monitoring_all_internal();
 static AvahiStringList* build_txt_record(const RdmnetBrokerDiscInfo* info);
 static int send_registration(const RdmnetBrokerDiscInfo* info, AvahiEntryGroup** entry_group, void* context);
-static void ip_avahi_to_lwpa(const AvahiAddress* avahi_ip, LwpaIpAddr* lwpa_ip);
+static void ip_avahi_to_etcpal(const AvahiAddress* avahi_ip, EtcPalIpAddr* etcpal_ip);
 static bool resolved_instance_matches_us(const RdmnetBrokerDiscInfo* their_info, const RdmnetBrokerDiscInfo* our_info);
 static bool avahi_txt_record_find(AvahiStringList* txt_list, const char* key, char** value, size_t* value_len);
 static void get_full_service_type(const char* scope, char* type_str);
 static bool broker_info_is_valid(const RdmnetBrokerDiscInfo* info);
-static bool ipv6_valid(LwpaIpAddr* ip);
+static bool ipv6_valid(EtcPalIpAddr* ip);
 
 /*************************** Function definitions ****************************/
 
@@ -163,7 +163,7 @@ static void resolve_callback(AvahiServiceResolver* r, AvahiIfIndex interface, Av
   if (event == AVAHI_RESOLVER_FAILURE)
   {
     notify_scope_monitor_error(db->monitor_ref, avahi_client_errno(disc_state.avahi_client));
-    if (lwpa_mutex_take(&disc_state.lock))
+    if (etcpal_mutex_take(&disc_state.lock))
     {
       if (--db->num_outstanding_resolves <= 0 && db->num_successful_resolves == 0)
       {
@@ -171,7 +171,7 @@ static void resolve_callback(AvahiServiceResolver* r, AvahiIfIndex interface, Av
         discovered_broker_remove(&ref->broker_list, db);
         discovered_broker_delete(db);
       }
-      lwpa_mutex_give(&disc_state.lock);
+      etcpal_mutex_give(&disc_state.lock);
     }
   }
   else
@@ -179,7 +179,7 @@ static void resolve_callback(AvahiServiceResolver* r, AvahiIfIndex interface, Av
     bool notify = false;
     RdmnetBrokerDiscInfo notify_info;
 
-    if (lwpa_mutex_take(&disc_state.lock))
+    if (etcpal_mutex_take(&disc_state.lock))
     {
       // Update the broker info we're building
       db->info.port = port;
@@ -198,7 +198,7 @@ static void resolve_callback(AvahiServiceResolver* r, AvahiIfIndex interface, Av
 
       if (avahi_txt_record_find(txt, "CID", &value, &value_len))
       {
-        lwpa_string_to_uuid(&db->info.cid, value, value_len);
+        etcpal_string_to_uuid(&db->info.cid, value, value_len);
         avahi_free(value);
       }
 
@@ -229,11 +229,11 @@ static void resolve_callback(AvahiServiceResolver* r, AvahiIfIndex interface, Av
       }
       else
       {
-        LwpaIpAddr ip_addr;
-        ip_avahi_to_lwpa(address, &ip_addr);
+        EtcPalIpAddr ip_addr;
+        ip_avahi_to_etcpal(address, &ip_addr);
 
-        if ((LWPA_IP_IS_V4(&ip_addr) && LWPA_IP_V4_ADDRESS(&ip_addr) != 0) ||
-            (LWPA_IP_IS_V6(&ip_addr) && ipv6_valid(&ip_addr)))
+        if ((ETCPAL_IP_IS_V4(&ip_addr) && ETCPAL_IP_V4_ADDRESS(&ip_addr) != 0) ||
+            (ETCPAL_IP_IS_V6(&ip_addr) && ipv6_valid(&ip_addr)))
         {
           // Add it to the info structure
           BrokerListenAddr* new_addr = (BrokerListenAddr*)malloc(sizeof(BrokerListenAddr));
@@ -258,7 +258,7 @@ static void resolve_callback(AvahiServiceResolver* r, AvahiIfIndex interface, Av
         --db->num_outstanding_resolves;
         ++db->num_successful_resolves;
       }
-      lwpa_mutex_give(&disc_state.lock);
+      etcpal_mutex_give(&disc_state.lock);
     }
 
     if (notify)
@@ -289,7 +289,7 @@ static void browse_callback(AvahiServiceBrowser* b, AvahiIfIndex interface, Avah
       // We have to take the lock before the DNSServiceResolve call, because we need to add the ref to
       // our map before it responds.
       int resolve_err = 0;
-      if (lwpa_mutex_take(&disc_state.lock))
+      if (etcpal_mutex_take(&disc_state.lock))
       {
         // Track this resolve operation
         DiscoveredBroker* db = discovered_broker_lookup_by_name(ref->broker_list, full_name);
@@ -321,7 +321,7 @@ static void browse_callback(AvahiServiceBrowser* b, AvahiIfIndex interface, Avah
           }
         }
 
-        lwpa_mutex_give(&disc_state.lock);
+        etcpal_mutex_give(&disc_state.lock);
       }
 
       if (resolve_err != 0)
@@ -330,7 +330,7 @@ static void browse_callback(AvahiServiceBrowser* b, AvahiIfIndex interface, Avah
     else
     {
       /*Service removal*/
-      if (lwpa_mutex_take(&disc_state.lock))
+      if (etcpal_mutex_take(&disc_state.lock))
       {
         DiscoveredBroker* db = discovered_broker_lookup_by_name(ref->broker_list, full_name);
         if (db)
@@ -338,7 +338,7 @@ static void browse_callback(AvahiServiceBrowser* b, AvahiIfIndex interface, Avah
           discovered_broker_remove(&ref->broker_list, db);
           discovered_broker_delete(db);
         }
-        lwpa_mutex_give(&disc_state.lock);
+        etcpal_mutex_give(&disc_state.lock);
       }
       notify_broker_lost(ref, name);
     }
@@ -351,7 +351,7 @@ static void client_callback(AvahiClient* c, AvahiClientState state, AVAHI_GCC_UN
   /* Called whenever the client or server state changes */
   if (state == AVAHI_CLIENT_FAILURE)
   {
-    lwpa_log(rdmnet_log_params, LWPA_LOG_ERR, RDMNET_LOG_MSG("Avahi server connection failure: %s"),
+    etcpal_log(rdmnet_log_params, ETCPAL_LOG_ERR, RDMNET_LOG_MSG("Avahi server connection failure: %s"),
              avahi_strerror(avahi_client_errno(c)));
     // avahi_simple_poll_quit(disc_state.avahi_simple_poll);
   }
@@ -361,15 +361,15 @@ static void client_callback(AvahiClient* c, AvahiClientState state, AVAHI_GCC_UN
  * public functions
  ******************************************************************************/
 
-lwpa_error_t rdmnetdisc_init()
+etcpal_error_t rdmnetdisc_init()
 {
-  if (!lwpa_mutex_create(&disc_state.lock))
-    return kLwpaErrSys;
+  if (!etcpal_mutex_create(&disc_state.lock))
+    return kEtcPalErrSys;
 
   if (!(disc_state.avahi_simple_poll = avahi_simple_poll_new()))
   {
-    lwpa_mutex_destroy(&disc_state.lock);
-    return kLwpaErrSys;
+    etcpal_mutex_destroy(&disc_state.lock);
+    return kEtcPalErrSys;
   }
 
   int error;
@@ -377,15 +377,15 @@ lwpa_error_t rdmnetdisc_init()
       avahi_client_new(avahi_simple_poll_get(disc_state.avahi_simple_poll), 0, client_callback, NULL, &error);
   if (!disc_state.avahi_client)
   {
-    lwpa_log(rdmnet_log_params, LWPA_LOG_ERR, RDMNET_LOG_MSG("Failed to create Avahi client instance: %s"),
+    etcpal_log(rdmnet_log_params, ETCPAL_LOG_ERR, RDMNET_LOG_MSG("Failed to create Avahi client instance: %s"),
              avahi_strerror(error));
     avahi_simple_poll_free(disc_state.avahi_simple_poll);
-    lwpa_mutex_destroy(&disc_state.lock);
-    return kLwpaErrSys;
+    etcpal_mutex_destroy(&disc_state.lock);
+    return kEtcPalErrSys;
   }
 
   disc_state.broker_ref.state = kBrokerStateNotRegistered;
-  return kLwpaErrOk;
+  return kEtcPalErrOk;
 }
 
 void rdmnetdisc_deinit()
@@ -403,12 +403,12 @@ void rdmnetdisc_deinit()
     disc_state.avahi_simple_poll = NULL;
   }
 
-  lwpa_mutex_destroy(&disc_state.lock);
+  etcpal_mutex_destroy(&disc_state.lock);
 }
 
 void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo* broker_info)
 {
-  broker_info->cid = kLwpaNullUuid;
+  broker_info->cid = kEtcPalNullUuid;
   rdmnet_safe_strncpy(broker_info->service_name, "RDMnet Broker", E133_SERVICE_NAME_STRING_PADDED_LENGTH);
   broker_info->port = 0;
   broker_info->listen_addr_list = NULL;
@@ -417,17 +417,17 @@ void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo* broker_info)
   memset(broker_info->manufacturer, 0, E133_MANUFACTURER_STRING_PADDED_LENGTH);
 }
 
-lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
+etcpal_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
                                          int* platform_specific_error)
 {
   if (!config || !handle || !platform_specific_error)
-    return kLwpaErrInvalid;
+    return kEtcPalErrInvalid;
   if (!rdmnet_core_initialized())
-    return kLwpaErrNotInit;
+    return kEtcPalErrNotInit;
 
   RdmnetScopeMonitorRef* new_monitor = scope_monitor_new(config);
   if (!new_monitor)
-    return kLwpaErrNoMem;
+    return kEtcPalErrNoMem;
 
   // Start the browse operation in the Bonjour stack.
   char service_str[SERVICE_STR_PADDED_LENGTH];
@@ -435,8 +435,8 @@ lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* config,
 
   // We have to take the lock before the DNSServiceBrowse call, because we need to add the ref to
   // our map before it responds.
-  lwpa_error_t res = kLwpaErrOk;
-  if (lwpa_mutex_take(&disc_state.lock))
+  etcpal_error_t res = kEtcPalErrOk;
+  if (etcpal_mutex_take(&disc_state.lock))
   {
     /* Create the service browser */
     new_monitor->avahi_browser =
@@ -450,24 +450,24 @@ lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* config,
     {
       *platform_specific_error = avahi_client_errno(disc_state.avahi_client);
       scope_monitor_delete(new_monitor);
-      res = kLwpaErrSys;
+      res = kEtcPalErrSys;
     }
-    lwpa_mutex_give(&disc_state.lock);
+    etcpal_mutex_give(&disc_state.lock);
   }
 
-  if (res == kLwpaErrOk)
+  if (res == kEtcPalErrOk)
     *handle = new_monitor;
 
   return res;
 }
 
-lwpa_error_t rdmnetdisc_change_monitored_scope(rdmnet_scope_monitor_t handle,
+etcpal_error_t rdmnetdisc_change_monitored_scope(rdmnet_scope_monitor_t handle,
                                                const RdmnetScopeMonitorConfig* new_config)
 {
   // TODO reevaluate if this is necessary.
   (void)handle;
   (void)new_config;
-  return kLwpaErrNotImpl;
+  return kEtcPalErrNotImpl;
 }
 
 void rdmnetdisc_stop_monitoring(rdmnet_scope_monitor_t handle)
@@ -475,11 +475,11 @@ void rdmnetdisc_stop_monitoring(rdmnet_scope_monitor_t handle)
   if (!handle || !rdmnet_core_initialized())
     return;
 
-  if (lwpa_mutex_take(&disc_state.lock))
+  if (etcpal_mutex_take(&disc_state.lock))
   {
     scope_monitor_remove(handle);
     scope_monitor_delete(handle);
-    lwpa_mutex_give(&disc_state.lock);
+    etcpal_mutex_give(&disc_state.lock);
   }
 }
 
@@ -493,7 +493,7 @@ void rdmnetdisc_stop_monitoring_all()
 
 void stop_monitoring_all_internal()
 {
-  if (lwpa_mutex_take(&disc_state.lock))
+  if (etcpal_mutex_take(&disc_state.lock))
   {
     if (disc_state.scope_ref_list)
     {
@@ -507,19 +507,19 @@ void stop_monitoring_all_internal()
       }
       disc_state.scope_ref_list = NULL;
     }
-    lwpa_mutex_give(&disc_state.lock);
+    etcpal_mutex_give(&disc_state.lock);
   }
 }
 
-lwpa_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config, rdmnet_registered_broker_t* handle)
+etcpal_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config, rdmnet_registered_broker_t* handle)
 {
   if (!config || !handle || disc_state.broker_ref.state != kBrokerStateNotRegistered ||
       !broker_info_is_valid(&config->my_info))
   {
-    return kLwpaErrInvalid;
+    return kEtcPalErrInvalid;
   }
   if (!rdmnet_core_initialized())
-    return kLwpaErrNotInit;
+    return kEtcPalErrNotInit;
 
   RdmnetBrokerRegisterRef* broker_ref = &disc_state.broker_ref;
 
@@ -530,7 +530,7 @@ lwpa_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config
 
   int mon_error;
   rdmnet_scope_monitor_t monitor_handle;
-  if (rdmnetdisc_start_monitoring(&monitor_config, &monitor_handle, &mon_error) == kLwpaErrOk)
+  if (rdmnetdisc_start_monitoring(&monitor_config, &monitor_handle, &mon_error) == kEtcPalErrOk)
   {
     broker_ref->scope_monitor_handle = monitor_handle;
     monitor_handle->broker_handle = broker_ref;
@@ -538,7 +538,7 @@ lwpa_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config
     broker_ref->config = *config;
     broker_ref->state = kBrokerStateQuerying;
     broker_ref->query_timeout_expired = false;
-    lwpa_timer_start(&broker_ref->query_timer, DISCOVERY_QUERY_TIMEOUT);
+    etcpal_timer_start(&broker_ref->query_timer, DISCOVERY_QUERY_TIMEOUT);
   }
   else if (broker_ref->config.callbacks.scope_monitor_error)
   {
@@ -547,7 +547,7 @@ lwpa_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config
   }
 
   *handle = broker_ref;
-  return kLwpaErrOk;
+  return kEtcPalErrOk;
 }
 
 void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle)
@@ -592,8 +592,8 @@ AvahiStringList* build_txt_record(const RdmnetBrokerDiscInfo* info)
   if (txt_list)
   {
     /*The CID can't have hyphens, so we'll strip them.*/
-    char cid_str[LWPA_UUID_STRING_BYTES];
-    lwpa_uuid_to_string(cid_str, &info->cid);
+    char cid_str[ETCPAL_UUID_STRING_BYTES];
+    etcpal_uuid_to_string(cid_str, &info->cid);
     char* src = cid_str;
     for (char* dst = src; *dst != 0; ++src, ++dst)
     {
@@ -673,7 +673,7 @@ void rdmnetdisc_tick()
   {
     case kBrokerStateQuerying:
     {
-      if (!broker_ref->query_timeout_expired && lwpa_timer_is_expired(&broker_ref->query_timer))
+      if (!broker_ref->query_timeout_expired && etcpal_timer_is_expired(&broker_ref->query_timer))
         broker_ref->query_timeout_expired = true;
 
       if (broker_ref->query_timeout_expired && !broker_ref->scope_monitor_handle->broker_list)
@@ -759,19 +759,19 @@ void notify_scope_monitor_error(rdmnet_scope_monitor_t handle, int platform_erro
  * helper functions
  ******************************************************************************/
 
-void ip_avahi_to_lwpa(const AvahiAddress* avahi_ip, LwpaIpAddr* lwpa_ip)
+void ip_avahi_to_etcpal(const AvahiAddress* avahi_ip, EtcPalIpAddr* etcpal_ip)
 {
   if (avahi_ip->proto == AVAHI_PROTO_INET)
   {
-    LWPA_IP_SET_V4_ADDRESS(lwpa_ip, ntohl(avahi_ip->data.ipv4.address));
+    ETCPAL_IP_SET_V4_ADDRESS(etcpal_ip, ntohl(avahi_ip->data.ipv4.address));
   }
   else if (avahi_ip->proto == AVAHI_PROTO_INET6)
   {
-    LWPA_IP_SET_V6_ADDRESS(lwpa_ip, avahi_ip->data.ipv6.address);
+    ETCPAL_IP_SET_V6_ADDRESS(etcpal_ip, avahi_ip->data.ipv6.address);
   }
   else
   {
-    LWPA_IP_SET_INVALID(lwpa_ip);
+    ETCPAL_IP_SET_INVALID(etcpal_ip);
   }
 }
 
@@ -781,7 +781,7 @@ bool resolved_instance_matches_us(const RdmnetBrokerDiscInfo* their_info, const 
 {
   // TODO: host name must also be included in this comparison.
   return ((their_info->port == our_info->port) && (0 == strcmp(their_info->scope, our_info->scope)) &&
-          (0 == LWPA_UUID_CMP(&their_info->cid, &our_info->cid)));
+          (0 == ETCPAL_UUID_CMP(&their_info->cid, &our_info->cid)));
 }
 
 bool avahi_txt_record_find(AvahiStringList* txt_list, const char* key, char** value, size_t* value_len)
@@ -808,15 +808,15 @@ void get_full_service_type(const char* scope, char* reg_str)
 bool broker_info_is_valid(const RdmnetBrokerDiscInfo* info)
 {
   // Make sure none of the broker info's fields are empty
-  return !(LWPA_UUID_IS_NULL(&info->cid) || strlen(info->service_name) == 0 || strlen(info->scope) == 0 ||
+  return !(ETCPAL_UUID_IS_NULL(&info->cid) || strlen(info->service_name) == 0 || strlen(info->scope) == 0 ||
            strlen(info->model) == 0 || strlen(info->manufacturer) == 0);
 }
 
 /* 0000:0000:0000:0000:0000:0000:0000:0001 is a loopback address
  * 0000:0000:0000:0000:0000:0000:0000:0000 is not valid */
-bool ipv6_valid(LwpaIpAddr* ip)
+bool ipv6_valid(EtcPalIpAddr* ip)
 {
-  return (!lwpa_ip_is_loopback(ip) && !lwpa_ip_is_wildcard(ip));
+  return (!etcpal_ip_is_loopback(ip) && !etcpal_ip_is_wildcard(ip));
 }
 
 RdmnetScopeMonitorRef* scope_monitor_new(const RdmnetScopeMonitorConfig* config)

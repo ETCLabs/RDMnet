@@ -59,7 +59,7 @@ RdmnetConnWrapper::RdmnetConnWrapper()
   new_conn_config_.callbacks.msg_received = conncb_msg_received;
 }
 
-lwpa_error_t RdmnetConnWrapper::Startup(const LwpaUuid& cid, const LwpaLogParams* log_params, RdmnetConnNotify* notify)
+etcpal_error_t RdmnetConnWrapper::Startup(const EtcPalUuid& cid, const EtcPalLogParams* log_params, RdmnetConnNotify* notify)
 {
   notify_ = notify;
   new_conn_config_.local_cid = cid;
@@ -71,14 +71,14 @@ void RdmnetConnWrapper::Shutdown()
   rdmnet_core_deinit();
 }
 
-lwpa_error_t RdmnetConnWrapper::CreateNewConnectionForSocket(lwpa_socket_t sock, const LwpaSockaddr& addr,
+etcpal_error_t RdmnetConnWrapper::CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
                                                              rdmnet_conn_t& new_handle)
 {
-  lwpa_error_t create_res = rdmnet_connection_create(&new_conn_config_, &new_handle);
-  if (create_res == kLwpaErrOk)
+  etcpal_error_t create_res = rdmnet_connection_create(&new_conn_config_, &new_handle);
+  if (create_res == kEtcPalErrOk)
   {
     create_res = rdmnet_attach_existing_socket(new_handle, sock, &addr);
-    if (create_res != kLwpaErrOk)
+    if (create_res != kEtcPalErrOk)
     {
       rdmnet_connection_destroy(new_handle, nullptr);
     }
@@ -91,7 +91,7 @@ void RdmnetConnWrapper::DestroyConnection(rdmnet_conn_t handle, SendDisconnect s
   rdmnet_connection_destroy(handle, send_disconnect.valid ? &send_disconnect.reason : nullptr);
 }
 
-lwpa_error_t RdmnetConnWrapper::SetBlocking(rdmnet_conn_t handle, bool blocking)
+etcpal_error_t RdmnetConnWrapper::SetBlocking(rdmnet_conn_t handle, bool blocking)
 {
   return rdmnet_set_blocking(handle, blocking);
 }
@@ -101,7 +101,7 @@ void RdmnetConnWrapper::SocketDataReceived(rdmnet_conn_t handle, const uint8_t* 
   rdmnet_socket_data_received(handle, data, data_size);
 }
 
-void RdmnetConnWrapper::SocketError(rdmnet_conn_t handle, lwpa_error_t err)
+void RdmnetConnWrapper::SocketError(rdmnet_conn_t handle, etcpal_error_t err)
 {
   rdmnet_socket_error(handle, err);
 }

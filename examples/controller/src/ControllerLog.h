@@ -32,7 +32,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
-#include "lwpa/log.h"
+#include "etcpal/log.h"
 
 class LogOutputStream
 {
@@ -48,8 +48,8 @@ public:
   virtual ~ControllerLog();
 
   void Log(int pri, const char* format, ...);
-  bool CanLog(int pri) const { return LWPA_CAN_LOG(&params_, pri); }
-  const LwpaLogParams* GetLogParams() const { return &params_; }
+  bool CanLog(int pri) const { return etcpal_can_log(&params_, pri); }
+  const EtcPalLogParams* GetLogParams() const { return &params_; }
 
   void LogFromCallback(const std::string& str);
 
@@ -61,6 +61,6 @@ public:
 protected:
   std::fstream file_;
   std::string file_name_;
-  LwpaLogParams params_;
+  EtcPalLogParams params_;
   std::vector<LogOutputStream*> customOutputStreams;
 };

@@ -32,7 +32,7 @@
 #include <cstring>
 #include <cstddef>
 
-#include "lwpa/pack.h"
+#include "etcpal/pack.h"
 #include "rdmnet/version.h"
 #include "rdmnet/core/connection.h"
 #include "broker_client.h"
@@ -62,7 +62,7 @@ RDMnet::Broker::~Broker()
 /// \param[in] listen_addrs Addresses of network interfaces for the Broker to listen on.
 /// \return true (started %Broker successfully) or false (an error occurred starting %Broker).
 bool RDMnet::Broker::Startup(const BrokerSettings& settings, uint16_t listen_port,
-                             std::vector<LwpaIpAddr>& listen_addrs)
+                             std::vector<EtcPalIpAddr>& listen_addrs)
 {
   return core_->Startup(settings, listen_port, listen_addrs);
 }
@@ -100,7 +100,7 @@ BrokerCore::BrokerCore(RDMnet::BrokerLog* log, RDMnet::BrokerSocketManager* sock
     , service_thread_(1)
     , disc_(this)
 {
-  lwpa_rwlock_create(&client_lock_);
+  etcpal_rwlock_create(&client_lock_);
 }
 
 BrokerCore::~BrokerCore()
@@ -108,16 +108,16 @@ BrokerCore::~BrokerCore()
   if (started_)
     Shutdown();
 
-  lwpa_rwlock_destroy(&client_lock_);
+  etcpal_rwlock_destroy(&client_lock_);
 }
 
 bool BrokerCore::Startup(const RDMnet::BrokerSettings& settings, uint16_t listen_port,
-                         const std::vector<LwpaIpAddr>& listen_addrs)
+                         const std::vector<EtcPalIpAddr>& listen_addrs)
 {
   if (!started_)
   {
     // Check the settings for validity
-    if (LWPA_UUID_IS_NULL(&settings.cid) ||
+    if (ETCPAL_UUID_IS_NULL(&settings.cid) ||
         (settings.uid_type == RDMnet::BrokerSettings::kStaticUid && !RDMNET_UID_IS_STATIC(&settings.uid)) ||
         (settings.uid_type == RDMnet::BrokerSettings::kDynamicUid && !RDMNET_UID_IS_DYNAMIC(&settings.uid)))
     {
@@ -133,7 +133,7 @@ bool BrokerCore::Startup(const RDMnet::BrokerSettings& settings, uint16_t listen
     }
     settings_ = settings;
 
-    if (kLwpaErrOk != conn_interface_->Startup(settings.cid, log_->GetLogParams(), this))
+    if (kEtcPalErrOk != conn_interface_->Startup(settings.cid, log_->GetLogParams(), this))
     {
       return false;
     }
@@ -160,19 +160,19 @@ bool BrokerCore::Startup(const RDMnet::BrokerSettings& settings, uint16_t listen
 
     disc_.RegisterBroker(settings_.disc_attributes, settings_.cid, listen_addrs_, listen_port_);
 
-    log_->Log(LWPA_LOG_INFO, "%s Prototype RDMnet Broker Version %s", settings.disc_attributes.dns_manufacturer.c_str(),
+    log_->Log(ETCPAL_LOG_INFO, "%s Prototype RDMnet Broker Version %s", settings.disc_attributes.dns_manufacturer.c_str(),
               RDMNET_VERSION_STRING);
-    log_->Log(LWPA_LOG_INFO, "Broker starting at scope \"%s\", listening on port %d.", disc_.scope().c_str(),
+    log_->Log(ETCPAL_LOG_INFO, "Broker starting at scope \"%s\", listening on port %d.", disc_.scope().c_str(),
               listen_port_);
 
     if (!listen_addrs.empty())
     {
-      log_->Log(LWPA_LOG_INFO, "Listening on manually-specified network interfaces:");
+      log_->Log(ETCPAL_LOG_INFO, "Listening on manually-specified network interfaces:");
       for (auto addr : listen_addrs)
       {
-        char addrbuf[LWPA_INET6_ADDRSTRLEN];
-        lwpa_inet_ntop(&addr, addrbuf, LWPA_INET6_ADDRSTRLEN);
-        log_->Log(LWPA_LOG_INFO, "%s", addrbuf);
+        char addrbuf[ETCPAL_INET6_ADDRSTRLEN];
+        etcpal_inet_ntop(&addr, addrbuf, ETCPAL_INET6_ADDRSTRLEN);
+        log_->Log(ETCPAL_LOG_INFO, "%s", addrbuf);
       }
     }
   }
@@ -249,7 +249,7 @@ void BrokerCore::GetConnSnapshot(std::vector<rdmnet_conn_t>& conns, bool include
 {
   conns.clear();
 
-  lwpa::ReadGuard client_read(client_lock_);
+  etcpal::ReadGuard client_read(client_lock_);
 
   if (!clients_.empty())
   {
@@ -274,26 +274,26 @@ void BrokerCore::GetConnSnapshot(std::vector<rdmnet_conn_t>& conns, bool include
   }
 }
 
-bool BrokerCore::NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr& addr)
+bool BrokerCore::NewConnection(etcpal_socket_t new_sock, const EtcPalSockaddr& addr)
 {
-  if (log_->CanLog(LWPA_LOG_INFO))
+  if (log_->CanLog(ETCPAL_LOG_INFO))
   {
-    char addrstr[LWPA_INET6_ADDRSTRLEN];
-    lwpa_inet_ntop(&addr.ip, addrstr, LWPA_INET6_ADDRSTRLEN);
-    log_->Log(LWPA_LOG_INFO, "Creating a new connection for ip addr %s", addrstr);
+    char addrstr[ETCPAL_INET6_ADDRSTRLEN];
+    etcpal_inet_ntop(&addr.ip, addrstr, ETCPAL_INET6_ADDRSTRLEN);
+    log_->Log(ETCPAL_LOG_INFO, "Creating a new connection for ip addr %s", addrstr);
   }
 
   rdmnet_conn_t connhandle = RDMNET_CONN_INVALID;
   bool result = false;
 
   {  // Client write lock scope
-    lwpa::WriteGuard client_write(client_lock_);
+    etcpal::WriteGuard client_write(client_lock_);
 
     if (settings_.max_connections == 0 ||
         (clients_.size() <= settings_.max_connections + settings_.max_reject_connections))
     {
-      lwpa_error_t create_res = conn_interface_->CreateNewConnectionForSocket(new_sock, addr, connhandle);
-      if (create_res == kLwpaErrOk)
+      etcpal_error_t create_res = conn_interface_->CreateNewConnectionForSocket(new_sock, addr, connhandle);
+      if (create_res == kEtcPalErrOk)
       {
         auto client = std::make_shared<BrokerClient>(connhandle);
 
@@ -315,11 +315,11 @@ bool BrokerCore::NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr& addr)
 
   if (result)
   {
-    log_->Log(LWPA_LOG_DEBUG, "New connection created with handle %d", connhandle);
+    log_->Log(ETCPAL_LOG_DEBUG, "New connection created with handle %d", connhandle);
   }
   else
   {
-    log_->Log(LWPA_LOG_ERR, "New connection failed");
+    log_->Log(ETCPAL_LOG_ERR, "New connection failed");
   }
 
   return result;
@@ -332,7 +332,7 @@ void BrokerCore::SocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t* da
 
 void BrokerCore::SocketClosed(rdmnet_conn_t conn_handle, bool graceful)
 {
-  conn_interface_->SocketError(conn_handle, graceful ? kLwpaErrConnClosed : kLwpaErrConnReset);
+  conn_interface_->SocketError(conn_handle, graceful ? kEtcPalErrConnClosed : kEtcPalErrConnReset);
 }
 
 // Process each controller queue, sending out the next message from each queue if devices are
@@ -343,7 +343,7 @@ bool BrokerCore::ServiceClients()
   bool result = false;
   std::vector<int> client_conns;
 
-  lwpa::ReadGuard clients_read(client_lock_);
+  etcpal::ReadGuard clients_read(client_lock_);
 
   for (auto client : clients_)
   {
@@ -368,10 +368,10 @@ void BrokerCore::RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage
           break;
         case VECTOR_BROKER_FETCH_CLIENT_LIST:
           SendClientList(handle);
-          log_->Log(LWPA_LOG_DEBUG, "Received Fetch Client List from Client %d; sending Client List.", handle);
+          log_->Log(ETCPAL_LOG_DEBUG, "Received Fetch Client List from Client %d; sending Client List.", handle);
           break;
         default:
-          log_->Log(LWPA_LOG_ERR, "Received Broker PDU with unknown or unhandled vector %d", bmsg->vector);
+          log_->Log(ETCPAL_LOG_ERR, "Received Broker PDU with unknown or unhandled vector %d", bmsg->vector);
           break;
       }
       break;
@@ -382,7 +382,7 @@ void BrokerCore::RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage
       break;
 
     default:
-      log_->Log(LWPA_LOG_WARNING, "Received Root Layer PDU with unknown or unhandled vector %d", msg.vector);
+      log_->Log(ETCPAL_LOG_WARNING, "Received Root Layer PDU with unknown or unhandled vector %d", msg.vector);
       break;
   }
 }
@@ -397,7 +397,7 @@ void BrokerCore::SendClientList(int conn)
   BrokerMessage bmsg;
   bmsg.vector = VECTOR_BROKER_CONNECTED_CLIENT_LIST;
 
-  lwpa::ReadGuard clients_read(client_lock_);
+  etcpal::ReadGuard clients_read(client_lock_);
   auto to_client = clients_.find(conn);
   if (to_client != clients_.end())
   {
@@ -479,11 +479,11 @@ void BrokerCore::SendStatus(RPTController* controller, const RptHeader& header, 
 
   if (controller->Push(settings_.cid, new_header, status))
   {
-    if (log_->CanLog(LWPA_LOG_INFO))
+    if (log_->CanLog(ETCPAL_LOG_INFO))
     {
-      char cid_str[LWPA_UUID_STRING_BYTES];
-      lwpa_uuid_to_string(cid_str, &controller->cid);
-      log_->Log(LWPA_LOG_WARNING, "Sending RPT Status code %d to Controller %s", status_code, cid_str);
+      char cid_str[ETCPAL_UUID_STRING_BYTES];
+      etcpal_uuid_to_string(cid_str, &controller->cid);
+      log_->Log(ETCPAL_LOG_WARNING, "Sending RPT Status code %d to Controller %s", status_code, cid_str);
     }
   }
   else
@@ -522,7 +522,7 @@ void BrokerCore::ProcessConnectRequest(int conn, const ClientConnectMsg* cmsg)
 
   if (deny_connection)
   {
-    lwpa::ReadGuard client_read(client_lock_);
+    etcpal::ReadGuard client_read(client_lock_);
 
     auto it = clients_.find(conn);
     if (it != clients_.end() && it->second)
@@ -544,13 +544,13 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
   ClientEntryData updated_data = data;
   ClientEntryDataRpt* rptdata = get_rpt_client_entry_data(&updated_data);
 
-  if (kLwpaErrOk != conn_interface_->SetBlocking(handle, false))
+  if (kEtcPalErrOk != conn_interface_->SetBlocking(handle, false))
   {
-    log_->Log(LWPA_LOG_INFO, "Error translating socket into non-blocking socket for Client %d", handle);
+    log_->Log(ETCPAL_LOG_INFO, "Error translating socket into non-blocking socket for Client %d", handle);
     return false;
   }
 
-  lwpa::WriteGuard clients_write(client_lock_);
+  etcpal::WriteGuard clients_write(client_lock_);
   RPTClient* new_client = nullptr;
 
   if ((settings_.max_connections > 0) && (clients_.size() >= settings_.max_connections))
@@ -669,9 +669,9 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
     creply->client_uid = rptdata->client_uid;
     new_client->Push(settings_.cid, msg);
 
-    if (log_->CanLog(LWPA_LOG_INFO))
+    if (log_->CanLog(ETCPAL_LOG_INFO))
     {
-      log_->Log(LWPA_LOG_INFO, "Successfully processed RPT Connect request from %s (connection %d), UID %04x:%08x",
+      log_->Log(ETCPAL_LOG_INFO, "Successfully processed RPT Connect request from %s (connection %d), UID %04x:%08x",
                 new_client->client_type == kRPTClientTypeController ? "Controller" : "Device", handle,
                 new_client->uid.manu, new_client->uid.id);
     }
@@ -687,7 +687,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
 
 void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
 {
-  lwpa::ReadGuard clients_read(client_lock_);
+  etcpal::ReadGuard clients_read(client_lock_);
 
   const RptMessage* rptmsg = get_rpt_msg(msg);
   bool route_msg = false;
@@ -710,7 +710,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
             if (!IsValidControllerDestinationUID(rptmsg->header.dest_uid))
             {
               SendStatus(controller, rptmsg->header, kRptStatusUnknownRptUid);
-              log_->Log(LWPA_LOG_DEBUG,
+              log_->Log(ETCPAL_LOG_DEBUG,
                         "Received Request PDU addressed to invalid or not found UID %04x:%08x from Controller %d",
                         rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
             }
@@ -718,7 +718,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
             {
               // There should only ever be one RDM command in an RPT request.
               SendStatus(controller, rptmsg->header, kRptStatusInvalidMessage);
-              log_->Log(LWPA_LOG_DEBUG,
+              log_->Log(ETCPAL_LOG_DEBUG,
                         "Received Request PDU from Controller %d which incorrectly contains multiple RDM Command PDUs",
                         conn);
             }
@@ -729,7 +729,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
           }
           else
           {
-            log_->Log(LWPA_LOG_DEBUG, "Received Request PDU from Client %d, which is not an RPT Controller", conn);
+            log_->Log(ETCPAL_LOG_DEBUG, "Received Request PDU from Client %d, which is not an RPT Controller", conn);
           }
           break;
 
@@ -741,18 +741,18 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
               if (get_rpt_status_msg(rptmsg)->status_code != kRptStatusBroadcastComplete)
                 route_msg = true;
               else
-                log_->Log(LWPA_LOG_DEBUG, "Device %d sent broadcast complete message.", conn);
+                log_->Log(ETCPAL_LOG_DEBUG, "Device %d sent broadcast complete message.", conn);
             }
             else
             {
-              log_->Log(LWPA_LOG_DEBUG,
+              log_->Log(ETCPAL_LOG_DEBUG,
                         "Received Status PDU addressed to invalid or not found UID %04x:%08x from Device %d",
                         rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
             }
           }
           else
           {
-            log_->Log(LWPA_LOG_DEBUG, "Received Status PDU from Client %d, which is not an RPT Device", conn);
+            log_->Log(ETCPAL_LOG_DEBUG, "Received Status PDU from Client %d, which is not an RPT Device", conn);
           }
           break;
 
@@ -765,20 +765,20 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
             }
             else
             {
-              log_->Log(LWPA_LOG_DEBUG,
+              log_->Log(ETCPAL_LOG_DEBUG,
                         "Received Notification PDU addressed to invalid or not found UID %04x:%08x from Device %d",
                         rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
             }
           }
           else
           {
-            log_->Log(LWPA_LOG_DEBUG, "Received Notification PDU from Client %d of unknown client type",
+            log_->Log(ETCPAL_LOG_DEBUG, "Received Notification PDU from Client %d of unknown client type",
                       rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
           }
           break;
 
         default:
-          log_->Log(LWPA_LOG_WARNING, "Received RPT PDU with unknown vector %d from Client %d", rptmsg->vector, conn);
+          log_->Log(ETCPAL_LOG_WARNING, "Received RPT PDU with unknown vector %d from Client %d", rptmsg->vector, conn);
           break;
       }
     }
@@ -791,7 +791,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
 
     if (RDMNET_UID_IS_CONTROLLER_BROADCAST(&rptmsg->header.dest_uid))
     {
-      log_->Log(LWPA_LOG_DEBUG, "Broadcasting RPT message from Device %04x:%08x to all Controllers",
+      log_->Log(ETCPAL_LOG_DEBUG, "Broadcasting RPT message from Device %04x:%08x to all Controllers",
                 rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id);
       for (auto controller : controllers_)
       {
@@ -799,14 +799,14 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
         if (!controller.second->Push(conn, msg->sender_cid, *rptmsg))
         {
           // TODO disconnect
-          log_->Log(LWPA_LOG_ERR, "Error pushing to send queue for RPT Controller %d. DEBUG:NOT disconnecting...",
+          log_->Log(ETCPAL_LOG_ERR, "Error pushing to send queue for RPT Controller %d. DEBUG:NOT disconnecting...",
                     controller.first);
         }
       }
     }
     else if (RDMNET_UID_IS_DEVICE_BROADCAST(&rptmsg->header.dest_uid))
     {
-      log_->Log(LWPA_LOG_DEBUG, "Broadcasting RPT message from Controller %04x:%08x to all Devices",
+      log_->Log(ETCPAL_LOG_DEBUG, "Broadcasting RPT message from Controller %04x:%08x to all Devices",
                 rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id);
       for (auto device : devices_)
       {
@@ -814,14 +814,14 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
         if (!device.second->Push(conn, msg->sender_cid, *rptmsg))
         {
           // TODO disconnect
-          log_->Log(LWPA_LOG_ERR, "Error pushing to send queue for RPT Device %d. DEBUG:NOT disconnecting...",
+          log_->Log(ETCPAL_LOG_ERR, "Error pushing to send queue for RPT Device %d. DEBUG:NOT disconnecting...",
                     device.first);
         }
       }
     }
     else if (IsDeviceManuBroadcastUID(rptmsg->header.dest_uid, device_manu))
     {
-      log_->Log(LWPA_LOG_DEBUG,
+      log_->Log(ETCPAL_LOG_DEBUG,
                 "Broadcasting RPT message from Controller %04x:%08x to all Devices from manufacturer %04x",
                 rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id, device_manu);
       for (auto device : devices_)
@@ -832,7 +832,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
           if (!device.second->Push(conn, msg->sender_cid, *rptmsg))
           {
             // TODO disconnect
-            log_->Log(LWPA_LOG_ERR, "Error pushing to send queue for RPT Device %d. DEBUG:NOT disconnecting...",
+            log_->Log(ETCPAL_LOG_ERR, "Error pushing to send queue for RPT Device %d. DEBUG:NOT disconnecting...",
                       device.first);
           }
         }
@@ -850,21 +850,21 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
           if (static_cast<RPTClient*>(dest_client->second.get())->Push(conn, msg->sender_cid, *rptmsg))
           {
             found_dest_client = true;
-            log_->Log(LWPA_LOG_DEBUG, "Routing RPT PDU from Client %04x:%08x to Client %04x:%08x",
+            log_->Log(ETCPAL_LOG_DEBUG, "Routing RPT PDU from Client %04x:%08x to Client %04x:%08x",
                       rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id, rptmsg->header.dest_uid.manu,
                       rptmsg->header.dest_uid.id);
           }
           else
           {
             // TODO disconnect
-            log_->Log(LWPA_LOG_ERR, "Error pushing to send queue for RPT Client %d. DEBUG:NOT disconnecting...",
+            log_->Log(ETCPAL_LOG_ERR, "Error pushing to send queue for RPT Client %d. DEBUG:NOT disconnecting...",
                       dest_client->first);
           }
         }
       }
       if (!found_dest_client)
       {
-        log_->Log(LWPA_LOG_ERR,
+        log_->Log(ETCPAL_LOG_ERR,
                   "Could not route message from RPT Client %d (%04x:%08x): Destination UID %04x:%08x not found.", conn,
                   rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id, rptmsg->header.dest_uid.manu,
                   rptmsg->header.dest_uid.id);
@@ -873,80 +873,80 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
   }
 }
 
-lwpa_socket_t BrokerCore::StartListening(const LwpaIpAddr& ip, uint16_t& port)
+etcpal_socket_t BrokerCore::StartListening(const EtcPalIpAddr& ip, uint16_t& port)
 {
-  LwpaSockaddr addr;
+  EtcPalSockaddr addr;
   addr.ip = ip;
   addr.port = port;
 
-  lwpa_socket_t listen_sock;
-  lwpa_error_t err = lwpa_socket(LWPA_IP_IS_V4(&addr.ip) ? LWPA_AF_INET : LWPA_AF_INET6, LWPA_STREAM, &listen_sock);
-  if (err != kLwpaErrOk)
+  etcpal_socket_t listen_sock;
+  etcpal_error_t err = etcpal_socket(ETCPAL_IP_IS_V4(&addr.ip) ? ETCPAL_AF_INET : ETCPAL_AF_INET6, ETCPAL_STREAM, &listen_sock);
+  if (err != kEtcPalErrOk)
   {
     if (log_)
     {
-      log_->Log(LWPA_LOG_WARNING, "Broker: Failed to create listen socket with error: %s.", lwpa_strerror(err));
+      log_->Log(ETCPAL_LOG_WARNING, "Broker: Failed to create listen socket with error: %s.", etcpal_strerror(err));
     }
-    return LWPA_SOCKET_INVALID;
+    return ETCPAL_SOCKET_INVALID;
   }
 
   int sockopt_val = 0;
-  err = lwpa_setsockopt(listen_sock, LWPA_IPPROTO_IPV6, LWPA_IPV6_V6ONLY, &sockopt_val, sizeof(int));
-  if (err != kLwpaErrOk)
+  err = etcpal_setsockopt(listen_sock, ETCPAL_IPPROTO_IPV6, ETCPAL_IPV6_V6ONLY, &sockopt_val, sizeof(int));
+  if (err != kEtcPalErrOk)
   {
-    lwpa_close(listen_sock);
+    etcpal_close(listen_sock);
     if (log_)
     {
-      log_->Log(LWPA_LOG_WARNING, "Broker: Failed to set V6ONLY socket option on listen socket: %s.",
-                lwpa_strerror(err));
+      log_->Log(ETCPAL_LOG_WARNING, "Broker: Failed to set V6ONLY socket option on listen socket: %s.",
+                etcpal_strerror(err));
     }
-    return LWPA_SOCKET_INVALID;
+    return ETCPAL_SOCKET_INVALID;
   }
 
-  err = lwpa_bind(listen_sock, &addr);
-  if (err != kLwpaErrOk)
+  err = etcpal_bind(listen_sock, &addr);
+  if (err != kEtcPalErrOk)
   {
-    lwpa_close(listen_sock);
-    if (log_ && log_->CanLog(LWPA_LOG_WARNING))
+    etcpal_close(listen_sock);
+    if (log_ && log_->CanLog(ETCPAL_LOG_WARNING))
     {
-      char addrstr[LWPA_INET6_ADDRSTRLEN];
-      lwpa_inet_ntop(&addr.ip, addrstr, LWPA_INET6_ADDRSTRLEN);
-      log_->Log(LWPA_LOG_WARNING, "Broker: Bind to %s failed on listen socket with error: %s.", addrstr,
-                lwpa_strerror(err));
+      char addrstr[ETCPAL_INET6_ADDRSTRLEN];
+      etcpal_inet_ntop(&addr.ip, addrstr, ETCPAL_INET6_ADDRSTRLEN);
+      log_->Log(ETCPAL_LOG_WARNING, "Broker: Bind to %s failed on listen socket with error: %s.", addrstr,
+                etcpal_strerror(err));
     }
-    return LWPA_SOCKET_INVALID;
+    return ETCPAL_SOCKET_INVALID;
   }
 
   if (port == 0)
   {
     // Get the ephemeral port number we were assigned and which we will use for all other
     // applicable network interfaces.
-    err = lwpa_getsockname(listen_sock, &addr);
-    if (err == kLwpaErrOk)
+    err = etcpal_getsockname(listen_sock, &addr);
+    if (err == kEtcPalErrOk)
     {
       port = addr.port;
     }
     else
     {
-      lwpa_close(listen_sock);
+      etcpal_close(listen_sock);
       if (log_)
       {
-        log_->Log(LWPA_LOG_WARNING, "Broker: Failed to get ephemeral port assigned to listen socket: %s",
-                  lwpa_strerror(err));
+        log_->Log(ETCPAL_LOG_WARNING, "Broker: Failed to get ephemeral port assigned to listen socket: %s",
+                  etcpal_strerror(err));
       }
-      return LWPA_SOCKET_INVALID;
+      return ETCPAL_SOCKET_INVALID;
     }
   }
 
-  err = lwpa_listen(listen_sock, 0);
-  if (err != kLwpaErrOk)
+  err = etcpal_listen(listen_sock, 0);
+  if (err != kEtcPalErrOk)
   {
-    lwpa_close(listen_sock);
+    etcpal_close(listen_sock);
     if (log_)
     {
-      log_->Log(LWPA_LOG_WARNING, "Broker: Listen failed on listen socket with error: %s.", lwpa_strerror(err));
+      log_->Log(ETCPAL_LOG_WARNING, "Broker: Listen failed on listen socket with error: %s.", etcpal_strerror(err));
     }
-    return LWPA_SOCKET_INVALID;
+    return ETCPAL_SOCKET_INVALID;
   }
   return listen_sock;
 }
@@ -958,11 +958,11 @@ bool BrokerCore::StartBrokerServices()
   if (listen_addrs_.empty())
   {
     // Listen on in6addr_any
-    LwpaIpAddr any_addr;
-    lwpa_ip_set_wildcard(kLwpaIpTypeV6, &any_addr);
+    EtcPalIpAddr any_addr;
+    etcpal_ip_set_wildcard(kEtcPalIpTypeV6, &any_addr);
 
-    lwpa_socket_t listen_sock = StartListening(any_addr, listen_port_);
-    if (listen_sock != LWPA_SOCKET_INVALID)
+    etcpal_socket_t listen_sock = StartListening(any_addr, listen_port_);
+    if (listen_sock != ETCPAL_SOCKET_INVALID)
     {
       auto p = std::make_unique<ListenThread>(listen_sock, this, log_);
       listeners_.push_back(std::move(p));
@@ -978,8 +978,8 @@ bool BrokerCore::StartBrokerServices()
     auto addr_iter = listen_addrs_.begin();
     while (addr_iter != listen_addrs_.end())
     {
-      lwpa_socket_t listen_sock = StartListening(*addr_iter, listen_port_);
-      if (listen_sock != LWPA_SOCKET_INVALID)
+      etcpal_socket_t listen_sock = StartListening(*addr_iter, listen_port_);
+      if (listen_sock != ETCPAL_SOCKET_INVALID)
       {
         auto p = std::make_unique<ListenThread>(listen_sock, this, log_);
         listeners_.push_back(std::move(p));
@@ -1029,7 +1029,7 @@ void BrokerCore::MarkConnForDestruction(rdmnet_conn_t conn, SendDisconnect send_
   bool found = false;
 
   {  // Client read lock and destroy lock scope
-    lwpa::ReadGuard clients_read(client_lock_);
+    etcpal::ReadGuard clients_read(client_lock_);
 
     auto client = clients_.find(conn);
     if ((client != clients_.end()) && client->second)
@@ -1043,14 +1043,14 @@ void BrokerCore::MarkConnForDestruction(rdmnet_conn_t conn, SendDisconnect send_
   if (found)
   {
     conn_interface_->DestroyConnection(conn, send_disconnect);
-    log_->Log(LWPA_LOG_DEBUG, "Connection %d marked for destruction", conn);
+    log_->Log(ETCPAL_LOG_DEBUG, "Connection %d marked for destruction", conn);
   }
 }
 
 // These functions will take a write lock on client_lock_ and client_destroy_lock_.
 void BrokerCore::DestroyMarkedClientSockets()
 {
-  lwpa::WriteGuard clients_write(client_lock_);
+  etcpal::WriteGuard clients_write(client_lock_);
   std::vector<ClientEntryData> entries;
 
   if (!clients_to_destroy_.empty())
@@ -1084,8 +1084,8 @@ void BrokerCore::DestroyMarkedClientSockets()
           entries[entries.size() - 2].next = &entries[entries.size() - 1];
         clients_.erase(client);
 
-        log_->Log(LWPA_LOG_INFO, "Removing connection %d marked for destruction.", to_destroy);
-        log_->Log(LWPA_LOG_DEBUG, "Clients: %zu Controllers: %zu Devices: %zu", clients_.size(), controllers_.size(),
+        log_->Log(ETCPAL_LOG_INFO, "Removing connection %d marked for destruction.", to_destroy);
+        log_->Log(ETCPAL_LOG_DEBUG, "Clients: %zu Controllers: %zu Devices: %zu", clients_.size(), controllers_.size(),
                   devices_.size());
       }
     }
@@ -1099,26 +1099,26 @@ void BrokerCore::DestroyMarkedClientSockets()
 void BrokerCore::BrokerRegistered(const std::string& assigned_service_name)
 {
   service_registered_ = true;
-  log_->Log(LWPA_LOG_INFO, "Broker \"%s\" (now named \"%s\") successfully registered at scope \"%s\"",
+  log_->Log(ETCPAL_LOG_INFO, "Broker \"%s\" (now named \"%s\") successfully registered at scope \"%s\"",
             disc_.requested_service_name().c_str(), assigned_service_name.c_str(), disc_.scope().c_str());
 }
 
 void BrokerCore::BrokerRegisterError(int platform_specific_error)
 {
-  log_->Log(LWPA_LOG_ERR, "Broker \"%s\" register error %d at scope \"%s\"", disc_.requested_service_name().c_str(),
+  log_->Log(ETCPAL_LOG_ERR, "Broker \"%s\" register error %d at scope \"%s\"", disc_.requested_service_name().c_str(),
             platform_specific_error, disc_.scope().c_str());
 }
 
 void BrokerCore::OtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
 {
-  if (log_->CanLog(LWPA_LOG_WARNING))
+  if (log_->CanLog(ETCPAL_LOG_WARNING))
   {
     std::string addrs;
     for (const BrokerListenAddr* listen_addr = broker_info.listen_addr_list; listen_addr;
          listen_addr = listen_addr->next)
     {
-      char addr_string[LWPA_INET6_ADDRSTRLEN];
-      if (kLwpaErrOk == lwpa_inet_ntop(&listen_addr->addr, addr_string, LWPA_INET6_ADDRSTRLEN))
+      char addr_string[ETCPAL_INET6_ADDRSTRLEN];
+      if (kEtcPalErrOk == etcpal_inet_ntop(&listen_addr->addr, addr_string, ETCPAL_INET6_ADDRSTRLEN))
       {
         addrs.append(addr_string);
         if (listen_addr->next)
@@ -1126,12 +1126,12 @@ void BrokerCore::OtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
       }
     }
 
-    log_->Log(LWPA_LOG_WARNING, "Broker \"%s\", ip[%s] found at same scope(\"%s\") as this broker.",
+    log_->Log(ETCPAL_LOG_WARNING, "Broker \"%s\", ip[%s] found at same scope(\"%s\") as this broker.",
               broker_info.service_name, addrs.c_str(), broker_info.scope);
   }
   if (!service_registered_)
   {
-    log_->Log(LWPA_LOG_WARNING,
+    log_->Log(ETCPAL_LOG_WARNING,
               "This broker will remain unregistered with DNS-SD until all conflicting brokers are removed.");
     // StopBrokerServices();
   }
@@ -1139,5 +1139,5 @@ void BrokerCore::OtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
 
 void BrokerCore::OtherBrokerLost(const std::string& service_name)
 {
-  log_->Log(LWPA_LOG_WARNING, "Conflicting broker %s no longer discovered.", service_name.c_str());
+  log_->Log(ETCPAL_LOG_WARNING, "Conflicting broker %s no longer discovered.", service_name.c_str());
 }

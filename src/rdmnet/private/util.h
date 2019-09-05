@@ -33,7 +33,7 @@
 #ifndef _RDMNET_PRIVATE_UTIL_H_
 #define _RDMNET_PRIVATE_UTIL_H_
 
-#include "lwpa/bool.h"
+#include "etcpal/bool.h"
 
 typedef bool (*HandleValueInUseFunction)(int handle_val);
 

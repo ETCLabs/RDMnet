@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "lwpa/thread.h"
+#include "etcpal/thread.h"
 #include "rdmnet/core.h"
 #include "rdmnet/core/discovery.h"
 #include "rdmnet/core/util.h"
@@ -40,8 +40,8 @@ void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDis
   printf("Service Name: %s\n", broker_info->service_name);
   for (BrokerListenAddr* listen_addr = broker_info->listen_addr_list; listen_addr; listen_addr = listen_addr->next)
   {
-    char addr_str[LWPA_INET6_ADDRSTRLEN];
-    lwpa_inet_ntop(&listen_addr->addr, addr_str, LWPA_INET6_ADDRSTRLEN);
+    char addr_str[ETCPAL_INET6_ADDRSTRLEN];
+    etcpal_inet_ntop(&listen_addr->addr, addr_str, ETCPAL_INET6_ADDRSTRLEN);
     printf("Address: %s:%d\n", addr_str, broker_info->port);
   }
 }
@@ -122,7 +122,7 @@ int main(int argc, char* argv[])
     RdmnetBrokerRegisterConfig config;
 
     rdmnetdisc_fill_default_broker_info(&config.my_info);
-    lwpa_generate_v4_uuid(&config.my_info.cid);
+    etcpal_generate_v4_uuid(&config.my_info.cid);
     rdmnet_safe_strncpy(config.my_info.service_name, "UNIQUE NAME", E133_SERVICE_NAME_STRING_PADDED_LENGTH);
     rdmnet_safe_strncpy(config.my_info.model, "Broker prototype", E133_MODEL_STRING_PADDED_LENGTH);
     rdmnet_safe_strncpy(config.my_info.manufacturer, "ETC", E133_MANUFACTURER_STRING_PADDED_LENGTH);
@@ -131,7 +131,7 @@ int main(int argc, char* argv[])
     config.callback_context = NULL;
 
     rdmnet_registered_broker_t handle;
-    if (kLwpaErrOk == rdmnetdisc_register_broker(&config, &handle))
+    if (kEtcPalErrOk == rdmnetdisc_register_broker(&config, &handle))
     {
       printf("RDMnet Broker registration started; assigned handle %p\n", handle);
       printf("  Service Name: %s\n", config.my_info.service_name);
@@ -155,7 +155,7 @@ int main(int argc, char* argv[])
     // start discovery
     rdmnet_scope_monitor_t handle;
     int platform_specific_error;
-    if (kLwpaErrOk == rdmnetdisc_start_monitoring(&config, &handle, &platform_specific_error))
+    if (kEtcPalErrOk == rdmnetdisc_start_monitoring(&config, &handle, &platform_specific_error))
     {
       printf("Monitoring of scope %s started.\n", config.scope);
     }
@@ -167,7 +167,7 @@ int main(int argc, char* argv[])
 
   while (true)
   {
-    lwpa_thread_sleep(500);
+    etcpal_thread_sleep(500);
   }
 
   rdmnet_core_deinit();

@@ -7,7 +7,7 @@ add_executable(${BROKER_TARGET}
   src/broker_shell.cpp
 )
 
-set_target_properties(${BROKER_TARGET} PROPERTIES CXX_STANDARD 14)
+set_target_properties(${BROKER_TARGET} PROPERTIES CXX_STANDARD 14 FOLDER examples)
 target_include_directories(${BROKER_TARGET} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src)
 target_link_libraries(${BROKER_TARGET} PRIVATE Broker)
 if(WIN32)

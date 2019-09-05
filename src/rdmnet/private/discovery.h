@@ -34,7 +34,7 @@
 extern "C" {
 #endif
 
-lwpa_error_t rdmnetdisc_init();
+etcpal_error_t rdmnetdisc_init();
 void rdmnetdisc_deinit();
 
 #ifdef __cplusplus

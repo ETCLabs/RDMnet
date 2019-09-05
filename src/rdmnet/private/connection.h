@@ -32,12 +32,12 @@
 #ifndef _RDMNET_PRIVATE_CONNECTION_H_
 #define _RDMNET_PRIVATE_CONNECTION_H_
 
-#include "lwpa/bool.h"
-#include "lwpa/int.h"
-#include "lwpa/lock.h"
-#include "lwpa/timer.h"
-#include "lwpa/inet.h"
-#include "lwpa/socket.h"
+#include "etcpal/bool.h"
+#include "etcpal/int.h"
+#include "etcpal/lock.h"
+#include "etcpal/timer.h"
+#include "etcpal/inet.h"
+#include "etcpal/socket.h"
 #include "rdmnet/core/connection.h"
 #include "rdmnet/private/opts.h"
 #include "rdmnet/private/core.h"
@@ -61,11 +61,11 @@ struct RdmnetConnection
   // Because of the way the comparisons are optimized, the handle MUST always be the first member
   // of the struct.
   rdmnet_conn_t handle;
-  LwpaUuid local_cid;
+  EtcPalUuid local_cid;
 
   // Underlying socket connection
-  lwpa_socket_t sock;
-  LwpaSockaddr remote_addr;
+  etcpal_socket_t sock;
+  EtcPalSockaddr remote_addr;
   bool external_socket_attached;
   bool is_blocking;
   PolledSocketInfo poll_info;
@@ -73,16 +73,16 @@ struct RdmnetConnection
   // Connection state
   conn_state_t state;
   ClientConnectMsg conn_data;
-  LwpaTimer send_timer;
-  LwpaTimer hb_timer;
-  LwpaTimer backoff_timer;
+  EtcPalTimer send_timer;
+  EtcPalTimer hb_timer;
+  EtcPalTimer backoff_timer;
   bool rdmnet_conn_failed;
 
   // Send and receive tracking
   RdmnetMsgBuf recv_buf;
 
   // Synchronization
-  lwpa_mutex_t lock;
+  etcpal_mutex_t lock;
 
   // Callbacks
   RdmnetConnCallbacks callbacks;
@@ -141,11 +141,11 @@ typedef struct ConnCallbackDispatchInfo
 extern "C" {
 #endif
 
-lwpa_error_t rdmnet_conn_init();
+etcpal_error_t rdmnet_conn_init();
 void rdmnet_conn_deinit();
 
-lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle, RdmnetConnection** conn_out);
-lwpa_error_t rdmnet_end_message(RdmnetConnection* conn);
+etcpal_error_t rdmnet_start_message(rdmnet_conn_t handle, RdmnetConnection** conn_out);
+etcpal_error_t rdmnet_end_message(RdmnetConnection* conn);
 
 void rdmnet_conn_tick();
 

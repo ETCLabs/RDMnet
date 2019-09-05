@@ -29,7 +29,7 @@
 #include <algorithm>
 #include <iterator>
 #include <cassert>
-#include "lwpa/pack.h"
+#include "etcpal/pack.h"
 #include "rdm/defs.h"
 #include "rdmnet/defs.h"
 #include "ControllerUtils.h"
@@ -118,7 +118,7 @@ bool ControllerDefaultResponder::GetDeviceLabel(const uint8_t* /*param_data*/, u
                                                 std::vector<RdmParamData>& resp_data_list,
                                                 uint16_t& /*nack_reason*/) const
 {
-  lwpa::ReadGuard prop_read(prop_lock_);
+  etcpal::ReadGuard prop_read(prop_lock_);
 
   size_t label_len = std::min(device_label_.length(), kRdmDeviceLabelMaxLength);
   RdmParamData resp_data;
@@ -134,7 +134,7 @@ bool ControllerDefaultResponder::GetComponentScope(const uint8_t* param_data, ui
 {
   if (param_data_len >= 2)
   {
-    return GetComponentScope(lwpa_upack_16b(param_data), resp_data_list, nack_reason);
+    return GetComponentScope(etcpal_upack_16b(param_data), resp_data_list, nack_reason);
   }
   else
   {
@@ -148,7 +148,7 @@ bool ControllerDefaultResponder::GetComponentScope(uint16_t slot, std::vector<Rd
 {
   if (slot != 0)
   {
-    lwpa::ReadGuard prop_read(prop_lock_);
+    etcpal::ReadGuard prop_read(prop_lock_);
 
     if (slot - 1u < scopes_.size())
     {
@@ -163,7 +163,7 @@ bool ControllerDefaultResponder::GetComponentScope(uint16_t slot, std::vector<Rd
 
         // Scope slot
         uint8_t* cur_ptr = resp_data.data;
-        lwpa_pack_16b(cur_ptr, slot);
+        etcpal_pack_16b(cur_ptr, slot);
         cur_ptr += 2;
 
         // Scope string
@@ -175,25 +175,25 @@ bool ControllerDefaultResponder::GetComponentScope(uint16_t slot, std::vector<Rd
         // Static configuration
         if (scopeIter->second.static_broker.valid)
         {
-          const LwpaSockaddr& saddr = scopeIter->second.static_broker.addr;
-          if (LWPA_IP_IS_V4(&saddr.ip))
+          const EtcPalSockaddr& saddr = scopeIter->second.static_broker.addr;
+          if (ETCPAL_IP_IS_V4(&saddr.ip))
           {
             *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
-            lwpa_pack_32b(cur_ptr, LWPA_IP_V4_ADDRESS(&saddr.ip));
+            etcpal_pack_32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&saddr.ip));
             cur_ptr += 4;
             // Skip the IPv6 field
             cur_ptr += 16;
-            lwpa_pack_16b(cur_ptr, saddr.port);
+            etcpal_pack_16b(cur_ptr, saddr.port);
             cur_ptr += 2;
           }
-          else if (LWPA_IP_IS_V6(&saddr.ip))
+          else if (ETCPAL_IP_IS_V6(&saddr.ip))
           {
             *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
             // Skip the IPv4 field
             cur_ptr += 4;
-            memcpy(cur_ptr, LWPA_IP_V6_ADDRESS(&saddr.ip), LWPA_IPV6_BYTES);
-            cur_ptr += LWPA_IPV6_BYTES;
-            lwpa_pack_16b(cur_ptr, saddr.port);
+            memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&saddr.ip), ETCPAL_IPV6_BYTES);
+            cur_ptr += ETCPAL_IPV6_BYTES;
+            etcpal_pack_16b(cur_ptr, saddr.port);
             cur_ptr += 2;
           }
         }
@@ -228,7 +228,7 @@ bool ControllerDefaultResponder::GetSearchDomain(const uint8_t* /*param_data*/, 
                                                  std::vector<RdmParamData>& resp_data_list,
                                                  uint16_t& /*nack_reason*/) const
 {
-  lwpa::ReadGuard prop_read(prop_lock_);
+  etcpal::ReadGuard prop_read(prop_lock_);
 
   RdmParamData resp_data;
   strncpy((char*)resp_data.data, search_domain_.c_str(), E133_DOMAIN_STRING_PADDED_LENGTH);
@@ -241,7 +241,7 @@ bool ControllerDefaultResponder::GetTCPCommsStatus(const uint8_t* /*param_data*/
                                                    std::vector<RdmParamData>& resp_data_list,
                                                    uint16_t& /*nack_reason*/) const
 {
-  lwpa::ReadGuard prop_read(prop_lock_);
+  etcpal::ReadGuard prop_read(prop_lock_);
 
   for (const auto& scope_pair : scopes_)
   {
@@ -256,33 +256,33 @@ bool ControllerDefaultResponder::GetTCPCommsStatus(const uint8_t* /*param_data*/
     const ControllerScopeData& scope_data = scope_pair.second;
     if (!scope_data.connected)
     {
-      lwpa_pack_32b(cur_ptr, 0);
+      etcpal_pack_32b(cur_ptr, 0);
       cur_ptr += 4;
-      memset(cur_ptr, 0, LWPA_IPV6_BYTES);
-      cur_ptr += LWPA_IPV6_BYTES;
-      lwpa_pack_16b(cur_ptr, 0);
+      memset(cur_ptr, 0, ETCPAL_IPV6_BYTES);
+      cur_ptr += ETCPAL_IPV6_BYTES;
+      etcpal_pack_16b(cur_ptr, 0);
       cur_ptr += 2;
     }
     else
     {
-      if (LWPA_IP_IS_V4(&scope_data.current_broker.ip))
+      if (ETCPAL_IP_IS_V4(&scope_data.current_broker.ip))
       {
-        lwpa_pack_32b(cur_ptr, LWPA_IP_V4_ADDRESS(&scope_data.current_broker.ip));
+        etcpal_pack_32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&scope_data.current_broker.ip));
         cur_ptr += 4;
-        memset(cur_ptr, 0, LWPA_IPV6_BYTES);
-        cur_ptr += LWPA_IPV6_BYTES;
+        memset(cur_ptr, 0, ETCPAL_IPV6_BYTES);
+        cur_ptr += ETCPAL_IPV6_BYTES;
       }
       else  // IPv6
       {
-        lwpa_pack_32b(cur_ptr, 0);
+        etcpal_pack_32b(cur_ptr, 0);
         cur_ptr += 4;
-        memcpy(cur_ptr, LWPA_IP_V6_ADDRESS(&scope_data.current_broker.ip), LWPA_IPV6_BYTES);
-        cur_ptr += LWPA_IPV6_BYTES;
+        memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&scope_data.current_broker.ip), ETCPAL_IPV6_BYTES);
+        cur_ptr += ETCPAL_IPV6_BYTES;
       }
-      lwpa_pack_16b(cur_ptr, scope_data.current_broker.port);
+      etcpal_pack_16b(cur_ptr, scope_data.current_broker.port);
       cur_ptr += 2;
     }
-    lwpa_pack_16b(cur_ptr, scope_data.unhealthy_tcp_events);
+    etcpal_pack_16b(cur_ptr, scope_data.unhealthy_tcp_events);
     cur_ptr += 2;
     resp_data.datalen = (uint8_t)(cur_ptr - resp_data.data);
     resp_data_list.push_back(resp_data);
@@ -299,7 +299,7 @@ bool ControllerDefaultResponder::GetSupportedParameters(const uint8_t* /*param_d
 
   for (uint16_t param : supported_parameters_)
   {
-    lwpa_pack_16b(cur_ptr, param);
+    etcpal_pack_16b(cur_ptr, param);
     cur_ptr += 2;
     if ((cur_ptr - resp_data.data) >= RDM_MAX_PDL - 1)
     {
@@ -359,27 +359,27 @@ bool ControllerDefaultResponder::GetSoftwareVersionLabel(const uint8_t* /*param_
 
 void ControllerDefaultResponder::UpdateSearchDomain(const std::string& new_search_domain)
 {
-  lwpa::WriteGuard prop_write(prop_lock_);
+  etcpal::WriteGuard prop_write(prop_lock_);
   search_domain_ = new_search_domain;
 }
 
 void ControllerDefaultResponder::AddScope(const std::string& new_scope, StaticBrokerConfig static_broker)
 {
-  lwpa::WriteGuard prop_write(prop_lock_);
+  etcpal::WriteGuard prop_write(prop_lock_);
 
   scopes_.insert(std::make_pair(new_scope, ControllerScopeData(static_broker)));
 }
 
 void ControllerDefaultResponder::RemoveScope(const std::string& scope_to_remove)
 {
-  lwpa::WriteGuard prop_write(prop_lock_);
+  etcpal::WriteGuard prop_write(prop_lock_);
   scopes_.erase(scope_to_remove);
 }
 
 void ControllerDefaultResponder::UpdateScopeConnectionStatus(const std::string& scope, bool connected,
-                                                             const LwpaSockaddr& broker_addr)
+                                                             const EtcPalSockaddr& broker_addr)
 {
-  lwpa::WriteGuard prop_write(prop_lock_);
+  etcpal::WriteGuard prop_write(prop_lock_);
   auto scope_entry = scopes_.find(scope);
   if (scope_entry != scopes_.end())
   {
@@ -391,7 +391,7 @@ void ControllerDefaultResponder::UpdateScopeConnectionStatus(const std::string& 
 
 void ControllerDefaultResponder::IncrementTcpUnhealthyCounter(const std::string& scope)
 {
-  lwpa::WriteGuard prop_write(prop_lock_);
+  etcpal::WriteGuard prop_write(prop_lock_);
   auto scope_entry = scopes_.find(scope);
   if (scope_entry != scopes_.end())
   {
@@ -401,7 +401,7 @@ void ControllerDefaultResponder::IncrementTcpUnhealthyCounter(const std::string&
 
 void ControllerDefaultResponder::ResetTcpUnhealthyCounter(const std::string& scope)
 {
-  lwpa::WriteGuard prop_write(prop_lock_);
+  etcpal::WriteGuard prop_write(prop_lock_);
   auto scope_entry = scopes_.find(scope);
   if (scope_entry != scopes_.end())
   {

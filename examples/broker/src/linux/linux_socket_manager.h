@@ -36,7 +36,7 @@
 #include <memory>
 #include <pthread.h>
 
-#include "lwpa/lock.h"
+#include "etcpal/lock.h"
 #include "rdmnet/broker/socket_manager.h"
 
 // Wrapper around Linux thread functions to increase the testability of this module.
@@ -67,7 +67,7 @@
 // The set of data allocated per-socket.
 struct SocketData
 {
-  SocketData(rdmnet_conn_t conn_handle_in, lwpa_socket_t socket_in) : conn_handle(conn_handle_in), socket(socket_in) {}
+  SocketData(rdmnet_conn_t conn_handle_in, etcpal_socket_t socket_in) : conn_handle(conn_handle_in), socket(socket_in) {}
 
   rdmnet_conn_t conn_handle{RDMNET_CONN_INVALID};
   int socket{-1};
@@ -78,7 +78,7 @@ struct SocketData
 
 // A class to manage RDMnet Broker sockets on Linux.
 // This handles receiving data on all RDMnet client connections, using epoll for maximum
-// performance. Sending on connections is done in the core Broker library through the lwpa
+// performance. Sending on connections is done in the core Broker library through the EtcPal
 // interface. Other miscellaneous Broker socket operations like LLRP are also handled in the core
 // library.
 class LinuxBrokerSocketManager : public RDMnet::BrokerSocketManager
@@ -87,14 +87,14 @@ public:
   LinuxBrokerSocketManager(/* LinuxThreadInterface* thread_interface = new DefaultLinuxThreads */)
   //: thread_interface_(thread_interface)
   {
-    lwpa_rwlock_create(&socket_lock_);
+    etcpal_rwlock_create(&socket_lock_);
   }
-  virtual ~LinuxBrokerSocketManager() { lwpa_rwlock_destroy(&socket_lock_); }
+  virtual ~LinuxBrokerSocketManager() { etcpal_rwlock_destroy(&socket_lock_); }
 
   // RDMnet::BrokerSocketManager interface
   bool Startup(RDMnet::BrokerSocketManagerNotify* notify) override;
   bool Shutdown() override;
-  bool AddSocket(rdmnet_conn_t conn_handle, lwpa_socket_t socket) override;
+  bool AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t socket) override;
   void RemoveSocket(rdmnet_conn_t conn_handle) override;
 
   // Callback functions called from worker threads
@@ -113,7 +113,7 @@ private:
 
   // The set of sockets being managed.
   std::map<rdmnet_conn_t, std::unique_ptr<SocketData>> sockets_;
-  lwpa_rwlock_t socket_lock_;
+  etcpal_rwlock_t socket_lock_;
 
   // The callback instance
   RDMnet::BrokerSocketManagerNotify* notify_{nullptr};

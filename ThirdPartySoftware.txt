@@ -4,13 +4,13 @@ RDMnet incorporates components of the following third-party software, under the
 respective terms of the license of each third-party software component.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-lwpa (https://github.com/ETCLabs/lwpa)
+EtcPal (https://github.com/ETCLabs/EtcPal)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-RDMnet depends on the lwpa library, which is maintained by ETC but in turn
+RDMnet depends on the EtcPal library, which is maintained by ETC but in turn
 incorporates components of third-party software. A listing of the third-party
-software incorporated by the lwpa library can be found at
-https://github.com/ETCLabs/lwpa/raw/master/ThirdPartySoftware.txt.
+software incorporated by the EtcPal library can be found at
+https://github.com/ETCLabs/EtcPal/raw/master/ThirdPartySoftware.txt.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 RDM (https://github.com/ETCLabs/RDM)

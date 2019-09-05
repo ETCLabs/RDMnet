@@ -96,7 +96,7 @@ bool LinuxBrokerSocketManager::Shutdown()
   shutting_down_ = true;
 
   {  // Read lock scope
-    lwpa::ReadGuard socket_read(socket_lock_);
+    etcpal::ReadGuard socket_read(socket_lock_);
     for (auto& sock_data : sockets_)
     {
       // Close each socket. Doesn't affect the epoll operation.
@@ -111,16 +111,16 @@ bool LinuxBrokerSocketManager::Shutdown()
   pthread_join(thread_handle_, NULL);
 
   {  // Write lock scope
-    lwpa::WriteGuard socket_write(socket_lock_);
+    etcpal::WriteGuard socket_write(socket_lock_);
     sockets_.clear();
   }
 
   return true;
 }
 
-bool LinuxBrokerSocketManager::AddSocket(rdmnet_conn_t conn_handle, lwpa_socket_t socket)
+bool LinuxBrokerSocketManager::AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t socket)
 {
-  lwpa::WriteGuard socket_write(socket_lock_);
+  etcpal::WriteGuard socket_write(socket_lock_);
 
   // Create the data structure for the new socket
   auto new_sock_data = std::make_unique<SocketData>(conn_handle, socket);
@@ -149,7 +149,7 @@ bool LinuxBrokerSocketManager::AddSocket(rdmnet_conn_t conn_handle, lwpa_socket_
 
 void LinuxBrokerSocketManager::RemoveSocket(rdmnet_conn_t conn_handle)
 {
-  lwpa::ReadGuard socket_write(socket_lock_);
+  etcpal::ReadGuard socket_write(socket_lock_);
 
   auto sock_data = sockets_.find(conn_handle);
   if (sock_data != sockets_.end())
@@ -164,7 +164,7 @@ void LinuxBrokerSocketManager::RemoveSocket(rdmnet_conn_t conn_handle)
 void LinuxBrokerSocketManager::WorkerNotifySocketBad(rdmnet_conn_t conn_handle)
 {
   {  // Write lock scope
-    lwpa::WriteGuard socket_write(socket_lock_);
+    etcpal::WriteGuard socket_write(socket_lock_);
 
     auto sock_data = sockets_.find(conn_handle);
     if (sock_data != sockets_.end())
@@ -180,7 +180,7 @@ void LinuxBrokerSocketManager::WorkerNotifySocketBad(rdmnet_conn_t conn_handle)
 
 void LinuxBrokerSocketManager::WorkerNotifySocketReadEvent(rdmnet_conn_t conn_handle)
 {
-  lwpa::ReadGuard socket_read(socket_lock_);
+  etcpal::ReadGuard socket_read(socket_lock_);
 
   auto sock_data = sockets_.find(conn_handle);
   if (sock_data != sockets_.end())

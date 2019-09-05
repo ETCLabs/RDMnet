@@ -32,8 +32,8 @@
 #ifndef _RDMNET_CORE_LLRP_MANAGER_H_
 #define _RDMNET_CORE_LLRP_MANAGER_H_
 
-#include "lwpa/uuid.h"
-#include "lwpa/inet.h"
+#include "etcpal/uuid.h"
+#include "etcpal/inet.h"
 #include "rdm/message.h"
 #include "rdmnet/core/llrp.h"
 
@@ -48,7 +48,7 @@
 typedef struct LlrpLocalRdmCommand
 {
   /*! The CID of the LLRP Target to which this command is addressed. */
-  LwpaUuid dest_cid;
+  EtcPalUuid dest_cid;
   /*! The RDM command. */
   RdmCommand rdm;
 } LlrpLocalRdmCommand;
@@ -57,7 +57,7 @@ typedef struct LlrpLocalRdmCommand
 typedef struct LlrpRemoteRdmResponse
 {
   /*! The CID of the LLRP Target from which this command was received. */
-  LwpaUuid src_cid;
+  EtcPalUuid src_cid;
   /*! The sequence number of this response (to be associated with a previously-sent command). */
   uint32_t seq_num;
   /*! The RDM response. */
@@ -74,7 +74,7 @@ typedef struct LlrpManagerCallbacks
 typedef struct LlrpManagerConfig
 {
   LlrpNetintId netint;
-  LwpaUuid cid;
+  EtcPalUuid cid;
   uint16_t manu_id;
   LlrpManagerCallbacks callbacks;
   void* callback_context;
@@ -84,13 +84,13 @@ typedef struct LlrpManagerConfig
 extern "C" {
 #endif
 
-lwpa_error_t rdmnet_llrp_manager_create(const LlrpManagerConfig* config, llrp_manager_t* handle);
+etcpal_error_t rdmnet_llrp_manager_create(const LlrpManagerConfig* config, llrp_manager_t* handle);
 void rdmnet_llrp_manager_destroy(llrp_manager_t handle);
 
-lwpa_error_t rdmnet_llrp_start_discovery(llrp_manager_t handle, uint16_t filter);
-lwpa_error_t rdmnet_llrp_stop_discovery(llrp_manager_t handle);
+etcpal_error_t rdmnet_llrp_start_discovery(llrp_manager_t handle, uint16_t filter);
+etcpal_error_t rdmnet_llrp_stop_discovery(llrp_manager_t handle);
 
-lwpa_error_t rdmnet_llrp_send_rdm_command(llrp_manager_t handle, const LlrpLocalRdmCommand* cmd,
+etcpal_error_t rdmnet_llrp_send_rdm_command(llrp_manager_t handle, const LlrpLocalRdmCommand* cmd,
                                           uint32_t* transaction_num);
 
 #ifdef __cplusplus

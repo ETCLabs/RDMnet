@@ -31,13 +31,13 @@
 /**************************** Private variables ******************************/
 
 #if !RDMNET_DYNAMIC_MEM
-LWPA_MEMPOOL_DEFINE(client_entries, ClientEntryData, RDMNET_MAX_CLIENT_ENTRIES);
-LWPA_MEMPOOL_DEFINE(ept_subprots, EptSubProtocol, RDMNET_MAX_EPT_SUBPROTS);
-LWPA_MEMPOOL_DEFINE(dynamic_uid_request_entries, DynamicUidRequestListEntry, RDM_MAX_DYNAMIC_UID_ENTRIES);
-LWPA_MEMPOOL_DEFINE(dynamic_uid_mappings, DynamicUidMapping, RDMNET_MAX_DYNAMIC_UID_ENTRIES);
-LWPA_MEMPOOL_DEFINE(fetch_uid_assignment_entries, FetchUidAssignmentListEntry, RDMNET_MAX_DYNAMIC_UID_ENTRIES);
-LWPA_MEMPOOL_DEFINE(rdm_commands, RdmBufListEntry, RDMNET_MAX_RDM_COMMANDS);
-LWPA_MEMPOOL_DEFINE_ARRAY(rpt_status_strings, char, RPT_STATUS_STRING_MAXLEN + 1, 1);
+ETCPAL_MEMPOOL_DEFINE(client_entries, ClientEntryData, RDMNET_MAX_CLIENT_ENTRIES);
+ETCPAL_MEMPOOL_DEFINE(ept_subprots, EptSubProtocol, RDMNET_MAX_EPT_SUBPROTS);
+ETCPAL_MEMPOOL_DEFINE(dynamic_uid_request_entries, DynamicUidRequestListEntry, RDM_MAX_DYNAMIC_UID_ENTRIES);
+ETCPAL_MEMPOOL_DEFINE(dynamic_uid_mappings, DynamicUidMapping, RDMNET_MAX_DYNAMIC_UID_ENTRIES);
+ETCPAL_MEMPOOL_DEFINE(fetch_uid_assignment_entries, FetchUidAssignmentListEntry, RDMNET_MAX_DYNAMIC_UID_ENTRIES);
+ETCPAL_MEMPOOL_DEFINE(rdm_commands, RdmBufListEntry, RDMNET_MAX_RDM_COMMANDS);
+ETCPAL_MEMPOOL_DEFINE_ARRAY(rpt_status_strings, char, RPT_STATUS_STRING_MAXLEN + 1, 1);
 #endif
 
 /*********************** Private function prototypes *************************/
@@ -47,17 +47,17 @@ static void free_rpt_message(RptMessage* rmsg);
 
 /*************************** Function definitions ****************************/
 
-lwpa_error_t rdmnet_message_init()
+etcpal_error_t rdmnet_message_init()
 {
-  lwpa_error_t res = kLwpaErrOk;
+  etcpal_error_t res = kEtcPalErrOk;
 #if !RDMNET_DYNAMIC_MEM
-  res |= lwpa_mempool_init(client_entries);
-  res |= lwpa_mempool_init(ept_subprots);
-  res |= lwpa_mempool_init(dynamic_uid_request_entries);
-  res |= lwpa_mempool_init(dynamic_uid_mappings);
-  res |= lwpa_mempool_init(fetch_uid_assignment_entries);
-  res |= lwpa_mempool_init(rdm_commands);
-  res |= lwpa_mempool_init(rpt_status_strings);
+  res |= etcpal_mempool_init(client_entries);
+  res |= etcpal_mempool_init(ept_subprots);
+  res |= etcpal_mempool_init(dynamic_uid_request_entries);
+  res |= etcpal_mempool_init(dynamic_uid_mappings);
+  res |= etcpal_mempool_init(fetch_uid_assignment_entries);
+  res |= etcpal_mempool_init(rdm_commands);
+  res |= etcpal_mempool_init(rpt_status_strings);
 #endif
   return res;
 }

@@ -13,7 +13,6 @@ else()
 endif()
 
 if(PROJECT_SOURCE_DIR_LC STREQUAL CMAKE_SOURCE_DIR_LC)
-  set(OPTION_DEFAULTS ON)
   if (MSVC)
     add_compile_options(/W4)
   elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -24,6 +23,11 @@ if(PROJECT_SOURCE_DIR_LC STREQUAL CMAKE_SOURCE_DIR_LC)
       add_compile_options(-Wno-sign-compare)
     endif()
   endif()
+
+  # Allow folder grouping in generated IDE projects
+  set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+  set(OPTION_DEFAULTS ON)
 else()
   set(OPTION_DEFAULTS OFF)
 endif()

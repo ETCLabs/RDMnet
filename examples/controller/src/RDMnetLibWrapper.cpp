@@ -98,7 +98,7 @@ RDMnetLibWrapper::RDMnetLibWrapper(ControllerLog* log) : log_(log)
 {
 }
 
-bool RDMnetLibWrapper::Startup(const LwpaUuid& cid, RDMnetLibNotify* notify)
+bool RDMnetLibWrapper::Startup(const EtcPalUuid& cid, RDMnetLibNotify* notify)
 {
   if (!running_)
   {
@@ -106,11 +106,11 @@ bool RDMnetLibWrapper::Startup(const LwpaUuid& cid, RDMnetLibNotify* notify)
     notify_ = notify;
 
     // Initialize the RDMnet controller library
-    lwpa_error_t res = rdmnet_controller_init(log_ ? log_->GetLogParams() : nullptr);
-    if (res != kLwpaErrOk)
+    etcpal_error_t res = rdmnet_controller_init(log_ ? log_->GetLogParams() : nullptr);
+    if (res != kEtcPalErrOk)
     {
       if (log_)
-        log_->Log(LWPA_LOG_ERR, "Error initializing RDMnet core library: '%s'", lwpa_strerror(res));
+        log_->Log(ETCPAL_LOG_ERR, "Error initializing RDMnet core library: '%s'", etcpal_strerror(res));
       return false;
     }
 
@@ -133,10 +133,10 @@ bool RDMnetLibWrapper::Startup(const LwpaUuid& cid, RDMnetLibNotify* notify)
     config.callback_context = static_cast<RDMnetLibNotifyInternal*>(this);
 
     res = rdmnet_controller_create(&config, &controller_handle_);
-    if (res != kLwpaErrOk)
+    if (res != kEtcPalErrOk)
     {
       if (log_)
-        log_->Log(LWPA_LOG_ERR, "Error creating an RDMnet Controller handle: '%s'", lwpa_strerror(res));
+        log_->Log(ETCPAL_LOG_ERR, "Error creating an RDMnet Controller handle: '%s'", etcpal_strerror(res));
       rdmnet_controller_deinit();
       return false;
     }
@@ -154,7 +154,7 @@ void RDMnetLibWrapper::Shutdown()
     rdmnet_controller_deinit();
     running_ = false;
     notify_ = nullptr;
-    my_cid_ = kLwpaNullUuid;
+    my_cid_ = kEtcPalNullUuid;
     log_ = nullptr;
   }
 }
@@ -178,61 +178,61 @@ rdmnet_client_scope_t RDMnetLibWrapper::AddScope(const std::string& scope, Stati
   }
 
   rdmnet_client_scope_t new_scope_handle;
-  lwpa_error_t res = rdmnet_controller_add_scope(controller_handle_, &config, &new_scope_handle);
-  if (res == kLwpaErrOk)
+  etcpal_error_t res = rdmnet_controller_add_scope(controller_handle_, &config, &new_scope_handle);
+  if (res == kEtcPalErrOk)
   {
     if (log_)
-      log_->Log(LWPA_LOG_INFO, "RDMnet scope '%s' added with handle %d.", scope.c_str(), new_scope_handle);
+      log_->Log(ETCPAL_LOG_INFO, "RDMnet scope '%s' added with handle %d.", scope.c_str(), new_scope_handle);
     return new_scope_handle;
   }
   else
   {
     if (log_)
-      log_->Log(LWPA_LOG_ERR, "Error adding new RDMnet scope '%s': '%s'", scope.c_str(), lwpa_strerror(res));
+      log_->Log(ETCPAL_LOG_ERR, "Error adding new RDMnet scope '%s': '%s'", scope.c_str(), etcpal_strerror(res));
     return RDMNET_CLIENT_SCOPE_INVALID;
   }
 }
 
 bool RDMnetLibWrapper::RemoveScope(rdmnet_client_scope_t scope_handle, rdmnet_disconnect_reason_t reason)
 {
-  lwpa_error_t res = rdmnet_controller_remove_scope(controller_handle_, scope_handle, reason);
-  if (res == kLwpaErrOk)
+  etcpal_error_t res = rdmnet_controller_remove_scope(controller_handle_, scope_handle, reason);
+  if (res == kEtcPalErrOk)
   {
     if (log_)
-      log_->Log(LWPA_LOG_INFO, "RDMnet scope with handle %d removed.", scope_handle);
+      log_->Log(ETCPAL_LOG_INFO, "RDMnet scope with handle %d removed.", scope_handle);
     return true;
   }
   else
   {
     if (log_)
-      log_->Log(LWPA_LOG_ERR, "Error removing RDMnet scope with handle %d: '%s'", scope_handle, lwpa_strerror(res));
+      log_->Log(ETCPAL_LOG_ERR, "Error removing RDMnet scope with handle %d: '%s'", scope_handle, etcpal_strerror(res));
     return false;
   }
 }
 
 bool RDMnetLibWrapper::SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand& cmd)
 {
-  return (kLwpaErrOk == rdmnet_controller_send_rdm_command(controller_handle_, scope_handle, &cmd, nullptr));
+  return (kEtcPalErrOk == rdmnet_controller_send_rdm_command(controller_handle_, scope_handle, &cmd, nullptr));
 }
 
 bool RDMnetLibWrapper::SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand& cmd, uint32_t& seq_num)
 {
-  return (kLwpaErrOk == rdmnet_controller_send_rdm_command(controller_handle_, scope_handle, &cmd, &seq_num));
+  return (kEtcPalErrOk == rdmnet_controller_send_rdm_command(controller_handle_, scope_handle, &cmd, &seq_num));
 }
 
 bool RDMnetLibWrapper::SendRdmResponse(rdmnet_client_scope_t scope_handle, const LocalRdmResponse& resp)
 {
-  return (kLwpaErrOk == rdmnet_controller_send_rdm_response(controller_handle_, scope_handle, &resp));
+  return (kEtcPalErrOk == rdmnet_controller_send_rdm_response(controller_handle_, scope_handle, &resp));
 }
 
 bool RDMnetLibWrapper::SendLlrpResponse(const LlrpLocalRdmResponse& resp)
 {
-  return (kLwpaErrOk == rdmnet_controller_send_llrp_response(controller_handle_, &resp));
+  return (kEtcPalErrOk == rdmnet_controller_send_llrp_response(controller_handle_, &resp));
 }
 
 bool RDMnetLibWrapper::RequestClientList(rdmnet_client_scope_t scope_handle)
 {
-  return (kLwpaErrOk == rdmnet_controller_request_client_list(controller_handle_, scope_handle));
+  return (kEtcPalErrOk == rdmnet_controller_request_client_list(controller_handle_, scope_handle));
 }
 
 void RDMnetLibWrapper::Connected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,

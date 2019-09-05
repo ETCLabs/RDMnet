@@ -32,20 +32,20 @@
 #include <Windows.h>
 #include <WS2tcpip.h>
 
-#include "lwpa/log.h"
-#include "lwpa/uuid.h"
+#include "etcpal/log.h"
+#include "etcpal/uuid.h"
 #include "manager.h"
 
 static int s_utc_offset;
 
 extern "C" {
-static void manager_log_callback(void *context, const LwpaLogStrings *strings)
+static void manager_log_callback(void *context, const EtcPalLogStrings *strings)
 {
   (void)context;
   std::cout << strings->human_readable << "\n";
 }
 
-static void manager_time_callback(void *context, LwpaLogTimeParams *time)
+static void manager_time_callback(void *context, EtcPalLogTimeParams *time)
 {
   SYSTEMTIME win_time;
   (void)context;
@@ -82,11 +82,11 @@ std::string ConsoleInputToUtf8(const std::wstring &input)
 
 int wmain(int /*argc*/, wchar_t * /*argv*/ [])
 {
-  LwpaUuid manager_cid;
+  EtcPalUuid manager_cid;
 
   UUID uuid;
   UuidCreate(&uuid);
-  memcpy(manager_cid.data, &uuid, LWPA_UUID_BYTES);
+  memcpy(manager_cid.data, &uuid, ETCPAL_UUID_BYTES);
 
   TIME_ZONE_INFORMATION tzinfo;
   switch(GetTimeZoneInformation(&tzinfo))
@@ -102,13 +102,13 @@ int wmain(int /*argc*/, wchar_t * /*argv*/ [])
       break;
   }
 
-  LwpaLogParams params;
-  params.action = kLwpaLogCreateHumanReadableLog;
+  EtcPalLogParams params;
+  params.action = kEtcPalLogCreateHumanReadableLog;
   params.log_fn = manager_log_callback;
-  params.log_mask = LWPA_LOG_UPTO(LWPA_LOG_INFO);
+  params.log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_INFO);
   params.time_fn = manager_time_callback;
   params.context = nullptr;
-  lwpa_validate_log_params(&params);
+  etcpal_validate_log_params(&params);
 
   LLRPManager mgr(manager_cid, &params);
   printf("Discovered network interfaces:\n");

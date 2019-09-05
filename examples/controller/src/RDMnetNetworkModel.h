@@ -30,7 +30,7 @@
 #include <map>
 #include <vector>
 #include <cstddef>
-#include "lwpa/lock.h"
+#include "etcpal/lock.h"
 #include "BrokerItem.h"
 #include "SearchingStatusItem.h"
 #include "PropertyValueItem.h"
@@ -67,12 +67,12 @@ signals:
 private:
   ControllerLog* log_{nullptr};
   RDMnetLibInterface* rdmnet_{nullptr};
-  LwpaUuid my_cid_;
+  EtcPalUuid my_cid_;
 
   ControllerDefaultResponder default_responder_;
 
   std::map<rdmnet_client_scope_t, BrokerItem*> broker_connections_;
-  lwpa_rwlock_t conn_lock_;
+  etcpal_rwlock_t conn_lock_;
 
   // Keeps track of scope updates of other controllers
   std::map<RdmUid, uint16_t> previous_slot_;
@@ -80,7 +80,7 @@ private:
 public slots:
   void addScopeToMonitor(QString scope);
   void directChildrenRevealed(const QModelIndex& parentIndex);
-  void addBrokerByIP(QString scope, const LwpaSockaddr& addr);
+  void addBrokerByIP(QString scope, const EtcPalSockaddr& addr);
   void addCustomLogOutputStream(LogOutputStream* stream);
   void removeCustomLogOutputStream(LogOutputStream* stream);
 
@@ -222,7 +222,7 @@ protected:
   void sendGetNextControllerScope(rdmnet_client_scope_t scope_handle, uint16_t manuID, uint32_t deviceID,
                                   uint16_t currentSlot);
   void sendGetCommand(BrokerItem* brokerItem, uint16_t pid, const RdmUid& dest_uid);
-  uint8_t* packIPAddressItem(const QVariant& value, lwpa_iptype_t addrType, uint8_t* packPtr, bool packPort = true);
+  uint8_t* packIPAddressItem(const QVariant& value, etcpal_iptype_t addrType, uint8_t* packPtr, bool packPort = true);
 
   // PID handling
   bool pidSupportedByGUI(uint16_t pid, bool checkSupportGet);

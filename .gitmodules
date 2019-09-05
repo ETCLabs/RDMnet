@@ -1,6 +1,6 @@
-[submodule "external/lwpa"]
-	path = external/lwpa
-	url = ../../ETCLabs/lwpa
 [submodule "external/RDM"]
 	path = external/RDM
 	url = ../../ETCLabs/RDM
+[submodule "external/EtcPal"]
+	path = external/EtcPal
+	url = https://github.com/ETCLabs/EtcPal

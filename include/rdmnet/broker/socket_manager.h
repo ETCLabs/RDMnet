@@ -29,7 +29,7 @@
 #ifndef _RDMNET_BROKER_SOCKET_MANAGER_H_
 #define _RDMNET_BROKER_SOCKET_MANAGER_H_
 
-#include "lwpa/socket.h"
+#include "etcpal/socket.h"
 #include "rdmnet/core/connection.h"
 
 namespace RDMnet
@@ -64,7 +64,7 @@ public:
   virtual bool Startup(BrokerSocketManagerNotify* notify) = 0;
   virtual bool Shutdown() = 0;
 
-  virtual bool AddSocket(rdmnet_conn_t conn_handle, lwpa_socket_t sock) = 0;
+  virtual bool AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t sock) = 0;
   virtual void RemoveSocket(rdmnet_conn_t conn_handle) = 0;
 };
 

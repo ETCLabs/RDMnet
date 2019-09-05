@@ -32,8 +32,8 @@
 #ifndef _RDMNET_DEVICE_H_
 #define _RDMNET_DEVICE_H_
 
-#include "lwpa/bool.h"
-#include "lwpa/uuid.h"
+#include "etcpal/bool.h"
+#include "etcpal/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/client.h"
 
@@ -68,7 +68,7 @@ typedef struct RdmnetDeviceCallbacks
 typedef struct RdmnetDeviceConfig
 {
   /*! The device's CID. */
-  LwpaUuid cid;
+  EtcPalUuid cid;
   /*! The device's configured RDMnet scope. */
   RdmnetScopeConfig scope_config;
   /*! A set of callbacks for the device to receive RDMnet notifications. */
@@ -98,19 +98,19 @@ typedef struct RdmnetDeviceConfig
  */
 #define RDMNET_DEVICE_CONFIG_INIT(devicecfgptr, manu_id) RPT_CLIENT_CONFIG_INIT(devicecfgptr, manu_id)
 
-lwpa_error_t rdmnet_device_init(const LwpaLogParams* lparams);
+etcpal_error_t rdmnet_device_init(const EtcPalLogParams* lparams);
 void rdmnet_device_deinit();
 
-lwpa_error_t rdmnet_device_create(const RdmnetDeviceConfig* config, rdmnet_device_t* handle);
-lwpa_error_t rdmnet_device_destroy(rdmnet_device_t handle);
+etcpal_error_t rdmnet_device_create(const RdmnetDeviceConfig* config, rdmnet_device_t* handle);
+etcpal_error_t rdmnet_device_destroy(rdmnet_device_t handle);
 
-lwpa_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const LocalRdmResponse* resp);
-lwpa_error_t rdmnet_device_send_status(rdmnet_device_t handle, const LocalRptStatus* status);
-lwpa_error_t rdmnet_device_send_llrp_response(rdmnet_device_t handle, const LlrpLocalRdmResponse* resp);
+etcpal_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const LocalRdmResponse* resp);
+etcpal_error_t rdmnet_device_send_status(rdmnet_device_t handle, const LocalRptStatus* status);
+etcpal_error_t rdmnet_device_send_llrp_response(rdmnet_device_t handle, const LlrpLocalRdmResponse* resp);
 
-lwpa_error_t rdmnet_device_change_scope(rdmnet_device_t handle, const RdmnetScopeConfig* new_scope_config,
+etcpal_error_t rdmnet_device_change_scope(rdmnet_device_t handle, const RdmnetScopeConfig* new_scope_config,
                                         rdmnet_disconnect_reason_t reason);
-lwpa_error_t rdmnet_device_change_search_domain(rdmnet_device_t handle, const char* new_search_domain,
+etcpal_error_t rdmnet_device_change_search_domain(rdmnet_device_t handle, const char* new_search_domain,
                                                 rdmnet_disconnect_reason_t reason);
 
 /*! @} */

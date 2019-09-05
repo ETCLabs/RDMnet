@@ -97,9 +97,9 @@ BrokerDiscoveryManager::~BrokerDiscoveryManager()
 {
 }
 
-lwpa_error_t BrokerDiscoveryManager::RegisterBroker(const RDMnet::BrokerDiscoveryAttributes& disc_attributes,
-                                                    const LwpaUuid& local_cid,
-                                                    const std::vector<LwpaIpAddr>& listen_addrs, uint16_t listen_port)
+etcpal_error_t BrokerDiscoveryManager::RegisterBroker(const RDMnet::BrokerDiscoveryAttributes& disc_attributes,
+                                                    const EtcPalUuid& local_cid,
+                                                    const std::vector<EtcPalIpAddr>& listen_addrs, uint16_t listen_port)
 {
   // Start with the default information.
   RdmnetBrokerDiscInfo* my_info = &cur_config_.my_info;
@@ -130,8 +130,8 @@ lwpa_error_t BrokerDiscoveryManager::RegisterBroker(const RDMnet::BrokerDiscover
           E133_SERVICE_NAME_STRING_PADDED_LENGTH);
   RDMNET_MSVC_END_NO_DEP_WARNINGS()
 
-  lwpa_error_t res = rdmnetdisc_register_broker(&cur_config_, &handle_);
-  if (res == kLwpaErrOk)
+  etcpal_error_t res = rdmnetdisc_register_broker(&cur_config_, &handle_);
+  if (res == kEtcPalErrOk)
     cur_config_valid_ = true;
   return res;
 }

@@ -32,7 +32,7 @@
 #include "rdmnet_mock/core.h"
 #include "rdmnet_mock/private/core.h"
 #include "dns_sd.h"
-#include "lwpa_mock/socket.h"
+#include "etcpal_mock/socket.h"
 
 #include "gtest/gtest.h"
 #include "fff.h"
@@ -101,7 +101,7 @@ protected:
     RESET_FAKE(monitorcb_broker_lost);
     RESET_FAKE(monitorcb_scope_monitor_error);
 
-    LWPA_SOCKET_DO_FOR_ALL_FAKES(RESET_FAKE);
+    ETCPAL_SOCKET_DO_FOR_ALL_FAKES(RESET_FAKE);
 
     FFF_RESET_HISTORY();
 
@@ -133,7 +133,7 @@ protected:
   };
   // clang-format on
   std::string default_full_service_name_;
-  lwpa_error_t init_result_;
+  etcpal_error_t init_result_;
   TXTRecordRef txt_record_;
   rdmnet_scope_monitor_t monitor_handle_;
 
@@ -164,17 +164,17 @@ void TestDiscoveryBonjour::MonitorDefaultScope()
   };
 
   int platform_specific_err;
-  ASSERT_EQ(kLwpaErrOk, rdmnetdisc_start_monitoring(&config, &monitor_handle_, &platform_specific_err));
+  ASSERT_EQ(kEtcPalErrOk, rdmnetdisc_start_monitoring(&config, &monitor_handle_, &platform_specific_err));
   ASSERT_EQ(DNSServiceBrowse_fake.call_count, 1u);
   ASSERT_GE(DNSServiceRefSockFD_fake.call_count, 1u);
-  ASSERT_EQ(lwpa_poll_add_socket_fake.call_count, 1u);
-  ASSERT_EQ(lwpa_poll_add_socket_fake.arg2_history[0], LWPA_POLL_IN);
+  ASSERT_EQ(etcpal_poll_add_socket_fake.call_count, 1u);
+  ASSERT_EQ(etcpal_poll_add_socket_fake.arg2_history[0], ETCPAL_POLL_IN);
 }
 
 void TestDiscoveryBonjour::CreateDefaultBroker()
 {
   default_listen_addr_ = std::make_unique<BrokerListenAddr>();
-  LWPA_IP_SET_V4_ADDRESS(&default_listen_addr_->addr, 0x0a650101);
+  ETCPAL_IP_SET_V4_ADDRESS(&default_listen_addr_->addr, 0x0a650101);
   default_listen_addr_->next = nullptr;
   default_discovered_broker_.listen_addr_list = default_listen_addr_.get();
 
@@ -187,8 +187,8 @@ void TestDiscoveryBonjour::CreateDefaultBroker()
             TXTRecordSetValue(&txt_record_, "E133Vers", static_cast<uint8_t>(e133vers.length()), e133vers.c_str()));
 
   // CID with the hyphens removed
-  char cid_buf[LWPA_UUID_STRING_BYTES];
-  lwpa_uuid_to_string(cid_buf, &default_discovered_broker_.cid);
+  char cid_buf[ETCPAL_UUID_STRING_BYTES];
+  etcpal_uuid_to_string(cid_buf, &default_discovered_broker_.cid);
   std::string cid_str(cid_buf);
   cid_str.erase(std::remove(cid_str.begin(), cid_str.end(), '-'), cid_str.end());
   ASSERT_EQ(kDNSServiceErr_NoError,
@@ -212,7 +212,7 @@ void TestDiscoveryBonjour::CreateDefaultBroker()
 
 TEST_F(TestDiscoveryBonjour, init)
 {
-  ASSERT_EQ(init_result_, kLwpaErrOk);
+  ASSERT_EQ(init_result_, kEtcPalErrOk);
 }
 
 // Test that rdmnetdisc_register_broker() behaves propertly with both valid and invalid input data.
@@ -220,7 +220,7 @@ TEST_F(TestDiscoveryBonjour, reg)
 {
   RdmnetBrokerRegisterConfig config;
 
-  config.my_info.cid = kLwpaNullUuid;
+  config.my_info.cid = kEtcPalNullUuid;
   config.my_info.service_name[0] = '\0';
   config.my_info.scope[0] = '\0';
   config.my_info.listen_addr_list = nullptr;
@@ -228,7 +228,7 @@ TEST_F(TestDiscoveryBonjour, reg)
   config.callback_context = this;
 
   rdmnet_registered_broker_t handle;
-  ASSERT_NE(kLwpaErrOk, rdmnetdisc_register_broker(&config, &handle));
+  ASSERT_NE(kEtcPalErrOk, rdmnetdisc_register_broker(&config, &handle));
   ASSERT_EQ(regcb_broker_registered_fake.call_count, 0u);
   ASSERT_EQ(DNSServiceRegister_fake.call_count, 0u);
 }
@@ -239,26 +239,26 @@ TEST_F(TestDiscoveryBonjour, monitor_tick_sockets)
 {
   MonitorDefaultScope();
 
-  // Tick should call lwpa_poll_wait
-  lwpa_poll_wait_fake.return_val = kLwpaErrTimedOut;
+  // Tick should call etcpal_poll_wait
+  etcpal_poll_wait_fake.return_val = kEtcPalErrTimedOut;
   DNSServiceProcessResult_fake.return_val = kDNSServiceErr_NoError;
 
   rdmnetdisc_tick();
-  ASSERT_EQ(lwpa_poll_wait_fake.call_count, 1u);
+  ASSERT_EQ(etcpal_poll_wait_fake.call_count, 1u);
   ASSERT_EQ(DNSServiceProcessResult_fake.call_count, 0u);
 
   // If a socket has activity, DNSServiceProcessResult should be called with that socket.
-  lwpa_poll_wait_fake.custom_fake = [](LwpaPollContext* context, LwpaPollEvent* event, int) -> lwpa_error_t {
+  etcpal_poll_wait_fake.custom_fake = [](EtcPalPollContext* context, EtcPalPollEvent* event, int) -> etcpal_error_t {
     EXPECT_NE(context, nullptr);
     EXPECT_NE(event, nullptr);
     if (event)
     {
-      event->events = LWPA_POLL_IN;
-      event->err = kLwpaErrOk;
+      event->events = ETCPAL_POLL_IN;
+      event->err = kEtcPalErrOk;
       event->socket = DEFAULT_MONITOR_SOCKET_VAL;
-      event->user_data = lwpa_poll_add_socket_fake.arg3_history[0];
+      event->user_data = etcpal_poll_add_socket_fake.arg3_history[0];
     }
-    return kLwpaErrOk;
+    return kEtcPalErrOk;
   };
   rdmnetdisc_tick();
   ASSERT_EQ(DNSServiceProcessResult_fake.call_count, 1u);
@@ -310,10 +310,10 @@ TEST_F(TestDiscoveryBonjour, resolve_cleanup)
   // DNSServiceGetAddrInfoReply
   DNSServiceGetAddrInfoReply gai_cb = DNSServiceGetAddrInfo_fake.arg5_val;
   struct sockaddr address;
-  LwpaSockaddr discovered_addr;
+  EtcPalSockaddr discovered_addr;
   discovered_addr.ip = default_listen_addr_->addr;
   discovered_addr.port = 0;
-  sockaddr_lwpa_to_os(&discovered_addr, &address);
+  sockaddr_etcpal_to_os(&discovered_addr, &address);
   gai_cb(DEFAULT_MONITOR_DNS_REF, 0, 0, kDNSServiceErr_NoError, "testhost", &address, 10,
          DNSServiceGetAddrInfo_fake.arg6_val);
 
@@ -322,11 +322,11 @@ TEST_F(TestDiscoveryBonjour, resolve_cleanup)
   ASSERT_EQ(monitorcb_broker_found_fake.arg0_val, monitor_handle_);
 
   // Make sure we are back to only one socket in the tick thread
-  //  lwpa_poll_fake.return_val = 0;
+  //  etcpal_poll_fake.return_val = 0;
   //  DNSServiceProcessResult_fake.return_val = kDNSServiceErr_NoError;
   //
   //  rdmnetdisc_tick();
-  //  ASSERT_EQ(lwpa_poll_fake.call_count, 1u);
-  //  ASSERT_EQ(lwpa_poll_fake.arg1_history[0], 1u);
+  //  ASSERT_EQ(etcpal_poll_fake.call_count, 1u);
+  //  ASSERT_EQ(etcpal_poll_fake.arg1_history[0], 1u);
   //  ASSERT_EQ(DNSServiceProcessResult_fake.call_count, 0u);
 }

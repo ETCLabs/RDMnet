@@ -32,9 +32,9 @@
 #ifndef _RDMNET_CONTROLLER_H_
 #define _RDMNET_CONTROLLER_H_
 
-#include "lwpa/bool.h"
-#include "lwpa/uuid.h"
-#include "lwpa/inet.h"
+#include "etcpal/bool.h"
+#include "etcpal/uuid.h"
+#include "etcpal/inet.h"
 #include "rdm/uid.h"
 #include "rdmnet/client.h"
 
@@ -88,7 +88,7 @@ typedef struct RdmnetControllerCallbacks
 typedef struct RdmnetControllerConfig
 {
   /*! The controller's CID. */
-  LwpaUuid cid;
+  EtcPalUuid cid;
   /*! A set of callbacks for the controller to receive RDMnet notifications. */
   RdmnetControllerCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. Can be NULL. */
@@ -116,25 +116,25 @@ typedef struct RdmnetControllerConfig
  */
 #define RDMNET_CONTROLLER_CONFIG_INIT(controllercfgptr, manu_id) RPT_CLIENT_CONFIG_INIT(controllercfgptr, manu_id)
 
-lwpa_error_t rdmnet_controller_init(const LwpaLogParams* lparams);
+etcpal_error_t rdmnet_controller_init(const EtcPalLogParams* lparams);
 void rdmnet_controller_deinit();
 
-lwpa_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rdmnet_controller_t* handle);
-lwpa_error_t rdmnet_controller_destroy(rdmnet_controller_t handle);
+etcpal_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rdmnet_controller_t* handle);
+etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle);
 
-lwpa_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const RdmnetScopeConfig* scope_config,
+etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const RdmnetScopeConfig* scope_config,
                                          rdmnet_client_scope_t* scope_handle);
-lwpa_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                             rdmnet_disconnect_reason_t reason);
-lwpa_error_t rdmnet_controller_change_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_change_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                             const RdmnetScopeConfig* new_config, rdmnet_disconnect_reason_t reason);
 
-lwpa_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                                 const LocalRdmCommand* cmd, uint32_t* seq_num);
-lwpa_error_t rdmnet_controller_send_rdm_response(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_send_rdm_response(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                                  const LocalRdmResponse* resp);
-lwpa_error_t rdmnet_controller_send_llrp_response(rdmnet_controller_t handle, const LlrpLocalRdmResponse* resp);
-lwpa_error_t rdmnet_controller_request_client_list(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle);
+etcpal_error_t rdmnet_controller_send_llrp_response(rdmnet_controller_t handle, const LlrpLocalRdmResponse* resp);
+etcpal_error_t rdmnet_controller_request_client_list(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle);
 
 #ifdef __cplusplus
 };

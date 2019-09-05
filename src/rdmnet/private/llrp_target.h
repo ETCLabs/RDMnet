@@ -28,14 +28,14 @@
 #ifndef _RDMNET_PRIVATE_LLRP_TARGET_H_
 #define _RDMNET_PRIVATE_LLRP_TARGET_H_
 
-#include "lwpa/uuid.h"
-#include "lwpa/bool.h"
-#include "lwpa/int.h"
-#include "lwpa/inet.h"
-#include "lwpa/rbtree.h"
-#include "lwpa/timer.h"
-#include "lwpa/socket.h"
-#include "lwpa/root_layer_pdu.h"
+#include "etcpal/uuid.h"
+#include "etcpal/bool.h"
+#include "etcpal/int.h"
+#include "etcpal/inet.h"
+#include "etcpal/rbtree.h"
+#include "etcpal/timer.h"
+#include "etcpal/socket.h"
+#include "etcpal/root_layer_pdu.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/core/llrp_target.h"
@@ -48,13 +48,13 @@ typedef struct LlrpTarget LlrpTarget;
 typedef struct LlrpTargetNetintInfo
 {
   LlrpNetintId id;
-  lwpa_socket_t send_sock;
+  etcpal_socket_t send_sock;
   uint8_t send_buf[LLRP_TARGET_MAX_MESSAGE_SIZE];
 
   bool reply_pending;
-  LwpaUuid pending_reply_cid;
+  EtcPalUuid pending_reply_cid;
   uint32_t pending_reply_trans_num;
-  LwpaTimer reply_backoff;
+  EtcPalTimer reply_backoff;
 
   LlrpTarget* target;
 } LlrpTargetNetintInfo;
@@ -63,7 +63,7 @@ typedef struct LlrpTargetNetintInfo
 typedef struct LlrpTargetKeys
 {
   llrp_target_t handle;
-  LwpaUuid cid;
+  EtcPalUuid cid;
 } LlrpTargetKeys;
 
 struct LlrpTarget
@@ -74,7 +74,7 @@ struct LlrpTarget
   llrp_component_t component_type;
 
   // Network interfaces on which the target is operating (value type is LlrpTargetNetintInfo)
-  LwpaRbTree netints;
+  EtcPalRbTree netints;
 
   // Global target state info
   bool connected_to_broker;
@@ -116,7 +116,7 @@ typedef struct TargetCallbackDispatchInfo
 extern "C" {
 #endif
 
-lwpa_error_t rdmnet_llrp_target_init();
+etcpal_error_t rdmnet_llrp_target_init();
 void rdmnet_llrp_target_deinit();
 
 void rdmnet_llrp_target_tick();

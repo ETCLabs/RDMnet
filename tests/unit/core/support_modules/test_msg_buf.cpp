@@ -45,13 +45,13 @@ protected:
 // Test parsing a fully-formed RPT Notification PDU
 TEST_F(TestMsgBuf, rpt_notification_full)
 {
-  ASSERT_EQ(kLwpaErrOk,
+  ASSERT_EQ(kEtcPalErrOk,
             rdmnet_msg_buf_recv(&buf_, RptNotificationPduFullValid::buf, sizeof(RptNotificationPduFullValid::buf)));
 
   // Test each field of the parsed message
   RdmnetMessage& msg = buf_.msg;
   ASSERT_EQ(msg.vector, RptNotificationPduFullValid::root_vector);
-  ASSERT_EQ(0, LWPA_UUID_CMP(&msg.sender_cid, &RptNotificationPduFullValid::sender_cid));
+  ASSERT_EQ(0, ETCPAL_UUID_CMP(&msg.sender_cid, &RptNotificationPduFullValid::sender_cid));
 
   RptMessage* rpt = get_rpt_msg(&msg);
   ASSERT_EQ(rpt->vector, RptNotificationPduFullValid::rpt_vector);

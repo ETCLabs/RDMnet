@@ -32,9 +32,9 @@
 #include <fstream>
 #include <string>
 #include <queue>
-#include "lwpa/log.h"
-#include "lwpa/thread.h"
-#include "lwpa/lock.h"
+#include "etcpal/log.h"
+#include "etcpal/thread.h"
+#include "etcpal/lock.h"
 #include "rdmnet/broker/log.h"
 
 class MacBrokerLog : public RDMnet::BrokerLog
@@ -44,11 +44,11 @@ public:
   virtual ~MacBrokerLog();
 
   void OutputLogMsg(const std::string& str) override;
-  virtual void GetTimeFromCallback(LwpaLogTimeParams* time) override;
+  virtual void GetTimeFromCallback(EtcPalLogTimeParams* time) override;
 
 private:
   std::fstream file_;
-  int log_level_{LWPA_LOG_INFO};
+  int log_level_{ETCPAL_LOG_INFO};
 };
 
 #endif  // _MACOS_BROKER_LOG_

@@ -31,11 +31,11 @@
 #include <cstdio>
 #include <memory>
 
-#include "lwpa/netint.h"
-#include "lwpa/pack.h"
-#include "lwpa/socket.h"
-#include "lwpa/thread.h"
-#include "lwpa/timer.h"
+#include "etcpal/netint.h"
+#include "etcpal/pack.h"
+#include "etcpal/socket.h"
+#include "etcpal/thread.h"
+#include "etcpal/timer.h"
 #include "rdmnet/core.h"
 #include "rdmnet/core/util.h"
 
@@ -62,11 +62,11 @@ void llrpcb_rdm_resp_received(llrp_manager_t /*handle*/, const LlrpRemoteRdmResp
 }
 }
 
-LLRPManager::LLRPManager(const LwpaUuid& my_cid, const LwpaLogParams* log_params) : cid_(my_cid)
+LLRPManager::LLRPManager(const EtcPalUuid& my_cid, const EtcPalLogParams* log_params) : cid_(my_cid)
 {
   rdmnet_core_init(log_params);
 
-  size_t num_interfaces = lwpa_netint_get_num_interfaces();
+  size_t num_interfaces = etcpal_netint_get_num_interfaces();
   if (num_interfaces > 0)
   {
     LlrpManagerConfig config;
@@ -77,23 +77,23 @@ LLRPManager::LLRPManager(const LwpaUuid& my_cid, const LwpaLogParams* log_params
     config.callbacks.rdm_resp_received = llrpcb_rdm_resp_received;
     config.callback_context = this;
 
-    const LwpaNetintInfo* netint_list = lwpa_netint_get_interfaces();
-    for (const LwpaNetintInfo* netint = netint_list; netint < netint_list + num_interfaces; ++netint)
+    const EtcPalNetintInfo* netint_list = etcpal_netint_get_interfaces();
+    for (const EtcPalNetintInfo* netint = netint_list; netint < netint_list + num_interfaces; ++netint)
     {
       config.netint.ip_type = netint->addr.type;
       config.netint.index = netint->index;
       llrp_manager_t handle;
-      lwpa_error_t res = rdmnet_llrp_manager_create(&config, &handle);
-      if (res == kLwpaErrOk)
+      etcpal_error_t res = rdmnet_llrp_manager_create(&config, &handle);
+      if (res == kEtcPalErrOk)
       {
         managers_.insert(std::make_pair(handle, *netint));
       }
       else
       {
-        char addr_str[LWPA_INET6_ADDRSTRLEN];
-        lwpa_inet_ntop(&netint->addr, addr_str, LWPA_INET6_ADDRSTRLEN);
+        char addr_str[ETCPAL_INET6_ADDRSTRLEN];
+        etcpal_inet_ntop(&netint->addr, addr_str, ETCPAL_INET6_ADDRSTRLEN);
         printf("Warning: couldn't create LLRP Manager on network interface %s (error: '%s').\n", addr_str,
-               lwpa_strerror(res));
+               etcpal_strerror(res));
       }
     }
   }
@@ -224,17 +224,17 @@ bool LLRPManager::ParseCommand(const std::string& line)
 
                 int target_handle = std::stoi(args);
                 int scope_slot = std::stoi(args.substr(first_sp_pos + 1, second_sp_pos - (first_sp_pos + 1)));
-                LwpaSockaddr static_config;
-                LWPA_IP_SET_INVALID(&static_config.ip);
+                EtcPalSockaddr static_config;
+                ETCPAL_IP_SET_INVALID(&static_config.ip);
                 if (third_sp_pos != std::string::npos)
                 {
                   std::string ip_port = args.substr(third_sp_pos + 1);
                   size_t colon_pos = ip_port.find_first_of(':');
                   if (colon_pos != std::string::npos)
                   {
-                    char ip_utf8[LWPA_INET6_ADDRSTRLEN];
-                    if ((kLwpaErrOk == lwpa_inet_pton(kLwpaIpTypeV4, ip_utf8, &static_config.ip)) ||
-                        (kLwpaErrOk == lwpa_inet_pton(kLwpaIpTypeV6, ip_utf8, &static_config.ip)))
+                    char ip_utf8[ETCPAL_INET6_ADDRSTRLEN];
+                    if ((kEtcPalErrOk == etcpal_inet_pton(kEtcPalIpTypeV4, ip_utf8, &static_config.ip)) ||
+                        (kEtcPalErrOk == etcpal_inet_pton(kEtcPalIpTypeV6, ip_utf8, &static_config.ip)))
                     {
                       static_config.port = static_cast<uint16_t>(std::stoi(ip_port.substr(colon_pos + 1)));
                     }
@@ -341,18 +341,18 @@ void LLRPManager::Discover(llrp_manager_t manager_handle)
   discovery_active_ = true;
 
   printf("Starting LLRP discovery...\n");
-  lwpa_error_t res = rdmnet_llrp_start_discovery(mgr_pair->first, 0);
-  if (res == kLwpaErrOk)
+  etcpal_error_t res = rdmnet_llrp_start_discovery(mgr_pair->first, 0);
+  if (res == kEtcPalErrOk)
   {
     while (discovery_active_)
     {
-      lwpa_thread_sleep(100);
+      etcpal_thread_sleep(100);
     }
     printf("LLRP Discovery finished.\n");
   }
   else
   {
-    printf("Error starting LLRP Discovery: '%s'\n", lwpa_strerror(res));
+    printf("Error starting LLRP Discovery: '%s'\n", etcpal_strerror(res));
   }
 }
 
@@ -361,8 +361,8 @@ void LLRPManager::PrintTargets()
   printf("Handle %-13s %-36s %-15s %s\n", "UID", "CID", "Type", "Hardware ID");
   for (const auto& target : targets_)
   {
-    char cid_str[LWPA_UUID_STRING_BYTES];
-    lwpa_uuid_to_string(cid_str, &target.second.prot_info.cid);
+    char cid_str[ETCPAL_UUID_STRING_BYTES];
+    etcpal_uuid_to_string(cid_str, &target.second.prot_info.cid);
 
     char mac_str[21];
     const uint8_t* mac_bytes = target.second.prot_info.hardware_address;
@@ -380,9 +380,9 @@ void LLRPManager::PrintNetints()
   printf("Handle %-30s %-17s Name\n", "Address", "MAC");
   for (const auto& sock_pair : managers_)
   {
-    char addr_str[LWPA_INET6_ADDRSTRLEN];
-    const LwpaNetintInfo& info = sock_pair.second;
-    lwpa_inet_ntop(&info.addr, addr_str, LWPA_INET6_ADDRSTRLEN);
+    char addr_str[ETCPAL_INET6_ADDRSTRLEN];
+    const EtcPalNetintInfo& info = sock_pair.second;
+    etcpal_inet_ntop(&info.addr, addr_str, ETCPAL_INET6_ADDRSTRLEN);
     printf("%-6d %-30s %02x:%02x:%02x:%02x:%02x:%02x %s\n", sock_pair.first, addr_str, info.mac[0], info.mac[1],
            info.mac[2], info.mac[3], info.mac[4], info.mac[5], info.friendly_name);
   }
@@ -413,19 +413,19 @@ void LLRPManager::GetDeviceInfo(int target_handle)
           printf("Device info:\n");
           printf("  RDM Protocol Version: %d.%d\n", cur_ptr[0], cur_ptr[1]);
           cur_ptr += 2;
-          printf("  Device Model ID: %d\n", lwpa_upack_16b(cur_ptr));
+          printf("  Device Model ID: %d\n", etcpal_upack_16b(cur_ptr));
           cur_ptr += 2;
-          printf("  Product Category: %d\n", lwpa_upack_16b(cur_ptr));
+          printf("  Product Category: %d\n", etcpal_upack_16b(cur_ptr));
           cur_ptr += 2;
-          printf("  Software Version ID: %d\n", lwpa_upack_32b(cur_ptr));
+          printf("  Software Version ID: %d\n", etcpal_upack_32b(cur_ptr));
           cur_ptr += 4;
-          printf("  DMX512 Footprint: %d\n", lwpa_upack_16b(cur_ptr));
+          printf("  DMX512 Footprint: %d\n", etcpal_upack_16b(cur_ptr));
           cur_ptr += 2;
-          printf("  DMX512 Personality: %d\n", lwpa_upack_16b(cur_ptr));
+          printf("  DMX512 Personality: %d\n", etcpal_upack_16b(cur_ptr));
           cur_ptr += 2;
-          printf("  DMX512 Start Address: %d\n", lwpa_upack_16b(cur_ptr));
+          printf("  DMX512 Start Address: %d\n", etcpal_upack_16b(cur_ptr));
           cur_ptr += 2;
-          printf("  Subdevice Count: %d\n", lwpa_upack_16b(cur_ptr));
+          printf("  Subdevice Count: %d\n", etcpal_upack_16b(cur_ptr));
           cur_ptr += 2;
           printf("  Sensor Count: %d\n", *cur_ptr);
         }
@@ -573,7 +573,7 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
       cmd_data.command_class = kRdmCCGetCommand;
       cmd_data.param_id = E133_COMPONENT_SCOPE;
       cmd_data.datalen = 2;
-      lwpa_pack_16b(cmd_data.data, static_cast<uint16_t>(scope_slot));
+      etcpal_pack_16b(cmd_data.data, static_cast<uint16_t>(scope_slot));
 
       if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
       {
@@ -581,7 +581,7 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
         {
           const uint8_t* cur_ptr = resp_data.data;
 
-          uint16_t slot = lwpa_upack_16b(cur_ptr);
+          uint16_t slot = etcpal_upack_16b(cur_ptr);
           cur_ptr += 2;
 
           std::string scope;
@@ -590,26 +590,26 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
           cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
 
           uint8_t static_config_type = *cur_ptr++;
-          LwpaIpAddr ip;
-          char ip_string[LWPA_INET6_ADDRSTRLEN] = {};
+          EtcPalIpAddr ip;
+          char ip_string[ETCPAL_INET6_ADDRSTRLEN] = {};
           uint16_t port = 0;
 
           printf("Scope for slot %d: %s\n", slot, scope_string);
           switch (static_config_type)
           {
             case E133_STATIC_CONFIG_IPV4:
-              LWPA_IP_SET_V4_ADDRESS(&ip, lwpa_upack_32b(cur_ptr));
-              lwpa_inet_ntop(&ip, ip_string, LWPA_INET6_ADDRSTRLEN);
+              ETCPAL_IP_SET_V4_ADDRESS(&ip, etcpal_upack_32b(cur_ptr));
+              etcpal_inet_ntop(&ip, ip_string, ETCPAL_INET6_ADDRSTRLEN);
               cur_ptr += 4 + 16;
-              port = lwpa_upack_16b(cur_ptr);
+              port = etcpal_upack_16b(cur_ptr);
               printf("Static Broker IPv4 for slot %d: %s:%u\n", slot, ip_string, port);
               break;
             case E133_STATIC_CONFIG_IPV6:
               cur_ptr += 4;
-              LWPA_IP_SET_V6_ADDRESS(&ip, cur_ptr);
-              lwpa_inet_ntop(&ip, ip_string, LWPA_INET6_ADDRSTRLEN);
+              ETCPAL_IP_SET_V6_ADDRESS(&ip, cur_ptr);
+              etcpal_inet_ntop(&ip, ip_string, ETCPAL_INET6_ADDRSTRLEN);
               cur_ptr += 16;
-              port = lwpa_upack_16b(cur_ptr);
+              port = etcpal_upack_16b(cur_ptr);
               printf("Static Broker IPv6 for slot %d: [%s]:%u\n", slot, ip_string, port);
               break;
             case E133_NO_STATIC_CONFIG:
@@ -699,7 +699,7 @@ void LLRPManager::SetDeviceLabel(int target_handle, const std::string& label)
 }
 
 void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std::string& scope_utf8,
-                                    const LwpaSockaddr& static_config)
+                                    const EtcPalSockaddr& static_config)
 {
   if (scope_slot < 1 || scope_slot > 65535)
   {
@@ -726,24 +726,24 @@ void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std
       memset(cmd_data.data, 0, COMPONENT_SCOPE_PDL);
 
       uint8_t* cur_ptr = cmd_data.data;
-      lwpa_pack_16b(cur_ptr, static_cast<uint16_t>(scope_slot));
+      etcpal_pack_16b(cur_ptr, static_cast<uint16_t>(scope_slot));
       cur_ptr += 2;
       RDMNET_MSVC_NO_DEP_WRN strncpy((char*)cur_ptr, scope_utf8.c_str(), E133_SCOPE_STRING_PADDED_LENGTH - 1);
       cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
-      if (LWPA_IP_IS_V4(&static_config.ip))
+      if (ETCPAL_IP_IS_V4(&static_config.ip))
       {
         *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
-        lwpa_pack_32b(cur_ptr, LWPA_IP_V4_ADDRESS(&static_config.ip));
+        etcpal_pack_32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&static_config.ip));
         cur_ptr += 4 + 16;
-        lwpa_pack_16b(cur_ptr, static_config.port);
+        etcpal_pack_16b(cur_ptr, static_config.port);
       }
-      else if (LWPA_IP_IS_V6(&static_config.ip))
+      else if (ETCPAL_IP_IS_V6(&static_config.ip))
       {
         *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
         cur_ptr += 4;
-        memcpy(cur_ptr, LWPA_IP_V6_ADDRESS(&static_config.ip), 16);
+        memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&static_config.ip), 16);
         cur_ptr += 16;
-        lwpa_pack_16b(cur_ptr, static_config.port);
+        etcpal_pack_16b(cur_ptr, static_config.port);
       }
       else
       {
@@ -784,7 +784,7 @@ void LLRPManager::DiscoveryFinished()
 
 void LLRPManager::RdmRespReceived(const LlrpRemoteRdmResponse& resp)
 {
-  if (pending_command_response_ && LWPA_UUID_CMP(&resp.src_cid, &pending_resp_cid_) == 0 &&
+  if (pending_command_response_ && ETCPAL_UUID_CMP(&resp.src_cid, &pending_resp_cid_) == 0 &&
       resp.seq_num == pending_resp_seq_num_)
   {
     resp_received_ = resp.rdm;
@@ -792,7 +792,7 @@ void LLRPManager::RdmRespReceived(const LlrpRemoteRdmResponse& resp)
   }
 }
 
-bool LLRPManager::SendRDMAndGetResponse(llrp_manager_t manager, const LwpaUuid& target_cid, const RdmCommand& cmd_data,
+bool LLRPManager::SendRDMAndGetResponse(llrp_manager_t manager, const EtcPalUuid& target_cid, const RdmCommand& cmd_data,
                                         RdmResponse& resp_data)
 {
   LlrpLocalRdmCommand cmd;
@@ -801,14 +801,14 @@ bool LLRPManager::SendRDMAndGetResponse(llrp_manager_t manager, const LwpaUuid& 
 
   pending_command_response_ = true;
   pending_resp_cid_ = cmd.dest_cid;
-  lwpa_error_t res = rdmnet_llrp_send_rdm_command(manager, &cmd, &pending_resp_seq_num_);
-  if (res == kLwpaErrOk)
+  etcpal_error_t res = rdmnet_llrp_send_rdm_command(manager, &cmd, &pending_resp_seq_num_);
+  if (res == kEtcPalErrOk)
   {
-    LwpaTimer resp_timer;
-    lwpa_timer_start(&resp_timer, LLRP_TIMEOUT_MS);
-    while (pending_command_response_ && !lwpa_timer_is_expired(&resp_timer))
+    EtcPalTimer resp_timer;
+    etcpal_timer_start(&resp_timer, LLRP_TIMEOUT_MS);
+    while (pending_command_response_ && !etcpal_timer_is_expired(&resp_timer))
     {
-      lwpa_thread_sleep(100);
+      etcpal_thread_sleep(100);
     }
 
     if (!pending_command_response_)
@@ -823,7 +823,7 @@ bool LLRPManager::SendRDMAndGetResponse(llrp_manager_t manager, const LwpaUuid& 
         }
         else if (resp_received_.resp_type == E120_RESPONSE_TYPE_NACK_REASON)
         {
-          printf("Received RDM NACK with reason %d\n", lwpa_upack_16b(resp_received_.data));
+          printf("Received RDM NACK with reason %d\n", etcpal_upack_16b(resp_received_.data));
         }
         else
         {
@@ -843,7 +843,7 @@ bool LLRPManager::SendRDMAndGetResponse(llrp_manager_t manager, const LwpaUuid& 
   }
   else
   {
-    printf("Error sending RDM command: '%s'\n", lwpa_strerror(res));
+    printf("Error sending RDM command: '%s'\n", etcpal_strerror(res));
     pending_command_response_ = false;
   }
 

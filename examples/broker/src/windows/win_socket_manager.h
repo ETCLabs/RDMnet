@@ -40,7 +40,7 @@
 #include <vector>
 #include <memory>
 
-#include "lwpa/lock.h"
+#include "etcpal/lock.h"
 #include "rdmnet/broker/socket_manager.h"
 
 // Wrapper around Windows thread functions to increase the testability of this module.
@@ -69,7 +69,7 @@ public:
 // The set of data allocated per-socket.
 struct SocketData
 {
-  SocketData(rdmnet_conn_t conn_handle_in, lwpa_socket_t socket_in) : conn_handle(conn_handle_in), socket(socket_in)
+  SocketData(rdmnet_conn_t conn_handle_in, etcpal_socket_t socket_in) : conn_handle(conn_handle_in), socket(socket_in)
   {
     ws_recv_buf.buf = reinterpret_cast<char*>(&recv_buf);
     ws_recv_buf.len = RDMNET_RECV_DATA_MAX_SIZE;
@@ -88,7 +88,7 @@ struct SocketData
 
 // A class to manage RDMnet Broker sockets on Windows.
 // This handles receiving data on all RDMnet client connections, using I/O completion ports for
-// maximum performance. Sending on connections is done in the core Broker library through the lwpa
+// maximum performance. Sending on connections is done in the core Broker library through the EtcPal
 // interface. Other miscellaneous Broker socket operations like LLRP are also handled in the core
 // library.
 class WinBrokerSocketManager : public RDMnet::BrokerSocketManager
@@ -97,14 +97,14 @@ public:
   WinBrokerSocketManager(WindowsThreadInterface* thread_interface = new DefaultWindowsThreads)
       : thread_interface_(thread_interface)
   {
-    lwpa_rwlock_create(&socket_lock_);
+    etcpal_rwlock_create(&socket_lock_);
   }
-  virtual ~WinBrokerSocketManager() { lwpa_rwlock_destroy(&socket_lock_); }
+  virtual ~WinBrokerSocketManager() { etcpal_rwlock_destroy(&socket_lock_); }
 
   // RDMnet::BrokerSocketManager interface
   bool Startup(RDMnet::BrokerSocketManagerNotify* notify) override;
   bool Shutdown() override;
-  bool AddSocket(rdmnet_conn_t conn_handle, lwpa_socket_t socket) override;
+  bool AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t socket) override;
   void RemoveSocket(rdmnet_conn_t conn_handle) override;
 
   // Callback functions called from worker threads
@@ -124,7 +124,7 @@ private:
 
   // The set of sockets being managed.
   std::map<rdmnet_conn_t, std::unique_ptr<SocketData>> sockets_;
-  lwpa_rwlock_t socket_lock_;
+  etcpal_rwlock_t socket_lock_;
 
   // The callback instance
   RDMnet::BrokerSocketManagerNotify* notify_{nullptr};

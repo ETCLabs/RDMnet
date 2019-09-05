@@ -25,24 +25,23 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "linux_broker_log.h"
-#include <ctime>
-#include <iostream>
-#include <cstdarg>
+#include "posix_device_log.h"
 
-LinuxBrokerLog::LinuxBrokerLog(const std::string& file_name) : RDMnet::BrokerLog()
+#include <stdio.h>
+#include <time.h>
+
+static EtcPalLogParams s_device_log_params;
+static FILE* s_log_file;
+
+static void device_log_callback(void* context, const EtcPalLogStrings* strings)
 {
-  file_.open(file_name.c_str(), std::fstream::out);
-  if (file_.fail())
-    std::cout << "BrokerLog couldn't open log file '" << file_name << "'." << std::endl;
+  (void)context;
+  printf("%s\n", strings->human_readable);
+  if (s_log_file)
+    fprintf(s_log_file, "%s\n", strings->human_readable);
 }
 
-LinuxBrokerLog::~LinuxBrokerLog()
-{
-  file_.close();
-}
-
-void LinuxBrokerLog::GetTimeFromCallback(EtcPalLogTimeParams* time_params)
+static void device_time_callback(void* context, EtcPalLogTimeParams* time_params)
 {
   time_t cur_time;
   time(&cur_time);
@@ -65,12 +64,30 @@ void LinuxBrokerLog::GetTimeFromCallback(EtcPalLogTimeParams* time_params)
   time_params->minute = timeinfo->tm_min;
   time_params->second = timeinfo->tm_sec;
   time_params->msec = 0;
-  time_params->utc_offset = static_cast<int>(utc_offset);
+  time_params->utc_offset = (int)utc_offset;
 }
 
-void LinuxBrokerLog::OutputLogMsg(const std::string& str)
+void device_log_init(const char* file_name)
 {
-  std::cout << str << "\n";
-  if (file_.is_open())
-    file_ << str << std::endl;
+  s_log_file = fopen(file_name, "w");
+  if (!s_log_file)
+    printf("Device Log: Couldn't open log file %s\n", file_name);
+
+  s_device_log_params.action = kEtcPalLogCreateHumanReadableLog;
+  s_device_log_params.log_fn = device_log_callback;
+  s_device_log_params.log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG);
+  s_device_log_params.time_fn = device_time_callback;
+  s_device_log_params.context = NULL;
+
+  etcpal_validate_log_params(&s_device_log_params);
+}
+
+const EtcPalLogParams* device_get_log_params()
+{
+  return &s_device_log_params;
+}
+
+void device_log_deinit()
+{
+  fclose(s_log_file);
 }

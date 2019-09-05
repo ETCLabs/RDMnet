@@ -33,11 +33,11 @@
 #define _RDMNET_MSG_BUF_H_
 
 #include <stddef.h>
-#include "lwpa/int.h"
-#include "lwpa/bool.h"
-#include "lwpa/log.h"
-#include "lwpa/uuid.h"
-#include "lwpa/socket.h"
+#include "etcpal/int.h"
+#include "etcpal/bool.h"
+#include "etcpal/log.h"
+#include "etcpal/uuid.h"
+#include "etcpal/socket.h"
 #include "rdmnet/core/connection.h"
 #include "rdmnet/core/message.h"
 #include "rdmnet/private/opts.h"
@@ -216,7 +216,7 @@ typedef struct RdmnetMsgBuf
   bool have_preamble;
   RlpState rlp_state;
 
-  const LwpaLogParams* lparams;
+  const EtcPalLogParams* lparams;
 } RdmnetMsgBuf;
 
 #ifdef __cplusplus
@@ -224,7 +224,7 @@ extern "C" {
 #endif
 
 void rdmnet_msg_buf_init(RdmnetMsgBuf* msg_buf);
-lwpa_error_t rdmnet_msg_buf_recv(RdmnetMsgBuf* msg_buf, const uint8_t* data, size_t data_size);
+etcpal_error_t rdmnet_msg_buf_recv(RdmnetMsgBuf* msg_buf, const uint8_t* data, size_t data_size);
 
 #ifdef __cplusplus
 }

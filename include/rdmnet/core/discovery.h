@@ -32,9 +32,9 @@
 #ifndef _RDMNET_DISCOVERY_H_
 #define _RDMNET_DISCOVERY_H_
 
-#include "lwpa/error.h"
-#include "lwpa/uuid.h"
-#include "lwpa/socket.h"
+#include "etcpal/error.h"
+#include "etcpal/uuid.h"
+#include "etcpal/socket.h"
 #include "rdmnet/defs.h"
 
 #ifdef __cplusplus
@@ -50,13 +50,13 @@ typedef struct RdmnetBrokerRegisterRef* rdmnet_registered_broker_t;
 typedef struct BrokerListenAddr BrokerListenAddr;
 struct BrokerListenAddr
 {
-  LwpaIpAddr addr;
+  EtcPalIpAddr addr;
   BrokerListenAddr* next;
 };
 
 typedef struct RdmnetBrokerDiscInfo
 {
-  LwpaUuid cid;
+  EtcPalUuid cid;
   char service_name[E133_SERVICE_NAME_STRING_PADDED_LENGTH];
   uint16_t port;
   BrokerListenAddr* listen_addr_list;
@@ -98,14 +98,14 @@ typedef struct RdmnetBrokerRegisterConfig
 
 void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo* broker_info);
 
-lwpa_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
+etcpal_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
                                          int* platform_specific_error);
-lwpa_error_t rdmnetdisc_change_monitored_scope(rdmnet_scope_monitor_t handle,
+etcpal_error_t rdmnetdisc_change_monitored_scope(rdmnet_scope_monitor_t handle,
                                                const RdmnetScopeMonitorConfig* new_config);
 void rdmnetdisc_stop_monitoring(rdmnet_scope_monitor_t handle);
 void rdmnetdisc_stop_monitoring_all();
 
-lwpa_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config, rdmnet_registered_broker_t* handle);
+etcpal_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config, rdmnet_registered_broker_t* handle);
 void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle);
 
 void rdmnetdisc_tick();
