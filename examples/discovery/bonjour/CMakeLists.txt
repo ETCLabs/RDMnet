@@ -1,2 +1,0 @@
-add_executable(bonjour_register_example bonjour_register.cpp)
-target_link_libraries(bonjour_register_example PRIVATE RDMnet)

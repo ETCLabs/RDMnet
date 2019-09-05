@@ -25,42 +25,13 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#pragma once
+/* rdmnet/discovery/common.h
+ * Common functions and definitions used by all mDNS/DNS-SD providers across
+ * platforms.
+ */
+#ifndef _RDMNET_DISCOVERY_COMMON_H_
+#define _RDMNET_DISCOVERY_COMMON_H_
 
-#include "ControllerUtils.h"
 
-BEGIN_INCLUDE_QT_HEADERS()
-#include <QDialog>
-#include "ui_BrokerStaticAddGUI.h"
-END_INCLUDE_QT_HEADERS()
 
-#include "lwpa/inet.h"
-
-class IHandlesBrokerStaticAdd
-{
-public:
-  virtual void handleAddBrokerByIP(QString scope, const LwpaSockaddr& addr) = 0;
-};
-
-class BrokerStaticAddGUI : public QDialog
-{
-  Q_OBJECT
-
-public slots:
-
-  void addBrokerTriggered();
-  void cancelTriggered();
-
-signals:
-
-  void addBrokerByIP(LwpaSockaddr addr);
-
-public:
-  BrokerStaticAddGUI(QWidget* parent = nullptr, IHandlesBrokerStaticAdd* handler = nullptr);
-  ~BrokerStaticAddGUI();
-
-private:
-  Ui::BrokerStaticAddGUI ui;
-
-  IHandlesBrokerStaticAdd* m_Handler;
-};
+#endif /* _RDMNET_DISCOVERY_COMMON_H_ */

@@ -25,52 +25,41 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#ifndef _RDMNET_DISCOVERY_BONJOUR_H_
-#define _RDMNET_DISCOVERY_BONJOUR_H_
+#ifndef _RDMNET_DISCOVERY_AVAHI_H_
+#define _RDMNET_DISCOVERY_AVAHI_H_
 
-#include "dns_sd.h"
-#include "lwpa/lock.h"
-#include "lwpa/socket.h"
+#include <avahi-client/client.h>
+#include <avahi-client/lookup.h>
+#include <avahi-client/publish.h>
+#include <avahi-common/domain.h>
+
 #include "lwpa/timer.h"
-#include "rdmnet/private/opts.h"
 #include "rdmnet/core/discovery.h"
 
-/*From dns_sd.h :
- *  For most applications, DNS - SD TXT records are generally
- *  less than 100 bytes, so in most cases a simple fixed - sized
- *  256 - byte buffer will be more than sufficient.*/
-#define TXT_RECORD_BUFFER_LENGTH 256
-#define REGISTRATION_STRING_PADDED_LENGTH E133_DNSSD_SRV_TYPE_PADDED_LENGTH + E133_SCOPE_STRING_PADDED_LENGTH + 4
+#define SERVICE_STR_PADDED_LENGTH E133_DNSSD_SRV_TYPE_PADDED_LENGTH + E133_SCOPE_STRING_PADDED_LENGTH + 10
 
-#define MAX_SCOPES_MONITORED ((RDMNET_MAX_SCOPES_PER_CONTROLLER * RDMNET_MAX_CONTROLLERS) + RDMNET_MAX_DEVICES)
-
-typedef enum
-{
-  kResolveStateServiceResolve,
-  kResolveStateGetAddrInfo,
-  kResolveStateDone
-} resolve_state_t;
+typedef struct RdmnetScopeMonitorRef RdmnetScopeMonitorRef;
 
 typedef struct DiscoveredBroker DiscoveredBroker;
 struct DiscoveredBroker
 {
-  char full_service_name[kDNSServiceMaxDomainName];
+  char full_service_name[AVAHI_DOMAIN_NAME_MAX];
   RdmnetBrokerDiscInfo info;
+  RdmnetScopeMonitorRef* monitor_ref;
 
   // State information for this broker.
-  resolve_state_t state;
-  DNSServiceRef dnssd_ref;
+  int num_outstanding_resolves;
+  int num_successful_resolves;
 
   DiscoveredBroker* next;
 };
 
-typedef struct RdmnetScopeMonitorRef RdmnetScopeMonitorRef;
 struct RdmnetScopeMonitorRef
 {
   // The configuration data that the user provided.
   RdmnetScopeMonitorConfig config;
-  // The Bonjour handle
-  DNSServiceRef dnssd_ref;
+  // The Avahi browse handle
+  AvahiServiceBrowser* avahi_browser;
   // If this ScopeMonitorRef is associated with a registered Broker, that is tracked here. Otherwise
   // NULL.
   rdmnet_registered_broker_t broker_handle;
@@ -93,13 +82,13 @@ typedef struct RdmnetBrokerRegisterRef
   RdmnetBrokerRegisterConfig config;
   rdmnet_scope_monitor_t scope_monitor_handle;
   broker_state_t state;
-  char full_service_name[kDNSServiceMaxDomainName];
+  char full_service_name[AVAHI_DOMAIN_NAME_MAX];
 
   LwpaTimer query_timer;
   bool query_timeout_expired;
 
   // For hooking up to the DNS-SD API
-  DNSServiceRef dnssd_ref;
+  AvahiEntryGroup* avahi_entry_group;
 } RdmnetBrokerRegisterRef;
 
-#endif /* _RDMNET_DISCOVERY_BONJOUR_H_ */
+#endif /* _RDMNET_DISCOVERY_AVAHI_H_ */

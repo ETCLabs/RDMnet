@@ -1,1 +1,2 @@
-add_subdirectory(bonjour)
+add_executable(discovery_example discovery_example.c)
+target_link_libraries(discovery_example PRIVATE RDMnet)

@@ -352,7 +352,7 @@ bool device_handle_rdm_command(const RdmCommand* rdm_cmd, RdmResponse* resp_list
 void device_send_rpt_status(rpt_status_code_t status_code, const RemoteRdmCommand* received_cmd)
 {
   LocalRptStatus status;
-  RDMNET_CREATE_STATUS_FROM_COMMAND(&status, received_cmd, status_code);
+  rdmnet_create_status_from_command(received_cmd, status_code, &status);
 
   lwpa_error_t send_res = rdmnet_device_send_status(device_state.device_handle, &status);
   if (send_res != kLwpaErrOk)
@@ -372,7 +372,7 @@ void device_send_rpt_nack(uint16_t nack_reason, const RemoteRdmCommand* received
 void device_send_rpt_response(RdmResponse* resp_list, size_t num_responses, const RemoteRdmCommand* received_cmd)
 {
   LocalRdmResponse resp_to_send;
-  RDMNET_CREATE_RESPONSE_FROM_COMMAND(&resp_to_send, received_cmd, resp_list, num_responses);
+  rdmnet_create_response_from_command(received_cmd, resp_list, num_responses, &resp_to_send);
 
   lwpa_error_t send_res = rdmnet_device_send_rdm_response(device_state.device_handle, &resp_to_send);
   if (send_res != kLwpaErrOk)

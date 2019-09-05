@@ -150,11 +150,21 @@ RDMnet depends on the ETC's RDM library for RDM protocol support. RDM is
 automatically included as a submodule for RDMnet source builds. See the
 [documentation for RDM](https://etclabs.github.io/RDM).
 
-### Bonjour SDK for Windows or ETCLabs/mDNSWindows
+### DNS-SD
 
-- If using the [Bonjour SDK for Windows](https://developer.apple.com/bonjour/):
-  v3.0.
-- If using ETCLabs/mDNSWindows: v1.2.0
+RDMnet requires a DNS-SD library. It is ported to use the following providers:
+- On Windows:
+  + [Bonjour SDK for Windows](https://developer.apple.com/bonjour/) v3.0
+  + [ETCLabs/mDNSWindows](https://github.com/ETCLabs/mDNSWindows) (fork of
+    Bonjour with permissive licensing) v1.2.0
+    * Note: The Windows CMake configuration will download these binaries by
+      default
+- On macOS:
+  + Native Bonjour (installed by default)
+- On Linux:
+  + [avahi-client](https://www.avahi.org/) v0.7
+    * For compiling RDMnet on Debian-based distributions:
+      `sudo apt-get install libavahi-client-dev`
 
 ### Qt
 

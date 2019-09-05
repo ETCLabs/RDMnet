@@ -25,42 +25,30 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#pragma once
+// A class for logging messages from the Broker on Linux.
+#ifndef _LINUX_BROKER_LOG_H_
+#define _LINUX_BROKER_LOG_H_
 
-#include "ControllerUtils.h"
+#include <fstream>
+#include <string>
+#include <queue>
+#include "lwpa/log.h"
+#include "lwpa/thread.h"
+#include "lwpa/lock.h"
+#include "rdmnet/broker/log.h"
 
-BEGIN_INCLUDE_QT_HEADERS()
-#include <QDialog>
-#include "ui_BrokerStaticAddGUI.h"
-END_INCLUDE_QT_HEADERS()
-
-#include "lwpa/inet.h"
-
-class IHandlesBrokerStaticAdd
+class LinuxBrokerLog : public RDMnet::BrokerLog
 {
 public:
-  virtual void handleAddBrokerByIP(QString scope, const LwpaSockaddr& addr) = 0;
-};
+  LinuxBrokerLog(const std::string& file_name);
+  virtual ~LinuxBrokerLog();
 
-class BrokerStaticAddGUI : public QDialog
-{
-  Q_OBJECT
-
-public slots:
-
-  void addBrokerTriggered();
-  void cancelTriggered();
-
-signals:
-
-  void addBrokerByIP(LwpaSockaddr addr);
-
-public:
-  BrokerStaticAddGUI(QWidget* parent = nullptr, IHandlesBrokerStaticAdd* handler = nullptr);
-  ~BrokerStaticAddGUI();
+  void OutputLogMsg(const std::string& str) override;
+  virtual void GetTimeFromCallback(LwpaLogTimeParams* time) override;
 
 private:
-  Ui::BrokerStaticAddGUI ui;
-
-  IHandlesBrokerStaticAdd* m_Handler;
+  std::fstream file_;
+  int log_level_{LWPA_LOG_INFO};
 };
+
+#endif  // _LINUX_BROKER_LOG_

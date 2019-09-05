@@ -81,13 +81,15 @@ void ListenThread::Stop()
 {
   if (!terminated_)
   {
+    terminated_ = true;
+
     if (listen_socket_ != LWPA_SOCKET_INVALID)
     {
+      lwpa_shutdown(listen_socket_, LWPA_SHUT_RD);
       lwpa_close(listen_socket_);
       listen_socket_ = LWPA_SOCKET_INVALID;
     }
 
-    terminated_ = true;
     lwpa_thread_join(&thread_handle_);
   }
 }
@@ -107,9 +109,14 @@ void ListenThread::Run()
 
       if (err != kLwpaErrOk)
       {
-        if (log_)
-          log_->Log(LWPA_LOG_ERR, "ListenThread: Accept failed with error: %s.", lwpa_strerror(err));
-        terminated_ = true;
+        // If terminated_ is set, the socket has been closed because the thread is being stopped
+        // externally. Otherwise, it's a real error.
+        if (!terminated_)
+        {
+          if (log_)
+            log_->Log(LWPA_LOG_ERR, "ListenThread: Accept failed with error: %s.", lwpa_strerror(err));
+          terminated_ = true;
+        }
         return;
       }
 

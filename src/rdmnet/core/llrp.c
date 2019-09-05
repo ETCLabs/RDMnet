@@ -215,12 +215,24 @@ lwpa_error_t init_sys_netints()
     netint_id.index = netint->index;
     netint_id.ip_type = netint->addr.type;
 
+    // create_send_socket() also tests setting the relevant send socket options and the
+    // MULTICAST_IF on the relevant interface.
     lwpa_socket_t test_socket;
     lwpa_error_t test_res = create_send_socket(&netint_id, &test_socket);
     if (test_res == kLwpaErrOk)
     {
       lwpa_close(test_socket);
-      test_res = init_sys_netint(&netint_id);
+
+      LlrpRecvSocket test_recv_sock;
+      test_res = create_recv_socket(kLlrpSocketTypeTarget, netint_id.ip_type, &test_recv_sock);
+      if (test_res == kLwpaErrOk)
+      {
+        test_res = subscribe_recv_socket(&netint_id, kLlrpSocketTypeTarget, &test_recv_sock);
+        destroy_recv_socket(&test_recv_sock);
+      }
+
+      if (test_res == kLwpaErrOk)
+        test_res = init_sys_netint(&netint_id);
     }
 
     if (test_res == kLwpaErrOk)

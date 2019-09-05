@@ -88,7 +88,7 @@ size_t pack_broker_header_with_rlp(const LwpaRootLayerPdu* rlp, uint8_t* buf, si
 
   PACK_BROKER_HEADER(rlp->datalen, vector, cur_ptr);
   cur_ptr += BROKER_PDU_HEADER_SIZE;
-  return cur_ptr - buf;
+  return (size_t)(cur_ptr - buf);
 }
 
 lwpa_error_t send_broker_header(RdmnetConnection* conn, const LwpaRootLayerPdu* rlp, uint8_t* buf, size_t buflen,
@@ -174,7 +174,7 @@ lwpa_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMsg*
   rdmnet_safe_strncpy((char*)cur_ptr, data->search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
   cur_ptr += E133_DOMAIN_STRING_PADDED_LENGTH;
   *cur_ptr++ = data->connect_flags;
-  int send_res = lwpa_send(conn->sock, buf, cur_ptr - buf, 0);
+  int send_res = lwpa_send(conn->sock, buf, (size_t)(cur_ptr - buf), 0);
   if (send_res < 0)
     return (lwpa_error_t)send_res;
 
@@ -261,7 +261,7 @@ size_t pack_connect_reply(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid
   lwpa_pack_32b(cur_ptr, data->client_uid.id);
   cur_ptr += 4;
 
-  return cur_ptr - buf;
+  return (size_t)(cur_ptr - buf);
 }
 
 /*! \brief Send a Connect Reply message on an RDMnet connection.
@@ -311,7 +311,7 @@ lwpa_error_t send_connect_reply(rdmnet_conn_t handle, const LwpaUuid* local_cid,
   lwpa_pack_32b(cur_ptr, data->client_uid.id);
   cur_ptr += 4;
 
-  int send_res = lwpa_send(conn->sock, buf, cur_ptr - buf, 0);
+  int send_res = lwpa_send(conn->sock, buf, (size_t)(cur_ptr - buf), 0);
   if (send_res < 0)
   {
     rdmnet_end_message(conn);
@@ -460,7 +460,7 @@ size_t pack_client_list(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, 
       return 0;
     }
   }
-  return cur_ptr - buf;
+  return (size_t)(cur_ptr - buf);
 }
 
 /**************************** Request Dynamic UIDs ***************************/
@@ -602,7 +602,7 @@ size_t pack_dynamic_uid_assignment_list(uint8_t* buf, size_t buflen, const LwpaU
     lwpa_pack_16b(cur_ptr, (uint16_t)cur_mapping->status_code);
     cur_ptr += 2;
   }
-  return cur_ptr - buf;
+  return (size_t)(cur_ptr - buf);
 }
 
 /********************* Fetch Dynamic UID Assignment List *********************/

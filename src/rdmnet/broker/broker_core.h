@@ -77,7 +77,6 @@ private:
   // These are never modified between startup and shutdown, so they don't need to be locked.
   bool started_{false};
   bool service_registered_{false};
-  int other_brokers_found_{0};
 
   RDMnet::BrokerLog* log_{nullptr};
   RDMnet::BrokerSocketManager* socket_manager_{nullptr};

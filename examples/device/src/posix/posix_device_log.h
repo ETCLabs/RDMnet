@@ -25,42 +25,14 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#pragma once
+#ifndef _POSIX_DEVICE_LOG_H_
+#define _POSIX_DEVICE_LOG_H_
 
-#include "ControllerUtils.h"
+#include "lwpa/bool.h"
+#include "lwpa/log.h"
 
-BEGIN_INCLUDE_QT_HEADERS()
-#include <QDialog>
-#include "ui_BrokerStaticAddGUI.h"
-END_INCLUDE_QT_HEADERS()
+void device_log_init(const char* file_name);
+const LwpaLogParams* device_get_log_params();
+void device_log_deinit();
 
-#include "lwpa/inet.h"
-
-class IHandlesBrokerStaticAdd
-{
-public:
-  virtual void handleAddBrokerByIP(QString scope, const LwpaSockaddr& addr) = 0;
-};
-
-class BrokerStaticAddGUI : public QDialog
-{
-  Q_OBJECT
-
-public slots:
-
-  void addBrokerTriggered();
-  void cancelTriggered();
-
-signals:
-
-  void addBrokerByIP(LwpaSockaddr addr);
-
-public:
-  BrokerStaticAddGUI(QWidget* parent = nullptr, IHandlesBrokerStaticAdd* handler = nullptr);
-  ~BrokerStaticAddGUI();
-
-private:
-  Ui::BrokerStaticAddGUI ui;
-
-  IHandlesBrokerStaticAdd* m_Handler;
-};
+#endif /* _POSIX_DEVICE_LOG_H_ */

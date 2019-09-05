@@ -31,8 +31,8 @@ endif()
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/tools/cmake)
 
 option(RDMNET_BUILD_TESTS "Build the RDMnet unit tests" ${OPTION_DEFAULTS})
-option(RDMNET_BUILD_EXAMPLES "Build the RDMnet example applications" ${OPTION_DEFAULTS})
-option(RDMNET_BUILD_CONSOLE_EXAMPLES "Build only the console RDMnet example applications" OFF)
+option(RDMNET_BUILD_GUI_EXAMPLES "Build the RDMnet GUI example applications" OFF)
+option(RDMNET_BUILD_CONSOLE_EXAMPLES "Build the RDMnet console example applications" ${OPTION_DEFAULTS})
 option(RDMNET_BUILD_TEST_TOOLS "Build the RDMnet test tools (typically used in development only)" OFF)
 
 if(RDMNET_BUILD_TESTS)
@@ -52,11 +52,7 @@ endif()
 
 ################################### Examples ################################## 
 
-if(RDMNET_BUILD_CONSOLE_EXAMPLES)
-  set(RDMNET_BUILD_EXAMPLES OFF)
-endif()
-
-if(RDMNET_BUILD_EXAMPLES OR RDMNET_BUILD_CONSOLE_EXAMPLES)
+if(RDMNET_BUILD_GUI_EXAMPLES OR RDMNET_BUILD_CONSOLE_EXAMPLES)
   add_subdirectory(examples)
 endif()
 

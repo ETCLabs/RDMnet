@@ -25,42 +25,4 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#pragma once
-
-#include "ControllerUtils.h"
-
-BEGIN_INCLUDE_QT_HEADERS()
-#include <QDialog>
-#include "ui_BrokerStaticAddGUI.h"
-END_INCLUDE_QT_HEADERS()
-
-#include "lwpa/inet.h"
-
-class IHandlesBrokerStaticAdd
-{
-public:
-  virtual void handleAddBrokerByIP(QString scope, const LwpaSockaddr& addr) = 0;
-};
-
-class BrokerStaticAddGUI : public QDialog
-{
-  Q_OBJECT
-
-public slots:
-
-  void addBrokerTriggered();
-  void cancelTriggered();
-
-signals:
-
-  void addBrokerByIP(LwpaSockaddr addr);
-
-public:
-  BrokerStaticAddGUI(QWidget* parent = nullptr, IHandlesBrokerStaticAdd* handler = nullptr);
-  ~BrokerStaticAddGUI();
-
-private:
-  Ui::BrokerStaticAddGUI ui;
-
-  IHandlesBrokerStaticAdd* m_Handler;
-};
+#include "rdmnet/discovery/common.h"

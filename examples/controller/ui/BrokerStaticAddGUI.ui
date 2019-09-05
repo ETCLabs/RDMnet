@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>566</width>
-    <height>166</height>
+    <width>650</width>
+    <height>201</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -93,10 +93,38 @@ Please use one of the following formats for the address:
     </layout>
    </item>
    <item>
-    <widget class="QPushButton" name="addBrokerButton">
-     <property name="text">
-      <string>Add Broker</string>
-     </property>
+    <widget class="QWidget" name="widget" native="true">
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <property name="spacing">
+       <number>6</number>
+      </property>
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="QPushButton" name="cancelButton">
+        <property name="text">
+         <string>Cancel</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="addBrokerButton">
+        <property name="text">
+         <string>Add Broker</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
   </layout>

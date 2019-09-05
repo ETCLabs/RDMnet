@@ -464,7 +464,7 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
           cur_ptr += 2;
           crmsg->client_uid.id = lwpa_upack_32b(cur_ptr);
           cur_ptr += 4;
-          next_layer_bytes_parsed = cur_ptr - &data[bytes_parsed];
+          next_layer_bytes_parsed = (size_t)(cur_ptr - &data[bytes_parsed]);
           res = kPSFullBlockParseOk;
         }
         break;
@@ -481,7 +481,7 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
           cur_ptr += 4;
           crmsg->new_addr.port = lwpa_upack_16b(cur_ptr);
           cur_ptr += 2;
-          next_layer_bytes_parsed = cur_ptr - &data[bytes_parsed];
+          next_layer_bytes_parsed = (size_t)(cur_ptr - &data[bytes_parsed]);
           res = kPSFullBlockParseOk;
         }
         break;
@@ -494,7 +494,7 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
           cur_ptr += 16;
           crmsg->new_addr.port = lwpa_upack_16b(cur_ptr);
           cur_ptr += 2;
-          next_layer_bytes_parsed = cur_ptr - &data[bytes_parsed];
+          next_layer_bytes_parsed = (size_t)(cur_ptr - &data[bytes_parsed]);
           res = kPSFullBlockParseOk;
         }
         break;
@@ -529,7 +529,7 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
           const uint8_t* cur_ptr = &data[bytes_parsed];
           get_disconnect_msg(bmsg)->disconnect_reason = (rdmnet_disconnect_reason_t)lwpa_upack_16b(cur_ptr);
           cur_ptr += 2;
-          next_layer_bytes_parsed = cur_ptr - &data[bytes_parsed];
+          next_layer_bytes_parsed = (size_t)(cur_ptr - &data[bytes_parsed]);
           res = kPSFullBlockParseOk;
         }
         break;
@@ -895,8 +895,8 @@ size_t parse_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t
       cur_ptr += LWPA_UUID_BYTES;
       mapping->status_code = (dynamic_uid_status_t)lwpa_upack_16b(cur_ptr);
       cur_ptr += 2;
-      bytes_parsed += (cur_ptr - &data[bytes_parsed]);
-      lstate->size_parsed += (cur_ptr - &data[bytes_parsed]);
+      bytes_parsed += (size_t)(cur_ptr - &data[bytes_parsed]);
+      lstate->size_parsed += (size_t)(cur_ptr - &data[bytes_parsed]);
 
       if (lstate->size_parsed >= lstate->full_list_size)
       {

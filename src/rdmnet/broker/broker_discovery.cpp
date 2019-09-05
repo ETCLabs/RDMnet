@@ -143,22 +143,6 @@ void BrokerDiscoveryManager::UnregisterBroker()
   rdmnetdisc_unregister_broker(handle_);
 }
 
-void BrokerDiscoveryManager::Standby()
-{
-  rdmnetdisc_unregister_broker(handle_);
-  assigned_service_name_.clear();
-}
-
-lwpa_error_t BrokerDiscoveryManager::Resume()
-{
-  lwpa_error_t res = rdmnetdisc_register_broker(&cur_config_, &handle_);
-  if (res != kLwpaErrOk)
-  {
-    cur_config_valid_ = false;
-  }
-  return res;
-}
-
 void BrokerDiscoveryManager::LibNotifyBrokerRegistered(rdmnet_registered_broker_t handle,
                                                        const char* assigned_service_name)
 {

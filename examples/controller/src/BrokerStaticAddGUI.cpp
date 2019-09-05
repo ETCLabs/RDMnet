@@ -43,6 +43,7 @@ BrokerStaticAddGUI::BrokerStaticAddGUI(QWidget* parent, IHandlesBrokerStaticAdd*
   ui.portEdit->setValidator(new QIntValidator(1, 65535, this));
 
   connect(ui.addBrokerButton, SIGNAL(clicked()), this, SLOT(addBrokerTriggered()));
+  connect(ui.cancelButton, SIGNAL(clicked()), this, SLOT(cancelTriggered()));
 
   setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 }
@@ -96,4 +97,9 @@ void BrokerStaticAddGUI::addBrokerTriggered()
     brokerAddr.port = static_cast<uint16_t>(ui.portEdit->text().toInt());
     m_Handler->handleAddBrokerByIP(scopeString, brokerAddr);
   }
+}
+
+void BrokerStaticAddGUI::cancelTriggered()
+{
+  close();
 }

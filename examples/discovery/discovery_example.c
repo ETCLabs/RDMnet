@@ -25,21 +25,25 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-// bonjour_register: Test app which attempts to register a service with Bonjour.
-
+#include "lwpa/thread.h"
 #include "rdmnet/core.h"
 #include "rdmnet/core/discovery.h"
 #include "rdmnet/core/util.h"
 #include <stdio.h>
-#include <windows.h>
 
 void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info, void* context)
 {
   (void)handle;
   (void)context;
+
   printf("A Broker was found on scope %s\n", broker_info->scope);
   printf("Service Name: %s\n", broker_info->service_name);
-  printf("Port: %d\n", broker_info->port);
+  for (BrokerListenAddr* listen_addr = broker_info->listen_addr_list; listen_addr; listen_addr = listen_addr->next)
+  {
+    char addr_str[LWPA_INET6_ADDRSTRLEN];
+    lwpa_inet_ntop(&listen_addr->addr, addr_str, LWPA_INET6_ADDRSTRLEN);
+    printf("Address: %s:%d\n", addr_str, broker_info->port);
+  }
 }
 
 void monitorcb_broker_lost(rdmnet_scope_monitor_t handle, const char* scope, const char* service_name, void* context)
@@ -119,7 +123,7 @@ int main(int argc, char* argv[])
 
     rdmnetdisc_fill_default_broker_info(&config.my_info);
     lwpa_generate_v4_uuid(&config.my_info.cid);
-    rdmnet_safe_strncpy(config.my_info.service_name, "UNIQUE NAME TWO", E133_SERVICE_NAME_STRING_PADDED_LENGTH);
+    rdmnet_safe_strncpy(config.my_info.service_name, "UNIQUE NAME", E133_SERVICE_NAME_STRING_PADDED_LENGTH);
     rdmnet_safe_strncpy(config.my_info.model, "Broker prototype", E133_MODEL_STRING_PADDED_LENGTH);
     rdmnet_safe_strncpy(config.my_info.manufacturer, "ETC", E133_MANUFACTURER_STRING_PADDED_LENGTH);
     config.my_info.port = 0x4567;
@@ -163,8 +167,7 @@ int main(int argc, char* argv[])
 
   while (true)
   {
-    rdmnetdisc_tick();
-    Sleep(500);
+    lwpa_thread_sleep(500);
   }
 
   rdmnet_core_deinit();

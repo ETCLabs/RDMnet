@@ -439,7 +439,7 @@ void handle_llrp_message(const uint8_t* data, size_t data_size, LlrpTarget* targ
         // TODO allow multiple probe replies to be queued
         if (request->contains_my_uid && !netint->reply_pending)
         {
-          int backoff_ms;
+          uint32_t backoff_ms;
 
           // Check the filter values.
           if (!((request->filter & LLRP_FILTERVAL_BROKERS_ONLY) && target->component_type != kLlrpCompBroker) &&
@@ -448,7 +448,7 @@ void handle_llrp_message(const uint8_t* data, size_t data_size, LlrpTarget* targ
             netint->reply_pending = true;
             netint->pending_reply_cid = msg.header.sender_cid;
             netint->pending_reply_trans_num = msg.header.transaction_number;
-            backoff_ms = (rand() * LLRP_MAX_BACKOFF_MS / RAND_MAX);
+            backoff_ms = (uint32_t)(rand() * LLRP_MAX_BACKOFF_MS / RAND_MAX);
             lwpa_timer_start(&netint->reply_backoff, backoff_ms);
           }
         }
@@ -573,6 +573,11 @@ lwpa_error_t setup_target_netints(const LlrpTargetOptionalConfig* config, LlrpTa
           break;
       }
     }
+
+    if (res != kLwpaErrOk)
+    {
+      lwpa_rbtree_clear_with_cb(&target->netints, cleanup_target_netint);
+    }
   }
   else
   {
@@ -581,16 +586,19 @@ lwpa_error_t setup_target_netints(const LlrpTargetOptionalConfig* config, LlrpTa
     for (LlrpNetint* netint = (LlrpNetint*)netint_iter.node->value; netint;
          netint = (LlrpNetint*)lwpa_rbiter_next(&netint_iter))
     {
+      // If the user hasn't provided a list of network interfaces to operate on, failing to
+      // intialize on a network interface will be non-fatal and we will log it.
       res = setup_target_netint(&netint->id, target);
       if (res != kLwpaErrOk)
-        break;
+      {
+        lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
+                 RDMNET_LOG_MSG("Failed to intiailize LLRP target for listening on network interface index %d: '%s'"),
+                 netint->id.index, lwpa_strerror(res));
+        res = kLwpaErrOk;
+      }
     }
   }
 
-  if (res != kLwpaErrOk)
-  {
-    lwpa_rbtree_clear_with_cb(&target->netints, cleanup_target_netint);
-  }
   return res;
 }
 

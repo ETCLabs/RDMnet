@@ -1,9 +1,10 @@
 
-if(NOT DEFINED QTDIR)
+set(QT_REQUIRED_VERSION 5.9.7)
+set(QTDIR "" CACHE STRING "Qt (>= ${QT_REQUIRED_VERSION}) installation directory for building GUI examples")
+if(NOT QTDIR)
   set(QTDIR $ENV{QTDIR})
 endif()
 set(CMAKE_PREFIX_PATH ${QTDIR})
-set(QT_REQUIRED_VERSION 5.9.7)
 
 find_package(Qt5Widgets ${QT_REQUIRED_VERSION} CONFIG)
 
@@ -23,6 +24,8 @@ endif()
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # Instruct CMake to run moc automatically when needed
 set(CMAKE_AUTOMOC ON)
+# Instruct CMake to run rcc automatically when needed
+set(CMAKE_AUTORCC ON)
 # Create code from a list of Qt designer ui files
 set(CMAKE_AUTOUIC ON)
 

@@ -145,6 +145,7 @@ void BrokerShell::Run(RDMnet::BrokerLog* log, RDMnet::BrokerSocketManager* sock_
 
       ApplySettingsChanges(broker_settings, ifaces);
       broker.Startup(broker_settings, initial_data_.port, ifaces);
+      restart_requested_ = false;
     }
 
     lwpa_thread_sleep(300);
