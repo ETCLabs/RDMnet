@@ -32,11 +32,11 @@
 #ifndef _RDMNET_CORE_LLRP_TARGET_H_
 #define _RDMNET_CORE_LLRP_TARGET_H_
 
-#include "lwpa/common.h"
-#include "lwpa/uuid.h"
-#include "lwpa/int.h"
-#include "lwpa/error.h"
-#include "lwpa/inet.h"
+#include "etcpal/common.h"
+#include "etcpal/uuid.h"
+#include "etcpal/int.h"
+#include "etcpal/error.h"
+#include "etcpal/inet.h"
 #include "rdm/uid.h"
 #include "rdm/message.h"
 #include "rdmnet/core/llrp.h"
@@ -52,7 +52,7 @@
 typedef struct LlrpLocalRdmResponse
 {
   /*! The CID of the LLRP Manager to which this response is addressed. */
-  LwpaUuid dest_cid;
+  EtcPalUuid dest_cid;
   /*! The sequence number received in the corresponding LlrpRemoteRdmCommand. */
   uint32_t seq_num;
   /*! The network interface ID in the corresponding LlrpRemoteRdmCommand. */
@@ -65,7 +65,7 @@ typedef struct LlrpLocalRdmResponse
 typedef struct LlrpRemoteRdmCommand
 {
   /*! The CID of the LLRP Mangaer from which this command was received. */
-  LwpaUuid src_cid;
+  EtcPalUuid src_cid;
   /*! The sequence number received with this command, to be echoed in the corresponding
    *  LlrpLocalRdmResponse. */
   uint32_t seq_num;
@@ -118,7 +118,7 @@ typedef struct LlrpTargetConfig
 {
   LlrpTargetOptionalConfig optional;
 
-  LwpaUuid cid;
+  EtcPalUuid cid;
   llrp_component_t component_type;
   LlrpTargetCallbacks callbacks;
   void* callback_context;
@@ -131,11 +131,11 @@ typedef struct LlrpTargetConfig
 extern "C" {
 #endif
 
-lwpa_error_t rdmnet_llrp_target_create(const LlrpTargetConfig* config, llrp_target_t* handle);
+etcpal_error_t rdmnet_llrp_target_create(const LlrpTargetConfig* config, llrp_target_t* handle);
 void rdmnet_llrp_target_destroy(llrp_target_t handle);
 
 void rdmnet_llrp_target_update_connection_state(llrp_target_t handle, bool connected_to_broker);
-lwpa_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLocalRdmResponse* resp);
+etcpal_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLocalRdmResponse* resp);
 
 #ifdef __cplusplus
 }

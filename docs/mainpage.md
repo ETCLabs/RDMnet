@@ -55,7 +55,7 @@ RDMnet is currently ported for the following platforms and toolchains:
 Prerequisites:
 
 * **For all applications: Microsoft Visual Studio**. Currently the only
-  toolchain for which lwpa (and thus RDMnet) is ported. Visual Studio 2017
+  toolchain for which EtcPal (and thus RDMnet) is ported. Visual Studio 2017
   Community Edition is free, without restriction, for open-source projects. It
   is available [here](https://visualstudio.microsoft.com/downloads/). Make sure
   to install Visual C++ as part of the Visual Studio installation.
@@ -138,17 +138,23 @@ To configure and build RDMnet on its own using CMake, follow these steps:
 
 ## Dependencies
 
-### lwpa
+### EtcPal
 
-RDMnet depends on the LightWeight Platform Abstraction (lwpa) library for
-platform abstraction. lwpa is automatically included as a submodule for RDMnet
-source builds. See the [documentation for lwpa](https://etclabs.github.io/lwpa).
+RDMnet depends on ETC's Platform Abstraction Layer (EtcPal) so that it can be 
+platform-neutral. By default, EtcPal is automatically included as a submodule
+in the `external` directory for RDMnet source builds. The CMake configuration
+will automatically update and pull the submodule before building.
+
+See the [documentation for EtcPal](https://etclabs.github.io/EtcPal).
 
 ### RDM
 
-RDMnet depends on the ETC's RDM library for RDM protocol support. RDM is
-automatically included as a submodule for RDMnet source builds. See the
-[documentation for RDM](https://etclabs.github.io/RDM).
+RDMnet depends on the ETC's RDM library for RDM protocol support. By default,
+RDM is automatically included as a submodule in the `external` directory for
+RDMnet source builds. The CMake configuration will automatically update and
+pull the submodule before building.
+
+See the [documentation for RDM](https://etclabs.github.io/RDM).
 
 ### DNS-SD
 

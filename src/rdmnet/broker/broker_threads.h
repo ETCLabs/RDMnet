@@ -35,10 +35,10 @@
 #include <memory>
 #include <vector>
 
-#include "lwpa/thread.h"
-#include "lwpa/lock.h"
-#include "lwpa/inet.h"
-#include "lwpa/socket.h"
+#include "etcpal/thread.h"
+#include "etcpal/lock.h"
+#include "etcpal/inet.h"
+#include "etcpal/socket.h"
 #include "rdmnet/core/connection.h"
 #include "rdmnet/broker.h"
 #include "broker_util.h"
@@ -52,14 +52,14 @@ public:
   // listener threads anyway...
   // The address & port fields of addr are used.
   // Do NOT stop the listening thread in this callback!
-  virtual bool NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr& remote_addr) = 0;
+  virtual bool NewConnection(etcpal_socket_t new_sock, const EtcPalSockaddr& remote_addr) = 0;
 };
 
 // Listens for TCP connections
 class ListenThread
 {
 public:
-  ListenThread(lwpa_socket_t listen_sock, ListenThreadNotify* pnotify, RDMnet::BrokerLog* log);
+  ListenThread(etcpal_socket_t listen_sock, ListenThreadNotify* pnotify, RDMnet::BrokerLog* log);
   virtual ~ListenThread();
 
   // Creates the listening socket and starts the thread.
@@ -75,8 +75,8 @@ protected:
   bool terminated_{true};
   ListenThreadNotify* notify_{nullptr};
 
-  lwpa_thread_t thread_handle_;
-  lwpa_socket_t listen_socket_{LWPA_SOCKET_INVALID};
+  etcpal_thread_t thread_handle_;
+  etcpal_socket_t listen_socket_{ETCPAL_SOCKET_INVALID};
 
   RDMnet::BrokerLog* log_{nullptr};
 };
@@ -108,7 +108,7 @@ public:
 
 protected:
   bool terminated_;
-  lwpa_thread_t thread_handle_;
+  etcpal_thread_t thread_handle_;
   int sleep_ms_;
   ClientServiceThreadNotify* notify_;
 };

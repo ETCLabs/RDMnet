@@ -32,7 +32,7 @@
 #include <stdbool.h>
 #include <wchar.h>
 #include <string.h>
-#include "lwpa/socket.h"
+#include "etcpal/socket.h"
 #include "rdmnet/device.h"
 #include "example_device.h"
 #include "win_device_log.h"
@@ -55,12 +55,12 @@ bool set_scope(wchar_t* arg, char* scope_buf)
   return false;
 }
 
-bool set_static_broker(wchar_t* arg, LwpaSockaddr* static_broker_addr)
+bool set_static_broker(wchar_t* arg, EtcPalSockaddr* static_broker_addr)
 {
   wchar_t* sep = wcschr(arg, ':');
-  if (sep != NULL && sep - arg < LWPA_INET6_ADDRSTRLEN)
+  if (sep != NULL && sep - arg < ETCPAL_INET6_ADDRSTRLEN)
   {
-    wchar_t ip_str[LWPA_INET6_ADDRSTRLEN];
+    wchar_t ip_str[ETCPAL_INET6_ADDRSTRLEN];
     ptrdiff_t ip_str_len = sep - arg;
     struct sockaddr_storage tst_addr;
 
@@ -76,7 +76,7 @@ bool set_static_broker(wchar_t* arg, LwpaSockaddr* static_broker_addr)
     if (convert_res == 1)
     {
       tst_addr.ss_family = AF_INET;
-      ip_os_to_lwpa((lwpa_os_ipaddr_t*)&tst_addr, &static_broker_addr->ip);
+      ip_os_to_etcpal((etcpal_os_ipaddr_t*)&tst_addr, &static_broker_addr->ip);
     }
     else
     {
@@ -84,7 +84,7 @@ bool set_static_broker(wchar_t* arg, LwpaSockaddr* static_broker_addr)
       if (convert_res == 1)
       {
         tst_addr.ss_family = AF_INET6;
-        ip_os_to_lwpa((lwpa_os_ipaddr_t*)&tst_addr, &static_broker_addr->ip);
+        ip_os_to_etcpal((etcpal_os_ipaddr_t*)&tst_addr, &static_broker_addr->ip);
       }
     }
     if (convert_res == 1 && 1 == swscanf(sep + 1, L"%hu", &static_broker_addr->port))
@@ -108,10 +108,10 @@ BOOL WINAPI console_handler(DWORD signal)
 
 int wmain(int argc, wchar_t* argv[])
 {
-  lwpa_error_t res = kLwpaErrOk;
+  etcpal_error_t res = kEtcPalErrOk;
   bool should_exit = false;
   RdmnetScopeConfig scope_config;
-  const LwpaLogParams* lparams;
+  const EtcPalLogParams* lparams;
 
   RDMNET_CLIENT_SET_DEFAULT_SCOPE(&scope_config);
 
@@ -164,19 +164,19 @@ int wmain(int argc, wchar_t* argv[])
   /* Handle console signals */
   if (!SetConsoleCtrlHandler(console_handler, TRUE))
   {
-    lwpa_log(lparams, LWPA_LOG_ERR, "Could not set console signal handler.");
+    etcpal_log(lparams, ETCPAL_LOG_ERR, "Could not set console signal handler.");
     return 1;
   }
 
   /* Startup the device */
   res = device_init(&scope_config, lparams);
-  if (res != kLwpaErrOk)
+  if (res != kEtcPalErrOk)
   {
-    lwpa_log(lparams, LWPA_LOG_ERR, "Device failed to initialize: '%s'", lwpa_strerror(res));
+    etcpal_log(lparams, ETCPAL_LOG_ERR, "Device failed to initialize: '%s'", etcpal_strerror(res));
     return 1;
   }
 
-  lwpa_log(lparams, LWPA_LOG_INFO, "Device initialized.");
+  etcpal_log(lparams, ETCPAL_LOG_INFO, "Device initialized.");
 
   while (device_keep_running)
   {

@@ -26,7 +26,7 @@
 ******************************************************************************/
 #include "AboutGUI.h"
 
-AboutGUI::AboutGUI(QWidget* parent, QString qtVersion, QString rdmNetVersion) : QDialog(parent)
+AboutGUI::AboutGUI(QWidget* parent, QString qt_version, QString rdmnet_version, QString etcpal_version) : QDialog(parent)
 {
   QFont titleFont("Arial", 18, QFont::Bold);
   QFont versionFont("Arial", 14, QFont::Bold);
@@ -34,10 +34,10 @@ AboutGUI::AboutGUI(QWidget* parent, QString qtVersion, QString rdmNetVersion) : 
   ui.setupUi(this);
 
   ui.titleLabel->setFont(titleFont);
-  ui.versionLabel->setText(ui.versionLabel->text() + rdmNetVersion);
+  ui.versionLabel->setText(ui.versionLabel->text() + rdmnet_version);
   ui.versionLabel->setFont(versionFont);
-  ui.qtVersionLabel->setText(ui.qtVersionLabel->text() + qtVersion);
-  ui.lwpaVersionLabel->setText(ui.lwpaVersionLabel->text() + rdmNetVersion);
+  ui.qtVersionLabel->setText(ui.qtVersionLabel->text() + qt_version);
+  ui.etcpalVersionLabel->setText(ui.etcpalVersionLabel->text() + etcpal_version);
 
   ui.repoLinkLabel->setText("<a href=\"https://github.com/ETCLabs/RDMnet/\">https://github.com/ETCLabs/RDMnet</a>");
   ui.repoLinkLabel->setTextFormat(Qt::RichText);

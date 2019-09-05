@@ -42,7 +42,7 @@ MacBrokerLog::~MacBrokerLog()
   file_.close();
 }
 
-void MacBrokerLog::GetTimeFromCallback(LwpaLogTimeParams* time_params)
+void MacBrokerLog::GetTimeFromCallback(EtcPalLogTimeParams* time_params)
 {
   time_t cur_time;
   time(&cur_time);

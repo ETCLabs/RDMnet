@@ -32,7 +32,7 @@
 #include <stdexcept>
 #include <queue>
 
-#include "lwpa/lock.h"
+#include "etcpal/lock.h"
 #include "rdmnet/core/rpt_prot.h"
 
 // Utility functions for manipulating messages

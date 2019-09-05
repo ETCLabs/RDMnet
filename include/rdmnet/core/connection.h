@@ -37,11 +37,11 @@
 #define _RDMNET_CORE_CONNECTION_H_
 
 #include <stddef.h>
-#include "lwpa/bool.h"
-#include "lwpa/log.h"
-#include "lwpa/error.h"
-#include "lwpa/inet.h"
-#include "lwpa/socket.h"
+#include "etcpal/bool.h"
+#include "etcpal/log.h"
+#include "etcpal/error.h"
+#include "etcpal/inet.h"
+#include "etcpal/socket.h"
 #include "rdmnet/core.h"
 #include "rdmnet/core/message.h"
 
@@ -69,7 +69,7 @@ typedef struct RdmnetConnectedInfo
   RdmUid client_uid;
   /*! The remote address to which we are connected. This could be different from the original
    *  address requested in the case of a redirect. */
-  LwpaSockaddr connected_addr;
+  EtcPalSockaddr connected_addr;
 } RdmnetConnectedInfo;
 
 /*! A high-level reason for RDMnet connection failure. */
@@ -96,7 +96,7 @@ typedef struct RdmnetConnectFailedInfo
   rdmnet_connect_fail_event_t event;
   /*! The system error code associated with the failure; valid if event is
    *  kRdmnetConnectFailSocketFailure or kRdmnetConnectFailTcpLevel. */
-  lwpa_error_t socket_err;
+  etcpal_error_t socket_err;
   /*! The reason given in the RDMnet-level connection refuse message. Valid if event is
    *  kRdmnetConnectFailRejected. */
   rdmnet_connect_status_t rdmnet_reason;
@@ -119,7 +119,7 @@ typedef struct RdmnetDisconnectedInfo
   rdmnet_disconnect_event_t event;
   /*! The system error code associated with the disconnect; valid if event is
    *  kRdmnetDisconnectAbruptClose. */
-  lwpa_error_t socket_err;
+  etcpal_error_t socket_err;
   /*! The reason given in the RDMnet-level disconnect message. Valid if event is
    *  kRdmnetDisconnectGracefulRemoteInitiated. */
   rdmnet_disconnect_reason_t rdmnet_reason;
@@ -170,7 +170,7 @@ typedef struct RdmnetConnCallbacks
 typedef struct RdmnetConnectionConfig
 {
   /*! The CID of the local component that will be using this connection. */
-  LwpaUuid local_cid;
+  EtcPalUuid local_cid;
   /*! A set of callbacks to receive asynchronous notifications of connection events. */
   RdmnetConnCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. */
@@ -185,11 +185,11 @@ typedef struct RdmnetConnectionConfig
 extern "C" {
 #endif
 
-lwpa_error_t rdmnet_connection_create(const RdmnetConnectionConfig* config, rdmnet_conn_t* handle);
-lwpa_error_t rdmnet_connect(rdmnet_conn_t handle, const LwpaSockaddr* remote_addr,
+etcpal_error_t rdmnet_connection_create(const RdmnetConnectionConfig* config, rdmnet_conn_t* handle);
+etcpal_error_t rdmnet_connect(rdmnet_conn_t handle, const EtcPalSockaddr* remote_addr,
                             const ClientConnectMsg* connect_data);
-lwpa_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking);
-lwpa_error_t rdmnet_connection_destroy(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t* disconnect_reason);
+etcpal_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking);
+etcpal_error_t rdmnet_connection_destroy(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t* disconnect_reason);
 
 int rdmnet_send(rdmnet_conn_t handle, const uint8_t* data, size_t size);
 
@@ -198,9 +198,9 @@ int rdmnet_send(rdmnet_conn_t handle, const uint8_t* data, size_t size);
  *  These functions are for advanced usage and are generally only used by broker apps.
  *  @{
  */
-lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t sock, const LwpaSockaddr* remote_addr);
+etcpal_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, etcpal_socket_t sock, const EtcPalSockaddr* remote_addr);
 void rdmnet_socket_data_received(rdmnet_conn_t handle, const uint8_t* data, size_t data_size);
-void rdmnet_socket_error(rdmnet_conn_t handle, lwpa_error_t socket_err);
+void rdmnet_socket_error(rdmnet_conn_t handle, etcpal_error_t socket_err);
 /*! @} */
 
 #ifdef __cplusplus

@@ -28,8 +28,8 @@
 #include "example_device.h"
 
 #include <stdio.h>
-#include "lwpa/int.h"
-#include "lwpa/pack.h"
+#include "etcpal/int.h"
+#include "etcpal/pack.h"
 #include "rdm/uid.h"
 #include "rdm/defs.h"
 #include "rdm/responder.h"
@@ -53,7 +53,7 @@ static struct device_state
 
   bool connected;
 
-  const LwpaLogParams* lparams;
+  const EtcPalLogParams* lparams;
 } device_state;
 
 /*********************** Private function prototypes *************************/
@@ -90,32 +90,32 @@ void device_print_version()
   printf("or implied.\n");
 }
 
-lwpa_error_t device_init(const RdmnetScopeConfig* scope_config, const LwpaLogParams* lparams)
+etcpal_error_t device_init(const RdmnetScopeConfig* scope_config, const EtcPalLogParams* lparams)
 {
   if (!scope_config)
-    return kLwpaErrInvalid;
+    return kEtcPalErrInvalid;
 
   device_state.lparams = lparams;
 
-  lwpa_log(lparams, LWPA_LOG_INFO, "ETC Prototype RDMnet Device Version " RDMNET_VERSION_STRING);
+  etcpal_log(lparams, ETCPAL_LOG_INFO, "ETC Prototype RDMnet Device Version " RDMNET_VERSION_STRING);
 
   rdmnet_safe_strncpy(device_state.cur_search_domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
   device_state.cur_scope_config = *scope_config;
   default_responder_init(scope_config, device_state.cur_search_domain);
 
-  lwpa_error_t res = rdmnet_device_init(lparams);
-  if (res != kLwpaErrOk)
+  etcpal_error_t res = rdmnet_device_init(lparams);
+  if (res != kEtcPalErrOk)
   {
-    lwpa_log(lparams, LWPA_LOG_ERR, "RDMnet initialization failed with error: '%s'", lwpa_strerror(res));
+    etcpal_log(lparams, ETCPAL_LOG_ERR, "RDMnet initialization failed with error: '%s'", etcpal_strerror(res));
     return res;
   }
 
   RdmnetDeviceConfig config;
   RDMNET_DEVICE_CONFIG_INIT(&config, 0x6574);
-  // A typical hardware-locked device would use lwpa_generate_v3_uuid() to generate a CID that is
+  // A typical hardware-locked device would use etcpal_generate_v3_uuid() to generate a CID that is
   // the same every time. But this example device is not locked to hardware, so a V4 UUID makes
   // more sense.
-  lwpa_generate_v4_uuid(&config.cid);
+  etcpal_generate_v4_uuid(&config.cid);
   config.scope_config = *scope_config;
   config.callbacks.connected = device_connected;
   config.callbacks.connect_failed = device_connect_failed;
@@ -125,9 +125,9 @@ lwpa_error_t device_init(const RdmnetScopeConfig* scope_config, const LwpaLogPar
   config.callback_context = NULL;
 
   res = rdmnet_device_create(&config, &device_state.device_handle);
-  if (res != kLwpaErrOk)
+  if (res != kEtcPalErrOk)
   {
-    lwpa_log(lparams, LWPA_LOG_ERR, "Device initialization failed with error: '%s'", lwpa_strerror(res));
+    etcpal_log(lparams, ETCPAL_LOG_ERR, "Device initialization failed with error: '%s'", etcpal_strerror(res));
     rdmnet_core_deinit();
   }
   return res;
@@ -146,7 +146,7 @@ void device_connected(rdmnet_device_t handle, const RdmnetClientConnectedInfo* i
   (void)context;
 
   default_responder_update_connection_status(true, &info->broker_addr);
-  lwpa_log(device_state.lparams, LWPA_LOG_INFO, "Device connected to Broker on scope '%s'.",
+  etcpal_log(device_state.lparams, ETCPAL_LOG_INFO, "Device connected to Broker on scope '%s'.",
            device_state.cur_scope_config.scope);
 }
 
@@ -164,7 +164,7 @@ void device_disconnected(rdmnet_device_t handle, const RdmnetClientDisconnectedI
   (void)info;
 
   default_responder_update_connection_status(false, NULL);
-  lwpa_log(device_state.lparams, LWPA_LOG_INFO, "Device disconnected from Broker on scope '%s'.",
+  etcpal_log(device_state.lparams, ETCPAL_LOG_INFO, "Device disconnected from Broker on scope '%s'.",
            device_state.cur_scope_config.scope);
 }
 
@@ -213,13 +213,13 @@ void device_handle_rpt_command(const RemoteRdmCommand* cmd, rdmnet_data_changed_
   if (rdm_cmd->command_class != kRdmCCGetCommand && rdm_cmd->command_class != kRdmCCSetCommand)
   {
     device_send_rpt_status(VECTOR_RPT_STATUS_INVALID_COMMAND_CLASS, cmd);
-    lwpa_log(device_state.lparams, LWPA_LOG_WARNING, "Device received RDM command with invalid command class 0x%02x",
+    etcpal_log(device_state.lparams, ETCPAL_LOG_WARNING, "Device received RDM command with invalid command class 0x%02x",
              rdm_cmd->command_class);
   }
   else if (!default_responder_supports_pid(rdm_cmd->param_id))
   {
     device_send_rpt_nack(E120_NR_UNKNOWN_PID, cmd);
-    lwpa_log(device_state.lparams, LWPA_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for unknown PID 0x%04x",
+    etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for unknown PID 0x%04x",
              cmd->source_uid.manu, cmd->source_uid.id, rdm_cmd->param_id);
   }
   else
@@ -230,14 +230,14 @@ void device_handle_rpt_command(const RemoteRdmCommand* cmd, rdmnet_data_changed_
     if (device_handle_rdm_command(&cmd->rdm, resp_list, &resp_list_size, &nack_reason, data_changed))
     {
       device_send_rpt_response(resp_list, resp_list_size, cmd);
-      lwpa_log(device_state.lparams, LWPA_LOG_DEBUG, "ACK'ing %s for PID 0x%04x from Controller %04x:%08x",
+      etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG, "ACK'ing %s for PID 0x%04x from Controller %04x:%08x",
                rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", rdm_cmd->param_id,
                cmd->source_uid.manu, cmd->source_uid.id);
     }
     else
     {
       device_send_rpt_nack(nack_reason, cmd);
-      lwpa_log(device_state.lparams, LWPA_LOG_DEBUG,
+      etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG,
                "Sending %s NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
                rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", cmd->source_uid.manu,
                cmd->source_uid.id, rdm_cmd->param_id, nack_reason);
@@ -251,13 +251,13 @@ void device_handle_llrp_command(const LlrpRemoteRdmCommand* cmd, rdmnet_data_cha
   if (rdm_cmd->command_class != kRdmCCGetCommand && rdm_cmd->command_class != kRdmCCSetCommand)
   {
     device_send_llrp_nack(E120_NR_UNSUPPORTED_COMMAND_CLASS, cmd);
-    lwpa_log(device_state.lparams, LWPA_LOG_WARNING,
+    etcpal_log(device_state.lparams, ETCPAL_LOG_WARNING,
              "Device received LLRP RDM command with invalid command class 0x%02x", rdm_cmd->command_class);
   }
   else if (!default_responder_supports_pid(rdm_cmd->param_id))
   {
     device_send_llrp_nack(E120_NR_UNKNOWN_PID, cmd);
-    lwpa_log(device_state.lparams, LWPA_LOG_DEBUG, "Sending NACK to LLRP Manager %04x:%08x for unknown PID 0x%04x",
+    etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG, "Sending NACK to LLRP Manager %04x:%08x for unknown PID 0x%04x",
              cmd->rdm.source_uid.manu, cmd->rdm.source_uid.id, rdm_cmd->param_id);
   }
   else
@@ -270,15 +270,15 @@ void device_handle_llrp_command(const LlrpRemoteRdmCommand* cmd, rdmnet_data_cha
       if (resp_list_size > 1)
       {
         device_send_llrp_nack(E137_7_NR_ACTION_NOT_SUPPORTED, cmd);
-        lwpa_log(
-            device_state.lparams, LWPA_LOG_DEBUG,
+        etcpal_log(
+            device_state.lparams, ETCPAL_LOG_DEBUG,
             "Sending NACK to LLRP Manager %04x:%08x for supported PID 0x%04x because response would cause ACK_OVERFLOW",
             cmd->rdm.source_uid.manu, cmd->rdm.source_uid.id, rdm_cmd->param_id);
       }
       else
       {
         device_send_llrp_response(resp_list, cmd);
-        lwpa_log(device_state.lparams, LWPA_LOG_DEBUG, "ACK'ing %s for PID 0x%04x from LLRP Manager %04x:%08x",
+        etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG, "ACK'ing %s for PID 0x%04x from LLRP Manager %04x:%08x",
                  rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", rdm_cmd->param_id,
                  cmd->rdm.source_uid.manu, cmd->rdm.source_uid.id);
       }
@@ -286,7 +286,7 @@ void device_handle_llrp_command(const LlrpRemoteRdmCommand* cmd, rdmnet_data_cha
     else
     {
       device_send_llrp_nack(nack_reason, cmd);
-      lwpa_log(device_state.lparams, LWPA_LOG_DEBUG,
+      etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG,
                "Sending %s NACK to LLRP Manager %04x:%08x for supported PID 0x%04x with reason 0x%04x",
                rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", cmd->rdm.source_uid.manu,
                cmd->rdm.source_uid.id, rdm_cmd->param_id, nack_reason);
@@ -354,11 +354,11 @@ void device_send_rpt_status(rpt_status_code_t status_code, const RemoteRdmComman
   LocalRptStatus status;
   rdmnet_create_status_from_command(received_cmd, status_code, &status);
 
-  lwpa_error_t send_res = rdmnet_device_send_status(device_state.device_handle, &status);
-  if (send_res != kLwpaErrOk)
+  etcpal_error_t send_res = rdmnet_device_send_status(device_state.device_handle, &status);
+  if (send_res != kEtcPalErrOk)
   {
-    lwpa_log(device_state.lparams, LWPA_LOG_ERR, "Error sending RPT Status message to Broker: '%s'.",
-             lwpa_strerror(send_res));
+    etcpal_log(device_state.lparams, ETCPAL_LOG_ERR, "Error sending RPT Status message to Broker: '%s'.",
+             etcpal_strerror(send_res));
   }
 }
 
@@ -374,10 +374,10 @@ void device_send_rpt_response(RdmResponse* resp_list, size_t num_responses, cons
   LocalRdmResponse resp_to_send;
   rdmnet_create_response_from_command(received_cmd, resp_list, num_responses, &resp_to_send);
 
-  lwpa_error_t send_res = rdmnet_device_send_rdm_response(device_state.device_handle, &resp_to_send);
-  if (send_res != kLwpaErrOk)
+  etcpal_error_t send_res = rdmnet_device_send_rdm_response(device_state.device_handle, &resp_to_send);
+  if (send_res != kEtcPalErrOk)
   {
-    lwpa_log(device_state.lparams, LWPA_LOG_ERR, "Error sending RPT RDM response: '%s.", lwpa_strerror(send_res));
+    etcpal_log(device_state.lparams, ETCPAL_LOG_ERR, "Error sending RPT RDM response: '%s.", etcpal_strerror(send_res));
   }
 }
 
@@ -393,9 +393,9 @@ void device_send_llrp_response(RdmResponse* resp, const LlrpRemoteRdmCommand* re
   LlrpLocalRdmResponse resp_to_send;
   LLRP_CREATE_RESPONSE_FROM_COMMAND(&resp_to_send, received_cmd, resp);
 
-  lwpa_error_t send_res = rdmnet_device_send_llrp_response(device_state.device_handle, &resp_to_send);
-  if (send_res != kLwpaErrOk)
+  etcpal_error_t send_res = rdmnet_device_send_llrp_response(device_state.device_handle, &resp_to_send);
+  if (send_res != kEtcPalErrOk)
   {
-    lwpa_log(device_state.lparams, LWPA_LOG_ERR, "Error sending LLRP RDM response: '%s.", lwpa_strerror(send_res));
+    etcpal_log(device_state.lparams, ETCPAL_LOG_ERR, "Error sending LLRP RDM response: '%s.", etcpal_strerror(send_res));
   }
 }

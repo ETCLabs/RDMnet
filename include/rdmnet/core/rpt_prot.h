@@ -34,10 +34,10 @@
 
 #include <stddef.h>
 #include <string.h>
-#include "lwpa/int.h"
-#include "lwpa/uuid.h"
-#include "lwpa/error.h"
-#include "lwpa/root_layer_pdu.h"
+#include "etcpal/int.h"
+#include "etcpal/uuid.h"
+#include "etcpal/error.h"
+#include "etcpal/root_layer_pdu.h"
 #include "rdm/message.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/core.h"
@@ -174,18 +174,18 @@ size_t bufsize_rpt_request(const RdmBuffer* cmd);
 size_t bufsize_rpt_status(const RptStatusMsg* status);
 size_t bufsize_rpt_notification(const RdmBuffer* cmd_arr, size_t cmd_arr_size);
 
-size_t pack_rpt_request(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, const RptHeader* header,
+size_t pack_rpt_request(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const RptHeader* header,
                         const RdmBuffer* cmd);
-size_t pack_rpt_status(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, const RptHeader* header,
+size_t pack_rpt_status(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const RptHeader* header,
                        const RptStatusMsg* status);
-size_t pack_rpt_notification(uint8_t* buf, size_t buflen, const LwpaUuid* local_cid, const RptHeader* header,
+size_t pack_rpt_notification(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const RptHeader* header,
                              const RdmBuffer* cmd_arr, size_t cmd_arr_size);
 
-lwpa_error_t send_rpt_request(rdmnet_conn_t handle, const LwpaUuid* local_cid, const RptHeader* header,
+etcpal_error_t send_rpt_request(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
                               const RdmBuffer* cmd);
-lwpa_error_t send_rpt_status(rdmnet_conn_t handle, const LwpaUuid* local_cid, const RptHeader* header,
+etcpal_error_t send_rpt_status(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
                              const RptStatusMsg* status);
-lwpa_error_t send_rpt_notification(rdmnet_conn_t handle, const LwpaUuid* local_cid, const RptHeader* header,
+etcpal_error_t send_rpt_notification(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
                                    const RdmBuffer* cmd_arr, size_t cmd_arr_size);
 
 #ifdef __cplusplus

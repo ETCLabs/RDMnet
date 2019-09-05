@@ -27,9 +27,9 @@
 
 #include "rdmnet/core.h"
 
-#include "lwpa/common.h"
-#include "lwpa/socket.h"
-#include "lwpa/timer.h"
+#include "etcpal/common.h"
+#include "etcpal/socket.h"
+#include "etcpal/timer.h"
 #include "rdmnet/core/discovery.h"
 #include "rdmnet/private/message.h"
 #include "rdmnet/private/core.h"
@@ -51,22 +51,22 @@
 #define RDMNET_TICK_PERIODIC_INTERVAL 100 /* ms */
 #define RDMNET_POLL_TIMEOUT 120           /* ms */
 
-#define RDMNET_LWPA_FEATURES (LWPA_FEATURE_SOCKETS | LWPA_FEATURE_TIMERS | LWPA_FEATURE_NETINTS | LWPA_FEATURE_LOGGING)
+#define RDMNET_ETCPAL_FEATURES (ETCPAL_FEATURE_SOCKETS | ETCPAL_FEATURE_TIMERS | ETCPAL_FEATURE_NETINTS | ETCPAL_FEATURE_LOGGING)
 
 /***************************** Private macros ********************************/
 
 #define RDMNET_CREATE_LOCK_OR_DIE()       \
   if (!core_state.lock_initted)           \
   {                                       \
-    if (lwpa_rwlock_create(&rdmnet_lock)) \
+    if (etcpal_rwlock_create(&rdmnet_lock)) \
       core_state.lock_initted = true;     \
     else                                  \
-      return kLwpaErrSys;                 \
+      return kEtcPalErrSys;                 \
   }
 
 /***************************** Global variables ******************************/
 
-const LwpaLogParams* rdmnet_log_params;
+const EtcPalLogParams* rdmnet_log_params;
 
 /**************************** Private variables ******************************/
 
@@ -75,17 +75,17 @@ static struct CoreState
   bool lock_initted;
   bool initted;
 
-  LwpaLogParams log_params;
-  LwpaTimer tick_timer;
-  LwpaPollContext poll_context;
+  EtcPalLogParams log_params;
+  EtcPalTimer tick_timer;
+  EtcPalPollContext poll_context;
 
 #if RDMNET_USE_TICK_THREAD
   bool tickthread_run;
-  lwpa_thread_t tick_thread;
+  etcpal_thread_t tick_thread;
 #endif
 } core_state;
 
-static lwpa_rwlock_t rdmnet_lock;
+static etcpal_rwlock_t rdmnet_lock;
 
 /*********************** Private function prototypes *************************/
 
@@ -93,18 +93,18 @@ static void rdmnet_tick_thread(void* arg);
 
 /*************************** Function definitions ****************************/
 
-lwpa_error_t rdmnet_core_init(const LwpaLogParams* log_params)
+etcpal_error_t rdmnet_core_init(const EtcPalLogParams* log_params)
 {
   // The lock is created only the first call to this function.
   RDMNET_CREATE_LOCK_OR_DIE();
 
-  lwpa_error_t res = kLwpaErrSys;
+  etcpal_error_t res = kEtcPalErrSys;
   if (rdmnet_writelock())
   {
-    res = kLwpaErrOk;
+    res = kEtcPalErrOk;
     if (!core_state.initted)
     {
-      bool lwpa_initted = false;
+      bool etcpal_initted = false;
       bool poll_initted = false;
       bool conn_initted = false;
       bool disc_initted = false;
@@ -117,39 +117,39 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams* log_params)
         rdmnet_log_params = &core_state.log_params;
       }
 
-      if (res == kLwpaErrOk)
-        lwpa_initted = ((res = lwpa_init(RDMNET_LWPA_FEATURES)) == kLwpaErrOk);
-      if (res == kLwpaErrOk)
-        poll_initted = ((res = lwpa_poll_context_init(&core_state.poll_context)) == kLwpaErrOk);
-      if (res == kLwpaErrOk)
+      if (res == kEtcPalErrOk)
+        etcpal_initted = ((res = etcpal_init(RDMNET_ETCPAL_FEATURES)) == kEtcPalErrOk);
+      if (res == kEtcPalErrOk)
+        poll_initted = ((res = etcpal_poll_context_init(&core_state.poll_context)) == kEtcPalErrOk);
+      if (res == kEtcPalErrOk)
         res = rdmnet_message_init();
-      if (res == kLwpaErrOk)
-        conn_initted = ((res = rdmnet_conn_init()) == kLwpaErrOk);
-      if (res == kLwpaErrOk)
-        disc_initted = ((res = rdmnetdisc_init()) == kLwpaErrOk);
-      if (res == kLwpaErrOk)
-        llrp_initted = ((res = rdmnet_llrp_init()) == kLwpaErrOk);
+      if (res == kEtcPalErrOk)
+        conn_initted = ((res = rdmnet_conn_init()) == kEtcPalErrOk);
+      if (res == kEtcPalErrOk)
+        disc_initted = ((res = rdmnetdisc_init()) == kEtcPalErrOk);
+      if (res == kEtcPalErrOk)
+        llrp_initted = ((res = rdmnet_llrp_init()) == kEtcPalErrOk);
 
 #if RDMNET_USE_TICK_THREAD
-      if (res == kLwpaErrOk)
+      if (res == kEtcPalErrOk)
       {
-        LwpaThreadParams thread_params;
+        EtcPalThreadParams thread_params;
         thread_params.thread_priority = RDMNET_TICK_THREAD_PRIORITY;
         thread_params.stack_size = RDMNET_TICK_THREAD_STACK;
         thread_params.thread_name = "rdmnet_tick";
         thread_params.platform_data = NULL;
         core_state.tickthread_run = true;
-        if (!lwpa_thread_create(&core_state.tick_thread, &thread_params, rdmnet_tick_thread, NULL))
+        if (!etcpal_thread_create(&core_state.tick_thread, &thread_params, rdmnet_tick_thread, NULL))
         {
-          res = kLwpaErrSys;
+          res = kEtcPalErrSys;
         }
       }
 #endif
 
-      if (res == kLwpaErrOk)
+      if (res == kEtcPalErrOk)
       {
         // Do the rest of the initialization
-        lwpa_timer_start(&core_state.tick_timer, RDMNET_TICK_PERIODIC_INTERVAL);
+        etcpal_timer_start(&core_state.tick_timer, RDMNET_TICK_PERIODIC_INTERVAL);
         core_state.initted = true;
       }
       else
@@ -163,9 +163,9 @@ lwpa_error_t rdmnet_core_init(const LwpaLogParams* log_params)
         if (conn_initted)
           rdmnet_conn_deinit();
         if (poll_initted)
-          lwpa_poll_context_deinit(&core_state.poll_context);
-        if (lwpa_initted)
-          lwpa_deinit(RDMNET_LWPA_FEATURES);
+          etcpal_poll_context_deinit(&core_state.poll_context);
+        if (etcpal_initted)
+          etcpal_deinit(RDMNET_ETCPAL_FEATURES);
 
         rdmnet_log_params = NULL;
       }
@@ -182,7 +182,7 @@ void rdmnet_core_deinit()
     core_state.initted = false;
 #if RDMNET_USE_TICK_THREAD
     core_state.tickthread_run = false;
-    lwpa_thread_join(&core_state.tick_thread);
+    etcpal_thread_join(&core_state.tick_thread);
 #endif
     if (rdmnet_writelock())
     {
@@ -191,8 +191,8 @@ void rdmnet_core_deinit()
       rdmnet_llrp_deinit();
       rdmnetdisc_deinit();
       rdmnet_conn_deinit();
-      lwpa_poll_context_deinit(&core_state.poll_context);
-      lwpa_deinit(RDMNET_LWPA_FEATURES);
+      etcpal_poll_context_deinit(&core_state.poll_context);
+      etcpal_deinit(RDMNET_ETCPAL_FEATURES);
       rdmnet_writeunlock();
     }
   }
@@ -213,19 +213,19 @@ bool rdmnet_core_initialized()
   return result;
 }
 
-lwpa_error_t rdmnet_core_add_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, PolledSocketInfo* info)
+etcpal_error_t rdmnet_core_add_polled_socket(etcpal_socket_t socket, etcpal_poll_events_t events, PolledSocketInfo* info)
 {
-  return lwpa_poll_add_socket(&core_state.poll_context, socket, events, info);
+  return etcpal_poll_add_socket(&core_state.poll_context, socket, events, info);
 }
 
-lwpa_error_t rdmnet_core_modify_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, PolledSocketInfo* info)
+etcpal_error_t rdmnet_core_modify_polled_socket(etcpal_socket_t socket, etcpal_poll_events_t events, PolledSocketInfo* info)
 {
-  return lwpa_poll_modify_socket(&core_state.poll_context, socket, events, info);
+  return etcpal_poll_modify_socket(&core_state.poll_context, socket, events, info);
 }
 
-void rdmnet_core_remove_polled_socket(lwpa_socket_t socket)
+void rdmnet_core_remove_polled_socket(etcpal_socket_t socket)
 {
-  lwpa_poll_remove_socket(&core_state.poll_context, socket);
+  etcpal_poll_remove_socket(&core_state.poll_context, socket);
 }
 
 #if RDMNET_USE_TICK_THREAD
@@ -241,9 +241,9 @@ void rdmnet_tick_thread(void* arg)
 
 void rdmnet_core_tick()
 {
-  LwpaPollEvent event;
-  lwpa_error_t poll_res = lwpa_poll_wait(&core_state.poll_context, &event, RDMNET_POLL_TIMEOUT);
-  if (poll_res == kLwpaErrOk)
+  EtcPalPollEvent event;
+  etcpal_error_t poll_res = etcpal_poll_wait(&core_state.poll_context, &event, RDMNET_POLL_TIMEOUT);
+  if (poll_res == kEtcPalErrOk)
   {
     PolledSocketInfo* info = (PolledSocketInfo*)event.user_data;
     if (info)
@@ -251,42 +251,42 @@ void rdmnet_core_tick()
       info->callback(&event, info->data);
     }
   }
-  else if (poll_res != kLwpaErrTimedOut)
+  else if (poll_res != kEtcPalErrTimedOut)
   {
-    if (poll_res != kLwpaErrNoSockets)
+    if (poll_res != kEtcPalErrNoSockets)
     {
-      lwpa_log(rdmnet_log_params, LWPA_LOG_ERR, RDMNET_LOG_MSG("Error ('%s') while polling sockets."),
-               lwpa_strerror(poll_res));
+      etcpal_log(rdmnet_log_params, ETCPAL_LOG_ERR, RDMNET_LOG_MSG("Error ('%s') while polling sockets."),
+               etcpal_strerror(poll_res));
     }
-    lwpa_thread_sleep(100);  // Sleep to avoid spinning on errors
+    etcpal_thread_sleep(100);  // Sleep to avoid spinning on errors
   }
 
-  if (lwpa_timer_is_expired(&core_state.tick_timer))
+  if (etcpal_timer_is_expired(&core_state.tick_timer))
   {
     rdmnetdisc_tick();
     rdmnet_conn_tick();
     rdmnet_llrp_tick();
 
-    lwpa_timer_reset(&core_state.tick_timer);
+    etcpal_timer_reset(&core_state.tick_timer);
   }
 }
 
 bool rdmnet_readlock()
 {
-  return lwpa_rwlock_readlock(&rdmnet_lock);
+  return etcpal_rwlock_readlock(&rdmnet_lock);
 }
 
 void rdmnet_readunlock()
 {
-  lwpa_rwlock_readunlock(&rdmnet_lock);
+  etcpal_rwlock_readunlock(&rdmnet_lock);
 }
 
 bool rdmnet_writelock()
 {
-  return lwpa_rwlock_writelock(&rdmnet_lock);
+  return etcpal_rwlock_writelock(&rdmnet_lock);
 }
 
 void rdmnet_writeunlock()
 {
-  lwpa_rwlock_writeunlock(&rdmnet_lock);
+  etcpal_rwlock_writeunlock(&rdmnet_lock);
 }

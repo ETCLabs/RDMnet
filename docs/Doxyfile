@@ -2164,7 +2164,7 @@ SKIP_FUNCTION_MACROS   = YES
 # the path). If a tag file is not located in the directory in which doxygen is
 # run, you must also specify the path to the tagfile here.
 
-TAGFILES               = ../external/lwpa/docs/lwpa.tag=https://etclabs.github.io/lwpa/docs/head \
+TAGFILES               = ../external/EtcPal/docs/etcpal.tag=https://etclabs.github.io/EtcPal/docs/head \
                          ../external/RDM/docs/RDM.tag=https://etclabs.github.io/RDM/docs/head
 
 # When a file name is specified after GENERATE_TAGFILE, doxygen will create a

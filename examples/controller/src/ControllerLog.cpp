@@ -34,14 +34,14 @@ BEGIN_INCLUDE_QT_HEADERS()
 END_INCLUDE_QT_HEADERS()
 
 extern "C" {
-static void log_callback(void* context, const LwpaLogStrings* strings)
+static void log_callback(void* context, const EtcPalLogStrings* strings)
 {
   ControllerLog* log = static_cast<ControllerLog*>(context);
   if (log)
     log->LogFromCallback(strings->human_readable);
 }
 
-static void time_callback(void* /*context*/, LwpaLogTimeParams* time)
+static void time_callback(void* /*context*/, EtcPalLogTimeParams* time)
 {
   QDateTime now = QDateTime::currentDateTime();
   QDate qdate = now.date();
@@ -61,14 +61,14 @@ ControllerLog::ControllerLog(const std::string& file_name) : file_name_(file_nam
 {
   file_.open(file_name.c_str(), std::fstream::out);
 
-  params_.action = kLwpaLogCreateHumanReadableLog;
+  params_.action = kEtcPalLogCreateHumanReadableLog;
   params_.log_fn = log_callback;
-  params_.log_mask = LWPA_LOG_UPTO(LWPA_LOG_DEBUG);
+  params_.log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG);
   params_.time_fn = time_callback;
   params_.context = this;
-  lwpa_validate_log_params(&params_);
+  etcpal_validate_log_params(&params_);
 
-  Log(LWPA_LOG_INFO, "Starting RDMnet Controller...");
+  Log(ETCPAL_LOG_INFO, "Starting RDMnet Controller...");
 }
 
 ControllerLog::~ControllerLog()
@@ -80,7 +80,7 @@ void ControllerLog::Log(int pri, const char* format, ...)
 {
   va_list args;
   va_start(args, format);
-  lwpa_vlog(&params_, pri, format, args);
+  etcpal_vlog(&params_, pri, format, args);
   va_end(args);
 }
 

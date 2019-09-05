@@ -31,15 +31,15 @@
 #if RDMNET_DYNAMIC_MEM
 #include <stdlib.h>
 #else
-#include "lwpa/mempool.h"
+#include "etcpal/mempool.h"
 #endif
 #if RDMNET_USE_TICK_THREAD
-#include "lwpa/thread.h"
+#include "etcpal/thread.h"
 #endif
-#include "lwpa/int.h"
-#include "lwpa/lock.h"
-#include "lwpa/socket.h"
-#include "lwpa/rbtree.h"
+#include "etcpal/int.h"
+#include "etcpal/lock.h"
+#include "etcpal/socket.h"
+#include "etcpal/rbtree.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/core/message.h"
 #include "rdmnet/private/core.h"
@@ -53,7 +53,7 @@
 /* When waiting on the backoff timer for a new connection, the interval at which to wake up and make
  * sure that we haven't been deinitted/closed. */
 #define BLOCKING_BACKOFF_WAIT_INTERVAL 500
-#define RDMNET_CONN_MAX_SOCKETS LWPA_SOCKET_MAX_POLL_SIZE
+#define RDMNET_CONN_MAX_SOCKETS ETCPAL_SOCKET_MAX_POLL_SIZE
 
 #if RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
 #define CB_STORAGE_CLASS
@@ -63,13 +63,13 @@
 
 /***************************** Private macros ********************************/
 
-/* Macros for dynamic vs static allocation. Static allocation is done using lwpa_mempool. */
+/* Macros for dynamic vs static allocation. Static allocation is done using etcpal_mempool. */
 #if RDMNET_DYNAMIC_MEM
 #define alloc_rdmnet_connection() malloc(sizeof(RdmnetConnection))
 #define free_rdmnet_connection(ptr) free(ptr)
 #else
-#define alloc_rdmnet_connection() lwpa_mempool_alloc(rdmnet_connections)
-#define free_rdmnet_connection(ptr) lwpa_mempool_free(rdmnet_connections, ptr)
+#define alloc_rdmnet_connection() etcpal_mempool_alloc(rdmnet_connections)
+#define free_rdmnet_connection(ptr) etcpal_mempool_free(rdmnet_connections, ptr)
 #endif
 
 #define INIT_CALLBACK_INFO(cbptr) ((cbptr)->which = kConnCallbackNone)
@@ -77,13 +77,13 @@
 /**************************** Private variables ******************************/
 
 #if !RDMNET_DYNAMIC_MEM
-LWPA_MEMPOOL_DEFINE(rdmnet_connections, RdmnetConnection, RDMNET_MAX_CONNECTIONS);
-LWPA_MEMPOOL_DEFINE(rdmnet_conn_rb_nodes, LwpaRbNode, RDMNET_MAX_CONNECTIONS);
+ETCPAL_MEMPOOL_DEFINE(rdmnet_connections, RdmnetConnection, RDMNET_MAX_CONNECTIONS);
+ETCPAL_MEMPOOL_DEFINE(rdmnet_conn_rb_nodes, EtcPalRbNode, RDMNET_MAX_CONNECTIONS);
 #endif
 
 static struct RdmnetConnectionState
 {
-  LwpaRbTree connections;
+  EtcPalRbTree connections;
   IntHandleManager handle_mgr;
 } state;
 
@@ -101,42 +101,42 @@ static void process_all_connection_state(ConnCallbackDispatchInfo* cb);
 static void fill_callback_info(const RdmnetConnection* conn, ConnCallbackDispatchInfo* info);
 static void deliver_callback(ConnCallbackDispatchInfo* info);
 
-static void rdmnet_conn_socket_activity(const LwpaPollEvent* event, PolledSocketOpaqueData data);
+static void rdmnet_conn_socket_activity(const EtcPalPollEvent* event, PolledSocketOpaqueData data);
 
 // Connection management, lookup, destruction
 static bool conn_handle_in_use(int handle_val);
 static RdmnetConnection* create_new_connection(const RdmnetConnectionConfig* config);
 static void destroy_connection(RdmnetConnection* conn, bool remove_from_tree);
-static lwpa_error_t get_conn(rdmnet_conn_t handle, RdmnetConnection** conn);
+static etcpal_error_t get_conn(rdmnet_conn_t handle, RdmnetConnection** conn);
 static void release_conn(RdmnetConnection* conn);
-static int conn_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b);
-static LwpaRbNode* conn_node_alloc();
-static void conn_node_free(LwpaRbNode* node);
+static int conn_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b);
+static EtcPalRbNode* conn_node_alloc();
+static void conn_node_free(EtcPalRbNode* node);
 
 /*************************** Function definitions ****************************/
 
 /* Initialize the RDMnet Connection module. Do all necessary initialization before other RDMnet
  * Connection API functions can be called. This private function is called from rdmnet_core_init().
  */
-lwpa_error_t rdmnet_conn_init()
+etcpal_error_t rdmnet_conn_init()
 {
-  lwpa_error_t res = kLwpaErrOk;
+  etcpal_error_t res = kEtcPalErrOk;
 
 #if !RDMNET_DYNAMIC_MEM
   /* Init memory pools */
-  res |= lwpa_mempool_init(rdmnet_connections);
+  res |= etcpal_mempool_init(rdmnet_connections);
 #endif
 
-  if (res == kLwpaErrOk)
+  if (res == kEtcPalErrOk)
   {
-    lwpa_rbtree_init(&state.connections, conn_cmp, conn_node_alloc, conn_node_free);
+    etcpal_rbtree_init(&state.connections, conn_cmp, conn_node_alloc, conn_node_free);
     init_int_handle_manager(&state.handle_mgr, conn_handle_in_use);
   }
 
   return res;
 }
 
-static void conn_dealloc(const LwpaRbTree* self, LwpaRbNode* node)
+static void conn_dealloc(const EtcPalRbTree* self, EtcPalRbNode* node)
 {
   (void)self;
 
@@ -153,7 +153,7 @@ static void conn_dealloc(const LwpaRbTree* self, LwpaRbNode* node)
  */
 void rdmnet_conn_deinit()
 {
-  lwpa_rbtree_clear_with_cb(&state.connections, conn_dealloc);
+  etcpal_rbtree_clear_with_cb(&state.connections, conn_dealloc);
   memset(&state, 0, sizeof state);
 }
 
@@ -164,30 +164,30 @@ void rdmnet_conn_deinit()
  *
  *  \param[in] config Configuration parameters for the connection to be created.
  *  \param[out] handle Handle to the newly-created connection
- *  \return #kLwpaErrOk: Handle created successfully.
- *  \return #kLwpaErrInvalid: Invalid argument provided.
- *  \return #kLwpaErrNotInit: Module not initialized.
- *  \return #kLwpaErrNoMem: No room to allocate additional connection.
- *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return #kEtcPalErrOk: Handle created successfully.
+ *  \return #kEtcPalErrInvalid: Invalid argument provided.
+ *  \return #kEtcPalErrNotInit: Module not initialized.
+ *  \return #kEtcPalErrNoMem: No room to allocate additional connection.
+ *  \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-lwpa_error_t rdmnet_connection_create(const RdmnetConnectionConfig* config, rdmnet_conn_t* handle)
+etcpal_error_t rdmnet_connection_create(const RdmnetConnectionConfig* config, rdmnet_conn_t* handle)
 {
   if (!config || !handle)
-    return kLwpaErrInvalid;
+    return kEtcPalErrInvalid;
   if (!rdmnet_core_initialized())
-    return kLwpaErrNotInit;
+    return kEtcPalErrNotInit;
 
-  lwpa_error_t res = kLwpaErrSys;
+  etcpal_error_t res = kEtcPalErrSys;
   if (rdmnet_writelock())
   {
-    res = kLwpaErrOk;
+    res = kEtcPalErrOk;
     // Passed the quick checks, try to create a struct to represent a new connection. This function
     // creates the new connection, gives it a unique handle and inserts it into the connection map.
     RdmnetConnection* conn = create_new_connection(config);
     if (!conn)
-      res = kLwpaErrNoMem;
+      res = kEtcPalErrNoMem;
 
-    if (res == kLwpaErrOk)
+    if (res == kEtcPalErrOk)
     {
       *handle = conn->handle;
     }
@@ -210,32 +210,32 @@ lwpa_error_t rdmnet_connection_create(const RdmnetConnectionConfig* config, rdmn
  *  \param[in] remote_addr %Broker's IP address and port.
  *  \param[in] connect_data The information about this client that will be sent to the %Broker as
  *                          part of the connection handshake. Caller maintains ownership.
- *  \return #kLwpaErrOk: Connection completed successfully.
- *  \return #kLwpaErrInProgress: Non-blocking connection started.
- *  \return #kLwpaErrInvalid: Invalid argument provided.
- *  \return #kLwpaErrNotInit: Module not initialized.
- *  \return #kLwpaErrNotFound: Connection handle not previously created.
- *  \return #kLwpaErrIsConn: Already connected on this handle.
- *  \return #kLwpaErrTimedOut: Timed out waiting for connection handshake to complete.
- *  \return #kLwpaErrConnRefused: Connection refused either at the TCP or RDMnet level.
+ *  \return #kEtcPalErrOk: Connection completed successfully.
+ *  \return #kEtcPalErrInProgress: Non-blocking connection started.
+ *  \return #kEtcPalErrInvalid: Invalid argument provided.
+ *  \return #kEtcPalErrNotInit: Module not initialized.
+ *  \return #kEtcPalErrNotFound: Connection handle not previously created.
+ *  \return #kEtcPalErrIsConn: Already connected on this handle.
+ *  \return #kEtcPalErrTimedOut: Timed out waiting for connection handshake to complete.
+ *  \return #kEtcPalErrConnRefused: Connection refused either at the TCP or RDMnet level.
  *                                additional_data may contain a reason code.
- *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return #kEtcPalErrSys: An internal library or system call error occurred.
  *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
-lwpa_error_t rdmnet_connect(rdmnet_conn_t handle, const LwpaSockaddr* remote_addr, const ClientConnectMsg* connect_data)
+etcpal_error_t rdmnet_connect(rdmnet_conn_t handle, const EtcPalSockaddr* remote_addr, const ClientConnectMsg* connect_data)
 {
   if (!remote_addr || !connect_data)
-    return kLwpaErrInvalid;
+    return kEtcPalErrInvalid;
 
   RdmnetConnection* conn;
-  lwpa_error_t res = get_conn(handle, &conn);
-  if (res != kLwpaErrOk)
+  etcpal_error_t res = get_conn(handle, &conn);
+  if (res != kEtcPalErrOk)
     return res;
 
   if (conn->state != kCSConnectNotStarted)
-    res = kLwpaErrIsConn;
+    res = kEtcPalErrIsConn;
 
-  if (res == kLwpaErrOk)
+  if (res == kEtcPalErrOk)
   {
     conn->remote_addr = *remote_addr;
     conn->conn_data = *connect_data;
@@ -253,36 +253,36 @@ lwpa_error_t rdmnet_connect(rdmnet_conn_t handle, const LwpaSockaddr* remote_add
  *  * Blocking:
  *    - rdmnet_send() and related functions will block until all data is sent.
  *  * Non-blocking:
- *    - rdmnet_send() will return immediately with error code #kLwpaErrWouldBlock if there is too much
+ *    - rdmnet_send() will return immediately with error code #kEtcPalErrWouldBlock if there is too much
  *      data to fit in the underlying send buffer.
  *
  *  \param[in] handle Connection handle for which to change blocking state.
  *  \param[in] blocking Whether the connection should be blocking.
- *  \return #kLwpaErrOk: Blocking state was changed successfully.
- *  \return #kLwpaErrInvalid: Invalid connection handle.
- *  \return #kLwpaErrNotInit: Module not initialized.
- *  \return #kLwpaErrBusy: A connection is currently in progress.
- *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return #kEtcPalErrOk: Blocking state was changed successfully.
+ *  \return #kEtcPalErrInvalid: Invalid connection handle.
+ *  \return #kEtcPalErrNotInit: Module not initialized.
+ *  \return #kEtcPalErrBusy: A connection is currently in progress.
+ *  \return #kEtcPalErrSys: An internal library or system call error occurred.
  *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
-lwpa_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking)
+etcpal_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking)
 {
   RdmnetConnection* conn;
-  lwpa_error_t res = get_conn(handle, &conn);
-  if (res != kLwpaErrOk)
+  etcpal_error_t res = get_conn(handle, &conn);
+  if (res != kEtcPalErrOk)
     return res;
 
   if (!(conn->state == kCSConnectNotStarted || conn->state == kCSHeartbeat))
   {
     // Can't change the blocking state while a connection is in progress.
     release_conn(conn);
-    return kLwpaErrBusy;
+    return kEtcPalErrBusy;
   }
 
   if (conn->state == kCSHeartbeat)
   {
-    res = lwpa_setblocking(conn->sock, blocking);
-    if (res == kLwpaErrOk)
+    res = etcpal_setblocking(conn->sock, blocking);
+    if (res == kEtcPalErrOk)
       conn->is_blocking = blocking;
   }
   else
@@ -304,27 +304,27 @@ lwpa_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking)
  *  \param[in] sock System socket to attach to the connection handle. Must be an already-connected
  *                  stream socket.
  *  \param[in] remote_addr The remote network address to which the socket is currently connected.
- *  \return #kLwpaErrOk: Socket was attached successfully.
- *  \return #kLwpaErrInvalid: Invalid argument provided.
- *  \return #kLwpaErrNotInit: Module not initialized.
- *  \return #kLwpaErrIsConn: The connection handle provided is already connected using another socket.
- *  \return #kLwpaErrNotImpl: RDMnet has been compiled with #RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS=0
+ *  \return #kEtcPalErrOk: Socket was attached successfully.
+ *  \return #kEtcPalErrInvalid: Invalid argument provided.
+ *  \return #kEtcPalErrNotInit: Module not initialized.
+ *  \return #kEtcPalErrIsConn: The connection handle provided is already connected using another socket.
+ *  \return #kEtcPalErrNotImpl: RDMnet has been compiled with #RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS=0
  *          and thus this function is not available.
- *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t sock, const LwpaSockaddr* remote_addr)
+etcpal_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, etcpal_socket_t sock, const EtcPalSockaddr* remote_addr)
 {
 #if RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
-  if (sock == LWPA_SOCKET_INVALID || !remote_addr)
-    return kLwpaErrInvalid;
+  if (sock == ETCPAL_SOCKET_INVALID || !remote_addr)
+    return kEtcPalErrInvalid;
 
   RdmnetConnection* conn;
-  lwpa_error_t res = get_conn(handle, &conn);
-  if (res == kLwpaErrOk)
+  etcpal_error_t res = get_conn(handle, &conn);
+  if (res == kEtcPalErrOk)
   {
     if (conn->state != kCSConnectNotStarted)
     {
-      res = kLwpaErrIsConn;
+      res = kEtcPalErrIsConn;
     }
     else
     {
@@ -332,8 +332,8 @@ lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t s
       conn->remote_addr = *remote_addr;
       conn->state = kCSHeartbeat;
       conn->external_socket_attached = true;
-      lwpa_timer_start(&conn->send_timer, E133_TCP_HEARTBEAT_INTERVAL_SEC * 1000);
-      lwpa_timer_start(&conn->hb_timer, E133_HEARTBEAT_TIMEOUT_SEC * 1000);
+      etcpal_timer_start(&conn->send_timer, E133_TCP_HEARTBEAT_INTERVAL_SEC * 1000);
+      etcpal_timer_start(&conn->hb_timer, E133_HEARTBEAT_TIMEOUT_SEC * 1000);
     }
     release_conn(conn);
   }
@@ -342,7 +342,7 @@ lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t s
   (void)handle;
   (void)sock;
   (void)remote_addr;
-  return kLwpaErrNotImpl;
+  return kEtcPalErrNotImpl;
 #endif  // RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
 }
 
@@ -355,16 +355,16 @@ lwpa_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, lwpa_socket_t s
  *  \param[in] disconnect_reason If not NULL, an RDMnet Disconnect message will be sent with this
  *                               reason code. This is the proper way to gracefully close a
  *                               connection in RDMnet.
- *  \return #kLwpaErrOk: Connection was successfully destroyed
- *  \return #kLwpaErrInvalid: Invalid argument provided.
- *  \return #kLwpaErrNotInit: Module not initialized.
- *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return #kEtcPalErrOk: Connection was successfully destroyed
+ *  \return #kEtcPalErrInvalid: Invalid argument provided.
+ *  \return #kEtcPalErrNotInit: Module not initialized.
+ *  \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-lwpa_error_t rdmnet_connection_destroy(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t* disconnect_reason)
+etcpal_error_t rdmnet_connection_destroy(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t* disconnect_reason)
 {
   RdmnetConnection* conn;
-  lwpa_error_t res = get_conn(handle, &conn);
-  if (res != kLwpaErrOk)
+  etcpal_error_t res = get_conn(handle, &conn);
+  if (res != kEtcPalErrOk)
     return res;
 
   if (conn->state == kCSHeartbeat && disconnect_reason)
@@ -388,25 +388,25 @@ lwpa_error_t rdmnet_connection_destroy(rdmnet_conn_t handle, const rdmnet_discon
  *  \param[in] data Data buffer to send.
  *  \param[in] size Size of data buffer.
  *  \return Number of bytes sent (success)
- *  \return #kLwpaErrInvalid: Invalid argument provided.
- *  \return #kLwpaErrNotInit: Module not initialized.
- *  \return #kLwpaErrNotConn: The connection handle has not been successfully connected.
- *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return #kEtcPalErrInvalid: Invalid argument provided.
+ *  \return #kEtcPalErrNotInit: Module not initialized.
+ *  \return #kEtcPalErrNotConn: The connection handle has not been successfully connected.
+ *  \return #kEtcPalErrSys: An internal library or system call error occurred.
  *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
 int rdmnet_send(rdmnet_conn_t handle, const uint8_t* data, size_t size)
 {
   if (!data || size == 0)
-    return kLwpaErrInvalid;
+    return kEtcPalErrInvalid;
 
   RdmnetConnection* conn;
   int res = get_conn(handle, &conn);
-  if (res == kLwpaErrOk)
+  if (res == kEtcPalErrOk)
   {
     if (conn->state != kCSHeartbeat)
-      res = kLwpaErrNotConn;
+      res = kEtcPalErrNotConn;
     else
-      res = lwpa_send(conn->sock, data, size, 0);
+      res = etcpal_send(conn->sock, data, size, 0);
 
     release_conn(conn);
   }
@@ -423,23 +423,23 @@ int rdmnet_send(rdmnet_conn_t handle, const uint8_t* data, size_t size)
  *
  * \param[in] handle Connection handle on which to start an atomic send operation.
  * \param[out] conn_out Filled in on success with a pointer to the underlying connection structure.
- *                      Its socket can be used to send using lwpa_send() and it should be passed
+ *                      Its socket can be used to send using etcpal_send() and it should be passed
  *                      back with a subsequent call to rdmnet_end_message().
- * \return #kLwpaErrOk: Send operation started successfully.
- * \return #kLwpaErrInvalid: Invalid argument provided.
- * \return #kLwpaErrNotInit: Module not initialized.
- * \return #kLwpaErrNotConn: The connection handle has not been successfully connected.
- * \return #kLwpaErrSys: An internal library or system call error occurred.
+ * \return #kEtcPalErrOk: Send operation started successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument provided.
+ * \return #kEtcPalErrNotInit: Module not initialized.
+ * \return #kEtcPalErrNotConn: The connection handle has not been successfully connected.
+ * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle, RdmnetConnection** conn_out)
+etcpal_error_t rdmnet_start_message(rdmnet_conn_t handle, RdmnetConnection** conn_out)
 {
   RdmnetConnection* conn;
-  lwpa_error_t res = get_conn(handle, &conn);
-  if (res == kLwpaErrOk)
+  etcpal_error_t res = get_conn(handle, &conn);
+  if (res == kEtcPalErrOk)
   {
     if (conn->state != kCSHeartbeat)
     {
-      res = kLwpaErrNotConn;
+      res = kEtcPalErrNotConn;
       release_conn(conn);
     }
     else
@@ -461,30 +461,30 @@ lwpa_error_t rdmnet_start_message(rdmnet_conn_t handle, RdmnetConnection** conn_
  * used to guarantee an atomic piece-wise send operation in a multithreaded environment.
  *
  * \param[in] handle Connection handle on which to end an atomic send operation.
- * \return #kLwpaErrOk: Send operation ended successfully.
- * \return #kLwpaErrInvalid: Invalid argument provided.
- * \return #kLwpaErrSys: An internal library or system call error occurred.
+ * \return #kEtcPalErrOk: Send operation ended successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument provided.
+ * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-lwpa_error_t rdmnet_end_message(RdmnetConnection* conn)
+etcpal_error_t rdmnet_end_message(RdmnetConnection* conn)
 {
   if (!conn)
-    return kLwpaErrInvalid;
+    return kEtcPalErrInvalid;
 
   release_conn(conn);
-  return kLwpaErrOk;
+  return kEtcPalErrOk;
 }
 
 void start_rdmnet_connection(RdmnetConnection* conn)
 {
   if (conn->is_blocking)
-    lwpa_setblocking(conn->sock, true);
+    etcpal_setblocking(conn->sock, true);
 
   // Update state
   conn->state = kCSRDMnetConnPending;
-  rdmnet_core_modify_polled_socket(conn->sock, LWPA_POLL_IN, &conn->poll_info);
+  rdmnet_core_modify_polled_socket(conn->sock, ETCPAL_POLL_IN, &conn->poll_info);
   send_client_connect(conn, &conn->conn_data);
-  lwpa_timer_start(&conn->hb_timer, E133_HEARTBEAT_TIMEOUT_SEC * 1000);
-  lwpa_timer_start(&conn->send_timer, E133_TCP_HEARTBEAT_INTERVAL_SEC * 1000);
+  etcpal_timer_start(&conn->hb_timer, E133_HEARTBEAT_TIMEOUT_SEC * 1000);
+  etcpal_timer_start(&conn->send_timer, E133_TCP_HEARTBEAT_INTERVAL_SEC * 1000);
 }
 
 void start_tcp_connection(RdmnetConnection* conn, ConnCallbackDispatchInfo* cb)
@@ -492,8 +492,8 @@ void start_tcp_connection(RdmnetConnection* conn, ConnCallbackDispatchInfo* cb)
   bool ok = true;
   RdmnetConnectFailedInfo* failed_info = &cb->args.connect_failed.failed_info;
 
-  lwpa_error_t res = lwpa_socket(LWPA_AF_INET, LWPA_STREAM, &conn->sock);
-  if (res != kLwpaErrOk)
+  etcpal_error_t res = etcpal_socket(ETCPAL_AF_INET, ETCPAL_STREAM, &conn->sock);
+  if (res != kEtcPalErrOk)
   {
     ok = false;
     failed_info->socket_err = res;
@@ -501,8 +501,8 @@ void start_tcp_connection(RdmnetConnection* conn, ConnCallbackDispatchInfo* cb)
 
   if (ok)
   {
-    res = lwpa_setblocking(conn->sock, false);
-    if (res != kLwpaErrOk)
+    res = etcpal_setblocking(conn->sock, false);
+    if (res != kEtcPalErrOk)
     {
       ok = false;
       failed_info->socket_err = res;
@@ -512,17 +512,17 @@ void start_tcp_connection(RdmnetConnection* conn, ConnCallbackDispatchInfo* cb)
   if (ok)
   {
     conn->rdmnet_conn_failed = false;
-    res = lwpa_connect(conn->sock, &conn->remote_addr);
-    if (res == kLwpaErrOk)
+    res = etcpal_connect(conn->sock, &conn->remote_addr);
+    if (res == kEtcPalErrOk)
     {
       // Fast connect condition
       start_rdmnet_connection(conn);
     }
-    else if (res == kLwpaErrInProgress || res == kLwpaErrWouldBlock)
+    else if (res == kEtcPalErrInProgress || res == kEtcPalErrWouldBlock)
     {
       conn->state = kCSTCPConnPending;
-      lwpa_error_t add_res = rdmnet_core_add_polled_socket(conn->sock, LWPA_POLL_CONNECT, &conn->poll_info);
-      if (add_res != kLwpaErrOk)
+      etcpal_error_t add_res = rdmnet_core_add_polled_socket(conn->sock, ETCPAL_POLL_CONNECT, &conn->poll_info);
+      if (add_res != kEtcPalErrOk)
       {
         ok = false;
         failed_info->socket_err = add_res;
@@ -580,10 +580,10 @@ void destroy_marked_connections()
   RdmnetConnection* destroy_list = NULL;
   RdmnetConnection** next_destroy_list_entry = &destroy_list;
 
-  LwpaRbIter conn_iter;
-  lwpa_rbiter_init(&conn_iter);
+  EtcPalRbIter conn_iter;
+  etcpal_rbiter_init(&conn_iter);
 
-  RdmnetConnection* conn = (RdmnetConnection*)lwpa_rbiter_first(&conn_iter, &state.connections);
+  RdmnetConnection* conn = (RdmnetConnection*)etcpal_rbiter_first(&conn_iter, &state.connections);
   while (conn)
   {
     // Can't destroy while iterating as that would invalidate the iterator
@@ -594,7 +594,7 @@ void destroy_marked_connections()
       conn->next_to_destroy = NULL;
       next_destroy_list_entry = &conn->next_to_destroy;
     }
-    conn = lwpa_rbiter_next(&conn_iter);
+    conn = etcpal_rbiter_next(&conn_iter);
   }
 
   // Now do the actual destruction
@@ -612,12 +612,12 @@ void destroy_marked_connections()
 
 void process_all_connection_state(ConnCallbackDispatchInfo* cb)
 {
-  LwpaRbIter conn_iter;
-  lwpa_rbiter_init(&conn_iter);
-  RdmnetConnection* conn = (RdmnetConnection*)lwpa_rbiter_first(&conn_iter, &state.connections);
+  EtcPalRbIter conn_iter;
+  etcpal_rbiter_init(&conn_iter);
+  RdmnetConnection* conn = (RdmnetConnection*)etcpal_rbiter_first(&conn_iter, &state.connections);
   while (conn)
   {
-    if (lwpa_mutex_take(&conn->lock))
+    if (etcpal_mutex_take(&conn->lock))
     {
       switch (conn->state)
       {
@@ -626,7 +626,7 @@ void process_all_connection_state(ConnCallbackDispatchInfo* cb)
           {
             if (conn->rdmnet_conn_failed)
             {
-              lwpa_timer_start(&conn->backoff_timer, update_backoff(conn->backoff_timer.interval));
+              etcpal_timer_start(&conn->backoff_timer, update_backoff(conn->backoff_timer.interval));
             }
             conn->state = kCSBackoff;
           }
@@ -636,13 +636,13 @@ void process_all_connection_state(ConnCallbackDispatchInfo* cb)
           }
           break;
         case kCSBackoff:
-          if (lwpa_timer_is_expired(&conn->backoff_timer))
+          if (etcpal_timer_is_expired(&conn->backoff_timer))
           {
             start_tcp_connection(conn, cb);
           }
           break;
         case kCSHeartbeat:
-          if (lwpa_timer_is_expired(&conn->hb_timer))
+          if (etcpal_timer_is_expired(&conn->hb_timer))
           {
             // Heartbeat timeout! Disconnect the connection.
             if (cb->which == kConnCallbackNone)
@@ -658,24 +658,24 @@ void process_all_connection_state(ConnCallbackDispatchInfo* cb)
 
               RdmnetDisconnectedInfo* disconn_info = &cb->args.disconnected.disconn_info;
               disconn_info->event = kRdmnetDisconnectNoHeartbeat;
-              disconn_info->socket_err = kLwpaErrOk;
+              disconn_info->socket_err = kEtcPalErrOk;
 
               reset_connection(conn);
             }
           }
-          else if (lwpa_timer_is_expired(&conn->send_timer))
+          else if (etcpal_timer_is_expired(&conn->send_timer))
           {
             send_null(conn);
-            lwpa_timer_reset(&conn->send_timer);
+            etcpal_timer_reset(&conn->send_timer);
           }
           break;
         default:
           break;
       }
-      lwpa_mutex_give(&conn->lock);
+      etcpal_mutex_give(&conn->lock);
     }
 
-    conn = lwpa_rbiter_next(&conn_iter);
+    conn = etcpal_rbiter_next(&conn_iter);
   }
 }
 
@@ -685,7 +685,7 @@ void tcp_connection_established(rdmnet_conn_t handle)
     return;
 
   RdmnetConnection* conn;
-  if (kLwpaErrOk == get_conn(handle, &conn))
+  if (kEtcPalErrOk == get_conn(handle, &conn))
   {
     // connected successfully!
     start_rdmnet_connection(conn);
@@ -693,7 +693,7 @@ void tcp_connection_established(rdmnet_conn_t handle)
   }
 }
 
-void rdmnet_socket_error(rdmnet_conn_t handle, lwpa_error_t socket_err)
+void rdmnet_socket_error(rdmnet_conn_t handle, etcpal_error_t socket_err)
 {
   if (handle < 0)
     return;
@@ -702,7 +702,7 @@ void rdmnet_socket_error(rdmnet_conn_t handle, lwpa_error_t socket_err)
   INIT_CALLBACK_INFO(&cb);
 
   RdmnetConnection* conn;
-  if (kLwpaErrOk == get_conn(handle, &conn))
+  if (kEtcPalErrOk == get_conn(handle, &conn))
   {
     fill_callback_info(conn, &cb);
 
@@ -747,7 +747,7 @@ void handle_rdmnet_connect_result(RdmnetConnection* conn, RdmnetMessage* msg, Co
         case kRdmnetConnectOk:
           // TODO check version
           conn->state = kCSHeartbeat;
-          lwpa_timer_start(&conn->backoff_timer, 0);
+          etcpal_timer_start(&conn->backoff_timer, 0);
           cb->which = kConnCallbackConnected;
 
           RdmnetConnectedInfo* connect_info = &cb->args.connected.connect_info;
@@ -761,7 +761,7 @@ void handle_rdmnet_connect_result(RdmnetConnection* conn, RdmnetMessage* msg, Co
 
           RdmnetConnectFailedInfo* failed_info = &cb->args.connect_failed.failed_info;
           failed_info->event = kRdmnetConnectFailRejected;
-          failed_info->socket_err = kLwpaErrOk;
+          failed_info->socket_err = kEtcPalErrOk;
           failed_info->rdmnet_reason = reply->connect_status;
 
           reset_connection(conn);
@@ -782,7 +782,7 @@ void handle_rdmnet_connect_result(RdmnetConnection* conn, RdmnetMessage* msg, Co
 void handle_rdmnet_message(RdmnetConnection* conn, RdmnetMessage* msg, ConnCallbackDispatchInfo* cb)
 {
   // We've received something on this connection. Reset the heartbeat timer.
-  lwpa_timer_reset(&conn->hb_timer);
+  etcpal_timer_reset(&conn->hb_timer);
 
   // We handle some Broker messages internally
   bool deliver_message = false;
@@ -800,7 +800,7 @@ void handle_rdmnet_message(RdmnetConnection* conn, RdmnetMessage* msg, ConnCallb
 
         RdmnetDisconnectedInfo* disconn_info = &cb->args.disconnected.disconn_info;
         disconn_info->event = kRdmnetDisconnectGracefulRemoteInitiated;
-        disconn_info->socket_err = kLwpaErrOk;
+        disconn_info->socket_err = kEtcPalErrOk;
         disconn_info->rdmnet_reason = get_disconnect_msg(bmsg)->disconnect_reason;
 
         reset_connection(conn);
@@ -826,18 +826,18 @@ void handle_rdmnet_message(RdmnetConnection* conn, RdmnetMessage* msg, ConnCallb
   }
 }
 
-lwpa_error_t rdmnet_do_recv(rdmnet_conn_t handle, const uint8_t* data, size_t data_size, ConnCallbackDispatchInfo* cb)
+etcpal_error_t rdmnet_do_recv(rdmnet_conn_t handle, const uint8_t* data, size_t data_size, ConnCallbackDispatchInfo* cb)
 {
   RdmnetConnection* conn;
-  lwpa_error_t res = get_conn(handle, &conn);
-  if (res == kLwpaErrOk)
+  etcpal_error_t res = get_conn(handle, &conn);
+  if (res == kEtcPalErrOk)
   {
     fill_callback_info(conn, cb);
     if (conn->state == kCSHeartbeat || conn->state == kCSRDMnetConnPending)
     {
       RdmnetMsgBuf* msgbuf = &conn->recv_buf;
       res = rdmnet_msg_buf_recv(msgbuf, data, data_size);
-      if (res == kLwpaErrOk)
+      if (res == kEtcPalErrOk)
       {
         if (conn->state == kCSRDMnetConnPending)
         {
@@ -851,7 +851,7 @@ lwpa_error_t rdmnet_do_recv(rdmnet_conn_t handle, const uint8_t* data, size_t da
     }
     else
     {
-      res = kLwpaErrInvalid;
+      res = kEtcPalErrInvalid;
     }
     release_conn(conn);
   }
@@ -866,8 +866,8 @@ void rdmnet_socket_data_received(rdmnet_conn_t handle, const uint8_t* data, size
   CB_STORAGE_CLASS ConnCallbackDispatchInfo cb;
   INIT_CALLBACK_INFO(&cb);
 
-  lwpa_error_t res = rdmnet_do_recv(handle, data, data_size, &cb);
-  while (res == kLwpaErrOk)
+  etcpal_error_t res = rdmnet_do_recv(handle, data, data_size, &cb);
+  while (res == kEtcPalErrOk)
   {
     deliver_callback(&cb);
     INIT_CALLBACK_INFO(&cb);
@@ -909,23 +909,23 @@ void deliver_callback(ConnCallbackDispatchInfo* info)
   }
 }
 
-void rdmnet_conn_socket_activity(const LwpaPollEvent* event, PolledSocketOpaqueData data)
+void rdmnet_conn_socket_activity(const EtcPalPollEvent* event, PolledSocketOpaqueData data)
 {
   static uint8_t rdmnet_poll_recv_buf[RDMNET_RECV_DATA_MAX_SIZE];
 
-  if (event->events & LWPA_POLL_ERR)
+  if (event->events & ETCPAL_POLL_ERR)
   {
     rdmnet_socket_error(data.conn_handle, event->err);
   }
-  else if (event->events & LWPA_POLL_IN)
+  else if (event->events & ETCPAL_POLL_IN)
   {
-    int recv_res = lwpa_recv(event->socket, rdmnet_poll_recv_buf, RDMNET_RECV_DATA_MAX_SIZE, 0);
+    int recv_res = etcpal_recv(event->socket, rdmnet_poll_recv_buf, RDMNET_RECV_DATA_MAX_SIZE, 0);
     if (recv_res <= 0)
       rdmnet_socket_error(data.conn_handle, recv_res);
     else
       rdmnet_socket_data_received(data.conn_handle, rdmnet_poll_recv_buf, (size_t)recv_res);
   }
-  else if (event->events & LWPA_POLL_CONNECT)
+  else if (event->events & ETCPAL_POLL_CONNECT)
   {
     tcp_connection_established(data.conn_handle);
   }
@@ -934,7 +934,7 @@ void rdmnet_conn_socket_activity(const LwpaPollEvent* event, PolledSocketOpaqueD
 /* Callback for IntHandleManager to determine whether a handle is in use. */
 bool conn_handle_in_use(int handle_val)
 {
-  return lwpa_rbtree_find(&state.connections, &handle_val);
+  return etcpal_rbtree_find(&state.connections, &handle_val);
 }
 
 /* Internal function which attempts to allocate and track a new connection, including allocating the
@@ -955,18 +955,18 @@ RdmnetConnection* create_new_connection(const RdmnetConnectionConfig* config)
     bool lock_created = false;
 
     // Try to create the locks and signal
-    ok = lock_created = lwpa_mutex_create(&conn->lock);
+    ok = lock_created = etcpal_mutex_create(&conn->lock);
     if (ok)
     {
       conn->handle = new_handle;
-      ok = (kLwpaErrOk == lwpa_rbtree_insert(&state.connections, conn));
+      ok = (kEtcPalErrOk == etcpal_rbtree_insert(&state.connections, conn));
     }
     if (ok)
     {
       conn->local_cid = config->local_cid;
 
-      conn->sock = LWPA_SOCKET_INVALID;
-      LWPA_IP_SET_INVALID(&conn->remote_addr.ip);
+      conn->sock = ETCPAL_SOCKET_INVALID;
+      ETCPAL_IP_SET_INVALID(&conn->remote_addr.ip);
       conn->remote_addr.port = 0;
       conn->external_socket_attached = false;
       conn->is_blocking = true;
@@ -974,7 +974,7 @@ RdmnetConnection* create_new_connection(const RdmnetConnectionConfig* config)
       conn->poll_info.data.conn_handle = conn->handle;
 
       conn->state = kCSConnectNotStarted;
-      lwpa_timer_start(&conn->backoff_timer, 0);
+      etcpal_timer_start(&conn->backoff_timer, 0);
       conn->rdmnet_conn_failed = false;
 
       rdmnet_msg_buf_init(&conn->recv_buf);
@@ -988,7 +988,7 @@ RdmnetConnection* create_new_connection(const RdmnetConnectionConfig* config)
     {
       // Clean up
       if (lock_created)
-        lwpa_mutex_destroy(&conn->lock);
+        etcpal_mutex_destroy(&conn->lock);
       free_rdmnet_connection(conn);
       conn = NULL;
     }
@@ -1010,24 +1010,24 @@ uint32_t update_backoff(uint32_t previous_backoff)
 
 void reset_connection(RdmnetConnection* conn)
 {
-  if (conn->sock != LWPA_SOCKET_INVALID)
+  if (conn->sock != ETCPAL_SOCKET_INVALID)
   {
     if (!conn->external_socket_attached)
     {
       rdmnet_core_remove_polled_socket(conn->sock);
-      lwpa_close(conn->sock);
+      etcpal_close(conn->sock);
     }
-    conn->sock = LWPA_SOCKET_INVALID;
+    conn->sock = ETCPAL_SOCKET_INVALID;
   }
   conn->state = kCSConnectNotStarted;
 }
 
 void retry_connection(RdmnetConnection* conn)
 {
-  if (conn->sock != LWPA_SOCKET_INVALID)
+  if (conn->sock != ETCPAL_SOCKET_INVALID)
   {
-    lwpa_close(conn->sock);
-    conn->sock = LWPA_SOCKET_INVALID;
+    etcpal_close(conn->sock);
+    conn->sock = ETCPAL_SOCKET_INVALID;
   }
   conn->state = kCSConnectPending;
 }
@@ -1036,53 +1036,53 @@ void destroy_connection(RdmnetConnection* conn, bool remove_from_tree)
 {
   if (conn)
   {
-    if (!conn->external_socket_attached && conn->sock != LWPA_SOCKET_INVALID)
+    if (!conn->external_socket_attached && conn->sock != ETCPAL_SOCKET_INVALID)
     {
       rdmnet_core_remove_polled_socket(conn->sock);
-      lwpa_close(conn->sock);
+      etcpal_close(conn->sock);
     }
-    lwpa_mutex_destroy(&conn->lock);
+    etcpal_mutex_destroy(&conn->lock);
     if (remove_from_tree)
-      lwpa_rbtree_remove(&state.connections, conn);
+      etcpal_rbtree_remove(&state.connections, conn);
     free_rdmnet_connection(conn);
   }
 }
 
-lwpa_error_t get_conn(rdmnet_conn_t handle, RdmnetConnection** conn)
+etcpal_error_t get_conn(rdmnet_conn_t handle, RdmnetConnection** conn)
 {
   if (!rdmnet_core_initialized())
-    return kLwpaErrNotInit;
+    return kEtcPalErrNotInit;
   if (!rdmnet_readlock())
-    return kLwpaErrSys;
+    return kEtcPalErrSys;
 
-  RdmnetConnection* found_conn = (RdmnetConnection*)lwpa_rbtree_find(&state.connections, &handle);
+  RdmnetConnection* found_conn = (RdmnetConnection*)etcpal_rbtree_find(&state.connections, &handle);
   if (!found_conn)
   {
     rdmnet_readunlock();
-    return kLwpaErrNotFound;
+    return kEtcPalErrNotFound;
   }
-  if (!lwpa_mutex_take(&found_conn->lock))
+  if (!etcpal_mutex_take(&found_conn->lock))
   {
     rdmnet_readunlock();
-    return kLwpaErrSys;
+    return kEtcPalErrSys;
   }
   if (found_conn->state == kCSMarkedForDestruction)
   {
-    lwpa_mutex_give(&found_conn->lock);
+    etcpal_mutex_give(&found_conn->lock);
     rdmnet_readunlock();
-    return kLwpaErrNotFound;
+    return kEtcPalErrNotFound;
   }
   *conn = found_conn;
-  return kLwpaErrOk;
+  return kEtcPalErrOk;
 }
 
 void release_conn(RdmnetConnection* conn)
 {
-  lwpa_mutex_give(&conn->lock);
+  etcpal_mutex_give(&conn->lock);
   rdmnet_readunlock();
 }
 
-int conn_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b)
+int conn_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
 {
   (void)self;
 
@@ -1092,20 +1092,20 @@ int conn_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode*
   return a->handle - b->handle;
 }
 
-LwpaRbNode* conn_node_alloc()
+EtcPalRbNode* conn_node_alloc()
 {
 #if RDMNET_DYNAMIC_MEM
-  return (LwpaRbNode*)malloc(sizeof(LwpaRbNode));
+  return (EtcPalRbNode*)malloc(sizeof(EtcPalRbNode));
 #else
-  return lwpa_mempool_alloc(rdmnet_conn_rb_nodes);
+  return etcpal_mempool_alloc(rdmnet_conn_rb_nodes);
 #endif
 }
 
-void conn_node_free(LwpaRbNode* node)
+void conn_node_free(EtcPalRbNode* node)
 {
 #if RDMNET_DYNAMIC_MEM
   free(node);
 #else
-  lwpa_mempool_free(rdmnet_conn_rb_nodes, node);
+  etcpal_mempool_free(rdmnet_conn_rb_nodes, node);
 #endif
 }

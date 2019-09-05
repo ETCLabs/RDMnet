@@ -32,7 +32,7 @@ BEGIN_INCLUDE_QT_HEADERS()
 #include <QMessageBox>
 END_INCLUDE_QT_HEADERS()
 
-#include "lwpa/socket.h"
+#include "etcpal/socket.h"
 
 BrokerStaticAddGUI::BrokerStaticAddGUI(QWidget* parent, IHandlesBrokerStaticAdd* handler) : QDialog(parent)
 {
@@ -68,12 +68,12 @@ void BrokerStaticAddGUI::addBrokerTriggered()
   QMessageBox errorMessageBox;
   errorMessageBox.setIcon(QMessageBox::Icon::Critical);
 
-  LwpaSockaddr brokerAddr;
+  EtcPalSockaddr brokerAddr;
   QByteArray ipBuf = ui.ipEdit->text().toUtf8();
   const char* ipStr = ipBuf.constData();
 
-  if ((kLwpaErrOk != lwpa_inet_pton(kLwpaIpTypeV4, ipStr, &brokerAddr.ip) &&
-       kLwpaErrOk != lwpa_inet_pton(kLwpaIpTypeV6, ipStr, &brokerAddr.ip))
+  if ((kEtcPalErrOk != etcpal_inet_pton(kEtcPalIpTypeV4, ipStr, &brokerAddr.ip) &&
+       kEtcPalErrOk != etcpal_inet_pton(kEtcPalIpTypeV6, ipStr, &brokerAddr.ip))
       // || ipEndString.contains( ":" ) || ipEndString.contains( "," )
   )
   {

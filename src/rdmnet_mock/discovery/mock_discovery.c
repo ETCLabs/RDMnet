@@ -27,14 +27,14 @@
 
 #include "rdmnet_mock/core/discovery.h"
 
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnetdisc_init);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnetdisc_init);
 DEFINE_FAKE_VOID_FUNC(rdmnetdisc_deinit);
 DEFINE_FAKE_VOID_FUNC(rdmnetdisc_fill_default_broker_info, RdmnetBrokerDiscInfo*);
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnetdisc_start_monitoring, const RdmnetScopeMonitorConfig*,
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnetdisc_start_monitoring, const RdmnetScopeMonitorConfig*,
                        rdmnet_scope_monitor_t*, int*);
 DEFINE_FAKE_VOID_FUNC(rdmnetdisc_stop_monitoring, rdmnet_scope_monitor_t);
 DEFINE_FAKE_VOID_FUNC(rdmnetdisc_stop_monitoring_all);
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnetdisc_register_broker, const RdmnetBrokerRegisterConfig*,
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnetdisc_register_broker, const RdmnetBrokerRegisterConfig*,
                        rdmnet_registered_broker_t*);
 DEFINE_FAKE_VOID_FUNC(rdmnetdisc_unregister_broker, rdmnet_registered_broker_t);
 DEFINE_FAKE_VOID_FUNC(rdmnetdisc_tick);

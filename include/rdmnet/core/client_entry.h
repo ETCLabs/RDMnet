@@ -32,8 +32,8 @@
 #ifndef _RDMNET_CORE_CLIENT_ENTRY_H_
 #define _RDMNET_CORE_CLIENT_ENTRY_H_
 
-#include "lwpa/bool.h"
-#include "lwpa/uuid.h"
+#include "etcpal/bool.h"
+#include "etcpal/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
 
@@ -65,7 +65,7 @@ typedef struct ClientEntryDataRpt
 {
   RdmUid client_uid;
   rpt_client_type_t client_type;
-  LwpaUuid binding_cid;
+  EtcPalUuid binding_cid;
 } ClientEntryDataRpt;
 
 typedef struct ClientEntryDataEpt
@@ -78,7 +78,7 @@ typedef struct ClientEntryData ClientEntryData;
 struct ClientEntryData
 {
   client_protocol_t client_protocol;
-  LwpaUuid client_cid;
+  EtcPalUuid client_cid;
   union
   {
     ClientEntryDataRpt rpt_data;
@@ -96,9 +96,9 @@ struct ClientEntryData
 extern "C" {
 #endif
 
-bool create_rpt_client_entry(const LwpaUuid* cid, const RdmUid* uid, rpt_client_type_t client_type,
-                             const LwpaUuid* binding_cid, ClientEntryData* entry);
-bool create_ept_client_entry(const LwpaUuid* cid, const EptSubProtocol* protocol_arr, size_t protocol_arr_size,
+bool create_rpt_client_entry(const EtcPalUuid* cid, const RdmUid* uid, rpt_client_type_t client_type,
+                             const EtcPalUuid* binding_cid, ClientEntryData* entry);
+bool create_ept_client_entry(const EtcPalUuid* cid, const EptSubProtocol* protocol_arr, size_t protocol_arr_size,
                              ClientEntryData* entry);
 
 #ifdef __cplusplus

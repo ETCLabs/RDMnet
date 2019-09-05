@@ -27,7 +27,7 @@
 
 #include "broker_threads.h"
 
-#include "lwpa/socket.h"
+#include "etcpal/socket.h"
 #include "rdmnet/core/connection.h"
 #include "broker_util.h"
 
@@ -47,7 +47,7 @@ static void listen_thread_fn(void* arg)
   }
 }
 
-ListenThread::ListenThread(lwpa_socket_t listen_sock, ListenThreadNotify* pnotify, RDMnet::BrokerLog* log)
+ListenThread::ListenThread(etcpal_socket_t listen_sock, ListenThreadNotify* pnotify, RDMnet::BrokerLog* log)
     : notify_(pnotify), listen_socket_(listen_sock), log_(log)
 {
 }
@@ -59,17 +59,17 @@ ListenThread::~ListenThread()
 
 bool ListenThread::Start()
 {
-  if (listen_socket_ == LWPA_SOCKET_INVALID)
+  if (listen_socket_ == ETCPAL_SOCKET_INVALID)
     return false;
 
   terminated_ = false;
-  LwpaThreadParams tparams = {LWPA_THREAD_DEFAULT_PRIORITY, LWPA_THREAD_DEFAULT_STACK, "ListenThread", NULL};
-  if (!lwpa_thread_create(&thread_handle_, &tparams, listen_thread_fn, this))
+  EtcPalThreadParams tparams = {ETCPAL_THREAD_DEFAULT_PRIORITY, ETCPAL_THREAD_DEFAULT_STACK, "ListenThread", NULL};
+  if (!etcpal_thread_create(&thread_handle_, &tparams, listen_thread_fn, this))
   {
-    lwpa_close(listen_socket_);
-    listen_socket_ = LWPA_SOCKET_INVALID;
+    etcpal_close(listen_socket_);
+    listen_socket_ = ETCPAL_SOCKET_INVALID;
     if (log_)
-      log_->Log(LWPA_LOG_ERR, "ListenThread: Failed to start thread.");
+      log_->Log(ETCPAL_LOG_ERR, "ListenThread: Failed to start thread.");
     return false;
   }
 
@@ -83,14 +83,14 @@ void ListenThread::Stop()
   {
     terminated_ = true;
 
-    if (listen_socket_ != LWPA_SOCKET_INVALID)
+    if (listen_socket_ != ETCPAL_SOCKET_INVALID)
     {
-      lwpa_shutdown(listen_socket_, LWPA_SHUT_RD);
-      lwpa_close(listen_socket_);
-      listen_socket_ = LWPA_SOCKET_INVALID;
+      etcpal_shutdown(listen_socket_, ETCPAL_SHUT_RD);
+      etcpal_close(listen_socket_);
+      listen_socket_ = ETCPAL_SOCKET_INVALID;
     }
 
-    lwpa_thread_join(&thread_handle_);
+    etcpal_thread_join(&thread_handle_);
   }
 }
 
@@ -100,21 +100,21 @@ void ListenThread::Run()
   // we'll keep accepting as long as the listen socket is valid.
   while (!terminated_)
   {
-    if (listen_socket_ != LWPA_SOCKET_INVALID)
+    if (listen_socket_ != ETCPAL_SOCKET_INVALID)
     {
-      lwpa_socket_t conn_sock;
-      LwpaSockaddr new_addr;
+      etcpal_socket_t conn_sock;
+      EtcPalSockaddr new_addr;
 
-      lwpa_error_t err = lwpa_accept(listen_socket_, &new_addr, &conn_sock);
+      etcpal_error_t err = etcpal_accept(listen_socket_, &new_addr, &conn_sock);
 
-      if (err != kLwpaErrOk)
+      if (err != kEtcPalErrOk)
       {
         // If terminated_ is set, the socket has been closed because the thread is being stopped
         // externally. Otherwise, it's a real error.
         if (!terminated_)
         {
           if (log_)
-            log_->Log(LWPA_LOG_ERR, "ListenThread: Accept failed with error: %s.", lwpa_strerror(err));
+            log_->Log(ETCPAL_LOG_ERR, "ListenThread: Accept failed with error: %s.", etcpal_strerror(err));
           terminated_ = true;
         }
         return;
@@ -124,11 +124,11 @@ void ListenThread::Run()
       if (notify_)
         keep_socket = notify_->NewConnection(conn_sock, new_addr);
       if (!keep_socket)
-        lwpa_close(conn_sock);
+        etcpal_close(conn_sock);
     }
     else
     {
-      lwpa_thread_sleep(10);
+      etcpal_thread_sleep(10);
     }
   }
 }
@@ -155,8 +155,8 @@ ClientServiceThread::~ClientServiceThread()
 bool ClientServiceThread::Start()
 {
   terminated_ = false;
-  LwpaThreadParams tparams = {LWPA_THREAD_DEFAULT_PRIORITY, LWPA_THREAD_DEFAULT_STACK, "ClientServiceThread", NULL};
-  return lwpa_thread_create(&thread_handle_, &tparams, controller_device_service_thread_fn, this);
+  EtcPalThreadParams tparams = {ETCPAL_THREAD_DEFAULT_PRIORITY, ETCPAL_THREAD_DEFAULT_STACK, "ClientServiceThread", NULL};
+  return etcpal_thread_create(&thread_handle_, &tparams, controller_device_service_thread_fn, this);
 }
 
 void ClientServiceThread::Stop()
@@ -164,7 +164,7 @@ void ClientServiceThread::Stop()
   if (!terminated_)
   {
     terminated_ = true;
-    lwpa_thread_join(&thread_handle_);
+    etcpal_thread_join(&thread_handle_);
   }
 }
 
@@ -178,7 +178,7 @@ void ClientServiceThread::Run()
     // As long as clients need to be processed, we won't sleep.
     while (notify_->ServiceClients())
       ;
-    lwpa_thread_sleep(sleep_ms_);
+    etcpal_thread_sleep(sleep_ms_);
   }
 }
 

@@ -40,9 +40,10 @@ END_INCLUDE_QT_HEADERS()
 #include "LogWindowGUI.h"
 #include "AboutGUI.h"
 
+#include "etcpal/version.h"
 #include "rdmnet/version.h"
 
-void RDMnetControllerGUI::handleAddBrokerByIP(QString scope, const LwpaSockaddr& addr)
+void RDMnetControllerGUI::handleAddBrokerByIP(QString scope, const EtcPalSockaddr& addr)
 {
   emit addBrokerByIPActivated(scope, addr);
 }
@@ -106,8 +107,8 @@ RDMnetControllerGUI* RDMnetControllerGUI::makeRDMnetControllerGUI()
 
   connect(gui->ui.moreBrokerSettingsButton, SIGNAL(clicked()), gui, SLOT(openBrokerStaticAddDialog()));
 
-  connect(gui, SIGNAL(addBrokerByIPActivated(QString, const LwpaSockaddr&)), gui->main_network_model_,
-          SLOT(addBrokerByIP(QString, const LwpaSockaddr&)));
+  connect(gui, SIGNAL(addBrokerByIPActivated(QString, const EtcPalSockaddr&)), gui->main_network_model_,
+          SLOT(addBrokerByIP(QString, const EtcPalSockaddr&)));
 
   connect(gui->main_network_model_, SIGNAL(brokerItemTextUpdated(const BrokerItem*)), gui,
           SLOT(processBrokerItemTextUpdate(const BrokerItem*)));
@@ -303,7 +304,7 @@ void RDMnetControllerGUI::openLogWindowDialog()
 
 void RDMnetControllerGUI::openAboutDialog()
 {
-  AboutGUI* aboutDialog = new AboutGUI(this, QT_VERSION_STR, RDMNET_VERSION_STRING);
+  AboutGUI* aboutDialog = new AboutGUI(this, QT_VERSION_STR, RDMNET_VERSION_STRING, ETCPAL_VERSION_STRING);
   aboutDialog->setAttribute(Qt::WA_DeleteOnClose);
   aboutDialog->setWindowModality(Qt::WindowModal);
   aboutDialog->setWindowTitle(tr("About"));

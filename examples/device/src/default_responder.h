@@ -28,9 +28,9 @@
 #ifndef _DEFAULTRESPONDER_H_
 #define _DEFAULTRESPONDER_H_
 
-#include "lwpa/int.h"
-#include "lwpa/bool.h"
-#include "lwpa/inet.h"
+#include "etcpal/int.h"
+#include "etcpal/bool.h"
+#include "etcpal/inet.h"
 #include "rdm/message.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/client.h"
@@ -63,7 +63,7 @@ void default_responder_deinit();
 void default_responder_get_scope_config(RdmnetScopeConfig* scope_config);
 void default_responder_get_search_domain(char* search_domain);
 bool default_responder_supports_pid(uint16_t pid);
-void default_responder_update_connection_status(bool connected, const LwpaSockaddr* broker_addr);
+void default_responder_update_connection_status(bool connected, const EtcPalSockaddr* broker_addr);
 void default_responder_incr_unhealthy_count();
 void default_responder_reset_unhealthy_count();
 

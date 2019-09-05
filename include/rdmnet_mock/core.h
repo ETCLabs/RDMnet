@@ -38,7 +38,7 @@
 extern "C" {
 #endif
 
-DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_core_init, const LwpaLogParams*);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_core_init, const EtcPalLogParams*);
 DECLARE_FAKE_VOID_FUNC(rdmnet_core_deinit);
 DECLARE_FAKE_VOID_FUNC(rdmnet_core_tick);
 

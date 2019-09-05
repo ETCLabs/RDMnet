@@ -26,12 +26,12 @@
 ******************************************************************************/
 #include <iostream>
 #include "gtest/gtest.h"
-#include "lwpa/netint.h"
-#include "lwpa/socket.h"
+#include "etcpal/netint.h"
+#include "etcpal/socket.h"
 
 // Need to pass this from the command line to a test case; there doesn't seem to be a better way to
 // do this than using a global variable.
-// LwpaIpAddr g_netint;
+// EtcPalIpAddr g_netint;
 
 int main(int argc, char** argv)
 {
@@ -42,7 +42,7 @@ int main(int argc, char** argv)
   //  {
   //    if (argc == 2)
   //    {
-  //      if (0 >= lwpa_inet_pton(kLwpaIpTypeV4, argv[1], &g_netint))
+  //      if (0 >= etcpal_inet_pton(kEtcPalIpTypeV4, argv[1], &g_netint))
   //      {
   //        std::cout << "Usage: " << argv[0] << " <interface_addr>" << std::endl;
   //        std::cout << "  interface_addr: IP address of network interface to use for test." << std::endl;
@@ -51,8 +51,8 @@ int main(int argc, char** argv)
   //    }
   //    else
   //    {
-  //      LwpaNetintInfo default_netint;
-  //      lwpa_netint_get_default_interface(&default_netint);
+  //      EtcPalNetintInfo default_netint;
+  //      etcpal_netint_get_default_interface(&default_netint);
   //      g_netint = default_netint.addr;
   //    }
   //  }

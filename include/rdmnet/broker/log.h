@@ -32,9 +32,9 @@
 #include <queue>
 #include <string>
 
-#include "lwpa/lock.h"
-#include "lwpa/log.h"
-#include "lwpa/thread.h"
+#include "etcpal/lock.h"
+#include "etcpal/log.h"
+#include "etcpal/thread.h"
 
 namespace RDMnet
 {
@@ -47,23 +47,23 @@ public:
   bool Startup(int log_mask);
   void Shutdown();
 
-  const LwpaLogParams* GetLogParams() const { return &log_params_; }
+  const EtcPalLogParams* GetLogParams() const { return &log_params_; }
   void Log(int pri, const char* format, ...);
-  bool CanLog(int pri) const { return LWPA_CAN_LOG(&log_params_, pri); }
+  bool CanLog(int pri) const { return etcpal_can_log(&log_params_, pri); }
 
   void LogFromCallback(const std::string& str);
   void LogThreadRun();
 
-  virtual void GetTimeFromCallback(LwpaLogTimeParams* time) = 0;
+  virtual void GetTimeFromCallback(EtcPalLogTimeParams* time) = 0;
   virtual void OutputLogMsg(const std::string& str) = 0;
 
 protected:
-  LwpaLogParams log_params_{};
+  EtcPalLogParams log_params_{};
 
   std::queue<std::string> msg_q_;
-  lwpa_signal_t signal_;
-  lwpa_thread_t thread_;
-  lwpa_mutex_t lock_;
+  etcpal_signal_t signal_;
+  etcpal_thread_t thread_;
+  etcpal_mutex_t lock_;
   bool keep_running_{false};
 };
 

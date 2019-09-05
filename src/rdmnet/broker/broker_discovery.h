@@ -33,8 +33,8 @@
 
 #include <string>
 #include <vector>
-#include "lwpa/error.h"
-#include "lwpa/int.h"
+#include "etcpal/error.h"
+#include "etcpal/int.h"
 #include "rdmnet/broker.h"
 #include "rdmnet/core/discovery.h"
 
@@ -60,8 +60,8 @@ public:
   virtual ~BrokerDiscoveryManager();
 
   // Registration actions
-  lwpa_error_t RegisterBroker(const RDMnet::BrokerDiscoveryAttributes& disc_attributes, const LwpaUuid& local_cid,
-                              const std::vector<LwpaIpAddr>& listen_addrs, uint16_t listen_port);
+  etcpal_error_t RegisterBroker(const RDMnet::BrokerDiscoveryAttributes& disc_attributes, const EtcPalUuid& local_cid,
+                              const std::vector<EtcPalIpAddr>& listen_addrs, uint16_t listen_port);
   void UnregisterBroker();
 
   // Accessors

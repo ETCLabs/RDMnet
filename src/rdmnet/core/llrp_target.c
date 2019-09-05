@@ -31,11 +31,11 @@
 #include <stdlib.h>
 #include "rdmnet/private/opts.h"
 #if !RDMNET_DYNAMIC_MEM
-#include "lwpa/mempool.h"
+#include "etcpal/mempool.h"
 #endif
-#include "lwpa/rbtree.h"
-#include "lwpa/socket.h"
-#include "lwpa/netint.h"
+#include "etcpal/rbtree.h"
+#include "etcpal/socket.h"
+#include "etcpal/netint.h"
 #include "rdm/responder.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/private/core.h"
@@ -56,10 +56,10 @@
 #define llrp_target_dealloc(ptr) free(ptr)
 #define llrp_target_netint_dealloc(ptr) free(ptr)
 #else
-#define llrp_target_alloc() (LlrpTarget*)lwpa_mempool_alloc(llrp_targets)
-#define llrp_target_netint_alloc() (LlrpTargetNetintInfo*)lwpa_mempool_alloc(llrp_targets_netints)
-#define llrp_target_dealloc(ptr) lwpa_mempool_free(llrp_targets, ptr)
-#define llrp_target_netint_dealloc(ptr) lwpa_mempool_free(llrp_target_netints, ptr)
+#define llrp_target_alloc() (LlrpTarget*)etcpal_mempool_alloc(llrp_targets)
+#define llrp_target_netint_alloc() (LlrpTargetNetintInfo*)etcpal_mempool_alloc(llrp_targets_netints)
+#define llrp_target_dealloc(ptr) etcpal_mempool_free(llrp_targets, ptr)
+#define llrp_target_netint_dealloc(ptr) etcpal_mempool_free(llrp_target_netints, ptr)
 #endif
 
 #define INIT_CALLBACK_INFO(cbptr) ((cbptr)->which = kTargetCallbackNone)
@@ -67,23 +67,23 @@
 /**************************** Private variables ******************************/
 
 #if !RDMNET_DYNAMIC_MEM
-LWPA_MEMPOOL_DEFINE(llrp_targets, LlrpTarget, RDMNET_LLRP_MAX_TARGETS);
-LWPA_MEMPOOL_DEFINE(llrp_target_netints, LlrpTargetNetintInfo, LLRP_MAX_TARGET_NETINTS);
-LWPA_MEMPOOL_DEFINE(llrp_target_rb_nodes, LwpaRbNode, LLRP_TARGET_MAX_RB_NODES);
+ETCPAL_MEMPOOL_DEFINE(llrp_targets, LlrpTarget, RDMNET_LLRP_MAX_TARGETS);
+ETCPAL_MEMPOOL_DEFINE(llrp_target_netints, LlrpTargetNetintInfo, LLRP_MAX_TARGET_NETINTS);
+ETCPAL_MEMPOOL_DEFINE(llrp_target_rb_nodes, EtcPalRbNode, LLRP_TARGET_MAX_RB_NODES);
 #endif
 
 static struct LlrpTargetState
 {
-  LwpaRbTree targets;
-  LwpaRbTree targets_by_cid;
+  EtcPalRbTree targets;
+  EtcPalRbTree targets_by_cid;
   IntHandleManager handle_mgr;
 } state;
 
 /*********************** Private function prototypes *************************/
 
 // Creating, destroying, and finding targets
-static lwpa_error_t create_new_target(const LlrpTargetConfig* config, LlrpTarget** new_target);
-static lwpa_error_t get_target(llrp_target_t handle, LlrpTarget** target);
+static etcpal_error_t create_new_target(const LlrpTargetConfig* config, LlrpTarget** new_target);
+static etcpal_error_t get_target(llrp_target_t handle, LlrpTarget** target);
 static void release_target(LlrpTarget* target);
 static void destroy_target(LlrpTarget* target, bool remove_from_tree);
 static bool target_handle_in_use(int handle_val);
@@ -95,36 +95,36 @@ static void fill_callback_info(const LlrpTarget* target, TargetCallbackDispatchI
 static void deliver_callback(TargetCallbackDispatchInfo* info);
 static void process_target_state(LlrpTarget* target);
 
-// Target tracking using LwpaRbTrees
-static LwpaRbNode* target_node_alloc();
-static void target_node_free(LwpaRbNode* node);
-static int target_cmp_by_handle(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b);
-static int target_cmp_by_cid(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b);
-static int target_netint_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b);
+// Target tracking using EtcPalRbTrees
+static EtcPalRbNode* target_node_alloc();
+static void target_node_free(EtcPalRbNode* node);
+static int target_cmp_by_handle(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b);
+static int target_cmp_by_cid(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b);
+static int target_netint_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b);
 
 /*************************** Function definitions ****************************/
 
-lwpa_error_t rdmnet_llrp_target_init()
+etcpal_error_t rdmnet_llrp_target_init()
 {
-  lwpa_error_t res = kLwpaErrOk;
+  etcpal_error_t res = kEtcPalErrOk;
 
 #if !RDMNET_DYNAMIC_MEM
   /* Init memory pool */
-  res |= lwpa_mempool_init(llrp_targets);
-  res |= lwpa_mempool_init(llrp_target_netints);
-  res |= lwpa_mempool_init(llrp_target_rb_nodes);
+  res |= etcpal_mempool_init(llrp_targets);
+  res |= etcpal_mempool_init(llrp_target_netints);
+  res |= etcpal_mempool_init(llrp_target_rb_nodes);
 #endif
 
-  if (res == kLwpaErrOk)
+  if (res == kEtcPalErrOk)
   {
-    lwpa_rbtree_init(&state.targets, target_cmp_by_handle, target_node_alloc, target_node_free);
-    lwpa_rbtree_init(&state.targets_by_cid, target_cmp_by_cid, target_node_alloc, target_node_free);
+    etcpal_rbtree_init(&state.targets, target_cmp_by_handle, target_node_alloc, target_node_free);
+    etcpal_rbtree_init(&state.targets_by_cid, target_cmp_by_cid, target_node_alloc, target_node_free);
     init_int_handle_manager(&state.handle_mgr, target_handle_in_use);
   }
   return res;
 }
 
-static void target_dealloc(const LwpaRbTree* self, LwpaRbNode* node)
+static void target_dealloc(const EtcPalRbTree* self, EtcPalRbNode* node)
 {
   (void)self;
 
@@ -136,7 +136,7 @@ static void target_dealloc(const LwpaRbTree* self, LwpaRbNode* node)
 
 void rdmnet_llrp_target_deinit()
 {
-  lwpa_rbtree_clear_with_cb(&state.targets, target_dealloc);
+  etcpal_rbtree_clear_with_cb(&state.targets, target_dealloc);
   memset(&state, 0, sizeof state);
 }
 
@@ -144,28 +144,28 @@ void rdmnet_llrp_target_deinit()
  *
  *  \param[in] config Configuration parameters for the LLRP target to be created.
  *  \param[out] handle Handle to the newly-created target instance.
- *  \return #kLwpaErrOk: Target created successfully.
- *  \return #kLwpaErrInvalid: Invalid argument provided.
- *  \return #kLwpaErrNotInit: Module not initialized.
- *  \return #kLwpaErrNoMem: No memory to allocate additional target instance.
- *  \return #kLwpaErrSys: An internal library or system call error occurred.
+ *  \return #kEtcPalErrOk: Target created successfully.
+ *  \return #kEtcPalErrInvalid: Invalid argument provided.
+ *  \return #kEtcPalErrNotInit: Module not initialized.
+ *  \return #kEtcPalErrNoMem: No memory to allocate additional target instance.
+ *  \return #kEtcPalErrSys: An internal library or system call error occurred.
  *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
-lwpa_error_t rdmnet_llrp_target_create(const LlrpTargetConfig* config, llrp_target_t* handle)
+etcpal_error_t rdmnet_llrp_target_create(const LlrpTargetConfig* config, llrp_target_t* handle)
 {
   if (!config || !handle)
-    return kLwpaErrInvalid;
+    return kEtcPalErrInvalid;
   if (!rdmnet_core_initialized())
-    return kLwpaErrNotInit;
+    return kEtcPalErrNotInit;
 
-  lwpa_error_t res = kLwpaErrSys;
+  etcpal_error_t res = kEtcPalErrSys;
   if (rdmnet_writelock())
   {
     // Attempt to create the LLRP target, give it a unique handle and add it to the map.
     LlrpTarget* target;
     res = create_new_target(config, &target);
 
-    if (res == kLwpaErrOk)
+    if (res == kEtcPalErrOk)
     {
       *handle = target->keys.handle;
     }
@@ -184,8 +184,8 @@ lwpa_error_t rdmnet_llrp_target_create(const LlrpTargetConfig* config, llrp_targ
 void rdmnet_llrp_target_destroy(llrp_target_t handle)
 {
   LlrpTarget* target;
-  lwpa_error_t res = get_target(handle, &target);
-  if (res != kLwpaErrOk)
+  etcpal_error_t res = get_target(handle, &target);
+  if (res != kEtcPalErrOk)
     return;
 
   target->marked_for_destruction = true;
@@ -205,8 +205,8 @@ void rdmnet_llrp_target_destroy(llrp_target_t handle)
 void rdmnet_llrp_target_update_connection_state(llrp_target_t handle, bool connected_to_broker)
 {
   LlrpTarget* target;
-  lwpa_error_t res = get_target(handle, &target);
-  if (res == kLwpaErrOk)
+  etcpal_error_t res = get_target(handle, &target);
+  if (res == kEtcPalErrOk)
   {
     target->connected_to_broker = connected_to_broker;
     release_target(target);
@@ -217,27 +217,27 @@ void rdmnet_llrp_target_update_connection_state(llrp_target_t handle, bool conne
  *
  *  \param[in] handle Handle to LLRP target from which to send an RDM response.
  *  \param[in] resp Response to send.
- *  \return #kLwpaErrOk: Response sent successfully.
- *  \return #kLwpaErrInvalid: Invalid argument provided.
- *  \return #kLwpaErrNotInit: Module not initialized.
- *  \return #kLwpaErrNotFound: Handle is not associated with a valid LLRP target instance.
+ *  \return #kEtcPalErrOk: Response sent successfully.
+ *  \return #kEtcPalErrInvalid: Invalid argument provided.
+ *  \return #kEtcPalErrNotInit: Module not initialized.
+ *  \return #kEtcPalErrNotFound: Handle is not associated with a valid LLRP target instance.
  *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
-lwpa_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLocalRdmResponse* resp)
+etcpal_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLocalRdmResponse* resp)
 {
   if (!resp)
-    return kLwpaErrInvalid;
+    return kEtcPalErrInvalid;
 
   RdmBuffer resp_buf;
-  lwpa_error_t res = rdmresp_pack_response(&resp->rdm, &resp_buf);
-  if (res != kLwpaErrOk)
+  etcpal_error_t res = rdmresp_pack_response(&resp->rdm, &resp_buf);
+  if (res != kEtcPalErrOk)
     return res;
 
   LlrpTarget* target;
   res = get_target(handle, &target);
-  if (res == kLwpaErrOk)
+  if (res == kEtcPalErrOk)
   {
-    LlrpTargetNetintInfo* netint = (LlrpTargetNetintInfo*)lwpa_rbtree_find(&target->netints, (void*)&resp->netint_id);
+    LlrpTargetNetintInfo* netint = (LlrpTargetNetintInfo*)etcpal_rbtree_find(&target->netints, (void*)&resp->netint_id);
     if (netint)
     {
       LlrpHeader header;
@@ -246,13 +246,13 @@ lwpa_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLocal
       header.sender_cid = target->keys.cid;
       header.transaction_number = resp->seq_num;
 
-      res = send_llrp_rdm_response(netint->send_sock, netint->send_buf, (netint->id.ip_type == kLwpaIpTypeV6), &header,
+      res = send_llrp_rdm_response(netint->send_sock, netint->send_buf, (netint->id.ip_type == kEtcPalIpTypeV6), &header,
                                    &resp_buf);
     }
     else
     {
       // Something has changed about the system network interfaces since this command was received.
-      res = kLwpaErrSys;
+      res = kEtcPalErrSys;
     }
     release_target(target);
   }
@@ -261,15 +261,15 @@ lwpa_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLocal
 
 void process_target_state(LlrpTarget* target)
 {
-  LwpaRbIter netint_iter;
-  lwpa_rbiter_init(&netint_iter);
+  EtcPalRbIter netint_iter;
+  etcpal_rbiter_init(&netint_iter);
 
-  for (LlrpTargetNetintInfo* netint = (LlrpTargetNetintInfo*)lwpa_rbiter_first(&netint_iter, &target->netints); netint;
-       netint = (LlrpTargetNetintInfo*)lwpa_rbiter_next(&netint_iter))
+  for (LlrpTargetNetintInfo* netint = (LlrpTargetNetintInfo*)etcpal_rbiter_first(&netint_iter, &target->netints); netint;
+       netint = (LlrpTargetNetintInfo*)etcpal_rbiter_next(&netint_iter))
   {
     if (netint->reply_pending)
     {
-      if (lwpa_timer_is_expired(&netint->reply_backoff))
+      if (etcpal_timer_is_expired(&netint->reply_backoff))
       {
         LlrpHeader header;
         header.sender_cid = target->keys.cid;
@@ -282,13 +282,13 @@ void process_target_state(LlrpTarget* target)
         memcpy(target_info.hardware_address, kLlrpLowestHardwareAddr, 6);
         target_info.component_type = target->component_type;
 
-        lwpa_error_t send_res = send_llrp_probe_reply(netint->send_sock, netint->send_buf,
-                                                      (netint->id.ip_type == kLwpaIpTypeV6), &header, &target_info);
-        if (send_res != kLwpaErrOk && LWPA_CAN_LOG(rdmnet_log_params, LWPA_LOG_WARNING))
+        etcpal_error_t send_res = send_llrp_probe_reply(netint->send_sock, netint->send_buf,
+                                                      (netint->id.ip_type == kEtcPalIpTypeV6), &header, &target_info);
+        if (send_res != kEtcPalErrOk && etcpal_can_log(rdmnet_log_params, ETCPAL_LOG_WARNING))
         {
-          char cid_str[LWPA_UUID_STRING_BYTES];
-          lwpa_uuid_to_string(cid_str, &header.dest_cid);
-          lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
+          char cid_str[ETCPAL_UUID_STRING_BYTES];
+          etcpal_uuid_to_string(cid_str, &header.dest_cid);
+          etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
                    RDMNET_LOG_MSG("Error sending probe reply to manager CID %s on interface index %u"), cid_str,
                    netint->id.index);
         }
@@ -310,10 +310,10 @@ void rdmnet_llrp_target_tick()
     LlrpTarget* destroy_list = NULL;
     LlrpTarget** next_destroy_list_entry = &destroy_list;
 
-    LwpaRbIter target_iter;
-    lwpa_rbiter_init(&target_iter);
+    EtcPalRbIter target_iter;
+    etcpal_rbiter_init(&target_iter);
 
-    LlrpTarget* target = (LlrpTarget*)lwpa_rbiter_first(&target_iter, &state.targets);
+    LlrpTarget* target = (LlrpTarget*)etcpal_rbiter_first(&target_iter, &state.targets);
     while (target)
     {
       // Can't destroy while iterating as that would invalidate the iterator
@@ -324,7 +324,7 @@ void rdmnet_llrp_target_tick()
         target->next_to_destroy = NULL;
         next_destroy_list_entry = &target->next_to_destroy;
       }
-      target = (LlrpTarget*)lwpa_rbiter_next(&target_iter);
+      target = (LlrpTarget*)etcpal_rbiter_next(&target_iter);
     }
 
     // Now do the actual destruction
@@ -345,14 +345,14 @@ void rdmnet_llrp_target_tick()
   // Do the rest of the periodic functionality with a read lock
   if (rdmnet_readlock())
   {
-    LwpaRbIter target_iter;
-    lwpa_rbiter_init(&target_iter);
-    LlrpTarget* target = (LlrpTarget*)lwpa_rbiter_first(&target_iter, &state.targets);
+    EtcPalRbIter target_iter;
+    etcpal_rbiter_init(&target_iter);
+    LlrpTarget* target = (LlrpTarget*)etcpal_rbiter_first(&target_iter, &state.targets);
 
     while (target)
     {
       process_target_state(target);
-      target = (LlrpTarget*)lwpa_rbiter_next(&target_iter);
+      target = (LlrpTarget*)etcpal_rbiter_next(&target_iter);
     }
 
     rdmnet_readunlock();
@@ -371,18 +371,18 @@ void target_data_received(const uint8_t* data, size_t data_size, const LlrpNetin
 
     if (rdmnet_readlock())
     {
-      if (0 == LWPA_UUID_CMP(&keys.cid, &kLlrpBroadcastCid))
+      if (0 == ETCPAL_UUID_CMP(&keys.cid, &kLlrpBroadcastCid))
       {
         // Broadcast LLRP message - handle with all targets
         target_found = true;
 
-        LwpaRbIter target_iter;
-        lwpa_rbiter_init(&target_iter);
-        for (LlrpTarget* target = (LlrpTarget*)lwpa_rbiter_first(&target_iter, &state.targets); target;
-             target = (LlrpTarget*)lwpa_rbiter_next(&target_iter))
+        EtcPalRbIter target_iter;
+        etcpal_rbiter_init(&target_iter);
+        for (LlrpTarget* target = (LlrpTarget*)etcpal_rbiter_first(&target_iter, &state.targets); target;
+             target = (LlrpTarget*)etcpal_rbiter_next(&target_iter))
         {
           LlrpTargetNetintInfo* target_netint =
-              (LlrpTargetNetintInfo*)lwpa_rbtree_find(&target->netints, (void*)netint);
+              (LlrpTargetNetintInfo*)etcpal_rbtree_find(&target->netints, (void*)netint);
           if (target_netint)
           {
             handle_llrp_message(data, data_size, target, target_netint, &cb);
@@ -391,13 +391,13 @@ void target_data_received(const uint8_t* data, size_t data_size, const LlrpNetin
       }
       else
       {
-        LlrpTarget* target = (LlrpTarget*)lwpa_rbtree_find(&state.targets_by_cid, &keys);
+        LlrpTarget* target = (LlrpTarget*)etcpal_rbtree_find(&state.targets_by_cid, &keys);
         if (target)
         {
           target_found = true;
 
           LlrpTargetNetintInfo* target_netint =
-              (LlrpTargetNetintInfo*)lwpa_rbtree_find(&target->netints, (void*)netint);
+              (LlrpTargetNetintInfo*)etcpal_rbtree_find(&target->netints, (void*)netint);
           if (target_netint)
           {
             handle_llrp_message(data, data_size, target, target_netint, &cb);
@@ -407,11 +407,11 @@ void target_data_received(const uint8_t* data, size_t data_size, const LlrpNetin
       rdmnet_readunlock();
     }
 
-    if (!target_found && LWPA_CAN_LOG(rdmnet_log_params, LWPA_LOG_DEBUG))
+    if (!target_found && etcpal_can_log(rdmnet_log_params, ETCPAL_LOG_DEBUG))
     {
-      char cid_str[LWPA_UUID_STRING_BYTES];
-      lwpa_uuid_to_string(cid_str, &keys.cid);
-      lwpa_log(rdmnet_log_params, LWPA_LOG_DEBUG,
+      char cid_str[ETCPAL_UUID_STRING_BYTES];
+      etcpal_uuid_to_string(cid_str, &keys.cid);
+      etcpal_log(rdmnet_log_params, ETCPAL_LOG_DEBUG,
                RDMNET_LOG_MSG("Ignoring LLRP message addressed to unknown LLRP Target %s"), cid_str);
     }
   }
@@ -449,7 +449,7 @@ void handle_llrp_message(const uint8_t* data, size_t data_size, LlrpTarget* targ
             netint->pending_reply_cid = msg.header.sender_cid;
             netint->pending_reply_trans_num = msg.header.transaction_number;
             backoff_ms = (uint32_t)(rand() * LLRP_MAX_BACKOFF_MS / RAND_MAX);
-            lwpa_timer_start(&netint->reply_backoff, backoff_ms);
+            etcpal_timer_start(&netint->reply_backoff, backoff_ms);
           }
         }
         // Even if we got a valid probe request, we are starting a backoff timer, so there's nothing
@@ -459,7 +459,7 @@ void handle_llrp_message(const uint8_t* data, size_t data_size, LlrpTarget* targ
       case VECTOR_LLRP_RDM_CMD:
       {
         LlrpRemoteRdmCommand* remote_cmd = &cb->args.cmd_received.cmd;
-        if (kLwpaErrOk == rdmresp_unpack_command(LLRP_MSG_GET_RDM(&msg), &remote_cmd->rdm))
+        if (kEtcPalErrOk == rdmresp_unpack_command(LLRP_MSG_GET_RDM(&msg), &remote_cmd->rdm))
         {
           remote_cmd->src_cid = msg.header.sender_cid;
           remote_cmd->seq_num = msg.header.transaction_number;
@@ -496,22 +496,22 @@ void deliver_callback(TargetCallbackDispatchInfo* info)
   }
 }
 
-lwpa_error_t setup_target_netint(const LlrpNetintId* netint_id, LlrpTarget* target)
+etcpal_error_t setup_target_netint(const LlrpNetintId* netint_id, LlrpTarget* target)
 {
-  lwpa_error_t res = kLwpaErrNoMem;
+  etcpal_error_t res = kEtcPalErrNoMem;
 
   LlrpTargetNetintInfo* new_netint_info = llrp_target_netint_alloc();
   if (new_netint_info)
   {
     res = get_llrp_send_socket(netint_id, &new_netint_info->send_sock);
-    if (res != kLwpaErrOk)
+    if (res != kEtcPalErrOk)
     {
       llrp_target_netint_dealloc(new_netint_info);
       return res;
     }
 
     res = llrp_recv_netint_add(netint_id, kLlrpSocketTypeTarget);
-    if (res != kLwpaErrOk)
+    if (res != kEtcPalErrOk)
     {
       release_llrp_send_socket(netint_id);
       llrp_target_netint_dealloc(new_netint_info);
@@ -519,9 +519,9 @@ lwpa_error_t setup_target_netint(const LlrpNetintId* netint_id, LlrpTarget* targ
     }
 
     new_netint_info->id = *netint_id;
-    res = lwpa_rbtree_insert(&target->netints, new_netint_info);
+    res = etcpal_rbtree_insert(&target->netints, new_netint_info);
 
-    if (res != kLwpaErrOk)
+    if (res != kEtcPalErrOk)
     {
       llrp_recv_netint_remove(netint_id, kLlrpSocketTypeTarget);
       release_llrp_send_socket(netint_id);
@@ -537,7 +537,7 @@ lwpa_error_t setup_target_netint(const LlrpNetintId* netint_id, LlrpTarget* targ
   return res;
 }
 
-void cleanup_target_netint(const LwpaRbTree* self, LwpaRbNode* node)
+void cleanup_target_netint(const EtcPalRbTree* self, EtcPalRbNode* node)
 {
   (void)self;
 
@@ -551,50 +551,50 @@ void cleanup_target_netint(const LwpaRbTree* self, LwpaRbNode* node)
   }
 }
 
-lwpa_error_t setup_target_netints(const LlrpTargetOptionalConfig* config, LlrpTarget* target)
+etcpal_error_t setup_target_netints(const LlrpTargetOptionalConfig* config, LlrpTarget* target)
 {
-  lwpa_error_t res = kLwpaErrOk;
-  lwpa_rbtree_init(&target->netints, target_netint_cmp, target_node_alloc, target_node_free);
+  etcpal_error_t res = kEtcPalErrOk;
+  etcpal_rbtree_init(&target->netints, target_netint_cmp, target_node_alloc, target_node_free);
 
   if (config->netint_arr && config->num_netints > 0)
   {
 #if !RDMNET_DYNAMIC_MEM
     if (config->num_netints > RDMNET_LLRP_MAX_NETINTS_PER_TARGET)
-      res = kLwpaErrNoMem;
+      res = kEtcPalErrNoMem;
 #endif
 
-    if (res == kLwpaErrOk)
+    if (res == kEtcPalErrOk)
     {
       for (const LlrpNetintId* netint_id = config->netint_arr; netint_id < config->netint_arr + config->num_netints;
            ++netint_id)
       {
         res = setup_target_netint(netint_id, target);
-        if (res != kLwpaErrOk)
+        if (res != kEtcPalErrOk)
           break;
       }
     }
 
-    if (res != kLwpaErrOk)
+    if (res != kEtcPalErrOk)
     {
-      lwpa_rbtree_clear_with_cb(&target->netints, cleanup_target_netint);
+      etcpal_rbtree_clear_with_cb(&target->netints, cleanup_target_netint);
     }
   }
   else
   {
-    LwpaRbIter netint_iter;
+    EtcPalRbIter netint_iter;
     get_llrp_netint_list(&netint_iter);
     for (LlrpNetint* netint = (LlrpNetint*)netint_iter.node->value; netint;
-         netint = (LlrpNetint*)lwpa_rbiter_next(&netint_iter))
+         netint = (LlrpNetint*)etcpal_rbiter_next(&netint_iter))
     {
       // If the user hasn't provided a list of network interfaces to operate on, failing to
       // intialize on a network interface will be non-fatal and we will log it.
       res = setup_target_netint(&netint->id, target);
-      if (res != kLwpaErrOk)
+      if (res != kEtcPalErrOk)
       {
-        lwpa_log(rdmnet_log_params, LWPA_LOG_WARNING,
+        etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
                  RDMNET_LOG_MSG("Failed to intiailize LLRP target for listening on network interface index %d: '%s'"),
-                 netint->id.index, lwpa_strerror(res));
-        res = kLwpaErrOk;
+                 netint->id.index, etcpal_strerror(res));
+        res = kEtcPalErrOk;
       }
     }
   }
@@ -602,9 +602,9 @@ lwpa_error_t setup_target_netints(const LlrpTargetOptionalConfig* config, LlrpTa
   return res;
 }
 
-lwpa_error_t create_new_target(const LlrpTargetConfig* config, LlrpTarget** new_target)
+etcpal_error_t create_new_target(const LlrpTargetConfig* config, LlrpTarget** new_target)
 {
-  lwpa_error_t res = kLwpaErrNoMem;
+  etcpal_error_t res = kEtcPalErrNoMem;
 
   llrp_target_t new_handle = get_next_int_handle(&state.handle_mgr);
   if (new_handle == LLRP_TARGET_INVALID)
@@ -615,15 +615,15 @@ lwpa_error_t create_new_target(const LlrpTargetConfig* config, LlrpTarget** new_
   {
     res = setup_target_netints(&config->optional, target);
 
-    if (res == kLwpaErrOk)
+    if (res == kEtcPalErrOk)
     {
       target->keys.handle = new_handle;
       target->keys.cid = config->cid;
-      res = lwpa_rbtree_insert(&state.targets, target);
-      if (res == kLwpaErrOk)
+      res = etcpal_rbtree_insert(&state.targets, target);
+      if (res == kEtcPalErrOk)
       {
-        res = lwpa_rbtree_insert(&state.targets_by_cid, target);
-        if (res == kLwpaErrOk)
+        res = etcpal_rbtree_insert(&state.targets_by_cid, target);
+        if (res == kEtcPalErrOk)
         {
           if (RDMNET_UID_IS_DYNAMIC_UID_REQUEST(&config->optional.uid))
           {
@@ -647,14 +647,14 @@ lwpa_error_t create_new_target(const LlrpTargetConfig* config, LlrpTarget** new_
         }
         else
         {
-          lwpa_rbtree_remove(&state.targets, target);
-          lwpa_rbtree_clear_with_cb(&target->netints, cleanup_target_netint);
+          etcpal_rbtree_remove(&state.targets, target);
+          etcpal_rbtree_clear_with_cb(&target->netints, cleanup_target_netint);
           llrp_target_dealloc(target);
         }
       }
       else
       {
-        lwpa_rbtree_clear_with_cb(&target->netints, cleanup_target_netint);
+        etcpal_rbtree_clear_with_cb(&target->netints, cleanup_target_netint);
         llrp_target_dealloc(target);
       }
     }
@@ -667,21 +667,21 @@ lwpa_error_t create_new_target(const LlrpTargetConfig* config, LlrpTarget** new_
   return res;
 }
 
-lwpa_error_t get_target(llrp_target_t handle, LlrpTarget** target)
+etcpal_error_t get_target(llrp_target_t handle, LlrpTarget** target)
 {
   if (!rdmnet_core_initialized())
-    return kLwpaErrNotInit;
+    return kEtcPalErrNotInit;
   if (!rdmnet_readlock())
-    return kLwpaErrSys;
+    return kEtcPalErrSys;
 
-  LlrpTarget* found_target = (LlrpTarget*)lwpa_rbtree_find(&state.targets, &handle);
+  LlrpTarget* found_target = (LlrpTarget*)etcpal_rbtree_find(&state.targets, &handle);
   if (!found_target || found_target->marked_for_destruction)
   {
     rdmnet_readunlock();
-    return kLwpaErrNotFound;
+    return kEtcPalErrNotFound;
   }
   *target = found_target;
-  return kLwpaErrOk;
+  return kEtcPalErrOk;
 }
 
 void release_target(LlrpTarget* target)
@@ -694,9 +694,9 @@ void destroy_target(LlrpTarget* target, bool remove_from_tree)
 {
   if (target)
   {
-    lwpa_rbtree_clear_with_cb(&target->netints, cleanup_target_netint);
+    etcpal_rbtree_clear_with_cb(&target->netints, cleanup_target_netint);
     if (remove_from_tree)
-      lwpa_rbtree_remove(&state.targets, target);
+      etcpal_rbtree_remove(&state.targets, target);
     llrp_target_dealloc(target);
   }
 }
@@ -704,10 +704,10 @@ void destroy_target(LlrpTarget* target, bool remove_from_tree)
 /* Callback for IntHandleManager to determine whether a handle is in use */
 bool target_handle_in_use(int handle_val)
 {
-  return lwpa_rbtree_find(&state.targets, &handle_val);
+  return etcpal_rbtree_find(&state.targets, &handle_val);
 }
 
-int target_cmp_by_handle(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b)
+int target_cmp_by_handle(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
 {
   (void)self;
 
@@ -717,17 +717,17 @@ int target_cmp_by_handle(const LwpaRbTree* self, const LwpaRbNode* node_a, const
   return (a->keys.handle > b->keys.handle) - (a->keys.handle < b->keys.handle);
 }
 
-int target_cmp_by_cid(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b)
+int target_cmp_by_cid(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
 {
   (void)self;
 
   const LlrpTarget* a = (const LlrpTarget*)node_a->value;
   const LlrpTarget* b = (const LlrpTarget*)node_b->value;
 
-  return LWPA_UUID_CMP(&a->keys.cid, &b->keys.cid);
+  return ETCPAL_UUID_CMP(&a->keys.cid, &b->keys.cid);
 }
 
-int target_netint_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const LwpaRbNode* node_b)
+int target_netint_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
 {
   (void)self;
 
@@ -740,24 +740,24 @@ int target_netint_cmp(const LwpaRbTree* self, const LwpaRbNode* node_a, const Lw
   }
   else
   {
-    return (a->id.ip_type == kLwpaIpTypeV6) ? 1 : -1;
+    return (a->id.ip_type == kEtcPalIpTypeV6) ? 1 : -1;
   }
 }
 
-LwpaRbNode* target_node_alloc()
+EtcPalRbNode* target_node_alloc()
 {
 #if RDMNET_DYNAMIC_MEM
-  return (LwpaRbNode*)malloc(sizeof(LwpaRbNode));
+  return (EtcPalRbNode*)malloc(sizeof(EtcPalRbNode));
 #else
-  return lwpa_mempool_alloc(llrp_target_rb_nodes);
+  return etcpal_mempool_alloc(llrp_target_rb_nodes);
 #endif
 }
 
-void target_node_free(LwpaRbNode* node)
+void target_node_free(EtcPalRbNode* node)
 {
 #if RDMNET_DYNAMIC_MEM
   free(node);
 #else
-  lwpa_mempool_free(llrp_target_rb_nodes, node);
+  etcpal_mempool_free(llrp_target_rb_nodes, node);
 #endif
 }

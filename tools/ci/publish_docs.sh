@@ -26,7 +26,7 @@ if [ "${BRANCH}" != "develop" ]; then
   exit 0
 fi
 
-# Allow access to lwpa and RDM repositories
+# Allow access to EtcPal and RDM repositories
 cd ${BUILD_DIR}
 git submodule init
 git submodule update

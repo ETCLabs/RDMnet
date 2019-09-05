@@ -47,7 +47,7 @@ public:
 class RDMnetLibInterface
 {
 public:
-  virtual bool Startup(const LwpaUuid& cid, RDMnetLibNotify* notify) = 0;
+  virtual bool Startup(const EtcPalUuid& cid, RDMnetLibNotify* notify) = 0;
   virtual void Shutdown() = 0;
 
   virtual rdmnet_client_scope_t AddScope(const std::string& scope,

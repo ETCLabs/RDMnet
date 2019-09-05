@@ -28,10 +28,10 @@
 #ifndef _RDMNET_PRIVATE_LLRP_MANAGER_H_
 #define _RDMNET_PRIVATE_LLRP_MANAGER_H_
 
-#include "lwpa/inet.h"
-#include "lwpa/socket.h"
-#include "lwpa/timer.h"
-#include "lwpa/rbtree.h"
+#include "etcpal/inet.h"
+#include "etcpal/socket.h"
+#include "etcpal/timer.h"
+#include "etcpal/rbtree.h"
 #include "rdm/uid.h"
 #include "rdmnet/core/llrp_manager.h"
 #include "rdmnet/private/core.h"
@@ -41,7 +41,7 @@ typedef struct DiscoveredTargetInternal DiscoveredTargetInternal;
 struct DiscoveredTargetInternal
 {
   KnownUid known_uid;
-  LwpaUuid cid;
+  EtcPalUuid cid;
   DiscoveredTargetInternal* next;
 };
 
@@ -49,7 +49,7 @@ struct DiscoveredTargetInternal
 typedef struct LlrpManagerKeys
 {
   llrp_manager_t handle;
-  LwpaUuid cid;
+  EtcPalUuid cid;
   LlrpNetintId netint;
 } LlrpManagerKeys;
 
@@ -61,7 +61,7 @@ struct LlrpManager
   RdmUid uid;
 
   // Underlying networking info
-  lwpa_socket_t send_sock;
+  etcpal_socket_t send_sock;
 
   // Send tracking
   uint8_t send_buf[LLRP_MANAGER_MAX_MESSAGE_SIZE];
@@ -70,9 +70,9 @@ struct LlrpManager
   // Discovery tracking
   bool discovery_active;
   unsigned int num_clean_sends;
-  LwpaTimer disc_timer;
+  EtcPalTimer disc_timer;
   uint16_t disc_filter;
-  LwpaRbTree discovered_targets;
+  EtcPalRbTree discovered_targets;
   RdmUid cur_range_low;
   RdmUid cur_range_high;
 
@@ -121,7 +121,7 @@ typedef struct ManagerCallbackDispatchInfo
 extern "C" {
 #endif
 
-lwpa_error_t rdmnet_llrp_manager_init();
+etcpal_error_t rdmnet_llrp_manager_init();
 void rdmnet_llrp_manager_deinit();
 
 void rdmnet_llrp_manager_tick();

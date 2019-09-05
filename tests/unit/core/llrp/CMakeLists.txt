@@ -19,6 +19,6 @@ add_executable(test_llrp
 )
 
 target_include_directories(test_llrp PRIVATE ${RDMNET_INCLUDE} ${RDMNET_SRC})
-target_link_libraries(test_llrp lwpa_mock RDM gtest)
-set_target_properties(test_llrp PROPERTIES CXX_STANDARD 11)
+target_link_libraries(test_llrp EtcPalMock RDM gtest)
+set_target_properties(test_llrp PROPERTIES CXX_STANDARD 11 FOLDER tests)
 gtest_add_tests(TARGET test_llrp SKIP_DEPENDENCY)

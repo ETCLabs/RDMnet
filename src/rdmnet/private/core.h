@@ -28,9 +28,9 @@
 #ifndef _RDMNET_PRIVATE_CORE_H_
 #define _RDMNET_PRIVATE_CORE_H_
 
-#include "lwpa/lock.h"
-#include "lwpa/log.h"
-#include "lwpa/socket.h"
+#include "etcpal/lock.h"
+#include "etcpal/log.h"
+#include "etcpal/socket.h"
 #include "rdmnet/core.h"
 #include "rdmnet/private/opts.h"
 
@@ -47,7 +47,7 @@ typedef union PolledSocketOpaqueData
   void* ptr;
 } PolledSocketOpaqueData;
 
-typedef void (*PolledSocketActivityCallback)(const LwpaPollEvent* event, PolledSocketOpaqueData data);
+typedef void (*PolledSocketActivityCallback)(const EtcPalPollEvent* event, PolledSocketOpaqueData data);
 
 typedef struct PolledSocketInfo
 {
@@ -55,7 +55,7 @@ typedef struct PolledSocketInfo
   PolledSocketOpaqueData data;
 } PolledSocketInfo;
 
-extern const LwpaLogParams* rdmnet_log_params;
+extern const EtcPalLogParams* rdmnet_log_params;
 
 bool rdmnet_core_initialized();
 
@@ -64,9 +64,9 @@ void rdmnet_readunlock();
 bool rdmnet_writelock();
 void rdmnet_writeunlock();
 
-lwpa_error_t rdmnet_core_add_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, PolledSocketInfo* info);
-lwpa_error_t rdmnet_core_modify_polled_socket(lwpa_socket_t socket, lwpa_poll_events_t events, PolledSocketInfo* info);
-void rdmnet_core_remove_polled_socket(lwpa_socket_t socket);
+etcpal_error_t rdmnet_core_add_polled_socket(etcpal_socket_t socket, etcpal_poll_events_t events, PolledSocketInfo* info);
+etcpal_error_t rdmnet_core_modify_polled_socket(etcpal_socket_t socket, etcpal_poll_events_t events, PolledSocketInfo* info);
+void rdmnet_core_remove_polled_socket(etcpal_socket_t socket);
 
 #ifdef __cplusplus
 }

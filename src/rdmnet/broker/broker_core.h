@@ -35,7 +35,7 @@
 #include <string>
 #include <vector>
 
-#include "lwpa/socket.h"
+#include "etcpal/socket.h"
 #include "rdmnet/broker.h"
 #include "broker_client.h"
 #include "broker_responder.h"
@@ -65,7 +65,7 @@ public:
   RDMnet::BrokerLog* GetLog() { return log_; }
 
   bool Startup(const RDMnet::BrokerSettings& settings, uint16_t listen_port,
-               const std::vector<LwpaIpAddr>& listen_addrs);
+               const std::vector<EtcPalIpAddr>& listen_addrs);
   void Shutdown();
   void Tick();
 
@@ -87,7 +87,7 @@ private:
   RdmUid my_uid_{};
 
   std::vector<std::unique_ptr<ListenThread>> listeners_;
-  std::vector<LwpaIpAddr> listen_addrs_;
+  std::vector<EtcPalIpAddr> listen_addrs_;
   uint16_t listen_port_;
 
   // The Broker's RDM responder
@@ -96,7 +96,7 @@ private:
   ClientServiceThread service_thread_;
   BrokerDiscoveryManager disc_;
 
-  lwpa_socket_t StartListening(const LwpaIpAddr& ip, uint16_t& port);
+  etcpal_socket_t StartListening(const EtcPalIpAddr& ip, uint16_t& port);
   bool StartBrokerServices();
   void StopBrokerServices();
 
@@ -109,7 +109,7 @@ private:
   virtual void SocketClosed(rdmnet_conn_t conn_handle, bool graceful) override;
 
   // ListenThreadNotify messages
-  virtual bool NewConnection(lwpa_socket_t new_sock, const LwpaSockaddr& addr) override;
+  virtual bool NewConnection(etcpal_socket_t new_sock, const EtcPalSockaddr& addr) override;
 
   // ClientServiceThreadNotify messages
   virtual bool ServiceClients() override;
@@ -125,7 +125,7 @@ private:
   // Manages the UIDs of connected clients and generates new ones upon request
   BrokerUidManager uid_manager_;
   // Protects the list of clients and uid lookup, but not the data in the clients themselves.
-  mutable lwpa_rwlock_t client_lock_;
+  mutable etcpal_rwlock_t client_lock_;
 
   void GetConnSnapshot(std::vector<rdmnet_conn_t>& conns, bool include_devices, bool include_controllers,
                        bool include_unknown, uint16_t manufacturer_filter = 0xffff);

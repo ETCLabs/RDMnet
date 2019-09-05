@@ -28,8 +28,8 @@
 #ifndef _DEVICE_H_
 #define _DEVICE_H_
 
-#include "lwpa/int.h"
-#include "lwpa/log.h"
+#include "etcpal/int.h"
+#include "etcpal/log.h"
 #include "rdm/message.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/device.h"
@@ -41,7 +41,7 @@ extern "C" {
 
 void device_print_version();
 
-lwpa_error_t device_init(const RdmnetScopeConfig* scope_config, const LwpaLogParams* lparams);
+etcpal_error_t device_init(const RdmnetScopeConfig* scope_config, const EtcPalLogParams* lparams);
 void device_deinit();
 void device_run();
 

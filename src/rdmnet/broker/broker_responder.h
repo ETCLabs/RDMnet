@@ -25,7 +25,7 @@
 * https://github.com/ETCLabs/RDMnet
 ******************************************************************************/
 
-#include "lwpa/int.h"
+#include "etcpal/int.h"
 #include "broker_client.h"
 
 // The Broker's RDM responder.

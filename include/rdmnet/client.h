@@ -32,8 +32,8 @@
 #ifndef _RDMNET_CLIENT_H_
 #define _RDMNET_CLIENT_H_
 
-#include "lwpa/uuid.h"
-#include "lwpa/inet.h"
+#include "etcpal/uuid.h"
+#include "etcpal/inet.h"
 #include "rdm/uid.h"
 #include "rdm/message.h"
 #include "rdmnet/defs.h"
@@ -72,7 +72,7 @@ typedef rdmnet_conn_t rdmnet_client_scope_t;
 typedef struct RdmnetClientConnectedInfo
 {
   /*! The IP address and port of the remote broker to which we have connected. */
-  LwpaSockaddr broker_addr;
+  EtcPalSockaddr broker_addr;
 } RdmnetClientConnectedInfo;
 
 /*! Information provided by the library about an unsuccessful RDMnet client connection. */
@@ -82,7 +82,7 @@ typedef struct RdmnetClientConnectFailedInfo
   rdmnet_connect_fail_event_t event;
   /*! The system error code associated with the failure; valid if event is
    *  kRdmnetConnectFailSocketFailure or kRdmnetConnectFailTcpLevel. */
-  lwpa_error_t socket_err;
+  etcpal_error_t socket_err;
   /*! The reason given in the RDMnet-level connection refuse message. Valid if event is
    *  kRdmnetConnectFailRejected. */
   rdmnet_connect_status_t rdmnet_reason;
@@ -107,7 +107,7 @@ typedef struct RdmnetClientDisconnectedInfo
   rdmnet_disconnect_event_t event;
   /*! The system error code associated with the disconnect; valid if event is
    *  kRdmnetDisconnectAbruptClose. */
-  lwpa_error_t socket_err;
+  etcpal_error_t socket_err;
   /*! The reason given in the RDMnet-level disconnect message. Valid if event is
    *  kRdmnetDisconnectGracefulRemoteInitiated. */
   rdmnet_disconnect_reason_t rdmnet_reason;
@@ -256,7 +256,7 @@ typedef struct RdmnetScopeConfig
    *  indicated in static_broker_addr. */
   bool has_static_broker_addr;
   /*! The broker address to which to connect, if a static broker has been configured. */
-  LwpaSockaddr static_broker_addr;
+  EtcPalSockaddr static_broker_addr;
 } RdmnetScopeConfig;
 
 /*! The optional values contained in an RPT Client configuration. These values have defaults that
@@ -285,7 +285,7 @@ typedef struct RdmnetRptClientConfig
   /*! The client type, either controller or device. */
   rpt_client_type_t type;
   /*! The client's CID. */
-  LwpaUuid cid;
+  EtcPalUuid cid;
   /*! A set of callbacks for the client to receive RDMnet notifications. */
   RptClientCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. */
@@ -362,7 +362,7 @@ typedef struct RdmnetEptClientConfig
  *
  *  \param configptr Pointer to RdmnetScopeConfig.
  *  \param scope_str UTF-8 scope string to copy to the RdmnetScopeConfig (const char *).
- *  \param broker_addr Address and port for a static broker (LwpaSockaddr).
+ *  \param broker_addr Address and port for a static broker (EtcPalSockaddr).
  */
 #define RDMNET_CLIENT_SET_STATIC_SCOPE(configptr, scope_str, broker_addr)                  \
   do                                                                                       \
@@ -379,7 +379,7 @@ typedef struct RdmnetEptClientConfig
  *  port given.
  *
  *  \param configptr Pointer to RdmnetScopeConfig.
- *  \param broker_addr Address and port for a static broker (LwpaSockaddr)
+ *  \param broker_addr Address and port for a static broker (EtcPalSockaddr)
  */
 #define RDMNET_CLIENT_SET_STATIC_DEFAULT_SCOPE(configptr, broker_addr)                                       \
   do                                                                                                         \
@@ -393,36 +393,36 @@ typedef struct RdmnetEptClientConfig
 extern "C" {
 #endif
 
-lwpa_error_t rdmnet_client_init(const LwpaLogParams* lparams);
+etcpal_error_t rdmnet_client_init(const EtcPalLogParams* lparams);
 void rdmnet_client_deinit();
 
-lwpa_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig* config, rdmnet_client_t* handle);
-lwpa_error_t rdmnet_ept_client_create(const RdmnetEptClientConfig* config, rdmnet_client_t* handle);
-lwpa_error_t rdmnet_client_destroy(rdmnet_client_t handle);
+etcpal_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig* config, rdmnet_client_t* handle);
+etcpal_error_t rdmnet_ept_client_create(const RdmnetEptClientConfig* config, rdmnet_client_t* handle);
+etcpal_error_t rdmnet_client_destroy(rdmnet_client_t handle);
 
-lwpa_error_t rdmnet_client_add_scope(rdmnet_client_t handle, const RdmnetScopeConfig* scope_config,
+etcpal_error_t rdmnet_client_add_scope(rdmnet_client_t handle, const RdmnetScopeConfig* scope_config,
                                      rdmnet_client_scope_t* scope_handle);
-lwpa_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                         rdmnet_disconnect_reason_t reason);
-lwpa_error_t rdmnet_client_change_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_client_change_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                         const RdmnetScopeConfig* new_config, rdmnet_disconnect_reason_t reason);
 
-lwpa_error_t rdmnet_client_change_search_domain(rdmnet_client_t handle, const char* new_search_domain,
+etcpal_error_t rdmnet_client_change_search_domain(rdmnet_client_t handle, const char* new_search_domain,
                                                 rdmnet_disconnect_reason_t reason);
 
-lwpa_error_t rdmnet_client_request_client_list(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle);
-// lwpa_error_t rdmnet_client_request_dynamic_uids(rdmnet_conn_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_client_request_client_list(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle);
+// etcpal_error_t rdmnet_client_request_dynamic_uids(rdmnet_conn_t handle, rdmnet_client_scope_t scope_handle,
 //                                            const DynamicUidRequestListEntry *request_list);
-// lwpa_error_t rdmnet_client_request_uid_assignment_list(rdmnet_conn_t handle, rdmnet_client_scope_t scope_handle,
+// etcpal_error_t rdmnet_client_request_uid_assignment_list(rdmnet_conn_t handle, rdmnet_client_scope_t scope_handle,
 //                                                   const FetchUidAssignmentListEntry *uid_list);
 
-lwpa_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                                 const LocalRdmCommand* cmd, uint32_t* seq_num);
-lwpa_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                                  const LocalRdmResponse* resp);
-lwpa_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                            const LocalRptStatus* status);
-lwpa_error_t rdmnet_rpt_client_send_llrp_response(rdmnet_client_t handle, const LlrpLocalRdmResponse* resp);
+etcpal_error_t rdmnet_rpt_client_send_llrp_response(rdmnet_client_t handle, const LlrpLocalRdmResponse* resp);
 
 #ifdef __cplusplus
 }

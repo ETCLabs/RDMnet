@@ -28,8 +28,8 @@
 #include <map>
 #include <string>
 
-#include "lwpa/log.h"
-#include "lwpa/uuid.h"
+#include "etcpal/log.h"
+#include "etcpal/uuid.h"
 #include "rdm/message.h"
 #include "rdmnet/core/llrp_manager.h"
 
@@ -42,7 +42,7 @@ struct LLRPTargetInfo
 class LLRPManager
 {
 public:
-  LLRPManager(const LwpaUuid &my_cid, const LwpaLogParams *log_params = nullptr);
+  LLRPManager(const EtcPalUuid &my_cid, const EtcPalLogParams *log_params = nullptr);
   virtual ~LLRPManager();
 
   void PrintCommandList();
@@ -60,19 +60,19 @@ public:
   void IdentifyDevice(int target_handle);
   void SetDeviceLabel(int target_handle, const std::string &label);
   void SetComponentScope(int target_handle, int scope_slot, const std::string &scope_utf8,
-                         const LwpaSockaddr &static_config);
+                         const EtcPalSockaddr &static_config);
 
   void TargetDiscovered(const DiscoveredLlrpTarget &target);
   void DiscoveryFinished();
   void RdmRespReceived(const LlrpRemoteRdmResponse &resp);
 
 private:
-  bool SendRDMAndGetResponse(llrp_manager_t manager, const LwpaUuid &target_cid, const RdmCommand &cmd_data,
+  bool SendRDMAndGetResponse(llrp_manager_t manager, const EtcPalUuid &target_cid, const RdmCommand &cmd_data,
                              RdmResponse &resp_data);
   static const char *LLRPComponentTypeToString(llrp_component_t type);
 
-  std::map<llrp_manager_t, LwpaNetintInfo> managers_;
-  LwpaUuid cid_{};
+  std::map<llrp_manager_t, EtcPalNetintInfo> managers_;
+  EtcPalUuid cid_{};
 
   std::map<int, LLRPTargetInfo> targets_;
   llrp_manager_t active_manager_{LLRP_MANAGER_INVALID};
@@ -80,7 +80,7 @@ private:
   bool discovery_active_{false};
 
   bool pending_command_response_{false};
-  LwpaUuid pending_resp_cid_{};
+  EtcPalUuid pending_resp_cid_{};
   uint32_t pending_resp_seq_num_{0};
   RdmResponse resp_received_{};
 };

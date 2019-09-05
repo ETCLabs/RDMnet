@@ -30,7 +30,7 @@ function(rdmnet_add_dependency target loc_variable)
         # Update submodules as needed
         option(GIT_SUBMODULE "Check submodules during build" ON)
         if(GIT_SUBMODULE)
-          execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+          execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init
                           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                           RESULT_VARIABLE GIT_SUBMOD_RESULT)
           if(NOT GIT_SUBMOD_RESULT EQUAL "0")
@@ -45,5 +45,8 @@ function(rdmnet_add_dependency target loc_variable)
 
       add_subdirectory(${RDMNET_ROOT}/external/${target} ${CMAKE_BINARY_DIR}/external/${target})
     endif()
+
+    # Organize the dependency nicely in IDEs
+    set_target_properties(${target} PROPERTIES FOLDER dependencies)
   endif()
 endfunction()

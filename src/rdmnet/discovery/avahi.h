@@ -33,7 +33,7 @@
 #include <avahi-client/publish.h>
 #include <avahi-common/domain.h>
 
-#include "lwpa/timer.h"
+#include "etcpal/timer.h"
 #include "rdmnet/core/discovery.h"
 
 #define SERVICE_STR_PADDED_LENGTH E133_DNSSD_SRV_TYPE_PADDED_LENGTH + E133_SCOPE_STRING_PADDED_LENGTH + 10
@@ -84,7 +84,7 @@ typedef struct RdmnetBrokerRegisterRef
   broker_state_t state;
   char full_service_name[AVAHI_DOMAIN_NAME_MAX];
 
-  LwpaTimer query_timer;
+  EtcPalTimer query_timer;
   bool query_timeout_expired;
 
   // For hooking up to the DNS-SD API

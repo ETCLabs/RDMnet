@@ -49,16 +49,16 @@ struct SendDisconnect
 class RdmnetConnInterface
 {
 public:
-  virtual lwpa_error_t Startup(const LwpaUuid& cid, const LwpaLogParams* log_params, RdmnetConnNotify* notify) = 0;
+  virtual etcpal_error_t Startup(const EtcPalUuid& cid, const EtcPalLogParams* log_params, RdmnetConnNotify* notify) = 0;
   virtual void Shutdown() = 0;
 
-  virtual lwpa_error_t CreateNewConnectionForSocket(lwpa_socket_t sock, const LwpaSockaddr& addr,
+  virtual etcpal_error_t CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
                                                     rdmnet_conn_t& new_handle) = 0;
   virtual void DestroyConnection(rdmnet_conn_t handle, SendDisconnect send_disconnect = SendDisconnect()) = 0;
-  virtual lwpa_error_t SetBlocking(rdmnet_conn_t handle, bool blocking) = 0;
+  virtual etcpal_error_t SetBlocking(rdmnet_conn_t handle, bool blocking) = 0;
 
   virtual void SocketDataReceived(rdmnet_conn_t handle, const uint8_t* data, size_t data_size) = 0;
-  virtual void SocketError(rdmnet_conn_t handle, lwpa_error_t err) = 0;
+  virtual void SocketError(rdmnet_conn_t handle, etcpal_error_t err) = 0;
 
   virtual ~RdmnetConnInterface() {}
 };
@@ -68,16 +68,16 @@ class RdmnetConnWrapper : public RdmnetConnInterface
 public:
   RdmnetConnWrapper();
 
-  lwpa_error_t Startup(const LwpaUuid& cid, const LwpaLogParams* log_params, RdmnetConnNotify* notify) override;
+  etcpal_error_t Startup(const EtcPalUuid& cid, const EtcPalLogParams* log_params, RdmnetConnNotify* notify) override;
   void Shutdown() override;
 
-  lwpa_error_t CreateNewConnectionForSocket(lwpa_socket_t sock, const LwpaSockaddr& addr,
+  etcpal_error_t CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
                                             rdmnet_conn_t& new_handle) override;
   virtual void DestroyConnection(rdmnet_conn_t handle, SendDisconnect send_disconnect = SendDisconnect()) override;
-  virtual lwpa_error_t SetBlocking(rdmnet_conn_t handle, bool blocking) override;
+  virtual etcpal_error_t SetBlocking(rdmnet_conn_t handle, bool blocking) override;
 
   virtual void SocketDataReceived(rdmnet_conn_t handle, const uint8_t* data, size_t data_size) override;
-  virtual void SocketError(rdmnet_conn_t handle, lwpa_error_t err) override;
+  virtual void SocketError(rdmnet_conn_t handle, etcpal_error_t err) override;
 
   void LibNotifyMsgReceived(rdmnet_conn_t handle, const RdmnetMessage* msg);
   void LibNotifyDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo* disconn_info);

@@ -48,7 +48,7 @@ protected:
 
     rdmnet_mock_core_reset_and_init();
 
-    ASSERT_EQ(kLwpaErrOk, rdmnet_conn_init());
+    ASSERT_EQ(kEtcPalErrOk, rdmnet_conn_init());
   }
 
   void TearDown() override { rdmnet_conn_deinit(); }
@@ -64,24 +64,24 @@ protected:
 extern "C" void conncb_socket_error(rdmnet_conn_t, const RdmnetDisconnectedInfo* disconn_info, void* context)
 {
   (void)context;
-  EXPECT_EQ(disconn_info->socket_err, kLwpaErrConnReset);
+  EXPECT_EQ(disconn_info->socket_err, kEtcPalErrConnReset);
   EXPECT_EQ(disconn_info->event, kRdmnetDisconnectAbruptClose);
 }
 
 TEST_F(TestConnection, socket_error)
 {
   rdmnet_conn_t conn;
-  ASSERT_EQ(kLwpaErrOk, rdmnet_connection_create(&default_config_, &conn));
+  ASSERT_EQ(kEtcPalErrOk, rdmnet_connection_create(&default_config_, &conn));
 
   // This allows us to skip the connection process and go straight to a connected state.
-  lwpa_socket_t fake_socket = 0;
-  LwpaSockaddr remote_addr{};
-  ASSERT_EQ(kLwpaErrOk, rdmnet_attach_existing_socket(conn, fake_socket, &remote_addr));
+  etcpal_socket_t fake_socket = 0;
+  EtcPalSockaddr remote_addr{};
+  ASSERT_EQ(kEtcPalErrOk, rdmnet_attach_existing_socket(conn, fake_socket, &remote_addr));
 
   conncb_disconnected_fake.custom_fake = conncb_socket_error;
 
   // Simulate an error on a socket, make sure it is marked disconnected.
-  rdmnet_socket_error(conn, kLwpaErrConnReset);
+  rdmnet_socket_error(conn, kEtcPalErrConnReset);
 
   ASSERT_EQ(conncb_disconnected_fake.call_count, 1u);
   ASSERT_EQ(conncb_disconnected_fake.arg0_val, conn);

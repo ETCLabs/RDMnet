@@ -27,11 +27,11 @@
 #ifndef _RDMNET_PRIVATE_LLRP_H_
 #define _RDMNET_PRIVATE_LLRP_H_
 
-#include "lwpa/bool.h"
-#include "lwpa/error.h"
-#include "lwpa/inet.h"
-#include "lwpa/rbtree.h"
-#include "lwpa/socket.h"
+#include "etcpal/bool.h"
+#include "etcpal/error.h"
+#include "etcpal/inet.h"
+#include "etcpal/rbtree.h"
+#include "etcpal/socket.h"
 #include "rdmnet/core/llrp.h"
 
 #define LLRP_MULTICAST_TTL_VAL 20
@@ -45,7 +45,7 @@ typedef enum
 typedef struct LlrpNetint
 {
   LlrpNetintId id;
-  lwpa_socket_t send_sock;
+  etcpal_socket_t send_sock;
   size_t send_ref_count;
   size_t recv_ref_count;
 } LlrpNetint;
@@ -54,24 +54,24 @@ typedef struct LlrpNetint
 extern "C" {
 #endif
 
-extern const LwpaSockaddr* kLlrpIpv4RespAddr;
-extern const LwpaSockaddr* kLlrpIpv6RespAddr;
-extern const LwpaSockaddr* kLlrpIpv4RequestAddr;
-extern const LwpaSockaddr* kLlrpIpv6RequestAddr;
+extern const EtcPalSockaddr* kLlrpIpv4RespAddr;
+extern const EtcPalSockaddr* kLlrpIpv6RespAddr;
+extern const EtcPalSockaddr* kLlrpIpv4RequestAddr;
+extern const EtcPalSockaddr* kLlrpIpv6RequestAddr;
 
 extern uint8_t kLlrpLowestHardwareAddr[6];
 
-lwpa_error_t rdmnet_llrp_init();
+etcpal_error_t rdmnet_llrp_init();
 void rdmnet_llrp_deinit();
 
 void rdmnet_llrp_tick();
 
-void get_llrp_netint_list(LwpaRbIter* list_iter);
+void get_llrp_netint_list(EtcPalRbIter* list_iter);
 
-lwpa_error_t get_llrp_send_socket(const LlrpNetintId* netint, lwpa_socket_t* socket);
+etcpal_error_t get_llrp_send_socket(const LlrpNetintId* netint, etcpal_socket_t* socket);
 void release_llrp_send_socket(const LlrpNetintId* netint);
 
-lwpa_error_t llrp_recv_netint_add(const LlrpNetintId* netint, llrp_socket_t llrp_type);
+etcpal_error_t llrp_recv_netint_add(const LlrpNetintId* netint, llrp_socket_t llrp_type);
 void llrp_recv_netint_remove(const LlrpNetintId* netint, llrp_socket_t llrp_type);
 
 #ifdef __cplusplus

@@ -197,7 +197,7 @@ bool WinBrokerSocketManager::Shutdown()
   shutting_down_ = true;
 
   {  // Read lock scope
-    lwpa::ReadGuard socket_read(socket_lock_);
+    etcpal::ReadGuard socket_read(socket_lock_);
     for (auto& sock_data : sockets_)
     {
       // Trigger the worker thread to stop processing each socket.
@@ -218,7 +218,7 @@ bool WinBrokerSocketManager::Shutdown()
   worker_threads_.clear();
 
   {  // Write lock scope
-    lwpa::WriteGuard socket_write(socket_lock_);
+    etcpal::WriteGuard socket_write(socket_lock_);
     sockets_.clear();
   }
 
@@ -229,9 +229,9 @@ bool WinBrokerSocketManager::Shutdown()
   return true;
 }
 
-bool WinBrokerSocketManager::AddSocket(rdmnet_conn_t conn_handle, lwpa_socket_t socket)
+bool WinBrokerSocketManager::AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t socket)
 {
-  lwpa::WriteGuard socket_write(socket_lock_);
+  etcpal::WriteGuard socket_write(socket_lock_);
 
   // Create the data structure for the new socket
   auto new_sock_data = std::make_unique<SocketData>(conn_handle, socket);
@@ -266,7 +266,7 @@ bool WinBrokerSocketManager::AddSocket(rdmnet_conn_t conn_handle, lwpa_socket_t 
 
 void WinBrokerSocketManager::RemoveSocket(rdmnet_conn_t conn_handle)
 {
-  lwpa::ReadGuard socket_read(socket_lock_);
+  etcpal::ReadGuard socket_read(socket_lock_);
 
   auto sock_data = sockets_.find(conn_handle);
   if (sock_data != sockets_.end())
@@ -286,7 +286,7 @@ void WinBrokerSocketManager::WorkerNotifySocketBad(rdmnet_conn_t conn_handle, bo
   bool notify_socket_closed = false;
 
   {  // Write lock scope
-    lwpa::WriteGuard socket_write(socket_lock_);
+    etcpal::WriteGuard socket_write(socket_lock_);
 
     auto sock_data = sockets_.find(conn_handle);
     if (sock_data != sockets_.end())
@@ -306,7 +306,7 @@ void WinBrokerSocketManager::WorkerNotifySocketBad(rdmnet_conn_t conn_handle, bo
 
 void WinBrokerSocketManager::WorkerNotifyRecvData(rdmnet_conn_t conn_handle, size_t size)
 {
-  lwpa::ReadGuard socket_read(socket_lock_);
+  etcpal::ReadGuard socket_read(socket_lock_);
 
   auto sock_data = sockets_.find(conn_handle);
   if (sock_data != sockets_.end())

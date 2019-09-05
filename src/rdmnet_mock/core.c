@@ -35,7 +35,7 @@
 #include "rdmnet_mock/core/llrp_target.h"
 
 // public mocks
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_core_init, const LwpaLogParams*);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_core_init, const EtcPalLogParams*);
 DEFINE_FAKE_VOID_FUNC(rdmnet_core_deinit);
 DEFINE_FAKE_VOID_FUNC(rdmnet_core_tick);
 DEFINE_FAKE_VALUE_FUNC(bool, rdmnet_core_initialized);
@@ -45,13 +45,13 @@ DEFINE_FAKE_VOID_FUNC(rdmnet_readunlock);
 DEFINE_FAKE_VALUE_FUNC(bool, rdmnet_writelock);
 DEFINE_FAKE_VOID_FUNC(rdmnet_writeunlock);
 
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_core_add_polled_socket, lwpa_socket_t, lwpa_poll_events_t,
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_core_add_polled_socket, etcpal_socket_t, etcpal_poll_events_t,
                        PolledSocketInfo*);
-DEFINE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_core_modify_polled_socket, lwpa_socket_t, lwpa_poll_events_t,
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_core_modify_polled_socket, etcpal_socket_t, etcpal_poll_events_t,
                        PolledSocketInfo*);
-DEFINE_FAKE_VOID_FUNC(rdmnet_core_remove_polled_socket, lwpa_socket_t);
+DEFINE_FAKE_VOID_FUNC(rdmnet_core_remove_polled_socket, etcpal_socket_t);
 
-const LwpaLogParams* rdmnet_log_params = NULL;
+const EtcPalLogParams* rdmnet_log_params = NULL;
 
 void rdmnet_mock_core_reset_and_init()
 {

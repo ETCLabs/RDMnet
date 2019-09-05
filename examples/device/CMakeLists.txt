@@ -9,6 +9,7 @@ add_executable(${DEVICE_TARGET}
   src/default_responder.c
 )
 
+set_target_properties(${DEVICE_TARGET} PROPERTIES FOLDER examples)
 target_include_directories(${DEVICE_TARGET} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src)
 target_link_libraries(${DEVICE_TARGET} PRIVATE RDMnet)
 if(WIN32)

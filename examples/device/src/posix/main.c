@@ -29,7 +29,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "lwpa/inet.h"
+#include "etcpal/inet.h"
 #include "example_device.h"
 #include "posix_device_log.h"
 
@@ -56,20 +56,20 @@ static bool set_scope(const char* scope_str, char* scope_buf)
 }
 
 // Parse the --broker=IP:PORT command line option and transfer it to the sockaddr structure.
-static bool set_static_broker(char* arg, LwpaSockaddr* static_broker_addr)
+static bool set_static_broker(char* arg, EtcPalSockaddr* static_broker_addr)
 {
   char* sep = strchr(arg, ':');
-  if (sep != NULL && sep - arg < LWPA_INET6_ADDRSTRLEN)
+  if (sep != NULL && sep - arg < ETCPAL_INET6_ADDRSTRLEN)
   {
-    char ip_str[LWPA_INET6_ADDRSTRLEN];
+    char ip_str[ETCPAL_INET6_ADDRSTRLEN];
     ptrdiff_t ip_str_len = sep - arg;
 
     memcpy(ip_str, arg, ip_str_len);
     ip_str[ip_str_len] = '\0';
 
-    LwpaIpAddr addr;
-    if ((lwpa_inet_pton(kLwpaIpTypeV4, ip_str, &addr) == kLwpaErrOk) ||
-        (lwpa_inet_pton(kLwpaIpTypeV6, ip_str, &addr) == kLwpaErrOk))
+    EtcPalIpAddr addr;
+    if ((etcpal_inet_pton(kEtcPalIpTypeV4, ip_str, &addr) == kEtcPalErrOk) ||
+        (etcpal_inet_pton(kEtcPalIpTypeV6, ip_str, &addr) == kEtcPalErrOk))
     {
       if (1 == scanf(sep + 1, "%hu", &static_broker_addr->port))
         return true;
@@ -88,10 +88,10 @@ void signal_handler(int signal)
 
 int main(int argc, char* argv[])
 {
-  lwpa_error_t res = kLwpaErrOk;
+  etcpal_error_t res = kEtcPalErrOk;
   bool should_exit = false;
   RdmnetScopeConfig scope_config;
-  const LwpaLogParams* lparams;
+  const EtcPalLogParams* lparams;
 
   RDMNET_CLIENT_SET_DEFAULT_SCOPE(&scope_config);
 
@@ -150,13 +150,13 @@ int main(int argc, char* argv[])
 
   /* Startup the device */
   res = device_init(&scope_config, lparams);
-  if (res != kLwpaErrOk)
+  if (res != kEtcPalErrOk)
   {
-    lwpa_log(lparams, LWPA_LOG_ERR, "Device failed to initialize: '%s'", lwpa_strerror(res));
+    etcpal_log(lparams, ETCPAL_LOG_ERR, "Device failed to initialize: '%s'", etcpal_strerror(res));
     return 1;
   }
 
-  lwpa_log(lparams, LWPA_LOG_INFO, "Device initialized.");
+  etcpal_log(lparams, ETCPAL_LOG_INFO, "Device initialized.");
 
   while (device_keep_running)
   {

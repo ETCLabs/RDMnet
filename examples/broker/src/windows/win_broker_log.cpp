@@ -60,7 +60,7 @@ WindowsBrokerLog::~WindowsBrokerLog()
   file_.close();
 }
 
-void WindowsBrokerLog::GetTimeFromCallback(LwpaLogTimeParams* time)
+void WindowsBrokerLog::GetTimeFromCallback(EtcPalLogTimeParams* time)
 {
   SYSTEMTIME win_time;
   GetLocalTime(&win_time);
@@ -77,13 +77,13 @@ void WindowsBrokerLog::GetTimeFromCallback(LwpaLogTimeParams* time)
 void WindowsBrokerLog::OutputLogMsg(const std::string& str)
 {
   // Haven't figured out the secret recipe for UTF-8 -> Windows Console yet.
-  //    WCHAR wmsg[LWPA_LOG_MSG_MAX_LEN + 1];
+  //    WCHAR wmsg[ETCPAL_LOG_MSG_MAX_LEN + 1];
   //    if (MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, wmsg,
-  //                            LWPA_LOG_MSG_MAX_LEN + 1) != 0)
+  //                            ETCPAL_LOG_MSG_MAX_LEN + 1) != 0)
   //    {
-  //      char final_msg[LWPA_LOG_MSG_MAX_LEN + 1];
+  //      char final_msg[ETCPAL_LOG_MSG_MAX_LEN + 1];
   //      if (WideCharToMultiByte(CP_OEMCP, 0, wmsg, -1, final_msg,
-  //                              LWPA_LOG_MSG_MAX_LEN + 1, NULL, NULL) != 0)
+  //                              ETCPAL_LOG_MSG_MAX_LEN + 1, NULL, NULL) != 0)
   //      {
   //        std::cout << final_msg << std::endl;
   //      }

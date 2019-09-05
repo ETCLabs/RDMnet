@@ -69,15 +69,15 @@ macro(add_gtest TESTNAME)
             gtest_add_tests(TARGET ${TESTNAME}
                             TEST_PREFIX "${TESTNAME}."
                             TEST_LIST TmpTestList)
-            set_tests_properties(${TmpTestList} PROPERTIES FOLDER "Tests")
+            set_tests_properties(${TmpTestList} PROPERTIES FOLDER "tests")
         else()
             gtest_discover_tests(${TESTNAME}
                 TEST_PREFIX "${TESTNAME}."
-                PROPERTIES FOLDER "Tests")
+                PROPERTIES FOLDER "tests")
         endif()
     else()
         add_test(${TESTNAME} ${TESTNAME})
-        set_target_properties(${TESTNAME} PROPERTIES FOLDER "Tests")
+        set_target_properties(${TESTNAME} PROPERTIES FOLDER "tests")
     endif()
 
 endmacro()
@@ -94,4 +94,4 @@ BUILD_GTEST
 )
 
 set_target_properties(gtest gtest_main gmock gmock_main
-    PROPERTIES FOLDER "Extern")
+    PROPERTIES FOLDER "tests")

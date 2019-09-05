@@ -29,17 +29,17 @@
 #include <iostream>
 #include <ctime>
 
-#include "lwpa/uuid.h"
+#include "etcpal/uuid.h"
 #include "manager.h"
 
 extern "C" {
-static void manager_log_callback(void *context, const LwpaLogStrings *strings)
+static void manager_log_callback(void *context, const EtcPalLogStrings *strings)
 {
   (void)context;
   std::cout << strings->human_readable << "\n";
 }
 
-static void manager_time_callback(void *context, LwpaLogTimeParams *time_params)
+static void manager_time_callback(void *context, EtcPalLogTimeParams *time_params)
 {
   time_t t = time(NULL);
   struct tm *local_time = localtime(&t);
@@ -56,17 +56,17 @@ static void manager_time_callback(void *context, LwpaLogTimeParams *time_params)
 
 int main(int /*argc*/, char * /*argv*/ [])
 {
-  LwpaUuid manager_cid;
-  lwpa_generate_os_preferred_uuid(&manager_cid);
+  EtcPalUuid manager_cid;
+  etcpal_generate_os_preferred_uuid(&manager_cid);
 
-  LwpaLogParams params;
-  params.action = kLwpaLogCreateHumanReadableLog;
+  EtcPalLogParams params;
+  params.action = kEtcPalLogCreateHumanReadableLog;
   params.log_fn = manager_log_callback;
-  params.log_mask = LWPA_LOG_UPTO(LWPA_LOG_INFO);
+  params.log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_INFO);
   params.time_fn = manager_time_callback;
   params.context = nullptr;
 
-  lwpa_validate_log_params(&params);
+  etcpal_validate_log_params(&params);
   LLRPManager mgr(manager_cid, &params);
   printf("Discovered network interfaces:\n");
   mgr.PrintNetints();

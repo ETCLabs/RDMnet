@@ -47,7 +47,7 @@
 #include "rdmnet_config.h"
 #endif
 
-#include "lwpa/thread.h"
+#include "etcpal/thread.h"
 
 /* Some option hints based on well-known compile definitions */
 
@@ -80,7 +80,7 @@
 /*! \brief Use dynamic memory allocation.
  *
  *  If defined nonzero, RDMnet manages memory dynamically using malloc() and free() from stdlib.h.
- *  Otherwise, RDMnet uses static arrays and fixed-size pools through \ref lwpa_mempool. The size of
+ *  Otherwise, RDMnet uses static arrays and fixed-size pools through \ref etcpal_mempool. The size of
  *  the pools is controlled with other config options.
  *
  *  If not defined in rdmnet_config.h, the library attempts to guess using standard OS predefined
@@ -250,7 +250,7 @@
 
 /*! \brief Spawn a thread internally to call rdmnet_tick().
  *
- *  If defined nonzero, rdmnet_init() will create a thread using \ref lwpa_thread which calls
+ *  If defined nonzero, rdmnet_init() will create a thread using \ref etcpal_thread which calls
  *  rdmnet_tick() periodically. The thread will be created using #RDMNET_TICK_THREAD_PRIORITY and
  *  #RDMNET_TICK_THREAD_STACK. The thread will be stopped by rdmnet_deinit().
  *
@@ -265,14 +265,14 @@
  *
  *  This is usually only meaningful on real-time systems. */
 #ifndef RDMNET_TICK_THREAD_PRIORITY
-#define RDMNET_TICK_THREAD_PRIORITY LWPA_THREAD_DEFAULT_PRIORITY
+#define RDMNET_TICK_THREAD_PRIORITY ETCPAL_THREAD_DEFAULT_PRIORITY
 #endif
 
 /*! \brief The stack size of the tick thread.
  *
  *  It's usually only necessary to worry about this on real-time or embedded systems. */
 #ifndef RDMNET_TICK_THREAD_STACK
-#define RDMNET_TICK_THREAD_STACK LWPA_THREAD_DEFAULT_STACK
+#define RDMNET_TICK_THREAD_STACK ETCPAL_THREAD_DEFAULT_STACK
 #endif
 
 /*! @} */

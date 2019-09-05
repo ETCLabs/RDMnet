@@ -38,10 +38,10 @@
 extern "C" {
 #endif
 
-DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_llrp_target_create, const LlrpTargetConfig*, llrp_target_t*);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_llrp_target_create, const LlrpTargetConfig*, llrp_target_t*);
 DECLARE_FAKE_VOID_FUNC(rdmnet_llrp_target_destroy, llrp_target_t);
 DECLARE_FAKE_VOID_FUNC(rdmnet_llrp_target_update_connection_state, llrp_target_t, bool);
-DECLARE_FAKE_VALUE_FUNC(lwpa_error_t, rdmnet_llrp_send_rdm_response, llrp_target_t, const LlrpLocalRdmResponse*);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_llrp_send_rdm_response, llrp_target_t, const LlrpLocalRdmResponse*);
 
 #define RDMNET_CORE_LLRP_TARGET_DO_FOR_ALL_FAKES(operation) \
   operation(rdmnet_llrp_target_create);                     \

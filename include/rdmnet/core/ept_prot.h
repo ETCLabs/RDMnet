@@ -32,7 +32,7 @@
 #ifndef _RDMNET_CORE_EPT_PROT_H_
 #define _RDMNET_CORE_EPT_PROT_H_
 
-#include "lwpa/int.h"
+#include "etcpal/int.h"
 #include "rdmnet/defs.h"
 
 /*! \addtogroup rdmnet_message

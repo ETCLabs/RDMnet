@@ -27,11 +27,11 @@
 #ifndef _RDMNET_PRIVATE_LLRP_PROT_H_
 #define _RDMNET_PRIVATE_LLRP_PROT_H_
 
-#include "lwpa/int.h"
-#include "lwpa/bool.h"
-#include "lwpa/uuid.h"
-#include "lwpa/root_layer_pdu.h"
-#include "lwpa/socket.h"
+#include "etcpal/int.h"
+#include "etcpal/bool.h"
+#include "etcpal/uuid.h"
+#include "etcpal/root_layer_pdu.h"
+#include "etcpal/socket.h"
 #include "rdm/uid.h"
 #include "rdm/message.h"
 #include "rdmnet/core/llrp.h"
@@ -50,8 +50,8 @@
 
 typedef struct LlrpHeader
 {
-  LwpaUuid sender_cid;
-  LwpaUuid dest_cid;
+  EtcPalUuid sender_cid;
+  EtcPalUuid dest_cid;
 
   uint32_t transaction_number;
 } LlrpHeader;
@@ -60,7 +60,7 @@ typedef struct LlrpMessageInterest
 {
   bool interested_in_probe_request;
   bool interested_in_probe_reply;
-  LwpaUuid my_cid;
+  EtcPalUuid my_cid;
   RdmUid my_uid;
 } LlrpMessageInterest;
 
@@ -107,20 +107,20 @@ typedef struct LlrpMessage
 extern "C" {
 #endif
 
-extern LwpaUuid kLlrpBroadcastCid;
+extern EtcPalUuid kLlrpBroadcastCid;
 
 void llrp_prot_init();
 
-bool get_llrp_destination_cid(const uint8_t* buf, size_t buflen, LwpaUuid* dest_cid);
+bool get_llrp_destination_cid(const uint8_t* buf, size_t buflen, EtcPalUuid* dest_cid);
 bool parse_llrp_message(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest, LlrpMessage* msg);
 
-lwpa_error_t send_llrp_probe_request(lwpa_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
+etcpal_error_t send_llrp_probe_request(etcpal_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
                                      const LocalProbeRequest* probe_request);
-lwpa_error_t send_llrp_probe_reply(lwpa_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
+etcpal_error_t send_llrp_probe_reply(etcpal_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
                                    const DiscoveredLlrpTarget* target_info);
-lwpa_error_t send_llrp_rdm_command(lwpa_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
+etcpal_error_t send_llrp_rdm_command(etcpal_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
                                    const RdmBuffer* cmd);
-lwpa_error_t send_llrp_rdm_response(lwpa_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
+etcpal_error_t send_llrp_rdm_response(etcpal_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
                                     const RdmBuffer* resp);
 
 #ifdef __cplusplus

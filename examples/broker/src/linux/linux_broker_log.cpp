@@ -42,7 +42,7 @@ LinuxBrokerLog::~LinuxBrokerLog()
   file_.close();
 }
 
-void LinuxBrokerLog::GetTimeFromCallback(LwpaLogTimeParams* time_params)
+void LinuxBrokerLog::GetTimeFromCallback(EtcPalLogTimeParams* time_params)
 {
   time_t cur_time;
   time(&cur_time);

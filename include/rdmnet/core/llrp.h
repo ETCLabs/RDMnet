@@ -32,9 +32,9 @@
 #ifndef _RDMNET_CORE_LLRP_H_
 #define _RDMNET_CORE_LLRP_H_
 
-#include "lwpa/inet.h"
-#include "lwpa/int.h"
-#include "lwpa/uuid.h"
+#include "etcpal/inet.h"
+#include "etcpal/int.h"
+#include "etcpal/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
 
@@ -72,7 +72,7 @@ typedef enum
 typedef struct DiscoveredLlrpTarget
 {
   /*! The LLRP Target's CID. */
-  LwpaUuid cid;
+  EtcPalUuid cid;
   /*! The LLRP Target's UID. */
   RdmUid uid;
   /*! The LLRP Target's hardware address (usually the MAC address) */
@@ -88,7 +88,7 @@ typedef struct DiscoveredLlrpTarget
 typedef struct LlrpNetintId
 {
   /*! The IP protocol used on the network interface. */
-  lwpa_iptype_t ip_type;
+  etcpal_iptype_t ip_type;
   /*! The index of the network interface. See \ref interface_indexes for more information. */
   unsigned int index;
 } LlrpNetintId;

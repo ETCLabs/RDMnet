@@ -34,9 +34,9 @@
 #include <memory>
 #include <string>
 
-#include "lwpa/int.h"
-#include "lwpa/uuid.h"
-#include "lwpa/socket.h"
+#include "etcpal/int.h"
+#include "etcpal/uuid.h"
+#include "etcpal/socket.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/broker/log.h"
@@ -73,7 +73,7 @@ struct BrokerDiscoveryAttributes
 /// A group of settings for Broker operation.
 struct BrokerSettings
 {
-  LwpaUuid cid{};  ///< The Broker's CID.
+  EtcPalUuid cid{};  ///< The Broker's CID.
 
   enum UidType
   {
@@ -116,7 +116,7 @@ struct BrokerSettings
 
   /// MODIFY FOR DEBUG PURPOSES ONLY: each read thread can support this many sockets, up to the
   /// maximum allowed by your platform's socket implementation.
-  //unsigned int max_socket_per_read_thread{LWPA_SOCKET_MAX_POLL_SIZE};
+  //unsigned int max_socket_per_read_thread{ETCPAL_SOCKET_MAX_POLL_SIZE};
 
   BrokerSettings() {}
   BrokerSettings(const RdmUid& static_uid) { SetStaticUid(static_uid); }
@@ -144,7 +144,7 @@ public:
   Broker(BrokerLog* log, BrokerSocketManager* socket_manager, BrokerNotify* notify);
   virtual ~Broker();
 
-  bool Startup(const BrokerSettings& settings, uint16_t listen_port, std::vector<LwpaIpAddr>& listen_addrs);
+  bool Startup(const BrokerSettings& settings, uint16_t listen_port, std::vector<EtcPalIpAddr>& listen_addrs);
   void Shutdown();
   void Tick();
 

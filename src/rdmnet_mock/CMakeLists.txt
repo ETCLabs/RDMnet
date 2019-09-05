@@ -32,4 +32,4 @@ add_library(RDMnetCore_mock
 )
 target_compile_definitions(RDMnetCore_mock PUBLIC RDMNET_BUILDING_FULL_MOCK_CORE_LIB)
 target_include_directories(RDMnetCore_mock PUBLIC ${RDMNET_INCLUDE} PRIVATE ${RDMNET_SRC})
-target_link_libraries(RDMnetCore_mock PUBLIC meekrosoft::fff RDMnetDiscovery_mock PRIVATE lwpa RDM)
+target_link_libraries(RDMnetCore_mock PUBLIC meekrosoft::fff RDMnetDiscovery_mock PRIVATE EtcPal RDM)

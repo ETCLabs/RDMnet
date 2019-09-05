@@ -29,9 +29,9 @@
 
 #include <string.h>
 #include <stdio.h>
-#include "lwpa/pack.h"
-#include "lwpa/thread.h"
-#include "lwpa/lock.h"
+#include "etcpal/pack.h"
+#include "etcpal/thread.h"
+#include "etcpal/lock.h"
 #include "rdm/defs.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/version.h"
@@ -75,17 +75,17 @@ static const uint8_t kDeviceInfo[] = {
 static struct DefaultResponderPropertyData
 {
   uint32_t endpoint_list_change_number;
-  lwpa_thread_t identify_thread;
+  etcpal_thread_t identify_thread;
   bool identifying;
   char device_label[DEVICE_LABEL_MAX_LEN + 1];
   RdmnetScopeConfig scope_config;
   char search_domain[E133_DOMAIN_STRING_PADDED_LENGTH];
   uint16_t tcp_unhealthy_counter;
   bool connected;
-  LwpaSockaddr cur_broker_addr;
+  EtcPalSockaddr cur_broker_addr;
 } prop_data;
 
-static lwpa_rwlock_t prop_lock;
+static etcpal_rwlock_t prop_lock;
 
 /*********************** Private function prototypes *************************/
 
@@ -131,7 +131,7 @@ bool get_endpoint_responders(const uint8_t* param_data, uint8_t param_data_len, 
 
 void default_responder_init(const RdmnetScopeConfig* scope_config, const char* search_domain)
 {
-  lwpa_rwlock_create(&prop_lock);
+  etcpal_rwlock_create(&prop_lock);
 
   rdmnet_safe_strncpy(prop_data.device_label, DEFAULT_DEVICE_LABEL, DEVICE_LABEL_MAX_LEN);
   rdmnet_safe_strncpy(prop_data.search_domain, search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
@@ -143,56 +143,56 @@ void default_responder_deinit()
   if (prop_data.identifying)
   {
     prop_data.identifying = false;
-    lwpa_thread_join(&prop_data.identify_thread);
+    etcpal_thread_join(&prop_data.identify_thread);
   }
   memset(&prop_data, 0, sizeof(prop_data));
-  lwpa_rwlock_destroy(&prop_lock);
+  etcpal_rwlock_destroy(&prop_lock);
 }
 
 void default_responder_get_scope_config(RdmnetScopeConfig* scope_config)
 {
-  if (lwpa_rwlock_readlock(&prop_lock))
+  if (etcpal_rwlock_readlock(&prop_lock))
   {
     *scope_config = prop_data.scope_config;
-    lwpa_rwlock_readunlock(&prop_lock);
+    etcpal_rwlock_readunlock(&prop_lock);
   }
 }
 
 void default_responder_get_search_domain(char* search_domain)
 {
-  if (lwpa_rwlock_readlock(&prop_lock))
+  if (etcpal_rwlock_readlock(&prop_lock))
   {
     rdmnet_safe_strncpy(search_domain, prop_data.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
-    lwpa_rwlock_readunlock(&prop_lock);
+    etcpal_rwlock_readunlock(&prop_lock);
   }
 }
 
-void default_responder_update_connection_status(bool connected, const LwpaSockaddr* broker_addr)
+void default_responder_update_connection_status(bool connected, const EtcPalSockaddr* broker_addr)
 {
-  if (lwpa_rwlock_readlock(&prop_lock))
+  if (etcpal_rwlock_readlock(&prop_lock))
   {
     prop_data.connected = connected;
     if (prop_data.connected)
       prop_data.cur_broker_addr = *broker_addr;
-    lwpa_rwlock_readunlock(&prop_lock);
+    etcpal_rwlock_readunlock(&prop_lock);
   }
 }
 
 void default_responder_incr_unhealthy_count()
 {
-  if (lwpa_rwlock_writelock(&prop_lock))
+  if (etcpal_rwlock_writelock(&prop_lock))
   {
     ++prop_data.tcp_unhealthy_counter;
-    lwpa_rwlock_writeunlock(&prop_lock);
+    etcpal_rwlock_writeunlock(&prop_lock);
   }
 }
 
-void default_responder_set_tcp_status(LwpaSockaddr* broker_addr)
+void default_responder_set_tcp_status(EtcPalSockaddr* broker_addr)
 {
-  if (lwpa_rwlock_writelock(&prop_lock))
+  if (etcpal_rwlock_writelock(&prop_lock))
   {
     prop_data.cur_broker_addr = *broker_addr;
-    lwpa_rwlock_writeunlock(&prop_lock);
+    etcpal_rwlock_writeunlock(&prop_lock);
   }
 }
 
@@ -211,7 +211,7 @@ bool default_responder_set(uint16_t pid, const uint8_t* param_data, uint8_t para
                            rdmnet_data_changed_t* data_changed)
 {
   bool res = false;
-  if (lwpa_rwlock_writelock(&prop_lock))
+  if (etcpal_rwlock_writelock(&prop_lock))
   {
     switch (pid)
     {
@@ -244,7 +244,7 @@ bool default_responder_set(uint16_t pid, const uint8_t* param_data, uint8_t para
         *data_changed = kNoRdmnetDataChanged;
         break;
     }
-    lwpa_rwlock_writeunlock(&prop_lock);
+    etcpal_rwlock_writeunlock(&prop_lock);
   }
   return res;
 }
@@ -253,7 +253,7 @@ bool default_responder_get(uint16_t pid, const uint8_t* param_data, uint8_t para
                            param_data_list_t resp_data_list, size_t* num_responses, uint16_t* nack_reason)
 {
   bool res = false;
-  if (lwpa_rwlock_readlock(&prop_lock))
+  if (etcpal_rwlock_readlock(&prop_lock))
   {
     switch (pid)
     {
@@ -297,7 +297,7 @@ bool default_responder_get(uint16_t pid, const uint8_t* param_data, uint8_t para
         *nack_reason = E120_NR_UNKNOWN_PID;
         break;
     }
-    lwpa_rwlock_readunlock(&prop_lock);
+    etcpal_rwlock_readunlock(&prop_lock);
   }
   return res;
 }
@@ -309,7 +309,7 @@ void identify_thread(void* arg)
   while (prop_data.identifying)
   {
     printf("I AM IDENTIFYING!!!\n");
-    lwpa_thread_sleep(1000);
+    etcpal_thread_sleep(1000);
   }
 }
 
@@ -321,14 +321,14 @@ bool set_identify_device(const uint8_t* param_data, uint8_t param_data_len, uint
     bool new_identify_setting = (bool)(*param_data);
     if (new_identify_setting && !prop_data.identifying)
     {
-      LwpaThreadParams ithread_params;
+      EtcPalThreadParams ithread_params;
 
-      ithread_params.thread_priority = LWPA_THREAD_DEFAULT_PRIORITY;
-      ithread_params.stack_size = LWPA_THREAD_DEFAULT_STACK;
+      ithread_params.thread_priority = ETCPAL_THREAD_DEFAULT_PRIORITY;
+      ithread_params.stack_size = ETCPAL_THREAD_DEFAULT_STACK;
       ithread_params.thread_name = "Identify Thread";
       ithread_params.platform_data = NULL;
 
-      lwpa_thread_create(&prop_data.identify_thread, &ithread_params, identify_thread, NULL);
+      etcpal_thread_create(&prop_data.identify_thread, &ithread_params, identify_thread, NULL);
     }
     prop_data.identifying = new_identify_setting;
     *data_changed = kNoRdmnetDataChanged;
@@ -365,12 +365,12 @@ bool set_component_scope(const uint8_t* param_data, uint8_t param_data_len, uint
 {
   if (param_data_len == (2 + E133_SCOPE_STRING_PADDED_LENGTH + 1 + 4 + 16 + 2))
   {
-    if (lwpa_upack_16b(param_data) == 1)
+    if (etcpal_upack_16b(param_data) == 1)
     {
       const uint8_t* cur_ptr = param_data + 2;
       char new_scope[E133_SCOPE_STRING_PADDED_LENGTH];
       bool have_new_static_broker = false;
-      LwpaSockaddr new_static_broker = {0};
+      EtcPalSockaddr new_static_broker = {0};
 
       strncpy(new_scope, (const char*)cur_ptr, E133_SCOPE_STRING_PADDED_LENGTH);
       new_scope[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
@@ -379,16 +379,16 @@ bool set_component_scope(const uint8_t* param_data, uint8_t param_data_len, uint
       switch (*cur_ptr++)
       {
         case E133_STATIC_CONFIG_IPV4:
-          LWPA_IP_SET_V4_ADDRESS(&new_static_broker.ip, lwpa_upack_32b(cur_ptr));
+          ETCPAL_IP_SET_V4_ADDRESS(&new_static_broker.ip, etcpal_upack_32b(cur_ptr));
           cur_ptr += 4 + 16;
-          new_static_broker.port = lwpa_upack_16b(cur_ptr);
+          new_static_broker.port = etcpal_upack_16b(cur_ptr);
           have_new_static_broker = true;
           break;
         case E133_STATIC_CONFIG_IPV6:
           cur_ptr += 4;
-          LWPA_IP_SET_V6_ADDRESS(&new_static_broker.ip, cur_ptr);
+          ETCPAL_IP_SET_V6_ADDRESS(&new_static_broker.ip, cur_ptr);
           cur_ptr += 16;
-          new_static_broker.port = lwpa_upack_16b(cur_ptr);
+          new_static_broker.port = etcpal_upack_16b(cur_ptr);
           have_new_static_broker = true;
           break;
         case E133_NO_STATIC_CONFIG:
@@ -399,7 +399,7 @@ bool set_component_scope(const uint8_t* param_data, uint8_t param_data_len, uint
       RdmnetScopeConfig* existing_scope_config = &prop_data.scope_config;
       if (strncmp((char*)&param_data[2], existing_scope_config->scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0 &&
           ((!have_new_static_broker && !existing_scope_config->has_static_broker_addr) ||
-           (lwpa_ip_equal(&new_static_broker.ip, &existing_scope_config->static_broker_addr.ip) &&
+           (etcpal_ip_equal(&new_static_broker.ip, &existing_scope_config->static_broker_addr.ip) &&
             new_static_broker.port == existing_scope_config->static_broker_addr.port)))
       {
         /* Same settings as current */
@@ -515,13 +515,13 @@ bool get_component_scope(const uint8_t* param_data, uint8_t param_data_len, para
 {
   if (param_data_len >= 2)
   {
-    if (lwpa_upack_16b(param_data) == 1)
+    if (etcpal_upack_16b(param_data) == 1)
     {
       const RdmnetScopeConfig* scope_config = &prop_data.scope_config;
 
       // Pack the scope
       uint8_t* cur_ptr = resp_data_list[0].data;
-      lwpa_pack_16b(cur_ptr, 1);
+      etcpal_pack_16b(cur_ptr, 1);
       cur_ptr += 2;
       rdmnet_safe_strncpy((char*)cur_ptr, scope_config->scope, E133_SCOPE_STRING_PADDED_LENGTH);
       cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
@@ -529,21 +529,21 @@ bool get_component_scope(const uint8_t* param_data, uint8_t param_data_len, para
       // Pack the static config data
       if (scope_config->has_static_broker_addr)
       {
-        if (LWPA_IP_IS_V4(&scope_config->static_broker_addr.ip))
+        if (ETCPAL_IP_IS_V4(&scope_config->static_broker_addr.ip))
         {
           *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
-          lwpa_pack_32b(cur_ptr, LWPA_IP_V4_ADDRESS(&scope_config->static_broker_addr.ip));
+          etcpal_pack_32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&scope_config->static_broker_addr.ip));
           cur_ptr += 4 + 16;
-          lwpa_pack_16b(cur_ptr, scope_config->static_broker_addr.port);
+          etcpal_pack_16b(cur_ptr, scope_config->static_broker_addr.port);
           cur_ptr += 2;
         }
         else  // V6
         {
           *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
           cur_ptr += 4;
-          memcpy(cur_ptr, LWPA_IP_V6_ADDRESS(&scope_config->static_broker_addr.ip), 16);
+          memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&scope_config->static_broker_addr.ip), 16);
           cur_ptr += 16;
-          lwpa_pack_16b(cur_ptr, scope_config->static_broker_addr.port);
+          etcpal_pack_16b(cur_ptr, scope_config->static_broker_addr.port);
           cur_ptr += 2;
         }
       }
@@ -593,21 +593,21 @@ bool get_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, par
   cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
   if (prop_data.connected)
   {
-    if (LWPA_IP_IS_V4(&prop_data.cur_broker_addr.ip))
+    if (ETCPAL_IP_IS_V4(&prop_data.cur_broker_addr.ip))
     {
-      lwpa_pack_32b(cur_ptr, LWPA_IP_V4_ADDRESS(&prop_data.cur_broker_addr.ip));
+      etcpal_pack_32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&prop_data.cur_broker_addr.ip));
       cur_ptr += 4;
-      memset(cur_ptr, 0, LWPA_IPV6_BYTES);
-      cur_ptr += LWPA_IPV6_BYTES;
+      memset(cur_ptr, 0, ETCPAL_IPV6_BYTES);
+      cur_ptr += ETCPAL_IPV6_BYTES;
     }
     else
     {
-      lwpa_pack_32b(cur_ptr, 0);
+      etcpal_pack_32b(cur_ptr, 0);
       cur_ptr += 4;
-      memcpy(cur_ptr, LWPA_IP_V6_ADDRESS(&prop_data.cur_broker_addr.ip), LWPA_IPV6_BYTES);
-      cur_ptr += LWPA_IPV6_BYTES;
+      memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&prop_data.cur_broker_addr.ip), ETCPAL_IPV6_BYTES);
+      cur_ptr += ETCPAL_IPV6_BYTES;
     }
-    lwpa_pack_16b(cur_ptr, prop_data.cur_broker_addr.port);
+    etcpal_pack_16b(cur_ptr, prop_data.cur_broker_addr.port);
     cur_ptr += 2;
   }
   else
@@ -615,7 +615,7 @@ bool get_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, par
     memset(cur_ptr, 0, 22);
     cur_ptr += 22;
   }
-  lwpa_pack_16b(cur_ptr, prop_data.tcp_unhealthy_counter);
+  etcpal_pack_16b(cur_ptr, prop_data.tcp_unhealthy_counter);
   cur_ptr += 2;
   resp_data_list[0].datalen = (uint8_t)(cur_ptr - resp_data_list[0].data);
   *num_responses = 1;
@@ -635,7 +635,7 @@ bool get_supported_parameters(const uint8_t* param_data, uint8_t param_data_len,
 
   for (i = 0; i < NUM_SUPPORTED_PIDS; ++i)
   {
-    lwpa_pack_16b(cur_ptr, kSupportedPIDList[i]);
+    etcpal_pack_16b(cur_ptr, kSupportedPIDList[i]);
     cur_ptr += 2;
     if ((cur_ptr - resp_data_list[list_index].data) >= RDM_MAX_PDL - 1)
     {
@@ -711,7 +711,7 @@ bool get_endpoint_list(const uint8_t* param_data, uint8_t param_data_len, param_
   /* Hardcoded: no endpoints other than NULL_ENDPOINT. NULL_ENDPOINT is not
    * reported in this response. */
   resp_data_list[0].datalen = 4;
-  lwpa_pack_32b(cur_ptr, prop_data.endpoint_list_change_number);
+  etcpal_pack_32b(cur_ptr, prop_data.endpoint_list_change_number);
   *num_responses = 1;
   return true;
 }

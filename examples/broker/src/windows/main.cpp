@@ -81,21 +81,21 @@ bool ParseAndSetScope(const LPWSTR scope_str, BrokerShell& broker_shell)
 // Parse the --ifaces=IFACE_LIST command line option and transfer it to the BrokerShell instance.
 bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell& broker_shell)
 {
-  std::vector<LwpaIpAddr> addrs;
+  std::vector<EtcPalIpAddr> addrs;
 
   if (wcslen(iface_list_str) != 0)
   {
     WCHAR* context;
     for (WCHAR* p = wcstok_s(iface_list_str, L",", &context); p != NULL; p = wcstok_s(NULL, L",", &context))
     {
-      LwpaIpAddr addr;
+      EtcPalIpAddr addr;
 
       struct sockaddr_storage tst_addr;
       INT res = InetPtonW(AF_INET, p, &((struct sockaddr_in*)&tst_addr)->sin_addr);
       if (res == 1)
       {
         tst_addr.ss_family = AF_INET;
-        ip_os_to_lwpa((lwpa_os_ipaddr_t*)&tst_addr, &addr);
+        ip_os_to_etcpal((etcpal_os_ipaddr_t*)&tst_addr, &addr);
       }
       else
       {
@@ -103,7 +103,7 @@ bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell& broker_shell
         if (res == 1)
         {
           tst_addr.ss_family = AF_INET6;
-          ip_os_to_lwpa((lwpa_os_ipaddr_t*)&tst_addr, &addr);
+          ip_os_to_etcpal((etcpal_os_ipaddr_t*)&tst_addr, &addr);
         }
       }
       if (res == 1)
@@ -127,7 +127,7 @@ void ParseMac(WCHAR* s, BrokerShell::MacAddr& mac_buf)
 {
   WCHAR* p = s;
 
-  for (int index = 0; index < LWPA_NETINTINFO_MAC_LEN; ++index)
+  for (int index = 0; index < ETCPAL_NETINTINFO_MAC_LEN; ++index)
   {
     mac_buf[index] = (uint8_t)wcstol(p, &p, 16);
     ++p;  // P points at the :
@@ -172,14 +172,14 @@ bool ParseAndSetPort(const LPWSTR port_str, BrokerShell& broker_shell)
 
 // clang-format off
 static const std::map<std::wstring, int> log_levels = {
-  {L"EMERG", LWPA_LOG_EMERG},
-  {L"ALERT", LWPA_LOG_ALERT},
-  {L"CRIT", LWPA_LOG_CRIT},
-  {L"ERR", LWPA_LOG_ERR},
-  {L"WARNING", LWPA_LOG_WARNING},
-  {L"NOTICE", LWPA_LOG_NOTICE},
-  {L"INFO", LWPA_LOG_INFO},
-  {L"DEBUG", LWPA_LOG_DEBUG}
+  {L"EMERG", ETCPAL_LOG_EMERG},
+  {L"ALERT", ETCPAL_LOG_ALERT},
+  {L"CRIT", ETCPAL_LOG_CRIT},
+  {L"ERR", ETCPAL_LOG_ERR},
+  {L"WARNING", ETCPAL_LOG_WARNING},
+  {L"NOTICE", ETCPAL_LOG_NOTICE},
+  {L"INFO", ETCPAL_LOG_INFO},
+  {L"DEBUG", ETCPAL_LOG_DEBUG}
 };
 // clang-format on
 

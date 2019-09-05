@@ -7,5 +7,5 @@ add_executable(test_rdmnet_broker
 )
 target_include_directories(test_rdmnet_broker PRIVATE ${RDMNET_SRC}/rdmnet/broker)
 target_link_libraries(test_rdmnet_broker Broker gtest)
-set_target_properties(test_rdmnet_broker PROPERTIES CXX_STANDARD 11)
+set_target_properties(test_rdmnet_broker PROPERTIES CXX_STANDARD 11 FOLDER tests)
 gtest_add_tests(TARGET test_rdmnet_broker SKIP_DEPENDENCY)

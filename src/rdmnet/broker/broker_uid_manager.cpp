@@ -39,7 +39,7 @@ BrokerUidManager::AddResult BrokerUidManager::AddStaticUid(int conn_handle, cons
   return AddResult::kOk;
 }
 
-BrokerUidManager::AddResult BrokerUidManager::AddDynamicUid(int conn_handle, const LwpaUuid& cid_or_rid,
+BrokerUidManager::AddResult BrokerUidManager::AddDynamicUid(int conn_handle, const EtcPalUuid& cid_or_rid,
                                                             RdmUid& new_dynamic_uid)
 {
   if (uid_lookup_.size() >= max_uid_capacity_)
