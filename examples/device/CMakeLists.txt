@@ -27,6 +27,12 @@ if(WIN32)
       COMMENT "Copying DNS-SD dll to executable directory..."
     )
   endif()
+else()
+  target_sources(${DEVICE_TARGET} PRIVATE
+    src/posix/posix_device_log.h
+    src/posix/posix_device_log.c
+    src/posix/main.c
+  )
 endif()
 
 install(TARGETS ${DEVICE_TARGET}
