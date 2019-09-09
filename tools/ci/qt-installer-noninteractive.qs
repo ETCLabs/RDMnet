@@ -10,7 +10,9 @@ Controller.prototype.WelcomePageCallback = function() {
 }
 
 Controller.prototype.CredentialsPageCallback = function() {
-  gui.clickButton(buttons.NextButton);
+  gui.currentPageWidget().loginWidget.EmailLineEdit.setText("");
+  gui.currentPageWidget().loginWidget.PasswordLineEdit.setText("");
+  gui.clickButton(buttons.NextButton)
 }
 
 Controller.prototype.IntroductionPageCallback = function() {
@@ -18,7 +20,7 @@ Controller.prototype.IntroductionPageCallback = function() {
 }
 
 Controller.prototype.TargetDirectoryPageCallback = function() {
-  gui.currentPageWidget().TargetDirectoryLineEdit.setText("C:/Qt");
+  gui.currentPageWidget().TargetDirectoryLineEdit.setText(installer.value("INSTALL_DIR"));
   gui.clickButton(buttons.NextButton);
 }
 
@@ -26,8 +28,12 @@ Controller.prototype.ComponentSelectionPageCallback = function() {
   var widget = gui.currentPageWidget();
 
   widget.deselectAll();
-  widget.selectComponent("qt.qt5.597.win32_msvc2015");
-  widget.selectComponent("qt.qt5.597.win64_msvc2017_64");
+  if (installer.value("os") == "win") {
+    widget.selectComponent("qt.qt5.597.win32_msvc2015");
+    widget.selectComponent("qt.qt5.597.win64_msvc2017_64");
+  } else if (installer.value("os") == "mac") {
+    widget.selectComponent("qt.qt5.597.clang_64");
+  }
 
   gui.clickButton(buttons.NextButton);
 }

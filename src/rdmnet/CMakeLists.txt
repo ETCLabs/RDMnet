@@ -174,3 +174,8 @@ add_library(Broker
 target_include_directories(Broker PUBLIC ${RDMNET_INCLUDE})
 target_link_libraries(Broker PUBLIC RDMnet)
 set_target_properties(Broker PROPERTIES CXX_STANDARD 14)
+
+# Installation
+install(TARGETS RDMnet ARCHIVE DESTINATION lib)
+install(TARGETS Broker ARCHIVE DESTINATION lib)
+install(DIRECTORY ${RDMNET_ROOT}/include/rdmnet DESTINATION include FILES_MATCHING PATTERN "*.h")

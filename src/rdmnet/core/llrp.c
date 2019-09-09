@@ -105,9 +105,9 @@ static LlrpRecvSocket* get_llrp_recv_sock(llrp_socket_t llrp_type, etcpal_iptype
 static etcpal_error_t create_send_socket(const LlrpNetintId* netint, etcpal_socket_t* socket);
 static etcpal_error_t create_recv_socket(llrp_socket_t llrp_type, etcpal_iptype_t ip_type, LlrpRecvSocket* sock_struct);
 static etcpal_error_t subscribe_recv_socket(const LlrpNetintId* netint, llrp_socket_t llrp_type,
-                                          LlrpRecvSocket* sock_struct);
-static etcpal_error_t unsubscribe_recv_socket(const LlrpNetintId* netint, llrp_socket_t llrp_type,
                                             LlrpRecvSocket* sock_struct);
+static etcpal_error_t unsubscribe_recv_socket(const LlrpNetintId* netint, llrp_socket_t llrp_type,
+                                              LlrpRecvSocket* sock_struct);
 static void destroy_recv_socket(LlrpRecvSocket* sock_struct);
 
 static void llrp_socket_activity(const EtcPalPollEvent* event, PolledSocketOpaqueData data);
@@ -237,8 +237,8 @@ etcpal_error_t init_sys_netints()
 
     if (test_res == kEtcPalErrOk)
     {
-      etcpal_log(rdmnet_log_params, ETCPAL_LOG_INFO, RDMNET_LOG_MSG("  Set up LLRP network interface %s for listening."),
-               addr_str);
+      etcpal_log(rdmnet_log_params, ETCPAL_LOG_INFO,
+                 RDMNET_LOG_MSG("  Set up LLRP network interface %s for listening."), addr_str);
 
       // Modify the lowest hardware address, if necessary
       if (memcmp(netint->mac, null_mac, 6) != 0)
@@ -257,8 +257,8 @@ etcpal_error_t init_sys_netints()
     else
     {
       etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
-               RDMNET_LOG_MSG("  Error creating test socket on LLRP network interface %s: '%s'. Skipping!"), addr_str,
-               etcpal_strerror(test_res));
+                 RDMNET_LOG_MSG("  Error creating test socket on LLRP network interface %s: '%s'. Skipping!"), addr_str,
+                 etcpal_strerror(test_res));
     }
   }
 
@@ -409,7 +409,8 @@ etcpal_error_t create_send_socket(const LlrpNetintId* netint, etcpal_socket_t* s
   etcpal_socket_t sock = ETCPAL_SOCKET_INVALID;
   int sockopt_ip_level = (netint->ip_type == kEtcPalIpTypeV6 ? ETCPAL_IPPROTO_IPV6 : ETCPAL_IPPROTO_IP);
 
-  etcpal_error_t res = etcpal_socket(netint->ip_type == kEtcPalIpTypeV6 ? ETCPAL_AF_INET6 : ETCPAL_AF_INET, ETCPAL_DGRAM, &sock);
+  etcpal_error_t res =
+      etcpal_socket(netint->ip_type == kEtcPalIpTypeV6 ? ETCPAL_AF_INET6 : ETCPAL_AF_INET, ETCPAL_DGRAM, &sock);
 
   if (res == kEtcPalErrOk)
   {
@@ -500,8 +501,9 @@ etcpal_error_t subscribe_recv_socket(const LlrpNetintId* netint, llrp_socket_t l
   group_req.ifindex = netint->index;
   group_req.group = get_llrp_mcast_addr(llrp_type, netint->ip_type);
 
-  return etcpal_setsockopt(sock_struct->socket, netint->ip_type == kEtcPalIpTypeV6 ? ETCPAL_IPPROTO_IPV6 : ETCPAL_IPPROTO_IP,
-                         ETCPAL_MCAST_JOIN_GROUP, (const void*)&group_req, sizeof(group_req));
+  return etcpal_setsockopt(sock_struct->socket,
+                           netint->ip_type == kEtcPalIpTypeV6 ? ETCPAL_IPPROTO_IPV6 : ETCPAL_IPPROTO_IP,
+                           ETCPAL_MCAST_JOIN_GROUP, (const void*)&group_req, sizeof(group_req));
 }
 
 etcpal_error_t unsubscribe_recv_socket(const LlrpNetintId* netint, llrp_socket_t llrp_type, LlrpRecvSocket* sock_struct)
@@ -510,8 +512,9 @@ etcpal_error_t unsubscribe_recv_socket(const LlrpNetintId* netint, llrp_socket_t
   group_req.ifindex = netint->index;
   group_req.group = get_llrp_mcast_addr(llrp_type, netint->ip_type);
 
-  return etcpal_setsockopt(sock_struct->socket, netint->ip_type == kEtcPalIpTypeV6 ? ETCPAL_IPPROTO_IPV6 : ETCPAL_IPPROTO_IP,
-                         ETCPAL_MCAST_LEAVE_GROUP, (const void*)&group_req, sizeof(group_req));
+  return etcpal_setsockopt(sock_struct->socket,
+                           netint->ip_type == kEtcPalIpTypeV6 ? ETCPAL_IPPROTO_IPV6 : ETCPAL_IPPROTO_IP,
+                           ETCPAL_MCAST_LEAVE_GROUP, (const void*)&group_req, sizeof(group_req));
 }
 
 void destroy_recv_socket(LlrpRecvSocket* sock_struct)
@@ -561,8 +564,8 @@ void llrp_socket_activity(const EtcPalPollEvent* event, PolledSocketOpaqueData d
         etcpal_inet_ntop(&from_addr.ip, addr_str, ETCPAL_INET6_ADDRSTRLEN);
 
         etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
-                 RDMNET_LOG_MSG("Couldn't reply to LLRP message from %s:%u because no reply route could be found."),
-                 addr_str, from_addr.port);
+                   RDMNET_LOG_MSG("Couldn't reply to LLRP message from %s:%u because no reply route could be found."),
+                   addr_str, from_addr.port);
       }
     }
   }
@@ -571,7 +574,7 @@ void llrp_socket_activity(const EtcPalPollEvent* event, PolledSocketOpaqueData d
 void llrp_socket_error(etcpal_error_t err)
 {
   etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING, RDMNET_LOG_MSG("Error receiving on an LLRP socket: '%s'"),
-           etcpal_strerror(err));
+             etcpal_strerror(err));
 }
 
 EtcPalIpAddr get_llrp_mcast_addr(llrp_socket_t llrp_type, etcpal_iptype_t ip_type)
@@ -621,7 +624,7 @@ int netint_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPa
   }
   else
   {
-    return (a->id.ip_type == kEtcPalIpTypeV6);
+    return (a->id.ip_type == kEtcPalIpTypeV6 ? 1 : -1);
   }
 }
 

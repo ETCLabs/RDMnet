@@ -1,0 +1,22 @@
+# A reusable step to download a built artifact and upload it to JFrog Bintray.
+
+parameters:
+  artifactName: ''
+  artifactFile: ''
+  artifactVersion: ''
+
+steps:
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download Build Artifact: ${{ parameters.artifactName }}'
+    inputs:
+      artifactName: ${{ parameters.artifactName }}
+      downloadPath: $(System.DefaultWorkingDirectory)
+  - task: cURLUploader@2
+    displayName: 'Upload Build Artifact to BinTray: ${{ parameters.artifactName }}'
+    inputs:
+      files: $(System.DefaultWorkingDirectory)/${{ parameters.artifactName }}/${{ parameters.artifactFile }}
+      authType: 'UserAndPass'
+      username: 'svc-etclabs'
+      password: '$(svc-etclabs_bintray_api_key)'
+      url: 'https://api.bintray.com/content/etclabs/rdmnet_bin/latest/${{ parameters.artifactVersion }}/${{ parameters.artifactFile }}'
+      options: '-G -d publish=0'

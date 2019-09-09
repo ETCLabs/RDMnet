@@ -32,11 +32,19 @@ set(CMAKE_AUTOUIC ON)
 ############################ RDMnet Controller GUI ############################ 
 
 set(CONTROLLER_TARGET rdmnet_controller_example)
+if(APPLE)
+else()
+endif()
 
-# Note - "WIN32" argument signals to Windows that this app is linked as a
-# windowed (not console) executable, and has no effect on other platforms. This
-# is a cross-platform Qt app.
-add_executable(${CONTROLLER_TARGET} WIN32
+if(WIN32)
+  # On Windows, indicates that the app is linked as a windowed (not console) executable
+  set(CONTROLLER_EXE_PROPERTIES WIN32)
+elseif(APPLE)
+  # On macOS, indicates that this executable should be built into an app bundle.
+  set(CONTROLLER_EXE_PROPERTIES MACOSX_BUNDLE)
+endif()
+
+add_executable(${CONTROLLER_TARGET} ${CONTROLLER_EXE_PROPERTIES}
   src/AboutGUI.cpp
   src/AboutGUI.h
   src/BrokerItem.cpp
@@ -108,13 +116,31 @@ if(WIN32)
   endif()
 endif()
 
-install(TARGETS ${CONTROLLER_TARGET}
-  RUNTIME DESTINATION controller
-)
 if(WIN32)
+  install(TARGETS ${CONTROLLER_TARGET}
+    RUNTIME DESTINATION controller
+  )
   get_filename_component(QTDIR_ESCAPED ${QTDIR} ABSOLUTE)
   install(CODE
     "execute_process(COMMAND ${QTDIR_ESCAPED}/bin/windeployqt.exe --no-compiler-runtime ${CONTROLLER_TARGET}.exe WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/controller)"
+  )
+elseif(APPLE)
+  set(CONTROLLER_OUTPUT_NAME "RDMnet Controller Example")
+  set_target_properties(${CONTROLLER_TARGET} PROPERTIES
+    OUTPUT_NAME ${CONTROLLER_OUTPUT_NAME}
+    MACOSX_BUNDLE_BUNDLE_NAME ${CONTROLLER_OUTPUT_NAME}
+    MACOSX_BUNDLE_GUI_IDENTIFIER "com.etcconnect.RDMnetControllerExample"
+    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+  )
+  install(TARGETS ${CONTROLLER_TARGET}
+    BUNDLE DESTINATION .
+  )
+  get_filename_component(QTDIR_ESCAPED ${QTDIR} ABSOLUTE)
+  install(CODE
+    "execute_process(COMMAND ${QTDIR_ESCAPED}/bin/macdeployqt \"${CONTROLLER_OUTPUT_NAME}.app\" WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})"
+  )
+  install(CODE
+    "execute_process(COMMAND install_name_tool -add_rpath \"@executable_path/../Frameworks\" \"${CONTROLLER_OUTPUT_NAME}.app/Contents/MacOS/${CONTROLLER_OUTPUT_NAME}\" WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})"
   )
 endif()
 
