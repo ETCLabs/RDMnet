@@ -144,6 +144,7 @@ stages:
           /usr/bin/security import $(macOSInstallerCert.secureFilePath) -P $(macos_app_cert_passphrase) -A -t cert -f pkcs12 -k $(macOSInstallAppCertificate.keychainPath)
         displayName: 'Workaround: Add installer certificate to existing temporary keychain'
       - script: |
+          brew update
           brew cask install packages
         displayName: 'Install dependencies'
   # TODO: uncomment once https://github.com/microsoft/azure-pipelines-tasks/issues/10841 is fixed. 
