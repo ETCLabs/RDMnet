@@ -53,8 +53,8 @@ int main(int argc, char *argv[])
   std::vector<std::string> args;
   args.reserve(argc);
   for (int i = 0; i < argc; ++i)
-    args[i] = argv[i];
-  switch(mgr.ParseCommandLineArgs(args_utf8))
+    args.push_back(std::string(argv[i]));
+  switch(mgr.ParseCommandLineArgs(args))
   {
     case LLRPManager::ParseResult::kParseErr:
       mgr.PrintUsage(argv[0]);
