@@ -1,29 +1,21 @@
 /******************************************************************************
-************************* IMPORTANT NOTE -- READ ME!!! ************************
-*******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
-* CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
-* GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
-* VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
-* BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
-*******************************************************************************
-* Copyright 2019 ETC Inc.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*******************************************************************************
-* This file is a part of RDMnet. For more information, go to:
-* https://github.com/ETCLabs/RDMnet
-******************************************************************************/
+ * Copyright 2019 ETC Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************
+ * This file is a part of RDMnet. For more information, go to:
+ * https://github.com/ETCLabs/RDMnet
+ *****************************************************************************/
 
 #include "rdmnet/core.h"
 
@@ -38,29 +30,22 @@
 #include "rdmnet/private/llrp.h"
 #include "rdmnet/private/opts.h"
 
-/************************* The draft warning message *************************/
-
-/* clang-format off */
-#pragma message("************ THIS CODE IMPLEMENTS A DRAFT STANDARD ************")
-#pragma message("*** PLEASE DO NOT INCLUDE THIS CODE IN ANY SHIPPING PRODUCT ***")
-#pragma message("************* SEE THE README FOR MORE INFORMATION *************")
-/* clang-format on */
-
 /*************************** Private constants *******************************/
 
 #define RDMNET_TICK_PERIODIC_INTERVAL 100 /* ms */
 #define RDMNET_POLL_TIMEOUT 120           /* ms */
 
-#define RDMNET_ETCPAL_FEATURES (ETCPAL_FEATURE_SOCKETS | ETCPAL_FEATURE_TIMERS | ETCPAL_FEATURE_NETINTS | ETCPAL_FEATURE_LOGGING)
+#define RDMNET_ETCPAL_FEATURES \
+  (ETCPAL_FEATURE_SOCKETS | ETCPAL_FEATURE_TIMERS | ETCPAL_FEATURE_NETINTS | ETCPAL_FEATURE_LOGGING)
 
 /***************************** Private macros ********************************/
 
-#define RDMNET_CREATE_LOCK_OR_DIE()       \
-  if (!core_state.lock_initted)           \
-  {                                       \
+#define RDMNET_CREATE_LOCK_OR_DIE()         \
+  if (!core_state.lock_initted)             \
+  {                                         \
     if (etcpal_rwlock_create(&rdmnet_lock)) \
-      core_state.lock_initted = true;     \
-    else                                  \
+      core_state.lock_initted = true;       \
+    else                                    \
       return kEtcPalErrSys;                 \
   }
 
@@ -213,12 +198,14 @@ bool rdmnet_core_initialized()
   return result;
 }
 
-etcpal_error_t rdmnet_core_add_polled_socket(etcpal_socket_t socket, etcpal_poll_events_t events, PolledSocketInfo* info)
+etcpal_error_t rdmnet_core_add_polled_socket(etcpal_socket_t socket, etcpal_poll_events_t events,
+                                             PolledSocketInfo* info)
 {
   return etcpal_poll_add_socket(&core_state.poll_context, socket, events, info);
 }
 
-etcpal_error_t rdmnet_core_modify_polled_socket(etcpal_socket_t socket, etcpal_poll_events_t events, PolledSocketInfo* info)
+etcpal_error_t rdmnet_core_modify_polled_socket(etcpal_socket_t socket, etcpal_poll_events_t events,
+                                                PolledSocketInfo* info)
 {
   return etcpal_poll_modify_socket(&core_state.poll_context, socket, events, info);
 }
@@ -256,7 +243,7 @@ void rdmnet_core_tick()
     if (poll_res != kEtcPalErrNoSockets)
     {
       etcpal_log(rdmnet_log_params, ETCPAL_LOG_ERR, RDMNET_LOG_MSG("Error ('%s') while polling sockets."),
-               etcpal_strerror(poll_res));
+                 etcpal_strerror(poll_res));
     }
     etcpal_thread_sleep(100);  // Sleep to avoid spinning on errors
   }

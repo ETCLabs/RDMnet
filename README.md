@@ -1,17 +1,8 @@
-## Important Note: Read Me First
-
-THE SOFTWARE IN THIS REPOSITORY IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33
-rev. 77. <mark><b>UNDER NO CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR OR
-INCLUDED IN ANY PRODUCT AVAILABLE FOR GENERAL SALE TO THE PUBLIC.</b></mark>
-DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL VALUES AND BEHAVIORAL
-REQUIREMENTS, <mark>PRODUCTS USING THIS SOFTWARE WILL **NOT** BE INTEROPERABLE
-WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.</mark>
-
 # RDMnet
 
 [![Build Status](https://dev.azure.com/ETCLabs/RDMnet/_apis/build/status/ETCLabs.RDMnet?branchName=develop)](https://dev.azure.com/ETCLabs/RDMnet/_build/latest?definitionId=2&branchName=develop)
 
-*RDMnet* is an upcoming entertainment technology standard by
+*RDMnet* is an ANSI standard for entertainment technology by
 [ESTA](http://tsp.esta.org) for transmission of [RDM](http://www.rdmprotocol.org)
 over IP networks. RDMnet leverages and extends the widely-adopted RDM message
 set and provides a standard method for configuring both IP-based entertainment
@@ -43,8 +34,8 @@ display and configuration of RDMnet Components.
 The applications are available as a binary package
 [here](https://etclabs.github.io/RDMnet).
 
-The library and applications currently support Microsoft Windows, and are built
-using CMake and Microsoft's Visual Studio toolchain.
+The library and applications currently support Microsoft Windows and macOS, and
+are built using CMake.
 
 ## Building
 
@@ -54,13 +45,11 @@ RDMnet overview and in-depth documentation, please see the
 
 ## Future Plans
 
-This library is maintained by [ETC](http://www.etcconnect.com). This early
-version has been published to facilitate early testing of the draft standard by
-interested manufacturers. ETC plans to maintain and enhance this library, and
-to update it for each new draft revision of the standard, as well as the final
-version. There are no planned licensing changes for these future updates, which
-means that you will be able to use this library in your commercial and/or
-closed-source application, subject to the terms of the Apache License 2.0.
+This library is maintained by [ETC](http://www.etcconnect.com). This
+open-source implementation of an industry standard is intended to encourage
+adoption of RDMnet throughout the entertainment industry. The code is licensed
+under the Apache License 2.0, which allows usage of this library in commercial
+and/or closed-source applications.
 
 The current prototypes are mostly compliant with the current standard version,
 with a few exceptions:
@@ -68,16 +57,14 @@ with a few exceptions:
 * The Broker has no RDM responder functionality and does not implement an LLRP 
   Target
 * EPT is not implemented
-* IPv6 is not implemented
 * The "Request Dynamic UID Assignment" and "Fetch Dynamic UID Assignment List"
   Broker messages are not yet implemented
 
 Other key items on the `TODO` list include:
 
-* Platform ports for macOS, Linux, and several popular embedded platforms
+* Platform ports for Linux and several popular embedded platforms
 
 ## Standard Version
 
-The current version of this repository implements BSR E1.33 rev. 77, which is
-currently being offered to the ESTA Control Protocols Working Group for a
-publication vote.
+The current version of this repository implements ANSI E1.33-2019, published in
+August of 2019.

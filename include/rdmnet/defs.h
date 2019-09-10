@@ -1,36 +1,28 @@
 /******************************************************************************
-************************* IMPORTANT NOTE -- READ ME!!! ************************
-*******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
-* CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
-* GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
-* VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
-* BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
-*******************************************************************************
-* Copyright 2019 ETC Inc.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*******************************************************************************
-* This file is a part of RDMnet. For more information, go to:
-* https://github.com/ETCLabs/RDMnet
-******************************************************************************/
+ * Copyright 2019 ETC Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************
+ * This file is a part of RDMnet. For more information, go to:
+ * https://github.com/ETCLabs/RDMnet
+ *****************************************************************************/
 
 #ifndef _RDMNET_DEFS_H_
 #define _RDMNET_DEFS_H_
 
 /******************************************************************************
  * Entertainment Services Technology Association (ESTA)
- * BSR E1.33 (RDMnet) Message Transport and Device Management of ANSI E1.20
+ * ANSI E1.33 (RDMnet) Message Transport and Device Management of ANSI E1.20
  * (RDM) over IP Networks
  ******************************************************************************
  * Appendix A Defines for all RDMnet Protocols.
@@ -49,9 +41,8 @@
 #define E133_DEFAULT_SCOPE               "default"
 #define E133_DEFAULT_DOMAIN              "local."
 
-/* TODO: THIS IS A DRAFT type.  The SRV_TYPE includes the service protocol and has the prepended '_'
- * in all fields */
-#define E133_DNSSD_SRV_TYPE "_draft-e133._tcp."
+/* The SRV_TYPE includes the service protocol and has the prepended '_' in all fields */
+#define E133_DNSSD_SRV_TYPE "_rdmnet._tcp."
 #define E133_DNSSD_SRV_TYPE_PADDED_LENGTH (sizeof(E133_DNSSD_SRV_TYPE))
 #define E133_DNSSD_TXTVERS  1
 #define E133_DNSSD_E133VERS 1
@@ -114,21 +105,21 @@
 /******************************************************************************
  * Table A-7: Vector Defines for Broker PDU
  *****************************************************************************/
-#define VECTOR_BROKER_FETCH_CLIENT_LIST      0x0001 /* Section 6.3.1.7 */
-#define VECTOR_BROKER_CONNECTED_CLIENT_LIST  0x0002 /* Section 6.3.1.8 */
-#define VECTOR_BROKER_CLIENT_ADD             0x0003 /* Section 6.3.1.9 */
-#define VECTOR_BROKER_CLIENT_REMOVE          0x0004 /* Section 6.3.1.10 */
-#define VECTOR_BROKER_CLIENT_ENTRY_CHANGE    0x0005 /* Section 6.3.1.11 */
-#define VECTOR_BROKER_CONNECT                0x0006 /* Section 6.3.1.2 */
-#define VECTOR_BROKER_CONNECT_REPLY          0x0007 /* Section 6.3.1.3 */
-#define VECTOR_BROKER_CLIENT_ENTRY_UPDATE    0x0008 /* Section 6.3.1.4 */
-#define VECTOR_BROKER_REDIRECT_V4            0x0009 /* Section 6.3.1.5 */
-#define VECTOR_BROKER_REDIRECT_V6            0x000A /* Section 6.3.1.6 */
-#define VECTOR_BROKER_DISCONNECT             0x000B /* Section 6.3.1.15 */
-#define VECTOR_BROKER_NULL                   0x000C /* Section 6.3.1.16 */
-#define VECTOR_BROKER_REQUEST_DYNAMIC_UIDS   0x000D /* Section 6.3.1.12 */
-#define VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS  0x000E /* Section 6.3.1.13 */
-#define VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST 0x000F /* Section 6.3.1.14 */
+#define VECTOR_BROKER_CONNECT                0x0001 /* Section 6.3.1.2 */
+#define VECTOR_BROKER_CONNECT_REPLY          0x0002 /* Section 6.3.1.3 */
+#define VECTOR_BROKER_CLIENT_ENTRY_UPDATE    0x0003 /* Section 6.3.1.4 */
+#define VECTOR_BROKER_REDIRECT_V4            0x0004 /* Section 6.3.1.5 */
+#define VECTOR_BROKER_REDIRECT_V6            0x0005 /* Section 6.3.1.6 */
+#define VECTOR_BROKER_FETCH_CLIENT_LIST      0x0006 /* Section 6.3.1.7 */
+#define VECTOR_BROKER_CONNECTED_CLIENT_LIST  0x0007 /* Section 6.3.1.8 */
+#define VECTOR_BROKER_CLIENT_ADD             0x0008 /* Section 6.3.1.9 */
+#define VECTOR_BROKER_CLIENT_REMOVE          0x0009 /* Section 6.3.1.10 */
+#define VECTOR_BROKER_CLIENT_ENTRY_CHANGE    0x000A /* Section 6.3.1.11 */
+#define VECTOR_BROKER_REQUEST_DYNAMIC_UIDS   0x000B /* Section 6.3.1.12 */
+#define VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS  0x000C /* Section 6.3.1.13 */
+#define VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST 0x000D /* Section 6.3.1.14 */
+#define VECTOR_BROKER_DISCONNECT             0x000E /* Section 6.3.1.15 */
+#define VECTOR_BROKER_NULL                   0x000F /* Section 6.3.1.16 */
 
 /******************************************************************************
  * Table A-8: Vector Defines for RPT PDU
@@ -181,20 +172,20 @@
  * Table A-15: RDM Parameter ID Defines
  *****************************************************************************/
 /* Category - E1.33 Management   */
-#define E133_COMPONENT_SCOPE  0x7FEF
-#define E133_SEARCH_DOMAIN    0x7FE0
-#define E133_TCP_COMMS_STATUS 0x7FED
-#define E133_BROKER_STATUS    0x7FF0
+#define E133_COMPONENT_SCOPE  0x0800
+#define E133_SEARCH_DOMAIN    0x0801
+#define E133_TCP_COMMS_STATUS 0x0802
+#define E133_BROKER_STATUS    0x0803
 
 /******************************************************************************
  * Table A-16: Additional Response NACK Reason Codes
  *****************************************************************************/
 #define E133_NR_ACTION_NOT_SUPPORTED       0x000B
-#define E133_NR_UNKNOWN_SCOPE              0x0012
-#define E133_NR_INVALID_STATIC_CONFIG_TYPE 0x0013
-#define E133_NR_INVALID_IPV4_ADDRESS       0x0014
-#define E133_NR_INVALID_IPV6_ADDRESS       0x0015
-#define E133_NR_INVALID_PORT               0x0016
+#define E133_NR_UNKNOWN_SCOPE              0x000F
+#define E133_NR_INVALID_STATIC_CONFIG_TYPE 0x0010
+#define E133_NR_INVALID_IPV4_ADDRESS       0x0011
+#define E133_NR_INVALID_IPV6_ADDRESS       0x0012
+#define E133_NR_INVALID_PORT               0x0013
 
 /******************************************************************************
  * Table A-17: Static Config Type Definitions for COMPONENT_SCOPE Parameter
@@ -215,11 +206,11 @@
  * Table A-19: Connection Status Codes for Broker Connect
  *****************************************************************************/
 #define E133_CONNECT_OK                   0x0000 /* Section 9.1.5 */
-#define E133_CONNECT_SCOPE_MISMATCH       0x0002 /* Section 9.1.5 */
-#define E133_CONNECT_CAPACITY_EXCEEDED    0x0003 /* Section 9.1.5 */
-#define E133_CONNECT_DUPLICATE_UID        0x0004 /* Section 9.1.5 */
-#define E133_CONNECT_INVALID_CLIENT_ENTRY 0x0005 /* Section 9.1.5 */
-#define E133_CONNECT_INVALID_UID          0x0006 /* Section 9.1.5 */
+#define E133_CONNECT_SCOPE_MISMATCH       0x0001 /* Section 9.1.5 */
+#define E133_CONNECT_CAPACITY_EXCEEDED    0x0002 /* Section 9.1.5 */
+#define E133_CONNECT_DUPLICATE_UID        0x0003 /* Section 9.1.5 */
+#define E133_CONNECT_INVALID_CLIENT_ENTRY 0x0004 /* Section 9.1.5 */
+#define E133_CONNECT_INVALID_UID          0x0005 /* Section 9.1.5 */
 
 /******************************************************************************
  * Table A-20: Status Codes for Dynamic UID Mapping
@@ -248,20 +239,19 @@
 #define LLRP_COMPONENT_TYPE_RPT_DEVICE     0x00
 #define LLRP_COMPONENT_TYPE_RPT_CONTROLLER 0x01
 #define LLRP_COMPONENT_TYPE_BROKER         0x02
-#define LLRP_COMPONENT_TYPE_UNKNOWN        0x03
+#define LLRP_COMPONENT_TYPE_NON_RDMNET     0xFF
 
 /******************************************************************************
  * Table A-24: RPT Client Disconnect Reason Codes
  *****************************************************************************/
 #define E133_DISCONNECT_SHUTDOWN              0x0000
 #define E133_DISCONNECT_CAPACITY_EXHAUSTED    0x0001
-#define E133_DISCONNECT_INCORRECT_CLIENT_TYPE 0x0002
-#define E133_DISCONNECT_HARDWARE_FAULT        0x0003
-#define E133_DISCONNECT_SOFTWARE_FAULT        0x0004
-#define E133_DISCONNECT_SOFTWARE_RESET        0x0005
-#define E133_DISCONNECT_INCORRECT_SCOPE       0x0006
-#define E133_DISCONNECT_RPT_RECONFIGURE       0x0007
-#define E133_DISCONNECT_LLRP_RECONFIGURE      0x0008
-#define E133_DISCONNECT_USER_RECONFIGURE      0x0009
+#define E133_DISCONNECT_HARDWARE_FAULT        0x0002
+#define E133_DISCONNECT_SOFTWARE_FAULT        0x0003
+#define E133_DISCONNECT_SOFTWARE_RESET        0x0004
+#define E133_DISCONNECT_INCORRECT_SCOPE       0x0005
+#define E133_DISCONNECT_RPT_RECONFIGURE       0x0006
+#define E133_DISCONNECT_LLRP_RECONFIGURE      0x0007
+#define E133_DISCONNECT_USER_RECONFIGURE      0x0008
 
 #endif /* _RDMNET_DEFS_H_ */

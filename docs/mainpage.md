@@ -1,18 +1,9 @@
 # RDMnet                                                            {#mainpage}
 
-## Important Note: Read Me First
-
-THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 rev. 77. **UNDER NO
-CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR OR INCLUDED IN ANY PRODUCT
-AVAILABLE FOR GENERAL SALE TO THE PUBLIC.** DUE TO THE INEVITABLE CHANGE OF
-DRAFT PROTOCOL VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE
-WILL **NOT** BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED
-STANDARD.
-
 ## Introduction
 
-RDMnet is a library that implements an upcoming ANSI standard, **BSR E1.33:
-Message Transport and Device Management of ANSI E1.20 (RDM) over IP Networks**,
+RDMnet is a library that implements an ANSI standard, **ANSI E1.33: Message
+Transport and Device Management of ANSI E1.20 (RDM) over IP Networks**,
 commonly referred to as **RDMnet**. The RDMnet library is designed to be
 portable and scalable to almost any RDMnet usage scenario, from lightweight
 embedded devices to large-scale data sending and routing operations.
@@ -46,33 +37,36 @@ For an overview of how RDMnet works, check out \ref how_it_works.
 
 ## Platforms
 
-RDMnet is currently ported for the following platforms and toolchains:
-* Windows
-  + Microsoft Visual Studio (x86 and x86_64)
+RDMnet is currently ported for the following platforms:
+* macOS
+* Microsoft Windows
 
 ### Building RDMnet for Your Platform
 
 Prerequisites:
 
-* **For all applications: Microsoft Visual Studio**. Currently the only
-  toolchain for which EtcPal (and thus RDMnet) is ported. Visual Studio 2017
-  Community Edition is free, without restriction, for open-source projects. It
-  is available [here](https://visualstudio.microsoft.com/downloads/). Make sure
-  to install Visual C++ as part of the Visual Studio installation.
+* **CMake**. CMake is an industry-standard cross-platform build system
+  generator for C and C++. CMake can be downloaded
+  [here](https://cmake.org/download). It is also available as a package in many
+  Linux distributions.
 
-* **For controller, broker and device: An implementation of DNS-SD/mDNS**.
-  There are two options for this:
-  + Apple's Bonjour service implements DNS-SD/mDNS. Note that you must have an
-    Apple developer account to download the Bonjour SDK for Windows, and that
-    bundling Bonjour with a Windows application may be subject to additional
-    licensing restrictions from Apple. The SDK is available
-    [here](https://developer.apple.com/bonjour/). Define
-    RDMNET_WINDOWS_USE_BONJOUR_SDK=ON at configure time to use the Bonjour SDK.
-  + ETC's fork of Bonjour, maintained
-    [here](https://github.com/ETCLabs/mDNSWindows). ETC maintains a fork of the
-    Apache-licensed Bonjour code which can be used as a DNS-SD/mDNS provider on
-    Windows. Download the binaries from the Github releases page and specify
-    their location with MDNSWINDOWS_INSTALL_LOC, or simply clone the mDNSWindows repository at the same directory level as RDMnet to build from source.
+* **An implementation of DNS-SD/mDNS**.
+  There are different options for this on different platforms:
+  + On Microsoft Windows:
+    - Apple's Bonjour for Windows implements DNS-SD/mDNS. Note that you must
+      have an Apple developer account to download the Bonjour SDK for Windows,
+      and that bundling Bonjour with a Windows application may be subject to
+      additional licensing restrictions from Apple. The SDK is available
+      [here](https://developer.apple.com/bonjour/). Define
+      RDMNET_WINDOWS_USE_BONJOUR_SDK=ON at configure time to use the Bonjour SDK.
+    - ETC's fork of Bonjour for Windows ("mDNSWindows"), maintained
+      [here](https://github.com/ETCLabs/mDNSWindows). ETC maintains a fork of the
+      Apache-licensed Bonjour code which can be used as a DNS-SD/mDNS provider on
+      Windows. The RDMnet CMake config will automatically download the latest
+      version if no other options are specified. Or, to build mDNSWindows from
+      source, specify the source location with the MDNSWINDOWS_SRC_LOC option.
+  + On macOS:
+    - RDMnet uses native Bonjour, which comes with every macOS distribution.
 
 * **For controller: Qt (>= 5.9.7) open-source**.  Qt installers are available
   [here](https://www.qt.io/download). To point CMake at the Qt dependency,

@@ -1,29 +1,21 @@
 /******************************************************************************
-************************* IMPORTANT NOTE -- READ ME!!! ************************
-*******************************************************************************
-* THIS SOFTWARE IMPLEMENTS A **DRAFT** STANDARD, BSR E1.33 REV. 77. UNDER NO
-* CIRCUMSTANCES SHOULD THIS SOFTWARE BE USED FOR ANY PRODUCT AVAILABLE FOR
-* GENERAL SALE TO THE PUBLIC. DUE TO THE INEVITABLE CHANGE OF DRAFT PROTOCOL
-* VALUES AND BEHAVIORAL REQUIREMENTS, PRODUCTS USING THIS SOFTWARE WILL **NOT**
-* BE INTEROPERABLE WITH PRODUCTS IMPLEMENTING THE FINAL RATIFIED STANDARD.
-*******************************************************************************
-* Copyright 2019 ETC Inc.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*******************************************************************************
-* This file is a part of RDMnet. For more information, go to:
-* https://github.com/ETCLabs/RDMnet
-******************************************************************************/
+ * Copyright 2019 ETC Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************
+ * This file is a part of RDMnet. For more information, go to:
+ * https://github.com/ETCLabs/RDMnet
+ *****************************************************************************/
 
 /*! \file rdmnet/core/broker_prot.h
  *  \brief Functions to pack, send, and parse %Broker PDUs and their encapsulated messages.
@@ -86,8 +78,6 @@ typedef enum
   kRdmnetDisconnectShutdown = E133_DISCONNECT_SHUTDOWN,
   /*! The remote component no longer has the ability to support this connection. */
   kRdmnetDisconnectCapacityExhausted = E133_DISCONNECT_CAPACITY_EXHAUSTED,
-  /*! Not a valid reason, removed from next revision. */
-  kRdmnetDisconnectIncorrectClientType = E133_DISCONNECT_INCORRECT_CLIENT_TYPE,
   /*! The component must disconnect due to an internal hardware fault. */
   kRdmnetDisconnectHardwareFault = E133_DISCONNECT_HARDWARE_FAULT,
   /*! The component must disconnect due to a software fault. */
