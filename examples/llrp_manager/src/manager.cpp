@@ -405,17 +405,25 @@ void LLRPManager::GetDeviceInfo(int target_handle)
           printf("Device info:\n");
           printf("  RDM Protocol Version: %d.%d\n", cur_ptr[0], cur_ptr[1]);
           cur_ptr += 2;
-          printf("  Device Model ID: %d\n", etcpal_upack_16b(cur_ptr));
+          printf("  Device Model ID: %d (0x%04x)\n", etcpal_upack_16b(cur_ptr), etcpal_upack_16b(cur_ptr));
           cur_ptr += 2;
-          printf("  Product Category: %d\n", etcpal_upack_16b(cur_ptr));
-          cur_ptr += 2;
-          printf("  Software Version ID: %d\n", etcpal_upack_32b(cur_ptr));
+          printf("  Product Category:\n");
+          printf("    Coarse: %d (0x%02x)\n", *cur_ptr, *cur_ptr);
+          ++cur_ptr;
+          printf("    Fine: %d (0x%02x)\n", *cur_ptr, *cur_ptr);
+          ++cur_ptr;
+          printf("  Software Version ID: %d (0x%08x)\n", etcpal_upack_32b(cur_ptr), etcpal_upack_32b(cur_ptr));
           cur_ptr += 4;
           printf("  DMX512 Footprint: %d\n", etcpal_upack_16b(cur_ptr));
           cur_ptr += 2;
-          printf("  DMX512 Personality: %d\n", etcpal_upack_16b(cur_ptr));
-          cur_ptr += 2;
-          printf("  DMX512 Start Address: %d\n", etcpal_upack_16b(cur_ptr));
+          printf("  DMX512 Personality:\n");
+          printf("    Current: %d\n", *cur_ptr++);
+          printf("    Total: %d\n", *cur_ptr++);
+          uint16_t dmx_start_addr = etcpal_upack_16b(cur_ptr);
+          if (dmx_start_addr == 0xffff)
+            printf("  DMX512 Start Address: N/A\n");
+          else
+            printf("  DMX512 Start Address: %d\n", dmx_start_addr);
           cur_ptr += 2;
           printf("  Subdevice Count: %d\n", etcpal_upack_16b(cur_ptr));
           cur_ptr += 2;
