@@ -110,13 +110,13 @@ void LLRPManager::Shutdown()
   rdmnet_core_deinit();
 }
 
-LLRPManager::ParseResult LLRPManager::ParseCommandLineArgs(const std::vector<std::string> &args)
+LLRPManager::ParseResult LLRPManager::ParseCommandLineArgs(const std::vector<std::string>& args)
 {
   auto iter = args.begin();
   if (iter == args.end())
-    return ParseResult::kParseErr; // Nothing in arg list, error
+    return ParseResult::kParseErr;  // Nothing in arg list, error
   if (++iter == args.end())
-    return ParseResult::kRun; // No arguments, run the app
+    return ParseResult::kRun;  // No arguments, run the app
 
   // We have an argument, these are the only valid ones right now.
   if (*iter == "--version" || *iter == "-v")
@@ -133,7 +133,7 @@ LLRPManager::ParseResult LLRPManager::ParseCommandLineArgs(const std::vector<std
   }
 }
 
-void LLRPManager::PrintUsage(const std::string &app_name)
+void LLRPManager::PrintUsage(const std::string& app_name)
 {
   printf("Usage: %s [OPTION]...\n", app_name.c_str());
   printf("With no options, the app will start normally and wait for user input.\n");
@@ -846,8 +846,8 @@ void LLRPManager::RdmRespReceived(const LlrpRemoteRdmResponse& resp)
   }
 }
 
-bool LLRPManager::SendRDMAndGetResponse(llrp_manager_t manager, const EtcPalUuid& target_cid, const RdmCommand& cmd_data,
-                                        RdmResponse& resp_data)
+bool LLRPManager::SendRDMAndGetResponse(llrp_manager_t manager, const EtcPalUuid& target_cid,
+                                        const RdmCommand& cmd_data, RdmResponse& resp_data)
 {
   LlrpLocalRdmCommand cmd;
   cmd.rdm = cmd_data;

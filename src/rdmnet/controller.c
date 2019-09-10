@@ -134,7 +134,7 @@ etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle)
 }
 
 etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const RdmnetScopeConfig* scope_config,
-                                         rdmnet_client_scope_t* scope_handle)
+                                           rdmnet_client_scope_t* scope_handle)
 {
   if (!handle)
     return kEtcPalErrInvalid;
@@ -143,7 +143,7 @@ etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const Rdm
 }
 
 etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                            rdmnet_disconnect_reason_t reason)
+                                              rdmnet_disconnect_reason_t reason)
 {
   if (!handle)
     return kEtcPalErrInvalid;
@@ -152,7 +152,7 @@ etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet
 }
 
 etcpal_error_t rdmnet_controller_change_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                            const RdmnetScopeConfig* new_config, rdmnet_disconnect_reason_t reason)
+                                              const RdmnetScopeConfig* new_config, rdmnet_disconnect_reason_t reason)
 {
   if (!handle)
     return kEtcPalErrInvalid;
@@ -161,7 +161,7 @@ etcpal_error_t rdmnet_controller_change_scope(rdmnet_controller_t handle, rdmnet
 }
 
 etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                const LocalRdmCommand* cmd, uint32_t* seq_num)
+                                                  const LocalRdmCommand* cmd, uint32_t* seq_num)
 {
   if (!handle)
     return kEtcPalErrInvalid;
@@ -170,7 +170,7 @@ etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rd
 }
 
 etcpal_error_t rdmnet_controller_send_rdm_response(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                 const LocalRdmResponse* resp)
+                                                   const LocalRdmResponse* resp)
 {
   if (!handle)
     return kEtcPalErrInvalid;

@@ -31,17 +31,17 @@
   do                                            \
   {                                             \
     (buf)[0] = 0xf0;                            \
-    ETCPAL_PDU_PACK_EXT_LEN(buf, length);         \
-    etcpal_pack_16b(&(buf)[3], vector);           \
+    ETCPAL_PDU_PACK_EXT_LEN(buf, length);       \
+    etcpal_pack_16b(&(buf)[3], vector);         \
   } while (0)
 
 #define PACK_CLIENT_ENTRY_HEADER(length, vector, cidptr, buf) \
   do                                                          \
   {                                                           \
     (buf)[0] = 0xf0;                                          \
-    ETCPAL_PDU_PACK_EXT_LEN(buf, length);                       \
-    etcpal_pack_32b(&(buf)[3], vector);                         \
-    memcpy(&(buf)[7], (cidptr)->data, ETCPAL_UUID_BYTES);       \
+    ETCPAL_PDU_PACK_EXT_LEN(buf, length);                     \
+    etcpal_pack_32b(&(buf)[3], vector);                       \
+    memcpy(&(buf)[7], (cidptr)->data, ETCPAL_UUID_BYTES);     \
   } while (0)
 
 /*********************** Private function prototypes *************************/
@@ -51,8 +51,8 @@ static size_t calc_request_dynamic_uids_len(const DynamicUidRequestListEntry* re
 static size_t calc_requested_uids_len(const FetchUidAssignmentListEntry* uid_list);
 static size_t calc_dynamic_uid_mapping_list_len(const DynamicUidMapping* mapping_list);
 static size_t pack_broker_header_with_rlp(const EtcPalRootLayerPdu* rlp, uint8_t* buf, size_t buflen, uint16_t vector);
-static etcpal_error_t send_broker_header(RdmnetConnection* conn, const EtcPalRootLayerPdu* rlp, uint8_t* buf, size_t buflen,
-                                       uint16_t vector);
+static etcpal_error_t send_broker_header(RdmnetConnection* conn, const EtcPalRootLayerPdu* rlp, uint8_t* buf,
+                                         size_t buflen, uint16_t vector);
 
 /*************************** Function definitions ****************************/
 
@@ -84,7 +84,7 @@ size_t pack_broker_header_with_rlp(const EtcPalRootLayerPdu* rlp, uint8_t* buf, 
 }
 
 etcpal_error_t send_broker_header(RdmnetConnection* conn, const EtcPalRootLayerPdu* rlp, uint8_t* buf, size_t buflen,
-                                uint16_t vector)
+                                  uint16_t vector)
 {
   size_t data_size = etcpal_root_layer_buf_size(rlp, 1);
   if (data_size == 0)
@@ -480,7 +480,7 @@ size_t calc_request_dynamic_uids_len(const DynamicUidRequestListEntry* request_l
  *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
 etcpal_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const EtcPalUuid* local_cid,
-                                       const DynamicUidRequestListEntry* request_list)
+                                         const DynamicUidRequestListEntry* request_list)
 {
   const DynamicUidRequestListEntry* cur_request;
 
@@ -611,7 +611,7 @@ static size_t calc_requested_uids_len(const FetchUidAssignmentListEntry* uid_lis
 }
 
 etcpal_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const EtcPalUuid* local_cid,
-                                            const FetchUidAssignmentListEntry* uid_list)
+                                              const FetchUidAssignmentListEntry* uid_list)
 {
   if (!local_cid || !uid_list)
     return kEtcPalErrInvalid;

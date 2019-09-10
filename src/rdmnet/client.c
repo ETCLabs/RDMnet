@@ -145,7 +145,7 @@ static etcpal_error_t rpt_client_new(const RdmnetRptClientConfig* config, rdmnet
 static etcpal_error_t create_llrp_handle_for_client(const RdmnetRptClientConfig* config, RdmnetClient* cli);
 static bool client_handle_in_use(int handle_val);
 static etcpal_error_t create_and_append_scope_entry(const RdmnetScopeConfig* config, RdmnetClient* client,
-                                                  ClientScopeListEntry** new_entry);
+                                                    ClientScopeListEntry** new_entry);
 static ClientScopeListEntry* find_scope_in_list(ClientScopeListEntry* list, const char* scope);
 static void remove_scope_from_list(ClientScopeListEntry** list, ClientScopeListEntry* entry);
 
@@ -160,7 +160,7 @@ static ClientScopeListEntry* get_scope(rdmnet_client_scope_t handle);
 static ClientScopeListEntry* get_scope_by_disc_handle(rdmnet_scope_monitor_t handle);
 static void release_scope(const ClientScopeListEntry* scope_entry);
 static etcpal_error_t get_client_and_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                         RdmnetClient** client, ClientScopeListEntry** scope_entry);
+                                           RdmnetClient** client, ClientScopeListEntry** scope_entry);
 static void release_client_and_scope(const RdmnetClient* client, const ClientScopeListEntry* scope_entry);
 
 // Manage callbacks
@@ -286,7 +286,7 @@ etcpal_error_t rdmnet_client_destroy(rdmnet_client_t handle)
 }
 
 etcpal_error_t rdmnet_client_add_scope(rdmnet_client_t handle, const RdmnetScopeConfig* scope_config,
-                                     rdmnet_client_scope_t* scope_handle)
+                                       rdmnet_client_scope_t* scope_handle)
 {
   if (handle < 0 || !scope_config || !scope_handle)
     return kEtcPalErrInvalid;
@@ -315,7 +315,7 @@ etcpal_error_t rdmnet_client_add_scope(rdmnet_client_t handle, const RdmnetScope
 }
 
 etcpal_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                        rdmnet_disconnect_reason_t reason)
+                                          rdmnet_disconnect_reason_t reason)
 {
   if (handle < 0 || scope_handle < 0)
     return kEtcPalErrInvalid;
@@ -341,7 +341,7 @@ etcpal_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_
 }
 
 etcpal_error_t rdmnet_client_change_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                        const RdmnetScopeConfig* new_config, rdmnet_disconnect_reason_t reason)
+                                          const RdmnetScopeConfig* new_config, rdmnet_disconnect_reason_t reason)
 {
   (void)handle;
   (void)scope_handle;
@@ -352,7 +352,7 @@ etcpal_error_t rdmnet_client_change_scope(rdmnet_client_t handle, rdmnet_client_
 }
 
 etcpal_error_t rdmnet_client_change_search_domain(rdmnet_client_t handle, const char* new_search_domain,
-                                                rdmnet_disconnect_reason_t reason)
+                                                  rdmnet_disconnect_reason_t reason)
 {
   (void)handle;
   (void)new_search_domain;
@@ -379,7 +379,7 @@ etcpal_error_t rdmnet_client_request_client_list(rdmnet_client_t handle, rdmnet_
 }
 
 etcpal_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                                const LocalRdmCommand* cmd, uint32_t* seq_num)
+                                                  const LocalRdmCommand* cmd, uint32_t* seq_num)
 {
   if (handle < 0 || scope_handle < 0 || !cmd)
     return kEtcPalErrInvalid;
@@ -416,7 +416,7 @@ etcpal_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet
 }
 
 etcpal_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                                 const LocalRdmResponse* resp)
+                                                   const LocalRdmResponse* resp)
 {
   if (handle < 0 || scope_handle < 0 || !resp)
     return kEtcPalErrInvalid;
@@ -481,7 +481,7 @@ etcpal_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmne
 }
 
 etcpal_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                           const LocalRptStatus* status)
+                                             const LocalRptStatus* status)
 {
   if (handle < 0 || scope_handle < 0 || !status)
     return kEtcPalErrInvalid;
@@ -541,8 +541,8 @@ void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDis
           if (etcpal_inet_ntop(&listen_addr->addr, addr_str, ETCPAL_INET6_ADDRSTRLEN) == kEtcPalErrOk)
           {
             etcpal_log(rdmnet_log_params, ETCPAL_LOG_INFO,
-                     RDMNET_LOG_MSG("Broker for scope '%s' discovered at address %s:%d. Starting connection..."),
-                     scope_entry->config.scope, addr_str, broker_info->port);
+                       RDMNET_LOG_MSG("Broker for scope '%s' discovered at address %s:%d. Starting connection..."),
+                       scope_entry->config.scope, addr_str, broker_info->port);
           }
         }
         EtcPalSockaddr connect_addr;
@@ -562,7 +562,7 @@ void monitorcb_broker_lost(rdmnet_scope_monitor_t handle, const char* scope, con
   (void)context;
 
   etcpal_log(rdmnet_log_params, ETCPAL_LOG_INFO, RDMNET_LOG_MSG("Broker '%s' no longer discovered on scope '%s'"),
-           service_name, scope);
+             service_name, scope);
 }
 
 void monitorcb_scope_monitor_error(rdmnet_scope_monitor_t handle, const char* scope, int platform_error, void* context)
@@ -696,15 +696,15 @@ void conncb_msg_received(rdmnet_conn_t handle, const RdmnetMessage* message, voi
         else
         {
           etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
-                   RDMNET_LOG_MSG("Incorrectly got RPT message for non-RPT client %d on scope %d"), cli->handle,
-                   handle);
+                     RDMNET_LOG_MSG("Incorrectly got RPT message for non-RPT client %d on scope %d"), cli->handle,
+                     handle);
         }
         break;
       case ACN_VECTOR_ROOT_EPT:
         // TODO, for now fall through
       default:
         etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
-                 RDMNET_LOG_MSG("Got message with unhandled vector type %u on scope %d"), message->vector, handle);
+                   RDMNET_LOG_MSG("Got message with unhandled vector type %u on scope %d"), message->vector, handle);
         break;
     }
     release_scope(scope_entry);
@@ -1111,7 +1111,7 @@ bool client_handle_in_use(int handle_val)
  * new_entry with the newly-created entry on success.
  */
 etcpal_error_t create_and_append_scope_entry(const RdmnetScopeConfig* config, RdmnetClient* client,
-                                           ClientScopeListEntry** new_entry)
+                                             ClientScopeListEntry** new_entry)
 {
   if (find_scope_in_list(client->scope_list, config->scope))
     return kEtcPalErrExists;
@@ -1319,7 +1319,8 @@ ClientScopeListEntry* get_scope_by_disc_handle(rdmnet_scope_monitor_t handle)
 
   ClientScopeListEntry scope_cmp;
   scope_cmp.monitor_handle = handle;
-  ClientScopeListEntry* found_scope = (ClientScopeListEntry*)etcpal_rbtree_find(&state.scopes_by_disc_handle, &scope_cmp);
+  ClientScopeListEntry* found_scope =
+      (ClientScopeListEntry*)etcpal_rbtree_find(&state.scopes_by_disc_handle, &scope_cmp);
   if (!found_scope)
   {
     rdmnet_client_unlock();
@@ -1336,7 +1337,7 @@ void release_scope(const ClientScopeListEntry* scope_entry)
 }
 
 etcpal_error_t get_client_and_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, RdmnetClient** client,
-                                  ClientScopeListEntry** scope_entry)
+                                    ClientScopeListEntry** scope_entry)
 {
   RdmnetClient* found_cli;
   etcpal_error_t res = get_client(handle, &found_cli);

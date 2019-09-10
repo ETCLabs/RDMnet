@@ -364,7 +364,8 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
         {
           db->state = kResolveStateServiceResolve;
           db->dnssd_ref = resolve_ref;
-          etcpal_poll_add_socket(&disc_state.poll_context, DNSServiceRefSockFD(resolve_ref), ETCPAL_POLL_IN, db->dnssd_ref);
+          etcpal_poll_add_socket(&disc_state.poll_context, DNSServiceRefSockFD(resolve_ref), ETCPAL_POLL_IN,
+                                 db->dnssd_ref);
         }
       }
 
@@ -430,7 +431,7 @@ void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo* broker_info)
 }
 
 etcpal_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
-                                         int* platform_specific_error)
+                                           int* platform_specific_error)
 {
   if (!config || !handle || !platform_specific_error)
     return kEtcPalErrInvalid;
@@ -455,7 +456,7 @@ etcpal_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* confi
     if (result == kDNSServiceErr_NoError)
     {
       etcpal_poll_add_socket(&disc_state.poll_context, DNSServiceRefSockFD(new_monitor->dnssd_ref), ETCPAL_POLL_IN,
-                           new_monitor->dnssd_ref);
+                             new_monitor->dnssd_ref);
       scope_monitor_insert(new_monitor);
     }
     else
@@ -474,7 +475,7 @@ etcpal_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* confi
 }
 
 etcpal_error_t rdmnetdisc_change_monitored_scope(rdmnet_scope_monitor_t handle,
-                                               const RdmnetScopeMonitorConfig* new_config)
+                                                 const RdmnetScopeMonitorConfig* new_config)
 {
   // TODO reevaluate if this is necessary.
   (void)handle;
@@ -707,7 +708,7 @@ void rdmnetdisc_tick()
         if (reg_result == kDNSServiceErr_NoError)
         {
           etcpal_poll_add_socket(&disc_state.poll_context, DNSServiceRefSockFD(broker_ref->dnssd_ref), ETCPAL_POLL_IN,
-                               broker_ref->dnssd_ref);
+                                 broker_ref->dnssd_ref);
         }
         else
         {

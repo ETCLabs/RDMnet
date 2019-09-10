@@ -344,7 +344,7 @@ static void client_callback(AvahiClient* c, AvahiClientState state, AVAHI_GCC_UN
   if (state == AVAHI_CLIENT_FAILURE)
   {
     etcpal_log(rdmnet_log_params, ETCPAL_LOG_ERR, RDMNET_LOG_MSG("Avahi server connection failure: %s"),
-             avahi_strerror(avahi_client_errno(c)));
+               avahi_strerror(avahi_client_errno(c)));
     // avahi_simple_poll_quit(disc_state.avahi_simple_poll);
   }
 }
@@ -370,7 +370,7 @@ etcpal_error_t rdmnetdisc_init()
   if (!disc_state.avahi_client)
   {
     etcpal_log(rdmnet_log_params, ETCPAL_LOG_ERR, RDMNET_LOG_MSG("Failed to create Avahi client instance: %s"),
-             avahi_strerror(error));
+               avahi_strerror(error));
     avahi_simple_poll_free(disc_state.avahi_simple_poll);
     etcpal_mutex_destroy(&disc_state.lock);
     return kEtcPalErrSys;
@@ -410,7 +410,7 @@ void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo* broker_info)
 }
 
 etcpal_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
-                                         int* platform_specific_error)
+                                           int* platform_specific_error)
 {
   if (!config || !handle || !platform_specific_error)
     return kEtcPalErrInvalid;
@@ -454,7 +454,7 @@ etcpal_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* confi
 }
 
 etcpal_error_t rdmnetdisc_change_monitored_scope(rdmnet_scope_monitor_t handle,
-                                               const RdmnetScopeMonitorConfig* new_config)
+                                                 const RdmnetScopeMonitorConfig* new_config)
 {
   // TODO reevaluate if this is necessary.
   (void)handle;

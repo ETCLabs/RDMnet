@@ -31,13 +31,13 @@
 static int s_utc_offset;
 
 extern "C" {
-static void manager_log_callback(void *context, const EtcPalLogStrings *strings)
+static void manager_log_callback(void* context, const EtcPalLogStrings* strings)
 {
   (void)context;
   std::cout << strings->human_readable << "\n";
 }
 
-static void manager_time_callback(void *context, EtcPalLogTimeParams *time)
+static void manager_time_callback(void* context, EtcPalLogTimeParams* time)
 {
   SYSTEMTIME win_time;
   (void)context;
@@ -79,7 +79,7 @@ void ConvertArgsToUtf8(int argc, wchar_t* argv[], std::vector<std::string>& args
   }
 }
 
-std::string ConsoleInputToUtf8(const std::wstring &input)
+std::string ConsoleInputToUtf8(const std::wstring& input)
 {
   if (!input.empty())
   {
@@ -89,14 +89,14 @@ std::string ConsoleInputToUtf8(const std::wstring &input)
   return std::string();
 }
 
-int wmain(int argc, wchar_t *argv[])
+int wmain(int argc, wchar_t* argv[])
 {
   LLRPManager mgr;
 
   std::vector<std::string> args_utf8;
   args_utf8.reserve(argc);
   ConvertArgsToUtf8(argc, argv, args_utf8);
-  switch(mgr.ParseCommandLineArgs(args_utf8))
+  switch (mgr.ParseCommandLineArgs(args_utf8))
   {
     case LLRPManager::ParseResult::kParseErr:
       mgr.PrintUsage(args_utf8[0]);
@@ -117,7 +117,7 @@ int wmain(int argc, wchar_t *argv[])
   memcpy(manager_cid.data, &uuid, ETCPAL_UUID_BYTES);
 
   TIME_ZONE_INFORMATION tzinfo;
-  switch(GetTimeZoneInformation(&tzinfo))
+  switch (GetTimeZoneInformation(&tzinfo))
   {
     case TIME_ZONE_ID_UNKNOWN:
     case TIME_ZONE_ID_STANDARD:

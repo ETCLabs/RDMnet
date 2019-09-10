@@ -238,8 +238,8 @@ etcpal_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLoc
       header.sender_cid = target->keys.cid;
       header.transaction_number = resp->seq_num;
 
-      res = send_llrp_rdm_response(netint->send_sock, netint->send_buf, (netint->id.ip_type == kEtcPalIpTypeV6), &header,
-                                   &resp_buf);
+      res = send_llrp_rdm_response(netint->send_sock, netint->send_buf, (netint->id.ip_type == kEtcPalIpTypeV6),
+                                   &header, &resp_buf);
     }
     else
     {
@@ -256,8 +256,8 @@ void process_target_state(LlrpTarget* target)
   EtcPalRbIter netint_iter;
   etcpal_rbiter_init(&netint_iter);
 
-  for (LlrpTargetNetintInfo* netint = (LlrpTargetNetintInfo*)etcpal_rbiter_first(&netint_iter, &target->netints); netint;
-       netint = (LlrpTargetNetintInfo*)etcpal_rbiter_next(&netint_iter))
+  for (LlrpTargetNetintInfo* netint = (LlrpTargetNetintInfo*)etcpal_rbiter_first(&netint_iter, &target->netints);
+       netint; netint = (LlrpTargetNetintInfo*)etcpal_rbiter_next(&netint_iter))
   {
     if (netint->reply_pending)
     {
@@ -275,14 +275,14 @@ void process_target_state(LlrpTarget* target)
         target_info.component_type = target->component_type;
 
         etcpal_error_t send_res = send_llrp_probe_reply(netint->send_sock, netint->send_buf,
-                                                      (netint->id.ip_type == kEtcPalIpTypeV6), &header, &target_info);
+                                                        (netint->id.ip_type == kEtcPalIpTypeV6), &header, &target_info);
         if (send_res != kEtcPalErrOk && etcpal_can_log(rdmnet_log_params, ETCPAL_LOG_WARNING))
         {
           char cid_str[ETCPAL_UUID_STRING_BYTES];
           etcpal_uuid_to_string(cid_str, &header.dest_cid);
           etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
-                   RDMNET_LOG_MSG("Error sending probe reply to manager CID %s on interface index %u"), cid_str,
-                   netint->id.index);
+                     RDMNET_LOG_MSG("Error sending probe reply to manager CID %s on interface index %u"), cid_str,
+                     netint->id.index);
         }
 
         netint->reply_pending = false;
@@ -404,7 +404,7 @@ void target_data_received(const uint8_t* data, size_t data_size, const LlrpNetin
       char cid_str[ETCPAL_UUID_STRING_BYTES];
       etcpal_uuid_to_string(cid_str, &keys.cid);
       etcpal_log(rdmnet_log_params, ETCPAL_LOG_DEBUG,
-               RDMNET_LOG_MSG("Ignoring LLRP message addressed to unknown LLRP Target %s"), cid_str);
+                 RDMNET_LOG_MSG("Ignoring LLRP message addressed to unknown LLRP Target %s"), cid_str);
     }
   }
 
@@ -584,8 +584,8 @@ etcpal_error_t setup_target_netints(const LlrpTargetOptionalConfig* config, Llrp
       if (res != kEtcPalErrOk)
       {
         etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
-                 RDMNET_LOG_MSG("Failed to intiailize LLRP target for listening on network interface index %d: '%s'"),
-                 netint->id.index, etcpal_strerror(res));
+                   RDMNET_LOG_MSG("Failed to intiailize LLRP target for listening on network interface index %d: '%s'"),
+                   netint->id.index, etcpal_strerror(res));
         res = kEtcPalErrOk;
       }
     }

@@ -36,6 +36,6 @@ int main(int argc, char* argv[])
   w->show();
   retVal = a.exec();
 
-  delete w; // w->deleteLater() won't work because a's event loop has ended.
+  delete w;  // w->deleteLater() won't work because a's event loop has ended.
   return retVal;
 }

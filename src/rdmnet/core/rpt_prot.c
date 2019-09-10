@@ -33,16 +33,16 @@
   do                                                                    \
   {                                                                     \
     (buf)[0] = 0xf0;                                                    \
-    ETCPAL_PDU_PACK_EXT_LEN(buf, RDM_CMD_PDU_LEN(rdmbufptr));             \
+    ETCPAL_PDU_PACK_EXT_LEN(buf, RDM_CMD_PDU_LEN(rdmbufptr));           \
     (buf)[3] = VECTOR_RDM_CMD_RDM_DATA;                                 \
     memcpy(&(buf)[4], &(rdmbufptr)->data[1], (rdmbufptr)->datalen - 1); \
   } while (0)
 
 /* Helper macros to pack the various RPT headers */
-#define PACK_REQUEST_HEADER(length, buf)            \
-  do                                                \
-  {                                                 \
-    (buf)[0] = 0xf0;                                \
+#define PACK_REQUEST_HEADER(length, buf)              \
+  do                                                  \
+  {                                                   \
+    (buf)[0] = 0xf0;                                  \
     ETCPAL_PDU_PACK_EXT_LEN(buf, length);             \
     etcpal_pack_32b(&buf[3], VECTOR_REQUEST_RDM_CMD); \
   } while (0)
@@ -50,13 +50,13 @@
   do                                            \
   {                                             \
     (buf)[0] = 0xf0;                            \
-    ETCPAL_PDU_PACK_EXT_LEN(buf, length);         \
-    etcpal_pack_16b(&buf[3], vector);             \
+    ETCPAL_PDU_PACK_EXT_LEN(buf, length);       \
+    etcpal_pack_16b(&buf[3], vector);           \
   } while (0)
-#define PACK_NOTIFICATION_HEADER(length, buf)            \
-  do                                                     \
-  {                                                      \
-    (buf)[0] = 0xf0;                                     \
+#define PACK_NOTIFICATION_HEADER(length, buf)              \
+  do                                                       \
+  {                                                        \
+    (buf)[0] = 0xf0;                                       \
     ETCPAL_PDU_PACK_EXT_LEN(buf, length);                  \
     etcpal_pack_32b(&buf[3], VECTOR_NOTIFICATION_RDM_CMD); \
   } while (0)
@@ -65,7 +65,7 @@
 
 static void pack_rpt_header(size_t length, uint32_t vector, const RptHeader* header, uint8_t* buf);
 static etcpal_error_t send_rpt_header(RdmnetConnection* conn, const EtcPalRootLayerPdu* rlp, uint32_t rpt_vector,
-                                    const RptHeader* header, uint8_t* buf, size_t buflen);
+                                      const RptHeader* header, uint8_t* buf, size_t buflen);
 static size_t calc_request_pdu_size(const RdmBuffer* cmd);
 static size_t calc_status_pdu_size(const RptStatusMsg* status);
 static size_t calc_notification_pdu_size(const RdmBuffer* cmd_arr, size_t num_cmds);
@@ -114,7 +114,7 @@ size_t pack_rpt_header_with_rlp(const EtcPalRootLayerPdu* rlp, uint8_t* buf, siz
 }
 
 etcpal_error_t send_rpt_header(RdmnetConnection* conn, const EtcPalRootLayerPdu* rlp, uint32_t rpt_vector,
-                             const RptHeader* header, uint8_t* buf, size_t buflen)
+                               const RptHeader* header, uint8_t* buf, size_t buflen)
 {
   size_t data_size = etcpal_root_layer_buf_size(rlp, 1);
   if (data_size == 0)
@@ -209,7 +209,7 @@ size_t pack_rpt_request(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
 etcpal_error_t send_rpt_request(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
-                              const RdmBuffer* cmd)
+                                const RdmBuffer* cmd)
 {
   if (!local_cid || !header || !cmd)
     return kEtcPalErrInvalid;
@@ -320,7 +320,7 @@ size_t pack_rpt_status(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid,
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
 etcpal_error_t send_rpt_status(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
-                             const RptStatusMsg* status)
+                               const RptStatusMsg* status)
 {
   if (!local_cid || !header || !status)
     return kEtcPalErrInvalid;
@@ -441,7 +441,7 @@ size_t pack_rpt_notification(uint8_t* buf, size_t buflen, const EtcPalUuid* loca
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
 etcpal_error_t send_rpt_notification(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
-                                   const RdmBuffer* cmd_arr, size_t cmd_arr_size)
+                                     const RdmBuffer* cmd_arr, size_t cmd_arr_size)
 {
   if (!local_cid || !header || !cmd_arr || cmd_arr_size == 0)
     return kEtcPalErrInvalid;

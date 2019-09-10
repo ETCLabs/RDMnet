@@ -1721,8 +1721,8 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
 
   if (first_resp.command_class == kRdmCCGetCommandResponse)
   {
-    log_->Log(ETCPAL_LOG_INFO, "Got GET_COMMAND_RESPONSE with PID 0x%04x from Controller %04x:%08x", first_resp.param_id,
-              first_resp.source_uid.manu, first_resp.source_uid.id);
+    log_->Log(ETCPAL_LOG_INFO, "Got GET_COMMAND_RESPONSE with PID 0x%04x from Controller %04x:%08x",
+              first_resp.param_id, first_resp.source_uid.manu, first_resp.source_uid.id);
 
     switch (first_resp.param_id)
     {
@@ -1769,8 +1769,8 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
 
           HandleDeviceInfoResponse(scope_handle, etcpal_upack_16b(&first_resp.data[0]),
                                    etcpal_upack_16b(&first_resp.data[2]), etcpal_upack_16b(&first_resp.data[4]),
-                                   etcpal_upack_32b(&first_resp.data[6]), etcpal_upack_16b(&first_resp.data[10]), cur_pers,
-                                   total_pers, etcpal_upack_16b(&first_resp.data[14]),
+                                   etcpal_upack_32b(&first_resp.data[6]), etcpal_upack_16b(&first_resp.data[10]),
+                                   cur_pers, total_pers, etcpal_upack_16b(&first_resp.data[14]),
                                    etcpal_upack_16b(&first_resp.data[16]), first_resp.data[18], first_resp);
         }
         break;
@@ -2803,7 +2803,8 @@ uint8_t* RDMnetNetworkModel::packIPAddressItem(const QVariant& value, etcpal_ipt
   {
     memset(packPtr, 0, memSize);
   }
-  else if (sscanf(valueData, (addrType == kEtcPalIpTypeV4) ? "%63[1234567890.]:%u" : "[%63[1234567890:abcdefABCDEF]]:%u",
+  else if (sscanf(valueData,
+                  (addrType == kEtcPalIpTypeV4) ? "%63[1234567890.]:%u" : "[%63[1234567890:abcdefABCDEF]]:%u",
                   ipStrBuffer, &portNumber) < 2)
   {
     // Incorrect format entered.

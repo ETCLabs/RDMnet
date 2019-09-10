@@ -108,7 +108,7 @@ struct BrokerSettings
 
   /// MODIFY FOR DEBUG PURPOSES ONLY: each read thread can support this many sockets, up to the
   /// maximum allowed by your platform's socket implementation.
-  //unsigned int max_socket_per_read_thread{ETCPAL_SOCKET_MAX_POLL_SIZE};
+  // unsigned int max_socket_per_read_thread{ETCPAL_SOCKET_MAX_POLL_SIZE};
 
   BrokerSettings() {}
   BrokerSettings(const RdmUid& static_uid) { SetStaticUid(static_uid); }

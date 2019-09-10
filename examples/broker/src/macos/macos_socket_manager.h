@@ -34,7 +34,9 @@
 // The set of data allocated per-socket.
 struct SocketData
 {
-  SocketData(rdmnet_conn_t conn_handle_in, etcpal_socket_t socket_in) : conn_handle(conn_handle_in), socket(socket_in) {}
+  SocketData(rdmnet_conn_t conn_handle_in, etcpal_socket_t socket_in) : conn_handle(conn_handle_in), socket(socket_in)
+  {
+  }
 
   rdmnet_conn_t conn_handle{RDMNET_CONN_INVALID};
   int socket{-1};

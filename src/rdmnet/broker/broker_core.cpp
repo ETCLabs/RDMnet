@@ -152,8 +152,8 @@ bool BrokerCore::Startup(const RDMnet::BrokerSettings& settings, uint16_t listen
 
     disc_.RegisterBroker(settings_.disc_attributes, settings_.cid, listen_addrs_, listen_port_);
 
-    log_->Log(ETCPAL_LOG_INFO, "%s Prototype RDMnet Broker Version %s", settings.disc_attributes.dns_manufacturer.c_str(),
-              RDMNET_VERSION_STRING);
+    log_->Log(ETCPAL_LOG_INFO, "%s Prototype RDMnet Broker Version %s",
+              settings.disc_attributes.dns_manufacturer.c_str(), RDMNET_VERSION_STRING);
     log_->Log(ETCPAL_LOG_INFO, "Broker starting at scope \"%s\", listening on port %d.", disc_.scope().c_str(),
               listen_port_);
 
@@ -872,7 +872,8 @@ etcpal_socket_t BrokerCore::StartListening(const EtcPalIpAddr& ip, uint16_t& por
   addr.port = port;
 
   etcpal_socket_t listen_sock;
-  etcpal_error_t err = etcpal_socket(ETCPAL_IP_IS_V4(&addr.ip) ? ETCPAL_AF_INET : ETCPAL_AF_INET6, ETCPAL_STREAM, &listen_sock);
+  etcpal_error_t err =
+      etcpal_socket(ETCPAL_IP_IS_V4(&addr.ip) ? ETCPAL_AF_INET : ETCPAL_AF_INET6, ETCPAL_STREAM, &listen_sock);
   if (err != kEtcPalErrOk)
   {
     if (log_)

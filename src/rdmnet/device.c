@@ -169,7 +169,7 @@ etcpal_error_t rdmnet_device_send_llrp_response(rdmnet_device_t handle, const Ll
 }
 
 etcpal_error_t rdmnet_device_change_scope(rdmnet_device_t handle, const RdmnetScopeConfig* new_scope_config,
-                                        rdmnet_disconnect_reason_t reason)
+                                          rdmnet_disconnect_reason_t reason)
 {
   if (!handle)
     return kEtcPalErrInvalid;
@@ -179,7 +179,7 @@ etcpal_error_t rdmnet_device_change_scope(rdmnet_device_t handle, const RdmnetSc
 }
 
 etcpal_error_t rdmnet_device_change_search_domain(rdmnet_device_t handle, const char* new_search_domain,
-                                                rdmnet_disconnect_reason_t reason)
+                                                  rdmnet_disconnect_reason_t reason)
 {
   if (!handle)
     return kEtcPalErrInvalid;

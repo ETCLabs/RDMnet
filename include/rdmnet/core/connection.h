@@ -179,7 +179,7 @@ extern "C" {
 
 etcpal_error_t rdmnet_connection_create(const RdmnetConnectionConfig* config, rdmnet_conn_t* handle);
 etcpal_error_t rdmnet_connect(rdmnet_conn_t handle, const EtcPalSockaddr* remote_addr,
-                            const ClientConnectMsg* connect_data);
+                              const ClientConnectMsg* connect_data);
 etcpal_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking);
 etcpal_error_t rdmnet_connection_destroy(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t* disconnect_reason);
 
@@ -190,7 +190,8 @@ int rdmnet_send(rdmnet_conn_t handle, const uint8_t* data, size_t size);
  *  These functions are for advanced usage and are generally only used by broker apps.
  *  @{
  */
-etcpal_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, etcpal_socket_t sock, const EtcPalSockaddr* remote_addr);
+etcpal_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, etcpal_socket_t sock,
+                                             const EtcPalSockaddr* remote_addr);
 void rdmnet_socket_data_received(rdmnet_conn_t handle, const uint8_t* data, size_t data_size);
 void rdmnet_socket_error(rdmnet_conn_t handle, etcpal_error_t socket_err);
 /*! @} */

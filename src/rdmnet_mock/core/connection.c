@@ -31,6 +31,7 @@ DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_end_message, rdmnet_conn_t);
 
 DEFINE_FAKE_VOID_FUNC(rdmnet_conn_tick);
 
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_attach_existing_socket, rdmnet_conn_t, etcpal_socket_t, const EtcPalSockaddr*);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_attach_existing_socket, rdmnet_conn_t, etcpal_socket_t,
+                       const EtcPalSockaddr*);
 DEFINE_FAKE_VOID_FUNC(rdmnet_socket_data_received, rdmnet_conn_t, const uint8_t*, size_t);
 DEFINE_FAKE_VOID_FUNC(rdmnet_socket_error, rdmnet_conn_t, etcpal_error_t);

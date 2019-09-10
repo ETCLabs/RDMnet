@@ -46,7 +46,7 @@ static bool parse_llrp_probe_reply(const uint8_t* buf, size_t buflen, Discovered
 static bool parse_llrp_rdm_command(const uint8_t* buf, size_t buflen, RdmBuffer* cmd);
 
 static etcpal_error_t send_llrp_rdm(etcpal_socket_t sock, uint8_t* buf, const EtcPalSockaddr* dest_addr,
-                                  const LlrpHeader* header, const RdmBuffer* rdm_msg);
+                                    const LlrpHeader* header, const RdmBuffer* rdm_msg);
 
 /*************************** Function definitions ****************************/
 
@@ -285,7 +285,7 @@ size_t etcpal_pack_llrp_header(uint8_t* buf, size_t pdu_len, uint32_t vector, co
 #define PROBE_REQUEST_RLP_DATA_MAX_SIZE (PROBE_REQUEST_RLP_DATA_MIN_SIZE + (6 * LLRP_KNOWN_UID_SIZE))
 
 etcpal_error_t send_llrp_probe_request(etcpal_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
-                                     const LocalProbeRequest* probe_request)
+                                       const LocalProbeRequest* probe_request)
 {
   uint8_t* cur_ptr = buf;
   uint8_t* buf_end = cur_ptr + LLRP_MANAGER_MAX_MESSAGE_SIZE;
@@ -341,7 +341,8 @@ etcpal_error_t send_llrp_probe_request(etcpal_socket_t sock, uint8_t* buf, bool 
     cur_uid = cur_uid->next;
   }
 
-  int send_res = etcpal_sendto(sock, buf, (size_t)(cur_ptr - buf), 0, ipv6 ? kLlrpIpv6RequestAddr : kLlrpIpv4RequestAddr);
+  int send_res =
+      etcpal_sendto(sock, buf, (size_t)(cur_ptr - buf), 0, ipv6 ? kLlrpIpv6RequestAddr : kLlrpIpv4RequestAddr);
   if (send_res >= 0)
     return kEtcPalErrOk;
   else
@@ -351,7 +352,7 @@ etcpal_error_t send_llrp_probe_request(etcpal_socket_t sock, uint8_t* buf, bool 
 #define PROBE_REPLY_RLP_DATA_SIZE (LLRP_HEADER_SIZE + PROBE_REPLY_PDU_SIZE)
 
 etcpal_error_t send_llrp_probe_reply(etcpal_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
-                                   const DiscoveredLlrpTarget* target_info)
+                                     const DiscoveredLlrpTarget* target_info)
 {
   uint8_t* cur_ptr = buf;
   uint8_t* buf_end = cur_ptr + LLRP_TARGET_MAX_MESSAGE_SIZE;
@@ -392,8 +393,8 @@ etcpal_error_t send_llrp_probe_reply(etcpal_socket_t sock, uint8_t* buf, bool ip
 
 #define RDM_CMD_RLP_DATA_MIN_SIZE (LLRP_HEADER_SIZE + 3 /* RDM cmd PDU Flags + Length */)
 
-etcpal_error_t send_llrp_rdm(etcpal_socket_t sock, uint8_t* buf, const EtcPalSockaddr* dest_addr, const LlrpHeader* header,
-                           const RdmBuffer* rdm_msg)
+etcpal_error_t send_llrp_rdm(etcpal_socket_t sock, uint8_t* buf, const EtcPalSockaddr* dest_addr,
+                             const LlrpHeader* header, const RdmBuffer* rdm_msg)
 {
   uint8_t* cur_ptr = buf;
   uint8_t* buf_end = cur_ptr + LLRP_MAX_MESSAGE_SIZE;
@@ -427,13 +428,13 @@ etcpal_error_t send_llrp_rdm(etcpal_socket_t sock, uint8_t* buf, const EtcPalSoc
 }
 
 etcpal_error_t send_llrp_rdm_command(etcpal_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
-                                   const RdmBuffer* cmd)
+                                     const RdmBuffer* cmd)
 {
   return send_llrp_rdm(sock, buf, ipv6 ? kLlrpIpv6RequestAddr : kLlrpIpv4RequestAddr, header, cmd);
 }
 
 etcpal_error_t send_llrp_rdm_response(etcpal_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
-                                    const RdmBuffer* resp)
+                                      const RdmBuffer* resp)
 {
   return send_llrp_rdm(sock, buf, ipv6 ? kLlrpIpv6RespAddr : kLlrpIpv4RespAddr, header, resp);
 }

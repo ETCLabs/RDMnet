@@ -90,8 +90,9 @@ BrokerDiscoveryManager::~BrokerDiscoveryManager()
 }
 
 etcpal_error_t BrokerDiscoveryManager::RegisterBroker(const RDMnet::BrokerDiscoveryAttributes& disc_attributes,
-                                                    const EtcPalUuid& local_cid,
-                                                    const std::vector<EtcPalIpAddr>& listen_addrs, uint16_t listen_port)
+                                                      const EtcPalUuid& local_cid,
+                                                      const std::vector<EtcPalIpAddr>& listen_addrs,
+                                                      uint16_t listen_port)
 {
   // Start with the default information.
   RdmnetBrokerDiscInfo* my_info = &cur_config_.my_info;

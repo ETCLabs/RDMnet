@@ -41,11 +41,12 @@ struct SendDisconnect
 class RdmnetConnInterface
 {
 public:
-  virtual etcpal_error_t Startup(const EtcPalUuid& cid, const EtcPalLogParams* log_params, RdmnetConnNotify* notify) = 0;
+  virtual etcpal_error_t Startup(const EtcPalUuid& cid, const EtcPalLogParams* log_params,
+                                 RdmnetConnNotify* notify) = 0;
   virtual void Shutdown() = 0;
 
   virtual etcpal_error_t CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
-                                                    rdmnet_conn_t& new_handle) = 0;
+                                                      rdmnet_conn_t& new_handle) = 0;
   virtual void DestroyConnection(rdmnet_conn_t handle, SendDisconnect send_disconnect = SendDisconnect()) = 0;
   virtual etcpal_error_t SetBlocking(rdmnet_conn_t handle, bool blocking) = 0;
 
@@ -64,7 +65,7 @@ public:
   void Shutdown() override;
 
   etcpal_error_t CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
-                                            rdmnet_conn_t& new_handle) override;
+                                              rdmnet_conn_t& new_handle) override;
   virtual void DestroyConnection(rdmnet_conn_t handle, SendDisconnect send_disconnect = SendDisconnect()) override;
   virtual etcpal_error_t SetBlocking(rdmnet_conn_t handle, bool blocking) override;
 

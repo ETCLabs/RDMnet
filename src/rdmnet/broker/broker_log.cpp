@@ -73,7 +73,8 @@ bool RDMnet::BrokerLog::Startup(int log_mask)
 
   // Start the log dispatch thread
   keep_running_ = true;
-  EtcPalThreadParams tparams = {ETCPAL_THREAD_DEFAULT_PRIORITY, ETCPAL_THREAD_DEFAULT_STACK, "RDMnet::BrokerLogThread", NULL};
+  EtcPalThreadParams tparams = {ETCPAL_THREAD_DEFAULT_PRIORITY, ETCPAL_THREAD_DEFAULT_STACK, "RDMnet::BrokerLogThread",
+                                NULL};
   return etcpal_thread_create(&thread_, &tparams, log_thread_fn, this);
 }
 

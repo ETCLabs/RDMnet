@@ -35,7 +35,7 @@ struct LLRPTargetInfo
 class LLRPManager
 {
 public:
-  bool Startup(const EtcPalUuid &my_cid, const EtcPalLogParams *log_params = nullptr);
+  bool Startup(const EtcPalUuid& my_cid, const EtcPalLogParams* log_params = nullptr);
   void Shutdown();
 
   enum class ParseResult
@@ -45,12 +45,12 @@ public:
     kPrintHelp,
     kPrintVersion
   };
-  ParseResult ParseCommandLineArgs(const std::vector<std::string> &args);
-  void PrintUsage(const std::string &app_name);
+  ParseResult ParseCommandLineArgs(const std::vector<std::string>& args);
+  void PrintUsage(const std::string& app_name);
   void PrintVersion();
 
   void PrintCommandList();
-  bool ParseCommand(const std::string &line);
+  bool ParseCommand(const std::string& line);
 
   void Discover(llrp_manager_t manager_handle);
   void PrintTargets();
@@ -62,18 +62,18 @@ public:
   void GetComponentScope(int target_handle, int scope_slot);
 
   void IdentifyDevice(int target_handle);
-  void SetDeviceLabel(int target_handle, const std::string &label);
-  void SetComponentScope(int target_handle, int scope_slot, const std::string &scope_utf8,
-                         const EtcPalSockaddr &static_config);
+  void SetDeviceLabel(int target_handle, const std::string& label);
+  void SetComponentScope(int target_handle, int scope_slot, const std::string& scope_utf8,
+                         const EtcPalSockaddr& static_config);
 
-  void TargetDiscovered(const DiscoveredLlrpTarget &target);
+  void TargetDiscovered(const DiscoveredLlrpTarget& target);
   void DiscoveryFinished();
-  void RdmRespReceived(const LlrpRemoteRdmResponse &resp);
+  void RdmRespReceived(const LlrpRemoteRdmResponse& resp);
 
 private:
-  bool SendRDMAndGetResponse(llrp_manager_t manager, const EtcPalUuid &target_cid, const RdmCommand &cmd_data,
-                             RdmResponse &resp_data);
-  static const char *LLRPComponentTypeToString(llrp_component_t type);
+  bool SendRDMAndGetResponse(llrp_manager_t manager, const EtcPalUuid& target_cid, const RdmCommand& cmd_data,
+                             RdmResponse& resp_data);
+  static const char* LLRPComponentTypeToString(llrp_component_t type);
 
   std::map<llrp_manager_t, EtcPalNetintInfo> managers_;
   EtcPalUuid cid_{};

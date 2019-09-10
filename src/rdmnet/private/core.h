@@ -56,8 +56,10 @@ void rdmnet_readunlock();
 bool rdmnet_writelock();
 void rdmnet_writeunlock();
 
-etcpal_error_t rdmnet_core_add_polled_socket(etcpal_socket_t socket, etcpal_poll_events_t events, PolledSocketInfo* info);
-etcpal_error_t rdmnet_core_modify_polled_socket(etcpal_socket_t socket, etcpal_poll_events_t events, PolledSocketInfo* info);
+etcpal_error_t rdmnet_core_add_polled_socket(etcpal_socket_t socket, etcpal_poll_events_t events,
+                                             PolledSocketInfo* info);
+etcpal_error_t rdmnet_core_modify_polled_socket(etcpal_socket_t socket, etcpal_poll_events_t events,
+                                                PolledSocketInfo* info);
 void rdmnet_core_remove_polled_socket(etcpal_socket_t socket);
 
 #ifdef __cplusplus

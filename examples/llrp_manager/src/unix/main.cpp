@@ -25,16 +25,16 @@
 #include "manager.h"
 
 extern "C" {
-static void manager_log_callback(void *context, const EtcPalLogStrings *strings)
+static void manager_log_callback(void* context, const EtcPalLogStrings* strings)
 {
   (void)context;
   std::cout << strings->human_readable << "\n";
 }
 
-static void manager_time_callback(void *context, EtcPalLogTimeParams *time_params)
+static void manager_time_callback(void* context, EtcPalLogTimeParams* time_params)
 {
   time_t t = time(NULL);
-  struct tm *local_time = localtime(&t);
+  struct tm* local_time = localtime(&t);
   time_params->year = local_time->tm_year + 1900;
   time_params->month = local_time->tm_mon + 1;
   time_params->day = local_time->tm_mday;
@@ -46,7 +46,7 @@ static void manager_time_callback(void *context, EtcPalLogTimeParams *time_param
 }
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
   LLRPManager mgr;
 
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
   args.reserve(argc);
   for (int i = 0; i < argc; ++i)
     args.push_back(std::string(argv[i]));
-  switch(mgr.ParseCommandLineArgs(args))
+  switch (mgr.ParseCommandLineArgs(args))
   {
     case LLRPManager::ParseResult::kParseErr:
       mgr.PrintUsage(argv[0]);

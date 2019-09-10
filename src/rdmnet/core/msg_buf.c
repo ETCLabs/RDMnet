@@ -173,8 +173,8 @@ void initialize_rdmnet_message(RlpState* rlpstate, RdmnetMessage* msg, size_t pd
       break;
     default:
       init_pdu_block_state(&rlpstate->data.unknown, pdu_data_len);
-      etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING, RDMNET_LOG_MSG("Dropping Root Layer PDU with unknown vector %d."),
-               msg->vector);
+      etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
+                 RDMNET_LOG_MSG("Dropping Root Layer PDU with unknown vector %d."), msg->vector);
       break;
   }
 }
@@ -238,7 +238,7 @@ size_t parse_rlp_block(RlpState* rlpstate, const uint8_t* data, size_t datalen, 
       /* Parse error in the root layer header. We cannot keep parsing this block. */
       bytes_parsed += consume_bad_block(&rlpstate->block, datalen, &res);
       etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
-               RDMNET_LOG_MSG("Protocol error encountered while parsing Root Layer PDU header."));
+                 RDMNET_LOG_MSG("Protocol error encountered while parsing Root Layer PDU header."));
     }
   }
   if (rlpstate->block.parsed_header)
@@ -360,7 +360,7 @@ void initialize_broker_message(BrokerState* bstate, BrokerMessage* bmsg, size_t 
     default:
       init_pdu_block_state(&bstate->data.unknown, pdu_data_len);
       etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING, RDMNET_LOG_MSG("Dropping Broker PDU with unknown vector %d."),
-               bmsg->vector);
+                 bmsg->vector);
       break;
   }
 
@@ -371,8 +371,8 @@ void initialize_broker_message(BrokerState* bstate, BrokerMessage* bmsg, size_t 
      * section. */
     bmsg->vector = 0xffff;
     etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
-             RDMNET_LOG_MSG("Dropping Broker PDU with vector %d and invalid length %zu"), bmsg->vector,
-             pdu_data_len + BROKER_PDU_HEADER_SIZE);
+               RDMNET_LOG_MSG("Dropping Broker PDU with vector %d and invalid length %zu"), bmsg->vector,
+               pdu_data_len + BROKER_PDU_HEADER_SIZE);
   }
 }
 
@@ -426,7 +426,7 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
       /* Parse error in the Broker PDU header. We cannot keep parsing this block. */
       bytes_parsed += consume_bad_block(&bstate->block, datalen, &res);
       etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
-               RDMNET_LOG_MSG("Protocol error encountered while parsing Broker PDU header."));
+                 RDMNET_LOG_MSG("Protocol error encountered while parsing Broker PDU header."));
     }
   }
   if (bstate->block.parsed_header)
@@ -693,8 +693,8 @@ size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, 
         /* PDU length mismatch */
         bytes_parsed += consume_bad_block(&cstate->entry_data, remaining_len, &res);
         etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
-                 RDMNET_LOG_MSG("Dropping RPT Client Entry with invalid length %zu"),
-                 cstate->entry_data.block_size + CLIENT_ENTRY_HEADER_SIZE);
+                   RDMNET_LOG_MSG("Dropping RPT Client Entry with invalid length %zu"),
+                   cstate->entry_data.block_size + CLIENT_ENTRY_HEADER_SIZE);
       }
     }
     else
@@ -702,7 +702,7 @@ size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, 
       /* Unknown Client Protocol */
       bytes_parsed += consume_bad_block(&cstate->entry_data, remaining_len, &res);
       etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
-               RDMNET_LOG_MSG("Dropping Client Entry with invalid client protocol %d"), entry->client_protocol);
+                 RDMNET_LOG_MSG("Dropping Client Entry with invalid client protocol %d"), entry->client_protocol);
     }
   }
 
@@ -974,7 +974,7 @@ void initialize_rpt_message(RptState* rstate, RptMessage* rmsg, size_t pdu_data_
          * section. */
         rmsg->vector = 0xffffffff;
         etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING, RDMNET_LOG_MSG("Dropping RPT PDU with invalid length %zu"),
-                 pdu_data_len + RPT_PDU_HEADER_SIZE);
+                   pdu_data_len + RPT_PDU_HEADER_SIZE);
       }
       break;
     case VECTOR_RPT_STATUS:
@@ -989,13 +989,13 @@ void initialize_rpt_message(RptState* rstate, RptMessage* rmsg, size_t pdu_data_
          * section. */
         rmsg->vector = 0xffffffff;
         etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING, RDMNET_LOG_MSG("Dropping RPT PDU with invalid length %zu"),
-                 pdu_data_len + RPT_PDU_HEADER_SIZE);
+                   pdu_data_len + RPT_PDU_HEADER_SIZE);
       }
       break;
     default:
       init_pdu_block_state(&rstate->data.unknown, pdu_data_len);
       etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING, RDMNET_LOG_MSG("Dropping RPT PDU with invalid vector %u"),
-               rmsg->vector);
+                 rmsg->vector);
       break;
   }
 }
@@ -1062,7 +1062,7 @@ size_t parse_rpt_block(RptState* rstate, const uint8_t* data, size_t datalen, Rp
     {
       bytes_parsed += consume_bad_block(&rstate->block, datalen, &res);
       etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
-               RDMNET_LOG_MSG("Protocol error encountered while parsing RPT PDU header."));
+                 RDMNET_LOG_MSG("Protocol error encountered while parsing RPT PDU header."));
     }
   }
   if (rstate->block.parsed_header)
@@ -1245,7 +1245,7 @@ size_t parse_rpt_status(RptStatusState* rsstate, const uint8_t* data, size_t dat
       /* Parse error in the RPT Status PDU header. We cannot keep parsing this block. */
       bytes_parsed += consume_bad_block(&rsstate->block, datalen, &res);
       etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
-               RDMNET_LOG_MSG("Protocol error encountered while parsing RPT Status PDU header."));
+                 RDMNET_LOG_MSG("Protocol error encountered while parsing RPT Status PDU header."));
     }
   }
   if (rsstate->block.parsed_header)

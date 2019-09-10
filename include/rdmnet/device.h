@@ -101,9 +101,9 @@ etcpal_error_t rdmnet_device_send_status(rdmnet_device_t handle, const LocalRptS
 etcpal_error_t rdmnet_device_send_llrp_response(rdmnet_device_t handle, const LlrpLocalRdmResponse* resp);
 
 etcpal_error_t rdmnet_device_change_scope(rdmnet_device_t handle, const RdmnetScopeConfig* new_scope_config,
-                                        rdmnet_disconnect_reason_t reason);
+                                          rdmnet_disconnect_reason_t reason);
 etcpal_error_t rdmnet_device_change_search_domain(rdmnet_device_t handle, const char* new_search_domain,
-                                                rdmnet_disconnect_reason_t reason);
+                                                  rdmnet_disconnect_reason_t reason);
 
 /*! @} */
 

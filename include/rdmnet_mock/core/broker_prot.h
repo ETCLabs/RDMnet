@@ -33,7 +33,8 @@ extern "C" {
 DECLARE_FAKE_VALUE_FUNC(size_t, bufsize_client_list, const ClientEntryData*);
 DECLARE_FAKE_VALUE_FUNC(size_t, bufsize_dynamic_uid_assignment_list, const DynamicUidMapping*);
 DECLARE_FAKE_VALUE_FUNC(size_t, pack_connect_reply, uint8_t*, size_t, const EtcPalUuid*, const ConnectReplyMsg*);
-DECLARE_FAKE_VALUE_FUNC(size_t, pack_client_list, uint8_t*, size_t, const EtcPalUuid*, uint16_t, const ClientEntryData*);
+DECLARE_FAKE_VALUE_FUNC(size_t, pack_client_list, uint8_t*, size_t, const EtcPalUuid*, uint16_t,
+                        const ClientEntryData*);
 DECLARE_FAKE_VALUE_FUNC(size_t, pack_dynamic_uid_assignment_list, uint8_t*, size_t, const EtcPalUuid*,
                         const DynamicUidMapping*);
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, send_connect_reply, rdmnet_conn_t, const EtcPalUuid*, const ConnectReplyMsg*);

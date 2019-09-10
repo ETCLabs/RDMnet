@@ -130,7 +130,7 @@ void BrokerShell::Run(RDMnet::BrokerLog* log, RDMnet::BrokerSocketManager* sock_
     }
     else if (restart_requested_)
     {
-      restart_requested_ = false; // Prevent broker from restarting infinitely many times
+      restart_requested_ = false;  // Prevent broker from restarting infinitely many times
 
       broker.GetSettings(broker_settings);
       broker.Shutdown();

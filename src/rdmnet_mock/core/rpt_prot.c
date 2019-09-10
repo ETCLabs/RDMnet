@@ -22,7 +22,8 @@
 DEFINE_FAKE_VALUE_FUNC(size_t, bufsize_rpt_request, const RdmBuffer*);
 DEFINE_FAKE_VALUE_FUNC(size_t, bufsize_rpt_status, const RptStatusMsg*);
 DEFINE_FAKE_VALUE_FUNC(size_t, bufsize_rpt_notification, const RdmBuffer*, size_t);
-DEFINE_FAKE_VALUE_FUNC(size_t, pack_rpt_request, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*, const RdmBuffer*);
+DEFINE_FAKE_VALUE_FUNC(size_t, pack_rpt_request, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*,
+                       const RdmBuffer*);
 DEFINE_FAKE_VALUE_FUNC(size_t, pack_rpt_status, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*,
                        const RptStatusMsg*);
 DEFINE_FAKE_VALUE_FUNC(size_t, pack_rpt_notification, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*,

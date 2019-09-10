@@ -139,7 +139,7 @@ void device_connected(rdmnet_device_t handle, const RdmnetClientConnectedInfo* i
 
   default_responder_update_connection_status(true, &info->broker_addr);
   etcpal_log(device_state.lparams, ETCPAL_LOG_INFO, "Device connected to Broker on scope '%s'.",
-           device_state.cur_scope_config.scope);
+             device_state.cur_scope_config.scope);
 }
 
 void device_connect_failed(rdmnet_device_t handle, const RdmnetClientConnectFailedInfo* info, void* context)
@@ -157,7 +157,7 @@ void device_disconnected(rdmnet_device_t handle, const RdmnetClientDisconnectedI
 
   default_responder_update_connection_status(false, NULL);
   etcpal_log(device_state.lparams, ETCPAL_LOG_INFO, "Device disconnected from Broker on scope '%s'.",
-           device_state.cur_scope_config.scope);
+             device_state.cur_scope_config.scope);
 }
 
 void device_rdm_cmd_received(rdmnet_device_t handle, const RemoteRdmCommand* cmd, void* context)
@@ -205,14 +205,14 @@ void device_handle_rpt_command(const RemoteRdmCommand* cmd, rdmnet_data_changed_
   if (rdm_cmd->command_class != kRdmCCGetCommand && rdm_cmd->command_class != kRdmCCSetCommand)
   {
     device_send_rpt_status(VECTOR_RPT_STATUS_INVALID_COMMAND_CLASS, cmd);
-    etcpal_log(device_state.lparams, ETCPAL_LOG_WARNING, "Device received RDM command with invalid command class 0x%02x",
-             rdm_cmd->command_class);
+    etcpal_log(device_state.lparams, ETCPAL_LOG_WARNING,
+               "Device received RDM command with invalid command class 0x%02x", rdm_cmd->command_class);
   }
   else if (!default_responder_supports_pid(rdm_cmd->param_id))
   {
     device_send_rpt_nack(E120_NR_UNKNOWN_PID, cmd);
     etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for unknown PID 0x%04x",
-             cmd->source_uid.manu, cmd->source_uid.id, rdm_cmd->param_id);
+               cmd->source_uid.manu, cmd->source_uid.id, rdm_cmd->param_id);
   }
   else
   {
@@ -223,16 +223,16 @@ void device_handle_rpt_command(const RemoteRdmCommand* cmd, rdmnet_data_changed_
     {
       device_send_rpt_response(resp_list, resp_list_size, cmd);
       etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG, "ACK'ing %s for PID 0x%04x from Controller %04x:%08x",
-               rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", rdm_cmd->param_id,
-               cmd->source_uid.manu, cmd->source_uid.id);
+                 rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", rdm_cmd->param_id,
+                 cmd->source_uid.manu, cmd->source_uid.id);
     }
     else
     {
       device_send_rpt_nack(nack_reason, cmd);
       etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG,
-               "Sending %s NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
-               rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", cmd->source_uid.manu,
-               cmd->source_uid.id, rdm_cmd->param_id, nack_reason);
+                 "Sending %s NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
+                 rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", cmd->source_uid.manu,
+                 cmd->source_uid.id, rdm_cmd->param_id, nack_reason);
     }
   }
 }
@@ -244,13 +244,13 @@ void device_handle_llrp_command(const LlrpRemoteRdmCommand* cmd, rdmnet_data_cha
   {
     device_send_llrp_nack(E120_NR_UNSUPPORTED_COMMAND_CLASS, cmd);
     etcpal_log(device_state.lparams, ETCPAL_LOG_WARNING,
-             "Device received LLRP RDM command with invalid command class 0x%02x", rdm_cmd->command_class);
+               "Device received LLRP RDM command with invalid command class 0x%02x", rdm_cmd->command_class);
   }
   else if (!default_responder_supports_pid(rdm_cmd->param_id))
   {
     device_send_llrp_nack(E120_NR_UNKNOWN_PID, cmd);
     etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG, "Sending NACK to LLRP Manager %04x:%08x for unknown PID 0x%04x",
-             cmd->rdm.source_uid.manu, cmd->rdm.source_uid.id, rdm_cmd->param_id);
+               cmd->rdm.source_uid.manu, cmd->rdm.source_uid.id, rdm_cmd->param_id);
   }
   else
   {
@@ -271,17 +271,17 @@ void device_handle_llrp_command(const LlrpRemoteRdmCommand* cmd, rdmnet_data_cha
       {
         device_send_llrp_response(resp_list, cmd);
         etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG, "ACK'ing %s for PID 0x%04x from LLRP Manager %04x:%08x",
-                 rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", rdm_cmd->param_id,
-                 cmd->rdm.source_uid.manu, cmd->rdm.source_uid.id);
+                   rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", rdm_cmd->param_id,
+                   cmd->rdm.source_uid.manu, cmd->rdm.source_uid.id);
       }
     }
     else
     {
       device_send_llrp_nack(nack_reason, cmd);
       etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG,
-               "Sending %s NACK to LLRP Manager %04x:%08x for supported PID 0x%04x with reason 0x%04x",
-               rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", cmd->rdm.source_uid.manu,
-               cmd->rdm.source_uid.id, rdm_cmd->param_id, nack_reason);
+                 "Sending %s NACK to LLRP Manager %04x:%08x for supported PID 0x%04x with reason 0x%04x",
+                 rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", cmd->rdm.source_uid.manu,
+                 cmd->rdm.source_uid.id, rdm_cmd->param_id, nack_reason);
     }
   }
 }
@@ -350,7 +350,7 @@ void device_send_rpt_status(rpt_status_code_t status_code, const RemoteRdmComman
   if (send_res != kEtcPalErrOk)
   {
     etcpal_log(device_state.lparams, ETCPAL_LOG_ERR, "Error sending RPT Status message to Broker: '%s'.",
-             etcpal_strerror(send_res));
+               etcpal_strerror(send_res));
   }
 }
 
@@ -388,6 +388,7 @@ void device_send_llrp_response(RdmResponse* resp, const LlrpRemoteRdmCommand* re
   etcpal_error_t send_res = rdmnet_device_send_llrp_response(device_state.device_handle, &resp_to_send);
   if (send_res != kEtcPalErrOk)
   {
-    etcpal_log(device_state.lparams, ETCPAL_LOG_ERR, "Error sending LLRP RDM response: '%s.", etcpal_strerror(send_res));
+    etcpal_log(device_state.lparams, ETCPAL_LOG_ERR, "Error sending LLRP RDM response: '%s.",
+               etcpal_strerror(send_res));
   }
 }

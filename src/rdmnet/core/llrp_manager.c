@@ -69,7 +69,8 @@ static void deliver_callback(ManagerCallbackDispatchInfo* info);
 static EtcPalRbNode* manager_node_alloc();
 static void manager_node_dealloc(EtcPalRbNode* node);
 static int manager_cmp_by_handle(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b);
-static int manager_cmp_by_cid_and_netint(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b);
+static int manager_cmp_by_cid_and_netint(const EtcPalRbTree* self, const EtcPalRbNode* node_a,
+                                         const EtcPalRbNode* node_b);
 static int discovered_target_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b);
 static void discovered_target_clear_cb(const EtcPalRbTree* self, EtcPalRbNode* node);
 
@@ -84,7 +85,7 @@ etcpal_error_t rdmnet_llrp_manager_init()
 {
   etcpal_rbtree_init(&state.managers, manager_cmp_by_handle, manager_node_alloc, manager_node_dealloc);
   etcpal_rbtree_init(&state.managers_by_cid_and_netint, manager_cmp_by_cid_and_netint, manager_node_alloc,
-                   manager_node_dealloc);
+                     manager_node_dealloc);
   init_int_handle_manager(&state.handle_mgr, manager_handle_in_use);
   return kEtcPalErrOk;
 }
@@ -253,7 +254,7 @@ etcpal_error_t rdmnet_llrp_stop_discovery(llrp_manager_t handle)
  *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
 etcpal_error_t rdmnet_llrp_send_rdm_command(llrp_manager_t handle, const LlrpLocalRdmCommand* command,
-                                          uint32_t* transaction_num)
+                                            uint32_t* transaction_num)
 {
   if (!command)
     return kEtcPalErrInvalid;
@@ -446,8 +447,8 @@ bool send_next_probe(LlrpManager* manager)
     request.upper_uid = manager->cur_range_high;
     request.uid_list = list_head;
 
-    etcpal_error_t send_res = send_llrp_probe_request(manager->send_sock, manager->send_buf,
-                                                    (manager->keys.netint.ip_type == kEtcPalIpTypeV6), &header, &request);
+    etcpal_error_t send_res = send_llrp_probe_request(
+        manager->send_sock, manager->send_buf, (manager->keys.netint.ip_type == kEtcPalIpTypeV6), &header, &request);
     if (send_res == kEtcPalErrOk)
     {
       etcpal_timer_start(&manager->disc_timer, LLRP_TIMEOUT_MS);
@@ -457,7 +458,7 @@ bool send_next_probe(LlrpManager* manager)
     else
     {
       etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
-               RDMNET_LOG_MSG("Sending LLRP probe request failed with error: '%s'"), etcpal_strerror(send_res));
+                 RDMNET_LOG_MSG("Sending LLRP probe request failed with error: '%s'"), etcpal_strerror(send_res));
       return false;
     }
   }
@@ -537,7 +538,7 @@ void manager_data_received(const uint8_t* data, size_t data_size, const LlrpNeti
       char cid_str[ETCPAL_UUID_STRING_BYTES];
       etcpal_uuid_to_string(cid_str, &keys.cid);
       etcpal_log(rdmnet_log_params, ETCPAL_LOG_DEBUG,
-               RDMNET_LOG_MSG("Ignoring LLRP message addressed to unknown LLRP Manager %s"), cid_str);
+                 RDMNET_LOG_MSG("Ignoring LLRP message addressed to unknown LLRP Manager %s"), cid_str);
     }
   }
 

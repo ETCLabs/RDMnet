@@ -22,7 +22,6 @@
 
 class TestLlrpTarget : public testing::Test
 {
-
 };
 
 // Test the macros that init LlrpTargetConfig structures.

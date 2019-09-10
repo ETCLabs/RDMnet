@@ -214,7 +214,8 @@ etcpal_error_t rdmnet_connection_create(const RdmnetConnectionConfig* config, rd
  *  \return #kEtcPalErrSys: An internal library or system call error occurred.
  *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
-etcpal_error_t rdmnet_connect(rdmnet_conn_t handle, const EtcPalSockaddr* remote_addr, const ClientConnectMsg* connect_data)
+etcpal_error_t rdmnet_connect(rdmnet_conn_t handle, const EtcPalSockaddr* remote_addr,
+                              const ClientConnectMsg* connect_data)
 {
   if (!remote_addr || !connect_data)
     return kEtcPalErrInvalid;
@@ -304,7 +305,8 @@ etcpal_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking)
  *          and thus this function is not available.
  *  \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, etcpal_socket_t sock, const EtcPalSockaddr* remote_addr)
+etcpal_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, etcpal_socket_t sock,
+                                             const EtcPalSockaddr* remote_addr)
 {
 #if RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
   if (sock == ETCPAL_SOCKET_INVALID || !remote_addr)

@@ -52,7 +52,8 @@ void* SocketWorkerThread(void* arg)
         if (kevent_list[i].data > 0)
         {
           // Do the read on the socket
-          sock_mgr->WorkerNotifySocketReadEvent(static_cast<rdmnet_conn_t>(reinterpret_cast<intptr_t>(kevent_list[i].udata)));
+          sock_mgr->WorkerNotifySocketReadEvent(
+              static_cast<rdmnet_conn_t>(reinterpret_cast<intptr_t>(kevent_list[i].udata)));
         }
         if (kevent_list[i].flags & EV_EOF)
         {

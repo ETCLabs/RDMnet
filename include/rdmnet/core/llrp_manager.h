@@ -83,7 +83,7 @@ etcpal_error_t rdmnet_llrp_start_discovery(llrp_manager_t handle, uint16_t filte
 etcpal_error_t rdmnet_llrp_stop_discovery(llrp_manager_t handle);
 
 etcpal_error_t rdmnet_llrp_send_rdm_command(llrp_manager_t handle, const LlrpLocalRdmCommand* cmd,
-                                          uint32_t* transaction_num);
+                                            uint32_t* transaction_num);
 
 #ifdef __cplusplus
 }

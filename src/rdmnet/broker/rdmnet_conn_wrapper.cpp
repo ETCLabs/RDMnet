@@ -51,7 +51,8 @@ RdmnetConnWrapper::RdmnetConnWrapper()
   new_conn_config_.callbacks.msg_received = conncb_msg_received;
 }
 
-etcpal_error_t RdmnetConnWrapper::Startup(const EtcPalUuid& cid, const EtcPalLogParams* log_params, RdmnetConnNotify* notify)
+etcpal_error_t RdmnetConnWrapper::Startup(const EtcPalUuid& cid, const EtcPalLogParams* log_params,
+                                          RdmnetConnNotify* notify)
 {
   notify_ = notify;
   new_conn_config_.local_cid = cid;
@@ -64,7 +65,7 @@ void RdmnetConnWrapper::Shutdown()
 }
 
 etcpal_error_t RdmnetConnWrapper::CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
-                                                             rdmnet_conn_t& new_handle)
+                                                               rdmnet_conn_t& new_handle)
 {
   etcpal_error_t create_res = rdmnet_connection_create(&new_conn_config_, &new_handle);
   if (create_res == kEtcPalErrOk)

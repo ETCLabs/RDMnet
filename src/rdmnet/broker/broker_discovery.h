@@ -53,7 +53,7 @@ public:
 
   // Registration actions
   etcpal_error_t RegisterBroker(const RDMnet::BrokerDiscoveryAttributes& disc_attributes, const EtcPalUuid& local_cid,
-                              const std::vector<EtcPalIpAddr>& listen_addrs, uint16_t listen_port);
+                                const std::vector<EtcPalIpAddr>& listen_addrs, uint16_t listen_port);
   void UnregisterBroker();
 
   // Accessors

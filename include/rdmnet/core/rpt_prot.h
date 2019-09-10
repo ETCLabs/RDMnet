@@ -174,11 +174,11 @@ size_t pack_rpt_notification(uint8_t* buf, size_t buflen, const EtcPalUuid* loca
                              const RdmBuffer* cmd_arr, size_t cmd_arr_size);
 
 etcpal_error_t send_rpt_request(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
-                              const RdmBuffer* cmd);
+                                const RdmBuffer* cmd);
 etcpal_error_t send_rpt_status(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
-                             const RptStatusMsg* status);
+                               const RptStatusMsg* status);
 etcpal_error_t send_rpt_notification(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
-                                   const RdmBuffer* cmd_arr, size_t cmd_arr_size);
+                                     const RdmBuffer* cmd_arr, size_t cmd_arr_size);
 
 #ifdef __cplusplus
 }

@@ -393,14 +393,14 @@ etcpal_error_t rdmnet_ept_client_create(const RdmnetEptClientConfig* config, rdm
 etcpal_error_t rdmnet_client_destroy(rdmnet_client_t handle);
 
 etcpal_error_t rdmnet_client_add_scope(rdmnet_client_t handle, const RdmnetScopeConfig* scope_config,
-                                     rdmnet_client_scope_t* scope_handle);
+                                       rdmnet_client_scope_t* scope_handle);
 etcpal_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                        rdmnet_disconnect_reason_t reason);
+                                          rdmnet_disconnect_reason_t reason);
 etcpal_error_t rdmnet_client_change_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                        const RdmnetScopeConfig* new_config, rdmnet_disconnect_reason_t reason);
+                                          const RdmnetScopeConfig* new_config, rdmnet_disconnect_reason_t reason);
 
 etcpal_error_t rdmnet_client_change_search_domain(rdmnet_client_t handle, const char* new_search_domain,
-                                                rdmnet_disconnect_reason_t reason);
+                                                  rdmnet_disconnect_reason_t reason);
 
 etcpal_error_t rdmnet_client_request_client_list(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle);
 // etcpal_error_t rdmnet_client_request_dynamic_uids(rdmnet_conn_t handle, rdmnet_client_scope_t scope_handle,
@@ -409,11 +409,11 @@ etcpal_error_t rdmnet_client_request_client_list(rdmnet_client_t handle, rdmnet_
 //                                                   const FetchUidAssignmentListEntry *uid_list);
 
 etcpal_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                                const LocalRdmCommand* cmd, uint32_t* seq_num);
+                                                  const LocalRdmCommand* cmd, uint32_t* seq_num);
 etcpal_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                                 const LocalRdmResponse* resp);
+                                                   const LocalRdmResponse* resp);
 etcpal_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                           const LocalRptStatus* status);
+                                             const LocalRptStatus* status);
 etcpal_error_t rdmnet_rpt_client_send_llrp_response(rdmnet_client_t handle, const LlrpLocalRdmResponse* resp);
 
 #ifdef __cplusplus

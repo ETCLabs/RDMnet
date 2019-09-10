@@ -147,7 +147,8 @@ ClientServiceThread::~ClientServiceThread()
 bool ClientServiceThread::Start()
 {
   terminated_ = false;
-  EtcPalThreadParams tparams = {ETCPAL_THREAD_DEFAULT_PRIORITY, ETCPAL_THREAD_DEFAULT_STACK, "ClientServiceThread", NULL};
+  EtcPalThreadParams tparams = {ETCPAL_THREAD_DEFAULT_PRIORITY, ETCPAL_THREAD_DEFAULT_STACK, "ClientServiceThread",
+                                NULL};
   return etcpal_thread_create(&thread_handle_, &tparams, controller_device_service_thread_fn, this);
 }
 
