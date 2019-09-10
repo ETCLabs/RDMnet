@@ -19,6 +19,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "etcpal/log.h"
 #include "etcpal/uuid.h"
@@ -34,8 +35,19 @@ struct LLRPTargetInfo
 class LLRPManager
 {
 public:
-  LLRPManager(const EtcPalUuid &my_cid, const EtcPalLogParams *log_params = nullptr);
-  virtual ~LLRPManager();
+  bool Startup(const EtcPalUuid &my_cid, const EtcPalLogParams *log_params = nullptr);
+  void Shutdown();
+
+  enum class ParseResult
+  {
+    kRun,
+    kParseErr,
+    kPrintHelp,
+    kPrintVersion
+  };
+  ParseResult ParseCommandLineArgs(const std::vector<std::string> &args);
+  void PrintUsage(const std::string &app_name);
+  void PrintVersion();
 
   void PrintCommandList();
   bool ParseCommand(const std::string &line);

@@ -46,8 +46,29 @@ static void manager_time_callback(void *context, EtcPalLogTimeParams *time_param
 }
 }
 
-int main(int /*argc*/, char * /*argv*/ [])
+int main(int argc, char *argv[])
 {
+  LLRPManager mgr;
+
+  std::vector<std::string> args;
+  args.reserve(argc);
+  for (int i = 0; i < argc; ++i)
+    args[i] = argv[i];
+  switch(mgr.ParseCommandLineArgs(args_utf8))
+  {
+    case LLRPManager::ParseResult::kParseErr:
+      mgr.PrintUsage(argv[0]);
+      return 1;
+    case LLRPManager::ParseResult::kPrintHelp:
+      mgr.PrintUsage(argv[0]);
+      return 0;
+    case LLRPManager::ParseResult::kPrintVersion:
+      mgr.PrintVersion();
+      return 0;
+    default:
+      break;
+  }
+
   EtcPalUuid manager_cid;
   etcpal_generate_os_preferred_uuid(&manager_cid);
 
@@ -59,17 +80,20 @@ int main(int /*argc*/, char * /*argv*/ [])
   params.context = nullptr;
 
   etcpal_validate_log_params(&params);
-  LLRPManager mgr(manager_cid, &params);
+
+  if (!mgr.Startup(manager_cid, &params))
+    return 1;
+
   printf("Discovered network interfaces:\n");
   mgr.PrintNetints();
   mgr.PrintCommandList();
 
   std::string input;
-  while (true)
+  do
   {
     std::getline(std::cin, input);
-    if (!mgr.ParseCommand(input))
-      break;
-  }
+  } while (mgr.ParseCommand(input));
+
+  mgr.Shutdown();
   return 0;
 }

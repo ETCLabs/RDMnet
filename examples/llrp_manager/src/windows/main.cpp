@@ -53,29 +53,65 @@ static void manager_time_callback(void *context, EtcPalLogTimeParams *time)
 }
 }
 
-std::string ConsoleInputToUtf8(const std::wstring &input)
+static std::string WCharToUtf8String(const wchar_t* str_in)
 {
-  if (!input.empty())
+  int size_needed = WideCharToMultiByte(CP_UTF8, 0, str_in, -1, NULL, 0, NULL, NULL);
+  if (size_needed > 0)
   {
-    int size_needed = WideCharToMultiByte(CP_UTF8, 0, input.c_str(), -1, NULL, 0, NULL, NULL);
-    if (size_needed > 0)
+    std::string str_res(size_needed, '\0');
+    int convert_res = WideCharToMultiByte(CP_UTF8, 0, str_in, -1, &str_res[0], size_needed, NULL, NULL);
+    if (convert_res > 0)
     {
-      std::string str_res(size_needed, '\0');
-      int convert_res = WideCharToMultiByte(CP_UTF8, 0, input.c_str(), -1, &str_res[0], size_needed, NULL, NULL);
-      if (convert_res > 0)
-      {
-        return str_res;
-      }
+      // Remove the NULL from being included in the string's count
+      str_res.resize(size_needed - 1);
+      return str_res;
     }
   }
 
   return std::string();
 }
 
-int wmain(int /*argc*/, wchar_t * /*argv*/ [])
+void ConvertArgsToUtf8(int argc, wchar_t* argv[], std::vector<std::string>& args_out)
 {
-  EtcPalUuid manager_cid;
+  for (int i = 0; i < argc; ++i)
+  {
+    args_out.push_back(WCharToUtf8String(argv[i]));
+  }
+}
 
+std::string ConsoleInputToUtf8(const std::wstring &input)
+{
+  if (!input.empty())
+  {
+    return WCharToUtf8String(input.c_str());
+  }
+
+  return std::string();
+}
+
+int wmain(int argc, wchar_t *argv[])
+{
+  LLRPManager mgr;
+
+  std::vector<std::string> args_utf8;
+  args_utf8.reserve(argc);
+  ConvertArgsToUtf8(argc, argv, args_utf8);
+  switch(mgr.ParseCommandLineArgs(args_utf8))
+  {
+    case LLRPManager::ParseResult::kParseErr:
+      mgr.PrintUsage(args_utf8[0]);
+      return 1;
+    case LLRPManager::ParseResult::kPrintHelp:
+      mgr.PrintUsage(args_utf8[0]);
+      return 0;
+    case LLRPManager::ParseResult::kPrintVersion:
+      mgr.PrintVersion();
+      return 0;
+    default:
+      break;
+  }
+
+  EtcPalUuid manager_cid;
   UUID uuid;
   UuidCreate(&uuid);
   memcpy(manager_cid.data, &uuid, ETCPAL_UUID_BYTES);
@@ -102,7 +138,9 @@ int wmain(int /*argc*/, wchar_t * /*argv*/ [])
   params.context = nullptr;
   etcpal_validate_log_params(&params);
 
-  LLRPManager mgr(manager_cid, &params);
+  if (!mgr.Startup(manager_cid, &params))
+    return 1;
+
   printf("Discovered network interfaces:\n");
   mgr.PrintNetints();
   mgr.PrintCommandList();
@@ -113,5 +151,6 @@ int wmain(int /*argc*/, wchar_t * /*argv*/ [])
     std::getline(std::wcin, input);
   } while (mgr.ParseCommand(ConsoleInputToUtf8(input)));
 
+  mgr.Shutdown();
   return 0;
 }

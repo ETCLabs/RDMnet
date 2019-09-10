@@ -30,6 +30,7 @@
 #include "etcpal/timer.h"
 #include "rdmnet/core.h"
 #include "rdmnet/core/util.h"
+#include "rdmnet/version.h"
 
 extern "C" {
 void llrpcb_target_discovered(llrp_manager_t /*handle*/, const DiscoveredLlrpTarget* target, void* context)
@@ -54,8 +55,11 @@ void llrpcb_rdm_resp_received(llrp_manager_t /*handle*/, const LlrpRemoteRdmResp
 }
 }
 
-LLRPManager::LLRPManager(const EtcPalUuid& my_cid, const EtcPalLogParams* log_params) : cid_(my_cid)
+bool LLRPManager::Startup(const EtcPalUuid& my_cid, const EtcPalLogParams* log_params)
 {
+  printf("ETC Example LLRP Manager version %s initializing...\n", RDMNET_VERSION_STRING);
+
+  cid_ = my_cid;
   rdmnet_core_init(log_params);
 
   size_t num_interfaces = etcpal_netint_get_num_interfaces();
@@ -88,16 +92,66 @@ LLRPManager::LLRPManager(const EtcPalUuid& my_cid, const EtcPalLogParams* log_pa
                etcpal_strerror(res));
       }
     }
+
+    if (!managers_.empty())
+      return true;
   }
+
+  printf("Error: Couldn't set up any network interfaces for LLRP Manager functionality.\n");
+  return false;
 }
 
-LLRPManager::~LLRPManager()
+void LLRPManager::Shutdown()
 {
   for (const auto& netint : managers_)
   {
     rdmnet_llrp_manager_destroy(netint.first);
   }
   rdmnet_core_deinit();
+}
+
+LLRPManager::ParseResult LLRPManager::ParseCommandLineArgs(const std::vector<std::string> &args)
+{
+  auto iter = args.begin();
+  if (iter == args.end())
+    return ParseResult::kParseErr; // Nothing in arg list, error
+  if (++iter == args.end())
+    return ParseResult::kRun; // No arguments, run the app
+
+  // We have an argument, these are the only valid ones right now.
+  if (*iter == "--version" || *iter == "-v")
+  {
+    return ParseResult::kPrintVersion;
+  }
+  else if (*iter == "--help" || *iter == "-?" || *iter == "-h")
+  {
+    return ParseResult::kPrintHelp;
+  }
+  else
+  {
+    return ParseResult::kParseErr;
+  }
+}
+
+void LLRPManager::PrintUsage(const std::string &app_name)
+{
+  printf("Usage: %s [OPTION]...\n", app_name.c_str());
+  printf("With no options, the app will start normally and wait for user input.\n");
+  printf("\n");
+  printf("Options:\n");
+  printf("  --help     Display this help and exit.\n");
+  printf("  --version  Output version information and exit.\n");
+}
+
+void LLRPManager::PrintVersion()
+{
+  printf("ETC Example LLRP Manager\n");
+  printf("Version %s\n\n", RDMNET_VERSION_STRING);
+  printf("%s\n", RDMNET_VERSION_COPYRIGHT);
+  printf("License: Apache License v2.0 <http://www.apache.org/licenses/LICENSE-2.0>\n");
+  printf("Unless required by applicable law or agreed to in writing, this software is\n");
+  printf("provided \"AS IS\", WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express\n");
+  printf("or implied.\n");
 }
 
 void LLRPManager::PrintCommandList()
