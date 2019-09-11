@@ -41,7 +41,7 @@ class BrokerCore;
 ///
 
 /// A namespace to contain the public Broker classes
-namespace RDMnet
+namespace rdmnet
 {
 /// Settings for the Broker's DNS Discovery functionality.
 struct BrokerDiscoveryAttributes
@@ -105,10 +105,6 @@ struct BrokerSettings
   /// supported to reject the connection request.
   unsigned int max_reject_connections{1000};
 
-  /// MODIFY FOR DEBUG PURPOSES ONLY: each read thread can support this many sockets, up to the
-  /// maximum allowed by your platform's socket implementation.
-  // unsigned int max_socket_per_read_thread{ETCPAL_SOCKET_MAX_POLL_SIZE};
-
   BrokerSettings() {}
   BrokerSettings(const RdmUid& static_uid) { SetStaticUid(static_uid); }
   BrokerSettings(uint16_t rdm_manu_id) { SetDynamicUid(rdm_manu_id); }
@@ -145,7 +141,7 @@ private:
   std::unique_ptr<BrokerCore> core_;
 };
 
-};  // namespace RDMnet
+};  // namespace rdmnet
 
 /// @}
 

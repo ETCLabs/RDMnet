@@ -31,7 +31,7 @@
 #include "etcpal/lock.h"
 #include "rdmnet/broker/log.h"
 
-class WindowsBrokerLog : public RDMnet::BrokerLog
+class WindowsBrokerLog : public rdmnet::BrokerLog
 {
 public:
   WindowsBrokerLog(const std::string& file_name);

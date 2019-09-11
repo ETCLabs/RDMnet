@@ -93,7 +93,7 @@ public:
   }
   virtual ~WinBrokerSocketManager() { etcpal_rwlock_destroy(&socket_lock_); }
 
-  // RDMnet::BrokerSocketManager interface
+  // rdmnet::BrokerSocketManager interface
   bool Startup(BrokerSocketManagerNotify* notify) override;
   bool Shutdown() override;
   bool AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t socket) override;

@@ -93,7 +93,7 @@ void BrokerResponder::ProcessRDMMessage(int /*conn*/, const RPTMessageRef& /*msg
 //     RDMnetSocket *psock = GetControllerSocket(cookie);
 //     if (psock)
 //     {
-//       if (!RDMnet::SendRDMMessages(psock, m_settings.cid, resp_end_data,
+//       if (!rdmnet::SendRDMMessages(psock, m_settings.cid, resp_end_data,
 //                                    msgs) &&
 //           m_log)
 //         etcpal_log(m_log, m_log_context, 1, ETCPAL_CAT_APP, ETCPAL_SEV_ERR,

@@ -51,7 +51,7 @@ public:
 class ListenThread
 {
 public:
-  ListenThread(etcpal_socket_t listen_sock, ListenThreadNotify* pnotify, RDMnet::BrokerLog* log);
+  ListenThread(etcpal_socket_t listen_sock, ListenThreadNotify* pnotify, rdmnet::BrokerLog* log);
   virtual ~ListenThread();
 
   // Creates the listening socket and starts the thread.
@@ -70,7 +70,7 @@ protected:
   etcpal_thread_t thread_handle_;
   etcpal_socket_t listen_socket_{ETCPAL_SOCKET_INVALID};
 
-  RDMnet::BrokerLog* log_{nullptr};
+  rdmnet::BrokerLog* log_{nullptr};
 };
 
 /************************************/

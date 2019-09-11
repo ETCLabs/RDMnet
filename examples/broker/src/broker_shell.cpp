@@ -50,7 +50,7 @@ void BrokerShell::AsyncShutdown()
   shutdown_requested_ = true;
 }
 
-void BrokerShell::ApplySettingsChanges(RDMnet::BrokerSettings& settings, std::vector<EtcPalIpAddr>& new_addrs)
+void BrokerShell::ApplySettingsChanges(rdmnet::BrokerSettings& settings, std::vector<EtcPalIpAddr>& new_addrs)
 {
   new_addrs = GetInterfacesToListen();
 
@@ -98,14 +98,14 @@ std::vector<EtcPalIpAddr> BrokerShell::ConvertMacsToInterfaces(const std::vector
   return to_return;
 }
 
-void BrokerShell::Run(RDMnet::BrokerLog* log)
+void BrokerShell::Run(rdmnet::BrokerLog* log)
 {
   PrintWarningMessage();
 
   log_ = log;
   log_->Startup(initial_data_.log_mask);
 
-  RDMnet::BrokerSettings broker_settings(0x6574);
+  rdmnet::BrokerSettings broker_settings(0x6574);
   broker_settings.disc_attributes.scope = initial_data_.scope;
 
   std::vector<EtcPalIpAddr> ifaces = GetInterfacesToListen();
@@ -116,7 +116,7 @@ void BrokerShell::Run(RDMnet::BrokerLog* log)
   broker_settings.disc_attributes.dns_service_instance_name = "UNIQUE NAME";
   broker_settings.disc_attributes.dns_model = "E1.33 Broker Prototype";
 
-  RDMnet::Broker broker(log, this);
+  rdmnet::Broker broker(log, this);
   broker.Startup(broker_settings, initial_data_.port, ifaces);
 
   // We want this to run forever if a console

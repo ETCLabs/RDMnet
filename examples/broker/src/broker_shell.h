@@ -31,12 +31,12 @@
 // BrokerShell : Platform-neutral wrapper around the Broker library from a generic console
 // application. Instantiates and drives the Broker library.
 
-class BrokerShell : public RDMnet::BrokerNotify
+class BrokerShell : public rdmnet::BrokerNotify
 {
 public:
   typedef std::array<uint8_t, ETCPAL_NETINTINFO_MAC_LEN> MacAddress;
 
-  void Run(RDMnet::BrokerLog* log);
+  void Run(rdmnet::BrokerLog* log);
   static void PrintVersion();
 
   // Options to set from the command line; must be set BEFORE Run() is called.
@@ -55,7 +55,7 @@ private:
 
   std::vector<EtcPalIpAddr> GetInterfacesToListen();
   std::vector<EtcPalIpAddr> ConvertMacsToInterfaces(const std::vector<MacAddress>& macs);
-  void ApplySettingsChanges(RDMnet::BrokerSettings& settings, std::vector<EtcPalIpAddr>& new_addrs);
+  void ApplySettingsChanges(rdmnet::BrokerSettings& settings, std::vector<EtcPalIpAddr>& new_addrs);
 
   struct InitialData
   {
@@ -66,7 +66,7 @@ private:
     int log_mask{ETCPAL_LOG_UPTO(ETCPAL_LOG_INFO)};
   } initial_data_;
 
-  RDMnet::BrokerLog* log_{nullptr};
+  rdmnet::BrokerLog* log_{nullptr};
   std::atomic<bool> restart_requested_{false};
   bool shutdown_requested_{false};
   std::string new_scope_;

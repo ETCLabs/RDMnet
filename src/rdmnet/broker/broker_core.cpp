@@ -33,12 +33,12 @@
 
 /*************************** Function definitions ****************************/
 
-RDMnet::Broker::Broker(BrokerLog* log, BrokerNotify* notify)
+rdmnet::Broker::Broker(BrokerLog* log, BrokerNotify* notify)
     : core_(std::make_unique<BrokerCore>(log, notify, std::unique_ptr<RdmnetConnInterface>(new RdmnetConnWrapper)))
 {
 }
 
-RDMnet::Broker::~Broker()
+rdmnet::Broker::~Broker()
 {
 }
 
@@ -52,23 +52,23 @@ RDMnet::Broker::~Broker()
 /// \param[in] listen_port Port for the Broker to listen on.
 /// \param[in] listen_addrs Addresses of network interfaces for the Broker to listen on.
 /// \return true (started %Broker successfully) or false (an error occurred starting %Broker).
-bool RDMnet::Broker::Startup(const BrokerSettings& settings, uint16_t listen_port,
+bool rdmnet::Broker::Startup(const BrokerSettings& settings, uint16_t listen_port,
                              std::vector<EtcPalIpAddr>& listen_addrs)
 {
   return core_->Startup(settings, listen_port, listen_addrs);
 }
 
-void RDMnet::Broker::Shutdown()
+void rdmnet::Broker::Shutdown()
 {
   core_->Shutdown();
 }
 
-void RDMnet::Broker::Tick()
+void rdmnet::Broker::Tick()
 {
   core_->Tick();
 }
 
-void RDMnet::Broker::GetSettings(BrokerSettings& settings) const
+void rdmnet::Broker::GetSettings(BrokerSettings& settings) const
 {
   core_->GetSettings(settings);
 }
@@ -78,7 +78,7 @@ void RDMnet::Broker::GetSettings(BrokerSettings& settings) const
 // BrokerCore: Private implementation of Broker functionality.
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-BrokerCore::BrokerCore(RDMnet::BrokerLog* log, RDMnet::BrokerNotify* notify, std::unique_ptr<RdmnetConnInterface> conn)
+BrokerCore::BrokerCore(rdmnet::BrokerLog* log, rdmnet::BrokerNotify* notify, std::unique_ptr<RdmnetConnInterface> conn)
     : RdmnetConnNotify()
     , ListenThreadNotify()
     , ClientServiceThreadNotify()
@@ -101,22 +101,22 @@ BrokerCore::~BrokerCore()
   etcpal_rwlock_destroy(&client_lock_);
 }
 
-bool BrokerCore::Startup(const RDMnet::BrokerSettings& settings, uint16_t listen_port,
+bool BrokerCore::Startup(const rdmnet::BrokerSettings& settings, uint16_t listen_port,
                          const std::vector<EtcPalIpAddr>& listen_addrs)
 {
   if (!started_)
   {
     // Check the settings for validity
     if (ETCPAL_UUID_IS_NULL(&settings.cid) ||
-        (settings.uid_type == RDMnet::BrokerSettings::kStaticUid && !RDMNET_UID_IS_STATIC(&settings.uid)) ||
-        (settings.uid_type == RDMnet::BrokerSettings::kDynamicUid && !RDMNET_UID_IS_DYNAMIC(&settings.uid)))
+        (settings.uid_type == rdmnet::BrokerSettings::kStaticUid && !RDMNET_UID_IS_STATIC(&settings.uid)) ||
+        (settings.uid_type == rdmnet::BrokerSettings::kDynamicUid && !RDMNET_UID_IS_DYNAMIC(&settings.uid)))
     {
       return false;
     }
 
     // Generate IDs if necessary
     my_uid_ = settings.uid;
-    if (settings.uid_type == RDMnet::BrokerSettings::kDynamicUid)
+    if (settings.uid_type == rdmnet::BrokerSettings::kDynamicUid)
     {
       my_uid_.id = 1;
       uid_manager_.SetNextDeviceId(2);
@@ -197,7 +197,7 @@ void BrokerCore::Tick()
 
 // Fills in the current settings the broker is using.  Can be called even after Shutdown. Useful if
 // you want to shutdown & restart the broker for any reason.
-void BrokerCore::GetSettings(RDMnet::BrokerSettings& settings) const
+void BrokerCore::GetSettings(rdmnet::BrokerSettings& settings) const
 {
   settings = settings_;
 }
@@ -491,7 +491,7 @@ void BrokerCore::ProcessConnectRequest(int conn, const ClientConnectMsg* cmsg)
   // auto it =clients_.find(cookie);
   // if(it !=clients_.end())
   //{
-  // RDMnet::SendRedirect(it->second->sock.get(), my_cid,
+  // rdmnet::SendRedirect(it->second->sock.get(), my_cid,
   //    CIPAddr::StringToAddr("192.168.6.12:8888"));
   // MarkSocketForDestruction(cookie, false, 0);
   // return;
