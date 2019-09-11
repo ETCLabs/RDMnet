@@ -30,21 +30,21 @@
 #include "etcpal/socket.h"
 #include "rdmnet/broker.h"
 #include "broker_client.h"
-#include "broker_responder.h"
-#include "broker_threads.h"
 #include "broker_discovery.h"
+#include "broker_responder.h"
+#include "broker_socket_manager.h"
+#include "broker_threads.h"
 #include "broker_uid_manager.h"
 #include "rdmnet_conn_wrapper.h"
 
 class BrokerCore : public RdmnetConnNotify,
-                   public RDMnet::BrokerSocketManagerNotify,
+                   public BrokerSocketManagerNotify,
                    public ListenThreadNotify,
                    public ClientServiceThreadNotify,
                    public BrokerDiscoveryManagerNotify
 {
 public:
-  BrokerCore(RDMnet::BrokerLog* log, RDMnet::BrokerSocketManager* socket_manager, RDMnet::BrokerNotify* notify,
-             std::unique_ptr<RdmnetConnInterface> conn);
+  BrokerCore(RDMnet::BrokerLog* log, RDMnet::BrokerNotify* notify, std::unique_ptr<RdmnetConnInterface> conn);
   virtual ~BrokerCore();
 
   // Some utility functions
@@ -71,7 +71,7 @@ private:
   bool service_registered_{false};
 
   RDMnet::BrokerLog* log_{nullptr};
-  RDMnet::BrokerSocketManager* socket_manager_{nullptr};
+  std::unique_ptr<BrokerSocketManager> socket_manager_;
   RDMnet::BrokerNotify* notify_{nullptr};
   std::unique_ptr<RdmnetConnInterface> conn_interface_;
 

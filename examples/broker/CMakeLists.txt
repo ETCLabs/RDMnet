@@ -15,8 +15,6 @@ if(WIN32)
     src/windows/main.cpp
     src/windows/win_broker_log.h
     src/windows/win_broker_log.cpp
-    src/windows/win_socket_manager.h
-    src/windows/win_socket_manager.cpp
   )
   target_compile_definitions(${BROKER_TARGET} PRIVATE UNICODE _UNICODE)
   if(DEFINED DNS_SD_DLL)
@@ -32,8 +30,6 @@ elseif(APPLE)
     src/macos/main.cpp
     src/macos/macos_broker_log.h
     src/macos/macos_broker_log.cpp
-    src/macos/macos_socket_manager.h
-    src/macos/macos_socket_manager.cpp
   )
   target_link_libraries(${BROKER_TARGET} PRIVATE pthread)
 elseif(UNIX)
@@ -41,8 +37,6 @@ elseif(UNIX)
     src/linux/main.cpp
     src/linux/linux_broker_log.h
     src/linux/linux_broker_log.cpp
-    src/linux/linux_socket_manager.h
-    src/linux/linux_socket_manager.cpp
   )
   target_link_libraries(${BROKER_TARGET} PRIVATE pthread)
 endif()

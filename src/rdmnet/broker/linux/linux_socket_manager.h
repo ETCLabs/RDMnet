@@ -17,7 +17,7 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-// Linux override of RDMnet::BrokerSocketManager.
+// Linux override of BrokerSocketManager.
 // Uses epoll, the most efficient and scalable socket management tool available from the Linux API.
 
 #ifndef _LINUX_SOCKET_MANAGER_H_
@@ -29,7 +29,7 @@
 #include <pthread.h>
 
 #include "etcpal/lock.h"
-#include "rdmnet/broker/socket_manager.h"
+#include "broker_socket_manager.h"
 
 // Wrapper around Linux thread functions to increase the testability of this module.
 // TODO on Linux
@@ -75,7 +75,7 @@ struct SocketData
 // performance. Sending on connections is done in the core Broker library through the EtcPal
 // interface. Other miscellaneous Broker socket operations like LLRP are also handled in the core
 // library.
-class LinuxBrokerSocketManager : public RDMnet::BrokerSocketManager
+class LinuxBrokerSocketManager : public BrokerSocketManager
 {
 public:
   LinuxBrokerSocketManager(/* LinuxThreadInterface* thread_interface = new DefaultLinuxThreads */)
@@ -85,8 +85,8 @@ public:
   }
   virtual ~LinuxBrokerSocketManager() { etcpal_rwlock_destroy(&socket_lock_); }
 
-  // RDMnet::BrokerSocketManager interface
-  bool Startup(RDMnet::BrokerSocketManagerNotify* notify) override;
+  // BrokerSocketManager interface
+  bool Startup(BrokerSocketManagerNotify* notify) override;
   bool Shutdown() override;
   bool AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t socket) override;
   void RemoveSocket(rdmnet_conn_t conn_handle) override;
@@ -110,7 +110,7 @@ private:
   etcpal_rwlock_t socket_lock_;
 
   // The callback instance
-  RDMnet::BrokerSocketManagerNotify* notify_{nullptr};
+  BrokerSocketManagerNotify* notify_{nullptr};
 };
 
 #endif  // _LINUX_SOCKET_MANAGER_H_

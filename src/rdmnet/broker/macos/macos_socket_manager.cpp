@@ -66,7 +66,7 @@ void* SocketWorkerThread(void* arg)
   return reinterpret_cast<void*>(0);
 }
 
-bool MacBrokerSocketManager::Startup(RDMnet::BrokerSocketManagerNotify* notify)
+bool MacBrokerSocketManager::Startup(BrokerSocketManagerNotify* notify)
 {
   notify_ = notify;
 

@@ -63,7 +63,7 @@ void* SocketWorkerThread(void* arg)
   return reinterpret_cast<void*>(0);
 }
 
-bool LinuxBrokerSocketManager::Startup(RDMnet::BrokerSocketManagerNotify* notify)
+bool LinuxBrokerSocketManager::Startup(BrokerSocketManagerNotify* notify)
 {
   notify_ = notify;
 
@@ -191,4 +191,10 @@ void LinuxBrokerSocketManager::WorkerNotifySocketReadEvent(rdmnet_conn_t conn_ha
       notify_->SocketDataReceived(conn_handle, sock_data->second->recv_buf, recv_result);
     }
   }
+}
+
+// Instantiate a LinuxBrokerSocketManager
+std::unique_ptr<BrokerSocketManager> CreateBrokerSocketManager()
+{
+  return std::make_unique<LinuxBrokerSocketManager>();
 }

@@ -17,7 +17,7 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-// macOS override of RDMnet::BrokerSocketManager.
+// macOS override of BrokerSocketManager.
 // Uses epoll, the most efficient and scalable socket management tool available from the Mac API.
 
 #ifndef _MACOS_SOCKET_MANAGER_H_
@@ -50,14 +50,14 @@ struct SocketData
 // performance. Sending on connections is done in the core Broker library through the EtcPal
 // interface. Other miscellaneous Broker socket operations like LLRP are also handled in the core
 // library.
-class MacBrokerSocketManager : public RDMnet::BrokerSocketManager
+class MacBrokerSocketManager : public BrokerSocketManager
 {
 public:
   MacBrokerSocketManager() { etcpal_rwlock_create(&socket_lock_); }
   virtual ~MacBrokerSocketManager() { etcpal_rwlock_destroy(&socket_lock_); }
 
-  // RDMnet::BrokerSocketManager interface
-  bool Startup(RDMnet::BrokerSocketManagerNotify* notify) override;
+  // BrokerSocketManager interface
+  bool Startup(BrokerSocketManagerNotify* notify) override;
   bool Shutdown() override;
   bool AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t socket) override;
   void RemoveSocket(rdmnet_conn_t conn_handle) override;
@@ -80,7 +80,7 @@ private:
   etcpal_rwlock_t socket_lock_;
 
   // The callback instance
-  RDMnet::BrokerSocketManagerNotify* notify_{nullptr};
+  BrokerSocketManagerNotify* notify_{nullptr};
 };
 
 #endif  // _MACOS_SOCKET_MANAGER_H_

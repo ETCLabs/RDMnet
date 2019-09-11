@@ -33,9 +33,8 @@
 
 /*************************** Function definitions ****************************/
 
-RDMnet::Broker::Broker(BrokerLog* log, BrokerSocketManager* socket_manager, BrokerNotify* notify)
-    : core_(std::make_unique<BrokerCore>(log, socket_manager, notify,
-                                         std::unique_ptr<RdmnetConnInterface>(new RdmnetConnWrapper)))
+RDMnet::Broker::Broker(BrokerLog* log, BrokerNotify* notify)
+    : core_(std::make_unique<BrokerCore>(log, notify, std::unique_ptr<RdmnetConnInterface>(new RdmnetConnWrapper)))
 {
 }
 
@@ -79,14 +78,13 @@ void RDMnet::Broker::GetSettings(BrokerSettings& settings) const
 // BrokerCore: Private implementation of Broker functionality.
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-BrokerCore::BrokerCore(RDMnet::BrokerLog* log, RDMnet::BrokerSocketManager* socket_manager,
-                       RDMnet::BrokerNotify* notify, std::unique_ptr<RdmnetConnInterface> conn)
+BrokerCore::BrokerCore(RDMnet::BrokerLog* log, RDMnet::BrokerNotify* notify, std::unique_ptr<RdmnetConnInterface> conn)
     : RdmnetConnNotify()
     , ListenThreadNotify()
     , ClientServiceThreadNotify()
     , BrokerDiscoveryManagerNotify()
     , log_(log)
-    , socket_manager_(socket_manager)
+    , socket_manager_(CreateBrokerSocketManager())
     , notify_(notify)
     , conn_interface_(std::move(conn))
     , service_thread_(1)
@@ -152,8 +150,8 @@ bool BrokerCore::Startup(const RDMnet::BrokerSettings& settings, uint16_t listen
 
     disc_.RegisterBroker(settings_.disc_attributes, settings_.cid, listen_addrs_, listen_port_);
 
-    log_->Log(ETCPAL_LOG_INFO, "%s Prototype RDMnet Broker Version %s",
-              settings.disc_attributes.dns_manufacturer.c_str(), RDMNET_VERSION_STRING);
+    log_->Log(ETCPAL_LOG_INFO, "%s RDMnet Broker Version %s", settings.disc_attributes.dns_manufacturer.c_str(),
+              RDMNET_VERSION_STRING);
     log_->Log(ETCPAL_LOG_INFO, "Broker starting at scope \"%s\", listening on port %d.", disc_.scope().c_str(),
               listen_port_);
 

@@ -77,7 +77,7 @@ std::vector<EtcPalIpAddr> BrokerShell::GetInterfacesToListen()
   }
 }
 
-std::vector<EtcPalIpAddr> BrokerShell::ConvertMacsToInterfaces(const std::vector<MacAddr>& macs)
+std::vector<EtcPalIpAddr> BrokerShell::ConvertMacsToInterfaces(const std::vector<MacAddress>& macs)
 {
   std::vector<EtcPalIpAddr> to_return;
 
@@ -98,7 +98,7 @@ std::vector<EtcPalIpAddr> BrokerShell::ConvertMacsToInterfaces(const std::vector
   return to_return;
 }
 
-void BrokerShell::Run(RDMnet::BrokerLog* log, RDMnet::BrokerSocketManager* sock_mgr)
+void BrokerShell::Run(RDMnet::BrokerLog* log)
 {
   PrintWarningMessage();
 
@@ -116,7 +116,7 @@ void BrokerShell::Run(RDMnet::BrokerLog* log, RDMnet::BrokerSocketManager* sock_
   broker_settings.disc_attributes.dns_service_instance_name = "UNIQUE NAME";
   broker_settings.disc_attributes.dns_model = "E1.33 Broker Prototype";
 
-  RDMnet::Broker broker(log, sock_mgr, this);
+  RDMnet::Broker broker(log, this);
   broker.Startup(broker_settings, initial_data_.port, ifaces);
 
   // We want this to run forever if a console
@@ -149,7 +149,7 @@ void BrokerShell::Run(RDMnet::BrokerLog* log, RDMnet::BrokerSocketManager* sock_
 
 void BrokerShell::PrintVersion()
 {
-  std::cout << "ETC Prototype RDMnet Broker\n";
+  std::cout << "ETC Example RDMnet Broker\n";
   std::cout << "Version " << RDMNET_VERSION_STRING << "\n\n";
   std::cout << RDMNET_VERSION_COPYRIGHT << "\n";
   std::cout << "License: Apache License v2.0 <http://www.apache.org/licenses/LICENSE-2.0>\n";

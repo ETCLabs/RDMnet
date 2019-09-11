@@ -143,7 +143,7 @@ unsigned __stdcall SocketWorkerThread(void* arg)
   return 0;
 }
 
-bool WinBrokerSocketManager::Startup(RDMnet::BrokerSocketManagerNotify* notify)
+bool WinBrokerSocketManager::Startup(BrokerSocketManagerNotify* notify)
 {
   bool ok = true;
   notify_ = notify;
@@ -308,4 +308,9 @@ void WinBrokerSocketManager::WorkerNotifyRecvData(rdmnet_conn_t conn_handle, siz
       notify_->SocketDataReceived(conn_handle, sock_data->second->recv_buf, size);
     }
   }
+}
+
+std::unique_ptr<BrokerSocketManager> CreateBrokerSocketManager()
+{
+  return std::make_unique<WinBrokerSocketManager>();
 }

@@ -25,7 +25,6 @@
 #include <map>
 #include <unistd.h>
 #include "broker_shell.h"
-#include "macos_socket_manager.h"
 #include "macos_broker_log.h"
 
 // Print the command-line usage details.
@@ -93,7 +92,7 @@ bool ParseAndSetIfaceList(char* iface_list_str, BrokerShell& broker_shell)
 }
 
 // Given a pointer to a string, parses out a mac addr
-void ParseMac(char* s, BrokerShell::MacAddr& mac_buf)
+void ParseMac(char* s, BrokerShell::MacAddress& mac_buf)
 {
   char* p = s;
 
@@ -107,14 +106,14 @@ void ParseMac(char* s, BrokerShell::MacAddr& mac_buf)
 // Parse the --macs=MAC_LIST command line option and transfer it to the BrokerShell instance.
 bool ParseAndSetMacList(char* mac_list_str, BrokerShell& broker_shell)
 {
-  std::vector<BrokerShell::MacAddr> macs;
+  std::vector<BrokerShell::MacAddress> macs;
 
   if (strlen(mac_list_str) != 0)
   {
     char* context;
     for (char* p = strtok_r(mac_list_str, ",", &context); p != NULL; p = strtok_r(NULL, ",", &context))
     {
-      BrokerShell::MacAddr mac_buf;
+      BrokerShell::MacAddress mac_buf;
       ParseMac(p, mac_buf);
       macs.push_back(mac_buf);
     }
@@ -315,9 +314,8 @@ int main(int argc, char* argv[])
     sigaction(SIGINT, &sigint_handler, NULL);
 
     // Startup and run the Broker.
-    MacBrokerSocketManager socket_mgr;
     MacBrokerLog log("RDMnetBroker.log");
-    broker_shell.Run(&log, &socket_mgr);
+    broker_shell.Run(&log);
 
     // Unregister/cleanup the network change detection. (Disabled for now)
     // CancelMibChangeNotify2(change_notif_handle);

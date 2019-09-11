@@ -17,15 +17,16 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/// \file rdmnet/broker/socket_manager.h
-#ifndef _RDMNET_BROKER_SOCKET_MANAGER_H_
-#define _RDMNET_BROKER_SOCKET_MANAGER_H_
+#ifndef _BROKER_SOCKET_MANAGER_H_
+#define _BROKER_SOCKET_MANAGER_H_
 
+#include <memory>
 #include "etcpal/socket.h"
 #include "rdmnet/core/connection.h"
 
-namespace RDMnet
-{
+// The corresponding sources for this file are found in the platform-specific subfolders for each
+// Broker platform.
+
 class BrokerSocketManagerNotify
 {
 public:
@@ -60,6 +61,6 @@ public:
   virtual void RemoveSocket(rdmnet_conn_t conn_handle) = 0;
 };
 
-};  // namespace RDMnet
+std::unique_ptr<BrokerSocketManager> CreateBrokerSocketManager();
 
-#endif  // _RDMNET_BROKER_SOCKET_MANAGER_H_
+#endif  // _BROKER_SOCKET_MANAGER_H_
