@@ -179,6 +179,16 @@ if(WIN32 OR APPLE OR UNIX)
       broker/windows/win_socket_manager.h
       broker/windows/win_socket_manager.cpp
     )
+  elseif(APPLE)
+    target_sources(Broker PRIVATE
+      broker/macos/macos_socket_manager.h
+      broker/macos/macos_socket_manager.cpp
+    )
+  elseif(UNIX)
+    target_sources(Broker PRIVATE
+      broker/linux/linux_socket_manager.h
+      broker/linux/linux_socket_manager.cpp
+    )
   endif()
 
   target_include_directories(Broker PUBLIC ${RDMNET_INCLUDE} broker)

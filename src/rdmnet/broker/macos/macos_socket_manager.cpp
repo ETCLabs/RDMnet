@@ -194,3 +194,8 @@ void MacBrokerSocketManager::WorkerNotifySocketReadEvent(rdmnet_conn_t conn_hand
     }
   }
 }
+
+std::unique_ptr<BrokerSocketManager> CreateBrokerSocketManager()
+{
+  return std::make_unique<MacBrokerSocketManager>();
+}

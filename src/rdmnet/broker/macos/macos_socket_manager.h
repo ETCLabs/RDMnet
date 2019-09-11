@@ -29,7 +29,7 @@
 #include <pthread.h>
 
 #include "etcpal/lock.h"
-#include "rdmnet/broker/socket_manager.h"
+#include "broker_socket_manager.h"
 
 // The set of data allocated per-socket.
 struct SocketData
