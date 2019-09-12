@@ -27,40 +27,40 @@ static void broker_log_callback(void* context, const EtcPalLogStrings* strings)
 {
   assert(strings);
   assert(strings->human_readable);
-  RDMnet::BrokerLog* bl = static_cast<RDMnet::BrokerLog*>(context);
+  rdmnet::BrokerLog* bl = static_cast<rdmnet::BrokerLog*>(context);
   if (bl)
     bl->LogFromCallback(strings->human_readable);
 }
 
 static void broker_time_callback(void* context, EtcPalLogTimeParams* time)
 {
-  RDMnet::BrokerLog* bl = static_cast<RDMnet::BrokerLog*>(context);
+  rdmnet::BrokerLog* bl = static_cast<rdmnet::BrokerLog*>(context);
   if (bl)
     bl->GetTimeFromCallback(time);
 }
 
 static void log_thread_fn(void* arg)
 {
-  RDMnet::BrokerLog* bl = static_cast<RDMnet::BrokerLog*>(arg);
+  rdmnet::BrokerLog* bl = static_cast<rdmnet::BrokerLog*>(arg);
   if (bl)
     bl->LogThreadRun();
 }
 }  // extern "C"
 
-RDMnet::BrokerLog::BrokerLog() : keep_running_(false)
+rdmnet::BrokerLog::BrokerLog() : keep_running_(false)
 {
   etcpal_signal_create(&signal_);
   etcpal_mutex_create(&lock_);
 }
 
-RDMnet::BrokerLog::~BrokerLog()
+rdmnet::BrokerLog::~BrokerLog()
 {
   Shutdown();
   etcpal_mutex_destroy(&lock_);
   etcpal_signal_destroy(&signal_);
 }
 
-bool RDMnet::BrokerLog::Startup(int log_mask)
+bool rdmnet::BrokerLog::Startup(int log_mask)
 {
   // Set up the log params
   log_params_.action = kEtcPalLogCreateHumanReadableLog;
@@ -73,12 +73,12 @@ bool RDMnet::BrokerLog::Startup(int log_mask)
 
   // Start the log dispatch thread
   keep_running_ = true;
-  EtcPalThreadParams tparams = {ETCPAL_THREAD_DEFAULT_PRIORITY, ETCPAL_THREAD_DEFAULT_STACK, "RDMnet::BrokerLogThread",
+  EtcPalThreadParams tparams = {ETCPAL_THREAD_DEFAULT_PRIORITY, ETCPAL_THREAD_DEFAULT_STACK, "rdmnet::BrokerLogThread",
                                 NULL};
   return etcpal_thread_create(&thread_, &tparams, log_thread_fn, this);
 }
 
-void RDMnet::BrokerLog::Shutdown()
+void rdmnet::BrokerLog::Shutdown()
 {
   if (keep_running_)
   {
@@ -88,7 +88,7 @@ void RDMnet::BrokerLog::Shutdown()
   }
 }
 
-void RDMnet::BrokerLog::Log(int pri, const char* format, ...)
+void rdmnet::BrokerLog::Log(int pri, const char* format, ...)
 {
   va_list args;
   va_start(args, format);
@@ -96,7 +96,7 @@ void RDMnet::BrokerLog::Log(int pri, const char* format, ...)
   va_end(args);
 }
 
-void RDMnet::BrokerLog::LogFromCallback(const std::string& str)
+void rdmnet::BrokerLog::LogFromCallback(const std::string& str)
 {
   {
     etcpal::MutexGuard guard(lock_);
@@ -105,7 +105,7 @@ void RDMnet::BrokerLog::LogFromCallback(const std::string& str)
   etcpal_signal_post(&signal_);
 }
 
-void RDMnet::BrokerLog::LogThreadRun()
+void rdmnet::BrokerLog::LogThreadRun()
 {
   while (keep_running_)
   {

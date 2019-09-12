@@ -22,7 +22,7 @@
 #include <iostream>
 #include <cstdarg>
 
-LinuxBrokerLog::LinuxBrokerLog(const std::string& file_name) : RDMnet::BrokerLog()
+LinuxBrokerLog::LinuxBrokerLog(const std::string& file_name) : rdmnet::BrokerLog()
 {
   file_.open(file_name.c_str(), std::fstream::out);
   if (file_.fail())

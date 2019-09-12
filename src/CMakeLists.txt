@@ -17,7 +17,9 @@ endif()
 rdmnet_add_dependency(EtcPal ETCPAL_DIR)
 rdmnet_add_dependency(RDM RDM_DIR)
 
-set_target_properties(EtcPalMock PROPERTIES FOLDER dependencies)
+if(TARGET EtcPalMock)
+  set_target_properties(EtcPalMock PROPERTIES FOLDER dependencies)
+endif()
 
 ################################## Libraries ##################################
 

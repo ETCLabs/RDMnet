@@ -26,7 +26,6 @@
 #include <iostream>
 #include <map>
 #include "broker_shell.h"
-#include "win_socket_manager.h"
 #include "win_broker_log.h"
 
 // Print the command-line usage details.
@@ -115,7 +114,7 @@ bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell& broker_shell
 }
 
 // Given a pointer to a string, parses out a mac addr
-void ParseMac(WCHAR* s, BrokerShell::MacAddr& mac_buf)
+void ParseMac(WCHAR* s, BrokerShell::MacAddress& mac_buf)
 {
   WCHAR* p = s;
 
@@ -129,14 +128,14 @@ void ParseMac(WCHAR* s, BrokerShell::MacAddr& mac_buf)
 // Parse the --macs=MAC_LIST command line option and transfer it to the BrokerShell instance.
 bool ParseAndSetMacList(const LPWSTR mac_list_str, BrokerShell& broker_shell)
 {
-  std::vector<BrokerShell::MacAddr> macs;
+  std::vector<BrokerShell::MacAddress> macs;
 
   if (wcslen(mac_list_str) != 0)
   {
     WCHAR* context;
     for (WCHAR* p = wcstok_s(mac_list_str, L",", &context); p != NULL; p = wcstok_s(NULL, L",", &context))
     {
-      BrokerShell::MacAddr mac_buf;
+      BrokerShell::MacAddress mac_buf;
       ParseMac(p, mac_buf);
       macs.push_back(mac_buf);
     }
@@ -333,9 +332,8 @@ int wmain(int argc, wchar_t* argv[])
     SetConsoleCtrlHandler(ConsoleSignalHandler, TRUE);
 
     // Startup and run the Broker.
-    WinBrokerSocketManager socket_mgr;
     WindowsBrokerLog log("RDMnetBroker.log");
-    broker_shell.Run(&log, &socket_mgr);
+    broker_shell.Run(&log);
 
     // Unregister/cleanup the network change detection.
     CancelMibChangeNotify2(change_notif_handle);

@@ -21,7 +21,7 @@
 #include <iostream>
 #include <cstdarg>
 
-WindowsBrokerLog::WindowsBrokerLog(const std::string& file_name) : RDMnet::BrokerLog(), utcoffset_(0)
+WindowsBrokerLog::WindowsBrokerLog(const std::string& file_name) : rdmnet::BrokerLog(), utcoffset_(0)
 {
   file_.open(file_name.c_str(), std::fstream::out);
   if (file_.fail())

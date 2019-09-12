@@ -17,74 +17,73 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#include "macos_socket_manager.h"
+// epoll() is a scalabile mechanism for watching many file descriptors (including sockets) in the
+// Linux kernel. For this app, we use a single thread polling all of the currently-open sockets.
+//
+// Further reading:
+// "man epoll" from a Linux distribution command line
+// https://linux.die.net/man/4/epoll
 
-#include <memory>
-#include <sys/event.h>
+#include "linux_socket_manager.h"
+
+#include <sys/epoll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <time.h>
 #include <unistd.h>
 
 constexpr int kMaxEvents = 100;
-constexpr int kEventTimeout = 200;
+constexpr int kEpollTimeout = 200;
 
 // Function for the worker thread which does all the socket reading.
 void* SocketWorkerThread(void* arg)
 {
-  MacBrokerSocketManager* sock_mgr = reinterpret_cast<MacBrokerSocketManager*>(arg);
+  LinuxBrokerSocketManager* sock_mgr = reinterpret_cast<LinuxBrokerSocketManager*>(arg);
   if (!sock_mgr)
     return reinterpret_cast<void*>(1);
 
-  auto kevent_list = std::make_unique<struct kevent[]>(kMaxEvents);
+  auto events = std::make_unique<struct epoll_event[]>(kMaxEvents);
 
   while (sock_mgr->keep_running())
   {
-    struct timespec tv;
-    tv.tv_sec = 0;
-    tv.tv_nsec = kEventTimeout * 1000;
-
-    int kevent_result = kevent(sock_mgr->kqueue_fd(), NULL, 0, kevent_list.get(), kMaxEvents, &tv);
-    for (int i = 0; i < kevent_result && sock_mgr->keep_running(); ++i)
+    int epoll_result = epoll_wait(sock_mgr->epoll_fd(), events.get(), kMaxEvents, kEpollTimeout);
+    for (int i = 0; i < epoll_result && sock_mgr->keep_running(); ++i)
     {
-      if (kevent_list[i].filter == EVFILT_READ)
+      if (events[i].events & EPOLLERR)
       {
-        if (kevent_list[i].data > 0)
-        {
-          // Do the read on the socket
-          sock_mgr->WorkerNotifySocketReadEvent(
-              static_cast<rdmnet_conn_t>(reinterpret_cast<intptr_t>(kevent_list[i].udata)));
-        }
-        if (kevent_list[i].flags & EV_EOF)
-        {
-          // Notify that this socket is bad
-          sock_mgr->WorkerNotifySocketBad(static_cast<rdmnet_conn_t>(reinterpret_cast<intptr_t>(kevent_list[i].udata)));
-        }
+        // Notify that this socket is bad
+        sock_mgr->WorkerNotifySocketBad(events[i].data.fd);
+      }
+      else if (events[i].events & EPOLLIN)
+      {
+        // Do the read on the socket
+        sock_mgr->WorkerNotifySocketReadEvent(events[i].data.fd);
       }
     }
   }
   return reinterpret_cast<void*>(0);
 }
 
-bool MacBrokerSocketManager::Startup(RDMnet::BrokerSocketManagerNotify* notify)
+bool LinuxBrokerSocketManager::Startup(BrokerSocketManagerNotify* notify)
 {
   notify_ = notify;
 
-  kqueue_fd_ = kqueue();
-  if (kqueue_fd_ < 0)
+  // Per the man page, the size argument is ignored but must be greater than zero. Random value was
+  // chosen
+  epoll_fd_ = epoll_create(42);
+  if (epoll_fd_ < 0)
     return false;
 
   if (0 != pthread_create(&thread_handle_, NULL, SocketWorkerThread, this))
   {
-    close(kqueue_fd_);
-    kqueue_fd_ = -1;
+    close(epoll_fd_);
+    epoll_fd_ = -1;
     return false;
   }
 
   return true;
 }
 
-bool MacBrokerSocketManager::Shutdown()
+bool LinuxBrokerSocketManager::Shutdown()
 {
   shutting_down_ = true;
 
@@ -97,8 +96,8 @@ bool MacBrokerSocketManager::Shutdown()
     }
   }
 
-  if (kqueue_fd_ >= 0)
-    close(kqueue_fd_);
+  if (epoll_fd_ >= 0)
+    close(epoll_fd_);
 
   // Shutdown the worker thread
   pthread_join(thread_handle_, NULL);
@@ -111,7 +110,7 @@ bool MacBrokerSocketManager::Shutdown()
   return true;
 }
 
-bool MacBrokerSocketManager::AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t socket)
+bool LinuxBrokerSocketManager::AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t socket)
 {
   etcpal::WriteGuard socket_write(socket_lock_);
 
@@ -124,10 +123,10 @@ bool MacBrokerSocketManager::AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_
     if (result.second)
     {
       // Add the socket to our epoll fd
-      struct kevent new_event;
-      EV_SET(&new_event, socket, EVFILT_READ, EV_ADD, 0, 0, reinterpret_cast<void*>(conn_handle));
-
-      if (0 == kevent(kqueue_fd_, &new_event, 1, NULL, 0, NULL))
+      struct epoll_event new_event;
+      new_event.events = EPOLLIN;
+      new_event.data.fd = conn_handle;
+      if (0 == epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, socket, &new_event))
       {
         return true;
       }
@@ -140,22 +139,21 @@ bool MacBrokerSocketManager::AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_
   return false;
 }
 
-void MacBrokerSocketManager::RemoveSocket(rdmnet_conn_t conn_handle)
+void LinuxBrokerSocketManager::RemoveSocket(rdmnet_conn_t conn_handle)
 {
   etcpal::ReadGuard socket_write(socket_lock_);
 
   auto sock_data = sockets_.find(conn_handle);
   if (sock_data != sockets_.end())
   {
-    // Per the kqueue man page, kevents associated with a closed descriptor are cleaned up
-    // automatically.
+    // Per the epoll man page, deregister is not necessary before closing the socket.
     shutdown(sock_data->second->socket, SHUT_RDWR);
     close(sock_data->second->socket);
     sockets_.erase(sock_data);
   }
 }
 
-void MacBrokerSocketManager::WorkerNotifySocketBad(rdmnet_conn_t conn_handle)
+void LinuxBrokerSocketManager::WorkerNotifySocketBad(rdmnet_conn_t conn_handle)
 {
   {  // Write lock scope
     etcpal::WriteGuard socket_write(socket_lock_);
@@ -172,7 +170,7 @@ void MacBrokerSocketManager::WorkerNotifySocketBad(rdmnet_conn_t conn_handle)
     notify_->SocketClosed(conn_handle, false);
 }
 
-void MacBrokerSocketManager::WorkerNotifySocketReadEvent(rdmnet_conn_t conn_handle)
+void LinuxBrokerSocketManager::WorkerNotifySocketReadEvent(rdmnet_conn_t conn_handle)
 {
   etcpal::ReadGuard socket_read(socket_lock_);
 
@@ -193,4 +191,10 @@ void MacBrokerSocketManager::WorkerNotifySocketReadEvent(rdmnet_conn_t conn_hand
       notify_->SocketDataReceived(conn_handle, sock_data->second->recv_buf, recv_result);
     }
   }
+}
+
+// Instantiate a LinuxBrokerSocketManager
+std::unique_ptr<BrokerSocketManager> CreateBrokerSocketManager()
+{
+  return std::make_unique<LinuxBrokerSocketManager>();
 }

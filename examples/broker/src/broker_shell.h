@@ -31,18 +31,18 @@
 // BrokerShell : Platform-neutral wrapper around the Broker library from a generic console
 // application. Instantiates and drives the Broker library.
 
-class BrokerShell : public RDMnet::BrokerNotify
+class BrokerShell : public rdmnet::BrokerNotify
 {
 public:
-  typedef std::array<uint8_t, ETCPAL_NETINTINFO_MAC_LEN> MacAddr;
+  typedef std::array<uint8_t, ETCPAL_NETINTINFO_MAC_LEN> MacAddress;
 
-  void Run(RDMnet::BrokerLog* log, RDMnet::BrokerSocketManager* socket_mgr);
+  void Run(rdmnet::BrokerLog* log);
   static void PrintVersion();
 
   // Options to set from the command line; must be set BEFORE Run() is called.
   void SetInitialScope(const std::string& scope) { initial_data_.scope = scope; }
   void SetInitialIfaceList(const std::vector<EtcPalIpAddr>& ifaces) { initial_data_.ifaces = ifaces; }
-  void SetInitialMacList(const std::vector<MacAddr>& macs) { initial_data_.macs = macs; }
+  void SetInitialMacList(const std::vector<MacAddress>& macs) { initial_data_.macs = macs; }
   void SetInitialPort(uint16_t port) { initial_data_.port = port; }
   void SetInitialLogLevel(int level) { initial_data_.log_mask = ETCPAL_LOG_UPTO(level); }
 
@@ -54,19 +54,19 @@ private:
   void PrintWarningMessage();
 
   std::vector<EtcPalIpAddr> GetInterfacesToListen();
-  std::vector<EtcPalIpAddr> ConvertMacsToInterfaces(const std::vector<MacAddr>& macs);
-  void ApplySettingsChanges(RDMnet::BrokerSettings& settings, std::vector<EtcPalIpAddr>& new_addrs);
+  std::vector<EtcPalIpAddr> ConvertMacsToInterfaces(const std::vector<MacAddress>& macs);
+  void ApplySettingsChanges(rdmnet::BrokerSettings& settings, std::vector<EtcPalIpAddr>& new_addrs);
 
   struct InitialData
   {
     std::string scope{E133_DEFAULT_SCOPE};
     std::vector<EtcPalIpAddr> ifaces;
-    std::vector<MacAddr> macs;
+    std::vector<MacAddress> macs;
     uint16_t port{0};
     int log_mask{ETCPAL_LOG_UPTO(ETCPAL_LOG_INFO)};
   } initial_data_;
 
-  RDMnet::BrokerLog* log_{nullptr};
+  rdmnet::BrokerLog* log_{nullptr};
   std::atomic<bool> restart_requested_{false};
   bool shutdown_requested_{false};
   std::string new_scope_;

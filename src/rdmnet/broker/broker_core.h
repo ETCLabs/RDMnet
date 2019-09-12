@@ -30,21 +30,21 @@
 #include "etcpal/socket.h"
 #include "rdmnet/broker.h"
 #include "broker_client.h"
-#include "broker_responder.h"
-#include "broker_threads.h"
 #include "broker_discovery.h"
+#include "broker_responder.h"
+#include "broker_socket_manager.h"
+#include "broker_threads.h"
 #include "broker_uid_manager.h"
 #include "rdmnet_conn_wrapper.h"
 
 class BrokerCore : public RdmnetConnNotify,
-                   public RDMnet::BrokerSocketManagerNotify,
+                   public BrokerSocketManagerNotify,
                    public ListenThreadNotify,
                    public ClientServiceThreadNotify,
                    public BrokerDiscoveryManagerNotify
 {
 public:
-  BrokerCore(RDMnet::BrokerLog* log, RDMnet::BrokerSocketManager* socket_manager, RDMnet::BrokerNotify* notify,
-             std::unique_ptr<RdmnetConnInterface> conn);
+  BrokerCore(rdmnet::BrokerLog* log, rdmnet::BrokerNotify* notify, std::unique_ptr<RdmnetConnInterface> conn);
   virtual ~BrokerCore();
 
   // Some utility functions
@@ -54,14 +54,14 @@ public:
   bool IsValidControllerDestinationUID(const RdmUid& uid) const;
   bool IsValidDeviceDestinationUID(const RdmUid& uid) const;
 
-  RDMnet::BrokerLog* GetLog() { return log_; }
+  rdmnet::BrokerLog* GetLog() { return log_; }
 
-  bool Startup(const RDMnet::BrokerSettings& settings, uint16_t listen_port,
+  bool Startup(const rdmnet::BrokerSettings& settings, uint16_t listen_port,
                const std::vector<EtcPalIpAddr>& listen_addrs);
   void Shutdown();
   void Tick();
 
-  void GetSettings(RDMnet::BrokerSettings& settings) const;
+  void GetSettings(rdmnet::BrokerSettings& settings) const;
 
   // Notification messages from the RDMnet core library
 
@@ -70,12 +70,12 @@ private:
   bool started_{false};
   bool service_registered_{false};
 
-  RDMnet::BrokerLog* log_{nullptr};
-  RDMnet::BrokerSocketManager* socket_manager_{nullptr};
-  RDMnet::BrokerNotify* notify_{nullptr};
+  rdmnet::BrokerLog* log_{nullptr};
+  std::unique_ptr<BrokerSocketManager> socket_manager_;
+  rdmnet::BrokerNotify* notify_{nullptr};
   std::unique_ptr<RdmnetConnInterface> conn_interface_;
 
-  RDMnet::BrokerSettings settings_;
+  rdmnet::BrokerSettings settings_;
   RdmUid my_uid_{};
 
   std::vector<std::unique_ptr<ListenThread>> listeners_;
@@ -96,7 +96,7 @@ private:
   virtual void RdmnetConnDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo& disconn_info) override;
   virtual void RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage& msg) override;
 
-  // RDMnet::BrokerSocketManagerNotify messages
+  // rdmnet::BrokerSocketManagerNotify messages
   virtual void SocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t* data, size_t data_size) override;
   virtual void SocketClosed(rdmnet_conn_t conn_handle, bool graceful) override;
 

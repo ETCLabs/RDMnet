@@ -17,11 +17,11 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-// macOS override of RDMnet::BrokerSocketManager.
-// Uses epoll, the most efficient and scalable socket management tool available from the Mac API.
+// Linux override of BrokerSocketManager.
+// Uses epoll, the most efficient and scalable socket management tool available from the Linux API.
 
-#ifndef _MACOS_SOCKET_MANAGER_H_
-#define _MACOS_SOCKET_MANAGER_H_
+#ifndef _LINUX_SOCKET_MANAGER_H_
+#define _LINUX_SOCKET_MANAGER_H_
 
 #include <map>
 #include <vector>
@@ -29,7 +29,32 @@
 #include <pthread.h>
 
 #include "etcpal/lock.h"
-#include "rdmnet/broker/socket_manager.h"
+#include "broker_socket_manager.h"
+
+// Wrapper around Linux thread functions to increase the testability of this module.
+// TODO on Linux
+
+// class LinuxThreadInterface
+//{
+// public:
+//  virtual HANDLE StartThread(_beginthreadex_proc_type start_address, void* arg_list) = 0;
+//  virtual DWORD WaitForThreadsCompletion(DWORD count, const HANDLE* handle_arr, BOOL wait_all, DWORD milliseconds) =
+//  0; virtual BOOL CleanupThread(HANDLE thread_handle) = 0;
+//};
+//
+// class DefaultLinuxThreads : public LinuxThreadInterface
+//{
+// public:
+//  virtual HANDLE StartThread(_beginthreadex_proc_type start_address, void* arg_list) override
+//  {
+//    return reinterpret_cast<HANDLE>(_beginthreadex(NULL, 0, start_address, arg_list, 0, NULL));
+//  }
+//  virtual DWORD WaitForThreadsCompletion(DWORD count, const HANDLE* handle_arr, BOOL wait_all, DWORD milliseconds)
+//  {
+//    return WaitForMultipleObjects(count, handle_arr, wait_all, milliseconds);
+//  }
+//  virtual BOOL CleanupThread(HANDLE thread_handle) override { return CloseHandle(thread_handle); }
+//};
 
 // The set of data allocated per-socket.
 struct SocketData
@@ -45,19 +70,23 @@ struct SocketData
   uint8_t recv_buf[RDMNET_RECV_DATA_MAX_SIZE];
 };
 
-// A class to manage RDMnet Broker sockets on Mac.
+// A class to manage RDMnet Broker sockets on Linux.
 // This handles receiving data on all RDMnet client connections, using epoll for maximum
 // performance. Sending on connections is done in the core Broker library through the EtcPal
 // interface. Other miscellaneous Broker socket operations like LLRP are also handled in the core
 // library.
-class MacBrokerSocketManager : public RDMnet::BrokerSocketManager
+class LinuxBrokerSocketManager : public BrokerSocketManager
 {
 public:
-  MacBrokerSocketManager() { etcpal_rwlock_create(&socket_lock_); }
-  virtual ~MacBrokerSocketManager() { etcpal_rwlock_destroy(&socket_lock_); }
+  LinuxBrokerSocketManager(/* LinuxThreadInterface* thread_interface = new DefaultLinuxThreads */)
+  //: thread_interface_(thread_interface)
+  {
+    etcpal_rwlock_create(&socket_lock_);
+  }
+  virtual ~LinuxBrokerSocketManager() { etcpal_rwlock_destroy(&socket_lock_); }
 
-  // RDMnet::BrokerSocketManager interface
-  bool Startup(RDMnet::BrokerSocketManagerNotify* notify) override;
+  // BrokerSocketManager interface
+  bool Startup(BrokerSocketManagerNotify* notify) override;
   bool Shutdown() override;
   bool AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t socket) override;
   void RemoveSocket(rdmnet_conn_t conn_handle) override;
@@ -68,19 +97,20 @@ public:
 
   // Accessors
   bool keep_running() const { return !shutting_down_; }
-  int kqueue_fd() const { return kqueue_fd_; }
+  int epoll_fd() const { return epoll_fd_; }
 
 private:
   bool shutting_down_{false};
   pthread_t thread_handle_;
-  int kqueue_fd_{-1};
+  int epoll_fd_{-1};
+  // std::unique_ptr<LinuxThreadInterface> thread_interface_;
 
   // The set of sockets being managed.
   std::map<rdmnet_conn_t, std::unique_ptr<SocketData>> sockets_;
   etcpal_rwlock_t socket_lock_;
 
   // The callback instance
-  RDMnet::BrokerSocketManagerNotify* notify_{nullptr};
+  BrokerSocketManagerNotify* notify_{nullptr};
 };
 
-#endif  // _MACOS_SOCKET_MANAGER_H_
+#endif  // _LINUX_SOCKET_MANAGER_H_

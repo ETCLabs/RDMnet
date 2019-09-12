@@ -29,7 +29,7 @@
 #include "etcpal/lock.h"
 #include "rdmnet/broker/log.h"
 
-class MacBrokerLog : public RDMnet::BrokerLog
+class MacBrokerLog : public rdmnet::BrokerLog
 {
 public:
   MacBrokerLog(const std::string& file_name);

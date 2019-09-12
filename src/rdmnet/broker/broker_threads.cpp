@@ -39,7 +39,7 @@ static void listen_thread_fn(void* arg)
   }
 }
 
-ListenThread::ListenThread(etcpal_socket_t listen_sock, ListenThreadNotify* pnotify, RDMnet::BrokerLog* log)
+ListenThread::ListenThread(etcpal_socket_t listen_sock, ListenThreadNotify* pnotify, rdmnet::BrokerLog* log)
     : notify_(pnotify), listen_socket_(listen_sock), log_(log)
 {
 }

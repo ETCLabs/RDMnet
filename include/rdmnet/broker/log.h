@@ -28,7 +28,7 @@
 #include "etcpal/log.h"
 #include "etcpal/thread.h"
 
-namespace RDMnet
+namespace rdmnet
 {
 /// \brief A class for logging messages from the %Broker.
 class BrokerLog
@@ -59,6 +59,6 @@ protected:
   bool keep_running_{false};
 };
 
-};  // namespace RDMnet
+};  // namespace rdmnet
 
 #endif  // _RDMNET_BROKER_LOG_H_

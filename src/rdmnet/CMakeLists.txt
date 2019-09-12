@@ -147,35 +147,58 @@ target_link_libraries(RDMnet PRIVATE RDMnetDiscovery dnssd)
 
 #################################### Broker ###################################
 
-add_library(Broker
-  # Broker public headers
-  ${RDMNET_INCLUDE}/rdmnet/broker.h
-  ${RDMNET_INCLUDE}/rdmnet/broker/log.h
-  ${RDMNET_INCLUDE}/rdmnet/broker/socket_manager.h
+if(WIN32 OR APPLE OR UNIX)
+  add_library(Broker
+    # Broker public headers
+    ${RDMNET_INCLUDE}/rdmnet/broker.h
+    ${RDMNET_INCLUDE}/rdmnet/broker/log.h
+    # ${RDMNET_INCLUDE}/rdmnet/broker/socket_manager.h
 
-  broker/broker_core.h
-  broker/broker_core.cpp
-  broker/broker_client.h
-  broker/broker_client.cpp
-  broker/broker_discovery.h
-  broker/broker_discovery.cpp
-  broker/broker_log.cpp
-  broker/broker_responder.h
-  broker/broker_responder.cpp
-  broker/broker_threads.h
-  broker/broker_threads.cpp
-  broker/broker_uid_manager.h
-  broker/broker_uid_manager.cpp
-  broker/broker_util.h
-  broker/broker_util.cpp
-  broker/rdmnet_conn_wrapper.h
-  broker/rdmnet_conn_wrapper.cpp
-)
-target_include_directories(Broker PUBLIC ${RDMNET_INCLUDE})
-target_link_libraries(Broker PUBLIC RDMnet)
-set_target_properties(Broker PROPERTIES CXX_STANDARD 14)
+    broker/broker_core.h
+    broker/broker_core.cpp
+    broker/broker_client.h
+    broker/broker_client.cpp
+    broker/broker_discovery.h
+    broker/broker_discovery.cpp
+    broker/broker_log.cpp
+    broker/broker_responder.h
+    broker/broker_responder.cpp
+    broker/broker_socket_manager.h
+    broker/broker_threads.h
+    broker/broker_threads.cpp
+    broker/broker_uid_manager.h
+    broker/broker_uid_manager.cpp
+    broker/broker_util.h
+    broker/broker_util.cpp
+    broker/rdmnet_conn_wrapper.h
+    broker/rdmnet_conn_wrapper.cpp
+  )
+
+  if(WIN32)
+    target_sources(Broker PRIVATE
+      broker/windows/win_socket_manager.h
+      broker/windows/win_socket_manager.cpp
+    )
+  elseif(APPLE)
+    target_sources(Broker PRIVATE
+      broker/macos/macos_socket_manager.h
+      broker/macos/macos_socket_manager.cpp
+    )
+  elseif(UNIX)
+    target_sources(Broker PRIVATE
+      broker/linux/linux_socket_manager.h
+      broker/linux/linux_socket_manager.cpp
+    )
+  endif()
+
+  target_include_directories(Broker PUBLIC ${RDMNET_INCLUDE} broker)
+  target_link_libraries(Broker PUBLIC RDMnet)
+  set_target_properties(Broker PROPERTIES CXX_STANDARD 14)
+  install(TARGETS Broker ARCHIVE DESTINATION lib)
+
+
+endif()
 
 # Installation
 install(TARGETS RDMnet ARCHIVE DESTINATION lib)
-install(TARGETS Broker ARCHIVE DESTINATION lib)
 install(DIRECTORY ${RDMNET_ROOT}/include/rdmnet DESTINATION include FILES_MATCHING PATTERN "*.h")

@@ -89,7 +89,7 @@ BrokerDiscoveryManager::~BrokerDiscoveryManager()
 {
 }
 
-etcpal_error_t BrokerDiscoveryManager::RegisterBroker(const RDMnet::BrokerDiscoveryAttributes& disc_attributes,
+etcpal_error_t BrokerDiscoveryManager::RegisterBroker(const rdmnet::BrokerDiscoveryAttributes& disc_attributes,
                                                       const EtcPalUuid& local_cid,
                                                       const std::vector<EtcPalIpAddr>& listen_addrs,
                                                       uint16_t listen_port)
