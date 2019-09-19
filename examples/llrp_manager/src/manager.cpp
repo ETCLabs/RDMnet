@@ -915,7 +915,7 @@ const char* LLRPManager::LLRPComponentTypeToString(llrp_component_t type)
     case kLlrpCompRptDevice:
       return "RPT Device";
     case kLlrpCompNonRdmnet:
-      return "LLRP Only"
+      return "LLRP Only";
     default:
       return "Unknown";
   }
