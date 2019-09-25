@@ -208,6 +208,57 @@ void device_handle_rpt_command(const RemoteRdmCommand* cmd, rdmnet_data_changed_
     etcpal_log(device_state.lparams, ETCPAL_LOG_WARNING,
                "Device received RDM command with invalid command class 0x%02x", rdm_cmd->command_class);
   }
+#ifdef USE_RDM_RESPONDER
+  else
+  {
+    RdmResponse resp;
+    RdmResponse resp_list[MAX_RESPONSES_IN_ACK_OVERFLOW];
+    size_t resp_list_size = 0;
+    int8_t process_result = RESP_NO_SEND;
+
+    do
+    {
+      process_result = RDMResponder_ProcessCommand(0, rdm_cmd, &resp);
+
+      if ((process_result == RESP_NACK_REASON) || (process_result == RESP_NO_SEND))
+      {
+        resp_list_size = 0;
+      }
+
+      if (process_result != RESP_NO_SEND)
+      {
+        resp_list[resp_list_size++] = resp;
+      }
+    } while ((process_result == RESP_ACK_OVERFLOW) && (resp_list_size < MAX_RESPONSES_IN_ACK_OVERFLOW));
+
+    if (process_result == E120_RESPONSE_TYPE_NACK_REASON)
+    {
+      uint16_t nack_reason = etcpal_upack_16b(resp.data);
+
+      if (nack_reason == E120_NR_UNKNOWN_PID)
+      {
+        etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG,
+                   "Sending NACK to Controller %04x:%08x for unknown PID 0x%04x", cmd->source_uid.manu,
+                   cmd->source_uid.id, rdm_cmd->param_id);
+      }
+      else
+      {
+        etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG,
+                   "Sending %s NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
+                   rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND",
+                   cmd->source_uid.manu, cmd->source_uid.id, rdm_cmd->param_id, nack_reason);
+      }
+    }
+
+    if (resp_list_size > 0)
+    {
+      device_send_rpt_response(resp_list, resp_list_size, cmd);
+      etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG, "ACK'ing %s for PID 0x%04x from Controller %04x:%08x",
+                 rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", rdm_cmd->param_id,
+                 cmd->source_uid.manu, cmd->source_uid.id);
+    }
+  }
+#else
   else if (!default_responder_supports_pid(rdm_cmd->param_id))
   {
     device_send_rpt_nack(E120_NR_UNKNOWN_PID, cmd);
@@ -235,6 +286,7 @@ void device_handle_rpt_command(const RemoteRdmCommand* cmd, rdmnet_data_changed_
                  cmd->source_uid.id, rdm_cmd->param_id, nack_reason);
     }
   }
+#endif
 }
 
 void device_handle_llrp_command(const LlrpRemoteRdmCommand* cmd, rdmnet_data_changed_t* data_changed)

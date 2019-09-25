@@ -1520,20 +1520,33 @@ bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand& cmd, rdmnet_client_sco
   return false;
 }
 
+void RDMnetNetworkModel::SendRDMResponses(rdmnet_client_scope_t scope_handle,
+                                          const std::vector<RdmResponse>& resp_list, bool have_command,
+                                          const RemoteRdmCommand& cmd)
+{
+  LocalRdmResponse resp;
+
+  resp.dest_uid = resp_list.begin()->dest_uid;
+  resp.seq_num = have_command ? cmd.seq_num : 0;
+  resp.source_endpoint = E133_NULL_ENDPOINT;
+  resp.num_responses = resp_list.size();
+  resp.rdm_arr = resp_list.data();
+
+  resp.command_included = have_command;
+  if (have_command)
+  {
+    resp.cmd = cmd.rdm;
+  }
+
+  rdmnet_->SendRdmResponse(scope_handle, resp);
+}
+
 void RDMnetNetworkModel::SendRDMGetResponses(rdmnet_client_scope_t scope_handle, const RdmUid& dest_uid,
                                              uint16_t param_id, const std::vector<RdmParamData>& resp_data_list,
                                              bool have_command, const RemoteRdmCommand& cmd)
 {
   std::vector<RdmResponse> resp_list;
   RdmResponse resp_data;
-  LocalRdmResponse resp;
-
-  resp.dest_uid = dest_uid;
-  resp.seq_num = have_command ? cmd.seq_num : 0;
-  resp.source_endpoint = E133_NULL_ENDPOINT;
-  resp.command_included = have_command;
-  if (have_command)
-    resp.cmd = cmd.rdm;
 
   // The source UID is added by the library right before sending.
   resp_data.dest_uid = dest_uid;
@@ -1555,9 +1568,7 @@ void RDMnetNetworkModel::SendRDMGetResponses(rdmnet_client_scope_t scope_handle,
     resp_list.push_back(resp_data);
   }
 
-  resp.num_responses = resp_list.size();
-  resp.rdm_arr = resp_list.data();
-  rdmnet_->SendRdmResponse(scope_handle, resp);
+  SendRDMResponses(scope_handle, resp_list, have_command, cmd);
 }
 
 void RDMnetNetworkModel::SendRDMGetResponsesBroadcast(uint16_t param_id,
@@ -1644,10 +1655,47 @@ void RDMnetNetworkModel::SendLlrpNack(const LlrpRemoteRdmCommand& received_cmd, 
 
 void RDMnetNetworkModel::RdmCommandReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmCommand& cmd)
 {
+  const RdmCommand& rdm = cmd.rdm;
+
+#ifdef USE_RDM_RESPONDER
+  RdmResponse resp;
+  std::vector<RdmResponse> resp_list;
+  resp_process_result process_result = RESP_NO_SEND;
+
+  do
+  {
+    process_result = RDMResponder_ProcessCommand(0, &rdm, &resp);
+
+    if ((process_result == RESP_NACK_REASON) || (process_result == RESP_NO_SEND)) // ASSERT
+    {
+      resp_list.clear();
+    }
+
+    if (process_result != RESP_NO_SEND)
+    {
+      resp_list.push_back(resp);
+    }
+  } while (process_result == RESP_ACK_OVERFLOW);
+
+  if (resp_list.size() > 0)
+  {
+    if (process_result == RESP_NACK_REASON)
+    {
+      log_->Log(ETCPAL_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for PID 0x%04x with reason 0x%04x",
+                cmd.source_uid.manu, cmd.source_uid.id, rdm.param_id, nack_reason);
+    }
+    else
+    {
+      log_->Log(ETCPAL_LOG_DEBUG, "ACK'ing GET_COMMAND for PID 0x%04x from Controller %04x:%08x", rdm.param_id,
+                cmd.source_uid.manu, cmd.source_uid.id);
+    }
+
+    SendRDMResponses(scope_handle, resp_list, true, cmd);
+  }
+#else
   bool should_nack = false;
   uint16_t nack_reason;
 
-  const RdmCommand& rdm = cmd.rdm;
   if (rdm.command_class == kRdmCCGetCommand)
   {
     std::vector<RdmParamData> resp_data_list;
@@ -1677,6 +1725,7 @@ void RDMnetNetworkModel::RdmCommandReceived(rdmnet_client_scope_t scope_handle, 
     log_->Log(ETCPAL_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for PID 0x%04x with reason 0x%04x",
               cmd.source_uid.manu, cmd.source_uid.id, rdm.param_id, nack_reason);
   }
+#endif  // USE_RDM_RESPONDER
 }
 
 void RDMnetNetworkModel::RdmResponseReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse& resp)

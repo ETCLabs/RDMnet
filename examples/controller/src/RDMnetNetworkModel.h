@@ -129,6 +129,8 @@ protected:
 
   bool SendRDMCommand(const RdmCommand& cmd, const BrokerItem* brokerItem);
   bool SendRDMCommand(const RdmCommand& cmd, rdmnet_client_scope_t scope_handle);
+  void SendRDMResponses(rdmnet_client_scope_t scope_handle, const std::vector<RdmResponse>& resp_list,
+                        bool have_command = false, const RemoteRdmCommand& cmd = RemoteRdmCommand());
   void SendRDMGetResponses(rdmnet_client_scope_t scope_handle, const RdmUid& dest_uid, uint16_t param_id,
                            const std::vector<RdmParamData>& resp_data_list, bool have_command = false,
                            const RemoteRdmCommand& cmd = RemoteRdmCommand());
