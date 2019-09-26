@@ -20,6 +20,7 @@
 #include "example_device.h"
 
 #include <stdio.h>
+#include <assert.h>
 #include "etcpal/int.h"
 #include "etcpal/pack.h"
 #include "rdm/uid.h"
@@ -214,48 +215,48 @@ void device_handle_rpt_command(const RemoteRdmCommand* cmd, rdmnet_data_changed_
     RdmResponse resp;
     RdmResponse resp_list[MAX_RESPONSES_IN_ACK_OVERFLOW];
     size_t resp_list_size = 0;
-    int8_t process_result = RESP_NO_SEND;
+    resp_process_result_t process_result = kRespNoSend;
 
     do
     {
-      process_result = RDMResponder_ProcessCommand(0, rdm_cmd, &resp);
+      process_result = rdmresp_process_command(&responder_state, rdm_cmd, &resp);
 
-      if ((process_result == RESP_NACK_REASON) || (process_result == RESP_NO_SEND))
-      {
-        resp_list_size = 0;
-      }
+      assert((resp_list_size == 0) || ((process_result != kRespNackReason) && (process_result != kRespNoSend)));
 
-      if (process_result != RESP_NO_SEND)
+      if (process_result != kRespNoSend)
       {
         resp_list[resp_list_size++] = resp;
       }
-    } while ((process_result == RESP_ACK_OVERFLOW) && (resp_list_size < MAX_RESPONSES_IN_ACK_OVERFLOW));
-
-    if (process_result == E120_RESPONSE_TYPE_NACK_REASON)
-    {
-      uint16_t nack_reason = etcpal_upack_16b(resp.data);
-
-      if (nack_reason == E120_NR_UNKNOWN_PID)
-      {
-        etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG,
-                   "Sending NACK to Controller %04x:%08x for unknown PID 0x%04x", cmd->source_uid.manu,
-                   cmd->source_uid.id, rdm_cmd->param_id);
-      }
-      else
-      {
-        etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG,
-                   "Sending %s NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
-                   rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND",
-                   cmd->source_uid.manu, cmd->source_uid.id, rdm_cmd->param_id, nack_reason);
-      }
-    }
+    } while ((process_result == kRespAckOverflow) && (resp_list_size < MAX_RESPONSES_IN_ACK_OVERFLOW));
 
     if (resp_list_size > 0)
     {
+      if (process_result == kRespNackReason)
+      {
+        uint16_t nack_reason = etcpal_upack_16b(resp.data);
+
+        if (nack_reason == E120_NR_UNKNOWN_PID)
+        {
+          etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG,
+                     "Sending NACK to Controller %04x:%08x for unknown PID 0x%04x", cmd->source_uid.manu,
+                     cmd->source_uid.id, rdm_cmd->param_id);
+        }
+        else
+        {
+          etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG,
+                     "Sending %s NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
+                     rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", cmd->source_uid.manu,
+                     cmd->source_uid.id, rdm_cmd->param_id, nack_reason);
+        }
+      }
+      else
+      {
+        etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG, "ACK'ing %s for PID 0x%04x from Controller %04x:%08x",
+                   rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", rdm_cmd->param_id,
+                   cmd->source_uid.manu, cmd->source_uid.id);
+      }
+
       device_send_rpt_response(resp_list, resp_list_size, cmd);
-      etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG, "ACK'ing %s for PID 0x%04x from Controller %04x:%08x",
-                 rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", rdm_cmd->param_id,
-                 cmd->source_uid.manu, cmd->source_uid.id);
     }
   }
 #else

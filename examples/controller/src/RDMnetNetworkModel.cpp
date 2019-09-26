@@ -1660,29 +1660,26 @@ void RDMnetNetworkModel::RdmCommandReceived(rdmnet_client_scope_t scope_handle, 
 #ifdef USE_RDM_RESPONDER
   RdmResponse resp;
   std::vector<RdmResponse> resp_list;
-  resp_process_result process_result = RESP_NO_SEND;
+  resp_process_result_t process_result = kRespNoSend;
 
   do
   {
-    process_result = RDMResponder_ProcessCommand(0, &rdm, &resp);
+    process_result = rdmresp_process_command(&responder_state, &rdm, &resp);
 
-    if ((process_result == RESP_NACK_REASON) || (process_result == RESP_NO_SEND)) // ASSERT
-    {
-      resp_list.clear();
-    }
+    assert(resp_list.empty() || ((process_result != kRespNackReason) && (process_result != kRespNoSend)));
 
-    if (process_result != RESP_NO_SEND)
+    if (process_result != kRespNoSend)
     {
       resp_list.push_back(resp);
     }
-  } while (process_result == RESP_ACK_OVERFLOW);
+  } while (process_result == kRespAckOverflow);
 
   if (resp_list.size() > 0)
   {
-    if (process_result == RESP_NACK_REASON)
+    if (process_result == kRespNackReason)
     {
       log_->Log(ETCPAL_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for PID 0x%04x with reason 0x%04x",
-                cmd.source_uid.manu, cmd.source_uid.id, rdm.param_id, nack_reason);
+                cmd.source_uid.manu, cmd.source_uid.id, rdm.param_id, etcpal_upack_16b(resp.data));
     }
     else
     {

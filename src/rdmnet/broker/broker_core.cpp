@@ -21,6 +21,7 @@
 
 #include "broker_core.h"
 
+#include <cassert>
 #include <cstring>
 #include <cstddef>
 
@@ -832,11 +833,12 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
     else if (rptmsg->header.dest_uid == my_uid_)  // This must come from a controller
     {
       RptMessage rpt_response;
-      const RdmBufList* req_list = get_rdm_buf_list(rptmsg);
+      const RdmBufList* request_list = get_rdm_buf_list(rptmsg);
       RdmBufList* response_list = get_rdm_buf_list(&rpt_response);
+      response_list->list = nullptr;
 
       /* Process the RDM command */
-      resp_process_result process_result = RESP_NO_SEND;
+      resp_process_result_t process_result = kRespNoSend;
       RdmBufListEntry** next = &response_list->list;
 
       /* Generate a list response_list of 0 or more RdmBufListEntry nodes */
@@ -845,22 +847,13 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
         RdmBufListEntry* response = new RdmBufListEntry;
         response->next = nullptr;
 
-        process_result = RDMResponder_ProcessPacket(0, req_list->list->msg.data, req_list->list->msg.datalen,
-                                                    response->msg.data, &response->msg.datalen, NULL);
+        process_result = rdmresp_process_packet(&responder_state, RDM_REF_FROM_BUFFER(request_list->list->msg),
+                                                RDM_REF_FROM_BUFFER(response->msg), nullptr);
 
-        if ((process_result == RESP_NACK_REASON) || (process_result == RESP_NO_SEND))
-        {
-          /* Delete the list, because this will either be sending nothing, or one NACK */
-          for (auto i = response_list->list; i != nullptr; i = i->next) 
-          {
-            delete i;
-          }
+        assert((response_list->list == nullptr) ||
+               ((process_result != kRespNackReason) && (process_result != kRespNoSend)));
 
-          response_list->list = nullptr;
-          next = &response_list->list;
-        }
-
-        if (process_result == RESP_NO_SEND)
+        if (process_result == kRespNoSend)
         {
           delete response;
         }
@@ -869,14 +862,13 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
           (*next) = response;
           next = &response->next;
         }
-      } while (process_result == RESP_ACK_OVERFLOW);
+      } while (process_result == kRespAckOverflow);
       
-
       /* Log that the broker got and processed the command */
       log_->Log(ETCPAL_LOG_DEBUG, "Received and processed RPT request from Client %04x:%08x",
                 rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id);
 
-      /* Finish initializing the RPT request */
+      /* Finish initializing the response RPT notification */
       rpt_response.vector = VECTOR_RPT_NOTIFICATION;
       rpt_response.header.source_uid = rptmsg->header.dest_uid;
       rpt_response.header.source_endpoint_id = rptmsg->header.dest_endpoint_id;
@@ -889,17 +881,17 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
       ClientWriteGuard client_write(*client->second);
       /* Because the recipient must be a controller, the connection handle is not used.
          Therefore, it is set to 0. */
-      if (static_cast<RPTClient*>(client->second.get())->Push(0, my_cid_, *rptmsg))
+      if (static_cast<RPTClient*>(client->second.get())->Push(0, settings_.cid, rpt_response))
       {
         /* SUCCESS: Log that the broker is sending a response */
         log_->Log(ETCPAL_LOG_DEBUG, "Sent a response RPT notification back to Client %04x:%08x",
-                  rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id);
+                  rpt_response.header.dest_uid.manu, rpt_response.header.dest_uid.id);
       }
       else
       {
         /* FAILURE: Log that the broker failed to send a response */
         log_->Log(ETCPAL_LOG_DEBUG, "Failed to send a response RPT notification to Client %04x:%08x",
-                  rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id);
+                  rpt_response.header.dest_uid.manu, rpt_response.header.dest_uid.id);
       }
 
       /* Now that the response(s) have been pushed, delete the response list */
