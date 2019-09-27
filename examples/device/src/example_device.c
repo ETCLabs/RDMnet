@@ -47,6 +47,9 @@ static struct device_state
   bool connected;
 
   const EtcPalLogParams* lparams;
+
+  RdmResponderState responder_state;
+  RdmPidHandlerEntry handler_array[10];
 } device_state;
 
 /*********************** Private function prototypes *************************/
@@ -95,6 +98,37 @@ etcpal_error_t device_init(const RdmnetScopeConfig* scope_config, const EtcPalLo
   rdmnet_safe_strncpy(device_state.cur_search_domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
   device_state.cur_scope_config = *scope_config;
   default_responder_init(scope_config, device_state.cur_search_domain);
+
+  const size_t HANDLER_ARRAY_SIZE = 10;
+
+  RdmPidHandlerEntry handler_array[HANDLER_ARRAY_SIZE] = {
+      {E120_SUPPORTED_PARAMETERS, default_responder_supportedParams, RDM_PS_ALL | RDM_PS_GET},
+      {E120_PARAMETER_DESCRIPTION, default_responder_parameterDescription, RDM_PS_ROOT | RDM_PS_GET},
+      {E120_DEVICE_MODEL_DESCRIPTION, default_responder_deviceModelDescription,
+       RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOWSUP},
+      {E120_MANUFACTURER_LABEL, default_responder_manufacturer_label, RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOWSUP},
+      {E120_DEVICE_LABEL, default_responder_device_label, RDM_PS_ALL | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
+      {E120_SOFTWARE_VERSION_LABEL, default_responder_software_version_label, RDM_PS_ROOT | RDM_PS_GET},
+      {E120_IDENTIFY_DEVICE, default_responder_identify_device, RDM_PS_ALL | RDM_PS_GET_SET},
+      {E133_COMPONENT_SCOPE, default_responder_component_scope, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
+      {E133_SEARCH_DOMAIN, default_responder_search_domain, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
+      {E133_TCP_COMMS_STATUS, default_responder_tcp_comms_status, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP}
+  };
+
+  device_state.responder_state.port_number = 0;
+  device_state.responder_state.uid = device_state.my_uid;
+  device_state.responder_state.number_of_subdevices = 0;
+  device_state.responder_state.responder_type = kRespTypeDevice;
+  device_state.responder_state.callback_context = NULL;
+  memcpy(device_state.handler_array, handler_array, HANDLER_ARRAY_SIZE * sizeof(RdmPidHandlerEntry));
+  device_state.responder_state.handler_array = device_state.handler_array;
+  device_state.responder_state.handler_array_size = HANDLER_ARRAY_SIZE;
+  device_state.responder_state.get_message_count = default_responder_get_message_count;
+  device_state.responder_state.get_next_queue_message = default_responder_get_next_queue_message;
+
+  rdmresp_sort_handler_array(device_state.handler_array, HANDLER_ARRAY_SIZE);
+  bool rdmresp_init_result = rdmresp_init(device_state.responder_state);
+  assert(rdmresp_init_result);
 
   etcpal_error_t res = rdmnet_device_init(lparams);
   if (res != kEtcPalErrOk)
@@ -219,7 +253,7 @@ void device_handle_rpt_command(const RemoteRdmCommand* cmd, rdmnet_data_changed_
 
     do
     {
-      process_result = rdmresp_process_command(&responder_state, rdm_cmd, &resp);
+      process_result = rdmresp_process_command(&device_state.responder_state, rdm_cmd, &resp);
 
       assert((resp_list_size == 0) || ((process_result != kRespNackReason) && (process_result != kRespNoSend)));
 

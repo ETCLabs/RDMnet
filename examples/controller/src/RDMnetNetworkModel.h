@@ -62,6 +62,7 @@ private:
   EtcPalUuid my_cid_;
 
   ControllerDefaultResponder default_responder_;
+  RdmResponderState responder_state_;
 
   std::map<rdmnet_client_scope_t, BrokerItem*> broker_connections_;
   etcpal_rwlock_t conn_lock_;
