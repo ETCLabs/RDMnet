@@ -150,19 +150,17 @@ bool BrokerCore::Startup(const rdmnet::BrokerSettings& settings, uint16_t listen
 
     disc_.RegisterBroker(settings_.disc_attributes, settings_.cid, listen_addrs_, listen_port_);
 
-    log_->Log(ETCPAL_LOG_INFO, "%s RDMnet Broker Version %s", settings.disc_attributes.dns_manufacturer.c_str(),
-              RDMNET_VERSION_STRING);
-    log_->Log(ETCPAL_LOG_INFO, "Broker starting at scope \"%s\", listening on port %d.", disc_.scope().c_str(),
-              listen_port_);
+    log_->Info("%s RDMnet Broker Version %s", settings.disc_attributes.dns_manufacturer.c_str(), RDMNET_VERSION_STRING);
+    log_->Info("Broker starting at scope \"%s\", listening on port %d.", disc_.scope().c_str(), listen_port_);
 
     if (!listen_addrs.empty())
     {
-      log_->Log(ETCPAL_LOG_INFO, "Listening on manually-specified network interfaces:");
+      log_->Info("Listening on manually-specified network interfaces:");
       for (auto addr : listen_addrs)
       {
         char addrbuf[ETCPAL_INET6_ADDRSTRLEN];
         etcpal_inet_ntop(&addr, addrbuf, ETCPAL_INET6_ADDRSTRLEN);
-        log_->Log(ETCPAL_LOG_INFO, "%s", addrbuf);
+        log_->Info("%s", addrbuf);
       }
     }
   }
@@ -270,7 +268,7 @@ bool BrokerCore::NewConnection(etcpal_socket_t new_sock, const EtcPalSockaddr& a
   {
     char addrstr[ETCPAL_INET6_ADDRSTRLEN];
     etcpal_inet_ntop(&addr.ip, addrstr, ETCPAL_INET6_ADDRSTRLEN);
-    log_->Log(ETCPAL_LOG_INFO, "Creating a new connection for ip addr %s", addrstr);
+    log_->Info("Creating a new connection for ip addr %s", addrstr);
   }
 
   rdmnet_conn_t connhandle = RDMNET_CONN_INVALID;
@@ -305,11 +303,11 @@ bool BrokerCore::NewConnection(etcpal_socket_t new_sock, const EtcPalSockaddr& a
 
   if (result)
   {
-    log_->Log(ETCPAL_LOG_DEBUG, "New connection created with handle %d", connhandle);
+    log_->Debug("New connection created with handle %d", connhandle);
   }
   else
   {
-    log_->Log(ETCPAL_LOG_ERR, "New connection failed");
+    log_->Error("New connection failed");
   }
 
   return result;
@@ -348,8 +346,7 @@ void BrokerCore::RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage
 {
   switch (msg.vector)
   {
-    case ACN_VECTOR_ROOT_BROKER:
-    {
+    case ACN_VECTOR_ROOT_BROKER: {
       const BrokerMessage* bmsg = get_broker_msg(&msg);
       switch (bmsg->vector)
       {
@@ -358,10 +355,10 @@ void BrokerCore::RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage
           break;
         case VECTOR_BROKER_FETCH_CLIENT_LIST:
           SendClientList(handle);
-          log_->Log(ETCPAL_LOG_DEBUG, "Received Fetch Client List from Client %d; sending Client List.", handle);
+          log_->Debug("Received Fetch Client List from Client %d; sending Client List.", handle);
           break;
         default:
-          log_->Log(ETCPAL_LOG_ERR, "Received Broker PDU with unknown or unhandled vector %d", bmsg->vector);
+          log_->Warning("Received Broker PDU with unknown or unhandled vector %d", bmsg->vector);
           break;
       }
       break;
@@ -372,7 +369,7 @@ void BrokerCore::RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage
       break;
 
     default:
-      log_->Log(ETCPAL_LOG_WARNING, "Received Root Layer PDU with unknown or unhandled vector %d", msg.vector);
+      log_->Warning("Received Root Layer PDU with unknown or unhandled vector %d", msg.vector);
       break;
   }
 }
@@ -473,7 +470,7 @@ void BrokerCore::SendStatus(RPTController* controller, const RptHeader& header, 
     {
       char cid_str[ETCPAL_UUID_STRING_BYTES];
       etcpal_uuid_to_string(cid_str, &controller->cid);
-      log_->Log(ETCPAL_LOG_WARNING, "Sending RPT Status code %d to Controller %s", status_code, cid_str);
+      log_->Warning("Sending RPT Status code %d to Controller %s", status_code, cid_str);
     }
   }
   else
@@ -536,7 +533,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
 
   if (kEtcPalErrOk != conn_interface_->SetBlocking(handle, false))
   {
-    log_->Log(ETCPAL_LOG_INFO, "Error translating socket into non-blocking socket for Client %d", handle);
+    log_->Error("Error translating socket into non-blocking socket for Client %d", handle);
     return false;
   }
 
@@ -661,9 +658,9 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
 
     if (log_->CanLog(ETCPAL_LOG_INFO))
     {
-      log_->Log(ETCPAL_LOG_INFO, "Successfully processed RPT Connect request from %s (connection %d), UID %04x:%08x",
-                new_client->client_type == kRPTClientTypeController ? "Controller" : "Device", handle,
-                new_client->uid.manu, new_client->uid.id);
+      log_->Info("Successfully processed RPT Connect request from %s (connection %d), UID %04x:%08x",
+                 new_client->client_type == kRPTClientTypeController ? "Controller" : "Device", handle,
+                 new_client->uid.manu, new_client->uid.id);
     }
 
     // Update everyone
@@ -700,17 +697,15 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
             if (!IsValidControllerDestinationUID(rptmsg->header.dest_uid))
             {
               SendStatus(controller, rptmsg->header, kRptStatusUnknownRptUid);
-              log_->Log(ETCPAL_LOG_DEBUG,
-                        "Received Request PDU addressed to invalid or not found UID %04x:%08x from Controller %d",
-                        rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
+              log_->Debug("Received Request PDU addressed to invalid or not found UID %04x:%08x from Controller %d",
+                          rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
             }
             else if (get_rdm_buf_list(rptmsg)->list->next)
             {
               // There should only ever be one RDM command in an RPT request.
               SendStatus(controller, rptmsg->header, kRptStatusInvalidMessage);
-              log_->Log(ETCPAL_LOG_DEBUG,
-                        "Received Request PDU from Controller %d which incorrectly contains multiple RDM Command PDUs",
-                        conn);
+              log_->Debug(
+                  "Received Request PDU from Controller %d which incorrectly contains multiple RDM Command PDUs", conn);
             }
             else
             {
@@ -719,7 +714,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
           }
           else
           {
-            log_->Log(ETCPAL_LOG_DEBUG, "Received Request PDU from Client %d, which is not an RPT Controller", conn);
+            log_->Debug("Received Request PDU from Client %d, which is not an RPT Controller", conn);
           }
           break;
 
@@ -731,18 +726,17 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
               if (get_rpt_status_msg(rptmsg)->status_code != kRptStatusBroadcastComplete)
                 route_msg = true;
               else
-                log_->Log(ETCPAL_LOG_DEBUG, "Device %d sent broadcast complete message.", conn);
+                log_->Debug("Device %d sent broadcast complete message.", conn);
             }
             else
             {
-              log_->Log(ETCPAL_LOG_DEBUG,
-                        "Received Status PDU addressed to invalid or not found UID %04x:%08x from Device %d",
-                        rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
+              log_->Debug("Received Status PDU addressed to invalid or not found UID %04x:%08x from Device %d",
+                          rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
             }
           }
           else
           {
-            log_->Log(ETCPAL_LOG_DEBUG, "Received Status PDU from Client %d, which is not an RPT Device", conn);
+            log_->Debug("Received Status PDU from Client %d, which is not an RPT Device", conn);
           }
           break;
 
@@ -755,20 +749,19 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
             }
             else
             {
-              log_->Log(ETCPAL_LOG_DEBUG,
-                        "Received Notification PDU addressed to invalid or not found UID %04x:%08x from Device %d",
-                        rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
+              log_->Debug("Received Notification PDU addressed to invalid or not found UID %04x:%08x from Device %d",
+                          rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
             }
           }
           else
           {
-            log_->Log(ETCPAL_LOG_DEBUG, "Received Notification PDU from Client %d of unknown client type",
-                      rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
+            log_->Debug("Received Notification PDU from Client %d of unknown client type", rptmsg->header.dest_uid.manu,
+                        rptmsg->header.dest_uid.id, conn);
           }
           break;
 
         default:
-          log_->Log(ETCPAL_LOG_WARNING, "Received RPT PDU with unknown vector %d from Client %d", rptmsg->vector, conn);
+          log_->Warning("Received RPT PDU with unknown vector %d from Client %d", rptmsg->vector, conn);
           break;
       }
     }
@@ -781,39 +774,37 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
 
     if (RDMNET_UID_IS_CONTROLLER_BROADCAST(&rptmsg->header.dest_uid))
     {
-      log_->Log(ETCPAL_LOG_DEBUG, "Broadcasting RPT message from Device %04x:%08x to all Controllers",
-                rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id);
+      log_->Debug("Broadcasting RPT message from Device %04x:%08x to all Controllers", rptmsg->header.source_uid.manu,
+                  rptmsg->header.source_uid.id);
       for (auto controller : controllers_)
       {
         ClientWriteGuard client_write(*controller.second);
         if (!controller.second->Push(conn, msg->sender_cid, *rptmsg))
         {
           // TODO disconnect
-          log_->Log(ETCPAL_LOG_ERR, "Error pushing to send queue for RPT Controller %d. DEBUG:NOT disconnecting...",
-                    controller.first);
+          log_->Error("Error pushing to send queue for RPT Controller %d. DEBUG:NOT disconnecting...",
+                      controller.first);
         }
       }
     }
     else if (RDMNET_UID_IS_DEVICE_BROADCAST(&rptmsg->header.dest_uid))
     {
-      log_->Log(ETCPAL_LOG_DEBUG, "Broadcasting RPT message from Controller %04x:%08x to all Devices",
-                rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id);
+      log_->Debug("Broadcasting RPT message from Controller %04x:%08x to all Devices", rptmsg->header.source_uid.manu,
+                  rptmsg->header.source_uid.id);
       for (auto device : devices_)
       {
         ClientWriteGuard client_write(*device.second);
         if (!device.second->Push(conn, msg->sender_cid, *rptmsg))
         {
           // TODO disconnect
-          log_->Log(ETCPAL_LOG_ERR, "Error pushing to send queue for RPT Device %d. DEBUG:NOT disconnecting...",
-                    device.first);
+          log_->Error("Error pushing to send queue for RPT Device %d. DEBUG:NOT disconnecting...", device.first);
         }
       }
     }
     else if (IsDeviceManuBroadcastUID(rptmsg->header.dest_uid, device_manu))
     {
-      log_->Log(ETCPAL_LOG_DEBUG,
-                "Broadcasting RPT message from Controller %04x:%08x to all Devices from manufacturer %04x",
-                rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id, device_manu);
+      log_->Debug("Broadcasting RPT message from Controller %04x:%08x to all Devices from manufacturer %04x",
+                  rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id, device_manu);
       for (auto device : devices_)
       {
         if (device.second->uid.manu == device_manu)
@@ -822,8 +813,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
           if (!device.second->Push(conn, msg->sender_cid, *rptmsg))
           {
             // TODO disconnect
-            log_->Log(ETCPAL_LOG_ERR, "Error pushing to send queue for RPT Device %d. DEBUG:NOT disconnecting...",
-                      device.first);
+            log_->Error("Error pushing to send queue for RPT Device %d. DEBUG:NOT disconnecting...", device.first);
           }
         }
       }
@@ -840,24 +830,22 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
           if (static_cast<RPTClient*>(dest_client->second.get())->Push(conn, msg->sender_cid, *rptmsg))
           {
             found_dest_client = true;
-            log_->Log(ETCPAL_LOG_DEBUG, "Routing RPT PDU from Client %04x:%08x to Client %04x:%08x",
-                      rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id, rptmsg->header.dest_uid.manu,
-                      rptmsg->header.dest_uid.id);
+            log_->Debug("Routing RPT PDU from Client %04x:%08x to Client %04x:%08x", rptmsg->header.source_uid.manu,
+                        rptmsg->header.source_uid.id, rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id);
           }
           else
           {
             // TODO disconnect
-            log_->Log(ETCPAL_LOG_ERR, "Error pushing to send queue for RPT Client %d. DEBUG:NOT disconnecting...",
-                      dest_client->first);
+            log_->Error("Error pushing to send queue for RPT Client %d. DEBUG:NOT disconnecting...",
+                        dest_client->first);
           }
         }
       }
       if (!found_dest_client)
       {
-        log_->Log(ETCPAL_LOG_ERR,
-                  "Could not route message from RPT Client %d (%04x:%08x): Destination UID %04x:%08x not found.", conn,
-                  rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id, rptmsg->header.dest_uid.manu,
-                  rptmsg->header.dest_uid.id);
+        log_->Error("Could not route message from RPT Client %d (%04x:%08x): Destination UID %04x:%08x not found.",
+                    conn, rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id, rptmsg->header.dest_uid.manu,
+                    rptmsg->header.dest_uid.id);
       }
     }
   }
@@ -876,7 +864,7 @@ etcpal_socket_t BrokerCore::StartListening(const EtcPalIpAddr& ip, uint16_t& por
   {
     if (log_)
     {
-      log_->Log(ETCPAL_LOG_WARNING, "Broker: Failed to create listen socket with error: %s.", etcpal_strerror(err));
+      log_->Critical("Broker: Failed to create listen socket with error: %s.", etcpal_strerror(err));
     }
     return ETCPAL_SOCKET_INVALID;
   }
@@ -888,8 +876,7 @@ etcpal_socket_t BrokerCore::StartListening(const EtcPalIpAddr& ip, uint16_t& por
     etcpal_close(listen_sock);
     if (log_)
     {
-      log_->Log(ETCPAL_LOG_WARNING, "Broker: Failed to set V6ONLY socket option on listen socket: %s.",
-                etcpal_strerror(err));
+      log_->Critical("Broker: Failed to set V6ONLY socket option on listen socket: %s.", etcpal_strerror(err));
     }
     return ETCPAL_SOCKET_INVALID;
   }
@@ -902,8 +889,7 @@ etcpal_socket_t BrokerCore::StartListening(const EtcPalIpAddr& ip, uint16_t& por
     {
       char addrstr[ETCPAL_INET6_ADDRSTRLEN];
       etcpal_inet_ntop(&addr.ip, addrstr, ETCPAL_INET6_ADDRSTRLEN);
-      log_->Log(ETCPAL_LOG_WARNING, "Broker: Bind to %s failed on listen socket with error: %s.", addrstr,
-                etcpal_strerror(err));
+      log_->Critical("Broker: Bind to %s failed on listen socket with error: %s.", addrstr, etcpal_strerror(err));
     }
     return ETCPAL_SOCKET_INVALID;
   }
@@ -922,8 +908,7 @@ etcpal_socket_t BrokerCore::StartListening(const EtcPalIpAddr& ip, uint16_t& por
       etcpal_close(listen_sock);
       if (log_)
       {
-        log_->Log(ETCPAL_LOG_WARNING, "Broker: Failed to get ephemeral port assigned to listen socket: %s",
-                  etcpal_strerror(err));
+        log_->Critical("Broker: Failed to get ephemeral port assigned to listen socket: %s", etcpal_strerror(err));
       }
       return ETCPAL_SOCKET_INVALID;
     }
@@ -935,7 +920,7 @@ etcpal_socket_t BrokerCore::StartListening(const EtcPalIpAddr& ip, uint16_t& por
     etcpal_close(listen_sock);
     if (log_)
     {
-      log_->Log(ETCPAL_LOG_WARNING, "Broker: Listen failed on listen socket with error: %s.", etcpal_strerror(err));
+      log_->Critical("Broker: Listen failed on listen socket with error: %s.", etcpal_strerror(err));
     }
     return ETCPAL_SOCKET_INVALID;
   }
@@ -1034,7 +1019,7 @@ void BrokerCore::MarkConnForDestruction(rdmnet_conn_t conn, SendDisconnect send_
   if (found)
   {
     conn_interface_->DestroyConnection(conn, send_disconnect);
-    log_->Log(ETCPAL_LOG_DEBUG, "Connection %d marked for destruction", conn);
+    log_->Debug("Connection %d marked for destruction", conn);
   }
 }
 
@@ -1075,9 +1060,12 @@ void BrokerCore::DestroyMarkedClientSockets()
           entries[entries.size() - 2].next = &entries[entries.size() - 1];
         clients_.erase(client);
 
-        log_->Log(ETCPAL_LOG_INFO, "Removing connection %d marked for destruction.", to_destroy);
-        log_->Log(ETCPAL_LOG_DEBUG, "Clients: %zu Controllers: %zu Devices: %zu", clients_.size(), controllers_.size(),
-                  devices_.size());
+        log_->Info("Removing connection %d marked for destruction.", to_destroy);
+        if (log_->CanLog(ETCPAL_LOG_DEBUG))
+        {
+          log_->Debug("Clients: %zu Controllers: %zu Devices: %zu", clients_.size(), controllers_.size(),
+                      devices_.size());
+        }
       }
     }
     clients_to_destroy_.clear();
@@ -1090,19 +1078,23 @@ void BrokerCore::DestroyMarkedClientSockets()
 void BrokerCore::BrokerRegistered(const std::string& assigned_service_name)
 {
   service_registered_ = true;
-  log_->Log(ETCPAL_LOG_INFO, "Broker \"%s\" (now named \"%s\") successfully registered at scope \"%s\"",
-            disc_.requested_service_name().c_str(), assigned_service_name.c_str(), disc_.scope().c_str());
+  log_->Info("Broker \"%s\" (now named \"%s\") successfully registered at scope \"%s\"",
+             disc_.requested_service_name().c_str(), assigned_service_name.c_str(), disc_.scope().c_str());
 }
 
 void BrokerCore::BrokerRegisterError(int platform_specific_error)
 {
-  log_->Log(ETCPAL_LOG_ERR, "Broker \"%s\" register error %d at scope \"%s\"", disc_.requested_service_name().c_str(),
-            platform_specific_error, disc_.scope().c_str());
+  log_->Critical("Broker \"%s\" register error %d at scope \"%s\"", disc_.requested_service_name().c_str(),
+                 platform_specific_error, disc_.scope().c_str());
 }
 
 void BrokerCore::OtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
 {
-  if (log_->CanLog(ETCPAL_LOG_WARNING))
+  // If the broker is already registered with DNS-SD, the presence of another broker is an error
+  // condition. Otherwise, the system is still usable (this broker will not register)
+  int log_pri = (service_registered_ ? ETCPAL_LOG_ERR : ETCPAL_LOG_NOTICE);
+
+  if (log_->CanLog(log_pri))
   {
     std::string addrs;
     for (const BrokerListenAddr* listen_addr = broker_info.listen_addr_list; listen_addr;
@@ -1117,18 +1109,17 @@ void BrokerCore::OtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
       }
     }
 
-    log_->Log(ETCPAL_LOG_WARNING, "Broker \"%s\", ip[%s] found at same scope(\"%s\") as this broker.",
-              broker_info.service_name, addrs.c_str(), broker_info.scope);
+    log_->Log(log_pri, "Broker \"%s\", ip[%s] found at same scope(\"%s\") as this broker.", broker_info.service_name,
+              addrs.c_str(), broker_info.scope);
   }
   if (!service_registered_)
   {
-    log_->Log(ETCPAL_LOG_WARNING,
-              "This broker will remain unregistered with DNS-SD until all conflicting brokers are removed.");
+    log_->Log(log_pri, "This broker will remain unregistered with DNS-SD until all conflicting brokers are removed.");
     // StopBrokerServices();
   }
 }
 
 void BrokerCore::OtherBrokerLost(const std::string& service_name)
 {
-  log_->Log(ETCPAL_LOG_WARNING, "Conflicting broker %s no longer discovered.", service_name.c_str());
+  log_->Notice("Conflicting broker %s no longer discovered.", service_name.c_str());
 }

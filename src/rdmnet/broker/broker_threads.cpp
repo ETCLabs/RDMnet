@@ -61,7 +61,7 @@ bool ListenThread::Start()
     etcpal_close(listen_socket_);
     listen_socket_ = ETCPAL_SOCKET_INVALID;
     if (log_)
-      log_->Log(ETCPAL_LOG_ERR, "ListenThread: Failed to start thread.");
+      log_->Critical("ListenThread: Failed to start thread.");
     return false;
   }
 
@@ -106,7 +106,7 @@ void ListenThread::Run()
         if (!terminated_)
         {
           if (log_)
-            log_->Log(ETCPAL_LOG_ERR, "ListenThread: Accept failed with error: %s.", etcpal_strerror(err));
+            log_->Critical("ListenThread: Accept failed with error: %s.", etcpal_strerror(err));
           terminated_ = true;
         }
         return;
