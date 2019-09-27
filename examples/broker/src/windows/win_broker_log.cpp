@@ -52,18 +52,18 @@ WindowsBrokerLog::~WindowsBrokerLog()
   file_.close();
 }
 
-void WindowsBrokerLog::GetTimeFromCallback(EtcPalLogTimeParams* time)
+void WindowsBrokerLog::GetTimeFromCallback(EtcPalLogTimeParams& time)
 {
   SYSTEMTIME win_time;
   GetLocalTime(&win_time);
-  time->year = win_time.wYear;
-  time->month = win_time.wMonth;
-  time->day = win_time.wDay;
-  time->hour = win_time.wHour;
-  time->minute = win_time.wMinute;
-  time->second = win_time.wSecond;
-  time->msec = win_time.wMilliseconds;
-  time->utc_offset = utcoffset_;
+  time.year = win_time.wYear;
+  time.month = win_time.wMonth;
+  time.day = win_time.wDay;
+  time.hour = win_time.wHour;
+  time.minute = win_time.wMinute;
+  time.second = win_time.wSecond;
+  time.msec = win_time.wMilliseconds;
+  time.utc_offset = utcoffset_;
 }
 
 void WindowsBrokerLog::OutputLogMsg(const std::string& str)

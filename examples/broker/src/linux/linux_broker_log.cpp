@@ -34,7 +34,7 @@ LinuxBrokerLog::~LinuxBrokerLog()
   file_.close();
 }
 
-void LinuxBrokerLog::GetTimeFromCallback(EtcPalLogTimeParams* time_params)
+void LinuxBrokerLog::GetTimeFromCallback(EtcPalLogTimeParams& time_params)
 {
   time_t cur_time;
   time(&cur_time);
@@ -50,14 +50,14 @@ void LinuxBrokerLog::GetTimeFromCallback(EtcPalLogTimeParams* time_params)
   if (timeinfo->tm_isdst)
     utc_offset += 60;
 
-  time_params->year = timeinfo->tm_year + 1900;
-  time_params->month = timeinfo->tm_mon + 1;
-  time_params->day = timeinfo->tm_mday;
-  time_params->hour = timeinfo->tm_hour;
-  time_params->minute = timeinfo->tm_min;
-  time_params->second = timeinfo->tm_sec;
-  time_params->msec = 0;
-  time_params->utc_offset = static_cast<int>(utc_offset);
+  time_params.year = timeinfo->tm_year + 1900;
+  time_params.month = timeinfo->tm_mon + 1;
+  time_params.day = timeinfo->tm_mday;
+  time_params.hour = timeinfo->tm_hour;
+  time_params.minute = timeinfo->tm_min;
+  time_params.second = timeinfo->tm_sec;
+  time_params.msec = 0;
+  time_params.utc_offset = static_cast<int>(utc_offset);
 }
 
 void LinuxBrokerLog::OutputLogMsg(const std::string& str)
