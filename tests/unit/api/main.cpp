@@ -17,28 +17,13 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/* rdmnet_mock/core/llrp_target.h
- * Mocking the functions of rdmnet/core/llrp_target.h
- */
-#ifndef _RDMNET_MOCK_CORE_LLRP_TARGET_H_
-#define _RDMNET_MOCK_CORE_LLRP_TARGET_H_
-
-#include "rdmnet/core/llrp_target.h"
+#include "gtest/gtest.h"
 #include "fff.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+DEFINE_FFF_GLOBALS;
 
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_llrp_target_create, const LlrpTargetConfig*, llrp_target_t*);
-DECLARE_FAKE_VOID_FUNC(rdmnet_llrp_target_destroy, llrp_target_t);
-DECLARE_FAKE_VOID_FUNC(rdmnet_llrp_target_update_connection_state, llrp_target_t, bool);
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_llrp_send_rdm_response, llrp_target_t, const LlrpLocalRdmResponse*);
-
-void llrp_target_reset_all_fakes(void);
-
-#ifdef __cplusplus
+int main(int argc, char* argv[])
+{
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
-#endif
-
-#endif /* _RDMNET_MOCK_CORE_LLRP_TARGET_H_ */

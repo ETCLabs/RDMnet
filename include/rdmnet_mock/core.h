@@ -34,7 +34,8 @@ DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_core_init, const EtcPalLogParams*
 DECLARE_FAKE_VOID_FUNC(rdmnet_core_deinit);
 DECLARE_FAKE_VOID_FUNC(rdmnet_core_tick);
 
-void rdmnet_mock_core_reset_and_init();
+void rdmnet_mock_core_reset(void);
+void rdmnet_mock_core_reset_and_init(void);
 
 #ifdef __cplusplus
 }

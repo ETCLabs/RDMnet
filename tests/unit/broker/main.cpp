@@ -25,7 +25,7 @@
 // do this than using a global variable.
 // EtcPalIpAddr g_netint;
 
-int main(int argc, char** argv)
+int main(int argc, char* argv[])
 {
   testing::InitGoogleTest(&argc, argv);
 

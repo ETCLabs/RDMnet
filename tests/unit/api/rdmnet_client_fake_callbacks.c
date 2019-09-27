@@ -17,28 +17,15 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/* rdmnet_mock/core/llrp_target.h
- * Mocking the functions of rdmnet/core/llrp_target.h
- */
-#ifndef _RDMNET_MOCK_CORE_LLRP_TARGET_H_
-#define _RDMNET_MOCK_CORE_LLRP_TARGET_H_
+#include "rdmnet_client_fake_callbacks.h"
 
-#include "rdmnet/core/llrp_target.h"
-#include "fff.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_llrp_target_create, const LlrpTargetConfig*, llrp_target_t*);
-DECLARE_FAKE_VOID_FUNC(rdmnet_llrp_target_destroy, llrp_target_t);
-DECLARE_FAKE_VOID_FUNC(rdmnet_llrp_target_update_connection_state, llrp_target_t, bool);
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_llrp_send_rdm_response, llrp_target_t, const LlrpLocalRdmResponse*);
-
-void llrp_target_reset_all_fakes(void);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* _RDMNET_MOCK_CORE_LLRP_TARGET_H_ */
+DEFINE_FAKE_VOID_FUNC(rdmnet_client_connected, rdmnet_client_t, rdmnet_client_scope_t, const RdmnetClientConnectedInfo*,
+                      void*);
+DEFINE_FAKE_VOID_FUNC(rdmnet_client_connect_failed, rdmnet_client_t, rdmnet_client_scope_t,
+                      const RdmnetClientConnectFailedInfo*, void*);
+DEFINE_FAKE_VOID_FUNC(rdmnet_client_disconnected, rdmnet_client_t, rdmnet_client_scope_t,
+                      const RdmnetClientDisconnectedInfo*, void*);
+DEFINE_FAKE_VOID_FUNC(rdmnet_client_broker_msg_received, rdmnet_client_t, rdmnet_client_scope_t, const BrokerMessage*,
+                      void*);
+DEFINE_FAKE_VOID_FUNC(rpt_client_msg_received, rdmnet_client_t, rdmnet_client_scope_t, const RptClientMessage*, void*);
+DEFINE_FAKE_VOID_FUNC(ept_client_msg_received, rdmnet_client_t, rdmnet_client_scope_t, const EptClientMessage*, void*);
