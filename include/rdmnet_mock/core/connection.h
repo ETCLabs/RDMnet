@@ -47,19 +47,7 @@ DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_attach_existing_socket, rdmnet_co
 DECLARE_FAKE_VOID_FUNC(rdmnet_socket_data_received, rdmnet_conn_t, const uint8_t*, size_t);
 DECLARE_FAKE_VOID_FUNC(rdmnet_socket_error, rdmnet_conn_t, etcpal_error_t);
 
-#define RDMNET_CORE_CONNECTION_DO_FOR_ALL_FAKES(operation) \
-  operation(rdmnet_connection_create);                     \
-  operation(rdmnet_connect);                               \
-  /* operation(rdmnet_set_blocking); */                    \
-  operation(rdmnet_connection_destroy);                    \
-  operation(rdmnet_send);                                  \
-  operation(rdmnet_start_message);                         \
-  operation(rdmnet_send_partial_message);                  \
-  operation(rdmnet_end_message);                           \
-  operation(rdmnet_conn_tick);                             \
-  operation(rdmnet_attach_existing_socket);                \
-  operation(rdmnet_socket_data_received);                  \
-  operation(rdmnet_socket_error)
+void rdmnet_connection_reset_all_fakes(void);
 
 #ifdef __cplusplus
 }

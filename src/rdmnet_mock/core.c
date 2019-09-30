@@ -26,6 +26,9 @@
 #include "rdmnet_mock/core/rpt_prot.h"
 #include "rdmnet_mock/core/llrp_target.h"
 
+static etcpal_error_t fake_init(const EtcPalLogParams*);
+static void fake_deinit(void);
+
 // public mocks
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_core_init, const EtcPalLogParams*);
 DEFINE_FAKE_VOID_FUNC(rdmnet_core_deinit);
@@ -45,7 +48,7 @@ DEFINE_FAKE_VOID_FUNC(rdmnet_core_remove_polled_socket, etcpal_socket_t);
 
 const EtcPalLogParams* rdmnet_log_params = NULL;
 
-void rdmnet_mock_core_reset_and_init()
+void rdmnet_mock_core_reset(void)
 {
   RESET_FAKE(rdmnet_core_init);
   RESET_FAKE(rdmnet_core_deinit);
@@ -63,13 +66,39 @@ void rdmnet_mock_core_reset_and_init()
 
 #if RDMNET_BUILDING_FULL_MOCK_CORE_LIB
   RDMNET_CORE_BROKER_PROT_DO_FOR_ALL_FAKES(RESET_FAKE);
-  RDMNET_CORE_CONNECTION_DO_FOR_ALL_FAKES(RESET_FAKE);
+  rdmnet_connection_reset_all_fakes();
   RDMNET_CORE_DISCOVERY_DO_FOR_ALL_FAKES(RESET_FAKE);
-  RDMNET_CORE_LLRP_TARGET_DO_FOR_ALL_FAKES(RESET_FAKE);
+  llrp_target_reset_all_fakes();
   RDMNET_CORE_RPT_PROT_DO_FOR_ALL_FAKES(RESET_FAKE);
 #endif
+
+  rdmnet_core_init_fake.custom_fake = fake_init;
+  rdmnet_core_deinit_fake.custom_fake = fake_deinit;
+}
+
+void rdmnet_mock_core_reset_and_init(void)
+{
+  rdmnet_mock_core_reset();
 
   rdmnet_readlock_fake.return_val = true;
   rdmnet_writelock_fake.return_val = true;
   rdmnet_core_initialized_fake.return_val = true;
+}
+
+etcpal_error_t fake_init(const EtcPalLogParams* params)
+{
+  rdmnet_log_params = params;
+  rdmnet_readlock_fake.return_val = true;
+  rdmnet_writelock_fake.return_val = true;
+  rdmnet_core_initialized_fake.return_val = true;
+  return kEtcPalErrOk;
+}
+
+void fake_deinit(void)
+{
+  rdmnet_log_params = NULL;
+
+  rdmnet_readlock_fake.return_val = false;
+  rdmnet_writelock_fake.return_val = false;
+  rdmnet_core_initialized_fake.return_val = false;
 }

@@ -17,30 +17,13 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-// A class for logging messages from the Broker on macOS.
-#ifndef _MACOS_BROKER_LOG_H_
-#define _MACOS_BROKER_LOG_H_
+#include "gtest/gtest.h"
+#include "fff.h"
 
-#include <fstream>
-#include <string>
-#include <queue>
-#include "etcpal/log.h"
-#include "etcpal/thread.h"
-#include "etcpal/lock.h"
-#include "rdmnet/broker/log.h"
+DEFINE_FFF_GLOBALS;
 
-class MacBrokerLog : public rdmnet::BrokerLog
+int main(int argc, char* argv[])
 {
-public:
-  MacBrokerLog(const std::string& file_name);
-  virtual ~MacBrokerLog();
-
-  void OutputLogMsg(const std::string& str) override;
-  virtual void GetTimeFromCallback(EtcPalLogTimeParams& time) override;
-
-private:
-  std::fstream file_;
-  int log_level_{ETCPAL_LOG_INFO};
-};
-
-#endif  // _MACOS_BROKER_LOG_
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

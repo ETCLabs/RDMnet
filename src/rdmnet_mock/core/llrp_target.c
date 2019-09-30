@@ -19,7 +19,29 @@
 
 #include "rdmnet_mock/core/llrp_target.h"
 
+static llrp_target_t next_target_handle;
+
+static etcpal_error_t fake_target_create(const LlrpTargetConfig* config, llrp_target_t* handle);
+
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_llrp_target_create, const LlrpTargetConfig*, llrp_target_t*);
 DEFINE_FAKE_VOID_FUNC(rdmnet_llrp_target_destroy, llrp_target_t);
 DEFINE_FAKE_VOID_FUNC(rdmnet_llrp_target_update_connection_state, llrp_target_t, bool);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_llrp_send_rdm_response, llrp_target_t, const LlrpLocalRdmResponse*);
+
+void llrp_target_reset_all_fakes(void)
+{
+  RESET_FAKE(rdmnet_llrp_target_create);
+  RESET_FAKE(rdmnet_llrp_target_destroy);
+  RESET_FAKE(rdmnet_llrp_target_update_connection_state);
+  RESET_FAKE(rdmnet_llrp_send_rdm_response);
+
+  next_target_handle = 0;
+  rdmnet_llrp_target_create_fake.custom_fake = fake_target_create;
+}
+
+etcpal_error_t fake_target_create(const LlrpTargetConfig* config, llrp_target_t* handle)
+{
+  (void)config;
+  *handle = next_target_handle++;
+  return kEtcPalErrOk;
+}

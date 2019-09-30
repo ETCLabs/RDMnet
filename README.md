@@ -67,4 +67,5 @@ Other key items on the `TODO` list include:
 ## Standard Version
 
 The current version of this repository implements ANSI E1.33-2019, published in
-August of 2019.
+August of 2019. You can download the standard document for free from the
+[ESTA TSP downloads page](https://tsp.esta.org/tsp/documents/published_docs.php).

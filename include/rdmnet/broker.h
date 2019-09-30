@@ -88,25 +88,22 @@ struct BrokerSettings
 
   /// The maximum number of client connections supported. 0 means infinite.
   unsigned int max_connections{0};
-
   /// The maximum number of controllers allowed. 0 means infinite.
   unsigned int max_controllers{0};
-
   /// The maximum number of queued messages per controller. 0 means infinite.
   unsigned int max_controller_messages{500};
-
   /// The maximum number of devices allowed.  0 means infinite.
   unsigned int max_devices{0};
-
   /// The maximum number of queued messages per device. 0 means infinite.
   unsigned int max_device_messages{500};
-
   /// If you reach the number of max connections, this number of tcp-level connections are still
   /// supported to reject the connection request.
   unsigned int max_reject_connections{1000};
 
   BrokerSettings() {}
+  /// Initialize a BrokerSettings with a static UID.
   BrokerSettings(const RdmUid& static_uid) { SetStaticUid(static_uid); }
+  /// Initialize a BrokerSettings with a dynamic UID (provide the manufacturer ID).
   BrokerSettings(uint16_t rdm_manu_id) { SetDynamicUid(rdm_manu_id); }
 };
 

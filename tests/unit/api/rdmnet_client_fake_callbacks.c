@@ -17,30 +17,15 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-// A class for logging messages from the Broker on macOS.
-#ifndef _MACOS_BROKER_LOG_H_
-#define _MACOS_BROKER_LOG_H_
+#include "rdmnet_client_fake_callbacks.h"
 
-#include <fstream>
-#include <string>
-#include <queue>
-#include "etcpal/log.h"
-#include "etcpal/thread.h"
-#include "etcpal/lock.h"
-#include "rdmnet/broker/log.h"
-
-class MacBrokerLog : public rdmnet::BrokerLog
-{
-public:
-  MacBrokerLog(const std::string& file_name);
-  virtual ~MacBrokerLog();
-
-  void OutputLogMsg(const std::string& str) override;
-  virtual void GetTimeFromCallback(EtcPalLogTimeParams& time) override;
-
-private:
-  std::fstream file_;
-  int log_level_{ETCPAL_LOG_INFO};
-};
-
-#endif  // _MACOS_BROKER_LOG_
+DEFINE_FAKE_VOID_FUNC(rdmnet_client_connected, rdmnet_client_t, rdmnet_client_scope_t, const RdmnetClientConnectedInfo*,
+                      void*);
+DEFINE_FAKE_VOID_FUNC(rdmnet_client_connect_failed, rdmnet_client_t, rdmnet_client_scope_t,
+                      const RdmnetClientConnectFailedInfo*, void*);
+DEFINE_FAKE_VOID_FUNC(rdmnet_client_disconnected, rdmnet_client_t, rdmnet_client_scope_t,
+                      const RdmnetClientDisconnectedInfo*, void*);
+DEFINE_FAKE_VOID_FUNC(rdmnet_client_broker_msg_received, rdmnet_client_t, rdmnet_client_scope_t, const BrokerMessage*,
+                      void*);
+DEFINE_FAKE_VOID_FUNC(rpt_client_msg_received, rdmnet_client_t, rdmnet_client_scope_t, const RptClientMessage*, void*);
+DEFINE_FAKE_VOID_FUNC(ept_client_msg_received, rdmnet_client_t, rdmnet_client_scope_t, const EptClientMessage*, void*);

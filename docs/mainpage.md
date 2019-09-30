@@ -4,9 +4,11 @@
 
 RDMnet is a library that implements an ANSI standard, **ANSI E1.33: Message
 Transport and Device Management of ANSI E1.20 (RDM) over IP Networks**,
-commonly referred to as **RDMnet**. The RDMnet library is designed to be
-portable and scalable to almost any RDMnet usage scenario, from lightweight
-embedded devices to large-scale data sending and routing operations.
+commonly referred to as **RDMnet**. ANSI E1.33 can be downloaded from the
+[ESTA TSP website](https://tsp.esta.org/tsp/documents/published_docs.php).
+The RDMnet library is designed to be portable and scalable to almost any RDMnet
+usage scenario, from lightweight embedded devices to large-scale data sending
+and routing operations.
 
 \htmlonly
 To jump right into the documentation, check out the

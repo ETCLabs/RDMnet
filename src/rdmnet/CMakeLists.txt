@@ -1,5 +1,7 @@
 ################################ RDMnet library ###############################
 
+include(CMakePackageConfigHelpers)
+
 ################################## Config file ################################
 
 if(DEFINED RDMNET_CONFIG_LOC)
@@ -145,14 +147,21 @@ source_group(TREE ${RDMNET_INCLUDE}/rdmnet PREFIX include FILES
 
 target_link_libraries(RDMnet PRIVATE RDMnetDiscovery dnssd)
 
+# Installation
+install(TARGETS RDMnet
+#  EXPORT RDMnet
+  ARCHIVE DESTINATION lib
+#  INCLUDES DESTINATION include
+)
+install(DIRECTORY ${RDMNET_ROOT}/include/rdmnet DESTINATION include FILES_MATCHING PATTERN "*.h")
+
 #################################### Broker ###################################
 
 if(WIN32 OR APPLE OR UNIX)
-  add_library(Broker
-    # Broker public headers
+  add_library(RDMnetBroker
+    # RDMnetBroker public headers
     ${RDMNET_INCLUDE}/rdmnet/broker.h
     ${RDMNET_INCLUDE}/rdmnet/broker/log.h
-    # ${RDMNET_INCLUDE}/rdmnet/broker/socket_manager.h
 
     broker/broker_core.h
     broker/broker_core.cpp
@@ -175,30 +184,44 @@ if(WIN32 OR APPLE OR UNIX)
   )
 
   if(WIN32)
-    target_sources(Broker PRIVATE
+    target_sources(RDMnetBroker PRIVATE
       broker/windows/win_socket_manager.h
       broker/windows/win_socket_manager.cpp
     )
   elseif(APPLE)
-    target_sources(Broker PRIVATE
+    target_sources(RDMnetBroker PRIVATE
       broker/macos/macos_socket_manager.h
       broker/macos/macos_socket_manager.cpp
     )
   elseif(UNIX)
-    target_sources(Broker PRIVATE
+    target_sources(RDMnetBroker PRIVATE
       broker/linux/linux_socket_manager.h
       broker/linux/linux_socket_manager.cpp
     )
   endif()
 
-  target_include_directories(Broker PUBLIC ${RDMNET_INCLUDE} broker)
-  target_link_libraries(Broker PUBLIC RDMnet)
-  set_target_properties(Broker PROPERTIES CXX_STANDARD 14)
-  install(TARGETS Broker ARCHIVE DESTINATION lib)
+  target_include_directories(RDMnetBroker PUBLIC ${RDMNET_INCLUDE} broker)
+  target_link_libraries(RDMnetBroker PUBLIC RDMnet)
+  set_target_properties(RDMnetBroker PROPERTIES CXX_STANDARD 14)
 
+  install(TARGETS RDMnetBroker ARCHIVE DESTINATION lib)
 
 endif()
 
-# Installation
-install(TARGETS RDMnet ARCHIVE DESTINATION lib)
-install(DIRECTORY ${RDMNET_ROOT}/include/rdmnet DESTINATION include FILES_MATCHING PATTERN "*.h")
+# TODO
+
+# configure_package_config_file(
+#   ${RDMNET_ROOT}/tools/cmake/RDMnetConfig.cmake.in
+#   ${CMAKE_CURRENT_BINARY_DIR}/RDMnetConfig.cmake
+#   INSTALL_DESTINATION lib/cmake
+# )
+# write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/RDMnetConfigVersion.cmake
+#   VERSION ${PROJECT_VERSION}
+#   COMPATIBILITY SameMajorVersion
+# )
+# install(FILES
+#   ${CMAKE_CURRENT_BINARY_DIR}/RDMnetConfig.cmake
+#   ${CMAKE_CURRENT_BINARY_DIR}/RDMnetConfigVersion.cmake
+#   DESTINATION lib/cmake
+# )
+# install(EXPORT RDMnet DESTINATION lib/cmake)

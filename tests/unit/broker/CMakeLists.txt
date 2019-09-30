@@ -3,9 +3,10 @@
 add_executable(test_rdmnet_broker
   # RDMnet Broker lib unit test sources
   main.cpp
+  test_broker_log.cpp
   test_broker_uid_manager.cpp
 )
 target_include_directories(test_rdmnet_broker PRIVATE ${RDMNET_SRC}/rdmnet/broker)
-target_link_libraries(test_rdmnet_broker Broker gtest)
+target_link_libraries(test_rdmnet_broker RDMnetBroker gmock)
 set_target_properties(test_rdmnet_broker PROPERTIES CXX_STANDARD 11 FOLDER tests)
 gtest_add_tests(TARGET test_rdmnet_broker SKIP_DEPENDENCY)

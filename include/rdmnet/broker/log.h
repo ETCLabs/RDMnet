@@ -34,28 +34,49 @@ namespace rdmnet
 class BrokerLog
 {
 public:
-  BrokerLog();
+  enum class DispatchPolicy
+  {
+    kDirect,  // Log messages propagate directly from calls to Log() to being output (normally only used for testing)
+    kQueued   // Log messages are queued and dispatched from another thread (recommended)
+  };
+
+  BrokerLog(DispatchPolicy dispatch_policy = DispatchPolicy::kQueued);
   virtual ~BrokerLog();
   bool Startup(int log_mask);
   void Shutdown();
 
   const EtcPalLogParams* GetLogParams() const { return &log_params_; }
-  void Log(int pri, const char* format, ...);
   bool CanLog(int pri) const { return etcpal_can_log(&log_params_, pri); }
+  void SetLogMask(int log_mask) { log_params_.log_mask = log_mask; }
+
+  // Log a message
+  void Log(int pri, const char* format, ...);
+
+  // Shortcuts to log at a specific priority level
+  void Debug(const char* format, ...);
+  void Info(const char* format, ...);
+  void Notice(const char* format, ...);
+  void Warning(const char* format, ...);
+  void Error(const char* format, ...);
+  void Critical(const char* format, ...);
+  void Alert(const char* format, ...);
+  void Emergency(const char* format, ...);
 
   void LogFromCallback(const std::string& str);
   void LogThreadRun();
 
-  virtual void GetTimeFromCallback(EtcPalLogTimeParams* time) = 0;
+  virtual void GetTimeFromCallback(EtcPalLogTimeParams& time) = 0;
   virtual void OutputLogMsg(const std::string& str) = 0;
 
 protected:
   EtcPalLogParams log_params_{};
 
+  const DispatchPolicy dispatch_policy_{DispatchPolicy::kQueued};
+
   std::queue<std::string> msg_q_;
-  etcpal_signal_t signal_;
-  etcpal_thread_t thread_;
-  etcpal_mutex_t lock_;
+  etcpal_signal_t signal_{};
+  etcpal_thread_t thread_{};
+  etcpal_mutex_t lock_{};
   bool keep_running_{false};
 };
 

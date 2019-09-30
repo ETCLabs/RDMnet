@@ -19,6 +19,10 @@
 
 #include "rdmnet_mock/core/connection.h"
 
+static rdmnet_conn_t next_conn_handle;
+
+static etcpal_error_t fake_connection_create(const RdmnetConnectionConfig* config, rdmnet_conn_t* handle);
+
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_connection_create, const RdmnetConnectionConfig*, rdmnet_conn_t*);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_connect, rdmnet_conn_t, const EtcPalSockaddr*, const ClientConnectMsg*);
 // DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_set_blocking, rdmnet_conn_t, bool);
@@ -35,3 +39,29 @@ DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_attach_existing_socket, rdmnet_con
                        const EtcPalSockaddr*);
 DEFINE_FAKE_VOID_FUNC(rdmnet_socket_data_received, rdmnet_conn_t, const uint8_t*, size_t);
 DEFINE_FAKE_VOID_FUNC(rdmnet_socket_error, rdmnet_conn_t, etcpal_error_t);
+
+void rdmnet_connection_reset_all_fakes()
+{
+  RESET_FAKE(rdmnet_connection_create);
+  RESET_FAKE(rdmnet_connect);
+  // RESET_FAKE(rdmnet_set_blocking);
+  RESET_FAKE(rdmnet_connection_destroy);
+  RESET_FAKE(rdmnet_send);
+  RESET_FAKE(rdmnet_start_message);
+  RESET_FAKE(rdmnet_send_partial_message);
+  RESET_FAKE(rdmnet_end_message);
+  RESET_FAKE(rdmnet_conn_tick);
+  RESET_FAKE(rdmnet_attach_existing_socket);
+  RESET_FAKE(rdmnet_socket_data_received);
+  RESET_FAKE(rdmnet_socket_error);
+
+  next_conn_handle = 0;
+  rdmnet_connection_create_fake.custom_fake = fake_connection_create;
+}
+
+etcpal_error_t fake_connection_create(const RdmnetConnectionConfig* config, rdmnet_conn_t* handle)
+{
+  (void)config;
+  *handle = next_conn_handle++;
+  return kEtcPalErrOk;
+}

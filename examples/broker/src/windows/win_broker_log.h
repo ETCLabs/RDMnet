@@ -38,7 +38,7 @@ public:
   virtual ~WindowsBrokerLog();
 
   void OutputLogMsg(const std::string& str) override;
-  virtual void GetTimeFromCallback(EtcPalLogTimeParams* time) override;
+  virtual void GetTimeFromCallback(EtcPalLogTimeParams& time) override;
 
 private:
   std::fstream file_;

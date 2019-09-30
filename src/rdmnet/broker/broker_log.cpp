@@ -35,8 +35,8 @@ static void broker_log_callback(void* context, const EtcPalLogStrings* strings)
 static void broker_time_callback(void* context, EtcPalLogTimeParams* time)
 {
   rdmnet::BrokerLog* bl = static_cast<rdmnet::BrokerLog*>(context);
-  if (bl)
-    bl->GetTimeFromCallback(time);
+  if (bl && time)
+    bl->GetTimeFromCallback(*time);
 }
 
 static void log_thread_fn(void* arg)
@@ -47,17 +47,23 @@ static void log_thread_fn(void* arg)
 }
 }  // extern "C"
 
-rdmnet::BrokerLog::BrokerLog() : keep_running_(false)
+rdmnet::BrokerLog::BrokerLog(DispatchPolicy dispatch_policy) : dispatch_policy_(dispatch_policy), keep_running_(false)
 {
-  etcpal_signal_create(&signal_);
-  etcpal_mutex_create(&lock_);
+  if (dispatch_policy_ == DispatchPolicy::kQueued)
+  {
+    etcpal_signal_create(&signal_);
+    etcpal_mutex_create(&lock_);
+  }
 }
 
 rdmnet::BrokerLog::~BrokerLog()
 {
   Shutdown();
-  etcpal_mutex_destroy(&lock_);
-  etcpal_signal_destroy(&signal_);
+  if (dispatch_policy_ == DispatchPolicy::kQueued)
+  {
+    etcpal_mutex_destroy(&lock_);
+    etcpal_signal_destroy(&signal_);
+  }
 }
 
 bool rdmnet::BrokerLog::Startup(int log_mask)
@@ -71,20 +77,37 @@ bool rdmnet::BrokerLog::Startup(int log_mask)
 
   etcpal_validate_log_params(&log_params_);
 
-  // Start the log dispatch thread
-  keep_running_ = true;
-  EtcPalThreadParams tparams = {ETCPAL_THREAD_DEFAULT_PRIORITY, ETCPAL_THREAD_DEFAULT_STACK, "rdmnet::BrokerLogThread",
-                                NULL};
-  return etcpal_thread_create(&thread_, &tparams, log_thread_fn, this);
+  if (dispatch_policy_ == DispatchPolicy::kQueued)
+  {
+    // Start the log dispatch thread
+    keep_running_ = true;
+    // clang-format off
+    EtcPalThreadParams tparams =
+    {
+      ETCPAL_THREAD_DEFAULT_PRIORITY,
+      ETCPAL_THREAD_DEFAULT_STACK,
+      "RDMnetBrokerLogThread",
+      NULL
+    };
+    // clang-format on
+    return etcpal_thread_create(&thread_, &tparams, log_thread_fn, this);
+  }
+  else
+  {
+    return true;
+  }
 }
 
 void rdmnet::BrokerLog::Shutdown()
 {
-  if (keep_running_)
+  if (dispatch_policy_ == DispatchPolicy::kQueued)
   {
-    keep_running_ = false;
-    etcpal_signal_post(&signal_);
-    etcpal_thread_join(&thread_);
+    if (keep_running_)
+    {
+      keep_running_ = false;
+      etcpal_signal_post(&signal_);
+      etcpal_thread_join(&thread_);
+    }
   }
 }
 
@@ -96,13 +119,84 @@ void rdmnet::BrokerLog::Log(int pri, const char* format, ...)
   va_end(args);
 }
 
+void rdmnet::BrokerLog::Debug(const char* format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  etcpal_vlog(&log_params_, ETCPAL_LOG_DEBUG, format, args);
+  va_end(args);
+}
+
+void rdmnet::BrokerLog::Info(const char* format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  etcpal_vlog(&log_params_, ETCPAL_LOG_INFO, format, args);
+  va_end(args);
+}
+
+void rdmnet::BrokerLog::Notice(const char* format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  etcpal_vlog(&log_params_, ETCPAL_LOG_NOTICE, format, args);
+  va_end(args);
+}
+
+void rdmnet::BrokerLog::Warning(const char* format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  etcpal_vlog(&log_params_, ETCPAL_LOG_WARNING, format, args);
+  va_end(args);
+}
+
+void rdmnet::BrokerLog::Error(const char* format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  etcpal_vlog(&log_params_, ETCPAL_LOG_ERR, format, args);
+  va_end(args);
+}
+
+void rdmnet::BrokerLog::Critical(const char* format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  etcpal_vlog(&log_params_, ETCPAL_LOG_CRIT, format, args);
+  va_end(args);
+}
+
+void rdmnet::BrokerLog::Alert(const char* format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  etcpal_vlog(&log_params_, ETCPAL_LOG_ALERT, format, args);
+  va_end(args);
+}
+
+void rdmnet::BrokerLog::Emergency(const char* format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  etcpal_vlog(&log_params_, ETCPAL_LOG_EMERG, format, args);
+  va_end(args);
+}
+
 void rdmnet::BrokerLog::LogFromCallback(const std::string& str)
 {
+  if (dispatch_policy_ == DispatchPolicy::kDirect)
   {
-    etcpal::MutexGuard guard(lock_);
-    msg_q_.push(str);
+    OutputLogMsg(str);
   }
-  etcpal_signal_post(&signal_);
+  else if (dispatch_policy_ == DispatchPolicy::kQueued)
+  {
+    {
+      etcpal::MutexGuard guard(lock_);
+      msg_q_.push(str);
+    }
+    etcpal_signal_post(&signal_);
+  }
 }
 
 void rdmnet::BrokerLog::LogThreadRun()
