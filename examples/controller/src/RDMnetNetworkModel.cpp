@@ -272,7 +272,7 @@ void RDMnetNetworkModel::Connected(rdmnet_client_scope_t scope_handle, const Rdm
     // Update relevant data
     brokerItemIter->second->setConnected(true, info.broker_addr);
     std::string utf8_scope = brokerItemIter->second->scope().toStdString();
-    default_responder_.UpdateScopeConnectionStatus(utf8_scope, true, info.broker_addr);
+    default_responder_.UpdateScopeConnectionStatus(utf8_scope, true, info.broker_addr, uid);
 
     // Broadcast GET_RESPONSE notification because of new connection
     std::vector<RdmParamData> resp_data_list;
@@ -823,6 +823,8 @@ RDMnetNetworkModel* RDMnetNetworkModel::makeRDMnetNetworkModel(RDMnetLibInterfac
 
   etcpal_generate_v4_uuid(&model->my_cid_);
   model->rdmnet_->Startup(model->my_cid_, model);
+
+  model->default_responder_.InitResponder();
 
   // Initialize GUI-supported PID information
   QString rdmGroupName("RDM");
@@ -1657,14 +1659,13 @@ void RDMnetNetworkModel::RdmCommandReceived(rdmnet_client_scope_t scope_handle, 
 {
   const RdmCommand& rdm = cmd.rdm;
 
-#ifdef USE_RDM_RESPONDER
   RdmResponse resp;
   std::vector<RdmResponse> resp_list;
   resp_process_result_t process_result = kRespNoSend;
 
   do
   {
-    process_result = rdmresp_process_command(&responder_state, &rdm, &resp);
+    process_result = default_responder_.ProcessCommand(broker_connections_[scope_handle]->scope().toStdString(), rdm, resp);
 
     assert(resp_list.empty() || ((process_result != kRespNackReason) && (process_result != kRespNoSend)));
 
@@ -1679,7 +1680,7 @@ void RDMnetNetworkModel::RdmCommandReceived(rdmnet_client_scope_t scope_handle, 
     if (process_result == kRespNackReason)
     {
       log_->Log(ETCPAL_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for PID 0x%04x with reason 0x%04x",
-                cmd.source_uid.manu, cmd.source_uid.id, rdm.param_id, etcpal_upack_16b(resp.data));
+                cmd.source_uid.manu, cmd.source_uid.id, rdm.param_id, etcpal_upack_16b(resp.parameter_data.data));
     }
     else
     {
@@ -1689,40 +1690,39 @@ void RDMnetNetworkModel::RdmCommandReceived(rdmnet_client_scope_t scope_handle, 
 
     SendRDMResponses(scope_handle, resp_list, true, cmd);
   }
-#else
-  bool should_nack = false;
-  uint16_t nack_reason;
+  /* OLD RESPONDER (commented out, should be removed once new responder is up and running) */
+  // bool should_nack = false;
+  //uint16_t nack_reason;
 
-  if (rdm.command_class == kRdmCCGetCommand)
-  {
-    std::vector<RdmParamData> resp_data_list;
+  //if (rdm.command_class == kRdmCCGetCommand)
+  //{
+  //  std::vector<RdmParamData> resp_data_list;
 
-    if (default_responder_.Get(rdm.param_id, rdm.data, rdm.datalen, resp_data_list, nack_reason))
-    {
-      SendRDMGetResponses(scope_handle, cmd.source_uid, rdm.param_id, resp_data_list, true, cmd);
+  //  if (default_responder_.Get(rdm.param_id, rdm.data, rdm.datalen, resp_data_list, nack_reason))
+  //  {
+  //    SendRDMGetResponses(scope_handle, cmd.source_uid, rdm.param_id, resp_data_list, true, cmd);
 
-      log_->Log(ETCPAL_LOG_DEBUG, "ACK'ing GET_COMMAND for PID 0x%04x from Controller %04x:%08x", rdm.param_id,
-                cmd.source_uid.manu, cmd.source_uid.id);
-    }
-    else
-    {
-      should_nack = true;
-    }
-  }
-  else
-  {
-    // This controller is currently read-only.
-    should_nack = true;
-    nack_reason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
-  }
+  //    log_->Log(ETCPAL_LOG_DEBUG, "ACK'ing GET_COMMAND for PID 0x%04x from Controller %04x:%08x", rdm.param_id,
+  //              cmd.source_uid.manu, cmd.source_uid.id);
+  //  }
+  //  else
+  //  {
+  //    should_nack = true;
+  //  }
+  //}
+  //else
+  //{
+  //  // This controller is currently read-only.
+  //  should_nack = true;
+  //  nack_reason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
+  //}
 
-  if (should_nack)
-  {
-    SendRDMNack(scope_handle, cmd, nack_reason);
-    log_->Log(ETCPAL_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for PID 0x%04x with reason 0x%04x",
-              cmd.source_uid.manu, cmd.source_uid.id, rdm.param_id, nack_reason);
-  }
-#endif  // USE_RDM_RESPONDER
+  //if (should_nack)
+  //{
+  //  SendRDMNack(scope_handle, cmd, nack_reason);
+  //  log_->Log(ETCPAL_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for PID 0x%04x with reason 0x%04x",
+  //            cmd.source_uid.manu, cmd.source_uid.id, rdm.param_id, nack_reason);
+  //}
 }
 
 void RDMnetNetworkModel::RdmResponseReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse& resp)

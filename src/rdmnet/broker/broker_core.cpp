@@ -819,7 +819,6 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
         }
       }
     }
-#ifdef USE_RDM_RESPONDER
     else if (rptmsg->header.dest_uid == my_uid_)  // This must come from a controller
     {
       RptMessage rpt_response;
@@ -892,7 +891,6 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
 
       response_list->list = nullptr;
     }
-#endif  // USE_RDM_RESPONDER
     else
     {
       bool found_dest_client = false;

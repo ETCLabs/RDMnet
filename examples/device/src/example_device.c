@@ -25,7 +25,6 @@
 #include "etcpal/pack.h"
 #include "rdm/uid.h"
 #include "rdm/defs.h"
-#include "rdm/responder.h"
 #include "rdm/controller.h"
 #include "rdmnet/version.h"
 #include "default_responder.h"
@@ -47,9 +46,6 @@ static struct device_state
   bool connected;
 
   const EtcPalLogParams* lparams;
-
-  RdmResponderState responder_state;
-  RdmPidHandlerEntry handler_array[10];
 } device_state;
 
 /*********************** Private function prototypes *************************/
@@ -97,38 +93,7 @@ etcpal_error_t device_init(const RdmnetScopeConfig* scope_config, const EtcPalLo
 
   rdmnet_safe_strncpy(device_state.cur_search_domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
   device_state.cur_scope_config = *scope_config;
-  default_responder_init(scope_config, device_state.cur_search_domain);
-
-  const size_t HANDLER_ARRAY_SIZE = 10;
-
-  RdmPidHandlerEntry handler_array[HANDLER_ARRAY_SIZE] = {
-      {E120_SUPPORTED_PARAMETERS, default_responder_supportedParams, RDM_PS_ALL | RDM_PS_GET},
-      {E120_PARAMETER_DESCRIPTION, default_responder_parameterDescription, RDM_PS_ROOT | RDM_PS_GET},
-      {E120_DEVICE_MODEL_DESCRIPTION, default_responder_deviceModelDescription,
-       RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOWSUP},
-      {E120_MANUFACTURER_LABEL, default_responder_manufacturer_label, RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOWSUP},
-      {E120_DEVICE_LABEL, default_responder_device_label, RDM_PS_ALL | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
-      {E120_SOFTWARE_VERSION_LABEL, default_responder_software_version_label, RDM_PS_ROOT | RDM_PS_GET},
-      {E120_IDENTIFY_DEVICE, default_responder_identify_device, RDM_PS_ALL | RDM_PS_GET_SET},
-      {E133_COMPONENT_SCOPE, default_responder_component_scope, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
-      {E133_SEARCH_DOMAIN, default_responder_search_domain, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
-      {E133_TCP_COMMS_STATUS, default_responder_tcp_comms_status, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP}
-  };
-
-  device_state.responder_state.port_number = 0;
-  device_state.responder_state.uid = device_state.my_uid;
-  device_state.responder_state.number_of_subdevices = 0;
-  device_state.responder_state.responder_type = kRespTypeDevice;
-  device_state.responder_state.callback_context = NULL;
-  memcpy(device_state.handler_array, handler_array, HANDLER_ARRAY_SIZE * sizeof(RdmPidHandlerEntry));
-  device_state.responder_state.handler_array = device_state.handler_array;
-  device_state.responder_state.handler_array_size = HANDLER_ARRAY_SIZE;
-  device_state.responder_state.get_message_count = default_responder_get_message_count;
-  device_state.responder_state.get_next_queue_message = default_responder_get_next_queue_message;
-
-  rdmresp_sort_handler_array(device_state.handler_array, HANDLER_ARRAY_SIZE);
-  bool rdmresp_init_result = rdmresp_init(device_state.responder_state);
-  assert(rdmresp_init_result);
+  default_responder_init(scope_config, device_state.cur_search_domain, device_state.my_uid);
 
   etcpal_error_t res = rdmnet_device_init(lparams);
   if (res != kEtcPalErrOk)
@@ -172,7 +137,7 @@ void device_connected(rdmnet_device_t handle, const RdmnetClientConnectedInfo* i
   (void)handle;
   (void)context;
 
-  default_responder_update_connection_status(true, &info->broker_addr);
+  default_responder_update_connection_status(true, &info->broker_addr, uid);
   etcpal_log(device_state.lparams, ETCPAL_LOG_INFO, "Device connected to Broker on scope '%s'.",
              device_state.cur_scope_config.scope);
 }
@@ -243,7 +208,6 @@ void device_handle_rpt_command(const RemoteRdmCommand* cmd, rdmnet_data_changed_
     etcpal_log(device_state.lparams, ETCPAL_LOG_WARNING,
                "Device received RDM command with invalid command class 0x%02x", rdm_cmd->command_class);
   }
-#ifdef USE_RDM_RESPONDER
   else
   {
     RdmResponse resp;
@@ -253,7 +217,7 @@ void device_handle_rpt_command(const RemoteRdmCommand* cmd, rdmnet_data_changed_
 
     do
     {
-      process_result = rdmresp_process_command(&device_state.responder_state, rdm_cmd, &resp);
+      process_result = default_responder_process_command(rdm_cmd, &resp);
 
       assert((resp_list_size == 0) || ((process_result != kRespNackReason) && (process_result != kRespNoSend)));
 
@@ -267,7 +231,7 @@ void device_handle_rpt_command(const RemoteRdmCommand* cmd, rdmnet_data_changed_
     {
       if (process_result == kRespNackReason)
       {
-        uint16_t nack_reason = etcpal_upack_16b(resp.data);
+        uint16_t nack_reason = etcpal_upack_16b(resp.parameter_data.data);
 
         if (nack_reason == E120_NR_UNKNOWN_PID)
         {
@@ -293,35 +257,34 @@ void device_handle_rpt_command(const RemoteRdmCommand* cmd, rdmnet_data_changed_
       device_send_rpt_response(resp_list, resp_list_size, cmd);
     }
   }
-#else
-  else if (!default_responder_supports_pid(rdm_cmd->param_id))
-  {
-    device_send_rpt_nack(E120_NR_UNKNOWN_PID, cmd);
-    etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for unknown PID 0x%04x",
-               cmd->source_uid.manu, cmd->source_uid.id, rdm_cmd->param_id);
-  }
-  else
-  {
-    RdmResponse resp_list[MAX_RESPONSES_IN_ACK_OVERFLOW];
-    size_t resp_list_size;
-    uint16_t nack_reason;
-    if (device_handle_rdm_command(&cmd->rdm, resp_list, &resp_list_size, &nack_reason, data_changed))
-    {
-      device_send_rpt_response(resp_list, resp_list_size, cmd);
-      etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG, "ACK'ing %s for PID 0x%04x from Controller %04x:%08x",
-                 rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", rdm_cmd->param_id,
-                 cmd->source_uid.manu, cmd->source_uid.id);
-    }
-    else
-    {
-      device_send_rpt_nack(nack_reason, cmd);
-      etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG,
-                 "Sending %s NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
-                 rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", cmd->source_uid.manu,
-                 cmd->source_uid.id, rdm_cmd->param_id, nack_reason);
-    }
-  }
-#endif
+  /* OLD RESPONDER (commented out, should be removed once new responder is up and running) */
+  //else if (!default_responder_supports_pid(rdm_cmd->param_id))
+  //{
+  //  device_send_rpt_nack(E120_NR_UNKNOWN_PID, cmd);
+  //  etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for unknown PID 0x%04x",
+  //             cmd->source_uid.manu, cmd->source_uid.id, rdm_cmd->param_id);
+  //}
+  //else
+  //{
+  //  RdmResponse resp_list[MAX_RESPONSES_IN_ACK_OVERFLOW];
+  //  size_t resp_list_size;
+  //  uint16_t nack_reason;
+  //  if (device_handle_rdm_command(&cmd->rdm, resp_list, &resp_list_size, &nack_reason, data_changed))
+  //  {
+  //    device_send_rpt_response(resp_list, resp_list_size, cmd);
+  //    etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG, "ACK'ing %s for PID 0x%04x from Controller %04x:%08x",
+  //               rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", rdm_cmd->param_id,
+  //               cmd->source_uid.manu, cmd->source_uid.id);
+  //  }
+  //  else
+  //  {
+  //    device_send_rpt_nack(nack_reason, cmd);
+  //    etcpal_log(device_state.lparams, ETCPAL_LOG_DEBUG,
+  //               "Sending %s NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
+  //               rdm_cmd->command_class == kRdmCCSetCommand ? "SET_COMMAND" : "GET_COMMAND", cmd->source_uid.manu,
+  //               cmd->source_uid.id, rdm_cmd->param_id, nack_reason);
+  //  }
+  //}
 }
 
 void device_handle_llrp_command(const LlrpRemoteRdmCommand* cmd, rdmnet_data_changed_t* data_changed)

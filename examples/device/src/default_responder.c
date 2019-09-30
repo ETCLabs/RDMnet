@@ -62,9 +62,11 @@ static const uint8_t kDeviceInfo[] = {
 #define MANUFACTURER_LABEL "ETC"
 #define DEVICE_MODEL_DESCRIPTION "Prototype RDMnet Device"
 
+#define DEVICE_HANDLER_ARRAY_SIZE 8
+
 /**************************** Private variables ******************************/
 
-static struct DefaultResponderPropertyData
+static struct DeviceResponderState
 {
   uint32_t endpoint_list_change_number;
   etcpal_thread_t identify_thread;
@@ -75,9 +77,12 @@ static struct DefaultResponderPropertyData
   uint16_t tcp_unhealthy_counter;
   bool connected;
   EtcPalSockaddr cur_broker_addr;
-} prop_data;
 
-static etcpal_rwlock_t prop_lock;
+  RdmResponderState rdm_responder_state;
+  RdmPidHandlerEntry handler_array[DEVICE_HANDLER_ARRAY_SIZE];
+} device_responder_state;
+
+static etcpal_rwlock_t state_lock;
 
 /*********************** Private function prototypes *************************/
 
@@ -119,72 +124,114 @@ bool get_endpoint_list(const uint8_t* param_data, uint8_t param_data_len, param_
 bool get_endpoint_responders(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
                              size_t* num_responses, uint16_t* nack_reason);
 
+/* RESPONDER HANDLERS */
+//resp_process_result_t default_responder_supported_params(PidHandlerData* data);
+resp_process_result_t default_responder_parameter_description(PidHandlerData* data);
+resp_process_result_t default_responder_device_model_description(PidHandlerData* data);
+//resp_process_result_t default_responder_manufacturer_label(PidHandlerData* data);
+resp_process_result_t default_responder_device_label(PidHandlerData* data);
+resp_process_result_t default_responder_software_version_label(PidHandlerData* data);
+resp_process_result_t default_responder_identify_device(PidHandlerData* data);
+resp_process_result_t default_responder_component_scope(PidHandlerData* data);
+resp_process_result_t default_responder_search_domain(PidHandlerData* data);
+resp_process_result_t default_responder_tcp_comms_status(PidHandlerData* data);
+uint8_t default_responder_get_message_count();
+void default_responder_get_next_queue_message(GetNextQueueMessageData* data);
+
 /*************************** Function definitions ****************************/
 
 void default_responder_init(const RdmnetScopeConfig* scope_config, const char* search_domain)
 {
-  etcpal_rwlock_create(&prop_lock);
+  etcpal_rwlock_create(&state_lock);
 
-  rdmnet_safe_strncpy(prop_data.device_label, DEFAULT_DEVICE_LABEL, DEVICE_LABEL_MAX_LEN);
-  rdmnet_safe_strncpy(prop_data.search_domain, search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
-  prop_data.scope_config = *scope_config;
+  rdmnet_safe_strncpy(device_responder_state.device_label, DEFAULT_DEVICE_LABEL, DEVICE_LABEL_MAX_LEN);
+  rdmnet_safe_strncpy(device_responder_state.search_domain, search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
+  device_responder_state.scope_config = *scope_config;
+
+  RdmPidHandlerEntry handler_array[DEVICE_HANDLER_ARRAY_SIZE] = {
+      //{E120_SUPPORTED_PARAMETERS, default_responder_supported_params, RDM_PS_ALL | RDM_PS_GET},
+      {E120_PARAMETER_DESCRIPTION, default_responder_parameter_description, RDM_PS_ROOT | RDM_PS_GET},
+      {E120_DEVICE_MODEL_DESCRIPTION, default_responder_device_model_description,
+       RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOWSUP},
+      //{E120_MANUFACTURER_LABEL, default_responder_manufacturer_label, RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOWSUP},
+      {E120_DEVICE_LABEL, default_responder_device_label, RDM_PS_ALL | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
+      {E120_SOFTWARE_VERSION_LABEL, default_responder_software_version_label, RDM_PS_ROOT | RDM_PS_GET},
+      {E120_IDENTIFY_DEVICE, default_responder_identify_device, RDM_PS_ALL | RDM_PS_GET_SET},
+      {E133_COMPONENT_SCOPE, default_responder_component_scope, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
+      {E133_SEARCH_DOMAIN, default_responder_search_domain, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
+      {E133_TCP_COMMS_STATUS, default_responder_tcp_comms_status, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP}};
+
+  device_responder_state.rdm_responder_state.port_number = 0;
+  device_responder_state.rdm_responder_state.number_of_subdevices = 0;
+  device_responder_state.rdm_responder_state.responder_type = kRespTypeDevice;
+  device_responder_state.rdm_responder_state.callback_context = NULL;
+  memcpy(device_responder_state.handler_array, handler_array, DEVICE_HANDLER_ARRAY_SIZE * sizeof(RdmPidHandlerEntry));
+  device_responder_state.rdm_responder_state.handler_array = device_responder_state.handler_array;
+  device_responder_state.rdm_responder_state.handler_array_size = DEVICE_HANDLER_ARRAY_SIZE;
+  device_responder_state.rdm_responder_state.get_message_count = default_responder_get_message_count;
+  device_responder_state.rdm_responder_state.get_next_queue_message = default_responder_get_next_queue_message;
+
+  rdmresp_sort_handler_array(device_responder_state.handler_array, DEVICE_HANDLER_ARRAY_SIZE);
+  assert(rdmresp_validate_state(&device_responder_state.rdm_responder_state));
 }
 
 void default_responder_deinit()
 {
-  if (prop_data.identifying)
+  if (device_responder_state.identifying)
   {
-    prop_data.identifying = false;
-    etcpal_thread_join(&prop_data.identify_thread);
+    device_responder_state.identifying = false;
+    etcpal_thread_join(&device_responder_state.identify_thread);
   }
-  memset(&prop_data, 0, sizeof(prop_data));
-  etcpal_rwlock_destroy(&prop_lock);
+  memset(&device_responder_state, 0, sizeof(device_responder_state));
+  etcpal_rwlock_destroy(&state_lock);
 }
 
 void default_responder_get_scope_config(RdmnetScopeConfig* scope_config)
 {
-  if (etcpal_rwlock_readlock(&prop_lock))
+  if (etcpal_rwlock_readlock(&state_lock))
   {
-    *scope_config = prop_data.scope_config;
-    etcpal_rwlock_readunlock(&prop_lock);
+    *scope_config = device_responder_state.scope_config;
+    etcpal_rwlock_readunlock(&state_lock);
   }
 }
 
 void default_responder_get_search_domain(char* search_domain)
 {
-  if (etcpal_rwlock_readlock(&prop_lock))
+  if (etcpal_rwlock_readlock(&state_lock))
   {
-    rdmnet_safe_strncpy(search_domain, prop_data.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
-    etcpal_rwlock_readunlock(&prop_lock);
+    rdmnet_safe_strncpy(search_domain, device_responder_state.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
+    etcpal_rwlock_readunlock(&state_lock);
   }
 }
 
-void default_responder_update_connection_status(bool connected, const EtcPalSockaddr* broker_addr)
+void default_responder_update_connection_status(bool connected, const EtcPalSockaddr* broker_addr,
+                                                const RdmUid* responder_uid)
 {
-  if (etcpal_rwlock_readlock(&prop_lock))
+  if (etcpal_rwlock_readlock(&state_lock))
   {
-    prop_data.connected = connected;
-    if (prop_data.connected)
-      prop_data.cur_broker_addr = *broker_addr;
-    etcpal_rwlock_readunlock(&prop_lock);
+    device_responder_state.connected = connected;
+    if (device_responder_state.connected)
+      device_responder_state.cur_broker_addr = *broker_addr;
+    device_responder_state.rdm_responder_state.uid = *responder_uid;
+    etcpal_rwlock_readunlock(&state_lock);
   }
 }
 
 void default_responder_incr_unhealthy_count()
 {
-  if (etcpal_rwlock_writelock(&prop_lock))
+  if (etcpal_rwlock_writelock(&state_lock))
   {
-    ++prop_data.tcp_unhealthy_counter;
-    etcpal_rwlock_writeunlock(&prop_lock);
+    ++device_responder_state.tcp_unhealthy_counter;
+    etcpal_rwlock_writeunlock(&state_lock);
   }
 }
 
 void default_responder_set_tcp_status(EtcPalSockaddr* broker_addr)
 {
-  if (etcpal_rwlock_writelock(&prop_lock))
+  if (etcpal_rwlock_writelock(&state_lock))
   {
-    prop_data.cur_broker_addr = *broker_addr;
-    etcpal_rwlock_writeunlock(&prop_lock);
+    device_responder_state.cur_broker_addr = *broker_addr;
+    etcpal_rwlock_writeunlock(&state_lock);
   }
 }
 
@@ -203,7 +250,7 @@ bool default_responder_set(uint16_t pid, const uint8_t* param_data, uint8_t para
                            rdmnet_data_changed_t* data_changed)
 {
   bool res = false;
-  if (etcpal_rwlock_writelock(&prop_lock))
+  if (etcpal_rwlock_writelock(&state_lock))
   {
     switch (pid)
     {
@@ -236,7 +283,7 @@ bool default_responder_set(uint16_t pid, const uint8_t* param_data, uint8_t para
         *data_changed = kNoRdmnetDataChanged;
         break;
     }
-    etcpal_rwlock_writeunlock(&prop_lock);
+    etcpal_rwlock_writeunlock(&state_lock);
   }
   return res;
 }
@@ -245,7 +292,7 @@ bool default_responder_get(uint16_t pid, const uint8_t* param_data, uint8_t para
                            param_data_list_t resp_data_list, size_t* num_responses, uint16_t* nack_reason)
 {
   bool res = false;
-  if (etcpal_rwlock_readlock(&prop_lock))
+  if (etcpal_rwlock_readlock(&state_lock))
   {
     switch (pid)
     {
@@ -289,16 +336,21 @@ bool default_responder_get(uint16_t pid, const uint8_t* param_data, uint8_t para
         *nack_reason = E120_NR_UNKNOWN_PID;
         break;
     }
-    etcpal_rwlock_readunlock(&prop_lock);
+    etcpal_rwlock_readunlock(&state_lock);
   }
   return res;
+}
+
+resp_process_result_t default_responder_process_command(const RdmCommand* command, RdmResponse* response)
+{
+  return rdmresp_process_command(&device_responder_state.rdm_responder_state, command, response);
 }
 
 void identify_thread(void* arg)
 {
   (void)arg;
 
-  while (prop_data.identifying)
+  while (device_responder_state.identifying)
   {
     printf("I AM IDENTIFYING!!!\n");
     etcpal_thread_sleep(1000);
@@ -311,7 +363,7 @@ bool set_identify_device(const uint8_t* param_data, uint8_t param_data_len, uint
   if (param_data_len >= 1)
   {
     bool new_identify_setting = (bool)(*param_data);
-    if (new_identify_setting && !prop_data.identifying)
+    if (new_identify_setting && !device_responder_state.identifying)
     {
       EtcPalThreadParams ithread_params;
 
@@ -320,9 +372,9 @@ bool set_identify_device(const uint8_t* param_data, uint8_t param_data_len, uint
       ithread_params.thread_name = "Identify Thread";
       ithread_params.platform_data = NULL;
 
-      etcpal_thread_create(&prop_data.identify_thread, &ithread_params, identify_thread, NULL);
+      etcpal_thread_create(&device_responder_state.identify_thread, &ithread_params, identify_thread, NULL);
     }
-    prop_data.identifying = new_identify_setting;
+    device_responder_state.identifying = new_identify_setting;
     *data_changed = kNoRdmnetDataChanged;
     return true;
   }
@@ -340,8 +392,8 @@ bool set_device_label(const uint8_t* param_data, uint8_t param_data_len, uint16_
   {
     if (param_data_len > DEVICE_LABEL_MAX_LEN)
       param_data_len = DEVICE_LABEL_MAX_LEN;
-    memcpy(prop_data.device_label, param_data, param_data_len);
-    prop_data.device_label[param_data_len] = '\0';
+    memcpy(device_responder_state.device_label, param_data, param_data_len);
+    device_responder_state.device_label[param_data_len] = '\0';
     *data_changed = kNoRdmnetDataChanged;
     return true;
   }
@@ -388,7 +440,7 @@ bool set_component_scope(const uint8_t* param_data, uint8_t param_data_len, uint
           break;
       }
 
-      RdmnetScopeConfig* existing_scope_config = &prop_data.scope_config;
+      RdmnetScopeConfig* existing_scope_config = &device_responder_state.scope_config;
       if (strncmp((char*)&param_data[2], existing_scope_config->scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0 &&
           ((!have_new_static_broker && !existing_scope_config->has_static_broker_addr) ||
            (etcpal_ip_equal(&new_static_broker.ip, &existing_scope_config->static_broker_addr.ip) &&
@@ -425,14 +477,14 @@ bool set_search_domain(const uint8_t* param_data, uint8_t param_data_len, uint16
   {
     if (param_data_len > 0 || strcmp("", (char*)param_data) != 0)
     {
-      if (strncmp(prop_data.search_domain, (char*)param_data, E133_DOMAIN_STRING_PADDED_LENGTH) == 0)
+      if (strncmp(device_responder_state.search_domain, (char*)param_data, E133_DOMAIN_STRING_PADDED_LENGTH) == 0)
       {
         /* Same domain as current */
         *data_changed = kNoRdmnetDataChanged;
       }
       else
       {
-        strncpy(prop_data.search_domain, (char*)param_data, E133_DOMAIN_STRING_PADDED_LENGTH);
+        strncpy(device_responder_state.search_domain, (char*)param_data, E133_DOMAIN_STRING_PADDED_LENGTH);
         *data_changed = kRdmnetSearchDomainChanged;
       }
     }
@@ -457,10 +509,10 @@ bool set_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, uin
 
   if (param_data_len == E133_SCOPE_STRING_PADDED_LENGTH)
   {
-    if (strncmp((char*)param_data, prop_data.scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
+    if (strncmp((char*)param_data, device_responder_state.scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
     {
       /* Same scope as current */
-      prop_data.tcp_unhealthy_counter = 0;
+      device_responder_state.tcp_unhealthy_counter = 0;
       return true;
     }
     else
@@ -483,7 +535,7 @@ bool get_identify_device(const uint8_t* param_data, uint8_t param_data_len, para
   (void)param_data_len;
   (void)nack_reason;
 
-  resp_data_list[0].data[0] = prop_data.identifying ? 1 : 0;
+  resp_data_list[0].data[0] = device_responder_state.identifying ? 1 : 0;
   resp_data_list[0].datalen = 1;
   *num_responses = 1;
   return true;
@@ -496,8 +548,8 @@ bool get_device_label(const uint8_t* param_data, uint8_t param_data_len, param_d
   (void)param_data_len;
   (void)nack_reason;
 
-  strncpy((char*)resp_data_list[0].data, prop_data.device_label, DEVICE_LABEL_MAX_LEN);
-  resp_data_list[0].datalen = (uint8_t)strnlen(prop_data.device_label, DEVICE_LABEL_MAX_LEN);
+  strncpy((char*)resp_data_list[0].data, device_responder_state.device_label, DEVICE_LABEL_MAX_LEN);
+  resp_data_list[0].datalen = (uint8_t)strnlen(device_responder_state.device_label, DEVICE_LABEL_MAX_LEN);
   *num_responses = 1;
   return true;
 }
@@ -509,7 +561,7 @@ bool get_component_scope(const uint8_t* param_data, uint8_t param_data_len, para
   {
     if (etcpal_upack_16b(param_data) == 1)
     {
-      const RdmnetScopeConfig* scope_config = &prop_data.scope_config;
+      const RdmnetScopeConfig* scope_config = &device_responder_state.scope_config;
 
       // Pack the scope
       uint8_t* cur_ptr = resp_data_list[0].data;
@@ -567,8 +619,8 @@ bool get_search_domain(const uint8_t* param_data, uint8_t param_data_len, param_
   (void)param_data;
   (void)param_data_len;
   (void)nack_reason;
-  strncpy((char*)resp_data_list[0].data, prop_data.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
-  resp_data_list[0].datalen = (uint8_t)strlen(prop_data.search_domain);
+  strncpy((char*)resp_data_list[0].data, device_responder_state.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
+  resp_data_list[0].datalen = (uint8_t)strlen(device_responder_state.search_domain);
   *num_responses = 1;
   return true;
 }
@@ -581,13 +633,13 @@ bool get_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, par
   (void)nack_reason;
   uint8_t* cur_ptr = resp_data_list[0].data;
 
-  memcpy(cur_ptr, prop_data.scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH);
+  memcpy(cur_ptr, device_responder_state.scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH);
   cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
-  if (prop_data.connected)
+  if (device_responder_state.connected)
   {
-    if (ETCPAL_IP_IS_V4(&prop_data.cur_broker_addr.ip))
+    if (ETCPAL_IP_IS_V4(&device_responder_state.cur_broker_addr.ip))
     {
-      etcpal_pack_32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&prop_data.cur_broker_addr.ip));
+      etcpal_pack_32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&device_responder_state.cur_broker_addr.ip));
       cur_ptr += 4;
       memset(cur_ptr, 0, ETCPAL_IPV6_BYTES);
       cur_ptr += ETCPAL_IPV6_BYTES;
@@ -596,10 +648,10 @@ bool get_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, par
     {
       etcpal_pack_32b(cur_ptr, 0);
       cur_ptr += 4;
-      memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&prop_data.cur_broker_addr.ip), ETCPAL_IPV6_BYTES);
+      memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&device_responder_state.cur_broker_addr.ip), ETCPAL_IPV6_BYTES);
       cur_ptr += ETCPAL_IPV6_BYTES;
     }
-    etcpal_pack_16b(cur_ptr, prop_data.cur_broker_addr.port);
+    etcpal_pack_16b(cur_ptr, device_responder_state.cur_broker_addr.port);
     cur_ptr += 2;
   }
   else
@@ -607,7 +659,7 @@ bool get_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, par
     memset(cur_ptr, 0, 22);
     cur_ptr += 22;
   }
-  etcpal_pack_16b(cur_ptr, prop_data.tcp_unhealthy_counter);
+  etcpal_pack_16b(cur_ptr, device_responder_state.tcp_unhealthy_counter);
   cur_ptr += 2;
   resp_data_list[0].datalen = (uint8_t)(cur_ptr - resp_data_list[0].data);
   *num_responses = 1;
@@ -703,7 +755,7 @@ bool get_endpoint_list(const uint8_t* param_data, uint8_t param_data_len, param_
   /* Hardcoded: no endpoints other than NULL_ENDPOINT. NULL_ENDPOINT is not
    * reported in this response. */
   resp_data_list[0].datalen = 4;
-  etcpal_pack_32b(cur_ptr, prop_data.endpoint_list_change_number);
+  etcpal_pack_32b(cur_ptr, device_responder_state.endpoint_list_change_number);
   *num_responses = 1;
   return true;
 }
@@ -724,4 +776,64 @@ bool get_endpoint_responders(const uint8_t* param_data, uint8_t param_data_len, 
   else
     *nack_reason = E120_NR_FORMAT_ERROR;
   return false;
+}
+
+//resp_process_result_t default_responder_supported_params(PidHandlerData* data)
+//{
+//  return kRespNoSend;
+//}
+
+resp_process_result_t default_responder_parameter_description(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+resp_process_result_t default_responder_device_model_description(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+//resp_process_result_t default_responder_manufacturer_label(PidHandlerData* data)
+//{
+//  return kRespNoSend;
+//}
+
+resp_process_result_t default_responder_device_label(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+resp_process_result_t default_responder_software_version_label(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+resp_process_result_t default_responder_identify_device(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+resp_process_result_t default_responder_component_scope(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+resp_process_result_t default_responder_search_domain(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+resp_process_result_t default_responder_tcp_comms_status(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+uint8_t default_responder_get_message_count()
+{
+  return 0;  // TODO: Not yet implemented
+}
+
+void default_responder_get_next_queue_message(GetNextQueueMessageData* data)
+{
+  // TODO: Not yet implemented
 }

@@ -24,16 +24,11 @@
 #include "etcpal/bool.h"
 #include "etcpal/inet.h"
 #include "rdm/message.h"
+#include "rdm/responder.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/client.h"
 
 #define MAX_RESPONSES_IN_ACK_OVERFLOW 2
-
-typedef struct RdmParamData
-{
-  uint8_t datalen;
-  uint8_t data[RDM_MAX_PDL];
-} RdmParamData;
 
 typedef RdmParamData param_data_list_t[MAX_RESPONSES_IN_ACK_OVERFLOW];
 
@@ -55,15 +50,17 @@ void default_responder_deinit();
 void default_responder_get_scope_config(RdmnetScopeConfig* scope_config);
 void default_responder_get_search_domain(char* search_domain);
 bool default_responder_supports_pid(uint16_t pid);
-void default_responder_update_connection_status(bool connected, const EtcPalSockaddr* broker_addr);
+void default_responder_update_connection_status(bool connected, const EtcPalSockaddr* broker_addr,
+                                                const RdmUid* responder_uid);
 void default_responder_incr_unhealthy_count();
 void default_responder_reset_unhealthy_count();
 
-/* Generic PID get and set functions */
+/* Command handling */
 bool default_responder_set(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
                            rdmnet_data_changed_t* data_changed);
 bool default_responder_get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len,
                            param_data_list_t resp_data_list, size_t* num_responses, uint16_t* nack_reason);
+resp_process_result_t default_responder_process_command(const RdmCommand* command, RdmResponse* response);
 
 #ifdef __cplusplus
 }

@@ -28,6 +28,8 @@
 #include "rdmnet/version.h"
 #include "ControllerUtils.h"
 
+#define CONTROLLER_HANDLER_ARRAY_SIZE 8
+
 struct RdmParamData
 {
   uint8_t data[RDM_MAX_PDL];
@@ -42,6 +44,7 @@ struct ControllerScopeData
   StaticBrokerConfig static_broker;
   bool connected{false};
   EtcPalSockaddr current_broker;
+  RdmUid my_uid;
 };
 
 constexpr char kMyDeviceLabel[] = "ETC Example RDMnet Controller";
@@ -54,6 +57,10 @@ class ControllerDefaultResponder
 public:
   ControllerDefaultResponder() { etcpal_rwlock_create(&prop_lock_); }
   virtual ~ControllerDefaultResponder() { etcpal_rwlock_destroy(&prop_lock_); }
+
+  void InitResponder();
+
+  resp_process_result_t ProcessCommand(const std::string& scope, const RdmCommand& pcmd, RdmResponse& presp);
 
   bool Get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len, std::vector<RdmParamData>& resp_data_list,
            uint16_t& nack_reason);
@@ -84,7 +91,8 @@ public:
   void AddScope(const std::string& new_scope, StaticBrokerConfig static_broker = StaticBrokerConfig());
   void RemoveScope(const std::string& scope_to_remove);
   void UpdateScopeConnectionStatus(const std::string& scope, bool connected,
-                                   const EtcPalSockaddr& broker_addr = EtcPalSockaddr());
+                                   const EtcPalSockaddr& broker_addr = EtcPalSockaddr(),
+                                   const RdmUid& controller_uid = RdmUid());
   void IncrementTcpUnhealthyCounter(const std::string& scope);
   void ResetTcpUnhealthyCounter(const std::string& scope);
 
@@ -101,4 +109,7 @@ private:
   const std::string manufacturer_label_{kMyManufacturerLabel};
   const std::string device_model_description_{kMyDeviceModelDescription};
   const std::string software_version_label_{kMySoftwareVersionLabel};
+
+  RdmResponderState rdm_responder_state_;
+  RdmPidHandlerEntry handler_array_[CONTROLLER_HANDLER_ARRAY_SIZE];
 };

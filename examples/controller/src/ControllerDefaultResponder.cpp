@@ -64,6 +64,112 @@ const std::vector<uint8_t> ControllerDefaultResponder::device_info_ = {
 };
 /* clang-format on */
 
+extern "C" {
+
+/* RESPONDER HANDLERS */
+// static resp_process_result_t default_responder_supported_params(PidHandlerData* data)
+//{
+//  return kRespNoSend;
+//}
+
+static resp_process_result_t default_responder_parameter_description(PidHandlerData* data)
+{
+  return kRespNoSend; // TODO: Not yet implemented
+}
+
+static resp_process_result_t default_responder_device_model_description(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+// static resp_process_result_t default_responder_manufacturer_label(PidHandlerData* data)
+//{
+//  return kRespNoSend;
+//}
+
+static resp_process_result_t default_responder_device_label(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+static resp_process_result_t default_responder_software_version_label(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+static resp_process_result_t default_responder_identify_device(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+static resp_process_result_t default_responder_component_scope(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+static resp_process_result_t default_responder_search_domain(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+static resp_process_result_t default_responder_tcp_comms_status(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+static uint8_t default_responder_get_message_count()
+{
+  return 0;  // TODO: Not yet implemented
+}
+
+static void default_responder_get_next_queue_message(GetNextQueueMessageData* data)
+{
+  // TODO: Not yet implemented
+}
+}  // extern "C"
+
+void ControllerDefaultResponder::InitResponder()
+{
+  RdmPidHandlerEntry handler_array[CONTROLLER_HANDLER_ARRAY_SIZE] = {
+      //{E120_SUPPORTED_PARAMETERS, default_responder_supported_params, RDM_PS_ALL | RDM_PS_GET},
+      {E120_PARAMETER_DESCRIPTION, default_responder_parameter_description, RDM_PS_ROOT | RDM_PS_GET},
+      {E120_DEVICE_MODEL_DESCRIPTION, default_responder_device_model_description,
+       RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOWSUP},
+      //{E120_MANUFACTURER_LABEL, default_responder_manufacturer_label, RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOWSUP},
+      {E120_DEVICE_LABEL, default_responder_device_label, RDM_PS_ALL | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
+      {E120_SOFTWARE_VERSION_LABEL, default_responder_software_version_label, RDM_PS_ROOT | RDM_PS_GET},
+      {E120_IDENTIFY_DEVICE, default_responder_identify_device, RDM_PS_ALL | RDM_PS_GET_SET},
+      {E133_COMPONENT_SCOPE, default_responder_component_scope, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
+      {E133_SEARCH_DOMAIN, default_responder_search_domain, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
+      {E133_TCP_COMMS_STATUS, default_responder_tcp_comms_status, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP}};
+
+  rdm_responder_state_.port_number = 0;
+  rdm_responder_state_.number_of_subdevices = 0;
+  rdm_responder_state_.responder_type = kRespTypeController;
+  rdm_responder_state_.callback_context = this;
+  memcpy(handler_array_, handler_array, CONTROLLER_HANDLER_ARRAY_SIZE * sizeof(RdmPidHandlerEntry));
+  rdm_responder_state_.handler_array = handler_array_;
+  rdm_responder_state_.handler_array_size = CONTROLLER_HANDLER_ARRAY_SIZE;
+  rdm_responder_state_.get_message_count = default_responder_get_message_count;
+  rdm_responder_state_.get_next_queue_message = default_responder_get_next_queue_message;
+
+  rdmresp_sort_handler_array(handler_array_, CONTROLLER_HANDLER_ARRAY_SIZE);
+  assert(rdmresp_validate_state(&rdm_responder_state_));
+}
+
+resp_process_result_t ControllerDefaultResponder::ProcessCommand(const std::string& scope, const RdmCommand& pcmd,
+                                                                 RdmResponse& presp)
+{
+  auto scope_entry = scopes_.find(scope);
+  if (scope_entry != scopes_.end())
+  {
+    rdm_responder_state_.uid = scope_entry->second.my_uid;
+    return rdmresp_process_command(&rdm_responder_state_, &pcmd, &presp);
+  }
+
+  return kRespNoSend;
+}
+
 bool ControllerDefaultResponder::Get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len,
                                      std::vector<RdmParamData>& resp_data_list, uint16_t& nack_reason)
 {
@@ -369,7 +475,8 @@ void ControllerDefaultResponder::RemoveScope(const std::string& scope_to_remove)
 }
 
 void ControllerDefaultResponder::UpdateScopeConnectionStatus(const std::string& scope, bool connected,
-                                                             const EtcPalSockaddr& broker_addr)
+                                                             const EtcPalSockaddr& broker_addr,
+                                                             const RdmUid& controller_uid)
 {
   etcpal::WriteGuard prop_write(prop_lock_);
   auto scope_entry = scopes_.find(scope);
@@ -377,7 +484,10 @@ void ControllerDefaultResponder::UpdateScopeConnectionStatus(const std::string& 
   {
     scope_entry->second.connected = connected;
     if (connected)
+    {
       scope_entry->second.current_broker = broker_addr;
+      scope_entry->second.my_uid = controller_uid;
+    }
   }
 }
 
