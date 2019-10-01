@@ -17,6 +17,7 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 #include <map>
+#include <utility>
 
 #include "gtest/gtest.h"
 #include "rdmnet/client.h"
@@ -49,6 +50,9 @@ protected:
   RdmnetScopeConfig default_dynamic_scope_{};
   RdmnetScopeConfig default_static_scope_{};
 
+  rdmnet_client_t client_handle_;
+  rdmnet_client_scope_t scope_handle_;
+
   TestClientBehavior()
   {
     rpt_callbacks_.connected = rdmnet_client_connected;
@@ -76,26 +80,49 @@ protected:
     // Reset the fakes
     RDMNET_CLIENT_CALLBACKS_DO_FOR_ALL_FAKES(RESET_FAKE);
     rdmnet_mock_core_reset();
+    rdmnet_connection_create_fake.custom_fake = create_conn_and_save_config;
+    rdmnet_connect_fake.return_val = kEtcPalErrOk;
+    rdmnetdisc_start_monitoring_fake.return_val = kEtcPalErrOk;
 
     // Init
     ASSERT_EQ(kEtcPalErrOk, rdmnet_client_init(NULL));
     ASSERT_EQ(rdmnet_core_init_fake.call_count, 1u);
+
+    // Create client
+    ASSERT_EQ(kEtcPalErrOk, rdmnet_rpt_client_create(&default_rpt_config_, &client_handle_));
   }
 
-  void TearDown() override { rdmnet_client_deinit(); }
+  void TearDown() override
+  {
+    ASSERT_EQ(kEtcPalErrOk, rdmnet_client_destroy(client_handle_));
+    rdmnet_client_deinit();
+  }
+
+  void ConnectAndVerify()
+  {
+    ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle_, &default_static_scope_, &scope_handle_));
+
+    EXPECT_EQ(rdmnet_connection_create_fake.call_count, 1u);
+    EXPECT_EQ(rdmnet_connect_fake.call_count, 1u);
+
+    RdmnetConnectedInfo connected_info{};
+    connected_info.broker_uid = {20, 40};
+    connected_info.client_uid = {1, 2};
+    connected_info.connected_addr = default_static_scope_.static_broker_addr;
+    last_conn_config.callbacks.connected(last_handle, &connected_info, last_conn_config.callback_context);
+
+    EXPECT_EQ(rdmnet_client_connected_fake.call_count, 1u);
+  }
 };
 
 // Test that the rdmnet_client_add_scope() function has the correct side-effects with respect to
 // discovery and connections
 TEST_F(TestClientBehavior, add_scope_has_correct_side_effects)
 {
-  // Create a new client
-  rdmnet_client_t client_handle;
-  ASSERT_EQ(kEtcPalErrOk, rdmnet_rpt_client_create(&default_rpt_config_, &client_handle));
-
   // Add a scope with default settings
   rdmnet_client_scope_t scope_handle;
-  ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle, &default_dynamic_scope_, &scope_handle));
+  ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle_, &default_dynamic_scope_, &scope_handle));
+
   // Make sure the correct underlying functions were called
   ASSERT_EQ(rdmnetdisc_start_monitoring_fake.call_count, 1u);
   ASSERT_EQ(rdmnet_connect_fake.call_count, 0u);
@@ -103,30 +130,62 @@ TEST_F(TestClientBehavior, add_scope_has_correct_side_effects)
   RESET_FAKE(rdmnetdisc_start_monitoring);
   RESET_FAKE(rdmnet_connect);
 
-  // Create another client with one scope and a static broker address
-  ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle, &default_static_scope_, &scope_handle));
+  // Add another scope with a static broker address
+  ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle_, &default_static_scope_, &scope_handle));
   ASSERT_EQ(rdmnetdisc_start_monitoring_fake.call_count, 0u);
   ASSERT_EQ(rdmnet_connect_fake.call_count, 1u);
 }
 
-TEST_F(TestClientBehavior, successful_connection_reported)
+TEST_F(TestClientBehavior, discovery_errors_handled)
 {
-  rdmnet_connection_create_fake.custom_fake = create_conn_and_save_config;
-
-  rdmnet_client_t handle;
-  ASSERT_EQ(kEtcPalErrOk, rdmnet_rpt_client_create(&default_rpt_config_, &handle));
+  rdmnetdisc_start_monitoring_fake.return_val = kEtcPalErrSys;
 
   rdmnet_client_scope_t scope_handle;
-  ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(handle, &default_static_scope_, &scope_handle));
+  EXPECT_EQ(kEtcPalErrSys, rdmnet_client_add_scope(client_handle_, &default_dynamic_scope_, &scope_handle));
+}
 
-  EXPECT_EQ(rdmnet_connection_create_fake.call_count, 1u);
-  EXPECT_EQ(rdmnet_connect_fake.call_count, 1u);
+TEST_F(TestClientBehavior, connection_errors_handled)
+{
+  rdmnet_connect_fake.return_val = kEtcPalErrSys;
 
-  RdmnetConnectedInfo connected_info{};
-  connected_info.broker_uid = {20, 40};
-  connected_info.client_uid = {1, 2};
-  connected_info.connected_addr = default_static_scope_.static_broker_addr;
-  last_conn_config.callbacks.connected(last_handle, &connected_info, last_conn_config.callback_context);
+  rdmnet_client_scope_t scope_handle;
+  EXPECT_EQ(kEtcPalErrSys, rdmnet_client_add_scope(client_handle_, &default_static_scope_, &scope_handle));
+}
 
-  EXPECT_EQ(rdmnet_client_connected_fake.call_count, 1u);
+TEST_F(TestClientBehavior, successful_connection_reported)
+{
+  ConnectAndVerify();
+}
+
+extern "C" {
+RdmnetClientDisconnectedInfo client_disconn_info;
+
+// Just save the info pointed to by the struct
+void custom_disconnected_cb(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+                            const RdmnetClientDisconnectedInfo* info, void* context)
+{
+  (void)handle;
+  (void)scope_handle;
+  client_disconn_info = *info;
+  (void)context;
+}
+};
+
+TEST_F(TestClientBehavior, client_retries_on_disconnect)
+{
+  ConnectAndVerify();
+
+  RESET_FAKE(rdmnet_connect);
+  rdmnet_client_disconnected_fake.custom_fake = custom_disconnected_cb;
+
+  // Simulate a disconnect for a reason that requires a retry
+  RdmnetDisconnectedInfo disconn_info{};
+  disconn_info.event = kRdmnetDisconnectGracefulRemoteInitiated;
+  disconn_info.rdmnet_reason = kRdmnetDisconnectShutdown;
+  disconn_info.socket_err = kEtcPalErrOk;
+  last_conn_config.callbacks.disconnected(last_handle, &disconn_info, last_conn_config.callback_context);
+
+  EXPECT_EQ(rdmnet_client_disconnected_fake.call_count, 1u);
+  EXPECT_TRUE(client_disconn_info.will_retry);
+  EXPECT_GE(rdmnet_connect_fake.call_count, 1u);
 }

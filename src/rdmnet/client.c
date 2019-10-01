@@ -141,7 +141,8 @@ static const LlrpTargetCallbacks llrp_callbacks =
 
 // Create and destroy clients and scopes
 static etcpal_error_t validate_rpt_client_config(const RdmnetRptClientConfig* config);
-static etcpal_error_t rpt_client_new(const RdmnetRptClientConfig* config, rdmnet_client_t* handle);
+static etcpal_error_t new_rpt_client(const RdmnetRptClientConfig* config, rdmnet_client_t* handle);
+static etcpal_error_t destroy_client(RdmnetClient* cli);
 static etcpal_error_t create_llrp_handle_for_client(const RdmnetRptClientConfig* config, RdmnetClient* cli);
 static bool client_handle_in_use(int handle_val);
 static etcpal_error_t create_and_append_scope_entry(const RdmnetScopeConfig* config, RdmnetClient* client,
@@ -166,8 +167,8 @@ static void release_client_and_scope(const RdmnetClient* client, const ClientSco
 // Manage callbacks
 static void fill_callback_info(const RdmnetClient* client, ClientCallbackDispatchInfo* cb);
 static void deliver_callback(ClientCallbackDispatchInfo* info);
-static bool connect_failed_will_retry(rdmnet_connect_fail_event_t event);
-static bool disconnected_will_retry(rdmnet_disconnect_event_t event);
+static bool connect_failed_will_retry(rdmnet_connect_fail_event_t event, rdmnet_connect_status_t status);
+static bool disconnected_will_retry(rdmnet_disconnect_event_t event, rdmnet_disconnect_reason_t reason);
 
 // Message handling
 static void free_rpt_client_message(RptClientMessage* msg);
@@ -240,6 +241,16 @@ etcpal_error_t rdmnet_client_init(const EtcPalLogParams* lparams)
   return res;
 }
 
+static void client_dealloc(const EtcPalRbTree* self, EtcPalRbNode* node)
+{
+  (void)self;
+
+  RdmnetClient* cli = (RdmnetClient*)node->value;
+  if (cli)
+    destroy_client(cli);
+  client_node_free(node);
+}
+
 void rdmnet_client_deinit()
 {
   if (!rdmnet_core_initialized())
@@ -247,7 +258,7 @@ void rdmnet_client_deinit()
 
   if (rdmnet_client_lock())
   {
-    // TODO destroy all clients
+    etcpal_rbtree_clear_with_cb(&state.clients, client_dealloc);
 
     rdmnet_core_deinit();
     rdmnet_client_unlock();
@@ -267,7 +278,7 @@ etcpal_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig* config, rdm
 
   if (rdmnet_client_lock())
   {
-    res = rpt_client_new(config, handle);
+    res = new_rpt_client(config, handle);
     rdmnet_client_unlock();
   }
   else
@@ -280,9 +291,19 @@ etcpal_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig* config, rdm
 
 etcpal_error_t rdmnet_client_destroy(rdmnet_client_t handle)
 {
-  (void)handle;
-  // TODO
-  return kEtcPalErrNotImpl;
+  if (!handle)
+    return kEtcPalErrInvalid;
+  if (!rdmnet_core_initialized())
+    return kEtcPalErrNotInit;
+
+  RdmnetClient* cli;
+  etcpal_error_t res = get_client(handle, &cli);
+  if (res != kEtcPalErrOk)
+    return res;
+
+  res = destroy_client(cli);
+  rdmnet_client_unlock();
+  return res;
 }
 
 etcpal_error_t rdmnet_client_add_scope(rdmnet_client_t handle, const RdmnetScopeConfig* scope_config,
@@ -620,7 +641,7 @@ void conncb_connect_failed(rdmnet_conn_t handle, const RdmnetConnectFailedInfo* 
     info.event = failed_info->event;
     info.socket_err = failed_info->socket_err;
     info.rdmnet_reason = failed_info->rdmnet_reason;
-    info.will_retry = connect_failed_will_retry(info.event);
+    info.will_retry = connect_failed_will_retry(info.event, info.rdmnet_reason);
 
     fill_callback_info(cli, &cb);
     cb.which = kClientCallbackConnectFailed;
@@ -651,7 +672,7 @@ void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo* dis
     info.event = disconn_info->event;
     info.socket_err = disconn_info->socket_err;
     info.rdmnet_reason = disconn_info->rdmnet_reason;
-    info.will_retry = disconnected_will_retry(info.event);
+    info.will_retry = disconnected_will_retry(info.event, info.rdmnet_reason);
 
     fill_callback_info(cli, &cb);
     cb.which = kClientCallbackDisconnected;
@@ -996,17 +1017,26 @@ void deliver_callback(ClientCallbackDispatchInfo* info)
   }
 }
 
-bool connect_failed_will_retry(rdmnet_connect_fail_event_t event)
+bool connect_failed_will_retry(rdmnet_connect_fail_event_t event, rdmnet_connect_status_t status)
 {
-  (void)event;
-  // TODO
-  return true;
+  switch (event)
+  {
+    case kRdmnetConnectFailSocketFailure:
+      return false;
+    case kRdmnetConnectFailRejected:
+      return (status == kRdmnetConnectCapacityExceeded);
+    case kRdmnetConnectFailTcpLevel:
+    case kRdmnetConnectFailNoReply:
+    default:
+      return true;
+  }
 }
 
-bool disconnected_will_retry(rdmnet_disconnect_event_t event)
+bool disconnected_will_retry(rdmnet_disconnect_event_t event, rdmnet_disconnect_reason_t reason)
 {
   (void)event;
-  // TODO
+  (void)reason;
+  // Currently all disconnects are retried.
   return true;
 }
 
@@ -1023,8 +1053,8 @@ etcpal_error_t validate_rpt_client_config(const RdmnetRptClientConfig* config)
   return kEtcPalErrOk;
 }
 
-/* Create and initialize a new RdmnetClient structure from a given config. */
-etcpal_error_t rpt_client_new(const RdmnetRptClientConfig* config, rdmnet_client_t* handle)
+/* Create and initialize a new RdmnetClient structure from a given RPT config. */
+etcpal_error_t new_rpt_client(const RdmnetRptClientConfig* config, rdmnet_client_t* handle)
 {
   etcpal_error_t res = kEtcPalErrNoMem;
 
@@ -1075,6 +1105,10 @@ etcpal_error_t rpt_client_new(const RdmnetRptClientConfig* config, rdmnet_client
   }
 
   return res;
+}
+
+etcpal_error_t destroy_client(RdmnetClient* cli)
+{
 }
 
 etcpal_error_t create_llrp_handle_for_client(const RdmnetRptClientConfig* config, RdmnetClient* cli)

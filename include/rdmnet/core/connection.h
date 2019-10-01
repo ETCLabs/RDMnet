@@ -97,10 +97,16 @@ typedef struct RdmnetConnectFailedInfo
 /*! A high-level reason for RDMnet connection to be disconnected after successful connection. */
 typedef enum
 {
+  /*! The TCP connection was closed without an RDMnet disconnect message being sent. */
   kRdmnetDisconnectAbruptClose,
+  /*! The TCP connection was deemed unhealthy due to no heartbeat message being received before the
+   *  heartbeat timeout. */
   kRdmnetDisconnectNoHeartbeat,
+  /*! The client was redirected to another broker address. */
   kRdmnetDisconnectRedirected,
+  /*! The remote component sent an RDMnet disconnect message with a reason code. */
   kRdmnetDisconnectGracefulRemoteInitiated,
+  /*! A disconnect was requested locally. */
   kRdmnetDisconnectGracefulLocalInitiated
 } rdmnet_disconnect_event_t;
 
