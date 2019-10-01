@@ -56,6 +56,7 @@ protected:
   TestClientBehavior()
   {
     rpt_callbacks_.connected = rdmnet_client_connected;
+    rpt_callbacks_.connect_failed = rdmnet_client_connect_failed;
     rpt_callbacks_.disconnected = rdmnet_client_disconnected;
     rpt_callbacks_.broker_msg_received = rdmnet_client_broker_msg_received;
     rpt_callbacks_.msg_received = rpt_client_msg_received;
@@ -188,4 +189,56 @@ TEST_F(TestClientBehavior, client_retries_on_disconnect)
   EXPECT_EQ(rdmnet_client_disconnected_fake.call_count, 1u);
   EXPECT_TRUE(client_disconn_info.will_retry);
   EXPECT_GE(rdmnet_connect_fake.call_count, 1u);
+}
+
+extern "C" {
+RdmnetClientConnectFailedInfo client_connect_failed_info;
+
+// Just save the info pointed to by the struct
+void custom_connect_failed(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+                           const RdmnetClientConnectFailedInfo* info, void* context)
+{
+  (void)handle;
+  (void)scope_handle;
+  client_connect_failed_info = *info;
+  (void)context;
+}
+};
+
+TEST_F(TestClientBehavior, client_retries_on_connect_fail)
+{
+  ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle_, &default_static_scope_, &scope_handle_));
+
+  EXPECT_EQ(rdmnet_connection_create_fake.call_count, 1u);
+  EXPECT_EQ(rdmnet_connect_fake.call_count, 1u);
+
+  RESET_FAKE(rdmnet_connect);
+
+  RdmnetConnectFailedInfo failed_info{};
+  failed_info.event = kRdmnetConnectFailTcpLevel;
+  failed_info.socket_err = kEtcPalErrTimedOut;
+  last_conn_config.callbacks.connect_failed(last_handle, &failed_info, last_conn_config.callback_context);
+
+  EXPECT_EQ(rdmnet_client_connect_failed_fake.call_count, 1u);
+  EXPECT_TRUE(client_connect_failed_info.will_retry);
+  EXPECT_GE(rdmnet_connect_fake.call_count, 1u);
+}
+
+TEST_F(TestClientBehavior, client_does_not_retry_on_fatal_connect_fail)
+{
+  ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle_, &default_static_scope_, &scope_handle_));
+
+  EXPECT_EQ(rdmnet_connection_create_fake.call_count, 1u);
+  EXPECT_EQ(rdmnet_connect_fake.call_count, 1u);
+
+  RESET_FAKE(rdmnet_connect);
+
+  RdmnetConnectFailedInfo failed_info{};
+  failed_info.event = kRdmnetConnectFailRejected;
+  failed_info.rdmnet_reason = kRdmnetConnectScopeMismatch;
+  last_conn_config.callbacks.connect_failed(last_handle, &failed_info, last_conn_config.callback_context);
+
+  EXPECT_EQ(rdmnet_client_connect_failed_fake.call_count, 1u);
+  EXPECT_FALSE(client_connect_failed_info.will_retry);
+  EXPECT_EQ(rdmnet_connect_fake.call_count, 0u);
 }

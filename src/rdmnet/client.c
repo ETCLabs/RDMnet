@@ -665,13 +665,27 @@ void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo* dis
   {
     RdmnetClient* cli = scope_entry->client;
 
-    scope_entry->state = kScopeStateDiscovery;
-
     RdmnetClientDisconnectedInfo info;
     info.event = disconn_info->event;
     info.socket_err = disconn_info->socket_err;
     info.rdmnet_reason = disconn_info->rdmnet_reason;
     info.will_retry = disconnected_will_retry(info.event, info.rdmnet_reason);
+
+    if (info.will_retry)
+    {
+      // Start discovery or connection on the new scope (depending on whether a static broker was
+      // configured)
+      if (scope_entry->monitor_handle)
+      {
+        scope_entry->state = kScopeStateDiscovery;
+        start_scope_discovery(scope_entry, cli->search_domain);
+      }
+      else
+      {
+        scope_entry->state = kScopeStateConnecting;
+        start_connection_for_scope(scope_entry, &scope_entry->config.static_broker_addr);
+      }
+    }
 
     fill_callback_info(cli, &cb);
     cb.which = kClientCallbackDisconnected;
