@@ -93,7 +93,7 @@ etcpal_error_t device_init(const RdmnetScopeConfig* scope_config, const EtcPalLo
 
   rdmnet_safe_strncpy(device_state.cur_search_domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
   device_state.cur_scope_config = *scope_config;
-  default_responder_init(scope_config, device_state.cur_search_domain, device_state.my_uid);
+  default_responder_init(scope_config, device_state.cur_search_domain);
 
   etcpal_error_t res = rdmnet_device_init(lparams);
   if (res != kEtcPalErrOk)
@@ -155,7 +155,7 @@ void device_disconnected(rdmnet_device_t handle, const RdmnetClientDisconnectedI
   (void)context;
   (void)info;
 
-  default_responder_update_connection_status(false, NULL);
+  default_responder_update_connection_status(false, NULL, NULL);
   etcpal_log(device_state.lparams, ETCPAL_LOG_INFO, "Device disconnected from Broker on scope '%s'.",
              device_state.cur_scope_config.scope);
 }
@@ -344,7 +344,8 @@ bool device_handle_rdm_command(const RdmCommand* rdm_cmd, RdmResponse* resp_list
   {
     case kRdmCCSetCommand:
     {
-      if (default_responder_set(rdm_cmd->param_id, rdm_cmd->data, rdm_cmd->datalen, nack_reason, data_changed))
+      if (default_responder_set(rdm_cmd->param_id, rdm_cmd->parameter_data.data, rdm_cmd->parameter_data.datalen,
+                                nack_reason, data_changed))
       {
         resp_list->source_uid = rdm_cmd->dest_uid;
         resp_list->dest_uid = kBroadcastUid;
@@ -354,7 +355,7 @@ bool device_handle_rdm_command(const RdmCommand* rdm_cmd, RdmResponse* resp_list
         resp_list->subdevice = 0;
         resp_list->command_class = kRdmCCSetCommandResponse;
         resp_list->param_id = rdm_cmd->param_id;
-        resp_list->datalen = 0;
+        resp_list->parameter_data.datalen = 0;
 
         *resp_list_size = 1;
         res = true;
@@ -364,8 +365,8 @@ bool device_handle_rdm_command(const RdmCommand* rdm_cmd, RdmResponse* resp_list
     case kRdmCCGetCommand:
     {
       param_data_list_t resp_data_list;
-      if (default_responder_get(rdm_cmd->param_id, rdm_cmd->data, rdm_cmd->datalen, resp_data_list, resp_list_size,
-                                nack_reason))
+      if (default_responder_get(rdm_cmd->param_id, rdm_cmd->parameter_data.data, rdm_cmd->parameter_data.datalen,
+                                resp_data_list, resp_list_size, nack_reason))
       {
         for (size_t i = 0; i < *resp_list_size; ++i)
         {
@@ -378,8 +379,8 @@ bool device_handle_rdm_command(const RdmCommand* rdm_cmd, RdmResponse* resp_list
           resp_list[i].command_class = kRdmCCGetCommandResponse;
           resp_list[i].param_id = rdm_cmd->param_id;
 
-          memcpy(resp_list[i].data, resp_data_list[i].data, resp_data_list[i].datalen);
-          resp_list[i].datalen = resp_data_list[i].datalen;
+          memcpy(resp_list[i].parameter_data.data, resp_data_list[i].data, resp_data_list[i].datalen);
+          resp_list[i].parameter_data.datalen = resp_data_list[i].datalen;
           res = true;
         }
       }

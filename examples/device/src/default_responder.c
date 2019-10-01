@@ -212,7 +212,10 @@ void default_responder_update_connection_status(bool connected, const EtcPalSock
     device_responder_state.connected = connected;
     if (device_responder_state.connected)
       device_responder_state.cur_broker_addr = *broker_addr;
-    device_responder_state.rdm_responder_state.uid = *responder_uid;
+    if (responder_uid)
+    {
+      device_responder_state.rdm_responder_state.uid = *responder_uid;
+    }
     etcpal_rwlock_readunlock(&state_lock);
   }
 }

@@ -30,12 +30,6 @@
 
 #define CONTROLLER_HANDLER_ARRAY_SIZE 8
 
-struct RdmParamData
-{
-  uint8_t data[RDM_MAX_PDL];
-  uint8_t datalen;
-};
-
 struct ControllerScopeData
 {
   ControllerScopeData(StaticBrokerConfig sb) : static_broker(sb) {}

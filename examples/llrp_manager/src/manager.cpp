@@ -449,13 +449,13 @@ void LLRPManager::GetDeviceInfo(int target_handle)
       cmd_data.subdevice = 0;
       cmd_data.command_class = kRdmCCGetCommand;
       cmd_data.param_id = E120_DEVICE_INFO;
-      cmd_data.datalen = 0;
+      cmd_data.parameter_data.datalen = 0;
 
       if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
       {
-        if (resp_data.datalen == 19)
+        if (resp_data.parameter_data.datalen == 19)
         {
-          const uint8_t* cur_ptr = resp_data.data;
+          const uint8_t* cur_ptr = resp_data.parameter_data.data;
           printf("Device info:\n");
           printf("  RDM Protocol Version: %d.%d\n", cur_ptr[0], cur_ptr[1]);
           cur_ptr += 2;
@@ -515,12 +515,12 @@ void LLRPManager::GetDeviceLabel(int target_handle)
       cmd_data.subdevice = 0;
       cmd_data.command_class = kRdmCCGetCommand;
       cmd_data.param_id = E120_DEVICE_LABEL;
-      cmd_data.datalen = 0;
+      cmd_data.parameter_data.datalen = 0;
 
       if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
       {
         std::string dev_label;
-        dev_label.assign(reinterpret_cast<char*>(resp_data.data), resp_data.datalen);
+        dev_label.assign(reinterpret_cast<char*>(resp_data.parameter_data.data), resp_data.parameter_data.datalen);
         printf("Device label: %s\n", dev_label.c_str());
       }
     }
@@ -550,12 +550,12 @@ void LLRPManager::GetManufacturerLabel(int target_handle)
       cmd_data.subdevice = 0;
       cmd_data.command_class = kRdmCCGetCommand;
       cmd_data.param_id = E120_MANUFACTURER_LABEL;
-      cmd_data.datalen = 0;
+      cmd_data.parameter_data.datalen = 0;
 
       if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
       {
         std::string manu_label;
-        manu_label.assign(reinterpret_cast<char*>(resp_data.data), resp_data.datalen);
+        manu_label.assign(reinterpret_cast<char*>(resp_data.parameter_data.data), resp_data.parameter_data.datalen);
         printf("Manufacturer label: %s\n", manu_label.c_str());
       }
     }
@@ -585,12 +585,12 @@ void LLRPManager::GetDeviceModelDescription(int target_handle)
       cmd_data.subdevice = 0;
       cmd_data.command_class = kRdmCCGetCommand;
       cmd_data.param_id = E120_DEVICE_MODEL_DESCRIPTION;
-      cmd_data.datalen = 0;
+      cmd_data.parameter_data.datalen = 0;
 
       if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
       {
         std::string dev_model_desc;
-        dev_model_desc.assign(reinterpret_cast<char*>(resp_data.data), resp_data.datalen);
+        dev_model_desc.assign(reinterpret_cast<char*>(resp_data.parameter_data.data), resp_data.parameter_data.datalen);
         printf("Device model description: %s\n", dev_model_desc.c_str());
       }
     }
@@ -626,14 +626,14 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
       cmd_data.subdevice = 0;
       cmd_data.command_class = kRdmCCGetCommand;
       cmd_data.param_id = E133_COMPONENT_SCOPE;
-      cmd_data.datalen = 2;
-      etcpal_pack_16b(cmd_data.data, static_cast<uint16_t>(scope_slot));
+      cmd_data.parameter_data.datalen = 2;
+      etcpal_pack_16b(cmd_data.parameter_data.data, static_cast<uint16_t>(scope_slot));
 
       if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
       {
-        if (resp_data.datalen >= (2 + E133_SCOPE_STRING_PADDED_LENGTH + 1 + 4 + 16 + 2))
+        if (resp_data.parameter_data.datalen >= (2 + E133_SCOPE_STRING_PADDED_LENGTH + 1 + 4 + 16 + 2))
         {
-          const uint8_t* cur_ptr = resp_data.data;
+          const uint8_t* cur_ptr = resp_data.parameter_data.data;
 
           uint16_t slot = etcpal_upack_16b(cur_ptr);
           cur_ptr += 2;
@@ -704,8 +704,8 @@ void LLRPManager::IdentifyDevice(int target_handle)
       cmd_data.subdevice = 0;
       cmd_data.command_class = kRdmCCSetCommand;
       cmd_data.param_id = E120_IDENTIFY_DEVICE;
-      cmd_data.datalen = 1;
-      cmd_data.data[0] = target->second.identifying ? 0 : 1;
+      cmd_data.parameter_data.datalen = 1;
+      cmd_data.parameter_data.data[0] = target->second.identifying ? 0 : 1;
 
       if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
       {
@@ -735,8 +735,8 @@ void LLRPManager::SetDeviceLabel(int target_handle, const std::string& label)
       cmd_data.subdevice = 0;
       cmd_data.command_class = kRdmCCSetCommand;
       cmd_data.param_id = E120_DEVICE_LABEL;
-      cmd_data.datalen = (uint8_t)label.length();
-      rdmnet_safe_strncpy((char*)cmd_data.data, label.c_str(), RDM_MAX_PDL);
+      cmd_data.parameter_data.datalen = (uint8_t)label.length();
+      rdmnet_safe_strncpy((char*)cmd_data.parameter_data.data, label.c_str(), RDM_MAX_PDL);
 
       if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
         printf("Set device label successfully.\n");
@@ -776,10 +776,10 @@ void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std
       cmd_data.subdevice = 0;
       cmd_data.command_class = kRdmCCSetCommand;
       cmd_data.param_id = E133_COMPONENT_SCOPE;
-      cmd_data.datalen = COMPONENT_SCOPE_PDL;
-      memset(cmd_data.data, 0, COMPONENT_SCOPE_PDL);
+      cmd_data.parameter_data.datalen = COMPONENT_SCOPE_PDL;
+      memset(cmd_data.parameter_data.data, 0, COMPONENT_SCOPE_PDL);
 
-      uint8_t* cur_ptr = cmd_data.data;
+      uint8_t* cur_ptr = cmd_data.parameter_data.data;
       etcpal_pack_16b(cur_ptr, static_cast<uint16_t>(scope_slot));
       cur_ptr += 2;
       RDMNET_MSVC_NO_DEP_WRN strncpy((char*)cur_ptr, scope_utf8.c_str(), E133_SCOPE_STRING_PADDED_LENGTH - 1);
@@ -877,7 +877,7 @@ bool LLRPManager::SendRDMAndGetResponse(llrp_manager_t manager, const EtcPalUuid
         }
         else if (resp_received_.resp_type == E120_RESPONSE_TYPE_NACK_REASON)
         {
-          printf("Received RDM NACK with reason %d\n", etcpal_upack_16b(resp_received_.data));
+          printf("Received RDM NACK with reason %d\n", etcpal_upack_16b(resp_received_.parameter_data.data));
         }
         else
         {

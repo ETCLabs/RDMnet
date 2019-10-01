@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "etcpal/socket.h"
+#include "rdm/responder.h"
 #include "rdmnet/broker.h"
 #include "broker_client.h"
 #include "broker_discovery.h"
