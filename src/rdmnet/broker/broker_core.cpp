@@ -144,6 +144,8 @@ bool BrokerCore::Startup(const rdmnet::BrokerSettings& settings, uint16_t listen
       return false;
     }
 
+    responder_.InitResponder(my_uid_);
+
     started_ = true;
 
     service_thread_.SetNotify(this);
@@ -836,8 +838,8 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
         RdmBufListEntry* response = new RdmBufListEntry;
         response->next = nullptr;
 
-        process_result = rdmresp_process_packet(&responder_state_, RDM_REF_FROM_BUFFER(request_list->list->msg),
-                                                RDM_REF_FROM_BUFFER(response->msg), nullptr);
+        process_result =
+            responder_.ProcessPacket(RDM_REF_FROM_BUFFER(request_list->list->msg), RDM_REF_FROM_BUFFER(response->msg));
 
         assert((response_list->list == nullptr) ||
                ((process_result != kRespNackReason) && (process_result != kRespNoSend)));

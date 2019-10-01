@@ -85,7 +85,6 @@ private:
 
   // The Broker's RDM responder
   BrokerResponder responder_;
-  RdmResponderState responder_state_;
 
   ClientServiceThread service_thread_;
   BrokerDiscoveryManager disc_;

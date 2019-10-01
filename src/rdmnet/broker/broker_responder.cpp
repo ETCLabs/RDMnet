@@ -19,6 +19,7 @@
 
 #include "broker_responder.h"
 
+#include <cassert>
 #include "rdm/defs.h"
 #include "rdmnet/core/connection.h"
 
@@ -30,44 +31,137 @@
 //
 // const char *BROKER_SOFTWARE_VERSION_LABEL = "v1.0";
 
-void BrokerResponder::ProcessRDMMessage(int /*conn*/, const RPTMessageRef& /*msg*/)
-{
-  //  uint16_t pid =
-  //      static_cast<uint16_t>(getParameterId(const_cast<rdmBuffer *>(&msg.msg)));
-  //  int cmd_class = getCommandClass(const_cast<rdmBuffer *>(&msg.msg));
+extern "C" {
 
-  //  switch (pid)
-  //  {
-  //    case E120_SUPPORTED_PARAMETERS:
-  //      if (cmd_class == E120_GET_COMMAND)
-  //        ProcessGetSupportedParameters(conn, msg);
-  //      else
-  //        SendNack(conn, msg, pid, E120_NR_UNSUPPORTED_COMMAND_CLASS, true);
-  //      break;
-  //    case E120_PARAMETER_DESCRIPTION:
-  //      if (cmd_class == E120_GET_COMMAND)
-  //        ProcessGetParameterDescription(conn, msg);
-  //      else
-  //        SendNack(conn, msg, pid, E120_NR_UNSUPPORTED_COMMAND_CLASS, true);
-  //      break;
-  //    case E120_SOFTWARE_VERSION_LABEL:
-  //      if (cmd_class == E120_GET_COMMAND)
-  //        ProcessGetSoftwareVersionLabel(conn, msg);
-  //      else
-  //        SendNack(conn, msg, pid, E120_NR_UNSUPPORTED_COMMAND_CLASS, true);
-  //      break;
-  //    case E133_COMPONENT_SCOPE:
-  //      if (cmd_class == E120_GET_COMMAND)
-  //        ProcessGetComponentScope(conn, msg);
-  //      else if (cmd_class == E120_SET_COMMAND)
-  //        ProcessSetComponentScope(conn, msg);
-  //      else
-  //        SendNack(conn, msg, pid, E120_NR_UNSUPPORTED_COMMAND_CLASS, true);
-  //      break;
-  //    default:
-  //      SendNack(conn, msg, pid, E120_NR_UNKNOWN_PID, true);
-  //  }
+/* RESPONDER HANDLERS */
+// static resp_process_result_t default_responder_supported_params(PidHandlerData* data)
+//{
+//  return kRespNoSend;
+//}
+
+static resp_process_result_t default_responder_parameter_description(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
 }
+
+static resp_process_result_t default_responder_device_model_description(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+// static resp_process_result_t default_responder_manufacturer_label(PidHandlerData* data)
+//{
+//  return kRespNoSend;
+//}
+
+static resp_process_result_t default_responder_device_label(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+static resp_process_result_t default_responder_software_version_label(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+static resp_process_result_t default_responder_identify_device(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+static resp_process_result_t default_responder_component_scope(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+static resp_process_result_t default_responder_broker_status(PidHandlerData* data)
+{
+  return kRespNoSend;  // TODO: Not yet implemented
+}
+
+static uint8_t default_responder_get_message_count()
+{
+  return 0;  // TODO: Not yet implemented
+}
+
+static void default_responder_get_next_queue_message(GetNextQueueMessageData* data)
+{
+  // TODO: Not yet implemented
+}
+}  // extern "C"
+
+void BrokerResponder::InitResponder(const RdmUid& uid)
+{
+  RdmPidHandlerEntry handler_array[BROKER_HANDLER_ARRAY_SIZE] = {
+      //{E120_SUPPORTED_PARAMETERS, default_responder_supported_params, RDM_PS_ALL | RDM_PS_GET},
+      {E120_PARAMETER_DESCRIPTION, default_responder_parameter_description, RDM_PS_ROOT | RDM_PS_GET},
+      {E120_DEVICE_MODEL_DESCRIPTION, default_responder_device_model_description,
+       RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOWSUP},
+      //{E120_MANUFACTURER_LABEL, default_responder_manufacturer_label, RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOWSUP},
+      {E120_DEVICE_LABEL, default_responder_device_label, RDM_PS_ALL | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
+      {E120_SOFTWARE_VERSION_LABEL, default_responder_software_version_label, RDM_PS_ROOT | RDM_PS_GET},
+      {E120_IDENTIFY_DEVICE, default_responder_identify_device, RDM_PS_ALL | RDM_PS_GET_SET},
+      {E133_COMPONENT_SCOPE, default_responder_component_scope, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
+      {E133_BROKER_STATUS, default_responder_broker_status, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP}};
+
+  rdm_responder_state_.port_number = 0;
+  rdm_responder_state_.uid = uid;
+  rdm_responder_state_.number_of_subdevices = 0;
+  rdm_responder_state_.responder_type = kRespTypeBroker;
+  rdm_responder_state_.callback_context = this;
+  memcpy(handler_array_, handler_array, BROKER_HANDLER_ARRAY_SIZE * sizeof(RdmPidHandlerEntry));
+  rdm_responder_state_.handler_array = handler_array_;
+  rdm_responder_state_.handler_array_size = BROKER_HANDLER_ARRAY_SIZE;
+  rdm_responder_state_.get_message_count = default_responder_get_message_count;
+  rdm_responder_state_.get_next_queue_message = default_responder_get_next_queue_message;
+
+  rdmresp_sort_handler_array(handler_array_, BROKER_HANDLER_ARRAY_SIZE);
+  assert(rdmresp_validate_state(&rdm_responder_state_));
+}
+
+resp_process_result_t BrokerResponder::ProcessPacket(const RdmBufferConstRef& bufferIn, const RdmBufferRef& bufferOut)
+{
+  return rdmresp_process_packet(&rdm_responder_state_, bufferIn, bufferOut, nullptr);
+}
+
+//void BrokerResponder::ProcessRDMMessage(int /*conn*/, const RPTMessageRef& /*msg*/)
+//{
+//    uint16_t pid =
+//        static_cast<uint16_t>(getParameterId(const_cast<rdmBuffer *>(&msg.msg)));
+//    int cmd_class = getCommandClass(const_cast<rdmBuffer *>(&msg.msg));
+//
+//    switch (pid)
+//    {
+//      case E120_SUPPORTED_PARAMETERS:
+//        if (cmd_class == E120_GET_COMMAND)
+//          ProcessGetSupportedParameters(conn, msg);
+//        else
+//          SendNack(conn, msg, pid, E120_NR_UNSUPPORTED_COMMAND_CLASS, true);
+//        break;
+//      case E120_PARAMETER_DESCRIPTION:
+//        if (cmd_class == E120_GET_COMMAND)
+//          ProcessGetParameterDescription(conn, msg);
+//        else
+//          SendNack(conn, msg, pid, E120_NR_UNSUPPORTED_COMMAND_CLASS, true);
+//        break;
+//      case E120_SOFTWARE_VERSION_LABEL:
+//        if (cmd_class == E120_GET_COMMAND)
+//          ProcessGetSoftwareVersionLabel(conn, msg);
+//        else
+//          SendNack(conn, msg, pid, E120_NR_UNSUPPORTED_COMMAND_CLASS, true);
+//        break;
+//      case E133_COMPONENT_SCOPE:
+//        if (cmd_class == E120_GET_COMMAND)
+//          ProcessGetComponentScope(conn, msg);
+//        else if (cmd_class == E120_SET_COMMAND)
+//          ProcessSetComponentScope(conn, msg);
+//        else
+//          SendNack(conn, msg, pid, E120_NR_UNSUPPORTED_COMMAND_CLASS, true);
+//        break;
+//      default:
+//        SendNack(conn, msg, pid, E120_NR_UNKNOWN_PID, true);
+//    }
+//}
 
 // void
 // BrokerResponder::SendRDMResponse(int conn, const RPTMessageRef &msg,
