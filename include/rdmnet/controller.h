@@ -112,7 +112,7 @@ etcpal_error_t rdmnet_controller_init(const EtcPalLogParams* lparams);
 void rdmnet_controller_deinit();
 
 etcpal_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rdmnet_controller_t* handle);
-etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle);
+etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle, rdmnet_disconnect_reason_t reason);
 
 etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const RdmnetScopeConfig* scope_config,
                                            rdmnet_client_scope_t* scope_handle);

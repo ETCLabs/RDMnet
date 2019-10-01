@@ -121,7 +121,7 @@ etcpal_error_t rdmnet_device_create(const RdmnetDeviceConfig* config, rdmnet_dev
     }
     else
     {
-      rdmnet_client_destroy(new_device->client_handle);
+      rdmnet_client_destroy(new_device->client_handle, kRdmnetDisconnectSoftwareFault);
       free_rdmnet_device(new_device);
     }
   }
@@ -132,12 +132,12 @@ etcpal_error_t rdmnet_device_create(const RdmnetDeviceConfig* config, rdmnet_dev
   return res;
 }
 
-etcpal_error_t rdmnet_device_destroy(rdmnet_device_t handle)
+etcpal_error_t rdmnet_device_destroy(rdmnet_device_t handle, rdmnet_disconnect_reason_t reason)
 {
   if (!handle)
     return kEtcPalErrInvalid;
 
-  etcpal_error_t res = rdmnet_client_destroy(handle->client_handle);
+  etcpal_error_t res = rdmnet_client_destroy(handle->client_handle, reason);
   if (res == kEtcPalErrOk)
     free_rdmnet_device(handle);
 

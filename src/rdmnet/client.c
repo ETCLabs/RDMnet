@@ -142,7 +142,7 @@ static const LlrpTargetCallbacks llrp_callbacks =
 // Create and destroy clients and scopes
 static etcpal_error_t validate_rpt_client_config(const RdmnetRptClientConfig* config);
 static etcpal_error_t new_rpt_client(const RdmnetRptClientConfig* config, rdmnet_client_t* handle);
-static etcpal_error_t destroy_client(RdmnetClient* cli);
+static void destroy_client(RdmnetClient* cli, rdmnet_disconnect_reason_t reason);
 static etcpal_error_t create_llrp_handle_for_client(const RdmnetRptClientConfig* config, RdmnetClient* cli);
 static bool client_handle_in_use(int handle_val);
 static etcpal_error_t create_and_append_scope_entry(const RdmnetScopeConfig* config, RdmnetClient* client,
@@ -247,7 +247,7 @@ static void client_dealloc(const EtcPalRbTree* self, EtcPalRbNode* node)
 
   RdmnetClient* cli = (RdmnetClient*)node->value;
   if (cli)
-    destroy_client(cli);
+    destroy_client(cli, kRdmnetDisconnectShutdown);
   client_node_free(node);
 }
 
@@ -289,10 +289,8 @@ etcpal_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig* config, rdm
   return res;
 }
 
-etcpal_error_t rdmnet_client_destroy(rdmnet_client_t handle)
+etcpal_error_t rdmnet_client_destroy(rdmnet_client_t handle, rdmnet_disconnect_reason_t reason)
 {
-  if (!handle)
-    return kEtcPalErrInvalid;
   if (!rdmnet_core_initialized())
     return kEtcPalErrNotInit;
 
@@ -301,7 +299,8 @@ etcpal_error_t rdmnet_client_destroy(rdmnet_client_t handle)
   if (res != kEtcPalErrOk)
     return res;
 
-  res = destroy_client(cli);
+  etcpal_rbtree_remove(&state.clients, cli);
+  destroy_client(cli, reason);
   rdmnet_client_unlock();
   return res;
 }
@@ -1107,8 +1106,28 @@ etcpal_error_t new_rpt_client(const RdmnetRptClientConfig* config, rdmnet_client
   return res;
 }
 
-etcpal_error_t destroy_client(RdmnetClient* cli)
+void destroy_client(RdmnetClient* cli, rdmnet_disconnect_reason_t reason)
 {
+  ClientScopeListEntry* scope = cli->scope_list;
+
+  while (scope)
+  {
+    if (scope->monitor_handle)
+    {
+      rdmnetdisc_stop_monitoring(scope->monitor_handle);
+      etcpal_rbtree_remove(&state.scopes_by_disc_handle, scope);
+    }
+    rdmnet_connection_destroy(scope->handle, &reason);
+    etcpal_rbtree_remove(&state.scopes_by_handle, scope);
+
+    ClientScopeListEntry* next_scope = scope->next;
+    free_client_scope(scope);
+    scope = next_scope;
+  }
+
+  rdmnet_llrp_target_destroy(cli->llrp_handle);
+
+  free_rdmnet_client(cli);
 }
 
 etcpal_error_t create_llrp_handle_for_client(const RdmnetRptClientConfig* config, RdmnetClient* cli)

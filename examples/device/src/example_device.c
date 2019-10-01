@@ -127,8 +127,8 @@ etcpal_error_t device_init(const RdmnetScopeConfig* scope_config, const EtcPalLo
 
 void device_deinit()
 {
-  rdmnet_device_destroy(device_state.device_handle);
-  rdmnet_core_deinit();
+  rdmnet_device_destroy(device_state.device_handle, kRdmnetDisconnectShutdown);
+  rdmnet_device_deinit();
   default_responder_deinit();
 }
 

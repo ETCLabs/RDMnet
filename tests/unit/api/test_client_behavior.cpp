@@ -94,7 +94,7 @@ protected:
 
   void TearDown() override
   {
-    ASSERT_EQ(kEtcPalErrOk, rdmnet_client_destroy(client_handle_));
+    ASSERT_EQ(kEtcPalErrOk, rdmnet_client_destroy(client_handle_, kRdmnetDisconnectShutdown));
     rdmnet_client_deinit();
   }
 
