@@ -202,13 +202,13 @@ void TestDiscoveryBonjour::CreateDefaultBroker()
   default_full_service_name_ += E133_DEFAULT_DOMAIN;
 }
 
-TEST_F(TestDiscoveryBonjour, init)
+TEST_F(TestDiscoveryBonjour, InitWorks)
 {
   ASSERT_EQ(init_result_, kEtcPalErrOk);
 }
 
-// Test that rdmnetdisc_register_broker() behaves propertly with both valid and invalid input data.
-TEST_F(TestDiscoveryBonjour, reg)
+// Test that rdmnetdisc_register_broker() behaves properly with invalid input data.
+TEST_F(TestDiscoveryBonjour, RegisterBrokerInvalidCallsFail)
 {
   RdmnetBrokerRegisterConfig config;
 
@@ -227,7 +227,7 @@ TEST_F(TestDiscoveryBonjour, reg)
 
 // Test that rdmnetdisc_tick() functions properly in the presence of various states of monitored
 // scopes.
-TEST_F(TestDiscoveryBonjour, monitor_tick_sockets)
+TEST_F(TestDiscoveryBonjour, TickHandlesSocketActivity)
 {
   MonitorDefaultScope();
 
@@ -259,7 +259,7 @@ TEST_F(TestDiscoveryBonjour, monitor_tick_sockets)
 
 // Test that a discovered broker is cleaned up properly after going through the entire resolution
 // process.
-TEST_F(TestDiscoveryBonjour, resolve_cleanup)
+TEST_F(TestDiscoveryBonjour, DiscoveredBrokerCleanedUpAfterResolve)
 {
   MonitorDefaultScope();
 

@@ -6,6 +6,7 @@ BasedOnStyle: Google
 # Brace wrapping: Allman style, except for extern "C" blocks.
 BreakBeforeBraces: Custom
 BraceWrapping:
+  AfterCaseLabel: true
   AfterClass: true
   AfterControlStatement: true
   AfterEnum: true

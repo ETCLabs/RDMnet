@@ -23,7 +23,7 @@ class TestBrokerProt : public ::testing::Test
 {
 };
 
-TEST_F(TestBrokerProt, message_ident_macros)
+TEST_F(TestBrokerProt, MessageIdentMacrosWork)
 {
   BrokerMessage bmsg;
 
@@ -67,7 +67,7 @@ TEST_F(TestBrokerProt, message_ident_macros)
   ASSERT_EQ(get_disconnect_msg(&bmsg), &bmsg.data.disconnect);
 }
 
-TEST_F(TestBrokerProt, message_string_macros)
+TEST_F(TestBrokerProt, MessageStringMacrosWork)
 {
   ClientConnectMsg ccmsg;
 

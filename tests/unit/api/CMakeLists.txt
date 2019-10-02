@@ -2,7 +2,7 @@
 
 add_executable(test_rdmnet_api
   test_rpt_client_api.cpp
-  test_client_behavior.cpp
+  test_rpt_client_behavior.cpp
 
   rdmnet_client_fake_callbacks.h
   rdmnet_client_fake_callbacks.c

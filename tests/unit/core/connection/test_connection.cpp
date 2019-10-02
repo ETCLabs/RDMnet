@@ -60,7 +60,7 @@ extern "C" void conncb_socket_error(rdmnet_conn_t, const RdmnetDisconnectedInfo*
   EXPECT_EQ(disconn_info->event, kRdmnetDisconnectAbruptClose);
 }
 
-TEST_F(TestConnection, socket_error)
+TEST_F(TestConnection, DisconnectsOnSocketError)
 {
   rdmnet_conn_t conn;
   ASSERT_EQ(kEtcPalErrOk, rdmnet_connection_create(&default_config_, &conn));
