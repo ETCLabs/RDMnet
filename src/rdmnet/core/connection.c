@@ -486,7 +486,8 @@ void start_tcp_connection(RdmnetConnection* conn, ConnCallbackDispatchInfo* cb)
   bool ok = true;
   RdmnetConnectFailedInfo* failed_info = &cb->args.connect_failed.failed_info;
 
-  etcpal_error_t res = etcpal_socket(ETCPAL_AF_INET, ETCPAL_STREAM, &conn->sock);
+  etcpal_error_t res = etcpal_socket(conn->remote_addr.ip.type == kEtcPalIpTypeV6 ? ETCPAL_AF_INET6 : ETCPAL_AF_INET,
+                                     ETCPAL_STREAM, &conn->sock);
   if (res != kEtcPalErrOk)
   {
     ok = false;

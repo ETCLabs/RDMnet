@@ -147,6 +147,15 @@ void device_connect_failed(rdmnet_device_t handle, const RdmnetClientConnectFail
   (void)handle;
   (void)info;
   (void)context;
+
+  if (info->will_retry)
+  {
+    etcpal_log(device_state.lparams, ETCPAL_LOG_INFO, "Connect failed with event %d, retrying...", info->event);
+  }
+  else
+  {
+    etcpal_log(device_state.lparams, ETCPAL_LOG_CRIT, "Connect failed with FATAL event %d!", info->event);
+  }
 }
 
 void device_disconnected(rdmnet_device_t handle, const RdmnetClientDisconnectedInfo* info, void* context)
