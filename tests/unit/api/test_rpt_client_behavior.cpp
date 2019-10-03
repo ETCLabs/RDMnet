@@ -42,7 +42,7 @@ static etcpal_error_t create_conn_and_save_config(const RdmnetConnectionConfig* 
   return kEtcPalErrOk;
 }
 
-static const rdmnet_scope_monitor_t last_monitor_handle;
+static const rdmnet_scope_monitor_t last_monitor_handle = reinterpret_cast<rdmnet_scope_monitor_t>(0xdead);
 static RdmnetScopeMonitorConfig last_monitor_config;
 
 static etcpal_error_t start_monitoring_and_save_config(const RdmnetScopeMonitorConfig* config,
@@ -57,8 +57,8 @@ static etcpal_error_t start_monitoring_and_save_config(const RdmnetScopeMonitorC
 static RdmnetClientConnectFailedInfo client_connect_failed_info;
 
 // Just save the info pointed to by the struct
-static void custom_connect_failed(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                  const RdmnetClientConnectFailedInfo* info, void* context)
+static void custom_connect_failed_cb(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+                                     const RdmnetClientConnectFailedInfo* info, void* context)
 {
   (void)handle;
   (void)scope_handle;
@@ -146,8 +146,6 @@ protected:
   void SetUp() override
   {
     TestRptClientBehavior::SetUp();
-
-    rdmnetdisc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
 
     rdmnet_safe_strncpy(default_dynamic_scope_.scope, "default", E133_SCOPE_STRING_PADDED_LENGTH);
     default_dynamic_scope_.has_static_broker_addr = false;
@@ -261,6 +259,8 @@ TEST_F(TestDynamicRptClientBehavior, DiscoveryErrorsHandled)
 
 TEST_F(TestDynamicRptClientBehavior, ConnectionErrorsHandled)
 {
+  rdmnetdisc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
+
   rdmnet_client_scope_t scope_handle;
   ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle_, &default_dynamic_scope_, &scope_handle));
   ASSERT_EQ(rdmnetdisc_start_monitoring_fake.call_count, 1u);
@@ -296,6 +296,7 @@ TEST_F(TestDynamicRptClientBehavior, ClientRetriesOnConnectFail)
 {
   rdmnetdisc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
   rdmnet_connect_fake.custom_fake = connect_and_save_address;
+  rdmnet_client_connect_failed_fake.custom_fake = custom_connect_failed_cb;
 
   ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle_, &default_dynamic_scope_, &scope_handle_));
 
@@ -320,6 +321,7 @@ TEST_F(TestDynamicRptClientBehavior, ClientRetriesOnConnectFail)
   EXPECT_EQ(rdmnet_client_connect_failed_fake.call_count, 1u);
   EXPECT_TRUE(client_connect_failed_info.will_retry);
   EXPECT_EQ(rdmnet_connect_fake.call_count, 1u);
+  // The retry should use the next Broker listen address in the list.
   EXPECT_TRUE(etcpal_ip_equal(&last_connect_addr.ip, &listen_addrs_.at(1).addr));
   EXPECT_EQ(last_connect_addr.port, discovered_broker_.port);
 }
@@ -364,6 +366,7 @@ TEST_F(TestStaticRptClientBehavior, ClientRetriesOnConnectFail)
   EXPECT_EQ(rdmnet_connect_fake.call_count, 1u);
 
   RESET_FAKE(rdmnet_connect);
+  rdmnet_client_connect_failed_fake.custom_fake = custom_connect_failed_cb;
 
   RdmnetConnectFailedInfo failed_info{};
   failed_info.event = kRdmnetConnectFailTcpLevel;
@@ -383,6 +386,7 @@ TEST_F(TestStaticRptClientBehavior, ClientDoesNotRetryOnFatalConnectFail)
   EXPECT_EQ(rdmnet_connect_fake.call_count, 1u);
 
   RESET_FAKE(rdmnet_connect);
+  rdmnet_client_connect_failed_fake.custom_fake = custom_connect_failed_cb;
 
   RdmnetConnectFailedInfo failed_info{};
   failed_info.event = kRdmnetConnectFailRejected;

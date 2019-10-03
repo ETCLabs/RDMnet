@@ -150,7 +150,7 @@ static etcpal_error_t create_and_append_scope_entry(const RdmnetScopeConfig* con
 static ClientScopeListEntry* find_scope_in_list(ClientScopeListEntry* list, const char* scope);
 static void remove_scope_from_list(ClientScopeListEntry** list, ClientScopeListEntry* entry);
 
-static void start_scope_discovery(ClientScopeListEntry* scope_entry, const char* search_domain);
+static etcpal_error_t start_scope_discovery(ClientScopeListEntry* scope_entry, const char* search_domain);
 static void attempt_connection_on_listen_addrs(ClientScopeListEntry* scope_entry);
 static etcpal_error_t start_connection_for_scope(ClientScopeListEntry* scope_entry, const EtcPalSockaddr* broker_addr);
 
@@ -326,9 +326,17 @@ etcpal_error_t rdmnet_client_add_scope(rdmnet_client_t handle, const RdmnetScope
     // Start discovery or connection on the new scope (depending on whether a static broker was
     // configured)
     if (new_entry->state == kScopeStateDiscovery)
-      start_scope_discovery(new_entry, cli->search_domain);
+      res = start_scope_discovery(new_entry, cli->search_domain);
     else if (new_entry->state == kScopeStateConnecting)
-      start_connection_for_scope(new_entry, &new_entry->config.static_broker_addr);
+      res = start_connection_for_scope(new_entry, &new_entry->config.static_broker_addr);
+
+    if (res != kEtcPalErrOk)
+    {
+      rdmnet_connection_destroy(new_entry->handle, NULL);
+      remove_scope_from_list(&cli->scope_list, new_entry);
+      etcpal_rbtree_remove(&state.scopes_by_handle, new_entry);
+      free_client_scope(new_entry);
+    }
   }
 
   release_client(cli);
@@ -639,6 +647,29 @@ void conncb_connect_failed(rdmnet_conn_t handle, const RdmnetConnectFailedInfo* 
     info.socket_err = failed_info->socket_err;
     info.rdmnet_reason = failed_info->rdmnet_reason;
     info.will_retry = connect_failed_will_retry(info.event, info.rdmnet_reason);
+
+    if (info.will_retry)
+    {
+      if (scope_entry->monitor_handle)
+      {
+        if (scope_entry->broker_found)
+        {
+          // Attempt to connect on the next listen address.
+          scope_entry->current_addr = scope_entry->current_addr->next;
+          if (!scope_entry->current_addr)
+            scope_entry->current_addr = scope_entry->listen_addr_list;
+          attempt_connection_on_listen_addrs(scope_entry);
+        }
+      }
+      else
+      {
+        if (kEtcPalErrOk != start_connection_for_scope(scope_entry, &scope_entry->config.static_broker_addr))
+        {
+          // Some fatal error while attempting to connect to the statically-configured address.
+          info.will_retry = false;
+        }
+      }
+    }
 
     fill_callback_info(cli, &cb);
     cb.which = kClientCallbackConnectFailed;
@@ -1278,7 +1309,7 @@ void remove_scope_from_list(ClientScopeListEntry** list, ClientScopeListEntry* e
   }
 }
 
-void start_scope_discovery(ClientScopeListEntry* scope_entry, const char* search_domain)
+etcpal_error_t start_scope_discovery(ClientScopeListEntry* scope_entry, const char* search_domain)
 {
   RdmnetScopeMonitorConfig config;
 
@@ -1289,10 +1320,19 @@ void start_scope_discovery(ClientScopeListEntry* scope_entry, const char* search
 
   // TODO capture errors
   int platform_error;
-  if (kEtcPalErrOk == rdmnetdisc_start_monitoring(&config, &scope_entry->monitor_handle, &platform_error))
+  etcpal_error_t res = rdmnetdisc_start_monitoring(&config, &scope_entry->monitor_handle, &platform_error);
+  if (res == kEtcPalErrOk)
   {
     etcpal_rbtree_insert(&state.scopes_by_disc_handle, scope_entry);
   }
+  else
+  {
+    etcpal_log(
+        rdmnet_log_params, ETCPAL_LOG_WARNING,
+        RDMNET_LOG_MSG("Starting discovery failed on scope '%s' with error '%s' (platform-specific error code %d)"),
+        scope_entry->config.scope, etcpal_strerror(res), platform_error);
+  }
+  return res;
 }
 
 void attempt_connection_on_listen_addrs(ClientScopeListEntry* scope_entry)
