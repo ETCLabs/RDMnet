@@ -41,7 +41,43 @@ extern "C" {
 
 static resp_process_result_t default_responder_parameter_description(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  if (data == nullptr)
+  {
+    // TODO: Handle error and return
+  }
+
+  if ((data->context == nullptr) || (data->pd_in == nullptr) || (data->pd_out == nullptr))
+  {
+    // TODO: Handle error and return
+  }
+
+  uint16_t requested_pid;
+  RdmPdParameterDescription description;
+
+  if (rdmpd_unpack_get_parameter_description(data->pd_in, &requested_pid) != kEtcPalErrOk)
+  {
+    // TODO: Handle error and return
+  }
+
+  BrokerResponder* responder = static_cast<BrokerResponder*>(data->context);
+
+  if (responder == nullptr)
+  {
+    // TODO: Handle error and return
+  }
+
+  resp_process_result_t result = responder->ProcessGetParameterDescription(requested_pid, description);
+
+  if (result == E120_RESPONSE_TYPE_NACK_REASON)
+  {
+    // TODO: Handle NACK and return (pack, etc...)
+  }
+  else if(rdmpd_pack_get_resp_parameter_description(&description, data->pd_out) != kEtcPalErrOk)
+  {
+    // TODO: Handle error and return
+  }
+
+  return result;
 }
 
 static resp_process_result_t default_responder_device_model_description(PidHandlerData* data)
@@ -81,12 +117,12 @@ static resp_process_result_t default_responder_broker_status(PidHandlerData* dat
 
 static uint8_t default_responder_get_message_count()
 {
-  return 0;  // TODO: Not yet implemented
+  return 0;
 }
 
 static void default_responder_get_next_queued_message(GetNextQueuedMessageData* data)
 {
-  // TODO: Not yet implemented
+  // Does nothing
 }
 }  // extern "C"
 

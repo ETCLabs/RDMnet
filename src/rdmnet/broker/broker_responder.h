@@ -18,6 +18,7 @@
  *****************************************************************************/
 
 #include "etcpal/int.h"
+#include "rdm/param_data.h"
 #include "rdm/responder.h"
 #include "broker_client.h"
 
@@ -32,6 +33,7 @@ class BrokerResponder
 public:
   void InitResponder(const RdmUid& uid);
   resp_process_result_t ProcessPacket(const RdmBufferConstRef& bufferIn, RdmBufferRef& bufferOut);
+  resp_process_result_t ProcessGetParameterDescription(uint16_t requestedPid, RdmPdParameterDescription& description);
   //void ProcessRDMMessage(int conn, const RPTMessageRef& msg);
   //void SendRDMResponse(int conn, const RPTMessageRef& msg, uint8_t response_type, uint8_t command_class,
   //                     uint16_t param_id, uint8_t packed_len, uint8_t* pdata);
