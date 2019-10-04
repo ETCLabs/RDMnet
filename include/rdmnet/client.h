@@ -390,7 +390,7 @@ void rdmnet_client_deinit();
 
 etcpal_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig* config, rdmnet_client_t* handle);
 etcpal_error_t rdmnet_ept_client_create(const RdmnetEptClientConfig* config, rdmnet_client_t* handle);
-etcpal_error_t rdmnet_client_destroy(rdmnet_client_t handle);
+etcpal_error_t rdmnet_client_destroy(rdmnet_client_t handle, rdmnet_disconnect_reason_t reason);
 
 etcpal_error_t rdmnet_client_add_scope(rdmnet_client_t handle, const RdmnetScopeConfig* scope_config,
                                        rdmnet_client_scope_t* scope_handle);

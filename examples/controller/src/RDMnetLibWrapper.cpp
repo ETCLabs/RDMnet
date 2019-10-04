@@ -142,7 +142,7 @@ void RDMnetLibWrapper::Shutdown()
 {
   if (running_)
   {
-    rdmnet_controller_destroy(controller_handle_);
+    rdmnet_controller_destroy(controller_handle_, kRdmnetDisconnectShutdown);
     rdmnet_controller_deinit();
     running_ = false;
     notify_ = nullptr;

@@ -46,6 +46,10 @@ struct ClientScopeListEntry
   uint32_t send_seq_num;
 
   rdmnet_scope_monitor_t monitor_handle;
+  bool broker_found;
+  const BrokerListenAddr* listen_addr_list;
+  const BrokerListenAddr* current_addr;
+  uint16_t port;
 
   RdmnetClient* client;
   ClientScopeListEntry* next;

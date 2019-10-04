@@ -44,6 +44,45 @@
     memcpy(&(buf)[7], (cidptr)->data, ETCPAL_UUID_BYTES);     \
   } while (0)
 
+/**************************** Private variables ******************************/
+
+// clang-format off
+static const char* kRdmnetConnectStatusStrings[] =
+{
+  "Successful connection",
+  "Broker/Client scope mismatch",
+  "Broker connection capacity exceeded",
+  "Duplicate UID detected",
+  "Invalid client entry",
+  "Invalid UID"
+};
+#define NUM_CONNECT_STATUS_STRINGS (sizeof(kRdmnetConnectStatusStrings) / sizeof(const char*))
+
+static const char* kRdmnetDisconnectReasonStrings[] =
+{
+  "Component shutting down",
+  "Component can no longer support this connection",
+  "Hardware fault",
+  "Software fault",
+  "Software reset",
+  "Incorrect scope",
+  "Component reconfigured via RPT",
+  "Component reconfigured via LLRP",
+  "Component reconfigured by non-RDMnet method"
+};
+#define NUM_DISCONNECT_REASON_STRINGS (sizeof(kRdmnetDisconnectReasonStrings) / sizeof(const char*))
+
+static const char* kRdmnetDynamicUidStatusStrings[] =
+{
+  "Dynamic UID fetched or assigned successfully",
+  "The Dynamic UID request was malformed",
+  "The requested Dynamic UID was not found",
+  "This RID has already been assigned a Dynamic UID",
+  "Dynamic UID capacity exhausted"
+};
+#define NUM_DYNAMIC_UID_STATUS_STRINGS (sizeof(kRdmnetDynamicUidStatusStrings) / sizeof(const char*))
+// clang-format on
+
 /*********************** Private function prototypes *************************/
 
 static size_t calc_client_connect_len(const ClientConnectMsg* data);
@@ -692,4 +731,51 @@ etcpal_error_t send_null(RdmnetConnection* conn)
     etcpal_timer_reset(&conn->send_timer);
 
   return res;
+}
+
+/*!
+ * \brief Get a string description of an RDMnet connect status code.
+ *
+ * Connect status codes are returned by a broker in a connect reply message after a client attempts
+ * to connect.
+ *
+ * \param[in] code Connect status code.
+ * \return String, or NULL if code is invalid.
+ */
+const char* rdmnet_connect_status_to_string(rdmnet_connect_status_t code)
+{
+  if (code >= 0 && code < NUM_CONNECT_STATUS_STRINGS)
+    return kRdmnetConnectStatusStrings[code];
+  return NULL;
+}
+
+/*!
+ * \brief Get a string description of an RDMnet disconnect reason code.
+ *
+ * Disconnect reason codes are sent by a broker or client that is disconnecting.
+ *
+ * \param[in] code Disconnect reason code.
+ * \return String, or NULL if code is invalid.
+ */
+const char* rdmnet_disconnect_reason_to_string(rdmnet_disconnect_reason_t code)
+{
+  if (code >= 0 && code < NUM_DISCONNECT_REASON_STRINGS)
+    return kRdmnetDisconnectReasonStrings[code];
+  return NULL;
+}
+
+/*!
+ * \brief Get a string description of an RDMnet Dynamic UID status code.
+ *
+ * Dynamic UID status codes are returned by a broker in response to a request for dynamic UIDs by a
+ * client.
+ *
+ * \param[in] code Dynamic UID status code.
+ * \return String, or NULL if code is invalid.
+ */
+const char* rdmnet_dynamic_uid_status_to_string(dynamic_uid_status_t code)
+{
+  if (code >= 0 && code < NUM_DYNAMIC_UID_STATUS_STRINGS)
+    return kRdmnetDynamicUidStatusStrings[code];
+  return NULL;
 }

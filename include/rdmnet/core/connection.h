@@ -97,10 +97,16 @@ typedef struct RdmnetConnectFailedInfo
 /*! A high-level reason for RDMnet connection to be disconnected after successful connection. */
 typedef enum
 {
+  /*! The TCP connection was closed without an RDMnet disconnect message being sent. */
   kRdmnetDisconnectAbruptClose,
+  /*! The TCP connection was deemed unhealthy due to no heartbeat message being received before the
+   *  heartbeat timeout. */
   kRdmnetDisconnectNoHeartbeat,
+  /*! The client was redirected to another broker address. */
   kRdmnetDisconnectRedirected,
+  /*! The remote component sent an RDMnet disconnect message with a reason code. */
   kRdmnetDisconnectGracefulRemoteInitiated,
+  /*! A disconnect was requested locally. */
   kRdmnetDisconnectGracefulLocalInitiated
 } rdmnet_disconnect_event_t;
 
@@ -184,6 +190,9 @@ etcpal_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking);
 etcpal_error_t rdmnet_connection_destroy(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t* disconnect_reason);
 
 int rdmnet_send(rdmnet_conn_t handle, const uint8_t* data, size_t size);
+
+const char* rdmnet_connect_fail_event_to_string(rdmnet_connect_fail_event_t event);
+const char* rdmnet_disconnect_event_to_string(rdmnet_disconnect_event_t event);
 
 /*! \name Externally managed socket functions.
  *

@@ -67,7 +67,7 @@ protected:
 };
 
 // Test the rdmnet_rpt_client_create() function in valid and invalid scenarios
-TEST_F(TestRptClientApi, client_create_invalid_calls_fail)
+TEST_F(TestRptClientApi, ClientCreateInvalidCallsFail)
 {
   rdmnet_client_t handle;
 
@@ -81,7 +81,7 @@ TEST_F(TestRptClientApi, client_create_invalid_calls_fail)
   EXPECT_EQ(kEtcPalErrNotInit, rdmnet_rpt_client_create(&default_rpt_config_, &handle));
 }
 
-TEST_F(TestRptClientApi, client_create_valid_calls_succeed)
+TEST_F(TestRptClientApi, ClientCreateValidCallsSucceed)
 {
   rdmnet_client_t handle_1;
 
@@ -104,7 +104,7 @@ TEST_F(TestRptClientApi, client_create_valid_calls_succeed)
   }
 }
 
-TEST_F(TestRptClientApi, send_rdm_command_invalid_calls_fail)
+TEST_F(TestRptClientApi, SendRdmCommandInvalidCallsFail)
 {
   rdmnet_client_t handle;
   rdmnet_client_scope_t scope_handle;
@@ -125,7 +125,7 @@ TEST_F(TestRptClientApi, send_rdm_command_invalid_calls_fail)
   EXPECT_EQ(kEtcPalErrInvalid, rdmnet_rpt_client_send_rdm_command(handle, scope_handle, NULL, &seq_num));
 }
 
-TEST_F(TestRptClientApi, send_rdm_response_invalid_calls_fail)
+TEST_F(TestRptClientApi, SendRdmResponseInvalidCallsFail)
 {
   rdmnet_client_t handle;
   rdmnet_client_scope_t scope_handle;
@@ -145,7 +145,7 @@ TEST_F(TestRptClientApi, send_rdm_response_invalid_calls_fail)
   ASSERT_EQ(kEtcPalErrInvalid, rdmnet_rpt_client_send_rdm_response(handle, scope_handle, NULL));
 }
 
-TEST_F(TestRptClientApi, send_status_invalid_calls_fail)
+TEST_F(TestRptClientApi, SendStatusInvalidCallsFail)
 {
   rdmnet_client_t handle;
   rdmnet_client_scope_t scope_handle;

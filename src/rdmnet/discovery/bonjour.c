@@ -378,6 +378,7 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
   else
   {
     /*Service removal*/
+    notify_broker_lost(ref, serviceName);
     if (etcpal_mutex_take(&disc_state.lock))
     {
       DiscoveredBroker* db = discovered_broker_lookup_by_name(ref->broker_list, full_name);
@@ -388,7 +389,6 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
       }
       etcpal_mutex_give(&disc_state.lock);
     }
-    notify_broker_lost(ref, serviceName);
   }
 }
 

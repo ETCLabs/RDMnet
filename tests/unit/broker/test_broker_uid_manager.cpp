@@ -25,7 +25,7 @@ protected:
   BrokerUidManager manager_;
 };
 
-TEST_F(TestBrokerUidManager, static_uid)
+TEST_F(TestBrokerUidManager, StaticUid)
 {
   // Test adding static UIDs
   RdmUid test_1 = {0, 1};
@@ -62,7 +62,7 @@ TEST_F(TestBrokerUidManager, static_uid)
   ASSERT_EQ(handle_out, 5);
 }
 
-TEST_F(TestBrokerUidManager, dynamic_uid)
+TEST_F(TestBrokerUidManager, DynamicUid)
 {
   manager_.SetNextDeviceId(1000);
 
@@ -108,7 +108,7 @@ TEST_F(TestBrokerUidManager, dynamic_uid)
   ASSERT_EQ(uid_1.id, 1000u);
 }
 
-TEST_F(TestBrokerUidManager, wraparound)
+TEST_F(TestBrokerUidManager, HandlesWraparound)
 {
   manager_.SetNextDeviceId(1);
 
