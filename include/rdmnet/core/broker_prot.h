@@ -403,6 +403,10 @@ etcpal_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const EtcPalUuid*
 etcpal_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const EtcPalUuid* local_cid,
                                               const FetchUidAssignmentListEntry* uid_list);
 
+const char* rdmnet_connect_status_to_string(rdmnet_connect_status_t code);
+const char* rdmnet_disconnect_reason_to_string(rdmnet_disconnect_reason_t code);
+const char* rdmnet_dynamic_uid_status_to_string(dynamic_uid_status_t code);
+
 #ifdef __cplusplus
 }
 #endif

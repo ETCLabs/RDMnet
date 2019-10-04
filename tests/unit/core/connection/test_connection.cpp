@@ -110,41 +110,6 @@ TEST_F(TestConnectionAlreadyConnected, DisconnectsOnSocketError)
   ASSERT_EQ(conncb_disconnected_fake.arg0_val, conn_);
 }
 
-#define CONNECT_SOCKET_FAIL_TEST_SOCKET_ID 1234
-
-// extern "C" etcpal_error_t etcpal_socket_conn_fail_test(unsigned int family, unsigned int type, etcpal_socket_t* id)
-//{
-//  (void)family;
-//  (void)type;
-//  *id = (etcpal_socket_t)(CONNECT_SOCKET_FAIL_TEST_SOCKET_ID);
-//  return kEtcPalErrOk;
-//}
-//
-// void* user_data_conn_fail_test;
-//
-// extern "C" etcpal_error_t etcpal_poll_add_socket_conn_fail_test(EtcPalPollContext* context, etcpal_socket_t socket,
-//                                                                etcpal_poll_events_t events, void* user_data)
-//{
-//  // Just save the user data
-//  (void)context;
-//  (void)events;
-//  if (socket == (etcpal_socket_t)(CONNECT_SOCKET_FAIL_TEST_SOCKET_ID))
-//    user_data_conn_fail_test = user_data;
-//  return kEtcPalErrOk;
-//}
-//
-// extern "C" etcpal_error_t etcpal_poll_wait_conn_fail_test(EtcPalPollContext* context, EtcPalPollEvent* event,
-//                                                          int timeout_ms)
-//{
-//  (void)context;
-//  (void)timeout_ms;
-//  event->socket = (etcpal_socket_t)(CONNECT_SOCKET_FAIL_TEST_SOCKET_ID);
-//  event->events = ETCPAL_POLL_ERR;
-//  event->err = kEtcPalErrConnRefused;
-//  event->user_data = user_data_conn_fail_test;
-//  return kEtcPalErrOk;
-//}
-
 TEST_F(TestConnection, HandlesSocketErrorOnConnect)
 {
   EtcPalSockaddr remote_addr;
@@ -202,4 +167,15 @@ TEST_F(TestConnection, SetsCorrectSocketOptionsIpv6)
   EXPECT_EQ(etcpal_setblocking_fake.arg1_val, false);
 
   EXPECT_EQ(etcpal_connect_fake.call_count, 1u);
+}
+
+TEST_F(TestConnection, EventToStringFunctionsWork)
+{
+  EXPECT_TRUE(rdmnet_connect_fail_event_to_string(kRdmnetConnectFailSocketFailure) != nullptr);
+  EXPECT_TRUE(rdmnet_connect_fail_event_to_string(static_cast<rdmnet_connect_fail_event_t>(INT_MAX)) == nullptr);
+  EXPECT_TRUE(rdmnet_connect_fail_event_to_string(static_cast<rdmnet_connect_fail_event_t>(-1)) == nullptr);
+
+  EXPECT_TRUE(rdmnet_disconnect_event_to_string(kRdmnetDisconnectAbruptClose) != nullptr);
+  EXPECT_TRUE(rdmnet_disconnect_event_to_string(static_cast<rdmnet_disconnect_event_t>(INT_MAX)) == nullptr);
+  EXPECT_TRUE(rdmnet_disconnect_event_to_string(static_cast<rdmnet_disconnect_event_t>(-1)) == nullptr);
 }

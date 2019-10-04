@@ -68,6 +68,27 @@
 
 /**************************** Private variables ******************************/
 
+// clang-format off
+static const char* kRdmnetConnectFailEventStrings[] =
+{
+  "Socket failure on connection initiation",
+  "TCP connection failure",
+  "No reply received to RDMnet handshake",
+  "RDMnet connection rejected"
+};
+#define NUM_CONNECT_FAIL_EVENT_STRINGS (sizeof(kRdmnetConnectFailEventStrings) / sizeof(const char*))
+
+static const char* kRdmnetDisconnectEventStrings[] =
+{
+  "Connection was closed abruptly",
+  "No heartbeat message was received within the heartbeat timeout",
+  "Connection was redirected to another Broker",
+  "Remote component sent a disconnect message",
+  "Local component sent a disconnect message"
+};
+#define NUM_DISCONNECT_EVENT_STRINGS (sizeof(kRdmnetDisconnectEventStrings) / sizeof(const char*))
+// clang-format on
+
 #if !RDMNET_DYNAMIC_MEM
 ETCPAL_MEMPOOL_DEFINE(rdmnet_connections, RdmnetConnection, RDMNET_MAX_CONNECTIONS);
 ETCPAL_MEMPOOL_DEFINE(rdmnet_conn_rb_nodes, EtcPalRbNode, RDMNET_MAX_CONNECTIONS);
@@ -466,6 +487,37 @@ etcpal_error_t rdmnet_end_message(RdmnetConnection* conn)
 
   release_conn(conn);
   return kEtcPalErrOk;
+}
+
+/*!
+ * \brief Get a string description of an RDMnet connection failure event.
+ *
+ * An RDMnet connection failure event provides a high-level reason why an RDMnet connection failed.
+ *
+ * \param[in] event Event code.
+ * \return String, or NULL if event is invalid.
+ */
+const char* rdmnet_connect_fail_event_to_string(rdmnet_connect_fail_event_t event)
+{
+  if (event >= 0 && event < NUM_CONNECT_FAIL_EVENT_STRINGS)
+    return kRdmnetConnectFailEventStrings[event];
+  return NULL;
+}
+
+/*!
+ * \brief Get a string description of an RDMnet disconnect event.
+ *
+ * An RDMnet disconnect event provides a high-level reason why an RDMnet connection was
+ * disconnected.
+ *
+ * \param[in] event Event code.
+ * \return String, or NULL if event is invalid.
+ */
+const char* rdmnet_disconnect_event_to_string(rdmnet_disconnect_event_t event)
+{
+  if (event >= 0 && event < NUM_DISCONNECT_EVENT_STRINGS)
+    return kRdmnetDisconnectEventStrings[event];
+  return NULL;
 }
 
 void start_rdmnet_connection(RdmnetConnection* conn)

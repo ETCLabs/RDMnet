@@ -191,6 +191,9 @@ etcpal_error_t rdmnet_connection_destroy(rdmnet_conn_t handle, const rdmnet_disc
 
 int rdmnet_send(rdmnet_conn_t handle, const uint8_t* data, size_t size);
 
+const char* rdmnet_connect_fail_event_to_string(rdmnet_connect_fail_event_t event);
+const char* rdmnet_disconnect_event_to_string(rdmnet_disconnect_event_t event);
+
 /*! \name Externally managed socket functions.
  *
  *  These functions are for advanced usage and are generally only used by broker apps.
