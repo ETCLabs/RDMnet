@@ -701,7 +701,7 @@ void rdmnet_socket_error(rdmnet_conn_t handle, etcpal_error_t socket_err)
   {
     fill_callback_info(conn, &cb);
 
-    if (conn->state == kCSConnectPending || conn->state == kCSRDMnetConnPending)
+    if (conn->state == kCSTCPConnPending || conn->state == kCSRDMnetConnPending)
     {
       cb.which = kConnCallbackConnectFailed;
 

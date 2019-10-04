@@ -25,10 +25,12 @@
 #include "rdmnet_mock/core.h"
 #include "rdmnet_mock/private/core.h"
 
+extern "C" {
 FAKE_VOID_FUNC(conncb_connected, rdmnet_conn_t, const RdmnetConnectedInfo*, void*);
 FAKE_VOID_FUNC(conncb_connect_failed, rdmnet_conn_t, const RdmnetConnectFailedInfo*, void*);
 FAKE_VOID_FUNC(conncb_disconnected, rdmnet_conn_t, const RdmnetDisconnectedInfo*, void*);
 FAKE_VOID_FUNC(conncb_msg_received, rdmnet_conn_t, const RdmnetMessage*, void*);
+}
 
 class TestConnection : public testing::Test
 {
@@ -106,6 +108,56 @@ TEST_F(TestConnectionAlreadyConnected, DisconnectsOnSocketError)
 
   ASSERT_EQ(conncb_disconnected_fake.call_count, 1u);
   ASSERT_EQ(conncb_disconnected_fake.arg0_val, conn_);
+}
+
+#define CONNECT_SOCKET_FAIL_TEST_SOCKET_ID 1234
+
+// extern "C" etcpal_error_t etcpal_socket_conn_fail_test(unsigned int family, unsigned int type, etcpal_socket_t* id)
+//{
+//  (void)family;
+//  (void)type;
+//  *id = (etcpal_socket_t)(CONNECT_SOCKET_FAIL_TEST_SOCKET_ID);
+//  return kEtcPalErrOk;
+//}
+//
+// void* user_data_conn_fail_test;
+//
+// extern "C" etcpal_error_t etcpal_poll_add_socket_conn_fail_test(EtcPalPollContext* context, etcpal_socket_t socket,
+//                                                                etcpal_poll_events_t events, void* user_data)
+//{
+//  // Just save the user data
+//  (void)context;
+//  (void)events;
+//  if (socket == (etcpal_socket_t)(CONNECT_SOCKET_FAIL_TEST_SOCKET_ID))
+//    user_data_conn_fail_test = user_data;
+//  return kEtcPalErrOk;
+//}
+//
+// extern "C" etcpal_error_t etcpal_poll_wait_conn_fail_test(EtcPalPollContext* context, EtcPalPollEvent* event,
+//                                                          int timeout_ms)
+//{
+//  (void)context;
+//  (void)timeout_ms;
+//  event->socket = (etcpal_socket_t)(CONNECT_SOCKET_FAIL_TEST_SOCKET_ID);
+//  event->events = ETCPAL_POLL_ERR;
+//  event->err = kEtcPalErrConnRefused;
+//  event->user_data = user_data_conn_fail_test;
+//  return kEtcPalErrOk;
+//}
+
+TEST_F(TestConnection, HandlesSocketErrorOnConnect)
+{
+  EtcPalSockaddr remote_addr;
+  ETCPAL_IP_SET_V4_ADDRESS(&remote_addr.ip, 0x0a650101);
+  remote_addr.port = 8888;
+
+  ClientConnectMsg connect_msg{};
+  ASSERT_EQ(kEtcPalErrOk, rdmnet_connect(conn_, &remote_addr, &connect_msg));
+
+  PassTimeAndTick();
+  rdmnet_socket_error(conn_, kEtcPalErrConnRefused);
+
+  EXPECT_EQ(conncb_connect_failed_fake.call_count, 1u);
 }
 
 TEST_F(TestConnection, SetsCorrectSocketOptionsIpv4)
