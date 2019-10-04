@@ -169,40 +169,6 @@
 #define VECTOR_EPT_STATUS_UNKNOWN_VECTOR 0x0002 /* Section 8.3.4.3 */
 
 /******************************************************************************
- * Table A-15: RDM Parameter ID Defines
- *****************************************************************************/
-/* Category - E1.33 Management   */
-#define E133_COMPONENT_SCOPE  0x0800
-#define E133_SEARCH_DOMAIN    0x0801
-#define E133_TCP_COMMS_STATUS 0x0802
-#define E133_BROKER_STATUS    0x0803
-
-/******************************************************************************
- * Table A-16: Additional Response NACK Reason Codes
- *****************************************************************************/
-#define E133_NR_ACTION_NOT_SUPPORTED       0x000B
-#define E133_NR_UNKNOWN_SCOPE              0x000F
-#define E133_NR_INVALID_STATIC_CONFIG_TYPE 0x0010
-#define E133_NR_INVALID_IPV4_ADDRESS       0x0011
-#define E133_NR_INVALID_IPV6_ADDRESS       0x0012
-#define E133_NR_INVALID_PORT               0x0013
-
-/******************************************************************************
- * Table A-17: Static Config Type Definitions for COMPONENT_SCOPE Parameter
- * Message
- *****************************************************************************/
-#define E133_NO_STATIC_CONFIG   0x00
-#define E133_STATIC_CONFIG_IPV4 0x01
-#define E133_STATIC_CONFIG_IPV6 0x02
-
-/******************************************************************************
- * Table A-18: Broker State Definitions for BROKER_STATUS Parameter Message
- *****************************************************************************/
-#define E133_BROKER_DISABLED 0x00
-#define E133_BROKER_ACTIVE   0x01
-#define E133_BROKER_STANDBY  0x02
-
-/******************************************************************************
  * Table A-19: Connection Status Codes for Broker Connect
  *****************************************************************************/
 #define E133_CONNECT_OK                   0x0000 /* Section 9.1.5 */
