@@ -150,11 +150,22 @@ void device_connect_failed(rdmnet_device_t handle, const RdmnetClientConnectFail
 
   if (info->will_retry)
   {
-    etcpal_log(device_state.lparams, ETCPAL_LOG_INFO, "Connect failed with event %d, retrying...", info->event);
+    etcpal_log(device_state.lparams, ETCPAL_LOG_INFO, "Connect failed to broker on scope '%s': %s. Retrying...",
+               device_state.cur_scope_config.scope, rdmnet_connect_fail_event_to_string(info->event));
   }
   else
   {
-    etcpal_log(device_state.lparams, ETCPAL_LOG_CRIT, "Connect failed with FATAL event %d!", info->event);
+    etcpal_log(device_state.lparams, ETCPAL_LOG_CRIT, "Connect to broker on scope '%s' failed FATALLY: %s",
+               device_state.cur_scope_config.scope, rdmnet_connect_fail_event_to_string(info->event));
+  }
+  if (info->event == kRdmnetConnectFailSocketFailure || info->event == kRdmnetConnectFailTcpLevel)
+  {
+    etcpal_log(device_state.lparams, ETCPAL_LOG_INFO, "Socket error: '%s'", etcpal_strerror(info->socket_err));
+  }
+  if (info->event == kRdmnetConnectFailRejected)
+  {
+    etcpal_log(device_state.lparams, ETCPAL_LOG_INFO, "Reject reason: '%s'",
+               rdmnet_connect_status_to_string(info->rdmnet_reason));
   }
 }
 
@@ -162,11 +173,27 @@ void device_disconnected(rdmnet_device_t handle, const RdmnetClientDisconnectedI
 {
   (void)handle;
   (void)context;
-  (void)info;
 
   default_responder_update_connection_status(false, NULL);
-  etcpal_log(device_state.lparams, ETCPAL_LOG_INFO, "Device disconnected from Broker on scope '%s'.",
-             device_state.cur_scope_config.scope);
+  if (info->will_retry)
+  {
+    etcpal_log(device_state.lparams, ETCPAL_LOG_INFO, "Device disconnected from broker on scope '%s': %s. Retrying...",
+               device_state.cur_scope_config.scope, rdmnet_disconnect_event_to_string(info->event));
+  }
+  else
+  {
+    etcpal_log(device_state.lparams, ETCPAL_LOG_CRIT, "Device disconnected FATALLY from broker on scope '%s': %s.",
+               device_state.cur_scope_config.scope, rdmnet_disconnect_event_to_string(info->event));
+  }
+  if (info->event == kRdmnetDisconnectAbruptClose)
+  {
+    etcpal_log(device_state.lparams, ETCPAL_LOG_INFO, "Socket error: '%s'", etcpal_strerror(info->socket_err));
+  }
+  if (info->event == kRdmnetDisconnectGracefulRemoteInitiated)
+  {
+    etcpal_log(device_state.lparams, ETCPAL_LOG_INFO, "Disconnect reason: '%s'",
+               rdmnet_disconnect_reason_to_string(info->rdmnet_reason));
+  }
 }
 
 void device_rdm_cmd_received(rdmnet_device_t handle, const RemoteRdmCommand* cmd, void* context)
