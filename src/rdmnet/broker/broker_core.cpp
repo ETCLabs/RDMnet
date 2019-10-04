@@ -838,8 +838,10 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
         RdmBufListEntry* response = new RdmBufListEntry;
         response->next = nullptr;
 
-        process_result =
-            responder_.ProcessPacket(RDM_REF_FROM_BUFFER(request_list->list->msg), RDM_REF_FROM_BUFFER(response->msg));
+        RdmBufferConstRef buffer_in = RDM_REF_FROM_BUFFER(request_list->list->msg);
+        RdmBufferRef buffer_out = RDM_REF_FROM_BUFFER(response->msg);
+
+        process_result = responder_.ProcessPacket(buffer_in, buffer_out);
 
         assert((response_list->list == nullptr) ||
                ((process_result != kRespNackReason) && (process_result != kRespNoSend)));

@@ -122,7 +122,7 @@ static uint8_t default_responder_get_message_count()
   return 0;  // TODO: Not yet implemented
 }
 
-static void default_responder_get_next_queue_message(GetNextQueueMessageData* data)
+static void default_responder_get_next_queued_message(GetNextQueuedMessageData* data)
 {
   // TODO: Not yet implemented
 }
@@ -134,14 +134,14 @@ void ControllerDefaultResponder::InitResponder()
       //{E120_SUPPORTED_PARAMETERS, default_responder_supported_params, RDM_PS_ALL | RDM_PS_GET},
       {E120_PARAMETER_DESCRIPTION, default_responder_parameter_description, RDM_PS_ROOT | RDM_PS_GET},
       {E120_DEVICE_MODEL_DESCRIPTION, default_responder_device_model_description,
-       RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOWSUP},
-      //{E120_MANUFACTURER_LABEL, default_responder_manufacturer_label, RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOWSUP},
-      {E120_DEVICE_LABEL, default_responder_device_label, RDM_PS_ALL | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
+       RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOW_SUPPORTED},
+      //{E120_MANUFACTURER_LABEL, default_responder_manufacturer_label, RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOW_SUPPORTED},
+      {E120_DEVICE_LABEL, default_responder_device_label, RDM_PS_ALL | RDM_PS_GET_SET | RDM_PS_SHOW_SUPPORTED},
       {E120_SOFTWARE_VERSION_LABEL, default_responder_software_version_label, RDM_PS_ROOT | RDM_PS_GET},
       {E120_IDENTIFY_DEVICE, default_responder_identify_device, RDM_PS_ALL | RDM_PS_GET_SET},
-      {E133_COMPONENT_SCOPE, default_responder_component_scope, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
-      {E133_SEARCH_DOMAIN, default_responder_search_domain, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
-      {E133_TCP_COMMS_STATUS, default_responder_tcp_comms_status, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP}};
+      {E133_COMPONENT_SCOPE, default_responder_component_scope, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOW_SUPPORTED},
+      {E133_SEARCH_DOMAIN, default_responder_search_domain, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOW_SUPPORTED},
+      {E133_TCP_COMMS_STATUS, default_responder_tcp_comms_status, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOW_SUPPORTED}};
 
   rdm_responder_state_.port_number = 0;
   rdm_responder_state_.number_of_subdevices = 0;
@@ -151,7 +151,7 @@ void ControllerDefaultResponder::InitResponder()
   rdm_responder_state_.handler_array = handler_array_;
   rdm_responder_state_.handler_array_size = CONTROLLER_HANDLER_ARRAY_SIZE;
   rdm_responder_state_.get_message_count = default_responder_get_message_count;
-  rdm_responder_state_.get_next_queue_message = default_responder_get_next_queue_message;
+  rdm_responder_state_.get_next_queued_message = default_responder_get_next_queued_message;
 
   rdmresp_sort_handler_array(handler_array_, CONTROLLER_HANDLER_ARRAY_SIZE);
   assert(rdmresp_validate_state(&rdm_responder_state_));

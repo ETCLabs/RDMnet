@@ -136,7 +136,7 @@ resp_process_result_t default_responder_component_scope(PidHandlerData* data);
 resp_process_result_t default_responder_search_domain(PidHandlerData* data);
 resp_process_result_t default_responder_tcp_comms_status(PidHandlerData* data);
 uint8_t default_responder_get_message_count();
-void default_responder_get_next_queue_message(GetNextQueueMessageData* data);
+void default_responder_get_next_queued_message(GetNextQueuedMessageData* data);
 
 /*************************** Function definitions ****************************/
 
@@ -152,14 +152,14 @@ void default_responder_init(const RdmnetScopeConfig* scope_config, const char* s
       //{E120_SUPPORTED_PARAMETERS, default_responder_supported_params, RDM_PS_ALL | RDM_PS_GET},
       {E120_PARAMETER_DESCRIPTION, default_responder_parameter_description, RDM_PS_ROOT | RDM_PS_GET},
       {E120_DEVICE_MODEL_DESCRIPTION, default_responder_device_model_description,
-       RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOWSUP},
-      //{E120_MANUFACTURER_LABEL, default_responder_manufacturer_label, RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOWSUP},
-      {E120_DEVICE_LABEL, default_responder_device_label, RDM_PS_ALL | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
+       RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOW_SUPPORTED},
+      //{E120_MANUFACTURER_LABEL, default_responder_manufacturer_label, RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOW_SUPPORTED},
+      {E120_DEVICE_LABEL, default_responder_device_label, RDM_PS_ALL | RDM_PS_GET_SET | RDM_PS_SHOW_SUPPORTED},
       {E120_SOFTWARE_VERSION_LABEL, default_responder_software_version_label, RDM_PS_ROOT | RDM_PS_GET},
       {E120_IDENTIFY_DEVICE, default_responder_identify_device, RDM_PS_ALL | RDM_PS_GET_SET},
-      {E133_COMPONENT_SCOPE, default_responder_component_scope, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
-      {E133_SEARCH_DOMAIN, default_responder_search_domain, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP},
-      {E133_TCP_COMMS_STATUS, default_responder_tcp_comms_status, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOWSUP}};
+      {E133_COMPONENT_SCOPE, default_responder_component_scope, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOW_SUPPORTED},
+      {E133_SEARCH_DOMAIN, default_responder_search_domain, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOW_SUPPORTED},
+      {E133_TCP_COMMS_STATUS, default_responder_tcp_comms_status, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOW_SUPPORTED}};
 
   device_responder_state.rdm_responder_state.port_number = 0;
   device_responder_state.rdm_responder_state.number_of_subdevices = 0;
@@ -169,7 +169,7 @@ void default_responder_init(const RdmnetScopeConfig* scope_config, const char* s
   device_responder_state.rdm_responder_state.handler_array = device_responder_state.handler_array;
   device_responder_state.rdm_responder_state.handler_array_size = DEVICE_HANDLER_ARRAY_SIZE;
   device_responder_state.rdm_responder_state.get_message_count = default_responder_get_message_count;
-  device_responder_state.rdm_responder_state.get_next_queue_message = default_responder_get_next_queue_message;
+  device_responder_state.rdm_responder_state.get_next_queued_message = default_responder_get_next_queued_message;
 
   rdmresp_sort_handler_array(device_responder_state.handler_array, DEVICE_HANDLER_ARRAY_SIZE);
   assert(rdmresp_validate_state(&device_responder_state.rdm_responder_state));
@@ -836,7 +836,7 @@ uint8_t default_responder_get_message_count()
   return 0;  // TODO: Not yet implemented
 }
 
-void default_responder_get_next_queue_message(GetNextQueueMessageData* data)
+void default_responder_get_next_queued_message(GetNextQueuedMessageData* data)
 {
   // TODO: Not yet implemented
 }
