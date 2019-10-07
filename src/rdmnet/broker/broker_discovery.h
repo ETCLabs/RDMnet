@@ -30,25 +30,29 @@
 #include "rdmnet/broker.h"
 #include "rdmnet/core/discovery.h"
 
-/// A callback interface for notifications from a BrokerDiscoveryManager.
-class BrokerDiscoveryManagerNotify
+/// A callback interface for notifications from the broker discovery subsystem.
+class BrokerDiscoveryNotify
 {
 public:
-  /// A %Broker was registered with the information indicated by broker_info.
+  /// A broker was registered with the information indicated by broker_info.
   virtual void BrokerRegistered(const std::string& assigned_service_name) = 0;
-  /// A %Broker was found at the same scope as the one which was previously registered.
+  /// A broker was found at the same scope as the one which was previously registered.
   virtual void OtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info) = 0;
-  /// A previously-found non-local %Broker has gone away.
+  /// A previously-found non-local broker has gone away.
   virtual void OtherBrokerLost(const std::string& service_name) = 0;
-  /// An error occurred while registering a %Broker's service instance.
+  /// An error occurred while registering a broker's service instance.
   virtual void BrokerRegisterError(int platform_error) = 0;
+};
+
+class BrokerDiscoveryInterface
+{
 };
 
 /// A wrapper for the RDMnet Discovery library for use by Brokers.
 class BrokerDiscoveryManager
 {
 public:
-  BrokerDiscoveryManager(BrokerDiscoveryManagerNotify* notify);
+  BrokerDiscoveryManager(BrokerDiscoveryNotify* notify);
   virtual ~BrokerDiscoveryManager();
 
   // Registration actions

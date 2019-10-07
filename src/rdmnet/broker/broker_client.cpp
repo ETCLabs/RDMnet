@@ -182,8 +182,7 @@ bool RPTController::Send()
   MessageRef* msg = nullptr;
   std::queue<MessageRef>* q = nullptr;
 
-  // Broker messages are first priority, then status messages, then RPT
-  // messages.
+  // Broker messages are first priority, then status messages, then RPT messages.
   if (!broker_msgs_.empty())
   {
     q = &broker_msgs_;

@@ -35,22 +35,31 @@
 #include "rdmnet/broker.h"
 #include "broker_util.h"
 
-// The interface for the listener callback.
-class ListenThreadNotify
+// The interface for callbacks from threads managed by the broker.
+class BrokerThreadNotify
 {
 public:
-  // Called when the listen thread gets a new connection.  If you return false,
-  // the connection is severed. Presumably you were just about to stop the
-  // listener threads anyway...
-  // The address & port fields of addr are used.
-  // Do NOT stop the listening thread in this callback!
+  // Called when a listen thread gets a new connection. Return false to close the connection
+  // immediately.
   virtual bool NewConnection(etcpal_socket_t new_sock, const EtcPalSockaddr& remote_addr) = 0;
+
+  // A notification from a client service thread to process each client queue, sending out the next
+  // message from each queue if one is available. Return false if no messages or partial messages
+  // were sent.
+  virtual bool ServiceClients() = 0;
 };
 
-// Listens for TCP connections
-class ListenThread
+class BrokerThreadInterface
 {
 public:
+  virtual bool AddListenThread(etcpal_socket_t listen_sock) = 0;
+
+  virtual bool AddClientServiceThread() = 0;
+};
+
+class BrokerThreadManager
+{
+  // Listens for TCP connections
   ListenThread(etcpal_socket_t listen_sock, ListenThreadNotify* pnotify, rdmnet::BrokerLog* log);
   virtual ~ListenThread();
 
@@ -67,21 +76,14 @@ protected:
   bool terminated_{true};
   ListenThreadNotify* notify_{nullptr};
 
-  etcpal_thread_t thread_handle_;
-  etcpal_socket_t listen_socket_{ETCPAL_SOCKET_INVALID};
+  struct ListenThread
+  {
+    etcpal_thread_t handle{};
+    etcpal_socket_t socket{ETCPAL_SOCKET_INVALID};
+  };
+  std::vector<ListenThread> listen_threads_;
 
   rdmnet::BrokerLog* log_{nullptr};
-};
-
-/************************************/
-
-class ClientServiceThreadNotify
-{
-public:
-  // Process each client queue, sending out the next message from each queue if
-  // clients are available. Return false if no messages or partial messages
-  // were sent.
-  virtual bool ServiceClients() = 0;
 };
 
 // This is the thread that processes the controller queues and device states

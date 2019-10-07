@@ -27,7 +27,7 @@
 // The corresponding sources for this file are found in the platform-specific subfolders for each
 // Broker platform.
 
-class BrokerSocketManagerNotify
+class BrokerSocketNotify
 {
 public:
   /// \brief Data was received on a socket.
@@ -54,7 +54,7 @@ public:
 class BrokerSocketManager
 {
 public:
-  virtual bool Startup(BrokerSocketManagerNotify* notify) = 0;
+  virtual bool Startup(BrokerSocketNotify* notify) = 0;
   virtual bool Shutdown() = 0;
 
   virtual bool AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t sock) = 0;

@@ -38,10 +38,9 @@
 #include "rdmnet_conn_wrapper.h"
 
 class BrokerCore : public RdmnetConnNotify,
-                   public BrokerSocketManagerNotify,
-                   public ListenThreadNotify,
-                   public ClientServiceThreadNotify,
-                   public BrokerDiscoveryManagerNotify
+                   public BrokerSocketNotify,
+                   public BrokerThreadNotify,
+                   public BrokerDiscoveryNotify
 {
 public:
   BrokerCore(std::unique_ptr<RdmnetConnInterface> conn);
@@ -68,21 +67,33 @@ private:
   bool started_{false};
   bool service_registered_{false};
 
-  rdmnet::BrokerLog* log_{nullptr};
-  std::unique_ptr<BrokerSocketManager> socket_manager_;
-  rdmnet::BrokerNotify* notify_{nullptr};
-  std::unique_ptr<RdmnetConnInterface> conn_interface_;
-
+  // Attributes of this broker instance
   rdmnet::BrokerSettings settings_;
   RdmUid my_uid_{};
+  BrokerResponder responder_;  // The Broker's RDM responder
 
-  std::vector<std::unique_ptr<ListenThread>> listeners_;
+  // External (non-owned) components
+  rdmnet::BrokerLog* log_{nullptr};        // Enables the broker to log messages
+  rdmnet::BrokerNotify* notify_{nullptr};  // Enables the broker to notify application code when something has changed
 
-  // The Broker's RDM responder
-  BrokerResponder responder_;
+  // Owned components
+  std::unique_ptr<BrokerSocketManager> socket_manager_;  // Manages the broker's readable sockets
+  std::unique_ptr<RdmnetConnInterface> conn_interface_;  // Manages the interface to the lower-level RDMnet library
+  std::unique_ptr<BrokerThreadInterface> threads_;       // Manages the broker's worker threads
+  std::unique_ptr<BrokerDiscoveryInterface> disc_;       // Handles DNS discovery of the broker
+  BrokerUidManager uid_manager_;  // Manages the UIDs of connected clients and generates new ones upon request
 
-  ClientServiceThread service_thread_;
-  BrokerDiscoveryManager disc_;
+  // The list of connected clients, indexed by the connection handle
+  std::map<rdmnet_conn_t, std::shared_ptr<BrokerClient>> clients_;
+  // Protects the list of clients and uid lookup, but not the data in the clients themselves.
+  mutable etcpal_rwlock_t client_lock_;
+
+  // The state data for each controller, indexed by its connection handle.
+  std::map<rdmnet_conn_t, std::shared_ptr<RPTController>> controllers_;
+  // The set of devices, indexed by the connection handle.
+  std::map<rdmnet_conn_t, std::shared_ptr<RPTDevice>> devices_;
+
+  std::set<rdmnet_conn_t> clients_to_destroy_;
 
   std::set<EtcPalIpAddr> ConvertMacsToInterfaces(const std::set<rdmnet::BrokerSettings::MacAddress>& macs);
   etcpal_socket_t StartListening(const EtcPalIpAddr& ip, uint16_t& port);
@@ -109,22 +120,8 @@ private:
   virtual void OtherBrokerLost(const std::string& service_name) override;
   virtual void BrokerRegisterError(int platform_error) override;
 
-  // The list of connected clients, indexed by the connection handle
-  std::map<rdmnet_conn_t, std::shared_ptr<BrokerClient>> clients_;
-  // Manages the UIDs of connected clients and generates new ones upon request
-  BrokerUidManager uid_manager_;
-  // Protects the list of clients and uid lookup, but not the data in the clients themselves.
-  mutable etcpal_rwlock_t client_lock_;
-
   void GetConnSnapshot(std::vector<rdmnet_conn_t>& conns, bool include_devices, bool include_controllers,
                        bool include_unknown, uint16_t manufacturer_filter = 0xffff);
-
-  // The state data for each controller, indexed by its connection handle.
-  std::map<rdmnet_conn_t, std::shared_ptr<RPTController>> controllers_;
-  // The set of devices, indexed by the connection handle.
-  std::map<rdmnet_conn_t, std::shared_ptr<RPTDevice>> devices_;
-
-  std::set<rdmnet_conn_t> clients_to_destroy_;
 
   void MarkConnForDestruction(rdmnet_conn_t conn, SendDisconnect send_disconnect = SendDisconnect());
   void DestroyMarkedClientSockets();
