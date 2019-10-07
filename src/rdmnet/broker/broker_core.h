@@ -44,7 +44,7 @@ class BrokerCore : public RdmnetConnNotify,
                    public BrokerDiscoveryManagerNotify
 {
 public:
-  BrokerCore(rdmnet::BrokerLog* log, rdmnet::BrokerNotify* notify, std::unique_ptr<RdmnetConnInterface> conn);
+  BrokerCore(std::unique_ptr<RdmnetConnInterface> conn);
   virtual ~BrokerCore();
 
   // Some utility functions
@@ -54,14 +54,12 @@ public:
   bool IsValidControllerDestinationUID(const RdmUid& uid) const;
   bool IsValidDeviceDestinationUID(const RdmUid& uid) const;
 
-  rdmnet::BrokerLog* GetLog() { return log_; }
+  rdmnet::BrokerLog* GetLog() const { return log_; }
+  rdmnet::BrokerSettings GetSettings() const { return settings_; }
 
-  bool Startup(const rdmnet::BrokerSettings& settings, uint16_t listen_port,
-               const std::vector<EtcPalIpAddr>& listen_addrs);
+  bool Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerNotify* notify, rdmnet::BrokerLog* log);
   void Shutdown();
   void Tick();
-
-  void GetSettings(rdmnet::BrokerSettings& settings) const;
 
   // Notification messages from the RDMnet core library
 
@@ -79,8 +77,6 @@ private:
   RdmUid my_uid_{};
 
   std::vector<std::unique_ptr<ListenThread>> listeners_;
-  std::vector<EtcPalIpAddr> listen_addrs_;
-  uint16_t listen_port_;
 
   // The Broker's RDM responder
   BrokerResponder responder_;
@@ -88,6 +84,7 @@ private:
   ClientServiceThread service_thread_;
   BrokerDiscoveryManager disc_;
 
+  std::set<EtcPalIpAddr> ConvertMacsToInterfaces(const std::set<rdmnet::BrokerSettings::MacAddress>& macs);
   etcpal_socket_t StartListening(const EtcPalIpAddr& ip, uint16_t& port);
   bool StartBrokerServices();
   void StopBrokerServices();

@@ -89,19 +89,16 @@ BrokerDiscoveryManager::~BrokerDiscoveryManager()
 {
 }
 
-etcpal_error_t BrokerDiscoveryManager::RegisterBroker(const rdmnet::BrokerDiscoveryAttributes& disc_attributes,
-                                                      const EtcPalUuid& local_cid,
-                                                      const std::vector<EtcPalIpAddr>& listen_addrs,
-                                                      uint16_t listen_port)
+etcpal_error_t BrokerDiscoveryManager::RegisterBroker(const rdmnet::BrokerSettings& settings)
 {
   // Start with the default information.
   RdmnetBrokerDiscInfo* my_info = &cur_config_.my_info;
   rdmnetdisc_fill_default_broker_info(my_info);
 
-  my_info->cid = local_cid;
+  my_info->cid = settings.cid;
   std::vector<BrokerListenAddr> listen_addr_list;
-  listen_addr_list.reserve(listen_addrs.size());
-  for (const auto& listen_addr : listen_addrs)
+  listen_addr_list.reserve(settings.listen_addrs.size());
+  for (const auto& listen_addr : settings.listen_addrs)
   {
     BrokerListenAddr to_add;
     to_add.addr = listen_addr;
@@ -113,14 +110,13 @@ etcpal_error_t BrokerDiscoveryManager::RegisterBroker(const rdmnet::BrokerDiscov
     }
   }
   my_info->listen_addr_list = listen_addr_list.data();
-  my_info->port = listen_port;
+  my_info->port = settings.listen_port;
 
   RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
-  strncpy(my_info->manufacturer, disc_attributes.dns_manufacturer.c_str(), E133_MANUFACTURER_STRING_PADDED_LENGTH);
-  strncpy(my_info->model, disc_attributes.dns_model.c_str(), E133_MODEL_STRING_PADDED_LENGTH);
-  strncpy(my_info->scope, disc_attributes.scope.c_str(), E133_SCOPE_STRING_PADDED_LENGTH);
-  strncpy(my_info->service_name, disc_attributes.dns_service_instance_name.c_str(),
-          E133_SERVICE_NAME_STRING_PADDED_LENGTH);
+  strncpy(my_info->manufacturer, settings.dns.manufacturer.c_str(), E133_MANUFACTURER_STRING_PADDED_LENGTH);
+  strncpy(my_info->model, settings.dns.model.c_str(), E133_MODEL_STRING_PADDED_LENGTH);
+  strncpy(my_info->scope, settings.scope.c_str(), E133_SCOPE_STRING_PADDED_LENGTH);
+  strncpy(my_info->service_name, settings.dns.service_instance_name.c_str(), E133_SERVICE_NAME_STRING_PADDED_LENGTH);
   RDMNET_MSVC_END_NO_DEP_WARNINGS()
 
   etcpal_error_t res = rdmnetdisc_register_broker(&cur_config_, &handle_);

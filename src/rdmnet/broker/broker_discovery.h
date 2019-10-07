@@ -52,8 +52,7 @@ public:
   virtual ~BrokerDiscoveryManager();
 
   // Registration actions
-  etcpal_error_t RegisterBroker(const rdmnet::BrokerDiscoveryAttributes& disc_attributes, const EtcPalUuid& local_cid,
-                                const std::vector<EtcPalIpAddr>& listen_addrs, uint16_t listen_port);
+  etcpal_error_t RegisterBroker(const rdmnet::BrokerSettings& settings);
   void UnregisterBroker();
 
   // Accessors

@@ -30,7 +30,7 @@
 
 namespace rdmnet
 {
-/// \brief A class for logging messages from the %Broker.
+/// \brief A class for logging messages from the Broker.
 class BrokerLog
 {
 public:
