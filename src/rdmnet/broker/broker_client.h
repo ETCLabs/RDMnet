@@ -18,8 +18,9 @@
  *****************************************************************************/
 
 /// \file broker_client.h
-#ifndef _BROKER_CLIENT_H_
-#define _BROKER_CLIENT_H_
+
+#ifndef BROKER_CLIENT_H_
+#define BROKER_CLIENT_H_
 
 #include <queue>
 #include <memory>
@@ -206,4 +207,4 @@ protected:
   std::map<rdmnet_conn_t, std::queue<MessageRef>> rpt_msgs_;
 };
 
-#endif  // _BROKER_CLIENT_H_
+#endif  // BROKER_CLIENT_H_

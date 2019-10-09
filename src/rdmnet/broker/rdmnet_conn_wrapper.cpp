@@ -51,10 +51,8 @@ RdmnetConnWrapper::RdmnetConnWrapper()
   new_conn_config_.callbacks.msg_received = conncb_msg_received;
 }
 
-etcpal_error_t RdmnetConnWrapper::Startup(const EtcPalUuid& cid, const EtcPalLogParams* log_params,
-                                          RdmnetConnNotify* notify)
+etcpal_error_t RdmnetConnWrapper::Startup(const EtcPalUuid& cid, const EtcPalLogParams* log_params)
 {
-  notify_ = notify;
   new_conn_config_.local_cid = cid;
   return rdmnet_core_init(log_params);
 }

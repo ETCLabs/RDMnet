@@ -16,11 +16,13 @@
  * This file is a part of RDMnet. For more information, go to:
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
+
 /// \file rdmnet/broker/settings.h
 /// \brief Defines a struct to hold the configuration settings that an rdmnet::Broker instance
 ///        takes on startup.
-#ifndef RDMNET_BROKER_SETTINGS_H
-#define RDMNET_BROKER_SETTINGS_H
+
+#ifndef RDMNET_BROKER_SETTINGS_H_
+#define RDMNET_BROKER_SETTINGS_H_
 
 #include <array>
 #include <cstdint>
@@ -140,4 +142,4 @@ inline bool BrokerSettings::valid() const
 
 };  // namespace rdmnet
 
-#endif  // RDMNET_BROKER_SETTINGS_H
+#endif  // RDMNET_BROKER_SETTINGS_H_

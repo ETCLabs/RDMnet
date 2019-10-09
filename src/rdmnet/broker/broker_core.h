@@ -18,8 +18,9 @@
  *****************************************************************************/
 
 /// \file broker_core.h
-#ifndef _BROKER_CORE_H_
-#define _BROKER_CORE_H_
+
+#ifndef BROKER_CORE_H_
+#define BROKER_CORE_H_
 
 #include <map>
 #include <memory>
@@ -37,13 +38,39 @@
 #include "broker_uid_manager.h"
 #include "rdmnet_conn_wrapper.h"
 
-class BrokerCore : public RdmnetConnNotify,
-                   public BrokerSocketNotify,
-                   public BrokerThreadNotify,
-                   public BrokerDiscoveryNotify
+class BrokerComponentNotify : public RdmnetConnNotify,
+                              public BrokerSocketNotify,
+                              public BrokerThreadNotify,
+                              public BrokerDiscoveryNotify
+{
+};
+
+// A set of components of broker functionality, separated to facilitate testing and dependency
+// injection.
+struct BrokerComponents
+{
+  // Manages the interface to the lower-level RDMnet library
+  std::unique_ptr<RdmnetConnInterface> conn_interface{std::make_unique<RdmnetConnWrapper>()};
+  // Manages the broker's readable sockets
+  std::unique_ptr<BrokerSocketManager> socket_mgr{CreateBrokerSocketManager()};
+  // Manages the broker's worker threads
+  std::unique_ptr<BrokerThreadInterface> threads{std::make_unique<BrokerThreadManager>()};
+  // Handles DNS discovery of the broker
+  std::unique_ptr<BrokerDiscoveryInterface> disc{std::make_unique<BrokerDiscoveryManager>()};
+
+  void SetNotify(BrokerComponentNotify* notify)
+  {
+    conn_interface->SetNotify(notify);
+    socket_mgr->SetNotify(notify);
+    threads->SetNotify(notify);
+    disc->SetNotify(notify);
+  }
+};
+
+class BrokerCore : public BrokerComponentNotify
 {
 public:
-  BrokerCore(std::unique_ptr<RdmnetConnInterface> conn);
+  BrokerCore();
   virtual ~BrokerCore();
 
   // Some utility functions
@@ -56,7 +83,8 @@ public:
   rdmnet::BrokerLog* GetLog() const { return log_; }
   rdmnet::BrokerSettings GetSettings() const { return settings_; }
 
-  bool Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerNotify* notify, rdmnet::BrokerLog* log);
+  bool Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerNotify* notify, rdmnet::BrokerLog* log,
+               BrokerComponents components = BrokerComponents());
   void Shutdown();
   void Tick();
 
@@ -77,10 +105,7 @@ private:
   rdmnet::BrokerNotify* notify_{nullptr};  // Enables the broker to notify application code when something has changed
 
   // Owned components
-  std::unique_ptr<BrokerSocketManager> socket_manager_;  // Manages the broker's readable sockets
-  std::unique_ptr<RdmnetConnInterface> conn_interface_;  // Manages the interface to the lower-level RDMnet library
-  std::unique_ptr<BrokerThreadInterface> threads_;       // Manages the broker's worker threads
-  std::unique_ptr<BrokerDiscoveryInterface> disc_;       // Handles DNS discovery of the broker
+  BrokerComponents components_;
   BrokerUidManager uid_manager_;  // Manages the UIDs of connected clients and generates new ones upon request
 
   // The list of connected clients, indexed by the connection handle
@@ -115,10 +140,12 @@ private:
   virtual bool ServiceClients() override;
 
   // BrokerDiscoveryManagerNotify messages
-  virtual void BrokerRegistered(const std::string& assigned_service_name) override;
+  virtual void BrokerRegistered(const std::string& scope, const std::string& requested_service_name,
+                                const std::string& assigned_service_name) override;
   virtual void OtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info) override;
-  virtual void OtherBrokerLost(const std::string& service_name) override;
-  virtual void BrokerRegisterError(int platform_error) override;
+  virtual void OtherBrokerLost(const std::string& scope, const std::string& service_name) override;
+  virtual void BrokerRegisterError(const std::string& scope, const std::string& requested_service_name,
+                                   int platform_error) override;
 
   void GetConnSnapshot(std::vector<rdmnet_conn_t>& conns, bool include_devices, bool include_controllers,
                        bool include_unknown, uint16_t manufacturer_filter = 0xffff);
@@ -143,4 +170,4 @@ private:
                   const std::string& status_str = std::string());
 };
 
-#endif  // _BROKER_CORE_H_
+#endif  // BROKER_CORE_H_

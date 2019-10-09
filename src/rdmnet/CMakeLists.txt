@@ -158,29 +158,47 @@ install(DIRECTORY ${RDMNET_ROOT}/include/rdmnet DESTINATION include FILES_MATCHI
 #################################### Broker ###################################
 
 if(WIN32 OR APPLE OR UNIX)
-  add_library(RDMnetBroker
-    # RDMnetBroker public headers
+  set(RDMNET_BROKER_PUBLIC_HEADERS
     ${RDMNET_INCLUDE}/rdmnet/broker.h
     ${RDMNET_INCLUDE}/rdmnet/broker/log.h
+    ${RDMNET_INCLUDE}/rdmnet/broker/settings.h
+  )
+  set(RDMNET_BROKER_PRIVATE_HEADERS
+    ${RDMNET_SRC}/rdmnet/broker/broker_core.h
+    ${RDMNET_SRC}/rdmnet/broker/broker_client.h
+    ${RDMNET_SRC}/rdmnet/broker/broker_discovery.h
+    ${RDMNET_SRC}/rdmnet/broker/broker_responder.h
+    ${RDMNET_SRC}/rdmnet/broker/broker_socket_manager.h
+    ${RDMNET_SRC}/rdmnet/broker/broker_threads.h
+    ${RDMNET_SRC}/rdmnet/broker/broker_uid_manager.h
+    ${RDMNET_SRC}/rdmnet/broker/broker_util.h
+    ${RDMNET_SRC}/rdmnet/broker/rdmnet_conn_wrapper.h
+  )
+  set(RDMNET_BROKER_SOURCES
+    ${RDMNET_SRC}/rdmnet/broker/broker_core.cpp
+    ${RDMNET_SRC}/rdmnet/broker/broker_client.cpp
+    ${RDMNET_SRC}/rdmnet/broker/broker_discovery.cpp
+    ${RDMNET_SRC}/rdmnet/broker/broker_log.cpp
+    ${RDMNET_SRC}/rdmnet/broker/broker_responder.cpp
+    ${RDMNET_SRC}/rdmnet/broker/broker_threads.cpp
+    ${RDMNET_SRC}/rdmnet/broker/broker_uid_manager.cpp
+    ${RDMNET_SRC}/rdmnet/broker/broker_util.cpp
+    ${RDMNET_SRC}/rdmnet/broker/rdmnet_conn_wrapper.cpp
+  )
 
-    broker/broker_core.h
-    broker/broker_core.cpp
-    broker/broker_client.h
-    broker/broker_client.cpp
-    broker/broker_discovery.h
-    broker/broker_discovery.cpp
-    broker/broker_log.cpp
-    broker/broker_responder.h
-    broker/broker_responder.cpp
-    broker/broker_socket_manager.h
-    broker/broker_threads.h
-    broker/broker_threads.cpp
-    broker/broker_uid_manager.h
-    broker/broker_uid_manager.cpp
-    broker/broker_util.h
-    broker/broker_util.cpp
-    broker/rdmnet_conn_wrapper.h
-    broker/rdmnet_conn_wrapper.cpp
+  # This target should not be used externally - it is only for use by the automated tests.
+  add_library(RDMnetBrokerCore INTERFACE)
+  target_sources(RDMnetBrokerCore INTERFACE
+    ${RDMNET_BROKER_PUBLIC_HEADERS}
+    ${RDMNET_BROKER_PRIVATE_HEADERS}
+    ${RDMNET_BROKER_SOURCES}
+  )
+  target_include_directories(RDMnetBrokerCore INTERFACE ${RDMNET_INCLUDE} ${RDMNET_SRC})
+
+  add_library(RDMnetBroker
+    ${RDMNET_BROKER_PUBLIC_HEADERS}
+    ${RDMNET_BROKER_PRIVATE_HEADERS}
+    ${RDMNET_BROKER_SOURCES}
   )
 
   if(WIN32)

@@ -16,17 +16,20 @@
  * This file is a part of RDMnet. For more information, go to:
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
-#include <iostream>
-#include "gtest/gtest.h"
-#include "fff.h"
-#include "etcpal/netint.h"
-#include "etcpal/socket.h"
+#include "gmock/gmock.h"
+#include "broker_threads.h"
 
-DEFINE_FFF_GLOBALS;
-
-int main(int argc, char* argv[])
+class MockBrokerThreadNotify : public BrokerThreadNotify
 {
-  testing::InitGoogleTest(&argc, argv);
+  MOCK_METHOD(bool, NewConnection, (etcpal_socket_t new_sock, const EtcPalSockaddr& remote_addr), (override));
+  MOCK_METHOD(bool, ServiceClients, (), (override));
+};
 
-  return RUN_ALL_TESTS();
-}
+class TestBrokerThreads : public testing::Test
+{
+protected:
+  BrokerThreadManager thread_mgr_;
+  MockBrokerThreadNotify notify_;
+
+  TestBrokerThreads() { thread_mgr_.SetNotify(&notify_); }
+};

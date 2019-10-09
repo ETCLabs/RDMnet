@@ -71,7 +71,7 @@ void disccb_scope_monitor_error(rdmnet_registered_broker_t handle, const char* s
 }
 }  // extern "C"
 
-BrokerDiscoveryManager::BrokerDiscoveryManager(BrokerDiscoveryManagerNotify* notify) : notify_(notify)
+BrokerDiscoveryManager::BrokerDiscoveryManager()
 {
   // clang-format off
   cur_config_.callbacks = {
@@ -83,10 +83,6 @@ BrokerDiscoveryManager::BrokerDiscoveryManager(BrokerDiscoveryManagerNotify* not
   };
   // clang-format on
   cur_config_.callback_context = this;
-}
-
-BrokerDiscoveryManager::~BrokerDiscoveryManager()
-{
 }
 
 etcpal_error_t BrokerDiscoveryManager::RegisterBroker(const rdmnet::BrokerSettings& settings)
@@ -139,14 +135,14 @@ void BrokerDiscoveryManager::LibNotifyBrokerRegistered(rdmnet_registered_broker_
   {
     assigned_service_name_ = assigned_service_name;
     if (notify_)
-      notify_->BrokerRegistered(assigned_service_name_);
+      notify_->BrokerRegistered(cur_config_.my_info.scope, cur_config_.my_info.service_name, assigned_service_name_);
   }
 }
 
 void BrokerDiscoveryManager::LibNotifyBrokerRegisterError(rdmnet_registered_broker_t handle, int platform_error)
 {
   if (handle == handle_ && notify_)
-    notify_->BrokerRegisterError(platform_error);
+    notify_->BrokerRegisterError(cur_config_.my_info.scope, cur_config_.my_info.service_name, platform_error);
 }
 
 void BrokerDiscoveryManager::LibNotifyBrokerFound(rdmnet_registered_broker_t handle,
@@ -156,11 +152,11 @@ void BrokerDiscoveryManager::LibNotifyBrokerFound(rdmnet_registered_broker_t han
     notify_->OtherBrokerFound(*broker_info);
 }
 
-void BrokerDiscoveryManager::LibNotifyBrokerLost(rdmnet_registered_broker_t handle, const char* /*scope*/,
+void BrokerDiscoveryManager::LibNotifyBrokerLost(rdmnet_registered_broker_t handle, const char* scope,
                                                  const char* service_name)
 {
   if (handle == handle_ && notify_ && service_name)
-    notify_->OtherBrokerLost(service_name);
+    notify_->OtherBrokerLost(scope, service_name);
 }
 
 void BrokerDiscoveryManager::LibNotifyScopeMonitorError(rdmnet_registered_broker_t /*handle*/, const char* /*scope*/,

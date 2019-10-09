@@ -16,9 +16,8 @@
  * This file is a part of RDMnet. For more information, go to:
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
-
-#ifndef _BROKER_SOCKET_MANAGER_H_
-#define _BROKER_SOCKET_MANAGER_H_
+#ifndef BROKER_SOCKET_MANAGER_H_
+#define BROKER_SOCKET_MANAGER_H_
 
 #include <memory>
 #include "etcpal/socket.h"
@@ -54,8 +53,10 @@ public:
 class BrokerSocketManager
 {
 public:
-  virtual bool Startup(BrokerSocketNotify* notify) = 0;
+  virtual bool Startup() = 0;
   virtual bool Shutdown() = 0;
+
+  virtual void SetNotify(BrokerSocketNotify* notify) = 0;
 
   virtual bool AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t sock) = 0;
   virtual void RemoveSocket(rdmnet_conn_t conn_handle) = 0;

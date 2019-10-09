@@ -18,8 +18,9 @@
  *****************************************************************************/
 
 /// \file broker_uid_manager.h
-#ifndef _BROKER_UID_MANAGER_H_
-#define _BROKER_UID_MANAGER_H_
+
+#ifndef BROKER_UID_MANAGER_H_
+#define BROKER_UID_MANAGER_H_
 
 #include <map>
 #include "etcpal/uuid.h"
@@ -80,4 +81,4 @@ private:
   const size_t max_uid_capacity_{kDefaultMaxUidCapacity};
 };
 
-#endif  // _BROKER_UID_MANAGER_H_
+#endif  // BROKER_UID_MANAGER_H_

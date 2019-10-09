@@ -18,8 +18,9 @@
  *****************************************************************************/
 
 /// \file rdmnet/broker/log.h
-#ifndef _RDMNET_BROKER_LOG_H_
-#define _RDMNET_BROKER_LOG_H_
+
+#ifndef RDMNET_BROKER_LOG_H_
+#define RDMNET_BROKER_LOG_H_
 
 #include <queue>
 #include <string>
@@ -82,4 +83,4 @@ protected:
 
 };  // namespace rdmnet
 
-#endif  // _RDMNET_BROKER_LOG_H_
+#endif  // RDMNET_BROKER_LOG_H_

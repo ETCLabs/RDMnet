@@ -23,14 +23,9 @@
 #include "rdmnet/core/connection.h"
 #include "broker_util.h"
 
-/**************************** Private constants ******************************/
-
-// The amount of time we'll block until we get an accept
-#define LISTEN_TIMEOUT_MS 200
-
 /*************************** Function definitions ****************************/
 
-static void listen_thread_fn(void* arg)
+extern "C" static void listen_thread_fn(void* arg)
 {
   ListenThread* lt = static_cast<ListenThread*>(arg);
   if (lt)
@@ -39,27 +34,17 @@ static void listen_thread_fn(void* arg)
   }
 }
 
-ListenThread::ListenThread(etcpal_socket_t listen_sock, ListenThreadNotify* pnotify, rdmnet::BrokerLog* log)
-    : notify_(pnotify), listen_socket_(listen_sock), log_(log)
-{
-}
-
-ListenThread::~ListenThread()
-{
-  Stop();
-}
-
 bool ListenThread::Start()
 {
-  if (listen_socket_ == ETCPAL_SOCKET_INVALID)
+  if (socket_ == ETCPAL_SOCKET_INVALID)
     return false;
 
   terminated_ = false;
   EtcPalThreadParams tparams = {ETCPAL_THREAD_DEFAULT_PRIORITY, ETCPAL_THREAD_DEFAULT_STACK, "ListenThread", NULL};
-  if (!etcpal_thread_create(&thread_handle_, &tparams, listen_thread_fn, this))
+  if (!etcpal_thread_create(&handle_, &tparams, listen_thread_fn, this))
   {
-    etcpal_close(listen_socket_);
-    listen_socket_ = ETCPAL_SOCKET_INVALID;
+    etcpal_close(socket_);
+    socket_ = ETCPAL_SOCKET_INVALID;
     if (log_)
       log_->Critical("ListenThread: Failed to start thread.");
     return false;
@@ -68,36 +53,18 @@ bool ListenThread::Start()
   return true;
 }
 
-// Destroys the listening socket.
-void ListenThread::Stop()
-{
-  if (!terminated_)
-  {
-    terminated_ = true;
-
-    if (listen_socket_ != ETCPAL_SOCKET_INVALID)
-    {
-      etcpal_shutdown(listen_socket_, ETCPAL_SHUT_RD);
-      etcpal_close(listen_socket_);
-      listen_socket_ = ETCPAL_SOCKET_INVALID;
-    }
-
-    etcpal_thread_join(&thread_handle_);
-  }
-}
-
 void ListenThread::Run()
 {
   // Wait on our listening thread for new sockets or timeout. Since we heavily block on the accept,
   // we'll keep accepting as long as the listen socket is valid.
   while (!terminated_)
   {
-    if (listen_socket_ != ETCPAL_SOCKET_INVALID)
+    if (socket_ != ETCPAL_SOCKET_INVALID)
     {
       etcpal_socket_t conn_sock;
       EtcPalSockaddr new_addr;
 
-      etcpal_error_t err = etcpal_accept(listen_socket_, &new_addr, &conn_sock);
+      etcpal_error_t err = etcpal_accept(socket_, &new_addr, &conn_sock);
 
       if (err != kEtcPalErrOk)
       {
@@ -125,23 +92,29 @@ void ListenThread::Run()
   }
 }
 
-/************************************/
-
-static void controller_device_service_thread_fn(void* arg)
+// Destroys the listening socket.
+ListenThread::~ListenThread()
 {
-  ClientServiceThread* cdt = static_cast<ClientServiceThread*>(arg);
-  if (cdt)
-    cdt->Run();
+  if (!terminated_)
+  {
+    terminated_ = true;
+
+    if (socket_ != ETCPAL_SOCKET_INVALID)
+    {
+      etcpal_shutdown(socket_, ETCPAL_SHUT_RD);
+      etcpal_close(socket_);
+      socket_ = ETCPAL_SOCKET_INVALID;
+    }
+
+    etcpal_thread_join(&handle_);
+  }
 }
 
-ClientServiceThread::ClientServiceThread(unsigned int sleep_ms)
-    : terminated_(true), sleep_ms_(sleep_ms), notify_(nullptr)
+extern "C" static void client_service_thread_fn(void* arg)
 {
-}
-
-ClientServiceThread::~ClientServiceThread()
-{
-  Stop();
+  ClientServiceThread* cst = static_cast<ClientServiceThread*>(arg);
+  if (cst)
+    cst->Run();
 }
 
 bool ClientServiceThread::Start()
@@ -149,16 +122,7 @@ bool ClientServiceThread::Start()
   terminated_ = false;
   EtcPalThreadParams tparams = {ETCPAL_THREAD_DEFAULT_PRIORITY, ETCPAL_THREAD_DEFAULT_STACK, "ClientServiceThread",
                                 NULL};
-  return etcpal_thread_create(&thread_handle_, &tparams, controller_device_service_thread_fn, this);
-}
-
-void ClientServiceThread::Stop()
-{
-  if (!terminated_)
-  {
-    terminated_ = true;
-    etcpal_thread_join(&thread_handle_);
-  }
+  return etcpal_thread_create(&handle_, &tparams, client_service_thread_fn, this);
 }
 
 void ClientServiceThread::Run()
@@ -171,8 +135,48 @@ void ClientServiceThread::Run()
     // As long as clients need to be processed, we won't sleep.
     while (notify_->ServiceClients())
       ;
-    etcpal_thread_sleep(sleep_ms_);
+    etcpal_thread_sleep(kSleepMs);
   }
 }
 
-/************************************/
+ClientServiceThread::~ClientServiceThread()
+{
+  if (!terminated_)
+  {
+    terminated_ = true;
+    etcpal_thread_join(&handle_);
+  }
+}
+
+bool BrokerThreadManager::AddListenThread(etcpal_socket_t listen_sock)
+{
+  auto new_thread = std::make_unique<ListenThread>(listen_sock, notify_, log_);
+  if (new_thread->Start())
+  {
+    threads_.push_back(std::move(new_thread));
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+bool BrokerThreadManager::AddClientServiceThread()
+{
+  auto new_thread = std::make_unique<ClientServiceThread>(notify_);
+  if (new_thread->Start())
+  {
+    threads_.push_back(std::move(new_thread));
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+void BrokerThreadManager::StopThreads()
+{
+  threads_.clear();
+}

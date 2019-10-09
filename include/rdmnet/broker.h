@@ -20,8 +20,9 @@
 /// \file rdmnet/broker.h
 /// \brief A platform-neutral RDMnet Broker implementation.
 /// \author Nick Ballhorn-Wagner and Sam Kearney
-#ifndef _RDMNET_BROKER_H_
-#define _RDMNET_BROKER_H_
+
+#ifndef RDMNET_BROKER_H_
+#define RDMNET_BROKER_H_
 
 #include <memory>
 #include <string>
@@ -56,9 +57,6 @@ public:
 class Broker
 {
 public:
-  Broker();
-  virtual ~Broker();
-
   bool Startup(const BrokerSettings& settings, BrokerNotify* notify, BrokerLog* log);
   void Shutdown();
   void Tick();
@@ -66,11 +64,11 @@ public:
   BrokerSettings GetSettings() const;
 
 private:
-  std::unique_ptr<BrokerCore> core_;
+  std::unique_ptr<BrokerCore> core_{std::make_unique<BrokerCore>()};
 };
 
 };  // namespace rdmnet
 
 /// @}
 
-#endif  // _RDMNET_BROKER_H_
+#endif  // RDMNET_BROKER_H_

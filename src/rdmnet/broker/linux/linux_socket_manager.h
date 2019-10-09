@@ -18,10 +18,11 @@
  *****************************************************************************/
 
 // Linux override of BrokerSocketManager.
-// Uses epoll, the most efficient and scalable socket management tool available from the Linux API.
+// Uses epoll, currently the most efficient and scalable socket management tool available from the
+// Linux API.
 
-#ifndef _LINUX_SOCKET_MANAGER_H_
-#define _LINUX_SOCKET_MANAGER_H_
+#ifndef LINUX_SOCKET_MANAGER_H_
+#define LINUX_SOCKET_MANAGER_H_
 
 #include <map>
 #include <vector>
@@ -86,8 +87,9 @@ public:
   virtual ~LinuxBrokerSocketManager() { etcpal_rwlock_destroy(&socket_lock_); }
 
   // BrokerSocketManager interface
-  bool Startup(BrokerSocketManagerNotify* notify) override;
+  bool Startup() override;
   bool Shutdown() override;
+  void SetNotify(BrokerSocketManagerNotify* notify) override { notify_ = notify; }
   bool AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t socket) override;
   void RemoveSocket(rdmnet_conn_t conn_handle) override;
 
@@ -110,7 +112,7 @@ private:
   etcpal_rwlock_t socket_lock_;
 
   // The callback instance
-  BrokerSocketManagerNotify* notify_{nullptr};
+  BrokerSocketNotify* notify_{nullptr};
 };
 
-#endif  // _LINUX_SOCKET_MANAGER_H_
+#endif  // LINUX_SOCKET_MANAGER_H_

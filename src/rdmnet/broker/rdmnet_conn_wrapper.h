@@ -17,8 +17,10 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef _RDMNET_CONN_WRAPPER_H_
-#define _RDMNET_CONN_WRAPPER_H_
+/// \file rdmnet_conn_wrapper.h
+
+#ifndef RDMNET_CONN_WRAPPER_H_
+#define RDMNET_CONN_WRAPPER_H_
 
 #include "rdmnet/core/connection.h"
 
@@ -41,9 +43,10 @@ struct SendDisconnect
 class RdmnetConnInterface
 {
 public:
-  virtual etcpal_error_t Startup(const EtcPalUuid& cid, const EtcPalLogParams* log_params,
-                                 RdmnetConnNotify* notify) = 0;
+  virtual etcpal_error_t Startup(const EtcPalUuid& cid, const EtcPalLogParams* log_params) = 0;
   virtual void Shutdown() = 0;
+
+  virtual void SetNotify(RdmnetConnNotify* notify) = 0;
 
   virtual etcpal_error_t CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
                                                       rdmnet_conn_t& new_handle) = 0;
@@ -61,8 +64,10 @@ class RdmnetConnWrapper : public RdmnetConnInterface
 public:
   RdmnetConnWrapper();
 
-  etcpal_error_t Startup(const EtcPalUuid& cid, const EtcPalLogParams* log_params, RdmnetConnNotify* notify) override;
+  etcpal_error_t Startup(const EtcPalUuid& cid, const EtcPalLogParams* log_params) override;
   void Shutdown() override;
+
+  void SetNotify(RdmnetConnNotify* notify) { notify_ = notify; }
 
   etcpal_error_t CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
                                               rdmnet_conn_t& new_handle) override;
@@ -80,4 +85,4 @@ private:
   RdmnetConnNotify* notify_{nullptr};
 };
 
-#endif  // _RDMNET_CONN_WRAPPER_H_
+#endif  // RDMNET_CONN_WRAPPER_H_
