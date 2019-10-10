@@ -34,8 +34,30 @@ public:
   void InitResponder(const RdmUid& uid);
   etcpal_error_t ProcessPacket(const RdmBufferConstRef& bufferIn, RdmBufferRef& bufferOut,
                                rdmresp_response_type_t& responseType);
-  etcpal_error_t ProcessGetParameterDescription(uint16_t requestedPid, RdmPdParameterDescription& description,
+
+  etcpal_error_t ProcessGetParameterDescription(uint16_t pid, RdmPdParameterDescription& description,
                                                 rdmresp_response_type_t& responseType, rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessGetDeviceModelDescription(RdmPdString& description, rdmresp_response_type_t& responseType,
+                                                  rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessGetDeviceLabel(RdmPdString& label, rdmresp_response_type_t& responseType,
+                                       rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessSetDeviceLabel(const RdmPdString& label, rdmresp_response_type_t& responseType,
+                                       rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessGetSoftwareVersionLabel(RdmPdString& label, rdmresp_response_type_t& responseType,
+                                                rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessGetIdentifyDevice(bool& identify_state, rdmresp_response_type_t& responseType,
+                                          rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessSetIdentifyDevice(bool identify, rdmresp_response_type_t& responseType,
+                                          rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessGetComponentScope(uint16_t slot, RdmPdComponentScope& component_scope,
+                                          rdmresp_response_type_t& responseType, rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessSetComponentScope(const RdmPdComponentScope& component_scope,
+                                          rdmresp_response_type_t& responseType, rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessGetBrokerStatus(RdmPdBrokerStatus& status, rdmresp_response_type_t& responseType,
+                                        rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessSetBrokerStatus(rdmpd_broker_state_t state, rdmresp_response_type_t& responseType,
+                                        rdmpd_nack_reason_t& nackReason);
+
   //void ProcessRDMMessage(int conn, const RPTMessageRef& msg);
   //void SendRDMResponse(int conn, const RPTMessageRef& msg, uint8_t response_type, uint8_t command_class,
   //                     uint16_t param_id, uint8_t packed_len, uint8_t* pdata);
