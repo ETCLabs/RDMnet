@@ -829,7 +829,8 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
       response_list->list = nullptr;
 
       /* Process the RDM command */
-      resp_process_result_t process_result = kRespNoSend;
+      rdmresp_response_type_t response_type = kRdmRespRtNoSend;
+      etcpal_error_t process_packet_result = kEtcPalErrOk;
       RdmBufListEntry** next = &response_list->list;
 
       /* Generate a list response_list of 0 or more RdmBufListEntry nodes */
@@ -841,21 +842,38 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
         RdmBufferConstRef buffer_in = RDM_REF_FROM_BUFFER(request_list->list->msg);
         RdmBufferRef buffer_out = RDM_REF_FROM_BUFFER(response->msg);
 
-        process_result = responder_.ProcessPacket(buffer_in, buffer_out);
+        process_packet_result = responder_.ProcessPacket(buffer_in, buffer_out, response_type);
 
-        assert((response_list->list == nullptr) ||
-               ((process_result != kRespNackReason) && (process_result != kRespNoSend)));
+        // Assert because if == kEtcPalErrInvalid, a bug exists on this side
+        assert(process_packet_result != kEtcPalErrInvalid);
 
-        if (process_result == kRespNoSend)
+        if (process_packet_result == kEtcPalErrOk)
         {
-          delete response;
+          assert((response_list->list == nullptr) ||
+                 ((response_type != kRdmRespRtNackReason) && (response_type != kRdmRespRtNoSend)));
+
+          if (response_type == kRdmRespRtNoSend)
+          {
+            delete response;
+          }
+          else
+          {
+            (*next) = response;
+            next = &response->next;
+          }
         }
-        else
+        else  // A NACK reason has already been packed in response by responder_.ProcessPacket
         {
+          for (auto i = response_list->list; i != nullptr; i = i->next)
+          {
+            delete i;
+          }
+
+          next = &response_list->list;
           (*next) = response;
           next = &response->next;
         }
-      } while (process_result == kRespAckOverflow);
+      } while (response_type == kRdmRespRtAckOverflow);
       
       /* Log that the broker got and processed the command */
       log_->Log(ETCPAL_LOG_DEBUG, "Received and processed RPT request from Client %04x:%08x",

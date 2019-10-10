@@ -1662,23 +1662,35 @@ void RDMnetNetworkModel::RdmCommandReceived(rdmnet_client_scope_t scope_handle, 
 
   RdmResponse resp;
   std::vector<RdmResponse> resp_list;
-  resp_process_result_t process_result = kRespNoSend;
+  rdmresp_response_type_t response_type = kRdmRespRtNoSend;
+  etcpal_error_t process_cmd_result = kEtcPalErrOk;
 
   do
   {
-    process_result = default_responder_.ProcessCommand(broker_connections_[scope_handle]->scope().toStdString(), rdm, resp);
+    process_cmd_result = default_responder_.ProcessCommand(broker_connections_[scope_handle]->scope().toStdString(),
+                                                           rdm, resp, response_type);
 
-    assert(resp_list.empty() || ((process_result != kRespNackReason) && (process_result != kRespNoSend)));
+    assert(process_cmd_result != kEtcPalErrInvalid); // Assert because if == kEtcPalErrInvalid, a bug exists on this side
 
-    if (process_result != kRespNoSend)
+    if (process_cmd_result == kEtcPalErrOk)
     {
+      assert(resp_list.empty() || ((response_type != kRdmRespRtNackReason) && (response_type != kRdmRespRtNoSend)));
+
+      if (response_type != kRdmRespRtNoSend)
+      {
+        resp_list.push_back(resp);
+      }
+    }
+    else // A NACK reason has already been packed in resp by default_responder_.ProcessCommand
+    {
+      resp_list.clear();
       resp_list.push_back(resp);
     }
-  } while (process_result == kRespAckOverflow);
+  } while (response_type == kRdmRespRtAckOverflow);
 
   if (resp_list.size() > 0)
   {
-    if (process_result == kRespNackReason)
+    if (response_type == kRdmRespRtNackReason)
     {
       log_->Log(ETCPAL_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for PID 0x%04x with reason 0x%04x",
                 cmd.source_uid.manu, cmd.source_uid.id, rdm.param_id, etcpal_upack_16b(resp.parameter_data.data));

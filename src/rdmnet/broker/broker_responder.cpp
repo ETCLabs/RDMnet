@@ -34,85 +34,78 @@
 extern "C" {
 
 /* RESPONDER HANDLERS */
-// static resp_process_result_t default_responder_supported_params(PidHandlerData* data)
+// static etcpal_error_t default_responder_supported_params(PidHandlerData* data)
 //{
-//  return kRespNoSend;
+//  return kEtcPalErrNotImpl;
 //}
 
-static resp_process_result_t default_responder_parameter_description(PidHandlerData* data)
+static etcpal_error_t default_responder_parameter_description(PidHandlerData* data)
 {
-  if (data == nullptr)
-  {
-    // TODO: Handle error and return
-  }
+  // if (!rdmresp_validate_pid_handler_data(data, true)) result = kEtcPalErrInvalid; // TODO: Caller should do this
 
-  if ((data->context == nullptr) || (data->pd_in == nullptr) || (data->pd_out == nullptr))
-  {
-    // TODO: Handle error and return
-  }
+  etcpal_error_t result = kEtcPalErrOk;
 
   uint16_t requested_pid;
-  RdmPdParameterDescription description;
+  result = rdmpd_unpack_get_parameter_description(data->pd_in, &requested_pid);
 
-  if (rdmpd_unpack_get_parameter_description(data->pd_in, &requested_pid) != kEtcPalErrOk)
+  if (result == kEtcPalErrOk)
   {
-    // TODO: Handle error and return
-  }
+    BrokerResponder* responder = static_cast<BrokerResponder*>(data->context);
+    assert(responder);  // If this is null, then there is an internal error in the broker responder code
 
-  BrokerResponder* responder = static_cast<BrokerResponder*>(data->context);
+    RdmPdParameterDescription description;
+    rdmpd_nack_reason_t nack_reason;
+    result = responder->ProcessGetParameterDescription(requested_pid, description, data->response_type, nack_reason);
 
-  if (responder == nullptr)
-  {
-    // TODO: Handle error and return
-  }
-
-  resp_process_result_t result = responder->ProcessGetParameterDescription(requested_pid, description);
-
-  if (result == E120_RESPONSE_TYPE_NACK_REASON)
-  {
-    // TODO: Handle NACK and return (pack, etc...)
-  }
-  else if(rdmpd_pack_get_resp_parameter_description(&description, data->pd_out) != kEtcPalErrOk)
-  {
-    // TODO: Handle error and return
+    if (result == kEtcPalErrOk)
+    {
+      if (data->response_type == kRdmRespRtNackReason)
+      {
+        result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
+      }
+      else if (data->response_type != kRdmRespRtNoSend)  // Assuming no ACK timer
+      {
+        result = rdmpd_pack_get_resp_parameter_description(&description, data->pd_out);
+      }
+    }
   }
 
   return result;
 }
 
-static resp_process_result_t default_responder_device_model_description(PidHandlerData* data)
+static etcpal_error_t default_responder_device_model_description(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-// static resp_process_result_t default_responder_manufacturer_label(PidHandlerData* data)
+// static etcpal_error_t default_responder_manufacturer_label(PidHandlerData* data)
 //{
-//  return kRespNoSend;
+//  return kEtcPalErrNotImpl;
 //}
 
-static resp_process_result_t default_responder_device_label(PidHandlerData* data)
+static etcpal_error_t default_responder_device_label(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-static resp_process_result_t default_responder_software_version_label(PidHandlerData* data)
+static etcpal_error_t default_responder_software_version_label(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-static resp_process_result_t default_responder_identify_device(PidHandlerData* data)
+static etcpal_error_t default_responder_identify_device(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-static resp_process_result_t default_responder_component_scope(PidHandlerData* data)
+static etcpal_error_t default_responder_component_scope(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-static resp_process_result_t default_responder_broker_status(PidHandlerData* data)
+static etcpal_error_t default_responder_broker_status(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 static uint8_t default_responder_get_message_count()
@@ -143,7 +136,7 @@ void BrokerResponder::InitResponder(const RdmUid& uid)
   rdm_responder_state_.port_number = 0;
   rdm_responder_state_.uid = uid;
   rdm_responder_state_.number_of_subdevices = 0;
-  rdm_responder_state_.responder_type = kRespTypeBroker;
+  rdm_responder_state_.responder_type = kRdmRespTypeBroker;
   rdm_responder_state_.callback_context = this;
   memcpy(handler_array_, handler_array, BROKER_HANDLER_ARRAY_SIZE * sizeof(RdmPidHandlerEntry));
   rdm_responder_state_.handler_array = handler_array_;
@@ -155,9 +148,18 @@ void BrokerResponder::InitResponder(const RdmUid& uid)
   assert(rdmresp_validate_state(&rdm_responder_state_));
 }
 
-resp_process_result_t BrokerResponder::ProcessPacket(const RdmBufferConstRef& bufferIn, RdmBufferRef& bufferOut)
+etcpal_error_t BrokerResponder::ProcessPacket(const RdmBufferConstRef& bufferIn, RdmBufferRef& bufferOut,
+                                              rdmresp_response_type_t& responseType)
 {
-  return rdmresp_process_packet(&rdm_responder_state_, bufferIn, &bufferOut, nullptr);
+  return rdmresp_process_packet(&rdm_responder_state_, bufferIn, &bufferOut, &responseType, nullptr);
+}
+
+etcpal_error_t BrokerResponder::ProcessGetParameterDescription(uint16_t requestedPid,
+                                                               RdmPdParameterDescription& description,
+                                                               rdmresp_response_type_t& responseType,
+                                                               rdmpd_nack_reason_t& nackReason)
+{
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 //void BrokerResponder::ProcessRDMMessage(int /*conn*/, const RPTMessageRef& /*msg*/)

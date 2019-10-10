@@ -125,16 +125,16 @@ bool get_endpoint_responders(const uint8_t* param_data, uint8_t param_data_len, 
                              size_t* num_responses, uint16_t* nack_reason);
 
 /* RESPONDER HANDLERS */
-//resp_process_result_t default_responder_supported_params(PidHandlerData* data);
-resp_process_result_t default_responder_parameter_description(PidHandlerData* data);
-resp_process_result_t default_responder_device_model_description(PidHandlerData* data);
-//resp_process_result_t default_responder_manufacturer_label(PidHandlerData* data);
-resp_process_result_t default_responder_device_label(PidHandlerData* data);
-resp_process_result_t default_responder_software_version_label(PidHandlerData* data);
-resp_process_result_t default_responder_identify_device(PidHandlerData* data);
-resp_process_result_t default_responder_component_scope(PidHandlerData* data);
-resp_process_result_t default_responder_search_domain(PidHandlerData* data);
-resp_process_result_t default_responder_tcp_comms_status(PidHandlerData* data);
+//etcpal_error_t default_responder_supported_params(PidHandlerData* data);
+etcpal_error_t default_responder_parameter_description(PidHandlerData* data);
+etcpal_error_t default_responder_device_model_description(PidHandlerData* data);
+//etcpal_error_t default_responder_manufacturer_label(PidHandlerData* data);
+etcpal_error_t default_responder_device_label(PidHandlerData* data);
+etcpal_error_t default_responder_software_version_label(PidHandlerData* data);
+etcpal_error_t default_responder_identify_device(PidHandlerData* data);
+etcpal_error_t default_responder_component_scope(PidHandlerData* data);
+etcpal_error_t default_responder_search_domain(PidHandlerData* data);
+etcpal_error_t default_responder_tcp_comms_status(PidHandlerData* data);
 uint8_t default_responder_get_message_count();
 void default_responder_get_next_queued_message(GetNextQueuedMessageData* data);
 
@@ -163,7 +163,7 @@ void default_responder_init(const RdmnetScopeConfig* scope_config, const char* s
 
   device_responder_state.rdm_responder_state.port_number = 0;
   device_responder_state.rdm_responder_state.number_of_subdevices = 0;
-  device_responder_state.rdm_responder_state.responder_type = kRespTypeDevice;
+  device_responder_state.rdm_responder_state.responder_type = kRdmRespTypeDevice;
   device_responder_state.rdm_responder_state.callback_context = NULL;
   memcpy(device_responder_state.handler_array, handler_array, DEVICE_HANDLER_ARRAY_SIZE * sizeof(RdmPidHandlerEntry));
   device_responder_state.rdm_responder_state.handler_array = device_responder_state.handler_array;
@@ -344,9 +344,10 @@ bool default_responder_get(uint16_t pid, const uint8_t* param_data, uint8_t para
   return res;
 }
 
-resp_process_result_t default_responder_process_command(const RdmCommand* command, RdmResponse* response)
+etcpal_error_t default_responder_process_command(const RdmCommand* command, RdmResponse* response,
+                                                 rdmresp_response_type_t* response_type)
 {
-  return rdmresp_process_command(&device_responder_state.rdm_responder_state, command, response);
+  return rdmresp_process_command(&device_responder_state.rdm_responder_state, command, response, response_type);
 }
 
 void identify_thread(void* arg)
@@ -781,54 +782,54 @@ bool get_endpoint_responders(const uint8_t* param_data, uint8_t param_data_len, 
   return false;
 }
 
-//resp_process_result_t default_responder_supported_params(PidHandlerData* data)
+//etcpal_error_t default_responder_supported_params(PidHandlerData* data)
 //{
-//  return kRespNoSend;
+//  return kEtcPalErrNotImpl;
 //}
 
-resp_process_result_t default_responder_parameter_description(PidHandlerData* data)
+etcpal_error_t default_responder_parameter_description(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-resp_process_result_t default_responder_device_model_description(PidHandlerData* data)
+etcpal_error_t default_responder_device_model_description(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-//resp_process_result_t default_responder_manufacturer_label(PidHandlerData* data)
+//etcpal_error_t default_responder_manufacturer_label(PidHandlerData* data)
 //{
-//  return kRespNoSend;
+//  return kEtcPalErrNotImpl;
 //}
 
-resp_process_result_t default_responder_device_label(PidHandlerData* data)
+etcpal_error_t default_responder_device_label(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-resp_process_result_t default_responder_software_version_label(PidHandlerData* data)
+etcpal_error_t default_responder_software_version_label(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-resp_process_result_t default_responder_identify_device(PidHandlerData* data)
+etcpal_error_t default_responder_identify_device(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-resp_process_result_t default_responder_component_scope(PidHandlerData* data)
+etcpal_error_t default_responder_component_scope(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-resp_process_result_t default_responder_search_domain(PidHandlerData* data)
+etcpal_error_t default_responder_search_domain(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-resp_process_result_t default_responder_tcp_comms_status(PidHandlerData* data)
+etcpal_error_t default_responder_tcp_comms_status(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 uint8_t default_responder_get_message_count()

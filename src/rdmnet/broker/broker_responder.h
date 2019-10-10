@@ -32,8 +32,10 @@ class BrokerResponder
 {
 public:
   void InitResponder(const RdmUid& uid);
-  resp_process_result_t ProcessPacket(const RdmBufferConstRef& bufferIn, RdmBufferRef& bufferOut);
-  resp_process_result_t ProcessGetParameterDescription(uint16_t requestedPid, RdmPdParameterDescription& description);
+  etcpal_error_t ProcessPacket(const RdmBufferConstRef& bufferIn, RdmBufferRef& bufferOut,
+                               rdmresp_response_type_t& responseType);
+  etcpal_error_t ProcessGetParameterDescription(uint16_t requestedPid, RdmPdParameterDescription& description,
+                                                rdmresp_response_type_t& responseType, rdmpd_nack_reason_t& nackReason);
   //void ProcessRDMMessage(int conn, const RPTMessageRef& msg);
   //void SendRDMResponse(int conn, const RPTMessageRef& msg, uint8_t response_type, uint8_t command_class,
   //                     uint16_t param_id, uint8_t packed_len, uint8_t* pdata);

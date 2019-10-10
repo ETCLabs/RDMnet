@@ -67,54 +67,54 @@ const std::vector<uint8_t> ControllerDefaultResponder::device_info_ = {
 extern "C" {
 
 /* RESPONDER HANDLERS */
-// static resp_process_result_t default_responder_supported_params(PidHandlerData* data)
+// static etcpal_error_t default_responder_supported_params(PidHandlerData* data)
 //{
-//  return kRespNoSend;
+//  return kEtcPalErrNotImpl;
 //}
 
-static resp_process_result_t default_responder_parameter_description(PidHandlerData* data)
+static etcpal_error_t default_responder_parameter_description(PidHandlerData* data)
 {
-  return kRespNoSend; // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-static resp_process_result_t default_responder_device_model_description(PidHandlerData* data)
+static etcpal_error_t default_responder_device_model_description(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-// static resp_process_result_t default_responder_manufacturer_label(PidHandlerData* data)
+// static etcpal_error_t default_responder_manufacturer_label(PidHandlerData* data)
 //{
-//  return kRespNoSend;
+//  return kEtcPalErrNotImpl;
 //}
 
-static resp_process_result_t default_responder_device_label(PidHandlerData* data)
+static etcpal_error_t default_responder_device_label(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-static resp_process_result_t default_responder_software_version_label(PidHandlerData* data)
+static etcpal_error_t default_responder_software_version_label(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-static resp_process_result_t default_responder_identify_device(PidHandlerData* data)
+static etcpal_error_t default_responder_identify_device(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-static resp_process_result_t default_responder_component_scope(PidHandlerData* data)
+static etcpal_error_t default_responder_component_scope(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-static resp_process_result_t default_responder_search_domain(PidHandlerData* data)
+static etcpal_error_t default_responder_search_domain(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-static resp_process_result_t default_responder_tcp_comms_status(PidHandlerData* data)
+static etcpal_error_t default_responder_tcp_comms_status(PidHandlerData* data)
 {
-  return kRespNoSend;  // TODO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 static uint8_t default_responder_get_message_count()
@@ -145,7 +145,7 @@ void ControllerDefaultResponder::InitResponder()
 
   rdm_responder_state_.port_number = 0;
   rdm_responder_state_.number_of_subdevices = 0;
-  rdm_responder_state_.responder_type = kRespTypeController;
+  rdm_responder_state_.responder_type = kRdmRespTypeController;
   rdm_responder_state_.callback_context = this;
   memcpy(handler_array_, handler_array, CONTROLLER_HANDLER_ARRAY_SIZE * sizeof(RdmPidHandlerEntry));
   rdm_responder_state_.handler_array = handler_array_;
@@ -157,17 +157,25 @@ void ControllerDefaultResponder::InitResponder()
   assert(rdmresp_validate_state(&rdm_responder_state_));
 }
 
-resp_process_result_t ControllerDefaultResponder::ProcessCommand(const std::string& scope, const RdmCommand& pcmd,
-                                                                 RdmResponse& presp)
+etcpal_error_t ControllerDefaultResponder::ProcessCommand(const std::string& scope, const RdmCommand& cmd,
+                                                          RdmResponse& resp, rdmresp_response_type_t& presp_type)
 {
+  etcpal_error_t result;
   auto scope_entry = scopes_.find(scope);
-  if (scope_entry != scopes_.end())
+  if (scope_entry == scopes_.end()) // Not found
+  {
+    presp_type = kRdmRespRtNackReason;
+    RDM_CREATE_NACK_FROM_COMMAND(&resp, &cmd, E120_NR_HARDWARE_FAULT);
+
+    result = kEtcPalErrNotFound;  // Scope handle not found
+  }
+  else
   {
     rdm_responder_state_.uid = scope_entry->second.my_uid;
-    return rdmresp_process_command(&rdm_responder_state_, &pcmd, &presp);
+    result = rdmresp_process_command(&rdm_responder_state_, &cmd, &resp, &presp_type);
   }
 
-  return kRespNoSend;
+  return result;
 }
 
 bool ControllerDefaultResponder::Get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len,

@@ -60,7 +60,8 @@ bool default_responder_set(uint16_t pid, const uint8_t* param_data, uint8_t para
                            rdmnet_data_changed_t* data_changed);
 bool default_responder_get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len,
                            param_data_list_t resp_data_list, size_t* num_responses, uint16_t* nack_reason);
-resp_process_result_t default_responder_process_command(const RdmCommand* command, RdmResponse* response);
+etcpal_error_t default_responder_process_command(const RdmCommand* command, RdmResponse* response,
+                                                 rdmresp_response_type_t* response_type);
 
 #ifdef __cplusplus
 }

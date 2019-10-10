@@ -54,7 +54,8 @@ public:
 
   void InitResponder();
 
-  resp_process_result_t ProcessCommand(const std::string& scope, const RdmCommand& pcmd, RdmResponse& presp);
+  etcpal_error_t ProcessCommand(const std::string& scope, const RdmCommand& cmd, RdmResponse& resp,
+                                rdmresp_response_type_t& presp_type);
 
   bool Get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len, std::vector<RdmParamData>& resp_data_list,
            uint16_t& nack_reason);

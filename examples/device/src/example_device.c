@@ -213,23 +213,36 @@ void device_handle_rpt_command(const RemoteRdmCommand* cmd, rdmnet_data_changed_
     RdmResponse resp;
     RdmResponse resp_list[MAX_RESPONSES_IN_ACK_OVERFLOW];
     size_t resp_list_size = 0;
-    resp_process_result_t process_result = kRespNoSend;
+    rdmresp_response_type_t response_type = kRdmRespRtNoSend;
+    etcpal_error_t process_cmd_result = kEtcPalErrOk;
 
     do
     {
-      process_result = default_responder_process_command(rdm_cmd, &resp);
+      process_cmd_result = default_responder_process_command(rdm_cmd, &resp, &response_type);
 
-      assert((resp_list_size == 0) || ((process_result != kRespNackReason) && (process_result != kRespNoSend)));
+      // Assert because if == kEtcPalErrInvalid, a bug exists on this side
+      assert(process_cmd_result != kEtcPalErrInvalid);  
 
-      if (process_result != kRespNoSend)
+      if (process_cmd_result == kEtcPalErrOk)
       {
-        resp_list[resp_list_size++] = resp;
+        assert((resp_list_size == 0) ||
+               ((response_type != kRdmRespRtNackReason) && (response_type != kRdmRespRtNoSend)));
+
+        if (response_type != kRdmRespRtNoSend)
+        {
+          resp_list[resp_list_size++] = resp;
+        }
       }
-    } while ((process_result == kRespAckOverflow) && (resp_list_size < MAX_RESPONSES_IN_ACK_OVERFLOW));
+      else  // A NACK reason has already been packed in resp by default_responder_process_command
+      {
+        resp_list[0] = resp;
+        resp_list_size = 1;
+      }
+    } while ((response_type == kRdmRespRtAckOverflow) && (resp_list_size < MAX_RESPONSES_IN_ACK_OVERFLOW));
 
     if (resp_list_size > 0)
     {
-      if (process_result == kRespNackReason)
+      if (response_type == kRdmRespRtNackReason)
       {
         uint16_t nack_reason = etcpal_upack_16b(resp.parameter_data.data);
 
