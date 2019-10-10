@@ -35,7 +35,7 @@ protected:
 };
 
 // Test parsing a fully-formed RPT Notification PDU
-TEST_F(TestMsgBuf, rpt_notification_full)
+TEST_F(TestMsgBuf, RptNotificationFull)
 {
   ASSERT_EQ(kEtcPalErrOk,
             rdmnet_msg_buf_recv(&buf_, RptNotificationPduFullValid::buf, sizeof(RptNotificationPduFullValid::buf)));

@@ -62,7 +62,7 @@ protected:
   }
 };
 
-TEST_F(TestBrokerLog, log_messages_formatted_correctly)
+TEST_F(TestBrokerLog, LogMessagesFormattedCorrectly)
 {
   TestLogFormat("Test strings: string 1 string 2", "Test strings: %s %s", "string 1", "string 2");
   TestLogFormat("Test ints: 1 2 -3", "Test ints: %u %d %d", 1u, 2, -3);
@@ -81,7 +81,7 @@ TEST_F(TestBrokerLog, log_messages_formatted_correctly)
   log_.SetLogMask(ETCPAL_LOG_UPTO(priority - 1));  \
   log_.name("Test message")  // Expect no call
 
-TEST_F(TestBrokerLog, priority_shortcuts_work_correctly)
+TEST_F(TestBrokerLog, PriorityShortcutsWorkCorrectly)
 {
   TEST_PRIORITY_SHORTCUT(Debug, ETCPAL_LOG_DEBUG);
   TEST_PRIORITY_SHORTCUT(Info, ETCPAL_LOG_INFO);

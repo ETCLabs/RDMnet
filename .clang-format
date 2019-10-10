@@ -1,4 +1,4 @@
-# This file is written for ClangFormat 7.0.0 or higher.
+# This file is written for ClangFormat 9.0.0 or higher.
 
 Language: Cpp
 BasedOnStyle: Google
@@ -6,6 +6,7 @@ BasedOnStyle: Google
 # Brace wrapping: Allman style, except for extern "C" blocks.
 BreakBeforeBraces: Custom
 BraceWrapping:
+  AfterCaseLabel: true
   AfterClass: true
   AfterControlStatement: true
   AfterEnum: true

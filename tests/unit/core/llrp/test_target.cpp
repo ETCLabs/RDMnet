@@ -25,7 +25,7 @@ class TestLlrpTarget : public testing::Test
 };
 
 // Test the macros that init LlrpTargetConfig structures.
-TEST_F(TestLlrpTarget, init_macros)
+TEST_F(TestLlrpTarget, InitMacrosWork)
 {
   LlrpTargetConfig test_config;
 

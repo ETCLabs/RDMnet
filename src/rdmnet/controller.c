@@ -121,12 +121,12 @@ etcpal_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rd
   return res;
 }
 
-etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle)
+etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle, rdmnet_disconnect_reason_t reason)
 {
   if (!handle)
     return kEtcPalErrInvalid;
 
-  etcpal_error_t res = rdmnet_client_destroy(handle->client_handle);
+  etcpal_error_t res = rdmnet_client_destroy(handle->client_handle, reason);
   if (res == kEtcPalErrOk)
     free_rdmnet_controller(handle);
 

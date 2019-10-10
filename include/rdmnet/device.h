@@ -94,7 +94,7 @@ etcpal_error_t rdmnet_device_init(const EtcPalLogParams* lparams);
 void rdmnet_device_deinit();
 
 etcpal_error_t rdmnet_device_create(const RdmnetDeviceConfig* config, rdmnet_device_t* handle);
-etcpal_error_t rdmnet_device_destroy(rdmnet_device_t handle);
+etcpal_error_t rdmnet_device_destroy(rdmnet_device_t handle, rdmnet_disconnect_reason_t reason);
 
 etcpal_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const LocalRdmResponse* resp);
 etcpal_error_t rdmnet_device_send_status(rdmnet_device_t handle, const LocalRptStatus* status);
