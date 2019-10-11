@@ -43,7 +43,7 @@ static etcpal_error_t default_responder_parameter_description(PidHandlerData* da
 {
   // if (!rdmresp_validate_pid_handler_data(data, true)) result = kEtcPalErrInvalid; // TODO: Caller should do this
 
-  etcpal_error_t result = kEtcPalErrOk;
+  etcpal_error_t result = kEtcPalErrNotImpl;
 
   uint16_t requested_pid;
   result = rdmpd_unpack_get_parameter_description(data->pd_in, &requested_pid);
@@ -51,7 +51,7 @@ static etcpal_error_t default_responder_parameter_description(PidHandlerData* da
   if (result == kEtcPalErrOk)
   {
     BrokerResponder* responder = static_cast<BrokerResponder*>(data->context);
-    assert(responder);  // If this is null, then there is an internal error in the broker responder code
+    assert(responder);
 
     RdmPdParameterDescription description;
     rdmpd_nack_reason_t nack_reason;
@@ -75,7 +75,28 @@ static etcpal_error_t default_responder_parameter_description(PidHandlerData* da
 
 static etcpal_error_t default_responder_device_model_description(PidHandlerData* data)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal_error_t result = kEtcPalErrNotImpl;
+
+  BrokerResponder* responder = static_cast<BrokerResponder*>(data->context);
+  assert(responder);
+
+  RdmPdString description;
+  rdmpd_nack_reason_t nack_reason;
+  result = responder->ProcessGetDeviceModelDescription(description, data->response_type, nack_reason);
+
+  if (result == kEtcPalErrOk)
+  {
+    if (data->response_type == kRdmRespRtNackReason)
+    {
+      result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
+    }
+    else if (data->response_type != kRdmRespRtNoSend)  // Assuming no ACK timer
+    {
+      result = rdmpd_pack_get_resp_device_model_description(&description, data->pd_out);
+    }
+  }
+
+  return result;
 }
 
 // static etcpal_error_t default_responder_manufacturer_label(PidHandlerData* data)
@@ -85,27 +106,195 @@ static etcpal_error_t default_responder_device_model_description(PidHandlerData*
 
 static etcpal_error_t default_responder_device_label(PidHandlerData* data)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal_error_t result = kEtcPalErrNotImpl;
+
+  BrokerResponder* responder = static_cast<BrokerResponder*>(data->context);
+  assert(responder);
+
+  RdmPdString label;
+  rdmpd_nack_reason_t nack_reason;
+
+  if (data->cmd_class == kRdmCCGetCommand)
+  {
+    result = responder->ProcessGetDeviceLabel(label, data->response_type, nack_reason);
+  }
+  else // kRdmCCSetCommand
+  {
+    result = rdmpd_unpack_set_device_label(data->pd_in, &label);
+
+    if (result == kEtcPalErrOk)
+    {
+      result = responder->ProcessSetDeviceLabel(label, data->response_type, nack_reason);
+    }
+  }
+
+  if (result == kEtcPalErrOk)
+  {
+    if (data->response_type == kRdmRespRtNackReason)
+    {
+      result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
+    }
+    else if ((data->response_type != kRdmRespRtNoSend) &&  // Assuming no ACK timer
+             (data->cmd_class == kRdmCCGetCommand))
+    {
+      result = rdmpd_pack_get_resp_device_label(&label, data->pd_out);
+    }
+  }
+
+  return result;
 }
 
 static etcpal_error_t default_responder_software_version_label(PidHandlerData* data)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal_error_t result = kEtcPalErrNotImpl;
+
+  BrokerResponder* responder = static_cast<BrokerResponder*>(data->context);
+  assert(responder);
+
+  RdmPdString label;
+  rdmpd_nack_reason_t nack_reason;
+  result = responder->ProcessGetSoftwareVersionLabel(label, data->response_type, nack_reason);
+
+  if (result == kEtcPalErrOk)
+  {
+    if (data->response_type == kRdmRespRtNackReason)
+    {
+      result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
+    }
+    else if (data->response_type != kRdmRespRtNoSend)  // Assuming no ACK timer
+    {
+      result = rdmpd_pack_get_resp_software_version_label(&label, data->pd_out);
+    }
+  }
+
+  return result;
 }
 
 static etcpal_error_t default_responder_identify_device(PidHandlerData* data)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal_error_t result = kEtcPalErrNotImpl;
+
+  BrokerResponder* responder = static_cast<BrokerResponder*>(data->context);
+  assert(responder);
+
+  bool identify;
+  rdmpd_nack_reason_t nack_reason;
+
+  if (data->cmd_class == kRdmCCGetCommand)
+  {
+    result = responder->ProcessGetIdentifyDevice(identify, data->response_type, nack_reason);
+  }
+  else  // kRdmCCSetCommand
+  {
+    result = rdmpd_unpack_set_identify_device(data->pd_in, &identify);
+
+    if (result == kEtcPalErrOk)
+    {
+      result = responder->ProcessSetIdentifyDevice(identify, data->response_type, nack_reason);
+    }
+  }
+
+  if (result == kEtcPalErrOk)
+  {
+    if (data->response_type == kRdmRespRtNackReason)
+    {
+      result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
+    }
+    else if ((data->response_type != kRdmRespRtNoSend) &&  // Assuming no ACK timer
+             (data->cmd_class == kRdmCCGetCommand))
+    {
+      result = rdmpd_pack_get_resp_identify_device(&identify, data->pd_out);
+    }
+  }
+
+  return result;
 }
 
 static etcpal_error_t default_responder_component_scope(PidHandlerData* data)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal_error_t result = kEtcPalErrNotImpl;
+
+  BrokerResponder* responder = static_cast<BrokerResponder*>(data->context);
+  assert(responder);
+
+  uint16_t requested_slot;
+  RdmPdComponentScope scope;
+  rdmpd_nack_reason_t nack_reason;
+
+  if (data->cmd_class == kRdmCCGetCommand)
+  {
+    result = rdmpd_unpack_get_component_scope(data->pd_in, &requested_slot);
+
+    if (result == kEtcPalErrOk)
+    {
+      result = responder->ProcessGetComponentScope(requested_slot, scope, data->response_type, nack_reason);
+    }
+  }
+  else  // kRdmCCSetCommand
+  {
+    result = rdmpd_unpack_set_component_scope(data->pd_in, &scope);
+
+    if (result == kEtcPalErrOk)
+    {
+      result = responder->ProcessSetComponentScope(scope, data->response_type, nack_reason);
+    }
+  }
+
+  if (result == kEtcPalErrOk)
+  {
+    if (data->response_type == kRdmRespRtNackReason)
+    {
+      result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
+    }
+    else if ((data->response_type != kRdmRespRtNoSend) &&  // Assuming no ACK timer
+             (data->cmd_class == kRdmCCGetCommand))
+    {
+      result = rdmpd_pack_get_resp_component_scope(&scope, data->pd_out);
+    }
+  }
+
+  return result;
 }
 
 static etcpal_error_t default_responder_broker_status(PidHandlerData* data)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal_error_t result = kEtcPalErrNotImpl;
+
+  BrokerResponder* responder = static_cast<BrokerResponder*>(data->context);
+  assert(responder);
+
+  RdmPdBrokerStatus status;
+  rdmpd_nack_reason_t nack_reason;
+
+  if (data->cmd_class == kRdmCCGetCommand)
+  {
+    result = responder->ProcessGetBrokerStatus(status, data->response_type, nack_reason);
+  }
+  else  // kRdmCCSetCommand
+  {
+    rdmpd_broker_state_t state;
+    result = rdmpd_unpack_set_broker_status(data->pd_in, &state);
+
+    if (result == kEtcPalErrOk)
+    {
+      result = responder->ProcessSetBrokerStatus(state, data->response_type, nack_reason);
+    }
+  }
+
+  if (result == kEtcPalErrOk)
+  {
+    if (data->response_type == kRdmRespRtNackReason)
+    {
+      result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
+    }
+    else if ((data->response_type != kRdmRespRtNoSend) &&  // Assuming no ACK timer
+             (data->cmd_class == kRdmCCGetCommand))
+    {
+      result = rdmpd_pack_get_resp_broker_status(&status, data->pd_out);
+    }
+  }
+
+  return result;
 }
 
 static uint8_t default_responder_get_message_count()
@@ -126,7 +315,8 @@ void BrokerResponder::InitResponder(const RdmUid& uid)
       {E120_PARAMETER_DESCRIPTION, default_responder_parameter_description, RDM_PS_ROOT | RDM_PS_GET},
       {E120_DEVICE_MODEL_DESCRIPTION, default_responder_device_model_description,
        RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOW_SUPPORTED},
-      //{E120_MANUFACTURER_LABEL, default_responder_manufacturer_label, RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOW_SUPPORTED},
+      //{E120_MANUFACTURER_LABEL, default_responder_manufacturer_label, RDM_PS_ALL | RDM_PS_GET |
+      //RDM_PS_SHOW_SUPPORTED},
       {E120_DEVICE_LABEL, default_responder_device_label, RDM_PS_ALL | RDM_PS_GET_SET | RDM_PS_SHOW_SUPPORTED},
       {E120_SOFTWARE_VERSION_LABEL, default_responder_software_version_label, RDM_PS_ROOT | RDM_PS_GET},
       {E120_IDENTIFY_DEVICE, default_responder_identify_device, RDM_PS_ALL | RDM_PS_GET_SET},
@@ -226,7 +416,7 @@ etcpal_error_t BrokerResponder::ProcessSetBrokerStatus(rdmpd_broker_state_t stat
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-//void BrokerResponder::ProcessRDMMessage(int /*conn*/, const RPTMessageRef& /*msg*/)
+// void BrokerResponder::ProcessRDMMessage(int /*conn*/, const RPTMessageRef& /*msg*/)
 //{
 //    uint16_t pid =
 //        static_cast<uint16_t>(getParameterId(const_cast<rdmBuffer *>(&msg.msg)));
