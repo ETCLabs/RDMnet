@@ -74,12 +74,62 @@ extern "C" {
 
 static etcpal_error_t default_responder_parameter_description(PidHandlerData* data)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  // if (!rdmresp_validate_pid_handler_data(data, true)) result = kEtcPalErrInvalid; // TODO: Caller should do this
+
+  etcpal_error_t result = kEtcPalErrNotImpl;
+
+  uint16_t requested_pid;
+  result = rdmpd_unpack_get_parameter_description(data->pd_in, &requested_pid);
+
+  if (result == kEtcPalErrOk)
+  {
+    ControllerDefaultResponder* responder = static_cast<ControllerDefaultResponder*>(data->context);
+    assert(responder);
+
+    RdmPdParameterDescription description;
+    rdmpd_nack_reason_t nack_reason;
+    result = responder->ProcessGetParameterDescription(requested_pid, description, data->response_type, nack_reason);
+
+    if (result == kEtcPalErrOk)
+    {
+      if (data->response_type == kRdmRespRtNackReason)
+      {
+        result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
+      }
+      else if (data->response_type != kRdmRespRtNoSend)  // Assuming no ACK timer
+      {
+        result = rdmpd_pack_get_resp_parameter_description(&description, data->pd_out);
+      }
+    }
+  }
+
+  return result;
 }
 
 static etcpal_error_t default_responder_device_model_description(PidHandlerData* data)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal_error_t result = kEtcPalErrNotImpl;
+
+  ControllerDefaultResponder* responder = static_cast<ControllerDefaultResponder*>(data->context);
+  assert(responder);
+
+  RdmPdString description;
+  rdmpd_nack_reason_t nack_reason;
+  result = responder->ProcessGetDeviceModelDescription(description, data->response_type, nack_reason);
+
+  if (result == kEtcPalErrOk)
+  {
+    if (data->response_type == kRdmRespRtNackReason)
+    {
+      result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
+    }
+    else if (data->response_type != kRdmRespRtNoSend)  // Assuming no ACK timer
+    {
+      result = rdmpd_pack_get_resp_device_model_description(&description, data->pd_out);
+    }
+  }
+
+  return result;
 }
 
 // static etcpal_error_t default_responder_manufacturer_label(PidHandlerData* data)
@@ -89,32 +139,235 @@ static etcpal_error_t default_responder_device_model_description(PidHandlerData*
 
 static etcpal_error_t default_responder_device_label(PidHandlerData* data)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal_error_t result = kEtcPalErrNotImpl;
+
+  ControllerDefaultResponder* responder = static_cast<ControllerDefaultResponder*>(data->context);
+  assert(responder);
+
+  RdmPdString label;
+  rdmpd_nack_reason_t nack_reason;
+
+  if (data->cmd_class == kRdmCCGetCommand)
+  {
+    result = responder->ProcessGetDeviceLabel(label, data->response_type, nack_reason);
+  }
+  else  // kRdmCCSetCommand
+  {
+    result = rdmpd_unpack_set_device_label(data->pd_in, &label);
+
+    if (result == kEtcPalErrOk)
+    {
+      result = responder->ProcessSetDeviceLabel(label, data->response_type, nack_reason);
+    }
+  }
+
+  if (result == kEtcPalErrOk)
+  {
+    if (data->response_type == kRdmRespRtNackReason)
+    {
+      result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
+    }
+    else if ((data->response_type != kRdmRespRtNoSend) &&  // Assuming no ACK timer
+             (data->cmd_class == kRdmCCGetCommand))
+    {
+      result = rdmpd_pack_get_resp_device_label(&label, data->pd_out);
+    }
+  }
+
+  return result;
 }
 
 static etcpal_error_t default_responder_software_version_label(PidHandlerData* data)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal_error_t result = kEtcPalErrNotImpl;
+
+  ControllerDefaultResponder* responder = static_cast<ControllerDefaultResponder*>(data->context);
+  assert(responder);
+
+  RdmPdString label;
+  rdmpd_nack_reason_t nack_reason;
+  result = responder->ProcessGetSoftwareVersionLabel(label, data->response_type, nack_reason);
+
+  if (result == kEtcPalErrOk)
+  {
+    if (data->response_type == kRdmRespRtNackReason)
+    {
+      result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
+    }
+    else if (data->response_type != kRdmRespRtNoSend)  // Assuming no ACK timer
+    {
+      result = rdmpd_pack_get_resp_software_version_label(&label, data->pd_out);
+    }
+  }
+
+  return result;
 }
 
 static etcpal_error_t default_responder_identify_device(PidHandlerData* data)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal_error_t result = kEtcPalErrNotImpl;
+
+  ControllerDefaultResponder* responder = static_cast<ControllerDefaultResponder*>(data->context);
+  assert(responder);
+
+  bool identify;
+  rdmpd_nack_reason_t nack_reason;
+
+  if (data->cmd_class == kRdmCCGetCommand)
+  {
+    result = responder->ProcessGetIdentifyDevice(identify, data->response_type, nack_reason);
+  }
+  else  // kRdmCCSetCommand
+  {
+    result = rdmpd_unpack_set_identify_device(data->pd_in, &identify);
+
+    if (result == kEtcPalErrOk)
+    {
+      result = responder->ProcessSetIdentifyDevice(identify, data->response_type, nack_reason);
+    }
+  }
+
+  if (result == kEtcPalErrOk)
+  {
+    if (data->response_type == kRdmRespRtNackReason)
+    {
+      result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
+    }
+    else if ((data->response_type != kRdmRespRtNoSend) &&  // Assuming no ACK timer
+             (data->cmd_class == kRdmCCGetCommand))
+    {
+      result = rdmpd_pack_get_resp_identify_device(&identify, data->pd_out);
+    }
+  }
+
+  return result;
 }
 
 static etcpal_error_t default_responder_component_scope(PidHandlerData* data)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal_error_t result = kEtcPalErrNotImpl;
+
+  ControllerDefaultResponder* responder = static_cast<ControllerDefaultResponder*>(data->context);
+  assert(responder);
+
+  uint16_t requested_slot;
+  RdmPdComponentScope scope;
+  rdmpd_nack_reason_t nack_reason;
+
+  if (data->cmd_class == kRdmCCGetCommand)
+  {
+    result = rdmpd_unpack_get_component_scope(data->pd_in, &requested_slot);
+
+    if (result == kEtcPalErrOk)
+    {
+      result = responder->ProcessGetComponentScope(requested_slot, scope, data->response_type, nack_reason);
+    }
+  }
+  else  // kRdmCCSetCommand
+  {
+    result = rdmpd_unpack_set_component_scope(data->pd_in, &scope);
+
+    if (result == kEtcPalErrOk)
+    {
+      result = responder->ProcessSetComponentScope(scope, data->response_type, nack_reason);
+    }
+  }
+
+  if (result == kEtcPalErrOk)
+  {
+    if (data->response_type == kRdmRespRtNackReason)
+    {
+      result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
+    }
+    else if ((data->response_type != kRdmRespRtNoSend) &&  // Assuming no ACK timer
+             (data->cmd_class == kRdmCCGetCommand))
+    {
+      result = rdmpd_pack_get_resp_component_scope(&scope, data->pd_out);
+    }
+  }
+
+  return result;
 }
 
 static etcpal_error_t default_responder_search_domain(PidHandlerData* data)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal_error_t result = kEtcPalErrNotImpl;
+
+  ControllerDefaultResponder* responder = static_cast<ControllerDefaultResponder*>(data->context);
+  assert(responder);
+
+  RdmPdSearchDomain search_domain;
+  rdmpd_nack_reason_t nack_reason;
+
+  if (data->cmd_class == kRdmCCGetCommand)
+  {
+    result = responder->ProcessGetSearchDomain(search_domain, data->response_type, nack_reason);
+  }
+  else  // kRdmCCSetCommand
+  {
+    result = rdmpd_unpack_set_search_domain(data->pd_in, &search_domain);
+
+    if (result == kEtcPalErrOk)
+    {
+      result = responder->ProcessSetSearchDomain(search_domain, data->response_type, nack_reason);
+    }
+  }
+
+  if (result == kEtcPalErrOk)
+  {
+    if (data->response_type == kRdmRespRtNackReason)
+    {
+      result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
+    }
+    else if ((data->response_type != kRdmRespRtNoSend) &&  // Assuming no ACK timer
+             (data->cmd_class == kRdmCCGetCommand))
+    {
+      result = rdmpd_pack_get_resp_search_domain(&search_domain, data->pd_out);
+    }
+  }
+
+  return result;
 }
 
 static etcpal_error_t default_responder_tcp_comms_status(PidHandlerData* data)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal_error_t result = kEtcPalErrNotImpl;
+
+  ControllerDefaultResponder* responder = static_cast<ControllerDefaultResponder*>(data->context);
+  assert(responder);
+
+  RdmPdTcpCommsEntry entry;
+  rdmpd_nack_reason_t nack_reason;
+
+  if (data->cmd_class == kRdmCCGetCommand)
+  {
+    result = responder->ProcessGetTcpCommsStatus(data->overflow_index, entry, data->response_type, nack_reason);
+  }
+  else  // kRdmCCSetCommand
+  {
+    RdmPdScopeString scope;
+    result = rdmpd_unpack_set_tcp_comms_status(data->pd_in, &scope);
+
+    if (result == kEtcPalErrOk)
+    {
+      result = responder->ProcessSetTcpCommsStatus(scope, data->response_type, nack_reason);
+    }
+  }
+
+  if (result == kEtcPalErrOk)
+  {
+    if (data->response_type == kRdmRespRtNackReason)
+    {
+      result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
+    }
+    else if ((data->response_type != kRdmRespRtNoSend) &&  // Assuming no ACK timer
+             (data->cmd_class == kRdmCCGetCommand))
+    {
+      result = rdmpd_pack_get_resp_tcp_comms_status(&entry, data->pd_out);
+    }
+  }
+
+  return result;
 }
 
 static uint8_t default_responder_get_message_count()
@@ -176,6 +429,98 @@ etcpal_error_t ControllerDefaultResponder::ProcessCommand(const std::string& sco
   }
 
   return result;
+}
+
+etcpal_error_t ControllerDefaultResponder::ProcessGetParameterDescription(uint16_t pid,
+                                                                          RdmPdParameterDescription& description,
+                                                                          rdmresp_response_type_t& responseType,
+                                                                          rdmpd_nack_reason_t& nackReason)
+{
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+}
+
+etcpal_error_t ControllerDefaultResponder::ProcessGetDeviceModelDescription(RdmPdString& description,
+                                                                            rdmresp_response_type_t& responseType,
+                                                                            rdmpd_nack_reason_t& nackReason)
+{
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+}
+
+etcpal_error_t ControllerDefaultResponder::ProcessGetDeviceLabel(RdmPdString& label,
+                                                                 rdmresp_response_type_t& responseType,
+                                                                 rdmpd_nack_reason_t& nackReason)
+{
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+}
+
+etcpal_error_t ControllerDefaultResponder::ProcessSetDeviceLabel(const RdmPdString& label,
+                                                                 rdmresp_response_type_t& responseType,
+                                                                 rdmpd_nack_reason_t& nackReason)
+{
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+}
+
+etcpal_error_t ControllerDefaultResponder::ProcessGetSoftwareVersionLabel(RdmPdString& label,
+                                                                          rdmresp_response_type_t& responseType,
+                                                                          rdmpd_nack_reason_t& nackReason)
+{
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+}
+
+etcpal_error_t ControllerDefaultResponder::ProcessGetIdentifyDevice(bool& identify_state,
+                                                                    rdmresp_response_type_t& responseType,
+                                                                    rdmpd_nack_reason_t& nackReason)
+{
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+}
+
+etcpal_error_t ControllerDefaultResponder::ProcessSetIdentifyDevice(bool identify,
+                                                                    rdmresp_response_type_t& responseType,
+                                                                    rdmpd_nack_reason_t& nackReason)
+{
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+}
+
+etcpal_error_t ControllerDefaultResponder::ProcessGetComponentScope(uint16_t slot, RdmPdComponentScope& component_scope,
+                                                                    rdmresp_response_type_t& responseType,
+                                                                    rdmpd_nack_reason_t& nackReason)
+{
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+}
+
+etcpal_error_t ControllerDefaultResponder::ProcessSetComponentScope(const RdmPdComponentScope& component_scope,
+                                                                    rdmresp_response_type_t& responseType,
+                                                                    rdmpd_nack_reason_t& nackReason)
+{
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+}
+
+etcpal_error_t ControllerDefaultResponder::ProcessGetSearchDomain(RdmPdSearchDomain& search_domain,
+                                                                  rdmresp_response_type_t& responseType,
+                                                                  rdmpd_nack_reason_t& nackReason)
+{
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+}
+
+etcpal_error_t ControllerDefaultResponder::ProcessSetSearchDomain(const RdmPdSearchDomain& search_domain,
+                                                                  rdmresp_response_type_t& responseType,
+                                                                  rdmpd_nack_reason_t& nackReason)
+{
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+}
+
+etcpal_error_t ControllerDefaultResponder::ProcessGetTcpCommsStatus(size_t overflow_index, RdmPdTcpCommsEntry& entry,
+                                                                    rdmresp_response_type_t& responseType,
+                                                                    rdmpd_nack_reason_t& nackReason)
+{
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+}
+
+etcpal_error_t ControllerDefaultResponder::ProcessSetTcpCommsStatus(const RdmPdScopeString& scope,
+                                                                    rdmresp_response_type_t& responseType,
+                                                                    rdmpd_nack_reason_t& nackReason)
+{
+  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 bool ControllerDefaultResponder::Get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len,

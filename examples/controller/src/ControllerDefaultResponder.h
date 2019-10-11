@@ -23,6 +23,7 @@
 #include <vector>
 #include <map>
 #include "etcpal/lock.h"
+#include "rdm/param_data.h"
 #include "rdm/responder.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/version.h"
@@ -56,6 +57,33 @@ public:
 
   etcpal_error_t ProcessCommand(const std::string& scope, const RdmCommand& cmd, RdmResponse& resp,
                                 rdmresp_response_type_t& presp_type);
+
+  etcpal_error_t ProcessGetParameterDescription(uint16_t pid, RdmPdParameterDescription& description,
+                                                rdmresp_response_type_t& responseType, rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessGetDeviceModelDescription(RdmPdString& description, rdmresp_response_type_t& responseType,
+                                                  rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessGetDeviceLabel(RdmPdString& label, rdmresp_response_type_t& responseType,
+                                       rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessSetDeviceLabel(const RdmPdString& label, rdmresp_response_type_t& responseType,
+                                       rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessGetSoftwareVersionLabel(RdmPdString& label, rdmresp_response_type_t& responseType,
+                                                rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessGetIdentifyDevice(bool& identify_state, rdmresp_response_type_t& responseType,
+                                          rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessSetIdentifyDevice(bool identify, rdmresp_response_type_t& responseType,
+                                          rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessGetComponentScope(uint16_t slot, RdmPdComponentScope& component_scope,
+                                          rdmresp_response_type_t& responseType, rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessSetComponentScope(const RdmPdComponentScope& component_scope,
+                                          rdmresp_response_type_t& responseType, rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessGetSearchDomain(RdmPdSearchDomain& search_domain, rdmresp_response_type_t& responseType,
+                                        rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessSetSearchDomain(const RdmPdSearchDomain& search_domain, rdmresp_response_type_t& responseType,
+                                        rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessGetTcpCommsStatus(size_t overflow_index, RdmPdTcpCommsEntry& entry,
+                                          rdmresp_response_type_t& responseType, rdmpd_nack_reason_t& nackReason);
+  etcpal_error_t ProcessSetTcpCommsStatus(const RdmPdScopeString& scope, rdmresp_response_type_t& responseType,
+                                          rdmpd_nack_reason_t& nackReason);
 
   bool Get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len, std::vector<RdmParamData>& resp_data_list,
            uint16_t& nack_reason);
