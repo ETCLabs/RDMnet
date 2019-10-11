@@ -433,92 +433,92 @@ etcpal_error_t ControllerDefaultResponder::ProcessCommand(const std::string& sco
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetParameterDescription(uint16_t pid,
                                                                           RdmPdParameterDescription& description,
-                                                                          rdmresp_response_type_t& responseType,
-                                                                          rdmpd_nack_reason_t& nackReason)
+                                                                          rdmresp_response_type_t& response_type,
+                                                                          rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetDeviceModelDescription(RdmPdString& description,
-                                                                            rdmresp_response_type_t& responseType,
-                                                                            rdmpd_nack_reason_t& nackReason)
+                                                                            rdmresp_response_type_t& response_type,
+                                                                            rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetDeviceLabel(RdmPdString& label,
-                                                                 rdmresp_response_type_t& responseType,
-                                                                 rdmpd_nack_reason_t& nackReason)
+                                                                 rdmresp_response_type_t& response_type,
+                                                                 rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessSetDeviceLabel(const RdmPdString& label,
-                                                                 rdmresp_response_type_t& responseType,
-                                                                 rdmpd_nack_reason_t& nackReason)
+                                                                 rdmresp_response_type_t& response_type,
+                                                                 rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetSoftwareVersionLabel(RdmPdString& label,
-                                                                          rdmresp_response_type_t& responseType,
-                                                                          rdmpd_nack_reason_t& nackReason)
+                                                                          rdmresp_response_type_t& response_type,
+                                                                          rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetIdentifyDevice(bool& identify_state,
-                                                                    rdmresp_response_type_t& responseType,
-                                                                    rdmpd_nack_reason_t& nackReason)
+                                                                    rdmresp_response_type_t& response_type,
+                                                                    rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessSetIdentifyDevice(bool identify,
-                                                                    rdmresp_response_type_t& responseType,
-                                                                    rdmpd_nack_reason_t& nackReason)
+                                                                    rdmresp_response_type_t& response_type,
+                                                                    rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetComponentScope(uint16_t slot, RdmPdComponentScope& component_scope,
-                                                                    rdmresp_response_type_t& responseType,
-                                                                    rdmpd_nack_reason_t& nackReason)
+                                                                    rdmresp_response_type_t& response_type,
+                                                                    rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessSetComponentScope(const RdmPdComponentScope& component_scope,
-                                                                    rdmresp_response_type_t& responseType,
-                                                                    rdmpd_nack_reason_t& nackReason)
+                                                                    rdmresp_response_type_t& response_type,
+                                                                    rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetSearchDomain(RdmPdSearchDomain& search_domain,
-                                                                  rdmresp_response_type_t& responseType,
-                                                                  rdmpd_nack_reason_t& nackReason)
+                                                                  rdmresp_response_type_t& response_type,
+                                                                  rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessSetSearchDomain(const RdmPdSearchDomain& search_domain,
-                                                                  rdmresp_response_type_t& responseType,
-                                                                  rdmpd_nack_reason_t& nackReason)
+                                                                  rdmresp_response_type_t& response_type,
+                                                                  rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetTcpCommsStatus(size_t overflow_index, RdmPdTcpCommsEntry& entry,
-                                                                    rdmresp_response_type_t& responseType,
-                                                                    rdmpd_nack_reason_t& nackReason)
+                                                                    rdmresp_response_type_t& response_type,
+                                                                    rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessSetTcpCommsStatus(const RdmPdScopeString& scope,
-                                                                    rdmresp_response_type_t& responseType,
-                                                                    rdmpd_nack_reason_t& nackReason)
+                                                                    rdmresp_response_type_t& response_type,
+                                                                    rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }

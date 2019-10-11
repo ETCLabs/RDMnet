@@ -338,80 +338,80 @@ void BrokerResponder::InitResponder(const RdmUid& uid)
   assert(rdmresp_validate_state(&rdm_responder_state_));
 }
 
-etcpal_error_t BrokerResponder::ProcessPacket(const RdmBufferConstRef& bufferIn, RdmBufferRef& bufferOut,
-                                              rdmresp_response_type_t& responseType)
+etcpal_error_t BrokerResponder::ProcessPacket(const RdmBufferConstRef& buffer_in, RdmBufferRef& buffer_out,
+                                              rdmresp_response_type_t& response_type)
 {
-  return rdmresp_process_packet(&rdm_responder_state_, bufferIn, &bufferOut, &responseType, nullptr);
+  return rdmresp_process_packet(&rdm_responder_state_, buffer_in, &buffer_out, &response_type, nullptr);
 }
 
 etcpal_error_t BrokerResponder::ProcessGetParameterDescription(uint16_t pid, RdmPdParameterDescription& description,
-                                                               rdmresp_response_type_t& responseType,
-                                                               rdmpd_nack_reason_t& nackReason)
+                                                               rdmresp_response_type_t& response_type,
+                                                               rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 etcpal_error_t BrokerResponder::ProcessGetDeviceModelDescription(RdmPdString& description,
-                                                                 rdmresp_response_type_t& responseType,
-                                                                 rdmpd_nack_reason_t& nackReason)
+                                                                 rdmresp_response_type_t& response_type,
+                                                                 rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-etcpal_error_t BrokerResponder::ProcessGetDeviceLabel(RdmPdString& label, rdmresp_response_type_t& responseType,
-                                                      rdmpd_nack_reason_t& nackReason)
+etcpal_error_t BrokerResponder::ProcessGetDeviceLabel(RdmPdString& label, rdmresp_response_type_t& response_type,
+                                                      rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-etcpal_error_t BrokerResponder::ProcessSetDeviceLabel(const RdmPdString& label, rdmresp_response_type_t& responseType,
-                                                      rdmpd_nack_reason_t& nackReason)
+etcpal_error_t BrokerResponder::ProcessSetDeviceLabel(const RdmPdString& label, rdmresp_response_type_t& response_type,
+                                                      rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 etcpal_error_t BrokerResponder::ProcessGetSoftwareVersionLabel(RdmPdString& label,
-                                                               rdmresp_response_type_t& responseType,
-                                                               rdmpd_nack_reason_t& nackReason)
+                                                               rdmresp_response_type_t& response_type,
+                                                               rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-etcpal_error_t BrokerResponder::ProcessGetIdentifyDevice(bool& identify_state, rdmresp_response_type_t& responseType,
-                                                         rdmpd_nack_reason_t& nackReason)
+etcpal_error_t BrokerResponder::ProcessGetIdentifyDevice(bool& identify_state, rdmresp_response_type_t& response_type,
+                                                         rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-etcpal_error_t BrokerResponder::ProcessSetIdentifyDevice(bool identify, rdmresp_response_type_t& responseType,
-                                                         rdmpd_nack_reason_t& nackReason)
+etcpal_error_t BrokerResponder::ProcessSetIdentifyDevice(bool identify, rdmresp_response_type_t& response_type,
+                                                         rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 etcpal_error_t BrokerResponder::ProcessGetComponentScope(uint16_t slot, RdmPdComponentScope& component_scope,
-                                                         rdmresp_response_type_t& responseType,
-                                                         rdmpd_nack_reason_t& nackReason)
+                                                         rdmresp_response_type_t& response_type,
+                                                         rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 etcpal_error_t BrokerResponder::ProcessSetComponentScope(const RdmPdComponentScope& component_scope,
-                                                         rdmresp_response_type_t& responseType,
-                                                         rdmpd_nack_reason_t& nackReason)
+                                                         rdmresp_response_type_t& response_type,
+                                                         rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
-etcpal_error_t BrokerResponder::ProcessGetBrokerStatus(RdmPdBrokerStatus& status, rdmresp_response_type_t& responseType,
-                                                       rdmpd_nack_reason_t& nackReason)
+etcpal_error_t BrokerResponder::ProcessGetBrokerStatus(RdmPdBrokerStatus& status, rdmresp_response_type_t& response_type,
+                                                       rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
 
 etcpal_error_t BrokerResponder::ProcessSetBrokerStatus(rdmpd_broker_state_t state,
-                                                       rdmresp_response_type_t& responseType,
-                                                       rdmpd_nack_reason_t& nackReason)
+                                                       rdmresp_response_type_t& response_type,
+                                                       rdmpd_nack_reason_t& nack_reason)
 {
   return kEtcPalErrNotImpl;  // TODO: Not yet implemented
 }
