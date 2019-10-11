@@ -372,12 +372,12 @@ static etcpal_error_t default_responder_tcp_comms_status(PidHandlerData* data)
 
 static uint8_t default_responder_get_message_count()
 {
-  return 0;  // TODO: Not yet implemented
+  return 0;
 }
 
 static void default_responder_get_next_queued_message(GetNextQueuedMessageData* data)
 {
-  // TODO: Not yet implemented
+  // Does nothing
 }
 }  // extern "C"
 
