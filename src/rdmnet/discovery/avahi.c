@@ -190,7 +190,7 @@ static void resolve_callback(AvahiServiceResolver* r, AvahiIfIndex interface, Av
 
       if (avahi_txt_record_find(txt, "CID", &value, &value_len))
       {
-        etcpal_string_to_uuid(&db->info.cid, value, value_len);
+        etcpal_string_to_uuid(value, &db->info.cid);
         avahi_free(value);
       }
 
@@ -585,7 +585,7 @@ AvahiStringList* build_txt_record(const RdmnetBrokerDiscInfo* info)
   {
     /*The CID can't have hyphens, so we'll strip them.*/
     char cid_str[ETCPAL_UUID_STRING_BYTES];
-    etcpal_uuid_to_string(cid_str, &info->cid);
+    etcpal_uuid_to_string(&info->cid, cid_str);
     char* src = cid_str;
     for (char* dst = src; *dst != 0; ++src, ++dst)
     {

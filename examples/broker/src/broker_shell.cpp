@@ -56,7 +56,7 @@ void BrokerShell::ApplySettingsChanges(rdmnet::BrokerSettings& settings, std::ve
 
   if (!new_scope_.empty())
   {
-    settings.disc_attributes.scope = new_scope_;
+    settings.scope = new_scope_;
     new_scope_.clear();
   }
 }
@@ -106,18 +106,20 @@ void BrokerShell::Run(rdmnet::BrokerLog* log)
   log_->Startup(initial_data_.log_mask);
 
   rdmnet::BrokerSettings broker_settings(0x6574);
-  broker_settings.disc_attributes.scope = initial_data_.scope;
+  broker_settings.scope = initial_data_.scope;
 
   std::vector<EtcPalIpAddr> ifaces = GetInterfacesToListen();
 
-  etcpal_generate_v4_uuid(&broker_settings.cid);
+  broker_settings.cid = etcpal::Uuid::V4();
 
-  broker_settings.disc_attributes.dns_manufacturer = "ETC";
-  broker_settings.disc_attributes.dns_service_instance_name = "UNIQUE NAME";
-  broker_settings.disc_attributes.dns_model = "E1.33 Broker Prototype";
+  broker_settings.dns.manufacturer = "ETC";
+  broker_settings.dns.service_instance_name = "UNIQUE NAME";
+  broker_settings.dns.model = "E1.33 Broker Prototype";
+  broker_settings.listen_port = initial_data_.port;
+  broker_settings.listen_addrs = ifaces;
 
-  rdmnet::Broker broker(log, this);
-  broker.Startup(broker_settings, initial_data_.port, ifaces);
+  rdmnet::Broker broker;
+  broker.Startup(broker_settings, this, log_);
 
   // We want this to run forever if a console
   while (true)
@@ -132,11 +134,11 @@ void BrokerShell::Run(rdmnet::BrokerLog* log)
     {
       restart_requested_ = false;  // Prevent broker from restarting infinitely many times
 
-      broker.GetSettings(broker_settings);
+      broker_settings = broker.GetSettings();
       broker.Shutdown();
 
       ApplySettingsChanges(broker_settings, ifaces);
-      broker.Startup(broker_settings, initial_data_.port, ifaces);
+      broker.Startup(broker_settings, this, log_);
       restart_requested_ = false;
     }
 

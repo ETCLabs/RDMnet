@@ -280,7 +280,7 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
 
         value = (const char*)(TXTRecordGetValuePtr(txtLen, txtRecord, "CID", &value_len));
         if (value && value_len)
-          etcpal_string_to_uuid(&db->info.cid, value, value_len);
+          etcpal_string_to_uuid(value, &db->info.cid);
 
         value = (const char*)(TXTRecordGetValuePtr(txtLen, txtRecord, "Model", &value_len));
         if (value && value_len)
@@ -646,7 +646,7 @@ DNSServiceErrorType send_registration(const RdmnetBrokerDiscInfo* info, DNSServi
   {
     /*The CID can't have hyphens, so we'll strip them.*/
     char cid_str[ETCPAL_UUID_STRING_BYTES];
-    etcpal_uuid_to_string(cid_str, &info->cid);
+    etcpal_uuid_to_string(&info->cid, cid_str);
     char* src = cid_str;
     for (char* dst = src; *dst != 0; ++src, ++dst)
     {

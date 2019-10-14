@@ -29,7 +29,7 @@
 #include <set>
 #include <string>
 #include "etcpal/inet.h"
-#include "etcpal/uuid.h"
+#include "etcpal/cpp/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
 
@@ -55,7 +55,7 @@ struct BrokerSettings
 {
   using MacAddress = std::array<uint8_t, ETCPAL_NETINTINFO_MAC_LEN>;
 
-  EtcPalUuid cid{kEtcPalNullUuid};  ///< The Broker's CID.
+  etcpal::Uuid cid;  ///< The Broker's CID.
 
   enum UidType
   {
@@ -135,8 +135,8 @@ inline BrokerSettings::BrokerSettings(uint16_t rdm_manu_id)
 
 inline bool BrokerSettings::valid() const
 {
-  return (!ETCPAL_UUID_IS_NULL(&cid) && (scope.length() < (E133_SCOPE_STRING_PADDED_LENGTH - 1)) &&
-          (listen_port >= 1024) && !(uid_type == rdmnet::BrokerSettings::kStaticUid && !RDMNET_UID_IS_STATIC(&uid)) &&
+  return (!cid.IsNull() && (scope.length() < (E133_SCOPE_STRING_PADDED_LENGTH - 1)) && (listen_port >= 1024) &&
+          !(uid_type == rdmnet::BrokerSettings::kStaticUid && !RDMNET_UID_IS_STATIC(&uid)) &&
           !(uid_type == rdmnet::BrokerSettings::kDynamicUid && !RDMNET_UID_IS_DYNAMIC(&uid)));
 }
 

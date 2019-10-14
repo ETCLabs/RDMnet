@@ -180,7 +180,7 @@ void TestDiscoveryBonjour::CreateDefaultBroker()
 
   // CID with the hyphens removed
   char cid_buf[ETCPAL_UUID_STRING_BYTES];
-  etcpal_uuid_to_string(cid_buf, &default_discovered_broker_.cid);
+  etcpal_uuid_to_string(&default_discovered_broker_.cid, cid_buf);
   std::string cid_str(cid_buf);
   cid_str.erase(std::remove(cid_str.begin(), cid_str.end(), '-'), cid_str.end());
   ASSERT_EQ(kDNSServiceErr_NoError,

@@ -22,6 +22,8 @@
 #ifndef RDMNET_CONN_WRAPPER_H_
 #define RDMNET_CONN_WRAPPER_H_
 
+#include "etcpal/cpp/error.h"
+#include "etcpal/cpp/uuid.h"
 #include "rdmnet/core/connection.h"
 
 class RdmnetConnNotify
@@ -43,15 +45,15 @@ struct SendDisconnect
 class RdmnetConnInterface
 {
 public:
-  virtual etcpal_error_t Startup(const EtcPalUuid& cid, const EtcPalLogParams* log_params) = 0;
+  virtual etcpal::Result Startup(const etcpal::Uuid& cid, const EtcPalLogParams* log_params) = 0;
   virtual void Shutdown() = 0;
 
   virtual void SetNotify(RdmnetConnNotify* notify) = 0;
 
-  virtual etcpal_error_t CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
+  virtual etcpal::Result CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
                                                       rdmnet_conn_t& new_handle) = 0;
   virtual void DestroyConnection(rdmnet_conn_t handle, SendDisconnect send_disconnect = SendDisconnect()) = 0;
-  virtual etcpal_error_t SetBlocking(rdmnet_conn_t handle, bool blocking) = 0;
+  virtual etcpal::Result SetBlocking(rdmnet_conn_t handle, bool blocking) = 0;
 
   virtual void SocketDataReceived(rdmnet_conn_t handle, const uint8_t* data, size_t data_size) = 0;
   virtual void SocketError(rdmnet_conn_t handle, etcpal_error_t err) = 0;
@@ -64,15 +66,15 @@ class RdmnetConnWrapper : public RdmnetConnInterface
 public:
   RdmnetConnWrapper();
 
-  etcpal_error_t Startup(const EtcPalUuid& cid, const EtcPalLogParams* log_params) override;
+  etcpal::Result Startup(const etcpal::Uuid& cid, const EtcPalLogParams* log_params) override;
   void Shutdown() override;
 
   void SetNotify(RdmnetConnNotify* notify) { notify_ = notify; }
 
-  etcpal_error_t CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
+  etcpal::Result CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
                                               rdmnet_conn_t& new_handle) override;
   virtual void DestroyConnection(rdmnet_conn_t handle, SendDisconnect send_disconnect = SendDisconnect()) override;
-  virtual etcpal_error_t SetBlocking(rdmnet_conn_t handle, bool blocking) override;
+  virtual etcpal::Result SetBlocking(rdmnet_conn_t handle, bool blocking) override;
 
   virtual void SocketDataReceived(rdmnet_conn_t handle, const uint8_t* data, size_t data_size) override;
   virtual void SocketError(rdmnet_conn_t handle, etcpal_error_t err) override;

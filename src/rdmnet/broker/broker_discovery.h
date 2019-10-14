@@ -25,7 +25,7 @@
 
 #include <string>
 #include <vector>
-#include "etcpal/error.h"
+#include "etcpal/cpp/error.h"
 #include "etcpal/int.h"
 #include "rdmnet/broker.h"
 #include "rdmnet/core/discovery.h"
@@ -51,7 +51,7 @@ class BrokerDiscoveryInterface
 public:
   virtual void SetNotify(BrokerDiscoveryNotify* notify) = 0;
 
-  virtual etcpal_error_t RegisterBroker(const rdmnet::BrokerSettings& settings) = 0;
+  virtual etcpal::Result RegisterBroker(const rdmnet::BrokerSettings& settings) = 0;
   virtual void UnregisterBroker() = 0;
 };
 
@@ -64,7 +64,7 @@ public:
   void SetNotify(BrokerDiscoveryNotify* notify) override { notify_ = notify; }
 
   // Registration actions
-  etcpal_error_t RegisterBroker(const rdmnet::BrokerSettings& settings) override;
+  etcpal::Result RegisterBroker(const rdmnet::BrokerSettings& settings) override;
   void UnregisterBroker() override;
 
   // Accessors

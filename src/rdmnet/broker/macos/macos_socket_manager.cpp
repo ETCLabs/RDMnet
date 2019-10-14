@@ -66,10 +66,8 @@ void* SocketWorkerThread(void* arg)
   return reinterpret_cast<void*>(0);
 }
 
-bool MacBrokerSocketManager::Startup(BrokerSocketManagerNotify* notify)
+bool MacBrokerSocketManager::Startup()
 {
-  notify_ = notify;
-
   kqueue_fd_ = kqueue();
   if (kqueue_fd_ < 0)
     return false;

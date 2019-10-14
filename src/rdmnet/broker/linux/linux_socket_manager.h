@@ -29,7 +29,7 @@
 #include <memory>
 #include <pthread.h>
 
-#include "etcpal/lock.h"
+#include "etcpal/cpp/lock.h"
 #include "broker_socket_manager.h"
 
 // Wrapper around Linux thread functions to increase the testability of this module.
@@ -82,9 +82,8 @@ public:
   LinuxBrokerSocketManager(/* LinuxThreadInterface* thread_interface = new DefaultLinuxThreads */)
   //: thread_interface_(thread_interface)
   {
-    etcpal_rwlock_create(&socket_lock_);
   }
-  virtual ~LinuxBrokerSocketManager() { etcpal_rwlock_destroy(&socket_lock_); }
+  virtual ~LinuxBrokerSocketManager() = default;
 
   // BrokerSocketManager interface
   bool Startup() override;
@@ -109,7 +108,7 @@ private:
 
   // The set of sockets being managed.
   std::map<rdmnet_conn_t, std::unique_ptr<SocketData>> sockets_;
-  etcpal_rwlock_t socket_lock_;
+  etcpal::RwLock socket_lock_;
 
   // The callback instance
   BrokerSocketNotify* notify_{nullptr};

@@ -27,7 +27,8 @@
 #include <map>
 #include <stdexcept>
 
-#include "etcpal/lock.h"
+#include "etcpal/cpp/lock.h"
+#include "etcpal/cpp/uuid.h"
 #include "etcpal/inet.h"
 #include "rdm/message.h"
 #include "rdmnet/client.h"
@@ -61,11 +62,8 @@ struct RPTMessageRef
 class BrokerClient
 {
 public:
-  BrokerClient(rdmnet_conn_t conn) : conn_(conn) { etcpal_rwlock_create(&lock_); }
-  BrokerClient(rdmnet_conn_t conn, size_t max_q_size) : conn_(conn), max_q_size_(max_q_size)
-  {
-    etcpal_rwlock_create(&lock_);
-  }
+  BrokerClient(rdmnet_conn_t conn) : conn_(conn) {}
+  BrokerClient(rdmnet_conn_t conn, size_t max_q_size) : conn_(conn), max_q_size_(max_q_size) {}
   // Non-default copy constructor to avoid copying the message queue and lock.
   BrokerClient(const BrokerClient& other)
       : cid(other.cid)
@@ -74,28 +72,27 @@ public:
       , conn_(other.conn_)
       , max_q_size_(other.max_q_size_)
   {
-    etcpal_rwlock_create(&lock_);
   }
-  virtual ~BrokerClient() { etcpal_rwlock_destroy(&lock_); }
+  virtual ~BrokerClient() = default;
 
-  virtual bool Push(const EtcPalUuid& sender_cid, const BrokerMessage& msg);
+  virtual bool Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg);
   virtual bool Send() { return false; }
 
   // Read/write lock functions. Prefer use of ClientReadGuard and
   // ClientWriteGuard to these functions where possible.
-  bool ReadLock() const { return etcpal_rwlock_readlock(&lock_); }
-  void ReadUnlock() const { etcpal_rwlock_readunlock(&lock_); }
-  bool WriteLock() const { return etcpal_rwlock_writelock(&lock_); }
-  void WriteUnlock() const { etcpal_rwlock_writeunlock(&lock_); }
+  bool ReadLock() const { return lock_.ReadLock(); }
+  void ReadUnlock() const { lock_.ReadUnlock(); }
+  bool WriteLock() const { return lock_.WriteLock(); }
+  void WriteUnlock() const { lock_.WriteUnlock(); }
 
-  EtcPalUuid cid{};
+  etcpal::Uuid cid{};
   client_protocol_t client_protocol{kClientProtocolUnknown};
   EtcPalSockaddr addr{};
 
 protected:
-  bool PushPostSizeCheck(const EtcPalUuid& sender_cid, const BrokerMessage& msg);
+  bool PushPostSizeCheck(const etcpal::Uuid& sender_cid, const BrokerMessage& msg);
 
-  mutable etcpal_rwlock_t lock_;
+  mutable etcpal::RwLock lock_;
   rdmnet_conn_t conn_{RDMNET_CONN_INVALID};
   size_t max_q_size_{0};
   std::queue<MessageRef> broker_msgs_;
@@ -142,18 +139,18 @@ public:
   }
   virtual ~RPTClient() {}
 
-  virtual bool Push(rdmnet_conn_t /*from_conn*/, const EtcPalUuid& /*sender_cid*/, const RptMessage& /*msg*/)
+  virtual bool Push(rdmnet_conn_t /*from_conn*/, const etcpal::Uuid& /*sender_cid*/, const RptMessage& /*msg*/)
   {
     return false;
   }
-  virtual bool Push(const EtcPalUuid& sender_cid, const BrokerMessage& msg) override;
+  virtual bool Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
 
   RdmUid uid{};
   rpt_client_type_t client_type{kRPTClientTypeUnknown};
-  EtcPalUuid binding_cid{};
+  etcpal::Uuid binding_cid{};
 
 protected:
-  bool PushPostSizeCheck(const EtcPalUuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg);
+  bool PushPostSizeCheck(const etcpal::Uuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg);
 
   std::queue<MessageRef> status_msgs_;
 };
@@ -176,9 +173,9 @@ public:
   }
   virtual ~RPTController() {}
 
-  virtual bool Push(rdmnet_conn_t from_conn, const EtcPalUuid& sender_cid, const RptMessage& msg) override;
-  virtual bool Push(const EtcPalUuid& sender_cid, const BrokerMessage& msg) override;
-  virtual bool Push(const EtcPalUuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg);
+  virtual bool Push(rdmnet_conn_t from_conn, const etcpal::Uuid& sender_cid, const RptMessage& msg) override;
+  virtual bool Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
+  virtual bool Push(const etcpal::Uuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg);
   virtual bool Send() override;
 
   std::queue<MessageRef> rpt_msgs_;
@@ -197,8 +194,8 @@ public:
   }
   virtual ~RPTDevice() {}
 
-  virtual bool Push(rdmnet_conn_t from_conn, const EtcPalUuid& sender_cid, const RptMessage& msg) override;
-  virtual bool Push(const EtcPalUuid& sender_cid, const BrokerMessage& msg) override;
+  virtual bool Push(rdmnet_conn_t from_conn, const etcpal::Uuid& sender_cid, const RptMessage& msg) override;
+  virtual bool Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
   virtual bool Send() override;
 
 protected:

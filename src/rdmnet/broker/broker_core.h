@@ -28,6 +28,7 @@
 #include <string>
 #include <vector>
 
+#include "etcpal/cpp/lock.h"
 #include "etcpal/socket.h"
 #include "rdmnet/broker.h"
 #include "broker_client.h"
@@ -111,7 +112,7 @@ private:
   // The list of connected clients, indexed by the connection handle
   std::map<rdmnet_conn_t, std::shared_ptr<BrokerClient>> clients_;
   // Protects the list of clients and uid lookup, but not the data in the clients themselves.
-  mutable etcpal_rwlock_t client_lock_;
+  mutable etcpal::RwLock client_lock_;
 
   // The state data for each controller, indexed by its connection handle.
   std::map<rdmnet_conn_t, std::shared_ptr<RPTController>> controllers_;

@@ -29,7 +29,7 @@
 #include <memory>
 #include <pthread.h>
 
-#include "etcpal/lock.h"
+#include "etcpal/cpp/lock.h"
 #include "broker_socket_manager.h"
 
 // The set of data allocated per-socket.
@@ -54,8 +54,7 @@ struct SocketData
 class MacBrokerSocketManager : public BrokerSocketManager
 {
 public:
-  MacBrokerSocketManager() { etcpal_rwlock_create(&socket_lock_); }
-  virtual ~MacBrokerSocketManager() { etcpal_rwlock_destroy(&socket_lock_); }
+  virtual ~MacBrokerSocketManager() = default;
 
   // BrokerSocketManager interface
   bool Startup() override;
@@ -79,7 +78,7 @@ private:
 
   // The set of sockets being managed.
   std::map<rdmnet_conn_t, std::unique_ptr<SocketData>> sockets_;
-  etcpal_rwlock_t socket_lock_;
+  etcpal::RwLock socket_lock_;
 
   // The callback instance
   BrokerSocketNotify* notify_{nullptr};

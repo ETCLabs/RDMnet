@@ -536,7 +536,7 @@ void manager_data_received(const uint8_t* data, size_t data_size, const LlrpNeti
     if (!manager_found && etcpal_can_log(rdmnet_log_params, ETCPAL_LOG_DEBUG))
     {
       char cid_str[ETCPAL_UUID_STRING_BYTES];
-      etcpal_uuid_to_string(cid_str, &keys.cid);
+      etcpal_uuid_to_string(&keys.cid, cid_str);
       etcpal_log(rdmnet_log_params, ETCPAL_LOG_DEBUG,
                  RDMNET_LOG_MSG("Ignoring LLRP message addressed to unknown LLRP Manager %s"), cid_str);
     }

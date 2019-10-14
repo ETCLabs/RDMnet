@@ -22,7 +22,8 @@
 #include <map>
 #include <vector>
 #include <cstddef>
-#include "etcpal/lock.h"
+#include "etcpal/cpp/lock.h"
+#include "etcpal/cpp/uuid.h"
 #include "BrokerItem.h"
 #include "SearchingStatusItem.h"
 #include "PropertyValueItem.h"
@@ -59,12 +60,12 @@ signals:
 private:
   ControllerLog* log_{nullptr};
   RDMnetLibInterface* rdmnet_{nullptr};
-  EtcPalUuid my_cid_;
+  etcpal::Uuid my_cid_{etcpal::Uuid::V4()};
 
   ControllerDefaultResponder default_responder_;
 
   std::map<rdmnet_client_scope_t, BrokerItem*> broker_connections_;
-  etcpal_rwlock_t conn_lock_;
+  etcpal::RwLock conn_lock_;
 
   // Keeps track of scope updates of other controllers
   std::map<RdmUid, uint16_t> previous_slot_;

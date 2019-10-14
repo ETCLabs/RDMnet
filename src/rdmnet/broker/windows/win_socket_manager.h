@@ -32,7 +32,7 @@
 #include <vector>
 #include <memory>
 
-#include "etcpal/lock.h"
+#include "etcpal/cpp/lock.h"
 #include "broker_socket_manager.h"
 
 // Wrapper around Windows thread functions to increase the testability of this module.
@@ -89,9 +89,8 @@ public:
   WinBrokerSocketManager(WindowsThreadInterface* thread_interface = new DefaultWindowsThreads)
       : thread_interface_(thread_interface)
   {
-    etcpal_rwlock_create(&socket_lock_);
   }
-  virtual ~WinBrokerSocketManager() { etcpal_rwlock_destroy(&socket_lock_); }
+  virtual ~WinBrokerSocketManager() = default;
 
   // rdmnet::BrokerSocketManager interface
   bool Startup() override;
@@ -117,7 +116,7 @@ private:
 
   // The set of sockets being managed.
   std::map<rdmnet_conn_t, std::unique_ptr<SocketData>> sockets_;
-  etcpal_rwlock_t socket_lock_;
+  etcpal::RwLock socket_lock_;
 
   // The callback instance
   BrokerSocketNotify* notify_{nullptr};

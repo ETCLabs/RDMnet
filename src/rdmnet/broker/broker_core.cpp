@@ -74,15 +74,12 @@ rdmnet::BrokerSettings rdmnet::Broker::GetSettings() const
 
 BrokerCore::BrokerCore() : BrokerComponentNotify()
 {
-  etcpal_rwlock_create(&client_lock_);
 }
 
 BrokerCore::~BrokerCore()
 {
   if (started_)
     Shutdown();
-
-  etcpal_rwlock_destroy(&client_lock_);
 }
 
 bool BrokerCore::Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerNotify* notify, rdmnet::BrokerLog* log,
@@ -109,7 +106,7 @@ bool BrokerCore::Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerN
       uid_manager_.SetNextDeviceId(2);
     }
 
-    if (kEtcPalErrOk != components_.conn_interface->Startup(settings.cid, log_->GetLogParams()))
+    if (!components_.conn_interface->Startup(settings.cid, log_->GetLogParams()))
     {
       return false;
     }
@@ -251,8 +248,8 @@ bool BrokerCore::NewConnection(etcpal_socket_t new_sock, const EtcPalSockaddr& a
     if (settings_.max_connections == 0 ||
         (clients_.size() <= settings_.max_connections + settings_.max_reject_connections))
     {
-      etcpal_error_t create_res = components_.conn_interface->CreateNewConnectionForSocket(new_sock, addr, connhandle);
-      if (create_res == kEtcPalErrOk)
+      auto create_res = components_.conn_interface->CreateNewConnectionForSocket(new_sock, addr, connhandle);
+      if (create_res)
       {
         auto client = std::make_shared<BrokerClient>(connhandle);
 
@@ -367,7 +364,7 @@ void BrokerCore::SendClientList(int conn)
       if (client.second->client_protocol == to_client->second->client_protocol)
       {
         ClientEntryData cli_data;
-        cli_data.client_cid = client.second->cid;
+        cli_data.client_cid = client.second->cid.get();
         cli_data.client_protocol = client.second->client_protocol;
         if (client.second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
         {
@@ -375,7 +372,7 @@ void BrokerCore::SendClientList(int conn)
           RPTClient* rptcli = static_cast<RPTClient*>(client.second.get());
           rpt_cli_data->client_uid = rptcli->uid;
           rpt_cli_data->client_type = rptcli->client_type;
-          rpt_cli_data->binding_cid = rptcli->binding_cid;
+          rpt_cli_data->binding_cid = rptcli->binding_cid.get();
         }
         cli_data.next = nullptr;
         entries.push_back(cli_data);
@@ -438,12 +435,7 @@ void BrokerCore::SendStatus(RPTController* controller, const RptHeader& header, 
 
   if (controller->Push(settings_.cid, new_header, status))
   {
-    if (log_->CanLog(ETCPAL_LOG_INFO))
-    {
-      char cid_str[ETCPAL_UUID_STRING_BYTES];
-      etcpal_uuid_to_string(cid_str, &controller->cid);
-      log_->Warning("Sending RPT Status code %d to Controller %s", status_code, cid_str);
-    }
+    log_->Warning("Sending RPT Status code %d to Controller %s", status_code, controller->cid.ToString().c_str());
   }
   else
   {
@@ -477,7 +469,7 @@ void BrokerCore::ProcessConnectRequest(int conn, const ClientConnectMsg* cmsg)
     if (it != clients_.end() && it->second)
     {
       ConnectReplyMsg creply = {connect_status, E133_VERSION, my_uid_, {}};
-      send_connect_reply(conn, &settings_.cid, &creply);
+      send_connect_reply(conn, &settings_.cid.get(), &creply);
     }
 
     // Clean up this socket. TODO
@@ -493,7 +485,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
   ClientEntryData updated_data = data;
   ClientEntryDataRpt* rptdata = get_rpt_client_entry_data(&updated_data);
 
-  if (kEtcPalErrOk != components_.conn_interface->SetBlocking(handle, false))
+  if (!components_.conn_interface->SetBlocking(handle, false))
   {
     log_->Error("Error translating socket into non-blocking socket for Client %d", handle);
     return false;
@@ -1010,7 +1002,7 @@ void BrokerCore::DestroyMarkedClientSockets()
       {
         ClientEntryData entry;
         entry.client_protocol = client->second->client_protocol;
-        entry.client_cid = client->second->cid;
+        entry.client_cid = client->second->cid.get();
 
         if (client->second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
         {
@@ -1024,7 +1016,7 @@ void BrokerCore::DestroyMarkedClientSockets()
           ClientEntryDataRpt* rptdata = get_rpt_client_entry_data(&entry);
           rptdata->client_uid = rptcli->uid;
           rptdata->client_type = rptcli->client_type;
-          rptdata->binding_cid = rptcli->binding_cid;
+          rptdata->binding_cid = rptcli->binding_cid.get();
         }
         entries.push_back(entry);
         entries[entries.size() - 1].next = nullptr;

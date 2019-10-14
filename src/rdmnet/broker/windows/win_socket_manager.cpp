@@ -143,10 +143,9 @@ unsigned __stdcall SocketWorkerThread(void* arg)
   return 0;
 }
 
-bool WinBrokerSocketManager::Startup(BrokerSocketManagerNotify* notify)
+bool WinBrokerSocketManager::Startup()
 {
   bool ok = true;
-  notify_ = notify;
 
   WSADATA wsadata;
   if (0 != WSAStartup(MAKEWORD(2, 2), &wsadata))

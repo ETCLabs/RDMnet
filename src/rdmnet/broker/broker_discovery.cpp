@@ -85,13 +85,13 @@ BrokerDiscoveryManager::BrokerDiscoveryManager()
   cur_config_.callback_context = this;
 }
 
-etcpal_error_t BrokerDiscoveryManager::RegisterBroker(const rdmnet::BrokerSettings& settings)
+etcpal::Result BrokerDiscoveryManager::RegisterBroker(const rdmnet::BrokerSettings& settings)
 {
   // Start with the default information.
   RdmnetBrokerDiscInfo* my_info = &cur_config_.my_info;
   rdmnetdisc_fill_default_broker_info(my_info);
 
-  my_info->cid = settings.cid;
+  my_info->cid = settings.cid.get();
   std::vector<BrokerListenAddr> listen_addr_list;
   listen_addr_list.reserve(settings.listen_addrs.size());
   for (const auto& listen_addr : settings.listen_addrs)

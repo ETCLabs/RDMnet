@@ -25,7 +25,7 @@
 #include <queue>
 #include <string>
 
-#include "etcpal/lock.h"
+#include "etcpal/cpp/lock.h"
 #include "etcpal/log.h"
 #include "etcpal/thread.h"
 
@@ -75,9 +75,9 @@ protected:
   const DispatchPolicy dispatch_policy_{DispatchPolicy::kQueued};
 
   std::queue<std::string> msg_q_;
-  etcpal_signal_t signal_{};
+  etcpal::Signal signal_;
   etcpal_thread_t thread_{};
-  etcpal_mutex_t lock_{};
+  etcpal::Mutex lock_;
   bool keep_running_{false};
 };
 

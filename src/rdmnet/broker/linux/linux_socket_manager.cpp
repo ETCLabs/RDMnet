@@ -63,10 +63,8 @@ void* SocketWorkerThread(void* arg)
   return reinterpret_cast<void*>(0);
 }
 
-bool LinuxBrokerSocketManager::Startup(BrokerSocketManagerNotify* notify)
+bool LinuxBrokerSocketManager::Startup()
 {
-  notify_ = notify;
-
   // Per the man page, the size argument is ignored but must be greater than zero. Random value was
   // chosen
   epoll_fd_ = epoll_create(42);
