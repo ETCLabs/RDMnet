@@ -418,7 +418,7 @@ etcpal_error_t ControllerDefaultResponder::ProcessCommand(const std::string& sco
   if (scope_entry == scopes_.end()) // Not found
   {
     presp_type = kRdmRespRtNackReason;
-    RDM_CREATE_NACK_FROM_COMMAND(&resp, &cmd, E120_NR_HARDWARE_FAULT);
+    rdmresp_create_nack_from_command(&resp, &cmd, E120_NR_HARDWARE_FAULT);
 
     result = kEtcPalErrNotFound;  // Scope handle not found
   }

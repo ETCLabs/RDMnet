@@ -457,7 +457,7 @@ void device_send_rpt_status(rpt_status_code_t status_code, const RemoteRdmComman
 void device_send_rpt_nack(uint16_t nack_reason, const RemoteRdmCommand* received_cmd)
 {
   RdmResponse resp;
-  RDM_CREATE_NACK_FROM_COMMAND(&resp, &received_cmd->rdm, nack_reason);
+  rdmresp_create_nack_from_command(&resp, &received_cmd->rdm, nack_reason);
   device_send_rpt_response(&resp, 1, received_cmd);
 }
 
@@ -476,7 +476,7 @@ void device_send_rpt_response(RdmResponse* resp_list, size_t num_responses, cons
 void device_send_llrp_nack(uint16_t nack_reason, const LlrpRemoteRdmCommand* received_cmd)
 {
   RdmResponse resp;
-  RDM_CREATE_NACK_FROM_COMMAND(&resp, &received_cmd->rdm, nack_reason);
+  rdmresp_create_nack_from_command(&resp, &received_cmd->rdm, nack_reason);
   device_send_llrp_response(&resp, received_cmd);
 }
 
