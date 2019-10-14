@@ -822,25 +822,32 @@ etcpal_error_t default_responder_parameter_description(PidHandlerData* data)
 
   etcpal_error_t result = kEtcPalErrNotImpl;
 
+  RdmPdParameterDescription description;
+  rdmpd_nack_reason_t nack_reason;
+
   uint16_t requested_pid;
   result = rdmpd_unpack_get_parameter_description(data->pd_in, &requested_pid);
 
   if (result == kEtcPalErrOk)
   {
-    RdmPdParameterDescription description;
-    rdmpd_nack_reason_t nack_reason;
     result = process_get_parameter_description(requested_pid, &description, &data->response_type, &nack_reason);
+  }
+  else if (result == kEtcPalErrProtocol)
+  {
+    result = kEtcPalErrOk;
+    data->response_type = kRdmRespRtNackReason;
+    nack_reason = kRdmPdNrFormatError;
+  }
 
-    if (result == kEtcPalErrOk)
+  if (result == kEtcPalErrOk)
+  {
+    if (data->response_type == kRdmRespRtNackReason)
     {
-      if (data->response_type == kRdmRespRtNackReason)
-      {
-        result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
-      }
-      else if (data->response_type != kRdmRespRtNoSend)  // Assuming no ACK timer
-      {
-        result = rdmpd_pack_get_resp_parameter_description(&description, data->pd_out);
-      }
+      result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
+    }
+    else if (data->response_type != kRdmRespRtNoSend)  // Assuming no ACK timer
+    {
+      result = rdmpd_pack_get_resp_parameter_description(&description, data->pd_out);
     }
   }
 
@@ -893,6 +900,12 @@ etcpal_error_t default_responder_device_label(PidHandlerData* data)
     if (result == kEtcPalErrOk)
     {
       result = process_set_device_label(&label, &data->response_type, &nack_reason);
+    }
+    else if (result == kEtcPalErrProtocol)
+    {
+      result = kEtcPalErrOk;
+      data->response_type = kRdmRespRtNackReason;
+      nack_reason = kRdmPdNrFormatError;
     }
   }
 
@@ -954,6 +967,12 @@ etcpal_error_t default_responder_identify_device(PidHandlerData* data)
     {
       result = process_set_identify_device(identify, &data->response_type, &nack_reason);
     }
+    else if (result == kEtcPalErrProtocol)
+    {
+      result = kEtcPalErrOk;
+      data->response_type = kRdmRespRtNackReason;
+      nack_reason = kRdmPdNrFormatError;
+    }
   }
 
   if (result == kEtcPalErrOk)
@@ -988,6 +1007,12 @@ etcpal_error_t default_responder_component_scope(PidHandlerData* data)
     {
       result = process_get_component_scope(requested_slot, &scope, &data->response_type, &nack_reason);
     }
+    else if (result == kEtcPalErrProtocol)
+    {
+      result = kEtcPalErrOk;
+      data->response_type = kRdmRespRtNackReason;
+      nack_reason = kRdmPdNrFormatError;
+    }
   }
   else  // kRdmCCSetCommand
   {
@@ -996,6 +1021,12 @@ etcpal_error_t default_responder_component_scope(PidHandlerData* data)
     if (result == kEtcPalErrOk)
     {
       result = process_set_component_scope(&scope, &data->response_type, &nack_reason);
+    }
+    else if (result == kEtcPalErrProtocol)
+    {
+      result = kEtcPalErrOk;
+      data->response_type = kRdmRespRtNackReason;
+      nack_reason = kRdmPdNrFormatError;
     }
   }
 
@@ -1033,6 +1064,12 @@ etcpal_error_t default_responder_search_domain(PidHandlerData* data)
     if (result == kEtcPalErrOk)
     {
       result = process_set_search_domain(&search_domain, &data->response_type, &nack_reason);
+    }
+    else if (result == kEtcPalErrProtocol)
+    {
+      result = kEtcPalErrOk;
+      data->response_type = kRdmRespRtNackReason;
+      nack_reason = kRdmPdNrFormatError;
     }
   }
 
@@ -1072,6 +1109,12 @@ etcpal_error_t default_responder_tcp_comms_status(PidHandlerData* data)
     {
       result = process_set_tcp_comms_status(&scope, &data->response_type, &nack_reason);
     }
+    else if (result == kEtcPalErrProtocol)
+    {
+      result = kEtcPalErrOk;
+      data->response_type = kRdmRespRtNackReason;
+      nack_reason = kRdmPdNrFormatError;
+    }
   }
 
   if (result == kEtcPalErrOk)
@@ -1104,61 +1147,148 @@ etcpal_error_t process_get_parameter_description(uint16_t pid, RdmPdParameterDes
                                                  rdmresp_response_type_t* response_type,
                                                  rdmpd_nack_reason_t* nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  assert(response_type);
+  assert(nack_reason);
+
+  (*response_type) = kRdmRespRtNackReason;
+  (*nack_reason) = kRdmPdNrDataOutOfRange; // No manufacturer-specific PIDs apply currently
+
+  return kEtcPalErrOk;
+}
+
+etcpal_error_t process_get_rdm_pd_string(RdmPdString* string, const char* source,
+                                         rdmresp_response_type_t* response_type, rdmpd_nack_reason_t* nack_reason)
+{
+  assert(string);
+  assert(source);
+  assert(response_type);
+  assert(nack_reason);
+  assert(strlen(source) < RDMPD_STRING_MAX_LENGTH);
+
+  rdmnet_safe_strncpy(string->string, source, RDMPD_STRING_MAX_LENGTH);
+
+  (*response_type) = kRdmRespRtAck;
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t process_get_device_model_description(RdmPdString* description, rdmresp_response_type_t* response_type,
                                                     rdmpd_nack_reason_t* nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  return process_get_rdm_pd_string(description, DEVICE_MODEL_DESCRIPTION, response_type, nack_reason);
 }
 
 etcpal_error_t process_get_device_label(RdmPdString* label, rdmresp_response_type_t* response_type,
                                         rdmpd_nack_reason_t* nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  return process_get_rdm_pd_string(label, device_responder_state.device_label, response_type, nack_reason);
 }
 
 etcpal_error_t process_set_device_label(const RdmPdString* label, rdmresp_response_type_t* response_type,
                                         rdmpd_nack_reason_t* nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  assert(label);
+  assert(response_type);
+  assert(nack_reason);
+
+  memcpy(device_responder_state.device_label, label->string, min(RDMPD_STRING_MAX_LENGTH, DEVICE_LABEL_MAX_LEN));
+
+  (*response_type) = kRdmRespRtAck;
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t process_get_software_version_label(RdmPdString* label, rdmresp_response_type_t* response_type,
                                                   rdmpd_nack_reason_t* nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  return process_get_rdm_pd_string(label, SOFTWARE_VERSION_LABEL, response_type, nack_reason);
 }
 
 etcpal_error_t process_get_identify_device(bool* identify_state, rdmresp_response_type_t* response_type,
                                            rdmpd_nack_reason_t* nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  assert(identify_state);
+  assert(response_type);
+  assert(nack_reason);
+
+  (*identify_state) = device_responder_state.identifying;
+
+  (*response_type) = kRdmRespRtAck;
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t process_set_identify_device(bool identify, rdmresp_response_type_t* response_type,
                                            rdmpd_nack_reason_t* nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  assert(response_type);
+  assert(nack_reason);
+
+  device_responder_state.identifying = identify;
+
+  (*response_type) = kRdmRespRtAck;
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t process_get_component_scope(uint16_t slot, RdmPdComponentScope* component_scope,
                                            rdmresp_response_type_t* response_type, rdmpd_nack_reason_t* nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  assert(component_scope);
+  assert(response_type);
+  assert(nack_reason);
+
+  if (slot == 1)
+  {
+    component_scope->scope_slot = slot;
+    rdmnet_safe_strncpy(component_scope->scope_string.string, device_responder_state.scope_config.scope,
+                        RDMPD_MAX_SCOPE_STR_LEN);
+    component_scope->static_broker_addr = device_responder_state.scope_config.static_broker_addr;
+  }
+  else
+  {
+    (*response_type) = kRdmRespRtNackReason;
+    (*nack_reason) = kRdmPdNrDataOutOfRange;
+  }
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t process_set_component_scope(const RdmPdComponentScope* component_scope,
                                            rdmresp_response_type_t* response_type, rdmpd_nack_reason_t* nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  assert(component_scope);
+  assert(response_type);
+  assert(nack_reason);
+
+  if (component_scope->scope_slot == 1)
+  {
+    rdmnet_safe_strncpy(device_responder_state.scope_config.scope, component_scope->scope_string.string,
+                        E133_SCOPE_STRING_PADDED_LENGTH);
+    device_responder_state.scope_config.has_static_broker_addr =
+        (component_scope->static_broker_addr.ip.type != kEtcPalIpTypeInvalid);
+    device_responder_state.scope_config.static_broker_addr = component_scope->static_broker_addr;
+  }
+  else
+  {
+    (*response_type) = kRdmRespRtNackReason;
+    (*nack_reason) = kRdmPdNrDataOutOfRange;
+  }
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t process_get_search_domain(RdmPdSearchDomain* search_domain, rdmresp_response_type_t* response_type,
                                          rdmpd_nack_reason_t* nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  assert(search_domain);
+  assert(response_type);
+  assert(nack_reason);
+
+  rdmnet_safe_strncpy(search_domain->string, device_responder_state.search_domain, RDMPD_MAX_SEARCH_DOMAIN_STR_LEN);
+
+  (*response_type) = kRdmRespRtAck;
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t process_set_search_domain(const RdmPdSearchDomain* search_domain, rdmresp_response_type_t* response_type,

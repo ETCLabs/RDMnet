@@ -45,6 +45,9 @@ static etcpal_error_t default_responder_parameter_description(PidHandlerData* da
 
   etcpal_error_t result = kEtcPalErrNotImpl;
 
+  RdmPdParameterDescription description;
+  rdmpd_nack_reason_t nack_reason;
+
   uint16_t requested_pid;
   result = rdmpd_unpack_get_parameter_description(data->pd_in, &requested_pid);
 
@@ -53,20 +56,24 @@ static etcpal_error_t default_responder_parameter_description(PidHandlerData* da
     BrokerResponder* responder = static_cast<BrokerResponder*>(data->context);
     assert(responder);
 
-    RdmPdParameterDescription description;
-    rdmpd_nack_reason_t nack_reason;
     result = responder->ProcessGetParameterDescription(requested_pid, description, data->response_type, nack_reason);
+  }
+  else if (result == kEtcPalErrProtocol)
+  {
+    result = kEtcPalErrOk;
+    data->response_type = kRdmRespRtNackReason;
+    nack_reason = kRdmPdNrFormatError;
+  }
 
-    if (result == kEtcPalErrOk)
+  if (result == kEtcPalErrOk)
+  {
+    if (data->response_type == kRdmRespRtNackReason)
     {
-      if (data->response_type == kRdmRespRtNackReason)
-      {
-        result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
-      }
-      else if (data->response_type != kRdmRespRtNoSend)  // Assuming no ACK timer
-      {
-        result = rdmpd_pack_get_resp_parameter_description(&description, data->pd_out);
-      }
+      result = rdmpd_pack_nack_reason(nack_reason, data->pd_out);
+    }
+    else if (data->response_type != kRdmRespRtNoSend)  // Assuming no ACK timer
+    {
+      result = rdmpd_pack_get_resp_parameter_description(&description, data->pd_out);
     }
   }
 
@@ -125,6 +132,12 @@ static etcpal_error_t default_responder_device_label(PidHandlerData* data)
     if (result == kEtcPalErrOk)
     {
       result = responder->ProcessSetDeviceLabel(label, data->response_type, nack_reason);
+    }
+    else if (result == kEtcPalErrProtocol)
+    {
+      result = kEtcPalErrOk;
+      data->response_type = kRdmRespRtNackReason;
+      nack_reason = kRdmPdNrFormatError;
     }
   }
 
@@ -192,6 +205,12 @@ static etcpal_error_t default_responder_identify_device(PidHandlerData* data)
     {
       result = responder->ProcessSetIdentifyDevice(identify, data->response_type, nack_reason);
     }
+    else if (result == kEtcPalErrProtocol)
+    {
+      result = kEtcPalErrOk;
+      data->response_type = kRdmRespRtNackReason;
+      nack_reason = kRdmPdNrFormatError;
+    }
   }
 
   if (result == kEtcPalErrOk)
@@ -229,6 +248,12 @@ static etcpal_error_t default_responder_component_scope(PidHandlerData* data)
     {
       result = responder->ProcessGetComponentScope(requested_slot, scope, data->response_type, nack_reason);
     }
+    else if (result == kEtcPalErrProtocol)
+    {
+      result = kEtcPalErrOk;
+      data->response_type = kRdmRespRtNackReason;
+      nack_reason = kRdmPdNrFormatError;
+    }
   }
   else  // kRdmCCSetCommand
   {
@@ -237,6 +262,12 @@ static etcpal_error_t default_responder_component_scope(PidHandlerData* data)
     if (result == kEtcPalErrOk)
     {
       result = responder->ProcessSetComponentScope(scope, data->response_type, nack_reason);
+    }
+    else if (result == kEtcPalErrProtocol)
+    {
+      result = kEtcPalErrOk;
+      data->response_type = kRdmRespRtNackReason;
+      nack_reason = kRdmPdNrFormatError;
     }
   }
 
@@ -278,6 +309,12 @@ static etcpal_error_t default_responder_broker_status(PidHandlerData* data)
     if (result == kEtcPalErrOk)
     {
       result = responder->ProcessSetBrokerStatus(state, data->response_type, nack_reason);
+    }
+    else if (result == kEtcPalErrProtocol)
+    {
+      result = kEtcPalErrOk;
+      data->response_type = kRdmRespRtNackReason;
+      nack_reason = kRdmPdNrFormatError;
     }
   }
 

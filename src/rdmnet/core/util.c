@@ -27,7 +27,8 @@
  *  Always puts a null character at destination[num - 1].
  *  \param[out] destination Pointer to the destination array where the content is to be copied.
  *  \param[in] source C string to be copied.
- *  \param[in] num Maximum number of characters to be copied from source.
+ *  \param[in] num The number of bytes to be written to destination, including the null terminator.
+ * num - 1 of these bytes will be copied from source.
  *  \return Destination.
  */
 char* rdmnet_safe_strncpy(char* destination, const char* source, size_t num)
@@ -35,7 +36,7 @@ char* rdmnet_safe_strncpy(char* destination, const char* source, size_t num)
   if (!destination || num == 0)
     return NULL;
 
-  RDMNET_MSVC_NO_DEP_WRN strncpy(destination, source, num);
+  RDMNET_MSVC_NO_DEP_WRN strncpy(destination, source, num - 1);
   destination[num - 1] = '\0';
   return destination;
 }
