@@ -186,6 +186,29 @@ if(WIN32 OR APPLE OR UNIX)
     ${RDMNET_SRC}/rdmnet/broker/rdmnet_conn_wrapper.cpp
   )
 
+  if(WIN32)
+    set(RDMNET_BROKER_PRIVATE_HEADERS ${RDMNET_BROKER_PRIVATE_HEADERS}
+      ${RDMNET_SRC}/rdmnet/broker/windows/win_socket_manager.h
+    )
+    set(RDMNET_BROKER_SOURCES ${RDMNET_BROKER_SOURCES}
+      ${RDMNET_SRC}/rdmnet/broker/windows/win_socket_manager.cpp
+    )
+  elseif(APPLE)
+    set(RDMNET_BROKER_PRIVATE_HEADERS ${RDMNET_BROKER_PRIVATE_HEADERS}
+      ${RDMNET_SRC}/rdmnet/broker/macos/macos_socket_manager.h
+    )
+    set(RDMNET_BROKER_SOURCES ${RDMNET_BROKER_SOURCES}
+      ${RDMNET_SRC}/rdmnet/broker/macos/macos_socket_manager.cpp
+    )
+  elseif(UNIX)
+    set(RDMNET_BROKER_PRIVATE_HEADERS ${RDMNET_BROKER_PRIVATE_HEADERS}
+      ${RDMNET_SRC}/rdmnet/broker/linux/linux_socket_manager.h
+    )
+    set(RDMNET_BROKER_SOURCES ${RDMNET_BROKER_SOURCES}
+      ${RDMNET_SRC}/rdmnet/broker/linux/linux_socket_manager.cpp
+    )
+  endif()
+
   # This target should not be used externally - it is only for use by the automated tests.
   add_library(RDMnetBrokerCore INTERFACE)
   target_sources(RDMnetBrokerCore INTERFACE
@@ -200,23 +223,6 @@ if(WIN32 OR APPLE OR UNIX)
     ${RDMNET_BROKER_PRIVATE_HEADERS}
     ${RDMNET_BROKER_SOURCES}
   )
-
-  if(WIN32)
-    target_sources(RDMnetBroker PRIVATE
-      broker/windows/win_socket_manager.h
-      broker/windows/win_socket_manager.cpp
-    )
-  elseif(APPLE)
-    target_sources(RDMnetBroker PRIVATE
-      broker/macos/macos_socket_manager.h
-      broker/macos/macos_socket_manager.cpp
-    )
-  elseif(UNIX)
-    target_sources(RDMnetBroker PRIVATE
-      broker/linux/linux_socket_manager.h
-      broker/linux/linux_socket_manager.cpp
-    )
-  endif()
 
   target_include_directories(RDMnetBroker PUBLIC ${RDMNET_INCLUDE} broker)
   target_link_libraries(RDMnetBroker PUBLIC RDMnet)

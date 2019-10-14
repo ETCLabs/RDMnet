@@ -46,7 +46,7 @@ protected:
 
     disc_mgr_.SetNotify(&notify_);
 
-    ASSERT_EQ(kEtcPalErrOk, etcpal_string_to_uuid("22672657-407a-4a83-b34c-0929ec6d0bfb", &settings_.cid));
+    settings_.cid = etcpal::Uuid::FromString("22672657-407a-4a83-b34c-0929ec6d0bfb");
     settings_.dns.manufacturer = "Test";
     settings_.dns.model = "Test Broker";
     settings_.dns.service_instance_name = "Test Broker Service Instance";
