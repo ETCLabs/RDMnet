@@ -167,7 +167,7 @@ void MacBrokerSocketManager::WorkerNotifySocketBad(rdmnet_conn_t conn_handle)
   }
 
   if (notify_)
-    notify_->SocketClosed(conn_handle, false);
+    notify_->HandleSocketClosed(conn_handle, false);
 }
 
 void MacBrokerSocketManager::WorkerNotifySocketReadEvent(rdmnet_conn_t conn_handle)
@@ -184,11 +184,11 @@ void MacBrokerSocketManager::WorkerNotifySocketReadEvent(rdmnet_conn_t conn_hand
       close(sock_data->second->socket);
       sockets_.erase(sock_data);
       if (notify_)
-        notify_->SocketClosed(conn_handle, (recv_result == 0));
+        notify_->HandleSocketClosed(conn_handle, (recv_result == 0));
     }
     else
     {
-      notify_->SocketDataReceived(conn_handle, sock_data->second->recv_buf, recv_result);
+      notify_->HandleSocketDataReceived(conn_handle, sock_data->second->recv_buf, recv_result);
     }
   }
 }

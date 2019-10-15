@@ -21,7 +21,7 @@
 
 class MockBrokerThreadNotify : public BrokerThreadNotify
 {
-  MOCK_METHOD(bool, NewConnection, (etcpal_socket_t new_sock, const EtcPalSockaddr& remote_addr), (override));
+  MOCK_METHOD(bool, HandleNewConnection, (etcpal_socket_t new_sock, const EtcPalSockaddr& remote_addr), (override));
   MOCK_METHOD(bool, ServiceClients, (), (override));
 };
 

@@ -25,7 +25,7 @@
 #include "etcpal/thread.h"
 #include "rdmnet/version.h"
 
-void BrokerShell::ScopeChanged(const std::string& new_scope)
+void BrokerShell::HandleScopeChanged(const std::string& new_scope)
 {
   if (log_)
     log_->Info("Scope change detected, restarting broker and applying changes");
@@ -50,52 +50,13 @@ void BrokerShell::AsyncShutdown()
   shutdown_requested_ = true;
 }
 
-void BrokerShell::ApplySettingsChanges(rdmnet::BrokerSettings& settings, std::vector<EtcPalIpAddr>& new_addrs)
+void BrokerShell::ApplySettingsChanges(rdmnet::BrokerSettings& settings)
 {
-  new_addrs = GetInterfacesToListen();
-
   if (!new_scope_.empty())
   {
     settings.scope = new_scope_;
     new_scope_.clear();
   }
-}
-
-std::vector<EtcPalIpAddr> BrokerShell::GetInterfacesToListen()
-{
-  if (!initial_data_.macs.empty())
-  {
-    return ConvertMacsToInterfaces(initial_data_.macs);
-  }
-  else if (!initial_data_.ifaces.empty())
-  {
-    return initial_data_.ifaces;
-  }
-  else
-  {
-    return std::vector<EtcPalIpAddr>();
-  }
-}
-
-std::vector<EtcPalIpAddr> BrokerShell::ConvertMacsToInterfaces(const std::vector<MacAddress>& macs)
-{
-  std::vector<EtcPalIpAddr> to_return;
-
-  size_t num_netints = etcpal_netint_get_num_interfaces();
-  for (const auto& mac : macs)
-  {
-    const EtcPalNetintInfo* netint_list = etcpal_netint_get_interfaces();
-    for (const EtcPalNetintInfo* netint = netint_list; netint < netint_list + num_netints; ++netint)
-    {
-      if (0 == memcmp(netint->mac, mac.data(), ETCPAL_NETINTINFO_MAC_LEN))
-      {
-        to_return.push_back(netint->addr);
-        break;
-      }
-    }
-  }
-
-  return to_return;
 }
 
 void BrokerShell::Run(rdmnet::BrokerLog* log)
@@ -108,15 +69,14 @@ void BrokerShell::Run(rdmnet::BrokerLog* log)
   rdmnet::BrokerSettings broker_settings(0x6574);
   broker_settings.scope = initial_data_.scope;
 
-  std::vector<EtcPalIpAddr> ifaces = GetInterfacesToListen();
-
   broker_settings.cid = etcpal::Uuid::V4();
 
   broker_settings.dns.manufacturer = "ETC";
   broker_settings.dns.service_instance_name = "UNIQUE NAME";
   broker_settings.dns.model = "E1.33 Broker Prototype";
   broker_settings.listen_port = initial_data_.port;
-  broker_settings.listen_addrs = ifaces;
+  broker_settings.listen_macs = initial_data_.macs;
+  broker_settings.listen_addrs = initial_data_.ifaces;
 
   rdmnet::Broker broker;
   broker.Startup(broker_settings, this, log_);
@@ -132,14 +92,13 @@ void BrokerShell::Run(rdmnet::BrokerLog* log)
     }
     else if (restart_requested_)
     {
-      restart_requested_ = false;  // Prevent broker from restarting infinitely many times
+      restart_requested_ = false;
 
       broker_settings = broker.GetSettings();
       broker.Shutdown();
 
-      ApplySettingsChanges(broker_settings, ifaces);
+      ApplySettingsChanges(broker_settings);
       broker.Startup(broker_settings, this, log_);
-      restart_requested_ = false;
     }
 
     etcpal_thread_sleep(300);

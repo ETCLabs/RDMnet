@@ -44,19 +44,38 @@ class BrokerNotify
 {
 public:
   /// The Scope of the Broker has changed via RDMnet configuration. The Broker should be restarted.
-  virtual void ScopeChanged(const std::string& new_scope) = 0;
+  virtual void HandleScopeChanged(const std::string& new_scope) = 0;
 };
 
 /// \brief Defines an instance of RDMnet %Broker functionality.
 ///
-/// After instantiatiation, call Startup() to start Broker services on a set of network interfaces.
-/// Starts some threads (defined in broker/threads.h) to handle messages and connections.
-/// Periodically call Tick() to handle some cleanup and housekeeping.
-/// Call Shutdown() at exit, when Broker services are no longer needed, or when a setting has
-/// changed.
+/// Use the BrokerSettings struct to configure the behavior of the broker. After instantiatiation,
+/// call Startup() to start broker services on a set of network interfaces.
+///
+/// Starts some threads to handle messages and connections. The current breakdown (pending
+/// concurrency optimization) is:
+///   * Either:
+///     + One thread per explicitly-specified network interface being listened on, or
+///     + One thread, if listening on all interfaces
+///   * A platform-dependent number of threads to receive messages from clients, depending on the
+///     most efficient way to read large number of sockets on a given platform
+///   * One thread to handle message routing between clients
+///   * One thread to dispatch log messages
+///
+/// Periodically call Tick() to handle some cleanup and housekeeping. Call Shutdown() at exit, when
+/// Broker services are no longer needed, or when a setting has changed. The Broker may send
+/// notifications through the BrokerNotify interface.
 class Broker
 {
 public:
+  Broker();
+  virtual ~Broker();
+
+  Broker(const Broker& other) = delete;
+  Broker& operator=(const Broker& other) = delete;
+  Broker(Broker&& other) = default;
+  Broker& operator=(Broker&& other) = default;
+
   bool Startup(const BrokerSettings& settings, BrokerNotify* notify, BrokerLog* log);
   void Shutdown();
   void Tick();
@@ -64,7 +83,7 @@ public:
   BrokerSettings GetSettings() const;
 
 private:
-  std::unique_ptr<BrokerCore> core_{std::make_unique<BrokerCore>()};
+  std::unique_ptr<BrokerCore> core_;
 };
 
 };  // namespace rdmnet

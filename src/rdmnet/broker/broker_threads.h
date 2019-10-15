@@ -42,7 +42,7 @@ class BrokerThreadNotify
 public:
   // Called when a listen thread gets a new connection. Return false to close the connection
   // immediately.
-  virtual bool NewConnection(etcpal_socket_t new_sock, const EtcPalSockaddr& remote_addr) = 0;
+  virtual bool HandleNewConnection(etcpal_socket_t new_sock, const EtcPalSockaddr& remote_addr) = 0;
 
   // A notification from a client service thread to process each client queue, sending out the next
   // message from each queue if one is available. Return false if no messages or partial messages

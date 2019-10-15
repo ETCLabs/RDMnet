@@ -29,8 +29,8 @@
 class RdmnetConnNotify
 {
 public:
-  virtual void RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage& msg) = 0;
-  virtual void RdmnetConnDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo& disconn_info) = 0;
+  virtual void HandleRdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage& msg) = 0;
+  virtual void HandleRdmnetConnDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo& disconn_info) = 0;
 };
 
 struct SendDisconnect
@@ -45,6 +45,8 @@ struct SendDisconnect
 class RdmnetConnInterface
 {
 public:
+  virtual ~RdmnetConnInterface() = default;
+
   virtual etcpal::Result Startup(const etcpal::Uuid& cid, const EtcPalLogParams* log_params) = 0;
   virtual void Shutdown() = 0;
 
@@ -57,8 +59,6 @@ public:
 
   virtual void SocketDataReceived(rdmnet_conn_t handle, const uint8_t* data, size_t data_size) = 0;
   virtual void SocketError(rdmnet_conn_t handle, etcpal_error_t err) = 0;
-
-  virtual ~RdmnetConnInterface() {}
 };
 
 class RdmnetConnWrapper : public RdmnetConnInterface

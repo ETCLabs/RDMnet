@@ -67,7 +67,7 @@ bool ParseAndSetScope(const char* scope_str, BrokerShell& broker_shell)
 // Parse the --ifaces=IFACE_LIST command line option and transfer it to the BrokerShell instance.
 bool ParseAndSetIfaceList(char* iface_list_str, BrokerShell& broker_shell)
 {
-  std::vector<EtcPalIpAddr> addrs;
+  std::set<EtcPalIpAddr> addrs;
 
   if (strlen(iface_list_str) != 0)
   {
@@ -78,7 +78,7 @@ bool ParseAndSetIfaceList(char* iface_list_str, BrokerShell& broker_shell)
       if ((etcpal_inet_pton(kEtcPalIpTypeV4, p, &addr) == kEtcPalErrOk) ||
           etcpal_inet_pton(kEtcPalIpTypeV6, p, &addr) == kEtcPalErrOk)
       {
-        addrs.push_back(addr);
+        addrs.insert(addr);
       }
     }
   }
@@ -106,7 +106,7 @@ void ParseMac(char* s, BrokerShell::MacAddress& mac_buf)
 // Parse the --macs=MAC_LIST command line option and transfer it to the BrokerShell instance.
 bool ParseAndSetMacList(char* mac_list_str, BrokerShell& broker_shell)
 {
-  std::vector<BrokerShell::MacAddress> macs;
+  std::set<BrokerShell::MacAddress> macs;
 
   if (strlen(mac_list_str) != 0)
   {
@@ -115,7 +115,7 @@ bool ParseAndSetMacList(char* mac_list_str, BrokerShell& broker_shell)
     {
       BrokerShell::MacAddress mac_buf;
       ParseMac(p, mac_buf);
-      macs.push_back(mac_buf);
+      macs.insert(mac_buf);
     }
   }
 

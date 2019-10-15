@@ -33,6 +33,14 @@
 
 /*************************** Function definitions ****************************/
 
+rdmnet::Broker::Broker() : core_(std::make_unique<BrokerCore>())
+{
+}
+
+rdmnet::Broker::~Broker()
+{
+}
+
 /// \brief Start all broker functionality and threads.
 ///
 /// If listen_addrs is empty, this returns false.  Otherwise, the broker uses the address fields to
@@ -103,7 +111,7 @@ bool BrokerCore::Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerN
     if (settings.uid_type == rdmnet::BrokerSettings::kDynamicUid)
     {
       my_uid_.id = 1;
-      uid_manager_.SetNextDeviceId(2);
+      components_.uids.SetNextDeviceId(2);
     }
 
     if (!components_.conn_interface->Startup(settings.cid, log_->GetLogParams()))
@@ -185,7 +193,7 @@ bool BrokerCore::IsValidControllerDestinationUID(const RdmUid& uid) const
 
   // TODO this should only check devices
   int tmp;
-  return uid_manager_.UidToHandle(uid, tmp);
+  return components_.uids.UidToHandle(uid, tmp);
 }
 
 bool BrokerCore::IsValidDeviceDestinationUID(const RdmUid& uid) const
@@ -195,7 +203,7 @@ bool BrokerCore::IsValidDeviceDestinationUID(const RdmUid& uid) const
 
   // TODO this should only check controllers
   int tmp;
-  return uid_manager_.UidToHandle(uid, tmp);
+  return components_.uids.UidToHandle(uid, tmp);
 }
 
 // The passed-in vector is cleared and filled with the cookies of connections that match the
@@ -230,7 +238,7 @@ void BrokerCore::GetConnSnapshot(std::vector<rdmnet_conn_t>& conns, bool include
   }
 }
 
-bool BrokerCore::NewConnection(etcpal_socket_t new_sock, const EtcPalSockaddr& addr)
+bool BrokerCore::HandleNewConnection(etcpal_socket_t new_sock, const EtcPalSockaddr& addr)
 {
   if (log_->CanLog(ETCPAL_LOG_INFO))
   {
@@ -281,12 +289,12 @@ bool BrokerCore::NewConnection(etcpal_socket_t new_sock, const EtcPalSockaddr& a
   return result;
 }
 
-void BrokerCore::SocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t* data, size_t data_size)
+void BrokerCore::HandleSocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t* data, size_t data_size)
 {
   components_.conn_interface->SocketDataReceived(conn_handle, data, data_size);
 }
 
-void BrokerCore::SocketClosed(rdmnet_conn_t conn_handle, bool graceful)
+void BrokerCore::HandleSocketClosed(rdmnet_conn_t conn_handle, bool graceful)
 {
   components_.conn_interface->SocketError(conn_handle, graceful ? kEtcPalErrConnClosed : kEtcPalErrConnReset);
 }
@@ -310,7 +318,7 @@ bool BrokerCore::ServiceClients()
 }
 
 // Message processing functions
-void BrokerCore::RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage& msg)
+void BrokerCore::HandleRdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage& msg)
 {
   switch (msg.vector)
   {
@@ -343,7 +351,7 @@ void BrokerCore::RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage
   }
 }
 
-void BrokerCore::RdmnetConnDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo& /*disconn_info*/)
+void BrokerCore::HandleRdmnetConnDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo& /*disconn_info*/)
 {
   MarkConnForDestruction(handle);
 }
@@ -504,7 +512,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
   if (RDMNET_UID_IS_DYNAMIC_UID_REQUEST(&rptdata->client_uid))
   {
     BrokerUidManager::AddResult add_result =
-        uid_manager_.AddDynamicUid(handle, updated_data.client_cid, rptdata->client_uid);
+        components_.uids.AddDynamicUid(handle, updated_data.client_cid, rptdata->client_uid);
     switch (add_result)
     {
       case BrokerUidManager::AddResult::kOk:
@@ -522,7 +530,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
   }
   else if (RDMNET_UID_IS_STATIC(&rptdata->client_uid))
   {
-    BrokerUidManager::AddResult add_result = uid_manager_.AddStaticUid(handle, rptdata->client_uid);
+    BrokerUidManager::AddResult add_result = components_.uids.AddStaticUid(handle, rptdata->client_uid);
     switch (add_result)
     {
       case BrokerUidManager::AddResult::kOk:
@@ -555,7 +563,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
       {
         connect_status = kRdmnetConnectCapacityExceeded;
         continue_adding = false;
-        uid_manager_.RemoveUid(rptdata->client_uid);
+        components_.uids.RemoveUid(rptdata->client_uid);
       }
       else
       {
@@ -577,7 +585,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
       {
         connect_status = kRdmnetConnectCapacityExceeded;
         continue_adding = false;
-        uid_manager_.RemoveUid(rptdata->client_uid);
+        components_.uids.RemoveUid(rptdata->client_uid);
       }
       else
       {
@@ -775,7 +783,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
     else
     {
       bool found_dest_client = false;
-      if (uid_manager_.UidToHandle(rptmsg->header.dest_uid, dest_conn))
+      if (components_.uids.UidToHandle(rptmsg->header.dest_uid, dest_conn))
       {
         auto dest_client = clients_.find(dest_conn);
         if (dest_client != clients_.end())
@@ -805,9 +813,10 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
   }
 }
 
-std::set<EtcPalIpAddr> BrokerCore::ConvertMacsToInterfaces(const std::set<rdmnet::BrokerSettings::MacAddress>& macs)
+std::set<EtcPalIpAddr> BrokerCore::CombineMacsAndInterfaces(const std::set<EtcPalIpAddr>& interfaces,
+                                                            const std::set<rdmnet::BrokerSettings::MacAddress>& macs)
 {
-  std::set<EtcPalIpAddr> to_return;
+  std::set<EtcPalIpAddr> to_return = interfaces;
 
   size_t num_netints = etcpal_netint_get_num_interfaces();
   for (const auto& mac : macs)
@@ -907,7 +916,8 @@ bool BrokerCore::StartBrokerServices()
 {
   bool success = true;
 
-  if (settings_.listen_addrs.empty())
+  std::set<EtcPalIpAddr> final_listen_addrs = CombineMacsAndInterfaces(settings_.listen_addrs, settings_.listen_macs);
+  if (final_listen_addrs.empty())
   {
     // Listen on in6addr_any
     EtcPalIpAddr any_addr;
@@ -926,8 +936,8 @@ bool BrokerCore::StartBrokerServices()
   else
   {
     // Listen on a specific set of interfaces supplied by the library user
-    auto addr_iter = settings_.listen_addrs.begin();
-    while (addr_iter != settings_.listen_addrs.end())
+    auto addr_iter = final_listen_addrs.begin();
+    while (addr_iter != final_listen_addrs.end())
     {
       etcpal_socket_t listen_sock = StartListening(*addr_iter, settings_.listen_port);
       if (listen_sock != ETCPAL_SOCKET_INVALID)
@@ -942,7 +952,7 @@ bool BrokerCore::StartBrokerServices()
     }
 
     // Errors on some interfaces are tolerated as long as we have at least one to listen on.
-    success = (!settings_.listen_addrs.empty());
+    success = (!final_listen_addrs.empty());
   }
 
   return success;
@@ -1007,7 +1017,7 @@ void BrokerCore::DestroyMarkedClientSockets()
         if (client->second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
         {
           RPTClient* rptcli = static_cast<RPTClient*>(client->second.get());
-          uid_manager_.RemoveUid(rptcli->uid);
+          components_.uids.RemoveUid(rptcli->uid);
           if (rptcli->client_type == kRPTClientTypeController)
             controllers_.erase(to_destroy);
           else if (rptcli->client_type == kRPTClientTypeDevice)
@@ -1039,22 +1049,22 @@ void BrokerCore::DestroyMarkedClientSockets()
     SendClientsRemoved(entries[0].client_protocol, entries);
 }
 
-void BrokerCore::BrokerRegistered(const std::string& scope, const std::string& requested_service_name,
-                                  const std::string& assigned_service_name)
+void BrokerCore::HandleBrokerRegistered(const std::string& scope, const std::string& requested_service_name,
+                                        const std::string& assigned_service_name)
 {
   service_registered_ = true;
   log_->Info("Broker \"%s\" (now named \"%s\") successfully registered at scope \"%s\"", requested_service_name.c_str(),
              assigned_service_name.c_str(), scope.c_str());
 }
 
-void BrokerCore::BrokerRegisterError(const std::string& scope, const std::string& requested_service_name,
-                                     int platform_specific_error)
+void BrokerCore::HandleBrokerRegisterError(const std::string& scope, const std::string& requested_service_name,
+                                           int platform_specific_error)
 {
   log_->Critical("Broker \"%s\" register error %d at scope \"%s\"", requested_service_name.c_str(),
                  platform_specific_error, scope.c_str());
 }
 
-void BrokerCore::OtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
+void BrokerCore::HandleOtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
 {
   // If the broker is already registered with DNS-SD, the presence of another broker is an error
   // condition. Otherwise, the system is still usable (this broker will not register)
@@ -1085,7 +1095,7 @@ void BrokerCore::OtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
   }
 }
 
-void BrokerCore::OtherBrokerLost(const std::string& scope, const std::string& service_name)
+void BrokerCore::HandleOtherBrokerLost(const std::string& scope, const std::string& service_name)
 {
   log_->Notice("Conflicting broker %s on scope \"%s\" no longer discovered.", service_name.c_str(), scope.c_str());
 }

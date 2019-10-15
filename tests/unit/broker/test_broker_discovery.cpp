@@ -21,20 +21,30 @@
 #include "broker_discovery.h"
 #include "rdmnet_mock/core/discovery.h"
 
+extern "C" {
+etcpal_error_t rdmnetdisc_register_broker_and_set_handle(const RdmnetBrokerRegisterConfig* config,
+                                                         rdmnet_registered_broker_t* handle);
+}
+
 class MockBrokerDiscoveryNotify : public BrokerDiscoveryNotify
 {
-  MOCK_METHOD(void, BrokerRegistered,
+public:
+  MOCK_METHOD(void, HandleBrokerRegistered,
               (const std::string& scope, const std::string& requested_service_name,
                const std::string& assigned_service_name),
               (override));
-  MOCK_METHOD(void, OtherBrokerFound, (const RdmnetBrokerDiscInfo& broker_info), (override));
-  MOCK_METHOD(void, OtherBrokerLost, (const std::string& scope, const std::string& service_name), (override));
-  MOCK_METHOD(void, BrokerRegisterError,
+  MOCK_METHOD(void, HandleOtherBrokerFound, (const RdmnetBrokerDiscInfo& broker_info), (override));
+  MOCK_METHOD(void, HandleOtherBrokerLost, (const std::string& scope, const std::string& service_name), (override));
+  MOCK_METHOD(void, HandleBrokerRegisterError,
               (const std::string& scope, const std::string& requested_service_name, int platform_error), (override));
 };
 
 class TestBrokerDiscovery : public testing::Test
 {
+public:
+  static constexpr rdmnet_registered_broker_t kBrokerRegisterHandle{
+      reinterpret_cast<rdmnet_registered_broker_t>(0xdead)};
+
 protected:
   MockBrokerDiscoveryNotify notify_;
   BrokerDiscoveryManager disc_mgr_;
@@ -43,6 +53,7 @@ protected:
   void SetUp() override
   {
     RDMNET_CORE_DISCOVERY_DO_FOR_ALL_FAKES(RESET_FAKE);
+    rdmnetdisc_register_broker_fake.custom_fake = rdmnetdisc_register_broker_and_set_handle;
 
     disc_mgr_.SetNotify(&notify_);
 
@@ -52,8 +63,68 @@ protected:
     settings_.dns.service_instance_name = "Test Broker Service Instance";
     settings_.scope = "Test Scope";
   }
+
+  void RegisterBroker()
+  {
+    ASSERT_TRUE(disc_mgr_.RegisterBroker(settings_));
+
+    EXPECT_CALL(notify_, HandleBrokerRegistered(settings_.scope, settings_.dns.service_instance_name,
+                                                settings_.dns.service_instance_name));
+    disc_mgr_.LibNotifyBrokerRegistered(kBrokerRegisterHandle, settings_.dns.service_instance_name.c_str());
+
+    EXPECT_EQ(disc_mgr_.scope(), settings_.scope);
+    EXPECT_EQ(disc_mgr_.requested_service_name(), settings_.dns.service_instance_name);
+    EXPECT_EQ(disc_mgr_.assigned_service_name(), settings_.dns.service_instance_name);
+  }
 };
 
+extern "C" etcpal_error_t rdmnetdisc_register_broker_and_set_handle(const RdmnetBrokerRegisterConfig* config,
+                                                                    rdmnet_registered_broker_t* handle)
+{
+  (void)config;
+  *handle = TestBrokerDiscovery::kBrokerRegisterHandle;
+  return kEtcPalErrOk;
+}
+
 TEST_F(TestBrokerDiscovery, RegisterWorksWithNoErrors)
+{
+  RegisterBroker();
+}
+
+TEST_F(TestBrokerDiscovery, SyncRegisterErrorIsHandled)
+{
+  rdmnetdisc_register_broker_fake.custom_fake = nullptr;
+  rdmnetdisc_register_broker_fake.return_val = kEtcPalErrSys;
+  auto result = disc_mgr_.RegisterBroker(settings_);
+
+  EXPECT_FALSE(result.IsOk());
+  EXPECT_EQ(result.code(), kEtcPalErrSys);
+}
+
+TEST_F(TestBrokerDiscovery, AsyncRegisterErrorIsForwarded)
+{
+  ASSERT_TRUE(disc_mgr_.RegisterBroker(settings_));
+
+  int platform_error = 42;
+  EXPECT_CALL(notify_, HandleBrokerRegisterError(settings_.scope, settings_.dns.service_instance_name, platform_error));
+  disc_mgr_.LibNotifyBrokerRegisterError(kBrokerRegisterHandle, platform_error);
+}
+
+TEST_F(TestBrokerDiscovery, ServiceNameChangeIsHandled)
+{
+  constexpr char* kActualServiceName = "A different service name";
+
+  ASSERT_TRUE(disc_mgr_.RegisterBroker(settings_));
+
+  EXPECT_CALL(notify_,
+              HandleBrokerRegistered(settings_.scope, settings_.dns.service_instance_name, kActualServiceName));
+  disc_mgr_.LibNotifyBrokerRegistered(kBrokerRegisterHandle, kActualServiceName);
+
+  EXPECT_EQ(disc_mgr_.scope(), settings_.scope);
+  EXPECT_EQ(disc_mgr_.requested_service_name(), settings_.dns.service_instance_name);
+  EXPECT_EQ(disc_mgr_.assigned_service_name(), kActualServiceName);
+}
+
+TEST_F(TestBrokerDiscovery, BrokerFoundIsForwarded)
 {
 }

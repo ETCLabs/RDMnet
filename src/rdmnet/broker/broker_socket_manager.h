@@ -37,7 +37,7 @@ public:
   /// \param[in] conn_handle The RDMnet connection handle on which data was received.
   /// \param[in] data Pointer to received data buffer.
   /// \param[in] data_size Size of received data buffer.
-  virtual void SocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t* data, size_t data_size) = 0;
+  virtual void HandleSocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t* data, size_t data_size) = 0;
 
   /// \brief A socket was closed remotely.
   ///
@@ -47,7 +47,7 @@ public:
   ///
   /// \param[in] conn_handle The RDMnet connection handle for which the socket was closed.
   /// \param[in] graceful Whether the TCP connection was closed gracefully.
-  virtual void SocketClosed(rdmnet_conn_t conn_handle, bool graceful) = 0;
+  virtual void HandleSocketClosed(rdmnet_conn_t conn_handle, bool graceful) = 0;
 };
 
 class BrokerSocketManager
@@ -64,4 +64,4 @@ public:
 
 std::unique_ptr<BrokerSocketManager> CreateBrokerSocketManager();
 
-#endif  // _BROKER_SOCKET_MANAGER_H_
+#endif  // BROKER_SOCKET_MANAGER_H_

@@ -81,7 +81,7 @@ void ListenThread::Run()
 
       bool keep_socket = false;
       if (notify_)
-        keep_socket = notify_->NewConnection(conn_sock, new_addr);
+        keep_socket = notify_->HandleNewConnection(conn_sock, new_addr);
       if (!keep_socket)
         etcpal_close(conn_sock);
     }

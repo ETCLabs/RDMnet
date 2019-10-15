@@ -292,7 +292,7 @@ void WinBrokerSocketManager::WorkerNotifySocketBad(rdmnet_conn_t conn_handle, bo
   }
 
   if (notify_socket_closed && notify_)
-    notify_->SocketClosed(conn_handle, graceful);
+    notify_->HandleSocketClosed(conn_handle, graceful);
 }
 
 void WinBrokerSocketManager::WorkerNotifyRecvData(rdmnet_conn_t conn_handle, size_t size)
@@ -304,7 +304,7 @@ void WinBrokerSocketManager::WorkerNotifyRecvData(rdmnet_conn_t conn_handle, siz
   {
     if (!sock_data->second->close_requested && notify_)
     {
-      notify_->SocketDataReceived(conn_handle, sock_data->second->recv_buf, size);
+      notify_->HandleSocketDataReceived(conn_handle, sock_data->second->recv_buf, size);
     }
   }
 }

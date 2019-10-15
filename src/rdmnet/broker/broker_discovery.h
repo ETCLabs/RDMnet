@@ -35,15 +35,15 @@ class BrokerDiscoveryNotify
 {
 public:
   /// A broker was registered with the information indicated by broker_info.
-  virtual void BrokerRegistered(const std::string& scope, const std::string& requested_service_name,
-                                const std::string& assigned_service_name) = 0;
+  virtual void HandleBrokerRegistered(const std::string& scope, const std::string& requested_service_name,
+                                      const std::string& assigned_service_name) = 0;
   /// A broker was found at the same scope as the one which was previously registered.
-  virtual void OtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info) = 0;
+  virtual void HandleOtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info) = 0;
   /// A previously-found non-local broker has gone away.
-  virtual void OtherBrokerLost(const std::string& scope, const std::string& service_name) = 0;
+  virtual void HandleOtherBrokerLost(const std::string& scope, const std::string& service_name) = 0;
   /// An error occurred while registering a broker's service instance.
-  virtual void BrokerRegisterError(const std::string& scope, const std::string& requested_service_name,
-                                   int platform_error) = 0;
+  virtual void HandleBrokerRegisterError(const std::string& scope, const std::string& requested_service_name,
+                                         int platform_error) = 0;
 };
 
 class BrokerDiscoveryInterface

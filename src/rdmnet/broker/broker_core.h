@@ -48,7 +48,7 @@ class BrokerComponentNotify : public RdmnetConnNotify,
 
 // A set of components of broker functionality, separated to facilitate testing and dependency
 // injection.
-struct BrokerComponents
+struct BrokerComponents final
 {
   // Manages the interface to the lower-level RDMnet library
   std::unique_ptr<RdmnetConnInterface> conn_interface{std::make_unique<RdmnetConnWrapper>()};
@@ -58,6 +58,10 @@ struct BrokerComponents
   std::unique_ptr<BrokerThreadInterface> threads{std::make_unique<BrokerThreadManager>()};
   // Handles DNS discovery of the broker
   std::unique_ptr<BrokerDiscoveryInterface> disc{std::make_unique<BrokerDiscoveryManager>()};
+  // Handles the Broker's dynamic UID assignment functionality
+  BrokerUidManager uids;
+  // The Broker's RDM responder
+  BrokerResponder responder;
 
   void SetNotify(BrokerComponentNotify* notify)
   {
@@ -68,7 +72,7 @@ struct BrokerComponents
   }
 };
 
-class BrokerCore : public BrokerComponentNotify
+class BrokerCore final : public BrokerComponentNotify
 {
 public:
   BrokerCore();
@@ -89,8 +93,6 @@ public:
   void Shutdown();
   void Tick();
 
-  // Notification messages from the RDMnet core library
-
 private:
   // These are never modified between startup and shutdown, so they don't need to be locked.
   bool started_{false};
@@ -99,7 +101,6 @@ private:
   // Attributes of this broker instance
   rdmnet::BrokerSettings settings_;
   RdmUid my_uid_{};
-  BrokerResponder responder_;  // The Broker's RDM responder
 
   // External (non-owned) components
   rdmnet::BrokerLog* log_{nullptr};        // Enables the broker to log messages
@@ -107,7 +108,6 @@ private:
 
   // Owned components
   BrokerComponents components_;
-  BrokerUidManager uid_manager_;  // Manages the UIDs of connected clients and generates new ones upon request
 
   // The list of connected clients, indexed by the connection handle
   std::map<rdmnet_conn_t, std::shared_ptr<BrokerClient>> clients_;
@@ -121,32 +121,31 @@ private:
 
   std::set<rdmnet_conn_t> clients_to_destroy_;
 
-  std::set<EtcPalIpAddr> ConvertMacsToInterfaces(const std::set<rdmnet::BrokerSettings::MacAddress>& macs);
+  static std::set<EtcPalIpAddr> CombineMacsAndInterfaces(const std::set<EtcPalIpAddr>& interfaces,
+                                                         const std::set<rdmnet::BrokerSettings::MacAddress>& macs);
   etcpal_socket_t StartListening(const EtcPalIpAddr& ip, uint16_t& port);
   bool StartBrokerServices();
   void StopBrokerServices();
 
   // RdmnetCoreLibraryNotify messages
-  virtual void RdmnetConnDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo& disconn_info) override;
-  virtual void RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage& msg) override;
+  virtual void HandleRdmnetConnDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo& disconn_info) override;
+  virtual void HandleRdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage& msg) override;
 
-  // rdmnet::BrokerSocketManagerNotify messages
-  virtual void SocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t* data, size_t data_size) override;
-  virtual void SocketClosed(rdmnet_conn_t conn_handle, bool graceful) override;
+  // BrokerSocketNotify messages
+  virtual void HandleSocketDataReceived(rdmnet_conn_t conn_handle, const uint8_t* data, size_t data_size) override;
+  virtual void HandleSocketClosed(rdmnet_conn_t conn_handle, bool graceful) override;
 
-  // ListenThreadNotify messages
-  virtual bool NewConnection(etcpal_socket_t new_sock, const EtcPalSockaddr& addr) override;
-
-  // ClientServiceThreadNotify messages
+  // BrokerThreadNotify messages
+  virtual bool HandleNewConnection(etcpal_socket_t new_sock, const EtcPalSockaddr& addr) override;
   virtual bool ServiceClients() override;
 
   // BrokerDiscoveryManagerNotify messages
-  virtual void BrokerRegistered(const std::string& scope, const std::string& requested_service_name,
-                                const std::string& assigned_service_name) override;
-  virtual void OtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info) override;
-  virtual void OtherBrokerLost(const std::string& scope, const std::string& service_name) override;
-  virtual void BrokerRegisterError(const std::string& scope, const std::string& requested_service_name,
-                                   int platform_error) override;
+  virtual void HandleBrokerRegistered(const std::string& scope, const std::string& requested_service_name,
+                                      const std::string& assigned_service_name) override;
+  virtual void HandleOtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info) override;
+  virtual void HandleOtherBrokerLost(const std::string& scope, const std::string& service_name) override;
+  virtual void HandleBrokerRegisterError(const std::string& scope, const std::string& requested_service_name,
+                                         int platform_error) override;
 
   void GetConnSnapshot(std::vector<rdmnet_conn_t>& conns, bool include_devices, bool include_controllers,
                        bool include_unknown, uint16_t manufacturer_filter = 0xffff);

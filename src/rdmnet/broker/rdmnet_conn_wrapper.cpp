@@ -101,7 +101,7 @@ void RdmnetConnWrapper::LibNotifyMsgReceived(rdmnet_conn_t handle, const RdmnetM
 {
   if (notify_ && msg)
   {
-    notify_->RdmnetConnMsgReceived(handle, *msg);
+    notify_->HandleRdmnetConnMsgReceived(handle, *msg);
   }
 }
 
@@ -109,6 +109,6 @@ void RdmnetConnWrapper::LibNotifyDisconnected(rdmnet_conn_t handle, const Rdmnet
 {
   if (notify_ && disconn_info)
   {
-    notify_->RdmnetConnDisconnected(handle, *disconn_info);
+    notify_->HandleRdmnetConnDisconnected(handle, *disconn_info);
   }
 }
