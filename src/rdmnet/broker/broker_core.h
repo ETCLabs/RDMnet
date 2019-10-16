@@ -146,6 +146,7 @@ private:
   virtual void HandleOtherBrokerLost(const std::string& scope, const std::string& service_name) override;
   virtual void HandleBrokerRegisterError(const std::string& scope, const std::string& requested_service_name,
                                          int platform_error) override;
+  virtual void HandleScopeMonitorError(const std::string& scope, int platform_error) override;
 
   void GetConnSnapshot(std::vector<rdmnet_conn_t>& conns, bool include_devices, bool include_controllers,
                        bool include_unknown, uint16_t manufacturer_filter = 0xffff);

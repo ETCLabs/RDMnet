@@ -16,9 +16,12 @@
  * This file is a part of RDMnet. For more information, go to:
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
-#include "gmock/gmock.h"
-#include "fff.h"
+
 #include "broker_discovery.h"
+
+#include <cstring>
+#include "gmock/gmock.h"
+#include "rdmnet/core/util.h"
 #include "rdmnet_mock/core/discovery.h"
 
 extern "C" {
@@ -37,18 +40,20 @@ public:
   MOCK_METHOD(void, HandleOtherBrokerLost, (const std::string& scope, const std::string& service_name), (override));
   MOCK_METHOD(void, HandleBrokerRegisterError,
               (const std::string& scope, const std::string& requested_service_name, int platform_error), (override));
+  MOCK_METHOD(void, HandleScopeMonitorError, (const std::string& scope, int platform_error), (override));
 };
 
 class TestBrokerDiscovery : public testing::Test
 {
 public:
-  static constexpr rdmnet_registered_broker_t kBrokerRegisterHandle{
-      reinterpret_cast<rdmnet_registered_broker_t>(0xdead)};
+  static TestBrokerDiscovery* instance;
+
+  static const rdmnet_registered_broker_t kBrokerRegisterHandle;
+  rdmnet::BrokerSettings settings_;
 
 protected:
-  MockBrokerDiscoveryNotify notify_;
+  testing::StrictMock<MockBrokerDiscoveryNotify> notify_;
   BrokerDiscoveryManager disc_mgr_;
-  rdmnet::BrokerSettings settings_;
 
   void SetUp() override
   {
@@ -62,7 +67,15 @@ protected:
     settings_.dns.model = "Test Broker";
     settings_.dns.service_instance_name = "Test Broker Service Instance";
     settings_.scope = "Test Scope";
+
+    EtcPalIpAddr addr;
+    ETCPAL_IP_SET_V4_ADDRESS(&addr, 0x0a650203);
+    settings_.listen_addrs.insert(addr);
+
+    instance = this;
   }
+
+  void TearDown() override { instance = nullptr; }
 
   void RegisterBroker()
   {
@@ -78,10 +91,33 @@ protected:
   }
 };
 
+const rdmnet_registered_broker_t TestBrokerDiscovery::kBrokerRegisterHandle =
+    reinterpret_cast<rdmnet_registered_broker_t>(0xdead);
+TestBrokerDiscovery* TestBrokerDiscovery::instance = nullptr;
+
 extern "C" etcpal_error_t rdmnetdisc_register_broker_and_set_handle(const RdmnetBrokerRegisterConfig* config,
                                                                     rdmnet_registered_broker_t* handle)
 {
   (void)config;
+
+  TestBrokerDiscovery* test = TestBrokerDiscovery::instance;
+
+  // Make sure we were registered with the correct settings
+  EXPECT_EQ(config->my_info.cid, test->settings_.cid);
+  EXPECT_EQ(config->my_info.service_name, test->settings_.dns.service_instance_name);
+  EXPECT_EQ(config->my_info.port, test->settings_.listen_port);
+  EXPECT_EQ(config->my_info.scope, test->settings_.scope);
+  EXPECT_EQ(config->my_info.model, test->settings_.dns.model);
+  EXPECT_EQ(config->my_info.manufacturer, test->settings_.dns.manufacturer);
+
+  auto listen_addr = config->my_info.listen_addr_list;
+  for (const auto& addr : test->settings_.listen_addrs)
+  {
+    EXPECT_NE(listen_addr, nullptr);
+    EXPECT_EQ(listen_addr->addr, addr);
+    listen_addr = listen_addr->next;
+  }
+
   *handle = TestBrokerDiscovery::kBrokerRegisterHandle;
   return kEtcPalErrOk;
 }
@@ -125,6 +161,74 @@ TEST_F(TestBrokerDiscovery, ServiceNameChangeIsHandled)
   EXPECT_EQ(disc_mgr_.assigned_service_name(), kActualServiceName);
 }
 
+bool operator==(const RdmnetBrokerDiscInfo& a, const RdmnetBrokerDiscInfo& b)
+{
+  if ((a.cid == b.cid) && (std::strncmp(a.service_name, b.service_name, E133_SERVICE_NAME_STRING_PADDED_LENGTH) == 0) &&
+      (a.port == b.port) && (std::strncmp(a.scope, b.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0) &&
+      (std::strncmp(a.model, b.model, E133_MODEL_STRING_PADDED_LENGTH) == 0) &&
+      (std::strncmp(a.manufacturer, b.manufacturer, E133_MANUFACTURER_STRING_PADDED_LENGTH) == 0))
+  {
+    // Check the BrokerListenAddrs
+    BrokerListenAddr* a_addr = a.listen_addr_list;
+    BrokerListenAddr* b_addr = b.listen_addr_list;
+    while (a_addr && b_addr)
+    {
+      if (!(a_addr->addr == b_addr->addr) || (a_addr->next && !b_addr->next) || (!b_addr->next && a_addr->next))
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
 TEST_F(TestBrokerDiscovery, BrokerFoundIsForwarded)
 {
+  RegisterBroker();
+
+  RdmnetBrokerDiscInfo found_info{};
+  rdmnet_safe_strncpy(found_info.scope, settings_.scope.c_str(), E133_SCOPE_STRING_PADDED_LENGTH);
+  rdmnet_safe_strncpy(found_info.service_name, "Other Broker Service Name", E133_SERVICE_NAME_STRING_PADDED_LENGTH);
+
+  // TODO replace this with a proper matcher
+  EXPECT_CALL(notify_, HandleOtherBrokerFound(found_info));
+  disc_mgr_.LibNotifyBrokerFound(kBrokerRegisterHandle, &found_info);
+}
+
+TEST_F(TestBrokerDiscovery, BrokerLostIsForwarded)
+{
+  RegisterBroker();
+
+  EXPECT_CALL(notify_, HandleOtherBrokerLost(settings_.scope, "Other Broker Service Name"));
+  disc_mgr_.LibNotifyBrokerLost(kBrokerRegisterHandle, settings_.scope.c_str(), "Other Broker Service Name");
+}
+
+TEST_F(TestBrokerDiscovery, ScopeMonitorErrorIsForwarded)
+{
+  RegisterBroker();
+
+  int platform_error = 42;
+  EXPECT_CALL(notify_, HandleScopeMonitorError(settings_.scope, platform_error));
+  disc_mgr_.LibNotifyScopeMonitorError(kBrokerRegisterHandle, settings_.scope.c_str(), platform_error);
+}
+
+// Using a strict mock - test will fail if any of these invalid calls are forwarded
+TEST_F(TestBrokerDiscovery, InvalidNotificationsAreNotForwarded)
+{
+  RegisterBroker();
+  const rdmnet_registered_broker_t kOtherBrokerHandle = reinterpret_cast<rdmnet_registered_broker_t>(0xbeef);
+  RdmnetBrokerDiscInfo other_broker_info{};
+
+  disc_mgr_.LibNotifyBrokerRegistered(kOtherBrokerHandle, settings_.scope.c_str());
+  disc_mgr_.LibNotifyBrokerRegistered(kBrokerRegisterHandle, nullptr);
+  disc_mgr_.LibNotifyBrokerRegisterError(kOtherBrokerHandle, 42);
+  disc_mgr_.LibNotifyBrokerFound(kOtherBrokerHandle, &other_broker_info);
+  disc_mgr_.LibNotifyBrokerFound(kBrokerRegisterHandle, nullptr);
+  disc_mgr_.LibNotifyBrokerLost(kOtherBrokerHandle, settings_.scope.c_str(),
+                                settings_.dns.service_instance_name.c_str());
+  disc_mgr_.LibNotifyBrokerLost(kBrokerRegisterHandle, nullptr, settings_.dns.service_instance_name.c_str());
+  disc_mgr_.LibNotifyBrokerLost(kBrokerRegisterHandle, settings_.scope.c_str(), nullptr);
+  disc_mgr_.LibNotifyScopeMonitorError(kOtherBrokerHandle, settings_.scope.c_str(), 42);
+  disc_mgr_.LibNotifyScopeMonitorError(kBrokerRegisterHandle, nullptr, 42);
 }

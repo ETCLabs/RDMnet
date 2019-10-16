@@ -135,7 +135,8 @@ void BrokerDiscoveryManager::LibNotifyBrokerRegistered(rdmnet_registered_broker_
   {
     assigned_service_name_ = assigned_service_name;
     if (notify_)
-      notify_->HandleBrokerRegistered(cur_config_.my_info.scope, cur_config_.my_info.service_name, assigned_service_name_);
+      notify_->HandleBrokerRegistered(cur_config_.my_info.scope, cur_config_.my_info.service_name,
+                                      assigned_service_name_);
   }
 }
 
@@ -155,11 +156,13 @@ void BrokerDiscoveryManager::LibNotifyBrokerFound(rdmnet_registered_broker_t han
 void BrokerDiscoveryManager::LibNotifyBrokerLost(rdmnet_registered_broker_t handle, const char* scope,
                                                  const char* service_name)
 {
-  if (handle == handle_ && notify_ && service_name)
+  if (handle == handle_ && notify_ && scope && service_name)
     notify_->HandleOtherBrokerLost(scope, service_name);
 }
 
-void BrokerDiscoveryManager::LibNotifyScopeMonitorError(rdmnet_registered_broker_t /*handle*/, const char* /*scope*/,
-                                                        int /*platform_error*/)
+void BrokerDiscoveryManager::LibNotifyScopeMonitorError(rdmnet_registered_broker_t handle, const char* scope,
+                                                        int platform_error)
 {
+  if (handle == handle_ && notify_ && scope)
+    notify_->HandleScopeMonitorError(scope, platform_error);
 }

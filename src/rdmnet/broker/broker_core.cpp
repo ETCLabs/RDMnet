@@ -1099,3 +1099,7 @@ void BrokerCore::HandleOtherBrokerLost(const std::string& scope, const std::stri
 {
   log_->Notice("Conflicting broker %s on scope \"%s\" no longer discovered.", service_name.c_str(), scope.c_str());
 }
+
+void BrokerCore::HandleScopeMonitorError(const std::string& scope, int platform_error)
+{
+}

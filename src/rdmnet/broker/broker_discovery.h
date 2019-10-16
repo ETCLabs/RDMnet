@@ -44,6 +44,8 @@ public:
   /// An error occurred while registering a broker's service instance.
   virtual void HandleBrokerRegisterError(const std::string& scope, const std::string& requested_service_name,
                                          int platform_error) = 0;
+  /// An error occurred while monitoring a given scope for other brokers.
+  virtual void HandleScopeMonitorError(const std::string& scope, int platform_error) = 0;
 };
 
 class BrokerDiscoveryInterface
