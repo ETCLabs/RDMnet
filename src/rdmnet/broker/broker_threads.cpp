@@ -43,6 +43,7 @@ bool ListenThread::Start()
   EtcPalThreadParams tparams = {ETCPAL_THREAD_DEFAULT_PRIORITY, ETCPAL_THREAD_DEFAULT_STACK, "ListenThread", NULL};
   if (!etcpal_thread_create(&handle_, &tparams, listen_thread_fn, this))
   {
+    terminated_ = true;
     etcpal_close(socket_);
     socket_ = ETCPAL_SOCKET_INVALID;
     if (log_)
@@ -59,36 +60,41 @@ void ListenThread::Run()
   // we'll keep accepting as long as the listen socket is valid.
   while (!terminated_)
   {
-    if (socket_ != ETCPAL_SOCKET_INVALID)
+    ReadSocket();
+  }
+}
+
+void ListenThread::ReadSocket()
+{
+  if (socket_ != ETCPAL_SOCKET_INVALID)
+  {
+    etcpal_socket_t conn_sock;
+    EtcPalSockaddr new_addr;
+
+    etcpal_error_t err = etcpal_accept(socket_, &new_addr, &conn_sock);
+
+    if (err != kEtcPalErrOk)
     {
-      etcpal_socket_t conn_sock;
-      EtcPalSockaddr new_addr;
-
-      etcpal_error_t err = etcpal_accept(socket_, &new_addr, &conn_sock);
-
-      if (err != kEtcPalErrOk)
+      // If terminated_ is set, the socket has been closed because the thread is being stopped
+      // externally. Otherwise, it's a real error.
+      if (!terminated_)
       {
-        // If terminated_ is set, the socket has been closed because the thread is being stopped
-        // externally. Otherwise, it's a real error.
-        if (!terminated_)
-        {
-          if (log_)
-            log_->Critical("ListenThread: Accept failed with error: %s.", etcpal_strerror(err));
-          terminated_ = true;
-        }
-        return;
+        if (log_)
+          log_->Critical("ListenThread: Accept failed with error: %s.", etcpal_strerror(err));
+        terminated_ = true;
       }
+      return;
+    }
 
-      bool keep_socket = false;
-      if (notify_)
-        keep_socket = notify_->HandleNewConnection(conn_sock, new_addr);
-      if (!keep_socket)
-        etcpal_close(conn_sock);
-    }
-    else
-    {
-      etcpal_thread_sleep(10);
-    }
+    bool keep_socket = false;
+    if (notify_)
+      keep_socket = notify_->HandleNewConnection(conn_sock, new_addr);
+    if (!keep_socket)
+      etcpal_close(conn_sock);
+  }
+  else
+  {
+    etcpal_thread_sleep(10);
   }
 }
 

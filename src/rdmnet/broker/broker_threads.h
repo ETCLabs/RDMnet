@@ -71,6 +71,8 @@ public:
   virtual bool Start() = 0;
   virtual void Run() = 0;
 
+  bool terminated() const { return terminated_; }
+
 protected:
   etcpal_thread_t handle_{};
   BrokerThreadNotify* notify_{nullptr};
@@ -88,6 +90,8 @@ public:
 
   bool Start() override;
   void Run() override;
+
+  void ReadSocket();
 
 private:
   etcpal_socket_t socket_{ETCPAL_SOCKET_INVALID};
@@ -116,6 +120,8 @@ public:
   bool AddClientServiceThread() override;
 
   void StopThreads() override;
+
+  std::vector<std::unique_ptr<BrokerThread>>& threads();
 
 private:
   BrokerThreadNotify* notify_{nullptr};

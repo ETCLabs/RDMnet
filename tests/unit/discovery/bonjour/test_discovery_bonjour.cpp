@@ -93,7 +93,7 @@ protected:
     RESET_FAKE(monitorcb_broker_lost);
     RESET_FAKE(monitorcb_scope_monitor_error);
 
-    ETCPAL_SOCKET_DO_FOR_ALL_FAKES(RESET_FAKE);
+    etcpal_socket_reset_all_fakes();
 
     FFF_RESET_HISTORY();
 
