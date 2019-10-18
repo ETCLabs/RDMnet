@@ -1294,17 +1294,61 @@ etcpal_error_t process_get_search_domain(RdmPdSearchDomain* search_domain, rdmre
 etcpal_error_t process_set_search_domain(const RdmPdSearchDomain* search_domain, rdmresp_response_type_t* response_type,
                                          rdmpd_nack_reason_t* nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  assert(search_domain);
+  assert(response_type);
+  assert(nack_reason);
+
+  strncpy(device_responder_state.search_domain, search_domain->string, E133_DOMAIN_STRING_PADDED_LENGTH);
+
+  (*response_type) = kRdmRespRtAck;
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t process_get_tcp_comms_status(size_t overflow_index, RdmPdTcpCommsEntry* entry,
                                             rdmresp_response_type_t* response_type, rdmpd_nack_reason_t* nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  assert(entry);
+  assert(response_type);
+  assert(nack_reason);
+
+  rdmnet_safe_strncpy(entry->scope_string.string, device_responder_state.scope_config.scope, RDMPD_MAX_SCOPE_STR_LEN);
+
+  if (device_responder_state.connected)
+  {
+    entry->broker_addr = device_responder_state.cur_broker_addr;
+  }
+  else
+  {
+    entry->broker_addr.port = 0;
+    entry->broker_addr.ip.type = kEtcPalIpTypeInvalid;
+  }
+
+  entry->unhealthy_tcp_events = device_responder_state.tcp_unhealthy_counter;
+
+  (*response_type) = kRdmRespRtAck;
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t process_set_tcp_comms_status(const RdmPdScopeString* scope, rdmresp_response_type_t* response_type,
                                             rdmpd_nack_reason_t* nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  assert(scope);
+  assert(response_type);
+  assert(nack_reason);
+
+  if (strncmp(scope->string, device_responder_state.scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
+  {
+    /* Same scope as current */
+    device_responder_state.tcp_unhealthy_counter = 0;
+    (*response_type) = kRdmRespRtAck;
+  }
+  else
+  {
+    (*response_type) = kRdmRespRtNackReason;
+    (*nack_reason) = kRdmPdNrUnknownScope;
+  }
+
+  return kEtcPalErrOk;
 }
