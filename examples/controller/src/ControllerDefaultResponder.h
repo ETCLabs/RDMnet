@@ -131,11 +131,11 @@ private:
   class ScopeMap
   {
   public:
-    bool FindByScope(std::string scope, ScopeEntry& entry) const;
-    bool FindBySlot(uint16_t slot, ScopeEntry& entry) const;
+    bool Find(std::string scope, ScopeEntry& entry) const;
+    bool Find(uint16_t slot, ScopeEntry& entry) const;
 
-    bool RemoveByScope(std::string scope);
-    bool RemoveBySlot(uint16_t slot);
+    bool Remove(std::string scope);
+    bool Remove(uint16_t slot);
 
     void Set(const ScopeEntry& entry);
 

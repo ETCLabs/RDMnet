@@ -462,7 +462,7 @@ etcpal_error_t ControllerDefaultResponder::ProcessCommand(const std::string& sco
   etcpal_error_t result;
   ScopeEntry entry;
 
-  if (scopes_.FindByScope(scope, entry))
+  if (scopes_.Find(scope, entry))
   {
     rdm_responder_state_.uid = entry.my_uid;
     result = rdmresp_process_command(&rdm_responder_state_, &cmd, &resp, &presp_type);
@@ -576,7 +576,7 @@ etcpal_error_t ControllerDefaultResponder::ProcessGetComponentScope(uint16_t slo
   if (slot != 0)
   {
     ScopeEntry entry;
-    if (scopes_.FindBySlot(slot, entry))
+    if (scopes_.Find(slot, entry))
     {
       component_scope.scope_slot = slot;
       rdmnet_safe_strncpy(component_scope.scope_string.string, entry.scope_string.c_str(), RDMPD_MAX_SCOPE_STR_LEN);
@@ -614,7 +614,7 @@ etcpal_error_t ControllerDefaultResponder::ProcessSetComponentScope(const RdmPdC
     // TO DO: Find a way to notify that scope has changed (if it has) (along with other property sets)
     if (strlen(component_scope.scope_string.string) == 0)
     {
-      scopes_.RemoveBySlot(component_scope.scope_slot);
+      scopes_.Remove(component_scope.scope_slot);
     }
     else
     {
@@ -625,7 +625,7 @@ etcpal_error_t ControllerDefaultResponder::ProcessSetComponentScope(const RdmPdC
       entry.static_broker.addr.ip.type = kEtcPalIpTypeInvalid;
       memset(&entry.my_uid, 0, sizeof(RdmUid));
 
-      scopes_.FindBySlot(component_scope.scope_slot, entry);  // Same code should follow regardless of if found.
+      scopes_.Find(component_scope.scope_slot, entry);  // Same code should follow regardless of if found.
       entry.scope_string.assign(component_scope.scope_string.string, RDMPD_MAX_SCOPE_STR_LEN);
       entry.scope_slot = component_scope.scope_slot;
       bool old_static_broker_valid = entry.static_broker.valid;
@@ -713,7 +713,7 @@ etcpal_error_t ControllerDefaultResponder::ProcessSetTcpCommsStatus(const RdmPdS
 
   ScopeEntry entry;
 
-  if (scopes_.FindByScope(scope.string, entry))
+  if (scopes_.Find(scope.string, entry))
   {
     entry.unhealthy_tcp_events = 0;
     scopes_.Set(entry);
@@ -808,7 +808,7 @@ bool ControllerDefaultResponder::GetComponentScope(uint16_t slot, std::vector<Rd
     etcpal::ReadGuard prop_read(prop_lock_);
     ScopeEntry entry;
 
-    if (scopes_.FindBySlot(slot, entry))
+    if (scopes_.Find(slot, entry))
     {
       RdmParamData resp_data;
 
@@ -1025,7 +1025,7 @@ void ControllerDefaultResponder::AddScope(const std::string& new_scope, StaticBr
 void ControllerDefaultResponder::RemoveScope(const std::string& scope_to_remove)
 {
   etcpal::WriteGuard prop_write(prop_lock_);
-  scopes_.RemoveByScope(scope_to_remove);
+  scopes_.Remove(scope_to_remove);
 }
 
 void ControllerDefaultResponder::UpdateScopeConnectionStatus(const std::string& scope, bool connected,
@@ -1034,7 +1034,7 @@ void ControllerDefaultResponder::UpdateScopeConnectionStatus(const std::string& 
 {
   etcpal::WriteGuard prop_write(prop_lock_);
   ScopeEntry entry;
-  if (scopes_.FindByScope(scope, entry))
+  if (scopes_.Find(scope, entry))
   {
     entry.connected = connected;
     if (connected)
@@ -1051,7 +1051,7 @@ void ControllerDefaultResponder::IncrementTcpUnhealthyCounter(const std::string&
 {
   etcpal::WriteGuard prop_write(prop_lock_);
   ScopeEntry entry;
-  if (scopes_.FindByScope(scope, entry))
+  if (scopes_.Find(scope, entry))
   {
     ++entry.unhealthy_tcp_events;
     scopes_.Set(entry);
@@ -1062,14 +1062,14 @@ void ControllerDefaultResponder::ResetTcpUnhealthyCounter(const std::string& sco
 {
   etcpal::WriteGuard prop_write(prop_lock_);
   ScopeEntry entry;
-  if (scopes_.FindByScope(scope, entry))
+  if (scopes_.Find(scope, entry))
   {
     entry.unhealthy_tcp_events = 0;
     scopes_.Set(entry);
   }
 }
 
-bool ControllerDefaultResponder::ScopeMap::FindByScope(std::string scope, ScopeEntry& entry) const
+bool ControllerDefaultResponder::ScopeMap::Find(std::string scope, ScopeEntry& entry) const
 {
   auto iter = string_map_.find(scope);
   if (iter != string_map_.end())
@@ -1080,7 +1080,7 @@ bool ControllerDefaultResponder::ScopeMap::FindByScope(std::string scope, ScopeE
   return false;
 }
 
-bool ControllerDefaultResponder::ScopeMap::FindBySlot(uint16_t slot, ScopeEntry& entry) const
+bool ControllerDefaultResponder::ScopeMap::Find(uint16_t slot, ScopeEntry& entry) const
 {
   auto iter = slot_map_.find(slot);
   if (iter != slot_map_.end())
@@ -1091,7 +1091,7 @@ bool ControllerDefaultResponder::ScopeMap::FindBySlot(uint16_t slot, ScopeEntry&
   return false;
 }
 
-bool ControllerDefaultResponder::ScopeMap::RemoveByScope(std::string scope)
+bool ControllerDefaultResponder::ScopeMap::Remove(std::string scope)
 {
   auto string_map_iter = string_map_.find(scope);
   if (string_map_iter != string_map_.end())
@@ -1108,7 +1108,7 @@ bool ControllerDefaultResponder::ScopeMap::RemoveByScope(std::string scope)
   return false;
 }
 
-bool ControllerDefaultResponder::ScopeMap::RemoveBySlot(uint16_t slot)
+bool ControllerDefaultResponder::ScopeMap::Remove(uint16_t slot)
 {
   auto slot_map_iter = slot_map_.find(slot);
   if (slot_map_iter != slot_map_.end())
