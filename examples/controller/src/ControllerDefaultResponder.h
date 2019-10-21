@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#include "etcpal/lock.h"
+#include "etcpal/cpp/lock.h"
 #include "rdm/responder.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/version.h"
@@ -52,8 +52,7 @@ constexpr char kMySoftwareVersionLabel[] = RDMNET_VERSION_STRING;
 class ControllerDefaultResponder
 {
 public:
-  ControllerDefaultResponder() { etcpal_rwlock_create(&prop_lock_); }
-  virtual ~ControllerDefaultResponder() { etcpal_rwlock_destroy(&prop_lock_); }
+  virtual ~ControllerDefaultResponder() = default;
 
   bool Get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len, std::vector<RdmParamData>& resp_data_list,
            uint16_t& nack_reason);
@@ -89,7 +88,7 @@ public:
   void ResetTcpUnhealthyCounter(const std::string& scope);
 
 private:
-  mutable etcpal_rwlock_t prop_lock_;
+  mutable etcpal::RwLock prop_lock_;
 
   // Property data
   const bool identifying_{false};

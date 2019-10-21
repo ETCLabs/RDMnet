@@ -355,7 +355,7 @@ void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem* broker_item, const 
     if (!is_rpt_client_entry(&entry))
       continue;
 
-    bool is_me = (0 == ETCPAL_UUID_CMP(&entry.client_cid, &my_cid_));
+    bool is_me = (entry.client_cid == my_cid_);
     RDMnetClientItem* newRDMnetClientItem = new RDMnetClientItem(entry, is_me);
     bool itemAlreadyAdded = false;
 
@@ -834,9 +834,6 @@ RDMnetNetworkModel* RDMnetNetworkModel::makeRDMnetNetworkModel(RDMnetLibInterfac
 {
   RDMnetNetworkModel* model = new RDMnetNetworkModel(library, log);
 
-  etcpal_rwlock_create(&model->conn_lock_);
-
-  etcpal_generate_v4_uuid(&model->my_cid_);
   model->rdmnet_->Startup(model->my_cid_, model);
 
   // Initialize GUI-supported PID information
@@ -1073,7 +1070,6 @@ void RDMnetNetworkModel::Shutdown()
   }
 
   rdmnet_->Shutdown();
-  etcpal_rwlock_destroy(&conn_lock_);
 
   rdmnet_ = nullptr;
   log_ = nullptr;

@@ -49,21 +49,11 @@ static void log_thread_fn(void* arg)
 
 rdmnet::BrokerLog::BrokerLog(DispatchPolicy dispatch_policy) : dispatch_policy_(dispatch_policy), keep_running_(false)
 {
-  if (dispatch_policy_ == DispatchPolicy::kQueued)
-  {
-    etcpal_signal_create(&signal_);
-    etcpal_mutex_create(&lock_);
-  }
 }
 
 rdmnet::BrokerLog::~BrokerLog()
 {
   Shutdown();
-  if (dispatch_policy_ == DispatchPolicy::kQueued)
-  {
-    etcpal_mutex_destroy(&lock_);
-    etcpal_signal_destroy(&signal_);
-  }
 }
 
 bool rdmnet::BrokerLog::Startup(int log_mask)
@@ -105,7 +95,7 @@ void rdmnet::BrokerLog::Shutdown()
     if (keep_running_)
     {
       keep_running_ = false;
-      etcpal_signal_post(&signal_);
+      signal_.Notify();
       etcpal_thread_join(&thread_);
     }
   }
@@ -195,7 +185,7 @@ void rdmnet::BrokerLog::LogFromCallback(const std::string& str)
       etcpal::MutexGuard guard(lock_);
       msg_q_.push(str);
     }
-    etcpal_signal_post(&signal_);
+    signal_.Notify();
   }
 }
 
@@ -203,7 +193,7 @@ void rdmnet::BrokerLog::LogThreadRun()
 {
   while (keep_running_)
   {
-    etcpal_signal_wait(&signal_);
+    signal_.Wait();
     if (keep_running_)
     {
       std::vector<std::string> to_log;

@@ -279,7 +279,7 @@ void process_target_state(LlrpTarget* target)
         if (send_res != kEtcPalErrOk && etcpal_can_log(rdmnet_log_params, ETCPAL_LOG_WARNING))
         {
           char cid_str[ETCPAL_UUID_STRING_BYTES];
-          etcpal_uuid_to_string(cid_str, &header.dest_cid);
+          etcpal_uuid_to_string(&header.dest_cid, cid_str);
           etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
                      RDMNET_LOG_MSG("Error sending probe reply to manager CID %s on interface index %u"), cid_str,
                      netint->id.index);
@@ -402,7 +402,7 @@ void target_data_received(const uint8_t* data, size_t data_size, const LlrpNetin
     if (!target_found && etcpal_can_log(rdmnet_log_params, ETCPAL_LOG_DEBUG))
     {
       char cid_str[ETCPAL_UUID_STRING_BYTES];
-      etcpal_uuid_to_string(cid_str, &keys.cid);
+      etcpal_uuid_to_string(&keys.cid, cid_str);
       etcpal_log(rdmnet_log_params, ETCPAL_LOG_DEBUG,
                  RDMNET_LOG_MSG("Ignoring LLRP message addressed to unknown LLRP Target %s"), cid_str);
     }

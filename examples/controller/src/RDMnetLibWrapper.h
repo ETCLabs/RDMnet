@@ -50,7 +50,7 @@ class RDMnetLibWrapper : public RDMnetLibInterface, public RDMnetLibNotifyIntern
 public:
   RDMnetLibWrapper(ControllerLog* log);
 
-  bool Startup(const EtcPalUuid& cid, RDMnetLibNotify* notify) override;
+  bool Startup(const etcpal::Uuid& cid, RDMnetLibNotify* notify) override;
   void Shutdown() override;
 
   rdmnet_client_scope_t AddScope(const std::string& scope,
@@ -82,7 +82,7 @@ protected:
   virtual void LlrpRdmCommandReceived(rdmnet_controller_t handle, const LlrpRemoteRdmCommand* cmd) override;
 
 private:
-  EtcPalUuid my_cid_;
+  etcpal::Uuid my_cid_;
 
   bool running_{false};
   rdmnet_controller_t controller_handle_{nullptr};

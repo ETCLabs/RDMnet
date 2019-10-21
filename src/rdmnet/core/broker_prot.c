@@ -223,7 +223,7 @@ etcpal_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMs
     cur_ptr += 2;
     etcpal_pack_32b(cur_ptr, rpt_data->client_uid.id);
     cur_ptr += 4;
-    *cur_ptr++ = rpt_data->client_type;
+    *cur_ptr++ = (uint8_t)(rpt_data->client_type);
     memcpy(cur_ptr, rpt_data->binding_cid.data, ETCPAL_UUID_BYTES);
     cur_ptr += ETCPAL_UUID_BYTES;
     send_res = etcpal_send(conn->sock, buf, RPT_CLIENT_ENTRY_DATA_SIZE, 0);
@@ -279,7 +279,7 @@ size_t pack_connect_reply(uint8_t* buf, size_t buflen, const EtcPalUuid* local_c
   cur_ptr += data_size;
 
   /* Pack the Connect Reply data fields */
-  etcpal_pack_16b(cur_ptr, data->connect_status);
+  etcpal_pack_16b(cur_ptr, (uint16_t)(data->connect_status));
   cur_ptr += 2;
   etcpal_pack_16b(cur_ptr, data->e133_version);
   cur_ptr += 2;
@@ -329,7 +329,7 @@ etcpal_error_t send_connect_reply(rdmnet_conn_t handle, const EtcPalUuid* local_
 
   // Pack and send the Connect Reply data fields
   uint8_t* cur_ptr = buf;
-  etcpal_pack_16b(cur_ptr, data->connect_status);
+  etcpal_pack_16b(cur_ptr, (uint16_t)(data->connect_status));
   cur_ptr += 2;
   etcpal_pack_16b(cur_ptr, data->e133_version);
   cur_ptr += 2;
@@ -481,7 +481,7 @@ size_t pack_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid
       cur_ptr += 2;
       etcpal_pack_32b(cur_ptr, rpt_data->client_uid.id);
       cur_ptr += 4;
-      *cur_ptr++ = rpt_data->client_type;
+      *cur_ptr++ = (uint8_t)(rpt_data->client_type);
       memcpy(cur_ptr, rpt_data->binding_cid.data, ETCPAL_UUID_BYTES);
       cur_ptr += ETCPAL_UUID_BYTES;
     }
@@ -706,7 +706,7 @@ etcpal_error_t send_disconnect(RdmnetConnection* conn, const DisconnectMsg* data
   if (res != kEtcPalErrOk)
     return res;
 
-  etcpal_pack_16b(buf, data->disconnect_reason);
+  etcpal_pack_16b(buf, (uint16_t)(data->disconnect_reason));
   int send_res = etcpal_send(conn->sock, buf, 2, 0);
   if (send_res < 0)
     return (etcpal_error_t)send_res;

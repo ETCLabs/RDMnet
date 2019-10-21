@@ -51,11 +51,9 @@ RdmnetConnWrapper::RdmnetConnWrapper()
   new_conn_config_.callbacks.msg_received = conncb_msg_received;
 }
 
-etcpal_error_t RdmnetConnWrapper::Startup(const EtcPalUuid& cid, const EtcPalLogParams* log_params,
-                                          RdmnetConnNotify* notify)
+etcpal::Result RdmnetConnWrapper::Startup(const etcpal::Uuid& cid, const EtcPalLogParams* log_params)
 {
-  notify_ = notify;
-  new_conn_config_.local_cid = cid;
+  new_conn_config_.local_cid = cid.get();
   return rdmnet_core_init(log_params);
 }
 
@@ -64,7 +62,7 @@ void RdmnetConnWrapper::Shutdown()
   rdmnet_core_deinit();
 }
 
-etcpal_error_t RdmnetConnWrapper::CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
+etcpal::Result RdmnetConnWrapper::CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
                                                                rdmnet_conn_t& new_handle)
 {
   etcpal_error_t create_res = rdmnet_connection_create(&new_conn_config_, &new_handle);
@@ -84,7 +82,7 @@ void RdmnetConnWrapper::DestroyConnection(rdmnet_conn_t handle, SendDisconnect s
   rdmnet_connection_destroy(handle, send_disconnect.valid ? &send_disconnect.reason : nullptr);
 }
 
-etcpal_error_t RdmnetConnWrapper::SetBlocking(rdmnet_conn_t handle, bool blocking)
+etcpal::Result RdmnetConnWrapper::SetBlocking(rdmnet_conn_t handle, bool blocking)
 {
   return rdmnet_set_blocking(handle, blocking);
 }
@@ -103,7 +101,7 @@ void RdmnetConnWrapper::LibNotifyMsgReceived(rdmnet_conn_t handle, const RdmnetM
 {
   if (notify_ && msg)
   {
-    notify_->RdmnetConnMsgReceived(handle, *msg);
+    notify_->HandleRdmnetConnMsgReceived(handle, *msg);
   }
 }
 
@@ -111,6 +109,6 @@ void RdmnetConnWrapper::LibNotifyDisconnected(rdmnet_conn_t handle, const Rdmnet
 {
   if (notify_ && disconn_info)
   {
-    notify_->RdmnetConnDisconnected(handle, *disconn_info);
+    notify_->HandleRdmnetConnDisconnected(handle, *disconn_info);
   }
 }

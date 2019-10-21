@@ -50,8 +50,8 @@ protected:
 
     rdmnet_mock_core_reset_and_init();
 
-    ETCPAL_SOCKET_DO_FOR_ALL_FAKES(RESET_FAKE);
-    ETCPAL_TIMER_DO_FOR_ALL_FAKES(RESET_FAKE);
+    etcpal_socket_reset_all_fakes();
+    etcpal_timer_reset_all_fakes();
     etcpal_socket_fake.return_val = kEtcPalErrOk;
     etcpal_setblocking_fake.return_val = kEtcPalErrOk;
     etcpal_connect_fake.return_val = kEtcPalErrInProgress;

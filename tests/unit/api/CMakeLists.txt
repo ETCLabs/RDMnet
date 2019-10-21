@@ -12,6 +12,7 @@ add_executable(test_rdmnet_api
 target_link_libraries(test_rdmnet_api PRIVATE
   RDMnetApi
   RDMnetCoreMock
+  RDMnetDiscoveryMock
   EtcPalMock
   RDM
   gtest_main

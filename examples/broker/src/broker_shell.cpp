@@ -25,7 +25,7 @@
 #include "etcpal/thread.h"
 #include "rdmnet/version.h"
 
-void BrokerShell::ScopeChanged(const std::string& new_scope)
+void BrokerShell::HandleScopeChanged(const std::string& new_scope)
 {
   if (log_)
     log_->Info("Scope change detected, restarting broker and applying changes");
@@ -50,76 +50,41 @@ void BrokerShell::AsyncShutdown()
   shutdown_requested_ = true;
 }
 
-void BrokerShell::ApplySettingsChanges(rdmnet::BrokerSettings& settings, std::vector<EtcPalIpAddr>& new_addrs)
+void BrokerShell::ApplySettingsChanges(rdmnet::BrokerSettings& settings)
 {
-  new_addrs = GetInterfacesToListen();
-
   if (!new_scope_.empty())
   {
-    settings.disc_attributes.scope = new_scope_;
+    settings.scope = new_scope_;
     new_scope_.clear();
   }
 }
 
-std::vector<EtcPalIpAddr> BrokerShell::GetInterfacesToListen()
-{
-  if (!initial_data_.macs.empty())
-  {
-    return ConvertMacsToInterfaces(initial_data_.macs);
-  }
-  else if (!initial_data_.ifaces.empty())
-  {
-    return initial_data_.ifaces;
-  }
-  else
-  {
-    return std::vector<EtcPalIpAddr>();
-  }
-}
-
-std::vector<EtcPalIpAddr> BrokerShell::ConvertMacsToInterfaces(const std::vector<MacAddress>& macs)
-{
-  std::vector<EtcPalIpAddr> to_return;
-
-  size_t num_netints = etcpal_netint_get_num_interfaces();
-  for (const auto& mac : macs)
-  {
-    const EtcPalNetintInfo* netint_list = etcpal_netint_get_interfaces();
-    for (const EtcPalNetintInfo* netint = netint_list; netint < netint_list + num_netints; ++netint)
-    {
-      if (0 == memcmp(netint->mac, mac.data(), ETCPAL_NETINTINFO_MAC_LEN))
-      {
-        to_return.push_back(netint->addr);
-        break;
-      }
-    }
-  }
-
-  return to_return;
-}
-
-void BrokerShell::Run(rdmnet::BrokerLog* log)
+int BrokerShell::Run(rdmnet::BrokerLog* log)
 {
   PrintWarningMessage();
 
   log_ = log;
   log_->Startup(initial_data_.log_mask);
 
-  rdmnet::BrokerSettings broker_settings(0x6574);
-  broker_settings.disc_attributes.scope = initial_data_.scope;
+  rdmnet::BrokerSettings broker_settings(etcpal::Uuid::V4(), 0x6574);
 
-  std::vector<EtcPalIpAddr> ifaces = GetInterfacesToListen();
+  broker_settings.scope = initial_data_.scope;
+  broker_settings.dns.manufacturer = "ETC";
+  broker_settings.dns.model = "RDMnet Broker Example App";
+  broker_settings.listen_port = initial_data_.port;
+  broker_settings.listen_macs = initial_data_.macs;
+  broker_settings.listen_addrs = initial_data_.ifaces;
 
-  etcpal_generate_v4_uuid(&broker_settings.cid);
+  rdmnet::Broker broker;
 
-  broker_settings.disc_attributes.dns_manufacturer = "ETC";
-  broker_settings.disc_attributes.dns_service_instance_name = "UNIQUE NAME";
-  broker_settings.disc_attributes.dns_model = "E1.33 Broker Prototype";
+  if (!broker.Startup(broker_settings, this, log_))
+  {
+    std::cout << "Broker failed to start.\n";
+    log->Shutdown();
+    return 1;
+  }
 
-  rdmnet::Broker broker(log, this);
-  broker.Startup(broker_settings, initial_data_.port, ifaces);
-
-  // We want this to run forever if a console
+  // We want this to run forever in a console
   while (true)
   {
     broker.Tick();
@@ -130,14 +95,13 @@ void BrokerShell::Run(rdmnet::BrokerLog* log)
     }
     else if (restart_requested_)
     {
-      restart_requested_ = false;  // Prevent broker from restarting infinitely many times
+      restart_requested_ = false;
 
-      broker.GetSettings(broker_settings);
+      broker_settings = broker.GetSettings();
       broker.Shutdown();
 
-      ApplySettingsChanges(broker_settings, ifaces);
-      broker.Startup(broker_settings, initial_data_.port, ifaces);
-      restart_requested_ = false;
+      ApplySettingsChanges(broker_settings);
+      broker.Startup(broker_settings, this, log_);
     }
 
     etcpal_thread_sleep(300);
@@ -145,6 +109,7 @@ void BrokerShell::Run(rdmnet::BrokerLog* log)
 
   broker.Shutdown();
   log_->Shutdown();
+  return 0;
 }
 
 void BrokerShell::PrintVersion()

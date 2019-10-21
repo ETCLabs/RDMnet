@@ -17,16 +17,20 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef _RDMNET_CONN_WRAPPER_H_
-#define _RDMNET_CONN_WRAPPER_H_
+/// \file rdmnet_conn_wrapper.h
 
+#ifndef RDMNET_CONN_WRAPPER_H_
+#define RDMNET_CONN_WRAPPER_H_
+
+#include "etcpal/cpp/error.h"
+#include "etcpal/cpp/uuid.h"
 #include "rdmnet/core/connection.h"
 
 class RdmnetConnNotify
 {
 public:
-  virtual void RdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage& msg) = 0;
-  virtual void RdmnetConnDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo& disconn_info) = 0;
+  virtual void HandleRdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetMessage& msg) = 0;
+  virtual void HandleRdmnetConnDisconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo& disconn_info) = 0;
 };
 
 struct SendDisconnect
@@ -41,19 +45,20 @@ struct SendDisconnect
 class RdmnetConnInterface
 {
 public:
-  virtual etcpal_error_t Startup(const EtcPalUuid& cid, const EtcPalLogParams* log_params,
-                                 RdmnetConnNotify* notify) = 0;
+  virtual ~RdmnetConnInterface() = default;
+
+  virtual etcpal::Result Startup(const etcpal::Uuid& cid, const EtcPalLogParams* log_params) = 0;
   virtual void Shutdown() = 0;
 
-  virtual etcpal_error_t CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
+  virtual void SetNotify(RdmnetConnNotify* notify) = 0;
+
+  virtual etcpal::Result CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
                                                       rdmnet_conn_t& new_handle) = 0;
   virtual void DestroyConnection(rdmnet_conn_t handle, SendDisconnect send_disconnect = SendDisconnect()) = 0;
-  virtual etcpal_error_t SetBlocking(rdmnet_conn_t handle, bool blocking) = 0;
+  virtual etcpal::Result SetBlocking(rdmnet_conn_t handle, bool blocking) = 0;
 
   virtual void SocketDataReceived(rdmnet_conn_t handle, const uint8_t* data, size_t data_size) = 0;
   virtual void SocketError(rdmnet_conn_t handle, etcpal_error_t err) = 0;
-
-  virtual ~RdmnetConnInterface() {}
 };
 
 class RdmnetConnWrapper : public RdmnetConnInterface
@@ -61,13 +66,15 @@ class RdmnetConnWrapper : public RdmnetConnInterface
 public:
   RdmnetConnWrapper();
 
-  etcpal_error_t Startup(const EtcPalUuid& cid, const EtcPalLogParams* log_params, RdmnetConnNotify* notify) override;
+  etcpal::Result Startup(const etcpal::Uuid& cid, const EtcPalLogParams* log_params) override;
   void Shutdown() override;
 
-  etcpal_error_t CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
+  void SetNotify(RdmnetConnNotify* notify) override { notify_ = notify; }
+
+  etcpal::Result CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
                                               rdmnet_conn_t& new_handle) override;
   virtual void DestroyConnection(rdmnet_conn_t handle, SendDisconnect send_disconnect = SendDisconnect()) override;
-  virtual etcpal_error_t SetBlocking(rdmnet_conn_t handle, bool blocking) override;
+  virtual etcpal::Result SetBlocking(rdmnet_conn_t handle, bool blocking) override;
 
   virtual void SocketDataReceived(rdmnet_conn_t handle, const uint8_t* data, size_t data_size) override;
   virtual void SocketError(rdmnet_conn_t handle, etcpal_error_t err) override;
@@ -80,4 +87,4 @@ private:
   RdmnetConnNotify* notify_{nullptr};
 };
 
-#endif  // _RDMNET_CONN_WRAPPER_H_
+#endif  // RDMNET_CONN_WRAPPER_H_

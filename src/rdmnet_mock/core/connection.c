@@ -25,7 +25,7 @@ static etcpal_error_t fake_connection_create(const RdmnetConnectionConfig* confi
 
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_connection_create, const RdmnetConnectionConfig*, rdmnet_conn_t*);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_connect, rdmnet_conn_t, const EtcPalSockaddr*, const ClientConnectMsg*);
-// DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_set_blocking, rdmnet_conn_t, bool);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_set_blocking, rdmnet_conn_t, bool);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_connection_destroy, rdmnet_conn_t, const rdmnet_disconnect_reason_t*);
 
 DEFINE_FAKE_VALUE_FUNC(int, rdmnet_send, rdmnet_conn_t, const uint8_t*, size_t);
@@ -44,7 +44,7 @@ void rdmnet_connection_reset_all_fakes()
 {
   RESET_FAKE(rdmnet_connection_create);
   RESET_FAKE(rdmnet_connect);
-  // RESET_FAKE(rdmnet_set_blocking);
+  RESET_FAKE(rdmnet_set_blocking);
   RESET_FAKE(rdmnet_connection_destroy);
   RESET_FAKE(rdmnet_send);
   RESET_FAKE(rdmnet_start_message);

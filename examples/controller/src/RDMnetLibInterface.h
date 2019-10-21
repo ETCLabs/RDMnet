@@ -19,6 +19,7 @@
 #pragma once
 
 #include <string>
+#include "etcpal/cpp/uuid.h"
 #include "rdmnet/controller.h"
 #include "ControllerUtils.h"
 
@@ -39,7 +40,7 @@ public:
 class RDMnetLibInterface
 {
 public:
-  virtual bool Startup(const EtcPalUuid& cid, RDMnetLibNotify* notify) = 0;
+  virtual bool Startup(const etcpal::Uuid& cid, RDMnetLibNotify* notify) = 0;
   virtual void Shutdown() = 0;
 
   virtual rdmnet_client_scope_t AddScope(const std::string& scope,

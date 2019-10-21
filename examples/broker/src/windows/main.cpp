@@ -72,7 +72,7 @@ bool ParseAndSetScope(const LPWSTR scope_str, BrokerShell& broker_shell)
 // Parse the --ifaces=IFACE_LIST command line option and transfer it to the BrokerShell instance.
 bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell& broker_shell)
 {
-  std::vector<EtcPalIpAddr> addrs;
+  std::set<EtcPalIpAddr> addrs;
 
   if (wcslen(iface_list_str) != 0)
   {
@@ -99,7 +99,7 @@ bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell& broker_shell
       }
       if (res == 1)
       {
-        addrs.push_back(addr);
+        addrs.insert(addr);
         break;
       }
     }
@@ -128,7 +128,7 @@ void ParseMac(WCHAR* s, BrokerShell::MacAddress& mac_buf)
 // Parse the --macs=MAC_LIST command line option and transfer it to the BrokerShell instance.
 bool ParseAndSetMacList(const LPWSTR mac_list_str, BrokerShell& broker_shell)
 {
-  std::vector<BrokerShell::MacAddress> macs;
+  std::set<BrokerShell::MacAddress> macs;
 
   if (wcslen(mac_list_str) != 0)
   {
@@ -137,7 +137,7 @@ bool ParseAndSetMacList(const LPWSTR mac_list_str, BrokerShell& broker_shell)
     {
       BrokerShell::MacAddress mac_buf;
       ParseMac(p, mac_buf);
-      macs.push_back(mac_buf);
+      macs.insert(mac_buf);
     }
   }
 
@@ -333,7 +333,7 @@ int wmain(int argc, wchar_t* argv[])
 
     // Startup and run the Broker.
     WindowsBrokerLog log("RDMnetBroker.log");
-    broker_shell.Run(&log);
+    exit_code = broker_shell.Run(&log);
 
     // Unregister/cleanup the network change detection.
     CancelMibChangeNotify2(change_notif_handle);

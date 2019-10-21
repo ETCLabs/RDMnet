@@ -52,7 +52,7 @@ static etcpal_error_t send_llrp_rdm(etcpal_socket_t sock, uint8_t* buf, const Et
 
 void llrp_prot_init()
 {
-  etcpal_string_to_uuid(&kLlrpBroadcastCid, LLRP_BROADCAST_CID, sizeof(LLRP_BROADCAST_CID));
+  etcpal_string_to_uuid(LLRP_BROADCAST_CID, &kLlrpBroadcastCid);
 }
 
 bool get_llrp_destination_cid(const uint8_t* buf, size_t buflen, EtcPalUuid* dest_cid)

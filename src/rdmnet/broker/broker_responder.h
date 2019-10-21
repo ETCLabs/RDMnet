@@ -16,13 +16,12 @@
  * This file is a part of RDMnet. For more information, go to:
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
+// The Broker's RDM responder.
+#ifndef BROKER_RESPONDER_H_
+#define BROKER_RESPONDER_H_
 
 #include "etcpal/int.h"
 #include "broker_client.h"
-
-// The Broker's RDM responder.
-#ifndef _BROKER_RESPONDER_H_
-#define _BROKER_RESPONDER_H_
 
 class BrokerResponder
 {
