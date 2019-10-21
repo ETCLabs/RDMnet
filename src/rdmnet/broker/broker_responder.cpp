@@ -381,11 +381,34 @@ etcpal_error_t BrokerResponder::ProcessPacket(const RdmBufferConstRef& buffer_in
   return rdmresp_process_packet(&rdm_responder_state_, buffer_in, &buffer_out, &response_type, nullptr);
 }
 
+etcpal_error_t BrokerResponder::ProcessGetRdmPdString(RdmPdString& string, const char* source,
+                                                      rdmresp_response_type_t& response_type,
+                                                      rdmpd_nack_reason_t& nack_reason)
+{
+  etcpal::ReadGuard prop_read(prop_lock_);
+
+  assert(source);
+  assert(strlen(source) < RDMPD_STRING_MAX_LENGTH);
+
+  rdmnet_safe_strncpy(string.string, source, RDMPD_STRING_MAX_LENGTH);
+  response_type = kRdmRespRtAck;
+
+  return kEtcPalErrOk;
+}
+
 etcpal_error_t BrokerResponder::ProcessGetParameterDescription(uint16_t pid, RdmPdParameterDescription& description,
                                                                rdmresp_response_type_t& response_type,
                                                                rdmpd_nack_reason_t& nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  // etcpal::ReadGuard prop_read(prop_lock_);
+
+  assert(response_type);
+  assert(nack_reason);
+
+  response_type = kRdmRespRtNackReason;
+  nack_reason = kRdmPdNrDataOutOfRange;  // No manufacturer-specific PIDs apply currently
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t BrokerResponder::ProcessGetDeviceModelDescription(RdmPdString& description,

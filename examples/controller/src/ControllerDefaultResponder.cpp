@@ -425,7 +425,7 @@ static void default_responder_get_next_queued_message(GetNextQueuedMessageData* 
 }
 }  // extern "C"
 
-void ControllerDefaultResponder::InitResponder()
+void ControllerDefaultResponder::InitResponder(ControllerResponderNotify* notify)
 {
   RdmPidHandlerEntry handler_array[CONTROLLER_HANDLER_ARRAY_SIZE] = {
       //{E120_SUPPORTED_PARAMETERS, default_responder_supported_params, RDM_PS_ALL | RDM_PS_GET},
@@ -454,6 +454,8 @@ void ControllerDefaultResponder::InitResponder()
 
   rdmresp_sort_handler_array(handler_array_, CONTROLLER_HANDLER_ARRAY_SIZE);
   assert(rdmresp_validate_state(&rdm_responder_state_));
+
+  notify_ = notify;
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessCommand(const std::string& scope, const RdmCommand& cmd,

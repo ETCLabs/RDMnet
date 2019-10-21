@@ -36,13 +36,24 @@ constexpr char kMyManufacturerLabel[] = "ETC";
 constexpr char kMyDeviceModelDescription[] = "ETC Example RDMnet Controller";
 constexpr char kMySoftwareVersionLabel[] = RDMNET_VERSION_STRING;
 
+class ControllerResponderNotify
+{
+public:
+  virtual void DeviceLabelChanged(const std::string& new_device_label){};
+  virtual void IdentifyDeviceChanged(bool new_identify_device){};
+  virtual void ComponentScopeChanged(uint16_t slot, const std::string& new_scope_string,
+                                     const StaticBrokerConfig& new_static_broker){};
+  virtual void SearchDomainChanged(const std::string& new_search_domain){};
+  virtual void UnhealthyTcpEventsReset(const std::string& scope){};
+};
+
 class ControllerDefaultResponder
 {
 public:
   ControllerDefaultResponder() { etcpal_rwlock_create(&prop_lock_); }
   virtual ~ControllerDefaultResponder() { etcpal_rwlock_destroy(&prop_lock_); }
 
-  void InitResponder();
+  void InitResponder(ControllerResponderNotify* notify);
 
   etcpal_error_t ProcessCommand(const std::string& scope, const RdmCommand& cmd, RdmResponse& resp,
                                 rdmresp_response_type_t& presp_type);
@@ -165,4 +176,5 @@ private:
 
   RdmResponderState rdm_responder_state_;
   RdmPidHandlerEntry handler_array_[CONTROLLER_HANDLER_ARRAY_SIZE];
+  ControllerResponderNotify* notify_{nullptr};
 };

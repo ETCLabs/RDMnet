@@ -35,6 +35,8 @@ public:
   etcpal_error_t ProcessPacket(const RdmBufferConstRef& buffer_in, RdmBufferRef& buffer_out,
                                rdmresp_response_type_t& response_type);
 
+  etcpal_error_t ProcessGetRdmPdString(RdmPdString& string, const char* source, rdmresp_response_type_t& response_type,
+                                       rdmpd_nack_reason_t& nack_reason);
   etcpal_error_t ProcessGetParameterDescription(uint16_t pid, RdmPdParameterDescription& description,
                                                 rdmresp_response_type_t& response_type, rdmpd_nack_reason_t& nack_reason);
   etcpal_error_t ProcessGetDeviceModelDescription(RdmPdString& description, rdmresp_response_type_t& response_type,
@@ -76,6 +78,9 @@ public:
 private:
   RdmResponderState rdm_responder_state_;
   RdmPidHandlerEntry handler_array_[BROKER_HANDLER_ARRAY_SIZE];
+
+  // Property data lock
+  mutable etcpal_rwlock_t prop_lock_;
 };
 
 #endif  // _BROKER_RESPONDER_H_

@@ -37,7 +37,7 @@ END_INCLUDE_QT_HEADERS()
 
 void appendRowToItem(QStandardItem* parent, QStandardItem* child);
 
-class RDMnetNetworkModel : public QStandardItemModel, public RDMnetLibNotify
+class RDMnetNetworkModel : public QStandardItemModel, public RDMnetLibNotify, public ControllerResponderNotify
 {
   Q_OBJECT
 
@@ -111,15 +111,21 @@ public:
 
 protected:
   // RDMnetLibNotify overrides
-  virtual void Connected(rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo& info) override;
-  virtual void ConnectFailed(rdmnet_client_scope_t scope_handle, const RdmnetClientConnectFailedInfo& info) override;
-  virtual void Disconnected(rdmnet_client_scope_t scope_handle, const RdmnetClientDisconnectedInfo& info) override;
-  virtual void ClientListUpdate(rdmnet_client_scope_t scope_handle, client_list_action_t action,
-                                const ClientList& list) override;
-  virtual void RdmCommandReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmCommand& cmd) override;
-  virtual void RdmResponseReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse& resp) override;
-  virtual void StatusReceived(rdmnet_client_scope_t scope_handle, const RemoteRptStatus& status) override;
-  virtual void LlrpRdmCommandReceived(const LlrpRemoteRdmCommand& cmd) override;
+  void Connected(rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo& info) override;
+  void ConnectFailed(rdmnet_client_scope_t scope_handle, const RdmnetClientConnectFailedInfo& info) override;
+  void Disconnected(rdmnet_client_scope_t scope_handle, const RdmnetClientDisconnectedInfo& info) override;
+  void ClientListUpdate(rdmnet_client_scope_t scope_handle, client_list_action_t action,
+                        const ClientList& list) override;
+  void RdmCommandReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmCommand& cmd) override;
+  void RdmResponseReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse& resp) override;
+  void StatusReceived(rdmnet_client_scope_t scope_handle, const RemoteRptStatus& status) override;
+  void LlrpRdmCommandReceived(const LlrpRemoteRdmCommand& cmd) override;
+
+  // ControllerResponderNotify overrides
+  void IdentifyDeviceChanged(bool new_identify_device) override;
+  void ComponentScopeChanged(uint16_t slot, const std::string& new_scope_string,
+                             const StaticBrokerConfig& new_static_broker) override;
+  void SearchDomainChanged(const std::string& new_search_domain) override;
 
   /******* RDM message handling functions *******/
   void HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse& resp);

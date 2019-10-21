@@ -839,7 +839,7 @@ RDMnetNetworkModel* RDMnetNetworkModel::makeRDMnetNetworkModel(RDMnetLibInterfac
   etcpal_generate_v4_uuid(&model->my_cid_);
   model->rdmnet_->Startup(model->my_cid_, model);
 
-  model->default_responder_.InitResponder();
+  model->default_responder_.InitResponder(model);
 
   // Initialize GUI-supported PID information
   QString rdmGroupName("RDM");
@@ -1474,6 +1474,30 @@ void RDMnetNetworkModel::LlrpRdmCommandReceived(const LlrpRemoteRdmCommand& cmd)
     log_->Log(ETCPAL_LOG_DEBUG, "Sending NACK to LLRP Manager %04x:%08x for PID 0x%04x with reason 0x%04x",
               rdm.source_uid.manu, rdm.source_uid.id, rdm.param_id, nack_reason);
   }
+}
+
+void RDMnetNetworkModel::IdentifyDeviceChanged(bool new_identify_device)
+{
+  // TO DO: Not yet implemented
+}
+
+void RDMnetNetworkModel::ComponentScopeChanged(uint16_t slot, const std::string& new_scope_string,
+                                               const StaticBrokerConfig& new_static_broker)
+{
+  // TO DO: Not yet implemented
+
+  // If there is an existing broker connection, end it and remove the broker item
+
+  // If the scope string is valid
+    // If the static broker config is valid
+      // Add a static connection and new broker item
+    // Else
+      // Add a new broker item and start searching for brokers in the new_scope_string scope
+}
+
+void RDMnetNetworkModel::SearchDomainChanged(const std::string& new_search_domain)
+{
+  // TO DO: Not yet implemented
 }
 
 bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand& cmd, const BrokerItem* broker_item)
