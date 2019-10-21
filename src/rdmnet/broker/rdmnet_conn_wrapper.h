@@ -69,7 +69,7 @@ public:
   etcpal::Result Startup(const etcpal::Uuid& cid, const EtcPalLogParams* log_params) override;
   void Shutdown() override;
 
-  void SetNotify(RdmnetConnNotify* notify) { notify_ = notify; }
+  void SetNotify(RdmnetConnNotify* notify) override { notify_ = notify; }
 
   etcpal::Result CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
                                               rdmnet_conn_t& new_handle) override;

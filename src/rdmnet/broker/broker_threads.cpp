@@ -25,13 +25,15 @@
 
 /*************************** Function definitions ****************************/
 
-extern "C" static void listen_thread_fn(void* arg)
+extern "C" {
+static void listen_thread_fn(void* arg)
 {
   ListenThread* lt = static_cast<ListenThread*>(arg);
   if (lt)
   {
     lt->Run();
   }
+}
 }
 
 bool ListenThread::Start()
@@ -116,11 +118,13 @@ ListenThread::~ListenThread()
   }
 }
 
-extern "C" static void client_service_thread_fn(void* arg)
+extern "C" {
+static void client_service_thread_fn(void* arg)
 {
   ClientServiceThread* cst = static_cast<ClientServiceThread*>(arg);
   if (cst)
     cst->Run();
+}
 }
 
 bool ClientServiceThread::Start()

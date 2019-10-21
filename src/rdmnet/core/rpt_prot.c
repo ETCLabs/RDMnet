@@ -299,7 +299,7 @@ size_t pack_rpt_status(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid,
     return 0;
   cur_ptr += data_size;
 
-  PACK_STATUS_HEADER(status_pdu_size, status->status_code, cur_ptr);
+  PACK_STATUS_HEADER(status_pdu_size, (uint16_t)(status->status_code), cur_ptr);
   cur_ptr += RPT_STATUS_HEADER_SIZE;
   if (status_pdu_size > RPT_STATUS_HEADER_SIZE)
   {
@@ -345,7 +345,7 @@ etcpal_error_t send_rpt_status(rdmnet_conn_t handle, const EtcPalUuid* local_cid
     return res;
   }
 
-  PACK_STATUS_HEADER(status_pdu_size, status->status_code, buf);
+  PACK_STATUS_HEADER(status_pdu_size, (uint16_t)(status->status_code), buf);
   int send_res = etcpal_send(conn->sock, buf, RPT_STATUS_HEADER_SIZE, 0);
   if (send_res < 0)
   {
