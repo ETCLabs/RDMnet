@@ -31,17 +31,6 @@
 
 #define CONTROLLER_HANDLER_ARRAY_SIZE 8
 
-struct ControllerScopeData
-{
-  ControllerScopeData(StaticBrokerConfig sb) : static_broker(sb) {}
-
-  uint16_t unhealthy_tcp_events{0};
-  StaticBrokerConfig static_broker;
-  bool connected{false};
-  EtcPalSockaddr current_broker;
-  RdmUid my_uid;
-};
-
 constexpr char kMyDeviceLabel[] = "ETC Example RDMnet Controller";
 constexpr char kMyManufacturerLabel[] = "ETC";
 constexpr char kMyDeviceModelDescription[] = "ETC Example RDMnet Controller";
@@ -58,8 +47,12 @@ public:
   etcpal_error_t ProcessCommand(const std::string& scope, const RdmCommand& cmd, RdmResponse& resp,
                                 rdmresp_response_type_t& presp_type);
 
+  etcpal_error_t ProcessGetRdmPdString(RdmPdString& string, const char* source, rdmresp_response_type_t& response_type,
+                                       rdmpd_nack_reason_t& nack_reason);
+
   etcpal_error_t ProcessGetParameterDescription(uint16_t pid, RdmPdParameterDescription& description,
-                                                rdmresp_response_type_t& response_type, rdmpd_nack_reason_t& nack_reason);
+                                                rdmresp_response_type_t& response_type,
+                                                rdmpd_nack_reason_t& nack_reason);
   etcpal_error_t ProcessGetDeviceModelDescription(RdmPdString& description, rdmresp_response_type_t& response_type,
                                                   rdmpd_nack_reason_t& nack_reason);
   etcpal_error_t ProcessGetDeviceLabel(RdmPdString& label, rdmresp_response_type_t& response_type,
@@ -120,12 +113,49 @@ public:
   void ResetTcpUnhealthyCounter(const std::string& scope);
 
 private:
+  struct ScopeEntry
+  {
+    ScopeEntry() {}
+    ScopeEntry(StaticBrokerConfig sb) : static_broker(sb) {}
+
+    std::string scope_string;
+    uint16_t scope_slot{0};  // 0 is an invalid slot, and for this struct's purposes means "unassigned"
+
+    uint16_t unhealthy_tcp_events{0};
+    StaticBrokerConfig static_broker;
+    bool connected{false};
+    EtcPalSockaddr current_broker;
+    RdmUid my_uid;
+  };
+
+  class ScopeMap
+  {
+  public:
+    bool FindByScope(std::string scope, ScopeEntry& entry) const;
+    bool FindBySlot(uint16_t slot, ScopeEntry& entry) const;
+
+    bool RemoveByScope(std::string scope);
+    bool RemoveBySlot(uint16_t slot);
+
+    void Set(const ScopeEntry& entry);
+
+    std::map<uint16_t, ScopeEntry>::const_iterator Begin() const;
+    std::map<uint16_t, ScopeEntry>::const_iterator End() const;
+    size_t Size() const;
+
+  private:
+    // Note that slot_map_ contains actual entries, string_map_ contains references.
+    std::map<uint16_t, ScopeEntry> slot_map_;
+    std::map<std::string, std::reference_wrapper<ScopeEntry>> string_map_;
+  };
+
+  // Property data lock
   mutable etcpal_rwlock_t prop_lock_;
 
   // Property data
-  const bool identifying_{false};
-  const std::string device_label_{kMyDeviceLabel};
-  std::map<std::string, ControllerScopeData> scopes_;
+  bool identifying_{false};
+  std::string device_label_{kMyDeviceLabel};
+  ScopeMap scopes_;
   std::string search_domain_{E133_DEFAULT_DOMAIN};
   static const std::vector<uint16_t> supported_parameters_;
   static const std::vector<uint8_t> device_info_;

@@ -1295,6 +1295,7 @@ etcpal_error_t process_set_component_scope(const RdmPdComponentScope* component_
 
     if (component_scope->scope_slot == 1)
     {
+      // TO DO: Find a way to notify that scope has changed (if it has) (along with other property sets)
       rdmnet_safe_strncpy(device_responder_state.scope_config.scope, component_scope->scope_string.string,
                           E133_SCOPE_STRING_PADDED_LENGTH);
       device_responder_state.scope_config.has_static_broker_addr =

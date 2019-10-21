@@ -24,6 +24,7 @@
 #include "etcpal/pack.h"
 #include "rdm/defs.h"
 #include "rdmnet/defs.h"
+#include "rdmnet/core/util.h"
 #include "ControllerUtils.h"
 
 static_assert(sizeof(kMyDeviceLabel) <= 33, "Defined Device Label is too long for RDM's requirements.");
@@ -431,13 +432,15 @@ void ControllerDefaultResponder::InitResponder()
       {E120_PARAMETER_DESCRIPTION, default_responder_parameter_description, RDM_PS_ROOT | RDM_PS_GET},
       {E120_DEVICE_MODEL_DESCRIPTION, default_responder_device_model_description,
        RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOW_SUPPORTED},
-      //{E120_MANUFACTURER_LABEL, default_responder_manufacturer_label, RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOW_SUPPORTED},
+      //{E120_MANUFACTURER_LABEL, default_responder_manufacturer_label, RDM_PS_ALL | RDM_PS_GET |
+      //RDM_PS_SHOW_SUPPORTED},
       {E120_DEVICE_LABEL, default_responder_device_label, RDM_PS_ALL | RDM_PS_GET_SET | RDM_PS_SHOW_SUPPORTED},
       {E120_SOFTWARE_VERSION_LABEL, default_responder_software_version_label, RDM_PS_ROOT | RDM_PS_GET},
       {E120_IDENTIFY_DEVICE, default_responder_identify_device, RDM_PS_ALL | RDM_PS_GET_SET},
       {E133_COMPONENT_SCOPE, default_responder_component_scope, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOW_SUPPORTED},
       {E133_SEARCH_DOMAIN, default_responder_search_domain, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOW_SUPPORTED},
-      {E133_TCP_COMMS_STATUS, default_responder_tcp_comms_status, RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOW_SUPPORTED}};
+      {E133_TCP_COMMS_STATUS, default_responder_tcp_comms_status,
+       RDM_PS_ROOT | RDM_PS_GET_SET | RDM_PS_SHOW_SUPPORTED}};
 
   rdm_responder_state_.port_number = 0;
   rdm_responder_state_.number_of_subdevices = 0;
@@ -457,21 +460,37 @@ etcpal_error_t ControllerDefaultResponder::ProcessCommand(const std::string& sco
                                                           RdmResponse& resp, rdmresp_response_type_t& presp_type)
 {
   etcpal_error_t result;
-  auto scope_entry = scopes_.find(scope);
-  if (scope_entry == scopes_.end()) // Not found
+  ScopeEntry entry;
+
+  if (scopes_.FindByScope(scope, entry))
+  {
+    rdm_responder_state_.uid = entry.my_uid;
+    result = rdmresp_process_command(&rdm_responder_state_, &cmd, &resp, &presp_type);
+  }
+  else  // Not found
   {
     presp_type = kRdmRespRtNackReason;
     rdmresp_create_nack_from_command(&resp, &cmd, E120_NR_HARDWARE_FAULT);
 
     result = kEtcPalErrNotFound;  // Scope handle not found
   }
-  else
-  {
-    rdm_responder_state_.uid = scope_entry->second.my_uid;
-    result = rdmresp_process_command(&rdm_responder_state_, &cmd, &resp, &presp_type);
-  }
 
   return result;
+}
+
+etcpal_error_t ControllerDefaultResponder::ProcessGetRdmPdString(RdmPdString& string, const char* source,
+                                                                 rdmresp_response_type_t& response_type,
+                                                                 rdmpd_nack_reason_t& nack_reason)
+{
+  etcpal::ReadGuard prop_read(prop_lock_);
+
+  assert(source);
+  assert(strlen(source) < RDMPD_STRING_MAX_LENGTH);
+
+  rdmnet_safe_strncpy(string.string, source, RDMPD_STRING_MAX_LENGTH);
+  response_type = kRdmRespRtAck;
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetParameterDescription(uint16_t pid,
@@ -479,91 +498,235 @@ etcpal_error_t ControllerDefaultResponder::ProcessGetParameterDescription(uint16
                                                                           rdmresp_response_type_t& response_type,
                                                                           rdmpd_nack_reason_t& nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  // etcpal::ReadGuard prop_read(prop_lock_);
+
+  assert(response_type);
+  assert(nack_reason);
+
+  response_type = kRdmRespRtNackReason;
+  nack_reason = kRdmPdNrDataOutOfRange;  // No manufacturer-specific PIDs apply currently
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetDeviceModelDescription(RdmPdString& description,
                                                                             rdmresp_response_type_t& response_type,
                                                                             rdmpd_nack_reason_t& nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  return ProcessGetRdmPdString(description, device_model_description_.c_str(), response_type, nack_reason);
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetDeviceLabel(RdmPdString& label,
                                                                  rdmresp_response_type_t& response_type,
                                                                  rdmpd_nack_reason_t& nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  return ProcessGetRdmPdString(label, device_label_.c_str(), response_type, nack_reason);
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessSetDeviceLabel(const RdmPdString& label,
                                                                  rdmresp_response_type_t& response_type,
                                                                  rdmpd_nack_reason_t& nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal::WriteGuard prop_write(prop_lock_);
+
+  device_label_.assign(label.string, RDMPD_STRING_MAX_LENGTH);
+  response_type = kRdmRespRtAck;
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetSoftwareVersionLabel(RdmPdString& label,
                                                                           rdmresp_response_type_t& response_type,
                                                                           rdmpd_nack_reason_t& nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  return ProcessGetRdmPdString(label, software_version_label_.c_str(), response_type, nack_reason);
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetIdentifyDevice(bool& identify_state,
                                                                     rdmresp_response_type_t& response_type,
                                                                     rdmpd_nack_reason_t& nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal::ReadGuard prop_read(prop_lock_);
+
+  identify_state = identifying_;
+  response_type = kRdmRespRtAck;
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessSetIdentifyDevice(bool identify,
                                                                     rdmresp_response_type_t& response_type,
                                                                     rdmpd_nack_reason_t& nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal::WriteGuard prop_write(prop_lock_);
+
+  identifying_ = identify;
+  response_type = kRdmRespRtAck;
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetComponentScope(uint16_t slot, RdmPdComponentScope& component_scope,
                                                                     rdmresp_response_type_t& response_type,
                                                                     rdmpd_nack_reason_t& nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal::ReadGuard prop_read(prop_lock_);
+  bool got_scope = false;
+
+  if (slot != 0)
+  {
+    ScopeEntry entry;
+    if (scopes_.FindBySlot(slot, entry))
+    {
+      component_scope.scope_slot = slot;
+      rdmnet_safe_strncpy(component_scope.scope_string.string, entry.scope_string.c_str(), RDMPD_MAX_SCOPE_STR_LEN);
+      component_scope.static_broker_addr = entry.static_broker.addr;
+      got_scope = true;
+    }
+  }
+
+  if (got_scope)
+  {
+    response_type = kRdmRespRtAck;
+  }
+  else
+  {
+    response_type = kRdmRespRtNackReason;
+    nack_reason = kRdmPdNrDataOutOfRange;
+  }
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessSetComponentScope(const RdmPdComponentScope& component_scope,
                                                                     rdmresp_response_type_t& response_type,
                                                                     rdmpd_nack_reason_t& nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal::WriteGuard prop_write(prop_lock_);
+
+  if (component_scope.scope_slot == 0)
+  {
+    response_type = kRdmRespRtNackReason;
+    nack_reason = kRdmPdNrDataOutOfRange;
+  }
+  else
+  {
+    // TO DO: Find a way to notify that scope has changed (if it has) (along with other property sets)
+    if (strlen(component_scope.scope_string.string) == 0)
+    {
+      scopes_.RemoveBySlot(component_scope.scope_slot);
+    }
+    else
+    {
+      ScopeEntry entry;
+      memset(&entry.current_broker, 0, sizeof(EtcPalSockaddr));
+      entry.current_broker.ip.type = kEtcPalIpTypeInvalid;
+      memset(&entry.static_broker, 0, sizeof(StaticBrokerConfig));
+      entry.static_broker.addr.ip.type = kEtcPalIpTypeInvalid;
+      memset(&entry.my_uid, 0, sizeof(RdmUid));
+
+      scopes_.FindBySlot(component_scope.scope_slot, entry);  // Same code should follow regardless of if found.
+      entry.scope_string.assign(component_scope.scope_string.string, RDMPD_MAX_SCOPE_STR_LEN);
+      entry.scope_slot = component_scope.scope_slot;
+      bool old_static_broker_valid = entry.static_broker.valid;
+      entry.static_broker.valid = (component_scope.static_broker_addr.ip.type != kEtcPalIpTypeInvalid) &&
+                                  (component_scope.static_broker_addr.port != 0);
+
+      if (entry.static_broker.valid)
+      {
+        // The next connection should be static.
+        entry.current_broker = entry.static_broker.addr = component_scope.static_broker_addr;
+      }
+      else if (old_static_broker_valid && !entry.static_broker.valid)
+      {
+        // Close the static connection (which is current). Both current and static should be invalidated.
+        memset(&entry.current_broker, 0, sizeof(EtcPalSockaddr));
+        entry.current_broker.ip.type = kEtcPalIpTypeInvalid;
+        memset(&entry.static_broker, 0, sizeof(StaticBrokerConfig));
+        entry.static_broker.addr.ip.type = kEtcPalIpTypeInvalid;
+      }
+
+      scopes_.Set(entry);
+    }
+
+    response_type = kRdmRespRtAck;
+  }
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetSearchDomain(RdmPdSearchDomain& search_domain,
                                                                   rdmresp_response_type_t& response_type,
                                                                   rdmpd_nack_reason_t& nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal::ReadGuard prop_read(prop_lock_);
+
+  rdmnet_safe_strncpy(search_domain.string, search_domain_.c_str(), RDMPD_MAX_SEARCH_DOMAIN_STR_LEN);
+  response_type = kRdmRespRtAck;
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessSetSearchDomain(const RdmPdSearchDomain& search_domain,
                                                                   rdmresp_response_type_t& response_type,
                                                                   rdmpd_nack_reason_t& nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal::WriteGuard prop_write(prop_lock_);
+
+  search_domain_.assign(search_domain.string, RDMPD_MAX_SEARCH_DOMAIN_STR_LEN);
+  response_type = kRdmRespRtAck;
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetTcpCommsStatus(size_t overflow_index, RdmPdTcpCommsEntry& entry,
                                                                     rdmresp_response_type_t& response_type,
                                                                     rdmpd_nack_reason_t& nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal::ReadGuard prop_read(prop_lock_);
+
+  auto iter = scopes_.Begin();
+
+  if ((iter != scopes_.End()) && (overflow_index <= scopes_.Size()))
+  {
+    std::advance(iter, overflow_index - 1);
+
+    entry.broker_addr = iter->second.current_broker;
+    rdmnet_safe_strncpy(entry.scope_string.string, iter->second.scope_string.c_str(), RDMPD_MAX_SCOPE_STR_LEN);
+    entry.unhealthy_tcp_events = iter->second.unhealthy_tcp_events;
+
+    response_type = kRdmRespRtAck;
+  }
+  else
+  {
+    response_type = kRdmRespRtNackReason;
+    nack_reason = kRdmPdNrDataOutOfRange;
+  }
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessSetTcpCommsStatus(const RdmPdScopeString& scope,
                                                                     rdmresp_response_type_t& response_type,
                                                                     rdmpd_nack_reason_t& nack_reason)
 {
-  return kEtcPalErrNotImpl;  // TODO: Not yet implemented
+  etcpal::WriteGuard prop_write(prop_lock_);
+
+  ScopeEntry entry;
+
+  if (scopes_.FindByScope(scope.string, entry))
+  {
+    entry.unhealthy_tcp_events = 0;
+    scopes_.Set(entry);
+
+    response_type = kRdmRespRtAck;
+  }
+  else
+  {
+    response_type = kRdmRespRtNackReason;
+    nack_reason = kRdmPdNrDataOutOfRange;
+  }
+
+  return kEtcPalErrOk;
 }
 
 bool ControllerDefaultResponder::Get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len,
@@ -643,68 +806,59 @@ bool ControllerDefaultResponder::GetComponentScope(uint16_t slot, std::vector<Rd
   if (slot != 0)
   {
     etcpal::ReadGuard prop_read(prop_lock_);
+    ScopeEntry entry;
 
-    if (slot - 1u < scopes_.size())
+    if (scopes_.FindBySlot(slot, entry))
     {
-      auto scopeIter = scopes_.begin();
-      if (scopeIter != scopes_.end())
+      RdmParamData resp_data;
+
+      // Build the parameter data of the COMPONENT_SCOPE response.
+
+      // Scope slot
+      uint8_t* cur_ptr = resp_data.data;
+      etcpal_pack_16b(cur_ptr, slot);
+      cur_ptr += 2;
+
+      // Scope string
+      const std::string& scope_str = entry.scope_string;
+      strncpy((char*)cur_ptr, scope_str.c_str(), E133_SCOPE_STRING_PADDED_LENGTH);
+      cur_ptr[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
+      cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
+
+      // Static configuration
+      if (entry.static_broker.valid)
       {
-        std::advance(scopeIter, slot - 1);
-
-        RdmParamData resp_data;
-
-        // Build the parameter data of the COMPONENT_SCOPE response.
-
-        // Scope slot
-        uint8_t* cur_ptr = resp_data.data;
-        etcpal_pack_16b(cur_ptr, slot);
-        cur_ptr += 2;
-
-        // Scope string
-        const std::string& scope_str = scopeIter->first;
-        strncpy((char*)cur_ptr, scope_str.c_str(), E133_SCOPE_STRING_PADDED_LENGTH);
-        cur_ptr[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
-        cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
-
-        // Static configuration
-        if (scopeIter->second.static_broker.valid)
+        const EtcPalSockaddr& saddr = entry.static_broker.addr;
+        if (ETCPAL_IP_IS_V4(&saddr.ip))
         {
-          const EtcPalSockaddr& saddr = scopeIter->second.static_broker.addr;
-          if (ETCPAL_IP_IS_V4(&saddr.ip))
-          {
-            *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
-            etcpal_pack_32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&saddr.ip));
-            cur_ptr += 4;
-            // Skip the IPv6 field
-            cur_ptr += 16;
-            etcpal_pack_16b(cur_ptr, saddr.port);
-            cur_ptr += 2;
-          }
-          else if (ETCPAL_IP_IS_V6(&saddr.ip))
-          {
-            *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
-            // Skip the IPv4 field
-            cur_ptr += 4;
-            memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&saddr.ip), ETCPAL_IPV6_BYTES);
-            cur_ptr += ETCPAL_IPV6_BYTES;
-            etcpal_pack_16b(cur_ptr, saddr.port);
-            cur_ptr += 2;
-          }
+          *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
+          etcpal_pack_32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&saddr.ip));
+          cur_ptr += 4;
+          // Skip the IPv6 field
+          cur_ptr += 16;
+          etcpal_pack_16b(cur_ptr, saddr.port);
+          cur_ptr += 2;
         }
-        else
+        else if (ETCPAL_IP_IS_V6(&saddr.ip))
         {
-          *cur_ptr++ = E133_NO_STATIC_CONFIG;
-          // Skip the IPv4, IPv6 and port fields
-          cur_ptr += 4 + 16 + 2;
+          *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
+          // Skip the IPv4 field
+          cur_ptr += 4;
+          memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&saddr.ip), ETCPAL_IPV6_BYTES);
+          cur_ptr += ETCPAL_IPV6_BYTES;
+          etcpal_pack_16b(cur_ptr, saddr.port);
+          cur_ptr += 2;
         }
-        resp_data.datalen = static_cast<uint8_t>(cur_ptr - resp_data.data);
-        resp_data_list.push_back(resp_data);
-        return true;
       }
       else
       {
-        nack_reason = E120_NR_DATA_OUT_OF_RANGE;
+        *cur_ptr++ = E133_NO_STATIC_CONFIG;
+        // Skip the IPv4, IPv6 and port fields
+        cur_ptr += 4 + 16 + 2;
       }
+      resp_data.datalen = static_cast<uint8_t>(cur_ptr - resp_data.data);
+      resp_data_list.push_back(resp_data);
+      return true;
     }
     else
     {
@@ -735,53 +889,54 @@ bool ControllerDefaultResponder::GetTCPCommsStatus(const uint8_t* /*param_data*/
                                                    std::vector<RdmParamData>& resp_data_list,
                                                    uint16_t& /*nack_reason*/) const
 {
-  etcpal::ReadGuard prop_read(prop_lock_);
+  //etcpal::ReadGuard prop_read(prop_lock_);
 
-  for (const auto& scope_pair : scopes_)
-  {
-    RdmParamData resp_data;
-    uint8_t* cur_ptr = resp_data.data;
+  //for (const auto& scope_pair : scopes_)
+  //{
+  //  RdmParamData resp_data;
+  //  uint8_t* cur_ptr = resp_data.data;
 
-    const std::string& scope_str = scope_pair.first;
-    memset(cur_ptr, 0, E133_SCOPE_STRING_PADDED_LENGTH);
-    memcpy(cur_ptr, scope_str.data(), std::min<size_t>(scope_str.length(), E133_SCOPE_STRING_PADDED_LENGTH));
-    cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
+  //  const std::string& scope_str = scope_pair.first;
+  //  memset(cur_ptr, 0, E133_SCOPE_STRING_PADDED_LENGTH);
+  //  memcpy(cur_ptr, scope_str.data(), std::min<size_t>(scope_str.length(), E133_SCOPE_STRING_PADDED_LENGTH));
+  //  cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
 
-    const ControllerScopeData& scope_data = scope_pair.second;
-    if (!scope_data.connected)
-    {
-      etcpal_pack_32b(cur_ptr, 0);
-      cur_ptr += 4;
-      memset(cur_ptr, 0, ETCPAL_IPV6_BYTES);
-      cur_ptr += ETCPAL_IPV6_BYTES;
-      etcpal_pack_16b(cur_ptr, 0);
-      cur_ptr += 2;
-    }
-    else
-    {
-      if (ETCPAL_IP_IS_V4(&scope_data.current_broker.ip))
-      {
-        etcpal_pack_32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&scope_data.current_broker.ip));
-        cur_ptr += 4;
-        memset(cur_ptr, 0, ETCPAL_IPV6_BYTES);
-        cur_ptr += ETCPAL_IPV6_BYTES;
-      }
-      else  // IPv6
-      {
-        etcpal_pack_32b(cur_ptr, 0);
-        cur_ptr += 4;
-        memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&scope_data.current_broker.ip), ETCPAL_IPV6_BYTES);
-        cur_ptr += ETCPAL_IPV6_BYTES;
-      }
-      etcpal_pack_16b(cur_ptr, scope_data.current_broker.port);
-      cur_ptr += 2;
-    }
-    etcpal_pack_16b(cur_ptr, scope_data.unhealthy_tcp_events);
-    cur_ptr += 2;
-    resp_data.datalen = (uint8_t)(cur_ptr - resp_data.data);
-    resp_data_list.push_back(resp_data);
-  }
-  return true;
+  //  const ControllerScopeData& scope_data = scope_pair.second;
+  //  if (!scope_data.connected)
+  //  {
+  //    etcpal_pack_32b(cur_ptr, 0);
+  //    cur_ptr += 4;
+  //    memset(cur_ptr, 0, ETCPAL_IPV6_BYTES);
+  //    cur_ptr += ETCPAL_IPV6_BYTES;
+  //    etcpal_pack_16b(cur_ptr, 0);
+  //    cur_ptr += 2;
+  //  }
+  //  else
+  //  {
+  //    if (ETCPAL_IP_IS_V4(&scope_data.current_broker.ip))
+  //    {
+  //      etcpal_pack_32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&scope_data.current_broker.ip));
+  //      cur_ptr += 4;
+  //      memset(cur_ptr, 0, ETCPAL_IPV6_BYTES);
+  //      cur_ptr += ETCPAL_IPV6_BYTES;
+  //    }
+  //    else  // IPv6
+  //    {
+  //      etcpal_pack_32b(cur_ptr, 0);
+  //      cur_ptr += 4;
+  //      memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&scope_data.current_broker.ip), ETCPAL_IPV6_BYTES);
+  //      cur_ptr += ETCPAL_IPV6_BYTES;
+  //    }
+  //    etcpal_pack_16b(cur_ptr, scope_data.current_broker.port);
+  //    cur_ptr += 2;
+  //  }
+  //  etcpal_pack_16b(cur_ptr, scope_data.unhealthy_tcp_events);
+  //  cur_ptr += 2;
+  //  resp_data.datalen = (uint8_t)(cur_ptr - resp_data.data);
+  //  resp_data_list.push_back(resp_data);
+  //}
+  //return true;
+  return false; // This function is on its way out
 }
 
 bool ControllerDefaultResponder::GetSupportedParameters(const uint8_t* /*param_data*/, uint8_t /*param_data_len*/,
@@ -861,13 +1016,16 @@ void ControllerDefaultResponder::AddScope(const std::string& new_scope, StaticBr
 {
   etcpal::WriteGuard prop_write(prop_lock_);
 
-  scopes_.insert(std::make_pair(new_scope, ControllerScopeData(static_broker)));
+  ScopeEntry entry;
+  entry.static_broker = static_broker;
+  entry.scope_string = new_scope;
+  scopes_.Set(entry);
 }
 
 void ControllerDefaultResponder::RemoveScope(const std::string& scope_to_remove)
 {
   etcpal::WriteGuard prop_write(prop_lock_);
-  scopes_.erase(scope_to_remove);
+  scopes_.RemoveByScope(scope_to_remove);
 }
 
 void ControllerDefaultResponder::UpdateScopeConnectionStatus(const std::string& scope, bool connected,
@@ -875,34 +1033,138 @@ void ControllerDefaultResponder::UpdateScopeConnectionStatus(const std::string& 
                                                              const RdmUid& controller_uid)
 {
   etcpal::WriteGuard prop_write(prop_lock_);
-  auto scope_entry = scopes_.find(scope);
-  if (scope_entry != scopes_.end())
+  ScopeEntry entry;
+  if (scopes_.FindByScope(scope, entry))
   {
-    scope_entry->second.connected = connected;
+    entry.connected = connected;
     if (connected)
     {
-      scope_entry->second.current_broker = broker_addr;
-      scope_entry->second.my_uid = controller_uid;
+      entry.current_broker = broker_addr;
+      entry.my_uid = controller_uid;
     }
+
+    scopes_.Set(entry);
   }
 }
 
 void ControllerDefaultResponder::IncrementTcpUnhealthyCounter(const std::string& scope)
 {
   etcpal::WriteGuard prop_write(prop_lock_);
-  auto scope_entry = scopes_.find(scope);
-  if (scope_entry != scopes_.end())
+  ScopeEntry entry;
+  if (scopes_.FindByScope(scope, entry))
   {
-    ++scope_entry->second.unhealthy_tcp_events;
+    ++entry.unhealthy_tcp_events;
+    scopes_.Set(entry);
   }
 }
 
 void ControllerDefaultResponder::ResetTcpUnhealthyCounter(const std::string& scope)
 {
   etcpal::WriteGuard prop_write(prop_lock_);
-  auto scope_entry = scopes_.find(scope);
-  if (scope_entry != scopes_.end())
+  ScopeEntry entry;
+  if (scopes_.FindByScope(scope, entry))
   {
-    scope_entry->second.unhealthy_tcp_events = 0;
+    entry.unhealthy_tcp_events = 0;
+    scopes_.Set(entry);
   }
+}
+
+bool ControllerDefaultResponder::ScopeMap::FindByScope(std::string scope, ScopeEntry& entry) const
+{
+  auto iter = string_map_.find(scope);
+  if (iter != string_map_.end())
+  {
+    entry = iter->second;
+    return true;
+  }
+  return false;
+}
+
+bool ControllerDefaultResponder::ScopeMap::FindBySlot(uint16_t slot, ScopeEntry& entry) const
+{
+  auto iter = slot_map_.find(slot);
+  if (iter != slot_map_.end())
+  {
+    entry = iter->second;
+    return true;
+  }
+  return false;
+}
+
+bool ControllerDefaultResponder::ScopeMap::RemoveByScope(std::string scope)
+{
+  auto string_map_iter = string_map_.find(scope);
+  if (string_map_iter != string_map_.end())
+  {
+    uint16_t slot = string_map_iter->second.get().scope_slot;
+    auto slot_map_iter = slot_map_.find(slot);
+    if (slot_map_iter != slot_map_.end())
+    {
+      string_map_.erase(string_map_iter);
+      slot_map_.erase(slot_map_iter);
+      return true;
+    }
+  }
+  return false;
+}
+
+bool ControllerDefaultResponder::ScopeMap::RemoveBySlot(uint16_t slot)
+{
+  auto slot_map_iter = slot_map_.find(slot);
+  if (slot_map_iter != slot_map_.end())
+  {
+    std::string scope = slot_map_iter->second.scope_string;
+    auto string_map_iter = string_map_.find(scope);
+    if (string_map_iter != string_map_.end())
+    {
+      string_map_.erase(string_map_iter);
+      slot_map_.erase(slot_map_iter);
+      return true;
+    }
+  }
+  return false;
+}
+
+void ControllerDefaultResponder::ScopeMap::Set(const ScopeEntry& entry)
+{
+  auto existing_entry = slot_map_.find(entry.scope_slot);
+  if (existing_entry != slot_map_.end())
+  {
+    if (existing_entry->second.scope_string != entry.scope_string)
+    {
+      // This string_map_ reference is no longer accurate.
+      string_map_.erase(string_map_.find(existing_entry->second.scope_string));
+    }
+  }
+
+  slot_map_[entry.scope_slot] = entry;
+
+  // Point reference to slot_map_ entry.
+  auto string_map_iter = string_map_.find(entry.scope_string);
+  if (string_map_iter == string_map_.end())
+  {
+    string_map_.insert(
+        std::make_pair(entry.scope_string, std::reference_wrapper<ScopeEntry>(slot_map_[entry.scope_slot])));
+  }
+  else
+  {
+    string_map_iter->second = std::reference_wrapper<ScopeEntry>(slot_map_[entry.scope_slot]);
+  }
+}
+
+std::map<uint16_t, ControllerDefaultResponder::ScopeEntry>::const_iterator ControllerDefaultResponder::ScopeMap::Begin()
+    const
+{
+  return slot_map_.begin();
+}
+
+std::map<uint16_t, ControllerDefaultResponder::ScopeEntry>::const_iterator ControllerDefaultResponder::ScopeMap::End()
+    const
+{
+  return slot_map_.end();
+}
+
+size_t ControllerDefaultResponder::ScopeMap::Size() const
+{
+  return slot_map_.size();
 }
