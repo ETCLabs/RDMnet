@@ -53,6 +53,8 @@ public:
 class BrokerSocketManager
 {
 public:
+  virtual ~BrokerSocketManager() = default;
+
   virtual bool Startup() = 0;
   virtual bool Shutdown() = 0;
 

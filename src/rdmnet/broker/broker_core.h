@@ -51,13 +51,13 @@ class BrokerComponentNotify : public RdmnetConnNotify,
 struct BrokerComponents final
 {
   // Manages the interface to the lower-level RDMnet library
-  std::unique_ptr<RdmnetConnInterface> conn_interface{std::make_unique<RdmnetConnWrapper>()};
+  std::unique_ptr<RdmnetConnInterface> conn_interface;
   // Manages the broker's readable sockets
-  std::unique_ptr<BrokerSocketManager> socket_mgr{CreateBrokerSocketManager()};
+  std::unique_ptr<BrokerSocketManager> socket_mgr;
   // Manages the broker's worker threads
-  std::unique_ptr<BrokerThreadInterface> threads{std::make_unique<BrokerThreadManager>()};
+  std::unique_ptr<BrokerThreadInterface> threads;
   // Handles DNS discovery of the broker
-  std::unique_ptr<BrokerDiscoveryInterface> disc{std::make_unique<BrokerDiscoveryManager>()};
+  std::unique_ptr<BrokerDiscoveryInterface> disc;
   // Handles the Broker's dynamic UID assignment functionality
   BrokerUidManager uids;
   // The Broker's RDM responder
@@ -69,6 +69,17 @@ struct BrokerComponents final
     socket_mgr->SetNotify(notify);
     threads->SetNotify(notify);
     disc->SetNotify(notify);
+  }
+
+  BrokerComponents(std::unique_ptr<RdmnetConnInterface> conn_interface_in = std::make_unique<RdmnetConnWrapper>(),
+                   std::unique_ptr<BrokerSocketManager> socket_mgr_in = CreateBrokerSocketManager(),
+                   std::unique_ptr<BrokerThreadInterface> threads_in = std::make_unique<BrokerThreadManager>(),
+                   std::unique_ptr<BrokerDiscoveryInterface> disc_in = std::make_unique<BrokerDiscoveryManager>())
+      : conn_interface(std::move(conn_interface_in))
+      , socket_mgr(std::move(socket_mgr_in))
+      , threads(std::move(threads_in))
+      , disc(std::move(disc_in))
+  {
   }
 };
 

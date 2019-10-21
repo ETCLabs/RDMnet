@@ -333,7 +333,7 @@ int wmain(int argc, wchar_t* argv[])
 
     // Startup and run the Broker.
     WindowsBrokerLog log("RDMnetBroker.log");
-    broker_shell.Run(&log);
+    exit_code = broker_shell.Run(&log);
 
     // Unregister/cleanup the network change detection.
     CancelMibChangeNotify2(change_notif_handle);

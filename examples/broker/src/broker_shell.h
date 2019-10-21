@@ -37,7 +37,8 @@ class BrokerShell : public rdmnet::BrokerNotify
 public:
   using MacAddress = rdmnet::BrokerSettings::MacAddress;
 
-  void Run(rdmnet::BrokerLog* log);
+  // Returns the code the app should exit with.
+  int Run(rdmnet::BrokerLog* log);
   static void PrintVersion();
 
   // Options to set from the command line; must be set BEFORE Run() is called.

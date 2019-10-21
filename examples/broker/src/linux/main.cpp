@@ -315,7 +315,7 @@ int main(int argc, char* argv[])
 
     // Startup and run the Broker.
     LinuxBrokerLog log("RDMnetBroker.log");
-    broker_shell.Run(&log);
+    exit_code = broker_shell.Run(&log);
 
     // Unregister/cleanup the network change detection. (Disabled for now)
     // CancelMibChangeNotify2(change_notif_handle);

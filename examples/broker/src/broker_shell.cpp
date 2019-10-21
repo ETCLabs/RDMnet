@@ -59,29 +59,32 @@ void BrokerShell::ApplySettingsChanges(rdmnet::BrokerSettings& settings)
   }
 }
 
-void BrokerShell::Run(rdmnet::BrokerLog* log)
+int BrokerShell::Run(rdmnet::BrokerLog* log)
 {
   PrintWarningMessage();
 
   log_ = log;
   log_->Startup(initial_data_.log_mask);
 
-  rdmnet::BrokerSettings broker_settings(0x6574);
+  rdmnet::BrokerSettings broker_settings(etcpal::Uuid::V4(), 0x6574);
+
   broker_settings.scope = initial_data_.scope;
-
-  broker_settings.cid = etcpal::Uuid::V4();
-
   broker_settings.dns.manufacturer = "ETC";
-  broker_settings.dns.service_instance_name = "UNIQUE NAME";
-  broker_settings.dns.model = "E1.33 Broker Prototype";
+  broker_settings.dns.model = "RDMnet Broker Example App";
   broker_settings.listen_port = initial_data_.port;
   broker_settings.listen_macs = initial_data_.macs;
   broker_settings.listen_addrs = initial_data_.ifaces;
 
   rdmnet::Broker broker;
-  broker.Startup(broker_settings, this, log_);
 
-  // We want this to run forever if a console
+  if (!broker.Startup(broker_settings, this, log_))
+  {
+    std::cout << "Broker failed to start.\n";
+    log->Shutdown();
+    return 1;
+  }
+
+  // We want this to run forever in a console
   while (true)
   {
     broker.Tick();
@@ -106,6 +109,7 @@ void BrokerShell::Run(rdmnet::BrokerLog* log)
 
   broker.Shutdown();
   log_->Shutdown();
+  return 0;
 }
 
 void BrokerShell::PrintVersion()

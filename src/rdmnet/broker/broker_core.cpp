@@ -136,10 +136,11 @@ bool BrokerCore::Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerN
 
     components_.disc->RegisterBroker(settings_);
 
-    log_->Info("%s RDMnet Broker Version %s", settings.dns.manufacturer.c_str(), RDMNET_VERSION_STRING);
-    log_->Info("Broker starting at scope \"%s\", listening on port %d.", settings.scope.c_str(), settings.listen_port);
+    log_->Info("%s RDMnet Broker Version %s", settings_.dns.manufacturer.c_str(), RDMNET_VERSION_STRING);
+    log_->Info("Broker starting at scope \"%s\", listening on port %d.", settings_.scope.c_str(),
+               settings_.listen_port);
 
-    if (!settings.listen_addrs.empty())
+    if (!settings_.listen_addrs.empty())
     {
       log_->Info("Listening on manually-specified network interfaces:");
       for (auto addr : settings.listen_addrs)
@@ -914,8 +915,10 @@ etcpal_socket_t BrokerCore::StartListening(const EtcPalIpAddr& ip, uint16_t& por
 
 bool BrokerCore::StartBrokerServices()
 {
-  bool success = true;
+  if (!components_.threads->AddClientServiceThread())
+    return false;
 
+  bool success = true;
   std::set<EtcPalIpAddr> final_listen_addrs = CombineMacsAndInterfaces(settings_.listen_addrs, settings_.listen_macs);
   if (final_listen_addrs.empty())
   {
@@ -926,7 +929,11 @@ bool BrokerCore::StartBrokerServices()
     etcpal_socket_t listen_sock = StartListening(any_addr, settings_.listen_port);
     if (listen_sock != ETCPAL_SOCKET_INVALID)
     {
-      components_.threads->AddListenThread(listen_sock);
+      if (!components_.threads->AddListenThread(listen_sock))
+      {
+        etcpal_close(listen_sock);
+        success = false;
+      }
     }
     else
     {
@@ -940,10 +947,17 @@ bool BrokerCore::StartBrokerServices()
     while (addr_iter != final_listen_addrs.end())
     {
       etcpal_socket_t listen_sock = StartListening(*addr_iter, settings_.listen_port);
-      if (listen_sock != ETCPAL_SOCKET_INVALID)
+      if (listen_sock != ETCPAL_SOCKET_INVALID && components_.threads->AddListenThread(listen_sock))
       {
-        components_.threads->AddListenThread(listen_sock);
-        ++addr_iter;
+        if (components_.threads->AddListenThread(listen_sock))
+        {
+          ++addr_iter;
+        }
+        else
+        {
+          etcpal_close(listen_sock);
+          addr_iter = settings_.listen_addrs.erase(addr_iter);
+        }
       }
       else
       {

@@ -53,6 +53,8 @@ public:
 class BrokerThreadInterface
 {
 public:
+  virtual ~BrokerThreadInterface() = default;
+
   virtual void SetNotify(BrokerThreadNotify* notify) = 0;
 
   virtual bool AddListenThread(etcpal_socket_t listen_sock) = 0;

@@ -95,12 +95,13 @@ struct BrokerSettings
   /// supported to reject the connection request.
   unsigned int max_reject_connections{1000};
 
-  BrokerSettings();
-  BrokerSettings(const RdmUid& static_uid);
-  BrokerSettings(uint16_t rdm_manu_id);
+  BrokerSettings() = default;
+  BrokerSettings(const etcpal::Uuid& cid_in, const RdmUid& static_uid_in);
+  BrokerSettings(const etcpal::Uuid& cid_in, uint16_t rdm_manu_id_in);
 
   void SetDynamicUid(uint16_t manufacturer_id);
   void SetStaticUid(const RdmUid& uid_in);
+  void SetDefaultServiceInstanceName();
 
   bool valid() const;
 };
@@ -117,27 +118,40 @@ inline void BrokerSettings::SetStaticUid(const RdmUid& uid_in)
   uid_type = kStaticUid;
 }
 
-inline BrokerSettings::BrokerSettings()
+inline void BrokerSettings::SetDefaultServiceInstanceName()
 {
+  dns.service_instance_name = "RDMnet Broker Instance " + cid.ToString();
 }
 
-/// Initialize a BrokerSettings with a static UID.
-inline BrokerSettings::BrokerSettings(const RdmUid& static_uid)
+/// Initialize a BrokerSettings with a CID and static UID.
+inline BrokerSettings::BrokerSettings(const etcpal::Uuid& cid_in, const RdmUid& static_uid_in) : cid(cid_in)
 {
-  SetStaticUid(static_uid);
+  SetStaticUid(static_uid_in);
+  SetDefaultServiceInstanceName();
 }
 
-/// Initialize a BrokerSettings with a dynamic UID (provide the manufacturer ID).
-inline BrokerSettings::BrokerSettings(uint16_t rdm_manu_id)
+/// Initialize a BrokerSettings with a CID and dynamic UID (provide the manufacturer ID).
+inline BrokerSettings::BrokerSettings(const etcpal::Uuid& cid_in, uint16_t rdm_manu_id_in) : cid(cid_in)
 {
-  SetDynamicUid(rdm_manu_id);
+  SetDynamicUid(rdm_manu_id_in);
+  SetDefaultServiceInstanceName();
 }
 
 inline bool BrokerSettings::valid() const
 {
-  return (!cid.IsNull() && (scope.length() < (E133_SCOPE_STRING_PADDED_LENGTH - 1)) && (listen_port >= 1024) &&
+  // clang-format off
+  return (
+          !cid.IsNull() &&
+          (!scope.empty() && scope.length() < (E133_SCOPE_STRING_PADDED_LENGTH - 1)) &&
+          (!dns.manufacturer.empty() && dns.manufacturer.length() < (E133_MANUFACTURER_STRING_PADDED_LENGTH - 1)) &&
+          (!dns.model.empty() && dns.model.length() < (E133_MODEL_STRING_PADDED_LENGTH - 1)) &&
+          (!dns.service_instance_name.empty() && dns.service_instance_name.length() < (E133_SERVICE_NAME_STRING_PADDED_LENGTH - 1)) &&
+          (listen_port == 0 || listen_port >= 1024) &&
+          (RDM_GET_MANUFACTURER_ID(&uid) > 0 && RDM_GET_MANUFACTURER_ID(&uid) < 0x8000) &&
           !(uid_type == rdmnet::BrokerSettings::kStaticUid && !RDMNET_UID_IS_STATIC(&uid)) &&
-          !(uid_type == rdmnet::BrokerSettings::kDynamicUid && !RDMNET_UID_IS_DYNAMIC(&uid)));
+          !(uid_type == rdmnet::BrokerSettings::kDynamicUid && !RDMNET_UID_IS_DYNAMIC(&uid))
+         );
+  // clang-format on
 }
 
 };  // namespace rdmnet

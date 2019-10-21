@@ -51,6 +51,8 @@ public:
 class BrokerDiscoveryInterface
 {
 public:
+  virtual ~BrokerDiscoveryInterface() = default;
+
   virtual void SetNotify(BrokerDiscoveryNotify* notify) = 0;
 
   virtual etcpal::Result RegisterBroker(const rdmnet::BrokerSettings& settings) = 0;
