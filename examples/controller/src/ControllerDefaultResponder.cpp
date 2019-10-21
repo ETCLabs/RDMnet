@@ -1069,7 +1069,7 @@ void ControllerDefaultResponder::ResetTcpUnhealthyCounter(const std::string& sco
   }
 }
 
-bool ControllerDefaultResponder::ScopeMap::Find(std::string scope, ScopeEntry& entry) const
+bool ControllerDefaultResponder::ScopeMap::Find(const std::string& scope, ScopeEntry& entry) const
 {
   auto iter = string_map_.find(scope);
   if (iter != string_map_.end())
@@ -1091,7 +1091,7 @@ bool ControllerDefaultResponder::ScopeMap::Find(uint16_t slot, ScopeEntry& entry
   return false;
 }
 
-bool ControllerDefaultResponder::ScopeMap::Remove(std::string scope)
+bool ControllerDefaultResponder::ScopeMap::Remove(const std::string& scope)
 {
   auto string_map_iter = string_map_.find(scope);
   if (string_map_iter != string_map_.end())
