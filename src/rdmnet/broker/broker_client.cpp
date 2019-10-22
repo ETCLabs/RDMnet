@@ -23,7 +23,7 @@
 #include "rdmnet/core/connection.h"
 #include "rdmnet/broker.h"
 
-bool BrokerClient::Push(const EtcPalUuid& sender_cid, const BrokerMessage& msg)
+bool BrokerClient::Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg)
 {
   if (broker_msgs_.size() < max_q_size_)
     return false;
@@ -31,7 +31,7 @@ bool BrokerClient::Push(const EtcPalUuid& sender_cid, const BrokerMessage& msg)
   return PushPostSizeCheck(sender_cid, msg);
 }
 
-bool BrokerClient::PushPostSizeCheck(const EtcPalUuid& sender_cid, const BrokerMessage& msg)
+bool BrokerClient::PushPostSizeCheck(const etcpal::Uuid& sender_cid, const BrokerMessage& msg)
 {
   MessageRef to_push;
   bool res = false;
@@ -42,7 +42,7 @@ bool BrokerClient::PushPostSizeCheck(const EtcPalUuid& sender_cid, const BrokerM
       to_push.data = std::make_unique<uint8_t[]>(CONNECT_REPLY_FULL_MSG_SIZE);
       if (to_push.data)
       {
-        to_push.size = pack_connect_reply(to_push.data.get(), CONNECT_REPLY_FULL_MSG_SIZE, &sender_cid,
+        to_push.size = pack_connect_reply(to_push.data.get(), CONNECT_REPLY_FULL_MSG_SIZE, &sender_cid.get(),
                                           get_connect_reply_msg(&msg));
         if (to_push.size)
         {
@@ -60,7 +60,7 @@ bool BrokerClient::PushPostSizeCheck(const EtcPalUuid& sender_cid, const BrokerM
       to_push.data = std::make_unique<uint8_t[]>(bufsize);
       if (to_push.data)
       {
-        to_push.size = pack_client_list(to_push.data.get(), bufsize, &sender_cid, msg.vector,
+        to_push.size = pack_client_list(to_push.data.get(), bufsize, &sender_cid.get(), msg.vector,
                                         get_client_list(&msg)->client_entry_list);
         if (to_push.size)
         {
@@ -76,7 +76,7 @@ bool BrokerClient::PushPostSizeCheck(const EtcPalUuid& sender_cid, const BrokerM
   return res;
 }
 
-bool RPTClient::Push(const EtcPalUuid& sender_cid, const BrokerMessage& msg)
+bool RPTClient::Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg)
 {
   if (broker_msgs_.size() + status_msgs_.size() >= max_q_size_)
     return false;
@@ -84,7 +84,7 @@ bool RPTClient::Push(const EtcPalUuid& sender_cid, const BrokerMessage& msg)
   return BrokerClient::PushPostSizeCheck(sender_cid, msg);
 }
 
-bool RPTClient::PushPostSizeCheck(const EtcPalUuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg)
+bool RPTClient::PushPostSizeCheck(const etcpal::Uuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg)
 {
   bool res = false;
   MessageRef to_push;
@@ -93,7 +93,7 @@ bool RPTClient::PushPostSizeCheck(const EtcPalUuid& sender_cid, const RptHeader&
   to_push.data = std::make_unique<uint8_t[]>(bufsize);
   if (to_push.data)
   {
-    to_push.size = pack_rpt_status(to_push.data.get(), bufsize, &sender_cid, &header, &msg);
+    to_push.size = pack_rpt_status(to_push.data.get(), bufsize, &sender_cid.get(), &header, &msg);
     if (to_push.size)
     {
       status_msgs_.push(std::move(to_push));
@@ -103,7 +103,7 @@ bool RPTClient::PushPostSizeCheck(const EtcPalUuid& sender_cid, const RptHeader&
   return res;
 }
 
-bool RPTController::Push(rdmnet_conn_t /*from_conn*/, const EtcPalUuid& sender_cid, const RptMessage& msg)
+bool RPTController::Push(rdmnet_conn_t /*from_conn*/, const etcpal::Uuid& sender_cid, const RptMessage& msg)
 {
   bool res = false;
   if ((status_msgs_.size() + broker_msgs_.size() + rpt_msgs_.size()) >= max_q_size_)
@@ -120,7 +120,7 @@ bool RPTController::Push(rdmnet_conn_t /*from_conn*/, const EtcPalUuid& sender_c
       to_push.data = std::make_unique<uint8_t[]>(bufsize);
       if (to_push.data)
       {
-        to_push.size = pack_rpt_request(to_push.data.get(), bufsize, &sender_cid, &msg.header,
+        to_push.size = pack_rpt_request(to_push.data.get(), bufsize, &sender_cid.get(), &msg.header,
                                         &(get_rdm_buf_list(&msg)->list->msg));
         if (to_push.size)
         {
@@ -143,8 +143,8 @@ bool RPTController::Push(rdmnet_conn_t /*from_conn*/, const EtcPalUuid& sender_c
       to_push.data = std::make_unique<uint8_t[]>(bufsize);
       if (to_push.data)
       {
-        to_push.size = pack_rpt_notification(to_push.data.get(), bufsize, &sender_cid, &msg.header, resp_list.data(),
-                                             resp_list.size());
+        to_push.size = pack_rpt_notification(to_push.data.get(), bufsize, &sender_cid.get(), &msg.header,
+                                             resp_list.data(), resp_list.size());
         if (to_push.size)
         {
           rpt_msgs_.push(std::move(to_push));
@@ -160,7 +160,7 @@ bool RPTController::Push(rdmnet_conn_t /*from_conn*/, const EtcPalUuid& sender_c
   return res;
 }
 
-bool RPTController::Push(const EtcPalUuid& sender_cid, const BrokerMessage& msg)
+bool RPTController::Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg)
 {
   if ((status_msgs_.size() + broker_msgs_.size() + rpt_msgs_.size()) >= max_q_size_)
   {
@@ -169,7 +169,7 @@ bool RPTController::Push(const EtcPalUuid& sender_cid, const BrokerMessage& msg)
   return BrokerClient::PushPostSizeCheck(sender_cid, msg);
 }
 
-bool RPTController::Push(const EtcPalUuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg)
+bool RPTController::Push(const etcpal::Uuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg)
 {
   if (broker_msgs_.size() + status_msgs_.size() >= max_q_size_)
     return false;
@@ -182,8 +182,7 @@ bool RPTController::Send()
   MessageRef* msg = nullptr;
   std::queue<MessageRef>* q = nullptr;
 
-  // Broker messages are first priority, then status messages, then RPT
-  // messages.
+  // Broker messages are first priority, then status messages, then RPT messages.
   if (!broker_msgs_.empty())
   {
     q = &broker_msgs_;
@@ -218,7 +217,7 @@ bool RPTController::Send()
   return false;
 }
 
-bool RPTDevice::Push(rdmnet_conn_t from_conn, const EtcPalUuid& sender_cid, const RptMessage& msg)
+bool RPTDevice::Push(rdmnet_conn_t from_conn, const etcpal::Uuid& sender_cid, const RptMessage& msg)
 {
   bool res = false;
   if ((status_msgs_.size() + broker_msgs_.size() + rpt_msgs_total_size_) >= max_q_size_)
@@ -239,7 +238,7 @@ bool RPTDevice::Push(rdmnet_conn_t from_conn, const EtcPalUuid& sender_cid, cons
       to_push.data = std::make_unique<uint8_t[]>(bufsize);
       if (to_push.data)
       {
-        to_push.size = pack_rpt_request(to_push.data.get(), bufsize, &sender_cid, &msg.header,
+        to_push.size = pack_rpt_request(to_push.data.get(), bufsize, &sender_cid.get(), &msg.header,
                                         &(get_rdm_buf_list(&msg)->list->msg));
         if (to_push.size)
         {
@@ -257,7 +256,7 @@ bool RPTDevice::Push(rdmnet_conn_t from_conn, const EtcPalUuid& sender_cid, cons
   return res;
 }
 
-bool RPTDevice::Push(const EtcPalUuid& sender_cid, const BrokerMessage& msg)
+bool RPTDevice::Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg)
 {
   if ((status_msgs_.size() + broker_msgs_.size() + rpt_msgs_total_size_) >= max_q_size_)
   {

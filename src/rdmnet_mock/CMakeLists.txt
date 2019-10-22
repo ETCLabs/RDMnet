@@ -35,4 +35,4 @@ target_sources(RDMnetCoreMock INTERFACE
 )
 target_compile_definitions(RDMnetCoreMock INTERFACE RDMNET_BUILDING_FULL_MOCK_CORE_LIB)
 target_include_directories(RDMnetCoreMock INTERFACE ${RDMNET_INCLUDE} ${RDMNET_SRC})
-target_link_libraries(RDMnetCoreMock INTERFACE meekrosoft::fff RDMnetDiscoveryMock EtcPal RDM)
+target_link_libraries(RDMnetCoreMock INTERFACE meekrosoft::fff)

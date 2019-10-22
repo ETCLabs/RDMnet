@@ -90,7 +90,7 @@ RDMnetLibWrapper::RDMnetLibWrapper(ControllerLog* log) : log_(log)
 {
 }
 
-bool RDMnetLibWrapper::Startup(const EtcPalUuid& cid, RDMnetLibNotify* notify)
+bool RDMnetLibWrapper::Startup(const etcpal::Uuid& cid, RDMnetLibNotify* notify)
 {
   if (!running_)
   {
@@ -109,7 +109,7 @@ bool RDMnetLibWrapper::Startup(const EtcPalUuid& cid, RDMnetLibNotify* notify)
     // Create our controller handle in the RDMnet library
     RdmnetControllerConfig config;
     RDMNET_CONTROLLER_CONFIG_INIT(&config, 0x6574);
-    config.cid = my_cid_;
+    config.cid = my_cid_.get();
     // clang-format off
     config.callbacks = {
       controllercb_connected,

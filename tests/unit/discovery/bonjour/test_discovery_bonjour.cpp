@@ -93,7 +93,7 @@ protected:
     RESET_FAKE(monitorcb_broker_lost);
     RESET_FAKE(monitorcb_scope_monitor_error);
 
-    ETCPAL_SOCKET_DO_FOR_ALL_FAKES(RESET_FAKE);
+    etcpal_socket_reset_all_fakes();
 
     FFF_RESET_HISTORY();
 
@@ -180,7 +180,7 @@ void TestDiscoveryBonjour::CreateDefaultBroker()
 
   // CID with the hyphens removed
   char cid_buf[ETCPAL_UUID_STRING_BYTES];
-  etcpal_uuid_to_string(cid_buf, &default_discovered_broker_.cid);
+  etcpal_uuid_to_string(&default_discovered_broker_.cid, cid_buf);
   std::string cid_str(cid_buf);
   cid_str.erase(std::remove(cid_str.begin(), cid_str.end(), '-'), cid_str.end());
   ASSERT_EQ(kDNSServiceErr_NoError,

@@ -16,17 +16,23 @@
  * This file is a part of RDMnet. For more information, go to:
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
-#include <iostream>
+
+#include "rdmnet/broker/settings.h"
+
 #include "gtest/gtest.h"
-#include "fff.h"
-#include "etcpal/netint.h"
-#include "etcpal/socket.h"
 
-DEFINE_FFF_GLOBALS;
-
-int main(int argc, char* argv[])
+TEST(TestBrokerSettings, DefaultConstructedSettingsIsNotValid)
 {
-  testing::InitGoogleTest(&argc, argv);
+  rdmnet::BrokerSettings settings;
+  EXPECT_FALSE(settings.valid());
+}
 
-  return RUN_ALL_TESTS();
+TEST(TestBrokerSettings, ExplicitConstructedSettingsIsValid)
+{
+  // Constructed using dynamic UID
+  rdmnet::BrokerSettings settings(etcpal::Uuid::OsPreferred(), 0x6574);
+  EXPECT_TRUE(settings.valid());
+
+  rdmnet::BrokerSettings settings_2(etcpal::Uuid::OsPreferred(), {0x6574, 0x00001234});
+  EXPECT_TRUE(settings_2.valid());
 }

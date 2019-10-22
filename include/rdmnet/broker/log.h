@@ -18,19 +18,20 @@
  *****************************************************************************/
 
 /// \file rdmnet/broker/log.h
-#ifndef _RDMNET_BROKER_LOG_H_
-#define _RDMNET_BROKER_LOG_H_
+
+#ifndef RDMNET_BROKER_LOG_H_
+#define RDMNET_BROKER_LOG_H_
 
 #include <queue>
 #include <string>
 
-#include "etcpal/lock.h"
+#include "etcpal/cpp/lock.h"
 #include "etcpal/log.h"
 #include "etcpal/thread.h"
 
 namespace rdmnet
 {
-/// \brief A class for logging messages from the %Broker.
+/// \brief A class for logging messages from the Broker.
 class BrokerLog
 {
 public:
@@ -74,12 +75,12 @@ protected:
   const DispatchPolicy dispatch_policy_{DispatchPolicy::kQueued};
 
   std::queue<std::string> msg_q_;
-  etcpal_signal_t signal_{};
+  etcpal::Signal signal_;
   etcpal_thread_t thread_{};
-  etcpal_mutex_t lock_{};
+  etcpal::Mutex lock_;
   bool keep_running_{false};
 };
 
 };  // namespace rdmnet
 
-#endif  // _RDMNET_BROKER_LOG_H_
+#endif  // RDMNET_BROKER_LOG_H_

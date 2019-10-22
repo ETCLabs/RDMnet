@@ -18,11 +18,12 @@
  *****************************************************************************/
 
 /// \file broker_uid_manager.h
-#ifndef _BROKER_UID_MANAGER_H_
-#define _BROKER_UID_MANAGER_H_
+
+#ifndef BROKER_UID_MANAGER_H_
+#define BROKER_UID_MANAGER_H_
 
 #include <map>
-#include "etcpal/uuid.h"
+#include "etcpal/cpp/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/core/connection.h"
 
@@ -34,7 +35,7 @@
 class BrokerUidManager
 {
 public:
-  BrokerUidManager() {}
+  BrokerUidManager() = default;
   explicit BrokerUidManager(size_t max_uid_capacity) : max_uid_capacity_(max_uid_capacity) {}
 
   static constexpr size_t kDefaultMaxUidCapacity = 1000000;
@@ -46,7 +47,7 @@ public:
   };
 
   AddResult AddStaticUid(rdmnet_conn_t conn_handle, const RdmUid& static_uid);
-  AddResult AddDynamicUid(rdmnet_conn_t conn_handle, const EtcPalUuid& cid_or_rid, RdmUid& new_dynamic_uid);
+  AddResult AddDynamicUid(rdmnet_conn_t conn_handle, const etcpal::Uuid& cid_or_rid, RdmUid& new_dynamic_uid);
 
   void RemoveUid(const RdmUid& uid);
 
@@ -74,10 +75,10 @@ private:
   std::map<RdmUid, UidData> uid_lookup_;
   // We try to give the same components back their dynamic UIDs when they reconnect.
   // TODO: scalability/flushing to disk.
-  std::map<EtcPalUuid, ReservationData> reservations_;
+  std::map<etcpal::Uuid, ReservationData> reservations_;
   // The next dynamic RDM Device ID that will be assigned
   uint32_t next_device_id_{1};
-  const size_t max_uid_capacity_{kDefaultMaxUidCapacity};
+  size_t max_uid_capacity_{kDefaultMaxUidCapacity};
 };
 
-#endif  // _BROKER_UID_MANAGER_H_
+#endif  // BROKER_UID_MANAGER_H_

@@ -18,11 +18,11 @@
  *****************************************************************************/
 
 // Windows override of BrokerSocketManager.
-// Uses Windows I/O completion ports, the most efficient and scalable socket management tool
-// available from the Windows API.
+// Uses Windows I/O completion ports, currently the most efficient and scalable socket management
+// tool available from the Windows API.
 
-#ifndef _WIN_SOCKET_MANAGER_H_
-#define _WIN_SOCKET_MANAGER_H_
+#ifndef WIN_SOCKET_MANAGER_H_
+#define WIN_SOCKET_MANAGER_H_
 
 #include <winsock2.h>
 #include <windows.h>
@@ -32,7 +32,7 @@
 #include <vector>
 #include <memory>
 
-#include "etcpal/lock.h"
+#include "etcpal/cpp/lock.h"
 #include "broker_socket_manager.h"
 
 // Wrapper around Windows thread functions to increase the testability of this module.
@@ -89,13 +89,13 @@ public:
   WinBrokerSocketManager(WindowsThreadInterface* thread_interface = new DefaultWindowsThreads)
       : thread_interface_(thread_interface)
   {
-    etcpal_rwlock_create(&socket_lock_);
   }
-  virtual ~WinBrokerSocketManager() { etcpal_rwlock_destroy(&socket_lock_); }
+  virtual ~WinBrokerSocketManager() = default;
 
   // rdmnet::BrokerSocketManager interface
-  bool Startup(BrokerSocketManagerNotify* notify) override;
+  bool Startup() override;
   bool Shutdown() override;
+  void SetNotify(BrokerSocketNotify* notify) override { notify_ = notify; }
   bool AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t socket) override;
   void RemoveSocket(rdmnet_conn_t conn_handle) override;
 
@@ -116,10 +116,10 @@ private:
 
   // The set of sockets being managed.
   std::map<rdmnet_conn_t, std::unique_ptr<SocketData>> sockets_;
-  etcpal_rwlock_t socket_lock_;
+  etcpal::RwLock socket_lock_;
 
   // The callback instance
-  BrokerSocketManagerNotify* notify_{nullptr};
+  BrokerSocketNotify* notify_{nullptr};
 };
 
-#endif  // _WIN_SOCKET_MANAGER_H_
+#endif  // WIN_SOCKET_MANAGER_H_

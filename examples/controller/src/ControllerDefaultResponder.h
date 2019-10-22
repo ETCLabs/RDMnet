@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#include "etcpal/lock.h"
+#include "etcpal/cpp/lock.h"
 #include "rdm/param_data.h"
 #include "rdm/responder.h"
 #include "rdmnet/defs.h"
@@ -50,8 +50,7 @@ public:
 class ControllerDefaultResponder
 {
 public:
-  ControllerDefaultResponder() { etcpal_rwlock_create(&prop_lock_); }
-  virtual ~ControllerDefaultResponder() { etcpal_rwlock_destroy(&prop_lock_); }
+  virtual ~ControllerDefaultResponder() = default;
 
   void InitResponder(ControllerResponderNotify* notify);
 
@@ -161,7 +160,7 @@ private:
   };
 
   // Property data lock
-  mutable etcpal_rwlock_t prop_lock_;
+  mutable etcpal::RwLock prop_lock_;
 
   // Property data
   bool identifying_{false};

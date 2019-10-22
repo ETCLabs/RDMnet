@@ -12,7 +12,7 @@ include(RdmnetAddDependency)
 
 if(RDMNET_BUILD_TESTS)
   set(ETCPAL_BUILD_MOCK_LIB ON CACHE BOOL "Build the EtcPal mock library" FORCE)
-  # set(RDM_BUILD_MOCK_LIB ON)
+  set(RDM_BUILD_MOCK_LIB ON CACHE BOOL "Build the RDM mock library" FORCE)
 endif()
 rdmnet_add_dependency(EtcPal ETCPAL_DIR)
 rdmnet_add_dependency(RDM RDM_DIR)

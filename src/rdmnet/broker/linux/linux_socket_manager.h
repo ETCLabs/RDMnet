@@ -18,17 +18,18 @@
  *****************************************************************************/
 
 // Linux override of BrokerSocketManager.
-// Uses epoll, the most efficient and scalable socket management tool available from the Linux API.
+// Uses epoll, currently the most efficient and scalable socket management tool available from the
+// Linux API.
 
-#ifndef _LINUX_SOCKET_MANAGER_H_
-#define _LINUX_SOCKET_MANAGER_H_
+#ifndef LINUX_SOCKET_MANAGER_H_
+#define LINUX_SOCKET_MANAGER_H_
 
 #include <map>
 #include <vector>
 #include <memory>
 #include <pthread.h>
 
-#include "etcpal/lock.h"
+#include "etcpal/cpp/lock.h"
 #include "broker_socket_manager.h"
 
 // Wrapper around Linux thread functions to increase the testability of this module.
@@ -81,13 +82,13 @@ public:
   LinuxBrokerSocketManager(/* LinuxThreadInterface* thread_interface = new DefaultLinuxThreads */)
   //: thread_interface_(thread_interface)
   {
-    etcpal_rwlock_create(&socket_lock_);
   }
-  virtual ~LinuxBrokerSocketManager() { etcpal_rwlock_destroy(&socket_lock_); }
+  virtual ~LinuxBrokerSocketManager() = default;
 
   // BrokerSocketManager interface
-  bool Startup(BrokerSocketManagerNotify* notify) override;
+  bool Startup() override;
   bool Shutdown() override;
+  void SetNotify(BrokerSocketManagerNotify* notify) override { notify_ = notify; }
   bool AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t socket) override;
   void RemoveSocket(rdmnet_conn_t conn_handle) override;
 
@@ -107,10 +108,10 @@ private:
 
   // The set of sockets being managed.
   std::map<rdmnet_conn_t, std::unique_ptr<SocketData>> sockets_;
-  etcpal_rwlock_t socket_lock_;
+  etcpal::RwLock socket_lock_;
 
   // The callback instance
-  BrokerSocketManagerNotify* notify_{nullptr};
+  BrokerSocketNotify* notify_{nullptr};
 };
 
-#endif  // _LINUX_SOCKET_MANAGER_H_
+#endif  // LINUX_SOCKET_MANAGER_H_

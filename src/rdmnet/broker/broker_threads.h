@@ -20,8 +20,9 @@
 /// \file broker_threads.h
 /// \brief Classes to represent threads used by the Broker.
 /// \author Nick Ballhorn-Wagner and Sam Kearney
-#ifndef _BROKER_THREADS_H_
-#define _BROKER_THREADS_H_
+
+#ifndef BROKER_THREADS_H_
+#define BROKER_THREADS_H_
 
 #include <string>
 #include <memory>
@@ -35,74 +36,101 @@
 #include "rdmnet/broker.h"
 #include "broker_util.h"
 
-// The interface for the listener callback.
-class ListenThreadNotify
+// The interface for callbacks from threads managed by the broker.
+class BrokerThreadNotify
 {
 public:
-  // Called when the listen thread gets a new connection.  If you return false,
-  // the connection is severed. Presumably you were just about to stop the
-  // listener threads anyway...
-  // The address & port fields of addr are used.
-  // Do NOT stop the listening thread in this callback!
-  virtual bool NewConnection(etcpal_socket_t new_sock, const EtcPalSockaddr& remote_addr) = 0;
-};
+  // Called when a listen thread gets a new connection. Return false to close the connection
+  // immediately.
+  virtual bool HandleNewConnection(etcpal_socket_t new_sock, const EtcPalSockaddr& remote_addr) = 0;
 
-// Listens for TCP connections
-class ListenThread
-{
-public:
-  ListenThread(etcpal_socket_t listen_sock, ListenThreadNotify* pnotify, rdmnet::BrokerLog* log);
-  virtual ~ListenThread();
-
-  // Creates the listening socket and starts the thread.
-  bool Start();
-
-  // Destroys the listening socket and stops the thread.
-  void Stop();
-
-  // The thread function
-  void Run();
-
-protected:
-  bool terminated_{true};
-  ListenThreadNotify* notify_{nullptr};
-
-  etcpal_thread_t thread_handle_;
-  etcpal_socket_t listen_socket_{ETCPAL_SOCKET_INVALID};
-
-  rdmnet::BrokerLog* log_{nullptr};
-};
-
-/************************************/
-
-class ClientServiceThreadNotify
-{
-public:
-  // Process each client queue, sending out the next message from each queue if
-  // clients are available. Return false if no messages or partial messages
+  // A notification from a client service thread to process each client queue, sending out the next
+  // message from each queue if one is available. Return false if no messages or partial messages
   // were sent.
   virtual bool ServiceClients() = 0;
 };
 
-// This is the thread that processes the controller queues and device states
-class ClientServiceThread
+class BrokerThreadInterface
 {
 public:
-  explicit ClientServiceThread(unsigned int sleep_ms);
-  virtual ~ClientServiceThread();
+  virtual ~BrokerThreadInterface() = default;
 
-  bool Start();
-  void Stop();
+  virtual void SetNotify(BrokerThreadNotify* notify) = 0;
 
-  void SetNotify(ClientServiceThreadNotify* pnotify) { notify_ = pnotify; }
+  virtual bool AddListenThread(etcpal_socket_t listen_sock) = 0;
 
-  void Run();
+  virtual bool AddClientServiceThread() = 0;
 
-protected:
-  bool terminated_;
-  etcpal_thread_t thread_handle_;
-  int sleep_ms_;
-  ClientServiceThreadNotify* notify_;
+  virtual void StopThreads() = 0;
 };
 
-#endif  // _BROKER_THREADS_H_
+class BrokerThread
+{
+public:
+  BrokerThread(BrokerThreadNotify* notify) : notify_(notify) {}
+  virtual ~BrokerThread() {}
+
+  virtual bool Start() = 0;
+  virtual void Run() = 0;
+
+  bool terminated() const { return terminated_; }
+
+protected:
+  etcpal_thread_t handle_{};
+  BrokerThreadNotify* notify_{nullptr};
+  bool terminated_{true};
+};
+
+class ListenThread : public BrokerThread
+{
+public:
+  ListenThread(etcpal_socket_t listen_sock, BrokerThreadNotify* notify, rdmnet::BrokerLog* log)
+      : BrokerThread(notify), socket_(listen_sock), log_(log)
+  {
+  }
+  ~ListenThread() override;
+
+  bool Start() override;
+  void Run() override;
+
+  void ReadSocket();
+
+private:
+  etcpal_socket_t socket_{ETCPAL_SOCKET_INVALID};
+  rdmnet::BrokerLog* log_{nullptr};
+};
+
+class ClientServiceThread : public BrokerThread
+{
+public:
+  ClientServiceThread(BrokerThreadNotify* notify) : BrokerThread(notify) {}
+  ~ClientServiceThread() override;
+
+  bool Start() override;
+  void Run() override;
+
+protected:
+  static constexpr int kSleepMs{1};
+};
+
+class BrokerThreadManager : public BrokerThreadInterface
+{
+public:
+  void SetNotify(BrokerThreadNotify* notify) override { notify_ = notify; }
+
+  bool AddListenThread(etcpal_socket_t listen_sock) override;
+  bool AddClientServiceThread() override;
+
+  void StopThreads() override;
+
+  std::vector<std::unique_ptr<BrokerThread>>& threads();
+
+private:
+  BrokerThreadNotify* notify_{nullptr};
+
+  std::vector<std::unique_ptr<BrokerThread>> threads_;
+
+  rdmnet::BrokerLog* log_{nullptr};
+};
+
+#endif  // BROKER_THREADS_H_

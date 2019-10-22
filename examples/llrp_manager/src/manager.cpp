@@ -22,7 +22,9 @@
 #include <cstring>
 #include <cstdio>
 #include <memory>
+#include <stdexcept>
 
+#include "etcpal/cpp/uuid.h"
 #include "etcpal/netint.h"
 #include "etcpal/pack.h"
 #include "etcpal/socket.h"
@@ -407,17 +409,14 @@ void LLRPManager::PrintTargets()
   printf("Handle %-13s %-36s %-15s %s\n", "UID", "CID", "Type", "Hardware ID");
   for (const auto& target : targets_)
   {
-    char cid_str[ETCPAL_UUID_STRING_BYTES];
-    etcpal_uuid_to_string(cid_str, &target.second.prot_info.cid);
-
     char mac_str[21];
     const uint8_t* mac_bytes = target.second.prot_info.hardware_address;
     snprintf(mac_str, 21, "%02x:%02x:%02x:%02x:%02x:%02x", mac_bytes[0], mac_bytes[1], mac_bytes[2], mac_bytes[3],
              mac_bytes[4], mac_bytes[5]);
 
     printf("%-6d %04x:%08x %s %-15s %s\n", target.first, target.second.prot_info.uid.manu,
-           target.second.prot_info.uid.id, cid_str, LLRPComponentTypeToString(target.second.prot_info.component_type),
-           mac_str);
+           target.second.prot_info.uid.id, etcpal::Uuid(target.second.prot_info.cid).ToString().c_str(),
+           LLRPComponentTypeToString(target.second.prot_info.component_type), mac_str);
   }
 }
 

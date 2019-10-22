@@ -19,42 +19,57 @@
 
 /// \file broker_discovery.h
 /// \brief Handles the Broker's DNS registration and discovery of other Brokers.
-/// \author Sam Kearney
-#ifndef _BROKER_DISCOVERY_H_
-#define _BROKER_DISCOVERY_H_
+
+#ifndef BROKER_DISCOVERY_H_
+#define BROKER_DISCOVERY_H_
 
 #include <string>
 #include <vector>
-#include "etcpal/error.h"
+#include "etcpal/cpp/error.h"
 #include "etcpal/int.h"
 #include "rdmnet/broker.h"
 #include "rdmnet/core/discovery.h"
 
-/// A callback interface for notifications from a BrokerDiscoveryManager.
-class BrokerDiscoveryManagerNotify
+/// A callback interface for notifications from the broker discovery subsystem.
+class BrokerDiscoveryNotify
 {
 public:
-  /// A %Broker was registered with the information indicated by broker_info.
-  virtual void BrokerRegistered(const std::string& assigned_service_name) = 0;
-  /// A %Broker was found at the same scope as the one which was previously registered.
-  virtual void OtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info) = 0;
-  /// A previously-found non-local %Broker has gone away.
-  virtual void OtherBrokerLost(const std::string& service_name) = 0;
-  /// An error occurred while registering a %Broker's service instance.
-  virtual void BrokerRegisterError(int platform_error) = 0;
+  /// A broker was registered with the information indicated by broker_info.
+  virtual void HandleBrokerRegistered(const std::string& scope, const std::string& requested_service_name,
+                                      const std::string& assigned_service_name) = 0;
+  /// A broker was found at the same scope as the one which was previously registered.
+  virtual void HandleOtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info) = 0;
+  /// A previously-found non-local broker has gone away.
+  virtual void HandleOtherBrokerLost(const std::string& scope, const std::string& service_name) = 0;
+  /// An error occurred while registering a broker's service instance.
+  virtual void HandleBrokerRegisterError(const std::string& scope, const std::string& requested_service_name,
+                                         int platform_error) = 0;
+  /// An error occurred while monitoring a given scope for other brokers.
+  virtual void HandleScopeMonitorError(const std::string& scope, int platform_error) = 0;
+};
+
+class BrokerDiscoveryInterface
+{
+public:
+  virtual ~BrokerDiscoveryInterface() = default;
+
+  virtual void SetNotify(BrokerDiscoveryNotify* notify) = 0;
+
+  virtual etcpal::Result RegisterBroker(const rdmnet::BrokerSettings& settings) = 0;
+  virtual void UnregisterBroker() = 0;
 };
 
 /// A wrapper for the RDMnet Discovery library for use by Brokers.
-class BrokerDiscoveryManager
+class BrokerDiscoveryManager : public BrokerDiscoveryInterface
 {
 public:
-  BrokerDiscoveryManager(BrokerDiscoveryManagerNotify* notify);
-  virtual ~BrokerDiscoveryManager();
+  BrokerDiscoveryManager();
+
+  void SetNotify(BrokerDiscoveryNotify* notify) override { notify_ = notify; }
 
   // Registration actions
-  etcpal_error_t RegisterBroker(const rdmnet::BrokerDiscoveryAttributes& disc_attributes, const EtcPalUuid& local_cid,
-                                const std::vector<EtcPalIpAddr>& listen_addrs, uint16_t listen_port);
-  void UnregisterBroker();
+  etcpal::Result RegisterBroker(const rdmnet::BrokerSettings& settings) override;
+  void UnregisterBroker() override;
 
   // Accessors
   std::string scope() const { return cur_config_valid_ ? cur_config_.my_info.scope : std::string(); }
@@ -71,11 +86,11 @@ public:
   void LibNotifyBrokerLost(rdmnet_registered_broker_t handle, const char* scope, const char* service_name);
   void LibNotifyScopeMonitorError(rdmnet_registered_broker_t handle, const char* scope, int platform_error);
 
-  BrokerDiscoveryManagerNotify* notify_{nullptr};
-  RdmnetBrokerRegisterConfig cur_config_;
+  BrokerDiscoveryNotify* notify_{nullptr};
+  RdmnetBrokerRegisterConfig cur_config_{};
   bool cur_config_valid_{false};
   rdmnet_registered_broker_t handle_{RDMNET_REGISTERED_BROKER_INVALID};
   std::string assigned_service_name_;
 };
 
-#endif  // _BROKER_DISCOVERY_H_
+#endif  // BROKER_DISCOVERY_H_
