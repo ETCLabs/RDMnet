@@ -133,7 +133,7 @@ bool BrokerCore::Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerN
       return false;
     }
 
-    responder_.InitResponder(my_uid_);
+    components_.responder.InitResponder(my_uid_);
 
     started_ = true;
 
@@ -805,7 +805,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
         RdmBufferConstRef buffer_in = RDM_REF_FROM_BUFFER(request_list->list->msg);
         RdmBufferRef buffer_out = RDM_REF_FROM_BUFFER(response->msg);
 
-        process_packet_result = responder_.ProcessPacket(buffer_in, buffer_out, response_type);
+        process_packet_result = components_.responder.ProcessPacket(buffer_in, buffer_out, response_type);
 
         // Assert because if == kEtcPalErrInvalid, a bug exists on this side
         assert(process_packet_result != kEtcPalErrInvalid);
