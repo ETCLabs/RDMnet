@@ -1472,15 +1472,20 @@ void RDMnetNetworkModel::LlrpRdmCommandReceived(const LlrpRemoteRdmCommand& cmd)
   }
 }
 
-void RDMnetNetworkModel::IdentifyDeviceChanged(bool new_identify_device)
+etcpal_error_t RDMnetNetworkModel::ApplyDeviceLabel(const std::string& new_device_label)
 {
-  // TO DO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TO DO: Not yet implemented
 }
 
-void RDMnetNetworkModel::ComponentScopeChanged(uint16_t slot, const std::string& new_scope_string,
-                                               const StaticBrokerConfig& new_static_broker)
+etcpal_error_t RDMnetNetworkModel::ApplyIdentifyDevice(bool new_identify_device)
 {
-  // TO DO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TO DO: Not yet implemented
+}
+
+etcpal_error_t RDMnetNetworkModel::ApplyComponentScope(uint16_t slot, const std::string& new_scope_string,
+                                                       const StaticBrokerConfig& new_static_broker)
+{
+  return kEtcPalErrNotImpl;  // TO DO: Not yet implemented
 
   // If there is an existing broker connection, end it and remove the broker item
 
@@ -1491,9 +1496,14 @@ void RDMnetNetworkModel::ComponentScopeChanged(uint16_t slot, const std::string&
       // Add a new broker item and start searching for brokers in the new_scope_string scope
 }
 
-void RDMnetNetworkModel::SearchDomainChanged(const std::string& new_search_domain)
+etcpal_error_t RDMnetNetworkModel::ApplySearchDomain(const std::string& new_search_domain)
 {
-  // TO DO: Not yet implemented
+  return kEtcPalErrNotImpl;  // TO DO: Not yet implemented
+}
+
+etcpal_error_t RDMnetNetworkModel::ResetUnhealthyTcpEvents(const std::string& scope)
+{
+  return kEtcPalErrNotImpl;  // TO DO: Not yet implemented
 }
 
 bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand& cmd, const BrokerItem* broker_item)

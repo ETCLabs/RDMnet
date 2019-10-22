@@ -36,15 +36,15 @@ constexpr char kMyManufacturerLabel[] = "ETC";
 constexpr char kMyDeviceModelDescription[] = "ETC Example RDMnet Controller";
 constexpr char kMySoftwareVersionLabel[] = RDMNET_VERSION_STRING;
 
-class ControllerResponderNotify
+class ControllerResponderClient
 {
 public:
-  virtual void DeviceLabelChanged(const std::string& new_device_label){};
-  virtual void IdentifyDeviceChanged(bool new_identify_device){};
-  virtual void ComponentScopeChanged(uint16_t slot, const std::string& new_scope_string,
-                                     const StaticBrokerConfig& new_static_broker){};
-  virtual void SearchDomainChanged(const std::string& new_search_domain){};
-  virtual void UnhealthyTcpEventsReset(const std::string& scope){};
+  virtual etcpal_error_t ApplyDeviceLabel(const std::string& new_device_label) = 0;
+  virtual etcpal_error_t ApplyIdentifyDevice(bool new_identify_device) = 0;
+  virtual etcpal_error_t ApplyComponentScope(uint16_t slot, const std::string& new_scope_string,
+                                             const StaticBrokerConfig& new_static_broker) = 0;
+  virtual etcpal_error_t ApplySearchDomain(const std::string& new_search_domain) = 0;
+  virtual etcpal_error_t ResetUnhealthyTcpEvents(const std::string& scope) = 0;
 };
 
 class ControllerDefaultResponder
@@ -52,7 +52,7 @@ class ControllerDefaultResponder
 public:
   virtual ~ControllerDefaultResponder() = default;
 
-  void InitResponder(ControllerResponderNotify* notify);
+  void InitResponder(ControllerResponderClient* client);
 
   etcpal_error_t ProcessCommand(const std::string& scope, const RdmCommand& cmd, RdmResponse& resp,
                                 rdmresp_response_type_t& presp_type);
@@ -125,8 +125,21 @@ public:
 private:
   struct ScopeEntry
   {
-    ScopeEntry() {}
-    ScopeEntry(StaticBrokerConfig sb) : static_broker(sb) {}
+    ScopeEntry()
+    {
+      memset(&current_broker, 0, sizeof(EtcPalSockaddr));
+      current_broker.ip.type = kEtcPalIpTypeInvalid;
+      memset(&static_broker, 0, sizeof(StaticBrokerConfig));
+      static_broker.addr.ip.type = kEtcPalIpTypeInvalid;
+      memset(&my_uid, 0, sizeof(RdmUid));
+    }
+
+    ScopeEntry(StaticBrokerConfig sb) : static_broker(sb)
+    {
+      memset(&current_broker, 0, sizeof(EtcPalSockaddr));
+      current_broker.ip.type = kEtcPalIpTypeInvalid;
+      memset(&my_uid, 0, sizeof(RdmUid));
+    }
 
     std::string scope_string;
     uint16_t scope_slot{0};  // 0 is an invalid slot, and for this struct's purposes means "unassigned"
@@ -175,5 +188,5 @@ private:
 
   RdmResponderState rdm_responder_state_;
   RdmPidHandlerEntry handler_array_[CONTROLLER_HANDLER_ARRAY_SIZE];
-  ControllerResponderNotify* notify_{nullptr};
+  ControllerResponderClient* client_{nullptr};
 };

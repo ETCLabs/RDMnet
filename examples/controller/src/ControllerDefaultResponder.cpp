@@ -425,7 +425,7 @@ static void default_responder_get_next_queued_message(GetNextQueuedMessageData* 
 }
 }  // extern "C"
 
-void ControllerDefaultResponder::InitResponder(ControllerResponderNotify* notify)
+void ControllerDefaultResponder::InitResponder(ControllerResponderClient* client)
 {
   RdmPidHandlerEntry handler_array[CONTROLLER_HANDLER_ARRAY_SIZE] = {
       //{E120_SUPPORTED_PARAMETERS, default_responder_supported_params, RDM_PS_ALL | RDM_PS_GET},
@@ -433,7 +433,7 @@ void ControllerDefaultResponder::InitResponder(ControllerResponderNotify* notify
       {E120_DEVICE_MODEL_DESCRIPTION, default_responder_device_model_description,
        RDM_PS_ALL | RDM_PS_GET | RDM_PS_SHOW_SUPPORTED},
       //{E120_MANUFACTURER_LABEL, default_responder_manufacturer_label, RDM_PS_ALL | RDM_PS_GET |
-      //RDM_PS_SHOW_SUPPORTED},
+      // RDM_PS_SHOW_SUPPORTED},
       {E120_DEVICE_LABEL, default_responder_device_label, RDM_PS_ALL | RDM_PS_GET_SET | RDM_PS_SHOW_SUPPORTED},
       {E120_SOFTWARE_VERSION_LABEL, default_responder_software_version_label, RDM_PS_ROOT | RDM_PS_GET},
       {E120_IDENTIFY_DEVICE, default_responder_identify_device, RDM_PS_ALL | RDM_PS_GET_SET},
@@ -455,7 +455,7 @@ void ControllerDefaultResponder::InitResponder(ControllerResponderNotify* notify
   rdmresp_sort_handler_array(handler_array_, CONTROLLER_HANDLER_ARRAY_SIZE);
   assert(rdmresp_validate_state(&rdm_responder_state_));
 
-  notify_ = notify;
+  client_ = client;
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessCommand(const std::string& scope, const RdmCommand& cmd,
@@ -529,12 +529,40 @@ etcpal_error_t ControllerDefaultResponder::ProcessSetDeviceLabel(const RdmPdStri
                                                                  rdmresp_response_type_t& response_type,
                                                                  rdmpd_nack_reason_t& nack_reason)
 {
-  etcpal::WriteGuard prop_write(prop_lock_);
+  etcpal_error_t result = kEtcPalErrOk;
+  bool change_made = false;
+  std::string label_string(label.string, RDMPD_STRING_MAX_LENGTH);
 
-  device_label_.assign(label.string, RDMPD_STRING_MAX_LENGTH);
   response_type = kRdmRespRtAck;
 
-  return kEtcPalErrOk;
+  // Determine if a change has been made
+  {
+    etcpal::ReadGuard prop_read(prop_lock_);
+    change_made = (device_label_.compare(label_string) != 0); 
+  }
+
+  if (change_made && client_)
+  {
+    // Tell the client to apply new device label - response determines support/success or error.
+    result = client_->ApplyDeviceLabel(label_string);
+
+    if ((result == kEtcPalErrNotImpl) || (result == kEtcPalErrPerm))
+    {
+      // Set not allowed or supported - send back a NACK, not an etcpal_error_t.
+      response_type = kRdmRespRtNackReason;
+      nack_reason = kRdmPdNrUnsupportedCommandClass;
+      result = kEtcPalErrOk;
+    }
+  }
+
+  if ((response_type == kRdmRespRtAck) && (result == kEtcPalErrOk) && change_made)
+  {
+    // Change has been applied - update responder state.
+    etcpal::WriteGuard prop_write(prop_lock_);
+    device_label_ = label_string;
+  }
+
+  return result;
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetSoftwareVersionLabel(RdmPdString& label,
@@ -560,12 +588,39 @@ etcpal_error_t ControllerDefaultResponder::ProcessSetIdentifyDevice(bool identif
                                                                     rdmresp_response_type_t& response_type,
                                                                     rdmpd_nack_reason_t& nack_reason)
 {
-  etcpal::WriteGuard prop_write(prop_lock_);
+  etcpal_error_t result = kEtcPalErrOk;
+  bool change_made = false;
 
-  identifying_ = identify;
   response_type = kRdmRespRtAck;
 
-  return kEtcPalErrOk;
+  // Determine if a change has been made
+  {
+    etcpal::ReadGuard prop_read(prop_lock_);
+    change_made = (identifying_ != identify);
+  }
+
+  if (change_made && client_)
+  {
+    // Tell the client to apply new identify state - response determines support/success or error.
+    result = client_->ApplyIdentifyDevice(identify);
+
+    if ((result == kEtcPalErrNotImpl) || (result == kEtcPalErrPerm))
+    {
+      // Set not allowed or supported - send back a NACK, not an etcpal_error_t.
+      response_type = kRdmRespRtNackReason;
+      nack_reason = kRdmPdNrUnsupportedCommandClass;
+      result = kEtcPalErrOk;
+    }
+  }
+
+  if ((response_type == kRdmRespRtAck) && (result == kEtcPalErrOk) && change_made)
+  {
+    // Change has been applied - update responder state.
+    etcpal::WriteGuard prop_write(prop_lock_);
+    identifying_ = identify;
+  }
+
+  return result;
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetComponentScope(uint16_t slot, RdmPdComponentScope& component_scope,
@@ -604,57 +659,105 @@ etcpal_error_t ControllerDefaultResponder::ProcessSetComponentScope(const RdmPdC
                                                                     rdmresp_response_type_t& response_type,
                                                                     rdmpd_nack_reason_t& nack_reason)
 {
-  etcpal::WriteGuard prop_write(prop_lock_);
+  etcpal_error_t result = kEtcPalErrOk;
 
+  bool change_made = false;
+
+  std::string new_scope_string = std::string(component_scope.scope_string.string, RDMPD_MAX_SCOPE_STR_LEN);
+  StaticBrokerConfig new_static_broker_config(component_scope.static_broker_addr);
+  ScopeEntry scope_entry;
+
+  response_type = kRdmRespRtAck;
+
+  // Check for invalid scope slot
   if (component_scope.scope_slot == 0)
   {
     response_type = kRdmRespRtNackReason;
     nack_reason = kRdmPdNrDataOutOfRange;
   }
-  else
+
+  if (response_type == kRdmRespRtAck)
   {
-    // TO DO: Find a way to notify that scope has changed (if it has) (along with other property sets)
-    if (strlen(component_scope.scope_string.string) == 0)
+    etcpal::ReadGuard prop_read(prop_lock_);
+
+    // Determine if a change has been made
+    if (scopes_.Find(component_scope.scope_slot, scope_entry))
     {
+      change_made = ((scope_entry.scope_string.compare(new_scope_string) != 0) ||
+                     (scope_entry.static_broker.addr != new_static_broker_config.addr));
+    }
+    else if (new_scope_string.length() > 0)
+    {
+      change_made = true;
+    }
+
+    if (change_made)
+    {
+      // Check for invalid scope setting
+      ScopeEntry existing_scope_string_entry;
+
+      if (scopes_.Find(new_scope_string, existing_scope_string_entry))
+      {
+        if (existing_scope_string_entry.scope_slot != component_scope.scope_slot)
+        {
+          // Two different slots cannot have the same scope string
+          response_type = kRdmRespRtNackReason;
+          nack_reason = kRdmPdNrActionNotSupported;
+        }
+      }
+    }
+  }
+
+  if ((response_type == kRdmRespRtAck) && change_made && client_)
+  {
+    // Tell the client to apply new scope data - response determines support/success or error.
+    result = client_->ApplyComponentScope(component_scope.scope_slot, new_scope_string, new_static_broker_config);
+
+    if ((result == kEtcPalErrNotImpl) || (result == kEtcPalErrPerm))
+    {
+      // Set not allowed or supported - send back a NACK, not an etcpal_error_t.
+      response_type = kRdmRespRtNackReason;
+      nack_reason = kRdmPdNrUnsupportedCommandClass;
+      result = kEtcPalErrOk;
+    }
+  }
+
+  if ((response_type == kRdmRespRtAck) && (result == kEtcPalErrOk) && change_made)
+  {
+    // Change has been applied - update responder state.
+    etcpal::WriteGuard prop_write(prop_lock_);
+
+    if (new_scope_string.length() == 0)
+    {
+      // Remove component scope
       scopes_.Remove(component_scope.scope_slot);
     }
     else
     {
-      ScopeEntry entry;
-      memset(&entry.current_broker, 0, sizeof(EtcPalSockaddr));
-      entry.current_broker.ip.type = kEtcPalIpTypeInvalid;
-      memset(&entry.static_broker, 0, sizeof(StaticBrokerConfig));
-      entry.static_broker.addr.ip.type = kEtcPalIpTypeInvalid;
-      memset(&entry.my_uid, 0, sizeof(RdmUid));
+      // Update component scope
+      scope_entry.scope_string = new_scope_string;
+      scope_entry.scope_slot = component_scope.scope_slot;
 
-      scopes_.Find(component_scope.scope_slot, entry);  // Same code should follow regardless of if found.
-      entry.scope_string.assign(component_scope.scope_string.string, RDMPD_MAX_SCOPE_STR_LEN);
-      entry.scope_slot = component_scope.scope_slot;
-      bool old_static_broker_valid = entry.static_broker.valid;
-      entry.static_broker.valid = (component_scope.static_broker_addr.ip.type != kEtcPalIpTypeInvalid) &&
-                                  (component_scope.static_broker_addr.port != 0);
+      bool old_static_broker_valid = scope_entry.static_broker.valid;
+      scope_entry.static_broker = new_static_broker_config;
 
-      if (entry.static_broker.valid)
+      if (scope_entry.static_broker.valid)
       {
         // The next connection should be static.
-        entry.current_broker = entry.static_broker.addr = component_scope.static_broker_addr;
+        scope_entry.current_broker = scope_entry.static_broker.addr;
       }
-      else if (old_static_broker_valid && !entry.static_broker.valid)
+      else if (old_static_broker_valid && !scope_entry.static_broker.valid)
       {
-        // Close the static connection (which is current). Both current and static should be invalidated.
-        memset(&entry.current_broker, 0, sizeof(EtcPalSockaddr));
-        entry.current_broker.ip.type = kEtcPalIpTypeInvalid;
-        memset(&entry.static_broker, 0, sizeof(StaticBrokerConfig));
-        entry.static_broker.addr.ip.type = kEtcPalIpTypeInvalid;
+        // Close the static connection (which is current).
+        memset(&scope_entry.current_broker, 0, sizeof(EtcPalSockaddr));
+        scope_entry.current_broker.ip.type = kEtcPalIpTypeInvalid;
       }
 
-      scopes_.Set(entry);
+      scopes_.Set(scope_entry);
     }
-
-    response_type = kRdmRespRtAck;
   }
 
-  return kEtcPalErrOk;
+  return result;
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetSearchDomain(RdmPdSearchDomain& search_domain,
@@ -673,12 +776,40 @@ etcpal_error_t ControllerDefaultResponder::ProcessSetSearchDomain(const RdmPdSea
                                                                   rdmresp_response_type_t& response_type,
                                                                   rdmpd_nack_reason_t& nack_reason)
 {
-  etcpal::WriteGuard prop_write(prop_lock_);
+  etcpal_error_t result = kEtcPalErrOk;
+  bool change_made = false;
+  std::string search_domain_string(search_domain.string, RDMPD_MAX_SEARCH_DOMAIN_STR_LEN);
 
-  search_domain_.assign(search_domain.string, RDMPD_MAX_SEARCH_DOMAIN_STR_LEN);
   response_type = kRdmRespRtAck;
 
-  return kEtcPalErrOk;
+  // Determine if a change has been made
+  {
+    etcpal::ReadGuard prop_read(prop_lock_);
+    change_made = (search_domain_.compare(search_domain_string) != 0);
+  }
+
+  if (change_made && client_)
+  {
+    // Tell the client to apply new search domain - response determines support/success or error.
+    result = client_->ApplySearchDomain(search_domain_string);
+
+    if ((result == kEtcPalErrNotImpl) || (result == kEtcPalErrPerm))
+    {
+      // Set not allowed or supported - send back a NACK, not an etcpal_error_t.
+      response_type = kRdmRespRtNackReason;
+      nack_reason = kRdmPdNrUnsupportedCommandClass;
+      result = kEtcPalErrOk;
+    }
+  }
+
+  if ((response_type == kRdmRespRtAck) && (result == kEtcPalErrOk) && change_made)
+  {
+    // Change has been applied - update responder state.
+    etcpal::WriteGuard prop_write(prop_lock_);
+    search_domain_ = search_domain_string;
+  }
+
+  return result;
 }
 
 etcpal_error_t ControllerDefaultResponder::ProcessGetTcpCommsStatus(size_t overflow_index, RdmPdTcpCommsEntry& entry,
@@ -711,24 +842,60 @@ etcpal_error_t ControllerDefaultResponder::ProcessSetTcpCommsStatus(const RdmPdS
                                                                     rdmresp_response_type_t& response_type,
                                                                     rdmpd_nack_reason_t& nack_reason)
 {
-  etcpal::WriteGuard prop_write(prop_lock_);
+  etcpal_error_t result = kEtcPalErrOk;
+  bool change_made = false;
 
-  ScopeEntry entry;
+  std::string scope_string = std::string(scope.string, RDMPD_MAX_SCOPE_STR_LEN);
+  ScopeEntry scope_entry;
 
-  if (scopes_.Find(scope.string, entry))
-  {
-    entry.unhealthy_tcp_events = 0;
-    scopes_.Set(entry);
+  response_type = kRdmRespRtAck;
 
-    response_type = kRdmRespRtAck;
-  }
-  else
+  // Check for invalid scope string
+  if (scope_string.length() == 0)
   {
     response_type = kRdmRespRtNackReason;
     nack_reason = kRdmPdNrDataOutOfRange;
   }
 
-  return kEtcPalErrOk;
+  if (response_type == kRdmRespRtAck)
+  {
+    etcpal::ReadGuard prop_read(prop_lock_);
+
+    // Determine if a change has been made or if scope is not found
+    if (scopes_.Find(scope_string, scope_entry))
+    {
+      change_made = (scope_entry.unhealthy_tcp_events != 0);
+    }
+    else
+    {
+      response_type = kRdmRespRtNackReason;
+      nack_reason = kRdmPdNrUnknownScope;
+    }
+  }
+
+  if ((response_type == kRdmRespRtAck) && change_made && client_)
+  {
+    // Tell the client to reset the event counter - response determines support/success or error.
+    result = client_->ResetUnhealthyTcpEvents(scope_string);
+
+    if ((result == kEtcPalErrNotImpl) || (result == kEtcPalErrPerm))
+    {
+      // Set not allowed or supported - send back a NACK, not an etcpal_error_t.
+      response_type = kRdmRespRtNackReason;
+      nack_reason = kRdmPdNrUnsupportedCommandClass;
+      result = kEtcPalErrOk;
+    }
+  }
+
+  if ((response_type == kRdmRespRtAck) && (result == kEtcPalErrOk) && change_made)
+  {
+    // Change has been applied - update responder state.
+    etcpal::WriteGuard prop_write(prop_lock_);
+    scope_entry.unhealthy_tcp_events = 0;
+    scopes_.Set(scope_entry);
+  }
+
+  return result;
 }
 
 bool ControllerDefaultResponder::Get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len,
@@ -891,9 +1058,9 @@ bool ControllerDefaultResponder::GetTCPCommsStatus(const uint8_t* /*param_data*/
                                                    std::vector<RdmParamData>& resp_data_list,
                                                    uint16_t& /*nack_reason*/) const
 {
-  //etcpal::ReadGuard prop_read(prop_lock_);
+  // etcpal::ReadGuard prop_read(prop_lock_);
 
-  //for (const auto& scope_pair : scopes_)
+  // for (const auto& scope_pair : scopes_)
   //{
   //  RdmParamData resp_data;
   //  uint8_t* cur_ptr = resp_data.data;
@@ -937,8 +1104,8 @@ bool ControllerDefaultResponder::GetTCPCommsStatus(const uint8_t* /*param_data*/
   //  resp_data.datalen = (uint8_t)(cur_ptr - resp_data.data);
   //  resp_data_list.push_back(resp_data);
   //}
-  //return true;
-  return false; // This function is on its way out
+  // return true;
+  return false;  // This function is on its way out
 }
 
 bool ControllerDefaultResponder::GetSupportedParameters(const uint8_t* /*param_data*/, uint8_t /*param_data_len*/,

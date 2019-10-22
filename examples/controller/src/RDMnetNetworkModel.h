@@ -38,7 +38,7 @@ END_INCLUDE_QT_HEADERS()
 
 void appendRowToItem(QStandardItem* parent, QStandardItem* child);
 
-class RDMnetNetworkModel : public QStandardItemModel, public RDMnetLibNotify, public ControllerResponderNotify
+class RDMnetNetworkModel : public QStandardItemModel, public RDMnetLibNotify, public ControllerResponderClient
 {
   Q_OBJECT
 
@@ -122,11 +122,13 @@ protected:
   void StatusReceived(rdmnet_client_scope_t scope_handle, const RemoteRptStatus& status) override;
   void LlrpRdmCommandReceived(const LlrpRemoteRdmCommand& cmd) override;
 
-  // ControllerResponderNotify overrides
-  void IdentifyDeviceChanged(bool new_identify_device) override;
-  void ComponentScopeChanged(uint16_t slot, const std::string& new_scope_string,
-                             const StaticBrokerConfig& new_static_broker) override;
-  void SearchDomainChanged(const std::string& new_search_domain) override;
+  // ControllerResponderClient overrides
+  etcpal_error_t ApplyDeviceLabel(const std::string& new_device_label) override;
+  etcpal_error_t ApplyIdentifyDevice(bool new_identify_device) override;
+  etcpal_error_t ApplyComponentScope(uint16_t slot, const std::string& new_scope_string,
+                                     const StaticBrokerConfig& new_static_broker) override;
+  etcpal_error_t ApplySearchDomain(const std::string& new_search_domain) override;
+  etcpal_error_t ResetUnhealthyTcpEvents(const std::string& scope) override;
 
   /******* RDM message handling functions *******/
   void HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse& resp);
