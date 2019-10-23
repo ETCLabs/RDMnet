@@ -61,7 +61,7 @@ typedef struct RdmnetConnectedInfo
   RdmUid client_uid;
   /*! The remote address to which we are connected. This could be different from the original
    *  address requested in the case of a redirect. */
-  EtcPalSockaddr connected_addr;
+  EtcPalSockAddr connected_addr;
 } RdmnetConnectedInfo;
 
 /*! A high-level reason for RDMnet connection failure. */
@@ -184,7 +184,7 @@ extern "C" {
 #endif
 
 etcpal_error_t rdmnet_connection_create(const RdmnetConnectionConfig* config, rdmnet_conn_t* handle);
-etcpal_error_t rdmnet_connect(rdmnet_conn_t handle, const EtcPalSockaddr* remote_addr,
+etcpal_error_t rdmnet_connect(rdmnet_conn_t handle, const EtcPalSockAddr* remote_addr,
                               const ClientConnectMsg* connect_data);
 etcpal_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking);
 etcpal_error_t rdmnet_connection_destroy(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t* disconnect_reason);
@@ -200,7 +200,7 @@ const char* rdmnet_disconnect_event_to_string(rdmnet_disconnect_event_t event);
  *  @{
  */
 etcpal_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, etcpal_socket_t sock,
-                                             const EtcPalSockaddr* remote_addr);
+                                             const EtcPalSockAddr* remote_addr);
 void rdmnet_socket_data_received(rdmnet_conn_t handle, const uint8_t* data, size_t data_size);
 void rdmnet_socket_error(rdmnet_conn_t handle, etcpal_error_t socket_err);
 /*! @} */

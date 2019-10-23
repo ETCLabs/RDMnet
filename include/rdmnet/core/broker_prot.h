@@ -182,7 +182,7 @@ typedef struct ClientEntryUpdateMsg
 typedef struct ClientRedirectMsg
 {
   /*! The new IPv4 or IPv6 address to which to connect. */
-  EtcPalSockaddr new_addr;
+  EtcPalSockAddr new_addr;
 } ClientRedirectMsg;
 
 /*! A structure that represents a list of Client Entries. Represents the data for multiple broker

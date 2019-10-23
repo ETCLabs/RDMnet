@@ -33,17 +33,17 @@
 
 /**************************** Global variables *******************************/
 
-EtcPalSockaddr kLlrpIpv4RespAddrInternal;
-EtcPalSockaddr kLlrpIpv6RespAddrInternal;
-EtcPalSockaddr kLlrpIpv4RequestAddrInternal;
-EtcPalSockaddr kLlrpIpv6RequestAddrInternal;
+EtcPalSockAddr kLlrpIpv4RespAddrInternal;
+EtcPalSockAddr kLlrpIpv6RespAddrInternal;
+EtcPalSockAddr kLlrpIpv4RequestAddrInternal;
+EtcPalSockAddr kLlrpIpv6RequestAddrInternal;
 
-const EtcPalSockaddr* kLlrpIpv4RespAddr = &kLlrpIpv4RespAddrInternal;
-const EtcPalSockaddr* kLlrpIpv6RespAddr = &kLlrpIpv6RespAddrInternal;
-const EtcPalSockaddr* kLlrpIpv4RequestAddr = &kLlrpIpv4RequestAddrInternal;
-const EtcPalSockaddr* kLlrpIpv6RequestAddr = &kLlrpIpv6RequestAddrInternal;
+const EtcPalSockAddr* kLlrpIpv4RespAddr = &kLlrpIpv4RespAddrInternal;
+const EtcPalSockAddr* kLlrpIpv6RespAddr = &kLlrpIpv6RespAddrInternal;
+const EtcPalSockAddr* kLlrpIpv4RequestAddr = &kLlrpIpv4RequestAddrInternal;
+const EtcPalSockAddr* kLlrpIpv6RequestAddr = &kLlrpIpv6RequestAddrInternal;
 
-uint8_t kLlrpLowestHardwareAddr[6];
+EtcPalMacAddr kLlrpLowestHardwareAddr;
 
 /**************************** Private constants ******************************/
 
@@ -187,9 +187,7 @@ etcpal_error_t init_sys_netints()
 
   const EtcPalNetintInfo* netint_list = etcpal_netint_get_interfaces();
 
-  uint8_t null_mac[6];
-  memset(null_mac, 0, sizeof null_mac);
-  memset(kLlrpLowestHardwareAddr, 0xff, sizeof kLlrpLowestHardwareAddr);
+  memset(kLlrpLowestHardwareAddr.data, 0xff, ETCPAL_MAC_BYTES);
 
   etcpal_log(rdmnet_log_params, ETCPAL_LOG_INFO, RDMNET_LOG_MSG("Initializing network interfaces for LLRP..."));
   for (const EtcPalNetintInfo* netint = netint_list; netint < netint_list + num_sys_netints; ++netint)
@@ -233,16 +231,16 @@ etcpal_error_t init_sys_netints()
                  RDMNET_LOG_MSG("  Set up LLRP network interface %s for listening."), addr_str);
 
       // Modify the lowest hardware address, if necessary
-      if (memcmp(netint->mac, null_mac, 6) != 0)
+      if (!ETCPAL_MAC_IS_NULL(&netint->mac))
       {
         if (netint == netint_list)
         {
-          memcpy(kLlrpLowestHardwareAddr, netint->mac, 6);
+          kLlrpLowestHardwareAddr = netint->mac;
         }
         else
         {
-          if (memcmp(netint->mac, kLlrpLowestHardwareAddr, 6) < 0)
-            memcpy(kLlrpLowestHardwareAddr, netint->mac, 6);
+          if (ETCPAL_MAC_CMP(&netint->mac, &kLlrpLowestHardwareAddr) < 0)
+            kLlrpLowestHardwareAddr = netint->mac;
         }
       }
     }
@@ -456,7 +454,7 @@ etcpal_error_t create_recv_socket(llrp_socket_t llrp_type, etcpal_iptype_t ip_ty
     const int value = 1;
     etcpal_setsockopt(sock_struct->socket, ETCPAL_SOL_SOCKET, ETCPAL_SO_REUSEPORT, &value, sizeof value);
 
-    EtcPalSockaddr bind_addr;
+    EtcPalSockAddr bind_addr;
 #if RDMNET_LLRP_BIND_TO_MCAST_ADDRESS
     // Bind socket to multicast address
     bind_addr.ip = get_llrp_mcast_addr(llrp_type, ip_type);
@@ -529,13 +527,13 @@ void llrp_socket_activity(const EtcPalPollEvent* event, PolledSocketOpaqueData d
   }
   else if (event->events & ETCPAL_POLL_IN)
   {
-    EtcPalSockaddr from_addr;
+    EtcPalSockAddr from_addr;
     int recv_res = etcpal_recvfrom(event->socket, llrp_recv_buf, LLRP_MAX_MESSAGE_SIZE, 0, &from_addr);
     if (recv_res <= 0)
     {
       if (recv_res != kEtcPalErrMsgSize)
       {
-        llrp_socket_error(recv_res);
+        llrp_socket_error((etcpal_error_t)recv_res);
       }
     }
     else

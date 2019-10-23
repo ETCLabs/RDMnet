@@ -23,6 +23,7 @@
 
 #include <cstring>
 #include <cstddef>
+#include "etcpal/cpp/error.h"
 #include "etcpal/netint.h"
 #include "etcpal/pack.h"
 #include "rdmnet/version.h"
@@ -145,9 +146,7 @@ bool BrokerCore::Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerN
       log_->Info("Listening on manually-specified network interfaces:");
       for (auto addr : settings.listen_addrs)
       {
-        char addrbuf[ETCPAL_INET6_ADDRSTRLEN];
-        etcpal_inet_ntop(&addr, addrbuf, ETCPAL_INET6_ADDRSTRLEN);
-        log_->Info("%s", addrbuf);
+        log_->Info("%s", addr.ToString().c_str());
       }
     }
   }
@@ -161,11 +160,8 @@ void BrokerCore::Shutdown()
   if (started_)
   {
     components_.disc->UnregisterBroker();
-
     StopBrokerServices();
-
     components_.socket_mgr->Shutdown();
-
     components_.conn_interface->Shutdown();
 
     started_ = false;
@@ -239,13 +235,11 @@ void BrokerCore::GetConnSnapshot(std::vector<rdmnet_conn_t>& conns, bool include
   }
 }
 
-bool BrokerCore::HandleNewConnection(etcpal_socket_t new_sock, const EtcPalSockaddr& addr)
+bool BrokerCore::HandleNewConnection(etcpal_socket_t new_sock, const etcpal::SockAddr& addr)
 {
   if (log_->CanLog(ETCPAL_LOG_INFO))
   {
-    char addrstr[ETCPAL_INET6_ADDRSTRLEN];
-    etcpal_inet_ntop(&addr.ip, addrstr, ETCPAL_INET6_ADDRSTRLEN);
-    log_->Info("Creating a new connection for ip addr %s", addrstr);
+    log_->Info("Creating a new connection for ip addr %s", addr.ip().ToString().c_str());
   }
 
   rdmnet_conn_t connhandle = RDMNET_CONN_INVALID;
@@ -814,10 +808,10 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
   }
 }
 
-std::set<EtcPalIpAddr> BrokerCore::CombineMacsAndInterfaces(const std::set<EtcPalIpAddr>& interfaces,
-                                                            const std::set<rdmnet::BrokerSettings::MacAddress>& macs)
+std::set<etcpal::IpAddr> BrokerCore::CombineMacsAndInterfaces(const std::set<etcpal::IpAddr>& interfaces,
+                                                              const std::set<etcpal::MacAddr>& macs)
 {
-  std::set<EtcPalIpAddr> to_return = interfaces;
+  auto to_return = interfaces;
 
   size_t num_netints = etcpal_netint_get_num_interfaces();
   for (const auto& mac : macs)
@@ -825,7 +819,7 @@ std::set<EtcPalIpAddr> BrokerCore::CombineMacsAndInterfaces(const std::set<EtcPa
     const EtcPalNetintInfo* netint_list = etcpal_netint_get_interfaces();
     for (const EtcPalNetintInfo* netint = netint_list; netint < netint_list + num_netints; ++netint)
     {
-      if (0 == memcmp(netint->mac, mac.data(), ETCPAL_NETINTINFO_MAC_LEN))
+      if (netint->mac == mac)
       {
         to_return.insert(netint->addr);
         // There could be multiple addresses that have this mac, we don't break here so we listen
@@ -837,45 +831,41 @@ std::set<EtcPalIpAddr> BrokerCore::CombineMacsAndInterfaces(const std::set<EtcPa
   return to_return;
 }
 
-etcpal_socket_t BrokerCore::StartListening(const EtcPalIpAddr& ip, uint16_t& port)
+etcpal_socket_t BrokerCore::StartListening(const etcpal::IpAddr& ip, uint16_t& port)
 {
-  EtcPalSockaddr addr;
-  addr.ip = ip;
-  addr.port = port;
+  etcpal::SockAddr addr(ip, port);
 
   etcpal_socket_t listen_sock;
-  etcpal_error_t err =
-      etcpal_socket(ETCPAL_IP_IS_V4(&addr.ip) ? ETCPAL_AF_INET : ETCPAL_AF_INET6, ETCPAL_STREAM, &listen_sock);
-  if (err != kEtcPalErrOk)
+  etcpal::Result res = etcpal_socket(addr.ip().IsV4() ? ETCPAL_AF_INET : ETCPAL_AF_INET6, ETCPAL_STREAM, &listen_sock);
+  if (!res)
   {
     if (log_)
     {
-      log_->Critical("Broker: Failed to create listen socket with error: %s.", etcpal_strerror(err));
+      log_->Critical("Broker: Failed to create listen socket with error: %s.", res.ToCString());
     }
     return ETCPAL_SOCKET_INVALID;
   }
 
   int sockopt_val = 0;
-  err = etcpal_setsockopt(listen_sock, ETCPAL_IPPROTO_IPV6, ETCPAL_IPV6_V6ONLY, &sockopt_val, sizeof(int));
-  if (err != kEtcPalErrOk)
+  res = etcpal_setsockopt(listen_sock, ETCPAL_IPPROTO_IPV6, ETCPAL_IPV6_V6ONLY, &sockopt_val, sizeof(int));
+  if (!res)
   {
     etcpal_close(listen_sock);
     if (log_)
     {
-      log_->Critical("Broker: Failed to set V6ONLY socket option on listen socket: %s.", etcpal_strerror(err));
+      log_->Critical("Broker: Failed to set V6ONLY socket option on listen socket: %s.", res.ToCString());
     }
     return ETCPAL_SOCKET_INVALID;
   }
 
-  err = etcpal_bind(listen_sock, &addr);
-  if (err != kEtcPalErrOk)
+  res = etcpal_bind(listen_sock, &addr.get());
+  if (!res)
   {
     etcpal_close(listen_sock);
     if (log_ && log_->CanLog(ETCPAL_LOG_WARNING))
     {
-      char addrstr[ETCPAL_INET6_ADDRSTRLEN];
-      etcpal_inet_ntop(&addr.ip, addrstr, ETCPAL_INET6_ADDRSTRLEN);
-      log_->Critical("Broker: Bind to %s failed on listen socket with error: %s.", addrstr, etcpal_strerror(err));
+      log_->Critical("Broker: Bind to %s failed on listen socket with error: %s.", addr.ToString().c_str(),
+                     res.ToCString());
     }
     return ETCPAL_SOCKET_INVALID;
   }
@@ -884,29 +874,29 @@ etcpal_socket_t BrokerCore::StartListening(const EtcPalIpAddr& ip, uint16_t& por
   {
     // Get the ephemeral port number we were assigned and which we will use for all other
     // applicable network interfaces.
-    err = etcpal_getsockname(listen_sock, &addr);
-    if (err == kEtcPalErrOk)
+    res = etcpal_getsockname(listen_sock, &addr.get());
+    if (res)
     {
-      port = addr.port;
+      port = addr.port();
     }
     else
     {
       etcpal_close(listen_sock);
       if (log_)
       {
-        log_->Critical("Broker: Failed to get ephemeral port assigned to listen socket: %s", etcpal_strerror(err));
+        log_->Critical("Broker: Failed to get ephemeral port assigned to listen socket: %s", res.ToCString());
       }
       return ETCPAL_SOCKET_INVALID;
     }
   }
 
-  err = etcpal_listen(listen_sock, 0);
-  if (err != kEtcPalErrOk)
+  res = etcpal_listen(listen_sock, 0);
+  if (!res)
   {
     etcpal_close(listen_sock);
     if (log_)
     {
-      log_->Critical("Broker: Listen failed on listen socket with error: %s.", etcpal_strerror(err));
+      log_->Critical("Broker: Listen failed on listen socket with error: %s.", res.ToCString());
     }
     return ETCPAL_SOCKET_INVALID;
   }
@@ -919,13 +909,11 @@ bool BrokerCore::StartBrokerServices()
     return false;
 
   bool success = true;
-  std::set<EtcPalIpAddr> final_listen_addrs = CombineMacsAndInterfaces(settings_.listen_addrs, settings_.listen_macs);
+  auto final_listen_addrs = CombineMacsAndInterfaces(settings_.listen_addrs, settings_.listen_macs);
   if (final_listen_addrs.empty())
   {
     // Listen on in6addr_any
-    EtcPalIpAddr any_addr;
-    etcpal_ip_set_wildcard(kEtcPalIpTypeV6, &any_addr);
-
+    const auto any_addr = etcpal::IpAddr::WildcardV6();
     etcpal_socket_t listen_sock = StartListening(any_addr, settings_.listen_port);
     if (listen_sock != ETCPAL_SOCKET_INVALID)
     {
@@ -956,12 +944,12 @@ bool BrokerCore::StartBrokerServices()
         else
         {
           etcpal_close(listen_sock);
-          addr_iter = settings_.listen_addrs.erase(addr_iter);
+          addr_iter = final_listen_addrs.erase(addr_iter);
         }
       }
       else
       {
-        addr_iter = settings_.listen_addrs.erase(addr_iter);
+        addr_iter = final_listen_addrs.erase(addr_iter);
       }
     }
 

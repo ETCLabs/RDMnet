@@ -46,12 +46,12 @@ typedef struct LlrpNetint
 extern "C" {
 #endif
 
-extern const EtcPalSockaddr* kLlrpIpv4RespAddr;
-extern const EtcPalSockaddr* kLlrpIpv6RespAddr;
-extern const EtcPalSockaddr* kLlrpIpv4RequestAddr;
-extern const EtcPalSockaddr* kLlrpIpv6RequestAddr;
+extern const EtcPalSockAddr* kLlrpIpv4RespAddr;
+extern const EtcPalSockAddr* kLlrpIpv6RespAddr;
+extern const EtcPalSockAddr* kLlrpIpv4RequestAddr;
+extern const EtcPalSockAddr* kLlrpIpv6RequestAddr;
 
-extern uint8_t kLlrpLowestHardwareAddr[6];
+extern EtcPalMacAddr kLlrpLowestHardwareAddr;
 
 etcpal_error_t rdmnet_llrp_init();
 void rdmnet_llrp_deinit();

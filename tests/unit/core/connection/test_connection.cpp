@@ -85,7 +85,7 @@ protected:
 
     // This allows us to skip the connection process and go straight to a connected state.
     etcpal_socket_t fake_socket = 0;
-    EtcPalSockaddr remote_addr{};
+    EtcPalSockAddr remote_addr{};
     ASSERT_EQ(kEtcPalErrOk, rdmnet_attach_existing_socket(conn_, fake_socket, &remote_addr));
   }
 };
@@ -112,7 +112,7 @@ TEST_F(TestConnectionAlreadyConnected, DisconnectsOnSocketError)
 
 TEST_F(TestConnection, HandlesSocketErrorOnConnect)
 {
-  EtcPalSockaddr remote_addr;
+  EtcPalSockAddr remote_addr;
   ETCPAL_IP_SET_V4_ADDRESS(&remote_addr.ip, 0x0a650101);
   remote_addr.port = 8888;
 
@@ -127,7 +127,7 @@ TEST_F(TestConnection, HandlesSocketErrorOnConnect)
 
 TEST_F(TestConnection, SetsCorrectSocketOptionsIpv4)
 {
-  EtcPalSockaddr remote_addr;
+  EtcPalSockAddr remote_addr;
   ETCPAL_IP_SET_V4_ADDRESS(&remote_addr.ip, 0x0a650101);
   remote_addr.port = 8888;
 
@@ -148,7 +148,7 @@ TEST_F(TestConnection, SetsCorrectSocketOptionsIpv4)
 
 TEST_F(TestConnection, SetsCorrectSocketOptionsIpv6)
 {
-  EtcPalSockaddr remote_addr;
+  EtcPalSockAddr remote_addr;
   const std::array<uint8_t, 16> v6_data = {0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00,
                                            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
   ETCPAL_IP_SET_V6_ADDRESS(&remote_addr.ip, v6_data.data());

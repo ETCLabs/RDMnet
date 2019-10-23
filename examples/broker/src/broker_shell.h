@@ -25,7 +25,7 @@
 #include <set>
 #include <string>
 #include <vector>
-#include "etcpal/inet.h"
+#include "etcpal/cpp/inet.h"
 #include "etcpal/log.h"
 #include "rdmnet/broker.h"
 
@@ -35,16 +35,14 @@
 class BrokerShell : public rdmnet::BrokerNotify
 {
 public:
-  using MacAddress = rdmnet::BrokerSettings::MacAddress;
-
   // Returns the code the app should exit with.
   int Run(rdmnet::BrokerLog* log);
   static void PrintVersion();
 
   // Options to set from the command line; must be set BEFORE Run() is called.
   void SetInitialScope(const std::string& scope) { initial_data_.scope = scope; }
-  void SetInitialIfaceList(const std::set<EtcPalIpAddr>& ifaces) { initial_data_.ifaces = ifaces; }
-  void SetInitialMacList(const std::set<MacAddress>& macs) { initial_data_.macs = macs; }
+  void SetInitialIfaceList(const std::set<etcpal::IpAddr>& ifaces) { initial_data_.ifaces = ifaces; }
+  void SetInitialMacList(const std::set<etcpal::MacAddr>& macs) { initial_data_.macs = macs; }
   void SetInitialPort(uint16_t port) { initial_data_.port = port; }
   void SetInitialLogLevel(int level) { initial_data_.log_mask = ETCPAL_LOG_UPTO(level); }
 
@@ -60,8 +58,8 @@ private:
   struct InitialData
   {
     std::string scope{E133_DEFAULT_SCOPE};
-    std::set<EtcPalIpAddr> ifaces;
-    std::set<MacAddress> macs;
+    std::set<etcpal::IpAddr> ifaces;
+    std::set<etcpal::MacAddr> macs;
     uint16_t port{0};
     int log_mask{ETCPAL_LOG_UPTO(ETCPAL_LOG_INFO)};
   } initial_data_;

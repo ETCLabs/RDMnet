@@ -271,7 +271,7 @@ void process_target_state(LlrpTarget* target)
         DiscoveredLlrpTarget target_info;
         target_info.cid = target->keys.cid;
         target_info.uid = target->uid;
-        memcpy(target_info.hardware_address, kLlrpLowestHardwareAddr, 6);
+        target_info.hardware_address = kLlrpLowestHardwareAddr;
         target_info.component_type = target->component_type;
 
         etcpal_error_t send_res = send_llrp_probe_reply(netint->send_sock, netint->send_buf,

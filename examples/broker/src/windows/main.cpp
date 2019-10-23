@@ -72,21 +72,21 @@ bool ParseAndSetScope(const LPWSTR scope_str, BrokerShell& broker_shell)
 // Parse the --ifaces=IFACE_LIST command line option and transfer it to the BrokerShell instance.
 bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell& broker_shell)
 {
-  std::set<EtcPalIpAddr> addrs;
+  std::set<etcpal::IpAddr> addrs;
 
   if (wcslen(iface_list_str) != 0)
   {
     WCHAR* context;
     for (WCHAR* p = wcstok_s(iface_list_str, L",", &context); p != NULL; p = wcstok_s(NULL, L",", &context))
     {
-      EtcPalIpAddr addr;
+      etcpal::IpAddr addr;
 
       struct sockaddr_storage tst_addr;
       INT res = InetPtonW(AF_INET, p, &((struct sockaddr_in*)&tst_addr)->sin_addr);
       if (res == 1)
       {
         tst_addr.ss_family = AF_INET;
-        ip_os_to_etcpal((etcpal_os_ipaddr_t*)&tst_addr, &addr);
+        ip_os_to_etcpal((etcpal_os_ipaddr_t*)&tst_addr, &addr.get());
       }
       else
       {
@@ -94,7 +94,7 @@ bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell& broker_shell
         if (res == 1)
         {
           tst_addr.ss_family = AF_INET6;
-          ip_os_to_etcpal((etcpal_os_ipaddr_t*)&tst_addr, &addr);
+          ip_os_to_etcpal((etcpal_os_ipaddr_t*)&tst_addr, &addr.get());
         }
       }
       if (res == 1)
@@ -114,13 +114,13 @@ bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell& broker_shell
 }
 
 // Given a pointer to a string, parses out a mac addr
-void ParseMac(WCHAR* s, BrokerShell::MacAddress& mac_buf)
+void ParseMac(WCHAR* s, etcpal::MacAddr& mac)
 {
   WCHAR* p = s;
 
-  for (int index = 0; index < ETCPAL_NETINTINFO_MAC_LEN; ++index)
+  for (int index = 0; index < ETCPAL_MAC_BYTES; ++index)
   {
-    mac_buf[index] = (uint8_t)wcstol(p, &p, 16);
+    mac.get().data[index] = (uint8_t)wcstol(p, &p, 16);
     ++p;  // P points at the :
   }
 }
@@ -128,16 +128,16 @@ void ParseMac(WCHAR* s, BrokerShell::MacAddress& mac_buf)
 // Parse the --macs=MAC_LIST command line option and transfer it to the BrokerShell instance.
 bool ParseAndSetMacList(const LPWSTR mac_list_str, BrokerShell& broker_shell)
 {
-  std::set<BrokerShell::MacAddress> macs;
+  std::set<etcpal::MacAddr> macs;
 
   if (wcslen(mac_list_str) != 0)
   {
     WCHAR* context;
     for (WCHAR* p = wcstok_s(mac_list_str, L",", &context); p != NULL; p = wcstok_s(NULL, L",", &context))
     {
-      BrokerShell::MacAddress mac_buf;
-      ParseMac(p, mac_buf);
-      macs.insert(mac_buf);
+      etcpal::MacAddr mac;
+      ParseMac(p, mac);
+      macs.insert(mac);
     }
   }
 

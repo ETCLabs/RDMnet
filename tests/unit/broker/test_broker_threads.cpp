@@ -29,7 +29,7 @@ using testing::Return;
 class MockBrokerThreadNotify : public BrokerThreadNotify
 {
 public:
-  MOCK_METHOD(bool, HandleNewConnection, (etcpal_socket_t new_sock, const EtcPalSockaddr& remote_addr), (override));
+  MOCK_METHOD(bool, HandleNewConnection, (etcpal_socket_t new_sock, const etcpal::SockAddr& remote_addr), (override));
   MOCK_METHOD(bool, ServiceClients, (), (override));
 };
 
@@ -89,7 +89,7 @@ TEST_F(TestListenThread, AcceptResultIsForwarded)
   // called from C to point to a C++ linkage function, which all lambdas are), but I *think* it is
   // supported by all the compilers we run tests with, and it makes for nicer less-boilerplatey
   // test code.
-  etcpal_accept_fake.custom_fake = [](etcpal_socket_t socket, EtcPalSockaddr* accept_addr,
+  etcpal_accept_fake.custom_fake = [](etcpal_socket_t socket, EtcPalSockAddr* accept_addr,
                                       etcpal_socket_t* accept_sock) {
     EXPECT_EQ(socket, 0);
     ETCPAL_IP_SET_V4_ADDRESS(&accept_addr->ip, kTestIpv4);
@@ -98,10 +98,7 @@ TEST_F(TestListenThread, AcceptResultIsForwarded)
     return kEtcPalErrOk;
   };
 
-  EtcPalSockaddr expected_addr;
-  ETCPAL_IP_SET_V4_ADDRESS(&expected_addr.ip, kTestIpv4);
-  expected_addr.port = kTestPort;
-
+  const etcpal::SockAddr expected_addr(kTestIpv4, kTestPort);
   EXPECT_CALL(notify_, HandleNewConnection(1, expected_addr)).WillOnce(Return(true));
   lt.ReadSocket();
 }

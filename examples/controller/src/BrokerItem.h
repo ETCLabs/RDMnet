@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "etcpal/cpp/inet.h"
 #include "rdmnet/client.h"
 #include "RDMnetNetworkItem.h"
 #include "RDMnetClientItem.h"
@@ -39,7 +40,7 @@ public:
   void setScope(const QString& scope) { scope_ = scope; }
   QString scope() const { return scope_; }
 
-  void setConnected(bool connected, const EtcPalSockaddr& broker_addr = EtcPalSockaddr());
+  void setConnected(bool connected, const etcpal::SockAddr& broker_addr = etcpal::SockAddr());
   bool connected() const { return connected_; }
 
   std::vector<RDMnetClientItem*> rdmnet_clients_;
@@ -51,6 +52,6 @@ private:
   QString scope_;
   rdmnet_client_scope_t scope_handle_{RDMNET_CLIENT_SCOPE_INVALID};
   StaticBrokerConfig static_broker_;
-  EtcPalSockaddr broker_addr_{};
+  etcpal::SockAddr broker_addr_{};
   bool connected_{false};
 };

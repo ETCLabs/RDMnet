@@ -29,7 +29,7 @@ public:
   MOCK_METHOD(void, Shutdown, (), (override));
   MOCK_METHOD(void, SetNotify, (RdmnetConnNotify * notify), (override));
   MOCK_METHOD(etcpal::Result, CreateNewConnectionForSocket,
-              (etcpal_socket_t sock, const EtcPalSockaddr& addr, rdmnet_conn_t& new_handle), (override));
+              (etcpal_socket_t sock, const etcpal::SockAddr& addr, rdmnet_conn_t& new_handle), (override));
   MOCK_METHOD(void, DestroyConnection, (rdmnet_conn_t handle, SendDisconnect send_disconnect), (override));
   MOCK_METHOD(etcpal::Result, SetBlocking, (rdmnet_conn_t handle, bool blocking), (override));
   MOCK_METHOD(void, SocketDataReceived, (rdmnet_conn_t handle, const uint8_t* data, size_t data_size), (override));
@@ -149,7 +149,7 @@ TEST_F(TestBrokerCore, DoesNotStartWhenAllListenThreadsFail)
 {
   EXPECT_CALL(*mock_threads_, AddListenThread(_)).WillRepeatedly(Return(false));
   rdmnet::BrokerSettings explicit_interfaces(etcpal::Uuid::OsPreferred(), 0x6574);
-  explicit_interfaces.listen_macs = {{0, 0, 0, 0, 0, 1}, {0, 0, 0, 0, 0, 2}, {0, 0, 0, 0, 0, 3}};
+  explicit_interfaces.listen_macs = {etcpal::MacAddr({0, 0, 0, 0, 0, 1}), etcpal::MacAddr({0, 0, 0, 0, 0, 2}), etcpal::MacAddr({ 0, 0, 0, 0, 0, 3 })};
   EXPECT_FALSE(StartBrokerWithMockComponents(explicit_interfaces));
 }
 

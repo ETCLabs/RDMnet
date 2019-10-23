@@ -57,7 +57,7 @@ struct RdmnetConnection
 
   // Underlying socket connection
   etcpal_socket_t sock;
-  EtcPalSockaddr remote_addr;
+  EtcPalSockAddr remote_addr;
   bool external_socket_attached;
   bool is_blocking;
   PolledSocketInfo poll_info;

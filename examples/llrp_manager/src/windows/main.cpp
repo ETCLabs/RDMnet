@@ -111,10 +111,7 @@ int wmain(int argc, wchar_t* argv[])
       break;
   }
 
-  EtcPalUuid manager_cid;
-  UUID uuid;
-  UuidCreate(&uuid);
-  memcpy(manager_cid.data, &uuid, ETCPAL_UUID_BYTES);
+  auto manager_cid = etcpal::Uuid::OsPreferred();
 
   TIME_ZONE_INFORMATION tzinfo;
   switch (GetTimeZoneInformation(&tzinfo))

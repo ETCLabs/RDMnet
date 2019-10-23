@@ -24,8 +24,6 @@ BEGIN_INCLUDE_QT_HEADERS()
 #include <QMessageBox>
 END_INCLUDE_QT_HEADERS()
 
-#include "etcpal/socket.h"
-
 BrokerStaticAddGUI::BrokerStaticAddGUI(QWidget* parent, IHandlesBrokerStaticAdd* handler) : QDialog(parent)
 {
   ui.setupUi(this);
@@ -60,14 +58,10 @@ void BrokerStaticAddGUI::addBrokerTriggered()
   QMessageBox errorMessageBox;
   errorMessageBox.setIcon(QMessageBox::Icon::Critical);
 
-  EtcPalSockaddr brokerAddr;
-  QByteArray ipBuf = ui.ipEdit->text().toUtf8();
-  const char* ipStr = ipBuf.constData();
+  etcpal::SockAddr brokerAddr(etcpal::IpAddr::FromString(ui.ipEdit->text().toStdString()),
+                              static_cast<uint16_t>(ui.portEdit->text().toInt()));
 
-  if ((kEtcPalErrOk != etcpal_inet_pton(kEtcPalIpTypeV4, ipStr, &brokerAddr.ip) &&
-       kEtcPalErrOk != etcpal_inet_pton(kEtcPalIpTypeV6, ipStr, &brokerAddr.ip))
-      // || ipEndString.contains( ":" ) || ipEndString.contains( "," )
-  )
+  if (!brokerAddr.ip().IsValid())
   {
     errorMessageBox.setText(tr("Invalid address format. Please use a correct input format."));
     errorMessageBox.exec();
@@ -86,7 +80,6 @@ void BrokerStaticAddGUI::addBrokerTriggered()
   else if (m_Handler)
   {
     close();
-    brokerAddr.port = static_cast<uint16_t>(ui.portEdit->text().toInt());
     m_Handler->handleAddBrokerByIP(scopeString, brokerAddr);
   }
 }

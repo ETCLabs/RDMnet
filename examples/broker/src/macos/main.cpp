@@ -96,7 +96,7 @@ void ParseMac(char* s, BrokerShell::MacAddress& mac_buf)
 {
   char* p = s;
 
-  for (int index = 0; index < ETCPAL_NETINTINFO_MAC_LEN; ++index)
+  for (int index = 0; index < ETCPAL_MAC_BYTES; ++index)
   {
     mac_buf[index] = static_cast<uint8_t>(strtol(p, &p, 16));
     ++p;  // P points at the :

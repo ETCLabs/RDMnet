@@ -47,7 +47,7 @@ bool set_scope(wchar_t* arg, char* scope_buf)
   return false;
 }
 
-bool set_static_broker(wchar_t* arg, EtcPalSockaddr* static_broker_addr)
+bool set_static_broker(wchar_t* arg, EtcPalSockAddr* static_broker_addr)
 {
   wchar_t* sep = wcschr(arg, ':');
   if (sep != NULL && sep - arg < ETCPAL_INET6_ADDRSTRLEN)

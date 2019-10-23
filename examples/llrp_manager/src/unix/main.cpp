@@ -69,8 +69,7 @@ int main(int argc, char* argv[])
       break;
   }
 
-  EtcPalUuid manager_cid;
-  etcpal_generate_os_preferred_uuid(&manager_cid);
+  auto manager_cid = etcpal::Uuid::OsPreferred();
 
   EtcPalLogParams params;
   params.action = kEtcPalLogCreateHumanReadableLog;

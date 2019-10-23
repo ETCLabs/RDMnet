@@ -41,7 +41,7 @@ struct ControllerScopeData
   uint16_t unhealthy_tcp_events{0};
   StaticBrokerConfig static_broker;
   bool connected{false};
-  EtcPalSockaddr current_broker;
+  etcpal::SockAddr current_broker;
 };
 
 constexpr char kMyDeviceLabel[] = "ETC Example RDMnet Controller";
@@ -83,7 +83,7 @@ public:
   void AddScope(const std::string& new_scope, StaticBrokerConfig static_broker = StaticBrokerConfig());
   void RemoveScope(const std::string& scope_to_remove);
   void UpdateScopeConnectionStatus(const std::string& scope, bool connected,
-                                   const EtcPalSockaddr& broker_addr = EtcPalSockaddr());
+                                   const etcpal::SockAddr& broker_addr = etcpal::SockAddr());
   void IncrementTcpUnhealthyCounter(const std::string& scope);
   void ResetTcpUnhealthyCounter(const std::string& scope);
 

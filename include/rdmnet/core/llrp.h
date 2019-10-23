@@ -68,7 +68,7 @@ typedef struct DiscoveredLlrpTarget
   /*! The LLRP Target's UID. */
   RdmUid uid;
   /*! The LLRP Target's hardware address (usually the MAC address) */
-  uint8_t hardware_address[6];
+  EtcPalMacAddr hardware_address;
   /*! The type of RPT Component this LLRP Target is associated with. */
   llrp_component_t component_type;
 } DiscoveredLlrpTarget;

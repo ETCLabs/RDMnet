@@ -18,8 +18,6 @@
  *****************************************************************************/
 #include "BrokerItem.h"
 
-#include "etcpal/socket.h"
-
 BrokerItem::BrokerItem(const QString& scope, rdmnet_client_scope_t scope_handle,
                        const StaticBrokerConfig& static_broker /* = StaticBrokerConfig() */)
     : RDMnetNetworkItem(), scope_(scope), scope_handle_(scope_handle), static_broker_(static_broker)
@@ -36,7 +34,7 @@ int BrokerItem::type() const
   return BrokerItemType;
 }
 
-void BrokerItem::setConnected(bool connected, const EtcPalSockaddr& broker_addr)
+void BrokerItem::setConnected(bool connected, const etcpal::SockAddr& broker_addr)
 {
   connected_ = connected;
   if (connected)
@@ -48,18 +46,16 @@ void BrokerItem::setConnected(bool connected, const EtcPalSockaddr& broker_addr)
 
 void BrokerItem::updateText()
 {
-  bool have_address = (connected_ || static_broker_.valid);
-  EtcPalSockaddr address;
+  etcpal::SockAddr address;
 
   if (connected_)
     address = broker_addr_;
   else if (static_broker_.valid)
     address = static_broker_.addr;
 
-  char addrString[ETCPAL_INET6_ADDRSTRLEN];
-  if (have_address && kEtcPalErrOk == etcpal_inet_ntop(&address.ip, addrString, ETCPAL_INET6_ADDRSTRLEN))
+  if (address.ip().IsValid())
   {
-    setText(QString("Broker for scope \"%1\" at %2:%3").arg(scope_, addrString, QString::number(address.port)));
+    setText(QString("Broker for scope \"%1\" at %2").arg(scope_, QString::fromStdString(address.ToString())));
   }
   else
   {

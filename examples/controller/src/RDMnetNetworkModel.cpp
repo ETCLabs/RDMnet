@@ -21,6 +21,7 @@
 
 #include <cassert>
 #include <algorithm>
+#include "etcpal/cpp/inet.h"
 #include "etcpal/pack.h"
 #include "etcpal/socket.h"
 #include "rdm/responder.h"
@@ -37,22 +38,20 @@ END_INCLUDE_QT_HEADERS()
 // Returns a string representation of the IP address if parsed successfully, empty string otherwise.
 static QString UnpackAndParseIPAddress(const uint8_t* addrData, etcpal_iptype_t addrType)
 {
-  char ip_str_buf[ETCPAL_INET6_ADDRSTRLEN];
-  EtcPalIpAddr ip;
+  etcpal::IpAddr ip;
 
   if (addrType == kEtcPalIpTypeV4)
   {
-    ETCPAL_IP_SET_V4_ADDRESS(&ip, etcpal_upack_32b(addrData));
+    ip.SetAddress(etcpal_upack_32b(addrData));
   }
   else if (addrType == kEtcPalIpTypeV6)
   {
-    ETCPAL_IP_SET_V6_ADDRESS(&ip, addrData);
+    ip.SetAddress(addrData);
   }
 
-  if (!etcpal_ip_is_wildcard(&ip))
+  if (!ip.IsWildcard())
   {
-    etcpal_inet_ntop(&ip, ip_str_buf, ETCPAL_INET6_ADDRSTRLEN);
-    return QString::fromUtf8(ip_str_buf);
+    return QString::fromStdString(ip.ToString());
   }
   else
   {
@@ -60,24 +59,25 @@ static QString UnpackAndParseIPAddress(const uint8_t* addrData, etcpal_iptype_t 
   }
 }
 
-static etcpal_error_t ParseAndPackIPAddress(etcpal_iptype_t addrType, const std::string& ipString, uint8_t* outBuf)
+static bool ParseAndPackIPAddress(etcpal_iptype_t addrType, const std::string& ipString, uint8_t* outBuf)
 {
-  EtcPalIpAddr ip;
+  etcpal::IpAddr ip = etcpal::IpAddr::FromString(ipString);
 
-  etcpal_error_t result = etcpal_inet_pton(addrType, ipString.c_str(), &ip);
-  if (result == kEtcPalErrOk)
+  if (ip.IsValid())
   {
     if (addrType == kEtcPalIpTypeV4)
     {
-      etcpal_pack_32b(outBuf, ETCPAL_IP_V4_ADDRESS(&ip));
+      etcpal_pack_32b(outBuf, ip.v4_data());
+      return true;
     }
     else if (addrType == kEtcPalIpTypeV6)
     {
-      memcpy(outBuf, ETCPAL_IP_V6_ADDRESS(&ip), ETCPAL_IPV6_BYTES);
+      memcpy(outBuf, ip.v6_data(), ETCPAL_IPV6_BYTES);
+      return true;
     }
   }
 
-  return result;
+  return false;
 }
 
 void appendRowToItem(QStandardItem* parent, QStandardItem* child)
@@ -191,7 +191,7 @@ void RDMnetNetworkModel::directChildrenRevealed(const QModelIndex& parentIndex)
   }
 }
 
-void RDMnetNetworkModel::addBrokerByIP(QString scope, const EtcPalSockaddr& addr)
+void RDMnetNetworkModel::addBrokerByIP(QString scope, const etcpal::SockAddr& addr)
 {
   bool brokerAlreadyAdded = false;
   bool shouldSendRDMGetResponsesBroadcast = false;
@@ -1216,7 +1216,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex& index, const QVariant& value
             if (pid == E133_COMPONENT_SCOPE)
             {
               // Scope slot (default to 1)
-              etcpal_pack_16b(packPtr, index.data(RDMnetNetworkItem::ScopeSlotRole).toInt());
+              etcpal_pack_16b(packPtr, static_cast<uint16_t>(index.data(RDMnetNetworkItem::ScopeSlotRole).toInt()));
               packPtr += 2;
             }
 
@@ -1226,10 +1226,10 @@ bool RDMnetNetworkModel::setData(const QModelIndex& index, const QVariant& value
                 switch (maxBuffSize - (packPtr - setCmd.data))
                 {
                   case 2:
-                    etcpal_pack_16b(packPtr, value.toInt());
+                    etcpal_pack_16b(packPtr, static_cast<uint16_t>(value.toInt()));
                     break;
                   case 4:
-                    etcpal_pack_32b(packPtr, value.toInt());
+                    etcpal_pack_32b(packPtr, static_cast<uint32_t>(value.toInt()));
                     break;
                 }
                 break;
@@ -2776,7 +2776,7 @@ void RDMnetNetworkModel::sendGetNextControllerScope(rdmnet_client_scope_t scope_
   cmd.command_class = kRdmCCGetCommand;
   cmd.datalen = 2;
 
-  etcpal_pack_16b(cmd.data, std::min(currentSlot + 1, 0xffff));  // Scope slot, start with #1
+  etcpal_pack_16b(cmd.data, std::min<uint16_t>(currentSlot + 1, 0xffff));  // Scope slot, start with #1
   cmd.param_id = E133_COMPONENT_SCOPE;
   SendRDMCommand(cmd, scope_handle);
 }
@@ -2821,7 +2821,7 @@ uint8_t* RDMnetNetworkModel::packIPAddressItem(const QVariant& value, etcpal_ipt
     // Incorrect format entered.
     return nullptr;
   }
-  else if (ParseAndPackIPAddress(addrType, ipStrBuffer, packPtr) != kEtcPalErrOk)
+  else if (!ParseAndPackIPAddress(addrType, ipStrBuffer, packPtr))
   {
     return nullptr;
   }

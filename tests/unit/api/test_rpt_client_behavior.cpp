@@ -78,10 +78,10 @@ static void custom_disconnected_cb(rdmnet_client_t handle, rdmnet_client_scope_t
   (void)context;
 }
 
-static EtcPalSockaddr last_connect_addr;
+static EtcPalSockAddr last_connect_addr;
 
 // Just save the info pointed to by the struct
-static etcpal_error_t connect_and_save_address(rdmnet_conn_t handle, const EtcPalSockaddr* remote_addr,
+static etcpal_error_t connect_and_save_address(rdmnet_conn_t handle, const EtcPalSockAddr* remote_addr,
                                                const ClientConnectMsg* connect_data)
 {
   (void)handle;
@@ -307,7 +307,7 @@ TEST_F(TestDynamicRptClientBehavior, ClientRetriesOnConnectFail)
   last_monitor_config.callbacks.broker_found(last_monitor_handle, &discovered_broker_,
                                              last_monitor_config.callback_context);
   EXPECT_EQ(rdmnet_connect_fake.call_count, 1u);
-  EXPECT_TRUE(etcpal_ip_equal(&last_connect_addr.ip, &listen_addrs_.at(0).addr));
+  EXPECT_EQ(last_connect_addr.ip, listen_addrs_.at(0).addr);
   EXPECT_EQ(last_connect_addr.port, discovered_broker_.port);
 
   RESET_FAKE(rdmnet_connect);
@@ -322,7 +322,7 @@ TEST_F(TestDynamicRptClientBehavior, ClientRetriesOnConnectFail)
   EXPECT_TRUE(client_connect_failed_info.will_retry);
   EXPECT_EQ(rdmnet_connect_fake.call_count, 1u);
   // The retry should use the next Broker listen address in the list.
-  EXPECT_TRUE(etcpal_ip_equal(&last_connect_addr.ip, &listen_addrs_.at(1).addr));
+  EXPECT_EQ(last_connect_addr.ip, listen_addrs_.at(1).addr);
   EXPECT_EQ(last_connect_addr.port, discovered_broker_.port);
 }
 

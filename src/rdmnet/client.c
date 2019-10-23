@@ -152,7 +152,7 @@ static void remove_scope_from_list(ClientScopeListEntry** list, ClientScopeListE
 
 static etcpal_error_t start_scope_discovery(ClientScopeListEntry* scope_entry, const char* search_domain);
 static void attempt_connection_on_listen_addrs(ClientScopeListEntry* scope_entry);
-static etcpal_error_t start_connection_for_scope(ClientScopeListEntry* scope_entry, const EtcPalSockaddr* broker_addr);
+static etcpal_error_t start_connection_for_scope(ClientScopeListEntry* scope_entry, const EtcPalSockAddr* broker_addr);
 
 // Find clients and scopes
 static etcpal_error_t get_client(rdmnet_client_t handle, RdmnetClient** client);
@@ -1352,7 +1352,7 @@ void attempt_connection_on_listen_addrs(ClientScopeListEntry* scope_entry)
                RDMNET_LOG_MSG("Attempting broker connection on scope '%s' at address %s:%d..."),
                scope_entry->config.scope, addr_str, scope_entry->port);
 
-    EtcPalSockaddr connect_addr;
+    EtcPalSockAddr connect_addr;
     connect_addr.ip = listen_addr->addr;
     connect_addr.port = scope_entry->port;
 
@@ -1387,7 +1387,7 @@ void attempt_connection_on_listen_addrs(ClientScopeListEntry* scope_entry)
   }
 }
 
-etcpal_error_t start_connection_for_scope(ClientScopeListEntry* scope_entry, const EtcPalSockaddr* broker_addr)
+etcpal_error_t start_connection_for_scope(ClientScopeListEntry* scope_entry, const EtcPalSockAddr* broker_addr)
 {
   ClientConnectMsg connect_msg;
   RdmnetClient* cli = scope_entry->client;

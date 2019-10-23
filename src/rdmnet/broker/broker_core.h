@@ -28,6 +28,7 @@
 #include <string>
 #include <vector>
 
+#include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/lock.h"
 #include "etcpal/socket.h"
 #include "rdmnet/broker.h"
@@ -132,9 +133,9 @@ private:
 
   std::set<rdmnet_conn_t> clients_to_destroy_;
 
-  static std::set<EtcPalIpAddr> CombineMacsAndInterfaces(const std::set<EtcPalIpAddr>& interfaces,
-                                                         const std::set<rdmnet::BrokerSettings::MacAddress>& macs);
-  etcpal_socket_t StartListening(const EtcPalIpAddr& ip, uint16_t& port);
+  static std::set<etcpal::IpAddr> CombineMacsAndInterfaces(const std::set<etcpal::IpAddr>& interfaces,
+                                                           const std::set<etcpal::MacAddr>& macs);
+  etcpal_socket_t StartListening(const etcpal::IpAddr& ip, uint16_t& port);
   bool StartBrokerServices();
   void StopBrokerServices();
 
@@ -147,7 +148,7 @@ private:
   virtual void HandleSocketClosed(rdmnet_conn_t conn_handle, bool graceful) override;
 
   // BrokerThreadNotify messages
-  virtual bool HandleNewConnection(etcpal_socket_t new_sock, const EtcPalSockaddr& addr) override;
+  virtual bool HandleNewConnection(etcpal_socket_t new_sock, const etcpal::SockAddr& addr) override;
   virtual bool ServiceClients() override;
 
   // BrokerDiscoveryManagerNotify messages

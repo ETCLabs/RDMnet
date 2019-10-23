@@ -62,13 +62,13 @@ void RdmnetConnWrapper::Shutdown()
   rdmnet_core_deinit();
 }
 
-etcpal::Result RdmnetConnWrapper::CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
+etcpal::Result RdmnetConnWrapper::CreateNewConnectionForSocket(etcpal_socket_t sock, const etcpal::SockAddr& addr,
                                                                rdmnet_conn_t& new_handle)
 {
   etcpal_error_t create_res = rdmnet_connection_create(&new_conn_config_, &new_handle);
   if (create_res == kEtcPalErrOk)
   {
-    create_res = rdmnet_attach_existing_socket(new_handle, sock, &addr);
+    create_res = rdmnet_attach_existing_socket(new_handle, sock, &addr.get());
     if (create_res != kEtcPalErrOk)
     {
       rdmnet_connection_destroy(new_handle, nullptr);

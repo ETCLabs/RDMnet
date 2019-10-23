@@ -167,25 +167,25 @@ bool ControllerDefaultResponder::GetComponentScope(uint16_t slot, std::vector<Rd
         // Static configuration
         if (scopeIter->second.static_broker.valid)
         {
-          const EtcPalSockaddr& saddr = scopeIter->second.static_broker.addr;
-          if (ETCPAL_IP_IS_V4(&saddr.ip))
+          const auto& saddr = scopeIter->second.static_broker.addr;
+          if (saddr.ip().IsV4())
           {
             *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
-            etcpal_pack_32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&saddr.ip));
+            etcpal_pack_32b(cur_ptr, saddr.ip().v4_data());
             cur_ptr += 4;
             // Skip the IPv6 field
             cur_ptr += 16;
-            etcpal_pack_16b(cur_ptr, saddr.port);
+            etcpal_pack_16b(cur_ptr, saddr.port());
             cur_ptr += 2;
           }
-          else if (ETCPAL_IP_IS_V6(&saddr.ip))
+          else if (saddr.ip().IsV6())
           {
             *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
             // Skip the IPv4 field
             cur_ptr += 4;
-            memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&saddr.ip), ETCPAL_IPV6_BYTES);
+            memcpy(cur_ptr, saddr.ip().v6_data(), ETCPAL_IPV6_BYTES);
             cur_ptr += ETCPAL_IPV6_BYTES;
-            etcpal_pack_16b(cur_ptr, saddr.port);
+            etcpal_pack_16b(cur_ptr, saddr.port());
             cur_ptr += 2;
           }
         }
@@ -257,9 +257,9 @@ bool ControllerDefaultResponder::GetTCPCommsStatus(const uint8_t* /*param_data*/
     }
     else
     {
-      if (ETCPAL_IP_IS_V4(&scope_data.current_broker.ip))
+      if (scope_data.current_broker.ip().IsV4())
       {
-        etcpal_pack_32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&scope_data.current_broker.ip));
+        etcpal_pack_32b(cur_ptr, scope_data.current_broker.ip().v4_data());
         cur_ptr += 4;
         memset(cur_ptr, 0, ETCPAL_IPV6_BYTES);
         cur_ptr += ETCPAL_IPV6_BYTES;
@@ -268,10 +268,10 @@ bool ControllerDefaultResponder::GetTCPCommsStatus(const uint8_t* /*param_data*/
       {
         etcpal_pack_32b(cur_ptr, 0);
         cur_ptr += 4;
-        memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&scope_data.current_broker.ip), ETCPAL_IPV6_BYTES);
+        memcpy(cur_ptr, scope_data.current_broker.ip().v6_data(), ETCPAL_IPV6_BYTES);
         cur_ptr += ETCPAL_IPV6_BYTES;
       }
-      etcpal_pack_16b(cur_ptr, scope_data.current_broker.port);
+      etcpal_pack_16b(cur_ptr, scope_data.current_broker.port());
       cur_ptr += 2;
     }
     etcpal_pack_16b(cur_ptr, scope_data.unhealthy_tcp_events);
@@ -369,7 +369,7 @@ void ControllerDefaultResponder::RemoveScope(const std::string& scope_to_remove)
 }
 
 void ControllerDefaultResponder::UpdateScopeConnectionStatus(const std::string& scope, bool connected,
-                                                             const EtcPalSockaddr& broker_addr)
+                                                             const etcpal::SockAddr& broker_addr)
 {
   etcpal::WriteGuard prop_write(prop_lock_);
   auto scope_entry = scopes_.find(scope);

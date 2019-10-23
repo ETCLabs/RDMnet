@@ -64,7 +64,7 @@ typedef rdmnet_conn_t rdmnet_client_scope_t;
 typedef struct RdmnetClientConnectedInfo
 {
   /*! The IP address and port of the remote broker to which we have connected. */
-  EtcPalSockaddr broker_addr;
+  EtcPalSockAddr broker_addr;
 } RdmnetClientConnectedInfo;
 
 /*! Information provided by the library about an unsuccessful RDMnet client connection. */
@@ -248,7 +248,7 @@ typedef struct RdmnetScopeConfig
    *  indicated in static_broker_addr. */
   bool has_static_broker_addr;
   /*! The broker address to which to connect, if a static broker has been configured. */
-  EtcPalSockaddr static_broker_addr;
+  EtcPalSockAddr static_broker_addr;
 } RdmnetScopeConfig;
 
 /*! The optional values contained in an RPT Client configuration. These values have defaults that
@@ -354,7 +354,7 @@ typedef struct RdmnetEptClientConfig
  *
  *  \param configptr Pointer to RdmnetScopeConfig.
  *  \param scope_str UTF-8 scope string to copy to the RdmnetScopeConfig (const char *).
- *  \param broker_addr Address and port for a static broker (EtcPalSockaddr).
+ *  \param broker_addr Address and port for a static broker (EtcPalSockAddr).
  */
 #define RDMNET_CLIENT_SET_STATIC_SCOPE(configptr, scope_str, broker_addr)                  \
   do                                                                                       \
@@ -371,7 +371,7 @@ typedef struct RdmnetEptClientConfig
  *  port given.
  *
  *  \param configptr Pointer to RdmnetScopeConfig.
- *  \param broker_addr Address and port for a static broker (EtcPalSockaddr)
+ *  \param broker_addr Address and port for a static broker (EtcPalSockAddr)
  */
 #define RDMNET_CLIENT_SET_STATIC_DEFAULT_SCOPE(configptr, broker_addr)                                       \
   do                                                                                                         \
