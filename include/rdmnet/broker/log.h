@@ -66,6 +66,8 @@ public:
   void LogFromCallback(const std::string& str);
   void LogThreadRun();
 
+  virtual bool OnStartup();
+  virtual void OnShutdown();
   virtual void GetTimeFromCallback(EtcPalLogTimeParams& time) = 0;
   virtual void OutputLogMsg(const std::string& str) = 0;
 

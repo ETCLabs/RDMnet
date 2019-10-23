@@ -58,6 +58,12 @@ rdmnet::BrokerLog::~BrokerLog()
 
 bool rdmnet::BrokerLog::Startup(int log_mask)
 {
+  if (etcpal_init(ETCPAL_FEATURE_LOGGING) != kEtcPalErrOk)
+    return false;
+
+  if (!OnStartup())
+    return false;
+
   // Set up the log params
   log_params_.action = kEtcPalLogCreateHumanReadableLog;
   log_params_.log_fn = broker_log_callback;
@@ -80,7 +86,15 @@ bool rdmnet::BrokerLog::Startup(int log_mask)
       NULL
     };
     // clang-format on
-    return etcpal_thread_create(&thread_, &tparams, log_thread_fn, this);
+    if (etcpal_thread_create(&thread_, &tparams, log_thread_fn, this))
+    {
+      return true;
+    }
+    else
+    {
+      OnShutdown();
+      return false;
+    }
   }
   else
   {
@@ -99,6 +113,10 @@ void rdmnet::BrokerLog::Shutdown()
       etcpal_thread_join(&thread_);
     }
   }
+
+  OnShutdown();
+
+  etcpal_deinit(ETCPAL_FEATURE_LOGGING);
 }
 
 void rdmnet::BrokerLog::Log(int pri, const char* format, ...)
@@ -194,23 +212,26 @@ void rdmnet::BrokerLog::LogThreadRun()
   while (keep_running_)
   {
     signal_.Wait();
-    if (keep_running_)
-    {
-      std::vector<std::string> to_log;
 
-      {
-        etcpal::MutexGuard guard(lock_);
-        to_log.reserve(msg_q_.size());
-        while (!msg_q_.empty())
-        {
-          to_log.push_back(msg_q_.front());
-          msg_q_.pop();
-        }
-      }
-      for (auto log_msg : to_log)
-      {
-        OutputLogMsg(log_msg);
-      }
+    std::queue<std::string> to_log;
+    {
+      etcpal::MutexGuard guard(lock_);
+      to_log.swap(msg_q_);
+    }
+
+    while (!to_log.empty())
+    {
+      OutputLogMsg(to_log.front());
+      to_log.pop();
     }
   }
+}
+
+bool rdmnet::BrokerLog::OnStartup()
+{
+  return true;
+}
+
+void rdmnet::BrokerLog::OnShutdown()
+{
 }
