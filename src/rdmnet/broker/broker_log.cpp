@@ -49,6 +49,12 @@ static void log_thread_fn(void* arg)
 
 rdmnet::BrokerLog::BrokerLog(DispatchPolicy dispatch_policy) : dispatch_policy_(dispatch_policy), keep_running_(false)
 {
+  // Set up the log params
+  log_params_.action = kEtcPalLogCreateHumanReadableLog;
+  log_params_.log_fn = broker_log_callback;
+  log_params_.log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG);
+  log_params_.time_fn = broker_time_callback;
+  log_params_.context = this;
 }
 
 rdmnet::BrokerLog::~BrokerLog()
@@ -56,20 +62,12 @@ rdmnet::BrokerLog::~BrokerLog()
   Shutdown();
 }
 
-bool rdmnet::BrokerLog::Startup(int log_mask)
+bool rdmnet::BrokerLog::Startup(BrokerLogInterface& log_interface)
 {
   if (etcpal_init(ETCPAL_FEATURE_LOGGING) != kEtcPalErrOk)
     return false;
 
-  if (!OnStartup())
-    return false;
-
-  // Set up the log params
-  log_params_.action = kEtcPalLogCreateHumanReadableLog;
-  log_params_.log_fn = broker_log_callback;
-  log_params_.log_mask = log_mask;
-  log_params_.time_fn = broker_time_callback;
-  log_params_.context = this;
+  log_interface_ = &log_interface;
 
   etcpal_validate_log_params(&log_params_);
 
@@ -86,15 +84,7 @@ bool rdmnet::BrokerLog::Startup(int log_mask)
       NULL
     };
     // clang-format on
-    if (etcpal_thread_create(&thread_, &tparams, log_thread_fn, this))
-    {
-      return true;
-    }
-    else
-    {
-      OnShutdown();
-      return false;
-    }
+    return etcpal_thread_create(&thread_, &tparams, log_thread_fn, this);
   }
   else
   {
@@ -114,9 +104,8 @@ void rdmnet::BrokerLog::Shutdown()
     }
   }
 
-  OnShutdown();
-
   etcpal_deinit(ETCPAL_FEATURE_LOGGING);
+  log_interface_ = nullptr;
 }
 
 void rdmnet::BrokerLog::Log(int pri, const char* format, ...)
@@ -193,18 +182,27 @@ void rdmnet::BrokerLog::Emergency(const char* format, ...)
 
 void rdmnet::BrokerLog::LogFromCallback(const std::string& str)
 {
-  if (dispatch_policy_ == DispatchPolicy::kDirect)
+  if (log_interface_)
   {
-    OutputLogMsg(str);
-  }
-  else if (dispatch_policy_ == DispatchPolicy::kQueued)
-  {
+    if (dispatch_policy_ == DispatchPolicy::kDirect)
     {
-      etcpal::MutexGuard guard(lock_);
-      msg_q_.push(str);
+      log_interface_->OutputLogMsg(str);
     }
-    signal_.Notify();
+    else if (dispatch_policy_ == DispatchPolicy::kQueued)
+    {
+      {
+        etcpal::MutexGuard guard(lock_);
+        msg_q_.push(str);
+      }
+      signal_.Notify();
+    }
   }
+}
+
+void rdmnet::BrokerLog::GetTimeFromCallback(EtcPalLogTimeParams& time)
+{
+  if (log_interface_)
+    log_interface_->GetLogTime(time);
 }
 
 void rdmnet::BrokerLog::LogThreadRun()
@@ -221,17 +219,9 @@ void rdmnet::BrokerLog::LogThreadRun()
 
     while (!to_log.empty())
     {
-      OutputLogMsg(to_log.front());
+      if (log_interface_)
+        log_interface_->OutputLogMsg(to_log.front());
       to_log.pop();
     }
   }
-}
-
-bool rdmnet::BrokerLog::OnStartup()
-{
-  return true;
-}
-
-void rdmnet::BrokerLog::OnShutdown()
-{
 }
