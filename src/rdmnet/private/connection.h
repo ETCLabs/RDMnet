@@ -17,12 +17,14 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*! \file rdmnet/private/connection.h
- *  \brief The internal definition for an RDMnet connection.
- *  \author Sam Kearney
+/*!
+ * \file rdmnet/private/connection.h
+ * \brief The internal definition for an RDMnet connection.
+ * \author Sam Kearney
  */
-#ifndef _RDMNET_PRIVATE_CONNECTION_H_
-#define _RDMNET_PRIVATE_CONNECTION_H_
+
+#ifndef RDMNET_PRIVATE_CONNECTION_H_
+#define RDMNET_PRIVATE_CONNECTION_H_
 
 #include "etcpal/bool.h"
 #include "etcpal/int.h"
@@ -145,4 +147,4 @@ void rdmnet_conn_tick();
 }
 #endif
 
-#endif /* _RDMNET_PRIVATE_CONNECTION_H_ */
+#endif /* RDMNET_PRIVATE_CONNECTION_H_ */

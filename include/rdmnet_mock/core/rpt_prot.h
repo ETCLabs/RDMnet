@@ -20,8 +20,8 @@
 /* rdmnet_mock/core/rpt_prot.h
  * Mocking the functions of rdmnet/core/rpt_prot.h
  */
-#ifndef _RDMNET_MOCK_CORE_RPT_PROT_H_
-#define _RDMNET_MOCK_CORE_RPT_PROT_H_
+#ifndef RDMNET_MOCK_CORE_RPT_PROT_H_
+#define RDMNET_MOCK_CORE_RPT_PROT_H_
 
 #include "rdmnet/core/rpt_prot.h"
 #include "fff.h"
@@ -61,4 +61,4 @@ DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, send_rpt_notification, rdmnet_conn_t, co
 }
 #endif
 
-#endif /* _RDMNET_MOCK_CORE_RPT_PROT_H_ */
+#endif /* RDMNET_MOCK_CORE_RPT_PROT_H_ */

@@ -21,7 +21,7 @@
  * Common functions and definitions used by all mDNS/DNS-SD providers across
  * platforms.
  */
-#ifndef _RDMNET_DISCOVERY_COMMON_H_
-#define _RDMNET_DISCOVERY_COMMON_H_
+#ifndef RDMNET_DISCOVERY_COMMON_H_
+#define RDMNET_DISCOVERY_COMMON_H_
 
-#endif /* _RDMNET_DISCOVERY_COMMON_H_ */
+#endif /* RDMNET_DISCOVERY_COMMON_H_ */

@@ -36,7 +36,7 @@ class BrokerShell : public rdmnet::BrokerNotify
 {
 public:
   // Returns the code the app should exit with.
-  int Run(rdmnet::BrokerLog* log);
+  int Run(rdmnet::BrokerLog& log);
   static void PrintVersion();
 
   // Options to set from the command line; must be set BEFORE Run() is called.
@@ -44,7 +44,6 @@ public:
   void SetInitialIfaceList(const std::set<etcpal::IpAddr>& ifaces) { initial_data_.ifaces = ifaces; }
   void SetInitialMacList(const std::set<etcpal::MacAddr>& macs) { initial_data_.macs = macs; }
   void SetInitialPort(uint16_t port) { initial_data_.port = port; }
-  void SetInitialLogLevel(int level) { initial_data_.log_mask = ETCPAL_LOG_UPTO(level); }
 
   void NetworkChanged();
   void AsyncShutdown();
@@ -61,7 +60,6 @@ private:
     std::set<etcpal::IpAddr> ifaces;
     std::set<etcpal::MacAddr> macs;
     uint16_t port{0};
-    int log_mask{ETCPAL_LOG_UPTO(ETCPAL_LOG_INFO)};
   } initial_data_;
 
   rdmnet::BrokerLog* log_{nullptr};

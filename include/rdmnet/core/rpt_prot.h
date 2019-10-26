@@ -17,12 +17,14 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*! \file rdmnet/core/rpt_prot.h
- *  \brief Functions to pack, send and parse RPT PDUs and their encapsulated messages.
- *  \author Sam Kearney
+/*!
+ * \file rdmnet/core/rpt_prot.h
+ * \brief Functions to pack, send and parse RPT PDUs and their encapsulated messages.
+ * \author Sam Kearney
  */
-#ifndef _RDMNET_CORE_RPT_PROT_H_
-#define _RDMNET_CORE_RPT_PROT_H_
+
+#ifndef RDMNET_CORE_RPT_PROT_H_
+#define RDMNET_CORE_RPT_PROT_H_
 
 #include <stddef.h>
 #include <string.h>
@@ -35,9 +37,14 @@
 #include "rdmnet/core.h"
 #include "rdmnet/core/util.h"
 
-/*! \addtogroup rdmnet_message
- *  @{
+/*!
+ * \addtogroup rdmnet_message
+ * @{
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*! The header size of an RPT PDU (not including encapsulating PDUs) */
 #define RPT_PDU_HEADER_SIZE                                                   \
@@ -114,10 +121,12 @@ struct RdmBufListEntry
  *  Notification. */
 typedef struct RdmBufList
 {
-  /*! This message contains a partial list. This can be set when the library runs out of static
-   *  memory in which to store RDM Commands and must deliver the partial list before continuing.
-   *  The application should store the entries in the list but should not act on the list until
-   *  another RdmCmdList is received with partial set to false. */
+  /*!
+   * This message contains a partial list. This can be set when the library runs out of static
+   * memory in which to store RDM Commands and must deliver the partial list before continuing.
+   * The application should store the entries in the list but should not act on the list until
+   * another RdmCmdList is received with partial set to false.
+   */
   bool more_coming;
   /*! The head of a linked list of packed RDM Commands. */
   RdmBufListEntry* list;
@@ -139,28 +148,35 @@ typedef struct RptMessage
   } data;
 } RptMessage;
 
-/*! \brief Determine whether an RptMessage contains an RDM Buffer List. Multiple types of RPT
- *         Messages can contain RDM Buffer Lists.
- *  \param rptmsgptr Pointer to RptMessage.
- *  \return (true or false) Whether the message contains an RDM Buffer List. */
-#define is_rdm_buf_list(rptmsgptr) \
+/*!
+ * \brief Determine whether an RptMessage contains an RDM Buffer List. Multiple types of RPT
+ *        Messages can contain RDM Buffer Lists.
+ * \param rptmsgptr Pointer to RptMessage.
+ * \return (true or false) Whether the message contains an RDM Buffer List.
+ */
+#define IS_RDM_BUF_LIST(rptmsgptr) \
   ((rptmsgptr)->vector == VECTOR_RPT_REQUEST || (rptmsgptr)->vector == VECTOR_RPT_NOTIFICATION)
-/*! \brief Get the encapsulated RDM Buffer List from an RptMessage.
- *  \param rptmsgptr Pointer to RptMessage.
- *  \return Pointer to encapsulated RDM Buffer List (RdmBufList *). */
-#define get_rdm_buf_list(rptmsgptr) (&(rptmsgptr)->data.rdm)
-/*! \brief Determine whether an RptMessage contains an RPT Status Message.
- *  \param rptmsgptr Pointer to RptMessage.
- *  \return (true or false) Whether the message contains an RPT Status Message. */
-#define is_rpt_status_msg(rptmsgptr) ((rptmsgptr)->vector == VECTOR_RPT_STATUS)
-/*! \brief Get the encapsulated RPT Status message from an RptMessage.
- *  \param rptmsgptr Pointer to RptMessage.
- *  \return Pointer to encapsulated RPT Status Message (RptStatusMsg *). */
-#define get_rpt_status_msg(rptmsgptr) (&(rptmsgptr)->data.status)
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/*!
+ * \brief Get the encapsulated RDM Buffer List from an RptMessage.
+ * \param rptmsgptr Pointer to RptMessage.
+ * \return Pointer to encapsulated RDM Buffer List (RdmBufList *).
+ */
+#define GET_RDM_BUF_LIST(rptmsgptr) (&(rptmsgptr)->data.rdm)
+
+/*!
+ * \brief Determine whether an RptMessage contains an RPT Status Message.
+ * \param rptmsgptr Pointer to RptMessage.
+ * \return (true or false) Whether the message contains an RPT Status Message.
+ */
+#define IS_RPT_STATUS_MSG(rptmsgptr) ((rptmsgptr)->vector == VECTOR_RPT_STATUS)
+
+/*!
+ * \brief Get the encapsulated RPT Status message from an RptMessage.
+ * \param rptmsgptr Pointer to RptMessage.
+ * \return Pointer to encapsulated RPT Status Message (RptStatusMsg *).
+ */
+#define GET_RPT_STATUS_MSG(rptmsgptr) (&(rptmsgptr)->data.status)
 
 size_t bufsize_rpt_request(const RdmBuffer* cmd);
 size_t bufsize_rpt_status(const RptStatusMsg* status);
@@ -184,6 +200,8 @@ etcpal_error_t send_rpt_notification(rdmnet_conn_t handle, const EtcPalUuid* loc
 }
 #endif
 
-/*!@}*/
+/*!
+ * @}
+ */
 
-#endif /* _RDMNET_CORE_RPT_PROT_H_ */
+#endif /* RDMNET_CORE_RPT_PROT_H_ */

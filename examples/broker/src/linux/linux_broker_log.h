@@ -32,15 +32,18 @@
 class LinuxBrokerLog : public rdmnet::BrokerLog
 {
 public:
-  LinuxBrokerLog(const std::string& file_name);
-  virtual ~LinuxBrokerLog();
+  bool Startup(const std::string& file_name, int log_mask);
+  void Shutdown();
 
   void OutputLogMsg(const std::string& str) override;
-  virtual void GetTimeFromCallback(EtcPalLogTimeParams& time) override;
+  void GetLogTime(EtcPalLogTimeParams& time) override;
+
+  rdmnet::BrokerLog& broker_log_instance() { return log_; }
 
 private:
+  rdmnet::BrokerLog log_;
+
   std::fstream file_;
-  int log_level_{ETCPAL_LOG_INFO};
 };
 
 #endif  // _LINUX_BROKER_LOG_

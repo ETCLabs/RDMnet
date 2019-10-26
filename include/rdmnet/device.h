@@ -17,32 +17,35 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*! \file rdmnet/device.h
- *  \brief Definitions for the RDMnet Device API
- *  \author Sam Kearney
+/*!
+ * \file rdmnet/device.h
+ * \brief Definitions for the RDMnet Device API
+ * \author Sam Kearney
  */
-#ifndef _RDMNET_DEVICE_H_
-#define _RDMNET_DEVICE_H_
+
+#ifndef RDMNET_DEVICE_H_
+#define RDMNET_DEVICE_H_
 
 #include "etcpal/bool.h"
 #include "etcpal/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/client.h"
 
+/*!
+ * \defgroup rdmnet_device Device API
+ * \ingroup rdmnet_client
+ * \brief Implementation of RDMnet device functionality.
+ *
+ * RDMnet devices are clients which exclusively receive and respond to RDM commands. Devices
+ * operate on only one scope at a time. This API wraps the RDMnet Client API and provides functions
+ * tailored specifically to the usage concerns of an RDMnet device.
+ *
+ * @{
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/*! \defgroup rdmnet_device Device API
- *  \ingroup rdmnet_client
- *  \brief Implementation of RDMnet device functionality.
- *
- *  RDMnet devices are clients which exclusively receive and respond to RDM commands. Devices
- *  operate on only one scope at a time. This API wraps the RDMnet Client API and provides functions
- *  tailored specifically to the usage concerns of an RDMnet device.
- *
- *  @{
- */
 
 /*! A handle to an RDMnet device. */
 typedef struct RdmnetDevice* rdmnet_device_t;
@@ -73,20 +76,21 @@ typedef struct RdmnetDeviceConfig
   LlrpTargetOptionalConfig llrp_optional;
 } RdmnetDeviceConfig;
 
-/*! \brief Initialize an RDMnet Device Config with default values for the optional config options.
+/*!
+ * \brief Initialize an RDMnet Device Config with default values for the optional config options.
  *
- *  The config struct members not marked 'optional' are not initialized by this macro. Those members
- *  do not have default values and must be initialized manually before passing the config struct to
- *  an API function.
+ * The config struct members not marked 'optional' are not initialized by this macro. Those members
+ * do not have default values and must be initialized manually before passing the config struct to
+ * an API function.
  *
- *  Usage example:
- *  \code
- *  RdmnetDeviceConfig config;
- *  RDMNET_DEVICE_CONFIG_INIT(&config, 0x6574);
- *  \endcode
+ * Usage example:
+ * \code
+ * RdmnetDeviceConfig config;
+ * RDMNET_DEVICE_CONFIG_INIT(&config, 0x6574);
+ * \endcode
  *
- *  \param devicecfgptr Pointer to RdmnetDeviceConfig.
- *  \param manu_id ESTA manufacturer ID. All RDMnet Devices must have one.
+ * \param devicecfgptr Pointer to RdmnetDeviceConfig.
+ * \param manu_id ESTA manufacturer ID. All RDMnet Devices must have one.
  */
 #define RDMNET_DEVICE_CONFIG_INIT(devicecfgptr, manu_id) RPT_CLIENT_CONFIG_INIT(devicecfgptr, manu_id)
 
@@ -105,10 +109,12 @@ etcpal_error_t rdmnet_device_change_scope(rdmnet_device_t handle, const RdmnetSc
 etcpal_error_t rdmnet_device_change_search_domain(rdmnet_device_t handle, const char* new_search_domain,
                                                   rdmnet_disconnect_reason_t reason);
 
-/*! @} */
-
 #ifdef __cplusplus
 };
 #endif
 
-#endif /* _RDMNET_DEVICE_H_ */
+/*!
+ * @}
+ */
+
+#endif /* RDMNET_DEVICE_H_ */

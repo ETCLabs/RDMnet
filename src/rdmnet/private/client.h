@@ -17,10 +17,12 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*! \file rdmnet/private/client.h
+/*!
+ * \file rdmnet/private/client.h
  */
-#ifndef _RDMNET_PRIVATE_CLIENT_H_
-#define _RDMNET_PRIVATE_CLIENT_H_
+
+#ifndef RDMNET_PRIVATE_CLIENT_H_
+#define RDMNET_PRIVATE_CLIENT_H_
 
 #include "rdmnet/client.h"
 #include "rdmnet/defs.h"
@@ -176,4 +178,4 @@ typedef struct ClientCallbackDispatchInfo
   } common_args;
 } ClientCallbackDispatchInfo;
 
-#endif /* _RDMNET_PRIVATE_CLIENT_H_ */
+#endif /* RDMNET_PRIVATE_CLIENT_H_ */

@@ -20,8 +20,8 @@
 /* rdmnet_mock/core/discovery.h
  * Mocking the functions of rdmnet/core/discovery.h
  */
-#ifndef _RDMNET_MOCK_CORE_DISCOVERY_H_
-#define _RDMNET_MOCK_CORE_DISCOVERY_H_
+#ifndef RDMNET_MOCK_CORE_DISCOVERY_H_
+#define RDMNET_MOCK_CORE_DISCOVERY_H_
 
 #include "rdmnet/core/discovery.h"
 #include "fff.h"
@@ -57,4 +57,4 @@ DECLARE_FAKE_VOID_FUNC(rdmnetdisc_tick);
 }
 #endif
 
-#endif /* _RDMNET_MOCK_CORE_DISCOVERY_H_ */
+#endif /* RDMNET_MOCK_CORE_DISCOVERY_H_ */

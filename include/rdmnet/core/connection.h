@@ -17,16 +17,18 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*! \file rdmnet/core/connection.h
- *  \brief RDMnet Connection API definitions
+/*!
+ * \file rdmnet/core/connection.h
+ * \brief RDMnet Connection API definitions
  *
- *  Functions and definitions for the \ref rdmnet_conn "RDMnet Connection API" are contained in this
- *  header.
+ * Functions and definitions for the \ref rdmnet_conn "RDMnet Connection API" are contained in this
+ * header.
  *
- *  \author Sam Kearney
+ * \author Sam Kearney
  */
-#ifndef _RDMNET_CORE_CONNECTION_H_
-#define _RDMNET_CORE_CONNECTION_H_
+
+#ifndef RDMNET_CORE_CONNECTION_H_
+#define RDMNET_CORE_CONNECTION_H_
 
 #include <stddef.h>
 #include "etcpal/bool.h"
@@ -37,20 +39,25 @@
 #include "rdmnet/core.h"
 #include "rdmnet/core/message.h"
 
-/*! \defgroup rdmnet_conn Connection
- *  \ingroup rdmnet_core_lib
- *  \brief Handle a connection between a Client and a %Broker in RDMnet.
+/*!
+ * \defgroup rdmnet_conn Connection
+ * \ingroup rdmnet_core_lib
+ * \brief Handle a connection between a Client and a %Broker in RDMnet.
  *
- *  In E1.33, the behavior of this module is dictated by the %Broker Protocol (&sect; 6).
+ * In E1.33, the behavior of this module is dictated by the %Broker Protocol (&sect; 6).
  *
- *  Basic functionality for an RDMnet Client: Initialize the library using rdmnet_init(). Create a
- *  new connection using rdmnet_connection_create(). Connect to a %Broker using rdmnet_connect().
- *  Depending on the value of #RDMNET_USE_TICK_THREAD, may need to call rdmnet_tick() at regular
- *  intervals. Send data over the %Broker connection using rdmnet_send(), and receive data over the
- *  %Broker connection using rdmnet_recv().
+ * Basic functionality for an RDMnet Client: Initialize the library using rdmnet_init(). Create a
+ * new connection using rdmnet_connection_create(). Connect to a %Broker using rdmnet_connect().
+ * Depending on the value of #RDMNET_USE_TICK_THREAD, may need to call rdmnet_tick() at regular
+ * intervals. Send data over the %Broker connection using rdmnet_send(), and receive data over the
+ * %Broker connection using rdmnet_recv().
  *
- *  @{
+ * @{
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*! Information about a successful RDMnet connection. */
 typedef struct RdmnetConnectedInfo
@@ -126,40 +133,41 @@ typedef struct RdmnetDisconnectedInfo
 /*! A set of callbacks which are called with notifications about RDMnet connections. */
 typedef struct RdmnetConnCallbacks
 {
-  /*! \brief An RDMnet connection has connected successfully.
-   *
-   *  \param[in] handle Handle to connection which has connected.
-   *  \param[in] connect_info More information about the successful connection.
-   *  \param[in] context Context pointer that was given at the creation of the connection.
+  /*!
+   * \brief An RDMnet connection has connected successfully.
+   * \param[in] handle Handle to connection which has connected.
+   * \param[in] connect_info More information about the successful connection.
+   * \param[in] context Context pointer that was given at the creation of the connection.
    */
   void (*connected)(rdmnet_conn_t handle, const RdmnetConnectedInfo* connect_info, void* context);
 
-  /*! \brief An RDMnet connection attempt failed.
-   *
-   *  \param[in] handle Handle to connection which has failed.
-   *  \param[in] failed_info More information about the connect failure event.
-   *  \param[in] context Context pointer that was given at the creation of the connection.
+  /*!
+   * \brief An RDMnet connection attempt failed.
+   * \param[in] handle Handle to connection which has failed.
+   * \param[in] failed_info More information about the connect failure event.
+   * \param[in] context Context pointer that was given at the creation of the connection.
    */
   void (*connect_failed)(rdmnet_conn_t handle, const RdmnetConnectFailedInfo* failed_info, void* context);
 
-  /*! \brief A previously-connected RDMnet connection has disconnected.
-   *
-   *  \param[in] handle Handle to connection which has been disconnected.
-   *  \param[in] disconn_info More information about the disconnect event.
-   *  \param[in] context Context pointer that was given at the creation of the connection.
+  /*!
+   * \brief A previously-connected RDMnet connection has disconnected.
+   * \param[in] handle Handle to connection which has been disconnected.
+   * \param[in] disconn_info More information about the disconnect event.
+   * \param[in] context Context pointer that was given at the creation of the connection.
    */
   void (*disconnected)(rdmnet_conn_t handle, const RdmnetDisconnectedInfo* disconn_info, void* context);
 
-  /*! \brief A message has been received on an RDMnet connection.
+  /*!
+   * \brief A message has been received on an RDMnet connection.
    *
-   *  %Broker Protocol messages that affect connection status are consumed internally by the
-   *  connection library and thus will not result in this callback. All other valid messages will be
-   *  delivered.
+   * %Broker Protocol messages that affect connection status are consumed internally by the
+   * connection library and thus will not result in this callback. All other valid messages will be
+   * delivered.
    *
-   *  \param[in] handle Handle to connection on which the message has been received.
-   *  \param[in] message Contains the message received. Use the macros in \ref rdmnet_message to
-   *                     decode.
-   *  \param[in] context Context pointer that was given at creation of the connection.
+   * \param[in] handle Handle to connection on which the message has been received.
+   * \param[in] message Contains the message received. Use the macros in \ref rdmnet_message to
+   *                    decode.
+   * \param[in] context Context pointer that was given at creation of the connection.
    */
   void (*msg_received)(rdmnet_conn_t handle, const RdmnetMessage* message, void* context);
 } RdmnetConnCallbacks;
@@ -179,10 +187,6 @@ typedef struct RdmnetConnectionConfig
  *  length that can be given in one call to rdmnet_conn_sock_data_received(). */
 #define RDMNET_RECV_DATA_MAX_SIZE 1200
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 etcpal_error_t rdmnet_connection_create(const RdmnetConnectionConfig* config, rdmnet_conn_t* handle);
 etcpal_error_t rdmnet_connect(rdmnet_conn_t handle, const EtcPalSockAddr* remote_addr,
                               const ClientConnectMsg* connect_data);
@@ -194,21 +198,26 @@ int rdmnet_send(rdmnet_conn_t handle, const uint8_t* data, size_t size);
 const char* rdmnet_connect_fail_event_to_string(rdmnet_connect_fail_event_t event);
 const char* rdmnet_disconnect_event_to_string(rdmnet_disconnect_event_t event);
 
-/*! \name Externally managed socket functions.
+/*!
+ * \name Externally managed socket functions.
  *
- *  These functions are for advanced usage and are generally only used by broker apps.
- *  @{
+ * These functions are for advanced usage and are generally only used by broker apps.
+ * @{
  */
 etcpal_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, etcpal_socket_t sock,
                                              const EtcPalSockAddr* remote_addr);
 void rdmnet_socket_data_received(rdmnet_conn_t handle, const uint8_t* data, size_t data_size);
 void rdmnet_socket_error(rdmnet_conn_t handle, etcpal_error_t socket_err);
-/*! @} */
+/*!
+ * @}
+ */
 
 #ifdef __cplusplus
 }
 #endif
 
-/*!@}*/
+/*!
+ * @}
+ */
 
-#endif /* _RDMNET_CORE_CONNECTION_H_ */
+#endif /* RDMNET_CORE_CONNECTION_H_ */

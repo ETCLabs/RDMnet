@@ -20,8 +20,8 @@
 /* rdmnet_mock/core/connection.h
  * Mocking the functions of rdmnet/core/connection.h
  */
-#ifndef _RDMNET_MOCK_CORE_CONNECTION_H_
-#define _RDMNET_MOCK_CORE_CONNECTION_H_
+#ifndef RDMNET_MOCK_CORE_CONNECTION_H_
+#define RDMNET_MOCK_CORE_CONNECTION_H_
 
 #include "rdmnet/core/connection.h"
 #include "fff.h"
@@ -53,4 +53,4 @@ void rdmnet_connection_reset_all_fakes(void);
 }
 #endif
 
-#endif /* _RDMNET_MOCK_CORE_CONNECTION_H_ */
+#endif /* RDMNET_MOCK_CORE_CONNECTION_H_ */

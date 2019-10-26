@@ -245,7 +245,7 @@ void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t sc
       case VECTOR_BROKER_CLIENT_REMOVE:
       case VECTOR_BROKER_CLIENT_ENTRY_CHANGE:
         controller->callbacks.client_list_update(controller, scope_handle, (client_list_action_t)msg->vector,
-                                                 get_client_list(msg), controller->callback_context);
+                                                 GET_CLIENT_LIST(msg), controller->callback_context);
         break;
       default:
         break;

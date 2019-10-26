@@ -17,17 +17,23 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*! \file rdmnet/core/client_entry.h
- *  \brief Functions to create Client Entry structures for RPT and EPT clients.
- *  \author Sam Kearney
+/*!
+ * \file rdmnet/core/client_entry.h
+ * \brief Functions to create Client Entry structures for RPT and EPT clients.
+ * \author Sam Kearney
  */
-#ifndef _RDMNET_CORE_CLIENT_ENTRY_H_
-#define _RDMNET_CORE_CLIENT_ENTRY_H_
+
+#ifndef RDMNET_CORE_CLIENT_ENTRY_H_
+#define RDMNET_CORE_CLIENT_ENTRY_H_
 
 #include "etcpal/bool.h"
 #include "etcpal/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum
 {
@@ -79,14 +85,10 @@ struct ClientEntryData
   ClientEntryData* next;
 };
 
-#define is_rpt_client_entry(clientryptr) ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_RPT)
-#define get_rpt_client_entry_data(clientryptr) (&(clientryptr)->data.rpt_data)
-#define is_ept_client_entry(clientryptr) ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_EPT)
-#define get_ept_client_entry_data(clientryptr) (&(clientryptr)->data.ept_data)
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define IS_RPT_CLIENT_ENTRY(clientryptr) ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_RPT)
+#define GET_RPT_CLIENT_ENTRY_DATA(clientryptr) (&(clientryptr)->data.rpt_data)
+#define IS_EPT_CLIENT_ENTRY(clientryptr) ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_EPT)
+#define GET_EPT_CLIENT_ENTRY_DATA(clientryptr) (&(clientryptr)->data.ept_data)
 
 bool create_rpt_client_entry(const EtcPalUuid* cid, const RdmUid* uid, rpt_client_type_t client_type,
                              const EtcPalUuid* binding_cid, ClientEntryData* entry);
@@ -97,4 +99,4 @@ bool create_ept_client_entry(const EtcPalUuid* cid, const EptSubProtocol* protoc
 }
 #endif
 
-#endif /* _RDMNET_CORE_CLIENT_ENTRY_H_ */
+#endif /* RDMNET_CORE_CLIENT_ENTRY_H_ */

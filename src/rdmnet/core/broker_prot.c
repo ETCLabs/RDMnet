@@ -160,14 +160,14 @@ size_t calc_client_connect_len(const ClientConnectMsg* data)
 {
   size_t res = BROKER_PDU_HEADER_SIZE + CLIENT_CONNECT_DATA_MIN_SIZE;
 
-  if (is_rpt_client_entry(&data->client_entry))
+  if (IS_RPT_CLIENT_ENTRY(&data->client_entry))
   {
     res += RPT_CLIENT_ENTRY_DATA_SIZE;
     return res;
   }
-  else if (is_ept_client_entry(&data->client_entry))
+  else if (IS_EPT_CLIENT_ENTRY(&data->client_entry))
   {
-    EptSubProtocol* prot = get_ept_client_entry_data(&data->client_entry)->protocol_list;
+    EptSubProtocol* prot = GET_EPT_CLIENT_ENTRY_DATA(&data->client_entry)->protocol_list;
     for (; prot; prot = prot->next)
       res += EPT_PROTOCOL_ENTRY_SIZE;
     return res;
@@ -181,7 +181,7 @@ size_t calc_client_connect_len(const ClientConnectMsg* data)
 
 etcpal_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMsg* data)
 {
-  if (!(is_rpt_client_entry(&data->client_entry) || is_ept_client_entry(&data->client_entry)))
+  if (!(IS_RPT_CLIENT_ENTRY(&data->client_entry) || IS_EPT_CLIENT_ENTRY(&data->client_entry)))
   {
     return kEtcPalErrProtocol;
   }
@@ -214,10 +214,10 @@ etcpal_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMs
                            data->client_entry.client_protocol, &data->client_entry.client_cid, buf);
   send_res = etcpal_send(conn->sock, buf, CLIENT_ENTRY_HEADER_SIZE, 0);
 
-  if (is_rpt_client_entry(&data->client_entry))
+  if (IS_RPT_CLIENT_ENTRY(&data->client_entry))
   {
     // Pack and send the RPT client entry
-    const ClientEntryDataRpt* rpt_data = get_rpt_client_entry_data(&data->client_entry);
+    const ClientEntryDataRpt* rpt_data = GET_RPT_CLIENT_ENTRY_DATA(&data->client_entry);
     cur_ptr = buf;
     etcpal_pack_16b(cur_ptr, rpt_data->client_uid.manu);
     cur_ptr += 2;
@@ -233,7 +233,7 @@ etcpal_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMs
   else  // is EPT client entry
   {
     // Pack and send the EPT client entry
-    const ClientEntryDataEpt* ept_data = get_ept_client_entry_data(&data->client_entry);
+    const ClientEntryDataEpt* ept_data = GET_EPT_CLIENT_ENTRY_DATA(&data->client_entry);
     const EptSubProtocol* prot = ept_data->protocol_list;
     for (; prot; prot = prot->next)
     {
@@ -470,7 +470,7 @@ size_t pack_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid
 
     if (cur_entry->client_protocol == E133_CLIENT_PROTOCOL_RPT)
     {
-      const ClientEntryDataRpt* rpt_data = get_rpt_client_entry_data(cur_entry);
+      const ClientEntryDataRpt* rpt_data = GET_RPT_CLIENT_ENTRY_DATA(cur_entry);
 
       // Check bounds.
       if (cur_ptr + RPT_CLIENT_ENTRY_DATA_SIZE > buf_end)

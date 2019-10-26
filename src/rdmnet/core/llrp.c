@@ -194,7 +194,7 @@ etcpal_error_t init_sys_netints()
   {
     char addr_str[ETCPAL_INET6_ADDRSTRLEN];
     addr_str[0] = '\0';
-    if (etcpal_can_log(rdmnet_log_params, ETCPAL_LOG_WARNING))
+    if (etcpal_can_log(rdmnet_log_params, ETCPAL_LOG_INFO))
     {
       etcpal_inet_ntop(&netint->addr, addr_str, ETCPAL_INET6_ADDRSTRLEN);
     }

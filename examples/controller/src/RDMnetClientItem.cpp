@@ -37,10 +37,10 @@ const char* RDMnetClientItem::clientType2String(rpt_client_type_t type)
 
 RDMnetClientItem::RDMnetClientItem(const ClientEntryData& entry, bool is_me)
     : RDMnetNetworkItem(QString("%0%1 | Manu: 0x%2 | ID: 0x%3")
-                            .arg(QString(clientType2String(get_rpt_client_entry_data(&entry)->client_type)))
+                            .arg(QString(clientType2String(GET_RPT_CLIENT_ENTRY_DATA(&entry)->client_type)))
                             .arg(is_me ? QString::fromUtf8(" (me)") : QString())
-                            .arg(QString::number(get_rpt_client_entry_data(&entry)->client_uid.manu, 16))
-                            .arg(QString::number(get_rpt_client_entry_data(&entry)->client_uid.id, 16)))
+                            .arg(QString::number(GET_RPT_CLIENT_ENTRY_DATA(&entry)->client_uid.manu, 16))
+                            .arg(QString::number(GET_RPT_CLIENT_ENTRY_DATA(&entry)->client_uid.id, 16)))
     , entry_(entry)
 {
 }

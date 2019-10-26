@@ -17,8 +17,8 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef _RDMNET_PRIVATE_DEVICE_H_
-#define _RDMNET_PRIVATE_DEVICE_H_
+#ifndef RDMNET_PRIVATE_DEVICE_H_
+#define RDMNET_PRIVATE_DEVICE_H_
 
 #include "rdmnet/device.h"
 #include "rdmnet/client.h"
@@ -32,4 +32,4 @@ typedef struct RdmnetDevice
   void* callback_context;
 } RdmnetDevice;
 
-#endif /* _RDMNET_PRIVATE_DEVICE_H_ */
+#endif /* RDMNET_PRIVATE_DEVICE_H_ */

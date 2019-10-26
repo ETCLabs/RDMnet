@@ -17,12 +17,14 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*! \file rdmnet/core/llrp.h
- *  \brief Functions and definitions common to LLRP Managers and Targets.
- *  \author Christian Reese and Sam Kearney
+/*!
+ * \file rdmnet/core/llrp.h
+ * \brief Functions and definitions common to LLRP Managers and Targets.
+ * \author Christian Reese and Sam Kearney
  */
-#ifndef _RDMNET_CORE_LLRP_H_
-#define _RDMNET_CORE_LLRP_H_
+
+#ifndef RDMNET_CORE_LLRP_H_
+#define RDMNET_CORE_LLRP_H_
 
 #include "etcpal/inet.h"
 #include "etcpal/int.h"
@@ -30,12 +32,17 @@
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
 
-/*! \defgroup llrp LLRP
- *  \ingroup rdmnet_core_lib
- *  \brief Implement Low Level Recovery Protocol (LLRP) functionality.
+/*!
+ * \defgroup llrp LLRP
+ * \ingroup rdmnet_core_lib
+ * \brief Implement Low Level Recovery Protocol (LLRP) functionality.
  *
- *  @{
+ * @{
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*! A handle for an instance of LLRP Manager functionality. */
 typedef int llrp_manager_t;
@@ -57,7 +64,7 @@ typedef enum
   /*! This LLRP Target is associated with a Broker. */
   kLlrpCompBroker = LLRP_COMPONENT_TYPE_BROKER,
   /*! This LLRP Target does not implement any RDMnet protocol other than LLRP. */
-  kLlrpCompNonRdmnet = LLRP_COMPONENT_TYPE_NON_RDMNET
+  kLlrpCompNonRdmnet = LLRP_COMPONENT_TYPE_NONRDMNET
 } llrp_component_t;
 
 /*! A set of information associated with an LLRP Target. */
@@ -73,10 +80,12 @@ typedef struct DiscoveredLlrpTarget
   llrp_component_t component_type;
 } DiscoveredLlrpTarget;
 
-/*! A set of identifying information for a network interface, for LLRP's purposes. All messages in
- *  LLRP are sent over multicast. This means that interface IP addresses don't matter and that for
- *  the purposes of LLRP, the primary key for a network interface should simply be a combination of
- *  the interface index and the IP protocol used. */
+/*!
+ * A set of identifying information for a network interface, for LLRP's purposes. All messages in
+ * LLRP are sent over multicast. This means that interface IP addresses don't matter and that for
+ * the purposes of LLRP, the primary key for a network interface should simply be a combination of
+ * the interface index and the IP protocol used.
+ */
 typedef struct LlrpNetintId
 {
   /*! The IP protocol used on the network interface. */
@@ -85,6 +94,12 @@ typedef struct LlrpNetintId
   unsigned int index;
 } LlrpNetintId;
 
-/*! @} */
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* _RDMNET_CORE_LLRP_H_ */
+/*!
+ * @}
+ */
+
+#endif /* RDMNET_CORE_LLRP_H_ */

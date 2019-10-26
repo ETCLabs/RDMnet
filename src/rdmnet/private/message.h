@@ -17,8 +17,8 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef _RDMNET_PRIVATE_MESSAGE_H_
-#define _RDMNET_PRIVATE_MESSAGE_H_
+#ifndef RDMNET_PRIVATE_MESSAGE_H_
+#define RDMNET_PRIVATE_MESSAGE_H_
 
 #include "etcpal/error.h"
 #include "rdmnet/private/opts.h"
@@ -81,4 +81,4 @@ etcpal_error_t rdmnet_message_init();
 }
 #endif
 
-#endif /* _RDMNET_MESSAGE_PRIV_H_ */
+#endif /* RDMNET_MESSAGE_PRIV_H_ */

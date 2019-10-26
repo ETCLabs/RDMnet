@@ -22,8 +22,8 @@
  * \brief Utilities used internally by the RDMnet library
  */
 
-#ifndef _RDMNET_PRIVATE_UTIL_H_
-#define _RDMNET_PRIVATE_UTIL_H_
+#ifndef RDMNET_PRIVATE_UTIL_H_
+#define RDMNET_PRIVATE_UTIL_H_
 
 #include "etcpal/bool.h"
 
@@ -49,4 +49,4 @@ typedef struct IntHandleManager
 void init_int_handle_manager(IntHandleManager* manager, HandleValueInUseFunction value_in_use_func);
 int get_next_int_handle(IntHandleManager* manager);
 
-#endif /* _RDMNET_PRIVATE_UTIL_H_ */
+#endif /* RDMNET_PRIVATE_UTIL_H_ */

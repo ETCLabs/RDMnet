@@ -163,24 +163,24 @@ bool ParseAndSetPort(const LPWSTR port_str, BrokerShell& broker_shell)
 
 // clang-format off
 static const std::map<std::wstring, int> log_levels = {
-  {L"EMERG", ETCPAL_LOG_EMERG},
-  {L"ALERT", ETCPAL_LOG_ALERT},
-  {L"CRIT", ETCPAL_LOG_CRIT},
-  {L"ERR", ETCPAL_LOG_ERR},
-  {L"WARNING", ETCPAL_LOG_WARNING},
-  {L"NOTICE", ETCPAL_LOG_NOTICE},
-  {L"INFO", ETCPAL_LOG_INFO},
-  {L"DEBUG", ETCPAL_LOG_DEBUG}
+  {L"EMERG", ETCPAL_LOG_UPTO(ETCPAL_LOG_EMERG)},
+  {L"ALERT", ETCPAL_LOG_UPTO(ETCPAL_LOG_ALERT)},
+  {L"CRIT", ETCPAL_LOG_UPTO(ETCPAL_LOG_CRIT)},
+  {L"ERR", ETCPAL_LOG_UPTO(ETCPAL_LOG_ERR)},
+  {L"WARNING", ETCPAL_LOG_UPTO(ETCPAL_LOG_WARNING)},
+  {L"NOTICE", ETCPAL_LOG_UPTO(ETCPAL_LOG_NOTICE)},
+  {L"INFO", ETCPAL_LOG_UPTO(ETCPAL_LOG_INFO)},
+  {L"DEBUG", ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG)}
 };
 // clang-format on
 
-// Parse the --log-level=LOG_LEVEL command line option and transfer it to the BrokerShell instance.
-bool ParseAndSetLogLevel(const LPWSTR log_level_str, BrokerShell& broker_shell)
+// Parse the --log-level=LOG_LEVEL command line option and convert it to a logging mask
+bool ParseAndSetLogLevel(const LPWSTR log_level_str, int& log_mask)
 {
   auto level = log_levels.find(log_level_str);
   if (level != log_levels.end())
   {
-    broker_shell.SetInitialLogLevel(level->second);
+    log_mask = level->second;
     return true;
   }
   return false;
@@ -196,7 +196,7 @@ enum class ParseResult
 };
 
 // Parse the command-line arguments.
-ParseResult ParseArgs(int argc, wchar_t* argv[], BrokerShell& broker_shell)
+ParseResult ParseArgs(int argc, wchar_t* argv[], BrokerShell& broker_shell, int& log_mask)
 {
   if (argc > 1)
   {
@@ -246,7 +246,7 @@ ParseResult ParseArgs(int argc, wchar_t* argv[], BrokerShell& broker_shell)
       }
       else if (_wcsnicmp(argv[i], L"--log-level=", 12) == 0)
       {
-        if (!ParseAndSetLogLevel(argv[i] + 12, broker_shell))
+        if (!ParseAndSetLogLevel(argv[i] + 12, log_mask))
           return ParseResult::kParseErr;
       }
       else if (_wcsicmp(argv[i], L"--version") == 0 || _wcsicmp(argv[i], L"-v") == 0)
@@ -301,8 +301,9 @@ int wmain(int argc, wchar_t* argv[])
 {
   bool should_run = true;
   int exit_code = 0;
+  int log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_INFO);
 
-  switch (ParseArgs(argc, argv, broker_shell))
+  switch (ParseArgs(argc, argv, broker_shell, log_mask))
   {
     case ParseResult::kParseErr:
       PrintHelp(argv[0]);
@@ -332,8 +333,10 @@ int wmain(int argc, wchar_t* argv[])
     SetConsoleCtrlHandler(ConsoleSignalHandler, TRUE);
 
     // Startup and run the Broker.
-    WindowsBrokerLog log("RDMnetBroker.log");
-    exit_code = broker_shell.Run(&log);
+    WindowsBrokerLog log;
+    log.Startup("RDMnetBroker.log", log_mask);
+    exit_code = broker_shell.Run(log.broker_log_instance());
+    log.Shutdown();
 
     // Unregister/cleanup the network change detection.
     CancelMibChangeNotify2(change_notif_handle);

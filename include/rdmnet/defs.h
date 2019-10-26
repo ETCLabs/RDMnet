@@ -17,8 +17,8 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef _RDMNET_DEFS_H_
-#define _RDMNET_DEFS_H_
+#ifndef RDMNET_DEFS_H_
+#define RDMNET_DEFS_H_
 
 /******************************************************************************
  * Entertainment Services Technology Association (ESTA)
@@ -239,7 +239,7 @@
 #define LLRP_COMPONENT_TYPE_RPT_DEVICE     0x00
 #define LLRP_COMPONENT_TYPE_RPT_CONTROLLER 0x01
 #define LLRP_COMPONENT_TYPE_BROKER         0x02
-#define LLRP_COMPONENT_TYPE_NON_RDMNET     0xFF
+#define LLRP_COMPONENT_TYPE_NONRDMNET     0xFF
 
 /******************************************************************************
  * Table A-24: RPT Client Disconnect Reason Codes
@@ -254,4 +254,4 @@
 #define E133_DISCONNECT_LLRP_RECONFIGURE      0x0007
 #define E133_DISCONNECT_USER_RECONFIGURE      0x0008
 
-#endif /* _RDMNET_DEFS_H_ */
+#endif /* RDMNET_DEFS_H_ */

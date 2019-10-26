@@ -319,11 +319,11 @@ void BrokerCore::HandleRdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetM
   {
     case ACN_VECTOR_ROOT_BROKER:
     {
-      const BrokerMessage* bmsg = get_broker_msg(&msg);
+      const BrokerMessage* bmsg = GET_BROKER_MSG(&msg);
       switch (bmsg->vector)
       {
         case VECTOR_BROKER_CONNECT:
-          ProcessConnectRequest(handle, get_client_connect_msg(bmsg));
+          ProcessConnectRequest(handle, GET_CLIENT_CONNECT_MSG(bmsg));
           break;
         case VECTOR_BROKER_FETCH_CLIENT_LIST:
           SendClientList(handle);
@@ -371,7 +371,7 @@ void BrokerCore::SendClientList(int conn)
         cli_data.client_protocol = client.second->client_protocol;
         if (client.second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
         {
-          ClientEntryDataRpt* rpt_cli_data = get_rpt_client_entry_data(&cli_data);
+          ClientEntryDataRpt* rpt_cli_data = GET_RPT_CLIENT_ENTRY_DATA(&cli_data);
           RPTClient* rptcli = static_cast<RPTClient*>(client.second.get());
           rpt_cli_data->client_uid = rptcli->uid;
           rpt_cli_data->client_type = rptcli->client_type;
@@ -386,7 +386,7 @@ void BrokerCore::SendClientList(int conn)
     }
     if (!entries.empty())
     {
-      get_client_list(&bmsg)->client_entry_list = entries.data();
+      GET_CLIENT_LIST(&bmsg)->client_entry_list = entries.data();
       to_client->second->Push(settings_.cid, bmsg);
     }
   }
@@ -397,7 +397,7 @@ void BrokerCore::SendClientsAdded(client_protocol_t client_prot, int conn_to_ign
 {
   BrokerMessage bmsg;
   bmsg.vector = VECTOR_BROKER_CLIENT_ADD;
-  get_client_list(&bmsg)->client_entry_list = entries.data();
+  GET_CLIENT_LIST(&bmsg)->client_entry_list = entries.data();
 
   for (const auto controller : controllers_)
   {
@@ -410,7 +410,7 @@ void BrokerCore::SendClientsRemoved(client_protocol_t client_prot, std::vector<C
 {
   BrokerMessage bmsg;
   bmsg.vector = VECTOR_BROKER_CLIENT_REMOVE;
-  get_client_list(&bmsg)->client_entry_list = entries.data();
+  GET_CLIENT_LIST(&bmsg)->client_entry_list = entries.data();
 
   for (const auto controller : controllers_)
   {
@@ -486,7 +486,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
   bool continue_adding = true;
   // We need to make a copy of the data because we might be changing the UID value
   ClientEntryData updated_data = data;
-  ClientEntryDataRpt* rptdata = get_rpt_client_entry_data(&updated_data);
+  ClientEntryDataRpt* rptdata = GET_RPT_CLIENT_ENTRY_DATA(&updated_data);
 
   if (!components_.conn_interface->SetBlocking(handle, false))
   {
@@ -606,7 +606,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
     // Send the connect reply
     BrokerMessage msg;
     msg.vector = VECTOR_BROKER_CONNECT_REPLY;
-    ConnectReplyMsg* creply = get_connect_reply_msg(&msg);
+    ConnectReplyMsg* creply = GET_CONNECT_REPLY_MSG(&msg);
     creply->connect_status = kRdmnetConnectOk;
     creply->e133_version = E133_VERSION;
     creply->broker_uid = my_uid_;
@@ -633,7 +633,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
 {
   etcpal::ReadGuard clients_read(client_lock_);
 
-  const RptMessage* rptmsg = get_rpt_msg(msg);
+  const RptMessage* rptmsg = GET_RPT_MSG(msg);
   bool route_msg = false;
   auto client = clients_.find(conn);
 
@@ -657,7 +657,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
               log_->Debug("Received Request PDU addressed to invalid or not found UID %04x:%08x from Controller %d",
                           rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
             }
-            else if (get_rdm_buf_list(rptmsg)->list->next)
+            else if (GET_RDM_BUF_LIST(rptmsg)->list->next)
             {
               // There should only ever be one RDM command in an RPT request.
               SendStatus(controller, rptmsg->header, kRptStatusInvalidMessage);
@@ -680,7 +680,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
           {
             if (IsValidDeviceDestinationUID(rptmsg->header.dest_uid))
             {
-              if (get_rpt_status_msg(rptmsg)->status_code != kRptStatusBroadcastComplete)
+              if (GET_RPT_STATUS_MSG(rptmsg)->status_code != kRptStatusBroadcastComplete)
                 route_msg = true;
               else
                 log_->Debug("Device %d sent broadcast complete message.", conn);
@@ -1025,7 +1025,7 @@ void BrokerCore::DestroyMarkedClientSockets()
           else if (rptcli->client_type == kRPTClientTypeDevice)
             devices_.erase(to_destroy);
 
-          ClientEntryDataRpt* rptdata = get_rpt_client_entry_data(&entry);
+          ClientEntryDataRpt* rptdata = GET_RPT_CLIENT_ENTRY_DATA(&entry);
           rptdata->client_uid = rptcli->uid;
           rptdata->client_type = rptcli->client_type;
           rptdata->binding_cid = rptcli->binding_cid.get();
@@ -1055,8 +1055,15 @@ void BrokerCore::HandleBrokerRegistered(const std::string& scope, const std::str
                                         const std::string& assigned_service_name)
 {
   service_registered_ = true;
-  log_->Info("Broker \"%s\" (now named \"%s\") successfully registered at scope \"%s\"", requested_service_name.c_str(),
-             assigned_service_name.c_str(), scope.c_str());
+  if (requested_service_name == assigned_service_name)
+  {
+    log_->Info("Broker \"%s\" successfully registered at scope \"%s\"", requested_service_name.c_str(), scope.c_str());
+  }
+  else
+  {
+    log_->Info("Broker \"%s\" (now named \"%s\") successfully registered at scope \"%s\"",
+               requested_service_name.c_str(), assigned_service_name.c_str(), scope.c_str());
+  }
 }
 
 void BrokerCore::HandleBrokerRegisterError(const std::string& scope, const std::string& requested_service_name,

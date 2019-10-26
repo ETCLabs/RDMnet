@@ -752,12 +752,12 @@ void conncb_msg_received(rdmnet_conn_t handle, const RdmnetMessage* message, voi
       case ACN_VECTOR_ROOT_BROKER:
         cb.which = kClientCallbackBrokerMsgReceived;
         cb.common_args.broker_msg_received.scope_handle = handle;
-        cb.common_args.broker_msg_received.msg = get_broker_msg(message);
+        cb.common_args.broker_msg_received.msg = GET_BROKER_MSG(message);
         break;
       case ACN_VECTOR_ROOT_RPT:
         if (cli->type == kClientProtocolRPT)
         {
-          if (handle_rpt_message(cli, scope_entry, get_rpt_msg(message), &cb.prot_info.rpt.args.msg_received))
+          if (handle_rpt_message(cli, scope_entry, GET_RPT_MSG(message), &cb.prot_info.rpt.args.msg_received))
           {
             cb.which = kClientCallbackMsgReceived;
           }
@@ -809,7 +809,7 @@ bool handle_rpt_message(const RdmnetClient* cli, const ClientScopeListEntry* sco
 bool handle_rpt_request(const RptMessage* rmsg, RptClientMessage* msg_out)
 {
   RemoteRdmCommand* cmd = &msg_out->payload.cmd;
-  const RdmBufListEntry* list = get_rdm_buf_list(rmsg)->list;
+  const RdmBufListEntry* list = GET_RDM_BUF_LIST(rmsg)->list;
 
   if (!list->next)  // Only one RDM command allowed in an RPT request
   {
@@ -833,13 +833,13 @@ bool handle_rpt_notification(const RptMessage* rmsg, RptClientMessage* msg_out)
   // Do some initialization
   msg_out->type = kRptClientMsgRdmResp;
   resp->command_included = false;
-  resp->more_coming = get_rdm_buf_list(rmsg)->more_coming;
+  resp->more_coming = GET_RDM_BUF_LIST(rmsg)->more_coming;
   resp->resp_list = NULL;
   RemoteRdmRespListEntry** next_entry = &resp->resp_list;
 
   bool good_parse = true;
   bool first_msg = true;
-  for (const RdmBufListEntry* buf_entry = get_rdm_buf_list(rmsg)->list; buf_entry && good_parse;
+  for (const RdmBufListEntry* buf_entry = GET_RDM_BUF_LIST(rmsg)->list; buf_entry && good_parse;
        buf_entry = buf_entry->next)
   {
     if (first_msg)
@@ -899,7 +899,7 @@ bool handle_rpt_notification(const RptMessage* rmsg, RptClientMessage* msg_out)
 bool handle_rpt_status(const RptMessage* rmsg, RptClientMessage* msg_out)
 {
   RemoteRptStatus* status_out = &msg_out->payload.status;
-  const RptStatusMsg* status = get_rpt_status_msg(rmsg);
+  const RptStatusMsg* status = GET_RPT_STATUS_MSG(rmsg);
 
   // This one is quick and simple with no failure condition
   msg_out->type = kRptClientMsgStatus;

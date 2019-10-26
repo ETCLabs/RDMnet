@@ -17,12 +17,14 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*! \file rdmnet/private/rpt_prot.h
- *  \brief Functions and definitions for RPT PDU messages that are only used internally.
- *  \author Sam Kearney
+/*!
+ * \file rdmnet/private/rpt_prot.h
+ * \brief Functions and definitions for RPT PDU messages that are only used internally.
+ * \author Sam Kearney
  */
-#ifndef _RDMNET_PRIVATE_RPT_PROT_H_
-#define _RDMNET_PRIVATE_RPT_PROT_H_
+
+#ifndef RDMNET_PRIVATE_RPT_PROT_H_
+#define RDMNET_PRIVATE_RPT_PROT_H_
 
 #include "rdm/message.h"
 
@@ -31,4 +33,4 @@
 #define RDM_CMD_PDU_MAX_SIZE (3 /* Flags & Length */ + RDM_MAX_BYTES)
 #define REQUEST_PDU_MAX_SIZE (REQUEST_PDU_HEADER_SIZE + RDM_CMD_PDU_MAX_SIZE)
 
-#endif /* _RDMNET_CORE_RPT_PROT_PRIV_H_ */
+#endif /* RDMNET_CORE_RPT_PROT_PRIV_H_ */

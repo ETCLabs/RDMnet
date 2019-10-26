@@ -20,8 +20,8 @@
 /* rdmnet_mock/core/broker_prot.h
  * Mocking the functions of rdmnet/core/broker_prot.h
  */
-#ifndef _RDMNET_MOCK_CORE_BROKER_PROT_H_
-#define _RDMNET_MOCK_CORE_BROKER_PROT_H_
+#ifndef RDMNET_MOCK_CORE_BROKER_PROT_H_
+#define RDMNET_MOCK_CORE_BROKER_PROT_H_
 
 #include "rdmnet/core/broker_prot.h"
 #include "fff.h"
@@ -58,4 +58,4 @@ DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, send_fetch_uid_assignment_list, rdmnet_c
 }
 #endif
 
-#endif /* _RDMNET_MOCK_CORE_BROKER_PROT_H_ */
+#endif /* RDMNET_MOCK_CORE_BROKER_PROT_H_ */

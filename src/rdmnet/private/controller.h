@@ -17,8 +17,8 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef _RDMNET_PRIVATE_CONTROLLER_H_
-#define _RDMNET_PRIVATE_CONTROLLER_H_
+#ifndef RDMNET_PRIVATE_CONTROLLER_H_
+#define RDMNET_PRIVATE_CONTROLLER_H_
 
 #include "rdmnet/controller.h"
 #include "rdmnet/client.h"
@@ -30,4 +30,4 @@ typedef struct RdmnetController
   void* callback_context;
 } RdmnetController;
 
-#endif /* _RDMNET_PRIVATE_CONTROLLER_H_ */
+#endif /* RDMNET_PRIVATE_CONTROLLER_H_ */

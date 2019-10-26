@@ -20,8 +20,8 @@
 /* rdmnet_mock/private/core.h
  * Mocking the functions of rdmnet/private/core.h
  */
-#ifndef _RDMNET_MOCK_PRIVATE_CORE_H_
-#define _RDMNET_MOCK_PRIVATE_CORE_H_
+#ifndef RDMNET_MOCK_PRIVATE_CORE_H_
+#define RDMNET_MOCK_PRIVATE_CORE_H_
 
 #include "rdmnet/private/core.h"
 #include "fff.h"
@@ -46,4 +46,4 @@ DECLARE_FAKE_VOID_FUNC(rdmnet_core_remove_polled_socket, etcpal_socket_t);
 }
 #endif
 
-#endif /* _RDMNET_MOCK_PRIVATE_CORE_H_ */
+#endif /* RDMNET_MOCK_PRIVATE_CORE_H_ */

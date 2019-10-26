@@ -17,14 +17,20 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*! \file rdmnet/core/util.h
- *  \brief Utilities used throughout the RDMnet library.
- *  \author Sam Kearney
+/*!
+ * \file rdmnet/core/util.h
+ * \brief Utilities used throughout the RDMnet library.
+ * \author Sam Kearney
  */
-#ifndef _RDMNET_CORE_UTIL_H_
-#define _RDMNET_CORE_UTIL_H_
+
+#ifndef RDMNET_CORE_UTIL_H_
+#define RDMNET_CORE_UTIL_H_
 
 #include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Suppress deprecated function warnings on Windows/MSVC. This is mostly used in situations where
  * Microsoft warns us that a function like strncpy() could be unsafe, but we want to be portable
@@ -45,14 +51,10 @@
 
 #endif /* _MSC_VER */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 char* rdmnet_safe_strncpy(char* destination, const char* source, size_t num);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _RDMNET_CORE_UTIL_H_ */
+#endif /* RDMNET_CORE_UTIL_H_ */

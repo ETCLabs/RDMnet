@@ -352,7 +352,7 @@ void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem* broker_item, const 
 
   for (const auto entry : list)
   {
-    if (!is_rpt_client_entry(&entry))
+    if (!IS_RPT_CLIENT_ENTRY(&entry))
       continue;
 
     bool is_me = (entry.client_cid == my_cid_);
@@ -380,11 +380,11 @@ void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem* broker_item, const 
       appendRowToItem(broker_item, newRDMnetClientItem);
       broker_item->rdmnet_clients_.push_back(newRDMnetClientItem);
 
-      if (get_rpt_client_entry_data(&entry)->client_type != kRPTClientTypeUnknown)
+      if (GET_RPT_CLIENT_ENTRY_DATA(&entry)->client_type != kRPTClientTypeUnknown)
       {
-        initializeRPTClientProperties(newRDMnetClientItem, get_rpt_client_entry_data(&entry)->client_uid.manu,
-                                      get_rpt_client_entry_data(&entry)->client_uid.id,
-                                      get_rpt_client_entry_data(&entry)->client_type);
+        initializeRPTClientProperties(newRDMnetClientItem, GET_RPT_CLIENT_ENTRY_DATA(&entry)->client_uid.manu,
+                                      GET_RPT_CLIENT_ENTRY_DATA(&entry)->client_uid.id,
+                                      GET_RPT_CLIENT_ENTRY_DATA(&entry)->client_type);
 
         newRDMnetClientItem->enableFeature(kIdentifyDevice);
         emit featureSupportChanged(newRDMnetClientItem, kIdentifyDevice);
@@ -407,7 +407,7 @@ void RDMnetNetworkModel::processRemoveRDMnetClients(BrokerItem* broker_item, con
     {
       for (auto j = list.begin(); j != list.end(); ++j)
       {
-        const ClientEntryDataRpt* rpt_entry = get_rpt_client_entry_data(&(*j));
+        const ClientEntryDataRpt* rpt_entry = GET_RPT_CLIENT_ENTRY_DATA(&(*j));
         if (rpt_entry->client_type == clientItem->ClientType() && rpt_entry->client_uid == clientItem->uid())
         {
           // Found the match
