@@ -1,7 +1,6 @@
 #include "fakeway_default_responder.h"
 
-#include "lwpa/pack.h"
-#include "lwpa/thread.h"
+#include "etcpal/pack.h"
 #include "rdmnet/defs.h"
 #include "rdm/defs.h"
 #include "rdmnet/version.h"
@@ -14,7 +13,7 @@ const uint8_t FakewayDefaultResponder::kDeviceInfo[] = {
     0xe1, 0x34, // Device Model ID
     0xe1, 0x33, // Product Category
 
-    // Software Version ID 
+    // Software Version ID
     RDMNET_VERSION_MAJOR, RDMNET_VERSION_MINOR,
     RDMNET_VERSION_PATCH, RDMNET_VERSION_BUILD,
 
@@ -30,12 +29,10 @@ const uint8_t FakewayDefaultResponder::kDeviceInfo[] = {
 
 /*************************** Function definitions ****************************/
 
-FakewayDefaultResponder::FakewayDefaultResponder(const RdmnetScopeConfig &scope_config,
-                                                 const std::string &search_domain)
+FakewayDefaultResponder::FakewayDefaultResponder(const RdmnetScopeConfig& scope_config,
+                                                 const std::string& search_domain)
     : scope_config_(scope_config), search_domain_(search_domain)
 {
-  lwpa_rwlock_create(&prop_lock_);
-
   supported_pid_list_.insert(E120_IDENTIFY_DEVICE);
   supported_pid_list_.insert(E120_SUPPORTED_PARAMETERS);
   supported_pid_list_.insert(E120_DEVICE_INFO);
@@ -61,47 +58,46 @@ FakewayDefaultResponder::~FakewayDefaultResponder()
   if (identifying_)
   {
     identifying_ = false;
-    lwpa_thread_join(&identify_thread_);
+    etcpal_thread_join(&identify_thread_);
   }
-  lwpa_rwlock_destroy(&prop_lock_);
 }
 
 void FakewayDefaultResponder::IncrementTcpUnhealthyCounter()
 {
-  lwpa::WriteGuard prop_write(prop_lock_);
+  etcpal::WriteGuard prop_write(prop_lock_);
   ++tcp_unhealthy_count_;
 }
 
-void FakewayDefaultResponder::UpdateConnectionStatus(bool connected, const LwpaSockaddr &broker_addr)
+void FakewayDefaultResponder::UpdateConnectionStatus(bool connected, const etcpal::SockAddr& broker_addr)
 {
-  lwpa::WriteGuard prop_write(prop_lock_);
+  etcpal::WriteGuard prop_write(prop_lock_);
   connected_ = connected;
   cur_broker_addr_ = broker_addr;
 }
 
-void FakewayDefaultResponder::AddEndpoints(const std::vector<uint16_t> &new_endpoints)
+void FakewayDefaultResponder::AddEndpoints(const std::vector<uint16_t>& new_endpoints)
 {
-  lwpa::WriteGuard prop_write(prop_lock_);
-  for (const auto &endpoint : new_endpoints)
+  etcpal::WriteGuard prop_write(prop_lock_);
+  for (const auto& endpoint : new_endpoints)
   {
     endpoints_.insert(std::make_pair(endpoint, EndpointInfo()));
   }
   ++endpoint_change_number_;
 }
 
-void FakewayDefaultResponder::RemoveEndpoints(const std::vector<uint16_t> &endpoints_to_remove)
+void FakewayDefaultResponder::RemoveEndpoints(const std::vector<uint16_t>& endpoints_to_remove)
 {
-  lwpa::WriteGuard prop_write(prop_lock_);
-  for (const auto &endpoint : endpoints_to_remove)
+  etcpal::WriteGuard prop_write(prop_lock_);
+  for (const auto& endpoint : endpoints_to_remove)
   {
     endpoints_.erase(endpoint);
   }
   ++endpoint_change_number_;
 }
 
-void FakewayDefaultResponder::AddResponderOnEndpoint(uint16_t endpoint, const RdmUid &responder)
+void FakewayDefaultResponder::AddResponderOnEndpoint(uint16_t endpoint, const RdmUid& responder)
 {
-  lwpa::WriteGuard prop_write(prop_lock_);
+  etcpal::WriteGuard prop_write(prop_lock_);
   auto endpoint_pair = endpoints_.find(endpoint);
   if (endpoint_pair != endpoints_.end())
   {
@@ -110,9 +106,9 @@ void FakewayDefaultResponder::AddResponderOnEndpoint(uint16_t endpoint, const Rd
   }
 }
 
-void FakewayDefaultResponder::RemoveResponderOnEndpoint(uint16_t endpoint, const RdmUid &responder)
+void FakewayDefaultResponder::RemoveResponderOnEndpoint(uint16_t endpoint, const RdmUid& responder)
 {
-  lwpa::WriteGuard prop_write(prop_lock_);
+  etcpal::WriteGuard prop_write(prop_lock_);
   auto endpoint_pair = endpoints_.find(endpoint);
   if (endpoint_pair != endpoints_.end())
   {
@@ -121,14 +117,14 @@ void FakewayDefaultResponder::RemoveResponderOnEndpoint(uint16_t endpoint, const
   }
 }
 
-bool FakewayDefaultResponder::FakewayDefaultResponder::Set(uint16_t pid, const uint8_t *param_data,
-                                                           uint8_t param_data_len, uint16_t &nack_reason,
-                                                           RdmnetConfigChange &config_change)
+bool FakewayDefaultResponder::FakewayDefaultResponder::Set(uint16_t pid, const uint8_t* param_data,
+                                                           uint8_t param_data_len, uint16_t& nack_reason,
+                                                           RdmnetConfigChange& config_change)
 {
   bool res = false;
   config_change = RdmnetConfigChange::kNoChange;
 
-  lwpa::WriteGuard prop_write(prop_lock_);
+  etcpal::WriteGuard prop_write(prop_lock_);
   switch (pid)
   {
     case E120_IDENTIFY_DEVICE:
@@ -162,12 +158,12 @@ bool FakewayDefaultResponder::FakewayDefaultResponder::Set(uint16_t pid, const u
   return res;
 }
 
-bool FakewayDefaultResponder::Get(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len,
-                                  ParamDataList &resp_data_list, uint16_t &nack_reason)
+bool FakewayDefaultResponder::Get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len,
+                                  ParamDataList& resp_data_list, uint16_t& nack_reason)
 {
   bool res = false;
 
-  lwpa::ReadGuard prop_read(prop_lock_);
+  etcpal::ReadGuard prop_read(prop_lock_);
   switch (pid)
   {
     case E120_IDENTIFY_DEVICE:
@@ -219,9 +215,9 @@ bool FakewayDefaultResponder::Get(uint16_t pid, const uint8_t *param_data, uint8
   return res;
 }
 
-static void identify_thread_fn(void *arg)
+static void identify_thread_fn(void* arg)
 {
-  FakewayDefaultResponder *def_resp = static_cast<FakewayDefaultResponder *>(arg);
+  FakewayDefaultResponder* def_resp = static_cast<FakewayDefaultResponder*>(arg);
   if (def_resp)
     def_resp->IdentifyThread();
 }
@@ -231,26 +227,26 @@ void FakewayDefaultResponder::IdentifyThread()
   while (identifying_)
   {
     Beep(440, 1000);
-    lwpa_thread_sleep(1000);
+    etcpal_thread_sleep(1000);
   }
 }
 
-bool FakewayDefaultResponder::SetIdentifyDevice(const uint8_t *param_data, uint8_t param_data_len,
-                                                uint16_t &nack_reason, RdmnetConfigChange &config_change)
+bool FakewayDefaultResponder::SetIdentifyDevice(const uint8_t* param_data, uint8_t param_data_len,
+                                                uint16_t& nack_reason, RdmnetConfigChange& config_change)
 {
   if (param_data_len >= 1)
   {
     bool new_identify_setting = (*param_data != 0);
     if (new_identify_setting && !identifying_)
     {
-      LwpaThreadParams ithread_params;
+      EtcPalThreadParams ithread_params;
 
-      ithread_params.thread_priority = LWPA_THREAD_DEFAULT_PRIORITY;
-      ithread_params.stack_size = LWPA_THREAD_DEFAULT_STACK;
+      ithread_params.thread_priority = ETCPAL_THREAD_DEFAULT_PRIORITY;
+      ithread_params.stack_size = ETCPAL_THREAD_DEFAULT_STACK;
       ithread_params.thread_name = "Identify Thread";
       ithread_params.platform_data = NULL;
 
-      lwpa_thread_create(&identify_thread_, &ithread_params, identify_thread_fn, this);
+      etcpal_thread_create(&identify_thread_, &ithread_params, identify_thread_fn, this);
     }
     identifying_ = new_identify_setting;
     return true;
@@ -262,14 +258,14 @@ bool FakewayDefaultResponder::SetIdentifyDevice(const uint8_t *param_data, uint8
   }
 }
 
-bool FakewayDefaultResponder::SetDeviceLabel(const uint8_t *param_data, uint8_t param_data_len, uint16_t &nack_reason,
-                                             RdmnetConfigChange &config_change)
+bool FakewayDefaultResponder::SetDeviceLabel(const uint8_t* param_data, uint8_t param_data_len, uint16_t& nack_reason,
+                                             RdmnetConfigChange& config_change)
 {
   if (param_data_len >= 1)
   {
     if (param_data_len > DEVICE_LABEL_MAX_LEN)
       param_data_len = DEVICE_LABEL_MAX_LEN;
-    device_label_.assign(reinterpret_cast<const char *>(param_data), param_data_len);
+    device_label_.assign(reinterpret_cast<const char*>(param_data), param_data_len);
     return true;
   }
   else
@@ -279,34 +275,34 @@ bool FakewayDefaultResponder::SetDeviceLabel(const uint8_t *param_data, uint8_t 
   }
 }
 
-bool FakewayDefaultResponder::SetComponentScope(const uint8_t *param_data, uint8_t param_data_len,
-                                                uint16_t &nack_reason, RdmnetConfigChange &config_change)
+bool FakewayDefaultResponder::SetComponentScope(const uint8_t* param_data, uint8_t param_data_len,
+                                                uint16_t& nack_reason, RdmnetConfigChange& config_change)
 {
   if (param_data_len == (2 + E133_SCOPE_STRING_PADDED_LENGTH + 1 + 4 + 16 + 2) &&
       param_data[1 + E133_SCOPE_STRING_PADDED_LENGTH] == '\0')
   {
-    if (lwpa_upack_16b(param_data) == 1)
+    if (etcpal_upack_16b(param_data) == 1)
     {
-      const uint8_t *cur_ptr = param_data + 2;
+      const uint8_t* cur_ptr = param_data + 2;
       RdmnetScopeConfig new_scope_config{};
 
-      rdmnet_safe_strncpy(new_scope_config.scope, reinterpret_cast<const char *>(cur_ptr),
+      rdmnet_safe_strncpy(new_scope_config.scope, reinterpret_cast<const char*>(cur_ptr),
                           E133_SCOPE_STRING_PADDED_LENGTH);
       cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
 
       switch (*cur_ptr++)
       {
         case E133_STATIC_CONFIG_IPV4:
-          LWPA_IP_SET_V4_ADDRESS(&new_scope_config.static_broker_addr.ip, lwpa_upack_32b(cur_ptr));
+          ETCPAL_IP_SET_V4_ADDRESS(&new_scope_config.static_broker_addr.ip, etcpal_upack_32b(cur_ptr));
           cur_ptr += 4 + 16;
-          new_scope_config.static_broker_addr.port = lwpa_upack_16b(cur_ptr);
+          new_scope_config.static_broker_addr.port = etcpal_upack_16b(cur_ptr);
           new_scope_config.has_static_broker_addr = true;
           break;
         case E133_STATIC_CONFIG_IPV6:
           cur_ptr += 4;
-          LWPA_IP_SET_V6_ADDRESS(&new_scope_config.static_broker_addr.ip, cur_ptr);
+          ETCPAL_IP_SET_V6_ADDRESS(&new_scope_config.static_broker_addr.ip, cur_ptr);
           cur_ptr += 16;
-          new_scope_config.static_broker_addr.port = lwpa_upack_16b(cur_ptr);
+          new_scope_config.static_broker_addr.port = etcpal_upack_16b(cur_ptr);
           new_scope_config.has_static_broker_addr = true;
           break;
         case E133_NO_STATIC_CONFIG:
@@ -316,8 +312,7 @@ bool FakewayDefaultResponder::SetComponentScope(const uint8_t *param_data, uint8
 
       if (strncmp(new_scope_config.scope, scope_config_.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0 &&
           ((!new_scope_config.has_static_broker_addr && !scope_config_.has_static_broker_addr) ||
-           (lwpa_ip_equal(&new_scope_config.static_broker_addr.ip, &scope_config_.static_broker_addr.ip) &&
-            new_scope_config.static_broker_addr.port == scope_config_.static_broker_addr.port)))
+           (new_scope_config.static_broker_addr == scope_config_.static_broker_addr)))
       {
         // Same settings as current
         config_change = RdmnetConfigChange::kNoChange;
@@ -341,12 +336,12 @@ bool FakewayDefaultResponder::SetComponentScope(const uint8_t *param_data, uint8
   return false;
 }
 
-bool FakewayDefaultResponder::SetSearchDomain(const uint8_t *param_data, uint8_t param_data_len, uint16_t &nack_reason,
-                                              RdmnetConfigChange &config_change)
+bool FakewayDefaultResponder::SetSearchDomain(const uint8_t* param_data, uint8_t param_data_len, uint16_t& nack_reason,
+                                              RdmnetConfigChange& config_change)
 {
   if (param_data_len > 0 && param_data_len < E133_DOMAIN_STRING_PADDED_LENGTH)
   {
-    search_domain_.assign(reinterpret_cast<const char *>(param_data), param_data_len);
+    search_domain_.assign(reinterpret_cast<const char*>(param_data), param_data_len);
     config_change = RdmnetConfigChange::kSearchDomainChanged;
     return true;
   }
@@ -357,12 +352,12 @@ bool FakewayDefaultResponder::SetSearchDomain(const uint8_t *param_data, uint8_t
   return false;
 }
 
-bool FakewayDefaultResponder::SetTcpCommsStatus(const uint8_t *param_data, uint8_t param_data_len,
-                                                uint16_t &nack_reason, RdmnetConfigChange &config_change)
+bool FakewayDefaultResponder::SetTcpCommsStatus(const uint8_t* param_data, uint8_t param_data_len,
+                                                uint16_t& nack_reason, RdmnetConfigChange& config_change)
 {
   if (param_data_len == E133_SCOPE_STRING_PADDED_LENGTH && param_data[E133_SCOPE_STRING_PADDED_LENGTH - 1] == '\0')
   {
-    if (0 == strcmp(scope_config_.scope, reinterpret_cast<const char *>(param_data)))
+    if (0 == strcmp(scope_config_.scope, reinterpret_cast<const char*>(param_data)))
     {
       tcp_unhealthy_count_ = 0;
       return true;
@@ -379,8 +374,8 @@ bool FakewayDefaultResponder::SetTcpCommsStatus(const uint8_t *param_data, uint8
   return false;
 }
 
-bool FakewayDefaultResponder::GetIdentifyDevice(const uint8_t *param_data, uint8_t param_data_len,
-                                                ParamDataList &resp_data_list, uint16_t &nack_reason)
+bool FakewayDefaultResponder::GetIdentifyDevice(const uint8_t* param_data, uint8_t param_data_len,
+                                                ParamDataList& resp_data_list, uint16_t& nack_reason)
 {
   (void)param_data;
   (void)param_data_len;
@@ -393,8 +388,8 @@ bool FakewayDefaultResponder::GetIdentifyDevice(const uint8_t *param_data, uint8
   return true;
 }
 
-bool FakewayDefaultResponder::GetDeviceInfo(const uint8_t * /*param_data*/, uint8_t /*param_data_len*/,
-                                            ParamDataList &resp_data_list, uint16_t & /*nack_reason*/)
+bool FakewayDefaultResponder::GetDeviceInfo(const uint8_t* /*param_data*/, uint8_t /*param_data_len*/,
+                                            ParamDataList& resp_data_list, uint16_t& /*nack_reason*/)
 {
   RdmParamData pd;
   memcpy(pd.data, kDeviceInfo, sizeof kDeviceInfo);
@@ -403,8 +398,8 @@ bool FakewayDefaultResponder::GetDeviceInfo(const uint8_t * /*param_data*/, uint
   return true;
 }
 
-bool FakewayDefaultResponder::GetDeviceLabel(const uint8_t *param_data, uint8_t param_data_len,
-                                             ParamDataList &resp_data_list, uint16_t &nack_reason)
+bool FakewayDefaultResponder::GetDeviceLabel(const uint8_t* param_data, uint8_t param_data_len,
+                                             ParamDataList& resp_data_list, uint16_t& nack_reason)
 {
   (void)param_data;
   (void)param_data_len;
@@ -418,40 +413,40 @@ bool FakewayDefaultResponder::GetDeviceLabel(const uint8_t *param_data, uint8_t 
   return true;
 }
 
-bool FakewayDefaultResponder::GetComponentScope(const uint8_t *param_data, uint8_t param_data_len,
-                                                ParamDataList &resp_data_list, uint16_t &nack_reason)
+bool FakewayDefaultResponder::GetComponentScope(const uint8_t* param_data, uint8_t param_data_len,
+                                                ParamDataList& resp_data_list, uint16_t& nack_reason)
 {
   if (param_data_len >= 2)
   {
-    if (lwpa_upack_16b(param_data) == 1)
+    if (etcpal_upack_16b(param_data) == 1)
     {
       RdmParamData pd;
 
       // Pack the scope
-      uint8_t *cur_ptr = pd.data;
-      lwpa_pack_16b(cur_ptr, 1);
+      uint8_t* cur_ptr = pd.data;
+      etcpal_pack_16b(cur_ptr, 1);
       cur_ptr += 2;
-      rdmnet_safe_strncpy((char *)cur_ptr, scope_config_.scope, E133_SCOPE_STRING_PADDED_LENGTH);
+      rdmnet_safe_strncpy((char*)cur_ptr, scope_config_.scope, E133_SCOPE_STRING_PADDED_LENGTH);
       cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
 
       // Pack the static config data
       if (scope_config_.has_static_broker_addr)
       {
-        if (LWPA_IP_IS_V4(&scope_config_.static_broker_addr.ip))
+        if (ETCPAL_IP_IS_V4(&scope_config_.static_broker_addr.ip))
         {
           *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
-          lwpa_pack_32b(cur_ptr, LWPA_IP_V4_ADDRESS(&scope_config_.static_broker_addr.ip));
+          etcpal_pack_32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&scope_config_.static_broker_addr.ip));
           cur_ptr += 4 + 16;
-          lwpa_pack_16b(cur_ptr, scope_config_.static_broker_addr.port);
+          etcpal_pack_16b(cur_ptr, scope_config_.static_broker_addr.port);
           cur_ptr += 2;
         }
         else  // V6
         {
           *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
           cur_ptr += 4;
-          memcpy(cur_ptr, LWPA_IP_V6_ADDRESS(&scope_config_.static_broker_addr.ip), 16);
+          memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&scope_config_.static_broker_addr.ip), 16);
           cur_ptr += 16;
-          lwpa_pack_16b(cur_ptr, scope_config_.static_broker_addr.port);
+          etcpal_pack_16b(cur_ptr, scope_config_.static_broker_addr.port);
           cur_ptr += 2;
         }
       }
@@ -477,56 +472,56 @@ bool FakewayDefaultResponder::GetComponentScope(const uint8_t *param_data, uint8
   return false;
 }
 
-bool FakewayDefaultResponder::GetSearchDomain(const uint8_t * /*param_data*/, uint8_t /*param_data_len*/,
-                                              ParamDataList &resp_data_list, uint16_t & /*nack_reason*/)
+bool FakewayDefaultResponder::GetSearchDomain(const uint8_t* /*param_data*/, uint8_t /*param_data_len*/,
+                                              ParamDataList& resp_data_list, uint16_t& /*nack_reason*/)
 {
   RdmParamData pd;
-  rdmnet_safe_strncpy(reinterpret_cast<char *>(pd.data), search_domain_.c_str(), E133_DOMAIN_STRING_PADDED_LENGTH);
+  rdmnet_safe_strncpy(reinterpret_cast<char*>(pd.data), search_domain_.c_str(), E133_DOMAIN_STRING_PADDED_LENGTH);
   pd.datalen = static_cast<uint8_t>(search_domain_.length());
   resp_data_list.push_back(pd);
   return true;
 }
 
-bool FakewayDefaultResponder::GetTcpCommsStatus(const uint8_t * /*param_data*/, uint8_t /*param_data_len*/,
-                                                ParamDataList &resp_data_list, uint16_t & /*nack_reason*/)
+bool FakewayDefaultResponder::GetTcpCommsStatus(const uint8_t* /*param_data*/, uint8_t /*param_data_len*/,
+                                                ParamDataList& resp_data_list, uint16_t& /*nack_reason*/)
 {
   RdmParamData pd;
-  uint8_t *cur_ptr = pd.data;
+  uint8_t* cur_ptr = pd.data;
 
-  rdmnet_safe_strncpy(reinterpret_cast<char *>(pd.data), scope_config_.scope, E133_SCOPE_STRING_PADDED_LENGTH);
+  rdmnet_safe_strncpy(reinterpret_cast<char*>(pd.data), scope_config_.scope, E133_SCOPE_STRING_PADDED_LENGTH);
   cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
-  if (LWPA_IP_IS_V4(&cur_broker_addr_.ip))
+  if (cur_broker_addr_.ip().IsV4())
   {
-    lwpa_pack_32b(cur_ptr, LWPA_IP_V4_ADDRESS(&cur_broker_addr_.ip));
+    etcpal_pack_32b(cur_ptr, cur_broker_addr_.ip().v4_data());
     cur_ptr += 4;
-    memset(cur_ptr, 0, LWPA_IPV6_BYTES);
-    cur_ptr += LWPA_IPV6_BYTES;
+    memset(cur_ptr, 0, ETCPAL_IPV6_BYTES);
+    cur_ptr += ETCPAL_IPV6_BYTES;
   }
   else
   {
-    lwpa_pack_32b(cur_ptr, 0);
+    etcpal_pack_32b(cur_ptr, 0);
     cur_ptr += 4;
-    memcpy(cur_ptr, LWPA_IP_V6_ADDRESS(&cur_broker_addr_.ip), LWPA_IPV6_BYTES);
-    cur_ptr += LWPA_IPV6_BYTES;
+    memcpy(cur_ptr, cur_broker_addr_.ip().v6_data(), ETCPAL_IPV6_BYTES);
+    cur_ptr += ETCPAL_IPV6_BYTES;
   }
-  lwpa_pack_16b(cur_ptr, cur_broker_addr_.port);
+  etcpal_pack_16b(cur_ptr, cur_broker_addr_.port());
   cur_ptr += 2;
-  lwpa_pack_16b(cur_ptr, tcp_unhealthy_count_);
+  etcpal_pack_16b(cur_ptr, tcp_unhealthy_count_);
   cur_ptr += 2;
   pd.datalen = (uint8_t)(cur_ptr - pd.data);
   resp_data_list.push_back(pd);
   return true;
 }
 
-bool FakewayDefaultResponder::GetSupportedParameters(const uint8_t * /*param_data*/, uint8_t /*param_data_len*/,
-                                                     ParamDataList &resp_data_list, uint16_t & /*nack_reason*/)
+bool FakewayDefaultResponder::GetSupportedParameters(const uint8_t* /*param_data*/, uint8_t /*param_data_len*/,
+                                                     ParamDataList& resp_data_list, uint16_t& /*nack_reason*/)
 {
   RdmParamData pd;
-  uint8_t *cur_ptr = pd.data;
+  uint8_t* cur_ptr = pd.data;
 
-  for (auto &pid : supported_pid_list_)
+  for (auto& pid : supported_pid_list_)
   {
-    lwpa_pack_16b(cur_ptr, pid);
+    etcpal_pack_16b(cur_ptr, pid);
     cur_ptr += 2;
     if ((cur_ptr - pd.data) >= RDM_MAX_PDL - 1)
     {
@@ -540,60 +535,60 @@ bool FakewayDefaultResponder::GetSupportedParameters(const uint8_t * /*param_dat
   return true;
 }
 
-bool FakewayDefaultResponder::GetManufacturerLabel(const uint8_t *param_data, uint8_t param_data_len,
-                                                   ParamDataList &resp_data_list, uint16_t &nack_reason)
+bool FakewayDefaultResponder::GetManufacturerLabel(const uint8_t* param_data, uint8_t param_data_len,
+                                                   ParamDataList& resp_data_list, uint16_t& nack_reason)
 {
   (void)param_data;
   (void)param_data_len;
   (void)nack_reason;
 
   RdmParamData pd;
-  strcpy((char *)pd.data, MANUFACTURER_LABEL);
+  strcpy((char*)pd.data, MANUFACTURER_LABEL);
   pd.datalen = sizeof(MANUFACTURER_LABEL) - 1;
   resp_data_list.push_back(pd);
   return true;
 }
 
-bool FakewayDefaultResponder::GetDeviceModelDescription(const uint8_t *param_data, uint8_t param_data_len,
-                                                        ParamDataList &resp_data_list, uint16_t &nack_reason)
+bool FakewayDefaultResponder::GetDeviceModelDescription(const uint8_t* param_data, uint8_t param_data_len,
+                                                        ParamDataList& resp_data_list, uint16_t& nack_reason)
 {
   (void)param_data;
   (void)param_data_len;
   (void)nack_reason;
 
   RdmParamData pd;
-  strcpy((char *)pd.data, DEVICE_MODEL_DESCRIPTION);
+  strcpy((char*)pd.data, DEVICE_MODEL_DESCRIPTION);
   pd.datalen = sizeof(DEVICE_MODEL_DESCRIPTION) - 1;
   resp_data_list.push_back(pd);
   return true;
 }
 
-bool FakewayDefaultResponder::GetSoftwareVersionLabel(const uint8_t *param_data, uint8_t param_data_len,
-                                                      ParamDataList &resp_data_list, uint16_t &nack_reason)
+bool FakewayDefaultResponder::GetSoftwareVersionLabel(const uint8_t* param_data, uint8_t param_data_len,
+                                                      ParamDataList& resp_data_list, uint16_t& nack_reason)
 {
   (void)param_data;
   (void)param_data_len;
   (void)nack_reason;
 
   RdmParamData pd;
-  strcpy((char *)pd.data, SOFTWARE_VERSION_LABEL);
+  strcpy((char*)pd.data, SOFTWARE_VERSION_LABEL);
   pd.datalen = sizeof(SOFTWARE_VERSION_LABEL) - 1;
   resp_data_list.push_back(pd);
   return true;
 }
 
-bool FakewayDefaultResponder::GetEndpointList(const uint8_t * /*param_data*/, uint8_t /*param_data_len*/,
-                                              ParamDataList &resp_data_list, uint16_t & /*nack_reason*/)
+bool FakewayDefaultResponder::GetEndpointList(const uint8_t* /*param_data*/, uint8_t /*param_data_len*/,
+                                              ParamDataList& resp_data_list, uint16_t& /*nack_reason*/)
 {
   RdmParamData pd;
-  uint8_t *cur_ptr = pd.data;
+  uint8_t* cur_ptr = pd.data;
 
-  lwpa_pack_32b(cur_ptr, endpoint_change_number_);
+  etcpal_pack_32b(cur_ptr, endpoint_change_number_);
   cur_ptr += 4;
 
-  for (const auto &endpoint : endpoints_)
+  for (const auto& endpoint : endpoints_)
   {
-    lwpa_pack_16b(cur_ptr, endpoint.first);
+    etcpal_pack_16b(cur_ptr, endpoint.first);
     cur_ptr += 2;
     *cur_ptr++ = E137_7_ENDPOINT_TYPE_PHYSICAL;
     if ((cur_ptr - pd.data) >= RDM_MAX_PDL - 2)
@@ -608,42 +603,42 @@ bool FakewayDefaultResponder::GetEndpointList(const uint8_t * /*param_data*/, ui
   return true;
 }
 
-bool FakewayDefaultResponder::GetEndpointListChange(const uint8_t *param_data, uint8_t param_data_len,
-                                                    FakewayDefaultResponder::ParamDataList &resp_data_list,
-                                                    uint16_t &nack_reason)
+bool FakewayDefaultResponder::GetEndpointListChange(const uint8_t* param_data, uint8_t param_data_len,
+                                                    FakewayDefaultResponder::ParamDataList& resp_data_list,
+                                                    uint16_t& nack_reason)
 {
   (void)param_data;
   (void)param_data_len;
   (void)nack_reason;
 
   RdmParamData pd;
-  lwpa_pack_32b(pd.data, endpoint_change_number_);
+  etcpal_pack_32b(pd.data, endpoint_change_number_);
   pd.datalen = 4;
   resp_data_list.push_back(pd);
   return true;
 }
 
-bool FakewayDefaultResponder::GetEndpointResponders(const uint8_t *param_data, uint8_t param_data_len,
-                                                    ParamDataList &resp_data_list, uint16_t &nack_reason)
+bool FakewayDefaultResponder::GetEndpointResponders(const uint8_t* param_data, uint8_t param_data_len,
+                                                    ParamDataList& resp_data_list, uint16_t& nack_reason)
 {
   if (param_data_len >= 2)
   {
-    uint16_t endpoint_id = lwpa_upack_16b(param_data);
+    uint16_t endpoint_id = etcpal_upack_16b(param_data);
     const auto endpt_pair = endpoints_.find(endpoint_id);
     if (endpt_pair != endpoints_.end())
     {
       RdmParamData pd;
-      uint8_t *cur_ptr = pd.data;
+      uint8_t* cur_ptr = pd.data;
 
-      lwpa_pack_16b(cur_ptr, endpoint_id);
+      etcpal_pack_16b(cur_ptr, endpoint_id);
       cur_ptr += 2;
-      lwpa_pack_32b(cur_ptr, endpt_pair->second.responder_change_number);
+      etcpal_pack_32b(cur_ptr, endpt_pair->second.responder_change_number);
       cur_ptr += 4;
-      for (const auto &responder : endpt_pair->second.responders)
+      for (const auto& responder : endpt_pair->second.responders)
       {
-        lwpa_pack_16b(cur_ptr, responder.manu);
+        etcpal_pack_16b(cur_ptr, responder.manu);
         cur_ptr += 2;
-        lwpa_pack_32b(cur_ptr, responder.id);
+        etcpal_pack_32b(cur_ptr, responder.id);
         cur_ptr += 4;
         if ((cur_ptr - pd.data) >= RDM_MAX_PDL - 5)
         {
@@ -669,18 +664,18 @@ bool FakewayDefaultResponder::GetEndpointResponders(const uint8_t *param_data, u
   }
 }
 
-bool FakewayDefaultResponder::GetEndpointResponderListChange(const uint8_t *param_data, uint8_t param_data_len,
-                                                             ParamDataList &resp_data_list, uint16_t &nack_reason)
+bool FakewayDefaultResponder::GetEndpointResponderListChange(const uint8_t* param_data, uint8_t param_data_len,
+                                                             ParamDataList& resp_data_list, uint16_t& nack_reason)
 {
   if (param_data_len >= 2)
   {
-    uint16_t endpoint_id = lwpa_upack_16b(param_data);
+    uint16_t endpoint_id = etcpal_upack_16b(param_data);
     auto endpt_pair = endpoints_.find(endpoint_id);
     if (endpt_pair != endpoints_.end())
     {
       RdmParamData pd;
-      lwpa_pack_16b(pd.data, endpt_pair->first);
-      lwpa_pack_32b(&pd.data[2], endpt_pair->second.responder_change_number);
+      etcpal_pack_16b(pd.data, endpt_pair->first);
+      etcpal_pack_32b(&pd.data[2], endpt_pair->second.responder_change_number);
       pd.datalen = 6;
       resp_data_list.push_back(pd);
       return true;

@@ -45,7 +45,7 @@ public:
   static const std::set<uint16_t> kPhysicalEndpointPIDs;
 
   PhysicalEndpoint(uint16_t id, unsigned int gadget_id, unsigned int gadget_port_num)
-      : id_(id), gadget_id_(dev_id), gadget_port_num_(dev_port_num)
+      : id_(id), gadget_id_(gadget_id), gadget_port_num_(gadget_port_num)
   {
   }
   virtual ~PhysicalEndpoint() = default;
@@ -66,7 +66,7 @@ protected:
   std::map<RdmUid, std::vector<std::unique_ptr<RemoteRdmCommand>>> responders_;
 };
 
-class Fakeway : public SimpleUsbRdmWrapper::Callback, public Win_CDLInterface, public RdmnetLibNotify
+class Fakeway : public GadgetNotify, public RdmnetLibNotify
 {
 public:
   Fakeway(std::unique_ptr<RdmnetLibInterface> rdmnet = std::make_unique<RdmnetLibWrapper>())
@@ -119,6 +119,8 @@ protected:
   void HandleRdmResponderLost(unsigned int gadget_id, unsigned int port_number, uid id) override;
   void HandleRdmResponse(unsigned int gadget_id, unsigned int port_number, const RDM_CmdC& response,
                          const void* cookie) override;
+  void HandleRdmTimeout(unsigned int gadget_id, unsigned int port_number, const RDM_CmdC& orig_cmd,
+                        const void* cookie) override;
   void HandleGadgetLogMsg(const char* str) override;
 
 private:

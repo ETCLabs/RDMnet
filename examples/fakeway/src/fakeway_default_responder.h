@@ -6,10 +6,10 @@
 #include <string>
 #include <vector>
 #include <cstddef>
-#include "lwpa/int.h"
-#include "lwpa/thread.h"
-#include "lwpa/inet.h"
-#include "lwpa/lock.h"
+#include <cstdint>
+#include "etcpal/cpp/inet.h"
+#include "etcpal/cpp/lock.h"
+#include "etcpal/thread.h"
 #include "rdmnet/version.h"
 #include "rdmnet/client.h"
 
@@ -39,17 +39,17 @@ public:
 
   static const uint8_t kDeviceInfo[];
 
-  FakewayDefaultResponder(const RdmnetScopeConfig &scope_config, const std::string &search_domain);
+  FakewayDefaultResponder(const RdmnetScopeConfig& scope_config, const std::string& search_domain);
   virtual ~FakewayDefaultResponder();
 
   // Update the information served by the Default Responder
   void IncrementTcpUnhealthyCounter();
   void ResetTcpUnhealthyCounter();
-  void UpdateConnectionStatus(bool connected, const LwpaSockaddr &broker_addr = LwpaSockaddr());
-  void AddEndpoints(const std::vector<uint16_t> &new_endpoints);
-  void RemoveEndpoints(const std::vector<uint16_t> &endpoints_to_remove);
-  void AddResponderOnEndpoint(uint16_t endpoint, const RdmUid &responder);
-  void RemoveResponderOnEndpoint(uint16_t endpoint, const RdmUid &responder);
+  void UpdateConnectionStatus(bool connected, const etcpal::SockAddr& broker_addr = etcpal::SockAddr{});
+  void AddEndpoints(const std::vector<uint16_t>& new_endpoints);
+  void RemoveEndpoints(const std::vector<uint16_t>& endpoints_to_remove);
+  void AddResponderOnEndpoint(uint16_t endpoint, const RdmUid& responder);
+  void RemoveResponderOnEndpoint(uint16_t endpoint, const RdmUid& responder);
 
   RdmnetScopeConfig scope_config() const { return scope_config_; }
   std::string search_domain() const { return search_domain_; }
@@ -59,10 +59,10 @@ public:
   {
     return pids_handled_with_phys_endpt_.find(pid) != pids_handled_with_phys_endpt_.end();
   }
-  bool Set(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len, uint16_t &nack_reason,
-           RdmnetConfigChange &config_change);
-  bool Get(uint16_t pid, const uint8_t *param_data, uint8_t param_data_len, ParamDataList &resp_data_list,
-           uint16_t &nack_reason);
+  bool Set(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len, uint16_t& nack_reason,
+           RdmnetConfigChange& config_change);
+  bool Get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len, ParamDataList& resp_data_list,
+           uint16_t& nack_reason);
 
   void IdentifyThread();
 
@@ -77,12 +77,12 @@ private:
   };
 
   // Lock around property data
-  lwpa_rwlock_t prop_lock_;
+  etcpal::RwLock prop_lock_;
   //////////////////////////////////////////////////////////////////////////////////////////////////
   // Property data
 
   // Identify
-  lwpa_thread_t identify_thread_{};
+  etcpal_thread_t identify_thread_{};
   bool identifying_{false};
 
   // Device Label
@@ -96,7 +96,7 @@ private:
 
   // TCP Comms Status
   bool connected_{false};
-  LwpaSockaddr cur_broker_addr_{};
+  etcpal::SockAddr cur_broker_addr_;
   uint16_t tcp_unhealthy_count_{0};
 
   // Endpoint List
@@ -106,46 +106,46 @@ private:
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
   /* SET COMMANDS */
-  bool SetIdentifyDevice(const uint8_t *param_data, uint8_t param_data_len, uint16_t &nack_reason,
-                         RdmnetConfigChange &config_change);
-  bool SetDeviceLabel(const uint8_t *param_data, uint8_t param_data_len, uint16_t &nack_reason,
-                      RdmnetConfigChange &config_change);
-  bool SetComponentScope(const uint8_t *param_data, uint8_t param_data_len, uint16_t &nack_reason,
-                         RdmnetConfigChange &config_change);
-  bool SetSearchDomain(const uint8_t *param_data, uint8_t param_data_len, uint16_t &nack_reason,
-                       RdmnetConfigChange &config_change);
-  bool SetTcpCommsStatus(const uint8_t *param_data, uint8_t param_data_len, uint16_t &nack_reason,
-                         RdmnetConfigChange &config_change);
+  bool SetIdentifyDevice(const uint8_t* param_data, uint8_t param_data_len, uint16_t& nack_reason,
+                         RdmnetConfigChange& config_change);
+  bool SetDeviceLabel(const uint8_t* param_data, uint8_t param_data_len, uint16_t& nack_reason,
+                      RdmnetConfigChange& config_change);
+  bool SetComponentScope(const uint8_t* param_data, uint8_t param_data_len, uint16_t& nack_reason,
+                         RdmnetConfigChange& config_change);
+  bool SetSearchDomain(const uint8_t* param_data, uint8_t param_data_len, uint16_t& nack_reason,
+                       RdmnetConfigChange& config_change);
+  bool SetTcpCommsStatus(const uint8_t* param_data, uint8_t param_data_len, uint16_t& nack_reason,
+                         RdmnetConfigChange& config_change);
 
   /* GET COMMANDS */
-  bool GetIdentifyDevice(const uint8_t *param_data, uint8_t param_data_len, ParamDataList &resp_data_list,
-                         uint16_t &nack_reason);
-  bool GetDeviceInfo(const uint8_t *param_data, uint8_t param_data_len, ParamDataList &resp_data_list,
-                     uint16_t &nack_reason);
-  bool GetDeviceLabel(const uint8_t *param_data, uint8_t param_data_len, ParamDataList &resp_data_list,
-                      uint16_t &nack_reason);
-  bool GetComponentScope(const uint8_t *param_data, uint8_t param_data_len, ParamDataList &resp_data_list,
-                         uint16_t &nack_reason);
-  bool GetSearchDomain(const uint8_t *param_data, uint8_t param_data_len, ParamDataList &resp_data_list,
-                       uint16_t &nack_reason);
-  bool GetTcpCommsStatus(const uint8_t *param_data, uint8_t param_data_len, ParamDataList &resp_data_list,
-                         uint16_t &nack_reason);
-  bool GetSupportedParameters(const uint8_t *param_data, uint8_t param_data_len, ParamDataList &resp_data_list,
-                              uint16_t &nack_reason);
-  bool GetManufacturerLabel(const uint8_t *param_data, uint8_t param_data_len, ParamDataList &resp_data_list,
-                            uint16_t &nack_reason);
-  bool GetDeviceModelDescription(const uint8_t *param_data, uint8_t param_data_len, ParamDataList &resp_data_list,
-                                 uint16_t &nack_reason);
-  bool GetSoftwareVersionLabel(const uint8_t *param_data, uint8_t param_data_len, ParamDataList &resp_data_list,
-                               uint16_t &nack_reason);
-  bool GetEndpointList(const uint8_t *param_data, uint8_t param_data_len, ParamDataList &resp_data_list,
-                       uint16_t &nack_reason);
-  bool GetEndpointListChange(const uint8_t *param_data, uint8_t param_data_len, ParamDataList &resp_data_list,
-                             uint16_t &nack_reason);
-  bool GetEndpointResponders(const uint8_t *param_data, uint8_t param_data_len, ParamDataList &resp_data_list,
-                             uint16_t &nack_reason);
-  bool GetEndpointResponderListChange(const uint8_t *param_data, uint8_t param_data_len, ParamDataList &resp_data_list,
-                                      uint16_t &nack_reason);
+  bool GetIdentifyDevice(const uint8_t* param_data, uint8_t param_data_len, ParamDataList& resp_data_list,
+                         uint16_t& nack_reason);
+  bool GetDeviceInfo(const uint8_t* param_data, uint8_t param_data_len, ParamDataList& resp_data_list,
+                     uint16_t& nack_reason);
+  bool GetDeviceLabel(const uint8_t* param_data, uint8_t param_data_len, ParamDataList& resp_data_list,
+                      uint16_t& nack_reason);
+  bool GetComponentScope(const uint8_t* param_data, uint8_t param_data_len, ParamDataList& resp_data_list,
+                         uint16_t& nack_reason);
+  bool GetSearchDomain(const uint8_t* param_data, uint8_t param_data_len, ParamDataList& resp_data_list,
+                       uint16_t& nack_reason);
+  bool GetTcpCommsStatus(const uint8_t* param_data, uint8_t param_data_len, ParamDataList& resp_data_list,
+                         uint16_t& nack_reason);
+  bool GetSupportedParameters(const uint8_t* param_data, uint8_t param_data_len, ParamDataList& resp_data_list,
+                              uint16_t& nack_reason);
+  bool GetManufacturerLabel(const uint8_t* param_data, uint8_t param_data_len, ParamDataList& resp_data_list,
+                            uint16_t& nack_reason);
+  bool GetDeviceModelDescription(const uint8_t* param_data, uint8_t param_data_len, ParamDataList& resp_data_list,
+                                 uint16_t& nack_reason);
+  bool GetSoftwareVersionLabel(const uint8_t* param_data, uint8_t param_data_len, ParamDataList& resp_data_list,
+                               uint16_t& nack_reason);
+  bool GetEndpointList(const uint8_t* param_data, uint8_t param_data_len, ParamDataList& resp_data_list,
+                       uint16_t& nack_reason);
+  bool GetEndpointListChange(const uint8_t* param_data, uint8_t param_data_len, ParamDataList& resp_data_list,
+                             uint16_t& nack_reason);
+  bool GetEndpointResponders(const uint8_t* param_data, uint8_t param_data_len, ParamDataList& resp_data_list,
+                             uint16_t& nack_reason);
+  bool GetEndpointResponderListChange(const uint8_t* param_data, uint8_t param_data_len, ParamDataList& resp_data_list,
+                                      uint16_t& nack_reason);
 };
 
 #endif /* _DEFAULTRESPONDER_H_ */

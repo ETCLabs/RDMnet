@@ -1,27 +1,38 @@
-#ifndef _FAKEWAY_LOG_H_
-#define _FAKEWAY_LOG_H_
+#ifndef FAKEWAY_LOG_H_
+#define FAKEWAY_LOG_H_
 
 #include <string>
 #include <fstream>
-#include "lwpa/log.h"
+#include "etcpal/log.h"
 
 class FakewayLog
 {
 public:
-  FakewayLog(const std::string &file_name);
+  FakewayLog(const std::string& file_name);
   virtual ~FakewayLog();
 
-  void Log(int pri, const char *format, ...);
-  bool CanLog(int pri) const { return LWPA_CAN_LOG(&params_, pri); }
-  const LwpaLogParams *params() const { return &params_; }
+  bool CanLog(int pri) const { return etcpal_can_log(&params_, pri); }
+  const EtcPalLogParams& params() const { return params_; }
 
-  void LogFromCallback(const std::string &str);
-  void GetTimeFromCallback(LwpaLogTimeParams *time);
+  void Log(int pri, const char* format, ...);
+
+  // Shortcuts to log at a specific priority level
+  void Debug(const char* format, ...);
+  void Info(const char* format, ...);
+  void Notice(const char* format, ...);
+  void Warning(const char* format, ...);
+  void Error(const char* format, ...);
+  void Critical(const char* format, ...);
+  void Alert(const char* format, ...);
+  void Emergency(const char* format, ...);
+
+  void LogFromCallback(const std::string& str);
+  void GetTimeFromCallback(EtcPalLogTimeParams& time);
 
 protected:
   std::fstream file_;
-  LwpaLogParams params_;
+  EtcPalLogParams params_;
   int utc_offset_;
 };
 
-#endif  // _FAKEWAY_LOG_H_
+#endif  // FAKEWAY_LOG_H_

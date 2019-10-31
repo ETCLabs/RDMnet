@@ -22,9 +22,11 @@
 
 #include "RdmDeviceInfo.h"
 #include "uid.h"
+#include "RDM_CmdC.h"
 
 class GadgetNotify
 {
+public:
   virtual void HandleGadgetConnected(unsigned int gadget_id, unsigned int num_ports) = 0;
   virtual void HandleGadgetDisconnected(unsigned int gadget_id) = 0;
   virtual void HandleNewRdmResponderDiscovered(unsigned int gadget_id, unsigned int port_number,
@@ -38,9 +40,18 @@ class GadgetNotify
   virtual void HandleGadgetLogMsg(const char* str) = 0;
 };
 
+class GadgetManager;
+
 class GadgetInterface
 {
+public:
+  bool Startup(GadgetNotify* notify);
+  void Shutdown();
+
   void SendRdmCommand(unsigned int gadget_id, unsigned int port_number, const RDM_CmdC& cmd, const void* cookie);
+
+private:
+  std::unique_ptr<GadgetManager> impl_;
 };
 
 #endif  // GADGET_INTERFACE_H_

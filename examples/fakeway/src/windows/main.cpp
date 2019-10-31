@@ -12,11 +12,10 @@
 #include <vector>
 #include <deque>
 
-#include "lwpa/pack.h"
-#include "lwpa/socket.h"
+#include "etcpal/inet.h"
 #include "fakeway.h"
 
-void PrintHelp(wchar_t *app_name)
+void PrintHelp(wchar_t* app_name)
 {
   printf("Usage: %ls [OPTION]...\n\n", app_name);
   printf("  --scope=SCOPE     Configures the RDMnet Scope to SCOPE. Enter nothing after\n");
@@ -27,16 +26,16 @@ void PrintHelp(wchar_t *app_name)
   printf("  --version         Output version information and exit.\n");
 }
 
-bool SetScope(wchar_t *arg, char *scope_buf)
+bool SetScope(wchar_t* arg, char* scope_buf)
 {
   if (WideCharToMultiByte(CP_UTF8, 0, arg, -1, scope_buf, E133_SCOPE_STRING_PADDED_LENGTH, NULL, NULL) > 0)
     return true;
   return false;
 }
 
-bool SetStaticBroker(wchar_t *arg, LwpaSockaddr &static_broker_addr)
+bool SetStaticBroker(wchar_t* arg, EtcPalSockAddr& static_broker_addr)
 {
-  wchar_t *sep = wcschr(arg, ':');
+  wchar_t* sep = wcschr(arg, ':');
   if (sep != NULL && sep - arg < LWPA_INET6_ADDRSTRLEN)
   {
     wchar_t ip_str[LWPA_INET6_ADDRSTRLEN];
@@ -88,7 +87,7 @@ BOOL WINAPI ConsoleHandler(DWORD signal)
   return TRUE;
 }
 
-int wmain(int argc, wchar_t *argv[])
+int wmain(int argc, wchar_t* argv[])
 {
   bool should_exit = false;
   RdmnetScopeConfig scope_config;

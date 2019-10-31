@@ -14,10 +14,14 @@ add_executable(${FAKEWAY_TARGET}
   src/fakeway.h
   src/fakeway.cpp
   src/gadget_interface.h
+  src/gadget_interface.cpp
   src/rdmnet_lib_wrapper.h
   src/rdmnet_lib_wrapper.cpp
+
+  src/windows/fakeway_log.cpp
+  src/windows/main.cpp
 )
-target_link_libraries(${FAKEWAY_TARGET} PRIVATE GadgetDLL::GadgetDLL)
+target_link_libraries(${FAKEWAY_TARGET} PRIVATE RDMnet GadgetDLL::GadgetDLL)
 set_target_properties(${FAKEWAY_TARGET} PROPERTIES FOLDER examples)
 
 if(DEFINED DNS_SD_DLL)

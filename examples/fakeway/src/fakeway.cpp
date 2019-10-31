@@ -94,18 +94,20 @@ bool Fakeway::Startup(const RdmnetScopeConfig& scope_config)
 {
   def_resp_ = std::make_unique<FakewayDefaultResponder>(scope_config, E133_DEFAULT_DOMAIN);
 
-  // A typical hardware-locked device would use etcpal_generate_v3_uuid() to generate a CID that is
+  if (!gadget_.Startup(this))
+    return false;
+
+  // A typical hardware-locked device would use etcpal::Uuid::V3() to generate a CID that is
   // the same every time. But this example device is not locked to hardware, so a V4 UUID makes
   // more sense.
   auto my_cid = etcpal::Uuid::V4();
   etcpal::Result res = rdmnet_->Startup(my_cid.get(), scope_config, this, &log_);
   if (!res)
   {
-    log_.Log(LWPA_LOG_CRIT, "Fatal: couldn't start RDMnet library due to error: '%s'", res.ToCString());
+    gadget_.Shutdown();
+    log_.Critical("Fatal: couldn't start RDMnet library due to error: '%s'", res.ToCString());
     return false;
   }
-
-  Gadget2_Connect();
 
   return true;
 }
@@ -114,7 +116,7 @@ void Fakeway::Shutdown()
 {
   configuration_change_ = true;
   rdmnet_->Shutdown();
-  Gadget2_Disconnect();
+  gadget_.Shutdown();
 
   physical_endpoints_.clear();
   physical_endpoint_rev_lookup_.clear();
@@ -123,27 +125,25 @@ void Fakeway::Shutdown()
 void Fakeway::Connected(const RdmnetClientConnectedInfo& info)
 {
   connected_to_broker_ = true;
-  if (log_.CanLog(LWPA_LOG_INFO))
+  if (log_.CanLog(ETCPAL_LOG_INFO))
   {
-    char addr_str[LWPA_INET6_ADDRSTRLEN];
-    etcpal_inet_ntop(&info.broker_addr.ip, addr_str, LWPA_INET6_ADDRSTRLEN);
-    log_.Log(LWPA_LOG_INFO, "Connected to broker for scope %s at address %s", def_resp_->scope_config().scope,
-             etcpal::SockAddr(info.broker_addr).ToString().c_str());
+    log_.Info("Connected to broker for scope %s at address %s", def_resp_->scope_config().scope,
+              etcpal::SockAddr(info.broker_addr).ToString().c_str());
   }
 }
 
 void Fakeway::ConnectFailed(const RdmnetClientConnectFailedInfo& info)
 {
   connected_to_broker_ = false;
-  log_.Log(LWPA_LOG_INFO, "Connect failed to broker for scope %s.%s", def_resp_->scope_config().scope,
-           info.will_retry ? " Retrying..." : "");
+  log_.Info("Connect failed to broker for scope %s.%s", def_resp_->scope_config().scope,
+            info.will_retry ? " Retrying..." : "");
 }
 
 void Fakeway::Disconnected(const RdmnetClientDisconnectedInfo& info)
 {
   connected_to_broker_ = false;
-  log_.Log(LWPA_LOG_INFO, "Disconnected from broker for scope %s.%s", def_resp_->scope_config().scope,
-           info.will_retry ? " Retrying..." : "");
+  log_.Info("Disconnected from broker for scope %s.%s", def_resp_->scope_config().scope,
+            info.will_retry ? " Retrying..." : "");
 }
 
 void Fakeway::RdmCommandReceived(const RemoteRdmCommand& cmd)
@@ -211,13 +211,13 @@ void Fakeway::ProcessDefRespRdmCommand(const RemoteRdmCommand& cmd, RdmnetConfig
   if (rdm.command_class != kRdmCCGetCommand && rdm.command_class != kRdmCCSetCommand)
   {
     SendRptStatus(cmd, kRptStatusInvalidCommandClass);
-    log_.Log(LWPA_LOG_WARNING, "Device received RDM command with invalid command class %d", rdm.command_class);
+    log_.Warning("Device received RDM command with invalid command class %d", rdm.command_class);
   }
   else if (!def_resp_->SupportsPid(rdm.param_id))
   {
     SendRptNack(cmd, E120_NR_UNKNOWN_PID);
-    log_.Log(LWPA_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for unknown PID 0x%04x", cmd.source_uid.manu,
-             cmd.source_uid.id, rdm.param_id);
+    log_.Debug("Sending NACK to Controller %04x:%08x for unknown PID 0x%04x", cmd.source_uid.manu, cmd.source_uid.id,
+               rdm.param_id);
   }
   else
   {
@@ -226,14 +226,14 @@ void Fakeway::ProcessDefRespRdmCommand(const RemoteRdmCommand& cmd, RdmnetConfig
     if (ProcessDefRespRdmCommand(cmd.rdm, resp_list, nack_reason, config_change))
     {
       SendRptResponse(cmd, resp_list);
-      log_.Log(LWPA_LOG_DEBUG, "ACK'ing SET_COMMAND for PID 0x%04x from Controller %04x:%08x", rdm.param_id,
-               cmd.source_uid.manu, cmd.source_uid.id);
+      log_.Debug("ACK'ing SET_COMMAND for PID 0x%04x from Controller %04x:%08x", rdm.param_id, cmd.source_uid.manu,
+                 cmd.source_uid.id);
     }
     else
     {
       SendRptNack(cmd, nack_reason);
-      log_.Log(LWPA_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
-               cmd.source_uid.manu, cmd.source_uid.id, rdm.param_id, nack_reason);
+      log_.Debug("Sending NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
+                 cmd.source_uid.manu, cmd.source_uid.id, rdm.param_id, nack_reason);
     }
   }
 }
@@ -244,13 +244,13 @@ void Fakeway::ProcessDefRespRdmCommand(const LlrpRemoteRdmCommand& cmd, RdmnetCo
   if (rdm.command_class != kRdmCCGetCommand && rdm.command_class != kRdmCCSetCommand)
   {
     SendLlrpNack(cmd, E120_NR_UNSUPPORTED_COMMAND_CLASS);
-    log_.Log(LWPA_LOG_WARNING, "Device received RDM command with invalid command class %d", rdm.command_class);
+    log_.Warning("Device received RDM command with invalid command class %d", rdm.command_class);
   }
   else if (!def_resp_->SupportsPid(rdm.param_id))
   {
     SendLlrpNack(cmd, E120_NR_UNKNOWN_PID);
-    log_.Log(LWPA_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for unknown PID 0x%04x", rdm.source_uid.manu,
-             rdm.source_uid.id, rdm.param_id);
+    log_.Debug("Sending NACK to Controller %04x:%08x for unknown PID 0x%04x", rdm.source_uid.manu, rdm.source_uid.id,
+               rdm.param_id);
   }
   else
   {
@@ -259,14 +259,14 @@ void Fakeway::ProcessDefRespRdmCommand(const LlrpRemoteRdmCommand& cmd, RdmnetCo
     if (ProcessDefRespRdmCommand(cmd.rdm, resp_list, nack_reason, config_change))
     {
       SendLlrpResponse(cmd, resp_list[0]);
-      log_.Log(LWPA_LOG_DEBUG, "ACK'ing SET_COMMAND for PID 0x%04x from Controller %04x:%08x", rdm.param_id,
-               rdm.source_uid.manu, rdm.source_uid.id);
+      log_.Debug("ACK'ing SET_COMMAND for PID 0x%04x from Controller %04x:%08x", rdm.param_id, rdm.source_uid.manu,
+                 rdm.source_uid.id);
     }
     else
     {
       SendLlrpNack(cmd, nack_reason);
-      log_.Log(LWPA_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
-               rdm.source_uid.manu, rdm.source_uid.id, rdm.param_id, nack_reason);
+      log_.Debug("Sending NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
+                 rdm.source_uid.manu, rdm.source_uid.id, rdm.param_id, nack_reason);
     }
   }
 }
@@ -339,7 +339,7 @@ void Fakeway::SendRptStatus(const RemoteRdmCommand& received_cmd, rpt_status_cod
   rdmnet_create_status_from_command(&received_cmd, status_code, &status);
 
   if (!rdmnet_->SendStatus(status))
-    log_.Log(LWPA_LOG_ERR, "Error sending RPT Status message to Broker.");
+    log_.Error("Error sending RPT Status message to Broker.");
 }
 
 void Fakeway::SendRptNack(const RemoteRdmCommand& received_cmd, uint16_t nack_reason)
@@ -359,7 +359,7 @@ void Fakeway::SendRptResponse(const RemoteRdmCommand& received_cmd, std::vector<
   rdmnet_create_response_from_command(&received_cmd, resp_list.data(), resp_list.size(), &resp_to_send);
 
   if (!rdmnet_->SendRdmResponse(resp_to_send))
-    log_.Log(LWPA_LOG_ERR, "Error sending RPT Notification message to Broker.");
+    log_.Error("Error sending RPT Notification message to Broker.");
 }
 
 void Fakeway::SendUnsolicitedRptResponse(uint16_t from_endpoint, std::vector<RdmResponse>& resp_list)
@@ -368,7 +368,7 @@ void Fakeway::SendUnsolicitedRptResponse(uint16_t from_endpoint, std::vector<Rdm
   rdmnet_create_unsolicited_response(from_endpoint, resp_list.data(), resp_list.size(), &resp_to_send);
 
   if (!rdmnet_->SendRdmResponse(resp_to_send))
-    log_.Log(LWPA_LOG_ERR, "Error sending RPT Notification message to Broker.");
+    log_.Error("Error sending RPT Notification message to Broker.");
 }
 
 void Fakeway::SendLlrpNack(const LlrpRemoteRdmCommand& received_cmd, uint16_t nack_reason)
@@ -386,7 +386,7 @@ void Fakeway::SendLlrpResponse(const LlrpRemoteRdmCommand& received_cmd, const R
   LLRP_CREATE_RESPONSE_FROM_COMMAND(&resp_to_send, &received_cmd, &resp);
 
   if (!rdmnet_->SendLlrpResponse(resp_to_send))
-    log_.Log(LWPA_LOG_ERR, "Error sending RPT Notification message to Broker.");
+    log_.Error("Error sending RPT Notification message to Broker.");
 }
 
 /**************************************************************************************************/
@@ -429,7 +429,7 @@ void Fakeway::HandleGadgetConnected(unsigned int gadget_id, unsigned int num_por
 
       std::vector<RdmResponse> resp_list(1, resp_data);
       SendUnsolicitedRptResponse(E133_NULL_ENDPOINT, resp_list);
-      log_.Log(LWPA_LOG_INFO, "Local RDM Device connected. Sending ENDPOINT_LIST_CHANGE to all Controllers...");
+      log_.Info("Local RDM Device connected. Sending ENDPOINT_LIST_CHANGE to all Controllers...");
     }
   }
 }
@@ -469,7 +469,7 @@ void Fakeway::HandleGadgetDisconnected(unsigned int gadget_id)
 
       std::vector<RdmResponse> resp_list(1, resp_data);
       SendUnsolicitedRptResponse(E133_NULL_ENDPOINT, resp_list);
-      log_.Log(LWPA_LOG_INFO, "Local RDM Device removed. Sending ENDPOINT_LIST_CHANGE to all Controllers...");
+      log_.Info("Local RDM Device removed. Sending ENDPOINT_LIST_CHANGE to all Controllers...");
     }
   }
 }
@@ -514,8 +514,7 @@ void Fakeway::HandleNewRdmResponderDiscovered(unsigned int gadget_id, unsigned i
 
             std::vector<RdmResponse> resp_list(1, resp_data);
             SendUnsolicitedRptResponse(E133_NULL_ENDPOINT, resp_list);
-            log_.Log(LWPA_LOG_INFO,
-                     "RDM Responder discovered. Sending ENDPOINT_RESPONDER_LIST_CHANGE to all Controllers...");
+            log_.Info("RDM Responder discovered. Sending ENDPOINT_RESPONDER_LIST_CHANGE to all Controllers...");
           }
         }
       }
@@ -632,7 +631,7 @@ void Fakeway::HandleRdmResponderLost(unsigned int gadget_id, unsigned int port_n
 
           std::vector<RdmResponse> resp_list(1, resp_data);
           SendUnsolicitedRptResponse(E133_NULL_ENDPOINT, resp_list);
-          log_.Log(LWPA_LOG_INFO, "RDM Responder lost. Sending ENDPOINT_RESPONDER_LIST_CHANGE to all Controllers...");
+          log_.Info("RDM Responder lost. Sending ENDPOINT_RESPONDER_LIST_CHANGE to all Controllers...");
         }
       }
     }
@@ -641,5 +640,5 @@ void Fakeway::HandleRdmResponderLost(unsigned int gadget_id, unsigned int port_n
 
 void Fakeway::HandleGadgetLogMsg(const char* str)
 {
-  log_.Log(LWPA_LOG_INFO, str);
+  log_.Info(str);
 }
