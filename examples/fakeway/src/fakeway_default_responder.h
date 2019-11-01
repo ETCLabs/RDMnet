@@ -35,7 +35,7 @@
 #define DEFAULT_DEVICE_LABEL "My ETC RDMnet Gateway"
 #define SOFTWARE_VERSION_LABEL RDMNET_VERSION_STRING
 #define MANUFACTURER_LABEL "ETC"
-#define DEVICE_MODEL_DESCRIPTION "Prototype RDMnet Gateway"
+#define DEVICE_MODEL_DESCRIPTION "Example RDMnet Gateway"
 
 enum class RdmnetConfigChange
 {

@@ -21,6 +21,8 @@ static void time_callback(void* context, EtcPalLogTimeParams* time)
 
 FakewayLog::FakewayLog(const std::string& file_name)
 {
+  etcpal_init(ETCPAL_FEATURE_LOGGING);
+
   file_.open(file_name.c_str(), std::fstream::out);
   if (file_.fail())
     std::cout << "Fakeway Log: Couldn't open log file '" << file_name << "'." << std::endl;
@@ -51,6 +53,7 @@ FakewayLog::FakewayLog(const std::string& file_name)
 FakewayLog::~FakewayLog()
 {
   file_.close();
+  etcpal_deinit(ETCPAL_FEATURE_LOGGING);
 }
 
 void FakewayLog::Log(int pri, const char* format, ...)
