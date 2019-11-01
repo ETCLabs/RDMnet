@@ -36,9 +36,9 @@ bool SetScope(wchar_t* arg, char* scope_buf)
 bool SetStaticBroker(wchar_t* arg, EtcPalSockAddr& static_broker_addr)
 {
   wchar_t* sep = wcschr(arg, ':');
-  if (sep != NULL && sep - arg < LWPA_INET6_ADDRSTRLEN)
+  if (sep != NULL && sep - arg < ETCPAL_INET6_ADDRSTRLEN)
   {
-    wchar_t ip_str[LWPA_INET6_ADDRSTRLEN];
+    wchar_t ip_str[ETCPAL_INET6_ADDRSTRLEN];
     ptrdiff_t ip_str_len = sep - arg;
     struct sockaddr_in tst_addr;
     struct sockaddr_in6 tst_addr6;
@@ -52,7 +52,7 @@ bool SetStaticBroker(wchar_t* arg, EtcPalSockAddr& static_broker_addr)
     if (convert_res == 1)
     {
       tst_addr.sin_family = AF_INET;
-      ip_os_to_lwpa((const lwpa_os_ipaddr_t*)&tst_addr, &static_broker_addr.ip);
+      ip_os_to_etcpal((const etcpal_os_ipaddr_t*)&tst_addr, &static_broker_addr.ip);
     }
     else
     {
@@ -60,7 +60,7 @@ bool SetStaticBroker(wchar_t* arg, EtcPalSockAddr& static_broker_addr)
       if (convert_res == 1)
       {
         tst_addr6.sin6_family = AF_INET6;
-        ip_os_to_lwpa((const lwpa_os_ipaddr_t*)&tst_addr6, &static_broker_addr.ip);
+        ip_os_to_etcpal((const etcpal_os_ipaddr_t*)&tst_addr6, &static_broker_addr.ip);
       }
     }
     if (convert_res == 1 && 1 == swscanf(sep + 1, L"%hu", &static_broker_addr.port))

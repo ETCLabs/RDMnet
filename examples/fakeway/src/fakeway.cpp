@@ -94,14 +94,15 @@ bool Fakeway::Startup(const RdmnetScopeConfig& scope_config)
 {
   def_resp_ = std::make_unique<FakewayDefaultResponder>(scope_config, E133_DEFAULT_DOMAIN);
 
-  if (!gadget_.Startup(this))
+  log_.Info("Using libGadget version %s", GadgetInterface::DllVersion().c_str());
+  if (!gadget_.Startup(*this, log_))
     return false;
 
   // A typical hardware-locked device would use etcpal::Uuid::V3() to generate a CID that is
   // the same every time. But this example device is not locked to hardware, so a V4 UUID makes
   // more sense.
   auto my_cid = etcpal::Uuid::V4();
-  etcpal::Result res = rdmnet_->Startup(my_cid.get(), scope_config, this, &log_);
+  auto res = rdmnet_->Startup(my_cid, scope_config, this, &log_);
   if (!res)
   {
     gadget_.Shutdown();
@@ -175,8 +176,8 @@ void Fakeway::RdmCommandReceived(const RemoteRdmCommand& cmd)
       const RdmCommand& rdm = cmd.rdm;
       if (endpoint->QueueMessageForResponder(rdm.dest_uid, std::move(saved_cmd)))
       {
-        RDM_CmdC to_send(rdm.command_class, rdm.param_id, rdm.subdevice, rdm.datalen, rdm.data, rdm.dest_uid.manu,
-                         rdm.dest_uid.id);
+        RDM_CmdC to_send(static_cast<uint8_t>(rdm.command_class), rdm.param_id, rdm.subdevice, rdm.datalen, rdm.data,
+                         rdm.dest_uid.manu, rdm.dest_uid.id);
         gadget_.SendRdmCommand(endpoint->gadget_id(), endpoint->port_num(), to_send, raw_saved_cmd);
       }
       else
@@ -345,8 +346,6 @@ void Fakeway::SendRptStatus(const RemoteRdmCommand& received_cmd, rpt_status_cod
 void Fakeway::SendRptNack(const RemoteRdmCommand& received_cmd, uint16_t nack_reason)
 {
   RdmResponse resp_data;
-  const RdmCommand& received_rdm = received_cmd.rdm;
-
   RDM_CREATE_NACK_FROM_COMMAND(&resp_data, &received_cmd.rdm, nack_reason);
 
   std::vector<RdmResponse> resp_list(1, resp_data);
@@ -374,8 +373,6 @@ void Fakeway::SendUnsolicitedRptResponse(uint16_t from_endpoint, std::vector<Rdm
 void Fakeway::SendLlrpNack(const LlrpRemoteRdmCommand& received_cmd, uint16_t nack_reason)
 {
   RdmResponse resp_data;
-  const RdmCommand& received_rdm = received_cmd.rdm;
-
   RDM_CREATE_NACK_FROM_COMMAND(&resp_data, &received_cmd.rdm, nack_reason);
   SendLlrpResponse(received_cmd, resp_data);
 }

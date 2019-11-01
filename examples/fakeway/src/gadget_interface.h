@@ -20,9 +20,12 @@
 #ifndef GADGET_INTERFACE_H_
 #define GADGET_INTERFACE_H_
 
+#include <memory>
+#include <string>
 #include "RdmDeviceInfo.h"
 #include "uid.h"
 #include "RDM_CmdC.h"
+#include "fakeway_log.h"
 
 class GadgetNotify
 {
@@ -45,7 +48,12 @@ class GadgetManager;
 class GadgetInterface
 {
 public:
-  bool Startup(GadgetNotify* notify);
+  GadgetInterface();
+  virtual ~GadgetInterface();
+
+  static std::string DllVersion();
+
+  bool Startup(GadgetNotify& notify, FakewayLog& log);
   void Shutdown();
 
   void SendRdmCommand(unsigned int gadget_id, unsigned int port_number, const RDM_CmdC& cmd, const void* cookie);

@@ -21,6 +21,7 @@ add_executable(${FAKEWAY_TARGET}
   src/windows/fakeway_log.cpp
   src/windows/main.cpp
 )
+target_include_directories(${FAKEWAY_TARGET} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src)
 target_link_libraries(${FAKEWAY_TARGET} PRIVATE RDMnet GadgetDLL::GadgetDLL)
 set_target_properties(${FAKEWAY_TARGET} PROPERTIES FOLDER examples)
 
@@ -33,7 +34,7 @@ if(DEFINED DNS_SD_DLL)
   )
 endif()
 
-get_target_property(GADGET_DLL_LOCATION GadgetDLL::GadgetDLL IMPORTED_LOCATION)
+get_target_property(GADGET_DLL_LOCATION GadgetDLL::GadgetDLL IMPORTED_LOCATION_RELEASE)
 add_custom_command(
   TARGET ${FAKEWAY_TARGET}
   POST_BUILD

@@ -1,3 +1,22 @@
+/******************************************************************************
+ * Copyright 2019 ETC Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************
+ * This file is a part of RDMnet. For more information, go to:
+ * https://github.com/ETCLabs/RDMnet
+ *****************************************************************************/
+
 #include "fakeway_default_responder.h"
 
 #include "etcpal/pack.h"
@@ -232,7 +251,7 @@ void FakewayDefaultResponder::IdentifyThread()
 }
 
 bool FakewayDefaultResponder::SetIdentifyDevice(const uint8_t* param_data, uint8_t param_data_len,
-                                                uint16_t& nack_reason, RdmnetConfigChange& config_change)
+                                                uint16_t& nack_reason, RdmnetConfigChange& /*config_change*/)
 {
   if (param_data_len >= 1)
   {
@@ -259,7 +278,7 @@ bool FakewayDefaultResponder::SetIdentifyDevice(const uint8_t* param_data, uint8
 }
 
 bool FakewayDefaultResponder::SetDeviceLabel(const uint8_t* param_data, uint8_t param_data_len, uint16_t& nack_reason,
-                                             RdmnetConfigChange& config_change)
+                                             RdmnetConfigChange& /*config_change*/)
 {
   if (param_data_len >= 1)
   {
@@ -353,7 +372,7 @@ bool FakewayDefaultResponder::SetSearchDomain(const uint8_t* param_data, uint8_t
 }
 
 bool FakewayDefaultResponder::SetTcpCommsStatus(const uint8_t* param_data, uint8_t param_data_len,
-                                                uint16_t& nack_reason, RdmnetConfigChange& config_change)
+                                                uint16_t& nack_reason, RdmnetConfigChange& /*config_change*/)
 {
   if (param_data_len == E133_SCOPE_STRING_PADDED_LENGTH && param_data[E133_SCOPE_STRING_PADDED_LENGTH - 1] == '\0')
   {
@@ -543,7 +562,7 @@ bool FakewayDefaultResponder::GetManufacturerLabel(const uint8_t* param_data, ui
   (void)nack_reason;
 
   RdmParamData pd;
-  strcpy((char*)pd.data, MANUFACTURER_LABEL);
+  RDMNET_MSVC_NO_DEP_WRN strcpy((char*)pd.data, MANUFACTURER_LABEL);
   pd.datalen = sizeof(MANUFACTURER_LABEL) - 1;
   resp_data_list.push_back(pd);
   return true;
@@ -557,7 +576,7 @@ bool FakewayDefaultResponder::GetDeviceModelDescription(const uint8_t* param_dat
   (void)nack_reason;
 
   RdmParamData pd;
-  strcpy((char*)pd.data, DEVICE_MODEL_DESCRIPTION);
+  RDMNET_MSVC_NO_DEP_WRN strcpy((char*)pd.data, DEVICE_MODEL_DESCRIPTION);
   pd.datalen = sizeof(DEVICE_MODEL_DESCRIPTION) - 1;
   resp_data_list.push_back(pd);
   return true;
@@ -571,7 +590,7 @@ bool FakewayDefaultResponder::GetSoftwareVersionLabel(const uint8_t* param_data,
   (void)nack_reason;
 
   RdmParamData pd;
-  strcpy((char*)pd.data, SOFTWARE_VERSION_LABEL);
+  RDMNET_MSVC_NO_DEP_WRN strcpy((char*)pd.data, SOFTWARE_VERSION_LABEL);
   pd.datalen = sizeof(SOFTWARE_VERSION_LABEL) - 1;
   resp_data_list.push_back(pd);
   return true;
