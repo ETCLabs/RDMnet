@@ -6,7 +6,7 @@ endif()
 
 find_package(GadgetDLL 2.0.4 REQUIRED)
 
-set(FAKEWAY_TARGET fakeway)
+set(FAKEWAY_TARGET rdmnet_gateway_example)
 add_executable(${FAKEWAY_TARGET}
   src/fakeway_default_responder.h
   src/fakeway_default_responder.cpp
@@ -40,4 +40,9 @@ add_custom_command(
   POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy ${GADGET_DLL_LOCATION} $<TARGET_FILE_DIR:${FAKEWAY_TARGET}>
   COMMENT "Copying Gadget DLL to executable directory..."
+)
+install(FILES ${GADGET_DLL_LOCATION} DESTINATION bin)
+
+install(TARGETS ${FAKEWAY_TARGET}
+  RUNTIME DESTINATION bin
 )
