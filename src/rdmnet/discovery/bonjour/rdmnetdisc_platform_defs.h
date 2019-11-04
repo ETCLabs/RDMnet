@@ -17,22 +17,38 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef RDMNET_PRIVATE_DISCOVERY_H_
-#define RDMNET_PRIVATE_DISCOVERY_H_
+/* The rdmnetdisc_platform_defs.h specialization for Bonjour. */
+#ifndef RDMNETDISC_PLATFORM_DEFS_H_
+#define RDMNETDISC_PLATFORM_DEFS_H_
 
-#include "rdmnet/core/discovery.h"
+#include "dns_sd.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define RDMNETDISC_SERVICE_NAME_MAX_LENGTH kDNSServiceMaxDomainName
 
-etcpal_error_t rdmnetdisc_init();
-void rdmnetdisc_deinit();
+typedef enum
+{
+  kResolveStateServiceResolve,
+  kResolveStateGetAddrInfo,
+  kResolveStateDone
+} resolve_state_t;
 
-void rdmnetdisc_tick();
+typedef struct RdmnetDiscoveredBrokerPlatformData
+{
+  // State information for this broker.
+  resolve_state_t state;
+  DNSServiceRef dnssd_ref;
+} RdmnetDiscoveredBrokerPlatformData;
 
-#ifdef __cplusplus
-}
-#endif
+typedef struct RdmnetScopeMonitorPlatformData
+{
+  // The Bonjour handle
+  DNSServiceRef dnssd_ref;
+} RdmnetScopeMonitorPlatformData;
 
-#endif /* RDMNET_PRIVATE_DISCOVERY_H_ */
+typedef struct RdmnetBrokerRegisterPlatformData
+{
+  // For hooking up to the DNS-SD API
+  DNSServiceRef dnssd_ref;
+} RdmnetBrokerRegisterPlatformData;
+
+#endif /* RDMNETDISC_PLATFORM_DEFS_H_ */

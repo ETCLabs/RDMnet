@@ -51,6 +51,9 @@ extern "C" {
 
 #endif /* _MSC_VER */
 
+/* Meaningful macro to suppress warnings on unused arguments */
+#define RDMNET_UNUSED_ARG(arg) ((void)arg)
+
 char* rdmnet_safe_strncpy(char* destination, const char* source, size_t num);
 
 #ifdef __cplusplus

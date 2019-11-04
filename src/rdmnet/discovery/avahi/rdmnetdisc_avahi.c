@@ -17,8 +17,6 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#include "rdmnet/discovery/avahi.h"
-
 #include <assert.h>
 #include <stdio.h>
 #include <arpa/inet.h>
@@ -29,6 +27,7 @@
 
 #include "etcpal/lock.h"
 #include "rdmnet/core/util.h"
+#include "rdmnet/discovery/common.h"
 #include "rdmnet/private/core.h"
 #include "rdmnet/private/opts.h"
 
@@ -41,22 +40,12 @@
 
 #define DISCOVERY_QUERY_TIMEOUT 3000
 
+#define SERVICE_STR_PADDED_LENGTH (E133_DNSSD_SRV_TYPE_PADDED_LENGTH + E133_SCOPE_STRING_PADDED_LENGTH + 10)
+
 /**************************** Private variables ******************************/
 
-typedef struct DiscoveryState
-{
-  etcpal_mutex_t lock;
-
-  RdmnetScopeMonitorRef* scope_ref_list;
-  RdmnetBrokerRegisterConfig registered_broker;
-
-  RdmnetBrokerRegisterRef broker_ref;
-
-  AvahiSimplePoll* avahi_simple_poll;
-  AvahiClient* avahi_client;
-} DiscoveryState;
-
-static DiscoveryState disc_state;
+static AvahiSimplePoll* avahi_simple_poll;
+static AvahiClient* avahi_client;
 
 /*********************** Private function prototypes *************************/
 

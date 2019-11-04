@@ -19,17 +19,31 @@
 
 /*!
  * \file rdmnet/core/discovery.h
- * \brief Functions to discover a Broker and/or register a Broker for discovery. Uses mDNS and
- *        DNS-SD under the hood.
+ * \brief RDMnet Discovery API definitions
+ *
+ * Functions to discover a Broker and/or register a Broker for discovery. Uses mDNS and DNS-SD under
+ * the hood.
  */
 
-#ifndef RDMNET_DISCOVERY_H_
-#define RDMNET_DISCOVERY_H_
+#ifndef RDMNET_CORE_DISCOVERY_H_
+#define RDMNET_CORE_DISCOVERY_H_
 
 #include "etcpal/error.h"
 #include "etcpal/uuid.h"
 #include "etcpal/socket.h"
 #include "rdmnet/defs.h"
+
+/*!
+ * \defgroup rdmnet_disc Discovery
+ * \ingroup rdmnet_core_lib
+ * \brief Handle RDMnet discovery using mDNS and DNS-SD.
+ *
+ * RDMnet uses DNS-SD (aka Bonjour) as its network discovery method. These functions encapsulate
+ * system DNS-SD and mDNS functionality (Bonjour, Avahi, etc.) and provide functions for doing
+ * broker discovery and service registration.
+ *
+ * @{
+ */
 
 #ifdef __cplusplus
 extern "C" {
@@ -102,10 +116,12 @@ void rdmnetdisc_stop_monitoring_all();
 etcpal_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config, rdmnet_registered_broker_t* handle);
 void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle);
 
-void rdmnetdisc_tick();
-
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* RDMNET_DISCOVERY_H_ */
+/*!
+ * @}
+ */
+
+#endif /* RDMNET_CORE_DISCOVERY_H_ */

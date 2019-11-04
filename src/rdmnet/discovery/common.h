@@ -18,10 +18,98 @@
  *****************************************************************************/
 
 /* rdmnet/discovery/common.h
- * Common functions and definitions used by all mDNS/DNS-SD providers across
- * platforms.
+ * Common functions and definitions used by all mDNS/DNS-SD providers across platforms.
  */
 #ifndef RDMNET_DISCOVERY_COMMON_H_
 #define RDMNET_DISCOVERY_COMMON_H_
+
+#include "etcpal/timer.h"
+#include "rdmnet/core/discovery.h"
+
+#include "rdmnetdisc_platform_defs.h"
+
+// How long we monitor the registered scope before doing the actual DNS registration of a broker.
+#define BROKER_REG_QUERY_TIMEOUT 3000
+
+typedef struct RdmnetScopeMonitorRef RdmnetScopeMonitorRef;
+
+typedef struct DiscoveredBroker DiscoveredBroker;
+struct DiscoveredBroker
+{
+  char full_service_name[RDMNETDISC_SERVICE_NAME_MAX_LENGTH];
+  RdmnetBrokerDiscInfo info;
+  RdmnetScopeMonitorRef* monitor_ref;
+  RdmnetDiscoveredBrokerPlatformData platform_data;
+  DiscoveredBroker* next;
+};
+
+struct RdmnetScopeMonitorRef
+{
+  // The configuration data that the user provided.
+  RdmnetScopeMonitorConfig config;
+  // If this ScopeMonitorRef is associated with a registered Broker, that is tracked here. Otherwise
+  // NULL.
+  rdmnet_registered_broker_t broker_handle;
+  // The list of Brokers discovered or being discovered on this scope.
+  DiscoveredBroker* broker_list;
+  // Platform-specific data stored with this monitor ref
+  RdmnetScopeMonitorPlatformData platform_data;
+  // The next ref in the list of scopes being monitored.
+  RdmnetScopeMonitorRef* next;
+};
+
+typedef enum
+{
+  kBrokerStateNotRegistered,
+  kBrokerStateQuerying,
+  kBrokerStateRegisterStarted,
+  kBrokerStateRegistered
+} broker_state_t;
+
+typedef struct RdmnetBrokerRegisterRef RdmnetBrokerRegisterRef;
+struct RdmnetBrokerRegisterRef
+{
+  RdmnetBrokerRegisterConfig config;
+  rdmnet_scope_monitor_t scope_monitor_handle;
+  broker_state_t state;
+  char full_service_name[RDMNETDISC_SERVICE_NAME_MAX_LENGTH];
+
+  EtcPalTimer query_timer;
+  bool query_timeout_expired;
+
+  RdmnetBrokerRegisterPlatformData platform_data;
+
+  RdmnetBrokerRegisterRef* next;
+};
+
+extern etcpal_mutex_t rdmnetdisc_lock;
+#define RDMNET_DISC_LOCK() etcpal_mutex_take(&rdmnetdisc_lock)
+#define RDMNET_DISC_UNLOCK() etcpal_mutex_give(&rdmnetdisc_lock)
+
+// Platform-specific functions called by discovery API functions
+etcpal_error_t rdmnetdisc_platform_init(void);
+void rdmnetdisc_platform_deinit(void);
+void rdmnetdisc_platform_tick(void);
+etcpal_error_t rdmnetdisc_platform_start_monitoring(const RdmnetScopeMonitorConfig* config,
+                                                    RdmnetScopeMonitorRef* handle, int* platform_specific_error);
+void rdmnetdisc_platform_stop_monitoring(RdmnetScopeMonitorRef* handle);
+etcpal_error_t rdmnetdisc_platform_register_broker(const RdmnetBrokerDiscInfo* info,
+                                                   RdmnetBrokerRegisterRef* broker_ref, int* platform_specific_error);
+void rdmnetdisc_platform_unregister_broker(rdmnet_registered_broker_t handle);
+
+RdmnetScopeMonitorRef* scope_monitor_lookup_by_platform_data(const RdmnetScopeMonitorPlatformData* data);
+bool scope_monitor_ref_is_valid(const RdmnetScopeMonitorRef* ref);
+bool broker_register_ref_is_valid(const RdmnetBrokerRegisterRef* ref);
+
+DiscoveredBroker* discovered_broker_lookup_by_name(DiscoveredBroker* list_head, const char* full_name);
+DiscoveredBroker* discovered_broker_new(const char* service_name, const char* full_service_name);
+void discovered_broker_insert(DiscoveredBroker** list_head_ptr, DiscoveredBroker* new_db);
+void discovered_broker_remove(DiscoveredBroker** list_head_ptr, const DiscoveredBroker* db);
+void discovered_broker_delete(DiscoveredBroker* db);
+
+// Callbacks called from platform-specific code, must be called in a locked context
+void notify_scope_monitor_error(RdmnetScopeMonitorRef* ref, int platform_specific_error);
+void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info);
+void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name);
 
 #endif /* RDMNET_DISCOVERY_COMMON_H_ */

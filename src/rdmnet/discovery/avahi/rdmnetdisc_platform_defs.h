@@ -17,22 +17,34 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef RDMNET_PRIVATE_DISCOVERY_H_
-#define RDMNET_PRIVATE_DISCOVERY_H_
+/* The rdmnetdisc_platform_defs.h specialization for Avahi. */
+#ifndef RDMNETDISC_PLATFORM_DEFS_H_
+#define RDMNETDISC_PLATFORM_DEFS_H_
 
-#include "rdmnet/core/discovery.h"
+#include <avahi-client/client.h>
+#include <avahi-client/lookup.h>
+#include <avahi-client/publish.h>
+#include <avahi-common/domain.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define RDMNETDISC_SERVICE_NAME_MAX_LENGTH AVAHI_DOMAIN_NAME_MAX
 
-etcpal_error_t rdmnetdisc_init();
-void rdmnetdisc_deinit();
+typedef struct RdmnetDiscoveredBrokerPlatformData
+{
+  // State information for this broker.
+  int num_outstanding_resolves;
+  int num_successful_resolves;
+} RdmnetDiscoveredBrokerPlatformData;
 
-void rdmnetdisc_tick();
+typedef struct RdmnetScopeMonitorPlatformData
+{
+  // The Avahi browse handle
+  AvahiServiceBrowser* avahi_browser;
+} RdmnetScopeMonitorPlatformData;
 
-#ifdef __cplusplus
-}
-#endif
+typedef struct RdmnetBrokerRegisterPlatformData
+{
+  // For hooking up to the DNS-SD API
+  AvahiEntryGroup* avahi_entry_group;
+} RdmnetBrokerRegisterPlatformData;
 
-#endif /* RDMNET_PRIVATE_DISCOVERY_H_ */
+#endif /* RDMNETDISC_PLATFORM_DEFS_H_ */

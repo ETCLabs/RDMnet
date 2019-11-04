@@ -1111,4 +1111,6 @@ void BrokerCore::HandleOtherBrokerLost(const std::string& scope, const std::stri
 
 void BrokerCore::HandleScopeMonitorError(const std::string& scope, int platform_error)
 {
+  log_->Error("Error code %d encountered while monitoring broker's scope \"%s\" for other brokers.", platform_error,
+              scope.c_str());
 }

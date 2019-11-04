@@ -26,7 +26,11 @@ add_library(dnssd INTERFACE)
 set(RDMNET_DISCOVERY_HEADERS ${RDMNET_INCLUDE}/rdmnet/core/discovery.h)
 
 add_library(RDMnetDiscovery INTERFACE)
-target_sources(RDMnetDiscovery INTERFACE ${RDMNET_DISCOVERY_HEADERS})
+target_sources(RDMnetDiscovery INTERFACE
+  ${RDMNET_DISCOVERY_HEADERS}
+  ${RDMNET_SRC}/rdmnet/discovery/common.h
+  ${RDMNET_SRC}/rdmnet/discovery/common.c
+)
 target_include_directories(RDMnetDiscovery INTERFACE ${RDMNET_INCLUDE} ${RDMNET_SRC})
 
 # A version of the DNS-SD library with certain symbols removed for mocking.
@@ -35,8 +39,11 @@ add_library(dnssd_mock INTERFACE)
 if(WIN32)
   # On Windows, we use Bonjour for Windows, either through the Bonjour SDK or ETC's Bonjour fork.
   set(RDMNET_DISCOVERY_ADDITIONAL_SOURCES
-    ${RDMNET_SRC}/rdmnet/discovery/bonjour.h
-    ${RDMNET_SRC}/rdmnet/discovery/bonjour.c
+    ${RDMNET_SRC}/rdmnet/discovery/bonjour/rdmnetdisc_platform_defs.h
+    ${RDMNET_SRC}/rdmnet/discovery/bonjour/rdmnetdisc_bonjour.c
+  )
+  set(RDMNET_DISCOVERY_ADDITIONAL_INCLUDE_DIRS
+    ${RDMNET_SRC}/rdmnet/discovery/bonjour
   )
 
   if(RDMNET_WINDOWS_USE_BONJOUR_SDK) # Using Apple's Bonjour SDK for Windows
@@ -146,19 +153,25 @@ if(WIN32)
 elseif(APPLE)
   # On Apple platforms, use native Bonjour.
   set(RDMNET_DISCOVERY_ADDITIONAL_SOURCES
-    ${RDMNET_SRC}/rdmnet/discovery/bonjour.h
-    ${RDMNET_SRC}/rdmnet/discovery/bonjour.c
+    ${RDMNET_SRC}/rdmnet/discovery/bonjour/rdmnetdisc_platform_defs.h
+    ${RDMNET_SRC}/rdmnet/discovery/bonjour/rdmnetdisc_bonjour.c
+  )
+  set(RDMNET_DISCOVERY_ADDITIONAL_INCLUDE_DIRS
+    ${RDMNET_SRC}/rdmnet/discovery/bonjour
   )
 elseif(UNIX)
   # On Unix-like platforms, use Avahi.
   set(RDMNET_DISCOVERY_ADDITIONAL_SOURCES
-    ${RDMNET_SRC}/rdmnet/discovery/avahi.h
-    ${RDMNET_SRC}/rdmnet/discovery/avahi.c
+    ${RDMNET_SRC}/rdmnet/discovery/avahi/rdmnetdisc_platform_defs.h
+    ${RDMNET_SRC}/rdmnet/discovery/avahi/rdmnetdisc_avahi.c
   )
-
+  set(RDMNET_DISCOVERY_ADDITIONAL_INCLUDE_DIRS
+    ${RDMNET_SRC}/rdmnet/discovery/avahi
+  )
   target_link_libraries(dnssd INTERFACE avahi-client avahi-common)
 else()
   message(FATAL_ERROR "There is currently no DNS-SD provider supported for this platform.")
 endif()
 
 target_sources(RDMnetDiscovery INTERFACE ${RDMNET_DISCOVERY_ADDITIONAL_SOURCES})
+target_include_directories(RDMnetDiscovery INTERFACE ${RDMNET_DISCOVERY_ADDITIONAL_INCLUDE_DIRS})
