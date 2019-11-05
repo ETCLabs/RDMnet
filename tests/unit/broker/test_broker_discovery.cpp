@@ -25,7 +25,7 @@
 #include "rdmnet_mock/core/discovery.h"
 
 extern "C" {
-etcpal_error_t rdmnetdisc_register_broker_and_set_handle(const RdmnetBrokerRegisterConfig* config,
+etcpal_error_t rdmnet_disc_register_broker_and_set_handle(const RdmnetBrokerRegisterConfig* config,
                                                          rdmnet_registered_broker_t* handle);
 }
 
@@ -58,7 +58,7 @@ protected:
   void SetUp() override
   {
     RDMNET_CORE_DISCOVERY_DO_FOR_ALL_FAKES(RESET_FAKE);
-    rdmnetdisc_register_broker_fake.custom_fake = rdmnetdisc_register_broker_and_set_handle;
+    rdmnet_disc_register_broker_fake.custom_fake = rdmnet_disc_register_broker_and_set_handle;
 
     disc_mgr_.SetNotify(&notify_);
 
@@ -95,10 +95,10 @@ const rdmnet_registered_broker_t TestBrokerDiscovery::kBrokerRegisterHandle =
     reinterpret_cast<rdmnet_registered_broker_t>(0xdead);
 TestBrokerDiscovery* TestBrokerDiscovery::instance = nullptr;
 
-extern "C" etcpal_error_t rdmnetdisc_register_broker_and_set_handle(const RdmnetBrokerRegisterConfig* config,
+extern "C" etcpal_error_t rdmnet_disc_register_broker_and_set_handle(const RdmnetBrokerRegisterConfig* config,
                                                                     rdmnet_registered_broker_t* handle)
 {
-  (void)config;
+  RDMNET_UNUSED_ARG(config);
 
   TestBrokerDiscovery* test = TestBrokerDiscovery::instance;
 
@@ -129,8 +129,8 @@ TEST_F(TestBrokerDiscovery, RegisterWorksWithNoErrors)
 
 TEST_F(TestBrokerDiscovery, SyncRegisterErrorIsHandled)
 {
-  rdmnetdisc_register_broker_fake.custom_fake = nullptr;
-  rdmnetdisc_register_broker_fake.return_val = kEtcPalErrSys;
+  rdmnet_disc_register_broker_fake.custom_fake = nullptr;
+  rdmnet_disc_register_broker_fake.return_val = kEtcPalErrSys;
   auto result = disc_mgr_.RegisterBroker(settings_);
 
   EXPECT_FALSE(result.IsOk());

@@ -30,6 +30,7 @@
 #include "etcpal/netint.h"
 #include "rdm/responder.h"
 #include "rdmnet/defs.h"
+#include "rdmnet/core/util.h"
 #include "rdmnet/private/core.h"
 #include "rdmnet/private/llrp_target.h"
 #include "rdmnet/private/llrp.h"
@@ -118,7 +119,7 @@ etcpal_error_t rdmnet_llrp_target_init()
 
 static void target_dealloc(const EtcPalRbTree* self, EtcPalRbNode* node)
 {
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
 
   LlrpTarget* target = (LlrpTarget*)node->value;
   if (target)
@@ -531,7 +532,7 @@ etcpal_error_t setup_target_netint(const LlrpNetintId* netint_id, LlrpTarget* ta
 
 void cleanup_target_netint(const EtcPalRbTree* self, EtcPalRbNode* node)
 {
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
 
   LlrpTargetNetintInfo* netint_info = (LlrpTargetNetintInfo*)node->value;
   if (netint_info)
@@ -678,7 +679,7 @@ etcpal_error_t get_target(llrp_target_t handle, LlrpTarget** target)
 
 void release_target(LlrpTarget* target)
 {
-  (void)target;
+  RDMNET_UNUSED_ARG(target);
   rdmnet_readunlock();
 }
 
@@ -701,7 +702,7 @@ bool target_handle_in_use(int handle_val)
 
 int target_cmp_by_handle(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
 {
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
 
   const LlrpTarget* a = (const LlrpTarget*)node_a->value;
   const LlrpTarget* b = (const LlrpTarget*)node_b->value;
@@ -711,7 +712,7 @@ int target_cmp_by_handle(const EtcPalRbTree* self, const EtcPalRbNode* node_a, c
 
 int target_cmp_by_cid(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
 {
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
 
   const LlrpTarget* a = (const LlrpTarget*)node_a->value;
   const LlrpTarget* b = (const LlrpTarget*)node_b->value;
@@ -721,7 +722,7 @@ int target_cmp_by_cid(const EtcPalRbTree* self, const EtcPalRbNode* node_a, cons
 
 int target_netint_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
 {
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
 
   const LlrpTargetNetintInfo* a = (const LlrpTargetNetintInfo*)node_a->value;
   const LlrpTargetNetintInfo* b = (const LlrpTargetNetintInfo*)node_b->value;

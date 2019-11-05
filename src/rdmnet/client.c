@@ -244,7 +244,7 @@ etcpal_error_t rdmnet_client_init(const EtcPalLogParams* lparams)
 
 static void client_dealloc(const EtcPalRbTree* self, EtcPalRbNode* node)
 {
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
 
   RdmnetClient* cli = (RdmnetClient*)node->value;
   if (cli)
@@ -357,7 +357,7 @@ etcpal_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_
 
   if (scope_entry->monitor_handle)
   {
-    rdmnetdisc_stop_monitoring(scope_entry->monitor_handle);
+    rdmnet_disc_stop_monitoring(scope_entry->monitor_handle);
     etcpal_rbtree_remove(&state.scopes_by_disc_handle, scope_entry);
   }
   rdmnet_connection_destroy(scope_entry->handle, &reason);
@@ -372,10 +372,10 @@ etcpal_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_
 etcpal_error_t rdmnet_client_change_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                           const RdmnetScopeConfig* new_config, rdmnet_disconnect_reason_t reason)
 {
-  (void)handle;
-  (void)scope_handle;
-  (void)new_config;
-  (void)reason;
+  RDMNET_UNUSED_ARG(handle);
+  RDMNET_UNUSED_ARG(scope_handle);
+  RDMNET_UNUSED_ARG(new_config);
+  RDMNET_UNUSED_ARG(reason);
   // TODO
   return kEtcPalErrNotImpl;
 }
@@ -383,9 +383,9 @@ etcpal_error_t rdmnet_client_change_scope(rdmnet_client_t handle, rdmnet_client_
 etcpal_error_t rdmnet_client_change_search_domain(rdmnet_client_t handle, const char* new_search_domain,
                                                   rdmnet_disconnect_reason_t reason)
 {
-  (void)handle;
-  (void)new_search_domain;
-  (void)reason;
+  RDMNET_UNUSED_ARG(handle);
+  RDMNET_UNUSED_ARG(new_search_domain);
+  RDMNET_UNUSED_ARG(reason);
   // TODO
   return kEtcPalErrNotImpl;
 }
@@ -554,7 +554,7 @@ etcpal_error_t rdmnet_rpt_client_send_llrp_response(rdmnet_client_t handle, cons
 
 void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info, void* context)
 {
-  (void)context;
+  RDMNET_UNUSED_ARG(context);
 
   etcpal_log(rdmnet_log_params, ETCPAL_LOG_INFO, RDMNET_LOG_MSG("Broker '%s' for scope '%s' discovered."),
              broker_info->service_name, broker_info->scope);
@@ -575,7 +575,7 @@ void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDis
 
 void monitorcb_broker_lost(rdmnet_scope_monitor_t handle, const char* scope, const char* service_name, void* context)
 {
-  (void)context;
+  RDMNET_UNUSED_ARG(context);
 
   ClientScopeListEntry* scope_entry = get_scope_by_disc_handle(handle);
   if (scope_entry)
@@ -593,17 +593,17 @@ void monitorcb_broker_lost(rdmnet_scope_monitor_t handle, const char* scope, con
 
 void monitorcb_scope_monitor_error(rdmnet_scope_monitor_t handle, const char* scope, int platform_error, void* context)
 {
-  (void)handle;
-  (void)scope;
-  (void)platform_error;
-  (void)context;
+  RDMNET_UNUSED_ARG(handle);
+  RDMNET_UNUSED_ARG(scope);
+  RDMNET_UNUSED_ARG(platform_error);
+  RDMNET_UNUSED_ARG(context);
 
   // TODO
 }
 
 void conncb_connected(rdmnet_conn_t handle, const RdmnetConnectedInfo* connect_info, void* context)
 {
-  (void)context;
+  RDMNET_UNUSED_ARG(context);
 
   CB_STORAGE_CLASS ClientCallbackDispatchInfo cb;
   init_callback_info(&cb);
@@ -630,7 +630,7 @@ void conncb_connected(rdmnet_conn_t handle, const RdmnetConnectedInfo* connect_i
 
 void conncb_connect_failed(rdmnet_conn_t handle, const RdmnetConnectFailedInfo* failed_info, void* context)
 {
-  (void)context;
+  RDMNET_UNUSED_ARG(context);
 
   CB_STORAGE_CLASS ClientCallbackDispatchInfo cb;
   init_callback_info(&cb);
@@ -684,7 +684,7 @@ void conncb_connect_failed(rdmnet_conn_t handle, const RdmnetConnectFailedInfo* 
 
 void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo* disconn_info, void* context)
 {
-  (void)context;
+  RDMNET_UNUSED_ARG(context);
 
   CB_STORAGE_CLASS ClientCallbackDispatchInfo cb;
   init_callback_info(&cb);
@@ -735,7 +735,7 @@ void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo* dis
 
 void conncb_msg_received(rdmnet_conn_t handle, const RdmnetMessage* message, void* context)
 {
-  (void)context;
+  RDMNET_UNUSED_ARG(context);
 
   CB_STORAGE_CLASS ClientCallbackDispatchInfo cb;
   init_callback_info(&cb);
@@ -785,7 +785,7 @@ void conncb_msg_received(rdmnet_conn_t handle, const RdmnetMessage* message, voi
 bool handle_rpt_message(const RdmnetClient* cli, const ClientScopeListEntry* scope_entry, const RptMessage* rmsg,
                         RptMsgReceivedArgs* cb_args)
 {
-  (void)cli;
+  RDMNET_UNUSED_ARG(cli);
   bool res = false;
 
   switch (rmsg->vector)
@@ -925,13 +925,13 @@ void free_rpt_client_message(RptClientMessage* msg)
 
 void free_ept_client_message(EptClientMessage* msg)
 {
-  (void)msg;
+  RDMNET_UNUSED_ARG(msg);
   // TODO
 }
 
 void llrpcb_rdm_cmd_received(llrp_target_t handle, const LlrpRemoteRdmCommand* cmd, void* context)
 {
-  (void)context;
+  RDMNET_UNUSED_ARG(context);
 
   CB_STORAGE_CLASS ClientCallbackDispatchInfo cb;
   init_callback_info(&cb);
@@ -1082,8 +1082,8 @@ bool connect_failed_will_retry(rdmnet_connect_fail_event_t event, rdmnet_connect
 
 bool disconnected_will_retry(rdmnet_disconnect_event_t event, rdmnet_disconnect_reason_t reason)
 {
-  (void)event;
-  (void)reason;
+  RDMNET_UNUSED_ARG(event);
+  RDMNET_UNUSED_ARG(reason);
   // Currently all disconnects are retried.
   return true;
 }
@@ -1163,7 +1163,7 @@ void destroy_client(RdmnetClient* cli, rdmnet_disconnect_reason_t reason)
   {
     if (scope->monitor_handle)
     {
-      rdmnetdisc_stop_monitoring(scope->monitor_handle);
+      rdmnet_disc_stop_monitoring(scope->monitor_handle);
       etcpal_rbtree_remove(&state.scopes_by_disc_handle, scope);
     }
     rdmnet_connection_destroy(scope->handle, &reason);
@@ -1320,7 +1320,7 @@ etcpal_error_t start_scope_discovery(ClientScopeListEntry* scope_entry, const ch
 
   // TODO capture errors
   int platform_error;
-  etcpal_error_t res = rdmnetdisc_start_monitoring(&config, &scope_entry->monitor_handle, &platform_error);
+  etcpal_error_t res = rdmnet_disc_start_monitoring(&config, &scope_entry->monitor_handle, &platform_error);
   if (res == kEtcPalErrOk)
   {
     etcpal_rbtree_insert(&state.scopes_by_disc_handle, scope_entry);
@@ -1460,7 +1460,7 @@ RdmnetClient* get_client_by_llrp_handle(llrp_target_t handle)
 
 void release_client(const RdmnetClient* client)
 {
-  (void)client;
+  RDMNET_UNUSED_ARG(client);
   rdmnet_client_unlock();
 }
 
@@ -1499,7 +1499,7 @@ ClientScopeListEntry* get_scope_by_disc_handle(rdmnet_scope_monitor_t handle)
 
 void release_scope(const ClientScopeListEntry* scope_entry)
 {
-  (void)scope_entry;
+  RDMNET_UNUSED_ARG(scope_entry);
   rdmnet_client_unlock();
 }
 
@@ -1530,14 +1530,14 @@ etcpal_error_t get_client_and_scope(rdmnet_client_t handle, rdmnet_client_scope_
 
 void release_client_and_scope(const RdmnetClient* client, const ClientScopeListEntry* scope)
 {
-  (void)client;
-  (void)scope;
+  RDMNET_UNUSED_ARG(client);
+  RDMNET_UNUSED_ARG(scope);
   rdmnet_client_unlock();
 }
 
 int client_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
 {
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
 
   RdmnetClient* a = (RdmnetClient*)node_a->value;
   RdmnetClient* b = (RdmnetClient*)node_b->value;
@@ -1547,7 +1547,7 @@ int client_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPa
 
 int client_llrp_handle_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
 {
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
 
   RdmnetClient* a = (RdmnetClient*)node_a->value;
   RdmnetClient* b = (RdmnetClient*)node_b->value;
@@ -1557,7 +1557,7 @@ int client_llrp_handle_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a,
 
 int scope_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
 {
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
 
   ClientScopeListEntry* a = (ClientScopeListEntry*)node_a->value;
   ClientScopeListEntry* b = (ClientScopeListEntry*)node_b->value;
@@ -1567,7 +1567,7 @@ int scope_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPal
 
 int scope_disc_handle_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
 {
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
 
   ClientScopeListEntry* a = (ClientScopeListEntry*)node_a->value;
   ClientScopeListEntry* b = (ClientScopeListEntry*)node_b->value;

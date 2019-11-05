@@ -17,16 +17,16 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/* The rdmnetdisc_platform_defs.h specialization for Avahi. */
-#ifndef RDMNETDISC_PLATFORM_DEFS_H_
-#define RDMNETDISC_PLATFORM_DEFS_H_
+/* The rdmnet_disc_platform_defs.h specialization for Avahi. */
+#ifndef RDMNET_DISC_PLATFORM_DEFS_H_
+#define RDMNET_DISC_PLATFORM_DEFS_H_
 
 #include <avahi-client/client.h>
 #include <avahi-client/lookup.h>
 #include <avahi-client/publish.h>
 #include <avahi-common/domain.h>
 
-#define RDMNETDISC_SERVICE_NAME_MAX_LENGTH AVAHI_DOMAIN_NAME_MAX
+#define RDMNET_DISC_SERVICE_NAME_MAX_LENGTH AVAHI_DOMAIN_NAME_MAX
 
 typedef struct RdmnetDiscoveredBrokerPlatformData
 {
@@ -47,4 +47,4 @@ typedef struct RdmnetBrokerRegisterPlatformData
   AvahiEntryGroup* avahi_entry_group;
 } RdmnetBrokerRegisterPlatformData;
 
-#endif /* RDMNETDISC_PLATFORM_DEFS_H_ */
+#endif /* RDMNET_DISC_PLATFORM_DEFS_H_ */

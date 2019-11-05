@@ -39,8 +39,8 @@ add_library(dnssd_mock INTERFACE)
 if(WIN32)
   # On Windows, we use Bonjour for Windows, either through the Bonjour SDK or ETC's Bonjour fork.
   set(RDMNET_DISCOVERY_ADDITIONAL_SOURCES
-    ${RDMNET_SRC}/rdmnet/discovery/bonjour/rdmnetdisc_platform_defs.h
-    ${RDMNET_SRC}/rdmnet/discovery/bonjour/rdmnetdisc_bonjour.c
+    ${RDMNET_SRC}/rdmnet/discovery/bonjour/rdmnet_disc_platform_defs.h
+    ${RDMNET_SRC}/rdmnet/discovery/bonjour/rdmnet_disc_bonjour.c
   )
   set(RDMNET_DISCOVERY_ADDITIONAL_INCLUDE_DIRS
     ${RDMNET_SRC}/rdmnet/discovery/bonjour
@@ -153,8 +153,8 @@ if(WIN32)
 elseif(APPLE)
   # On Apple platforms, use native Bonjour.
   set(RDMNET_DISCOVERY_ADDITIONAL_SOURCES
-    ${RDMNET_SRC}/rdmnet/discovery/bonjour/rdmnetdisc_platform_defs.h
-    ${RDMNET_SRC}/rdmnet/discovery/bonjour/rdmnetdisc_bonjour.c
+    ${RDMNET_SRC}/rdmnet/discovery/bonjour/rdmnet_disc_platform_defs.h
+    ${RDMNET_SRC}/rdmnet/discovery/bonjour/rdmnet_disc_bonjour.c
   )
   set(RDMNET_DISCOVERY_ADDITIONAL_INCLUDE_DIRS
     ${RDMNET_SRC}/rdmnet/discovery/bonjour
@@ -162,8 +162,8 @@ elseif(APPLE)
 elseif(UNIX)
   # On Unix-like platforms, use Avahi.
   set(RDMNET_DISCOVERY_ADDITIONAL_SOURCES
-    ${RDMNET_SRC}/rdmnet/discovery/avahi/rdmnetdisc_platform_defs.h
-    ${RDMNET_SRC}/rdmnet/discovery/avahi/rdmnetdisc_avahi.c
+    ${RDMNET_SRC}/rdmnet/discovery/avahi/rdmnet_disc_platform_defs.h
+    ${RDMNET_SRC}/rdmnet/discovery/avahi/rdmnet_disc_avahi.c
   )
   set(RDMNET_DISCOVERY_ADDITIONAL_INCLUDE_DIRS
     ${RDMNET_SRC}/rdmnet/discovery/avahi

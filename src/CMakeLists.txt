@@ -20,6 +20,9 @@ rdmnet_add_dependency(RDM RDM_DIR)
 if(TARGET EtcPalMock)
   set_target_properties(EtcPalMock PROPERTIES FOLDER dependencies)
 endif()
+if(TARGET RDMMock)
+  set_target_properties(RDMMock PROPERTIES FOLDER dependencies)
+endif()
 
 ################################## Libraries ##################################
 

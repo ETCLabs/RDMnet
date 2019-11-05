@@ -24,7 +24,7 @@
 
 /***************************** Global variables ******************************/
 
-etcpal_mutex_t rdmnetdisc_lock;
+etcpal_mutex_t rdmnet_disc_lock;
 
 /**************************** Private constants ******************************/
 
@@ -43,11 +43,14 @@ static void scope_monitor_remove(const RdmnetScopeMonitorRef* ref);
 static void scope_monitor_delete(RdmnetScopeMonitorRef* ref);
 
 static RdmnetBrokerRegisterRef* registered_broker_new(const RdmnetBrokerRegisterConfig* config);
+static void registered_broker_insert(RdmnetBrokerRegisterRef* ref);
+static void registered_broker_remove(const RdmnetBrokerRegisterRef* ref);
 static void registered_broker_delete(RdmnetBrokerRegisterRef* rb);
 
 static void stop_monitoring_all_internal();
 
 // Other helpers
+static void process_broker_state(RdmnetBrokerRegisterRef* broker_ref);
 static bool broker_info_is_valid(const RdmnetBrokerDiscInfo* info);
 
 /*************************** Function definitions ****************************/
@@ -55,27 +58,27 @@ static bool broker_info_is_valid(const RdmnetBrokerDiscInfo* info);
 /* Internal function to initialize the RDMnet discovery API.
  * Returns kEtcPalErrOk on success, or specific error code on failure.
  */
-etcpal_error_t rdmnetdisc_init()
+etcpal_error_t rdmnet_disc_init()
 {
   etcpal_error_t res = kEtcPalErrOk;
 
-  if (!etcpal_mutex_create(&rdmnetdisc_lock))
+  if (!etcpal_mutex_create(&rdmnet_disc_lock))
     res = kEtcPalErrSys;
 
   if (res == kEtcPalErrOk)
-    res = rdmnetdisc_platform_init();
+    res = rdmnet_disc_platform_init();
 
   if (res != kEtcPalErrOk)
-    etcpal_mutex_destroy(&rdmnetdisc_lock);
+    etcpal_mutex_destroy(&rdmnet_disc_lock);
 
   return res;
 }
 
 /* Internal function to deinitialize the RDMnet discovery API. */
-void rdmnetdisc_deinit()
+void rdmnet_disc_deinit()
 {
   stop_monitoring_all_internal();
-  etcpal_mutex_destroy(&rdmnetdisc_lock);
+  etcpal_mutex_destroy(&rdmnet_disc_lock);
 }
 
 /*!
@@ -83,11 +86,11 @@ void rdmnetdisc_deinit()
  *
  * Note that this does not produce a valid RdmnetBrokerDiscInfo for broker registration - you will
  * need to manipulate the fields with your own broker information before passing it to
- * rdmnetdisc_register_broker().
+ * rdmnet_disc_register_broker().
  *
  * \param[out] broker_info Info struct to nullify.
  */
-void rdmnetdisc_init_broker_info(RdmnetBrokerDiscInfo* broker_info)
+void rdmnet_disc_init_broker_info(RdmnetBrokerDiscInfo* broker_info)
 {
   broker_info->cid = kEtcPalNullUuid;
   memset(broker_info->service_name, 0, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
@@ -116,8 +119,8 @@ void rdmnetdisc_init_broker_info(RdmnetBrokerDiscInfo* broker_info)
  * \return #kEtcPalErrNoMem: Couldn't allocate resources to monitor this scope.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
-                                           int* platform_specific_error)
+etcpal_error_t rdmnet_disc_start_monitoring(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
+                                            int* platform_specific_error)
 {
   if (!config || !handle || !platform_specific_error)
     return kEtcPalErrInvalid;
@@ -131,7 +134,7 @@ etcpal_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* confi
     if (!new_monitor)
       res = kEtcPalErrNoMem;
 
-    res = rdmnetdisc_platform_start_monitoring(config, new_monitor, platform_specific_error);
+    res = rdmnet_disc_platform_start_monitoring(config, new_monitor, platform_specific_error);
     if (res == kEtcPalErrOk)
     {
       scope_monitor_insert(new_monitor);
@@ -152,15 +155,6 @@ etcpal_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* confi
   return res;
 }
 
-etcpal_error_t rdmnetdisc_change_monitored_scope(rdmnet_scope_monitor_t handle,
-                                                 const RdmnetScopeMonitorConfig* new_config)
-{
-  // TODO reevaluate if this is necessary.
-  (void)handle;
-  (void)new_config;
-  return kEtcPalErrNotImpl;
-}
-
 /*!
  * \brief Stop monitoring an RDMnet scope for brokers.
  *
@@ -168,14 +162,14 @@ etcpal_error_t rdmnetdisc_change_monitored_scope(rdmnet_scope_monitor_t handle,
  *
  * \param[in] handle Scope handle to stop monitoring.
  */
-void rdmnetdisc_stop_monitoring(rdmnet_scope_monitor_t handle)
+void rdmnet_disc_stop_monitoring(rdmnet_scope_monitor_t handle)
 {
   if (!handle || !rdmnet_core_initialized())
     return;
 
   if (RDMNET_DISC_LOCK())
   {
-    rdmnetdisc_platform_stop_monitoring(handle);
+    rdmnet_disc_platform_stop_monitoring(handle);
     scope_monitor_remove(handle);
     scope_monitor_delete(handle);
     RDMNET_DISC_UNLOCK();
@@ -187,7 +181,7 @@ void rdmnetdisc_stop_monitoring(rdmnet_scope_monitor_t handle)
  *
  * *This function will deadlock if called directly from an RDMnet discovery callback.*
  */
-void rdmnetdisc_stop_monitoring_all()
+void rdmnet_disc_stop_monitoring_all()
 {
   if (!rdmnet_core_initialized())
     return;
@@ -206,7 +200,7 @@ void stop_monitoring_all_internal()
       while (ref)
       {
         next_ref = ref->next;
-        rdmnetdisc_platform_stop_monitoring(ref);
+        rdmnet_disc_platform_stop_monitoring(ref);
         scope_monitor_delete(ref);
         ref = next_ref;
       }
@@ -241,7 +235,7 @@ void stop_monitoring_all_internal()
  * \return #kEtcPalErrNoMem: Couldn't allocate resources to register this broker.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config, rdmnet_registered_broker_t* handle)
+etcpal_error_t rdmnet_disc_register_broker(const RdmnetBrokerRegisterConfig* config, rdmnet_registered_broker_t* handle)
 {
   if (!config || !handle || !broker_info_is_valid(&config->my_info))
     return kEtcPalErrInvalid;
@@ -264,7 +258,7 @@ etcpal_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* conf
       rdmnet_safe_strncpy(monitor_config.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
 
       int mon_error;
-      res = rdmnetdisc_start_monitoring(&monitor_config, &broker_ref->scope_monitor_handle, &mon_error);
+      res = rdmnet_disc_start_monitoring(&monitor_config, &broker_ref->scope_monitor_handle, &mon_error);
 
       if (res == kEtcPalErrOk)
       {
@@ -296,7 +290,7 @@ etcpal_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* conf
  *
  * \param[in] handle Broker handle to unregister.
  */
-void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle)
+void rdmnet_disc_unregister_broker(rdmnet_registered_broker_t handle)
 {
   if (!handle || !rdmnet_core_initialized())
     return;
@@ -305,12 +299,12 @@ void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle)
   {
     /* Since the broker only cares about scopes while it is running, shut down any outstanding
      * queries for that scope.*/
-    rdmnetdisc_stop_monitoring(handle->scope_monitor_handle);
+    rdmnet_disc_stop_monitoring(handle->scope_monitor_handle);
     handle->scope_monitor_handle = NULL;
 
     if (RDMNET_DISC_LOCK())
     {
-      rdmnetdisc_platform_unregister_broker(handle);
+      rdmnet_disc_platform_unregister_broker(handle);
       registered_broker_remove(handle);
       registered_broker_delete(handle);
       RDMNET_DISC_UNLOCK();
@@ -321,7 +315,7 @@ void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle)
 /* Internal function to handle periodic RDMnet discovery functionality, called from
  * rdmnet_core_tick().
  */
-void rdmnetdisc_tick(void)
+void rdmnet_disc_tick(void)
 {
   if (!rdmnet_core_initialized())
     return;
@@ -334,7 +328,7 @@ void rdmnetdisc_tick(void)
     }
     RDMNET_DISC_UNLOCK();
   }
-  rdmnetdisc_platform_tick();
+  rdmnet_disc_platform_tick();
 }
 
 void process_broker_state(RdmnetBrokerRegisterRef* broker_ref)
@@ -351,7 +345,8 @@ void process_broker_state(RdmnetBrokerRegisterRef* broker_ref)
       broker_ref->state = kBrokerStateRegisterStarted;
 
       int platform_error = 0;
-      if (rdmnetdisc_platform_register_broker(&broker_ref->config.my_info, broker_ref, &platform_error) != kEtcPalErrOk)
+      if (rdmnet_disc_platform_register_broker(&broker_ref->config.my_info, broker_ref, &platform_error) !=
+          kEtcPalErrOk)
       {
         broker_ref->state = kBrokerStateNotRegistered;
         broker_ref->config.callbacks.broker_register_error(broker_ref, platform_error,
@@ -361,7 +356,21 @@ void process_broker_state(RdmnetBrokerRegisterRef* broker_ref)
   }
 }
 
-/* Adds a new scope info to the scope_ref_list. Assumes a lock is already taken. */
+/* Allocate and initialize a new scope monitor ref. */
+RdmnetScopeMonitorRef* scope_monitor_new(const RdmnetScopeMonitorConfig* config)
+{
+  RdmnetScopeMonitorRef* new_monitor = (RdmnetScopeMonitorRef*)malloc(sizeof(RdmnetScopeMonitorRef));
+  if (new_monitor)
+  {
+    new_monitor->config = *config;
+    new_monitor->broker_handle = NULL;
+    new_monitor->broker_list = NULL;
+    new_monitor->next = NULL;
+  }
+  return new_monitor;
+}
+
+/* Adds a new scope monitor ref to the global scope_ref_list. Assumes a lock is already taken. */
 void scope_monitor_insert(RdmnetScopeMonitorRef* scope_ref)
 {
   if (scope_ref)
@@ -384,17 +393,14 @@ void scope_monitor_insert(RdmnetScopeMonitorRef* scope_ref)
   }
 }
 
-RdmnetScopeMonitorRef* scope_monitor_new(const RdmnetScopeMonitorConfig* config)
+bool scope_monitor_ref_is_valid(const RdmnetScopeMonitorRef* ref)
 {
-  RdmnetScopeMonitorRef* new_monitor = (RdmnetScopeMonitorRef*)malloc(sizeof(RdmnetScopeMonitorRef));
-  if (new_monitor)
+  for (const RdmnetScopeMonitorRef* compare_ref = scope_ref_list; compare_ref; compare_ref = compare_ref->next)
   {
-    new_monitor->config = *config;
-    new_monitor->broker_handle = NULL;
-    new_monitor->broker_list = NULL;
-    new_monitor->next = NULL;
+    if (ref == compare_ref)
+      return true;
   }
-  return new_monitor;
+  return false;
 }
 
 /* Removes an entry from scope_ref_list. Assumes a lock is already taken. */
@@ -410,8 +416,7 @@ void scope_monitor_remove(const RdmnetScopeMonitorRef* ref)
   }
   else
   {
-    RdmnetScopeMonitorRef* prev_ref = scope_ref_list;
-    for (; prev_ref->next; prev_ref = prev_ref->next)
+    for (RdmnetScopeMonitorRef* prev_ref = scope_ref_list; prev_ref->next; prev_ref = prev_ref->next)
     {
       if (prev_ref->next == ref)
       {
@@ -422,6 +427,8 @@ void scope_monitor_remove(const RdmnetScopeMonitorRef* ref)
   }
 }
 
+/* Deallocate a scope_monitor_ref. Also deallocates all DiscoveredBrokers attached to this
+ * scope_monitor_ref. */
 void scope_monitor_delete(RdmnetScopeMonitorRef* ref)
 {
   DiscoveredBroker* db = ref->broker_list;
@@ -440,11 +447,10 @@ DiscoveredBroker* discovered_broker_new(const char* service_name, const char* fu
   DiscoveredBroker* new_db = (DiscoveredBroker*)malloc(sizeof(DiscoveredBroker));
   if (new_db)
   {
-    rdmnetdisc_fill_default_broker_info(&new_db->info);
+    rdmnet_disc_init_broker_info(&new_db->info);
     rdmnet_safe_strncpy(new_db->info.service_name, service_name, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
-    rdmnet_safe_strncpy(new_db->full_service_name, full_service_name, kDNSServiceMaxDomainName);
-    new_db->state = kResolveStateServiceResolve;
-    new_db->dnssd_ref = NULL;
+    rdmnet_safe_strncpy(new_db->full_service_name, full_service_name, RDMNET_DISC_SERVICE_NAME_MAX_LENGTH);
+    memset(&new_db->platform_data, 0, sizeof(RdmnetDiscoveredBrokerPlatformData));
     new_db->next = NULL;
   }
   return new_db;
@@ -452,11 +458,6 @@ DiscoveredBroker* discovered_broker_new(const char* service_name, const char* fu
 
 void discovered_broker_delete(DiscoveredBroker* db)
 {
-  if (db->state != kResolveStateDone)
-  {
-    etcpal_poll_remove_socket(&disc_state.poll_context, DNSServiceRefSockFD(db->dnssd_ref));
-    DNSServiceRefDeallocate(db->dnssd_ref);
-  }
   BrokerListenAddr* listen_addr = db->info.listen_addr_list;
   while (listen_addr)
   {
@@ -464,6 +465,7 @@ void discovered_broker_delete(DiscoveredBroker* db)
     free(listen_addr);
     listen_addr = next_listen_addr;
   }
+  discovered_broker_free_platform_resources(db);
   free(db);
 }
 
@@ -476,9 +478,65 @@ RdmnetBrokerRegisterRef* registered_broker_new(const RdmnetBrokerRegisterConfig*
     new_rb->scope_monitor_handle = NULL;
     new_rb->state = kBrokerStateNotRegistered;
     new_rb->full_service_name[0] = '\0';
-    new_rb->dnssd_ref = NULL;
+    memset(&new_rb->platform_data, 0, sizeof(RdmnetBrokerRegisterPlatformData));
   }
   return new_rb;
+}
+
+void registered_broker_insert(RdmnetBrokerRegisterRef* ref)
+{
+  if (ref)
+  {
+    ref->next = NULL;
+
+    if (!broker_ref_list)
+    {
+      // Make the new scope the head of the list.
+      broker_ref_list = ref;
+    }
+    else
+    {
+      // Insert the new registered broker at the end of the list.
+      RdmnetBrokerRegisterRef* last_ref = broker_ref_list;
+      for (; last_ref->next; last_ref = last_ref->next)
+        ;
+      last_ref->next = ref;
+    }
+  }
+}
+
+bool broker_register_ref_is_valid(const RdmnetBrokerRegisterRef* ref)
+{
+  for (const RdmnetBrokerRegisterRef* compare_ref = broker_ref_list; compare_ref; compare_ref = compare_ref->next)
+  {
+    if (ref == compare_ref)
+      return true;
+  }
+  return false;
+}
+
+/* Removes an entry from broker_ref_list. Assumes a lock is already taken. */
+void registered_broker_remove(const RdmnetBrokerRegisterRef* ref)
+{
+  if (!broker_ref_list)
+    return;
+
+  if (ref == broker_ref_list)
+  {
+    // Remove the element at the head of the list
+    broker_ref_list = ref->next;
+  }
+  else
+  {
+    for (RdmnetBrokerRegisterRef* prev_ref = broker_ref_list; prev_ref->next; prev_ref = prev_ref->next)
+    {
+      if (prev_ref->next == ref)
+      {
+        prev_ref->next = ref->next;
+        break;
+      }
+    }
+  }
 }
 
 void registered_broker_delete(RdmnetBrokerRegisterRef* rb)
@@ -534,8 +592,7 @@ void discovered_broker_remove(DiscoveredBroker** list_head_ptr, const Discovered
   else
   {
     // Find in the list and remove.
-    DiscoveredBroker* prev_db = *list_head_ptr;
-    for (; prev_db->next; prev_db = prev_db->next)
+    for (DiscoveredBroker* prev_db = *list_head_ptr; prev_db->next; prev_db = prev_db->next)
     {
       if (prev_db->next == db)
       {

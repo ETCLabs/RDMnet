@@ -151,7 +151,7 @@ etcpal_error_t rdmnet_conn_init()
 
 static void conn_dealloc(const EtcPalRbTree* self, EtcPalRbNode* node)
 {
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
 
   RdmnetConnection* conn = (RdmnetConnection*)node->value;
   if (conn)
@@ -354,9 +354,9 @@ etcpal_error_t rdmnet_attach_existing_socket(rdmnet_conn_t handle, etcpal_socket
   }
   return res;
 #else   // RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
-  (void)handle;
-  (void)sock;
-  (void)remote_addr;
+  RDMNET_UNUSED_ARG(handle);
+  RDMNET_UNUSED_ARG(sock);
+  RDMNET_UNUSED_ARG(remote_addr);
   return kEtcPalErrNotImpl;
 #endif  // RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
 }
@@ -1131,7 +1131,7 @@ void release_conn(RdmnetConnection* conn)
 
 int conn_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
 {
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
 
   RdmnetConnection* a = (RdmnetConnection*)node_a->value;
   RdmnetConnection* b = (RdmnetConnection*)node_b->value;

@@ -190,7 +190,7 @@ etcpal_error_t rdmnet_device_change_search_domain(rdmnet_device_t handle, const 
 void client_connected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo* info,
                       void* context)
 {
-  (void)handle;
+  RDMNET_UNUSED_ARG(handle);
 
   RdmnetDevice* device = (RdmnetDevice*)context;
   if (device && scope_handle == device->scope_handle)
@@ -202,7 +202,7 @@ void client_connected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle
 void client_connect_failed(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                            const RdmnetClientConnectFailedInfo* info, void* context)
 {
-  (void)handle;
+  RDMNET_UNUSED_ARG(handle);
 
   RdmnetDevice* device = (RdmnetDevice*)context;
   if (device && scope_handle == device->scope_handle)
@@ -214,7 +214,7 @@ void client_connect_failed(rdmnet_client_t handle, rdmnet_client_scope_t scope_h
 void client_disconnected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                          const RdmnetClientDisconnectedInfo* info, void* context)
 {
-  (void)handle;
+  RDMNET_UNUSED_ARG(handle);
 
   RdmnetDevice* device = (RdmnetDevice*)context;
   if (device && scope_handle == device->scope_handle)
@@ -226,16 +226,16 @@ void client_disconnected(rdmnet_client_t handle, rdmnet_client_scope_t scope_han
 void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const BrokerMessage* msg,
                                 void* context)
 {
-  (void)handle;
-  (void)scope_handle;
-  (void)context;
+  RDMNET_UNUSED_ARG(handle);
+  RDMNET_UNUSED_ARG(scope_handle);
+  RDMNET_UNUSED_ARG(context);
 
   etcpal_log(rdmnet_log_params, ETCPAL_LOG_INFO, "Got Broker message with vector %d", msg->vector);
 }
 
 void client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand* cmd, void* context)
 {
-  (void)handle;
+  RDMNET_UNUSED_ARG(handle);
 
   RdmnetDevice* device = (RdmnetDevice*)context;
   if (device)
@@ -247,7 +247,7 @@ void client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand
 void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptClientMessage* msg,
                          void* context)
 {
-  (void)handle;
+  RDMNET_UNUSED_ARG(handle);
 
   RdmnetDevice* device = (RdmnetDevice*)context;
   if (device && scope_handle == device->scope_handle)

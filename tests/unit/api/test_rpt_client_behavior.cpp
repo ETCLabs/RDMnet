@@ -48,7 +48,7 @@ static RdmnetScopeMonitorConfig last_monitor_config;
 static etcpal_error_t start_monitoring_and_save_config(const RdmnetScopeMonitorConfig* config,
                                                        rdmnet_scope_monitor_t* handle, int* platform_specific_error)
 {
-  (void)platform_specific_error;
+  RDMNET_UNUSED_ARG(platform_specific_error);
   *handle = last_monitor_handle;
   last_monitor_config = *config;
   return kEtcPalErrOk;
@@ -60,10 +60,10 @@ static RdmnetClientConnectFailedInfo client_connect_failed_info;
 static void custom_connect_failed_cb(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                      const RdmnetClientConnectFailedInfo* info, void* context)
 {
-  (void)handle;
-  (void)scope_handle;
+  RDMNET_UNUSED_ARG(handle);
+  RDMNET_UNUSED_ARG(scope_handle);
   client_connect_failed_info = *info;
-  (void)context;
+  RDMNET_UNUSED_ARG(context);
 }
 
 static RdmnetClientDisconnectedInfo client_disconn_info;
@@ -72,10 +72,10 @@ static RdmnetClientDisconnectedInfo client_disconn_info;
 static void custom_disconnected_cb(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                    const RdmnetClientDisconnectedInfo* info, void* context)
 {
-  (void)handle;
-  (void)scope_handle;
+  RDMNET_UNUSED_ARG(handle);
+  RDMNET_UNUSED_ARG(scope_handle);
   client_disconn_info = *info;
-  (void)context;
+  RDMNET_UNUSED_ARG(context);
 }
 
 static EtcPalSockAddr last_connect_addr;
@@ -84,9 +84,9 @@ static EtcPalSockAddr last_connect_addr;
 static etcpal_error_t connect_and_save_address(rdmnet_conn_t handle, const EtcPalSockAddr* remote_addr,
                                                const ClientConnectMsg* connect_data)
 {
-  (void)handle;
+  RDMNET_UNUSED_ARG(handle);
   last_connect_addr = *remote_addr;
-  (void)connect_data;
+  RDMNET_UNUSED_ARG(connect_data);
   return kEtcPalErrOk;
 }
 }
@@ -106,7 +106,7 @@ protected:
     rdmnet_mock_core_reset();
     rdmnet_connection_create_fake.custom_fake = create_conn_and_save_config;
     rdmnet_connect_fake.return_val = kEtcPalErrOk;
-    rdmnetdisc_start_monitoring_fake.return_val = kEtcPalErrOk;
+    rdmnet_disc_start_monitoring_fake.return_val = kEtcPalErrOk;
 
     // Init
     ASSERT_EQ(kEtcPalErrOk, rdmnet_client_init(NULL));
@@ -173,12 +173,12 @@ protected:
 
   void ConnectAndVerify()
   {
-    rdmnetdisc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
+    rdmnet_disc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
 
     ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle_, &default_dynamic_scope_, &scope_handle_));
 
     EXPECT_EQ(rdmnet_connection_create_fake.call_count, 1u);
-    EXPECT_EQ(rdmnetdisc_start_monitoring_fake.call_count, 1u);
+    EXPECT_EQ(rdmnet_disc_start_monitoring_fake.call_count, 1u);
 
     rdmnet_connect_fake.return_val = kEtcPalErrOk;
     last_monitor_config.callbacks.broker_found(last_monitor_handle, &discovered_broker_,
@@ -236,7 +236,7 @@ TEST_F(TestDynamicRptClientBehavior, AddScopeHasCorrectSideEffects)
   ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle_, &default_dynamic_scope_, &scope_handle));
 
   // Make sure the correct underlying functions were called
-  ASSERT_EQ(rdmnetdisc_start_monitoring_fake.call_count, 1u);
+  ASSERT_EQ(rdmnet_disc_start_monitoring_fake.call_count, 1u);
   ASSERT_EQ(rdmnet_connect_fake.call_count, 0u);
 }
 
@@ -245,13 +245,13 @@ TEST_F(TestStaticRptClientBehavior, AddScopeHasCorrectSideEffects)
   // Add a scope with a static broker address
   rdmnet_client_scope_t scope_handle;
   ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle_, &default_static_scope_, &scope_handle));
-  ASSERT_EQ(rdmnetdisc_start_monitoring_fake.call_count, 0u);
+  ASSERT_EQ(rdmnet_disc_start_monitoring_fake.call_count, 0u);
   ASSERT_EQ(rdmnet_connect_fake.call_count, 1u);
 }
 
 TEST_F(TestDynamicRptClientBehavior, DiscoveryErrorsHandled)
 {
-  rdmnetdisc_start_monitoring_fake.return_val = kEtcPalErrSys;
+  rdmnet_disc_start_monitoring_fake.return_val = kEtcPalErrSys;
 
   rdmnet_client_scope_t scope_handle;
   EXPECT_EQ(kEtcPalErrSys, rdmnet_client_add_scope(client_handle_, &default_dynamic_scope_, &scope_handle));
@@ -259,11 +259,11 @@ TEST_F(TestDynamicRptClientBehavior, DiscoveryErrorsHandled)
 
 TEST_F(TestDynamicRptClientBehavior, ConnectionErrorsHandled)
 {
-  rdmnetdisc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
+  rdmnet_disc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
 
   rdmnet_client_scope_t scope_handle;
   ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle_, &default_dynamic_scope_, &scope_handle));
-  ASSERT_EQ(rdmnetdisc_start_monitoring_fake.call_count, 1u);
+  ASSERT_EQ(rdmnet_disc_start_monitoring_fake.call_count, 1u);
 
   rdmnet_connect_fake.return_val = kEtcPalErrSys;
   last_monitor_config.callbacks.broker_found(last_monitor_handle, &discovered_broker_,
@@ -294,14 +294,14 @@ TEST_F(TestDynamicRptClientBehavior, ReconnectionErrorsHandled)
 
 TEST_F(TestDynamicRptClientBehavior, ClientRetriesOnConnectFail)
 {
-  rdmnetdisc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
+  rdmnet_disc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
   rdmnet_connect_fake.custom_fake = connect_and_save_address;
   rdmnet_client_connect_failed_fake.custom_fake = custom_connect_failed_cb;
 
   ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle_, &default_dynamic_scope_, &scope_handle_));
 
   EXPECT_EQ(rdmnet_connection_create_fake.call_count, 1u);
-  EXPECT_EQ(rdmnetdisc_start_monitoring_fake.call_count, 1u);
+  EXPECT_EQ(rdmnet_disc_start_monitoring_fake.call_count, 1u);
 
   rdmnet_connect_fake.return_val = kEtcPalErrOk;
   last_monitor_config.callbacks.broker_found(last_monitor_handle, &discovered_broker_,

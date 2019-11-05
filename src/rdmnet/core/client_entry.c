@@ -18,6 +18,7 @@
  *****************************************************************************/
 
 #include "rdmnet/core/client_entry.h"
+#include "rdmnet/core/util.h"
 
 bool create_rpt_client_entry(const EtcPalUuid* cid, const RdmUid* uid, rpt_client_type_t client_type,
                              const EtcPalUuid* binding_cid, ClientEntryData* entry)
@@ -40,10 +41,10 @@ bool create_rpt_client_entry(const EtcPalUuid* cid, const RdmUid* uid, rpt_clien
 bool create_ept_client_entry(const EtcPalUuid* cid, const EptSubProtocol* protocol_arr, size_t protocol_arr_size,
                              ClientEntryData* entry)
 {
-  (void)cid;
-  (void)protocol_arr;
-  (void)protocol_arr_size;
-  (void)entry;
+  RDMNET_UNUSED_ARG(cid);
+  RDMNET_UNUSED_ARG(protocol_arr);
+  RDMNET_UNUSED_ARG(protocol_arr_size);
+  RDMNET_UNUSED_ARG(entry);
   // TODO
   return false;
 }

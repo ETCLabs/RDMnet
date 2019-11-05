@@ -94,7 +94,7 @@ protected:
 // (which is invalid after the function returns)
 extern "C" void conncb_socket_error(rdmnet_conn_t, const RdmnetDisconnectedInfo* disconn_info, void* context)
 {
-  (void)context;
+  RDMNET_UNUSED_ARG(context);
   EXPECT_EQ(disconn_info->socket_err, kEtcPalErrConnReset);
   EXPECT_EQ(disconn_info->event, kRdmnetDisconnectAbruptClose);
 }

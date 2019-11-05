@@ -62,6 +62,8 @@ static void txt_record_to_broker_info(const unsigned char* txt, uint16_t txt_len
 void DNSSD_API HandleDNSServiceRegisterReply(DNSServiceRef sdRef, DNSServiceFlags flags, DNSServiceErrorType errorCode,
                                              const char* name, const char* regtype, const char* domain, void* context)
 {
+  RDMNET_UNUSED_ARG(sdRef);
+
   RdmnetBrokerRegisterRef* ref = (RdmnetBrokerRegisterRef*)context;
   assert(ref);
 
@@ -308,18 +310,18 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
  * Platform-specific functions from rdmnet/discovery/common.h
  ******************************************************************************/
 
-etcpal_error_t rdmnetdisc_platform_init(void)
+etcpal_error_t rdmnet_disc_platform_init(void)
 {
   return etcpal_poll_context_init(&poll_context);
 }
 
-void rdmnetdisc_platform_deinit(void)
+void rdmnet_disc_platform_deinit(void)
 {
   etcpal_poll_context_deinit(&poll_context);
 }
 
-etcpal_error_t rdmnetdisc_platform_start_monitoring(const RdmnetScopeMonitorConfig* config,
-                                                    RdmnetScopeMonitorRef* handle, int* platform_specific_error)
+etcpal_error_t rdmnet_disc_platform_start_monitoring(const RdmnetScopeMonitorConfig* config,
+                                                     RdmnetScopeMonitorRef* handle, int* platform_specific_error)
 {
   // Start the browse operation in the Bonjour stack.
   char reg_str[REGISTRATION_STRING_PADDED_LENGTH];
@@ -340,21 +342,27 @@ etcpal_error_t rdmnetdisc_platform_start_monitoring(const RdmnetScopeMonitorConf
   }
 }
 
-void rdmnetdisc_platform_stop_monitoring(RdmnetScopeMonitorRef* handle)
+void rdmnet_disc_platform_stop_monitoring(RdmnetScopeMonitorRef* handle)
 {
   etcpal_poll_remove_socket(&poll_context, DNSServiceRefSockFD(handle->platform_data.dnssd_ref));
   DNSServiceRefDeallocate(handle->platform_data.dnssd_ref);
 }
 
-void rdmnetdisc_platform_unregister_broker(rdmnet_registered_broker_t handle)
+void rdmnet_disc_platform_unregister_broker(rdmnet_registered_broker_t handle)
 {
   etcpal_poll_remove_socket(&poll_context, DNSServiceRefSockFD(handle->platform_data.dnssd_ref));
   DNSServiceRefDeallocate(handle->platform_data.dnssd_ref);
+}
+
+void discovered_broker_free_platform_resources(DiscoveredBroker* db)
+{
+  etcpal_poll_remove_socket(&poll_context, DNSServiceRefSockFD(db->platform_data.dnssd_ref));
+  DNSServiceRefDeallocate(db->platform_data.dnssd_ref);
 }
 
 /* If returns !0, this was an error from Bonjour.  Reset the state and notify the callback.*/
-etcpal_error_t rdmnetdisc_platform_register_broker(const RdmnetBrokerDiscInfo* info,
-                                                   RdmnetBrokerRegisterRef* broker_ref, int* platform_specific_error)
+etcpal_error_t rdmnet_disc_platform_register_broker(const RdmnetBrokerDiscInfo* info,
+                                                    RdmnetBrokerRegisterRef* broker_ref, int* platform_specific_error)
 {
   // Before we start the registration, we have to massage a few parameters
   uint16_t net_port = 0;
@@ -363,7 +371,8 @@ etcpal_error_t rdmnetdisc_platform_register_broker(const RdmnetBrokerDiscInfo* i
   char reg_str[REGISTRATION_STRING_PADDED_LENGTH];
   get_registration_string(E133_DNSSD_SRV_TYPE, info->scope, reg_str);
 
-  TXTRecordRef txt = broker_info_to_txt_record(info);
+  TXTRecordRef txt;
+  broker_info_to_txt_record(info, &txt);
 
   // TODO: If we want to register a device on a particular interface instead of all interfaces,
   // we'll have to have multiple reg_refs and do a DNSServiceRegister on each interface. Not
@@ -383,7 +392,7 @@ etcpal_error_t rdmnetdisc_platform_register_broker(const RdmnetBrokerDiscInfo* i
   return (result == kDNSServiceErr_NoError ? kEtcPalErrOk : kEtcPalErrSys);
 }
 
-void rdmnetdisc_platform_tick()
+void rdmnet_disc_platform_tick()
 {
   EtcPalPollEvent event = {ETCPAL_SOCKET_INVALID};
   etcpal_error_t poll_res = kEtcPalErrSys;
@@ -449,23 +458,22 @@ void get_registration_string(const char* srv_type, const char* scope, char* reg_
 }
 
 /* Create a TXT record with the required key/value pairs from E1.33 from the RdmnetBrokerDiscInfo */
-TXTRecordRef broker_info_to_txt_record(const RdmnetBrokerDiscInfo* info)
+void broker_info_to_txt_record(const RdmnetBrokerDiscInfo* info, TXTRecordRef* txt)
 {
   static uint8_t txt_buffer[TXT_RECORD_BUFFER_LENGTH];
-  TXTRecordRef txt;
-  TXTRecordCreate(&txt, TXT_RECORD_BUFFER_LENGTH, txt_buffer);
+  TXTRecordCreate(txt, TXT_RECORD_BUFFER_LENGTH, txt_buffer);
 
   char int_conversion[16];
   snprintf(int_conversion, 16, "%d", E133_DNSSD_TXTVERS);
-  DNSServiceErrorType result = TXTRecordSetValue(&txt, "TxtVers", (uint8_t)(strlen(int_conversion)), int_conversion);
+  DNSServiceErrorType result = TXTRecordSetValue(txt, "TxtVers", (uint8_t)(strlen(int_conversion)), int_conversion);
   if (result == kDNSServiceErr_NoError)
   {
-    result = TXTRecordSetValue(&txt, "ConfScope", (uint8_t)(strlen(info->scope)), info->scope);
+    result = TXTRecordSetValue(txt, "ConfScope", (uint8_t)(strlen(info->scope)), info->scope);
   }
   if (result == kDNSServiceErr_NoError)
   {
     snprintf(int_conversion, 16, "%d", E133_DNSSD_E133VERS);
-    result = TXTRecordSetValue(&txt, "E133Vers", (uint8_t)(strlen(int_conversion)), int_conversion);
+    result = TXTRecordSetValue(txt, "E133Vers", (uint8_t)(strlen(int_conversion)), int_conversion);
   }
   if (result == kDNSServiceErr_NoError)
   {
@@ -480,17 +488,16 @@ TXTRecordRef broker_info_to_txt_record(const RdmnetBrokerDiscInfo* info)
 
       *dst = *src;
     }
-    result = TXTRecordSetValue(&txt, "CID", (uint8_t)(strlen(cid_str)), cid_str);
+    result = TXTRecordSetValue(txt, "CID", (uint8_t)(strlen(cid_str)), cid_str);
   }
   if (result == kDNSServiceErr_NoError)
   {
-    result = TXTRecordSetValue(&txt, "Model", (uint8_t)(strlen(info->model)), info->model);
+    result = TXTRecordSetValue(txt, "Model", (uint8_t)(strlen(info->model)), info->model);
   }
   if (result == kDNSServiceErr_NoError)
   {
-    result = TXTRecordSetValue(&txt, "Manuf", (uint8_t)(strlen(info->manufacturer)), info->manufacturer);
+    result = TXTRecordSetValue(txt, "Manuf", (uint8_t)(strlen(info->manufacturer)), info->manufacturer);
   }
-  return txt;
 }
 
 /* Create an RdmnetBrokerDiscInfo struct from a TXT record with the required key/value pairs from

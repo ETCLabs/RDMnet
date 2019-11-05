@@ -104,17 +104,16 @@ typedef struct RdmnetBrokerRegisterConfig
   void* callback_context;
 } RdmnetBrokerRegisterConfig;
 
-void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo* broker_info);
+void rdmnet_disc_init_broker_info(RdmnetBrokerDiscInfo* broker_info);
 
-etcpal_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
-                                           int* platform_specific_error);
-etcpal_error_t rdmnetdisc_change_monitored_scope(rdmnet_scope_monitor_t handle,
-                                                 const RdmnetScopeMonitorConfig* new_config);
-void rdmnetdisc_stop_monitoring(rdmnet_scope_monitor_t handle);
-void rdmnetdisc_stop_monitoring_all();
+etcpal_error_t rdmnet_disc_start_monitoring(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
+                                            int* platform_specific_error);
+void rdmnet_disc_stop_monitoring(rdmnet_scope_monitor_t handle);
+void rdmnet_disc_stop_monitoring_all(void);
 
-etcpal_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config, rdmnet_registered_broker_t* handle);
-void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle);
+etcpal_error_t rdmnet_disc_register_broker(const RdmnetBrokerRegisterConfig* config,
+                                           rdmnet_registered_broker_t* handle);
+void rdmnet_disc_unregister_broker(rdmnet_registered_broker_t handle);
 
 #ifdef __cplusplus
 }

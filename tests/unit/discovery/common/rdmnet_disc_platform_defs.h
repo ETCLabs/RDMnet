@@ -17,21 +17,21 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef RDMNET_PRIVATE_DISCOVERY_H_
-#define RDMNET_PRIVATE_DISCOVERY_H_
+// A fake rdmnet_disc_platform_defs.h file for testing.
 
-#include "rdmnet/core/discovery.h"
+#define RDMNET_DISC_SERVICE_NAME_MAX_LENGTH 20
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+typedef struct RdmnetDiscoveredBrokerPlatformData
+{
+  int placeholder;
+} RdmnetDiscoveredBrokerPlatformData;
 
-etcpal_error_t rdmnet_disc_init(void);
-void rdmnet_disc_deinit(void);
-void rdmnet_disc_tick(void);
+typedef struct RdmnetScopeMonitorPlatformData
+{
+  int placeholder;
+} RdmnetScopeMonitorPlatformData;
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* RDMNET_PRIVATE_DISCOVERY_H_ */
+typedef struct RdmnetBrokerRegisterPlatformData
+{
+  int placeholder;
+} RdmnetBrokerRegisterPlatformData;

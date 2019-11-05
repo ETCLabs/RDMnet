@@ -16,10 +16,11 @@
  * This file is a part of RDMnet. For more information, go to:
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
+
 #include <string>
 #include <algorithm>
 
-#include "rdmnet/private/discovery.h"
+#include "rdmnet/discovery/common.h"
 #include "rdmnet/core/util.h"
 #include "rdmnet_mock/core.h"
 #include "rdmnet_mock/private/core.h"
@@ -28,6 +29,7 @@
 
 #include "gtest/gtest.h"
 #include "fff.h"
+
 DEFINE_FFF_GLOBALS;
 
 // Mocking the dns_sd.h interface
@@ -97,7 +99,7 @@ protected:
 
     FFF_RESET_HISTORY();
 
-    init_result_ = rdmnetdisc_init();
+    init_result_ = rdmnet_disc_init();
     rdmnet_core_initialized_fake.return_val = true;
 
     CreateDefaultBroker();
@@ -106,7 +108,7 @@ protected:
   void TearDown() override
   {
     TXTRecordDeallocate(&txt_record_);
-    rdmnetdisc_deinit();
+    rdmnet_disc_deinit();
   }
 
   void MonitorDefaultScope();
@@ -147,7 +149,7 @@ void TestDiscoveryBonjour::MonitorDefaultScope()
 
   // Assign a socket value to our service browse operation
 
-  // Set up the fakes called by rdmnetdisc_start_monitoring
+  // Set up the fakes called by rdmnet_disc_start_monitoring
   DNSServiceRefSockFD_fake.return_val = DEFAULT_MONITOR_SOCKET_VAL;
   DNSServiceBrowse_fake.custom_fake = [](DNSServiceRef* ref, DNSServiceFlags, uint32_t, const char*, const char*,
                                          DNSServiceBrowseReply, void*) -> DNSServiceErrorType {
@@ -156,7 +158,7 @@ void TestDiscoveryBonjour::MonitorDefaultScope()
   };
 
   int platform_specific_err;
-  ASSERT_EQ(kEtcPalErrOk, rdmnetdisc_start_monitoring(&config, &monitor_handle_, &platform_specific_err));
+  ASSERT_EQ(kEtcPalErrOk, rdmnet_disc_start_monitoring(&config, &monitor_handle_, &platform_specific_err));
   ASSERT_EQ(DNSServiceBrowse_fake.call_count, 1u);
   ASSERT_GE(DNSServiceRefSockFD_fake.call_count, 1u);
   ASSERT_EQ(etcpal_poll_add_socket_fake.call_count, 1u);
@@ -207,7 +209,7 @@ TEST_F(TestDiscoveryBonjour, InitWorks)
   ASSERT_EQ(init_result_, kEtcPalErrOk);
 }
 
-// Test that rdmnetdisc_register_broker() behaves properly with invalid input data.
+// Test that rdmnet_disc_register_broker() behaves properly with invalid input data.
 TEST_F(TestDiscoveryBonjour, RegisterBrokerInvalidCallsFail)
 {
   RdmnetBrokerRegisterConfig config;
@@ -220,12 +222,12 @@ TEST_F(TestDiscoveryBonjour, RegisterBrokerInvalidCallsFail)
   config.callback_context = this;
 
   rdmnet_registered_broker_t handle;
-  ASSERT_NE(kEtcPalErrOk, rdmnetdisc_register_broker(&config, &handle));
+  ASSERT_NE(kEtcPalErrOk, rdmnet_disc_register_broker(&config, &handle));
   ASSERT_EQ(regcb_broker_registered_fake.call_count, 0u);
   ASSERT_EQ(DNSServiceRegister_fake.call_count, 0u);
 }
 
-// Test that rdmnetdisc_tick() functions properly in the presence of various states of monitored
+// Test that rdmnet_disc_tick() functions properly in the presence of various states of monitored
 // scopes.
 TEST_F(TestDiscoveryBonjour, TickHandlesSocketActivity)
 {
@@ -235,7 +237,7 @@ TEST_F(TestDiscoveryBonjour, TickHandlesSocketActivity)
   etcpal_poll_wait_fake.return_val = kEtcPalErrTimedOut;
   DNSServiceProcessResult_fake.return_val = kDNSServiceErr_NoError;
 
-  rdmnetdisc_tick();
+  rdmnet_disc_tick();
   ASSERT_EQ(etcpal_poll_wait_fake.call_count, 1u);
   ASSERT_EQ(DNSServiceProcessResult_fake.call_count, 0u);
 
@@ -252,7 +254,7 @@ TEST_F(TestDiscoveryBonjour, TickHandlesSocketActivity)
     }
     return kEtcPalErrOk;
   };
-  rdmnetdisc_tick();
+  rdmnet_disc_tick();
   ASSERT_EQ(DNSServiceProcessResult_fake.call_count, 1u);
   ASSERT_EQ(DNSServiceProcessResult_fake.arg0_history[0], DEFAULT_MONITOR_DNS_REF);
 }
@@ -317,7 +319,7 @@ TEST_F(TestDiscoveryBonjour, DiscoveredBrokerCleanedUpAfterResolve)
   //  etcpal_poll_fake.return_val = 0;
   //  DNSServiceProcessResult_fake.return_val = kDNSServiceErr_NoError;
   //
-  //  rdmnetdisc_tick();
+  //  rdmnet_disc_tick();
   //  ASSERT_EQ(etcpal_poll_fake.call_count, 1u);
   //  ASSERT_EQ(etcpal_poll_fake.arg1_history[0], 1u);
   //  ASSERT_EQ(DNSServiceProcessResult_fake.call_count, 0u);

@@ -24,9 +24,12 @@
 #define RDMNET_DISCOVERY_COMMON_H_
 
 #include "etcpal/timer.h"
-#include "rdmnet/core/discovery.h"
+#include "rdmnet/private/discovery.h"
+#include "rdmnet_disc_platform_defs.h"
 
-#include "rdmnetdisc_platform_defs.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // How long we monitor the registered scope before doing the actual DNS registration of a broker.
 #define BROKER_REG_QUERY_TIMEOUT 3000
@@ -36,7 +39,7 @@ typedef struct RdmnetScopeMonitorRef RdmnetScopeMonitorRef;
 typedef struct DiscoveredBroker DiscoveredBroker;
 struct DiscoveredBroker
 {
-  char full_service_name[RDMNETDISC_SERVICE_NAME_MAX_LENGTH];
+  char full_service_name[RDMNET_DISC_SERVICE_NAME_MAX_LENGTH];
   RdmnetBrokerDiscInfo info;
   RdmnetScopeMonitorRef* monitor_ref;
   RdmnetDiscoveredBrokerPlatformData platform_data;
@@ -72,7 +75,7 @@ struct RdmnetBrokerRegisterRef
   RdmnetBrokerRegisterConfig config;
   rdmnet_scope_monitor_t scope_monitor_handle;
   broker_state_t state;
-  char full_service_name[RDMNETDISC_SERVICE_NAME_MAX_LENGTH];
+  char full_service_name[RDMNET_DISC_SERVICE_NAME_MAX_LENGTH];
 
   EtcPalTimer query_timer;
   bool query_timeout_expired;
@@ -82,22 +85,34 @@ struct RdmnetBrokerRegisterRef
   RdmnetBrokerRegisterRef* next;
 };
 
-extern etcpal_mutex_t rdmnetdisc_lock;
-#define RDMNET_DISC_LOCK() etcpal_mutex_take(&rdmnetdisc_lock)
-#define RDMNET_DISC_UNLOCK() etcpal_mutex_give(&rdmnetdisc_lock)
+/**************************************************************************************************
+ * Access to the global discovery lock
+ *************************************************************************************************/
 
-// Platform-specific functions called by discovery API functions
-etcpal_error_t rdmnetdisc_platform_init(void);
-void rdmnetdisc_platform_deinit(void);
-void rdmnetdisc_platform_tick(void);
-etcpal_error_t rdmnetdisc_platform_start_monitoring(const RdmnetScopeMonitorConfig* config,
-                                                    RdmnetScopeMonitorRef* handle, int* platform_specific_error);
-void rdmnetdisc_platform_stop_monitoring(RdmnetScopeMonitorRef* handle);
-etcpal_error_t rdmnetdisc_platform_register_broker(const RdmnetBrokerDiscInfo* info,
-                                                   RdmnetBrokerRegisterRef* broker_ref, int* platform_specific_error);
-void rdmnetdisc_platform_unregister_broker(rdmnet_registered_broker_t handle);
+extern etcpal_mutex_t rdmnet_disc_lock;
+#define RDMNET_DISC_LOCK() etcpal_mutex_take(&rdmnet_disc_lock)
+#define RDMNET_DISC_UNLOCK() etcpal_mutex_give(&rdmnet_disc_lock)
 
-RdmnetScopeMonitorRef* scope_monitor_lookup_by_platform_data(const RdmnetScopeMonitorPlatformData* data);
+/**************************************************************************************************
+ * Platform-specific functions called by discovery API functions
+ *************************************************************************************************/
+
+etcpal_error_t rdmnet_disc_platform_init(void);
+void rdmnet_disc_platform_deinit(void);
+void rdmnet_disc_platform_tick(void);
+etcpal_error_t rdmnet_disc_platform_start_monitoring(const RdmnetScopeMonitorConfig* config,
+                                                     RdmnetScopeMonitorRef* handle, int* platform_specific_error);
+void rdmnet_disc_platform_stop_monitoring(RdmnetScopeMonitorRef* handle);
+etcpal_error_t rdmnet_disc_platform_register_broker(const RdmnetBrokerDiscInfo* info,
+                                                    RdmnetBrokerRegisterRef* broker_ref, int* platform_specific_error);
+void rdmnet_disc_platform_unregister_broker(rdmnet_registered_broker_t handle);
+
+void discovered_broker_free_platform_resources(DiscoveredBroker* db);
+
+/**************************************************************************************************
+ * Platform-neutral functions callable from both common.c and the platform-specific sources
+ *************************************************************************************************/
+
 bool scope_monitor_ref_is_valid(const RdmnetScopeMonitorRef* ref);
 bool broker_register_ref_is_valid(const RdmnetBrokerRegisterRef* ref);
 
@@ -111,5 +126,9 @@ void discovered_broker_delete(DiscoveredBroker* db);
 void notify_scope_monitor_error(RdmnetScopeMonitorRef* ref, int platform_specific_error);
 void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info);
 void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* RDMNET_DISCOVERY_COMMON_H_ */
