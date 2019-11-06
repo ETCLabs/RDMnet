@@ -23,10 +23,11 @@
 #include "gmock/gmock.h"
 #include "rdmnet/core/util.h"
 #include "rdmnet_mock/core/discovery.h"
+#include "test_operators.h"
 
 extern "C" {
 etcpal_error_t rdmnet_disc_register_broker_and_set_handle(const RdmnetBrokerRegisterConfig* config,
-                                                         rdmnet_registered_broker_t* handle);
+                                                          rdmnet_registered_broker_t* handle);
 }
 
 class MockBrokerDiscoveryNotify : public BrokerDiscoveryNotify
@@ -96,7 +97,7 @@ const rdmnet_registered_broker_t TestBrokerDiscovery::kBrokerRegisterHandle =
 TestBrokerDiscovery* TestBrokerDiscovery::instance = nullptr;
 
 extern "C" etcpal_error_t rdmnet_disc_register_broker_and_set_handle(const RdmnetBrokerRegisterConfig* config,
-                                                                    rdmnet_registered_broker_t* handle)
+                                                                     rdmnet_registered_broker_t* handle)
 {
   RDMNET_UNUSED_ARG(config);
 
@@ -159,28 +160,6 @@ TEST_F(TestBrokerDiscovery, ServiceNameChangeIsHandled)
   EXPECT_EQ(disc_mgr_.scope(), settings_.scope);
   EXPECT_EQ(disc_mgr_.requested_service_name(), settings_.dns.service_instance_name);
   EXPECT_EQ(disc_mgr_.assigned_service_name(), kActualServiceName);
-}
-
-bool operator==(const RdmnetBrokerDiscInfo& a, const RdmnetBrokerDiscInfo& b)
-{
-  if ((a.cid == b.cid) && (std::strncmp(a.service_name, b.service_name, E133_SERVICE_NAME_STRING_PADDED_LENGTH) == 0) &&
-      (a.port == b.port) && (std::strncmp(a.scope, b.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0) &&
-      (std::strncmp(a.model, b.model, E133_MODEL_STRING_PADDED_LENGTH) == 0) &&
-      (std::strncmp(a.manufacturer, b.manufacturer, E133_MANUFACTURER_STRING_PADDED_LENGTH) == 0))
-  {
-    // Check the BrokerListenAddrs
-    BrokerListenAddr* a_addr = a.listen_addr_list;
-    BrokerListenAddr* b_addr = b.listen_addr_list;
-    while (a_addr && b_addr)
-    {
-      if (!(a_addr->addr == b_addr->addr) || (a_addr->next && !b_addr->next) || (!b_addr->next && a_addr->next))
-      {
-        return false;
-      }
-    }
-    return true;
-  }
-  return false;
 }
 
 TEST_F(TestBrokerDiscovery, BrokerFoundIsForwarded)

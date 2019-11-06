@@ -20,12 +20,14 @@
 #include <string>
 #include <algorithm>
 
+#include "etcpal/cpp/inet.h"
 #include "rdmnet/discovery/common.h"
 #include "rdmnet/core/util.h"
 #include "rdmnet_mock/core.h"
 #include "rdmnet_mock/private/core.h"
 #include "dns_sd.h"
 #include "etcpal_mock/socket.h"
+#include "test_operators.h"
 
 #include "gtest/gtest.h"
 #include "fff.h"
@@ -74,7 +76,26 @@ static void set_monitor_callbacks(RdmnetScopeMonitorCallbacks* callbacks)
 
 class TestDiscoveryBonjour : public ::testing::Test
 {
+public:
+  // clang-format off
+  RdmnetBrokerDiscInfo default_discovered_broker_ =
+  {
+    {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}},
+    "Test Service Name",
+    8888,
+    nullptr,
+    "default",
+    "Test Broker",
+    "ETC"
+  };
+  // clang-format on
 protected:
+  std::string default_full_service_name_;
+  etcpal_error_t init_result_;
+  TXTRecordRef txt_record_;
+  rdmnet_scope_monitor_t monitor_handle_;
+  std::unique_ptr<BrokerListenAddr> default_listen_addr_;
+
   void SetUp() override
   {
     // Reset fff state
@@ -111,64 +132,17 @@ protected:
     rdmnet_disc_deinit();
   }
 
-  void MonitorDefaultScope();
   void CreateDefaultBroker();
-
-  // clang-format off
-  RdmnetBrokerDiscInfo default_discovered_broker_ =
-  {
-    {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}},
-    "Test Service Name",
-    8888,
-    nullptr,
-    "default",
-    "Test Broker",
-    "ETC"
-  };
-  // clang-format on
-  std::string default_full_service_name_;
-  etcpal_error_t init_result_;
-  TXTRecordRef txt_record_;
-  rdmnet_scope_monitor_t monitor_handle_;
-
-  std::unique_ptr<BrokerListenAddr> default_listen_addr_;
+  DNSServiceBrowseReply MonitorDefaultScope();
+  DNSServiceResolveReply DriveBrowseCallback(DNSServiceBrowseReply browse_cb);
+  DNSServiceGetAddrInfoReply DriveResolveCallback(DNSServiceResolveReply resolve_cb);
+  void DriveGetAddrInfoCallback(DNSServiceGetAddrInfoReply gai_cb);
 };
-
-// These need to be macros because of the way we are using non-capturing lambdas in various tests
-#define DEFAULT_MONITOR_SOCKET_VAL 1
-// This one needs to be a macro because of C function pointer/lambda restrictions
-#define DEFAULT_MONITOR_DNS_REF reinterpret_cast<DNSServiceRef>(2)
-
-void TestDiscoveryBonjour::MonitorDefaultScope()
-{
-  RdmnetScopeMonitorConfig config;
-  rdmnet_safe_strncpy(config.scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH);
-  rdmnet_safe_strncpy(config.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
-  set_monitor_callbacks(&config.callbacks);
-  config.callback_context = this;
-
-  // Assign a socket value to our service browse operation
-
-  // Set up the fakes called by rdmnet_disc_start_monitoring
-  DNSServiceRefSockFD_fake.return_val = DEFAULT_MONITOR_SOCKET_VAL;
-  DNSServiceBrowse_fake.custom_fake = [](DNSServiceRef* ref, DNSServiceFlags, uint32_t, const char*, const char*,
-                                         DNSServiceBrowseReply, void*) -> DNSServiceErrorType {
-    *ref = DEFAULT_MONITOR_DNS_REF;
-    return kDNSServiceErr_NoError;
-  };
-
-  int platform_specific_err;
-  ASSERT_EQ(kEtcPalErrOk, rdmnet_disc_start_monitoring(&config, &monitor_handle_, &platform_specific_err));
-  ASSERT_EQ(DNSServiceBrowse_fake.call_count, 1u);
-  ASSERT_GE(DNSServiceRefSockFD_fake.call_count, 1u);
-  ASSERT_EQ(etcpal_poll_add_socket_fake.call_count, 1u);
-  ASSERT_EQ(etcpal_poll_add_socket_fake.arg2_history[0], ETCPAL_POLL_IN);
-}
 
 void TestDiscoveryBonjour::CreateDefaultBroker()
 {
   default_listen_addr_ = std::make_unique<BrokerListenAddr>();
-  ETCPAL_IP_SET_V4_ADDRESS(&default_listen_addr_->addr, 0x0a650101);
+  default_listen_addr->addr = etcpal::IpAddr::FromString("10.101.1.1").get();
   default_listen_addr_->next = nullptr;
   default_discovered_broker_.listen_addr_list = default_listen_addr_.get();
 
@@ -204,9 +178,85 @@ void TestDiscoveryBonjour::CreateDefaultBroker()
   default_full_service_name_ += E133_DEFAULT_DOMAIN;
 }
 
+// These need to be macros because of the way we are using non-capturing lambdas in various tests
+#define DEFAULT_MONITOR_SOCKET_VAL 1
+// This one needs to be a macro because of C function pointer/lambda restrictions
+#define DEFAULT_MONITOR_DNS_REF reinterpret_cast<DNSServiceRef>(2)
+
+DNSServiceBrowseReply TestDiscoveryBonjour::MonitorDefaultScope()
+{
+  RdmnetScopeMonitorConfig config;
+  rdmnet_safe_strncpy(config.scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH);
+  rdmnet_safe_strncpy(config.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
+  set_monitor_callbacks(&config.callbacks);
+  config.callback_context = this;
+
+  // Assign a socket value to our service browse operation
+
+  auto previous_call_count = DNSServiceBrowse_fake.call_count;
+
+  // Set up the fakes called by rdmnet_disc_start_monitoring
+  DNSServiceRefSockFD_fake.return_val = DEFAULT_MONITOR_SOCKET_VAL;
+  DNSServiceBrowse_fake.custom_fake = [](DNSServiceRef* ref, DNSServiceFlags, uint32_t, const char*, const char*,
+                                         DNSServiceBrowseReply, void*) -> DNSServiceErrorType {
+    *ref = DEFAULT_MONITOR_DNS_REF;
+    return kDNSServiceErr_NoError;
+  };
+
+  int platform_specific_err;
+  EXPECT_EQ(kEtcPalErrOk, rdmnet_disc_start_monitoring(&config, &monitor_handle_, &platform_specific_err));
+  EXPECT_EQ(DNSServiceBrowse_fake.call_count, previous_call_count + 1);
+
+  return DNSServiceBrowse_fake.arg5_val;
+}
+
+DNSServiceResolveReply TestDiscoveryBonjour::DriveBrowseCallback(DNSServiceBrowseReply browse_cb)
+{
+  auto previous_call_count = DNSServiceResolve_fake.call_count;
+
+  DNSServiceResolve_fake.custom_fake = [](DNSServiceRef* ref, DNSServiceFlags, uint32_t, const char*, const char*,
+                                          const char*, DNSServiceResolveReply, void*) -> DNSServiceErrorType {
+    *ref = DEFAULT_MONITOR_DNS_REF;
+    return kDNSServiceErr_NoError;
+  };
+  browse_cb(DEFAULT_MONITOR_DNS_REF, kDNSServiceFlagsAdd, 0, kDNSServiceErr_NoError,
+            default_discovered_broker_.service_name, E133_DNSSD_SRV_TYPE, E133_DEFAULT_DOMAIN,
+            DNSServiceBrowse_fake.arg6_val);
+  EXPECT_EQ(DNSServiceResolve_fake.call_count, previous_call_count + 1);
+  return DNSServiceResolve_fake.arg6_val;
+}
+
+DNSServiceGetAddrInfoReply TestDiscoveryBonjour::DriveResolveCallback(DNSServiceResolveReply resolve_cb)
+{
+  auto previous_call_count = DNSServiceGetAddrInfo_fake.call_count;
+
+  DNSServiceGetAddrInfo_fake.custom_fake = [](DNSServiceRef* ref, DNSServiceFlags, uint32_t, DNSServiceProtocol,
+                                              const char*, DNSServiceGetAddrInfoReply, void*) -> DNSServiceErrorType {
+    *ref = DEFAULT_MONITOR_DNS_REF;
+    return kDNSServiceErr_NoError;
+  };
+  resolve_cb(DEFAULT_MONITOR_DNS_REF, 0, 0, kDNSServiceErr_NoError, default_full_service_name_.c_str(), "testhost",
+             htons(default_discovered_broker_.port), TXTRecordGetLength(&txt_record_),
+             reinterpret_cast<const unsigned char*>(TXTRecordGetBytesPtr(&txt_record_)),
+             DNSServiceResolve_fake.arg7_val);
+  EXPECT_EQ(DNSServiceGetAddrInfo_fake.call_count, previous_call_count + 1);
+  return DNSServiceGetAddrInfo_fake.arg5_val;
+}
+
+void TestDiscoveryBonjour::DriveGetAddrInfoCallback(DNSServiceGetAddrInfoReply gai_cb)
+{
+  struct sockaddr address;
+  EtcPalSockAddr discovered_addr;
+  discovered_addr.ip = default_listen_addr_->addr;
+  discovered_addr.port = 0;
+  sockaddr_etcpal_to_os(&discovered_addr, &address);
+  gai_cb(DEFAULT_MONITOR_DNS_REF, 0, 0, kDNSServiceErr_NoError, "testhost", &address, 10,
+         DNSServiceGetAddrInfo_fake.arg6_val);
+}
+
 TEST_F(TestDiscoveryBonjour, InitWorks)
 {
-  ASSERT_EQ(init_result_, kEtcPalErrOk);
+  EXPECT_EQ(init_result_, kEtcPalErrOk);
 }
 
 // Test that rdmnet_disc_register_broker() behaves properly with invalid input data.
@@ -222,9 +272,9 @@ TEST_F(TestDiscoveryBonjour, RegisterBrokerInvalidCallsFail)
   config.callback_context = this;
 
   rdmnet_registered_broker_t handle;
-  ASSERT_NE(kEtcPalErrOk, rdmnet_disc_register_broker(&config, &handle));
-  ASSERT_EQ(regcb_broker_registered_fake.call_count, 0u);
-  ASSERT_EQ(DNSServiceRegister_fake.call_count, 0u);
+  EXPECT_NE(kEtcPalErrOk, rdmnet_disc_register_broker(&config, &handle));
+  EXPECT_EQ(regcb_broker_registered_fake.call_count, 0u);
+  EXPECT_EQ(DNSServiceRegister_fake.call_count, 0u);
 }
 
 // Test that rdmnet_disc_tick() functions properly in the presence of various states of monitored
@@ -233,13 +283,17 @@ TEST_F(TestDiscoveryBonjour, TickHandlesSocketActivity)
 {
   MonitorDefaultScope();
 
+  EXPECT_GE(DNSServiceRefSockFD_fake.call_count, 1u);
+  EXPECT_EQ(etcpal_poll_add_socket_fake.call_count, 1u);
+  EXPECT_EQ(etcpal_poll_add_socket_fake.arg2_history[0], ETCPAL_POLL_IN);
+
   // Tick should call etcpal_poll_wait
   etcpal_poll_wait_fake.return_val = kEtcPalErrTimedOut;
   DNSServiceProcessResult_fake.return_val = kDNSServiceErr_NoError;
 
   rdmnet_disc_tick();
-  ASSERT_EQ(etcpal_poll_wait_fake.call_count, 1u);
-  ASSERT_EQ(DNSServiceProcessResult_fake.call_count, 0u);
+  EXPECT_EQ(etcpal_poll_wait_fake.call_count, 1u);
+  EXPECT_EQ(DNSServiceProcessResult_fake.call_count, 0u);
 
   // If a socket has activity, DNSServiceProcessResult should be called with that socket.
   etcpal_poll_wait_fake.custom_fake = [](EtcPalPollContext* context, EtcPalPollEvent* event, int) -> etcpal_error_t {
@@ -255,65 +309,53 @@ TEST_F(TestDiscoveryBonjour, TickHandlesSocketActivity)
     return kEtcPalErrOk;
   };
   rdmnet_disc_tick();
-  ASSERT_EQ(DNSServiceProcessResult_fake.call_count, 1u);
-  ASSERT_EQ(DNSServiceProcessResult_fake.arg0_history[0], DEFAULT_MONITOR_DNS_REF);
+  EXPECT_EQ(DNSServiceProcessResult_fake.call_count, 1u);
+  EXPECT_EQ(DNSServiceProcessResult_fake.arg0_history[0], DEFAULT_MONITOR_DNS_REF);
+}
+
+TEST_F(TestDiscoveryBonjour, NormalResolveWorksCorrectly)
+{
+  // Drive the state machine by calling the appropriate callbacks
+  auto browse_cb = MonitorDefaultScope();
+  auto resolve_cb = DriveBrowseCallback(browse_cb);
+
+  ASSERT_EQ(DNSServiceResolve_fake.call_count, 1u);
+  EXPECT_EQ(DNSServiceResolve_fake.arg2_val, 0u);
+  EXPECT_STREQ(DNSServiceResolve_fake.arg3_val, default_discovered_broker_.service_name);
+  EXPECT_STREQ(DNSServiceResolve_fake.arg4_val, E133_DNSSD_SRV_TYPE);
+  EXPECT_STREQ(DNSServiceResolve_fake.arg5_val, E133_DEFAULT_DOMAIN);
+
+  // DNSServiceResolveReply
+  auto gai_cb = DriveResolveCallback(resolve_cb);
+
+  ASSERT_EQ(DNSServiceGetAddrInfo_fake.call_count, 1u);
+  EXPECT_EQ(DNSServiceGetAddrInfo_fake.arg2_val, 0u);
+  EXPECT_STREQ(DNSServiceGetAddrInfo_fake.arg4_val, "testhost");
+
+  monitorcb_broker_found_fake.custom_fake = [](rdmnet_scope_monitor_t, const RdmnetBrokerDiscInfo* broker_info,
+                                               void* context) {
+    TestDiscoveryBonjour* test_fixture = static_cast<TestDiscoveryBonjour*>(context);
+    ASSERT_TRUE(test_fixture != nullptr);
+    ASSERT_TRUE(broker_info != nullptr);
+    EXPECT_EQ(test_fixture->default_discovered_broker_, *broker_info);
+  };
+  DriveGetAddrInfoCallback(gai_cb);
+
+  ASSERT_EQ(monitorcb_broker_found_fake.call_count, 1u);
+  EXPECT_EQ(monitorcb_broker_found_fake.arg0_val, monitor_handle_);
 }
 
 // Test that a discovered broker is cleaned up properly after going through the entire resolution
 // process.
 TEST_F(TestDiscoveryBonjour, DiscoveredBrokerCleanedUpAfterResolve)
 {
-  MonitorDefaultScope();
-
   // Drive the state machine by calling the appropriate callbacks
-
-  // DNSServiceBrowseReply
-  DNSServiceResolve_fake.custom_fake = [](DNSServiceRef* ref, DNSServiceFlags, uint32_t, const char*, const char*,
-                                          const char*, DNSServiceResolveReply, void*) -> DNSServiceErrorType {
-    *ref = DEFAULT_MONITOR_DNS_REF;
-    return kDNSServiceErr_NoError;
-  };
-  DNSServiceBrowseReply browse_cb = DNSServiceBrowse_fake.arg5_val;
-  browse_cb(DEFAULT_MONITOR_DNS_REF, kDNSServiceFlagsAdd, 0, kDNSServiceErr_NoError,
-            default_discovered_broker_.service_name, E133_DNSSD_SRV_TYPE, E133_DEFAULT_DOMAIN,
-            DNSServiceBrowse_fake.arg6_val);
-
-  ASSERT_EQ(DNSServiceResolve_fake.call_count, 1u);
-  ASSERT_EQ(DNSServiceResolve_fake.arg2_val, 0u);
-  ASSERT_STREQ(DNSServiceResolve_fake.arg3_val, default_discovered_broker_.service_name);
-  ASSERT_STREQ(DNSServiceResolve_fake.arg4_val, E133_DNSSD_SRV_TYPE);
-  ASSERT_STREQ(DNSServiceResolve_fake.arg5_val, E133_DEFAULT_DOMAIN);
-
-  // DNSServiceResolveReply
-  DNSServiceGetAddrInfo_fake.custom_fake = [](DNSServiceRef* ref, DNSServiceFlags, uint32_t, DNSServiceProtocol,
-                                              const char*, DNSServiceGetAddrInfoReply, void*) -> DNSServiceErrorType {
-    *ref = DEFAULT_MONITOR_DNS_REF;
-    return kDNSServiceErr_NoError;
-  };
-  DNSServiceResolveReply resolve_cb = DNSServiceResolve_fake.arg6_val;
-  resolve_cb(DEFAULT_MONITOR_DNS_REF, 0, 0, kDNSServiceErr_NoError, default_full_service_name_.c_str(), "testhost",
-             default_discovered_broker_.port, TXTRecordGetLength(&txt_record_),
-             reinterpret_cast<const unsigned char*>(TXTRecordGetBytesPtr(&txt_record_)),
-             DNSServiceResolve_fake.arg7_val);
-
-  ASSERT_EQ(DNSServiceRefDeallocate_fake.call_count, 1u);
-  ASSERT_EQ(DNSServiceGetAddrInfo_fake.call_count, 1u);
-  ASSERT_EQ(DNSServiceGetAddrInfo_fake.arg2_val, 0u);
-  ASSERT_STREQ(DNSServiceGetAddrInfo_fake.arg4_val, "testhost");
-
-  // DNSServiceGetAddrInfoReply
-  DNSServiceGetAddrInfoReply gai_cb = DNSServiceGetAddrInfo_fake.arg5_val;
-  struct sockaddr address;
-  EtcPalSockAddr discovered_addr;
-  discovered_addr.ip = default_listen_addr_->addr;
-  discovered_addr.port = 0;
-  sockaddr_etcpal_to_os(&discovered_addr, &address);
-  gai_cb(DEFAULT_MONITOR_DNS_REF, 0, 0, kDNSServiceErr_NoError, "testhost", &address, 10,
-         DNSServiceGetAddrInfo_fake.arg6_val);
-
-  ASSERT_EQ(DNSServiceRefDeallocate_fake.call_count, 2u);
-  ASSERT_EQ(monitorcb_broker_found_fake.call_count, 1u);
-  ASSERT_EQ(monitorcb_broker_found_fake.arg0_val, monitor_handle_);
+  auto browse_cb = MonitorDefaultScope();
+  auto resolve_cb = DriveBrowseCallback(browse_cb);
+  auto gai_cb = DriveResolveCallback(resolve_cb);
+  EXPECT_EQ(DNSServiceRefDeallocate_fake.call_count, 1u);
+  DriveGetAddrInfoCallback(gai_cb);
+  EXPECT_EQ(DNSServiceRefDeallocate_fake.call_count, 2u);
 
   // Make sure we are back to only one socket in the tick thread
   //  etcpal_poll_fake.return_val = 0;

@@ -6,7 +6,6 @@ add_executable(test_discovery_common
   ${RDMNET_SRC}/rdmnet/discovery/common.c
 
   ${RDMNET_INCLUDE}/rdmnet_mock/core.h
-  ${RDMNET_INCLUDE}/rdmnet_mock/core.h
   ${RDMNET_SRC}/rdmnet/core/util.c
 )
 target_include_directories(test_discovery_common PRIVATE ${RDMNET_INCLUDE} ${RDMNET_SRC} ${CMAKE_CURRENT_LIST_DIR})

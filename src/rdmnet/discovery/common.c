@@ -264,6 +264,8 @@ etcpal_error_t rdmnet_disc_register_broker(const RdmnetBrokerRegisterConfig* con
       {
         // We wait for the timeout to make sure there are no other brokers around with the same
         // scope.
+        registered_broker_insert(broker_ref);
+        broker_ref->state = kBrokerStateQuerying;
         broker_ref->scope_monitor_handle->broker_handle = broker_ref;
         etcpal_timer_start(&broker_ref->query_timer, BROKER_REG_QUERY_TIMEOUT);
         *handle = broker_ref;
@@ -478,7 +480,9 @@ RdmnetBrokerRegisterRef* registered_broker_new(const RdmnetBrokerRegisterConfig*
     new_rb->scope_monitor_handle = NULL;
     new_rb->state = kBrokerStateNotRegistered;
     new_rb->full_service_name[0] = '\0';
+    new_rb->query_timeout_expired = false;
     memset(&new_rb->platform_data, 0, sizeof(RdmnetBrokerRegisterPlatformData));
+    new_rb->next = NULL;
   }
   return new_rb;
 }

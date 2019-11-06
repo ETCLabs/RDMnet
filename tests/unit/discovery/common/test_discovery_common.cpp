@@ -24,6 +24,7 @@
 #include <string>
 #include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/uuid.h"
+#include "etcpal_mock/timer.h"
 #include "gtest/gtest.h"
 #include "fff.h"
 
@@ -94,9 +95,11 @@ protected:
   RdmnetScopeMonitorConfig default_monitor_config_{};
   RdmnetBrokerRegisterConfig default_register_config_{};
   std::unique_ptr<BrokerListenAddr> default_listen_addr_;
+  bool deinitted_during_test_{false};
 
   TestDiscoveryCommon()
   {
+    etcpal_timer_reset_all_fakes();
     TestDiscoveryCommonResetAllFakes();
     rdmnet_core_initialized_fake.return_val = true;
 
@@ -124,7 +127,25 @@ protected:
     default_register_config_.callback_context = this;
   }
 
-  ~TestDiscoveryCommon() { rdmnet_disc_deinit(); }
+  ~TestDiscoveryCommon()
+  {
+    if (!deinitted_during_test_)
+      rdmnet_disc_deinit();
+  }
+
+  rdmnet_registered_broker_t RegisterBroker()
+  {
+    rdmnet_registered_broker_t broker_handle;
+    EXPECT_EQ(rdmnet_disc_register_broker(&default_register_config_, &broker_handle), kEtcPalErrOk);
+
+    // Advance time past the query timeout
+    etcpal_getms_fake.return_val += BROKER_REG_QUERY_TIMEOUT + 1000;
+    rdmnet_disc_tick();
+
+    EXPECT_EQ(rdmnet_disc_platform_register_broker_fake.call_count, 1u);
+    EXPECT_EQ(rdmnet_disc_platform_register_broker_fake.arg1_val, broker_handle);
+    return broker_handle;
+  }
 };
 
 TEST_F(TestDiscoveryCommon, InitBrokerInfoTouchesAllFields)
@@ -164,4 +185,75 @@ TEST_F(TestDiscoveryCommon, StartMonitoringWorksWithNormalArgs)
 
   EXPECT_EQ(rdmnet_disc_start_monitoring(&default_monitor_config_, &monitor_handle, &platform_err), kEtcPalErrOk);
   EXPECT_EQ(rdmnet_disc_platform_start_monitoring_fake.call_count, 1u);
+}
+
+TEST_F(TestDiscoveryCommon, BrokerRegisterSucceedsUnderNormalConditions)
+{
+  rdmnet_registered_broker_t broker_handle;
+  ASSERT_EQ(rdmnet_disc_register_broker(&default_register_config_, &broker_handle), kEtcPalErrOk);
+
+  // Make sure broker is not registered before query timeout expires
+  rdmnet_disc_tick();
+  ASSERT_EQ(rdmnet_disc_platform_register_broker_fake.call_count, 0u);
+
+  // Advance time past the query timeout
+  etcpal_getms_fake.return_val += BROKER_REG_QUERY_TIMEOUT + 1000;
+  rdmnet_disc_tick();
+
+  EXPECT_EQ(rdmnet_disc_platform_register_broker_fake.call_count, 1u);
+  EXPECT_EQ(rdmnet_disc_platform_register_broker_fake.arg1_val, broker_handle);
+}
+
+TEST_F(TestDiscoveryCommon, BrokerUnregisterCallsPlatformCode)
+{
+  auto broker_handle = RegisterBroker();
+
+  ASSERT_EQ(rdmnet_disc_platform_unregister_broker_fake.call_count, 0u);
+
+  rdmnet_disc_unregister_broker(broker_handle);
+  EXPECT_EQ(rdmnet_disc_platform_unregister_broker_fake.call_count, 1u);
+}
+
+TEST_F(TestDiscoveryCommon, BrokerNotRegisteredWhenConflictingBrokersPresent)
+{
+  rdmnet_registered_broker_t broker_handle;
+  ASSERT_EQ(rdmnet_disc_register_broker(&default_register_config_, &broker_handle), kEtcPalErrOk);
+
+  // Add a conflicting broker
+  DiscoveredBroker* db = discovered_broker_new("Other Test Broker", "Other Test Broker._rdmnet._tcp.local.");
+  discovered_broker_insert(&broker_handle->scope_monitor_handle->broker_list, db);
+
+  rdmnet_disc_tick();
+
+  // Advance time past the query timeout
+  etcpal_getms_fake.return_val += BROKER_REG_QUERY_TIMEOUT + 100;
+  rdmnet_disc_tick();
+
+  // Make sure the broker has not been registered
+  EXPECT_EQ(rdmnet_disc_platform_register_broker_fake.call_count, 0u);
+}
+
+TEST_F(TestDiscoveryCommon, DeinitUnmonitorsScope)
+{
+  rdmnet_scope_monitor_t monitor_handle;
+  int platform_error;
+  ASSERT_EQ(rdmnet_disc_start_monitoring(&default_monitor_config_, &monitor_handle, &platform_error), kEtcPalErrOk);
+  ASSERT_EQ(rdmnet_disc_platform_start_monitoring_fake.call_count, 1u);
+
+  rdmnet_disc_deinit();
+  EXPECT_EQ(rdmnet_disc_platform_stop_monitoring_fake.call_count, 1u);
+
+  // Stop the destructor from doing a double deinit
+  deinitted_during_test_ = true;
+}
+
+TEST_F(TestDiscoveryCommon, DeinitUnregistersBrokerIfRegistered)
+{
+  RegisterBroker();
+
+  rdmnet_disc_deinit();
+  EXPECT_EQ(rdmnet_disc_platform_unregister_broker_fake.call_count, 1u);
+
+  // Stop the destructor from doing a double deinit
+  deinitted_during_test_ = true;
 }
