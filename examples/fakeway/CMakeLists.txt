@@ -4,7 +4,7 @@ else()
   list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_LIST_DIR}/../../external/libGadget/x64)
 endif()
 
-find_package(GadgetDLL 2.0.4 REQUIRED)
+find_package(GadgetDLL 2.1.0 REQUIRED)
 
 set(FAKEWAY_TARGET rdmnet_gateway_example)
 add_executable(${FAKEWAY_TARGET}
