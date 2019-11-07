@@ -29,6 +29,9 @@ RDMnet:
 display and configuration of RDMnet Components.
 * *rdmnet_broker_example*: A console application which implements an RDMnet Broker.
 * *rdmnet_device_example*: A console application which implements an RDMnet Device.
+* *rdmnet_gateway_example*: A console application which implements an RDMnet Gateway,
+  affectionately referred to as the "Fakeway". Uses ETC Gadget 2 devices to
+  simulate gateway ports.
 * *llrp_manager_example*: A console application which implements a basic LLRP Manager.
 
 The applications are available as a binary package

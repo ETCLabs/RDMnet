@@ -4,3 +4,6 @@
 [submodule "external/EtcPal"]
 	path = external/EtcPal
 	url = https://github.com/ETCLabs/EtcPal
+[submodule "external/libGadget"]
+	path = external/libGadget
+	url = https://github.com/ETCLabs/libGadget

@@ -436,11 +436,6 @@ void RDMnetNetworkModel::processNewEndpointList(RDMnetClientItem* treeClientItem
   }
 
   std::vector<EndpointItem*> prev_list = treeClientItem->endpoints_;
-  // Slight hack to avoid removing the NULL_ENDPOINT.
-  if (!prev_list.empty())
-  {
-    prev_list.erase(prev_list.begin());
-  }
 
   // Save these endpoints here
   for (auto endpoint_id : list)

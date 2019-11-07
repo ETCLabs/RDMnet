@@ -29,8 +29,14 @@
               <Component Id="LlrpManager" Guid="D5683599-6003-4CC6-A382-ECE7955EF102">
                 <File Id="LlrpManagerExe" Name="llrp_manager_example.exe" DiskId="1" KeyPath="yes" />
               </Component>
+              <Component Id="Fakeway" Guid="E7AB7623-F4A8-4B0C-B465-E9063AF309BA">
+                <File Id="FakewayExe" Name="rdmnet_gateway_example.exe" DiskId="1" KeyPath="yes" />
+              </Component>
               <Component Id="DnsSdDll" Guid="997E9DB8-712B-490B-B427-427018333F33">
                 <File Id="DnsSdDll" Name="dnssd.dll" DiskId="1" KeyPath="yes" />
+              </Component>
+              <Component Id="GadgetDll" Guid="1861B75B-8858-4B17-AD33-EC79A3B6C5B0">
+                <File Id="GadgetDll" Name="GadgetDLL.dll" DiskId="1" KeyPath="yes" />
               </Component>
             </Directory>
           </Directory>
@@ -61,6 +67,12 @@
             Level="1">
           <ComponentRef Id="Device" />
           <ComponentRef Id="DnsSdDll" />
+        </Feature>
+        <Feature Id="Fakeway" Title="RDMnet Gateway App (&quot;Fakeway&quot;)" Description="The RDMnet Gateway example app."
+            Level="1">
+          <ComponentRef Id="Fakeway" />
+          <ComponentRef Id="DnsSdDll" />
+          <ComponentRef Id="GadgetDll" />
         </Feature>
         <Feature Id="LlrpManager" Title="LLRP Manager App"
             Description="The LLRP Manager example app." Level="1">

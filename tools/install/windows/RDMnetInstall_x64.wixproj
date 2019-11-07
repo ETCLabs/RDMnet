@@ -18,6 +18,7 @@
     </WixVariables>
     <DefineConstants>InstallSourceDir=$(InstallSourceDir);ControllerSourceDir=$(InstallSourceDir)\controller</DefineConstants>
     <SuppressSpecificWarnings>5150</SuppressSpecificWarnings>
+    <SuppressIces>ICE03</SuppressIces>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
     <WixVariables>
@@ -38,6 +39,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="RDMnet.wxs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="..\" />
+    <Folder Include="..\..\" />
+    <Folder Include="..\..\..\" />
+    <Folder Include="..\..\..\build\" />
+    <Folder Include="..\..\..\build\install_x64\" />
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" Condition=" '$(WixTargetsPath)' != '' " />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets" Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') " />
