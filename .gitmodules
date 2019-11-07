@@ -1,6 +1,6 @@
 [submodule "external/RDM"]
 	path = external/RDM
-	url = ../../ETCLabs/RDM
+	url = https://github.com/ETCLabs/RDM
 [submodule "external/EtcPal"]
 	path = external/EtcPal
 	url = https://github.com/ETCLabs/EtcPal
