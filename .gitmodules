@@ -7,3 +7,7 @@
 [submodule "external/libGadget"]
 	path = external/libGadget
 	url = https://github.com/ETCLabs/libGadget
+[submodule "external/googletest"]
+	path = external/googletest
+	url = https://github.com/google/googletest
+	branch = release-1.10.0
