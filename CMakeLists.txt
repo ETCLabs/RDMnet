@@ -33,7 +33,7 @@ else()
   set(OPTION_DEFAULTS OFF)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/tools/cmake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
 option(RDMNET_BUILD_TESTS "Build the RDMnet unit tests" ${OPTION_DEFAULTS})
 option(RDMNET_BUILD_GUI_EXAMPLES "Build the RDMnet GUI example applications" OFF)
@@ -51,8 +51,8 @@ add_subdirectory(src)
 #################################### Tests ####################################
 
 if(RDMNET_BUILD_TESTS)
-  include(CTest)
   enable_testing()
+  include(AddGoogleTest)
   add_subdirectory(tests)
 endif()
 
