@@ -16,8 +16,9 @@
  * This file is a part of RDMnet. For more information, go to:
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
-#ifndef _RDMNET_PRIVATE_LLRP_PROT_H_
-#define _RDMNET_PRIVATE_LLRP_PROT_H_
+
+#ifndef RDMNET_PRIVATE_LLRP_PROT_H_
+#define RDMNET_PRIVATE_LLRP_PROT_H_
 
 #include "etcpal/int.h"
 #include "etcpal/bool.h"
@@ -119,4 +120,4 @@ etcpal_error_t send_llrp_rdm_response(etcpal_socket_t sock, uint8_t* buf, bool i
 }
 #endif
 
-#endif /* _LLRP_PROT_PRIV_ */
+#endif /* RDMNET_PRIVATE_LLRP_PROT_H_ */

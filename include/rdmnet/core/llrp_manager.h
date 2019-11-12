@@ -17,24 +17,31 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*! \file rdmnet/core/llrp_manager.h
- *  \brief Functions for implementing LLRP Manager functionality
- *  \author Christian Reese and Sam Kearney
+/*!
+ * \file rdmnet/core/llrp_manager.h
+ * \brief Functions for implementing LLRP Manager functionality
+ * \author Christian Reese and Sam Kearney
  */
-#ifndef _RDMNET_CORE_LLRP_MANAGER_H_
-#define _RDMNET_CORE_LLRP_MANAGER_H_
+
+#ifndef RDMNET_CORE_LLRP_MANAGER_H_
+#define RDMNET_CORE_LLRP_MANAGER_H_
 
 #include "etcpal/uuid.h"
 #include "etcpal/inet.h"
 #include "rdm/message.h"
 #include "rdmnet/core/llrp.h"
 
-/*! \defgroup llrp_manager LLRP Manager
- *  \ingroup llrp
- *  \brief Implement the functionality required by an LLRP Manager in E1.33.
+/*!
+ * \defgroup llrp_manager LLRP Manager
+ * \ingroup llrp
+ * \brief Implement the functionality required by an LLRP Manager in E1.33.
  *
- *  @{
+ * @{
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*! An RDM command to be sent from a local LLRP Manager. */
 typedef struct LlrpLocalRdmCommand
@@ -72,10 +79,6 @@ typedef struct LlrpManagerConfig
   void* callback_context;
 } LlrpManagerConfig;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 etcpal_error_t rdmnet_llrp_manager_create(const LlrpManagerConfig* config, llrp_manager_t* handle);
 void rdmnet_llrp_manager_destroy(llrp_manager_t handle);
 
@@ -89,6 +92,8 @@ etcpal_error_t rdmnet_llrp_send_rdm_command(llrp_manager_t handle, const LlrpLoc
 }
 #endif
 
-/*! @} */
+/*!
+ * @}
+ */
 
-#endif /* _RDMNET_CORE_LLRP_MANAGER_H_ */
+#endif /* RDMNET_CORE_LLRP_MANAGER_H_ */

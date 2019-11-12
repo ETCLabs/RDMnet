@@ -302,7 +302,7 @@ TEST_F(TestDiscoveryBonjour, DiscoveredBrokerCleanedUpAfterResolve)
   // DNSServiceGetAddrInfoReply
   DNSServiceGetAddrInfoReply gai_cb = DNSServiceGetAddrInfo_fake.arg5_val;
   struct sockaddr address;
-  EtcPalSockaddr discovered_addr;
+  EtcPalSockAddr discovered_addr;
   discovered_addr.ip = default_listen_addr_->addr;
   discovered_addr.port = 0;
   sockaddr_etcpal_to_os(&discovered_addr, &address);

@@ -21,29 +21,26 @@
 #ifndef _WIN_BROKER_LOG_H_
 #define _WIN_BROKER_LOG_H_
 
-#include <WinSock2.h>
-#include <Windows.h>
 #include <fstream>
 #include <string>
-#include <queue>
-#include "etcpal/log.h"
-#include "etcpal/thread.h"
-#include "etcpal/lock.h"
 #include "rdmnet/broker/log.h"
 
-class WindowsBrokerLog : public rdmnet::BrokerLog
+class WindowsBrokerLog : public rdmnet::BrokerLogInterface
 {
 public:
-  WindowsBrokerLog(const std::string& file_name);
-  virtual ~WindowsBrokerLog();
+  bool Startup(const std::string& file_name, int log_mask);
+  void Shutdown();
 
   void OutputLogMsg(const std::string& str) override;
-  virtual void GetTimeFromCallback(EtcPalLogTimeParams& time) override;
+  void GetLogTime(EtcPalLogTimeParams& time) override;
+
+  rdmnet::BrokerLog& broker_log_instance() { return log_; }
 
 private:
+  rdmnet::BrokerLog log_;
+
   std::fstream file_;
   long utcoffset_{0};
-  int log_level_{ETCPAL_LOG_INFO};
 };
 
 #endif  // _WIN_BROKER_LOG_

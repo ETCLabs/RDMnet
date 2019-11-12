@@ -17,8 +17,8 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef _RDMNET_PRIVATE_LLRP_MANAGER_H_
-#define _RDMNET_PRIVATE_LLRP_MANAGER_H_
+#ifndef RDMNET_PRIVATE_LLRP_MANAGER_H_
+#define RDMNET_PRIVATE_LLRP_MANAGER_H_
 
 #include "etcpal/inet.h"
 #include "etcpal/socket.h"
@@ -124,4 +124,4 @@ void manager_data_received(const uint8_t* data, size_t data_size, const LlrpNeti
 }
 #endif
 
-#endif /* _RDMNET_PRIVATE_LLRP_MANAGER_H_ */
+#endif /* RDMNET_PRIVATE_LLRP_MANAGER_H_ */

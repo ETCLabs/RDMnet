@@ -21,8 +21,9 @@
 #include <string>
 #include <vector>
 
+#include "etcpal/cpp/inet.h"
+#include "etcpal/cpp/uuid.h"
 #include "etcpal/log.h"
-#include "etcpal/uuid.h"
 #include "rdm/message.h"
 #include "rdmnet/core/llrp_manager.h"
 
@@ -35,7 +36,7 @@ struct LLRPTargetInfo
 class LLRPManager
 {
 public:
-  bool Startup(const EtcPalUuid& my_cid, const EtcPalLogParams* log_params = nullptr);
+  bool Startup(const etcpal::Uuid& my_cid, const EtcPalLogParams* log_params = nullptr);
   void Shutdown();
 
   enum class ParseResult
@@ -64,7 +65,7 @@ public:
   void IdentifyDevice(int target_handle);
   void SetDeviceLabel(int target_handle, const std::string& label);
   void SetComponentScope(int target_handle, int scope_slot, const std::string& scope_utf8,
-                         const EtcPalSockaddr& static_config);
+                         const etcpal::SockAddr& static_config);
 
   void TargetDiscovered(const DiscoveredLlrpTarget& target);
   void DiscoveryFinished();
@@ -76,7 +77,7 @@ private:
   static const char* LLRPComponentTypeToString(llrp_component_t type);
 
   std::map<llrp_manager_t, EtcPalNetintInfo> managers_;
-  EtcPalUuid cid_{};
+  etcpal::Uuid cid_;
 
   std::map<int, LLRPTargetInfo> targets_;
   llrp_manager_t active_manager_{LLRP_MANAGER_INVALID};
@@ -84,7 +85,7 @@ private:
   bool discovery_active_{false};
 
   bool pending_command_response_{false};
-  EtcPalUuid pending_resp_cid_{};
+  etcpal::Uuid pending_resp_cid_;
   uint32_t pending_resp_seq_num_{0};
   RdmResponse resp_received_{};
 };

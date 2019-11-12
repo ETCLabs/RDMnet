@@ -153,10 +153,10 @@ void free_rdmnet_message(RdmnetMessage* msg)
     switch (msg->vector)
     {
       case ACN_VECTOR_ROOT_BROKER:
-        free_broker_message(get_broker_msg(msg));
+        free_broker_message(GET_BROKER_MSG(msg));
         break;
       case ACN_VECTOR_ROOT_RPT:
-        free_rpt_message(get_rpt_msg(msg));
+        free_rpt_message(GET_RPT_MSG(msg));
         break;
       default:
         break;
@@ -173,14 +173,14 @@ void free_broker_message(BrokerMessage* bmsg)
     case VECTOR_BROKER_CLIENT_ENTRY_CHANGE:
     case VECTOR_BROKER_CONNECTED_CLIENT_LIST:
     {
-      ClientList* clist = get_client_list(bmsg);
+      ClientList* clist = GET_CLIENT_LIST(bmsg);
       ClientEntryData* entry = clist->client_entry_list;
       ClientEntryData* next_entry;
       while (entry)
       {
         if (entry->client_protocol == E133_CLIENT_PROTOCOL_EPT)
         {
-          ClientEntryDataEpt* eptdata = get_ept_client_entry_data(entry);
+          ClientEntryDataEpt* eptdata = GET_EPT_CLIENT_ENTRY_DATA(entry);
           EptSubProtocol* subprot = eptdata->protocol_list;
           EptSubProtocol* next_subprot;
           while (subprot)
@@ -198,7 +198,7 @@ void free_broker_message(BrokerMessage* bmsg)
     }
     case VECTOR_BROKER_REQUEST_DYNAMIC_UIDS:
     {
-      DynamicUidRequestList* list = get_dynamic_uid_request_list(bmsg);
+      DynamicUidRequestList* list = GET_DYNAMIC_UID_REQUEST_LIST(bmsg);
       DynamicUidRequestListEntry* entry = list->request_list;
       DynamicUidRequestListEntry* next_entry;
       while (entry)
@@ -211,7 +211,7 @@ void free_broker_message(BrokerMessage* bmsg)
     }
     case VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS:
     {
-      DynamicUidAssignmentList* list = get_dynamic_uid_assignment_list(bmsg);
+      DynamicUidAssignmentList* list = GET_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg);
       DynamicUidMapping* mapping = list->mapping_list;
       DynamicUidMapping* next_mapping;
       while (mapping)
@@ -224,7 +224,7 @@ void free_broker_message(BrokerMessage* bmsg)
     }
     case VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST:
     {
-      FetchUidAssignmentList* list = get_fetch_dynamic_uid_assignment_list(bmsg);
+      FetchUidAssignmentList* list = GET_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg);
       FetchUidAssignmentListEntry* entry = list->assignment_list;
       FetchUidAssignmentListEntry* next_entry;
       while (entry)
@@ -247,7 +247,7 @@ void free_rpt_message(RptMessage* rmsg)
     case VECTOR_RPT_REQUEST:
     case VECTOR_RPT_NOTIFICATION:
     {
-      RdmBufList* rlist = get_rdm_buf_list(rmsg);
+      RdmBufList* rlist = GET_RDM_BUF_LIST(rmsg);
       RdmBufListEntry* rdmcmd = rlist->list;
       RdmBufListEntry* next_rdmcmd;
       while (rdmcmd)
@@ -260,7 +260,7 @@ void free_rpt_message(RptMessage* rmsg)
     }
     case VECTOR_RPT_STATUS:
     {
-      RptStatusMsg* status = get_rpt_status_msg(rmsg);
+      RptStatusMsg* status = GET_RPT_STATUS_MSG(rmsg);
       if (status->status_string)
       {
         free_rpt_status_str((char*)status->status_string);

@@ -23,6 +23,7 @@
 #define RDMNET_CONN_WRAPPER_H_
 
 #include "etcpal/cpp/error.h"
+#include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/uuid.h"
 #include "rdmnet/core/connection.h"
 
@@ -52,7 +53,7 @@ public:
 
   virtual void SetNotify(RdmnetConnNotify* notify) = 0;
 
-  virtual etcpal::Result CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
+  virtual etcpal::Result CreateNewConnectionForSocket(etcpal_socket_t sock, const etcpal::SockAddr& addr,
                                                       rdmnet_conn_t& new_handle) = 0;
   virtual void DestroyConnection(rdmnet_conn_t handle, SendDisconnect send_disconnect = SendDisconnect()) = 0;
   virtual etcpal::Result SetBlocking(rdmnet_conn_t handle, bool blocking) = 0;
@@ -71,7 +72,7 @@ public:
 
   void SetNotify(RdmnetConnNotify* notify) override { notify_ = notify; }
 
-  etcpal::Result CreateNewConnectionForSocket(etcpal_socket_t sock, const EtcPalSockaddr& addr,
+  etcpal::Result CreateNewConnectionForSocket(etcpal_socket_t sock, const etcpal::SockAddr& addr,
                                               rdmnet_conn_t& new_handle) override;
   virtual void DestroyConnection(rdmnet_conn_t handle, SendDisconnect send_disconnect = SendDisconnect()) override;
   virtual etcpal::Result SetBlocking(rdmnet_conn_t handle, bool blocking) override;

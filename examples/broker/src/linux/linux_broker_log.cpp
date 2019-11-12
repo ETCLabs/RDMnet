@@ -22,19 +22,23 @@
 #include <iostream>
 #include <cstdarg>
 
-LinuxBrokerLog::LinuxBrokerLog(const std::string& file_name) : rdmnet::BrokerLog()
+bool LinuxBrokerLog::Startup(const std::string& file_name, int log_mask)
 {
   file_.open(file_name.c_str(), std::fstream::out);
-  if (file_.fail())
+  if (!file_.is_open())
     std::cout << "BrokerLog couldn't open log file '" << file_name << "'." << std::endl;
+
+  log_.SetLogMask(log_mask);
+  return log_.Startup(*this);
 }
 
-LinuxBrokerLog::~LinuxBrokerLog()
+void LinuxBrokerLog::Shutdown()
 {
+  log_.Shutdown();
   file_.close();
 }
 
-void LinuxBrokerLog::GetTimeFromCallback(EtcPalLogTimeParams& time_params)
+void LinuxBrokerLog::GetLogTime(EtcPalLogTimeParams& time_params)
 {
   time_t cur_time;
   time(&cur_time);

@@ -31,19 +31,29 @@
 
 namespace rdmnet
 {
+/// This interface connects the BrokerLog class to an application that handles logs.
+class BrokerLogInterface
+{
+public:
+  /// Used by the BrokerLog class to get a timestamp to prepend to a log message.
+  virtual void GetLogTime(EtcPalLogTimeParams& time) = 0;
+  /// Called from the BrokerLog's dispatch context to output a log message.
+  virtual void OutputLogMsg(const std::string& str) = 0;
+};
+
 /// \brief A class for logging messages from the Broker.
 class BrokerLog
 {
 public:
   enum class DispatchPolicy
   {
-    kDirect,  // Log messages propagate directly from calls to Log() to being output (normally only used for testing)
-    kQueued   // Log messages are queued and dispatched from another thread (recommended)
+    kDirect,  ///< Log messages propagate directly from calls to Log() to being output (normally only used for testing)
+    kQueued   ///< Log messages are queued and dispatched from another thread (recommended)
   };
 
   BrokerLog(DispatchPolicy dispatch_policy = DispatchPolicy::kQueued);
   virtual ~BrokerLog();
-  bool Startup(int log_mask);
+  bool Startup(BrokerLogInterface& log_interface);
   void Shutdown();
 
   const EtcPalLogParams* GetLogParams() const { return &log_params_; }
@@ -64,12 +74,12 @@ public:
   void Emergency(const char* format, ...);
 
   void LogFromCallback(const std::string& str);
+  void GetTimeFromCallback(EtcPalLogTimeParams& time);
   void LogThreadRun();
 
-  virtual void GetTimeFromCallback(EtcPalLogTimeParams& time) = 0;
-  virtual void OutputLogMsg(const std::string& str) = 0;
-
 protected:
+  BrokerLogInterface* log_interface_{nullptr};
+
   EtcPalLogParams log_params_{};
 
   const DispatchPolicy dispatch_policy_{DispatchPolicy::kQueued};

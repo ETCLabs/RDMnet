@@ -97,7 +97,7 @@ etcpal::Result BrokerDiscoveryManager::RegisterBroker(const rdmnet::BrokerSettin
   for (const auto& listen_addr : settings.listen_addrs)
   {
     BrokerListenAddr to_add;
-    to_add.addr = listen_addr;
+    to_add.addr = listen_addr.get();
     to_add.next = nullptr;
     listen_addr_list.push_back(to_add);
     if (listen_addr_list.size() > 1)

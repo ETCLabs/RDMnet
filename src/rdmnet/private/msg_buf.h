@@ -17,12 +17,14 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*! \file rdmnet/private/msg_buf.h
- *  \brief Helper functions and definitions to do piece-wise parsing of an RDMnet message.
- *  \author Sam Kearney
+/*!
+ * \file rdmnet/private/msg_buf.h
+ * \brief Helper functions and definitions to do piece-wise parsing of an RDMnet message.
+ * \author Sam Kearney
  */
-#ifndef _RDMNET_MSG_BUF_H_
-#define _RDMNET_MSG_BUF_H_
+
+#ifndef RDMNET_PRIVATE_MSG_BUF_H_
+#define RDMNET_PRIVATE_MSG_BUF_H_
 
 #include <stddef.h>
 #include "etcpal/int.h"
@@ -84,8 +86,8 @@ typedef struct RdmListState
   {                                                         \
     (rlstateptr)->parsed_request_notif_header = false;      \
     init_pdu_block_state(&(rlstateptr)->block, blocksize);  \
-    get_rdm_buf_list(rmsgptr)->list = NULL;                 \
-    get_rdm_buf_list(rmsgptr)->more_coming = false;         \
+    GET_RDM_BUF_LIST(rmsgptr)->list = NULL;                 \
+    GET_RDM_BUF_LIST(rmsgptr)->more_coming = false;         \
   } while (0)
 
 typedef struct RptStatusState
@@ -139,8 +141,8 @@ typedef struct ClientListState
   do                                                           \
   {                                                            \
     init_pdu_block_state(&(clstateptr)->block, blocksize);     \
-    get_client_list(bmsgptr)->client_entry_list = NULL;        \
-    get_client_list(bmsgptr)->more_coming = false;             \
+    GET_CLIENT_LIST(bmsgptr)->client_entry_list = NULL;        \
+    GET_CLIENT_LIST(bmsgptr)->more_coming = false;             \
   } while (0)
 
 typedef struct ClientConnectState
@@ -222,4 +224,4 @@ etcpal_error_t rdmnet_msg_buf_recv(RdmnetMsgBuf* msg_buf, const uint8_t* data, s
 }
 #endif
 
-#endif /* _RDMNET_MSG_BUF_H_ */
+#endif /* RDMNET_PRIVATE_MSG_BUF_H_ */

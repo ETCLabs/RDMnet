@@ -22,6 +22,7 @@
 #include <map>
 #include <vector>
 #include <cstddef>
+#include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/lock.h"
 #include "etcpal/cpp/uuid.h"
 #include "BrokerItem.h"
@@ -73,7 +74,7 @@ private:
 public slots:
   void addScopeToMonitor(QString scope);
   void directChildrenRevealed(const QModelIndex& parentIndex);
-  void addBrokerByIP(QString scope, const EtcPalSockaddr& addr);
+  void addBrokerByIP(QString scope, const etcpal::SockAddr& addr);
   void addCustomLogOutputStream(LogOutputStream* stream);
   void removeCustomLogOutputStream(LogOutputStream* stream);
 

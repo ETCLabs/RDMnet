@@ -17,8 +17,8 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef _RDMNET_PRIVATE_LLRP_TARGET_H_
-#define _RDMNET_PRIVATE_LLRP_TARGET_H_
+#ifndef RDMNET_PRIVATE_LLRP_TARGET_H_
+#define RDMNET_PRIVATE_LLRP_TARGET_H_
 
 #include "etcpal/uuid.h"
 #include "etcpal/bool.h"
@@ -119,4 +119,4 @@ void target_data_received(const uint8_t* data, size_t data_size, const LlrpNetin
 }
 #endif
 
-#endif /* _RDMNET_PRIVATE_LLRP_TARGET_H_ */
+#endif /* RDMNET_PRIVATE_LLRP_TARGET_H_ */

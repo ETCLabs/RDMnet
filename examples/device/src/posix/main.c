@@ -48,7 +48,7 @@ static bool set_scope(const char* scope_str, char* scope_buf)
 }
 
 // Parse the --broker=IP:PORT command line option and transfer it to the sockaddr structure.
-static bool set_static_broker(char* arg, EtcPalSockaddr* static_broker_addr)
+static bool set_static_broker(char* arg, EtcPalSockAddr* static_broker_addr)
 {
   char* sep = strchr(arg, ':');
   if (sep != NULL && sep - arg < ETCPAL_INET6_ADDRSTRLEN)

@@ -26,12 +26,12 @@ BEGIN_INCLUDE_QT_HEADERS()
 #include "ui_BrokerStaticAddGUI.h"
 END_INCLUDE_QT_HEADERS()
 
-#include "etcpal/inet.h"
+#include "etcpal/cpp/inet.h"
 
 class IHandlesBrokerStaticAdd
 {
 public:
-  virtual void handleAddBrokerByIP(QString scope, const EtcPalSockaddr& addr) = 0;
+  virtual void handleAddBrokerByIP(QString scope, const etcpal::SockAddr& addr) = 0;
 };
 
 class BrokerStaticAddGUI : public QDialog
@@ -45,7 +45,7 @@ public slots:
 
 signals:
 
-  void addBrokerByIP(EtcPalSockaddr addr);
+  void addBrokerByIP(etcpal::SockAddr addr);
 
 public:
   BrokerStaticAddGUI(QWidget* parent = nullptr, IHandlesBrokerStaticAdd* handler = nullptr);

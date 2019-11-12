@@ -28,7 +28,7 @@
 #include <cstdint>
 #include <set>
 #include <string>
-#include "etcpal/inet.h"
+#include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
@@ -53,8 +53,6 @@ struct BrokerDiscoveryAttributes
 /// A group of settings for Broker operation.
 struct BrokerSettings
 {
-  using MacAddress = std::array<uint8_t, ETCPAL_NETINTINFO_MAC_LEN>;
-
   etcpal::Uuid cid;  ///< The Broker's CID.
 
   enum UidType
@@ -75,11 +73,11 @@ struct BrokerSettings
   /// A list of MAC addresses representing network interfaces to listen on. If both this and
   /// listen_addrs are empty, the broker will listen on all available interfaces. Otherwise
   /// listening will be restricted to the interfaces specified.
-  std::set<MacAddress> listen_macs;
+  std::set<etcpal::MacAddr> listen_macs;
   /// A list of IP addresses representing network interfaces to listen on. If both this and
   /// listen_macs are empty, the broker will listen on all available interfaces. Otherwise
   /// listening will be restricted to the interfaces specified.
-  std::set<EtcPalIpAddr> listen_addrs;
+  std::set<etcpal::IpAddr> listen_addrs;
 
   /// The maximum number of client connections supported. 0 means infinite.
   unsigned int max_connections{0};

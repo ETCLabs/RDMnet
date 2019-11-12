@@ -31,6 +31,22 @@
 
 #define CONTROLLER_HANDLER_ARRAY_SIZE 8
 
+struct RdmParamData
+{
+  uint8_t data[RDM_MAX_PDL];
+  uint8_t datalen;
+};
+
+struct ControllerScopeData
+{
+  ControllerScopeData(StaticBrokerConfig sb) : static_broker(sb) {}
+
+  uint16_t unhealthy_tcp_events{0};
+  StaticBrokerConfig static_broker;
+  bool connected{false};
+  etcpal::SockAddr current_broker;
+};
+
 constexpr char kMyDeviceLabel[] = "ETC Example RDMnet Controller";
 constexpr char kMyManufacturerLabel[] = "ETC";
 constexpr char kMyDeviceModelDescription[] = "ETC Example RDMnet Controller";
@@ -117,7 +133,7 @@ public:
   void AddScope(const std::string& new_scope, StaticBrokerConfig static_broker = StaticBrokerConfig());
   void RemoveScope(const std::string& scope_to_remove);
   void UpdateScopeConnectionStatus(const std::string& scope, bool connected,
-                                   const EtcPalSockaddr& broker_addr = EtcPalSockaddr(),
+                                   const etcpal::SockAddr& broker_addr = etcpal::SockAddr(),
                                    const RdmUid& controller_uid = RdmUid());
   void IncrementTcpUnhealthyCounter(const std::string& scope);
   void ResetTcpUnhealthyCounter(const std::string& scope);

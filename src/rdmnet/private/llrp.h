@@ -16,8 +16,9 @@
  * This file is a part of RDMnet. For more information, go to:
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
-#ifndef _RDMNET_PRIVATE_LLRP_H_
-#define _RDMNET_PRIVATE_LLRP_H_
+
+#ifndef RDMNET_PRIVATE_LLRP_H_
+#define RDMNET_PRIVATE_LLRP_H_
 
 #include "etcpal/bool.h"
 #include "etcpal/error.h"
@@ -46,12 +47,12 @@ typedef struct LlrpNetint
 extern "C" {
 #endif
 
-extern const EtcPalSockaddr* kLlrpIpv4RespAddr;
-extern const EtcPalSockaddr* kLlrpIpv6RespAddr;
-extern const EtcPalSockaddr* kLlrpIpv4RequestAddr;
-extern const EtcPalSockaddr* kLlrpIpv6RequestAddr;
+extern const EtcPalSockAddr* kLlrpIpv4RespAddr;
+extern const EtcPalSockAddr* kLlrpIpv6RespAddr;
+extern const EtcPalSockAddr* kLlrpIpv4RequestAddr;
+extern const EtcPalSockAddr* kLlrpIpv6RequestAddr;
 
-extern uint8_t kLlrpLowestHardwareAddr[6];
+extern EtcPalMacAddr kLlrpLowestHardwareAddr;
 
 etcpal_error_t rdmnet_llrp_init();
 void rdmnet_llrp_deinit();
@@ -70,4 +71,4 @@ void llrp_recv_netint_remove(const LlrpNetintId* netint, llrp_socket_t llrp_type
 }
 #endif
 
-#endif /* _RDMNET_PRIVATE_LLRP_H_ */
+#endif /* RDMNET_PRIVATE_LLRP_H_ */

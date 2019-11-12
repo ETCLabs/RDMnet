@@ -45,7 +45,7 @@ TEST_F(TestMsgBuf, RptNotificationFull)
   ASSERT_EQ(msg.vector, RptNotificationPduFullValid::root_vector);
   ASSERT_EQ(0, ETCPAL_UUID_CMP(&msg.sender_cid, &RptNotificationPduFullValid::sender_cid));
 
-  RptMessage* rpt = get_rpt_msg(&msg);
+  RptMessage* rpt = GET_RPT_MSG(&msg);
   ASSERT_EQ(rpt->vector, RptNotificationPduFullValid::rpt_vector);
   ASSERT_TRUE(RDM_UID_EQUAL(&rpt->header.source_uid, &RptNotificationPduFullValid::rpt_src_uid));
   ASSERT_EQ(rpt->header.source_endpoint_id, RptNotificationPduFullValid::rpt_src_endpoint);
@@ -53,7 +53,7 @@ TEST_F(TestMsgBuf, RptNotificationFull)
   ASSERT_EQ(rpt->header.dest_endpoint_id, RptNotificationPduFullValid::rpt_dest_endpoint);
   ASSERT_EQ(rpt->header.seqnum, RptNotificationPduFullValid::seq_num);
 
-  RdmBufList* buf_list = get_rdm_buf_list(rpt);
+  RdmBufList* buf_list = GET_RDM_BUF_LIST(rpt);
   ASSERT_FALSE(buf_list->more_coming);
 
   RdmBufListEntry* entry = buf_list->list;

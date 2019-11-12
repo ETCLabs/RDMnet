@@ -27,9 +27,9 @@
 #include <map>
 #include <stdexcept>
 
+#include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/lock.h"
 #include "etcpal/cpp/uuid.h"
-#include "etcpal/inet.h"
 #include "rdm/message.h"
 #include "rdmnet/client.h"
 #include "rdmnet/core/message.h"
@@ -87,7 +87,7 @@ public:
 
   etcpal::Uuid cid{};
   client_protocol_t client_protocol{kClientProtocolUnknown};
-  EtcPalSockaddr addr{};
+  etcpal::SockAddr addr{};
 
 protected:
   bool PushPostSizeCheck(const etcpal::Uuid& sender_cid, const BrokerMessage& msg);

@@ -17,19 +17,26 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*! \file rdmnet/core/ept_prot.h
- *  \brief Functions to pack, send, and parse EPT PDUs and their encapsulated messages.
- *  \author Sam Kearney
+/*!
+ * \file rdmnet/core/ept_prot.h
+ * \brief Functions to pack, send, and parse EPT PDUs and their encapsulated messages.
+ * \author Sam Kearney
  */
-#ifndef _RDMNET_CORE_EPT_PROT_H_
-#define _RDMNET_CORE_EPT_PROT_H_
+
+#ifndef RDMNET_CORE_EPT_PROT_H_
+#define RDMNET_CORE_EPT_PROT_H_
 
 #include "etcpal/int.h"
 #include "rdmnet/defs.h"
 
-/*! \addtogroup rdmnet_message
- *  @{
+/*!
+ * \addtogroup rdmnet_message
+ * @{
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct EptDataMsg
 {
@@ -66,6 +73,12 @@ typedef struct EptMessage
   } data;
 } EptMessage;
 
-/*!@}*/
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* _RDMNET_CORE_EPT_PROT_H_ */
+/*!
+ * @}
+ */
+
+#endif /* RDMNET_CORE_EPT_PROT_H_ */

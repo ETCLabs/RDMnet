@@ -160,7 +160,7 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceF
     if (etcpal_mutex_take(&disc_state.lock))
     {
       // Update the broker info we're building
-      EtcPalSockaddr ip_addr;
+      EtcPalSockAddr ip_addr;
       if (sockaddr_os_to_etcpal(address, &ip_addr))
       {
         if ((ETCPAL_IP_IS_V4(&ip_addr.ip) && ETCPAL_IP_V4_ADDRESS(&ip_addr.ip) != 0) ||

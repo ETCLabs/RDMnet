@@ -17,12 +17,14 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*! \file rdmnet/core/llrp_target.h
- *  \brief Functions for implementing LLRP Target functionality.
- *  \author Christian Reese and Sam Kearney
+/*!
+ * \file rdmnet/core/llrp_target.h
+ * \brief Functions for implementing LLRP Target functionality.
+ * \author Christian Reese and Sam Kearney
  */
-#ifndef _RDMNET_CORE_LLRP_TARGET_H_
-#define _RDMNET_CORE_LLRP_TARGET_H_
+
+#ifndef RDMNET_CORE_LLRP_TARGET_H_
+#define RDMNET_CORE_LLRP_TARGET_H_
 
 #include "etcpal/common.h"
 #include "etcpal/uuid.h"
@@ -33,12 +35,17 @@
 #include "rdm/message.h"
 #include "rdmnet/core/llrp.h"
 
-/*! \defgroup llrp_target LLRP Target
- *  \ingroup llrp
- *  \brief Implement the functionality required by an LLRP Target in E1.33.
+/*!
+ * \defgroup llrp_target LLRP Target
+ * \ingroup llrp
+ * \brief Implement the functionality required by an LLRP Target in E1.33.
  *
- *  @{
+ * @{
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*! An RDM command to be sent from a local LLRP Target. */
 typedef struct LlrpLocalRdmResponse
@@ -69,13 +76,14 @@ typedef struct LlrpRemoteRdmCommand
   RdmCommand rdm;
 } LlrpRemoteRdmCommand;
 
-/*! \brief Initialize a LlrpLocalRdmResponse to a received LlrpRemoteRdmCommand.
+/*!
+ * \brief Initialize a LlrpLocalRdmResponse to a received LlrpRemoteRdmCommand.
  *
- *  Provide the received command and the RdmResponse to be sent in response.
+ * Provide the received command and the RdmResponse to be sent in response.
  *
- *  \param resp Response to initialize (LlrpLocalRdmResponse *).
- *  \param received_cmd Received command (LlrpRemoteRdmCommand *).
- *  \param rdm_resp RDM response to send (RdmResponse *).
+ * \param resp Response to initialize (LlrpLocalRdmResponse *).
+ * \param received_cmd Received command (LlrpRemoteRdmCommand *).
+ * \param rdm_resp RDM response to send (RdmResponse *).
  */
 #define LLRP_CREATE_RESPONSE_FROM_COMMAND(resp, received_cmd, rdm_resp) \
   do                                                                    \
@@ -119,10 +127,6 @@ typedef struct LlrpTargetConfig
 #define LLRP_TARGET_CONFIG_INIT(targetcfgptr, manu_id) \
   LLRP_TARGET_INIT_OPTIONAL_CONFIG_VALUES(&(targetcfgptr)->optional, manu_id)
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 etcpal_error_t rdmnet_llrp_target_create(const LlrpTargetConfig* config, llrp_target_t* handle);
 void rdmnet_llrp_target_destroy(llrp_target_t handle);
 
@@ -133,6 +137,8 @@ etcpal_error_t rdmnet_llrp_send_rdm_response(llrp_target_t handle, const LlrpLoc
 }
 #endif
 
-/*! @} */
+/*!
+ * @}
+ */
 
-#endif /* _RDMNET_CORE_LLRP_H_ */
+#endif /* RDMNET_CORE_LLRP_H_ */

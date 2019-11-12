@@ -22,7 +22,7 @@
 #include <stdexcept>
 #include <cstddef>
 #include "etcpal/int.h"
-#include "etcpal/inet.h"
+#include "etcpal/cpp/inet.h"
 
 // Macros to suppress warnings inside of Qt headers.
 #if defined(_MSC_VER)
@@ -55,7 +55,7 @@ struct StaticBrokerConfig
   }
 
   bool valid{false};
-  EtcPalSockaddr addr;
+  etcpal::SockAddr addr;
 };
 
 // Some definitions that aren't provided elsewhere

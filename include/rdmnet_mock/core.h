@@ -20,8 +20,8 @@
 /* rdmnet_mock/core.h
  * Mocking the functions of rdmnet/core.h
  */
-#ifndef _RDMNET_MOCK_CORE_H_
-#define _RDMNET_MOCK_CORE_H_
+#ifndef RDMNET_MOCK_CORE_H_
+#define RDMNET_MOCK_CORE_H_
 
 #include "rdmnet/core.h"
 #include "fff.h"
@@ -41,4 +41,4 @@ void rdmnet_mock_core_reset_and_init(void);
 }
 #endif
 
-#endif /* _RDMNET_MOCK_CORE_H_ */
+#endif /* RDMNET_MOCK_CORE_H_ */

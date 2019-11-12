@@ -147,20 +147,19 @@ stages:
           brew update
           brew cask install packages
         displayName: 'Install dependencies'
-  # TODO: uncomment once https://github.com/microsoft/azure-pipelines-tasks/issues/10841 is fixed. 
-  #    - task: CacheBeta@0
-  #      inputs:
-  #        key: Qt597 | $(Agent.OS)
-  #        path: $(qt_cache_dir_macos)
-  #        cacheHitVar: CACHE_RESTORED
-  #      displayName: 'Qt 5.9.7 Cache'
-  #      continueOnError: true
+      - task: CacheBeta@0
+        inputs:
+          key: Qt597 | $(Agent.OS)
+          path: $(qt_cache_dir_macos)
+          cacheHitVar: CACHE_RESTORED
+        displayName: 'Qt 5.9.7 Cache'
+        continueOnError: true
       - script: |
           curl -fL http://download.qt-project.org/official_releases/qt/5.9/5.9.7/qt-opensource-mac-x64-5.9.7.dmg -o qt-5.9.7-mac.dmg
           hdiutil attach qt-5.9.7-mac.dmg -noverify
           sudo /Volumes/qt-opensource-mac-x64-5.9.7/qt-opensource-mac-x64-5.9.7.app/Contents/MacOS/qt-opensource-mac-x64-5.9.7 --verbose --script tools/ci/qt-installer-noninteractive.qs INSTALL_DIR=$(qt_cache_dir_macos)
           hdiutil detach /Volumes/qt-opensource-mac-x64-5.9.7
-  #      condition: ne(variables.CACHE_RESTORED, 'true')
+        condition: ne(variables.CACHE_RESTORED, 'true')
         displayName: 'Download and install Qt 5.9.7'
       - script: |
           mkdir build

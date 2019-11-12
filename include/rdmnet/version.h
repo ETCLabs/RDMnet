@@ -17,41 +17,52 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*! \file rdmnet/version.h
- *  \brief Provides the current version of the RDMnet library and executables.
- *  \author Sam Kearney
+/*!
+ * \file rdmnet/version.h
+ * \brief Provides the current version of the RDMnet library and executables.
+ * \author Sam Kearney
  */
-#ifndef _RDMNET_VERSION_H_
-#define _RDMNET_VERSION_H_
+
+#ifndef RDMNET_VERSION_H_
+#define RDMNET_VERSION_H_
 
 /* clang-format off */
 
-/*! \defgroup rdmnet_core_lib RDMnet Core Library
- *  \brief Implementation of the core functions of RDMnet.
+/*!
+ * \defgroup rdmnet_core_lib RDMnet Core Library
+ * \brief Implementation of the core functions of RDMnet.
  *
- *  This includes discovery, connections, and message packing and unpacking.
+ * This includes discovery, connections, and message packing and unpacking.
  *
- *  @{
+ * @{
  */
 
-/*! \name RDMnet version numbers
- *  @{
+/*!
+ * \name RDMnet version numbers
+ * @{
  */
 #define RDMNET_VERSION_MAJOR 0 /*!< The major version. */
 #define RDMNET_VERSION_MINOR 3 /*!< The minor version. */
 #define RDMNET_VERSION_PATCH 0 /*!< The patch version. */
-#define RDMNET_VERSION_BUILD 2 /*!< The build number. */
-/*!@}*/
-
-/*! \name RDMnet version strings
- *  @{
+#define RDMNET_VERSION_BUILD 4 /*!< The build number. */
+/*!
+ * @}
  */
-#define RDMNET_VERSION_STRING "0.3.0.2"
-#define RDMNET_VERSION_DATESTR "10.Sep.2019"
+
+/*!
+ * \name RDMnet version strings
+ * @{
+ */
+#define RDMNET_VERSION_STRING "0.3.0.4"
+#define RDMNET_VERSION_DATESTR "06.Nov.2019"
 #define RDMNET_VERSION_COPYRIGHT "Copyright 2019 ETC Inc."
 #define RDMNET_VERSION_PRODUCTNAME "RDMnet"
-/*!@}*/
+/*!
+ * @}
+ */
 
-/*!@}*/
+/*!
+ * @}
+ */
 
-#endif /* _RDMNET_VERSION_H_ */
+#endif /* RDMNET_VERSION_H_ */

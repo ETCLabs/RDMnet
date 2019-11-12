@@ -17,8 +17,8 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef _RDMNET_DISCOVERY_AVAHI_H_
-#define _RDMNET_DISCOVERY_AVAHI_H_
+#ifndef RDMNET_DISCOVERY_AVAHI_H_
+#define RDMNET_DISCOVERY_AVAHI_H_
 
 #include <avahi-client/client.h>
 #include <avahi-client/lookup.h>
@@ -83,4 +83,4 @@ typedef struct RdmnetBrokerRegisterRef
   AvahiEntryGroup* avahi_entry_group;
 } RdmnetBrokerRegisterRef;
 
-#endif /* _RDMNET_DISCOVERY_AVAHI_H_ */
+#endif /* RDMNET_DISCOVERY_AVAHI_H_ */

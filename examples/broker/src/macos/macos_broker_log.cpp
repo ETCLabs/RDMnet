@@ -20,21 +20,24 @@
 #include "macos_broker_log.h"
 #include <ctime>
 #include <iostream>
-#include <cstdarg>
 
-MacBrokerLog::MacBrokerLog(const std::string& file_name) : rdmnet::BrokerLog()
+bool MacBrokerLog::Startup(const std::string& file_name, int log_mask)
 {
   file_.open(file_name.c_str(), std::fstream::out);
-  if (file_.fail())
-    std::cout << "BrokerLog couldn't open log file '" << file_name << "'." << std::endl;
+  if (!file_.is_open())
+    std::cout << "BrokerLog couldn't open log file '" << file_name << "'.\n";
+
+  log_.SetLogMask(log_mask);
+  return log_.Startup(*this);
 }
 
-MacBrokerLog::~MacBrokerLog()
+void MacBrokerLog::Shutdown()
 {
+  log_.Shutdown();
   file_.close();
 }
 
-void MacBrokerLog::GetTimeFromCallback(EtcPalLogTimeParams& time_params)
+void MacBrokerLog::GetLogTime(EtcPalLogTimeParams& time_params)
 {
   time_t cur_time;
   time(&cur_time);

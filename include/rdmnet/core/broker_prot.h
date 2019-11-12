@@ -21,8 +21,9 @@
  *  \brief Functions to pack, send, and parse %Broker PDUs and their encapsulated messages.
  *  \author Sam Kearney
  */
-#ifndef _RDMNET_CORE_BROKER_PROT_H_
-#define _RDMNET_CORE_BROKER_PROT_H_
+
+#ifndef RDMNET_CORE_BROKER_PROT_H_
+#define RDMNET_CORE_BROKER_PROT_H_
 
 #include <string.h>
 #include "etcpal/int.h"
@@ -37,9 +38,14 @@
 #include "rdmnet/core/client_entry.h"
 #include "rdmnet/core/util.h"
 
-/*! \addtogroup rdmnet_message
- *  @{
+/*!
+ * \addtogroup rdmnet_message
+ * @{
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define BROKER_PDU_HEADER_SIZE 5
 #define BROKER_PDU_FULL_HEADER_SIZE (BROKER_PDU_HEADER_SIZE + ACN_RLP_HEADER_SIZE_EXT_LEN + ACN_TCP_PREAMBLE_SIZE)
@@ -48,9 +54,10 @@
   (2 /* Connection Code */ + 2 /* E1.33 Version */ + 6 /* broker's UID */ + 6 /* Client's UID */)
 #define CONNECT_REPLY_FULL_MSG_SIZE (BROKER_PDU_FULL_HEADER_SIZE + CONNECT_REPLY_DATA_SIZE)
 
-/*! A flag to indicate whether a client would like to receive notifications when other clients
- *  connect and disconnect. Used in the connect_flags field of a ClientConnectMsg or
- *  ClientEntryUpdateMsg.
+/*!
+ * A flag to indicate whether a client would like to receive notifications when other clients
+ * connect and disconnect. Used in the connect_flags field of a ClientConnectMsg or
+ * ClientEntryUpdateMsg.
  */
 #define CONNECTFLAG_INCREMENTAL_UPDATES 0x01u
 
@@ -129,26 +136,34 @@ typedef struct ClientConnectMsg
   ClientEntryData client_entry;
 } ClientConnectMsg;
 
-/*! \brief Safely copy a scope string to a ClientConnectMsg.
- *  \param ccmsgptr Pointer to ClientConnectMsg.
- *  \param scope_str String to copy to the ClientConnectMsg (const char *). */
-#define client_connect_msg_set_scope(ccmsgptr, scope_str) \
+/*!
+ * \brief Safely copy a scope string to a ClientConnectMsg.
+ * \param ccmsgptr Pointer to ClientConnectMsg.
+ * \param scope_str String to copy to the ClientConnectMsg (const char *).
+ */
+#define CLIENT_CONNECT_MSG_SET_SCOPE(ccmsgptr, scope_str) \
   rdmnet_safe_strncpy((ccmsgptr)->scope, scope_str, E133_SCOPE_STRING_PADDED_LENGTH)
 
-/*! \brief Copy the default scope string to a ClientConnectMsg.
- *  \param ccmsgptr Pointer to ClientConnectMsg. */
-#define client_connect_msg_set_default_scope(ccmsgptr) \
+/*!
+ * \brief Copy the default scope string to a ClientConnectMsg.
+ * \param ccmsgptr Pointer to ClientConnectMsg.
+ */
+#define CLIENT_CONNECT_MSG_SET_DEFAULT_SCOPE(ccmsgptr) \
   RDMNET_MSVC_NO_DEP_WRN strncpy((ccmsgptr)->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH)
 
-/*! \brief Safely copy a search domain string to a ClientConnectMsg.
- *  \param ccmsgptr Pointer to ClientConnectMsg.
- *  \param search_domain_str String to copy to the ClientConnectMsg (const char *). */
-#define client_connect_msg_set_search_domain(ccmsgptr, search_domain_str) \
+/*!
+ * \brief Safely copy a search domain string to a ClientConnectMsg.
+ * \param ccmsgptr Pointer to ClientConnectMsg.
+ * \param search_domain_str String to copy to the ClientConnectMsg (const char *).
+ */
+#define CLIENT_CONNECT_MSG_SET_SEARCH_DOMAIN(ccmsgptr, search_domain_str) \
   rdmnet_safe_strncpy((ccmsgptr)->search_domain, search_domain_str, E133_DOMAIN_STRING_PADDED_LENGTH)
 
-/*! \brief Copy the default search domain string to a ClientConnectMsg.
- *  \param ccmsgptr Pointer to ClientConnectMsg. */
-#define client_connect_msg_set_default_search_domain(ccmsgptr) \
+/*!
+ * \brief Copy the default search domain string to a ClientConnectMsg.
+ * \param ccmsgptr Pointer to ClientConnectMsg.
+ */
+#define CLIENT_CONNECT_MSG_SET_DEFAULT_SEARCH_DOMAIN(ccmsgptr) \
   RDMNET_MSVC_NO_DEP_WRN strncpy((ccmsgptr)->search_domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH)
 
 /*! The Connect Reply message in the broker protocol. */
@@ -182,18 +197,22 @@ typedef struct ClientEntryUpdateMsg
 typedef struct ClientRedirectMsg
 {
   /*! The new IPv4 or IPv6 address to which to connect. */
-  EtcPalSockaddr new_addr;
+  EtcPalSockAddr new_addr;
 } ClientRedirectMsg;
 
-/*! A structure that represents a list of Client Entries. Represents the data for multiple broker
- *  Protocol messages: Connected Client List, Client Incremental Addition, Client Incremental
- *  Deletion, and Client Entry Change. */
+/*!
+ * A structure that represents a list of Client Entries. Represents the data for multiple broker
+ * Protocol messages: Connected Client List, Client Incremental Addition, Client Incremental
+ * Deletion, and Client Entry Change.
+ */
 typedef struct ClientList
 {
-  /*! This message contains a partial list. This can be set when the library runs out of static
-   *  memory in which to store Client Entries and must deliver the partial list before continuing.
-   *  The application should store the entries in the list but should not act on the list until
-   *  another ClientList is received with partial set to false. */
+  /*!
+   * This message contains a partial list. This can be set when the library runs out of static
+   * memory in which to store Client Entries and must deliver the partial list before continuing.
+   * The application should store the entries in the list but should not act on the list until
+   * another ClientList is received with partial set to false.
+   */
   bool more_coming;
   /*! The head of a linked list of Client Entries. */
   ClientEntryData* client_entry_list;
@@ -211,10 +230,12 @@ struct DynamicUidRequestListEntry
 /*! A list of Responder IDs (RIDs) for which Dynamic UID assignment is requested. */
 typedef struct DynamicUidRequestList
 {
-  /*! This message contains a partial list. This can be set when the library runs out of static
-   *  memory in which to store DynamicUidRequestListEntrys and must deliver the partial list before
-   *  continuing. The application should store the entries in the list but should not act on the
-   *  list until another DynamicUidRequestList is received with partial set to false. */
+  /*!
+   * This message contains a partial list. This can be set when the library runs out of static
+   * memory in which to store DynamicUidRequestListEntrys and must deliver the partial list before
+   * continuing. The application should store the entries in the list but should not act on the
+   * list until another DynamicUidRequestList is received with partial set to false.
+   */
   bool more_coming;
   /*! The head of a linked list of RIDs for which Dynamic UIDs are requested. */
   DynamicUidRequestListEntry* request_list;
@@ -249,10 +270,12 @@ struct FetchUidAssignmentListEntry
  *  requested. */
 typedef struct FetchUidAssignmentList
 {
-  /*! This message contains a partial list. This can be set when the library runs out of static
-   *  memory in which to store FetchUidAssignmentListEntrys and must deliver the partial list before
-   *  continuing. The application should store the entries in the list but should not act on the
-   *  list until another DynamicUidRequestList is received with partial set to false. */
+  /*!
+   * This message contains a partial list. This can be set when the library runs out of static
+   * memory in which to store FetchUidAssignmentListEntrys and must deliver the partial list before
+   * continuing. The application should store the entries in the list but should not act on the
+   * list until another DynamicUidRequestList is received with partial set to false.
+   */
   bool more_coming;
   /*! The head of a linked list of Dynamic UIDs for which the currently assigned RIDs are being
    *  requested. */
@@ -287,105 +310,137 @@ typedef struct BrokerMessage
   } data;
 } BrokerMessage;
 
-/*! \brief Determine whether a BrokerMessage contains a Client Connect message.
- *  \param brokermsgptr Pointer to BrokerMessage.
- *  \return (true or false) whether the message contains a Client Connect message. */
-#define is_client_connect_msg(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_CONNECT)
+/*!
+ * \brief Determine whether a BrokerMessage contains a Client Connect message.
+ * \param brokermsgptr Pointer to BrokerMessage.
+ * \return (true or false) whether the message contains a Client Connect message.
+ */
+#define IS_CLIENT_CONNECT_MSG(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_CONNECT)
 
-/*! \brief Get the encapsulated Client Connect message from a BrokerMessage.
- *  \param brokermsgptr Pointer to BrokerMessage.
- *  \return Pointer to encapsulated Client Connect message (ClientConnectMsg *). */
-#define get_client_connect_msg(brokermsgptr) (&(brokermsgptr)->data.client_connect)
+/*!
+ * \brief Get the encapsulated Client Connect message from a BrokerMessage.
+ * \param brokermsgptr Pointer to BrokerMessage.
+ * \return Pointer to encapsulated Client Connect message (ClientConnectMsg *).
+ */
+#define GET_CLIENT_CONNECT_MSG(brokermsgptr) (&(brokermsgptr)->data.client_connect)
 
-/*! \brief Determine whether a BrokerMessage contains a Connect Reply message.
- *  \param brokermsgptr Pointer to BrokerMessage.
- *  \return (true or false) whether the message contains a Connect Reply message. */
-#define is_connect_reply_msg(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_CONNECT_REPLY)
+/*!
+ * \brief Determine whether a BrokerMessage contains a Connect Reply message.
+ * \param brokermsgptr Pointer to BrokerMessage.
+ * \return (true or false) whether the message contains a Connect Reply message.
+ */
+#define IS_CONNECT_REPLY_MSG(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_CONNECT_REPLY)
 
-/*! \brief Get the encapsulated Connect Reply message from a BrokerMessage.
- *  \param brokermsgptr Pointer to BrokerMessage.
- *  \return Pointer to encapsulated Connect Reply message (ConnectReplyMsg *). */
-#define get_connect_reply_msg(brokermsgptr) (&(brokermsgptr)->data.connect_reply)
+/*!
+ * \brief Get the encapsulated Connect Reply message from a BrokerMessage.
+ * \param brokermsgptr Pointer to BrokerMessage.
+ * \return Pointer to encapsulated Connect Reply message (ConnectReplyMsg *).
+ */
+#define GET_CONNECT_REPLY_MSG(brokermsgptr) (&(brokermsgptr)->data.connect_reply)
 
-/*! \brief Determine whether a BrokerMessage contains a Client Entry Update message.
- *  \param brokermsgptr Pointer to BrokerMessage.
- *  \return (true or false) whether the message contains a Client Entry Update message. */
-#define is_client_entry_update_msg(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_CLIENT_ENTRY_UPDATE)
+/*!
+ * \brief Determine whether a BrokerMessage contains a Client Entry Update message.
+ * \param brokermsgptr Pointer to BrokerMessage.
+ * \return (true or false) whether the message contains a Client Entry Update message.
+ */
+#define IS_CLIENT_ENTRY_UPDATE_MSG(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_CLIENT_ENTRY_UPDATE)
 
-/*! \brief Get the encapsulated Client Entry Update message from a BrokerMessage.
- *  \param brokermsgptr Pointer to BrokerMessage.
- *  \return Pointer to encapsulated Client Entry Update message (ClientEntryUpdateMsg *). */
-#define get_client_entry_update_msg(brokermsgptr) (&(brokermsgptr)->data.client_entry_update)
+/*!
+ * \brief Get the encapsulated Client Entry Update message from a BrokerMessage.
+ * \param brokermsgptr Pointer to BrokerMessage.
+ * \return Pointer to encapsulated Client Entry Update message (ClientEntryUpdateMsg *).
+ */
+#define GET_CLIENT_ENTRY_UPDATE_MSG(brokermsgptr) (&(brokermsgptr)->data.client_entry_update)
 
-/*! \brief Determine whether a BrokerMessage contains a Client Redirect message.
- *  \param brokermsgptr Pointer to BrokerMessage.
- *  \return (true or false) whether the message contains a Client Redirect message. */
-#define is_client_redirect_msg(brokermsgptr) \
+/*!
+ * \brief Determine whether a BrokerMessage contains a Client Redirect message.
+ * \param brokermsgptr Pointer to BrokerMessage.
+ * \return (true or false) whether the message contains a Client Redirect message.
+ */
+#define IS_CLIENT_REDIRECT_MSG(brokermsgptr) \
   ((brokermsgptr)->vector == VECTOR_BROKER_REDIRECT_V4 || (brokermsgptr)->vector == VECTOR_BROKER_REDIRECT_V6)
 
-/*! \brief Get the encapsulated Client Redirect message from a BrokerMessage.
- *  \param brokermsgptr Pointer to BrokerMessage.
- *  \return Pointer to encapsulated Client Redirect message (ClientRedirectMsg *). */
-#define get_client_redirect_msg(brokermsgptr) (&(brokermsgptr)->data.client_redirect)
+/*!
+ * \brief Get the encapsulated Client Redirect message from a BrokerMessage.
+ * \param brokermsgptr Pointer to BrokerMessage.
+ * \return Pointer to encapsulated Client Redirect message (ClientRedirectMsg *).
+ */
+#define GET_CLIENT_REDIRECT_MSG(brokermsgptr) (&(brokermsgptr)->data.client_redirect)
 
-/*! \brief Determine whether a BrokerMessage contains a Client List. Multiple types of broker
- *         message can contain Client Lists.
- *  \param brokermsgptr Pointer to BrokerMessage.
- *  \return (true or false) whether the message contains a Client List. */
-#define is_client_list(brokermsgptr)                                                                              \
+/*!
+ * \brief Determine whether a BrokerMessage contains a Client List. Multiple types of broker
+ *        message can contain Client Lists.
+ * \param brokermsgptr Pointer to BrokerMessage.
+ * \return (true or false) whether the message contains a Client List.
+ */
+#define IS_CLIENT_LIST(brokermsgptr)                                                                              \
   ((brokermsgptr)->vector == VECTOR_BROKER_CONNECTED_CLIENT_LIST ||                                               \
    (brokermsgptr)->vector == VECTOR_BROKER_CLIENT_ADD || (brokermsgptr)->vector == VECTOR_BROKER_CLIENT_REMOVE || \
    (brokermsgptr)->vector == VECTOR_BROKER_CLIENT_ENTRY_CHANGE)
 
-/*! \brief Get the encapsulated Client List from a BrokerMessage.
- *  \param brokermsgptr Pointer to BrokerMessage.
- *  \return Pointer to encapsulated Client List (ClientList *). */
-#define get_client_list(brokermsgptr) (&(brokermsgptr)->data.client_list)
+/*!
+ * \brief Get the encapsulated Client List from a BrokerMessage.
+ * \param brokermsgptr Pointer to BrokerMessage.
+ * \return Pointer to encapsulated Client List (ClientList *).
+ */
+#define GET_CLIENT_LIST(brokermsgptr) (&(brokermsgptr)->data.client_list)
 
-/*! \brief Determine whether a BrokerMessage contains a Request Dynamic UID Assignment message.
- *  \param brokermsgptr Pointer to BrokerMessage.
- *  \return (true or false) whether the message contains a Request Dynamic UID Assignment message. */
-#define is_request_dynamic_uid_assignment(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_REQUEST_DYNAMIC_UIDS)
+/*!
+ * \brief Determine whether a BrokerMessage contains a Request Dynamic UID Assignment message.
+ * \param brokermsgptr Pointer to BrokerMessage.
+ * \return (true or false) whether the message contains a Request Dynamic UID Assignment message.
+ */
+#define IS_REQUEST_DYNAMIC_UID_ASSIGNMENT(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_REQUEST_DYNAMIC_UIDS)
 
-/*! \brief Get the encapsulated Dynamic UID Request List from a BrokerMessage.
- *  \param brokermsgptr Pointer to BrokerMessage.
- *  \return Pointer to encapsulated Dynamic UID Request List (DynamicUidRequestList *). */
-#define get_dynamic_uid_request_list(brokermsgptr) (&(brokermsgptr)->data.dynamic_uid_request_list)
+/*!
+ * \brief Get the encapsulated Dynamic UID Request List from a BrokerMessage.
+ * \param brokermsgptr Pointer to BrokerMessage.
+ * \return Pointer to encapsulated Dynamic UID Request List (DynamicUidRequestList *).
+ */
+#define GET_DYNAMIC_UID_REQUEST_LIST(brokermsgptr) (&(brokermsgptr)->data.dynamic_uid_request_list)
 
-/*! \brief Determine whether a BrokerMessage contains a Dynamic UID Assignment List message.
- *  \param brokermsgptr Pointer to BrokerMessage.
- *  \return (true or false) whether the message contains a Dynamic UID Assignment List message. */
-#define is_dynamic_uid_assignment_list(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS)
+/*!
+ * \brief Determine whether a BrokerMessage contains a Dynamic UID Assignment List message.
+ * \param brokermsgptr Pointer to BrokerMessage.
+ * \return (true or false) whether the message contains a Dynamic UID Assignment List message.
+ */
+#define IS_DYNAMIC_UID_ASSIGNMENT_LIST(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS)
 
-/*! \brief Get the encapsulated Dynamic UID Assignment List from a BrokerMessage.
- *  \param brokermsgptr Pointer to BrokerMessage.
- *  \return Pointer to encapsulated Dynamic UID Assignment List (DynamicUidAssignmentList *). */
-#define get_dynamic_uid_assignment_list(brokermsgptr) (&(brokermsgptr)->data.dynamic_uid_assignment_list)
+/*!
+ * \brief Get the encapsulated Dynamic UID Assignment List from a BrokerMessage.
+ * \param brokermsgptr Pointer to BrokerMessage.
+ * \return Pointer to encapsulated Dynamic UID Assignment List (DynamicUidAssignmentList *).
+ */
+#define GET_DYNAMIC_UID_ASSIGNMENT_LIST(brokermsgptr) (&(brokermsgptr)->data.dynamic_uid_assignment_list)
 
-/*! \brief Determine whether a BrokerMessage contains a Fetch Dynamic UID Assignment List message.
- *  \param brokermsgptr Pointer to BrokerMessage.
- *  \return (true or false) whether the message contains a Fetch Dynamic UID Assignment List message. */
-#define is_fetch_dynamic_uid_assignment_list(brokermsgptr) \
+/*!
+ * \brief Determine whether a BrokerMessage contains a Fetch Dynamic UID Assignment List message.
+ * \param brokermsgptr Pointer to BrokerMessage.
+ * \return (true or false) whether the message contains a Fetch Dynamic UID Assignment List message.
+ */
+#define IS_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(brokermsgptr) \
   ((brokermsgptr)->vector == VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST)
 
-/*! \brief Get the encapsulated Fetch Dynamic UID Assignment List from a BrokerMessage.
- *  \param brokermsgptr Pointer to BrokerMessage.
- *  \return Pointer to encapsulated Fetch Dynamic UID Assignment List (FetchUidAssignmentList *). */
-#define get_fetch_dynamic_uid_assignment_list(brokermsgptr) (&(brokermsgptr)->data.fetch_uid_assignment_list)
+/*!
+ * \brief Get the encapsulated Fetch Dynamic UID Assignment List from a BrokerMessage.
+ * \param brokermsgptr Pointer to BrokerMessage.
+ * \return Pointer to encapsulated Fetch Dynamic UID Assignment List (FetchUidAssignmentList *).
+ */
+#define GET_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(brokermsgptr) (&(brokermsgptr)->data.fetch_uid_assignment_list)
 
-/*! \brief Determine whether a BrokerMessage contains a Disconnect message.
- *  \param brokermsgptr Pointer to BrokerMessage.
- *  \return (true or false) whether the message contains a Disconnect message. */
-#define is_disconnect_msg(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_DISCONNECT)
+/*!
+ * \brief Determine whether a BrokerMessage contains a Disconnect message.
+ * \param brokermsgptr Pointer to BrokerMessage.
+ * \return (true or false) whether the message contains a Disconnect message.
+ */
+#define IS_DISCONNECT_MSG(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_DISCONNECT)
 
-/*! \brief Get the encapsulated Disconnect message from a BrokerMessage.
- *  \param brokermsgptr Pointer to BrokerMessage.
- *  \return Pointer to encapsulated Disconnect message (ClientConnectMsg *). */
-#define get_disconnect_msg(brokermsgptr) (&(brokermsgptr)->data.disconnect)
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+/*!
+ * \brief Get the encapsulated Disconnect message from a BrokerMessage.
+ * \param brokermsgptr Pointer to BrokerMessage.
+ * \return Pointer to encapsulated Disconnect message (ClientConnectMsg *).
+ */
+#define GET_DISCONNECT_MSG(brokermsgptr) (&(brokermsgptr)->data.disconnect)
 
 size_t bufsize_client_list(const ClientEntryData* client_entry_list);
 size_t bufsize_dynamic_uid_assignment_list(const DynamicUidMapping* mapping_list);
@@ -411,6 +466,8 @@ const char* rdmnet_dynamic_uid_status_to_string(dynamic_uid_status_t code);
 }
 #endif
 
-/*!@}*/
+/*!
+ * @}
+ */
 
-#endif /* _RDMNET_CORE_BROKER_PROT_H_ */
+#endif /* RDMNET_CORE_BROKER_PROT_H_ */

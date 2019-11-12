@@ -35,7 +35,7 @@ END_INCLUDE_QT_HEADERS()
 #include "etcpal/version.h"
 #include "rdmnet/version.h"
 
-void RDMnetControllerGUI::handleAddBrokerByIP(QString scope, const EtcPalSockaddr& addr)
+void RDMnetControllerGUI::handleAddBrokerByIP(QString scope, const etcpal::SockAddr& addr)
 {
   emit addBrokerByIPActivated(scope, addr);
 }
@@ -99,8 +99,8 @@ RDMnetControllerGUI* RDMnetControllerGUI::makeRDMnetControllerGUI()
 
   connect(gui->ui.moreBrokerSettingsButton, SIGNAL(clicked()), gui, SLOT(openBrokerStaticAddDialog()));
 
-  connect(gui, SIGNAL(addBrokerByIPActivated(QString, const EtcPalSockaddr&)), gui->main_network_model_,
-          SLOT(addBrokerByIP(QString, const EtcPalSockaddr&)));
+  connect(gui, SIGNAL(addBrokerByIPActivated(QString, const etcpal::SockAddr&)), gui->main_network_model_,
+          SLOT(addBrokerByIP(QString, const etcpal::SockAddr&)));
 
   connect(gui->main_network_model_, SIGNAL(brokerItemTextUpdated(const BrokerItem*)), gui,
           SLOT(processBrokerItemTextUpdate(const BrokerItem*)));

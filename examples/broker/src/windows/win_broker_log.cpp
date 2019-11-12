@@ -18,14 +18,16 @@
  *****************************************************************************/
 
 #include "win_broker_log.h"
-#include <iostream>
-#include <cstdarg>
 
-WindowsBrokerLog::WindowsBrokerLog(const std::string& file_name) : rdmnet::BrokerLog(), utcoffset_(0)
+#include <iostream>
+#include <WinSock2.h>
+#include <Windows.h>
+
+bool WindowsBrokerLog::Startup(const std::string& file_name, int log_mask)
 {
   file_.open(file_name.c_str(), std::fstream::out);
-  if (file_.fail())
-    std::cout << "BrokerLog couldn't open log file '" << file_name << "'." << std::endl;
+  if (!file_.is_open())
+    std::cout << "BrokerLog couldn't open log file '" << file_name << "'.\n";
 
   WSADATA wsdata;
   WSAStartup(MAKEWORD(2, 2), &wsdata);
@@ -44,15 +46,19 @@ WindowsBrokerLog::WindowsBrokerLog(const std::string& file_name) : rdmnet::Broke
       std::cout << "BrokerLog couldn't get time zone info." << std::endl;
       break;
   }
+
+  log_.SetLogMask(log_mask);
+  return log_.Startup(*this);
 }
 
-WindowsBrokerLog::~WindowsBrokerLog()
+void WindowsBrokerLog::Shutdown()
 {
+  log_.Shutdown();
   WSACleanup();
   file_.close();
 }
 
-void WindowsBrokerLog::GetTimeFromCallback(EtcPalLogTimeParams& time)
+void WindowsBrokerLog::GetLogTime(EtcPalLogTimeParams& time)
 {
   SYSTEMTIME win_time;
   GetLocalTime(&win_time);
@@ -80,6 +86,7 @@ void WindowsBrokerLog::OutputLogMsg(const std::string& str)
   //        std::cout << final_msg << std::endl;
   //      }
   //    }
+
   std::cout << str << "\n";
   if (file_.is_open())
     file_ << str << std::endl;

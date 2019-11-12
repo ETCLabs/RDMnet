@@ -17,8 +17,8 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef _RDMNET_PRIVATE_CORE_H_
-#define _RDMNET_PRIVATE_CORE_H_
+#ifndef RDMNET_PRIVATE_CORE_H_
+#define RDMNET_PRIVATE_CORE_H_
 
 #include "etcpal/lock.h"
 #include "etcpal/log.h"
@@ -66,4 +66,4 @@ void rdmnet_core_remove_polled_socket(etcpal_socket_t socket);
 }
 #endif
 
-#endif /* _RDMNET_PRIVATE_CORE_H_ */
+#endif /* RDMNET_PRIVATE_CORE_H_ */

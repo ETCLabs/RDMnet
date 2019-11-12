@@ -17,12 +17,14 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*! \file rdmnet/core/discovery.h
- *  \brief Functions to discover a Broker and/or register a Broker for discovery. Uses mDNS and
- *         DNS-SD under the hood.
+/*!
+ * \file rdmnet/core/discovery.h
+ * \brief Functions to discover a Broker and/or register a Broker for discovery. Uses mDNS and
+ *        DNS-SD under the hood.
  */
-#ifndef _RDMNET_DISCOVERY_H_
-#define _RDMNET_DISCOVERY_H_
+
+#ifndef RDMNET_DISCOVERY_H_
+#define RDMNET_DISCOVERY_H_
 
 #include "etcpal/error.h"
 #include "etcpal/uuid.h"
@@ -106,4 +108,4 @@ void rdmnetdisc_tick();
 }
 #endif
 
-#endif /* _RDMNET_DISCOVERY_H_ */
+#endif /* RDMNET_DISCOVERY_H_ */

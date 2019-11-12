@@ -59,12 +59,11 @@ void BrokerShell::ApplySettingsChanges(rdmnet::BrokerSettings& settings)
   }
 }
 
-int BrokerShell::Run(rdmnet::BrokerLog* log)
+int BrokerShell::Run(rdmnet::BrokerLog& log)
 {
   PrintWarningMessage();
 
-  log_ = log;
-  log_->Startup(initial_data_.log_mask);
+  log_ = &log;
 
   rdmnet::BrokerSettings broker_settings(etcpal::Uuid::V4(), 0x6574);
 
@@ -80,7 +79,6 @@ int BrokerShell::Run(rdmnet::BrokerLog* log)
   if (!broker.Startup(broker_settings, this, log_))
   {
     std::cout << "Broker failed to start.\n";
-    log->Shutdown();
     return 1;
   }
 
@@ -108,7 +106,6 @@ int BrokerShell::Run(rdmnet::BrokerLog* log)
   }
 
   broker.Shutdown();
-  log_->Shutdown();
   return 0;
 }
 

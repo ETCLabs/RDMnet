@@ -17,12 +17,14 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*! \file rdmnet/private/broker_prot.h
- *  \brief Functions and definitions for Broker PDU messages that are only used internally.
- *  \author Sam Kearney
+/*!
+ * \file rdmnet/private/broker_prot.h
+ * \brief Functions and definitions for Broker PDU messages that are only used internally.
+ * \author Sam Kearney
  */
-#ifndef _RDMNET_PRIVATE_BROKER_PROT_
-#define _RDMNET_PRIVATE_BROKER_PROT_
+
+#ifndef RDMNET_PRIVATE_BROKER_PROT_
+#define RDMNET_PRIVATE_BROKER_PROT_
 
 #include "etcpal/error.h"
 #include "rdmnet/core/broker_prot.h"
@@ -81,4 +83,4 @@ etcpal_error_t send_null(RdmnetConnection* conn);
 }
 #endif
 
-#endif /* _RDMNET_PRIVATE_BROKER_PROT_H_ */
+#endif /* RDMNET_PRIVATE_BROKER_PROT_H_ */

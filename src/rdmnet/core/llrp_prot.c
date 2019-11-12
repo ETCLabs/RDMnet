@@ -45,7 +45,7 @@ static bool parse_llrp_probe_request(const uint8_t* buf, size_t buflen, const Ll
 static bool parse_llrp_probe_reply(const uint8_t* buf, size_t buflen, DiscoveredLlrpTarget* reply);
 static bool parse_llrp_rdm_command(const uint8_t* buf, size_t buflen, RdmBuffer* cmd);
 
-static etcpal_error_t send_llrp_rdm(etcpal_socket_t sock, uint8_t* buf, const EtcPalSockaddr* dest_addr,
+static etcpal_error_t send_llrp_rdm(etcpal_socket_t sock, uint8_t* buf, const EtcPalSockAddr* dest_addr,
                                     const LlrpHeader* header, const RdmBuffer* rdm_msg);
 
 /*************************** Function definitions ****************************/
@@ -240,7 +240,7 @@ bool parse_llrp_probe_reply(const uint8_t* buf, size_t buflen, DiscoveredLlrpTar
   cur_ptr += 2;
   reply->uid.id = etcpal_upack_32b(cur_ptr);
   cur_ptr += 4;
-  memcpy(reply->hardware_address, cur_ptr, 6);
+  memcpy(reply->hardware_address.data, cur_ptr, 6);
   cur_ptr += 6;
   reply->component_type = (llrp_component_t)*cur_ptr;
   return true;
@@ -380,7 +380,7 @@ etcpal_error_t send_llrp_probe_reply(etcpal_socket_t sock, uint8_t* buf, bool ip
   cur_ptr += 2;
   etcpal_pack_32b(cur_ptr, target_info->uid.id);
   cur_ptr += 4;
-  memcpy(cur_ptr, target_info->hardware_address, 6);
+  memcpy(cur_ptr, target_info->hardware_address.data, 6);
   cur_ptr += 6;
   *cur_ptr++ = (uint8_t)target_info->component_type;
 
@@ -393,7 +393,7 @@ etcpal_error_t send_llrp_probe_reply(etcpal_socket_t sock, uint8_t* buf, bool ip
 
 #define RDM_CMD_RLP_DATA_MIN_SIZE (LLRP_HEADER_SIZE + 3 /* RDM cmd PDU Flags + Length */)
 
-etcpal_error_t send_llrp_rdm(etcpal_socket_t sock, uint8_t* buf, const EtcPalSockaddr* dest_addr,
+etcpal_error_t send_llrp_rdm(etcpal_socket_t sock, uint8_t* buf, const EtcPalSockAddr* dest_addr,
                              const LlrpHeader* header, const RdmBuffer* rdm_msg)
 {
   uint8_t* cur_ptr = buf;

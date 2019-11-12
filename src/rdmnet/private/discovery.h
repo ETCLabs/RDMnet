@@ -17,8 +17,8 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef _RDMNET_PRIVATE_DISCOVERY_H_
-#define _RDMNET_PRIVATE_DISCOVERY_H_
+#ifndef RDMNET_PRIVATE_DISCOVERY_H_
+#define RDMNET_PRIVATE_DISCOVERY_H_
 
 #include "rdmnet/core/discovery.h"
 
@@ -33,4 +33,4 @@ void rdmnetdisc_deinit();
 }
 #endif
 
-#endif /* _RDMNET_PRIVATE_DISCOVERY_H_ */
+#endif /* RDMNET_PRIVATE_DISCOVERY_H_ */

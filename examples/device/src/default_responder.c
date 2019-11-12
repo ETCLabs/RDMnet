@@ -77,11 +77,11 @@ static struct DeviceResponderState
   char search_domain[E133_DOMAIN_STRING_PADDED_LENGTH];
   uint16_t tcp_unhealthy_counter;
   bool connected;
-  EtcPalSockaddr cur_broker_addr;
+  EtcPalSockAddr cur_broker_addr;
 
   RdmResponderState rdm_responder_state;
   RdmPidHandlerEntry handler_array[DEVICE_HANDLER_ARRAY_SIZE];
-} device_responder_state;
+} prop_data;
 
 static etcpal_rwlock_t state_lock;
 
@@ -233,7 +233,7 @@ void default_responder_get_search_domain(char* search_domain)
   }
 }
 
-void default_responder_update_connection_status(bool connected, const EtcPalSockaddr* broker_addr,
+void default_responder_update_connection_status(bool connected, const EtcPalSockAddr* broker_addr,
                                                 const RdmUid* responder_uid)
 {
   if (etcpal_rwlock_readlock(&state_lock))
@@ -258,7 +258,7 @@ void default_responder_incr_unhealthy_count()
   }
 }
 
-void default_responder_set_tcp_status(EtcPalSockaddr* broker_addr)
+void default_responder_set_tcp_status(EtcPalSockAddr* broker_addr)
 {
   if (etcpal_rwlock_writelock(&state_lock))
   {
@@ -447,7 +447,7 @@ bool set_component_scope(const uint8_t* param_data, uint8_t param_data_len, uint
       const uint8_t* cur_ptr = param_data + 2;
       char new_scope[E133_SCOPE_STRING_PADDED_LENGTH];
       bool have_new_static_broker = false;
-      EtcPalSockaddr new_static_broker = {0};
+      EtcPalSockAddr new_static_broker = {0};
 
       strncpy(new_scope, (const char*)cur_ptr, E133_SCOPE_STRING_PADDED_LENGTH);
       new_scope[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
@@ -476,7 +476,7 @@ bool set_component_scope(const uint8_t* param_data, uint8_t param_data_len, uint
       RdmnetScopeConfig* existing_scope_config = &device_responder_state.scope_config;
       if (strncmp((char*)&param_data[2], existing_scope_config->scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0 &&
           ((!have_new_static_broker && !existing_scope_config->has_static_broker_addr) ||
-           (etcpal_ip_equal(&new_static_broker.ip, &existing_scope_config->static_broker_addr.ip) &&
+           ((etcpal_ip_cmp(&new_static_broker.ip, &existing_scope_config->static_broker_addr.ip) == 0) &&
             new_static_broker.port == existing_scope_config->static_broker_addr.port)))
       {
         /* Same settings as current */

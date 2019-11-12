@@ -43,7 +43,7 @@ class RDMnetControllerGUI : public QMainWindow, public IHandlesBrokerStaticAdd
 public:
   static RDMnetControllerGUI* makeRDMnetControllerGUI();
 
-  virtual void handleAddBrokerByIP(QString scope, const EtcPalSockaddr& addr);
+  virtual void handleAddBrokerByIP(QString scope, const etcpal::SockAddr& addr);
 
 public slots:
 
@@ -70,7 +70,7 @@ signals:
   void removeSelectedBrokerActivated(class BrokerItem* brokerItem);
   void removeAllBrokersActivated();
   void featureActivated(class RDMnetNetworkItem* device, SupportedDeviceFeature feature);
-  void addBrokerByIPActivated(QString scope, const EtcPalSockaddr& addr);
+  void addBrokerByIPActivated(QString scope, const etcpal::SockAddr& addr);
 
 private:
   explicit RDMnetControllerGUI(QWidget* parent = Q_NULLPTR);

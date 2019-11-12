@@ -17,8 +17,8 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef _RDMNET_DISCOVERY_BONJOUR_H_
-#define _RDMNET_DISCOVERY_BONJOUR_H_
+#ifndef RDMNET_DISCOVERY_BONJOUR_H_
+#define RDMNET_DISCOVERY_BONJOUR_H_
 
 #include "dns_sd.h"
 #include "etcpal/lock.h"
@@ -94,4 +94,4 @@ typedef struct RdmnetBrokerRegisterRef
   DNSServiceRef dnssd_ref;
 } RdmnetBrokerRegisterRef;
 
-#endif /* _RDMNET_DISCOVERY_BONJOUR_H_ */
+#endif /* RDMNET_DISCOVERY_BONJOUR_H_ */

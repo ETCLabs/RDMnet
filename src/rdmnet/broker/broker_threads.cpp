@@ -19,6 +19,7 @@
 
 #include "broker_threads.h"
 
+#include "etcpal/cpp/error.h"
 #include "etcpal/socket.h"
 #include "rdmnet/core/connection.h"
 #include "broker_util.h"
@@ -71,18 +72,18 @@ void ListenThread::ReadSocket()
   if (socket_ != ETCPAL_SOCKET_INVALID)
   {
     etcpal_socket_t conn_sock;
-    EtcPalSockaddr new_addr;
+    EtcPalSockAddr new_addr;
 
-    etcpal_error_t err = etcpal_accept(socket_, &new_addr, &conn_sock);
+    etcpal::Result res = etcpal_accept(socket_, &new_addr, &conn_sock);
 
-    if (err != kEtcPalErrOk)
+    if (!res)
     {
       // If terminated_ is set, the socket has been closed because the thread is being stopped
       // externally. Otherwise, it's a real error.
       if (!terminated_)
       {
         if (log_)
-          log_->Critical("ListenThread: Accept failed with error: %s.", etcpal_strerror(err));
+          log_->Critical("ListenThread: Accept failed with error: %s.", res.ToCString());
         terminated_ = true;
       }
       return;

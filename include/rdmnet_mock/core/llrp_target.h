@@ -20,8 +20,8 @@
 /* rdmnet_mock/core/llrp_target.h
  * Mocking the functions of rdmnet/core/llrp_target.h
  */
-#ifndef _RDMNET_MOCK_CORE_LLRP_TARGET_H_
-#define _RDMNET_MOCK_CORE_LLRP_TARGET_H_
+#ifndef RDMNET_MOCK_CORE_LLRP_TARGET_H_
+#define RDMNET_MOCK_CORE_LLRP_TARGET_H_
 
 #include "rdmnet/core/llrp_target.h"
 #include "fff.h"
@@ -41,4 +41,4 @@ void llrp_target_reset_all_fakes(void);
 }
 #endif
 
-#endif /* _RDMNET_MOCK_CORE_LLRP_TARGET_H_ */
+#endif /* RDMNET_MOCK_CORE_LLRP_TARGET_H_ */

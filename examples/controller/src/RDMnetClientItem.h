@@ -42,12 +42,12 @@ public:
 
   bool operator==(const RDMnetClientItem& other)
   {
-    return (get_rpt_client_entry_data(&entry_)->client_type == get_rpt_client_entry_data(&other.entry_)->client_type) &&
-           (get_rpt_client_entry_data(&entry_)->client_uid == get_rpt_client_entry_data(&other.entry_)->client_uid);
+    return (GET_RPT_CLIENT_ENTRY_DATA(&entry_)->client_type == GET_RPT_CLIENT_ENTRY_DATA(&other.entry_)->client_type) &&
+           (GET_RPT_CLIENT_ENTRY_DATA(&entry_)->client_uid == GET_RPT_CLIENT_ENTRY_DATA(&other.entry_)->client_uid);
   }
 
-  RdmUid uid() const override { return get_rpt_client_entry_data(&entry_)->client_uid; }
-  const rpt_client_type_t ClientType() const { return get_rpt_client_entry_data(&entry_)->client_type; }
+  RdmUid uid() const override { return GET_RPT_CLIENT_ENTRY_DATA(&entry_)->client_uid; }
+  const rpt_client_type_t ClientType() const { return GET_RPT_CLIENT_ENTRY_DATA(&entry_)->client_type; }
 
   void setScopeSlot(const QString& scope, uint16_t slot);
   uint16_t getScopeSlot(const QString& scope);

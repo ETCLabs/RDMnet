@@ -18,6 +18,7 @@
  *****************************************************************************/
 
 #include "RDMnetLibWrapper.h"
+#include "etcpal/cpp/error.h"
 
 extern "C" {
 
@@ -98,11 +99,11 @@ bool RDMnetLibWrapper::Startup(const etcpal::Uuid& cid, RDMnetLibNotify* notify)
     notify_ = notify;
 
     // Initialize the RDMnet controller library
-    etcpal_error_t res = rdmnet_controller_init(log_ ? log_->GetLogParams() : nullptr);
-    if (res != kEtcPalErrOk)
+    etcpal::Result res = rdmnet_controller_init(log_ ? log_->GetLogParams() : nullptr);
+    if (!res)
     {
       if (log_)
-        log_->Log(ETCPAL_LOG_ERR, "Error initializing RDMnet core library: '%s'", etcpal_strerror(res));
+        log_->Log(ETCPAL_LOG_ERR, "Error initializing RDMnet core library: '%s'", res.ToCString());
       return false;
     }
 
@@ -125,10 +126,10 @@ bool RDMnetLibWrapper::Startup(const etcpal::Uuid& cid, RDMnetLibNotify* notify)
     config.callback_context = static_cast<RDMnetLibNotifyInternal*>(this);
 
     res = rdmnet_controller_create(&config, &controller_handle_);
-    if (res != kEtcPalErrOk)
+    if (!res)
     {
       if (log_)
-        log_->Log(ETCPAL_LOG_ERR, "Error creating an RDMnet Controller handle: '%s'", etcpal_strerror(res));
+        log_->Log(ETCPAL_LOG_ERR, "Error creating an RDMnet Controller handle: '%s'", res.ToCString());
       rdmnet_controller_deinit();
       return false;
     }
@@ -162,7 +163,7 @@ rdmnet_client_scope_t RDMnetLibWrapper::AddScope(const std::string& scope, Stati
   if (static_broker.valid)
   {
     config.has_static_broker_addr = true;
-    config.static_broker_addr = static_broker.addr;
+    config.static_broker_addr = static_broker.addr.get();
   }
   else
   {
@@ -170,8 +171,8 @@ rdmnet_client_scope_t RDMnetLibWrapper::AddScope(const std::string& scope, Stati
   }
 
   rdmnet_client_scope_t new_scope_handle;
-  etcpal_error_t res = rdmnet_controller_add_scope(controller_handle_, &config, &new_scope_handle);
-  if (res == kEtcPalErrOk)
+  etcpal::Result res = rdmnet_controller_add_scope(controller_handle_, &config, &new_scope_handle);
+  if (res)
   {
     if (log_)
       log_->Log(ETCPAL_LOG_INFO, "RDMnet scope '%s' added with handle %d.", scope.c_str(), new_scope_handle);
@@ -180,15 +181,15 @@ rdmnet_client_scope_t RDMnetLibWrapper::AddScope(const std::string& scope, Stati
   else
   {
     if (log_)
-      log_->Log(ETCPAL_LOG_ERR, "Error adding new RDMnet scope '%s': '%s'", scope.c_str(), etcpal_strerror(res));
+      log_->Log(ETCPAL_LOG_ERR, "Error adding new RDMnet scope '%s': '%s'", scope.c_str(), res.ToCString());
     return RDMNET_CLIENT_SCOPE_INVALID;
   }
 }
 
 bool RDMnetLibWrapper::RemoveScope(rdmnet_client_scope_t scope_handle, rdmnet_disconnect_reason_t reason)
 {
-  etcpal_error_t res = rdmnet_controller_remove_scope(controller_handle_, scope_handle, reason);
-  if (res == kEtcPalErrOk)
+  etcpal::Result res = rdmnet_controller_remove_scope(controller_handle_, scope_handle, reason);
+  if (res)
   {
     if (log_)
       log_->Log(ETCPAL_LOG_INFO, "RDMnet scope with handle %d removed.", scope_handle);
@@ -197,7 +198,7 @@ bool RDMnetLibWrapper::RemoveScope(rdmnet_client_scope_t scope_handle, rdmnet_di
   else
   {
     if (log_)
-      log_->Log(ETCPAL_LOG_ERR, "Error removing RDMnet scope with handle %d: '%s'", scope_handle, etcpal_strerror(res));
+      log_->Log(ETCPAL_LOG_ERR, "Error removing RDMnet scope with handle %d: '%s'", scope_handle, res.ToCString());
     return false;
   }
 }
