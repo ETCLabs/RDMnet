@@ -637,7 +637,7 @@ etcpal_error_t ControllerDefaultResponder::ProcessGetComponentScope(uint16_t slo
     {
       component_scope.scope_slot = slot;
       rdmnet_safe_strncpy(component_scope.scope_string.string, entry.scope_string.c_str(), RDMPD_MAX_SCOPE_STR_LEN);
-      component_scope.static_broker_addr = entry.static_broker.addr;
+      component_scope.static_broker_addr = entry.static_broker.addr.get();
       got_scope = true;
     }
   }
@@ -744,12 +744,12 @@ etcpal_error_t ControllerDefaultResponder::ProcessSetComponentScope(const RdmPdC
       if (scope_entry.static_broker.valid)
       {
         // The next connection should be static.
-        scope_entry.current_broker = scope_entry.static_broker.addr;
+        scope_entry.current_broker = scope_entry.static_broker.addr.get();
       }
       else if (old_static_broker_valid && !scope_entry.static_broker.valid)
       {
         // Close the static connection (which is current).
-        memset(&scope_entry.current_broker, 0, sizeof(EtcPalSockaddr));
+        memset(&scope_entry.current_broker, 0, sizeof(EtcPalSockAddr));
         scope_entry.current_broker.ip.type = kEtcPalIpTypeInvalid;
       }
 
@@ -972,86 +972,86 @@ bool ControllerDefaultResponder::GetComponentScope(const uint8_t* param_data, ui
 bool ControllerDefaultResponder::GetComponentScope(uint16_t slot, std::vector<RdmParamData>& resp_data_list,
                                                    uint16_t& nack_reason) const
 {
-  if (slot != 0)
-  {
-    etcpal::ReadGuard prop_read(prop_lock_);
-    ScopeEntry entry;
+  //if (slot != 0)
+  //{
+  //  etcpal::ReadGuard prop_read(prop_lock_);
+  //  ScopeEntry entry;
 
-    if (scopes_.Find(slot, entry))
-    {
-      RdmParamData resp_data;
+  //  if (scopes_.Find(slot, entry))
+  //  {
+  //    RdmParamData resp_data;
 
-      // Build the parameter data of the COMPONENT_SCOPE response.
+  //    // Build the parameter data of the COMPONENT_SCOPE response.
 
-      // Scope slot
-      uint8_t* cur_ptr = resp_data.data;
-      etcpal_pack_16b(cur_ptr, slot);
-      cur_ptr += 2;
+  //    // Scope slot
+  //    uint8_t* cur_ptr = resp_data.data;
+  //    etcpal_pack_16b(cur_ptr, slot);
+  //    cur_ptr += 2;
 
-      // Scope string
-      const std::string& scope_str = entry.scope_string;
-      strncpy((char*)cur_ptr, scope_str.c_str(), E133_SCOPE_STRING_PADDED_LENGTH);
-      cur_ptr[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
-      cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
+  //    // Scope string
+  //    const std::string& scope_str = entry.scope_string;
+  //    strncpy((char*)cur_ptr, scope_str.c_str(), E133_SCOPE_STRING_PADDED_LENGTH);
+  //    cur_ptr[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
+  //    cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
 
-      // Static configuration
-      if (entry.static_broker.valid)
-      {
-        const EtcPalSockaddr& saddr = entry.static_broker.addr;
-        if (ETCPAL_IP_IS_V4(&saddr.ip))
-        {
-          const auto& saddr = scopeIter->second.static_broker.addr;
-          if (saddr.ip().IsV4())
-          {
-            *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
-            etcpal_pack_32b(cur_ptr, saddr.ip().v4_data());
-            cur_ptr += 4;
-            // Skip the IPv6 field
-            cur_ptr += 16;
-            etcpal_pack_16b(cur_ptr, saddr.port());
-            cur_ptr += 2;
-          }
-          else if (saddr.ip().IsV6())
-          {
-            *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
-            // Skip the IPv4 field
-            cur_ptr += 4;
-            memcpy(cur_ptr, saddr.ip().v6_data(), ETCPAL_IPV6_BYTES);
-            cur_ptr += ETCPAL_IPV6_BYTES;
-            etcpal_pack_16b(cur_ptr, saddr.port());
-            cur_ptr += 2;
-          }
-        }
-        else if (ETCPAL_IP_IS_V6(&saddr.ip))
-        {
-          *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
-          // Skip the IPv4 field
-          cur_ptr += 4;
-          memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&saddr.ip), ETCPAL_IPV6_BYTES);
-          cur_ptr += ETCPAL_IPV6_BYTES;
-          etcpal_pack_16b(cur_ptr, saddr.port);
-          cur_ptr += 2;
-        }
-      }
-      else
-      {
-        *cur_ptr++ = E133_NO_STATIC_CONFIG;
-        // Skip the IPv4, IPv6 and port fields
-        cur_ptr += 4 + 16 + 2;
-      }
-      resp_data.datalen = static_cast<uint8_t>(cur_ptr - resp_data.data);
-      resp_data_list.push_back(resp_data);
-      return true;
-    }
-    else
-    {
-      nack_reason = E120_NR_DATA_OUT_OF_RANGE;
-    }
-  }
-  else
-  {
-    nack_reason = E120_NR_DATA_OUT_OF_RANGE;
-  }
+  //    // Static configuration
+  //    if (entry.static_broker.valid)
+  //    {
+  //      const EtcPalSockAddr& saddr = entry.static_broker.addr.get();
+  //      if (ETCPAL_IP_IS_V4(&saddr.ip))
+  //      {
+  //        const auto& saddr = scopeIter->second.static_broker.addr;
+  //        if (saddr.ip().IsV4())
+  //        {
+  //          *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
+  //          etcpal_pack_32b(cur_ptr, saddr.ip().v4_data());
+  //          cur_ptr += 4;
+  //          // Skip the IPv6 field
+  //          cur_ptr += 16;
+  //          etcpal_pack_16b(cur_ptr, saddr.port());
+  //          cur_ptr += 2;
+  //        }
+  //        else if (saddr.ip().IsV6())
+  //        {
+  //          *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
+  //          // Skip the IPv4 field
+  //          cur_ptr += 4;
+  //          memcpy(cur_ptr, saddr.ip().v6_data(), ETCPAL_IPV6_BYTES);
+  //          cur_ptr += ETCPAL_IPV6_BYTES;
+  //          etcpal_pack_16b(cur_ptr, saddr.port());
+  //          cur_ptr += 2;
+  //        }
+  //      }
+  //      else if (ETCPAL_IP_IS_V6(&saddr.ip))
+  //      {
+  //        *cur_ptr++ = E133_STATIC_CONFIG_IPV6;
+  //        // Skip the IPv4 field
+  //        cur_ptr += 4;
+  //        memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&saddr.ip), ETCPAL_IPV6_BYTES);
+  //        cur_ptr += ETCPAL_IPV6_BYTES;
+  //        etcpal_pack_16b(cur_ptr, saddr.port);
+  //        cur_ptr += 2;
+  //      }
+  //    }
+  //    else
+  //    {
+  //      *cur_ptr++ = E133_NO_STATIC_CONFIG;
+  //      // Skip the IPv4, IPv6 and port fields
+  //      cur_ptr += 4 + 16 + 2;
+  //    }
+  //    resp_data.datalen = static_cast<uint8_t>(cur_ptr - resp_data.data);
+  //    resp_data_list.push_back(resp_data);
+  //    return true;
+  //  }
+  //  else
+  //  {
+  //    nack_reason = E120_NR_DATA_OUT_OF_RANGE;
+  //  }
+  //}
+  //else
+  //{
+  //  nack_reason = E120_NR_DATA_OUT_OF_RANGE;
+  //}
   return false;
 }
 
@@ -1212,7 +1212,7 @@ void ControllerDefaultResponder::RemoveScope(const std::string& scope_to_remove)
 
 void ControllerDefaultResponder::UpdateScopeConnectionStatus(const std::string& scope, bool connected,
                                                              const etcpal::SockAddr& broker_addr,
-                                                             const RdmUid& controller_uid))
+                                                             const RdmUid& controller_uid)
 {
   etcpal::WriteGuard prop_write(prop_lock_);
   ScopeEntry entry;
@@ -1221,7 +1221,7 @@ void ControllerDefaultResponder::UpdateScopeConnectionStatus(const std::string& 
     entry.connected = connected;
     if (connected)
     {
-      entry.current_broker = broker_addr;
+      entry.current_broker = broker_addr.get();
       entry.my_uid = controller_uid;
     }
 

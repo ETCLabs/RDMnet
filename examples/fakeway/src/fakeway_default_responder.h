@@ -29,6 +29,7 @@
 #include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/lock.h"
 #include "etcpal/thread.h"
+#include "rdm/message.h"
 #include "rdmnet/version.h"
 #include "rdmnet/client.h"
 
@@ -49,11 +50,6 @@ class FakewayDefaultResponder
 public:
   static const size_t MAX_RESPONSES_IN_ACK_OVERFLOW = 2;
 
-  struct RdmParamData
-  {
-    uint8_t datalen;
-    uint8_t data[RDM_MAX_PDL];
-  };
   using ParamDataList = std::vector<RdmParamData>;
 
   static const uint8_t kDeviceInfo[];

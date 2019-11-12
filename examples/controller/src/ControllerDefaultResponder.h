@@ -31,12 +31,6 @@
 
 #define CONTROLLER_HANDLER_ARRAY_SIZE 8
 
-struct RdmParamData
-{
-  uint8_t data[RDM_MAX_PDL];
-  uint8_t datalen;
-};
-
 struct ControllerScopeData
 {
   ControllerScopeData(StaticBrokerConfig sb) : static_broker(sb) {}
@@ -143,16 +137,14 @@ private:
   {
     ScopeEntry()
     {
-      memset(&current_broker, 0, sizeof(EtcPalSockaddr));
+      memset(&current_broker, 0, sizeof(EtcPalSockAddr));
       current_broker.ip.type = kEtcPalIpTypeInvalid;
-      memset(&static_broker, 0, sizeof(StaticBrokerConfig));
-      static_broker.addr.ip.type = kEtcPalIpTypeInvalid;
       memset(&my_uid, 0, sizeof(RdmUid));
     }
 
     ScopeEntry(StaticBrokerConfig sb) : static_broker(sb)
     {
-      memset(&current_broker, 0, sizeof(EtcPalSockaddr));
+      memset(&current_broker, 0, sizeof(EtcPalSockAddr));
       current_broker.ip.type = kEtcPalIpTypeInvalid;
       memset(&my_uid, 0, sizeof(RdmUid));
     }
@@ -163,7 +155,7 @@ private:
     uint16_t unhealthy_tcp_events{0};
     StaticBrokerConfig static_broker;
     bool connected{false};
-    EtcPalSockaddr current_broker;
+    EtcPalSockAddr current_broker;
     RdmUid my_uid;
   };
 

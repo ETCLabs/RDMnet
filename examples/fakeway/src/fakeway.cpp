@@ -176,7 +176,8 @@ void Fakeway::RdmCommandReceived(const RemoteRdmCommand& cmd)
       const RdmCommand& rdm = cmd.rdm;
       if (endpoint->QueueMessageForResponder(rdm.dest_uid, std::move(saved_cmd)))
       {
-        RDM_CmdC to_send(static_cast<uint8_t>(rdm.command_class), rdm.param_id, rdm.subdevice, rdm.datalen, rdm.data,
+        RDM_CmdC to_send(static_cast<uint8_t>(rdm.command_class), rdm.param_id, rdm.subdevice,
+                         rdm.parameter_data.datalen, rdm.parameter_data.data,
                          rdm.dest_uid.manu, rdm.dest_uid.id);
         gadget_.SendRdmCommand(endpoint->gadget_id(), endpoint->port_num(), to_send, raw_saved_cmd);
       }
@@ -279,7 +280,7 @@ bool Fakeway::ProcessDefRespRdmCommand(const RdmCommand& cmd, std::vector<RdmRes
   switch (cmd.command_class)
   {
     case kRdmCCSetCommand:
-      if (def_resp_->Set(cmd.param_id, cmd.data, cmd.datalen, nack_reason, config_change))
+      if (def_resp_->Set(cmd.param_id, cmd.parameter_data.data, cmd.parameter_data.datalen, nack_reason, config_change))
       {
         RdmResponse resp_data;
         resp_data.source_uid = cmd.dest_uid;
@@ -290,7 +291,7 @@ bool Fakeway::ProcessDefRespRdmCommand(const RdmCommand& cmd, std::vector<RdmRes
         resp_data.subdevice = 0;
         resp_data.command_class = kRdmCCSetCommandResponse;
         resp_data.param_id = cmd.param_id;
-        resp_data.datalen = 0;
+        resp_data.parameter_data.datalen = 0;
 
         resp_list.push_back(resp_data);
         res = true;
@@ -300,7 +301,7 @@ bool Fakeway::ProcessDefRespRdmCommand(const RdmCommand& cmd, std::vector<RdmRes
     {
       FakewayDefaultResponder::ParamDataList resp_data_list;
 
-      if (def_resp_->Get(cmd.param_id, cmd.data, cmd.datalen, resp_data_list, nack_reason) && !resp_data_list.empty())
+      if (def_resp_->Get(cmd.param_id, cmd.parameter_data.data, cmd.parameter_data.datalen, resp_data_list, nack_reason) && !resp_data_list.empty())
       {
         RdmResponse resp_data;
 
@@ -315,8 +316,8 @@ bool Fakeway::ProcessDefRespRdmCommand(const RdmCommand& cmd, std::vector<RdmRes
 
         for (size_t i = 0; i < resp_data_list.size(); ++i)
         {
-          memcpy(resp_data.data, resp_data_list[i].data, resp_data_list[i].datalen);
-          resp_data.datalen = resp_data_list[i].datalen;
+          memcpy(resp_data.parameter_data.data, resp_data_list[i].data, resp_data_list[i].datalen);
+          resp_data.parameter_data.datalen = resp_data_list[i].datalen;
 
           if (i == resp_data_list.size() - 1)
           {
@@ -346,7 +347,7 @@ void Fakeway::SendRptStatus(const RemoteRdmCommand& received_cmd, rpt_status_cod
 void Fakeway::SendRptNack(const RemoteRdmCommand& received_cmd, uint16_t nack_reason)
 {
   RdmResponse resp_data;
-  RDM_CREATE_NACK_FROM_COMMAND(&resp_data, &received_cmd.rdm, nack_reason);
+  rdmresp_create_nack_from_command(&resp_data, &received_cmd.rdm, nack_reason);
 
   std::vector<RdmResponse> resp_list(1, resp_data);
   SendRptResponse(received_cmd, resp_list);
@@ -373,7 +374,7 @@ void Fakeway::SendUnsolicitedRptResponse(uint16_t from_endpoint, std::vector<Rdm
 void Fakeway::SendLlrpNack(const LlrpRemoteRdmCommand& received_cmd, uint16_t nack_reason)
 {
   RdmResponse resp_data;
-  RDM_CREATE_NACK_FROM_COMMAND(&resp_data, &received_cmd.rdm, nack_reason);
+  rdmresp_create_nack_from_command(&resp_data, &received_cmd.rdm, nack_reason);
   SendLlrpResponse(received_cmd, resp_data);
 }
 
@@ -421,8 +422,8 @@ void Fakeway::HandleGadgetConnected(unsigned int gadget_id, unsigned int num_por
       resp_data.subdevice = 0;
       resp_data.command_class = kRdmCCGetCommandResponse;
       resp_data.param_id = E137_7_ENDPOINT_LIST_CHANGE;
-      memcpy(resp_data.data, param_data[0].data, param_data[0].datalen);
-      resp_data.datalen = param_data[0].datalen;
+      memcpy(resp_data.parameter_data.data, param_data[0].data, param_data[0].datalen);
+      resp_data.parameter_data.datalen = param_data[0].datalen;
 
       std::vector<RdmResponse> resp_list(1, resp_data);
       SendUnsolicitedRptResponse(E133_NULL_ENDPOINT, resp_list);
@@ -461,8 +462,8 @@ void Fakeway::HandleGadgetDisconnected(unsigned int gadget_id)
       resp_data.subdevice = 0;
       resp_data.command_class = kRdmCCGetCommandResponse;
       resp_data.param_id = E137_7_ENDPOINT_LIST_CHANGE;
-      memcpy(resp_data.data, param_data[0].data, param_data[0].datalen);
-      resp_data.datalen = param_data[0].datalen;
+      memcpy(resp_data.parameter_data.data, param_data[0].data, param_data[0].datalen);
+      resp_data.parameter_data.datalen = param_data[0].datalen;
 
       std::vector<RdmResponse> resp_list(1, resp_data);
       SendUnsolicitedRptResponse(E133_NULL_ENDPOINT, resp_list);
@@ -506,8 +507,8 @@ void Fakeway::HandleNewRdmResponderDiscovered(unsigned int gadget_id, unsigned i
             resp_data.subdevice = 0;
             resp_data.command_class = kRdmCCGetCommandResponse;
             resp_data.param_id = E137_7_ENDPOINT_RESPONDER_LIST_CHANGE;
-            memcpy(resp_data.data, param_data[0].data, param_data[0].datalen);
-            resp_data.datalen = param_data[0].datalen;
+            memcpy(resp_data.parameter_data.data, param_data[0].data, param_data[0].datalen);
+            resp_data.parameter_data.datalen = param_data[0].datalen;
 
             std::vector<RdmResponse> resp_list(1, resp_data);
             SendUnsolicitedRptResponse(E133_NULL_ENDPOINT, resp_list);
@@ -542,8 +543,8 @@ void Fakeway::HandleRdmResponse(unsigned int gadget_id, unsigned int port_number
       resp_data.subdevice = cmd.getSubdevice();
       resp_data.command_class = static_cast<rdm_command_class_t>(cmd.getCommand());
       resp_data.param_id = cmd.getParameter();
-      resp_data.datalen = cmd.getLength();
-      memcpy(resp_data.data, cmd.getBuffer(), resp_data.datalen);
+      resp_data.parameter_data.datalen = cmd.getLength();
+      memcpy(resp_data.parameter_data.data, cmd.getBuffer(), resp_data.parameter_data.datalen);
 
       std::vector<RdmResponse> resp_list(1, resp_data);
       if (!received_cmd)
@@ -623,8 +624,8 @@ void Fakeway::HandleRdmResponderLost(unsigned int gadget_id, unsigned int port_n
           resp_data.subdevice = 0;
           resp_data.command_class = kRdmCCGetCommandResponse;
           resp_data.param_id = E137_7_ENDPOINT_RESPONDER_LIST_CHANGE;
-          memcpy(resp_data.data, param_data[0].data, param_data[0].datalen);
-          resp_data.datalen = param_data[0].datalen;
+          memcpy(resp_data.parameter_data.data, param_data[0].data, param_data[0].datalen);
+          resp_data.parameter_data.datalen = param_data[0].datalen;
 
           std::vector<RdmResponse> resp_list(1, resp_data);
           SendUnsolicitedRptResponse(E133_NULL_ENDPOINT, resp_list);

@@ -43,10 +43,8 @@
 struct StaticBrokerConfig
 {
   StaticBrokerConfig() {}
-  StaticBrokerConfig(const EtcPalSockaddr& address)
+  StaticBrokerConfig(const EtcPalSockAddr& address)
   {
-    memset(&addr, 0, sizeof(EtcPalSockaddr));
-    addr.ip.type = kEtcPalIpTypeInvalid;
     valid = (address.ip.type != kEtcPalIpTypeInvalid) && (address.port != 0);
     if (valid)
     {

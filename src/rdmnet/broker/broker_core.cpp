@@ -781,8 +781,8 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
     else if (rptmsg->header.dest_uid == my_uid_)  // This must come from a controller
     {
       RptMessage rpt_response;
-      const RdmBufList* request_list = get_rdm_buf_list(rptmsg);
-      RdmBufList* response_list = get_rdm_buf_list(&rpt_response);
+      const RdmBufList* request_list = GET_RDM_BUF_LIST(rptmsg);
+      RdmBufList* response_list = GET_RDM_BUF_LIST(&rpt_response);
       response_list->list = nullptr;
 
       /* Process the RDM command */
