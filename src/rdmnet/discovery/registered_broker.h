@@ -24,6 +24,10 @@
 #include "rdmnet/core/discovery.h"
 #include "disc_platform_defs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // How long we monitor the registered scope before doing the actual DNS registration of a broker.
 #define BROKER_REG_QUERY_TIMEOUT 3000
 
@@ -50,5 +54,16 @@ struct RdmnetBrokerRegisterRef
 
   RdmnetBrokerRegisterRef* next;
 };
+
+RdmnetBrokerRegisterRef* registered_broker_new(const RdmnetBrokerRegisterConfig* config);
+void registered_broker_insert(RdmnetBrokerRegisterRef* ref);
+bool broker_register_ref_is_valid(const RdmnetBrokerRegisterRef* ref);
+void registered_broker_for_each(void (*for_each_func)(RdmnetBrokerRegisterRef*));
+void registered_broker_remove(const RdmnetBrokerRegisterRef* ref);
+void registered_broker_delete(RdmnetBrokerRegisterRef* rb);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* REGISTERED_BROKER_H_ */

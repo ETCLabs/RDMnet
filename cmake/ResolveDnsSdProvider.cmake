@@ -9,8 +9,8 @@
 # The imported DNS-SD library. This will have its properties set by the various options below.
 add_library(dnssd INTERFACE)
 
-add_library(RDMnetDiscovery INTERFACE)
-target_sources(RDMnetDiscovery INTERFACE
+add_library(RDMnetDiscoveryCommon INTERFACE)
+target_sources(RDMnetDiscoveryCommon INTERFACE
   ${RDMNET_INCLUDE}/rdmnet/core/discovery.h
 
   ${RDMNET_SRC}/rdmnet/discovery/disc_common.h
@@ -24,7 +24,7 @@ target_sources(RDMnetDiscovery INTERFACE
   ${RDMNET_SRC}/rdmnet/discovery/monitored_scope.c
   ${RDMNET_SRC}/rdmnet/discovery/registered_broker.c
 )
-target_include_directories(RDMnetDiscovery INTERFACE
+target_include_directories(RDMnetDiscoveryCommon INTERFACE
   ${RDMNET_INCLUDE}
   ${RDMNET_SRC}
   ${RDMNET_SRC}/rdmnet/discovery
@@ -33,12 +33,9 @@ target_include_directories(RDMnetDiscovery INTERFACE
 if(WIN32)
   include(${RDMNET_ROOT}/cmake/dnssd/windows.cmake)
 elseif(APPLE)
-  include(dnssd/macos.cmake)
+  include(${RDMNET_ROOT}/cmake/dnssd/macos.cmake)
 elseif(UNIX)
-  include(dnssd/unix.cmake)
+  include(${RDMNET_ROOT}/cmake/dnssd/unix.cmake)
 else()
   message(FATAL_ERROR "There is currently no DNS-SD provider supported for this platform.")
 endif()
-
-target_sources(RDMnetDiscovery INTERFACE ${RDMNET_DISCOVERY_ADDITIONAL_SOURCES})
-target_include_directories(RDMnetDiscovery INTERFACE ${RDMNET_DISCOVERY_ADDITIONAL_INCLUDE_DIRS})

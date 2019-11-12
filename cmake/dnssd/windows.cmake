@@ -16,11 +16,12 @@ set(MDNSWINDOWS_SRC_LOC "" CACHE STRING "Override location for mDNSWindows to bu
 add_library(dnssd_mock INTERFACE)
 
 # On Windows, we use Bonjour for Windows, either through the Bonjour SDK or ETC's Bonjour fork.
-set(RDMNET_DISCOVERY_ADDITIONAL_SOURCES
+add_library(RDMnetDiscoveryPlatform INTERFACE)
+target_sources(RDMnetDiscoveryPlatform INTERFACE
   ${RDMNET_SRC}/rdmnet/discovery/bonjour/disc_platform_defs.h
   ${RDMNET_SRC}/rdmnet/discovery/bonjour/rdmnet_disc_bonjour.c
 )
-set(RDMNET_DISCOVERY_ADDITIONAL_INCLUDE_DIRS
+target_include_directories(RDMnetDiscoveryPlatform INTERFACE
   ${RDMNET_SRC}/rdmnet/discovery/bonjour
 )
 

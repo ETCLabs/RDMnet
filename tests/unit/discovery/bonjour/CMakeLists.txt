@@ -8,7 +8,8 @@ add_executable(test_discovery_bonjour
 )
 target_include_directories(test_discovery_bonjour PRIVATE ${RDMNET_SRC})
 target_link_libraries(test_discovery_bonjour PRIVATE
-  RDMnetDiscovery
+  RDMnetDiscoveryCommon
+  RDMnetDiscoveryPlatform
   dnssd_mock
   EtcPalMock
   RDM

@@ -17,35 +17,20 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#include "rdmnet/discovery/common.h"
+#include "disc_common.h"
 
 #include "rdmnet/core/util.h"
 #include "rdmnet/private/core.h"
+#include "registered_broker.h"
+#include "discovered_broker.h"
+#include "monitored_scope.h"
+#include "disc_platform_api.h"
 
 /***************************** Global variables ******************************/
 
 etcpal_mutex_t rdmnet_disc_lock;
 
-/**************************** Private constants ******************************/
-
-#define MAX_SCOPES_MONITORED ((RDMNET_MAX_SCOPES_PER_CONTROLLER * RDMNET_MAX_CONTROLLERS) + RDMNET_MAX_DEVICES)
-
-/**************************** Private variables ******************************/
-
-static RdmnetScopeMonitorRef* scope_ref_list;
-static RdmnetBrokerRegisterRef* broker_ref_list;
-
 /*********************** Private function prototypes *************************/
-
-static RdmnetScopeMonitorRef* scope_monitor_new(const RdmnetScopeMonitorConfig* config);
-static void scope_monitor_insert(RdmnetScopeMonitorRef* scope_ref);
-static void scope_monitor_remove(const RdmnetScopeMonitorRef* ref);
-static void scope_monitor_delete(RdmnetScopeMonitorRef* ref);
-
-static RdmnetBrokerRegisterRef* registered_broker_new(const RdmnetBrokerRegisterConfig* config);
-static void registered_broker_insert(RdmnetBrokerRegisterRef* ref);
-static void registered_broker_remove(const RdmnetBrokerRegisterRef* ref);
-static void registered_broker_delete(RdmnetBrokerRegisterRef* rb);
 
 static void stop_monitoring_all_internal();
 
@@ -193,19 +178,8 @@ void stop_monitoring_all_internal()
 {
   if (RDMNET_DISC_LOCK())
   {
-    if (scope_ref_list)
-    {
-      RdmnetScopeMonitorRef* ref = scope_ref_list;
-      RdmnetScopeMonitorRef* next_ref;
-      while (ref)
-      {
-        next_ref = ref->next;
-        rdmnet_disc_platform_stop_monitoring(ref);
-        scope_monitor_delete(ref);
-        ref = next_ref;
-      }
-      scope_ref_list = NULL;
-    }
+    scope_monitor_for_each(rdmnet_disc_platform_stop_monitoring);
+    scope_monitor_delete_all();
     RDMNET_DISC_UNLOCK();
   }
 }
@@ -324,10 +298,7 @@ void rdmnet_disc_tick(void)
 
   if (RDMNET_DISC_LOCK())
   {
-    for (RdmnetBrokerRegisterRef* broker_ref = broker_ref_list; broker_ref; broker_ref = broker_ref->next)
-    {
-      process_broker_state(broker_ref);
-    }
+    registered_broker_for_each(process_broker_state);
     RDMNET_DISC_UNLOCK();
   }
   rdmnet_disc_platform_tick();
@@ -353,255 +324,6 @@ void process_broker_state(RdmnetBrokerRegisterRef* broker_ref)
         broker_ref->state = kBrokerStateNotRegistered;
         broker_ref->config.callbacks.broker_register_error(broker_ref, platform_error,
                                                            broker_ref->config.callback_context);
-      }
-    }
-  }
-}
-
-/* Allocate and initialize a new scope monitor ref. */
-RdmnetScopeMonitorRef* scope_monitor_new(const RdmnetScopeMonitorConfig* config)
-{
-  RdmnetScopeMonitorRef* new_monitor = (RdmnetScopeMonitorRef*)malloc(sizeof(RdmnetScopeMonitorRef));
-  if (new_monitor)
-  {
-    new_monitor->config = *config;
-    new_monitor->broker_handle = NULL;
-    new_monitor->broker_list = NULL;
-    new_monitor->next = NULL;
-  }
-  return new_monitor;
-}
-
-/* Adds a new scope monitor ref to the global scope_ref_list. Assumes a lock is already taken. */
-void scope_monitor_insert(RdmnetScopeMonitorRef* scope_ref)
-{
-  if (scope_ref)
-  {
-    scope_ref->next = NULL;
-
-    if (!scope_ref_list)
-    {
-      // Make the new scope the head of the list.
-      scope_ref_list = scope_ref;
-    }
-    else
-    {
-      // Insert the new scope at the end of the list.
-      RdmnetScopeMonitorRef* ref = scope_ref_list;
-      for (; ref->next; ref = ref->next)
-        ;
-      ref->next = scope_ref;
-    }
-  }
-}
-
-bool scope_monitor_ref_is_valid(const RdmnetScopeMonitorRef* ref)
-{
-  for (const RdmnetScopeMonitorRef* compare_ref = scope_ref_list; compare_ref; compare_ref = compare_ref->next)
-  {
-    if (ref == compare_ref)
-      return true;
-  }
-  return false;
-}
-
-/* Removes an entry from scope_ref_list. Assumes a lock is already taken. */
-void scope_monitor_remove(const RdmnetScopeMonitorRef* ref)
-{
-  if (!scope_ref_list)
-    return;
-
-  if (ref == scope_ref_list)
-  {
-    // Remove the element at the head of the list
-    scope_ref_list = ref->next;
-  }
-  else
-  {
-    for (RdmnetScopeMonitorRef* prev_ref = scope_ref_list; prev_ref->next; prev_ref = prev_ref->next)
-    {
-      if (prev_ref->next == ref)
-      {
-        prev_ref->next = ref->next;
-        break;
-      }
-    }
-  }
-}
-
-/* Deallocate a scope_monitor_ref. Also deallocates all DiscoveredBrokers attached to this
- * scope_monitor_ref. */
-void scope_monitor_delete(RdmnetScopeMonitorRef* ref)
-{
-  DiscoveredBroker* db = ref->broker_list;
-  DiscoveredBroker* next_db;
-  while (db)
-  {
-    next_db = db->next;
-    discovered_broker_delete(db);
-    db = next_db;
-  }
-  free(ref);
-}
-
-DiscoveredBroker* discovered_broker_new(const char* service_name, const char* full_service_name)
-{
-  DiscoveredBroker* new_db = (DiscoveredBroker*)malloc(sizeof(DiscoveredBroker));
-  if (new_db)
-  {
-    rdmnet_disc_init_broker_info(&new_db->info);
-    rdmnet_safe_strncpy(new_db->info.service_name, service_name, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
-    rdmnet_safe_strncpy(new_db->full_service_name, full_service_name, RDMNET_DISC_SERVICE_NAME_MAX_LENGTH);
-    memset(&new_db->platform_data, 0, sizeof(RdmnetDiscoveredBrokerPlatformData));
-    new_db->next = NULL;
-  }
-  return new_db;
-}
-
-void discovered_broker_delete(DiscoveredBroker* db)
-{
-  BrokerListenAddr* listen_addr = db->info.listen_addr_list;
-  while (listen_addr)
-  {
-    BrokerListenAddr* next_listen_addr = listen_addr->next;
-    free(listen_addr);
-    listen_addr = next_listen_addr;
-  }
-  discovered_broker_free_platform_resources(db);
-  free(db);
-}
-
-RdmnetBrokerRegisterRef* registered_broker_new(const RdmnetBrokerRegisterConfig* config)
-{
-  RdmnetBrokerRegisterRef* new_rb = (RdmnetBrokerRegisterRef*)malloc(sizeof(RdmnetBrokerRegisterRef));
-  if (new_rb)
-  {
-    new_rb->config = *config;
-    new_rb->scope_monitor_handle = NULL;
-    new_rb->state = kBrokerStateNotRegistered;
-    new_rb->full_service_name[0] = '\0';
-    new_rb->query_timeout_expired = false;
-    memset(&new_rb->platform_data, 0, sizeof(RdmnetBrokerRegisterPlatformData));
-    new_rb->next = NULL;
-  }
-  return new_rb;
-}
-
-void registered_broker_insert(RdmnetBrokerRegisterRef* ref)
-{
-  if (ref)
-  {
-    ref->next = NULL;
-
-    if (!broker_ref_list)
-    {
-      // Make the new scope the head of the list.
-      broker_ref_list = ref;
-    }
-    else
-    {
-      // Insert the new registered broker at the end of the list.
-      RdmnetBrokerRegisterRef* last_ref = broker_ref_list;
-      for (; last_ref->next; last_ref = last_ref->next)
-        ;
-      last_ref->next = ref;
-    }
-  }
-}
-
-bool broker_register_ref_is_valid(const RdmnetBrokerRegisterRef* ref)
-{
-  for (const RdmnetBrokerRegisterRef* compare_ref = broker_ref_list; compare_ref; compare_ref = compare_ref->next)
-  {
-    if (ref == compare_ref)
-      return true;
-  }
-  return false;
-}
-
-/* Removes an entry from broker_ref_list. Assumes a lock is already taken. */
-void registered_broker_remove(const RdmnetBrokerRegisterRef* ref)
-{
-  if (!broker_ref_list)
-    return;
-
-  if (ref == broker_ref_list)
-  {
-    // Remove the element at the head of the list
-    broker_ref_list = ref->next;
-  }
-  else
-  {
-    for (RdmnetBrokerRegisterRef* prev_ref = broker_ref_list; prev_ref->next; prev_ref = prev_ref->next)
-    {
-      if (prev_ref->next == ref)
-      {
-        prev_ref->next = ref->next;
-        break;
-      }
-    }
-  }
-}
-
-void registered_broker_delete(RdmnetBrokerRegisterRef* rb)
-{
-  free(rb);
-}
-
-/* Adds broker discovery information into brokers.
- * Assumes a lock is already taken.*/
-void discovered_broker_insert(DiscoveredBroker** list_head_ptr, DiscoveredBroker* new_db)
-{
-  if (*list_head_ptr)
-  {
-    DiscoveredBroker* cur = *list_head_ptr;
-    for (; cur->next; cur = cur->next)
-      ;
-    cur->next = new_db;
-  }
-  else
-  {
-    *list_head_ptr = new_db;
-  }
-}
-
-/* Searches for a DiscoveredBroker instance by full name in a list.
- * Returns the found instance or NULL if no match was found.
- * Assumes a lock is already taken.
- */
-DiscoveredBroker* discovered_broker_lookup_by_name(DiscoveredBroker* list_head, const char* full_name)
-{
-  for (DiscoveredBroker* current = list_head; current; current = current->next)
-  {
-    if (strcmp(current->full_service_name, full_name) == 0)
-    {
-      return current;
-    }
-  }
-  return NULL;
-}
-
-/* Removes a DiscoveredBroker instance from a list.
- * Assumes a lock is already taken.*/
-void discovered_broker_remove(DiscoveredBroker** list_head_ptr, const DiscoveredBroker* db)
-{
-  if (!(*list_head_ptr))
-    return;
-
-  if (*list_head_ptr == db)
-  {
-    // Remove from the head of the list
-    *list_head_ptr = (*list_head_ptr)->next;
-  }
-  else
-  {
-    // Find in the list and remove.
-    for (DiscoveredBroker* prev_db = *list_head_ptr; prev_db->next; prev_db = prev_db->next)
-    {
-      if (prev_db->next == db)
-      {
-        prev_db->next = prev_db->next->next;
-        break;
       }
     }
   }

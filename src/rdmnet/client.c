@@ -20,11 +20,6 @@
 #include "rdmnet/client.h"
 
 #include <string.h>
-#if RDMNET_DYNAMIC_MEM
-#include <stdlib.h>
-#else
-#include "etcpal/mempool.h"
-#endif
 #include "etcpal/lock.h"
 #include "etcpal/rbtree.h"
 #include "rdm/controller.h"
@@ -38,6 +33,12 @@
 #include "rdmnet/private/client.h"
 #include "rdmnet/private/opts.h"
 #include "rdmnet/private/util.h"
+
+#if RDMNET_DYNAMIC_MEM
+#include <stdlib.h>
+#else
+#include "etcpal/mempool.h"
+#endif
 
 /*************************** Private constants *******************************/
 

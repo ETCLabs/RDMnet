@@ -17,7 +17,7 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#include "rdmnet/discovery/common.h"
+#include "disc_common.h"
 
 #include <cstring>
 #include <memory>

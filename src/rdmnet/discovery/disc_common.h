@@ -17,11 +17,11 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/* rdmnet/discovery/common.h
+/* disc_common.h
  * Common functions and definitions used by all mDNS/DNS-SD providers across platforms.
  */
-#ifndef RDMNET_DISCOVERY_COMMON_H_
-#define RDMNET_DISCOVERY_COMMON_H_
+#ifndef DISC_COMMON_H_
+#define DISC_COMMON_H_
 
 #include "etcpal/timer.h"
 #include "rdmnet/private/discovery.h"
@@ -43,9 +43,6 @@ extern etcpal_mutex_t rdmnet_disc_lock;
  * Platform-neutral functions callable from both common.c and the platform-specific sources
  *************************************************************************************************/
 
-bool scope_monitor_ref_is_valid(const RdmnetScopeMonitorRef* ref);
-bool broker_register_ref_is_valid(const RdmnetBrokerRegisterRef* ref);
-
 // Callbacks called from platform-specific code, must be called in a locked context
 void notify_scope_monitor_error(RdmnetScopeMonitorRef* ref, int platform_specific_error);
 void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info);
@@ -55,4 +52,4 @@ void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name)
 }
 #endif
 
-#endif /* RDMNET_DISCOVERY_COMMON_H_ */
+#endif /* DISC_COMMON_H_ */
