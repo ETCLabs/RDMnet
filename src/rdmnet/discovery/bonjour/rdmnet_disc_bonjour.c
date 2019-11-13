@@ -138,22 +138,7 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceF
     {
       if (!etcpal_ip_is_loopback(&ip_addr.ip) && !etcpal_ip_is_wildcard(&ip_addr.ip))
       {
-        // Add it to the info structure
-        BrokerListenAddr* new_addr = (BrokerListenAddr*)malloc(sizeof(BrokerListenAddr));
-        new_addr->addr = ip_addr.ip;
-        new_addr->next = NULL;
-
-        if (!db->info.listen_addr_list)
-        {
-          db->info.listen_addr_list = new_addr;
-        }
-        else
-        {
-          BrokerListenAddr* cur_addr = db->info.listen_addr_list;
-          while (cur_addr->next)
-            cur_addr = cur_addr->next;
-          cur_addr->next = new_addr;
-        }
+        discovered_broker_add_listen_addr(db, &ip_addr.ip);
       }
     }
 

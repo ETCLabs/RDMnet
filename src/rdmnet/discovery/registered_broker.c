@@ -132,3 +132,18 @@ void registered_broker_delete(RdmnetBrokerRegisterRef* rb)
 {
   FREE_REGISTERED_BROKER(rb);
 }
+
+void registered_broker_delete_all()
+{
+  if (!broker_ref_list)
+    return;
+
+  RdmnetBrokerRegisterRef* ref = broker_ref_list;
+  while (ref)
+  {
+    RdmnetBrokerRegisterRef* next_ref = ref->next;
+    registered_broker_delete(ref);
+    ref = next_ref;
+  }
+  broker_ref_list = NULL;
+}

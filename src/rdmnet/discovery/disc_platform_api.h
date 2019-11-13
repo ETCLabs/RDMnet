@@ -25,6 +25,13 @@
 #define DISC_PLATFORM_API_H_
 
 #include "rdmnet/core/discovery.h"
+#include "discovered_broker.h"
+#include "monitored_scope.h"
+#include "registered_broker.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 etcpal_error_t rdmnet_disc_platform_init(void);
 void rdmnet_disc_platform_deinit(void);
@@ -35,5 +42,10 @@ void rdmnet_disc_platform_stop_monitoring(RdmnetScopeMonitorRef* handle);
 etcpal_error_t rdmnet_disc_platform_register_broker(const RdmnetBrokerDiscInfo* info,
                                                     RdmnetBrokerRegisterRef* broker_ref, int* platform_specific_error);
 void rdmnet_disc_platform_unregister_broker(rdmnet_registered_broker_t handle);
+void discovered_broker_free_platform_resources(DiscoveredBroker* db);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* DISC_PLATFORM_API_H_ */

@@ -17,9 +17,9 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/* The rdmnet_disc_platform_defs.h specialization for Avahi. */
-#ifndef RDMNET_DISC_PLATFORM_DEFS_H_
-#define RDMNET_DISC_PLATFORM_DEFS_H_
+/* The disc_platform_defs.h specialization for Avahi. */
+#ifndef DISC_PLATFORM_DEFS_H_
+#define DISC_PLATFORM_DEFS_H_
 
 #include <avahi-client/client.h>
 #include <avahi-client/lookup.h>
@@ -47,4 +47,4 @@ typedef struct RdmnetBrokerRegisterPlatformData
   AvahiEntryGroup* avahi_entry_group;
 } RdmnetBrokerRegisterPlatformData;
 
-#endif /* RDMNET_DISC_PLATFORM_DEFS_H_ */
+#endif /* DISC_PLATFORM_DEFS_H_ */

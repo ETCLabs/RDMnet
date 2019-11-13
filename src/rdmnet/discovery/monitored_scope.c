@@ -27,10 +27,6 @@
 #include "etcpal/mempool.h"
 #endif
 
-/**************************** Private constants ******************************/
-
-#define MAX_SCOPES_MONITORED ((RDMNET_MAX_SCOPES_PER_CONTROLLER * RDMNET_MAX_CONTROLLERS) + RDMNET_MAX_DEVICES)
-
 /****************************** Private macros *******************************/
 
 #if RDMNET_DYNAMIC_MEM
@@ -44,7 +40,7 @@
 /**************************** Private variables ******************************/
 
 #if !RDMNET_DYNAMIC_MEM
-ETCPAL_MEMPOOL_DEFINE(scope_monitor_refs, RdmnetScopeMonitorRef, MAX_SCOPES_MONITORED);
+ETCPAL_MEMPOOL_DEFINE(scope_monitor_refs, RdmnetScopeMonitorRef, RDMNET_MAX_MONITORED_SCOPES);
 #endif
 
 static RdmnetScopeMonitorRef* scope_ref_list;

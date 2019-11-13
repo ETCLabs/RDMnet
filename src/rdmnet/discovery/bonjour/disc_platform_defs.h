@@ -17,9 +17,9 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/* The rdmnet_disc_platform_defs.h specialization for Bonjour. */
-#ifndef RDMNET_DISC_PLATFORM_DEFS_H_
-#define RDMNET_DISC_PLATFORM_DEFS_H_
+/* The disc_platform_defs.h specialization for Bonjour. */
+#ifndef DISC_PLATFORM_DEFS_H_
+#define DISC_PLATFORM_DEFS_H_
 
 #include "dns_sd.h"
 
@@ -51,4 +51,4 @@ typedef struct RdmnetBrokerRegisterPlatformData
   DNSServiceRef dnssd_ref;
 } RdmnetBrokerRegisterPlatformData;
 
-#endif /* RDMNET_DISC_PLATFORM_DEFS_H_ */
+#endif /* DISC_PLATFORM_DEFS_H_ */

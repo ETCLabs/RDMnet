@@ -17,14 +17,47 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
+/* Implementation of the discovered_broker.h functions. */
+
 #include "discovered_broker.h"
 
-DiscoveredBroker* discovered_broker_new(const char* service_name, const char* full_service_name)
+#include "rdmnet/core/util.h"
+#include "rdmnet/private/opts.h"
+#include "disc_platform_api.h"
+
+#if RDMNET_DYNAMIC_MEM
+#include <stdlib.h>
+#else
+#include "etcpal/mempool.h"
+#endif
+
+/****************************** Private macros *******************************/
+
+#if RDMNET_DYNAMIC_MEM
+#define ALLOC_DISCOVERED_BROKER() (DiscoveredBroker*)malloc(sizeof(DiscoveredBroker))
+#define FREE_DISCOVERED_BROKER(ptr) free(ptr)
+#else
+#define ALLOC_DISCOVERED_BROKER() (DiscoveredBroker*)etcpal_mempool_alloc(discovered_brokers)
+#define FREE_DISCOVERED_BROKER(ptr) etcpal_mempool_free(discovered_brokers, ptr)
+#endif
+
+/**************************** Private variables ******************************/
+
+#if !RDMNET_DYNAMIC_MEM
+ETCPAL_MEMPOOL_DEFINE(discovered_brokers, DiscoveredBroker, RDMNET_MAX_DISCOVERED_BROKERS);
+#endif
+
+DiscoveredBroker* discovered_broker_new(rdmnet_scope_monitor_t monitor_ref, const char* service_name,
+                                        const char* full_service_name)
 {
-  DiscoveredBroker* new_db = (DiscoveredBroker*)malloc(sizeof(DiscoveredBroker));
+  DiscoveredBroker* new_db = ALLOC_DISCOVERED_BROKER();
   if (new_db)
   {
     rdmnet_disc_init_broker_info(&new_db->info);
+#if !RDMNET_DYNAMIC_MEM
+    new_db->info.listen_addrs = new_db->listen_addr_array;
+#endif
+    new_db->monitor_ref = monitor_ref;
     rdmnet_safe_strncpy(new_db->info.service_name, service_name, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
     rdmnet_safe_strncpy(new_db->full_service_name, full_service_name, RDMNET_DISC_SERVICE_NAME_MAX_LENGTH);
     memset(&new_db->platform_data, 0, sizeof(RdmnetDiscoveredBrokerPlatformData));
@@ -33,8 +66,6 @@ DiscoveredBroker* discovered_broker_new(const char* service_name, const char* fu
   return new_db;
 }
 
-/* Adds broker discovery information into brokers.
- * Assumes a lock is already taken.*/
 void discovered_broker_insert(DiscoveredBroker** list_head_ptr, DiscoveredBroker* new_db)
 {
   if (*list_head_ptr)
@@ -50,10 +81,43 @@ void discovered_broker_insert(DiscoveredBroker** list_head_ptr, DiscoveredBroker
   }
 }
 
-/* Searches for a DiscoveredBroker instance by full name in a list.
- * Returns the found instance or NULL if no match was found.
- * Assumes a lock is already taken.
- */
+bool discovered_broker_add_listen_addr(DiscoveredBroker* db, const EtcPalIpAddr* addr)
+{
+#if RDMNET_DYNAMIC_MEM
+  if (!db->info.listen_addrs)
+  {
+    db->info.listen_addrs = (EtcPalIpAddr*)malloc(sizeof(EtcPalIpAddr));
+    if (db->info.listen_addrs)
+    {
+      db->info.num_listen_addrs = 1;
+      db->info.listen_addrs[db->info.num_listen_addrs - 1] = *addr;
+      return true;
+    }
+  }
+  else
+  {
+    EtcPalIpAddr* new_arr =
+        (EtcPalIpAddr*)realloc(db->info.listen_addrs, sizeof(EtcPalIpAddr) * (db->info.num_listen_addrs + 1));
+    if (new_arr)
+    {
+      db->info.listen_addrs = new_arr;
+      ++db->info.num_listen_addrs;
+      db->info.listen_addrs[db->info.num_listen_addrs - 1] = *addr;
+      return true;
+    }
+  }
+  return false;
+#else
+  if (db->info.num_listen_addrs < RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER)
+  {
+    db->listen_addr_array[db->info.num_listen_addrs] = *addr;
+    ++db->info.num_listen_addrs;
+    return true;
+  }
+  return false;
+#endif
+}
+
 DiscoveredBroker* discovered_broker_lookup_by_name(DiscoveredBroker* list_head, const char* full_name)
 {
   for (DiscoveredBroker* current = list_head; current; current = current->next)
@@ -66,8 +130,6 @@ DiscoveredBroker* discovered_broker_lookup_by_name(DiscoveredBroker* list_head, 
   return NULL;
 }
 
-/* Removes a DiscoveredBroker instance from a list.
- * Assumes a lock is already taken.*/
 void discovered_broker_remove(DiscoveredBroker** list_head_ptr, const DiscoveredBroker* db)
 {
   if (!(*list_head_ptr))
@@ -94,13 +156,9 @@ void discovered_broker_remove(DiscoveredBroker** list_head_ptr, const Discovered
 
 void discovered_broker_delete(DiscoveredBroker* db)
 {
-  BrokerListenAddr* listen_addr = db->info.listen_addr_list;
-  while (listen_addr)
-  {
-    BrokerListenAddr* next_listen_addr = listen_addr->next;
-    free(listen_addr);
-    listen_addr = next_listen_addr;
-  }
+#if RDMNET_DYNAMIC_MEM
+  free(db->info.listen_addrs);
+#endif
   discovered_broker_free_platform_resources(db);
-  free(db);
+  FREE_DISCOVERED_BROKER(db);
 }

@@ -21,6 +21,9 @@
 #define DISCOVERED_BROKER_H_
 
 #include "rdmnet/core/discovery.h"
+
+#include "etcpal/bool.h"
+#include "rdmnet/private/opts.h"
 #include "disc_platform_defs.h"
 
 #ifdef __cplusplus
@@ -32,17 +35,55 @@ struct DiscoveredBroker
 {
   char full_service_name[RDMNET_DISC_SERVICE_NAME_MAX_LENGTH];
   RdmnetBrokerDiscInfo info;
-  RdmnetScopeMonitorRef* monitor_ref;
+  rdmnet_scope_monitor_t monitor_ref;
+#if !RDMNET_DYNAMIC_MEM
+  EtcPalIpAddr listen_addr_array[RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER];
+#endif
   RdmnetDiscoveredBrokerPlatformData platform_data;
   DiscoveredBroker* next;
 };
 
-DiscoveredBroker* discovered_broker_lookup_by_name(DiscoveredBroker* list_head, const char* full_name);
-DiscoveredBroker* discovered_broker_new(const char* service_name, const char* full_service_name);
+/*
+ * None of these functions are thread-safe and as such they should always be called within
+ * appropriate locks.
+ */
+
+/*
+ * Allocates a new discovered broker reference for a given monitored scope. service_name is the
+ * service instance name to populate the new broker reference with. full_service_name is the
+ * service name combined with the service type and domain. Call discovered_broker_insert() to
+ * insert the broker into a list.
+ */
+DiscoveredBroker* discovered_broker_new(rdmnet_scope_monitor_t monitor_ref, const char* service_name,
+                                        const char* full_service_name);
+
+/*
+ * Adds a discovered broker reference to a linked list pointed to by *list_head_ptr (works if
+ * *list_head_ptr is NULL, in that case creates the first list entry).
+ */
 void discovered_broker_insert(DiscoveredBroker** list_head_ptr, DiscoveredBroker* new_db);
+
+/*
+ * Adds a new broker listen address to the array for a given discovered broker.
+ */
+bool discovered_broker_add_listen_addr(DiscoveredBroker* db, const EtcPalIpAddr* addr);
+
+/*
+ * Searches for a DiscoveredBroker instance by full name in a list. Returns the found instance or
+ * NULL if no match was found.
+ */
+DiscoveredBroker* discovered_broker_lookup_by_name(DiscoveredBroker* list_head, const char* full_name);
+
+/*
+ * Removes a DiscoveredBroker instance from a list. If the instance was at the head of the list,
+ * updates *list_head_ptr.
+ */
 void discovered_broker_remove(DiscoveredBroker** list_head_ptr, const DiscoveredBroker* db);
+
+/*
+ * Deallocates a discovered broker reference.
+ */
 void discovered_broker_delete(DiscoveredBroker* db);
-void discovered_broker_free_platform_resources(DiscoveredBroker* db);
 
 #ifdef __cplusplus
 }

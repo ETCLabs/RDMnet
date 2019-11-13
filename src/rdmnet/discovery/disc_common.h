@@ -31,6 +31,9 @@
 extern "C" {
 #endif
 
+// How long we monitor the registered scope before doing the actual DNS registration of a broker.
+#define BROKER_REG_QUERY_TIMEOUT 3000
+
 /**************************************************************************************************
  * Access to the global discovery lock
  *************************************************************************************************/
@@ -44,7 +47,7 @@ extern etcpal_mutex_t rdmnet_disc_lock;
  *************************************************************************************************/
 
 // Callbacks called from platform-specific code, must be called in a locked context
-void notify_scope_monitor_error(RdmnetScopeMonitorRef* ref, int platform_specific_error);
+void notify_scope_monitor_error(rdmnet_scope_monitor_t handle, int platform_specific_error);
 void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info);
 void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name);
 

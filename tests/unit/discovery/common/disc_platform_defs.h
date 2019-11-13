@@ -17,9 +17,12 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
+#ifndef DISC_PLATFORM_DEFS_H_
+#define DISC_PLATFORM_DEFS_H_
+
 // A fake rdmnet_disc_platform_defs.h file for testing.
 
-#define RDMNET_DISC_SERVICE_NAME_MAX_LENGTH 20
+#define RDMNET_DISC_SERVICE_NAME_MAX_LENGTH 100
 
 typedef struct RdmnetDiscoveredBrokerPlatformData
 {
@@ -35,3 +38,5 @@ typedef struct RdmnetBrokerRegisterPlatformData
 {
   int placeholder;
 } RdmnetBrokerRegisterPlatformData;
+
+#endif /* DISC_PLATFORM_DEFS_H_ */

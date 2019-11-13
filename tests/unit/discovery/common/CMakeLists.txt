@@ -1,7 +1,12 @@
 # RDMnet Bonjour Discovery library unit tests
 
 add_executable(test_discovery_common
+  disc_platform_defs.h
+  test_disc_common_fakes.h
+  test_disc_common_fakes.c
+
   test_discovery_common.cpp
+  test_discovered_broker.cpp
 
   ${RDMNET_INCLUDE}/rdmnet_mock/core.h
   ${RDMNET_SRC}/rdmnet/core/util.c

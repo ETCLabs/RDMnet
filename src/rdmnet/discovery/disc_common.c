@@ -32,7 +32,8 @@ etcpal_mutex_t rdmnet_disc_lock;
 
 /*********************** Private function prototypes *************************/
 
-static void stop_monitoring_all_internal();
+static void stop_monitoring_all_scopes();
+static void unregister_all_brokers();
 
 // Other helpers
 static void process_broker_state(RdmnetBrokerRegisterRef* broker_ref);
@@ -62,7 +63,8 @@ etcpal_error_t rdmnet_disc_init()
 /* Internal function to deinitialize the RDMnet discovery API. */
 void rdmnet_disc_deinit()
 {
-  stop_monitoring_all_internal();
+  stop_monitoring_all_scopes();
+  unregister_all_brokers();
   etcpal_mutex_destroy(&rdmnet_disc_lock);
 }
 
@@ -80,7 +82,8 @@ void rdmnet_disc_init_broker_info(RdmnetBrokerDiscInfo* broker_info)
   broker_info->cid = kEtcPalNullUuid;
   memset(broker_info->service_name, 0, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
   broker_info->port = 0;
-  broker_info->listen_addr_list = NULL;
+  broker_info->listen_addrs = NULL;
+  broker_info->num_listen_addrs = 0;
   rdmnet_safe_strncpy(broker_info->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH);
   memset(broker_info->model, 0, E133_MODEL_STRING_PADDED_LENGTH);
   memset(broker_info->manufacturer, 0, E133_MANUFACTURER_STRING_PADDED_LENGTH);
@@ -171,15 +174,9 @@ void rdmnet_disc_stop_monitoring_all()
   if (!rdmnet_core_initialized())
     return;
 
-  stop_monitoring_all_internal();
-}
-
-void stop_monitoring_all_internal()
-{
   if (RDMNET_DISC_LOCK())
   {
-    scope_monitor_for_each(rdmnet_disc_platform_stop_monitoring);
-    scope_monitor_delete_all();
+    stop_monitoring_all_scopes();
     RDMNET_DISC_UNLOCK();
   }
 }
@@ -334,6 +331,18 @@ bool broker_info_is_valid(const RdmnetBrokerDiscInfo* info)
   // Make sure none of the broker info's fields are empty
   return !(ETCPAL_UUID_IS_NULL(&info->cid) || strlen(info->service_name) == 0 || strlen(info->scope) == 0 ||
            strlen(info->model) == 0 || strlen(info->manufacturer) == 0);
+}
+
+void stop_monitoring_all_scopes()
+{
+  scope_monitor_for_each(rdmnet_disc_platform_stop_monitoring);
+  scope_monitor_delete_all();
+}
+
+void unregister_all_brokers()
+{
+  registered_broker_for_each(rdmnet_disc_platform_unregister_broker);
+  registered_broker_delete_all();
 }
 
 void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info)
