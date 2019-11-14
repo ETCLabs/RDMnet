@@ -6,7 +6,7 @@
 # - DNS_SD_ADDITIONAL_INCLUDE_DIRS: Include directories to be added to the RDMnet library compilation
 # - DNS_SD_ADDITIONAL_LIBS: Static libs to be added to the RDMnet library compilation
 
-set(MDNSWINDOWS_VERSION 1.2.0.3)
+set(MDNSWINDOWS_VERSION 1.2.0.4)
 set(MDNSWINDOWS_MERGE_DOWNLOAD_URL "https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_Merge_${MDNSWINDOWS_VERSION}.msm")
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   set(MDNSWINDOWS_DOWNLOAD_URL "https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_${MDNSWINDOWS_VERSION}_x64.zip")
