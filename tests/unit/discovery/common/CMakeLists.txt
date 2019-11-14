@@ -7,6 +7,8 @@ add_executable(test_discovery_common
 
   test_discovery_common.cpp
   test_discovered_broker.cpp
+  test_monitored_scope.cpp
+  test_registered_broker.cpp
 
   ${RDMNET_INCLUDE}/rdmnet_mock/core.h
   ${RDMNET_SRC}/rdmnet/core/util.c

@@ -79,11 +79,13 @@ TEST_F(TestDiscoveredBroker, InsertWorksAtHeadOfList)
 
 TEST_F(TestDiscoveredBroker, InsertWorksAtEndOfList)
 {
+  // Create a list head -> dummy_1 -> dummy_2 -> end
   DiscoveredBroker dummy_1{};
   DiscoveredBroker dummy_2{};
   dummy_1.next = &dummy_2;
   DiscoveredBroker* list = &dummy_1;
 
+  // Insert to_insert, should be at the end of the list
   DiscoveredBroker to_insert{};
   discovered_broker_insert(&list, &to_insert);
   EXPECT_EQ(list, &dummy_1);
@@ -91,11 +93,34 @@ TEST_F(TestDiscoveredBroker, InsertWorksAtEndOfList)
   EXPECT_EQ(dummy_2.next, &to_insert);
 }
 
+TEST_F(TestDiscoveredBroker, RemoveWorksAtHeadOfList)
+{
+  DiscoveredBroker to_remove{};
+
+  DiscoveredBroker* list = &to_remove;
+  discovered_broker_remove(&list, &to_remove);
+  EXPECT_EQ(list, nullptr);
+}
+
+TEST_F(TestDiscoveredBroker, RemoveWorksAtEndOfList)
+{
+  // Create a list head -> dummy_1 -> dummy_2 -> end
+  DiscoveredBroker dummy_1{};
+  DiscoveredBroker dummy_2{};
+  dummy_1.next = &dummy_2;
+  DiscoveredBroker* list = &dummy_1;
+
+  // Remove dummy_2 from the list
+  discovered_broker_remove(&list, &dummy_2);
+  EXPECT_EQ(list, &dummy_1);
+  EXPECT_EQ(dummy_1.next, nullptr);
+}
+
 TEST_F(TestDiscoveredBroker, AddListenAddrWorks)
 {
   auto db = MakeDefaultDiscoveredBroker();
 
-  EtcPalIpAddr test_addr = etcpal::IpAddr::FromString("10.101.1.1").get();
+  const EtcPalIpAddr test_addr = etcpal::IpAddr::FromString("10.101.1.1").get();
   ASSERT_TRUE(discovered_broker_add_listen_addr(db.get(), &test_addr));
 
   EXPECT_EQ(db->info.num_listen_addrs, 1u);
