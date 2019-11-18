@@ -49,8 +49,9 @@ struct ClientScopeListEntry
 
   rdmnet_scope_monitor_t monitor_handle;
   bool broker_found;
-  const BrokerListenAddr* listen_addr_list;
-  const BrokerListenAddr* current_addr;
+  const EtcPalIpAddr* listen_addrs;
+  size_t num_listen_addrs;
+  size_t current_listen_addr;
   uint16_t port;
 
   RdmnetClient* client;

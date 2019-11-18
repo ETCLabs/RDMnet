@@ -111,12 +111,15 @@ extern "C" etcpal_error_t rdmnet_disc_register_broker_and_set_handle(const Rdmne
   EXPECT_EQ(config->my_info.model, test->settings_.dns.model);
   EXPECT_EQ(config->my_info.manufacturer, test->settings_.dns.manufacturer);
 
-  auto listen_addr = config->my_info.listen_addr_list;
-  for (const auto& addr : test->settings_.listen_addrs)
+  // Can't assert in this callback
+  EXPECT_EQ(test->settings_.listen_addrs.size(), config->my_info.num_listen_addrs);
+  if (test->settings_.listen_addrs.size() == config->my_info.num_listen_addrs)
   {
-    EXPECT_NE(listen_addr, nullptr);
-    EXPECT_EQ(listen_addr->addr, addr);
-    listen_addr = listen_addr->next;
+    size_t i = 0;
+    for (const auto& addr : test->settings_.listen_addrs)
+    {
+      EXPECT_EQ(addr, config->my_info.listen_addrs[i++]);
+    }
   }
 
   *handle = TestBrokerDiscovery::kBrokerRegisterHandle;

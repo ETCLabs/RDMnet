@@ -92,20 +92,14 @@ etcpal::Result BrokerDiscoveryManager::RegisterBroker(const rdmnet::BrokerSettin
   rdmnet_disc_init_broker_info(my_info);
 
   my_info->cid = settings.cid.get();
-  std::vector<BrokerListenAddr> listen_addr_list;
+  std::vector<EtcPalIpAddr> listen_addr_list;
   listen_addr_list.reserve(settings.listen_addrs.size());
   for (const auto& listen_addr : settings.listen_addrs)
   {
-    BrokerListenAddr to_add;
-    to_add.addr = listen_addr.get();
-    to_add.next = nullptr;
-    listen_addr_list.push_back(to_add);
-    if (listen_addr_list.size() > 1)
-    {
-      listen_addr_list[listen_addr_list.size() - 2].next = &listen_addr_list[listen_addr_list.size() - 1];
-    }
+    listen_addr_list.push_back(listen_addr.get());
   }
-  my_info->listen_addr_list = listen_addr_list.data();
+  my_info->listen_addrs = listen_addr_list.data();
+  my_info->num_listen_addrs = listen_addr_list.size();
   my_info->port = settings.listen_port;
 
   RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()

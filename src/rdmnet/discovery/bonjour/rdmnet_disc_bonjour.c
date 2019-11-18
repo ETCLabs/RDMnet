@@ -17,8 +17,6 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#include "rdmnet/discovery/common.h"
-
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
@@ -29,6 +27,10 @@
 #include "rdmnet/core/util.h"
 #include "rdmnet/private/core.h"
 #include "rdmnet/private/opts.h"
+#include "disc_common.h"
+#include "discovered_broker.h"
+#include "registered_broker.h"
+#include "monitored_scope.h"
 
 // Compile time check of memory configuration
 #if !RDMNET_DYNAMIC_MEM
@@ -264,7 +266,7 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
         if (!db)
         {
           // Allocate a new DiscoveredBroker to track info as it comes in.
-          db = discovered_broker_new(serviceName, full_name);
+          db = discovered_broker_new(ref, serviceName, full_name);
           if (db)
             discovered_broker_insert(&ref->broker_list, db);
         }
@@ -371,6 +373,10 @@ etcpal_error_t rdmnet_disc_platform_register_broker(const RdmnetBrokerDiscInfo* 
   {
     etcpal_poll_add_socket(&poll_context, DNSServiceRefSockFD(broker_ref->platform_data.dnssd_ref), ETCPAL_POLL_IN,
                            broker_ref->platform_data.dnssd_ref);
+  }
+  else
+  {
+    *platform_specific_error = result;
   }
 
   TXTRecordDeallocate(&txt);

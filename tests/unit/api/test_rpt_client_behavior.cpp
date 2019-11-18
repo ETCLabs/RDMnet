@@ -140,7 +140,7 @@ class TestDynamicRptClientBehavior : public TestRptClientBehavior
 protected:
   RdmnetScopeConfig default_dynamic_scope_{};
 
-  std::vector<BrokerListenAddr> listen_addrs_;
+  std::vector<EtcPalIpAddr> listen_addrs_;
   RdmnetBrokerDiscInfo discovered_broker_;
 
   void SetUp() override
@@ -151,24 +151,20 @@ protected:
     default_dynamic_scope_.has_static_broker_addr = false;
 
     // Construct our listen addresses
-    BrokerListenAddr listen_addr{};
-    ETCPAL_IP_SET_V4_ADDRESS(&listen_addr.addr, 0x0a650101);
+    EtcPalIpAddr listen_addr{};
+    ETCPAL_IP_SET_V4_ADDRESS(&listen_addr, 0x0a650101);
     listen_addrs_.push_back(listen_addr);
-    ETCPAL_IP_SET_V4_ADDRESS(&listen_addr.addr, 0xc0a80101);
+    ETCPAL_IP_SET_V4_ADDRESS(&listen_addr, 0xc0a80101);
     listen_addrs_.push_back(listen_addr);
     const std::array<uint8_t, 16> v6_addr{0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00,
                                           0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xaa, 0xbb};
-    ETCPAL_IP_SET_V6_ADDRESS(&listen_addr.addr, v6_addr.data());
+    ETCPAL_IP_SET_V6_ADDRESS(&listen_addr, v6_addr.data());
     listen_addrs_.push_back(listen_addr);
-
-    for (size_t i = 0; i < listen_addrs_.size() - 1; ++i)
-    {
-      listen_addrs_.at(i).next = &listen_addrs_.at(i + 1);
-    }
 
     discovered_broker_.port = 8888;
     rdmnet_safe_strncpy(discovered_broker_.scope, default_dynamic_scope_.scope, E133_SCOPE_STRING_PADDED_LENGTH);
-    discovered_broker_.listen_addr_list = listen_addrs_.data();
+    discovered_broker_.listen_addrs = listen_addrs_.data();
+    discovered_broker_.num_listen_addrs = listen_addrs_.size();
   }
 
   void ConnectAndVerify()
@@ -188,7 +184,7 @@ protected:
     RdmnetConnectedInfo connected_info{};
     connected_info.broker_uid = {20, 40};
     connected_info.client_uid = {1, 2};
-    connected_info.connected_addr = {8888, listen_addrs_[0].addr};
+    connected_info.connected_addr = {8888, listen_addrs_[0]};
     last_conn_config.callbacks.connected(last_conn_handle, &connected_info, last_conn_config.callback_context);
 
     EXPECT_EQ(rdmnet_client_connected_fake.call_count, 1u);
@@ -307,7 +303,7 @@ TEST_F(TestDynamicRptClientBehavior, ClientRetriesOnConnectFail)
   last_monitor_config.callbacks.broker_found(last_monitor_handle, &discovered_broker_,
                                              last_monitor_config.callback_context);
   EXPECT_EQ(rdmnet_connect_fake.call_count, 1u);
-  EXPECT_EQ(last_connect_addr.ip, listen_addrs_.at(0).addr);
+  EXPECT_EQ(last_connect_addr.ip, listen_addrs_.at(0));
   EXPECT_EQ(last_connect_addr.port, discovered_broker_.port);
 
   RESET_FAKE(rdmnet_connect);
@@ -322,7 +318,7 @@ TEST_F(TestDynamicRptClientBehavior, ClientRetriesOnConnectFail)
   EXPECT_TRUE(client_connect_failed_info.will_retry);
   EXPECT_EQ(rdmnet_connect_fake.call_count, 1u);
   // The retry should use the next Broker listen address in the list.
-  EXPECT_EQ(last_connect_addr.ip, listen_addrs_.at(1).addr);
+  EXPECT_EQ(last_connect_addr.ip, listen_addrs_.at(1));
   EXPECT_EQ(last_connect_addr.port, discovered_broker_.port);
 }
 

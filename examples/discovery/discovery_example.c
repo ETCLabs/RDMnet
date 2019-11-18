@@ -30,10 +30,10 @@ void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDis
 
   printf("A Broker was found on scope %s\n", broker_info->scope);
   printf("Service Name: %s\n", broker_info->service_name);
-  for (BrokerListenAddr* listen_addr = broker_info->listen_addr_list; listen_addr; listen_addr = listen_addr->next)
+  for (EtcPalIpAddr* listen_addr = broker_info->listen_addrs; listen_addr < broker_info->listen_addrs + broker_info->num_listen_addrs; ++listen_addr)
   {
     char addr_str[ETCPAL_INET6_ADDRSTRLEN];
-    etcpal_inet_ntop(&listen_addr->addr, addr_str, ETCPAL_INET6_ADDRSTRLEN);
+    etcpal_inet_ntop(listen_addr, addr_str, ETCPAL_INET6_ADDRSTRLEN);
     printf("Address: %s:%d\n", addr_str, broker_info->port);
   }
 }

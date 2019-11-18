@@ -20,13 +20,13 @@
 #include <string>
 #include <algorithm>
 
+#include "etcpal_mock/socket.h"
 #include "etcpal/cpp/inet.h"
-#include "rdmnet/discovery/common.h"
 #include "rdmnet/core/util.h"
 #include "rdmnet_mock/core.h"
 #include "rdmnet_mock/private/core.h"
+#include "disc_common.h"
 #include "dns_sd.h"
-#include "etcpal_mock/socket.h"
 #include "test_operators.h"
 
 #include "gtest/gtest.h"
@@ -84,6 +84,7 @@ public:
     "Test Service Name",
     8888,
     nullptr,
+    0,
     "default",
     "Test Broker",
     "ETC"
@@ -94,7 +95,7 @@ protected:
   etcpal_error_t init_result_;
   TXTRecordRef txt_record_;
   rdmnet_scope_monitor_t monitor_handle_;
-  std::unique_ptr<BrokerListenAddr> default_listen_addr_;
+  std::unique_ptr<EtcPalIpAddr> default_listen_addr_;
 
   void SetUp() override
   {
@@ -141,10 +142,9 @@ protected:
 
 void TestDiscoveryBonjour::CreateDefaultBroker()
 {
-  default_listen_addr_ = std::make_unique<BrokerListenAddr>();
-  default_listen_addr->addr = etcpal::IpAddr::FromString("10.101.1.1").get();
-  default_listen_addr_->next = nullptr;
-  default_discovered_broker_.listen_addr_list = default_listen_addr_.get();
+  default_listen_addr_ = std::make_unique<EtcPalIpAddr>(etcpal::IpAddr::FromString("10.101.1.1").get());
+  default_discovered_broker_.listen_addrs = default_listen_addr_.get();
+  default_discovered_broker_.num_listen_addrs = 1;
 
   TXTRecordCreate(&txt_record_, 0, nullptr);
   std::string txtvers = std::to_string(E133_DNSSD_TXTVERS);
@@ -247,7 +247,7 @@ void TestDiscoveryBonjour::DriveGetAddrInfoCallback(DNSServiceGetAddrInfoReply g
 {
   struct sockaddr address;
   EtcPalSockAddr discovered_addr;
-  discovered_addr.ip = default_listen_addr_->addr;
+  discovered_addr.ip = *default_listen_addr_;
   discovered_addr.port = 0;
   sockaddr_etcpal_to_os(&discovered_addr, &address);
   gai_cb(DEFAULT_MONITOR_DNS_REF, 0, 0, kDNSServiceErr_NoError, "testhost", &address, 10,
@@ -267,7 +267,8 @@ TEST_F(TestDiscoveryBonjour, RegisterBrokerInvalidCallsFail)
   config.my_info.cid = kEtcPalNullUuid;
   config.my_info.service_name[0] = '\0';
   config.my_info.scope[0] = '\0';
-  config.my_info.listen_addr_list = nullptr;
+  config.my_info.listen_addrs = nullptr;
+  config.my_info.num_listen_addrs = 0;
   set_reg_callbacks(&config.callbacks);
   config.callback_context = this;
 

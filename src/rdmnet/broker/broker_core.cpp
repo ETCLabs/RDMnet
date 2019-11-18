@@ -1082,14 +1082,13 @@ void BrokerCore::HandleOtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
   if (log_->CanLog(log_pri))
   {
     std::string addrs;
-    for (const BrokerListenAddr* listen_addr = broker_info.listen_addr_list; listen_addr;
-         listen_addr = listen_addr->next)
+    for (size_t i = 0; i < broker_info.num_listen_addrs; ++i)
     {
       char addr_string[ETCPAL_INET6_ADDRSTRLEN];
-      if (kEtcPalErrOk == etcpal_inet_ntop(&listen_addr->addr, addr_string, ETCPAL_INET6_ADDRSTRLEN))
+      if (kEtcPalErrOk == etcpal_inet_ntop(&broker_info.listen_addrs[i], addr_string, ETCPAL_INET6_ADDRSTRLEN))
       {
         addrs.append(addr_string);
-        if (listen_addr->next)
+        if (i < broker_info.num_listen_addrs - 1)
           addrs.append(", ");
       }
     }

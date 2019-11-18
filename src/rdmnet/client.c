@@ -564,8 +564,9 @@ void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDis
   if (scope_entry && !scope_entry->broker_found)
   {
     scope_entry->broker_found = true;
-    scope_entry->listen_addr_list = broker_info->listen_addr_list;
-    scope_entry->current_addr = scope_entry->listen_addr_list;
+    scope_entry->listen_addrs = broker_info->listen_addrs;
+    scope_entry->num_listen_addrs = broker_info->num_listen_addrs;
+    scope_entry->current_listen_addr = 0;
     scope_entry->port = broker_info->port;
 
     attempt_connection_on_listen_addrs(scope_entry);
@@ -582,8 +583,9 @@ void monitorcb_broker_lost(rdmnet_scope_monitor_t handle, const char* scope, con
   if (scope_entry)
   {
     scope_entry->broker_found = false;
-    scope_entry->listen_addr_list = NULL;
-    scope_entry->current_addr = NULL;
+    scope_entry->listen_addrs = NULL;
+    scope_entry->num_listen_addrs = 0;
+    scope_entry->current_listen_addr = 0;
     scope_entry->port = 0;
 
     release_scope(scope_entry);
@@ -656,9 +658,8 @@ void conncb_connect_failed(rdmnet_conn_t handle, const RdmnetConnectFailedInfo* 
         if (scope_entry->broker_found)
         {
           // Attempt to connect on the next listen address.
-          scope_entry->current_addr = scope_entry->current_addr->next;
-          if (!scope_entry->current_addr)
-            scope_entry->current_addr = scope_entry->listen_addr_list;
+          if (++scope_entry->current_listen_addr == scope_entry->num_listen_addrs)
+            scope_entry->current_listen_addr = 0;
           attempt_connection_on_listen_addrs(scope_entry);
         }
       }
@@ -1269,8 +1270,9 @@ etcpal_error_t create_and_append_scope_entry(const RdmnetScopeConfig* config, Rd
     new_scope->send_seq_num = 1;
     new_scope->monitor_handle = NULL;
     new_scope->broker_found = false;
-    new_scope->listen_addr_list = NULL;
-    new_scope->current_addr = NULL;
+    new_scope->listen_addrs = NULL;
+    new_scope->num_listen_addrs = 0;
+    new_scope->current_listen_addr = 0;
     new_scope->port = 0;
     new_scope->client = client;
 
@@ -1338,7 +1340,7 @@ etcpal_error_t start_scope_discovery(ClientScopeListEntry* scope_entry, const ch
 
 void attempt_connection_on_listen_addrs(ClientScopeListEntry* scope_entry)
 {
-  const BrokerListenAddr* listen_addr = scope_entry->current_addr;
+  size_t listen_addr_index = scope_entry->current_listen_addr;
 
   while (true)
   {
@@ -1346,7 +1348,7 @@ void attempt_connection_on_listen_addrs(ClientScopeListEntry* scope_entry)
 
     if (etcpal_can_log(rdmnet_log_params, ETCPAL_LOG_WARNING))
     {
-      etcpal_inet_ntop(&listen_addr->addr, addr_str, ETCPAL_INET6_ADDRSTRLEN);
+      etcpal_inet_ntop(&scope_entry->listen_addrs[listen_addr_index], addr_str, ETCPAL_INET6_ADDRSTRLEN);
     }
 
     etcpal_log(rdmnet_log_params, ETCPAL_LOG_INFO,
@@ -1354,26 +1356,26 @@ void attempt_connection_on_listen_addrs(ClientScopeListEntry* scope_entry)
                scope_entry->config.scope, addr_str, scope_entry->port);
 
     EtcPalSockAddr connect_addr;
-    connect_addr.ip = listen_addr->addr;
+    connect_addr.ip = scope_entry->listen_addrs[listen_addr_index];
     connect_addr.port = scope_entry->port;
 
     etcpal_error_t connect_res = start_connection_for_scope(scope_entry, &connect_addr);
     if (connect_res == kEtcPalErrOk)
     {
-      scope_entry->current_addr = listen_addr;
+      scope_entry->current_listen_addr = listen_addr_index;
       break;
     }
     else
     {
-      listen_addr = listen_addr->next;
-      if (!listen_addr)
-        listen_addr = scope_entry->listen_addr_list;
-      if (listen_addr == scope_entry->current_addr)
+      if (++listen_addr_index == scope_entry->num_listen_addrs)
+        listen_addr_index = 0;
+      if (listen_addr_index == scope_entry->current_listen_addr)
       {
         // We've looped through all the addresses. This broker is no longer valid.
         scope_entry->broker_found = false;
-        scope_entry->listen_addr_list = NULL;
-        scope_entry->current_addr = NULL;
+        scope_entry->listen_addrs = NULL;
+        scope_entry->num_listen_addrs = 0;
+        scope_entry->current_listen_addr = 0;
         scope_entry->port = 0;
       }
 
