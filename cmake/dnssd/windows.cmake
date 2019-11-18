@@ -1,4 +1,4 @@
-set(MDNSWINDOWS_VERSION 1.2.0.3)
+set(MDNSWINDOWS_VERSION 1.2.0.4)
 
 set(MDNSWINDOWS_MERGE_DOWNLOAD_URL "https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_Merge_${MDNSWINDOWS_VERSION}.msm")
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
