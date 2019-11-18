@@ -543,6 +543,7 @@ void start_tcp_connection(RdmnetConnection* conn, ConnCallbackDispatchInfo* cb)
   if (res != kEtcPalErrOk)
   {
     ok = false;
+    failed_info->event = kRdmnetConnectFailSocketFailure;
     failed_info->socket_err = res;
   }
 
@@ -552,6 +553,7 @@ void start_tcp_connection(RdmnetConnection* conn, ConnCallbackDispatchInfo* cb)
     if (res != kEtcPalErrOk)
     {
       ok = false;
+      failed_info->event = kRdmnetConnectFailSocketFailure;
       failed_info->socket_err = res;
     }
   }
@@ -578,6 +580,12 @@ void start_tcp_connection(RdmnetConnection* conn, ConnCallbackDispatchInfo* cb)
     else
     {
       ok = false;
+      // EHOSTUNREACH is sometimes reported synchronously even for a non-blocking connect.
+
+      if (res == kEtcPalErrHostUnreach)
+        failed_info->event = kRdmnetConnectFailTcpLevel;
+      else
+        failed_info->event = kRdmnetConnectFailSocketFailure;
       failed_info->socket_err = res;
     }
   }
@@ -586,7 +594,6 @@ void start_tcp_connection(RdmnetConnection* conn, ConnCallbackDispatchInfo* cb)
   {
     cb->which = kConnCallbackConnectFailed;
     fill_callback_info(conn, cb);
-    failed_info->event = kRdmnetConnectFailSocketFailure;
     reset_connection(conn);
   }
 }
