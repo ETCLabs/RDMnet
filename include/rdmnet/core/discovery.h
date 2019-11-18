@@ -28,6 +28,7 @@
 #ifndef RDMNET_CORE_DISCOVERY_H_
 #define RDMNET_CORE_DISCOVERY_H_
 
+#include <string.h>
 #include "etcpal/error.h"
 #include "etcpal/uuid.h"
 #include "etcpal/socket.h"

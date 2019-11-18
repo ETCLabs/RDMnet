@@ -20,19 +20,24 @@
 #include "registered_broker.h"
 
 #include <array>
+#include <cstring>
 #include <memory>
 #include <string>
-#include "etcpal/cpp/uuid.h"
-#include "etcpal/cpp/inet.h"
+#include "rdmnet/core/util.h"
 #include "gtest/gtest.h"
 #include "test_disc_common_fakes.h"
+#include "test_operators.h"
 
 class TestRegisteredBroker : public testing::Test
 {
 protected:
   struct RegisteredBrokerDeleter
   {
-    void operator()(RdmnetBrokerRegisterRef* ref) { registered_broker_delete(ref); }
+    void operator()(RdmnetBrokerRegisterRef* ref)
+    {
+      registered_broker_remove(ref);
+      registered_broker_delete(ref);
+    }
   };
   using RegisteredBrokerUniquePtr = std::unique_ptr<RdmnetBrokerRegisterRef, RegisteredBrokerDeleter>;
 
@@ -40,13 +45,10 @@ protected:
 
   RegisteredBrokerUniquePtr MakeDefaultRegisteredBroker()
   {
-    return RegisteredBrokerUniquePtr(
-        registered_broker_new(monitor_ref_, service_name_.c_str(), full_service_name_.c_str()));
+    return RegisteredBrokerUniquePtr(registered_broker_new(&default_config_));
   }
 
-  const std::string service_name_ = "Test service name";
-  const std::string full_service_name_ = "Test full service name";
-  rdmnet_scope_monitor_t monitor_ref_ = reinterpret_cast<rdmnet_scope_monitor_t>(0xcc);
+  RdmnetBrokerRegisterConfig default_config_{};
 };
 
 TEST_F(TestRegisteredBroker, NewInitializesFieldsProperly)
@@ -55,100 +57,115 @@ TEST_F(TestRegisteredBroker, NewInitializesFieldsProperly)
 
   ASSERT_NE(ref, nullptr);
 
-  EXPECT_EQ(ref->full_service_name, full_service_name_);
-  EXPECT_EQ(ref->monitor_ref, monitor_ref_);
-  EXPECT_EQ(ref->info.cid, etcpal::Uuid{});  // UUID should be null
-  EXPECT_EQ(ref->info.service_name, service_name_);
-  EXPECT_EQ(ref->info.port, 0u);
-  EXPECT_EQ(ref->info.listen_addrs, nullptr);
-  EXPECT_EQ(ref->info.num_listen_addrs, 0u);
-  EXPECT_STREQ(ref->info.scope, E133_DEFAULT_SCOPE);
-  EXPECT_STREQ(ref->info.model, "");
-  EXPECT_STREQ(ref->info.manufacturer, "");
+  EXPECT_EQ(ref->config, default_config_);
+  EXPECT_EQ(ref->scope_monitor_handle, nullptr);
+  EXPECT_EQ(ref->state, kBrokerStateNotRegistered);
+  EXPECT_STREQ(ref->full_service_name, "");
+  EXPECT_EQ(ref->query_timeout_expired, false);
   EXPECT_EQ(ref->next, nullptr);
 }
 
-TEST_F(TestRegisteredBroker, InsertWorksAtHeadOfList)
+TEST_F(TestRegisteredBroker, InsertWorks)
 {
-  RdmnetBrokerRegisterRef to_insert{};
+  auto broker_1 = MakeDefaultRegisteredBroker();
+  rdmnet_safe_strncpy(broker_1->full_service_name, "Test Insert 1 Service Name", RDMNET_DISC_SERVICE_NAME_MAX_LENGTH);
+  registered_broker_insert(broker_1.get());
 
-  RdmnetBrokerRegisterRef* list = nullptr;
-  registered_broker_insert(&list, &to_insert);
-  EXPECT_EQ(list, &to_insert);
+  // We test the presence by using the for_each function.
+  EXPECT_TRUE(broker_register_ref_is_valid(broker_1.get()));
+  registered_broker_for_each(
+      [](RdmnetBrokerRegisterRef* ref) { EXPECT_STREQ(ref->full_service_name, "Test Insert 1 Service Name"); });
+
+  auto broker_2 = MakeDefaultRegisteredBroker();
+  rdmnet_safe_strncpy(broker_2->full_service_name, "Test Insert 2 Service Name", RDMNET_DISC_SERVICE_NAME_MAX_LENGTH);
+  registered_broker_insert(broker_2.get());
+
+  EXPECT_TRUE(broker_register_ref_is_valid(broker_1.get()));
+  EXPECT_TRUE(broker_register_ref_is_valid(broker_2.get()));
 }
 
-TEST_F(TestRegisteredBroker, InsertWorksAtEndOfList)
+// clang-format off
+// These need to be at file scope because we are using stateless lambdas as C function pointers
+static std::pair<std::string, bool> broker_names[] = {
+  {"Test Broker 1", false},
+  {"Test Broker 2", false},
+  {"Test Broker 3", false},
+  {"Test Broker 4", false}
+};
+// clang-format on
+
+TEST_F(TestRegisteredBroker, ForEachWorks)
 {
-  // Create a list head -> dummy_1 -> dummy_2 -> end
-  RegisteredBroker dummy_1{};
-  RegisteredBroker dummy_2{};
-  dummy_1.next = &dummy_2;
-  RegisteredBroker* list = &dummy_1;
-
-  // Insert to_insert, should be at the end of the list
-  RegisteredBroker to_insert{};
-  registered_broker_insert(&list, &to_insert);
-  EXPECT_EQ(list, &dummy_1);
-  EXPECT_EQ(dummy_1.next, &dummy_2);
-  EXPECT_EQ(dummy_2.next, &to_insert);
-}
-
-TEST_F(TestRegisteredBroker, RemoveWorksAtHeadOfList)
-{
-  RegisteredBroker to_remove{};
-
-  RegisteredBroker* list = &to_remove;
-  registered_broker_remove(&list, &to_remove);
-  EXPECT_EQ(list, nullptr);
-}
-
-TEST_F(TestRegisteredBroker, RemoveWorksAtEndOfList)
-{
-  // Create a list head -> dummy_1 -> dummy_2 -> end
-  RegisteredBroker dummy_1{};
-  RegisteredBroker dummy_2{};
-  dummy_1.next = &dummy_2;
-  RegisteredBroker* list = &dummy_1;
-
-  // Remove dummy_2 from the list
-  registered_broker_remove(&list, &dummy_2);
-  EXPECT_EQ(list, &dummy_1);
-  EXPECT_EQ(dummy_1.next, nullptr);
-}
-
-TEST_F(TestRegisteredBroker, AddListenAddrWorks)
-{
-  auto ref = MakeDefaultRegisteredBroker();
-
-  const EtcPalIpAddr test_addr = etcpal::IpAddr::FromString("10.101.1.1").get();
-  ASSERT_TRUE(registered_broker_add_listen_addr(ref.get(), &test_addr));
-
-  EXPECT_EQ(ref->info.num_listen_addrs, 1u);
-
-  ASSERT_NE(ref->info.listen_addrs, nullptr);
-  EXPECT_EQ(ref->info.listen_addrs[0], test_addr);
-}
-
-TEST_F(TestRegisteredBroker, LookupByNameWorks)
-{
-  // An array of RegisteredBroker pointers that will automatically call registered_broker_delete()
-  // on each one on destruction.
-  constexpr int kNumBrokers = 10;
-  std::array<RegisteredBrokerUniquePtr, kNumBrokers> brokers;
-
-  RegisteredBroker* list = nullptr;
-
-  // Fill the array and linked list of RegisteredBrokers
-  for (int i = 0; i < 10; ++i)
+  std::array<RegisteredBrokerUniquePtr, std::size(broker_names)> brokers;
+  // Insert each name into the list.
+  for (size_t i = 0; i < std::size(broker_names); ++i)
   {
-    const auto this_full_service_name = full_service_name_ + " " + std::to_string(i);
-    brokers[i].reset(registered_broker_new(monitor_ref_, service_name_.c_str(), this_full_service_name.c_str()));
-    registered_broker_insert(&list, brokers[i].get());
+    broker_names[i].second = false;
+    brokers[i] = MakeDefaultRegisteredBroker();
+    rdmnet_safe_strncpy(brokers[i]->full_service_name, broker_names[i].first.c_str(),
+                        RDMNET_DISC_SERVICE_NAME_MAX_LENGTH);
+    registered_broker_insert(brokers[i].get());
   }
 
-  // Find the kNumBrokers / 2 broker instance by name.
-  auto found_ref = registered_broker_lookup_by_name(
-      list, std::string(full_service_name_ + " " + std::to_string(kNumBrokers / 2)).c_str());
-  ASSERT_NE(found_ref, nullptr);
-  ASSERT_EQ(found_ref->full_service_name, full_service_name_ + " " + std::to_string(kNumBrokers / 2));
+  // Flag each name as we hit it from the for_each function.
+  registered_broker_for_each([](RdmnetBrokerRegisterRef* ref) {
+    for (auto& name : broker_names)
+    {
+      if (0 == std::strncmp(ref->full_service_name, name.first.c_str(), RDMNET_DISC_SERVICE_NAME_MAX_LENGTH))
+        name.second = true;
+    }
+  });
+
+  // Make sure we've hit each of the names.
+  for (const auto& name : broker_names)
+    EXPECT_EQ(name.second, true);
+}
+
+// Needs to be at file scope because of C function pointers/stateless lambdas
+static int remove_test_call_count = 0;
+
+TEST_F(TestRegisteredBroker, RemoveWorks)
+{
+  remove_test_call_count = 0;
+
+  auto broker_1 = MakeDefaultRegisteredBroker();
+  registered_broker_insert(broker_1.get());
+  auto broker_2 = MakeDefaultRegisteredBroker();
+  registered_broker_insert(broker_2.get());
+
+  registered_broker_remove(broker_2.get());
+
+  // Only broker_1 should remain in the list
+  EXPECT_TRUE(broker_register_ref_is_valid(broker_1.get()));
+  EXPECT_FALSE(broker_register_ref_is_valid(broker_2.get()));
+  registered_broker_for_each([](RdmnetBrokerRegisterRef*) { ++remove_test_call_count; });
+  EXPECT_EQ(remove_test_call_count, 1);
+
+  registered_broker_remove(broker_1.get());
+
+  // No brokers should remain in the list
+  EXPECT_FALSE(broker_register_ref_is_valid(broker_1.get()));
+  registered_broker_for_each([](RdmnetBrokerRegisterRef*) { FAIL(); });
+
+  // Need to clean up the resources manually since they've already been removed
+  registered_broker_delete(broker_1.release());
+  registered_broker_delete(broker_2.release());
+}
+
+TEST_F(TestRegisteredBroker, DeleteAllWorks)
+{
+  auto broker_1 = MakeDefaultRegisteredBroker();
+  registered_broker_insert(broker_1.get());
+  auto broker_2 = MakeDefaultRegisteredBroker();
+  registered_broker_insert(broker_2.get());
+
+  registered_broker_delete_all();
+
+  // No brokers should remain in the list
+  EXPECT_FALSE(broker_register_ref_is_valid(broker_1.get()));
+  EXPECT_FALSE(broker_register_ref_is_valid(broker_2.get()));
+  registered_broker_for_each([](RdmnetBrokerRegisterRef*) { FAIL(); });
+
+  broker_1.release();
+  broker_2.release();
 }
