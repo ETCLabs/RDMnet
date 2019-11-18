@@ -17,70 +17,43 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef RDMNET_DISCOVERY_AVAHI_H_
-#define RDMNET_DISCOVERY_AVAHI_H_
+#ifndef MONITORED_SCOPE_H_
+#define MONITORED_SCOPE_H_
 
-#include <avahi-client/client.h>
-#include <avahi-client/lookup.h>
-#include <avahi-client/publish.h>
-#include <avahi-common/domain.h>
-
-#include "etcpal/timer.h"
 #include "rdmnet/core/discovery.h"
+#include "discovered_broker.h"
+#include "disc_platform_defs.h"
 
-#define SERVICE_STR_PADDED_LENGTH E133_DNSSD_SRV_TYPE_PADDED_LENGTH + E133_SCOPE_STRING_PADDED_LENGTH + 10
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct RdmnetScopeMonitorRef RdmnetScopeMonitorRef;
-
-typedef struct DiscoveredBroker DiscoveredBroker;
-struct DiscoveredBroker
-{
-  char full_service_name[AVAHI_DOMAIN_NAME_MAX];
-  RdmnetBrokerDiscInfo info;
-  RdmnetScopeMonitorRef* monitor_ref;
-
-  // State information for this broker.
-  int num_outstanding_resolves;
-  int num_successful_resolves;
-
-  DiscoveredBroker* next;
-};
-
 struct RdmnetScopeMonitorRef
 {
   // The configuration data that the user provided.
   RdmnetScopeMonitorConfig config;
-  // The Avahi browse handle
-  AvahiServiceBrowser* avahi_browser;
   // If this ScopeMonitorRef is associated with a registered Broker, that is tracked here. Otherwise
   // NULL.
   rdmnet_registered_broker_t broker_handle;
   // The list of Brokers discovered or being discovered on this scope.
   DiscoveredBroker* broker_list;
+  // Platform-specific data stored with this monitor ref
+  RdmnetScopeMonitorPlatformData platform_data;
   // The next ref in the list of scopes being monitored.
   RdmnetScopeMonitorRef* next;
 };
 
-typedef enum
-{
-  kBrokerStateNotRegistered,
-  kBrokerStateQuerying,
-  kBrokerStateRegisterStarted,
-  kBrokerStateRegistered
-} broker_state_t;
+RdmnetScopeMonitorRef* scope_monitor_new(const RdmnetScopeMonitorConfig* config);
+void scope_monitor_insert(RdmnetScopeMonitorRef* scope_ref);
+bool scope_monitor_ref_is_valid(const RdmnetScopeMonitorRef* ref);
+void scope_monitor_for_each(void (*for_each_func)(RdmnetScopeMonitorRef*));
+void scope_monitor_remove(const RdmnetScopeMonitorRef* ref);
+void scope_monitor_delete(RdmnetScopeMonitorRef* ref);
+void scope_monitor_delete_all();
 
-typedef struct RdmnetBrokerRegisterRef
-{
-  RdmnetBrokerRegisterConfig config;
-  rdmnet_scope_monitor_t scope_monitor_handle;
-  broker_state_t state;
-  char full_service_name[AVAHI_DOMAIN_NAME_MAX];
+#ifdef __cplusplus
+}
+#endif
 
-  EtcPalTimer query_timer;
-  bool query_timeout_expired;
-
-  // For hooking up to the DNS-SD API
-  AvahiEntryGroup* avahi_entry_group;
-} RdmnetBrokerRegisterRef;
-
-#endif /* RDMNET_DISCOVERY_AVAHI_H_ */
+#endif /* MONITORED_SCOPE_H_ */

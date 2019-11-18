@@ -17,8 +17,6 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#include "rdmnet/discovery/avahi.h"
-
 #include <assert.h>
 #include <stdio.h>
 #include <arpa/inet.h>
@@ -29,6 +27,7 @@
 
 #include "etcpal/lock.h"
 #include "rdmnet/core/util.h"
+#include "rdmnet/discovery/common.h"
 #include "rdmnet/private/core.h"
 #include "rdmnet/private/opts.h"
 
@@ -41,22 +40,12 @@
 
 #define DISCOVERY_QUERY_TIMEOUT 3000
 
+#define SERVICE_STR_PADDED_LENGTH (E133_DNSSD_SRV_TYPE_PADDED_LENGTH + E133_SCOPE_STRING_PADDED_LENGTH + 10)
+
 /**************************** Private variables ******************************/
 
-typedef struct DiscoveryState
-{
-  etcpal_mutex_t lock;
-
-  RdmnetScopeMonitorRef* scope_ref_list;
-  RdmnetBrokerRegisterConfig registered_broker;
-
-  RdmnetBrokerRegisterRef broker_ref;
-
-  AvahiSimplePoll* avahi_simple_poll;
-  AvahiClient* avahi_client;
-} DiscoveryState;
-
-static DiscoveryState disc_state;
+static AvahiSimplePoll* avahi_simple_poll;
+static AvahiClient* avahi_client;
 
 /*********************** Private function prototypes *************************/
 
@@ -100,7 +89,7 @@ static bool ipv6_valid(EtcPalIpAddr* ip);
 
 static void entry_group_callback(AvahiEntryGroup* g, AvahiEntryGroupState state, void* userdata)
 {
-  (void)userdata;
+  RDMNET_UNUSED_ARG(userdata);
 
   rdmnet_registered_broker_t broker_handle = &disc_state.broker_ref;
   if (!broker_handle)
@@ -353,7 +342,7 @@ static void client_callback(AvahiClient* c, AvahiClientState state, AVAHI_GCC_UN
  * public functions
  ******************************************************************************/
 
-etcpal_error_t rdmnetdisc_init()
+etcpal_error_t rdmnet_disc_init()
 {
   if (!etcpal_mutex_create(&disc_state.lock))
     return kEtcPalErrSys;
@@ -380,7 +369,7 @@ etcpal_error_t rdmnetdisc_init()
   return kEtcPalErrOk;
 }
 
-void rdmnetdisc_deinit()
+void rdmnet_disc_deinit()
 {
   stop_monitoring_all_internal();
 
@@ -398,7 +387,7 @@ void rdmnetdisc_deinit()
   etcpal_mutex_destroy(&disc_state.lock);
 }
 
-void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo* broker_info)
+void rdmnet_disc_init_broker_info(RdmnetBrokerDiscInfo* broker_info)
 {
   broker_info->cid = kEtcPalNullUuid;
   rdmnet_safe_strncpy(broker_info->service_name, "RDMnet Broker", E133_SERVICE_NAME_STRING_PADDED_LENGTH);
@@ -409,8 +398,8 @@ void rdmnetdisc_fill_default_broker_info(RdmnetBrokerDiscInfo* broker_info)
   memset(broker_info->manufacturer, 0, E133_MANUFACTURER_STRING_PADDED_LENGTH);
 }
 
-etcpal_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
-                                           int* platform_specific_error)
+etcpal_error_t rdmnet_disc_start_monitoring(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
+                                            int* platform_specific_error)
 {
   if (!config || !handle || !platform_specific_error)
     return kEtcPalErrInvalid;
@@ -453,16 +442,7 @@ etcpal_error_t rdmnetdisc_start_monitoring(const RdmnetScopeMonitorConfig* confi
   return res;
 }
 
-etcpal_error_t rdmnetdisc_change_monitored_scope(rdmnet_scope_monitor_t handle,
-                                                 const RdmnetScopeMonitorConfig* new_config)
-{
-  // TODO reevaluate if this is necessary.
-  (void)handle;
-  (void)new_config;
-  return kEtcPalErrNotImpl;
-}
-
-void rdmnetdisc_stop_monitoring(rdmnet_scope_monitor_t handle)
+void rdmnet_disc_stop_monitoring(rdmnet_scope_monitor_t handle)
 {
   if (!handle || !rdmnet_core_initialized())
     return;
@@ -475,7 +455,7 @@ void rdmnetdisc_stop_monitoring(rdmnet_scope_monitor_t handle)
   }
 }
 
-void rdmnetdisc_stop_monitoring_all()
+void rdmnet_disc_stop_monitoring_all()
 {
   if (!rdmnet_core_initialized())
     return;
@@ -503,7 +483,7 @@ void stop_monitoring_all_internal()
   }
 }
 
-etcpal_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* config, rdmnet_registered_broker_t* handle)
+etcpal_error_t rdmnet_disc_register_broker(const RdmnetBrokerRegisterConfig* config, rdmnet_registered_broker_t* handle)
 {
   if (!config || !handle || disc_state.broker_ref.state != kBrokerStateNotRegistered ||
       !broker_info_is_valid(&config->my_info))
@@ -522,7 +502,7 @@ etcpal_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* conf
 
   int mon_error;
   rdmnet_scope_monitor_t monitor_handle;
-  if (rdmnetdisc_start_monitoring(&monitor_config, &monitor_handle, &mon_error) == kEtcPalErrOk)
+  if (rdmnet_disc_start_monitoring(&monitor_config, &monitor_handle, &mon_error) == kEtcPalErrOk)
   {
     broker_ref->scope_monitor_handle = monitor_handle;
     monitor_handle->broker_handle = broker_ref;
@@ -542,7 +522,7 @@ etcpal_error_t rdmnetdisc_register_broker(const RdmnetBrokerRegisterConfig* conf
   return kEtcPalErrOk;
 }
 
-void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle)
+void rdmnet_disc_unregister_broker(rdmnet_registered_broker_t handle)
 {
   if (!handle || !rdmnet_core_initialized())
     return;
@@ -557,7 +537,7 @@ void rdmnetdisc_unregister_broker(rdmnet_registered_broker_t handle)
 
     /* Since the broker only cares about scopes while it is running, shut down any outstanding
      * queries for that scope.*/
-    rdmnetdisc_stop_monitoring(handle->scope_monitor_handle);
+    rdmnet_disc_stop_monitoring(handle->scope_monitor_handle);
 
     /*Reset the state*/
     disc_state.broker_ref.state = kBrokerStateNotRegistered;
@@ -653,7 +633,7 @@ int send_registration(const RdmnetBrokerDiscInfo* info, AvahiEntryGroup** entry_
   return res;
 }
 
-void rdmnetdisc_tick()
+void rdmnet_disc_tick()
 {
   if (!rdmnet_core_initialized())
     return;
@@ -846,7 +826,7 @@ DiscoveredBroker* discovered_broker_new(RdmnetScopeMonitorRef* ref, const char* 
   DiscoveredBroker* new_db = (DiscoveredBroker*)malloc(sizeof(DiscoveredBroker));
   if (new_db)
   {
-    rdmnetdisc_fill_default_broker_info(&new_db->info);
+    rdmnet_disc_init_broker_info(&new_db->info);
     rdmnet_safe_strncpy(new_db->info.service_name, service_name, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
     rdmnet_safe_strncpy(new_db->full_service_name, full_service_name, AVAHI_DOMAIN_NAME_MAX);
     new_db->monitor_ref = ref;

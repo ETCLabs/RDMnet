@@ -149,7 +149,7 @@ endif()
 # Help out the Visual Studio debugging environment by pointing it at the Qt DLLs.
 if(MSVC)
   configure_file(
-    ${CMAKE_CURRENT_LIST_DIR}/../../tools/cmake/ExampleController.vcxproj.user.in
+    ${CMAKE_CURRENT_LIST_DIR}/../../cmake/ExampleController.vcxproj.user.in
     ${CMAKE_CURRENT_BINARY_DIR}/${CONTROLLER_TARGET}.vcxproj.user
     @ONLY
   )

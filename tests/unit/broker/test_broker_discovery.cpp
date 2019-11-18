@@ -23,10 +23,11 @@
 #include "gmock/gmock.h"
 #include "rdmnet/core/util.h"
 #include "rdmnet_mock/core/discovery.h"
+#include "test_operators.h"
 
 extern "C" {
-etcpal_error_t rdmnetdisc_register_broker_and_set_handle(const RdmnetBrokerRegisterConfig* config,
-                                                         rdmnet_registered_broker_t* handle);
+etcpal_error_t rdmnet_disc_register_broker_and_set_handle(const RdmnetBrokerRegisterConfig* config,
+                                                          rdmnet_registered_broker_t* handle);
 }
 
 class MockBrokerDiscoveryNotify : public BrokerDiscoveryNotify
@@ -58,7 +59,7 @@ protected:
   void SetUp() override
   {
     RDMNET_CORE_DISCOVERY_DO_FOR_ALL_FAKES(RESET_FAKE);
-    rdmnetdisc_register_broker_fake.custom_fake = rdmnetdisc_register_broker_and_set_handle;
+    rdmnet_disc_register_broker_fake.custom_fake = rdmnet_disc_register_broker_and_set_handle;
 
     disc_mgr_.SetNotify(&notify_);
 
@@ -95,10 +96,10 @@ const rdmnet_registered_broker_t TestBrokerDiscovery::kBrokerRegisterHandle =
     reinterpret_cast<rdmnet_registered_broker_t>(0xdead);
 TestBrokerDiscovery* TestBrokerDiscovery::instance = nullptr;
 
-extern "C" etcpal_error_t rdmnetdisc_register_broker_and_set_handle(const RdmnetBrokerRegisterConfig* config,
-                                                                    rdmnet_registered_broker_t* handle)
+extern "C" etcpal_error_t rdmnet_disc_register_broker_and_set_handle(const RdmnetBrokerRegisterConfig* config,
+                                                                     rdmnet_registered_broker_t* handle)
 {
-  (void)config;
+  RDMNET_UNUSED_ARG(config);
 
   TestBrokerDiscovery* test = TestBrokerDiscovery::instance;
 
@@ -110,12 +111,15 @@ extern "C" etcpal_error_t rdmnetdisc_register_broker_and_set_handle(const Rdmnet
   EXPECT_EQ(config->my_info.model, test->settings_.dns.model);
   EXPECT_EQ(config->my_info.manufacturer, test->settings_.dns.manufacturer);
 
-  auto listen_addr = config->my_info.listen_addr_list;
-  for (const auto& addr : test->settings_.listen_addrs)
+  // Can't assert in this callback
+  EXPECT_EQ(test->settings_.listen_addrs.size(), config->my_info.num_listen_addrs);
+  if (test->settings_.listen_addrs.size() == config->my_info.num_listen_addrs)
   {
-    EXPECT_NE(listen_addr, nullptr);
-    EXPECT_EQ(listen_addr->addr, addr);
-    listen_addr = listen_addr->next;
+    size_t i = 0;
+    for (const auto& addr : test->settings_.listen_addrs)
+    {
+      EXPECT_EQ(addr, config->my_info.listen_addrs[i++]);
+    }
   }
 
   *handle = TestBrokerDiscovery::kBrokerRegisterHandle;
@@ -129,8 +133,8 @@ TEST_F(TestBrokerDiscovery, RegisterWorksWithNoErrors)
 
 TEST_F(TestBrokerDiscovery, SyncRegisterErrorIsHandled)
 {
-  rdmnetdisc_register_broker_fake.custom_fake = nullptr;
-  rdmnetdisc_register_broker_fake.return_val = kEtcPalErrSys;
+  rdmnet_disc_register_broker_fake.custom_fake = nullptr;
+  rdmnet_disc_register_broker_fake.return_val = kEtcPalErrSys;
   auto result = disc_mgr_.RegisterBroker(settings_);
 
   EXPECT_FALSE(result.IsOk());
@@ -148,7 +152,7 @@ TEST_F(TestBrokerDiscovery, AsyncRegisterErrorIsForwarded)
 
 TEST_F(TestBrokerDiscovery, ServiceNameChangeIsHandled)
 {
-  constexpr char* kActualServiceName = "A different service name";
+  constexpr const char* kActualServiceName = "A different service name";
 
   ASSERT_TRUE(disc_mgr_.RegisterBroker(settings_));
 
@@ -159,28 +163,6 @@ TEST_F(TestBrokerDiscovery, ServiceNameChangeIsHandled)
   EXPECT_EQ(disc_mgr_.scope(), settings_.scope);
   EXPECT_EQ(disc_mgr_.requested_service_name(), settings_.dns.service_instance_name);
   EXPECT_EQ(disc_mgr_.assigned_service_name(), kActualServiceName);
-}
-
-bool operator==(const RdmnetBrokerDiscInfo& a, const RdmnetBrokerDiscInfo& b)
-{
-  if ((a.cid == b.cid) && (std::strncmp(a.service_name, b.service_name, E133_SERVICE_NAME_STRING_PADDED_LENGTH) == 0) &&
-      (a.port == b.port) && (std::strncmp(a.scope, b.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0) &&
-      (std::strncmp(a.model, b.model, E133_MODEL_STRING_PADDED_LENGTH) == 0) &&
-      (std::strncmp(a.manufacturer, b.manufacturer, E133_MANUFACTURER_STRING_PADDED_LENGTH) == 0))
-  {
-    // Check the BrokerListenAddrs
-    BrokerListenAddr* a_addr = a.listen_addr_list;
-    BrokerListenAddr* b_addr = b.listen_addr_list;
-    while (a_addr && b_addr)
-    {
-      if (!(a_addr->addr == b_addr->addr) || (a_addr->next && !b_addr->next) || (!b_addr->next && a_addr->next))
-      {
-        return false;
-      }
-    }
-    return true;
-  }
-  return false;
 }
 
 TEST_F(TestBrokerDiscovery, BrokerFoundIsForwarded)

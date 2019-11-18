@@ -22,11 +22,10 @@
 #include "etcpal/common.h"
 #include "etcpal/socket.h"
 #include "etcpal/timer.h"
-#include "rdmnet/core/discovery.h"
+#include "rdmnet/private/discovery.h"
 #include "rdmnet/private/message.h"
 #include "rdmnet/private/core.h"
 #include "rdmnet/private/connection.h"
-#include "rdmnet/private/discovery.h"
 #include "rdmnet/private/llrp.h"
 #include "rdmnet/private/opts.h"
 
@@ -111,7 +110,7 @@ etcpal_error_t rdmnet_core_init(const EtcPalLogParams* log_params)
       if (res == kEtcPalErrOk)
         conn_initted = ((res = rdmnet_conn_init()) == kEtcPalErrOk);
       if (res == kEtcPalErrOk)
-        disc_initted = ((res = rdmnetdisc_init()) == kEtcPalErrOk);
+        disc_initted = ((res = rdmnet_disc_init()) == kEtcPalErrOk);
       if (res == kEtcPalErrOk)
         llrp_initted = ((res = rdmnet_llrp_init()) == kEtcPalErrOk);
 
@@ -144,7 +143,7 @@ etcpal_error_t rdmnet_core_init(const EtcPalLogParams* log_params)
         if (llrp_initted)
           rdmnet_llrp_deinit();
         if (disc_initted)
-          rdmnetdisc_deinit();
+          rdmnet_disc_deinit();
         if (conn_initted)
           rdmnet_conn_deinit();
         if (poll_initted)
@@ -174,7 +173,7 @@ void rdmnet_core_deinit()
       rdmnet_log_params = NULL;
 
       rdmnet_llrp_deinit();
-      rdmnetdisc_deinit();
+      rdmnet_disc_deinit();
       rdmnet_conn_deinit();
       etcpal_poll_context_deinit(&core_state.poll_context);
       etcpal_deinit(RDMNET_ETCPAL_FEATURES);
@@ -218,7 +217,7 @@ void rdmnet_core_remove_polled_socket(etcpal_socket_t socket)
 #if RDMNET_USE_TICK_THREAD
 void rdmnet_tick_thread(void* arg)
 {
-  (void)arg;
+  RDMNET_UNUSED_ARG(arg);
   while (core_state.tickthread_run)
   {
     rdmnet_core_tick();
@@ -250,7 +249,7 @@ void rdmnet_core_tick()
 
   if (etcpal_timer_is_expired(&core_state.tick_timer))
   {
-    rdmnetdisc_tick();
+    rdmnet_disc_tick();
     rdmnet_conn_tick();
     rdmnet_llrp_tick();
 

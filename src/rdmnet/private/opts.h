@@ -301,6 +301,47 @@
  */
 
 /*!
+ * \defgroup rdmnetopts_disc Discovery
+ * \ingroup rdmnetopts
+ *
+ * Configuration options for RDMnet discovery using DNS-SD.
+ * @{
+ */
+
+/*!
+ * \brief How many RDMnet scopes can be monitored simultaneously.
+ *
+ * Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
+ */
+#ifndef RDMNET_MAX_MONITORED_SCOPES
+#define RDMNET_MAX_MONITORED_SCOPES ((RDMNET_MAX_SCOPES_PER_CONTROLLER * RDMNET_MAX_CONTROLLERS) + RDMNET_MAX_DEVICES)
+#endif
+
+/*!
+ * \brief How many brokers can be discovered at the same time across all monitored scopes.
+ *
+ * Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
+ */
+#ifndef RDMNET_MAX_DISCOVERED_BROKERS
+#define RDMNET_MAX_DISCOVERED_BROKERS RDMNET_MAX_MONITORED_SCOPES
+#endif
+
+/*!
+ * \brief How many listen addresses can be resolved for each discovered broker.
+ *
+ * Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0. Theoretically, this should only need to
+ * be a small number, since only reachable listen addresses should be advertised by registered
+ * brokers.
+ */
+#ifndef RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER
+#define RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER 2
+#endif
+
+/*!
+ * @}
+ */
+
+/*!
  * \defgroup rdmnetopts_llrp LLRP
  * \ingroup rdmnetopts
  *

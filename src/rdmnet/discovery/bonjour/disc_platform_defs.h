@@ -17,4 +17,38 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#include "rdmnet/discovery/common.h"
+/* The disc_platform_defs.h specialization for Bonjour. */
+#ifndef DISC_PLATFORM_DEFS_H_
+#define DISC_PLATFORM_DEFS_H_
+
+#include "dns_sd.h"
+
+#define RDMNET_DISC_SERVICE_NAME_MAX_LENGTH kDNSServiceMaxDomainName
+
+typedef enum
+{
+  kResolveStateServiceResolve,
+  kResolveStateGetAddrInfo,
+  kResolveStateDone
+} resolve_state_t;
+
+typedef struct RdmnetDiscoveredBrokerPlatformData
+{
+  // State information for this broker.
+  resolve_state_t state;
+  DNSServiceRef dnssd_ref;
+} RdmnetDiscoveredBrokerPlatformData;
+
+typedef struct RdmnetScopeMonitorPlatformData
+{
+  // The Bonjour handle
+  DNSServiceRef dnssd_ref;
+} RdmnetScopeMonitorPlatformData;
+
+typedef struct RdmnetBrokerRegisterPlatformData
+{
+  // For hooking up to the DNS-SD API
+  DNSServiceRef dnssd_ref;
+} RdmnetBrokerRegisterPlatformData;
+
+#endif /* DISC_PLATFORM_DEFS_H_ */

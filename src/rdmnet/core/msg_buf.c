@@ -792,7 +792,7 @@ size_t parse_request_dynamic_uid_assignment(GenericListState* lstate, const uint
   parse_result_t res = kPSNoData;
   DynamicUidRequestListEntry** lentry_ptr;
 
-  (void)rdmnet_log_params;
+  RDMNET_UNUSED_ARG(rdmnet_log_params);
 
   /* Navigate to the end of the request list */
   for (lentry_ptr = &rlist->request_list; *lentry_ptr && (*lentry_ptr)->next; lentry_ptr = &(*lentry_ptr)->next)
@@ -847,7 +847,7 @@ size_t parse_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t
   parse_result_t res = kPSNoData;
   DynamicUidMapping** mapping_ptr;
 
-  (void)rdmnet_log_params;
+  RDMNET_UNUSED_ARG(rdmnet_log_params);
 
   /* Navigate to the end of the request list */
   for (mapping_ptr = &alist->mapping_list; *mapping_ptr && (*mapping_ptr)->next; mapping_ptr = &(*mapping_ptr)->next)
@@ -909,7 +909,7 @@ size_t parse_fetch_dynamic_uid_assignment_list(GenericListState* lstate, const u
   parse_result_t res = kPSNoData;
   FetchUidAssignmentListEntry** uid_ptr;
 
-  (void)rdmnet_log_params;
+  RDMNET_UNUSED_ARG(rdmnet_log_params);
 
   /* Navigate to the end of the request list */
   for (uid_ptr = &alist->assignment_list; *uid_ptr && (*uid_ptr)->next; uid_ptr = &(*uid_ptr)->next)

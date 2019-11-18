@@ -26,6 +26,7 @@
 #endif
 #include "etcpal/netint.h"
 #include "etcpal/rbtree.h"
+#include "rdmnet/core/util.h"
 #include "rdmnet/private/llrp.h"
 #include "rdmnet/private/llrp_manager.h"
 #include "rdmnet/private/llrp_target.h"
@@ -295,7 +296,7 @@ void deinit_sys_netints()
 
 void deinit_sys_netint(const EtcPalRbTree* self, EtcPalRbNode* node)
 {
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
 
   LlrpNetint* netint = (LlrpNetint*)node->value;
   if (netint->send_ref_count)
@@ -605,7 +606,7 @@ LlrpRecvSocket* get_llrp_recv_sock(llrp_socket_t llrp_type, etcpal_iptype_t ip_t
 
 int netint_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
 {
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
   const LlrpNetint* a = (const LlrpNetint*)node_a->value;
   const LlrpNetint* b = (const LlrpNetint*)node_b->value;
   if (a->id.ip_type == b->id.ip_type)

@@ -5,6 +5,8 @@ set(RDMNET_SRC ${CMAKE_CURRENT_LIST_DIR}/../../src)
 
 include(GoogleTest)
 
+include_directories(test_shared)
+
 add_subdirectory(core)
 add_subdirectory(api)
 add_subdirectory(broker)

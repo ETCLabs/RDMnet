@@ -20,6 +20,7 @@
 #include "rdmnet/core/llrp_manager.h"
 
 #include "rdm/controller.h"
+#include "rdmnet/core/util.h"
 #include "rdmnet/private/core.h"
 #include "rdmnet/private/llrp_manager.h"
 #include "rdmnet/private/llrp.h"
@@ -92,7 +93,7 @@ etcpal_error_t rdmnet_llrp_manager_init()
 
 static void manager_dealloc(const EtcPalRbTree* self, EtcPalRbNode* node)
 {
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
 
   LlrpManager* manager = (LlrpManager*)node->value;
   if (manager)
@@ -479,7 +480,7 @@ void discovered_target_clear_cb(const EtcPalRbTree* self, EtcPalRbNode* node)
     target = next_target;
   }
   manager_node_dealloc(node);
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
 }
 
 void process_manager_state(LlrpManager* manager, ManagerCallbackDispatchInfo* cb)
@@ -501,7 +502,7 @@ void process_manager_state(LlrpManager* manager, ManagerCallbackDispatchInfo* cb
 
 void manager_data_received(const uint8_t* data, size_t data_size, const LlrpNetintId* netint)
 {
-  (void)netint;
+  RDMNET_UNUSED_ARG(netint);
 
   ManagerCallbackDispatchInfo cb;
   INIT_CALLBACK_INFO(&cb);
@@ -749,7 +750,7 @@ etcpal_error_t get_manager(llrp_manager_t handle, LlrpManager** manager)
 
 void release_manager(LlrpManager* manager)
 {
-  (void)manager;
+  RDMNET_UNUSED_ARG(manager);
   rdmnet_readunlock();
 }
 
@@ -784,7 +785,7 @@ bool manager_handle_in_use(int handle_val)
 
 int manager_cmp_by_handle(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
 {
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
 
   const LlrpManager* a = (const LlrpManager*)node_a->value;
   const LlrpManager* b = (const LlrpManager*)node_b->value;
@@ -794,7 +795,7 @@ int manager_cmp_by_handle(const EtcPalRbTree* self, const EtcPalRbNode* node_a, 
 
 int manager_cmp_by_cid_and_netint(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
 {
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
 
   const LlrpManager* a = (const LlrpManager*)node_a->value;
   const LlrpManager* b = (const LlrpManager*)node_b->value;
@@ -818,7 +819,7 @@ int manager_cmp_by_cid_and_netint(const EtcPalRbTree* self, const EtcPalRbNode* 
 
 int discovered_target_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
 {
-  (void)self;
+  RDMNET_UNUSED_ARG(self);
   const DiscoveredTargetInternal* a = (const DiscoveredTargetInternal*)node_a->value;
   const DiscoveredTargetInternal* b = (const DiscoveredTargetInternal*)node_b->value;
   return RDM_UID_CMP(&a->known_uid.uid, &b->known_uid.uid);

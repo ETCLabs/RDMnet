@@ -197,7 +197,7 @@ etcpal_error_t rdmnet_controller_request_client_list(rdmnet_controller_t handle,
 void client_connected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo* info,
                       void* context)
 {
-  (void)handle;
+  RDMNET_UNUSED_ARG(handle);
 
   RdmnetController* controller = (RdmnetController*)context;
   if (controller)
@@ -209,7 +209,7 @@ void client_connected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle
 void client_connect_failed(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                            const RdmnetClientConnectFailedInfo* info, void* context)
 {
-  (void)handle;
+  RDMNET_UNUSED_ARG(handle);
 
   RdmnetController* controller = (RdmnetController*)context;
   if (controller)
@@ -221,7 +221,7 @@ void client_connect_failed(rdmnet_client_t handle, rdmnet_client_scope_t scope_h
 void client_disconnected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                          const RdmnetClientDisconnectedInfo* info, void* context)
 {
-  (void)handle;
+  RDMNET_UNUSED_ARG(handle);
 
   RdmnetController* controller = (RdmnetController*)context;
   if (controller)
@@ -233,7 +233,7 @@ void client_disconnected(rdmnet_client_t handle, rdmnet_client_scope_t scope_han
 void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const BrokerMessage* msg,
                                 void* context)
 {
-  (void)handle;
+  RDMNET_UNUSED_ARG(handle);
 
   RdmnetController* controller = (RdmnetController*)context;
   if (controller)
@@ -255,7 +255,7 @@ void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t sc
 
 void client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand* cmd, void* context)
 {
-  (void)handle;
+  RDMNET_UNUSED_ARG(handle);
 
   RdmnetController* controller = (RdmnetController*)context;
   if (controller)
@@ -267,7 +267,7 @@ void client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand
 void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RptClientMessage* msg,
                          void* context)
 {
-  (void)handle;
+  RDMNET_UNUSED_ARG(handle);
 
   RdmnetController* controller = (RdmnetController*)context;
   if (controller)

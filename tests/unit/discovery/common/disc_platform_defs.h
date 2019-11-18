@@ -17,11 +17,26 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/* rdmnet/discovery/common.h
- * Common functions and definitions used by all mDNS/DNS-SD providers across
- * platforms.
- */
-#ifndef RDMNET_DISCOVERY_COMMON_H_
-#define RDMNET_DISCOVERY_COMMON_H_
+#ifndef DISC_PLATFORM_DEFS_H_
+#define DISC_PLATFORM_DEFS_H_
 
-#endif /* RDMNET_DISCOVERY_COMMON_H_ */
+// A fake rdmnet_disc_platform_defs.h file for testing.
+
+#define RDMNET_DISC_SERVICE_NAME_MAX_LENGTH 100
+
+typedef struct RdmnetDiscoveredBrokerPlatformData
+{
+  int placeholder;
+} RdmnetDiscoveredBrokerPlatformData;
+
+typedef struct RdmnetScopeMonitorPlatformData
+{
+  int placeholder;
+} RdmnetScopeMonitorPlatformData;
+
+typedef struct RdmnetBrokerRegisterPlatformData
+{
+  int placeholder;
+} RdmnetBrokerRegisterPlatformData;
+
+#endif /* DISC_PLATFORM_DEFS_H_ */

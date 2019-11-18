@@ -48,7 +48,7 @@ static RdmnetScopeMonitorConfig last_monitor_config;
 static etcpal_error_t start_monitoring_and_save_config(const RdmnetScopeMonitorConfig* config,
                                                        rdmnet_scope_monitor_t* handle, int* platform_specific_error)
 {
-  (void)platform_specific_error;
+  RDMNET_UNUSED_ARG(platform_specific_error);
   *handle = last_monitor_handle;
   last_monitor_config = *config;
   return kEtcPalErrOk;
@@ -60,10 +60,10 @@ static RdmnetClientConnectFailedInfo client_connect_failed_info;
 static void custom_connect_failed_cb(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                      const RdmnetClientConnectFailedInfo* info, void* context)
 {
-  (void)handle;
-  (void)scope_handle;
+  RDMNET_UNUSED_ARG(handle);
+  RDMNET_UNUSED_ARG(scope_handle);
   client_connect_failed_info = *info;
-  (void)context;
+  RDMNET_UNUSED_ARG(context);
 }
 
 static RdmnetClientDisconnectedInfo client_disconn_info;
@@ -72,10 +72,10 @@ static RdmnetClientDisconnectedInfo client_disconn_info;
 static void custom_disconnected_cb(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                    const RdmnetClientDisconnectedInfo* info, void* context)
 {
-  (void)handle;
-  (void)scope_handle;
+  RDMNET_UNUSED_ARG(handle);
+  RDMNET_UNUSED_ARG(scope_handle);
   client_disconn_info = *info;
-  (void)context;
+  RDMNET_UNUSED_ARG(context);
 }
 
 static EtcPalSockAddr last_connect_addr;
@@ -84,9 +84,9 @@ static EtcPalSockAddr last_connect_addr;
 static etcpal_error_t connect_and_save_address(rdmnet_conn_t handle, const EtcPalSockAddr* remote_addr,
                                                const ClientConnectMsg* connect_data)
 {
-  (void)handle;
+  RDMNET_UNUSED_ARG(handle);
   last_connect_addr = *remote_addr;
-  (void)connect_data;
+  RDMNET_UNUSED_ARG(connect_data);
   return kEtcPalErrOk;
 }
 }
@@ -106,7 +106,7 @@ protected:
     rdmnet_mock_core_reset();
     rdmnet_connection_create_fake.custom_fake = create_conn_and_save_config;
     rdmnet_connect_fake.return_val = kEtcPalErrOk;
-    rdmnetdisc_start_monitoring_fake.return_val = kEtcPalErrOk;
+    rdmnet_disc_start_monitoring_fake.return_val = kEtcPalErrOk;
 
     // Init
     ASSERT_EQ(kEtcPalErrOk, rdmnet_client_init(NULL));
@@ -140,7 +140,7 @@ class TestDynamicRptClientBehavior : public TestRptClientBehavior
 protected:
   RdmnetScopeConfig default_dynamic_scope_{};
 
-  std::vector<BrokerListenAddr> listen_addrs_;
+  std::vector<EtcPalIpAddr> listen_addrs_;
   RdmnetBrokerDiscInfo discovered_broker_;
 
   void SetUp() override
@@ -151,34 +151,30 @@ protected:
     default_dynamic_scope_.has_static_broker_addr = false;
 
     // Construct our listen addresses
-    BrokerListenAddr listen_addr{};
-    ETCPAL_IP_SET_V4_ADDRESS(&listen_addr.addr, 0x0a650101);
+    EtcPalIpAddr listen_addr{};
+    ETCPAL_IP_SET_V4_ADDRESS(&listen_addr, 0x0a650101);
     listen_addrs_.push_back(listen_addr);
-    ETCPAL_IP_SET_V4_ADDRESS(&listen_addr.addr, 0xc0a80101);
+    ETCPAL_IP_SET_V4_ADDRESS(&listen_addr, 0xc0a80101);
     listen_addrs_.push_back(listen_addr);
     const std::array<uint8_t, 16> v6_addr{0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00,
                                           0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xaa, 0xbb};
-    ETCPAL_IP_SET_V6_ADDRESS(&listen_addr.addr, v6_addr.data());
+    ETCPAL_IP_SET_V6_ADDRESS(&listen_addr, v6_addr.data());
     listen_addrs_.push_back(listen_addr);
-
-    for (size_t i = 0; i < listen_addrs_.size() - 1; ++i)
-    {
-      listen_addrs_.at(i).next = &listen_addrs_.at(i + 1);
-    }
 
     discovered_broker_.port = 8888;
     rdmnet_safe_strncpy(discovered_broker_.scope, default_dynamic_scope_.scope, E133_SCOPE_STRING_PADDED_LENGTH);
-    discovered_broker_.listen_addr_list = listen_addrs_.data();
+    discovered_broker_.listen_addrs = listen_addrs_.data();
+    discovered_broker_.num_listen_addrs = listen_addrs_.size();
   }
 
   void ConnectAndVerify()
   {
-    rdmnetdisc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
+    rdmnet_disc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
 
     ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle_, &default_dynamic_scope_, &scope_handle_));
 
     EXPECT_EQ(rdmnet_connection_create_fake.call_count, 1u);
-    EXPECT_EQ(rdmnetdisc_start_monitoring_fake.call_count, 1u);
+    EXPECT_EQ(rdmnet_disc_start_monitoring_fake.call_count, 1u);
 
     rdmnet_connect_fake.return_val = kEtcPalErrOk;
     last_monitor_config.callbacks.broker_found(last_monitor_handle, &discovered_broker_,
@@ -188,7 +184,7 @@ protected:
     RdmnetConnectedInfo connected_info{};
     connected_info.broker_uid = {20, 40};
     connected_info.client_uid = {1, 2};
-    connected_info.connected_addr = {8888, listen_addrs_[0].addr};
+    connected_info.connected_addr = {8888, listen_addrs_[0]};
     last_conn_config.callbacks.connected(last_conn_handle, &connected_info, last_conn_config.callback_context);
 
     EXPECT_EQ(rdmnet_client_connected_fake.call_count, 1u);
@@ -236,7 +232,7 @@ TEST_F(TestDynamicRptClientBehavior, AddScopeHasCorrectSideEffects)
   ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle_, &default_dynamic_scope_, &scope_handle));
 
   // Make sure the correct underlying functions were called
-  ASSERT_EQ(rdmnetdisc_start_monitoring_fake.call_count, 1u);
+  ASSERT_EQ(rdmnet_disc_start_monitoring_fake.call_count, 1u);
   ASSERT_EQ(rdmnet_connect_fake.call_count, 0u);
 }
 
@@ -245,13 +241,13 @@ TEST_F(TestStaticRptClientBehavior, AddScopeHasCorrectSideEffects)
   // Add a scope with a static broker address
   rdmnet_client_scope_t scope_handle;
   ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle_, &default_static_scope_, &scope_handle));
-  ASSERT_EQ(rdmnetdisc_start_monitoring_fake.call_count, 0u);
+  ASSERT_EQ(rdmnet_disc_start_monitoring_fake.call_count, 0u);
   ASSERT_EQ(rdmnet_connect_fake.call_count, 1u);
 }
 
 TEST_F(TestDynamicRptClientBehavior, DiscoveryErrorsHandled)
 {
-  rdmnetdisc_start_monitoring_fake.return_val = kEtcPalErrSys;
+  rdmnet_disc_start_monitoring_fake.return_val = kEtcPalErrSys;
 
   rdmnet_client_scope_t scope_handle;
   EXPECT_EQ(kEtcPalErrSys, rdmnet_client_add_scope(client_handle_, &default_dynamic_scope_, &scope_handle));
@@ -259,11 +255,11 @@ TEST_F(TestDynamicRptClientBehavior, DiscoveryErrorsHandled)
 
 TEST_F(TestDynamicRptClientBehavior, ConnectionErrorsHandled)
 {
-  rdmnetdisc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
+  rdmnet_disc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
 
   rdmnet_client_scope_t scope_handle;
   ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle_, &default_dynamic_scope_, &scope_handle));
-  ASSERT_EQ(rdmnetdisc_start_monitoring_fake.call_count, 1u);
+  ASSERT_EQ(rdmnet_disc_start_monitoring_fake.call_count, 1u);
 
   rdmnet_connect_fake.return_val = kEtcPalErrSys;
   last_monitor_config.callbacks.broker_found(last_monitor_handle, &discovered_broker_,
@@ -294,20 +290,20 @@ TEST_F(TestDynamicRptClientBehavior, ReconnectionErrorsHandled)
 
 TEST_F(TestDynamicRptClientBehavior, ClientRetriesOnConnectFail)
 {
-  rdmnetdisc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
+  rdmnet_disc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
   rdmnet_connect_fake.custom_fake = connect_and_save_address;
   rdmnet_client_connect_failed_fake.custom_fake = custom_connect_failed_cb;
 
   ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(client_handle_, &default_dynamic_scope_, &scope_handle_));
 
   EXPECT_EQ(rdmnet_connection_create_fake.call_count, 1u);
-  EXPECT_EQ(rdmnetdisc_start_monitoring_fake.call_count, 1u);
+  EXPECT_EQ(rdmnet_disc_start_monitoring_fake.call_count, 1u);
 
   rdmnet_connect_fake.return_val = kEtcPalErrOk;
   last_monitor_config.callbacks.broker_found(last_monitor_handle, &discovered_broker_,
                                              last_monitor_config.callback_context);
   EXPECT_EQ(rdmnet_connect_fake.call_count, 1u);
-  EXPECT_EQ(last_connect_addr.ip, listen_addrs_.at(0).addr);
+  EXPECT_EQ(last_connect_addr.ip, listen_addrs_.at(0));
   EXPECT_EQ(last_connect_addr.port, discovered_broker_.port);
 
   RESET_FAKE(rdmnet_connect);
@@ -322,7 +318,7 @@ TEST_F(TestDynamicRptClientBehavior, ClientRetriesOnConnectFail)
   EXPECT_TRUE(client_connect_failed_info.will_retry);
   EXPECT_EQ(rdmnet_connect_fake.call_count, 1u);
   // The retry should use the next Broker listen address in the list.
-  EXPECT_EQ(last_connect_addr.ip, listen_addrs_.at(1).addr);
+  EXPECT_EQ(last_connect_addr.ip, listen_addrs_.at(1));
   EXPECT_EQ(last_connect_addr.port, discovered_broker_.port);
 }
 

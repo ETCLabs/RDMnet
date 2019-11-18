@@ -145,7 +145,7 @@ source_group(TREE ${RDMNET_INCLUDE}/rdmnet PREFIX include FILES
   ${RDMNET_DISCOVERY_HEADERS}
 )
 
-target_link_libraries(RDMnet PRIVATE RDMnetDiscovery dnssd)
+target_link_libraries(RDMnet PRIVATE RDMnetDiscoveryCommon RDMnetDiscoveryPlatform dnssd)
 
 # Installation
 install(TARGETS RDMnet

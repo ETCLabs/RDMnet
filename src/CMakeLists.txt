@@ -1,7 +1,3 @@
-set(RDMNET_ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
-set(RDMNET_INCLUDE ${RDMNET_ROOT}/include)
-set(RDMNET_SRC ${CMAKE_CURRENT_LIST_DIR})
-
 ################################ DNS-SD SUPPORT ###############################
 
 include(ResolveDnsSdProvider)
@@ -19,6 +15,9 @@ rdmnet_add_dependency(RDM RDM_DIR)
 
 if(TARGET EtcPalMock)
   set_target_properties(EtcPalMock PROPERTIES FOLDER dependencies)
+endif()
+if(TARGET RDMMock)
+  set_target_properties(RDMMock PROPERTIES FOLDER dependencies)
 endif()
 
 ################################## Libraries ##################################

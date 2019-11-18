@@ -1,7 +1,6 @@
-# RDMnet Discovery library unit tests
+# RDMnet Bonjour Discovery library unit tests
 
 add_executable(test_discovery_bonjour
-  # RDMnet Discovery lib unit test sources
   test_discovery_bonjour.cpp
 
   ${RDMNET_SRC}/rdmnet/core/util.c
@@ -9,7 +8,8 @@ add_executable(test_discovery_bonjour
 )
 target_include_directories(test_discovery_bonjour PRIVATE ${RDMNET_SRC})
 target_link_libraries(test_discovery_bonjour PRIVATE
-  RDMnetDiscovery
+  RDMnetDiscoveryCommon
+  RDMnetDiscoveryPlatform
   dnssd_mock
   EtcPalMock
   RDM

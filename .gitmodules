@@ -1,9 +1,13 @@
 [submodule "external/RDM"]
 	path = external/RDM
-	url = ../../ETCLabs/RDM
+	url = https://github.com/ETCLabs/RDM
 [submodule "external/EtcPal"]
 	path = external/EtcPal
 	url = https://github.com/ETCLabs/EtcPal
 [submodule "external/libGadget"]
 	path = external/libGadget
 	url = https://github.com/ETCLabs/libGadget
+[submodule "external/googletest"]
+	path = external/googletest
+	url = https://github.com/google/googletest
+	branch = release-1.10.0

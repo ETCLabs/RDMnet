@@ -89,23 +89,17 @@ etcpal::Result BrokerDiscoveryManager::RegisterBroker(const rdmnet::BrokerSettin
 {
   // Start with the default information.
   RdmnetBrokerDiscInfo* my_info = &cur_config_.my_info;
-  rdmnetdisc_fill_default_broker_info(my_info);
+  rdmnet_disc_init_broker_info(my_info);
 
   my_info->cid = settings.cid.get();
-  std::vector<BrokerListenAddr> listen_addr_list;
+  std::vector<EtcPalIpAddr> listen_addr_list;
   listen_addr_list.reserve(settings.listen_addrs.size());
   for (const auto& listen_addr : settings.listen_addrs)
   {
-    BrokerListenAddr to_add;
-    to_add.addr = listen_addr.get();
-    to_add.next = nullptr;
-    listen_addr_list.push_back(to_add);
-    if (listen_addr_list.size() > 1)
-    {
-      listen_addr_list[listen_addr_list.size() - 2].next = &listen_addr_list[listen_addr_list.size() - 1];
-    }
+    listen_addr_list.push_back(listen_addr.get());
   }
-  my_info->listen_addr_list = listen_addr_list.data();
+  my_info->listen_addrs = listen_addr_list.data();
+  my_info->num_listen_addrs = listen_addr_list.size();
   my_info->port = settings.listen_port;
 
   RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
@@ -115,7 +109,7 @@ etcpal::Result BrokerDiscoveryManager::RegisterBroker(const rdmnet::BrokerSettin
   strncpy(my_info->service_name, settings.dns.service_instance_name.c_str(), E133_SERVICE_NAME_STRING_PADDED_LENGTH);
   RDMNET_MSVC_END_NO_DEP_WARNINGS()
 
-  etcpal_error_t res = rdmnetdisc_register_broker(&cur_config_, &handle_);
+  etcpal_error_t res = rdmnet_disc_register_broker(&cur_config_, &handle_);
   if (res == kEtcPalErrOk)
     cur_config_valid_ = true;
   return res;
@@ -125,7 +119,7 @@ void BrokerDiscoveryManager::UnregisterBroker()
 {
   cur_config_valid_ = false;
   assigned_service_name_.clear();
-  rdmnetdisc_unregister_broker(handle_);
+  rdmnet_disc_unregister_broker(handle_);
 }
 
 void BrokerDiscoveryManager::LibNotifyBrokerRegistered(rdmnet_registered_broker_t handle,
