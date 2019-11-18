@@ -59,11 +59,10 @@ static bool set_static_broker(char* arg, EtcPalSockAddr* static_broker_addr)
     memcpy(ip_str, arg, ip_str_len);
     ip_str[ip_str_len] = '\0';
 
-    EtcPalIpAddr addr;
-    if ((etcpal_inet_pton(kEtcPalIpTypeV4, ip_str, &addr) == kEtcPalErrOk) ||
-        (etcpal_inet_pton(kEtcPalIpTypeV6, ip_str, &addr) == kEtcPalErrOk))
+    if ((etcpal_inet_pton(kEtcPalIpTypeV4, ip_str, &static_broker_addr->ip) == kEtcPalErrOk) ||
+        (etcpal_inet_pton(kEtcPalIpTypeV6, ip_str, &static_broker_addr->ip) == kEtcPalErrOk))
     {
-      if (1 == scanf(sep + 1, "%hu", &static_broker_addr->port))
+      if (1 == sscanf(sep + 1, "%hu", &static_broker_addr->port))
         return true;
     }
   }
