@@ -152,7 +152,7 @@ TEST_F(TestBrokerDiscovery, AsyncRegisterErrorIsForwarded)
 
 TEST_F(TestBrokerDiscovery, ServiceNameChangeIsHandled)
 {
-  constexpr char* kActualServiceName = "A different service name";
+  constexpr const char* kActualServiceName = "A different service name";
 
   ASSERT_TRUE(disc_mgr_.RegisterBroker(settings_));
 

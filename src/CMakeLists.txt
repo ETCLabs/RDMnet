@@ -1,7 +1,3 @@
-set(RDMNET_ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
-set(RDMNET_INCLUDE ${RDMNET_ROOT}/include)
-set(RDMNET_SRC ${CMAKE_CURRENT_LIST_DIR})
-
 ################################ DNS-SD SUPPORT ###############################
 
 include(ResolveDnsSdProvider)

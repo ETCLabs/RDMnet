@@ -23,6 +23,7 @@
 #ifndef DISC_COMMON_H_
 #define DISC_COMMON_H_
 
+#include "etcpal/lock.h"
 #include "etcpal/timer.h"
 #include "rdmnet/private/discovery.h"
 #include "disc_platform_defs.h"

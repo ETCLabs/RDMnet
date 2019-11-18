@@ -83,7 +83,8 @@ TEST_F(TestMonitoredScope, InsertWorks)
 
 // clang-format off
 // These need to be at file scope because we are using stateless lambdas as C function pointers
-static std::pair<std::string, bool> scope_names[] = {
+constexpr size_t kNumScopeNames = 4;
+static std::pair<std::string, bool> scope_names[kNumScopeNames] = {
   {"Test Scope 1", false},
   {"Test Scope 2", false},
   {"Test Scope 3", false},
@@ -93,9 +94,9 @@ static std::pair<std::string, bool> scope_names[] = {
 
 TEST_F(TestMonitoredScope, ForEachWorks)
 {
-  std::array<ScopeMonitorUniquePtr, std::size(scope_names)> scopes;
+  std::array<ScopeMonitorUniquePtr, kNumScopeNames> scopes;
   // Insert each name into the list.
-  for (size_t i = 0; i < std::size(scope_names); ++i)
+  for (size_t i = 0; i < kNumScopeNames; ++i)
   {
     scope_names[i].second = false;
     scopes[i] = MakeDefaultMonitoredScope();

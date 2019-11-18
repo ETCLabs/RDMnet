@@ -86,7 +86,8 @@ TEST_F(TestRegisteredBroker, InsertWorks)
 
 // clang-format off
 // These need to be at file scope because we are using stateless lambdas as C function pointers
-static std::pair<std::string, bool> broker_names[] = {
+constexpr size_t kNumBrokerNames = 4;
+static std::pair<std::string, bool> broker_names[kNumBrokerNames] = {
   {"Test Broker 1", false},
   {"Test Broker 2", false},
   {"Test Broker 3", false},
@@ -96,9 +97,9 @@ static std::pair<std::string, bool> broker_names[] = {
 
 TEST_F(TestRegisteredBroker, ForEachWorks)
 {
-  std::array<RegisteredBrokerUniquePtr, std::size(broker_names)> brokers;
+  std::array<RegisteredBrokerUniquePtr, kNumBrokerNames> brokers;
   // Insert each name into the list.
-  for (size_t i = 0; i < std::size(broker_names); ++i)
+  for (size_t i = 0; i < kNumBrokerNames; ++i)
   {
     broker_names[i].second = false;
     brokers[i] = MakeDefaultRegisteredBroker();

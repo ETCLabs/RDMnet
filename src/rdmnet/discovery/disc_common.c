@@ -32,6 +32,8 @@ etcpal_mutex_t rdmnet_disc_lock;
 
 /*********************** Private function prototypes *************************/
 
+static etcpal_error_t start_monitoring_internal(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
+                                                int* platform_specific_error);
 static void stop_monitoring_all_scopes();
 static void unregister_all_brokers();
 
@@ -118,26 +120,34 @@ etcpal_error_t rdmnet_disc_start_monitoring(const RdmnetScopeMonitorConfig* conf
   etcpal_error_t res = kEtcPalErrOk;
   if (RDMNET_DISC_LOCK())
   {
-    RdmnetScopeMonitorRef* new_monitor = scope_monitor_new(config);
-    if (!new_monitor)
-      res = kEtcPalErrNoMem;
-
-    res = rdmnet_disc_platform_start_monitoring(config, new_monitor, platform_specific_error);
-    if (res == kEtcPalErrOk)
-    {
-      scope_monitor_insert(new_monitor);
-      *handle = new_monitor;
-    }
-    else
-    {
-      scope_monitor_delete(new_monitor);
-    }
-
+    res = start_monitoring_internal(config, handle, platform_specific_error);
     RDMNET_DISC_UNLOCK();
   }
   else
   {
     res = kEtcPalErrSys;
+  }
+
+  return res;
+}
+
+/* Do the actual tasks related to monitoring a scope, within the lock. */
+etcpal_error_t start_monitoring_internal(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
+                                         int* platform_specific_error)
+{
+  RdmnetScopeMonitorRef* new_monitor = scope_monitor_new(config);
+  if (!new_monitor)
+    return kEtcPalErrNoMem;
+
+  etcpal_error_t res = rdmnet_disc_platform_start_monitoring(config, new_monitor, platform_specific_error);
+  if (res == kEtcPalErrOk)
+  {
+    scope_monitor_insert(new_monitor);
+    *handle = new_monitor;
+  }
+  else
+  {
+    scope_monitor_delete(new_monitor);
   }
 
   return res;
@@ -229,8 +239,7 @@ etcpal_error_t rdmnet_disc_register_broker(const RdmnetBrokerRegisterConfig* con
       rdmnet_safe_strncpy(monitor_config.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
 
       int mon_error;
-      res = rdmnet_disc_start_monitoring(&monitor_config, &broker_ref->scope_monitor_handle, &mon_error);
-
+      res = start_monitoring_internal(&monitor_config, &broker_ref->scope_monitor_handle, &mon_error);
       if (res == kEtcPalErrOk)
       {
         // We wait for the timeout to make sure there are no other brokers around with the same
