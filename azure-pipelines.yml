@@ -25,7 +25,7 @@ stages:
   jobs:
   # Build and test RDMnet on Windows using CMake and Visual Studio 2017.
   - job: windows_build_and_test
-    displayName: 'Windows Build and Test'
+    displayName: 'Windows'
     pool:
       vmImage: 'vs2017-win2016'
     strategy:
@@ -87,6 +87,7 @@ stages:
         inputs:
           testResultsFormat: 'CTest'
           testResultsFiles: '**/Test.xml'
+          testRunTitle: 'Windows $(WinArtifactType)'
           failTaskOnFailedTests: true
       - script: |
           cd $(Build.SourcesDirectory)\build
@@ -118,7 +119,7 @@ stages:
 
     # Build and test RDMnet on macOS using CMake and Clang.
   - job: macos_build_and_test
-    displayName: 'macOS Build and Test'
+    displayName: 'macOS'
     pool:
       vmImage: 'macos-10.14'
     steps:
@@ -180,6 +181,7 @@ stages:
         inputs:
           testResultsFormat: 'CTest'
           testResultsFiles: '**/Test.xml'
+          testRunTitle: 'macOS'
           failTaskOnFailedTests: true
       - template: tools/ci/azure_templates/initialize_artifact_version.yml
       - script: |
