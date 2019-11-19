@@ -77,6 +77,8 @@ bool ParseAndSetIfaceList(char* iface_list_str, BrokerShell& broker_shell)
     char* context;
     for (char* p = strtok_r(iface_list_str, ",", &context); p != NULL; p = strtok_r(NULL, ",", &context))
     {
+      etcpal::IpAddr addr;
+
       struct addrinfo ai_hints;
       ai_hints.ai_flags = AI_NUMERICHOST;
       ai_hints.ai_family = AF_UNSPEC;
