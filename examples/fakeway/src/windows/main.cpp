@@ -15,6 +15,10 @@
 #include "etcpal/inet.h"
 #include "fakeway.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
+
 void PrintHelp(wchar_t* app_name)
 {
   printf("Usage: %ls [OPTION]...\n\n", app_name);
