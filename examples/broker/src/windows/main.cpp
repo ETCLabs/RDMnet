@@ -100,7 +100,6 @@ bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell& broker_shell
       if (res == 1)
       {
         addrs.insert(addr);
-        break;
       }
     }
   }

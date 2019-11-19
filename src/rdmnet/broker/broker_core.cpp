@@ -841,31 +841,34 @@ etcpal_socket_t BrokerCore::StartListening(const etcpal::IpAddr& ip, uint16_t& p
   {
     if (log_)
     {
-      log_->Critical("Broker: Failed to create listen socket with error: %s.", res.ToCString());
+      log_->Error("Broker: Failed to create listen socket with error: %s.", res.ToCString());
     }
     return ETCPAL_SOCKET_INVALID;
   }
 
-  int sockopt_val = 0;
-  res = etcpal_setsockopt(listen_sock, ETCPAL_IPPROTO_IPV6, ETCPAL_IPV6_V6ONLY, &sockopt_val, sizeof(int));
-  if (!res)
+  if (ip.IsV6())
   {
-    etcpal_close(listen_sock);
-    if (log_)
+    int sockopt_val = (ip.IsWildcard() ? 0 : 1);
+    res = etcpal_setsockopt(listen_sock, ETCPAL_IPPROTO_IPV6, ETCPAL_IPV6_V6ONLY, &sockopt_val, sizeof(int));
+    if (!res)
     {
-      log_->Critical("Broker: Failed to set V6ONLY socket option on listen socket: %s.", res.ToCString());
+      etcpal_close(listen_sock);
+      if (log_)
+      {
+        log_->Error("Broker: Failed to set V6ONLY socket option on listen socket: %s.", res.ToCString());
+      }
+      return ETCPAL_SOCKET_INVALID;
     }
-    return ETCPAL_SOCKET_INVALID;
   }
 
   res = etcpal_bind(listen_sock, &addr.get());
   if (!res)
   {
     etcpal_close(listen_sock);
-    if (log_ && log_->CanLog(ETCPAL_LOG_WARNING))
+    if (log_ && log_->CanLog(ETCPAL_LOG_ERR))
     {
-      log_->Critical("Broker: Bind to %s failed on listen socket with error: %s.", addr.ToString().c_str(),
-                     res.ToCString());
+      log_->Error("Broker: Bind to %s failed on listen socket with error: %s.", addr.ToString().c_str(),
+                  res.ToCString());
     }
     return ETCPAL_SOCKET_INVALID;
   }
@@ -884,7 +887,7 @@ etcpal_socket_t BrokerCore::StartListening(const etcpal::IpAddr& ip, uint16_t& p
       etcpal_close(listen_sock);
       if (log_)
       {
-        log_->Critical("Broker: Failed to get ephemeral port assigned to listen socket: %s", res.ToCString());
+        log_->Error("Broker: Failed to get ephemeral port assigned to listen socket: %s", res.ToCString());
       }
       return ETCPAL_SOCKET_INVALID;
     }
@@ -896,7 +899,7 @@ etcpal_socket_t BrokerCore::StartListening(const etcpal::IpAddr& ip, uint16_t& p
     etcpal_close(listen_sock);
     if (log_)
     {
-      log_->Critical("Broker: Listen failed on listen socket with error: %s.", res.ToCString());
+      log_->Error("Broker: Listen failed on listen socket with error: %s.", res.ToCString());
     }
     return ETCPAL_SOCKET_INVALID;
   }
@@ -925,6 +928,7 @@ bool BrokerCore::StartBrokerServices()
     }
     else
     {
+      log_->Critical("Could not bind a wildcard listening socket.");
       success = false;
     }
   }
@@ -954,7 +958,11 @@ bool BrokerCore::StartBrokerServices()
     }
 
     // Errors on some interfaces are tolerated as long as we have at least one to listen on.
-    success = (!final_listen_addrs.empty());
+    if (final_listen_addrs.empty())
+    {
+      log_->Critical("Could not listen on any provided IP addresses.");
+      success = false;
+    }
   }
 
   return success;

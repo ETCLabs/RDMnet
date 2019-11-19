@@ -21,6 +21,7 @@
 
 #include "gmock/gmock.h"
 #include "etcpal_mock/common.h"
+#include "etcpal_mock/socket.h"
 
 class MockRdmnetConnInterface : public RdmnetConnInterface
 {
@@ -149,7 +150,8 @@ TEST_F(TestBrokerCore, DoesNotStartWhenAllListenThreadsFail)
 {
   EXPECT_CALL(*mock_threads_, AddListenThread(_)).WillRepeatedly(Return(false));
   rdmnet::BrokerSettings explicit_interfaces(etcpal::Uuid::OsPreferred(), 0x6574);
-  explicit_interfaces.listen_macs = {etcpal::MacAddr({0, 0, 0, 0, 0, 1}), etcpal::MacAddr({0, 0, 0, 0, 0, 2}), etcpal::MacAddr({ 0, 0, 0, 0, 0, 3 })};
+  explicit_interfaces.listen_macs = {etcpal::MacAddr({0, 0, 0, 0, 0, 1}), etcpal::MacAddr({0, 0, 0, 0, 0, 2}),
+                                     etcpal::MacAddr({0, 0, 0, 0, 0, 3})};
   EXPECT_FALSE(StartBrokerWithMockComponents(explicit_interfaces));
 }
 
@@ -158,4 +160,91 @@ TEST_F(TestBrokerCore, DoesNotStartWhenClientServiceThreadFails)
 {
   EXPECT_CALL(*mock_threads_, AddClientServiceThread()).WillOnce(Return(false));
   EXPECT_FALSE(StartBrokerWithMockComponents(DefaultBrokerSettings()));
+}
+
+// When no explicit listen interfaces are specified, the broker should create a single IPv6 socket
+// and bind it to in6addr_any with the V6ONLY option disabled.
+TEST_F(TestBrokerCore, SingleSocketWhenListeningOnAllInterfaces)
+{
+  static int v6only_call_count;  // Lambdas used must be stateless so this must be static
+  v6only_call_count = 0;
+
+  etcpal_setsockopt_fake.custom_fake = [](etcpal_socket_t, int level, int option, const void* value,
+                                          size_t value_size) {
+    if (level == ETCPAL_IPPROTO_IPV6 && option == ETCPAL_IPV6_V6ONLY)
+    {
+      EXPECT_EQ(value_size, sizeof(int));
+      EXPECT_EQ(*reinterpret_cast<const int*>(value), 0);
+      ++v6only_call_count;
+    }
+    return kEtcPalErrOk;
+  };
+  etcpal_bind_fake.custom_fake = [](etcpal_socket_t, const EtcPalSockAddr* addr) {
+    EXPECT_TRUE(ETCPAL_IP_IS_V6(&addr->ip));
+    EXPECT_TRUE(etcpal_ip_is_wildcard(&addr->ip));
+    EXPECT_EQ(addr->port, 0u);
+    return kEtcPalErrOk;
+  };
+
+  ASSERT_TRUE(StartBrokerWithMockComponents(DefaultBrokerSettings()));
+  EXPECT_EQ(etcpal_socket_fake.call_count, 1u);
+  EXPECT_EQ(etcpal_socket_fake.arg0_val, ETCPAL_AF_INET6);
+  EXPECT_EQ(etcpal_socket_fake.arg1_val, ETCPAL_STREAM);
+  EXPECT_EQ(v6only_call_count, 1);
+  EXPECT_EQ(etcpal_listen_fake.call_count, 1u);
+}
+
+// When explicit listen interfaces are specified, the broker should create a socket per interface
+// with the appropriate IP protocol and bind it to the interface IP address.
+TEST_F(TestBrokerCore, IndividualSocketsWhenListeningOnMultipleInterfaces)
+{
+  static int v6only_call_count;  // Lambdas used must be stateless so this must be static
+  v6only_call_count = 0;
+
+  auto settings = DefaultBrokerSettings();
+  settings.listen_addrs.insert(etcpal::IpAddr::FromString("10.101.20.30"));
+  settings.listen_addrs.insert(etcpal::IpAddr::FromString("fe80::1234:5678:9abc:def0"));
+
+  // In this situation, we should be setting the V6ONLY socket option to true for V6 sockets only.
+  etcpal_setsockopt_fake.custom_fake = [](etcpal_socket_t, int level, int option, const void* value,
+                                          size_t value_size) -> etcpal_error_t {
+    if (option == ETCPAL_IPV6_V6ONLY)
+    {
+      EXPECT_EQ(level, ETCPAL_IPPROTO_IPV6);
+      EXPECT_EQ(value_size, sizeof(int));
+      EXPECT_EQ(*reinterpret_cast<const int*>(value), 1);
+      ++v6only_call_count;
+    }
+    return kEtcPalErrOk;
+  };
+
+  etcpal_getsockname_fake.custom_fake = [](etcpal_socket_t, EtcPalSockAddr* addr) {
+    addr->ip = etcpal::IpAddr::FromString("10.101.20.30").get();
+    addr->port = 8888;
+    return kEtcPalErrOk;
+  };
+
+  etcpal_bind_fake.custom_fake = [](etcpal_socket_t, const EtcPalSockAddr* addr) {
+    EXPECT_FALSE(etcpal_ip_is_wildcard(&addr->ip));
+    if (etcpal_bind_fake.call_count == 1u)
+      EXPECT_EQ(addr->port, 0);
+    else
+      EXPECT_EQ(addr->port, 8888);
+    return kEtcPalErrOk;
+  };
+
+  ASSERT_TRUE(StartBrokerWithMockComponents(settings));
+
+  EXPECT_EQ(etcpal_socket_fake.call_count, 2u);
+  if (etcpal_socket_fake.arg0_history[0] == ETCPAL_AF_INET)
+    EXPECT_EQ(etcpal_socket_fake.arg0_history[1], ETCPAL_AF_INET6);
+  else if (etcpal_socket_fake.arg0_history[0] == ETCPAL_AF_INET6)
+    EXPECT_EQ(etcpal_socket_fake.arg0_history[1], ETCPAL_AF_INET);
+  else
+    ADD_FAILURE() << "etcpal_socket called with invalid protocol argument";
+
+  // Should only be called once, for the IPv6 socket.
+  EXPECT_EQ(v6only_call_count, 1);
+  EXPECT_EQ(etcpal_bind_fake.call_count, 2u);
+  EXPECT_EQ(etcpal_listen_fake.call_count, 2u);
 }
