@@ -3,17 +3,26 @@
 
   <?include vars.wxi ?>
 
-  <Product Name="RDMnet" Manufacturer="ETC Inc." Id="*" UpgradeCode="FF687C87-2E87-4D58-BE07-1759636A6DAE"
+  <!-- This variable should NEVER BE CHANGED at any point in the product's lifecycle! -->
+  <!-- It will muck with Windows installer logic. You have been warned. -->
+  <?define UpgradeCode = "FF687C87-2E87-4D58-BE07-1759636A6DAE" ?>
+
+  <Product Name="RDMnet" Manufacturer="ETC Inc." Id="*" UpgradeCode="$(var.UpgradeCode)"
       Language="1033" Codepage="1252" Version="$(var.VersionNumber)">
 
     <Package Id="*" Keywords="Installer" Description="$(var.PkgDescription)" Manufacturer="ETC Inc."
         InstallerVersion="301" Languages="1033" Compressed="yes" SummaryCodepage="1252"
         InstallScope="perMachine" InstallPrivileges="elevated" />
 
-    <MajorUpgrade
-        DowngradeErrorMessage="A newer version of [ProductName] is already installed. If you are trying to downgrade your installation, first uninstall the newer version."
-        AllowSameVersionUpgrades="yes" />
-    <MediaTemplate EmbedCab="yes" />
+    <!-- Upgrade logic - every upgrade is considered a Major Upgrade -->
+    <Upgrade Id="$(var.UpgradeCode)">
+        <UpgradeVersion Maximum="$(var.VersionNumber)" IncludeMaximum="yes" OnlyDetect="no"
+                        Property="PLACEHOLDER" />
+    </Upgrade>
+    <MajorUpgrade AllowDowngrades="yes" AllowSameVersionUpgrades="no"
+        Schedule="afterInstallInitialize" MigrateFeatures="no" />
+
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
 
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="$(var.ProgramFilesFolder)">
