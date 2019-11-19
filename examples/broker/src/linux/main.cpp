@@ -23,6 +23,9 @@
 #include <csignal>
 #include <iostream>
 #include <map>
+#include <netdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #include "broker_shell.h"
 #include "linux_broker_log.h"
@@ -74,9 +77,27 @@ bool ParseAndSetIfaceList(char* iface_list_str, BrokerShell& broker_shell)
     char* context;
     for (char* p = strtok_r(iface_list_str, ",", &context); p != NULL; p = strtok_r(NULL, ",", &context))
     {
-      auto addr = etcpal::IpAddr::FromString(p);
-      if (addr.IsValid())
-        addrs.insert(addr);
+      struct addrinfo ai_hints;
+      ai_hints.ai_flags = AI_NUMERICHOST;
+      ai_hints.ai_family = AF_UNSPEC;
+      ai_hints.ai_socktype = 0;
+      ai_hints.ai_protocol = 0;
+      ai_hints.ai_addrlen = 0;
+      ai_hints.ai_addr = nullptr;
+      ai_hints.ai_canonname = nullptr;
+      ai_hints.ai_next = nullptr;
+
+      struct addrinfo* gai_result;
+      int res = getaddrinfo(p, nullptr, &ai_hints, &gai_result);
+      if (res == 0)
+      {
+        if (gai_result->ai_addr)
+        {
+          ip_os_to_etcpal(gai_result->ai_addr, &addr.get());
+          addrs.insert(addr);
+        }
+        freeaddrinfo(gai_result);
+      }
     }
   }
 

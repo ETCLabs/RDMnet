@@ -23,6 +23,7 @@
 #include <ws2ipdef.h>
 #include <iphlpapi.h>
 #include <WS2tcpip.h>
+#include <cassert>
 #include <iostream>
 #include <map>
 #include "broker_shell.h"
@@ -81,25 +82,26 @@ bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell& broker_shell
     {
       etcpal::IpAddr addr;
 
-      struct sockaddr_storage tst_addr;
-      INT res = InetPtonW(AF_INET, p, &((struct sockaddr_in*)&tst_addr)->sin_addr);
-      if (res == 1)
+      ADDRINFOW ai_hints;
+      ai_hints.ai_flags = AI_NUMERICHOST;
+      ai_hints.ai_family = AF_UNSPEC;
+      ai_hints.ai_socktype = 0;
+      ai_hints.ai_protocol = 0;
+      ai_hints.ai_addrlen = 0;
+      ai_hints.ai_addr = nullptr;
+      ai_hints.ai_canonname = nullptr;
+      ai_hints.ai_next = nullptr;
+
+      ADDRINFOW* gai_result;
+      INT res = GetAddrInfoW(p, nullptr, &ai_hints, &gai_result);
+      if (res == 0)
       {
-        tst_addr.ss_family = AF_INET;
-        ip_os_to_etcpal((etcpal_os_ipaddr_t*)&tst_addr, &addr.get());
-      }
-      else
-      {
-        res = InetPtonW(AF_INET6, p, &((struct sockaddr_in6*)&tst_addr)->sin6_addr);
-        if (res == 1)
+        if (gai_result->ai_addr)
         {
-          tst_addr.ss_family = AF_INET6;
-          ip_os_to_etcpal((etcpal_os_ipaddr_t*)&tst_addr, &addr.get());
+          ip_os_to_etcpal(gai_result->ai_addr, &addr.get());
+          addrs.insert(addr);
         }
-      }
-      if (res == 1)
-      {
-        addrs.insert(addr);
+        FreeAddrInfoW(gai_result);
       }
     }
   }
@@ -302,6 +304,10 @@ int wmain(int argc, wchar_t* argv[])
   int exit_code = 0;
   int log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_INFO);
 
+  WSADATA wsa_data;
+  int ws_err = WSAStartup(MAKEWORD(2, 2), &wsa_data);
+  assert(ws_err == 0);
+
   switch (ParseArgs(argc, argv, broker_shell, log_mask))
   {
     case ParseResult::kParseErr:
@@ -340,6 +346,8 @@ int wmain(int argc, wchar_t* argv[])
     // Unregister/cleanup the network change detection.
     CancelMibChangeNotify2(change_notif_handle);
   }
+
+  WSACleanup();
 
   return exit_code;
 }
