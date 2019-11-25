@@ -199,26 +199,25 @@ stages:
   - job: documentation_deploy
     displayName: 'Documentation Deploy'
     pool:
-      vmImage: 'ubuntu-16.04'
+      vmImage: 'ubuntu-18.04'
+    condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/pull'))
     steps:
     - script: |
         sudo apt-get install doxygen
       displayName: 'Install Doxygen'
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.x' 
+        addToPath: true 
     - task: ShellScript@2
       inputs:
         scriptPath: 'tools/ci/publish_docs.sh'
         failOnStandardError: false
       displayName: 'Generate and Push Documentation'
       env:
-        BRANCH: '$(Build.SourceBranchName)'
-        BUILD_DIR: '$(Build.SourcesDirectory)'
-        BUILD_NUMBER: '$(Build.BuildNumber)'
-        COMMIT: '$(Build.SourceVersion)'
-        BUILD_REASON: '$(Build.Reason)'
         GH_REPO_NAME: 'RDMnet'
         GH_REPO_REF: 'github.com/ETCLabs/RDMnet.git'
         SVC_ETCLABS_CREDENTIALS: 'svc-etclabs:$(svc_etclabs_password)'
-    condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
 
 - stage: deploy_binaries
   displayName: 'Deploy RDMnet Binaries'
