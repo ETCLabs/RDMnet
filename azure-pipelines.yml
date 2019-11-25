@@ -210,15 +210,10 @@ stages:
         failOnStandardError: false
       displayName: 'Generate and Push Documentation'
       env:
-        BRANCH: '$(Build.SourceBranchName)'
-        BUILD_DIR: '$(Build.SourcesDirectory)'
-        BUILD_NUMBER: '$(Build.BuildNumber)'
-        COMMIT: '$(Build.SourceVersion)'
-        BUILD_REASON: '$(Build.Reason)'
         GH_REPO_NAME: 'RDMnet'
         GH_REPO_REF: 'github.com/ETCLabs/RDMnet.git'
         SVC_ETCLABS_CREDENTIALS: 'svc-etclabs:$(svc_etclabs_password)'
-    condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
+    condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/pull'))
 
 - stage: deploy_binaries
   displayName: 'Deploy RDMnet Binaries'
