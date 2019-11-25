@@ -6,9 +6,9 @@
 | Windows 32-bit | [![Build & Test Status][win32-build-badge]][azure-devops-link] |
 | Windows 64-bit | [![Build & Test Status][win64-build-badge]][azure-devops-link] |
 
-[win32-build-badge]: https://dev.azure.com/ETCLabs/RDMnet/_apis/build/status/ETCLabs.RDMnet?branchName=develop&stageName=Build%20and%20Test%20RDMnet&jobName=Windows%20Build%20and%20Test&configuration=Windows%20Build%20and%20Test%20Win32
-[win64-build-badge]: https://dev.azure.com/ETCLabs/RDMnet/_apis/build/status/ETCLabs.RDMnet?branchName=develop&stageName=Build%20and%20Test%20RDMnet&jobName=Windows%20Build%20and%20Test&configuration=Windows%20Build%20and%20Test%20x64
-[macos-build-badge]: https://dev.azure.com/ETCLabs/RDMnet/_apis/build/status/ETCLabs.RDMnet?branchName=develop&stageName=Build%20and%20Test%20RDMnet&jobName=macOS%20Build%20and%20Test
+[win32-build-badge]: https://dev.azure.com/ETCLabs/RDMnet/_apis/build/status/ETCLabs.RDMnet?branchName=develop&stageName=Build%20and%20Test%20RDMnet&jobName=Windows&configuration=Windows%20Win32
+[win64-build-badge]: https://dev.azure.com/ETCLabs/RDMnet/_apis/build/status/ETCLabs.RDMnet?branchName=develop&stageName=Build%20and%20Test%20RDMnet&jobName=Windows&configuration=Windows%20x64
+[macos-build-badge]: https://dev.azure.com/ETCLabs/RDMnet/_apis/build/status/ETCLabs.RDMnet?branchName=develop&stageName=Build%20and%20Test%20RDMnet&jobName=macOS
 [azure-devops-link]: https://dev.azure.com/ETCLabs/RDMnet/_build/latest?definitionId=2&branchName=develop
 
 *RDMnet* is an ANSI standard for entertainment technology by
