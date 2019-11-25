@@ -47,7 +47,7 @@ if os.getenv("BUILD_BUILDID"):
             match = re.match(r"(.+):(\d+):.+", line)
             if match:
                 print(
-                    "##vso[task.logissue type=warning;sourcepath={};line={}]{}".format(
+                    "##vso[task.logissue type=warning;sourcepath={};linenumber={}]{}".format(
                         match.group(1), match.group(2), line
                     )
                 )
