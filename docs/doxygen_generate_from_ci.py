@@ -51,12 +51,12 @@ if os.getenv("BUILD_BUILDID"):
             if match:
                 print(
                     "##vso[task.logissue type=warning;sourcepath={};linenumber={};columnnumber=0]{}".format(
-                        match.group(1), match.group(2), match.group(3)
+                        match.group(1), match.group(2), match.group(3).replace("warning: ", "")
                     )
                 )
             else:
                 print("##vso[task.logissue type=warning]{}".format(line))
-        time.sleep(0.001)
+        time.sleep(0.01)
 else:
     decoded = process_result.stderr.decode("utf-8")
     num_issues = len(decoded.splitlines())
