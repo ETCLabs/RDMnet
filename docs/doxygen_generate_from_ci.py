@@ -44,11 +44,11 @@ if os.getenv("BUILD_BUILDID"):
         if "error:" in line:
             print("##vso[task.logissue type=error]{}".format(line))
         else:
-            match = re.match(r"(.+):(\d+):.+", line)
+            match = re.match(r"(.+):(\d+):(.+)", line)
             if match:
                 print(
-                    "##vso[task.logissue type=warning;sourcepath={};linenumber={}]{}".format(
-                        match.group(1), match.group(2), line
+                    "##vso[task.logissue type=warning;sourcepath={};linenumber={};columnnumber=0]{}".format(
+                        match.group(1), match.group(2), match.group(3)
                     )
                 )
             else:

@@ -104,7 +104,7 @@ void rdmnet_disc_init_broker_info(RdmnetBrokerDiscInfo* broker_info)
  *                    scope later.
  * \param[out] platform_specific_error Filled in on failure with a platform-specific error code.
  * \return #kEtcPalErrOk: Monitoring started successfully.
- * \return #kEtcPalInvalid: Invalid argument.
+ * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
  * \return #kEtcPalErrNoMem: Couldn't allocate resources to monitor this scope.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
@@ -211,7 +211,7 @@ void rdmnet_disc_stop_monitoring_all()
  * \param[out] handle Filled in on success with a handle that can be used to access the registered
  *                    broker later.
  * \return #kEtcPalErrOk: Monitoring started successfully.
- * \return #kEtcPalInvalid: Invalid argument.
+ * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
  * \return #kEtcPalErrNoMem: Couldn't allocate resources to register this broker.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.

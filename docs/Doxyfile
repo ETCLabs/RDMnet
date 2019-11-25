@@ -1,4 +1,4 @@
-# Doxyfile 1.8.14
+# Doxyfile 1.8.11
 
 # This file describes the settings to be used by the documentation system
 # doxygen (www.doxygen.org) for a project.
@@ -304,15 +304,6 @@ EXTENSION_MAPPING      =
 # The default value is: YES.
 
 MARKDOWN_SUPPORT       = YES
-
-# When the TOC_INCLUDE_HEADINGS tag is set to a non-zero value, all headings up
-# to that level are automatically included in the table of contents, even if
-# they do not have an id attribute.
-# Note: This feature currently applies only to Markdown headings.
-# Minimum value: 0, maximum value: 99, default value: 0.
-# This tag requires that the tag MARKDOWN_SUPPORT is set to YES.
-
-TOC_INCLUDE_HEADINGS   = 0
 
 # When enabled doxygen tries to link words that correspond to documented
 # classes, or namespaces to their corresponding documentation. Such a link can
@@ -742,7 +733,7 @@ WARNINGS               = YES
 # will automatically be disabled.
 # The default value is: YES.
 
-WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_UNDOCUMENTED   = YES
 
 # If the WARN_IF_DOC_ERROR tag is set to YES, doxygen will generate warnings for
 # potential errors in the documentation, such as not documenting some parameters
@@ -1097,17 +1088,6 @@ CLANG_ASSISTED_PARSING = NO
 
 CLANG_OPTIONS          = 
 
-# If clang assisted parsing is enabled you can provide the clang parser with the
-# path to the compilation database (see:
-# http://clang.llvm.org/docs/HowToSetupToolingForLLVM.html) used when the files
-# were built. This is equivalent to specifying the "-p" option to a clang tool,
-# such as clang-check. These options will then be pased to the parser.
-# Note: The availability of this option depends on whether or not doxygen was
-# generated with the -Duse-libclang=ON option for CMake.
-# The default value is: 0.
-
-CLANG_COMPILATION_DATABASE_PATH= 0
-
 #---------------------------------------------------------------------------
 # Configuration options related to the alphabetical class index
 #---------------------------------------------------------------------------
@@ -1261,17 +1241,6 @@ HTML_COLORSTYLE_GAMMA  = 141
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
 HTML_TIMESTAMP         = NO
-
-# If the HTML_DYNAMIC_MENUS tag is set to YES then the generated HTML
-# documentation will contain a main index with vertical navigation menus that
-# are dynamically created via Javascript. If disabled, the navigation index will
-# consists of multiple levels of tabs that are statically embedded in every HTML
-# page. Disable this option to support browsers that do not have Javascript,
-# like the Qt help browser.
-# The default value is: YES.
-# This tag requires that the tag GENERATE_HTML is set to YES.
-
-HTML_DYNAMIC_MENUS     = YES
 
 # If the HTML_DYNAMIC_SECTIONS tag is set to YES then the generated HTML
 # documentation will contain sections that can be hidden and shown after the
@@ -2448,11 +2417,6 @@ DIAFILE_DIRS           =
 # will not generate output for the diagram.
 
 PLANTUML_JAR_PATH      = 
-
-# When using plantuml, the PLANTUML_CFG_FILE tag can be used to specify a
-# configuration file for plantuml.
-
-PLANTUML_CFG_FILE      = 
 
 # When using plantuml, the specified paths are searched for files specified by
 # the !include statement in a plantuml block.
