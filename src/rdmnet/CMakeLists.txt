@@ -175,6 +175,7 @@ if(WIN32 OR APPLE OR UNIX)
     ${RDMNET_SRC}/rdmnet/broker/rdmnet_conn_wrapper.h
   )
   set(RDMNET_BROKER_SOURCES
+    ${RDMNET_SRC}/rdmnet/broker/broker_api.cpp
     ${RDMNET_SRC}/rdmnet/broker/broker_core.cpp
     ${RDMNET_SRC}/rdmnet/broker/broker_client.cpp
     ${RDMNET_SRC}/rdmnet/broker/broker_discovery.cpp

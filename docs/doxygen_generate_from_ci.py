@@ -38,9 +38,11 @@ with open("Doxyfile", "r") as doxyfile:
 print(process_result.stdout.decode("utf-8"))
 
 print("\nISSUES:\n")
+num_issues = 0
 # Check to see if we are running on Azure Pipelines.
 if os.getenv("BUILD_BUILDID"):
     for line in process_result.stderr.decode("utf-8").splitlines():
+        num_issues += 1
         if "error:" in line:
             print("##vso[task.logissue type=error]{}".format(line))
         else:
@@ -54,6 +56,10 @@ if os.getenv("BUILD_BUILDID"):
             else:
                 print("##vso[task.logissue type=warning]{}".format(line))
 else:
-    print(process_result.stderr.decode("utf-8"))
+    decoded = process_result.stderr.decode("utf-8")
+    num_issues = len(decoded.splitlines())
+    print(decoded)
+
+print("\n{} issues captured.".format(num_issues))
 
 sys.exit(process_result.returncode)

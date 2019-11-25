@@ -454,7 +454,7 @@ EXTRACT_STATIC         = NO
 # for Java sources.
 # The default value is: YES.
 
-EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_LOCAL_CLASSES  = NO
 
 # This flag is only useful for Objective-C code. If set to YES, local methods,
 # which are defined in the implementation section but not in the interface are
@@ -783,13 +783,16 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = ../src \
-                         mainpage.md \
-                         how_it_works.md \
-                         discovery.md \
-                         devices_and_gateways.md \
-                         roles_and_addressing.md \
-                         ../include
+INPUT                  = . \
+                         ../include/rdmnet \
+                         ../include/rdmnet/broker \
+                         ../include/rdmnet/core \
+                         ../src/rdmnet \
+                         ../src/rdmnet/broker/broker_api.cpp \
+                         ../src/rdmnet/broker/broker_log.cpp \
+                         ../src/rdmnet/core \
+                         ../src/rdmnet/discovery \
+                         ../src/rdmnet/private/opts.h
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -863,7 +866,7 @@ FILE_PATTERNS          = *.c \
 # be searched for input files as well.
 # The default value is: NO.
 
-RECURSIVE              = YES
+RECURSIVE              = NO
 
 # The EXCLUDE tag can be used to specify files and/or directories that should be
 # excluded from the INPUT source files. This way you can easily exclude a
@@ -888,7 +891,8 @@ EXCLUDE_SYMLINKS       = NO
 # Note that the wildcards are matched against the file with absolute path, so to
 # exclude all test directories for example use the pattern */test/*
 
-EXCLUDE_PATTERNS       = 
+EXCLUDE_PATTERNS       = */src/rdmnet/broker/*.h \
+                         */src/rdmnet/discovery/*.h
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the

@@ -17,9 +17,8 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/// \file broker_threads.h
-/// \brief Classes to represent threads used by the Broker.
-/// \author Nick Ballhorn-Wagner and Sam Kearney
+// broker_threads.h
+// Classes to represent threads used by the Broker.
 
 #ifndef BROKER_THREADS_H_
 #define BROKER_THREADS_H_

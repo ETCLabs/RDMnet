@@ -77,7 +77,7 @@ public:
   void GetTimeFromCallback(EtcPalLogTimeParams& time);
   void LogThreadRun();
 
-protected:
+private:
   BrokerLogInterface* log_interface_{nullptr};
 
   EtcPalLogParams log_params_{};

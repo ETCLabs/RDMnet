@@ -17,7 +17,7 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-// The core broker implementation.
+// The core broker implementation. Contains the private implementation of Broker functionality.
 
 #include "broker_core.h"
 
@@ -33,53 +33,6 @@
 #include "broker_util.h"
 
 /*************************** Function definitions ****************************/
-
-rdmnet::Broker::Broker() : core_(std::make_unique<BrokerCore>())
-{
-}
-
-rdmnet::Broker::~Broker()
-{
-}
-
-/// \brief Start all broker functionality and threads.
-///
-/// If listen_addrs is empty, this returns false.  Otherwise, the broker uses the address fields to
-/// set up the listening sockets. If the listen_port is 0 and their is only one listen_addr, an
-/// ephemeral port is chosen. If there are more listen_addrs, listen_port must not be 0.
-///
-/// \param[in] settings Settings for the broker to use for this session.
-/// \param[in] notify A class instance that the broker will use to send asynchronous notifications
-///                   about its state.
-/// \param[in] log A class instance that the broker will use to log messages.
-/// \return true (started broker successfully) or false (an error occurred starting broker).
-bool rdmnet::Broker::Startup(const BrokerSettings& settings, rdmnet::BrokerNotify* notify, rdmnet::BrokerLog* log)
-{
-  return core_->Startup(settings, notify, log);
-}
-
-void rdmnet::Broker::Shutdown()
-{
-  core_->Shutdown();
-}
-
-void rdmnet::Broker::Tick()
-{
-  core_->Tick();
-}
-
-/// \brief Get the current settings the broker is using.
-/// Can be called even after Shutdown. Useful if you want to shutdown & restart the broker for any
-/// reason.
-rdmnet::BrokerSettings rdmnet::Broker::GetSettings() const
-{
-  return core_->GetSettings();
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Begin BrokerCore Functions
-// BrokerCore: Private implementation of Broker functionality.
-///////////////////////////////////////////////////////////////////////////////////////////////////
 
 BrokerCore::BrokerCore() : BrokerComponentNotify()
 {

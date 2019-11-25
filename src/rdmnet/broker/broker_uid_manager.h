@@ -17,8 +17,6 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/// \file broker_uid_manager.h
-
 #ifndef BROKER_UID_MANAGER_H_
 #define BROKER_UID_MANAGER_H_
 

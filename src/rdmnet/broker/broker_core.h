@@ -17,8 +17,6 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/// \file broker_core.h
-
 #ifndef BROKER_CORE_H_
 #define BROKER_CORE_H_
 
