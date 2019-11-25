@@ -3,6 +3,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 
 THIS_SCRIPT_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
@@ -55,6 +56,7 @@ if os.getenv("BUILD_BUILDID"):
                 )
             else:
                 print("##vso[task.logissue type=warning]{}".format(line))
+        time.sleep(0.001)
 else:
     decoded = process_result.stderr.decode("utf-8")
     num_issues = len(decoded.splitlines())
