@@ -793,6 +793,8 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = . \
+                         ./how_rdmnet_works \
+                         ./getting_started \
                          ../include/rdmnet \
                          ../include/rdmnet/broker \
                          ../include/rdmnet/core \

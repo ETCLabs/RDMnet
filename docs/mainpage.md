@@ -10,9 +10,11 @@ The RDMnet library is designed to be portable and scalable to almost any RDMnet
 usage scenario, from lightweight embedded devices to large-scale data sending
 and routing operations.
 
+Check out \ref getting_started to get started with using the library in your
+application.
+
 \htmlonly
-To jump right into the documentation, check out the
-<a href="modules.html">Modules Overview</a>.
+The full API reference is organized by <a href="modules.html">module</a>.
 
 \endhtmlonly
 ## What is RDMnet?
