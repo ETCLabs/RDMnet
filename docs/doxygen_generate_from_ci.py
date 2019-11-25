@@ -56,7 +56,6 @@ if os.getenv("BUILD_BUILDID"):
                 )
             else:
                 print("##vso[task.logissue type=warning]{}".format(line))
-        time.sleep(0.01)
 else:
     decoded = process_result.stderr.decode("utf-8")
     num_issues = len(decoded.splitlines())
