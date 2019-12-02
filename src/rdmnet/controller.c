@@ -72,6 +72,15 @@ static const RptClientCallbacks client_callbacks =
 
 /*************************** Function definitions ****************************/
 
+/*!
+ * \brief Initialize the RDMnet Controller library.
+ *
+ * Only one call to this function can be made per application.
+ *
+ * \param[in] lparams Log parameters to pass to the underlying library.
+ * \return #kEtcPalErrOk: Initialization successful.
+ * \return Errors forwarded from rdmnet_client_init()
+ */
 etcpal_error_t rdmnet_controller_init(const EtcPalLogParams* lparams)
 {
 #if !RDMNET_DYNAMIC_MEM
@@ -88,6 +97,19 @@ void rdmnet_controller_deinit()
   rdmnet_client_deinit();
 }
 
+/*!
+ * \brief Create a new instance of RDMnet controller functionality.
+ *
+ * Each controller is identified by a single component ID (CID). Typical controller applications
+ * will only need one controller instance.
+ *
+ * \param[in] config Configuration parameters to use for this controller instance.
+ * \param[out] handle Filled in on success with a handle to the new controller instance.
+ * \return #kEtcPalErrOk: Controller created successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return #kEtcPalErrNoMem: No memory to allocate new controller instance.
+ * \return Errors forwarded from rdmnet_rpt_client_create().
+ */
 etcpal_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rdmnet_controller_t* handle)
 {
   if (!config || !handle)
@@ -121,6 +143,18 @@ etcpal_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rd
   return res;
 }
 
+/*!
+ * \brief Destroy a controller instance.
+ *
+ * Will disconnect all scopes to which this controller is currently connected, sending the
+ * disconnect reason provided in the reason parameter.
+ *
+ * \param[in] handle Handle to controller to destroy, no longer valid after this function returns.
+ * \param[in] reason Disconnect reason code to send on all connected scopes.
+ * \return #kEtcPalErrOk: Controller destroyed successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return Errors forwarded from rdmnet_client_destroy().
+ */
 etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle, rdmnet_disconnect_reason_t reason)
 {
   if (!handle)
@@ -133,6 +167,8 @@ etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle, rdmnet_disc
   return res;
 }
 
+/*!
+ * \brief Add a new scope for this
 etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const RdmnetScopeConfig* scope_config,
                                            rdmnet_client_scope_t* scope_handle)
 {
@@ -149,15 +185,6 @@ etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet
     return kEtcPalErrInvalid;
 
   return rdmnet_client_remove_scope(handle->client_handle, scope_handle, reason);
-}
-
-etcpal_error_t rdmnet_controller_change_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                              const RdmnetScopeConfig* new_config, rdmnet_disconnect_reason_t reason)
-{
-  if (!handle)
-    return kEtcPalErrInvalid;
-
-  return rdmnet_client_change_scope(handle->client_handle, scope_handle, new_config, reason);
 }
 
 etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,

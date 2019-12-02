@@ -199,11 +199,12 @@ stages:
   - job: documentation_deploy
     displayName: 'Documentation Deploy'
     pool:
+      # TODO change to ubuntu-latest when this issue is fixed:
+      # https://github.com/microsoft/azure-pipelines-image-generation/issues/1379
       vmImage: 'ubuntu-18.04'
     condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/pull'))
     steps:
-    - script: |
-        sudo apt-get install doxygen
+    - script: sudo apt-get install doxygen
       displayName: 'Install Doxygen'
     - task: UsePythonVersion@0
       inputs:

@@ -12,7 +12,7 @@
 
 ################################################################################
 ##### Setup this script and get the current gh-pages branch.               #####
-
+echo 'Publishing documentation...'
 # Exit with nonzero exit code if anything fails
 set -e
 
@@ -20,8 +20,6 @@ set -e
 cd ${BUILD_SOURCESDIRECTORY}
 git submodule init
 git submodule update
-
-echo 'Publishing documentation...'
 
 # Create a clean working directory for this script.
 cd docs

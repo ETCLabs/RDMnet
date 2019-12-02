@@ -34,14 +34,18 @@
 
 /*!
  * \defgroup rdmnet_controller Controller API
- * \ingroup rdmnet_client
  * \brief Implementation of RDMnet controller functionality.
  *
  * RDMnet controllers are clients which originate RDM commands and receive responses. Controllers
  * can participate in multiple scopes; the default scope string "default" must be configured as a
  * default setting. This API wraps the RDMnet Client API and provides functions tailored
  * specifically to the usage concerns of an RDMnet controller.
- *
+ */
+
+/*!
+ * \defgroup rdmnet_controller_c Controller C Language API
+ * \ingroup rdmnet_controller
+ * \brief C Language version of the Controller API
  * @{
  */
 
@@ -51,6 +55,8 @@ extern "C" {
 
 /*! A handle to an RDMnet controller. */
 typedef struct RdmnetController* rdmnet_controller_t;
+/*! An invalid RDMnet controller handle value. */
+#define RDMNET_CONTROLLER_INVALID NULL
 
 typedef enum
 {
@@ -120,10 +126,9 @@ etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle, rdmnet_disc
 
 etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const RdmnetScopeConfig* scope_config,
                                            rdmnet_client_scope_t* scope_handle);
+etcpal_error_t rdmnet_controller_add_default_scope(rdmnet_controller_t handle, rdmnet_client_scope_t* scope_handle);
 etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                               rdmnet_disconnect_reason_t reason);
-etcpal_error_t rdmnet_controller_change_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                              const RdmnetScopeConfig* new_config, rdmnet_disconnect_reason_t reason);
 
 etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                                   const LocalRdmCommand* cmd, uint32_t* seq_num);

@@ -38,7 +38,7 @@
 #include "rdmnet/core/util.h"
 
 /*!
- * \defgroup rdmnet_client RDMnet Client Library
+ * \defgroup rdmnet_client Client API
  * \brief Implementation of RDMnet client functionality
  *
  * RDMnet clients encompass controllers (which originate RDM commands on the network and receive
@@ -413,8 +413,6 @@ etcpal_error_t rdmnet_client_add_scope(rdmnet_client_t handle, const RdmnetScope
                                        rdmnet_client_scope_t* scope_handle);
 etcpal_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                           rdmnet_disconnect_reason_t reason);
-etcpal_error_t rdmnet_client_change_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                          const RdmnetScopeConfig* new_config, rdmnet_disconnect_reason_t reason);
 
 etcpal_error_t rdmnet_client_change_search_domain(rdmnet_client_t handle, const char* new_search_domain,
                                                   rdmnet_disconnect_reason_t reason);

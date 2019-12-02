@@ -370,17 +370,6 @@ etcpal_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_
   return res;
 }
 
-etcpal_error_t rdmnet_client_change_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                          const RdmnetScopeConfig* new_config, rdmnet_disconnect_reason_t reason)
-{
-  RDMNET_UNUSED_ARG(handle);
-  RDMNET_UNUSED_ARG(scope_handle);
-  RDMNET_UNUSED_ARG(new_config);
-  RDMNET_UNUSED_ARG(reason);
-  // TODO
-  return kEtcPalErrNotImpl;
-}
-
 etcpal_error_t rdmnet_client_change_search_domain(rdmnet_client_t handle, const char* new_search_domain,
                                                   rdmnet_disconnect_reason_t reason)
 {

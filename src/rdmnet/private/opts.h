@@ -264,13 +264,13 @@
 #endif
 
 /*!
- * \brief Spawn a thread internally to call rdmnet_tick().
+ * \brief Spawn a thread internally to call rdmnet_core_tick().
  *
- * If defined nonzero, rdmnet_init() will create a thread using \ref etcpal_thread which calls
- * rdmnet_tick() periodically. The thread will be created using #RDMNET_TICK_THREAD_PRIORITY and
- * #RDMNET_TICK_THREAD_STACK. The thread will be stopped by rdmnet_deinit().
+ * If defined nonzero, rdmnet_core_init() will create a thread using \ref etcpal_thread which calls
+ * rdmnet_core_tick() periodically. The thread will be created using #RDMNET_TICK_THREAD_PRIORITY
+ * and #RDMNET_TICK_THREAD_STACK. The thread will be stopped by rdmnet_core_deinit().
  *
- * If defined zero, the function declaration of rdmnet_tick() will be exposed in
+ * If defined zero, the function declaration of rdmnet_core_tick() will be exposed in
  * rdmnet/connection.h and it must be called by the application as specified in that function's
  * documentation.
  */

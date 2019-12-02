@@ -105,8 +105,8 @@ etcpal_error_t device_init(const RdmnetScopeConfig* scope_config, const EtcPalLo
   RdmnetDeviceConfig config;
   RDMNET_DEVICE_CONFIG_INIT(&config, 0x6574);
   // A typical hardware-locked device would use etcpal_generate_v3_uuid() to generate a CID that is
-  // the same every time. But this example device is not locked to hardware, so a V4 UUID makes
-  // more sense.
+  // the same every time. But this example device is not locked to hardware, so we'll just use the
+  // UUID format preferred by the underlying OS, which is different each time it is generated.
   etcpal_generate_v4_uuid(&config.cid);
   config.scope_config = *scope_config;
   config.callbacks.connected = device_connected;

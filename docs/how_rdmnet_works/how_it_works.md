@@ -37,15 +37,15 @@ RDM Controller            Broker            RDM Responder
       ||                    ||                    ||
 ```
 
-Why is the %Broker necessary? We'll get back to that. First, some new
+Why is the broker necessary? We'll get back to that. First, some new
 terminology.
 
 In RDMnet, the protocol that carries RDM messages is called **RDM Packet
 Transport (RPT)**. Something that originates RDM commands using RPT and
 receives responses is called an **RPT Controller**, and something that receives
 RDM commands using RPT and sends responses is called an **RPT Device**. When
-discussing RDMnet, these are often shortened to simply *Controller* and
-*Device*.
+discussing RDMnet, these are often shortened to simply *controller* and
+*device*.
 
 An RPT message that carries an RDM commands is called a **Request**, and an RPT
 message that carries an RDM response is called a **Notification**.
@@ -65,19 +65,19 @@ RPT Controller            Broker              RPT Device
 ```
 
 All three of these components are necessary for message transport in RDMnet;
-**an RDMnet system is not functional without a %Broker**.
+**an RDMnet system is not functional without a broker**.
 
-Requiring a %Broker may seem like a burden, but its presence provides RDMnet
+Requiring a broker may seem like a burden, but its presence provides RDMnet
 with many helpful features.
 
-## Benefits of the %Broker model
+## Benefits of the broker model
 
 ### Multi-Controller functionality
 
 RDM is a single-controller environment. In RDMnet, you can have as many
-Controllers on the network as you want. The %Broker keeps everyone up-to-date
+controllers on the network as you want. The broker keeps everyone up-to-date
 on the state of each Device by forwarding the responses to RDM SET commands to
-all connected Controllers.
+all connected controllers.
 
 ```
  Controller 1             Broker                Device
@@ -102,58 +102,56 @@ all connected Controllers.
 
 ### Scalability
 
-In RDMnet, each Controller and Device implementation only needs to worry about
-one connection: its connection to the %Broker. Resource-constrained Device
+In RDMnet, each controller and device implementation only needs to worry about
+one connection: its connection to the broker. Resource-constrained device
 implementations need not shoulder the burden of keeping track of many
-Controller connections and handling subscriptions and updates. The scalability
-of an RDMnet system is limited only by the scalability of its %Broker.
+controller connections and handling subscriptions and updates. The scalability
+of an RDMnet system is limited only by the scalability of its broker.
 
-When a %Broker is run on non-resource-constrained hardware such as a modern PC
-or server, an RDMnet system can easily scale to hundreds of Controllers and
-tens of thousands of Devices.
+When a broker is run on non-resource-constrained hardware such as a modern PC
+or server, an RDMnet system can easily scale to hundreds of controllers and
+tens of thousands of devices.
 
 ### Simplicity
 
-Having a %Broker makes implementing Controllers and Devices easy. Take a look at
+Having a broker makes implementing controllers and devices easy. Take a look at
 `example_device.c` in the example Device application for proof of this. The
-startup steps for a Device are simple:
+startup steps for a device are simple:
 
-* Discover a %Broker
+* Discover a broker
 * Connect using TCP
 * Start listening for RDM commands
 
-For a Controller, there is one additional step:
+For a controller, there is one additional step:
 
-* Discover a %Broker
+* Discover a broker
 * Connect using TCP
-* Ask the %Broker for a Device list
-* Send RDM commands to one or more Devices
+* Ask the broker for a device list
+* Send RDM commands to one or more devices
 
 ## Scopes
 
-A %Broker has a Scope, which affects which Controllers and Devices connect to
-it. A Controller or Device will only connect to a %Broker with a matching
-Scope.
+A broker has a scope, which affects which controllers and devices connect to
+it. A controller or device will only connect to a broker with a matching scope.
 
 Scopes are UTF-8 strings from 1 to 62 bytes in length (this limitation is
-imposed by the requirements of DNS-SD, which is used to discover %Brokers). The
-standard requires all RDMnet equipment to be shipped with the Scope set to the
-string `"default"`, which simplifies initial setup and operation. Most
-applications will have no need to change the Scope from the default setting,
-but it can be useful for large-scale and advanced setups.
+imposed by the requirements of DNS-SD, which is used to discover brokers). The
+standard requires all RDMnet equipment or software to be shipped with a scope
+configured to the string `"default"`, which simplifies initial setup and
+operation. Most applications will have no need to change the Scope from the
+default setting, but it can be useful for large-scale and advanced setups.
 
 ## %Broker Setups
 
-To simplify RDMnet for end-users, it is anticipated that a common way to ship
-%Brokers will be to co-locate a %Broker and Controller on the same piece of
-physical hardware (e.g. a lighting console). In this setup, the %Broker could
-run as a system service or daemon which communicates with the Controller via
-the local network stack, or the %Broker and Controller functionality could be
-implemented by the same software.
+To simplify RDMnet for end-users, a common way to ship brokers is to co-locate
+a broker and controller on the same piece of physical hardware (e.g. a laptop
+or lighting console). In this setup, the broker generally runs as a system
+service or daemon which communicates with the controller via the local network
+stack. For mobile platforms, which are generally unfriendly to background
+processes, a single app can implement both controller and broker functionality.
 
-Alternatively, a %Broker could be designed to be run on a more traditional
-standalone server, such that the %Broker is "always on" on the lighting
-network.
+Alternatively, a broker can be designed to be run on a more traditional
+standalone server, such that the broker is "always on" on the lighting network.
 
 ## Deeper Dives
 
@@ -161,5 +159,5 @@ To learn more about specific aspects of RDMnet, take a look at one of the topic
 pages below.
 
 * \subpage roles_and_addressing
-* \subpage discovery
 * \subpage devices_and_gateways
+* \subpage discovery

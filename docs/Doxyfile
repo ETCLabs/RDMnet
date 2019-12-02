@@ -797,6 +797,7 @@ INPUT                  = . \
                          ./getting_started \
                          ../include/rdmnet \
                          ../include/rdmnet/broker \
+                         ../include/rdmnet/cpp \
                          ../include/rdmnet/core \
                          ../src/rdmnet \
                          ../src/rdmnet/broker/broker_api.cpp \
