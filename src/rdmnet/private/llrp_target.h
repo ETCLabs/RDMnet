@@ -29,6 +29,7 @@
 #include "etcpal/socket.h"
 #include "etcpal/root_layer_pdu.h"
 #include "rdm/uid.h"
+#include "rdmnet/core.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/core/llrp_target.h"
 #include "rdmnet/private/core.h"
@@ -39,7 +40,7 @@ typedef struct LlrpTarget LlrpTarget;
 
 typedef struct LlrpTargetNetintInfo
 {
-  LlrpNetintId id;
+  RdmnetMcastNetintId id;
   etcpal_socket_t send_sock;
   uint8_t send_buf[LLRP_TARGET_MAX_MESSAGE_SIZE];
 
@@ -47,8 +48,6 @@ typedef struct LlrpTargetNetintInfo
   EtcPalUuid pending_reply_cid;
   uint32_t pending_reply_trans_num;
   EtcPalTimer reply_backoff;
-
-  LlrpTarget* target;
 } LlrpTargetNetintInfo;
 
 // A struct containing the map keys we use for LLRP targets.
@@ -66,7 +65,12 @@ struct LlrpTarget
   llrp_component_t component_type;
 
   // Network interfaces on which the target is operating (value type is LlrpTargetNetintInfo)
-  EtcPalRbTree netints;
+#if RDMNET_DYNAMIC_MEM
+  LlrpTargetNetintInfo* netints;
+#else
+  LlrpTargetNetintInfo netints[RDMNET_MAX_MCAST_NETINTS];
+#endif
+  size_t num_netints;
 
   // Global target state info
   bool connected_to_broker;
@@ -113,7 +117,7 @@ void rdmnet_llrp_target_deinit();
 
 void rdmnet_llrp_target_tick();
 
-void target_data_received(const uint8_t* data, size_t data_size, const LlrpNetintId* netint);
+void target_data_received(const uint8_t* data, size_t data_size, const RdmnetMcastNetintId* netint);
 
 #ifdef __cplusplus
 }

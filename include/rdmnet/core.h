@@ -27,6 +27,7 @@
 #define RDMNET_CORE_H_
 
 #include "etcpal/error.h"
+#include "etcpal/inet.h"
 #include "etcpal/log.h"
 
 #ifdef __cplusplus
@@ -62,7 +63,27 @@ typedef int rdmnet_conn_t;
  * @{
  */
 
-etcpal_error_t rdmnet_core_init(const EtcPalLogParams* log_params);
+/*!
+ * A set of identifying information for a network interface, for multicast purposes. RDMnet uses
+ * two multicast protocols, LLRP and mDNS. When creating sockets to use with these protocols, the
+ * interface IP addresses don't matter and the primary key for a network interface is simply a
+ * combination of the interface index and the IP protocol used.
+ */
+typedef struct RdmnetMcastNetintId
+{
+  /*! The IP protocol used on the network interface. */
+  etcpal_iptype_t ip_type;
+  /*! The index of the network interface. See \ref interface_indexes for more information. */
+  unsigned int index;
+} RdmnetMcastNetintId;
+
+typedef struct RdmnetNetintConfig
+{
+  RdmnetMcastNetintId* netint_arr;
+  size_t num_netints;
+} RdmnetNetintConfig;
+
+etcpal_error_t rdmnet_core_init(const EtcPalLogParams* log_params, const RdmnetNetintConfig* netint_config);
 void rdmnet_core_deinit();
 
 void rdmnet_core_tick();

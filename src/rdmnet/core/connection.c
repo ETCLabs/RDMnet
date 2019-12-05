@@ -138,6 +138,7 @@ etcpal_error_t rdmnet_conn_init()
 #if !RDMNET_DYNAMIC_MEM
   /* Init memory pools */
   res |= etcpal_mempool_init(rdmnet_connections);
+  res |= etcpal_mempool_init(rdmnet_conn_rb_nodes);
 #endif
 
   if (res == kEtcPalErrOk)

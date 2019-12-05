@@ -67,7 +67,7 @@ void DNSSD_API HandleDNSServiceRegisterReply(DNSServiceRef sdRef, DNSServiceFlag
   RDMNET_UNUSED_ARG(sdRef);
 
   RdmnetBrokerRegisterRef* ref = (RdmnetBrokerRegisterRef*)context;
-  assert(ref);
+  RDMNET_ASSERT(ref);
 
   if (RDMNET_DISC_LOCK())
   {
@@ -102,7 +102,7 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef sdRef, DNSServiceF
   RDMNET_UNUSED_ARG(ttl);
 
   RdmnetScopeMonitorRef* ref = (RdmnetScopeMonitorRef*)context;
-  assert(ref);
+  RDMNET_ASSERT(ref);
 
   if (RDMNET_DISC_LOCK())
   {
@@ -167,7 +167,7 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
   RDMNET_UNUSED_ARG(fullname);
 
   RdmnetScopeMonitorRef* ref = (RdmnetScopeMonitorRef*)context;
-  assert(ref);
+  RDMNET_ASSERT(ref);
 
   if (RDMNET_DISC_LOCK())
   {
@@ -223,7 +223,7 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
   RDMNET_UNUSED_ARG(interfaceIndex);
 
   RdmnetScopeMonitorRef* ref = (RdmnetScopeMonitorRef*)context;
-  assert(ref);
+  RDMNET_ASSERT(ref);
 
   char full_name[kDNSServiceMaxDomainName];
   if (DNSServiceConstructFullName(full_name, serviceName, regtype, replyDomain) != kDNSServiceErr_NoError)
@@ -298,8 +298,10 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef sdRef, DNSServiceFlags 
  * Platform-specific functions from rdmnet/discovery/common.h
  ******************************************************************************/
 
-etcpal_error_t rdmnet_disc_platform_init(void)
+etcpal_error_t rdmnet_disc_platform_init(const RdmnetNetintConfig* netint_config)
 {
+  // TODO restrict network interfaces using netint_config
+  RDMNET_UNUSED_ARG(netint_config);
   return etcpal_poll_context_init(&poll_context);
 }
 

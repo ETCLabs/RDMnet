@@ -29,6 +29,7 @@
 #include "etcpal/uuid.h"
 #include "etcpal/inet.h"
 #include "rdm/message.h"
+#include "rdmnet/core.h"
 #include "rdmnet/core/llrp.h"
 
 /*!
@@ -72,7 +73,7 @@ typedef struct LlrpManagerCallbacks
 
 typedef struct LlrpManagerConfig
 {
-  LlrpNetintId netint;
+  RdmnetMcastNetintId netint;
   EtcPalUuid cid;
   uint16_t manu_id;
   LlrpManagerCallbacks callbacks;

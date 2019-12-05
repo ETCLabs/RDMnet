@@ -64,7 +64,7 @@ bool LLRPManager::Startup(const etcpal::Uuid& my_cid, const EtcPalLogParams* log
   printf("ETC Example LLRP Manager version %s initializing...\n", RDMNET_VERSION_STRING);
 
   cid_ = my_cid;
-  rdmnet_core_init(log_params);
+  rdmnet_core_init(log_params, nullptr);
 
   size_t num_interfaces = etcpal_netint_get_num_interfaces();
   if (num_interfaces > 0)

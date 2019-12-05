@@ -255,9 +255,9 @@ size_t calc_status_pdu_size(const RptStatusMsg* status)
 {
 #if RDMNET_DYNAMIC_MEM
   return (RPT_STATUS_HEADER_SIZE +
-          (status->status_string ? strnlen(status->status_string, RPT_STATUS_STRING_MAXLEN) : 0));
+          (status->status_string ? strlen(status->status_string) : 0));
 #else
-  return (RPT_STATUS_HEADER_SIZE + strnlen(status->status_string, RPT_STATUS_STRING_MAXLEN));
+  return (RPT_STATUS_HEADER_SIZE + strlen(status->status_string));
 #endif
 }
 

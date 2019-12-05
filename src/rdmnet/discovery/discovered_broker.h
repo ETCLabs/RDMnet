@@ -49,6 +49,11 @@ struct DiscoveredBroker
  */
 
 /*
+ * Initialize the discovered_broker module.
+ */
+etcpal_error_t discovered_broker_init();
+
+/*
  * Allocates a new discovered broker reference for a given monitored scope. service_name is the
  * service instance name to populate the new broker reference with. full_service_name is the
  * service name combined with the service type and domain. Call discovered_broker_insert() to

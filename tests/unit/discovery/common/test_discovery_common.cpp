@@ -50,7 +50,7 @@ protected:
     TestDiscoveryCommonResetAllFakes();
     rdmnet_core_initialized_fake.return_val = true;
 
-    rdmnet_disc_init();
+    rdmnet_disc_init(nullptr);
 
     // Fill default values to make default_monitor_config_ valid.
     std::strcpy(default_monitor_config_.scope, E133_DEFAULT_SCOPE);

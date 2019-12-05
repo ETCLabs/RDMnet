@@ -46,18 +46,25 @@ static bool broker_info_is_valid(const RdmnetBrokerDiscInfo* info);
 /* Internal function to initialize the RDMnet discovery API.
  * Returns kEtcPalErrOk on success, or specific error code on failure.
  */
-etcpal_error_t rdmnet_disc_init()
+etcpal_error_t rdmnet_disc_init(const RdmnetNetintConfig* netint_config)
 {
   etcpal_error_t res = kEtcPalErrOk;
 
-  if (!etcpal_mutex_create(&rdmnet_disc_lock))
-    res = kEtcPalErrSys;
+  res |= discovered_broker_init();
+  res |= monitored_scope_init();
 
   if (res == kEtcPalErrOk)
-    res = rdmnet_disc_platform_init();
+  {
+    if (!etcpal_mutex_create(&rdmnet_disc_lock))
+      res = kEtcPalErrSys;
+  }
 
-  if (res != kEtcPalErrOk)
-    etcpal_mutex_destroy(&rdmnet_disc_lock);
+  if (res == kEtcPalErrOk)
+  {
+    res = rdmnet_disc_platform_init(netint_config);
+    if (res != kEtcPalErrOk)
+      etcpal_mutex_destroy(&rdmnet_disc_lock);
+  }
 
   return res;
 }

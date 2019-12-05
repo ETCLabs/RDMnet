@@ -94,7 +94,7 @@ typedef struct RdmnetDeviceConfig
  */
 #define RDMNET_DEVICE_CONFIG_INIT(devicecfgptr, manu_id) RPT_CLIENT_CONFIG_INIT(devicecfgptr, manu_id)
 
-etcpal_error_t rdmnet_device_init(const EtcPalLogParams* lparams);
+etcpal_error_t rdmnet_device_init(const EtcPalLogParams* lparams, const RdmnetNetintConfig* netint_config);
 void rdmnet_device_deinit();
 
 etcpal_error_t rdmnet_device_create(const RdmnetDeviceConfig* config, rdmnet_device_t* handle);

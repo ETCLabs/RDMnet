@@ -32,7 +32,7 @@ extern "C" {
 DECLARE_FAKE_VALUE_FUNC(bool, rdmnet_core_initialized);
 
 // Platform-specific rdmnet_disc sources
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_platform_init);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_platform_init, const RdmnetNetintConfig*);
 DECLARE_FAKE_VOID_FUNC(rdmnet_disc_platform_deinit);
 DECLARE_FAKE_VOID_FUNC(rdmnet_disc_platform_tick);
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_platform_start_monitoring, const RdmnetScopeMonitorConfig*,

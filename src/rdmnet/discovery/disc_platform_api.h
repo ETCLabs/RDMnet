@@ -24,6 +24,7 @@
 #ifndef DISC_PLATFORM_API_H_
 #define DISC_PLATFORM_API_H_
 
+#include "rdmnet/core.h"
 #include "rdmnet/core/discovery.h"
 #include "discovered_broker.h"
 #include "monitored_scope.h"
@@ -33,7 +34,7 @@
 extern "C" {
 #endif
 
-etcpal_error_t rdmnet_disc_platform_init(void);
+etcpal_error_t rdmnet_disc_platform_init(const RdmnetNetintConfig* netint_config);
 void rdmnet_disc_platform_deinit(void);
 void rdmnet_disc_platform_tick(void);
 etcpal_error_t rdmnet_disc_platform_start_monitoring(const RdmnetScopeMonitorConfig* config,

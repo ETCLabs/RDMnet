@@ -17,8 +17,8 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef _POSIX_DEVICE_LOG_H_
-#define _POSIX_DEVICE_LOG_H_
+#ifndef POSIX_DEVICE_LOG_H_
+#define POSIX_DEVICE_LOG_H_
 
 #include "etcpal/bool.h"
 #include "etcpal/log.h"
@@ -27,4 +27,4 @@ void device_log_init(const char* file_name);
 const EtcPalLogParams* device_get_log_params();
 void device_log_deinit();
 
-#endif /* _POSIX_DEVICE_LOG_H_ */
+#endif /* POSIX_DEVICE_LOG_H_ */

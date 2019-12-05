@@ -59,7 +59,7 @@ protected:
     rdmnet_mock_core_reset();
 
     // Init
-    ASSERT_EQ(kEtcPalErrOk, rdmnet_client_init(NULL));
+    ASSERT_EQ(kEtcPalErrOk, rdmnet_client_init(nullptr, nullptr));
     ASSERT_EQ(rdmnet_core_init_fake.call_count, 1u);
   }
 

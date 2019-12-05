@@ -18,8 +18,8 @@
  *****************************************************************************/
 
 // A class for logging messages from the Broker on macOS.
-#ifndef _MACOS_BROKER_LOG_H_
-#define _MACOS_BROKER_LOG_H_
+#ifndef MACOS_BROKER_LOG_H_
+#define MACOS_BROKER_LOG_H_
 
 #include <fstream>
 #include <string>
@@ -42,4 +42,4 @@ private:
   std::fstream file_;
 };
 
-#endif  // _MACOS_BROKER_LOG_
+#endif  // MACOS_BROKER_LOG_

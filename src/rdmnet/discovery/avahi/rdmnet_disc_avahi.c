@@ -136,10 +136,10 @@ static void resolve_callback(AvahiServiceResolver* r, AvahiIfIndex interface, Av
   if (address)
     avahi_address_snprint(addr_str, AVAHI_ADDRESS_STR_MAX, address);
   DiscoveredBroker* db = (DiscoveredBroker*)userdata;
-  assert(db);
+  RDMNET_ASSERT(db);
 
   RdmnetScopeMonitorRef* ref = db->monitor_ref;
-  assert(ref);
+  RDMNET_ASSERT(ref);
 
   if (event == AVAHI_RESOLVER_FAILURE)
   {
@@ -253,7 +253,7 @@ static void browse_callback(AvahiServiceBrowser* b, AvahiIfIndex interface, Avah
                             AVAHI_GCC_UNUSED AvahiLookupResultFlags flags, void* userdata)
 {
   RdmnetScopeMonitorRef* ref = (RdmnetScopeMonitorRef*)userdata;
-  assert(ref);
+  RDMNET_ASSERT(ref);
 
   if (event == AVAHI_BROWSER_FAILURE)
   {
@@ -328,12 +328,11 @@ static void browse_callback(AvahiServiceBrowser* b, AvahiIfIndex interface, Avah
 
 static void client_callback(AvahiClient* c, AvahiClientState state, AVAHI_GCC_UNUSED void* userdata)
 {
-  assert(c);
+  RDMNET_ASSERT(c);
   /* Called whenever the client or server state changes */
   if (state == AVAHI_CLIENT_FAILURE)
   {
-    etcpal_log(rdmnet_log_params, ETCPAL_LOG_ERR, RDMNET_LOG_MSG("Avahi server connection failure: %s"),
-               avahi_strerror(avahi_client_errno(c)));
+    RDMNET_LOG_ERR("Avahi server connection failure: %s", avahi_strerror(avahi_client_errno(c)));
     // avahi_simple_poll_quit(disc_state.avahi_simple_poll);
   }
 }
@@ -358,8 +357,7 @@ etcpal_error_t rdmnet_disc_init()
       avahi_client_new(avahi_simple_poll_get(disc_state.avahi_simple_poll), 0, client_callback, NULL, &error);
   if (!disc_state.avahi_client)
   {
-    etcpal_log(rdmnet_log_params, ETCPAL_LOG_ERR, RDMNET_LOG_MSG("Failed to create Avahi client instance: %s"),
-               avahi_strerror(error));
+    RDMNET_LOG_ERR("Failed to create Avahi client instance: %s", avahi_strerror(error));
     avahi_simple_poll_free(disc_state.avahi_simple_poll);
     etcpal_mutex_destroy(&disc_state.lock);
     return kEtcPalErrSys;
@@ -610,7 +608,7 @@ int send_registration(const RdmnetBrokerDiscInfo* info, AvahiEntryGroup** entry_
     get_full_service_type(info->scope, full_service_type);
 
     AvahiStringList* txt_list = build_txt_record(info);
-    assert(txt_list);
+    RDMNET_ASSERT(txt_list);
 
     // Add the unqualified service type
     res = avahi_entry_group_add_service_strlst(group, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, 0, info->service_name,

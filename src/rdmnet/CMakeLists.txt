@@ -70,6 +70,7 @@ set(RDMNET_CORE_PRIVATE_HEADERS
   ${RDMNET_SRC}/rdmnet/private/llrp_manager.h
   ${RDMNET_SRC}/rdmnet/private/llrp_prot.h
   ${RDMNET_SRC}/rdmnet/private/llrp_target.h
+  ${RDMNET_SRC}/rdmnet/private/mcast.h
   ${RDMNET_SRC}/rdmnet/private/message.h
   ${RDMNET_SRC}/rdmnet/private/msg_buf.h
   ${RDMNET_SRC}/rdmnet/private/opts.h
@@ -85,6 +86,7 @@ set(RDMNET_CORE_SOURCES
   ${RDMNET_SRC}/rdmnet/core/llrp_manager.c
   ${RDMNET_SRC}/rdmnet/core/llrp_prot.c
   ${RDMNET_SRC}/rdmnet/core/llrp_target.c
+  ${RDMNET_SRC}/rdmnet/core/mcast.c
   ${RDMNET_SRC}/rdmnet/core/message.c
   ${RDMNET_SRC}/rdmnet/core/msg_buf.c
   ${RDMNET_SRC}/rdmnet/core/rpt_prot.c
@@ -137,12 +139,13 @@ source_group(TREE ${RDMNET_SRC}/rdmnet PREFIX src FILES
   ${RDMNET_CORE_SOURCES}
   ${RDMNET_API_PRIVATE_HEADERS}
   ${RDMNET_CORE_PRIVATE_HEADERS}
-  ${RDMNET_DISCOVERY_ADDITIONAL_SOURCES}
+  ${RDMNET_DISC_COMMON_SOURCES}
+  ${RDMNET_DISC_PLATFORM_SOURCES}
 )
 source_group(TREE ${RDMNET_INCLUDE}/rdmnet PREFIX include FILES
   ${RDMNET_API_PUBLIC_HEADERS}
   ${RDMNET_CORE_PUBLIC_HEADERS}
-  ${RDMNET_DISCOVERY_HEADERS}
+  ${RDMNET_DISC_PUBLIC_HEADERS}
 )
 
 target_link_libraries(RDMnet PRIVATE RDMnetDiscoveryCommon RDMnetDiscoveryPlatform dnssd)
@@ -225,13 +228,24 @@ if(WIN32 OR APPLE OR UNIX)
     ${RDMNET_BROKER_SOURCES}
   )
 
-  target_include_directories(RDMnetBroker PUBLIC ${RDMNET_INCLUDE} broker)
+  target_include_directories(RDMnetBroker PUBLIC ${RDMNET_INCLUDE} broker PRIVATE ${RDMNET_SRC})
   target_link_libraries(RDMnetBroker PUBLIC RDMnet)
   set_target_properties(RDMnetBroker PROPERTIES CXX_STANDARD 14)
+
+  # Organize sources in IDEs
+  source_group(TREE ${RDMNET_SRC}/rdmnet PREFIX src FILES
+    ${RDMNET_BROKER_PRIVATE_HEADERS}
+    ${RDMNET_BROKER_SOURCES}
+  )
+  source_group(TREE ${RDMNET_INCLUDE}/rdmnet PREFIX include FILES
+    ${RDMNET_BROKER_PUBLIC_HEADERS}
+  )
+
 
   install(TARGETS RDMnetBroker ARCHIVE DESTINATION lib)
 
 endif()
+
 
 # TODO
 

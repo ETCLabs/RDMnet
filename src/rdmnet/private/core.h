@@ -30,7 +30,17 @@
 extern "C" {
 #endif
 
-#define RDMNET_LOG_MSG(msg) RDMNET_LOG_MSG_PREFIX msg
+#define RDMNET_LOG(pri, ...) etcpal_log(rdmnet_log_params, (pri), RDMNET_LOG_MSG_PREFIX __VA_ARGS__)
+#define RDMNET_LOG_EMERG(...) RDMNET_LOG(ETCPAL_LOG_EMERG, __VA_ARGS__)
+#define RDMNET_LOG_ALERT(...) RDMNET_LOG(ETCPAL_LOG_ALERT, __VA_ARGS__)
+#define RDMNET_LOG_CRIT(...) RDMNET_LOG(ETCPAL_LOG_CRIT, __VA_ARGS__)
+#define RDMNET_LOG_ERR(...) RDMNET_LOG(ETCPAL_LOG_ERR, __VA_ARGS__)
+#define RDMNET_LOG_WARNING(...) RDMNET_LOG(ETCPAL_LOG_WARNING, __VA_ARGS__)
+#define RDMNET_LOG_NOTICE(...) RDMNET_LOG(ETCPAL_LOG_NOTICE, __VA_ARGS__)
+#define RDMNET_LOG_INFO(...) RDMNET_LOG(ETCPAL_LOG_INFO, __VA_ARGS__)
+#define RDMNET_LOG_DEBUG(...) RDMNET_LOG(ETCPAL_LOG_DEBUG, __VA_ARGS__)
+
+#define RDMNET_CAN_LOG(pri) etcpal_can_log(rdmnet_log_params, (pri))
 
 typedef union PolledSocketOpaqueData
 {

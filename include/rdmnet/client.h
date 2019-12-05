@@ -402,7 +402,7 @@ typedef struct RdmnetEptClientConfig
     (configptr)->static_broker_addr = (broker_addr);                                                         \
   } while (0)
 
-etcpal_error_t rdmnet_client_init(const EtcPalLogParams* lparams);
+etcpal_error_t rdmnet_client_init(const EtcPalLogParams* lparams, const RdmnetNetintConfig* netint_config);
 void rdmnet_client_deinit();
 
 etcpal_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig* config, rdmnet_client_t* handle);

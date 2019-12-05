@@ -109,7 +109,7 @@ protected:
     rdmnet_disc_start_monitoring_fake.return_val = kEtcPalErrOk;
 
     // Init
-    ASSERT_EQ(kEtcPalErrOk, rdmnet_client_init(NULL));
+    ASSERT_EQ(kEtcPalErrOk, rdmnet_client_init(nullptr, nullptr));
     ASSERT_EQ(rdmnet_core_init_fake.call_count, 1u);
 
     rpt_callbacks_.connected = rdmnet_client_connected;

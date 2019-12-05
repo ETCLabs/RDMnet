@@ -24,13 +24,14 @@
 #define RDMNET_MOCK_CORE_DISCOVERY_H_
 
 #include "rdmnet/core/discovery.h"
+#include "rdmnet/core.h"
 #include "fff.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_init);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_init, const RdmnetNetintConfig*);
 DECLARE_FAKE_VOID_FUNC(rdmnet_disc_deinit);
 DECLARE_FAKE_VOID_FUNC(rdmnet_disc_init_broker_info, RdmnetBrokerDiscInfo*);
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_start_monitoring, const RdmnetScopeMonitorConfig*,

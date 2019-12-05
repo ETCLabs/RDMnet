@@ -18,8 +18,8 @@
  *****************************************************************************/
 
 // A class for logging messages from the Broker on Linux.
-#ifndef _LINUX_BROKER_LOG_H_
-#define _LINUX_BROKER_LOG_H_
+#ifndef LINUX_BROKER_LOG_H_
+#define LINUX_BROKER_LOG_H_
 
 #include <fstream>
 #include <string>
@@ -46,4 +46,4 @@ private:
   std::fstream file_;
 };
 
-#endif  // _LINUX_BROKER_LOG_
+#endif  // LINUX_BROKER_LOG_

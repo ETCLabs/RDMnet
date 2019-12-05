@@ -47,6 +47,15 @@ static RdmnetScopeMonitorRef* scope_ref_list;
 
 /*************************** Function definitions ****************************/
 
+etcpal_error_t monitored_scope_init()
+{
+#if RDMNET_DYNAMIC_MEM
+  return kEtcPalErrOk;
+#else
+  return etcpal_mempool_init(scope_monitor_refs);
+#endif
+}
+
 /* Allocate and initialize a new scope monitor ref. */
 RdmnetScopeMonitorRef* scope_monitor_new(const RdmnetScopeMonitorConfig* config)
 {

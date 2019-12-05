@@ -24,6 +24,7 @@
 #include "rdmnet/private/core.h"
 #include "rdmnet/private/llrp_manager.h"
 #include "rdmnet/private/llrp.h"
+#include "rdmnet/private/mcast.h"
 #include "rdmnet/private/opts.h"
 #include "rdmnet/private/util.h"
 
@@ -34,7 +35,7 @@
 #define llrp_manager_dealloc(ptr) free(ptr)
 #else
 #define llrp_manager_alloc() NULL
-#define llrp_manager_dealloc()
+#define llrp_manager_dealloc(ptr)
 #endif
 
 #define INIT_CALLBACK_INFO(cbptr) ((cbptr)->which = kManagerCallbackNone)
@@ -91,6 +92,7 @@ etcpal_error_t rdmnet_llrp_manager_init()
   return kEtcPalErrOk;
 }
 
+#if RDMNET_DYNAMIC_MEM
 static void manager_dealloc(const EtcPalRbTree* self, EtcPalRbNode* node)
 {
   RDMNET_UNUSED_ARG(self);
@@ -101,6 +103,7 @@ static void manager_dealloc(const EtcPalRbTree* self, EtcPalRbNode* node)
 
   free(node);
 }
+#endif
 
 void rdmnet_llrp_manager_deinit()
 {
@@ -458,8 +461,7 @@ bool send_next_probe(LlrpManager* manager)
     }
     else
     {
-      etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
-                 RDMNET_LOG_MSG("Sending LLRP probe request failed with error: '%s'"), etcpal_strerror(send_res));
+      RDMNET_LOG_WARNING("Sending LLRP probe request failed with error: '%s'", etcpal_strerror(send_res));
       return false;
     }
   }
@@ -500,7 +502,7 @@ void process_manager_state(LlrpManager* manager, ManagerCallbackDispatchInfo* cb
   }
 }
 
-void manager_data_received(const uint8_t* data, size_t data_size, const LlrpNetintId* netint)
+void manager_data_received(const uint8_t* data, size_t data_size, const RdmnetMcastNetintId* netint)
 {
   RDMNET_UNUSED_ARG(netint);
 
@@ -534,12 +536,11 @@ void manager_data_received(const uint8_t* data, size_t data_size, const LlrpNeti
       rdmnet_readunlock();
     }
 
-    if (!manager_found && etcpal_can_log(rdmnet_log_params, ETCPAL_LOG_DEBUG))
+    if (!manager_found && RDMNET_CAN_LOG(ETCPAL_LOG_DEBUG))
     {
       char cid_str[ETCPAL_UUID_STRING_BYTES];
       etcpal_uuid_to_string(&keys.cid, cid_str);
-      etcpal_log(rdmnet_log_params, ETCPAL_LOG_DEBUG,
-                 RDMNET_LOG_MSG("Ignoring LLRP message addressed to unknown LLRP Manager %s"), cid_str);
+      RDMNET_LOG_DEBUG("Ignoring LLRP message addressed to unknown LLRP Manager %s", cid_str);
     }
   }
 
@@ -652,12 +653,12 @@ void deliver_callback(ManagerCallbackDispatchInfo* info)
 
 etcpal_error_t setup_manager_socket(LlrpManager* manager)
 {
-  etcpal_error_t res = get_llrp_send_socket(&manager->keys.netint, &manager->send_sock);
+  etcpal_error_t res = rdmnet_get_mcast_send_socket(&manager->keys.netint, &manager->send_sock);
   if (res == kEtcPalErrOk)
   {
     res = llrp_recv_netint_add(&manager->keys.netint, kLlrpSocketTypeManager);
     if (res != kEtcPalErrOk)
-      release_llrp_send_socket(&manager->keys.netint);
+      rdmnet_release_mcast_send_socket(&manager->keys.netint);
   }
   return res;
 }
@@ -774,7 +775,7 @@ void destroy_manager(LlrpManager* manager, bool remove_from_tree)
 void destroy_manager_socket(LlrpManager* manager)
 {
   llrp_recv_netint_remove(&manager->keys.netint, kLlrpSocketTypeManager);
-  release_llrp_send_socket(&manager->keys.netint);
+  rdmnet_release_mcast_send_socket(&manager->keys.netint);
 }
 
 /* Callback for IntHandleManager to determine whether a handle is in use */
