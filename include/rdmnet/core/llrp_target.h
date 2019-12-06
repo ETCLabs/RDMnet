@@ -33,6 +33,7 @@
 #include "etcpal/inet.h"
 #include "rdm/uid.h"
 #include "rdm/message.h"
+#include "rdmnet/core.h"
 #include "rdmnet/core/llrp.h"
 
 /*!
@@ -55,7 +56,7 @@ typedef struct LlrpLocalRdmResponse
   /*! The sequence number received in the corresponding LlrpRemoteRdmCommand. */
   uint32_t seq_num;
   /*! The network interface ID in the corresponding LlrpRemoteRdmCommand. */
-  LlrpNetintId netint_id;
+  RdmnetMcastNetintId netint_id;
   /*! The RDM response. */
   RdmResponse rdm;
 } LlrpLocalRdmResponse;
@@ -71,7 +72,7 @@ typedef struct LlrpRemoteRdmCommand
   /*! An ID for the network interface on which this command was received, to be echoed in the
    *  corresponding LlrpLocalRdmResponse. This helps the LLRP library send the response on the same
    *  interface on which it was received. */
-  LlrpNetintId netint_id;
+  RdmnetMcastNetintId netint_id;
   /*! The RDM command. */
   RdmCommand rdm;
 } LlrpRemoteRdmCommand;
@@ -101,7 +102,7 @@ typedef struct LlrpTargetCallbacks
 
 typedef struct LlrpTargetOptionalConfig
 {
-  LlrpNetintId* netint_arr;
+  RdmnetMcastNetintId* netint_arr;
   size_t num_netints;
   RdmUid uid;
 } LlrpTargetOptionalConfig;

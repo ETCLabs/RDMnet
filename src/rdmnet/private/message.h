@@ -51,14 +51,14 @@
 #define alloc_dynamic_uid_mapping() etcpal_mempool_alloc(dynamic_uid_mappings)
 #define alloc_fetch_uid_assignment_entry() etcpal_mempool_alloc(fetch_uid_assignment_entries)
 #define alloc_rdm_command() etcpal_mempool_alloc(rdm_commands)
-#define alloc_rpt_status_str(size) etcpal_mempool_alloc(rpt_status_strings, ptr)
+#define alloc_rpt_status_str(size) etcpal_mempool_alloc(rpt_status_strings)
 #define free_client_entry(ptr) etcpal_mempool_free(client_entries, ptr)
 #define free_ept_subprot(ptr) etcpal_mempool_free(ept_subprots, ptr)
 #define free_dynamic_uid_request_entry(ptr) etcpal_mempool_free(dynamic_uid_request_entries, ptr)
 #define free_dynamic_uid_mapping(ptr) etcpal_mempool_free(dynamic_uid_mappings, ptr)
 #define free_fetch_uid_assignment_entry(ptr) etcpal_mempool_free(fetch_uid_assignment_entries, ptr)
 #define free_rdm_command(ptr) etcpal_mempool_free(rdm_commands, ptr)
-#define free_rpt_status_str(size) etcpal_mempool_free(rpt_status_strings, ptr)
+#define free_rpt_status_str(ptr) etcpal_mempool_free(rpt_status_strings, ptr)
 #endif
 
 #if !RDMNET_DYNAMIC_MEM

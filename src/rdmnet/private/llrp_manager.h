@@ -42,7 +42,7 @@ typedef struct LlrpManagerKeys
 {
   llrp_manager_t handle;
   EtcPalUuid cid;
-  LlrpNetintId netint;
+  RdmnetMcastNetintId netint;
 } LlrpManagerKeys;
 
 typedef struct LlrpManager LlrpManager;
@@ -118,7 +118,7 @@ void rdmnet_llrp_manager_deinit();
 
 void rdmnet_llrp_manager_tick();
 
-void manager_data_received(const uint8_t* data, size_t data_size, const LlrpNetintId* netint);
+void manager_data_received(const uint8_t* data, size_t data_size, const RdmnetMcastNetintId* netint);
 
 #ifdef __cplusplus
 }

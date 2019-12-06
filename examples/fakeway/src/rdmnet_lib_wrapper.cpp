@@ -75,7 +75,7 @@ etcpal::Result RdmnetLibWrapper::Startup(const etcpal::Uuid& cid, const RdmnetSc
   log_ = log;
 
   // Initialize the Rdmnet device library
-  etcpal::Result res = rdmnet_device_init(log_ ? &log_->params() : nullptr);
+  etcpal::Result res = rdmnet_device_init(log_ ? &log_->params() : nullptr, nullptr);
   if (!res)
   {
     if (log_)

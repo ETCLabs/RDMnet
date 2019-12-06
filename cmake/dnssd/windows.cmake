@@ -1,3 +1,9 @@
+# On Windows, we get mDNS/DNS-SD services from Apple Bonjour for Windows. There are two options for
+# consuming Bonjour for Windows:
+# - The Bonjour SDK, available from Apple (LICENSING RESTRICTIONS MAY APPLY)
+# - ETC's fork of the Bonjour source code, called mDNSWindows, available under the Apache 2.0
+#   license.
+
 set(MDNSWINDOWS_VERSION 1.2.0.5)
 
 set(MDNSWINDOWS_MERGE_DOWNLOAD_URL "https://dl.bintray.com/etclabs/mdnswindows_bin/mDNSWindows_Merge_${MDNSWINDOWS_VERSION}.msm")
@@ -16,11 +22,12 @@ set(MDNSWINDOWS_SRC_LOC "" CACHE STRING "Override location for mDNSWindows to bu
 add_library(dnssd_mock INTERFACE)
 
 # On Windows, we use Bonjour for Windows, either through the Bonjour SDK or ETC's Bonjour fork.
-add_library(RDMnetDiscoveryPlatform INTERFACE)
-target_sources(RDMnetDiscoveryPlatform INTERFACE
+set(RDMNET_DISC_PLATFORM_SOURCES
   ${RDMNET_SRC}/rdmnet/discovery/bonjour/disc_platform_defs.h
   ${RDMNET_SRC}/rdmnet/discovery/bonjour/rdmnet_disc_bonjour.c
 )
+add_library(RDMnetDiscoveryPlatform INTERFACE)
+target_sources(RDMnetDiscoveryPlatform INTERFACE ${RDMNET_DISC_PLATFORM_SOURCES})
 target_include_directories(RDMnetDiscoveryPlatform INTERFACE
   ${RDMNET_SRC}/rdmnet/discovery/bonjour
 )

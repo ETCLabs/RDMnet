@@ -19,7 +19,9 @@
 
 #include "rdmnet/client.h"
 
+#include <inttypes.h>
 #include <string.h>
+#include "etcpal/int.h"
 #include "etcpal/lock.h"
 #include "etcpal/rbtree.h"
 #include "rdm/controller.h"
@@ -80,7 +82,7 @@
 #if !RDMNET_DYNAMIC_MEM
 ETCPAL_MEMPOOL_DEFINE(rdmnet_clients, RdmnetClient, RDMNET_MAX_CLIENTS);
 ETCPAL_MEMPOOL_DEFINE(client_scopes, ClientScopeListEntry, RDMNET_MAX_CLIENT_SCOPES);
-ETCPAL_MEMPOOL_DEFINE(client_rb_nodes, EtcPalRbNode, CLIENT_MAX_RB_NODES);
+ETCPAL_MEMPOOL_DEFINE(client_rb_nodes, EtcPalRbNode, MAX_CLIENT_RB_NODES);
 ETCPAL_MEMPOOL_DEFINE(client_rdm_responses, RemoteRdmRespListEntry, RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES);
 #endif
 
@@ -191,7 +193,7 @@ static void client_node_free(EtcPalRbNode* node);
 
 /*************************** Function definitions ****************************/
 
-etcpal_error_t rdmnet_client_init(const EtcPalLogParams* lparams)
+etcpal_error_t rdmnet_client_init(const EtcPalLogParams* lparams, const RdmnetNetintConfig* netint_config)
 {
   // The lock is created only on the first call to this function.
   if (!client_lock_initted)
@@ -211,7 +213,7 @@ etcpal_error_t rdmnet_client_init(const EtcPalLogParams* lparams)
   etcpal_error_t res = kEtcPalErrSys;
   if (rdmnet_client_lock())
   {
-    res = rdmnet_core_init(lparams);
+    res = rdmnet_core_init(lparams, netint_config);
 
 #if !RDMNET_DYNAMIC_MEM
     if (res == kEtcPalErrOk)
@@ -557,8 +559,7 @@ void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDis
 {
   RDMNET_UNUSED_ARG(context);
 
-  etcpal_log(rdmnet_log_params, ETCPAL_LOG_INFO, RDMNET_LOG_MSG("Broker '%s' for scope '%s' discovered."),
-             broker_info->service_name, broker_info->scope);
+  RDMNET_LOG_INFO("Broker '%s' for scope '%s' discovered.", broker_info->service_name, broker_info->scope);
 
   ClientScopeListEntry* scope_entry = get_scope_by_disc_handle(handle);
   if (scope_entry && !scope_entry->broker_found)
@@ -590,8 +591,7 @@ void monitorcb_broker_lost(rdmnet_scope_monitor_t handle, const char* scope, con
 
     release_scope(scope_entry);
   }
-  etcpal_log(rdmnet_log_params, ETCPAL_LOG_INFO, RDMNET_LOG_MSG("Broker '%s' no longer discovered on scope '%s'"),
-             service_name, scope);
+  RDMNET_LOG_INFO("Broker '%s' no longer discovered on scope '%s'", service_name, scope);
 }
 
 void monitorcb_scope_monitor_error(rdmnet_scope_monitor_t handle, const char* scope, int platform_error, void* context)
@@ -766,16 +766,13 @@ void conncb_msg_received(rdmnet_conn_t handle, const RdmnetMessage* message, voi
         }
         else
         {
-          etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
-                     RDMNET_LOG_MSG("Incorrectly got RPT message for non-RPT client %d on scope %d"), cli->handle,
-                     handle);
+          RDMNET_LOG_WARNING("Incorrectly got RPT message for non-RPT client %d on scope %d", cli->handle, handle);
         }
         break;
       case ACN_VECTOR_ROOT_EPT:
         // TODO, for now fall through
       default:
-        etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
-                   RDMNET_LOG_MSG("Got message with unhandled vector type %u on scope %d"), message->vector, handle);
+        RDMNET_LOG_WARNING("Got message with unhandled vector type %" PRIu32 " on scope %d", message->vector, handle);
         break;
     }
     release_scope(scope_entry);
@@ -1330,10 +1327,8 @@ etcpal_error_t start_scope_discovery(ClientScopeListEntry* scope_entry, const ch
   }
   else
   {
-    etcpal_log(
-        rdmnet_log_params, ETCPAL_LOG_WARNING,
-        RDMNET_LOG_MSG("Starting discovery failed on scope '%s' with error '%s' (platform-specific error code %d)"),
-        scope_entry->config.scope, etcpal_strerror(res), platform_error);
+    RDMNET_LOG_WARNING("Starting discovery failed on scope '%s' with error '%s' (platform-specific error code %d)",
+                       scope_entry->config.scope, etcpal_strerror(res), platform_error);
   }
   return res;
 }
@@ -1346,14 +1341,13 @@ void attempt_connection_on_listen_addrs(ClientScopeListEntry* scope_entry)
   {
     char addr_str[ETCPAL_INET6_ADDRSTRLEN] = {'\0'};
 
-    if (etcpal_can_log(rdmnet_log_params, ETCPAL_LOG_WARNING))
+    if (RDMNET_CAN_LOG(ETCPAL_LOG_WARNING))
     {
       etcpal_inet_ntop(&scope_entry->listen_addrs[listen_addr_index], addr_str, ETCPAL_INET6_ADDRSTRLEN);
     }
 
-    etcpal_log(rdmnet_log_params, ETCPAL_LOG_INFO,
-               RDMNET_LOG_MSG("Attempting broker connection on scope '%s' at address %s:%d..."),
-               scope_entry->config.scope, addr_str, scope_entry->port);
+    RDMNET_LOG_INFO("Attempting broker connection on scope '%s' at address %s:%d...", scope_entry->config.scope,
+                    addr_str, scope_entry->port);
 
     EtcPalSockAddr connect_addr;
     connect_addr.ip = scope_entry->listen_addrs[listen_addr_index];
@@ -1379,10 +1373,9 @@ void attempt_connection_on_listen_addrs(ClientScopeListEntry* scope_entry)
         scope_entry->port = 0;
       }
 
-      etcpal_log(rdmnet_log_params, ETCPAL_LOG_WARNING,
-                 RDMNET_LOG_MSG("Connection to broker for scope '%s' at address %s:%d failed with error: '%s'. %s"),
-                 scope_entry->config.scope, addr_str, connect_addr.port, etcpal_strerror(connect_res),
-                 scope_entry->broker_found ? "Trying next address..." : "All addresses exhausted. Giving up.");
+      RDMNET_LOG_WARNING("Connection to broker for scope '%s' at address %s:%d failed with error: '%s'. %s",
+                         scope_entry->config.scope, addr_str, connect_addr.port, etcpal_strerror(connect_res),
+                         scope_entry->broker_found ? "Trying next address..." : "All addresses exhausted. Giving up.");
 
       if (!scope_entry->broker_found)
         break;

@@ -19,8 +19,8 @@
 
 /// \file broker_util.h
 
-#ifndef _BROKER_UTIL_H_
-#define _BROKER_UTIL_H_
+#ifndef BROKER_UTIL_H_
+#define BROKER_UTIL_H_
 
 #include <stdexcept>
 #include <queue>
@@ -32,4 +32,4 @@
 RptHeader SwapHeaderData(const RptHeader& source);
 std::vector<RdmBuffer> RdmBufListToVect(const RdmBufListEntry* list_head);
 
-#endif  // _BROKER_UTIL_H_
+#endif  // BROKER_UTIL_H_

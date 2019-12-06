@@ -20,13 +20,14 @@
 #ifndef RDMNET_PRIVATE_DISCOVERY_H_
 #define RDMNET_PRIVATE_DISCOVERY_H_
 
+#include "rdmnet/core.h"
 #include "rdmnet/core/discovery.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-etcpal_error_t rdmnet_disc_init(void);
+etcpal_error_t rdmnet_disc_init(const RdmnetNetintConfig* netint_config);
 void rdmnet_disc_deinit(void);
 void rdmnet_disc_tick(void);
 

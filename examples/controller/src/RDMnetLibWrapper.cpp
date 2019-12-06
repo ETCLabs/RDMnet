@@ -99,7 +99,7 @@ bool RDMnetLibWrapper::Startup(const etcpal::Uuid& cid, RDMnetLibNotify* notify)
     notify_ = notify;
 
     // Initialize the RDMnet controller library
-    etcpal::Result res = rdmnet_controller_init(log_ ? log_->GetLogParams() : nullptr);
+    etcpal::Result res = rdmnet_controller_init(log_ ? log_->GetLogParams() : nullptr, nullptr);
     if (!res)
     {
       if (log_)

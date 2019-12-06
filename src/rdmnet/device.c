@@ -73,7 +73,7 @@ static const RptClientCallbacks client_callbacks =
 
 /*************************** Function definitions ****************************/
 
-etcpal_error_t rdmnet_device_init(const EtcPalLogParams* lparams)
+etcpal_error_t rdmnet_device_init(const EtcPalLogParams* lparams, const RdmnetNetintConfig* netint_config)
 {
 #if !RDMNET_DYNAMIC_MEM
   etcpal_error_t res = etcpal_mempool_init(rdmnet_devices);
@@ -81,7 +81,7 @@ etcpal_error_t rdmnet_device_init(const EtcPalLogParams* lparams)
     return res;
 #endif
 
-  return rdmnet_client_init(lparams);
+  return rdmnet_client_init(lparams, netint_config);
 }
 
 void rdmnet_device_deinit()

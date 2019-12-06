@@ -121,7 +121,7 @@ protected:
 
     FFF_RESET_HISTORY();
 
-    init_result_ = rdmnet_disc_init();
+    init_result_ = rdmnet_disc_init(nullptr);
     rdmnet_core_initialized_fake.return_val = true;
 
     CreateDefaultBroker();

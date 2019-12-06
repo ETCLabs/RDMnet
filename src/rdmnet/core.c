@@ -27,6 +27,7 @@
 #include "rdmnet/private/core.h"
 #include "rdmnet/private/connection.h"
 #include "rdmnet/private/llrp.h"
+#include "rdmnet/private/mcast.h"
 #include "rdmnet/private/opts.h"
 
 /*************************** Private constants *******************************/
@@ -77,7 +78,7 @@ static void rdmnet_tick_thread(void* arg);
 
 /*************************** Function definitions ****************************/
 
-etcpal_error_t rdmnet_core_init(const EtcPalLogParams* log_params)
+etcpal_error_t rdmnet_core_init(const EtcPalLogParams* log_params, const RdmnetNetintConfig* netint_config)
 {
   // The lock is created only the first call to this function.
   RDMNET_CREATE_LOCK_OR_DIE();
@@ -90,6 +91,7 @@ etcpal_error_t rdmnet_core_init(const EtcPalLogParams* log_params)
     {
       bool etcpal_initted = false;
       bool poll_initted = false;
+      bool mcast_initted = false;
       bool conn_initted = false;
       bool disc_initted = false;
       bool llrp_initted = false;
@@ -108,9 +110,11 @@ etcpal_error_t rdmnet_core_init(const EtcPalLogParams* log_params)
       if (res == kEtcPalErrOk)
         res = rdmnet_message_init();
       if (res == kEtcPalErrOk)
+        mcast_initted = ((res = rdmnet_mcast_init(netint_config)) == kEtcPalErrOk);
+      if (res == kEtcPalErrOk)
         conn_initted = ((res = rdmnet_conn_init()) == kEtcPalErrOk);
       if (res == kEtcPalErrOk)
-        disc_initted = ((res = rdmnet_disc_init()) == kEtcPalErrOk);
+        disc_initted = ((res = rdmnet_disc_init(netint_config)) == kEtcPalErrOk);
       if (res == kEtcPalErrOk)
         llrp_initted = ((res = rdmnet_llrp_init()) == kEtcPalErrOk);
 
@@ -146,6 +150,8 @@ etcpal_error_t rdmnet_core_init(const EtcPalLogParams* log_params)
           rdmnet_disc_deinit();
         if (conn_initted)
           rdmnet_conn_deinit();
+        if (mcast_initted)
+          rdmnet_mcast_deinit();
         if (poll_initted)
           etcpal_poll_context_deinit(&core_state.poll_context);
         if (etcpal_initted)
@@ -175,6 +181,7 @@ void rdmnet_core_deinit()
       rdmnet_llrp_deinit();
       rdmnet_disc_deinit();
       rdmnet_conn_deinit();
+      rdmnet_mcast_deinit();
       etcpal_poll_context_deinit(&core_state.poll_context);
       etcpal_deinit(RDMNET_ETCPAL_FEATURES);
       rdmnet_writeunlock();
@@ -241,8 +248,7 @@ void rdmnet_core_tick()
   {
     if (poll_res != kEtcPalErrNoSockets)
     {
-      etcpal_log(rdmnet_log_params, ETCPAL_LOG_ERR, RDMNET_LOG_MSG("Error ('%s') while polling sockets."),
-                 etcpal_strerror(poll_res));
+      RDMNET_LOG_ERR("Error ('%s') while polling sockets.", etcpal_strerror(poll_res));
     }
     etcpal_thread_sleep(100);  // Sleep to avoid spinning on errors
   }

@@ -19,14 +19,14 @@
 
 #include "rdmnet/broker/log.h"
 
-#include <cassert>
+#include "rdmnet/private/opts.h"
 #include "broker_util.h"
 
 extern "C" {
 static void broker_log_callback(void* context, const EtcPalLogStrings* strings)
 {
-  assert(strings);
-  assert(strings->human_readable);
+  RDMNET_ASSERT(strings);
+  RDMNET_ASSERT(strings->human_readable);
   rdmnet::BrokerLog* bl = static_cast<rdmnet::BrokerLog*>(context);
   if (bl)
     bl->LogFromCallback(strings->human_readable);

@@ -17,8 +17,8 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef _DEVICE_H_
-#define _DEVICE_H_
+#ifndef DEVICE_H_
+#define DEVICE_H_
 
 #include "etcpal/int.h"
 #include "etcpal/log.h"
@@ -41,4 +41,4 @@ void device_run();
 }
 #endif
 
-#endif /* _DEVICE_H_ */
+#endif /* DEVICE_H_ */

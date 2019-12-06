@@ -54,7 +54,8 @@ RdmnetConnWrapper::RdmnetConnWrapper()
 etcpal::Result RdmnetConnWrapper::Startup(const etcpal::Uuid& cid, const EtcPalLogParams* log_params)
 {
   new_conn_config_.local_cid = cid.get();
-  return rdmnet_core_init(log_params);
+  // TODO honor a network interface configuration
+  return rdmnet_core_init(log_params, nullptr);
 }
 
 void RdmnetConnWrapper::Shutdown()

@@ -17,8 +17,8 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef _DEFAULTRESPONDER_H_
-#define _DEFAULTRESPONDER_H_
+#ifndef DEFAULTRESPONDER_H_
+#define DEFAULTRESPONDER_H_
 
 #include "etcpal/int.h"
 #include "etcpal/bool.h"
@@ -69,4 +69,4 @@ bool default_responder_get(uint16_t pid, const uint8_t* param_data, uint8_t para
 }
 #endif
 
-#endif /* _DEFAULTRESPONDER_H_ */
+#endif /* DEFAULTRESPONDER_H_ */
