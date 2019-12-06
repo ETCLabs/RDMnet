@@ -162,6 +162,8 @@ def main():
     if not update_version_files(repo_root, new_version):
         sys.exit(1)
 
+    resolve_import_versions(repo_root, new_version)
+
     if not prompt_to_continue():
         sys.exit(0)
 
