@@ -5,6 +5,14 @@ import sys
 
 BN_PASSWORD = os.getenv("BUILDNETWORKING_PASSWORD")
 THIS_SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+BUILD_DESCRIPTION_TEMPLATE="""
+{{noformat}}
+{}
+{{noformat}}
+
+Installers for RDMnet are available on Bintray:
+https://bintray.com/etclabs/rdmnet_bin/latest
+"""
 
 def main():
     with open(os.path.join(THIS_SCRIPT_DIR, "..", "version", "imports.txt")) as imports_file:
@@ -19,7 +27,7 @@ def main():
                 "key": "RDMNET"
             },
             "summary": current_version,
-            "description": "{{noformat}}\n{}\n{{noformat}}\n".format(jira_imports),
+            "description": BUILD_DESCRIPTION_TEMPLATE.format(jira_imports),
             "issuetype": {
                 "name": "Build"
             }
