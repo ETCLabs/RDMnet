@@ -53,6 +53,32 @@ def parse_version(vers_string):
 
     return [major, minor, patch, build]
 
+IMPORTS = {
+    'EtcPal': '@ETCPAL_VERSION_STRING@',
+    'RDM': '@RDM_VERSION_STRING@'
+}
+IMPORT_TEMPLATE_FILE = os.path.join(FILE_TEMPLATE_DIR, 'imports.txt.in')
+IMPORT_OUT_FILE = os.path.join('tools', 'version', 'imports.txt')
+
+def resolve_import_versions(repo_root, version):
+    """Update the version record of the submodule dependencies."""
+    version_str = '{}.{}.{}.{}'.format(version[0], version[1], version[2], version[3])
+
+    with open(os.path.join(repo_root, IMPORT_TEMPLATE_FILE), 'r') as import_file:
+        import_file_contents = import_file.read()
+
+    import_file_contents = import_file_contents.replace('@RDMNET_VERSION_STRING@', version_str)
+
+    for import_name, import_var in IMPORTS.items():
+        import_version_file_path = os.path.join(repo_root, 'external', import_name, 'tools',
+                                                'version', 'current_version.txt')
+        with open(import_version_file_path, 'r') as import_version_file:
+            import_version = import_version_file.read().strip()
+            import_file_contents = import_file_contents.replace(import_var, import_version)
+
+    with open(os.path.join(repo_root, IMPORT_OUT_FILE), 'w') as out_file:
+        out_file.write(import_file_contents)
+
 
 def update_version_files(repo_root, version):
     """Update RDMnet files with version information in them with the new version information.
@@ -107,6 +133,7 @@ def commit_and_tag(repo, new_version):
 
     # Add all of our version files
     out_file_abs_paths = [os.path.join(repo.working_tree_dir, out_file) for out_file in FILE_OUT_PATHS]
+    out_file_abs_paths.append(os.path.join(repo.working_tree_dir, IMPORT_OUT_FILE))
     index.add(out_file_abs_paths)
 
     # Commit and tag
