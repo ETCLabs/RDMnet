@@ -20,7 +20,6 @@
 /*!
  * \file rdmnet/controller.h
  * \brief Definitions for the RDMnet Controller API
- * \author Sam Kearney
  */
 
 #ifndef RDMNET_CONTROLLER_H_
@@ -34,7 +33,7 @@
 
 /*!
  * \defgroup rdmnet_controller Controller API
- * \brief Implementation of RDMnet controller functionality.
+ * \brief Implementation of RDMnet controller functionality; see \ref using_controller.
  *
  * RDMnet controllers are clients which originate RDM commands and receive responses. Controllers
  * can participate in multiple scopes; the default scope string "default" must be configured as a

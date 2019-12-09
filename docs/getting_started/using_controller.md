@@ -190,6 +190,52 @@ auto add_res = controller.AddDefaultScope(static_broker_addr);
 
 ### Handling Callbacks
 
+The library will dispatch callback notifications from the context in which rdmnet_core_tick() is
+called (in the default configuration, this is a single dedicated worker thread). It is safe to call
+any RDMnet API function from any callback; in fact, this is the recommended way of handling many
+callbacks.
+
+For example, a very common controller behavior will be to fetch a client list from the broker
+after a successful connection:
+
+```c
+void controller_connected_callback(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                                   const RdmnetClientConnectedInfo* info, void* context)
+{
+  // Check handle and/or context as necessary...
+  rdmnet_controller_request_client_list(handle, scope_handle);
+}                                   
+```
+
+```cpp
+void MyControllerNotifyHandler::HandleConnectedToBroker(ScopeHandle scope, const RdmnetClientConnectedInfo& info)
+{
+  // Check handle as necessary...
+  controller.RequestClientList(scope);
+}
+```
+
+#### Connection Failure
+
+It's worth noting connection failure as a special case here. RDMnet connections can fail for many
+reasons, including user misconfiguration, network misconfiguration, components starting up or
+shutting down, programming errors, and more. There is 
+
+The RdmnetClientConnectFailedInfo and RdmnetClientDisconnectedInfo structs passed back with the 
+connect_failed and disconnected callbacks respectively have comprehensive information about the 
+failure, including enum values containing the library's categorization of the failure, protocol
+reason codes and socket errors where applicable. This information is typically used mostly for
+logging and debugging. Each of these codes has a respective to_string() function to aid in logging.
+
+For programmatic use, the structs also contain a will_retry member which indicates whether the
+library plans to retry this connection in the background. The only circumstances under which the 
+library will not retry is when a connection failure is determined to be either a programming error
+or a user misconfiguration. Some examples of these circumstances are:
+
+* The broker explicitly rejected a connection with a reason code indicating a configuration error,
+  such as CONNECT_SCOPE_MISMATCH or CONNECT_DUPLICATE_UID.
+* The library failed to create a network socket before the connection was initiated.
+
 ### Sending RDM Commands
 
 ### Handling RDM Responses

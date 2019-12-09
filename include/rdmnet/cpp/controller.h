@@ -30,6 +30,7 @@
 #include "etcpal/cpp/uuid.h"
 #include "etcpal/log.h"
 #include "rdmnet/controller.h"
+#include "rdmnet/cpp/client.h"
 
 namespace rdmnet
 {
@@ -39,24 +40,22 @@ namespace rdmnet
 /// @{
 
 using ControllerHandle = rdmnet_controller_t;
-using ScopeHandle = rdmnet_client_scope_t;
 
 /// @}
 
 /// \brief A base class for a class that receives notification callbacks from a controller.
 /// \ingroup rdmnet_controller_cpp
-class ControllerNotify
+class ControllerNotifyHandler
 {
 public:
-  virtual void Connected(ScopeHandle scope, const RdmnetClientConnectedInfo& info) = 0;
-  virtual void ConnectFailed(ScopeHandle scope, const RdmnetClientConnectFailedInfo& info) = 0;
-  virtual void Disconnected(ScopeHandle scope, const RdmnetClientDisconnectedInfo& info) = 0;
-  virtual void ClientListUpdateReceived(ScopeHandle scope, client_list_action_t list_action,
-                                        const ClientList& list) = 0;
-  virtual void RdmResponseReceived(ScopeHandle scope, const RemoteRdmResponse& resp) = 0;
-  virtual void RdmCommandReceived(Scopehandle scope, const RemoteRdmCommand& cmd) = 0;
-  virtual void StatusReceived(ScopeHandle scope, const RemoteRptStatus& status) = 0;
-  virtual void LlrpRdmCommandReceived(const LlrpRemoteRdmCommand& cmd) = 0;
+  virtual void HandleConnectedToBroker(ScopeHandle scope, const RdmnetClientConnectedInfo& info) = 0;
+  virtual void HandleBrokerConnectFailed(ScopeHandle scope, const RdmnetClientConnectFailedInfo& info) = 0;
+  virtual void HandleDisconnectedFromBroker(ScopeHandle scope, const RdmnetClientDisconnectedInfo& info) = 0;
+  virtual void HandleClientListUpdate(ScopeHandle scope, client_list_action_t list_action, const ClientList& list) = 0;
+  virtual void HandleRdmResponse(ScopeHandle scope, const RemoteRdmResponse& resp) = 0;
+  virtual void HandleRdmCommand(Scopehandle scope, const RemoteRdmCommand& cmd) = 0;
+  virtual void HandleRptStatus(ScopeHandle scope, const RemoteRptStatus& status) = 0;
+  virtual void HandleLlrpRdmCommand(const LlrpRemoteRdmCommand& cmd) = 0;
 };
 
 /// \brief An instance of RDMnet Controller functionality.
@@ -64,14 +63,11 @@ public:
 class Controller
 {
 public:
-  etcpal::Result Startup(const etcpal::Uuid& cid, ControllerNotify& notify, RdmUid& uid = RdmUid{},
-                         const std::string& search_domain = std::string{},
-                         const std::vector<LlrpNetintId>& llrp_netints = std::vector<LlrpNetintId>{});
+  etcpal::Result Startup(const etcpal::Uuid& cid, ControllerNotifyHandler& notify_handler);
   void Shutdown();
 
   etcpal::Expected<ScopeHandle> AddDefaultScope(const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
-  etcpal::Expected<ScopeHandle> AddScope(const std::string& scope_str,
-                                         const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
+  etcpal::Expected<ScopeHandle> AddScope(const Scope& scope);
   etcpal::Result RemoveScope(ScopeHandle handle);
 
   etcpal::Expected<uint32_t> SendRdmCommand(ScopeHandle scope, const LocalRdmCommand& cmd);
@@ -81,13 +77,21 @@ public:
 
   ControllerHandle handle() const;
   const etcpal::Uuid& cid() const;
+  etcpal::Expected<Scope> scope(ScopeHandle handle) const;
 
-  static etcpal::Result Init(const EtcPalLogParams* log_params);
+  void SetUid(const RdmUid& uid);
+  void SetSearchDomain(const std::string& search_domain);
+
+  static etcpal::Result Init(const EtcPalLogParams* log_params, const std::vector<RdmnetMcastNetintId>& mcast_netints =
+                                                                    std::vector<RdmnetMcastNetintId>{});
   static void Deinit();
 
 private:
-  ControllerHandle handle_{};
+  ControllerNotifyHandler* notify_{nullptr};
+  ControllerHandle handle_{RDMNET_CONTROLLER_INVALID};
   etcpal::Uuid cid_;
+  RdmUid uid_{};
+  std::string search_domain_;
 };
 
 inline etcpal::Result Controller::Startup(const etcpal::Uuid& cid);
@@ -103,7 +107,8 @@ inline void Controller::Shutdown()
 /// \param log_params Optional logging configuration for the RDMnet library.
 /// \return kEtcPalErrOk: Initialization successful.
 /// \return Error codes from rdmnet_client_init().
-inline etcpal::Result Controller::Init(const EtcPalLogParams* log_params)
+inline etcpal::Result Controller::Init(const EtcPalLogParams* log_params,
+                                       const std::vector<RdmnetMcastNetintId>& mcast_netints)
 {
   return kEtcPalErrNotImpl;
 }

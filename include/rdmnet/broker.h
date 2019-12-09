@@ -36,7 +36,6 @@ class BrokerCore;
 /// @{
 ///
 
-/// A namespace to contain the public Broker classes
 namespace rdmnet
 {
 /// A callback interface for notifications from the Broker.

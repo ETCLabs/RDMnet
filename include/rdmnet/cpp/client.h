@@ -27,6 +27,66 @@
 
 namespace rdmnet
 {
+using ScopeHandle = rdmnet_client_scope_t;
+
+class Scope
+{
+public:
+  constexpr Scope(const std::string& scope_str);
+  constexpr Scope(const std::string& scope_str, const etcpal::SockAddr& static_broker_addr);
+
+  constexpr bool IsStatic() const noexcept;
+  constexpr bool IsDefault() const noexcept;
+  constexpr const std::string& id() const noexcept;
+  constexpr const etcpal::SockAddr& static_broker_addr() const noexcept;
+
+  void SetId(const std::string& id);
+  void SetStaticBrokerAddr(const etcpal::SockAddr& static_broker_addr);
+
+private:
+  std::string id_;
+  etcpal::SockAddr static_broker_addr_;
+};
+
+constexpr Scope::Scope(const std::string& scope_str) : id_(scope_str)
+{
+}
+
+constexpr Scope::Scope(const std::string& scope_str, const etcpal::SockAddr& static_broker_addr)
+    : id_(scope_str), static_broker_addr_(static_broker_addr)
+{
+}
+
+constexpr bool Scope::IsStatic() const
+{
+  return static_broker_addr_.ip().IsValid();
+}
+
+constexpr bool Scope::IsDefault() const
+{
+  return id_ == E133_DEFAULT_SCOPE;
+}
+
+constexpr const std::string& Scope::id() const
+{
+  return id_;
+}
+
+constexpr const etcpal::SockAddr& Scope::static_broker_addr() const
+{
+  return static_broker_addr_;
+}
+
+inline void Scope::SetId(const std::string& id)
+{
+  id_ = id;
+}
+
+inline void Scope::SetStaticBrokerAddr(const etcpal::SockAddr& static_broker_addr)
+{
+  static_broker_addr_ = static_broker_addr;
+}
+
 };  // namespace rdmnet
 
 #endif  // RDMNET_CPP_CLIENT_H_

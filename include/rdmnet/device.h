@@ -20,7 +20,6 @@
 /*!
  * \file rdmnet/device.h
  * \brief Definitions for the RDMnet Device API
- * \author Sam Kearney
  */
 
 #ifndef RDMNET_DEVICE_H_
@@ -34,12 +33,17 @@
 /*!
  * \defgroup rdmnet_device Device API
  * \ingroup rdmnet_client
- * \brief Implementation of RDMnet device functionality.
+ * \brief Implementation of RDMnet device functionality; see \ref using_device.
  *
  * RDMnet devices are clients which exclusively receive and respond to RDM commands. Devices
  * operate on only one scope at a time. This API wraps the RDMnet Client API and provides functions
  * tailored specifically to the usage concerns of an RDMnet device.
- *
+ */
+
+/*!
+ * \defgroup rdmnet_device_c Device C Language API
+ * \ingroup rdmnet_device
+ * \brief C Language version of the Device API
  * @{
  */
 
@@ -49,6 +53,8 @@ extern "C" {
 
 /*! A handle to an RDMnet device. */
 typedef struct RdmnetDevice* rdmnet_device_t;
+/*! An invalid RDMnet controller handle value. */
+#define RDMNET_DEVICE_INVALID NULL
 
 typedef struct RdmnetDeviceCallbacks
 {
