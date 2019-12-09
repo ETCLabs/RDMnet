@@ -95,7 +95,7 @@ etcpal_error_t device_init(const RdmnetScopeConfig* scope_config, const EtcPalLo
   device_state.cur_scope_config = *scope_config;
   default_responder_init(scope_config, device_state.cur_search_domain);
 
-  etcpal_error_t res = rdmnet_device_init(lparams);
+  etcpal_error_t res = rdmnet_device_init(lparams, NULL);
   if (res != kEtcPalErrOk)
   {
     etcpal_log(lparams, ETCPAL_LOG_ERR, "RDMnet initialization failed with error: '%s'", etcpal_strerror(res));

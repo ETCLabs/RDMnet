@@ -106,7 +106,7 @@ void set_reg_callback_functions(RdmnetDiscBrokerCallbacks* callbacks)
 
 int main(int argc, char* argv[])
 {
-  rdmnet_core_init(NULL);
+  rdmnet_core_init(NULL, NULL);
 
   if (argc == 2 && strcmp("broker", argv[1]) == 0)
   {

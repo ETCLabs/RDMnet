@@ -214,6 +214,7 @@ void GadgetManager::ResolveGadgetChanges()
 
       for (unsigned int i = 1; i <= port_count; ++i)
       {
+        Gadget2_SetRDMEnabled(current_id, i, 1);
         Gadget2_DoFullDiscovery(current_id, i);
       }
     }

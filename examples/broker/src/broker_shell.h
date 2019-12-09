@@ -17,8 +17,8 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef _BROKER_SHELL_H_
-#define _BROKER_SHELL_H_
+#ifndef BROKER_SHELL_H_
+#define BROKER_SHELL_H_
 
 #include <array>
 #include <atomic>
@@ -68,4 +68,4 @@ private:
   std::string new_scope_;
 };
 
-#endif  // _BROKER_SHELL_H_
+#endif  // BROKER_SHELL_H_

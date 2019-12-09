@@ -19,9 +19,9 @@
 
 #include "broker_client.h"
 
-#include <cassert>
-#include "rdmnet/core/connection.h"
 #include "rdmnet/broker.h"
+#include "rdmnet/core/connection.h"
+#include "rdmnet/private/opts.h"
 
 bool BrokerClient::Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg)
 {
@@ -272,7 +272,7 @@ bool RPTDevice::Send()
   bool is_rpt = false;
 
   // We should never push a status message to a Device.
-  assert(status_msgs_.empty());
+  RDMNET_ASSERT(status_msgs_.empty());
 
   // Broker messages are first priority, then RPT messages.
   if (!broker_msgs_.empty())

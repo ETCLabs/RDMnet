@@ -47,6 +47,15 @@
 ETCPAL_MEMPOOL_DEFINE(discovered_brokers, DiscoveredBroker, RDMNET_MAX_DISCOVERED_BROKERS);
 #endif
 
+etcpal_error_t discovered_broker_init()
+{
+#if RDMNET_DYNAMIC_MEM
+  return kEtcPalErrOk;
+#else
+  return etcpal_mempool_init(discovered_brokers);
+#endif
+}
+
 DiscoveredBroker* discovered_broker_new(rdmnet_scope_monitor_t monitor_ref, const char* service_name,
                                         const char* full_service_name)
 {

@@ -221,13 +221,13 @@ stages:
         SVC_ETCLABS_CREDENTIALS: 'svc-etclabs:$(svc_etclabs_password)'
 
 - stage: deploy_binaries
-  displayName: 'Deploy RDMnet Binaries'
+  displayName: 'Deploy Build Artifacts'
   condition: and(succeeded('build_and_test'), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
   jobs:
   - job: bintray_deploy
     displayName: 'BinTray Deploy'
     pool:
-      vmImage: 'ubuntu-16.04'
+      vmImage: 'ubuntu-latest'
     steps:
     - script: |
         cd tools/version
@@ -249,3 +249,21 @@ stages:
         artifactName: rdmnet_macos
         artifactFile: RDMnet_$(RDMnetVersion).pkg
         artifactVersion: $(RDMnetVersion)
+  - job: create_build_report
+    displayName: 'Create Jira Build Report'
+    pool:
+      vmImage: 'ubuntu-latest'
+    variables:
+    - group: etc_jira
+    steps:
+    - task: UsePythonVersion@0
+      displayName: 'Select Python Version'
+      inputs:
+        versionSpec: '3.x'
+        addToPath: true
+    - script: |
+        python -m pip install requests
+        python tools/ci/create_build_report.py
+      displayName: 'Run Create Build Report Script'
+      env:
+        BUILDNETWORKING_PASSWORD: $(buildnetworking_password)

@@ -19,7 +19,7 @@
 
 #include "rdmnet_mock/core/discovery.h"
 
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_init);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_init, const RdmnetNetintConfig*);
 DEFINE_FAKE_VOID_FUNC(rdmnet_disc_deinit);
 DEFINE_FAKE_VOID_FUNC(rdmnet_disc_init_broker_info, RdmnetBrokerDiscInfo*);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_start_monitoring, const RdmnetScopeMonitorConfig*,

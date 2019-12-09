@@ -18,8 +18,8 @@
  *****************************************************************************/
 
 // A class for logging messages from the Broker on Windows.
-#ifndef _WIN_BROKER_LOG_H_
-#define _WIN_BROKER_LOG_H_
+#ifndef WIN_BROKER_LOG_H_
+#define WIN_BROKER_LOG_H_
 
 #include <fstream>
 #include <string>
@@ -43,4 +43,4 @@ private:
   long utcoffset_{0};
 };
 
-#endif  // _WIN_BROKER_LOG_
+#endif  // WIN_BROKER_LOG_

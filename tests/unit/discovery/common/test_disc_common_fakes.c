@@ -22,7 +22,7 @@
 DEFINE_FFF_GLOBALS;
 
 DEFINE_FAKE_VALUE_FUNC(bool, rdmnet_core_initialized);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_platform_init);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_platform_init, const RdmnetNetintConfig*);
 DEFINE_FAKE_VOID_FUNC(rdmnet_disc_platform_deinit);
 DEFINE_FAKE_VOID_FUNC(rdmnet_disc_platform_tick);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_platform_start_monitoring, const RdmnetScopeMonitorConfig*,

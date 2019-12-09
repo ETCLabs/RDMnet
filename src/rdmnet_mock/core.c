@@ -26,11 +26,11 @@
 #include "rdmnet_mock/core/rpt_prot.h"
 #include "rdmnet_mock/core/llrp_target.h"
 
-static etcpal_error_t fake_init(const EtcPalLogParams*);
+static etcpal_error_t fake_init(const EtcPalLogParams*, const RdmnetNetintConfig*);
 static void fake_deinit(void);
 
 // public mocks
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_core_init, const EtcPalLogParams*);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_core_init, const EtcPalLogParams*, const RdmnetNetintConfig*);
 DEFINE_FAKE_VOID_FUNC(rdmnet_core_deinit);
 DEFINE_FAKE_VOID_FUNC(rdmnet_core_tick);
 DEFINE_FAKE_VALUE_FUNC(bool, rdmnet_core_initialized);
@@ -85,8 +85,9 @@ void rdmnet_mock_core_reset_and_init(void)
   rdmnet_core_initialized_fake.return_val = true;
 }
 
-etcpal_error_t fake_init(const EtcPalLogParams* params)
+etcpal_error_t fake_init(const EtcPalLogParams* params, const RdmnetNetintConfig* config)
 {
+  (void)config;
   rdmnet_log_params = params;
   rdmnet_readlock_fake.return_val = true;
   rdmnet_writelock_fake.return_val = true;

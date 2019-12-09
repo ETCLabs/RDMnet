@@ -78,7 +78,7 @@
  *
  * If defined nonzero, RDMnet manages memory dynamically using malloc() and free() from stdlib.h.
  * Otherwise, RDMnet uses static arrays and fixed-size pools through \ref etcpal_mempool. The size of
- * the pools is controlled with other config options.
+ * the pools is controlled with other config options starting with RDMNET_MAX_.
  *
  * If not defined in rdmnet_config.h, the library attempts to guess using standard OS predefined
  * macros whether it is being compiled on a full-featured OS, in which case this option is defined
@@ -93,6 +93,17 @@
  */
 #ifndef RDMNET_LOG_MSG_PREFIX
 #define RDMNET_LOG_MSG_PREFIX "RDMnet: "
+#endif
+
+/*!
+ * \brief The debug assert used by the RDMnet library.
+ *
+ * By default, just uses the C library assert. If redefining this, it must be redefined as a macro
+ * taking a single argument (the assertion expression).
+ */
+#ifndef RDMNET_ASSERT
+#include <assert.h>
+#define RDMNET_ASSERT(expr) assert(expr)
 #endif
 
 /*!
@@ -243,6 +254,30 @@
 #endif
 
 /*!
+ * \brief The maximum number of network interfaces usable for RDMnet's multicast protocols.
+ *
+ * RDMnet makes use of two multicast protocols, LLRP and mDNS. These protocols require tracking of
+ * local network interfaces when creating network sockets.
+ *
+ * Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
+ */
+#ifndef RDMNET_MAX_MCAST_NETINTS
+#define RDMNET_MAX_MCAST_NETINTS 3
+#endif
+
+/*!
+ * \brief For multicast protocols, whether to bind the underlying network socket directly to the
+ *        multicast address.
+ *
+ * Otherwise, the socket is bound to the wildcard address. On some systems, binding directly to a
+ * multicast address decreases traffic duplication. On other systems, it's not even allowed. Leave
+ * this option at its default value unless you REALLY know what you're doing.
+ */
+#ifndef RDMNET_BIND_MCAST_SOCKETS_TO_MCAST_ADDRESS
+#define RDMNET_BIND_MCAST_SOCKETS_TO_MCAST_ADDRESS !RDMNET_WINDOWS_HINT
+#endif
+
+/*!
  * \brief Whether to allow sockets associated with connections to be polled externally.
  *
  * If this option is defined to 0, the externally-managed-socket functions in the
@@ -356,27 +391,6 @@
  */
 #ifndef RDMNET_LLRP_MAX_TARGETS
 #define RDMNET_LLRP_MAX_TARGETS RDMNET_MAX_CLIENTS
-#endif
-
-/*!
- * \brief The maximum number of network interfaces on which each LLRP Target can operate.
- *
- * Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
- */
-#ifndef RDMNET_LLRP_MAX_NETINTS_PER_TARGET
-#define RDMNET_LLRP_MAX_NETINTS_PER_TARGET 1
-#endif
-
-/*!
- * \brief In LLRP, whether to bind the underlying network socket directly to the LLRP multicast
- *        address.
- *
- * Otherwise, the socket is bound to the wildcard address. On some systems, binding directly to a
- * multicast address decreases traffic duplication. On other systems, it's not even allowed. Leave
- * this option at its default value unless you REALLY know what you're doing.
- */
-#ifndef RDMNET_LLRP_BIND_TO_MCAST_ADDRESS
-#define RDMNET_LLRP_BIND_TO_MCAST_ADDRESS !RDMNET_WINDOWS_HINT
 #endif
 
 /*!

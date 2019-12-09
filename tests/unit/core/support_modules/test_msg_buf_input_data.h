@@ -16,8 +16,8 @@
  * This file is a part of RDMnet. For more information, go to:
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
-#ifndef _TEST_MSG_BUF_INPUT_DATA_H_
-#define _TEST_MSG_BUF_INPUT_DATA_H_
+#ifndef TEST_MSG_BUF_INPUT_DATA_H_
+#define TEST_MSG_BUF_INPUT_DATA_H_
 
 #include "rdmnet/core/message.h"
 
@@ -81,4 +81,4 @@ constexpr uint8_t buf[] = {
 // clang-format on
 };  // namespace RptNotificationPduFullValid
 
-#endif  // _TEST_MSG_BUF_INPUT_DATA_H_
+#endif  // TEST_MSG_BUF_INPUT_DATA_H_

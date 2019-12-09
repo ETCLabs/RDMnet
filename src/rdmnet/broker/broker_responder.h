@@ -41,4 +41,4 @@ class BrokerResponder
   void SendNack(int conn, const RPTMessageRef& msg, uint16_t pid, uint16_t reason, bool set_response);
 };
 
-#endif  // _BROKER_RESPONDER_H_
+#endif  // BROKER_RESPONDER_H_

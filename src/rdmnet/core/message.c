@@ -25,10 +25,10 @@
 #if !RDMNET_DYNAMIC_MEM
 ETCPAL_MEMPOOL_DEFINE(client_entries, ClientEntryData, RDMNET_MAX_CLIENT_ENTRIES);
 ETCPAL_MEMPOOL_DEFINE(ept_subprots, EptSubProtocol, RDMNET_MAX_EPT_SUBPROTS);
-ETCPAL_MEMPOOL_DEFINE(dynamic_uid_request_entries, DynamicUidRequestListEntry, RDM_MAX_DYNAMIC_UID_ENTRIES);
+ETCPAL_MEMPOOL_DEFINE(dynamic_uid_request_entries, DynamicUidRequestListEntry, RDMNET_MAX_DYNAMIC_UID_ENTRIES);
 ETCPAL_MEMPOOL_DEFINE(dynamic_uid_mappings, DynamicUidMapping, RDMNET_MAX_DYNAMIC_UID_ENTRIES);
 ETCPAL_MEMPOOL_DEFINE(fetch_uid_assignment_entries, FetchUidAssignmentListEntry, RDMNET_MAX_DYNAMIC_UID_ENTRIES);
-ETCPAL_MEMPOOL_DEFINE(rdm_commands, RdmBufListEntry, RDMNET_MAX_RDM_COMMANDS);
+ETCPAL_MEMPOOL_DEFINE(rdm_commands, RdmBufListEntry, RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES);
 ETCPAL_MEMPOOL_DEFINE_ARRAY(rpt_status_strings, char, RPT_STATUS_STRING_MAXLEN + 1, 1);
 #endif
 

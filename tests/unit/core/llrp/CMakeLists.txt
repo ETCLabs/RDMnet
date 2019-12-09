@@ -13,6 +13,7 @@ add_executable(test_llrp
 
   # Mock dependencies
   ${RDMNET_SRC}/rdmnet_mock/core.c
+  ${RDMNET_SRC}/rdmnet_mock/core/mcast.c
 
   # Real dependencies
   ${RDMNET_SRC}/rdmnet/core/util.c

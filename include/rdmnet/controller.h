@@ -118,7 +118,7 @@ typedef struct RdmnetControllerConfig
  */
 #define RDMNET_CONTROLLER_CONFIG_INIT(controllercfgptr, manu_id) RPT_CLIENT_CONFIG_INIT(controllercfgptr, manu_id)
 
-etcpal_error_t rdmnet_controller_init(const EtcPalLogParams* lparams);
+etcpal_error_t rdmnet_controller_init(const EtcPalLogParams* lparams, const RdmnetNetintConfig* netint_config);
 void rdmnet_controller_deinit();
 
 etcpal_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rdmnet_controller_t* handle);
