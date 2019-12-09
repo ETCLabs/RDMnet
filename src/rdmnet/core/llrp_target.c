@@ -42,6 +42,12 @@
 
 #define LLRP_TARGET_MAX_RB_NODES (RDMNET_LLRP_MAX_TARGETS * 2)
 
+#if RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
+#define CB_STORAGE_CLASS
+#else
+#define CB_STORAGE_CLASS static
+#endif
+
 /***************************** Private macros ********************************/
 
 #if RDMNET_DYNAMIC_MEM
@@ -354,7 +360,7 @@ void rdmnet_llrp_target_tick()
 
 void target_data_received(const uint8_t* data, size_t data_size, const RdmnetMcastNetintId* netint)
 {
-  TargetCallbackDispatchInfo cb;
+  CB_STORAGE_CLASS TargetCallbackDispatchInfo cb;
   INIT_CALLBACK_INFO(&cb);
 
   LlrpTargetKeys keys;

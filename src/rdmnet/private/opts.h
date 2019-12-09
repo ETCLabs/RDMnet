@@ -328,7 +328,7 @@
  * It's usually only necessary to worry about this on real-time or embedded systems.
  */
 #ifndef RDMNET_TICK_THREAD_STACK
-#define RDMNET_TICK_THREAD_STACK ETCPAL_THREAD_DEFAULT_STACK
+#define RDMNET_TICK_THREAD_STACK (ETCPAL_THREAD_DEFAULT_STACK * 2)
 #endif
 
 /*!
