@@ -53,7 +53,7 @@ public:
   virtual void HandleDisconnectedFromBroker(ScopeHandle scope, const RdmnetClientDisconnectedInfo& info) = 0;
   virtual void HandleClientListUpdate(ScopeHandle scope, client_list_action_t list_action, const ClientList& list) = 0;
   virtual void HandleRdmResponse(ScopeHandle scope, const RemoteRdmResponse& resp) = 0;
-  virtual void HandleRdmCommand(Scopehandle scope, const RemoteRdmCommand& cmd) = 0;
+  virtual void HandleRdmCommand(ScopeHandle scope, const RemoteRdmCommand& cmd) = 0;
   virtual void HandleRptStatus(ScopeHandle scope, const RemoteRptStatus& status) = 0;
   virtual void HandleLlrpRdmCommand(const LlrpRemoteRdmCommand& cmd) = 0;
 };

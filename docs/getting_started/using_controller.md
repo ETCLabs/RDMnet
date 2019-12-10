@@ -238,5 +238,7 @@ or a user misconfiguration. Some examples of these circumstances are:
 
 ### Sending RDM Commands
 
+Build RDM commands using the LocalRdmCommand type. 
+
 ### Handling RDM Responses
 
