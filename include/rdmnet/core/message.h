@@ -27,7 +27,7 @@
 #define RDMNET_CORE_MESSAGE_H_
 
 #include <stddef.h>
-#include "etcpal/int.h"
+#include <stdint.h>
 #include "etcpal/bool.h"
 #include "etcpal/root_layer_pdu.h"
 #include "etcpal/uuid.h"

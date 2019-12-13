@@ -27,7 +27,7 @@
 #define RDMNET_PRIVATE_MSG_BUF_H_
 
 #include <stddef.h>
-#include "etcpal/int.h"
+#include <stdint.h>
 #include "etcpal/bool.h"
 #include "etcpal/log.h"
 #include "etcpal/uuid.h"

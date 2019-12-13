@@ -27,8 +27,8 @@
 #define RDMNET_CORE_RPT_PROT_H_
 
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
-#include "etcpal/int.h"
 #include "etcpal/uuid.h"
 #include "etcpal/error.h"
 #include "etcpal/root_layer_pdu.h"

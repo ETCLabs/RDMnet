@@ -25,8 +25,8 @@
 #ifndef RDMNET_CORE_BROKER_PROT_H_
 #define RDMNET_CORE_BROKER_PROT_H_
 
+#include <stdint.h>
 #include <string.h>
-#include "etcpal/int.h"
 #include "etcpal/bool.h"
 #include "etcpal/error.h"
 #include "etcpal/inet.h"

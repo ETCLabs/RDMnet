@@ -27,7 +27,6 @@
 #define RDMNET_PRIVATE_CONNECTION_H_
 
 #include "etcpal/bool.h"
-#include "etcpal/int.h"
 #include "etcpal/lock.h"
 #include "etcpal/timer.h"
 #include "etcpal/inet.h"

@@ -20,8 +20,8 @@
 #include "rdmnet/client.h"
 
 #include <inttypes.h>
+#include <stdint.h>
 #include <string.h>
-#include "etcpal/int.h"
 #include "etcpal/lock.h"
 #include "etcpal/rbtree.h"
 #include "rdm/controller.h"

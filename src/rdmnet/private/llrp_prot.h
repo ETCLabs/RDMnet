@@ -20,7 +20,7 @@
 #ifndef RDMNET_PRIVATE_LLRP_PROT_H_
 #define RDMNET_PRIVATE_LLRP_PROT_H_
 
-#include "etcpal/int.h"
+#include <stdint.h>
 #include "etcpal/bool.h"
 #include "etcpal/uuid.h"
 #include "etcpal/root_layer_pdu.h"

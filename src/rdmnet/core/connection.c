@@ -19,16 +19,7 @@
 
 #include "rdmnet/core/connection.h"
 
-#include "rdmnet/private/opts.h"
-#if RDMNET_DYNAMIC_MEM
-#include <stdlib.h>
-#else
-#include "etcpal/mempool.h"
-#endif
-#if RDMNET_USE_TICK_THREAD
-#include "etcpal/thread.h"
-#endif
-#include "etcpal/int.h"
+#include <stdint.h>
 #include "etcpal/lock.h"
 #include "etcpal/socket.h"
 #include "etcpal/rbtree.h"
@@ -38,7 +29,17 @@
 #include "rdmnet/private/message.h"
 #include "rdmnet/private/connection.h"
 #include "rdmnet/private/broker_prot.h"
+#include "rdmnet/private/opts.h"
 #include "rdmnet/private/util.h"
+
+#if RDMNET_DYNAMIC_MEM
+#include <stdlib.h>
+#else
+#include "etcpal/mempool.h"
+#endif
+#if RDMNET_USE_TICK_THREAD
+#include "etcpal/thread.h"
+#endif
 
 /*************************** Private constants *******************************/
 

@@ -26,7 +26,6 @@
 #include <string>
 #include <vector>
 #include "etcpal/cpp/error.h"
-#include "etcpal/int.h"
 #include "rdmnet/broker.h"
 #include "rdmnet/core/discovery.h"
 

@@ -19,8 +19,8 @@
 
 #include "example_device.h"
 
+#include <stdint.h>
 #include <stdio.h>
-#include "etcpal/int.h"
 #include "etcpal/pack.h"
 #include "rdm/uid.h"
 #include "rdm/defs.h"
