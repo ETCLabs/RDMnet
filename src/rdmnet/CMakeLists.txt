@@ -1,6 +1,10 @@
 ################################ RDMnet library ###############################
 
-include(CMakePackageConfigHelpers)
+set(RDMNET_LIB_TARGET_NAME RDMnet)
+set(RDMNET_BROKER_LIB_TARGET_NAME RDMnetBroker)
+
+set(RDMNET_CONFIG_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/config)
+set(RDMNET_TARGETS_EXPORT_NAME ${PROJECT_NAME}Targets)
 
 ################################## Config file ################################
 
@@ -118,20 +122,20 @@ set(RDMNET_LIB_SOURCES
 )
 
 # The main RDMnet library
-add_library(RDMnet
+add_library(${RDMNET_LIB_TARGET_NAME}
   ${RDMNET_LIB_PUBLIC_HEADERS}
   ${RDMNET_LIB_PRIVATE_HEADERS}
   ${RDMNET_LIB_SOURCES}
 )
-target_include_directories(RDMnet
+target_include_directories(${RDMNET_LIB_TARGET_NAME}
   PUBLIC ${RDMNET_INCLUDE}
   PRIVATE ${RDMNET_SRC}
 )
 if(DEFINED RDMNET_CONFIG_LOC)
-  target_include_directories(RDMnet PRIVATE ${RDMNET_CONFIG_LOC})
-  target_compile_definitions(RDMnet PRIVATE RDMNET_HAVE_CONFIG_H)
+  target_include_directories(${RDMNET_LIB_TARGET_NAME} PRIVATE ${RDMNET_CONFIG_LOC})
+  target_compile_definitions(${RDMNET_LIB_TARGET_NAME} PRIVATE RDMNET_HAVE_CONFIG_H)
 endif()
-target_link_libraries(RDMnet PUBLIC EtcPal RDM)
+target_link_libraries(${RDMNET_LIB_TARGET_NAME} PUBLIC EtcPal RDM)
 
 # Organize sources in IDEs
 source_group(TREE ${RDMNET_SRC}/rdmnet PREFIX src FILES
@@ -148,13 +152,13 @@ source_group(TREE ${RDMNET_INCLUDE}/rdmnet PREFIX include FILES
   ${RDMNET_DISC_PUBLIC_HEADERS}
 )
 
-target_link_libraries(RDMnet PRIVATE RDMnetDiscoveryCommon RDMnetDiscoveryPlatform dnssd)
+target_link_libraries(${RDMNET_LIB_TARGET_NAME} PRIVATE RDMnetDiscoveryCommon RDMnetDiscoveryPlatform dnssd)
 
 # Installation
-install(TARGETS RDMnet
-#  EXPORT RDMnet
+install(TARGETS ${RDMNET_LIB_TARGET_NAME}
+  EXPORT ${RDMNET_TARGETS_EXPORT_NAME}
   ARCHIVE DESTINATION lib
-#  INCLUDES DESTINATION include
+  INCLUDES DESTINATION include
 )
 install(DIRECTORY ${RDMNET_ROOT}/include/rdmnet DESTINATION include FILES_MATCHING PATTERN "*.h")
 
@@ -222,15 +226,15 @@ if(WIN32 OR APPLE OR UNIX)
   )
   target_include_directories(RDMnetBrokerCore INTERFACE ${RDMNET_INCLUDE} ${RDMNET_SRC})
 
-  add_library(RDMnetBroker
+  add_library(${RDMNET_BROKER_LIB_TARGET_NAME}
     ${RDMNET_BROKER_PUBLIC_HEADERS}
     ${RDMNET_BROKER_PRIVATE_HEADERS}
     ${RDMNET_BROKER_SOURCES}
   )
 
-  target_include_directories(RDMnetBroker PUBLIC ${RDMNET_INCLUDE} broker PRIVATE ${RDMNET_SRC})
-  target_link_libraries(RDMnetBroker PUBLIC RDMnet)
-  set_target_properties(RDMnetBroker PROPERTIES CXX_STANDARD 14)
+  target_include_directories(${RDMNET_BROKER_LIB_TARGET_NAME} PUBLIC ${RDMNET_INCLUDE} PRIVATE broker ${RDMNET_SRC})
+  target_link_libraries(${RDMNET_BROKER_LIB_TARGET_NAME} PUBLIC ${RDMNET_LIB_TARGET_NAME})
+  set_target_properties(${RDMNET_BROKER_LIB_TARGET_NAME} PROPERTIES CXX_STANDARD 14)
 
   # Organize sources in IDEs
   source_group(TREE ${RDMNET_SRC}/rdmnet PREFIX src FILES
@@ -241,26 +245,40 @@ if(WIN32 OR APPLE OR UNIX)
     ${RDMNET_BROKER_PUBLIC_HEADERS}
   )
 
-
-  install(TARGETS RDMnetBroker ARCHIVE DESTINATION lib)
+  install(TARGETS ${RDMNET_BROKER_LIB_TARGET_NAME}
+    EXPORT ${RDMNET_TARGETS_EXPORT_NAME}
+    ARCHIVE DESTINATION lib
+    INCLUDES DESTINATION include
+  )
 
 endif()
 
+## Create the CMake config files that will be exported with the built DLL
 
-# TODO
+# Below section mostly working but still TODO, need to clean up use of interface libraries
+# somehow
 
-# configure_package_config_file(
-#   ${RDMNET_ROOT}/tools/cmake/RDMnetConfig.cmake.in
-#   ${CMAKE_CURRENT_BINARY_DIR}/RDMnetConfig.cmake
-#   INSTALL_DESTINATION lib/cmake
-# )
-# write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/RDMnetConfigVersion.cmake
-#   VERSION ${PROJECT_VERSION}
-#   COMPATIBILITY SameMajorVersion
-# )
+# include(CMakePackageConfigHelpers)
+# 
+# install(TARGETS EtcPal EXPORT ${RDMNET_TARGETS_EXPORT_NAME})
+# install(TARGETS RDM EXPORT ${RDMNET_TARGETS_EXPORT_NAME})
+# 
+# # Establish the names of the config files
+# set(RDMNET_CMAKE_VERSION_CONFIG_FILE ${RDMNET_CONFIG_OUTPUT_DIR}/${PROJECT_NAME}ConfigVersion.cmake)
+# set(RDMNET_CMAKE_PROJECT_CONFIG_FILE ${RDMNET_CONFIG_OUTPUT_DIR}/${PROJECT_NAME}Config.cmake)
+# 
+# # Create the config files in a staging directory
+# write_basic_package_version_file(${RDMNET_CMAKE_VERSION_CONFIG_FILE} COMPATIBILITY SameMajorVersion)
+# configure_file(${RDMNET_ROOT}/cmake/config.cmake.in ${RDMNET_CMAKE_PROJECT_CONFIG_FILE} @ONLY)
+# 
+# # Specify the installation locations of the CMake config files
 # install(FILES
-#   ${CMAKE_CURRENT_BINARY_DIR}/RDMnetConfig.cmake
-#   ${CMAKE_CURRENT_BINARY_DIR}/RDMnetConfigVersion.cmake
-#   DESTINATION lib/cmake
+#   ${RDMNET_CMAKE_PROJECT_CONFIG_FILE}
+#   ${RDMNET_CMAKE_VERSION_CONFIG_FILE}
+#   DESTINATION lib/cmake/${PROJECT_NAME}
 # )
-# install(EXPORT RDMnet DESTINATION lib/cmake)
+# install(EXPORT
+#   ${RDMNET_TARGETS_EXPORT_NAME}
+#   NAMESPACE ${PROJECT_NAME}::
+#   DESTINATION lib/cmake/${PROJECT_NAME}
+# )

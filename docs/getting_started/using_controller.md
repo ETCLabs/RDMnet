@@ -1,22 +1,19 @@
-# Using the Controller API                                  {#using_controller}
+# Using the Controller API                                                      {#using_controller}
 
-The RDMnet Controller API exposes both a C and C++ language interface. The C++
-interface is a header-only wrapper around the C interface.
+The RDMnet Controller API exposes both a C and C++ language interface. The C++ interface is a
+header-only wrapper around the C interface.
 
 ## Initialization and Destruction
 
-The controller init and deinit functions should be called once each at
-application startup and shutdown time. These functions interface with the
-\ref etcpal_log API to configure what happens when the library logs messages.
-Optionally pass an EtcPalLogParams structure to use this functionality. This
-structure can be shared across different ETC library modules.
+The controller init and deinit functions should be called once each at application startup and
+shutdown time. These functions interface with the EtcPal \ref etcpal_log API to configure what
+happens when the library logs messages. Optionally pass an EtcPalLogParams structure to use this 
+functionality. This structure can be shared across different ETC library modules.
 
-The init function has the side-effect of initializing the core RDMnet library,
-which by default starts a background thread for handling periodic RDMnet
-functionality and receiving data (this behavior can be overridden at
-compile-time if an app wants more control over its threading, see
-#RDMNET_USE_TICK_THREAD and rdmnet_core_tick()). The deinit function joins this
-thread.
+The init function has the side-effect of initializing the core RDMnet library, which by default
+starts a background thread for handling periodic RDMnet functionality and receiving data (this
+behavior can be overridden at compile-time if an app wants more control over its threading, see
+#RDMNET_USE_TICK_THREAD and rdmnet_core_tick()). The deinit function joins this thread.
 
 ```c
 #include "rdmnet/controller.h"
@@ -24,7 +21,10 @@ thread.
 // In some function called at startup...
 EtcPalLogParams log_params;
 // Initialize log_params...
+
 etcpal_error_t init_result = rdmnet_controller_init(&log_params);
+// Or, to init without worrying about logs from the RDMnet library...
+etcpal_error_t init_result = rdmnet_controller_init(NULL);
 
 // In some function called at shutdown...
 rdmnet_controller_deinit();
@@ -34,22 +34,25 @@ rdmnet_controller_deinit();
 #include "rdmnet/cpp/controller.h"
 
 // In some function called at startup...
-EtcPalLogParams log_params;
-// Initialize log_params...
-etcpal::Result init_result = rdmnet::Controller::Init(&log_params);
+etcpal::Logger logger;
+// Initialize and start logger...
+
+etcpal::Result init_result = rdmnet::Controller::Init(logger);
+
+// Or, to init without worrying about logs from the RDMnet library...
+etcpal::Result init_result = rdmnet::Controller::Init();
 
 // In some function called at shutdown...
 rdmnet::Controller::Deinit();
 ```
 
-To create a controller instance, use the rdmnet_controller_create() function.
-Most apps will only need a single controller instance. One controller can
-monitor an arbitrary number of RDMnet scopes at once.
+To create a controller instance, use the rdmnet_controller_create() function. Most apps will only
+need a single controller instance. One controller can monitor an arbitrary number of RDMnet scopes
+at once.
 
-The RDMnet controller API is an asynchronous, callback-oriented API. On
-creation, you give the library a configuration struct containing, among other
-things, a set of function pointers to use as callbacks. Callbacks are
-dispatched from the thread context which calls rdmnet_core_tick().
+The RDMnet controller API is an asynchronous, callback-oriented API. On creation, you give the
+library a configuration struct containing, among other things, a set of function pointers to use as
+callbacks. Callbacks are dispatched from the thread context which calls rdmnet_core_tick().
 
 ```c
 RdmnetControllerConfig config;
@@ -89,8 +92,7 @@ else
 }
 ```
 
-In C++, instantiate an `rdmnet::Controller` instance and call its `Startup()`
-function.
+In C++, instantiate an rdmnet::Controller instance and call its Startup() function.
 
 ```cpp
 // MyControllerNotify derives from rdmnet::ControllerNotify
@@ -110,10 +112,10 @@ else
 
 ### Managing Scopes
 
-A controller instance is initially created without any configured scopes. If
-the app has not been reconfigured by a user, the E1.33 RDMnet standard requires
-that the RDMnet default scope be configured automatically. There is a shortcut
-function for this, rdmnet_controller_add_default_scope().
+A controller instance is initially created without any configured scopes. If the app has not been
+reconfigured by a user, the E1.33 RDMnet standard requires that the RDMnet default scope be
+configured automatically. There is a shortcut function for this,
+rdmnet_controller_add_default_scope().
 
 Otherwise, use rdmnet_controller_add_scope() to add a custom configured scope. 
 
@@ -182,7 +184,7 @@ Or, in C++:
 
 ```cpp
 // Get configured static broker address
-etcpal::SockAddr static_broker_addr = etcpal::SockAddr::FromString("192.168.2.1:8000");
+auto static_broker_addr = etcpal::SockAddr(etcpal::IpAddr::FromString("192.168.2.1"), 8000);
 auto add_res = controller.AddScope("my_custom_scope", static_broker_addr);
 // Or:
 auto add_res = controller.AddDefaultScope(static_broker_addr);
@@ -208,7 +210,8 @@ void controller_connected_callback(rdmnet_controller_t handle, rdmnet_client_sco
 ```
 
 ```cpp
-void MyControllerNotifyHandler::HandleConnectedToBroker(ScopeHandle scope, const RdmnetClientConnectedInfo& info)
+void MyControllerNotifyHandler::HandleConnectedToBroker(rdmnet::Controller& controller, rdmnet::ScopeHandle scope,
+                                                        const RdmnetClientConnectedInfo& info)
 {
   // Check handle as necessary...
   controller.RequestClientList(scope);
@@ -219,26 +222,36 @@ void MyControllerNotifyHandler::HandleConnectedToBroker(ScopeHandle scope, const
 
 It's worth noting connection failure as a special case here. RDMnet connections can fail for many
 reasons, including user misconfiguration, network misconfiguration, components starting up or
-shutting down, programming errors, and more. There is 
+shutting down, programming errors, and more.
 
 The RdmnetClientConnectFailedInfo and RdmnetClientDisconnectedInfo structs passed back with the 
-connect_failed and disconnected callbacks respectively have comprehensive information about the 
+"connect failed" and "disconnected" callbacks respectively have comprehensive information about the 
 failure, including enum values containing the library's categorization of the failure, protocol
 reason codes and socket errors where applicable. This information is typically used mostly for
-logging and debugging. Each of these codes has a respective to_string() function to aid in logging.
+logging and debugging. Each of these codes has a respective `to_string()` function to aid in
+logging.
 
-For programmatic use, the structs also contain a will_retry member which indicates whether the
+For programmatic use, the structs also contain a `will_retry` member which indicates whether the
 library plans to retry this connection in the background. The only circumstances under which the 
 library will not retry is when a connection failure is determined to be either a programming error
 or a user misconfiguration. Some examples of these circumstances are:
 
 * The broker explicitly rejected a connection with a reason code indicating a configuration error,
-  such as CONNECT_SCOPE_MISMATCH or CONNECT_DUPLICATE_UID.
+  such as `CONNECT_SCOPE_MISMATCH` or `CONNECT_DUPLICATE_UID`.
 * The library failed to create a network socket before the connection was initiated.
 
 ### Sending RDM Commands
 
-Build RDM commands using the LocalRdmCommand type. 
+Build RDM commands using the LocalRdmCommand type. The library uses a naming convention where names
+beginning with `Local` represent data that is generated locally, whereas names beginning with
+`Remote` represent data received from a remote component.
+
+```c
+LocalRdmCommand cmd;
+// Build the RDM command using cmd.rdm...
+cmd.dest_uid = client_uid;
+cmd.
+```
 
 ### Handling RDM Responses
 

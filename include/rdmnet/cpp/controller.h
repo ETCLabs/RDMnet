@@ -28,7 +28,8 @@
 #include "etcpal/cpp/error.h"
 #include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/uuid.h"
-#include "etcpal/log.h"
+#include "etcpal/cpp/log.h"
+#include "rdm/cpp/uid.h"
 #include "rdmnet/controller.h"
 #include "rdmnet/cpp/client.h"
 
@@ -43,19 +44,25 @@ using ControllerHandle = rdmnet_controller_t;
 
 /// @}
 
+class Controller;
+
 /// \brief A base class for a class that receives notification callbacks from a controller.
 /// \ingroup rdmnet_controller_cpp
 class ControllerNotifyHandler
 {
 public:
-  virtual void HandleConnectedToBroker(ScopeHandle scope, const RdmnetClientConnectedInfo& info) = 0;
-  virtual void HandleBrokerConnectFailed(ScopeHandle scope, const RdmnetClientConnectFailedInfo& info) = 0;
-  virtual void HandleDisconnectedFromBroker(ScopeHandle scope, const RdmnetClientDisconnectedInfo& info) = 0;
-  virtual void HandleClientListUpdate(ScopeHandle scope, client_list_action_t list_action, const ClientList& list) = 0;
-  virtual void HandleRdmResponse(ScopeHandle scope, const RemoteRdmResponse& resp) = 0;
-  virtual void HandleRdmCommand(ScopeHandle scope, const RemoteRdmCommand& cmd) = 0;
-  virtual void HandleRptStatus(ScopeHandle scope, const RemoteRptStatus& status) = 0;
-  virtual void HandleLlrpRdmCommand(const LlrpRemoteRdmCommand& cmd) = 0;
+  virtual void HandleConnectedToBroker(Controller& controller, ScopeHandle scope,
+                                       const RdmnetClientConnectedInfo& info) = 0;
+  virtual void HandleBrokerConnectFailed(Controller& controller, ScopeHandle scope,
+                                         const RdmnetClientConnectFailedInfo& info) = 0;
+  virtual void HandleDisconnectedFromBroker(Controller& controller, ScopeHandle scope,
+                                            const RdmnetClientDisconnectedInfo& info) = 0;
+  virtual void HandleClientListUpdate(Controller& controller, ScopeHandle scope, client_list_action_t list_action,
+                                      const ClientList& list) = 0;
+  virtual void HandleRdmResponse(Controller& controller, ScopeHandle scope, const RemoteRdmResponse& resp) = 0;
+  virtual void HandleRdmCommand(Controller& controller, ScopeHandle scope, const RemoteRdmCommand& cmd) = 0;
+  virtual void HandleRptStatus(Controller& controller, ScopeHandle scope, const RemoteRptStatus& status) = 0;
+  virtual void HandleLlrpRdmCommand(Controller& controller, const LlrpRemoteRdmCommand& cmd) = 0;
 };
 
 /// \brief An instance of RDMnet Controller functionality.
@@ -78,19 +85,23 @@ public:
   ControllerHandle handle() const;
   const etcpal::Uuid& cid() const;
   etcpal::Expected<Scope> scope(ScopeHandle handle) const;
+  const rdm::Uid& uid() const;
 
-  void SetUid(const RdmUid& uid);
+  void SetUid(const rdm::Uid& uid);
   void SetSearchDomain(const std::string& search_domain);
 
-  static etcpal::Result Init(const EtcPalLogParams* log_params, const std::vector<RdmnetMcastNetintId>& mcast_netints =
-                                                                    std::vector<RdmnetMcastNetintId>{});
+  static etcpal::Result Init(
+      const EtcPalLogParams* log_params = nullptr,
+      const std::vector<RdmnetMcastNetintId>& mcast_netints = std::vector<RdmnetMcastNetintId>{});
+  static etcpal::Result Init(const etcpal::Logger& logger, const std::vector<RdmnetMcastNetintId>& mcast_netints =
+                                                               std::vector<RdmnetMcastNetintId>{});
   static void Deinit();
 
 private:
   ControllerNotifyHandler* notify_{nullptr};
   ControllerHandle handle_{RDMNET_CONTROLLER_INVALID};
   etcpal::Uuid cid_;
-  RdmUid uid_{};
+  rdm::Uid uid_;
   std::string search_domain_;
 };
 
@@ -162,6 +173,23 @@ inline ControllerHandle Controller::handle()
 inline const etcpal::Uuid& Controller::cid() const
 {
   return cid_;
+}
+
+inline const rdm::Uid& Controller::uid() const
+{
+  return uid_;
+}
+
+inline Controller& SetUid(const rdm::Uid& uid)
+{
+  uid_ = uid;
+  return *this;
+}
+
+inline Controller& SetSearchDomain(const std::string& search_domain)
+{
+  search_domain_ = search_domain;
+  return *this;
 }
 
 };  // namespace rdmnet

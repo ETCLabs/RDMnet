@@ -128,6 +128,8 @@ etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const Rdm
 etcpal_error_t rdmnet_controller_add_default_scope(rdmnet_controller_t handle, rdmnet_client_scope_t* scope_handle);
 etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                               rdmnet_disconnect_reason_t reason);
+etcpal_error_t rdmnet_controller_get_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                                           RdmnetScopeConfig* scope_config);
 
 etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                                   const LocalRdmCommand* cmd, uint32_t* seq_num);

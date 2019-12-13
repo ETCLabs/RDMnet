@@ -39,9 +39,9 @@ set(RDMNET_SRC ${CMAKE_CURRENT_LIST_DIR}/src)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
-option(RDMNET_BUILD_TESTS "Build the RDMnet unit tests" ${OPTION_DEFAULTS})
+option(RDMNET_BUILD_TESTS "Build the RDMnet unit tests" OFF)
 option(RDMNET_BUILD_GUI_EXAMPLES "Build the RDMnet GUI example applications" OFF)
-option(RDMNET_BUILD_CONSOLE_EXAMPLES "Build the RDMnet console example applications" ${OPTION_DEFAULTS})
+option(RDMNET_BUILD_CONSOLE_EXAMPLES "Build the RDMnet console example applications" OFF)
 option(RDMNET_BUILD_TEST_TOOLS "Build the RDMnet test tools (typically used in development only)" OFF)
 
 if(RDMNET_BUILD_TESTS)
