@@ -499,7 +499,7 @@ void Fakeway::HandleNewRdmResponderDiscovered(unsigned int gadget_id, unsigned i
           {
             RdmResponse resp_data;
             // source_uid gets filled in by the library
-            resp_data.dest_uid = kBroadcastUid;
+            resp_data.dest_uid = kRdmBroadcastUid;
             resp_data.transaction_num = 0;
             resp_data.resp_type = kRdmResponseTypeAck;
             resp_data.msg_count = 0;
@@ -535,7 +535,7 @@ void Fakeway::HandleRdmResponse(unsigned int gadget_id, unsigned int port_number
 
       RdmResponse resp_data;
       resp_data.source_uid = resp_src_uid;
-      resp_data.dest_uid = received_cmd ? received_cmd->source_uid : kBroadcastUid;
+      resp_data.dest_uid = received_cmd ? received_cmd->source_uid : kRdmBroadcastUid;
       resp_data.transaction_num = cmd.getTransactionNum();
       resp_data.resp_type = static_cast<rdm_response_type_t>(cmd.getResponseType());
       resp_data.msg_count = 0;
@@ -616,7 +616,7 @@ void Fakeway::HandleRdmResponderLost(unsigned int gadget_id, unsigned int port_n
           // Now send the responder list change message.
           RdmResponse resp_data;
           // src_uid gets filled in by the library
-          resp_data.dest_uid = kBroadcastUid;
+          resp_data.dest_uid = kRdmBroadcastUid;
           resp_data.transaction_num = 0;
           resp_data.resp_type = kRdmResponseTypeAck;
           resp_data.msg_count = 0;

@@ -44,7 +44,7 @@ bool ListenThread::Start()
 
   terminated_ = false;
   EtcPalThreadParams tparams = {ETCPAL_THREAD_DEFAULT_PRIORITY, ETCPAL_THREAD_DEFAULT_STACK, "ListenThread", NULL};
-  if (!etcpal_thread_create(&handle_, &tparams, listen_thread_fn, this))
+  if (etcpal_thread_create(&handle_, &tparams, listen_thread_fn, this) != kEtcPalErrOk)
   {
     terminated_ = true;
     etcpal_close(socket_);
@@ -133,7 +133,7 @@ bool ClientServiceThread::Start()
   terminated_ = false;
   EtcPalThreadParams tparams = {ETCPAL_THREAD_DEFAULT_PRIORITY, ETCPAL_THREAD_DEFAULT_STACK, "ClientServiceThread",
                                 NULL};
-  return etcpal_thread_create(&handle_, &tparams, client_service_thread_fn, this);
+  return (etcpal_thread_create(&handle_, &tparams, client_service_thread_fn, this) == kEtcPalErrOk);
 }
 
 void ClientServiceThread::Run()

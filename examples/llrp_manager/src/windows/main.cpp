@@ -128,7 +128,7 @@ int wmain(int argc, wchar_t* argv[])
   }
 
   EtcPalLogParams params;
-  params.action = kEtcPalLogCreateHumanReadableLog;
+  params.action = kEtcPalLogCreateHumanReadable;
   params.log_fn = manager_log_callback;
   params.log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_INFO);
   params.time_fn = manager_time_callback;

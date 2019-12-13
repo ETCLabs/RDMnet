@@ -333,7 +333,7 @@ bool device_handle_rdm_command(const RdmCommand* rdm_cmd, RdmResponse* resp_list
       if (default_responder_set(rdm_cmd->param_id, rdm_cmd->data, rdm_cmd->datalen, nack_reason, data_changed))
       {
         resp_list->source_uid = rdm_cmd->dest_uid;
-        resp_list->dest_uid = kBroadcastUid;
+        resp_list->dest_uid = kRdmBroadcastUid;
         resp_list->transaction_num = rdm_cmd->transaction_num;
         resp_list->resp_type = kRdmResponseTypeAck;
         resp_list->msg_count = 0;

@@ -197,7 +197,7 @@ etcpal_error_t rdmnet_llrp_start_discovery(llrp_manager_t handle, uint16_t filte
     {
       manager->cur_range_low.manu = 0;
       manager->cur_range_low.id = 0;
-      manager->cur_range_high = kBroadcastUid;
+      manager->cur_range_high = kRdmBroadcastUid;
       manager->num_clean_sends = 0;
       manager->discovery_active = true;
       manager->disc_filter = filter;
@@ -391,7 +391,7 @@ bool update_probe_range(LlrpManager* manager, KnownUid** uid_list)
         manager->cur_range_low.manu = manager->cur_range_high.manu;
         manager->cur_range_low.id = (uint32_t)(manager->cur_range_high.id + 1u);
       }
-      manager->cur_range_high = kBroadcastUid;
+      manager->cur_range_high = kRdmBroadcastUid;
       manager->num_clean_sends = 0;
     }
   }

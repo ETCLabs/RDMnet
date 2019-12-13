@@ -42,7 +42,7 @@ FakewayLog::FakewayLog(const std::string& file_name)
       break;
   }
 
-  params_.action = kEtcPalLogCreateHumanReadableLog;
+  params_.action = kEtcPalLogCreateHumanReadable;
   params_.log_fn = log_callback;
   params_.log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG);
   params_.time_fn = time_callback;

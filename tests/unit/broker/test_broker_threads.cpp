@@ -74,7 +74,7 @@ TEST_F(TestListenThread, StartCleansUpOnThreadError)
 {
   ListenThread lt(kListenSocketVal, &notify_, nullptr);
 
-  etcpal_thread_create_fake.return_val = false;
+  etcpal_thread_create_fake.return_val = kEtcPalErrSys;
   EXPECT_FALSE(lt.Start());
   EXPECT_EQ(etcpal_close_fake.call_count, 1u);
   EXPECT_TRUE(lt.terminated());

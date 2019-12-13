@@ -87,7 +87,7 @@ void WindowsBrokerLog::OutputLogMsg(const std::string& str)
   //      }
   //    }
 
-  std::cout << str << "\n";
+  std::cout << str << '\n';
   if (file_.is_open())
     file_ << str << std::endl;
 }

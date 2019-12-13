@@ -170,7 +170,7 @@ etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle, rdmnet_disc
 }
 
 /*!
- * \brief Add a new scope for this
+ */
 etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const RdmnetScopeConfig* scope_config,
                                            rdmnet_client_scope_t* scope_handle)
 {

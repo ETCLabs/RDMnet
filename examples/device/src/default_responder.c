@@ -315,7 +315,7 @@ bool set_identify_device(const uint8_t* param_data, uint8_t param_data_len, uint
     {
       EtcPalThreadParams ithread_params;
 
-      ithread_params.thread_priority = ETCPAL_THREAD_DEFAULT_PRIORITY;
+      ithread_params.priority = ETCPAL_THREAD_DEFAULT_PRIORITY;
       ithread_params.stack_size = ETCPAL_THREAD_DEFAULT_STACK;
       ithread_params.thread_name = "Identify Thread";
       ithread_params.platform_data = NULL;

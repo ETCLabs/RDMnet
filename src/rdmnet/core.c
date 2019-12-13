@@ -122,12 +122,12 @@ etcpal_error_t rdmnet_core_init(const EtcPalLogParams* log_params, const RdmnetN
       if (res == kEtcPalErrOk)
       {
         EtcPalThreadParams thread_params;
-        thread_params.thread_priority = RDMNET_TICK_THREAD_PRIORITY;
+        thread_params.priority = RDMNET_TICK_THREAD_PRIORITY;
         thread_params.stack_size = RDMNET_TICK_THREAD_STACK;
-        thread_params.thread_name = "rdmnet_tick";
+        thread_params.thread_name = "RDMnet thread";
         thread_params.platform_data = NULL;
         core_state.tickthread_run = true;
-        if (!etcpal_thread_create(&core_state.tick_thread, &thread_params, rdmnet_tick_thread, NULL))
+        if (etcpal_thread_create(&core_state.tick_thread, &thread_params, rdmnet_tick_thread, NULL) != kEtcPalErrOk)
         {
           res = kEtcPalErrSys;
         }
