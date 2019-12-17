@@ -196,6 +196,8 @@ etcpal_error_t send_rpt_status(rdmnet_conn_t handle, const EtcPalUuid* local_cid
 etcpal_error_t send_rpt_notification(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
                                      const RdmBuffer* cmd_arr, size_t cmd_arr_size);
 
+const char* rpt_status_code_to_string(rpt_status_code_t code);
+
 #ifdef __cplusplus
 }
 #endif

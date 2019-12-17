@@ -57,15 +57,13 @@ callbacks. Callbacks are dispatched from the thread context which calls rdmnet_c
 ```c
 RdmnetControllerConfig config;
 
-// Sets optional values to defaults. Must pass your ESTA manufacturer ID. If
-// you have not yet requested an ESTA manufacturer ID, the range 0x7ff0 to
-// 0x7fff can be used for prototyping.
+// Sets optional values to defaults. Must pass your ESTA manufacturer ID. If you have not yet
+// requested an ESTA manufacturer ID, the range 0x7ff0 to 0x7fff can be used for prototyping.
 RDMNET_CONTROLLER_CONFIG_INIT(&config, MY_ESTA_MANUFACTURER_ID_VAL);
 
-// Each controller is a component that must have a Component ID (CID), which is
-// simply a UUID. Pure redistributable software apps may generate a new CID on
-// each run, but hardware-locked devices should use a consistent CID locked to
-// a MAC address (a V3 or V5 UUID).
+// Each controller is a component that must have a Component ID (CID), which is simply a UUID. Pure
+// redistributable software apps may generate a new CID on each run, but hardware-locked devices
+// should use a consistent CID locked to a MAC address (a V3 or V5 UUID).
 etcpal_generate_os_preferred_uuid(&config.cid);
 
 // Set the callback functions - defined elsewhere
@@ -73,9 +71,7 @@ config.callbacks.connected = my_controller_connected_cb;
 config.callbacks.disconnected = my_controller_disconnected_cb;
 config.callbacks.client_list_update = my_controller_client_list_update_cb;
 config.callbacks.rdm_response_received = my_controller_rdm_response_received_cb;
-config.callbacks.rdm_command_received = my_controller_rdm_command_received_cb;
 config.callbacks.status_received = my_controller_status_received_cb;
-config.callbacks.llrp_rdm_command_received = my_controller_llrp_command_received_cb;
 
 // An opaque data pointer that will be passed back to each callback function
 config.callback_context = p_some_opaque_data;
@@ -95,11 +91,20 @@ else
 In C++, instantiate an rdmnet::Controller instance and call its Startup() function.
 
 ```cpp
-// MyControllerNotify derives from rdmnet::ControllerNotify
-MyControllerNotify my_controller_notify;
+class MyControllerNotifyHandler : public rdmnet::ControllerNotifyHandler
+{
+  // Implement the ControllerNotifyHandler callbacks...
+};
 
+MyControllerNotifyHandler my_controller_notify_handler;
+
+// Needed to identify this controller to other controllers on the network. More on this later.
+rdmnet::ControllerRdmData my_rdm_data("My Manufacturer Name",
+                                      "My Product Name",
+                                      "1.0.0",
+                                      "My Device Label");
 rdmnet::Controller controller;
-etcpal::Result result = controller.Startup(etcpal::Uuid::OsPreferred(), my_controller_notify);
+etcpal::Result result = controller.Startup(my_controller_notify_handler, my_rdm_data);
 if (result)
 {
   // Controller is valid and running.
@@ -250,8 +255,145 @@ beginning with `Local` represent data that is generated locally, whereas names b
 LocalRdmCommand cmd;
 // Build the RDM command using cmd.rdm...
 cmd.dest_uid = client_uid;
-cmd.
+cmd.dest_endpoint = E133_NULL_ENDPOINT; // We're addressing this command to the default responder.
+
+uint32_t cmd_seq_num;
+etcpal_error_t result = rdmnet_controller_send_rdm_command(my_controller_handle, my_scope_handle, &cmd, &cmd_seq_num);
+if (result == kEtcPalErrOk)
+{
+  // cmd_seq_num identifies this command transaction. Store it for when a response is received.
+}
+```
+
+```cpp
+LocalRdmCommand cmd;
+// Build the RDM command using cmd.rdm...
+cmd.dest_uid = client_uid;
+cmd.dest_endpoint = E133_NULL_ENDPOINT; // We're addressing this command to the default responder.
+
+etcpal::Expected<uint32_t> result = controller.SendRdmCommand(my_scope_handle, cmd);
+if (result)
+{
+  // *result identifies this command transaction. Store it for when a response is received.
+}
 ```
 
 ### Handling RDM Responses
 
+Responses to commands you send will be delivered asynchronously through the "RDM response" callback.
+You may also receive "unsolicited responses" - asynchronous state updates from devices that don't
+correspond to changes you requested.
+
+```c
+void rdm_response_callback(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                           const RemoteRdmResponse* resp, void* context)
+{
+  // Check handle and/or context as necessary...
+
+  if (resp->seq_num == 0)
+  {
+    // This is an unsolicited RDM response - an asynchronous update about a change you didn't
+    // initiate.
+  }
+  else
+  {
+    // Verify resp->seq_num against the cmd_seq_num you stored earlier.
+  }
+
+  // If resp->seq_num != 0, resp->cmd will contain the command you sent.
+
+  for (const RemoteRdmRespListEntry* response = resp->resp_list; response; response = response->next)
+  {
+    // Process the list of responses.
+  }
+
+  if (resp->more_coming)
+  {
+    // The library ran out of memory pool space while allocating responses - after this callback
+    // returns, another will be delivered with the continuation of this response.
+    // If RDMNET_DYNAMIC_MEM == 1 (the default on non-embedded platforms), this flag will never be set to true.
+  }
+}
+```
+
+```cpp
+void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::Controller& controller, rdmnet::ScopeHandle scope,
+                                                  const RemoteRdmResponse& resp)
+{
+  if (resp.seq_num == 0)
+  {
+    // This is an unsolicited RDM response - an asynchronous update about a change you didn't
+    // initiate.
+  }
+  else
+  {
+    // Verify resp.seq_num against the result of rdmnet::Controller::SendRdmCommand() you stored earlier.
+  }
+
+  // If resp->seq_num != 0, resp.cmd will contain the command you sent.
+
+  for (const RemoteRdmRespListEntry* response = resp.resp_list; response; response = response->next)
+  {
+    // Process the list of responses.
+  }
+
+  if (resp.more_coming)
+  {
+    // The library ran out of memory pool space while allocating responses - after this callback
+    // returns, another will be delivered with the continuation of this response.
+    // If RDMNET_DYNAMIC_MEM == 1 (the default on non-embedded platforms), this flag will never be set to true.
+  }
+}
+```
+
+If something went wrong while either a broker or device was processing your message, you will get a
+response called an "RPT Status". There is a separate callback for handling these messages.
+
+When you send an RDM command, you start a transaction that is identified by a 32-bit sequence
+number. That transaction is considered completed when you get either an RDM Response or an RPT
+Status containing that same sequence number.
+
+```c
+void rpt_status_callback(rdmnet_controller_t handle, rdmnet_client_scope_t handle, const RemoteRptStatus* status,
+                         void* context)
+{
+  // Check handle and/or context as necessary...
+
+  // Verify status->seq_num against the cmd_seq_num you stored earlier.
+
+  char uid_str[RDM_UID_STRING_BYTES];
+  rdm_uid_to_string(&status->source_uid, uid_str);
+  printf("Error sending RDM command to device %s: '%s'\n", uid_str, rpt_status_code_to_string(status->msg.status_code));
+  
+  // Other logic as needed; remove our internal storage of the RDM transaction, etc.
+}
+```
+
+```cpp
+void MyControllerNotifyHandler::HandleRptStatus(rdmnet::Controller& controller, rdmnet::ScopeHandle scope,
+                                                const RemoteRptStatus& status)
+{
+  // Verify status.seq_num against the result of rdmnet::Controller::SendRdmCommand() you stored earlier.
+
+  std::cout << "Error sending RDM command to device " << rdm::Uid(status.source_uid).ToString() << ": '"
+            << rpt_status_code_to_string(status.msg.status_code) << "'\n";
+
+  // Other logic as needed; remove our internal storage of the RDM transaction, etc.
+}
+```
+
+### Handling RDM Commands
+
+In addition to getting information about responders, RDMnet controllers are required to respond to
+a basic set of RDM commands, which allows them to be identified by other controllers on the
+network. By default, this behavior is implemented completely within the library, using the
+rdmnet::ControllerIdentifyingData structure you provide when starting up a controller.
+
+The default implementation provides read-only access to the standard set of data that is required
+to be readable from a controller. This includes the current scope(s) (`COMPONENT_SCOPE`), search
+domain (`SEARCH_DOMAIN`), and RDMnet communication diagnostic data (`TCP_COMMS_STATUS`), as well as
+some basic RDM data like the manufacturer (`MANUFACTURER_LABEL`), a description of the product
+(`DEVICE_MODEL_DESCRIPTION`), the software version in string form (`SOFTWARE_VERSION_LABEL`) and a
+user-settable label for the controller (`DEVICE_LABEL`).
+
+If you want to provide 

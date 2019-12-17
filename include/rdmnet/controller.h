@@ -77,12 +77,34 @@ typedef struct RdmnetControllerCallbacks
                              client_list_action_t list_action, const ClientList* list, void* context);
   void (*rdm_response_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                 const RemoteRdmResponse* resp, void* context);
-  void (*rdm_command_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                               const RemoteRdmCommand* cmd, void* context);
   void (*status_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle, const RemoteRptStatus* status,
                           void* context);
-  void (*llrp_rdm_command_received)(rdmnet_controller_t handle, const LlrpRemoteRdmCommand* cmd, void* context);
 } RdmnetControllerCallbacks;
+
+typedef struct RdmnetControllerRdmCmdCallbacks
+{
+  void (*rdm_command_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                               const RemoteRdmCommand* cmd, void* context);
+  void (*llrp_rdm_command_received)(rdmnet_controller_t handle, const LlrpRemoteRdmCommand* cmd, void* context);
+} RdmnetControllerRdmCmdCallbacks;
+
+typedef struct RdmnetControllerRdmData
+{
+  char manufacturer_label[33];
+  char device_model_description[33];
+  char software_version_label[33];
+  char device_label[33];
+} RdmnetControllerRdmData;
+
+typedef struct RdmnetControllerOptionalConfig
+{
+  /*! The client's UID. If the client has a static UID, fill in the values normally. If a dynamic
+   *  UID is desired, assign using RPT_CLIENT_DYNAMIC_UID(manu_id), passing your ESTA manufacturer
+   *  ID. All RDMnet components are required to have a valid ESTA manufacturer ID. */
+  RdmUid uid;
+  /*! The client's configured search domain for discovery. */
+  const char* search_domain;
+} RdmnetControllerOptionalConfig;
 
 /*! A set of information that defines the startup parameters of an RDMnet Controller. */
 typedef struct RdmnetControllerConfig
@@ -93,32 +115,22 @@ typedef struct RdmnetControllerConfig
   RdmnetControllerCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. Can be NULL. */
   void* callback_context;
+  /*! Callbacks for the controller to receive RDM commands over RDMnet. Either this or rdm_data
+   *  must be provided. */
+  RdmnetControllerRdmCmdCallbacks rdm_callbacks;
+  /*! Data for the library to use for handling RDM commands internally. Either this or
+   *  rdm_callbacks must be provided. */
+  RdmnetControllerRdmData rdm_data;
   /*! Optional configuration data for the controller's RPT Client functionality. */
-  RptClientOptionalConfig optional;
+  RdmnetControllerOptionalConfig optional;
   /*! Optional configuration data for the controller's LLRP Target functionality. */
   LlrpTargetOptionalConfig llrp_optional;
 } RdmnetControllerConfig;
 
-/*!
- * \brief Initialize an RDMnet Controller Config with default values for the optional config options.
- *
- * The config struct members not marked 'optional' are not initialized by this macro. Those members
- * do not have default values and must be initialized manually before passing the config struct to
- * an API function.
- *
- * Usage example:
- * \code
- * RdmnetControllerConfig config;
- * RDMNET_CONTROLLER_CONFIG_INIT(&config, 0x6574);
- * \endcode
- *
- * \param controllercfgptr Pointer to RdmnetControllerConfig.
- * \param manu_id ESTA manufacturer ID. All RDMnet Controllers must have one.
- */
-#define RDMNET_CONTROLLER_CONFIG_INIT(controllercfgptr, manu_id) RPT_CLIENT_CONFIG_INIT(controllercfgptr, manu_id)
-
 etcpal_error_t rdmnet_controller_init(const EtcPalLogParams* lparams, const RdmnetNetintConfig* netint_config);
 void rdmnet_controller_deinit();
+
+void rdmnet_controller_config_init(RdmnetControllerConfig* config, uint16_t manufacturer_id);
 
 etcpal_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rdmnet_controller_t* handle);
 etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle, rdmnet_disconnect_reason_t reason);

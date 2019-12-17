@@ -46,8 +46,21 @@ using ControllerHandle = rdmnet_controller_t;
 
 class Controller;
 
-/// \brief A base class for a class that receives notification callbacks from a controller.
 /// \ingroup rdmnet_controller_cpp
+/// \brief A base class for a class that receives RDM commands addressed to a controller.
+///
+/// This is an optional portion of the controller API. See \ref using_controller for details.
+class ControllerRdmCommandHandler
+{
+public:
+  virtual bool HandleRdmCommand(Controller& controller, ScopeHandle scope, const RemoteRdmCommand& cmd) = 0;
+  virtual bool HandleLlrpRdmCommand(Controller& controller, const LlrpRemoteRdmCommand& cmd) = 0;
+};
+
+/// \ingroup rdmnet_controller_cpp
+/// \brief A base class for a class that receives notification callbacks from a controller.
+///
+/// See \ref using_controller for details of how to use this API.
 class ControllerNotifyHandler
 {
 public:
@@ -60,17 +73,56 @@ public:
   virtual void HandleClientListUpdate(Controller& controller, ScopeHandle scope, client_list_action_t list_action,
                                       const ClientList& list) = 0;
   virtual void HandleRdmResponse(Controller& controller, ScopeHandle scope, const RemoteRdmResponse& resp) = 0;
-  virtual void HandleRdmCommand(Controller& controller, ScopeHandle scope, const RemoteRdmCommand& cmd) = 0;
   virtual void HandleRptStatus(Controller& controller, ScopeHandle scope, const RemoteRptStatus& status) = 0;
-  virtual void HandleLlrpRdmCommand(Controller& controller, const LlrpRemoteRdmCommand& cmd) = 0;
 };
 
-/// \brief An instance of RDMnet Controller functionality.
+struct ControllerData
+{
+  etcpal::Uuid cid;
+  rdm::Uid uid;
+  std::string search_domain;
+
+  ControllerData() = default;
+  ControllerData(const etcpal::Uuid& cid_in, const rdm::Uid& uid_in, const std::string& search_domain_in)
+      : cid(cid_in), uid(uid_in), search_domain(search_domain_in)
+  {
+  }
+  static ControllerData Default()
+  {
+    return ControllerData(etcpal::Uuid::OsPreferred(), rdm::Uid::DynamicRequest(), E133_DEFAULT_DOMAIN);
+  }
+};
+
+struct ControllerRdmData
+{
+  std::string manufacturer_label;
+  std::string device_model_description;
+  std::string software_version_label;
+  std::string device_label;
+  bool device_label_settable{true};
+
+  ControllerRdmData() = default;
+  ControllerRdmData(const std::string& manufacturer_label_in, const std::string& device_model_description_in,
+                    const std::string& software_version_label_in, const std::string& device_label_in)
+      : manufacturer_label(manufacturer_label_in)
+      , device_model_description(device_model_description_in)
+      , software_version_label(software_version_label_in)
+      , device_label(device_label_in)
+  {
+  }
+};
+
 /// \ingroup rdmnet_controller_cpp
+/// \brief An instance of RDMnet Controller functionality.
+///
+/// See \ref using_controller for details of how to use this API.
 class Controller
 {
 public:
-  etcpal::Result Startup(const etcpal::Uuid& cid, ControllerNotifyHandler& notify_handler);
+  etcpal::Result Startup(ControllerNotifyHandler& notify_handler, const ControllerRdmData& rdm_data,
+                         const ControllerData& data = ControllerData::Default());
+  etcpal::Result Startup(ControllerNotifyHandler& notify_handler, ControllerRdmCommandHandler& rdm_handler,
+                         const ControllerData& data = ControllerData::Default());
   void Shutdown();
 
   etcpal::Expected<ScopeHandle> AddDefaultScope(const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
@@ -83,12 +135,7 @@ public:
   etcpal::Result RequestClientList(ScopeHandle scope);
 
   ControllerHandle handle() const;
-  const etcpal::Uuid& cid() const;
-  etcpal::Expected<Scope> scope(ScopeHandle handle) const;
-  const rdm::Uid& uid() const;
-
-  void SetUid(const rdm::Uid& uid);
-  void SetSearchDomain(const std::string& search_domain);
+  const ControllerIdentifyingData& identifying_data() const;
 
   static etcpal::Result Init(
       const EtcPalLogParams* log_params = nullptr,
@@ -98,14 +145,15 @@ public:
   static void Deinit();
 
 private:
-  ControllerNotifyHandler* notify_{nullptr};
   ControllerHandle handle_{RDMNET_CONTROLLER_INVALID};
-  etcpal::Uuid cid_;
-  rdm::Uid uid_;
-  std::string search_domain_;
+  ControllerData my_data_;
+  ControllerRdmData my_rdm_data_;
+
+  ControllerRdmCommandHandler* rdm_cmd_handler_{nullptr};
+  ControllerNotifyHandler* notify_{nullptr};
 };
 
-inline etcpal::Result Controller::Startup(const etcpal::Uuid& cid);
+inline etcpal::Result Controller::Startup(const etcpal::Uuid& cid)
 {
   return kEtcPalErrNotImpl;
 }
@@ -115,10 +163,19 @@ inline void Controller::Shutdown()
 }
 
 /// \brief Initialize the RDMnet Controller library.
-/// \param log_params Optional logging configuration for the RDMnet library.
+/// \param log_params Optional logging configuration for the RDMnet library. If nullptr, no
+///                   messages will be logged.
+/// \param mcast_netints Optional set of network interfaces on which to operate RDMnet's multicast
+///                      protocols. If left at default, all interfaces will be used.
 /// \return kEtcPalErrOk: Initialization successful.
 /// \return Error codes from rdmnet_client_init().
 inline etcpal::Result Controller::Init(const EtcPalLogParams* log_params,
+                                       const std::vector<RdmnetMcastNetintId>& mcast_netints)
+{
+  return kEtcPalErrNotImpl;
+}
+
+inline etcpal::Result Controller::Init(const etcpal::Logger& logger,
                                        const std::vector<RdmnetMcastNetintId>& mcast_netints)
 {
   return kEtcPalErrNotImpl;
@@ -170,28 +227,10 @@ inline ControllerHandle Controller::handle()
   return handle_;
 }
 
-inline const etcpal::Uuid& Controller::cid() const
+inline const ControllerIdentifyingData& Controller::identifying_data() const
 {
-  return cid_;
+  return my_data_;
 }
-
-inline const rdm::Uid& Controller::uid() const
-{
-  return uid_;
-}
-
-inline Controller& SetUid(const rdm::Uid& uid)
-{
-  uid_ = uid;
-  return *this;
-}
-
-inline Controller& SetSearchDomain(const std::string& search_domain)
-{
-  search_domain_ = search_domain;
-  return *this;
-}
-
 };  // namespace rdmnet
 
 #endif  // RDMNET_CPP_CONTROLLER_H_

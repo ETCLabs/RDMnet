@@ -19,13 +19,15 @@
 
 #include "rdmnet/controller.h"
 
+#include <string.h>
 #include "rdmnet/private/opts.h"
+#include "rdmnet/private/controller.h"
+
 #if RDMNET_DYNAMIC_MEM
 #include <stdlib.h>
 #else
 #include "etcpal/mempool.h"
 #endif
-#include "rdmnet/private/controller.h"
 
 /***************************** Private macros ********************************/
 
@@ -97,6 +99,32 @@ etcpal_error_t rdmnet_controller_init(const EtcPalLogParams* lparams, const Rdmn
 void rdmnet_controller_deinit()
 {
   rdmnet_client_deinit();
+}
+
+/*!
+ * \brief Initialize an RdmnetControllerConfig with default values for the optional config options.
+ *
+ * The config struct members not marked 'optional' are not initialized by this function. Those
+ * members do not have default values and must be initialized manually before passing the config
+ * struct to an API function.
+ *
+ * Usage example:
+ * \code
+ * RdmnetControllerConfig config;
+ * rdmnet_controller_config_init(&config, 0x6574);
+ * \endcode
+ *
+ * \param[in] manufacturer_id ESTA manufacturer ID. All RDMnet Controllers must have one.
+ * \param[out] controllercfgptr Pointer to RdmnetControllerConfig to init.
+ */
+void rdmnet_controller_config_init(uint16_t manufacturer_id, RdmnetControllerConfig* config)
+{
+  if (!config)
+    return;
+
+  memset(config, 0, sizeof(RdmnetControllerConfig));
+  LLRP_TARGET_INIT_OPTIONAL_CONFIG_VALUES(&config->llrp_optional, manufacturer_id);
+  RPT_CLIENT_INIT_OPTIONAL_CONFIG_VALUES(&config->optional, manufacturer_id);
 }
 
 /*!
