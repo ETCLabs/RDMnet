@@ -95,10 +95,10 @@ public:
   bool IsValidControllerDestinationUID(const RdmUid& uid) const;
   bool IsValidDeviceDestinationUID(const RdmUid& uid) const;
 
-  rdmnet::BrokerLog* GetLog() const { return log_; }
+  etcpal::Logger* GetLog() const { return log_; }
   rdmnet::BrokerSettings GetSettings() const { return settings_; }
 
-  bool Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerNotify* notify, rdmnet::BrokerLog* log,
+  bool Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerNotify* notify, etcpal::Logger* logger,
                BrokerComponents components = BrokerComponents());
   void Shutdown();
   void Tick();
@@ -113,7 +113,7 @@ private:
   RdmUid my_uid_{};
 
   // External (non-owned) components
-  rdmnet::BrokerLog* log_{nullptr};        // Enables the broker to log messages
+  etcpal::Logger* log_{nullptr};           // Enables the broker to log messages
   rdmnet::BrokerNotify* notify_{nullptr};  // Enables the broker to notify application code when something has changed
 
   // Owned components
@@ -167,16 +167,14 @@ private:
   // Message processing and sending functions
   void ProcessRPTMessage(rdmnet_conn_t conn, const RdmnetMessage* msg);
   void ProcessConnectRequest(rdmnet_conn_t conn, const ClientConnectMsg* cmsg);
-  bool ProcessRPTConnectRequest(rdmnet_conn_t conn, const ClientEntryData& data,
-                                rdmnet_connect_status_t& connect_status);
+  bool ProcessRPTConnectRequest(rdmnet_conn_t conn, const ClientEntry& data, rdmnet_connect_status_t& connect_status);
 
   void SendRDMBrokerResponse(rdmnet_conn_t conn, const RPTMessageRef& msg, uint8_t response_type, uint8_t command_class,
                              uint16_t param_id, uint8_t packedlen, uint8_t* pdata);
 
   void SendClientList(rdmnet_conn_t conn);
-  void SendClientsAdded(client_protocol_t client_prot, rdmnet_conn_t conn_to_ignore,
-                        std::vector<ClientEntryData>& entries);
-  void SendClientsRemoved(client_protocol_t client_prot, std::vector<ClientEntryData>& entries);
+  void SendClientsAdded(client_protocol_t client_prot, rdmnet_conn_t conn_to_ignore, std::vector<ClientEntry>& entries);
+  void SendClientsRemoved(client_protocol_t client_prot, std::vector<ClientEntry>& entries);
   void SendStatus(RPTController* controller, const RptHeader& header, rpt_status_code_t status_code,
                   const std::string& status_str = std::string());
 };

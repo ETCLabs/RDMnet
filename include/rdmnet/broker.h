@@ -26,7 +26,7 @@
 
 #include <memory>
 #include <string>
-#include "rdmnet/broker/log.h"
+#include "etcpal/cpp/log.h"
 #include "rdmnet/broker/settings.h"
 
 class BrokerCore;
@@ -75,7 +75,7 @@ public:
   Broker(Broker&& other) = default;
   Broker& operator=(Broker&& other) = default;
 
-  bool Startup(const BrokerSettings& settings, BrokerNotify* notify, BrokerLog* log);
+  bool Startup(const BrokerSettings& settings, BrokerNotify* notify, etcpal::Logger* logger);
   void Shutdown();
   void Tick();
 

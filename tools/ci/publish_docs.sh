@@ -40,7 +40,7 @@ git config user.email "azure@microsoft.com"
 ################################################################################
 ##### Generate the Doxygen code documentation and log the output.          #####
 cd ../..
-python doxygen_generate_from_ci.py
+python doxygen_generate.py
 cd build/${GH_REPO_NAME}
 
 ################################################################################

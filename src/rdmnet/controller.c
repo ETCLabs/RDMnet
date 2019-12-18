@@ -123,7 +123,6 @@ void rdmnet_controller_config_init(uint16_t manufacturer_id, RdmnetControllerCon
     return;
 
   memset(config, 0, sizeof(RdmnetControllerConfig));
-  LLRP_TARGET_INIT_OPTIONAL_CONFIG_VALUES(&config->llrp_optional, manufacturer_id);
   RPT_CLIENT_INIT_OPTIONAL_CONFIG_VALUES(&config->optional, manufacturer_id);
 }
 
@@ -155,7 +154,6 @@ etcpal_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rd
   client_config.callbacks = client_callbacks;
   client_config.callback_context = new_controller;
   client_config.optional = config->optional;
-  client_config.llrp_optional = config->llrp_optional;
 
   etcpal_error_t res = rdmnet_rpt_client_create(&client_config, &new_controller->client_handle);
   if (res == kEtcPalErrOk)

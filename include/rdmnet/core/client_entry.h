@@ -59,23 +59,23 @@ struct EptSubProtocol
   EptSubProtocol* next;
 };
 
-typedef struct EptClientEntryData EptClientEntryData;
-typedef struct EptClientEntryData
+typedef struct EptClientEntry EptClientEntry;
+struct EptClientEntry
 {
   EtcPalUuid cid;
   bool more_coming;
   EptSubProtocol* protocol_list;
-  EptClientEntryData* next;
-} EptClientEntryData;
+  EptClientEntry* next;
+};
 
-typedef struct RptClientEntryData RptClientEntryData;
-struct RptClientEntryData
+typedef struct RptClientEntry RptClientEntry;
+struct RptClientEntry
 {
   EtcPalUuid cid;
   RdmUid uid;
   rpt_client_type_t type;
   EtcPalUuid binding_cid;
-  RptClientEntryData* next;
+  RptClientEntry* next;
 };
 
 typedef struct ClientEntry
@@ -83,8 +83,8 @@ typedef struct ClientEntry
   client_protocol_t client_protocol;
   union
   {
-    RptClientEntryData rpt;
-    EptClientEntryData ept;
+    RptClientEntry rpt;
+    EptClientEntry ept;
   } data;
 } ClientEntry;
 
@@ -94,9 +94,9 @@ typedef struct ClientEntry
 #define GET_EPT_CLIENT_ENTRY_DATA(clientryptr) (&(clientryptr)->data.ept)
 
 bool create_rpt_client_entry(const EtcPalUuid* cid, const RdmUid* uid, rpt_client_type_t client_type,
-                             const EtcPalUuid* binding_cid, RptClientEntryData* entry);
+                             const EtcPalUuid* binding_cid, RptClientEntry* entry);
 bool create_ept_client_entry(const EtcPalUuid* cid, const EptSubProtocol* protocol_arr, size_t protocol_arr_size,
-                             EptClientEntryData* entry);
+                             EptClientEntry* entry);
 
 #ifdef __cplusplus
 }

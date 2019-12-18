@@ -3,6 +3,8 @@
 The RDMnet Controller API exposes both a C and C++ language interface. The C++ interface is a
 header-only wrapper around the C interface.
 
+<!-- LANGUAGE_SELECTOR -->
+
 ## Initialization and Destruction
 
 The controller init and deinit functions should be called once each at application startup and
@@ -15,6 +17,7 @@ starts a background thread for handling periodic RDMnet functionality and receiv
 behavior can be overridden at compile-time if an app wants more control over its threading, see
 #RDMNET_USE_TICK_THREAD and rdmnet_core_tick()). The deinit function joins this thread.
 
+<!-- CODE_BLOCK_START -->
 ```c
 #include "rdmnet/controller.h"
 
@@ -29,7 +32,7 @@ etcpal_error_t init_result = rdmnet_controller_init(NULL);
 // In some function called at shutdown...
 rdmnet_controller_deinit();
 ```
-
+<!-- CODE_BLOCK_MID -->
 ```cpp
 #include "rdmnet/cpp/controller.h"
 
@@ -45,15 +48,17 @@ etcpal::Result init_result = rdmnet::Controller::Init();
 // In some function called at shutdown...
 rdmnet::Controller::Deinit();
 ```
+<!-- CODE_BLOCK_END -->
 
-To create a controller instance, use the rdmnet_controller_create() function. Most apps will only
-need a single controller instance. One controller can monitor an arbitrary number of RDMnet scopes
-at once.
+To create a controller instance, use the rdmnet_controller_create() function in C, or instantiate
+an rdmnet::Controller and call its Startup() function in C++. Most apps will only need a single
+controller instance. One controller can monitor an arbitrary number of RDMnet scopes at once.
 
 The RDMnet controller API is an asynchronous, callback-oriented API. On creation, you give the
 library a configuration struct containing, among other things, a set of function pointers to use as
 callbacks. Callbacks are dispatched from the thread context which calls rdmnet_core_tick().
 
+<!-- CODE_BLOCK_START -->
 ```c
 RdmnetControllerConfig config;
 
@@ -86,9 +91,7 @@ else
   // Some error occurred, handle is not valid.
 }
 ```
-
-In C++, instantiate an rdmnet::Controller instance and call its Startup() function.
-
+<!-- CODE_BLOCK_MID -->
 ```cpp
 class MyControllerNotifyHandler : public rdmnet::ControllerNotifyHandler
 {
@@ -114,6 +117,7 @@ else
   // Startup failed, use result.code() or result.ToString() to inspect details
 }
 ```
+<!-- CODE_BLOCK_END -->
 
 ### Managing Scopes
 
@@ -127,6 +131,7 @@ Otherwise, use rdmnet_controller_add_scope() to add a custom configured scope.
 Per the requirements of RDMnet, a scope string is always UTF-8 and is thus represented by a char[]
 in C and a std::string in C++.
 
+<!-- CODE_BLOCK_START -->
 ```c
 // Add a default scope
 rdmnet_client_scope_t default_scope_handle;
@@ -139,9 +144,7 @@ RDMNET_CLIENT_SET_SCOPE(&scope_config, "custom_scope_name");
 rdmnet_client_scope_t custom_scope_handle;
 etcpal_error_t result = rdmnet_controller_add_scope(my_controller_handle, &scope_config, &custom_scope_handle);
 ```
-
-Or, in C++:
-
+<!-- CODE_BLOCK_MID -->
 ```cpp
 auto add_res = controller.AddDefaultScope();
 // Or...
@@ -157,6 +160,7 @@ else
   std::cout << "Error adding default scope: '" << add_res.result().ToString() << "'\n"
 }
 ```
+<!-- CODE_BLOCK_END -->
 
 ### Dynamic vs Static Scopes
 
@@ -170,6 +174,7 @@ the connected or connect_failed callback.
 If a broker for a given scope has been configured with a static IP address and port, you can skip
 DNS-SD discovery by providing a static configuration:
 
+<!-- CODE_BLOCK_START -->
 ```c
 // Get configured static broker address
 EtcPalSockAddr static_broker_addr;
@@ -182,11 +187,9 @@ RDMNET_CLIENT_SET_STATIC_SCOPE(&config, "my_custom_scope", static_broker_addr);
 RDMNET_CLIENT_SET_STATIC_DEFAULT_SCOPE(&config, static_broker_addr);
 
 rdmnet_client_scope_t scope_handle;
-etcpal_error_t result = rdmnet_controller_add_scope(my_controller_handle, &config, &scope_handle);
+etcpal_error_t result = rdmnet_controller_static_config(my_controller_handle, &config, &scope_handle);
 ```
-
-Or, in C++:
-
+<!-- CODE_BLOCK_MID -->
 ```cpp
 // Get configured static broker address
 auto static_broker_addr = etcpal::SockAddr(etcpal::IpAddr::FromString("192.168.2.1"), 8000);
@@ -194,6 +197,7 @@ auto add_res = controller.AddScope("my_custom_scope", static_broker_addr);
 // Or:
 auto add_res = controller.AddDefaultScope(static_broker_addr);
 ```
+<!-- CODE_BLOCK_END -->
 
 ### Handling Callbacks
 
@@ -205,23 +209,25 @@ callbacks.
 For example, a very common controller behavior will be to fetch a client list from the broker
 after a successful connection:
 
+<!-- CODE_BLOCK_START -->
 ```c
 void controller_connected_callback(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                    const RdmnetClientConnectedInfo* info, void* context)
 {
-  // Check handle and/or context as necessary...
+  // Check handles and/or context as necessary...
   rdmnet_controller_request_client_list(handle, scope_handle);
 }                                   
 ```
-
+<!-- CODE_BLOCK_MID -->
 ```cpp
 void MyControllerNotifyHandler::HandleConnectedToBroker(rdmnet::Controller& controller, rdmnet::ScopeHandle scope,
                                                         const RdmnetClientConnectedInfo& info)
 {
-  // Check handle as necessary...
+  // Check handles as necessary...
   controller.RequestClientList(scope);
 }
 ```
+<!-- CODE_BLOCK_END -->
 
 #### Connection Failure
 
@@ -253,19 +259,93 @@ rdmnet_controller_request_client_list() or rdmnet::Controller::RequestClientList
 appropriate request to the broker, and the reply will come back in the "Client List Update"
 callback:
 
+<!-- CODE_BLOCK_START -->
 ```c
 void my_client_list_update_cb(rdmnet_controller_t handle, rdmnet_client_scope_t handle,
-                              client_list_action_t list_action, const ClientList* list, void* context)
+                              client_list_action_t list_action, const RptClientList* list, void* context)
 {
-  // Check handle and/or context as necessary
+  // Check handles and/or context as necessary...
 
-  switch (list_action)
+  for (const RptClientEntry* entry = list->client_entries; entry; entry = entry->next)
   {
-    case kRdmnetClientListAppend:
-      // These entries are 
+    switch (list_action)
+    {
+      case kRdmnetClientListAppend:
+        // These are new entries to be added to the list of clients. Append the new entry to our
+        // bookkeeping.
+        break;
+      case kRdmnetClientListRemove:
+        // These are entries to be removed from the list of clients. Remove the entry from our
+        // bookkeeping.
+        break;
+      case kRdmnetClientListUpdate:
+        // These are entries to be updated in the list of clients. Update the corresponding entry
+        // in our bookkeeping.
+        break;
+      case kRdmnetClientListReplace:
+        // This is the full client list currently connected to the broker - our existing client 
+        // list should be replaced wholesale with this one. This will be the response to
+        // rdmnet_controller_request_client_list(); the other cases are sent unsolicited.
+        break;
+    }
+  }
+
+  if (list->more_coming)
+  {
+    // The library ran out of memory pool space while allocating client entries - after this
+    // callback returns, another will be delivered with the continuation of this response.
+    // If RDMNET_DYNAMIC_MEM == 1 (the default on non-embedded platforms), this flag will never be
+    // set to true and does not need to be checked.
   }
 }
 ```
+<!-- CODE_BLOCK_MID -->
+```cpp
+void MyControllerNotifyHandler::HandleClientListUpdate(Controller& controller, ScopeHandle scope,
+                                                       client_list_action_t list_action, const RptClientList& list)
+{
+  // Check handles as necessary...
+
+  for (const RptClientEntry* entry = list.client_entries; entry; entry = entry->next)
+  {
+    switch (list_action)
+    {
+      case kRdmnetClientListAppend:
+        // These are new entries to be added to the list of clients. Append the new entry to our
+        // bookkeeping.
+        break;
+      case kRdmnetClientListRemove:
+        // These are entries to be removed from the list of clients. Remove the entry from our
+        // bookkeeping.
+        break;
+      case kRdmnetClientListUpdate:
+        // These are entries to be updated in the list of clients. Update the corresponding entry
+        // in our bookkeeping.
+        break;
+      case kRdmnetClientListReplace:
+        // This is the full client list currently connected to the broker - our existing client 
+        // list should be replaced wholesale with this one. This will be the response to
+        // rdmnet_controller_request_client_list(); the other cases are sent unsolicited.
+        break;
+    }
+  }
+
+  if (list.more_coming)
+  {
+    // The library ran out of memory pool space while allocating client entries - after this
+    // callback returns, another will be delivered with the continuation of this response.
+    // If RDMNET_DYNAMIC_MEM == 1 (the default on non-embedded platforms), this flag will never be
+    // set to true and does not need to be checked.
+  }
+}
+```
+<!-- CODE_BLOCK_END -->
+
+Brokers also send Client List Update messages asynchronously when things change; these messages
+contain only the differences from the last client list sent to a given controller. This means you
+should only have to request a full client list when a new connection completes; after that, expect
+periodic callbacks notifying you of changes, with the #client_list_action_t set appropriately as
+shown above.
 
 ### Sending RDM Commands
 
@@ -273,6 +353,7 @@ Build RDM commands using the LocalRdmCommand type. The library uses a naming con
 beginning with `Local` represent data that is generated locally, whereas names beginning with
 `Remote` represent data received from a remote component.
 
+<!-- CODE_BLOCK_START -->
 ```c
 LocalRdmCommand cmd;
 // Build the RDM command using cmd.rdm...
@@ -286,7 +367,7 @@ if (result == kEtcPalErrOk)
   // cmd_seq_num identifies this command transaction. Store it for when a response is received.
 }
 ```
-
+<!-- CODE_BLOCK_MID -->
 ```cpp
 LocalRdmCommand cmd;
 // Build the RDM command using cmd.rdm...
@@ -299,6 +380,7 @@ if (result)
   // *result identifies this command transaction. Store it for when a response is received.
 }
 ```
+<!-- CODE_BLOCK_END -->
 
 ### Handling RDM Responses
 
@@ -306,11 +388,12 @@ Responses to commands you send will be delivered asynchronously through the "RDM
 You may also receive "unsolicited responses" - asynchronous state updates from devices that don't
 correspond to changes you requested.
 
+<!-- CODE_BLOCK_START -->
 ```c
 void rdm_response_callback(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                            const RemoteRdmResponse* resp, void* context)
 {
-  // Check handle and/or context as necessary...
+  // Check handles and/or context as necessary...
 
   if (resp->seq_num == 0)
   {
@@ -333,11 +416,12 @@ void rdm_response_callback(rdmnet_controller_t handle, rdmnet_client_scope_t sco
   {
     // The library ran out of memory pool space while allocating responses - after this callback
     // returns, another will be delivered with the continuation of this response.
-    // If RDMNET_DYNAMIC_MEM == 1 (the default on non-embedded platforms), this flag will never be set to true.
+    // If RDMNET_DYNAMIC_MEM == 1 (the default on non-embedded platforms), this flag will never be
+    // set to true.
   }
 }
 ```
-
+<!-- CODE_BLOCK_MID -->
 ```cpp
 void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::Controller& controller, rdmnet::ScopeHandle scope,
                                                   const RemoteRdmResponse& resp)
@@ -367,6 +451,7 @@ void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::Controller& controller
   }
 }
 ```
+<!-- CODE_BLOCK_END -->
 
 If something went wrong while either a broker or device was processing your message, you will get a
 response called an "RPT Status". There is a separate callback for handling these messages.
@@ -375,11 +460,12 @@ When you send an RDM command, you start a transaction that is identified by a 32
 number. That transaction is considered completed when you get either an RDM Response or an RPT
 Status containing that same sequence number.
 
+<!-- CODE_BLOCK_START -->
 ```c
 void rpt_status_callback(rdmnet_controller_t handle, rdmnet_client_scope_t handle, const RemoteRptStatus* status,
                          void* context)
 {
-  // Check handle and/or context as necessary...
+  // Check handles and/or context as necessary...
 
   // Verify status->seq_num against the cmd_seq_num you stored earlier.
 
@@ -390,7 +476,7 @@ void rpt_status_callback(rdmnet_controller_t handle, rdmnet_client_scope_t handl
   // Other logic as needed; remove our internal storage of the RDM transaction, etc.
 }
 ```
-
+<!-- CODE_BLOCK_MID -->
 ```cpp
 void MyControllerNotifyHandler::HandleRptStatus(rdmnet::Controller& controller, rdmnet::ScopeHandle scope,
                                                 const RemoteRptStatus& status)
@@ -403,6 +489,7 @@ void MyControllerNotifyHandler::HandleRptStatus(rdmnet::Controller& controller, 
   // Other logic as needed; remove our internal storage of the RDM transaction, etc.
 }
 ```
+<!-- CODE_BLOCK_END -->
 
 ### Handling RDM Commands
 
@@ -428,6 +515,7 @@ handle any RDM commands on your behalf and you must handle all of the above PIDs
 
 To use the library this way, you can:
 
+<!-- CODE_BLOCK_START -->
 ```c
 RdmnetControllerConfig config;
 rdmnet_controller_config_init(&config, MY_ESTA_MANUFACTURER_ID_VAL);
@@ -439,7 +527,7 @@ RDMNET_CONTROLLER_SET_RDM_CMD_CALLBACKS(&config, my_rdm_command_received_cb, my_
 rdmnet_controller_t my_controller_handle;
 etcpal_error_t result = rdmnet_controller_create(&config, &my_controller_handle);
 ```
-
+<!-- CODE_BLOCK_MID -->
 ```cpp
 class MyControllerRdmCommandHandler : public rdmnet::ControllerRdmCommandHandler
 {
@@ -451,3 +539,4 @@ MyControllerRdmCommandHandler my_rdm_cmd_handler;
 etcpal::Result result = controller.Startup(my_controller_notify_handler, my_rdm_cmd_handler,
                                            rdmnet::ControllerData::Default(MY_ESTA_MANUFACTURER_ID_VAL));
 ```
+<!-- CODE_BLOCK_END -->

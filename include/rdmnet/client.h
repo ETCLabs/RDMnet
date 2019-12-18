@@ -272,12 +272,22 @@ typedef struct RdmnetScopeConfig
  *  can be initialized using the appropriate initialization macros. */
 typedef struct RptClientOptionalConfig
 {
-  /*! The client's UID. If the client has a static UID, fill in the values normally. If a dynamic
-   *  UID is desired, assign using RPT_CLIENT_DYNAMIC_UID(manu_id), passing your ESTA manufacturer
-   *  ID. All RDMnet components are required to have a valid ESTA manufacturer ID. */
+  /*!
+   * \brief The client's UID.
+   *
+   * If the client has a static UID, fill in the values normally. If a dynamic UID is desired,
+   * assign using RPT_CLIENT_DYNAMIC_UID(manu_id), passing your ESTA manufacturer ID. All RDMnet
+   * components are required to have a valid ESTA manufacturer ID.
+   */
   RdmUid uid;
   /*! The client's configured search domain for discovery. */
   const char* search_domain;
+  /*! A set of network interfaces to use for the LLRP target associated with this client. If NULL,
+   *  the set passed to rdmnet_core_init() will be used, or all network interfaces on the system if
+   *  that was not provided. */
+  RdmnetMcastNetintId* llrp_netint_arr;
+  /*! The size of llrp_netint_arr. */
+  size_t num_llrp_netints;
 } RptClientOptionalConfig;
 
 #define RPT_CLIENT_INIT_OPTIONAL_CONFIG_VALUES(optionalcfgptr, manu_id) \
@@ -285,6 +295,8 @@ typedef struct RptClientOptionalConfig
   {                                                                     \
     RDMNET_INIT_DYNAMIC_UID_REQUEST(&(optionalcfgptr)->uid, (manu_id)); \
     (optionalcfgptr)->search_domain = E133_DEFAULT_DOMAIN;              \
+    (optionalcfgptr)->llrp_netint_arr = NULL;                           \
+    (optionalcfgptr)->num_llrp_netints = 0;                             \
   } while (0)
 
 /*! A set of information that defines the startup parameters of an RPT RDMnet Client. */
@@ -298,8 +310,6 @@ typedef struct RdmnetRptClientConfig
   RptClientCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. */
   void* callback_context;
-  /*! Optional configuration data for the client's LLRP Target functionality. */
-  LlrpTargetOptionalConfig llrp_optional;
   /*! Optional configuration data for the client. */
   RptClientOptionalConfig optional;
 } RdmnetRptClientConfig;

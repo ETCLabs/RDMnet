@@ -79,7 +79,7 @@ typedef struct RdmnetMcastNetintId
 
 typedef struct RdmnetNetintConfig
 {
-  RdmnetMcastNetintId* netint_arr;
+  const RdmnetMcastNetintId* netint_arr;
   size_t num_netints;
 } RdmnetNetintConfig;
 

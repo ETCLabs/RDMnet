@@ -44,7 +44,7 @@ BrokerCore::~BrokerCore()
     Shutdown();
 }
 
-bool BrokerCore::Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerNotify* notify, rdmnet::BrokerLog* log,
+bool BrokerCore::Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerNotify* notify, etcpal::Logger* logger,
                          BrokerComponents components)
 {
   if (!started_)
@@ -56,7 +56,7 @@ bool BrokerCore::Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerN
     // Save members
     settings_ = settings;
     notify_ = notify;
-    log_ = log;
+    log_ = logger;
     components_ = std::move(components);
     components_.SetNotify(this);
 
@@ -68,7 +68,7 @@ bool BrokerCore::Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerN
       components_.uids.SetNextDeviceId(2);
     }
 
-    if (!components_.conn_interface->Startup(settings.cid, log_->GetLogParams()))
+    if (!components_.conn_interface->Startup(settings.cid, &log_->log_params()))
     {
       return false;
     }

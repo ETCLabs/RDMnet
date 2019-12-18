@@ -57,11 +57,16 @@ typedef struct RdmnetController* rdmnet_controller_t;
 /*! An invalid RDMnet controller handle value. */
 #define RDMNET_CONTROLLER_INVALID NULL
 
+/*! How to apply the client entries to the existing client list in a client_list_update callback. */
 typedef enum
 {
+  /*! The client entries should be appended to the existing client list. */
   kRdmnetClientListAppend = VECTOR_BROKER_CLIENT_ADD,
+  /*! The client entries should be removed from the existing client list. */
   kRdmnetClientListRemove = VECTOR_BROKER_CLIENT_REMOVE,
+  /*! The client entries should be updated in the existing client list. */
   kRdmnetClientListUpdate = VECTOR_BROKER_CLIENT_ENTRY_CHANGE,
+  /*! The existing client list should be replaced wholesale with this one. */
   kRdmnetClientListReplace = VECTOR_BROKER_CONNECTED_CLIENT_LIST
 } client_list_action_t;
 
@@ -74,7 +79,7 @@ typedef struct RdmnetControllerCallbacks
   void (*disconnected)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                        const RdmnetClientDisconnectedInfo* info, void* context);
   void (*client_list_update)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                             client_list_action_t list_action, const ClientList* list, void* context);
+                             client_list_action_t list_action, const RptClientList* list, void* context);
   void (*rdm_response_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                 const RemoteRdmResponse* resp, void* context);
   void (*status_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle, const RemoteRptStatus* status,
@@ -96,16 +101,6 @@ typedef struct RdmnetControllerRdmData
   const char* device_label;
 } RdmnetControllerRdmData;
 
-typedef struct RdmnetControllerOptionalConfig
-{
-  /*! The client's UID. If the client has a static UID, fill in the values normally. If a dynamic
-   *  UID is desired, assign using RPT_CLIENT_DYNAMIC_UID(manu_id), passing your ESTA manufacturer
-   *  ID. All RDMnet components are required to have a valid ESTA manufacturer ID. */
-  RdmUid uid;
-  /*! The client's configured search domain for discovery. */
-  const char* search_domain;
-} RdmnetControllerOptionalConfig;
-
 /*! A set of information that defines the startup parameters of an RDMnet Controller. */
 typedef struct RdmnetControllerConfig
 {
@@ -122,14 +117,12 @@ typedef struct RdmnetControllerConfig
    *  rdm_callbacks must be provided. */
   RdmnetControllerRdmData rdm_data;
   /*! Optional configuration data for the controller's RPT Client functionality. */
-  RdmnetControllerOptionalConfig optional;
-  /*! Optional configuration data for the controller's LLRP Target functionality. */
-  LlrpTargetOptionalConfig llrp_optional;
+  RptClientOptionalConfig optional;
 } RdmnetControllerConfig;
 
 #define RDMNET_CONTROLLER_SET_CALLBACKS(configptr, connected_cb, connect_failed_cb, disconnected_cb,         \
                                         client_list_update_cb, rdm_response_received_cb, status_received_cb, \
-                                        callback_context)                                                    \
+                                        cb_context)                                                          \
   do                                                                                                         \
   {                                                                                                          \
     (configptr)->callbacks.connected = (connected_cb);                                                       \
@@ -138,7 +131,7 @@ typedef struct RdmnetControllerConfig
     (configptr)->callbacks.client_list_update = (client_list_update_cb);                                     \
     (configptr)->callbacks.rdm_response_received = (rdm_response_received_cb);                               \
     (configptr)->callbacks.status_received = (status_received_cb);                                           \
-    (configptr)->callback_context = (callback_context);                                                      \
+    (configptr)->callback_context = (cb_context);                                                            \
   } while (0)
 
 #define RDMNET_CONTROLLER_SET_RDM_DATA(configptr, manu_label, dev_model_desc, sw_vers_label, dev_label) \

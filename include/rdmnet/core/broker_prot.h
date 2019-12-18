@@ -133,7 +133,7 @@ typedef struct ClientConnectMsg
   /*! Configurable options for the connection. See CONNECTFLAG_*. */
   uint8_t connect_flags;
   /*! The client's Client Entry. */
-  ClientEntryData client_entry;
+  ClientEntry client_entry;
 } ClientConnectMsg;
 
 /*!
@@ -189,7 +189,7 @@ typedef struct ClientEntryUpdateMsg
   /*! The new Client Entry. The standard says that it must have the same values for client_protocol
    *  and client_cid as the entry sent on initial connection - only the data section can be
    *  different. */
-  ClientEntryData client_entry;
+  ClientEntry client_entry;
 } ClientEntryUpdateMsg;
 
 /*! The Client Redirect message in the broker protocol. This struture is used to represent both
@@ -215,7 +215,7 @@ typedef struct RptClientList
    */
   bool more_coming;
   /*! The head of a linked list of RPT Client Entries. */
-  RptClientEntryData* client_entry_list;
+  RptClientEntry* client_entries;
 } RptClientList;
 
 /*!
@@ -233,8 +233,18 @@ typedef struct EptClientList
    */
   bool more_coming;
   /*! The head of a linked list of EPT Client Entries. */
-  EptClientEntryData* client_entry_list;
+  EptClientEntry* client_entries;
 } EptClientList;
+
+typedef struct ClientList
+{
+  client_protocol_t client_protocol;
+  union
+  {
+    RptClientList rpt;
+    EptClientList ept;
+  } data;
+} ClientList;
 
 typedef struct DynamicUidRequestListEntry DynamicUidRequestListEntry;
 /*! An entry in a linked list of Responder IDs (RIDs) which make up a Dynamic UID Request List. */
@@ -460,12 +470,12 @@ typedef struct BrokerMessage
  */
 #define GET_DISCONNECT_MSG(brokermsgptr) (&(brokermsgptr)->data.disconnect)
 
-size_t bufsize_client_list(const ClientEntryData* client_entry_list);
+size_t bufsize_client_list(const ClientEntry* client_entry_list);
 size_t bufsize_dynamic_uid_assignment_list(const DynamicUidMapping* mapping_list);
 
 size_t pack_connect_reply(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const ConnectReplyMsg* data);
 size_t pack_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
-                        const ClientEntryData* client_entry_list);
+                        const ClientEntry* client_entry_list);
 size_t pack_dynamic_uid_assignment_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid,
                                         const DynamicUidMapping* mapping_list);
 

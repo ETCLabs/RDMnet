@@ -36,7 +36,7 @@ class BrokerShell : public rdmnet::BrokerNotify
 {
 public:
   // Returns the code the app should exit with.
-  int Run(rdmnet::BrokerLog& log);
+  int Run(etcpal::Logger& log);
   static void PrintVersion();
 
   // Options to set from the command line; must be set BEFORE Run() is called.
@@ -62,7 +62,7 @@ private:
     uint16_t port{0};
   } initial_data_;
 
-  rdmnet::BrokerLog* log_{nullptr};
+  etcpal::Logger* log_{nullptr};
   std::atomic<bool> restart_requested_{false};
   bool shutdown_requested_{false};
   std::string new_scope_;
