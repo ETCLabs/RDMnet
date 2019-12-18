@@ -201,11 +201,11 @@ typedef struct ClientRedirectMsg
 } ClientRedirectMsg;
 
 /*!
- * A structure that represents a list of Client Entries. Represents the data for multiple broker
- * Protocol messages: Connected Client List, Client Incremental Addition, Client Incremental
+ * A structure that represents a list of RPT Client Entries. Represents the data for multiple
+ * Broker Protocol messages: Connected Client List, Client Incremental Addition, Client Incremental
  * Deletion, and Client Entry Change.
  */
-typedef struct ClientList
+typedef struct RptClientList
 {
   /*!
    * This message contains a partial list. This can be set when the library runs out of static
@@ -214,9 +214,27 @@ typedef struct ClientList
    * another ClientList is received with partial set to false.
    */
   bool more_coming;
-  /*! The head of a linked list of Client Entries. */
-  ClientEntryData* client_entry_list;
-} ClientList;
+  /*! The head of a linked list of RPT Client Entries. */
+  RptClientEntryData* client_entry_list;
+} RptClientList;
+
+/*!
+ * A structure that represents a list of EPT Client Entries. Represents the data for multiple
+ * Broker Protocol messages: Connected Client List, Client Incremental Addition, Client Incremental
+ * Deletion, and Client Entry Change.
+ */
+typedef struct EptClientList
+{
+  /*!
+   * This message contains a partial list. This can be set when the library runs out of static
+   * memory in which to store Client Entries and must deliver the partial list before continuing.
+   * The application should store the entries in the list but should not act on the list until
+   * another ClientList is received with partial set to false.
+   */
+  bool more_coming;
+  /*! The head of a linked list of EPT Client Entries. */
+  EptClientEntryData* client_entry_list;
+} EptClientList;
 
 typedef struct DynamicUidRequestListEntry DynamicUidRequestListEntry;
 /*! An entry in a linked list of Responder IDs (RIDs) which make up a Dynamic UID Request List. */

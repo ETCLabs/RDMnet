@@ -59,41 +59,44 @@ struct EptSubProtocol
   EptSubProtocol* next;
 };
 
-typedef struct ClientEntryDataRpt
+typedef struct EptClientEntryData EptClientEntryData;
+typedef struct EptClientEntryData
 {
-  RdmUid client_uid;
-  rpt_client_type_t client_type;
-  EtcPalUuid binding_cid;
-} ClientEntryDataRpt;
-
-typedef struct ClientEntryDataEpt
-{
+  EtcPalUuid cid;
   bool more_coming;
   EptSubProtocol* protocol_list;
-} ClientEntryDataEpt;
+  EptClientEntryData* next;
+} EptClientEntryData;
 
-typedef struct ClientEntryData ClientEntryData;
-struct ClientEntryData
+typedef struct RptClientEntryData RptClientEntryData;
+struct RptClientEntryData
 {
-  client_protocol_t client_protocol;
-  EtcPalUuid client_cid;
-  union
-  {
-    ClientEntryDataRpt rpt_data;
-    ClientEntryDataEpt ept_data;
-  } data;
-  ClientEntryData* next;
+  EtcPalUuid cid;
+  RdmUid uid;
+  rpt_client_type_t type;
+  EtcPalUuid binding_cid;
+  RptClientEntryData* next;
 };
 
+typedef struct ClientEntry
+{
+  client_protocol_t client_protocol;
+  union
+  {
+    RptClientEntryData rpt;
+    EptClientEntryData ept;
+  } data;
+} ClientEntry;
+
 #define IS_RPT_CLIENT_ENTRY(clientryptr) ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_RPT)
-#define GET_RPT_CLIENT_ENTRY_DATA(clientryptr) (&(clientryptr)->data.rpt_data)
+#define GET_RPT_CLIENT_ENTRY_DATA(clientryptr) (&(clientryptr)->data.rpt)
 #define IS_EPT_CLIENT_ENTRY(clientryptr) ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_EPT)
-#define GET_EPT_CLIENT_ENTRY_DATA(clientryptr) (&(clientryptr)->data.ept_data)
+#define GET_EPT_CLIENT_ENTRY_DATA(clientryptr) (&(clientryptr)->data.ept)
 
 bool create_rpt_client_entry(const EtcPalUuid* cid, const RdmUid* uid, rpt_client_type_t client_type,
-                             const EtcPalUuid* binding_cid, ClientEntryData* entry);
+                             const EtcPalUuid* binding_cid, RptClientEntryData* entry);
 bool create_ept_client_entry(const EtcPalUuid* cid, const EptSubProtocol* protocol_arr, size_t protocol_arr_size,
-                             ClientEntryData* entry);
+                             EptClientEntryData* entry);
 
 #ifdef __cplusplus
 }

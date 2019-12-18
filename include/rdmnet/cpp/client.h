@@ -36,7 +36,7 @@ public:
   constexpr Scope(const std::string& scope_str, const etcpal::SockAddr& static_broker_addr);
 
   constexpr bool IsStatic() const noexcept;
-  constexpr bool IsDefault() const noexcept;
+  bool IsDefault() const noexcept;
   constexpr const std::string& id() const noexcept;
   constexpr const etcpal::SockAddr& static_broker_addr() const noexcept;
 
@@ -57,22 +57,22 @@ constexpr Scope::Scope(const std::string& scope_str, const etcpal::SockAddr& sta
 {
 }
 
-constexpr bool Scope::IsStatic() const
+constexpr bool Scope::IsStatic() const noexcept
 {
   return static_broker_addr_.ip().IsValid();
 }
 
-constexpr bool Scope::IsDefault() const
+inline bool Scope::IsDefault() const noexcept
 {
   return id_ == E133_DEFAULT_SCOPE;
 }
 
-constexpr const std::string& Scope::id() const
+constexpr const std::string& Scope::id() const noexcept
 {
   return id_;
 }
 
-constexpr const etcpal::SockAddr& Scope::static_broker_addr() const
+constexpr const etcpal::SockAddr& Scope::static_broker_addr() const noexcept
 {
   return static_broker_addr_;
 }

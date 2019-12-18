@@ -59,7 +59,7 @@ RdmnetControllerConfig config;
 
 // Sets optional values to defaults. Must pass your ESTA manufacturer ID. If you have not yet
 // requested an ESTA manufacturer ID, the range 0x7ff0 to 0x7fff can be used for prototyping.
-RDMNET_CONTROLLER_CONFIG_INIT(&config, MY_ESTA_MANUFACTURER_ID_VAL);
+rdmnet_controller_config_init(&config, MY_ESTA_MANUFACTURER_ID_VAL);
 
 // Each controller is a component that must have a Component ID (CID), which is simply a UUID. Pure
 // redistributable software apps may generate a new CID on each run, but hardware-locked devices
@@ -67,14 +67,13 @@ RDMNET_CONTROLLER_CONFIG_INIT(&config, MY_ESTA_MANUFACTURER_ID_VAL);
 etcpal_generate_os_preferred_uuid(&config.cid);
 
 // Set the callback functions - defined elsewhere
-config.callbacks.connected = my_controller_connected_cb;
-config.callbacks.disconnected = my_controller_disconnected_cb;
-config.callbacks.client_list_update = my_controller_client_list_update_cb;
-config.callbacks.rdm_response_received = my_controller_rdm_response_received_cb;
-config.callbacks.status_received = my_controller_status_received_cb;
+// p_some_opaque_data is an opaque data pointer that will be passed back to each callback function
+RDMNET_CONTROLLER_SET_CALLBACKS(&config, my_controller_connected_cb, my_controller_disconnected_cb,
+                                my_controller_client_list_update_cb, my_controller_rdm_response_received_cb,
+                                my_controller_status_received_cb, p_some_opaque_data);
 
-// An opaque data pointer that will be passed back to each callback function
-config.callback_context = p_some_opaque_data;
+// Needed to identify this controller to other controllers on the network. More on this later.
+RDMNET_CONTROLLER_SET_RDM_DATA(&config, "My Manufacturer Name", "My Product Name", "1.0.0", "My Device Label");
 
 rdmnet_controller_t my_controller_handle;
 etcpal_error_t result = rdmnet_controller_create(&config, &my_controller_handle);
@@ -104,7 +103,8 @@ rdmnet::ControllerRdmData my_rdm_data("My Manufacturer Name",
                                       "1.0.0",
                                       "My Device Label");
 rdmnet::Controller controller;
-etcpal::Result result = controller.Startup(my_controller_notify_handler, my_rdm_data);
+etcpal::Result result = controller.Startup(my_controller_notify_handler, my_rdm_data,
+                                           rdmnet::ControllerData::Default(MY_ESTA_MANUFACTURER_ID_VAL));
 if (result)
 {
   // Controller is valid and running.
@@ -244,6 +244,28 @@ or a user misconfiguration. Some examples of these circumstances are:
 * The broker explicitly rejected a connection with a reason code indicating a configuration error,
   such as `CONNECT_SCOPE_MISMATCH` or `CONNECT_DUPLICATE_UID`.
 * The library failed to create a network socket before the connection was initiated.
+
+### Discovering Devices
+
+To discover devices in RDMnet, you need to request a _Client List_ from the broker you're connected
+to. In our API, this is very easy - as we saw in the callbacks section earlier, we can just call
+rdmnet_controller_request_client_list() or rdmnet::Controller::RequestClientList(). This sends the
+appropriate request to the broker, and the reply will come back in the "Client List Update"
+callback:
+
+```c
+void my_client_list_update_cb(rdmnet_controller_t handle, rdmnet_client_scope_t handle,
+                              client_list_action_t list_action, const ClientList* list, void* context)
+{
+  // Check handle and/or context as necessary
+
+  switch (list_action)
+  {
+    case kRdmnetClientListAppend:
+      // These entries are 
+  }
+}
+```
 
 ### Sending RDM Commands
 
@@ -386,14 +408,46 @@ void MyControllerNotifyHandler::HandleRptStatus(rdmnet::Controller& controller, 
 
 In addition to getting information about responders, RDMnet controllers are required to respond to
 a basic set of RDM commands, which allows them to be identified by other controllers on the
-network. By default, this behavior is implemented completely within the library, using the
-rdmnet::ControllerIdentifyingData structure you provide when starting up a controller.
+network. By default, this behavior is implemented completely within the library.
 
 The default implementation provides read-only access to the standard set of data that is required
 to be readable from a controller. This includes the current scope(s) (`COMPONENT_SCOPE`), search
 domain (`SEARCH_DOMAIN`), and RDMnet communication diagnostic data (`TCP_COMMS_STATUS`), as well as
 some basic RDM data like the manufacturer (`MANUFACTURER_LABEL`), a description of the product
 (`DEVICE_MODEL_DESCRIPTION`), the software version in string form (`SOFTWARE_VERSION_LABEL`) and a
-user-settable label for the controller (`DEVICE_LABEL`).
+user-settable label for the controller (`DEVICE_LABEL`). The library has access to all the
+information necessary for the first three items, since that information is necessary for RDMnet
+communication. Initial values for the last four items are provided to the library when creating a
+new controller instance, through the RDMNET_CONTROLLER_SET_RDM_DATA() macro or the
+rdmnet::ControllerRdmData structure.
 
-If you want to provide 
+If you want to provide richer RDM responder functionality from your controller implementation, you
+can provide a set of callbacks to handle RDM commands. In this case, the library will no longer
+handle any RDM commands on your behalf and you must handle all of the above PIDs, as well as
+`SUPPORTED_PARAMETERS` and any additional ones you choose to support.
+
+To use the library this way, you can:
+
+```c
+RdmnetControllerConfig config;
+rdmnet_controller_config_init(&config, MY_ESTA_MANUFACTURER_ID_VAL);
+
+// Generate CID and call RDMNET_CONTROLLER_SET_CALLBACKS() as above...
+
+RDMNET_CONTROLLER_SET_RDM_CMD_CALLBACKS(&config, my_rdm_command_received_cb, my_llrp_rdm_command_received_cb);
+
+rdmnet_controller_t my_controller_handle;
+etcpal_error_t result = rdmnet_controller_create(&config, &my_controller_handle);
+```
+
+```cpp
+class MyControllerRdmCommandHandler : public rdmnet::ControllerRdmCommandHandler
+{
+  // Implement the ControllerRdmCommandHandler functions...
+};
+
+MyControllerRdmCommandHandler my_rdm_cmd_handler;
+
+etcpal::Result result = controller.Startup(my_controller_notify_handler, my_rdm_cmd_handler,
+                                           rdmnet::ControllerData::Default(MY_ESTA_MANUFACTURER_ID_VAL));
+```

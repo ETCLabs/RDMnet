@@ -53,8 +53,8 @@ class Controller;
 class ControllerRdmCommandHandler
 {
 public:
-  virtual bool HandleRdmCommand(Controller& controller, ScopeHandle scope, const RemoteRdmCommand& cmd) = 0;
-  virtual bool HandleLlrpRdmCommand(Controller& controller, const LlrpRemoteRdmCommand& cmd) = 0;
+  virtual void HandleRdmCommand(Controller& controller, ScopeHandle scope, const RemoteRdmCommand& cmd) = 0;
+  virtual void HandleLlrpRdmCommand(Controller& controller, const LlrpRemoteRdmCommand& cmd) = 0;
 };
 
 /// \ingroup rdmnet_controller_cpp
@@ -83,15 +83,20 @@ struct ControllerData
   std::string search_domain;
 
   ControllerData() = default;
-  ControllerData(const etcpal::Uuid& cid_in, const rdm::Uid& uid_in, const std::string& search_domain_in)
-      : cid(cid_in), uid(uid_in), search_domain(search_domain_in)
-  {
-  }
-  static ControllerData Default()
-  {
-    return ControllerData(etcpal::Uuid::OsPreferred(), rdm::Uid::DynamicRequest(), E133_DEFAULT_DOMAIN);
-  }
+  ControllerData(const etcpal::Uuid& cid_in, const rdm::Uid& uid_in, const std::string& search_domain_in);
+  static ControllerData Default(uint16_t manufacturer_id);
 };
+
+inline ControllerData::ControllerData(const etcpal::Uuid& cid_in, const rdm::Uid& uid_in,
+                                      const std::string& search_domain_in)
+    : cid(cid_in), uid(uid_in), search_domain(search_domain_in)
+{
+}
+
+inline ControllerData ControllerData::Default(uint16_t manufacturer_id)
+{
+  return ControllerData(etcpal::Uuid::OsPreferred(), rdm::Uid::DynamicUidRequest(manufacturer_id), E133_DEFAULT_DOMAIN);
+}
 
 struct ControllerRdmData
 {
@@ -103,14 +108,27 @@ struct ControllerRdmData
 
   ControllerRdmData() = default;
   ControllerRdmData(const std::string& manufacturer_label_in, const std::string& device_model_description_in,
-                    const std::string& software_version_label_in, const std::string& device_label_in)
-      : manufacturer_label(manufacturer_label_in)
-      , device_model_description(device_model_description_in)
-      , software_version_label(software_version_label_in)
-      , device_label(device_label_in)
-  {
-  }
+                    const std::string& software_version_label_in, const std::string& device_label_in);
+
+  bool IsValid() const;
 };
+
+inline ControllerRdmData::ControllerRdmData(const std::string& manufacturer_label_in,
+                                            const std::string& device_model_description_in,
+                                            const std::string& software_version_label_in,
+                                            const std::string& device_label_in)
+    : manufacturer_label(manufacturer_label_in)
+    , device_model_description(device_model_description_in)
+    , software_version_label(software_version_label_in)
+    , device_label(device_label_in)
+{
+}
+
+inline bool ControllerRdmData::IsValid() const
+{
+  return !(manufacturer_label.empty() && device_model_description.empty() && software_version_label.empty() &&
+           device_label.empty());
+}
 
 /// \ingroup rdmnet_controller_cpp
 /// \brief An instance of RDMnet Controller functionality.
@@ -120,9 +138,9 @@ class Controller
 {
 public:
   etcpal::Result Startup(ControllerNotifyHandler& notify_handler, const ControllerRdmData& rdm_data,
-                         const ControllerData& data = ControllerData::Default());
+                         const ControllerData& data);
   etcpal::Result Startup(ControllerNotifyHandler& notify_handler, ControllerRdmCommandHandler& rdm_handler,
-                         const ControllerData& data = ControllerData::Default());
+                         const ControllerData& data);
   void Shutdown();
 
   etcpal::Expected<ScopeHandle> AddDefaultScope(const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
@@ -135,7 +153,10 @@ public:
   etcpal::Result RequestClientList(ScopeHandle scope);
 
   ControllerHandle handle() const;
-  const ControllerIdentifyingData& identifying_data() const;
+  const ControllerData& data() const;
+  const ControllerRdmData& rdm_data() const;
+
+  void UpdateRdmData(const ControllerRdmData& new_data);
 
   static etcpal::Result Init(
       const EtcPalLogParams* log_params = nullptr,
@@ -153,7 +174,14 @@ private:
   ControllerNotifyHandler* notify_{nullptr};
 };
 
-inline etcpal::Result Controller::Startup(const etcpal::Uuid& cid)
+inline etcpal::Result Controller::Startup(ControllerNotifyHandler& notify_handler, const ControllerRdmData& rdm_data,
+                                          const ControllerData& data)
+{
+  return kEtcPalErrNotImpl;
+}
+
+inline etcpal::Result Controller::Startup(ControllerNotifyHandler& notify_handler,
+                                          ControllerRdmCommandHandler& rdm_handler, const ControllerData& data)
 {
   return kEtcPalErrNotImpl;
 }
@@ -191,8 +219,7 @@ inline etcpal::Expected<ScopeHandle> Controller::AddDefaultScope(const etcpal::S
   return kEtcPalErrNotImpl;
 }
 
-inline etcpal::Expected<ScopeHandle> Controller::AddScope(const std::string& scope_str,
-                                                          const etcpal::SockAddr& static_broker_addr)
+inline etcpal::Expected<ScopeHandle> Controller::AddScope(const Scope& scope)
 {
   return kEtcPalErrNotImpl;
 }
@@ -222,12 +249,12 @@ inline etcpal::Result Controller::RequestClientList(ScopeHandle scope)
   return kEtcPalErrNotImpl;
 }
 
-inline ControllerHandle Controller::handle()
+inline ControllerHandle Controller::handle() const
 {
   return handle_;
 }
 
-inline const ControllerIdentifyingData& Controller::identifying_data() const
+inline const ControllerData& Controller::data() const
 {
   return my_data_;
 }

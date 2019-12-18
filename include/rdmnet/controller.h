@@ -90,10 +90,10 @@ typedef struct RdmnetControllerRdmCmdCallbacks
 
 typedef struct RdmnetControllerRdmData
 {
-  char manufacturer_label[33];
-  char device_model_description[33];
-  char software_version_label[33];
-  char device_label[33];
+  const char* manufacturer_label;
+  const char* device_model_description;
+  const char* software_version_label;
+  const char* device_label;
 } RdmnetControllerRdmData;
 
 typedef struct RdmnetControllerOptionalConfig
@@ -113,11 +113,11 @@ typedef struct RdmnetControllerConfig
   EtcPalUuid cid;
   /*! A set of callbacks for the controller to receive RDMnet notifications. */
   RdmnetControllerCallbacks callbacks;
-  /*! Pointer to opaque data passed back with each callback. Can be NULL. */
-  void* callback_context;
   /*! Callbacks for the controller to receive RDM commands over RDMnet. Either this or rdm_data
    *  must be provided. */
   RdmnetControllerRdmCmdCallbacks rdm_callbacks;
+  /*! Pointer to opaque data passed back with each callback. Can be NULL. */
+  void* callback_context;
   /*! Data for the library to use for handling RDM commands internally. Either this or
    *  rdm_callbacks must be provided. */
   RdmnetControllerRdmData rdm_data;
@@ -126,6 +126,36 @@ typedef struct RdmnetControllerConfig
   /*! Optional configuration data for the controller's LLRP Target functionality. */
   LlrpTargetOptionalConfig llrp_optional;
 } RdmnetControllerConfig;
+
+#define RDMNET_CONTROLLER_SET_CALLBACKS(configptr, connected_cb, connect_failed_cb, disconnected_cb,         \
+                                        client_list_update_cb, rdm_response_received_cb, status_received_cb, \
+                                        callback_context)                                                    \
+  do                                                                                                         \
+  {                                                                                                          \
+    (configptr)->callbacks.connected = (connected_cb);                                                       \
+    (configptr)->callbacks.connect_failed = (connect_failed_cb);                                             \
+    (configptr)->callbacks.disconnected = (disconnected_cb);                                                 \
+    (configptr)->callbacks.client_list_update = (client_list_update_cb);                                     \
+    (configptr)->callbacks.rdm_response_received = (rdm_response_received_cb);                               \
+    (configptr)->callbacks.status_received = (status_received_cb);                                           \
+    (configptr)->callback_context = (callback_context);                                                      \
+  } while (0)
+
+#define RDMNET_CONTROLLER_SET_RDM_DATA(configptr, manu_label, dev_model_desc, sw_vers_label, dev_label) \
+  do                                                                                                    \
+  {                                                                                                     \
+    (configptr)->rdm_data.manufacturer_label = (manu_label);                                            \
+    (configptr)->rdm_data.device_model_description = (dev_model_desc);                                  \
+    (configptr)->rdm_data.software_version_label = (sw_vers_label);                                     \
+    (configptr)->rdm_data.device_label = (dev_label);                                                   \
+  } while (0)
+
+#define RDMNET_CONTROLLER_SET_RDM_CMD_CALLBACKS(configptr, rdm_cmd_received_cb, llrp_rdm_cmd_received_cb) \
+  do                                                                                                      \
+  {                                                                                                       \
+    (configptr)->rdm_callbacks.rdm_command_received = (rdm_cmd_received_cb);                              \
+    (configptr)->rdm_callbacks.llrp_rdm_command_received = (llrp_rdm_cmd_received_cb);                    \
+  } while (0)
 
 etcpal_error_t rdmnet_controller_init(const EtcPalLogParams* lparams, const RdmnetNetintConfig* netint_config);
 void rdmnet_controller_deinit();
