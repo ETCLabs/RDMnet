@@ -43,7 +43,7 @@ rdmnet::Broker::~Broker()
 ///                   about its state.
 /// \param[in] log A class instance that the broker will use to log messages.
 /// \return true (started broker successfully) or false (an error occurred starting broker).
-bool rdmnet::Broker::Startup(const BrokerSettings& settings, rdmnet::BrokerNotify* notify, rdmnet::BrokerLog* log)
+bool rdmnet::Broker::Startup(const BrokerSettings& settings, rdmnet::BrokerNotify* notify, etcpal::Logger* log)
 {
   return core_->Startup(settings, notify, log);
 }

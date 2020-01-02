@@ -167,7 +167,6 @@ install(DIRECTORY ${RDMNET_ROOT}/include/rdmnet DESTINATION include FILES_MATCHI
 if(WIN32 OR APPLE OR UNIX)
   set(RDMNET_BROKER_PUBLIC_HEADERS
     ${RDMNET_INCLUDE}/rdmnet/broker.h
-    ${RDMNET_INCLUDE}/rdmnet/broker/log.h
     ${RDMNET_INCLUDE}/rdmnet/broker/settings.h
   )
   set(RDMNET_BROKER_PRIVATE_HEADERS
@@ -186,7 +185,6 @@ if(WIN32 OR APPLE OR UNIX)
     ${RDMNET_SRC}/rdmnet/broker/broker_core.cpp
     ${RDMNET_SRC}/rdmnet/broker/broker_client.cpp
     ${RDMNET_SRC}/rdmnet/broker/broker_discovery.cpp
-    ${RDMNET_SRC}/rdmnet/broker/broker_log.cpp
     ${RDMNET_SRC}/rdmnet/broker/broker_responder.cpp
     ${RDMNET_SRC}/rdmnet/broker/broker_threads.cpp
     ${RDMNET_SRC}/rdmnet/broker/broker_uid_manager.cpp

@@ -83,7 +83,7 @@ protected:
 class ListenThread : public BrokerThread
 {
 public:
-  ListenThread(etcpal_socket_t listen_sock, BrokerThreadNotify* notify, rdmnet::BrokerLog* log)
+  ListenThread(etcpal_socket_t listen_sock, BrokerThreadNotify* notify, etcpal::Logger* log)
       : BrokerThread(notify), socket_(listen_sock), log_(log)
   {
   }
@@ -96,7 +96,7 @@ public:
 
 private:
   etcpal_socket_t socket_{ETCPAL_SOCKET_INVALID};
-  rdmnet::BrokerLog* log_{nullptr};
+  etcpal::Logger* log_{nullptr};
 };
 
 class ClientServiceThread : public BrokerThread
@@ -129,7 +129,7 @@ private:
 
   std::vector<std::unique_ptr<BrokerThread>> threads_;
 
-  rdmnet::BrokerLog* log_{nullptr};
+  etcpal::Logger* log_{nullptr};
 };
 
 #endif  // BROKER_THREADS_H_

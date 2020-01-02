@@ -27,17 +27,17 @@ bool MacBrokerLog::Startup(const std::string& file_name, int log_mask)
   if (!file_.is_open())
     std::cout << "BrokerLog couldn't open log file '" << file_name << "'.\n";
 
-  log_.SetLogMask(log_mask);
-  return log_.Startup(*this);
+  logger_.SetLogMask(log_mask);
+  return logger_.Startup(*this);
 }
 
 void MacBrokerLog::Shutdown()
 {
-  log_.Shutdown();
+  logger_.Shutdown();
   file_.close();
 }
 
-void MacBrokerLog::GetLogTime(EtcPalLogTimeParams& time_params)
+EtcPalLogTimeParams MacBrokerLog::GetLogTimestamp()
 {
   time_t cur_time;
   time(&cur_time);
@@ -53,19 +53,19 @@ void MacBrokerLog::GetLogTime(EtcPalLogTimeParams& time_params)
   if (timeinfo->tm_isdst)
     utc_offset += 60;
 
-  time_params.year = timeinfo->tm_year + 1900;
-  time_params.month = timeinfo->tm_mon + 1;
-  time_params.day = timeinfo->tm_mday;
-  time_params.hour = timeinfo->tm_hour;
-  time_params.minute = timeinfo->tm_min;
-  time_params.second = timeinfo->tm_sec;
-  time_params.msec = 0;
-  time_params.utc_offset = static_cast<int>(utc_offset);
+  return EtcPalLogTimeParams{timeinfo->tm_year + 1900,
+                             timeinfo->tm_mon + 1,
+                             timeinfo->tm_mday,
+                             timeinfo->tm_hour,
+                             timeinfo->tm_min,
+                             timeinfo->tm_sec,
+                             0,
+                             static_cast<int>(utc_offset)};
 }
 
-void MacBrokerLog::OutputLogMsg(const std::string& str)
+void MacBrokerLog::HandleLogMessage(const EtcPalLogStrings& strings)
 {
-  std::cout << str << '\n';
+  std::cout << strings.human_readable << '\n';
   if (file_.is_open())
-    file_ << str << std::endl;
+    file_ << strings.human_readable << std::endl;
 }

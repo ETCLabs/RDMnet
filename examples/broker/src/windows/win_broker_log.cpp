@@ -37,42 +37,36 @@ bool WindowsBrokerLog::Startup(const std::string& file_name, int log_mask)
   {
     case TIME_ZONE_ID_UNKNOWN:
     case TIME_ZONE_ID_STANDARD:
-      utcoffset_ = -(tzinfo.Bias + tzinfo.StandardBias);
+      utcoffset_ = static_cast<int>(-(tzinfo.Bias + tzinfo.StandardBias));
       break;
     case TIME_ZONE_ID_DAYLIGHT:
-      utcoffset_ = -(tzinfo.Bias + tzinfo.DaylightBias);
+      utcoffset_ = static_cast<int>(-(tzinfo.Bias + tzinfo.DaylightBias));
       break;
     default:
       std::cout << "BrokerLog couldn't get time zone info." << std::endl;
       break;
   }
 
-  log_.SetLogMask(log_mask);
-  return log_.Startup(*this);
+  logger_.SetLogMask(log_mask);
+  return logger_.Startup(*this);
 }
 
 void WindowsBrokerLog::Shutdown()
 {
-  log_.Shutdown();
+  logger_.Shutdown();
   WSACleanup();
   file_.close();
 }
 
-void WindowsBrokerLog::GetLogTime(EtcPalLogTimeParams& time)
+EtcPalLogTimeParams WindowsBrokerLog::GetLogTimestamp()
 {
   SYSTEMTIME win_time;
   GetLocalTime(&win_time);
-  time.year = win_time.wYear;
-  time.month = win_time.wMonth;
-  time.day = win_time.wDay;
-  time.hour = win_time.wHour;
-  time.minute = win_time.wMinute;
-  time.second = win_time.wSecond;
-  time.msec = win_time.wMilliseconds;
-  time.utc_offset = utcoffset_;
+  return EtcPalLogTimeParams{win_time.wYear,   win_time.wMonth,  win_time.wDay,          win_time.wHour,
+                             win_time.wMinute, win_time.wSecond, win_time.wMilliseconds, utcoffset_};
 }
 
-void WindowsBrokerLog::OutputLogMsg(const std::string& str)
+void WindowsBrokerLog::HandleLogMessage(const EtcPalLogStrings& strings)
 {
   // Haven't figured out the secret recipe for UTF-8 -> Windows Console yet.
   //    WCHAR wmsg[ETCPAL_LOG_MSG_MAX_LEN + 1];
@@ -87,7 +81,7 @@ void WindowsBrokerLog::OutputLogMsg(const std::string& str)
   //      }
   //    }
 
-  std::cout << str << '\n';
+  std::cout << strings.human_readable << '\n';
   if (file_.is_open())
-    file_ << str << std::endl;
+    file_ << strings.human_readable << std::endl;
 }

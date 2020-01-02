@@ -59,7 +59,7 @@ void BrokerShell::ApplySettingsChanges(rdmnet::BrokerSettings& settings)
   }
 }
 
-int BrokerShell::Run(rdmnet::BrokerLog& log)
+int BrokerShell::Run(etcpal::Logger& log)
 {
   PrintWarningMessage();
 
