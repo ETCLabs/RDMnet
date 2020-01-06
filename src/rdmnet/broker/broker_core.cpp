@@ -313,35 +313,35 @@ void BrokerCore::SendClientList(int conn)
   auto to_client = clients_.find(conn);
   if (to_client != clients_.end())
   {
-    std::vector<ClientEntryData> entries;
-    entries.reserve(clients_.size());
-    for (auto client : clients_)
+    if (to_client->second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
+      SendRptClientList(bmsg, static_cast<RPTClient&>(*to_client->second));
+    else
+      SendEptClientList(bmsg, static_cast<EPTClient&>(*to_client->second));
+  }
+}
+
+void BrokerCore::SendRptClientList(BrokerMessage& bmsg, RPTClient& to_cli)
+{
+  std::vector<RptClientEntry> entries;
+  entries.reserve(clients_.size());
+  for (auto client : clients_)
+  {
+    if (client.second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
     {
-      if (client.second->client_protocol == to_client->second->client_protocol)
-      {
-        ClientEntryData cli_data;
-        cli_data.client_cid = client.second->cid.get();
-        cli_data.client_protocol = client.second->client_protocol;
-        if (client.second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
-        {
-          ClientEntryDataRpt* rpt_cli_data = GET_RPT_CLIENT_ENTRY_DATA(&cli_data);
-          RPTClient* rptcli = static_cast<RPTClient*>(client.second.get());
-          rpt_cli_data->client_uid = rptcli->uid;
-          rpt_cli_data->client_type = rptcli->client_type;
-          rpt_cli_data->binding_cid = rptcli->binding_cid.get();
-        }
-        cli_data.next = nullptr;
-        entries.push_back(cli_data);
-        // Keep the list linked for the pack function.
-        if (entries.size() > 1)
-          entries[entries.size() - 2].next = &entries[entries.size() - 1];
-      }
+      entries.emplace_back();
+      RptClientEntry& rpt_entry = entries.back();
+      RPTClient& rpt_cli = static_cast<RPTClient&>(*client.second);
+
+      rpt_entry.cid = rpt_cli.cid.get();
+      rpt_entry.uid = rpt_cli.uid;
+      rpt_entry.type = rpt_cli.client_type;
+      rpt_entry.binding_cid = rpt_cli.binding_cid.get();
     }
-    if (!entries.empty())
-    {
-      GET_CLIENT_LIST(&bmsg)->client_entry_list = entries.data();
-      to_client->second->Push(settings_.cid, bmsg);
-    }
+  }
+  if (!entries.empty())
+  {
+    GET_CLIENT_LIST(&bmsg)->dat = entries.data();
+    to_client->second->Push(settings_.cid, bmsg);
   }
 }
 
@@ -409,8 +409,9 @@ void BrokerCore::ProcessConnectRequest(int conn, const ClientConnectMsg* cmsg)
     switch (cmsg->client_entry.client_protocol)
     {
       case E133_CLIENT_PROTOCOL_RPT:
-        deny_connection = !ProcessRPTConnectRequest(conn, cmsg->client_entry, connect_status);
+        deny_connection = !ProcessRPTConnectRequest(conn, *(GET_RPT_CLIENT_ENTRY(&cmsg->client_entry)), connect_status);
         break;
+      // TODO EPT
       default:
         connect_status = kRdmnetConnectInvalidClientEntry;
         break;
@@ -433,13 +434,12 @@ void BrokerCore::ProcessConnectRequest(int conn, const ClientConnectMsg* cmsg)
   }
 }
 
-bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntryData& data,
+bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const RptClientEntry& client_entry,
                                           rdmnet_connect_status_t& connect_status)
 {
   bool continue_adding = true;
   // We need to make a copy of the data because we might be changing the UID value
-  ClientEntryData updated_data = data;
-  ClientEntryDataRpt* rptdata = GET_RPT_CLIENT_ENTRY_DATA(&updated_data);
+  RptClientEntry updated_client_entry = client_entry;
 
   if (!components_.conn_interface->SetBlocking(handle, false))
   {
@@ -457,10 +457,10 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
   }
 
   // Resolve the Client's UID
-  if (RDMNET_UID_IS_DYNAMIC_UID_REQUEST(&rptdata->client_uid))
+  if (RDMNET_UID_IS_DYNAMIC_UID_REQUEST(&updated_client_entry.uid))
   {
     BrokerUidManager::AddResult add_result =
-        components_.uids.AddDynamicUid(handle, updated_data.client_cid, rptdata->client_uid);
+        components_.uids.AddDynamicUid(handle, updated_client_entry.cid, updated_client_entry.uid);
     switch (add_result)
     {
       case BrokerUidManager::AddResult::kOk:
@@ -476,9 +476,9 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
         break;
     }
   }
-  else if (RDMNET_UID_IS_STATIC(&rptdata->client_uid))
+  else if (RDMNET_UID_IS_STATIC(&updated_client_entry.uid))
   {
-    BrokerUidManager::AddResult add_result = components_.uids.AddStaticUid(handle, rptdata->client_uid);
+    BrokerUidManager::AddResult add_result = components_.uids.AddStaticUid(handle, updated_client_entry.uid);
     switch (add_result)
     {
       case BrokerUidManager::AddResult::kOk:
@@ -505,18 +505,18 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
   {
     // If it's a controller, add it to the controller queues -- unless
     // we've hit our maximum number of controllers
-    if (rptdata->client_type == kRPTClientTypeController)
+    if (updated_client_entry.type == kRPTClientTypeController)
     {
       if ((settings_.max_controllers > 0) && (controllers_.size() >= settings_.max_controllers))
       {
         connect_status = kRdmnetConnectCapacityExceeded;
         continue_adding = false;
-        components_.uids.RemoveUid(rptdata->client_uid);
+        components_.uids.RemoveUid(updated_client_entry.uid);
       }
       else
       {
         auto controller =
-            std::make_shared<RPTController>(settings_.max_controller_messages, updated_data, *clients_[handle]);
+            std::make_shared<RPTController>(settings_.max_controller_messages, updated_client_entry, *clients_[handle]);
         if (controller)
         {
           new_client = controller.get();
@@ -527,17 +527,18 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
     }
     // If it's a device, add it to the device states -- unless we've hit
     // our maximum number of devices
-    else if (rptdata->client_type == kRPTClientTypeDevice)
+    else if (updated_client_entry.type == kRPTClientTypeDevice)
     {
       if ((settings_.max_devices > 0) && (devices_.size() >= settings_.max_devices))
       {
         connect_status = kRdmnetConnectCapacityExceeded;
         continue_adding = false;
-        components_.uids.RemoveUid(rptdata->client_uid);
+        components_.uids.RemoveUid(updated_client_entry.uid);
       }
       else
       {
-        auto device = std::make_shared<RPTDevice>(settings_.max_device_messages, updated_data, *clients_[handle]);
+        auto device =
+            std::make_shared<RPTDevice>(settings_.max_device_messages, updated_client_entry, *clients_[handle]);
         if (device)
         {
           new_client = device.get();
@@ -552,9 +553,9 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
   // it or check if capacity is exceeded
   if (continue_adding && new_client)
   {
-    new_client->client_type = rptdata->client_type;
-    new_client->uid = rptdata->client_uid;
-    new_client->binding_cid = rptdata->binding_cid;
+    new_client->client_type = updated_client_entry.type;
+    new_client->uid = updated_client_entry.uid;
+    new_client->binding_cid = updated_client_entry.binding_cid;
 
     // Send the connect reply
     BrokerMessage msg;
@@ -563,7 +564,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
     creply->connect_status = kRdmnetConnectOk;
     creply->e133_version = E133_VERSION;
     creply->broker_uid = my_uid_;
-    creply->client_uid = rptdata->client_uid;
+    creply->client_uid = updated_client_entry.uid;
     new_client->Push(settings_.cid, msg);
 
     if (log_->CanLog(ETCPAL_LOG_INFO))
@@ -574,8 +575,8 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const ClientEntr
     }
 
     // Update everyone
-    std::vector<ClientEntryData> entries;
-    entries.push_back(updated_data);
+    std::vector<RptClientEntry> entries;
+    entries.push_back(updated_client_entry);
     entries[0].next = nullptr;
     SendClientsAdded(kClientProtocolRPT, handle, entries);
   }

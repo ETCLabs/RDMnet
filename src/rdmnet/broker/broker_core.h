@@ -20,7 +20,7 @@
 #ifndef BROKER_CORE_H_
 #define BROKER_CORE_H_
 
-#include <map>
+#include <unordered_map>
 #include <memory>
 #include <set>
 #include <string>
@@ -120,14 +120,14 @@ private:
   BrokerComponents components_;
 
   // The list of connected clients, indexed by the connection handle
-  std::map<rdmnet_conn_t, std::shared_ptr<BrokerClient>> clients_;
+  std::unordered_map<rdmnet_conn_t, std::shared_ptr<BrokerClient>> clients_;
   // Protects the list of clients and uid lookup, but not the data in the clients themselves.
   mutable etcpal::RwLock client_lock_;
 
   // The state data for each controller, indexed by its connection handle.
-  std::map<rdmnet_conn_t, std::shared_ptr<RPTController>> controllers_;
+  std::unordered_map<rdmnet_conn_t, std::shared_ptr<RPTController>> controllers_;
   // The set of devices, indexed by the connection handle.
-  std::map<rdmnet_conn_t, std::shared_ptr<RPTDevice>> devices_;
+  std::unordered_map<rdmnet_conn_t, std::shared_ptr<RPTDevice>> devices_;
 
   std::set<rdmnet_conn_t> clients_to_destroy_;
 
@@ -167,12 +167,15 @@ private:
   // Message processing and sending functions
   void ProcessRPTMessage(rdmnet_conn_t conn, const RdmnetMessage* msg);
   void ProcessConnectRequest(rdmnet_conn_t conn, const ClientConnectMsg* cmsg);
-  bool ProcessRPTConnectRequest(rdmnet_conn_t conn, const ClientEntry& data, rdmnet_connect_status_t& connect_status);
+  bool ProcessRPTConnectRequest(rdmnet_conn_t conn, const RptClientEntry& client_entry,
+                                rdmnet_connect_status_t& connect_status);
 
   void SendRDMBrokerResponse(rdmnet_conn_t conn, const RPTMessageRef& msg, uint8_t response_type, uint8_t command_class,
                              uint16_t param_id, uint8_t packedlen, uint8_t* pdata);
 
   void SendClientList(rdmnet_conn_t conn);
+  void SendRptClientList(BrokerMessage& bmsg, RPTClient& to_cli);
+  void SendEptClientList(BrokerMessage& bmsg, EPTClient& to_cli);
   void SendClientsAdded(client_protocol_t client_prot, rdmnet_conn_t conn_to_ignore, std::vector<ClientEntry>& entries);
   void SendClientsRemoved(client_protocol_t client_prot, std::vector<ClientEntry>& entries);
   void SendStatus(RPTController* controller, const RptHeader& header, rpt_status_code_t status_code,

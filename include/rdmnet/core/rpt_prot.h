@@ -46,16 +46,29 @@
 extern "C" {
 #endif
 
+/* RPT PDU Header:
+ * Flags + Length:          3
+ * Vector:                  4
+ * Source UID:              6
+ * Source Endpoint ID:      2
+ * Destination UID:         6
+ * Destination Endpoint ID: 2
+ * Sequence Number:         4
+ * Reserved:                1
+ * --------------------------
+ * Total:                  28 */
 /*! The header size of an RPT PDU (not including encapsulating PDUs) */
-#define RPT_PDU_HEADER_SIZE                                                   \
-  (3 /* Flags + Length */ + 4 /* Vector */ + 6         /* Source UID */       \
-   + 2 /* Source Endpoint ID */ + 6 /* Dest UID */ + 2 /* Dest Endpoint ID */ \
-   + 4 /* Sequence Number */ + 1 /* Reserved */)
+#define RPT_PDU_HEADER_SIZE 28
 /*! The header size of an RPT PDU, including encapsulating PDUs */
 #define RPT_PDU_FULL_HEADER_SIZE (RPT_PDU_HEADER_SIZE + ACN_RLP_HEADER_SIZE_EXT_LEN + ACN_TCP_PREAMBLE_SIZE)
 
+/* RPT Status Header:
+ * Flags + Length: 3
+ * Vector:         2
+ * -----------------
+ * Total:          5 */
 /*! The header size of an RPT Status PDU (not including encapsulating PDUs) */
-#define RPT_STATUS_HEADER_SIZE (3 /* Flags + Length */ + 2 /* Vector */)
+#define RPT_STATUS_HEADER_SIZE 5
 /*! The maximum length of the Status String portion of an RPT Status message. */
 #define RPT_STATUS_STRING_MAXLEN 1024
 /*! The maximum length of an RPT Status message, including all encapsulating PDUs. */

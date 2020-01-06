@@ -50,8 +50,14 @@ extern "C" {
 #define BROKER_PDU_HEADER_SIZE 5
 #define BROKER_PDU_FULL_HEADER_SIZE (BROKER_PDU_HEADER_SIZE + ACN_RLP_HEADER_SIZE_EXT_LEN + ACN_TCP_PREAMBLE_SIZE)
 
-#define CONNECT_REPLY_DATA_SIZE \
-  (2 /* Connection Code */ + 2 /* E1.33 Version */ + 6 /* broker's UID */ + 6 /* Client's UID */)
+/* Connect Reply Data:
+ * Connection Code: 2
+ * E1.33 Version:   2
+ * Broker's UID:    6
+ * Client's UID:    6
+ * ------------------
+ * Total:          16 */
+#define CONNECT_REPLY_DATA_SIZE 16
 #define CONNECT_REPLY_FULL_MSG_SIZE (BROKER_PDU_FULL_HEADER_SIZE + CONNECT_REPLY_DATA_SIZE)
 
 /*!
@@ -207,15 +213,17 @@ typedef struct ClientRedirectMsg
  */
 typedef struct RptClientList
 {
+  /*! An array of RPT Client Entries. */
+  RptClientEntry* client_entries;
+  /*! The size of the client_entries array. */
+  size_t num_client_entries;
   /*!
    * This message contains a partial list. This can be set when the library runs out of static
    * memory in which to store Client Entries and must deliver the partial list before continuing.
    * The application should store the entries in the list but should not act on the list until
-   * another ClientList is received with partial set to false.
+   * another ClientList is received with more_coming set to false.
    */
   bool more_coming;
-  /*! The head of a linked list of RPT Client Entries. */
-  RptClientEntry* client_entries;
 } RptClientList;
 
 /*!
@@ -225,15 +233,17 @@ typedef struct RptClientList
  */
 typedef struct EptClientList
 {
+  /*! An array of EPT Client Entries. */
+  EptClientEntry* client_entries;
+  /*! The size of the client_entries array. */
+  size_t num_client_entries;
   /*!
    * This message contains a partial list. This can be set when the library runs out of static
    * memory in which to store Client Entries and must deliver the partial list before continuing.
    * The application should store the entries in the list but should not act on the list until
-   * another ClientList is received with partial set to false.
+   * another ClientList is received with more_coming set to false.
    */
   bool more_coming;
-  /*! The head of a linked list of EPT Client Entries. */
-  EptClientEntry* client_entries;
 } EptClientList;
 
 typedef struct ClientList
@@ -246,68 +256,70 @@ typedef struct ClientList
   } data;
 } ClientList;
 
-typedef struct DynamicUidRequestListEntry DynamicUidRequestListEntry;
-/*! An entry in a linked list of Responder IDs (RIDs) which make up a Dynamic UID Request List. */
-struct DynamicUidRequestListEntry
+/*! An entry in a list of Responder IDs (RIDs) which make up a Dynamic UID Request List. */
+typedef struct DynamicUidRequest
 {
   uint16_t manu_id;
   EtcPalUuid rid;
-  DynamicUidRequestListEntry* next;
-};
+} DynamicUidRequest;
 
-/*! A list of Responder IDs (RIDs) for which Dynamic UID assignment is requested. */
+/*! A list of Responder IDs (RIDs) for which dynamic UID assignment is requested. */
 typedef struct DynamicUidRequestList
 {
+  /*! An array of RIDs for which dynamic UIDs are requested. */
+  DynamicUidRequest* requests;
+  /*! The size of the requests array. */
+  size_t num_requests;
   /*!
    * This message contains a partial list. This can be set when the library runs out of static
-   * memory in which to store DynamicUidRequestListEntrys and must deliver the partial list before
+   * memory in which to store DynamicUidRequests and must deliver the partial list before
    * continuing. The application should store the entries in the list but should not act on the
-   * list until another DynamicUidRequestList is received with partial set to false.
+   * list until another DynamicUidRequestList is received with more_coming set to false.
    */
   bool more_coming;
-  /*! The head of a linked list of RIDs for which Dynamic UIDs are requested. */
-  DynamicUidRequestListEntry* request_list;
 } DynamicUidRequestList;
 
-typedef struct DynamicUidMapping DynamicUidMapping;
-
-struct DynamicUidMapping
+/*! A response from a broker to a Dynamic UID Request. */
+typedef struct DynamicUidMapping
 {
+  /*! The response code - indicates whether the broker was able to assign this dynamic UID. */
   dynamic_uid_status_t status_code;
+  /*! The dynamic UID - only valid if status_code is kDynamicUidStatusOk. */
   RdmUid uid;
+  /*! The corresponding RID for which the dynamic UID was requested. */
   EtcPalUuid rid;
-  DynamicUidMapping* next;
-};
+} DynamicUidMapping;
 
 typedef struct DynamicUidAssignmentList
 {
+  /*! An array of dynamic UID mappings. */
+  DynamicUidMapping* mappings;
+  /*! The size of the mappings array. */
+  size_t num_mappings;
+  /*!
+   * This message contains a partial list. This can be set when the library runs out of static
+   * memory in which to store DynamicUidMappings and must deliver the partial list before
+   * continuing. The application should store the entries in the list but should not act on the
+   * list until another DynamicUidAssignmentList is received with more_coming set to false.
+   */
   bool more_coming;
-  DynamicUidMapping* mapping_list;
 } DynamicUidAssignmentList;
-
-typedef struct FetchUidAssignmentListEntry FetchUidAssignmentListEntry;
-/*! An entry in a linked list of UIDs which make up the data of a Fetch Dynamic UID Assignment List
- *  message. */
-struct FetchUidAssignmentListEntry
-{
-  RdmUid uid;
-  FetchUidAssignmentListEntry* next;
-};
 
 /*! A list of Dynamic UIDs for which the currently assigned Responder IDs (RIDs) are being
  *  requested. */
 typedef struct FetchUidAssignmentList
 {
+  /*! An array of Dynamic UIDs for which RIDs are requested. */
+  RdmUid* uids;
+  /*! The size of the uids array. */
+  size_t num_uids;
   /*!
    * This message contains a partial list. This can be set when the library runs out of static
    * memory in which to store FetchUidAssignmentListEntrys and must deliver the partial list before
    * continuing. The application should store the entries in the list but should not act on the
-   * list until another DynamicUidRequestList is received with partial set to false.
+   * list until another FetchUidAssignmentList is received with more_coming set to false.
    */
   bool more_coming;
-  /*! The head of a linked list of Dynamic UIDs for which the currently assigned RIDs are being
-   *  requested. */
-  FetchUidAssignmentListEntry* assignment_list;
 } FetchUidAssignmentList;
 
 /*! The Disconnect message in the broker protocol. */
@@ -470,21 +482,24 @@ typedef struct BrokerMessage
  */
 #define GET_DISCONNECT_MSG(brokermsgptr) (&(brokermsgptr)->data.disconnect)
 
-size_t bufsize_client_list(const ClientEntry* client_entry_list);
-size_t bufsize_dynamic_uid_assignment_list(const DynamicUidMapping* mapping_list);
+size_t bufsize_rpt_client_list(size_t num_client_entries);
+size_t bufsize_ept_client_list(const EptClientEntry* client_entries, size_t num_client_entries);
+size_t bufsize_dynamic_uid_assignment_list(size_t num_mappings);
 
 size_t pack_connect_reply(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const ConnectReplyMsg* data);
-size_t pack_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
-                        const ClientEntry* client_entry_list);
+size_t pack_rpt_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
+                            const RptClientEntry* client_entries, size_t num_client_entries);
+size_t pack_ept_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
+                            const EptClientEntry* client_entries, size_t num_client_entries);
 size_t pack_dynamic_uid_assignment_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid,
-                                        const DynamicUidMapping* mapping_list);
+                                        const DynamicUidMapping* mappings, size_t num_mappings);
 
 etcpal_error_t send_connect_reply(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const ConnectReplyMsg* data);
 etcpal_error_t send_fetch_client_list(rdmnet_conn_t handle, const EtcPalUuid* local_cid);
 etcpal_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const EtcPalUuid* local_cid,
-                                         const DynamicUidRequestListEntry* request_list);
-etcpal_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const EtcPalUuid* local_cid,
-                                              const FetchUidAssignmentListEntry* uid_list);
+                                         const DynamicUidRequest* requests, size_t num_requests);
+etcpal_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RdmUid* uids,
+                                              size_t num_uids);
 
 const char* rdmnet_connect_status_to_string(rdmnet_connect_status_t code);
 const char* rdmnet_disconnect_reason_to_string(rdmnet_disconnect_reason_t code);

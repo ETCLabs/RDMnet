@@ -20,7 +20,6 @@
 /*!
  * \file rdmnet/private/broker_prot.h
  * \brief Functions and definitions for Broker PDU messages that are only used internally.
- * \author Sam Kearney
  */
 
 #ifndef RDMNET_PRIVATE_BROKER_PROT_
@@ -30,49 +29,92 @@
 #include "rdmnet/core/broker_prot.h"
 #include "rdmnet/private/connection.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define BROKER_NULL_MSG_SIZE BROKER_PDU_HEADER_SIZE
 
 /***************************** Client Entry Sizes ****************************/
 
-#define CLIENT_ENTRY_HEADER_SIZE (3 /* Flags + length */ + 4 /* Vector */ + 16 /* CID */)
-#define RPT_CLIENT_ENTRY_DATA_SIZE (6 /* Client UID */ + 1 /* Client Type */ + 16 /* Binding CID */)
-#define EPT_PROTOCOL_ENTRY_SIZE (4 /* Protocol Vector */ + 32 /* Protocol String */)
+/* Client Entry Header:
+ * Flags + Length:  3
+ * Vector:          4
+ * CID:            16
+ * ------------------
+ * Total:          23 */
+#define CLIENT_ENTRY_HEADER_SIZE 23
+/* RPT Client Entry Data:
+ * Client UID:   6
+ * Client Type:  1
+ * Binding CID: 16
+ * ---------------
+ * Total:       23 */
+#define RPT_CLIENT_ENTRY_DATA_SIZE 23
+/* EPT Protocol Entry:
+ * Protocol Vector:  4
+ * Protocol String: 32
+ * -------------------
+ * Total:           36 */
+#define EPT_PROTOCOL_ENTRY_SIZE 36
 #define RPT_CLIENT_ENTRY_SIZE (CLIENT_ENTRY_HEADER_SIZE + RPT_CLIENT_ENTRY_DATA_SIZE)
 #define CLIENT_ENTRY_MIN_SIZE RPT_CLIENT_ENTRY_SIZE
 
 /**************************** Client Connect Sizes ***************************/
 
-#define CLIENT_CONNECT_COMMON_FIELD_SIZE                                 \
-  (E133_SCOPE_STRING_PADDED_LENGTH /* Scope */ + 2 /* E1.33 Version */ + \
-   E133_DOMAIN_STRING_PADDED_LENGTH /* Search Domain */ + 1 /* Connect Flags */)
+/* Client Connect Common Fields:
+ * Scope:         [Referenced]
+ * E1.33 Version:            2
+ * Search Domain: [Referenced]
+ * Connect Flags:            1
+ * ---------------------------
+ * Total non-referenced:     3 */
+#define CLIENT_CONNECT_COMMON_FIELD_SIZE (3 + E133_SCOPE_STRING_PADDED_LENGTH + E133_DOMAIN_STRING_PADDED_LENGTH)
 #define CLIENT_CONNECT_DATA_MIN_SIZE (CLIENT_CONNECT_COMMON_FIELD_SIZE + CLIENT_ENTRY_HEADER_SIZE)
 
 /************************* Client Entry Update Sizes *************************/
 
-#define CLIENT_ENTRY_UPDATE_COMMON_FIELD_SIZE (1 /* Connect Flags */)
+#define CLIENT_ENTRY_UPDATE_COMMON_FIELD_SIZE 1 /* One field: Connect Flags */
 #define CLIENT_ENTRY_UPDATE_DATA_MIN_SIZE (CLIENT_ENTRY_UPDATE_COMMON_FIELD_SIZE + CLIENT_ENTRY_HEADER_SIZE)
 
 /*************************** Client Redirect Sizes ***************************/
 
-#define REDIRECT_V4_DATA_SIZE (4 /* IPv4 address */ + 2 /* Port */)
-#define REDIRECT_V6_DATA_SIZE (16 /* IPv6 address */ + 2 /* Port */)
+/* Client Redirect IPv4 Data:
+ * IPv4 Address: 4
+ * Port:         2
+ * ---------------
+ * Total:        6 */
+#define REDIRECT_V4_DATA_SIZE 6
+/* Client Redirect IPv6 Data:
+ * IPv6 Address: 16
+ * Port:          2
+ * ----------------
+ * Total:        18 */
+#define REDIRECT_V6_DATA_SIZE 18
 
 /************************* Request Dynamic UIDs Sizes ************************/
 
-#define DYNAMIC_UID_REQUEST_PAIR_SIZE (6 /* Dynamic UID Request */ + 16 /* RID */)
+/* Dynamic UID Request Pair:
+ * Dynamic UID Request:  6
+ * RID:                 16
+ * -----------------------
+ * Total:               22 */
+#define DYNAMIC_UID_REQUEST_PAIR_SIZE 22
 
 /********************* Dynamic UID Assignment List Sizes *********************/
 
+/* Dynamic UID Mapping:
+ * Dynamic UID:  6
+ * RID:         16
+ * Status Code:  2
+ * ---------------
+ * Total:       24 */
 #define DYNAMIC_UID_MAPPING_SIZE (6 /* Dynamic UID */ + 16 /* RID */ + 2 /* Status Code */)
 
 /****************************** Disconnect Sizes *****************************/
 
-#define DISCONNECT_DATA_SIZE 2 /* Disconnect Reason */
+#define DISCONNECT_DATA_SIZE 2 /* One field: Disconnect Reason */
 #define BROKER_DISCONNECT_MSG_SIZE (BROKER_PDU_HEADER_SIZE + DISCONNECT_DATA_SIZE)
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* All functions must be called from inside the relevant send locks. */
 etcpal_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMsg* data);

@@ -79,7 +79,7 @@ typedef struct RdmnetControllerCallbacks
   void (*disconnected)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                        const RdmnetClientDisconnectedInfo* info, void* context);
   void (*client_list_update)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                             client_list_action_t list_action, const RptClientList* list, void* context);
+                             client_list_action_t list_action, const RptClientList* client_list, void* context);
   void (*rdm_response_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                 const RemoteRdmResponse* resp, void* context);
   void (*status_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle, const RemoteRptStatus* status,

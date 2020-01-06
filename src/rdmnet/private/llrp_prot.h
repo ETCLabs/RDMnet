@@ -29,16 +29,43 @@
 #include "rdm/message.h"
 #include "rdmnet/core/llrp.h"
 
-#define LLRP_HEADER_SIZE \
-  (3 /* Flags + Length */ + 4 /* Vector */ + 16 /* Destination CID */ + 4 /* Transaction Number */)
-#define PROBE_REQUEST_PDU_MIN_SIZE \
-  (3 /* Flags + Length */ + 1 /* Vector */ + 6 /* Lower UID */ + 6 /* Upper UID */ + 2 /* Filter */)
-#define PROBE_REQUEST_PDU_MAX_SIZE (PROBE_REQUEST_PDU_MIN_SIZE + (6 * LLRP_KNOWN_UID_SIZE) /* Known UIDS */)
-#define LLRP_RDM_CMD_PDU_MAX_SIZE (3 /* Flags + Length */ + RDM_MAX_BYTES)
+/* LLRP Header:
+ * Flags + Length:      3
+ * Vector:              4
+ * Destination CID:    16
+ * Transaction Number:  4
+ * ----------------------
+ * Total:              27 */
+#define LLRP_HEADER_SIZE 27
+
+/* LLRP Probe Request Minimum Size:
+ * Flags + Length: 3
+ * Vector:         1
+ * Lower UID:      6
+ * Upper UID:      6
+ * Filter:         2
+ * -----------------
+ * Total:         18 */
+#define PROBE_REQUEST_PDU_MIN_SIZE 18
+
+/* LLRP Probe Request PDU Max Size:
+ * Minimum Size with no Known UIDs: [Referenced]
+ * Max Known UID Field Size: 6 (size of one UID) * LLRP_KNOWN_UID_SIZE (maximum number of Known UIDs) */
+#define PROBE_REQUEST_PDU_MAX_SIZE (PROBE_REQUEST_PDU_MIN_SIZE + (6 * LLRP_KNOWN_UID_SIZE))
+
+/* LLRP RDM Command PDU Maximum Size:
+ * Flags + Length:                      3
+ * Maximum RDM Command Size: [Referenced]
+ * --------------------------------------
+ * Total non-referenced:                3 */
+#define LLRP_RDM_CMD_PDU_MAX_SIZE (3 + RDM_MAX_BYTES)
+
 #define LLRP_TARGET_MAX_MESSAGE_SIZE \
   (ACN_UDP_PREAMBLE_SIZE + ACN_RLP_HEADER_SIZE_EXT_LEN + LLRP_HEADER_SIZE + LLRP_RDM_CMD_PDU_MAX_SIZE)
+
 #define LLRP_MANAGER_MAX_MESSAGE_SIZE \
   (ACN_UDP_PREAMBLE_SIZE + ACN_RLP_HEADER_SIZE_EXT_LEN + LLRP_HEADER_SIZE + PROBE_REQUEST_PDU_MAX_SIZE)
+
 #define LLRP_MAX_MESSAGE_SIZE LLRP_MANAGER_MAX_MESSAGE_SIZE
 
 typedef struct LlrpHeader

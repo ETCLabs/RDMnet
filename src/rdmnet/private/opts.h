@@ -290,12 +290,12 @@
 #endif
 
 /* The library has some limitations around static memory allocation and how many message structures
- * can be allocated at a time. If RDMNET_POLL_CONNECTIONS_INTERNALLY is false, the library has no
- * guarantee as to how many threads could be receiving and allocating messages simultaneously;
- * therefore, in this case, RDMNET_DYNAMIC_MEM must be enabled.
+ * can be allocated at a time. If #RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS is true, the library has
+ * no guarantee as to how many threads could be receiving and allocating messages simultaneously;
+ * therefore, in this case, #RDMNET_DYNAMIC_MEM must be enabled.
  */
 #if (RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS && !RDMNET_DYNAMIC_MEM)
-#error "RDMNET_POLL_CONNECTIONS_INTERNALLY=0 requires RDMNET_DYNAMIC_MEM=1"
+#error "RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS=1 requires RDMNET_DYNAMIC_MEM=1"
 #endif
 
 /*!

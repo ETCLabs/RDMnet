@@ -51,32 +51,27 @@ typedef enum
 
 #define EPT_PROTOCOL_STRING_PADDED_LENGTH 32
 
-typedef struct EptSubProtocol EptSubProtocol;
-struct EptSubProtocol
+typedef struct EptSubProtocol
 {
   uint32_t protocol_vector;
   char protocol_string[EPT_PROTOCOL_STRING_PADDED_LENGTH];
-  EptSubProtocol* next;
-};
+} EptSubProtocol;
 
-typedef struct EptClientEntry EptClientEntry;
-struct EptClientEntry
+typedef struct EptClientEntry
 {
   EtcPalUuid cid;
   bool more_coming;
   EptSubProtocol* protocol_list;
-  EptClientEntry* next;
-};
+  size_t num_protocols;
+} EptClientEntry;
 
-typedef struct RptClientEntry RptClientEntry;
-struct RptClientEntry
+typedef struct RptClientEntry
 {
   EtcPalUuid cid;
   RdmUid uid;
   rpt_client_type_t type;
   EtcPalUuid binding_cid;
-  RptClientEntry* next;
-};
+} RptClientEntry;
 
 typedef struct ClientEntry
 {
@@ -89,9 +84,9 @@ typedef struct ClientEntry
 } ClientEntry;
 
 #define IS_RPT_CLIENT_ENTRY(clientryptr) ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_RPT)
-#define GET_RPT_CLIENT_ENTRY_DATA(clientryptr) (&(clientryptr)->data.rpt)
+#define GET_RPT_CLIENT_ENTRY(clientryptr) (&(clientryptr)->data.rpt)
 #define IS_EPT_CLIENT_ENTRY(clientryptr) ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_EPT)
-#define GET_EPT_CLIENT_ENTRY_DATA(clientryptr) (&(clientryptr)->data.ept)
+#define GET_EPT_CLIENT_ENTRY(clientryptr) (&(clientryptr)->data.ept)
 
 bool create_rpt_client_entry(const EtcPalUuid* cid, const RdmUid* uid, rpt_client_type_t client_type,
                              const EtcPalUuid* binding_cid, RptClientEntry* entry);

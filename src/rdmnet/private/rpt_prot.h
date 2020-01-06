@@ -20,7 +20,6 @@
 /*!
  * \file rdmnet/private/rpt_prot.h
  * \brief Functions and definitions for RPT PDU messages that are only used internally.
- * \author Sam Kearney
  */
 
 #ifndef RDMNET_PRIVATE_RPT_PROT_H_
@@ -28,9 +27,27 @@
 
 #include "rdm/message.h"
 
-#define REQUEST_NOTIF_PDU_HEADER_SIZE (3 /* Flags & Length */ + 4 /* Vector*/)
-#define RDM_CMD_PDU_MIN_SIZE (3 /* Flags & Length */ + RDM_MIN_BYTES)
-#define RDM_CMD_PDU_MAX_SIZE (3 /* Flags & Length */ + RDM_MAX_BYTES)
-#define REQUEST_PDU_MAX_SIZE (REQUEST_PDU_HEADER_SIZE + RDM_CMD_PDU_MAX_SIZE)
+/* Request or Notification PDU Header:
+ * Flags + Length: 3
+ * Vector:         4
+ * -----------------
+ * Total:          7 */
+#define REQUEST_NOTIF_PDU_HEADER_SIZE 7
 
-#endif /* RDMNET_CORE_RPT_PROT_PRIV_H_ */
+/* RDM Command PDU Minimum Size:
+ * Flags + Length:                      3
+ * Minimum RDM Command Size: [Referenced]
+ * --------------------------------------
+ * Total non-referenced:                3 */
+#define RDM_CMD_PDU_MIN_SIZE (3 + RDM_MIN_BYTES)
+
+/* RDM Command PDU Maximum Size:
+ * Flags + Length:                      3
+ * Maximum RDM Command Size: [Referenced]
+ * --------------------------------------
+ * Total non-referenced:                3 */
+#define RDM_CMD_PDU_MAX_SIZE (3 + RDM_MAX_BYTES)
+
+#define REQUEST_PDU_MAX_SIZE (REQUEST_NOTIF_PDU_HEADER_SIZE + RDM_CMD_PDU_MAX_SIZE)
+
+#endif /* RDMNET_PRIVATE_RPT_PROT_H_ */

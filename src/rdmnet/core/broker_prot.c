@@ -44,6 +44,11 @@
     memcpy(&(buf)[7], (cidptr)->data, ETCPAL_UUID_BYTES);     \
   } while (0)
 
+#define RPT_CLIENT_LIST_SIZE(num_client_entries) (num_client_entries * RPT_CLIENT_ENTRY_SIZE)
+#define REQUEST_DYNAMIC_UIDS_DATA_SIZE(num_requests) (num_requests * DYNAMIC_UID_REQUEST_PAIR_SIZE)
+#define FETCH_UID_ASSIGNMENT_LIST_DATA_SIZE(num_uids) (num_uids * 6)
+#define DYNAMIC_UID_ASSIGNMENT_LIST_DATA_SIZE(num_mappings) (num_mappings * DYNAMIC_UID_MAPPING_SIZE)
+
 /**************************** Private variables ******************************/
 
 // clang-format off
@@ -86,9 +91,6 @@ static const char* kRdmnetDynamicUidStatusStrings[] =
 /*********************** Private function prototypes *************************/
 
 static size_t calc_client_connect_len(const ClientConnectMsg* data);
-static size_t calc_request_dynamic_uids_len(const DynamicUidRequestListEntry* request_list);
-static size_t calc_requested_uids_len(const FetchUidAssignmentListEntry* uid_list);
-static size_t calc_dynamic_uid_mapping_list_len(const DynamicUidMapping* mapping_list);
 static size_t pack_broker_header_with_rlp(const EtcPalRootLayerPdu* rlp, uint8_t* buf, size_t buflen, uint16_t vector);
 static etcpal_error_t send_broker_header(RdmnetConnection* conn, const EtcPalRootLayerPdu* rlp, uint8_t* buf,
                                          size_t buflen, uint16_t vector);
@@ -167,9 +169,7 @@ size_t calc_client_connect_len(const ClientConnectMsg* data)
   }
   else if (IS_EPT_CLIENT_ENTRY(&data->client_entry))
   {
-    EptSubProtocol* prot = GET_EPT_CLIENT_ENTRY_DATA(&data->client_entry)->protocol_list;
-    for (; prot; prot = prot->next)
-      res += EPT_PROTOCOL_ENTRY_SIZE;
+    res += (EPT_PROTOCOL_ENTRY_SIZE * GET_EPT_CLIENT_ENTRY(&data->client_entry)->num_protocols);
     return res;
   }
   else
@@ -210,21 +210,26 @@ etcpal_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMs
     return (etcpal_error_t)send_res;
 
   // Pack and send the beginning of the Client Entry PDU
+  const EtcPalUuid* cid =
+      (IS_RPT_CLIENT_ENTRY(&data->client_entry) ? &(GET_RPT_CLIENT_ENTRY(&data->client_entry)->cid)
+                                                : &(GET_EPT_CLIENT_ENTRY(&data->client_entry)->cid));
   PACK_CLIENT_ENTRY_HEADER(rlp.datalen - (BROKER_PDU_HEADER_SIZE + CLIENT_CONNECT_COMMON_FIELD_SIZE),
-                           data->client_entry.client_protocol, &data->client_entry.client_cid, buf);
+                           data->client_entry.client_protocol, cid, buf);
   send_res = etcpal_send(conn->sock, buf, CLIENT_ENTRY_HEADER_SIZE, 0);
 
   if (IS_RPT_CLIENT_ENTRY(&data->client_entry))
   {
     // Pack and send the RPT client entry
-    const ClientEntryDataRpt* rpt_data = GET_RPT_CLIENT_ENTRY_DATA(&data->client_entry);
+    const RptClientEntry* rpt_entry = GET_RPT_CLIENT_ENTRY(&data->client_entry);
     cur_ptr = buf;
-    etcpal_pack_16b(cur_ptr, rpt_data->client_uid.manu);
+    memcpy(cur_ptr, rpt_entry->cid.data, ETCPAL_UUID_BYTES);
+    cur_ptr += ETCPAL_UUID_BYTES;
+    etcpal_pack_16b(cur_ptr, rpt_entry->uid.manu);
     cur_ptr += 2;
-    etcpal_pack_32b(cur_ptr, rpt_data->client_uid.id);
+    etcpal_pack_32b(cur_ptr, rpt_entry->uid.id);
     cur_ptr += 4;
-    *cur_ptr++ = (uint8_t)(rpt_data->client_type);
-    memcpy(cur_ptr, rpt_data->binding_cid.data, ETCPAL_UUID_BYTES);
+    *cur_ptr++ = (uint8_t)(rpt_entry->type);
+    memcpy(cur_ptr, rpt_entry->binding_cid.data, ETCPAL_UUID_BYTES);
     cur_ptr += ETCPAL_UUID_BYTES;
     send_res = etcpal_send(conn->sock, buf, RPT_CLIENT_ENTRY_DATA_SIZE, 0);
     if (send_res < 0)
@@ -233,9 +238,10 @@ etcpal_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMs
   else  // is EPT client entry
   {
     // Pack and send the EPT client entry
-    const ClientEntryDataEpt* ept_data = GET_EPT_CLIENT_ENTRY_DATA(&data->client_entry);
-    const EptSubProtocol* prot = ept_data->protocol_list;
-    for (; prot; prot = prot->next)
+    const EptClientEntry* ept_entry = GET_EPT_CLIENT_ENTRY_DATA(&data->client_entry);
+    const EptSubProtocol* prot = ept_entry->protocol_list;
+    for (const EptSubProtocol* prot = ept_entry->protocol_list;
+         prot < ept_entry->protocol_list + ept_entry->num_protocols; ++prot)
     {
       cur_ptr = buf;
       etcpal_pack_32b(cur_ptr, prot->protocol_vector);
@@ -354,13 +360,14 @@ etcpal_error_t send_connect_reply(rdmnet_conn_t handle, const EtcPalUuid* local_
 
 /***************************** Fetch Client List *****************************/
 
-/*! \brief Send a Fetch Client List message on an RDMnet connection.
- *  \param[in] handle RDMnet connection handle on which to send the Fetch Client List message.
- *  \param[in] local_cid CID of the Component sending the Fetch Client List message.
- *  \return #kEtcPalErrOk: Send success.
- *  \return #kEtcPalErrInvalid: Invalid argument provided.
- *  \return #kEtcPalErrSys: An internal library or system call error occurred.
- *  \return Note: Other error codes might be propagated from underlying socket calls.
+/*!
+ * \brief Send a Fetch Client List message on an RDMnet connection.
+ * \param[in] handle RDMnet connection handle on which to send the Fetch Client List message.
+ * \param[in] local_cid CID of the Component sending the Fetch Client List message.
+ * \return #kEtcPalErrOk: Send success.
+ * \return #kEtcPalErrInvalid: Invalid argument provided.
+ * \return #kEtcPalErrSys: An internal library or system call error occurred.
+ * \return Note: Other error codes might be propagated from underlying socket calls.
  */
 etcpal_error_t send_fetch_client_list(rdmnet_conn_t handle, const EtcPalUuid* local_cid)
 {
@@ -387,52 +394,35 @@ etcpal_error_t send_fetch_client_list(rdmnet_conn_t handle, const EtcPalUuid* lo
 
 /**************************** Client List Messages ***************************/
 
-size_t calc_client_entry_buf_size(const ClientEntryData* client_entry_list)
+/*!
+ * \brief Get the packed buffer size for a given RPT Client List.
+ * \param[in] num_client_entries Number of entries in the RPT Client List.
+ * \return Required buffer size.
+ */
+size_t bufsize_rpt_client_list(size_t num_client_entries)
 {
-  size_t res = 0;
-  const ClientEntryData* cur_entry = client_entry_list;
-
-  for (; cur_entry; cur_entry = cur_entry->next)
-  {
-    if (cur_entry->client_protocol == E133_CLIENT_PROTOCOL_RPT)
-    {
-      res += RPT_CLIENT_ENTRY_SIZE;
-    }
-    else
-    {
-      // TODO
-      return 0;
-    }
-  }
-  return res;
+  return (BROKER_PDU_FULL_HEADER_SIZE + RPT_CLIENT_LIST_SIZE(num_client_entries));
 }
 
-/*! \brief Get the packed buffer size for a given Client List.
- *  \param[in] client_entry_list Client List of which to calculate the packed size.
- *  \return Required buffer size, or 0 on error.
- */
-size_t bufsize_client_list(const ClientEntryData* client_entry_list)
-{
-  return (client_entry_list ? (BROKER_PDU_FULL_HEADER_SIZE + calc_client_entry_buf_size(client_entry_list)) : 0);
-}
-
-/*! \brief Pack a Client List message into a buffer.
+/*!
+ * \brief Pack a Client List message containing RPT Client Entries into a buffer.
  *
- *  Multiple types of Broker messages can contain a Client List; indicate which type this should be
- *  with the vector field. Valid values are VECTOR_BROKER_CONNECTED_CLIENT_LIST,
- *  VECTOR_BROKER_CLIENT_ADD, VECTOR_BROKER_CLIENT_REMOVE and VECTOR_BROKER_CLIENT_ENTRY_CHANGE.
+ * Multiple types of Broker messages can contain an RPT Client List; indicate which type this
+ * should be with the vector field. Valid values are VECTOR_BROKER_CONNECTED_CLIENT_LIST,
+ * VECTOR_BROKER_CLIENT_ADD, VECTOR_BROKER_CLIENT_REMOVE and VECTOR_BROKER_CLIENT_ENTRY_CHANGE.
  *
- *  \param[out] buf Buffer into which to pack the Client List message.
- *  \param[in] buflen Length in bytes of buf.
- *  \param[in] local_cid CID of the Component sending the Client List message.
- *  \param[in] vector Which type of Client List message this is.
- *  \param[in] client_entry_list Client List to pack into the data segment.
- *  \return Number of bytes packed, or 0 on error.
+ * \param[out] buf Buffer into which to pack the Client List message.
+ * \param[in] buflen Length in bytes of buf.
+ * \param[in] local_cid CID of the Component sending the Client List message.
+ * \param[in] vector Which type of Client List message this is.
+ * \param[in] client_entries Array of RPT Client Entries to pack into the data segment.
+ * \param[in] num_client_entries Size of client_entries array.
+ * \return Number of bytes packed, or 0 on error.
  */
-size_t pack_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
-                        const ClientEntryData* client_entry_list)
+size_t pack_rpt_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
+                            const RptClientEntry* client_entries, size_t num_client_entries)
 {
-  if (!buf || buflen < BROKER_PDU_FULL_HEADER_SIZE || !local_cid || !client_entry_list ||
+  if (!buf || buflen < BROKER_PDU_FULL_HEADER_SIZE || !local_cid || !client_entries || num_client_entries == 0 ||
       (vector != VECTOR_BROKER_CONNECTED_CLIENT_LIST && vector != VECTOR_BROKER_CLIENT_ADD &&
        vector != VECTOR_BROKER_CLIENT_REMOVE && vector != VECTOR_BROKER_CLIENT_ENTRY_CHANGE))
   {
@@ -442,7 +432,7 @@ size_t pack_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid
   EtcPalRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
-  rlp.datalen = BROKER_PDU_HEADER_SIZE + calc_client_entry_buf_size(client_entry_list);
+  rlp.datalen = BROKER_PDU_HEADER_SIZE + RPT_CLIENT_LIST_SIZE(num_client_entries);
 
   uint8_t* cur_ptr = buf;
   uint8_t* buf_end = buf + buflen;
@@ -453,83 +443,86 @@ size_t pack_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid
     return 0;
   cur_ptr += data_size;
 
-  for (const ClientEntryData* cur_entry = client_entry_list; cur_entry; cur_entry = cur_entry->next)
+  for (const RptClientEntry* cur_entry = client_entries; cur_entry < client_entries + num_client_entries; ++cur_entry)
   {
     // Check bounds
-    if (cur_ptr + CLIENT_ENTRY_HEADER_SIZE > buf_end)
+    if (cur_ptr + RPT_CLIENT_ENTRY_SIZE > buf_end)
       return 0;
 
     // Pack the common client entry fields.
     *cur_ptr = 0xf0;
     ETCPAL_PDU_PACK_EXT_LEN(cur_ptr, RPT_CLIENT_ENTRY_SIZE);
     cur_ptr += 3;
-    etcpal_pack_32b(cur_ptr, cur_entry->client_protocol);
+    etcpal_pack_32b(cur_ptr, E133_CLIENT_PROTOCOL_RPT);
     cur_ptr += 4;
-    memcpy(cur_ptr, cur_entry->client_cid.data, ETCPAL_UUID_BYTES);
+    memcpy(cur_ptr, cur_entry->cid.data, ETCPAL_UUID_BYTES);
     cur_ptr += ETCPAL_UUID_BYTES;
 
-    if (cur_entry->client_protocol == E133_CLIENT_PROTOCOL_RPT)
-    {
-      const ClientEntryDataRpt* rpt_data = GET_RPT_CLIENT_ENTRY_DATA(cur_entry);
-
-      // Check bounds.
-      if (cur_ptr + RPT_CLIENT_ENTRY_DATA_SIZE > buf_end)
-        return 0;
-
-      // Pack the RPT Client Entry data
-      etcpal_pack_16b(cur_ptr, rpt_data->client_uid.manu);
-      cur_ptr += 2;
-      etcpal_pack_32b(cur_ptr, rpt_data->client_uid.id);
-      cur_ptr += 4;
-      *cur_ptr++ = (uint8_t)(rpt_data->client_type);
-      memcpy(cur_ptr, rpt_data->binding_cid.data, ETCPAL_UUID_BYTES);
-      cur_ptr += ETCPAL_UUID_BYTES;
-    }
-    else
-    {
-      // TODO EPT
-      return 0;
-    }
+    // Pack the RPT Client Entry data
+    etcpal_pack_16b(cur_ptr, cur_entry->uid.manu);
+    cur_ptr += 2;
+    etcpal_pack_32b(cur_ptr, cur_entry->uid.id);
+    cur_ptr += 4;
+    *cur_ptr++ = (uint8_t)(cur_entry->type);
+    memcpy(cur_ptr, cur_entry->binding_cid.data, ETCPAL_UUID_BYTES);
+    cur_ptr += ETCPAL_UUID_BYTES;
   }
   return (size_t)(cur_ptr - buf);
 }
 
-/**************************** Request Dynamic UIDs ***************************/
-
-size_t calc_request_dynamic_uids_len(const DynamicUidRequestListEntry* request_list)
+/*!
+ * \brief Pack a Client List message containing EPT Client Entries into a buffer.
+ *
+ * Multiple types of Broker messages can contain an EPT Client List; indicate which type this
+ * should be with the vector field. Valid values are VECTOR_BROKER_CONNECTED_CLIENT_LIST,
+ * VECTOR_BROKER_CLIENT_ADD, VECTOR_BROKER_CLIENT_REMOVE and VECTOR_BROKER_CLIENT_ENTRY_CHANGE.
+ *
+ * \param[out] buf Buffer into which to pack the Client List message.
+ * \param[in] buflen Length in bytes of buf.
+ * \param[in] local_cid CID of the Component sending the Client List message.
+ * \param[in] vector Which type of Client List message this is.
+ * \param[in] client_entries Array of EPT Client Entries to pack into the data segment.
+ * \param[in] num_client_entries Size of client_entries array.
+ * \return Number of bytes packed, or 0 on error.
+ */
+size_t pack_ept_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
+                            const EptClientEntry* client_entries, size_t num_client_entries)
 {
-  size_t res = BROKER_PDU_HEADER_SIZE;
-
-  for (const DynamicUidRequestListEntry* cur_request = request_list; cur_request; cur_request = cur_request->next)
-  {
-    res += DYNAMIC_UID_REQUEST_PAIR_SIZE;
-  }
-  return res;
+  RDMNET_UNUSED_ARG(buf);
+  RDMNET_UNUSED_ARG(buflen);
+  RDMNET_UNUSED_ARG(local_cid);
+  RDMNET_UNUSED_ARG(vector);
+  RDMNET_UNUSED_ARG(client_entries);
+  RDMNET_UNUSED_ARG(num_client_entries);
+  // TODO
+  return 0;
 }
 
-/*! \brief Send a Request Dynamic UID Assignment message on an RDMnet connection.
- *  \param[in] handle RDMnet connection handle on which to send the Request Dynamic UID Assignment
- *                    message.
- *  \param[in] local_cid CID of the Component sending the Request Dynamic UID Assignment message.
- *  \param[in] request_list List of Dynamic UID Request Pairs, each indicating a request for a
- *                          newly-assigned Dynamic UID.
- *  \return #kEtcPalErrOk: Send success.
- *  \return #kEtcPalErrInvalid: Invalid argument provided.
- *  \return #kEtcPalErrSys: An internal library or system call error occurred.
- *  \return Note: Other error codes might be propagated from underlying socket calls.
+/**************************** Request Dynamic UIDs ***************************/
+
+/*!
+ * \brief Send a Request Dynamic UID Assignment message on an RDMnet connection.
+ * \param[in] handle RDMnet connection handle on which to send the Request Dynamic UID Assignment
+ *                   message.
+ * \param[in] local_cid CID of the Component sending the Request Dynamic UID Assignment message.
+ * \param[in] requests Array of Dynamic UID Request Pairs, each indicating a request for a
+ *                     newly-assigned Dynamic UID.
+ * \param[in] num_requests Size of requests array.
+ * \return #kEtcPalErrOk: Send success.
+ * \return #kEtcPalErrInvalid: Invalid argument provided.
+ * \return #kEtcPalErrSys: An internal library or system call error occurred.
+ * \return Note: Other error codes might be propagated from underlying socket calls.
  */
 etcpal_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const EtcPalUuid* local_cid,
-                                         const DynamicUidRequestListEntry* request_list)
+                                         const DynamicUidRequest* requests, size_t num_requests)
 {
-  const DynamicUidRequestListEntry* cur_request;
-
-  if (!local_cid || !request_list)
+  if (!local_cid || !requests || num_requests == 0)
     return kEtcPalErrInvalid;
 
   EtcPalRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
-  rlp.datalen = calc_request_dynamic_uids_len(request_list);
+  rlp.datalen = BROKER_PDU_HEADER_SIZE + REQUEST_DYNAMIC_UIDS_DATA_SIZE(num_requests);
 
   RdmnetConnection* conn;
   etcpal_error_t res = rdmnet_start_message(handle, &conn);
@@ -544,10 +537,10 @@ etcpal_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const EtcPalUuid*
     return res;
   }
 
-  /* Pack and send each Dynamic UID Request Pair in turn */
-  for (cur_request = request_list; cur_request; cur_request = cur_request->next)
+  // Pack and send each Dynamic UID Request Pair in turn
+  for (const DynamicUidRequest* cur_request = requests; cur_request < requests + num_requests; ++cur_request)
   {
-    /* Pack the Dynamic UID Request Pair */
+    // Pack the Dynamic UID Request Pair
     etcpal_pack_16b(&buf[0], cur_request->manu_id | 0x8000);
     etcpal_pack_32b(&buf[2], 0);
     memcpy(&buf[6], cur_request->rid.data, ETCPAL_UUID_BYTES);
@@ -566,39 +559,31 @@ etcpal_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const EtcPalUuid*
 
 /************************ Dynamic UID Assignment List ************************/
 
-size_t calc_dynamic_uid_mapping_list_len(const DynamicUidMapping* mapping_list)
-{
-  size_t res = BROKER_PDU_HEADER_SIZE;
-
-  for (const DynamicUidMapping* cur_mapping = mapping_list; cur_mapping; cur_mapping = cur_mapping->next)
-  {
-    res += DYNAMIC_UID_MAPPING_SIZE;
-  }
-  return res;
-}
-
-/*! \brief Get the packed buffer size for a Dynamic UID Assignment List message.
- *  \param[in] mapping_list The Dynamic UID Mapping List that will occupy the data segment of the
- *                          message.
- *  \return Required buffer size, or 0 on error.
+/*!
+ * \brief Get the packed buffer size for a Dynamic UID Assignment List message.
+ * \param[in] num_mappings The number of DynamicUidMappings that will occupy the data segment of
+ *                         the message.
+ * \return Required buffer size, or 0 on error.
  */
-size_t bufsize_dynamic_uid_assignment_list(const DynamicUidMapping* mapping_list)
+size_t bufsize_dynamic_uid_assignment_list(size_t num_mappings)
 {
-  return (mapping_list ? (BROKER_PDU_FULL_HEADER_SIZE + calc_dynamic_uid_mapping_list_len(mapping_list)) : 0);
+  return BROKER_PDU_FULL_HEADER_SIZE + DYNAMIC_UID_ASSIGNMENT_LIST_DATA_SIZE(num_mappings);
 }
 
-/*! \brief Pack a Dynamic UID Assignment List message into a buffer.
+/*!
+ * \brief Pack a Dynamic UID Assignment List message into a buffer.
  *
- *  \param[out] buf Buffer into which to pack the Dynamic UID Assignment List message.
- *  \param[in] buflen Length in bytes of buf.
- *  \param[in] local_cid CID of the Component sending the Dynamic UID Assignment List message.
- *  \param[in] mapping_list List of Dynamic UID Mappings to pack into the data segment.
- *  \return Number of bytes packed, or 0 on error.
+ * \param[out] buf Buffer into which to pack the Dynamic UID Assignment List message.
+ * \param[in] buflen Length in bytes of buf.
+ * \param[in] local_cid CID of the Component sending the Dynamic UID Assignment List message.
+ * \param[in] mappings Array of Dynamic UID Mappings to pack into the data segment.
+ * \param[in] num_mappings Size of mappings array.
+ * \return Number of bytes packed, or 0 on error.
  */
 size_t pack_dynamic_uid_assignment_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid,
-                                        const DynamicUidMapping* mapping_list)
+                                        const DynamicUidMapping* mappings, size_t num_mappings)
 {
-  if (!buf || buflen < BROKER_PDU_FULL_HEADER_SIZE || !local_cid || !mapping_list)
+  if (!buf || buflen < BROKER_PDU_FULL_HEADER_SIZE || !local_cid || !mappings || num_mappings == 0)
   {
     return 0;
   }
@@ -606,7 +591,7 @@ size_t pack_dynamic_uid_assignment_list(uint8_t* buf, size_t buflen, const EtcPa
   EtcPalRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
-  rlp.datalen = BROKER_PDU_HEADER_SIZE + calc_dynamic_uid_mapping_list_len(mapping_list);
+  rlp.datalen = BROKER_PDU_HEADER_SIZE + DYNAMIC_UID_ASSIGNMENT_LIST_DATA_SIZE(num_mappings);
 
   uint8_t* cur_ptr = buf;
   uint8_t* buf_end = buf + buflen;
@@ -617,7 +602,7 @@ size_t pack_dynamic_uid_assignment_list(uint8_t* buf, size_t buflen, const EtcPa
     return 0;
   cur_ptr += data_size;
 
-  for (const DynamicUidMapping* cur_mapping = mapping_list; cur_mapping; cur_mapping = cur_mapping->next)
+  for (const DynamicUidMapping* cur_mapping = mappings; cur_mapping < mappings + num_mappings; ++cur_mapping)
   {
     // Check bounds
     if (cur_ptr + DYNAMIC_UID_MAPPING_SIZE > buf_end)
@@ -638,27 +623,28 @@ size_t pack_dynamic_uid_assignment_list(uint8_t* buf, size_t buflen, const EtcPa
 
 /********************* Fetch Dynamic UID Assignment List *********************/
 
-static size_t calc_requested_uids_len(const FetchUidAssignmentListEntry* uid_list)
+/*!
+ * \brief Send a Fetch Dynamic UID Assignment List message on an RDMnet connection.
+ * \param[in] handle RDMnet connection handle on which to send the Fetch Dynamic UID Assignment
+ *                   List message.
+ * \param[in] local_cid CID of the Component sending the Fetch Dynamic UID Assignment List message.
+ * \param[in] uids Array of UIDs, each indicating a request for a corresponding RID.
+ * \param[in] num_uids Size of uids array.
+ * \return #kEtcPalErrOk: Send success.
+ * \return #kEtcPalErrInvalid: Invalid argument provided.
+ * \return #kEtcPalErrSys: An internal library or system call error occurred.
+ * \return Note: Other error codes might be propagated from underlying socket calls.
+ */
+etcpal_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RdmUid* uids,
+                                              size_t num_uids)
 {
-  size_t res = BROKER_PDU_HEADER_SIZE;
-
-  for (const FetchUidAssignmentListEntry* cur_uid = uid_list; cur_uid; cur_uid = cur_uid->next)
-  {
-    res += 6;  // The size of a packed UID
-  }
-  return res;
-}
-
-etcpal_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const EtcPalUuid* local_cid,
-                                              const FetchUidAssignmentListEntry* uid_list)
-{
-  if (!local_cid || !uid_list)
+  if (!local_cid || !uids || num_uids == 0)
     return kEtcPalErrInvalid;
 
   EtcPalRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
-  rlp.datalen = calc_requested_uids_len(uid_list);
+  rlp.datalen = BROKER_PDU_HEADER_SIZE + FETCH_UID_ASSIGNMENT_LIST_DATA_SIZE(num_uids);
 
   RdmnetConnection* conn;
   etcpal_error_t res = rdmnet_start_message(handle, &conn);
@@ -674,11 +660,11 @@ etcpal_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const EtcPal
   }
 
   // Pack and send each Dynamic UID Request Pair in turn
-  for (const FetchUidAssignmentListEntry* cur_uid = uid_list; cur_uid; cur_uid = cur_uid->next)
+  for (const RdmUid* cur_uid = uids; cur_uid < uids + num_uids; ++cur_uid)
   {
     // Pack the Requested UID
-    etcpal_pack_16b(&buf[0], cur_uid->uid.manu);
-    etcpal_pack_32b(&buf[2], cur_uid->uid.id);
+    etcpal_pack_16b(&buf[0], cur_uid->manu);
+    etcpal_pack_32b(&buf[2], cur_uid->id);
 
     // Send the segment
     int send_res = etcpal_send(conn->sock, buf, 6, 0);
