@@ -53,7 +53,7 @@ typedef struct PduBlockState
   bool parsed_header;
 } PduBlockState;
 
-#define init_pdu_block_state(blockstateptr, blocksize) \
+#define INIT_PDU_BLOCK_STATE(blockstateptr, blocksize) \
   do                                                   \
   {                                                    \
     (blockstateptr)->block_size = blocksize;           \
@@ -68,7 +68,7 @@ typedef struct GenericListState
   size_t size_parsed;
 } GenericListState;
 
-#define init_generic_list_state(liststateptr, list_size) \
+#define INIT_GENERIC_LIST_STATE(liststateptr, list_size) \
   do                                                     \
   {                                                      \
     (liststateptr)->full_list_size = list_size;          \
@@ -81,11 +81,11 @@ typedef struct RdmListState
   PduBlockState block;
 } RdmListState;
 
-#define init_rdm_list_state(rlstateptr, blocksize, rmsgptr) \
+#define INIT_RDM_LIST_STATE(rlstateptr, blocksize, rmsgptr) \
   do                                                        \
   {                                                         \
     (rlstateptr)->parsed_request_notif_header = false;      \
-    init_pdu_block_state(&(rlstateptr)->block, blocksize);  \
+    INIT_PDU_BLOCK_STATE(&(rlstateptr)->block, blocksize);  \
     GET_RDM_BUF_LIST(rmsgptr)->list = NULL;                 \
     GET_RDM_BUF_LIST(rmsgptr)->more_coming = false;         \
   } while (0)
@@ -95,10 +95,10 @@ typedef struct RptStatusState
   PduBlockState block;
 } RptStatusState;
 
-#define init_rpt_status_state(rsstateptr, blocksize)       \
+#define INIT_RPT_STATUS_STATE(rsstateptr, blocksize)       \
   do                                                       \
   {                                                        \
-    init_pdu_block_state(&(rsstateptr)->block, blocksize); \
+    INIT_PDU_BLOCK_STATE(&(rsstateptr)->block, blocksize); \
   } while (0)
 
 typedef struct RptState
@@ -112,10 +112,10 @@ typedef struct RptState
   } data;
 } RptState;
 
-#define init_rpt_state(rstateptr, blocksize)              \
+#define INIT_RPT_STATE(rstateptr, blocksize)              \
   do                                                      \
   {                                                       \
-    init_pdu_block_state(&(rstateptr)->block, blocksize); \
+    INIT_PDU_BLOCK_STATE(&(rstateptr)->block, blocksize); \
   } while (0)
 
 typedef struct ClientEntryState
@@ -124,7 +124,7 @@ typedef struct ClientEntryState
   PduBlockState entry_data;
 } ClientEntryState;
 
-#define init_client_entry_state(cstateptr, blocksize, centryptr) \
+#define INIT_CLIENT_ENTRY_STATE(cstateptr, blocksize, centryptr) \
   do                                                             \
   {                                                              \
     (centryptr)->client_protocol = kClientProtocolUnknown;       \
@@ -137,10 +137,10 @@ typedef struct ClientListState
   ClientEntryState entry;
 } ClientListState;
 
-#define init_client_list_state(clstateptr, blocksize, bmsgptr) \
+#define INIT_CLIENT_LIST_STATE(clstateptr, blocksize, bmsgptr) \
   do                                                           \
   {                                                            \
-    init_pdu_block_state(&(clstateptr)->block, blocksize);     \
+    INIT_PDU_BLOCK_STATE(&(clstateptr)->block, blocksize);     \
     GET_CLIENT_LIST(bmsgptr)->client_entry_list = NULL;        \
     GET_CLIENT_LIST(bmsgptr)->more_coming = false;             \
   } while (0)
@@ -152,7 +152,7 @@ typedef struct ClientConnectState
   ClientEntryState entry;
 } ClientConnectState;
 
-#define init_client_connect_state(cstateptr, blocksize, bmsgptr) \
+#define INIT_CLIENT_CONNECT_STATE(cstateptr, blocksize, bmsgptr) \
   do                                                             \
   {                                                              \
     (cstateptr)->pdu_data_size = blocksize;                      \
@@ -166,7 +166,7 @@ typedef struct ClientEntryUpdateState
   ClientEntryState entry;
 } ClientEntryUpdateState;
 
-#define init_client_entry_update_state(ceustateptr, blocksize, bmsgptr) \
+#define INIT_CLIENT_ENTRY_UPDATE_STATE(ceustateptr, blocksize, bmsgptr) \
   do                                                                    \
   {                                                                     \
     (ceustateptr)->pdu_data_size = blocksize;                           \
@@ -186,7 +186,7 @@ typedef struct BrokerState
   } data;
 } BrokerState;
 
-#define init_broker_state(bstateptr, blocksize, msgptr) init_pdu_block_state(&(bstateptr)->block, blocksize)
+#define INIT_BROKER_STATE(bstateptr, blocksize, msgptr) INIT_PDU_BLOCK_STATE(&(bstateptr)->block, blocksize)
 
 typedef struct RlpState
 {
@@ -199,7 +199,7 @@ typedef struct RlpState
   } data;
 } RlpState;
 
-#define init_rlp_state(rlpstateptr, blocksize) init_pdu_block_state(&(rlpstateptr)->block, blocksize)
+#define INIT_RLP_STATE(rlpstateptr, blocksize) INIT_PDU_BLOCK_STATE(&(rlpstateptr)->block, blocksize)
 
 typedef struct RdmnetMsgBuf
 {

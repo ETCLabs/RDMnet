@@ -121,28 +121,21 @@ typedef struct RptStatusMsg
   const char* status_string;
 } RptStatusMsg;
 
-typedef struct RdmBufListEntry RdmBufListEntry;
-
-/*! An entry in a linked list of packed RDM commands. */
-struct RdmBufListEntry
-{
-  RdmBuffer msg;
-  RdmBufListEntry* next;
-};
-
-/*! A list of packed RDM Commands. Two types of RPT messages contain an RdmCmdList: Request and
+/*! A list of packed RDM Commands. Two types of RPT messages contain an RdmBufList: Request and
  *  Notification. */
 typedef struct RdmBufList
 {
+  /*! An array of packed RDM commands and/or responses. */
+  RdmBuffer* rdm_buffers;
+  /*! The size of the rdm_buffers array. */
+  size_t num_rdm_buffers;
   /*!
    * This message contains a partial list. This can be set when the library runs out of static
    * memory in which to store RDM Commands and must deliver the partial list before continuing.
    * The application should store the entries in the list but should not act on the list until
-   * another RdmCmdList is received with partial set to false.
+   * another RdmBufList is received with partial set to false.
    */
   bool more_coming;
-  /*! The head of a linked list of packed RDM Commands. */
-  RdmBufListEntry* list;
 } RdmBufList;
 
 /*! An RPT message. */

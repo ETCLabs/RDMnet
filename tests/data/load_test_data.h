@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,32 +17,19 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#include "rdmnet/core/client_entry.h"
-#include "rdmnet/core/util.h"
+#ifndef LOAD_TEST_DATA_H_
+#define LOAD_TEST_DATA_H_
 
-bool create_rpt_client_entry(const EtcPalUuid* cid, const RdmUid* uid, rpt_client_type_t client_type,
-                             const EtcPalUuid* binding_cid, RptClientEntry* entry)
+#include <cstdint>
+#include <fstream>
+#include <vector>
+
+namespace rdmnet
 {
-  if (!cid || !uid || !entry)
-    return false;
-
-  entry->cid = *cid;
-  entry->uid = *uid;
-  entry->type = client_type;
-  if (binding_cid)
-    entry->binding_cid = *binding_cid;
-  else
-    entry->binding_cid = kEtcPalNullUuid;
-  return true;
-}
-
-bool create_ept_client_entry(const EtcPalUuid* cid, const EptSubProtocol* protocol_arr, size_t protocol_arr_size,
-                             EptClientEntry* entry)
+namespace testing
 {
-  RDMNET_UNUSED_ARG(cid);
-  RDMNET_UNUSED_ARG(protocol_arr);
-  RDMNET_UNUSED_ARG(protocol_arr_size);
-  RDMNET_UNUSED_ARG(entry);
-  // TODO
-  return false;
-}
+std::vector<uint8_t> LoadTestData(std::ifstream& file);
+};
+};  // namespace rdmnet
+
+#endif  // LOAD_TEST_DATA_H_

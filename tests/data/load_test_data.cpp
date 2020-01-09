@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,32 +17,37 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#include "rdmnet/core/client_entry.h"
-#include "rdmnet/core/util.h"
+#include "load_test_data.h"
+#include <cassert>
+#include <ios>
+#include <string>
 
-bool create_rpt_client_entry(const EtcPalUuid* cid, const RdmUid* uid, rpt_client_type_t client_type,
-                             const EtcPalUuid* binding_cid, RptClientEntry* entry)
+namespace rdmnet
 {
-  if (!cid || !uid || !entry)
-    return false;
+namespace testing
+{
+std::vector<uint8_t> LoadTestData(std::ifstream& file)
+{
+  assert(file.is_open());
 
-  entry->cid = *cid;
-  entry->uid = *uid;
-  entry->type = client_type;
-  if (binding_cid)
-    entry->binding_cid = *binding_cid;
-  else
-    entry->binding_cid = kEtcPalNullUuid;
-  return true;
+  std::vector<uint8_t> data;
+  file >> std::hex;
+
+  int byte;
+  do
+  {
+    if (file >> byte)
+      data.push_back(static_cast<uint8_t>(byte));
+    else
+    {
+      file.clear();
+      std::string remaining_line;
+      std::getline(file, remaining_line);
+    }
+  } while (!file.eof());
+
+  return data;
 }
 
-bool create_ept_client_entry(const EtcPalUuid* cid, const EptSubProtocol* protocol_arr, size_t protocol_arr_size,
-                             EptClientEntry* entry)
-{
-  RDMNET_UNUSED_ARG(cid);
-  RDMNET_UNUSED_ARG(protocol_arr);
-  RDMNET_UNUSED_ARG(protocol_arr_size);
-  RDMNET_UNUSED_ARG(entry);
-  // TODO
-  return false;
-}
+};  // namespace testing
+};  // namespace rdmnet

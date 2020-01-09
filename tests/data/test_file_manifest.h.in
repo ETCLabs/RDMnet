@@ -1,0 +1,15 @@
+#ifndef TEST_FILE_MANIFEST_H_
+#define TEST_FILE_MANIFEST_H_
+
+#include <utility>
+#include "rdmnet/core/message.h"
+
+// clang-format off
+
+@RDMNET_VALIDATION_MESSAGE_DECLARATIONS@
+
+constexpr std::pair<const char*, const RdmnetMessage&> kRdmnetTestDataFiles[] = {
+@RDMNET_TEST_DATA_PAIRS@
+}
+
+#endif  // TEST_FILE_MANIFEST_H_
