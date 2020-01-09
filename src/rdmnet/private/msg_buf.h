@@ -45,11 +45,15 @@ typedef enum
   kPSFullBlockProtErr
 } parse_result_t;
 
+// Tracks state while parsing an ACN PDU block from a byte stream.
+// Typically INIT_PDU_BLOCK_STATE() will be called from the parent function of the function that
+// parses the PDU block.
 typedef struct PduBlockState
 {
   size_t block_size;
   size_t size_parsed;
   bool consuming_bad_block;
+  // Whether a header has been parsed for a PDU in this block.
   bool parsed_header;
 } PduBlockState;
 
@@ -86,7 +90,8 @@ typedef struct RdmListState
   {                                                         \
     (rlstateptr)->parsed_request_notif_header = false;      \
     INIT_PDU_BLOCK_STATE(&(rlstateptr)->block, blocksize);  \
-    GET_RDM_BUF_LIST(rmsgptr)->list = NULL;                 \
+    GET_RDM_BUF_LIST(rmsgptr)->rdm_buffers = NULL;          \
+    GET_RDM_BUF_LIST(rmsgptr)->num_rdm_buffers = 0;         \
     GET_RDM_BUF_LIST(rmsgptr)->more_coming = false;         \
   } while (0)
 
@@ -121,14 +126,16 @@ typedef struct RptState
 typedef struct ClientEntryState
 {
   size_t enclosing_block_size;
-  PduBlockState entry_data;
+  bool parsed_entry_header;
+  PduBlockState entry_data;  // This is only for use with consume_bad_block()
 } ClientEntryState;
 
-#define INIT_CLIENT_ENTRY_STATE(cstateptr, blocksize, centryptr) \
-  do                                                             \
-  {                                                              \
-    (centryptr)->client_protocol = kClientProtocolUnknown;       \
-    (cstateptr)->enclosing_block_size = blocksize;               \
+#define INIT_CLIENT_ENTRY_STATE(cstateptr, blocksize, cpptr) \
+  do                                                         \
+  {                                                          \
+    *(cpptr) = kClientProtocolUnknown;                       \
+    (cstateptr)->enclosing_block_size = blocksize;           \
+    (cstateptr)->parsed_entry_header = false;                \
   } while (0)
 
 typedef struct ClientListState
@@ -137,12 +144,17 @@ typedef struct ClientListState
   ClientEntryState entry;
 } ClientListState;
 
-#define INIT_CLIENT_LIST_STATE(clstateptr, blocksize, bmsgptr) \
-  do                                                           \
-  {                                                            \
-    INIT_PDU_BLOCK_STATE(&(clstateptr)->block, blocksize);     \
-    GET_CLIENT_LIST(bmsgptr)->client_entry_list = NULL;        \
-    GET_CLIENT_LIST(bmsgptr)->more_coming = false;             \
+#define INIT_CLIENT_LIST_STATE(clstateptr, blocksize, bmsgptr)             \
+  do                                                                       \
+  {                                                                        \
+    INIT_PDU_BLOCK_STATE(&(clstateptr)->block, blocksize);                 \
+    GET_CLIENT_LIST(bmsgptr)->client_protocol = kClientProtocolUnknown;    \
+    GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(bmsgptr))->client_entries = NULL;  \
+    GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(bmsgptr))->num_client_entries = 0; \
+    GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(bmsgptr))->more_coming = false;    \
+    GET_EPT_CLIENT_LIST(GET_CLIENT_LIST(bmsgptr))->client_entries = NULL;  \
+    GET_EPT_CLIENT_LIST(GET_CLIENT_LIST(bmsgptr))->num_client_entries = 0; \
+    GET_EPT_CLIENT_LIST(GET_CLIENT_LIST(bmsgptr))->more_coming = false;    \
   } while (0)
 
 typedef struct ClientConnectState

@@ -73,14 +73,16 @@ typedef struct RptClientEntry
   EtcPalUuid binding_cid;
 } RptClientEntry;
 
+typedef union
+{
+  RptClientEntry rpt;
+  EptClientEntry ept;
+} ClientEntryUnion;
+
 typedef struct ClientEntry
 {
   client_protocol_t client_protocol;
-  union
-  {
-    RptClientEntry rpt;
-    EptClientEntry ept;
-  } data;
+  ClientEntryUnion data;
 } ClientEntry;
 
 #define IS_RPT_CLIENT_ENTRY(clientryptr) ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_RPT)

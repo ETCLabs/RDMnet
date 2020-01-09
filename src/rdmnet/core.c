@@ -108,8 +108,6 @@ etcpal_error_t rdmnet_core_init(const EtcPalLogParams* log_params, const RdmnetN
       if (res == kEtcPalErrOk)
         poll_initted = ((res = etcpal_poll_context_init(&core_state.poll_context)) == kEtcPalErrOk);
       if (res == kEtcPalErrOk)
-        res = rdmnet_message_init();
-      if (res == kEtcPalErrOk)
         mcast_initted = ((res = rdmnet_mcast_init(netint_config)) == kEtcPalErrOk);
       if (res == kEtcPalErrOk)
         conn_initted = ((res = rdmnet_conn_init()) == kEtcPalErrOk);

@@ -425,6 +425,11 @@ typedef struct BrokerMessage
  */
 #define GET_CLIENT_LIST(brokermsgptr) (&(brokermsgptr)->data.client_list)
 
+#define IS_RPT_CLIENT_LIST(clientlistptr) (&(clientlistptr)->client_protocol == E133_CLIENT_PROTOCOL_RPT)
+#define GET_RPT_CLIENT_LIST(clientlistptr) (&(clientlistptr)->data.rpt)
+#define IS_EPT_CLIENT_LIST(clientlistptr) (&(clientlistptr)->client_protocol == E133_CLIENT_PROTOCOL_EPT)
+#define GET_EPT_CLIENT_LIST(clientlistptr) (&(clientlistptr)->data.ept)
+
 /*!
  * \brief Determine whether a BrokerMessage contains a Request Dynamic UID Assignment message.
  * \param brokermsgptr Pointer to BrokerMessage.

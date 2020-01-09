@@ -10,6 +10,6 @@
 
 constexpr std::pair<const char*, const RdmnetMessage&> kRdmnetTestDataFiles[] = {
 @RDMNET_TEST_DATA_PAIRS@
-}
+};
 
 #endif  // TEST_FILE_MANIFEST_H_

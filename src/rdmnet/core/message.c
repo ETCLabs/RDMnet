@@ -23,36 +23,18 @@
 /**************************** Private variables ******************************/
 
 #if !RDMNET_DYNAMIC_MEM
-ETCPAL_MEMPOOL_DEFINE(client_entries, ClientEntryData, RDMNET_MAX_CLIENT_ENTRIES);
-ETCPAL_MEMPOOL_DEFINE(ept_subprots, EptSubProtocol, RDMNET_MAX_EPT_SUBPROTS);
-ETCPAL_MEMPOOL_DEFINE(dynamic_uid_request_entries, DynamicUidRequestListEntry, RDMNET_MAX_DYNAMIC_UID_ENTRIES);
-ETCPAL_MEMPOOL_DEFINE(dynamic_uid_mappings, DynamicUidMapping, RDMNET_MAX_DYNAMIC_UID_ENTRIES);
-ETCPAL_MEMPOOL_DEFINE(fetch_uid_assignment_entries, FetchUidAssignmentListEntry, RDMNET_MAX_DYNAMIC_UID_ENTRIES);
-ETCPAL_MEMPOOL_DEFINE(rdm_commands, RdmBufListEntry, RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES);
-ETCPAL_MEMPOOL_DEFINE_ARRAY(rpt_status_strings, char, RPT_STATUS_STRING_MAXLEN + 1, 1);
+StaticMessageBuffer rdmnet_static_msg_buf;
+char rpt_status_string_buffer[RPT_STATUS_STRING_MAXLEN + 1];
 #endif
 
 /*********************** Private function prototypes *************************/
 
 static void free_broker_message(BrokerMessage* bmsg);
+#if RDMNET_DYNAMIC_MEM
 static void free_rpt_message(RptMessage* rmsg);
+#endif
 
 /*************************** Function definitions ****************************/
-
-etcpal_error_t rdmnet_message_init()
-{
-  etcpal_error_t res = kEtcPalErrOk;
-#if !RDMNET_DYNAMIC_MEM
-  res |= etcpal_mempool_init(client_entries);
-  res |= etcpal_mempool_init(ept_subprots);
-  res |= etcpal_mempool_init(dynamic_uid_request_entries);
-  res |= etcpal_mempool_init(dynamic_uid_mappings);
-  res |= etcpal_mempool_init(fetch_uid_assignment_entries);
-  res |= etcpal_mempool_init(rdm_commands);
-  res |= etcpal_mempool_init(rpt_status_strings);
-#endif
-  return res;
-}
 
 /*! \brief Initialize a LocalRdmResponse associated with a received RemoteRdmCommand.
  *
@@ -155,9 +137,11 @@ void free_rdmnet_message(RdmnetMessage* msg)
       case ACN_VECTOR_ROOT_BROKER:
         free_broker_message(GET_BROKER_MSG(msg));
         break;
+#if RDMNET_DYNAMIC_MEM
       case ACN_VECTOR_ROOT_RPT:
         free_rpt_message(GET_RPT_MSG(msg));
         break;
+#endif
       default:
         break;
     }
@@ -174,72 +158,43 @@ void free_broker_message(BrokerMessage* bmsg)
     case VECTOR_BROKER_CONNECTED_CLIENT_LIST:
     {
       ClientList* clist = GET_CLIENT_LIST(bmsg);
-      ClientEntryData* entry = clist->client_entry_list;
-      ClientEntryData* next_entry;
-      while (entry)
+      if (IS_EPT_CLIENT_LIST(clist))
       {
-        if (entry->client_protocol == E133_CLIENT_PROTOCOL_EPT)
+        EptClientEntry* ept_entry_list = GET_EPT_CLIENT_LIST(clist)->client_entries;
+        size_t ept_entry_list_size = GET_EPT_CLIENT_LIST(clist)->num_client_entries;
+        for (EptClientEntry* ept_entry = ept_entry_list; ept_entry < ept_entry_list + ept_entry_list_size; ++ept_entry)
         {
-          ClientEntryDataEpt* eptdata = GET_EPT_CLIENT_ENTRY_DATA(entry);
-          EptSubProtocol* subprot = eptdata->protocol_list;
-          EptSubProtocol* next_subprot;
-          while (subprot)
-          {
-            next_subprot = subprot->next;
-            free_ept_subprot(subprot);
-            subprot = next_subprot;
-          }
+          free_ept_subprot_list(ept_entry->protocol_list);
         }
-        next_entry = entry->next;
-        free_client_entry(entry);
-        entry = next_entry;
+#if RDMNET_DYNAMIC_MEM
+        free(ept_entry_list);
+#endif
       }
+#if RDMNET_DYNAMIC_MEM
+      else if (IS_RPT_CLIENT_LIST(clist))
+      {
+        free(GET_RPT_CLIENT_LIST(clist)->client_entries);
+      }
+#endif
       break;
     }
+#if RDMNET_DYNAMIC_MEM
     case VECTOR_BROKER_REQUEST_DYNAMIC_UIDS:
-    {
-      DynamicUidRequestList* list = GET_DYNAMIC_UID_REQUEST_LIST(bmsg);
-      DynamicUidRequestListEntry* entry = list->request_list;
-      DynamicUidRequestListEntry* next_entry;
-      while (entry)
-      {
-        next_entry = entry->next;
-        free_dynamic_uid_request_entry(entry);
-        entry = next_entry;
-      }
+      free(GET_DYNAMIC_UID_REQUEST_LIST(bmsg)->requests);
       break;
-    }
     case VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS:
-    {
-      DynamicUidAssignmentList* list = GET_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg);
-      DynamicUidMapping* mapping = list->mapping_list;
-      DynamicUidMapping* next_mapping;
-      while (mapping)
-      {
-        next_mapping = mapping->next;
-        free_dynamic_uid_mapping(mapping);
-        mapping = next_mapping;
-      }
+      free(GET_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg)->mappings);
       break;
-    }
     case VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST:
-    {
-      FetchUidAssignmentList* list = GET_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg);
-      FetchUidAssignmentListEntry* entry = list->assignment_list;
-      FetchUidAssignmentListEntry* next_entry;
-      while (entry)
-      {
-        next_entry = entry->next;
-        free_fetch_uid_assignment_entry(entry);
-        entry = next_entry;
-      }
+      free(GET_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg)->uids);
       break;
-    }
+#endif
     default:
       break;
   }
 }
 
+#if RDMNET_DYNAMIC_MEM
 void free_rpt_message(RptMessage* rmsg)
 {
   switch (rmsg->vector)
@@ -272,3 +227,4 @@ void free_rpt_message(RptMessage* rmsg)
       break;
   }
 }
+#endif

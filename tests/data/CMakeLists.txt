@@ -2,9 +2,9 @@ add_library(test_data
   ${CMAKE_CURRENT_LIST_DIR}/load_test_data.h
   ${CMAKE_CURRENT_LIST_DIR}/load_test_data.cpp
 )
-get_target_property(RDMNET_INCLUDE_DIRS RDMnet INTERFACE_INCLUDE_DIRECTORIES)
-get_target_property(RDM_INCLUDE_DIRS RDM INTERFACE_INCLUDE_DIRECTORIES)
-target_include_directories(test_data PUBLIC ${CMAKE_CURRENT_LIST_DIR} ${RDMNET_INCLUDE_DIRS} ${RDM_INCLUDE_DIRS})
+target_include_directories(test_data PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_link_libraries(test_data PRIVATE RDMnet)
+set_target_properties(test_data PROPERTIES FOLDER tests)
 
 # Generate the test file manifest
 file(GLOB TEST_FILE_LIST messages/*.data.txt)
