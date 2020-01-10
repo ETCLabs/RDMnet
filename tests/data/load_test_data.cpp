@@ -37,9 +37,12 @@ std::vector<uint8_t> LoadTestData(std::ifstream& file)
   do
   {
     if (file >> byte)
+    {
       data.push_back(static_cast<uint8_t>(byte));
+    }
     else
     {
+      // Encountered a comment or other text, skip the rest of the line
       file.clear();
       std::string remaining_line;
       std::getline(file, remaining_line);

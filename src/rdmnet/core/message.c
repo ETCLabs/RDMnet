@@ -41,26 +41,26 @@ static void free_rpt_message(RptMessage* rmsg);
  *  Provide the received command and the array of RdmResponses to be sent in response.
  *
  *  \param[in] received_cmd Received command.
- *  \param[in] rdm_arr Array of RDM responses to the command.
- *  \param[in] num_responses Number of RDM responses in rdm_arr.
+ *  \param[in] responses Array of RDM responses to the command.
+ *  \param[in] num_responses Number of RDM responses in responses array.
  *  \param[out] resp Response to fill in.
  */
-void rdmnet_create_response_from_command(const RemoteRdmCommand* received_cmd, const RdmResponse* rdm_arr,
+void rdmnet_create_response_from_command(const RemoteRdmCommand* received_cmd, const RdmResponse* responses,
                                          size_t num_responses, LocalRdmResponse* resp)
 {
-  if (received_cmd && rdm_arr && num_responses > 0 && resp)
+  if (received_cmd && responses && num_responses > 0 && resp)
   {
     // If we are ACK'ing a SET_COMMAND, we broadcast the response to keep other controllers
     // apprised of state.
     resp->dest_uid =
-        (((received_cmd->rdm.command_class == kRdmCCSetCommand) && (rdm_arr[0].resp_type == kRdmResponseTypeAck))
+        (((received_cmd->rdm.command_class == kRdmCCSetCommand) && (responses[0].resp_type == kRdmResponseTypeAck))
              ? kRdmnetControllerBroadcastUid
              : received_cmd->source_uid);
     resp->source_endpoint = received_cmd->dest_endpoint;
     resp->seq_num = received_cmd->seq_num;
     resp->command_included = true;
     resp->cmd = received_cmd->rdm;
-    resp->rdm_arr = rdm_arr;
+    resp->responses = responses;
     resp->num_responses = num_responses;
   }
 }
@@ -70,20 +70,20 @@ void rdmnet_create_response_from_command(const RemoteRdmCommand* received_cmd, c
  *  Provide the array of RdmResponses to be sent.
  *
  *  \param[in] source_endpoint Endpoint from which this response is originating.
- *  \param[in] rdm_arr Array of RDM responses to be sent.
- *  \param[in] num_responses Number of RDM responses in rdm_arr.
+ *  \param[in] responses Array of RDM responses to be sent.
+ *  \param[in] num_responses Number of RDM responses in responses array.
  *  \param[out] resp Response to initialize.
  */
-void rdmnet_create_unsolicited_response(uint16_t source_endpoint, const RdmResponse* rdm_arr, size_t num_responses,
+void rdmnet_create_unsolicited_response(uint16_t source_endpoint, const RdmResponse* responses, size_t num_responses,
                                         LocalRdmResponse* resp)
 {
-  if (rdm_arr && num_responses > 0 && resp)
+  if (responses && num_responses > 0 && resp)
   {
     resp->dest_uid = kRdmnetControllerBroadcastUid;
     resp->source_endpoint = source_endpoint;
     resp->seq_num = 0;
     resp->command_included = false;
-    resp->rdm_arr = rdm_arr;
+    resp->responses = responses;
     resp->num_responses = num_responses;
   }
 }
@@ -164,7 +164,7 @@ void free_broker_message(BrokerMessage* bmsg)
         size_t ept_entry_list_size = GET_EPT_CLIENT_LIST(clist)->num_client_entries;
         for (EptClientEntry* ept_entry = ept_entry_list; ept_entry < ept_entry_list + ept_entry_list_size; ++ept_entry)
         {
-          free_ept_subprot_list(ept_entry->protocol_list);
+          FREE_EPT_SUBPROT_LIST(ept_entry->protocol_list);
         }
 #if RDMNET_DYNAMIC_MEM
         free(ept_entry_list);

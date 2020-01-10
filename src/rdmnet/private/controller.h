@@ -23,10 +23,24 @@
 #include "rdmnet/controller.h"
 #include "rdmnet/client.h"
 
+typedef enum
+{
+  kRdmHandleMethodUseCallbacks,
+  kRdmHandleMethodUseData
+} rdm_handle_method_t;
+
 typedef struct RdmnetController
 {
   rdmnet_client_t client_handle;
   RdmnetControllerCallbacks callbacks;
+
+  rdm_handle_method_t rdm_handle_method;
+  union
+  {
+    RdmnetControllerRdmCmdCallbacks callbacks;
+    RdmnetControllerRdmData data;
+  } rdm_handler;
+
   void* callback_context;
 } RdmnetController;
 

@@ -104,7 +104,6 @@ etcpal_error_t rdmnet_device_create(const RdmnetDeviceConfig* config, rdmnet_dev
   client_config.callbacks = client_callbacks;
   client_config.callback_context = new_device;
   client_config.optional = config->optional;
-  client_config.llrp_optional = config->llrp_optional;
 
   etcpal_error_t res = rdmnet_rpt_client_create(&client_config, &new_device->client_handle);
   if (res == kEtcPalErrOk)

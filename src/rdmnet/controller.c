@@ -114,10 +114,10 @@ void rdmnet_controller_deinit()
  * rdmnet_controller_config_init(&config, 0x6574);
  * \endcode
  *
+ * \param[out] config Pointer to RdmnetControllerConfig to init.
  * \param[in] manufacturer_id ESTA manufacturer ID. All RDMnet Controllers must have one.
- * \param[out] controllercfgptr Pointer to RdmnetControllerConfig to init.
  */
-void rdmnet_controller_config_init(uint16_t manufacturer_id, RdmnetControllerConfig* config)
+void rdmnet_controller_config_init(RdmnetControllerConfig* config, uint16_t manufacturer_id)
 {
   if (!config)
     return;
@@ -299,8 +299,10 @@ void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t sc
       case VECTOR_BROKER_CLIENT_ADD:
       case VECTOR_BROKER_CLIENT_REMOVE:
       case VECTOR_BROKER_CLIENT_ENTRY_CHANGE:
+        assert(GET_CLIENT_LIST(msg)->client_protocol == kClientProtocolRPT);
         controller->callbacks.client_list_update(controller, scope_handle, (client_list_action_t)msg->vector,
-                                                 GET_CLIENT_LIST(msg), controller->callback_context);
+                                                 GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(msg)),
+                                                 controller->callback_context);
         break;
       default:
         break;
@@ -315,7 +317,14 @@ void client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand
   RdmnetController* controller = (RdmnetController*)context;
   if (controller)
   {
-    controller->callbacks.llrp_rdm_command_received(controller, cmd, controller->callback_context);
+    if (controller->rdm_handle_method == kRdmHandleMethodUseCallbacks)
+    {
+      controller->rdm_handler.callbacks.llrp_rdm_command_received(controller, cmd, controller->callback_context);
+    }
+    else
+    {
+      // TODO
+    }
   }
 }
 
@@ -330,8 +339,15 @@ void client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_han
     switch (msg->type)
     {
       case kRptClientMsgRdmCmd:
-        controller->callbacks.rdm_command_received(controller, scope_handle, GET_REMOTE_RDM_COMMAND(msg),
-                                                   controller->callback_context);
+        if (controller->rdm_handle_method == kRdmHandleMethodUseCallbacks)
+        {
+          controller->rdm_handler.callbacks.rdm_command_received(controller, scope_handle, GET_REMOTE_RDM_COMMAND(msg),
+                                                                 controller->callback_context);
+        }
+        else
+        {
+          // TODO
+        }
         break;
       case kRptClientMsgRdmResp:
         controller->callbacks.rdm_response_received(controller, scope_handle, GET_REMOTE_RDM_RESPONSE(msg),

@@ -214,7 +214,7 @@ size_t parse_rlp_block(RlpState* rlpstate, const uint8_t* data, size_t datalen, 
         // preamble, it is an error.
         if (rlpstate->block.size_parsed + rlp.datalen <= rlpstate->block.block_size)
         {
-          // Fill in the root layer data in the overall rdmnet_message struct.
+          // Fill in the root layer data in the overall RdmnetMessage struct.
           msg->vector = rlp.vector;
           msg->sender_cid = rlp.sender_cid;
           rlpstate->block.parsed_header = true;
@@ -771,9 +771,19 @@ size_t parse_client_list(ClientListState* clstate, const uint8_t* data, size_t d
           clist->client_protocol = GET_CLIENT_PROTOCOL_FROM_CENTRY_HEADER(data);
           if (clist->client_protocol == kClientProtocolRPT)
           {
+            GET_RPT_CLIENT_LIST(clist)->client_entries = ALLOC_RPT_CLIENT_ENTRY();
+            GET_RPT_CLIENT_LIST(clist)->num_client_entries = 1;
+            if (!(GET_RPT_CLIENT_LIST(clist)->client_entries))
+              // TODO figure out error handling
+              break;
           }
           else if (clist->client_protocol == kClientProtocolEPT)
           {
+            GET_EPT_CLIENT_LIST(clist)->client_entries = ALLOC_EPT_CLIENT_ENTRY();
+            GET_EPT_CLIENT_LIST(clist)->num_client_entries = 1;
+            if (!(GET_EPT_CLIENT_LIST(clist)->client_entries))
+              // TODO figure out error handling
+              break;
           }
           else
           {
@@ -795,18 +805,18 @@ size_t parse_client_list(ClientListState* clstate, const uint8_t* data, size_t d
         next_entry_cp = clist->client_protocol;
         if (clist->client_protocol == kClientProtocolRPT)
         {
-          next_entry = &(GET_RPT_CLIENT_LIST(clist)->client_entries[GET_RPT_CLIENT_LIST(clist)->num_client_entries]);
+          next_entry = (ClientEntryUnion*)&(GET_RPT_CLIENT_LIST(clist)->client_entries[GET_RPT_CLIENT_LIST(clist)->num_client_entries]);
         }
         else
         {
-          next_entry = &(GET_EPT_CLIENT_LIST(clist)->client_entries[GET_EPT_CLIENT_LIST(clist)->num_client_entries]);
+          next_entry = (ClientEntryUnion*)&(GET_EPT_CLIENT_LIST(clist)->client_entries[GET_EPT_CLIENT_LIST(clist)->num_client_entries]);
         }
       }
 
       if (clstate->block.parsed_header)
       {
         size_t next_layer_bytes_parsed = parse_single_client_entry(
-            &clstate->entry, &data[bytes_parsed], datalen - bytes_parsed, next_entry_cp, next_entry, &res);
+            &clstate->entry, &data[bytes_parsed], datalen - bytes_parsed, &next_entry_cp, next_entry, &res);
         RDMNET_ASSERT(next_layer_bytes_parsed <= (datalen - bytes_parsed));
         RDMNET_ASSERT(clstate->block.size_parsed + next_layer_bytes_parsed <= clstate->block.block_size);
         bytes_parsed += next_layer_bytes_parsed;
@@ -1320,7 +1330,7 @@ size_t parse_rpt_status(RptStatusState* rsstate, const uint8_t* data, size_t dat
         }
         else if (remaining_len >= str_len)
         {
-          char* str_buf = alloc_rpt_status_str(str_len + 1);
+          char* str_buf = ALLOC_RPT_STATUS_STR(str_len + 1);
           if (str_buf)
           {
             memcpy(str_buf, &data[bytes_parsed], str_len);

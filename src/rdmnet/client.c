@@ -55,27 +55,35 @@
 
 /***************************** Private macros ********************************/
 
-/* Macros for dynamic vs static allocation. Static allocation is done using etcpal_mempool. */
+// Macros for dynamic vs static allocation. Static allocation is done using etcpal_mempool for
+// client tracking information, and via a static buffer for RDM responses.
 #if RDMNET_DYNAMIC_MEM
-#define alloc_rdmnet_client() malloc(sizeof(RdmnetClient))
-#define alloc_client_scope() malloc(sizeof(ClientScopeListEntry))
-#define alloc_client_rdm_response() malloc(sizeof(RemoteRdmRespListEntry))
-#define free_rdmnet_client(ptr) free(ptr)
-#define free_client_scope(ptr) free(ptr)
-#define free_client_rdm_response(ptr) free(ptr)
+
+#define ALLOC_RDMNET_CLIENT() malloc(sizeof(RdmnetClient))
+#define ALLOC_CLIENT_SCOPE() malloc(sizeof(ClientScopeListEntry))
+#define FREE_RDMNET_CLIENT(ptr) free(ptr)
+#define FREE_CLIENT_SCOPE(ptr) free(ptr)
+
+#define ALLOC_CLIENT_RDM_RESPONSE_ARRAY(num_responses) calloc((num_responses), sizeof(RdmResponse))
+#define FREE_CLIENT_RDM_RESPONSE_ARRAY(ptr) free(ptr)
+
 #else
-#define alloc_rdmnet_client() etcpal_mempool_alloc(rdmnet_clients)
-#define alloc_client_scope() etcpal_mempool_alloc(client_scopes)
-#define alloc_client_rdm_response() etcpal_mempool_alloc(client_rdm_responses)
-#define free_rdmnet_client(ptr) etcpal_mempool_free(rdmnet_clients, ptr)
-#define free_client_scope(ptr) etcpal_mempool_free(client_scopes, ptr)
-#define free_client_rdm_response(ptr) etcpal_mempool_free(client_rdm_responses, ptr)
+
+#define ALLOC_RDMNET_CLIENT() etcpal_mempool_alloc(rdmnet_clients)
+#define ALLOC_CLIENT_SCOPE() etcpal_mempool_alloc(client_scopes)
+#define FREE_RDMNET_CLIENT(ptr) etcpal_mempool_free(rdmnet_clients, ptr)
+#define FREE_CLIENT_SCOPE(ptr) etcpal_mempool_free(client_scopes, ptr)
+
+#define ALLOC_CLIENT_RDM_RESPONSE_ARRAY(num_responses) \
+  (assert(num_responses <= RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES), client_rdm_response_buf)
+#define FREE_CLIENT_RDM_RESPONSE_ARRAY(ptr)
+
 #endif
 
-#define rdmnet_client_lock() etcpal_mutex_take(&client_lock)
-#define rdmnet_client_unlock() etcpal_mutex_give(&client_lock)
+#define RDMNET_CLIENT_LOCK() etcpal_mutex_take(&client_lock)
+#define RDMNET_CLIENT_UNLOCK() etcpal_mutex_give(&client_lock)
 
-#define init_callback_info(cbptr) ((cbptr)->which = kClientCallbackNone)
+#define INIT_CALLBACK_INFO(cbptr) ((cbptr)->which = kClientCallbackNone)
 
 /**************************** Private variables ******************************/
 
@@ -83,7 +91,8 @@
 ETCPAL_MEMPOOL_DEFINE(rdmnet_clients, RdmnetClient, RDMNET_MAX_CLIENTS);
 ETCPAL_MEMPOOL_DEFINE(client_scopes, ClientScopeListEntry, RDMNET_MAX_CLIENT_SCOPES);
 ETCPAL_MEMPOOL_DEFINE(client_rb_nodes, EtcPalRbNode, MAX_CLIENT_RB_NODES);
-ETCPAL_MEMPOOL_DEFINE(client_rdm_responses, RemoteRdmRespListEntry, RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES);
+
+static RdmResponse client_rdm_response_buf[RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES];
 #endif
 
 static bool client_lock_initted = false;
@@ -211,7 +220,7 @@ etcpal_error_t rdmnet_client_init(const EtcPalLogParams* lparams, const RdmnetNe
   }
 
   etcpal_error_t res = kEtcPalErrSys;
-  if (rdmnet_client_lock())
+  if (RDMNET_CLIENT_LOCK())
   {
     res = rdmnet_core_init(lparams, netint_config);
 
@@ -221,7 +230,6 @@ etcpal_error_t rdmnet_client_init(const EtcPalLogParams* lparams, const RdmnetNe
       res |= etcpal_mempool_init(rdmnet_clients);
       res |= etcpal_mempool_init(client_scopes);
       res |= etcpal_mempool_init(client_rb_nodes);
-      res |= etcpal_mempool_init(client_rdm_responses);
     }
 
     if (res != kEtcPalErrOk)
@@ -240,7 +248,7 @@ etcpal_error_t rdmnet_client_init(const EtcPalLogParams* lparams, const RdmnetNe
 
       init_int_handle_manager(&state.handle_mgr, client_handle_in_use);
     }
-    rdmnet_client_unlock();
+    RDMNET_CLIENT_UNLOCK();
   }
   return res;
 }
@@ -260,12 +268,12 @@ void rdmnet_client_deinit()
   if (!rdmnet_core_initialized())
     return;
 
-  if (rdmnet_client_lock())
+  if (RDMNET_CLIENT_LOCK())
   {
     etcpal_rbtree_clear_with_cb(&state.clients, client_dealloc);
 
     rdmnet_core_deinit();
-    rdmnet_client_unlock();
+    RDMNET_CLIENT_UNLOCK();
   }
 }
 
@@ -280,10 +288,10 @@ etcpal_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig* config, rdm
   if (res != kEtcPalErrOk)
     return res;
 
-  if (rdmnet_client_lock())
+  if (RDMNET_CLIENT_LOCK())
   {
     res = new_rpt_client(config, handle);
-    rdmnet_client_unlock();
+    RDMNET_CLIENT_UNLOCK();
   }
   else
   {
@@ -305,7 +313,7 @@ etcpal_error_t rdmnet_client_destroy(rdmnet_client_t handle, rdmnet_disconnect_r
 
   etcpal_rbtree_remove(&state.clients, cli);
   destroy_client(cli, reason);
-  rdmnet_client_unlock();
+  RDMNET_CLIENT_UNLOCK();
   return res;
 }
 
@@ -338,7 +346,7 @@ etcpal_error_t rdmnet_client_add_scope(rdmnet_client_t handle, const RdmnetScope
       rdmnet_connection_destroy(new_entry->handle, NULL);
       remove_scope_from_list(&cli->scope_list, new_entry);
       etcpal_rbtree_remove(&state.scopes_by_handle, new_entry);
-      free_client_scope(new_entry);
+      FREE_CLIENT_SCOPE(new_entry);
     }
   }
 
@@ -366,7 +374,7 @@ etcpal_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_
   rdmnet_connection_destroy(scope_entry->handle, &reason);
   remove_scope_from_list(&cli->scope_list, scope_entry);
   etcpal_rbtree_remove(&state.scopes_by_handle, scope_entry);
-  free_client_scope(scope_entry);
+  FREE_CLIENT_SCOPE(scope_entry);
 
   release_client(cli);
   return res;
@@ -481,7 +489,7 @@ etcpal_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmne
     for (size_t i = 0; i < resp->num_responses; ++i)
     {
       size_t out_buf_offset = resp->command_included ? i + 1 : i;
-      RdmResponse resp_data = resp->rdm_arr[i];
+      RdmResponse resp_data = resp->responses[i];
       if (resp->source_endpoint == E133_NULL_ENDPOINT)
         resp_data.source_uid = scope_entry->uid;
       res = rdmresp_pack_response(&resp_data, &resp_buf[out_buf_offset]);
@@ -598,7 +606,7 @@ void conncb_connected(rdmnet_conn_t handle, const RdmnetConnectedInfo* connect_i
   RDMNET_UNUSED_ARG(context);
 
   CB_STORAGE_CLASS ClientCallbackDispatchInfo cb;
-  init_callback_info(&cb);
+  INIT_CALLBACK_INFO(&cb);
 
   ClientScopeListEntry* scope_entry = get_scope(handle);
   if (scope_entry)
@@ -625,7 +633,7 @@ void conncb_connect_failed(rdmnet_conn_t handle, const RdmnetConnectFailedInfo* 
   RDMNET_UNUSED_ARG(context);
 
   CB_STORAGE_CLASS ClientCallbackDispatchInfo cb;
-  init_callback_info(&cb);
+  INIT_CALLBACK_INFO(&cb);
 
   ClientScopeListEntry* scope_entry = get_scope(handle);
   if (scope_entry)
@@ -678,7 +686,7 @@ void conncb_disconnected(rdmnet_conn_t handle, const RdmnetDisconnectedInfo* dis
   RDMNET_UNUSED_ARG(context);
 
   CB_STORAGE_CLASS ClientCallbackDispatchInfo cb;
-  init_callback_info(&cb);
+  INIT_CALLBACK_INFO(&cb);
 
   ClientScopeListEntry* scope_entry = get_scope(handle);
   if (scope_entry)
@@ -729,7 +737,7 @@ void conncb_msg_received(rdmnet_conn_t handle, const RdmnetMessage* message, voi
   RDMNET_UNUSED_ARG(context);
 
   CB_STORAGE_CLASS ClientCallbackDispatchInfo cb;
-  init_callback_info(&cb);
+  INIT_CALLBACK_INFO(&cb);
 
   ClientScopeListEntry* scope_entry = get_scope(handle);
   if (scope_entry)
@@ -797,11 +805,11 @@ bool handle_rpt_message(const RdmnetClient* cli, const ClientScopeListEntry* sco
 bool handle_rpt_request(const RptMessage* rmsg, RptClientMessage* msg_out)
 {
   RemoteRdmCommand* cmd = &msg_out->payload.cmd;
-  const RdmBufListEntry* list = GET_RDM_BUF_LIST(rmsg)->list;
+  const RdmBufList* list = GET_RDM_BUF_LIST(rmsg);
 
-  if (!list->next)  // Only one RDM command allowed in an RPT request
+  if (list->num_rdm_buffers == 1)  // Only one RDM command allowed in an RPT request
   {
-    etcpal_error_t unpack_res = rdmresp_unpack_command(&list->msg, &cmd->rdm);
+    etcpal_error_t unpack_res = rdmresp_unpack_command(list->rdm_buffers, &cmd->rdm);
     if (unpack_res == kEtcPalErrOk)
     {
       msg_out->type = kRptClientMsgRdmCmd;
@@ -822,20 +830,23 @@ bool handle_rpt_notification(const RptMessage* rmsg, RptClientMessage* msg_out)
   msg_out->type = kRptClientMsgRdmResp;
   resp->command_included = false;
   resp->more_coming = GET_RDM_BUF_LIST(rmsg)->more_coming;
-  resp->resp_list = NULL;
-  RemoteRdmRespListEntry** next_entry = &resp->resp_list;
+
+  const RdmBufList* list = GET_RDM_BUF_LIST(rmsg);
+  resp->responses = ALLOC_CLIENT_RDM_RESPONSE_ARRAY(list->num_rdm_buffers);
+  if (!resp->responses)
+    return false;
 
   bool good_parse = true;
   bool first_msg = true;
-  for (const RdmBufListEntry* buf_entry = GET_RDM_BUF_LIST(rmsg)->list; buf_entry && good_parse;
-       buf_entry = buf_entry->next)
+  for (size_t i = 0; i < list->num_rdm_buffers; ++i)
   {
+    const RdmBuffer* buffer = &list->rdm_buffers[i];
     if (first_msg)
     {
-      if (rdmresp_is_non_disc_command(&buf_entry->msg))
+      if (rdmresp_is_non_disc_command(buffer))
       {
         // The command is included.
-        etcpal_error_t unpack_res = rdmresp_unpack_command(&buf_entry->msg, &resp->cmd);
+        etcpal_error_t unpack_res = rdmresp_unpack_command(buffer, &resp->cmd);
         if (unpack_res == kEtcPalErrOk)
         {
           resp->command_included = true;
@@ -848,24 +859,10 @@ bool handle_rpt_notification(const RptMessage* rmsg, RptClientMessage* msg_out)
       }
       first_msg = false;
     }
-    *next_entry = (RemoteRdmRespListEntry*)alloc_client_rdm_response();
-    if (*next_entry)
-    {
-      etcpal_error_t unpack_res = rdmctl_unpack_response(&buf_entry->msg, &(*next_entry)->msg);
-      if (unpack_res == kEtcPalErrOk)
-      {
-        (*next_entry)->next = NULL;
-        next_entry = &(*next_entry)->next;
-      }
-      else
-      {
-        good_parse = false;
-      }
-    }
-    else
-    {
+
+    etcpal_error_t unpack_res = rdmctl_unpack_response(buffer, &resp->responses[i]);
+    if (unpack_res != kEtcPalErrOk)
       good_parse = false;
-    }
   }
 
   if (good_parse)
@@ -902,12 +899,7 @@ void free_rpt_client_message(RptClientMessage* msg)
 {
   if (msg->type == kRptClientMsgRdmResp)
   {
-    RemoteRdmRespListEntry* next;
-    for (RemoteRdmRespListEntry* to_free = GET_REMOTE_RDM_RESPONSE(msg)->resp_list; to_free; to_free = next)
-    {
-      next = to_free->next;
-      free_client_rdm_response(to_free);
-    }
+    FREE_CLIENT_RDM_RESPONSE_ARRAY(GET_REMOTE_RDM_RESPONSE(msg)->responses);
   }
 }
 
@@ -922,7 +914,7 @@ void llrpcb_rdm_cmd_received(llrp_target_t handle, const LlrpRemoteRdmCommand* c
   RDMNET_UNUSED_ARG(context);
 
   CB_STORAGE_CLASS ClientCallbackDispatchInfo cb;
-  init_callback_info(&cb);
+  INIT_CALLBACK_INFO(&cb);
 
   RdmnetClient* cli = get_client_by_llrp_handle(handle);
   if (cli)
@@ -1098,7 +1090,7 @@ etcpal_error_t new_rpt_client(const RdmnetRptClientConfig* config, rdmnet_client
   if (new_handle == RDMNET_CLIENT_INVALID)
     return res;
 
-  RdmnetClient* new_cli = (RdmnetClient*)alloc_rdmnet_client();
+  RdmnetClient* new_cli = (RdmnetClient*)ALLOC_RDMNET_CLIENT();
   if (new_cli)
   {
     res = create_llrp_handle_for_client(config, new_cli);
@@ -1130,13 +1122,13 @@ etcpal_error_t new_rpt_client(const RdmnetRptClientConfig* config, rdmnet_client
       else
       {
         etcpal_rbtree_remove(&state.clients_by_llrp_handle, new_cli);
-        free_rdmnet_client(new_cli);
+        FREE_RDMNET_CLIENT(new_cli);
         res = kEtcPalErrNoMem;
       }
     }
     else
     {
-      free_rdmnet_client(new_cli);
+      FREE_RDMNET_CLIENT(new_cli);
     }
   }
 
@@ -1158,19 +1150,22 @@ void destroy_client(RdmnetClient* cli, rdmnet_disconnect_reason_t reason)
     etcpal_rbtree_remove(&state.scopes_by_handle, scope);
 
     ClientScopeListEntry* next_scope = scope->next;
-    free_client_scope(scope);
+    FREE_CLIENT_SCOPE(scope);
     scope = next_scope;
   }
 
   rdmnet_llrp_target_destroy(cli->llrp_handle);
 
-  free_rdmnet_client(cli);
+  FREE_RDMNET_CLIENT(cli);
 }
 
 etcpal_error_t create_llrp_handle_for_client(const RdmnetRptClientConfig* config, RdmnetClient* cli)
 {
   LlrpTargetConfig target_config;
-  target_config.optional = config->llrp_optional;
+  target_config.optional.netint_arr = config->optional.llrp_netint_arr;
+  target_config.optional.num_netints = config->optional.num_llrp_netints;
+  target_config.optional.uid = config->optional.uid;
+
   target_config.cid = config->cid;
   target_config.component_type =
       (config->type == kRPTClientTypeController ? kLlrpCompRptController : kLlrpCompRptDevice);
@@ -1212,7 +1207,7 @@ etcpal_error_t create_and_append_scope_entry(const RdmnetScopeConfig* config, Rd
 
   // The scope string was not in the list, try to allocate it
   etcpal_error_t res = kEtcPalErrNoMem;
-  ClientScopeListEntry* new_scope = (ClientScopeListEntry*)alloc_client_scope();
+  ClientScopeListEntry* new_scope = (ClientScopeListEntry*)ALLOC_CLIENT_SCOPE();
   if (new_scope)
   {
     RdmnetConnectionConfig conn_config;
@@ -1233,13 +1228,13 @@ etcpal_error_t create_and_append_scope_entry(const RdmnetScopeConfig* config, Rd
       {
         res = kEtcPalErrNoMem;
         rdmnet_connection_destroy(new_scope->handle, NULL);
-        free_client_scope(new_scope);
+        FREE_CLIENT_SCOPE(new_scope);
         new_scope = NULL;
       }
     }
     else
     {
-      free_client_scope(new_scope);
+      FREE_CLIENT_SCOPE(new_scope);
       new_scope = NULL;
     }
   }
@@ -1397,7 +1392,8 @@ etcpal_error_t start_connection_for_scope(ClientScopeListEntry* scope_entry, con
       connect_msg.connect_flags = CONNECTFLAG_INCREMENTAL_UPDATES;
     else
       connect_msg.connect_flags = 0;
-    create_rpt_client_entry(&cli->cid, &my_uid, rpt_data->type, NULL, &connect_msg.client_entry);
+    connect_msg.client_entry.client_protocol = kClientProtocolRPT;
+    create_rpt_client_entry(&cli->cid, &my_uid, rpt_data->type, NULL, GET_RPT_CLIENT_ENTRY(&connect_msg.client_entry));
   }
   else
   {
@@ -1412,13 +1408,13 @@ etcpal_error_t get_client(rdmnet_client_t handle, RdmnetClient** client)
 {
   if (!rdmnet_core_initialized())
     return kEtcPalErrNotInit;
-  if (!rdmnet_client_lock())
+  if (!RDMNET_CLIENT_LOCK())
     return kEtcPalErrSys;
 
   RdmnetClient* found_cli = (RdmnetClient*)etcpal_rbtree_find(&state.clients, &handle);
   if (!found_cli)
   {
-    rdmnet_client_unlock();
+    RDMNET_CLIENT_UNLOCK();
     return kEtcPalErrNotFound;
   }
   *client = found_cli;
@@ -1428,7 +1424,7 @@ etcpal_error_t get_client(rdmnet_client_t handle, RdmnetClient** client)
 
 RdmnetClient* get_client_by_llrp_handle(llrp_target_t handle)
 {
-  if (!rdmnet_client_lock())
+  if (!RDMNET_CLIENT_LOCK())
     return NULL;
 
   RdmnetClient llrp_cmp;
@@ -1436,7 +1432,7 @@ RdmnetClient* get_client_by_llrp_handle(llrp_target_t handle)
   RdmnetClient* found_cli = (RdmnetClient*)etcpal_rbtree_find(&state.clients_by_llrp_handle, &llrp_cmp);
   if (!found_cli)
   {
-    rdmnet_client_unlock();
+    RDMNET_CLIENT_UNLOCK();
     return NULL;
   }
   // Return keeping the lock
@@ -1446,18 +1442,18 @@ RdmnetClient* get_client_by_llrp_handle(llrp_target_t handle)
 void release_client(const RdmnetClient* client)
 {
   RDMNET_UNUSED_ARG(client);
-  rdmnet_client_unlock();
+  RDMNET_CLIENT_UNLOCK();
 }
 
 ClientScopeListEntry* get_scope(rdmnet_client_scope_t handle)
 {
-  if (!rdmnet_client_lock())
+  if (!RDMNET_CLIENT_LOCK())
     return NULL;
 
   ClientScopeListEntry* found_scope = (ClientScopeListEntry*)etcpal_rbtree_find(&state.scopes_by_handle, &handle);
   if (!found_scope)
   {
-    rdmnet_client_unlock();
+    RDMNET_CLIENT_UNLOCK();
     return NULL;
   }
   // Return keeping the lock
@@ -1466,7 +1462,7 @@ ClientScopeListEntry* get_scope(rdmnet_client_scope_t handle)
 
 ClientScopeListEntry* get_scope_by_disc_handle(rdmnet_scope_monitor_t handle)
 {
-  if (!rdmnet_client_lock())
+  if (!RDMNET_CLIENT_LOCK())
     return NULL;
 
   ClientScopeListEntry scope_cmp;
@@ -1475,7 +1471,7 @@ ClientScopeListEntry* get_scope_by_disc_handle(rdmnet_scope_monitor_t handle)
       (ClientScopeListEntry*)etcpal_rbtree_find(&state.scopes_by_disc_handle, &scope_cmp);
   if (!found_scope)
   {
-    rdmnet_client_unlock();
+    RDMNET_CLIENT_UNLOCK();
     return NULL;
   }
   // Return keeping the lock
@@ -1485,7 +1481,7 @@ ClientScopeListEntry* get_scope_by_disc_handle(rdmnet_scope_monitor_t handle)
 void release_scope(const ClientScopeListEntry* scope_entry)
 {
   RDMNET_UNUSED_ARG(scope_entry);
-  rdmnet_client_unlock();
+  RDMNET_CLIENT_UNLOCK();
 }
 
 etcpal_error_t get_client_and_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, RdmnetClient** client,
@@ -1517,7 +1513,7 @@ void release_client_and_scope(const RdmnetClient* client, const ClientScopeListE
 {
   RDMNET_UNUSED_ARG(client);
   RDMNET_UNUSED_ARG(scope);
-  rdmnet_client_unlock();
+  RDMNET_CLIENT_UNLOCK();
 }
 
 int client_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)

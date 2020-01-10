@@ -51,7 +51,7 @@ typedef union
 } StaticMessageBuffer;
 
 extern StaticMessageBuffer rdmnet_static_msg_buf;
-extern char rpt_statuc_string_buffer[RPT_STATUS_STRING_MAXLEN + 1];
+extern char rpt_status_string_buffer[RPT_STATUS_STRING_MAXLEN + 1];
 
 #undef RDMNET_DYNAMIC_MEM
 #define RDMNET_DYNAMIC_MEM 0
@@ -74,6 +74,7 @@ extern char rpt_statuc_string_buffer[RPT_STATUS_STRING_MAXLEN + 1];
 
 #define ALLOC_EPT_SUBPROT_LIST() malloc(sizeof(EptSubProtocol))
 #define REALLOC_EPT_SUBPROT_LIST(ptr, new_size) realloc((ptr), ((new_size) * sizeof(EptSubProtocol)))
+#define FREE_EPT_SUBPROT_LIST(ptr) free(ptr)
 
 #define ALLOC_RPT_STATUS_STR(size) malloc(size)
 
@@ -85,7 +86,7 @@ extern char rpt_statuc_string_buffer[RPT_STATUS_STRING_MAXLEN + 1];
 // time.
 #define ALLOC_FROM_ARRAY(array, array_size) rdmnet_static_msg_buf.array
 #define REALLOC_FROM_ARRAY(ptr, new_size, array, array_size) \
-  (assert((ptr) == (array)), ((new_size) <= (array_size) ? rdmnet_static_msg_buf.array : NULL))
+  (assert((ptr) == (rdmnet_static_msg_buf.array)), ((new_size) <= (array_size) ? rdmnet_static_msg_buf.array : NULL))
 
 #define ALLOC_RPT_CLIENT_ENTRY() ALLOC_FROM_ARRAY(rpt_client_entries, RPT_CLIENT_ENTRIES_MAX_SIZE)
 #define ALLOC_EPT_CLIENT_ENTRY() ALLOC_FROM_ARRAY(ept_client_entries, EPT_CLIENT_ENTRIES_MAX_SIZE)
@@ -108,8 +109,10 @@ extern char rpt_statuc_string_buffer[RPT_STATUS_STRING_MAXLEN + 1];
 
 #define ALLOC_RPT_STATUS_STR(size) rpt_status_string_buffer
 
+// TODO
 #define ALLOC_EPT_SUBPROT_LIST() NULL
 #define REALLOC_EPT_SUBPROT_LIST() NULL
+#define FREE_EPT_SUBPROT_LIST(ptr)
 
 #define FREE_MESSAGE_BUFFER(ptr)
 

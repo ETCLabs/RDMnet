@@ -1,9 +1,10 @@
 add_library(test_data
   ${CMAKE_CURRENT_LIST_DIR}/load_test_data.h
   ${CMAKE_CURRENT_LIST_DIR}/load_test_data.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/test_data_util.h
 )
 target_include_directories(test_data PUBLIC ${CMAKE_CURRENT_LIST_DIR})
-target_link_libraries(test_data PRIVATE RDMnet)
+target_link_libraries(test_data PRIVATE RDMnet gtest)
 set_target_properties(test_data PROPERTIES FOLDER tests)
 
 # Generate the test file manifest

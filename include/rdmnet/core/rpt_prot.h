@@ -133,7 +133,7 @@ typedef struct RdmBufList
    * This message contains a partial list. This can be set when the library runs out of static
    * memory in which to store RDM Commands and must deliver the partial list before continuing.
    * The application should store the entries in the list but should not act on the list until
-   * another RdmBufList is received with partial set to false.
+   * another RdmBufList is received with more_coming set to false.
    */
   bool more_coming;
 } RdmBufList;

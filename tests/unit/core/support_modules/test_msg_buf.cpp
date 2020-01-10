@@ -18,56 +18,178 @@
  *****************************************************************************/
 
 // Test the rdmnet/private/msg_buf.c module
+// The msg_buf module is the TCP stream parser that parses the RDMnet TCP-based protocols: Broker,
+// RPT and EPT. This module works using a small testing library which deserializes a set of golden
+// master RDMnet protocol messages which live in tests/data/messages and validates them.
 
+// This test suite makes use of GoogleTest's Value-Parameterized Tests functionality:
+// https://github.com/google/googletest/blob/master/googletest/docs/advanced.md#value-parameterized-tests
+
+#include <cassert>
 #include <cstring>
 #include <fstream>
+#include <random>
+#include <set>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "gtest/gtest.h"
 #include "rdmnet/private/msg_buf.h"
 #include "GeneratedFiles/test_file_manifest.h"
 #include "load_test_data.h"
+#include "test_data_util.h"
 
-class TestMsgBuf : public testing::Test
+static constexpr size_t kNumRandomIterationsPerMessage = 10;
+static constexpr size_t kNumChunksPerMessage = 5;
+
+// If a test fails on a certain file and set of random chunks, you can reproduce the test by
+// changing this to 1, and adding the file name and chunk set in the map below.
+#define DEBUGGING_TEST_FAILURE 0
+
+#if DEBUGGING_TEST_FAILURE
+// clang-format off
+const std::unordered_map<std::string, const std::vector<size_t>> kFixedChunkSizes = {
+   std::make_pair("D:/git/ETCLabs/RDMnet/tests/data/messages/rpt_connected_client_list.data.txt",
+                  std::vector<size_t>({16, 26, 8, 2, 38}))
+};
+// clang-format on
+#endif
+
+// This test fixture is run on each file in the data file manifest; see tests/data
+class TestMsgBuf : public testing::Test, public testing::WithParamInterface<const DataValidationPair*>
 {
 protected:
   TestMsgBuf() { rdmnet_msg_buf_init(&buf_); }
 
+  std::vector<std::vector<uint8_t>> DivideIntoRandomChunks(const std::vector<uint8_t>& original, size_t num_chunks);
+  std::vector<std::vector<uint8_t>> DivideIntoFixedChunks(const std::vector<uint8_t>& original,
+                                                          const std::vector<size_t>& chunk_sizes);
+
+  std::random_device dev_;
+  std::default_random_engine rng_{dev_()};
   RdmnetMsgBuf buf_;
 };
 
-// Test parsing a fully-formed RPT Notification PDU
-TEST_F(TestMsgBuf, RptNotificationFull)
+// Divide a vector of uint8_t into num_chunks randomly-sized chunks.
+std::vector<std::vector<uint8_t>> TestMsgBuf::DivideIntoRandomChunks(const std::vector<uint8_t>& original,
+                                                                     size_t num_chunks)
 {
-  std::ifstream test_data_file(kRdmnetTestDataFiles[0].first);
+  assert(num_chunks > 0);
+  assert(original.size() >= num_chunks);
+
+  std::uniform_int_distribution<> dist(1, static_cast<int>(original.size() - 1));
+  std::set<int> breakpoints;
+
+  // Generate a set of indexes at which to divide the vector, using a while loop because we might
+  // get duplicates
+  while (breakpoints.size() < num_chunks - 1)
+  {
+    breakpoints.insert(dist(rng_));
+  }
+
+  std::vector<std::vector<uint8_t>> result;
+  result.reserve(num_chunks);
+
+  // Divide the vector between each pair of breakpoints, with the first chunk being between the
+  // beginning and the first breakpoint, and the last chunk being between the last breakpoint and
+  // the end.
+  int prev_breakpoint = 0;
+  auto chunk_begin_iter = original.begin();
+  for (auto breakpoint : breakpoints)
+  {
+    auto chunk_end_iter = chunk_begin_iter + (breakpoint - prev_breakpoint);
+    result.push_back(std::vector<uint8_t>(chunk_begin_iter, chunk_end_iter));
+    prev_breakpoint = breakpoint;
+    chunk_begin_iter = chunk_end_iter;
+  }
+  result.push_back(std::vector<uint8_t>(chunk_begin_iter, original.end()));
+  return result;
+}
+
+// Divide a vector of uint8_t into fixed-size chunks specified by chunk_sizes. For debugging failed
+// tests only. Very little error checking.
+std::vector<std::vector<uint8_t>> TestMsgBuf::DivideIntoFixedChunks(const std::vector<uint8_t>& original,
+                                                                    const std::vector<size_t>& chunk_sizes)
+{
+  std::vector<std::vector<uint8_t>> result;
+  result.reserve(chunk_sizes.size());
+
+  auto begin_iter = original.begin();
+  size_t chunks_index = 0;
+  while (begin_iter != original.end())
+  {
+    result.push_back(std::vector<uint8_t>(begin_iter, begin_iter + chunk_sizes[chunks_index]));
+    begin_iter += chunk_sizes[chunks_index];
+    ++chunks_index;
+  }
+  return result;
+}
+
+// Test parsing the message as one full chunk.
+TEST_P(TestMsgBuf, ParseMessageInFull)
+{
+  SCOPED_TRACE(std::string{"While testing input file: "} + GetParam()->first);
+
+  std::ifstream test_data_file(GetParam()->first);
   auto test_data = rdmnet::testing::LoadTestData(test_data_file);
   ASSERT_EQ(kEtcPalErrOk, rdmnet_msg_buf_recv(&buf_, test_data.data(), test_data.size()));
-
-  // Test each field of the parsed message
-  // RdmnetMessage& msg = buf_.msg;
-  // ASSERT_EQ(msg.vector, RptNotificationPduFullValid::root_vector);
-  // ASSERT_EQ(0, ETCPAL_UUID_CMP(&msg.sender_cid, &RptNotificationPduFullValid::sender_cid));
-
-  // RptMessage* rpt = GET_RPT_MSG(&msg);
-  // ASSERT_EQ(rpt->vector, RptNotificationPduFullValid::rpt_vector);
-  // ASSERT_TRUE(RDM_UID_EQUAL(&rpt->header.source_uid, &RptNotificationPduFullValid::rpt_src_uid));
-  // ASSERT_EQ(rpt->header.source_endpoint_id, RptNotificationPduFullValid::rpt_src_endpoint);
-  // ASSERT_TRUE(RDM_UID_EQUAL(&rpt->header.dest_uid, &RptNotificationPduFullValid::rpt_dest_uid));
-  // ASSERT_EQ(rpt->header.dest_endpoint_id, RptNotificationPduFullValid::rpt_dest_endpoint);
-  // ASSERT_EQ(rpt->header.seqnum, RptNotificationPduFullValid::seq_num);
-
-  // RdmBufList* buf_list = GET_RDM_BUF_LIST(rpt);
-  // ASSERT_FALSE(buf_list->more_coming);
-
-  // RdmBufListEntry* entry = buf_list->list;
-  // ASSERT_NE(entry->next, nullptr);
-  // ASSERT_EQ(entry->msg.datalen, RptNotificationPduFullValid::first_cmd.datalen);
-  // ASSERT_EQ(0, memcmp(entry->msg.data, RptNotificationPduFullValid::first_cmd.data,
-  //                     RptNotificationPduFullValid::first_cmd.datalen));
-
-  // entry = entry->next;
-  // ASSERT_EQ(nullptr, entry->next);
-  // ASSERT_EQ(entry->msg.datalen, RptNotificationPduFullValid::second_cmd.datalen);
-  // ASSERT_EQ(0, memcmp(entry->msg.data, RptNotificationPduFullValid::second_cmd.data,
-  //                     RptNotificationPduFullValid::second_cmd.datalen));
+  ExpectMessagesEqual(buf_.msg, GetParam()->second);
 }
+
+// Test parsing the message after dividing it into a number of randomly-sized chunks and simulating
+// receiving each chunk at discrete times. This simulates the byte-stream nature of TCP. The number
+// of chunks is controlled by kNumChunksPerMessage, and this test case re-divides the message
+// randomly and iterates a number of times controlled by kNumRandomIterationsPerMessage.
+TEST_P(TestMsgBuf, ParseMessageInRandomChunks)
+{
+  SCOPED_TRACE(std::string{"While testing input file: "} + GetParam()->first);
+
+  std::ifstream test_data_file(GetParam()->first);
+  auto test_data = rdmnet::testing::LoadTestData(test_data_file);
+
+  for (size_t i = 0; i < kNumRandomIterationsPerMessage; ++i)
+  {
+    SCOPED_TRACE(std::string{"On random chunk iteration "} + std::to_string(i));
+
+#if DEBUGGING_TEST_FAILURE
+    std::vector<std::vector<uint8_t>> chunks;
+    auto fixed_chunks = kFixedChunkSizes.find(GetParam()->first);
+    if (fixed_chunks != kFixedChunkSizes.end())
+      chunks = DivideIntoFixedChunks(test_data, fixed_chunks->second);
+    else
+      chunks = DivideIntoRandomChunks(test_data, kNumChunksPerMessage);
+#else
+    auto chunks = DivideIntoRandomChunks(test_data, kNumChunksPerMessage);
+#endif
+
+    // Assemble some test debugging output and error checking around the chunks.
+    std::string error_msg = "Total message length: " + std::to_string(test_data.size()) + "\nRandom chunk sizes: {";
+    size_t chunk_sum = 0;
+    for (const auto& chunk : chunks)
+    {
+      error_msg += std::to_string(chunk.size()) + ' ';
+      chunk_sum += chunk.size();
+    }
+    error_msg.erase(error_msg.length() - 1);  // Trim the last space
+    error_msg += '}';
+    ASSERT_EQ(chunk_sum, test_data.size()) << "Uh oh, looks like the test has a bug!";
+    SCOPED_TRACE("While testing input data:\n" + error_msg);
+
+    // Do the chunked parsing
+    for (size_t j = 0; j < kNumChunksPerMessage - 1; ++j)
+    {
+      ASSERT_EQ(kEtcPalErrNoData, rdmnet_msg_buf_recv(&buf_, chunks[j].data(), chunks[j].size()))
+          << "While parsing chunk " << j + 1 << " of " << kNumChunksPerMessage;
+    }
+    ASSERT_EQ(kEtcPalErrOk, rdmnet_msg_buf_recv(&buf_, chunks.back().data(), chunks.back().size()))
+        << "While parsing chunk " << kNumChunksPerMessage << " of " << kNumChunksPerMessage;
+
+    // Validate the parse result
+    SCOPED_TRACE("While validating RdmnetMessage parsed from rdmnet_msg_buf_recv() using ExpectMessagesEqual()");
+    ExpectMessagesEqual(buf_.msg, GetParam()->second);
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(TestValidInputData, TestMsgBuf,
+                         testing::Range(std::begin(kRdmnetTestDataFiles), std::end(kRdmnetTestDataFiles)));

@@ -238,8 +238,7 @@ etcpal_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMs
   else  // is EPT client entry
   {
     // Pack and send the EPT client entry
-    const EptClientEntry* ept_entry = GET_EPT_CLIENT_ENTRY_DATA(&data->client_entry);
-    const EptSubProtocol* prot = ept_entry->protocol_list;
+    const EptClientEntry* ept_entry = GET_EPT_CLIENT_ENTRY(&data->client_entry);
     for (const EptSubProtocol* prot = ept_entry->protocol_list;
          prot < ept_entry->protocol_list + ept_entry->num_protocols; ++prot)
     {
