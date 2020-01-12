@@ -50,8 +50,8 @@ static constexpr size_t kNumChunksPerMessage = 5;
 #if DEBUGGING_TEST_FAILURE
 // clang-format off
 const std::unordered_map<std::string, const std::vector<size_t>> kFixedChunkSizes = {
-   std::make_pair("D:/git/ETCLabs/RDMnet/tests/data/messages/rpt_connected_client_list.data.txt",
-                  std::vector<size_t>({16, 26, 8, 2, 38}))
+   std::make_pair("C:/git/ETCLabs/RDMnet/tests/data/messages/rpt_connected_client_list.data.txt",
+                  std::vector<size_t>({1, 7, 85, 23, 66}))
 };
 // clang-format on
 #endif
@@ -148,9 +148,11 @@ TEST_P(TestMsgBuf, ParseMessageInRandomChunks)
   std::ifstream test_data_file(GetParam()->first);
   auto test_data = rdmnet::testing::LoadTestData(test_data_file);
 
+#if !DEBUGGING_TEST_FAILURE
   for (size_t i = 0; i < kNumRandomIterationsPerMessage; ++i)
   {
     SCOPED_TRACE(std::string{"On random chunk iteration "} + std::to_string(i));
+#endif
 
 #if DEBUGGING_TEST_FAILURE
     std::vector<std::vector<uint8_t>> chunks;
@@ -160,7 +162,7 @@ TEST_P(TestMsgBuf, ParseMessageInRandomChunks)
     else
       chunks = DivideIntoRandomChunks(test_data, kNumChunksPerMessage);
 #else
-    auto chunks = DivideIntoRandomChunks(test_data, kNumChunksPerMessage);
+  auto chunks = DivideIntoRandomChunks(test_data, kNumChunksPerMessage);
 #endif
 
     // Assemble some test debugging output and error checking around the chunks.
@@ -188,7 +190,9 @@ TEST_P(TestMsgBuf, ParseMessageInRandomChunks)
     // Validate the parse result
     SCOPED_TRACE("While validating RdmnetMessage parsed from rdmnet_msg_buf_recv() using ExpectMessagesEqual()");
     ExpectMessagesEqual(buf_.msg, GetParam()->second);
+#if !DEBUGGING_TEST_FAILURE
   }
+#endif
 }
 
 INSTANTIATE_TEST_SUITE_P(TestValidInputData, TestMsgBuf,

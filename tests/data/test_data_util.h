@@ -292,6 +292,10 @@ inline void ExpectMessagesEqual(const BrokerMessage& a, const BrokerMessage& b)
       case VECTOR_BROKER_DISCONNECT:
         ExpectMessagesEqual(a.data.disconnect, b.data.disconnect);
         break;
+      case VECTOR_BROKER_FETCH_CLIENT_LIST:
+      case VECTOR_BROKER_NULL:
+        // No data to validate
+        break;
       default:
         ADD_FAILURE() << "Broker messages contained unknown vector " << a.vector;
         break;

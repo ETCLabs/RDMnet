@@ -76,6 +76,12 @@ static size_t parse_dynamic_uid_assignment_list(GenericListState* lstate, const 
 static size_t parse_fetch_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t* data, size_t datalen,
                                                       FetchUidAssignmentList* alist, parse_result_t* result);
 
+// Helpers for parsing client list messages
+static size_t parse_rpt_client_list(ClientListState* clstate, const uint8_t* data, size_t datalen, RptClientList* clist,
+                                    parse_result_t* result);
+static RptClientEntry* alloc_next_rpt_client_entry(RptClientList* clist);
+static EptClientEntry* alloc_next_ept_client_entry(EptClientList* clist);
+
 /*************************** Function definitions ****************************/
 
 void rdmnet_msg_buf_init(RdmnetMsgBuf* msg_buf)
@@ -570,8 +576,7 @@ size_t parse_client_connect(ClientConnectState* ccstate, const uint8_t* data, si
     parse_client_connect_header(data, ccmsg);
     bytes_parsed += CLIENT_CONNECT_COMMON_FIELD_SIZE;
     ccstate->common_data_parsed = true;
-    INIT_CLIENT_ENTRY_STATE(&ccstate->entry, ccstate->pdu_data_size - CLIENT_CONNECT_COMMON_FIELD_SIZE,
-                            &ccmsg->client_entry.client_protocol);
+    INIT_CLIENT_ENTRY_STATE(&ccstate->entry, ccstate->pdu_data_size - CLIENT_CONNECT_COMMON_FIELD_SIZE);
   }
   if (ccstate->common_data_parsed)
   {
@@ -604,8 +609,7 @@ size_t parse_client_entry_update(ClientEntryUpdateState* ceustate, const uint8_t
     ceumsg->connect_flags = *data;
     bytes_parsed += CLIENT_ENTRY_UPDATE_COMMON_FIELD_SIZE;
     ceustate->common_data_parsed = true;
-    INIT_CLIENT_ENTRY_STATE(&ceustate->entry, ceustate->pdu_data_size - CLIENT_ENTRY_UPDATE_COMMON_FIELD_SIZE,
-                            &ceumsg->client_entry.client_protocol);
+    INIT_CLIENT_ENTRY_STATE(&ceustate->entry, ceustate->pdu_data_size - CLIENT_ENTRY_UPDATE_COMMON_FIELD_SIZE);
   }
   if (ceustate->common_data_parsed)
   {
@@ -630,13 +634,13 @@ size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, 
   size_t bytes_parsed = 0;
   parse_result_t res = kPSNoData;
 
-  if (*client_protocol == kClientProtocolUnknown)
+  if (cstate->client_protocol == kClientProtocolUnknown)
   {
     if (datalen >= CLIENT_ENTRY_HEADER_SIZE)
     {
       // Parse the Client Entry header
       size_t cli_entry_pdu_len = GET_LENGTH_FROM_CENTRY_HEADER(data);
-      *client_protocol = GET_CLIENT_PROTOCOL_FROM_CENTRY_HEADER(data);
+      cstate->client_protocol = GET_CLIENT_PROTOCOL_FROM_CENTRY_HEADER(data);
       bytes_parsed += CLIENT_ENTRY_HEADER_SIZE;
       INIT_PDU_BLOCK_STATE(&cstate->entry_data, cli_entry_pdu_len - CLIENT_ENTRY_HEADER_SIZE);
       if (cli_entry_pdu_len > cstate->enclosing_block_size)
@@ -645,7 +649,7 @@ size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, 
       }
       else
       {
-        if (*client_protocol == kClientProtocolRPT)
+        if (cstate->client_protocol == kClientProtocolRPT)
           COPY_CID_FROM_CENTRY_HEADER(data, &entry->rpt.cid);
         else
           COPY_CID_FROM_CENTRY_HEADER(data, &entry->ept.cid);
@@ -653,21 +657,22 @@ size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, 
     }
     // Else return no data
   }
-  if (*client_protocol != kClientProtocolUnknown)
+  if (cstate->client_protocol != kClientProtocolUnknown)
   {
     size_t remaining_len = datalen - bytes_parsed;
+    *client_protocol = cstate->client_protocol;
 
     if (cstate->entry_data.consuming_bad_block)
     {
       bytes_parsed += consume_bad_block(&cstate->entry_data, remaining_len, &res);
     }
-    else if (*client_protocol == kClientProtocolEPT)
+    else if (cstate->client_protocol == kClientProtocolEPT)
     {
       // Parse the EPT Client Entry data
       // TODO
       bytes_parsed += consume_bad_block(&cstate->entry_data, remaining_len, &res);
     }
-    else if (*client_protocol == kClientProtocolRPT)
+    else if (cstate->client_protocol == kClientProtocolRPT)
     {
       if (cstate->entry_data.size_parsed + RPT_CLIENT_ENTRY_DATA_SIZE == cstate->entry_data.block_size)
       {
@@ -701,7 +706,7 @@ size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, 
     {
       // Unknown Client Protocol
       bytes_parsed += consume_bad_block(&cstate->entry_data, remaining_len, &res);
-      RDMNET_LOG_WARNING("Dropping Client Entry with invalid client protocol %d", *client_protocol);
+      RDMNET_LOG_WARNING("Dropping Client Entry with invalid client protocol %d", cstate->client_protocol);
     }
   }
 
@@ -721,116 +726,170 @@ size_t parse_client_list(ClientListState* clstate, const uint8_t* data, size_t d
   }
   else
   {
-    while (clstate->block.size_parsed < clstate->block.block_size)
+    if (clist->client_protocol == kClientProtocolUnknown)
     {
-      client_protocol_t next_entry_cp = kClientProtocolUnknown;
-      ClientEntryUnion* next_entry = NULL;
-
-      if (!clstate->block.parsed_header)
+      if (datalen >= CLIENT_ENTRY_HEADER_SIZE)
       {
-        if (clist->client_protocol == kClientProtocolRPT && GET_RPT_CLIENT_LIST(clist)->client_entries)
+        clist->client_protocol = GET_CLIENT_PROTOCOL_FROM_CENTRY_HEADER(data);
+      }
+    }
+
+    if (clist->client_protocol == kClientProtocolRPT)
+    {
+      bytes_parsed += parse_rpt_client_list(clstate, data, datalen, GET_RPT_CLIENT_LIST(clist), &res);
+    }
+    else if (clist->client_protocol == kClientProtocolEPT)
+    {
+      // TODO EPT
+      bytes_parsed += consume_bad_block(&clstate->block, datalen, &res);
+    }
+    else if (clist->client_protocol != kClientProtocolUnknown)
+    {
+      RDMNET_LOG_WARNING("Dropping Client List message with unknown Client Protocol %d", clist->client_protocol);
+      bytes_parsed += consume_bad_block(&clstate->block, datalen, &res);
+    }
+  }
+
+  *result = res;
+  return bytes_parsed;
+}
+
+size_t parse_rpt_client_list(ClientListState* clstate, const uint8_t* data, size_t datalen, RptClientList* clist,
+                             parse_result_t* result)
+{
+  size_t bytes_parsed = 0;
+  parse_result_t res = kPSNoData;
+
+  while (clstate->block.size_parsed < clstate->block.block_size)
+  {
+    size_t remaining_len = datalen - bytes_parsed;
+    const uint8_t* cur_data_ptr = &data[bytes_parsed];
+    RptClientEntry* next_entry = NULL;
+
+    if (!clstate->block.parsed_header)
+    {
+      if (remaining_len >= CLIENT_ENTRY_HEADER_SIZE)
+      {
+        if (GET_CLIENT_PROTOCOL_FROM_CENTRY_HEADER(cur_data_ptr) != kClientProtocolRPT)
         {
-          RptClientList* rpt_list = GET_RPT_CLIENT_LIST(clist);
-          RptClientEntry* new_arr =
-              REALLOC_RPT_CLIENT_ENTRY(rpt_list->client_entries, rpt_list->num_client_entries + 1);
-          if (new_arr)
-          {
-            rpt_list->client_entries = new_arr;
-            next_entry = (ClientEntryUnion*)&rpt_list->client_entries[rpt_list->num_client_entries++];
-          }
-          else
-          {
-            // We've run out of space for RPT Client Entries - send back up what we have now
-            rpt_list->more_coming = true;
-            res = kPSPartialBlockParseOk;
-            break;
-          }
-        }
-        else if (clist->client_protocol == kClientProtocolEPT && GET_EPT_CLIENT_LIST(clist)->client_entries)
-        {
-          EptClientList* ept_list = GET_EPT_CLIENT_LIST(clist);
-          EptClientEntry* new_arr =
-              REALLOC_EPT_CLIENT_ENTRY(ept_list->client_entries, ept_list->num_client_entries + 1);
-          if (new_arr)
-          {
-            ept_list->client_entries = new_arr;
-            next_entry = (ClientEntryUnion*)&ept_list->client_entries[ept_list->num_client_entries++];
-          }
-          else
-          {
-            // We've run out of space for RPT Client Entries - send back up what we have now
-            ept_list->more_coming = true;
-            res = kPSPartialBlockParseOk;
-            break;
-          }
-        }
-        else
-        {
-          // We are at the beginning of the client list. Peek at the header to find out what client
-          // protocol the first entry has.
-          clist->client_protocol = GET_CLIENT_PROTOCOL_FROM_CENTRY_HEADER(data);
-          if (clist->client_protocol == kClientProtocolRPT)
-          {
-            GET_RPT_CLIENT_LIST(clist)->client_entries = ALLOC_RPT_CLIENT_ENTRY();
-            GET_RPT_CLIENT_LIST(clist)->num_client_entries = 1;
-            if (!(GET_RPT_CLIENT_LIST(clist)->client_entries))
-              // TODO figure out error handling
-              break;
-          }
-          else if (clist->client_protocol == kClientProtocolEPT)
-          {
-            GET_EPT_CLIENT_LIST(clist)->client_entries = ALLOC_EPT_CLIENT_ENTRY();
-            GET_EPT_CLIENT_LIST(clist)->num_client_entries = 1;
-            if (!(GET_EPT_CLIENT_LIST(clist)->client_entries))
-              // TODO figure out error handling
-              break;
-          }
-          else
-          {
-            // Unknown Client Protocol
-            bytes_parsed += consume_bad_block(&clstate->block, datalen, &res);
-            RDMNET_LOG_WARNING("Dropping Client List containing entry with invalid client protocol %d",
-                               clist->client_protocol);
-          }
+          RDMNET_LOG_WARNING("Dropping invalid Client List - first entry was RPT, but also contains client protocol %d",
+                             GET_CLIENT_PROTOCOL_FROM_CENTRY_HEADER(cur_data_ptr));
+          bytes_parsed += consume_bad_block(&clstate->block, datalen, &res);
+          break;
         }
 
+        next_entry = alloc_next_rpt_client_entry(clist);
         if (next_entry)
         {
           clstate->block.parsed_header = true;
-          INIT_CLIENT_ENTRY_STATE(&clstate->entry, clstate->block.block_size, &next_entry_cp);
+          INIT_CLIENT_ENTRY_STATE(&clstate->entry, clstate->block.block_size);
+        }
+        else
+        {
+          // We've run out of space for RPT Client Entries - send back up what we have now
+          clist->more_coming = true;
+          res = kPSPartialBlockParseOk;
         }
       }
       else
       {
-        next_entry_cp = clist->client_protocol;
-        if (clist->client_protocol == kClientProtocolRPT)
-        {
-          next_entry = (ClientEntryUnion*)&(GET_RPT_CLIENT_LIST(clist)->client_entries[GET_RPT_CLIENT_LIST(clist)->num_client_entries]);
-        }
-        else
-        {
-          next_entry = (ClientEntryUnion*)&(GET_EPT_CLIENT_LIST(clist)->client_entries[GET_EPT_CLIENT_LIST(clist)->num_client_entries]);
-        }
+        break;
       }
+    }
+    else
+    {
+      next_entry = &clist->client_entries[clist->num_client_entries - 1];
+    }
 
-      if (clstate->block.parsed_header)
+    if (clstate->block.parsed_header)
+    {
+      // We know the client protocol is correct because it's been validated above.
+      client_protocol_t cp = kClientProtocolUnknown;
+      size_t next_layer_bytes_parsed = parse_single_client_entry(
+          &clstate->entry, cur_data_ptr, remaining_len, &cp, (ClientEntryUnion*)next_entry, &res);
+
+      // Check and advance the buffer pointers
+      RDMNET_ASSERT(next_layer_bytes_parsed <= remaining_len);
+      RDMNET_ASSERT(clstate->block.size_parsed + next_layer_bytes_parsed <= clstate->block.block_size);
+      bytes_parsed += next_layer_bytes_parsed;
+      clstate->block.size_parsed += next_layer_bytes_parsed;
+
+      // Determine what to do next in the list loop
+      if (res == kPSFullBlockParseOk)
       {
-        size_t next_layer_bytes_parsed = parse_single_client_entry(
-            &clstate->entry, &data[bytes_parsed], datalen - bytes_parsed, &next_entry_cp, next_entry, &res);
-        RDMNET_ASSERT(next_layer_bytes_parsed <= (datalen - bytes_parsed));
-        RDMNET_ASSERT(clstate->block.size_parsed + next_layer_bytes_parsed <= clstate->block.block_size);
-        bytes_parsed += next_layer_bytes_parsed;
-        clstate->block.size_parsed += next_layer_bytes_parsed;
-        if (res == kPSFullBlockParseOk || res == kPSFullBlockProtErr)
-          clstate->block.parsed_header = false;
-        if (res != kPSFullBlockParseOk)
-          break;
+        clstate->block.parsed_header = false;
+        if (clstate->block.size_parsed != clstate->block.block_size)
+        {
+          // This isn't the last entry in the list
+          res = kPSNoData;
+        }
+        // Iterate again
+      }
+      else if (res == kPSFullBlockProtErr)
+      {
+        // Bail on the list
+        clstate->block.parsed_header = false;
+        bytes_parsed += consume_bad_block(&clstate->block, remaining_len - next_layer_bytes_parsed, &res);
+        break;
+      }
+      else
+      {
+        // Couldn't parse a complete entry, wait for next time
+        break;
       }
     }
   }
 
   *result = res;
   return bytes_parsed;
+}
+
+RptClientEntry* alloc_next_rpt_client_entry(RptClientList* clist)
+{
+  if (clist->client_entries)
+  {
+    RptClientEntry* new_arr = REALLOC_RPT_CLIENT_ENTRY(clist->client_entries, clist->num_client_entries + 1);
+    if (new_arr)
+    {
+      clist->client_entries = new_arr;
+      return &clist->client_entries[clist->num_client_entries++];
+    }
+    else
+    {
+      return NULL;
+    }
+  }
+  else
+  {
+    clist->client_entries = ALLOC_RPT_CLIENT_ENTRY();
+    if (clist->client_entries)
+      clist->num_client_entries = 1;
+    return clist->client_entries;
+  }
+}
+
+EptClientEntry* alloc_next_ept_client_entry(EptClientList* clist)
+{
+  if (clist->client_entries)
+  {
+    EptClientEntry* new_arr = REALLOC_EPT_CLIENT_ENTRY(clist->client_entries, clist->num_client_entries + 1);
+    if (new_arr)
+    {
+      clist->client_entries = new_arr;
+      return &clist->client_entries[clist->num_client_entries++];
+    }
+    else
+    {
+      return NULL;
+    }
+  }
+  else
+  {
+    clist->client_entries = ALLOC_EPT_CLIENT_ENTRY();
+    if (clist->client_entries)
+      clist->num_client_entries = 1;
+    return clist->client_entries;
+  }
 }
 
 size_t parse_request_dynamic_uid_assignment(GenericListState* lstate, const uint8_t* data, size_t datalen,

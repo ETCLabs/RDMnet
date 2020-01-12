@@ -9,6 +9,8 @@ set_target_properties(test_data PROPERTIES FOLDER tests)
 
 # Generate the test file manifest
 file(GLOB TEST_FILE_LIST messages/*.data.txt)
+source_group(TREE ${CMAKE_CURRENT_LIST_DIR}/messages PREFIX validation_files FILES ${TEST_FILE_LIST})
+
 foreach(FILE_NAME ${TEST_FILE_LIST})
   get_filename_component(FILE_BASE_NAME ${FILE_NAME} NAME)
   string(REPLACE ".data.txt" "" FILE_BASE_NAME ${FILE_BASE_NAME})

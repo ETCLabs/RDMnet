@@ -127,15 +127,16 @@ typedef struct ClientEntryState
 {
   size_t enclosing_block_size;
   bool parsed_entry_header;
+  client_protocol_t client_protocol;
   PduBlockState entry_data;  // This is only for use with consume_bad_block()
 } ClientEntryState;
 
-#define INIT_CLIENT_ENTRY_STATE(cstateptr, blocksize, cpptr) \
-  do                                                         \
-  {                                                          \
-    *(cpptr) = kClientProtocolUnknown;                       \
-    (cstateptr)->enclosing_block_size = blocksize;           \
-    (cstateptr)->parsed_entry_header = false;                \
+#define INIT_CLIENT_ENTRY_STATE(cstateptr, blocksize)      \
+  do                                                       \
+  {                                                        \
+    (cstateptr)->enclosing_block_size = (blocksize);       \
+    (cstateptr)->parsed_entry_header = false;              \
+    (cstateptr)->client_protocol = kClientProtocolUnknown; \
   } while (0)
 
 typedef struct ClientListState
