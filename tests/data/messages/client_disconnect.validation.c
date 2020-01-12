@@ -14,4 +14,3 @@ const RdmnetMessage client_disconnect = {
     }
   }
 };
-

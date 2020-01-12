@@ -805,8 +805,8 @@ size_t parse_rpt_client_list(ClientListState* clstate, const uint8_t* data, size
     {
       // We know the client protocol is correct because it's been validated above.
       client_protocol_t cp = kClientProtocolUnknown;
-      size_t next_layer_bytes_parsed = parse_single_client_entry(
-          &clstate->entry, cur_data_ptr, remaining_len, &cp, (ClientEntryUnion*)next_entry, &res);
+      size_t next_layer_bytes_parsed = parse_single_client_entry(&clstate->entry, cur_data_ptr, remaining_len, &cp,
+                                                                 (ClientEntryUnion*)next_entry, &res);
 
       // Check and advance the buffer pointers
       RDMNET_ASSERT(next_layer_bytes_parsed <= remaining_len);
@@ -996,8 +996,8 @@ size_t parse_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t
     cur_ptr += ETCPAL_UUID_BYTES;
     mapping->status_code = (dynamic_uid_status_t)etcpal_upack_16b(cur_ptr);
     cur_ptr += 2;
-    bytes_parsed += (size_t)(cur_ptr - &data[bytes_parsed]);
-    lstate->size_parsed += (size_t)(cur_ptr - &data[bytes_parsed]);
+    bytes_parsed += DYNAMIC_UID_MAPPING_SIZE;
+    lstate->size_parsed += DYNAMIC_UID_MAPPING_SIZE;
 
     if (lstate->size_parsed >= lstate->full_list_size)
     {
