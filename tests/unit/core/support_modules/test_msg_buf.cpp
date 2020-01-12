@@ -36,7 +36,7 @@
 
 #include "gtest/gtest.h"
 #include "rdmnet/private/msg_buf.h"
-#include "GeneratedFiles/test_file_manifest.h"
+#include "test_file_manifest.h"
 #include "load_test_data.h"
 #include "test_data_util.h"
 
@@ -57,7 +57,7 @@ const std::unordered_map<std::string, const std::vector<size_t>> kFixedChunkSize
 #endif
 
 // This test fixture is run on each file in the data file manifest; see tests/data
-class TestMsgBuf : public testing::Test, public testing::WithParamInterface<const DataValidationPair*>
+class TestMsgBuf : public testing::Test, public testing::WithParamInterface<DataValidationPair>
 {
 protected:
   TestMsgBuf() { rdmnet_msg_buf_init(&buf_); }
@@ -129,12 +129,12 @@ std::vector<std::vector<uint8_t>> TestMsgBuf::DivideIntoFixedChunks(const std::v
 // Test parsing the message as one full chunk.
 TEST_P(TestMsgBuf, ParseMessageInFull)
 {
-  SCOPED_TRACE(std::string{"While testing input file: "} + GetParam()->first);
+  SCOPED_TRACE(std::string{"While testing input file: "} + GetParam().first);
 
-  std::ifstream test_data_file(GetParam()->first);
+  std::ifstream test_data_file(GetParam().first);
   auto test_data = rdmnet::testing::LoadTestData(test_data_file);
   ASSERT_EQ(kEtcPalErrOk, rdmnet_msg_buf_recv(&buf_, test_data.data(), test_data.size()));
-  ExpectMessagesEqual(buf_.msg, GetParam()->second);
+  ExpectMessagesEqual(buf_.msg, GetParam().second);
 }
 
 // Test parsing the message after dividing it into a number of randomly-sized chunks and simulating
@@ -143,9 +143,9 @@ TEST_P(TestMsgBuf, ParseMessageInFull)
 // randomly and iterates a number of times controlled by kNumRandomIterationsPerMessage.
 TEST_P(TestMsgBuf, ParseMessageInRandomChunks)
 {
-  SCOPED_TRACE(std::string{"While testing input file: "} + GetParam()->first);
+  SCOPED_TRACE(std::string{"While testing input file: "} + GetParam().first);
 
-  std::ifstream test_data_file(GetParam()->first);
+  std::ifstream test_data_file(GetParam().first);
   auto test_data = rdmnet::testing::LoadTestData(test_data_file);
 
 #if !DEBUGGING_TEST_FAILURE
@@ -189,11 +189,10 @@ TEST_P(TestMsgBuf, ParseMessageInRandomChunks)
 
     // Validate the parse result
     SCOPED_TRACE("While validating RdmnetMessage parsed from rdmnet_msg_buf_recv() using ExpectMessagesEqual()");
-    ExpectMessagesEqual(buf_.msg, GetParam()->second);
+    ExpectMessagesEqual(buf_.msg, GetParam().second);
 #if !DEBUGGING_TEST_FAILURE
   }
 #endif
 }
 
-INSTANTIATE_TEST_SUITE_P(TestValidInputData, TestMsgBuf,
-                         testing::Range(std::begin(kRdmnetTestDataFiles), std::end(kRdmnetTestDataFiles)));
+INSTANTIATE_TEST_SUITE_P(TestValidInputData, TestMsgBuf, testing::ValuesIn(kRdmnetTestDataFiles));

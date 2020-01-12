@@ -109,7 +109,7 @@ extern "C" {
  * Status Code:  2
  * ---------------
  * Total:       24 */
-#define DYNAMIC_UID_MAPPING_SIZE (6 /* Dynamic UID */ + 16 /* RID */ + 2 /* Status Code */)
+#define DYNAMIC_UID_MAPPING_SIZE 24
 
 /****************************** Disconnect Sizes *****************************/
 

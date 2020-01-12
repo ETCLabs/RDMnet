@@ -16,8 +16,8 @@ The format for the `.data.txt` file is as follows:
 * Empty lines are allowed.
 
 The files are scraped by CMake based on the above naming convention and added to a manifest which
-is usable from a C++ program, which is written to GeneratedFiles/test_file_manifest.h. The manifest
-is an array of pairs containing the file name and the valid C structure.
+is usable from a C++ program, which is defined in test_file_manifest.h. The manifest is a vector of
+pairs containing the file name and a ref to the valid C structure.
 
 `load_test_data.h` defines a function `rdmnet::testing::LoadTestData()` which can convert the
 format of the `.data.txt` files to a byte array.

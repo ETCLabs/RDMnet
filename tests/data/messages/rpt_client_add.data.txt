@@ -1,17 +1,17 @@
 // A client add message containing a few RPT client entries.
 
-41 53 43 2d 45 31 2e 31 37 00 00 00 // ACN packet identifier
-00 00 00 78 // Total length
-f0 00 78 00 00 00 09 // Root layer PDU flags, length, vector
+41 53 43 2d 45 31 2e 31 37 00 00 00             // ACN packet identifier
+00 00 00 78                                     // Total length
+f0 00 78 00 00 00 09                            // Root layer PDU flags, length, vector
 c9 57 a9 e5 72 b3 45 5b ba 4f 5b 00 cd c6 fb 57 // Sender CID
-f0 00 61 00 08 // Broker PDU flags, length, vector
-f0 00 2e 00 00 00 05 // RPT Client Entry PDU flags, length, vector
+f0 00 61 00 08                                  // Broker PDU flags, length, vector
+f0 00 2e 00 00 00 05                            // RPT Client Entry PDU flags, length, vector
 73 0f 10 6b ea d1 49 de a9 5b e5 9b 7f 95 56 ed // Client CID
-47 38 b4 7d e6 f6 // Client's UID
-01 // Client Type
+47 38 b4 7d e6 f6                               // Client's UID
+01                                              // Client Type
 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 // Binding CID
-f0 00 2e 00 00 00 05 // RPT Client Entry PDU flags, length, vector
+f0 00 2e 00 00 00 05                            // RPT Client Entry PDU flags, length, vector
 84 74 64 ec d7 bc 4b 8a b5 01 57 4b d4 f8 d9 85 // Client CID
-eb 83 9c b7 b2 24 // Client's UID
-00 // Client Type
+eb 83 9c b7 b2 24                               // Client's UID
+00                                              // Client Type
 84 16 cc 3e d9 b1 43 8b b5 8d 98 5f e4 bc 72 84 // Binding CID

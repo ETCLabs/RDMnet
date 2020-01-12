@@ -1360,6 +1360,7 @@ size_t parse_rpt_status(RptStatusState* rsstate, const uint8_t* data, size_t dat
         // These status codes have no additional data.
         if (rsstate->block.size_parsed == rsstate->block.block_size)
         {
+          smsg->status_string = NULL;
           res = kPSFullBlockParseOk;
         }
         else

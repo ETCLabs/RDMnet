@@ -1,7 +1,7 @@
 // A broker protocol NULL message
 
-41 53 43 2d 45 31 2e 31 37 00 00 00 // ACN packet identifier
-00 00 00 1c // Total length
-f0 00 1c 00 00 00 09 // Root layer PDU flags, length, vector
+41 53 43 2d 45 31 2e 31 37 00 00 00             // ACN packet identifier
+00 00 00 1c                                     // Total length
+f0 00 1c 00 00 00 09                            // Root layer PDU flags, length, vector
 7a b5 96 7a 17 37 48 9b 9b c8 62 a8 ea 47 9b 6b // Sender CID
-f0 00 05 00 0f // Broker PDU flags, length, vector
+f0 00 05 00 0f                                  // Broker PDU flags, length, vector

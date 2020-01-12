@@ -1,9 +1,9 @@
 // A client redirect PDU containing an IPv4 address
 
-41 53 43 2d 45 31 2e 31 37 00 00 00 // ACN packet identifier
-00 00 00 22 // Total length
-f0 00 22 00 00 00 09 // Root layer PDU flags, length, vector
+41 53 43 2d 45 31 2e 31 37 00 00 00             // ACN packet identifier
+00 00 00 22                                     // Total length
+f0 00 22 00 00 00 09                            // Root layer PDU flags, length, vector
 ed 8d ee 0c df ca 4d 29 a5 0a e0 08 1d d5 67 df // Sender CID
-f0 00 0b 00 04 // Broker PDU flags, length, vector
-c0 a8 13 37 // IPv4 address
-88 88 // Port
+f0 00 0b 00 04  // Broker PDU flags, length, vector
+c0 a8 13 37     // IPv4 address
+88 88           // Port

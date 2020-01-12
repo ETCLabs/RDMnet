@@ -56,8 +56,9 @@ inline void ExpectEptClientEntriesEqual(const EptClientEntry& a, const EptClient
     }
     else
     {
-      ADD_FAILURE() << "Null/not-null mismatch between protocol_list entries; a was " << a.protocol_list << ", b was "
-                    << b.protocol_list;
+      ADD_FAILURE() << "Null/not-null mismatch between protocol_list entries; a was "
+                    << reinterpret_cast<void*>(a.protocol_list) << ", b was "
+                    << reinterpret_cast<void*>(b.protocol_list);
     }
   }
 }
@@ -136,8 +137,9 @@ inline void ExpectMessagesEqual(const ClientList& a, const ClientList& b)
           }
           else
           {
-            ADD_FAILURE() << "Null/not-null mismatch between client entry lists; a was " << a.data.rpt.client_entries
-                          << ", b was " << b.data.rpt.client_entries;
+            ADD_FAILURE() << "Null/not-null mismatch between client entry lists; a was "
+                          << reinterpret_cast<void*>(a.data.rpt.client_entries) << ", b was "
+                          << reinterpret_cast<void*>(b.data.rpt.client_entries);
           }
         }
         break;
@@ -160,8 +162,9 @@ inline void ExpectMessagesEqual(const ClientList& a, const ClientList& b)
           }
           else
           {
-            ADD_FAILURE() << "Null/not-null mismatch between client entry lists; a was " << a.data.ept.client_entries
-                          << ", b was " << b.data.ept.client_entries;
+            ADD_FAILURE() << "Null/not-null mismatch between client entry lists; a was "
+                          << reinterpret_cast<void*>(a.data.ept.client_entries) << ", b was "
+                          << reinterpret_cast<void*>(b.data.ept.client_entries);
           }
         }
         break;
@@ -192,8 +195,8 @@ inline void ExpectMessagesEqual(const DynamicUidRequestList& a, const DynamicUid
     }
     else
     {
-      ADD_FAILURE() << "Null/not-null mismatch between dynamic UID request lists; a was " << a.requests << ", b was "
-                    << b.requests;
+      ADD_FAILURE() << "Null/not-null mismatch between dynamic UID request lists; a was "
+                    << reinterpret_cast<void*>(a.requests) << ", b was " << reinterpret_cast<void*>(b.requests);
     }
   }
 }
@@ -219,8 +222,8 @@ inline void ExpectMessagesEqual(const DynamicUidAssignmentList& a, const Dynamic
     }
     else
     {
-      ADD_FAILURE() << "Null/not-null mismatch between dynamic UID mapping lists; a was " << a.mappings << ", b was "
-                    << b.mappings;
+      ADD_FAILURE() << "Null/not-null mismatch between dynamic UID mapping lists; a was "
+                    << reinterpret_cast<void*>(a.mappings) << ", b was " << reinterpret_cast<void*>(b.mappings);
     }
   }
 }
@@ -244,7 +247,8 @@ inline void ExpectMessagesEqual(const FetchUidAssignmentList& a, const FetchUidA
     }
     else
     {
-      ADD_FAILURE() << "Null/not-null mismatch between UID lists; a was " << a.uids << ", b was " << b.uids;
+      ADD_FAILURE() << "Null/not-null mismatch between UID lists; a was " << reinterpret_cast<void*>(a.uids)
+                    << ", b was " << reinterpret_cast<void*>(b.uids);
     }
   }
 }
@@ -324,8 +328,8 @@ inline void ExpectMessagesEqual(const RdmBufList& a, const RdmBufList& b)
     }
     else
     {
-      ADD_FAILURE() << "Null/not-null mismatch between RDM buffer lists; a was " << a.rdm_buffers << ", b was "
-                    << b.rdm_buffers;
+      ADD_FAILURE() << "Null/not-null mismatch between RDM buffer lists; a was "
+                    << reinterpret_cast<void*>(a.rdm_buffers) << ", b was " << reinterpret_cast<void*>(b.rdm_buffers);
     }
   }
 }
@@ -343,8 +347,8 @@ inline void ExpectMessagesEqual(const RptStatusMsg& a, const RptStatusMsg& b)
   }
   else
   {
-    ADD_FAILURE() << "Null/not-null mismatch between status strings; a was " << a.status_string << ", b was "
-                  << b.status_string;
+    ADD_FAILURE() << "Null/not-null mismatch between status strings; a was " << reinterpret_cast<const void*>(a.status_string)
+                  << ", b was " << reinterpret_cast<const void*>(b.status_string);
   }
 }
 

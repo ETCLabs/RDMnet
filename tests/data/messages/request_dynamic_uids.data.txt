@@ -1,13 +1,13 @@
 // A request dynamic UID assignment message
 
-41 53 43 2d 45 31 2e 31 37 00 00 00 // ACN packet identifier
-00 00 00 5e // Total length
-f0 00 5e 00 00 00 09 // Root layer PDU flags, length, vector
+41 53 43 2d 45 31 2e 31 37 00 00 00             // ACN packet identifier
+00 00 00 5e                                     // Total length
+f0 00 5e 00 00 00 09                            // Root layer PDU flags, length, vector
 22 38 a5 c4 6e 25 4a bc 82 69 88 26 19 27 90 17 // Sender CID
-f0 00 47 00 0b // Broker PDU flags, length, vector
-a5 92 00 00 00 00 // Dynamic UID request
+f0 00 47 00 0b                                  // Broker PDU flags, length, vector
+a5 92 00 00 00 00                               // Dynamic UID request
 f9 71 cd 96 a2 cf 4c ed aa d6 1d 8d 63 f7 d0 77 // RID
-a5 92 00 00 00 00 // Dynamic UID request
+a5 92 00 00 00 00                               // Dynamic UID request
 27 f3 3a fc 99 6a 4e c3 a6 03 01 5c f9 06 23 68 // RID
-a5 92 00 00 00 00 // Dynamic UID request
+a5 92 00 00 00 00                               // Dynamic UID request
 60 d3 7e 0d 34 ef 45 27 86 95 fe 85 de 08 e9 e0 // RID
