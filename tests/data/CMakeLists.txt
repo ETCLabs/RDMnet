@@ -25,7 +25,6 @@ target_link_libraries(test_data PRIVATE RDMnet gtest)
 set_target_properties(test_data PROPERTIES FOLDER tests)
 
 # Add the validation files to the library to be compiled
-message(STATUS "Test file list is ${TEST_FILE_LIST}")
 foreach(FILE_NAME ${TEST_FILE_LIST})
   get_filename_component(FILE_BASE_NAME ${FILE_NAME} NAME)
   string(REPLACE ".data.txt" "" FILE_BASE_NAME ${FILE_BASE_NAME})

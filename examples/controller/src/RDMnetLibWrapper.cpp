@@ -47,7 +47,7 @@ static void controllercb_disconnected(rdmnet_controller_t handle, rdmnet_client_
 }
 
 static void controllercb_client_list_update(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                            client_list_action_t list_action, const ClientList* list, void* context)
+                                            client_list_action_t list_action, const RptClientList* list, void* context)
 {
   RDMnetLibNotifyInternal* notify = static_cast<RDMnetLibNotifyInternal*>(context);
   if (notify)
@@ -109,21 +109,14 @@ bool RDMnetLibWrapper::Startup(const etcpal::Uuid& cid, RDMnetLibNotify* notify)
 
     // Create our controller handle in the RDMnet library
     RdmnetControllerConfig config;
-    RDMNET_CONTROLLER_CONFIG_INIT(&config, 0x6574);
+    rdmnet_controller_config_init(&config, 0x6574);
     config.cid = my_cid_.get();
-    // clang-format off
-    config.callbacks = {
-      controllercb_connected,
-      controllercb_connect_failed,
-      controllercb_disconnected,
-      controllercb_client_list_update,
-      controllercb_rdm_response_received,
-      controllercb_rdm_command_received,
-      controllercb_status_received,
-      controllercb_llrp_rdm_command_received
-    };
-    // clang-format on
-    config.callback_context = static_cast<RDMnetLibNotifyInternal*>(this);
+    RDMNET_CONTROLLER_SET_CALLBACKS(&config, controllercb_connected, controllercb_connect_failed,
+                                    controllercb_disconnected, controllercb_client_list_update,
+                                    controllercb_rdm_response_received, controllercb_status_received,
+                                    static_cast<RDMnetLibNotifyInternal*>(this));
+    RDMNET_CONTROLLER_SET_RDM_CMD_CALLBACKS(&config, controllercb_rdm_command_received,
+                                            controllercb_llrp_rdm_command_received);
 
     res = rdmnet_controller_create(&config, &controller_handle_);
     if (!res)
@@ -256,7 +249,7 @@ void RDMnetLibWrapper::Disconnected(rdmnet_controller_t handle, rdmnet_client_sc
 }
 
 void RDMnetLibWrapper::ClientListUpdate(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                        client_list_action_t list_action, const ClientList* list)
+                                        client_list_action_t list_action, const RptClientList* list)
 {
   if (notify_ && handle == controller_handle_ && list)
   {

@@ -1,12 +1,11 @@
 # RDMnet C++ Client API unit tests
 
-add_executable(test_rdmnet_cpp_api
+add_executable(test_rdmnet_cpp_api EXCLUDE_FROM_ALL
   test_controller.cpp
-
   main.cpp
 )
 target_link_libraries(test_rdmnet_cpp_api
-  RDMnetCoreMock
+  RDMnetApiMock
   RDMnetDiscoveryMock
   EtcPalMock
   RDM

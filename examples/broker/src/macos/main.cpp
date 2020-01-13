@@ -325,7 +325,7 @@ int main(int argc, char* argv[])
     // Startup and run the Broker.
     MacBrokerLog log;
     log.Startup("RDMnetBroker.log", log_mask);
-    exit_code = broker_shell.Run(log.broker_log_instance());
+    exit_code = broker_shell.Run(log.log_instance());
     log.Shutdown();
 
     // Unregister/cleanup the network change detection. (Disabled for now)

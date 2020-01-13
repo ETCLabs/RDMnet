@@ -32,6 +32,12 @@
 #include "gtest/gtest.h"
 #include "fff.h"
 
+extern "C" void RdmnetTestingAssertHandler(const char* expression, const char* file, unsigned int line)
+{
+  FAIL() << "Assertion failure from inside RDMnet library. Expression: " << expression << " File: " << file
+         << " Line: " << line;
+}
+
 DEFINE_FFF_GLOBALS;
 
 // Mocking the dns_sd.h interface

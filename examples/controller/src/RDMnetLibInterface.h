@@ -30,7 +30,7 @@ public:
   virtual void ConnectFailed(rdmnet_client_scope_t scope_handle, const RdmnetClientConnectFailedInfo& info) = 0;
   virtual void Disconnected(rdmnet_client_scope_t scope_handle, const RdmnetClientDisconnectedInfo& info) = 0;
   virtual void ClientListUpdate(rdmnet_client_scope_t scope_handle, client_list_action_t action,
-                                const ClientList& list) = 0;
+                                const RptClientList& list) = 0;
   virtual void RdmCommandReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmCommand& cmd) = 0;
   virtual void RdmResponseReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse& resp) = 0;
   virtual void StatusReceived(rdmnet_client_scope_t scope_handle, const RemoteRptStatus& status) = 0;

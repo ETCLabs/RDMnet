@@ -36,3 +36,17 @@ target_sources(RDMnetCoreMock INTERFACE
 target_compile_definitions(RDMnetCoreMock INTERFACE RDMNET_BUILDING_FULL_MOCK_CORE_LIB)
 target_include_directories(RDMnetCoreMock INTERFACE ${RDMNET_INCLUDE} ${RDMNET_SRC})
 target_link_libraries(RDMnetCoreMock INTERFACE meekrosoft::fff)
+
+set(RDMNET_API_MOCK_HEADERS
+  ${RDMNET_INCLUDE}/rdmnet_mock/controller.h
+)
+set(RDMNET_API_MOCK_SOURCES
+  ${RDMNET_SRC}/rdmnet_mock/controller.c
+)
+add_library(RDMnetApiMock INTERFACE)
+target_sources(RDMnetApiMock INTERFACE
+  ${RDMNET_API_MOCK_HEADERS}
+  ${RDMNET_API_MOCK_SOURCES}
+)
+target_include_directories(RDMnetApiMock INTERFACE ${RDMNET_INCLUDE} ${RDMNET_SRC})
+target_link_libraries(RDMnetApiMock INTERFACE meekrosoft::fff)

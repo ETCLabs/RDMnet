@@ -342,7 +342,7 @@ void RDMnetNetworkModel::Disconnected(rdmnet_client_scope_t scope_handle, const 
   }
 }
 
-void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem* broker_item, const std::vector<ClientEntryData>& list)
+void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem* broker_item, const std::vector<RptClientEntry>& list)
 {
   // Update the Controller's discovered list to match
   if (list.size() > 0)
@@ -350,13 +350,10 @@ void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem* broker_item, const 
     broker_item->disableChildrenSearch();
   }
 
-  for (const auto entry : list)
+  for (const auto& rpt_entry : list)
   {
-    if (!IS_RPT_CLIENT_ENTRY(&entry))
-      continue;
-
-    bool is_me = (entry.client_cid == my_cid_);
-    RDMnetClientItem* newRDMnetClientItem = new RDMnetClientItem(entry, is_me);
+    bool is_me = (rpt_entry.cid == my_cid_);
+    RDMnetClientItem* newRDMnetClientItem = new RDMnetClientItem(rpt_entry, is_me);
     bool itemAlreadyAdded = false;
 
     for (auto clientIter = broker_item->rdmnet_clients_.begin();
@@ -380,11 +377,9 @@ void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem* broker_item, const 
       appendRowToItem(broker_item, newRDMnetClientItem);
       broker_item->rdmnet_clients_.push_back(newRDMnetClientItem);
 
-      if (GET_RPT_CLIENT_ENTRY_DATA(&entry)->client_type != kRPTClientTypeUnknown)
+      if (rpt_entry.type != kRPTClientTypeUnknown)
       {
-        initializeRPTClientProperties(newRDMnetClientItem, GET_RPT_CLIENT_ENTRY_DATA(&entry)->client_uid.manu,
-                                      GET_RPT_CLIENT_ENTRY_DATA(&entry)->client_uid.id,
-                                      GET_RPT_CLIENT_ENTRY_DATA(&entry)->client_type);
+        initializeRPTClientProperties(newRDMnetClientItem, rpt_entry.uid.manu, rpt_entry.uid.id, rpt_entry.type);
 
         newRDMnetClientItem->enableFeature(kIdentifyDevice);
         emit featureSupportChanged(newRDMnetClientItem, kIdentifyDevice);
@@ -395,7 +390,7 @@ void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem* broker_item, const 
   }
 }
 
-void RDMnetNetworkModel::processRemoveRDMnetClients(BrokerItem* broker_item, const std::vector<ClientEntryData>& list)
+void RDMnetNetworkModel::processRemoveRDMnetClients(BrokerItem* broker_item, const std::vector<RptClientEntry>& list)
 {
   // Update the Controller's discovered list by removing these newly lost
   // clients
@@ -405,10 +400,9 @@ void RDMnetNetworkModel::processRemoveRDMnetClients(BrokerItem* broker_item, con
 
     if (clientItem)
     {
-      for (auto j = list.begin(); j != list.end(); ++j)
+      for (const auto& rpt_entry : list)
       {
-        const ClientEntryDataRpt* rpt_entry = GET_RPT_CLIENT_ENTRY_DATA(&(*j));
-        if (rpt_entry->client_type == clientItem->ClientType() && rpt_entry->client_uid == clientItem->uid())
+        if (rpt_entry.type == clientItem->ClientType() && rpt_entry.uid == clientItem->uid())
         {
           // Found the match
           broker_item->rdmnet_clients_.erase(
@@ -994,7 +988,7 @@ RDMnetNetworkModel* RDMnetNetworkModel::makeRDMnetNetworkModel(RDMnetLibInterfac
   model->setHeaderData(0, Qt::Orientation::Horizontal, tr("Property"));
   model->setHeaderData(1, Qt::Orientation::Horizontal, tr("Value"));
 
-  qRegisterMetaType<std::vector<ClientEntryData>>("std::vector<ClientEntryData>");
+  qRegisterMetaType<std::vector<RptClientEntry>>("std::vector<RptClientEntry>");
   qRegisterMetaType<std::vector<std::pair<uint16_t, uint8_t>>>("std::vector<std::pair<uint16_t, uint8_t>>");
   qRegisterMetaType<std::vector<RdmUid>>("std::vector<RdmUid>");
   qRegisterMetaType<std::vector<PropertyItem*>*>("std::vector<PropertyItem*>*");
@@ -1352,18 +1346,14 @@ bool RDMnetNetworkModel::setData(const QModelIndex& index, const QVariant& value
 }
 
 void RDMnetNetworkModel::ClientListUpdate(rdmnet_client_scope_t scope_handle, client_list_action_t action,
-                                          const ClientList& list)
+                                          const RptClientList& list)
 {
   etcpal::ReadGuard conn_read(conn_lock_);
 
   BrokerItem* broker_item = broker_connections_[scope_handle];
 
-  std::vector<ClientEntryData> entries;
-
-  for (const ClientEntryData* entry = list.client_entry_list; entry; entry = entry->next)
-  {
-    entries.push_back(*entry);
-  }
+  std::vector<RptClientEntry> entries;
+  entries.assign(list.client_entries, list.client_entries + list.num_client_entries);
 
   // TODO the four possible actions need to be handled properly
   // kRdmnetClientListAppend means this list should be added to the existing clients
@@ -1562,7 +1552,7 @@ void RDMnetNetworkModel::SendRDMGetResponses(rdmnet_client_scope_t scope_handle,
   }
 
   resp.num_responses = resp_list.size();
-  resp.rdm_arr = resp_list.data();
+  resp.responses = resp_list.data();
   rdmnet_->SendRdmResponse(scope_handle, resp);
 }
 
@@ -1598,7 +1588,7 @@ void RDMnetNetworkModel::SendRDMNack(rdmnet_client_scope_t scope, const RemoteRd
   LocalRdmResponse resp;
   resp.dest_uid = received_cmd.source_uid;
   resp.num_responses = 1;
-  resp.rdm_arr = &rdm_resp;
+  resp.responses = &rdm_resp;
   resp.seq_num = received_cmd.seq_num;
   resp.source_endpoint = E133_NULL_ENDPOINT;
   resp.command_included = true;
@@ -1689,9 +1679,9 @@ void RDMnetNetworkModel::RdmResponseReceived(rdmnet_client_scope_t scope_handle,
 {
   // Since we are compiling with RDMNET_DYNAMIC_MEM, we should never get partial responses.
   assert(!resp.more_coming);
-  assert(resp.resp_list);
+  assert(resp.num_responses >= 1);
 
-  const RdmResponse& first_resp = resp.resp_list->msg;
+  const RdmResponse& first_resp = *resp.responses;
   switch (first_resp.resp_type)
   {
     case kRdmResponseTypeAckTimer:
@@ -1719,18 +1709,14 @@ void RDMnetNetworkModel::RdmResponseReceived(rdmnet_client_scope_t scope_handle,
 
 void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse& resp)
 {
-  const RemoteRdmRespListEntry* resp_entry = resp.resp_list;
-  if (!resp_entry)
-    return;
+  const RdmResponse* first_resp = resp.responses;
 
-  const RdmResponse& first_resp = resp_entry->msg;
-
-  if (first_resp.command_class == kRdmCCGetCommandResponse)
+  if (first_resp->command_class == kRdmCCGetCommandResponse)
   {
     log_->Log(ETCPAL_LOG_INFO, "Got GET_COMMAND_RESPONSE with PID 0x%04x from Controller %04x:%08x",
-              first_resp.param_id, first_resp.source_uid.manu, first_resp.source_uid.id);
+              first_resp->param_id, first_resp->source_uid.manu, first_resp->source_uid.id);
 
-    switch (first_resp.param_id)
+    switch (first_resp->param_id)
     {
       case E120_STATUS_MESSAGES:
       {
@@ -1754,30 +1740,30 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
       {
         std::vector<uint16_t> list;
 
-        for (; resp_entry; resp_entry = resp_entry->next)
+        for (const RdmResponse* response = resp.responses; response < resp.responses + resp.num_responses; ++response)
         {
-          for (size_t pos = 0; pos + 1 < resp_entry->msg.datalen; pos += 2)
-            list.push_back(etcpal_upack_16b(&resp_entry->msg.data[pos]));
+          for (size_t pos = 0; pos + 1 < response->datalen; pos += 2)
+            list.push_back(etcpal_upack_16b(&response->data[pos]));
         }
 
         if (!list.empty())
-          HandleSupportedParametersResponse(scope_handle, list, first_resp);
+          HandleSupportedParametersResponse(scope_handle, list, *first_resp);
         break;
       }
       case E120_DEVICE_INFO:
       {
-        if (first_resp.datalen >= 19)
+        if (first_resp->datalen >= 19)
         {
           // Current personality is reset if less than 1
-          uint8_t cur_pers = (first_resp.data[12] < 1 ? 1 : first_resp.data[12]);
+          uint8_t cur_pers = (first_resp->data[12] < 1 ? 1 : first_resp->data[12]);
           // Total personality is reset if current or total is less than 1
-          uint8_t total_pers = ((first_resp.data[12] < 1 || first_resp.data[13] < 1) ? 1 : first_resp.data[13]);
+          uint8_t total_pers = ((first_resp->data[12] < 1 || first_resp->data[13] < 1) ? 1 : first_resp->data[13]);
 
-          HandleDeviceInfoResponse(scope_handle, etcpal_upack_16b(&first_resp.data[0]),
-                                   etcpal_upack_16b(&first_resp.data[2]), etcpal_upack_16b(&first_resp.data[4]),
-                                   etcpal_upack_32b(&first_resp.data[6]), etcpal_upack_16b(&first_resp.data[10]),
-                                   cur_pers, total_pers, etcpal_upack_16b(&first_resp.data[14]),
-                                   etcpal_upack_16b(&first_resp.data[16]), first_resp.data[18], first_resp);
+          HandleDeviceInfoResponse(scope_handle, etcpal_upack_16b(&first_resp->data[0]),
+                                   etcpal_upack_16b(&first_resp->data[2]), etcpal_upack_16b(&first_resp->data[4]),
+                                   etcpal_upack_32b(&first_resp->data[6]), etcpal_upack_16b(&first_resp->data[10]),
+                                   cur_pers, total_pers, etcpal_upack_16b(&first_resp->data[14]),
+                                   etcpal_upack_16b(&first_resp->data[16]), first_resp->data[18], *first_resp);
         }
         break;
       }
@@ -1792,53 +1778,53 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
         // Ensure that the string is null-terminated
         memset(label, 0, 33);
         // Max label length is 32
-        memcpy(label, first_resp.data, (first_resp.datalen > 32) ? 32 : first_resp.datalen);
+        memcpy(label, first_resp->data, (first_resp->datalen > 32) ? 32 : first_resp->datalen);
 
-        switch (first_resp.param_id)
+        switch (first_resp->param_id)
         {
           case E120_DEVICE_MODEL_DESCRIPTION:
-            HandleModelDescResponse(scope_handle, QString::fromUtf8(label), first_resp);
+            HandleModelDescResponse(scope_handle, QString::fromUtf8(label), *first_resp);
             break;
           case E120_SOFTWARE_VERSION_LABEL:
-            HandleSoftwareLabelResponse(scope_handle, QString::fromUtf8(label), first_resp);
+            HandleSoftwareLabelResponse(scope_handle, QString::fromUtf8(label), *first_resp);
             break;
           case E120_MANUFACTURER_LABEL:
-            HandleManufacturerLabelResponse(scope_handle, QString::fromUtf8(label), first_resp);
+            HandleManufacturerLabelResponse(scope_handle, QString::fromUtf8(label), *first_resp);
             break;
           case E120_DEVICE_LABEL:
-            HandleDeviceLabelResponse(scope_handle, QString::fromUtf8(label), first_resp);
+            HandleDeviceLabelResponse(scope_handle, QString::fromUtf8(label), *first_resp);
             break;
           case E120_BOOT_SOFTWARE_VERSION_LABEL:
-            HandleBootSoftwareLabelResponse(scope_handle, QString::fromUtf8(label), first_resp);
+            HandleBootSoftwareLabelResponse(scope_handle, QString::fromUtf8(label), *first_resp);
             break;
         }
         break;
       }
       case E120_BOOT_SOFTWARE_VERSION_ID:
       {
-        if (first_resp.datalen >= 4)
-          HandleBootSoftwareIdResponse(scope_handle, etcpal_upack_32b(first_resp.data), first_resp);
+        if (first_resp->datalen >= 4)
+          HandleBootSoftwareIdResponse(scope_handle, etcpal_upack_32b(first_resp->data), *first_resp);
         break;
       }
       case E120_DMX_PERSONALITY:
       {
-        if (first_resp.datalen >= 2)
-          HandlePersonalityResponse(scope_handle, first_resp.data[0], first_resp.data[1], first_resp);
+        if (first_resp->datalen >= 2)
+          HandlePersonalityResponse(scope_handle, first_resp->data[0], first_resp->data[1], *first_resp);
         break;
       }
       case E120_DMX_PERSONALITY_DESCRIPTION:
       {
-        if (first_resp.datalen >= 3)
+        if (first_resp->datalen >= 3)
         {
           char description[33];
-          uint8_t descriptionLength = first_resp.datalen - 3;
+          uint8_t descriptionLength = first_resp->datalen - 3;
 
           memset(description, 0, 33);  // Ensure that the string is null-terminated
-          memcpy(description, &first_resp.data[3],
+          memcpy(description, &first_resp->data[3],
                  (descriptionLength > 32) ? 32 : descriptionLength);  // Max description length is 32
 
-          HandlePersonalityDescResponse(scope_handle, first_resp.data[0], etcpal_upack_16b(&first_resp.data[1]),
-                                        QString::fromUtf8(description), first_resp);
+          HandlePersonalityDescResponse(scope_handle, first_resp->data[0], etcpal_upack_16b(&first_resp->data[1]),
+                                        QString::fromUtf8(description), *first_resp);
         }
         break;
       }
@@ -1849,25 +1835,23 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
         std::vector<std::pair<uint16_t, uint8_t>> list;
         RdmUid source_uid;
 
-        for (; resp_entry; resp_entry = resp_entry->next)
+        for (const RdmResponse* response = resp.responses; response < resp.responses + resp.num_responses; ++response)
         {
-          const RdmResponse& resp_part = resp_entry->msg;
-
           size_t pos = 0;
           if (is_first_message)
           {
-            if (resp_part.datalen < 4)
+            if (response->datalen < 4)
               break;
-            source_uid = resp_part.source_uid;
-            change_number = etcpal_upack_32b(&resp_part.data[0]);
+            source_uid = response->source_uid;
+            change_number = etcpal_upack_32b(&response->data[0]);
             pos = 4;
             is_first_message = false;
           }
 
-          for (; pos + 2 < resp_part.datalen; pos += 3)
+          for (; pos + 2 < response->datalen; pos += 3)
           {
-            uint16_t endpoint_id = etcpal_upack_16b(&resp_part.data[pos]);
-            uint8_t endpoint_type = resp_part.data[pos + 2];
+            uint16_t endpoint_id = etcpal_upack_16b(&response->data[pos]);
+            uint8_t endpoint_type = response->data[pos + 2];
             list.push_back(std::make_pair(endpoint_id, endpoint_type));
           }
         }
@@ -1883,27 +1867,25 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
         uint16_t endpoint_id = 0;
         uint32_t change_number = 0;
 
-        for (; resp_entry; resp_entry = resp_entry->next)
+        for (const RdmResponse* response = resp.responses; response < resp.responses + resp.num_responses; ++response)
         {
-          const RdmResponse& resp_part = resp_entry->msg;
-
           size_t pos = 0;
           if (is_first_message)
           {
-            if (resp_part.datalen < 6)
+            if (response->datalen < 6)
               break;
-            source_uid = resp_part.source_uid;
-            endpoint_id = etcpal_upack_16b(&resp_part.data[0]);
-            change_number = etcpal_upack_32b(&resp_part.data[2]);
+            source_uid = response->source_uid;
+            endpoint_id = etcpal_upack_16b(&response->data[0]);
+            change_number = etcpal_upack_32b(&response->data[2]);
             pos = 6;
             is_first_message = false;
           }
 
-          for (; pos + 5 < resp_part.datalen; pos += 6)
+          for (; pos + 5 < response->datalen; pos += 6)
           {
             RdmUid device;
-            device.manu = etcpal_upack_16b(&resp_part.data[pos]);
-            device.id = etcpal_upack_32b(&resp_part.data[pos + 2]);
+            device.manu = etcpal_upack_16b(&response->data[pos]);
+            device.id = etcpal_upack_32b(&response->data[pos + 2]);
             list.push_back(device);
           }
         }
@@ -1913,43 +1895,41 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
       break;
       case E137_7_ENDPOINT_LIST_CHANGE:
       {
-        if (first_resp.datalen >= 4)
+        if (first_resp->datalen >= 4)
         {
-          uint32_t change_number = etcpal_upack_32b(first_resp.data);
-          HandleEndpointListChangeResponse(scope_handle, change_number, first_resp.source_uid);
+          uint32_t change_number = etcpal_upack_32b(first_resp->data);
+          HandleEndpointListChangeResponse(scope_handle, change_number, first_resp->source_uid);
         }
         break;
       }
       case E137_7_ENDPOINT_RESPONDER_LIST_CHANGE:
       {
-        if (first_resp.datalen >= 6)
+        if (first_resp->datalen >= 6)
         {
-          uint16_t endpoint_id = etcpal_upack_16b(first_resp.data);
-          uint32_t change_num = etcpal_upack_32b(&first_resp.data[2]);
-          HandleResponderListChangeResponse(scope_handle, change_num, endpoint_id, first_resp.source_uid);
+          uint16_t endpoint_id = etcpal_upack_16b(first_resp->data);
+          uint32_t change_num = etcpal_upack_32b(&first_resp->data[2]);
+          HandleResponderListChangeResponse(scope_handle, change_num, endpoint_id, first_resp->source_uid);
         }
         break;
       }
       case E133_TCP_COMMS_STATUS:
       {
-        for (; resp_entry; resp_entry = resp_entry->next)
+        for (const RdmResponse* response = resp.responses; response < resp.responses + resp.num_responses; ++response)
         {
-          const RdmResponse& resp_part = resp_entry->msg;
-
           char scopeString[E133_SCOPE_STRING_PADDED_LENGTH];
           memset(scopeString, 0, E133_SCOPE_STRING_PADDED_LENGTH);
-          memcpy(scopeString, resp_part.data, E133_SCOPE_STRING_PADDED_LENGTH - 1);
+          memcpy(scopeString, response->data, E133_SCOPE_STRING_PADDED_LENGTH - 1);
 
           QString v4AddrString =
-              UnpackAndParseIPAddress(resp_part.data + E133_SCOPE_STRING_PADDED_LENGTH, kEtcPalIpTypeV4);
+              UnpackAndParseIPAddress(response->data + E133_SCOPE_STRING_PADDED_LENGTH, kEtcPalIpTypeV4);
           QString v6AddrString =
-              UnpackAndParseIPAddress(resp_part.data + E133_SCOPE_STRING_PADDED_LENGTH + 4, kEtcPalIpTypeV6);
-          uint16_t port = etcpal_upack_16b(resp_part.data + E133_SCOPE_STRING_PADDED_LENGTH + 4 + ETCPAL_IPV6_BYTES);
+              UnpackAndParseIPAddress(response->data + E133_SCOPE_STRING_PADDED_LENGTH + 4, kEtcPalIpTypeV6);
+          uint16_t port = etcpal_upack_16b(response->data + E133_SCOPE_STRING_PADDED_LENGTH + 4 + ETCPAL_IPV6_BYTES);
           uint16_t unhealthyTCPEvents =
-              etcpal_upack_16b(resp_part.data + E133_SCOPE_STRING_PADDED_LENGTH + 4 + ETCPAL_IPV6_BYTES + 2);
+              etcpal_upack_16b(response->data + E133_SCOPE_STRING_PADDED_LENGTH + 4 + ETCPAL_IPV6_BYTES + 2);
 
           HandleTcpCommsStatusResponse(scope_handle, QString::fromUtf8(scopeString), v4AddrString, v6AddrString, port,
-                                       unhealthyTCPEvents, first_resp);
+                                       unhealthyTCPEvents, *first_resp);
         }
 
         break;
@@ -1957,30 +1937,30 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
       default:
       {
         // Process data for PIDs that support get and set, where the data has the same form in either case.
-        ProcessRDMGetSetData(scope_handle, first_resp.param_id, first_resp.data, first_resp.datalen, first_resp);
+        ProcessRDMGetSetData(scope_handle, first_resp->param_id, first_resp->data, first_resp->datalen, *first_resp);
         break;
       }
     }
   }
-  else if (first_resp.command_class == E120_SET_COMMAND_RESPONSE)
+  else if (first_resp->command_class == E120_SET_COMMAND_RESPONSE)
   {
-    log_->Log(ETCPAL_LOG_INFO, "Got SET_COMMAND_RESPONSE with PID %d", first_resp.param_id);
+    log_->Log(ETCPAL_LOG_INFO, "Got SET_COMMAND_RESPONSE with PID %d", first_resp->param_id);
 
     if (resp.command_included)
     {
       // Make sure this Controller is up-to-date with data that was set on a Device.
-      switch (first_resp.param_id)
+      switch (first_resp->param_id)
       {
         case E120_DMX_PERSONALITY:
         {
           if (resp.cmd.datalen >= 2)
-            HandlePersonalityResponse(scope_handle, resp.cmd.data[0], 0, first_resp);
+            HandlePersonalityResponse(scope_handle, resp.cmd.data[0], 0, *first_resp);
           break;
         }
         default:
         {
           // Process PIDs with data that is in the same format for get and set.
-          ProcessRDMGetSetData(scope_handle, first_resp.param_id, resp.cmd.data, resp.cmd.datalen, first_resp);
+          ProcessRDMGetSetData(scope_handle, first_resp->param_id, resp.cmd.data, resp.cmd.datalen, *first_resp);
           break;
         }
       }

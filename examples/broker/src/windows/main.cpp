@@ -19,6 +19,7 @@
 
 // main.cpp: The Windows console entry point for the Broker example application.
 
+#define NOMINMAX 1
 #include <winsock2.h>
 #include <ws2ipdef.h>
 #include <iphlpapi.h>
@@ -340,7 +341,7 @@ int wmain(int argc, wchar_t* argv[])
     // Startup and run the Broker.
     WindowsBrokerLog log;
     log.Startup("RDMnetBroker.log", log_mask);
-    exit_code = broker_shell.Run(log.broker_log_instance());
+    exit_code = broker_shell.Run(log.log_instance());
     log.Shutdown();
 
     // Unregister/cleanup the network change detection.

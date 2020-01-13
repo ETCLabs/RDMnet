@@ -290,7 +290,7 @@ inline etcpal::Result Controller::Startup(ControllerNotifyHandler& notify_handle
   my_rdm_data_ = rdm_data;
 
   RdmnetControllerConfig config;
-  rdmnet_controller_config_init(&config, data.uid.manufacturer_id);
+  rdmnet_controller_config_init(&config, data.uid.manufacturer_id());
   config.optional.uid = data.uid.get();
   config.optional.search_domain = data.search_domain.c_str();
   config.cid = data.cid.get();
@@ -323,7 +323,7 @@ inline etcpal::Result Controller::Startup(ControllerNotifyHandler& notify_handle
   my_data_ = data;
 
   RdmnetControllerConfig config;
-  rdmnet_controller_config_init(&config, data.uid.manufacturer_id);
+  rdmnet_controller_config_init(&config, data.uid.manufacturer_id());
   config.optional.uid = data.uid.get();
   config.optional.search_domain = data.search_domain.c_str();
   config.cid = data.cid.get();
@@ -432,6 +432,22 @@ inline const ControllerData& Controller::data() const
 {
   return my_data_;
 }
+
+inline const ControllerRdmData& Controller::rdm_data() const
+{
+  return my_rdm_data_;
+}
+
+inline ControllerNotifyHandler* Controller::notify_handler() const
+{
+  return notify_;
+}
+
+inline ControllerRdmCommandHandler* Controller::rdm_command_handler() const
+{
+  return rdm_cmd_handler_;
+}
+
 };  // namespace rdmnet
 
 #endif  // RDMNET_CPP_CONTROLLER_H_

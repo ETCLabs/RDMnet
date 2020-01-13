@@ -35,25 +35,24 @@ public:
   static const char* clientType2String(rpt_client_type_t type);
 
   // RDMnetClientItem();
-  RDMnetClientItem(const ClientEntryData& entry, bool is_me);
+  RDMnetClientItem(const RptClientEntry& entry, bool is_me);
   virtual ~RDMnetClientItem();
 
   virtual int type() const override;
 
   bool operator==(const RDMnetClientItem& other)
   {
-    return (GET_RPT_CLIENT_ENTRY_DATA(&entry_)->client_type == GET_RPT_CLIENT_ENTRY_DATA(&other.entry_)->client_type) &&
-           (GET_RPT_CLIENT_ENTRY_DATA(&entry_)->client_uid == GET_RPT_CLIENT_ENTRY_DATA(&other.entry_)->client_uid);
+    return (entry_.type == other.entry_.type) && (entry_.uid == other.entry_.uid);
   }
 
-  RdmUid uid() const override { return GET_RPT_CLIENT_ENTRY_DATA(&entry_)->client_uid; }
-  const rpt_client_type_t ClientType() const { return GET_RPT_CLIENT_ENTRY_DATA(&entry_)->client_type; }
+  RdmUid uid() const override { return entry_.uid; }
+  const rpt_client_type_t ClientType() const { return entry_.type; }
 
   void setScopeSlot(const QString& scope, uint16_t slot);
   uint16_t getScopeSlot(const QString& scope);
   void removeScopeSlot(const QString& scope);
 
-  ClientEntryData entry_;
+  RptClientEntry entry_;
   std::vector<EndpointItem*> endpoints_;
 
 protected:

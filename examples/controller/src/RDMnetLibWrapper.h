@@ -35,7 +35,7 @@ public:
   virtual void Disconnected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
                             const RdmnetClientDisconnectedInfo* info) = 0;
   virtual void ClientListUpdate(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                client_list_action_t list_action, const ClientList* list) = 0;
+                                client_list_action_t list_action, const RptClientList* list) = 0;
   virtual void RdmResponseReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
                                    const RemoteRdmResponse* resp) = 0;
   virtual void RdmCommandReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
@@ -72,7 +72,7 @@ protected:
   virtual void Disconnected(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
                             const RdmnetClientDisconnectedInfo* info) override;
   virtual void ClientListUpdate(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                client_list_action_t list_action, const ClientList* list) override;
+                                client_list_action_t list_action, const RptClientList* list) override;
   virtual void RdmResponseReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
                                    const RemoteRdmResponse* resp) override;
   virtual void RdmCommandReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
