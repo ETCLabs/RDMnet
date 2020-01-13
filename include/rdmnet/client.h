@@ -330,12 +330,8 @@ typedef struct RdmnetRptClientConfig
  * \param clientcfgptr Pointer to RdmnetRptClientConfig.
  * \param manu_id ESTA manufacturer ID. All RDMnet RPT components must have one.
  */
-#define RPT_CLIENT_CONFIG_INIT(clientcfgptr, manu_id)                                 \
-  do                                                                                  \
-  {                                                                                   \
-    RPT_CLIENT_INIT_OPTIONAL_CONFIG_VALUES(&(clientcfgptr)->optional, manu_id);       \
-    LLRP_TARGET_INIT_OPTIONAL_CONFIG_VALUES(&(clientcfgptr)->llrp_optional, manu_id); \
-  } while (0)
+#define RPT_CLIENT_CONFIG_INIT(clientcfgptr, manu_id) \
+  RPT_CLIENT_INIT_OPTIONAL_CONFIG_VALUES(&(clientcfgptr)->optional, manu_id);
 
 typedef struct RdmnetEptClientConfig
 {

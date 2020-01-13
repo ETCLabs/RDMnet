@@ -133,9 +133,14 @@ private:
 class RPTClient : public BrokerClient
 {
 public:
-  RPTClient(rpt_client_type_t new_ctype, const RdmUid& new_uid, const BrokerClient& prev_client)
-      : BrokerClient(prev_client), uid(new_uid), client_type(new_ctype)
+  RPTClient(const RptClientEntry& client_entry, const BrokerClient& prev_client)
+      : BrokerClient(prev_client)
+      , uid(client_entry.uid)
+      , client_type(client_entry.type)
+      , binding_cid(client_entry.binding_cid)
   {
+    client_protocol = kClientProtocolRPT;
+    cid = client_entry.cid;
   }
   virtual ~RPTClient() {}
 
@@ -164,12 +169,10 @@ class RPTController : public RPTClient
 {
 public:
   // TODO max queue size
-  RPTController(size_t max_q_size, const ClientEntryData& cli_entry, const BrokerClient& prev_client)
-      : RPTClient(cli_entry.data.rpt_data.client_type, cli_entry.data.rpt_data.client_uid, prev_client)
+  RPTController(size_t max_q_size, const RptClientEntry& cli_entry, const BrokerClient& prev_client)
+      : RPTClient(cli_entry, prev_client)
   {
     max_q_size_ = max_q_size;
-    cid = cli_entry.client_cid;
-    client_protocol = cli_entry.client_protocol;
   }
   virtual ~RPTController() {}
 
@@ -185,12 +188,10 @@ public:
 class RPTDevice : public RPTClient
 {
 public:
-  RPTDevice(size_t max_q_size, const ClientEntryData& cli_entry, const BrokerClient& prev_client)
-      : RPTClient(cli_entry.data.rpt_data.client_type, cli_entry.data.rpt_data.client_uid, prev_client)
+  RPTDevice(size_t max_q_size, const RptClientEntry& cli_entry, const BrokerClient& prev_client)
+      : RPTClient(cli_entry, prev_client)
   {
     max_q_size_ = max_q_size;
-    cid = cli_entry.client_cid;
-    client_protocol = cli_entry.client_protocol;
   }
   virtual ~RPTDevice() {}
 

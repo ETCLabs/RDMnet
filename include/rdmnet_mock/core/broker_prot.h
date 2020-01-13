@@ -32,20 +32,22 @@ extern "C" {
 
 DECLARE_FAKE_VALUE_FUNC(size_t, bufsize_rpt_client_list, size_t);
 DECLARE_FAKE_VALUE_FUNC(size_t, bufsize_ept_client_list, const EptClientEntry*, size_t);
-DECLARE_FAKE_VALUE_FUNC(size_t, bufsize_dynamic_uid_assignment_list, const DynamicUidMapping*);
+DECLARE_FAKE_VALUE_FUNC(size_t, bufsize_dynamic_uid_assignment_list, size_t);
+
 DECLARE_FAKE_VALUE_FUNC(size_t, pack_connect_reply, uint8_t*, size_t, const EtcPalUuid*, const ConnectReplyMsg*);
 DECLARE_FAKE_VALUE_FUNC(size_t, pack_rpt_client_list, uint8_t*, size_t, const EtcPalUuid*, uint16_t,
                         const RptClientEntry*, size_t);
-DECLARE_FAKE_VALUE_FUNC(size_t, pack_ept_client_list,uint8_t*, size_t, const EtcPalUuid*, uint16_t,
+DECLARE_FAKE_VALUE_FUNC(size_t, pack_ept_client_list, uint8_t*, size_t, const EtcPalUuid*, uint16_t,
                         const EptClientEntry*, size_t);
 DECLARE_FAKE_VALUE_FUNC(size_t, pack_dynamic_uid_assignment_list, uint8_t*, size_t, const EtcPalUuid*,
-                        const DynamicUidMapping*);
+                        const DynamicUidMapping*, size_t);
+
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, send_connect_reply, rdmnet_conn_t, const EtcPalUuid*, const ConnectReplyMsg*);
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, send_fetch_client_list, rdmnet_conn_t, const EtcPalUuid*);
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, send_request_dynamic_uids, rdmnet_conn_t, const EtcPalUuid*,
                         const DynamicUidRequest*, size_t);
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, send_fetch_uid_assignment_list, rdmnet_conn_t, const EtcPalUuid*,
-                        const RdmUid*, size_t);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, send_fetch_uid_assignment_list, rdmnet_conn_t, const EtcPalUuid*, const RdmUid*,
+                        size_t);
 
 #define RDMNET_CORE_BROKER_PROT_DO_FOR_ALL_FAKES(operation) \
   operation(bufsize_rpt_client_list);                       \

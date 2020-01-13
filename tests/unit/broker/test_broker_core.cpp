@@ -248,3 +248,13 @@ TEST_F(TestBrokerCore, IndividualSocketsWhenListeningOnMultipleInterfaces)
   EXPECT_EQ(etcpal_bind_fake.call_count, 2u);
   EXPECT_EQ(etcpal_listen_fake.call_count, 2u);
 }
+
+class TestStartedBrokerCore : public TestBrokerCore
+{
+protected:
+  TestStartedBrokerCore() : TestBrokerCore() { StartBrokerWithMockComponents(DefaultBrokerSettings()); }
+};
+
+TEST_F(TestStartedBrokerCore, HandlesConnect)
+{
+}

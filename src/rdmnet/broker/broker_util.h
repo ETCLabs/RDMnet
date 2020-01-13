@@ -30,6 +30,5 @@
 
 // Utility functions for manipulating messages
 RptHeader SwapHeaderData(const RptHeader& source);
-std::vector<RdmBuffer> RdmBufListToVect(const RdmBufListEntry* list_head);
 
 #endif  // BROKER_UTIL_H_

@@ -19,15 +19,21 @@
 
 #include "rdmnet_mock/core/broker_prot.h"
 
-DEFINE_FAKE_VALUE_FUNC(size_t, bufsize_client_list, const ClientEntryData*);
-DEFINE_FAKE_VALUE_FUNC(size_t, bufsize_dynamic_uid_assignment_list, const DynamicUidMapping*);
+DEFINE_FAKE_VALUE_FUNC(size_t, bufsize_rpt_client_list, size_t);
+DEFINE_FAKE_VALUE_FUNC(size_t, bufsize_ept_client_list, const EptClientEntry*, size_t);
+DEFINE_FAKE_VALUE_FUNC(size_t, bufsize_dynamic_uid_assignment_list, size_t);
+
 DEFINE_FAKE_VALUE_FUNC(size_t, pack_connect_reply, uint8_t*, size_t, const EtcPalUuid*, const ConnectReplyMsg*);
-DEFINE_FAKE_VALUE_FUNC(size_t, pack_client_list, uint8_t*, size_t, const EtcPalUuid*, uint16_t, const ClientEntryData*);
+DEFINE_FAKE_VALUE_FUNC(size_t, pack_rpt_client_list, uint8_t*, size_t, const EtcPalUuid*, uint16_t,
+                       const RptClientEntry*, size_t);
+DEFINE_FAKE_VALUE_FUNC(size_t, pack_ept_client_list, uint8_t*, size_t, const EtcPalUuid*, uint16_t,
+                       const EptClientEntry*, size_t);
 DEFINE_FAKE_VALUE_FUNC(size_t, pack_dynamic_uid_assignment_list, uint8_t*, size_t, const EtcPalUuid*,
-                       const DynamicUidMapping*);
+                       const DynamicUidMapping*, size_t);
+
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, send_connect_reply, rdmnet_conn_t, const EtcPalUuid*, const ConnectReplyMsg*);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, send_fetch_client_list, rdmnet_conn_t, const EtcPalUuid*);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, send_request_dynamic_uids, rdmnet_conn_t, const EtcPalUuid*,
-                       const DynamicUidRequestListEntry*);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, send_fetch_uid_assignment_list, rdmnet_conn_t, const EtcPalUuid*,
-                       const FetchUidAssignmentListEntry*);
+                       const DynamicUidRequest*, size_t);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, send_fetch_uid_assignment_list, rdmnet_conn_t, const EtcPalUuid*, const RdmUid*,
+                       size_t);

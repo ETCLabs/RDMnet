@@ -207,7 +207,7 @@ bool BrokerCore::HandleNewConnection(etcpal_socket_t new_sock, const etcpal::Soc
       auto create_res = components_.conn_interface->CreateNewConnectionForSocket(new_sock, addr, connhandle);
       if (create_res)
       {
-        auto client = std::make_shared<BrokerClient>(connhandle);
+        auto client = std::make_unique<BrokerClient>(connhandle);
 
         // Before inserting the connection, make sure we can attach the socket.
         if (client)
@@ -257,7 +257,7 @@ bool BrokerCore::ServiceClients()
 
   etcpal::ReadGuard clients_read(client_lock_);
 
-  for (auto client : clients_)
+  for (auto& client : clients_)
   {
     ClientWriteGuard client_write(*client.second);
     result |= client.second->Send();
@@ -323,52 +323,56 @@ void BrokerCore::SendClientList(int conn)
 void BrokerCore::SendRptClientList(BrokerMessage& bmsg, RPTClient& to_cli)
 {
   std::vector<RptClientEntry> entries;
-  entries.reserve(clients_.size());
-  for (auto client : clients_)
+  entries.reserve(rpt_clients_.size());
+  for (auto& client : rpt_clients_)
   {
-    if (client.second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
-    {
-      entries.emplace_back();
-      RptClientEntry& rpt_entry = entries.back();
-      RPTClient& rpt_cli = static_cast<RPTClient&>(*client.second);
+    entries.emplace_back();
+    RptClientEntry& rpt_entry = entries.back();
+    RPTClient& rpt_cli = static_cast<RPTClient&>(*client.second);
 
-      rpt_entry.cid = rpt_cli.cid.get();
-      rpt_entry.uid = rpt_cli.uid;
-      rpt_entry.type = rpt_cli.client_type;
-      rpt_entry.binding_cid = rpt_cli.binding_cid.get();
-    }
+    rpt_entry.cid = rpt_cli.cid.get();
+    rpt_entry.uid = rpt_cli.uid;
+    rpt_entry.type = rpt_cli.client_type;
+    rpt_entry.binding_cid = rpt_cli.binding_cid.get();
   }
   if (!entries.empty())
   {
-    GET_CLIENT_LIST(&bmsg)->dat = entries.data();
-    to_client->second->Push(settings_.cid, bmsg);
+    GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(&bmsg))->client_entries = entries.data();
+    GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(&bmsg))->num_client_entries = entries.size();
+    to_cli.Push(settings_.cid, bmsg);
   }
 }
 
-void BrokerCore::SendClientsAdded(client_protocol_t client_prot, int conn_to_ignore,
-                                  std::vector<ClientEntryData>& entries)
+void BrokerCore::SendEptClientList(BrokerMessage& /*bmsg*/, EPTClient& /*to_cli*/)
+{
+}
+
+void BrokerCore::SendClientsAdded(rdmnet_conn_t conn_to_ignore, std::vector<RptClientEntry>& entries)
 {
   BrokerMessage bmsg;
   bmsg.vector = VECTOR_BROKER_CLIENT_ADD;
-  GET_CLIENT_LIST(&bmsg)->client_entry_list = entries.data();
+  GET_CLIENT_LIST(&bmsg)->client_protocol = kClientProtocolRPT;
+  GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(&bmsg))->client_entries = entries.data();
+  GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(&bmsg))->num_client_entries = entries.size();
 
   for (const auto controller : controllers_)
   {
-    if (controller.second->client_protocol == client_prot && controller.first != conn_to_ignore)
+    if (controller.first != conn_to_ignore)
       controller.second->Push(settings_.cid, bmsg);
   }
 }
 
-void BrokerCore::SendClientsRemoved(client_protocol_t client_prot, std::vector<ClientEntryData>& entries)
+void BrokerCore::SendClientsRemoved(std::vector<RptClientEntry>& entries)
 {
   BrokerMessage bmsg;
   bmsg.vector = VECTOR_BROKER_CLIENT_REMOVE;
-  GET_CLIENT_LIST(&bmsg)->client_entry_list = entries.data();
+  GET_CLIENT_LIST(&bmsg)->client_protocol = kClientProtocolRPT;
+  GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(&bmsg))->client_entries = entries.data();
+  GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(&bmsg))->num_client_entries = entries.size();
 
   for (const auto controller : controllers_)
   {
-    if (controller.second->client_protocol == client_prot)
-      controller.second->Push(settings_.cid, bmsg);
+    controller.second->Push(settings_.cid, bmsg);
   }
 }
 
@@ -420,17 +424,11 @@ void BrokerCore::ProcessConnectRequest(int conn, const ClientConnectMsg* cmsg)
 
   if (deny_connection)
   {
-    etcpal::ReadGuard client_read(client_lock_);
+    ConnectReplyMsg creply = {connect_status, E133_VERSION, my_uid_, {}};
+    send_connect_reply(conn, &settings_.cid.get(), &creply);
 
-    auto it = clients_.find(conn);
-    if (it != clients_.end() && it->second)
-    {
-      ConnectReplyMsg creply = {connect_status, E133_VERSION, my_uid_, {}};
-      send_connect_reply(conn, &settings_.cid.get(), &creply);
-    }
-
-    // Clean up this socket. TODO
-    // MarkSocketForDestruction(cookie, false, 0);
+    // Clean up this connection.
+    MarkConnForDestruction(conn);
   }
 }
 
@@ -516,17 +514,18 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const RptClientE
       else
       {
         auto controller =
-            std::make_shared<RPTController>(settings_.max_controller_messages, updated_client_entry, *clients_[handle]);
+            std::make_unique<RPTController>(settings_.max_controller_messages, updated_client_entry, *clients_[handle]);
         if (controller)
         {
           new_client = controller.get();
-          controllers_.insert(std::make_pair(handle, controller));
+          controllers_.insert(std::make_pair(handle, controller.get()));
+          rpt_clients_.insert(std::make_pair(handle, controller.get()));
           clients_[handle] = std::move(controller);
         }
       }
     }
-    // If it's a device, add it to the device states -- unless we've hit
-    // our maximum number of devices
+    // If it's a device, add it to the device states -- unless we've hit our maximum number of
+    // devices
     else if (updated_client_entry.type == kRPTClientTypeDevice)
     {
       if ((settings_.max_devices > 0) && (devices_.size() >= settings_.max_devices))
@@ -538,25 +537,20 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const RptClientE
       else
       {
         auto device =
-            std::make_shared<RPTDevice>(settings_.max_device_messages, updated_client_entry, *clients_[handle]);
+            std::make_unique<RPTDevice>(settings_.max_device_messages, updated_client_entry, *clients_[handle]);
         if (device)
         {
           new_client = device.get();
-          devices_.insert(std::make_pair(handle, device));
+          devices_.insert(std::make_pair(handle, device.get()));
+          rpt_clients_.insert(std::make_pair(handle, device.get()));
           clients_[handle] = std::move(device);
         }
       }
     }
   }
 
-  // The client is already part of our connections, but we need to update
-  // it or check if capacity is exceeded
   if (continue_adding && new_client)
   {
-    new_client->client_type = updated_client_entry.type;
-    new_client->uid = updated_client_entry.uid;
-    new_client->binding_cid = updated_client_entry.binding_cid;
-
     // Send the connect reply
     BrokerMessage msg;
     msg.vector = VECTOR_BROKER_CONNECT_REPLY;
@@ -577,8 +571,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const RptClientE
     // Update everyone
     std::vector<RptClientEntry> entries;
     entries.push_back(updated_client_entry);
-    entries[0].next = nullptr;
-    SendClientsAdded(kClientProtocolRPT, handle, entries);
+    SendClientsAdded(handle, entries);
   }
   return continue_adding;
 }
@@ -611,7 +604,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
               log_->Debug("Received Request PDU addressed to invalid or not found UID %04x:%08x from Controller %d",
                           rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
             }
-            else if (GET_RDM_BUF_LIST(rptmsg)->list->next)
+            else if (GET_RDM_BUF_LIST(rptmsg)->num_rdm_buffers > 1)
             {
               // There should only ever be one RDM command in an RPT request.
               SendStatus(controller, rptmsg->header, kRptStatusInvalidMessage);
@@ -965,7 +958,7 @@ void BrokerCore::MarkConnForDestruction(rdmnet_conn_t conn, SendDisconnect send_
 void BrokerCore::DestroyMarkedClientSockets()
 {
   etcpal::WriteGuard clients_write(client_lock_);
-  std::vector<ClientEntryData> entries;
+  std::vector<RptClientEntry> rpt_entries;
 
   if (!clients_to_destroy_.empty())
   {
@@ -974,10 +967,6 @@ void BrokerCore::DestroyMarkedClientSockets()
       auto client = clients_.find(to_destroy);
       if (client != clients_.end())
       {
-        ClientEntryData entry;
-        entry.client_protocol = client->second->client_protocol;
-        entry.client_cid = client->second->cid.get();
-
         if (client->second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
         {
           RPTClient* rptcli = static_cast<RPTClient*>(client->second.get());
@@ -987,15 +976,13 @@ void BrokerCore::DestroyMarkedClientSockets()
           else if (rptcli->client_type == kRPTClientTypeDevice)
             devices_.erase(to_destroy);
 
-          ClientEntryDataRpt* rptdata = GET_RPT_CLIENT_ENTRY_DATA(&entry);
-          rptdata->client_uid = rptcli->uid;
-          rptdata->client_type = rptcli->client_type;
-          rptdata->binding_cid = rptcli->binding_cid.get();
+          rpt_entries.emplace_back();
+          RptClientEntry& entry = rpt_entries.back();
+          entry.cid = rptcli->cid.get();
+          entry.uid = rptcli->uid;
+          entry.type = rptcli->client_type;
+          entry.binding_cid = rptcli->binding_cid.get();
         }
-        entries.push_back(entry);
-        entries[entries.size() - 1].next = nullptr;
-        if (entries.size() > 1)
-          entries[entries.size() - 2].next = &entries[entries.size() - 1];
         clients_.erase(client);
 
         log_->Info("Removing connection %d marked for destruction.", to_destroy);
@@ -1009,8 +996,8 @@ void BrokerCore::DestroyMarkedClientSockets()
     clients_to_destroy_.clear();
   }
 
-  if (!entries.empty())
-    SendClientsRemoved(entries[0].client_protocol, entries);
+  if (!rpt_entries.empty())
+    SendClientsRemoved(rpt_entries);
 }
 
 void BrokerCore::HandleBrokerRegistered(const std::string& scope, const std::string& requested_service_name,

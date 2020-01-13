@@ -56,18 +56,23 @@ bool BrokerClient::PushPostSizeCheck(const etcpal::Uuid& sender_cid, const Broke
     case VECTOR_BROKER_CLIENT_REMOVE:
     case VECTOR_BROKER_CLIENT_ENTRY_CHANGE:
     {
-      size_t bufsize = bufsize_client_list(GET_CLIENT_LIST(&msg)->client_entry_list);
-      to_push.data = std::make_unique<uint8_t[]>(bufsize);
-      if (to_push.data)
+      if (GET_CLIENT_LIST(&msg)->client_protocol == kClientProtocolRPT)
       {
-        to_push.size = pack_client_list(to_push.data.get(), bufsize, &sender_cid.get(), msg.vector,
-                                        GET_CLIENT_LIST(&msg)->client_entry_list);
-        if (to_push.size)
+        const RptClientList* rpt_list = GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(&msg));
+        size_t bufsize = bufsize_rpt_client_list(rpt_list->num_client_entries);
+        to_push.data = std::make_unique<uint8_t[]>(bufsize);
+        if (to_push.data)
         {
-          broker_msgs_.push(std::move(to_push));
-          res = true;
+          to_push.size = pack_rpt_client_list(to_push.data.get(), bufsize, &sender_cid.get(), msg.vector,
+                                              rpt_list->client_entries, rpt_list->num_client_entries);
+          if (to_push.size)
+          {
+            broker_msgs_.push(std::move(to_push));
+            res = true;
+          }
         }
       }
+      // Else TODO EPT
       break;
     }
     default:
@@ -116,12 +121,12 @@ bool RPTController::Push(rdmnet_conn_t /*from_conn*/, const etcpal::Uuid& sender
     case VECTOR_RPT_REQUEST:  // Controllers should respond to requests like devices do.
     {
       MessageRef to_push;
-      size_t bufsize = bufsize_rpt_request(&(GET_RDM_BUF_LIST(&msg)->list->msg));
+      size_t bufsize = bufsize_rpt_request(GET_RDM_BUF_LIST(&msg)->rdm_buffers);
       to_push.data = std::make_unique<uint8_t[]>(bufsize);
       if (to_push.data)
       {
         to_push.size = pack_rpt_request(to_push.data.get(), bufsize, &sender_cid.get(), &msg.header,
-                                        &(GET_RDM_BUF_LIST(&msg)->list->msg));
+                                        GET_RDM_BUF_LIST(&msg)->rdm_buffers);
         if (to_push.size)
         {
           rpt_msgs_.push(std::move(to_push));
@@ -138,7 +143,9 @@ bool RPTController::Push(rdmnet_conn_t /*from_conn*/, const etcpal::Uuid& sender
     case VECTOR_RPT_NOTIFICATION:
     {
       MessageRef to_push;
-      std::vector<RdmBuffer> resp_list = RdmBufListToVect(GET_RDM_BUF_LIST(&msg)->list);
+      std::vector<RdmBuffer> resp_list;
+      resp_list.assign(GET_RDM_BUF_LIST(&msg)->rdm_buffers,
+                       GET_RDM_BUF_LIST(&msg)->rdm_buffers + GET_RDM_BUF_LIST(&msg)->num_rdm_buffers);
       size_t bufsize = bufsize_rpt_notification(resp_list.data(), resp_list.size());
       to_push.data = std::make_unique<uint8_t[]>(bufsize);
       if (to_push.data)
@@ -234,12 +241,12 @@ bool RPTDevice::Push(rdmnet_conn_t from_conn, const etcpal::Uuid& sender_cid, co
     case VECTOR_RPT_REQUEST:
     {
       MessageRef to_push;
-      size_t bufsize = bufsize_rpt_request(&(GET_RDM_BUF_LIST(&msg)->list->msg));
+      size_t bufsize = bufsize_rpt_request(GET_RDM_BUF_LIST(&msg)->rdm_buffers);
       to_push.data = std::make_unique<uint8_t[]>(bufsize);
       if (to_push.data)
       {
         to_push.size = pack_rpt_request(to_push.data.get(), bufsize, &sender_cid.get(), &msg.header,
-                                        &(GET_RDM_BUF_LIST(&msg)->list->msg));
+                                        GET_RDM_BUF_LIST(&msg)->rdm_buffers);
         if (to_push.size)
         {
           rpt_msgs_[from_conn].push(std::move(to_push));

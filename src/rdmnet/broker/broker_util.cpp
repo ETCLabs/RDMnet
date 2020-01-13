@@ -30,13 +30,3 @@ RptHeader SwapHeaderData(const RptHeader& source)
   swapped_header.source_uid = source.dest_uid;
   return swapped_header;
 }
-
-std::vector<RdmBuffer> RdmBufListToVect(const RdmBufListEntry* list_head)
-{
-  std::vector<RdmBuffer> res;
-  for (const RdmBufListEntry* entry = list_head; entry; entry = entry->next)
-  {
-    res.push_back(entry->msg);
-  }
-  return res;
-}
