@@ -27,6 +27,7 @@
 
 namespace rdmnet
 {
+/// \copydoc rdmnet_client_scope_t
 using ScopeHandle = rdmnet_client_scope_t;
 
 class Scope

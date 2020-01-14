@@ -44,7 +44,10 @@
 /*!
  * \defgroup rdmnet_controller_c Controller C Language API
  * \ingroup rdmnet_controller
- * \brief C Language version of the Controller API
+ * \brief C Language version of the Controller API.
+ *
+ * See \ref using_controller for a detailed description of how to use this API.
+ *
  * @{
  */
 
@@ -57,7 +60,8 @@ typedef struct RdmnetController* rdmnet_controller_t;
 /*! An invalid RDMnet controller handle value. */
 #define RDMNET_CONTROLLER_INVALID NULL
 
-/*! How to apply the client entries to the existing client list in a client_list_update callback. */
+/*! How to apply the client entries to the existing client list in a client_list_update_received
+ *  callback. */
 typedef enum
 {
   /*! The client entries should be appended to the existing client list. */
@@ -70,35 +74,109 @@ typedef enum
   kRdmnetClientListReplace = VECTOR_BROKER_CONNECTED_CLIENT_LIST
 } client_list_action_t;
 
+/*! A set of notification callbacks received about a controller. */
 typedef struct RdmnetControllerCallbacks
 {
+  /*!
+   * \brief A controller has successfully connected to a broker.
+   * \param[in] handle Handle to the controller which has connected.
+   * \param[in] scope_handle Handle to the scope on which the controller has connected.
+   * \param[in] info More information about the successful connection.
+   * \param[in] context Context pointer that was given at the creation of the controller instance.
+   */
   void (*connected)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                     const RdmnetClientConnectedInfo* info, void* context);
+
+  /*!
+   * \brief A connection attempt failed between a controller and a broker.
+   * \param[in] handle Handle to the controller which has failed to connect.
+   * \param[in] scope_handle Handle to the scope on which the connection failed.
+   * \param[in] info More information about the failed connection.
+   * \param[in] context Context pointer that was given at the creation of the controller instance.
+   */
   void (*connect_failed)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                          const RdmnetClientConnectFailedInfo* info, void* context);
+
+  /*!
+   * \brief A controller which was previously connected to a broker has disconnected.
+   * \param[in] handle Handle to the controller which has disconnected.
+   * \param[in] scope_handle Handle to the scope on which the disconnect occurred.
+   * \param[in] info More information about the disconnect event.
+   * \param[in] context Context pointer that was given at the creation of the controller instance.
+   */
   void (*disconnected)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                        const RdmnetClientDisconnectedInfo* info, void* context);
-  void (*client_list_update)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                             client_list_action_t list_action, const RptClientList* client_list, void* context);
+
+  /*!
+   * \brief A client list update has been received from a broker.
+   * \param[in] handle Handle to the controller which has received the client list update.
+   * \param[in] scope_handle Handle to the scope on which the client list update was received.
+   * \param[in] list_action The way the updates in client_list should be applied to the
+   *                        controller's cached list.
+   * \param[in] client_list The list of updates.
+   * \param[in] context Context pointer that was given at the creation of the controller instance.
+   */
+  void (*client_list_update_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                                      client_list_action_t list_action, const RptClientList* client_list,
+                                      void* context);
+
+  /*!
+   * \brief An RDM response has been received.
+   * \param[in] handle Handle to the controller which has received the RDM response.
+   * \param[in] scope_handle Handle to the scope on which the RDM response was received.
+   * \param[in] resp The RDM response data.
+   * \param[in] context Context pointer that was given at the creation of the controller instance.
+   */
   void (*rdm_response_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                 const RemoteRdmResponse* resp, void* context);
+
+  /*!
+   * \brief An RPT status message has been received in response to a previously-sent RDM command.
+   * \param[in] handle Handle to the controller which has received the RPT status message.
+   * \param[in] scope_handle Handle to the scope on which the RPT status message was received.
+   * \param[in] status The RPT status data.
+   * \param[in] context Context pointer that was given at the creation of the controller instance.
+   */
   void (*status_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle, const RemoteRptStatus* status,
                           void* context);
 } RdmnetControllerCallbacks;
 
+/*! A set of callbacks which can be optionally provided to handle RDM commands addressed to a
+ *  controller. */
 typedef struct RdmnetControllerRdmCmdCallbacks
 {
+  /*!
+   * \brief An RDM command has been received addressed to a controller.
+   * \param[in] handle Handle to the controller which has received the RDM command.
+   * \param[in] scope_handle Handle to the scope on which the RDM command was received.
+   * \param[in] cmd The RDM command data.
+   * \param[in] context Context pointer that was given at the creation of the controller instance.
+   */
   void (*rdm_command_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                const RemoteRdmCommand* cmd, void* context);
+
+  /*!
+   * \brief An RDM command has been received over LLRP, addressed to a controller.
+   * \param[in] handle Handle to the controller which has received the RDM command.
+   * \param[in] cmd The RDM command data.
+   * \param[in] context Context pointer that was given at the creation of the controller instance.
+   */
   void (*llrp_rdm_command_received)(rdmnet_controller_t handle, const LlrpRemoteRdmCommand* cmd, void* context);
 } RdmnetControllerRdmCmdCallbacks;
 
+/*! A set of data for the controller library to use for handling RDM commands internally. */
 typedef struct RdmnetControllerRdmData
 {
+  /*! A string representing the manufacturer of the controller. */
   const char* manufacturer_label;
+  /*! A string representing the name of the product model which implements the controller. */
   const char* device_model_description;
+  /*! A string representing the software version of the controller. */
   const char* software_version_label;
+  /*! A user-settable string representing a name for this particular controller instance. */
   const char* device_label;
+  /*! Whether the library should allow the device_label to be changed remotely. */
+  bool device_label_settable;
 } RdmnetControllerRdmData;
 
 /*! A set of information that defines the startup parameters of an RDMnet Controller. */
@@ -120,29 +198,85 @@ typedef struct RdmnetControllerConfig
   RptClientOptionalConfig optional;
 } RdmnetControllerConfig;
 
-#define RDMNET_CONTROLLER_SET_CALLBACKS(configptr, connected_cb, connect_failed_cb, disconnected_cb,         \
-                                        client_list_update_cb, rdm_response_received_cb, status_received_cb, \
-                                        cb_context)                                                          \
-  do                                                                                                         \
-  {                                                                                                          \
-    (configptr)->callbacks.connected = (connected_cb);                                                       \
-    (configptr)->callbacks.connect_failed = (connect_failed_cb);                                             \
-    (configptr)->callbacks.disconnected = (disconnected_cb);                                                 \
-    (configptr)->callbacks.client_list_update = (client_list_update_cb);                                     \
-    (configptr)->callbacks.rdm_response_received = (rdm_response_received_cb);                               \
-    (configptr)->callbacks.status_received = (status_received_cb);                                           \
-    (configptr)->callback_context = (cb_context);                                                            \
+/*!
+ * \brief Set the main callbacks in an RDMnet controller configuration structure.
+ *
+ * All callbacks are required.
+ *
+ * \param configptr Pointer to the RdmnetControllerConfig in which to set the callbacks.
+ * \param connected_cb Function pointer to use for the \ref RdmnetControllerCallbacks::connected
+ *                     "connected" callback.
+ * \param connect_failed_cb Function pointer to use for the \ref RdmnetControllerCallbacks::connect_failed
+ *                          "connect_failed" callback.
+ * \param disconnected_cb Function pointer to use for the \ref RdmnetControllerCallbacks::disconnected
+ *                       "disconnected" callback.
+ * \param client_list_update_received_cb Function pointer to use for the
+ *    \ref RdmnetControllerCallbacks::client_list_update_received "client_list_update_received" callback.
+ * \param rdm_response_received_cb Function pointer to use for the \ref RdmnetControllerCallbacks::rdm_response_received
+ *                                 "rdm_response_received" callback.
+ * \param status_received_cb Function pointer to use for the \ref RdmnetControllerCallbacks::status_received
+ *                           "status_received" callback.
+ * \param cb_context Pointer to opaque data passed back with each callback. Can be NULL.
+ */
+#define RDMNET_CONTROLLER_SET_CALLBACKS(configptr, connected_cb, connect_failed_cb, disconnected_cb,                  \
+                                        client_list_update_received_cb, rdm_response_received_cb, status_received_cb, \
+                                        cb_context)                                                                   \
+  do                                                                                                                  \
+  {                                                                                                                   \
+    (configptr)->callbacks.connected = (connected_cb);                                                                \
+    (configptr)->callbacks.connect_failed = (connect_failed_cb);                                                      \
+    (configptr)->callbacks.disconnected = (disconnected_cb);                                                          \
+    (configptr)->callbacks.client_list_update_received = (client_list_update_received_cb);                            \
+    (configptr)->callbacks.rdm_response_received = (rdm_response_received_cb);                                        \
+    (configptr)->callbacks.status_received = (status_received_cb);                                                    \
+    (configptr)->callback_context = (cb_context);                                                                     \
   } while (0)
 
-#define RDMNET_CONTROLLER_SET_RDM_DATA(configptr, manu_label, dev_model_desc, sw_vers_label, dev_label) \
+/*!
+ * \brief Provide a set of basic information that the library will use for responding to RDM commands.
+ *
+ * RDMnet controllers are required to respond to a basic set of RDM commands. This library provides
+ * two possible approaches to this. With this approach, the library stores some basic data about
+ * a controller instance and handles and responds to all RDM commands internally. Use this macro to
+ * set that data in the configuration structure. See \ref using_controller for more information.
+ * The strings provided here are copied into the controller instance.
+ *
+ * \param configptr Pointer to the RdmnetControllerConfig in which to set the callbacks.
+ * \param manu_label A string (const char*) representing the manufacturer of the controller.
+ * \param dev_model_desc A string (const char*) representing the name of the product model
+ *                       implementing the controller.
+ * \param sw_vers_label A string (const char*) representing the software version of the controller.
+ * \param dev_label A string (const char*) representing a user-settable name for this controller
+ *                  instance.
+ * \param dev_label_settable (bool) Whether the library should allow the device label to be changed
+ *                           remotely.
+ */
+#define RDMNET_CONTROLLER_SET_RDM_DATA(configptr, manu_label, dev_model_desc, sw_vers_label, dev_label, \
+                                       dev_label_settable)                                              \
   do                                                                                                    \
   {                                                                                                     \
     (configptr)->rdm_data.manufacturer_label = (manu_label);                                            \
     (configptr)->rdm_data.device_model_description = (dev_model_desc);                                  \
     (configptr)->rdm_data.software_version_label = (sw_vers_label);                                     \
     (configptr)->rdm_data.device_label = (dev_label);                                                   \
+    (configptr)->rdm_data.device_label_settable = (dev_label_settable);                                 \
   } while (0)
 
+/*!
+ * \brief Set callbacks to handle RDM commands in an RDMnet controller configuration structure.
+ *
+ * RDMnet controllers are required to respond to a basic set of RDM commands. This library provides
+ * two possible approaches to this. With this approach, the library forwards RDM commands received
+ * via callbacks to the application to handle. GET requests for COMPONENT_SCOPE, SEARCH_DOMAIN, and
+ * TCP_COMMS_STATUS will still be consumed internally. See \ref using_controller for more
+ * information.
+ *
+ * \param configptr Pointer to the RdmnetControllerConfig in which to set the callbacks.
+ * \param rdm_cmd_received_cb Function pointer to use for the
+ *    \ref RdmnetControllerRdmCmdCallbacks::rdm_command_received "rdm_command_received" callback.
+ * \param llrp_rdm_cmd_received_cb Function pointer to use for the
+ *    \ref RdmnetControllerRdmCmdCallbacks::llrp_rdm_command_received "llrp_rdm_command_received" callback.
+ */
 #define RDMNET_CONTROLLER_SET_RDM_CMD_CALLBACKS(configptr, rdm_cmd_received_cb, llrp_rdm_cmd_received_cb) \
   do                                                                                                      \
   {                                                                                                       \

@@ -106,8 +106,8 @@ rdmnet::ControllerRdmData my_rdm_data("My Manufacturer Name",
                                       "1.0.0",
                                       "My Device Label");
 rdmnet::Controller controller;
-etcpal::Result result = controller.Startup(my_controller_notify_handler, my_rdm_data,
-                                           rdmnet::ControllerData::Default(MY_ESTA_MANUFACTURER_ID_VAL));
+etcpal::Result result = controller.Startup(my_controller_notify_handler,
+                                           rdmnet::ControllerData::Default(MY_ESTA_MANUFACTURER_ID_VAL), my_rdm_data);
 if (result)
 {
   // Controller is valid and running.
@@ -220,7 +220,8 @@ void controller_connected_callback(rdmnet_controller_t handle, rdmnet_client_sco
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleConnectedToBroker(rdmnet::Controller& controller, rdmnet::ScopeHandle scope,
+void MyControllerNotifyHandler::HandleConnectedToBroker(rdmnet::Controller& controller,
+                                                        rdmnet::ScopeHandle scope_handle,
                                                         const RdmnetClientConnectedInfo& info)
 {
   // Check handles as necessary...
@@ -301,7 +302,7 @@ void my_client_list_update_cb(rdmnet_controller_t handle, rdmnet_client_scope_t 
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleClientListUpdate(Controller& controller, ScopeHandle scope,
+void MyControllerNotifyHandler::HandleClientListUpdate(Controller& controller, ScopeHandle scope_handle,
                                                        client_list_action_t list_action, const RptClientList& list)
 {
   // Check handles as necessary...
@@ -347,6 +348,9 @@ should only have to request a full client list when a new connection completes; 
 periodic callbacks notifying you of changes, with the #client_list_action_t set appropriately as
 shown above.
 
+Clients include both devices and other controllers; to differentiate the two, check the type field
+in each RptClientEntry structure.
+
 ### Sending RDM Commands
 
 Build RDM commands using the LocalRdmCommand type. The library uses a naming convention where names
@@ -373,8 +377,13 @@ LocalRdmCommand cmd;
 // Build the RDM command using cmd.rdm...
 cmd.dest_uid = client_uid;
 cmd.dest_endpoint = E133_NULL_ENDPOINT; // We're addressing this command to the default responder.
-
 etcpal::Expected<uint32_t> result = controller.SendRdmCommand(my_scope_handle, cmd);
+
+// Alternatively, without using the LocalRdmCommand structure:
+
+etcpal::Expected<uint32_t> result = controller.SendRdmCommand(my_scope_handle, client_uid, E133_NULL_ENDPOINT,
+                                                              my_rdm_command);
+
 if (result)
 {
   // *result identifies this command transaction. Store it for when a response is received.
@@ -423,7 +432,7 @@ void rdm_response_callback(rdmnet_controller_t handle, rdmnet_client_scope_t sco
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::Controller& controller, rdmnet::ScopeHandle scope,
+void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
                                                   const RemoteRdmResponse& resp)
 {
   if (resp.seq_num == 0)
@@ -478,7 +487,7 @@ void rpt_status_callback(rdmnet_controller_t handle, rdmnet_client_scope_t handl
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleRptStatus(rdmnet::Controller& controller, rdmnet::ScopeHandle scope,
+void MyControllerNotifyHandler::HandleRptStatus(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
                                                 const RemoteRptStatus& status)
 {
   // Verify status.seq_num against the result of rdmnet::Controller::SendRdmCommand() you stored earlier.
@@ -536,7 +545,8 @@ class MyControllerRdmCommandHandler : public rdmnet::ControllerRdmCommandHandler
 
 MyControllerRdmCommandHandler my_rdm_cmd_handler;
 
-etcpal::Result result = controller.Startup(my_controller_notify_handler, my_rdm_cmd_handler,
-                                           rdmnet::ControllerData::Default(MY_ESTA_MANUFACTURER_ID_VAL));
+etcpal::Result result = controller.Startup(my_controller_notify_handler,
+                                           rdmnet::ControllerData::Default(MY_ESTA_MANUFACTURER_ID_VAL),
+                                           my_rdm_cmd_handler);
 ```
 <!-- CODE_BLOCK_END -->

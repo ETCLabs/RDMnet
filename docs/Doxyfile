@@ -792,7 +792,7 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = . \
+INPUT                  = ./mainpage.md \
                          ./how_rdmnet_works \
                          ./getting_started/GeneratedFiles \
                          ../include/rdmnet \
@@ -801,7 +801,6 @@ INPUT                  = . \
                          ../include/rdmnet/core \
                          ../src/rdmnet \
                          ../src/rdmnet/broker/broker_api.cpp \
-                         ../src/rdmnet/broker/broker_log.cpp \
                          ../src/rdmnet/core \
                          ../src/rdmnet/discovery \
                          ../src/rdmnet/private/opts.h

@@ -130,14 +130,15 @@ void rdmnet_controller_config_init(RdmnetControllerConfig* config, uint16_t manu
  * \brief Create a new instance of RDMnet controller functionality.
  *
  * Each controller is identified by a single component ID (CID). Typical controller applications
- * will only need one controller instance.
+ * will only need one controller instance. RDMnet connection will not be attempted until at least
+ * one scope is added using rdmnet_controller_add_scope().
  *
  * \param[in] config Configuration parameters to use for this controller instance.
  * \param[out] handle Filled in on success with a handle to the new controller instance.
  * \return #kEtcPalErrOk: Controller created successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNoMem: No memory to allocate new controller instance.
- * \return Errors forwarded from rdmnet_rpt_client_create().
+ * \return Other errors forwarded from rdmnet_rpt_client_create().
  */
 etcpal_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rdmnet_controller_t* handle)
 {
@@ -181,7 +182,7 @@ etcpal_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rd
  * \param[in] reason Disconnect reason code to send on all connected scopes.
  * \return #kEtcPalErrOk: Controller destroyed successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
- * \return Errors forwarded from rdmnet_client_destroy().
+ * \return Other errors forwarded from rdmnet_client_destroy().
  */
 etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle, rdmnet_disconnect_reason_t reason)
 {
@@ -196,6 +197,17 @@ etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle, rdmnet_disc
 }
 
 /*!
+ * \brief Add a new scope to a controller instance.
+ *
+ * The library will attempt to discover and connected to a broker for the scope; the status of
+ * these attempts will be communicated via the callbacks associated with the controller instance.
+ *
+ * \param[in] handle Handle to controller to which to add a new scope.
+ * \param[in] scope_config Configuration parameters for the new scope.
+ * \param[out] scope_handle Filled in on success with a handle to the new scope.
+ * \return #kEtcPalErrOk: New scope added successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return Other errors forwarded from rdmnet_client_add_scope().
  */
 etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const RdmnetScopeConfig* scope_config,
                                            rdmnet_client_scope_t* scope_handle)
@@ -206,6 +218,35 @@ etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const Rdm
   return rdmnet_client_add_scope(handle->client_handle, scope_config, scope_handle);
 }
 
+/*!
+ * \brief Add a new scope representing the default RDMnet scope to a controller instance.
+ *
+ * This is a shortcut to easily add the default RDMnet scope to a controller. The default behavior
+ * is to not use a statically-configured broker. If a static broker is needed on the default scope,
+ * rdmnet_controller_add_scope() must be used.
+ *
+ * \param[in] handle Handle to controller to which to add the default scope.
+ * \param[out] scope_handle Filled in on success with a handle to the new scope.
+ * \return #kEtcPalErrOk: New scope added successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return Other errors forwarded from rdmnet_client_add_scope().
+ */
+etcpal_error_t rdmnet_controller_add_default_scope(rdmnet_controller_t handle, rdmnet_client_scope_t* scope_handle)
+{
+}
+
+/*!
+ * \brief Remove a previously-added scope from a controller instance.
+ *
+ * After this call completes, scope_handle will no longer be valid.
+ *
+ * \param[in] handle Handle to the controller from which to remove a scope.
+ * \param[in] scope_handle Handle to scope to remove.
+ * \param[in] reason RDMnet protocol disconnect reason to send to the connected broker.
+ * \return #kEtcPalErrOk: Scope removed successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return Other errors forwarded from rdmnet_client_remove_scope().
+ */
 etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                               rdmnet_disconnect_reason_t reason)
 {
@@ -215,6 +256,18 @@ etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet
   return rdmnet_client_remove_scope(handle->client_handle, scope_handle, reason);
 }
 
+/*!
+ * \brief Send an RDM command from a controller on a scope.
+ *
+ * \param[in] handle Handle to the controller from which to send the RDM command.
+ * \param[in] scope_handle Handle to the scope on which to send the RDM command.
+ * \param[in] cmd The RDM command data to send, including its addressing information.
+ * \param[out] seq_num Filled in on success with a sequence number which can be used to match the
+ *                     command with a response.
+ * \return #kEtcPalErrOk: Command sent successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return Other errors forwarded from rdmnet_rpt_client_send_rdm_command().
+ */
 etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                                   const LocalRdmCommand* cmd, uint32_t* seq_num)
 {
@@ -300,9 +353,9 @@ void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t sc
       case VECTOR_BROKER_CLIENT_REMOVE:
       case VECTOR_BROKER_CLIENT_ENTRY_CHANGE:
         RDMNET_ASSERT(GET_CLIENT_LIST(msg)->client_protocol == kClientProtocolRPT);
-        controller->callbacks.client_list_update(controller, scope_handle, (client_list_action_t)msg->vector,
-                                                 GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(msg)),
-                                                 controller->callback_context);
+        controller->callbacks.client_list_update_received(controller, scope_handle, (client_list_action_t)msg->vector,
+                                                          GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(msg)),
+                                                          controller->callback_context);
         break;
       default:
         break;
