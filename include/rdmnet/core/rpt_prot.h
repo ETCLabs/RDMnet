@@ -20,7 +20,6 @@
 /*!
  * \file rdmnet/core/rpt_prot.h
  * \brief Functions to pack, send and parse RPT PDUs and their encapsulated messages.
- * \author Sam Kearney
  */
 
 #ifndef RDMNET_CORE_RPT_PROT_H_

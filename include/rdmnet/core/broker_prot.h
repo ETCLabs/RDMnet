@@ -17,9 +17,9 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*! \file rdmnet/core/broker_prot.h
- *  \brief Functions to pack, send, and parse %Broker PDUs and their encapsulated messages.
- *  \author Sam Kearney
+/*!
+ * \file rdmnet/core/broker_prot.h
+ * \brief Functions to pack, send, and parse %Broker PDUs and their encapsulated messages.
  */
 
 #ifndef RDMNET_CORE_BROKER_PROT_H_

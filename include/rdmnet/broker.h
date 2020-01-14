@@ -19,7 +19,6 @@
 
 /// \file rdmnet/broker.h
 /// \brief A platform-neutral RDMnet Broker implementation.
-/// \author Nick Ballhorn-Wagner and Sam Kearney
 
 #ifndef RDMNET_BROKER_H_
 #define RDMNET_BROKER_H_
@@ -31,14 +30,14 @@
 
 class BrokerCore;
 
-/// \defgroup rdmnet_broker RDMnet Broker Library
-/// \brief A platform-neutral RDMnet Broker implementation.
-/// @{
-///
-
 namespace rdmnet
 {
-/// A callback interface for notifications from the Broker.
+/// \defgroup rdmnet_broker Broker API
+/// \ingroup rdmnet_cpp_api
+/// \brief Implementation of RDMnet broker functionality; see \ref using_broker.
+
+/// \ingroup rdmnet_broker
+/// \brief A callback interface for notifications from the Broker.
 class BrokerNotify
 {
 public:
@@ -46,7 +45,8 @@ public:
   virtual void HandleScopeChanged(const std::string& new_scope) = 0;
 };
 
-/// \brief Defines an instance of RDMnet %Broker functionality.
+/// \ingroup rdmnet_broker
+/// \brief Defines an instance of RDMnet broker functionality.
 ///
 /// Use the BrokerSettings struct to configure the behavior of the broker. After instantiatiation,
 /// call Startup() to start broker services on a set of network interfaces.

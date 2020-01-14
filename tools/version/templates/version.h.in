@@ -20,7 +20,6 @@
 /*!
  * \file rdmnet/version.h
  * \brief Provides the current version of the RDMnet library and executables.
- * \author Sam Kearney
  */
 
 #ifndef RDMNET_VERSION_H_
@@ -29,11 +28,7 @@
 /* clang-format off */
 
 /*!
- * \defgroup rdmnet_core_lib RDMnet Core Library
- * \brief Implementation of the core functions of RDMnet.
- *
- * This includes discovery, connections, and message packing and unpacking.
- *
+ * \addtogroup rdmnet_core_lib
  * @{
  */
 

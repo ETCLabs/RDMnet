@@ -125,6 +125,24 @@ void rdmnet_create_status_from_command(const RemoteRdmCommand* received_cmd, rpt
   rdmnet_create_status_from_command_with_str(received_cmd, status_code, NULL, status);
 }
 
+/*!
+ * \brief Initialize a LlrpLocalRdmResponse associated with a received LlrpRemoteRdmCommand.
+ *
+ * Provide the received command and the RdmResponse to be sent in response.
+ *
+ * \param[in] received_cmd Received command.
+ * \param[in] rdm_response RDM response to send.
+ * \param[out] resp LlrpLocalRdmResponse to initialize.
+ */
+void rdmnet_create_llrp_response_from_command(const LlrpRemoteRdmCommand* received_cmd, const RdmResponse* rdm_response,
+                                              LlrpLocalRdmResponse* resp)
+{
+  resp->dest_cid = received_cmd->src_cid;
+  resp->seq_num = received_cmd->seq_num;
+  resp->netint_id = received_cmd->netint_id;
+  resp->rdm = *rdm_response;
+}
+
 /*! \brief Free the resources held by an RdmnetMessage returned from another API function.
  *  \param[in] msg Pointer to message to free.
  */

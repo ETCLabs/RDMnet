@@ -22,8 +22,6 @@
  * \brief RDMnet configuration options.
  *
  * Default values for all of RDMnet's \ref rdmnetopts "compile-time configuration options".
- *
- * \author Sam Kearney
  */
 
 #ifndef RDMNET_PRIVATE_OPTS_H_
@@ -77,11 +75,12 @@
  * \brief Use dynamic memory allocation.
  *
  * If defined nonzero, RDMnet manages memory dynamically using malloc() and free() from stdlib.h.
- * Otherwise, RDMnet uses static arrays and fixed-size pools through \ref etcpal_mempool. The size of
- * the pools is controlled with other config options starting with RDMNET_MAX_.
+ * Otherwise, RDMnet uses static arrays and fixed-size pools through EtcPal's \ref etcpal_mempool.
+ * The size of the pools and arrays is controlled with other config options starting with
+ * RDMNET_MAX_.
  *
  * If not defined in rdmnet_config.h, the library attempts to guess using standard OS predefined
- * macros whether it is being compiled on a full-featured OS, in which case this option is defined
+ * macros whether it is being compiled for a full-featured OS, in which case this option is defined
  * to 1 (otherwise an embedded application is assumed and it is defined to 0).
  */
 #ifndef RDMNET_DYNAMIC_MEM

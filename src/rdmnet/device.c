@@ -32,11 +32,11 @@
 
 /* Macros for dynamic vs static allocation. Static allocation is done using etcpal_mempool. */
 #if RDMNET_DYNAMIC_MEM
-#define alloc_rdmnet_device() malloc(sizeof(RdmnetDevice))
-#define free_rdmnet_device(ptr) free(ptr)
+#define ALLOC_RDMNET_DEVICE() malloc(sizeof(RdmnetDevice))
+#define FREE_RDMNET_DEVICE(ptr) free(ptr)
 #else
-#define alloc_rdmnet_device() etcpal_mempool_alloc(rdmnet_devices)
-#define free_rdmnet_device(ptr) etcpal_mempool_free(rdmnet_devices, ptr)
+#define ALLOC_RDMNET_DEVICE() etcpal_mempool_alloc(rdmnet_devices)
+#define FREE_RDMNET_DEVICE(ptr) etcpal_mempool_free(rdmnet_devices, ptr)
 #endif
 
 /**************************** Private variables ******************************/
@@ -73,6 +73,17 @@ static const RptClientCallbacks client_callbacks =
 
 /*************************** Function definitions ****************************/
 
+/*!
+ * \brief Initialize the RDMnet Device library.
+ *
+ * Only one call to this function can be made per application.
+ *
+ * \param[in] lparams Optional: log parameters to pass to the underlying library.
+ * \param[in] netint_config Optional: set of network interfaces to which to restrict multicast
+ *                          operation.
+ * \return #kEtcPalErrOk: Initialization successful.
+ * \return Errors forwarded from rdmnet_client_init()
+ */
 etcpal_error_t rdmnet_device_init(const EtcPalLogParams* lparams, const RdmnetNetintConfig* netint_config)
 {
 #if !RDMNET_DYNAMIC_MEM
@@ -84,17 +95,63 @@ etcpal_error_t rdmnet_device_init(const EtcPalLogParams* lparams, const RdmnetNe
   return rdmnet_client_init(lparams, netint_config);
 }
 
+/*!
+ * \brief Deinitialize the RDMnet Device library.
+ *
+ * Only one call to this function can be made per application. No RDMnet API functions are usable
+ * after this function is called.
+ */
 void rdmnet_device_deinit()
 {
   rdmnet_client_deinit();
 }
 
+/*!
+ * \brief Initialize an RDMnet Device Config with default values for the optional config options.
+ *
+ * The config struct members not marked 'optional' are not meanizngfully initialized by this
+ * function. Those members do not have default values and must be initialized manually before
+ * passing the config struct to an API function.
+ *
+ * Usage example:
+ * \code
+ * RdmnetDeviceConfig config;
+ * RDMNET_DEVICE_CONFIG_INIT(&config, 0x6574);
+ * \endcode
+ *
+ * \param[out] config Pointer to RdmnetDeviceConfig to init.
+ * \param[in] manufacturer_id ESTA manufacturer ID. All RDMnet Devices must have one.
+ */
+void rdmnet_device_config_init(RdmnetDeviceConfig* config, uint16_t manufacturer_id)
+{
+  if (config)
+  {
+    memset(config, 0, sizeof(RdmnetDeviceConfig));
+    RPT_CLIENT_INIT_OPTIONAL_CONFIG_VALUES(&config->optional, manufacturer_id);
+  }
+}
+
+/*!
+ * \brief Create a new instance of RDMnet device functionality.
+ *
+ * Each device is identified by a single component ID (CID). Typical device applications will only
+ * need one device instance. The library will attempt to discover and connect to a broker for the
+ * scope given in config->scope_config (or just connect if a static broker is given); the status of
+ * these attempts will be communicated via the callbacks associated with the device instance.
+ *
+ * \param[in] config Configuration parameters to use for this device instance.
+ * \param[out] handle Filled in on success with a handle to the new device instance.
+ * \return #kEtcPalErrOk: Device created successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return #kEtcPalErrNoMem: No memory to allocate new device instance.
+ * \return Other errors forwarded from rdmnet_rpt_client_create().
+ */
 etcpal_error_t rdmnet_device_create(const RdmnetDeviceConfig* config, rdmnet_device_t* handle)
 {
   if (!config || !handle)
     return kEtcPalErrInvalid;
 
-  RdmnetDevice* new_device = alloc_rdmnet_device();
+  RdmnetDevice* new_device = ALLOC_RDMNET_DEVICE();
   if (!new_device)
     return kEtcPalErrNoMem;
 
@@ -112,7 +169,6 @@ etcpal_error_t rdmnet_device_create(const RdmnetDeviceConfig* config, rdmnet_dev
     if (res == kEtcPalErrOk)
     {
       // Do the rest of the initialization
-      // rdmnet_safe_strncpy(new_device->scope, config->scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH);
       new_device->callbacks = config->callbacks;
       new_device->callback_context = config->callback_context;
 
@@ -121,28 +177,52 @@ etcpal_error_t rdmnet_device_create(const RdmnetDeviceConfig* config, rdmnet_dev
     else
     {
       rdmnet_client_destroy(new_device->client_handle, kRdmnetDisconnectSoftwareFault);
-      free_rdmnet_device(new_device);
+      FREE_RDMNET_DEVICE(new_device);
     }
   }
   else
   {
-    free_rdmnet_device(new_device);
+    FREE_RDMNET_DEVICE(new_device);
   }
   return res;
 }
 
-etcpal_error_t rdmnet_device_destroy(rdmnet_device_t handle, rdmnet_disconnect_reason_t reason)
+/*!
+ * \brief Destroy a device instance.
+ *
+ * Will disconnect from the broker to which this device is currently connected (if applicable),
+ * sending the disconnect reason provided in the disconnect_reason parameter.
+ *
+ * \param[in] handle Handle to device to destroy, no longer valid after this function returns.
+ * \param[in] disconnect_reason Disconnect reason code to send to the connected broker.
+ * \return #kEtcPalErrOk: Device destroyed successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return Other errors forwarded from rdmnet_client_destroy().
+ */
+etcpal_error_t rdmnet_device_destroy(rdmnet_device_t handle, rdmnet_disconnect_reason_t disconnect_reason)
 {
   if (!handle)
     return kEtcPalErrInvalid;
 
-  etcpal_error_t res = rdmnet_client_destroy(handle->client_handle, reason);
+  etcpal_error_t res = rdmnet_client_destroy(handle->client_handle, disconnect_reason);
   if (res == kEtcPalErrOk)
-    free_rdmnet_device(handle);
+    FREE_RDMNET_DEVICE(handle);
 
   return res;
 }
 
+/*!
+ * \brief Send an RDM response from a device.
+ *
+ * The LocalRdmResponse struct should be filled in using rdmnet_create_response_from_command() or
+ * rdmnet_create_unsolicited_response(), which will ensure that the members are set properly.
+ *
+ * \param[in] handle Handle to the device from which to send the RDM response.
+ * \param[in] resp Response to send.
+ * \return #kEtcPalErrOk: Response sent successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return Other errors forwarded from rdmnet_rpt_client_send_rdm_response().
+ */
 etcpal_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const LocalRdmResponse* resp)
 {
   if (!handle)
@@ -151,6 +231,21 @@ etcpal_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const Loc
   return rdmnet_rpt_client_send_rdm_response(handle->client_handle, handle->scope_handle, resp);
 }
 
+/*!
+ * \brief Send an RPT status message from a device.
+ *
+ * Status messages should only be sent in response to RDM commands received over RDMnet, if
+ * something has gone wrong while attempting to resolve the command. The LocalRptStatus struct
+ * should be filled in using rdmnet_create_status_from_command() or
+ * rdmnet_create_status_from_command_with_str(), which will ensure that the members are set
+ * properly.
+ *
+ * \param[in] handle Handle to the device from which to send the RPT status.
+ * \param[in] status Status message to send.
+ * \return #kEtcPalErrOk: Status sent successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return Other errors forwarded from rdmnet_rpt_client_send_status().
+ */
 etcpal_error_t rdmnet_device_send_status(rdmnet_device_t handle, const LocalRptStatus* status)
 {
   if (!handle)
@@ -159,6 +254,18 @@ etcpal_error_t rdmnet_device_send_status(rdmnet_device_t handle, const LocalRptS
   return rdmnet_rpt_client_send_status(handle->client_handle, handle->scope_handle, status);
 }
 
+/*!
+ * \brief Send a response to an RDM command received over LLRP.
+ *
+ * The LlrpLocalRdmResponse struct should be filled in with rdmnet_create_llrp_response_from_command(),
+ * which will ensure that the members are set properly.
+ *
+ * \param[in] handle Handle to the device from which to send the LLRP RDM response.
+ * \param[in] resp Response to send.
+ * \return #kEtcPalErrOk: Response sent successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return Other errors forwarded from rdmnet_rpt_client_send_llrp_response().
+ */
 etcpal_error_t rdmnet_device_send_llrp_response(rdmnet_device_t handle, const LlrpLocalRdmResponse* resp)
 {
   if (!handle)
@@ -168,22 +275,24 @@ etcpal_error_t rdmnet_device_send_llrp_response(rdmnet_device_t handle, const Ll
 }
 
 etcpal_error_t rdmnet_device_change_scope(rdmnet_device_t handle, const RdmnetScopeConfig* new_scope_config,
-                                          rdmnet_disconnect_reason_t reason)
+                                          rdmnet_disconnect_reason_t disconnect_reason)
 {
   if (!handle)
     return kEtcPalErrInvalid;
 
-  rdmnet_client_remove_scope(handle->client_handle, handle->scope_handle, reason);
+  etcpal_error_t remove_res =
+      rdmnet_client_remove_scope(handle->client_handle, handle->scope_handle, disconnect_reason);
+  RDMNET_ASSERT(remove_res == kEtcPalErrOk);
   return rdmnet_client_add_scope(handle->client_handle, new_scope_config, &handle->scope_handle);
 }
 
 etcpal_error_t rdmnet_device_change_search_domain(rdmnet_device_t handle, const char* new_search_domain,
-                                                  rdmnet_disconnect_reason_t reason)
+                                                  rdmnet_disconnect_reason_t disconnect_reason)
 {
   if (!handle)
     return kEtcPalErrInvalid;
 
-  return rdmnet_client_change_search_domain(handle->client_handle, new_search_domain, reason);
+  return rdmnet_client_change_search_domain(handle->client_handle, new_search_domain, disconnect_reason);
 }
 
 void client_connected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo* info,

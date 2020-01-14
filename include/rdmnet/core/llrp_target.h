@@ -20,7 +20,6 @@
 /*!
  * \file rdmnet/core/llrp_target.h
  * \brief Functions for implementing LLRP Target functionality.
- * \author Christian Reese and Sam Kearney
  */
 
 #ifndef RDMNET_CORE_LLRP_TARGET_H_
@@ -35,6 +34,7 @@
 #include "rdm/message.h"
 #include "rdmnet/core.h"
 #include "rdmnet/core/llrp.h"
+#include "rdmnet/core/message.h"
 
 /*!
  * \defgroup llrp_target LLRP Target
@@ -47,53 +47,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/*! An RDM command to be sent from a local LLRP Target. */
-typedef struct LlrpLocalRdmResponse
-{
-  /*! The CID of the LLRP Manager to which this response is addressed. */
-  EtcPalUuid dest_cid;
-  /*! The sequence number received in the corresponding LlrpRemoteRdmCommand. */
-  uint32_t seq_num;
-  /*! The network interface ID in the corresponding LlrpRemoteRdmCommand. */
-  RdmnetMcastNetintId netint_id;
-  /*! The RDM response. */
-  RdmResponse rdm;
-} LlrpLocalRdmResponse;
-
-/*! An RDM command received from a remote LLRP Manager. */
-typedef struct LlrpRemoteRdmCommand
-{
-  /*! The CID of the LLRP Mangaer from which this command was received. */
-  EtcPalUuid src_cid;
-  /*! The sequence number received with this command, to be echoed in the corresponding
-   *  LlrpLocalRdmResponse. */
-  uint32_t seq_num;
-  /*! An ID for the network interface on which this command was received, to be echoed in the
-   *  corresponding LlrpLocalRdmResponse. This helps the LLRP library send the response on the same
-   *  interface on which it was received. */
-  RdmnetMcastNetintId netint_id;
-  /*! The RDM command. */
-  RdmCommand rdm;
-} LlrpRemoteRdmCommand;
-
-/*!
- * \brief Initialize a LlrpLocalRdmResponse to a received LlrpRemoteRdmCommand.
- *
- * Provide the received command and the RdmResponse to be sent in response.
- *
- * \param resp Response to initialize (LlrpLocalRdmResponse *).
- * \param received_cmd Received command (LlrpRemoteRdmCommand *).
- * \param rdm_resp RDM response to send (RdmResponse *).
- */
-#define LLRP_CREATE_RESPONSE_FROM_COMMAND(resp, received_cmd, rdm_resp) \
-  do                                                                    \
-  {                                                                     \
-    (resp)->dest_cid = (received_cmd)->src_cid;                         \
-    (resp)->seq_num = (received_cmd)->seq_num;                          \
-    (resp)->netint_id = (received_cmd)->netint_id;                      \
-    (resp)->rdm = *(rdm_resp);                                          \
-  } while (0)
 
 typedef struct LlrpTargetCallbacks
 {

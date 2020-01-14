@@ -2,12 +2,16 @@
 
 ## Addressing Constructs
 
+### CIDs
+
 Each software entity communicating using RDMnet is referred to as a _component_. Each component has
 a unique ID called a _Component ID_, or _CID_. A CID is simply a UUID; for pure-software components
 like desktop or mobile applications, a CID may be ephemeral and regenerated each time the software
 starts (or persistent, if desired). For hardware-locked components like lighting fixtures or
 gateways, a CID should be generated using the UUID version 3 or version 5 method, to produce the
 same CID throughout the lifetime of the product.
+
+### UIDs
 
 In addition to its CID, each component in RDMnet also has an RDM Unique ID (UID). This is for 
 compatibility with the RDM protocol.
@@ -25,6 +29,8 @@ Hardware-locked devices typically have a UID assigned by combining an organizati
 manufacturer ID with a device ID generated at time of manufacture and unique among all products
 manufactured by that organization.
 
+#### Dynamic UIDs
+
 RDMnet also introduces the concept of dynamic UIDs, which are assigned by a broker at runtime.
 Dynamic UIDs are useful for pure software devices of which many instances can be downloaded and
 used on the personal devices of users.
@@ -33,6 +39,10 @@ A dynamic UID is assigned to a component by a broker on initial connection, and 
 after disconnecting; the component will get a different, unrelated dynamic UID if it connects
 again. Think of a dynamic UID like a DHCP-assigned IP address - it is not permanent and has a lease
 time equal to the length of the RDMnet connection.
+
+A dynamic UID is identified by the top bit of the Manufacturer ID field being set to 1. Recall that
+only manufacturer IDs from `0x0000` to `0x7fff` are assigned, which allows this reserved bit to be
+used to indicate a dynamic UID.
 
 ## Component Roles
 

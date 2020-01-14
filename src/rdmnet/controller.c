@@ -33,11 +33,11 @@
 
 /* Macros for dynamic vs static allocation. Static allocation is done using etcpal_mempool. */
 #if RDMNET_DYNAMIC_MEM
-#define alloc_rdmnet_controller() malloc(sizeof(RdmnetController))
-#define free_rdmnet_controller(ptr) free(ptr)
+#define ALLOC_RDMNET_CONTROLLER() malloc(sizeof(RdmnetController))
+#define FREE_RDMNET_CONTROLLER(ptr) free(ptr)
 #else
-#define alloc_rdmnet_controller() etcpal_mempool_alloc(rdmnet_controllers)
-#define free_rdmnet_controller(ptr) etcpal_mempool_free(rdmnet_controllers, ptr)
+#define ALLOC_RDMNET_CONTROLLER() etcpal_mempool_alloc(rdmnet_controllers)
+#define FREE_RDMNET_CONTROLLER(ptr) etcpal_mempool_free(rdmnet_controllers, ptr)
 #endif
 
 /**************************** Private variables ******************************/
@@ -96,6 +96,12 @@ etcpal_error_t rdmnet_controller_init(const EtcPalLogParams* lparams, const Rdmn
   return rdmnet_client_init(lparams, netint_config);
 }
 
+/*!
+ * \brief Deinitialize the RDMnet Controller library.
+ *
+ * Only one call to this function can be made per application. No RDMnet API functions are usable
+ * after this function is called.
+ */
 void rdmnet_controller_deinit()
 {
   rdmnet_client_deinit();
@@ -104,9 +110,9 @@ void rdmnet_controller_deinit()
 /*!
  * \brief Initialize an RdmnetControllerConfig with default values for the optional config options.
  *
- * The config struct members not marked 'optional' are not initialized by this function. Those
- * members do not have default values and must be initialized manually before passing the config
- * struct to an API function.
+ * The config struct members not marked 'optional' are not meaningfully initialized by this
+ * function. Those members do not have default values and must be initialized manually before
+ * passing the config struct to an API function.
  *
  * Usage example:
  * \code
@@ -119,11 +125,11 @@ void rdmnet_controller_deinit()
  */
 void rdmnet_controller_config_init(RdmnetControllerConfig* config, uint16_t manufacturer_id)
 {
-  if (!config)
-    return;
-
-  memset(config, 0, sizeof(RdmnetControllerConfig));
-  RPT_CLIENT_INIT_OPTIONAL_CONFIG_VALUES(&config->optional, manufacturer_id);
+  if (config)
+  {
+    memset(config, 0, sizeof(RdmnetControllerConfig));
+    RPT_CLIENT_INIT_OPTIONAL_CONFIG_VALUES(&config->optional, manufacturer_id);
+  }
 }
 
 /*!
@@ -145,7 +151,7 @@ etcpal_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rd
   if (!config || !handle)
     return kEtcPalErrInvalid;
 
-  RdmnetController* new_controller = alloc_rdmnet_controller();
+  RdmnetController* new_controller = ALLOC_RDMNET_CONTROLLER();
   if (!new_controller)
     return kEtcPalErrNoMem;
 
@@ -167,7 +173,7 @@ etcpal_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rd
   }
   else
   {
-    free_rdmnet_controller(new_controller);
+    FREE_RDMNET_CONTROLLER(new_controller);
   }
   return res;
 }
@@ -175,23 +181,23 @@ etcpal_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rd
 /*!
  * \brief Destroy a controller instance.
  *
- * Will disconnect all scopes to which this controller is currently connected, sending the
- * disconnect reason provided in the reason parameter.
+ * Will disconnect from all brokers to which this controller is currently connected, sending the
+ * disconnect reason provided in the disconnect_reason parameter.
  *
  * \param[in] handle Handle to controller to destroy, no longer valid after this function returns.
- * \param[in] reason Disconnect reason code to send on all connected scopes.
+ * \param[in] disconnect_reason Disconnect reason code to send on all connected scopes.
  * \return #kEtcPalErrOk: Controller destroyed successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return Other errors forwarded from rdmnet_client_destroy().
  */
-etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle, rdmnet_disconnect_reason_t reason)
+etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle, rdmnet_disconnect_reason_t disconnect_reason)
 {
   if (!handle)
     return kEtcPalErrInvalid;
 
-  etcpal_error_t res = rdmnet_client_destroy(handle->client_handle, reason);
+  etcpal_error_t res = rdmnet_client_destroy(handle->client_handle, disconnect_reason);
   if (res == kEtcPalErrOk)
-    free_rdmnet_controller(handle);
+    FREE_RDMNET_CONTROLLER(handle);
 
   return res;
 }
@@ -260,7 +266,7 @@ etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet
 
 /*!
  * \brief Retrieve information about a previously-added scope.
- * 
+ *
  * \param[in] handle Handle to the controller from which to retrieve scope information.
  * \param[in] scope_handle Handle to the scope for which to retrieve the configuration.
  * \param[out] scope_config Filled in with information about the scope.
@@ -278,7 +284,7 @@ etcpal_error_t rdmnet_controller_get_scope(rdmnet_controller_t handle, rdmnet_cl
  *
  * The response will be delivered via the \ref RdmnetControllerCallbacks::rdm_response_received
  * "rdm_response_received" callback.
- * 
+ *
  * \param[in] handle Handle to the controller from which to send the RDM command.
  * \param[in] scope_handle Handle to the scope on which to send the RDM command.
  * \param[in] cmd The RDM command data to send, including its addressing information.
@@ -299,7 +305,7 @@ etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rd
 
 /*!
  * \brief Send an RDM response from a controller on a scope.
- * 
+ *
  * \param[in] handle Handle to the controller from which to send the RDM response.
  * \param[in] scope_handle Handle to the scope on which to send the RDM response.
  * \param[in] resp The RDM response data to send, including its addressing information.
@@ -318,7 +324,7 @@ etcpal_error_t rdmnet_controller_send_rdm_response(rdmnet_controller_t handle, r
 
 /*!
  * \brief Send an LLRP RDM response from a controller.
- * 
+ *
  * \param[in] handle Handle to the controller from which to send the LLRP RDM response.
  * \param[in] resp The RDM response data to send, including its addressing information.
  * \return #kEtcPalErrOk: Response sent successfully.
@@ -335,10 +341,10 @@ etcpal_error_t rdmnet_controller_send_llrp_response(rdmnet_controller_t handle, 
 
 /*!
  * \brief Request a client list from a broker.
- * 
+ *
  * The response will be delivered via the \ref RdmnetControllerCallbacks::client_list_update_received
  * "client_list_update_received" callback.
- * 
+ *
  * \param[in] handle Handle to the controller from which to request the client list.
  * \param[in] scope_handle Handle to the scope on which to request the client list.
  * \return #kEtcPalErrOk: Request sent successfully.

@@ -20,7 +20,6 @@
 /*!
  * \file rdmnet/core/util.h
  * \brief Utilities used throughout the RDMnet library.
- * \author Sam Kearney
  */
 
 #ifndef RDMNET_CORE_UTIL_H_

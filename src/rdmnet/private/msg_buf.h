@@ -20,7 +20,6 @@
 /*!
  * \file rdmnet/private/msg_buf.h
  * \brief Helper functions and definitions to do piece-wise parsing of an RDMnet message.
- * \author Sam Kearney
  */
 
 #ifndef RDMNET_PRIVATE_MSG_BUF_H_

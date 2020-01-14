@@ -15,7 +15,7 @@ addressing information, etc.
 If a device only implements RDMnet, not RDM or sACN, the default responder is all that's needed; it
 can contain all of the RDMnet-configurable information about the device. But when a device starts
 interacting with sACN or RDM, things get a bit more complex. Let's consider the example of a 2-port
-DMX gateway.
+DMX/RDM gateway:
 
-Otherwise, 
-Devices may have additional RDM responders
+![A 2-port DMX/RDM Gateway](./2_port_gateway.png)
+

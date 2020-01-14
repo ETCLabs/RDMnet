@@ -54,9 +54,10 @@ To create a controller instance, use the rdmnet_controller_create() function in 
 an rdmnet::Controller and call its Startup() function in C++. Most apps will only need a single
 controller instance. One controller can monitor an arbitrary number of RDMnet scopes at once.
 
-The RDMnet controller API is an asynchronous, callback-oriented API. On creation, you give the
-library a configuration struct containing, among other things, a set of function pointers to use as
-callbacks. Callbacks are dispatched from the thread context which calls rdmnet_core_tick().
+The RDMnet controller API is an asynchronous, callback-oriented API. Part of the initial
+configuration for a controller instance is a set of function pointers (or abstract interface) for
+the library to use as callbacks. Callbacks are dispatched from the thread context which calls
+rdmnet_core_tick().
 
 <!-- CODE_BLOCK_START -->
 ```c
@@ -73,9 +74,10 @@ etcpal_generate_os_preferred_uuid(&config.cid);
 
 // Set the callback functions - defined elsewhere
 // p_some_opaque_data is an opaque data pointer that will be passed back to each callback function
-RDMNET_CONTROLLER_SET_CALLBACKS(&config, my_controller_connected_cb, my_controller_disconnected_cb,
-                                my_controller_client_list_update_cb, my_controller_rdm_response_received_cb,
-                                my_controller_status_received_cb, p_some_opaque_data);
+RDMNET_CONTROLLER_SET_CALLBACKS(&config, my_controller_connected_cb, my_controller_connect_failed_cb,
+                                my_controller_disconnected_cb, my_controller_client_list_update_received_cb,
+                                my_controller_rdm_response_received_cb, my_controller_status_received_cb,
+                                p_some_opaque_data);
 
 // Needed to identify this controller to other controllers on the network. More on this later.
 RDMNET_CONTROLLER_SET_RDM_DATA(&config, "My Manufacturer Name", "My Product Name", "1.0.0", "My Device Label");
@@ -107,7 +109,7 @@ rdmnet::ControllerRdmData my_rdm_data("My Manufacturer Name",
                                       "My Device Label");
 rdmnet::Controller controller;
 etcpal::Result result = controller.Startup(my_controller_notify_handler,
-                                           rdmnet::ControllerData::Default(MY_ESTA_MANUFACTURER_ID_VAL), my_rdm_data);
+                                           rdmnet::ControllerData::Default(MY_ESTA_MANUFACTURER_ID_VAL),my_rdm_data);
 if (result)
 {
   // Controller is valid and running.
@@ -130,6 +132,8 @@ Otherwise, use rdmnet_controller_add_scope() to add a custom configured scope.
 
 Per the requirements of RDMnet, a scope string is always UTF-8 and is thus represented by a char[]
 in C and a std::string in C++.
+
+See the "Scopes" section in \ref how_it_works for more information on scopes.
 
 <!-- CODE_BLOCK_START -->
 ```c

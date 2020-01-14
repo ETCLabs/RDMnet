@@ -20,7 +20,6 @@
 /*!
  * \file rdmnet/core/message.h
  * \brief Basic types for parsed RDMnet messages.
- * \author Sam Kearney
  */
 
 #ifndef RDMNET_CORE_MESSAGE_H_
@@ -174,7 +173,7 @@ typedef struct EptClientMessage
   } payload;
 } EptClientMessage;
 
-/*! A received RDMnet message. */
+/*! An RDMnet received from one of RDMnet's TCP protocols. */
 typedef struct RdmnetMessage
 {
   /*! The root layer vector. Compare to the vectors in \ref etcpal_rootlayerpdu. */
@@ -232,6 +231,55 @@ typedef struct RdmnetMessage
  */
 #define GET_EPT_MSG(msgptr) (&(msgptr)->data.ept)
 
+/*! An RDM command received from a remote LLRP Manager. */
+typedef struct LlrpRemoteRdmCommand
+{
+  /*! The CID of the LLRP Mangaer from which this command was received. */
+  EtcPalUuid src_cid;
+  /*! The sequence number received with this command, to be echoed in the corresponding
+   *  LlrpLocalRdmResponse. */
+  uint32_t seq_num;
+  /*! An ID for the network interface on which this command was received, to be echoed in the
+   *  corresponding LlrpLocalRdmResponse. This helps the LLRP library send the response on the same
+   *  interface on which it was received. */
+  RdmnetMcastNetintId netint_id;
+  /*! The RDM command. */
+  RdmCommand rdm;
+} LlrpRemoteRdmCommand;
+
+/*! An RDM command to be sent from a local LLRP Target. */
+typedef struct LlrpLocalRdmResponse
+{
+  /*! The CID of the LLRP Manager to which this response is addressed. */
+  EtcPalUuid dest_cid;
+  /*! The sequence number received in the corresponding LlrpRemoteRdmCommand. */
+  uint32_t seq_num;
+  /*! The network interface ID in the corresponding LlrpRemoteRdmCommand. */
+  RdmnetMcastNetintId netint_id;
+  /*! The RDM response. */
+  RdmResponse rdm;
+} LlrpLocalRdmResponse;
+
+/*! An RDM command to be sent from a local LLRP Manager. */
+typedef struct LlrpLocalRdmCommand
+{
+  /*! The CID of the LLRP Target to which this command is addressed. */
+  EtcPalUuid dest_cid;
+  /*! The RDM command. */
+  RdmCommand rdm;
+} LlrpLocalRdmCommand;
+
+/*! An RDM response received from a remote LLRP Target. */
+typedef struct LlrpRemoteRdmResponse
+{
+  /*! The CID of the LLRP Target from which this command was received. */
+  EtcPalUuid src_cid;
+  /*! The sequence number of this response (to be associated with a previously-sent command). */
+  uint32_t seq_num;
+  /*! The RDM response. */
+  RdmResponse rdm;
+} LlrpRemoteRdmResponse;
+
 void rdmnet_create_response_from_command(const RemoteRdmCommand* received_cmd, const RdmResponse* rdm_arr,
                                          size_t num_responses, LocalRdmResponse* resp);
 void rdmnet_create_unsolicited_response(uint16_t source_endpoint, const RdmResponse* rdm_arr, size_t num_responses,
@@ -240,6 +288,8 @@ void rdmnet_create_status_from_command_with_str(const RemoteRdmCommand* received
                                                 const char* status_str, LocalRptStatus* status);
 void rdmnet_create_status_from_command(const RemoteRdmCommand* received_cmd, rpt_status_code_t status_code,
                                        LocalRptStatus* status);
+void rdmnet_create_llrp_response_from_command(const LlrpRemoteRdmCommand* received_cmd, const RdmResponse* rdm_response,
+                                              LlrpLocalRdmResponse* resp);
 
 void free_rdmnet_message(RdmnetMessage* msg);
 

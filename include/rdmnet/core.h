@@ -20,7 +20,6 @@
 /*!
  * \file rdmnet/core.h
  * \brief Functions to init, deinit and drive the rdmnet/core modules.
- * \author Sam Kearney
  */
 
 #ifndef RDMNET_CORE_H_
@@ -53,9 +52,9 @@ typedef int rdmnet_conn_t;
  * \defgroup rdmnet_core_lib RDMnet Core Library
  * \brief Implementation of the core functions of RDMnet.
  *
- * The core library sits underneath the higher-level \ref rdmnet_client "client" and
- * \ref rdmnet_broker "broker" APIs, and contains the functionality that every component of RDMnet
- * needs. This includes discovery, connections, and LLRP, as well as message packing and unpacking.
+ * The core library sits underneath the higher-level \ref rdmnet_api "RDMnet APIs" and contains the
+ * functionality that every component of RDMnet needs. This includes discovery, connections, and
+ * LLRP, as well as message packing and unpacking.
  *
  * Most applications will not need to interact with the API functions in the core library directly,
  * although it does define types that are exposed through the higher-level APIs.

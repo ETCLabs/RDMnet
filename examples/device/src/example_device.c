@@ -104,17 +104,14 @@ etcpal_error_t device_init(const RdmnetScopeConfig* scope_config, const EtcPalLo
 
   RdmnetDeviceConfig config;
   RDMNET_DEVICE_CONFIG_INIT(&config, 0x6574);
-  // A typical hardware-locked device would use etcpal_generate_v3_uuid() to generate a CID that is
-  // the same every time. But this example device is not locked to hardware, so we'll just use the
-  // UUID format preferred by the underlying OS, which is different each time it is generated.
+  // A typical hardware-locked device would use etcpal_generate_v5_uuid() or
+  // etcpal_generate_device_uuid() to generate a CID that is the same every time. But this example
+  // device is not locked to hardware, so we'll just use the UUID format preferred by the
+  // underlying OS, which is different each time it is generated.
   etcpal_generate_v4_uuid(&config.cid);
   config.scope_config = *scope_config;
-  config.callbacks.connected = device_connected;
-  config.callbacks.connect_failed = device_connect_failed;
-  config.callbacks.disconnected = device_disconnected;
-  config.callbacks.rdm_command_received = device_rdm_cmd_received;
-  config.callbacks.llrp_rdm_command_received = device_llrp_rdm_cmd_received;
-  config.callback_context = NULL;
+  RDMNET_DEVICE_SET_CALLBACKS(&config, device_connected, device_connect_failed, device_disconnected,
+                              device_rdm_cmd_received, device_llrp_rdm_cmd_received, NULL);
 
   res = rdmnet_device_create(&config, &device_state.device_handle);
   if (res != kEtcPalErrOk)

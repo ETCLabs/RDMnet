@@ -277,6 +277,31 @@ void rdmnet_client_deinit()
   }
 }
 
+/*!
+ * \brief Initialize an RPT Client Config with default values for the optional config options.
+ *
+ * The config struct members not marked 'optional' are not meaningfully initialized by this
+ * function. Those members do not have default values and must be initialized manually before
+ * passing the config struct to an API function.
+ *
+ * Usage example:
+ * \code
+ * RdmnetRptClientConfig config;
+ * rdmnet_rpt_client_config_init(&config, 0x6574);
+ * \endcode
+ *
+ * \param[out] config RdmnetRptClientConfig to initialize.
+ * \param[in] manu_id ESTA manufacturer ID. All RDMnet RPT components must have one.
+ */
+void rdmnet_rpt_client_config_init(RdmnetRptClientConfig* config, uint16_t manufacturer_id)
+{
+  if (config)
+  {
+    memset(config, 0, sizeof(RdmnetRptClientConfig));
+    RPT_CLIENT_INIT_OPTIONAL_CONFIG_VALUES(&config->optional, manufacturer_id);
+  }
+}
+
 etcpal_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig* config, rdmnet_client_t* handle)
 {
   if (!config || !handle)
@@ -1332,8 +1357,8 @@ void attempt_connection_on_listen_addrs(ClientScopeListEntry* scope_entry)
       etcpal_inet_ntop(&scope_entry->listen_addrs[listen_addr_index], addr_str, ETCPAL_INET6_ADDRSTRLEN);
     }
 
-    RDMNET_LOG_INFO("Attempting broker connection on scope '%s' at address %s:%d...", scope_entry->id,
-                    addr_str, scope_entry->port);
+    RDMNET_LOG_INFO("Attempting broker connection on scope '%s' at address %s:%d...", scope_entry->id, addr_str,
+                    scope_entry->port);
 
     EtcPalSockAddr connect_addr;
     connect_addr.ip = scope_entry->listen_addrs[listen_addr_index];

@@ -20,7 +20,6 @@
 /*!
  * \file rdmnet/core/ept_prot.h
  * \brief Functions to pack, send, and parse EPT PDUs and their encapsulated messages.
- * \author Sam Kearney
  */
 
 #ifndef RDMNET_CORE_EPT_PROT_H_

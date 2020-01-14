@@ -32,18 +32,15 @@
 
 /*!
  * \defgroup rdmnet_device Device API
- * \ingroup rdmnet_client
+ * \ingroup rdmnet_api
  * \brief Implementation of RDMnet device functionality; see \ref using_device.
  *
  * RDMnet devices are clients which exclusively receive and respond to RDM commands. Devices
  * operate on only one scope at a time. This API wraps the RDMnet Client API and provides functions
  * tailored specifically to the usage concerns of an RDMnet device.
- */
-
-/*!
- * \defgroup rdmnet_device_c Device C Language API
- * \ingroup rdmnet_device
- * \brief C Language version of the Device API
+ *
+ * See \ref using_device for a detailed description of how to use this API.
+ *
  * @{
  */
 
@@ -56,13 +53,56 @@ typedef struct RdmnetDevice* rdmnet_device_t;
 /*! An invalid RDMnet controller handle value. */
 #define RDMNET_DEVICE_INVALID NULL
 
+/*! A set of notification callbacks received about a device. */
 typedef struct RdmnetDeviceCallbacks
 {
+  /*!
+   * \brief A device has successfully connected to a broker.
+   * \param[in] handle Handle to the device which has connected.
+   * \param[in] info More information about the successful connection.
+   * \param[in] context Context pointer that was given at the creation of the device instance.
+   */
   void (*connected)(rdmnet_device_t handle, const RdmnetClientConnectedInfo* info, void* context);
+
+  /*!
+   * \brief A connection attempt failed between a device and a broker.
+   * \param[in] handle Handle to the device which has failed to connect.
+   * \param[in] info More information about the failed connection.
+   * \param[in] context Context pointer that was given at the creation of the device instance.
+   */
   void (*connect_failed)(rdmnet_device_t handle, const RdmnetClientConnectFailedInfo* info, void* context);
+
+  /*!
+   * \brief A device which was previously connected to a broker has disconnected.
+   * \param[in] handle Handle to the device which has disconnected.
+   * \param[in] info More information about the disconnect event.
+   * \param[in] context Context pointer that was given at the creation of the device instance.
+   */
   void (*disconnected)(rdmnet_device_t handle, const RdmnetClientDisconnectedInfo* info, void* context);
+
+  /*!
+   * \brief An RDM command has been received addressed to a device.
+   * \param[in] handle Handle to the device which has received the RDM command.
+   * \param[in] cmd The RDM command data.
+   * \param[in] context Context pointer that was given at the creation of the device instance.
+   */
   void (*rdm_command_received)(rdmnet_device_t handle, const RemoteRdmCommand* cmd, void* context);
+
+  /*!
+   * \brief An RDM command has been received over LLRP, addressed to a device.
+   * \param[in] handle Handle to the device which has received the RDM command.
+   * \param[in] cmd The RDM command data.
+   * \param[in] context Context pointer that was given at the creation of the device instance.
+   */
   void (*llrp_rdm_command_received)(rdmnet_device_t handle, const LlrpRemoteRdmCommand* cmd, void* context);
+
+  /*!
+   * \brief A set of previously-requested dynamic UID assignments has been received.
+   * \param[in] handle Handle to the device which has received the dynamic UID assignments.
+   * \param[in] list The list of dynamic UID assignments.
+   * \param[in] context Context pointer that was given at the creation of the device instance.
+   */
+  void (*dynamic_uid_assignments_received)(rdmnet_device_t handle, const DynamicUidAssignmentList* list, void* context);
 } RdmnetDeviceCallbacks;
 
 /*! A set of information that defines the startup parameters of an RDMnet Device. */
@@ -78,42 +118,58 @@ typedef struct RdmnetDeviceConfig
   void* callback_context;
   /*! Optional configuration data for the device's RPT Client functionality. */
   RptClientOptionalConfig optional;
-  /*! Optional configuration data for the device's LLRP Target functionality. */
-  LlrpTargetOptionalConfig llrp_optional;
 } RdmnetDeviceConfig;
 
 /*!
- * \brief Initialize an RDMnet Device Config with default values for the optional config options.
+ * \brief Set the main callbacks in an RDMnet device configuration structure.
  *
- * The config struct members not marked 'optional' are not initialized by this macro. Those members
- * do not have default values and must be initialized manually before passing the config struct to
- * an API function.
+ * All callbacks are required.
  *
- * Usage example:
- * \code
- * RdmnetDeviceConfig config;
- * RDMNET_DEVICE_CONFIG_INIT(&config, 0x6574);
- * \endcode
- *
- * \param devicecfgptr Pointer to RdmnetDeviceConfig.
- * \param manu_id ESTA manufacturer ID. All RDMnet Devices must have one.
+ * \param configptr Pointer to the RdmnetDeviceConfig in which to set the callbacks.
+ * \param connected_cb Function pointer to use for the \ref RdmnetDeviceCallbacks::connected
+ *                     "connected" callback.
+ * \param connect_failed_cb Function pointer to use for the \ref RdmnetDeviceCallbacks::connect_failed
+ *                          "connect_failed" callback.
+ * \param disconnected_cb Function pointer to use for the \ref RdmnetDeviceCallbacks::disconnected
+ *                       "disconnected" callback.
+ * \param rdm_command_received_cb Function pointer to use for the \ref RdmnetDeviceCallbacks::rdm_command_received
+ *                                "rdm_command_received" callback.
+ * \param llrp_rdm_command_received_cb Function pointer to use for the \ref
+ *                                     RdmnetDeviceCallbacks::llrp_rdm_command_received "llrp_rdm_command_received"
+ *                                     callback.
+ * \param cb_context Pointer to opaque data passed back with each callback. Can be NULL.
  */
-#define RDMNET_DEVICE_CONFIG_INIT(devicecfgptr, manu_id) RPT_CLIENT_CONFIG_INIT(devicecfgptr, manu_id)
+#define RDMNET_DEVICE_SET_CALLBACKS(configptr, connected_cb, connect_failed_cb, disconnected_cb,       \
+                                    rdm_command_received_cb, llrp_rdm_command_received_cb, cb_context) \
+  do                                                                                                   \
+  {                                                                                                    \
+    (configptr)->callbacks.connected = (connected_cb);                                                 \
+    (configptr)->callbacks.connect_failed = (connect_failed_cb);                                       \
+    (configptr)->callbacks.disconnected = (disconnected_cb);                                           \
+    (configptr)->callbacks.rdm_command_received = (rdm_command_received_cb);                           \
+    (configptr)->callbacks.llrp_rdm_command_received = (llrp_rdm_command_received_cb);                 \
+    (configptr)->callback_context = (cb_context);                                                      \
+  } while (0)
 
 etcpal_error_t rdmnet_device_init(const EtcPalLogParams* lparams, const RdmnetNetintConfig* netint_config);
 void rdmnet_device_deinit();
 
+void rdmnet_device_config_init(RdmnetDeviceConfig* config, uint16_t manufacturer_id);
+
 etcpal_error_t rdmnet_device_create(const RdmnetDeviceConfig* config, rdmnet_device_t* handle);
-etcpal_error_t rdmnet_device_destroy(rdmnet_device_t handle, rdmnet_disconnect_reason_t reason);
+etcpal_error_t rdmnet_device_destroy(rdmnet_device_t handle, rdmnet_disconnect_reason_t disconnect_reason);
 
 etcpal_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const LocalRdmResponse* resp);
 etcpal_error_t rdmnet_device_send_status(rdmnet_device_t handle, const LocalRptStatus* status);
 etcpal_error_t rdmnet_device_send_llrp_response(rdmnet_device_t handle, const LlrpLocalRdmResponse* resp);
 
+etcpal_error_t rdmnet_device_request_dynamic_uids(rdmnet_device_t handle, const DynamicUidRequest* requests,
+                                                  size_t num_requests);
+
 etcpal_error_t rdmnet_device_change_scope(rdmnet_device_t handle, const RdmnetScopeConfig* new_scope_config,
-                                          rdmnet_disconnect_reason_t reason);
+                                          rdmnet_disconnect_reason_t disconnect_reason);
 etcpal_error_t rdmnet_device_change_search_domain(rdmnet_device_t handle, const char* new_search_domain,
-                                                  rdmnet_disconnect_reason_t reason);
+                                                  rdmnet_disconnect_reason_t disconnect_reason);
 
 #ifdef __cplusplus
 };

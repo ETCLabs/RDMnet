@@ -23,8 +23,6 @@
  *
  * Functions and definitions for the \ref rdmnet_conn "RDMnet Connection API" are contained in this
  * header.
- *
- * \author Sam Kearney
  */
 
 #ifndef RDMNET_CORE_CONNECTION_H_

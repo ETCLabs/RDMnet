@@ -20,7 +20,6 @@
 /*!
  * \file rdmnet/core/llrp_manager.h
  * \brief Functions for implementing LLRP Manager functionality
- * \author Christian Reese and Sam Kearney
  */
 
 #ifndef RDMNET_CORE_LLRP_MANAGER_H_
@@ -31,6 +30,7 @@
 #include "rdm/message.h"
 #include "rdmnet/core.h"
 #include "rdmnet/core/llrp.h"
+#include "rdmnet/core/message.h"
 
 /*!
  * \defgroup llrp_manager LLRP Manager
@@ -43,26 +43,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/*! An RDM command to be sent from a local LLRP Manager. */
-typedef struct LlrpLocalRdmCommand
-{
-  /*! The CID of the LLRP Target to which this command is addressed. */
-  EtcPalUuid dest_cid;
-  /*! The RDM command. */
-  RdmCommand rdm;
-} LlrpLocalRdmCommand;
-
-/*! An RDM response received from a remote LLRP Target. */
-typedef struct LlrpRemoteRdmResponse
-{
-  /*! The CID of the LLRP Target from which this command was received. */
-  EtcPalUuid src_cid;
-  /*! The sequence number of this response (to be associated with a previously-sent command). */
-  uint32_t seq_num;
-  /*! The RDM response. */
-  RdmResponse rdm;
-} LlrpRemoteRdmResponse;
 
 typedef struct LlrpManagerCallbacks
 {

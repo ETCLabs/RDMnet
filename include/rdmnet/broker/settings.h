@@ -35,7 +35,8 @@
 
 namespace rdmnet
 {
-/// Settings for the Broker's DNS Discovery functionality.
+/// \ingroup rdmnet_broker
+/// \brief Settings for the Broker's DNS Discovery functionality.
 struct BrokerDiscoveryAttributes
 {
   /// Your unique name for this broker DNS-SD service instance. The discovery library uses
@@ -50,7 +51,8 @@ struct BrokerDiscoveryAttributes
   std::string model{"Generic RDMnet Broker"};
 };
 
-/// A group of settings for Broker operation.
+/// \ingroup rdmnet_broker
+/// \brief A group of settings for Broker operation.
 struct BrokerSettings
 {
   etcpal::Uuid cid;  ///< The Broker's CID.

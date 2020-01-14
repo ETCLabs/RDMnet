@@ -33,18 +33,13 @@
 
 /*!
  * \defgroup rdmnet_controller Controller API
+ * \ingroup rdmnet_api
  * \brief Implementation of RDMnet controller functionality; see \ref using_controller.
  *
  * RDMnet controllers are clients which originate RDM commands and receive responses. Controllers
  * can participate in multiple scopes; the default scope string "default" must be configured as a
  * default setting. This API wraps the RDMnet Client API and provides functions tailored
  * specifically to the usage concerns of an RDMnet controller.
- */
-
-/*!
- * \defgroup rdmnet_controller_c Controller C Language API
- * \ingroup rdmnet_controller
- * \brief C Language version of the Controller API.
  *
  * See \ref using_controller for a detailed description of how to use this API.
  *
@@ -139,6 +134,16 @@ typedef struct RdmnetControllerCallbacks
    */
   void (*status_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle, const RemoteRptStatus* status,
                           void* context);
+
+  /*!
+   * \brief A set of previously-requested dynamic UID mappings has been received.
+   * \param[in] handle Handle to the controller which has received the dynamic UID mappings.
+   * \param[in] scope_handle Handle to the scope on which the dynamic UID mappings were received.
+   * \param[in] list The list of dynamic UID mappings.
+   * \param[in] context Context pointer that was given at the creation of the controller instance.
+   */
+  void (*dynamic_uid_mappings_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                                        const DynamicUidAssignmentList* list, void* context);
 } RdmnetControllerCallbacks;
 
 /*! A set of callbacks which can be optionally provided to handle RDM commands addressed to a
@@ -305,7 +310,11 @@ etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rd
 etcpal_error_t rdmnet_controller_send_rdm_response(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                                    const LocalRdmResponse* resp);
 etcpal_error_t rdmnet_controller_send_llrp_response(rdmnet_controller_t handle, const LlrpLocalRdmResponse* resp);
+
 etcpal_error_t rdmnet_controller_request_client_list(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle);
+etcpal_error_t rdmnet_controller_request_dynamic_uid_mappings(rdmnet_controller_t handle,
+                                                              rdmnet_client_scope_t scope_handle, const RdmUid* uids,
+                                                              size_t num_uids);
 
 #ifdef __cplusplus
 };

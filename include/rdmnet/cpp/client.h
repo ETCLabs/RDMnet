@@ -27,9 +27,15 @@
 
 namespace rdmnet
 {
+/// \defgroup rdmnet_cpp_api RDMnet C++ Language API
+/// \brief RDMnet C++-language API
+
+/// \ingroup rdmnet_cpp_api
 /// \copydoc rdmnet_client_scope_t
 using ScopeHandle = rdmnet_client_scope_t;
 
+/// \ingroup rdmnet_cpp_api
+/// \brief An RDMnet scope configuration.
 class Scope
 {
 public:

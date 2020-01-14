@@ -78,6 +78,25 @@ static void rdmnet_tick_thread(void* arg);
 
 /*************************** Function definitions ****************************/
 
+/*!
+ * \brief Initialize the RDMnet core library.
+ *
+ * If you are using one of the higher-level APIs like the \ref rdmnet_controller or
+ * \ref rdmnet_device, this function should not be called directly.
+ *
+ * Initializes the core modules of the RDMnet library, including LLRP, discovery, connections, and
+ * the message dispatch thread.
+ *
+ * \param[in] log_params Optional: log parameters for the RDMnet library to use to log messages. If
+ *                       NULL, no logging will be performed.
+ * \param[in] netint_config Optional: a set of network interfaces to which to restrict multicast
+ *                          operation.
+ * \return #kEtcPalErrOk: Initialization successful.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return #kEtcPalErrNoNetints: No network interfaces found on the system.
+ * \return #kEtcPalErrSys: An internal library or system call error occurred.
+ * \return Other error codes are possible from the initialization of EtcPal.
+ */
 etcpal_error_t rdmnet_core_init(const EtcPalLogParams* log_params, const RdmnetNetintConfig* netint_config)
 {
   // The lock is created only the first call to this function.
@@ -163,6 +182,12 @@ etcpal_error_t rdmnet_core_init(const EtcPalLogParams* log_params, const RdmnetN
   return res;
 }
 
+/*!
+ * \brief Deinitialize the RDMnet core library.
+ *
+ * Closes all connections, deallocates all resources and joins the background thread. No RDMnet API
+ * funcitons are usable after this function is called.
+ */
 void rdmnet_core_deinit()
 {
   if (core_state.initted)
@@ -230,6 +255,15 @@ void rdmnet_tick_thread(void* arg)
 }
 #endif
 
+/*!
+ * \brief Process RDMnet background tasks.
+ *
+ * This includes polling for data on incoming network connections, checking various timeouts, and
+ * delivering notification callbacks. In the default configuration of the RDMnet library, this
+ * function is called from an internally-created thread and does not need to be called externally.
+ * Otherwise, this function should be called in a loop without artificial delay for best
+ * performance; it will block internally for up to 100ms at a time.
+ */
 void rdmnet_core_tick()
 {
   EtcPalPollEvent event;

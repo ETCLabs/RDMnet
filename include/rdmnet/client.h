@@ -20,7 +20,6 @@
 /*!
  * \file rdmnet/client.h
  * \brief An API for RDMnet Client functionality.
- * \author Sam Kearney
  */
 
 #ifndef RDMNET_CLIENT_H_
@@ -38,7 +37,12 @@
 #include "rdmnet/core/util.h"
 
 /*!
- * \defgroup rdmnet_client Client API
+ * \defgroup rdmnet_api RDMnet C Language API
+ */
+
+/*!
+ * \defgroup rdmnet_client_api Client API
+ * \ingroup rdmnet_api
  * \brief Implementation of RDMnet client functionality
  *
  * RDMnet clients encompass controllers (which originate RDM commands on the network and receive
@@ -314,22 +318,6 @@ typedef struct RdmnetRptClientConfig
   RptClientOptionalConfig optional;
 } RdmnetRptClientConfig;
 
-/*!
- * \brief Initialize an RPT Client Config with default values for the optional config options.
- *
- * The config struct members not marked 'optional' are not initialized by this macro. Those members
- * do not have default values and must be initialized manually before passing the config struct to
- * an API function.
- *
- * Usage example:
- * \code
- * RdmnetRptClientConfig config;
- * RPT_CLIENT_CONFIG_INIT(&config, 0x6574);
- * \endcode
- *
- * \param clientcfgptr Pointer to RdmnetRptClientConfig.
- * \param manu_id ESTA manufacturer ID. All RDMnet RPT components must have one.
- */
 #define RPT_CLIENT_CONFIG_INIT(clientcfgptr, manu_id) \
   RPT_CLIENT_INIT_OPTIONAL_CONFIG_VALUES(&(clientcfgptr)->optional, manu_id);
 

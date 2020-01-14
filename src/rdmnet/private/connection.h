@@ -20,7 +20,6 @@
 /*!
  * \file rdmnet/private/connection.h
  * \brief The internal definition for an RDMnet connection.
- * \author Sam Kearney
  */
 
 #ifndef RDMNET_PRIVATE_CONNECTION_H_
