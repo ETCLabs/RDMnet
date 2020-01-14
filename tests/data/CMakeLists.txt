@@ -22,7 +22,7 @@ add_library(test_data
 )
 target_include_directories(test_data PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(test_data PRIVATE RDMnet gtest)
-set_target_properties(test_data PROPERTIES FOLDER tests)
+set_target_properties(test_data PROPERTIES FOLDER tests CXX_STANDARD 14)
 
 # Add the validation files to the library to be compiled
 foreach(FILE_NAME ${TEST_FILE_LIST})

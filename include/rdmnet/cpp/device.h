@@ -31,26 +31,46 @@ namespace rdmnet
 /// \defgroup rdmnet_device_cpp Device C++ Language API
 /// \ingroup rdmnet_device
 /// \brief C++ Language version of the Device API
+///
+/// See \ref using_device for details of how to use this API.
+///
 /// @{
 
 using DeviceHandle = rdmnet_device_t;
 
 /// @}
 
-/// \brief A base class for a class that receives notification callbacks from a controller.
+class Device;
+
 /// \ingroup rdmnet_device_cpp
+/// \brief A base class for a class that receives notification callbacks from a controller.
+///
+/// See \ref using_device for details of how to use this API.
 class DeviceNotifyHandler
 {
 public:
-  virtual void HandleConnectedToBroker(const RdmnetClientConnectedInfo& info) = 0;
-  virtual void HandleBrokerConnectFailed(const RdmnetClientConnectFailedInfo& info) = 0;
-  virtual void HandleDisconnectedFromBroker(const RdmnetClientDisconnectedInfo& info) = 0;
-  virtual void HandleRdmCommand(const RemoteRdmCommand& cmd) = 0;
-  virtual void HandleLlrpRdmCommand(const LlrpRemoteRdmCommand& cmd) = 0;
+  virtual void HandleConnectedToBroker(Device& device, const RdmnetClientConnectedInfo& info) = 0;
+  virtual void HandleBrokerConnectFailed(Device& device, const RdmnetClientConnectFailedInfo& info) = 0;
+  virtual void HandleDisconnectedFromBroker(Device& device, const RdmnetClientDisconnectedInfo& info) = 0;
+  virtual void HandleRdmCommand(Device& device, const RemoteRdmCommand& cmd) = 0;
+  virtual void HandleLlrpRdmCommand(Device& device, const LlrpRemoteRdmCommand& cmd) = 0;
 };
 
-/// \brief An instance of RDMnet Device functionality.
+struct DeviceData
+{
+  etcpal::Uuid cid;           ///< The device's Component Identifier (CID).
+  rdm::Uid uid;               ///< The device's RDM UID. For a dynamic UID, use ::rdm::Uid::DynamicUidRequest().
+  std::string search_domain;  ///< The device's search domain for discovering brokers.
+
+  DeviceData() = default;
+  DeviceData(const etcpal::Uuid& cid_in, const rdm::Uid& uid_in, const std::string& search_domain_in);
+  static DeviceData Default(uint16_t manufacturer_id);
+};
+
 /// \ingroup rdmnet_device_cpp
+/// \brief An instance of RDMnet Device functionality.
+///
+/// See \ref using_device for details of how to use this API.
 class Device
 {
 public:
@@ -64,18 +84,20 @@ public:
   etcpal::Result SendLlrpResponse(const LlrpLocalRdmResponse& resp);
 
   DeviceHandle handle() const;
-  const etcpal::Uuid& cid() const;
+  const DeviceData& data() const;
+  Scope scope() const;
 
-  void SetMcastNetints(const std::vector<RdmnetMcastNetintId>& mcast_netints);
-  void SetUid(const RdmUid& uid);
-  void SetSearchDomain(const std::string& search_domain);
+  static etcpal::Result Init(
+      const EtcPalLogParams* log_params = nullptr,
+      const std::vector<RdmnetMcastNetintId>& mcast_netints = std::vector<RdmnetMcastNetintId>{});
+  static etcpal::Result Init(const etcpal::Logger& logger, const std::vector<RdmnetMcastNetintId>& mcast_netints =
+                                                               std::vector<RdmnetMcastNetintId>{});
+  static void Deinit();
 
 private:
+  DeviceHandle handle_{RDMNET_DEVICE_INVALID};
+  DeviceData my_data_;
   DeviceNotifyHandler* notify_{nullptr};
-  DeviceHandle handle_{};
-  etcpal::Uuid cid_;
-  RdmUid uid_{};
-  std::string search_domain_;
 };
 
 };  // namespace rdmnet

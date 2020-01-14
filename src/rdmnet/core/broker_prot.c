@@ -239,12 +239,14 @@ etcpal_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMs
   {
     // Pack and send the EPT client entry
     const EptClientEntry* ept_entry = GET_EPT_CLIENT_ENTRY(&data->client_entry);
-    for (const EptSubProtocol* prot = ept_entry->protocol_list;
-         prot < ept_entry->protocol_list + ept_entry->num_protocols; ++prot)
+    for (const EptSubProtocol* prot = ept_entry->protocols;
+         prot < ept_entry->protocols + ept_entry->num_protocols; ++prot)
     {
       cur_ptr = buf;
-      etcpal_pack_32b(cur_ptr, prot->protocol_vector);
-      cur_ptr += 4;
+      etcpal_pack_16b(cur_ptr, prot->manufacturer_id);
+      cur_ptr += 2;
+      etcpal_pack_16b(cur_ptr, prot->protocol_id);
+      cur_ptr += 2;
       rdmnet_safe_strncpy((char*)cur_ptr, prot->protocol_string, EPT_PROTOCOL_STRING_PADDED_LENGTH);
       cur_ptr += EPT_PROTOCOL_STRING_PADDED_LENGTH;
       send_res = etcpal_send(conn->sock, buf, EPT_PROTOCOL_ENTRY_SIZE, 0);

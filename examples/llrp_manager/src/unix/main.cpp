@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
   auto manager_cid = etcpal::Uuid::OsPreferred();
 
   EtcPalLogParams params;
-  params.action = kEtcPalLogCreateHumanReadableLog;
+  params.action = kEtcPalLogCreateHumanReadable;
   params.log_fn = manager_log_callback;
   params.log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_INFO);
   params.time_fn = manager_time_callback;

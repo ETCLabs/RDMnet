@@ -267,7 +267,8 @@ void my_client_list_update_cb(rdmnet_controller_t handle, rdmnet_client_scope_t 
 {
   // Check handles and/or context as necessary...
 
-  for (const RptClientEntry* entry = list->client_entries; entry; entry = entry->next)
+  for (const RptClientEntry* entry = list->client_entries; entry < list->client_entries + list->num_client_entries;
+       ++entry)
   {
     switch (list_action)
     {
@@ -302,12 +303,13 @@ void my_client_list_update_cb(rdmnet_controller_t handle, rdmnet_client_scope_t 
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleClientListUpdate(Controller& controller, ScopeHandle scope_handle,
+void MyControllerNotifyHandler::HandleClientListUpdate(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
                                                        client_list_action_t list_action, const RptClientList& list)
 {
   // Check handles as necessary...
 
-  for (const RptClientEntry* entry = list.client_entries; entry; entry = entry->next)
+  for (const RptClientEntry* entry = list.client_entries; entry < list.client_entries + list.num_client_entries;
+       ++entry)
   {
     switch (list_action)
     {
@@ -414,9 +416,8 @@ void rdm_response_callback(rdmnet_controller_t handle, rdmnet_client_scope_t sco
     // Verify resp->seq_num against the cmd_seq_num you stored earlier.
   }
 
-  // If resp->seq_num != 0, resp->cmd will contain the command you sent.
-
-  for (const RemoteRdmRespListEntry* response = resp->resp_list; response; response = response->next)
+  // If resp->seq_num != 0, resp->cmd will contain the original command you sent. 
+  for (const RdmResponse* response = resp->responses; response < resp->responses + resp->num_responses; ++response)
   {
     // Process the list of responses.
   }
@@ -447,7 +448,7 @@ void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::Controller& controller
 
   // If resp->seq_num != 0, resp.cmd will contain the command you sent.
 
-  for (const RemoteRdmRespListEntry* response = resp.resp_list; response; response = response->next)
+  for (const RdmResponse* response = resp.responses; response < resp.responses + resp.num_responses; ++response)
   {
     // Process the list of responses.
   }

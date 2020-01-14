@@ -259,7 +259,7 @@ typedef struct RdmnetScopeConfig
 {
   /*! The scope string. Scope strings are UTF-8, and their maximum length is derived from the
    *  requirements of DNS and DNS-SD. */
-  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
+  const char* scope;
   /*! Whether a static broker address has been configured on this scope. If this is true, discovery
    *  using DNS-SD will be bypassed and a connection will be attempted directly to the address
    *  indicated in static_broker_addr. */

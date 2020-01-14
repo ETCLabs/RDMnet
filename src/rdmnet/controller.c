@@ -199,8 +199,9 @@ etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle, rdmnet_disc
 /*!
  * \brief Add a new scope to a controller instance.
  *
- * The library will attempt to discover and connected to a broker for the scope; the status of
- * these attempts will be communicated via the callbacks associated with the controller instance.
+ * The library will attempt to discover and connect to a broker for the scope (or just connect if a
+ * static broker address is given); the status of these attempts will be communicated via the
+ * callbacks associated with the controller instance.
  *
  * \param[in] handle Handle to controller to which to add a new scope.
  * \param[in] scope_config Configuration parameters for the new scope.
@@ -233,6 +234,7 @@ etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const Rdm
  */
 etcpal_error_t rdmnet_controller_add_default_scope(rdmnet_controller_t handle, rdmnet_client_scope_t* scope_handle)
 {
+  return kEtcPalErrNotImpl;
 }
 
 /*!
@@ -242,23 +244,41 @@ etcpal_error_t rdmnet_controller_add_default_scope(rdmnet_controller_t handle, r
  *
  * \param[in] handle Handle to the controller from which to remove a scope.
  * \param[in] scope_handle Handle to scope to remove.
- * \param[in] reason RDMnet protocol disconnect reason to send to the connected broker.
+ * \param[in] disconnect_reason RDMnet protocol disconnect reason to send to the connected broker.
  * \return #kEtcPalErrOk: Scope removed successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return Other errors forwarded from rdmnet_client_remove_scope().
  */
 etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                              rdmnet_disconnect_reason_t reason)
+                                              rdmnet_disconnect_reason_t disconnect_reason)
 {
   if (!handle)
     return kEtcPalErrInvalid;
 
-  return rdmnet_client_remove_scope(handle->client_handle, scope_handle, reason);
+  return rdmnet_client_remove_scope(handle->client_handle, scope_handle, disconnect_reason);
+}
+
+/*!
+ * \brief Retrieve information about a previously-added scope.
+ * 
+ * \param[in] handle Handle to the controller from which to retrieve scope information.
+ * \param[in] scope_handle Handle to the scope for which to retrieve the configuration.
+ * \param[out] scope_config Filled in with information about the scope.
+ * \return #kEtcPalErrOk: Scope information retrieved successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return Other errors forwarded from rdmnet_client_get_scope().
+ */
+etcpal_error_t rdmnet_controller_get_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                                           RdmnetScopeConfig* scope_config)
+{
 }
 
 /*!
  * \brief Send an RDM command from a controller on a scope.
  *
+ * The response will be delivered via the \ref RdmnetControllerCallbacks::rdm_response_received
+ * "rdm_response_received" callback.
+ * 
  * \param[in] handle Handle to the controller from which to send the RDM command.
  * \param[in] scope_handle Handle to the scope on which to send the RDM command.
  * \param[in] cmd The RDM command data to send, including its addressing information.
@@ -277,6 +297,16 @@ etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rd
   return rdmnet_rpt_client_send_rdm_command(handle->client_handle, scope_handle, cmd, seq_num);
 }
 
+/*!
+ * \brief Send an RDM response from a controller on a scope.
+ * 
+ * \param[in] handle Handle to the controller from which to send the RDM response.
+ * \param[in] scope_handle Handle to the scope on which to send the RDM response.
+ * \param[in] resp The RDM response data to send, including its addressing information.
+ * \return #kEtcPalErrOk: Response sent successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return Other errors forwarded from rdmnet_rpt_client_send_rdm_response().
+ */
 etcpal_error_t rdmnet_controller_send_rdm_response(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                                    const LocalRdmResponse* resp)
 {
@@ -286,6 +316,15 @@ etcpal_error_t rdmnet_controller_send_rdm_response(rdmnet_controller_t handle, r
   return rdmnet_rpt_client_send_rdm_response(handle->client_handle, scope_handle, resp);
 }
 
+/*!
+ * \brief Send an LLRP RDM response from a controller.
+ * 
+ * \param[in] handle Handle to the controller from which to send the LLRP RDM response.
+ * \param[in] resp The RDM response data to send, including its addressing information.
+ * \return #kEtcPalErrOk: Response sent successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return Other errors forwarded from rdmnet_rpt_client_send_llrp_response().
+ */
 etcpal_error_t rdmnet_controller_send_llrp_response(rdmnet_controller_t handle, const LlrpLocalRdmResponse* resp)
 {
   if (!handle)
@@ -294,6 +333,18 @@ etcpal_error_t rdmnet_controller_send_llrp_response(rdmnet_controller_t handle, 
   return rdmnet_rpt_client_send_llrp_response(handle->client_handle, resp);
 }
 
+/*!
+ * \brief Request a client list from a broker.
+ * 
+ * The response will be delivered via the \ref RdmnetControllerCallbacks::client_list_update_received
+ * "client_list_update_received" callback.
+ * 
+ * \param[in] handle Handle to the controller from which to request the client list.
+ * \param[in] scope_handle Handle to the scope on which to request the client list.
+ * \return #kEtcPalErrOk: Request sent successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return Other errors forwarded from rdmnet_client_request_client_list().
+ */
 etcpal_error_t rdmnet_controller_request_client_list(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle)
 {
   if (!handle)

@@ -197,20 +197,22 @@ public:
 
   etcpal::Expected<ScopeHandle> AddDefaultScope(const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
   etcpal::Expected<ScopeHandle> AddScope(const Scope& scope);
-  etcpal::Result RemoveScope(ScopeHandle handle);
+  etcpal::Expected<ScopeHandle> AddScope(const std::string& id, const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
+  etcpal::Result RemoveScope(ScopeHandle scope_handle, rdmnet_disconnect_reason_t disconnect_reason);
 
-  etcpal::Expected<uint32_t> SendRdmCommand(ScopeHandle scope, const LocalRdmCommand& cmd);
-  etcpal::Expected<uint32_t> SendRdmCommand(ScopeHandle scope, const rdm::Uid& dest_uid, uint16_t dest_endpoint,
+  etcpal::Expected<uint32_t> SendRdmCommand(ScopeHandle scope_handle, const LocalRdmCommand& cmd);
+  etcpal::Expected<uint32_t> SendRdmCommand(ScopeHandle scope_handle, const rdm::Uid& dest_uid, uint16_t dest_endpoint,
                                             const RdmCommand& rdm);
-  etcpal::Result SendRdmResponse(ScopeHandle scope, const LocalRdmResponse& resp);
+  etcpal::Result SendRdmResponse(ScopeHandle scope_handle, const LocalRdmResponse& resp);
   etcpal::Result SendLlrpResponse(const LlrpLocalRdmResponse& resp);
-  etcpal::Result RequestClientList(ScopeHandle scope);
+  etcpal::Result RequestClientList(ScopeHandle scope_handle);
 
   ControllerHandle handle() const;
   const ControllerData& data() const;
   const ControllerRdmData& rdm_data() const;
   ControllerNotifyHandler* notify_handler() const;
   ControllerRdmCommandHandler* rdm_command_handler() const;
+  etcpal::Expected<Scope> scope(ScopeHandle scope_handle) const;
 
   void UpdateRdmData(const ControllerRdmData& new_data);
 
@@ -442,61 +444,154 @@ inline void Controller::Deinit()
   rdmnet_controller_deinit();
 }
 
+/// \brief Shortcut to add the default RDMnet scope to a controller instance.
+///
+/// \param static_broker_addr [optional] A static broker address to configure for the default scope.
+/// \return On success, a handle to the new scope, to be used with subsequent API calls.
+/// \return On failure, error codes from rdmnet_controller_add_scope().
 inline etcpal::Expected<ScopeHandle> Controller::AddDefaultScope(const etcpal::SockAddr& static_broker_addr)
 {
   return kEtcPalErrNotImpl;
 }
 
+/// \brief Add a new scope to this controller instance.
+///
+/// The library will attempt to discover and connect to a broker for the scope (or just connect if
+/// a static broker address is given); the status of these attempts will be communicated via
+/// associated ControllerNotifyHandler.
+///
+/// \param scope Configuration information for the new scope.
+/// \return On success, a handle to the new scope, to be used with subsequent API calls.
+/// \return On failure, error codes from rdmnet_controller_add_scope().
 inline etcpal::Expected<ScopeHandle> Controller::AddScope(const Scope& scope)
 {
-  return kEtcPalErrNotImpl;
+  return AddScope(scope.id(), scope.static_broker_addr());
 }
 
-inline etcpal::Result Controller::RemoveScope(ScopeHandle handle)
+/// \brief Add a new scope to this controller instance.
+///
+/// The library will attempt to discover and connect to a broker for the scope (or just connect if
+/// a static broker address is given); the status of these attempts will be communicated via
+/// associated ControllerNotifyHandler.
+///
+/// \param id The scope ID string.
+/// \param static_broker_addr [optional] A static IP address and port at which to connect to the
+///                           broker for this scope.
+/// \return On success, a handle to the new scope, to be used with subsequent API calls.
+/// \return On failure, error codes from rdmnet_controller_add_scope().
+inline etcpal::Expected<ScopeHandle> Controller::AddScope(const std::string& id, const etcpal::SockAddr& static_broker_addr)
+{
+  RdmnetScopeConfig scope_config = { id.c_str(), static_broker_addr.ip().IsValid(), static_broker_addr.get() };
+  rdmnet_client_scope_t scope_handle;
+  auto result = rdmnet_controller_add_scope(handle_, &scope_config, &scope_handle);
+  return (result == kEtcPalErrOk ? scope_handle : result);
+}
+
+/// \brief Remove a previously-added scope from this controller instance.
+///
+/// After this call completes, scope_handle will no longer be valid.
+///
+/// \param scope_handle Handle to scope to remove.
+/// \param disconnect_reason RDMnet protocol disconnect reason to send to the connected broker.
+/// \return etcpal::Result::Ok(): Scope removed successfully.
+/// \return Error codes from from rdmnet_controller_remove_scope().
+inline etcpal::Result Controller::RemoveScope(ScopeHandle scope_handle, rdmnet_disconnect_reason_t disconnect_reason)
+{
+  return rdmnet_controller_remove_scope(handle_, scope_handle, disconnect_reason);
+}
+
+/// \brief Send an RDM command from a controller on a scope.
+///
+/// The response will be delivered via the ControllerNotifyHandler::HandleRdmResponse() callback.
+/// 
+/// \param scope_handle Handle to the scope on which to send the RDM command.
+/// \param cmd The RDM command data to send, including its addressing information.
+/// \return On success, a sequence number which can be used to match the command with a response.
+/// \return On failure, error codes from rdmnet_controller_send_rdm_command().
+inline etcpal::Expected<uint32_t> Controller::SendRdmCommand(ScopeHandle scope_handle, const LocalRdmCommand& cmd)
 {
   return kEtcPalErrNotImpl;
 }
 
-inline etcpal::Expected<uint32_t> Controller::SendRdmCommand(ScopeHandle scope, const LocalRdmCommand& cmd)
+/// \brief Send an RDM command from a controller on a scope.
+///
+/// The response will be delivered via the ControllerNotifyHandler::HandleRdmResponse() callback.
+/// 
+/// \param scope_handle Handle to the scope on which to send the RDM command.
+/// \param dest_uid The UID of the component to which to send the RDM command.
+/// \param dest_endpoint The endpoint on the device to which to send the RDM command.
+///                      E133_NULL_ENDPOINT addresses the default responder. If addressing another
+///                      controller, this must always be E133_NULL_ENDPOINT.
+/// \param rdm The RDM command data to send.
+/// \return On success, a sequence number which can be used to match the command with a response.
+/// \return On failure, error codes from rdmnet_controller_send_rdm_command().
+inline etcpal::Expected<uint32_t> Controller::SendRdmCommand(ScopeHandle scope_handle, const rdm::Uid& dest_uid,
+                                                             uint16_t dest_endpoint, const RdmCommand& rdm)
 {
   return kEtcPalErrNotImpl;
 }
 
-inline etcpal::Result Controller::SendRdmResponse(ScopeHandle scope, const LocalRdmResponse& resp)
+/// \brief Send an RDM response from a controller on a scope.
+/// \param scope_handle Handle to the scope on which to send the RDM response.
+/// \param resp The RDM response data to send, including its addressing information.
+/// \return etcpal::Result::Ok(): Response sent successfully.
+/// \return Error codes from from rdmnet_controller_send_rdm_response().
+inline etcpal::Result Controller::SendRdmResponse(ScopeHandle scope_handle, const LocalRdmResponse& resp)
 {
   return kEtcPalErrNotImpl;
 }
 
+/// \brief Send an LLRP RDM response from a controller on a scope.
+/// \param resp The LLRP RDM response data to send, including its addressing information.
+/// \return etcpal::Result::Ok(): Response sent successfully.
+/// \return Error codes from from rdmnet_controller_send_llrp_rdm_response().
 inline etcpal::Result Controller::SendLlrpResponse(const LlrpLocalRdmResponse& resp)
 {
   return kEtcPalErrNotImpl;
 }
 
-inline etcpal::Result Controller::RequestClientList(ScopeHandle scope)
+/// \brief Request a client list from a broker.
+/// 
+/// The response will be delivered via the ControllerNotifyHandler::HandleClientListUpdate()
+/// callback.
+/// 
+/// \param[in] scope_handle Handle to the scope on which to request the client list.
+/// \return etcpal::Result::Ok(): Request sent successfully.
+/// \return Errors codes from rdmnet_controller_request_client_list().
+inline etcpal::Result Controller::RequestClientList(ScopeHandle scope_handle)
 {
   return kEtcPalErrNotImpl;
 }
 
+/// \brief Retrieve the handle of a controller instance.
+///
+/// The handle is mostly used for interacting with the C controller API.
 inline ControllerHandle Controller::handle() const
 {
   return handle_;
 }
 
+/// \brief Retrieve the data that this controller was configured with on startup.
 inline const ControllerData& Controller::data() const
 {
   return my_data_;
 }
 
+/// \brief Retrieve the RDM data that this controller was configured with on startup.
+/// \return The data, or an invalid ControllerRdmData instance if it was not provided.
 inline const ControllerRdmData& Controller::rdm_data() const
 {
   return my_rdm_data_;
 }
 
+/// \brief Retrieve the ControllerNotifyHandler reference that this controller was configured with.
 inline ControllerNotifyHandler* Controller::notify_handler() const
 {
   return notify_;
 }
 
+/// \brief Retrieve the ControllerRdmCommandHandler reference that this controller was configured with.
+/// \return A pointer to the handler, or nullptr if it was not provided.
 inline ControllerRdmCommandHandler* Controller::rdm_command_handler() const
 {
   return rdm_cmd_handler_;

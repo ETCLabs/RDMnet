@@ -36,29 +36,30 @@ inline void ExpectRptClientEntriesEqual(const RptClientEntry& a, const RptClient
 inline void ExpectEptClientEntriesEqual(const EptClientEntry& a, const EptClientEntry& b)
 {
   EXPECT_EQ(a.cid, b.cid);
-  EXPECT_EQ(a.more_coming, b.more_coming);
   EXPECT_EQ(a.num_protocols, b.num_protocols);
   if (a.num_protocols == b.num_protocols)
   {
-    if (a.protocol_list && b.protocol_list)
+    if (a.protocols && b.protocols)
     {
       for (size_t i = 0; i < a.num_protocols; ++i)
       {
-        EXPECT_EQ(a.protocol_list[i].protocol_vector, b.protocol_list[i].protocol_vector)
+        EXPECT_EQ(a.protocols[i].manufacturer_id, b.protocols[i].manufacturer_id)
             << "While comparing index " << i;
-        EXPECT_STREQ(a.protocol_list[i].protocol_string, b.protocol_list[i].protocol_string)
+        EXPECT_EQ(a.protocols[i].protocol_id, b.protocols[i].protocol_id)
+            << "While comparing index " << i;
+        EXPECT_STREQ(a.protocols[i].protocol_string, b.protocols[i].protocol_string)
             << "While comparing index " << i;
       }
     }
-    else if (!a.protocol_list && b.protocol_list)
+    else if (!a.protocols && b.protocols)
     {
       // No comparison to make
     }
     else
     {
       ADD_FAILURE() << "Null/not-null mismatch between protocol_list entries; a was "
-                    << reinterpret_cast<void*>(a.protocol_list) << ", b was "
-                    << reinterpret_cast<void*>(b.protocol_list);
+                    << reinterpret_cast<void*>(a.protocols) << ", b was "
+                    << reinterpret_cast<void*>(b.protocols);
     }
   }
 }

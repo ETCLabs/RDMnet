@@ -42,7 +42,9 @@ typedef struct ClientScopeListEntry ClientScopeListEntry;
 struct ClientScopeListEntry
 {
   rdmnet_client_scope_t handle;
-  RdmnetScopeConfig config;
+  char id[E133_SCOPE_STRING_PADDED_LENGTH];
+  bool has_static_broker_addr;
+  EtcPalSockAddr static_broker_addr;
   scope_state_t state;
   RdmUid uid;
   uint32_t send_seq_num;
@@ -57,8 +59,6 @@ struct ClientScopeListEntry
   RdmnetClient* client;
   ClientScopeListEntry* next;
 };
-
-#define rpt_client_uid_is_dynamic(configuidptr) ((configuidptr)->id == 0)
 
 typedef struct RptClientData
 {
