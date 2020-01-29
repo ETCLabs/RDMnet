@@ -17,6 +17,7 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 #include <array>
+#include <climits>
 #include "gtest/gtest.h"
 #include "etcpal_mock/socket.h"
 #include "etcpal_mock/timer.h"

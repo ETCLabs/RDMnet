@@ -16,6 +16,7 @@
  * This file is a part of RDMnet. For more information, go to:
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
+#include <climits>
 #include "gtest/gtest.h"
 #include "rdmnet/core/broker_prot.h"
 

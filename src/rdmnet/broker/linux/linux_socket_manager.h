@@ -88,7 +88,8 @@ public:
   // BrokerSocketManager interface
   bool Startup() override;
   bool Shutdown() override;
-  void SetNotify(BrokerSocketManagerNotify* notify) override { notify_ = notify; }
+  // void SetNotify(BrokerSocketManagerNotify* notify) override { notify_ = notify; }
+  void SetNotify(BrokerSocketNotify* notify) override { notify_ = notify; }
   bool AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t socket) override;
   void RemoveSocket(rdmnet_conn_t conn_handle) override;
 

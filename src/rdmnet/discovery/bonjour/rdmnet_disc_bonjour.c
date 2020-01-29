@@ -18,6 +18,7 @@
  *****************************************************************************/
 
 #include <assert.h>
+#include <dns_sd.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -200,17 +201,18 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
     DNSServiceRefDeallocate(sdRef);
 
     DNSServiceRef addr_ref;
-    getaddrinfo_err = DNSServiceGetAddrInfo(&addr_ref, 0, 0, 0, hosttarget, &HandleDNSServiceGetAddrInfoReply, context);
-    if (getaddrinfo_err == kDNSServiceErr_NoError)
-    {
-      // Update the broker info.
-      db->info.port = etcpal_upack_16b((const uint8_t*)&port);
-      txt_record_to_broker_info(txtRecord, txtLen, &db->info);
+    // TODO: Fix me! This should use getaddrinfo if using avahi's compat layer
+    // getaddrinfo_err = DNSServiceGetAddrInfo(&addr_ref, 0, 0, 0, hosttarget, &HandleDNSServiceGetAddrInfoReply, context);
+    // if (getaddrinfo_err == kDNSServiceErr_NoError)
+    // {
+    //   // Update the broker info.
+    //   db->info.port = etcpal_upack_16b((const uint8_t*)&port);
+    //   txt_record_to_broker_info(txtRecord, txtLen, &db->info);
 
-      db->platform_data.state = kResolveStateGetAddrInfo;
-      db->platform_data.dnssd_ref = addr_ref;
-      etcpal_poll_add_socket(&poll_context, DNSServiceRefSockFD(addr_ref), ETCPAL_POLL_IN, db->platform_data.dnssd_ref);
-    }
+    //   db->platform_data.state = kResolveStateGetAddrInfo;
+    //   db->platform_data.dnssd_ref = addr_ref;
+    //   etcpal_poll_add_socket(&poll_context, DNSServiceRefSockFD(addr_ref), ETCPAL_POLL_IN, db->platform_data.dnssd_ref);
+    // }
     RDMNET_DISC_UNLOCK();
   }
 }
