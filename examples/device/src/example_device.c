@@ -376,8 +376,8 @@ bool device_handle_rdm_command(const RdmCommand* rdm_cmd, RdmResponse* resp_list
 
 void device_rpt_send_status(rpt_status_code_t status_code, const RdmnetRemoteRdmCommand* received_cmd)
 {
-  LocalRptStatus status;
-  rdmnet_create_status_from_command(received_cmd, status_code, &status);
+  RdmnetLocalRptStatus status;
+  rdmnet_create_status(received_cmd, status_code, &status);
 
   etcpal_error_t send_res = rdmnet_device_send_status(device_state.device_handle, &status);
   if (send_res != kEtcPalErrOk)
@@ -397,7 +397,7 @@ void device_send_rpt_nack(uint16_t nack_reason, const RdmnetRemoteRdmCommand* re
 void device_send_rpt_response(RdmResponse* resp_list, size_t num_responses, const RdmnetRemoteRdmCommand* received_cmd)
 {
   RdmnetLocalRdmResponse resp_to_send;
-  rdmnet_create_response_from_command(received_cmd, resp_list, num_responses, &resp_to_send);
+  rdmnet_create_response(received_cmd, resp_list, num_responses, &resp_to_send);
 
   etcpal_error_t send_res = rdmnet_device_send_rdm_response(device_state.device_handle, &resp_to_send);
   if (send_res != kEtcPalErrOk)
@@ -408,17 +408,17 @@ void device_send_rpt_response(RdmResponse* resp_list, size_t num_responses, cons
 
 void device_send_llrp_nack(uint16_t nack_reason, const LlrpRemoteRdmCommand* received_cmd)
 {
-  RdmResponse resp;
-  RDM_CREATE_NACK_FROM_COMMAND(&resp, &received_cmd->rdm, nack_reason);
-  device_send_llrp_response(&resp, received_cmd);
+  LlrpLocalRdmResponse resp;
+  rdmnet_create_llrp_nack(received_cmd, nack_reason, &resp);
+  device_send_llrp_response(&resp);
 }
 
-void device_send_llrp_response(RdmResponse* resp, const LlrpRemoteRdmCommand* received_cmd)
+void device_send_llrp_response(const LlrpLocalRdmResponse* resp)
 {
   LlrpLocalRdmResponse resp_to_send;
-  LLRP_CREATE_RESPONSE_FROM_COMMAND(&resp_to_send, received_cmd, resp);
+  rdmnet_create_llrp_response(received_cmd, resp, &resp_to_send);
 
-  etcpal_error_t send_res = rdmnet_device_send_llrp_response(device_state.device_handle, &resp_to_send);
+  etcpal_error_t send_res = rdmnet_device_send_llrp_response(device_state.device_handle, resp);
   if (send_res != kEtcPalErrOk)
   {
     etcpal_log(device_state.lparams, ETCPAL_LOG_ERR, "Error sending LLRP RDM response: '%s.",

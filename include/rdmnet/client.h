@@ -124,6 +124,12 @@ typedef struct RdmnetClientDisconnectedInfo
   bool will_retry;
 } RdmnetClientDisconnectedInfo;
 
+typedef enum
+{
+  kRdmnetSendSynchronousResponse,
+  kRdmnetDeferResponse
+} rdmnet_response_action_t;
+
 /*!
  * \name Client Callback Functions
  * \brief Function types used as callbacks for RPT and EPT clients.
@@ -200,7 +206,9 @@ typedef void (*RdmnetClientBrokerMsgReceivedCb)(rdmnet_client_t handle, rdmnet_c
  * \param[in] cmd The LLRP RDM command.
  * \param[in] context Context pointer that was given at the creation of the client.
  */
-typedef void (*RdmnetClientLlrpMsgReceivedCb)(rdmnet_client_t handle, const LlrpRemoteRdmCommand* cmd, void* context);
+typedef rdmnet_response_action_t (*RdmnetClientLlrpMsgReceivedCb)(rdmnet_client_t handle,
+                                                                  const LlrpRemoteRdmCommand* cmd,
+                                                                  LlrpLocalRdmResponse* response, void* context);
 
 /*!
  * \brief An RPT message was received on an RPT client connection.
@@ -215,8 +223,9 @@ typedef void (*RdmnetClientLlrpMsgReceivedCb)(rdmnet_client_t handle, const Llrp
  * \param[in] msg The RPT message.
  * \param[in] context Context pointer that was given at the creation of the client.
  */
-typedef void (*RptClientMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                       const RptClientMessage* msg, void* context);
+typedef rdmnet_response_action_t (*RptClientMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+                                                           const RptClientMessage* msg, RptClientMessage* response,
+                                                           void* context);
 
 /*!
  * \brief An EPT message was received on an EPT client connection.
@@ -229,8 +238,9 @@ typedef void (*RptClientMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_sco
  * \param[in] msg The EPT message.
  * \param[in] context Context pointer that was given at the creation of the client.
  */
-typedef void (*EptClientMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope, const EptClientMessage* msg,
-                                       void* context);
+typedef rdmnet_response_action_t (*EptClientMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope,
+                                                           const EptClientMessage* msg, EptClientMessage* response,
+                                                           void* context);
 
 /*!
  * @}

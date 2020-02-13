@@ -71,7 +71,7 @@ public:
   /// \param scope_handle Handle to the scope on which the RDM command was received.
   /// \param cmd The RDM command data.
   virtual void HandleRdmCommand(Controller& controller, ScopeHandle scope_handle,
-                                const RdmnetRemoteRdmCommand& cmd) = 0;
+                                const rdmnet::RemoteRdmCommand& cmd) = 0;
 
   /// \brief An RDM command has been received over LLRP, addressed to a controller.
   /// \param controller Controller instance which has received the RDM command.
@@ -139,7 +139,7 @@ public:
   /// \param scope_handle Handle to the scope on which the dynamic UID mappings were received.
   /// \param list The list of dynamic UID mappings.
   virtual void HandleBrokerDynamicUidMappingsReceived(Controller& controller, ScopeHandle scope_handle,
-                                                const BrokerDynamicUidAssignmentList& list)
+                                                      const BrokerDynamicUidAssignmentList& list)
   {
     RDMNET_UNUSED_ARG(controller);
     RDMNET_UNUSED_ARG(scope_handle);
@@ -150,8 +150,8 @@ public:
 /// A set of configuration data that a controller needs to initialize.
 struct ControllerData
 {
-  etcpal::Uuid cid;           ///< The controller's Component Identifier (CID).
-  rdm::Uid uid;               ///< The controller's RDM UID. For a dynamic UID, use ::rdm::Uid::BrokerDynamicUidRequest().
+  etcpal::Uuid cid;  ///< The controller's Component Identifier (CID).
+  rdm::Uid uid;      ///< The controller's RDM UID. For a dynamic UID, use ::rdm::Uid::BrokerDynamicUidRequest().
   std::string search_domain;  ///< The controller's search domain for discovering brokers.
 
   /// Create an empty, invalid data structure by default.
@@ -183,7 +183,8 @@ bool ControllerData::IsValid() const
 /// ESTA manufacturer ID.
 inline ControllerData ControllerData::Default(uint16_t manufacturer_id)
 {
-  return ControllerData(etcpal::Uuid::OsPreferred(), rdm::Uid::BrokerDynamicUidRequest(manufacturer_id), E133_DEFAULT_DOMAIN);
+  return ControllerData(etcpal::Uuid::OsPreferred(), rdm::Uid::BrokerDynamicUidRequest(manufacturer_id),
+                        E133_DEFAULT_DOMAIN);
 }
 
 /// A set of initial identifying RDM data to use for a controller.
@@ -344,8 +345,9 @@ extern "C" inline void ControllerLibCbStatusReceived(rdmnet_controller_t handle,
 }
 
 extern "C" inline void ControllerLibCbBrokerDynamicUidMappingsReceived(rdmnet_controller_t handle,
-                                                                 rdmnet_client_scope_t scope_handle,
-                                                                 const BrokerDynamicUidAssignmentList* list, void* context)
+                                                                       rdmnet_client_scope_t scope_handle,
+                                                                       const BrokerDynamicUidAssignmentList* list,
+                                                                       void* context)
 {
   if (list && context)
   {

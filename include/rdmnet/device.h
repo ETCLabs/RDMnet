@@ -86,7 +86,8 @@ typedef struct RdmnetDeviceCallbacks
    * \param[in] cmd The RDM command data.
    * \param[in] context Context pointer that was given at the creation of the device instance.
    */
-  void (*rdm_command_received)(rdmnet_device_t handle, const RdmnetRemoteRdmCommand* cmd, void* context);
+  rdmnet_response_action_t (*rdm_command_received)(rdmnet_device_t handle, const RdmnetRemoteRdmCommand* cmd,
+                                                   void* context);
 
   /*!
    * \brief An RDM command has been received over LLRP, addressed to a device.
@@ -94,7 +95,8 @@ typedef struct RdmnetDeviceCallbacks
    * \param[in] cmd The RDM command data.
    * \param[in] context Context pointer that was given at the creation of the device instance.
    */
-  void (*llrp_rdm_command_received)(rdmnet_device_t handle, const LlrpRemoteRdmCommand* cmd, void* context);
+  rdmnet_response_action_t (*llrp_rdm_command_received)(rdmnet_device_t handle, const LlrpRemoteRdmCommand* cmd,
+                                                        void* context);
 
   /*!
    * \brief A set of previously-requested dynamic UID assignments has been received.
@@ -102,7 +104,8 @@ typedef struct RdmnetDeviceCallbacks
    * \param[in] list The list of dynamic UID assignments.
    * \param[in] context Context pointer that was given at the creation of the device instance.
    */
-  void (*dynamic_uid_assignments_received)(rdmnet_device_t handle, const BrokerDynamicUidAssignmentList* list, void* context);
+  void (*dynamic_uid_assignments_received)(rdmnet_device_t handle, const BrokerDynamicUidAssignmentList* list,
+                                           void* context);
 } RdmnetDeviceCallbacks;
 
 /*! A set of information that defines the startup parameters of an RDMnet Device. */
