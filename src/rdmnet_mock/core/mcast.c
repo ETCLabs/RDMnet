@@ -28,8 +28,9 @@ DEFINE_FAKE_VALUE_FUNC(const EtcPalMacAddr*, rdmnet_get_lowest_mac_addr);
 
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_get_mcast_send_socket, const RdmnetMcastNetintId*, etcpal_socket_t*);
 DEFINE_FAKE_VOID_FUNC(rdmnet_release_mcast_send_socket, const RdmnetMcastNetintId*);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_create_mcast_recv_socket, const EtcPalIpAddr*, uint16_t, etcpal_socket_t*);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_create_mcast_recv_socket, const EtcPalIpAddr*, uint16_t,
+                       etcpal_socket_t*);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_subscribe_mcast_recv_socket, etcpal_socket_t, const RdmnetMcastNetintId*,
                        const EtcPalIpAddr*);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_unsubscribe_mcast_recv_socket, etcpal_socket_t, const RdmnetMcastNetintId*,
-                       const EtcPalIpAddr*);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_unsubscribe_mcast_recv_socket, etcpal_socket_t,
+                       const RdmnetMcastNetintId*, const EtcPalIpAddr*);

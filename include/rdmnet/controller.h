@@ -25,7 +25,7 @@
 #ifndef RDMNET_CONTROLLER_H_
 #define RDMNET_CONTROLLER_H_
 
-#include "etcpal/bool.h"
+#include <stdbool.h>
 #include "etcpal/uuid.h"
 #include "etcpal/inet.h"
 #include "rdm/uid.h"
@@ -123,7 +123,7 @@ typedef struct RdmnetControllerCallbacks
    * \param[in] context Context pointer that was given at the creation of the controller instance.
    */
   void (*rdm_response_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                const RemoteRdmResponse* resp, void* context);
+                                const RdmnetRemoteRdmResponse* resp, void* context);
 
   /*!
    * \brief An RPT status message has been received in response to a previously-sent RDM command.
@@ -158,7 +158,7 @@ typedef struct RdmnetControllerRdmCmdCallbacks
    * \param[in] context Context pointer that was given at the creation of the controller instance.
    */
   void (*rdm_command_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                               const RemoteRdmCommand* cmd, void* context);
+                               const RdmnetRemoteRdmCommand* cmd, void* context);
 
   /*!
    * \brief An RDM command has been received over LLRP, addressed to a controller.
@@ -306,9 +306,9 @@ etcpal_error_t rdmnet_controller_get_scope(rdmnet_controller_t handle, rdmnet_cl
                                            RdmnetScopeConfig* scope_config);
 
 etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                  const LocalRdmCommand* cmd, uint32_t* seq_num);
+                                                  const RdmnetLocalRdmCommand* cmd, uint32_t* seq_num);
 etcpal_error_t rdmnet_controller_send_rdm_response(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                   const LocalRdmResponse* resp);
+                                                   const RdmnetLocalRdmResponse* resp);
 etcpal_error_t rdmnet_controller_send_llrp_response(rdmnet_controller_t handle, const LlrpLocalRdmResponse* resp);
 
 etcpal_error_t rdmnet_controller_request_client_list(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle);

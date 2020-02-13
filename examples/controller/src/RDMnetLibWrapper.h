@@ -37,9 +37,9 @@ public:
   virtual void ClientListUpdate(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
                                 client_list_action_t list_action, const RptClientList* list) = 0;
   virtual void RdmResponseReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                   const RemoteRdmResponse* resp) = 0;
+                                   const RdmnetRemoteRdmResponse* resp) = 0;
   virtual void RdmCommandReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                  const RemoteRdmCommand* cmd) = 0;
+                                  const RdmnetRemoteRdmCommand* cmd) = 0;
   virtual void StatusReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
                               const RemoteRptStatus* status) = 0;
   virtual void LlrpRdmCommandReceived(rdmnet_controller_t handle, const LlrpRemoteRdmCommand* cmd) = 0;
@@ -57,9 +57,9 @@ public:
                                  StaticBrokerConfig static_broker = StaticBrokerConfig()) override;
   bool RemoveScope(rdmnet_client_scope_t scope_handle, rdmnet_disconnect_reason_t reason) override;
 
-  bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand& cmd) override;
-  bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand& cmd, uint32_t& seq_num) override;
-  bool SendRdmResponse(rdmnet_client_scope_t scope_handle, const LocalRdmResponse& resp) override;
+  bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const RdmnetLocalRdmCommand& cmd) override;
+  bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const RdmnetLocalRdmCommand& cmd, uint32_t& seq_num) override;
+  bool SendRdmResponse(rdmnet_client_scope_t scope_handle, const RdmnetLocalRdmResponse& resp) override;
   bool SendLlrpResponse(const LlrpLocalRdmResponse& resp) override;
   bool RequestClientList(rdmnet_client_scope_t scope_handle) override;
 
@@ -74,9 +74,9 @@ protected:
   virtual void ClientListUpdate(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
                                 client_list_action_t list_action, const RptClientList* list) override;
   virtual void RdmResponseReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                   const RemoteRdmResponse* resp) override;
+                                   const RdmnetRemoteRdmResponse* resp) override;
   virtual void RdmCommandReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                  const RemoteRdmCommand* cmd) override;
+                                  const RdmnetRemoteRdmCommand* cmd) override;
   virtual void StatusReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
                               const RemoteRptStatus* status) override;
   virtual void LlrpRdmCommandReceived(rdmnet_controller_t handle, const LlrpRemoteRdmCommand* cmd) override;

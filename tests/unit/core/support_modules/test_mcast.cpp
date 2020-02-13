@@ -49,7 +49,7 @@ protected:
     iface.addr = etcpal::IpAddr::FromString("10.101.1.20").get();
     iface.mask = etcpal::IpAddr::FromString("255.255.0.0").get();
     iface.mac = etcpal::MacAddr::FromString("10:00:00:00:00:01").get();
-    std::strcpy(iface.name, "if1");
+    std::strcpy(iface.id, "if1");
     std::strcpy(iface.friendly_name, "Interface 1");
     netint_arr_.push_back(iface);
 
@@ -58,7 +58,7 @@ protected:
     iface.addr = etcpal::IpAddr::FromString("fe80::1:2:3:4").get();
     iface.mask = etcpal::IpAddr::NetmaskV6(64).get();
     iface.mac = etcpal::MacAddr::FromString("00:00:00:00:00:02").get();
-    std::strcpy(iface.name, "if2");
+    std::strcpy(iface.id, "if2");
     std::strcpy(iface.friendly_name, "Interface 2");
     netint_arr_.push_back(iface);
 
@@ -67,7 +67,7 @@ protected:
     iface.addr = etcpal::IpAddr::FromString("192.168.30.4").get();
     iface.mask = etcpal::IpAddr::FromString("255.255.255.0").get();
     iface.mac = etcpal::MacAddr::FromString("00:10:00:00:00:01").get();
-    std::strcpy(iface.name, "if3");
+    std::strcpy(iface.id, "if3");
     std::strcpy(iface.friendly_name, "Interface 3");
     netint_arr_.push_back(iface);
 

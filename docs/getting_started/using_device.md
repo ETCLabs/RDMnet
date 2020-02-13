@@ -40,10 +40,10 @@ rdmnet_device_deinit();
 etcpal::Logger logger;
 // Initialize and start logger...
 
-etcpal::Result init_result = rdmnet::Device::Init(logger);
+etcpal::Error init_result = rdmnet::Device::Init(logger);
 
 // Or, to init without worrying about logs from the RDMnet library...
-etcpal::Result init_result = rdmnet::Device::Init();
+etcpal::Error init_result = rdmnet::Device::Init();
 
 // In some function called at shutdown...
 rdmnet::Device::Deinit();
@@ -107,7 +107,7 @@ rdmnet::Device device;
 
 // In this example we are using the convenience method to startup with the default scope. The
 // Startup() overloads can be used to specify a scope to start on.
-etcpal::Result result = device.StartupWithDefaultScope(my_device_notify_handler, device_data);
+etcpal::Error result = device.StartupWithDefaultScope(my_device_notify_handler, device_data);
 if (result)
 {
   // Device is valid and running.

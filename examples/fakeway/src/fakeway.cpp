@@ -39,7 +39,7 @@ bool PhysicalEndpoint::QueueMessageForResponder(const RdmUid& uid, std::unique_p
   return false;
 }
 
-void PhysicalEndpoint::GotResponse(const RdmUid& uid, const RemoteRdmCommand* cmd)
+void PhysicalEndpoint::GotResponse(const RdmUid& uid, const RdmnetRemoteRdmCommand* cmd)
 {
   // Cleanup the command from our queue
   etcpal::MutexGuard responder_guard(responder_lock_);
@@ -147,7 +147,7 @@ void Fakeway::Disconnected(const RdmnetClientDisconnectedInfo& info)
             info.will_retry ? " Retrying..." : "");
 }
 
-void Fakeway::RdmCommandReceived(const RemoteRdmCommand& cmd)
+void Fakeway::RdmCommandReceived(const RdmnetRemoteRdmCommand& cmd)
 {
   if (cmd.dest_endpoint == E133_NULL_ENDPOINT)
   {
@@ -206,7 +206,7 @@ void Fakeway::LlrpRdmCommandReceived(const LlrpRemoteRdmCommand& cmd)
   }
 }
 
-void Fakeway::ProcessDefRespRdmCommand(const RemoteRdmCommand& cmd, RdmnetConfigChange& config_change)
+void Fakeway::ProcessDefRespRdmCommand(const RdmnetRemoteRdmCommand& cmd, RdmnetConfigChange& config_change)
 {
   const RdmCommand& rdm = cmd.rdm;
   if (rdm.command_class != kRdmCCGetCommand && rdm.command_class != kRdmCCSetCommand)
@@ -334,7 +334,7 @@ bool Fakeway::ProcessDefRespRdmCommand(const RdmCommand& cmd, std::vector<RdmRes
   return res;
 }
 
-void Fakeway::SendRptStatus(const RemoteRdmCommand& received_cmd, rpt_status_code_t status_code)
+void Fakeway::SendRptStatus(const RdmnetRemoteRdmCommand& received_cmd, rpt_status_code_t status_code)
 {
   LocalRptStatus status;
   rdmnet_create_status_from_command(&received_cmd, status_code, &status);
@@ -343,7 +343,7 @@ void Fakeway::SendRptStatus(const RemoteRdmCommand& received_cmd, rpt_status_cod
     log_.Error("Error sending RPT Status message to Broker.");
 }
 
-void Fakeway::SendRptNack(const RemoteRdmCommand& received_cmd, uint16_t nack_reason)
+void Fakeway::SendRptNack(const RdmnetRemoteRdmCommand& received_cmd, uint16_t nack_reason)
 {
   RdmResponse resp_data;
   RDM_CREATE_NACK_FROM_COMMAND(&resp_data, &received_cmd.rdm, nack_reason);
@@ -352,9 +352,9 @@ void Fakeway::SendRptNack(const RemoteRdmCommand& received_cmd, uint16_t nack_re
   SendRptResponse(received_cmd, resp_list);
 }
 
-void Fakeway::SendRptResponse(const RemoteRdmCommand& received_cmd, std::vector<RdmResponse>& resp_list)
+void Fakeway::SendRptResponse(const RdmnetRemoteRdmCommand& received_cmd, std::vector<RdmResponse>& resp_list)
 {
-  LocalRdmResponse resp_to_send;
+  RdmnetLocalRdmResponse resp_to_send;
   rdmnet_create_response_from_command(&received_cmd, resp_list.data(), resp_list.size(), &resp_to_send);
 
   if (!rdmnet_->SendRdmResponse(resp_to_send))
@@ -363,7 +363,7 @@ void Fakeway::SendRptResponse(const RemoteRdmCommand& received_cmd, std::vector<
 
 void Fakeway::SendUnsolicitedRptResponse(uint16_t from_endpoint, std::vector<RdmResponse>& resp_list)
 {
-  LocalRdmResponse resp_to_send;
+  RdmnetLocalRdmResponse resp_to_send;
   rdmnet_create_unsolicited_response(from_endpoint, resp_list.data(), resp_list.size(), &resp_to_send);
 
   if (!rdmnet_->SendRdmResponse(resp_to_send))
@@ -493,7 +493,7 @@ void Fakeway::HandleNewRdmResponderDiscovered(unsigned int gadget_id, unsigned i
           FakewayDefaultResponder::ParamDataList param_data;
           uint16_t nack_reason;
           std::array<uint8_t, 2> endpt_buf;
-          etcpal_pack_16b(endpt_buf.data(), endpt_pair->first);
+          etcpal_pack_u16b(endpt_buf.data(), endpt_pair->first);
           if (def_resp_->Get(E137_7_ENDPOINT_RESPONDER_LIST_CHANGE, endpt_buf.data(), 2, param_data, nack_reason) &&
               param_data.size() == 1)
           {
@@ -530,7 +530,7 @@ void Fakeway::HandleRdmResponse(unsigned int gadget_id, unsigned int port_number
     auto endpt_pair = physical_endpoints_.find(dev_pair->second[port_number - 1]);
     if (endpt_pair != physical_endpoints_.end())
     {
-      const RemoteRdmCommand* received_cmd = static_cast<const RemoteRdmCommand*>(cookie);
+      const RdmnetRemoteRdmCommand* received_cmd = static_cast<const RdmnetRemoteRdmCommand*>(cookie);
       RdmUid resp_src_uid{cmd.getManufacturerId(), cmd.getDeviceId()};
 
       RdmResponse resp_data;
@@ -562,7 +562,7 @@ void Fakeway::HandleRdmResponse(unsigned int gadget_id, unsigned int port_number
 void Fakeway::HandleRdmTimeout(unsigned int gadget_id, unsigned int port_number, const RDM_CmdC& orig_cmd,
                                const void* cookie)
 {
-  const RemoteRdmCommand* received_cmd = static_cast<const RemoteRdmCommand*>(cookie);
+  const RdmnetRemoteRdmCommand* received_cmd = static_cast<const RdmnetRemoteRdmCommand*>(cookie);
   if (received_cmd)
   {
     etcpal::ReadGuard endpoint_read(endpoint_lock_);
@@ -609,7 +609,7 @@ void Fakeway::HandleRdmResponderLost(unsigned int gadget_id, unsigned int port_n
         FakewayDefaultResponder::ParamDataList param_data;
         uint16_t nack_reason;
         std::array<uint8_t, 2> endpt_buf;
-        etcpal_pack_16b(endpt_buf.data(), endpt_pair->first);
+        etcpal_pack_u16b(endpt_buf.data(), endpt_pair->first);
         if (def_resp_->Get(E137_7_ENDPOINT_RESPONDER_LIST_CHANGE, endpt_buf.data(), 2, param_data, nack_reason) &&
             param_data.size() == 1)
         {

@@ -37,8 +37,7 @@ protected:
 
   TestRptClientApi()
   {
-    rdmnet_safe_strncpy(default_dynamic_scope_.scope, "default", E133_SCOPE_STRING_PADDED_LENGTH);
-    default_dynamic_scope_.has_static_broker_addr = false;
+    RDMNET_CLIENT_SET_DEFAULT_SCOPE(&default_dynamic_scope_);
 
     rpt_callbacks_.connected = rdmnet_client_connected;
     rpt_callbacks_.disconnected = rdmnet_client_disconnected;
@@ -97,9 +96,10 @@ TEST_F(TestRptClientApi, ClientCreateValidCallsSucceed)
 
   for (size_t i = 0; i < 100; ++i)
   {
-    RdmnetScopeConfig tmp_scope = default_dynamic_scope_;
+    std::string scope_str = E133_DEFAULT_SCOPE + std::to_string(i);
+    RdmnetScopeConfig tmp_scope;
+    RDMNET_CLIENT_SET_SCOPE(&tmp_scope, scope_str.c_str());
     rdmnet_client_scope_t tmp_handle;
-    RDMNET_MSVC_NO_DEP_WRN strcat(tmp_scope.scope, std::to_string(i).c_str());
     ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(handle_2, &tmp_scope, &tmp_handle));
   }
 }
@@ -111,7 +111,7 @@ TEST_F(TestRptClientApi, SendRdmCommandInvalidCallsFail)
   ASSERT_EQ(kEtcPalErrOk, rdmnet_rpt_client_create(&default_rpt_config_, &handle));
   ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(handle, &default_dynamic_scope_, &scope_handle));
 
-  LocalRdmCommand cmd;
+  RdmnetLocalRdmCommand cmd;
   uint32_t seq_num = 0;
 
   // Core not initialized
@@ -132,7 +132,7 @@ TEST_F(TestRptClientApi, SendRdmResponseInvalidCallsFail)
   ASSERT_EQ(kEtcPalErrOk, rdmnet_rpt_client_create(&default_rpt_config_, &handle));
   ASSERT_EQ(kEtcPalErrOk, rdmnet_client_add_scope(handle, &default_dynamic_scope_, &scope_handle));
 
-  LocalRdmResponse resp;
+  RdmnetLocalRdmResponse resp;
 
   // Core not initialized
   rdmnet_core_initialized_fake.return_val = false;

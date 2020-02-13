@@ -214,7 +214,7 @@ etcpal_error_t rdmnet_device_destroy(rdmnet_device_t handle, rdmnet_disconnect_r
 /*!
  * \brief Send an RDM response from a device.
  *
- * The LocalRdmResponse struct should be filled in using rdmnet_create_response_from_command() or
+ * The RdmnetLocalRdmResponse struct should be filled in using rdmnet_create_response_from_command() or
  * rdmnet_create_unsolicited_response(), which will ensure that the members are set properly.
  *
  * \param[in] handle Handle to the device from which to send the RDM response.
@@ -223,7 +223,7 @@ etcpal_error_t rdmnet_device_destroy(rdmnet_device_t handle, rdmnet_disconnect_r
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return Other errors forwarded from rdmnet_rpt_client_send_rdm_response().
  */
-etcpal_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const LocalRdmResponse* resp)
+etcpal_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const RdmnetLocalRdmResponse* resp)
 {
   if (!handle)
     return kEtcPalErrInvalid;

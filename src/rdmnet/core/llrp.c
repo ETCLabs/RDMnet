@@ -186,7 +186,8 @@ etcpal_error_t llrp_recv_netint_add(const RdmnetMcastNetintId* id, llrp_socket_t
 
     if (res == kEtcPalErrOk && netint->ref_count == 0)
     {
-      res = rdmnet_subscribe_mcast_recv_socket(recv_sock->socket, &netint->id, get_llrp_mcast_addr(llrp_type, id->ip_type));
+      res = rdmnet_subscribe_mcast_recv_socket(recv_sock->socket, &netint->id,
+                                               get_llrp_mcast_addr(llrp_type, id->ip_type));
     }
 
     if (res == kEtcPalErrOk)

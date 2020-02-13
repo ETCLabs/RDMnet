@@ -25,7 +25,7 @@
 #ifndef RDMNET_PRIVATE_UTIL_H_
 #define RDMNET_PRIVATE_UTIL_H_
 
-#include "etcpal/bool.h"
+#include <stdbool.h>
 
 typedef bool (*HandleValueInUseFunction)(int handle_val);
 

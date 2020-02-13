@@ -40,8 +40,8 @@ extern "C" {
  *************************************************************************************************/
 
 extern etcpal_mutex_t rdmnet_disc_lock;
-#define RDMNET_DISC_LOCK() etcpal_mutex_take(&rdmnet_disc_lock)
-#define RDMNET_DISC_UNLOCK() etcpal_mutex_give(&rdmnet_disc_lock)
+#define RDMNET_DISC_LOCK() etcpal_mutex_lock(&rdmnet_disc_lock)
+#define RDMNET_DISC_UNLOCK() etcpal_mutex_unlock(&rdmnet_disc_lock)
 
 /**************************************************************************************************
  * Platform-neutral functions callable from both common.c and the platform-specific sources

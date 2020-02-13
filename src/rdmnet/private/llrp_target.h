@@ -20,8 +20,8 @@
 #ifndef RDMNET_PRIVATE_LLRP_TARGET_H_
 #define RDMNET_PRIVATE_LLRP_TARGET_H_
 
+#include <stdbool.h>
 #include <stdint.h>
-#include "etcpal/bool.h"
 #include "etcpal/socket.h"
 #include "etcpal/timer.h"
 #include "etcpal/uuid.h"

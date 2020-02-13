@@ -36,7 +36,8 @@ class MockControllerNotifyHandler : public rdmnet::ControllerNotifyHandler
                const RptClientList& list),
               (override));
   MOCK_METHOD(void, HandleRdmResponse,
-              (rdmnet::Controller & controller, rdmnet::ScopeHandle scope, const RemoteRdmResponse& resp), (override));
+              (rdmnet::Controller & controller, rdmnet::ScopeHandle scope, const RdmnetRemoteRdmResponse& resp),
+              (override));
   MOCK_METHOD(void, HandleRptStatus,
               (rdmnet::Controller & controller, rdmnet::ScopeHandle scope, const RemoteRptStatus& status), (override));
 };
@@ -44,7 +45,8 @@ class MockControllerNotifyHandler : public rdmnet::ControllerNotifyHandler
 class MockControllerRdmHandler : public rdmnet::ControllerRdmCommandHandler
 {
   MOCK_METHOD(void, HandleRdmCommand,
-              (rdmnet::Controller & controller, rdmnet::ScopeHandle scope, const RemoteRdmCommand& cmd), (override));
+              (rdmnet::Controller & controller, rdmnet::ScopeHandle scope, const RdmnetRemoteRdmCommand& cmd),
+              (override));
   MOCK_METHOD(void, HandleLlrpRdmCommand, (rdmnet::Controller & controller, const LlrpRemoteRdmCommand& cmd),
               (override));
 };
@@ -63,7 +65,7 @@ TEST_F(TestCppControllerApi, StartupWithRdmData)
   rdmnet::ControllerRdmData rdm("Test", "Test", "Test", "Test");
   rdmnet::Controller controller;
 
-  EXPECT_EQ(controller.Startup(notify, rdm, rdmnet::ControllerData::Default(0x6574)), kEtcPalErrOk);
+  EXPECT_EQ(controller.Startup(notify, rdmnet::ControllerData::Default(0x6574), rdm), kEtcPalErrOk);
 }
 
 TEST_F(TestCppControllerApi, StartupWithRdmHandler)
@@ -72,5 +74,5 @@ TEST_F(TestCppControllerApi, StartupWithRdmHandler)
   MockControllerRdmHandler rdm;
   rdmnet::Controller controller;
 
-  EXPECT_EQ(controller.Startup(notify, rdm, rdmnet::ControllerData::Default(0x6574)), kEtcPalErrOk);
+  EXPECT_EQ(controller.Startup(notify, rdmnet::ControllerData::Default(0x6574), rdm), kEtcPalErrOk);
 }

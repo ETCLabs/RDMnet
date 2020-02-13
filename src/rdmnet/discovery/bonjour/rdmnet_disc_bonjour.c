@@ -18,10 +18,10 @@
  *****************************************************************************/
 
 #include <assert.h>
-#include <string.h>
-#include <stdlib.h>
+#include <stdbool.h>
 #include <stdio.h>
-#include "etcpal/bool.h"
+#include <stdlib.h>
+#include <string.h>
 #include "etcpal/inet.h"
 #include "etcpal/pack.h"
 #include "rdmnet/core/util.h"
@@ -204,7 +204,7 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef sdRef, DNSServiceFlags
     if (getaddrinfo_err == kDNSServiceErr_NoError)
     {
       // Update the broker info.
-      db->info.port = etcpal_upack_16b((const uint8_t*)&port);
+      db->info.port = etcpal_unpack_u16b((const uint8_t*)&port);
       txt_record_to_broker_info(txtRecord, txtLen, &db->info);
 
       db->platform_data.state = kResolveStateGetAddrInfo;
@@ -356,7 +356,7 @@ etcpal_error_t rdmnet_disc_platform_register_broker(const RdmnetBrokerDiscInfo* 
 {
   // Before we start the registration, we have to massage a few parameters
   uint16_t net_port = 0;
-  etcpal_pack_16b((uint8_t*)&net_port, info->port);
+  etcpal_pack_u16b((uint8_t*)&net_port, info->port);
 
   char reg_str[REGISTRATION_STRING_PADDED_LENGTH];
   get_registration_string(E133_DNSSD_SRV_TYPE, info->scope, reg_str);

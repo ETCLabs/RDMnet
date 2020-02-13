@@ -17,42 +17,50 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef RDMNET_PRIVATE_LLRP_H_
-#define RDMNET_PRIVATE_LLRP_H_
+#ifndef RDMNET_CPP_MESSAGE_H_
+#define RDMNET_CPP_MESSAGE_H_
 
-#include <stdbool.h>
-#include "etcpal/error.h"
-#include "etcpal/inet.h"
-#include "etcpal/rbtree.h"
-#include "etcpal/socket.h"
-#include "rdmnet/core.h"
-#include "rdmnet/core/llrp.h"
+#include "rdm/cpp/uid.h"
+#include "rdm/cpp/message.h"
+#include "rdmnet/core/message.h"
 
-typedef enum
+namespace rdmnet
 {
-  kLlrpSocketTypeManager,
-  kLlrpSocketTypeTarget
-} llrp_socket_t;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-extern const EtcPalSockAddr* kLlrpIpv4RespAddr;
-extern const EtcPalSockAddr* kLlrpIpv6RespAddr;
-extern const EtcPalSockAddr* kLlrpIpv4RequestAddr;
-extern const EtcPalSockAddr* kLlrpIpv6RequestAddr;
-
-etcpal_error_t rdmnet_llrp_init(void);
-void rdmnet_llrp_deinit(void);
-
-void rdmnet_llrp_tick(void);
-
-etcpal_error_t llrp_recv_netint_add(const RdmnetMcastNetintId* netint, llrp_socket_t llrp_type);
-void llrp_recv_netint_remove(const RdmnetMcastNetintId* netint, llrp_socket_t llrp_type);
-
-#ifdef __cplusplus
+template <class Message>
+rdm::Uid GetSourceUid(const Message& msg)
+{
+  return msg.source_uid;
 }
-#endif
 
-#endif /* RDMNET_PRIVATE_LLRP_H_ */
+template <class Message>
+rdm::Uid GetDestUid(const Message& msg)
+{
+  return msg.dest_uid;
+}
+
+template <class Message>
+uint16_t GetDestEndpoint(const Message& msg)
+{
+  return msg.dest_endpoint;
+}
+
+template <class Message>
+uint32_t GetSeqNum(const Message& msg)
+{
+  return msg.seq_num;
+}
+
+template <class Message>
+rdm::Command GetRdmCommand(const Message& msg)
+{
+  return msg.rdm_command;
+}
+
+template <class Message>
+rdm::Command GetOriginalCommand(const Message& msg)
+{
+  return msg.original_command;
+}
+
+};      // namespace rdmnet
+#endif  // RDMNET_CPP_MESSAGE_H_

@@ -300,7 +300,7 @@ bool FakewayDefaultResponder::SetComponentScope(const uint8_t* param_data, uint8
   if (param_data_len == (2 + E133_SCOPE_STRING_PADDED_LENGTH + 1 + 4 + 16 + 2) &&
       param_data[1 + E133_SCOPE_STRING_PADDED_LENGTH] == '\0')
   {
-    if (etcpal_upack_16b(param_data) == 1)
+    if (etcpal_unpack_u16b(param_data) == 1)
     {
       const uint8_t* cur_ptr = param_data + 2;
       RdmnetScopeConfig new_scope_config{};
@@ -312,16 +312,16 @@ bool FakewayDefaultResponder::SetComponentScope(const uint8_t* param_data, uint8
       switch (*cur_ptr++)
       {
         case E133_STATIC_CONFIG_IPV4:
-          ETCPAL_IP_SET_V4_ADDRESS(&new_scope_config.static_broker_addr.ip, etcpal_upack_32b(cur_ptr));
+          ETCPAL_IP_SET_V4_ADDRESS(&new_scope_config.static_broker_addr.ip, etcpal_unpack_u32b(cur_ptr));
           cur_ptr += 4 + 16;
-          new_scope_config.static_broker_addr.port = etcpal_upack_16b(cur_ptr);
+          new_scope_config.static_broker_addr.port = etcpal_unpack_u16b(cur_ptr);
           new_scope_config.has_static_broker_addr = true;
           break;
         case E133_STATIC_CONFIG_IPV6:
           cur_ptr += 4;
           ETCPAL_IP_SET_V6_ADDRESS(&new_scope_config.static_broker_addr.ip, cur_ptr);
           cur_ptr += 16;
-          new_scope_config.static_broker_addr.port = etcpal_upack_16b(cur_ptr);
+          new_scope_config.static_broker_addr.port = etcpal_unpack_u16b(cur_ptr);
           new_scope_config.has_static_broker_addr = true;
           break;
         case E133_NO_STATIC_CONFIG:
@@ -437,13 +437,13 @@ bool FakewayDefaultResponder::GetComponentScope(const uint8_t* param_data, uint8
 {
   if (param_data_len >= 2)
   {
-    if (etcpal_upack_16b(param_data) == 1)
+    if (etcpal_unpack_u16b(param_data) == 1)
     {
       RdmParamData pd;
 
       // Pack the scope
       uint8_t* cur_ptr = pd.data;
-      etcpal_pack_16b(cur_ptr, 1);
+      etcpal_pack_u16b(cur_ptr, 1);
       cur_ptr += 2;
       rdmnet_safe_strncpy((char*)cur_ptr, scope_config_.scope, E133_SCOPE_STRING_PADDED_LENGTH);
       cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
@@ -454,9 +454,9 @@ bool FakewayDefaultResponder::GetComponentScope(const uint8_t* param_data, uint8
         if (ETCPAL_IP_IS_V4(&scope_config_.static_broker_addr.ip))
         {
           *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
-          etcpal_pack_32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&scope_config_.static_broker_addr.ip));
+          etcpal_pack_u32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&scope_config_.static_broker_addr.ip));
           cur_ptr += 4 + 16;
-          etcpal_pack_16b(cur_ptr, scope_config_.static_broker_addr.port);
+          etcpal_pack_u16b(cur_ptr, scope_config_.static_broker_addr.port);
           cur_ptr += 2;
         }
         else  // V6
@@ -465,7 +465,7 @@ bool FakewayDefaultResponder::GetComponentScope(const uint8_t* param_data, uint8
           cur_ptr += 4;
           memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&scope_config_.static_broker_addr.ip), 16);
           cur_ptr += 16;
-          etcpal_pack_16b(cur_ptr, scope_config_.static_broker_addr.port);
+          etcpal_pack_u16b(cur_ptr, scope_config_.static_broker_addr.port);
           cur_ptr += 2;
         }
       }
@@ -511,21 +511,21 @@ bool FakewayDefaultResponder::GetTcpCommsStatus(const uint8_t* /*param_data*/, u
   cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
   if (cur_broker_addr_.ip().IsV4())
   {
-    etcpal_pack_32b(cur_ptr, cur_broker_addr_.ip().v4_data());
+    etcpal_pack_u32b(cur_ptr, cur_broker_addr_.ip().v4_data());
     cur_ptr += 4;
     memset(cur_ptr, 0, ETCPAL_IPV6_BYTES);
     cur_ptr += ETCPAL_IPV6_BYTES;
   }
   else
   {
-    etcpal_pack_32b(cur_ptr, 0);
+    etcpal_pack_u32b(cur_ptr, 0);
     cur_ptr += 4;
     memcpy(cur_ptr, cur_broker_addr_.ip().v6_data(), ETCPAL_IPV6_BYTES);
     cur_ptr += ETCPAL_IPV6_BYTES;
   }
-  etcpal_pack_16b(cur_ptr, cur_broker_addr_.port());
+  etcpal_pack_u16b(cur_ptr, cur_broker_addr_.port());
   cur_ptr += 2;
-  etcpal_pack_16b(cur_ptr, tcp_unhealthy_count_);
+  etcpal_pack_u16b(cur_ptr, tcp_unhealthy_count_);
   cur_ptr += 2;
   pd.datalen = (uint8_t)(cur_ptr - pd.data);
   resp_data_list.push_back(pd);
@@ -540,7 +540,7 @@ bool FakewayDefaultResponder::GetSupportedParameters(const uint8_t* /*param_data
 
   for (auto& pid : supported_pid_list_)
   {
-    etcpal_pack_16b(cur_ptr, pid);
+    etcpal_pack_u16b(cur_ptr, pid);
     cur_ptr += 2;
     if ((cur_ptr - pd.data) >= RDM_MAX_PDL - 1)
     {
@@ -602,12 +602,12 @@ bool FakewayDefaultResponder::GetEndpointList(const uint8_t* /*param_data*/, uin
   RdmParamData pd;
   uint8_t* cur_ptr = pd.data;
 
-  etcpal_pack_32b(cur_ptr, endpoint_change_number_);
+  etcpal_pack_u32b(cur_ptr, endpoint_change_number_);
   cur_ptr += 4;
 
   for (const auto& endpoint : endpoints_)
   {
-    etcpal_pack_16b(cur_ptr, endpoint.first);
+    etcpal_pack_u16b(cur_ptr, endpoint.first);
     cur_ptr += 2;
     *cur_ptr++ = E137_7_ENDPOINT_TYPE_PHYSICAL;
     if ((cur_ptr - pd.data) >= RDM_MAX_PDL - 2)
@@ -631,7 +631,7 @@ bool FakewayDefaultResponder::GetEndpointListChange(const uint8_t* param_data, u
   (void)nack_reason;
 
   RdmParamData pd;
-  etcpal_pack_32b(pd.data, endpoint_change_number_);
+  etcpal_pack_u32b(pd.data, endpoint_change_number_);
   pd.datalen = 4;
   resp_data_list.push_back(pd);
   return true;
@@ -642,22 +642,22 @@ bool FakewayDefaultResponder::GetEndpointResponders(const uint8_t* param_data, u
 {
   if (param_data_len >= 2)
   {
-    uint16_t endpoint_id = etcpal_upack_16b(param_data);
+    uint16_t endpoint_id = etcpal_unpack_u16b(param_data);
     const auto endpt_pair = endpoints_.find(endpoint_id);
     if (endpt_pair != endpoints_.end())
     {
       RdmParamData pd;
       uint8_t* cur_ptr = pd.data;
 
-      etcpal_pack_16b(cur_ptr, endpoint_id);
+      etcpal_pack_u16b(cur_ptr, endpoint_id);
       cur_ptr += 2;
-      etcpal_pack_32b(cur_ptr, endpt_pair->second.responder_change_number);
+      etcpal_pack_u32b(cur_ptr, endpt_pair->second.responder_change_number);
       cur_ptr += 4;
       for (const auto& responder : endpt_pair->second.responders)
       {
-        etcpal_pack_16b(cur_ptr, responder.manu);
+        etcpal_pack_u16b(cur_ptr, responder.manu);
         cur_ptr += 2;
-        etcpal_pack_32b(cur_ptr, responder.id);
+        etcpal_pack_u32b(cur_ptr, responder.id);
         cur_ptr += 4;
         if ((cur_ptr - pd.data) >= RDM_MAX_PDL - 5)
         {
@@ -688,13 +688,13 @@ bool FakewayDefaultResponder::GetEndpointResponderListChange(const uint8_t* para
 {
   if (param_data_len >= 2)
   {
-    uint16_t endpoint_id = etcpal_upack_16b(param_data);
+    uint16_t endpoint_id = etcpal_unpack_u16b(param_data);
     auto endpt_pair = endpoints_.find(endpoint_id);
     if (endpt_pair != endpoints_.end())
     {
       RdmParamData pd;
-      etcpal_pack_16b(pd.data, endpt_pair->first);
-      etcpal_pack_32b(&pd.data[2], endpt_pair->second.responder_change_number);
+      etcpal_pack_u16b(pd.data, endpt_pair->first);
+      etcpal_pack_u32b(&pd.data[2], endpt_pair->second.responder_change_number);
       pd.datalen = 6;
       resp_data_list.push_back(pd);
       return true;

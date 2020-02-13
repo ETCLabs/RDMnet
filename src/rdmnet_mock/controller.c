@@ -33,9 +33,9 @@ DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_controller_remove_scope, rdmnet_co
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_controller_get_scope, rdmnet_controller_t, rdmnet_client_scope_t,
                        RdmnetScopeConfig*);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_controller_send_rdm_command, rdmnet_controller_t, rdmnet_client_scope_t,
-                       const LocalRdmCommand*, uint32_t*);
+                       const RdmnetLocalRdmCommand*, uint32_t*);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_controller_send_rdm_response, rdmnet_controller_t, rdmnet_client_scope_t,
-                       const LocalRdmResponse*);
+                       const RdmnetLocalRdmResponse*);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_controller_send_llrp_response, rdmnet_controller_t,
                        const LlrpLocalRdmResponse*);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_controller_request_client_list, rdmnet_controller_t,

@@ -36,7 +36,7 @@ static void free_rpt_message(RptMessage* rmsg);
 
 /*************************** Function definitions ****************************/
 
-/*! \brief Initialize a LocalRdmResponse associated with a received RemoteRdmCommand.
+/*! \brief Initialize a RdmnetLocalRdmResponse associated with a received RdmnetRemoteRdmCommand.
  *
  *  Provide the received command and the array of RdmResponses to be sent in response.
  *
@@ -45,27 +45,27 @@ static void free_rpt_message(RptMessage* rmsg);
  *  \param[in] num_responses Number of RDM responses in responses array.
  *  \param[out] resp Response to fill in.
  */
-void rdmnet_create_response_from_command(const RemoteRdmCommand* received_cmd, const RdmResponse* responses,
-                                         size_t num_responses, LocalRdmResponse* resp)
+void rdmnet_create_response_from_command(const RdmnetRemoteRdmCommand* received_cmd, const RdmResponse* responses,
+                                         size_t num_responses, RdmnetLocalRdmResponse* resp)
 {
   if (received_cmd && responses && num_responses > 0 && resp)
   {
     // If we are ACK'ing a SET_COMMAND, we broadcast the response to keep other controllers
     // apprised of state.
-    resp->dest_uid =
-        (((received_cmd->rdm.command_class == kRdmCCSetCommand) && (responses[0].resp_type == kRdmResponseTypeAck))
-             ? kRdmnetControllerBroadcastUid
-             : received_cmd->source_uid);
+    resp->dest_uid = (((received_cmd->rdm_command.command_class == kRdmCCSetCommand) &&
+                       (responses[0].resp_type == kRdmResponseTypeAck))
+                          ? kRdmnetControllerBroadcastUid
+                          : received_cmd->source_uid);
     resp->source_endpoint = received_cmd->dest_endpoint;
     resp->seq_num = received_cmd->seq_num;
-    resp->command_included = true;
-    resp->cmd = received_cmd->rdm;
+    resp->original_command_included = true;
+    resp->original_command = received_cmd->rdm_command;
     resp->responses = responses;
     resp->num_responses = num_responses;
   }
 }
 
-/*! \brief Initialize an unsolicited LocalRdmResponse (without an associated command).
+/*! \brief Initialize an unsolicited RdmnetLocalRdmResponse (without an associated command).
  *
  *  Provide the array of RdmResponses to be sent.
  *
@@ -75,21 +75,21 @@ void rdmnet_create_response_from_command(const RemoteRdmCommand* received_cmd, c
  *  \param[out] resp Response to initialize.
  */
 void rdmnet_create_unsolicited_response(uint16_t source_endpoint, const RdmResponse* responses, size_t num_responses,
-                                        LocalRdmResponse* resp)
+                                        RdmnetLocalRdmResponse* resp)
 {
   if (responses && num_responses > 0 && resp)
   {
     resp->dest_uid = kRdmnetControllerBroadcastUid;
     resp->source_endpoint = source_endpoint;
     resp->seq_num = 0;
-    resp->command_included = false;
+    resp->original_command_included = false;
     resp->responses = responses;
     resp->num_responses = num_responses;
   }
 }
 
 /*! \brief Initialize an RptStatusMsg containing a status string, associated with a received
- *         RemoteRdmCommand.
+ *         RdmnetRemoteRdmCommand.
  *
  *  Provide the status code and string.
  *
@@ -98,8 +98,9 @@ void rdmnet_create_unsolicited_response(uint16_t source_endpoint, const RdmRespo
  *  \param[in] status_str Status string to be sent.
  *  \param[out] status LocalRptStatus to initialize.
  */
-void rdmnet_create_status_from_command_with_str(const RemoteRdmCommand* received_cmd, rpt_status_code_t status_code,
-                                                const char* status_str, LocalRptStatus* status)
+void rdmnet_create_status_from_command_with_str(const RdmnetRemoteRdmCommand* received_cmd,
+                                                rpt_status_code_t status_code, const char* status_str,
+                                                LocalRptStatus* status)
 {
   if (received_cmd && status)
   {
@@ -111,7 +112,7 @@ void rdmnet_create_status_from_command_with_str(const RemoteRdmCommand* received
   }
 }
 
-/*! \brief Initialize an RptStatusMsg associated with a received RemoteRdmCommand.
+/*! \brief Initialize an RptStatusMsg associated with a received RdmnetRemoteRdmCommand.
  *
  *  Provide the status code.
  *
@@ -119,7 +120,7 @@ void rdmnet_create_status_from_command_with_str(const RemoteRdmCommand* received
  *  \param[in] status_code Status code to be sent.
  *  \param[out] status LocalRptStatus to initialize.
  */
-void rdmnet_create_status_from_command(const RemoteRdmCommand* received_cmd, rpt_status_code_t status_code,
+void rdmnet_create_status_from_command(const RdmnetRemoteRdmCommand* received_cmd, rpt_status_code_t status_code,
                                        LocalRptStatus* status)
 {
   rdmnet_create_status_from_command_with_str(received_cmd, status_code, NULL, status);

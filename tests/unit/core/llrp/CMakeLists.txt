@@ -1,6 +1,6 @@
 # Unit tests for the RDMnet LLRP module
 
-add_executable(test_llrp
+rdmnet_add_unit_test(test_llrp
   # RDMnet LLRP unit test sources
   test_target.cpp
   main.cpp
@@ -18,8 +18,4 @@ add_executable(test_llrp
   # Real dependencies
   ${RDMNET_SRC}/rdmnet/core/util.c
 )
-
-target_include_directories(test_llrp PRIVATE ${RDMNET_INCLUDE} ${RDMNET_SRC})
-target_link_libraries(test_llrp EtcPalMock RDM gtest)
-set_target_properties(test_llrp PROPERTIES CXX_STANDARD 11 FOLDER tests)
-gtest_add_tests(TARGET test_llrp SKIP_DEPENDENCY)
+target_link_libraries(test_llrp PRIVATE EtcPalMock RDM)

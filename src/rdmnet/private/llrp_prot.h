@@ -20,10 +20,10 @@
 #ifndef RDMNET_PRIVATE_LLRP_PROT_H_
 #define RDMNET_PRIVATE_LLRP_PROT_H_
 
+#include <stdbool.h>
 #include <stdint.h>
-#include "etcpal/bool.h"
+#include "etcpal/acn_rlp.h"
 #include "etcpal/uuid.h"
-#include "etcpal/root_layer_pdu.h"
 #include "etcpal/socket.h"
 #include "rdm/uid.h"
 #include "rdm/message.h"

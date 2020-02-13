@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.12 CACHE STRING "Minimum macOS version targeted by RDMnet on macOS")
 project(RDMnet VERSION 0.3.0)
@@ -28,9 +28,21 @@ if(PROJECT_SOURCE_DIR_LC STREQUAL CMAKE_SOURCE_DIR_LC)
   # Allow folder grouping in generated IDE projects
   set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-  set(OPTION_DEFAULTS ON)
-else()
-  set(OPTION_DEFAULTS OFF)
+  # Add a target to run Clang Format
+  file(GLOB_RECURSE FILES_TO_REFORMAT 
+    examples/*.c
+    examples/*.cpp
+    examples/*.h
+    include/*.h
+    src/*.c
+    src/*.cpp
+    src/*.h
+    tests/*.c
+    tests/*.cpp
+    tests/*.h
+  )
+  add_custom_target(reformat_all COMMAND clang-format -i ${FILES_TO_REFORMAT})
+  set_target_properties(reformat_all PROPERTIES FOLDER tools)
 endif()
 
 set(RDMNET_ROOT ${CMAKE_CURRENT_LIST_DIR})

@@ -25,7 +25,7 @@
 #ifndef RDMNET_DEVICE_H_
 #define RDMNET_DEVICE_H_
 
-#include "etcpal/bool.h"
+#include <stdbool.h>
 #include "etcpal/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/client.h"
@@ -86,7 +86,7 @@ typedef struct RdmnetDeviceCallbacks
    * \param[in] cmd The RDM command data.
    * \param[in] context Context pointer that was given at the creation of the device instance.
    */
-  void (*rdm_command_received)(rdmnet_device_t handle, const RemoteRdmCommand* cmd, void* context);
+  void (*rdm_command_received)(rdmnet_device_t handle, const RdmnetRemoteRdmCommand* cmd, void* context);
 
   /*!
    * \brief An RDM command has been received over LLRP, addressed to a device.
@@ -159,7 +159,7 @@ void rdmnet_device_config_init(RdmnetDeviceConfig* config, uint16_t manufacturer
 etcpal_error_t rdmnet_device_create(const RdmnetDeviceConfig* config, rdmnet_device_t* handle);
 etcpal_error_t rdmnet_device_destroy(rdmnet_device_t handle, rdmnet_disconnect_reason_t disconnect_reason);
 
-etcpal_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const LocalRdmResponse* resp);
+etcpal_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const RdmnetLocalRdmResponse* resp);
 etcpal_error_t rdmnet_device_send_status(rdmnet_device_t handle, const LocalRptStatus* status);
 etcpal_error_t rdmnet_device_send_llrp_response(rdmnet_device_t handle, const LlrpLocalRdmResponse* resp);
 

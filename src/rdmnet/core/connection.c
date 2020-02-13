@@ -123,8 +123,8 @@ static RdmnetConnection* create_new_connection(const RdmnetConnectionConfig* con
 static void destroy_connection(RdmnetConnection* conn, bool remove_from_tree);
 static etcpal_error_t get_conn(rdmnet_conn_t handle, RdmnetConnection** conn);
 static void release_conn(RdmnetConnection* conn);
-static int conn_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b);
-static EtcPalRbNode* conn_node_alloc();
+static int conn_compare(const EtcPalRbTree* self, const void* value_a, const void* value_b);
+static EtcPalRbNode* conn_node_alloc(void);
 static void conn_node_free(EtcPalRbNode* node);
 
 /*************************** Function definitions ****************************/
@@ -144,7 +144,7 @@ etcpal_error_t rdmnet_conn_init()
 
   if (res == kEtcPalErrOk)
   {
-    etcpal_rbtree_init(&state.connections, conn_cmp, conn_node_alloc, conn_node_free);
+    etcpal_rbtree_init(&state.connections, conn_compare, conn_node_alloc, conn_node_free);
     init_int_handle_manager(&state.handle_mgr, conn_handle_in_use);
   }
 
@@ -673,7 +673,7 @@ void process_all_connection_state(ConnCallbackDispatchInfo* cb)
   RdmnetConnection* conn = (RdmnetConnection*)etcpal_rbiter_first(&conn_iter, &state.connections);
   while (conn)
   {
-    if (etcpal_mutex_take(&conn->lock))
+    if (etcpal_mutex_lock(&conn->lock))
     {
       switch (conn->state)
       {
@@ -728,7 +728,7 @@ void process_all_connection_state(ConnCallbackDispatchInfo* cb)
         default:
           break;
       }
-      etcpal_mutex_give(&conn->lock);
+      etcpal_mutex_unlock(&conn->lock);
     }
 
     conn = etcpal_rbiter_next(&conn_iter);
@@ -1117,14 +1117,14 @@ etcpal_error_t get_conn(rdmnet_conn_t handle, RdmnetConnection** conn)
     rdmnet_readunlock();
     return kEtcPalErrNotFound;
   }
-  if (!etcpal_mutex_take(&found_conn->lock))
+  if (!etcpal_mutex_lock(&found_conn->lock))
   {
     rdmnet_readunlock();
     return kEtcPalErrSys;
   }
   if (found_conn->state == kCSMarkedForDestruction)
   {
-    etcpal_mutex_give(&found_conn->lock);
+    etcpal_mutex_unlock(&found_conn->lock);
     rdmnet_readunlock();
     return kEtcPalErrNotFound;
   }
@@ -1134,21 +1134,20 @@ etcpal_error_t get_conn(rdmnet_conn_t handle, RdmnetConnection** conn)
 
 void release_conn(RdmnetConnection* conn)
 {
-  etcpal_mutex_give(&conn->lock);
+  etcpal_mutex_unlock(&conn->lock);
   rdmnet_readunlock();
 }
 
-int conn_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
+int conn_compare(const EtcPalRbTree* self, const void* value_a, const void* value_b)
 {
   RDMNET_UNUSED_ARG(self);
 
-  RdmnetConnection* a = (RdmnetConnection*)node_a->value;
-  RdmnetConnection* b = (RdmnetConnection*)node_b->value;
-
-  return a->handle - b->handle;
+  const RdmnetConnection* a = (const RdmnetConnection*)value_a;
+  const RdmnetConnection* b = (const RdmnetConnection*)value_b;
+  return (a->handle > b->handle) - (a->handle < b->handle);
 }
 
-EtcPalRbNode* conn_node_alloc()
+EtcPalRbNode* conn_node_alloc(void)
 {
 #if RDMNET_DYNAMIC_MEM
   return (EtcPalRbNode*)malloc(sizeof(EtcPalRbNode));

@@ -31,8 +31,8 @@ public:
   virtual void Disconnected(rdmnet_client_scope_t scope_handle, const RdmnetClientDisconnectedInfo& info) = 0;
   virtual void ClientListUpdate(rdmnet_client_scope_t scope_handle, client_list_action_t action,
                                 const RptClientList& list) = 0;
-  virtual void RdmCommandReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmCommand& cmd) = 0;
-  virtual void RdmResponseReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse& resp) = 0;
+  virtual void RdmCommandReceived(rdmnet_client_scope_t scope_handle, const RdmnetRemoteRdmCommand& cmd) = 0;
+  virtual void RdmResponseReceived(rdmnet_client_scope_t scope_handle, const RdmnetRemoteRdmResponse& resp) = 0;
   virtual void StatusReceived(rdmnet_client_scope_t scope_handle, const RemoteRptStatus& status) = 0;
   virtual void LlrpRdmCommandReceived(const LlrpRemoteRdmCommand& cmd) = 0;
 };
@@ -46,9 +46,10 @@ public:
   virtual rdmnet_client_scope_t AddScope(const std::string& scope,
                                          StaticBrokerConfig static_broker = StaticBrokerConfig()) = 0;
   virtual bool RemoveScope(rdmnet_client_scope_t scope_handle, rdmnet_disconnect_reason_t reason) = 0;
-  virtual bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand& cmd) = 0;
-  virtual bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand& cmd, uint32_t& seq_num) = 0;
-  virtual bool SendRdmResponse(rdmnet_client_scope_t scope_handle, const LocalRdmResponse& resp) = 0;
+  virtual bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const RdmnetLocalRdmCommand& cmd) = 0;
+  virtual bool SendRdmCommand(rdmnet_client_scope_t scope_handle, const RdmnetLocalRdmCommand& cmd,
+                              uint32_t& seq_num) = 0;
+  virtual bool SendRdmResponse(rdmnet_client_scope_t scope_handle, const RdmnetLocalRdmResponse& resp) = 0;
   virtual bool SendLlrpResponse(const LlrpLocalRdmResponse& resp) = 0;
   virtual bool RequestClientList(rdmnet_client_scope_t scope_handle) = 0;
 };

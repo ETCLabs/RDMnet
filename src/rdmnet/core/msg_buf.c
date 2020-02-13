@@ -21,8 +21,8 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include "etcpal/acn_rlp.h"
 #include "etcpal/pack.h"
-#include "etcpal/root_layer_pdu.h"
 #include "rdmnet/core.h"
 #include "rdmnet/private/broker_prot.h"
 #include "rdmnet/private/opts.h"
@@ -207,10 +207,10 @@ size_t parse_rlp_block(RlpState* rlpstate, const uint8_t* data, size_t datalen, 
     }
     else if (datalen >= ACN_RLP_HEADER_SIZE_EXT_LEN)
     {
-      EtcPalRootLayerPdu rlp;
+      AcnRootLayerPdu rlp;
 
       // Inheritance at the root layer is disallowed by E1.33.
-      if (etcpal_parse_root_layer_header(data, datalen, &rlp, NULL))
+      if (acn_parse_root_layer_header(data, datalen, &rlp, NULL))
       {
         // Update the data pointers and sizes.
         bytes_parsed += ACN_RLP_HEADER_SIZE_EXT_LEN;
@@ -407,13 +407,13 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
       // We can parse a Broker PDU header.
       const uint8_t* cur_ptr = data;
 
-      size_t pdu_len = ETCPAL_PDU_LENGTH(cur_ptr);
+      size_t pdu_len = ACN_PDU_LENGTH(cur_ptr);
       if (pdu_len >= BROKER_PDU_HEADER_SIZE && bstate->block.size_parsed + pdu_len <= bstate->block.block_size)
       {
         size_t pdu_data_len = pdu_len - BROKER_PDU_HEADER_SIZE;
 
         cur_ptr += 3;
-        bmsg->vector = etcpal_upack_16b(cur_ptr);
+        bmsg->vector = etcpal_unpack_u16b(cur_ptr);
         cur_ptr += 2;
         bytes_parsed += BROKER_PDU_HEADER_SIZE;
         bstate->block.size_parsed += BROKER_PDU_HEADER_SIZE;
@@ -449,17 +449,17 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
         {
           ConnectReplyMsg* crmsg = GET_CONNECT_REPLY_MSG(bmsg);
           const uint8_t* cur_ptr = &data[bytes_parsed];
-          crmsg->connect_status = (rdmnet_connect_status_t)etcpal_upack_16b(cur_ptr);
+          crmsg->connect_status = (rdmnet_connect_status_t)etcpal_unpack_u16b(cur_ptr);
           cur_ptr += 2;
-          crmsg->e133_version = etcpal_upack_16b(cur_ptr);
+          crmsg->e133_version = etcpal_unpack_u16b(cur_ptr);
           cur_ptr += 2;
-          crmsg->broker_uid.manu = etcpal_upack_16b(cur_ptr);
+          crmsg->broker_uid.manu = etcpal_unpack_u16b(cur_ptr);
           cur_ptr += 2;
-          crmsg->broker_uid.id = etcpal_upack_32b(cur_ptr);
+          crmsg->broker_uid.id = etcpal_unpack_u32b(cur_ptr);
           cur_ptr += 4;
-          crmsg->client_uid.manu = etcpal_upack_16b(cur_ptr);
+          crmsg->client_uid.manu = etcpal_unpack_u16b(cur_ptr);
           cur_ptr += 2;
-          crmsg->client_uid.id = etcpal_upack_32b(cur_ptr);
+          crmsg->client_uid.id = etcpal_unpack_u32b(cur_ptr);
           cur_ptr += 4;
           next_layer_bytes_parsed = (size_t)(cur_ptr - &data[bytes_parsed]);
           res = kPSFullBlockParseOk;
@@ -474,9 +474,9 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
         {
           ClientRedirectMsg* crmsg = GET_CLIENT_REDIRECT_MSG(bmsg);
           const uint8_t* cur_ptr = &data[bytes_parsed];
-          ETCPAL_IP_SET_V4_ADDRESS(&crmsg->new_addr.ip, etcpal_upack_32b(cur_ptr));
+          ETCPAL_IP_SET_V4_ADDRESS(&crmsg->new_addr.ip, etcpal_unpack_u32b(cur_ptr));
           cur_ptr += 4;
-          crmsg->new_addr.port = etcpal_upack_16b(cur_ptr);
+          crmsg->new_addr.port = etcpal_unpack_u16b(cur_ptr);
           cur_ptr += 2;
           next_layer_bytes_parsed = (size_t)(cur_ptr - &data[bytes_parsed]);
           res = kPSFullBlockParseOk;
@@ -489,7 +489,7 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
           const uint8_t* cur_ptr = &data[bytes_parsed];
           ETCPAL_IP_SET_V6_ADDRESS(&crmsg->new_addr.ip, cur_ptr);
           cur_ptr += 16;
-          crmsg->new_addr.port = etcpal_upack_16b(cur_ptr);
+          crmsg->new_addr.port = etcpal_unpack_u16b(cur_ptr);
           cur_ptr += 2;
           next_layer_bytes_parsed = (size_t)(cur_ptr - &data[bytes_parsed]);
           res = kPSFullBlockParseOk;
@@ -524,7 +524,7 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
         if (remaining_len >= DISCONNECT_DATA_SIZE)
         {
           const uint8_t* cur_ptr = &data[bytes_parsed];
-          GET_DISCONNECT_MSG(bmsg)->disconnect_reason = (rdmnet_disconnect_reason_t)etcpal_upack_16b(cur_ptr);
+          GET_DISCONNECT_MSG(bmsg)->disconnect_reason = (rdmnet_disconnect_reason_t)etcpal_unpack_u16b(cur_ptr);
           cur_ptr += 2;
           next_layer_bytes_parsed = (size_t)(cur_ptr - &data[bytes_parsed]);
           res = kPSFullBlockParseOk;
@@ -551,7 +551,7 @@ void parse_client_connect_header(const uint8_t* data, ClientConnectMsg* ccmsg)
 
   CLIENT_CONNECT_MSG_SET_SCOPE(ccmsg, (const char*)cur_ptr);
   cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
-  ccmsg->e133_version = etcpal_upack_16b(cur_ptr);
+  ccmsg->e133_version = etcpal_unpack_u16b(cur_ptr);
   cur_ptr += 2;
   CLIENT_CONNECT_MSG_SET_SEARCH_DOMAIN(ccmsg, (const char*)cur_ptr);
   cur_ptr += E133_DOMAIN_STRING_PADDED_LENGTH;
@@ -624,8 +624,8 @@ size_t parse_client_entry_update(ClientEntryUpdateState* ceustate, const uint8_t
   return bytes_parsed;
 }
 
-#define GET_LENGTH_FROM_CENTRY_HEADER(dataptr) ETCPAL_PDU_LENGTH(dataptr)
-#define GET_CLIENT_PROTOCOL_FROM_CENTRY_HEADER(dataptr) (client_protocol_t)(etcpal_upack_32b((dataptr) + 3))
+#define GET_LENGTH_FROM_CENTRY_HEADER(dataptr) ACN_PDU_LENGTH(dataptr)
+#define GET_CLIENT_PROTOCOL_FROM_CENTRY_HEADER(dataptr) (client_protocol_t)(etcpal_unpack_u32b((dataptr) + 3))
 #define COPY_CID_FROM_CENTRY_HEADER(dataptr, cid) memcpy((cid)->data, (dataptr) + 7, ETCPAL_UUID_BYTES)
 
 size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, size_t datalen,
@@ -682,9 +682,9 @@ size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, 
           RptClientEntry* rpt_entry = (RptClientEntry*)entry;
           const uint8_t* cur_ptr = &data[bytes_parsed];
 
-          rpt_entry->uid.manu = etcpal_upack_16b(cur_ptr);
+          rpt_entry->uid.manu = etcpal_unpack_u16b(cur_ptr);
           cur_ptr += 2;
-          rpt_entry->uid.id = etcpal_upack_32b(cur_ptr);
+          rpt_entry->uid.id = etcpal_unpack_u32b(cur_ptr);
           cur_ptr += 4;
           rpt_entry->type = (rpt_client_type_t)*cur_ptr++;
           memcpy(rpt_entry->binding_cid.data, cur_ptr, ETCPAL_UUID_BYTES);
@@ -931,7 +931,7 @@ size_t parse_request_dynamic_uid_assignment(GenericListState* lstate, const uint
 
     // Gotten here - parse a new DynamicUidRequest
     DynamicUidRequest* request = &rlist->requests[rlist->num_requests++];
-    request->manu_id = etcpal_upack_16b(&data[bytes_parsed]) & 0x7fff;
+    request->manu_id = etcpal_unpack_u16b(&data[bytes_parsed]) & 0x7fff;
     memcpy(request->rid.data, &data[bytes_parsed + 6], ETCPAL_UUID_BYTES);
     bytes_parsed += DYNAMIC_UID_REQUEST_PAIR_SIZE;
     lstate->size_parsed += DYNAMIC_UID_REQUEST_PAIR_SIZE;
@@ -988,13 +988,13 @@ size_t parse_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t
     DynamicUidMapping* mapping = &alist->mappings[alist->num_mappings++];
     const uint8_t* cur_ptr = &data[bytes_parsed];
 
-    mapping->uid.manu = etcpal_upack_16b(cur_ptr);
+    mapping->uid.manu = etcpal_unpack_u16b(cur_ptr);
     cur_ptr += 2;
-    mapping->uid.id = etcpal_upack_32b(cur_ptr);
+    mapping->uid.id = etcpal_unpack_u32b(cur_ptr);
     cur_ptr += 4;
     memcpy(mapping->rid.data, cur_ptr, ETCPAL_UUID_BYTES);
     cur_ptr += ETCPAL_UUID_BYTES;
-    mapping->status_code = (dynamic_uid_status_t)etcpal_upack_16b(cur_ptr);
+    mapping->status_code = (dynamic_uid_status_t)etcpal_unpack_u16b(cur_ptr);
     cur_ptr += 2;
     bytes_parsed += DYNAMIC_UID_MAPPING_SIZE;
     lstate->size_parsed += DYNAMIC_UID_MAPPING_SIZE;
@@ -1049,8 +1049,8 @@ size_t parse_fetch_dynamic_uid_assignment_list(GenericListState* lstate, const u
 
     // Gotten here - parse a new UID
     RdmUid* uid_entry = &alist->uids[alist->num_uids++];
-    uid_entry->manu = etcpal_upack_16b(&data[bytes_parsed]);
-    uid_entry->id = etcpal_upack_32b(&data[bytes_parsed + 2]);
+    uid_entry->manu = etcpal_unpack_u16b(&data[bytes_parsed]);
+    uid_entry->id = etcpal_unpack_u32b(&data[bytes_parsed + 2]);
     bytes_parsed += 6;
     lstate->size_parsed += 6;
 
@@ -1128,26 +1128,26 @@ size_t parse_rpt_block(RptState* rstate, const uint8_t* data, size_t datalen, Rp
     {
       // We can parse an RPT PDU header.
       const uint8_t* cur_ptr = data;
-      size_t pdu_len = ETCPAL_PDU_LENGTH(cur_ptr);
+      size_t pdu_len = ACN_PDU_LENGTH(cur_ptr);
       if (pdu_len >= RPT_PDU_HEADER_SIZE && rstate->block.size_parsed + pdu_len <= rstate->block.block_size)
       {
         size_t pdu_data_len = pdu_len - RPT_PDU_HEADER_SIZE;
         cur_ptr += 3;
-        rmsg->vector = etcpal_upack_32b(cur_ptr);
+        rmsg->vector = etcpal_unpack_u32b(cur_ptr);
         cur_ptr += 4;
-        rmsg->header.source_uid.manu = etcpal_upack_16b(cur_ptr);
+        rmsg->header.source_uid.manu = etcpal_unpack_u16b(cur_ptr);
         cur_ptr += 2;
-        rmsg->header.source_uid.id = etcpal_upack_32b(cur_ptr);
+        rmsg->header.source_uid.id = etcpal_unpack_u32b(cur_ptr);
         cur_ptr += 4;
-        rmsg->header.source_endpoint_id = etcpal_upack_16b(cur_ptr);
+        rmsg->header.source_endpoint_id = etcpal_unpack_u16b(cur_ptr);
         cur_ptr += 2;
-        rmsg->header.dest_uid.manu = etcpal_upack_16b(cur_ptr);
+        rmsg->header.dest_uid.manu = etcpal_unpack_u16b(cur_ptr);
         cur_ptr += 2;
-        rmsg->header.dest_uid.id = etcpal_upack_32b(cur_ptr);
+        rmsg->header.dest_uid.id = etcpal_unpack_u32b(cur_ptr);
         cur_ptr += 4;
-        rmsg->header.dest_endpoint_id = etcpal_upack_16b(cur_ptr);
+        rmsg->header.dest_endpoint_id = etcpal_unpack_u16b(cur_ptr);
         cur_ptr += 2;
-        rmsg->header.seqnum = etcpal_upack_32b(cur_ptr);
+        rmsg->header.seqnum = etcpal_unpack_u32b(cur_ptr);
         cur_ptr += 4;
         ++cur_ptr;  // 1-byte reserved field
 
@@ -1207,11 +1207,11 @@ size_t parse_rdm_list(RdmListState* rlstate, const uint8_t* data, size_t datalen
   if (!rlstate->parsed_request_notif_header && datalen >= REQUEST_NOTIF_PDU_HEADER_SIZE)
   {
     const uint8_t* cur_ptr = data;
-    size_t pdu_len = ETCPAL_PDU_LENGTH(cur_ptr);
+    size_t pdu_len = ACN_PDU_LENGTH(cur_ptr);
     uint32_t vect;
 
     cur_ptr += 3;
-    vect = etcpal_upack_32b(cur_ptr);
+    vect = etcpal_unpack_u32b(cur_ptr);
     cur_ptr += 4;
     if (pdu_len != rlstate->block.block_size || (vect != VECTOR_REQUEST_RDM_CMD && vect != VECTOR_NOTIFICATION_RDM_CMD))
     {
@@ -1240,7 +1240,7 @@ size_t parse_rdm_list(RdmListState* rlstate, const uint8_t* data, size_t datalen
         if (remaining_len >= RDM_CMD_PDU_MIN_SIZE)
         {
           const uint8_t* cur_ptr = &data[bytes_parsed];
-          size_t rdm_cmd_pdu_len = ETCPAL_PDU_LENGTH(cur_ptr);
+          size_t rdm_cmd_pdu_len = ACN_PDU_LENGTH(cur_ptr);
 
           if (rdm_cmd_pdu_len > rlstate->block.block_size || rdm_cmd_pdu_len > RDM_CMD_PDU_MAX_SIZE)
           {
@@ -1326,11 +1326,11 @@ size_t parse_rpt_status(RptStatusState* rsstate, const uint8_t* data, size_t dat
       // We can parse an RPT Status PDU header.
       const uint8_t* cur_ptr = data;
 
-      size_t pdu_len = ETCPAL_PDU_LENGTH(cur_ptr);
+      size_t pdu_len = ACN_PDU_LENGTH(cur_ptr);
       if (pdu_len >= RPT_STATUS_HEADER_SIZE && pdu_len >= rsstate->block.block_size)
       {
         cur_ptr += 3;
-        smsg->status_code = (rpt_status_code_t)etcpal_upack_16b(cur_ptr);
+        smsg->status_code = (rpt_status_code_t)etcpal_unpack_u16b(cur_ptr);
         cur_ptr += 2;
         bytes_parsed += RPT_STATUS_HEADER_SIZE;
         rsstate->block.size_parsed += RPT_STATUS_HEADER_SIZE;
@@ -1426,8 +1426,8 @@ size_t locate_tcp_preamble(RdmnetMsgBuf* msg_buf)
   size_t i = 0;
   for (; i < (msg_buf->cur_data_size - ACN_TCP_PREAMBLE_SIZE); ++i)
   {
-    EtcPalTcpPreamble preamble;
-    if (etcpal_parse_tcp_preamble(&msg_buf->buf[i], msg_buf->cur_data_size - i, &preamble))
+    AcnTcpPreamble preamble;
+    if (acn_parse_tcp_preamble(&msg_buf->buf[i], msg_buf->cur_data_size - i, &preamble))
     {
       // Discard the data before and including the TCP preamble.
       if (msg_buf->cur_data_size > i + ACN_TCP_PREAMBLE_SIZE)

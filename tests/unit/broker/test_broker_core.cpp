@@ -26,13 +26,13 @@
 class MockRdmnetConnInterface : public RdmnetConnInterface
 {
 public:
-  MOCK_METHOD(etcpal::Result, Startup, (const etcpal::Uuid& cid, const EtcPalLogParams* log_params), (override));
+  MOCK_METHOD(etcpal::Error, Startup, (const etcpal::Uuid& cid, const EtcPalLogParams* log_params), (override));
   MOCK_METHOD(void, Shutdown, (), (override));
   MOCK_METHOD(void, SetNotify, (RdmnetConnNotify * notify), (override));
-  MOCK_METHOD(etcpal::Result, CreateNewConnectionForSocket,
+  MOCK_METHOD(etcpal::Error, CreateNewConnectionForSocket,
               (etcpal_socket_t sock, const etcpal::SockAddr& addr, rdmnet_conn_t& new_handle), (override));
   MOCK_METHOD(void, DestroyConnection, (rdmnet_conn_t handle, SendDisconnect send_disconnect), (override));
-  MOCK_METHOD(etcpal::Result, SetBlocking, (rdmnet_conn_t handle, bool blocking), (override));
+  MOCK_METHOD(etcpal::Error, SetBlocking, (rdmnet_conn_t handle, bool blocking), (override));
   MOCK_METHOD(void, SocketDataReceived, (rdmnet_conn_t handle, const uint8_t* data, size_t data_size), (override));
   MOCK_METHOD(void, SocketError, (rdmnet_conn_t handle, etcpal_error_t err), (override));
 };
@@ -60,7 +60,7 @@ class MockBrokerDiscoveryManager : public BrokerDiscoveryInterface
 {
 public:
   MOCK_METHOD(void, SetNotify, (BrokerDiscoveryNotify * notify), (override));
-  MOCK_METHOD(etcpal::Result, RegisterBroker, (const rdmnet::BrokerSettings& settings), (override));
+  MOCK_METHOD(etcpal::Error, RegisterBroker, (const rdmnet::BrokerSettings& settings), (override));
   MOCK_METHOD(void, UnregisterBroker, (), (override));
 };
 
@@ -102,11 +102,11 @@ protected:
       broker_callbacks_ = static_cast<BrokerComponentNotify*>(notify);
     });
 
-    ON_CALL(*mock_conn_, Startup(_, _)).WillByDefault(Return(etcpal::Result::Ok()));
+    ON_CALL(*mock_conn_, Startup(_, _)).WillByDefault(Return(etcpal::Error::Ok()));
     ON_CALL(*mock_socket_mgr_, Startup()).WillByDefault(Return(true));
     ON_CALL(*mock_threads_, AddListenThread(_)).WillByDefault(Return(true));
     ON_CALL(*mock_threads_, AddClientServiceThread()).WillByDefault(Return(true));
-    ON_CALL(*mock_disc_, RegisterBroker(_)).WillByDefault(Return(etcpal::Result::Ok()));
+    ON_CALL(*mock_disc_, RegisterBroker(_)).WillByDefault(Return(etcpal::Error::Ok()));
   }
 
   // The way the test fixture is currently architected, this can only be called once per test.

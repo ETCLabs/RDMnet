@@ -40,10 +40,10 @@ rdmnet_controller_deinit();
 etcpal::Logger logger;
 // Initialize and start logger...
 
-etcpal::Result init_result = rdmnet::Controller::Init(logger);
+etcpal::Error init_result = rdmnet::Controller::Init(logger);
 
 // Or, to init without worrying about logs from the RDMnet library...
-etcpal::Result init_result = rdmnet::Controller::Init();
+etcpal::Error init_result = rdmnet::Controller::Init();
 
 // In some function called at shutdown...
 rdmnet::Controller::Deinit();
@@ -108,7 +108,7 @@ rdmnet::ControllerRdmData my_rdm_data("My Manufacturer Name",
                                       "1.0.0",
                                       "My Device Label");
 rdmnet::Controller controller;
-etcpal::Result result = controller.Startup(my_controller_notify_handler,
+etcpal::Error result = controller.Startup(my_controller_notify_handler,
                                            rdmnet::ControllerData::Default(MY_ESTA_MANUFACTURER_ID_VAL),my_rdm_data);
 if (result)
 {
@@ -121,7 +121,7 @@ else
 ```
 <!-- CODE_BLOCK_END -->
 
-### Managing Scopes
+## Managing Scopes
 
 A controller instance is initially created without any configured scopes. If the app has not been
 reconfigured by a user, the E1.33 RDMnet standard requires that the RDMnet default scope be
@@ -166,7 +166,7 @@ else
 ```
 <!-- CODE_BLOCK_END -->
 
-### Dynamic vs Static Scopes
+## Dynamic vs Static Scopes
 
 Adding a scope will immediately begin the scope connection state machine from the RDMnet tick
 thread. If a static configuration is not provided (using the RDMNET_CLIENT_SET_SCOPE() macro to
@@ -203,7 +203,7 @@ auto add_res = controller.AddDefaultScope(static_broker_addr);
 ```
 <!-- CODE_BLOCK_END -->
 
-### Handling Callbacks
+## Handling Callbacks
 
 The library will dispatch callback notifications from the context in which rdmnet_core_tick() is
 called (in the default configuration, this is a single dedicated worker thread). It is safe to call
@@ -234,7 +234,7 @@ void MyControllerNotifyHandler::HandleConnectedToBroker(rdmnet::Controller& cont
 ```
 <!-- CODE_BLOCK_END -->
 
-#### Connection Failure
+### Connection Failure
 
 It's worth noting connection failure as a special case here. RDMnet connections can fail for many
 reasons, including user misconfiguration, network misconfiguration, components starting up or
@@ -256,7 +256,7 @@ or a user misconfiguration. Some examples of these circumstances are:
   such as `CONNECT_SCOPE_MISMATCH` or `CONNECT_DUPLICATE_UID`.
 * The library failed to create a network socket before the connection was initiated.
 
-### Discovering Devices
+## Discovering Devices
 
 To discover devices in RDMnet, you need to request a _Client List_ from the broker you're connected
 to. In our API, this is very easy - as we saw in the callbacks section earlier, we can just call
@@ -357,9 +357,9 @@ shown above.
 Clients include both devices and other controllers; to differentiate the two, check the type field
 in each RptClientEntry structure.
 
-### Sending RDM Commands
+## Sending RDM Commands
 
-Build RDM commands using the LocalRdmCommand type. The library uses a naming convention where names
+Build RDM commands using the RdmnetLocalRdmCommand type. The library uses a naming convention where names
 beginning with `Local` represent data that is generated locally, whereas names beginning with
 `Remote` represent data received from a remote component.
 
@@ -385,7 +385,7 @@ cmd.dest_uid = client_uid;
 cmd.dest_endpoint = E133_NULL_ENDPOINT; // We're addressing this command to the default responder.
 etcpal::Expected<uint32_t> result = controller.SendRdmCommand(my_scope_handle, cmd);
 
-// Alternatively, without using the LocalRdmCommand structure:
+// Alternatively, without using the RdmnetLocalRdmCommand structure:
 
 etcpal::Expected<uint32_t> result = controller.SendRdmCommand(my_scope_handle, client_uid, E133_NULL_ENDPOINT,
                                                               my_rdm_command);
@@ -397,7 +397,7 @@ if (result)
 ```
 <!-- CODE_BLOCK_END -->
 
-### Handling RDM Responses
+## Handling RDM Responses
 
 Responses to commands you send will be delivered asynchronously through the "RDM response" callback.
 You may also receive "unsolicited responses" - asynchronous state updates from devices that don't
@@ -406,7 +406,7 @@ correspond to changes you requested.
 <!-- CODE_BLOCK_START -->
 ```c
 void rdm_response_callback(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                           const RemoteRdmResponse* resp, void* context)
+                           const RdmnetRemoteRdmResponse* resp, void* context)
 {
   // Check handles and/or context as necessary...
 
@@ -438,7 +438,7 @@ void rdm_response_callback(rdmnet_controller_t handle, rdmnet_client_scope_t sco
 <!-- CODE_BLOCK_MID -->
 ```cpp
 void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
-                                                  const RemoteRdmResponse& resp)
+                                                  const RdmnetRemoteRdmResponse& resp)
 {
   if (resp.seq_num == 0)
   {
@@ -505,7 +505,7 @@ void MyControllerNotifyHandler::HandleRptStatus(rdmnet::Controller& controller, 
 ```
 <!-- CODE_BLOCK_END -->
 
-### Handling RDM Commands
+## Handling RDM Commands
 
 In addition to getting information about responders, RDMnet controllers are required to respond to
 a basic set of RDM commands, which allows them to be identified by other controllers on the
@@ -550,7 +550,7 @@ class MyControllerRdmCommandHandler : public rdmnet::ControllerRdmCommandHandler
 
 MyControllerRdmCommandHandler my_rdm_cmd_handler;
 
-etcpal::Result result = controller.Startup(my_controller_notify_handler,
+etcpal::Error result = controller.Startup(my_controller_notify_handler,
                                            rdmnet::ControllerData::Default(MY_ESTA_MANUFACTURER_ID_VAL),
                                            my_rdm_cmd_handler);
 ```

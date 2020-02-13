@@ -28,9 +28,9 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
-#include "etcpal/uuid.h"
+#include "etcpal/acn_rlp.h"
 #include "etcpal/error.h"
-#include "etcpal/root_layer_pdu.h"
+#include "etcpal/uuid.h"
 #include "rdm/message.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/core.h"

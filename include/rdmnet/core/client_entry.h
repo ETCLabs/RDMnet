@@ -25,7 +25,7 @@
 #ifndef RDMNET_CORE_CLIENT_ENTRY_H_
 #define RDMNET_CORE_CLIENT_ENTRY_H_
 
-#include "etcpal/bool.h"
+#include <stdbool.h>
 #include "etcpal/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"

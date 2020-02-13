@@ -55,7 +55,7 @@ static void controllercb_client_list_update(rdmnet_controller_t handle, rdmnet_c
 }
 
 static void controllercb_rdm_response_received(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                               const RemoteRdmResponse* resp, void* context)
+                                               const RdmnetRemoteRdmResponse* resp, void* context)
 {
   RDMnetLibNotifyInternal* notify = static_cast<RDMnetLibNotifyInternal*>(context);
   if (notify)
@@ -63,7 +63,7 @@ static void controllercb_rdm_response_received(rdmnet_controller_t handle, rdmne
 }
 
 static void controllercb_rdm_command_received(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                              const RemoteRdmCommand* cmd, void* context)
+                                              const RdmnetRemoteRdmCommand* cmd, void* context)
 {
   RDMnetLibNotifyInternal* notify = static_cast<RDMnetLibNotifyInternal*>(context);
   if (notify)
@@ -99,7 +99,7 @@ bool RDMnetLibWrapper::Startup(const etcpal::Uuid& cid, RDMnetLibNotify* notify)
     notify_ = notify;
 
     // Initialize the RDMnet controller library
-    etcpal::Result res = rdmnet_controller_init(log_ ? log_->GetLogParams() : nullptr, nullptr);
+    etcpal::Error res = rdmnet_controller_init(log_ ? log_->GetLogParams() : nullptr, nullptr);
     if (!res)
     {
       if (log_)
@@ -164,7 +164,7 @@ rdmnet_client_scope_t RDMnetLibWrapper::AddScope(const std::string& scope, Stati
   }
 
   rdmnet_client_scope_t new_scope_handle;
-  etcpal::Result res = rdmnet_controller_add_scope(controller_handle_, &config, &new_scope_handle);
+  etcpal::Error res = rdmnet_controller_add_scope(controller_handle_, &config, &new_scope_handle);
   if (res)
   {
     if (log_)
@@ -181,7 +181,7 @@ rdmnet_client_scope_t RDMnetLibWrapper::AddScope(const std::string& scope, Stati
 
 bool RDMnetLibWrapper::RemoveScope(rdmnet_client_scope_t scope_handle, rdmnet_disconnect_reason_t reason)
 {
-  etcpal::Result res = rdmnet_controller_remove_scope(controller_handle_, scope_handle, reason);
+  etcpal::Error res = rdmnet_controller_remove_scope(controller_handle_, scope_handle, reason);
   if (res)
   {
     if (log_)
@@ -196,17 +196,18 @@ bool RDMnetLibWrapper::RemoveScope(rdmnet_client_scope_t scope_handle, rdmnet_di
   }
 }
 
-bool RDMnetLibWrapper::SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand& cmd)
+bool RDMnetLibWrapper::SendRdmCommand(rdmnet_client_scope_t scope_handle, const RdmnetLocalRdmCommand& cmd)
 {
   return (kEtcPalErrOk == rdmnet_controller_send_rdm_command(controller_handle_, scope_handle, &cmd, nullptr));
 }
 
-bool RDMnetLibWrapper::SendRdmCommand(rdmnet_client_scope_t scope_handle, const LocalRdmCommand& cmd, uint32_t& seq_num)
+bool RDMnetLibWrapper::SendRdmCommand(rdmnet_client_scope_t scope_handle, const RdmnetLocalRdmCommand& cmd,
+                                      uint32_t& seq_num)
 {
   return (kEtcPalErrOk == rdmnet_controller_send_rdm_command(controller_handle_, scope_handle, &cmd, &seq_num));
 }
 
-bool RDMnetLibWrapper::SendRdmResponse(rdmnet_client_scope_t scope_handle, const LocalRdmResponse& resp)
+bool RDMnetLibWrapper::SendRdmResponse(rdmnet_client_scope_t scope_handle, const RdmnetLocalRdmResponse& resp)
 {
   return (kEtcPalErrOk == rdmnet_controller_send_rdm_response(controller_handle_, scope_handle, &resp));
 }
@@ -258,7 +259,7 @@ void RDMnetLibWrapper::ClientListUpdate(rdmnet_controller_t handle, rdmnet_clien
 }
 
 void RDMnetLibWrapper::RdmResponseReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                           const RemoteRdmResponse* resp)
+                                           const RdmnetRemoteRdmResponse* resp)
 {
   if (notify_ && handle == controller_handle_ && resp)
   {
@@ -267,7 +268,7 @@ void RDMnetLibWrapper::RdmResponseReceived(rdmnet_controller_t handle, rdmnet_cl
 }
 
 void RDMnetLibWrapper::RdmCommandReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope,
-                                          const RemoteRdmCommand* cmd)
+                                          const RdmnetRemoteRdmCommand* cmd)
 {
   if (notify_ && handle == controller_handle_ && cmd)
   {

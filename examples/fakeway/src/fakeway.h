@@ -51,7 +51,7 @@ public:
   virtual ~PhysicalEndpoint() = default;
 
   bool QueueMessageForResponder(const RdmUid& uid, std::unique_ptr<RemoteRdmCommand> cmd);
-  void GotResponse(const RdmUid& uid, const RemoteRdmCommand* cmd);
+  void GotResponse(const RdmUid& uid, const RdmnetRemoteRdmCommand* cmd);
   bool AddResponder(const RdmUid& uid);
   bool RemoveResponder(const RdmUid& uid, std::vector<std::unique_ptr<RemoteRdmCommand>>& orphaned_msgs);
 
@@ -92,18 +92,18 @@ protected:
   void Connected(const RdmnetClientConnectedInfo& info) override;
   void ConnectFailed(const RdmnetClientConnectFailedInfo& info) override;
   void Disconnected(const RdmnetClientDisconnectedInfo& info) override;
-  void RdmCommandReceived(const RemoteRdmCommand& cmd) override;
+  void RdmCommandReceived(const RdmnetRemoteRdmCommand& cmd) override;
   void LlrpRdmCommandReceived(const LlrpRemoteRdmCommand& cmd) override;
 
-  void ProcessDefRespRdmCommand(const RemoteRdmCommand& cmd, RdmnetConfigChange& config_change);
+  void ProcessDefRespRdmCommand(const RdmnetRemoteRdmCommand& cmd, RdmnetConfigChange& config_change);
   void ProcessDefRespRdmCommand(const LlrpRemoteRdmCommand& cmd, RdmnetConfigChange& config_change);
   bool ProcessDefRespRdmCommand(const RdmCommand& cmd, std::vector<RdmResponse>& resp_list, uint16_t& nack_reason,
                                 RdmnetConfigChange& config_change);
 
   // Send responses
-  void SendRptStatus(const RemoteRdmCommand& received_cmd, rpt_status_code_t status_code);
-  void SendRptNack(const RemoteRdmCommand& received_cmd, uint16_t nack_reason);
-  void SendRptResponse(const RemoteRdmCommand& received_cmd, std::vector<RdmResponse>& resp_list);
+  void SendRptStatus(const RdmnetRemoteRdmCommand& received_cmd, rpt_status_code_t status_code);
+  void SendRptNack(const RdmnetRemoteRdmCommand& received_cmd, uint16_t nack_reason);
+  void SendRptResponse(const RdmnetRemoteRdmCommand& received_cmd, std::vector<RdmResponse>& resp_list);
   void SendUnsolicitedRptResponse(uint16_t from_endpoint, std::vector<RdmResponse>& resp_list);
 
   void SendLlrpNack(const LlrpRemoteRdmCommand& received_cmd, uint16_t nack_reason);

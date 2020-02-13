@@ -1,24 +1,19 @@
 # Unit tests for the stateless support modules
 
-add_executable(test_rdmnet_core_support_modules
+rdmnet_add_unit_test(test_rdmnet_core_support_modules
   # RDMnet core support modules unit test sources
   test_broker_prot.cpp
   test_mcast.cpp
   test_msg_buf.cpp
   main.cpp
+
+  ${RDMNET_CORE_SOURCES}
+  ${RDMNET_MOCK_DISCOVERY_SOURCES}
 )
 
 target_include_directories(test_rdmnet_core_support_modules PRIVATE ${RDMNET_SRC})
 target_link_libraries(test_rdmnet_core_support_modules PRIVATE
-  RDMnetCore
   test_data
-  RDMnetDiscoveryMock
   RDMMock
   EtcPalMock
-  gtest
 )
-set_target_properties(test_rdmnet_core_support_modules PROPERTIES
-  CXX_STANDARD 11
-  FOLDER tests
-)
-gtest_add_tests(TARGET test_rdmnet_core_support_modules SKIP_DEPENDENCY)

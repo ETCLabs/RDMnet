@@ -16,18 +16,17 @@
  * This file is a part of RDMnet. For more information, go to:
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
+
 #include <array>
 #include <map>
 #include <utility>
-
-#include "gtest/gtest.h"
+#include "etcpal/cpp/inet.h"
 #include "rdmnet/client.h"
-
 #include "rdmnet_mock/core.h"
 #include "rdmnet_mock/core/connection.h"
 #include "rdmnet_mock/core/discovery.h"
-
 #include "rdmnet_client_fake_callbacks.h"
+#include "gtest/gtest.h"
 
 extern "C" {
 static rdmnet_conn_t next_conn_handle;
@@ -147,8 +146,7 @@ protected:
   {
     TestRptClientBehavior::SetUp();
 
-    rdmnet_safe_strncpy(default_dynamic_scope_.scope, "default", E133_SCOPE_STRING_PADDED_LENGTH);
-    default_dynamic_scope_.has_static_broker_addr = false;
+    RDMNET_CLIENT_SET_DEFAULT_SCOPE(&default_dynamic_scope_);
 
     // Construct our listen addresses
     EtcPalIpAddr listen_addr{};
@@ -200,10 +198,8 @@ protected:
   {
     TestRptClientBehavior::SetUp();
 
-    rdmnet_safe_strncpy(default_static_scope_.scope, "not_default", E133_SCOPE_STRING_PADDED_LENGTH);
-    default_static_scope_.has_static_broker_addr = true;
-    ETCPAL_IP_SET_V4_ADDRESS(&default_static_scope_.static_broker_addr.ip, 0x0a650101);
-    default_static_scope_.static_broker_addr.port = 8888;
+    auto static_broker = etcpal::SockAddr(etcpal::IpAddr::FromString("10.101.1.1:8888"), 8888);
+    RDMNET_CLIENT_SET_STATIC_SCOPE(&default_static_scope_, "not default", static_broker.get());
   }
 
   void ConnectAndVerify()

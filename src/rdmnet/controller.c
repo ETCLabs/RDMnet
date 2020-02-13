@@ -277,6 +277,8 @@ etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet
 etcpal_error_t rdmnet_controller_get_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                            RdmnetScopeConfig* scope_config)
 {
+  // TODO
+  return kEtcPalErrNotImpl;
 }
 
 /*!
@@ -295,7 +297,7 @@ etcpal_error_t rdmnet_controller_get_scope(rdmnet_controller_t handle, rdmnet_cl
  * \return Other errors forwarded from rdmnet_rpt_client_send_rdm_command().
  */
 etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                  const LocalRdmCommand* cmd, uint32_t* seq_num)
+                                                  const RdmnetLocalRdmCommand* cmd, uint32_t* seq_num)
 {
   if (!handle)
     return kEtcPalErrInvalid;
@@ -314,7 +316,7 @@ etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rd
  * \return Other errors forwarded from rdmnet_rpt_client_send_rdm_response().
  */
 etcpal_error_t rdmnet_controller_send_rdm_response(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                   const LocalRdmResponse* resp)
+                                                   const RdmnetLocalRdmResponse* resp)
 {
   if (!handle)
     return kEtcPalErrInvalid;

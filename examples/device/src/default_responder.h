@@ -20,8 +20,8 @@
 #ifndef DEFAULTRESPONDER_H_
 #define DEFAULTRESPONDER_H_
 
+#include <stdbool.h>
 #include <stdint.h>
-#include "etcpal/bool.h"
 #include "etcpal/inet.h"
 #include "rdm/message.h"
 #include "rdmnet/defs.h"

@@ -71,7 +71,7 @@ public:
   /// \brief An RDM command has been received addressed to a device.
   /// \param device Device instance which has received the RDM command.
   /// \param cmd The RDM command data.
-  virtual void HandleRdmCommand(Device& device, const RemoteRdmCommand& cmd) = 0;
+  virtual void HandleRdmCommand(Device& device, const RdmnetRemoteRdmCommand& cmd) = 0;
 
   /// \brief An RDM command has been received over LLRP, addressed to a device.
   /// \param device Device instance which has received the RDM command.
@@ -115,27 +115,27 @@ inline bool DeviceData::IsValid() const
 class Device
 {
 public:
-  etcpal::Result StartupWithDefaultScope(DeviceNotifyHandler& notify_handler, const DeviceData& data,
+  etcpal::Error StartupWithDefaultScope(DeviceNotifyHandler& notify_handler, const DeviceData& data,
                                          const etcpal::Sockaddr& static_broker_addr = etcpal::SockAddr{});
-  etcpal::Result Startup(DeviceNotifyHandler& notify_handler, const DeviceData& data, const std::string& scope_str,
+  etcpal::Error Startup(DeviceNotifyHandler& notify_handler, const DeviceData& data, const std::string& scope_str,
                          const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
-  etcpal::Result Startup(DeviceNotifyHandler& notify_handler, const DeviceData& data, const Scope& scope_config);
+  etcpal::Error Startup(DeviceNotifyHandler& notify_handler, const DeviceData& data, const Scope& scope_config);
   void Shutdown();
 
-  etcpal::Result SendRdmResponse(const LocalRdmResponse& resp);
-  etcpal::Result SendLlrpResponse(const LlrpLocalRdmResponse& resp);
-  etcpal::Result ChangeScope(const Scope& new_scope_config, rdmnet_disconnect_reason_t disconnect_reason);
-  etcpal::Result ChangeScope(const std::string& new_scope_string, rdmnet_disconnect_reason_t disconnect_reason,
+  etcpal::Error SendRdmResponse(const RdmnetLocalRdmResponse& resp);
+  etcpal::Error SendLlrpResponse(const LlrpLocalRdmResponse& resp);
+  etcpal::Error ChangeScope(const Scope& new_scope_config, rdmnet_disconnect_reason_t disconnect_reason);
+  etcpal::Error ChangeScope(const std::string& new_scope_string, rdmnet_disconnect_reason_t disconnect_reason,
                              const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
 
   DeviceHandle handle() const;
   const DeviceData& data() const;
   Scope scope() const;
 
-  static etcpal::Result Init(
+  static etcpal::Error Init(
       const EtcPalLogParams* log_params = nullptr,
       const std::vector<RdmnetMcastNetintId>& mcast_netints = std::vector<RdmnetMcastNetintId>{});
-  static etcpal::Result Init(const etcpal::Logger& logger, const std::vector<RdmnetMcastNetintId>& mcast_netints =
+  static etcpal::Error Init(const etcpal::Logger& logger, const std::vector<RdmnetMcastNetintId>& mcast_netints =
                                                                std::vector<RdmnetMcastNetintId>{});
   static void Deinit();
 

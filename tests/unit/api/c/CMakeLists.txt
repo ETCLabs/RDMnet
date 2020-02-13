@@ -1,6 +1,6 @@
 # RDMnet C Client API unit tests
 
-add_executable(test_rdmnet_api
+rdmnet_add_unit_test(test_rdmnet_api
   test_rpt_client_api.cpp
   test_rpt_client_behavior.cpp
 
@@ -8,16 +8,10 @@ add_executable(test_rdmnet_api
   rdmnet_client_fake_callbacks.c
 
   main.cpp
+
+  ${RDMNET_API_SOURCES}
+  ${RDMNET_MOCK_CORE_SOURCES}
+  ${RDMNET_MOCK_DISCOVERY_SOURCES}
 )
-target_link_libraries(test_rdmnet_api PRIVATE
-  RDMnetApi
-  RDMnetCoreMock
-  RDMnetDiscoveryMock
-  EtcPalMock
-  RDM
-  gtest_main
-  meekrosoft::fff
-)
-set_target_properties(test_rdmnet_api PROPERTIES CXX_STANDARD 11 FOLDER tests)
-gtest_add_tests(TARGET test_rdmnet_api SKIP_DEPENDENCY)
+target_link_libraries(test_rdmnet_api PRIVATE EtcPalMock RDM)
 

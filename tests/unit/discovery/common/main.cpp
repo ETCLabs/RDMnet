@@ -17,42 +17,13 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef RDMNET_PRIVATE_LLRP_H_
-#define RDMNET_PRIVATE_LLRP_H_
+#include "gtest/gtest.h"
+#include "fff.h"
 
-#include <stdbool.h>
-#include "etcpal/error.h"
-#include "etcpal/inet.h"
-#include "etcpal/rbtree.h"
-#include "etcpal/socket.h"
-#include "rdmnet/core.h"
-#include "rdmnet/core/llrp.h"
+DEFINE_FFF_GLOBALS;
 
-typedef enum
+int main(int argc, char* argv[])
 {
-  kLlrpSocketTypeManager,
-  kLlrpSocketTypeTarget
-} llrp_socket_t;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-extern const EtcPalSockAddr* kLlrpIpv4RespAddr;
-extern const EtcPalSockAddr* kLlrpIpv6RespAddr;
-extern const EtcPalSockAddr* kLlrpIpv4RequestAddr;
-extern const EtcPalSockAddr* kLlrpIpv6RequestAddr;
-
-etcpal_error_t rdmnet_llrp_init(void);
-void rdmnet_llrp_deinit(void);
-
-void rdmnet_llrp_tick(void);
-
-etcpal_error_t llrp_recv_netint_add(const RdmnetMcastNetintId* netint, llrp_socket_t llrp_type);
-void llrp_recv_netint_remove(const RdmnetMcastNetintId* netint, llrp_socket_t llrp_type);
-
-#ifdef __cplusplus
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
-#endif
-
-#endif /* RDMNET_PRIVATE_LLRP_H_ */

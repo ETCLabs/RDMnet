@@ -74,7 +74,7 @@ void ListenThread::ReadSocket()
     etcpal_socket_t conn_sock;
     EtcPalSockAddr new_addr;
 
-    etcpal::Result res = etcpal_accept(socket_, &new_addr, &conn_sock);
+    etcpal::Error res = etcpal_accept(socket_, &new_addr, &conn_sock);
 
     if (!res)
     {

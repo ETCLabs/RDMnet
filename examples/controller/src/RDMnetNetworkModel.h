@@ -118,13 +118,13 @@ protected:
   virtual void Disconnected(rdmnet_client_scope_t scope_handle, const RdmnetClientDisconnectedInfo& info) override;
   virtual void ClientListUpdate(rdmnet_client_scope_t scope_handle, client_list_action_t action,
                                 const RptClientList& list) override;
-  virtual void RdmCommandReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmCommand& cmd) override;
-  virtual void RdmResponseReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse& resp) override;
+  virtual void RdmCommandReceived(rdmnet_client_scope_t scope_handle, const RdmnetRemoteRdmCommand& cmd) override;
+  virtual void RdmResponseReceived(rdmnet_client_scope_t scope_handle, const RdmnetRemoteRdmResponse& resp) override;
   virtual void StatusReceived(rdmnet_client_scope_t scope_handle, const RemoteRptStatus& status) override;
   virtual void LlrpRdmCommandReceived(const LlrpRemoteRdmCommand& cmd) override;
 
   /******* RDM message handling functions *******/
-  void HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse& resp);
+  void HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_handle, const RdmnetRemoteRdmResponse& resp);
   // Use this with data that has identical GET_COMMAND_RESPONSE and SET_COMMAND forms.
   void ProcessRDMGetSetData(rdmnet_client_scope_t scope_handle, uint16_t param_id, const uint8_t* data, uint8_t datalen,
                             const RdmResponse& firstResp);
@@ -133,9 +133,9 @@ protected:
   bool SendRDMCommand(const RdmCommand& cmd, rdmnet_client_scope_t scope_handle);
   void SendRDMGetResponses(rdmnet_client_scope_t scope_handle, const RdmUid& dest_uid, uint16_t param_id,
                            const std::vector<RdmParamData>& resp_data_list, bool have_command = false,
-                           const RemoteRdmCommand& cmd = RemoteRdmCommand());
+                           const RdmnetRemoteRdmCommand& cmd = RdmnetRemoteRdmCommand());
   void SendRDMGetResponsesBroadcast(uint16_t param_id, const std::vector<RdmParamData>& resp_data_list);
-  void SendRDMNack(rdmnet_client_scope_t scope, const RemoteRdmCommand& received_cmd, uint16_t nack_reason);
+  void SendRDMNack(rdmnet_client_scope_t scope, const RdmnetRemoteRdmCommand& received_cmd, uint16_t nack_reason);
   void SendLlrpGetResponse(const LlrpRemoteRdmCommand& received_cmd, const std::vector<RdmParamData>& resp_data_list);
   void SendLlrpNack(const LlrpRemoteRdmCommand& received_cmd, uint16_t nack_reason);
 

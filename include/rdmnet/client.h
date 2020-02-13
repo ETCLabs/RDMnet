@@ -336,13 +336,14 @@ typedef struct RdmnetEptClientConfig
  * static broker address and port, use rdmnet_set_static_scope().
  *
  * \param configptr Pointer to RdmnetScopeConfig.
- * \param scope_str UTF-8 scope string to copy to the RdmnetScopeConfig (const char *).
+ * \param scope_str UTF-8 scope string (const char *), must remain valid for as long as this scope
+ *                  config.
  */
-#define RDMNET_CLIENT_SET_SCOPE(configptr, scope_str)                                      \
-  do                                                                                       \
-  {                                                                                        \
-    rdmnet_safe_strncpy((configptr)->scope, (scope_str), E133_SCOPE_STRING_PADDED_LENGTH); \
-    (configptr)->has_static_broker_addr = false;                                           \
+#define RDMNET_CLIENT_SET_SCOPE(configptr, scope_str) \
+  do                                                  \
+  {                                                   \
+    (configptr)->scope = scope_str;                   \
+    (configptr)->has_static_broker_addr = false;      \
   } while (0)
 
 /*!
@@ -353,11 +354,11 @@ typedef struct RdmnetEptClientConfig
  *
  * \param configptr Pointer to RdmnetScopeConfig.
  */
-#define RDMNET_CLIENT_SET_DEFAULT_SCOPE(configptr)                                                           \
-  do                                                                                                         \
-  {                                                                                                          \
-    RDMNET_MSVC_NO_DEP_WRN strncpy((configptr)->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH); \
-    (configptr)->has_static_broker_addr = false;                                                             \
+#define RDMNET_CLIENT_SET_DEFAULT_SCOPE(configptr) \
+  do                                               \
+  {                                                \
+    (configptr)->scope = E133_DEFAULT_SCOPE;       \
+    (configptr)->has_static_broker_addr = false;   \
   } while (0)
 
 /*!
@@ -367,15 +368,16 @@ typedef struct RdmnetEptClientConfig
  * port given.
  *
  * \param configptr Pointer to RdmnetScopeConfig.
- * \param scope_str UTF-8 scope string to copy to the RdmnetScopeConfig (const char *).
+ * \param scope_str UTF-8 scope string (const char *), must remain valid for as long as this scope
+ *                  config.
  * \param broker_addr Address and port for a static broker (EtcPalSockAddr).
  */
-#define RDMNET_CLIENT_SET_STATIC_SCOPE(configptr, scope_str, broker_addr)                  \
-  do                                                                                       \
-  {                                                                                        \
-    rdmnet_safe_strncpy((configptr)->scope, (scope_str), E133_SCOPE_STRING_PADDED_LENGTH); \
-    (configptr)->has_static_broker_addr = true;                                            \
-    (configptr)->static_broker_addr = (broker_addr);                                       \
+#define RDMNET_CLIENT_SET_STATIC_SCOPE(configptr, scope_str, broker_addr) \
+  do                                                                      \
+  {                                                                       \
+    (configptr)->scope = (scope_str);                                     \
+    (configptr)->has_static_broker_addr = true;                           \
+    (configptr)->static_broker_addr = (broker_addr);                      \
   } while (0)
 
 /*!
@@ -388,12 +390,12 @@ typedef struct RdmnetEptClientConfig
  * \param configptr Pointer to RdmnetScopeConfig.
  * \param broker_addr Address and port for a static broker (EtcPalSockAddr)
  */
-#define RDMNET_CLIENT_SET_STATIC_DEFAULT_SCOPE(configptr, broker_addr)                                       \
-  do                                                                                                         \
-  {                                                                                                          \
-    RDMNET_MSVC_NO_DEP_WRN strncpy((configptr)->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH); \
-    (configptr)->has_static_broker_addr = true;                                                              \
-    (configptr)->static_broker_addr = (broker_addr);                                                         \
+#define RDMNET_CLIENT_SET_STATIC_DEFAULT_SCOPE(configptr, broker_addr) \
+  do                                                                   \
+  {                                                                    \
+    (configptr)->scope = E133_DEFAULT_SCOPE;                           \
+    (configptr)->has_static_broker_addr = true;                        \
+    (configptr)->static_broker_addr = (broker_addr);                   \
   } while (0)
 
 etcpal_error_t rdmnet_client_init(const EtcPalLogParams* lparams, const RdmnetNetintConfig* netint_config);
@@ -418,9 +420,9 @@ etcpal_error_t rdmnet_client_request_client_list(rdmnet_client_t handle, rdmnet_
 //                                                   const FetchUidAssignmentListEntry *uid_list);
 
 etcpal_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                                  const LocalRdmCommand* cmd, uint32_t* seq_num);
+                                                  const RdmnetLocalRdmCommand* cmd, uint32_t* seq_num);
 etcpal_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                                   const LocalRdmResponse* resp);
+                                                   const RdmnetLocalRdmResponse* resp);
 etcpal_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                              const LocalRptStatus* status);
 etcpal_error_t rdmnet_rpt_client_send_llrp_response(rdmnet_client_t handle, const LlrpLocalRdmResponse* resp);

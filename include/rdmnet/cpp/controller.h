@@ -30,6 +30,7 @@
 #include "etcpal/cpp/uuid.h"
 #include "etcpal/cpp/log.h"
 #include "rdm/cpp/uid.h"
+#include "rdm/cpp/message.h"
 #include "rdmnet/controller.h"
 #include "rdmnet/cpp/client.h"
 
@@ -65,7 +66,8 @@ public:
   /// \param controller Controller instance which has received the RDM command.
   /// \param scope_handle Handle to the scope on which the RDM command was received.
   /// \param cmd The RDM command data.
-  virtual void HandleRdmCommand(Controller& controller, ScopeHandle scope_handle, const RemoteRdmCommand& cmd) = 0;
+  virtual void HandleRdmCommand(Controller& controller, ScopeHandle scope_handle,
+                                const RdmnetRemoteRdmCommand& cmd) = 0;
 
   /// \brief An RDM command has been received over LLRP, addressed to a controller.
   /// \param controller Controller instance which has received the RDM command.
@@ -114,7 +116,8 @@ public:
   /// \param controller Controller instance which has received the RDM response.
   /// \param scope_handle Handle to the scope on which the RDM response was received.
   /// \param resp The RDM response data.
-  virtual void HandleRdmResponse(Controller& controller, ScopeHandle scope_handle, const RemoteRdmResponse& resp) = 0;
+  virtual void HandleRdmResponse(Controller& controller, ScopeHandle scope_handle,
+                                 const RdmnetRemoteRdmResponse& resp) = 0;
 
   /// \brief An RPT status message has been received in response to a previously-sent RDM command.
   /// \param controller Controller instance which has received the RPT status message.
@@ -204,24 +207,24 @@ inline bool ControllerRdmData::IsValid() const
 class Controller
 {
 public:
-  etcpal::Result Startup(ControllerNotifyHandler& notify_handler, const ControllerData& data,
-                         const ControllerRdmData& rdm_data);
-  etcpal::Result Startup(ControllerNotifyHandler& notify_handler, const ControllerData& data,
-                         ControllerRdmCommandHandler& rdm_handler);
+  etcpal::Error Startup(ControllerNotifyHandler& notify_handler, const ControllerData& data,
+                        const ControllerRdmData& rdm_data);
+  etcpal::Error Startup(ControllerNotifyHandler& notify_handler, const ControllerData& data,
+                        ControllerRdmCommandHandler& rdm_handler);
   void Shutdown(rdmnet_disconnect_reason_t disconnect_reason = kRdmnetDisconnectShutdown);
 
   etcpal::Expected<ScopeHandle> AddDefaultScope(const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
   etcpal::Expected<ScopeHandle> AddScope(const Scope& scope);
   etcpal::Expected<ScopeHandle> AddScope(const std::string& id,
                                          const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
-  etcpal::Result RemoveScope(ScopeHandle scope_handle, rdmnet_disconnect_reason_t disconnect_reason);
+  etcpal::Error RemoveScope(ScopeHandle scope_handle, rdmnet_disconnect_reason_t disconnect_reason);
 
-  etcpal::Expected<uint32_t> SendRdmCommand(ScopeHandle scope_handle, const LocalRdmCommand& cmd);
+  etcpal::Expected<uint32_t> SendRdmCommand(ScopeHandle scope_handle, const RdmnetLocalRdmCommand& cmd);
   etcpal::Expected<uint32_t> SendRdmCommand(ScopeHandle scope_handle, const rdm::Uid& dest_uid, uint16_t dest_endpoint,
-                                            const RdmCommand& rdm);
-  etcpal::Result SendRdmResponse(ScopeHandle scope_handle, const LocalRdmResponse& resp);
-  etcpal::Result SendLlrpResponse(const LlrpLocalRdmResponse& resp);
-  etcpal::Result RequestClientList(ScopeHandle scope_handle);
+                                            const rdm::Command& rdm);
+  etcpal::Error SendRdmResponse(ScopeHandle scope_handle, const RdmnetLocalRdmResponse& resp);
+  etcpal::Error SendLlrpResponse(const LlrpLocalRdmResponse& resp);
+  etcpal::Error RequestClientList(ScopeHandle scope_handle);
 
   ControllerHandle handle() const;
   const ControllerData& data() const;
@@ -232,11 +235,10 @@ public:
 
   void UpdateRdmData(const ControllerRdmData& new_data);
 
-  static etcpal::Result Init(
-      const EtcPalLogParams* log_params = nullptr,
-      const std::vector<RdmnetMcastNetintId>& mcast_netints = std::vector<RdmnetMcastNetintId>{});
-  static etcpal::Result Init(const etcpal::Logger& logger, const std::vector<RdmnetMcastNetintId>& mcast_netints =
-                                                               std::vector<RdmnetMcastNetintId>{});
+  static etcpal::Error Init(const EtcPalLogParams* log_params = nullptr,
+                            const std::vector<RdmnetMcastNetintId>& mcast_netints = std::vector<RdmnetMcastNetintId>{});
+  static etcpal::Error Init(const etcpal::Logger& logger,
+                            const std::vector<RdmnetMcastNetintId>& mcast_netints = std::vector<RdmnetMcastNetintId>{});
   static void Deinit();
 
 private:
@@ -298,7 +300,7 @@ extern "C" inline void ControllerLibCbClientListUpdate(rdmnet_controller_t handl
 
 extern "C" inline void ControllerLibCbRdmResponseReceived(rdmnet_controller_t handle,
                                                           rdmnet_client_scope_t scope_handle,
-                                                          const RemoteRdmResponse* resp, void* context)
+                                                          const RdmnetRemoteRdmResponse* resp, void* context)
 {
   if (resp && context)
   {
@@ -318,7 +320,7 @@ extern "C" inline void ControllerLibCbStatusReceived(rdmnet_controller_t handle,
 }
 
 extern "C" inline void ControllerLibCbRdmCommandReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                         const RemoteRdmCommand* cmd, void* context)
+                                                         const RdmnetRemoteRdmCommand* cmd, void* context)
 {
   if (cmd && context)
   {
@@ -348,11 +350,11 @@ extern "C" inline void ControllerLibCbLlrpRdmCommandReceived(rdmnet_controller_t
 /// \param data RDMnet protocol data used by this controller. In most instances,
 ///             the value produced by ControllerData::Default() is sufficient.
 /// \param rdm_data Data to identify this controller to other controllers on the network.
-/// \return etcpal::Result::Ok(): Controller started successfully.
+/// \return etcpal::Error::Ok(): Controller started successfully.
 /// \return #kEtcPalErrInvalid: Invalid argument.
 /// \return Errors forwarded from rdmnet_controller_create().
-inline etcpal::Result Controller::Startup(ControllerNotifyHandler& notify_handler, const ControllerData& data,
-                                          const ControllerRdmData& rdm_data)
+inline etcpal::Error Controller::Startup(ControllerNotifyHandler& notify_handler, const ControllerData& data,
+                                         const ControllerRdmData& rdm_data)
 {
   if (!data.IsValid() || !rdm_data.IsValid())
     return kEtcPalErrInvalid;
@@ -371,7 +373,7 @@ inline etcpal::Result Controller::Startup(ControllerNotifyHandler& notify_handle
                                   ControllerLibCbRdmResponseReceived, ControllerLibCbStatusReceived, this);
   RDMNET_CONTROLLER_SET_RDM_DATA(&config, rdm_data.manufacturer_label.c_str(),
                                  rdm_data.device_model_description.c_str(), rdm_data.software_version_label.c_str(),
-                                 rdm_data.device_label.c_str());
+                                 rdm_data.device_label.c_str(), rdm_data.device_label_settable);
   return rdmnet_controller_create(&config, &handle_);
 }
 
@@ -385,10 +387,10 @@ inline etcpal::Result Controller::Startup(ControllerNotifyHandler& notify_handle
 /// \param data RDMnet protocol data used by this controller. In most instances,
 ///             the value produced by ControllerData::Default() is sufficient.
 /// \param rdm_handler A class instance to handle RDM commands addressed to this controller.
-/// \return etcpal::Result::Ok(): Controller started successfully.
+/// \return etcpal::Error::Ok(): Controller started successfully.
 /// \return Errors forwarded from rdmnet_controller_create().
-inline etcpal::Result Controller::Startup(ControllerNotifyHandler& notify_handler, const ControllerData& data,
-                                          ControllerRdmCommandHandler& rdm_handler)
+inline etcpal::Error Controller::Startup(ControllerNotifyHandler& notify_handler, const ControllerData& data,
+                                         ControllerRdmCommandHandler& rdm_handler)
 {
   if (!data.IsValid())
     return kEtcPalErrInvalid;
@@ -472,9 +474,9 @@ inline etcpal::Expected<ScopeHandle> Controller::AddScope(const std::string& id,
 ///
 /// \param scope_handle Handle to scope to remove.
 /// \param disconnect_reason RDMnet protocol disconnect reason to send to the connected broker.
-/// \return etcpal::Result::Ok(): Scope removed successfully.
+/// \return etcpal::Error::Ok(): Scope removed successfully.
 /// \return Error codes from from rdmnet_controller_remove_scope().
-inline etcpal::Result Controller::RemoveScope(ScopeHandle scope_handle, rdmnet_disconnect_reason_t disconnect_reason)
+inline etcpal::Error Controller::RemoveScope(ScopeHandle scope_handle, rdmnet_disconnect_reason_t disconnect_reason)
 {
   return rdmnet_controller_remove_scope(handle_, scope_handle, disconnect_reason);
 }
@@ -487,7 +489,7 @@ inline etcpal::Result Controller::RemoveScope(ScopeHandle scope_handle, rdmnet_d
 /// \param cmd The RDM command data to send, including its addressing information.
 /// \return On success, a sequence number which can be used to match the command with a response.
 /// \return On failure, error codes from rdmnet_controller_send_rdm_command().
-inline etcpal::Expected<uint32_t> Controller::SendRdmCommand(ScopeHandle scope_handle, const LocalRdmCommand& cmd)
+inline etcpal::Expected<uint32_t> Controller::SendRdmCommand(ScopeHandle scope_handle, const RdmnetLocalRdmCommand& cmd)
 {
   return kEtcPalErrNotImpl;
 }
@@ -505,7 +507,7 @@ inline etcpal::Expected<uint32_t> Controller::SendRdmCommand(ScopeHandle scope_h
 /// \return On success, a sequence number which can be used to match the command with a response.
 /// \return On failure, error codes from rdmnet_controller_send_rdm_command().
 inline etcpal::Expected<uint32_t> Controller::SendRdmCommand(ScopeHandle scope_handle, const rdm::Uid& dest_uid,
-                                                             uint16_t dest_endpoint, const RdmCommand& rdm)
+                                                             uint16_t dest_endpoint, const rdm::Command& rdm)
 {
   return kEtcPalErrNotImpl;
 }
@@ -513,18 +515,18 @@ inline etcpal::Expected<uint32_t> Controller::SendRdmCommand(ScopeHandle scope_h
 /// \brief Send an RDM response from a controller on a scope.
 /// \param scope_handle Handle to the scope on which to send the RDM response.
 /// \param resp The RDM response data to send, including its addressing information.
-/// \return etcpal::Result::Ok(): Response sent successfully.
+/// \return etcpal::Error::Ok(): Response sent successfully.
 /// \return Error codes from from rdmnet_controller_send_rdm_response().
-inline etcpal::Result Controller::SendRdmResponse(ScopeHandle scope_handle, const LocalRdmResponse& resp)
+inline etcpal::Error Controller::SendRdmResponse(ScopeHandle scope_handle, const RdmnetLocalRdmResponse& resp)
 {
   return kEtcPalErrNotImpl;
 }
 
 /// \brief Send an LLRP RDM response from a controller on a scope.
 /// \param resp The LLRP RDM response data to send, including its addressing information.
-/// \return etcpal::Result::Ok(): Response sent successfully.
+/// \return etcpal::Error::Ok(): Response sent successfully.
 /// \return Error codes from from rdmnet_controller_send_llrp_rdm_response().
-inline etcpal::Result Controller::SendLlrpResponse(const LlrpLocalRdmResponse& resp)
+inline etcpal::Error Controller::SendLlrpResponse(const LlrpLocalRdmResponse& resp)
 {
   return kEtcPalErrNotImpl;
 }
@@ -535,9 +537,9 @@ inline etcpal::Result Controller::SendLlrpResponse(const LlrpLocalRdmResponse& r
 /// callback.
 ///
 /// \param[in] scope_handle Handle to the scope on which to request the client list.
-/// \return etcpal::Result::Ok(): Request sent successfully.
+/// \return etcpal::Error::Ok(): Request sent successfully.
 /// \return Errors codes from rdmnet_controller_request_client_list().
-inline etcpal::Result Controller::RequestClientList(ScopeHandle scope_handle)
+inline etcpal::Error Controller::RequestClientList(ScopeHandle scope_handle)
 {
   return kEtcPalErrNotImpl;
 }
@@ -581,10 +583,10 @@ inline ControllerRdmCommandHandler* Controller::rdm_command_handler() const
 ///                   messages will be logged.
 /// \param mcast_netints Optional set of network interfaces on which to operate RDMnet's multicast
 ///                      protocols. If left at default, all interfaces will be used.
-/// \return etcpal::Result::Ok(): Initialization successful.
+/// \return etcpal::Error::Ok(): Initialization successful.
 /// \return Error codes from rdmnet_client_init().
-inline etcpal::Result Controller::Init(const EtcPalLogParams* log_params,
-                                       const std::vector<RdmnetMcastNetintId>& mcast_netints)
+inline etcpal::Error Controller::Init(const EtcPalLogParams* log_params,
+                                      const std::vector<RdmnetMcastNetintId>& mcast_netints)
 {
   if (!mcast_netints.empty())
   {
@@ -603,10 +605,10 @@ inline etcpal::Result Controller::Init(const EtcPalLogParams* log_params,
 /// \param logger Logger instance to gather log messages from the RDMnet library.
 /// \param mcast_netints Optional set of network interfaces on which to operate RDMnet's multicast
 ///                      protocols. If left at default, all interfaces will be used.
-/// \return etcpal::Result::Ok(): Initialization successful.
+/// \return etcpal::Error::Ok(): Initialization successful.
 /// \return Error codes from rdmnet_client_init().
-inline etcpal::Result Controller::Init(const etcpal::Logger& logger,
-                                       const std::vector<RdmnetMcastNetintId>& mcast_netints)
+inline etcpal::Error Controller::Init(const etcpal::Logger& logger,
+                                      const std::vector<RdmnetMcastNetintId>& mcast_netints)
 {
   return Init(&logger.log_params(), mcast_netints);
 }

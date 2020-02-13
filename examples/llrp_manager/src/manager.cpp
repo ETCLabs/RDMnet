@@ -83,7 +83,7 @@ bool LLRPManager::Startup(const etcpal::Uuid& my_cid, const EtcPalLogParams* log
       config.netint.ip_type = netint->addr.type;
       config.netint.index = netint->index;
       llrp_manager_t handle;
-      etcpal::Result res = rdmnet_llrp_manager_create(&config, &handle);
+      etcpal::Error res = rdmnet_llrp_manager_create(&config, &handle);
       if (res)
       {
         managers_.insert(std::make_pair(handle, *netint));
@@ -388,7 +388,7 @@ void LLRPManager::Discover(llrp_manager_t manager_handle)
   discovery_active_ = true;
 
   printf("Starting LLRP discovery...\n");
-  etcpal::Result res = rdmnet_llrp_start_discovery(mgr_pair->first, 0);
+  etcpal::Error res = rdmnet_llrp_start_discovery(mgr_pair->first, 0);
   if (res)
   {
     while (discovery_active_)
@@ -451,27 +451,27 @@ void LLRPManager::GetDeviceInfo(int target_handle)
           printf("Device info:\n");
           printf("  RDM Protocol Version: %d.%d\n", cur_ptr[0], cur_ptr[1]);
           cur_ptr += 2;
-          printf("  Device Model ID: %d (0x%04x)\n", etcpal_upack_16b(cur_ptr), etcpal_upack_16b(cur_ptr));
+          printf("  Device Model ID: %d (0x%04x)\n", etcpal_unpack_u16b(cur_ptr), etcpal_unpack_u16b(cur_ptr));
           cur_ptr += 2;
           printf("  Product Category:\n");
           printf("    Coarse: %d (0x%02x)\n", *cur_ptr, *cur_ptr);
           ++cur_ptr;
           printf("    Fine: %d (0x%02x)\n", *cur_ptr, *cur_ptr);
           ++cur_ptr;
-          printf("  Software Version ID: %d (0x%08x)\n", etcpal_upack_32b(cur_ptr), etcpal_upack_32b(cur_ptr));
+          printf("  Software Version ID: %d (0x%08x)\n", etcpal_unpack_u32b(cur_ptr), etcpal_unpack_u32b(cur_ptr));
           cur_ptr += 4;
-          printf("  DMX512 Footprint: %d\n", etcpal_upack_16b(cur_ptr));
+          printf("  DMX512 Footprint: %d\n", etcpal_unpack_u16b(cur_ptr));
           cur_ptr += 2;
           printf("  DMX512 Personality:\n");
           printf("    Current: %d\n", *cur_ptr++);
           printf("    Total: %d\n", *cur_ptr++);
-          uint16_t dmx_start_addr = etcpal_upack_16b(cur_ptr);
+          uint16_t dmx_start_addr = etcpal_unpack_u16b(cur_ptr);
           if (dmx_start_addr == 0xffff)
             printf("  DMX512 Start Address: N/A\n");
           else
             printf("  DMX512 Start Address: %d\n", dmx_start_addr);
           cur_ptr += 2;
-          printf("  Subdevice Count: %d\n", etcpal_upack_16b(cur_ptr));
+          printf("  Subdevice Count: %d\n", etcpal_unpack_u16b(cur_ptr));
           cur_ptr += 2;
           printf("  Sensor Count: %d\n", *cur_ptr);
         }
@@ -619,7 +619,7 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
       cmd_data.command_class = kRdmCCGetCommand;
       cmd_data.param_id = E133_COMPONENT_SCOPE;
       cmd_data.datalen = 2;
-      etcpal_pack_16b(cmd_data.data, static_cast<uint16_t>(scope_slot));
+      etcpal_pack_u16b(cmd_data.data, static_cast<uint16_t>(scope_slot));
 
       if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
       {
@@ -627,7 +627,7 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
         {
           const uint8_t* cur_ptr = resp_data.data;
 
-          uint16_t slot = etcpal_upack_16b(cur_ptr);
+          uint16_t slot = etcpal_unpack_u16b(cur_ptr);
           cur_ptr += 2;
 
           char scope_string[E133_SCOPE_STRING_PADDED_LENGTH] = {};
@@ -641,16 +641,16 @@ void LLRPManager::GetComponentScope(int target_handle, int scope_slot)
           switch (static_config_type)
           {
             case E133_STATIC_CONFIG_IPV4:
-              sockaddr.SetAddress(etcpal_upack_32b(cur_ptr));
+              sockaddr.SetAddress(etcpal_unpack_u32b(cur_ptr));
               cur_ptr += 4 + 16;
-              sockaddr.SetPort(etcpal_upack_16b(cur_ptr));
+              sockaddr.SetPort(etcpal_unpack_u16b(cur_ptr));
               printf("Static Broker IPv4 for slot %d: %s\n", slot, sockaddr.ToString().c_str());
               break;
             case E133_STATIC_CONFIG_IPV6:
               cur_ptr += 4;
               sockaddr.SetAddress(cur_ptr);
               cur_ptr += 16;
-              sockaddr.SetPort(etcpal_upack_16b(cur_ptr));
+              sockaddr.SetPort(etcpal_unpack_u16b(cur_ptr));
               printf("Static Broker IPv6 for slot %d: %s\n", slot, sockaddr.ToString().c_str());
               break;
             case E133_NO_STATIC_CONFIG:
@@ -767,16 +767,16 @@ void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std
       memset(cmd_data.data, 0, COMPONENT_SCOPE_PDL);
 
       uint8_t* cur_ptr = cmd_data.data;
-      etcpal_pack_16b(cur_ptr, static_cast<uint16_t>(scope_slot));
+      etcpal_pack_u16b(cur_ptr, static_cast<uint16_t>(scope_slot));
       cur_ptr += 2;
       RDMNET_MSVC_NO_DEP_WRN strncpy((char*)cur_ptr, scope_utf8.c_str(), E133_SCOPE_STRING_PADDED_LENGTH - 1);
       cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
       if (static_config.ip().IsV4())
       {
         *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
-        etcpal_pack_32b(cur_ptr, static_config.ip().v4_data());
+        etcpal_pack_u32b(cur_ptr, static_config.ip().v4_data());
         cur_ptr += 4 + 16;
-        etcpal_pack_16b(cur_ptr, static_config.port());
+        etcpal_pack_u16b(cur_ptr, static_config.port());
       }
       else if (static_config.ip().IsV6())
       {
@@ -784,7 +784,7 @@ void LLRPManager::SetComponentScope(int target_handle, int scope_slot, const std
         cur_ptr += 4;
         memcpy(cur_ptr, static_config.ip().v6_data(), 16);
         cur_ptr += 16;
-        etcpal_pack_16b(cur_ptr, static_config.port());
+        etcpal_pack_u16b(cur_ptr, static_config.port());
       }
       else
       {
@@ -841,7 +841,7 @@ bool LLRPManager::SendRDMAndGetResponse(llrp_manager_t manager, const EtcPalUuid
 
   pending_command_response_ = true;
   pending_resp_cid_ = cmd.dest_cid;
-  etcpal::Result res = rdmnet_llrp_send_rdm_command(manager, &cmd, &pending_resp_seq_num_);
+  etcpal::Error res = rdmnet_llrp_send_rdm_command(manager, &cmd, &pending_resp_seq_num_);
   if (res)
   {
     EtcPalTimer resp_timer;
@@ -863,7 +863,7 @@ bool LLRPManager::SendRDMAndGetResponse(llrp_manager_t manager, const EtcPalUuid
         }
         else if (resp_received_.resp_type == E120_RESPONSE_TYPE_NACK_REASON)
         {
-          printf("Received RDM NACK with reason %d\n", etcpal_upack_16b(resp_received_.data));
+          printf("Received RDM NACK with reason %d\n", etcpal_unpack_u16b(resp_received_.data));
         }
         else
         {

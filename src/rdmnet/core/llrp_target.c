@@ -95,10 +95,10 @@ static void deliver_callback(TargetCallbackDispatchInfo* info);
 static void process_target_state(LlrpTarget* target);
 
 // Target tracking using EtcPalRbTrees
-static EtcPalRbNode* target_node_alloc();
+static EtcPalRbNode* target_node_alloc(void);
 static void target_node_free(EtcPalRbNode* node);
-static int target_cmp_by_handle(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b);
-static int target_cmp_by_cid(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b);
+static int target_compare_by_handle(const EtcPalRbTree* self, const void* value_a, const void* value_b);
+static int target_compare_by_cid(const EtcPalRbTree* self, const void* value_a, const void* value_b);
 
 /*************************** Function definitions ****************************/
 
@@ -114,8 +114,8 @@ etcpal_error_t rdmnet_llrp_target_init()
 
   if (res == kEtcPalErrOk)
   {
-    etcpal_rbtree_init(&state.targets, target_cmp_by_handle, target_node_alloc, target_node_free);
-    etcpal_rbtree_init(&state.targets_by_cid, target_cmp_by_cid, target_node_alloc, target_node_free);
+    etcpal_rbtree_init(&state.targets, target_compare_by_handle, target_node_alloc, target_node_free);
+    etcpal_rbtree_init(&state.targets_by_cid, target_compare_by_cid, target_node_alloc, target_node_free);
     init_int_handle_manager(&state.handle_mgr, target_handle_in_use);
 
     if (RDMNET_CAN_LOG(ETCPAL_LOG_DEBUG))
@@ -709,27 +709,25 @@ bool target_handle_in_use(int handle_val)
   return etcpal_rbtree_find(&state.targets, &handle_val);
 }
 
-int target_cmp_by_handle(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
+int target_compare_by_handle(const EtcPalRbTree* self, const void* value_a, const void* value_b)
 {
   RDMNET_UNUSED_ARG(self);
 
-  const LlrpTarget* a = (const LlrpTarget*)node_a->value;
-  const LlrpTarget* b = (const LlrpTarget*)node_b->value;
-
+  const LlrpTarget* a = (const LlrpTarget*)value_a;
+  const LlrpTarget* b = (const LlrpTarget*)value_b;
   return (a->keys.handle > b->keys.handle) - (a->keys.handle < b->keys.handle);
 }
 
-int target_cmp_by_cid(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
+int target_compare_by_cid(const EtcPalRbTree* self, const void* value_a, const void* value_b)
 {
   RDMNET_UNUSED_ARG(self);
 
-  const LlrpTarget* a = (const LlrpTarget*)node_a->value;
-  const LlrpTarget* b = (const LlrpTarget*)node_b->value;
-
+  const LlrpTarget* a = (const LlrpTarget*)value_a;
+  const LlrpTarget* b = (const LlrpTarget*)value_b;
   return ETCPAL_UUID_CMP(&a->keys.cid, &b->keys.cid);
 }
 
-EtcPalRbNode* target_node_alloc()
+EtcPalRbNode* target_node_alloc(void)
 {
 #if RDMNET_DYNAMIC_MEM
   return (EtcPalRbNode*)malloc(sizeof(EtcPalRbNode));
