@@ -19,7 +19,7 @@
 #include "BrokerItem.h"
 
 BrokerItem::BrokerItem(const QString& scope, rdmnet_client_scope_t scope_handle,
-                       const StaticBrokerConfig& static_broker /* = StaticBrokerConfig() */)
+                       const etcpal::SockAddr& static_broker /* = etcpal::SockAddr() */)
     : RDMnetNetworkItem(), scope_(scope), scope_handle_(scope_handle), static_broker_(static_broker)
 {
   updateText();
@@ -50,8 +50,8 @@ void BrokerItem::updateText()
 
   if (connected_)
     address = broker_addr_;
-  else if (static_broker_.valid)
-    address = static_broker_.addr;
+  else if (static_broker_.ip().IsValid())
+    address = static_broker_;
 
   if (address.ip().IsValid())
   {

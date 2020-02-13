@@ -52,10 +52,10 @@ void rdmnet_create_response_from_command(const RdmnetRemoteRdmCommand* received_
   {
     // If we are ACK'ing a SET_COMMAND, we broadcast the response to keep other controllers
     // apprised of state.
-    resp->dest_uid = (((received_cmd->rdm_command.command_class == kRdmCCSetCommand) &&
-                       (responses[0].resp_type == kRdmResponseTypeAck))
-                          ? kRdmnetControllerBroadcastUid
-                          : received_cmd->source_uid);
+    resp->rdmnet_dest_uid = (((received_cmd->rdm_command.command_class == kRdmCCSetCommand) &&
+                              (responses[0].resp_type == kRdmResponseTypeAck))
+                                 ? kRdmnetControllerBroadcastUid
+                                 : received_cmd->source_uid);
     resp->source_endpoint = received_cmd->dest_endpoint;
     resp->seq_num = received_cmd->seq_num;
     resp->original_command_included = true;
@@ -79,7 +79,7 @@ void rdmnet_create_unsolicited_response(uint16_t source_endpoint, const RdmRespo
 {
   if (responses && num_responses > 0 && resp)
   {
-    resp->dest_uid = kRdmnetControllerBroadcastUid;
+    resp->rdmnet_dest_uid = kRdmnetControllerBroadcastUid;
     resp->source_endpoint = source_endpoint;
     resp->seq_num = 0;
     resp->original_command_included = false;
@@ -100,11 +100,11 @@ void rdmnet_create_unsolicited_response(uint16_t source_endpoint, const RdmRespo
  */
 void rdmnet_create_status_from_command_with_str(const RdmnetRemoteRdmCommand* received_cmd,
                                                 rpt_status_code_t status_code, const char* status_str,
-                                                LocalRptStatus* status)
+                                                RdmnetLocalRptStatus* status)
 {
   if (received_cmd && status)
   {
-    status->dest_uid = received_cmd->source_uid;
+    status->rdmnet_dest_uid = received_cmd->source_uid;
     status->source_endpoint = received_cmd->dest_endpoint;
     status->seq_num = received_cmd->seq_num;
     status->msg.status_code = status_code;
@@ -121,7 +121,7 @@ void rdmnet_create_status_from_command_with_str(const RdmnetRemoteRdmCommand* re
  *  \param[out] status LocalRptStatus to initialize.
  */
 void rdmnet_create_status_from_command(const RdmnetRemoteRdmCommand* received_cmd, rpt_status_code_t status_code,
-                                       LocalRptStatus* status)
+                                       RdmnetLocalRptStatus* status)
 {
   rdmnet_create_status_from_command_with_str(received_cmd, status_code, NULL, status);
 }

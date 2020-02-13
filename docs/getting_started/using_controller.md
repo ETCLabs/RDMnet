@@ -359,16 +359,16 @@ in each RptClientEntry structure.
 
 ## Sending RDM Commands
 
-Build RDM commands using the RdmnetLocalRdmCommand type. The library uses a naming convention where names
-beginning with `Local` represent data that is generated locally, whereas names beginning with
+Build RDM commands using the RdmnetLocalRdmCommand type. The library uses a naming convention where
+names containing `Local` represent data that is generated locally, whereas names containing
 `Remote` represent data received from a remote component.
 
 <!-- CODE_BLOCK_START -->
 ```c
-LocalRdmCommand cmd;
-// Build the RDM command using cmd.rdm...
-cmd.dest_uid = client_uid;
+RdmnetLocalRdmCommand cmd;
+cmd.rdmnet_dest_uid = client_uid;
 cmd.dest_endpoint = E133_NULL_ENDPOINT; // We're addressing this command to the default responder.
+// Build the rest of the RDM command...
 
 uint32_t cmd_seq_num;
 etcpal_error_t result = rdmnet_controller_send_rdm_command(my_controller_handle, my_scope_handle, &cmd, &cmd_seq_num);
@@ -379,10 +379,10 @@ if (result == kEtcPalErrOk)
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-LocalRdmCommand cmd;
-// Build the RDM command using cmd.rdm...
-cmd.dest_uid = client_uid;
+RdmnetLocalRdmCommand cmd;
+cmd.rdmnet_dest_uid = client_uid;
 cmd.dest_endpoint = E133_NULL_ENDPOINT; // We're addressing this command to the default responder.
+// Build the rest of the RDM command...
 etcpal::Expected<uint32_t> result = controller.SendRdmCommand(my_scope_handle, cmd);
 
 // Alternatively, without using the RdmnetLocalRdmCommand structure:
@@ -476,7 +476,7 @@ Status containing that same sequence number.
 
 <!-- CODE_BLOCK_START -->
 ```c
-void rpt_status_callback(rdmnet_controller_t handle, rdmnet_client_scope_t handle, const RemoteRptStatus* status,
+void rpt_status_callback(rdmnet_controller_t handle, rdmnet_client_scope_t handle, const RdmnetRemoteRptStatus* status,
                          void* context)
 {
   // Check handles and/or context as necessary...
@@ -493,7 +493,7 @@ void rpt_status_callback(rdmnet_controller_t handle, rdmnet_client_scope_t handl
 <!-- CODE_BLOCK_MID -->
 ```cpp
 void MyControllerNotifyHandler::HandleRptStatus(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
-                                                const RemoteRptStatus& status)
+                                                const RdmnetRemoteRptStatus& status)
 {
   // Verify status.seq_num against the result of rdmnet::Controller::SendRdmCommand() you stored earlier.
 

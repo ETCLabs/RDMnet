@@ -25,12 +25,11 @@
 #include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/lock.h"
 #include "etcpal/cpp/uuid.h"
+#include "rdmnet/cpp/controller.h"
 #include "BrokerItem.h"
 #include "SearchingStatusItem.h"
 #include "PropertyValueItem.h"
 #include "ControllerUtils.h"
-#include "RDMnetLibInterface.h"
-#include "ControllerDefaultResponder.h"
 #include "ControllerLog.h"
 
 BEGIN_INCLUDE_QT_HEADERS()
@@ -39,7 +38,7 @@ END_INCLUDE_QT_HEADERS()
 
 void appendRowToItem(QStandardItem* parent, QStandardItem* child);
 
-class RDMnetNetworkModel : public QStandardItemModel, public RDMnetLibNotify
+class RDMnetNetworkModel : public QStandardItemModel, public rdmnet::ControllerNotifyHandler
 {
   Q_OBJECT
 
@@ -60,7 +59,7 @@ signals:
 
 private:
   ControllerLog* log_{nullptr};
-  RDMnetLibInterface* rdmnet_{nullptr};
+  rdmnet::Controller& rdmnet_;
   etcpal::Uuid my_cid_{etcpal::Uuid::V4()};
 
   ControllerDefaultResponder default_responder_;
@@ -94,10 +93,10 @@ protected slots:
   void activateFeature(RDMnetNetworkItem* device, SupportedDeviceFeature feature);
 
 protected:
-  RDMnetNetworkModel(RDMnetLibInterface* library, ControllerLog* log);
+  RDMnetNetworkModel(rdmnet::Controller& library, ControllerLog* log);
 
 public:
-  static RDMnetNetworkModel* makeRDMnetNetworkModel(RDMnetLibInterface* library, ControllerLog* log);
+  static RDMnetNetworkModel* makeRDMnetNetworkModel(rdmnet::Controller& library, ControllerLog* log);
   static RDMnetNetworkModel* makeTestModel();
 
   RDMnetNetworkModel() = delete;
@@ -112,16 +111,19 @@ public:
   virtual bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole);
 
 protected:
-  // RDMnetLibNotify overrides
-  virtual void Connected(rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo& info) override;
-  virtual void ConnectFailed(rdmnet_client_scope_t scope_handle, const RdmnetClientConnectFailedInfo& info) override;
-  virtual void Disconnected(rdmnet_client_scope_t scope_handle, const RdmnetClientDisconnectedInfo& info) override;
-  virtual void ClientListUpdate(rdmnet_client_scope_t scope_handle, client_list_action_t action,
-                                const RptClientList& list) override;
-  virtual void RdmCommandReceived(rdmnet_client_scope_t scope_handle, const RdmnetRemoteRdmCommand& cmd) override;
-  virtual void RdmResponseReceived(rdmnet_client_scope_t scope_handle, const RdmnetRemoteRdmResponse& resp) override;
-  virtual void StatusReceived(rdmnet_client_scope_t scope_handle, const RemoteRptStatus& status) override;
-  virtual void LlrpRdmCommandReceived(const LlrpRemoteRdmCommand& cmd) override;
+  // rdmnet::ControllerNotifyHandler overrides
+  virtual void HandleConnectedToBroker(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
+                                       const RdmnetClientConnectedInfo& info) override;
+  virtual void HandleBrokerConnectFailed(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
+                                         const RdmnetClientConnectFailedInfo& info) override;
+  virtual void HandleDisconnectedFromBroker(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
+                                            const RdmnetClientDisconnectedInfo& info) override;
+  virtual void HandleClientListUpdate(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
+                                      client_list_action_t action, const RptClientList& list) override;
+  virtual void HandleRdmResponse(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
+                                 const RemoteRdmResponse& resp) override;
+  virtual void HandleRptStatus(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
+                               const RemoteRptStatus& status) override;
 
   /******* RDM message handling functions *******/
   void HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_handle, const RdmnetRemoteRdmResponse& resp);
@@ -131,13 +133,6 @@ protected:
 
   bool SendRDMCommand(const RdmCommand& cmd, const BrokerItem* brokerItem);
   bool SendRDMCommand(const RdmCommand& cmd, rdmnet_client_scope_t scope_handle);
-  void SendRDMGetResponses(rdmnet_client_scope_t scope_handle, const RdmUid& dest_uid, uint16_t param_id,
-                           const std::vector<RdmParamData>& resp_data_list, bool have_command = false,
-                           const RdmnetRemoteRdmCommand& cmd = RdmnetRemoteRdmCommand());
-  void SendRDMGetResponsesBroadcast(uint16_t param_id, const std::vector<RdmParamData>& resp_data_list);
-  void SendRDMNack(rdmnet_client_scope_t scope, const RdmnetRemoteRdmCommand& received_cmd, uint16_t nack_reason);
-  void SendLlrpGetResponse(const LlrpRemoteRdmCommand& received_cmd, const std::vector<RdmParamData>& resp_data_list);
-  void SendLlrpNack(const LlrpRemoteRdmCommand& received_cmd, uint16_t nack_reason);
 
   /* GET/SET RESPONSE PROCESSING */
 

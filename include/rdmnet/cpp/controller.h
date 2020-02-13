@@ -33,6 +33,8 @@
 #include "rdm/cpp/message.h"
 #include "rdmnet/controller.h"
 #include "rdmnet/cpp/client.h"
+#include "rdmnet/controller.h"
+#include "rdmnet/core/util.h"
 
 namespace rdmnet
 {
@@ -49,6 +51,8 @@ namespace rdmnet
 ///
 /// @{
 
+/// The handle used to identify controllers to the C language controller API. Typically does not
+/// need to be used directly.
 using ControllerHandle = rdmnet_controller_t;
 
 /// @}
@@ -123,7 +127,24 @@ public:
   /// \param controller Controller instance which has received the RPT status message.
   /// \param scope_handle Handle to the scope on which the RPT status message was received.
   /// \param status The RPT status data.
-  virtual void HandleRptStatus(Controller& controller, ScopeHandle scope_handle, const RemoteRptStatus& status) = 0;
+  virtual void HandleRptStatus(Controller& controller, ScopeHandle scope_handle,
+                               const RdmnetRemoteRptStatus& status) = 0;
+
+  /// \brief A set of previously-requested dynamic UID mappints has been received.
+  ///
+  /// This callback does not need to be implemented if the controller implementation never intends
+  /// to request dynamic UID mappings.
+  ///
+  /// \param controller Controller instance which has received the dynamic UID mappints.
+  /// \param scope_handle Handle to the scope on which the dynamic UID mappings were received.
+  /// \param list The list of dynamic UID mappings.
+  virtual void HandleDynamicUidMappingsReceived(Controller& controller, ScopeHandle scope_handle,
+                                                const DynamicUidAssignmentList& list)
+  {
+    RDMNET_UNUSED_ARG(controller);
+    RDMNET_UNUSED_ARG(scope_handle);
+    RDMNET_UNUSED_ARG(list);
+  }
 };
 
 /// A set of configuration data that a controller needs to initialize.
@@ -135,7 +156,8 @@ struct ControllerData
 
   /// Create an empty, invalid data structure by default.
   ControllerData() = default;
-  ControllerData(const etcpal::Uuid& cid_in, const rdm::Uid& uid_in, const std::string& search_domain_in);
+  ControllerData(const etcpal::Uuid& cid_in, const rdm::Uid& uid_in,
+                 const std::string& search_domain_in = E133_DEFAULT_DOMAIN);
 
   bool IsValid() const;
 
@@ -253,6 +275,8 @@ private:
 /// \cond controller_c_callbacks
 /// Callbacks from underlying controllerlibrary to be forwarded
 
+namespace internal
+{
 #define RDMNET_GET_CONTROLLER_REF(handle_in, context_in)            \
   Controller& controller = *(static_cast<Controller*>(context_in)); \
   assert((handle_in) == controller.handle());
@@ -310,12 +334,23 @@ extern "C" inline void ControllerLibCbRdmResponseReceived(rdmnet_controller_t ha
 }
 
 extern "C" inline void ControllerLibCbStatusReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                     const RemoteRptStatus* status, void* context)
+                                                     const RdmnetRemoteRptStatus* status, void* context)
 {
   if (status && context)
   {
     RDMNET_GET_CONTROLLER_REF(handle, context);
     controller.notify_handler()->HandleRptStatus(controller, scope_handle, *status);
+  }
+}
+
+extern "C" inline void ControllerLibCbDynamicUidMappingsReceived(rdmnet_controller_t handle,
+                                                                 rdmnet_client_scope_t scope_handle,
+                                                                 const DynamicUidAssignmentList* list, void* context)
+{
+  if (list && context)
+  {
+    RDMNET_GET_CONTROLLER_REF(handle, context);
+    controller.notify_handler()->HandleDynamicUidMappingsReceived(controller, scope_handle, *list);
   }
 }
 
@@ -338,6 +373,8 @@ extern "C" inline void ControllerLibCbLlrpRdmCommandReceived(rdmnet_controller_t
     controller.rdm_command_handler()->HandleLlrpRdmCommand(controller, *cmd);
   }
 }
+
+};  // namespace internal
 
 /// \endcond
 
@@ -368,9 +405,10 @@ inline etcpal::Error Controller::Startup(ControllerNotifyHandler& notify_handler
   config.optional.uid = data.uid.get();
   config.optional.search_domain = data.search_domain.c_str();
   config.cid = data.cid.get();
-  RDMNET_CONTROLLER_SET_CALLBACKS(&config, ControllerLibCbConnected, ControllerLibCbConnectFailed,
-                                  ControllerLibCbDisconnected, ControllerLibCbClientListUpdate,
-                                  ControllerLibCbRdmResponseReceived, ControllerLibCbStatusReceived, this);
+  RDMNET_CONTROLLER_SET_CALLBACKS(&config, internal::ControllerLibCbConnected, internal::ControllerLibCbConnectFailed,
+                                  internal::ControllerLibCbDisconnected, internal::ControllerLibCbClientListUpdate,
+                                  internal::ControllerLibCbRdmResponseReceived, internal::ControllerLibCbStatusReceived,
+                                  internal::ControllerLibCbDynamicUidMappingsReceived, this);
   RDMNET_CONTROLLER_SET_RDM_DATA(&config, rdm_data.manufacturer_label.c_str(),
                                  rdm_data.device_model_description.c_str(), rdm_data.software_version_label.c_str(),
                                  rdm_data.device_label.c_str(), rdm_data.device_label_settable);
@@ -404,11 +442,12 @@ inline etcpal::Error Controller::Startup(ControllerNotifyHandler& notify_handler
   config.optional.uid = data.uid.get();
   config.optional.search_domain = data.search_domain.c_str();
   config.cid = data.cid.get();
-  RDMNET_CONTROLLER_SET_CALLBACKS(&config, ControllerLibCbConnected, ControllerLibCbConnectFailed,
-                                  ControllerLibCbDisconnected, ControllerLibCbClientListUpdate,
-                                  ControllerLibCbRdmResponseReceived, ControllerLibCbStatusReceived, this);
-  RDMNET_CONTROLLER_SET_RDM_CMD_CALLBACKS(&config, ControllerLibCbRdmCommandReceived,
-                                          ControllerLibCbLlrpRdmCommandReceived);
+  RDMNET_CONTROLLER_SET_CALLBACKS(&config, internal::ControllerLibCbConnected, internal::ControllerLibCbConnectFailed,
+                                  internal::ControllerLibCbDisconnected, internal::ControllerLibCbClientListUpdate,
+                                  internal::ControllerLibCbRdmResponseReceived, internal::ControllerLibCbStatusReceived,
+                                  internal::ControllerLibCbDynamicUidMappingsReceived, this);
+  RDMNET_CONTROLLER_SET_RDM_CMD_CALLBACKS(&config, internal::ControllerLibCbRdmCommandReceived,
+                                          internal::ControllerLibCbLlrpRdmCommandReceived);
   return rdmnet_controller_create(&config, &handle_);
 }
 
@@ -576,6 +615,20 @@ inline ControllerNotifyHandler* Controller::notify_handler() const
 inline ControllerRdmCommandHandler* Controller::rdm_command_handler() const
 {
   return rdm_cmd_handler_;
+}
+
+/// \brief Retrieve the scope configuration associated with a given scope handle.
+/// \return The scope configuration, or #kEtcPalErrNotFound if the scope handle was not found.
+inline etcpal::Expected<Scope> Controller::scope(ScopeHandle scope_handle) const
+{
+  RdmnetScopeConfig scope_config;
+  auto result = rdmnet_controller_get_scope(handle_, scope_handle, &scope_config);
+  return (result == kEtcPalErrOk) ? Scope(scope_config) : result;
+}
+
+/// \brief Update the data used to identify this controller to other controllers.
+inline void Controller::UpdateRdmData(const ControllerRdmData& new_data)
+{
 }
 
 /// \brief Initialize the RDMnet Controller library.

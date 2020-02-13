@@ -17,50 +17,105 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
+/// \file rdmnet/cpp/message.h
+
 #ifndef RDMNET_CPP_MESSAGE_H_
 #define RDMNET_CPP_MESSAGE_H_
 
+#include <cstdint>
 #include "rdm/cpp/uid.h"
-#include "rdm/cpp/message.h"
 #include "rdmnet/core/message.h"
 
 namespace rdmnet
 {
-template <class Message>
-rdm::Uid GetSourceUid(const Message& msg)
+class RemoteRdmCommand
 {
-  return msg.source_uid;
-}
+private:
+  RdmnetRemoteRdmCommand cmd_;
+};
 
-template <class Message>
-rdm::Uid GetDestUid(const Message& msg)
+class LocalRdmResponse
 {
-  return msg.dest_uid;
-}
+  LocalRdmResponse(const rdm::Uid& rdmnet_dest_uid, uint16_t source_endpoint, uint32_t seq_num,
+                   const RdmResponse* responses, size_t num_responses);
 
-template <class Message>
-uint16_t GetDestEndpoint(const Message& msg)
+private:
+  RdmnetLocalRdmResponse resp_;
+};
+
+class LocalRdmCommand
 {
-  return msg.dest_endpoint;
-}
+public:
+  LocalRdmCommand(const rdm::Uid& rdmnet_dest_uid, uint16_t dest_endpoint, const rdm::Uid& rdm_dest_uid,
+                  rdm_command_class_t command_class, uint16_t param_id, const uint8_t* data = nullptr,
+                  uint8_t datalen = 0);
+  LocalRdmCommand(const rdm::Uid& rdmnet_dest_uid, uint16_t dest_endpoint, const rdm::Uid& rdm_dest_uid,
+                  uint16_t subdevice, rdm_command_class_t command_class, uint16_t param_id,
+                  const uint8_t* data = nullptr, uint8_t datalen = 0);
 
-template <class Message>
-uint32_t GetSeqNum(const Message& msg)
+  static RdmnetLocalRdmCommand& get() noexcept;
+  const RdmnetLocalRdmCommand& get() const noexcept;
+
+  static LocalRdmCommand Get(uint16_t param_id, const rdm::Uid& rdmnet_dest_uid, uint16_t dest_endpoint,
+                             const rdm::Uid& rdm_dest_uid, const uint8_t* data = nullptr, uint8_t datalen = 0);
+  static LocalRdmCommand Set(uint16_t param_id, const rdm::Uid& rdmnet_dest_uid, uint16_t dest_endpoint,
+                             const rdm::Uid& rdm_dest_uid, const uint8_t* data = nullptr, uint8_t datalen = 0);
+
+  static LocalRdmCommand ToDefaultResponder(const rdm::Uid& rdm_dest_uid, rdm_command_class_t command_class,
+                                            uint16_t param_id, const uint8_t* data = nullptr, uint8_t datalen = 0);
+  static LocalRdmCommand GetToDefaultResponder(uint16_t param_id, const rdm::Uid& rdm_dest_uid,
+                                               const uint8_t* data = nullptr, uint8_t datalen = 0);
+  static LocalRdmCommand SetToDefaultResponder(uint16_t param_id, const rdm::Uid& rdm_dest_uid,
+                                               const uint8_t* data = nullptr, uint8_t datalen = 0);
+
+private:
+  RdmnetLocalRdmCommand cmd_;
+};
+
+class RemoteRdmResponse
 {
-  return msg.seq_num;
-}
+private:
+  RdmnetRemoteRdmResponse resp_;
+};
 
-template <class Message>
-rdm::Command GetRdmCommand(const Message& msg)
-{
-  return msg.rdm_command;
-}
+// TODO Resolve
 
-template <class Message>
-rdm::Command GetOriginalCommand(const Message& msg)
-{
-  return msg.original_command;
-}
+// template <class Message>
+// rdm::Uid GetSourceUid(const Message& msg)
+// {
+//   return msg.source_uid;
+// }
+//
+// template <class Message>
+// rdm::Uid GetDestUid(const Message& msg)
+// {
+//   return msg.dest_uid;
+// }
+//
+// template <class Message>
+// uint16_t GetDestEndpoint(const Message& msg)
+// {
+//   return msg.dest_endpoint;
+// }
+//
+// template <class Message>
+// uint32_t GetSeqNum(const Message& msg)
+// {
+//   return msg.seq_num;
+// }
+//
+// template <class Message>
+// rdm::Command GetRdmCommand(const Message& msg)
+// {
+//   return msg.rdm_command;
+// }
+//
+// template <class Message>
+// rdm::Command GetOriginalCommand(const Message& msg)
+// {
+//   return msg.original_command;
+// }
 
-};      // namespace rdmnet
+};  // namespace rdmnet
+
 #endif  // RDMNET_CPP_MESSAGE_H_

@@ -424,7 +424,7 @@ etcpal_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet
 etcpal_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                                    const RdmnetLocalRdmResponse* resp);
 etcpal_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                             const LocalRptStatus* status);
+                                             const RdmnetLocalRptStatus* status);
 etcpal_error_t rdmnet_rpt_client_send_llrp_response(rdmnet_client_t handle, const LlrpLocalRdmResponse* resp);
 
 #ifdef __cplusplus

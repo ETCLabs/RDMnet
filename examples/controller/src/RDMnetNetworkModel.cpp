@@ -141,16 +141,16 @@ void RDMnetNetworkModel::addScopeToMonitor(QString scope)
     }
     else
     {
-      rdmnet_client_scope_t new_scope_handle = rdmnet_->AddScope(scope.toStdString());
-      if (new_scope_handle != RDMNET_CLIENT_SCOPE_INVALID)
+      auto new_scope_handle = rdmnet_.AddScope(scope.toStdString());
+      if (new_scope_handle)
       {
-        BrokerItem* broker = new BrokerItem(scope, new_scope_handle);
+        BrokerItem* broker = new BrokerItem(scope, *new_scope_handle);
         appendRowToItem(invisibleRootItem(), broker);
         broker->enableChildrenSearch();
 
         emit expandNewItem(broker->index(), BrokerItem::BrokerItemType);
 
-        broker_connections_.insert(std::make_pair(new_scope_handle, broker));
+        broker_connections_.insert(std::make_pair(*new_scope_handle, broker));
 
         default_responder_.AddScope(scope.toStdString());
         newScopeAdded = true;
@@ -158,16 +158,16 @@ void RDMnetNetworkModel::addScopeToMonitor(QString scope)
     }
   }
 
-  if (newScopeAdded)
-  {
-    // Broadcast GET_RESPONSE notification because of newly added scope
-    std::vector<RdmParamData> resp_data_list;
-    uint16_t nack_reason;
-    if (default_responder_.GetComponentScope(0x0001, resp_data_list, nack_reason))
-    {
-      SendRDMGetResponsesBroadcast(E133_COMPONENT_SCOPE, resp_data_list);
-    }
-  }
+  // if (newScopeAdded)
+  // {
+  //   // Broadcast GET_RESPONSE notification because of newly added scope
+  //   std::vector<RdmParamData> resp_data_list;
+  //   uint16_t nack_reason;
+  //   if (default_responder_.GetComponentScope(0x0001, resp_data_list, nack_reason))
+  //   {
+  //     SendRDMGetResponsesBroadcast(E133_COMPONENT_SCOPE, resp_data_list);
+  //   }
+  // }
 }
 
 void RDMnetNetworkModel::directChildrenRevealed(const QModelIndex& parentIndex)
@@ -194,8 +194,8 @@ void RDMnetNetworkModel::directChildrenRevealed(const QModelIndex& parentIndex)
 void RDMnetNetworkModel::addBrokerByIP(QString scope, const etcpal::SockAddr& addr)
 {
   bool brokerAlreadyAdded = false;
-  bool shouldSendRDMGetResponsesBroadcast = false;
-  std::vector<RdmParamData> resp_data_list;
+  // bool shouldSendRDMGetResponsesBroadcast = false;
+  // std::vector<RdmParamData> resp_data_list;
 
   {
     etcpal::WriteGuard conn_write(conn_lock_);
@@ -220,36 +220,32 @@ void RDMnetNetworkModel::addBrokerByIP(QString scope, const etcpal::SockAddr& ad
     }
     else
     {
-      StaticBrokerConfig static_broker;
-      static_broker.valid = true;
-      static_broker.addr = addr;
-
-      rdmnet_client_scope_t new_scope_handle = rdmnet_->AddScope(scope.toStdString(), static_broker);
-      if (new_scope_handle != RDMNET_CLIENT_SCOPE_INVALID)
+      auto new_scope_handle = rdmnet_.AddScope(scope.toStdString(), addr);
+      if (new_scope_handle)
       {
-        BrokerItem* broker = new BrokerItem(scope, new_scope_handle, static_broker);
+        BrokerItem* broker = new BrokerItem(scope, *new_scope_handle, addr);
         appendRowToItem(invisibleRootItem(), broker);
         broker->enableChildrenSearch();
 
         emit expandNewItem(broker->index(), BrokerItem::BrokerItemType);
 
-        broker_connections_.insert(std::make_pair(new_scope_handle, broker));
+        broker_connections_.insert(std::make_pair(*new_scope_handle, broker));
 
-        default_responder_.AddScope(scope.toStdString(), static_broker);
-        // Broadcast GET_RESPONSE notification because of newly added scope
-        uint16_t nack_reason;
-        if (default_responder_.GetComponentScope(0x0001, resp_data_list, nack_reason))
-        {
-          shouldSendRDMGetResponsesBroadcast = true;
-        }
+        // default_responder_.AddScope(scope.toStdString(), static_broker);
+        // // Broadcast GET_RESPONSE notification because of newly added scope
+        // uint16_t nack_reason;
+        // if (default_responder_.GetComponentScope(0x0001, resp_data_list, nack_reason))
+        // {
+        //   shouldSendRDMGetResponsesBroadcast = true;
+        // }
       }
     }
   }
 
-  if (shouldSendRDMGetResponsesBroadcast)
-  {
-    SendRDMGetResponsesBroadcast(E133_COMPONENT_SCOPE, resp_data_list);
-  }
+  // if (shouldSendRDMGetResponsesBroadcast)
+  // {
+  //   SendRDMGetResponsesBroadcast(E133_COMPONENT_SCOPE, resp_data_list);
+  // }
 }
 
 void RDMnetNetworkModel::addCustomLogOutputStream(LogOutputStream* stream)
@@ -262,7 +258,8 @@ void RDMnetNetworkModel::removeCustomLogOutputStream(LogOutputStream* stream)
   log_->removeCustomOutputStream(stream);
 }
 
-void RDMnetNetworkModel::Connected(rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo& info)
+void RDMnetNetworkModel::HandleConnectedToBroker(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
+                                                 const RdmnetClientConnectedInfo& info)
 {
   etcpal::ReadGuard conn_read(conn_lock_);
 
@@ -275,19 +272,20 @@ void RDMnetNetworkModel::Connected(rdmnet_client_scope_t scope_handle, const Rdm
     default_responder_.UpdateScopeConnectionStatus(utf8_scope, true, info.broker_addr);
 
     // Broadcast GET_RESPONSE notification because of new connection
-    std::vector<RdmParamData> resp_data_list;
-    uint16_t nack_reason;
-    if (default_responder_.GetTCPCommsStatus(nullptr, 0, resp_data_list, nack_reason))
-    {
-      SendRDMGetResponsesBroadcast(E133_TCP_COMMS_STATUS, resp_data_list);
-    }
+    // std::vector<RdmParamData> resp_data_list;
+    // uint16_t nack_reason;
+    // if (default_responder_.GetTCPCommsStatus(nullptr, 0, resp_data_list, nack_reason))
+    // {
+    //   SendRDMGetResponsesBroadcast(E133_TCP_COMMS_STATUS, resp_data_list);
+    // }
 
     log_->Log(ETCPAL_LOG_INFO, "Connected to broker on scope %s", utf8_scope.c_str());
-    rdmnet_->RequestClientList(scope_handle);
+    rdmnet_.RequestClientList(scope_handle);
   }
 }
 
-void RDMnetNetworkModel::ConnectFailed(rdmnet_client_scope_t scope_handle, const RdmnetClientConnectFailedInfo& info)
+void RDMnetNetworkModel::HandleBrokerConnectFailed(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
+                                                   const RdmnetClientConnectFailedInfo& info)
 {
   etcpal::ReadGuard conn_read(conn_lock_);
 
@@ -305,7 +303,8 @@ void RDMnetNetworkModel::ConnectFailed(rdmnet_client_scope_t scope_handle, const
   }
 }
 
-void RDMnetNetworkModel::Disconnected(rdmnet_client_scope_t scope_handle, const RdmnetClientDisconnectedInfo& info)
+void RDMnetNetworkModel::HandleDisconnectedFromBroker(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
+                                                      const RdmnetClientDisconnectedInfo& info)
 {
   etcpal::WriteGuard conn_write(conn_lock_);
 
@@ -332,12 +331,12 @@ void RDMnetNetworkModel::Disconnected(rdmnet_client_scope_t scope_handle, const 
       broker_item->enableChildrenSearch();
 
       // Broadcast GET_RESPONSE notification because of lost connection
-      std::vector<RdmParamData> resp_data_list;
-      uint16_t nack_reason;
-      if (default_responder_.GetTCPCommsStatus(nullptr, 0, resp_data_list, nack_reason))
-      {
-        SendRDMGetResponsesBroadcast(E133_TCP_COMMS_STATUS, resp_data_list);
-      }
+      // std::vector<RdmParamData> resp_data_list;
+      // uint16_t nack_reason;
+      // if (default_responder_.GetTCPCommsStatus(nullptr, 0, resp_data_list, nack_reason))
+      // {
+      //   SendRDMGetResponsesBroadcast(E133_TCP_COMMS_STATUS, resp_data_list);
+      // }
     }
   }
 }
@@ -707,7 +706,7 @@ void RDMnetNetworkModel::removeBroker(BrokerItem* broker_item)
   bool removeComplete = false;
 
   rdmnet_client_scope_t scope_handle = broker_item->scope_handle();
-  rdmnet_->RemoveScope(scope_handle, kRdmnetDisconnectUserReconfigure);
+  rdmnet_.RemoveScope(scope_handle, kRdmnetDisconnectUserReconfigure);
   {  // Write lock scope
     etcpal::WriteGuard conn_write(conn_lock_);
     broker_connections_.erase(scope_handle);
@@ -730,12 +729,12 @@ void RDMnetNetworkModel::removeBroker(BrokerItem* broker_item)
   }
 
   // Broadcast GET_RESPONSE notification because of removed scope
-  std::vector<RdmParamData> resp_data_list;
-  uint16_t nack_reason;
-  if (default_responder_.GetComponentScope(0x0001, resp_data_list, nack_reason))
-  {
-    SendRDMGetResponsesBroadcast(E133_COMPONENT_SCOPE, resp_data_list);
-  }
+  // std::vector<RdmParamData> resp_data_list;
+  // uint16_t nack_reason;
+  // if (default_responder_.GetComponentScope(0x0001, resp_data_list, nack_reason))
+  // {
+  //   SendRDMGetResponsesBroadcast(E133_COMPONENT_SCOPE, resp_data_list);
+  // }
 }
 
 void RDMnetNetworkModel::removeAllBrokers()
@@ -746,7 +745,7 @@ void RDMnetNetworkModel::removeAllBrokers()
     auto broker_iter = broker_connections_.begin();
     while (broker_iter != broker_connections_.end())
     {
-      rdmnet_->RemoveScope(broker_iter->second->scope_handle(), kRdmnetDisconnectUserReconfigure);
+      rdmnet_.RemoveScope(broker_iter->second->scope_handle(), kRdmnetDisconnectUserReconfigure);
       default_responder_.RemoveScope(broker_iter->second->scope().toStdString());
       broker_iter = broker_connections_.erase(broker_iter);
     }
@@ -766,12 +765,12 @@ void RDMnetNetworkModel::removeAllBrokers()
   // Broadcast GET_RESPONSE notification, which will send an empty scope
   // to show that there are no scopes left.
 
-  std::vector<RdmParamData> resp_data_list;
-  uint16_t nack_reason;
-  if (default_responder_.GetComponentScope(0x0001, resp_data_list, nack_reason))
-  {
-    SendRDMGetResponsesBroadcast(E133_COMPONENT_SCOPE, resp_data_list);
-  }
+  // std::vector<RdmParamData> resp_data_list;
+  // uint16_t nack_reason;
+  // if (default_responder_.GetComponentScope(0x0001, resp_data_list, nack_reason))
+  // {
+  //   SendRDMGetResponsesBroadcast(E133_COMPONENT_SCOPE, resp_data_list);
+  // }
 }
 
 void RDMnetNetworkModel::activateFeature(RDMnetNetworkItem* device, SupportedDeviceFeature feature)
@@ -815,15 +814,18 @@ void RDMnetNetworkModel::activateFeature(RDMnetNetworkItem* device, SupportedDev
   }
 }
 
-RDMnetNetworkModel::RDMnetNetworkModel(RDMnetLibInterface* library, ControllerLog* log) : rdmnet_(library), log_(log)
+RDMnetNetworkModel::RDMnetNetworkModel(rdmnet::Controller& library, ControllerLog* log) : rdmnet_(library), log_(log)
 {
 }
 
-RDMnetNetworkModel* RDMnetNetworkModel::makeRDMnetNetworkModel(RDMnetLibInterface* library, ControllerLog* log)
+RDMnetNetworkModel* RDMnetNetworkModel::makeRDMnetNetworkModel(rdmnet::Controller& library, ControllerLog* log)
 {
   RDMnetNetworkModel* model = new RDMnetNetworkModel(library, log);
 
-  model->rdmnet_->Startup(model->my_cid_, model);
+  const rdmnet::ControllerRdmData my_rdm_data("ETC", "Example RDMnet Controller", "1.0.0",
+                                              "My Example RDMnet Controller");
+  model->rdmnet_.Startup(*model, rdmnet::ControllerData(model->my_cid_, rdm::Uid::DynamicUidRequest(0x6574)),
+                         my_rdm_data);
 
   // Initialize GUI-supported PID information
   QString rdmGroupName("RDM");
@@ -1052,15 +1054,11 @@ void RDMnetNetworkModel::Shutdown()
   {  // Write lock scope
     etcpal::WriteGuard conn_write(conn_lock_);
 
-    for (auto& connection : broker_connections_)
-      rdmnet_->RemoveScope(connection.first, kRdmnetDisconnectShutdown);
-
     broker_connections_.clear();
   }
 
-  rdmnet_->Shutdown();
+  rdmnet_.Shutdown();
 
-  rdmnet_ = nullptr;
   log_ = nullptr;
 }
 
@@ -1345,8 +1343,8 @@ bool RDMnetNetworkModel::setData(const QModelIndex& index, const QVariant& value
   return updateValue ? QStandardItemModel::setData(index, newValue, role) : false;
 }
 
-void RDMnetNetworkModel::ClientListUpdate(rdmnet_client_scope_t scope_handle, client_list_action_t action,
-                                          const RptClientList& list)
+void RDMnetNetworkModel::HandleClientListUpdate(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
+                                                client_list_action_t action, const RptClientList& list)
 {
   etcpal::ReadGuard conn_read(conn_lock_);
 
@@ -1366,7 +1364,8 @@ void RDMnetNetworkModel::ClientListUpdate(rdmnet_client_scope_t scope_handle, cl
     emit addRDMnetClients(broker_item, entries);
 }
 
-void RDMnetNetworkModel::StatusReceived(rdmnet_client_scope_t /* scope_handle */, const RemoteRptStatus& status)
+void RDMnetNetworkModel::HandleRptStatus(rdmnet::Controller& controller, rdmnet::ScopeHandle /* scope_handle */,
+                                         const RemoteRptStatus& status)
 {
   // This function has some work TODO. We should at least be logging things
   // here.
@@ -1409,50 +1408,50 @@ void RDMnetNetworkModel::StatusReceived(rdmnet_client_scope_t /* scope_handle */
   }
 }
 
-void RDMnetNetworkModel::LlrpRdmCommandReceived(const LlrpRemoteRdmCommand& cmd)
-{
-  bool should_nack = false;
-  uint16_t nack_reason;
-
-  const RdmCommand& rdm = cmd.rdm;
-  if (rdm.command_class == kRdmCCGetCommand)
-  {
-    std::vector<RdmParamData> resp_data_list;
-
-    if (default_responder_.Get(rdm.param_id, rdm.data, rdm.datalen, resp_data_list, nack_reason))
-    {
-      if (resp_data_list.size() == 1)
-      {
-        SendLlrpGetResponse(cmd, resp_data_list);
-
-        log_->Log(ETCPAL_LOG_DEBUG, "ACK'ing GET_COMMAND for PID 0x%04x from LLRP Manager %04x:%08x", rdm.param_id,
-                  rdm.source_uid.manu, rdm.source_uid.id);
-      }
-      else
-      {
-        should_nack = true;
-        nack_reason = E137_7_NR_ACTION_NOT_SUPPORTED;
-      }
-    }
-    else
-    {
-      should_nack = true;
-    }
-  }
-  else
-  {
-    // This controller is currently read-only.
-    should_nack = true;
-    nack_reason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
-  }
-
-  if (should_nack)
-  {
-    SendLlrpNack(cmd, nack_reason);
-    log_->Log(ETCPAL_LOG_DEBUG, "Sending NACK to LLRP Manager %04x:%08x for PID 0x%04x with reason 0x%04x",
-              rdm.source_uid.manu, rdm.source_uid.id, rdm.param_id, nack_reason);
-  }
-}
+// void RDMnetNetworkModel::LlrpRdmCommandReceived(const LlrpRemoteRdmCommand& cmd)
+// {
+//   bool should_nack = false;
+//   uint16_t nack_reason;
+//
+//   const RdmCommand& rdm = cmd.rdm;
+//   if (rdm.command_class == kRdmCCGetCommand)
+//   {
+//     std::vector<RdmParamData> resp_data_list;
+//
+//     if (default_responder_.Get(rdm.param_id, rdm.data, rdm.datalen, resp_data_list, nack_reason))
+//     {
+//       if (resp_data_list.size() == 1)
+//       {
+//         SendLlrpGetResponse(cmd, resp_data_list);
+//
+//         log_->Log(ETCPAL_LOG_DEBUG, "ACK'ing GET_COMMAND for PID 0x%04x from LLRP Manager %04x:%08x", rdm.param_id,
+//                   rdm.source_uid.manu, rdm.source_uid.id);
+//       }
+//       else
+//       {
+//         should_nack = true;
+//         nack_reason = E137_7_NR_ACTION_NOT_SUPPORTED;
+//       }
+//     }
+//     else
+//     {
+//       should_nack = true;
+//     }
+//   }
+//   else
+//   {
+//     // This controller is currently read-only.
+//     should_nack = true;
+//     nack_reason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
+//   }
+//
+//   if (should_nack)
+//   {
+//     SendLlrpNack(cmd, nack_reason);
+//     log_->Log(ETCPAL_LOG_DEBUG, "Sending NACK to LLRP Manager %04x:%08x for PID 0x%04x with reason 0x%04x",
+//               rdm.source_uid.manu, rdm.source_uid.id, rdm.param_id, nack_reason);
+//   }
+// }
 
 bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand& cmd, const BrokerItem* broker_item)
 {
@@ -1467,7 +1466,7 @@ bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand& cmd, const BrokerItem*
     if (client->uid() == cmd.dest_uid)
     {
       // We are sending a command to a Default Responder.
-      cmd_to_send.dest_uid = cmd.dest_uid;
+      cmd_to_send.rdmnet_dest_uid = cmd.dest_uid;
       cmd_to_send.dest_endpoint = E133_NULL_ENDPOINT;
       found_responder = true;
       break;
@@ -1480,7 +1479,7 @@ bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand& cmd, const BrokerItem*
         {
           if (responder->uid() == cmd.dest_uid)
           {
-            cmd_to_send.dest_uid = client->uid();
+            cmd_to_send.rdmnet_dest_uid = client->uid();
             cmd_to_send.dest_endpoint = endpoint->id();
             found_responder = true;
             break;
@@ -1498,7 +1497,7 @@ bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand& cmd, const BrokerItem*
     return false;
 
   cmd_to_send.rdm = cmd;
-  return rdmnet_->SendRdmCommand(broker_item->scope_handle(), cmd_to_send);
+  return rdmnet_.SendRdmCommand(broker_item->scope_handle(), cmd_to_send).has_value();
 }
 
 bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand& cmd, rdmnet_client_scope_t scope_handle)
@@ -1516,166 +1515,8 @@ bool RDMnetNetworkModel::SendRDMCommand(const RdmCommand& cmd, rdmnet_client_sco
   return false;
 }
 
-void RDMnetNetworkModel::SendRDMGetResponses(rdmnet_client_scope_t scope_handle, const RdmUid& dest_uid,
-                                             uint16_t param_id, const std::vector<RdmParamData>& resp_data_list,
-                                             bool have_command, const RdmnetRemoteRdmCommand& cmd)
-{
-  std::vector<RdmResponse> resp_list;
-  RdmResponse resp_data;
-  RdmnetLocalRdmResponse resp;
-
-  resp.dest_uid = dest_uid;
-  resp.seq_num = have_command ? cmd.seq_num : 0;
-  resp.source_endpoint = E133_NULL_ENDPOINT;
-  resp.command_included = have_command;
-  if (have_command)
-    resp.cmd = cmd.rdm;
-
-  // The source UID is added by the library right before sending.
-  resp_data.dest_uid = dest_uid;
-  resp_data.transaction_num = have_command ? cmd.rdm.transaction_num : 0;
-  resp_data.resp_type = resp_data_list.size() > 1 ? kRdmResponseTypeAckOverflow : kRdmResponseTypeAck;
-  resp_data.msg_count = 0;
-  resp_data.subdevice = 0;
-  resp_data.command_class = kRdmCCGetCommandResponse;
-  resp_data.param_id = param_id;
-
-  for (size_t i = 0; i < resp_data_list.size(); ++i)
-  {
-    memcpy(resp_data.data, resp_data_list[i].data, resp_data_list[i].datalen);
-    resp_data.datalen = resp_data_list[i].datalen;
-    if (i == resp_data_list.size() - 1)
-    {
-      resp_data.resp_type = kRdmResponseTypeAck;
-    }
-    resp_list.push_back(resp_data);
-  }
-
-  resp.num_responses = resp_list.size();
-  resp.responses = resp_list.data();
-  rdmnet_->SendRdmResponse(scope_handle, resp);
-}
-
-void RDMnetNetworkModel::SendRDMGetResponsesBroadcast(uint16_t param_id,
-                                                      const std::vector<RdmParamData>& resp_data_list)
-{
-  etcpal::ReadGuard conn_read(conn_lock_);
-
-  for (const auto& broker_pair : broker_connections_)
-  {
-    if (broker_pair.second->connected())
-    {
-      SendRDMGetResponses(broker_pair.second->scope_handle(), kRdmnetControllerBroadcastUid, param_id, resp_data_list);
-    }
-  }
-}
-
-void RDMnetNetworkModel::SendRDMNack(rdmnet_client_scope_t scope, const RdmnetRemoteRdmCommand& received_cmd,
-                                     uint16_t nack_reason)
-{
-  RdmResponse rdm_resp;
-  rdm_resp.dest_uid = received_cmd.rdm.source_uid;
-  rdm_resp.transaction_num = received_cmd.rdm.transaction_num;
-  rdm_resp.resp_type = kRdmResponseTypeNackReason;
-  rdm_resp.msg_count = 0;
-  rdm_resp.subdevice = 0;
-  rdm_resp.command_class =
-      (received_cmd.rdm.command_class == kRdmCCSetCommand) ? kRdmCCSetCommandResponse : kRdmCCGetCommandResponse;
-  rdm_resp.param_id = received_cmd.rdm.param_id;
-  rdm_resp.datalen = 2;
-  etcpal_pack_u16b(rdm_resp.data, nack_reason);
-
-  RdmnetLocalRdmResponse resp;
-  resp.dest_uid = received_cmd.source_uid;
-  resp.num_responses = 1;
-  resp.responses = &rdm_resp;
-  resp.seq_num = received_cmd.seq_num;
-  resp.source_endpoint = E133_NULL_ENDPOINT;
-  resp.command_included = true;
-  resp.cmd = received_cmd.rdm;
-  rdmnet_->SendRdmResponse(scope, resp);
-}
-
-void RDMnetNetworkModel::SendLlrpGetResponse(const LlrpRemoteRdmCommand& received_cmd,
-                                             const std::vector<RdmParamData>& resp_data_list)
-{
-  if (resp_data_list.size() != 1)
-    return;
-
-  RdmResponse rdm_resp;
-  rdm_resp.source_uid = received_cmd.rdm.dest_uid;
-  rdm_resp.dest_uid = received_cmd.rdm.source_uid;
-  rdm_resp.transaction_num = received_cmd.rdm.transaction_num;
-  rdm_resp.resp_type = kRdmResponseTypeAck;
-  rdm_resp.msg_count = 0;
-  rdm_resp.subdevice = 0;
-  rdm_resp.command_class = kRdmCCGetCommandResponse;
-  rdm_resp.param_id = received_cmd.rdm.param_id;
-  memcpy(rdm_resp.data, resp_data_list[0].data, resp_data_list[0].datalen);
-  rdm_resp.datalen = resp_data_list[0].datalen;
-
-  LlrpLocalRdmResponse resp;
-  LLRP_CREATE_RESPONSE_FROM_COMMAND(&resp, &received_cmd, &rdm_resp);
-  rdmnet_->SendLlrpResponse(resp);
-}
-
-void RDMnetNetworkModel::SendLlrpNack(const LlrpRemoteRdmCommand& received_cmd, uint16_t nack_reason)
-{
-  RdmResponse rdm_resp;
-  rdm_resp.dest_uid = received_cmd.rdm.source_uid;
-  rdm_resp.transaction_num = received_cmd.rdm.transaction_num;
-  rdm_resp.resp_type = kRdmResponseTypeNackReason;
-  rdm_resp.msg_count = 0;
-  rdm_resp.subdevice = 0;
-  rdm_resp.command_class =
-      (received_cmd.rdm.command_class == kRdmCCSetCommand) ? kRdmCCSetCommandResponse : kRdmCCGetCommandResponse;
-  rdm_resp.param_id = received_cmd.rdm.param_id;
-  rdm_resp.datalen = 2;
-  etcpal_pack_u16b(rdm_resp.data, nack_reason);
-
-  LlrpLocalRdmResponse resp;
-  LLRP_CREATE_RESPONSE_FROM_COMMAND(&resp, &received_cmd, &rdm_resp);
-  rdmnet_->SendLlrpResponse(resp);
-}
-
-void RDMnetNetworkModel::RdmCommandReceived(rdmnet_client_scope_t scope_handle, const RdmnetRemoteRdmCommand& cmd)
-{
-  bool should_nack = false;
-  uint16_t nack_reason;
-
-  const RdmCommand& rdm = cmd.rdm;
-  if (rdm.command_class == kRdmCCGetCommand)
-  {
-    std::vector<RdmParamData> resp_data_list;
-
-    if (default_responder_.Get(rdm.param_id, rdm.data, rdm.datalen, resp_data_list, nack_reason))
-    {
-      SendRDMGetResponses(scope_handle, cmd.source_uid, rdm.param_id, resp_data_list, true, cmd);
-
-      log_->Log(ETCPAL_LOG_DEBUG, "ACK'ing GET_COMMAND for PID 0x%04x from Controller %04x:%08x", rdm.param_id,
-                cmd.source_uid.manu, cmd.source_uid.id);
-    }
-    else
-    {
-      should_nack = true;
-    }
-  }
-  else
-  {
-    // This controller is currently read-only.
-    should_nack = true;
-    nack_reason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
-  }
-
-  if (should_nack)
-  {
-    SendRDMNack(scope_handle, cmd, nack_reason);
-    log_->Log(ETCPAL_LOG_DEBUG, "Sending NACK to Controller %04x:%08x for PID 0x%04x with reason 0x%04x",
-              cmd.source_uid.manu, cmd.source_uid.id, rdm.param_id, nack_reason);
-  }
-}
-
-void RDMnetNetworkModel::RdmResponseReceived(rdmnet_client_scope_t scope_handle, const RdmnetRemoteRdmResponse& resp)
+void RDMnetNetworkModel::HandleRdmResponse(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
+                                           const RdmnetRemoteRdmResponse& resp)
 {
   // Since we are compiling with RDMNET_DYNAMIC_MEM, we should never get partial responses.
   assert(!resp.more_coming);
@@ -2128,12 +1969,7 @@ void RDMnetNetworkModel::HandleEndpointListChangeResponse(rdmnet_client_scope_t 
   rdm.param_id = E137_7_ENDPOINT_LIST;
   rdm.datalen = 0;
 
-  RdmnetLocalRdmCommand cmd;
-  cmd.dest_uid = source_uid;
-  cmd.dest_endpoint = E133_NULL_ENDPOINT;
-  cmd.rdm = rdm;
-
-  rdmnet_->SendRdmCommand(scope_handle, cmd);
+  rdmnet_.SendRdmCommand(scope_handle, source_uid, rdmnet::kNullEndpoint, rdm);
 }
 
 void RDMnetNetworkModel::HandleResponderListChangeResponse(rdmnet_client_scope_t scope_handle,
@@ -2149,12 +1985,7 @@ void RDMnetNetworkModel::HandleResponderListChangeResponse(rdmnet_client_scope_t
   rdm.datalen = sizeof(uint16_t);
   etcpal_pack_u16b(rdm.data, endpoint);
 
-  RdmnetLocalRdmCommand cmd;
-  cmd.dest_uid = source_uid;
-  cmd.dest_endpoint = E133_NULL_ENDPOINT;
-  cmd.rdm = rdm;
-
-  rdmnet_->SendRdmCommand(scope_handle, cmd);
+  rdmnet_.SendRdmCommand(scope_handle, source_uid, rdmnet::kNullEndpoint, rdm);
 }
 
 void RDMnetNetworkModel::HandleRDMNack(rdmnet_client_scope_t scope_handle, uint16_t reason, const RdmResponse& resp)

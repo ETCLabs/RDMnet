@@ -160,7 +160,7 @@ etcpal_error_t rdmnet_device_create(const RdmnetDeviceConfig* config, rdmnet_dev
 etcpal_error_t rdmnet_device_destroy(rdmnet_device_t handle, rdmnet_disconnect_reason_t disconnect_reason);
 
 etcpal_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const RdmnetLocalRdmResponse* resp);
-etcpal_error_t rdmnet_device_send_status(rdmnet_device_t handle, const LocalRptStatus* status);
+etcpal_error_t rdmnet_device_send_status(rdmnet_device_t handle, const RdmnetLocalRptStatus* status);
 etcpal_error_t rdmnet_device_send_llrp_response(rdmnet_device_t handle, const LlrpLocalRdmResponse* resp);
 
 etcpal_error_t rdmnet_device_request_dynamic_uids(rdmnet_device_t handle, const DynamicUidRequest* requests,

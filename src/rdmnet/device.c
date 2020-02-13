@@ -246,7 +246,7 @@ etcpal_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const Rdm
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return Other errors forwarded from rdmnet_rpt_client_send_status().
  */
-etcpal_error_t rdmnet_device_send_status(rdmnet_device_t handle, const LocalRptStatus* status)
+etcpal_error_t rdmnet_device_send_status(rdmnet_device_t handle, const RdmnetLocalRptStatus* status)
 {
   if (!handle)
     return kEtcPalErrInvalid;

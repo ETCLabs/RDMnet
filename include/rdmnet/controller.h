@@ -132,11 +132,15 @@ typedef struct RdmnetControllerCallbacks
    * \param[in] status The RPT status data.
    * \param[in] context Context pointer that was given at the creation of the controller instance.
    */
-  void (*status_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle, const RemoteRptStatus* status,
-                          void* context);
+  void (*status_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                          const RdmnetRemoteRptStatus* status, void* context);
 
   /*!
    * \brief A set of previously-requested dynamic UID mappings has been received.
+   *
+   * This callback does not need to be implemented if the controller implementation never intends
+   * to request dynamic UID mappings.
+   *
    * \param[in] handle Handle to the controller which has received the dynamic UID mappings.
    * \param[in] scope_handle Handle to the scope on which the dynamic UID mappings were received.
    * \param[in] list The list of dynamic UID mappings.
@@ -206,7 +210,7 @@ typedef struct RdmnetControllerConfig
 /*!
  * \brief Set the main callbacks in an RDMnet controller configuration structure.
  *
- * All callbacks are required.
+ * All callbacks are required except for .
  *
  * \param configptr Pointer to the RdmnetControllerConfig in which to set the callbacks.
  * \param connected_cb Function pointer to use for the \ref RdmnetControllerCallbacks::connected
@@ -221,11 +225,13 @@ typedef struct RdmnetControllerConfig
  *                                 "rdm_response_received" callback.
  * \param status_received_cb Function pointer to use for the \ref RdmnetControllerCallbacks::status_received
  *                           "status_received" callback.
+ * \param dynamic_uid_mappings_received_cb Function pointer to use for the
+ *    \ref RdmnetControllerCallbacks::status_received "status_received" callback. Can be NULL.
  * \param cb_context Pointer to opaque data passed back with each callback. Can be NULL.
  */
 #define RDMNET_CONTROLLER_SET_CALLBACKS(configptr, connected_cb, connect_failed_cb, disconnected_cb,                  \
                                         client_list_update_received_cb, rdm_response_received_cb, status_received_cb, \
-                                        cb_context)                                                                   \
+                                        dynamic_uid_mappings_received_cb, cb_context)                                 \
   do                                                                                                                  \
   {                                                                                                                   \
     (configptr)->callbacks.connected = (connected_cb);                                                                \
@@ -234,6 +240,7 @@ typedef struct RdmnetControllerConfig
     (configptr)->callbacks.client_list_update_received = (client_list_update_received_cb);                            \
     (configptr)->callbacks.rdm_response_received = (rdm_response_received_cb);                                        \
     (configptr)->callbacks.status_received = (status_received_cb);                                                    \
+    (configptr)->callbacks.dynamic_uid_mappings_received = (dynamic_uid_mappings_received_cb);                        \
     (configptr)->callback_context = (cb_context);                                                                     \
   } while (0)
 

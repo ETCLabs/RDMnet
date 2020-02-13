@@ -23,7 +23,6 @@
 #include "rdmnet/client.h"
 #include "RDMnetNetworkItem.h"
 #include "RDMnetClientItem.h"
-#include "ControllerUtils.h"
 
 class BrokerItem : public RDMnetNetworkItem
 {
@@ -31,7 +30,7 @@ public:
   static const int BrokerItemType = QStandardItem::UserType + 2;
 
   BrokerItem(const QString& scope, rdmnet_client_scope_t scope_handle,
-             const StaticBrokerConfig& static_broker = StaticBrokerConfig());
+             const etcpal::SockAddr& static_broker = etcpal::SockAddr());
   virtual ~BrokerItem();
 
   virtual int type() const override;
@@ -51,7 +50,7 @@ protected:
 private:
   QString scope_;
   rdmnet_client_scope_t scope_handle_{RDMNET_CLIENT_SCOPE_INVALID};
-  StaticBrokerConfig static_broker_;
-  etcpal::SockAddr broker_addr_{};
+  etcpal::SockAddr broker_addr_;
+  etcpal::SockAddr static_broker_;
   bool connected_{false};
 };

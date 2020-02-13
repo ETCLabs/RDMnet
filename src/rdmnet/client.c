@@ -448,14 +448,20 @@ etcpal_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet
   RptHeader header;
   header.source_uid = scope_entry->uid;
   header.source_endpoint_id = E133_NULL_ENDPOINT;
-  header.dest_uid = cmd->dest_uid;
+  header.dest_uid = cmd->rdmnet_dest_uid;
   header.dest_endpoint_id = cmd->dest_endpoint;
   header.seqnum = scope_entry->send_seq_num++;
 
-  RdmCommand rdm_to_send = cmd->rdm;
+  RdmCommand rdm_to_send;
   rdm_to_send.source_uid = scope_entry->uid;
+  rdm_to_send.dest_uid = cmd->rdm_dest_uid;
   rdm_to_send.port_id = 1;
   rdm_to_send.transaction_num = (uint8_t)(header.seqnum & 0xffu);
+  rdm_to_send.subdevice = cmd->subdevice;
+  rdm_to_send.command_class = cmd->command_class;
+  rdm_to_send.param_id = cmd->param_id;
+  rdm_to_send.datalen = cmd->datalen;
+  memcpy(rdm_to_send.data, cmd->data, rdm_to_send.datalen);
 
   RdmBuffer buf_to_send;
   res = rdmctl_pack_command(&rdm_to_send, &buf_to_send);
@@ -502,7 +508,7 @@ etcpal_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmne
   RptHeader header;
   header.source_uid = scope_entry->uid;
   header.source_endpoint_id = resp->source_endpoint;
-  header.dest_uid = resp->dest_uid;
+  header.dest_uid = resp->rdmnet_dest_uid;
   header.dest_endpoint_id = E133_NULL_ENDPOINT;
   header.seqnum = resp->seq_num;
 
@@ -536,7 +542,7 @@ etcpal_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmne
 }
 
 etcpal_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                             const LocalRptStatus* status)
+                                             const RdmnetLocalRptStatus* status)
 {
   if (handle < 0 || scope_handle < 0 || !status)
     return kEtcPalErrInvalid;
@@ -550,7 +556,7 @@ etcpal_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, rdmnet_clie
   RptHeader header;
   header.source_uid = scope_entry->uid;
   header.source_endpoint_id = status->source_endpoint;
-  header.dest_uid = status->dest_uid;
+  header.dest_uid = status->rdmnet_dest_uid;
   header.dest_endpoint_id = E133_NULL_ENDPOINT;
   header.seqnum = status->seq_num;
 
@@ -830,7 +836,7 @@ bool handle_rpt_message(const RdmnetClient* cli, const ClientScopeListEntry* sco
 
 bool handle_rpt_request(const RptMessage* rmsg, RptClientMessage* msg_out)
 {
-  RdmnetRemoteRdmCommand* cmd = &msg_out->payload.cmd;
+  RdmnetRemoteRdmCommand* cmd = RDMNET_GET_REMOTE_RDM_COMMAND(msg_out);
   const RdmBufList* list = GET_RDM_BUF_LIST(rmsg);
 
   if (list->num_rdm_buffers == 1)  // Only one RDM command allowed in an RPT request
@@ -850,7 +856,7 @@ bool handle_rpt_request(const RptMessage* rmsg, RptClientMessage* msg_out)
 
 bool handle_rpt_notification(const RptMessage* rmsg, RptClientMessage* msg_out)
 {
-  RdmnetRemoteRdmResponse* resp = &msg_out->payload.resp;
+  RdmnetRemoteRdmResponse* resp = RDMNET_GET_REMOTE_RDM_RESPONSE(msg_out);
 
   // Do some initialization
   msg_out->type = kRptClientMsgRdmResp;
@@ -894,7 +900,7 @@ bool handle_rpt_notification(const RptMessage* rmsg, RptClientMessage* msg_out)
   if (good_parse)
   {
     // Fill in the rest of the info
-    resp->source_uid = rmsg->header.source_uid;
+    resp->rdmnet_source_uid = rmsg->header.source_uid;
     resp->source_endpoint = rmsg->header.source_endpoint_id;
     resp->seq_num = rmsg->header.seqnum;
     return true;
@@ -909,12 +915,12 @@ bool handle_rpt_notification(const RptMessage* rmsg, RptClientMessage* msg_out)
 
 bool handle_rpt_status(const RptMessage* rmsg, RptClientMessage* msg_out)
 {
-  RemoteRptStatus* status_out = &msg_out->payload.status;
+  RdmnetRemoteRptStatus* status_out = RDMNET_GET_REMOTE_RPT_STATUS(msg_out);
   const RptStatusMsg* status = GET_RPT_STATUS_MSG(rmsg);
 
   // This one is quick and simple with no failure condition
   msg_out->type = kRptClientMsgStatus;
-  status_out->source_uid = rmsg->header.source_uid;
+  status_out->rdmnet_source_uid = rmsg->header.source_uid;
   status_out->source_endpoint = rmsg->header.source_endpoint_id;
   status_out->seq_num = rmsg->header.seqnum;
   status_out->msg = *status;
@@ -925,7 +931,7 @@ void free_rpt_client_message(RptClientMessage* msg)
 {
   if (msg->type == kRptClientMsgRdmResp)
   {
-    FREE_CLIENT_RDM_RESPONSE_ARRAY(GET_REMOTE_RDM_RESPONSE(msg)->responses);
+    FREE_CLIENT_RDM_RESPONSE_ARRAY(RDMNET_GET_REMOTE_RDM_RESPONSE(msg)->responses);
   }
 }
 

@@ -42,20 +42,18 @@ void PrintAllSizes()
   PRINT_SIZE(ClientEntryUpdateMsg);
   PRINT_SIZE(ClientRedirectMsg);
   PRINT_SIZE(ClientList);
-  PRINT_SIZE(DynamicUidRequestListEntry);
   PRINT_SIZE(DynamicUidRequestList);
   PRINT_SIZE(DynamicUidMapping);
   PRINT_SIZE(DynamicUidAssignmentList);
-  PRINT_SIZE(FetchUidAssignmentListEntry);
   PRINT_SIZE(FetchUidAssignmentList);
   PRINT_SIZE(DisconnectMsg);
   PRINT_SIZE(BrokerMessage);
 
   PRINT_HEADER_NAME("rdmnet/core/client_entry.h");
   PRINT_SIZE(EptSubProtocol);
-  PRINT_SIZE(ClientEntryDataRpt);
-  PRINT_SIZE(ClientEntryDataEpt);
-  PRINT_SIZE(ClientEntryData);
+  PRINT_SIZE(RptClientEntry);
+  PRINT_SIZE(EptClientEntry);
+  PRINT_SIZE(ClientEntry);
 
   PRINT_HEADER_NAME("rdmnet/core/connection.h");
   PRINT_SIZE(RdmnetConnCallbacks);
@@ -69,11 +67,10 @@ void PrintAllSizes()
   PRINT_SIZE(EptMessage);
 
   PRINT_HEADER_NAME("rdmnet/core/message.h");
-  PRINT_SIZE(LocalRdmCommand);
-  PRINT_SIZE(RemoteRdmCommand);
-  PRINT_SIZE(LocalRdmResponse);
-  PRINT_SIZE(RemoteRdmRespListEntry);
-  PRINT_SIZE(RemoteRdmResponse);
+  PRINT_SIZE(RdmnetLocalRdmCommand);
+  PRINT_SIZE(RdmnetRemoteRdmCommand);
+  PRINT_SIZE(RdmnetLocalRdmResponse);
+  PRINT_SIZE(RdmnetRemoteRdmResponse);
   PRINT_SIZE(RptClientMessage);
   PRINT_SIZE(EptClientMessage);
   PRINT_SIZE(RdmnetMessage);
@@ -81,7 +78,6 @@ void PrintAllSizes()
   PRINT_HEADER_NAME("rdmnet/core/rpt_prot.h");
   PRINT_SIZE(RptHeader);
   PRINT_SIZE(RptStatusMsg);
-  PRINT_SIZE(RdmBufListEntry);
   PRINT_SIZE(RdmBufList);
   PRINT_SIZE(RptMessage);
 

@@ -39,7 +39,7 @@ class MockControllerNotifyHandler : public rdmnet::ControllerNotifyHandler
               (rdmnet::Controller & controller, rdmnet::ScopeHandle scope, const RdmnetRemoteRdmResponse& resp),
               (override));
   MOCK_METHOD(void, HandleRptStatus,
-              (rdmnet::Controller & controller, rdmnet::ScopeHandle scope, const RemoteRptStatus& status), (override));
+              (rdmnet::Controller & controller, rdmnet::ScopeHandle scope, const RdmnetRemoteRptStatus& status), (override));
 };
 
 class MockControllerRdmHandler : public rdmnet::ControllerRdmCommandHandler

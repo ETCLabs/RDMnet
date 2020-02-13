@@ -32,9 +32,6 @@ set(CMAKE_AUTOUIC ON)
 ############################ RDMnet Controller GUI ############################ 
 
 set(CONTROLLER_TARGET rdmnet_controller_example)
-if(APPLE)
-else()
-endif()
 
 if(WIN32)
   # On Windows, indicates that the app is linked as a windowed (not console) executable
@@ -51,8 +48,6 @@ add_executable(${CONTROLLER_TARGET} ${CONTROLLER_EXE_PROPERTIES}
   src/BrokerItem.h
   src/BrokerStaticAddGUI.cpp
   src/BrokerStaticAddGUI.h
-  src/ControllerDefaultResponder.h
-  src/ControllerDefaultResponder.cpp
   src/ControllerLog.h
   src/ControllerLog.cpp
   src/ControllerUtils.h
@@ -75,9 +70,6 @@ add_executable(${CONTROLLER_TARGET} ${CONTROLLER_EXE_PROPERTIES}
   src/RDMnetClientItem.h
   src/RDMnetControllerGUI.cpp
   src/RDMnetControllerGUI.h
-  src/RDMnetLibInterface.h
-  src/RDMnetLibWrapper.h
-  src/RDMnetLibWrapper.cpp
   src/RDMnetNetworkItem.cpp
   src/RDMnetNetworkItem.h
   src/RDMnetNetworkModel.cpp

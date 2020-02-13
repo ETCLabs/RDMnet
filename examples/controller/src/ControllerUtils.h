@@ -39,13 +39,6 @@
 
 #endif
 
-// A representation of an optional static Broker configuration.
-struct StaticBrokerConfig
-{
-  bool valid{false};
-  etcpal::SockAddr addr;
-};
-
 // Some definitions that aren't provided elsewhere
 constexpr uint16_t kRdmnetMaxScopeSlotNumber = 0xFFFF;
 constexpr size_t kRdmDeviceLabelMaxLength = 32u;

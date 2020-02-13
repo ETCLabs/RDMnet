@@ -26,7 +26,7 @@
 #include "etcpal/pack.h"
 #include "rdm/responder.h"
 
-bool PhysicalEndpoint::QueueMessageForResponder(const RdmUid& uid, std::unique_ptr<RemoteRdmCommand> cmd)
+bool PhysicalEndpoint::QueueMessageForResponder(const RdmUid& uid, std::unique_ptr<RdmnetRemoteRdmCommand> cmd)
 {
   etcpal::MutexGuard responder_guard(responder_lock_);
 
@@ -61,11 +61,12 @@ void PhysicalEndpoint::GotResponse(const RdmUid& uid, const RdmnetRemoteRdmComma
 bool PhysicalEndpoint::AddResponder(const RdmUid& uid)
 {
   etcpal::MutexGuard responder_guard(responder_lock_);
-  auto insert_result = responders_.insert(std::make_pair(uid, std::vector<std::unique_ptr<RemoteRdmCommand>>()));
+  auto insert_result = responders_.insert(std::make_pair(uid, std::vector<std::unique_ptr<RdmnetRemoteRdmCommand>>()));
   return insert_result.second;
 }
 
-bool PhysicalEndpoint::RemoveResponder(const RdmUid& uid, std::vector<std::unique_ptr<RemoteRdmCommand>>& orphaned_msgs)
+bool PhysicalEndpoint::RemoveResponder(const RdmUid& uid,
+                                       std::vector<std::unique_ptr<RdmnetRemoteRdmCommand>>& orphaned_msgs)
 {
   etcpal::MutexGuard responder_guard(responder_lock_);
 
@@ -336,7 +337,7 @@ bool Fakeway::ProcessDefRespRdmCommand(const RdmCommand& cmd, std::vector<RdmRes
 
 void Fakeway::SendRptStatus(const RdmnetRemoteRdmCommand& received_cmd, rpt_status_code_t status_code)
 {
-  LocalRptStatus status;
+  RdmnetLocalRptStatus status;
   rdmnet_create_status_from_command(&received_cmd, status_code, &status);
 
   if (!rdmnet_->SendStatus(status))
@@ -380,7 +381,7 @@ void Fakeway::SendLlrpNack(const LlrpRemoteRdmCommand& received_cmd, uint16_t na
 void Fakeway::SendLlrpResponse(const LlrpRemoteRdmCommand& received_cmd, const RdmResponse& resp)
 {
   LlrpLocalRdmResponse resp_to_send;
-  LLRP_CREATE_RESPONSE_FROM_COMMAND(&resp_to_send, &received_cmd, &resp);
+  rdmnet_create_llrp_response_from_command(&received_cmd, &resp, &resp_to_send);
 
   if (!rdmnet_->SendLlrpResponse(resp_to_send))
     log_.Error("Error sending RPT Notification message to Broker.");

@@ -32,7 +32,7 @@
 #include "etcpal/cpp/lock.h"
 #include "etcpal/cpp/uuid.h"
 #include "rdm/uid.h"
-#include "rdmnet/device.h"
+#include "rdmnet/cpp/device.h"
 
 #include "fakeway_log.h"
 #include "fakeway_default_responder.h"
@@ -50,10 +50,10 @@ public:
   }
   virtual ~PhysicalEndpoint() = default;
 
-  bool QueueMessageForResponder(const RdmUid& uid, std::unique_ptr<RemoteRdmCommand> cmd);
+  bool QueueMessageForResponder(const RdmUid& uid, std::unique_ptr<RdmnetRemoteRdmCommand> cmd);
   void GotResponse(const RdmUid& uid, const RdmnetRemoteRdmCommand* cmd);
   bool AddResponder(const RdmUid& uid);
-  bool RemoveResponder(const RdmUid& uid, std::vector<std::unique_ptr<RemoteRdmCommand>>& orphaned_msgs);
+  bool RemoveResponder(const RdmUid& uid, std::vector<std::unique_ptr<RdmnetRemoteRdmCommand>>& orphaned_msgs);
 
   unsigned int gadget_id() const { return gadget_id_; }
   unsigned int port_num() const { return gadget_port_num_; }
@@ -63,13 +63,13 @@ protected:
   unsigned int gadget_id_;
   unsigned int gadget_port_num_;
   etcpal::Mutex responder_lock_;
-  std::map<RdmUid, std::vector<std::unique_ptr<RemoteRdmCommand>>> responders_;
+  std::map<RdmUid, std::vector<std::unique_ptr<RdmnetRemoteRdmCommand>>> responders_;
 };
 
-class Fakeway : public GadgetNotify, public RdmnetLibNotify
+class Fakeway : public GadgetNotify, public rdmnet::DeviceNotifyHandler
 {
 public:
-  Fakeway(std::unique_ptr<RdmnetLibInterface> rdmnet = std::make_unique<RdmnetLibWrapper>())
+  Fakeway(std::unique_ptr<rdmnet::Device> rdmnet = std::make_unique<rdmnet::Device>())
       : log_("fakeway.log"), rdmnet_(std::move(rdmnet))
   {
   }
@@ -89,11 +89,11 @@ public:
   FakewayDefaultResponder* def_resp() const { return def_resp_.get(); }
 
 protected:
-  void Connected(const RdmnetClientConnectedInfo& info) override;
-  void ConnectFailed(const RdmnetClientConnectFailedInfo& info) override;
-  void Disconnected(const RdmnetClientDisconnectedInfo& info) override;
-  void RdmCommandReceived(const RdmnetRemoteRdmCommand& cmd) override;
-  void LlrpRdmCommandReceived(const LlrpRemoteRdmCommand& cmd) override;
+  void HandleConnectedToBroker(rdmnet::Device& device, const RdmnetClientConnectedInfo& info) override;
+  void HandleBrokerConnectFailed(rdmnet::Device& device, const RdmnetClientConnectFailedInfo& info) override;
+  void HandleDisconnectedFromBroker(rdmnet::Device& device, const RdmnetClientDisconnectedInfo& info) override;
+  void HandleRdmCommand(rdmnet::Device& device, const RdmnetRemoteRdmCommand& cmd) override;
+  void HandleLlrpRdmCommand(rdmnet::Device& device, const LlrpRemoteRdmCommand& cmd) override;
 
   void ProcessDefRespRdmCommand(const RdmnetRemoteRdmCommand& cmd, RdmnetConfigChange& config_change);
   void ProcessDefRespRdmCommand(const LlrpRemoteRdmCommand& cmd, RdmnetConfigChange& config_change);
@@ -127,7 +127,7 @@ private:
   bool configuration_change_{false};
   FakewayLog log_;
   std::unique_ptr<FakewayDefaultResponder> def_resp_;
-  std::unique_ptr<RdmnetLibInterface> rdmnet_;
+  std::unique_ptr<rdmnet::Device> rdmnet_;
 
   etcpal::SockAddr resolved_broker_addr_;
 

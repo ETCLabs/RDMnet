@@ -23,6 +23,9 @@
 #ifndef RDMNET_CPP_DEVICE_H_
 #define RDMNET_CPP_DEVICE_H_
 
+#include "etcpal/cpp/inet.h"
+#include "etcpal/cpp/log.h"
+#include "rdm/cpp/uid.h"
 #include "rdmnet/device.h"
 #include "rdmnet/cpp/client.h"
 
@@ -96,8 +99,8 @@ struct DeviceData
 
 /// Create a DeviceData instance by passing all members explicitly. Search domain is optional and
 /// has a default value.
-inline bool DeviceData::DeviceData(const etcpal::Uuid& cid_in, const rdm::Uid& uid_in,
-                                   const std::string& search_domain_in = E133_DEFAULT_DOMAIN)
+inline DeviceData::DeviceData(const etcpal::Uuid& cid_in, const rdm::Uid& uid_in,
+                              const std::string& search_domain_in = E133_DEFAULT_DOMAIN)
     : cid(cid_in), uid(uid_in), search_domain(search_domain_in)
 {
 }
@@ -116,9 +119,9 @@ class Device
 {
 public:
   etcpal::Error StartupWithDefaultScope(DeviceNotifyHandler& notify_handler, const DeviceData& data,
-                                         const etcpal::Sockaddr& static_broker_addr = etcpal::SockAddr{});
+                                        const etcpal::Sockaddr& static_broker_addr = etcpal::SockAddr{});
   etcpal::Error Startup(DeviceNotifyHandler& notify_handler, const DeviceData& data, const std::string& scope_str,
-                         const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
+                        const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
   etcpal::Error Startup(DeviceNotifyHandler& notify_handler, const DeviceData& data, const Scope& scope_config);
   void Shutdown();
 
@@ -126,17 +129,16 @@ public:
   etcpal::Error SendLlrpResponse(const LlrpLocalRdmResponse& resp);
   etcpal::Error ChangeScope(const Scope& new_scope_config, rdmnet_disconnect_reason_t disconnect_reason);
   etcpal::Error ChangeScope(const std::string& new_scope_string, rdmnet_disconnect_reason_t disconnect_reason,
-                             const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
+                            const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
 
   DeviceHandle handle() const;
   const DeviceData& data() const;
   Scope scope() const;
 
-  static etcpal::Error Init(
-      const EtcPalLogParams* log_params = nullptr,
-      const std::vector<RdmnetMcastNetintId>& mcast_netints = std::vector<RdmnetMcastNetintId>{});
-  static etcpal::Error Init(const etcpal::Logger& logger, const std::vector<RdmnetMcastNetintId>& mcast_netints =
-                                                               std::vector<RdmnetMcastNetintId>{});
+  static etcpal::Error Init(const EtcPalLogParams* log_params = nullptr,
+                            const std::vector<RdmnetMcastNetintId>& mcast_netints = std::vector<RdmnetMcastNetintId>{});
+  static etcpal::Error Init(const etcpal::Logger& logger,
+                            const std::vector<RdmnetMcastNetintId>& mcast_netints = std::vector<RdmnetMcastNetintId>{});
   static void Deinit();
 
 private:
