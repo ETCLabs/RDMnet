@@ -32,7 +32,7 @@
 // BrokerShell : Platform-neutral wrapper around the Broker library from a generic console
 // application. Instantiates and drives the Broker library.
 
-class BrokerShell : public rdmnet::BrokerNotify
+class BrokerShell : public rdmnet::BrokerNotifyHandler
 {
 public:
   // Returns the code the app should exit with.

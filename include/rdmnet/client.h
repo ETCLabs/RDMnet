@@ -415,9 +415,9 @@ etcpal_error_t rdmnet_client_change_search_domain(rdmnet_client_t handle, const 
 
 etcpal_error_t rdmnet_client_request_client_list(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle);
 // etcpal_error_t rdmnet_client_request_dynamic_uids(rdmnet_conn_t handle, rdmnet_client_scope_t scope_handle,
-//                                            const DynamicUidRequestListEntry *request_list);
+//                                            const BrokerDynamicUidRequestListEntry *request_list);
 // etcpal_error_t rdmnet_client_request_uid_assignment_list(rdmnet_conn_t handle, rdmnet_client_scope_t scope_handle,
-//                                                   const FetchUidAssignmentListEntry *uid_list);
+//                                                   const BrokerFetchUidAssignmentListEntry *uid_list);
 
 etcpal_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
                                                   const RdmnetLocalRdmCommand* cmd, uint32_t* seq_num);

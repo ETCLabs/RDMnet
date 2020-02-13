@@ -98,7 +98,7 @@ public:
   etcpal::Logger* GetLog() const { return log_; }
   rdmnet::BrokerSettings GetSettings() const { return settings_; }
 
-  bool Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerNotify* notify, etcpal::Logger* logger,
+  bool Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerNotifyHandler* notify, etcpal::Logger* logger,
                BrokerComponents components = BrokerComponents());
   void Shutdown();
   void Tick();
@@ -114,7 +114,7 @@ private:
 
   // External (non-owned) components
   etcpal::Logger* log_{nullptr};           // Enables the broker to log messages
-  rdmnet::BrokerNotify* notify_{nullptr};  // Enables the broker to notify application code when something has changed
+  rdmnet::BrokerNotifyHandler* notify_{nullptr};  // Enables the broker to notify application code when something has changed
 
   // Owned components
   BrokerComponents components_;
@@ -166,7 +166,7 @@ private:
 
   // Message processing and sending functions
   void ProcessRPTMessage(rdmnet_conn_t conn, const RdmnetMessage* msg);
-  void ProcessConnectRequest(rdmnet_conn_t conn, const ClientConnectMsg* cmsg);
+  void ProcessConnectRequest(rdmnet_conn_t conn, const BrokerClientConnectMsg* cmsg);
   bool ProcessRPTConnectRequest(rdmnet_conn_t conn, const RptClientEntry& client_entry,
                                 rdmnet_connect_status_t& connect_status);
 

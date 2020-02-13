@@ -81,7 +81,7 @@ static EtcPalSockAddr last_connect_addr;
 
 // Just save the info pointed to by the struct
 static etcpal_error_t connect_and_save_address(rdmnet_conn_t handle, const EtcPalSockAddr* remote_addr,
-                                               const ClientConnectMsg* connect_data)
+                                               const BrokerClientConnectMsg* connect_data)
 {
   RDMNET_UNUSED_ARG(handle);
   last_connect_addr = *remote_addr;

@@ -64,7 +64,7 @@ struct RdmnetConnection
 
   // Connection state
   conn_state_t state;
-  ClientConnectMsg conn_data;
+  BrokerClientConnectMsg conn_data;
   EtcPalTimer send_timer;
   EtcPalTimer hb_timer;
   EtcPalTimer backoff_timer;

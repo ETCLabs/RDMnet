@@ -102,7 +102,7 @@ typedef struct RdmnetDeviceCallbacks
    * \param[in] list The list of dynamic UID assignments.
    * \param[in] context Context pointer that was given at the creation of the device instance.
    */
-  void (*dynamic_uid_assignments_received)(rdmnet_device_t handle, const DynamicUidAssignmentList* list, void* context);
+  void (*dynamic_uid_assignments_received)(rdmnet_device_t handle, const BrokerDynamicUidAssignmentList* list, void* context);
 } RdmnetDeviceCallbacks;
 
 /*! A set of information that defines the startup parameters of an RDMnet Device. */
@@ -163,7 +163,7 @@ etcpal_error_t rdmnet_device_send_rdm_response(rdmnet_device_t handle, const Rdm
 etcpal_error_t rdmnet_device_send_status(rdmnet_device_t handle, const RdmnetLocalRptStatus* status);
 etcpal_error_t rdmnet_device_send_llrp_response(rdmnet_device_t handle, const LlrpLocalRdmResponse* resp);
 
-etcpal_error_t rdmnet_device_request_dynamic_uids(rdmnet_device_t handle, const DynamicUidRequest* requests,
+etcpal_error_t rdmnet_device_request_dynamic_uids(rdmnet_device_t handle, const BrokerDynamicUidRequest* requests,
                                                   size_t num_requests);
 
 etcpal_error_t rdmnet_device_change_scope(rdmnet_device_t handle, const RdmnetScopeConfig* new_scope_config,

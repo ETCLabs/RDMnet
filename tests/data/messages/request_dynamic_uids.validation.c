@@ -2,7 +2,7 @@
 
 // clang-format off
 
-static DynamicUidRequest requests[] = {
+static BrokerDynamicUidRequest requests[] = {
   {
     .manu_id = 0x2592,
     .rid = {

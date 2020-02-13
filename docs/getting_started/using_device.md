@@ -102,7 +102,7 @@ MyDeviceNotifyHandler my_device_notify_handler;
 
 // Recommended way of generating my_cid for a hardware-locked device:
 // auto my_cid = etcpal::Uuid::Device("My Device Name", device_mac_addr, 0);
-rdmnet::DeviceData device_data(my_cid, rdm::Uid::DynamicUidRequest(MY_ESTA_MANUFACTURER_ID_VAL));
+rdmnet::DeviceData device_data(my_cid, rdm::Uid::BrokerDynamicUidRequest(MY_ESTA_MANUFACTURER_ID_VAL));
 rdmnet::Device device;
 
 // In this example we are using the convenience method to startup with the default scope. The

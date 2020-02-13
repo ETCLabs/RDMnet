@@ -156,7 +156,7 @@ size_t calc_request_pdu_size(const RdmBuffer* cmd)
  *  \param[in] cmd Encapsulated RDM Command that will occupy the RPT Request message.
  *  \return Required buffer size, or 0 on error.
  */
-size_t bufsize_rpt_request(const RdmBuffer* cmd)
+size_t rpt_get_request_buffer_size(const RdmBuffer* cmd)
 {
   return (cmd ? (RPT_PDU_FULL_HEADER_SIZE + calc_request_pdu_size(cmd)) : 0);
 }
@@ -169,10 +169,10 @@ size_t bufsize_rpt_request(const RdmBuffer* cmd)
  *  \param[in] cmd Encapsulated RDM Command that will occupy the RPT Request message.
  *  \return Number of bytes packed, or 0 on error.
  */
-size_t pack_rpt_request(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const RptHeader* header,
+size_t rpt_pack_request(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const RptHeader* header,
                         const RdmBuffer* cmd)
 {
-  if (!buf || !local_cid || !header || !cmd || buflen < bufsize_rpt_request(cmd))
+  if (!buf || !local_cid || !header || !cmd || buflen < rpt_get_request_buffer_size(cmd))
   {
     return 0;
   }
@@ -208,7 +208,7 @@ size_t pack_rpt_request(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid
  *          #kEtcPalErrSys: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
-etcpal_error_t send_rpt_request(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
+etcpal_error_t rpt_send_request(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
                                 const RdmBuffer* cmd)
 {
   if (!local_cid || !header || !cmd)
@@ -264,7 +264,7 @@ size_t calc_status_pdu_size(const RptStatusMsg* status)
  *  \param[in] status RPT Status message data.
  *  \return Required buffer size, or 0 on error.
  */
-size_t bufsize_rpt_status(const RptStatusMsg* status)
+size_t rpt_get_status_buffer_size(const RptStatusMsg* status)
 {
   return (status ? RPT_PDU_FULL_HEADER_SIZE + calc_status_pdu_size(status) : 0);
 }
@@ -277,10 +277,10 @@ size_t bufsize_rpt_status(const RptStatusMsg* status)
  *  \param[in] status RPT Status message data.
  *  \return Number of bytes packed, or 0 on error.
  */
-size_t pack_rpt_status(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const RptHeader* header,
+size_t rpt_pack_status(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const RptHeader* header,
                        const RptStatusMsg* status)
 {
-  if (!buf || !local_cid || !header || !status || buflen < bufsize_rpt_status(status))
+  if (!buf || !local_cid || !header || !status || buflen < rpt_get_status_buffer_size(status))
   {
     return 0;
   }
@@ -318,7 +318,7 @@ size_t pack_rpt_status(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid,
  *          #kEtcPalErrSys: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
-etcpal_error_t send_rpt_status(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
+etcpal_error_t rpt_send_status(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
                                const RptStatusMsg* status)
 {
   if (!local_cid || !header || !status)
@@ -381,7 +381,7 @@ size_t calc_notification_pdu_size(const RdmBuffer* cmd_arr, size_t cmd_arr_size)
  *  \param[in] cmd_arr_size Size of packed RDM Command array.
  *  \return Required buffer size, or 0 on error.
  */
-size_t bufsize_rpt_notification(const RdmBuffer* cmd_arr, size_t cmd_arr_size)
+size_t rpt_get_notification_buffer_size(const RdmBuffer* cmd_arr, size_t cmd_arr_size)
 {
   return (cmd_arr ? (RPT_PDU_FULL_HEADER_SIZE + calc_notification_pdu_size(cmd_arr, cmd_arr_size)) : 0);
 }
@@ -395,11 +395,11 @@ size_t bufsize_rpt_notification(const RdmBuffer* cmd_arr, size_t cmd_arr_size)
  *  \param[in] cmd_arr_size Size of packed RDM Command array.
  *  \return Number of bytes packed, or 0 on error.
  */
-size_t pack_rpt_notification(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const RptHeader* header,
+size_t rpt_pack_notification(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const RptHeader* header,
                              const RdmBuffer* cmd_arr, size_t cmd_arr_size)
 {
   if (!buf || !local_cid || !header || !cmd_arr || cmd_arr_size == 0 ||
-      buflen < bufsize_rpt_notification(cmd_arr, cmd_arr_size))
+      buflen < rpt_get_notification_buffer_size(cmd_arr, cmd_arr_size))
   {
     return 0;
   }
@@ -439,7 +439,7 @@ size_t pack_rpt_notification(uint8_t* buf, size_t buflen, const EtcPalUuid* loca
  *          #kEtcPalErrSys: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
-etcpal_error_t send_rpt_notification(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
+etcpal_error_t rpt_send_notification(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
                                      const RdmBuffer* cmd_arr, size_t cmd_arr_size)
 {
   if (!local_cid || !header || !cmd_arr || cmd_arr_size == 0)

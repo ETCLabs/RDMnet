@@ -120,9 +120,9 @@ typedef struct RptStatusMsg
   const char* status_string;
 } RptStatusMsg;
 
-/*! A list of packed RDM Commands. Two types of RPT messages contain an RdmBufList: Request and
+/*! A list of packed RDM Commands. Two types of RPT messages contain an RptRdmBufList: Request and
  *  Notification. */
-typedef struct RdmBufList
+typedef struct RptRdmBufList
 {
   /*! An array of packed RDM commands and/or responses. */
   RdmBuffer* rdm_buffers;
@@ -132,10 +132,10 @@ typedef struct RdmBufList
    * This message contains a partial list. This can be set when the library runs out of static
    * memory in which to store RDM Commands and must deliver the partial list before continuing.
    * The application should store the entries in the list but should not act on the list until
-   * another RdmBufList is received with more_coming set to false.
+   * another RptRdmBufList is received with more_coming set to false.
    */
   bool more_coming;
-} RdmBufList;
+} RptRdmBufList;
 
 /*! An RPT message. */
 typedef struct RptMessage
@@ -149,7 +149,7 @@ typedef struct RptMessage
   union
   {
     RptStatusMsg status;
-    RdmBufList rdm;
+    RptRdmBufList rdm;
   } data;
 } RptMessage;
 
@@ -157,48 +157,48 @@ typedef struct RptMessage
  * \brief Determine whether an RptMessage contains an RDM Buffer List. Multiple types of RPT
  *        Messages can contain RDM Buffer Lists.
  * \param rptmsgptr Pointer to RptMessage.
- * \return (true or false) Whether the message contains an RDM Buffer List.
+ * \return (bool) Whether the message contains an RDM Buffer List.
  */
-#define IS_RDM_BUF_LIST(rptmsgptr) \
+#define RPT_IS_RDM_BUF_LIST(rptmsgptr) \
   ((rptmsgptr)->vector == VECTOR_RPT_REQUEST || (rptmsgptr)->vector == VECTOR_RPT_NOTIFICATION)
 
 /*!
  * \brief Get the encapsulated RDM Buffer List from an RptMessage.
  * \param rptmsgptr Pointer to RptMessage.
- * \return Pointer to encapsulated RDM Buffer List (RdmBufList *).
+ * \return Pointer to encapsulated RDM Buffer List (RptRdmBufList*).
  */
-#define GET_RDM_BUF_LIST(rptmsgptr) (&(rptmsgptr)->data.rdm)
+#define RPT_GET_RDM_BUF_LIST(rptmsgptr) (&(rptmsgptr)->data.rdm)
 
 /*!
  * \brief Determine whether an RptMessage contains an RPT Status Message.
  * \param rptmsgptr Pointer to RptMessage.
- * \return (true or false) Whether the message contains an RPT Status Message.
+ * \return (bool) Whether the message contains an RPT Status Message.
  */
-#define IS_RPT_STATUS_MSG(rptmsgptr) ((rptmsgptr)->vector == VECTOR_RPT_STATUS)
+#define RPT_IS_STATUS_MSG(rptmsgptr) ((rptmsgptr)->vector == VECTOR_RPT_STATUS)
 
 /*!
  * \brief Get the encapsulated RPT Status message from an RptMessage.
  * \param rptmsgptr Pointer to RptMessage.
- * \return Pointer to encapsulated RPT Status Message (RptStatusMsg *).
+ * \return Pointer to encapsulated RPT Status Message (RptStatusMsg*).
  */
-#define GET_RPT_STATUS_MSG(rptmsgptr) (&(rptmsgptr)->data.status)
+#define RPT_GET_STATUS_MSG(rptmsgptr) (&(rptmsgptr)->data.status)
 
-size_t bufsize_rpt_request(const RdmBuffer* cmd);
-size_t bufsize_rpt_status(const RptStatusMsg* status);
-size_t bufsize_rpt_notification(const RdmBuffer* cmd_arr, size_t cmd_arr_size);
+size_t rpt_get_request_buffer_size(const RdmBuffer* cmd);
+size_t rpt_get_status_buffer_size(const RptStatusMsg* status);
+size_t rpt_get_notification_buffer_size(const RdmBuffer* cmd_arr, size_t cmd_arr_size);
 
-size_t pack_rpt_request(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const RptHeader* header,
+size_t rpt_pack_request(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const RptHeader* header,
                         const RdmBuffer* cmd);
-size_t pack_rpt_status(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const RptHeader* header,
+size_t rpt_pack_status(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const RptHeader* header,
                        const RptStatusMsg* status);
-size_t pack_rpt_notification(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const RptHeader* header,
+size_t rpt_pack_notification(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const RptHeader* header,
                              const RdmBuffer* cmd_arr, size_t cmd_arr_size);
 
-etcpal_error_t send_rpt_request(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
+etcpal_error_t rpt_send_request(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
                                 const RdmBuffer* cmd);
-etcpal_error_t send_rpt_status(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
+etcpal_error_t rpt_send_status(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
                                const RptStatusMsg* status);
-etcpal_error_t send_rpt_notification(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
+etcpal_error_t rpt_send_notification(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
                                      const RdmBuffer* cmd_arr, size_t cmd_arr_size);
 
 const char* rpt_status_code_to_string(rpt_status_code_t code);

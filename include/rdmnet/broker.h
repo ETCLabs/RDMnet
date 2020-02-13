@@ -38,7 +38,7 @@ namespace rdmnet
 
 /// \ingroup rdmnet_broker
 /// \brief A callback interface for notifications from the Broker.
-class BrokerNotify
+class BrokerNotifyHandler
 {
 public:
   /// The Scope of the Broker has changed via RDMnet configuration. The Broker should be restarted.
@@ -63,7 +63,7 @@ public:
 ///
 /// Periodically call Tick() to handle some cleanup and housekeeping. Call Shutdown() at exit, when
 /// Broker services are no longer needed, or when a setting has changed. The Broker may send
-/// notifications through the BrokerNotify interface.
+/// notifications through the BrokerNotifyHandler interface.
 class Broker
 {
 public:
@@ -75,7 +75,7 @@ public:
   Broker(Broker&& other) = default;
   Broker& operator=(Broker&& other) = default;
 
-  bool Startup(const BrokerSettings& settings, BrokerNotify* notify, etcpal::Logger* logger);
+  bool Startup(const BrokerSettings& settings, BrokerNotifyHandler* notify, etcpal::Logger* logger);
   void Shutdown();
   void Tick();
 

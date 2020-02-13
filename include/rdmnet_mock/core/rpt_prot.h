@@ -30,32 +30,32 @@
 extern "C" {
 #endif
 
-DECLARE_FAKE_VALUE_FUNC(size_t, bufsize_rpt_request, const RdmBuffer*);
-DECLARE_FAKE_VALUE_FUNC(size_t, bufsize_rpt_status, const RptStatusMsg*);
-DECLARE_FAKE_VALUE_FUNC(size_t, bufsize_rpt_notification, const RdmBuffer*, size_t);
-DECLARE_FAKE_VALUE_FUNC(size_t, pack_rpt_request, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*,
+DECLARE_FAKE_VALUE_FUNC(size_t, rpt_get_request_buffer_size, const RdmBuffer*);
+DECLARE_FAKE_VALUE_FUNC(size_t, rpt_get_status_buffer_size, const RptStatusMsg*);
+DECLARE_FAKE_VALUE_FUNC(size_t, rpt_get_notification_buffer_size, const RdmBuffer*, size_t);
+DECLARE_FAKE_VALUE_FUNC(size_t, rpt_pack_request, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*,
                         const RdmBuffer*);
-DECLARE_FAKE_VALUE_FUNC(size_t, pack_rpt_status, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*,
+DECLARE_FAKE_VALUE_FUNC(size_t, rpt_pack_status, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*,
                         const RptStatusMsg*);
-DECLARE_FAKE_VALUE_FUNC(size_t, pack_rpt_notification, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*,
+DECLARE_FAKE_VALUE_FUNC(size_t, rpt_pack_notification, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*,
                         const RdmBuffer*, size_t);
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, send_rpt_request, rdmnet_conn_t, const EtcPalUuid*, const RptHeader*,
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rpt_send_request, rdmnet_conn_t, const EtcPalUuid*, const RptHeader*,
                         const RdmBuffer*);
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, send_rpt_status, rdmnet_conn_t, const EtcPalUuid*, const RptHeader*,
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rpt_send_status, rdmnet_conn_t, const EtcPalUuid*, const RptHeader*,
                         const RptStatusMsg*);
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, send_rpt_notification, rdmnet_conn_t, const EtcPalUuid*, const RptHeader*,
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rpt_send_notification, rdmnet_conn_t, const EtcPalUuid*, const RptHeader*,
                         const RdmBuffer*, size_t);
 
 #define RDMNET_CORE_RPT_PROT_DO_FOR_ALL_FAKES(operation) \
-  operation(bufsize_rpt_request);                        \
-  operation(bufsize_rpt_status);                         \
-  operation(bufsize_rpt_notification);                   \
-  operation(pack_rpt_request);                           \
-  operation(pack_rpt_status);                            \
-  operation(pack_rpt_notification);                      \
-  operation(send_rpt_request);                           \
-  operation(send_rpt_status);                            \
-  operation(send_rpt_notification)
+  operation(rpt_get_request_buffer_size);                        \
+  operation(rpt_get_status_buffer_size);                         \
+  operation(rpt_get_notification_buffer_size);                   \
+  operation(rpt_pack_request);                           \
+  operation(rpt_pack_status);                            \
+  operation(rpt_pack_notification);                      \
+  operation(rpt_send_request);                           \
+  operation(rpt_send_status);                            \
+  operation(rpt_send_notification)
 
 #ifdef __cplusplus
 }

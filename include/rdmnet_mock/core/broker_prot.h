@@ -30,36 +30,36 @@
 extern "C" {
 #endif
 
-DECLARE_FAKE_VALUE_FUNC(size_t, bufsize_rpt_client_list, size_t);
-DECLARE_FAKE_VALUE_FUNC(size_t, bufsize_ept_client_list, const EptClientEntry*, size_t);
-DECLARE_FAKE_VALUE_FUNC(size_t, bufsize_dynamic_uid_assignment_list, size_t);
+DECLARE_FAKE_VALUE_FUNC(size_t, broker_get_rpt_client_list_buffer_size, size_t);
+DECLARE_FAKE_VALUE_FUNC(size_t, broker_get_ept_client_list_buffer_size, const EptClientEntry*, size_t);
+DECLARE_FAKE_VALUE_FUNC(size_t, broker_get_uid_assignment_list_buffer_size, size_t);
 
-DECLARE_FAKE_VALUE_FUNC(size_t, pack_connect_reply, uint8_t*, size_t, const EtcPalUuid*, const ConnectReplyMsg*);
-DECLARE_FAKE_VALUE_FUNC(size_t, pack_rpt_client_list, uint8_t*, size_t, const EtcPalUuid*, uint16_t,
+DECLARE_FAKE_VALUE_FUNC(size_t, broker_pack_connect_reply, uint8_t*, size_t, const EtcPalUuid*, const BrokerConnectReplyMsg*);
+DECLARE_FAKE_VALUE_FUNC(size_t, broker_pack_rpt_client_list, uint8_t*, size_t, const EtcPalUuid*, uint16_t,
                         const RptClientEntry*, size_t);
-DECLARE_FAKE_VALUE_FUNC(size_t, pack_ept_client_list, uint8_t*, size_t, const EtcPalUuid*, uint16_t,
+DECLARE_FAKE_VALUE_FUNC(size_t, broker_pack_ept_client_list, uint8_t*, size_t, const EtcPalUuid*, uint16_t,
                         const EptClientEntry*, size_t);
-DECLARE_FAKE_VALUE_FUNC(size_t, pack_dynamic_uid_assignment_list, uint8_t*, size_t, const EtcPalUuid*,
-                        const DynamicUidMapping*, size_t);
+DECLARE_FAKE_VALUE_FUNC(size_t, broker_pack_uid_assignment_list, uint8_t*, size_t, const EtcPalUuid*,
+                        const BrokerDynamicUidMapping*, size_t);
 
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, send_connect_reply, rdmnet_conn_t, const EtcPalUuid*, const ConnectReplyMsg*);
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, send_fetch_client_list, rdmnet_conn_t, const EtcPalUuid*);
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, send_request_dynamic_uids, rdmnet_conn_t, const EtcPalUuid*,
-                        const DynamicUidRequest*, size_t);
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, send_fetch_uid_assignment_list, rdmnet_conn_t, const EtcPalUuid*, const RdmUid*,
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, broker_send_connect_reply, rdmnet_conn_t, const EtcPalUuid*, const BrokerConnectReplyMsg*);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, broker_send_fetch_client_list, rdmnet_conn_t, const EtcPalUuid*);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, broker_send_request_dynamic_uids, rdmnet_conn_t, const EtcPalUuid*,
+                        const BrokerDynamicUidRequest*, size_t);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, broker_send_fetch_uid_assignment_list, rdmnet_conn_t, const EtcPalUuid*, const RdmUid*,
                         size_t);
 
 #define RDMNET_CORE_BROKER_PROT_DO_FOR_ALL_FAKES(operation) \
-  operation(bufsize_rpt_client_list);                       \
-  operation(bufsize_ept_client_list);                       \
-  operation(bufsize_dynamic_uid_assignment_list);           \
-  operation(pack_connect_reply);                            \
-  operation(pack_rpt_client_list);                          \
-  operation(pack_ept_client_list);                          \
-  operation(pack_dynamic_uid_assignment_list);              \
-  operation(send_connect_reply);                            \
-  operation(send_fetch_client_list);                        \
-  operation(send_fetch_uid_assignment_list)
+  operation(broker_get_rpt_client_list_buffer_size);                       \
+  operation(broker_get_ept_client_list_buffer_size);                       \
+  operation(broker_get_uid_assignment_list_buffer_size);           \
+  operation(broker_pack_connect_reply);                            \
+  operation(broker_pack_rpt_client_list);                          \
+  operation(broker_pack_ept_client_list);                          \
+  operation(broker_pack_uid_assignment_list);              \
+  operation(broker_send_connect_reply);                            \
+  operation(broker_send_fetch_client_list);                        \
+  operation(broker_send_fetch_uid_assignment_list)
 
 #ifdef __cplusplus
 }

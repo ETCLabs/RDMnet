@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_connection_create, const RdmnetConnectionConfig*, rdmnet_conn_t*);
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_connect, rdmnet_conn_t, const EtcPalSockAddr*, const ClientConnectMsg*);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_connect, rdmnet_conn_t, const EtcPalSockAddr*, const BrokerClientConnectMsg*);
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_set_blocking, rdmnet_conn_t, bool);
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_connection_destroy, rdmnet_conn_t, const rdmnet_disconnect_reason_t*);
 

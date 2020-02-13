@@ -52,29 +52,29 @@ static size_t parse_rpt_block(RptState* rstate, const uint8_t* data, size_t data
 
 // RPT layer
 static void initialize_rpt_message(RptState* rstate, RptMessage* rmsg, size_t pdu_data_len);
-static size_t parse_rdm_list(RdmListState* rlstate, const uint8_t* data, size_t datalen, RdmBufList* cmd_list,
+static size_t parse_rdm_list(RdmListState* rlstate, const uint8_t* data, size_t datalen, RptRdmBufList* cmd_list,
                              parse_result_t* result);
 static size_t parse_rpt_status(RptStatusState* rsstate, const uint8_t* data, size_t datalen, RptStatusMsg* smsg,
                                parse_result_t* result);
 
 // Broker layer
 static void initialize_broker_message(BrokerState* bstate, BrokerMessage* bmsg, size_t pdu_data_len);
-static void parse_client_connect_header(const uint8_t* data, ClientConnectMsg* ccmsg);
+static void parse_client_connect_header(const uint8_t* data, BrokerClientConnectMsg* ccmsg);
 static size_t parse_client_connect(ClientConnectState* ccstate, const uint8_t* data, size_t datalen,
-                                   ClientConnectMsg* ccmsg, parse_result_t* result);
+                                   BrokerClientConnectMsg* ccmsg, parse_result_t* result);
 static size_t parse_client_entry_update(ClientEntryUpdateState* ceustate, const uint8_t* data, size_t datalen,
-                                        ClientEntryUpdateMsg* ceumsg, parse_result_t* result);
+                                        BrokerClientEntryUpdateMsg* ceumsg, parse_result_t* result);
 static size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, size_t datalen,
                                         client_protocol_t* client_protocol, ClientEntryUnion* entry,
                                         parse_result_t* result);
-static size_t parse_client_list(ClientListState* clstate, const uint8_t* data, size_t datalen, ClientList* clist,
+static size_t parse_client_list(ClientListState* clstate, const uint8_t* data, size_t datalen, BrokerClientList* clist,
                                 parse_result_t* result);
 static size_t parse_request_dynamic_uid_assignment(GenericListState* lstate, const uint8_t* data, size_t datalen,
-                                                   DynamicUidRequestList* rlist, parse_result_t* result);
+                                                   BrokerDynamicUidRequestList* rlist, parse_result_t* result);
 static size_t parse_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t* data, size_t datalen,
-                                                DynamicUidAssignmentList* alist, parse_result_t* result);
+                                                BrokerDynamicUidAssignmentList* alist, parse_result_t* result);
 static size_t parse_fetch_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t* data, size_t datalen,
-                                                      FetchUidAssignmentList* alist, parse_result_t* result);
+                                                      BrokerFetchUidAssignmentList* alist, parse_result_t* result);
 
 // Helpers for parsing client list messages
 static size_t parse_rpt_client_list(ClientListState* clstate, const uint8_t* data, size_t datalen, RptClientList* clist,
@@ -253,11 +253,11 @@ size_t parse_rlp_block(RlpState* rlpstate, const uint8_t* data, size_t datalen, 
     {
       case ACN_VECTOR_ROOT_BROKER:
         next_layer_bytes_parsed = parse_broker_block(&rlpstate->data.broker, &data[bytes_parsed],
-                                                     datalen - bytes_parsed, GET_BROKER_MSG(msg), &res);
+                                                     datalen - bytes_parsed, RDMNET_GET_BROKER_MSG(msg), &res);
         break;
       case ACN_VECTOR_ROOT_RPT:
-        next_layer_bytes_parsed =
-            parse_rpt_block(&rlpstate->data.rpt, &data[bytes_parsed], datalen - bytes_parsed, GET_RPT_MSG(msg), &res);
+        next_layer_bytes_parsed = parse_rpt_block(&rlpstate->data.rpt, &data[bytes_parsed], datalen - bytes_parsed,
+                                                  RDMNET_GET_RPT_MSG(msg), &res);
         break;
       default:
         next_layer_bytes_parsed = consume_bad_block(&rlpstate->data.unknown, datalen - bytes_parsed, &res);
@@ -286,7 +286,7 @@ void initialize_broker_message(BrokerState* bstate, BrokerMessage* bmsg, size_t 
         bad_length = true;
       break;
     case VECTOR_BROKER_CONNECT_REPLY:
-      if (pdu_data_len != CONNECT_REPLY_DATA_SIZE)
+      if (pdu_data_len != BROKER_CONNECT_REPLY_DATA_SIZE)
         bad_length = true;
       break;
     case VECTOR_BROKER_CLIENT_ENTRY_UPDATE:
@@ -313,7 +313,7 @@ void initialize_broker_message(BrokerState* bstate, BrokerMessage* bmsg, size_t 
     case VECTOR_BROKER_REQUEST_DYNAMIC_UIDS:
       if (pdu_data_len > 0 && pdu_data_len % DYNAMIC_UID_REQUEST_PAIR_SIZE == 0)
       {
-        DynamicUidRequestList* rlist = GET_DYNAMIC_UID_REQUEST_LIST(bmsg);
+        BrokerDynamicUidRequestList* rlist = BROKER_GET_DYNAMIC_UID_REQUEST_LIST(bmsg);
         rlist->requests = NULL;
         rlist->num_requests = 0;
         rlist->more_coming = false;
@@ -328,7 +328,7 @@ void initialize_broker_message(BrokerState* bstate, BrokerMessage* bmsg, size_t 
     case VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS:
       if (pdu_data_len > 0 && pdu_data_len % DYNAMIC_UID_MAPPING_SIZE == 0)
       {
-        DynamicUidAssignmentList* alist = GET_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg);
+        BrokerDynamicUidAssignmentList* alist = BROKER_GET_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg);
         alist->mappings = NULL;
         alist->num_mappings = 0;
         alist->more_coming = false;
@@ -343,7 +343,7 @@ void initialize_broker_message(BrokerState* bstate, BrokerMessage* bmsg, size_t 
     case VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST:
       if (pdu_data_len > 0 && pdu_data_len % 6 /* Size of one packed UID */ == 0)
       {
-        FetchUidAssignmentList* ulist = GET_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg);
+        BrokerFetchUidAssignmentList* ulist = BROKER_GET_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg);
         ulist->uids = NULL;
         ulist->num_uids = 0;
         ulist->more_coming = false;
@@ -442,12 +442,12 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
     {
       case VECTOR_BROKER_CONNECT:
         next_layer_bytes_parsed = parse_client_connect(&bstate->data.client_connect, &data[bytes_parsed], remaining_len,
-                                                       GET_CLIENT_CONNECT_MSG(bmsg), &res);
+                                                       BROKER_GET_CLIENT_CONNECT_MSG(bmsg), &res);
         break;
       case VECTOR_BROKER_CONNECT_REPLY:
-        if (remaining_len >= CONNECT_REPLY_DATA_SIZE)
+        if (remaining_len >= BROKER_CONNECT_REPLY_DATA_SIZE)
         {
-          ConnectReplyMsg* crmsg = GET_CONNECT_REPLY_MSG(bmsg);
+          BrokerConnectReplyMsg* crmsg = BROKER_GET_CONNECT_REPLY_MSG(bmsg);
           const uint8_t* cur_ptr = &data[bytes_parsed];
           crmsg->connect_status = (rdmnet_connect_status_t)etcpal_unpack_u16b(cur_ptr);
           cur_ptr += 2;
@@ -467,12 +467,12 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
         break;
       case VECTOR_BROKER_CLIENT_ENTRY_UPDATE:
         next_layer_bytes_parsed = parse_client_entry_update(&bstate->data.update, &data[bytes_parsed], remaining_len,
-                                                            GET_CLIENT_ENTRY_UPDATE_MSG(bmsg), &res);
+                                                            BROKER_GET_CLIENT_ENTRY_UPDATE_MSG(bmsg), &res);
         break;
       case VECTOR_BROKER_REDIRECT_V4:
         if (remaining_len >= REDIRECT_V4_DATA_SIZE)
         {
-          ClientRedirectMsg* crmsg = GET_CLIENT_REDIRECT_MSG(bmsg);
+          BrokerClientRedirectMsg* crmsg = BROKER_GET_CLIENT_REDIRECT_MSG(bmsg);
           const uint8_t* cur_ptr = &data[bytes_parsed];
           ETCPAL_IP_SET_V4_ADDRESS(&crmsg->new_addr.ip, etcpal_unpack_u32b(cur_ptr));
           cur_ptr += 4;
@@ -485,7 +485,7 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
       case VECTOR_BROKER_REDIRECT_V6:
         if (remaining_len >= REDIRECT_V6_DATA_SIZE)
         {
-          ClientRedirectMsg* crmsg = GET_CLIENT_REDIRECT_MSG(bmsg);
+          BrokerClientRedirectMsg* crmsg = BROKER_GET_CLIENT_REDIRECT_MSG(bmsg);
           const uint8_t* cur_ptr = &data[bytes_parsed];
           ETCPAL_IP_SET_V6_ADDRESS(&crmsg->new_addr.ip, cur_ptr);
           cur_ptr += 16;
@@ -500,20 +500,20 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
       case VECTOR_BROKER_CLIENT_REMOVE:
       case VECTOR_BROKER_CLIENT_ENTRY_CHANGE:
         next_layer_bytes_parsed = parse_client_list(&bstate->data.client_list, &data[bytes_parsed], remaining_len,
-                                                    GET_CLIENT_LIST(bmsg), &res);
+                                                    BROKER_GET_CLIENT_LIST(bmsg), &res);
         break;
       case VECTOR_BROKER_REQUEST_DYNAMIC_UIDS:
         next_layer_bytes_parsed = parse_request_dynamic_uid_assignment(
-            &bstate->data.data_list, &data[bytes_parsed], remaining_len, GET_DYNAMIC_UID_REQUEST_LIST(bmsg), &res);
+            &bstate->data.data_list, &data[bytes_parsed], remaining_len, BROKER_GET_DYNAMIC_UID_REQUEST_LIST(bmsg), &res);
         break;
       case VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS:
         next_layer_bytes_parsed = parse_dynamic_uid_assignment_list(
-            &bstate->data.data_list, &data[bytes_parsed], remaining_len, GET_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg), &res);
+            &bstate->data.data_list, &data[bytes_parsed], remaining_len, BROKER_GET_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg), &res);
         break;
       case VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST:
         next_layer_bytes_parsed =
             parse_fetch_dynamic_uid_assignment_list(&bstate->data.data_list, &data[bytes_parsed], remaining_len,
-                                                    GET_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg), &res);
+                                                    BROKER_GET_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg), &res);
         break;
       case VECTOR_BROKER_NULL:
       case VECTOR_BROKER_FETCH_CLIENT_LIST:
@@ -524,7 +524,7 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
         if (remaining_len >= DISCONNECT_DATA_SIZE)
         {
           const uint8_t* cur_ptr = &data[bytes_parsed];
-          GET_DISCONNECT_MSG(bmsg)->disconnect_reason = (rdmnet_disconnect_reason_t)etcpal_unpack_u16b(cur_ptr);
+          BROKER_GET_DISCONNECT_MSG(bmsg)->disconnect_reason = (rdmnet_disconnect_reason_t)etcpal_unpack_u16b(cur_ptr);
           cur_ptr += 2;
           next_layer_bytes_parsed = (size_t)(cur_ptr - &data[bytes_parsed]);
           res = kPSFullBlockParseOk;
@@ -545,21 +545,21 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
   return bytes_parsed;
 }
 
-void parse_client_connect_header(const uint8_t* data, ClientConnectMsg* ccmsg)
+void parse_client_connect_header(const uint8_t* data, BrokerClientConnectMsg* ccmsg)
 {
   const uint8_t* cur_ptr = data;
 
-  CLIENT_CONNECT_MSG_SET_SCOPE(ccmsg, (const char*)cur_ptr);
+  BROKER_CLIENT_CONNECT_MSG_SET_SCOPE(ccmsg, (const char*)cur_ptr);
   cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
   ccmsg->e133_version = etcpal_unpack_u16b(cur_ptr);
   cur_ptr += 2;
-  CLIENT_CONNECT_MSG_SET_SEARCH_DOMAIN(ccmsg, (const char*)cur_ptr);
+  BROKER_CLIENT_CONNECT_MSG_SET_SEARCH_DOMAIN(ccmsg, (const char*)cur_ptr);
   cur_ptr += E133_DOMAIN_STRING_PADDED_LENGTH;
   ccmsg->connect_flags = *cur_ptr;
 }
 
-size_t parse_client_connect(ClientConnectState* ccstate, const uint8_t* data, size_t datalen, ClientConnectMsg* ccmsg,
-                            parse_result_t* result)
+size_t parse_client_connect(ClientConnectState* ccstate, const uint8_t* data, size_t datalen,
+                            BrokerClientConnectMsg* ccmsg, parse_result_t* result)
 {
   parse_result_t res = kPSNoData;
   size_t bytes_parsed = 0;
@@ -592,7 +592,7 @@ size_t parse_client_connect(ClientConnectState* ccstate, const uint8_t* data, si
 }
 
 size_t parse_client_entry_update(ClientEntryUpdateState* ceustate, const uint8_t* data, size_t datalen,
-                                 ClientEntryUpdateMsg* ceumsg, parse_result_t* result)
+                                 BrokerClientEntryUpdateMsg* ceumsg, parse_result_t* result)
 {
   parse_result_t res = kPSNoData;
   size_t bytes_parsed = 0;
@@ -714,7 +714,7 @@ size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, 
   return bytes_parsed;
 }
 
-size_t parse_client_list(ClientListState* clstate, const uint8_t* data, size_t datalen, ClientList* clist,
+size_t parse_client_list(ClientListState* clstate, const uint8_t* data, size_t datalen, BrokerClientList* clist,
                          parse_result_t* result)
 {
   parse_result_t res = kPSNoData;
@@ -736,7 +736,7 @@ size_t parse_client_list(ClientListState* clstate, const uint8_t* data, size_t d
 
     if (clist->client_protocol == kClientProtocolRPT)
     {
-      bytes_parsed += parse_rpt_client_list(clstate, data, datalen, GET_RPT_CLIENT_LIST(clist), &res);
+      bytes_parsed += parse_rpt_client_list(clstate, data, datalen, BROKER_GET_RPT_CLIENT_LIST(clist), &res);
     }
     else if (clist->client_protocol == kClientProtocolEPT)
     {
@@ -893,7 +893,7 @@ EptClientEntry* alloc_next_ept_client_entry(EptClientList* clist)
 }
 
 size_t parse_request_dynamic_uid_assignment(GenericListState* lstate, const uint8_t* data, size_t datalen,
-                                            DynamicUidRequestList* rlist, parse_result_t* result)
+                                            BrokerDynamicUidRequestList* rlist, parse_result_t* result)
 {
   RDMNET_UNUSED_ARG(rdmnet_log_params);
 
@@ -906,7 +906,7 @@ size_t parse_request_dynamic_uid_assignment(GenericListState* lstate, const uint
     // Make room for a new struct at the end of the current array.
     if (rlist->requests)
     {
-      DynamicUidRequest* new_arr = REALLOC_DYNAMIC_UID_REQUEST_ENTRY(rlist->requests, rlist->num_requests + 1);
+      BrokerDynamicUidRequest* new_arr = REALLOC_DYNAMIC_UID_REQUEST_ENTRY(rlist->requests, rlist->num_requests + 1);
       if (new_arr)
       {
         rlist->requests = new_arr;
@@ -929,8 +929,8 @@ size_t parse_request_dynamic_uid_assignment(GenericListState* lstate, const uint
       }
     }
 
-    // Gotten here - parse a new DynamicUidRequest
-    DynamicUidRequest* request = &rlist->requests[rlist->num_requests++];
+    // Gotten here - parse a new BrokerDynamicUidRequest
+    BrokerDynamicUidRequest* request = &rlist->requests[rlist->num_requests++];
     request->manu_id = etcpal_unpack_u16b(&data[bytes_parsed]) & 0x7fff;
     memcpy(request->rid.data, &data[bytes_parsed + 6], ETCPAL_UUID_BYTES);
     bytes_parsed += DYNAMIC_UID_REQUEST_PAIR_SIZE;
@@ -948,7 +948,7 @@ size_t parse_request_dynamic_uid_assignment(GenericListState* lstate, const uint
 }
 
 size_t parse_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t* data, size_t datalen,
-                                         DynamicUidAssignmentList* alist, parse_result_t* result)
+                                         BrokerDynamicUidAssignmentList* alist, parse_result_t* result)
 {
   RDMNET_UNUSED_ARG(rdmnet_log_params);
 
@@ -961,7 +961,7 @@ size_t parse_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t
     // Make room for a new struct at the end of the current array.
     if (alist->mappings)
     {
-      DynamicUidMapping* new_arr = REALLOC_DYNAMIC_UID_MAPPING(alist->mappings, alist->num_mappings + 1);
+      BrokerDynamicUidMapping* new_arr = REALLOC_DYNAMIC_UID_MAPPING(alist->mappings, alist->num_mappings + 1);
       if (new_arr)
       {
         alist->mappings = new_arr;
@@ -984,8 +984,8 @@ size_t parse_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t
       }
     }
 
-    // Gotten here - parse a new DynamicUidMapping
-    DynamicUidMapping* mapping = &alist->mappings[alist->num_mappings++];
+    // Gotten here - parse a new BrokerDynamicUidMapping
+    BrokerDynamicUidMapping* mapping = &alist->mappings[alist->num_mappings++];
     const uint8_t* cur_ptr = &data[bytes_parsed];
 
     mapping->uid.manu = etcpal_unpack_u16b(cur_ptr);
@@ -994,7 +994,7 @@ size_t parse_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t
     cur_ptr += 4;
     memcpy(mapping->rid.data, cur_ptr, ETCPAL_UUID_BYTES);
     cur_ptr += ETCPAL_UUID_BYTES;
-    mapping->status_code = (dynamic_uid_status_t)etcpal_unpack_u16b(cur_ptr);
+    mapping->status_code = (rdmnet_dynamic_uid_status_t)etcpal_unpack_u16b(cur_ptr);
     cur_ptr += 2;
     bytes_parsed += DYNAMIC_UID_MAPPING_SIZE;
     lstate->size_parsed += DYNAMIC_UID_MAPPING_SIZE;
@@ -1011,7 +1011,7 @@ size_t parse_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t
 }
 
 size_t parse_fetch_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t* data, size_t datalen,
-                                               FetchUidAssignmentList* alist, parse_result_t* result)
+                                               BrokerFetchUidAssignmentList* alist, parse_result_t* result)
 {
   size_t bytes_parsed = 0;
   parse_result_t res = kPSNoData;
@@ -1177,12 +1177,12 @@ size_t parse_rpt_block(RptState* rstate, const uint8_t* data, size_t datalen, Rp
     {
       case VECTOR_RPT_REQUEST:
       case VECTOR_RPT_NOTIFICATION:
-        next_layer_bytes_parsed =
-            parse_rdm_list(&rstate->data.rdm_list, &data[bytes_parsed], remaining_len, GET_RDM_BUF_LIST(rmsg), &res);
+        next_layer_bytes_parsed = parse_rdm_list(&rstate->data.rdm_list, &data[bytes_parsed], remaining_len,
+                                                 RPT_GET_RDM_BUF_LIST(rmsg), &res);
         break;
       case VECTOR_RPT_STATUS:
         next_layer_bytes_parsed =
-            parse_rpt_status(&rstate->data.status, &data[bytes_parsed], remaining_len, GET_RPT_STATUS_MSG(rmsg), &res);
+            parse_rpt_status(&rstate->data.status, &data[bytes_parsed], remaining_len, RPT_GET_STATUS_MSG(rmsg), &res);
         break;
       default:
         // Unknown RPT vector - discard this RPT PDU.
@@ -1198,7 +1198,7 @@ size_t parse_rpt_block(RptState* rstate, const uint8_t* data, size_t datalen, Rp
   return bytes_parsed;
 }
 
-size_t parse_rdm_list(RdmListState* rlstate, const uint8_t* data, size_t datalen, RdmBufList* cmd_list,
+size_t parse_rdm_list(RdmListState* rlstate, const uint8_t* data, size_t datalen, RptRdmBufList* cmd_list,
                       parse_result_t* result)
 {
   parse_result_t res = kPSNoData;

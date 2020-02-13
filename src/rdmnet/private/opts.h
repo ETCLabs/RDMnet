@@ -233,8 +233,8 @@
  * \brief The maximum number of Dynamic-UID-related structures that can be returned with a parsed
  *        message.
  *
- * This option applies to DynamicUidRequestListEntry, DynamicUidMapping, and
- * FetchUidAssignmentListEntry structures. Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
+ * This option applies to BrokerDynamicUidRequestListEntry, BrokerDynamicUidMapping, and
+ * BrokerFetchUidAssignmentListEntry structures. Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
  */
 #ifndef RDMNET_MAX_DYNAMIC_UID_ENTRIES
 #define RDMNET_MAX_DYNAMIC_UID_ENTRIES 5

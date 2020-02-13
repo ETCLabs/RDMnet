@@ -147,7 +147,7 @@ typedef struct RdmnetControllerCallbacks
    * \param[in] context Context pointer that was given at the creation of the controller instance.
    */
   void (*dynamic_uid_mappings_received)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                        const DynamicUidAssignmentList* list, void* context);
+                                        const BrokerDynamicUidAssignmentList* list, void* context);
 } RdmnetControllerCallbacks;
 
 /*! A set of callbacks which can be optionally provided to handle RDM commands addressed to a

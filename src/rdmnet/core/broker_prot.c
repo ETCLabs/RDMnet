@@ -90,7 +90,7 @@ static const char* kRdmnetDynamicUidStatusStrings[] =
 
 /*********************** Private function prototypes *************************/
 
-static size_t calc_client_connect_len(const ClientConnectMsg* data);
+static size_t calc_client_connect_len(const BrokerClientConnectMsg* data);
 static size_t pack_broker_header_with_rlp(const AcnRootLayerPdu* rlp, uint8_t* buf, size_t buflen, uint16_t vector);
 static etcpal_error_t send_broker_header(RdmnetConnection* conn, const AcnRootLayerPdu* rlp, uint8_t* buf,
                                          size_t buflen, uint16_t vector);
@@ -158,7 +158,7 @@ etcpal_error_t send_broker_header(RdmnetConnection* conn, const AcnRootLayerPdu*
 
 /******************************* Client Connect ******************************/
 
-size_t calc_client_connect_len(const ClientConnectMsg* data)
+size_t calc_client_connect_len(const BrokerClientConnectMsg* data)
 {
   size_t res = BROKER_PDU_HEADER_SIZE + CLIENT_CONNECT_DATA_MIN_SIZE;
 
@@ -179,7 +179,7 @@ size_t calc_client_connect_len(const ClientConnectMsg* data)
   }
 }
 
-etcpal_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMsg* data)
+etcpal_error_t send_client_connect(RdmnetConnection* conn, const BrokerClientConnectMsg* data)
 {
   if (!(IS_RPT_CLIENT_ENTRY(&data->client_entry) || IS_EPT_CLIENT_ENTRY(&data->client_entry)))
   {
@@ -268,15 +268,15 @@ etcpal_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMs
  *  \param[in] data Connect Reply data to pack into the data segment.
  *  \return Number of bytes packed, or 0 on error.
  */
-size_t pack_connect_reply(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const ConnectReplyMsg* data)
+size_t broker_pack_connect_reply(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const BrokerConnectReplyMsg* data)
 {
-  if (!buf || buflen < CONNECT_REPLY_FULL_MSG_SIZE || !local_cid || !data)
+  if (!buf || buflen < BROKER_CONNECT_REPLY_FULL_MSG_SIZE || !local_cid || !data)
     return 0;
 
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
-  rlp.datalen = BROKER_PDU_HEADER_SIZE + CONNECT_REPLY_DATA_SIZE;
+  rlp.datalen = BROKER_PDU_HEADER_SIZE + BROKER_CONNECT_REPLY_DATA_SIZE;
 
   // Try to pack all the header data
   uint8_t* cur_ptr = buf;
@@ -311,7 +311,7 @@ size_t pack_connect_reply(uint8_t* buf, size_t buflen, const EtcPalUuid* local_c
  *  \return #kEtcPalErrSys: An internal library or system call error occurred.
  *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
-etcpal_error_t send_connect_reply(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const ConnectReplyMsg* data)
+etcpal_error_t broker_send_connect_reply(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const BrokerConnectReplyMsg* data)
 {
   if (!local_cid || !data)
     return kEtcPalErrInvalid;
@@ -319,7 +319,7 @@ etcpal_error_t send_connect_reply(rdmnet_conn_t handle, const EtcPalUuid* local_
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
-  rlp.datalen = BROKER_PDU_HEADER_SIZE + CONNECT_REPLY_DATA_SIZE;
+  rlp.datalen = BROKER_PDU_HEADER_SIZE + BROKER_CONNECT_REPLY_DATA_SIZE;
 
   RdmnetConnection* conn;
   etcpal_error_t res = rdmnet_start_message(handle, &conn);
@@ -370,7 +370,7 @@ etcpal_error_t send_connect_reply(rdmnet_conn_t handle, const EtcPalUuid* local_
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  * \return Note: Other error codes might be propagated from underlying socket calls.
  */
-etcpal_error_t send_fetch_client_list(rdmnet_conn_t handle, const EtcPalUuid* local_cid)
+etcpal_error_t broker_send_fetch_client_list(rdmnet_conn_t handle, const EtcPalUuid* local_cid)
 {
   if (!local_cid)
     return kEtcPalErrInvalid;
@@ -400,7 +400,7 @@ etcpal_error_t send_fetch_client_list(rdmnet_conn_t handle, const EtcPalUuid* lo
  * \param[in] num_client_entries Number of entries in the RPT Client List.
  * \return Required buffer size.
  */
-size_t bufsize_rpt_client_list(size_t num_client_entries)
+size_t broker_get_rpt_client_list_buffer_size(size_t num_client_entries)
 {
   return (BROKER_PDU_FULL_HEADER_SIZE + RPT_CLIENT_LIST_SIZE(num_client_entries));
 }
@@ -420,7 +420,7 @@ size_t bufsize_rpt_client_list(size_t num_client_entries)
  * \param[in] num_client_entries Size of client_entries array.
  * \return Number of bytes packed, or 0 on error.
  */
-size_t pack_rpt_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
+size_t broker_pack_rpt_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
                             const RptClientEntry* client_entries, size_t num_client_entries)
 {
   if (!buf || buflen < BROKER_PDU_FULL_HEADER_SIZE || !local_cid || !client_entries || num_client_entries == 0 ||
@@ -486,7 +486,7 @@ size_t pack_rpt_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local
  * \param[in] num_client_entries Size of client_entries array.
  * \return Number of bytes packed, or 0 on error.
  */
-size_t pack_ept_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
+size_t broker_pack_ept_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
                             const EptClientEntry* client_entries, size_t num_client_entries)
 {
   RDMNET_UNUSED_ARG(buf);
@@ -514,8 +514,8 @@ size_t pack_ept_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  * \return Note: Other error codes might be propagated from underlying socket calls.
  */
-etcpal_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const EtcPalUuid* local_cid,
-                                         const DynamicUidRequest* requests, size_t num_requests)
+etcpal_error_t broker_send_request_dynamic_uids(rdmnet_conn_t handle, const EtcPalUuid* local_cid,
+                                         const BrokerDynamicUidRequest* requests, size_t num_requests)
 {
   if (!local_cid || !requests || num_requests == 0)
     return kEtcPalErrInvalid;
@@ -539,7 +539,7 @@ etcpal_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const EtcPalUuid*
   }
 
   // Pack and send each Dynamic UID Request Pair in turn
-  for (const DynamicUidRequest* cur_request = requests; cur_request < requests + num_requests; ++cur_request)
+  for (const BrokerDynamicUidRequest* cur_request = requests; cur_request < requests + num_requests; ++cur_request)
   {
     // Pack the Dynamic UID Request Pair
     etcpal_pack_u16b(&buf[0], cur_request->manu_id | 0x8000);
@@ -562,11 +562,11 @@ etcpal_error_t send_request_dynamic_uids(rdmnet_conn_t handle, const EtcPalUuid*
 
 /*!
  * \brief Get the packed buffer size for a Dynamic UID Assignment List message.
- * \param[in] num_mappings The number of DynamicUidMappings that will occupy the data segment of
+ * \param[in] num_mappings The number of BrokerDynamicUidMappings that will occupy the data segment of
  *                         the message.
  * \return Required buffer size, or 0 on error.
  */
-size_t bufsize_dynamic_uid_assignment_list(size_t num_mappings)
+size_t broker_get_uid_assignment_list_buffer_size(size_t num_mappings)
 {
   return BROKER_PDU_FULL_HEADER_SIZE + DYNAMIC_UID_ASSIGNMENT_LIST_DATA_SIZE(num_mappings);
 }
@@ -581,8 +581,8 @@ size_t bufsize_dynamic_uid_assignment_list(size_t num_mappings)
  * \param[in] num_mappings Size of mappings array.
  * \return Number of bytes packed, or 0 on error.
  */
-size_t pack_dynamic_uid_assignment_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid,
-                                        const DynamicUidMapping* mappings, size_t num_mappings)
+size_t broker_pack_uid_assignment_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid,
+                                        const BrokerDynamicUidMapping* mappings, size_t num_mappings)
 {
   if (!buf || buflen < BROKER_PDU_FULL_HEADER_SIZE || !local_cid || !mappings || num_mappings == 0)
   {
@@ -603,7 +603,7 @@ size_t pack_dynamic_uid_assignment_list(uint8_t* buf, size_t buflen, const EtcPa
     return 0;
   cur_ptr += data_size;
 
-  for (const DynamicUidMapping* cur_mapping = mappings; cur_mapping < mappings + num_mappings; ++cur_mapping)
+  for (const BrokerDynamicUidMapping* cur_mapping = mappings; cur_mapping < mappings + num_mappings; ++cur_mapping)
   {
     // Check bounds
     if (cur_ptr + DYNAMIC_UID_MAPPING_SIZE > buf_end)
@@ -636,7 +636,7 @@ size_t pack_dynamic_uid_assignment_list(uint8_t* buf, size_t buflen, const EtcPa
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  * \return Note: Other error codes might be propagated from underlying socket calls.
  */
-etcpal_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RdmUid* uids,
+etcpal_error_t broker_send_fetch_uid_assignment_list(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RdmUid* uids,
                                               size_t num_uids)
 {
   if (!local_cid || !uids || num_uids == 0)
@@ -681,7 +681,7 @@ etcpal_error_t send_fetch_uid_assignment_list(rdmnet_conn_t handle, const EtcPal
 
 /******************************** Disconnect *********************************/
 
-etcpal_error_t send_disconnect(RdmnetConnection* conn, const DisconnectMsg* data)
+etcpal_error_t send_disconnect(RdmnetConnection* conn, const BrokerDisconnectMsg* data)
 {
   AcnRootLayerPdu rlp;
   rlp.sender_cid = conn->local_cid;
@@ -760,7 +760,7 @@ const char* rdmnet_disconnect_reason_to_string(rdmnet_disconnect_reason_t code)
  * \param[in] code Dynamic UID status code.
  * \return String, or NULL if code is invalid.
  */
-const char* rdmnet_dynamic_uid_status_to_string(dynamic_uid_status_t code)
+const char* rdmnet_rdmnet_dynamic_uid_status_to_string(rdmnet_dynamic_uid_status_t code)
 {
   if (code >= 0 && code < NUM_DYNAMIC_UID_STATUS_STRINGS)
     return kRdmnetDynamicUidStatusStrings[code];

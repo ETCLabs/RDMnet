@@ -138,8 +138,8 @@ public:
   /// \param controller Controller instance which has received the dynamic UID mappints.
   /// \param scope_handle Handle to the scope on which the dynamic UID mappings were received.
   /// \param list The list of dynamic UID mappings.
-  virtual void HandleDynamicUidMappingsReceived(Controller& controller, ScopeHandle scope_handle,
-                                                const DynamicUidAssignmentList& list)
+  virtual void HandleBrokerDynamicUidMappingsReceived(Controller& controller, ScopeHandle scope_handle,
+                                                const BrokerDynamicUidAssignmentList& list)
   {
     RDMNET_UNUSED_ARG(controller);
     RDMNET_UNUSED_ARG(scope_handle);
@@ -151,7 +151,7 @@ public:
 struct ControllerData
 {
   etcpal::Uuid cid;           ///< The controller's Component Identifier (CID).
-  rdm::Uid uid;               ///< The controller's RDM UID. For a dynamic UID, use ::rdm::Uid::DynamicUidRequest().
+  rdm::Uid uid;               ///< The controller's RDM UID. For a dynamic UID, use ::rdm::Uid::BrokerDynamicUidRequest().
   std::string search_domain;  ///< The controller's search domain for discovering brokers.
 
   /// Create an empty, invalid data structure by default.
@@ -174,7 +174,7 @@ inline ControllerData::ControllerData(const etcpal::Uuid& cid_in, const rdm::Uid
 /// Determine whether a ControllerData instance contains valid data for RDMnet operation.
 bool ControllerData::IsValid() const
 {
-  return (!cid.IsNull() && (uid.IsStatic() || uid.IsDynamicUidRequest()) && !search_domain.empty());
+  return (!cid.IsNull() && (uid.IsStatic() || uid.IsBrokerDynamicUidRequest()) && !search_domain.empty());
 }
 
 /// \brief Create a default set of controller data.
@@ -183,7 +183,7 @@ bool ControllerData::IsValid() const
 /// ESTA manufacturer ID.
 inline ControllerData ControllerData::Default(uint16_t manufacturer_id)
 {
-  return ControllerData(etcpal::Uuid::OsPreferred(), rdm::Uid::DynamicUidRequest(manufacturer_id), E133_DEFAULT_DOMAIN);
+  return ControllerData(etcpal::Uuid::OsPreferred(), rdm::Uid::BrokerDynamicUidRequest(manufacturer_id), E133_DEFAULT_DOMAIN);
 }
 
 /// A set of initial identifying RDM data to use for a controller.
@@ -343,14 +343,14 @@ extern "C" inline void ControllerLibCbStatusReceived(rdmnet_controller_t handle,
   }
 }
 
-extern "C" inline void ControllerLibCbDynamicUidMappingsReceived(rdmnet_controller_t handle,
+extern "C" inline void ControllerLibCbBrokerDynamicUidMappingsReceived(rdmnet_controller_t handle,
                                                                  rdmnet_client_scope_t scope_handle,
-                                                                 const DynamicUidAssignmentList* list, void* context)
+                                                                 const BrokerDynamicUidAssignmentList* list, void* context)
 {
   if (list && context)
   {
     RDMNET_GET_CONTROLLER_REF(handle, context);
-    controller.notify_handler()->HandleDynamicUidMappingsReceived(controller, scope_handle, *list);
+    controller.notify_handler()->HandleBrokerDynamicUidMappingsReceived(controller, scope_handle, *list);
   }
 }
 
@@ -408,7 +408,7 @@ inline etcpal::Error Controller::Startup(ControllerNotifyHandler& notify_handler
   RDMNET_CONTROLLER_SET_CALLBACKS(&config, internal::ControllerLibCbConnected, internal::ControllerLibCbConnectFailed,
                                   internal::ControllerLibCbDisconnected, internal::ControllerLibCbClientListUpdate,
                                   internal::ControllerLibCbRdmResponseReceived, internal::ControllerLibCbStatusReceived,
-                                  internal::ControllerLibCbDynamicUidMappingsReceived, this);
+                                  internal::ControllerLibCbBrokerDynamicUidMappingsReceived, this);
   RDMNET_CONTROLLER_SET_RDM_DATA(&config, rdm_data.manufacturer_label.c_str(),
                                  rdm_data.device_model_description.c_str(), rdm_data.software_version_label.c_str(),
                                  rdm_data.device_label.c_str(), rdm_data.device_label_settable);
@@ -445,7 +445,7 @@ inline etcpal::Error Controller::Startup(ControllerNotifyHandler& notify_handler
   RDMNET_CONTROLLER_SET_CALLBACKS(&config, internal::ControllerLibCbConnected, internal::ControllerLibCbConnectFailed,
                                   internal::ControllerLibCbDisconnected, internal::ControllerLibCbClientListUpdate,
                                   internal::ControllerLibCbRdmResponseReceived, internal::ControllerLibCbStatusReceived,
-                                  internal::ControllerLibCbDynamicUidMappingsReceived, this);
+                                  internal::ControllerLibCbBrokerDynamicUidMappingsReceived, this);
   RDMNET_CONTROLLER_SET_RDM_CMD_CALLBACKS(&config, internal::ControllerLibCbRdmCommandReceived,
                                           internal::ControllerLibCbLlrpRdmCommandReceived);
   return rdmnet_controller_create(&config, &handle_);

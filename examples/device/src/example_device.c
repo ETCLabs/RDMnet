@@ -55,7 +55,7 @@ static void device_handle_rpt_command(const RdmnetRemoteRdmCommand* cmd, rdmnet_
 static void device_handle_llrp_command(const LlrpRemoteRdmCommand* cmd, rdmnet_data_changed_t* data_changed);
 static bool device_handle_rdm_command(const RdmCommand* rdm_cmd, RdmResponse* resp_list, size_t* resp_list_size,
                                       uint16_t* nack_reason, rdmnet_data_changed_t* data_changed);
-static void device_send_rpt_status(rpt_status_code_t status_code, const RdmnetRemoteRdmCommand* received_cmd);
+static void device_rpt_send_status(rpt_status_code_t status_code, const RdmnetRemoteRdmCommand* received_cmd);
 static void device_send_rpt_nack(uint16_t nack_reason, const RdmnetRemoteRdmCommand* received_cmd);
 static void device_send_rpt_response(RdmResponse* resp_list, size_t num_responses,
                                      const RdmnetRemoteRdmCommand* received_cmd);
@@ -237,7 +237,7 @@ void device_handle_rpt_command(const RdmnetRemoteRdmCommand* cmd, rdmnet_data_ch
   const RdmCommand* rdm_cmd = &cmd->rdm;
   if (rdm_cmd->command_class != kRdmCCGetCommand && rdm_cmd->command_class != kRdmCCSetCommand)
   {
-    device_send_rpt_status(VECTOR_RPT_STATUS_INVALID_COMMAND_CLASS, cmd);
+    device_rpt_send_status(VECTOR_RPT_STATUS_INVALID_COMMAND_CLASS, cmd);
     etcpal_log(device_state.lparams, ETCPAL_LOG_WARNING,
                "Device received RDM command with invalid command class 0x%02x", rdm_cmd->command_class);
   }
@@ -374,7 +374,7 @@ bool device_handle_rdm_command(const RdmCommand* rdm_cmd, RdmResponse* resp_list
   return res;
 }
 
-void device_send_rpt_status(rpt_status_code_t status_code, const RdmnetRemoteRdmCommand* received_cmd)
+void device_rpt_send_status(rpt_status_code_t status_code, const RdmnetRemoteRdmCommand* received_cmd)
 {
   LocalRptStatus status;
   rdmnet_create_status_from_command(received_cmd, status_code, &status);

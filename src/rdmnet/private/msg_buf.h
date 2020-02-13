@@ -89,9 +89,9 @@ typedef struct RdmListState
   {                                                         \
     (rlstateptr)->parsed_request_notif_header = false;      \
     INIT_PDU_BLOCK_STATE(&(rlstateptr)->block, blocksize);  \
-    GET_RDM_BUF_LIST(rmsgptr)->rdm_buffers = NULL;          \
-    GET_RDM_BUF_LIST(rmsgptr)->num_rdm_buffers = 0;         \
-    GET_RDM_BUF_LIST(rmsgptr)->more_coming = false;         \
+    RPT_GET_RDM_BUF_LIST(rmsgptr)->rdm_buffers = NULL;      \
+    RPT_GET_RDM_BUF_LIST(rmsgptr)->num_rdm_buffers = 0;     \
+    RPT_GET_RDM_BUF_LIST(rmsgptr)->more_coming = false;     \
   } while (0)
 
 typedef struct RptStatusState
@@ -138,23 +138,23 @@ typedef struct ClientEntryState
     (cstateptr)->client_protocol = kClientProtocolUnknown; \
   } while (0)
 
-typedef struct ClientListState
+typedef struct BrokerClientListState
 {
   PduBlockState block;
   ClientEntryState entry;
-} ClientListState;
+} BrokerClientListState;
 
 #define INIT_CLIENT_LIST_STATE(clstateptr, blocksize, bmsgptr)             \
   do                                                                       \
   {                                                                        \
     INIT_PDU_BLOCK_STATE(&(clstateptr)->block, blocksize);                 \
-    GET_CLIENT_LIST(bmsgptr)->client_protocol = kClientProtocolUnknown;    \
-    GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(bmsgptr))->client_entries = NULL;  \
-    GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(bmsgptr))->num_client_entries = 0; \
-    GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(bmsgptr))->more_coming = false;    \
-    GET_EPT_CLIENT_LIST(GET_CLIENT_LIST(bmsgptr))->client_entries = NULL;  \
-    GET_EPT_CLIENT_LIST(GET_CLIENT_LIST(bmsgptr))->num_client_entries = 0; \
-    GET_EPT_CLIENT_LIST(GET_CLIENT_LIST(bmsgptr))->more_coming = false;    \
+    BROKER_GET_CLIENT_LIST(bmsgptr)->client_protocol = kClientProtocolUnknown;    \
+    BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(bmsgptr))->client_entries = NULL;  \
+    BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(bmsgptr))->num_client_entries = 0; \
+    BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(bmsgptr))->more_coming = false;    \
+    BROKER_GET_EPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(bmsgptr))->client_entries = NULL;  \
+    BROKER_GET_EPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(bmsgptr))->num_client_entries = 0; \
+    BROKER_GET_EPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(bmsgptr))->more_coming = false;    \
   } while (0)
 
 typedef struct ClientConnectState
@@ -191,7 +191,7 @@ typedef struct BrokerState
   union
   {
     GenericListState data_list;
-    ClientListState client_list;
+    BrokerClientListState client_list;
     ClientConnectState client_connect;
     ClientEntryUpdateState update;
     PduBlockState unknown;

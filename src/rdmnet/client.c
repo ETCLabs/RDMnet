@@ -427,7 +427,7 @@ etcpal_error_t rdmnet_client_request_client_list(rdmnet_client_t handle, rdmnet_
   if (res != kEtcPalErrOk)
     return res;
 
-  res = send_fetch_client_list(scope_handle, &cli->cid);
+  res = broker_send_fetch_client_list(scope_handle, &cli->cid);
 
   release_client_and_scope(cli, scope_entry);
   return res;
@@ -467,7 +467,7 @@ etcpal_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet
   res = rdmctl_pack_command(&rdm_to_send, &buf_to_send);
   if (res == kEtcPalErrOk)
   {
-    res = send_rpt_request(scope_handle, &cli->cid, &header, &buf_to_send);
+    res = rpt_send_request(scope_handle, &cli->cid, &header, &buf_to_send);
     if (res == kEtcPalErrOk && seq_num)
       *seq_num = header.seqnum;
   }
@@ -531,7 +531,7 @@ etcpal_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmne
   }
   if (res == kEtcPalErrOk)
   {
-    res = send_rpt_notification(scope_handle, &cli->cid, &header, resp_buf, resp_buf_size);
+    res = rpt_send_notification(scope_handle, &cli->cid, &header, resp_buf, resp_buf_size);
   }
 
 #if RDMNET_DYNAMIC_MEM
@@ -560,7 +560,7 @@ etcpal_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, rdmnet_clie
   header.dest_endpoint_id = E133_NULL_ENDPOINT;
   header.seqnum = status->seq_num;
 
-  res = send_rpt_status(scope_handle, &cli->cid, &header, &status->msg);
+  res = rpt_send_status(scope_handle, &cli->cid, &header, &status->msg);
 
   release_client_and_scope(cli, scope_entry);
   return res;
@@ -783,12 +783,12 @@ void conncb_msg_received(rdmnet_conn_t handle, const RdmnetMessage* message, voi
       case ACN_VECTOR_ROOT_BROKER:
         cb.which = kClientCallbackBrokerMsgReceived;
         cb.common_args.broker_msg_received.scope_handle = handle;
-        cb.common_args.broker_msg_received.msg = GET_BROKER_MSG(message);
+        cb.common_args.broker_msg_received.msg = RDMNET_GET_BROKER_MSG(message);
         break;
       case ACN_VECTOR_ROOT_RPT:
         if (cli->type == kClientProtocolRPT)
         {
-          if (handle_rpt_message(cli, scope_entry, GET_RPT_MSG(message), &cb.prot_info.rpt.args.msg_received))
+          if (handle_rpt_message(cli, scope_entry, RDMNET_GET_RPT_MSG(message), &cb.prot_info.rpt.args.msg_received))
           {
             cb.which = kClientCallbackMsgReceived;
           }
@@ -837,7 +837,7 @@ bool handle_rpt_message(const RdmnetClient* cli, const ClientScopeListEntry* sco
 bool handle_rpt_request(const RptMessage* rmsg, RptClientMessage* msg_out)
 {
   RdmnetRemoteRdmCommand* cmd = RDMNET_GET_REMOTE_RDM_COMMAND(msg_out);
-  const RdmBufList* list = GET_RDM_BUF_LIST(rmsg);
+  const RptRdmBufList* list = RPT_GET_RDM_BUF_LIST(rmsg);
 
   if (list->num_rdm_buffers == 1)  // Only one RDM command allowed in an RPT request
   {
@@ -861,9 +861,9 @@ bool handle_rpt_notification(const RptMessage* rmsg, RptClientMessage* msg_out)
   // Do some initialization
   msg_out->type = kRptClientMsgRdmResp;
   resp->command_included = false;
-  resp->more_coming = GET_RDM_BUF_LIST(rmsg)->more_coming;
+  resp->more_coming = RPT_GET_RDM_BUF_LIST(rmsg)->more_coming;
 
-  const RdmBufList* list = GET_RDM_BUF_LIST(rmsg);
+  const RptRdmBufList* list = RPT_GET_RDM_BUF_LIST(rmsg);
   resp->responses = ALLOC_CLIENT_RDM_RESPONSE_ARRAY(list->num_rdm_buffers);
   if (!resp->responses)
     return false;
@@ -916,7 +916,7 @@ bool handle_rpt_notification(const RptMessage* rmsg, RptClientMessage* msg_out)
 bool handle_rpt_status(const RptMessage* rmsg, RptClientMessage* msg_out)
 {
   RdmnetRemoteRptStatus* status_out = RDMNET_GET_REMOTE_RPT_STATUS(msg_out);
-  const RptStatusMsg* status = GET_RPT_STATUS_MSG(rmsg);
+  const RptStatusMsg* status = RPT_GET_STATUS_MSG(rmsg);
 
   // This one is quick and simple with no failure condition
   msg_out->type = kRptClientMsgStatus;
@@ -1403,7 +1403,7 @@ void attempt_connection_on_listen_addrs(ClientScopeListEntry* scope_entry)
 
 etcpal_error_t start_connection_for_scope(ClientScopeListEntry* scope_entry, const EtcPalSockAddr* broker_addr)
 {
-  ClientConnectMsg connect_msg;
+  BrokerClientConnectMsg connect_msg;
   RdmnetClient* cli = scope_entry->client;
 
   if (cli->type == kClientProtocolRPT)
@@ -1423,7 +1423,7 @@ etcpal_error_t start_connection_for_scope(ClientScopeListEntry* scope_entry, con
     connect_msg.e133_version = E133_VERSION;
     rdmnet_safe_strncpy(connect_msg.search_domain, cli->search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
     if (rpt_data->type == kRPTClientTypeController)
-      connect_msg.connect_flags = CONNECTFLAG_INCREMENTAL_UPDATES;
+      connect_msg.connect_flags = BROKER_CONNECT_FLAG_INCREMENTAL_UPDATES;
     else
       connect_msg.connect_flags = 0;
     connect_msg.client_entry.client_protocol = kClientProtocolRPT;

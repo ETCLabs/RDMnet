@@ -19,18 +19,18 @@
 
 #include "rdmnet_mock/core/rpt_prot.h"
 
-DEFINE_FAKE_VALUE_FUNC(size_t, bufsize_rpt_request, const RdmBuffer*);
-DEFINE_FAKE_VALUE_FUNC(size_t, bufsize_rpt_status, const RptStatusMsg*);
-DEFINE_FAKE_VALUE_FUNC(size_t, bufsize_rpt_notification, const RdmBuffer*, size_t);
-DEFINE_FAKE_VALUE_FUNC(size_t, pack_rpt_request, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*,
+DEFINE_FAKE_VALUE_FUNC(size_t, rpt_get_request_buffer_size, const RdmBuffer*);
+DEFINE_FAKE_VALUE_FUNC(size_t, rpt_get_status_buffer_size, const RptStatusMsg*);
+DEFINE_FAKE_VALUE_FUNC(size_t, rpt_get_notification_buffer_size, const RdmBuffer*, size_t);
+DEFINE_FAKE_VALUE_FUNC(size_t, rpt_pack_request, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*,
                        const RdmBuffer*);
-DEFINE_FAKE_VALUE_FUNC(size_t, pack_rpt_status, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*,
+DEFINE_FAKE_VALUE_FUNC(size_t, rpt_pack_status, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*,
                        const RptStatusMsg*);
-DEFINE_FAKE_VALUE_FUNC(size_t, pack_rpt_notification, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*,
+DEFINE_FAKE_VALUE_FUNC(size_t, rpt_pack_notification, uint8_t*, size_t, const EtcPalUuid*, const RptHeader*,
                        const RdmBuffer*, size_t);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, send_rpt_request, rdmnet_conn_t, const EtcPalUuid*, const RptHeader*,
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rpt_send_request, rdmnet_conn_t, const EtcPalUuid*, const RptHeader*,
                        const RdmBuffer*);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, send_rpt_status, rdmnet_conn_t, const EtcPalUuid*, const RptHeader*,
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rpt_send_status, rdmnet_conn_t, const EtcPalUuid*, const RptHeader*,
                        const RptStatusMsg*);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, send_rpt_notification, rdmnet_conn_t, const EtcPalUuid*, const RptHeader*,
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rpt_send_notification, rdmnet_conn_t, const EtcPalUuid*, const RptHeader*,
                        const RdmBuffer*, size_t);

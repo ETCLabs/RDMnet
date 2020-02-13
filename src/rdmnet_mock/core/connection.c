@@ -24,7 +24,7 @@ static rdmnet_conn_t next_conn_handle;
 static etcpal_error_t fake_connection_create(const RdmnetConnectionConfig* config, rdmnet_conn_t* handle);
 
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_connection_create, const RdmnetConnectionConfig*, rdmnet_conn_t*);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_connect, rdmnet_conn_t, const EtcPalSockAddr*, const ClientConnectMsg*);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_connect, rdmnet_conn_t, const EtcPalSockAddr*, const BrokerClientConnectMsg*);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_set_blocking, rdmnet_conn_t, bool);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_connection_destroy, rdmnet_conn_t, const rdmnet_disconnect_reason_t*);
 

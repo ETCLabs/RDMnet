@@ -2,9 +2,9 @@
 
 // clang-format off
 
-static DynamicUidMapping mappings[] = {
+static BrokerDynamicUidMapping mappings[] = {
   {
-    .status_code = kDynamicUidStatusOk,
+    .status_code = kRdmnetDynamicUidStatusOk,
     .uid = {
       .manu = 0xa592,
       .id = 0x00000037
@@ -14,7 +14,7 @@ static DynamicUidMapping mappings[] = {
     }
   },
   {
-    .status_code = kDynamicUidStatusOk,
+    .status_code = kRdmnetDynamicUidStatusOk,
     .uid = {
       .manu = 0xa592,
       .id = 0x00000038
@@ -24,7 +24,7 @@ static DynamicUidMapping mappings[] = {
     }
   },
   {
-    .status_code = kDynamicUidStatusDuplicateRid,
+    .status_code = kRdmnetDynamicUidStatusDuplicateRid,
     .uid = {
       .manu = 0,
       .id = 0

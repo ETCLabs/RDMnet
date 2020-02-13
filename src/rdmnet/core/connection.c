@@ -238,7 +238,7 @@ etcpal_error_t rdmnet_connection_create(const RdmnetConnectionConfig* config, rd
  *  \return Note: Other error codes might be propagated from underlying socket calls.
  */
 etcpal_error_t rdmnet_connect(rdmnet_conn_t handle, const EtcPalSockAddr* remote_addr,
-                              const ClientConnectMsg* connect_data)
+                              const BrokerClientConnectMsg* connect_data)
 {
   if (!remote_addr || !connect_data)
     return kEtcPalErrInvalid;
@@ -386,7 +386,7 @@ etcpal_error_t rdmnet_connection_destroy(rdmnet_conn_t handle, const rdmnet_disc
 
   if (conn->state == kCSHeartbeat && disconnect_reason)
   {
-    DisconnectMsg dm;
+    BrokerDisconnectMsg dm;
     dm.disconnect_reason = *disconnect_reason;
     send_disconnect(conn, &dm);
   }
@@ -792,12 +792,12 @@ void rdmnet_socket_error(rdmnet_conn_t handle, etcpal_error_t socket_err)
 
 void handle_rdmnet_connect_result(RdmnetConnection* conn, RdmnetMessage* msg, ConnCallbackDispatchInfo* cb)
 {
-  if (GET_BROKER_MSG(msg))
+  if (RDMNET_GET_BROKER_MSG(msg))
   {
-    BrokerMessage* bmsg = GET_BROKER_MSG(msg);
-    if (IS_CONNECT_REPLY_MSG(bmsg))
+    BrokerMessage* bmsg = RDMNET_GET_BROKER_MSG(msg);
+    if (BROKER_IS_CONNECT_REPLY_MSG(bmsg))
     {
-      ConnectReplyMsg* reply = GET_CONNECT_REPLY_MSG(bmsg);
+      BrokerConnectReplyMsg* reply = BROKER_GET_CONNECT_REPLY_MSG(bmsg);
       switch (reply->connect_status)
       {
         case kRdmnetConnectOk:
@@ -826,13 +826,13 @@ void handle_rdmnet_connect_result(RdmnetConnection* conn, RdmnetMessage* msg, Co
         }
       }
     }
-    else if (IS_CLIENT_REDIRECT_MSG(bmsg))
+    else if (BROKER_IS_CLIENT_REDIRECT_MSG(bmsg))
     {
-      conn->remote_addr = GET_CLIENT_REDIRECT_MSG(bmsg)->new_addr;
+      conn->remote_addr = BROKER_GET_CLIENT_REDIRECT_MSG(bmsg)->new_addr;
       retry_connection(conn);
     }
   }
-  free_rdmnet_message(msg);
+  rdmnet_free_message_resources(msg);
 }
 
 void handle_rdmnet_message(RdmnetConnection* conn, RdmnetMessage* msg, ConnCallbackDispatchInfo* cb)
@@ -842,9 +842,9 @@ void handle_rdmnet_message(RdmnetConnection* conn, RdmnetMessage* msg, ConnCallb
 
   // We handle some Broker messages internally
   bool deliver_message = false;
-  if (GET_BROKER_MSG(msg))
+  if (RDMNET_GET_BROKER_MSG(msg))
   {
-    BrokerMessage* bmsg = GET_BROKER_MSG(msg);
+    BrokerMessage* bmsg = RDMNET_GET_BROKER_MSG(msg);
     switch (bmsg->vector)
     {
       case VECTOR_BROKER_CONNECT_REPLY:
@@ -857,7 +857,7 @@ void handle_rdmnet_message(RdmnetConnection* conn, RdmnetMessage* msg, ConnCallb
         RdmnetDisconnectedInfo* disconn_info = &cb->args.disconnected.disconn_info;
         disconn_info->event = kRdmnetDisconnectGracefulRemoteInitiated;
         disconn_info->socket_err = kEtcPalErrOk;
-        disconn_info->rdmnet_reason = GET_DISCONNECT_MSG(bmsg)->disconnect_reason;
+        disconn_info->rdmnet_reason = BROKER_GET_DISCONNECT_MSG(bmsg)->disconnect_reason;
 
         reset_connection(conn);
         break;
@@ -878,7 +878,7 @@ void handle_rdmnet_message(RdmnetConnection* conn, RdmnetMessage* msg, ConnCallb
   }
   else
   {
-    free_rdmnet_message(msg);
+    rdmnet_free_message_resources(msg);
   }
 }
 
@@ -957,7 +957,7 @@ void deliver_callback(ConnCallbackDispatchInfo* info)
     case kConnCallbackMsgReceived:
       if (info->cbs.msg_received)
         info->cbs.msg_received(info->handle, &info->args.msg_received.message, info->context);
-      free_rdmnet_message(&info->args.msg_received.message);
+      rdmnet_free_message_resources(&info->args.msg_received.message);
       break;
     case kConnCallbackNone:
     default:

@@ -80,7 +80,7 @@ inline void ExpectClientEntriesEqual(const ClientEntry& a, const ClientEntry& b)
   }
 }
 
-inline void ExpectMessagesEqual(const ClientConnectMsg& a, const ClientConnectMsg& b)
+inline void ExpectMessagesEqual(const BrokerClientConnectMsg& a, const BrokerClientConnectMsg& b)
 {
   EXPECT_STREQ(a.scope, b.scope);
   EXPECT_EQ(a.e133_version, b.e133_version);
@@ -89,7 +89,7 @@ inline void ExpectMessagesEqual(const ClientConnectMsg& a, const ClientConnectMs
   ExpectClientEntriesEqual(a.client_entry, b.client_entry);
 }
 
-inline void ExpectMessagesEqual(const ConnectReplyMsg& a, const ConnectReplyMsg& b)
+inline void ExpectMessagesEqual(const BrokerConnectReplyMsg& a, const BrokerConnectReplyMsg& b)
 {
   EXPECT_EQ(a.connect_status, b.connect_status);
   EXPECT_EQ(a.e133_version, b.e133_version);
@@ -97,18 +97,18 @@ inline void ExpectMessagesEqual(const ConnectReplyMsg& a, const ConnectReplyMsg&
   EXPECT_EQ(a.client_uid, b.client_uid);
 }
 
-inline void ExpectMessagesEqual(const ClientEntryUpdateMsg& a, const ClientEntryUpdateMsg& b)
+inline void ExpectMessagesEqual(const BrokerClientEntryUpdateMsg& a, const BrokerClientEntryUpdateMsg& b)
 {
   EXPECT_EQ(a.connect_flags, b.connect_flags);
   ExpectClientEntriesEqual(a.client_entry, b.client_entry);
 }
 
-inline void ExpectMessagesEqual(const ClientRedirectMsg& a, const ClientRedirectMsg& b)
+inline void ExpectMessagesEqual(const BrokerClientRedirectMsg& a, const BrokerClientRedirectMsg& b)
 {
   EXPECT_EQ(a.new_addr, b.new_addr);
 }
 
-inline void ExpectMessagesEqual(const ClientList& a, const ClientList& b)
+inline void ExpectMessagesEqual(const BrokerClientList& a, const BrokerClientList& b)
 {
   EXPECT_EQ(a.client_protocol, b.client_protocol);
   if (a.client_protocol == b.client_protocol)
@@ -172,7 +172,7 @@ inline void ExpectMessagesEqual(const ClientList& a, const ClientList& b)
   }
 }
 
-inline void ExpectMessagesEqual(const DynamicUidRequestList& a, const DynamicUidRequestList& b)
+inline void ExpectMessagesEqual(const BrokerDynamicUidRequestList& a, const BrokerDynamicUidRequestList& b)
 {
   EXPECT_EQ(a.num_requests, b.num_requests);
   EXPECT_EQ(a.more_coming, b.more_coming);
@@ -198,7 +198,7 @@ inline void ExpectMessagesEqual(const DynamicUidRequestList& a, const DynamicUid
   }
 }
 
-inline void ExpectMessagesEqual(const DynamicUidAssignmentList& a, const DynamicUidAssignmentList& b)
+inline void ExpectMessagesEqual(const BrokerDynamicUidAssignmentList& a, const BrokerDynamicUidAssignmentList& b)
 {
   EXPECT_EQ(a.num_mappings, b.num_mappings);
   EXPECT_EQ(a.more_coming, b.more_coming);
@@ -225,7 +225,7 @@ inline void ExpectMessagesEqual(const DynamicUidAssignmentList& a, const Dynamic
   }
 }
 
-inline void ExpectMessagesEqual(const FetchUidAssignmentList& a, const FetchUidAssignmentList& b)
+inline void ExpectMessagesEqual(const BrokerFetchUidAssignmentList& a, const BrokerFetchUidAssignmentList& b)
 {
   EXPECT_EQ(a.num_uids, b.num_uids);
   EXPECT_EQ(a.more_coming, b.more_coming);
@@ -250,7 +250,7 @@ inline void ExpectMessagesEqual(const FetchUidAssignmentList& a, const FetchUidA
   }
 }
 
-inline void ExpectMessagesEqual(const DisconnectMsg& a, const DisconnectMsg& b)
+inline void ExpectMessagesEqual(const BrokerDisconnectMsg& a, const BrokerDisconnectMsg& b)
 {
   EXPECT_EQ(a.disconnect_reason, b.disconnect_reason);
 }
@@ -304,7 +304,7 @@ inline void ExpectMessagesEqual(const BrokerMessage& a, const BrokerMessage& b)
   }
 }
 
-inline void ExpectMessagesEqual(const RdmBufList& a, const RdmBufList& b)
+inline void ExpectMessagesEqual(const RptRdmBufList& a, const RptRdmBufList& b)
 {
   EXPECT_EQ(a.num_rdm_buffers, b.num_rdm_buffers);
   EXPECT_EQ(a.more_coming, b.more_coming);

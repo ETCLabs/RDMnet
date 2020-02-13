@@ -109,7 +109,7 @@ typedef struct ClientEntry
 /*!
  * \brief Determine whether a ClientEntry contains an RptClientEntry.
  * \param clientryptr Pointer to ClientEntry.
- * \return (true or false) whether the ClientEntry contains an RptClientEntry.
+ * \return (bool) whether the ClientEntry contains an RptClientEntry.
  */
 #define IS_RPT_CLIENT_ENTRY(clientryptr) ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_RPT)
 
@@ -123,7 +123,7 @@ typedef struct ClientEntry
 /*!
  * \brief Determine whether a ClientEntry contains an EptClientEntry.
  * \param clientryptr Pointer to ClientEntry.
- * \return (true or false) whether the ClientEntry contains an EptClientEntry.
+ * \return (bool) whether the ClientEntry contains an EptClientEntry.
  */
 #define IS_EPT_CLIENT_ENTRY(clientryptr) ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_EPT)
 

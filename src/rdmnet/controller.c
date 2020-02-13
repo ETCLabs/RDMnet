@@ -411,9 +411,9 @@ void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t sc
       case VECTOR_BROKER_CLIENT_ADD:
       case VECTOR_BROKER_CLIENT_REMOVE:
       case VECTOR_BROKER_CLIENT_ENTRY_CHANGE:
-        RDMNET_ASSERT(GET_CLIENT_LIST(msg)->client_protocol == kClientProtocolRPT);
+        RDMNET_ASSERT(BROKER_GET_CLIENT_LIST(msg)->client_protocol == kClientProtocolRPT);
         controller->callbacks.client_list_update_received(controller, scope_handle, (client_list_action_t)msg->vector,
-                                                          GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(msg)),
+                                                          BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(msg)),
                                                           controller->callback_context);
         break;
       default:

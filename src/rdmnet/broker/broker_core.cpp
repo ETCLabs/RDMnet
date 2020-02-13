@@ -44,7 +44,7 @@ BrokerCore::~BrokerCore()
     Shutdown();
 }
 
-bool BrokerCore::Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerNotify* notify, etcpal::Logger* logger,
+bool BrokerCore::Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerNotifyHandler* notify, etcpal::Logger* logger,
                          BrokerComponents components)
 {
   if (!started_)
@@ -272,11 +272,11 @@ void BrokerCore::HandleRdmnetConnMsgReceived(rdmnet_conn_t handle, const RdmnetM
   {
     case ACN_VECTOR_ROOT_BROKER:
     {
-      const BrokerMessage* bmsg = GET_BROKER_MSG(&msg);
+      const BrokerMessage* bmsg = RDMNET_GET_BROKER_MSG(&msg);
       switch (bmsg->vector)
       {
         case VECTOR_BROKER_CONNECT:
-          ProcessConnectRequest(handle, GET_CLIENT_CONNECT_MSG(bmsg));
+          ProcessConnectRequest(handle, BROKER_GET_CLIENT_CONNECT_MSG(bmsg));
           break;
         case VECTOR_BROKER_FETCH_CLIENT_LIST:
           SendClientList(handle);
@@ -337,8 +337,8 @@ void BrokerCore::SendRptClientList(BrokerMessage& bmsg, RPTClient& to_cli)
   }
   if (!entries.empty())
   {
-    GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(&bmsg))->client_entries = entries.data();
-    GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(&bmsg))->num_client_entries = entries.size();
+    BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&bmsg))->client_entries = entries.data();
+    BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&bmsg))->num_client_entries = entries.size();
     to_cli.Push(settings_.cid, bmsg);
   }
 }
@@ -351,9 +351,9 @@ void BrokerCore::SendClientsAdded(rdmnet_conn_t conn_to_ignore, std::vector<RptC
 {
   BrokerMessage bmsg;
   bmsg.vector = VECTOR_BROKER_CLIENT_ADD;
-  GET_CLIENT_LIST(&bmsg)->client_protocol = kClientProtocolRPT;
-  GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(&bmsg))->client_entries = entries.data();
-  GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(&bmsg))->num_client_entries = entries.size();
+  BROKER_GET_CLIENT_LIST(&bmsg)->client_protocol = kClientProtocolRPT;
+  BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&bmsg))->client_entries = entries.data();
+  BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&bmsg))->num_client_entries = entries.size();
 
   for (const auto controller : controllers_)
   {
@@ -366,9 +366,9 @@ void BrokerCore::SendClientsRemoved(std::vector<RptClientEntry>& entries)
 {
   BrokerMessage bmsg;
   bmsg.vector = VECTOR_BROKER_CLIENT_REMOVE;
-  GET_CLIENT_LIST(&bmsg)->client_protocol = kClientProtocolRPT;
-  GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(&bmsg))->client_entries = entries.data();
-  GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(&bmsg))->num_client_entries = entries.size();
+  BROKER_GET_CLIENT_LIST(&bmsg)->client_protocol = kClientProtocolRPT;
+  BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&bmsg))->client_entries = entries.data();
+  BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&bmsg))->num_client_entries = entries.size();
 
   for (const auto controller : controllers_)
   {
@@ -403,7 +403,7 @@ void BrokerCore::SendStatus(RPTController* controller, const RptHeader& header, 
   }
 }
 
-void BrokerCore::ProcessConnectRequest(int conn, const ClientConnectMsg* cmsg)
+void BrokerCore::ProcessConnectRequest(int conn, const BrokerClientConnectMsg* cmsg)
 {
   bool deny_connection = true;
   rdmnet_connect_status_t connect_status = kRdmnetConnectScopeMismatch;
@@ -424,8 +424,8 @@ void BrokerCore::ProcessConnectRequest(int conn, const ClientConnectMsg* cmsg)
 
   if (deny_connection)
   {
-    ConnectReplyMsg creply = {connect_status, E133_VERSION, my_uid_, {}};
-    send_connect_reply(conn, &settings_.cid.get(), &creply);
+    BrokerConnectReplyMsg creply = {connect_status, E133_VERSION, my_uid_, {}};
+    broker_send_connect_reply(conn, &settings_.cid.get(), &creply);
 
     // Clean up this connection.
     MarkConnForDestruction(conn);
@@ -554,7 +554,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const RptClientE
     // Send the connect reply
     BrokerMessage msg;
     msg.vector = VECTOR_BROKER_CONNECT_REPLY;
-    ConnectReplyMsg* creply = GET_CONNECT_REPLY_MSG(&msg);
+    BrokerConnectReplyMsg* creply = BROKER_GET_CONNECT_REPLY_MSG(&msg);
     creply->connect_status = kRdmnetConnectOk;
     creply->e133_version = E133_VERSION;
     creply->broker_uid = my_uid_;
@@ -580,7 +580,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
 {
   etcpal::ReadGuard clients_read(client_lock_);
 
-  const RptMessage* rptmsg = GET_RPT_MSG(msg);
+  const RptMessage* rptmsg = RDMNET_GET_RPT_MSG(msg);
   bool route_msg = false;
   auto client = clients_.find(conn);
 
@@ -604,7 +604,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
               log_->Debug("Received Request PDU addressed to invalid or not found UID %04x:%08x from Controller %d",
                           rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, conn);
             }
-            else if (GET_RDM_BUF_LIST(rptmsg)->num_rdm_buffers > 1)
+            else if (RPT_GET_RDM_BUF_LIST(rptmsg)->num_rdm_buffers > 1)
             {
               // There should only ever be one RDM command in an RPT request.
               SendStatus(controller, rptmsg->header, kRptStatusInvalidMessage);
@@ -627,7 +627,7 @@ void BrokerCore::ProcessRPTMessage(int conn, const RdmnetMessage* msg)
           {
             if (IsValidDeviceDestinationUID(rptmsg->header.dest_uid))
             {
-              if (GET_RPT_STATUS_MSG(rptmsg)->status_code != kRptStatusBroadcastComplete)
+              if (RPT_GET_STATUS_MSG(rptmsg)->status_code != kRptStatusBroadcastComplete)
                 route_msg = true;
               else
                 log_->Debug("Device %d sent broadcast complete message.", conn);

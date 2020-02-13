@@ -39,11 +39,11 @@ bool BrokerClient::PushPostSizeCheck(const etcpal::Uuid& sender_cid, const Broke
   switch (msg.vector)
   {
     case VECTOR_BROKER_CONNECT_REPLY:
-      to_push.data = std::make_unique<uint8_t[]>(CONNECT_REPLY_FULL_MSG_SIZE);
+      to_push.data = std::make_unique<uint8_t[]>(BROKER_CONNECT_REPLY_FULL_MSG_SIZE);
       if (to_push.data)
       {
-        to_push.size = pack_connect_reply(to_push.data.get(), CONNECT_REPLY_FULL_MSG_SIZE, &sender_cid.get(),
-                                          GET_CONNECT_REPLY_MSG(&msg));
+        to_push.size = broker_pack_connect_reply(to_push.data.get(), BROKER_CONNECT_REPLY_FULL_MSG_SIZE, &sender_cid.get(),
+                                          BROKER_GET_CONNECT_REPLY_MSG(&msg));
         if (to_push.size)
         {
           broker_msgs_.push(std::move(to_push));
@@ -56,14 +56,14 @@ bool BrokerClient::PushPostSizeCheck(const etcpal::Uuid& sender_cid, const Broke
     case VECTOR_BROKER_CLIENT_REMOVE:
     case VECTOR_BROKER_CLIENT_ENTRY_CHANGE:
     {
-      if (GET_CLIENT_LIST(&msg)->client_protocol == kClientProtocolRPT)
+      if (BROKER_GET_CLIENT_LIST(&msg)->client_protocol == kClientProtocolRPT)
       {
-        const RptClientList* rpt_list = GET_RPT_CLIENT_LIST(GET_CLIENT_LIST(&msg));
-        size_t bufsize = bufsize_rpt_client_list(rpt_list->num_client_entries);
+        const RptClientList* rpt_list = BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&msg));
+        size_t bufsize = broker_get_rpt_client_list_buffer_size(rpt_list->num_client_entries);
         to_push.data = std::make_unique<uint8_t[]>(bufsize);
         if (to_push.data)
         {
-          to_push.size = pack_rpt_client_list(to_push.data.get(), bufsize, &sender_cid.get(), msg.vector,
+          to_push.size = broker_pack_rpt_client_list(to_push.data.get(), bufsize, &sender_cid.get(), msg.vector,
                                               rpt_list->client_entries, rpt_list->num_client_entries);
           if (to_push.size)
           {
@@ -94,11 +94,11 @@ bool RPTClient::PushPostSizeCheck(const etcpal::Uuid& sender_cid, const RptHeade
   bool res = false;
   MessageRef to_push;
 
-  size_t bufsize = bufsize_rpt_status(&msg);
+  size_t bufsize = rpt_get_status_buffer_size(&msg);
   to_push.data = std::make_unique<uint8_t[]>(bufsize);
   if (to_push.data)
   {
-    to_push.size = pack_rpt_status(to_push.data.get(), bufsize, &sender_cid.get(), &header, &msg);
+    to_push.size = rpt_pack_status(to_push.data.get(), bufsize, &sender_cid.get(), &header, &msg);
     if (to_push.size)
     {
       status_msgs_.push(std::move(to_push));
@@ -121,12 +121,12 @@ bool RPTController::Push(rdmnet_conn_t /*from_conn*/, const etcpal::Uuid& sender
     case VECTOR_RPT_REQUEST:  // Controllers should respond to requests like devices do.
     {
       MessageRef to_push;
-      size_t bufsize = bufsize_rpt_request(GET_RDM_BUF_LIST(&msg)->rdm_buffers);
+      size_t bufsize = rpt_get_request_buffer_size(RPT_GET_RDM_BUF_LIST(&msg)->rdm_buffers);
       to_push.data = std::make_unique<uint8_t[]>(bufsize);
       if (to_push.data)
       {
-        to_push.size = pack_rpt_request(to_push.data.get(), bufsize, &sender_cid.get(), &msg.header,
-                                        GET_RDM_BUF_LIST(&msg)->rdm_buffers);
+        to_push.size = rpt_pack_request(to_push.data.get(), bufsize, &sender_cid.get(), &msg.header,
+                                        RPT_GET_RDM_BUF_LIST(&msg)->rdm_buffers);
         if (to_push.size)
         {
           rpt_msgs_.push(std::move(to_push));
@@ -137,20 +137,20 @@ bool RPTController::Push(rdmnet_conn_t /*from_conn*/, const etcpal::Uuid& sender
     break;
 
     case VECTOR_RPT_STATUS:
-      res = RPTClient::PushPostSizeCheck(sender_cid, msg.header, *GET_RPT_STATUS_MSG(&msg));
+      res = RPTClient::PushPostSizeCheck(sender_cid, msg.header, *RPT_GET_STATUS_MSG(&msg));
       break;
 
     case VECTOR_RPT_NOTIFICATION:
     {
       MessageRef to_push;
       std::vector<RdmBuffer> resp_list;
-      resp_list.assign(GET_RDM_BUF_LIST(&msg)->rdm_buffers,
-                       GET_RDM_BUF_LIST(&msg)->rdm_buffers + GET_RDM_BUF_LIST(&msg)->num_rdm_buffers);
-      size_t bufsize = bufsize_rpt_notification(resp_list.data(), resp_list.size());
+      resp_list.assign(RPT_GET_RDM_BUF_LIST(&msg)->rdm_buffers,
+                       RPT_GET_RDM_BUF_LIST(&msg)->rdm_buffers + RPT_GET_RDM_BUF_LIST(&msg)->num_rdm_buffers);
+      size_t bufsize = rpt_get_notification_buffer_size(resp_list.data(), resp_list.size());
       to_push.data = std::make_unique<uint8_t[]>(bufsize);
       if (to_push.data)
       {
-        to_push.size = pack_rpt_notification(to_push.data.get(), bufsize, &sender_cid.get(), &msg.header,
+        to_push.size = rpt_pack_notification(to_push.data.get(), bufsize, &sender_cid.get(), &msg.header,
                                              resp_list.data(), resp_list.size());
         if (to_push.size)
         {
@@ -235,18 +235,18 @@ bool RPTDevice::Push(rdmnet_conn_t from_conn, const etcpal::Uuid& sender_cid, co
   switch (msg.vector)
   {
     case VECTOR_RPT_STATUS:
-      res = RPTClient::PushPostSizeCheck(sender_cid, msg.header, *GET_RPT_STATUS_MSG(&msg));
+      res = RPTClient::PushPostSizeCheck(sender_cid, msg.header, *RPT_GET_STATUS_MSG(&msg));
       break;
 
     case VECTOR_RPT_REQUEST:
     {
       MessageRef to_push;
-      size_t bufsize = bufsize_rpt_request(GET_RDM_BUF_LIST(&msg)->rdm_buffers);
+      size_t bufsize = rpt_get_request_buffer_size(RPT_GET_RDM_BUF_LIST(&msg)->rdm_buffers);
       to_push.data = std::make_unique<uint8_t[]>(bufsize);
       if (to_push.data)
       {
-        to_push.size = pack_rpt_request(to_push.data.get(), bufsize, &sender_cid.get(), &msg.header,
-                                        GET_RDM_BUF_LIST(&msg)->rdm_buffers);
+        to_push.size = rpt_pack_request(to_push.data.get(), bufsize, &sender_cid.get(), &msg.header,
+                                        RPT_GET_RDM_BUF_LIST(&msg)->rdm_buffers);
         if (to_push.size)
         {
           rpt_msgs_[from_conn].push(std::move(to_push));

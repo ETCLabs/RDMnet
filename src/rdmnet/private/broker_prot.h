@@ -117,8 +117,8 @@ extern "C" {
 #define BROKER_DISCONNECT_MSG_SIZE (BROKER_PDU_HEADER_SIZE + DISCONNECT_DATA_SIZE)
 
 /* All functions must be called from inside the relevant send locks. */
-etcpal_error_t send_client_connect(RdmnetConnection* conn, const ClientConnectMsg* data);
-etcpal_error_t send_disconnect(RdmnetConnection* conn, const DisconnectMsg* data);
+etcpal_error_t send_client_connect(RdmnetConnection* conn, const BrokerClientConnectMsg* data);
+etcpal_error_t send_disconnect(RdmnetConnection* conn, const BrokerDisconnectMsg* data);
 etcpal_error_t send_null(RdmnetConnection* conn);
 
 #ifdef __cplusplus

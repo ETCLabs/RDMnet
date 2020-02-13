@@ -86,7 +86,7 @@ public:
 struct DeviceData
 {
   etcpal::Uuid cid;           ///< The device's Component Identifier (CID).
-  rdm::Uid uid;               ///< The device's RDM UID. For a dynamic UID, use ::rdm::Uid::DynamicUidRequest().
+  rdm::Uid uid;               ///< The device's RDM UID. For a dynamic UID, use ::rdm::Uid::BrokerDynamicUidRequest().
   std::string search_domain;  ///< The device's search domain for discovering brokers.
 
   /// Create an empty, invalid data structure by default.
@@ -108,7 +108,7 @@ inline DeviceData::DeviceData(const etcpal::Uuid& cid_in, const rdm::Uid& uid_in
 /// Determine whether a DeviceData instance contains valid data for RDMnet operation.
 inline bool DeviceData::IsValid() const
 {
-  return (!cid.IsNull() && (uid.IsStatic() || uid.IsDynamicUidRequest()) && !search_domain.empty());
+  return (!cid.IsNull() && (uid.IsStatic() || uid.IsBrokerDynamicUidRequest()) && !search_domain.empty());
 }
 
 /// \ingroup rdmnet_device_cpp

@@ -116,7 +116,7 @@ TEST_F(TestConnection, HandlesSocketErrorOnConnect)
   ETCPAL_IP_SET_V4_ADDRESS(&remote_addr.ip, 0x0a650101);
   remote_addr.port = 8888;
 
-  ClientConnectMsg connect_msg{};
+  BrokerClientConnectMsg connect_msg{};
   ASSERT_EQ(kEtcPalErrOk, rdmnet_connect(conn_, &remote_addr, &connect_msg));
 
   PassTimeAndTick();
@@ -131,7 +131,7 @@ TEST_F(TestConnection, SetsCorrectSocketOptionsIpv4)
   ETCPAL_IP_SET_V4_ADDRESS(&remote_addr.ip, 0x0a650101);
   remote_addr.port = 8888;
 
-  ClientConnectMsg connect_msg{};
+  BrokerClientConnectMsg connect_msg{};
 
   ASSERT_EQ(kEtcPalErrOk, rdmnet_connect(conn_, &remote_addr, &connect_msg));
   PassTimeAndTick();
@@ -154,7 +154,7 @@ TEST_F(TestConnection, SetsCorrectSocketOptionsIpv6)
   ETCPAL_IP_SET_V6_ADDRESS(&remote_addr.ip, v6_data.data());
   remote_addr.port = 8888;
 
-  ClientConnectMsg connect_msg{};
+  BrokerClientConnectMsg connect_msg{};
 
   ASSERT_EQ(kEtcPalErrOk, rdmnet_connect(conn_, &remote_addr, &connect_msg));
   PassTimeAndTick();

@@ -824,7 +824,7 @@ RDMnetNetworkModel* RDMnetNetworkModel::makeRDMnetNetworkModel(rdmnet::Controlle
 
   const rdmnet::ControllerRdmData my_rdm_data("ETC", "Example RDMnet Controller", "1.0.0",
                                               "My Example RDMnet Controller");
-  model->rdmnet_.Startup(*model, rdmnet::ControllerData(model->my_cid_, rdm::Uid::DynamicUidRequest(0x6574)),
+  model->rdmnet_.Startup(*model, rdmnet::ControllerData(model->my_cid_, rdm::Uid::BrokerDynamicUidRequest(0x6574)),
                          my_rdm_data);
 
   // Initialize GUI-supported PID information

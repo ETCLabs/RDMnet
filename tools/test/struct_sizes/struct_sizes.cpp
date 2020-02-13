@@ -37,16 +37,16 @@ void PrintAllSizes()
   std::cout << "Size" << std::endl;
 
   PRINT_HEADER_NAME("rdmnet/core/broker_prot.h");
-  PRINT_SIZE(ClientConnectMsg);
-  PRINT_SIZE(ConnectReplyMsg);
-  PRINT_SIZE(ClientEntryUpdateMsg);
-  PRINT_SIZE(ClientRedirectMsg);
+  PRINT_SIZE(BrokerClientConnectMsg);
+  PRINT_SIZE(BrokerConnectReplyMsg);
+  PRINT_SIZE(BrokerClientEntryUpdateMsg);
+  PRINT_SIZE(BrokerClientRedirectMsg);
   PRINT_SIZE(ClientList);
-  PRINT_SIZE(DynamicUidRequestList);
-  PRINT_SIZE(DynamicUidMapping);
-  PRINT_SIZE(DynamicUidAssignmentList);
-  PRINT_SIZE(FetchUidAssignmentList);
-  PRINT_SIZE(DisconnectMsg);
+  PRINT_SIZE(BrokerDynamicUidRequestList);
+  PRINT_SIZE(BrokerDynamicUidMapping);
+  PRINT_SIZE(BrokerDynamicUidAssignmentList);
+  PRINT_SIZE(BrokerFetchUidAssignmentList);
+  PRINT_SIZE(BrokerDisconnectMsg);
   PRINT_SIZE(BrokerMessage);
 
   PRINT_HEADER_NAME("rdmnet/core/client_entry.h");
@@ -78,7 +78,7 @@ void PrintAllSizes()
   PRINT_HEADER_NAME("rdmnet/core/rpt_prot.h");
   PRINT_SIZE(RptHeader);
   PRINT_SIZE(RptStatusMsg);
-  PRINT_SIZE(RdmBufList);
+  PRINT_SIZE(RptRdmBufList);
   PRINT_SIZE(RptMessage);
 
   PRINT_HEADER_NAME("rdmnet/client.h");

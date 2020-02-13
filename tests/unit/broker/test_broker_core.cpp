@@ -64,7 +64,7 @@ public:
   MOCK_METHOD(void, UnregisterBroker, (), (override));
 };
 
-class MockBrokerNotify : public rdmnet::BrokerNotify
+class MockBrokerNotifyHandler : public rdmnet::BrokerNotifyHandler
 {
 public:
   MOCK_METHOD(void, HandleScopeChanged, (const std::string& new_scope), (override));
@@ -82,7 +82,7 @@ protected:
   MockBrokerThreadManager* mock_threads_{nullptr};
   MockBrokerDiscoveryManager* mock_disc_{nullptr};
 
-  MockBrokerNotify notify_;
+  MockBrokerNotifyHandler notify_;
 
   BrokerCore broker_;
   BrokerComponentNotify* broker_callbacks_{nullptr};

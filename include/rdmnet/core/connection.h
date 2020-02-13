@@ -187,7 +187,7 @@ typedef struct RdmnetConnectionConfig
 
 etcpal_error_t rdmnet_connection_create(const RdmnetConnectionConfig* config, rdmnet_conn_t* handle);
 etcpal_error_t rdmnet_connect(rdmnet_conn_t handle, const EtcPalSockAddr* remote_addr,
-                              const ClientConnectMsg* connect_data);
+                              const BrokerClientConnectMsg* connect_data);
 etcpal_error_t rdmnet_set_blocking(rdmnet_conn_t handle, bool blocking);
 etcpal_error_t rdmnet_connection_destroy(rdmnet_conn_t handle, const rdmnet_disconnect_reason_t* disconnect_reason);
 

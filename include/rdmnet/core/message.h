@@ -165,8 +165,10 @@ typedef struct RdmnetRemoteRptStatus
   uint16_t source_endpoint;
   /*! The sequence number of the status message, for matching with a corresponding command. */
   uint32_t seq_num;
-  /*! The status message. */
-  RptStatusMsg msg;
+  /*! A status code that indicates the specific error or status condition. */
+  rpt_status_code_t status_code;
+  /*! An optional implementation-defined status string to accompany this status message. */
+  const char* status_string;
 } RdmnetRemoteRptStatus;
 
 typedef struct RptClientMessage
@@ -219,44 +221,44 @@ typedef struct RdmnetMessage
 /*!
  * \brief Determine whether an RdmnetMessage contains a Broker message.
  * \param msgptr Pointer to RdmnetMessage.
- * \return (true or false) whether the message contains a Broker message.
+ * \return (bool) whether the message contains a Broker message.
  */
-#define IS_BROKER_MSG(msgptr) ((msgptr)->vector == ACN_VECTOR_ROOT_BROKER)
+#define RDMNET_IS_BROKER_MSG(msgptr) ((msgptr)->vector == ACN_VECTOR_ROOT_BROKER)
 
 /*!
  * \brief Get the encapsulated Broker message from an RdmnetMessage.
  * \param msgptr Pointer to RdmnetMessage.
- * \return Pointer to encapsulated Broker message (BrokerMessage *).
+ * \return Pointer to encapsulated Broker message (BrokerMessage*).
  */
-#define GET_BROKER_MSG(msgptr) (&(msgptr)->data.broker)
+#define RDMNET_GET_BROKER_MSG(msgptr) (&(msgptr)->data.broker)
 
 /*!
  * \brief Determine whether an RdmnetMessage contains a RPT message.
  * \param msgptr Pointer to RdmnetMessage.
- * \return (true or false) whether the message contains a RPT message.
+ * \return (bool) whether the message contains a RPT message.
  */
-#define IS_RPT_MSG(msgptr) ((msgptr)->vector == ACN_VECTOR_ROOT_RPT)
+#define RDMNET_IS_RPT_MSG(msgptr) ((msgptr)->vector == ACN_VECTOR_ROOT_RPT)
 
 /*!
  * \brief Get the encapsulated RPT message from an RdmnetMessage.
  * \param msgptr Pointer to RdmnetMessage.
- * \return Pointer to encapsulated RPT message (RptMessage *).
+ * \return Pointer to encapsulated RPT message (RptMessage*).
  */
-#define GET_RPT_MSG(msgptr) (&(msgptr)->data.rpt)
+#define RDMNET_GET_RPT_MSG(msgptr) (&(msgptr)->data.rpt)
 
 /*!
  * \brief Determine whether an RdmnetMessage contains a EPT message.
  * \param msgptr Pointer to RdmnetMessage.
- * \return (true or false) whether the message contains a EPT message.
+ * \return (bool) whether the message contains a EPT message.
  */
-#define IS_EPT_MSG(msgptr) ((msgptr)->vector == ACN_VECTOR_ROOT_EPT)
+#define RDMNET_IS_EPT_MSG(msgptr) ((msgptr)->vector == ACN_VECTOR_ROOT_EPT)
 
 /*!
  * \brief Get the encapsulated EPT message from an RdmnetMessage.
  * \param msgptr Pointer to RdmnetMessage.
- * \return Pointer to encapsulated EPT message (EptMessage *).
+ * \return Pointer to encapsulated EPT message (EptMessage*).
  */
-#define GET_EPT_MSG(msgptr) (&(msgptr)->data.ept)
+#define RDMNET_GET_EPT_MSG(msgptr) (&(msgptr)->data.ept)
 
 /*! An RDM command received from a remote LLRP Manager. */
 typedef struct LlrpRemoteRdmCommand
@@ -319,7 +321,7 @@ void rdmnet_create_status_from_command(const RdmnetRemoteRdmCommand* received_cm
 void rdmnet_create_llrp_response_from_command(const LlrpRemoteRdmCommand* received_cmd, const RdmResponse* rdm_response,
                                               LlrpLocalRdmResponse* resp);
 
-void free_rdmnet_message(RdmnetMessage* msg);
+void rdmnet_free_message_resources(RdmnetMessage* msg);
 
 #ifdef __cplusplus
 }
