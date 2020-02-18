@@ -28,16 +28,11 @@
 #include "rdmnet/client.h"
 
 #define NUM_SUPPORTED_PIDS 15
-#define PARAM_DATA_BUF_LENGTH RDM_MAX_PDL
+#define RDM_RESPONSE_BUF_LENGTH RDM_MAX_PDL
 
-#define MAX_RESPONSES_IN_ACK_OVERFLOW 2
-
-typedef enum
-{
-  kNoRdmnetDataChanged,
-  kRdmnetScopeConfigChanged,
-  kRdmnetSearchDomainChanged
-} rdmnet_data_changed_t;
+#if (NUM_SUPPORTED_PIDS * 2 > RDM_RESPONSE_BUF_LENGTH)
+#error "Response buffer must be made bigger!!"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,10 +50,10 @@ void default_responder_incr_unhealthy_count();
 void default_responder_reset_unhealthy_count();
 
 /* Generic PID get and set functions */
-bool default_responder_set(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
-                           rdmnet_data_changed_t* data_changed);
-bool default_responder_get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len, uint8_t* resp_data_buf,
-                           size_t* resp_data_size, uint16_t* nack_reason);
+void default_responder_set(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len,
+                           RdmnetSyncRdmResponse* response);
+void default_responder_get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len,
+                           RdmnetSyncRdmResponse* response, uint8_t* response_buf);
 
 #ifdef __cplusplus
 }

@@ -81,42 +81,37 @@ static etcpal_rwlock_t prop_lock;
 /*********************** Private function prototypes *************************/
 
 /* SET COMMANDS */
-bool set_identify_device(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
-                         rdmnet_data_changed_t* data_changed);
-bool set_device_label(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
-                      rdmnet_data_changed_t* data_changed);
-bool set_component_scope(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
-                         rdmnet_data_changed_t* data_changed);
-bool set_search_domain(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
-                       rdmnet_data_changed_t* data_changed);
-bool set_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
-                          rdmnet_data_changed_t* data_changed);
+void set_identify_device(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response);
+void set_device_label(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response);
+void set_component_scope(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response);
+void set_search_domain(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response);
+void set_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response);
 
 /* GET COMMANDS */
-bool get_identify_device(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                         size_t* num_responses, uint16_t* nack_reason);
-bool get_device_label(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                      size_t* num_responses, uint16_t* nack_reason);
-bool get_component_scope(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                         size_t* num_responses, uint16_t* nack_reason);
-bool get_search_domain(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                       size_t* num_responses, uint16_t* nack_reason);
-bool get_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                          size_t* num_responses, uint16_t* nack_reason);
-bool get_supported_parameters(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                              size_t* num_responses, uint16_t* nack_reason);
-bool get_device_info(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                     size_t* num_responses, uint16_t* nack_reason);
-bool get_manufacturer_label(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                            size_t* num_responses, uint16_t* nack_reason);
-bool get_device_model_description(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                                  size_t* num_responses, uint16_t* nack_reason);
-bool get_software_version_label(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                                size_t* num_responses, uint16_t* nack_reason);
-bool get_endpoint_list(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                       size_t* num_responses, uint16_t* nack_reason);
-bool get_endpoint_responders(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                             size_t* num_responses, uint16_t* nack_reason);
+void get_identify_device(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                         uint8_t* response_buf);
+void get_device_label(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                      uint8_t* response_buf);
+void get_component_scope(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                         uint8_t* response_buf);
+void get_search_domain(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                       uint8_t* response_buf);
+void get_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                          uint8_t* response_buf);
+void get_supported_parameters(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                              uint8_t* response_buf);
+void get_device_info(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                     uint8_t* response_buf);
+void get_manufacturer_label(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                            uint8_t* response_buf);
+void get_device_model_description(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                                  uint8_t* response_buf);
+void get_software_version_label(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                                uint8_t* response_buf);
+void get_endpoint_list(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                       uint8_t* response_buf);
+void get_endpoint_responders(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                             uint8_t* response_buf);
 
 /*************************** Function definitions ****************************/
 
@@ -198,8 +193,8 @@ bool default_responder_supports_pid(uint16_t pid)
   return false;
 }
 
-bool default_responder_set(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
-                           rdmnet_data_changed_t* data_changed)
+void default_responder_set(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len,
+                           RdmnetSyncRdmResponse* response)
 {
   bool res = false;
   if (etcpal_rwlock_writelock(&prop_lock))
@@ -207,19 +202,19 @@ bool default_responder_set(uint16_t pid, const uint8_t* param_data, uint8_t para
     switch (pid)
     {
       case E120_IDENTIFY_DEVICE:
-        res = set_identify_device(param_data, param_data_len, nack_reason, data_changed);
+        set_identify_device(param_data, param_data_len, response);
         break;
       case E120_DEVICE_LABEL:
-        res = set_device_label(param_data, param_data_len, nack_reason, data_changed);
+        set_device_label(param_data, param_data_len, response);
         break;
       case E133_COMPONENT_SCOPE:
-        res = set_component_scope(param_data, param_data_len, nack_reason, data_changed);
+        set_component_scope(param_data, param_data_len, response);
         break;
       case E133_SEARCH_DOMAIN:
-        res = set_search_domain(param_data, param_data_len, nack_reason, data_changed);
+        set_search_domain(param_data, param_data_len, response);
         break;
       case E133_TCP_COMMS_STATUS:
-        res = set_tcp_comms_status(param_data, param_data_len, nack_reason, data_changed);
+        set_tcp_comms_status(param_data, param_data_len, response);
         break;
       case E120_SUPPORTED_PARAMETERS:
       case E120_MANUFACTURER_LABEL:
@@ -227,12 +222,12 @@ bool default_responder_set(uint16_t pid, const uint8_t* param_data, uint8_t para
       case E120_SOFTWARE_VERSION_LABEL:
       case E137_7_ENDPOINT_LIST:
       case E137_7_ENDPOINT_RESPONDERS:
-        *nack_reason = E120_NR_UNSUPPORTED_COMMAND_CLASS;
-        *data_changed = kNoRdmnetDataChanged;
+        response->ack = false;
+        response->nack_reason = kRdmNRUnsupportedCommandClass;
         break;
       default:
-        *nack_reason = E120_NR_UNKNOWN_PID;
-        *data_changed = kNoRdmnetDataChanged;
+        response->ack = false;
+        response->nack_reason = kRdmNRUnknownPid;
         break;
     }
     etcpal_rwlock_writeunlock(&prop_lock);
@@ -240,8 +235,8 @@ bool default_responder_set(uint16_t pid, const uint8_t* param_data, uint8_t para
   return res;
 }
 
-bool default_responder_get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len,
-                           param_data_list_t resp_data_list, size_t* num_responses, uint16_t* nack_reason)
+void default_responder_get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len,
+                           RdmnetSyncRdmResponse* response, uint8_t* response_buf)
 {
   bool res = false;
   if (etcpal_rwlock_readlock(&prop_lock))
@@ -249,43 +244,44 @@ bool default_responder_get(uint16_t pid, const uint8_t* param_data, uint8_t para
     switch (pid)
     {
       case E120_IDENTIFY_DEVICE:
-        res = get_identify_device(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+        get_identify_device(param_data, param_data_len, response, response_buf);
         break;
       case E120_DEVICE_LABEL:
-        res = get_device_label(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+        get_device_label(param_data, param_data_len, response, response_buf);
         break;
       case E133_COMPONENT_SCOPE:
-        res = get_component_scope(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+        get_component_scope(param_data, param_data_len, response, response_buf);
         break;
       case E133_SEARCH_DOMAIN:
-        res = get_search_domain(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+        get_search_domain(param_data, param_data_len, response, response_buf);
         break;
       case E133_TCP_COMMS_STATUS:
-        res = get_tcp_comms_status(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+        get_tcp_comms_status(param_data, param_data_len, response, response_buf);
         break;
       case E120_SUPPORTED_PARAMETERS:
-        res = get_supported_parameters(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+        get_supported_parameters(param_data, param_data_len, response, response_buf);
         break;
       case E120_DEVICE_INFO:
-        res = get_device_info(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+        get_device_info(param_data, param_data_len, response, response_buf);
         break;
       case E120_MANUFACTURER_LABEL:
-        res = get_manufacturer_label(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+        get_manufacturer_label(param_data, param_data_len, response, response_buf);
         break;
       case E120_DEVICE_MODEL_DESCRIPTION:
-        res = get_device_model_description(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+        get_device_model_description(param_data, param_data_len, response, response_buf);
         break;
       case E120_SOFTWARE_VERSION_LABEL:
-        res = get_software_version_label(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+        get_software_version_label(param_data, param_data_len, response, response_buf);
         break;
       case E137_7_ENDPOINT_LIST:
-        res = get_endpoint_list(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+        get_endpoint_list(param_data, param_data_len, response, response_buf);
         break;
       case E137_7_ENDPOINT_RESPONDERS:
-        res = get_endpoint_responders(param_data, param_data_len, resp_data_list, num_responses, nack_reason);
+        get_endpoint_responders(param_data, param_data_len, response, response_buf);
         break;
       default:
-        *nack_reason = E120_NR_UNKNOWN_PID;
+        response->ack = false;
+        response->nack_reason = kRdmNRUnknownPid;
         break;
     }
     etcpal_rwlock_readunlock(&prop_lock);
@@ -304,8 +300,7 @@ void identify_thread(void* arg)
   }
 }
 
-bool set_identify_device(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
-                         rdmnet_data_changed_t* data_changed)
+void set_identify_device(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response)
 {
   if (param_data_len >= 1)
   {
@@ -322,18 +317,17 @@ bool set_identify_device(const uint8_t* param_data, uint8_t param_data_len, uint
       etcpal_thread_create(&prop_data.identify_thread, &ithread_params, identify_thread, NULL);
     }
     prop_data.identifying = new_identify_setting;
-    *data_changed = kNoRdmnetDataChanged;
-    return true;
+    response->ack = true;
   }
   else
   {
-    *nack_reason = E120_NR_FORMAT_ERROR;
+    response->ack = false;
+    response->nack_reason = kRdmNRFormatError;
     return false;
   }
 }
 
-bool set_device_label(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
-                      rdmnet_data_changed_t* data_changed)
+void set_device_label(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response)
 {
   if (param_data_len >= 1)
   {
@@ -341,18 +335,17 @@ bool set_device_label(const uint8_t* param_data, uint8_t param_data_len, uint16_
       param_data_len = DEVICE_LABEL_MAX_LEN;
     memcpy(prop_data.device_label, param_data, param_data_len);
     prop_data.device_label[param_data_len] = '\0';
-    *data_changed = kNoRdmnetDataChanged;
-    return true;
+    response->ack = true;
   }
   else
   {
-    *nack_reason = E120_NR_FORMAT_ERROR;
+    response->ack = false;
+    response->nack_reason = kRdmNRFormatError;
     return false;
   }
 }
 
-bool set_component_scope(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
-                         rdmnet_data_changed_t* data_changed)
+void set_component_scope(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response)
 {
   if (param_data_len == (2 + E133_SCOPE_STRING_PADDED_LENGTH + 1 + 4 + 16 + 2))
   {
@@ -388,121 +381,92 @@ bool set_component_scope(const uint8_t* param_data, uint8_t param_data_len, uint
       }
 
       RdmnetScopeConfig* existing_scope_config = &prop_data.scope_config;
-      if (strncmp((char*)&param_data[2], existing_scope_config->scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0 &&
-          ((!have_new_static_broker && !existing_scope_config->has_static_broker_addr) ||
-           ((etcpal_ip_cmp(&new_static_broker.ip, &existing_scope_config->static_broker_addr.ip) == 0) &&
-            new_static_broker.port == existing_scope_config->static_broker_addr.port)))
-      {
-        /* Same settings as current */
-        *data_changed = kNoRdmnetDataChanged;
-      }
-      else
-      {
-        rdmnet_safe_strncpy(existing_scope_config->scope, new_scope, E133_SCOPE_STRING_PADDED_LENGTH);
-        existing_scope_config->has_static_broker_addr = have_new_static_broker;
-        existing_scope_config->static_broker_addr = new_static_broker;
-        *data_changed = kRdmnetScopeConfigChanged;
-      }
-      return true;
+      rdmnet_safe_strncpy(existing_scope_config->scope, new_scope, E133_SCOPE_STRING_PADDED_LENGTH);
+      existing_scope_config->has_static_broker_addr = have_new_static_broker;
+      existing_scope_config->static_broker_addr = new_static_broker;
+      response->ack = true;
     }
     else
     {
-      *nack_reason = E120_NR_DATA_OUT_OF_RANGE;
+      response->ack = false;
+      response->nack_reason = kRdmNRDataOutOfRange;
     }
   }
   else
   {
-    *nack_reason = E120_NR_FORMAT_ERROR;
+    response->ack = false;
+    response->nack_reason = kRdmNRFormatError;
   }
-  return false;
 }
 
-bool set_search_domain(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
-                       rdmnet_data_changed_t* data_changed)
+void set_search_domain(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response)
 {
   if (param_data_len <= E133_DOMAIN_STRING_PADDED_LENGTH)
   {
     if (param_data_len > 0 || strcmp("", (char*)param_data) != 0)
     {
-      if (strncmp(prop_data.search_domain, (char*)param_data, E133_DOMAIN_STRING_PADDED_LENGTH) == 0)
-      {
-        /* Same domain as current */
-        *data_changed = kNoRdmnetDataChanged;
-      }
-      else
-      {
-        strncpy(prop_data.search_domain, (char*)param_data, E133_DOMAIN_STRING_PADDED_LENGTH);
-        *data_changed = kRdmnetSearchDomainChanged;
-      }
+      strncpy(prop_data.search_domain, (char*)param_data, E133_DOMAIN_STRING_PADDED_LENGTH);
     }
     else
     {
-      *nack_reason = E120_NR_DATA_OUT_OF_RANGE;
+      response->ack = false;
+      response->nack_reason = kRdmNRDataOutOfRange;
     }
-    return true;
   }
   else
   {
-    *nack_reason = E120_NR_FORMAT_ERROR;
+    response->ack = false;
+    response->nack_reason = kRdmNRFormatError;
   }
-
-  return false;
 }
 
-bool set_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, uint16_t* nack_reason,
-                          rdmnet_data_changed_t* data_changed)
+void set_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response)
 {
-  *data_changed = kNoRdmnetDataChanged;
-
   if (param_data_len == E133_SCOPE_STRING_PADDED_LENGTH)
   {
     if (strncmp((char*)param_data, prop_data.scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH) == 0)
     {
-      /* Same scope as current */
+      // Same scope as current
       prop_data.tcp_unhealthy_counter = 0;
-      return true;
+      response->ack = true;
     }
     else
     {
-      *nack_reason = E133_NR_UNKNOWN_SCOPE;
+      response->ack = false;
+      response->nack_reason = kRdmNRUnknownScope;
     }
   }
   else
   {
-    *nack_reason = E120_NR_FORMAT_ERROR;
+    response->ack = false;
+    response->nack_reason = kRdmNRFormatError;
   }
-
-  return false;
 }
 
-bool get_identify_device(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                         size_t* num_responses, uint16_t* nack_reason)
+void get_identify_device(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                         uint8_t* response_buf)
 {
   (void)param_data;
   (void)param_data_len;
-  (void)nack_reason;
 
-  resp_data_list[0].data[0] = prop_data.identifying ? 1 : 0;
-  resp_data_list[0].datalen = 1;
-  *num_responses = 1;
-  return true;
+  response->ack = true;
+  response_buf[0] = prop_data.identifying ? 1 : 0;
+  response->response_data_len = 1;
 }
 
-bool get_device_label(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                      size_t* num_responses, uint16_t* nack_reason)
+void get_device_label(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                      uint8_t* response_buf)
 {
   (void)param_data;
   (void)param_data_len;
-  (void)nack_reason;
 
-  strncpy((char*)resp_data_list[0].data, prop_data.device_label, DEVICE_LABEL_MAX_LEN);
-  resp_data_list[0].datalen = (uint8_t)strnlen(prop_data.device_label, DEVICE_LABEL_MAX_LEN);
-  *num_responses = 1;
-  return true;
+  response->ack = true;
+  strncpy((char*)response_buf, prop_data.device_label, DEVICE_LABEL_MAX_LEN);
+  response->response_data_len = (uint8_t)strnlen(prop_data.device_label, DEVICE_LABEL_MAX_LEN);
 }
 
-bool get_component_scope(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                         size_t* num_responses, uint16_t* nack_reason)
+void get_component_scope(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                         uint8_t* response_buf)
 {
   if (param_data_len >= 2)
   {
@@ -511,7 +475,7 @@ bool get_component_scope(const uint8_t* param_data, uint8_t param_data_len, para
       const RdmnetScopeConfig* scope_config = &prop_data.scope_config;
 
       // Pack the scope
-      uint8_t* cur_ptr = resp_data_list[0].data;
+      uint8_t* cur_ptr = response_buf;
       etcpal_pack_u16b(cur_ptr, 1);
       cur_ptr += 2;
       rdmnet_safe_strncpy((char*)cur_ptr, scope_config->scope, E133_SCOPE_STRING_PADDED_LENGTH);
@@ -544,41 +508,40 @@ bool get_component_scope(const uint8_t* param_data, uint8_t param_data_len, para
         memset(cur_ptr, 0, 4 + 16 + 2);
         cur_ptr += 4 + 16 + 2;
       }
-      resp_data_list[0].datalen = (uint8_t)(cur_ptr - resp_data_list[0].data);
-      *num_responses = 1;
-      return true;
+      response->ack = true;
+      response->response_data_len = (uint8_t)(cur_ptr - response_buf);
     }
     else
     {
-      *nack_reason = E120_NR_DATA_OUT_OF_RANGE;
+      response->ack = false;
+      response->nack_reason = kRdmNRDataOutOfRange;
     }
   }
   else
   {
-    *nack_reason = E120_NR_FORMAT_ERROR;
+    response->ack = false;
+    response->nack_reason = kRdmNRFormatError;
   }
-  return false;
 }
 
-bool get_search_domain(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                       size_t* num_responses, uint16_t* nack_reason)
+void get_search_domain(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                       uint8_t* response_buf)
 {
   (void)param_data;
   (void)param_data_len;
-  (void)nack_reason;
-  strncpy((char*)resp_data_list[0].data, prop_data.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
-  resp_data_list[0].datalen = (uint8_t)strlen(prop_data.search_domain);
-  *num_responses = 1;
-  return true;
+
+  response->ack = true;
+  strncpy((char*)response_buf, prop_data.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
+  response->response_data_len = (uint8_t)strlen(prop_data.search_domain);
 }
 
-bool get_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                          size_t* num_responses, uint16_t* nack_reason)
+void get_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                          uint8_t* response_buf)
 {
   (void)param_data;
   (void)param_data_len;
-  (void)nack_reason;
-  uint8_t* cur_ptr = resp_data_list[0].data;
+
+  uint8_t* cur_ptr = response_buf;
 
   memcpy(cur_ptr, prop_data.scope_config.scope, E133_SCOPE_STRING_PADDED_LENGTH);
   cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
@@ -608,119 +571,101 @@ bool get_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, par
   }
   etcpal_pack_u16b(cur_ptr, prop_data.tcp_unhealthy_counter);
   cur_ptr += 2;
-  resp_data_list[0].datalen = (uint8_t)(cur_ptr - resp_data_list[0].data);
-  *num_responses = 1;
-  return true;
+
+  response->ack = true;
+  response->response_data_len = (uint8_t)(cur_ptr - response_buf);
 }
 
-bool get_supported_parameters(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                              size_t* num_responses, uint16_t* nack_reason)
+void get_supported_parameters(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                              uint8_t* response_buf)
 {
   size_t list_index = 0;
-  uint8_t* cur_ptr = resp_data_list[0].data;
+  uint8_t* cur_ptr = response_buf;
   size_t i;
 
   (void)param_data;
   (void)param_data_len;
-  (void)nack_reason;
 
   for (i = 0; i < NUM_SUPPORTED_PIDS; ++i)
   {
     etcpal_pack_u16b(cur_ptr, kSupportedPIDList[i]);
     cur_ptr += 2;
-    if ((cur_ptr - resp_data_list[list_index].data) >= RDM_MAX_PDL - 1)
-    {
-      resp_data_list[list_index].datalen = (uint8_t)(cur_ptr - resp_data_list[list_index].data);
-      cur_ptr = resp_data_list[++list_index].data;
-    }
   }
-  resp_data_list[list_index].datalen = (uint8_t)(cur_ptr - resp_data_list[list_index].data);
-  *num_responses = list_index + 1;
-  return true;
+
+  response->ack = true;
+  response->response_data_len = (uint8_t)(cur_ptr - response_buf);
 }
 
-bool get_device_info(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                     size_t* num_responses, uint16_t* nack_reason)
+void get_device_info(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                     uint8_t* response_buf)
 {
   (void)param_data;
   (void)param_data_len;
-  (void)nack_reason;
-  memcpy(resp_data_list[0].data, kDeviceInfo, sizeof kDeviceInfo);
-  resp_data_list[0].datalen = sizeof kDeviceInfo;
-  *num_responses = 1;
-  return true;
+
+  response->ack = true;
+  memcpy(response_buf, kDeviceInfo, sizeof kDeviceInfo);
+  response->response_data_len = sizeof kDeviceInfo;
 }
 
-bool get_manufacturer_label(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                            size_t* num_responses, uint16_t* nack_reason)
+void get_manufacturer_label(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                            uint8_t* response_buf)
 {
   (void)param_data;
   (void)param_data_len;
-  (void)nack_reason;
 
-  strcpy((char*)resp_data_list[0].data, MANUFACTURER_LABEL);
-  resp_data_list[0].datalen = sizeof(MANUFACTURER_LABEL) - 1;
-  *num_responses = 1;
-  return true;
+  response->ack = true;
+  strcpy((char*)response_buf, MANUFACTURER_LABEL);
+  response->response_data_len = sizeof(MANUFACTURER_LABEL) - 1;
 }
 
-bool get_device_model_description(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                                  size_t* num_responses, uint16_t* nack_reason)
+void get_device_model_description(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                                  uint8_t* response_buf)
 {
   (void)param_data;
   (void)param_data_len;
-  (void)nack_reason;
 
-  strcpy((char*)resp_data_list[0].data, DEVICE_MODEL_DESCRIPTION);
-  resp_data_list[0].datalen = sizeof(DEVICE_MODEL_DESCRIPTION) - 1;
-  *num_responses = 1;
-  return true;
+  response->ack = true;
+  strcpy((char*)response_buf, DEVICE_MODEL_DESCRIPTION);
+  response->response_data_len = sizeof(DEVICE_MODEL_DESCRIPTION) - 1;
 }
 
-bool get_software_version_label(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                                size_t* num_responses, uint16_t* nack_reason)
+void get_software_version_label(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                                uint8_t* response_buf)
 {
   (void)param_data;
   (void)param_data_len;
-  (void)nack_reason;
 
-  strcpy((char*)resp_data_list[0].data, SOFTWARE_VERSION_LABEL);
-  resp_data_list[0].datalen = sizeof(SOFTWARE_VERSION_LABEL) - 1;
-  *num_responses = 1;
-  return true;
+  response->ack = true;
+  strcpy((char*)response_buf, SOFTWARE_VERSION_LABEL);
+  response->response_data_len = sizeof(SOFTWARE_VERSION_LABEL) - 1;
 }
 
-bool get_endpoint_list(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                       size_t* num_responses, uint16_t* nack_reason)
+void get_endpoint_list(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                       uint8_t* response_buf)
 {
   (void)param_data;
   (void)param_data_len;
-  (void)nack_reason;
 
-  uint8_t* cur_ptr = resp_data_list[0].data;
-
-  /* Hardcoded: no endpoints other than NULL_ENDPOINT. NULL_ENDPOINT is not
-   * reported in this response. */
-  resp_data_list[0].datalen = 4;
-  etcpal_pack_u32b(cur_ptr, prop_data.endpoint_list_change_number);
-  *num_responses = 1;
-  return true;
+  // Hardcoded: no endpoints other than NULL_ENDPOINT. NULL_ENDPOINT is not reported in this response.
+  response->ack = true;
+  response->response_data_len = 4;
+  etcpal_pack_u32b(response_buf, prop_data.endpoint_list_change_number);
 }
 
-bool get_endpoint_responders(const uint8_t* param_data, uint8_t param_data_len, param_data_list_t resp_data_list,
-                             size_t* num_responses, uint16_t* nack_reason)
+void get_endpoint_responders(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
+                             uint8_t* response_buf)
 {
   (void)param_data;
-  (void)param_data_len;
-  (void)resp_data_list;
-  (void)num_responses;
 
   if (param_data_len >= 2)
   {
-    /* We have no valid endpoints for this message */
-    *nack_reason = E137_7_NR_ENDPOINT_NUMBER_INVALID;
+    // We have no valid endpoints for this message
+    response->ack = false;
+    response->nack_reason = kRdmNREndpointNumberInvalid;
   }
   else
-    *nack_reason = E120_NR_FORMAT_ERROR;
-  return false;
+  {
+    response->ack = false;
+    response->nack_reason = kRdmNRFormatError;
+  }
 }

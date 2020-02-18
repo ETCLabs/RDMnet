@@ -87,7 +87,7 @@ typedef struct RdmnetDeviceCallbacks
    * \param[in] context Context pointer that was given at the creation of the device instance.
    */
   rdmnet_response_action_t (*rdm_command_received)(rdmnet_device_t handle, const RdmnetRemoteRdmCommand* cmd,
-                                                   void* context);
+                                                   RdmnetSyncRdmResponse* response, void* context);
 
   /*!
    * \brief An RDM command has been received over LLRP, addressed to a device.
@@ -96,7 +96,7 @@ typedef struct RdmnetDeviceCallbacks
    * \param[in] context Context pointer that was given at the creation of the device instance.
    */
   rdmnet_response_action_t (*llrp_rdm_command_received)(rdmnet_device_t handle, const LlrpRemoteRdmCommand* cmd,
-                                                        void* context);
+                                                        RdmnetSyncRdmResponse* response, void* context);
 
   /*!
    * \brief A set of previously-requested dynamic UID assignments has been received.
@@ -111,6 +111,8 @@ typedef struct RdmnetDeviceCallbacks
 /*! A set of information that defines the startup parameters of an RDMnet Device. */
 typedef struct RdmnetDeviceConfig
 {
+  /**** Required Values ****/
+
   /*! The device's CID. */
   EtcPalUuid cid;
   /*! The device's configured RDMnet scope. */
@@ -119,8 +121,33 @@ typedef struct RdmnetDeviceConfig
   RdmnetDeviceCallbacks callbacks;
   /*! Pointer to opaque data passed back with each callback. Can be NULL. */
   void* callback_context;
-  /*! Optional configuration data for the device's RPT Client functionality. */
-  RptClientOptionalConfig optional;
+
+  /**** Optional Values ****/
+
+  uint8_t* response_buf;
+  size_t response_buf_size;
+
+  /*!
+   * \brief OPTIONAL: The device's UID.
+   *
+   * This should only be filled in manually if the device is using a static UID. Otherwise,
+   * rdmnet_device_config_init() will initialize this field with a dynamic UID request generated
+   * from your ESTA manufacturer ID. All RDMnet components are required to have a valid ESTA
+   * manufacturer ID.
+   */
+  RdmUid uid;
+  /*! OPTIONAL: The client's configured search domain for discovery. */
+  const char* search_domain;
+  /*!
+   * \brief OPTIONAL: A set of network interfaces to use for the LLRP target associated with this
+   *        device.
+   *
+   * If NULL, the set passed to rdmnet_core_init() will be used, or all network interfaces on the
+   * system if that was not provided.
+   */
+  RdmnetMcastNetintId* llrp_netint_arr;
+  /*! OPTIONAL: The size of llrp_netint_arr. */
+  size_t num_llrp_netints;
 } RdmnetDeviceConfig;
 
 /*!

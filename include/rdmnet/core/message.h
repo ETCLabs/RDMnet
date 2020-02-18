@@ -107,14 +107,15 @@ typedef struct RdmnetLocalRdmResponse
   uint16_t source_endpoint;
   /*! The sequence number from the corresponding command, or 0 for an unsolicited response. */
   uint32_t seq_num;
-  /*! Whether the original command is included; if so, store it in cmd. */
+  /*! Whether the original command is included; if so, store it in original_command. */
   bool original_command_included;
-  /*! The original command associated with this response; valid if command_included is true. */
+  /*!
+   * The original command associated with this response; valid if original_command_included is
+   * true.
+   */
   RdmCommand original_command;
-  /*! The array of RDM responses. */
-  const RdmResponse* responses;
-  /*! The size of the responses array. */
-  size_t num_responses;
+  /*! The encapsulated RDM response. */
+  RdmResponse rdm_response;
 } RdmnetLocalRdmResponse;
 
 /*! An RDMnet RDM response received by a local component. */
@@ -126,19 +127,21 @@ typedef struct RdmnetRemoteRdmResponse
   uint16_t source_endpoint;
   /*! The sequence number of the response, for matching with a corresponding command. */
   uint32_t seq_num;
-  /*! Whether the original command is included; if so, it is stored in cmd. */
-  bool command_included;
-  /*! The original command associated with this response; valid if command_included is true. */
-  RdmCommand cmd;
-  /*! The array of RDM responses. */
-  RdmResponse* responses;
-  /*! The size of the responses array. */
-  size_t num_responses;
+  /*! Whether the original command is included; if so, it is stored in original_command. */
+  bool original_command_included;
   /*!
-   * This message contains a partial list. This can be set when the library runs out of static
-   * memory in which to store RDM responses and must deliver the partial list before continuing.
-   * The application should store the entries in the list but should not act on the list until
-   * another RdmnetRemoteRdmResponse is received with more_coming set to false.
+   * The original command associated with this response; valid if original_command_included is
+   * true.
+   */
+  RdmCommand original_command;
+  /*! The encapsulated RDM response. */
+  RdmResponse rdm_response;
+  /*!
+   * This message contains partial RDM data. This can be set when the library runs out of static
+   * memory in which to store RDM response data and must deliver a partial data buffer before
+   * continuing (this only applies to the data buffer within the RDM response). The application
+   * should store the partial data but should not act on it until another RdmnetRemoteRdmResponse
+   * is received with more_coming set to false.
    */
   bool more_coming;
 } RdmnetRemoteRdmResponse;
@@ -284,7 +287,7 @@ typedef struct LlrpRemoteRdmCommand
    *  interface on which it was received. */
   RdmnetMcastNetintId netint_id;
   /*! The RDM command. */
-  RdmCommand rdm;
+  RdmCommand rdm_command;
 } LlrpRemoteRdmCommand;
 
 /*! An RDM command to be sent from a local LLRP Target. */
@@ -297,7 +300,7 @@ typedef struct LlrpLocalRdmResponse
   /*! The network interface ID in the corresponding LlrpRemoteRdmCommand. */
   RdmnetMcastNetintId netint_id;
   /*! The RDM response. */
-  RdmResponse rdm;
+  RdmSingleResponse rdm_response;
 } LlrpLocalRdmResponse;
 
 /*! An RDM response received from a remote LLRP Target. */
@@ -308,8 +311,15 @@ typedef struct LlrpRemoteRdmResponse
   /*! The sequence number of this response (to be associated with a previously-sent command). */
   uint32_t seq_num;
   /*! The RDM response. */
-  RdmResponse rdm;
+  RdmSingleResponse rdm_response;
 } LlrpRemoteRdmResponse;
+
+typedef struct RdmnetSyncRdmResponse
+{
+  bool ack;
+  rdm_nack_reason_t nack_reason;
+  size_t response_data_len;
+} RdmnetSyncRdmResponse;
 
 void rdmnet_create_response(const RdmnetRemoteRdmCommand* received_cmd, const RdmResponse* rdm_arr,
                             size_t num_responses, RdmnetLocalRdmResponse* resp);

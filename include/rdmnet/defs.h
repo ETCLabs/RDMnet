@@ -177,15 +177,10 @@
 #define E133_TCP_COMMS_STATUS 0x0802
 #define E133_BROKER_STATUS    0x0803
 
-/******************************************************************************
- * Table A-16: Additional Response NACK Reason Codes
- *****************************************************************************/
-#define E133_NR_ACTION_NOT_SUPPORTED       0x000B
-#define E133_NR_UNKNOWN_SCOPE              0x000F
-#define E133_NR_INVALID_STATIC_CONFIG_TYPE 0x0010
-#define E133_NR_INVALID_IPV4_ADDRESS       0x0011
-#define E133_NR_INVALID_IPV6_ADDRESS       0x0012
-#define E133_NR_INVALID_PORT               0x0013
+/*
+ * E1.33's additional NACK reason codes are defined in rdm/defs.h:
+ * https://github.com/ETCLabs/RDM
+ */
 
 /******************************************************************************
  * Table A-17: Static Config Type Definitions for COMPONENT_SCOPE Parameter
