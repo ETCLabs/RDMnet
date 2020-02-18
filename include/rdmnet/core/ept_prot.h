@@ -26,7 +26,7 @@
 #ifndef RDMNET_CORE_EPT_PROT_H_
 #define RDMNET_CORE_EPT_PROT_H_
 
-#include "etcpal/int.h"
+#include <stdint.h>
 #include "rdmnet/defs.h"
 
 /*!

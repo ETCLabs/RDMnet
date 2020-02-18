@@ -36,7 +36,7 @@ class BrokerLogInterface
 {
 public:
   /// Used by the BrokerLog class to get a timestamp to prepend to a log message.
-  virtual void GetLogTime(EtcPalLogTimeParams& time) = 0;
+  virtual void GetLogTime(EtcPalLogTimestamp& time) = 0;
   /// Called from the BrokerLog's dispatch context to output a log message.
   virtual void OutputLogMsg(const std::string& str) = 0;
 };
@@ -74,7 +74,7 @@ public:
   void Emergency(const char* format, ...);
 
   void LogFromCallback(const std::string& str);
-  void GetTimeFromCallback(EtcPalLogTimeParams& time);
+  void GetTimeFromCallback(EtcPalLogTimestamp& time);
   void LogThreadRun();
 
 private:

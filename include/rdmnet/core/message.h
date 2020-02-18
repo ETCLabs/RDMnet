@@ -26,10 +26,10 @@
 #ifndef RDMNET_CORE_MESSAGE_H_
 #define RDMNET_CORE_MESSAGE_H_
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <stddef.h>
-#include "etcpal/int.h"
-#include "etcpal/bool.h"
-#include "etcpal/root_layer_pdu.h"
+#include "etcpal/acn_rlp.h"
 #include "etcpal/uuid.h"
 #include "rdmnet/core/broker_prot.h"
 #include "rdmnet/core/rpt_prot.h"
@@ -163,7 +163,7 @@ typedef struct EptClientMessage
 /*! A received RDMnet message. */
 typedef struct RdmnetMessage
 {
-  /*! The root layer vector. Compare to the vectors in \ref etcpal_rootlayerpdu. */
+  /*! The root layer vector. Compare to the vectors in \ref acn_rootlayerpdu. */
   uint32_t vector;
   /*! The CID of the Component that sent this message. */
   EtcPalUuid sender_cid;

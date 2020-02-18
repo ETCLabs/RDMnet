@@ -21,7 +21,7 @@
 
 #include <stdexcept>
 #include <cstddef>
-#include "etcpal/int.h"
+#include <cstdint>
 #include "etcpal/cpp/inet.h"
 
 // Macros to suppress warnings inside of Qt headers.

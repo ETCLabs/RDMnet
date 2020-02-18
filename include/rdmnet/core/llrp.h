@@ -26,8 +26,8 @@
 #ifndef RDMNET_CORE_LLRP_H_
 #define RDMNET_CORE_LLRP_H_
 
+#include <stdint.h>
 #include "etcpal/inet.h"
-#include "etcpal/int.h"
 #include "etcpal/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"

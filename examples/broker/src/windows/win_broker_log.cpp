@@ -58,7 +58,7 @@ void WindowsBrokerLog::Shutdown()
   file_.close();
 }
 
-void WindowsBrokerLog::GetLogTime(EtcPalLogTimeParams& time)
+void WindowsBrokerLog::GetLogTime(EtcPalLogTimestamp& time)
 {
   SYSTEMTIME win_time;
   GetLocalTime(&win_time);

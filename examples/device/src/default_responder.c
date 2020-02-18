@@ -315,7 +315,7 @@ bool set_identify_device(const uint8_t* param_data, uint8_t param_data_len, uint
     {
       EtcPalThreadParams ithread_params;
 
-      ithread_params.thread_priority = ETCPAL_THREAD_DEFAULT_PRIORITY;
+      ithread_params.priority = ETCPAL_THREAD_DEFAULT_PRIORITY;
       ithread_params.stack_size = ETCPAL_THREAD_DEFAULT_STACK;
       ithread_params.thread_name = "Identify Thread";
       ithread_params.platform_data = NULL;
@@ -357,7 +357,7 @@ bool set_component_scope(const uint8_t* param_data, uint8_t param_data_len, uint
 {
   if (param_data_len == (2 + E133_SCOPE_STRING_PADDED_LENGTH + 1 + 4 + 16 + 2))
   {
-    if (etcpal_upack_16b(param_data) == 1)
+    if (etcpal_unpack_u16b(param_data) == 1)
     {
       const uint8_t* cur_ptr = param_data + 2;
       char new_scope[E133_SCOPE_STRING_PADDED_LENGTH];
@@ -371,16 +371,16 @@ bool set_component_scope(const uint8_t* param_data, uint8_t param_data_len, uint
       switch (*cur_ptr++)
       {
         case E133_STATIC_CONFIG_IPV4:
-          ETCPAL_IP_SET_V4_ADDRESS(&new_static_broker.ip, etcpal_upack_32b(cur_ptr));
+          ETCPAL_IP_SET_V4_ADDRESS(&new_static_broker.ip, etcpal_unpack_u32b(cur_ptr));
           cur_ptr += 4 + 16;
-          new_static_broker.port = etcpal_upack_16b(cur_ptr);
+          new_static_broker.port = etcpal_unpack_u16b(cur_ptr);
           have_new_static_broker = true;
           break;
         case E133_STATIC_CONFIG_IPV6:
           cur_ptr += 4;
           ETCPAL_IP_SET_V6_ADDRESS(&new_static_broker.ip, cur_ptr);
           cur_ptr += 16;
-          new_static_broker.port = etcpal_upack_16b(cur_ptr);
+          new_static_broker.port = etcpal_unpack_u16b(cur_ptr);
           have_new_static_broker = true;
           break;
         case E133_NO_STATIC_CONFIG:
@@ -507,13 +507,13 @@ bool get_component_scope(const uint8_t* param_data, uint8_t param_data_len, para
 {
   if (param_data_len >= 2)
   {
-    if (etcpal_upack_16b(param_data) == 1)
+    if (etcpal_unpack_u16b(param_data) == 1)
     {
       const RdmnetScopeConfig* scope_config = &prop_data.scope_config;
 
       // Pack the scope
       uint8_t* cur_ptr = resp_data_list[0].data;
-      etcpal_pack_16b(cur_ptr, 1);
+      etcpal_pack_u16b(cur_ptr, 1);
       cur_ptr += 2;
       rdmnet_safe_strncpy((char*)cur_ptr, scope_config->scope, E133_SCOPE_STRING_PADDED_LENGTH);
       cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
@@ -524,9 +524,9 @@ bool get_component_scope(const uint8_t* param_data, uint8_t param_data_len, para
         if (ETCPAL_IP_IS_V4(&scope_config->static_broker_addr.ip))
         {
           *cur_ptr++ = E133_STATIC_CONFIG_IPV4;
-          etcpal_pack_32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&scope_config->static_broker_addr.ip));
+          etcpal_pack_u32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&scope_config->static_broker_addr.ip));
           cur_ptr += 4 + 16;
-          etcpal_pack_16b(cur_ptr, scope_config->static_broker_addr.port);
+          etcpal_pack_u16b(cur_ptr, scope_config->static_broker_addr.port);
           cur_ptr += 2;
         }
         else  // V6
@@ -535,7 +535,7 @@ bool get_component_scope(const uint8_t* param_data, uint8_t param_data_len, para
           cur_ptr += 4;
           memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&scope_config->static_broker_addr.ip), 16);
           cur_ptr += 16;
-          etcpal_pack_16b(cur_ptr, scope_config->static_broker_addr.port);
+          etcpal_pack_u16b(cur_ptr, scope_config->static_broker_addr.port);
           cur_ptr += 2;
         }
       }
@@ -587,19 +587,19 @@ bool get_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, par
   {
     if (ETCPAL_IP_IS_V4(&prop_data.cur_broker_addr.ip))
     {
-      etcpal_pack_32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&prop_data.cur_broker_addr.ip));
+      etcpal_pack_u32b(cur_ptr, ETCPAL_IP_V4_ADDRESS(&prop_data.cur_broker_addr.ip));
       cur_ptr += 4;
       memset(cur_ptr, 0, ETCPAL_IPV6_BYTES);
       cur_ptr += ETCPAL_IPV6_BYTES;
     }
     else
     {
-      etcpal_pack_32b(cur_ptr, 0);
+      etcpal_pack_u32b(cur_ptr, 0);
       cur_ptr += 4;
       memcpy(cur_ptr, ETCPAL_IP_V6_ADDRESS(&prop_data.cur_broker_addr.ip), ETCPAL_IPV6_BYTES);
       cur_ptr += ETCPAL_IPV6_BYTES;
     }
-    etcpal_pack_16b(cur_ptr, prop_data.cur_broker_addr.port);
+    etcpal_pack_u16b(cur_ptr, prop_data.cur_broker_addr.port);
     cur_ptr += 2;
   }
   else
@@ -607,7 +607,7 @@ bool get_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, par
     memset(cur_ptr, 0, 22);
     cur_ptr += 22;
   }
-  etcpal_pack_16b(cur_ptr, prop_data.tcp_unhealthy_counter);
+  etcpal_pack_u16b(cur_ptr, prop_data.tcp_unhealthy_counter);
   cur_ptr += 2;
   resp_data_list[0].datalen = (uint8_t)(cur_ptr - resp_data_list[0].data);
   *num_responses = 1;
@@ -627,7 +627,7 @@ bool get_supported_parameters(const uint8_t* param_data, uint8_t param_data_len,
 
   for (i = 0; i < NUM_SUPPORTED_PIDS; ++i)
   {
-    etcpal_pack_16b(cur_ptr, kSupportedPIDList[i]);
+    etcpal_pack_u16b(cur_ptr, kSupportedPIDList[i]);
     cur_ptr += 2;
     if ((cur_ptr - resp_data_list[list_index].data) >= RDM_MAX_PDL - 1)
     {
@@ -703,7 +703,7 @@ bool get_endpoint_list(const uint8_t* param_data, uint8_t param_data_len, param_
   /* Hardcoded: no endpoints other than NULL_ENDPOINT. NULL_ENDPOINT is not
    * reported in this response. */
   resp_data_list[0].datalen = 4;
-  etcpal_pack_32b(cur_ptr, prop_data.endpoint_list_change_number);
+  etcpal_pack_u32b(cur_ptr, prop_data.endpoint_list_change_number);
   *num_responses = 1;
   return true;
 }

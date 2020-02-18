@@ -25,12 +25,12 @@
 #ifndef RDMNET_CORE_BROKER_PROT_H_
 #define RDMNET_CORE_BROKER_PROT_H_
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
-#include "etcpal/int.h"
-#include "etcpal/bool.h"
+#include "etcpal/acn_rlp.h"
 #include "etcpal/error.h"
 #include "etcpal/inet.h"
-#include "etcpal/root_layer_pdu.h"
 #include "etcpal/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"

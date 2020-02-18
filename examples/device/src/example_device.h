@@ -20,7 +20,7 @@
 #ifndef DEVICE_H_
 #define DEVICE_H_
 
-#include "etcpal/int.h"
+#include <stdint.h>
 #include "etcpal/log.h"
 #include "rdm/message.h"
 #include "rdmnet/defs.h"

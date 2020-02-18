@@ -37,7 +37,7 @@ void MacBrokerLog::Shutdown()
   file_.close();
 }
 
-void MacBrokerLog::GetLogTime(EtcPalLogTimeParams& time_params)
+void MacBrokerLog::GetLogTime(EtcPalLogTimestamp& time_params)
 {
   time_t cur_time;
   time(&cur_time);

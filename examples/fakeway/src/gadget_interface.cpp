@@ -117,7 +117,7 @@ bool GadgetManager::Startup(GadgetNotify& notify, FakewayLog& log)
   EtcPalThreadParams params;
   ETCPAL_THREAD_SET_DEFAULT_PARAMS(&params);
   running_ = true;
-  if (!etcpal_thread_create(&thread_id_, &params, thread_func, this))
+  if (etcpal_thread_create(&thread_id_, &params, thread_func, this) != kEtcPalErrOk)
   {
     Gadget2_Disconnect();
     return false;

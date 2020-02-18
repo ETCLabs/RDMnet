@@ -30,8 +30,8 @@
 #ifndef RDMNET_CORE_CONNECTION_H_
 #define RDMNET_CORE_CONNECTION_H_
 
+#include <stdbool.h>
 #include <stddef.h>
-#include "etcpal/bool.h"
 #include "etcpal/log.h"
 #include "etcpal/error.h"
 #include "etcpal/inet.h"

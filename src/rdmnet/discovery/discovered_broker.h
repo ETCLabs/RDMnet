@@ -22,7 +22,7 @@
 
 #include "rdmnet/core/discovery.h"
 
-#include "etcpal/bool.h"
+#include <stdbool.h>
 #include "rdmnet/private/opts.h"
 #include "disc_platform_defs.h"
 

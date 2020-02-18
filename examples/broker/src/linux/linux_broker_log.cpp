@@ -38,7 +38,7 @@ void LinuxBrokerLog::Shutdown()
   file_.close();
 }
 
-void LinuxBrokerLog::GetLogTime(EtcPalLogTimeParams& time_params)
+void LinuxBrokerLog::GetLogTime(EtcPalLogTimestamp& time_params)
 {
   time_t cur_time;
   time(&cur_time);
