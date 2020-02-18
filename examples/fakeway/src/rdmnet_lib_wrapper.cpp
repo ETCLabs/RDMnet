@@ -68,7 +68,7 @@ static void devicecb_llrp_rdm_command_received(rdmnet_device_t handle, const Llr
 }
 
 etcpal::Error RdmnetLibWrapper::Startup(const etcpal::Uuid& cid, const RdmnetScopeConfig& scope_config,
-                                         RdmnetLibNotify* notify, FakewayLog* log)
+                                        RdmnetLibNotify* notify, FakewayLog* log)
 {
   my_cid_ = cid;
   notify_ = notify;
@@ -135,13 +135,13 @@ etcpal::Error RdmnetLibWrapper::SendLlrpResponse(const LlrpLocalRdmResponse& res
 }
 
 etcpal::Error RdmnetLibWrapper::ChangeScope(const RdmnetScopeConfig& new_scope_config,
-                                             rdmnet_disconnect_reason_t reason)
+                                            rdmnet_disconnect_reason_t reason)
 {
   return rdmnet_device_change_scope(device_handle_, &new_scope_config, reason);
 }
 
 etcpal::Error RdmnetLibWrapper::ChangeSearchDomain(const std::string& new_search_domain,
-                                                    rdmnet_disconnect_reason_t reason)
+                                                   rdmnet_disconnect_reason_t reason)
 {
   return rdmnet_device_change_search_domain(device_handle_, new_search_domain.c_str(), reason);
 }

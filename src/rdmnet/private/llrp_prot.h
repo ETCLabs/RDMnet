@@ -84,13 +84,6 @@ typedef struct LlrpMessageInterest
   RdmUid my_uid;
 } LlrpMessageInterest;
 
-typedef struct KnownUid KnownUid;
-struct KnownUid
-{
-  RdmUid uid;
-  KnownUid* next;
-};
-
 typedef struct RemoteProbeRequest
 {
   /* True if this probe request contains my UID as registered in the LlrpMessageInterest struct, and
@@ -104,7 +97,8 @@ typedef struct LocalProbeRequest
   RdmUid lower_uid;
   RdmUid upper_uid;
   uint16_t filter;
-  KnownUid* uid_list;
+  const RdmUid* known_uids;
+  size_t num_known_uids;
 } LocalProbeRequest;
 
 typedef struct LlrpMessage

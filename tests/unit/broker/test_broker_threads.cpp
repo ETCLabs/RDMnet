@@ -85,10 +85,6 @@ TEST_F(TestListenThread, AcceptResultIsForwarded)
   ListenThread lt(kListenSocketVal, &notify_, nullptr);
   ASSERT_TRUE(lt.Start());
 
-  // Tentatively trying this. This is not standard C++ (it's not valid for a function pointer
-  // called from C to point to a C++ linkage function, which all lambdas are), but I *think* it is
-  // supported by all the compilers we run tests with, and it makes for nicer less-boilerplatey
-  // test code.
   etcpal_accept_fake.custom_fake = [](etcpal_socket_t socket, EtcPalSockAddr* accept_addr,
                                       etcpal_socket_t* accept_sock) {
     EXPECT_EQ(socket, 0);

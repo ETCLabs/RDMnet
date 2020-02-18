@@ -33,7 +33,7 @@ static void log_callback(void* context, const EtcPalLogStrings* strings)
     log->LogFromCallback(strings->human_readable);
 }
 
-static void time_callback(void* /*context*/, EtcPalLogTimeParams* time)
+static void time_callback(void* /*context*/, EtcPalLogTimestamp* time)
 {
   QDateTime now = QDateTime::currentDateTime();
   QDate qdate = now.date();

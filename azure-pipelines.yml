@@ -28,6 +28,8 @@ stages:
     displayName: 'Windows'
     pool:
       vmImage: 'vs2017-win2016'
+    variables:
+    - group: etc_os_qt_creds
     strategy:
       matrix:
         Win32:
@@ -62,7 +64,7 @@ stages:
             $client = new-object System.Net.WebClient
             $client.DownloadFile("http://download.qt-project.org/official_releases/qt/5.9/5.9.7/qt-opensource-windows-x86-5.9.7.exe", "install-qt-5.9.7.exe")
         condition: ne(variables.CACHE_RESTORED, 'true')
-      - script: install-qt-5.9.7 --verbose --script tools/ci/qt-installer-noninteractive.qs INSTALL_DIR=$(qt_cache_dir_windows)
+      - script: install-qt-5.9.7 --verbose --script tools/ci/qt-installer-noninteractive.qs INSTALL_DIR=$(qt_cache_dir_windows) QT_ACCOUNT_EMAIL="$(etc_os_qt_account_email)" QT_ACCOUNT_PW="$(etc_os_qt_account_pw)"
         displayName: 'Install Qt 5.9.7'
         condition: ne(variables.CACHE_RESTORED, 'true')
       - script: |
@@ -122,6 +124,8 @@ stages:
     displayName: 'macOS'
     pool:
       vmImage: 'macos-10.14'
+    variables:
+    - group: etc_os_qt_creds
     steps:
       - task: InstallAppleCertificate@2
         name: macOSInstallAppCertificate
@@ -158,7 +162,7 @@ stages:
       - script: |
           curl -fL http://download.qt-project.org/official_releases/qt/5.9/5.9.7/qt-opensource-mac-x64-5.9.7.dmg -o qt-5.9.7-mac.dmg
           hdiutil attach qt-5.9.7-mac.dmg -noverify
-          sudo /Volumes/qt-opensource-mac-x64-5.9.7/qt-opensource-mac-x64-5.9.7.app/Contents/MacOS/qt-opensource-mac-x64-5.9.7 --verbose --script tools/ci/qt-installer-noninteractive.qs INSTALL_DIR=$(qt_cache_dir_macos)
+          sudo /Volumes/qt-opensource-mac-x64-5.9.7/qt-opensource-mac-x64-5.9.7.app/Contents/MacOS/qt-opensource-mac-x64-5.9.7 --verbose --script tools/ci/qt-installer-noninteractive.qs INSTALL_DIR=$(qt_cache_dir_macos) QT_ACCOUNT_EMAIL="$(etc_os_qt_account_email)" QT_ACCOUNT_PW="$(etc_os_qt_account_pw)"
           hdiutil detach /Volumes/qt-opensource-mac-x64-5.9.7
         condition: ne(variables.CACHE_RESTORED, 'true')
         displayName: 'Download and install Qt 5.9.7'

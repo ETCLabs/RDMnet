@@ -39,23 +39,22 @@ public:
 class RdmnetLibInterface
 {
 public:
-  virtual etcpal::Error Startup(const etcpal::Uuid& cid, const RdmnetScopeConfig& scope_config,
-                                 RdmnetLibNotify* notify, FakewayLog* log) = 0;
+  virtual etcpal::Error Startup(const etcpal::Uuid& cid, const RdmnetScopeConfig& scope_config, RdmnetLibNotify* notify,
+                                FakewayLog* log) = 0;
   virtual void Shutdown() = 0;
 
   virtual etcpal::Error SendRdmResponse(const RdmnetLocalRdmResponse& resp) = 0;
   virtual etcpal::Error SendStatus(const LocalRptStatus& status) = 0;
   virtual etcpal::Error SendLlrpResponse(const LlrpLocalRdmResponse& resp) = 0;
   virtual etcpal::Error ChangeScope(const RdmnetScopeConfig& new_scope_config, rdmnet_disconnect_reason_t reason) = 0;
-  virtual etcpal::Error ChangeSearchDomain(const std::string& new_search_domain,
-                                            rdmnet_disconnect_reason_t reason) = 0;
+  virtual etcpal::Error ChangeSearchDomain(const std::string& new_search_domain, rdmnet_disconnect_reason_t reason) = 0;
 };
 
 class RdmnetLibWrapper : public RdmnetLibInterface
 {
 public:
   etcpal::Error Startup(const etcpal::Uuid& cid, const RdmnetScopeConfig& scope_config, RdmnetLibNotify* notify,
-                         FakewayLog* log) override;
+                        FakewayLog* log) override;
   void Shutdown() override;
 
   etcpal::Error SendRdmResponse(const RdmnetLocalRdmResponse& resp) override;

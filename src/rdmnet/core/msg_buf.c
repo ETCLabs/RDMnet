@@ -503,12 +503,14 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
                                                     BROKER_GET_CLIENT_LIST(bmsg), &res);
         break;
       case VECTOR_BROKER_REQUEST_DYNAMIC_UIDS:
-        next_layer_bytes_parsed = parse_request_dynamic_uid_assignment(
-            &bstate->data.data_list, &data[bytes_parsed], remaining_len, BROKER_GET_DYNAMIC_UID_REQUEST_LIST(bmsg), &res);
+        next_layer_bytes_parsed =
+            parse_request_dynamic_uid_assignment(&bstate->data.data_list, &data[bytes_parsed], remaining_len,
+                                                 BROKER_GET_DYNAMIC_UID_REQUEST_LIST(bmsg), &res);
         break;
       case VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS:
-        next_layer_bytes_parsed = parse_dynamic_uid_assignment_list(
-            &bstate->data.data_list, &data[bytes_parsed], remaining_len, BROKER_GET_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg), &res);
+        next_layer_bytes_parsed =
+            parse_dynamic_uid_assignment_list(&bstate->data.data_list, &data[bytes_parsed], remaining_len,
+                                              BROKER_GET_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg), &res);
         break;
       case VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST:
         next_layer_bytes_parsed =

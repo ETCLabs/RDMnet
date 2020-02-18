@@ -37,7 +37,7 @@ static void manager_log_callback(void* context, const EtcPalLogStrings* strings)
   std::cout << strings->human_readable << "\n";
 }
 
-static void manager_time_callback(void* context, EtcPalLogTimeParams* time)
+static void manager_time_callback(void* context, EtcPalLogTimestamp* time)
 {
   SYSTEMTIME win_time;
   (void)context;

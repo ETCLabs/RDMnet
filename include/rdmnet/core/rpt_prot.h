@@ -25,6 +25,7 @@
 #ifndef RDMNET_CORE_RPT_PROT_H_
 #define RDMNET_CORE_RPT_PROT_H_
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>

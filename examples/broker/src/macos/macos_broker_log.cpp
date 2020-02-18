@@ -37,7 +37,7 @@ void MacBrokerLog::Shutdown()
   file_.close();
 }
 
-EtcPalLogTimeParams MacBrokerLog::GetLogTimestamp()
+EtcPalLogTimestamp MacBrokerLog::GetLogTimestamp()
 {
   time_t cur_time;
   time(&cur_time);
@@ -53,14 +53,14 @@ EtcPalLogTimeParams MacBrokerLog::GetLogTimestamp()
   if (timeinfo->tm_isdst)
     utc_offset += 60;
 
-  return EtcPalLogTimeParams{timeinfo->tm_year + 1900,
-                             timeinfo->tm_mon + 1,
-                             timeinfo->tm_mday,
-                             timeinfo->tm_hour,
-                             timeinfo->tm_min,
-                             timeinfo->tm_sec,
-                             0,
-                             static_cast<int>(utc_offset)};
+  return EtcPalLogTimestamp{timeinfo->tm_year + 1900,
+                            timeinfo->tm_mon + 1,
+                            timeinfo->tm_mday,
+                            timeinfo->tm_hour,
+                            timeinfo->tm_min,
+                            timeinfo->tm_sec,
+                            0,
+                            static_cast<int>(utc_offset)};
 }
 
 void MacBrokerLog::HandleLogMessage(const EtcPalLogStrings& strings)

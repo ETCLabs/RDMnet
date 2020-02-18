@@ -12,7 +12,7 @@ static void log_callback(void* context, const EtcPalLogStrings* strings)
     log->LogFromCallback(strings->human_readable);
 }
 
-static void time_callback(void* context, EtcPalLogTimeParams* time)
+static void time_callback(void* context, EtcPalLogTimestamp* time)
 {
   FakewayLog* log = static_cast<FakewayLog*>(context);
   if (log && time)
@@ -135,7 +135,7 @@ void FakewayLog::LogFromCallback(const std::string& str)
     file_ << str << std::endl;
 }
 
-void FakewayLog::GetTimeFromCallback(EtcPalLogTimeParams& time)
+void FakewayLog::GetTimeFromCallback(EtcPalLogTimestamp& time)
 {
   SYSTEMTIME win_time;
   GetLocalTime(&win_time);

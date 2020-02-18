@@ -144,11 +144,11 @@ typedef struct BrokerClientListState
   ClientEntryState entry;
 } BrokerClientListState;
 
-#define INIT_CLIENT_LIST_STATE(clstateptr, blocksize, bmsgptr)             \
-  do                                                                       \
-  {                                                                        \
-    INIT_PDU_BLOCK_STATE(&(clstateptr)->block, blocksize);                 \
-    BROKER_GET_CLIENT_LIST(bmsgptr)->client_protocol = kClientProtocolUnknown;    \
+#define INIT_CLIENT_LIST_STATE(clstateptr, blocksize, bmsgptr)                           \
+  do                                                                                     \
+  {                                                                                      \
+    INIT_PDU_BLOCK_STATE(&(clstateptr)->block, blocksize);                               \
+    BROKER_GET_CLIENT_LIST(bmsgptr)->client_protocol = kClientProtocolUnknown;           \
     BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(bmsgptr))->client_entries = NULL;  \
     BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(bmsgptr))->num_client_entries = 0; \
     BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(bmsgptr))->more_coming = false;    \

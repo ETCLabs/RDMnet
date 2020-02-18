@@ -36,7 +36,7 @@ public:
   void Shutdown();
 
   void HandleLogMessage(const EtcPalLogStrings& strings) override;
-  EtcPalLogTimeParams GetLogTimestamp() override;
+  EtcPalLogTimestamp GetLogTimestamp() override;
 
   etcpal::Logger& logger() { return logger_; }
 

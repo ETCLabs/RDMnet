@@ -25,10 +25,10 @@
 #include "etcpal/rbtree.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/core/message.h"
+#include "rdmnet/private/broker_prot.h"
+#include "rdmnet/private/connection.h"
 #include "rdmnet/private/core.h"
 #include "rdmnet/private/message.h"
-#include "rdmnet/private/connection.h"
-#include "rdmnet/private/broker_prot.h"
 #include "rdmnet/private/opts.h"
 #include "rdmnet/private/util.h"
 

@@ -23,6 +23,7 @@
 #ifndef BROKER_DISCOVERY_H_
 #define BROKER_DISCOVERY_H_
 
+#include <cstdint>
 #include <string>
 #include <vector>
 #include "etcpal/cpp/error.h"

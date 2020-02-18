@@ -32,7 +32,7 @@ public:
   void Shutdown();
 
   void HandleLogMessage(const EtcPalLogStrings& strings) override;
-  EtcPalLogTimeParams GetLogTimestamp() override;
+  EtcPalLogTimestamp GetLogTimestamp() override;
 
   etcpal::Logger& log_instance() { return logger_; }
 

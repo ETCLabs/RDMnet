@@ -33,7 +33,7 @@ static void device_log_callback(void* context, const EtcPalLogStrings* strings)
     fprintf(s_log_file, "%s\n", strings->human_readable);
 }
 
-static void device_time_callback(void* context, EtcPalLogTimeParams* time_params)
+static void device_time_callback(void* context, EtcPalLogTimestamp* time_params)
 {
   time_t cur_time;
   time(&cur_time);

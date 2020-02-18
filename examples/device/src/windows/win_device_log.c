@@ -35,7 +35,7 @@ static void device_log_callback(void* context, const EtcPalLogStrings* strings)
     fprintf(s_log_file, "%s\n", strings->human_readable);
 }
 
-static void device_time_callback(void* context, EtcPalLogTimeParams* time)
+static void device_time_callback(void* context, EtcPalLogTimestamp* time)
 {
   SYSTEMTIME win_time;
   (void)context;

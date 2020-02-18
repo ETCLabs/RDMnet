@@ -210,7 +210,7 @@ typedef struct EptClientMessage
 /*! An RDMnet received from one of RDMnet's TCP protocols. */
 typedef struct RdmnetMessage
 {
-  /*! The root layer vector. Compare to the vectors in \ref etcpal_rootlayerpdu. */
+  /*! The root layer vector. Compare to the vectors in \ref acn_rootlayerpdu. */
   uint32_t vector;
   /*! The CID of the Component that sent this message. */
   EtcPalUuid sender_cid;
