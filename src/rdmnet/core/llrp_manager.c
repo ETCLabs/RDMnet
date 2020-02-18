@@ -363,7 +363,7 @@ void halve_range(RdmUid* uid1, RdmUid* uid2)
 {
   uint64_t uval1 = ((((uint64_t)uid1->manu) << 32) | uid1->id);
   uint64_t uval2 = ((((uint64_t)uid2->manu) << 32) | uid2->id);
-  uint64_t umid = uval1 + uval2 / 2;
+  uint64_t umid = (uval1 + uval2) / 2;
 
   uid2->manu = (uint16_t)((umid >> 32) & 0xffffu);
   uid2->id = (uint32_t)(umid & 0xffffffffu);
