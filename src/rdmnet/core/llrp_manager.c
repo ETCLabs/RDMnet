@@ -77,8 +77,7 @@ static int discovered_target_compare(const EtcPalRbTree* self, const void* value
 static void discovered_target_clear_cb(const EtcPalRbTree* self, EtcPalRbNode* node);
 
 // Functions for Manager discovery
-static void halve_range(RdmUid* uid1, RdmUid* uid2);
-static bool update_probe_range(LlrpManager* manager, KnownUid** uid_list);
+static bool update_probe_range(LlrpManager* manager);
 static bool send_next_probe(LlrpManager* manager);
 
 /*************************** Function definitions ****************************/
@@ -359,17 +358,7 @@ void rdmnet_llrp_manager_tick()
   deliver_callback(&cb);
 }
 
-void halve_range(RdmUid* uid1, RdmUid* uid2)
-{
-  uint64_t uval1 = ((((uint64_t)uid1->manu) << 32) | uid1->id);
-  uint64_t uval2 = ((((uint64_t)uid2->manu) << 32) | uid2->id);
-  uint64_t umid = (uval1 + uval2) / 2;
-
-  uid2->manu = (uint16_t)((umid >> 32) & 0xffffu);
-  uid2->id = (uint32_t)(umid & 0xffffffffu);
-}
-
-bool update_probe_range(LlrpManager* manager, KnownUid** uid_list)
+bool update_probe_range(LlrpManager* manager)
 {
   if (manager->num_clean_sends >= 3)
   {
@@ -398,48 +387,40 @@ bool update_probe_range(LlrpManager* manager, KnownUid** uid_list)
   }
 
   // Determine how many known UIDs are in the current range
-  KnownUid* list_begin = NULL;
-  KnownUid* last_uid = NULL;
-  unsigned int uids_in_range = 0;
+  manager->num_known_uids = 0;
 
   EtcPalRbIter iter;
   etcpal_rbiter_init(&iter);
   DiscoveredTargetInternal* cur_target =
       (DiscoveredTargetInternal*)etcpal_rbiter_first(&iter, &manager->discovered_targets);
-  while (cur_target && (rdm_uid_compare(&cur_target->known_uid.uid, &manager->cur_range_high) <= 0))
+  while (cur_target && (rdm_uid_compare(&cur_target->uid, &manager->cur_range_high) <= 0))
   {
-    if (last_uid)
+    if (manager->num_known_uids != 0)
     {
-      if (++uids_in_range <= LLRP_KNOWN_UID_SIZE)
+      if (manager->num_known_uids + 1 <= LLRP_KNOWN_UID_SIZE)
       {
-        last_uid->next = &cur_target->known_uid;
-        cur_target->known_uid.next = NULL;
-        last_uid = &cur_target->known_uid;
+        manager->known_uids[manager->num_known_uids++] = cur_target->uid;
       }
       else
       {
-        halve_range(&manager->cur_range_low, &manager->cur_range_high);
-        return update_probe_range(manager, uid_list);
+        // Put the high point of the current range in the middle of the list of Known UIDs.
+        manager->cur_range_high = manager->known_uids[(LLRP_KNOWN_UID_SIZE / 2) - 1];
+        manager->num_known_uids = LLRP_KNOWN_UID_SIZE / 2;
+        break;
       }
     }
-    else if (rdm_uid_compare(&cur_target->known_uid.uid, &manager->cur_range_low) >= 0)
+    else if (rdm_uid_compare(&cur_target->uid, &manager->cur_range_low) >= 0)
     {
-      list_begin = &cur_target->known_uid;
-      cur_target->known_uid.next = NULL;
-      last_uid = &cur_target->known_uid;
-      ++uids_in_range;
+      manager->known_uids[manager->num_known_uids++] = cur_target->uid;
     }
     cur_target = (DiscoveredTargetInternal*)etcpal_rbiter_next(&iter);
   }
-  *uid_list = list_begin;
   return true;
 }
 
 bool send_next_probe(LlrpManager* manager)
 {
-  KnownUid* list_head;
-
-  if (update_probe_range(manager, &list_head))
+  if (update_probe_range(manager))
   {
     LlrpHeader header;
     header.sender_cid = manager->keys.cid;
@@ -450,7 +431,8 @@ bool send_next_probe(LlrpManager* manager)
     request.filter = manager->disc_filter;
     request.lower_uid = manager->cur_range_low;
     request.upper_uid = manager->cur_range_high;
-    request.uid_list = list_head;
+    request.known_uids = manager->known_uids;
+    request.num_known_uids = manager->num_known_uids;
 
     etcpal_error_t send_res = send_llrp_probe_request(
         manager->send_sock, manager->send_buf, (manager->keys.netint.ip_type == kEtcPalIpTypeV6), &header, &request);
@@ -561,8 +543,7 @@ void handle_llrp_message(LlrpManager* manager, const LlrpMessage* msg, ManagerCa
         DiscoveredTargetInternal* new_target = (DiscoveredTargetInternal*)malloc(sizeof(DiscoveredTargetInternal));
         if (new_target)
         {
-          new_target->known_uid.uid = target->uid;
-          new_target->known_uid.next = NULL;
+          new_target->uid = target->uid;
           new_target->cid = msg->header.sender_cid;
           new_target->next = NULL;
 
@@ -702,6 +683,7 @@ etcpal_error_t create_new_manager(const LlrpManagerConfig* config, LlrpManager**
 
           manager->transaction_number = 0;
           manager->discovery_active = false;
+          manager->num_known_uids = 0;
 
           manager->callbacks = config->callbacks;
           manager->callback_context = config->callback_context;
@@ -823,7 +805,7 @@ int discovered_target_compare(const EtcPalRbTree* self, const void* value_a, con
   RDMNET_UNUSED_ARG(self);
   const DiscoveredTargetInternal* a = (const DiscoveredTargetInternal*)value_a;
   const DiscoveredTargetInternal* b = (const DiscoveredTargetInternal*)value_b;
-  return rdm_uid_compare(&a->known_uid.uid, &b->known_uid.uid);
+  return rdm_uid_compare(&a->uid, &b->uid);
 }
 
 EtcPalRbNode* manager_node_alloc(void)

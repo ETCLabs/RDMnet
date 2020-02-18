@@ -16,6 +16,7 @@
  * This file is a part of RDMnet. For more information, go to:
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
+
 #include "rdmnet/private/llrp_prot.h"
 
 #include <string.h>
@@ -288,6 +289,9 @@ size_t etcpal_pack_llrp_header(uint8_t* buf, size_t pdu_len, uint32_t vector, co
 etcpal_error_t send_llrp_probe_request(etcpal_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
                                        const LocalProbeRequest* probe_request)
 {
+  if (probe_request->num_known_uids > LLRP_KNOWN_UID_SIZE)
+    return kEtcPalErrInvalid;
+
   uint8_t* cur_ptr = buf;
   uint8_t* buf_end = cur_ptr + LLRP_MANAGER_MAX_MESSAGE_SIZE;
 
@@ -297,15 +301,7 @@ etcpal_error_t send_llrp_probe_request(etcpal_socket_t sock, uint8_t* buf, bool 
   AcnRootLayerPdu rlp;
   rlp.vector = ACN_VECTOR_ROOT_LLRP;
   rlp.sender_cid = header->sender_cid;
-  rlp.datalen = PROBE_REQUEST_RLP_DATA_MIN_SIZE;
-
-  // Calculate the data length
-  const KnownUid* cur_uid = probe_request->uid_list;
-  while (cur_uid && rlp.datalen < PROBE_REQUEST_RLP_DATA_MAX_SIZE)
-  {
-    rlp.datalen += 6;
-    cur_uid = cur_uid->next;
-  }
+  rlp.datalen = PROBE_REQUEST_RLP_DATA_MIN_SIZE + (probe_request->num_known_uids * 6);
 
   // Pack the Root Layer PDU header0
   cur_ptr += acn_pack_root_layer_header(cur_ptr, (size_t)(buf_end - cur_ptr), &rlp);
@@ -330,16 +326,13 @@ etcpal_error_t send_llrp_probe_request(etcpal_socket_t sock, uint8_t* buf, bool 
   cur_ptr += 2;
 
   // Pack the Known UIDs
-  cur_uid = probe_request->uid_list;
-  while (cur_uid)
+  for (const RdmUid* cur_uid = probe_request->known_uids;
+       cur_uid < probe_request->known_uids + probe_request->num_known_uids; ++cur_uid)
   {
-    if (cur_ptr + 6 > buf_end)
-      break;
-    etcpal_pack_u16b(cur_ptr, cur_uid->uid.manu);
+    etcpal_pack_u16b(cur_ptr, cur_uid->manu);
     cur_ptr += 2;
-    etcpal_pack_u32b(cur_ptr, cur_uid->uid.id);
+    etcpal_pack_u32b(cur_ptr, cur_uid->id);
     cur_ptr += 4;
-    cur_uid = cur_uid->next;
   }
 
   int send_res =
