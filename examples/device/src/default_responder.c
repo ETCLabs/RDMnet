@@ -30,7 +30,7 @@
 
 /**************************** Private constants ******************************/
 
-#define NUM_SUPPORTED_PIDS 15
+#define NUM_SUPPORTED_PIDS 12
 static const uint16_t kSupportedPIDList[NUM_SUPPORTED_PIDS] = {
     E120_IDENTIFY_DEVICE,    E120_SUPPORTED_PARAMETERS,     E120_DEVICE_INFO,
     E120_MANUFACTURER_LABEL, E120_DEVICE_MODEL_DESCRIPTION, E120_SOFTWARE_VERSION_LABEL,
