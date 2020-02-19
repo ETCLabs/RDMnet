@@ -26,9 +26,9 @@
 #ifndef RDMNET_CORE_LLRP_TARGET_H_
 #define RDMNET_CORE_LLRP_TARGET_H_
 
+#include <stdint.h>
 #include "etcpal/common.h"
 #include "etcpal/uuid.h"
-#include "etcpal/int.h"
 #include "etcpal/error.h"
 #include "etcpal/inet.h"
 #include "rdm/uid.h"

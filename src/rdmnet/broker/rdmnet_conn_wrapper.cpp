@@ -51,7 +51,7 @@ RdmnetConnWrapper::RdmnetConnWrapper()
   new_conn_config_.callbacks.msg_received = conncb_msg_received;
 }
 
-etcpal::Result RdmnetConnWrapper::Startup(const etcpal::Uuid& cid, const EtcPalLogParams* log_params)
+etcpal::Error RdmnetConnWrapper::Startup(const etcpal::Uuid& cid, const EtcPalLogParams* log_params)
 {
   new_conn_config_.local_cid = cid.get();
   // TODO honor a network interface configuration
@@ -63,7 +63,7 @@ void RdmnetConnWrapper::Shutdown()
   rdmnet_core_deinit();
 }
 
-etcpal::Result RdmnetConnWrapper::CreateNewConnectionForSocket(etcpal_socket_t sock, const etcpal::SockAddr& addr,
+etcpal::Error RdmnetConnWrapper::CreateNewConnectionForSocket(etcpal_socket_t sock, const etcpal::SockAddr& addr,
                                                                rdmnet_conn_t& new_handle)
 {
   etcpal_error_t create_res = rdmnet_connection_create(&new_conn_config_, &new_handle);
@@ -83,7 +83,7 @@ void RdmnetConnWrapper::DestroyConnection(rdmnet_conn_t handle, SendDisconnect s
   rdmnet_connection_destroy(handle, send_disconnect.valid ? &send_disconnect.reason : nullptr);
 }
 
-etcpal::Result RdmnetConnWrapper::SetBlocking(rdmnet_conn_t handle, bool blocking)
+etcpal::Error RdmnetConnWrapper::SetBlocking(rdmnet_conn_t handle, bool blocking)
 {
   return rdmnet_set_blocking(handle, blocking);
 }

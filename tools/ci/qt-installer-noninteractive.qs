@@ -10,9 +10,9 @@ Controller.prototype.WelcomePageCallback = function() {
 }
 
 Controller.prototype.CredentialsPageCallback = function() {
-  gui.currentPageWidget().loginWidget.EmailLineEdit.setText("");
-  gui.currentPageWidget().loginWidget.PasswordLineEdit.setText("");
-  gui.clickButton(buttons.NextButton)
+  gui.currentPageWidget().loginWidget.EmailLineEdit.setText(installer.value("QT_ACCOUNT_EMAIL"));
+  gui.currentPageWidget().loginWidget.PasswordLineEdit.setText(installer.value("QT_ACCOUNT_PW"));
+  gui.clickButton(buttons.NextButton);
 }
 
 Controller.prototype.IntroductionPageCallback = function() {

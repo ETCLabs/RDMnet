@@ -789,7 +789,7 @@ etcpal_socket_t BrokerCore::StartListening(const etcpal::IpAddr& ip, uint16_t& p
   etcpal::SockAddr addr(ip, port);
 
   etcpal_socket_t listen_sock;
-  etcpal::Result res = etcpal_socket(addr.ip().IsV4() ? ETCPAL_AF_INET : ETCPAL_AF_INET6, ETCPAL_STREAM, &listen_sock);
+  etcpal::Error res = etcpal_socket(addr.ip().IsV4() ? ETCPAL_AF_INET : ETCPAL_AF_INET6, ETCPAL_STREAM, &listen_sock);
   if (!res)
   {
     if (log_)

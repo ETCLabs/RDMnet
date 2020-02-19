@@ -36,7 +36,7 @@ public:
   void Shutdown();
 
   void OutputLogMsg(const std::string& str) override;
-  void GetLogTime(EtcPalLogTimeParams& time) override;
+  void GetLogTime(EtcPalLogTimestamp& time) override;
 
   rdmnet::BrokerLog& broker_log_instance() { return log_; }
 

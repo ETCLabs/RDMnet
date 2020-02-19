@@ -20,7 +20,7 @@
 #ifndef WIN_DEVICE_LOG_H_
 #define WIN_DEVICE_LOG_H_
 
-#include "etcpal/bool.h"
+#include <stdbool.h>
 #include "etcpal/log.h"
 
 void device_log_init(const char* file_name);

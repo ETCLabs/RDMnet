@@ -32,7 +32,7 @@ static void broker_log_callback(void* context, const EtcPalLogStrings* strings)
     bl->LogFromCallback(strings->human_readable);
 }
 
-static void broker_time_callback(void* context, EtcPalLogTimeParams* time)
+static void broker_time_callback(void* context, EtcPalLogTimestamp* time)
 {
   rdmnet::BrokerLog* bl = static_cast<rdmnet::BrokerLog*>(context);
   if (bl && time)
@@ -50,7 +50,7 @@ static void log_thread_fn(void* arg)
 rdmnet::BrokerLog::BrokerLog(DispatchPolicy dispatch_policy) : dispatch_policy_(dispatch_policy), keep_running_(false)
 {
   // Set up the log params
-  log_params_.action = kEtcPalLogCreateHumanReadableLog;
+  log_params_.action = kEtcPalLogCreateHumanReadable;
   log_params_.log_fn = broker_log_callback;
   log_params_.log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG);
   log_params_.time_fn = broker_time_callback;
@@ -84,7 +84,7 @@ bool rdmnet::BrokerLog::Startup(BrokerLogInterface& log_interface)
       NULL
     };
     // clang-format on
-    return etcpal_thread_create(&thread_, &tparams, log_thread_fn, this);
+    return (etcpal_thread_create(&thread_, &tparams, log_thread_fn, this) == kEtcPalErrOk);
   }
   else
   {
@@ -199,7 +199,7 @@ void rdmnet::BrokerLog::LogFromCallback(const std::string& str)
   }
 }
 
-void rdmnet::BrokerLog::GetTimeFromCallback(EtcPalLogTimeParams& time)
+void rdmnet::BrokerLog::GetTimeFromCallback(EtcPalLogTimestamp& time)
 {
   if (log_interface_)
     log_interface_->GetLogTime(time);

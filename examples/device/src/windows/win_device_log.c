@@ -35,7 +35,7 @@ static void device_log_callback(void* context, const EtcPalLogStrings* strings)
     fprintf(s_log_file, "%s\n", strings->human_readable);
 }
 
-static void device_time_callback(void* context, EtcPalLogTimeParams* time)
+static void device_time_callback(void* context, EtcPalLogTimestamp* time)
 {
   SYSTEMTIME win_time;
   (void)context;
@@ -71,7 +71,7 @@ void device_log_init(const char* file_name)
       break;
   }
 
-  s_device_log_params.action = kEtcPalLogCreateHumanReadableLog;
+  s_device_log_params.action = kEtcPalLogCreateHumanReadable;
   s_device_log_params.log_fn = device_log_callback;
   s_device_log_params.log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG);
   s_device_log_params.time_fn = device_time_callback;

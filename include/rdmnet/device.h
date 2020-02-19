@@ -26,7 +26,7 @@
 #ifndef RDMNET_DEVICE_H_
 #define RDMNET_DEVICE_H_
 
-#include "etcpal/bool.h"
+#include <stdbool.h>
 #include "etcpal/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/client.h"

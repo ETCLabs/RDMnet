@@ -67,7 +67,7 @@ static void devicecb_llrp_rdm_command_received(rdmnet_device_t handle, const Llr
 }
 }
 
-etcpal::Result RdmnetLibWrapper::Startup(const etcpal::Uuid& cid, const RdmnetScopeConfig& scope_config,
+etcpal::Error RdmnetLibWrapper::Startup(const etcpal::Uuid& cid, const RdmnetScopeConfig& scope_config,
                                          RdmnetLibNotify* notify, FakewayLog* log)
 {
   my_cid_ = cid;
@@ -75,7 +75,7 @@ etcpal::Result RdmnetLibWrapper::Startup(const etcpal::Uuid& cid, const RdmnetSc
   log_ = log;
 
   // Initialize the Rdmnet device library
-  etcpal::Result res = rdmnet_device_init(log_ ? &log_->params() : nullptr, nullptr);
+  etcpal::Error res = rdmnet_device_init(log_ ? &log_->params() : nullptr, nullptr);
   if (!res)
   {
     if (log_)
@@ -119,28 +119,28 @@ void RdmnetLibWrapper::Shutdown()
   my_cid_ = etcpal::Uuid{};
 }
 
-etcpal::Result RdmnetLibWrapper::SendRdmResponse(const LocalRdmResponse& resp)
+etcpal::Error RdmnetLibWrapper::SendRdmResponse(const LocalRdmResponse& resp)
 {
   return rdmnet_device_send_rdm_response(device_handle_, &resp);
 }
 
-etcpal::Result RdmnetLibWrapper::SendStatus(const LocalRptStatus& status)
+etcpal::Error RdmnetLibWrapper::SendStatus(const LocalRptStatus& status)
 {
   return rdmnet_device_send_status(device_handle_, &status);
 }
 
-etcpal::Result RdmnetLibWrapper::SendLlrpResponse(const LlrpLocalRdmResponse& resp)
+etcpal::Error RdmnetLibWrapper::SendLlrpResponse(const LlrpLocalRdmResponse& resp)
 {
   return rdmnet_device_send_llrp_response(device_handle_, &resp);
 }
 
-etcpal::Result RdmnetLibWrapper::ChangeScope(const RdmnetScopeConfig& new_scope_config,
+etcpal::Error RdmnetLibWrapper::ChangeScope(const RdmnetScopeConfig& new_scope_config,
                                              rdmnet_disconnect_reason_t reason)
 {
   return rdmnet_device_change_scope(device_handle_, &new_scope_config, reason);
 }
 
-etcpal::Result RdmnetLibWrapper::ChangeSearchDomain(const std::string& new_search_domain,
+etcpal::Error RdmnetLibWrapper::ChangeSearchDomain(const std::string& new_search_domain,
                                                     rdmnet_disconnect_reason_t reason)
 {
   return rdmnet_device_change_search_domain(device_handle_, new_search_domain.c_str(), reason);

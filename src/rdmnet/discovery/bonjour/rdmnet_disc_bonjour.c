@@ -19,10 +19,10 @@
 
 #include <assert.h>
 #include <dns_sd.h>
-#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "etcpal/bool.h"
+#include <stdlib.h>
+#include <stdbool.h>
 #include "etcpal/inet.h"
 #include "etcpal/pack.h"
 #include "rdmnet/core/util.h"
@@ -358,7 +358,7 @@ etcpal_error_t rdmnet_disc_platform_register_broker(const RdmnetBrokerDiscInfo* 
 {
   // Before we start the registration, we have to massage a few parameters
   uint16_t net_port = 0;
-  etcpal_pack_16b((uint8_t*)&net_port, info->port);
+  etcpal_pack_u16b((uint8_t*)&net_port, info->port);
 
   char reg_str[REGISTRATION_STRING_PADDED_LENGTH];
   get_registration_string(E133_DNSSD_SRV_TYPE, info->scope, reg_str);

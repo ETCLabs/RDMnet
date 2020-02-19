@@ -493,13 +493,13 @@ void Fakeway::HandleNewRdmResponderDiscovered(unsigned int gadget_id, unsigned i
           FakewayDefaultResponder::ParamDataList param_data;
           uint16_t nack_reason;
           std::array<uint8_t, 2> endpt_buf;
-          etcpal_pack_16b(endpt_buf.data(), endpt_pair->first);
+          etcpal_pack_u16b(endpt_buf.data(), endpt_pair->first);
           if (def_resp_->Get(E137_7_ENDPOINT_RESPONDER_LIST_CHANGE, endpt_buf.data(), 2, param_data, nack_reason) &&
               param_data.size() == 1)
           {
             RdmResponse resp_data;
             // source_uid gets filled in by the library
-            resp_data.dest_uid = kBroadcastUid;
+            resp_data.dest_uid = kRdmBroadcastUid;
             resp_data.transaction_num = 0;
             resp_data.resp_type = kRdmResponseTypeAck;
             resp_data.msg_count = 0;
@@ -535,7 +535,7 @@ void Fakeway::HandleRdmResponse(unsigned int gadget_id, unsigned int port_number
 
       RdmResponse resp_data;
       resp_data.source_uid = resp_src_uid;
-      resp_data.dest_uid = received_cmd ? received_cmd->source_uid : kBroadcastUid;
+      resp_data.dest_uid = received_cmd ? received_cmd->source_uid : kRdmBroadcastUid;
       resp_data.transaction_num = cmd.getTransactionNum();
       resp_data.resp_type = static_cast<rdm_response_type_t>(cmd.getResponseType());
       resp_data.msg_count = 0;
@@ -609,14 +609,14 @@ void Fakeway::HandleRdmResponderLost(unsigned int gadget_id, unsigned int port_n
         FakewayDefaultResponder::ParamDataList param_data;
         uint16_t nack_reason;
         std::array<uint8_t, 2> endpt_buf;
-        etcpal_pack_16b(endpt_buf.data(), endpt_pair->first);
+        etcpal_pack_u16b(endpt_buf.data(), endpt_pair->first);
         if (def_resp_->Get(E137_7_ENDPOINT_RESPONDER_LIST_CHANGE, endpt_buf.data(), 2, param_data, nack_reason) &&
             param_data.size() == 1)
         {
           // Now send the responder list change message.
           RdmResponse resp_data;
           // src_uid gets filled in by the library
-          resp_data.dest_uid = kBroadcastUid;
+          resp_data.dest_uid = kRdmBroadcastUid;
           resp_data.transaction_num = 0;
           resp_data.resp_type = kRdmResponseTypeAck;
           resp_data.msg_count = 0;

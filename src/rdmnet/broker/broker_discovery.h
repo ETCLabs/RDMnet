@@ -23,10 +23,10 @@
 #ifndef BROKER_DISCOVERY_H_
 #define BROKER_DISCOVERY_H_
 
+#include <cstdint>
 #include <string>
 #include <vector>
 #include "etcpal/cpp/error.h"
-#include "etcpal/int.h"
 #include "rdmnet/broker.h"
 #include "rdmnet/core/discovery.h"
 
@@ -55,7 +55,7 @@ public:
 
   virtual void SetNotify(BrokerDiscoveryNotify* notify) = 0;
 
-  virtual etcpal::Result RegisterBroker(const rdmnet::BrokerSettings& settings) = 0;
+  virtual etcpal::Error RegisterBroker(const rdmnet::BrokerSettings& settings) = 0;
   virtual void UnregisterBroker() = 0;
 };
 
@@ -68,7 +68,7 @@ public:
   void SetNotify(BrokerDiscoveryNotify* notify) override { notify_ = notify; }
 
   // Registration actions
-  etcpal::Result RegisterBroker(const rdmnet::BrokerSettings& settings) override;
+  etcpal::Error RegisterBroker(const rdmnet::BrokerSettings& settings) override;
   void UnregisterBroker() override;
 
   // Accessors

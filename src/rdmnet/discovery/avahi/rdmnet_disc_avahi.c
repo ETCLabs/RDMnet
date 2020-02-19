@@ -144,7 +144,7 @@ static void resolve_callback(AvahiServiceResolver* r, AvahiIfIndex interface, Av
   if (event == AVAHI_RESOLVER_FAILURE)
   {
     notify_scope_monitor_error(db->monitor_ref, avahi_client_errno(disc_state.avahi_client));
-    if (etcpal_mutex_take(&disc_state.lock))
+    if (etcpal_mutex_lock(&disc_state.lock))
     {
       if (--db->num_outstanding_resolves <= 0 && db->num_successful_resolves == 0)
       {
@@ -152,7 +152,7 @@ static void resolve_callback(AvahiServiceResolver* r, AvahiIfIndex interface, Av
         discovered_broker_remove(&ref->broker_list, db);
         discovered_broker_delete(db);
       }
-      etcpal_mutex_give(&disc_state.lock);
+      etcpal_mutex_unlock(&disc_state.lock);
     }
   }
   else
@@ -160,7 +160,7 @@ static void resolve_callback(AvahiServiceResolver* r, AvahiIfIndex interface, Av
     bool notify = false;
     RdmnetBrokerDiscInfo notify_info;
 
-    if (etcpal_mutex_take(&disc_state.lock))
+    if (etcpal_mutex_lock(&disc_state.lock))
     {
       // Update the broker info we're building
       db->info.port = port;
@@ -239,7 +239,7 @@ static void resolve_callback(AvahiServiceResolver* r, AvahiIfIndex interface, Av
         --db->num_outstanding_resolves;
         ++db->num_successful_resolves;
       }
-      etcpal_mutex_give(&disc_state.lock);
+      etcpal_mutex_unlock(&disc_state.lock);
     }
 
     if (notify)
@@ -270,7 +270,7 @@ static void browse_callback(AvahiServiceBrowser* b, AvahiIfIndex interface, Avah
       // We have to take the lock before the DNSServiceResolve call, because we need to add the ref to
       // our map before it responds.
       int resolve_err = 0;
-      if (etcpal_mutex_take(&disc_state.lock))
+      if (etcpal_mutex_lock(&disc_state.lock))
       {
         // Track this resolve operation
         DiscoveredBroker* db = discovered_broker_lookup_by_name(ref->broker_list, full_name);
@@ -302,7 +302,7 @@ static void browse_callback(AvahiServiceBrowser* b, AvahiIfIndex interface, Avah
           }
         }
 
-        etcpal_mutex_give(&disc_state.lock);
+        etcpal_mutex_unlock(&disc_state.lock);
       }
 
       if (resolve_err != 0)
@@ -311,7 +311,7 @@ static void browse_callback(AvahiServiceBrowser* b, AvahiIfIndex interface, Avah
     else
     {
       /*Service removal*/
-      if (etcpal_mutex_take(&disc_state.lock))
+      if (etcpal_mutex_lock(&disc_state.lock))
       {
         DiscoveredBroker* db = discovered_broker_lookup_by_name(ref->broker_list, full_name);
         if (db)
@@ -319,7 +319,7 @@ static void browse_callback(AvahiServiceBrowser* b, AvahiIfIndex interface, Avah
           discovered_broker_remove(&ref->broker_list, db);
           discovered_broker_delete(db);
         }
-        etcpal_mutex_give(&disc_state.lock);
+        etcpal_mutex_unlock(&disc_state.lock);
       }
       notify_broker_lost(ref, name);
     }
@@ -415,7 +415,7 @@ etcpal_error_t rdmnet_disc_start_monitoring(const RdmnetScopeMonitorConfig* conf
   // We have to take the lock before the DNSServiceBrowse call, because we need to add the ref to
   // our map before it responds.
   etcpal_error_t res = kEtcPalErrOk;
-  if (etcpal_mutex_take(&disc_state.lock))
+  if (etcpal_mutex_lock(&disc_state.lock))
   {
     /* Create the service browser */
     new_monitor->avahi_browser =
@@ -431,7 +431,7 @@ etcpal_error_t rdmnet_disc_start_monitoring(const RdmnetScopeMonitorConfig* conf
       scope_monitor_delete(new_monitor);
       res = kEtcPalErrSys;
     }
-    etcpal_mutex_give(&disc_state.lock);
+    etcpal_mutex_unlock(&disc_state.lock);
   }
 
   if (res == kEtcPalErrOk)
@@ -445,11 +445,11 @@ void rdmnet_disc_stop_monitoring(rdmnet_scope_monitor_t handle)
   if (!handle || !rdmnet_core_initialized())
     return;
 
-  if (etcpal_mutex_take(&disc_state.lock))
+  if (etcpal_mutex_lock(&disc_state.lock))
   {
     scope_monitor_remove(handle);
     scope_monitor_delete(handle);
-    etcpal_mutex_give(&disc_state.lock);
+    etcpal_mutex_unlock(&disc_state.lock);
   }
 }
 
@@ -463,7 +463,7 @@ void rdmnet_disc_stop_monitoring_all()
 
 void stop_monitoring_all_internal()
 {
-  if (etcpal_mutex_take(&disc_state.lock))
+  if (etcpal_mutex_lock(&disc_state.lock))
   {
     if (disc_state.scope_ref_list)
     {
@@ -477,7 +477,7 @@ void stop_monitoring_all_internal()
       }
       disc_state.scope_ref_list = NULL;
     }
-    etcpal_mutex_give(&disc_state.lock);
+    etcpal_mutex_unlock(&disc_state.lock);
   }
 }
 

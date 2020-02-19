@@ -22,6 +22,7 @@
 #include <ws2tcpip.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <wchar.h>
 #include <string.h>
 #include "etcpal/socket.h"
@@ -104,6 +105,10 @@ int wmain(int argc, wchar_t* argv[])
   bool should_exit = false;
   RdmnetScopeConfig scope_config;
   const EtcPalLogParams* lparams;
+
+  LARGE_INTEGER counter;
+  QueryPerformanceCounter(&counter);
+  srand(counter.LowPart);
 
   RDMNET_CLIENT_SET_DEFAULT_SCOPE(&scope_config);
 

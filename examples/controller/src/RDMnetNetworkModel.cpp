@@ -42,7 +42,7 @@ static QString UnpackAndParseIPAddress(const uint8_t* addrData, etcpal_iptype_t 
 
   if (addrType == kEtcPalIpTypeV4)
   {
-    ip.SetAddress(etcpal_upack_32b(addrData));
+    ip.SetAddress(etcpal_unpack_u32b(addrData));
   }
   else if (addrType == kEtcPalIpTypeV6)
   {
@@ -67,7 +67,7 @@ static bool ParseAndPackIPAddress(etcpal_iptype_t addrType, const std::string& i
   {
     if (addrType == kEtcPalIpTypeV4)
     {
-      etcpal_pack_32b(outBuf, ip.v4_data());
+      etcpal_pack_u32b(outBuf, ip.v4_data());
       return true;
     }
     else if (addrType == kEtcPalIpTypeV6)
@@ -1132,7 +1132,7 @@ void RDMnetNetworkModel::searchingItemRevealed(SearchingStatusItem* searchItem)
               cmd.command_class = kRdmCCGetCommand;
               cmd.param_id = E137_7_ENDPOINT_RESPONDERS;
               cmd.datalen = sizeof(uint16_t);
-              etcpal_pack_16b(cmd.data, endpointItem->id());
+              etcpal_pack_u16b(cmd.data, endpointItem->id());
 
               SendRDMCommand(cmd, getNearestParentItemOfType<BrokerItem>(endpointItem));
             }
@@ -1211,7 +1211,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex& index, const QVariant& value
             if (pid == E133_COMPONENT_SCOPE)
             {
               // Scope slot (default to 1)
-              etcpal_pack_16b(packPtr, static_cast<uint16_t>(index.data(RDMnetNetworkItem::ScopeSlotRole).toInt()));
+              etcpal_pack_u16b(packPtr, static_cast<uint16_t>(index.data(RDMnetNetworkItem::ScopeSlotRole).toInt()));
               packPtr += 2;
             }
 
@@ -1221,10 +1221,10 @@ bool RDMnetNetworkModel::setData(const QModelIndex& index, const QVariant& value
                 switch (maxBuffSize - (packPtr - setCmd.data))
                 {
                   case 2:
-                    etcpal_pack_16b(packPtr, static_cast<uint16_t>(value.toInt()));
+                    etcpal_pack_u16b(packPtr, static_cast<uint16_t>(value.toInt()));
                     break;
                   case 4:
-                    etcpal_pack_32b(packPtr, static_cast<uint32_t>(value.toInt()));
+                    etcpal_pack_u32b(packPtr, static_cast<uint32_t>(value.toInt()));
                     break;
                 }
                 break;
@@ -1310,7 +1310,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex& index, const QVariant& value
                     // This way, packIPAddressItem obtained the port value for us.
                     // Save the port value for later - we don't want it packed here.
                     packPtr -= 2;
-                    port = etcpal_upack_16b(packPtr);
+                    port = etcpal_unpack_u16b(packPtr);
                   }
 
                   packPtr = packIPAddressItem(ipv6String, kEtcPalIpTypeV6, packPtr,
@@ -1319,7 +1319,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex& index, const QVariant& value
                   if ((staticConfigType == E133_STATIC_CONFIG_IPV4) && (packPtr != nullptr))
                   {
                     // Pack the port value saved from earlier.
-                    etcpal_pack_16b(packPtr, port);
+                    etcpal_pack_u16b(packPtr, port);
                     packPtr += 2;
                   }
                 }
@@ -1593,7 +1593,7 @@ void RDMnetNetworkModel::SendRDMNack(rdmnet_client_scope_t scope, const RemoteRd
       (received_cmd.rdm.command_class == kRdmCCSetCommand) ? kRdmCCSetCommandResponse : kRdmCCGetCommandResponse;
   rdm_resp.param_id = received_cmd.rdm.param_id;
   rdm_resp.datalen = 2;
-  etcpal_pack_16b(rdm_resp.data, nack_reason);
+  etcpal_pack_u16b(rdm_resp.data, nack_reason);
 
   LocalRdmResponse resp;
   resp.dest_uid = received_cmd.source_uid;
@@ -1641,7 +1641,7 @@ void RDMnetNetworkModel::SendLlrpNack(const LlrpRemoteRdmCommand& received_cmd, 
       (received_cmd.rdm.command_class == kRdmCCSetCommand) ? kRdmCCSetCommandResponse : kRdmCCGetCommandResponse;
   rdm_resp.param_id = received_cmd.rdm.param_id;
   rdm_resp.datalen = 2;
-  etcpal_pack_16b(rdm_resp.data, nack_reason);
+  etcpal_pack_u16b(rdm_resp.data, nack_reason);
 
   LlrpLocalRdmResponse resp;
   LLRP_CREATE_RESPONSE_FROM_COMMAND(&resp, &received_cmd, &rdm_resp);
@@ -1708,7 +1708,7 @@ void RDMnetNetworkModel::RdmResponseReceived(rdmnet_client_scope_t scope_handle,
       uint16_t nackReason = 0xffff;
 
       if (first_resp.datalen == 2)
-        nackReason = etcpal_upack_16b(first_resp.data);
+        nackReason = etcpal_unpack_u16b(first_resp.data);
       HandleRDMNack(scope_handle, nackReason, first_resp);
       return;
     }
@@ -1737,10 +1737,10 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
         // TODO
         //   for (unsigned int i = 0; i < cmd->getLength(); i += 9)
         //   {
-        //     cmd->setSubdevice((uint8_t)etcpal_upack_16b(&cmdBuffer[i]));
+        //     cmd->setSubdevice((uint8_t)etcpal_unpack_u16b(&cmdBuffer[i]));
 
-        //     status(cmdBuffer[i + 2], etcpal_upack_16b(&cmdBuffer[i + 3]),
-        //            etcpal_upack_16b(&cmdBuffer[i + 5]), etcpal_upack_16b(&cmdBuffer[i + 7]),
+        //     status(cmdBuffer[i + 2], etcpal_unpack_u16b(&cmdBuffer[i + 3]),
+        //            etcpal_unpack_u16b(&cmdBuffer[i + 5]), etcpal_unpack_u16b(&cmdBuffer[i + 7]),
         //            cmd);
         //   }
 
@@ -1757,7 +1757,7 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
         for (; resp_entry; resp_entry = resp_entry->next)
         {
           for (size_t pos = 0; pos + 1 < resp_entry->msg.datalen; pos += 2)
-            list.push_back(etcpal_upack_16b(&resp_entry->msg.data[pos]));
+            list.push_back(etcpal_unpack_u16b(&resp_entry->msg.data[pos]));
         }
 
         if (!list.empty())
@@ -1773,11 +1773,11 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
           // Total personality is reset if current or total is less than 1
           uint8_t total_pers = ((first_resp.data[12] < 1 || first_resp.data[13] < 1) ? 1 : first_resp.data[13]);
 
-          HandleDeviceInfoResponse(scope_handle, etcpal_upack_16b(&first_resp.data[0]),
-                                   etcpal_upack_16b(&first_resp.data[2]), etcpal_upack_16b(&first_resp.data[4]),
-                                   etcpal_upack_32b(&first_resp.data[6]), etcpal_upack_16b(&first_resp.data[10]),
-                                   cur_pers, total_pers, etcpal_upack_16b(&first_resp.data[14]),
-                                   etcpal_upack_16b(&first_resp.data[16]), first_resp.data[18], first_resp);
+          HandleDeviceInfoResponse(scope_handle, etcpal_unpack_u16b(&first_resp.data[0]),
+                                   etcpal_unpack_u16b(&first_resp.data[2]), etcpal_unpack_u16b(&first_resp.data[4]),
+                                   etcpal_unpack_u32b(&first_resp.data[6]), etcpal_unpack_u16b(&first_resp.data[10]),
+                                   cur_pers, total_pers, etcpal_unpack_u16b(&first_resp.data[14]),
+                                   etcpal_unpack_u16b(&first_resp.data[16]), first_resp.data[18], first_resp);
         }
         break;
       }
@@ -1817,7 +1817,7 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
       case E120_BOOT_SOFTWARE_VERSION_ID:
       {
         if (first_resp.datalen >= 4)
-          HandleBootSoftwareIdResponse(scope_handle, etcpal_upack_32b(first_resp.data), first_resp);
+          HandleBootSoftwareIdResponse(scope_handle, etcpal_unpack_u32b(first_resp.data), first_resp);
         break;
       }
       case E120_DMX_PERSONALITY:
@@ -1837,7 +1837,7 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
           memcpy(description, &first_resp.data[3],
                  (descriptionLength > 32) ? 32 : descriptionLength);  // Max description length is 32
 
-          HandlePersonalityDescResponse(scope_handle, first_resp.data[0], etcpal_upack_16b(&first_resp.data[1]),
+          HandlePersonalityDescResponse(scope_handle, first_resp.data[0], etcpal_unpack_u16b(&first_resp.data[1]),
                                         QString::fromUtf8(description), first_resp);
         }
         break;
@@ -1859,14 +1859,14 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
             if (resp_part.datalen < 4)
               break;
             source_uid = resp_part.source_uid;
-            change_number = etcpal_upack_32b(&resp_part.data[0]);
+            change_number = etcpal_unpack_u32b(&resp_part.data[0]);
             pos = 4;
             is_first_message = false;
           }
 
           for (; pos + 2 < resp_part.datalen; pos += 3)
           {
-            uint16_t endpoint_id = etcpal_upack_16b(&resp_part.data[pos]);
+            uint16_t endpoint_id = etcpal_unpack_u16b(&resp_part.data[pos]);
             uint8_t endpoint_type = resp_part.data[pos + 2];
             list.push_back(std::make_pair(endpoint_id, endpoint_type));
           }
@@ -1893,8 +1893,8 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
             if (resp_part.datalen < 6)
               break;
             source_uid = resp_part.source_uid;
-            endpoint_id = etcpal_upack_16b(&resp_part.data[0]);
-            change_number = etcpal_upack_32b(&resp_part.data[2]);
+            endpoint_id = etcpal_unpack_u16b(&resp_part.data[0]);
+            change_number = etcpal_unpack_u32b(&resp_part.data[2]);
             pos = 6;
             is_first_message = false;
           }
@@ -1902,8 +1902,8 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
           for (; pos + 5 < resp_part.datalen; pos += 6)
           {
             RdmUid device;
-            device.manu = etcpal_upack_16b(&resp_part.data[pos]);
-            device.id = etcpal_upack_32b(&resp_part.data[pos + 2]);
+            device.manu = etcpal_unpack_u16b(&resp_part.data[pos]);
+            device.id = etcpal_unpack_u32b(&resp_part.data[pos + 2]);
             list.push_back(device);
           }
         }
@@ -1915,7 +1915,7 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
       {
         if (first_resp.datalen >= 4)
         {
-          uint32_t change_number = etcpal_upack_32b(first_resp.data);
+          uint32_t change_number = etcpal_unpack_u32b(first_resp.data);
           HandleEndpointListChangeResponse(scope_handle, change_number, first_resp.source_uid);
         }
         break;
@@ -1924,8 +1924,8 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
       {
         if (first_resp.datalen >= 6)
         {
-          uint16_t endpoint_id = etcpal_upack_16b(first_resp.data);
-          uint32_t change_num = etcpal_upack_32b(&first_resp.data[2]);
+          uint16_t endpoint_id = etcpal_unpack_u16b(first_resp.data);
+          uint32_t change_num = etcpal_unpack_u32b(&first_resp.data[2]);
           HandleResponderListChangeResponse(scope_handle, change_num, endpoint_id, first_resp.source_uid);
         }
         break;
@@ -1944,9 +1944,9 @@ void RDMnetNetworkModel::HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_h
               UnpackAndParseIPAddress(resp_part.data + E133_SCOPE_STRING_PADDED_LENGTH, kEtcPalIpTypeV4);
           QString v6AddrString =
               UnpackAndParseIPAddress(resp_part.data + E133_SCOPE_STRING_PADDED_LENGTH + 4, kEtcPalIpTypeV6);
-          uint16_t port = etcpal_upack_16b(resp_part.data + E133_SCOPE_STRING_PADDED_LENGTH + 4 + ETCPAL_IPV6_BYTES);
+          uint16_t port = etcpal_unpack_u16b(resp_part.data + E133_SCOPE_STRING_PADDED_LENGTH + 4 + ETCPAL_IPV6_BYTES);
           uint16_t unhealthyTCPEvents =
-              etcpal_upack_16b(resp_part.data + E133_SCOPE_STRING_PADDED_LENGTH + 4 + ETCPAL_IPV6_BYTES + 2);
+              etcpal_unpack_u16b(resp_part.data + E133_SCOPE_STRING_PADDED_LENGTH + 4 + ETCPAL_IPV6_BYTES + 2);
 
           HandleTcpCommsStatusResponse(scope_handle, QString::fromUtf8(scopeString), v4AddrString, v6AddrString, port,
                                        unhealthyTCPEvents, first_resp);
@@ -2011,7 +2011,7 @@ void RDMnetNetworkModel::ProcessRDMGetSetData(rdmnet_client_scope_t scope_handle
       {
         if (datalen >= 2)
         {
-          HandleStartAddressResponse(scope_handle, etcpal_upack_16b(data), firstResp);
+          HandleStartAddressResponse(scope_handle, etcpal_unpack_u16b(data), firstResp);
         }
         break;
       }
@@ -2030,7 +2030,7 @@ void RDMnetNetworkModel::ProcessRDMGetSetData(rdmnet_client_scope_t scope_handle
         uint16_t port = 0;
         const uint8_t* cur_ptr = data;
 
-        scopeSlot = etcpal_upack_16b(cur_ptr);
+        scopeSlot = etcpal_unpack_u16b(cur_ptr);
         cur_ptr += 2;
         memcpy(scopeString, cur_ptr, E133_SCOPE_STRING_PADDED_LENGTH);
         scopeString[E133_SCOPE_STRING_PADDED_LENGTH - 1] = '\0';
@@ -2042,13 +2042,13 @@ void RDMnetNetworkModel::ProcessRDMGetSetData(rdmnet_client_scope_t scope_handle
           case E133_STATIC_CONFIG_IPV4:
             staticConfigV4 = UnpackAndParseIPAddress(cur_ptr, kEtcPalIpTypeV4);
             cur_ptr += 4 + 16;
-            port = etcpal_upack_16b(cur_ptr);
+            port = etcpal_unpack_u16b(cur_ptr);
             break;
           case E133_STATIC_CONFIG_IPV6:
             cur_ptr += 4;
             staticConfigV6 = UnpackAndParseIPAddress(cur_ptr, kEtcPalIpTypeV6);
             cur_ptr += 16;
-            port = etcpal_upack_16b(cur_ptr);
+            port = etcpal_unpack_u16b(cur_ptr);
             break;
           case E133_NO_STATIC_CONFIG:
           default:
@@ -2166,7 +2166,7 @@ void RDMnetNetworkModel::HandleResponderListChangeResponse(rdmnet_client_scope_t
   rdm.command_class = kRdmCCGetCommand;
   rdm.param_id = E137_7_ENDPOINT_RESPONDERS;
   rdm.datalen = sizeof(uint16_t);
-  etcpal_pack_16b(rdm.data, endpoint);
+  etcpal_pack_u16b(rdm.data, endpoint);
 
   LocalRdmCommand cmd;
   cmd.dest_uid = source_uid;
@@ -2194,7 +2194,7 @@ void RDMnetNetworkModel::HandleRDMNack(rdmnet_client_scope_t scope_handle, uint1
     if (cmd.param_id == E133_COMPONENT_SCOPE)
     {
       cmd.datalen = 2;
-      etcpal_pack_16b(cmd.data, 0x0001);  // Scope slot, default to 1 for RPT Devices (non-controllers, non-brokers).
+      etcpal_pack_u16b(cmd.data, 0x0001);  // Scope slot, default to 1 for RPT Devices (non-controllers, non-brokers).
     }
     else
     {
@@ -2736,7 +2736,7 @@ void RDMnetNetworkModel::initializeRPTClientProperties(RDMnetClientItem* parent,
   }
 
   cmd.datalen = 2;
-  etcpal_pack_16b(cmd.data, 0x0001);  // Scope slot, start with #1
+  etcpal_pack_u16b(cmd.data, 0x0001);  // Scope slot, start with #1
   cmd.param_id = E133_COMPONENT_SCOPE;
   SendRDMCommand(cmd, broker_item);
 }
@@ -2771,7 +2771,7 @@ void RDMnetNetworkModel::sendGetNextControllerScope(rdmnet_client_scope_t scope_
   cmd.command_class = kRdmCCGetCommand;
   cmd.datalen = 2;
 
-  etcpal_pack_16b(cmd.data, std::min<uint16_t>(currentSlot + 1, 0xffff));  // Scope slot, start with #1
+  etcpal_pack_u16b(cmd.data, std::min<uint16_t>(currentSlot + 1, 0xffff));  // Scope slot, start with #1
   cmd.param_id = E133_COMPONENT_SCOPE;
   SendRDMCommand(cmd, scope_handle);
 }
@@ -2826,7 +2826,7 @@ uint8_t* RDMnetNetworkModel::packIPAddressItem(const QVariant& value, etcpal_ipt
   }
   else if (packPort)
   {
-    etcpal_pack_16b(packPtr + memSize - 2, static_cast<uint16_t>(portNumber));
+    etcpal_pack_u16b(packPtr + memSize - 2, static_cast<uint16_t>(portNumber));
   }
 
   return packPtr + memSize;
