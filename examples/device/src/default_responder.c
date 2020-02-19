@@ -42,7 +42,7 @@ static const uint16_t kSupportedPIDList[NUM_SUPPORTED_PIDS] = {
 static const uint8_t kDeviceInfo[] = {
     0x01, 0x00, /* RDM Protocol version */
     0xe1, 0x33, /* Device Model ID */
-    0xe1, 0x33, /* Product Category */
+    0x71, 0x01, /* Product Category */
 
     /* Software Version ID */
     RDMNET_VERSION_MAJOR, RDMNET_VERSION_MINOR,
