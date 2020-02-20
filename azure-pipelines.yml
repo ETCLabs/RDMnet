@@ -169,6 +169,7 @@ stages:
           python -m pip install aqtinstall
           python -m aqt install 5.9.7 mac desktop -O $(qt_cache_dir_macos)
         displayName: 'Download and Install Qt 5.9.7'
+        condition: ne(variables.CACHE_RESTORED, 'true')
       - script: |
           mkdir build
           cd build
