@@ -35,6 +35,7 @@ stages:
         Win32:
           CMAKE_GENERATOR: 'Visual Studio 15 2017'
           QT_DIRECTORY: C:\Qt\5.9.7\msvc2015
+          AQT_ARCH: win32_msvc2015
           ARTIFACT_TYPE: x86
           INSTALLER_PROJECT: RDMnetInstall_x86.wixproj
           INSTALLER_ARTIFACT: bin\Release\RDMnetSetup_x86.msi
@@ -43,6 +44,7 @@ stages:
         x64:
           CMAKE_GENERATOR: 'Visual Studio 15 2017 Win64'
           QT_DIRECTORY: C:\Qt\5.9.7\msvc2017_64
+          AQT_ARCH: win64_msvc2017_64
           ARTIFACT_TYPE: x64
           INSTALLER_PROJECT: RDMnetInstall_x64.wixproj
           INSTALLER_ARTIFACT: bin\Release\RDMnetSetup_x64.msi
@@ -52,7 +54,7 @@ stages:
       - task: CacheBeta@0
         displayName: 'Qt 5.9.7 Cache'
         inputs:
-          key: Qt597aqt | $(Agent.OS)
+          key: Qt597 | $(AQT_ARCH) | $(Agent.OS)
           path: $(qt_cache_dir_windows)
           cacheHitVar: CACHE_RESTORED
         continueOnError: true
@@ -63,8 +65,7 @@ stages:
         condition: ne(variables.CACHE_RESTORED, 'true')
       - script: |
           python -m pip install aqtinstall
-          python -m aqt install 5.9.7 windows desktop win64_msvc2017_64 -O $(qt_cache_dir_windows)
-          python -m aqt install 5.9.7 windows desktop win32_msvc2015 -O $(qt_cache_dir_windows)
+          python -m aqt install 5.9.7 windows desktop $(AQT_ARCH) -O $(qt_cache_dir_windows)
         displayName: 'Download and Install Qt 5.9.7'
         condition: ne(variables.CACHE_RESTORED, 'true')
       - script: |
