@@ -52,20 +52,20 @@ stages:
       - task: CacheBeta@0
         displayName: 'Qt 5.9.7 Cache'
         inputs:
-          key: Qt597 | $(Agent.OS)
+          key: Qt597aqt | $(Agent.OS)
           path: $(qt_cache_dir_windows)
           cacheHitVar: CACHE_RESTORED
         continueOnError: true
-      - task: PowerShell@2
-        displayName: 'Download Qt 5.9.7 Installer'
+      - task: UsePythonVersion@0
         inputs:
-          targetType: 'inline'
-          script: |
-            $client = new-object System.Net.WebClient
-            $client.DownloadFile("http://download.qt-project.org/official_releases/qt/5.9/5.9.7/qt-opensource-windows-x86-5.9.7.exe", "install-qt-5.9.7.exe")
+          versionSpec: '3.x' 
+          addToPath: true 
         condition: ne(variables.CACHE_RESTORED, 'true')
-      - script: install-qt-5.9.7 --verbose --script tools/ci/qt-installer-noninteractive.qs INSTALL_DIR=$(qt_cache_dir_windows) QT_ACCOUNT_EMAIL="$(etc_os_qt_account_email)" QT_ACCOUNT_PW="$(etc_os_qt_account_pw)"
-        displayName: 'Install Qt 5.9.7'
+      - script: |
+          python -m pip install aqtinstall
+          python -m aqt install 5.9.7 windows desktop win64_msvc2017_64 -O $(qt_cache_dir_windows)
+          python -m aqt install 5.9.7 windows desktop win32_msvc2015 -O $(qt_cache_dir_windows)
+        displayName: 'Download and Install Qt 5.9.7'
         condition: ne(variables.CACHE_RESTORED, 'true')
       - script: |
           @echo ##vso[task.setvariable variable=WinArtifactType]%ARTIFACT_TYPE%
@@ -154,18 +154,20 @@ stages:
         displayName: 'Install dependencies'
       - task: CacheBeta@0
         inputs:
-          key: Qt597 | $(Agent.OS)
+          key: Qt597aqt | $(Agent.OS)
           path: $(qt_cache_dir_macos)
           cacheHitVar: CACHE_RESTORED
         displayName: 'Qt 5.9.7 Cache'
         continueOnError: true
-      - script: |
-          curl -fL http://download.qt-project.org/official_releases/qt/5.9/5.9.7/qt-opensource-mac-x64-5.9.7.dmg -o qt-5.9.7-mac.dmg
-          hdiutil attach qt-5.9.7-mac.dmg -noverify
-          sudo /Volumes/qt-opensource-mac-x64-5.9.7/qt-opensource-mac-x64-5.9.7.app/Contents/MacOS/qt-opensource-mac-x64-5.9.7 --verbose --script tools/ci/qt-installer-noninteractive.qs INSTALL_DIR=$(qt_cache_dir_macos) QT_ACCOUNT_EMAIL="$(etc_os_qt_account_email)" QT_ACCOUNT_PW="$(etc_os_qt_account_pw)"
-          hdiutil detach /Volumes/qt-opensource-mac-x64-5.9.7
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.x' 
+          addToPath: true 
         condition: ne(variables.CACHE_RESTORED, 'true')
-        displayName: 'Download and install Qt 5.9.7'
+      - script: |
+          python -m pip install aqtinstall
+          python -m aqt install 5.9.7 mac desktop -O $(qt_cache_dir_macos)
+        displayName: 'Download and Install Qt 5.9.7'
       - script: |
           mkdir build
           cd build
