@@ -93,7 +93,7 @@ stages:
           - task: InstallAppleCertificate@2
             name: macOSInstallAppCertificate
             displayName: "Install Application Certificate"
-            condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
+            condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/tags'))
             inputs:
               certSecureFile: "macos_developerID_application.p12"
               certPwd: $(macos_app_cert_passphrase)
@@ -106,14 +106,14 @@ stages:
           #        certPwd: $(macos_app_cert_passphrase)
           - task: DownloadSecureFile@1
             name: macOSInstallerCert
-            condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
+            condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/tags'))
             displayName: "Download Installer Certificate"
             inputs:
               secureFile: "macos_developerID_installer.p12"
           - script: |
               /usr/bin/security import $(macOSInstallerCert.secureFilePath) -P $(macos_app_cert_passphrase) -A -t cert -f pkcs12 -k $(macOSInstallAppCertificate.keychainPath)
             displayName: "Workaround: Add installer certificate to existing temporary keychain"
-            condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
+            condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/tags'))
           - script: |
               brew update
               brew cask install packages

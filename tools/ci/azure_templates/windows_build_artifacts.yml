@@ -6,18 +6,18 @@ steps:
       cd $(Build.SourcesDirectory)\build
       cmake -P cmake_install.cmake
     displayName: "Install Project Artifacts"
-    condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
+    condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/tags'))
   - task: MSBuild@1
     inputs:
       solution: $(Build.SourcesDirectory)\tools\install\windows\%INSTALLER_PROJECT%
       platform: $(ARTIFACT_TYPE)
       msbuildArguments: /p:RunWixToolsOutOfProc=true
     displayName: "Build Windows Installer"
-    condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
+    condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/tags'))
   - task: DownloadSecureFile@1
     name: codeSignCertWindows
     displayName: "Download Code Signing Certificate"
-    condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
+    condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/tags'))
     inputs:
       secureFile: "codesign_cert_windows.pfx"
   - script: |
@@ -27,9 +27,9 @@ steps:
       signtool.exe sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f $(codeSignCertWindows.secureFilePath) /p $(codesign_cert_secret) RDMnetSetup.msi > NUL
       copy RDMnetSetup.msi $(Build.ArtifactStagingDirectory)\RDMnetSetup_%RDMNET_ARTIFACT_VERSION%_%ARTIFACT_TYPE%.msi
     displayName: "Sign RDMnet Installer"
-    condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
+    condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/tags'))
   - task: PublishBuildArtifacts@1
-    condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
+    condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/tags'))
     inputs:
       pathtoPublish: "$(Build.ArtifactStagingDirectory)"
       artifactName: "rdmnet_windows_$(ARTIFACT_TYPE)"
