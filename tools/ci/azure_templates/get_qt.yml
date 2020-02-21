@@ -1,0 +1,27 @@
+# A reusable step to restore Qt from a cache or download and install it
+
+parameters:
+  host: ""
+  arch: ""
+  directory: ""
+  version: ""
+  cacheKey: ""
+
+steps:
+  - task: Cache@2
+    displayName: "Qt Cache"
+    inputs:
+      key: ${{ parameters.cacheKey }}
+      path: ${{ parameters.directory }}
+      cacheHitVar: CACHE_RESTORED
+    continueOnError: true
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: "3.x"
+      addToPath: true
+    condition: ne(variables.CACHE_RESTORED, 'true')
+  - script: |
+      python -m pip install aqtinstall
+      python -m aqt install ${{ parameters.version }} ${{ parameters.host }} desktop ${{ parameters.arch }} -O ${{ parameters.directory }}
+    displayName: "Download and Install Qt ${{ parameters.version }}"
+    condition: ne(variables.CACHE_RESTORED, 'true')
