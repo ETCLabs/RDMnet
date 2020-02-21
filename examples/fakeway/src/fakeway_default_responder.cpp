@@ -77,7 +77,7 @@ FakewayDefaultResponder::~FakewayDefaultResponder()
   if (identifying_)
   {
     identifying_ = false;
-    etcpal_thread_join(&identify_thread_);
+    identify_thread_.Join();
   }
 }
 
@@ -234,13 +234,6 @@ bool FakewayDefaultResponder::Get(uint16_t pid, const uint8_t* param_data, uint8
   return res;
 }
 
-static void identify_thread_fn(void* arg)
-{
-  FakewayDefaultResponder* def_resp = static_cast<FakewayDefaultResponder*>(arg);
-  if (def_resp)
-    def_resp->IdentifyThread();
-}
-
 void FakewayDefaultResponder::IdentifyThread()
 {
   while (identifying_)
@@ -258,14 +251,7 @@ bool FakewayDefaultResponder::SetIdentifyDevice(const uint8_t* param_data, uint8
     bool new_identify_setting = (*param_data != 0);
     if (new_identify_setting && !identifying_)
     {
-      EtcPalThreadParams ithread_params;
-
-      ithread_params.priority = ETCPAL_THREAD_DEFAULT_PRIORITY;
-      ithread_params.stack_size = ETCPAL_THREAD_DEFAULT_STACK;
-      ithread_params.thread_name = "Identify Thread";
-      ithread_params.platform_data = NULL;
-
-      etcpal_thread_create(&identify_thread_, &ithread_params, identify_thread_fn, this);
+      identify_thread_.SetName("Identify Thread").Start(&FakewayDefaultResponder::IdentifyThread, this);
     }
     identifying_ = new_identify_setting;
     return true;

@@ -313,13 +313,8 @@ bool set_identify_device(const uint8_t* param_data, uint8_t param_data_len, uint
     bool new_identify_setting = (bool)(*param_data);
     if (new_identify_setting && !prop_data.identifying)
     {
-      EtcPalThreadParams ithread_params;
-
-      ithread_params.priority = ETCPAL_THREAD_DEFAULT_PRIORITY;
-      ithread_params.stack_size = ETCPAL_THREAD_DEFAULT_STACK;
+      EtcPalThreadParams ithread_params = ETCPAL_THREAD_PARAMS_INIT;
       ithread_params.thread_name = "Identify Thread";
-      ithread_params.platform_data = NULL;
-
       etcpal_thread_create(&prop_data.identify_thread, &ithread_params, identify_thread, NULL);
     }
     prop_data.identifying = new_identify_setting;
