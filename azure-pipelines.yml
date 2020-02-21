@@ -28,8 +28,6 @@ stages:
     displayName: 'Windows'
     pool:
       vmImage: 'vs2017-win2016'
-    variables:
-    - group: etc_os_qt_creds
     strategy:
       matrix:
         Win32:
@@ -126,7 +124,7 @@ stages:
     pool:
       vmImage: 'macos-10.14'
     variables:
-    - group: etc_os_qt_creds
+    - group: apple_developer_id
     steps:
       - task: InstallAppleCertificate@2
         name: macOSInstallAppCertificate
@@ -162,9 +160,8 @@ stages:
         continueOnError: true
       - task: UsePythonVersion@0
         inputs:
-          versionSpec: '3.x' 
+          versionSpec: '3.7' 
           addToPath: true 
-        condition: ne(variables.CACHE_RESTORED, 'true')
       - script: |
           python -m pip install aqtinstall
           python -m aqt install 5.9.7 mac desktop -O $(qt_cache_dir_macos)
@@ -193,12 +190,14 @@ stages:
           failTaskOnFailedTests: true
       - template: tools/ci/azure_templates/initialize_artifact_version.yml
       - script: |
-          tools/install/macos/macos_build_package.sh
+          python tools/install/macos/macos_build_package.py
           cp RDMnet.pkg $(Build.ArtifactStagingDirectory)/RDMnet_${RDMNET_ARTIFACT_VERSION}.pkg
         displayName: 'Build Installer Package'
         env:
           MACOS_APPLICATION_SIGNING_IDENTITY: $(macOSInstallAppCertificate.signingIdentity)
-          MACOS_INSTALLER_SIGNING_IDENTITY: $(macOSInstallInstallerCertificate.signingIdentity)
+#          MACOS_INSTALLER_SIGNING_IDENTITY: $(macOSInstallInstallerCertificate.signingIdentity)
+          RDMNET_APPLE_DEVELOPER_ID_USER: $(apple_dev_id_user)
+          RDMNET_APPLE_DEVELOPER_ID_PW: $(apple_dev_id_pw)
       - task: PublishBuildArtifacts@1
         inputs:
           pathtoPublish: '$(Build.ArtifactStagingDirectory)'
