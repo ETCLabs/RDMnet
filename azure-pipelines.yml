@@ -6,268 +6,219 @@
 trigger:
   branches:
     include:
-    - develop
-    - master
-    - release/*
-    - refs/tags/v*.*.*.*
+      - develop
+      - master
+      - release/*
+      - refs/tags/v*.*.*.*
 
 pr:
-- develop
+  - develop
 
 variables:
-  rdmnet_artifact_version: 'not_initialized'
-  qt_cache_dir_windows: C:/Qt
+  rdmnet_artifact_version: "not_initialized"
   qt_cache_dir_macos: $(Pipeline.Workspace)/Qt
 
 stages:
-- stage: build_and_test
-  displayName: 'Build and Test RDMnet'
-  jobs:
-  # Build and test RDMnet on Windows using CMake and Visual Studio 2017.
-  - job: windows_build_and_test
-    displayName: 'Windows'
-    pool:
-      vmImage: 'vs2017-win2016'
-    variables:
-    - group: etc_os_qt_creds
-    strategy:
-      matrix:
-        Win32:
-          CMAKE_GENERATOR: 'Visual Studio 15 2017'
-          QT_DIRECTORY: C:\Qt\5.9.7\msvc2015
-          ARTIFACT_TYPE: x86
-          INSTALLER_PROJECT: RDMnetInstall_x86.wixproj
-          INSTALLER_ARTIFACT: bin\Release\RDMnetSetup_x86.msi
-          CMAKE_INSTALL: install_x86
-          VCVARSALL_PLATFORM: x86
-        x64:
-          CMAKE_GENERATOR: 'Visual Studio 15 2017 Win64'
-          QT_DIRECTORY: C:\Qt\5.9.7\msvc2017_64
-          ARTIFACT_TYPE: x64
-          INSTALLER_PROJECT: RDMnetInstall_x64.wixproj
-          INSTALLER_ARTIFACT: bin\Release\RDMnetSetup_x64.msi
-          CMAKE_INSTALL: install_x64
-          VCVARSALL_PLATFORM: amd64
-    steps:
-      - task: CacheBeta@0
-        displayName: 'Qt 5.9.7 Cache'
-        inputs:
-          key: Qt597 | $(Agent.OS)
-          path: $(qt_cache_dir_windows)
-          cacheHitVar: CACHE_RESTORED
-        continueOnError: true
-      - task: PowerShell@2
-        displayName: 'Download Qt 5.9.7 Installer'
-        inputs:
-          targetType: 'inline'
-          script: |
-            $client = new-object System.Net.WebClient
-            $client.DownloadFile("http://download.qt-project.org/official_releases/qt/5.9/5.9.7/qt-opensource-windows-x86-5.9.7.exe", "install-qt-5.9.7.exe")
-        condition: ne(variables.CACHE_RESTORED, 'true')
-      - script: install-qt-5.9.7 --verbose --script tools/ci/qt-installer-noninteractive.qs INSTALL_DIR=$(qt_cache_dir_windows) QT_ACCOUNT_EMAIL="$(etc_os_qt_account_email)" QT_ACCOUNT_PW="$(etc_os_qt_account_pw)"
-        displayName: 'Install Qt 5.9.7'
-        condition: ne(variables.CACHE_RESTORED, 'true')
-      - script: |
-          @echo ##vso[task.setvariable variable=WinArtifactType]%ARTIFACT_TYPE%
-          cd $(Build.SourcesDirectory)
-          mkdir build
-          cd build
-          cmake --version
-          cmake -G "%CMAKE_GENERATOR%" -DQTDIR=%QT_DIRECTORY% -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL% -DRDMNET_BUILD_GUI_EXAMPLES=ON ..
-        displayName: 'Configure Project'
-      - task: VSBuild@1
-        displayName: 'Build Project'
-        inputs:
-          solution: $(Build.SourcesDirectory)\build\RDMnet.sln
-          configuration: Release
-      - script: |
-          cd $(Build.SourcesDirectory)\build
-          ctest -C Release -T Test --output-on-failure
-        displayName: 'Run Tests'
-      - task: PublishTestResults@2
-        displayName: 'Publish Test Results'
-        inputs:
-          testResultsFormat: 'CTest'
-          testResultsFiles: '**/Test.xml'
-          testRunTitle: 'Windows $(WinArtifactType)'
-          failTaskOnFailedTests: true
-      - script: |
-          cd $(Build.SourcesDirectory)\build
-          cmake -P cmake_install.cmake
-        displayName: 'Install Project Artifacts'
-      - task: MSBuild@1
-        inputs:
-          solution: $(Build.SourcesDirectory)\tools\install\windows\%INSTALLER_PROJECT%
-          platform: $(WinArtifactType)
-          msbuildArguments: /p:RunWixToolsOutOfProc=true
-        displayName: 'Build Windows Installer'
-      - task: DownloadSecureFile@1
-        name: codeSignCertWindows
-        displayName: 'Download Code Signing Certificate'
-        inputs:
-          secureFile: 'codesign_cert_windows.pfx'
-      - template: tools/ci/azure_templates/initialize_artifact_version.yml
-      - script: |
-          cd $(Build.SourcesDirectory)\tools\install\windows
-          copy "%INSTALLER_ARTIFACT%" .\RDMnetSetup.msi
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" %VCVARSALL_PLATFORM%
-          signtool.exe sign /v /a /tr "http://timestamp.digicert.com" /td sha256 /fd sha256 /f $(codeSignCertWindows.secureFilePath) /p $(codesign_cert_secret) RDMnetSetup.msi > NUL
-          copy RDMnetSetup.msi $(Build.ArtifactStagingDirectory)\RDMnetSetup_%RDMNET_ARTIFACT_VERSION%_%ARTIFACT_TYPE%.msi
-        displayName: 'Sign RDMnet Installer'
-      - task: PublishBuildArtifacts@1
-        inputs:
-          pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-          artifactName: 'rdmnet_windows_$(WinArtifactType)'
+  - stage: build_and_test
+    displayName: "Build and Test RDMnet"
+    jobs:
+      # Build and test RDMnet on Windows using CMake and Visual Studio 2017.
+      - job: windows_build_and_test
+        displayName: "Windows"
+        pool:
+          vmImage: "vs2017-win2016"
+        strategy:
+          matrix:
+            Win32:
+              CMAKE_GENERATOR: "Visual Studio 15 2017"
+              QT_DIRECTORY: C:\Qt\5.12.7\msvc2017
+              AQT_ARCH: win32_msvc2017
+              ARTIFACT_TYPE: x86
+              INSTALLER_PROJECT: RDMnetInstall_x86.wixproj
+              INSTALLER_ARTIFACT: bin\Release\RDMnetSetup_x86.msi
+              CMAKE_INSTALL: install_x86
+              VCVARSALL_PLATFORM: x86
+            x64:
+              CMAKE_GENERATOR: "Visual Studio 15 2017 Win64"
+              QT_DIRECTORY: C:\Qt\5.12.7\msvc2017_64
+              AQT_ARCH: win64_msvc2017_64
+              ARTIFACT_TYPE: x64
+              INSTALLER_PROJECT: RDMnetInstall_x64.wixproj
+              INSTALLER_ARTIFACT: bin\Release\RDMnetSetup_x64.msi
+              CMAKE_INSTALL: install_x64
+              VCVARSALL_PLATFORM: amd64
+        steps:
+          - template: tools/ci/azure_templates/get_qt.yml
+            parameters:
+              host: windows
+              arch: $(AQT_ARCH)
+              directory: C:/Qt
+              version: 5.12.7
+              cacheKey: Qt5127 | $(AQT_ARCH) | $(Agent.OS)
+          - script: |
+              cd $(Build.SourcesDirectory)
+              mkdir build
+              cd build
+              cmake --version
+              cmake -G "%CMAKE_GENERATOR%" -DQTDIR=%QT_DIRECTORY% -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL% -DRDMNET_BUILD_GUI_EXAMPLES=ON ..
+            displayName: "Configure Project"
+          - task: VSBuild@1
+            displayName: "Build Project"
+            inputs:
+              solution: $(Build.SourcesDirectory)\build\RDMnet.sln
+              configuration: Release
+              maximumCpuCount: true
+          - script: |
+              cd $(Build.SourcesDirectory)\build
+              ctest -C Release -T Test --output-on-failure
+            displayName: "Run Tests"
+          - task: PublishTestResults@2
+            displayName: "Publish Test Results"
+            inputs:
+              testResultsFormat: "CTest"
+              testResultsFiles: "**/Test.xml"
+              testRunTitle: "Windows $(ARTIFACT_TYPE)"
+              failTaskOnFailedTests: true
+          - template: tools/ci/azure_templates/initialize_artifact_version.yml
+          - template: tools/ci/azure_templates/windows_build_artifacts.yml
 
-    # Build and test RDMnet on macOS using CMake and Clang.
-  - job: macos_build_and_test
-    displayName: 'macOS'
-    pool:
-      vmImage: 'macos-10.14'
-    variables:
-    - group: etc_os_qt_creds
-    steps:
-      - task: InstallAppleCertificate@2
-        name: macOSInstallAppCertificate
-        displayName: 'Install Application Certificate'
-        inputs:
-          certSecureFile: 'macos_developerID_application.p12'
-          certPwd: $(macos_app_cert_passphrase)
-  # TODO: uncomment and remove next two steps once https://github.com/microsoft/azure-pipelines-tasks/issues/10792 is fixed.
-  #    - task: InstallAppleCertificate@2
-  #      name: macOSInstallInstallerCertificate
-  #      displayName: 'Install Installer Certificate'
-  #      inputs:
-  #        certSecureFile: 'macos_developerID_installer.p12'
-  #        certPwd: $(macos_app_cert_passphrase)
-      - task: DownloadSecureFile@1
-        name: macOSInstallerCert
-        displayName: 'Download Installer Certificate'
-        inputs:
-          secureFile: 'macos_developerID_installer.p12'
-      - script: |
-          /usr/bin/security import $(macOSInstallerCert.secureFilePath) -P $(macos_app_cert_passphrase) -A -t cert -f pkcs12 -k $(macOSInstallAppCertificate.keychainPath)
-        displayName: 'Workaround: Add installer certificate to existing temporary keychain'
-      - script: |
-          brew update
-          brew cask install packages
-        displayName: 'Install dependencies'
-      - task: CacheBeta@0
-        inputs:
-          key: Qt597 | $(Agent.OS)
-          path: $(qt_cache_dir_macos)
-          cacheHitVar: CACHE_RESTORED
-        displayName: 'Qt 5.9.7 Cache'
-        continueOnError: true
-      - script: |
-          curl -fL http://download.qt-project.org/official_releases/qt/5.9/5.9.7/qt-opensource-mac-x64-5.9.7.dmg -o qt-5.9.7-mac.dmg
-          hdiutil attach qt-5.9.7-mac.dmg -noverify
-          sudo /Volumes/qt-opensource-mac-x64-5.9.7/qt-opensource-mac-x64-5.9.7.app/Contents/MacOS/qt-opensource-mac-x64-5.9.7 --verbose --script tools/ci/qt-installer-noninteractive.qs INSTALL_DIR=$(qt_cache_dir_macos) QT_ACCOUNT_EMAIL="$(etc_os_qt_account_email)" QT_ACCOUNT_PW="$(etc_os_qt_account_pw)"
-          hdiutil detach /Volumes/qt-opensource-mac-x64-5.9.7
-        condition: ne(variables.CACHE_RESTORED, 'true')
-        displayName: 'Download and install Qt 5.9.7'
-      - script: |
-          mkdir build
-          cd build
-          cmake --version
-          cmake -G "Unix Makefiles" -DQTDIR=$QT_DIRECTORY -DCMAKE_INSTALL_PREFIX=install -DRDMNET_BUILD_GUI_EXAMPLES=ON ..
-          make
-          make install
-        displayName: 'Build Project'
-        env:
-          QT_DIRECTORY: $(qt_cache_dir_macos)/5.9.7/clang_64
-      - script: |
-          cd build
-          ctest -T Test --output-on-failure
-        displayName: 'Run Tests'
-      - task: PublishTestResults@2
-        displayName: 'Publish Test Results'
-        inputs:
-          testResultsFormat: 'CTest'
-          testResultsFiles: '**/Test.xml'
-          testRunTitle: 'macOS'
-          failTaskOnFailedTests: true
-      - template: tools/ci/azure_templates/initialize_artifact_version.yml
-      - script: |
-          tools/install/macos/macos_build_package.sh
-          cp RDMnet.pkg $(Build.ArtifactStagingDirectory)/RDMnet_${RDMNET_ARTIFACT_VERSION}.pkg
-        displayName: 'Build Installer Package'
-        env:
-          MACOS_APPLICATION_SIGNING_IDENTITY: $(macOSInstallAppCertificate.signingIdentity)
-          MACOS_INSTALLER_SIGNING_IDENTITY: $(macOSInstallInstallerCertificate.signingIdentity)
-      - task: PublishBuildArtifacts@1
-        inputs:
-          pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-          artifactName: 'rdmnet_macos'
+        # Build and test RDMnet on macOS using CMake and Clang.
+      - job: macos_build_and_test
+        displayName: "macOS"
+        pool:
+          vmImage: "macos-10.15"
+        variables:
+          - group: apple_developer_id
+        steps:
+          - task: InstallAppleCertificate@2
+            name: macOSInstallAppCertificate
+            displayName: "Install Application Certificate"
+            condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/tags'))
+            inputs:
+              certSecureFile: "macos_developerID_application.p12"
+              certPwd: $(macos_app_cert_passphrase)
+          # TODO: uncomment and remove next two steps once https://github.com/microsoft/azure-pipelines-tasks/issues/10792 is fixed.
+          #    - task: InstallAppleCertificate@2
+          #      name: macOSInstallInstallerCertificate
+          #      displayName: 'Install Installer Certificate'
+          #      inputs:
+          #        certSecureFile: 'macos_developerID_installer.p12'
+          #        certPwd: $(macos_app_cert_passphrase)
+          - task: DownloadSecureFile@1
+            name: macOSInstallerCert
+            condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/tags'))
+            displayName: "Download Installer Certificate"
+            inputs:
+              secureFile: "macos_developerID_installer.p12"
+          - script: |
+              /usr/bin/security import $(macOSInstallerCert.secureFilePath) -P $(macos_app_cert_passphrase) -A -t cert -f pkcs12 -k $(macOSInstallAppCertificate.keychainPath)
+            displayName: "Workaround: Add installer certificate to existing temporary keychain"
+            condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/tags'))
+          - script: |
+              brew update
+              brew cask install packages
+            displayName: "Install dependencies"
+          - template: tools/ci/azure_templates/get_qt.yml
+            parameters:
+              host: mac
+              directory: $(qt_cache_dir_macos)
+              version: 5.12.7
+              cacheKey: Qt5127aqt | $(Agent.OS)
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: "3.7"
+              addToPath: true
+          - script: |
+              mkdir build
+              cd build
+              cmake --version
+              cmake -G "Unix Makefiles" -DQTDIR=$QT_DIRECTORY -DCMAKE_INSTALL_PREFIX=install -DRDMNET_BUILD_GUI_EXAMPLES=ON ..
+              make -j4
+              make install
+            displayName: "Build Project"
+            env:
+              QT_DIRECTORY: $(qt_cache_dir_macos)/5.12.7/clang_64
+          - script: |
+              cd build
+              ctest -T Test --output-on-failure
+            displayName: "Run Tests"
+          - task: PublishTestResults@2
+            displayName: "Publish Test Results"
+            inputs:
+              testResultsFormat: "CTest"
+              testResultsFiles: "**/Test.xml"
+              testRunTitle: "macOS"
+              failTaskOnFailedTests: true
+          - template: tools/ci/azure_templates/initialize_artifact_version.yml
+          - template: tools/ci/azure_templates/macos_build_artifacts.yml
 
-  - job: documentation_deploy
-    displayName: 'Documentation Deploy'
-    pool:
-      # TODO change to ubuntu-latest when this issue is fixed:
-      # https://github.com/microsoft/azure-pipelines-image-generation/issues/1379
-      vmImage: 'ubuntu-18.04'
-    condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/pull'))
-    steps:
-    - script: sudo apt-get install doxygen
-      displayName: 'Install Doxygen'
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '3.x' 
-        addToPath: true 
-    - task: ShellScript@2
-      inputs:
-        scriptPath: 'tools/ci/publish_docs.sh'
-        failOnStandardError: false
-      displayName: 'Generate and Push Documentation'
-      env:
-        GH_REPO_NAME: 'RDMnet'
-        GH_REPO_REF: 'github.com/ETCLabs/RDMnet.git'
-        SVC_ETCLABS_CREDENTIALS: 'svc-etclabs:$(svc_etclabs_password)'
+      - job: documentation_deploy
+        displayName: "Documentation Deploy"
+        pool:
+          vmImage: "ubuntu-18.04"
+        condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/pull'))
+        steps:
+          - script: |
+              sudo apt-get install doxygen
+            displayName: "Install Doxygen"
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: "3.x"
+              addToPath: true
+          - task: ShellScript@2
+            inputs:
+              scriptPath: "tools/ci/publish_docs.sh"
+              failOnStandardError: false
+            displayName: "Generate and Push Documentation"
+            env:
+              GH_REPO_NAME: "RDMnet"
+              GH_REPO_REF: "github.com/ETCLabs/RDMnet.git"
+              SVC_ETCLABS_CREDENTIALS: "svc-etclabs:$(svc_etclabs_password)"
 
-- stage: deploy_binaries
-  displayName: 'Deploy Build Artifacts'
-  condition: and(succeeded('build_and_test'), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
-  jobs:
-  - job: bintray_deploy
-    displayName: 'BinTray Deploy'
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - script: |
-        cd tools/version
-        version=$(<current_version.txt)
-        echo "##vso[task.setvariable variable=RDMnetVersion]$version"
-      displayName: 'Obtain RDMnet Version'
-    - template: tools/ci/azure_templates/deploy_artifact.yml
-      parameters:
-        artifactName: rdmnet_windows_x64
-        artifactFile: RDMnetSetup_$(RDMnetVersion)_x64.msi
-        artifactVersion: $(RDMnetVersion)
-    - template: tools/ci/azure_templates/deploy_artifact.yml
-      parameters:
-        artifactName: rdmnet_windows_x86
-        artifactFile: RDMnetSetup_$(RDMnetVersion)_x86.msi
-        artifactVersion: $(RDMnetVersion)
-    - template: tools/ci/azure_templates/deploy_artifact.yml
-      parameters:
-        artifactName: rdmnet_macos
-        artifactFile: RDMnet_$(RDMnetVersion).pkg
-        artifactVersion: $(RDMnetVersion)
-  - job: create_build_report
-    displayName: 'Create Jira Build Report'
-    pool:
-      vmImage: 'ubuntu-latest'
-    variables:
-    - group: etc_jira
-    steps:
-    - task: UsePythonVersion@0
-      displayName: 'Select Python Version'
-      inputs:
-        versionSpec: '3.x'
-        addToPath: true
-    - script: |
-        python -m pip install requests
-        python tools/ci/create_build_report.py
-      displayName: 'Run Create Build Report Script'
-      env:
-        BUILDNETWORKING_PASSWORD: $(buildnetworking_password)
+  - stage: deploy_binaries
+    displayName: "Deploy Build Artifacts"
+    condition: and(succeeded('build_and_test'), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+    jobs:
+      - job: bintray_deploy
+        displayName: "BinTray Deploy"
+        pool:
+          vmImage: "ubuntu-latest"
+        steps:
+          - script: |
+              cd tools/version
+              version=$(<current_version.txt)
+              echo "##vso[task.setvariable variable=RDMnetVersion]$version"
+            displayName: "Obtain RDMnet Version"
+          - template: tools/ci/azure_templates/deploy_artifact.yml
+            parameters:
+              artifactName: rdmnet_windows_x64
+              artifactFile: RDMnetSetup_$(RDMnetVersion)_x64.msi
+              artifactVersion: $(RDMnetVersion)
+          - template: tools/ci/azure_templates/deploy_artifact.yml
+            parameters:
+              artifactName: rdmnet_windows_x86
+              artifactFile: RDMnetSetup_$(RDMnetVersion)_x86.msi
+              artifactVersion: $(RDMnetVersion)
+          - template: tools/ci/azure_templates/deploy_artifact.yml
+            parameters:
+              artifactName: rdmnet_macos
+              artifactFile: RDMnet_$(RDMnetVersion).pkg
+              artifactVersion: $(RDMnetVersion)
+      - job: create_build_report
+        displayName: "Create Jira Build Report"
+        pool:
+          vmImage: "ubuntu-latest"
+        variables:
+          - group: etc_jira
+        steps:
+          - task: UsePythonVersion@0
+            displayName: "Select Python Version"
+            inputs:
+              versionSpec: "3.x"
+              addToPath: true
+          - script: |
+              python -m pip install requests
+              python tools/ci/create_build_report.py
+            displayName: "Run Create Build Report Script"
+            env:
+              BUILDNETWORKING_PASSWORD: $(buildnetworking_password)

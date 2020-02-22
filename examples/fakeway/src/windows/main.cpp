@@ -1,5 +1,8 @@
 // RDMnetDevice.cpp : Defines the entry point for the console application.
 
+#include "etcpal/inet.h"
+#include "fakeway.h"
+
 #include <WinSock2.h>  //MUST ALWAYS BE INCLUDED before windows.h!
 #include <windows.h>
 #include <WS2tcpip.h>
@@ -11,9 +14,6 @@
 #include <string>
 #include <vector>
 #include <deque>
-
-#include "etcpal/inet.h"
-#include "fakeway.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4996)

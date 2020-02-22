@@ -27,7 +27,7 @@
 #include "rdmnet/defs.h"
 #include "rdmnet/client.h"
 
-#define NUM_SUPPORTED_PIDS 15
+#define NUM_SUPPORTED_PIDS 12
 #define RDM_RESPONSE_BUF_LENGTH RDM_MAX_PDL
 
 #if (NUM_SUPPORTED_PIDS * 2 > RDM_RESPONSE_BUF_LENGTH)

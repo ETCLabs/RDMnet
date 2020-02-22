@@ -41,7 +41,7 @@ static const uint16_t kSupportedPIDList[NUM_SUPPORTED_PIDS] = {
 static const uint8_t kDeviceInfo[] = {
     0x01, 0x00, /* RDM Protocol version */
     0xe1, 0x33, /* Device Model ID */
-    0xe1, 0x33, /* Product Category */
+    0x71, 0x01, /* Product Category */
 
     /* Software Version ID */
     RDMNET_VERSION_MAJOR, RDMNET_VERSION_MINOR,
@@ -307,13 +307,8 @@ void set_identify_device(const uint8_t* param_data, uint8_t param_data_len, Rdmn
     bool new_identify_setting = (bool)(*param_data);
     if (new_identify_setting && !prop_data.identifying)
     {
-      EtcPalThreadParams ithread_params;
-
-      ithread_params.priority = ETCPAL_THREAD_DEFAULT_PRIORITY;
-      ithread_params.stack_size = ETCPAL_THREAD_DEFAULT_STACK;
+      EtcPalThreadParams ithread_params = ETCPAL_THREAD_PARAMS_INIT;
       ithread_params.thread_name = "Identify Thread";
-      ithread_params.platform_data = NULL;
-
       etcpal_thread_create(&prop_data.identify_thread, &ithread_params, identify_thread, NULL);
     }
     prop_data.identifying = new_identify_setting;

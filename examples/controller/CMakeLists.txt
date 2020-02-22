@@ -1,6 +1,6 @@
 
 set(QT_REQUIRED_VERSION 5.9.7)
-set(QTDIR "" CACHE STRING "Qt (>= ${QT_REQUIRED_VERSION}) installation directory for building GUI examples")
+set(QTDIR "" CACHE FILEPATH "Qt (>= ${QT_REQUIRED_VERSION}) installation directory for building GUI examples")
 if(NOT QTDIR)
   set(QTDIR $ENV{QTDIR})
 endif()
@@ -138,8 +138,18 @@ endif()
 
 ############################## Allow Qt Debugging #############################
 
-# Help out the Visual Studio debugging environment by pointing it at the Qt DLLs.
 if(MSVC)
+  # Copy the proper Qt style plugin, if applicable
+  if(EXISTS ${QTDIR}/plugins/styles)
+    add_custom_command(
+      TARGET ${CONTROLLER_TARGET}
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy ${QTDIR}/plugins/styles/qwindowsvistastyle$<$<CONFIG:Debug>:d>.dll $<TARGET_FILE_DIR:${CONTROLLER_TARGET}>/styles/qwindowsvistastyle$<$<CONFIG:Debug>:d>.dll
+      COMMENT "Copying Qt style plugin to executable directory..."
+    )
+  endif()
+
+  # Help out the Visual Studio debugging environment by pointing it at the Qt DLLs.
   configure_file(
     ${CMAKE_CURRENT_LIST_DIR}/../../cmake/ExampleController.vcxproj.user.in
     ${CMAKE_CURRENT_BINARY_DIR}/${CONTROLLER_TARGET}.vcxproj.user

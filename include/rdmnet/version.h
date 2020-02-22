@@ -39,7 +39,7 @@
 #define RDMNET_VERSION_MAJOR 0 /*!< The major version. */
 #define RDMNET_VERSION_MINOR 3 /*!< The minor version. */
 #define RDMNET_VERSION_PATCH 0 /*!< The patch version. */
-#define RDMNET_VERSION_BUILD 7 /*!< The build number. */
+#define RDMNET_VERSION_BUILD 8 /*!< The build number. */
 /*!
  * @}
  */
@@ -48,9 +48,9 @@
  * \name RDMnet version strings
  * @{
  */
-#define RDMNET_VERSION_STRING "0.3.0.7"
-#define RDMNET_VERSION_DATESTR "06.Dec.2019"
-#define RDMNET_VERSION_COPYRIGHT "Copyright 2019 ETC Inc."
+#define RDMNET_VERSION_STRING "0.3.0.8"
+#define RDMNET_VERSION_DATESTR "21.Feb.2020"
+#define RDMNET_VERSION_COPYRIGHT "Copyright 2020 ETC Inc."
 #define RDMNET_VERSION_PRODUCTNAME "RDMnet"
 /*!
  * @}

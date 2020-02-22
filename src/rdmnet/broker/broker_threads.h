@@ -27,7 +27,7 @@
 #include <memory>
 #include <vector>
 
-#include "etcpal/thread.h"
+#include "etcpal/cpp/thread.h"
 #include "etcpal/lock.h"
 #include "etcpal/inet.h"
 #include "etcpal/socket.h"
@@ -75,7 +75,7 @@ public:
   bool terminated() const { return terminated_; }
 
 protected:
-  etcpal_thread_t handle_{};
+  etcpal::Thread thread_;
   BrokerThreadNotify* notify_{nullptr};
   bool terminated_{true};
 };
