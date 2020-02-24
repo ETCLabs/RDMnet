@@ -65,7 +65,7 @@ struct Gadget
 class GadgetManager
 {
 public:
-  bool Startup(GadgetNotify& notify, FakewayLog& log);
+  bool Startup(GadgetNotify& notify, etcpal::Logger& logger);
   void Shutdown();
   void Run();
 
@@ -90,7 +90,7 @@ private:
   bool GetResponseFromQueue(const void* cookie, RDM_CmdC& response);
 };
 
-static FakewayLog* log_instance{nullptr};
+static etcpal::Logger* log_instance{nullptr};
 
 extern "C" void __stdcall GadgetLogCallback(const char* LogData)
 {
@@ -98,10 +98,10 @@ extern "C" void __stdcall GadgetLogCallback(const char* LogData)
     log_instance->Info(LogData);
 }
 
-bool GadgetManager::Startup(GadgetNotify& notify, FakewayLog& log)
+bool GadgetManager::Startup(GadgetNotify& notify, etcpal::Logger& logger)
 {
   notify_ = &notify;
-  log_instance = &log;
+  log_instance = &logger;
 
   Gadget2_SetLogCallback(GadgetLogCallback);
   if (!Gadget2_Connect())
@@ -339,9 +339,9 @@ std::string GadgetInterface::DllVersion()
   return Gadget2_GetDllVersion();
 }
 
-bool GadgetInterface::Startup(GadgetNotify& notify, FakewayLog& log)
+bool GadgetInterface::Startup(GadgetNotify& notify, etcpal::Logger& logger)
 {
-  return impl_->Startup(notify, log);
+  return impl_->Startup(notify, logger);
 }
 
 void GadgetInterface::Shutdown()

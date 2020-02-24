@@ -19,23 +19,23 @@
 
 #include "rdmnet/core/rpt_prot.h"
 
+#include "etcpal/common.h"
 #include "etcpal/pack.h"
 #include "rdmnet/defs.h"
-#include "rdmnet/core/util.h"
 #include "rdmnet/private/connection.h"
 #include "rdmnet/private/rpt_prot.h"
 
 /***************************** Private macros ********************************/
 
 /* Helper macros for RDM Command PDUs */
-#define RDM_CMD_PDU_LEN(rdmbufptr) ((rdmbufptr)->datalen + 3)
-#define PACK_RDM_CMD_PDU(rdmbufptr, buf)                                \
-  do                                                                    \
-  {                                                                     \
-    (buf)[0] = 0xf0;                                                    \
-    ACN_PDU_PACK_EXT_LEN(buf, RDM_CMD_PDU_LEN(rdmbufptr));              \
-    (buf)[3] = VECTOR_RDM_CMD_RDM_DATA;                                 \
-    memcpy(&(buf)[4], &(rdmbufptr)->data[1], (rdmbufptr)->datalen - 1); \
+#define RDM_CMD_PDU_LEN(rdmbufptr) ((rdmbufptr)->data_len + 3)
+#define PACK_RDM_CMD_PDU(rdmbufptr, buf)                                 \
+  do                                                                     \
+  {                                                                      \
+    (buf)[0] = 0xf0;                                                     \
+    ACN_PDU_PACK_EXT_LEN(buf, RDM_CMD_PDU_LEN(rdmbufptr));               \
+    (buf)[3] = VECTOR_RDM_CMD_RDM_DATA;                                  \
+    memcpy(&(buf)[4], &(rdmbufptr)->data[1], (rdmbufptr)->data_len - 1); \
   } while (0)
 
 /* Helper macros to pack the various RPT headers */
@@ -108,7 +108,7 @@ size_t pack_rpt_header_with_rlp(const AcnRootLayerPdu* rlp, uint8_t* buf, size_t
   cur_ptr += data_size;
   buflen -= data_size;
 
-  pack_rpt_header(rlp->datalen, vector, header, cur_ptr);
+  pack_rpt_header(rlp->data_len, vector, header, cur_ptr);
   cur_ptr += RPT_PDU_HEADER_SIZE;
   return (size_t)(cur_ptr - buf);
 }
@@ -139,7 +139,7 @@ etcpal_error_t send_rpt_header(RdmnetConnection* conn, const AcnRootLayerPdu* rl
     return (etcpal_error_t)send_res;
 
   // Pack and send the RPT PDU header
-  pack_rpt_header(rlp->datalen, rpt_vector, header, buf);
+  pack_rpt_header(rlp->data_len, rpt_vector, header, buf);
   send_res = etcpal_send(conn->sock, buf, RPT_PDU_HEADER_SIZE, 0);
   if (send_res < 0)
     return (etcpal_error_t)send_res;
@@ -182,7 +182,7 @@ size_t rpt_pack_request(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_RPT;
-  rlp.datalen = RPT_PDU_HEADER_SIZE + request_pdu_size;
+  rlp.data_len = RPT_PDU_HEADER_SIZE + request_pdu_size;
 
   uint8_t* cur_ptr = buf;
   size_t data_size = pack_rpt_header_with_rlp(&rlp, buf, buflen, VECTOR_RPT_REQUEST, header);
@@ -217,7 +217,7 @@ etcpal_error_t rpt_send_request(rdmnet_conn_t handle, const EtcPalUuid* local_ci
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_RPT;
-  rlp.datalen = RPT_PDU_HEADER_SIZE + calc_request_pdu_size(cmd);
+  rlp.data_len = RPT_PDU_HEADER_SIZE + calc_request_pdu_size(cmd);
 
   RdmnetConnection* conn;
   etcpal_error_t res = rdmnet_start_message(handle, &conn);
@@ -232,7 +232,7 @@ etcpal_error_t rpt_send_request(rdmnet_conn_t handle, const EtcPalUuid* local_ci
     return res;
   }
 
-  PACK_REQUEST_HEADER(rlp.datalen - RPT_PDU_HEADER_SIZE, buf);
+  PACK_REQUEST_HEADER(rlp.data_len - RPT_PDU_HEADER_SIZE, buf);
   int send_res = etcpal_send(conn->sock, buf, REQUEST_NOTIF_PDU_HEADER_SIZE, 0);
   if (send_res < 0)
   {
@@ -290,7 +290,7 @@ size_t rpt_pack_status(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid,
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_RPT;
-  rlp.datalen = RPT_PDU_HEADER_SIZE + status_pdu_size;
+  rlp.data_len = RPT_PDU_HEADER_SIZE + status_pdu_size;
 
   uint8_t* cur_ptr = buf;
   size_t data_size = pack_rpt_header_with_rlp(&rlp, buf, buflen, VECTOR_RPT_STATUS, header);
@@ -302,7 +302,7 @@ size_t rpt_pack_status(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid,
   cur_ptr += RPT_STATUS_HEADER_SIZE;
   if (status_pdu_size > RPT_STATUS_HEADER_SIZE)
   {
-    RDMNET_MSVC_NO_DEP_WRN strncpy((char*)cur_ptr, status->status_string, RPT_STATUS_STRING_MAXLEN);
+    ETCPAL_MSVC_NO_DEP_WRN strncpy((char*)cur_ptr, status->status_string, RPT_STATUS_STRING_MAXLEN);
     cur_ptr += (status_pdu_size - RPT_STATUS_HEADER_SIZE);
   }
   return (size_t)(cur_ptr - buf);
@@ -329,7 +329,7 @@ etcpal_error_t rpt_send_status(rdmnet_conn_t handle, const EtcPalUuid* local_cid
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_RPT;
-  rlp.datalen = RPT_PDU_HEADER_SIZE + status_pdu_size;
+  rlp.data_len = RPT_PDU_HEADER_SIZE + status_pdu_size;
 
   RdmnetConnection* conn;
   etcpal_error_t res = rdmnet_start_message(handle, &conn);
@@ -409,7 +409,7 @@ size_t rpt_pack_notification(uint8_t* buf, size_t buflen, const EtcPalUuid* loca
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_RPT;
-  rlp.datalen = RPT_PDU_HEADER_SIZE + notif_pdu_size;
+  rlp.data_len = RPT_PDU_HEADER_SIZE + notif_pdu_size;
 
   uint8_t* cur_ptr = buf;
   size_t data_size = pack_rpt_header_with_rlp(&rlp, buf, buflen, VECTOR_RPT_NOTIFICATION, header);
@@ -450,7 +450,7 @@ etcpal_error_t rpt_send_notification(rdmnet_conn_t handle, const EtcPalUuid* loc
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_RPT;
-  rlp.datalen = RPT_PDU_HEADER_SIZE + notif_pdu_size;
+  rlp.data_len = RPT_PDU_HEADER_SIZE + notif_pdu_size;
 
   RdmnetConnection* conn;
   etcpal_error_t res = rdmnet_start_message(handle, &conn);

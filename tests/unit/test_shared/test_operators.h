@@ -25,7 +25,7 @@
 #define TEST_OPERATORS_H_
 
 #include <cstring>
-#include "rdmnet/core/discovery.h"
+#include "rdmnet/discovery.h"
 
 inline bool operator==(const RdmnetBrokerDiscInfo& a, const RdmnetBrokerDiscInfo& b)
 {

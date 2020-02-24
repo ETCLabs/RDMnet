@@ -47,7 +47,7 @@
 ETCPAL_MEMPOOL_DEFINE(discovered_brokers, DiscoveredBroker, RDMNET_MAX_DISCOVERED_BROKERS);
 #endif
 
-etcpal_error_t discovered_broker_init()
+etcpal_error_t discovered_broker_init(void)
 {
 #if RDMNET_DYNAMIC_MEM
   return kEtcPalErrOk;

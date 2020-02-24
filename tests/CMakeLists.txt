@@ -2,5 +2,5 @@
 
 include(RdmnetSourceManifest)
 
-add_subdirectory(data)
+# add_subdirectory(data)
 add_subdirectory(unit)

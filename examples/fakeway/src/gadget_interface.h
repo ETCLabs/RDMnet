@@ -22,10 +22,10 @@
 
 #include <memory>
 #include <string>
+#include "etcpal/cpp/log.h"
 #include "RdmDeviceInfo.h"
 #include "uid.h"
 #include "RDM_CmdC.h"
-#include "fakeway_log.h"
 
 class GadgetNotify
 {
@@ -53,7 +53,7 @@ public:
 
   static std::string DllVersion();
 
-  bool Startup(GadgetNotify& notify, FakewayLog& log);
+  bool Startup(GadgetNotify& notify, etcpal::Logger& log);
   void Shutdown();
 
   void SendRdmCommand(unsigned int gadget_id, unsigned int port_number, const RDM_CmdC& cmd, const void* cookie);

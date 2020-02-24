@@ -21,6 +21,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include "etcpal/common.h"
 #include "etcpal/pack.h"
 #include "etcpal/thread.h"
 #include "etcpal/lock.h"
@@ -28,32 +29,34 @@
 #include "rdmnet/defs.h"
 #include "rdmnet/version.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
+
 /**************************** Private constants ******************************/
 
 static const uint16_t kSupportedPIDList[NUM_SUPPORTED_PIDS] = {
     E120_IDENTIFY_DEVICE,    E120_SUPPORTED_PARAMETERS,     E120_DEVICE_INFO,
     E120_MANUFACTURER_LABEL, E120_DEVICE_MODEL_DESCRIPTION, E120_SOFTWARE_VERSION_LABEL,
     E120_DEVICE_LABEL,       E133_COMPONENT_SCOPE,          E133_SEARCH_DOMAIN,
-    E133_TCP_COMMS_STATUS,   E137_7_ENDPOINT_RESPONDERS,    E137_7_ENDPOINT_LIST,
+    E133_TCP_COMMS_STATUS,
 };
 
-/* clang-format off */
 static const uint8_t kDeviceInfo[] = {
     0x01, 0x00, /* RDM Protocol version */
     0xe1, 0x33, /* Device Model ID */
     0x71, 0x01, /* Product Category */
 
     /* Software Version ID */
-    RDMNET_VERSION_MAJOR, RDMNET_VERSION_MINOR,
-    RDMNET_VERSION_PATCH, (RDMNET_VERSION_BUILD > 0xff ? 0xff : RDMNET_VERSION_BUILD),
+    RDMNET_VERSION_MAJOR, RDMNET_VERSION_MINOR, RDMNET_VERSION_PATCH,
+    (RDMNET_VERSION_BUILD > 0xff ? 0xff : RDMNET_VERSION_BUILD),
 
     0x00, 0x00, /* DMX512 Footprint */
     0x00, 0x00, /* DMX512 Personality */
     0xff, 0xff, /* DMX512 Start Address */
     0x00, 0x00, /* Sub-device count */
-    0x00 /* Sensor count */
+    0x00        /* Sensor count */
 };
-/* clang-format on */
 
 #define DEVICE_LABEL_MAX_LEN 32
 #define DEFAULT_DEVICE_LABEL "My ETC RDMnet Device"
@@ -65,7 +68,6 @@ static const uint8_t kDeviceInfo[] = {
 
 static struct DefaultResponderPropertyData
 {
-  uint32_t endpoint_list_change_number;
   etcpal_thread_t identify_thread;
   bool identifying;
   char device_label[DEVICE_LABEL_MAX_LEN + 1];
@@ -108,10 +110,6 @@ void get_device_model_description(const uint8_t* param_data, uint8_t param_data_
                                   uint8_t* response_buf);
 void get_software_version_label(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
                                 uint8_t* response_buf);
-void get_endpoint_list(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
-                       uint8_t* response_buf);
-void get_endpoint_responders(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
-                             uint8_t* response_buf);
 
 /*************************** Function definitions ****************************/
 
@@ -119,8 +117,8 @@ void default_responder_init(const RdmnetScopeConfig* scope_config, const char* s
 {
   etcpal_rwlock_create(&prop_lock);
 
-  rdmnet_safe_strncpy(prop_data.device_label, DEFAULT_DEVICE_LABEL, DEVICE_LABEL_MAX_LEN);
-  rdmnet_safe_strncpy(prop_data.search_domain, search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
+  strcpy(prop_data.device_label, DEFAULT_DEVICE_LABEL);
+  strcpy(prop_data.search_domain, search_domain);
   prop_data.scope_config = *scope_config;
 }
 
@@ -148,7 +146,7 @@ void default_responder_get_search_domain(char* search_domain)
 {
   if (etcpal_rwlock_readlock(&prop_lock))
   {
-    rdmnet_safe_strncpy(search_domain, prop_data.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
+    strncpy(search_domain, prop_data.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
     etcpal_rwlock_readunlock(&prop_lock);
   }
 }
@@ -220,14 +218,10 @@ void default_responder_set(uint16_t pid, const uint8_t* param_data, uint8_t para
       case E120_MANUFACTURER_LABEL:
       case E120_DEVICE_MODEL_DESCRIPTION:
       case E120_SOFTWARE_VERSION_LABEL:
-      case E137_7_ENDPOINT_LIST:
-      case E137_7_ENDPOINT_RESPONDERS:
-        response->ack = false;
-        response->nack_reason = kRdmNRUnsupportedCommandClass;
+        RDMNET_SYNC_SEND_NACK(response, kRdmNRUnsupportedCommandClass);
         break;
       default:
-        response->ack = false;
-        response->nack_reason = kRdmNRUnknownPid;
+        RDMNET_SYNC_SEND_NACK(response, kRdmNRUnknownPid);
         break;
     }
     etcpal_rwlock_writeunlock(&prop_lock);
@@ -273,25 +267,17 @@ void default_responder_get(uint16_t pid, const uint8_t* param_data, uint8_t para
       case E120_SOFTWARE_VERSION_LABEL:
         get_software_version_label(param_data, param_data_len, response, response_buf);
         break;
-      case E137_7_ENDPOINT_LIST:
-        get_endpoint_list(param_data, param_data_len, response, response_buf);
-        break;
-      case E137_7_ENDPOINT_RESPONDERS:
-        get_endpoint_responders(param_data, param_data_len, response, response_buf);
-        break;
       default:
-        response->ack = false;
-        response->nack_reason = kRdmNRUnknownPid;
+        RDMNET_SYNC_SEND_NACK(response, kRdmNRUnknownPid);
         break;
     }
     etcpal_rwlock_readunlock(&prop_lock);
   }
-  return res;
 }
 
 void identify_thread(void* arg)
 {
-  (void)arg;
+  ETCPAL_UNUSED_ARG(arg);
 
   while (prop_data.identifying)
   {
@@ -312,13 +298,11 @@ void set_identify_device(const uint8_t* param_data, uint8_t param_data_len, Rdmn
       etcpal_thread_create(&prop_data.identify_thread, &ithread_params, identify_thread, NULL);
     }
     prop_data.identifying = new_identify_setting;
-    response->ack = true;
+    RDMNET_SYNC_SEND_ACK(response, 0);
   }
   else
   {
-    response->ack = false;
-    response->nack_reason = kRdmNRFormatError;
-    return false;
+    RDMNET_SYNC_SEND_NACK(response, kRdmNRFormatError);
   }
 }
 
@@ -330,13 +314,11 @@ void set_device_label(const uint8_t* param_data, uint8_t param_data_len, RdmnetS
       param_data_len = DEVICE_LABEL_MAX_LEN;
     memcpy(prop_data.device_label, param_data, param_data_len);
     prop_data.device_label[param_data_len] = '\0';
-    response->ack = true;
+    RDMNET_SYNC_SEND_ACK(response, 0);
   }
   else
   {
-    response->ack = false;
-    response->nack_reason = kRdmNRFormatError;
-    return false;
+    RDMNET_SYNC_SEND_NACK(response, kRdmNRFormatError);
   }
 }
 
@@ -376,21 +358,19 @@ void set_component_scope(const uint8_t* param_data, uint8_t param_data_len, Rdmn
       }
 
       RdmnetScopeConfig* existing_scope_config = &prop_data.scope_config;
-      rdmnet_safe_strncpy(existing_scope_config->scope, new_scope, E133_SCOPE_STRING_PADDED_LENGTH);
+      strcpy(existing_scope_config->scope, new_scope);
       existing_scope_config->has_static_broker_addr = have_new_static_broker;
       existing_scope_config->static_broker_addr = new_static_broker;
-      response->ack = true;
+      RDMNET_SYNC_SEND_ACK(response, 0);
     }
     else
     {
-      response->ack = false;
-      response->nack_reason = kRdmNRDataOutOfRange;
+      RDMNET_SYNC_SEND_NACK(response, kRdmNRDataOutOfRange);
     }
   }
   else
   {
-    response->ack = false;
-    response->nack_reason = kRdmNRFormatError;
+    RDMNET_SYNC_SEND_NACK(response, kRdmNRFormatError);
   }
 }
 
@@ -401,17 +381,16 @@ void set_search_domain(const uint8_t* param_data, uint8_t param_data_len, Rdmnet
     if (param_data_len > 0 || strcmp("", (char*)param_data) != 0)
     {
       strncpy(prop_data.search_domain, (char*)param_data, E133_DOMAIN_STRING_PADDED_LENGTH);
+      RDMNET_SYNC_SEND_ACK(response, 0);
     }
     else
     {
-      response->ack = false;
-      response->nack_reason = kRdmNRDataOutOfRange;
+      RDMNET_SYNC_SEND_NACK(response, kRdmNRDataOutOfRange);
     }
   }
   else
   {
-    response->ack = false;
-    response->nack_reason = kRdmNRFormatError;
+    RDMNET_SYNC_SEND_NACK(response, kRdmNRFormatError);
   }
 }
 
@@ -423,41 +402,37 @@ void set_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, Rdm
     {
       // Same scope as current
       prop_data.tcp_unhealthy_counter = 0;
-      response->ack = true;
+      RDMNET_SYNC_SEND_ACK(response, 0);
     }
     else
     {
-      response->ack = false;
-      response->nack_reason = kRdmNRUnknownScope;
+      RDMNET_SYNC_SEND_NACK(response, kRdmNRUnknownScope);
     }
   }
   else
   {
-    response->ack = false;
-    response->nack_reason = kRdmNRFormatError;
+    RDMNET_SYNC_SEND_NACK(response, kRdmNRFormatError);
   }
 }
 
 void get_identify_device(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
                          uint8_t* response_buf)
 {
-  (void)param_data;
-  (void)param_data_len;
+  ETCPAL_UNUSED_ARG(param_data);
+  ETCPAL_UNUSED_ARG(param_data_len);
 
-  response->ack = true;
   response_buf[0] = prop_data.identifying ? 1 : 0;
-  response->response_data_len = 1;
+  RDMNET_SYNC_SEND_ACK(response, 1);
 }
 
 void get_device_label(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
                       uint8_t* response_buf)
 {
-  (void)param_data;
-  (void)param_data_len;
+  ETCPAL_UNUSED_ARG(param_data);
+  ETCPAL_UNUSED_ARG(param_data_len);
 
-  response->ack = true;
   strncpy((char*)response_buf, prop_data.device_label, DEVICE_LABEL_MAX_LEN);
-  response->response_data_len = (uint8_t)strnlen(prop_data.device_label, DEVICE_LABEL_MAX_LEN);
+  RDMNET_SYNC_SEND_ACK(response, (uint8_t)strnlen(prop_data.device_label, DEVICE_LABEL_MAX_LEN));
 }
 
 void get_component_scope(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
@@ -473,8 +448,9 @@ void get_component_scope(const uint8_t* param_data, uint8_t param_data_len, Rdmn
       uint8_t* cur_ptr = response_buf;
       etcpal_pack_u16b(cur_ptr, 1);
       cur_ptr += 2;
-      rdmnet_safe_strncpy((char*)cur_ptr, scope_config->scope, E133_SCOPE_STRING_PADDED_LENGTH);
-      cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
+      strncpy((char*)cur_ptr, scope_config->scope, E133_SCOPE_STRING_PADDED_LENGTH);
+      cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH - 1;
+      *cur_ptr++ = 0;
 
       // Pack the static config data
       if (scope_config->has_static_broker_addr)
@@ -503,38 +479,34 @@ void get_component_scope(const uint8_t* param_data, uint8_t param_data_len, Rdmn
         memset(cur_ptr, 0, 4 + 16 + 2);
         cur_ptr += 4 + 16 + 2;
       }
-      response->ack = true;
-      response->response_data_len = (uint8_t)(cur_ptr - response_buf);
+      RDMNET_SYNC_SEND_ACK(response, (uint8_t)(cur_ptr - response_buf));
     }
     else
     {
-      response->ack = false;
-      response->nack_reason = kRdmNRDataOutOfRange;
+      RDMNET_SYNC_SEND_NACK(response, kRdmNRDataOutOfRange);
     }
   }
   else
   {
-    response->ack = false;
-    response->nack_reason = kRdmNRFormatError;
+    RDMNET_SYNC_SEND_NACK(response, kRdmNRFormatError);
   }
 }
 
 void get_search_domain(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
                        uint8_t* response_buf)
 {
-  (void)param_data;
-  (void)param_data_len;
+  ETCPAL_UNUSED_ARG(param_data);
+  ETCPAL_UNUSED_ARG(param_data_len);
 
-  response->ack = true;
   strncpy((char*)response_buf, prop_data.search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
-  response->response_data_len = (uint8_t)strlen(prop_data.search_domain);
+  RDMNET_SYNC_SEND_ACK(response, (uint8_t)strlen(prop_data.search_domain));
 }
 
 void get_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
                           uint8_t* response_buf)
 {
-  (void)param_data;
-  (void)param_data_len;
+  ETCPAL_UNUSED_ARG(param_data);
+  ETCPAL_UNUSED_ARG(param_data_len);
 
   uint8_t* cur_ptr = response_buf;
 
@@ -567,100 +539,62 @@ void get_tcp_comms_status(const uint8_t* param_data, uint8_t param_data_len, Rdm
   etcpal_pack_u16b(cur_ptr, prop_data.tcp_unhealthy_counter);
   cur_ptr += 2;
 
-  response->ack = true;
-  response->response_data_len = (uint8_t)(cur_ptr - response_buf);
+  RDMNET_SYNC_SEND_ACK(response, (uint8_t)(cur_ptr - response_buf));
 }
 
 void get_supported_parameters(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
                               uint8_t* response_buf)
 {
-  size_t list_index = 0;
   uint8_t* cur_ptr = response_buf;
-  size_t i;
 
-  (void)param_data;
-  (void)param_data_len;
+  ETCPAL_UNUSED_ARG(param_data);
+  ETCPAL_UNUSED_ARG(param_data_len);
 
-  for (i = 0; i < NUM_SUPPORTED_PIDS; ++i)
+  for (size_t i = 0; i < NUM_SUPPORTED_PIDS; ++i)
   {
     etcpal_pack_u16b(cur_ptr, kSupportedPIDList[i]);
     cur_ptr += 2;
   }
 
-  response->ack = true;
-  response->response_data_len = (uint8_t)(cur_ptr - response_buf);
+  RDMNET_SYNC_SEND_ACK(response, (uint8_t)(cur_ptr - response_buf));
 }
 
 void get_device_info(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
                      uint8_t* response_buf)
 {
-  (void)param_data;
-  (void)param_data_len;
+  ETCPAL_UNUSED_ARG(param_data);
+  ETCPAL_UNUSED_ARG(param_data_len);
 
-  response->ack = true;
   memcpy(response_buf, kDeviceInfo, sizeof kDeviceInfo);
-  response->response_data_len = sizeof kDeviceInfo;
+  RDMNET_SYNC_SEND_ACK(response, sizeof kDeviceInfo);
 }
 
 void get_manufacturer_label(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
                             uint8_t* response_buf)
 {
-  (void)param_data;
-  (void)param_data_len;
+  ETCPAL_UNUSED_ARG(param_data);
+  ETCPAL_UNUSED_ARG(param_data_len);
 
-  response->ack = true;
   strcpy((char*)response_buf, MANUFACTURER_LABEL);
-  response->response_data_len = sizeof(MANUFACTURER_LABEL) - 1;
+  RDMNET_SYNC_SEND_ACK(response, sizeof(MANUFACTURER_LABEL) - 1);
 }
 
 void get_device_model_description(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
                                   uint8_t* response_buf)
 {
-  (void)param_data;
-  (void)param_data_len;
+  ETCPAL_UNUSED_ARG(param_data);
+  ETCPAL_UNUSED_ARG(param_data_len);
 
-  response->ack = true;
   strcpy((char*)response_buf, DEVICE_MODEL_DESCRIPTION);
-  response->response_data_len = sizeof(DEVICE_MODEL_DESCRIPTION) - 1;
+  RDMNET_SYNC_SEND_ACK(response, sizeof(DEVICE_MODEL_DESCRIPTION) - 1);
 }
 
 void get_software_version_label(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
                                 uint8_t* response_buf)
 {
-  (void)param_data;
-  (void)param_data_len;
+  ETCPAL_UNUSED_ARG(param_data);
+  ETCPAL_UNUSED_ARG(param_data_len);
 
-  response->ack = true;
   strcpy((char*)response_buf, SOFTWARE_VERSION_LABEL);
-  response->response_data_len = sizeof(SOFTWARE_VERSION_LABEL) - 1;
-}
-
-void get_endpoint_list(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
-                       uint8_t* response_buf)
-{
-  (void)param_data;
-  (void)param_data_len;
-
-  // Hardcoded: no endpoints other than NULL_ENDPOINT. NULL_ENDPOINT is not reported in this response.
-  response->ack = true;
-  response->response_data_len = 4;
-  etcpal_pack_u32b(response_buf, prop_data.endpoint_list_change_number);
-}
-
-void get_endpoint_responders(const uint8_t* param_data, uint8_t param_data_len, RdmnetSyncRdmResponse* response,
-                             uint8_t* response_buf)
-{
-  (void)param_data;
-
-  if (param_data_len >= 2)
-  {
-    // We have no valid endpoints for this message
-    response->ack = false;
-    response->nack_reason = kRdmNREndpointNumberInvalid;
-  }
-  else
-  {
-    response->ack = false;
-    response->nack_reason = kRdmNRFormatError;
-  }
+  RDMNET_SYNC_SEND_ACK(response, sizeof(SOFTWARE_VERSION_LABEL) - 1);
 }

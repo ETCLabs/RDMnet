@@ -22,6 +22,7 @@
 #include <assert.h>
 #include <inttypes.h>
 #include "etcpal/acn_rlp.h"
+#include "etcpal/common.h"
 #include "etcpal/pack.h"
 #include "rdmnet/core.h"
 #include "rdmnet/private/broker_prot.h"
@@ -33,7 +34,7 @@
 
 static etcpal_error_t run_parse_state_machine(RdmnetMsgBuf* msg_buf);
 static size_t locate_tcp_preamble(RdmnetMsgBuf* msg_buf);
-static size_t consume_bad_block(PduBlockState* block, size_t datalen, parse_result_t* parse_res);
+static size_t consume_bad_block(PduBlockState* block, size_t data_len, parse_result_t* parse_res);
 static parse_result_t check_for_full_parse(parse_result_t prev_res, PduBlockState* block);
 
 // The parse functions are organized by protocol layer, and each one gets a subset of the overall
@@ -45,40 +46,40 @@ static size_t parse_rlp_block(RlpState* rlpstate, const uint8_t* data, size_t da
 
 // RDMnet layer
 static void initialize_rdmnet_message(RlpState* rlpstate, RdmnetMessage* msg, size_t pdu_data_len);
-static size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datalen, BrokerMessage* bmsg,
+static size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t data_len, BrokerMessage* bmsg,
                                  parse_result_t* result);
-static size_t parse_rpt_block(RptState* rstate, const uint8_t* data, size_t datalen, RptMessage* rmsg,
+static size_t parse_rpt_block(RptState* rstate, const uint8_t* data, size_t data_len, RptMessage* rmsg,
                               parse_result_t* result);
 
 // RPT layer
 static void initialize_rpt_message(RptState* rstate, RptMessage* rmsg, size_t pdu_data_len);
-static size_t parse_rdm_list(RdmListState* rlstate, const uint8_t* data, size_t datalen, RptRdmBufList* cmd_list,
+static size_t parse_rdm_list(RdmListState* rlstate, const uint8_t* data, size_t data_len, RptRdmBufList* cmd_list,
                              parse_result_t* result);
-static size_t parse_rpt_status(RptStatusState* rsstate, const uint8_t* data, size_t datalen, RptStatusMsg* smsg,
+static size_t parse_rpt_status(RptStatusState* rsstate, const uint8_t* data, size_t data_len, RptStatusMsg* smsg,
                                parse_result_t* result);
 
 // Broker layer
 static void initialize_broker_message(BrokerState* bstate, BrokerMessage* bmsg, size_t pdu_data_len);
 static void parse_client_connect_header(const uint8_t* data, BrokerClientConnectMsg* ccmsg);
-static size_t parse_client_connect(ClientConnectState* ccstate, const uint8_t* data, size_t datalen,
+static size_t parse_client_connect(ClientConnectState* ccstate, const uint8_t* data, size_t data_len,
                                    BrokerClientConnectMsg* ccmsg, parse_result_t* result);
-static size_t parse_client_entry_update(ClientEntryUpdateState* ceustate, const uint8_t* data, size_t datalen,
+static size_t parse_client_entry_update(ClientEntryUpdateState* ceustate, const uint8_t* data, size_t data_len,
                                         BrokerClientEntryUpdateMsg* ceumsg, parse_result_t* result);
-static size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, size_t datalen,
+static size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, size_t data_len,
                                         client_protocol_t* client_protocol, ClientEntryUnion* entry,
                                         parse_result_t* result);
-static size_t parse_client_list(ClientListState* clstate, const uint8_t* data, size_t datalen, BrokerClientList* clist,
+static size_t parse_client_list(ClientListState* clstate, const uint8_t* data, size_t data_len, BrokerClientList* clist,
                                 parse_result_t* result);
-static size_t parse_request_dynamic_uid_assignment(GenericListState* lstate, const uint8_t* data, size_t datalen,
+static size_t parse_request_dynamic_uid_assignment(GenericListState* lstate, const uint8_t* data, size_t data_len,
                                                    BrokerDynamicUidRequestList* rlist, parse_result_t* result);
-static size_t parse_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t* data, size_t datalen,
+static size_t parse_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t* data, size_t data_len,
                                                 BrokerDynamicUidAssignmentList* alist, parse_result_t* result);
-static size_t parse_fetch_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t* data, size_t datalen,
+static size_t parse_fetch_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t* data, size_t data_len,
                                                       BrokerFetchUidAssignmentList* alist, parse_result_t* result);
 
 // Helpers for parsing client list messages
-static size_t parse_rpt_client_list(ClientListState* clstate, const uint8_t* data, size_t datalen, RptClientList* clist,
-                                    parse_result_t* result);
+static size_t parse_rpt_client_list(ClientListState* clstate, const uint8_t* data, size_t data_len,
+                                    RptClientList* clist, parse_result_t* result);
 static RptClientEntry* alloc_next_rpt_client_entry(RptClientList* clist);
 static EptClientEntry* alloc_next_ept_client_entry(EptClientList* clist);
 
@@ -185,7 +186,7 @@ void initialize_rdmnet_message(RlpState* rlpstate, RdmnetMessage* msg, size_t pd
   }
 }
 
-size_t parse_rlp_block(RlpState* rlpstate, const uint8_t* data, size_t datalen, RdmnetMessage* msg,
+size_t parse_rlp_block(RlpState* rlpstate, const uint8_t* data, size_t data_len, RdmnetMessage* msg,
                        parse_result_t* result)
 {
   parse_result_t res = kPSNoData;
@@ -193,7 +194,7 @@ size_t parse_rlp_block(RlpState* rlpstate, const uint8_t* data, size_t datalen, 
 
   if (rlpstate->block.consuming_bad_block)
   {
-    bytes_parsed += consume_bad_block(&rlpstate->block, datalen, &res);
+    bytes_parsed += consume_bad_block(&rlpstate->block, data_len, &res);
   }
   else if (!rlpstate->block.parsed_header)
   {
@@ -205,12 +206,12 @@ size_t parse_rlp_block(RlpState* rlpstate, const uint8_t* data, size_t datalen, 
     {
       parse_err = true;
     }
-    else if (datalen >= ACN_RLP_HEADER_SIZE_EXT_LEN)
+    else if (data_len >= ACN_RLP_HEADER_SIZE_EXT_LEN)
     {
       AcnRootLayerPdu rlp;
 
       // Inheritance at the root layer is disallowed by E1.33.
-      if (acn_parse_root_layer_header(data, datalen, &rlp, NULL))
+      if (acn_parse_root_layer_header(data, data_len, &rlp, NULL))
       {
         // Update the data pointers and sizes.
         bytes_parsed += ACN_RLP_HEADER_SIZE_EXT_LEN;
@@ -218,13 +219,13 @@ size_t parse_rlp_block(RlpState* rlpstate, const uint8_t* data, size_t datalen, 
 
         // If this PDU indicates a length that takes it past the end of the block size from the
         // preamble, it is an error.
-        if (rlpstate->block.size_parsed + rlp.datalen <= rlpstate->block.block_size)
+        if (rlpstate->block.size_parsed + rlp.data_len <= rlpstate->block.block_size)
         {
           // Fill in the root layer data in the overall RdmnetMessage struct.
           msg->vector = rlp.vector;
           msg->sender_cid = rlp.sender_cid;
           rlpstate->block.parsed_header = true;
-          initialize_rdmnet_message(rlpstate, msg, rlp.datalen);
+          initialize_rdmnet_message(rlpstate, msg, rlp.data_len);
         }
         else
         {
@@ -242,7 +243,7 @@ size_t parse_rlp_block(RlpState* rlpstate, const uint8_t* data, size_t datalen, 
     if (parse_err)
     {
       // Parse error in the root layer header. We cannot keep parsing this block.
-      bytes_parsed += consume_bad_block(&rlpstate->block, datalen, &res);
+      bytes_parsed += consume_bad_block(&rlpstate->block, data_len, &res);
       RDMNET_LOG_WARNING("Protocol error encountered while parsing Root Layer PDU header.");
     }
   }
@@ -253,17 +254,17 @@ size_t parse_rlp_block(RlpState* rlpstate, const uint8_t* data, size_t datalen, 
     {
       case ACN_VECTOR_ROOT_BROKER:
         next_layer_bytes_parsed = parse_broker_block(&rlpstate->data.broker, &data[bytes_parsed],
-                                                     datalen - bytes_parsed, RDMNET_GET_BROKER_MSG(msg), &res);
+                                                     data_len - bytes_parsed, RDMNET_GET_BROKER_MSG(msg), &res);
         break;
       case ACN_VECTOR_ROOT_RPT:
-        next_layer_bytes_parsed = parse_rpt_block(&rlpstate->data.rpt, &data[bytes_parsed], datalen - bytes_parsed,
+        next_layer_bytes_parsed = parse_rpt_block(&rlpstate->data.rpt, &data[bytes_parsed], data_len - bytes_parsed,
                                                   RDMNET_GET_RPT_MSG(msg), &res);
         break;
       default:
-        next_layer_bytes_parsed = consume_bad_block(&rlpstate->data.unknown, datalen - bytes_parsed, &res);
+        next_layer_bytes_parsed = consume_bad_block(&rlpstate->data.unknown, data_len - bytes_parsed, &res);
         break;
     }
-    RDMNET_ASSERT(next_layer_bytes_parsed <= (datalen - bytes_parsed));
+    RDMNET_ASSERT(next_layer_bytes_parsed <= (data_len - bytes_parsed));
     RDMNET_ASSERT(rlpstate->block.size_parsed + next_layer_bytes_parsed <= rlpstate->block.block_size);
     rlpstate->block.size_parsed += next_layer_bytes_parsed;
     bytes_parsed += next_layer_bytes_parsed;
@@ -382,7 +383,7 @@ void initialize_broker_message(BrokerState* bstate, BrokerMessage* bmsg, size_t 
   }
 }
 
-size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datalen, BrokerMessage* bmsg,
+size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t data_len, BrokerMessage* bmsg,
                           parse_result_t* result)
 {
   parse_result_t res = kPSNoData;
@@ -390,7 +391,7 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
 
   if (bstate->block.consuming_bad_block)
   {
-    bytes_parsed += consume_bad_block(&bstate->block, datalen, &res);
+    bytes_parsed += consume_bad_block(&bstate->block, data_len, &res);
   }
   else if (!bstate->block.parsed_header)
   {
@@ -402,7 +403,7 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
     {
       parse_err = true;
     }
-    else if (datalen >= BROKER_PDU_HEADER_SIZE)
+    else if (data_len >= BROKER_PDU_HEADER_SIZE)
     {
       // We can parse a Broker PDU header.
       const uint8_t* cur_ptr = data;
@@ -430,14 +431,14 @@ size_t parse_broker_block(BrokerState* bstate, const uint8_t* data, size_t datal
     if (parse_err)
     {
       // Parse error in the Broker PDU header. We cannot keep parsing this block.
-      bytes_parsed += consume_bad_block(&bstate->block, datalen, &res);
+      bytes_parsed += consume_bad_block(&bstate->block, data_len, &res);
       RDMNET_LOG_WARNING("Protocol error encountered while parsing Broker PDU header.");
     }
   }
   if (bstate->block.parsed_header)
   {
     size_t next_layer_bytes_parsed = 0;
-    size_t remaining_len = datalen - bytes_parsed;
+    size_t remaining_len = data_len - bytes_parsed;
     switch (bmsg->vector)
     {
       case VECTOR_BROKER_CONNECT:
@@ -560,7 +561,7 @@ void parse_client_connect_header(const uint8_t* data, BrokerClientConnectMsg* cc
   ccmsg->connect_flags = *cur_ptr;
 }
 
-size_t parse_client_connect(ClientConnectState* ccstate, const uint8_t* data, size_t datalen,
+size_t parse_client_connect(ClientConnectState* ccstate, const uint8_t* data, size_t data_len,
                             BrokerClientConnectMsg* ccmsg, parse_result_t* result)
 {
   parse_result_t res = kPSNoData;
@@ -569,7 +570,7 @@ size_t parse_client_connect(ClientConnectState* ccstate, const uint8_t* data, si
   if (!ccstate->common_data_parsed)
   {
     // We want to wait until we can parse all of the Client Connect common data at once.
-    if (datalen < CLIENT_CONNECT_COMMON_FIELD_SIZE)
+    if (data_len < CLIENT_CONNECT_COMMON_FIELD_SIZE)
     {
       *result = kPSNoData;
       return 0;
@@ -583,9 +584,9 @@ size_t parse_client_connect(ClientConnectState* ccstate, const uint8_t* data, si
   if (ccstate->common_data_parsed)
   {
     size_t next_layer_bytes_parsed =
-        parse_single_client_entry(&ccstate->entry, &data[bytes_parsed], datalen - bytes_parsed,
+        parse_single_client_entry(&ccstate->entry, &data[bytes_parsed], data_len - bytes_parsed,
                                   &ccmsg->client_entry.client_protocol, &ccmsg->client_entry.data, &res);
-    RDMNET_ASSERT(next_layer_bytes_parsed <= (datalen - bytes_parsed));
+    RDMNET_ASSERT(next_layer_bytes_parsed <= (data_len - bytes_parsed));
     bytes_parsed += next_layer_bytes_parsed;
   }
 
@@ -593,7 +594,7 @@ size_t parse_client_connect(ClientConnectState* ccstate, const uint8_t* data, si
   return bytes_parsed;
 }
 
-size_t parse_client_entry_update(ClientEntryUpdateState* ceustate, const uint8_t* data, size_t datalen,
+size_t parse_client_entry_update(ClientEntryUpdateState* ceustate, const uint8_t* data, size_t data_len,
                                  BrokerClientEntryUpdateMsg* ceumsg, parse_result_t* result)
 {
   parse_result_t res = kPSNoData;
@@ -602,7 +603,7 @@ size_t parse_client_entry_update(ClientEntryUpdateState* ceustate, const uint8_t
   if (!ceustate->common_data_parsed)
   {
     // We want to wait until we can parse all of the Client Entry Update common data at once.
-    if (datalen < CLIENT_ENTRY_UPDATE_COMMON_FIELD_SIZE)
+    if (data_len < CLIENT_ENTRY_UPDATE_COMMON_FIELD_SIZE)
     {
       *result = kPSNoData;
       return 0;
@@ -616,9 +617,9 @@ size_t parse_client_entry_update(ClientEntryUpdateState* ceustate, const uint8_t
   if (ceustate->common_data_parsed)
   {
     size_t next_layer_bytes_parsed =
-        parse_single_client_entry(&ceustate->entry, &data[bytes_parsed], datalen - bytes_parsed,
+        parse_single_client_entry(&ceustate->entry, &data[bytes_parsed], data_len - bytes_parsed,
                                   &ceumsg->client_entry.client_protocol, &ceumsg->client_entry.data, &res);
-    RDMNET_ASSERT(next_layer_bytes_parsed <= (datalen - bytes_parsed));
+    RDMNET_ASSERT(next_layer_bytes_parsed <= (data_len - bytes_parsed));
     bytes_parsed += next_layer_bytes_parsed;
   }
 
@@ -630,7 +631,7 @@ size_t parse_client_entry_update(ClientEntryUpdateState* ceustate, const uint8_t
 #define GET_CLIENT_PROTOCOL_FROM_CENTRY_HEADER(dataptr) (client_protocol_t)(etcpal_unpack_u32b((dataptr) + 3))
 #define COPY_CID_FROM_CENTRY_HEADER(dataptr, cid) memcpy((cid)->data, (dataptr) + 7, ETCPAL_UUID_BYTES)
 
-size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, size_t datalen,
+size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, size_t data_len,
                                  client_protocol_t* client_protocol, ClientEntryUnion* entry, parse_result_t* result)
 {
   size_t bytes_parsed = 0;
@@ -638,7 +639,7 @@ size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, 
 
   if (cstate->client_protocol == kClientProtocolUnknown)
   {
-    if (datalen >= CLIENT_ENTRY_HEADER_SIZE)
+    if (data_len >= CLIENT_ENTRY_HEADER_SIZE)
     {
       // Parse the Client Entry header
       size_t cli_entry_pdu_len = GET_LENGTH_FROM_CENTRY_HEADER(data);
@@ -647,7 +648,7 @@ size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, 
       INIT_PDU_BLOCK_STATE(&cstate->entry_data, cli_entry_pdu_len - CLIENT_ENTRY_HEADER_SIZE);
       if (cli_entry_pdu_len > cstate->enclosing_block_size)
       {
-        bytes_parsed += consume_bad_block(&cstate->entry_data, datalen - bytes_parsed, &res);
+        bytes_parsed += consume_bad_block(&cstate->entry_data, data_len - bytes_parsed, &res);
       }
       else
       {
@@ -661,7 +662,7 @@ size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, 
   }
   if (cstate->client_protocol != kClientProtocolUnknown)
   {
-    size_t remaining_len = datalen - bytes_parsed;
+    size_t remaining_len = data_len - bytes_parsed;
     *client_protocol = cstate->client_protocol;
 
     if (cstate->entry_data.consuming_bad_block)
@@ -716,7 +717,7 @@ size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, 
   return bytes_parsed;
 }
 
-size_t parse_client_list(ClientListState* clstate, const uint8_t* data, size_t datalen, BrokerClientList* clist,
+size_t parse_client_list(ClientListState* clstate, const uint8_t* data, size_t data_len, BrokerClientList* clist,
                          parse_result_t* result)
 {
   parse_result_t res = kPSNoData;
@@ -724,13 +725,13 @@ size_t parse_client_list(ClientListState* clstate, const uint8_t* data, size_t d
 
   if (clstate->block.consuming_bad_block)
   {
-    bytes_parsed += consume_bad_block(&clstate->block, datalen, &res);
+    bytes_parsed += consume_bad_block(&clstate->block, data_len, &res);
   }
   else
   {
     if (clist->client_protocol == kClientProtocolUnknown)
     {
-      if (datalen >= CLIENT_ENTRY_HEADER_SIZE)
+      if (data_len >= CLIENT_ENTRY_HEADER_SIZE)
       {
         clist->client_protocol = GET_CLIENT_PROTOCOL_FROM_CENTRY_HEADER(data);
       }
@@ -738,17 +739,17 @@ size_t parse_client_list(ClientListState* clstate, const uint8_t* data, size_t d
 
     if (clist->client_protocol == kClientProtocolRPT)
     {
-      bytes_parsed += parse_rpt_client_list(clstate, data, datalen, BROKER_GET_RPT_CLIENT_LIST(clist), &res);
+      bytes_parsed += parse_rpt_client_list(clstate, data, data_len, BROKER_GET_RPT_CLIENT_LIST(clist), &res);
     }
     else if (clist->client_protocol == kClientProtocolEPT)
     {
       // TODO EPT
-      bytes_parsed += consume_bad_block(&clstate->block, datalen, &res);
+      bytes_parsed += consume_bad_block(&clstate->block, data_len, &res);
     }
     else if (clist->client_protocol != kClientProtocolUnknown)
     {
       RDMNET_LOG_WARNING("Dropping Client List message with unknown Client Protocol %d", clist->client_protocol);
-      bytes_parsed += consume_bad_block(&clstate->block, datalen, &res);
+      bytes_parsed += consume_bad_block(&clstate->block, data_len, &res);
     }
   }
 
@@ -756,7 +757,7 @@ size_t parse_client_list(ClientListState* clstate, const uint8_t* data, size_t d
   return bytes_parsed;
 }
 
-size_t parse_rpt_client_list(ClientListState* clstate, const uint8_t* data, size_t datalen, RptClientList* clist,
+size_t parse_rpt_client_list(ClientListState* clstate, const uint8_t* data, size_t data_len, RptClientList* clist,
                              parse_result_t* result)
 {
   size_t bytes_parsed = 0;
@@ -764,7 +765,7 @@ size_t parse_rpt_client_list(ClientListState* clstate, const uint8_t* data, size
 
   while (clstate->block.size_parsed < clstate->block.block_size)
   {
-    size_t remaining_len = datalen - bytes_parsed;
+    size_t remaining_len = data_len - bytes_parsed;
     const uint8_t* cur_data_ptr = &data[bytes_parsed];
     RptClientEntry* next_entry = NULL;
 
@@ -776,7 +777,7 @@ size_t parse_rpt_client_list(ClientListState* clstate, const uint8_t* data, size
         {
           RDMNET_LOG_WARNING("Dropping invalid Client List - first entry was RPT, but also contains client protocol %d",
                              GET_CLIENT_PROTOCOL_FROM_CENTRY_HEADER(cur_data_ptr));
-          bytes_parsed += consume_bad_block(&clstate->block, datalen, &res);
+          bytes_parsed += consume_bad_block(&clstate->block, data_len, &res);
           break;
         }
 
@@ -894,15 +895,15 @@ EptClientEntry* alloc_next_ept_client_entry(EptClientList* clist)
   }
 }
 
-size_t parse_request_dynamic_uid_assignment(GenericListState* lstate, const uint8_t* data, size_t datalen,
+size_t parse_request_dynamic_uid_assignment(GenericListState* lstate, const uint8_t* data, size_t data_len,
                                             BrokerDynamicUidRequestList* rlist, parse_result_t* result)
 {
-  RDMNET_UNUSED_ARG(rdmnet_log_params);
+  ETCPAL_UNUSED_ARG(rdmnet_log_params);
 
   size_t bytes_parsed = 0;
   parse_result_t res = kPSNoData;
 
-  while (datalen - bytes_parsed >= DYNAMIC_UID_REQUEST_PAIR_SIZE)
+  while (data_len - bytes_parsed >= DYNAMIC_UID_REQUEST_PAIR_SIZE)
   {
     // We are starting at the beginning of a new Request Dynamic UID Assignment PDU.
     // Make room for a new struct at the end of the current array.
@@ -949,15 +950,15 @@ size_t parse_request_dynamic_uid_assignment(GenericListState* lstate, const uint
   return bytes_parsed;
 }
 
-size_t parse_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t* data, size_t datalen,
+size_t parse_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t* data, size_t data_len,
                                          BrokerDynamicUidAssignmentList* alist, parse_result_t* result)
 {
-  RDMNET_UNUSED_ARG(rdmnet_log_params);
+  ETCPAL_UNUSED_ARG(rdmnet_log_params);
 
   size_t bytes_parsed = 0;
   parse_result_t res = kPSNoData;
 
-  while (datalen - bytes_parsed >= DYNAMIC_UID_MAPPING_SIZE)
+  while (data_len - bytes_parsed >= DYNAMIC_UID_MAPPING_SIZE)
   {
     // We are starting at the beginning of a new Dynamic UID Assignment PDU.
     // Make room for a new struct at the end of the current array.
@@ -1012,15 +1013,15 @@ size_t parse_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t
   return bytes_parsed;
 }
 
-size_t parse_fetch_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t* data, size_t datalen,
+size_t parse_fetch_dynamic_uid_assignment_list(GenericListState* lstate, const uint8_t* data, size_t data_len,
                                                BrokerFetchUidAssignmentList* alist, parse_result_t* result)
 {
   size_t bytes_parsed = 0;
   parse_result_t res = kPSNoData;
 
-  RDMNET_UNUSED_ARG(rdmnet_log_params);
+  ETCPAL_UNUSED_ARG(rdmnet_log_params);
 
-  while (datalen - bytes_parsed >= 6)
+  while (data_len - bytes_parsed >= 6)
   {
     // We are starting at the beginning of a new Fetch Dynamic UID Assignment PDU.
     // Make room for a new struct at the end of the current array.
@@ -1107,14 +1108,14 @@ void initialize_rpt_message(RptState* rstate, RptMessage* rmsg, size_t pdu_data_
   }
 }
 
-size_t parse_rpt_block(RptState* rstate, const uint8_t* data, size_t datalen, RptMessage* rmsg, parse_result_t* result)
+size_t parse_rpt_block(RptState* rstate, const uint8_t* data, size_t data_len, RptMessage* rmsg, parse_result_t* result)
 {
   size_t bytes_parsed = 0;
   parse_result_t res = kPSNoData;
 
   if (rstate->block.consuming_bad_block)
   {
-    bytes_parsed += consume_bad_block(&rstate->block, datalen, &res);
+    bytes_parsed += consume_bad_block(&rstate->block, data_len, &res);
   }
   else if (!rstate->block.parsed_header)
   {
@@ -1126,7 +1127,7 @@ size_t parse_rpt_block(RptState* rstate, const uint8_t* data, size_t datalen, Rp
     {
       parse_err = true;
     }
-    else if (datalen >= RPT_PDU_HEADER_SIZE)
+    else if (data_len >= RPT_PDU_HEADER_SIZE)
     {
       // We can parse an RPT PDU header.
       const uint8_t* cur_ptr = data;
@@ -1167,14 +1168,14 @@ size_t parse_rpt_block(RptState* rstate, const uint8_t* data, size_t datalen, Rp
 
     if (parse_err)
     {
-      bytes_parsed += consume_bad_block(&rstate->block, datalen, &res);
+      bytes_parsed += consume_bad_block(&rstate->block, data_len, &res);
       RDMNET_LOG_WARNING("Protocol error encountered while parsing RPT PDU header.");
     }
   }
   if (rstate->block.parsed_header)
   {
     size_t next_layer_bytes_parsed;
-    size_t remaining_len = datalen - bytes_parsed;
+    size_t remaining_len = data_len - bytes_parsed;
     switch (rmsg->vector)
     {
       case VECTOR_RPT_REQUEST:
@@ -1200,13 +1201,13 @@ size_t parse_rpt_block(RptState* rstate, const uint8_t* data, size_t datalen, Rp
   return bytes_parsed;
 }
 
-size_t parse_rdm_list(RdmListState* rlstate, const uint8_t* data, size_t datalen, RptRdmBufList* cmd_list,
+size_t parse_rdm_list(RdmListState* rlstate, const uint8_t* data, size_t data_len, RptRdmBufList* cmd_list,
                       parse_result_t* result)
 {
   parse_result_t res = kPSNoData;
   size_t bytes_parsed = 0;
 
-  if (!rlstate->parsed_request_notif_header && datalen >= REQUEST_NOTIF_PDU_HEADER_SIZE)
+  if (!rlstate->parsed_request_notif_header && data_len >= REQUEST_NOTIF_PDU_HEADER_SIZE)
   {
     const uint8_t* cur_ptr = data;
     size_t pdu_len = ACN_PDU_LENGTH(cur_ptr);
@@ -1217,7 +1218,7 @@ size_t parse_rdm_list(RdmListState* rlstate, const uint8_t* data, size_t datalen
     cur_ptr += 4;
     if (pdu_len != rlstate->block.block_size || (vect != VECTOR_REQUEST_RDM_CMD && vect != VECTOR_NOTIFICATION_RDM_CMD))
     {
-      bytes_parsed += consume_bad_block(&rlstate->block, datalen, &res);
+      bytes_parsed += consume_bad_block(&rlstate->block, data_len, &res);
     }
     else
     {
@@ -1230,13 +1231,13 @@ size_t parse_rdm_list(RdmListState* rlstate, const uint8_t* data, size_t datalen
   {
     if (rlstate->block.consuming_bad_block)
     {
-      bytes_parsed += consume_bad_block(&rlstate->block, datalen - bytes_parsed, &res);
+      bytes_parsed += consume_bad_block(&rlstate->block, data_len - bytes_parsed, &res);
     }
     else
     {
       while (rlstate->block.size_parsed < rlstate->block.block_size)
       {
-        size_t remaining_len = datalen - bytes_parsed;
+        size_t remaining_len = data_len - bytes_parsed;
 
         // We want to parse an entire RDM Command PDU at once.
         if (remaining_len >= RDM_CMD_PDU_MIN_SIZE)
@@ -1281,7 +1282,7 @@ size_t parse_rdm_list(RdmListState* rlstate, const uint8_t* data, size_t datalen
             RdmBuffer* rdm_buf = &cmd_list->rdm_buffers[cmd_list->num_rdm_buffers++];
             cur_ptr += 3;
             memcpy(rdm_buf->data, cur_ptr, rdm_cmd_pdu_len - 3);
-            rdm_buf->datalen = rdm_cmd_pdu_len - 3;
+            rdm_buf->data_len = rdm_cmd_pdu_len - 3;
             bytes_parsed += rdm_cmd_pdu_len;
             rlstate->block.size_parsed += rdm_cmd_pdu_len;
             if (rlstate->block.size_parsed >= rlstate->block.block_size)
@@ -1303,7 +1304,7 @@ size_t parse_rdm_list(RdmListState* rlstate, const uint8_t* data, size_t datalen
   return bytes_parsed;
 }
 
-size_t parse_rpt_status(RptStatusState* rsstate, const uint8_t* data, size_t datalen, RptStatusMsg* smsg,
+size_t parse_rpt_status(RptStatusState* rsstate, const uint8_t* data, size_t data_len, RptStatusMsg* smsg,
                         parse_result_t* result)
 {
   parse_result_t res = kPSNoData;
@@ -1311,7 +1312,7 @@ size_t parse_rpt_status(RptStatusState* rsstate, const uint8_t* data, size_t dat
 
   if (rsstate->block.consuming_bad_block)
   {
-    bytes_parsed += consume_bad_block(&rsstate->block, datalen, &res);
+    bytes_parsed += consume_bad_block(&rsstate->block, data_len, &res);
   }
   else if (!rsstate->block.parsed_header)
   {
@@ -1323,7 +1324,7 @@ size_t parse_rpt_status(RptStatusState* rsstate, const uint8_t* data, size_t dat
     {
       parse_err = true;
     }
-    else if (datalen >= RPT_STATUS_HEADER_SIZE)
+    else if (data_len >= RPT_STATUS_HEADER_SIZE)
     {
       // We can parse an RPT Status PDU header.
       const uint8_t* cur_ptr = data;
@@ -1348,13 +1349,13 @@ size_t parse_rpt_status(RptStatusState* rsstate, const uint8_t* data, size_t dat
     if (parse_err)
     {
       // Parse error in the RPT Status PDU header. We cannot keep parsing this block.
-      bytes_parsed += consume_bad_block(&rsstate->block, datalen, &res);
+      bytes_parsed += consume_bad_block(&rsstate->block, data_len, &res);
       RDMNET_LOG_WARNING("Protocol error encountered while parsing RPT Status PDU header.");
     }
   }
   if (rsstate->block.parsed_header)
   {
-    size_t remaining_len = datalen - bytes_parsed;
+    size_t remaining_len = data_len - bytes_parsed;
     switch (smsg->status_code)
     {
       case VECTOR_RPT_STATUS_INVALID_MESSAGE:
@@ -1451,10 +1452,10 @@ size_t locate_tcp_preamble(RdmnetMsgBuf* msg_buf)
   return 0;
 }
 
-size_t consume_bad_block(PduBlockState* block, size_t datalen, parse_result_t* parse_res)
+size_t consume_bad_block(PduBlockState* block, size_t data_len, parse_result_t* parse_res)
 {
   size_t size_remaining = block->block_size - block->size_parsed;
-  if (datalen >= size_remaining)
+  if (data_len >= size_remaining)
   {
     *parse_res = kPSFullBlockProtErr;
     block->size_parsed = block->block_size;
@@ -1463,9 +1464,9 @@ size_t consume_bad_block(PduBlockState* block, size_t datalen, parse_result_t* p
   else
   {
     *parse_res = kPSNoData;
-    block->size_parsed += datalen;
+    block->size_parsed += data_len;
     block->consuming_bad_block = true;
-    return datalen;
+    return data_len;
   }
 }
 

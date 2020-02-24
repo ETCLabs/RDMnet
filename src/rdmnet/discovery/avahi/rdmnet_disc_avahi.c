@@ -25,6 +25,7 @@
 #include <avahi-common/malloc.h>
 #include <avahi-common/simple-watch.h>
 
+#include "etcpal/common.h"
 #include "etcpal/lock.h"
 #include "rdmnet/core/util.h"
 #include "rdmnet/discovery/common.h"
@@ -89,7 +90,7 @@ static bool ipv6_valid(EtcPalIpAddr* ip);
 
 static void entry_group_callback(AvahiEntryGroup* g, AvahiEntryGroupState state, void* userdata)
 {
-  RDMNET_UNUSED_ARG(userdata);
+  ETCPAL_UNUSED_ARG(userdata);
 
   rdmnet_registered_broker_t broker_handle = &disc_state.broker_ref;
   if (!broker_handle)

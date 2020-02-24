@@ -62,7 +62,7 @@ void BrokerStaticAddGUI::addBrokerTriggered()
   etcpal::SockAddr brokerAddr(etcpal::IpAddr::FromString(ui.ipEdit->text().toStdString()),
                               static_cast<uint16_t>(ui.portEdit->text().toInt()));
 
-  if (!brokerAddr.ip().IsValid())
+  if (!brokerAddr.IsValid())
   {
     errorMessageBox.setText(tr("Invalid address format. Please use a correct input format."));
     errorMessageBox.exec();

@@ -25,9 +25,9 @@
 #include "etcpal/inet.h"
 #include "rdm/message.h"
 #include "rdmnet/defs.h"
-#include "rdmnet/client.h"
+#include "rdmnet/device.h"
 
-#define NUM_SUPPORTED_PIDS 12
+#define NUM_SUPPORTED_PIDS 10
 #define RDM_RESPONSE_BUF_LENGTH RDM_MAX_PDL
 
 #if (NUM_SUPPORTED_PIDS * 2 > RDM_RESPONSE_BUF_LENGTH)

@@ -16,9 +16,10 @@
  * This file is a part of RDMnet. For more information, go to:
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
+
 #include "broker_discovery.h"
 
-#include "rdmnet/core/util.h"
+#include "etcpal/common.h"
 
 /*************************** Function definitions ****************************/
 
@@ -102,12 +103,12 @@ etcpal::Error BrokerDiscoveryManager::RegisterBroker(const rdmnet::BrokerSetting
   my_info->num_listen_addrs = listen_addr_list.size();
   my_info->port = settings.listen_port;
 
-  RDMNET_MSVC_BEGIN_NO_DEP_WARNINGS()
+  ETCPAL_MSVC_BEGIN_NO_DEP_WARNINGS()
   strncpy(my_info->manufacturer, settings.dns.manufacturer.c_str(), E133_MANUFACTURER_STRING_PADDED_LENGTH);
   strncpy(my_info->model, settings.dns.model.c_str(), E133_MODEL_STRING_PADDED_LENGTH);
   strncpy(my_info->scope, settings.scope.c_str(), E133_SCOPE_STRING_PADDED_LENGTH);
   strncpy(my_info->service_name, settings.dns.service_instance_name.c_str(), E133_SERVICE_NAME_STRING_PADDED_LENGTH);
-  RDMNET_MSVC_END_NO_DEP_WARNINGS()
+  ETCPAL_MSVC_END_NO_DEP_WARNINGS()
 
   etcpal_error_t res = rdmnet_disc_register_broker(&cur_config_, &handle_);
   if (res == kEtcPalErrOk)

@@ -17,8 +17,8 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
+#include "etcpal/common.h"
 #include "rdmnet/core/client_entry.h"
-#include "rdmnet/core/util.h"
 
 bool create_rpt_client_entry(const EtcPalUuid* cid, const RdmUid* uid, rpt_client_type_t client_type,
                              const EtcPalUuid* binding_cid, RptClientEntry* entry)
@@ -39,10 +39,10 @@ bool create_rpt_client_entry(const EtcPalUuid* cid, const RdmUid* uid, rpt_clien
 bool create_ept_client_entry(const EtcPalUuid* cid, const EptSubProtocol* protocol_arr, size_t protocol_arr_size,
                              EptClientEntry* entry)
 {
-  RDMNET_UNUSED_ARG(cid);
-  RDMNET_UNUSED_ARG(protocol_arr);
-  RDMNET_UNUSED_ARG(protocol_arr_size);
-  RDMNET_UNUSED_ARG(entry);
+  ETCPAL_UNUSED_ARG(cid);
+  ETCPAL_UNUSED_ARG(protocol_arr);
+  ETCPAL_UNUSED_ARG(protocol_arr_size);
+  ETCPAL_UNUSED_ARG(entry);
   // TODO
   return false;
 }

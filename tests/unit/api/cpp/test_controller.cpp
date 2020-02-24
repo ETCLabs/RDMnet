@@ -17,46 +17,56 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#include "gmock/gmock.h"
 #include "rdmnet/cpp/controller.h"
+
+#include "gmock/gmock.h"
+#include "rdmnet_mock/common.h"
 
 class MockControllerNotifyHandler : public rdmnet::ControllerNotifyHandler
 {
   MOCK_METHOD(void, HandleConnectedToBroker,
-              (rdmnet::Controller & controller, rdmnet::ScopeHandle scope, const RdmnetClientConnectedInfo& info),
+              (rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle,
+               const RdmnetClientConnectedInfo& info),
               (override));
   MOCK_METHOD(void, HandleBrokerConnectFailed,
-              (rdmnet::Controller & controller, rdmnet::ScopeHandle scope, const RdmnetClientConnectFailedInfo& info),
+              (rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle,
+               const RdmnetClientConnectFailedInfo& info),
               (override));
   MOCK_METHOD(void, HandleDisconnectedFromBroker,
-              (rdmnet::Controller & controller, rdmnet::ScopeHandle scope, const RdmnetClientDisconnectedInfo& info),
+              (rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle,
+               const RdmnetClientDisconnectedInfo& info),
               (override));
   MOCK_METHOD(void, HandleClientListUpdate,
-              (rdmnet::Controller & controller, rdmnet::ScopeHandle scope, client_list_action_t list_action,
+              (rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle, client_list_action_t list_action,
                const RptClientList& list),
               (override));
   MOCK_METHOD(void, HandleRdmResponse,
-              (rdmnet::Controller & controller, rdmnet::ScopeHandle scope, const RdmnetRemoteRdmResponse& resp),
+              (rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle, const rdmnet::RdmResponse& resp),
               (override));
   MOCK_METHOD(void, HandleRptStatus,
-              (rdmnet::Controller & controller, rdmnet::ScopeHandle scope, const RdmnetRemoteRptStatus& status), (override));
+              (rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle, const rdmnet::RptStatus& status),
+              (override));
 };
 
 class MockControllerRdmHandler : public rdmnet::ControllerRdmCommandHandler
 {
-  MOCK_METHOD(void, HandleRdmCommand,
-              (rdmnet::Controller & controller, rdmnet::ScopeHandle scope, const RdmnetRemoteRdmCommand& cmd),
+  MOCK_METHOD(rdmnet::ResponseAction, HandleRdmCommand,
+              (rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle, const rdmnet::RdmCommand& cmd),
               (override));
-  MOCK_METHOD(void, HandleLlrpRdmCommand, (rdmnet::Controller & controller, const LlrpRemoteRdmCommand& cmd),
-              (override));
+  MOCK_METHOD(rdmnet::ResponseAction, HandleLlrpRdmCommand,
+              (rdmnet::ControllerHandle handle, const rdmnet::llrp::RdmCommand& cmd), (override));
 };
 
 class TestCppControllerApi : public testing::Test
 {
 protected:
-  void SetUp() override { ASSERT_EQ(rdmnet::Controller::Init(), kEtcPalErrOk); }
+  void SetUp() override
+  {
+    rdmnet_mock_common_reset();
+    ASSERT_EQ(rdmnet::Init(), kEtcPalErrOk);
+  }
 
-  void TearDown() override { rdmnet::Controller::Deinit(); }
+  void TearDown() override { rdmnet::Deinit(); }
 };
 
 TEST_F(TestCppControllerApi, StartupWithRdmData)
@@ -65,7 +75,8 @@ TEST_F(TestCppControllerApi, StartupWithRdmData)
   rdmnet::ControllerRdmData rdm("Test", "Test", "Test", "Test");
   rdmnet::Controller controller;
 
-  EXPECT_EQ(controller.Startup(notify, rdmnet::ControllerData::Default(0x6574), rdm), kEtcPalErrOk);
+  EXPECT_EQ(controller.Startup(notify, rdmnet::ControllerSettings(etcpal::Uuid::OsPreferred(), 0x6574), rdm),
+            kEtcPalErrOk);
 }
 
 TEST_F(TestCppControllerApi, StartupWithRdmHandler)
@@ -74,5 +85,6 @@ TEST_F(TestCppControllerApi, StartupWithRdmHandler)
   MockControllerRdmHandler rdm;
   rdmnet::Controller controller;
 
-  EXPECT_EQ(controller.Startup(notify, rdmnet::ControllerData::Default(0x6574), rdm), kEtcPalErrOk);
+  EXPECT_EQ(controller.Startup(notify, rdmnet::ControllerSettings(etcpal::Uuid::OsPreferred(), 0x6574), rdm),
+            kEtcPalErrOk);
 }

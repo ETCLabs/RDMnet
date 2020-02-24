@@ -18,10 +18,13 @@
  *****************************************************************************/
 
 #include "etcpal/thread.h"
-#include "rdmnet/core.h"
-#include "rdmnet/core/discovery.h"
-#include "rdmnet/core/util.h"
+#include "rdmnet/discovery.h"
 #include <stdio.h>
+#include <string.h>
+
+#ifdef _MSC_VER
+#pragma warning(disable: 4996)
+#endif
 
 void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info, void* context)
 {
@@ -107,7 +110,7 @@ void set_reg_callback_functions(RdmnetDiscBrokerCallbacks* callbacks)
 
 int main(int argc, char* argv[])
 {
-  rdmnet_core_init(NULL, NULL);
+  rdmnet_init(NULL, NULL);
 
   if (argc == 2 && strcmp("broker", argv[1]) == 0)
   {
@@ -116,9 +119,9 @@ int main(int argc, char* argv[])
 
     rdmnet_disc_init_broker_info(&config.my_info);
     etcpal_generate_v4_uuid(&config.my_info.cid);
-    rdmnet_safe_strncpy(config.my_info.service_name, "UNIQUE NAME", E133_SERVICE_NAME_STRING_PADDED_LENGTH);
-    rdmnet_safe_strncpy(config.my_info.model, "Broker prototype", E133_MODEL_STRING_PADDED_LENGTH);
-    rdmnet_safe_strncpy(config.my_info.manufacturer, "ETC", E133_MANUFACTURER_STRING_PADDED_LENGTH);
+    strcpy(config.my_info.service_name, "UNIQUE NAME");
+    strcpy(config.my_info.model, "Broker prototype");
+    strcpy(config.my_info.manufacturer, "ETC");
     config.my_info.port = 0x4567;
     set_reg_callback_functions(&config.callbacks);
     config.callback_context = NULL;
@@ -140,8 +143,8 @@ int main(int argc, char* argv[])
   {
     RdmnetScopeMonitorConfig config;
 
-    rdmnet_safe_strncpy(config.scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH);
-    rdmnet_safe_strncpy(config.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
+    strcpy(config.scope, E133_DEFAULT_SCOPE);
+    strcpy(config.domain, E133_DEFAULT_DOMAIN);
     set_monitor_callback_functions(&config.callbacks);
     config.callback_context = NULL;
 
@@ -163,6 +166,6 @@ int main(int argc, char* argv[])
     etcpal_thread_sleep(500);
   }
 
-  rdmnet_core_deinit();
+  rdmnet_deinit();
   return 0;
 }

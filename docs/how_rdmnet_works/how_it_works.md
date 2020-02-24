@@ -1,4 +1,4 @@
-# How RDMnet Works                                              {#how_it_works}
+# How RDMnet Works                                                                  {#how_it_works}
 
 This overview assumes a working familiarity with RDM. For more information about RDM, go to
 http://www.rdmprotocol.org.
@@ -45,19 +45,16 @@ Something that originates RDM commands using RPT and receives responses is calle
 called an **RPT Device**. When discussing RDMnet, these are often shortened to simply *controller*
 and *device*.
 
-An RPT message that carries an RDM commands is called a **Request**, and an RPT message that
-carries an RDM response is called a **Notification**.
-
 Let's update our diagram to reflect the proper terminology:
 
 ```
 RPT Controller            Broker              RPT Device
       ||                    ||                    ||
-      ||    RPT Request     ||                    ||
-      || -----------------> ||    RPT Request     ||
+      ||    RDM command     ||                    ||
+      || -----------------> ||    RDM command     ||
       ||                    || -----------------> ||
-      ||                    ||  RPT Notification  ||
-      ||  RPT Notification  || <----------------- ||
+      ||                    ||    RDM response    ||
+      ||    RDM response    || <----------------- ||
       || <----------------- ||                    ||
       ||                    ||                    ||
 ```
@@ -130,7 +127,7 @@ device will only connect to a broker with a matching scope.
 
 Scopes are UTF-8 strings from 1 to 62 bytes in length (this limitation is imposed by the
 requirements of DNS-SD, which is used to discover brokers). The standard requires all RDMnet
-equipment or software to be shipped with a scope configured to the string `"default"`, which
+equipment or software to be shipped with a scope configured to the string `default`, which
 simplifies initial setup and operation. Most applications will have no need to change the Scope
 from the default setting, but it can be useful for large-scale and advanced setups.
 
@@ -152,3 +149,4 @@ To learn more about specific aspects of RDMnet, take a look at one of the topic 
 * \subpage roles_and_addressing
 * \subpage devices_and_gateways
 * \subpage discovery
+* \subpage llrp

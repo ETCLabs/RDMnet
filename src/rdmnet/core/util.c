@@ -18,9 +18,10 @@
  *****************************************************************************/
 
 #include "rdmnet/core/util.h"
-#include "rdmnet/private/util.h"
 
 #include <string.h>
+#include "etcpal/common.h"
+#include "rdmnet/private/util.h"
 
 /*! \brief A wrapper for the C library function strncpy() which truncates safely.
  *
@@ -35,7 +36,7 @@ char* rdmnet_safe_strncpy(char* destination, const char* source, size_t num)
   if (!destination || num == 0)
     return NULL;
 
-  RDMNET_MSVC_NO_DEP_WRN strncpy(destination, source, num);
+  ETCPAL_MSVC_NO_DEP_WRN strncpy(destination, source, num);
   destination[num - 1] = '\0';
   return destination;
 }

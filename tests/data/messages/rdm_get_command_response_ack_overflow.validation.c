@@ -7,7 +7,7 @@ static RdmBuffer rdm_bufs[] = {
     .data = {
       0xcc, 0x01, 0x18, 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xcb, 0xa9, 0x87, 0x65, 0x43, 0x21, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x08, 0x02, 0x00, 0x06, 0x3d
     },
-    .datalen = 26
+    .data_len = 26
   },
   {
     .data = {
@@ -19,7 +19,7 @@ static RdmBuffer rdm_bufs[] = {
       0x00, 0x02,
       0x0c, 0x21
     },
-    .datalen = 113,
+    .data_len = 113,
   },
   {
     .data = {
@@ -31,7 +31,7 @@ static RdmBuffer rdm_bufs[] = {
       0x00, 0x20,
       0x0f, 0x59
     },
-    .datalen = 113
+    .data_len = 113
   },
   {
     .data = {
@@ -43,7 +43,7 @@ static RdmBuffer rdm_bufs[] = {
       0x00, 0x00,
       0x13, 0x79
     },
-    .datalen = 113
+    .data_len = 113
   }
 };
 

@@ -21,7 +21,11 @@
 #define RDMNET_PRIVATE_CONTROLLER_H_
 
 #include "rdmnet/controller.h"
-#include "rdmnet/client.h"
+#include "rdmnet/core/client.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum
 {
@@ -43,5 +47,12 @@ typedef struct RdmnetController
 
   void* callback_context;
 } RdmnetController;
+
+etcpal_error_t rdmnet_controller_init(void);
+void rdmnet_controller_deinit(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* RDMNET_PRIVATE_CONTROLLER_H_ */

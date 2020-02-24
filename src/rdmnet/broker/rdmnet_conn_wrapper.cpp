@@ -51,20 +51,18 @@ RdmnetConnWrapper::RdmnetConnWrapper()
   new_conn_config_.callbacks.msg_received = conncb_msg_received;
 }
 
-etcpal::Error RdmnetConnWrapper::Startup(const etcpal::Uuid& cid, const EtcPalLogParams* log_params)
+etcpal::Error RdmnetConnWrapper::Startup(const etcpal::Uuid& cid)
 {
+  // TODO check rdmnet_core_initialized()
   new_conn_config_.local_cid = cid.get();
-  // TODO honor a network interface configuration
-  return rdmnet_core_init(log_params, nullptr);
 }
 
 void RdmnetConnWrapper::Shutdown()
 {
-  rdmnet_core_deinit();
 }
 
 etcpal::Error RdmnetConnWrapper::CreateNewConnectionForSocket(etcpal_socket_t sock, const etcpal::SockAddr& addr,
-                                                               rdmnet_conn_t& new_handle)
+                                                              rdmnet_conn_t& new_handle)
 {
   etcpal_error_t create_res = rdmnet_connection_create(&new_conn_config_, &new_handle);
   if (create_res == kEtcPalErrOk)

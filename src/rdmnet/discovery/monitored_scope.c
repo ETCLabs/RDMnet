@@ -47,7 +47,7 @@ static RdmnetScopeMonitorRef* scope_ref_list;
 
 /*************************** Function definitions ****************************/
 
-etcpal_error_t monitored_scope_init()
+etcpal_error_t monitored_scope_init(void)
 {
 #if RDMNET_DYNAMIC_MEM
   return kEtcPalErrOk;
@@ -151,7 +151,7 @@ void scope_monitor_delete(RdmnetScopeMonitorRef* ref)
   FREE_SCOPE_MONITOR_REF(ref);
 }
 
-void scope_monitor_delete_all()
+void scope_monitor_delete_all(void)
 {
   if (!scope_ref_list)
     return;

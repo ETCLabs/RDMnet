@@ -75,7 +75,7 @@ bool get_llrp_destination_cid(const uint8_t* buf, size_t buflen, EtcPalUuid* des
   // Check the PDU length
   const uint8_t* cur_ptr = rlp.pdata;
   size_t llrp_pdu_len = ACN_PDU_LENGTH(cur_ptr);
-  if (llrp_pdu_len > rlp.datalen || llrp_pdu_len < LLRP_MIN_PDU_SIZE)
+  if (llrp_pdu_len > rlp.data_len || llrp_pdu_len < LLRP_MIN_PDU_SIZE)
     return false;
 
   // Jump to the position of the LLRP destination CID and fill it in
@@ -102,7 +102,7 @@ bool parse_llrp_message(const uint8_t* buf, size_t buflen, const LlrpMessageInte
 
   // Fill in the data we have and try to parse the LLRP PDU.
   msg->header.sender_cid = rlp.sender_cid;
-  return parse_llrp_pdu(rlp.pdata, rlp.datalen, interest, msg);
+  return parse_llrp_pdu(rlp.pdata, rlp.data_len, interest, msg);
 }
 
 bool parse_llrp_pdu(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest, LlrpMessage* msg)
@@ -263,7 +263,7 @@ bool parse_llrp_rdm_command(const uint8_t* buf, size_t buflen, RdmBuffer* cmd)
     return false;
 
   memcpy(cmd->data, cur_ptr, pdu_len - 3);
-  cmd->datalen = pdu_len - 3;
+  cmd->data_len = pdu_len - 3;
   return true;
 }
 
@@ -301,17 +301,17 @@ etcpal_error_t send_llrp_probe_request(etcpal_socket_t sock, uint8_t* buf, bool 
   AcnRootLayerPdu rlp;
   rlp.vector = ACN_VECTOR_ROOT_LLRP;
   rlp.sender_cid = header->sender_cid;
-  rlp.datalen = PROBE_REQUEST_RLP_DATA_MIN_SIZE + (probe_request->num_known_uids * 6);
+  rlp.data_len = PROBE_REQUEST_RLP_DATA_MIN_SIZE + (probe_request->num_known_uids * 6);
 
   // Pack the Root Layer PDU header0
   cur_ptr += acn_pack_root_layer_header(cur_ptr, (size_t)(buf_end - cur_ptr), &rlp);
 
   // Pack the LLRP header
-  cur_ptr += etcpal_pack_llrp_header(cur_ptr, rlp.datalen, VECTOR_LLRP_PROBE_REQUEST, header);
+  cur_ptr += etcpal_pack_llrp_header(cur_ptr, rlp.data_len, VECTOR_LLRP_PROBE_REQUEST, header);
 
   // Pack the Probe Request PDU header fields
   *cur_ptr = 0xf0;
-  ACN_PDU_PACK_EXT_LEN(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
+  ACN_PDU_PACK_EXT_LEN(cur_ptr, rlp.data_len - LLRP_HEADER_SIZE);
   cur_ptr += 3;
   *cur_ptr++ = VECTOR_PROBE_REQUEST_DATA;
   etcpal_pack_u16b(cur_ptr, probe_request->lower_uid.manu);
@@ -357,17 +357,17 @@ etcpal_error_t send_llrp_probe_reply(etcpal_socket_t sock, uint8_t* buf, bool ip
   AcnRootLayerPdu rlp;
   rlp.vector = ACN_VECTOR_ROOT_LLRP;
   rlp.sender_cid = header->sender_cid;
-  rlp.datalen = PROBE_REPLY_RLP_DATA_SIZE;
+  rlp.data_len = PROBE_REPLY_RLP_DATA_SIZE;
 
   // Pack the Root Layer PDU header
   cur_ptr += acn_pack_root_layer_header(cur_ptr, (size_t)(buf_end - cur_ptr), &rlp);
 
   // Pack the LLRP header
-  cur_ptr += etcpal_pack_llrp_header(cur_ptr, rlp.datalen, VECTOR_LLRP_PROBE_REPLY, header);
+  cur_ptr += etcpal_pack_llrp_header(cur_ptr, rlp.data_len, VECTOR_LLRP_PROBE_REPLY, header);
 
   // Pack the Probe Reply PDU
   *cur_ptr = 0xf0;
-  ACN_PDU_PACK_EXT_LEN(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
+  ACN_PDU_PACK_EXT_LEN(cur_ptr, rlp.data_len - LLRP_HEADER_SIZE);
   cur_ptr += 3;
   *cur_ptr++ = VECTOR_PROBE_REPLY_DATA;
   etcpal_pack_u16b(cur_ptr, target_info->uid.manu);
@@ -399,20 +399,20 @@ etcpal_error_t send_llrp_rdm(etcpal_socket_t sock, uint8_t* buf, const EtcPalSoc
   AcnRootLayerPdu rlp;
   rlp.vector = ACN_VECTOR_ROOT_LLRP;
   rlp.sender_cid = header->sender_cid;
-  rlp.datalen = RDM_CMD_RLP_DATA_MIN_SIZE + rdm_msg->datalen;
+  rlp.data_len = RDM_CMD_RLP_DATA_MIN_SIZE + rdm_msg->data_len;
 
   // Pack the Root Layer PDU header
   cur_ptr += acn_pack_root_layer_header(cur_ptr, (size_t)(buf_end - cur_ptr), &rlp);
 
   // Pack the LLRP header
-  cur_ptr += etcpal_pack_llrp_header(cur_ptr, rlp.datalen, VECTOR_LLRP_RDM_CMD, header);
+  cur_ptr += etcpal_pack_llrp_header(cur_ptr, rlp.data_len, VECTOR_LLRP_RDM_CMD, header);
 
   // Pack the RDM Command PDU
   *cur_ptr = 0xf0;
-  ACN_PDU_PACK_EXT_LEN(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
+  ACN_PDU_PACK_EXT_LEN(cur_ptr, rlp.data_len - LLRP_HEADER_SIZE);
   cur_ptr += 3;
-  memcpy(cur_ptr, rdm_msg->data, rdm_msg->datalen);
-  cur_ptr += rdm_msg->datalen;
+  memcpy(cur_ptr, rdm_msg->data, rdm_msg->data_len);
+  cur_ptr += rdm_msg->data_len;
 
   int send_res = etcpal_sendto(sock, buf, (size_t)(cur_ptr - buf), 0, dest_addr);
   if (send_res >= 0)

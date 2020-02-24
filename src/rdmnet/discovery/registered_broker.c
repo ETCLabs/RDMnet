@@ -133,7 +133,7 @@ void registered_broker_delete(RdmnetBrokerRegisterRef* rb)
   FREE_REGISTERED_BROKER(rb);
 }
 
-void registered_broker_delete_all()
+void registered_broker_delete_all(void)
 {
   if (!broker_ref_list)
     return;

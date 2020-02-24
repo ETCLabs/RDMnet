@@ -34,8 +34,8 @@ etcpal_mutex_t rdmnet_disc_lock;
 
 static etcpal_error_t start_monitoring_internal(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
                                                 int* platform_specific_error);
-static void stop_monitoring_all_scopes();
-static void unregister_all_brokers();
+static void stop_monitoring_all_scopes(void);
+static void unregister_all_brokers(void);
 
 // Other helpers
 static void process_broker_state(RdmnetBrokerRegisterRef* broker_ref);
@@ -70,7 +70,7 @@ etcpal_error_t rdmnet_disc_init(const RdmnetNetintConfig* netint_config)
 }
 
 /* Internal function to deinitialize the RDMnet discovery API. */
-void rdmnet_disc_deinit()
+void rdmnet_disc_deinit(void)
 {
   stop_monitoring_all_scopes();
   unregister_all_brokers();
@@ -186,7 +186,7 @@ void rdmnet_disc_stop_monitoring(rdmnet_scope_monitor_t handle)
  *
  * *This function will deadlock if called directly from an RDMnet discovery callback.*
  */
-void rdmnet_disc_stop_monitoring_all()
+void rdmnet_disc_stop_monitoring_all(void)
 {
   if (!rdmnet_core_initialized())
     return;
@@ -349,13 +349,13 @@ bool broker_info_is_valid(const RdmnetBrokerDiscInfo* info)
            strlen(info->model) == 0 || strlen(info->manufacturer) == 0);
 }
 
-void stop_monitoring_all_scopes()
+void stop_monitoring_all_scopes(void)
 {
   scope_monitor_for_each(rdmnet_disc_platform_stop_monitoring);
   scope_monitor_delete_all();
 }
 
-void unregister_all_brokers()
+void unregister_all_brokers(void)
 {
   registered_broker_for_each(rdmnet_disc_platform_unregister_broker);
   registered_broker_delete_all();

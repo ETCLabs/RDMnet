@@ -26,7 +26,7 @@
 #include "etcpal/pack.h"
 #include "rdm/responder.h"
 
-bool PhysicalEndpoint::QueueMessageForResponder(const RdmUid& uid, std::unique_ptr<RdmnetRemoteRdmCommand> cmd)
+bool PhysicalEndpoint::QueueMessageForResponder(const rdm::Uid& uid, std::unique_ptr<rdmnet::SavedRdmCommand> cmd)
 {
   etcpal::MutexGuard responder_guard(responder_lock_);
 
@@ -39,7 +39,7 @@ bool PhysicalEndpoint::QueueMessageForResponder(const RdmUid& uid, std::unique_p
   return false;
 }
 
-void PhysicalEndpoint::GotResponse(const RdmUid& uid, const RdmnetRemoteRdmCommand* cmd)
+void PhysicalEndpoint::GotResponse(const rdm::Uid& uid, const rdmnet::SavedRdmCommand* cmd)
 {
   // Cleanup the command from our queue
   etcpal::MutexGuard responder_guard(responder_lock_);
@@ -58,15 +58,15 @@ void PhysicalEndpoint::GotResponse(const RdmUid& uid, const RdmnetRemoteRdmComma
   }
 }
 
-bool PhysicalEndpoint::AddResponder(const RdmUid& uid)
+bool PhysicalEndpoint::AddResponder(const rdm::Uid& uid)
 {
   etcpal::MutexGuard responder_guard(responder_lock_);
-  auto insert_result = responders_.insert(std::make_pair(uid, std::vector<std::unique_ptr<RdmnetRemoteRdmCommand>>()));
+  auto insert_result = responders_.insert(std::make_pair(uid, std::vector<std::unique_ptr<rdmnet::SavedRdmCommand>>()));
   return insert_result.second;
 }
 
-bool PhysicalEndpoint::RemoveResponder(const RdmUid& uid,
-                                       std::vector<std::unique_ptr<RdmnetRemoteRdmCommand>>& orphaned_msgs)
+bool PhysicalEndpoint::RemoveResponder(const rdm::Uid& uid,
+                                       std::vector<std::unique_ptr<rdmnet::SavedRdmCommand>>& orphaned_msgs)
 {
   etcpal::MutexGuard responder_guard(responder_lock_);
 
@@ -91,23 +91,24 @@ void Fakeway::PrintVersion()
   std::cout << "or implied.\n";
 }
 
-bool Fakeway::Startup(const RdmnetScopeConfig& scope_config)
+bool Fakeway::Startup(const rdmnet::Scope& scope_config, etcpal::Logger& logger)
 {
   def_resp_ = std::make_unique<FakewayDefaultResponder>(scope_config, E133_DEFAULT_DOMAIN);
 
-  log_.Info("Using libGadget version %s", GadgetInterface::DllVersion().c_str());
-  if (!gadget_.Startup(*this, log_))
+  log_ = &logger;
+  log_->Info("Using libGadget version %s", GadgetInterface::DllVersion().c_str());
+  if (!gadget_.Startup(*this, logger))
     return false;
 
   // A typical hardware-locked device would use etcpal::Uuid::V3() to generate a CID that is
   // the same every time. But this example device is not locked to hardware, so a V4 UUID makes
   // more sense.
-  auto my_cid = etcpal::Uuid::V4();
-  auto res = rdmnet_->Startup(my_cid, scope_config, this, &log_);
+  auto my_settings = rdmnet::DeviceSettings(etcpal::Uuid::V4(), rdm::Uid::DynamicUidRequest(0x6574));
+  auto res = rdmnet_.Startup(*this, my_settings, scope_config);
   if (!res)
   {
     gadget_.Shutdown();
-    log_.Critical("Fatal: couldn't start RDMnet library due to error: '%s'", res.ToCString());
+    log_->Critical("Fatal: couldn't start RDMnet library due to error: '%s'", res.ToCString());
     return false;
   }
 
@@ -117,51 +118,42 @@ bool Fakeway::Startup(const RdmnetScopeConfig& scope_config)
 void Fakeway::Shutdown()
 {
   configuration_change_ = true;
-  rdmnet_->Shutdown();
+  rdmnet_.Shutdown();
   gadget_.Shutdown();
 
   physical_endpoints_.clear();
   physical_endpoint_rev_lookup_.clear();
 }
 
-void Fakeway::Connected(const RdmnetClientConnectedInfo& info)
+void Fakeway::HandleConnectedToBroker(rdmnet::DeviceHandle handle, const RdmnetClientConnectedInfo& info)
 {
   connected_to_broker_ = true;
-  if (log_.CanLog(ETCPAL_LOG_INFO))
+  if (log_->CanLog(ETCPAL_LOG_INFO))
   {
-    log_.Info("Connected to broker for scope %s at address %s", def_resp_->scope_config().scope,
-              etcpal::SockAddr(info.broker_addr).ToString().c_str());
+    log_->Info("Connected to broker for scope %s at address %s", def_resp_->scope_config().id_string().c_str(),
+               etcpal::SockAddr(info.broker_addr).ToString().c_str());
   }
 }
 
-void Fakeway::ConnectFailed(const RdmnetClientConnectFailedInfo& info)
+void Fakeway::HandleBrokerConnectFailed(rdmnet::DeviceHandle handle, const RdmnetClientConnectFailedInfo& info)
 {
   connected_to_broker_ = false;
-  log_.Info("Connect failed to broker for scope %s.%s", def_resp_->scope_config().scope,
-            info.will_retry ? " Retrying..." : "");
+  log_->Info("Connect failed to broker for scope %s.%s", def_resp_->scope_config().id_string().c_str(),
+             info.will_retry ? " Retrying..." : "");
 }
 
-void Fakeway::Disconnected(const RdmnetClientDisconnectedInfo& info)
+void Fakeway::HandleDisconnectedFromBroker(rdmnet::DeviceHandle handle, const RdmnetClientDisconnectedInfo& info)
 {
   connected_to_broker_ = false;
-  log_.Info("Disconnected from broker for scope %s.%s", def_resp_->scope_config().scope,
-            info.will_retry ? " Retrying..." : "");
+  log_->Info("Disconnected from broker for scope %s.%s", def_resp_->scope_config().id_string().c_str(),
+             info.will_retry ? " Retrying..." : "");
 }
 
-void Fakeway::RdmCommandReceived(const RdmnetRemoteRdmCommand& cmd)
+rdmnet::ResponseAction Fakeway::HandleRdmCommand(rdmnet::DeviceHandle handle, const rdmnet::RdmCommand& cmd)
 {
-  if (cmd.dest_endpoint == E133_NULL_ENDPOINT)
+  if (cmd.IsToDefaultResponder())
   {
-    RdmnetConfigChange change = RdmnetConfigChange::kNoChange;
-    ProcessDefRespRdmCommand(cmd, change);
-    if (change == RdmnetConfigChange::kScopeConfigChanged)
-    {
-      rdmnet_->ChangeScope(def_resp_->scope_config(), kRdmnetDisconnectRptReconfigure);
-    }
-    else if (change == RdmnetConfigChange::kSearchDomainChanged)
-    {
-      rdmnet_->ChangeSearchDomain(def_resp_->search_domain(), kRdmnetDisconnectRptReconfigure);
-    }
+    return ProcessDefRespRdmCommand(cmd.rdm_header(), cmd.data(), cmd.data_len());
   }
   else
   {
@@ -170,305 +162,84 @@ void Fakeway::RdmCommandReceived(const RdmnetRemoteRdmCommand& cmd)
     if (endpoint_pair != physical_endpoints_.end())
     {
       PhysicalEndpoint* endpoint = endpoint_pair->second.get();
-      auto saved_cmd = std::make_unique<RemoteRdmCommand>(cmd);
+      auto saved_cmd = std::make_unique<rdmnet::SavedRdmCommand>(cmd.Save());
       assert(saved_cmd);
 
       auto raw_saved_cmd = saved_cmd.get();
-      const RdmCommand& rdm = cmd.rdm;
-      if (endpoint->QueueMessageForResponder(rdm.dest_uid, std::move(saved_cmd)))
+      if (endpoint->QueueMessageForResponder(cmd.rdm_dest_uid(), std::move(saved_cmd)))
       {
-        RDM_CmdC to_send(static_cast<uint8_t>(rdm.command_class), rdm.param_id, rdm.subdevice, rdm.datalen, rdm.data,
-                         rdm.dest_uid.manu, rdm.dest_uid.id);
+        RDM_CmdC to_send(static_cast<uint8_t>(cmd.command_class()), cmd.param_id(), cmd.subdevice(), cmd.data_len(),
+                         cmd.data(), cmd.rdm_dest_uid().manufacturer_id(), cmd.rdm_dest_uid().device_id());
         gadget_.SendRdmCommand(endpoint->gadget_id(), endpoint->port_num(), to_send, raw_saved_cmd);
       }
       else
       {
-        SendRptStatus(cmd, kRptStatusUnknownRdmUid);
+        rdmnet_.SendRptStatus(cmd.Save(), kRptStatusUnknownRdmUid);
       }
     }
     else
     {
-      SendRptStatus(cmd, kRptStatusUnknownEndpoint);
+      rdmnet_.SendRptStatus(cmd.Save(), kRptStatusUnknownEndpoint);
     }
   }
+  return rdmnet::ResponseAction::DeferResponse();
 }
 
-void Fakeway::LlrpRdmCommandReceived(const LlrpRemoteRdmCommand& cmd)
+rdmnet::ResponseAction Fakeway::HandleLlrpRdmCommand(rdmnet::DeviceHandle handle, const rdmnet::llrp::RdmCommand& cmd)
 {
-  RdmnetConfigChange change = RdmnetConfigChange::kNoChange;
-  ProcessDefRespRdmCommand(cmd, change);
-  if (change == RdmnetConfigChange::kScopeConfigChanged)
-  {
-    rdmnet_->ChangeScope(def_resp_->scope_config(), kRdmnetDisconnectLlrpReconfigure);
-  }
-  else if (change == RdmnetConfigChange::kSearchDomainChanged)
-  {
-    rdmnet_->ChangeSearchDomain(def_resp_->search_domain(), kRdmnetDisconnectLlrpReconfigure);
-  }
+  return ProcessDefRespRdmCommand(cmd.rdm_header(), cmd.data(), cmd.data_len());
 }
 
-void Fakeway::ProcessDefRespRdmCommand(const RdmnetRemoteRdmCommand& cmd, RdmnetConfigChange& config_change)
+rdmnet::ResponseAction Fakeway::ProcessDefRespRdmCommand(const rdm::CommandHeader& cmd_header, const uint8_t* data,
+                                                         uint8_t data_len)
 {
-  const RdmCommand& rdm = cmd.rdm;
-  if (rdm.command_class != kRdmCCGetCommand && rdm.command_class != kRdmCCSetCommand)
+  if (!def_resp_->SupportsPid(cmd_header.param_id()))
   {
-    SendRptStatus(cmd, kRptStatusInvalidCommandClass);
-    log_.Warning("Device received RDM command with invalid command class %d", rdm.command_class);
+    log_->Debug("Sending NACK to Controller %04x:%08x for unknown PID 0x%04x",
+                cmd_header.source_uid().manufacturer_id(), cmd_header.source_uid().device_id(), cmd_header.param_id());
+    return rdmnet::ResponseAction::SendNack(kRdmNRUnknownPid);
   }
-  else if (!def_resp_->SupportsPid(rdm.param_id))
-  {
-    SendRptNack(cmd, E120_NR_UNKNOWN_PID);
-    log_.Debug("Sending NACK to Controller %04x:%08x for unknown PID 0x%04x", cmd.source_uid.manu, cmd.source_uid.id,
-               rdm.param_id);
-  }
-  else
-  {
-    std::vector<RdmResponse> resp_list;
-    uint16_t nack_reason;
-    if (ProcessDefRespRdmCommand(cmd.rdm, resp_list, nack_reason, config_change))
-    {
-      SendRptResponse(cmd, resp_list);
-      log_.Debug("ACK'ing SET_COMMAND for PID 0x%04x from Controller %04x:%08x", rdm.param_id, cmd.source_uid.manu,
-                 cmd.source_uid.id);
-    }
-    else
-    {
-      SendRptNack(cmd, nack_reason);
-      log_.Debug("Sending NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
-                 cmd.source_uid.manu, cmd.source_uid.id, rdm.param_id, nack_reason);
-    }
-  }
-}
-
-void Fakeway::ProcessDefRespRdmCommand(const LlrpRemoteRdmCommand& cmd, RdmnetConfigChange& config_change)
-{
-  const RdmCommand& rdm = cmd.rdm;
-  if (rdm.command_class != kRdmCCGetCommand && rdm.command_class != kRdmCCSetCommand)
-  {
-    SendLlrpNack(cmd, E120_NR_UNSUPPORTED_COMMAND_CLASS);
-    log_.Warning("Device received RDM command with invalid command class %d", rdm.command_class);
-  }
-  else if (!def_resp_->SupportsPid(rdm.param_id))
-  {
-    SendLlrpNack(cmd, E120_NR_UNKNOWN_PID);
-    log_.Debug("Sending NACK to Controller %04x:%08x for unknown PID 0x%04x", rdm.source_uid.manu, rdm.source_uid.id,
-               rdm.param_id);
-  }
-  else
-  {
-    std::vector<RdmResponse> resp_list;
-    uint16_t nack_reason;
-    if (ProcessDefRespRdmCommand(cmd.rdm, resp_list, nack_reason, config_change))
-    {
-      SendLlrpResponse(cmd, resp_list[0]);
-      log_.Debug("ACK'ing SET_COMMAND for PID 0x%04x from Controller %04x:%08x", rdm.param_id, rdm.source_uid.manu,
-                 rdm.source_uid.id);
-    }
-    else
-    {
-      SendLlrpNack(cmd, nack_reason);
-      log_.Debug("Sending NACK to Controller %04x:%08x for supported PID 0x%04x with reason 0x%04x",
-                 rdm.source_uid.manu, rdm.source_uid.id, rdm.param_id, nack_reason);
-    }
-  }
-}
-
-bool Fakeway::ProcessDefRespRdmCommand(const RdmCommand& cmd, std::vector<RdmResponse>& resp_list,
-                                       uint16_t& nack_reason, RdmnetConfigChange& config_change)
-{
-  bool res = false;
-  switch (cmd.command_class)
+  switch (cmd_header.command_class)
   {
     case kRdmCCSetCommand:
-      if (def_resp_->Set(cmd.param_id, cmd.data, cmd.datalen, nack_reason, config_change))
-      {
-        RdmResponse resp_data;
-        resp_data.source_uid = cmd.dest_uid;
-        resp_data.dest_uid = cmd.source_uid;
-        resp_data.transaction_num = cmd.transaction_num;
-        resp_data.resp_type = kRdmResponseTypeAck;
-        resp_data.msg_count = 0;
-        resp_data.subdevice = 0;
-        resp_data.command_class = kRdmCCSetCommandResponse;
-        resp_data.param_id = cmd.param_id;
-        resp_data.datalen = 0;
-
-        resp_list.push_back(resp_data);
-        res = true;
-      }
-      break;
+      return def_resp_->Set(cmd_header.param_id(), data, data_len);
     case kRdmCCGetCommand:
-    {
-      FakewayDefaultResponder::ParamDataList resp_data_list;
-
-      if (def_resp_->Get(cmd.param_id, cmd.data, cmd.datalen, resp_data_list, nack_reason) && !resp_data_list.empty())
-      {
-        RdmResponse resp_data;
-
-        resp_data.source_uid = cmd.dest_uid;
-        resp_data.dest_uid = cmd.source_uid;
-        resp_data.transaction_num = cmd.transaction_num;
-        resp_data.resp_type = resp_data_list.size() > 1 ? kRdmResponseTypeAckOverflow : kRdmResponseTypeAck;
-        resp_data.msg_count = 0;
-        resp_data.subdevice = 0;
-        resp_data.command_class = kRdmCCGetCommandResponse;
-        resp_data.param_id = cmd.param_id;
-
-        for (size_t i = 0; i < resp_data_list.size(); ++i)
-        {
-          memcpy(resp_data.data, resp_data_list[i].data, resp_data_list[i].datalen);
-          resp_data.datalen = resp_data_list[i].datalen;
-
-          if (i == resp_data_list.size() - 1)
-          {
-            resp_data.resp_type = kRdmResponseTypeAck;
-          }
-          resp_list.push_back(resp_data);
-        }
-        res = true;
-      }
-      break;
-    }
+      return def_resp_->Get(cmd_header.param_id(), data, data_len);
     default:
-      break;
+      return rdmnet::ResponseAction::SendNack(kRdmNRUnsupportedCommandClass);
   }
-  return res;
-}
-
-void Fakeway::SendRptStatus(const RdmnetRemoteRdmCommand& received_cmd, rpt_status_code_t status_code)
-{
-  RdmnetLocalRptStatus status;
-  rdmnet_create_status_from_command(&received_cmd, status_code, &status);
-
-  if (!rdmnet_->SendStatus(status))
-    log_.Error("Error sending RPT Status message to Broker.");
-}
-
-void Fakeway::SendRptNack(const RdmnetRemoteRdmCommand& received_cmd, uint16_t nack_reason)
-{
-  RdmResponse resp_data;
-  RDM_CREATE_NACK_FROM_COMMAND(&resp_data, &received_cmd.rdm, nack_reason);
-
-  std::vector<RdmResponse> resp_list(1, resp_data);
-  SendRptResponse(received_cmd, resp_list);
-}
-
-void Fakeway::SendRptResponse(const RdmnetRemoteRdmCommand& received_cmd, std::vector<RdmResponse>& resp_list)
-{
-  RdmnetLocalRdmResponse resp_to_send;
-  rdmnet_create_response_from_command(&received_cmd, resp_list.data(), resp_list.size(), &resp_to_send);
-
-  if (!rdmnet_->SendRdmResponse(resp_to_send))
-    log_.Error("Error sending RPT Notification message to Broker.");
-}
-
-void Fakeway::SendUnsolicitedRptResponse(uint16_t from_endpoint, std::vector<RdmResponse>& resp_list)
-{
-  RdmnetLocalRdmResponse resp_to_send;
-  rdmnet_create_unsolicited_response(from_endpoint, resp_list.data(), resp_list.size(), &resp_to_send);
-
-  if (!rdmnet_->SendRdmResponse(resp_to_send))
-    log_.Error("Error sending RPT Notification message to Broker.");
-}
-
-void Fakeway::SendLlrpNack(const LlrpRemoteRdmCommand& received_cmd, uint16_t nack_reason)
-{
-  RdmResponse resp_data;
-  RDM_CREATE_NACK_FROM_COMMAND(&resp_data, &received_cmd.rdm, nack_reason);
-  SendLlrpResponse(received_cmd, resp_data);
-}
-
-void Fakeway::SendLlrpResponse(const LlrpRemoteRdmCommand& received_cmd, const RdmResponse& resp)
-{
-  LlrpLocalRdmResponse resp_to_send;
-  rdmnet_create_llrp_response_from_command(&received_cmd, &resp, &resp_to_send);
-
-  if (!rdmnet_->SendLlrpResponse(resp_to_send))
-    log_.Error("Error sending RPT Notification message to Broker.");
 }
 
 /**************************************************************************************************/
 
 void Fakeway::HandleGadgetConnected(unsigned int gadget_id, unsigned int num_ports)
 {
-  {  // Write lock scope
-    etcpal::WriteGuard endpoint_write(endpoint_lock_);
+  etcpal::WriteGuard endpoint_write(endpoint_lock_);
 
-    std::vector<uint16_t> new_endpoints;
-    new_endpoints.reserve(num_ports);
-    for (uint8_t i = 0; i < num_ports; ++i)
-    {
-      uint16_t this_endpoint_id = next_endpoint_id_++;
-      physical_endpoints_.insert(
-          std::make_pair(this_endpoint_id, std::make_unique<PhysicalEndpoint>(this_endpoint_id, gadget_id, i + 1)));
-      new_endpoints.push_back(this_endpoint_id);
-    }
-    physical_endpoint_rev_lookup_.insert(std::make_pair(gadget_id, new_endpoints));
-    def_resp_->AddEndpoints(new_endpoints);
-  }
-
-  if (connected())
+  std::vector<uint16_t> new_endpoints;
+  new_endpoints.reserve(num_ports);
+  for (uint8_t i = 0; i < num_ports; ++i)
   {
-    FakewayDefaultResponder::ParamDataList param_data;
-    uint16_t nack_reason;
-    if (def_resp_->Get(E137_7_ENDPOINT_LIST_CHANGE, nullptr, 0, param_data, nack_reason) && param_data.size() == 1)
-    {
-      RdmResponse resp_data;
-      // src_uid gets filled in by the library
-      resp_data.dest_uid = kRdmnetControllerBroadcastUid;
-      resp_data.transaction_num = 0;
-      resp_data.resp_type = kRdmResponseTypeAck;
-      resp_data.msg_count = 0;
-      resp_data.subdevice = 0;
-      resp_data.command_class = kRdmCCGetCommandResponse;
-      resp_data.param_id = E137_7_ENDPOINT_LIST_CHANGE;
-      memcpy(resp_data.data, param_data[0].data, param_data[0].datalen);
-      resp_data.datalen = param_data[0].datalen;
-
-      std::vector<RdmResponse> resp_list(1, resp_data);
-      SendUnsolicitedRptResponse(E133_NULL_ENDPOINT, resp_list);
-      log_.Info("Local RDM Device connected. Sending ENDPOINT_LIST_CHANGE to all Controllers...");
-    }
+    uint16_t this_endpoint_id = next_endpoint_id_++;
+    physical_endpoints_.insert(
+        std::make_pair(this_endpoint_id, std::make_unique<PhysicalEndpoint>(this_endpoint_id, gadget_id, i + 1)));
+    new_endpoints.push_back(this_endpoint_id);
   }
+  physical_endpoint_rev_lookup_.insert(std::make_pair(gadget_id, new_endpoints));
+  rdmnet_.AddEndpoints(new_endpoints);
 }
 
 void Fakeway::HandleGadgetDisconnected(unsigned int gadget_id)
 {
-  {  // Write lock scope
-    etcpal::WriteGuard endpoint_write(endpoint_lock_);
+  etcpal::WriteGuard endpoint_write(endpoint_lock_);
 
-    auto endpoints = physical_endpoint_rev_lookup_.find(gadget_id);
-    if (endpoints != physical_endpoint_rev_lookup_.end())
-    {
-      for (auto endpoint : endpoints->second)
-        physical_endpoints_.erase(endpoint);
-      def_resp_->RemoveEndpoints(endpoints->second);
-      physical_endpoint_rev_lookup_.erase(endpoints);
-    }
-  }
-
-  if (connected())
+  auto endpoints = physical_endpoint_rev_lookup_.find(gadget_id);
+  if (endpoints != physical_endpoint_rev_lookup_.end())
   {
-    FakewayDefaultResponder::ParamDataList param_data;
-    uint16_t nack_reason;
-    if (def_resp_->Get(E137_7_ENDPOINT_LIST_CHANGE, nullptr, 0, param_data, nack_reason) && param_data.size() == 1)
-    {
-      RdmResponse resp_data;
-      // source_uid gets filled in by the library
-      resp_data.dest_uid = kRdmnetControllerBroadcastUid;
-      resp_data.transaction_num = 0;
-      resp_data.resp_type = kRdmResponseTypeAck;
-      resp_data.msg_count = 0;
-      resp_data.subdevice = 0;
-      resp_data.command_class = kRdmCCGetCommandResponse;
-      resp_data.param_id = E137_7_ENDPOINT_LIST_CHANGE;
-      memcpy(resp_data.data, param_data[0].data, param_data[0].datalen);
-      resp_data.datalen = param_data[0].datalen;
-
-      std::vector<RdmResponse> resp_list(1, resp_data);
-      SendUnsolicitedRptResponse(E133_NULL_ENDPOINT, resp_list);
-      log_.Info("Local RDM Device removed. Sending ENDPOINT_LIST_CHANGE to all Controllers...");
-    }
+    for (auto endpoint : endpoints->second)
+      physical_endpoints_.erase(endpoint);
+    rdmnet_.RemoveEndpoints(endpoints->second);
+    physical_endpoint_rev_lookup_.erase(endpoints);
   }
 }
 
@@ -484,37 +255,10 @@ void Fakeway::HandleNewRdmResponderDiscovered(unsigned int gadget_id, unsigned i
     if (endpt_pair != physical_endpoints_.end())
     {
       PhysicalEndpoint* endpt = endpt_pair->second.get();
-      RdmUid responder{info.manufacturer_id, info.device_id};
+      rdm::Uid responder(info.manufacturer_id, info.device_id);
       if (endpt->AddResponder(responder))
       {
-        def_resp_->AddResponderOnEndpoint(endpt_pair->first, responder);
-
-        if (connected())
-        {
-          FakewayDefaultResponder::ParamDataList param_data;
-          uint16_t nack_reason;
-          std::array<uint8_t, 2> endpt_buf;
-          etcpal_pack_u16b(endpt_buf.data(), endpt_pair->first);
-          if (def_resp_->Get(E137_7_ENDPOINT_RESPONDER_LIST_CHANGE, endpt_buf.data(), 2, param_data, nack_reason) &&
-              param_data.size() == 1)
-          {
-            RdmResponse resp_data;
-            // source_uid gets filled in by the library
-            resp_data.dest_uid = kRdmBroadcastUid;
-            resp_data.transaction_num = 0;
-            resp_data.resp_type = kRdmResponseTypeAck;
-            resp_data.msg_count = 0;
-            resp_data.subdevice = 0;
-            resp_data.command_class = kRdmCCGetCommandResponse;
-            resp_data.param_id = E137_7_ENDPOINT_RESPONDER_LIST_CHANGE;
-            memcpy(resp_data.data, param_data[0].data, param_data[0].datalen);
-            resp_data.datalen = param_data[0].datalen;
-
-            std::vector<RdmResponse> resp_list(1, resp_data);
-            SendUnsolicitedRptResponse(E133_NULL_ENDPOINT, resp_list);
-            log_.Info("RDM Responder discovered. Sending ENDPOINT_RESPONDER_LIST_CHANGE to all Controllers...");
-          }
-        }
+        rdmnet_.AddPhysicalResponders(endpt_pair->first, &responder, 1);
       }
     }
   }
@@ -531,26 +275,18 @@ void Fakeway::HandleRdmResponse(unsigned int gadget_id, unsigned int port_number
     auto endpt_pair = physical_endpoints_.find(dev_pair->second[port_number - 1]);
     if (endpt_pair != physical_endpoints_.end())
     {
-      const RdmnetRemoteRdmCommand* received_cmd = static_cast<const RdmnetRemoteRdmCommand*>(cookie);
-      RdmUid resp_src_uid{cmd.getManufacturerId(), cmd.getDeviceId()};
+      const rdmnet::SavedRdmCommand* received_cmd = static_cast<const rdmnet::SavedRdmCommand*>(cookie);
+      rdm::Uid resp_src_uid(cmd.getManufacturerId(), cmd.getDeviceId());
 
-      RdmResponse resp_data;
-      resp_data.source_uid = resp_src_uid;
-      resp_data.dest_uid = received_cmd ? received_cmd->source_uid : kRdmBroadcastUid;
-      resp_data.transaction_num = cmd.getTransactionNum();
-      resp_data.resp_type = static_cast<rdm_response_type_t>(cmd.getResponseType());
-      resp_data.msg_count = 0;
-      resp_data.subdevice = cmd.getSubdevice();
-      resp_data.command_class = static_cast<rdm_command_class_t>(cmd.getCommand());
-      resp_data.param_id = cmd.getParameter();
-      resp_data.datalen = cmd.getLength();
-      memcpy(resp_data.data, cmd.getBuffer(), resp_data.datalen);
-
-      std::vector<RdmResponse> resp_list(1, resp_data);
-      if (!received_cmd)
-        SendUnsolicitedRptResponse(endpt_pair->first, resp_list);
+      if (!received_cmd && cmd.getCommand() == E120_GET_COMMAND_RESPONSE)
+        rdmnet_.SendRdmUpdate(endpt_pair->first, resp_src_uid, cmd.getParameter(),
+                              reinterpret_cast<const uint8_t*>(cmd.getBuffer()), cmd.getLength());
+      else if (cmd.getResponseType() == E120_RESPONSE_TYPE_ACK)
+        rdmnet_.SendRdmAck(*received_cmd, reinterpret_cast<const uint8_t*>(cmd.getBuffer()), cmd.getLength());
+      else if (cmd.getResponseType() == E120_RESPONSE_TYPE_NACK_REASON)
+        rdmnet_.SendRdmNack(*received_cmd, etcpal_unpack_u16b(reinterpret_cast<const uint8_t*>(cmd.getBuffer())));
       else
-        SendRptResponse(*received_cmd, resp_list);
+        rdmnet_.SendRptStatus(*received_cmd, kRptStatusInvalidRdmResponse);
 
       if (received_cmd)
       {
@@ -563,7 +299,7 @@ void Fakeway::HandleRdmResponse(unsigned int gadget_id, unsigned int port_number
 void Fakeway::HandleRdmTimeout(unsigned int gadget_id, unsigned int port_number, const RDM_CmdC& orig_cmd,
                                const void* cookie)
 {
-  const RdmnetRemoteRdmCommand* received_cmd = static_cast<const RdmnetRemoteRdmCommand*>(cookie);
+  const rdmnet::SavedRdmCommand* received_cmd = static_cast<const rdmnet::SavedRdmCommand*>(cookie);
   if (received_cmd)
   {
     etcpal::ReadGuard endpoint_read(endpoint_lock_);
@@ -574,8 +310,8 @@ void Fakeway::HandleRdmTimeout(unsigned int gadget_id, unsigned int port_number,
       auto endpt_pair = physical_endpoints_.find(dev_pair->second[port_number - 1]);
       if (endpt_pair != physical_endpoints_.end())
       {
-        SendRptStatus(*received_cmd, kRptStatusRdmTimeout);
-        RdmUid resp_src_uid{orig_cmd.getManufacturerId(), orig_cmd.getDeviceId()};
+        rdmnet_.SendRptStatus(*received_cmd, kRptStatusRdmTimeout);
+        rdm::Uid resp_src_uid(orig_cmd.getManufacturerId(), orig_cmd.getDeviceId());
         endpt_pair->second->GotResponse(resp_src_uid, received_cmd);
       }
     }
@@ -593,44 +329,18 @@ void Fakeway::HandleRdmResponderLost(unsigned int gadget_id, unsigned int port_n
     if (endpt_pair != physical_endpoints_.end())
     {
       PhysicalEndpoint* endpt = endpt_pair->second.get();
-      std::vector<std::unique_ptr<RemoteRdmCommand>> orphaned_msgs;
-      RdmUid uid_lost{id.manu, id.id};
-      if (endpt->RemoveResponder(uid_lost, orphaned_msgs) && connected())
+      std::vector<std::unique_ptr<rdmnet::SavedRdmCommand>> orphaned_msgs;
+      rdm::Uid uid_lost(id.manu, id.id);
+      if (endpt->RemoveResponder(uid_lost, orphaned_msgs))
       {
         // Send RDM timeout responses for each queued command for this device.
         for (const auto& msg : orphaned_msgs)
         {
           if (msg)
-            SendRptStatus(*msg, kRptStatusRdmTimeout);
+            rdmnet_.SendRptStatus(*msg, kRptStatusRdmTimeout);
         }
         orphaned_msgs.clear();
-
-        def_resp_->RemoveResponderOnEndpoint(endpt_pair->first, uid_lost);
-
-        FakewayDefaultResponder::ParamDataList param_data;
-        uint16_t nack_reason;
-        std::array<uint8_t, 2> endpt_buf;
-        etcpal_pack_u16b(endpt_buf.data(), endpt_pair->first);
-        if (def_resp_->Get(E137_7_ENDPOINT_RESPONDER_LIST_CHANGE, endpt_buf.data(), 2, param_data, nack_reason) &&
-            param_data.size() == 1)
-        {
-          // Now send the responder list change message.
-          RdmResponse resp_data;
-          // src_uid gets filled in by the library
-          resp_data.dest_uid = kRdmBroadcastUid;
-          resp_data.transaction_num = 0;
-          resp_data.resp_type = kRdmResponseTypeAck;
-          resp_data.msg_count = 0;
-          resp_data.subdevice = 0;
-          resp_data.command_class = kRdmCCGetCommandResponse;
-          resp_data.param_id = E137_7_ENDPOINT_RESPONDER_LIST_CHANGE;
-          memcpy(resp_data.data, param_data[0].data, param_data[0].datalen);
-          resp_data.datalen = param_data[0].datalen;
-
-          std::vector<RdmResponse> resp_list(1, resp_data);
-          SendUnsolicitedRptResponse(E133_NULL_ENDPOINT, resp_list);
-          log_.Info("RDM Responder lost. Sending ENDPOINT_RESPONDER_LIST_CHANGE to all Controllers...");
-        }
+        rdmnet_.RemovePhysicalResponders(endpt_pair->first, &uid_lost, 1);
       }
     }
   }
@@ -638,5 +348,5 @@ void Fakeway::HandleRdmResponderLost(unsigned int gadget_id, unsigned int port_n
 
 void Fakeway::HandleGadgetLogMsg(const char* str)
 {
-  log_.Info(str);
+  log_->Info(str);
 }

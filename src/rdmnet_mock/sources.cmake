@@ -1,10 +1,10 @@
 # RDMnet mock source manifest
 
 set(RDMNET_MOCK_DISCOVERY_HEADERS
-  ${RDMNET_INCLUDE}/rdmnet_mock/core/discovery.h
+  ${RDMNET_INCLUDE}/rdmnet_mock/discovery.h
 )
 set(RDMNET_MOCK_DISCOVERY_SOURCES
-  ${RDMNET_SRC}/rdmnet_mock/discovery/mock_discovery.c
+  ${RDMNET_SRC}/rdmnet_mock/discovery.c
 )
 set(RDMNET_MOCK_CORE_HEADERS
   ${RDMNET_INCLUDE}/rdmnet_mock/core.h
@@ -25,9 +25,11 @@ set(RDMNET_MOCK_CORE_SOURCES
 )
 set(RDMNET_MOCK_API_HEADERS
   ${RDMNET_INCLUDE}/rdmnet_mock/controller.h
+  ${RDMNET_INCLUDE}/rdmnet_mock/common.h
 )
 set(RDMNET_MOCK_API_SOURCES
   ${RDMNET_SRC}/rdmnet_mock/controller.c
+  ${RDMNET_SRC}/rdmnet_mock/common.c
 )
 
 set(RDMNET_MOCK_ALL_HEADERS

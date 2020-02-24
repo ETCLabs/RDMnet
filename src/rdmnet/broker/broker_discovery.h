@@ -28,7 +28,7 @@
 #include <vector>
 #include "etcpal/cpp/error.h"
 #include "rdmnet/broker.h"
-#include "rdmnet/core/discovery.h"
+#include "rdmnet/discovery.h"
 
 /// A callback interface for notifications from the broker discovery subsystem.
 class BrokerDiscoveryNotify

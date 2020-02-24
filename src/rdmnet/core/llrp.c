@@ -94,7 +94,7 @@ static void llrp_socket_error(etcpal_error_t err);
 
 /*************************** Function definitions ****************************/
 
-etcpal_error_t rdmnet_llrp_init(void)
+etcpal_error_t llrp_init(void)
 {
   bool target_initted = false;
 #if RDMNET_DYNAMIC_MEM
@@ -120,31 +120,31 @@ etcpal_error_t rdmnet_llrp_init(void)
   llrp_prot_init();
 
   etcpal_error_t res;
-  target_initted = ((res = rdmnet_llrp_target_init()) == kEtcPalErrOk);
+  target_initted = ((res = llrp_target_init()) == kEtcPalErrOk);
 
 #if RDMNET_DYNAMIC_MEM
   if (res == kEtcPalErrOk)
-    manager_initted = ((res = rdmnet_llrp_manager_init()) == kEtcPalErrOk);
+    manager_initted = ((res = llrp_manager_init()) == kEtcPalErrOk);
 #endif
 
   if (res != kEtcPalErrOk)
   {
 #if RDMNET_DYNAMIC_MEM
     if (manager_initted)
-      rdmnet_llrp_manager_deinit();
+      llrp_manager_deinit();
 #endif
     if (target_initted)
-      rdmnet_llrp_target_deinit();
+      llrp_target_deinit();
   }
 
   return res;
 }
 
-void rdmnet_llrp_deinit(void)
+void llrp_deinit(void)
 {
-  rdmnet_llrp_target_deinit();
+  llrp_target_deinit();
 #if RDMNET_DYNAMIC_MEM
-  rdmnet_llrp_manager_deinit();
+  llrp_manager_deinit();
 #endif
 
   deinit_recv_socket(&state.manager_recvsock_ipv4);
@@ -153,12 +153,12 @@ void rdmnet_llrp_deinit(void)
   deinit_recv_socket(&state.target_recvsock_ipv6);
 }
 
-void rdmnet_llrp_tick(void)
+void llrp_tick(void)
 {
 #if RDMNET_DYNAMIC_MEM
-  rdmnet_llrp_manager_tick();
+  llrp_manager_tick();
 #endif
-  rdmnet_llrp_target_tick();
+  llrp_target_tick();
 }
 
 etcpal_error_t llrp_recv_netint_add(const RdmnetMcastNetintId* id, llrp_socket_t llrp_type)

@@ -28,7 +28,7 @@
 /* clang-format off */
 
 /*!
- * \addtogroup rdmnet_core_lib
+ * \addtogroup rdmnet_api_common
  * @{
  */
 

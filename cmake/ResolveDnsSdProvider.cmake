@@ -12,7 +12,7 @@ add_library(dnssd INTERFACE)
 
 # The platform-neutral portion of the discovery library.
 set(RDMNET_DISC_PUBLIC_HEADERS
-  ${RDMNET_INCLUDE}/rdmnet/core/discovery.h
+  ${RDMNET_INCLUDE}/rdmnet/discovery.h
 )
 set(RDMNET_DISC_COMMON_SOURCES
   ${RDMNET_SRC}/rdmnet/discovery/disc_common.h

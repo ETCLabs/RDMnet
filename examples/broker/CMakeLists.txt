@@ -9,7 +9,8 @@ add_executable(${BROKER_TARGET}
 
 set_target_properties(${BROKER_TARGET} PROPERTIES CXX_STANDARD 14 FOLDER examples)
 target_include_directories(${BROKER_TARGET} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src)
-target_link_libraries(${BROKER_TARGET} PRIVATE RDMnetBroker)
+#target_link_libraries(${BROKER_TARGET} PRIVATE RDMnetBroker)
+target_link_libraries(${BROKER_TARGET} PRIVATE RDMnet)
 if(WIN32)
   target_sources(${BROKER_TARGET} PRIVATE
     src/windows/main.cpp

@@ -20,6 +20,7 @@
 #include "rdmnet/core/broker_prot.h"
 
 #include <string.h>
+#include "etcpal/common.h"
 #include "etcpal/pack.h"
 #include "rdmnet/core/util.h"
 #include "rdmnet/private/connection.h"
@@ -48,45 +49,6 @@
 #define REQUEST_DYNAMIC_UIDS_DATA_SIZE(num_requests) (num_requests * DYNAMIC_UID_REQUEST_PAIR_SIZE)
 #define FETCH_UID_ASSIGNMENT_LIST_DATA_SIZE(num_uids) (num_uids * 6)
 #define DYNAMIC_UID_ASSIGNMENT_LIST_DATA_SIZE(num_mappings) (num_mappings * DYNAMIC_UID_MAPPING_SIZE)
-
-/**************************** Private variables ******************************/
-
-// clang-format off
-static const char* kRdmnetConnectStatusStrings[] =
-{
-  "Successful connection",
-  "Broker/Client scope mismatch",
-  "Broker connection capacity exceeded",
-  "Duplicate UID detected",
-  "Invalid client entry",
-  "Invalid UID"
-};
-#define NUM_CONNECT_STATUS_STRINGS (sizeof(kRdmnetConnectStatusStrings) / sizeof(const char*))
-
-static const char* kRdmnetDisconnectReasonStrings[] =
-{
-  "Component shutting down",
-  "Component can no longer support this connection",
-  "Hardware fault",
-  "Software fault",
-  "Software reset",
-  "Incorrect scope",
-  "Component reconfigured via RPT",
-  "Component reconfigured via LLRP",
-  "Component reconfigured by non-RDMnet method"
-};
-#define NUM_DISCONNECT_REASON_STRINGS (sizeof(kRdmnetDisconnectReasonStrings) / sizeof(const char*))
-
-static const char* kRdmnetDynamicUidStatusStrings[] =
-{
-  "Dynamic UID fetched or assigned successfully",
-  "The Dynamic UID request was malformed",
-  "The requested Dynamic UID was not found",
-  "This RID has already been assigned a Dynamic UID",
-  "Dynamic UID capacity exhausted"
-};
-#define NUM_DYNAMIC_UID_STATUS_STRINGS (sizeof(kRdmnetDynamicUidStatusStrings) / sizeof(const char*))
-// clang-format on
 
 /*********************** Private function prototypes *************************/
 
@@ -119,7 +81,7 @@ size_t pack_broker_header_with_rlp(const AcnRootLayerPdu* rlp, uint8_t* buf, siz
   cur_ptr += data_size;
   buflen -= data_size;
 
-  PACK_BROKER_HEADER(rlp->datalen, vector, cur_ptr);
+  PACK_BROKER_HEADER(rlp->data_len, vector, cur_ptr);
   cur_ptr += BROKER_PDU_HEADER_SIZE;
   return (size_t)(cur_ptr - buf);
 }
@@ -148,7 +110,7 @@ etcpal_error_t send_broker_header(RdmnetConnection* conn, const AcnRootLayerPdu*
     return (etcpal_error_t)send_res;
 
   // Pack and send the Broker PDU header
-  PACK_BROKER_HEADER(rlp->datalen, vector, buf);
+  PACK_BROKER_HEADER(rlp->data_len, vector, buf);
   send_res = etcpal_send(conn->sock, buf, BROKER_PDU_HEADER_SIZE, 0);
   if (send_res < 0)
     return (etcpal_error_t)send_res;
@@ -190,7 +152,7 @@ etcpal_error_t send_client_connect(RdmnetConnection* conn, const BrokerClientCon
   AcnRootLayerPdu rlp;
   rlp.sender_cid = conn->local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
-  rlp.datalen = calc_client_connect_len(data);
+  rlp.data_len = calc_client_connect_len(data);
 
   etcpal_error_t res = send_broker_header(conn, &rlp, buf, CLIENT_CONNECT_COMMON_FIELD_SIZE, VECTOR_BROKER_CONNECT);
   if (res != kEtcPalErrOk)
@@ -213,7 +175,7 @@ etcpal_error_t send_client_connect(RdmnetConnection* conn, const BrokerClientCon
   const EtcPalUuid* cid =
       (IS_RPT_CLIENT_ENTRY(&data->client_entry) ? &(GET_RPT_CLIENT_ENTRY(&data->client_entry)->cid)
                                                 : &(GET_EPT_CLIENT_ENTRY(&data->client_entry)->cid));
-  PACK_CLIENT_ENTRY_HEADER(rlp.datalen - (BROKER_PDU_HEADER_SIZE + CLIENT_CONNECT_COMMON_FIELD_SIZE),
+  PACK_CLIENT_ENTRY_HEADER(rlp.data_len - (BROKER_PDU_HEADER_SIZE + CLIENT_CONNECT_COMMON_FIELD_SIZE),
                            data->client_entry.client_protocol, cid, buf);
   send_res = etcpal_send(conn->sock, buf, CLIENT_ENTRY_HEADER_SIZE, 0);
 
@@ -275,7 +237,7 @@ size_t broker_pack_connect_reply(uint8_t* buf, size_t buflen, const EtcPalUuid* 
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
-  rlp.datalen = BROKER_PDU_HEADER_SIZE + BROKER_CONNECT_REPLY_DATA_SIZE;
+  rlp.data_len = BROKER_PDU_HEADER_SIZE + BROKER_CONNECT_REPLY_DATA_SIZE;
 
   // Try to pack all the header data
   uint8_t* cur_ptr = buf;
@@ -319,7 +281,7 @@ etcpal_error_t broker_send_connect_reply(rdmnet_conn_t handle, const EtcPalUuid*
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
-  rlp.datalen = BROKER_PDU_HEADER_SIZE + BROKER_CONNECT_REPLY_DATA_SIZE;
+  rlp.data_len = BROKER_PDU_HEADER_SIZE + BROKER_CONNECT_REPLY_DATA_SIZE;
 
   RdmnetConnection* conn;
   etcpal_error_t res = rdmnet_start_message(handle, &conn);
@@ -378,7 +340,7 @@ etcpal_error_t broker_send_fetch_client_list(rdmnet_conn_t handle, const EtcPalU
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
-  rlp.datalen = BROKER_PDU_HEADER_SIZE;
+  rlp.data_len = BROKER_PDU_HEADER_SIZE;
 
   RdmnetConnection* conn;
   etcpal_error_t res = rdmnet_start_message(handle, &conn);
@@ -433,7 +395,7 @@ size_t broker_pack_rpt_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
-  rlp.datalen = BROKER_PDU_HEADER_SIZE + RPT_CLIENT_LIST_SIZE(num_client_entries);
+  rlp.data_len = BROKER_PDU_HEADER_SIZE + RPT_CLIENT_LIST_SIZE(num_client_entries);
 
   uint8_t* cur_ptr = buf;
   uint8_t* buf_end = buf + buflen;
@@ -489,12 +451,12 @@ size_t broker_pack_rpt_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid
 size_t broker_pack_ept_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
                                    const EptClientEntry* client_entries, size_t num_client_entries)
 {
-  RDMNET_UNUSED_ARG(buf);
-  RDMNET_UNUSED_ARG(buflen);
-  RDMNET_UNUSED_ARG(local_cid);
-  RDMNET_UNUSED_ARG(vector);
-  RDMNET_UNUSED_ARG(client_entries);
-  RDMNET_UNUSED_ARG(num_client_entries);
+  ETCPAL_UNUSED_ARG(buf);
+  ETCPAL_UNUSED_ARG(buflen);
+  ETCPAL_UNUSED_ARG(local_cid);
+  ETCPAL_UNUSED_ARG(vector);
+  ETCPAL_UNUSED_ARG(client_entries);
+  ETCPAL_UNUSED_ARG(num_client_entries);
   // TODO
   return 0;
 }
@@ -523,7 +485,7 @@ etcpal_error_t broker_send_request_dynamic_uids(rdmnet_conn_t handle, const EtcP
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
-  rlp.datalen = BROKER_PDU_HEADER_SIZE + REQUEST_DYNAMIC_UIDS_DATA_SIZE(num_requests);
+  rlp.data_len = BROKER_PDU_HEADER_SIZE + REQUEST_DYNAMIC_UIDS_DATA_SIZE(num_requests);
 
   RdmnetConnection* conn;
   etcpal_error_t res = rdmnet_start_message(handle, &conn);
@@ -592,7 +554,7 @@ size_t broker_pack_uid_assignment_list(uint8_t* buf, size_t buflen, const EtcPal
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
-  rlp.datalen = BROKER_PDU_HEADER_SIZE + DYNAMIC_UID_ASSIGNMENT_LIST_DATA_SIZE(num_mappings);
+  rlp.data_len = BROKER_PDU_HEADER_SIZE + DYNAMIC_UID_ASSIGNMENT_LIST_DATA_SIZE(num_mappings);
 
   uint8_t* cur_ptr = buf;
   uint8_t* buf_end = buf + buflen;
@@ -645,7 +607,7 @@ etcpal_error_t broker_send_fetch_uid_assignment_list(rdmnet_conn_t handle, const
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
-  rlp.datalen = BROKER_PDU_HEADER_SIZE + FETCH_UID_ASSIGNMENT_LIST_DATA_SIZE(num_uids);
+  rlp.data_len = BROKER_PDU_HEADER_SIZE + FETCH_UID_ASSIGNMENT_LIST_DATA_SIZE(num_uids);
 
   RdmnetConnection* conn;
   etcpal_error_t res = rdmnet_start_message(handle, &conn);
@@ -686,7 +648,7 @@ etcpal_error_t send_disconnect(RdmnetConnection* conn, const BrokerDisconnectMsg
   AcnRootLayerPdu rlp;
   rlp.sender_cid = conn->local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
-  rlp.datalen = BROKER_DISCONNECT_MSG_SIZE;
+  rlp.data_len = BROKER_DISCONNECT_MSG_SIZE;
 
   uint8_t buf[ACN_RLP_HEADER_SIZE_EXT_LEN];
   etcpal_error_t res = send_broker_header(conn, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_DISCONNECT);
@@ -709,7 +671,7 @@ etcpal_error_t send_null(RdmnetConnection* conn)
   AcnRootLayerPdu rlp;
   rlp.sender_cid = conn->local_cid;
   rlp.vector = ACN_VECTOR_ROOT_BROKER;
-  rlp.datalen = BROKER_NULL_MSG_SIZE;
+  rlp.data_len = BROKER_NULL_MSG_SIZE;
 
   uint8_t buf[ACN_RLP_HEADER_SIZE_EXT_LEN];
   etcpal_error_t res = send_broker_header(conn, &rlp, buf, ACN_RLP_HEADER_SIZE_EXT_LEN, VECTOR_BROKER_NULL);
@@ -718,51 +680,4 @@ etcpal_error_t send_null(RdmnetConnection* conn)
     etcpal_timer_reset(&conn->send_timer);
 
   return res;
-}
-
-/*!
- * \brief Get a string description of an RDMnet connect status code.
- *
- * Connect status codes are returned by a broker in a connect reply message after a client attempts
- * to connect.
- *
- * \param[in] code Connect status code.
- * \return String, or NULL if code is invalid.
- */
-const char* rdmnet_connect_status_to_string(rdmnet_connect_status_t code)
-{
-  if (code >= 0 && code < NUM_CONNECT_STATUS_STRINGS)
-    return kRdmnetConnectStatusStrings[code];
-  return NULL;
-}
-
-/*!
- * \brief Get a string description of an RDMnet disconnect reason code.
- *
- * Disconnect reason codes are sent by a broker or client that is disconnecting.
- *
- * \param[in] code Disconnect reason code.
- * \return String, or NULL if code is invalid.
- */
-const char* rdmnet_disconnect_reason_to_string(rdmnet_disconnect_reason_t code)
-{
-  if (code >= 0 && code < NUM_DISCONNECT_REASON_STRINGS)
-    return kRdmnetDisconnectReasonStrings[code];
-  return NULL;
-}
-
-/*!
- * \brief Get a string description of an RDMnet Dynamic UID status code.
- *
- * Dynamic UID status codes are returned by a broker in response to a request for dynamic UIDs by a
- * client.
- *
- * \param[in] code Dynamic UID status code.
- * \return String, or NULL if code is invalid.
- */
-const char* rdmnet_rdmnet_dynamic_uid_status_to_string(rdmnet_dynamic_uid_status_t code)
-{
-  if (code >= 0 && code < NUM_DYNAMIC_UID_STATUS_STRINGS)
-    return kRdmnetDynamicUidStatusStrings[code];
-  return NULL;
 }

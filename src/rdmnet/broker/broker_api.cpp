@@ -24,10 +24,12 @@
 
 /*************************** Function definitions ****************************/
 
+/// Constructs a broker instance. Broker is not running until Broker::Startup() is called.
 rdmnet::Broker::Broker() : core_(std::make_unique<BrokerCore>())
 {
 }
 
+/// Destroys a broker instance. Call Broker::Shutdown() first.
 rdmnet::Broker::~Broker()
 {
 }
@@ -38,30 +40,48 @@ rdmnet::Broker::~Broker()
 /// set up the listening sockets. If the listen_port is 0 and their is only one listen_addr, an
 /// ephemeral port is chosen. If there are more listen_addrs, listen_port must not be 0.
 ///
-/// \param[in] settings Settings for the broker to use for this session.
-/// \param[in] notify A class instance that the broker will use to send asynchronous notifications
-///                   about its state.
+/// \param settings Settings for the broker to use for this session.
+/// \param notify A class instance that the broker will use to send asynchronous notifications
+///               about its state.
 /// \param[in] log A class instance that the broker will use to log messages.
-/// \return true (started broker successfully) or false (an error occurred starting broker).
-bool rdmnet::Broker::Startup(const BrokerSettings& settings, rdmnet::BrokerNotifyHandler* notify, etcpal::Logger* log)
+/// \return etcpal::Error::Ok(): Broker started successfully.
+/// \return  or false (an error occurred starting broker).
+etcpal::Error rdmnet::Broker::Startup(const BrokerSettings& settings, rdmnet::BrokerNotifyHandler* notify,
+                                      etcpal::Logger* log)
 {
   return core_->Startup(settings, notify, log);
 }
 
-void rdmnet::Broker::Shutdown()
+/// \brief Shut down all broker functionality and threads.
+///
+/// Sends disconnect messages to all connected clients, joins all threads and deallocates
+/// resources.
+///
+/// \param disconnect_reason Disconnect reason code to send to all connected clients.
+void rdmnet::Broker::Shutdown(rdmnet_disconnect_reason_t disconnect_reason)
 {
   core_->Shutdown();
 }
 
-void rdmnet::Broker::Tick()
+/// \brief Change the scope on which a broker operates.
+///
+/// This function is for changing the scope after Broker::Startup() has been called. To configure
+/// the initial scope, use the BrokerSettings::scope member. Sends disconnect messages to all
+/// connected clients with the reason given before disconnecting and beginning operations on the
+/// new scope.
+///
+/// \param new_scope The new scope on which the broker should operate.
+/// \param disconnect_reason Disconnect reason code to send to all connected clients on the current
+///                          scope.
+etcpal::Error rdmnet::Broker::ChangeScope(const std::string& new_scope, rdmnet_disconnect_reason_t disconnect_reason)
 {
-  core_->Tick();
+  return core_->ChangeScope(new_scope, disconnect_reason);
 }
 
 /// \brief Get the current settings the broker is using.
 /// Can be called even after Shutdown. Useful if you want to shutdown & restart the broker for any
 /// reason.
-rdmnet::BrokerSettings rdmnet::Broker::GetSettings() const
+rdmnet::BrokerSettings rdmnet::Broker::settings() const
 {
-  return core_->GetSettings();
+  return core_->settings();
 }

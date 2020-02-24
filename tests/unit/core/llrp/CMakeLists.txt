@@ -8,7 +8,6 @@ rdmnet_add_unit_test(test_llrp
   # Sources under test
   ${RDMNET_SRC}/rdmnet/core/llrp.c
   ${RDMNET_SRC}/rdmnet/core/llrp_target.c
-  ${RDMNET_SRC}/rdmnet/core/llrp_manager.c
   ${RDMNET_SRC}/rdmnet/core/llrp_prot.c
 
   # Mock dependencies

@@ -10,7 +10,8 @@
 
 #include <cwchar>
 #include <cstring>
-#include <cstdio>
+#include <fstream>
+#include <iostream>
 #include <string>
 #include <vector>
 #include <deque>
@@ -21,13 +22,13 @@
 
 void PrintHelp(wchar_t* app_name)
 {
-  printf("Usage: %ls [OPTION]...\n\n", app_name);
-  printf("  --scope=SCOPE     Configures the RDMnet Scope to SCOPE. Enter nothing after\n");
-  printf("                    '=' to set the scope to the default.\n");
-  printf("  --broker=IP:PORT  Connect to a Broker at address IP:PORT instead of\n");
-  printf("                    performing discovery.\n");
-  printf("  --help            Display this help and exit.\n");
-  printf("  --version         Output version information and exit.\n");
+  std::wcout << L"Usage: " << app_name << L"[OPTION]...\n\n";
+  std::cout << "  --scope=SCOPE     Configures the RDMnet Scope to SCOPE. Enter nothing after\n";
+  std::cout << "                    '=' to set the scope to the default.\n";
+  std::cout << "  --broker=IP:PORT  Connect to a Broker at address IP:PORT instead of\n";
+  std::cout << "                    performing discovery.\n";
+  std::cout << "  --help            Display this help and exit.\n";
+  std::cout << "  --version         Output version information and exit.\n";
 }
 
 bool SetScope(wchar_t* arg, char* scope_buf)
@@ -84,19 +85,81 @@ BOOL WINAPI ConsoleHandler(DWORD signal)
 {
   if (signal == CTRL_C_EVENT)
   {
-    printf("Stopping Fakeway...\n");
+    std::cout << "Stopping Fakeway...\n";
     fakeway_keep_running = false;
   }
 
   return TRUE;
 }
 
+class WindowsLog : public etcpal::LogMessageHandler
+{
+public:
+  WindowsLog();
+  ~WindowsLog();
+
+  etcpal::Logger& logger() { return logger_; }
+
+  etcpal::LogTimestamp GetLogTimestamp() override;
+  void HandleLogMessage(const EtcPalLogStrings& strings) override;
+
+private:
+  etcpal::Logger logger_;
+  std::fstream file_;
+  int utc_offset_{0};
+};
+
+WindowsLog::WindowsLog()
+{
+  etcpal_init(ETCPAL_FEATURE_LOGGING);
+
+  file_.open(file_name.c_str(), std::fstream::out);
+  if (file_.fail())
+    std::cout << "Fakeway Log: Couldn't open log file '" << file_name << "'." << std::endl;
+
+  TIME_ZONE_INFORMATION tzinfo;
+  switch (GetTimeZoneInformation(&tzinfo))
+  {
+    case TIME_ZONE_ID_UNKNOWN:
+    case TIME_ZONE_ID_STANDARD:
+      utc_offset_ = -(tzinfo.Bias + tzinfo.StandardBias);
+      break;
+    case TIME_ZONE_ID_DAYLIGHT:
+      utc_offset_ = -(tzinfo.Bias + tzinfo.DaylightBias);
+      break;
+    default:
+      std::cout << "Fakeway Log: Couldn't get time zone info.\n";
+      break;
+  }
+
+  logger_.SetLogAction(kEtcPalLogCreateHumanReadable).SetLogMask(ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG)).Startup(*this);
+}
+
+WindowsLog::~WindowsLog()
+{
+  logger_.Shutdown();
+  etcpal_deinit(ETCPAL_FEATURE_LOGGING);
+}
+
+etcpal::LogTimestamp WindowsLog::GetLogTimestamp()
+{
+  SYSTEMTIME time;
+  GetLocalTime(&time);
+  return etcpal::LogTimestamp(time.wYear - 1900, time.wMonth - 1, time.wDay, time.wHour, time.wMinute, time.wSecond,
+                              time.wMilliseconds, utc_offset_);
+}
+
+void WindowsLog::HandleLogMessage(const EtcPalLogStrings& strings)
+{
+  std::cout << strings.human_readable << '\n';
+  if (file_.is_open())
+    file_ << strings.human_readable << '\n';
+}
+
 int wmain(int argc, wchar_t* argv[])
 {
   bool should_exit = false;
-  RdmnetScopeConfig scope_config;
-
-  RDMNET_CLIENT_SET_DEFAULT_SCOPE(&scope_config);
+  rdmnet::Scope scope_config;
 
   if (argc > 1)
   {
@@ -144,12 +207,13 @@ int wmain(int argc, wchar_t* argv[])
   // Handle console signals
   if (!SetConsoleCtrlHandler(ConsoleHandler, TRUE))
   {
-    printf("Could not set console signal handler.\n");
+    std::cout << "Could not set console signal handler.\n";
     return 1;
   }
 
-  printf("Starting Fakeway...\n");
-  fakeway.Startup(scope_config);
+  std::cout << "Starting Fakeway...\n";
+  WindowsLog log;
+  fakeway.Startup(scope_config, log.logger());
 
   while (fakeway_keep_running)
   {

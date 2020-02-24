@@ -58,12 +58,12 @@ void WindowsBrokerLog::Shutdown()
   file_.close();
 }
 
-EtcPalLogTimestamp WindowsBrokerLog::GetLogTimestamp()
+etcpal::LogTimestamp WindowsBrokerLog::GetLogTimestamp()
 {
   SYSTEMTIME win_time;
   GetLocalTime(&win_time);
-  return EtcPalLogTimestamp{win_time.wYear,   win_time.wMonth,  win_time.wDay,          win_time.wHour,
-                            win_time.wMinute, win_time.wSecond, win_time.wMilliseconds, utcoffset_};
+  return etcpal::LogTimestamp(win_time.wYear,   win_time.wMonth,  win_time.wDay,          win_time.wHour,
+                              win_time.wMinute, win_time.wSecond, win_time.wMilliseconds, utcoffset_);
 }
 
 void WindowsBrokerLog::HandleLogMessage(const EtcPalLogStrings& strings)

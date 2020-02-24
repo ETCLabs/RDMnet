@@ -21,7 +21,7 @@
 #define TEST_DISC_COMMON_FAKES_H_
 
 #include "fff.h"
-#include "rdmnet/core/discovery.h"
+#include "rdmnet/discovery.h"
 #include "disc_platform_api.h"
 
 #ifdef __cplusplus

@@ -50,21 +50,43 @@ PANEL_END_TEXT = r"""
 print("Converting markdown files...")
 
 try:
-    os.makedirs(os.path.join(THIS_SCRIPT_DIRECTORY, "getting_started", "GeneratedFiles"))
+    shutil.rmtree(os.path.join(THIS_SCRIPT_DIRECTORY, "GeneratedFiles"), ignore_errors=True)
+    os.makedirs(os.path.join(THIS_SCRIPT_DIRECTORY, "GeneratedFiles"))
 except OSError:
     pass
 
-markdown_files = [file_name for file_name in os.listdir(os.path.join(THIS_SCRIPT_DIRECTORY, "getting_started")) \
-                  if os.path.isfile(os.path.join(THIS_SCRIPT_DIRECTORY, "getting_started", file_name))]
-for file_name in markdown_files:
+markdown_source_directories = [
+    os.path.join(THIS_SCRIPT_DIRECTORY, "getting_started"),
+    os.path.join(THIS_SCRIPT_DIRECTORY, "how_rdmnet_works"),
+]
+
+markdown_files = []
+for directory in markdown_source_directories:
+    markdown_files.extend(
+        os.path.join(directory, file_name)
+        for file_name in os.listdir(directory)
+        if os.path.isfile(os.path.join(directory, file_name)) and file_name.endswith(".md")
+    )
+
+for file_path in markdown_files:
     panel_number = 1
-    with open(os.path.join(THIS_SCRIPT_DIRECTORY, "getting_started", file_name), "r") as file_handle:
-        with open(os.path.join(THIS_SCRIPT_DIRECTORY, "getting_started", "GeneratedFiles", file_name), "w") as out_file:
+    with open(file_path, "r") as file_handle:
+        with open(
+            os.path.join(THIS_SCRIPT_DIRECTORY, "GeneratedFiles", os.path.basename(file_path)), "w"
+        ) as out_file:
             for line in file_handle.readlines():
-                new_line = line.replace("<!-- CODE_BLOCK_START -->", PANEL_START_TEXT.format(panel_number))
-                new_line = new_line.replace("<!-- CODE_BLOCK_MID -->", PANEL_MID_TEXT.format(panel_number))
-                new_line = new_line.replace("<!-- CODE_BLOCK_END -->", PANEL_END_TEXT.format(panel_number))
-                new_line = new_line.replace("<!-- LANGUAGE_SELECTOR -->", LANGUAGE_SELECTOR_TEXT.format(panel_number))
+                new_line = line.replace(
+                    "<!-- CODE_BLOCK_START -->", PANEL_START_TEXT.format(panel_number)
+                )
+                new_line = new_line.replace(
+                    "<!-- CODE_BLOCK_MID -->", PANEL_MID_TEXT.format(panel_number)
+                )
+                new_line = new_line.replace(
+                    "<!-- CODE_BLOCK_END -->", PANEL_END_TEXT.format(panel_number)
+                )
+                new_line = new_line.replace(
+                    "<!-- LANGUAGE_SELECTOR -->", LANGUAGE_SELECTOR_TEXT.format(panel_number)
+                )
                 if "<!-- CODE_BLOCK_END -->" in line or "<!-- LANGUAGE_SELECTOR -->" in line:
                     panel_number += 1
                 out_file.write(new_line)
@@ -78,8 +100,7 @@ if os.getenv("BUILD_REASON", "IndividualCI") == "PullRequest":
         os.getenv("SYSTEM_PULLREQUEST_PULLREQUESTNUMBER")
     )
     output_dir = "build/{}/docs/stage/{}".format(
-        os.getenv("GH_REPO_NAME", "RDMnet"),
-        os.getenv("SYSTEM_PULLREQUEST_PULLREQUESTNUMBER"),
+        os.getenv("GH_REPO_NAME", "RDMnet"), os.getenv("SYSTEM_PULLREQUEST_PULLREQUESTNUMBER"),
     )
 else:
     project_number = "HEAD (unstable)"
@@ -90,7 +111,7 @@ else:
 shutil.rmtree(output_dir, ignore_errors=True)
 os.makedirs(output_dir)
 
-with open("Doxyfile", "r") as doxyfile:
+with open(os.path.join(THIS_SCRIPT_DIRECTORY, "Doxyfile"), "r") as doxyfile:
     dox_input = doxyfile.read()
     dox_input += '\nPROJECT_NUMBER="{}"'.format(project_number)
     dox_input += '\nOUTPUT_DIRECTORY="{}"'.format(output_dir)

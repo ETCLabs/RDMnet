@@ -20,7 +20,7 @@
 #pragma once
 
 #include "rdm/message.h"
-#include "rdmnet/client.h"
+#include "rdmnet/core/client.h"
 #include "EndpointItem.h"
 
 BEGIN_INCLUDE_QT_HEADERS()

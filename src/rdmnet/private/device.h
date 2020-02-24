@@ -21,7 +21,11 @@
 #define RDMNET_PRIVATE_DEVICE_H_
 
 #include "rdmnet/device.h"
-#include "rdmnet/client.h"
+#include "rdmnet/core/client.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct RdmnetDevice
 {
@@ -30,5 +34,12 @@ typedef struct RdmnetDevice
   RdmnetDeviceCallbacks callbacks;
   void* callback_context;
 } RdmnetDevice;
+
+etcpal_error_t rdmnet_device_init(void);
+void rdmnet_device_deinit(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* RDMNET_PRIVATE_DEVICE_H_ */

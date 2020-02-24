@@ -17,9 +17,11 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/* disc_common.h
+/*
+ * disc_common.h
  * Common functions and definitions used by all mDNS/DNS-SD providers across platforms.
  */
+
 #ifndef DISC_COMMON_H_
 #define DISC_COMMON_H_
 
@@ -46,6 +48,10 @@ extern etcpal_mutex_t rdmnet_disc_lock;
 /**************************************************************************************************
  * Platform-neutral functions callable from both common.c and the platform-specific sources
  *************************************************************************************************/
+
+etcpal_error_t rdmnet_disc_init(const RdmnetNetintConfig* netint_config);
+void rdmnet_disc_deinit(void);
+void rdmnet_disc_tick(void);
 
 // Callbacks called from platform-specific code, must be called in a locked context
 void notify_scope_monitor_error(rdmnet_scope_monitor_t handle, int platform_specific_error);

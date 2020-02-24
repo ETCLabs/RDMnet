@@ -314,8 +314,8 @@ inline void ExpectMessagesEqual(const RptRdmBufList& a, const RptRdmBufList& b)
     {
       for (size_t i = 0; i < a.num_rdm_buffers; ++i)
       {
-        std::vector<uint8_t> a_rdm_data(a.rdm_buffers[i].data, &a.rdm_buffers[i].data[a.rdm_buffers[i].datalen]);
-        std::vector<uint8_t> b_rdm_data(b.rdm_buffers[i].data, &b.rdm_buffers[i].data[b.rdm_buffers[i].datalen]);
+        std::vector<uint8_t> a_rdm_data(a.rdm_buffers[i].data, &a.rdm_buffers[i].data[a.rdm_buffers[i].data_len]);
+        std::vector<uint8_t> b_rdm_data(b.rdm_buffers[i].data, &b.rdm_buffers[i].data[b.rdm_buffers[i].data_len]);
         EXPECT_EQ(a_rdm_data, b_rdm_data) << "While comparing index " << i;
       }
     }

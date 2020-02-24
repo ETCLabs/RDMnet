@@ -50,10 +50,10 @@ void BrokerItem::updateText()
 
   if (connected_)
     address = broker_addr_;
-  else if (static_broker_.ip().IsValid())
+  else if (static_broker_.IsValid())
     address = static_broker_;
 
-  if (address.ip().IsValid())
+  if (address.IsValid())
   {
     setText(QString("Broker for scope \"%1\" at %2").arg(scope_, QString::fromStdString(address.ToString())));
   }

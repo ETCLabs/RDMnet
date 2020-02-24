@@ -22,7 +22,7 @@
 
 #include "rdmnet_mock/core/broker_prot.h"
 #include "rdmnet_mock/core/connection.h"
-#include "rdmnet_mock/core/discovery.h"
+#include "rdmnet_mock/discovery.h"
 #include "rdmnet_mock/core/rpt_prot.h"
 #include "rdmnet_mock/core/llrp_target.h"
 
@@ -67,7 +67,7 @@ void rdmnet_mock_core_reset(void)
 #if RDMNET_BUILDING_FULL_MOCK_CORE_LIB
   RDMNET_CORE_BROKER_PROT_DO_FOR_ALL_FAKES(RESET_FAKE);
   rdmnet_connection_reset_all_fakes();
-  RDMNET_CORE_DISCOVERY_DO_FOR_ALL_FAKES(RESET_FAKE);
+  rdmnet_discovery_reset_all_fakes();
   llrp_target_reset_all_fakes();
   RDMNET_CORE_RPT_PROT_DO_FOR_ALL_FAKES(RESET_FAKE);
 #endif

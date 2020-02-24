@@ -7,15 +7,13 @@ header-only wrapper around the C interface.
 
 ## Initialization and Destruction
 
-The controller init and deinit functions should be called once each at application startup and
+The core RDMnet init and deinit functions should be called once each at application startup and
 shutdown time. These functions interface with the EtcPal \ref etcpal_log API to configure what
 happens when the library logs messages. Optionally pass an EtcPalLogParams structure to use this 
 functionality. This structure can be shared across different ETC library modules.
 
-The init function has the side-effect of initializing the core RDMnet library, which by default
-starts a background thread for handling periodic RDMnet functionality and receiving data (this
-behavior can be overridden at compile-time if an app wants more control over its threading, see
-#RDMNET_USE_TICK_THREAD and rdmnet_core_tick()). The deinit function joins this thread.
+The init function by default starts a background thread for handling periodic RDMnet functionality
+and receiving data. The deinit function joins this thread.
 
 <!-- CODE_BLOCK_START -->
 ```c
@@ -25,12 +23,12 @@ behavior can be overridden at compile-time if an app wants more control over its
 EtcPalLogParams log_params;
 // Initialize log_params...
 
-etcpal_error_t init_result = rdmnet_controller_init(&log_params);
+etcpal_error_t init_result = rdmnet_init(&log_params, NULL);
 // Or, to init without worrying about logs from the RDMnet library...
-etcpal_error_t init_result = rdmnet_controller_init(NULL);
+etcpal_error_t init_result = rdmnet_init(NULL, NULL);
 
 // In some function called at shutdown...
-rdmnet_controller_deinit();
+rdmnet_core_deinit();
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
@@ -40,13 +38,13 @@ rdmnet_controller_deinit();
 etcpal::Logger logger;
 // Initialize and start logger...
 
-etcpal::Error init_result = rdmnet::Controller::Init(logger);
+etcpal::Error init_result = rdmnet::Init(logger);
 
 // Or, to init without worrying about logs from the RDMnet library...
-etcpal::Error init_result = rdmnet::Controller::Init();
+etcpal::Error init_result = rdmnet::Init();
 
 // In some function called at shutdown...
-rdmnet::Controller::Deinit();
+rdmnet::Deinit();
 ```
 <!-- CODE_BLOCK_END -->
 
@@ -61,26 +59,23 @@ rdmnet_core_tick().
 
 <!-- CODE_BLOCK_START -->
 ```c
-RdmnetControllerConfig config;
-
 // Sets optional values to defaults. Must pass your ESTA manufacturer ID. If you have not yet
 // requested an ESTA manufacturer ID, the range 0x7ff0 to 0x7fff can be used for prototyping.
-rdmnet_controller_config_init(&config, MY_ESTA_MANUFACTURER_ID_VAL);
+RdmnetControllerConfig config = RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT(MY_ESTA_MANUFACTURER_ID_VAL);
 
-// Each controller is a component that must have a Component ID (CID), which is simply a UUID. Pure
-// redistributable software apps may generate a new CID on each run, but hardware-locked devices
-// should use a consistent CID locked to a MAC address (a V3 or V5 UUID).
+// Each controller is a component that must have a Component ID (CID), which is simply a UUID.
+// Software should generate and save a CID so that the same one is used on each run of the software.
 etcpal_generate_os_preferred_uuid(&config.cid);
 
 // Set the callback functions - defined elsewhere
 // p_some_opaque_data is an opaque data pointer that will be passed back to each callback function
-RDMNET_CONTROLLER_SET_CALLBACKS(&config, my_controller_connected_cb, my_controller_connect_failed_cb,
+rdmnet_controller_set_callbacks(&config, my_controller_connected_cb, my_controller_connect_failed_cb,
                                 my_controller_disconnected_cb, my_controller_client_list_update_received_cb,
                                 my_controller_rdm_response_received_cb, my_controller_status_received_cb,
                                 p_some_opaque_data);
 
 // Needed to identify this controller to other controllers on the network. More on this later.
-RDMNET_CONTROLLER_SET_RDM_DATA(&config, "My Manufacturer Name", "My Product Name", "1.0.0", "My Device Label");
+rdmnet_controller_set_rdm_data(&config, "My Manufacturer Name", "My Product Name", "1.0.0", "My Device Label", true);
 
 rdmnet_controller_t my_controller_handle;
 etcpal_error_t result = rdmnet_controller_create(&config, &my_controller_handle);
@@ -102,17 +97,22 @@ class MyControllerNotifyHandler : public rdmnet::ControllerNotifyHandler
 
 MyControllerNotifyHandler my_controller_notify_handler;
 
+// Contains the configuration settings that the controller needs to operate. Some of these are set
+// to default values and can be changed if necessary.
+rdmnet::ControllerSettings my_settings(my_cid, MY_ESTA_MANUFACTURER_ID_VAL);
+
 // Needed to identify this controller to other controllers on the network. More on this later.
 rdmnet::ControllerRdmData my_rdm_data("My Manufacturer Name",
                                       "My Product Name",
                                       "1.0.0",
                                       "My Device Label");
 rdmnet::Controller controller;
-etcpal::Error result = controller.Startup(my_controller_notify_handler,
-                                           rdmnet::ControllerData::Default(MY_ESTA_MANUFACTURER_ID_VAL),my_rdm_data);
+etcpal::Error result = controller.Startup(my_controller_notify_handler, my_settings, my_rdm_data);
 if (result)
 {
   // Controller is valid and running.
+  auto handle = controller.handle();
+  // Store handle for later lookup from the ControllerNotifyHandler callback functions.
 }
 else
 {
@@ -166,7 +166,7 @@ else
 ```
 <!-- CODE_BLOCK_END -->
 
-## Dynamic vs Static Scopes
+### Dynamic vs Static Scopes
 
 Adding a scope will immediately begin the scope connection state machine from the RDMnet tick
 thread. If a static configuration is not provided (using the RDMNET_CLIENT_SET_SCOPE() macro to
@@ -191,7 +191,7 @@ RDMNET_CLIENT_SET_STATIC_SCOPE(&config, "my_custom_scope", static_broker_addr);
 RDMNET_CLIENT_SET_STATIC_DEFAULT_SCOPE(&config, static_broker_addr);
 
 rdmnet_client_scope_t scope_handle;
-etcpal_error_t result = rdmnet_controller_static_config(my_controller_handle, &config, &scope_handle);
+etcpal_error_t result = rdmnet_controller_add_scope(my_controller_handle, &config, &scope_handle);
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
@@ -224,12 +224,12 @@ void controller_connected_callback(rdmnet_controller_t handle, rdmnet_client_sco
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleConnectedToBroker(rdmnet::Controller& controller,
+void MyControllerNotifyHandler::HandleConnectedToBroker(rdmnet::ControllerHandle handle,
                                                         rdmnet::ScopeHandle scope_handle,
                                                         const RdmnetClientConnectedInfo& info)
 {
-  // Check handles as necessary...
-  controller.RequestClientList(scope);
+  // Check handles as necessary and get controller instance...
+  controller.RequestClientList(scope_handle);
 }
 ```
 <!-- CODE_BLOCK_END -->
@@ -519,7 +519,7 @@ some basic RDM data like the manufacturer (`MANUFACTURER_LABEL`), a description 
 user-settable label for the controller (`DEVICE_LABEL`). The library has access to all the
 information necessary for the first three items, since that information is necessary for RDMnet
 communication. Initial values for the last four items are provided to the library when creating a
-new controller instance, through the RDMNET_CONTROLLER_SET_RDM_DATA() macro or the
+new controller instance, through the rdmnet_controller_set_rdm_data() function or the
 rdmnet::ControllerRdmData structure.
 
 If you want to provide richer RDM responder functionality from your controller implementation, you
@@ -531,12 +531,11 @@ To use the library this way, you can:
 
 <!-- CODE_BLOCK_START -->
 ```c
-RdmnetControllerConfig config;
-rdmnet_controller_config_init(&config, MY_ESTA_MANUFACTURER_ID_VAL);
+RdmnetControllerConfig config = RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT(MY_ESTA_MANUFACTURER_ID_VAL);
 
-// Generate CID and call RDMNET_CONTROLLER_SET_CALLBACKS() as above...
+// Generate CID and call rdmnet_controller_set_callbacks() as above...
 
-RDMNET_CONTROLLER_SET_RDM_CMD_CALLBACKS(&config, my_rdm_command_received_cb, my_llrp_rdm_command_received_cb);
+rdmnet_controller_set_rdm_cmd_callbacks(&config, my_rdm_command_received_cb, my_llrp_rdm_command_received_cb);
 
 rdmnet_controller_t my_controller_handle;
 etcpal_error_t result = rdmnet_controller_create(&config, &my_controller_handle);
@@ -549,9 +548,8 @@ class MyControllerRdmCommandHandler : public rdmnet::ControllerRdmCommandHandler
 };
 
 MyControllerRdmCommandHandler my_rdm_cmd_handler;
+rdmnet::ControllerSettings my_settings(my_cid, MY_ESTA_MANUFACTURER_ID_VAL);
 
-etcpal::Error result = controller.Startup(my_controller_notify_handler,
-                                           rdmnet::ControllerData::Default(MY_ESTA_MANUFACTURER_ID_VAL),
-                                           my_rdm_cmd_handler);
+etcpal::Error result = controller.Startup(my_controller_notify_handler, my_settings, my_rdm_cmd_handler);
 ```
 <!-- CODE_BLOCK_END -->

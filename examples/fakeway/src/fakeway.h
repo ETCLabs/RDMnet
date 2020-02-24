@@ -30,14 +30,13 @@
 
 #include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/lock.h"
+#include "etcpal/cpp/log.h"
 #include "etcpal/cpp/uuid.h"
-#include "rdm/uid.h"
+#include "rdm/cpp/uid.h"
 #include "rdmnet/cpp/device.h"
 
-#include "fakeway_log.h"
 #include "fakeway_default_responder.h"
 #include "gadget_interface.h"
-#include "rdmnet_lib_wrapper.h"
 
 class PhysicalEndpoint
 {
@@ -50,10 +49,10 @@ public:
   }
   virtual ~PhysicalEndpoint() = default;
 
-  bool QueueMessageForResponder(const RdmUid& uid, std::unique_ptr<RdmnetRemoteRdmCommand> cmd);
-  void GotResponse(const RdmUid& uid, const RdmnetRemoteRdmCommand* cmd);
-  bool AddResponder(const RdmUid& uid);
-  bool RemoveResponder(const RdmUid& uid, std::vector<std::unique_ptr<RdmnetRemoteRdmCommand>>& orphaned_msgs);
+  bool QueueMessageForResponder(const rdm::Uid& uid, std::unique_ptr<rdmnet::SavedRdmCommand> cmd);
+  void GotResponse(const rdm::Uid& uid, const rdmnet::SavedRdmCommand* cmd);
+  bool AddResponder(const rdm::Uid& uid);
+  bool RemoveResponder(const rdm::Uid& uid, std::vector<std::unique_ptr<rdmnet::SavedRdmCommand>>& orphaned_msgs);
 
   unsigned int gadget_id() const { return gadget_id_; }
   unsigned int port_num() const { return gadget_port_num_; }
@@ -63,51 +62,34 @@ protected:
   unsigned int gadget_id_;
   unsigned int gadget_port_num_;
   etcpal::Mutex responder_lock_;
-  std::map<RdmUid, std::vector<std::unique_ptr<RdmnetRemoteRdmCommand>>> responders_;
+  std::map<rdm::Uid, std::vector<std::unique_ptr<rdmnet::SavedRdmCommand>>> responders_;
 };
 
 class Fakeway : public GadgetNotify, public rdmnet::DeviceNotifyHandler
 {
 public:
-  Fakeway(std::unique_ptr<rdmnet::Device> rdmnet = std::make_unique<rdmnet::Device>())
-      : log_("fakeway.log"), rdmnet_(std::move(rdmnet))
-  {
-  }
-
   static void PrintVersion();
 
   // Starts up the RDMnet Device logic with the scope configuration provided. Also initializes the
   // USB library and begins listening for Gadgets.
-  bool Startup(const RdmnetScopeConfig& scope_config);
+  bool Startup(const rdmnet::Scope& scope_config, etcpal::Logger& logger);
   // Shuts down RDMnet and USB/RDM functionality.
   void Shutdown();
 
   // Is this Fakeway connected to a Broker?
   bool connected() const { return connected_to_broker_; }
 
-  FakewayLog* log() { return &log_; }
   FakewayDefaultResponder* def_resp() const { return def_resp_.get(); }
 
 protected:
-  void HandleConnectedToBroker(rdmnet::Device& device, const RdmnetClientConnectedInfo& info) override;
-  void HandleBrokerConnectFailed(rdmnet::Device& device, const RdmnetClientConnectFailedInfo& info) override;
-  void HandleDisconnectedFromBroker(rdmnet::Device& device, const RdmnetClientDisconnectedInfo& info) override;
-  void HandleRdmCommand(rdmnet::Device& device, const RdmnetRemoteRdmCommand& cmd) override;
-  void HandleLlrpRdmCommand(rdmnet::Device& device, const LlrpRemoteRdmCommand& cmd) override;
+  void HandleConnectedToBroker(rdmnet::DeviceHandle handle, const RdmnetClientConnectedInfo& info) override;
+  void HandleBrokerConnectFailed(rdmnet::DeviceHandle handle, const RdmnetClientConnectFailedInfo& info) override;
+  void HandleDisconnectedFromBroker(rdmnet::DeviceHandle handle, const RdmnetClientDisconnectedInfo& info) override;
+  rdmnet::ResponseAction HandleRdmCommand(rdmnet::DeviceHandle handle, const rdmnet::RdmCommand& cmd) override;
+  rdmnet::ResponseAction HandleLlrpRdmCommand(rdmnet::DeviceHandle handle,
+                                              const rdmnet::llrp::RdmCommand& cmd) override;
 
-  void ProcessDefRespRdmCommand(const RdmnetRemoteRdmCommand& cmd, RdmnetConfigChange& config_change);
-  void ProcessDefRespRdmCommand(const LlrpRemoteRdmCommand& cmd, RdmnetConfigChange& config_change);
-  bool ProcessDefRespRdmCommand(const RdmCommand& cmd, std::vector<RdmResponse>& resp_list, uint16_t& nack_reason,
-                                RdmnetConfigChange& config_change);
-
-  // Send responses
-  void SendRptStatus(const RdmnetRemoteRdmCommand& received_cmd, rpt_status_code_t status_code);
-  void SendRptNack(const RdmnetRemoteRdmCommand& received_cmd, uint16_t nack_reason);
-  void SendRptResponse(const RdmnetRemoteRdmCommand& received_cmd, std::vector<RdmResponse>& resp_list);
-  void SendUnsolicitedRptResponse(uint16_t from_endpoint, std::vector<RdmResponse>& resp_list);
-
-  void SendLlrpNack(const LlrpRemoteRdmCommand& received_cmd, uint16_t nack_reason);
-  void SendLlrpResponse(const LlrpRemoteRdmCommand& received_cmd, const RdmResponse& resp);
+  rdmnet::ResponseAction ProcessDefRespRdmCommand(const rdm::CommandHeader& cmd, const uint8_t* data, uint8_t data_len);
 
   ////////////////////////////////////////////////////////////////////////////
   // GadgetNotify interface
@@ -125,9 +107,9 @@ protected:
 
 private:
   bool configuration_change_{false};
-  FakewayLog log_;
+  etcpal::Logger* log_{nullptr};
   std::unique_ptr<FakewayDefaultResponder> def_resp_;
-  std::unique_ptr<rdmnet::Device> rdmnet_;
+  rdmnet::Device rdmnet_;
 
   etcpal::SockAddr resolved_broker_addr_;
 

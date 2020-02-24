@@ -25,16 +25,17 @@
 
 #include <string>
 #include <vector>
+#include "etcpal/common.h"
 #include "etcpal/cpp/error.h"
 #include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/uuid.h"
 #include "etcpal/cpp/log.h"
 #include "rdm/cpp/uid.h"
 #include "rdm/cpp/message.h"
-#include "rdmnet/controller.h"
 #include "rdmnet/cpp/client.h"
+#include "rdmnet/cpp/common.h"
+#include "rdmnet/cpp/message.h"
 #include "rdmnet/controller.h"
-#include "rdmnet/core/util.h"
 
 namespace rdmnet
 {
@@ -51,13 +52,12 @@ namespace rdmnet
 ///
 /// @{
 
-/// The handle used to identify controllers to the C language controller API. Typically does not
-/// need to be used directly.
+/// A handle type used by the RDMnet library to identify controller instances.
 using ControllerHandle = rdmnet_controller_t;
+/// An invalid ControllerHandle value.
+constexpr ControllerHandle kInvalidControllerHandle = RDMNET_CONTROLLER_INVALID;
 
 /// @}
-
-class Controller;
 
 /// \ingroup rdmnet_controller_cpp
 /// \brief A base class for a class that receives RDM commands addressed to a controller.
@@ -67,16 +67,21 @@ class ControllerRdmCommandHandler
 {
 public:
   /// \brief An RDM command has been received addressed to a controller.
-  /// \param controller Controller instance which has received the RDM command.
+  /// \param handle Handle to controller instance which has received the RDM command.
   /// \param scope_handle Handle to the scope on which the RDM command was received.
   /// \param cmd The RDM command data.
-  virtual void HandleRdmCommand(Controller& controller, ScopeHandle scope_handle,
-                                const rdmnet::RemoteRdmCommand& cmd) = 0;
+  virtual rdmnet::ResponseAction HandleRdmCommand(ControllerHandle handle, ScopeHandle scope_handle,
+                                                  const RdmCommand& cmd) = 0;
 
   /// \brief An RDM command has been received over LLRP, addressed to a controller.
-  /// \param controller Controller instance which has received the RDM command.
+  /// \param handle Handle to controller instance which has received the RDM command.
   /// \param cmd The RDM command data.
-  virtual void HandleLlrpRdmCommand(Controller& controller, const LlrpRemoteRdmCommand& cmd) = 0;
+  virtual rdmnet::ResponseAction HandleLlrpRdmCommand(ControllerHandle handle, const llrp::RdmCommand& cmd)
+  {
+    ETCPAL_UNUSED_ARG(handle);
+    ETCPAL_UNUSED_ARG(cmd);
+    return rdmnet::ResponseAction::SendNack(kRdmNRActionNotSupported);
+  }
 };
 
 /// \ingroup rdmnet_controller_cpp
@@ -87,104 +92,106 @@ class ControllerNotifyHandler
 {
 public:
   /// \brief A controller has successfully connected to a broker.
-  /// \param controller Controller instance which has connected.
+  /// \param handle Handle to controller instance which has connected.
   /// \param scope_handle Handle to the scope on which the controller has connected.
   /// \param info More information about the successful connection.
-  virtual void HandleConnectedToBroker(Controller& controller, ScopeHandle scope_handle,
+  virtual void HandleConnectedToBroker(ControllerHandle handle, ScopeHandle scope_handle,
                                        const RdmnetClientConnectedInfo& info) = 0;
 
   /// \brief A connection attempt failed between a controller and a broker.
-  /// \param controller Controller instance which has failed to connect.
+  /// \param handle Handle to controller instance which has failed to connect.
   /// \param scope_handle Handle to the scope on which the connection failed.
   /// \param info More information about the failed connection.
-  virtual void HandleBrokerConnectFailed(Controller& controller, ScopeHandle scope_handle,
+  virtual void HandleBrokerConnectFailed(ControllerHandle handle, ScopeHandle scope_handle,
                                          const RdmnetClientConnectFailedInfo& info) = 0;
 
   /// \brief A controller which was previously connected to a broker has disconnected.
-  /// \param controller Controller instance which has disconnected.
+  /// \param handle Handle to controller instance which has disconnected.
   /// \param scope_handle Handle to the scope on which the disconnect occurred.
   /// \param info More information about the disconnect event.
-  virtual void HandleDisconnectedFromBroker(Controller& controller, ScopeHandle scope_handle,
+  virtual void HandleDisconnectedFromBroker(ControllerHandle handle, ScopeHandle scope_handle,
                                             const RdmnetClientDisconnectedInfo& info) = 0;
 
   /// \brief A client list update has been received from a broker.
-  /// \param controller Controller instance which has received the client list update.
+  /// \param handle Handle to controller instance which has received the client list update.
   /// \param scope_handle Handle to the scope on which the client list update was received.
   /// \param list_action The way the updates in client_list should be applied to the controller's
   ///                    cached list.
   /// \param list The list of updates.
-  virtual void HandleClientListUpdate(Controller& controller, ScopeHandle scope_handle,
+  virtual void HandleClientListUpdate(ControllerHandle handle, ScopeHandle scope_handle,
                                       client_list_action_t list_action, const RptClientList& list) = 0;
 
   /// \brief An RDM response has been received.
-  /// \param controller Controller instance which has received the RDM response.
+  /// \param handle Handle to controller instance which has received the RDM response.
   /// \param scope_handle Handle to the scope on which the RDM response was received.
   /// \param resp The RDM response data.
-  virtual void HandleRdmResponse(Controller& controller, ScopeHandle scope_handle,
-                                 const RdmnetRemoteRdmResponse& resp) = 0;
+  virtual void HandleRdmResponse(ControllerHandle handle, ScopeHandle scope_handle, const RdmResponse& resp) = 0;
 
   /// \brief An RPT status message has been received in response to a previously-sent RDM command.
-  /// \param controller Controller instance which has received the RPT status message.
+  /// \param handle Handle to controller instance which has received the RPT status message.
   /// \param scope_handle Handle to the scope on which the RPT status message was received.
   /// \param status The RPT status data.
-  virtual void HandleRptStatus(Controller& controller, ScopeHandle scope_handle,
-                               const RdmnetRemoteRptStatus& status) = 0;
+  virtual void HandleRptStatus(ControllerHandle handle, ScopeHandle scope_handle, const RptStatus& status) = 0;
 
-  /// \brief A set of previously-requested dynamic UID mappints has been received.
+  /// \brief A set of previously-requested mappings of dynamic UIDs to responder IDs has been received.
   ///
   /// This callback does not need to be implemented if the controller implementation never intends
-  /// to request dynamic UID mappings.
+  /// to request responder IDs.
   ///
-  /// \param controller Controller instance which has received the dynamic UID mappints.
-  /// \param scope_handle Handle to the scope on which the dynamic UID mappings were received.
-  /// \param list The list of dynamic UID mappings.
-  virtual void HandleBrokerDynamicUidMappingsReceived(Controller& controller, ScopeHandle scope_handle,
-                                                      const BrokerDynamicUidAssignmentList& list)
+  /// \param handle Handle to controller instance which has received the responder IDs.
+  /// \param scope_handle Handle to the scope on which the responder IDs were received.
+  /// \param list The list of dynamic UID to responder ID mappings.
+  virtual void HandleResponderIdsReceived(ControllerHandle handle, ScopeHandle scope_handle,
+                                          const RdmnetDynamicUidAssignmentList& list)
   {
-    RDMNET_UNUSED_ARG(controller);
-    RDMNET_UNUSED_ARG(scope_handle);
-    RDMNET_UNUSED_ARG(list);
+    ETCPAL_UNUSED_ARG(handle);
+    ETCPAL_UNUSED_ARG(scope_handle);
+    ETCPAL_UNUSED_ARG(list);
   }
 };
 
-/// A set of configuration data that a controller needs to initialize.
-struct ControllerData
+/// A set of configuration settings that a controller needs to initialize.
+struct ControllerSettings
 {
-  etcpal::Uuid cid;  ///< The controller's Component Identifier (CID).
-  rdm::Uid uid;      ///< The controller's RDM UID. For a dynamic UID, use ::rdm::Uid::BrokerDynamicUidRequest().
-  std::string search_domain;  ///< The controller's search domain for discovering brokers.
+  etcpal::Uuid cid;           ///< The controller's Component Identifier (CID).
+  rdm::Uid uid;               ///< The controller's RDM UID. For a dynamic UID, use ::rdm::Uid::DynamicUidRequest().
+  std::string search_domain;  ///< (optional) The controller's search domain for discovering brokers.
+
+  /// (optional) Whether to create an LLRP target associated with this controller.
+  bool create_llrp_target{false};
+  /// (optional) A set of network interfaces to use for the LLRP target associated with this
+  /// controller. If empty, the set passed to rdmnet::Init() will be used, or all network
+  /// interfaces on the system if that was not provided.
+  std::vector<RdmnetMcastNetintId> llrp_netints;
 
   /// Create an empty, invalid data structure by default.
-  ControllerData() = default;
-  ControllerData(const etcpal::Uuid& cid_in, const rdm::Uid& uid_in,
-                 const std::string& search_domain_in = E133_DEFAULT_DOMAIN);
+  ControllerSettings() = default;
+  ControllerSettings(const etcpal::Uuid& new_cid, const rdm::Uid& new_uid);
+  ControllerSettings(const etcpal::Uuid& new_cid, uint16_t manufacturer_id);
 
   bool IsValid() const;
-
-  static ControllerData Default(uint16_t manufacturer_id);
 };
 
-/// Create a ControllerData instance by passing all members explicitly.
-inline ControllerData::ControllerData(const etcpal::Uuid& cid_in, const rdm::Uid& uid_in,
-                                      const std::string& search_domain_in)
-    : cid(cid_in), uid(uid_in), search_domain(search_domain_in)
+/// \brief Create a ControllerSettings instance by passing the required members explicitly.
+/// \details This version takes the fully-formed RDM UID that the controller will use.
+inline ControllerSettings::ControllerSettings(const etcpal::Uuid& new_cid, const rdm::Uid& new_uid)
+    : cid(new_cid), uid(new_uid)
 {
 }
 
-/// Determine whether a ControllerData instance contains valid data for RDMnet operation.
-bool ControllerData::IsValid() const
-{
-  return (!cid.IsNull() && (uid.IsStatic() || uid.IsBrokerDynamicUidRequest()) && !search_domain.empty());
-}
-
-/// \brief Create a default set of controller data.
+/// \brief Create a ControllerSettings instance by passing the required members explicitly.
 ///
-/// Generates an ephemeral UUID to use as a CID and creates a dynamic UID based on the provided
-/// ESTA manufacturer ID.
-inline ControllerData ControllerData::Default(uint16_t manufacturer_id)
+/// This version just takes the controller's ESTA manufacturer ID and uses it to generate
+/// an RDMnet dynamic UID request.
+inline ControllerSettings::ControllerSettings(const etcpal::Uuid& new_cid, uint16_t manufacturer_id)
+    : cid(new_cid), uid(rdm::Uid::DynamicUidRequest(manufacturer_id))
 {
-  return ControllerData(etcpal::Uuid::OsPreferred(), rdm::Uid::BrokerDynamicUidRequest(manufacturer_id),
-                        E133_DEFAULT_DOMAIN);
+}
+
+/// Determine whether a ControllerSettings instance contains valid data for RDMnet operation.
+bool ControllerSettings::IsValid() const
+{
+  return (!cid.IsNull() && (uid.IsStatic() || uid.IsDynamicUidRequest()));
 }
 
 /// A set of initial identifying RDM data to use for a controller.
@@ -198,29 +205,44 @@ struct ControllerRdmData
 
   /// Create an empty, invalid structure by default - must be filled in before passing to Controller::Startup().
   ControllerRdmData() = default;
-  ControllerRdmData(const std::string& manufacturer_label_in, const std::string& device_model_description_in,
-                    const std::string& software_version_label_in, const std::string& device_label_in);
+  ControllerRdmData(const char* new_manufacturer_label, const char* new_device_model_description,
+                    const char* new_software_version_label, const char* new_device_label);
+  ControllerRdmData(const std::string& new_manufacturer_label, const std::string& new_device_model_description,
+                    const std::string& new_software_version_label, const std::string& new_device_label);
 
   bool IsValid() const;
 };
 
 /// Create a ControllerRdmData instance by passing all members explicitly.
-inline ControllerRdmData::ControllerRdmData(const std::string& manufacturer_label_in,
-                                            const std::string& device_model_description_in,
-                                            const std::string& software_version_label_in,
-                                            const std::string& device_label_in)
-    : manufacturer_label(manufacturer_label_in)
-    , device_model_description(device_model_description_in)
-    , software_version_label(software_version_label_in)
-    , device_label(device_label_in)
+/// Pointers must remain valid until this structure is passed to rdmnet::Controller::Startup().
+inline ControllerRdmData::ControllerRdmData(const char* new_manufacturer_label,
+                                            const char* new_device_model_description,
+                                            const char* new_software_version_label, const char* new_device_label)
+    : manufacturer_label(new_manufacturer_label)
+    , device_model_description(new_device_model_description)
+    , software_version_label(new_software_version_label)
+    , device_label(new_device_label)
+{
+}
+
+/// Create a ControllerRdmData instance by passing all members explicitly as std::strings.
+/// Strings must remain in scope until this structure is passed to rdmnet::Controller::Startup().
+inline ControllerRdmData::ControllerRdmData(const std::string& new_manufacturer_label,
+                                            const std::string& new_device_model_description,
+                                            const std::string& new_software_version_label,
+                                            const std::string& new_device_label)
+    : manufacturer_label(new_manufacturer_label)
+    , device_model_description(new_device_model_description)
+    , software_version_label(new_software_version_label)
+    , device_label(new_device_label)
 {
 }
 
 /// Whether this data is valid (all string members are non-empty).
 inline bool ControllerRdmData::IsValid() const
 {
-  return !(manufacturer_label.empty() && device_model_description.empty() && software_version_label.empty() &&
-           device_label.empty());
+  return ((!manufacturer_label.empty()) && (!device_model_description.empty()) && (!software_version_label.empty()) &&
+          (!device_label.empty()));
 }
 
 /// \ingroup rdmnet_controller_cpp
@@ -230,27 +252,48 @@ inline bool ControllerRdmData::IsValid() const
 class Controller
 {
 public:
-  etcpal::Error Startup(ControllerNotifyHandler& notify_handler, const ControllerData& data,
+  Controller() = default;
+  Controller(const Controller& other) = delete;
+  Controller& operator=(const Controller& other) = delete;
+
+  etcpal::Error Startup(ControllerNotifyHandler& notify_handler, const ControllerSettings& settings,
                         const ControllerRdmData& rdm_data);
-  etcpal::Error Startup(ControllerNotifyHandler& notify_handler, const ControllerData& data,
-                        ControllerRdmCommandHandler& rdm_handler);
+  etcpal::Error Startup(ControllerNotifyHandler& notify_handler, const ControllerSettings& settings,
+                        ControllerRdmCommandHandler& rdm_handler, uint8_t* rdm_response_buf = nullptr);
   void Shutdown(rdmnet_disconnect_reason_t disconnect_reason = kRdmnetDisconnectShutdown);
 
-  etcpal::Expected<ScopeHandle> AddDefaultScope(const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
-  etcpal::Expected<ScopeHandle> AddScope(const Scope& scope);
-  etcpal::Expected<ScopeHandle> AddScope(const std::string& id,
+  etcpal::Expected<ScopeHandle> AddScope(const char* id,
                                          const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
+  etcpal::Expected<ScopeHandle> AddScope(const Scope& scope_config);
+  etcpal::Expected<ScopeHandle> AddDefaultScope(const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
   etcpal::Error RemoveScope(ScopeHandle scope_handle, rdmnet_disconnect_reason_t disconnect_reason);
 
-  etcpal::Expected<uint32_t> SendRdmCommand(ScopeHandle scope_handle, const RdmnetLocalRdmCommand& cmd);
-  etcpal::Expected<uint32_t> SendRdmCommand(ScopeHandle scope_handle, const rdm::Uid& dest_uid, uint16_t dest_endpoint,
-                                            const rdm::Command& rdm);
-  etcpal::Error SendRdmResponse(ScopeHandle scope_handle, const RdmnetLocalRdmResponse& resp);
-  etcpal::Error SendLlrpResponse(const LlrpLocalRdmResponse& resp);
+  etcpal::Expected<uint32_t> SendRdmCommand(ScopeHandle scope_handle, const DestinationAddr& destination,
+                                            rdmnet_command_class_t command_class, uint16_t param_id,
+                                            const uint8_t* data = nullptr, uint8_t data_len = 0);
+  etcpal::Expected<uint32_t> SendGetCommand(ScopeHandle scope_handle, const DestinationAddr& destination,
+                                            uint16_t param_id, const uint8_t* data = nullptr, uint8_t data_len = 0);
+  etcpal::Expected<uint32_t> SendSetCommand(ScopeHandle scope_handle, const DestinationAddr& destination,
+                                            uint16_t param_id, const uint8_t* data = nullptr, uint8_t data_len = 0);
+
   etcpal::Error RequestClientList(ScopeHandle scope_handle);
+  etcpal::Error RequestResponderIds(ScopeHandle scope_handle, const rdm::Uid* uids, size_t num_uids);
+  etcpal::Error RequestResponderIds(ScopeHandle scope_handle, const std::vector<rdm::Uid>& uids);
+
+  etcpal::Error SendRdmAck(ScopeHandle scope_handle, const SavedRdmCommand& received_cmd,
+                           const uint8_t* response_data = nullptr, size_t response_data_len = 0);
+  etcpal::Error SendRdmNack(ScopeHandle scope_handle, const SavedRdmCommand& received_cmd,
+                            rdm_nack_reason_t nack_reason);
+  etcpal::Error SendRdmNack(ScopeHandle scope_handle, const SavedRdmCommand& received_cmd, uint16_t raw_nack_reason);
+  etcpal::Error SendRdmUpdate(ScopeHandle scope_handle, uint16_t param_id, const uint8_t* data = nullptr,
+                              size_t data_len = 0);
+
+  etcpal::Error SendLlrpAck(const llrp::SavedRdmCommand& received_cmd, const uint8_t* response_data = nullptr,
+                            size_t response_data_len = 0);
+  etcpal::Error SendLlrpNack(const llrp::SavedRdmCommand& received_cmd, rdm_nack_reason_t nack_reason);
+  etcpal::Error SendLlrpNack(const llrp::SavedRdmCommand& received_cmd, uint16_t raw_nack_reason);
 
   ControllerHandle handle() const;
-  const ControllerData& data() const;
   const ControllerRdmData& rdm_data() const;
   ControllerNotifyHandler* notify_handler() const;
   ControllerRdmCommandHandler* rdm_command_handler() const;
@@ -258,15 +301,8 @@ public:
 
   void UpdateRdmData(const ControllerRdmData& new_data);
 
-  static etcpal::Error Init(const EtcPalLogParams* log_params = nullptr,
-                            const std::vector<RdmnetMcastNetintId>& mcast_netints = std::vector<RdmnetMcastNetintId>{});
-  static etcpal::Error Init(const etcpal::Logger& logger,
-                            const std::vector<RdmnetMcastNetintId>& mcast_netints = std::vector<RdmnetMcastNetintId>{});
-  static void Deinit();
-
 private:
-  ControllerHandle handle_{RDMNET_CONTROLLER_INVALID};
-  ControllerData my_data_;
+  ControllerHandle handle_{kInvalidControllerHandle};
   ControllerRdmData my_rdm_data_;
 
   ControllerRdmCommandHandler* rdm_cmd_handler_{nullptr};
@@ -278,17 +314,12 @@ private:
 
 namespace internal
 {
-#define RDMNET_GET_CONTROLLER_REF(handle_in, context_in)            \
-  Controller& controller = *(static_cast<Controller*>(context_in)); \
-  assert((handle_in) == controller.handle());
-
 extern "C" inline void ControllerLibCbConnected(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                                 const RdmnetClientConnectedInfo* info, void* context)
 {
   if (info && context)
   {
-    RDMNET_GET_CONTROLLER_REF(handle, context);
-    controller.notify_handler()->HandleConnectedToBroker(controller, scope_handle, *info);
+    static_cast<ControllerNotifyHandler*>(context)->HandleConnectedToBroker(handle, scope_handle, *info);
   }
 }
 
@@ -297,8 +328,7 @@ extern "C" inline void ControllerLibCbConnectFailed(rdmnet_controller_t handle, 
 {
   if (info && context)
   {
-    RDMNET_GET_CONTROLLER_REF(handle, context);
-    controller.notify_handler()->HandleBrokerConnectFailed(controller, scope_handle, *info);
+    static_cast<ControllerNotifyHandler*>(context)->HandleBrokerConnectFailed(handle, scope_handle, *info);
   }
 }
 
@@ -307,8 +337,7 @@ extern "C" inline void ControllerLibCbDisconnected(rdmnet_controller_t handle, r
 {
   if (info && context)
   {
-    RDMNET_GET_CONTROLLER_REF(handle, context);
-    controller.notify_handler()->HandleDisconnectedFromBroker(controller, scope_handle, *info);
+    static_cast<ControllerNotifyHandler*>(context)->HandleDisconnectedFromBroker(handle, scope_handle, *info);
   }
 }
 
@@ -318,61 +347,55 @@ extern "C" inline void ControllerLibCbClientListUpdate(rdmnet_controller_t handl
 {
   if (list && context)
   {
-    RDMNET_GET_CONTROLLER_REF(handle, context);
-    controller.notify_handler()->HandleClientListUpdate(controller, scope_handle, list_action, *list);
+    static_cast<ControllerNotifyHandler*>(context)->HandleClientListUpdate(handle, scope_handle, list_action, *list);
   }
 }
 
 extern "C" inline void ControllerLibCbRdmResponseReceived(rdmnet_controller_t handle,
                                                           rdmnet_client_scope_t scope_handle,
-                                                          const RdmnetRemoteRdmResponse* resp, void* context)
+                                                          const RdmnetRdmResponse* resp, void* context)
 {
   if (resp && context)
   {
-    RDMNET_GET_CONTROLLER_REF(handle, context);
-    controller.notify_handler()->HandleRdmResponse(controller, scope_handle, *resp);
+    static_cast<ControllerNotifyHandler*>(context)->HandleRdmResponse(handle, scope_handle, *resp);
   }
 }
 
 extern "C" inline void ControllerLibCbStatusReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                     const RdmnetRemoteRptStatus* status, void* context)
+                                                     const RdmnetRptStatus* status, void* context)
 {
   if (status && context)
   {
-    RDMNET_GET_CONTROLLER_REF(handle, context);
-    controller.notify_handler()->HandleRptStatus(controller, scope_handle, *status);
+    static_cast<ControllerNotifyHandler*>(context)->HandleRptStatus(handle, scope_handle, *status);
   }
 }
 
-extern "C" inline void ControllerLibCbBrokerDynamicUidMappingsReceived(rdmnet_controller_t handle,
-                                                                       rdmnet_client_scope_t scope_handle,
-                                                                       const BrokerDynamicUidAssignmentList* list,
-                                                                       void* context)
+extern "C" inline void ControllerLibCbResponderIdsReceived(rdmnet_controller_t handle,
+                                                           rdmnet_client_scope_t scope_handle,
+                                                           const RdmnetDynamicUidAssignmentList* list, void* context)
 {
   if (list && context)
   {
-    RDMNET_GET_CONTROLLER_REF(handle, context);
-    controller.notify_handler()->HandleBrokerDynamicUidMappingsReceived(controller, scope_handle, *list);
+    static_cast<ControllerNotifyHandler*>(context)->HandleResponderIdsReceived(handle, scope_handle, *list);
   }
 }
 
 extern "C" inline void ControllerLibCbRdmCommandReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                         const RdmnetRemoteRdmCommand* cmd, void* context)
+                                                         const RdmnetRdmCommand* cmd, RdmnetSyncRdmResponse* response,
+                                                         void* context)
 {
   if (cmd && context)
   {
-    RDMNET_GET_CONTROLLER_REF(handle, context);
-    controller.rdm_command_handler()->HandleRdmCommand(controller, scope_handle, *cmd);
+    *response = static_cast<ControllerRdmCommandHandler*>(context)->HandleRdmCommand(handle, scope_handle, *cmd).get();
   }
 }
 
-extern "C" inline void ControllerLibCbLlrpRdmCommandReceived(rdmnet_controller_t handle,
-                                                             const LlrpRemoteRdmCommand* cmd, void* context)
+extern "C" inline void ControllerLibCbLlrpRdmCommandReceived(rdmnet_controller_t handle, const LlrpRdmCommand* cmd,
+                                                             RdmnetSyncRdmResponse* response, void* context)
 {
   if (cmd && context)
   {
-    RDMNET_GET_CONTROLLER_REF(handle, context);
-    controller.rdm_command_handler()->HandleLlrpRdmCommand(controller, *cmd);
+    *response = static_cast<ControllerRdmCommandHandler*>(context)->HandleLlrpRdmCommand(handle, *cmd).get();
   }
 }
 
@@ -380,80 +403,123 @@ extern "C" inline void ControllerLibCbLlrpRdmCommandReceived(rdmnet_controller_t
 
 /// \endcond
 
-/// \brief Allocate resources and startup this controller with the given configuration.
+/// \brief Allocate resources and start up this controller with the given configuration.
 ///
 /// This overload provides a set of RDM data to the library to use for the controller's RDM
 /// responder. RDM commands addressed to the controller will be handled internally by the library.
 ///
 /// \param notify_handler A class instance to handle callback notifications from this controller.
-/// \param data RDMnet protocol data used by this controller. In most instances,
-///             the value produced by ControllerData::Default() is sufficient.
+/// \param settings Configuration settings used by this controller.
 /// \param rdm_data Data to identify this controller to other controllers on the network.
 /// \return etcpal::Error::Ok(): Controller started successfully.
 /// \return #kEtcPalErrInvalid: Invalid argument.
 /// \return Errors forwarded from rdmnet_controller_create().
-inline etcpal::Error Controller::Startup(ControllerNotifyHandler& notify_handler, const ControllerData& data,
+inline etcpal::Error Controller::Startup(ControllerNotifyHandler& notify_handler, const ControllerSettings& settings,
                                          const ControllerRdmData& rdm_data)
 {
-  if (!data.IsValid() || !rdm_data.IsValid())
+  if (!settings.IsValid() || !rdm_data.IsValid())
     return kEtcPalErrInvalid;
 
   notify_ = &notify_handler;
-  my_data_ = data;
   my_rdm_data_ = rdm_data;
 
-  RdmnetControllerConfig config;
-  rdmnet_controller_config_init(&config, data.uid.manufacturer_id());
-  config.optional.uid = data.uid.get();
-  config.optional.search_domain = data.search_domain.c_str();
-  config.cid = data.cid.get();
-  RDMNET_CONTROLLER_SET_CALLBACKS(&config, internal::ControllerLibCbConnected, internal::ControllerLibCbConnectFailed,
-                                  internal::ControllerLibCbDisconnected, internal::ControllerLibCbClientListUpdate,
-                                  internal::ControllerLibCbRdmResponseReceived, internal::ControllerLibCbStatusReceived,
-                                  internal::ControllerLibCbBrokerDynamicUidMappingsReceived, this);
-  RDMNET_CONTROLLER_SET_RDM_DATA(&config, rdm_data.manufacturer_label.c_str(),
-                                 rdm_data.device_model_description.c_str(), rdm_data.software_version_label.c_str(),
-                                 rdm_data.device_label.c_str(), rdm_data.device_label_settable);
+  // clang-format off
+  RdmnetControllerConfig config = {
+    settings.cid.get(),             // CID
+    {                               // Callback shims
+      internal::ControllerLibCbConnected,
+      internal::ControllerLibCbConnectFailed,
+      internal::ControllerLibCbDisconnected,
+      internal::ControllerLibCbClientListUpdate,
+      internal::ControllerLibCbRdmResponseReceived,
+      internal::ControllerLibCbStatusReceived,
+      internal::ControllerLibCbResponderIdsReceived
+    },
+    {                               // RDM command callback shims
+      nullptr, nullptr, nullptr
+    },
+    {                               // RDM data
+      rdm_data.manufacturer_label.c_str(),
+      rdm_data.device_model_description.c_str(),
+      rdm_data.software_version_label.c_str(),
+      rdm_data.device_label.c_str(),
+      rdm_data.device_label_settable
+    },
+    &notify_handler,                // Callback context
+    settings.uid.get(),             // UID
+    settings.search_domain.c_str(), // Search domain
+    settings.create_llrp_target,    // Create LLRP target
+    nullptr,
+    0
+  };
+  // clang-format on
+
+  // LLRP network interfaces
+  if (!settings.llrp_netints.empty())
+  {
+    config.llrp_netints = settings.llrp_netints.data();
+    config.num_llrp_netints = settings.llrp_netints.size();
+  }
+
   return rdmnet_controller_create(&config, &handle_);
 }
 
-/// \brief Allocate resources and startup this controller with the given configuration.
+/// \brief Allocate resources and start up this controller with the given configuration.
 ///
 /// This overload provides a notification handler to respond to RDM commands addressed to the
 /// controller. You must implement a core set of RDM commands - see \ref using_controller for more
 /// information.
 ///
 /// \param notify_handler A class instance to handle callback notifications from this controller.
-/// \param data RDMnet protocol data used by this controller. In most instances,
-///             the value produced by ControllerData::Default() is sufficient.
+/// \param settings Configuration settings used by this controller.
 /// \param rdm_handler A class instance to handle RDM commands addressed to this controller.
+/// \param rdm_response_buf (optional) A data buffer used to respond synchronously to RDM commands.
+///                         See \ref handling_rdm_commands for more information.
 /// \return etcpal::Error::Ok(): Controller started successfully.
+/// \return #kEtcPalErrInvalid: Invalid argument.
 /// \return Errors forwarded from rdmnet_controller_create().
-inline etcpal::Error Controller::Startup(ControllerNotifyHandler& notify_handler, const ControllerData& data,
-                                         ControllerRdmCommandHandler& rdm_handler)
+inline etcpal::Error Controller::Startup(ControllerNotifyHandler& notify_handler, const ControllerSettings& settings,
+                                         ControllerRdmCommandHandler& rdm_handler, uint8_t* rdm_response_buf)
 {
-  if (!data.IsValid())
+  if (!settings.IsValid())
     return kEtcPalErrInvalid;
 
   notify_ = &notify_handler;
   rdm_cmd_handler_ = &rdm_handler;
-  my_data_ = data;
 
-  RdmnetControllerConfig config;
-  rdmnet_controller_config_init(&config, data.uid.manufacturer_id());
-  config.optional.uid = data.uid.get();
-  config.optional.search_domain = data.search_domain.c_str();
-  config.cid = data.cid.get();
-  RDMNET_CONTROLLER_SET_CALLBACKS(&config, internal::ControllerLibCbConnected, internal::ControllerLibCbConnectFailed,
-                                  internal::ControllerLibCbDisconnected, internal::ControllerLibCbClientListUpdate,
-                                  internal::ControllerLibCbRdmResponseReceived, internal::ControllerLibCbStatusReceived,
-                                  internal::ControllerLibCbBrokerDynamicUidMappingsReceived, this);
-  RDMNET_CONTROLLER_SET_RDM_CMD_CALLBACKS(&config, internal::ControllerLibCbRdmCommandReceived,
-                                          internal::ControllerLibCbLlrpRdmCommandReceived);
+  // clang-format off
+  RdmnetControllerConfig config = {
+    settings.cid.get(),             // CID
+    {                               // Callback shims
+      internal::ControllerLibCbConnected,
+      internal::ControllerLibCbConnectFailed,
+      internal::ControllerLibCbDisconnected,
+      internal::ControllerLibCbClientListUpdate,
+      internal::ControllerLibCbRdmResponseReceived,
+      internal::ControllerLibCbStatusReceived,
+      internal::ControllerLibCbResponderIdsReceived
+    },
+    {                               // RDM command callback shims
+      internal::ControllerLibCbRdmCommandReceived,
+      internal::ControllerLibCbLlrpRdmCommandReceived,
+      rdm_response_buf
+    },
+    {                               // RDM data
+      nullptr, nullptr, nullptr, nullptr, false
+    },
+    &notify_handler,                // Callback context
+    settings.uid.get(),             // UID
+    settings.search_domain.c_str(), // Search domain
+    settings.create_llrp_target,    // TODO: Create LLRP target
+    settings.llrp_netints.data(),   // TODO: LLRP network interfaces
+    settings.llrp_netints.size()    // TODO: LLRP network interfaces
+  };
+  // clang-format on
+
   return rdmnet_controller_create(&config, &handle_);
 }
 
-/// \brief Shutdown this controller and deallocate resources.
+/// \brief Shut down this controller and deallocate resources.
 ///
 /// Will disconnect all scopes to which this controller is currently connected, sending the
 /// disconnect reason provided in the disconnect_reason parameter.
@@ -462,37 +528,13 @@ inline etcpal::Error Controller::Startup(ControllerNotifyHandler& notify_handler
 inline void Controller::Shutdown(rdmnet_disconnect_reason_t disconnect_reason)
 {
   rdmnet_controller_destroy(handle_, disconnect_reason);
-  handle_ = RDMNET_CONTROLLER_INVALID;
-}
-
-/// \brief Shortcut to add the default RDMnet scope to a controller instance.
-///
-/// \param static_broker_addr [optional] A static broker address to configure for the default scope.
-/// \return On success, a handle to the new scope, to be used with subsequent API calls.
-/// \return On failure, error codes from rdmnet_controller_add_scope().
-inline etcpal::Expected<ScopeHandle> Controller::AddDefaultScope(const etcpal::SockAddr& static_broker_addr)
-{
-  return kEtcPalErrNotImpl;
+  handle_ = kInvalidControllerHandle;
 }
 
 /// \brief Add a new scope to this controller instance.
 ///
 /// The library will attempt to discover and connect to a broker for the scope (or just connect if
-/// a static broker address is given); the status of these attempts will be communicated via
-/// associated ControllerNotifyHandler.
-///
-/// \param scope Configuration information for the new scope.
-/// \return On success, a handle to the new scope, to be used with subsequent API calls.
-/// \return On failure, error codes from rdmnet_controller_add_scope().
-inline etcpal::Expected<ScopeHandle> Controller::AddScope(const Scope& scope)
-{
-  return AddScope(scope.id(), scope.static_broker_addr());
-}
-
-/// \brief Add a new scope to this controller instance.
-///
-/// The library will attempt to discover and connect to a broker for the scope (or just connect if
-/// a static broker address is given); the status of these attempts will be communicated via
+/// a static broker address is given); the status of these attempts will be communicated via the
 /// associated ControllerNotifyHandler.
 ///
 /// \param id The scope ID string.
@@ -500,13 +542,40 @@ inline etcpal::Expected<ScopeHandle> Controller::AddScope(const Scope& scope)
 ///                           broker for this scope.
 /// \return On success, a handle to the new scope, to be used with subsequent API calls.
 /// \return On failure, error codes from rdmnet_controller_add_scope().
-inline etcpal::Expected<ScopeHandle> Controller::AddScope(const std::string& id,
-                                                          const etcpal::SockAddr& static_broker_addr)
+inline etcpal::Expected<ScopeHandle> Controller::AddScope(const char* id, const etcpal::SockAddr& static_broker_addr)
 {
-  RdmnetScopeConfig scope_config = {id.c_str(), static_broker_addr.ip().IsValid(), static_broker_addr.get()};
+  RdmnetScopeConfig scope_config = {id, static_broker_addr.get()};
   rdmnet_client_scope_t scope_handle;
   auto result = rdmnet_controller_add_scope(handle_, &scope_config, &scope_handle);
   return (result == kEtcPalErrOk ? scope_handle : result);
+}
+
+/// \brief Add a new scope to this controller instance.
+///
+/// The library will attempt to discover and connect to a broker for the scope (or just connect if
+/// a static broker address is given); the status of these attempts will be communicated via the
+/// associated ControllerNotifyHandler.
+///
+/// \param scope_config Configuration information for the new scope.
+/// \return On success, a handle to the new scope, to be used with subsequent API calls.
+/// \return On failure, error codes from rdmnet_controller_add_scope().
+inline etcpal::Expected<ScopeHandle> Controller::AddScope(const Scope& scope_config)
+{
+  return AddScope(scope_config.id_string().c_str(), scope_config.static_broker_addr());
+}
+
+/// \brief Shortcut to add the default RDMnet scope to a controller instance.
+///
+/// The library will attempt to discover and connect to a broker for the default scope (or just
+/// connect if a static broker address is given); the status of these attempts will be communicated
+/// via the associated ControllerNotifyHandler.
+///
+/// \param static_broker_addr [optional] A static broker address to configure for the default scope.
+/// \return On success, a handle to the new scope, to be used with subsequent API calls.
+/// \return On failure, error codes from rdmnet_controller_add_scope().
+inline etcpal::Expected<ScopeHandle> Controller::AddDefaultScope(const etcpal::SockAddr& static_broker_addr)
+{
+  return AddScope(E133_DEFAULT_SCOPE, static_broker_addr);
 }
 
 /// \brief Remove a previously-added scope from this controller instance.
@@ -527,48 +596,70 @@ inline etcpal::Error Controller::RemoveScope(ScopeHandle scope_handle, rdmnet_di
 /// The response will be delivered via the ControllerNotifyHandler::HandleRdmResponse() callback.
 ///
 /// \param scope_handle Handle to the scope on which to send the RDM command.
-/// \param cmd The RDM command data to send, including its addressing information.
+/// \param destination The destination addressing information for the RDM command.
+/// \param command_class The command's RDM command class (GET or SET).
+/// \param param_id The command's RDM parameter ID.
+/// \param data [optional] The command's RDM parameter data, if it has any.
+/// \param data_len [optional] The length of the RDM parameter data (or 0 if data is nullptr).
 /// \return On success, a sequence number which can be used to match the command with a response.
 /// \return On failure, error codes from rdmnet_controller_send_rdm_command().
-inline etcpal::Expected<uint32_t> Controller::SendRdmCommand(ScopeHandle scope_handle, const RdmnetLocalRdmCommand& cmd)
+inline etcpal::Expected<uint32_t> Controller::SendRdmCommand(ScopeHandle scope_handle,
+                                                             const DestinationAddr& destination,
+                                                             rdmnet_command_class_t command_class, uint16_t param_id,
+                                                             const uint8_t* data, uint8_t data_len)
 {
+  ETCPAL_UNUSED_ARG(scope_handle);
+  ETCPAL_UNUSED_ARG(destination);
+  ETCPAL_UNUSED_ARG(command_class);
+  ETCPAL_UNUSED_ARG(param_id);
+  ETCPAL_UNUSED_ARG(data);
+  ETCPAL_UNUSED_ARG(data_len);
   return kEtcPalErrNotImpl;
 }
 
-/// \brief Send an RDM command from a controller on a scope.
+/// \brief Send an RDM GET command from a controller on a scope.
 ///
 /// The response will be delivered via the ControllerNotifyHandler::HandleRdmResponse() callback.
 ///
 /// \param scope_handle Handle to the scope on which to send the RDM command.
-/// \param dest_uid The UID of the component to which to send the RDM command.
-/// \param dest_endpoint The endpoint on the device to which to send the RDM command.
-///                      E133_NULL_ENDPOINT addresses the default responder. If addressing another
-///                      controller, this must always be E133_NULL_ENDPOINT.
-/// \param rdm The RDM command data to send.
+/// \param destination The destination addressing information for the RDM command.
+/// \param param_id The command's RDM parameter ID.
+/// \param data [optional] The command's RDM parameter data, if it has any.
+/// \param data_len [optional] The length of the RDM parameter data (or 0 if data is nullptr).
 /// \return On success, a sequence number which can be used to match the command with a response.
-/// \return On failure, error codes from rdmnet_controller_send_rdm_command().
-inline etcpal::Expected<uint32_t> Controller::SendRdmCommand(ScopeHandle scope_handle, const rdm::Uid& dest_uid,
-                                                             uint16_t dest_endpoint, const rdm::Command& rdm)
+/// \return On failure, error codes from rdmnet_controller_send_get_command().
+inline etcpal::Expected<uint32_t> Controller::SendGetCommand(ScopeHandle scope_handle,
+                                                             const DestinationAddr& destination, uint16_t param_id,
+                                                             const uint8_t* data, uint8_t data_len)
 {
+  ETCPAL_UNUSED_ARG(scope_handle);
+  ETCPAL_UNUSED_ARG(destination);
+  ETCPAL_UNUSED_ARG(param_id);
+  ETCPAL_UNUSED_ARG(data);
+  ETCPAL_UNUSED_ARG(data_len);
   return kEtcPalErrNotImpl;
 }
 
-/// \brief Send an RDM response from a controller on a scope.
-/// \param scope_handle Handle to the scope on which to send the RDM response.
-/// \param resp The RDM response data to send, including its addressing information.
-/// \return etcpal::Error::Ok(): Response sent successfully.
-/// \return Error codes from from rdmnet_controller_send_rdm_response().
-inline etcpal::Error Controller::SendRdmResponse(ScopeHandle scope_handle, const RdmnetLocalRdmResponse& resp)
+/// \brief Send an RDM SET command from a controller on a scope.
+///
+/// The response will be delivered via the ControllerNotifyHandler::HandleRdmResponse() callback.
+///
+/// \param scope_handle Handle to the scope on which to send the RDM command.
+/// \param destination The destination addressing information for the RDM command.
+/// \param param_id The command's RDM parameter ID.
+/// \param data [optional] The command's RDM parameter data, if it has any.
+/// \param data_len [optional] The length of the RDM parameter data (or 0 if data is nullptr).
+/// \return On success, a sequence number which can be used to match the command with a response.
+/// \return On failure, error codes from rdmnet_controller_send_set_command().
+inline etcpal::Expected<uint32_t> Controller::SendSetCommand(ScopeHandle scope_handle,
+                                                             const DestinationAddr& destination, uint16_t param_id,
+                                                             const uint8_t* data, uint8_t data_len)
 {
-  return kEtcPalErrNotImpl;
-}
-
-/// \brief Send an LLRP RDM response from a controller on a scope.
-/// \param resp The LLRP RDM response data to send, including its addressing information.
-/// \return etcpal::Error::Ok(): Response sent successfully.
-/// \return Error codes from from rdmnet_controller_send_llrp_rdm_response().
-inline etcpal::Error Controller::SendLlrpResponse(const LlrpLocalRdmResponse& resp)
-{
+  ETCPAL_UNUSED_ARG(scope_handle);
+  ETCPAL_UNUSED_ARG(destination);
+  ETCPAL_UNUSED_ARG(param_id);
+  ETCPAL_UNUSED_ARG(data);
+  ETCPAL_UNUSED_ARG(data_len);
   return kEtcPalErrNotImpl;
 }
 
@@ -577,26 +668,186 @@ inline etcpal::Error Controller::SendLlrpResponse(const LlrpLocalRdmResponse& re
 /// The response will be delivered via the ControllerNotifyHandler::HandleClientListUpdate()
 /// callback.
 ///
-/// \param[in] scope_handle Handle to the scope on which to request the client list.
+/// \param scope_handle Handle to the scope on which to request the client list.
 /// \return etcpal::Error::Ok(): Request sent successfully.
-/// \return Errors codes from rdmnet_controller_request_client_list().
+/// \return Error codes from rdmnet_controller_request_client_list().
 inline etcpal::Error Controller::RequestClientList(ScopeHandle scope_handle)
 {
+  ETCPAL_UNUSED_ARG(scope_handle);
+  return kEtcPalErrNotImpl;
+}
+
+/// \brief Request mappings from dynamic UIDs to Responder IDs (RIDs).
+///
+/// See \ref devices_and_gateways for more information. A RID is a UUID that permanently identifies
+/// a virtual RDMnet responder.
+///
+/// \param scope_handle Handle to the scope on which to request the responder IDs.
+/// \param uids List of dynamic UIDs for which to request the corresponding responder ID.
+/// \param num_uids Size of the uids array.
+/// \return etcpal::Error::Ok(): Request sent successfully.
+/// \return Error codes from rdmnet_controller_request_responder_ids().
+inline etcpal::Error Controller::RequestResponderIds(ScopeHandle scope_handle, const rdm::Uid* uids, size_t num_uids)
+{
+  ETCPAL_UNUSED_ARG(scope_handle);
+  ETCPAL_UNUSED_ARG(uids);
+  ETCPAL_UNUSED_ARG(num_uids);
+  return kEtcPalErrNotImpl;
+}
+
+/// \brief Request mappings from dynamic UIDs to Responder IDs (RIDs).
+///
+/// See \ref devices_and_gateways for more information. A RID is a UUID that permanently identifies
+/// a virtual RDMnet responder.
+///
+/// \param scope_handle Handle to the scope on which to request the responder IDs.
+/// \param uids List of dynamic UIDs for which to request the corresponding responder ID.
+/// \return etcpal::Error::Ok(): Request sent successfully.
+/// \return Error codes from rdmnet_controller_request_responder_ids().
+inline etcpal::Error Controller::RequestResponderIds(ScopeHandle scope_handle, const std::vector<rdm::Uid>& uids)
+{
+  ETCPAL_UNUSED_ARG(scope_handle);
+  ETCPAL_UNUSED_ARG(uids);
+  return kEtcPalErrNotImpl;
+}
+
+/// \brief Send an acknowledge (ACK) response to an RDM command received by a controller.
+///
+/// This function should only be used if a ControllerRdmCommandHandler was supplied when starting
+/// this controller.
+///
+/// \param scope_handle Handle to the scope on which the corresponding command was received.
+/// \param received_cmd The command to which this ACK is a response.
+/// \param response_data [optional] The response's RDM parameter data, if it has any.
+/// \param response_data_len [optional] The length of the RDM parameter data (or 0 if data is nullptr).
+/// \return etcpal::Error::Ok(): ACK sent successfully.
+/// \return Error codes from rdmnet_controller_send_rdm_ack().
+inline etcpal::Error Controller::SendRdmAck(ScopeHandle scope_handle, const SavedRdmCommand& received_cmd,
+                                            const uint8_t* response_data, size_t response_data_len)
+{
+  ETCPAL_UNUSED_ARG(scope_handle);
+  ETCPAL_UNUSED_ARG(received_cmd);
+  ETCPAL_UNUSED_ARG(response_data);
+  ETCPAL_UNUSED_ARG(response_data_len);
+  return kEtcPalErrNotImpl;
+}
+
+/// \brief Send a negative acknowledge (NACK) response to an RDM command received by a controller.
+///
+/// This function should only be used if a ControllerRdmCommandHandler was supplied when starting
+/// this controller.
+///
+/// \param scope_handle Handle to the scope on which the corresponding command was received.
+/// \param received_cmd The command to which this NACK is a response.
+/// \param nack_reason The RDM NACK reason to send with the NACK response.
+/// \return etcpal::Error::Ok(): NACK sent successfully.
+/// \return Error codes from rdmnet_controller_send_rdm_nack().
+inline etcpal::Error Controller::SendRdmNack(ScopeHandle scope_handle, const SavedRdmCommand& received_cmd,
+                                             rdm_nack_reason_t nack_reason)
+{
+  ETCPAL_UNUSED_ARG(scope_handle);
+  ETCPAL_UNUSED_ARG(received_cmd);
+  ETCPAL_UNUSED_ARG(nack_reason);
+  return kEtcPalErrNotImpl;
+}
+
+/// \brief Send a negative acknowledge (NACK) response to an RDM command received by a controller.
+///
+/// This function should only be used if a ControllerRdmCommandHandler was supplied when starting
+/// this controller.
+///
+/// \param scope_handle Handle to the scope on which the corresponding command was received.
+/// \param received_cmd The command to which this NACK is a response.
+/// \param raw_nack_reason The NACK reason (either standard or manufacturer-specific) to send with
+///                        the NACK response.
+/// \return etcpal::Error::Ok(): NACK sent successfully.
+/// \return Error codes from rdmnet_controller_send_rdm_nack().
+inline etcpal::Error Controller::SendRdmNack(ScopeHandle scope_handle, const SavedRdmCommand& received_cmd,
+                                             uint16_t raw_nack_reason)
+{
+  ETCPAL_UNUSED_ARG(scope_handle);
+  ETCPAL_UNUSED_ARG(received_cmd);
+  ETCPAL_UNUSED_ARG(raw_nack_reason);
+  return kEtcPalErrNotImpl;
+}
+
+/// \brief Send an asynchronous RDM GET response to update the value of a local parameter.
+///
+/// This function should only be used if a ControllerRdmCommandHandler was supplied when starting
+/// this controller.
+///
+/// \param scope_handle Handle to the scope on which to send the RDM update.
+/// \param param_id The RDM parameter ID that has been updated.
+/// \param data The updated parameter data, if any.
+/// \param data_len The length of the parameter data, if any.
+/// \return etcpal::Error::Ok(): RDM update sent successfully.
+/// \return Error codes from rdmnet_controller_send_rdm_update().
+inline etcpal::Error Controller::SendRdmUpdate(ScopeHandle scope_handle, uint16_t param_id, const uint8_t* data,
+                                               size_t data_len)
+{
+  ETCPAL_UNUSED_ARG(scope_handle);
+  ETCPAL_UNUSED_ARG(param_id);
+  ETCPAL_UNUSED_ARG(data);
+  ETCPAL_UNUSED_ARG(data_len);
+  return kEtcPalErrNotImpl;
+}
+
+/// \brief Send an acknowledge (ACK) response to an LLRP RDM command received by a controller.
+///
+/// This function should only be used if a ControllerRdmCommandHandler was supplied when starting
+/// this controller.
+///
+/// \param received_cmd The command to which this ACK is a response.
+/// \param response_data [optional] The response's RDM parameter data, if it has any.
+/// \param response_data_len [optional] The length of the RDM parameter data (or 0 if data is nullptr).
+/// \return etcpal::Error::Ok(): LLRP ACK sent successfully.
+/// \return Error codes from rdmnet_controller_send_llrp_ack().
+inline etcpal::Error Controller::SendLlrpAck(const llrp::SavedRdmCommand& received_cmd, const uint8_t* response_data,
+                                             size_t response_data_len)
+{
+  ETCPAL_UNUSED_ARG(received_cmd);
+  ETCPAL_UNUSED_ARG(response_data);
+  ETCPAL_UNUSED_ARG(response_data_len);
+  return kEtcPalErrNotImpl;
+}
+
+/// \brief Send a negative acknowledge (NACK) response to an LLRP RDM command received by a controller.
+///
+/// This function should only be used if a ControllerRdmCommandHandler was supplied when starting
+/// this controller.
+///
+/// \param received_cmd The command to which this NACK is a response.
+/// \param nack_reason The RDM NACK reason to send with the NACK response.
+/// \return etcpal::Error::Ok(): NACK sent successfully.
+/// \return Error codes from rdmnet_controller_send_llrp_nack().
+inline etcpal::Error Controller::SendLlrpNack(const llrp::SavedRdmCommand& received_cmd, rdm_nack_reason_t nack_reason)
+{
+  ETCPAL_UNUSED_ARG(received_cmd);
+  ETCPAL_UNUSED_ARG(nack_reason);
+  return kEtcPalErrNotImpl;
+}
+
+/// \brief Send a negative acknowledge (NACK) response to an LLRP RDM command received by a controller.
+///
+/// This function should only be used if a ControllerRdmCommandHandler was supplied when starting
+/// this controller.
+///
+/// \param received_cmd The command to which this NACK is a response.
+/// \param raw_nack_reason The NACK reason (either standard or manufacturer-specific) to send with
+///                        the NACK response.
+/// \return etcpal::Error::Ok(): NACK sent successfully.
+/// \return Error codes from rdmnet_controller_send_llrp_nack().
+inline etcpal::Error Controller::SendLlrpNack(const llrp::SavedRdmCommand& received_cmd, uint16_t raw_nack_reason)
+{
+  ETCPAL_UNUSED_ARG(received_cmd);
+  ETCPAL_UNUSED_ARG(raw_nack_reason);
   return kEtcPalErrNotImpl;
 }
 
 /// \brief Retrieve the handle of a controller instance.
-///
-/// The handle is mostly used for interacting with the C controller API.
 inline ControllerHandle Controller::handle() const
 {
   return handle_;
-}
-
-/// \brief Retrieve the data that this controller was configured with on startup.
-inline const ControllerData& Controller::data() const
-{
-  return my_data_;
 }
 
 /// \brief Retrieve the RDM data that this controller was configured with on startup.
@@ -620,58 +871,25 @@ inline ControllerRdmCommandHandler* Controller::rdm_command_handler() const
 }
 
 /// \brief Retrieve the scope configuration associated with a given scope handle.
-/// \return The scope configuration, or #kEtcPalErrNotFound if the scope handle was not found.
+/// \return The scope configuration on success.
+/// \return #kEtcPalErrNotInit: Module not initialized.
+/// \return #kEtcPalErrNotFound: Controller not started, or scope handle not found.
 inline etcpal::Expected<Scope> Controller::scope(ScopeHandle scope_handle) const
 {
-  RdmnetScopeConfig scope_config;
-  auto result = rdmnet_controller_get_scope(handle_, scope_handle, &scope_config);
-  return (result == kEtcPalErrOk) ? Scope(scope_config) : result;
+  char scope_str_buf[E133_SCOPE_STRING_PADDED_LENGTH];
+  EtcPalSockAddr static_broker_addr;
+  auto result = rdmnet_controller_get_scope(handle_, scope_handle, scope_str_buf, &static_broker_addr);
+
+  if (result == kEtcPalErrOk)
+    return Scope(scope_str_buf, static_broker_addr);
+  else
+    return result;
 }
 
 /// \brief Update the data used to identify this controller to other controllers.
 inline void Controller::UpdateRdmData(const ControllerRdmData& new_data)
 {
-}
-
-/// \brief Initialize the RDMnet Controller library.
-/// \param log_params Optional logging configuration for the RDMnet library. If nullptr, no
-///                   messages will be logged.
-/// \param mcast_netints Optional set of network interfaces on which to operate RDMnet's multicast
-///                      protocols. If left at default, all interfaces will be used.
-/// \return etcpal::Error::Ok(): Initialization successful.
-/// \return Error codes from rdmnet_client_init().
-inline etcpal::Error Controller::Init(const EtcPalLogParams* log_params,
-                                      const std::vector<RdmnetMcastNetintId>& mcast_netints)
-{
-  if (!mcast_netints.empty())
-  {
-    RdmnetNetintConfig netint_config;
-    netint_config.netint_arr = mcast_netints.data();
-    netint_config.num_netints = mcast_netints.size();
-    return rdmnet_controller_init(log_params, &netint_config);
-  }
-  else
-  {
-    return rdmnet_controller_init(log_params, nullptr);
-  }
-}
-
-/// \brief Initialize the RDMnet Controller library.
-/// \param logger Logger instance to gather log messages from the RDMnet library.
-/// \param mcast_netints Optional set of network interfaces on which to operate RDMnet's multicast
-///                      protocols. If left at default, all interfaces will be used.
-/// \return etcpal::Error::Ok(): Initialization successful.
-/// \return Error codes from rdmnet_client_init().
-inline etcpal::Error Controller::Init(const etcpal::Logger& logger,
-                                      const std::vector<RdmnetMcastNetintId>& mcast_netints)
-{
-  return Init(&logger.log_params(), mcast_netints);
-}
-
-/// \brief Deinitialize the RDMnet Controller library.
-inline void Controller::Deinit()
-{
-  rdmnet_controller_deinit();
+  ETCPAL_UNUSED_ARG(new_data);
 }
 
 };  // namespace rdmnet

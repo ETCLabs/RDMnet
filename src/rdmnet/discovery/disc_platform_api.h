@@ -25,7 +25,7 @@
 #define DISC_PLATFORM_API_H_
 
 #include "rdmnet/core.h"
-#include "rdmnet/core/discovery.h"
+#include "rdmnet/discovery.h"
 #include "discovered_broker.h"
 #include "monitored_scope.h"
 #include "registered_broker.h"

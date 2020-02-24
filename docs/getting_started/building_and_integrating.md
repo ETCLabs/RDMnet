@@ -64,50 +64,31 @@ target_link_libraries(MyApp PRIVATE RDMnetBroker) # RDMnet will be linked transi
 
 ### Including RDMnet in non-CMake projects
 
-## Building RDMnet on its own
+RDMnet can be built on its own using CMake and its headers and binaries can be installed for
+inclusion in a non-CMake project. Typical practice is to create a clean directory to hold the build
+results named some varion of "build".
 
-If you just want to play around with RDMnet, you can build the library standalone - in this
-configuration, you can set some CMake options to build extras like the unit tests and examples:
-* `RDMNET_BUILD_TESTS`: Build the unit tests
-* `RDMNET_BUILD_CONSOLE_EXAMPLES`: Build the console example applications
-* `RDMNET_BUILD_GUI_EXAMPLES`: Build the controller GUI example
-* `RDMNET_BUILD_TEST_TOOLS`: Build the library test tools
+**NOTE**: If you are cross-compiling and/or building for an embedded target, some additional
+configuration is necessary. EtcPal helps make this possible; see the 
+[EtcPal embedded build documentation](https://etclabs.github.io/EtcPal/docs/head/building_for_embedded.html)
+for more details.
 
-If you want to build the controller GUI example application, you will need another prerequisite:
-Qt (>=5.9.7 open-source). Qt installers are available [here](https://www.qt.io/download). To point
-CMake at the Qt dependency, there are two options:
-  + Set a system environment variable called QTDIR which points at the Qt installation directory
-    (i.e. .../Qt/5.9.7/msvc2017_64)
-  + Provide the Qt installation directory as an argument to CMake:
-    ```
-    cmake -DQTDIR=[...]/Qt/5.9.7/msvc2017_64
-    ```
-
-To configure and build RDMnet on its own using command-line CMake, follow these steps:
-
-1. Clone (or download and extract) the RDMnet repository:
-   ```
-   $ git clone https://github.com/ETCLabs/RDMnet
-   ```
-2. Create a directory in your location of choice (a directory called 'build' at the repository root
+1. Create a directory in your location of choice (a directory called 'build' at the repository root
    is recommended) to hold your build projects or Makefiles:
    ```
    $ mkdir build && cd build
    ```
-3. Run CMake to configure the RDMnet project:
+2. Run CMake to configure the RDMnet project:
    ```
-   $ cmake .. # [or cmake path/to/RDMnet/root as applicable]
+   $ cmake -DCMAKE_INSTALL_PREFIX=[path/to/install/location] [path/to/RDMnet/root]
    ```
    You can optionally specify your build system with the `-G` option; otherwise, CMake will choose
-   a system-appropriate default. Use `cmake --help` to see all available options.
-
-   Use -D to enable the building of any relevant extras that you want:
-   ```
-   $ cmake -DRDMNET_BUILD_GUI_EXAMPLES=ON .. # Include the Qt example app
-   $ cmake -DRDMNET_BUILD_TESTS=ON .. # Include the unit tests
-   ```
-   etc..
-4. Use CMake to invoke the generated build system to build the RDMnet library and any extras you
+   a system-appropriate default. Use `cmake --help` to see all available options. CMake also has a
+   GUI tool that can be used for this, as well as plugins available for several editors and IDEs.
+   `CMAKE_INSTALL_PREFIX` specifies where the final binaries and headers will go; if not given,
+   they will be installed in a system-appropriate place like `/usr/local/include` and
+   `/usr/local/lib` on a *nix system.
+3. Use CMake to invoke the generated build system to build the RDMnet library and any extras you
    have enabled:
    ```
    $ cmake --build .
@@ -116,19 +97,36 @@ To configure and build RDMnet on its own using command-line CMake, follow these 
    ```
    $ cmake --open .
    ```
-
-**Note:** Steps 2 through 4 can also be done in the CMake GUI application, or via a CMake plugin to
-your favorite IDE.
-
-### Installation
-
-5. To run or distribute the example applications outside of a debugging context, use CMake's 
-   installation target. This usually shows up as another project called "INSTALL" inside an IDE or
-   a target called "install" (e.g. `make install` for a Makefile generator). You can also do it
-   manually from the command line in the build directory:
+4. Use CMake's installation target to install the built binaries and headers. This usually shows up
+   as another project called "INSTALL" inside an IDE or a target called "install" (e.g.
+   `make install` for a Makefile generator). You can also do it manually from the command line in
+   the build directory:
    ```
    $ cmake -P cmake_install.cmake
    ```
-   Binaries will be installed in a directory underneath `CMAKE_INSTALL_PREFIX`, which normally
-   defaults to a system directory. To change this, specify CMAKE_INSTALL_PREFIX explicitly when
-   configuring the project.
+
+### Building RDMnet on its own
+
+If want to build the RDMnet library on its own, in order to tweak the examples or contribute
+changes, follow the instructions for "Including RDMnet in non-CMake projects" above. Additionally,
+you can set some CMake options to build extras like the unit tests and examples:
+* `RDMNET_BUILD_TESTS`: Build the unit tests
+* `RDMNET_BUILD_CONSOLE_EXAMPLES`: Build the console example applications
+* `RDMNET_BUILD_GUI_EXAMPLES`: Build the controller GUI example
+* `RDMNET_BUILD_TEST_TOOLS`: Build the library test tools
+
+These can be specified using the CMake GUI tool or at the command line using `-D`:
+```
+$ cmake -DRDMNET_BUILD_GUI_EXAMPLES=ON [...] # Include the Qt example app
+$ cmake -DRDMNET_BUILD_TESTS=ON [...] # Include the unit tests
+```
+
+If you want to build the GUI example applications, you will need another prerequisite:
+Qt (>=5.9.7 open-source). Qt installers are available [here](https://www.qt.io/download). To point
+CMake at the Qt dependency, there are two options:
+  + Set a system environment variable called QTDIR which points at the Qt installation directory
+    (i.e. .../Qt/5.9.7/msvc2017_64)
+  + Provide the Qt installation directory as an argument to CMake:
+    ```
+    cmake -DQTDIR=[...]/Qt/5.9.7/msvc2017_64
+    ```

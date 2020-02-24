@@ -17,13 +17,14 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 #include <array>
-#include "gtest/gtest.h"
+#include "etcpal/common.h"
 #include "etcpal_mock/socket.h"
 #include "etcpal_mock/timer.h"
 #include "rdmnet/core/connection.h"
 #include "rdmnet/private/connection.h"
 #include "rdmnet_mock/core.h"
 #include "rdmnet_mock/private/core.h"
+#include "gtest/gtest.h"
 
 extern "C" {
 FAKE_VOID_FUNC(conncb_connected, rdmnet_conn_t, const RdmnetConnectedInfo*, void*);
@@ -94,7 +95,7 @@ protected:
 // (which is invalid after the function returns)
 extern "C" void conncb_socket_error(rdmnet_conn_t, const RdmnetDisconnectedInfo* disconn_info, void* context)
 {
-  RDMNET_UNUSED_ARG(context);
+  ETCPAL_UNUSED_ARG(context);
   EXPECT_EQ(disconn_info->socket_err, kEtcPalErrConnReset);
   EXPECT_EQ(disconn_info->event, kRdmnetDisconnectAbruptClose);
 }

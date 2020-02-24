@@ -25,7 +25,7 @@
 #include "etcpal/timer.h"
 #include "etcpal/rbtree.h"
 #include "rdm/uid.h"
-#include "rdmnet/core/llrp_manager.h"
+#include "rdmnet/llrp_manager.h"
 #include "rdmnet/private/core.h"
 #include "rdmnet/private/llrp_prot.h"
 
@@ -115,12 +115,12 @@ typedef struct ManagerCallbackDispatchInfo
 extern "C" {
 #endif
 
-etcpal_error_t rdmnet_llrp_manager_init();
-void rdmnet_llrp_manager_deinit();
+etcpal_error_t llrp_manager_init(void);
+void llrp_manager_deinit(void);
 
-void rdmnet_llrp_manager_tick();
+void llrp_manager_tick(void);
 
-void manager_data_received(const uint8_t* data, size_t data_size, const RdmnetMcastNetintId* netint);
+void llrp_manager_data_received(const uint8_t* data, size_t data_size, const RdmnetMcastNetintId* netint);
 
 #ifdef __cplusplus
 }

@@ -19,62 +19,61 @@
 
 /*!
  * \file rdmnet/client.h
- * \brief An API for RDMnet Client functionality.
+ * \brief API definitions used by RDMnet clients (controllers and devices)
  */
 
 #ifndef RDMNET_CLIENT_H_
 #define RDMNET_CLIENT_H_
 
-#include "etcpal/uuid.h"
+#include <stdbool.h>
+#include <stdint.h>
 #include "etcpal/inet.h"
 #include "rdm/uid.h"
-#include "rdm/message.h"
-#include "rdmnet/defs.h"
-#include "rdmnet/core.h"
-#include "rdmnet/core/message.h"
-#include "rdmnet/core/connection.h"
-#include "rdmnet/core/llrp_target.h"
-#include "rdmnet/core/util.h"
+#include "rdmnet/common.h"
 
 /*!
- * \defgroup rdmnet_api RDMnet C Language API
- */
-
-/*!
- * \defgroup rdmnet_client_api Client API
- * \ingroup rdmnet_api
- * \brief Implementation of RDMnet client functionality
- *
- * RDMnet clients encompass controllers (which originate RDM commands on the network and receive
- * responses) and devices (which receive RDM commands and respond to them), as well as EPT clients,
- * which use the Extensible Packet Transport feature of RDMnet to transport opaque data through a
- * broker.
- *
- * Clients and the scopes they participate in are tracked by handles. Management of connections to
- * brokers, as well as LLRP functionality, is handled under the hood.
- *
+ * \addtogroup rdmnet_api_common
  * @{
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/*! A handle to an RDMnet client. */
-typedef int rdmnet_client_t;
-/*! An invalid RDMnet client handle value. */
-#define RDMNET_CLIENT_INVALID -1
-
 /*! A handle to a scope that an RDMnet client participates in. */
-typedef rdmnet_conn_t rdmnet_client_scope_t;
+typedef int rdmnet_client_scope_t;
 /*! An invalid RDMnet client scope handle value. */
-#define RDMNET_CLIENT_SCOPE_INVALID RDMNET_CONN_INVALID
+#define RDMNET_CLIENT_SCOPE_INVALID -1
+
+/*!
+ * \brief A destination address for an RDM command in RDMnet's RPT protocol.
+ * \details See \ref roles_and_addressing and \ref devices_and_gateways for more information.
+ */
+typedef struct RdmnetDestinationAddr
+{
+  /*! The UID of the RDMnet component to which this command is addressed. */
+  RdmUid rdmnet_uid;
+  /*!
+   * The endpoint on the RDMnet component to which this message is addressed. If addressing the
+   * default (root) responder of an RDMnet device, set this to E133_NULL_ENDPOINT.
+   */
+  uint16_t endpoint;
+  /*!
+   * The UID of the RDM responder to which this message is addressed. If addressing the default
+   * (root) responder of an RDMnet device, this should be the same as rdmnet_uid.
+   */
+  RdmUid rdm_uid;
+  /*! The sub-device to which this command is addressed, or 0 for the root device. */
+  uint16_t subdevice;
+} RdmnetDestinationAddr;
 
 /*! Information provided by the library about a successful RDMnet client connection. */
 typedef struct RdmnetClientConnectedInfo
 {
   /*! The IP address and port of the remote broker to which we have connected. */
   EtcPalSockAddr broker_addr;
+  /*! The DNS name of the broker, if it was discovered using DNS-SD; otherwise an empty string. */
+  const char* broker_name;
+  /*! The CID of the connected broker. */
+  EtcPalUuid broker_cid;
+  /*! The RDM UID of the connected broker. */
+  RdmUid broker_uid;
 } RdmnetClientConnectedInfo;
 
 /*! Information provided by the library about an unsuccessful RDMnet client connection. */
@@ -82,11 +81,15 @@ typedef struct RdmnetClientConnectFailedInfo
 {
   /*! The high-level reason that this connection failed. */
   rdmnet_connect_fail_event_t event;
-  /*! The system error code associated with the failure; valid if event is
-   *  kRdmnetConnectFailSocketFailure or kRdmnetConnectFailTcpLevel. */
+  /*!
+   * The system error code associated with the failure; valid if event is
+   * kRdmnetConnectFailSocketFailure or kRdmnetConnectFailTcpLevel.
+   */
   etcpal_error_t socket_err;
-  /*! The reason given in the RDMnet-level connection refuse message. Valid if event is
-   *  kRdmnetConnectFailRejected. */
+  /*!
+   * The reason given in the RDMnet-level connection refuse message. Valid if event is
+   * kRdmnetConnectFailRejected.
+   */
   rdmnet_connect_status_t rdmnet_reason;
   /*!
    * \brief Whether the connection will be retried automatically.
@@ -108,11 +111,15 @@ typedef struct RdmnetClientDisconnectedInfo
 {
   /*! The high-level reason for the disconnect. */
   rdmnet_disconnect_event_t event;
-  /*! The system error code associated with the disconnect; valid if event is
-   *  kRdmnetDisconnectAbruptClose. */
+  /*!
+   * The system error code associated with the disconnect; valid if event is
+   * kRdmnetDisconnectAbruptClose.
+   */
   etcpal_error_t socket_err;
-  /*! The reason given in the RDMnet-level disconnect message. Valid if event is
-   *  kRdmnetDisconnectGracefulRemoteInitiated. */
+  /*!
+   * The reason given in the RDMnet-level disconnect message. Valid if event is
+   * kRdmnetDisconnectGracefulRemoteInitiated.
+   */
   rdmnet_disconnect_reason_t rdmnet_reason;
   /*!
    * \brief Whether the connection will be retried automatically.
@@ -124,220 +131,38 @@ typedef struct RdmnetClientDisconnectedInfo
   bool will_retry;
 } RdmnetClientDisconnectedInfo;
 
-typedef enum
-{
-  kRdmnetSendSynchronousResponse,
-  kRdmnetDeferResponse
-} rdmnet_response_action_t;
-
 /*!
- * \name Client Callback Functions
- * \brief Function types used as callbacks for RPT and EPT clients.
- * @{
+ * A set of configuration information for a single scope in which an RDMnet client is
+ * participating.
  */
-
-/*!
- * \brief An RDMnet client has connected successfully to a broker on a scope.
- *
- * Messages may now be sent using the relevant API functions, and messages may be received via
- * the msg_received callback.
- *
- * \param[in] handle Handle to client which has connected.
- * \param[in] scope_handle Handle to scope on which the client has connected.
- * \param[in] info More information about the successful connection.
- * \param[in] context Context pointer that was given at the creation of the client.
- */
-typedef void (*RdmnetClientConnectedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                        const RdmnetClientConnectedInfo* info, void* context);
-
-/*!
- * \brief An RDMnet client experienced a failure while attempting to connect to a broker on a
- *        scope.
- *
- * Connection failures can be fatal or non-fatal; the will_retry member of the info struct
- * indicates whether the connection will be retried automatically. If will_retry is false, it
- * usually indicates a misconfiguration that needs to be resolved by an application user.
- *
- * \param[in] handle Handle to client on which connection has failed.
- * \param[in] scope_handle Handle to scope on which connection has failed.
- * \param[in] info More information about the failed connection.
- * \param[in] context Context pointer that was given at the creation of the client.
- */
-typedef void (*RdmnetClientConnectFailedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                            const RdmnetClientConnectFailedInfo* info, void* context);
-
-/*! \brief An RDMnet client disconnected from a broker on a scope.
- *
- *  Disconnection can be fatal or non-fatal; the will_retry member of the info struct indicates
- *  whether the connection will be retried automatically. If will_retry is false, it usually
- *  indicates a misconfiguration that needs to be resolved by an application user.
- *
- *  \param[in] handle Handle to client which has disconnected.
- *  \param[in] scope_handle Handle to scope on which the disconnect occurred.
- *  \param[in] info More information about the disconnect.
- *  \param[in] context Context pointer that was given at the creation of the client.
- */
-typedef void (*RdmnetClientDisconnectedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                           const RdmnetClientDisconnectedInfo* info, void* context);
-
-/*!
- * \brief A broker message has been received on an RDMnet client connection.
- *
- * Broker messages are exchanged between an RDMnet client and broker to setup and faciliate RDMnet
- * communication. If using the \ref rdmnet_device "Device" or \ref rdmnet_controller "Controller"
- * API, this callback will be consumed internally and propagated to callbacks specific to those
- * client types.
- *
- * \param[in] handle Handle to client which has received a broker message.
- * \param[in] scope_handle Handle to scope on which the broker message was received.
- * \param[in] msg The broker message.
- * \param[in] context Context pointer that was given at the creation of the client.
- */
-typedef void (*RdmnetClientBrokerMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                                const BrokerMessage* msg, void* context);
-
-/*!
- * \brief An LLRP message has been received by an RDMnet client.
- *
- * RPT clients (controllers and devices) automatically listen for LLRP messages as required by
- * E1.33. This callback is called when an LLRP RDM command is received.
- *
- * \param[in] handle Handle to client which has received an LLRP message.
- * \param[in] cmd The LLRP RDM command.
- * \param[in] context Context pointer that was given at the creation of the client.
- */
-typedef rdmnet_response_action_t (*RdmnetClientLlrpMsgReceivedCb)(rdmnet_client_t handle,
-                                                                  const LlrpRemoteRdmCommand* cmd,
-                                                                  LlrpLocalRdmResponse* response, void* context);
-
-/*!
- * \brief An RPT message was received on an RPT client connection.
- *
- * RPT messages include Request and Notification, which wrap RDM commands and responses, as well as
- * Status, which informs of exceptional conditions in response to a Request. If using the
- * \ref rdmnet_device "Device" or \ref rdmnet_controller "Controller" API, this callback will be
- * consumed internally and propagated to callbacks specific to those client types.
- *
- * \param[in] handle Handle to client which has received an RPT message.
- * \param[in] scope_handle Handle to scope on which the RPT message was received.
- * \param[in] msg The RPT message.
- * \param[in] context Context pointer that was given at the creation of the client.
- */
-typedef rdmnet_response_action_t (*RptClientMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                                           const RptClientMessage* msg, RptClientMessage* response,
-                                                           void* context);
-
-/*!
- * \brief An EPT message was received on an EPT client connection.
- *
- * EPT messages include Data, which wraps opaque data, and Status, which informs of exceptional
- * conditions in response to Data.
- *
- * \param[in] handle Handle to client which has received an EPT message.
- * \param[in] scope_handle Handle to scope on which the EPT message was received.
- * \param[in] msg The EPT message.
- * \param[in] context Context pointer that was given at the creation of the client.
- */
-typedef rdmnet_response_action_t (*EptClientMsgReceivedCb)(rdmnet_client_t handle, rdmnet_client_scope_t scope,
-                                                           const EptClientMessage* msg, EptClientMessage* response,
-                                                           void* context);
-
-/*!
- * @}
- */
-
-/*! The set of possible callbacks that are delivered to an RPT client. */
-typedef struct RptClientCallbacks
-{
-  RdmnetClientConnectedCb connected;
-  RdmnetClientConnectFailedCb connect_failed;
-  RdmnetClientDisconnectedCb disconnected;
-  RdmnetClientBrokerMsgReceivedCb broker_msg_received;
-  RdmnetClientLlrpMsgReceivedCb llrp_msg_received;
-  RptClientMsgReceivedCb msg_received;
-} RptClientCallbacks;
-
-/*! The set of possible callbacks that are delivered to an EPT client. */
-typedef struct EptClientCallbacks
-{
-  RdmnetClientConnectedCb connected;
-  RdmnetClientConnectFailedCb connect_failed;
-  RdmnetClientDisconnectedCb disconnected;
-  RdmnetClientBrokerMsgReceivedCb broker_msg_received;
-  EptClientMsgReceivedCb msg_received;
-} EptClientCallbacks;
-
-/*! A set of configuration information for a single scope in which an RDMnet client is
- *  participating. */
 typedef struct RdmnetScopeConfig
 {
-  /*! The scope string. Scope strings are UTF-8, and their maximum length is derived from the
-   *  requirements of DNS and DNS-SD. */
+  /*!
+   * The scope string. Scope strings are UTF-8, and their maximum length including NULL terminator
+   * is #E133_SCOPE_STRING_PADDED_LENGTH, which is derived from the requirements of DNS and DNS-SD.
+   */
   const char* scope;
-  /*! Whether a static broker address has been configured on this scope. If this is true, discovery
-   *  using DNS-SD will be bypassed and a connection will be attempted directly to the address
-   *  indicated in static_broker_addr. */
-  bool has_static_broker_addr;
-  /*! The broker address to which to connect, if a static broker has been configured. */
+  /*!
+   * The broker address to which to connect, if a static broker has been configured. If this member
+   * contains a valid EtcPalIpAddr and port, discovery using DNS-SD will be bypassed and a
+   * connection will be attempted directly to the address given.
+   */
   EtcPalSockAddr static_broker_addr;
 } RdmnetScopeConfig;
 
-/*! The optional values contained in an RPT Client configuration. These values have defaults that
- *  can be initialized using the appropriate initialization macros. */
-typedef struct RptClientOptionalConfig
-{
-  /*!
-   * \brief The client's UID.
-   *
-   * If the client has a static UID, fill in the values normally. If a dynamic UID is desired,
-   * assign using RPT_CLIENT_DYNAMIC_UID(manu_id), passing your ESTA manufacturer ID. All RDMnet
-   * components are required to have a valid ESTA manufacturer ID.
-   */
-  RdmUid uid;
-  /*! The client's configured search domain for discovery. */
-  const char* search_domain;
-  /*! A set of network interfaces to use for the LLRP target associated with this client. If NULL,
-   *  the set passed to rdmnet_core_init() will be used, or all network interfaces on the system if
-   *  that was not provided. */
-  RdmnetMcastNetintId* llrp_netint_arr;
-  /*! The size of llrp_netint_arr. */
-  size_t num_llrp_netints;
-} RptClientOptionalConfig;
-
-#define RPT_CLIENT_INIT_OPTIONAL_CONFIG_VALUES(optionalcfgptr, manu_id) \
-  do                                                                    \
-  {                                                                     \
-    RDMNET_INIT_DYNAMIC_UID_REQUEST(&(optionalcfgptr)->uid, (manu_id)); \
-    (optionalcfgptr)->search_domain = E133_DEFAULT_DOMAIN;              \
-    (optionalcfgptr)->llrp_netint_arr = NULL;                           \
-    (optionalcfgptr)->num_llrp_netints = 0;                             \
-  } while (0)
-
-/*! A set of information that defines the startup parameters of an RPT RDMnet Client. */
-typedef struct RdmnetRptClientConfig
-{
-  /*! The client type, either controller or device. */
-  rpt_client_type_t type;
-  /*! The client's CID. */
-  EtcPalUuid cid;
-  /*! A set of callbacks for the client to receive RDMnet notifications. */
-  RptClientCallbacks callbacks;
-  /*! Pointer to opaque data passed back with each callback. */
-  void* callback_context;
-  /*! Optional configuration data for the client. */
-  RptClientOptionalConfig optional;
-} RdmnetRptClientConfig;
-
-#define RPT_CLIENT_CONFIG_INIT(clientcfgptr, manu_id) \
-  RPT_CLIENT_INIT_OPTIONAL_CONFIG_VALUES(&(clientcfgptr)->optional, manu_id);
-
-typedef struct RdmnetEptClientConfig
-{
-  EptSubProtocol* protocol_list;
-  size_t num_protocols;
-  EptClientCallbacks callbacks;
-  void* callback_context;
-} RdmnetEptClientConfig;
+/*!
+ * \brief A default-value initializer for an RdmnetScopeConfig struct.
+ *
+ * Usage:
+ * \code
+ * RdmnetScopeConfig scope_config = RDMNET_SCOPE_CONFIG_DEFAULT_INIT;
+ * // scope_config holds the configuration for the default RDMnet scope with no statically-configured broker.
+ * \endcode
+ */
+#define RDMNET_SCOPE_CONFIG_DEFAULT_INIT              \
+  {                                                   \
+    E133_DEFAULT_SCOPE, { 0, ETCPAL_IP_INVALID_INIT } \
+  }
 
 /*!
  * \brief Initialize an RdmnetScopeConfig struct with a scope string.
@@ -349,11 +174,11 @@ typedef struct RdmnetEptClientConfig
  * \param scope_str UTF-8 scope string (const char *), must remain valid for as long as this scope
  *                  config.
  */
-#define RDMNET_CLIENT_SET_SCOPE(configptr, scope_str) \
-  do                                                  \
-  {                                                   \
-    (configptr)->scope = scope_str;                   \
-    (configptr)->has_static_broker_addr = false;      \
+#define RDMNET_CLIENT_SET_SCOPE(configptr, scope_str)           \
+  do                                                            \
+  {                                                             \
+    (configptr)->scope = scope_str;                             \
+    ETCPAL_IP_SET_INVALID(&(configptr)->static_broker_addr.ip); \
   } while (0)
 
 /*!
@@ -364,11 +189,11 @@ typedef struct RdmnetEptClientConfig
  *
  * \param configptr Pointer to RdmnetScopeConfig.
  */
-#define RDMNET_CLIENT_SET_DEFAULT_SCOPE(configptr) \
-  do                                               \
-  {                                                \
-    (configptr)->scope = E133_DEFAULT_SCOPE;       \
-    (configptr)->has_static_broker_addr = false;   \
+#define RDMNET_CLIENT_SET_DEFAULT_SCOPE(configptr)              \
+  do                                                            \
+  {                                                             \
+    (configptr)->scope = E133_DEFAULT_SCOPE;                    \
+    ETCPAL_IP_SET_INVALID(&(configptr)->static_broker_addr.ip); \
   } while (0)
 
 /*!
@@ -386,7 +211,6 @@ typedef struct RdmnetEptClientConfig
   do                                                                      \
   {                                                                       \
     (configptr)->scope = (scope_str);                                     \
-    (configptr)->has_static_broker_addr = true;                           \
     (configptr)->static_broker_addr = (broker_addr);                      \
   } while (0)
 
@@ -404,42 +228,8 @@ typedef struct RdmnetEptClientConfig
   do                                                                   \
   {                                                                    \
     (configptr)->scope = E133_DEFAULT_SCOPE;                           \
-    (configptr)->has_static_broker_addr = true;                        \
     (configptr)->static_broker_addr = (broker_addr);                   \
   } while (0)
-
-etcpal_error_t rdmnet_client_init(const EtcPalLogParams* lparams, const RdmnetNetintConfig* netint_config);
-void rdmnet_client_deinit();
-
-etcpal_error_t rdmnet_rpt_client_create(const RdmnetRptClientConfig* config, rdmnet_client_t* handle);
-etcpal_error_t rdmnet_ept_client_create(const RdmnetEptClientConfig* config, rdmnet_client_t* handle);
-etcpal_error_t rdmnet_client_destroy(rdmnet_client_t handle, rdmnet_disconnect_reason_t reason);
-
-etcpal_error_t rdmnet_client_add_scope(rdmnet_client_t handle, const RdmnetScopeConfig* scope_config,
-                                       rdmnet_client_scope_t* scope_handle);
-etcpal_error_t rdmnet_client_remove_scope(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                          rdmnet_disconnect_reason_t reason);
-
-etcpal_error_t rdmnet_client_change_search_domain(rdmnet_client_t handle, const char* new_search_domain,
-                                                  rdmnet_disconnect_reason_t reason);
-
-etcpal_error_t rdmnet_client_request_client_list(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle);
-// etcpal_error_t rdmnet_client_request_dynamic_uids(rdmnet_conn_t handle, rdmnet_client_scope_t scope_handle,
-//                                            const BrokerDynamicUidRequestListEntry *request_list);
-// etcpal_error_t rdmnet_client_request_uid_assignment_list(rdmnet_conn_t handle, rdmnet_client_scope_t scope_handle,
-//                                                   const BrokerFetchUidAssignmentListEntry *uid_list);
-
-etcpal_error_t rdmnet_rpt_client_send_rdm_command(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                                  const RdmnetLocalRdmCommand* cmd, uint32_t* seq_num);
-etcpal_error_t rdmnet_rpt_client_send_rdm_response(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                                   const RdmnetLocalRdmResponse* resp);
-etcpal_error_t rdmnet_rpt_client_send_status(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                             const RdmnetLocalRptStatus* status);
-etcpal_error_t rdmnet_rpt_client_send_llrp_response(rdmnet_client_t handle, const LlrpLocalRdmResponse* resp);
-
-#ifdef __cplusplus
-}
-#endif
 
 /*!
  * @}

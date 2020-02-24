@@ -20,18 +20,11 @@
 #ifndef RDMNET_PRIVATE_LLRP_TARGET_H_
 #define RDMNET_PRIVATE_LLRP_TARGET_H_
 
-#include <stdbool.h>
-#include <stdint.h>
-#include "etcpal/socket.h"
-#include "etcpal/timer.h"
-#include "etcpal/uuid.h"
-#include "rdm/uid.h"
-#include "rdmnet/core.h"
-#include "rdmnet/defs.h"
-#include "rdmnet/core/llrp_target.h"
-#include "rdmnet/private/core.h"
-#include "rdmnet/private/opts.h"
-#include "rdmnet/private/llrp_prot.h"
+#include "rdmnet/llrp_target.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct LlrpTarget LlrpTarget;
 
@@ -105,14 +98,10 @@ typedef struct TargetCallbackDispatchInfo
   } args;
 } TargetCallbackDispatchInfo;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+etcpal_error_t llrp_target_init(void);
+void llrp_target_deinit(void);
 
-etcpal_error_t rdmnet_llrp_target_init();
-void rdmnet_llrp_target_deinit();
-
-void rdmnet_llrp_target_tick();
+void llrp_target_tick(void);
 
 void target_data_received(const uint8_t* data, size_t data_size, const RdmnetMcastNetintId* netint);
 

@@ -27,6 +27,7 @@
 #include <memory>
 #include <vector>
 
+#include "etcpal/cpp/error.h"
 #include "etcpal/cpp/thread.h"
 #include "etcpal/lock.h"
 #include "etcpal/inet.h"
@@ -56,9 +57,9 @@ public:
 
   virtual void SetNotify(BrokerThreadNotify* notify) = 0;
 
-  virtual bool AddListenThread(etcpal_socket_t listen_sock) = 0;
+  virtual etcpal::Error AddListenThread(etcpal_socket_t listen_sock) = 0;
 
-  virtual bool AddClientServiceThread() = 0;
+  virtual etcpal::Error AddClientServiceThread() = 0;
 
   virtual void StopThreads() = 0;
 };
@@ -69,7 +70,7 @@ public:
   BrokerThread(BrokerThreadNotify* notify) : notify_(notify) {}
   virtual ~BrokerThread() {}
 
-  virtual bool Start() = 0;
+  virtual etcpal::Error Start() = 0;
   virtual void Run() = 0;
 
   bool terminated() const { return terminated_; }
@@ -89,7 +90,7 @@ public:
   }
   ~ListenThread() override;
 
-  bool Start() override;
+  etcpal::Error Start() override;
   void Run() override;
 
   void ReadSocket();
@@ -105,7 +106,7 @@ public:
   ClientServiceThread(BrokerThreadNotify* notify) : BrokerThread(notify) {}
   ~ClientServiceThread() override;
 
-  bool Start() override;
+  etcpal::Error Start() override;
   void Run() override;
 
 protected:

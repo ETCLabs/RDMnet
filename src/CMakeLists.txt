@@ -8,7 +8,7 @@ include(RdmnetAddDependency)
 
 if(RDMNET_BUILD_TESTS)
   set(ETCPAL_BUILD_MOCK_LIB ON CACHE BOOL "Build the EtcPal mock library" FORCE)
-  set(RDM_BUILD_MOCK_LIB ON CACHE BOOL "Build the RDM mock library" FORCE)
+  # set(RDM_BUILD_MOCK_LIB ON CACHE BOOL "Build the RDM mock library" FORCE)
 endif()
 rdmnet_add_dependency(EtcPal ETCPAL_DIR)
 rdmnet_add_dependency(RDM RDM_DIR)
@@ -43,75 +43,75 @@ set(RDMNET_TARGETS_EXPORT_NAME ${PROJECT_NAME}Targets)
 include(rdmnet/sources.cmake)
 
 # The main RDMnet library
-add_library(${RDMNET_LIB_TARGET_NAME}
-  ${RDMNET_LIB_PUBLIC_HEADERS}
-  ${RDMNET_LIB_PRIVATE_HEADERS}
-  ${RDMNET_LIB_SOURCES}
+add_library(${RDMNET_LIB_TARGET_NAME} INTERFACE
+#  ${RDMNET_LIB_PUBLIC_HEADERS}
+#   ${RDMNET_LIB_PRIVATE_HEADERS}
+#   ${RDMNET_LIB_SOURCES}
 )
 target_include_directories(${RDMNET_LIB_TARGET_NAME}
-  PUBLIC ${RDMNET_INCLUDE}
-  PRIVATE ${RDMNET_SRC}
+  INTERFACE ${RDMNET_INCLUDE}
+  # PRIVATE ${RDMNET_SRC}
 )
-if(DEFINED RDMNET_CONFIG_LOC)
-  target_include_directories(${RDMNET_LIB_TARGET_NAME} PRIVATE ${RDMNET_CONFIG_LOC})
-  target_compile_definitions(${RDMNET_LIB_TARGET_NAME} PRIVATE RDMNET_HAVE_CONFIG_H)
-endif()
-target_link_libraries(${RDMNET_LIB_TARGET_NAME} PUBLIC EtcPal RDM)
+# if(DEFINED RDMNET_CONFIG_LOC)
+#   target_include_directories(${RDMNET_LIB_TARGET_NAME} PRIVATE ${RDMNET_CONFIG_LOC})
+#   target_compile_definitions(${RDMNET_LIB_TARGET_NAME} PRIVATE RDMNET_HAVE_CONFIG_H)
+# endif()
+target_link_libraries(${RDMNET_LIB_TARGET_NAME} INTERFACE EtcPal RDM)
 
 # Organize sources in IDEs
-source_group(TREE ${RDMNET_SRC}/rdmnet PREFIX src FILES
-  ${RDMNET_API_SOURCES}
-  ${RDMNET_CORE_SOURCES}
-  ${RDMNET_API_PRIVATE_HEADERS}
-  ${RDMNET_CORE_PRIVATE_HEADERS}
-  ${RDMNET_DISC_COMMON_SOURCES}
-  ${RDMNET_DISC_PLATFORM_SOURCES}
-)
-source_group(TREE ${RDMNET_INCLUDE}/rdmnet PREFIX include FILES
-  ${RDMNET_API_PUBLIC_HEADERS}
-  ${RDMNET_CORE_PUBLIC_HEADERS}
-  ${RDMNET_DISC_PUBLIC_HEADERS}
-)
+# source_group(TREE ${RDMNET_SRC}/rdmnet PREFIX src FILES
+#   ${RDMNET_API_SOURCES}
+#   ${RDMNET_CORE_SOURCES}
+#   ${RDMNET_API_PRIVATE_HEADERS}
+#   ${RDMNET_CORE_PRIVATE_HEADERS}
+#   ${RDMNET_DISC_COMMON_SOURCES}
+#   ${RDMNET_DISC_PLATFORM_SOURCES}
+# )
+# source_group(TREE ${RDMNET_INCLUDE}/rdmnet PREFIX include FILES
+#   ${RDMNET_API_PUBLIC_HEADERS}
+#   ${RDMNET_CORE_PUBLIC_HEADERS}
+#   ${RDMNET_DISC_PUBLIC_HEADERS}
+# )
 
-target_link_libraries(${RDMNET_LIB_TARGET_NAME} PRIVATE RDMnetDiscoveryCommon RDMnetDiscoveryPlatform dnssd)
+# target_link_libraries(${RDMNET_LIB_TARGET_NAME} PRIVATE RDMnetDiscoveryCommon RDMnetDiscoveryPlatform dnssd)
 
 # Installation
-install(TARGETS ${RDMNET_LIB_TARGET_NAME}
-  EXPORT ${RDMNET_TARGETS_EXPORT_NAME}
-  ARCHIVE DESTINATION lib
-  INCLUDES DESTINATION include
-)
-install(DIRECTORY ${RDMNET_ROOT}/include/rdmnet DESTINATION include FILES_MATCHING PATTERN "*.h")
+# install(TARGETS ${RDMNET_LIB_TARGET_NAME}
+#   EXPORT ${RDMNET_TARGETS_EXPORT_NAME}
+#   ARCHIVE DESTINATION lib
+#   INCLUDES DESTINATION include
+# )
+# install(DIRECTORY ${RDMNET_ROOT}/include/rdmnet DESTINATION include FILES_MATCHING PATTERN "*.h")
 
 #################################### Broker ###################################
 
-if(WIN32 OR APPLE OR UNIX)
-  add_library(${RDMNET_BROKER_LIB_TARGET_NAME}
-    ${RDMNET_BROKER_PUBLIC_HEADERS}
-    ${RDMNET_BROKER_PRIVATE_HEADERS}
-    ${RDMNET_BROKER_SOURCES}
-  )
-
-  target_include_directories(${RDMNET_BROKER_LIB_TARGET_NAME} PUBLIC ${RDMNET_INCLUDE} PRIVATE ${RDMNET_SRC} ${RDMNET_SRC}/rdmnet/broker)
-  target_link_libraries(${RDMNET_BROKER_LIB_TARGET_NAME} PUBLIC ${RDMNET_LIB_TARGET_NAME})
-  set_target_properties(${RDMNET_BROKER_LIB_TARGET_NAME} PROPERTIES CXX_STANDARD 14)
-
-  # Organize sources in IDEs
-  source_group(TREE ${RDMNET_SRC}/rdmnet PREFIX src FILES
-    ${RDMNET_BROKER_PRIVATE_HEADERS}
-    ${RDMNET_BROKER_SOURCES}
-  )
-  source_group(TREE ${RDMNET_INCLUDE}/rdmnet PREFIX include FILES
-    ${RDMNET_BROKER_PUBLIC_HEADERS}
-  )
-
-  install(TARGETS ${RDMNET_BROKER_LIB_TARGET_NAME}
-    EXPORT ${RDMNET_TARGETS_EXPORT_NAME}
-    ARCHIVE DESTINATION lib
-    INCLUDES DESTINATION include
-  )
-
-endif()
+# if(WIN32 OR APPLE OR UNIX)
+#   add_library(${RDMNET_BROKER_LIB_TARGET_NAME}
+#     ${RDMNET_BROKER_PUBLIC_HEADERS}
+#     ${RDMNET_BROKER_PRIVATE_HEADERS}
+#     ${RDMNET_BROKER_SOURCES}
+#   )
+# 
+#   target_include_directories(${RDMNET_BROKER_LIB_TARGET_NAME} PUBLIC ${RDMNET_INCLUDE} PRIVATE ${RDMNET_SRC} ${RDMNET_SRC}/rdmnet/broker)
+#   target_link_libraries(${RDMNET_BROKER_LIB_TARGET_NAME} PUBLIC ${RDMNET_LIB_TARGET_NAME})
+#   set_target_properties(${RDMNET_BROKER_LIB_TARGET_NAME} PROPERTIES CXX_STANDARD 14)
+# 
+#   # Organize sources in IDEs
+#   source_group(TREE ${RDMNET_SRC}/rdmnet PREFIX src FILES
+#     ${RDMNET_BROKER_PRIVATE_HEADERS}
+#     ${RDMNET_BROKER_SOURCES}
+#   )
+#   source_group(TREE ${RDMNET_INCLUDE}/rdmnet PREFIX include FILES
+#     ${RDMNET_BROKER_PUBLIC_HEADERS}
+#   )
+# 
+#   install(TARGETS ${RDMNET_BROKER_LIB_TARGET_NAME}
+#     EXPORT ${RDMNET_TARGETS_EXPORT_NAME}
+#     ARCHIVE DESTINATION lib
+#     INCLUDES DESTINATION include
+#   )
+# 
+# endif()
 
 ## Create the CMake config files that will be exported with the built DLL
 

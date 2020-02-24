@@ -25,7 +25,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
+#include "etcpal/cpp/error.h"
 #include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/lock.h"
 #include "etcpal/socket.h"
@@ -95,12 +95,13 @@ public:
   bool IsValidControllerDestinationUID(const RdmUid& uid) const;
   bool IsValidDeviceDestinationUID(const RdmUid& uid) const;
 
-  etcpal::Logger* GetLog() const { return log_; }
-  rdmnet::BrokerSettings GetSettings() const { return settings_; }
+  etcpal::Logger* logger() const { return log_; }
+  rdmnet::BrokerSettings settings() const { return settings_; }
 
-  bool Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerNotifyHandler* notify, etcpal::Logger* logger,
-               BrokerComponents components = BrokerComponents());
+  etcpal::Error Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerNotifyHandler* notify,
+                        etcpal::Logger* logger, BrokerComponents components = BrokerComponents());
   void Shutdown();
+  etcpal::Error ChangeScope(const std::string& new_scope, rdmnet_disconnect_reason_t disconnect_reason);
   void Tick();
 
 private:
@@ -113,8 +114,11 @@ private:
   RdmUid my_uid_{};
 
   // External (non-owned) components
-  etcpal::Logger* log_{nullptr};           // Enables the broker to log messages
-  rdmnet::BrokerNotifyHandler* notify_{nullptr};  // Enables the broker to notify application code when something has changed
+
+  // Enables the broker to log messages
+  etcpal::Logger* log_{nullptr};
+  // Enables the broker to notify application code when something has changed
+  rdmnet::BrokerNotifyHandler* notify_{nullptr};
 
   // Owned components
   BrokerComponents components_;
@@ -133,8 +137,8 @@ private:
 
   static std::set<etcpal::IpAddr> CombineMacsAndInterfaces(const std::set<etcpal::IpAddr>& interfaces,
                                                            const std::set<etcpal::MacAddr>& macs);
-  etcpal_socket_t StartListening(const etcpal::IpAddr& ip, uint16_t& port);
-  bool StartBrokerServices();
+  etcpal::Expected<etcpal_socket_t> StartListening(const etcpal::IpAddr& ip, uint16_t& port);
+  etcpal::Error StartBrokerServices();
   void StopBrokerServices();
 
   // RdmnetCoreLibraryNotify messages

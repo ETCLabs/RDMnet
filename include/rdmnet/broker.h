@@ -23,10 +23,16 @@
 #ifndef RDMNET_BROKER_H_
 #define RDMNET_BROKER_H_
 
+#include <cstdint>
 #include <memory>
+#include <set>
 #include <string>
+#include "etcpal/cpp/error.h"
+#include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/log.h"
-#include "rdmnet/broker/settings.h"
+#include "etcpal/cpp/uuid.h"
+#include "rdm/cpp/uid.h"
+#include "rdmnet/defs.h"
 
 class BrokerCore;
 
@@ -37,11 +43,121 @@ namespace rdmnet
 /// \brief Implementation of RDMnet broker functionality; see \ref using_broker.
 
 /// \ingroup rdmnet_broker
-/// \brief A callback interface for notifications from the Broker.
+/// \brief Settings for the Broker's DNS Discovery functionality.
+struct BrokerDnsAttributes
+{
+  /// Your unique name for this broker DNS-SD service instance. The discovery library uses
+  /// standard mechanisms to ensure that this service instance name is actually unique;
+  /// however, the application should make a reasonable effort to provide a name that will
+  /// not conflict with other brokers.
+  std::string service_instance_name;
+
+  /// A string to identify the manufacturer of this broker instance.
+  std::string manufacturer{"Generic Manufacturer"};
+  /// A string to identify the model of product in which the broker instance is included.
+  std::string model{"Generic RDMnet Broker"};
+};
+
+/// A set of limits for broker operation.
+struct BrokerLimits
+{
+  /// The maximum number of client connections supported. 0 means infinite.
+  unsigned int connections{0};
+  /// The maximum number of controllers allowed. 0 means infinite.
+  unsigned int controllers{0};
+  /// The maximum number of queued messages per controller. 0 means infinite.
+  unsigned int controller_messages{500};
+  /// The maximum number of devices allowed.  0 means infinite.
+  unsigned int devices{0};
+  /// The maximum number of queued messages per device. 0 means infinite.
+  unsigned int device_messages{500};
+  /// If you reach the number of max connections, this number of tcp-level connections are still
+  /// supported to reject the connection request.
+  unsigned int reject_connections{1000};
+};
+
+/// \ingroup rdmnet_broker
+/// \brief A group of settings for broker operation.
+struct BrokerSettings
+{
+  etcpal::Uuid cid;         ///< The broker's CID.
+  rdm::Uid uid;             ///< The broker's UID.
+  BrokerDnsAttributes dns;  ///< The broker's DNS attributes.
+  BrokerLimits limits;      ///< The broker's limits.
+
+  /// The RDMnet scope on which this broker should operate.
+  std::string scope{E133_DEFAULT_SCOPE};
+  /// Whether the broker should allow the scope to be changed via RDM commands.
+  bool allow_remote_scope_change{false};
+
+  /// The port on which this broker should listen for incoming connections (and advertise via DNS).
+  /// 0 means use an ephemeral port.
+  uint16_t listen_port{0};
+  /// A list of MAC addresses representing network interfaces to listen on. If both this and
+  /// listen_addrs are empty, the broker will listen on all available interfaces. Otherwise
+  /// listening will be restricted to the interfaces specified.
+  std::set<etcpal::MacAddr> listen_macs;
+  /// A list of IP addresses representing network interfaces to listen on. If both this and
+  /// listen_macs are empty, the broker will listen on all available interfaces. Otherwise
+  /// listening will be restricted to the interfaces specified.
+  std::set<etcpal::IpAddr> listen_addrs;
+
+  BrokerSettings() = default;
+  BrokerSettings(const etcpal::Uuid& cid_in, const rdm::Uid& static_uid_in);
+  BrokerSettings(const etcpal::Uuid& cid_in, uint16_t rdm_manu_id_in);
+
+  void SetDefaultServiceInstanceName();
+
+  bool IsValid() const;
+};
+
+/// Generate a DNS service instance name based on the broker's current CID.
+inline void BrokerSettings::SetDefaultServiceInstanceName()
+{
+  dns.service_instance_name = "RDMnet Broker Instance " + cid.ToString();
+}
+
+/// Initialize a BrokerSettings with a CID and static UID.
+inline BrokerSettings::BrokerSettings(const etcpal::Uuid& cid_in, const rdm::Uid& static_uid_in)
+    : cid(cid_in), uid(static_uid_in)
+{
+  SetDefaultServiceInstanceName();
+}
+
+/// Initialize a BrokerSettings with a CID and dynamic UID (provide the manufacturer ID).
+inline BrokerSettings::BrokerSettings(const etcpal::Uuid& cid_in, uint16_t rdm_manu_id_in)
+    : cid(cid_in), uid(rdm::Uid::DynamicUidRequest(rdm_manu_id_in))
+{
+  SetDefaultServiceInstanceName();
+}
+
+/// Whether this structure contains valid settings for broker operation.
+inline bool BrokerSettings::IsValid() const
+{
+  // clang-format off
+  return (
+          !cid.IsNull() &&
+          (!scope.empty() && scope.length() < (E133_SCOPE_STRING_PADDED_LENGTH - 1)) &&
+          (!dns.manufacturer.empty() && dns.manufacturer.length() < (E133_MANUFACTURER_STRING_PADDED_LENGTH - 1)) &&
+          (!dns.model.empty() && dns.model.length() < (E133_MODEL_STRING_PADDED_LENGTH - 1)) &&
+          (!dns.service_instance_name.empty() && dns.service_instance_name.length() < (E133_SERVICE_NAME_STRING_PADDED_LENGTH - 1)) &&
+          (listen_port == 0 || listen_port >= 1024) &&
+          (uid.manufacturer_id() != 0) &&
+          (uid.IsStatic() || uid.IsDynamicUidRequest())
+         );
+  // clang-format on
+}
+
+/// \ingroup rdmnet_broker
+/// \brief A callback interface for notifications from the broker.
 class BrokerNotifyHandler
 {
 public:
-  /// The Scope of the Broker has changed via RDMnet configuration. The Broker should be restarted.
+  /// \brief The scope of the broker has changed via RDMnet configuration.
+  ///
+  /// This callback is informative; no action needs to be taken to adjust broker operation to the
+  /// new scope. This callback will only be called if the associated
+  /// BrokerSettings::allow_remote_scope_change was set to true.
   virtual void HandleScopeChanged(const std::string& new_scope) = 0;
 };
 
@@ -59,27 +175,30 @@ public:
 ///   * A platform-dependent number of threads to receive messages from clients, depending on the
 ///     most efficient way to read large number of sockets on a given platform
 ///   * One thread to handle message routing between clients
-///   * One thread to dispatch log messages
+///   * One thread to handle periodic cleanup and housekeeping.
 ///
-/// Periodically call Tick() to handle some cleanup and housekeeping. Call Shutdown() at exit, when
-/// Broker services are no longer needed, or when a setting has changed. The Broker may send
-/// notifications through the BrokerNotifyHandler interface.
+/// Call Shutdown() at exit, when Broker services are no longer needed, or when a setting has
+/// changed. The Broker may send notifications through the BrokerNotifyHandler interface.
 class Broker
 {
 public:
   Broker();
   virtual ~Broker();
 
+  /// Brokers cannot be copied.
   Broker(const Broker& other) = delete;
+  /// Brokers cannot be copied.
   Broker& operator=(const Broker& other) = delete;
+  /// Move an instance of broker functionality.
   Broker(Broker&& other) = default;
+  /// Move an instance of broker functionality.
   Broker& operator=(Broker&& other) = default;
 
-  bool Startup(const BrokerSettings& settings, BrokerNotifyHandler* notify, etcpal::Logger* logger);
-  void Shutdown();
-  void Tick();
+  etcpal::Error Startup(const BrokerSettings& settings, BrokerNotifyHandler* notify, etcpal::Logger* logger);
+  void Shutdown(rdmnet_disconnect_reason_t disconnect_reason = kRdmnetDisconnectShutdown);
+  etcpal::Error ChangeScope(const std::string& new_scope, rdmnet_disconnect_reason_t disconnect_reason);
 
-  BrokerSettings GetSettings() const;
+  BrokerSettings settings() const;
 
 private:
   std::unique_ptr<BrokerCore> core_;

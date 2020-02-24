@@ -23,20 +23,24 @@ static llrp_target_t next_target_handle;
 
 static etcpal_error_t fake_target_create(const LlrpTargetConfig* config, llrp_target_t* handle);
 
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_llrp_target_create, const LlrpTargetConfig*, llrp_target_t*);
-DEFINE_FAKE_VOID_FUNC(rdmnet_llrp_target_destroy, llrp_target_t);
-DEFINE_FAKE_VOID_FUNC(rdmnet_llrp_target_update_connection_state, llrp_target_t, bool);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_llrp_send_rdm_response, llrp_target_t, const LlrpLocalRdmResponse*);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, llrp_target_create, const LlrpTargetConfig*, llrp_target_t*);
+DEFINE_FAKE_VOID_FUNC(llrp_target_destroy, llrp_target_t);
+DEFINE_FAKE_VOID_FUNC(llrp_target_update_connection_state, llrp_target_t, bool);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, llrp_target_send_ack, llrp_target_t, const LlrpRemoteRdmCommand*, const uint8_t*,
+                       uint8_t);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, llrp_target_send_nack, llrp_target_t, const LlrpRemoteRdmCommand*,
+                       rdm_nack_reason_t);
 
 void llrp_target_reset_all_fakes(void)
 {
-  RESET_FAKE(rdmnet_llrp_target_create);
-  RESET_FAKE(rdmnet_llrp_target_destroy);
-  RESET_FAKE(rdmnet_llrp_target_update_connection_state);
-  RESET_FAKE(rdmnet_llrp_send_rdm_response);
+  RESET_FAKE(llrp_target_create);
+  RESET_FAKE(llrp_target_destroy);
+  RESET_FAKE(llrp_target_update_connection_state);
+  RESET_FAKE(llrp_target_send_ack);
+  RESET_FAKE(llrp_target_send_nack);
 
   next_target_handle = 0;
-  rdmnet_llrp_target_create_fake.custom_fake = fake_target_create;
+  llrp_target_create_fake.custom_fake = fake_target_create;
 }
 
 etcpal_error_t fake_target_create(const LlrpTargetConfig* config, llrp_target_t* handle)

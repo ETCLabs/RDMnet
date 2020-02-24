@@ -31,7 +31,7 @@
 #include "etcpal/cpp/lock.h"
 #include "etcpal/cpp/uuid.h"
 #include "rdm/message.h"
-#include "rdmnet/client.h"
+#include "rdmnet/core/client.h"
 #include "rdmnet/core/message.h"
 #include "rdmnet/core/rpt_prot.h"
 #include "broker_threads.h"

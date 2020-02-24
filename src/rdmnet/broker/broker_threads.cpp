@@ -26,23 +26,24 @@
 
 /*************************** Function definitions ****************************/
 
-bool ListenThread::Start()
+etcpal::Error ListenThread::Start()
 {
   if (socket_ == ETCPAL_SOCKET_INVALID)
-    return false;
+    return kEtcPalErrInvalid;
 
   terminated_ = false;
-  if (!thread_.SetName("ListenThread").Start(&ListenThread::Run, this))
+
+  auto start_res = thread_.SetName("ListenThread").Start(&ListenThread::Run, this);
+  if (!start_res)
   {
     terminated_ = true;
     etcpal_close(socket_);
     socket_ = ETCPAL_SOCKET_INVALID;
     if (log_)
       log_->Critical("ListenThread: Failed to start thread.");
-    return false;
   }
 
-  return true;
+  return start_res;
 }
 
 void ListenThread::Run()
@@ -107,10 +108,10 @@ ListenThread::~ListenThread()
   }
 }
 
-bool ClientServiceThread::Start()
+etcpal::Error ClientServiceThread::Start()
 {
   terminated_ = false;
-  return thread_.SetName("ClientServiceThread").Start(&ClientServiceThread::Run, this).IsOk();
+  return thread_.SetName("ClientServiceThread").Start(&ClientServiceThread::Run, this);
 }
 
 void ClientServiceThread::Run()
@@ -136,32 +137,26 @@ ClientServiceThread::~ClientServiceThread()
   }
 }
 
-bool BrokerThreadManager::AddListenThread(etcpal_socket_t listen_sock)
+etcpal::Error BrokerThreadManager::AddListenThread(etcpal_socket_t listen_sock)
 {
   auto new_thread = std::make_unique<ListenThread>(listen_sock, notify_, log_);
-  if (new_thread->Start())
-  {
+
+  auto start_res = new_thread->Start();
+  if (start_res)
     threads_.push_back(std::move(new_thread));
-    return true;
-  }
-  else
-  {
-    return false;
-  }
+
+  return start_res;
 }
 
-bool BrokerThreadManager::AddClientServiceThread()
+etcpal::Error BrokerThreadManager::AddClientServiceThread()
 {
   auto new_thread = std::make_unique<ClientServiceThread>(notify_);
-  if (new_thread->Start())
-  {
+
+  auto start_res = new_thread->Start();
+  if (start_res)
     threads_.push_back(std::move(new_thread));
-    return true;
-  }
-  else
-  {
-    return false;
-  }
+
+  return start_res;
 }
 
 void BrokerThreadManager::StopThreads()

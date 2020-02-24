@@ -21,7 +21,7 @@
 #define REGISTERED_BROKER_H_
 
 #include "etcpal/timer.h"
-#include "rdmnet/core/discovery.h"
+#include "rdmnet/discovery.h"
 #include "disc_platform_defs.h"
 
 #ifdef __cplusplus
@@ -58,7 +58,7 @@ bool broker_register_ref_is_valid(const RdmnetBrokerRegisterRef* ref);
 void registered_broker_for_each(void (*for_each_func)(RdmnetBrokerRegisterRef*));
 void registered_broker_remove(const RdmnetBrokerRegisterRef* ref);
 void registered_broker_delete(RdmnetBrokerRegisterRef* rb);
-void registered_broker_delete_all();
+void registered_broker_delete_all(void);
 
 #ifdef __cplusplus
 }

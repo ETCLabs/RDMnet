@@ -533,7 +533,7 @@ CASE_SENSE_NAMES       = NO
 # scope will be hidden.
 # The default value is: NO.
 
-HIDE_SCOPE_NAMES       = YES
+HIDE_SCOPE_NAMES       = NO
 
 # If the HIDE_COMPOUND_REFERENCE tag is set to NO (default) then doxygen will
 # append additional text to a page's title, such as Class Reference. If set to
@@ -793,16 +793,11 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = ./mainpage.md \
-                         ./how_rdmnet_works \
-                         ./getting_started/GeneratedFiles \
+                         ./GeneratedFiles \
                          ../include/rdmnet \
-                         ../include/rdmnet/broker \
                          ../include/rdmnet/cpp \
-                         ../include/rdmnet/core \
                          ../src/rdmnet \
                          ../src/rdmnet/broker/broker_api.cpp \
-                         ../src/rdmnet/core \
-                         ../src/rdmnet/discovery \
                          ../src/rdmnet/private/opts.h
 
 # This tag can be used to specify the character encoding of the source files
@@ -940,7 +935,8 @@ EXAMPLE_RECURSIVE      = NO
 # that contain images that are to be included in the documentation (see the
 # \image command).
 
-IMAGE_PATH             = 
+IMAGE_PATH             = ./getting_started \
+                         ./how_rdmnet_works
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
 # invoke to filter for each input file. Doxygen will invoke the filter program

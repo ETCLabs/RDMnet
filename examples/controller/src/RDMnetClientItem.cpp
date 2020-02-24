@@ -19,8 +19,6 @@
 
 #include "RDMnetClientItem.h"
 
-#include "rdmnet/client.h"
-
 const char* RDMnetClientItem::clientType2String(rpt_client_type_t type)
 {
   switch (type)

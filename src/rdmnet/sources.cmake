@@ -7,63 +7,61 @@
 # The "RDMnet API" layer: Top-level public API logic called by applications.
 
 set(RDMNET_API_PUBLIC_HEADERS
-  ${RDMNET_INCLUDE}/rdmnet/client.h
+  ${RDMNET_INCLUDE}/rdmnet/common.h
   ${RDMNET_INCLUDE}/rdmnet/controller.h
   ${RDMNET_INCLUDE}/rdmnet/defs.h
   ${RDMNET_INCLUDE}/rdmnet/device.h
+  ${RDMNET_INCLUDE}/rdmnet/discovery.h
+  ${RDMNET_INCLUDE}/rdmnet/ept_client.h
+  ${RDMNET_INCLUDE}/rdmnet/llrp_manager.h
+  ${RDMNET_INCLUDE}/rdmnet/llrp_target.h
+  ${RDMNET_INCLUDE}/rdmnet/llrp.h
+  ${RDMNET_INCLUDE}/rdmnet/message.h
   ${RDMNET_INCLUDE}/rdmnet/version.h
 )
 set(RDMNET_API_PRIVATE_HEADERS
-  ${RDMNET_SRC}/rdmnet/private/client.h
   ${RDMNET_SRC}/rdmnet/private/controller.h
   ${RDMNET_SRC}/rdmnet/private/device.h
+  ${RDMNET_SRC}/rdmnet/private/llrp_manager.h
+  ${RDMNET_SRC}/rdmnet/private/llrp_target.h
+  ${RDMNET_SRC}/rdmnet/private/opts.h
 )
 set(RDMNET_API_SOURCES
-  ${RDMNET_SRC}/rdmnet/client.c
   ${RDMNET_SRC}/rdmnet/controller.c
   ${RDMNET_SRC}/rdmnet/device.c
+  ${RDMNET_SRC}/rdmnet/llrp.c
+  ${RDMNET_SRC}/rdmnet/llrp_manager.c
+  ${RDMNET_SRC}/rdmnet/llrp_target.c
+  ${RDMNET_SRC}/rdmnet/message.c
 )
 
 # The "RDMnet Core" layer: Lower-level logic shared by the Client APIs and the Broker library.
 
-set(RDMNET_CORE_PUBLIC_HEADERS
-  ${RDMNET_INCLUDE}/rdmnet/core.h
-  ${RDMNET_INCLUDE}/rdmnet/core/broker_prot.h
-  ${RDMNET_INCLUDE}/rdmnet/core/connection.h
-  ${RDMNET_INCLUDE}/rdmnet/core/ept_prot.h
-  ${RDMNET_INCLUDE}/rdmnet/core/llrp.h
-  ${RDMNET_INCLUDE}/rdmnet/core/llrp_manager.h
-  ${RDMNET_INCLUDE}/rdmnet/core/llrp_target.h
-  ${RDMNET_INCLUDE}/rdmnet/core/message.h
-  ${RDMNET_INCLUDE}/rdmnet/core/rpt_prot.h
-  ${RDMNET_INCLUDE}/rdmnet/core/util.h
-)
-set(RDMNET_CORE_PRIVATE_HEADERS
-  ${RDMNET_SRC}/rdmnet/private/broker_prot.h
-  ${RDMNET_SRC}/rdmnet/private/core.h
-  ${RDMNET_SRC}/rdmnet/private/connection.h
-  ${RDMNET_SRC}/rdmnet/private/llrp.h
-  ${RDMNET_SRC}/rdmnet/private/llrp_manager.h
-  ${RDMNET_SRC}/rdmnet/private/llrp_prot.h
-  ${RDMNET_SRC}/rdmnet/private/llrp_target.h
-  ${RDMNET_SRC}/rdmnet/private/mcast.h
-  ${RDMNET_SRC}/rdmnet/private/message.h
-  ${RDMNET_SRC}/rdmnet/private/msg_buf.h
-  ${RDMNET_SRC}/rdmnet/private/opts.h
-  ${RDMNET_SRC}/rdmnet/private/rpt_prot.h
-  ${RDMNET_SRC}/rdmnet/private/util.h
+set(RDMNET_CORE_HEADERS
+  ${RDMNET_SRC}/rdmnet/core/broker_prot.h
+  ${RDMNET_SRC}/rdmnet/core/client.h
+  ${RDMNET_SRC}/rdmnet/core/client_entry.h
+  ${RDMNET_SRC}/rdmnet/core/common.h
+  ${RDMNET_SRC}/rdmnet/core/connection.h
+  ${RDMNET_SRC}/rdmnet/core/ept_prot.h
+  ${RDMNET_SRC}/rdmnet/core/llrp.h
+  ${RDMNET_SRC}/rdmnet/core/llrp_prot.h
+  ${RDMNET_SRC}/rdmnet/core/mcast.h
+  ${RDMNET_SRC}/rdmnet/core/message.h
+  ${RDMNET_SRC}/rdmnet/core/msg_buf.h
+  ${RDMNET_SRC}/rdmnet/core/rpt_prot.h
+  ${RDMNET_SRC}/rdmnet/core/util.h
 )
 set(RDMNET_CORE_SOURCES
-  ${RDMNET_SRC}/rdmnet/core.c
   ${RDMNET_SRC}/rdmnet/core/broker_prot.c
+  ${RDMNET_SRC}/rdmnet/core/client.c
   ${RDMNET_SRC}/rdmnet/core/client_entry.c
+  ${RDMNET_SRC}/rdmnet/core/common.c
   ${RDMNET_SRC}/rdmnet/core/connection.c
   ${RDMNET_SRC}/rdmnet/core/llrp.c
-  ${RDMNET_SRC}/rdmnet/core/llrp_manager.c
   ${RDMNET_SRC}/rdmnet/core/llrp_prot.c
-  ${RDMNET_SRC}/rdmnet/core/llrp_target.c
   ${RDMNET_SRC}/rdmnet/core/mcast.c
-  ${RDMNET_SRC}/rdmnet/core/message.c
+  # ${RDMNET_SRC}/rdmnet/core/message.c
   ${RDMNET_SRC}/rdmnet/core/msg_buf.c
   ${RDMNET_SRC}/rdmnet/core/rpt_prot.c
   ${RDMNET_SRC}/rdmnet/core/util.c
@@ -73,11 +71,10 @@ set(RDMNET_CORE_SOURCES
 
 set(RDMNET_LIB_PUBLIC_HEADERS 
   ${RDMNET_API_PUBLIC_HEADERS}
-  ${RDMNET_CORE_PUBLIC_HEADERS}
 )
 set(RDMNET_LIB_PRIVATE_HEADERS
   ${RDMNET_API_PRIVATE_HEADERS}
-  ${RDMNET_CORE_PRIVATE_HEADERS}
+  ${RDMNET_CORE_HEADERS}
 )
 set(RDMNET_LIB_SOURCES
   ${RDMNET_API_SOURCES}
@@ -86,7 +83,6 @@ set(RDMNET_LIB_SOURCES
 
 set(RDMNET_BROKER_PUBLIC_HEADERS
   ${RDMNET_INCLUDE}/rdmnet/broker.h
-  ${RDMNET_INCLUDE}/rdmnet/broker/settings.h
 )
 set(RDMNET_BROKER_PRIVATE_HEADERS
   ${RDMNET_SRC}/rdmnet/broker/broker_core.h
