@@ -10,10 +10,12 @@
 # CMake
 build*/
 
+# User files
+*.user
+
 # MSVC and Qt
 *.VC.db
 *.VC.opendb
-*.vcxproj.user
 .vs/
 Debug/
 Release/
