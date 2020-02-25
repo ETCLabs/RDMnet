@@ -156,7 +156,7 @@ stages:
         displayName: "Documentation Deploy"
         pool:
           vmImage: "ubuntu-18.04"
-        condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/pull'))
+        condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), and(startsWith(variables['Build.SourceBranch'], 'refs/pull'), not(variables['System.PullRequest.IsFork'])))
         steps:
           - script: |
               sudo apt-get install doxygen
