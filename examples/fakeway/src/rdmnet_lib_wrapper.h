@@ -39,30 +39,30 @@ public:
 class RdmnetLibInterface
 {
 public:
-  virtual etcpal::Result Startup(const etcpal::Uuid& cid, const RdmnetScopeConfig& scope_config,
+  virtual etcpal::Error Startup(const etcpal::Uuid& cid, const RdmnetScopeConfig& scope_config,
                                  RdmnetLibNotify* notify, FakewayLog* log) = 0;
   virtual void Shutdown() = 0;
 
-  virtual etcpal::Result SendRdmResponse(const LocalRdmResponse& resp) = 0;
-  virtual etcpal::Result SendStatus(const LocalRptStatus& status) = 0;
-  virtual etcpal::Result SendLlrpResponse(const LlrpLocalRdmResponse& resp) = 0;
-  virtual etcpal::Result ChangeScope(const RdmnetScopeConfig& new_scope_config, rdmnet_disconnect_reason_t reason) = 0;
-  virtual etcpal::Result ChangeSearchDomain(const std::string& new_search_domain,
+  virtual etcpal::Error SendRdmResponse(const LocalRdmResponse& resp) = 0;
+  virtual etcpal::Error SendStatus(const LocalRptStatus& status) = 0;
+  virtual etcpal::Error SendLlrpResponse(const LlrpLocalRdmResponse& resp) = 0;
+  virtual etcpal::Error ChangeScope(const RdmnetScopeConfig& new_scope_config, rdmnet_disconnect_reason_t reason) = 0;
+  virtual etcpal::Error ChangeSearchDomain(const std::string& new_search_domain,
                                             rdmnet_disconnect_reason_t reason) = 0;
 };
 
 class RdmnetLibWrapper : public RdmnetLibInterface
 {
 public:
-  etcpal::Result Startup(const etcpal::Uuid& cid, const RdmnetScopeConfig& scope_config, RdmnetLibNotify* notify,
+  etcpal::Error Startup(const etcpal::Uuid& cid, const RdmnetScopeConfig& scope_config, RdmnetLibNotify* notify,
                          FakewayLog* log) override;
   void Shutdown() override;
 
-  etcpal::Result SendRdmResponse(const LocalRdmResponse& resp) override;
-  etcpal::Result SendStatus(const LocalRptStatus& status) override;
-  etcpal::Result SendLlrpResponse(const LlrpLocalRdmResponse& resp) override;
-  etcpal::Result ChangeScope(const RdmnetScopeConfig& new_scope_config, rdmnet_disconnect_reason_t reason) override;
-  etcpal::Result ChangeSearchDomain(const std::string& new_search_domain, rdmnet_disconnect_reason_t reason) override;
+  etcpal::Error SendRdmResponse(const LocalRdmResponse& resp) override;
+  etcpal::Error SendStatus(const LocalRptStatus& status) override;
+  etcpal::Error SendLlrpResponse(const LlrpLocalRdmResponse& resp) override;
+  etcpal::Error ChangeScope(const RdmnetScopeConfig& new_scope_config, rdmnet_disconnect_reason_t reason) override;
+  etcpal::Error ChangeSearchDomain(const std::string& new_search_domain, rdmnet_disconnect_reason_t reason) override;
 
   void LibNotifyConnected(rdmnet_device_t handle, const RdmnetClientConnectedInfo* info);
   void LibNotifyConnectFailed(rdmnet_device_t handle, const RdmnetClientConnectFailedInfo* info);

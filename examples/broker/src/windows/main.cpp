@@ -285,12 +285,15 @@ VOID NETIOAPI_API_ InterfaceChangeCallback(IN PVOID CallerContext, IN PMIB_IPINT
 }
 
 BrokerShell broker_shell;
+bool handled_ctrl_c_once = false;
 
 BOOL WINAPI ConsoleSignalHandler(DWORD signal)
 {
-  if (signal == CTRL_C_EVENT)
+  // We only gracefully shut down on the first Ctrl+C
+  if (signal == CTRL_C_EVENT && !handled_ctrl_c_once)
   {
     broker_shell.AsyncShutdown();
+    handled_ctrl_c_once = true;
     return TRUE;
   }
   return FALSE;

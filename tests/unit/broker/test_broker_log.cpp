@@ -26,7 +26,7 @@ class MockBrokerLog : public rdmnet::BrokerLog
 public:
   MockBrokerLog() : BrokerLog(DispatchPolicy::kDirect) {}
 
-  MOCK_METHOD(void, GetTimeFromCallback, (EtcPalLogTimeParams & time), (override));
+  MOCK_METHOD(void, GetTimeFromCallback, (EtcPalLogTimestamp & time), (override));
   MOCK_METHOD(void, OutputLogMsg, (const std::string& str), (override));
 };
 
@@ -51,7 +51,7 @@ public:
 protected:
   MockBrokerLog log_;
 
-  const EtcPalLogTimeParams test_time_ = {1970, 1, 1, 0, 0, 0, 0, 0};
+  const EtcPalLogTimestamp test_time_ = {1970, 1, 1, 0, 0, 0, 0, 0};
 
   template <typename... FormatArgs>
   void TestLogFormat(const std::string& expected, const std::string& format, FormatArgs... args)

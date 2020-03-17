@@ -46,7 +46,7 @@ public:
   void Emergency(const char* format, ...);
 
   void LogFromCallback(const std::string& str);
-  void GetTimeFromCallback(EtcPalLogTimeParams& time);
+  void GetTimeFromCallback(EtcPalLogTimestamp& time);
 
 protected:
   std::fstream file_;

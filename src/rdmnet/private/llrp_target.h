@@ -20,14 +20,14 @@
 #ifndef RDMNET_PRIVATE_LLRP_TARGET_H_
 #define RDMNET_PRIVATE_LLRP_TARGET_H_
 
-#include "etcpal/uuid.h"
-#include "etcpal/bool.h"
-#include "etcpal/int.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include "etcpal/acn_rlp.h"
 #include "etcpal/inet.h"
 #include "etcpal/rbtree.h"
 #include "etcpal/timer.h"
 #include "etcpal/socket.h"
-#include "etcpal/root_layer_pdu.h"
+#include "etcpal/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/core.h"
 #include "rdmnet/defs.h"

@@ -20,7 +20,7 @@
 #ifndef DNS_MESSAGE_H_
 #define DNS_MESSAGE_H_
 
-#include "etcpal/int.h"
+#include <stdint.h>
 #include "etcpal/inet.h"
 
 #ifdef __cplusplus

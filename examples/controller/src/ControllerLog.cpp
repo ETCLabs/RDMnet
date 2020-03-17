@@ -33,7 +33,7 @@ static void log_callback(void* context, const EtcPalLogStrings* strings)
     log->LogFromCallback(strings->human_readable);
 }
 
-static void time_callback(void* /*context*/, EtcPalLogTimeParams* time)
+static void time_callback(void* /*context*/, EtcPalLogTimestamp* time)
 {
   QDateTime now = QDateTime::currentDateTime();
   QDate qdate = now.date();
@@ -53,7 +53,7 @@ ControllerLog::ControllerLog(const std::string& file_name) : file_name_(file_nam
 {
   file_.open(file_name.c_str(), std::fstream::out);
 
-  params_.action = kEtcPalLogCreateHumanReadableLog;
+  params_.action = kEtcPalLogCreateHumanReadable;
   params_.log_fn = log_callback;
   params_.log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG);
   params_.time_fn = time_callback;

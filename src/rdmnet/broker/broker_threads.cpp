@@ -26,25 +26,13 @@
 
 /*************************** Function definitions ****************************/
 
-extern "C" {
-static void listen_thread_fn(void* arg)
-{
-  ListenThread* lt = static_cast<ListenThread*>(arg);
-  if (lt)
-  {
-    lt->Run();
-  }
-}
-}
-
 bool ListenThread::Start()
 {
   if (socket_ == ETCPAL_SOCKET_INVALID)
     return false;
 
   terminated_ = false;
-  EtcPalThreadParams tparams = {ETCPAL_THREAD_DEFAULT_PRIORITY, ETCPAL_THREAD_DEFAULT_STACK, "ListenThread", NULL};
-  if (!etcpal_thread_create(&handle_, &tparams, listen_thread_fn, this))
+  if (!thread_.SetName("ListenThread").Start(&ListenThread::Run, this))
   {
     terminated_ = true;
     etcpal_close(socket_);
@@ -74,7 +62,7 @@ void ListenThread::ReadSocket()
     etcpal_socket_t conn_sock;
     EtcPalSockAddr new_addr;
 
-    etcpal::Result res = etcpal_accept(socket_, &new_addr, &conn_sock);
+    etcpal::Error res = etcpal_accept(socket_, &new_addr, &conn_sock);
 
     if (!res)
     {
@@ -115,25 +103,14 @@ ListenThread::~ListenThread()
       socket_ = ETCPAL_SOCKET_INVALID;
     }
 
-    etcpal_thread_join(&handle_);
+    thread_.Join();
   }
-}
-
-extern "C" {
-static void client_service_thread_fn(void* arg)
-{
-  ClientServiceThread* cst = static_cast<ClientServiceThread*>(arg);
-  if (cst)
-    cst->Run();
-}
 }
 
 bool ClientServiceThread::Start()
 {
   terminated_ = false;
-  EtcPalThreadParams tparams = {ETCPAL_THREAD_DEFAULT_PRIORITY, ETCPAL_THREAD_DEFAULT_STACK, "ClientServiceThread",
-                                NULL};
-  return etcpal_thread_create(&handle_, &tparams, client_service_thread_fn, this);
+  return thread_.SetName("ClientServiceThread").Start(&ClientServiceThread::Run, this).IsOk();
 }
 
 void ClientServiceThread::Run()
@@ -155,7 +132,7 @@ ClientServiceThread::~ClientServiceThread()
   if (!terminated_)
   {
     terminated_ = true;
-    etcpal_thread_join(&handle_);
+    thread_.Join();
   }
 }
 

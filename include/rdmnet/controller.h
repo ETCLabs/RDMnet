@@ -26,7 +26,7 @@
 #ifndef RDMNET_CONTROLLER_H_
 #define RDMNET_CONTROLLER_H_
 
-#include "etcpal/bool.h"
+#include <stdbool.h>
 #include "etcpal/uuid.h"
 #include "etcpal/inet.h"
 #include "rdm/uid.h"

@@ -20,10 +20,10 @@
 #ifndef RDMNET_PRIVATE_LLRP_PROT_H_
 #define RDMNET_PRIVATE_LLRP_PROT_H_
 
-#include "etcpal/int.h"
-#include "etcpal/bool.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include "etcpal/acn_rlp.h"
 #include "etcpal/uuid.h"
-#include "etcpal/root_layer_pdu.h"
 #include "etcpal/socket.h"
 #include "rdm/uid.h"
 #include "rdm/message.h"
@@ -57,13 +57,6 @@ typedef struct LlrpMessageInterest
   RdmUid my_uid;
 } LlrpMessageInterest;
 
-typedef struct KnownUid KnownUid;
-struct KnownUid
-{
-  RdmUid uid;
-  KnownUid* next;
-};
-
 typedef struct RemoteProbeRequest
 {
   /* True if this probe request contains my UID as registered in the LlrpMessageInterest struct, and
@@ -77,7 +70,8 @@ typedef struct LocalProbeRequest
   RdmUid lower_uid;
   RdmUid upper_uid;
   uint16_t filter;
-  KnownUid* uid_list;
+  const RdmUid* known_uids;
+  size_t num_known_uids;
 } LocalProbeRequest;
 
 typedef struct LlrpMessage

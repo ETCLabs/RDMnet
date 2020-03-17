@@ -20,7 +20,7 @@
 #ifndef BROKER_RESPONDER_H_
 #define BROKER_RESPONDER_H_
 
-#include "etcpal/int.h"
+#include <cstdint>
 #include "broker_client.h"
 
 class BrokerResponder

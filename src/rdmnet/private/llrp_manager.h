@@ -32,7 +32,7 @@
 typedef struct DiscoveredTargetInternal DiscoveredTargetInternal;
 struct DiscoveredTargetInternal
 {
-  KnownUid known_uid;
+  RdmUid uid;
   EtcPalUuid cid;
   DiscoveredTargetInternal* next;
 };
@@ -67,6 +67,8 @@ struct LlrpManager
   EtcPalRbTree discovered_targets;
   RdmUid cur_range_low;
   RdmUid cur_range_high;
+  RdmUid known_uids[LLRP_KNOWN_UID_SIZE];
+  size_t num_known_uids;
 
   // Callback dispatch info
   LlrpManagerCallbacks callbacks;

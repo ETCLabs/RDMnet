@@ -28,7 +28,7 @@
 #include <cstdint>
 #include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/lock.h"
-#include "etcpal/thread.h"
+#include "etcpal/cpp/thread.h"
 #include "rdmnet/version.h"
 #include "rdmnet/client.h"
 
@@ -101,7 +101,7 @@ private:
   // Property data
 
   // Identify
-  etcpal_thread_t identify_thread_{};
+  etcpal::Thread identify_thread_;
   bool identifying_{false};
 
   // Device Label

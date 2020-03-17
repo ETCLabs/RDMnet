@@ -22,8 +22,8 @@
 #include <map>
 #include <vector>
 #include "etcpal/cpp/lock.h"
-#include "etcpal/thread.h"
-#include "etcpal/timer.h"
+#include "etcpal/cpp/thread.h"
+#include "etcpal/cpp/timer.h"
 #include "GadgetDLL.h"
 
 #include <iostream>
@@ -41,7 +41,7 @@ struct GadgetRdmCommand
   RDM_CmdC cmd;
   unsigned int port_number;
   const void* cookie;
-  EtcPalTimer timeout;
+  etcpal::Timer timeout;
 };
 
 struct RdmResponder
@@ -74,7 +74,7 @@ public:
 private:
   GadgetNotify* notify_{nullptr};
   bool running_{false};
-  etcpal_thread_t thread_id_;
+  etcpal::Thread thread_;
 
   etcpal::Mutex gadget_lock_;
   std::map<unsigned int, Gadget> gadgets_;
@@ -89,13 +89,6 @@ private:
   void CheckForUnsolicitedRdmResponses();
   bool GetResponseFromQueue(const void* cookie, RDM_CmdC& response);
 };
-
-extern "C" static void thread_func(void* arg)
-{
-  GadgetManager* mgr = static_cast<GadgetManager*>(arg);
-  if (mgr)
-    mgr->Run();
-}
 
 static FakewayLog* log_instance{nullptr};
 
@@ -114,10 +107,8 @@ bool GadgetManager::Startup(GadgetNotify& notify, FakewayLog& log)
   if (!Gadget2_Connect())
     return false;
 
-  EtcPalThreadParams params;
-  ETCPAL_THREAD_SET_DEFAULT_PARAMS(&params);
   running_ = true;
-  if (!etcpal_thread_create(&thread_id_, &params, thread_func, this))
+  if (!thread_.Start(&GadgetManager::Run, this))
   {
     Gadget2_Disconnect();
     return false;
@@ -129,7 +120,7 @@ bool GadgetManager::Startup(GadgetNotify& notify, FakewayLog& log)
 void GadgetManager::Shutdown()
 {
   running_ = false;
-  etcpal_thread_join(&thread_id_);
+  thread_.Join();
   Gadget2_Disconnect();
   log_instance = nullptr;
 }
@@ -160,7 +151,7 @@ void GadgetManager::SendRdmCommand(unsigned int gadget_id, unsigned int port_num
     gadget_cmd.cmd = cmd;
     gadget_cmd.port_number = port_number;
     gadget_cmd.cookie = cookie;
-    etcpal_timer_start(&gadget_cmd.timeout, 5000);
+    gadget_cmd.timeout.Start(5000);
 
     Gadget2_SendRDMCommandWithContext(gadget_id, port_number, cmd.getCommand(), cmd.getParameter(), cmd.getSubdevice(),
                                       cmd.getLength(), reinterpret_cast<const char*>(cmd.getBuffer()),
@@ -279,7 +270,7 @@ void GadgetManager::CheckForRdmResponses()
         notify_->HandleRdmResponse(gadget.second.id, command_iter->port_number, response, command_iter->cookie);
         command_iter = gadget.second.commands.erase(command_iter);
       }
-      else if (etcpal_timer_is_expired(&command_iter->timeout))
+      else if (command_iter->timeout.IsExpired())
       {
         notify_->HandleRdmTimeout(gadget.second.id, command_iter->port_number, command_iter->cmd, command_iter->cookie);
         command_iter = gadget.second.commands.erase(command_iter);

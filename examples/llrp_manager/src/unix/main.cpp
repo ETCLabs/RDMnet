@@ -31,7 +31,7 @@ static void manager_log_callback(void* context, const EtcPalLogStrings* strings)
   std::cout << strings->human_readable << "\n";
 }
 
-static void manager_time_callback(void* context, EtcPalLogTimeParams* time_params)
+static void manager_time_callback(void* context, EtcPalLogTimestamp* time_params)
 {
   time_t t = time(NULL);
   struct tm* local_time = localtime(&t);
@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
   auto manager_cid = etcpal::Uuid::OsPreferred();
 
   EtcPalLogParams params;
-  params.action = kEtcPalLogCreateHumanReadableLog;
+  params.action = kEtcPalLogCreateHumanReadable;
   params.log_fn = manager_log_callback;
   params.log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_INFO);
   params.time_fn = manager_time_callback;

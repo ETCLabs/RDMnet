@@ -20,7 +20,7 @@
 #ifndef RDMNET_PRIVATE_LLRP_H_
 #define RDMNET_PRIVATE_LLRP_H_
 
-#include "etcpal/bool.h"
+#include <stdbool.h>
 #include "etcpal/error.h"
 #include "etcpal/inet.h"
 #include "etcpal/rbtree.h"

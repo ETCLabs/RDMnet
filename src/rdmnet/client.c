@@ -20,8 +20,8 @@
 #include "rdmnet/client.h"
 
 #include <inttypes.h>
+#include <stdint.h>
 #include <string.h>
-#include "etcpal/int.h"
 #include "etcpal/lock.h"
 #include "etcpal/rbtree.h"
 #include "rdm/controller.h"
@@ -72,8 +72,8 @@
 #define free_client_rdm_response(ptr) etcpal_mempool_free(client_rdm_responses, ptr)
 #endif
 
-#define rdmnet_client_lock() etcpal_mutex_take(&client_lock)
-#define rdmnet_client_unlock() etcpal_mutex_give(&client_lock)
+#define rdmnet_client_lock() etcpal_mutex_lock(&client_lock)
+#define rdmnet_client_unlock() etcpal_mutex_unlock(&client_lock)
 
 #define init_callback_info(cbptr) ((cbptr)->which = kClientCallbackNone)
 
@@ -184,11 +184,11 @@ static bool handle_rpt_message(const RdmnetClient* cli, const ClientScopeListEnt
                                RptMsgReceivedArgs* cb_args);
 
 // Red-black tree management
-static int client_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b);
-static int client_llrp_handle_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b);
-static int scope_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b);
-static int scope_disc_handle_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b);
-static EtcPalRbNode* client_node_alloc();
+static int client_compare(const EtcPalRbTree* self, const void* value_a, const void* value_b);
+static int client_llrp_handle_compare(const EtcPalRbTree* self, const void* value_a, const void* value_b);
+static int scope_compare(const EtcPalRbTree* self, const void* value_a, const void* value_b);
+static int scope_disc_handle_compare(const EtcPalRbTree* self, const void* value_a, const void* value_b);
+static EtcPalRbNode* client_node_alloc(void);
 static void client_node_free(EtcPalRbNode* node);
 
 /*************************** Function definitions ****************************/
@@ -232,11 +232,12 @@ etcpal_error_t rdmnet_client_init(const EtcPalLogParams* lparams, const RdmnetNe
 
     if (res == kEtcPalErrOk)
     {
-      etcpal_rbtree_init(&state.clients, client_cmp, client_node_alloc, client_node_free);
-      etcpal_rbtree_init(&state.clients_by_llrp_handle, client_llrp_handle_cmp, client_node_alloc, client_node_free);
+      etcpal_rbtree_init(&state.clients, client_compare, client_node_alloc, client_node_free);
+      etcpal_rbtree_init(&state.clients_by_llrp_handle, client_llrp_handle_compare, client_node_alloc,
+                         client_node_free);
 
-      etcpal_rbtree_init(&state.scopes_by_handle, scope_cmp, client_node_alloc, client_node_free);
-      etcpal_rbtree_init(&state.scopes_by_disc_handle, scope_disc_handle_cmp, client_node_alloc, client_node_free);
+      etcpal_rbtree_init(&state.scopes_by_handle, scope_compare, client_node_alloc, client_node_free);
+      etcpal_rbtree_init(&state.scopes_by_disc_handle, scope_disc_handle_compare, client_node_alloc, client_node_free);
 
       init_int_handle_manager(&state.handle_mgr, client_handle_in_use);
     }
@@ -1531,52 +1532,44 @@ void release_client_and_scope(const RdmnetClient* client, const ClientScopeListE
   rdmnet_client_unlock();
 }
 
-int client_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
+int client_compare(const EtcPalRbTree* self, const void* value_a, const void* value_b)
 {
   RDMNET_UNUSED_ARG(self);
 
-  RdmnetClient* a = (RdmnetClient*)node_a->value;
-  RdmnetClient* b = (RdmnetClient*)node_b->value;
-
-  return a->handle - b->handle;
+  const RdmnetClient* a = (const RdmnetClient*)value_a;
+  const RdmnetClient* b = (const RdmnetClient*)value_b;
+  return (a->handle > b->handle) - (a->handle < b->handle);
 }
 
-int client_llrp_handle_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
+int client_llrp_handle_compare(const EtcPalRbTree* self, const void* value_a, const void* value_b)
 {
   RDMNET_UNUSED_ARG(self);
 
-  RdmnetClient* a = (RdmnetClient*)node_a->value;
-  RdmnetClient* b = (RdmnetClient*)node_b->value;
-
-  return a->llrp_handle - b->llrp_handle;
+  const RdmnetClient* a = (const RdmnetClient*)value_a;
+  const RdmnetClient* b = (const RdmnetClient*)value_b;
+  return (a->llrp_handle > b->llrp_handle) - (a->llrp_handle < b->llrp_handle);
 }
 
-int scope_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
+int scope_compare(const EtcPalRbTree* self, const void* value_a, const void* value_b)
 {
   RDMNET_UNUSED_ARG(self);
 
-  ClientScopeListEntry* a = (ClientScopeListEntry*)node_a->value;
-  ClientScopeListEntry* b = (ClientScopeListEntry*)node_b->value;
-
-  return a->handle - b->handle;
+  const ClientScopeListEntry* a = (const ClientScopeListEntry*)value_a;
+  const ClientScopeListEntry* b = (const ClientScopeListEntry*)value_b;
+  return (a->handle > b->handle) - (a->handle < b->handle);
 }
 
-int scope_disc_handle_cmp(const EtcPalRbTree* self, const EtcPalRbNode* node_a, const EtcPalRbNode* node_b)
+int scope_disc_handle_compare(const EtcPalRbTree* self, const void* value_a, const void* value_b)
 {
   RDMNET_UNUSED_ARG(self);
 
-  ClientScopeListEntry* a = (ClientScopeListEntry*)node_a->value;
-  ClientScopeListEntry* b = (ClientScopeListEntry*)node_b->value;
+  const ClientScopeListEntry* a = (const ClientScopeListEntry*)value_a;
+  const ClientScopeListEntry* b = (const ClientScopeListEntry*)value_b;
 
-  if (a->monitor_handle > b->monitor_handle)
-    return 1;
-  else if (a->monitor_handle < b->monitor_handle)
-    return -1;
-  else
-    return 0;
+  return (a->monitor_handle > b->monitor_handle) - (a->monitor_handle < b->monitor_handle);
 }
 
-EtcPalRbNode* client_node_alloc()
+EtcPalRbNode* client_node_alloc(void)
 {
 #if RDMNET_DYNAMIC_MEM
   return (EtcPalRbNode*)malloc(sizeof(EtcPalRbNode));

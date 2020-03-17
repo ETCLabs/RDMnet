@@ -22,6 +22,7 @@
 
 BEGIN_INCLUDE_QT_HEADERS()
 #include <QMessageBox>
+#include <QIntValidator>
 END_INCLUDE_QT_HEADERS()
 
 BrokerStaticAddGUI::BrokerStaticAddGUI(QWidget* parent, IHandlesBrokerStaticAdd* handler) : QDialog(parent)

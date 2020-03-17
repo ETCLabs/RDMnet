@@ -99,7 +99,7 @@ bool RDMnetLibWrapper::Startup(const etcpal::Uuid& cid, RDMnetLibNotify* notify)
     notify_ = notify;
 
     // Initialize the RDMnet controller library
-    etcpal::Result res = rdmnet_controller_init(log_ ? log_->GetLogParams() : nullptr, nullptr);
+    etcpal::Error res = rdmnet_controller_init(log_ ? log_->GetLogParams() : nullptr, nullptr);
     if (!res)
     {
       if (log_)
@@ -171,7 +171,7 @@ rdmnet_client_scope_t RDMnetLibWrapper::AddScope(const std::string& scope, Stati
   }
 
   rdmnet_client_scope_t new_scope_handle;
-  etcpal::Result res = rdmnet_controller_add_scope(controller_handle_, &config, &new_scope_handle);
+  etcpal::Error res = rdmnet_controller_add_scope(controller_handle_, &config, &new_scope_handle);
   if (res)
   {
     if (log_)
@@ -188,7 +188,7 @@ rdmnet_client_scope_t RDMnetLibWrapper::AddScope(const std::string& scope, Stati
 
 bool RDMnetLibWrapper::RemoveScope(rdmnet_client_scope_t scope_handle, rdmnet_disconnect_reason_t reason)
 {
-  etcpal::Result res = rdmnet_controller_remove_scope(controller_handle_, scope_handle, reason);
+  etcpal::Error res = rdmnet_controller_remove_scope(controller_handle_, scope_handle, reason);
   if (res)
   {
     if (log_)
