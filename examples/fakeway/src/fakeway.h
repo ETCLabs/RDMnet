@@ -77,8 +77,9 @@ public:
   static void PrintVersion();
 
   // Starts up the RDMnet Device logic with the scope configuration provided. Also initializes the
-  // USB library and begins listening for Gadgets.
-  bool Startup(const RdmnetScopeConfig& scope_config);
+  // USB library and begins listening for Gadgets. If cid_str is null, a V4 UUID is generated for the
+  // fakeway's CID. Otherwise, cid_str will be used for this fakeway's CID.
+  bool Startup(const RdmnetScopeConfig& scope_config, const char *cid_str);
   // Shuts down RDMnet and USB/RDM functionality.
   void Shutdown();
 
