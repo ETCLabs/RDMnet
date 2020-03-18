@@ -26,6 +26,9 @@ void PrintHelp(wchar_t* app_name)
   printf("                    '=' to set the scope to the default.\n");
   printf("  --broker=IP:PORT  Connect to a Broker at address IP:PORT instead of\n");
   printf("                    performing discovery.\n");
+  printf("  --cid=CID         Configures the CID (CID should follow the format\n");
+  printf("                    xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (not case sensitive)).\n");
+  printf("                    If this isn't specified, a V4 UUID will be generated.\n");
   printf("  --help            Display this help and exit.\n");
   printf("  --version         Output version information and exit.\n");
 }
@@ -96,6 +99,10 @@ int wmain(int argc, wchar_t* argv[])
   bool should_exit = false;
   RdmnetScopeConfig scope_config;
 
+  char cid_str[ETCPAL_UUID_STRING_BYTES];
+  memset(cid_str, '\0', ETCPAL_UUID_STRING_BYTES);
+  bool cid_str_set = false;
+
   RDMNET_CLIENT_SET_DEFAULT_SCOPE(&scope_config);
 
   if (argc > 1)
@@ -124,6 +131,11 @@ int wmain(int argc, wchar_t* argv[])
           break;
         }
       }
+      else if (_wcsnicmp(argv[i], L"--cid=", 6) == 0)
+      {
+        cid_str_set =
+            (WideCharToMultiByte(CP_UTF8, 0, &argv[i][6], -1, cid_str, ETCPAL_UUID_STRING_BYTES, NULL, NULL) > 0);
+      }
       else if (_wcsicmp(argv[i], L"--version") == 0)
       {
         Fakeway::PrintVersion();
@@ -149,7 +161,7 @@ int wmain(int argc, wchar_t* argv[])
   }
 
   printf("Starting Fakeway...\n");
-  fakeway.Startup(scope_config);
+  fakeway.Startup(scope_config, cid_str_set ? cid_str : nullptr);
 
   while (fakeway_keep_running)
   {
