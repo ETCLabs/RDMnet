@@ -66,6 +66,8 @@ public:
   void SetDeviceLabel(int target_handle, const std::string& label);
   void SetComponentScope(int target_handle, int scope_slot, const std::string& scope_utf8,
                          const etcpal::SockAddr& static_config);
+  void FactoryDefaults(int target_handle);
+  void ResetDevice(int target_handle);
 
   void TargetDiscovered(const DiscoveredLlrpTarget& target);
   void DiscoveryFinished();
