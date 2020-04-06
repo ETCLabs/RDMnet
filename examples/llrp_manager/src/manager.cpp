@@ -782,7 +782,6 @@ void LLRPManager::ResetDevice(int target_handle)
 
       if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
       {
-        target->second.identifying = !target->second.identifying;
         printf("Reset device successfully.\n");
       }
     }
@@ -816,7 +815,6 @@ void LLRPManager::FactoryDefaults(int target_handle)
 
       if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
       {
-        target->second.identifying = !target->second.identifying;
         printf("Factory defaults successfully.\n");
       }
     }
