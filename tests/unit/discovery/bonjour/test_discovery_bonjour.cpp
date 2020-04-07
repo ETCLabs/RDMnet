@@ -80,7 +80,7 @@ static void set_monitor_callbacks(RdmnetScopeMonitorCallbacks* callbacks)
   callbacks->scope_monitor_error = monitorcb_scope_monitor_error;
 }
 
-class TestDiscoveryBonjour : public ::testing::Test
+class TestDiscoveryBonjour : public testing::Test
 {
 public:
   // clang-format off

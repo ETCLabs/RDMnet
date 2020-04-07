@@ -7,6 +7,7 @@
 # The "RDMnet API" layer: Top-level public API logic called by applications.
 
 set(RDMNET_API_PUBLIC_HEADERS
+  ${RDMNET_INCLUDE}/rdmnet/client.h
   ${RDMNET_INCLUDE}/rdmnet/common.h
   ${RDMNET_INCLUDE}/rdmnet/controller.h
   ${RDMNET_INCLUDE}/rdmnet/defs.h
@@ -27,6 +28,7 @@ set(RDMNET_API_PRIVATE_HEADERS
   ${RDMNET_SRC}/rdmnet/private/opts.h
 )
 set(RDMNET_API_SOURCES
+  ${RDMNET_SRC}/rdmnet/common.c
   ${RDMNET_SRC}/rdmnet/controller.c
   ${RDMNET_SRC}/rdmnet/device.c
   ${RDMNET_SRC}/rdmnet/llrp.c

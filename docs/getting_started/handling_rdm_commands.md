@@ -127,7 +127,6 @@ Most SET commands don't require data in their ACK response; the response is just
 that the changed parameter was acted upon. In this case, there's no need to copy any data before
 responding with an ACK.
 
-
 <!-- CODE_BLOCK_START -->
 ```c
 void rdm_command_received(rdmnet_device_t handle, const RdmnetRdmCommand* cmd, RdmnetSyncRdmResponse* response,

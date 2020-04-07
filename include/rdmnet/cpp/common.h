@@ -96,10 +96,10 @@ public:
   static ResponseAction SendNack(uint16_t raw_nack_reason);
   static ResponseAction DeferResponse();
 
-  constexpr const ::RdmnetSyncRdmResponse& get() const;
+  constexpr const RdmnetSyncRdmResponse& get() const;
 
 private:
-  ::RdmnetSyncRdmResponse response_;
+  RdmnetSyncRdmResponse response_;
 };
 
 /// \brief Send an RDM ACK, optionally including some response data.
@@ -141,7 +141,7 @@ inline ResponseAction ResponseAction::DeferResponse()
 }
 
 /// \brief Get a const reference to the underlying C type.
-constexpr const ::RdmnetSyncRdmResponse& ResponseAction::get() const
+constexpr const RdmnetSyncRdmResponse& ResponseAction::get() const
 {
   return response_;
 }

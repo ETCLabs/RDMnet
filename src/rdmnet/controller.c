@@ -112,7 +112,6 @@ void rdmnet_controller_config_init(RdmnetControllerConfig* config, uint16_t manu
   {
     memset(config, 0, sizeof(RdmnetControllerConfig));
     RDMNET_INIT_DYNAMIC_UID_REQUEST(&config->uid, manufacturer_id);
-    config->search_domain = E133_DEFAULT_DOMAIN;
   }
 }
 
@@ -131,8 +130,8 @@ void rdmnet_controller_config_init(RdmnetControllerConfig* config, uint16_t manu
  *                                  command.
  * \param[in] status_received Callback called when a controller receives a status message in
  *                            response to an RDM command.
- * \param[in] dynamic_uid_mappings_received (optional) Callback called when a controller receives a
- *                                          set of dynamic UID mappings.
+ * \param[in] responder_ids_received (optional) Callback called when a controller receives a set of
+ *                                   dynamic UID mappings.
  * \param[in] callback_context (optional) Pointer to opaque data passed back with each callback.
  */
 void rdmnet_controller_set_callbacks(RdmnetControllerConfig* config, RdmnetControllerConnectedCallback connected,
@@ -141,7 +140,7 @@ void rdmnet_controller_set_callbacks(RdmnetControllerConfig* config, RdmnetContr
                                      RdmnetControllerClientListUpdateReceivedCallback client_list_update_received,
                                      RdmnetControllerRdmResponseReceivedCallback rdm_response_received,
                                      RdmnetControllerStatusReceivedCallback status_received,
-                                     RdmnetControllerDynamicUidMappingsReceivedCallback dynamic_uid_mappings_received,
+                                     RdmnetControllerResponderIdsReceivedCallback responder_ids_received,
                                      void* callback_context)
 {
   if (config)
@@ -152,7 +151,7 @@ void rdmnet_controller_set_callbacks(RdmnetControllerConfig* config, RdmnetContr
     config->callbacks.client_list_update_received = client_list_update_received;
     config->callbacks.rdm_response_received = rdm_response_received;
     config->callbacks.status_received = status_received;
-    config->callbacks.dynamic_uid_mappings_received = dynamic_uid_mappings_received;
+    config->callbacks.responder_ids_received = responder_ids_received;
     config->callback_context = callback_context;
   }
 }
@@ -366,6 +365,34 @@ etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet
 }
 
 /*!
+ * \brief Change the configuration of a scope on a controller.
+ *
+ * Will disconnect from any connected brokers and attempt connection again using the new
+ * configuration given.
+ *
+ * \param[in] handle Handle to the controller on which to change a scope.
+ * \param[in] scope_handle Handle to the scope for which to change the configuration.
+ * \param[in] new_scope_config New configuration parameters for the scope.
+ * \param[in] disconnect_reason RDMnet protocol disconnect reason to send to the connected broker.
+ * \return #kEtcPalErrOk: Scope changed successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return #kEtcPalErrNotInit: Module not initialized.
+ * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance, or
+ *                              scope_handle is not associated with a valid scope instance.
+ * \return #kEtcPalErrSys: An internal library or system call error occurred.
+ */
+etcpal_error_t rdmnet_controller_change_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                                              const RdmnetScopeConfig* new_scope_config,
+                                              rdmnet_disconnect_reason_t disconnect_reason)
+{
+  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(scope_handle);
+  ETCPAL_UNUSED_ARG(new_scope_config);
+  ETCPAL_UNUSED_ARG(disconnect_reason);
+  return kEtcPalErrNotImpl;
+}
+
+/*!
  * \brief Retrieve the scope string of a previously-added scope.
  *
  * \param[in] handle Handle to the controller from which to retrieve the scope string.
@@ -415,6 +442,32 @@ etcpal_error_t rdmnet_controller_request_client_list(rdmnet_controller_t handle,
 }
 
 /*!
+ * \brief Request a set of responder IDs corresponding with dynamic responder UIDs from a broker.
+ *
+ * The response will be delivered via the RdmnetControllerResponderIdsReceivedCallback.
+ *
+ * \param[in] handle Handle to the controller from which to request the responder IDs.
+ * \param[in] scope_handle Handle to the scope on which to request the responder IDs.
+ * \param[in] uids Array of dynamic RDM UIDs for which to request the corresponding responder IDs.
+ * \param[in] num_uids Size of the uids array.
+ * \return #kEtcPalErrOk: Request sent successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return #kEtcPalErrNotInit: Module not initialized.
+ * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance, or
+ *                              scope_handle is not associated with a valid scope instance.
+ * \return #kEtcPalErrSys: An internal library or system call error occurred.
+ */
+etcpal_error_t rdmnet_controller_request_responder_ids(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                                                       const RdmUid* uids, size_t num_uids)
+{
+  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(scope);
+  ETCPAL_UNUSED_ARG(uids);
+  ETCPAL_UNUSED_ARG(num_uids);
+  return kEtcPalErrNotImpl;
+}
+
+/*!
  * \brief Requesting the mapping of one or more dynamic UIDs to RIDs from a broker.
  *
  * The response will be delivered via the RdmnetControllerDynamicUidMappingsReceivedCallback.
@@ -448,7 +501,12 @@ etcpal_error_t rdmnet_controller_request_dynamic_uid_mappings(rdmnet_controller_
  *
  * \param[in] handle Handle to the controller from which to send the RDM command.
  * \param[in] scope_handle Handle to the scope on which to send the RDM command.
- * \param[in] cmd The RDM command data to send, including its addressing information.
+ * \param[in] destination Addressing information for the RDMnet client and responder to which to
+ *                        send the command.
+ * \param[in] command_class Whether this is a GET or a SET command.
+ * \param[in] param_id The command's RDM parameter ID.
+ * \param[in] data Any RDM parameter data associated with the command (NULL for no data).
+ * \param[in] data_len Length of any RDM parameter data associated with the command (0 for no data).
  * \param[out] seq_num Filled in on success with a sequence number which can be used to match the
  *                     command with a response.
  * \return #kEtcPalErrOk: Command sent successfully.
@@ -459,12 +517,86 @@ etcpal_error_t rdmnet_controller_request_dynamic_uid_mappings(rdmnet_controller_
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
 etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                  const RdmnetLocalRdmCommand* cmd, uint32_t* seq_num)
+                                                  const RdmnetDestinationAddr* destination,
+                                                  rdmnet_command_class_t command_class, uint16_t param_id,
+                                                  const uint8_t* data, uint8_t data_len, uint32_t* seq_num)
 {
   if (!handle)
     return kEtcPalErrInvalid;
 
   return rdmnet_rpt_client_send_rdm_command(handle->client_handle, scope_handle, cmd, seq_num);
+}
+
+/*!
+ * \brief Send an RDM GET command from a controller on a scope.
+ *
+ * The response will be delivered via either the RdmnetControllerRdmResponseReceived callback or
+ * the RdmnetControllerStatusReceivedCallback, depending on the outcome of the command.
+ *
+ * \param[in] handle Handle to the controller from which to send the GET command.
+ * \param[in] scope_handle Handle to the scope on which to send the GET command.
+ * \param[in] destination Addressing information for the RDMnet client and responder to which to
+ *                        send the command.
+ * \param[in] param_id The command's RDM parameter ID.
+ * \param[in] data Any RDM parameter data associated with the command (NULL for no data).
+ * \param[in] data_len Length of any RDM parameter data associated with the command (0 for no data).
+ * \param[out] seq_num Filled in on success with a sequence number which can be used to match the
+ *                     command with a response.
+ * \return #kEtcPalErrOk: Command sent successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return #kEtcPalErrNotInit: Module not initialized.
+ * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance, or
+ *                              scope_handle is not associated with a valid scope instance.
+ * \return #kEtcPalErrSys: An internal library or system call error occurred.
+ */
+etcpal_error_t rdmnet_controller_send_get_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                                                  const RdmnetDestinationAddr* destination, uint16_t param_id,
+                                                  const uint8_t* data, uint8_t data_len, uint32_t* seq_num)
+{
+  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(scope_handle);
+  ETCPAL_UNUSED_ARG(destination);
+  ETCPAL_UNUSED_ARG(param_id);
+  ETCPAL_UNUSED_ARG(data);
+  ETCPAL_UNUSED_ARG(data_len);
+  ETCPAL_UNUSED_ARG(seq_num);
+  return kEtcPalErrNotImpl;
+}
+
+/*!
+ * \brief Send an RDM SET command from a controller on a scope.
+ *
+ * The response will be delivered via either the RdmnetControllerRdmResponseReceived callback or
+ * the RdmnetControllerStatusReceivedCallback, depending on the outcome of the command.
+ *
+ * \param[in] handle Handle to the controller from which to send the SET command.
+ * \param[in] scope_handle Handle to the scope on which to send the SET command.
+ * \param[in] destination Addressing information for the RDMnet client and responder to which to
+ *                        send the command.
+ * \param[in] param_id The command's RDM parameter ID.
+ * \param[in] data Any RDM parameter data associated with the command (NULL for no data).
+ * \param[in] data_len Length of any RDM parameter data associated with the command (0 for no data).
+ * \param[out] seq_num Filled in on success with a sequence number which can be used to match the
+ *                     command with a response.
+ * \return #kEtcPalErrOk: Command sent successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return #kEtcPalErrNotInit: Module not initialized.
+ * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance, or
+ *                              scope_handle is not associated with a valid scope instance.
+ * \return #kEtcPalErrSys: An internal library or system call error occurred.
+ */
+etcpal_error_t rdmnet_controller_send_set_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                                                  const RdmnetDestinationAddr* destination, uint16_t param_id,
+                                                  const uint8_t* data, uint8_t data_len, uint32_t* seq_num)
+{
+  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(scope_handle);
+  ETCPAL_UNUSED_ARG(destination);
+  ETCPAL_UNUSED_ARG(param_id);
+  ETCPAL_UNUSED_ARG(data);
+  ETCPAL_UNUSED_ARG(data_len);
+  ETCPAL_UNUSED_ARG(seq_num);
+  return kEtcPalErrNotImpl;
 }
 
 /*!
@@ -486,7 +618,7 @@ etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rd
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
 etcpal_error_t rdmnet_controller_send_rdm_ack(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                              const RdmnetRemoteRdmCommand* received_cmd, const uint8_t* response_data,
+                                              const RdmnetSavedRdmCommand* received_cmd, const uint8_t* response_data,
                                               size_t response_data_len)
 {
   if (!handle)
@@ -514,8 +646,7 @@ etcpal_error_t rdmnet_controller_send_rdm_ack(rdmnet_controller_t handle, rdmnet
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
 etcpal_error_t rdmnet_controller_send_rdm_nack(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                               const RdmnetRemoteRdmCommand* received_cmd,
-                                               rdm_nack_reason_t nack_reason)
+                                               const RdmnetSavedRdmCommand* received_cmd, rdm_nack_reason_t nack_reason)
 {
   if (!handle)
     return kEtcPalErrInvalid;
@@ -529,7 +660,8 @@ etcpal_error_t rdmnet_controller_send_rdm_nack(rdmnet_controller_t handle, rdmne
  * This function should only be used if a valid RdmnetControllerRdmCmdHandler was provided with the
  * associated config struct.
  *
- * \param[in] handle Handle to the controler from which to send the RDM update.
+ * \param[in] handle Handle to the controller from which to send the RDM update.
+ * \param[in] scope_handle Handle to the scope on which to send the RDM update.
  * \param[in] param_id The RDM parameter ID that has been updated.
  * \param[in] data The updated parameter data, or NULL if no data.
  * \param[in] data_len The length of the updated parameter data, or NULL if no data.
@@ -540,8 +672,8 @@ etcpal_error_t rdmnet_controller_send_rdm_nack(rdmnet_controller_t handle, rdmne
  *                              scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_send_rdm_update(rdmnet_device_t handle, uint16_t param_id, const uint8_t* data,
-                                                 size_t data_len)
+etcpal_error_t rdmnet_controller_send_rdm_update(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                                                 uint16_t param_id, const uint8_t* data, size_t data_len)
 {
   ETCPAL_UNUSED_ARG(handle);
   ETCPAL_UNUSED_ARG(param_id);
@@ -563,7 +695,7 @@ etcpal_error_t rdmnet_controller_send_rdm_update(rdmnet_device_t handle, uint16_
  * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_send_llrp_ack(rdmnet_controller_t handle, const LlrpRemoteRdmCommand* received_cmd,
+etcpal_error_t rdmnet_controller_send_llrp_ack(rdmnet_controller_t handle, const LlrpSavedRdmCommand* received_cmd,
                                                const uint8_t* response_data, uint8_t response_data_len)
 {
   if (!handle)
@@ -584,7 +716,7 @@ etcpal_error_t rdmnet_controller_send_llrp_ack(rdmnet_controller_t handle, const
  * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_send_llrp_nack(rdmnet_controller_t handle, const LlrpLocalRdmCommand* received_cmd,
+etcpal_error_t rdmnet_controller_send_llrp_nack(rdmnet_controller_t handle, const LlrpSavedRdmCommand* received_cmd,
                                                 rdm_nack_reason_t nack_reason)
 {
   if (!handle)
@@ -701,14 +833,14 @@ rdmnet_response_action_t client_msg_received(rdmnet_client_t handle, rdmnet_clie
       case kRptClientMsgRdmResp:
         controller->callbacks.rdm_response_received(controller, scope_handle, RDMNET_GET_REMOTE_RDM_RESPONSE(msg),
                                                     controller->callback_context);
-        return kRdmnetResponseActionDefer;
+        return kRdmnetRdmResponseActionDefer;
       case kRptClientMsgStatus:
         controller->callbacks.status_received(controller, scope_handle, RDMNET_GET_REMOTE_RPT_STATUS(msg),
                                               controller->callback_context);
-        return kRdmnetResponseActionDefer;
+        return kRdmnetRdmResponseActionDefer;
       default:
         break;
     }
   }
-  return kRdmnetResponseActionDefer;
+  return kRdmnetRdmResponseActionDefer;
 }

@@ -150,3 +150,4 @@ To learn more about specific aspects of RDMnet, take a look at one of the topic 
 * \subpage devices_and_gateways
 * \subpage discovery
 * \subpage llrp
+* \subpage ept

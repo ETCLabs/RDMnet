@@ -145,8 +145,33 @@ void llrp_target_deinit()
 }
 
 /*!
- * \brief Create a new LLRP target instance.
+ * \brief Initialize an LlrpTargetConfig with default values for the optional config options.
  *
+ * The config struct members not marked 'optional' are not meaningfully initialized by this
+ * function. Those members do not have default values and must be initialized manually before
+ * passing the config struct to an API function.
+ *
+ * Usage example:
+ * \code
+ * LlrpTargetConfig config;
+ * llrp_target_config_init(&config, 0x6574);
+ * \endcode
+ *
+ * \param[out] config Pointer to LlrpTargetConfig to init.
+ * \param[in] manufacturer_id ESTA manufacturer ID. All LLRP targets must have one.
+ */
+void llrp_target_config_init(LlrpTargetConfig* config, uint16_t manufacturer_id)
+{
+  if (config)
+  {
+    memset(config, 0, sizeof(LlrpTargetConfig));
+    config->component_type = kLlrpCompNonRdmnet;
+    RDMNET_INIT_DYNAMIC_UID_REQUEST(&config->uid, manufacturer_id);
+  }
+}
+
+/*!
+ * \brief Create a new LLRP target instance.
  * \param[in] config Configuration parameters for the LLRP target to be created.
  * \param[out] handle Handle to the newly-created target instance.
  * \return #kEtcPalErrOk: Target created successfully.
@@ -233,7 +258,7 @@ void llrp_target_update_connection_state(llrp_target_t handle, bool connected_to
  * \return #kEtcPalErrNotFound: Handle is not associated with a valid LLRP target instance.
  * \return Note: Other error codes might be propagated from underlying socket calls.
  */
-etcpal_error_t llrp_target_send_ack(llrp_target_t handle, const LlrpRemoteRdmCommand* received_cmd,
+etcpal_error_t llrp_target_send_ack(llrp_target_t handle, const LlrpSavedRdmCommand* received_cmd,
                                     const uint8_t* response_data, uint8_t response_data_len)
 {
   ETCPAL_UNUSED_ARG(handle);
@@ -287,7 +312,7 @@ etcpal_error_t llrp_target_send_ack(llrp_target_t handle, const LlrpRemoteRdmCom
  * \return #kEtcPalErrNotFound: Handle is not associated with a valid LLRP target instance.
  * \return Note: Other error codes might be propagated from underlying socket calls.
  */
-etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpRemoteRdmCommand* received_cmd,
+etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCommand* received_cmd,
                                      rdm_nack_reason_t nack_reason)
 {
   ETCPAL_UNUSED_ARG(handle);

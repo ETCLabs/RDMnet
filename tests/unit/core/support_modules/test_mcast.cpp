@@ -32,7 +32,7 @@
 #pragma warning(disable : 4996)
 #endif
 
-class TestMcast : public ::testing::Test
+class TestMcast : public testing::Test
 {
 protected:
   std::vector<EtcPalNetintInfo> netint_arr_;

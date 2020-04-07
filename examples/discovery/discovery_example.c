@@ -23,7 +23,7 @@
 #include <string.h>
 
 #ifdef _MSC_VER
-#pragma warning(disable: 4996)
+#pragma warning(disable : 4996)
 #endif
 
 void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info, void* context)
@@ -42,11 +42,13 @@ void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDis
   }
 }
 
-void monitorcb_broker_lost(rdmnet_scope_monitor_t handle, const char* scope, const char* service_name, void* context)
+void monitorcb_broker_lost(rdmnet_scope_monitor_t handle, const char* scope, const char* service_instance_name,
+                           void* context)
 {
   (void)handle;
   (void)context;
-  printf("Previously found Broker on scope %s with service name %s has been lost.\n", scope, service_name);
+  printf("Previously found Broker on scope %s with service instance name %s has been lost.\n", scope,
+         service_instance_name);
 }
 
 void monitorcb_scope_monitor_error(rdmnet_scope_monitor_t handle, const char* scope, int platform_error, void* context)
@@ -119,9 +121,9 @@ int main(int argc, char* argv[])
 
     rdmnet_disc_init_broker_info(&config.my_info);
     etcpal_generate_v4_uuid(&config.my_info.cid);
-    strcpy(config.my_info.service_name, "UNIQUE NAME");
-    strcpy(config.my_info.model, "Broker prototype");
-    strcpy(config.my_info.manufacturer, "ETC");
+    config.my_info.service_name = "UNIQUE NAME";
+    config.my_info.model = "Broker prototype";
+    config.my_info.manufacturer = "ETC";
     config.my_info.port = 0x4567;
     set_reg_callback_functions(&config.callbacks);
     config.callback_context = NULL;

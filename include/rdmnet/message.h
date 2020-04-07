@@ -32,6 +32,7 @@
 #include "etcpal/uuid.h"
 #include "rdm/message.h"
 #include "rdm/uid.h"
+#include "rdmnet/common.h"
 
 /*!
  * \addtogroup rdmnet_api_common
@@ -59,6 +60,7 @@ typedef struct RdmnetRdmCommand
   uint8_t data_len;
 } RdmnetRdmCommand;
 
+/*! Whether an RdmnetRdmCommand is addressed to the default responder. */
 #define RDMNET_COMMAND_IS_TO_DEFAULT_RESPONDER(cmd_ptr) ((cmd_ptr)->dest_endpoint == E133_NULL_ENDPOINT)
 
 /*! An RDM command received by this component and saved for a later response. */
@@ -118,7 +120,7 @@ typedef struct RdmnetRdmResponse
 /*!
  * \brief An RDM response received over RDMnet and saved for later processing.
  *
- * This type is not used by the library API, but can come in handy if an applicatoin wants to queue
+ * This type is not used by the library API, but can come in handy if an application wants to queue
  * or copy RDM responses before acting on them. The rdm_data member is heap-allocated and owned; be
  * sure to call rdmnet_free_saved_rdm_response() to free this data before disposing of an instance.
  */
@@ -167,6 +169,14 @@ typedef struct RdmnetRptStatus
   const char* status_string;
 } RdmnetRptStatus;
 
+/*!
+ * \brief An RPT status received over RDMnet and saved for later processing.
+ *
+ * This type is not used by the library API, but can come in handy if an application wants to queue
+ * or copy RPT status messages before acting on them. The status_string member is heap-allocated
+ * and owned; be sure to call rdmnet_free_saved_rpt_status() to free this data before disposing of
+ * an instance.
+ */
 typedef struct RdmnetSavedRptStatus
 {
   /*! The UID of the RDMnet component that sent this status message. */
@@ -196,6 +206,7 @@ typedef struct RdmnetDynamicUidMapping
   EtcPalUuid rid;
 } RdmnetDynamicUidMapping;
 
+/*! A list of mappings from dynamic UIDs to responder IDs received from an RDMnet broker. */
 typedef struct RdmnetDynamicUidAssignmentList
 {
   /*! An array of dynamic UID mappings. */
@@ -210,6 +221,28 @@ typedef struct RdmnetDynamicUidAssignmentList
    */
   bool more_coming;
 } RdmnetDynamicUidAssignmentList;
+
+/*! An RDMnet EPT data message received by a local component. */
+typedef struct RdmnetEptData
+{
+  /*! The manufacturer ID that identifies the EPT sub-protocol. */
+  uint16_t manufacturer_id;
+  /*! The protocol ID that identifies the EPT sub-protocol. */
+  uint16_t protocol_id;
+  /*! The data associated with this EPT message. */
+  const uint8_t* data;
+  /*! The length of the data associated with this EPT message. */
+  size_t data_len;
+} RdmnetEptData;
+
+/*! An RDMnet EPT status message received by a local component. */
+typedef struct RdmnetEptStatus
+{
+  /*! A status code that indicates the specific error or status condition. */
+  ept_status_code_t status_code;
+  /*! An optional implementation-defined status string to accompany this status message. */
+  const char* status_string;
+} RdmnetEptStatus;
 
 /*! An RPT client type. */
 typedef enum
@@ -234,9 +267,12 @@ typedef struct RptClientEntry
 /*! The maximum length of an EPT sub-protocol string, including the null terminator. */
 #define EPT_PROTOCOL_STRING_PADDED_LENGTH 32
 
-/*! A description of an EPT sub-protocol. EPT clients can implement multiple protocols, each of
- *  which is identified by a two-part identifier including an ESTA manufacturer ID and a protocol
- *  ID. */
+/*!
+ * \brief A description of an EPT sub-protocol.
+ *
+ * EPT clients can implement multiple protocols, each of which is identified by a two-part
+ * identifier including an ESTA manufacturer ID and a protocol ID.
+ */
 typedef struct EptSubProtocol
 {
   /*! The ESTA manufacturer ID under which this protocol is namespaced. */

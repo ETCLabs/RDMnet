@@ -41,9 +41,9 @@ public:
                                                   const rdm::Uid& rdm_uid, uint16_t subdevice = 0);
 
 private:
-  constexpr DestinationAddr(const ::RdmUid& rdmnet_uid, uint16_t endpoint, const ::RdmUid& rdm_uid, uint16_t subdevice);
+  constexpr DestinationAddr(const RdmUid& rdmnet_uid, uint16_t endpoint, const RdmUid& rdm_uid, uint16_t subdevice);
 
-  ::RdmnetDestinationAddr addr_{};
+  RdmnetDestinationAddr addr_{};
 };
 
 /// \brief Get a DestinationAddr representing a message addressed to a component's default responder.

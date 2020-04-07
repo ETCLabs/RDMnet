@@ -798,6 +798,7 @@ INPUT                  = ./mainpage.md \
                          ../include/rdmnet/cpp \
                          ../src/rdmnet \
                          ../src/rdmnet/broker/broker_api.cpp \
+                         ../src/rdmnet/discovery/disc_common.c \
                          ../src/rdmnet/private/opts.h
 
 # This tag can be used to specify the character encoding of the source files

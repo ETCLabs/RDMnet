@@ -154,7 +154,7 @@ public:
 struct ControllerSettings
 {
   etcpal::Uuid cid;           ///< The controller's Component Identifier (CID).
-  rdm::Uid uid;               ///< The controller's RDM UID. For a dynamic UID, use ::rdm::Uid::DynamicUidRequest().
+  rdm::Uid uid;               ///< The controller's RDM UID. For a dynamic UID, use rdm::Uid::DynamicUidRequest().
   std::string search_domain;  ///< (optional) The controller's search domain for discovering brokers.
 
   /// (optional) Whether to create an LLRP target associated with this controller.

@@ -6,6 +6,7 @@
 * For implementing an RDMnet Device, see \subpage using_device.
 * For implementing an RDMnet Broker, see \subpage using_broker.
 * For implementing an LLRP Manager, see \subpage using_llrp_manager.
+* For implementing an EPT Client, see \subpage using_ept_client.
 
 \htmlonly
 <div style="display:none">

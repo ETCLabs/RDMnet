@@ -111,8 +111,8 @@ etcpal_error_t llrp_manager_start_discovery(llrp_manager_t handle, uint16_t filt
 etcpal_error_t llrp_manager_stop_discovery(llrp_manager_t handle);
 
 etcpal_error_t llrp_manager_send_rdm_command(llrp_manager_t handle, const LlrpDestinationAddr* destination,
-                                             rdm_command_class_t command_class, uint16_t param_id, const uint8_t* data,
-                                             uint8_t data_len, uint32_t* seq_num);
+                                             rdmnet_command_class_t command_class, uint16_t param_id,
+                                             const uint8_t* data, uint8_t data_len, uint32_t* seq_num);
 etcpal_error_t llrp_manager_send_get_command(llrp_manager_t handle, const LlrpDestinationAddr* destination,
                                              uint16_t param_id, const uint8_t* data, uint8_t data_len,
                                              uint32_t* seq_num);

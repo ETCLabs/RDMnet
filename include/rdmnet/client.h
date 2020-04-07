@@ -139,7 +139,7 @@ typedef struct RdmnetScopeConfig
 {
   /*!
    * The scope string. Scope strings are UTF-8, and their maximum length including NULL terminator
-   * is #E133_SCOPE_STRING_PADDED_LENGTH, which is derived from the requirements of DNS and DNS-SD.
+   * is E133_SCOPE_STRING_PADDED_LENGTH, which is derived from the requirements of DNS and DNS-SD.
    */
   const char* scope;
   /*!

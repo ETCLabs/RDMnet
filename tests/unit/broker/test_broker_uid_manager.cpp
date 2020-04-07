@@ -19,7 +19,7 @@
 #include "gtest/gtest.h"
 #include "broker_uid_manager.h"
 
-class TestBrokerUidManager : public ::testing::Test
+class TestBrokerUidManager : public testing::Test
 {
 protected:
   BrokerUidManager manager_;

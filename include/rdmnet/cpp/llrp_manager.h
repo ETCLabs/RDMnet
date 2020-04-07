@@ -58,7 +58,7 @@ public:
   constexpr DestinationAddr(const etcpal::Uuid& cid, const rdm::Uid& uid, uint16_t subdevice = 0);
 
 private:
-  ::LlrpDestinationAddr addr_;
+  LlrpDestinationAddr addr_;
 };
 
 /// Construct a destination address from its component parts.
@@ -77,8 +77,8 @@ class DiscoveredTarget
 public:
   /// Construct a target with null/empty values by default.
   DiscoveredTarget() = default;
-  constexpr DiscoveredTarget(const ::DiscoveredLlrpTarget& c_target) noexcept;
-  DiscoveredTarget& operator=(const ::DiscoveredLlrpTarget& c_target) noexcept;
+  constexpr DiscoveredTarget(const DiscoveredLlrpTarget& c_target) noexcept;
+  DiscoveredTarget& operator=(const DiscoveredLlrpTarget& c_target) noexcept;
 
   constexpr const etcpal::Uuid& cid() const noexcept;
   constexpr const rdm::Uid& uid() const noexcept;
@@ -95,7 +95,7 @@ private:
 };
 
 /// \brief Construct a DiscoveredTarget copied from an instance of the C DiscoveredLlrpTarget type.
-constexpr DiscoveredTarget::DiscoveredTarget(const ::DiscoveredLlrpTarget& c_target) noexcept
+constexpr DiscoveredTarget::DiscoveredTarget(const DiscoveredLlrpTarget& c_target) noexcept
     : cid_(c_target.cid)
     , uid_(c_target.uid)
     , hardware_addr_(c_target.hardware_address)
@@ -104,7 +104,7 @@ constexpr DiscoveredTarget::DiscoveredTarget(const ::DiscoveredLlrpTarget& c_tar
 }
 
 /// \brief Assign an instance of the C DiscoveredLlrpTarget type to an instance of this class.
-inline DiscoveredTarget& DiscoveredTarget::operator=(const ::DiscoveredLlrpTarget& c_target) noexcept
+inline DiscoveredTarget& DiscoveredTarget::operator=(const DiscoveredLlrpTarget& c_target) noexcept
 {
   cid_ = c_target.cid;
   uid_ = c_target.uid;

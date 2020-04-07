@@ -138,14 +138,14 @@ public:
   VirtualEndpointConfig(uint16_t id, const std::vector<rdm::Uid>& static_responders,
                         const std::vector<etcpal::Uuid>& dynamic_responders = std::vector<etcpal::Uuid>{});
 
-  constexpr const ::RdmnetVirtualEndpointConfig& get() const noexcept;
+  constexpr const RdmnetVirtualEndpointConfig& get() const noexcept;
 
 private:
   void UpdateConfig();
 
   std::vector<EtcPalUuid> dynamic_responders_;
   std::vector<RdmUid> static_responders_;
-  ::RdmnetVirtualEndpointConfig config_;
+  RdmnetVirtualEndpointConfig config_;
 };
 
 /// \brief Create a virtual endpoint configuration with an optional set of virtual responders with dynamic UIDs.
@@ -229,7 +229,7 @@ inline VirtualEndpointConfig::VirtualEndpointConfig(uint16_t id, const std::vect
 }
 
 /// \brief Get a const reference to the underlying C type.
-constexpr const ::RdmnetVirtualEndpointConfig& VirtualEndpointConfig::get() const noexcept
+constexpr const RdmnetVirtualEndpointConfig& VirtualEndpointConfig::get() const noexcept
 {
   return config_;
 }
@@ -273,7 +273,7 @@ public:
   PhysicalEndpointConfig(uint16_t id, const rdm::Uid* responders = nullptr, size_t num_responders = 0);
   PhysicalEndpointConfig(uint16_t id, const std::vector<rdm::Uid>& responders);
 
-  constexpr const ::RdmnetPhysicalEndpointConfig& get() const noexcept;
+  constexpr const RdmnetPhysicalEndpointConfig& get() const noexcept;
 
 private:
   void UpdateConfig();
@@ -328,7 +328,7 @@ inline void PhysicalEndpointConfig::UpdateConfig()
 struct DeviceSettings
 {
   etcpal::Uuid cid;           ///< The device's Component Identifier (CID).
-  rdm::Uid uid;               ///< The device's RDM UID. For a dynamic UID, use ::rdm::Uid::DynamicUidRequest().
+  rdm::Uid uid;               ///< The device's RDM UID. For a dynamic UID, use rdm::Uid::DynamicUidRequest().
   std::string search_domain;  ///< The device's search domain for discovering brokers.
 
   /// A data buffer to be used to respond synchronously to RDM commands. See

@@ -17,46 +17,13 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*!
- * \file rdmnet/core/ept_prot.h
- * \brief Functions to pack, send, and parse EPT PDUs and their encapsulated messages.
- */
+#include "gtest/gtest.h"
+#include "fff.h"
 
-#ifndef RDMNET_CORE_EPT_PROT_H_
-#define RDMNET_CORE_EPT_PROT_H_
+DEFINE_FFF_GLOBALS;
 
-#include <stdint.h>
-#include "rdmnet/defs.h"
-#include "rdmnet/message.h"
-
-/*!
- * \addtogroup rdmnet_message
- * @{
- */
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/*! An EPT message. */
-typedef struct EptMessage
+int main(int argc, char* argv[])
 {
-  /*! The vector indicates which type of message is present in the data section. Valid values are
-   *  indicated by VECTOR_EPT_* in rdmnet/defs.h. */
-  uint32_t vector;
-  union
-  {
-    RdmnetEptData ept_data;
-    RdmnetEptStatus ept_status;
-  } data;
-} EptMessage;
-
-#ifdef __cplusplus
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
-#endif
-
-/*!
- * @}
- */
-
-#endif /* RDMNET_CORE_EPT_PROT_H_ */

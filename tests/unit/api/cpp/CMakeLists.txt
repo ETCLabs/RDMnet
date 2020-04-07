@@ -1,4 +1,4 @@
-# RDMnet C++ Client API unit tests
+# RDMnet C++ API unit tests
 
 rdmnet_add_unit_test(test_rdmnet_cpp_api EXCLUDE_FROM_ALL
   test_controller.cpp

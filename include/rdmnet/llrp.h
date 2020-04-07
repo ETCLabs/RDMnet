@@ -45,6 +45,10 @@ typedef int llrp_manager_t;
 /*! An invalid LLRP manager handle value. */
 #define LLRP_MANAGER_INVALID -1
 
+/*!
+ * \brief A destination address for an RDM command in LLRP.
+ * \brief See \ref llrp for more information.
+ */
 typedef struct LlrpDestinationAddr
 {
   /*! The CID of the LLRP Target to which this command is addressed. */

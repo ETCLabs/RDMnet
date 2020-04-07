@@ -78,24 +78,104 @@ void rdmnet_disc_deinit(void)
 }
 
 /*!
- * \brief Initialize an RdmnetBrokerDiscInfo structure with null settings.
+ * \brief Initialize an RdmnetBrokerRegisterConfig with default values for the optional config options.
  *
- * Note that this does not produce a valid RdmnetBrokerDiscInfo for broker registration - you will
- * need to manipulate the fields with your own broker information before passing it to
- * rdmnet_disc_register_broker().
+ * The config struct members not marked 'optional' are not meaningfully initialized by this
+ * function. Those members do not have default values and must be initialized manually before
+ * passing the config struct to an API function.
  *
- * \param[out] broker_info Info struct to nullify.
+ * Usage example:
+ * \code
+ * RdmnetBrokerRegisterConfig config;
+ * rdmnet_broker_register_config_init(&config);
+ * \endcode
+ *
+ * \param[out] config Pointer to RdmnetBrokerRegisterConfig to init.
  */
-void rdmnet_disc_init_broker_info(RdmnetBrokerDiscInfo* broker_info)
+void rdmnet_broker_register_config_init(RdmnetBrokerRegisterConfig* config)
 {
-  broker_info->cid = kEtcPalNullUuid;
-  memset(broker_info->service_name, 0, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
-  broker_info->port = 0;
-  broker_info->listen_addrs = NULL;
-  broker_info->num_listen_addrs = 0;
-  rdmnet_safe_strncpy(broker_info->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH);
-  memset(broker_info->model, 0, E133_MODEL_STRING_PADDED_LENGTH);
-  memset(broker_info->manufacturer, 0, E133_MANUFACTURER_STRING_PADDED_LENGTH);
+  if (config)
+  {
+    memset(config, 0, sizeof(RdmnetBrokerRegisterConfig);
+    config->my_info.scope = E133_DEFAULT_SCOPE;
+  }
+}
+
+/*!
+ * \brief Set the callbacks in an RDMnet broker register configuration structure.
+ *
+ * Items marked "optional" can be NULL.
+ *
+ * \param[out] config Config struct in which to set the callbacks.
+ * \param[in] broker_registered Callback called when a broker is successfully registered.
+ * \param[in] broker_register_failed Callback called when a broker registration has failed.
+ * \param[in] other_broker_found Callback called when another broker is found on the same scope as a
+ *                               registered broker.
+ * \param[in] other_broker_lost Callback called when a broker previously found on the same scope as
+ *                              a registered broker has gone away.
+ * \param[in] callback_context (optional) Pointer to opaque data passed back with each callback.
+ */
+void rdmnet_broker_register_config_set_callbacks(RdmnetBrokerRegisterConfig* config,
+                                                 RdmnetDiscBrokerRegisteredCallback broker_registered,
+                                                 RdmnetDiscBrokerRegisterFailedCallback broker_register_failed,
+                                                 RdmnetDiscOtherBrokerFoundCallback other_broker_found,
+                                                 RdmnetDiscOtherBrokerLostCallback other_broker_lost,
+                                                 void* callback_context)
+{
+  if (config)
+  {
+    config->callbacks.broker_registered = broker_registered;
+    config->callbacks.broker_register_failed = broker_register_failed;
+    config->callbacks.other_broker_found = other_broker_found;
+    config->callbacks.other_broker_lost = other_broker_lost;
+    config->callback_context = callback_context;
+  }
+}
+
+/*!
+ * \brief Initialize an RdmnetScopeMonitorConfig with default values for the optional config options.
+ *
+ * The config struct members not marked 'optional' are not meaningfully initialized by this
+ * function. Those members do not have default values and must be initialized manually before
+ * passing the config struct to an API function.
+ *
+ * Usage example:
+ * \code
+ * RdmnetScopeMonitorConfig config;
+ * rdmnet_scope_monitor_config_init(&config);
+ * \endcode
+ *
+ * \param[out] config Pointer to RdmnetScopeMonitorConfig to init.
+ */
+void rdmnet_scope_monitor_config_init(RdmnetScopeMonitorConfig* config)
+{
+  if (config)
+  {
+    memset(config, 0, sizeof(RdmnetScopeMonitorConfig));
+    config->scope = E133_DEFAULT_SCOPE;
+  }
+}
+
+/*!
+ * \brief Set the callbacks in an RDMnet scope monitor configuration structure.
+ *
+ * Items marked "optional" can be NULL.
+ *
+ * \param[out] config Config struct in which to set the callbacks.
+ * \param[in] broker_found Callback called when a broker is discovered on the scope.
+ * \param[in] broker_lost Callback called when a previously-discovered broker is lost.
+ * \param[in] callback_context (optional) Pointer to opaque data passed back with each callback.
+ */
+void rdmnet_scope_monitor_config_set_callbacks(RdmnetScopeMonitorConfig* config,
+                                               RdmnetDiscBrokerFoundCallback broker_found,
+                                               RdmnetDiscBrokerLostCallback broker_lost, void* callback_context)
+{
+  if (config)
+  {
+    config->callbacks.broker_found = broker_found;
+    config->callbacks.broker_lost = broker_lost;
+    config->callback_context = callback_context;
+  }
 }
 
 /*!

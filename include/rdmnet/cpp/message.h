@@ -58,7 +58,7 @@ public:
   /// Not copyable - use Save() to create a copyable version.
   RdmCommand& operator=(const RdmCommand& other) = delete;
 
-  constexpr RdmCommand(const ::RdmnetRdmCommand& c_cmd) noexcept;
+  constexpr RdmCommand(const RdmnetRdmCommand& c_cmd) noexcept;
 
   constexpr rdm::Uid rdmnet_source_uid() const noexcept;
   constexpr uint16_t dest_endpoint() const noexcept;
@@ -81,13 +81,13 @@ public:
   constexpr bool IsGet() const noexcept;
   constexpr bool IsSet() const noexcept;
 
-  constexpr const ::RdmnetRdmCommand& get() const noexcept;
+  constexpr const RdmnetRdmCommand& get() const noexcept;
 
   rdm::Command ToRdm() const;
   SavedRdmCommand Save() const;
 
 private:
-  const ::RdmnetRdmCommand& cmd_;
+  const RdmnetRdmCommand& cmd_;
 };
 
 /// \ingroup rdmnet_cpp_common
@@ -97,8 +97,8 @@ class SavedRdmCommand
 public:
   /// Construct an empty, invalid SavedRdmCommand by default.
   SavedRdmCommand() = default;
-  constexpr SavedRdmCommand(const ::RdmnetSavedRdmCommand& c_cmd) noexcept;
-  SavedRdmCommand& operator=(const ::RdmnetSavedRdmCommand& c_cmd) noexcept;
+  constexpr SavedRdmCommand(const RdmnetSavedRdmCommand& c_cmd) noexcept;
+  SavedRdmCommand& operator=(const RdmnetSavedRdmCommand& c_cmd) noexcept;
   SavedRdmCommand(const RdmCommand& command) noexcept;
   SavedRdmCommand& operator=(const RdmCommand& command) noexcept;
 
@@ -124,13 +124,13 @@ public:
   constexpr bool IsGet() const noexcept;
   constexpr bool IsSet() const noexcept;
 
-  ETCPAL_CONSTEXPR_14 ::RdmnetSavedRdmCommand& get() noexcept;
-  constexpr const ::RdmnetSavedRdmCommand& get() const noexcept;
+  ETCPAL_CONSTEXPR_14 RdmnetSavedRdmCommand& get() noexcept;
+  constexpr const RdmnetSavedRdmCommand& get() const noexcept;
 
   rdm::Command ToRdm() const;
 
 private:
-  ::RdmnetSavedRdmCommand cmd_{};
+  RdmnetSavedRdmCommand cmd_{};
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -138,7 +138,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// \brief Construct an RdmCommand which references an instance of the C RdmnetRdmCommand type.
-constexpr RdmCommand::RdmCommand(const ::RdmnetRdmCommand& c_cmd) noexcept : cmd_(c_cmd)
+constexpr RdmCommand::RdmCommand(const RdmnetRdmCommand& c_cmd) noexcept : cmd_(c_cmd)
 {
 }
 
@@ -234,7 +234,7 @@ constexpr bool RdmCommand::IsToDefaultResponder() const noexcept
 }
 
 /// \brief Get a const reference to the underlying C type.
-constexpr const ::RdmnetRdmCommand& RdmCommand::get() const noexcept
+constexpr const RdmnetRdmCommand& RdmCommand::get() const noexcept
 {
   return cmd_;
 }
@@ -257,12 +257,12 @@ inline SavedRdmCommand RdmCommand::Save() const
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// \brief Construct a SavedRdmCommand copied from an instance of the C RdmnetSavedRdmCommand type.
-constexpr SavedRdmCommand::SavedRdmCommand(const ::RdmnetSavedRdmCommand& c_cmd) noexcept : cmd_(c_cmd)
+constexpr SavedRdmCommand::SavedRdmCommand(const RdmnetSavedRdmCommand& c_cmd) noexcept : cmd_(c_cmd)
 {
 }
 
 /// \brief Assign an instance of the C RdmnetSavedRdmCommand type to an instance of this class.
-inline SavedRdmCommand& SavedRdmCommand::operator=(const ::RdmnetSavedRdmCommand& c_cmd) noexcept
+inline SavedRdmCommand& SavedRdmCommand::operator=(const RdmnetSavedRdmCommand& c_cmd) noexcept
 {
   cmd_ = c_cmd;
   return *this;
@@ -379,13 +379,13 @@ constexpr bool SavedRdmCommand::IsSet() const noexcept
 }
 
 /// \brief Get a mutable reference to the underlying C type.
-ETCPAL_CONSTEXPR_14_OR_INLINE ::RdmnetSavedRdmCommand& SavedRdmCommand::get() noexcept
+ETCPAL_CONSTEXPR_14_OR_INLINE RdmnetSavedRdmCommand& SavedRdmCommand::get() noexcept
 {
   return cmd_;
 }
 
 /// \brief Get a const reference to the underlying C type.
-constexpr const ::RdmnetSavedRdmCommand& SavedRdmCommand::get() const noexcept
+constexpr const RdmnetSavedRdmCommand& SavedRdmCommand::get() const noexcept
 {
   return cmd_;
 }
@@ -417,7 +417,7 @@ public:
   /// Not copyable - use Save() to create a copyable version.
   RdmResponse& operator=(const RdmResponse& other) = delete;
 
-  constexpr RdmResponse(const ::RdmnetRdmResponse& c_resp) noexcept;
+  constexpr RdmResponse(const RdmnetRdmResponse& c_resp) noexcept;
 
   constexpr rdm::Uid rdmnet_source_uid() const noexcept;
   constexpr uint16_t source_endpoint() const noexcept;
@@ -451,14 +451,14 @@ public:
 
   etcpal::Expected<rdm::NackReason> NackReason() const noexcept;
 
-  constexpr const ::RdmnetRdmResponse& get() const noexcept;
+  constexpr const RdmnetRdmResponse& get() const noexcept;
 
   rdm::Command OriginalCommandToRdm() const;
   rdm::Response ToRdm() const;
   SavedRdmResponse Save() const;
 
 private:
-  const ::RdmnetRdmResponse& resp_;
+  const RdmnetRdmResponse& resp_;
 };
 
 /// \ingroup rdmnet_cpp_common
@@ -472,8 +472,8 @@ class SavedRdmResponse
 public:
   /// Constructs an empty, invalid RDM response by default.
   SavedRdmResponse() = default;
-  SavedRdmResponse(const ::RdmnetSavedRdmResponse& c_resp);
-  SavedRdmResponse& operator=(const ::RdmnetSavedRdmResponse& c_resp);
+  SavedRdmResponse(const RdmnetSavedRdmResponse& c_resp);
+  SavedRdmResponse& operator=(const RdmnetSavedRdmResponse& c_resp);
   SavedRdmResponse(const RdmResponse& resp);
   SavedRdmResponse& operator=(const RdmResponse& resp);
 
@@ -525,7 +525,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// \brief Construct a RdmResponse copied from an instance of the C RdmnetRdmResponse type.
-constexpr RdmResponse::RdmResponse(const ::RdmnetRdmResponse& c_resp) noexcept : resp_(c_resp)
+constexpr RdmResponse::RdmResponse(const RdmnetRdmResponse& c_resp) noexcept : resp_(c_resp)
 {
 }
 
@@ -706,7 +706,7 @@ inline etcpal::Expected<rdm::NackReason> RdmResponse::NackReason() const noexcep
 }
 
 /// \brief Get a const reference to the underlying C type.
-constexpr const ::RdmnetRdmResponse& RdmResponse::get() const noexcept
+constexpr const RdmnetRdmResponse& RdmResponse::get() const noexcept
 {
   return resp_;
 }
@@ -739,7 +739,7 @@ inline SavedRdmResponse RdmResponse::Save() const
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// \brief Construct a SavedRdmResponse copied from an instance of the C RdmnetSavedRdmResponse type.
-inline SavedRdmResponse::SavedRdmResponse(const ::RdmnetSavedRdmResponse& c_resp)
+inline SavedRdmResponse::SavedRdmResponse(const RdmnetSavedRdmResponse& c_resp)
     : rdmnet_source_uid_(c_resp.rdmnet_source_uid)
     , source_endpoint_(c_resp.source_endpoint)
     , seq_num_(c_resp.seq_num)
@@ -749,7 +749,7 @@ inline SavedRdmResponse::SavedRdmResponse(const ::RdmnetSavedRdmResponse& c_resp
 }
 
 /// \brief Assign an instance of the C RdmnetSavedRdmResponse type to an instance of this class.
-inline SavedRdmResponse& SavedRdmResponse::operator=(const ::RdmnetSavedRdmResponse& c_resp)
+inline SavedRdmResponse& SavedRdmResponse::operator=(const RdmnetSavedRdmResponse& c_resp)
 {
   rdmnet_source_uid_ = c_resp.rdmnet_source_uid;
   source_endpoint_ = c_resp.source_endpoint;
@@ -990,7 +990,7 @@ class RptStatus
 public:
   /// Not default-constructible.
   RptStatus() = delete;
-  RptStatus(const ::RdmnetRptStatus& c_status);
+  RptStatus(const RdmnetRptStatus& c_status);
 
   constexpr rdm::Uid rdmnet_source_uid() const noexcept;
   constexpr uint16_t source_endpoint() const noexcept;
@@ -1004,12 +1004,12 @@ public:
   std::string CodeToString() const;
   constexpr bool HasStatusString() const noexcept;
 
-  constexpr const ::RdmnetRptStatus& get() const noexcept;
+  constexpr const RdmnetRptStatus& get() const noexcept;
 
   SavedRptStatus Save() const;
 
 private:
-  const ::RdmnetRptStatus& status_;
+  const RdmnetRptStatus& status_;
 };
 
 /// \ingroup rdmnet_cpp_common
@@ -1019,8 +1019,8 @@ class SavedRptStatus
 public:
   /// Constructs an empty, invalid RPT status by default.
   SavedRptStatus() = default;
-  SavedRptStatus(const ::RdmnetSavedRptStatus& c_resp);
-  SavedRptStatus& operator=(const ::RdmnetSavedRptStatus& c_resp);
+  SavedRptStatus(const RdmnetSavedRptStatus& c_resp);
+  SavedRptStatus& operator=(const RdmnetSavedRptStatus& c_resp);
   SavedRptStatus(const RptStatus& status);
   SavedRptStatus& operator=(const RptStatus& status);
 
@@ -1049,7 +1049,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// \brief Construct an RptStatus from an instance of the C RdmnetRptStatus type.
-inline RptStatus::RptStatus(const ::RdmnetRptStatus& c_status) : status_(c_status)
+inline RptStatus::RptStatus(const RdmnetRptStatus& c_status) : status_(c_status)
 {
 }
 
@@ -1109,7 +1109,7 @@ constexpr bool RptStatus::HasStatusString() const noexcept
 }
 
 /// \brief Get a const reference to the underlying C type.
-constexpr const ::RdmnetRptStatus& RptStatus::get() const noexcept
+constexpr const RdmnetRptStatus& RptStatus::get() const noexcept
 {
   return status_;
 }
@@ -1126,7 +1126,7 @@ inline SavedRptStatus RptStatus::Save() const
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// \brief Construct a SavedRptStatus from an instance of the C RdmnetSavedRptStatus type.
-inline SavedRptStatus::SavedRptStatus(const ::RdmnetSavedRptStatus& c_resp)
+inline SavedRptStatus::SavedRptStatus(const RdmnetSavedRptStatus& c_resp)
     : rdmnet_source_uid_(c_resp.rdmnet_source_uid)
     , source_endpoint_(c_resp.source_endpoint)
     , seq_num_(c_resp.seq_num)
@@ -1137,7 +1137,7 @@ inline SavedRptStatus::SavedRptStatus(const ::RdmnetSavedRptStatus& c_resp)
 }
 
 /// \brief Assign an instance of the C RdmnetSavedRptStatus type to an instance of this class.
-inline SavedRptStatus& SavedRptStatus::operator=(const ::RdmnetSavedRptStatus& c_resp)
+inline SavedRptStatus& SavedRptStatus::operator=(const RdmnetSavedRptStatus& c_resp)
 {
   rdmnet_source_uid_ = c_resp.rdmnet_source_uid;
   source_endpoint_ = c_resp.source_endpoint;
@@ -1247,7 +1247,7 @@ public:
   /// Not copyable - use Save() to create a copyable version.
   RdmCommand& operator=(const RdmCommand& other) = delete;
 
-  constexpr RdmCommand(const ::LlrpRdmCommand& c_cmd) noexcept;
+  constexpr RdmCommand(const LlrpRdmCommand& c_cmd) noexcept;
 
   constexpr etcpal::Uuid source_cid() const noexcept;
   constexpr uint32_t seq_num() const noexcept;
@@ -1271,13 +1271,13 @@ public:
   constexpr bool IsGet() const noexcept;
   constexpr bool IsSet() const noexcept;
 
-  constexpr const ::LlrpRdmCommand& get() const noexcept;
+  constexpr const LlrpRdmCommand& get() const noexcept;
 
   rdm::Command ToRdm() const;
   SavedRdmCommand Save() const;
 
 private:
-  const ::LlrpRdmCommand& cmd_;
+  const LlrpRdmCommand& cmd_;
 };
 
 /// \ingroup rdmnet_cpp_common
@@ -1287,8 +1287,8 @@ class SavedRdmCommand
 public:
   /// Create an empty, invalid SavedRdmCommand by default.
   SavedRdmCommand() = default;
-  constexpr SavedRdmCommand(const ::LlrpSavedRdmCommand& c_cmd) noexcept;
-  SavedRdmCommand& operator=(const ::LlrpSavedRdmCommand& c_cmd) noexcept;
+  constexpr SavedRdmCommand(const LlrpSavedRdmCommand& c_cmd) noexcept;
+  SavedRdmCommand& operator=(const LlrpSavedRdmCommand& c_cmd) noexcept;
   SavedRdmCommand(const RdmCommand& command) noexcept;
   SavedRdmCommand& operator=(const RdmCommand& command) noexcept;
 
@@ -1314,13 +1314,13 @@ public:
   constexpr bool IsGet() const noexcept;
   constexpr bool IsSet() const noexcept;
 
-  ETCPAL_CONSTEXPR_14 ::LlrpSavedRdmCommand& get() noexcept;
-  constexpr const ::LlrpSavedRdmCommand& get() const noexcept;
+  ETCPAL_CONSTEXPR_14 LlrpSavedRdmCommand& get() noexcept;
+  constexpr const LlrpSavedRdmCommand& get() const noexcept;
 
   rdm::Command ToRdm() const;
 
 private:
-  ::LlrpSavedRdmCommand cmd_{};
+  LlrpSavedRdmCommand cmd_{};
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1328,7 +1328,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// \brief Construct an RdmCommand which references an instance of the C LlrpRdmCommand type.
-constexpr RdmCommand::RdmCommand(const ::LlrpRdmCommand& c_cmd) noexcept : cmd_(c_cmd)
+constexpr RdmCommand::RdmCommand(const LlrpRdmCommand& c_cmd) noexcept : cmd_(c_cmd)
 {
 }
 
@@ -1430,7 +1430,7 @@ constexpr bool RdmCommand::IsSet() const noexcept
 }
 
 /// \brief Get a const reference to the underlying C type.
-constexpr const ::LlrpRdmCommand& RdmCommand::get() const noexcept
+constexpr const LlrpRdmCommand& RdmCommand::get() const noexcept
 {
   return cmd_;
 }
@@ -1453,12 +1453,12 @@ inline SavedRdmCommand RdmCommand::Save() const
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// \brief Construct a SavedRdmCommand copied from an instance of the C LlrpSavedRdmCommand type.
-constexpr SavedRdmCommand::SavedRdmCommand(const ::LlrpSavedRdmCommand& c_cmd) noexcept : cmd_(c_cmd)
+constexpr SavedRdmCommand::SavedRdmCommand(const LlrpSavedRdmCommand& c_cmd) noexcept : cmd_(c_cmd)
 {
 }
 
 /// \brief Assign an instance of the C RdmnetSavedRdmCommand type to an instance of this class.
-inline SavedRdmCommand& SavedRdmCommand::operator=(const ::LlrpSavedRdmCommand& c_cmd) noexcept
+inline SavedRdmCommand& SavedRdmCommand::operator=(const LlrpSavedRdmCommand& c_cmd) noexcept
 {
   cmd_ = c_cmd;
   return *this;
@@ -1574,13 +1574,13 @@ constexpr bool SavedRdmCommand::IsSet() const noexcept
 }
 
 /// \brief Get a mutable reference to the underlying C type.
-ETCPAL_CONSTEXPR_14_OR_INLINE ::LlrpSavedRdmCommand& SavedRdmCommand::get() noexcept
+ETCPAL_CONSTEXPR_14_OR_INLINE LlrpSavedRdmCommand& SavedRdmCommand::get() noexcept
 {
   return cmd_;
 }
 
 /// \brief Get a const reference to the underlying C type.
-constexpr const ::LlrpSavedRdmCommand& SavedRdmCommand::get() const noexcept
+constexpr const LlrpSavedRdmCommand& SavedRdmCommand::get() const noexcept
 {
   return cmd_;
 }
@@ -1612,7 +1612,7 @@ public:
   /// Not copyable - use Save() to create a copyable version.
   RdmResponse& operator=(const RdmResponse& other) = delete;
 
-  constexpr RdmResponse(const ::LlrpRdmResponse& c_resp) noexcept;
+  constexpr RdmResponse(const LlrpRdmResponse& c_resp) noexcept;
 
   constexpr etcpal::Uuid source_cid() const noexcept;
   constexpr uint32_t seq_num() const noexcept;
@@ -1635,7 +1635,7 @@ public:
   constexpr bool IsGetResponse() const noexcept;
   constexpr bool IsSetResponse() const noexcept;
 
-  constexpr const ::LlrpRdmResponse& get() const noexcept;
+  constexpr const LlrpRdmResponse& get() const noexcept;
 
   etcpal::Expected<rdm::NackReason> NackReason() const noexcept;
 
@@ -1643,7 +1643,7 @@ public:
   SavedRdmResponse Save() const;
 
 private:
-  const ::LlrpRdmResponse& resp_;
+  const LlrpRdmResponse& resp_;
 };
 
 /// \ingroup rdmnet_cpp_common
@@ -1657,8 +1657,8 @@ class SavedRdmResponse
 public:
   /// Constructs an empty, invalid RDM response by default.
   SavedRdmResponse() = default;
-  SavedRdmResponse(const ::LlrpSavedRdmResponse& c_resp);
-  SavedRdmResponse& operator=(const ::LlrpSavedRdmResponse& c_resp);
+  SavedRdmResponse(const LlrpSavedRdmResponse& c_resp);
+  SavedRdmResponse& operator=(const LlrpSavedRdmResponse& c_resp);
   SavedRdmResponse(const RdmResponse& resp);
   SavedRdmResponse& operator=(const RdmResponse& resp);
 
@@ -1698,7 +1698,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// \brief Construct a RdmResponse copied from an instance of the C LlrpRdmResponse type.
-constexpr RdmResponse::RdmResponse(const ::LlrpRdmResponse& c_resp) noexcept : resp_(c_resp)
+constexpr RdmResponse::RdmResponse(const LlrpRdmResponse& c_resp) noexcept : resp_(c_resp)
 {
 }
 
@@ -1816,7 +1816,7 @@ inline etcpal::Expected<rdm::NackReason> RdmResponse::NackReason() const noexcep
 }
 
 /// \brief Get a const reference to the underlying C type.
-constexpr const ::LlrpRdmResponse& RdmResponse::get() const noexcept
+constexpr const LlrpRdmResponse& RdmResponse::get() const noexcept
 {
   return resp_;
 }
@@ -1839,7 +1839,7 @@ inline SavedRdmResponse RdmResponse::Save() const
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// \brief Construct a SavedRdmResponse copied from an instance of the C LlrpSavedRdmResponse type.
-inline SavedRdmResponse::SavedRdmResponse(const ::LlrpSavedRdmResponse& c_resp)
+inline SavedRdmResponse::SavedRdmResponse(const LlrpSavedRdmResponse& c_resp)
     : source_cid_(c_resp.source_cid)
     , seq_num_(c_resp.seq_num)
     , rdm_(c_resp.rdm_header, c_resp.rdm_data, c_resp.rdm_data_len)
@@ -1847,7 +1847,7 @@ inline SavedRdmResponse::SavedRdmResponse(const ::LlrpSavedRdmResponse& c_resp)
 }
 
 /// \brief Assign an instance of the C LlrpSavedRdmResponse type to an instance of this class.
-inline SavedRdmResponse& SavedRdmResponse::operator=(const ::LlrpSavedRdmResponse& c_resp)
+inline SavedRdmResponse& SavedRdmResponse::operator=(const LlrpSavedRdmResponse& c_resp)
 {
   source_cid_ = c_resp.source_cid;
   seq_num_ = c_resp.seq_num;

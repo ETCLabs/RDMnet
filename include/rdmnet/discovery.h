@@ -44,6 +44,15 @@
  * system DNS-SD and mDNS functionality (Bonjour, Avahi, etc.) and provide functions for doing
  * broker discovery and service registration.
  *
+ * Typically, this API is called automatically when using the role APIs:
+ *
+ * * \ref rdmnet_controller
+ * * \ref rdmnet_device
+ * * \ref rdmnet_broker
+ * * \ref rdmnet_ept_client
+ *
+ * And thus these functions should not typically need to be used directly.
+ *
  * @{
  */
 
@@ -51,56 +60,246 @@
 extern "C" {
 #endif
 
-typedef struct RdmnetScopeMonitorRef* rdmnet_scope_monitor_t;
+/*! A handle to an RDMnet broker's DNS-SD registration. */
 typedef struct RdmnetBrokerRegisterRef* rdmnet_registered_broker_t;
-
-#define RDMNET_SCOPE_MONITOR_INVALID NULL
+/*! An invalid registered broker value. */
 #define RDMNET_REGISTERED_BROKER_INVALID NULL
 
+/*! Information about a broker discovered or registered using DNS-SD. */
 typedef struct RdmnetBrokerDiscInfo
 {
+  /*! The broker's CID. */
   EtcPalUuid cid;
-  char service_name[E133_SERVICE_NAME_STRING_PADDED_LENGTH];
+  /*!
+   * \brief The broker's service instance name.
+   *
+   * A service instance name uniquely identifies a specific broker on a given network segment. They
+   * are a maximum of 63 bytes in length, can contain any UTF-8 character, and should be
+   * configurable by a user.
+   */
+  const char* service_instance_name;
+  /*! The port on which the broker is listening for RDMnet connections. */
   uint16_t port;
+  /*! An array of IP addresses at which the broker is listening for RDMnet connections. */
   EtcPalIpAddr* listen_addrs;
+  /*! Size of the listen_addrs array. */
   size_t num_listen_addrs;
-  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
-  char model[E133_MODEL_STRING_PADDED_LENGTH];
-  char manufacturer[E133_MANUFACTURER_STRING_PADDED_LENGTH];
+  /*! The broker's RDMnet scope. */
+  const char* scope;
+  /*! The broker's product model name. */
+  const char* model;
+  /*! The name of the broker's manufacturer. */
+  const char* manufacturer;
 } RdmnetBrokerDiscInfo;
 
-typedef struct RdmnetScopeMonitorCallbacks
-{
-  void (*broker_found)(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info, void* context);
-  void (*broker_lost)(rdmnet_scope_monitor_t handle, const char* scope, const char* service_name, void* context);
-  void (*scope_monitor_error)(rdmnet_scope_monitor_t handle, const char* scope, int platform_error, void* context);
-} RdmnetScopeMonitorCallbacks;
+/*!
+ * \name Registered Broker Callbacks
+ * @{
+ */
 
-typedef struct RdmnetScopeMonitorConfig
-{
-  char scope[E133_SCOPE_STRING_PADDED_LENGTH];
-  char domain[E133_DOMAIN_STRING_PADDED_LENGTH];
-  RdmnetScopeMonitorCallbacks callbacks;
-  void* callback_context;
-} RdmnetScopeMonitorConfig;
+/*!
+ * \brief A broker has been registered successfully with the DNS-SD service.
+ * \param[in] handle Handle to the registered broker instance.
+ * \param[in] assigned_service_instance_name The broker's service instance name. Note that this might be different from
+ *                                           the one given at config time because of DNS-SD's uniqueness negotiation.
+ * \param[in] context Context pointer that was given at the creation of the registered broker instance.
+ */
+typedef void (*RdmnetDiscBrokerRegisteredCallback)(rdmnet_registered_broker_t handle,
+                                                   const char* assigned_service_instance_name, void* context);
 
+/*!
+ * \brief Broker registration has failed.
+ * \param[in] handle Handle to the registered broker instance which has failed to register.
+ * \param[in] platform_error Platform-specific error code from the underlying DNS-SD service (e.g. Bonjour or Avahi).
+ * \param[in] context Context pointer that was given at the creation of the registered broker instance.
+ */
+typedef void (*RdmnetDiscBrokerRegisterFailedCallback)(rdmnet_registered_broker_t handle, int platform_error,
+                                                       void* context);
+
+/*!
+ * \brief Another broker has been found on the scope on which this broker is registered.
+ * \param[in] handle Handle to the registered broker instance.
+ * \param[in] broker_info Information about the other broker that has been found on the same scope.
+ * \param[in] context Context pointer that was given at the creation of the registered broker instance.
+ */
+typedef void (*RdmnetDiscOtherBrokerFoundCallback)(rdmnet_registered_broker_t handle,
+                                                   const RdmnetBrokerDiscInfo* broker_info, void* context);
+
+/*!
+ * \brief A broker which was previously detected on the same scope as a registered broker has been lost.
+ * \param[in] handle Handle to the registered broker instance.
+ * \param[in] scope Scope string of the scope on which the broker is registered.
+ * \param[in] service_instance_name Service instance name of the other broker that has been lost.
+ * \param[in] context Context pointer that was given at the creation of the registered broker instance.
+ */
+typedef void (*RdmnetDiscOtherBrokerLostCallback)(rdmnet_registered_broker_t handle, const char* scope,
+                                                  const char* service_instance_name, void* context);
+
+/*!
+ * @}
+ */
+
+/*! A set of notification callbacks received by a registered broker instance. */
 typedef struct RdmnetDiscBrokerCallbacks
 {
-  void (*broker_registered)(rdmnet_registered_broker_t handle, const char* assigned_service_name, void* context);
-  void (*broker_register_error)(rdmnet_registered_broker_t handle, int platform_error, void* context);
-  void (*broker_found)(rdmnet_registered_broker_t handle, const RdmnetBrokerDiscInfo* broker_info, void* context);
-  void (*broker_lost)(rdmnet_registered_broker_t handle, const char* scope, const char* service_name, void* context);
-  void (*scope_monitor_error)(rdmnet_registered_broker_t handle, const char* scope, int platform_error, void* context);
+  RdmnetDiscBrokerRegisteredCallback broker_registered;          /*!< Required. */
+  RdmnetDiscBrokerRegisterFailedCallback broker_register_failed; /*!< Required. */
+  RdmnetDiscOtherBrokerFoundCallback other_broker_found;         /*!< Required. */
+  RdmnetDiscOtherBrokerLostCallback other_broker_lost;           /*!< Required. */
 } RdmnetDiscBrokerCallbacks;
 
+/*! A set of information that defines the parameters of an RDMnet broker registered with DNS-SD. */
 typedef struct RdmnetBrokerRegisterConfig
 {
+  /************************************************************************************************
+   * Required Values
+   ***********************************************************************************************/
+
+  /*!
+   * The discovery information of the broker to be registered. All fields in this structure are
+   * required.
+   */
   RdmnetBrokerDiscInfo my_info;
+  /*! A set of callbacks to receive notifications about the registered broker. */
   RdmnetDiscBrokerCallbacks callbacks;
+
+  /************************************************************************************************
+   * Optional Values
+   ***********************************************************************************************/
+
+  /*! (optional) Pointer to opaque data passed back with each callback. */
   void* callback_context;
 } RdmnetBrokerRegisterConfig;
 
-void rdmnet_disc_init_broker_info(RdmnetBrokerDiscInfo* broker_info);
+/*!
+ * \brief A set of default initializer values for an RdmnetBrokerRegisterConfig struct.
+ *
+ * Usage:
+ * \code
+ * RdmnetBrokerRegisterConfig config = { RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT_VALUES };
+ * // Now fill in the required portions as necessary with your data...
+ * \endcode
+ *
+ * To omit the enclosing brackets, use #RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT.
+ */
+#define RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT_VALUES \
+  {{{0}}, NULL, 0, NULL, 0, NULL, NULL, NULL}, {NULL, NULL, NULL, NULL}, NULL
+
+/*!
+ * \brief A default-value initializer for an RdmnetBrokerRegisterConfig struct.
+ *
+ * Usage:
+ * \code
+ * RdmnetBrokerRegisterConfig config = RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT;
+ * // Now fill in the required portions as necessary with your data...
+ * \endcode
+ */
+#define RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT    \
+  {                                                   \
+    RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT_VALUES \
+  }
+
+/*! A handle to a monitored RDMnet scope. */
+typedef struct RdmnetScopeMonitorRef* rdmnet_scope_monitor_t;
+/*! An invalid monitored scope handle value. */
+#define RDMNET_SCOPE_MONITOR_INVALID NULL
+
+/*!
+ * \name Scope Monitor Callbacks
+ * @{
+ */
+
+/*!
+ * \brief An RDMnet broker has been found on a monitored scope.
+ * \param[in] handle Handle to the monitored scope on which the broker was found.
+ * \param[in] broker_info Information about the broker that was found.
+ * \param[in] context Context pointer that was given at the creation of the scope monitor instance.
+ */
+typedef void (*RdmnetDiscBrokerFoundCallback)(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info,
+                                              void* context);
+
+/*!
+ * \brief A previously-discovered RDMnet broker has been lost on a monitored scope.
+ * \param[in] handle Handle to the monitored scope on which the broker was lost.
+ * \param[in] scope Scope string of the monitored scope.
+ * \param[in] service_instance_name Service instance name of the broker that has been lost.
+ * \param[in] context Context pointer that was given at the creation of the scope monitor instance.
+ */
+typedef void (*RdmnetDiscBrokerLostCallback)(rdmnet_scope_monitor_t handle, const char* scope,
+                                             const char* service_instance_name, void* context);
+
+/*!
+ * @}
+ */
+
+/*! A set of notification callbacks received by a scope monitor instance. */
+typedef struct RdmnetScopeMonitorCallbacks
+{
+  RdmnetDiscBrokerFoundCallback broker_found; /*!< Required. */
+  RdmnetDiscBrokerLostCallback broker_lost;   /*!< Required. */
+} RdmnetScopeMonitorCallbacks;
+
+/*! A set of information that defines the parameters of an RDMnet scope to be monitored using DNS-SD. */
+typedef struct RdmnetScopeMonitorConfig
+{
+  /************************************************************************************************
+   * Required Values
+   ***********************************************************************************************/
+
+  /*! Scope string of the scope to be monitored. */
+  const char* scope;
+  /*! A set of callbacks to receive notifications about the monitored scope. */
+  RdmnetScopeMonitorCallbacks callbacks;
+
+  /************************************************************************************************
+   * Optional Values
+   ***********************************************************************************************/
+
+  /*! (optional) Pointer to opaque data passed back with each callback. */
+  void* callback_context;
+  /*! (optional) The search domain to use for DNS discovery. NULL to use the default search domain(s). */
+  const char* domain;
+} RdmnetScopeMonitorConfig;
+
+/*!
+ * \brief A set of default initializer values for an RdmnetScopeMonitorConfig struct.
+ *
+ * Usage:
+ * \code
+ * RdmnetScopeMonitorConfig config = { RDMNET_SCOPE_MONITOR_CONFIG_DEFAULT_INIT_VALUES };
+ * // Now fill in the required portions as necessary with your data...
+ * \endcode
+ *
+ * To omit the enclosing brackets, use #RDMNET_SCOPE_MONITOR_CONFIG_DEFAULT_INIT.
+ */
+#define RDMNET_SCOPE_MONITOR_CONFIG_DEFAULT_INIT_VALUES E133_DEFAULT_SCOPE, {NULL, NULL}, NULL, NULL
+
+/*!
+ * \brief A default-value initializer for an RdmnetScopeMonitorConfig struct.
+ *
+ * Usage:
+ * \code
+ * RdmnetScopeMonitorConfig config = RDMNET_SCOPE_MONITOR_CONFIG_DEFAULT_INIT;
+ * // Now fill in the required portions as necessary with your data...
+ * \endcode
+ */
+#define RDMNET_SCOPE_MONITOR_CONFIG_DEFAULT_INIT    \
+  {                                                 \
+    RDMNET_SCOPE_MONITOR_CONFIG_DEFAULT_INIT_VALUES \
+  }
+
+void rdmnet_broker_register_config_init(RdmnetBrokerRegisterConfig* config);
+void rdmnet_broker_register_config_set_callbacks(RdmnetBrokerRegisterConfig* config,
+                                                 RdmnetDiscBrokerRegisteredCallback broker_registered,
+                                                 RdmnetDiscBrokerRegisterFailedCallback broker_register_failed,
+                                                 RdmnetDiscOtherBrokerFoundCallback other_broker_found,
+                                                 RdmnetDiscOtherBrokerLostCallback other_broker_lost,
+                                                 void* callback_context);
+
+void rdmnet_scope_monitor_config_init(RdmnetScopeMonitorConfig* config);
+void rdmnet_scope_monitor_config_set_callbacks(RdmnetScopeMonitorConfig* config,
+                                               RdmnetDiscBrokerFoundCallback broker_found,
+                                               RdmnetDiscBrokerLostCallback broker_lost, void* callback_context);
 
 etcpal_error_t rdmnet_disc_start_monitoring(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
                                             int* platform_specific_error);

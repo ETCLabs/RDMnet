@@ -40,8 +40,7 @@
  *
  * RDMnet controllers are clients which originate RDM commands and receive responses. Controllers
  * can participate in multiple scopes; the default scope string "default" must be configured as a
- * default setting. This API wraps the RDMnet Client API and provides functions tailored
- * specifically to the usage concerns of an RDMnet controller.
+ * default setting.
  *
  * See \ref using_controller for a detailed description of how to use this API.
  *
@@ -154,13 +153,13 @@ typedef void (*RdmnetControllerResponderIdsReceivedCallback)(rdmnet_controller_t
 /*! A set of notification callbacks received about a controller. */
 typedef struct RdmnetControllerCallbacks
 {
-  RdmnetControllerConnectedCallback connected;
-  RdmnetControllerConnectFailedCallback connect_failed;
-  RdmnetControllerDisconnectedCallback disconnected;
-  RdmnetControllerClientListUpdateReceivedCallback client_list_update_received;
-  RdmnetControllerRdmResponseReceivedCallback rdm_response_received;
-  RdmnetControllerStatusReceivedCallback status_received;
-  RdmnetControllerResponderIdsReceivedCallback responder_ids_received;
+  RdmnetControllerConnectedCallback connected;                                  /*!< Required. */
+  RdmnetControllerConnectFailedCallback connect_failed;                         /*!< Required. */
+  RdmnetControllerDisconnectedCallback disconnected;                            /*!< Required. */
+  RdmnetControllerClientListUpdateReceivedCallback client_list_update_received; /*!< Required. */
+  RdmnetControllerRdmResponseReceivedCallback rdm_response_received;            /*!< Required. */
+  RdmnetControllerStatusReceivedCallback status_received;                       /*!< Required. */
+  RdmnetControllerResponderIdsReceivedCallback responder_ids_received;          /*!< Optional. */
 } RdmnetControllerCallbacks;
 
 /*!
@@ -275,6 +274,23 @@ typedef struct RdmnetControllerConfig
 } RdmnetControllerConfig;
 
 /*!
+ * \brief A set of default initializer values for an RdmnetControllerConfig struct.
+ *
+ * Usage:
+ * \code
+ * RdmnetControllerConfig config = { RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT_VALUES(MY_ESTA_MANUFACTURER_ID) };
+ * // Now fill in the required portions as necessary with your data...
+ * \endcode
+ *
+ * To omit the enclosing brackets, use #RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT().
+ *
+ * \param manu_id Your ESTA manufacturer ID.
+ */
+#define RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT_VALUES(manu_id)                                                   \
+  {{0}}, {NULL, NULL, NULL, NULL, NULL, NULL, NULL}, {NULL, NULL, NULL}, {NULL, NULL, NULL, NULL, false}, NULL, \
+      {(0x8000 | manu_id), 0}, NULL, false, NULL, 0
+
+/*!
  * \brief A default-value initializer for an RdmnetControllerConfig struct.
  *
  * Usage:
@@ -285,10 +301,9 @@ typedef struct RdmnetControllerConfig
  *
  * \param manu_id Your ESTA manufacturer ID.
  */
-#define RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT(manu_id)                                                            \
-  {                                                                                                               \
-    {{0}}, {NULL, NULL, NULL, NULL, NULL, NULL, NULL}, {NULL, NULL, NULL}, {NULL, NULL, NULL, NULL, false}, NULL, \
-        {(0x8000 | manu_id), 0}, NULL, false, NULL, 0                                                             \
+#define RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT(manu_id)    \
+  {                                                       \
+    RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT_VALUES(manu_id) \
   }
 
 void rdmnet_controller_config_init(RdmnetControllerConfig* config, uint16_t manufacturer_id);
@@ -298,7 +313,7 @@ void rdmnet_controller_set_callbacks(RdmnetControllerConfig* config, RdmnetContr
                                      RdmnetControllerClientListUpdateReceivedCallback client_list_update_received,
                                      RdmnetControllerRdmResponseReceivedCallback rdm_response_received,
                                      RdmnetControllerStatusReceivedCallback status_received,
-                                     RdmnetControllerResponderIdsReceivedCallback dynamic_uid_mappings_received,
+                                     RdmnetControllerResponderIdsReceivedCallback responder_ids_received,
                                      void* callback_context);
 void rdmnet_controller_set_rdm_data(RdmnetControllerConfig* config, const char* manufacturer_label,
                                     const char* device_model_description, const char* software_version_label,
@@ -315,6 +330,9 @@ etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const Rdm
 etcpal_error_t rdmnet_controller_add_default_scope(rdmnet_controller_t handle, rdmnet_client_scope_t* scope_handle);
 etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                               rdmnet_disconnect_reason_t reason);
+etcpal_error_t rdmnet_controller_change_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                                              const RdmnetScopeConfig* new_scope_config,
+                                              rdmnet_disconnect_reason_t disconnect_reason);
 etcpal_error_t rdmnet_controller_get_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                            char* scope_str_buf, EtcPalSockAddr* static_broker_addr);
 

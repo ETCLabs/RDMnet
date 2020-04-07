@@ -41,6 +41,14 @@
  * \ingroup rdmnet_api
  * \brief Implement the functionality required by an LLRP Target in E1.33.
  *
+ * Typically, this API is called automatically when using the role APIs:
+ *
+ * * \ref rdmnet_controller
+ * * \ref rdmnet_device
+ * * \ref rdmnet_broker
+ *
+ * And thus these functions should not typically need to be used directly.
+ *
  * @{
  */
 

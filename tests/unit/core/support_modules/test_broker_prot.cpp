@@ -20,7 +20,7 @@
 #include "gtest/gtest.h"
 #include "rdmnet/core/broker_prot.h"
 
-class TestBrokerProt : public ::testing::Test
+class TestBrokerProt : public testing::Test
 {
 };
 

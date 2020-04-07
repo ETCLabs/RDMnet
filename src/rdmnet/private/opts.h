@@ -44,6 +44,8 @@
 
 /* Some option hints based on well-known compile definitions */
 
+/*! \cond Internal definitions */
+
 /* Are we being compiled for a full-featured OS? */
 #if defined(_WIN32) || defined(__APPLE__) || defined(__linux__) || defined(__unix__) || defined(_POSIX_VERSION)
 #define RDMNET_FULL_OS_AVAILABLE_HINT 1
@@ -57,6 +59,8 @@
 #else
 #define RDMNET_WINDOWS_HINT 0
 #endif
+
+/*! \endcond */
 
 /********************************* Global ************************************/
 
@@ -177,6 +181,8 @@
  * @}
  */
 
+/*! \cond Internal/derived definitions */
+
 #ifdef RDMNET_MAX_RPT_CLIENTS
 #undef RDMNET_MAX_RPT_CLIENTS
 #endif
@@ -186,6 +192,8 @@
 #undef RDMNET_MAX_CLIENTS
 #endif
 #define RDMNET_MAX_CLIENTS (RDMNET_MAX_RPT_CLIENTS + RDMNET_MAX_EPT_CLIENTS)
+
+/*! \endcond */
 
 /*!
  * \defgroup rdmnetopts_core Core
@@ -276,19 +284,22 @@
 #define RDMNET_BIND_MCAST_SOCKETS_TO_MCAST_ADDRESS !RDMNET_WINDOWS_HINT
 #endif
 
-/*!
+/*! \cond deprecated */
+/*
+ * [DEPRECATED]
  * \brief Whether to allow sockets associated with connections to be polled externally.
  *
- * If this option is defined to 0, the externally-managed-socket functions in the
- * \ref rdmnet_conn "Connection API" will not be implemented. Most applications will want the
- * default behavior, unless scaling the number of connections is a concern. Broker applications
- * will set this to 1.
+ * If this option is defined to 0, the externally-managed-socket functions in the RDMnet connection
+ * API will not be implemented. Most applications will want the default behavior, unless scaling
+ * the number of connections is a concern. Broker applications will set this to 1.
  */
 #ifndef RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
 #define RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS RDMNET_FULL_OS_AVAILABLE_HINT
 #endif
+/*! \endcond */
 
-/* The library has some limitations around static memory allocation and how many message structures
+/*
+ * The library has some limitations around static memory allocation and how many message structures
  * can be allocated at a time. If #RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS is true, the library has
  * no guarantee as to how many threads could be receiving and allocating messages simultaneously;
  * therefore, in this case, #RDMNET_DYNAMIC_MEM must be enabled.

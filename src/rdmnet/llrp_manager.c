@@ -252,23 +252,32 @@ etcpal_error_t llrp_manager_stop_discovery(llrp_manager_t handle)
 /*!
  * \brief Send an RDM command from an LLRP manager.
  *
- * On success, provides the transaction number to correlate with a response.
+ * On success, provides the sequence number to correlate with a response.
  *
- * \param[in] handle Handle to LLRP manager from which to send an RDM command.
- * \param[in] command Command to send.
- * \param[out] transaction_num Filled in on success with the transaction number of the command.
+ * \param[in] handle Handle to LLRP manager from which to send the RDM command.
+ * \param[in] destination Addressing information for LLRP target to which to send the command.
+ * \param[in] command_class Whether this is a GET or a SET command.
+ * \param[in] param_id The command's RDM parameter ID.
+ * \param[in] data Any RDM parameter data associated with the command (NULL for no data).
+ * \param[in] data_len Length of any RDM parameter data associated with the command (0 for no data).
+ * \param[out] seq_num Filled in on success with the LLRP sequence number of the command.
  * \return #kEtcPalErrOk: Command sent successfully.
  * \return #kEtcPalErrInvalid: Invalid argument provided.
  * \return #kEtcPalErrNotInit: Module not initialized.
  * \return #kEtcPalErrNotFound: Handle is not associated with a valid LLRP manager instance.
  * \return Note: Other error codes might be propagated from underlying socket calls.
  */
-etcpal_error_t llrp_manager_send_rdm_command(llrp_manager_t handle, const LlrpLocalRdmCommand* command,
-                                             uint32_t* transaction_num)
+etcpal_error_t llrp_manager_send_rdm_command(llrp_manager_t handle, const LlrpDestinationAddr* destination,
+                                             rdmnet_command_class_t command_class, uint16_t param_id,
+                                             const uint8_t* data, uint8_t data_len, uint32_t* seq_num)
 {
   ETCPAL_UNUSED_ARG(handle);
-  ETCPAL_UNUSED_ARG(command);
-  ETCPAL_UNUSED_ARG(transaction_num);
+  ETCPAL_UNUSED_ARG(destination);
+  ETCPAL_UNUSED_ARG(command_class);
+  ETCPAL_UNUSED_ARG(param_id);
+  ETCPAL_UNUSED_ARG(data);
+  ETCPAL_UNUSED_ARG(data_len);
+  ETCPAL_UNUSED_ARG(seq_num);
   return kEtcPalErrNotImpl;
   //  if (!command)
   //    return kEtcPalErrInvalid;
@@ -299,6 +308,65 @@ etcpal_error_t llrp_manager_send_rdm_command(llrp_manager_t handle, const LlrpLo
   //    release_manager(manager);
   //  }
   //  return res;
+}
+
+/*!
+ * \brief Send an RDM GET command from an LLRP manager.
+ *
+ * On success, provides the sequence number to correlate with a response.
+ *
+ * \param[in] handle Handle to LLRP manager from which to send the GET command.
+ * \param[in] destination Addressing information for LLRP target to which to send the command.
+ * \param[in] param_id The command's RDM parameter ID.
+ * \param[in] data Any RDM parameter data associated with the command (NULL for no data).
+ * \param[in] data_len Length of any RDM parameter data associated with the command (0 for no data).
+ * \param[out] seq_num Filled in on success with the LLRP sequence number of the command.
+ * \return #kEtcPalErrOk: Command sent successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument provided.
+ * \return #kEtcPalErrNotInit: Module not initialized.
+ * \return #kEtcPalErrNotFound: Handle is not associated with a valid LLRP manager instance.
+ * \return Note: Other error codes might be propagated from underlying socket calls.
+ */
+etcpal_error_t llrp_manager_send_get_command(llrp_manager_t handle, const LlrpDestinationAddr* destination,
+                                             uint16_t param_id, const uint8_t* data, uint8_t data_len,
+                                             uint32_t* seq_num)
+{
+  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(destination);
+  ETCPAL_UNUSED_ARG(param_id);
+  ETCPAL_UNUSED_ARG(data);
+  ETCPAL_UNUSED_ARG(data_len);
+  ETCPAL_UNUSED_ARG(seq_num);
+  return kEtcPalErrNotImpl;
+}
+/*!
+ * \brief Send an RDM SET command from an LLRP manager.
+ *
+ * On success, provides the sequence number to correlate with a response.
+ *
+ * \param[in] handle Handle to LLRP manager from which to send the SET command.
+ * \param[in] destination Addressing information for LLRP target to which to send the command.
+ * \param[in] param_id The command's RDM parameter ID.
+ * \param[in] data Any RDM parameter data associated with the command (NULL for no data).
+ * \param[in] data_len Length of any RDM parameter data associated with the command (0 for no data).
+ * \param[out] seq_num Filled in on success with the LLRP sequence number of the command.
+ * \return #kEtcPalErrOk: Command sent successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument provided.
+ * \return #kEtcPalErrNotInit: Module not initialized.
+ * \return #kEtcPalErrNotFound: Handle is not associated with a valid LLRP manager instance.
+ * \return Note: Other error codes might be propagated from underlying socket calls.
+ */
+etcpal_error_t llrp_manager_send_set_command(llrp_manager_t handle, const LlrpDestinationAddr* destination,
+                                             uint16_t param_id, const uint8_t* data, uint8_t data_len,
+                                             uint32_t* seq_num)
+{
+  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(destination);
+  ETCPAL_UNUSED_ARG(param_id);
+  ETCPAL_UNUSED_ARG(data);
+  ETCPAL_UNUSED_ARG(data_len);
+  ETCPAL_UNUSED_ARG(seq_num);
+  return kEtcPalErrNotImpl;
 }
 
 void llrp_manager_tick(void)

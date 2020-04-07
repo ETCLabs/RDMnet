@@ -129,6 +129,8 @@ void rdmnet_device_config_init(RdmnetDeviceConfig* config, uint16_t manufacturer
  * \param[in] rdm_command_received Callback called when a device receives an RDM command.
  * \param[in] llrp_rdm_command_received Callback called when a device receives an RDM command over
  *                                      LLRP.
+ * \param[in] dynamic_uid_status_received Callback called when a device receives dynamic UID
+ *                                        assignments for one or more virtual responders.
  * \param[in] callback_context (optional) Pointer to opaque data passed back with each callback.
  */
 void rdmnet_device_set_callbacks(RdmnetDeviceConfig* config, RdmnetDeviceConnectedCallback connected,
@@ -136,6 +138,7 @@ void rdmnet_device_set_callbacks(RdmnetDeviceConfig* config, RdmnetDeviceConnect
                                  RdmnetDeviceDisconnectedCallback disconnected,
                                  RdmnetDeviceRdmCommandReceivedCallback rdm_command_received,
                                  RdmnetDeviceLlrpRdmCommandReceivedCallback llrp_rdm_command_received,
+                                 RdmnetDeviceDynamicUidStatusCallback dynamic_uid_status_received,
                                  void* callback_context)
 {
   if (config)
@@ -245,7 +248,7 @@ etcpal_error_t rdmnet_device_destroy(rdmnet_device_t handle, rdmnet_disconnect_r
  * \return #kEtcPalErrNotFound: Handle is not associated with a valid device instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_device_send_rdm_ack(rdmnet_device_t handle, const RdmnetRemoteRdmCommand* received_cmd,
+etcpal_error_t rdmnet_device_send_rdm_ack(rdmnet_device_t handle, const RdmnetSavedRdmCommand* received_cmd,
                                           const uint8_t* response_data, size_t response_data_len)
 {
   if (!handle)
@@ -267,7 +270,7 @@ etcpal_error_t rdmnet_device_send_rdm_ack(rdmnet_device_t handle, const RdmnetRe
  * \return #kEtcPalErrNotFound: Handle is not associated with a valid device instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_device_send_rdm_nack(rdmnet_device_t handle, const RdmnetRemoteRdmCommand* received_cmd,
+etcpal_error_t rdmnet_device_send_rdm_nack(rdmnet_device_t handle, const RdmnetSavedRdmCommand* received_cmd,
                                            rdm_nack_reason_t nack_reason)
 {
   if (!handle)
@@ -342,14 +345,16 @@ etcpal_error_t rdmnet_device_send_rdm_update_from_responder(rdmnet_device_t hand
  * something has gone wrong while attempting to resolve the command.
  *
  * \param[in] handle Handle to the device from which to send the RPT status.
- * \param[in] status Status message to send.
+ * \param[in] received_cmd Previously-received command that the status message is a response to.
+ * \param[in] status_code RPT status code to send.
+ * \param[in] status_string (optional) status string to send. NULL for no string.
  * \return #kEtcPalErrOk: Status sent successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
  * \return #kEtcPalErrNotFound: Handle is not associated with a valid device instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_device_send_status(rdmnet_device_t handle, const RdmnetRemoteRdmCommand* received_cmd,
+etcpal_error_t rdmnet_device_send_status(rdmnet_device_t handle, const RdmnetSavedRdmCommand* received_cmd,
                                          rpt_status_code_t status_code, const char* status_string)
 {
   if (!handle)
@@ -372,7 +377,7 @@ etcpal_error_t rdmnet_device_send_status(rdmnet_device_t handle, const RdmnetRem
  * \return #kEtcPalErrNotFound: Handle is not associated with a valid device instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_device_send_llrp_ack(rdmnet_device_t handle, const LlrpRemoteRdmCommand* received_cmd,
+etcpal_error_t rdmnet_device_send_llrp_ack(rdmnet_device_t handle, const LlrpSavedRdmCommand* received_cmd,
                                            const uint8_t* response_data, uint8_t response_data_len)
 {
   if (!handle)
@@ -393,7 +398,7 @@ etcpal_error_t rdmnet_device_send_llrp_ack(rdmnet_device_t handle, const LlrpRem
  * \return #kEtcPalErrNotFound: Handle is not associated with a valid device instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_device_send_llrp_nack(rdmnet_device_t handle, const LlrpLocalRdmCommand* received_cmd,
+etcpal_error_t rdmnet_device_send_llrp_nack(rdmnet_device_t handle, const LlrpSavedRdmCommand* received_cmd,
                                             rdm_nack_reason_t nack_reason)
 {
   if (!handle)
@@ -768,5 +773,5 @@ rdmnet_response_action_t client_msg_received(rdmnet_client_t handle, rdmnet_clie
       RDMNET_LOG_INFO("Device incorrectly got non-RDM-command message.");
     }
   }
-  return kRdmnetResponseActionDefer;
+  return kRdmnetRdmResponseActionDefer;
 }
