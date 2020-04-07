@@ -72,7 +72,7 @@ public:
 
   // Starts up the RDMnet Device logic with the scope configuration provided. Also initializes the
   // USB library and begins listening for Gadgets.
-  bool Startup(const rdmnet::Scope& scope_config, etcpal::Logger& logger);
+  bool Startup(const rdmnet::Scope& scope_config, etcpal::Logger& logger, const char* cid_str);
   // Shuts down RDMnet and USB/RDM functionality.
   void Shutdown();
 

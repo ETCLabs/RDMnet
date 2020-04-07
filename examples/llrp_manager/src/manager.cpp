@@ -136,9 +136,11 @@ void LlrpManagerExample::PrintCommandList()
   printf("    pi: Print network interfaces\n");
   printf("    i <target_handle>: Get DEVICE_INFO from Target <target_handle>\n");
   printf("    l <target_handle>: Get DEVICE_LABEL from Target <target_handle>\n");
+  printf("    sf <target_handle>: Set FACTORY_DEFAULTS on Target <target_handle>\n");
   printf("    si <target_handle>: Toggle IDENTIFY_DEVICE on/off on Target <target_handle>\n");
   printf("    sl <target_handle> <label>: Set DEVICE_LABEL to <label> on Target\n");
   printf("        <target_handle>\n");
+  printf("    sr <target_handle>: Set RESET_DEVICE on Target <target_handle>\n");
   printf("    m <target_handle>: Get MANUFACTURER_LABEL from Target <target_handle>\n");
   printf("    c <target_handle>: Get DEVICE_MODEL_DESCRIPTION from Target <target_handle>\n");
   printf("    s <target_handle> <scope_slot>: Get COMPONENT_SCOPE for Scope Slot\n");
@@ -279,6 +281,17 @@ bool LlrpManagerExample::ParseCommand(const std::string& line)
                 printf("Command syntax: ss <target_handle> <scope_slot> <scope> [ip:port]\n");
               }
               break;
+            case 'f':
+              try
+              {
+                int target_handle = std::stoi(line.substr(3));
+                FactoryDefaults(target_handle);
+              }
+              catch (std::exception)
+              {
+                printf("Command syntax: sf <target_handle>\n");
+              }
+              break;
             case 'i':
               try
               {
@@ -303,6 +316,17 @@ bool LlrpManagerExample::ParseCommand(const std::string& line)
               catch (std::exception)
               {
                 printf("Command syntax: sl <target_handle> <label>\n");
+              }
+              break;
+            case 'r':
+              try
+              {
+                int target_handle = std::stoi(line.substr(3));
+                ResetDevice(target_handle);
+              }
+              catch (std::exception)
+              {
+                printf("Command syntax: sr <target_handle>\n");
               }
               break;
             case ' ':
@@ -640,6 +664,72 @@ void LlrpManagerExample::SetDeviceLabel(int target_handle, const std::string& la
   else
   {
     printf("Error sending COMPONENT_SCOPE command.\n");
+  }
+}
+
+void LlrpManagerExample::SetResetDevice(int target_handle)
+{
+  auto mgr_pair = managers_.find(active_manager_);
+  if (mgr_pair != managers_.end())
+  {
+    auto target = targets_.find(target_handle);
+    if (target != targets_.end())
+    {
+      RdmCommand cmd_data;
+      RdmResponse resp_data;
+
+      cmd_data.dest_uid = target->second.prot_info.uid;
+      cmd_data.subdevice = 0;
+      cmd_data.command_class = kRdmCCSetCommand;
+      cmd_data.param_id = E120_RESET_DEVICE;
+      cmd_data.datalen = 0;
+
+      if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
+      {
+        printf("Reset device successfully.\n");
+      }
+    }
+    else
+    {
+      printf("Target handle %d not found\n", target_handle);
+    }
+  }
+  else
+  {
+    printf("Error sending RESET_DEVICE command.\n");
+  }
+}
+
+void LlrpManagerExample::SetFactoryDefaults(int target_handle)
+{
+  auto mgr_pair = managers_.find(active_manager_);
+  if (mgr_pair != managers_.end())
+  {
+    auto target = targets_.find(target_handle);
+    if (target != targets_.end())
+    {
+      RdmCommand cmd_data;
+      RdmResponse resp_data;
+
+      cmd_data.dest_uid = target->second.prot_info.uid;
+      cmd_data.subdevice = 0;
+      cmd_data.command_class = kRdmCCSetCommand;
+      cmd_data.param_id = E120_FACTORY_DEFAULTS;
+      cmd_data.datalen = 0;
+
+      if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
+      {
+        printf("Factory defaults successfully.\n");
+      }
+    }
+    else
+    {
+      printf("Target handle %d not found\n", target_handle);
+    }
+  }
+  else
+  {
+    printf("Error sending FACTORY_DEFAULTS command.\n");
   }
 }
 

@@ -74,6 +74,8 @@ public:
   void SetDeviceLabel(int target_handle, const std::string& label);
   void SetComponentScope(int target_handle, int scope_slot, const std::string& scope_utf8,
                          const etcpal::SockAddr& static_config);
+  void SetFactoryDefaults(int target_handle);
+  void SetResetDevice(int target_handle);
 
   void HandleLlrpTargetDiscovered(llrp::ManagerHandle handle, const llrp::DiscoveredTarget& target) override;
   void HandleLlrpDiscoveryFinished(llrp::ManagerHandle handle) override;

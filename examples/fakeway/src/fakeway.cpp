@@ -91,7 +91,7 @@ void Fakeway::PrintVersion()
   std::cout << "or implied.\n";
 }
 
-bool Fakeway::Startup(const rdmnet::Scope& scope_config, etcpal::Logger& logger)
+bool Fakeway::Startup(const rdmnet::Scope& scope_config, etcpal::Logger& logger, const char* cid_str)
 {
   def_resp_ = std::make_unique<FakewayDefaultResponder>(scope_config, E133_DEFAULT_DOMAIN);
 
@@ -100,10 +100,19 @@ bool Fakeway::Startup(const rdmnet::Scope& scope_config, etcpal::Logger& logger)
   if (!gadget_.Startup(*this, logger))
     return false;
 
-  // A typical hardware-locked device would use etcpal::Uuid::V3() to generate a CID that is
-  // the same every time. But this example device is not locked to hardware, so a V4 UUID makes
-  // more sense.
-  auto my_settings = rdmnet::DeviceSettings(etcpal::Uuid::V4(), rdm::Uid::DynamicUidRequest(0x6574));
+  etcpal::Uuid my_cid;
+  if (!cid_str)
+  {
+    // A typical hardware-locked device would use etcpal::Uuid::V3() to generate a CID that is
+    // the same every time. But this example device is not locked to hardware, so a V4 UUID makes
+    // more sense.
+    my_cid = etcpal::Uuid::V4();
+  }
+  else
+  {
+    my_cid = etcpal::Uuid::FromString(cid_str);
+  }
+  auto my_settings = rdmnet::DeviceSettings(my_cid, rdm::Uid::DynamicUidRequest(0x6574));
   auto res = rdmnet_.Startup(*this, my_settings, scope_config);
   if (!res)
   {
