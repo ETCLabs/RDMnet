@@ -236,8 +236,8 @@ typedef struct BrokerClientList
   client_protocol_t client_protocol;
   union
   {
-    RptClientList rpt;
-    EptClientList ept;
+    RdmnetRptClientList rpt;
+    RdmnetEptClientList ept;
   } data;
 } BrokerClientList;
 
@@ -394,7 +394,7 @@ typedef struct BrokerMessage
 /*!
  * \brief Get the encapsulated RPT Client List from a BrokerClientList.
  * \param clientlistptr Pointer to BrokerClientList.
- * \return Pointer to encapsulated RPT Client List (RptClientList*).
+ * \return Pointer to encapsulated RPT Client List (RdmnetRptClientList*).
  */
 #define BROKER_GET_RPT_CLIENT_LIST(clientlistptr) (&(clientlistptr)->data.rpt)
 
@@ -408,7 +408,7 @@ typedef struct BrokerMessage
 /*!
  * \brief Get the encapsulated EPT Client List from a BrokerClientList.
  * \param clientlistptr Pointer to BrokerClientList.
- * \return Pointer to encapsulated EPT Client List (EptClientList*).
+ * \return Pointer to encapsulated EPT Client List (RdmnetEptClientList*).
  */
 #define BROKER_GET_EPT_CLIENT_LIST(clientlistptr) (&(clientlistptr)->data.ept)
 
@@ -472,15 +472,15 @@ typedef struct BrokerMessage
 #define BROKER_GET_DISCONNECT_MSG(brokermsgptr) (&(brokermsgptr)->data.disconnect)
 
 size_t broker_get_rpt_client_list_buffer_size(size_t num_client_entries);
-size_t broker_get_ept_client_list_buffer_size(const EptClientEntry* client_entries, size_t num_client_entries);
+size_t broker_get_ept_client_list_buffer_size(const RdmnetEptClientEntry* client_entries, size_t num_client_entries);
 size_t broker_get_uid_assignment_list_buffer_size(size_t num_mappings);
 
 size_t broker_pack_connect_reply(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid,
                                  const BrokerConnectReplyMsg* data);
 size_t broker_pack_rpt_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
-                                   const RptClientEntry* client_entries, size_t num_client_entries);
+                                   const RdmnetRptClientEntry* client_entries, size_t num_client_entries);
 size_t broker_pack_ept_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
-                                   const EptClientEntry* client_entries, size_t num_client_entries);
+                                   const RdmnetEptClientEntry* client_entries, size_t num_client_entries);
 size_t broker_pack_uid_assignment_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid,
                                        const BrokerDynamicUidMapping* mappings, size_t num_mappings);
 

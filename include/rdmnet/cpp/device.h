@@ -70,26 +70,28 @@ public:
   /// \brief A device has successfully connected to a broker.
   /// \param handle Handle to device instance which has connected.
   /// \param info More information about the successful connection.
-  virtual void HandleConnectedToBroker(DeviceHandle handle, const RdmnetClientConnectedInfo& info) = 0;
+  virtual void HandleConnectedToBroker(DeviceHandle handle, const ClientConnectedInfo& info) = 0;
 
   /// \brief A connection attempt failed between a device and a broker.
   /// \param handle Handle to device instance which has failed to connect.
   /// \param info More information about the failed connection.
-  virtual void HandleBrokerConnectFailed(DeviceHandle handle, const RdmnetClientConnectFailedInfo& info) = 0;
+  virtual void HandleBrokerConnectFailed(DeviceHandle handle, const ClientConnectFailedInfo& info) = 0;
 
   /// \brief A device which was previously connected to a broker has disconnected.
   /// \param handle Handle to device instance which has disconnected.
   /// \param info More information about the disconnect event.
-  virtual void HandleDisconnectedFromBroker(DeviceHandle handle, const RdmnetClientDisconnectedInfo& info) = 0;
+  virtual void HandleDisconnectedFromBroker(DeviceHandle handle, const ClientDisconnectedInfo& info) = 0;
 
   /// \brief An RDM command has been received addressed to a device.
   /// \param handle Handle to device instance which has received the RDM command.
   /// \param cmd The RDM command data.
+  /// \return The action to take in response to this RDM command.
   virtual ResponseAction HandleRdmCommand(DeviceHandle handle, const RdmCommand& cmd) = 0;
 
   /// \brief An RDM command has been received over LLRP, addressed to a device.
   /// \param handle Handle to device instance which has received the RDM command.
   /// \param cmd The RDM command data.
+  /// \return The action to take in response to this LLRP RDM command.
   virtual ResponseAction HandleLlrpRdmCommand(DeviceHandle handle, const llrp::RdmCommand& cmd) = 0;
 
   /// \brief The dynamic UID assignment status for a set of virtual responders has been received.

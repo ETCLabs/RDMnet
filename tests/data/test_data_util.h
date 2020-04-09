@@ -25,7 +25,7 @@
 #include "rdmnet/core/message.h"
 #include "gtest/gtest.h"
 
-inline void ExpectRptClientEntriesEqual(const RptClientEntry& a, const RptClientEntry& b)
+inline void ExpectRptClientEntriesEqual(const RdmnetRptClientEntry& a, const RdmnetRptClientEntry& b)
 {
   EXPECT_EQ(a.cid, b.cid);
   EXPECT_EQ(a.uid, b.uid);
@@ -33,7 +33,7 @@ inline void ExpectRptClientEntriesEqual(const RptClientEntry& a, const RptClient
   EXPECT_EQ(a.binding_cid, b.binding_cid);
 }
 
-inline void ExpectEptClientEntriesEqual(const EptClientEntry& a, const EptClientEntry& b)
+inline void ExpectEptClientEntriesEqual(const RdmnetEptClientEntry& a, const RdmnetEptClientEntry& b)
 {
   EXPECT_EQ(a.cid, b.cid);
   EXPECT_EQ(a.num_protocols, b.num_protocols);

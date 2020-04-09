@@ -29,7 +29,6 @@
 #include "etcpal/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/client.h"
-#include "rdmnet/llrp_target.h"
 #include "rdmnet/message.h"
 
 /*!

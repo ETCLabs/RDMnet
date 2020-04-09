@@ -95,8 +95,8 @@ typedef struct RdmnetMessage
  */
 #define RDMNET_GET_EPT_MSG(msgptr) (&(msgptr)->data.ept)
 
-#define RPT_CLIENT_ENTRIES_MAX_SIZE (RDMNET_MAX_CLIENT_ENTRIES * sizeof(RptClientEntry))
-#define EPT_CLIENT_ENTRIES_MAX_SIZE (RDMNET_MAX_CLIENT_ENTRIES * sizeof(EptClientEntry))
+#define RPT_CLIENT_ENTRIES_MAX_SIZE (RDMNET_MAX_CLIENT_ENTRIES * sizeof(RdmnetRptClientEntry))
+#define EPT_CLIENT_ENTRIES_MAX_SIZE (RDMNET_MAX_CLIENT_ENTRIES * sizeof(RdmnetEptClientEntry))
 #define DYNAMIC_UID_REQUESTS_MAX_SIZE (RDMNET_MAX_DYNAMIC_UID_ENTRIES * sizeof(BrokerDynamicUidRequest))
 #define DYNAMIC_UID_MAPPINGS_MAX_SIZE (RDMNET_MAX_DYNAMIC_UID_ENTRIES * sizeof(BrokerDynamicUidMapping))
 #define FETCH_UID_ASSIGNMENTS_MAX_SIZE (RDMNET_MAX_DYNAMIC_UID_ENTRIES * sizeof(RdmUid))
@@ -104,8 +104,8 @@ typedef struct RdmnetMessage
 
 typedef union
 {
-  RptClientEntry rpt_client_entries[RPT_CLIENT_ENTRIES_MAX_SIZE];
-  EptClientEntry ept_client_entries[EPT_CLIENT_ENTRIES_MAX_SIZE];
+  RdmnetRptClientEntry rpt_client_entries[RPT_CLIENT_ENTRIES_MAX_SIZE];
+  RdmnetEptClientEntry ept_client_entries[EPT_CLIENT_ENTRIES_MAX_SIZE];
   BrokerDynamicUidRequest dynamic_uid_requests[DYNAMIC_UID_REQUESTS_MAX_SIZE];
   BrokerDynamicUidMapping dynamic_uid_mappings[DYNAMIC_UID_MAPPINGS_MAX_SIZE];
   RdmUid fetch_uid_assignments[FETCH_UID_ASSIGNMENTS_MAX_SIZE];
@@ -120,22 +120,22 @@ extern char rpt_status_string_buffer[RPT_STATUS_STRING_MAXLEN + 1];
 
 #if RDMNET_DYNAMIC_MEM
 
-#define ALLOC_RPT_CLIENT_ENTRY() malloc(sizeof(RptClientEntry))
-#define ALLOC_EPT_CLIENT_ENTRY() malloc(sizeof(EptClientEntry))
+#define ALLOC_RPT_CLIENT_ENTRY() malloc(sizeof(RdmnetRptClientEntry))
+#define ALLOC_EPT_CLIENT_ENTRY() malloc(sizeof(RdmnetEptClientEntry))
 #define ALLOC_DYNAMIC_UID_REQUEST_ENTRY() malloc(sizeof(BrokerDynamicUidRequest))
 #define ALLOC_DYNAMIC_UID_MAPPING() malloc(sizeof(BrokerDynamicUidMapping))
 #define ALLOC_FETCH_UID_ASSIGNMENT() malloc(sizeof(RdmUid))
 #define ALLOC_RDM_BUFFER() malloc(sizeof(RdmBuffer))
 
-#define REALLOC_RPT_CLIENT_ENTRY(ptr, new_size) realloc((ptr), ((new_size) * sizeof(RptClientEntry)))
-#define REALLOC_EPT_CLIENT_ENTRY(ptr, new_size) realloc((ptr), ((new_size) * sizeof(EptClientEntry)))
+#define REALLOC_RPT_CLIENT_ENTRY(ptr, new_size) realloc((ptr), ((new_size) * sizeof(RdmnetRptClientEntry)))
+#define REALLOC_EPT_CLIENT_ENTRY(ptr, new_size) realloc((ptr), ((new_size) * sizeof(RdmnetEptClientEntry)))
 #define REALLOC_DYNAMIC_UID_REQUEST_ENTRY(ptr, new_size) realloc((ptr), ((new_size) * sizeof(BrokerDynamicUidRequest)))
 #define REALLOC_DYNAMIC_UID_MAPPING(ptr, new_size) realloc((ptr), ((new_size) * sizeof(BrokerDynamicUidMapping)))
 #define REALLOC_FETCH_UID_ASSIGNMENT(ptr, new_size) realloc((ptr), ((new_size) * sizeof(RdmUid)))
 #define REALLOC_RDM_BUFFER(ptr, new_size) realloc((ptr), ((new_size) * sizeof(RdmBuffer)))
 
-#define ALLOC_EPT_SUBPROT_LIST() malloc(sizeof(EptSubProtocol))
-#define REALLOC_EPT_SUBPROT_LIST(ptr, new_size) realloc((ptr), ((new_size) * sizeof(EptSubProtocol)))
+#define ALLOC_EPT_SUBPROT_LIST() malloc(sizeof(RdmnetEptSubProtocol))
+#define REALLOC_EPT_SUBPROT_LIST(ptr, new_size) realloc((ptr), ((new_size) * sizeof(RdmnetEptSubProtocol)))
 #define FREE_EPT_SUBPROT_LIST(ptr) free(ptr)
 
 #define ALLOC_RPT_STATUS_STR(size) malloc(size)

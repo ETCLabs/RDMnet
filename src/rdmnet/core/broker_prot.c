@@ -182,7 +182,7 @@ etcpal_error_t send_client_connect(RdmnetConnection* conn, const BrokerClientCon
   if (IS_RPT_CLIENT_ENTRY(&data->client_entry))
   {
     // Pack and send the RPT client entry
-    const RptClientEntry* rpt_entry = GET_RPT_CLIENT_ENTRY(&data->client_entry);
+    const RdmnetRptClientEntry* rpt_entry = GET_RPT_CLIENT_ENTRY(&data->client_entry);
     cur_ptr = buf;
     etcpal_pack_u16b(cur_ptr, rpt_entry->uid.manu);
     cur_ptr += 2;
@@ -198,9 +198,9 @@ etcpal_error_t send_client_connect(RdmnetConnection* conn, const BrokerClientCon
   else  // is EPT client entry
   {
     // Pack and send the EPT client entry
-    const EptClientEntry* ept_entry = GET_EPT_CLIENT_ENTRY(&data->client_entry);
-    for (const EptSubProtocol* prot = ept_entry->protocols; prot < ept_entry->protocols + ept_entry->num_protocols;
-         ++prot)
+    const RdmnetEptClientEntry* ept_entry = GET_EPT_CLIENT_ENTRY(&data->client_entry);
+    for (const RdmnetEptSubProtocol* prot = ept_entry->protocols;
+         prot < ept_entry->protocols + ept_entry->num_protocols; ++prot)
     {
       cur_ptr = buf;
       etcpal_pack_u16b(cur_ptr, prot->manufacturer_id);
@@ -383,7 +383,7 @@ size_t broker_get_rpt_client_list_buffer_size(size_t num_client_entries)
  * \return Number of bytes packed, or 0 on error.
  */
 size_t broker_pack_rpt_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
-                                   const RptClientEntry* client_entries, size_t num_client_entries)
+                                   const RdmnetRptClientEntry* client_entries, size_t num_client_entries)
 {
   if (!buf || buflen < BROKER_PDU_FULL_HEADER_SIZE || !local_cid || !client_entries || num_client_entries == 0 ||
       (vector != VECTOR_BROKER_CONNECTED_CLIENT_LIST && vector != VECTOR_BROKER_CLIENT_ADD &&
@@ -406,7 +406,8 @@ size_t broker_pack_rpt_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid
     return 0;
   cur_ptr += data_size;
 
-  for (const RptClientEntry* cur_entry = client_entries; cur_entry < client_entries + num_client_entries; ++cur_entry)
+  for (const RdmnetRptClientEntry* cur_entry = client_entries; cur_entry < client_entries + num_client_entries;
+       ++cur_entry)
   {
     // Check bounds
     if (cur_ptr + RPT_CLIENT_ENTRY_SIZE > buf_end)
@@ -449,7 +450,7 @@ size_t broker_pack_rpt_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid
  * \return Number of bytes packed, or 0 on error.
  */
 size_t broker_pack_ept_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
-                                   const EptClientEntry* client_entries, size_t num_client_entries)
+                                   const RdmnetEptClientEntry* client_entries, size_t num_client_entries)
 {
   ETCPAL_UNUSED_ARG(buf);
   ETCPAL_UNUSED_ARG(buflen);

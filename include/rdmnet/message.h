@@ -225,7 +225,9 @@ typedef struct RdmnetDynamicUidAssignmentList
 /*! An RDMnet EPT data message received by a local component. */
 typedef struct RdmnetEptData
 {
-  /*! The manufacturer ID that identifies the EPT sub-protocol. */
+  /*! The CID of the EPT client that sent this data. */
+  EtcPalUuid source_cid;
+  /*! The ESTA manufacturer ID that identifies the EPT sub-protocol. */
   uint16_t manufacturer_id;
   /*! The protocol ID that identifies the EPT sub-protocol. */
   uint16_t protocol_id;
@@ -235,14 +237,62 @@ typedef struct RdmnetEptData
   size_t data_len;
 } RdmnetEptData;
 
+/*!
+ * \brief An EPT data message received over RDMnet and saved for later processing.
+ *
+ * This type is not used by the library API, but can come in handy if an application wants to queue
+ * or copy EPT data messages before acting on them. The data member is heap-allocated and owned; be
+ * sure to call rdmnet_free_saved_ept_data() to free this data before disposing of an instance.
+ */
+typedef struct RdmnetSavedEptData
+{
+  /*! The CID of the EPT client that sent this data. */
+  EtcPalUuid source_cid;
+  /*! The ESTA manufacturer ID that identifies the EPT sub-protocol. */
+  uint16_t manufacturer_id;
+  /*! The protocol ID that identifies the EPT sub-protocol. */
+  uint16_t protocol_id;
+  /*!
+   * The data associated with this EPT message. This pointer is owned and must be freed before this
+   * type goes out of scope using rdmnet_free_saved_ept_data().
+   */
+  const uint8_t* data;
+  /*! The length of the data associated with this EPT message. */
+  size_t data_len;
+} RdmnetSavedEptData;
+
 /*! An RDMnet EPT status message received by a local component. */
 typedef struct RdmnetEptStatus
 {
+  /*! The CID of the EPT client that sent this status message. */
+  EtcPalUuid source_cid;
   /*! A status code that indicates the specific error or status condition. */
   ept_status_code_t status_code;
   /*! An optional implementation-defined status string to accompany this status message. */
   const char* status_string;
 } RdmnetEptStatus;
+
+/*!
+ * \brief An EPT status received over RDMnet and saved for later processing.
+ *
+ * This type is not used by the library API, but can come in handy if an application wants to queue
+ * or copy EPT status messages before acting on them. The status_string member is heap-allocated
+ * and owned; be sure to call rdmnet_free_saved_ept_status() to free this data before disposing of
+ * an instance.
+ */
+typedef struct RdmnetSavedEptStatus
+{
+  /*! The CID of the EPT client that sent this status message. */
+  EtcPalUuid source_cid;
+  /*! A status code that indicates the specific error or status condition. */
+  ept_status_code_t status_code;
+  /*!
+   * An optional implementation-defined status string to accompany this status message. This
+   * pointer is owned and must be freed before this type goes out of scope using
+   * rdmnet_free_saved_ept_status().
+   */
+  const char* status_string;
+} RdmnetSavedEptStatus;
 
 /*! An RPT client type. */
 typedef enum
@@ -256,13 +306,13 @@ typedef enum
 } rpt_client_type_t;
 
 /*! A descriptive structure for an RPT client. */
-typedef struct RptClientEntry
+typedef struct RdmnetRptClientEntry
 {
   EtcPalUuid cid;         /*!< The client's Component Identifier (CID). */
   RdmUid uid;             /*!< The client's RDM UID. */
   rpt_client_type_t type; /*!< Whether the client is a controller or device. */
   EtcPalUuid binding_cid; /*!< An optional identifier for another component that the client is associated with. */
-} RptClientEntry;
+} RdmnetRptClientEntry;
 
 /*! The maximum length of an EPT sub-protocol string, including the null terminator. */
 #define EPT_PROTOCOL_STRING_PADDED_LENGTH 32
@@ -273,33 +323,33 @@ typedef struct RptClientEntry
  * EPT clients can implement multiple protocols, each of which is identified by a two-part
  * identifier including an ESTA manufacturer ID and a protocol ID.
  */
-typedef struct EptSubProtocol
+typedef struct RdmnetEptSubProtocol
 {
   /*! The ESTA manufacturer ID under which this protocol is namespaced. */
   uint16_t manufacturer_id;
   /*! The identifier for this protocol. */
   uint16_t protocol_id;
   /*! A descriptive string for the protocol. */
-  char protocol_string[EPT_PROTOCOL_STRING_PADDED_LENGTH];
-} EptSubProtocol;
+  const char* protocol_string;
+} RdmnetEptSubProtocol;
 
 /*! A descriptive structure for an EPT client. */
-typedef struct EptClientEntry
+typedef struct RdmnetEptClientEntry
 {
-  EtcPalUuid cid;            /*!< The client's Component Identifier (CID). */
-  EptSubProtocol* protocols; /*!< A list of EPT protocols that this client implements. */
-  size_t num_protocols;      /*!< The size of the protocols array. */
-} EptClientEntry;
+  EtcPalUuid cid;                  /*!< The client's Component Identifier (CID). */
+  RdmnetEptSubProtocol* protocols; /*!< A list of EPT protocols that this client implements. */
+  size_t num_protocols;            /*!< The size of the protocols array. */
+} RdmnetEptClientEntry;
 
 /*!
  * A structure that represents a list of RPT Client Entries. Represents the data for multiple
  * Broker Protocol messages: Connected Client List, Client Incremental Addition, Client Incremental
  * Deletion, and Client Entry Change.
  */
-typedef struct RptClientList
+typedef struct RdmnetRptClientList
 {
   /*! An array of RPT Client Entries. */
-  RptClientEntry* client_entries;
+  RdmnetRptClientEntry* client_entries;
   /*! The size of the client_entries array. */
   size_t num_client_entries;
   /*!
@@ -309,17 +359,17 @@ typedef struct RptClientList
    * another BrokerClientList is received with more_coming set to false.
    */
   bool more_coming;
-} RptClientList;
+} RdmnetRptClientList;
 
 /*!
  * A structure that represents a list of EPT Client Entries. Represents the data for multiple
  * Broker Protocol messages: Connected Client List, Client Incremental Addition, Client Incremental
  * Deletion, and Client Entry Change.
  */
-typedef struct EptClientList
+typedef struct RdmnetEptClientList
 {
   /*! An array of EPT Client Entries. */
-  EptClientEntry* client_entries;
+  RdmnetEptClientEntry* client_entries;
   /*! The size of the client_entries array. */
   size_t num_client_entries;
   /*!
@@ -329,7 +379,77 @@ typedef struct EptClientList
    * another BrokerClientList is received with more_coming set to false.
    */
   bool more_coming;
-} EptClientList;
+} RdmnetEptClientList;
+
+/*! An RDM command received from a remote LLRP Manager. */
+typedef struct LlrpRdmCommand
+{
+  /*! The CID of the LLRP Manager from which this command was received. */
+  EtcPalUuid source_cid;
+  /*! The sequence number received with this command, to be echoed in the corresponding response. */
+  uint32_t seq_num;
+  /*!
+   * An ID for the network interface on which this command was received. This helps the LLRP
+   * library send the response on the same interface on which it was received.
+   */
+  RdmnetMcastNetintId netint_id;
+  /*! The header information from the encapsulated RDM command. */
+  RdmCommandHeader rdm_header;
+  /*! Pointer to buffer containing any associated RDM parameter data. */
+  const uint8_t* data;
+  /*! The length of any associated RDM parameter data. */
+  uint8_t data_len;
+} LlrpRdmCommand;
+
+/*! An RDM command received from a remote LLRP Manager. */
+typedef struct LlrpSavedRdmCommand
+{
+  /*! The CID of the LLRP Manager from which this command was received. */
+  EtcPalUuid source_cid;
+  /*! The sequence number received with this command, to be echoed in the corresponding response. */
+  uint32_t seq_num;
+  /*!
+   * An ID for the network interface on which this command was received. This helps the LLRP
+   * library send the response on the same interface on which it was received.
+   */
+  RdmnetMcastNetintId netint_id;
+  /*! The header information from the encapsulated RDM command. */
+  RdmCommandHeader rdm_header;
+  /*! Pointer to buffer containing any associated RDM parameter data. */
+  uint8_t data[RDM_MAX_PDL];
+  /*! The length of any associated RDM parameter data. */
+  uint8_t data_len;
+} LlrpSavedRdmCommand;
+
+/*! An RDM response received from a remote LLRP Target. */
+typedef struct LlrpRdmResponse
+{
+  /*! The CID of the LLRP Target from which this command was received. */
+  EtcPalUuid source_cid;
+  /*! The sequence number of this response (to be associated with a previously-sent command). */
+  uint32_t seq_num;
+  /*! The header information from the encapsulated RDM response. */
+  RdmResponseHeader rdm_header;
+  /*! Any parameter data associated with the RDM response. */
+  const uint8_t* rdm_data;
+  /*! The length of the parameter data associated with the RDM response. */
+  uint8_t rdm_data_len;
+} LlrpRdmResponse;
+
+/*! An RDM command received from a remote LLRP Manager. */
+typedef struct LlrpSavedRdmResponse
+{
+  /*! The CID of the LLRP Target from which this command was received. */
+  EtcPalUuid source_cid;
+  /*! The sequence number of this response (to be associated with a previously-sent command). */
+  uint32_t seq_num;
+  /*! The header information from the encapsulated RDM response. */
+  RdmResponseHeader rdm_header;
+  /*! Any parameter data associated with the RDM response. */
+  uint8_t rdm_data[RDM_MAX_PDL];
+  /*! The length of the parameter data associated with the RDM response. */
+  uint8_t rdm_data_len;
+} LlrpSavedRdmResponse;
 
 etcpal_error_t rdmnet_save_rdm_command(const RdmnetRdmCommand* command, RdmnetSavedRdmCommand* saved_command);
 etcpal_error_t rdmnet_save_rdm_response(const RdmnetRdmResponse* response, RdmnetSavedRdmResponse* saved_response);
@@ -342,6 +462,21 @@ etcpal_error_t rdmnet_copy_saved_rpt_status(const RdmnetSavedRptStatus* saved_st
 
 etcpal_error_t rdmnet_free_saved_rdm_response(RdmnetSavedRdmResponse* saved_response);
 etcpal_error_t rdmnet_free_saved_rpt_status(RdmnetSavedRptStatus* saved_status);
+
+etcpal_error_t rdmnet_save_ept_data(const RdmnetEptData* data, RdmnetSavedEptData* saved_data);
+etcpal_error_t rdmnet_save_ept_status(const RdmnetEptStatus* status, RdmnetSavedEptStatus* saved_status);
+
+etcpal_error_t rdmnet_copy_saved_ept_data(const RdmnetSavedEptData* saved_data_old, RdmnetSavedEptData* saved_data_new);
+etcpal_error_t rdmnet_copy_saved_ept_status(const RdmnetSavedEptStatus* saved_status_old,
+                                            RdmnetEptStatus* saved_status_new);
+
+etcpal_error_t rdmnet_free_saved_ept_data(RdmnetSavedEptData* saved_data);
+etcpal_error_t rdmnet_free_saved_ept_status(RdmnetSavedEptStatus* saved_status);
+
+etcpal_error_t rdmnet_save_llrp_rdm_command(const LlrpRdmCommand* command, LlrpSavedRdmCommand* saved_command);
+etcpal_error_t rdmnet_save_llrp_rdm_response(const LlrpRdmResponse* response, LlrpSavedRdmResponse* saved_response);
+etcpal_error_t rdmnet_copy_saved_llrp_rdm_response(const LlrpSavedRdmResponse* saved_resp_old,
+                                                   LlrpSavedRdmResponse* saved_resp_new);
 
 #ifdef __cplusplus
 }

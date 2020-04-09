@@ -58,7 +58,7 @@ bool BrokerClient::PushPostSizeCheck(const etcpal::Uuid& sender_cid, const Broke
     {
       if (BROKER_GET_CLIENT_LIST(&msg)->client_protocol == kClientProtocolRPT)
       {
-        const RptClientList* rpt_list = BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&msg));
+        const RdmnetRptClientList* rpt_list = BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&msg));
         size_t bufsize = broker_get_rpt_client_list_buffer_size(rpt_list->num_client_entries);
         to_push.data = std::make_unique<uint8_t[]>(bufsize);
         if (to_push.data)

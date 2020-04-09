@@ -35,10 +35,10 @@
  * \ingroup rdmnet_api
  * \brief Implementation of EPT client functionality; see \ref using_ept_client.
  *
- * EPT clients use the Extensible Packet Tranpsort protocol to exchange opaque,
- * manufacturer-specific non-RDM data across the network infrastructure defined by RDMnet. EPT
- * clients participate in RDMnet scopes and exchange messages through an RDMnet broker, similarly
- * to RDMnet controllers and devices.
+ * EPT clients use the Extensible Packet Transport protocol to exchange opaque,
+ * manufacturer-specific non-RDM data across the network topology defined by RDMnet. EPT clients
+ * participate in RDMnet scopes and exchange messages through an RDMnet broker, similarly to
+ * RDMnet controllers and devices.
  *
  * See \ref using_ept_client for a detailed description of how to use this API.
  *
@@ -96,7 +96,7 @@ typedef void (*RdmnetEptClientDisconnectedCallback)(rdmnet_ept_client_t handle, 
 typedef void (*RdmnetEptClientClientListUpdateReceivedCallback)(rdmnet_ept_client_t handle,
                                                                 rdmnet_client_scope_t scope_handle,
                                                                 client_list_action_t list_action,
-                                                                const EptClientList* client_list, void* context);
+                                                                const RdmnetEptClientList* client_list, void* context);
 
 /*!
  * \brief EPT data has been received addressed to an EPT client.
@@ -142,6 +142,10 @@ typedef struct RdmnetEptClientConfig
   EtcPalUuid cid;
   /*! A set of callbacks for the client to receive RDMnet notifications. */
   RdmnetEptClientCallbacks callbacks;
+  /*! The list of EPT sub-protocols that this EPT client supports. */
+  const RdmnetEptSubProtocol* protocols;
+  /*! The size of the protocols array. */
+  size_t num_protocols;
 
   /************************************************************************************************
    * Optional Values
@@ -174,7 +178,8 @@ typedef struct RdmnetEptClientConfig
  *
  * To omit the enclosing brackets, use #RDMNET_EPT_CLIENT_CONFIG_DEFAULT_INIT.
  */
-#define RDMNET_EPT_CLIENT_CONFIG_DEFAULT_INIT_VALUES {{0}}, {NULL, NULL, NULL, NULL, NULL, NULL}, NULL, NULL, NULL
+#define RDMNET_EPT_CLIENT_CONFIG_DEFAULT_INIT_VALUES \
+  {{0}}, {NULL, NULL, NULL, NULL, NULL, NULL}, NULL, 0, NULL, NULL, NULL
 
 /*!
  * \brief A default-value initializer for an RdmnetEptClientConfig struct.

@@ -22,7 +22,10 @@
 #ifndef RDMNET_CPP_CLIENT_H_
 #define RDMNET_CPP_CLIENT_H_
 
+#include "etcpal/cpp/error.h"
 #include "etcpal/cpp/inet.h"
+#include "etcpal/cpp/uuid.h"
+#include "rdm/cpp/uid.h"
 #include "rdmnet/client.h"
 
 namespace rdmnet
@@ -84,6 +87,250 @@ constexpr DestinationAddr::DestinationAddr(const RdmUid& rdmnet_uid, uint16_t en
                                            uint16_t subdevice)
     : addr_{rdmnet_uid, endpoint, rdm_uid, subdevice}
 {
+}
+
+/// \ingroup rdmnet_cpp_common
+/// \brief Information about a successful connection to a broker delivered to an RDMnet callback function.
+///
+/// Not valid for use other than as a parameter to an RDMnet callback function. Extract the members
+/// to save them for later use.
+class ClientConnectedInfo
+{
+public:
+  /// Not default-constructible.
+  ClientConnectedInfo() = delete;
+  /// Not copyable.
+  ClientConnectedInfo(const ClientConnectedInfo& other) = delete;
+  /// Not copyable.
+  ClientConnectedInfo& operator=(const ClientConnectedInfo& other) = delete;
+
+  constexpr ClientConnectedInfo(const RdmnetClientConnectedInfo& c_info) noexcept;
+
+  constexpr etcpal::SockAddr broker_addr() const noexcept;
+  constexpr std::string broker_name() const;
+  constexpr const char* broker_name_c_str() const noexcept;
+  constexpr etcpal::Uuid broker_cid() const noexcept;
+  constexpr rdm::Uid broker_uid() const noexcept;
+
+  constexpr const RdmnetClientConnectedInfo& get() const noexcept;
+
+private:
+  const RdmnetClientConnectedInfo& info_;
+};
+
+/// Construct a ClientConnectedInfo which references an instance of the C RdmnetClientConnectedInfo type.
+constexpr ClientConnectedInfo::ClientConnectedInfo(const RdmnetClientConnectedInfo& c_info) noexcept : info_(c_info)
+{
+}
+
+/// Get the IP address and port of the remote broker to which we have connected.
+constexpr etcpal::SockAddr ClientConnectedInfo::broker_addr() const noexcept
+{
+  return info_.broker_addr;
+}
+
+/// Get the DNS name of the broker (if it was discovered via DNS-SD; otherwise this will be an empty string)
+constexpr std::string ClientConnectedInfo::broker_name() const
+{
+  return info_.broker_name;
+}
+
+/// Get the DNS name of the broker (if it was discovered via DNS-SD; otherwise this will be an empty string)
+constexpr const char* ClientConnectedInfo::broker_name_c_str() const noexcept
+{
+  return info_.broker_name;
+}
+
+/// Get the CID of the connected broker.
+constexpr etcpal::Uuid ClientConnectedInfo::broker_cid() const noexcept
+{
+  return info_.broker_cid;
+}
+
+/// Get the RDM UID of the connected broker.
+constexpr rdm::Uid ClientConnectedInfo::broker_uid() const noexcept
+{
+  return info_.broker_uid;
+}
+
+/// Get a const reference to the underlying C type.
+constexpr const RdmnetClientConnectedInfo& ClientConnectedInfo::get() const noexcept
+{
+  return info_;
+}
+
+/// \ingroup rdmnet_cpp_common
+/// \brief Information about a failed connection to a broker delivered to an RDMnet callback function.
+///
+/// Not valid for use other than as a parameter to an RDMnet callback function. Extract the members
+/// to save them for later use.
+class ClientConnectFailedInfo
+{
+public:
+  /// Not default-constructible.
+  ClientConnectFailedInfo() = delete;
+  /// Not copyable.
+  ClientConnectFailedInfo(const ClientConnectFailedInfo& other) = delete;
+  /// Not copyable.
+  ClientConnectFailedInfo& operator=(const ClientConnectFailedInfo& other) = delete;
+
+  constexpr ClientConnectFailedInfo(const RdmnetClientConnectFailedInfo& c_info) noexcept;
+
+  constexpr rdmnet_connect_fail_event_t event() const noexcept;
+  constexpr etcpal::Error socket_err() const noexcept;
+  constexpr rdmnet_connect_status_t rdmnet_reason() const noexcept;
+  constexpr bool will_retry() const noexcept;
+
+  constexpr bool HasSocketErr() const noexcept;
+  constexpr bool HasRdmnetReason() const noexcept;
+
+  constexpr const RdmnetClientConnectFailedInfo& get() const noexcept;
+
+private:
+  const RdmnetClientConnectFailedInfo& info_;
+};
+
+/// Construct a ClientConnectFailedInfo which references an instance of the C RdmnetClientConnectFailedInfo type.
+constexpr ClientConnectFailedInfo::ClientConnectFailedInfo(const RdmnetClientConnectFailedInfo& c_info) noexcept
+    : info_(c_info)
+{
+}
+
+/// Get the high-level reason that this connection failed.
+constexpr rdmnet_connect_fail_event_t ClientConnectFailedInfo::event() const noexcept
+{
+  return info_.event;
+}
+
+/// \brief Get the system error code associated with the failure.
+/// \details Valid if HasSocketErr() == true.
+constexpr etcpal::Error ClientConnectFailedInfo::socket_err() const noexcept
+{
+  return info_.socket_err;
+}
+
+/// \brief Get the reason given in the RDMnet-level connection refuse message.
+/// \details Valid if HasRdmnetReason() == true.
+constexpr rdmnet_connect_status_t ClientConnectFailedInfo::rdmnet_reason() const noexcept
+{
+  return info_.rdmnet_reason;
+}
+
+/// \brief Whether the connection will be retried automatically.
+///
+/// If this is true, the connection will be retried on the relevant scope; expect further
+/// notifications of connection success or failure. If false, the rdmnet_client_scope_t handle
+/// associated with the scope is invalidated, and the scope must be created again. This indicates
+/// that the connection failed for a reason that usually must be corrected by a user or application
+/// developer. Some possible reasons for this to be false include:
+/// - The wrong scope was specified for a statically-configured broker
+/// - A static UID was given that was invalid or duplicate with another UID in the system
+constexpr bool ClientConnectFailedInfo::will_retry() const noexcept
+{
+  return info_.will_retry;
+}
+
+/// Whether the value returned from socket_err() is valid.
+constexpr bool ClientConnectFailedInfo::HasSocketErr() const noexcept
+{
+  return (info_.event == kRdmnetConnectFailSocketFailure || info_.event == kRdmnetConnectFailTcpLevel);
+}
+
+/// Whether the value returned from rdmnet_reason() is valid.
+constexpr bool ClientConnectFailedInfo::HasRdmnetReason() const noexcept
+{
+  return (info_.event == kRdmnetConnectFailRejected);
+}
+
+/// Get a const reference to the underlying C type.
+constexpr const RdmnetClientConnectFailedInfo& ClientConnectFailedInfo::get() const noexcept
+{
+  return info_;
+}
+
+/// \ingroup rdmnet_cpp_common
+/// \brief Information about a disconnect event from a broker delivered to an RDMnet callback function.
+///
+/// Not valid for use other than as a parameter to an RDMnet callback function. Extract the members
+/// to save them for later use.
+class ClientDisconnectedInfo
+{
+public:
+  /// Not default-constructible.
+  ClientDisconnectedInfo() = delete;
+  /// Not copyable.
+  ClientDisconnectedInfo(const ClientDisconnectedInfo& other) = delete;
+  /// Not copyable.
+  ClientDisconnectedInfo& operator=(const ClientDisconnectedInfo& other) = delete;
+
+  constexpr ClientDisconnectedInfo(const RdmnetClientDisconnectedInfo& c_info) noexcept;
+
+  constexpr rdmnet_disconnect_event_t event() const noexcept;
+  constexpr etcpal::Error socket_err() const noexcept;
+  constexpr rdmnet_disconnect_reason_t rdmnet_reason() const noexcept;
+  constexpr bool will_retry() const noexcept;
+
+  constexpr bool HasSocketErr() const noexcept;
+  constexpr bool HasRdmnetReason() const noexcept;
+
+  constexpr const RdmnetClientDisconnectedInfo& get() const noexcept;
+
+private:
+  const RdmnetClientDisconnectedInfo& info_;
+};
+
+/// Construct a ClientDisconnectedInfo which references an instance of the C RdmnetClientDisconnectedInfo type.
+constexpr ClientDisconnectedInfo::ClientDisconnectedInfo(const RdmnetClientDisconnectedInfo& c_info) noexcept
+    : info_(c_info)
+{
+}
+
+/// Get the high-level reason for this disconnect.
+constexpr rdmnet_disconnect_event_t ClientDisconnectedInfo::event() const noexcept
+{
+  return info_.event;
+}
+
+/// \brief Get the system error code associated with the disconnect.
+/// \details Valid if HasSocketErr() == true.
+constexpr etcpal::Error ClientDisconnectedInfo::socket_err() const noexcept
+{
+  return info_.socket_err;
+}
+
+/// \brief Get the reason given in the RDMnet-level disconnect message.
+/// \details Valid if HasRdmnetReason() == true.
+constexpr rdmnet_disconnect_reason_t ClientDisconnectedInfo::rdmnet_reason() const noexcept
+{
+  return info_.rdmnet_reason;
+}
+
+/// \brief Whether the connection will be retried automatically.
+///
+/// There are currently no conditions that will cause this to be false; therefore, disconnection
+/// events after a successful connection will always lead to the connection being retried
+/// automatically. This accessor exists for potential future usage.
+constexpr bool ClientDisconnectedInfo::will_retry() const noexcept
+{
+  return info_.will_retry;
+}
+
+/// Whether the value returned from socket_err() is valid.
+constexpr bool ClientDisconnectedInfo::HasSocketErr() const noexcept
+{
+  return (info_.event == kRdmnetDisconnectAbruptClose);
+}
+
+/// Whether the value returned from rdmnet_reason() is valid.
+constexpr bool ClientDisconnectedInfo::HasRdmnetReason() const noexcept
+{
+  return (info_.event == kRdmnetDisconnectGracefulRemoteInitiated);
+}
+
+/// Get a const reference to the underlying C type.
+constexpr const RdmnetClientDisconnectedInfo& ClientDisconnectedInfo::get() const noexcept
+{
+  return info_;
 }
 
 /// \ingroup rdmnet_cpp_common

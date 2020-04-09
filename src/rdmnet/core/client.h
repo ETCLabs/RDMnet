@@ -272,7 +272,7 @@ typedef struct RdmnetRptClientConfig
 typedef struct RdmnetEptClientConfig
 {
   /*! An array of EPT sub-protocols that this EPT client uses. */
-  EptSubProtocol* protocols;
+  RdmnetEptSubProtocol* protocols;
   /*! The size of the protocols array. */
   size_t num_protocols;
   /*! A set of callbacks for the client to receive RDMnet notifications. */

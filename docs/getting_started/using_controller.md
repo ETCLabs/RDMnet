@@ -267,11 +267,11 @@ callback:
 <!-- CODE_BLOCK_START -->
 ```c
 void my_client_list_update_cb(rdmnet_controller_t handle, rdmnet_client_scope_t handle,
-                              client_list_action_t list_action, const RptClientList* list, void* context)
+                              client_list_action_t list_action, const RdmnetRptClientList* list, void* context)
 {
   // Check handles and/or context as necessary...
 
-  for (const RptClientEntry* entry = list->client_entries; entry < list->client_entries + list->num_client_entries;
+  for (const RdmnetRptClientEntry* entry = list->client_entries; entry < list->client_entries + list->num_client_entries;
        ++entry)
   {
     switch (list_action)
@@ -308,11 +308,11 @@ void my_client_list_update_cb(rdmnet_controller_t handle, rdmnet_client_scope_t 
 <!-- CODE_BLOCK_MID -->
 ```cpp
 void MyControllerNotifyHandler::HandleClientListUpdate(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
-                                                       client_list_action_t list_action, const RptClientList& list)
+                                                       client_list_action_t list_action, const RdmnetRptClientList& list)
 {
   // Check handles as necessary...
 
-  for (const RptClientEntry* entry = list.client_entries; entry < list.client_entries + list.num_client_entries;
+  for (const RdmnetRptClientEntry* entry = list.client_entries; entry < list.client_entries + list.num_client_entries;
        ++entry)
   {
     switch (list_action)
@@ -355,7 +355,7 @@ periodic callbacks notifying you of changes, with the #client_list_action_t set 
 shown above.
 
 Clients include both devices and other controllers; to differentiate the two, check the type field
-in each RptClientEntry structure.
+in each RdmnetRptClientEntry structure.
 
 ## Sending RDM Commands
 

@@ -50,8 +50,8 @@ typedef enum
 
 typedef union
 {
-  RptClientEntry rpt;
-  EptClientEntry ept;
+  RdmnetRptClientEntry rpt;
+  RdmnetEptClientEntry ept;
 } ClientEntryUnion;
 
 /*! A generic client entry which could represent either an RPT or EPT client. */
@@ -64,37 +64,37 @@ typedef struct ClientEntry
 } ClientEntry;
 
 /*!
- * \brief Determine whether a ClientEntry contains an RptClientEntry.
+ * \brief Determine whether a ClientEntry contains an RdmnetRptClientEntry.
  * \param clientryptr Pointer to ClientEntry.
- * \return (bool) whether the ClientEntry contains an RptClientEntry.
+ * \return (bool) whether the ClientEntry contains an RdmnetRptClientEntry.
  */
 #define IS_RPT_CLIENT_ENTRY(clientryptr) ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_RPT)
 
 /*!
- * \brief Get the encapsulated RptClientEntry from a ClientEntry.
+ * \brief Get the encapsulated RdmnetRptClientEntry from a ClientEntry.
  * \param clientryptr Pointer to ClientEntry.
- * \return Pointer to encapsulated RptClientEntry structure (RptClientEntry*).
+ * \return Pointer to encapsulated RdmnetRptClientEntry structure (RdmnetRptClientEntry*).
  */
 #define GET_RPT_CLIENT_ENTRY(clientryptr) (&(clientryptr)->data.rpt)
 
 /*!
- * \brief Determine whether a ClientEntry contains an EptClientEntry.
+ * \brief Determine whether a ClientEntry contains an RdmnetEptClientEntry.
  * \param clientryptr Pointer to ClientEntry.
- * \return (bool) whether the ClientEntry contains an EptClientEntry.
+ * \return (bool) whether the ClientEntry contains an RdmnetEptClientEntry.
  */
 #define IS_EPT_CLIENT_ENTRY(clientryptr) ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_EPT)
 
 /*!
- * \brief Get the encapsulated EptClientEntry from a ClientEntry.
+ * \brief Get the encapsulated RdmnetEptClientEntry from a ClientEntry.
  * \param clientryptr Pointer to ClientEntry.
- * \return Pointer to encapsulated EptClientEntry structure (EptClientEntry*).
+ * \return Pointer to encapsulated RdmnetEptClientEntry structure (RdmnetEptClientEntry*).
  */
 #define GET_EPT_CLIENT_ENTRY(clientryptr) (&(clientryptr)->data.ept)
 
 bool create_rpt_client_entry(const EtcPalUuid* cid, const RdmUid* uid, rpt_client_type_t client_type,
-                             const EtcPalUuid* binding_cid, RptClientEntry* entry);
-bool create_ept_client_entry(const EtcPalUuid* cid, const EptSubProtocol* protocol_arr, size_t protocol_arr_size,
-                             EptClientEntry* entry);
+                             const EtcPalUuid* binding_cid, RdmnetRptClientEntry* entry);
+bool create_ept_client_entry(const EtcPalUuid* cid, const RdmnetEptSubProtocol* protocol_arr, size_t protocol_arr_size,
+                             RdmnetEptClientEntry* entry);
 
 #ifdef __cplusplus
 }

@@ -79,9 +79,9 @@ static size_t parse_fetch_dynamic_uid_assignment_list(GenericListState* lstate, 
 
 // Helpers for parsing client list messages
 static size_t parse_rpt_client_list(ClientListState* clstate, const uint8_t* data, size_t data_len,
-                                    RptClientList* clist, parse_result_t* result);
-static RptClientEntry* alloc_next_rpt_client_entry(RptClientList* clist);
-static EptClientEntry* alloc_next_ept_client_entry(EptClientList* clist);
+                                    RdmnetRptClientList* clist, parse_result_t* result);
+static RdmnetRptClientEntry* alloc_next_rpt_client_entry(RdmnetRptClientList* clist);
+static RdmnetEptClientEntry* alloc_next_ept_client_entry(RdmnetEptClientList* clist);
 
 /*************************** Function definitions ****************************/
 
@@ -682,7 +682,7 @@ size_t parse_single_client_entry(ClientEntryState* cstate, const uint8_t* data, 
         if (remaining_len >= RPT_CLIENT_ENTRY_DATA_SIZE)
         {
           // Parse the RPT Client Entry data
-          RptClientEntry* rpt_entry = (RptClientEntry*)entry;
+          RdmnetRptClientEntry* rpt_entry = (RdmnetRptClientEntry*)entry;
           const uint8_t* cur_ptr = &data[bytes_parsed];
 
           rpt_entry->uid.manu = etcpal_unpack_u16b(cur_ptr);
@@ -757,7 +757,7 @@ size_t parse_client_list(ClientListState* clstate, const uint8_t* data, size_t d
   return bytes_parsed;
 }
 
-size_t parse_rpt_client_list(ClientListState* clstate, const uint8_t* data, size_t data_len, RptClientList* clist,
+size_t parse_rpt_client_list(ClientListState* clstate, const uint8_t* data, size_t data_len, RdmnetRptClientList* clist,
                              parse_result_t* result)
 {
   size_t bytes_parsed = 0;
@@ -767,7 +767,7 @@ size_t parse_rpt_client_list(ClientListState* clstate, const uint8_t* data, size
   {
     size_t remaining_len = data_len - bytes_parsed;
     const uint8_t* cur_data_ptr = &data[bytes_parsed];
-    RptClientEntry* next_entry = NULL;
+    RdmnetRptClientEntry* next_entry = NULL;
 
     if (!clstate->block.parsed_header)
     {
@@ -847,11 +847,11 @@ size_t parse_rpt_client_list(ClientListState* clstate, const uint8_t* data, size
   return bytes_parsed;
 }
 
-RptClientEntry* alloc_next_rpt_client_entry(RptClientList* clist)
+RdmnetRptClientEntry* alloc_next_rpt_client_entry(RdmnetRptClientList* clist)
 {
   if (clist->client_entries)
   {
-    RptClientEntry* new_arr = REALLOC_RPT_CLIENT_ENTRY(clist->client_entries, clist->num_client_entries + 1);
+    RdmnetRptClientEntry* new_arr = REALLOC_RPT_CLIENT_ENTRY(clist->client_entries, clist->num_client_entries + 1);
     if (new_arr)
     {
       clist->client_entries = new_arr;
@@ -871,11 +871,11 @@ RptClientEntry* alloc_next_rpt_client_entry(RptClientList* clist)
   }
 }
 
-EptClientEntry* alloc_next_ept_client_entry(EptClientList* clist)
+RdmnetEptClientEntry* alloc_next_ept_client_entry(RdmnetEptClientList* clist)
 {
   if (clist->client_entries)
   {
-    EptClientEntry* new_arr = REALLOC_EPT_CLIENT_ENTRY(clist->client_entries, clist->num_client_entries + 1);
+    RdmnetEptClientEntry* new_arr = REALLOC_EPT_CLIENT_ENTRY(clist->client_entries, clist->num_client_entries + 1);
     if (new_arr)
     {
       clist->client_entries = new_arr;

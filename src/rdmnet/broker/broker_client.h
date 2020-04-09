@@ -133,7 +133,7 @@ private:
 class RPTClient : public BrokerClient
 {
 public:
-  RPTClient(const RptClientEntry& client_entry, const BrokerClient& prev_client)
+  RPTClient(const RdmnetRptClientEntry& client_entry, const BrokerClient& prev_client)
       : BrokerClient(prev_client)
       , uid(client_entry.uid)
       , client_type(client_entry.type)
@@ -169,7 +169,7 @@ class RPTController : public RPTClient
 {
 public:
   // TODO max queue size
-  RPTController(size_t max_q_size, const RptClientEntry& cli_entry, const BrokerClient& prev_client)
+  RPTController(size_t max_q_size, const RdmnetRptClientEntry& cli_entry, const BrokerClient& prev_client)
       : RPTClient(cli_entry, prev_client)
   {
     max_q_size_ = max_q_size;
@@ -188,7 +188,7 @@ public:
 class RPTDevice : public RPTClient
 {
 public:
-  RPTDevice(size_t max_q_size, const RptClientEntry& cli_entry, const BrokerClient& prev_client)
+  RPTDevice(size_t max_q_size, const RdmnetRptClientEntry& cli_entry, const BrokerClient& prev_client)
       : RPTClient(cli_entry, prev_client)
   {
     max_q_size_ = max_q_size;

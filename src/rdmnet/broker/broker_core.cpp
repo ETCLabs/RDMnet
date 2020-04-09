@@ -314,20 +314,20 @@ void BrokerCore::SendClientList(int conn)
   if (to_client != clients_.end())
   {
     if (to_client->second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
-      SendRptClientList(bmsg, static_cast<RPTClient&>(*to_client->second));
+      SendRdmnetRptClientList(bmsg, static_cast<RPTClient&>(*to_client->second));
     else
-      SendEptClientList(bmsg, static_cast<EPTClient&>(*to_client->second));
+      SendRdmnetEptClientList(bmsg, static_cast<EPTClient&>(*to_client->second));
   }
 }
 
-void BrokerCore::SendRptClientList(BrokerMessage& bmsg, RPTClient& to_cli)
+void BrokerCore::SendRdmnetRptClientList(BrokerMessage& bmsg, RPTClient& to_cli)
 {
-  std::vector<RptClientEntry> entries;
+  std::vector<RdmnetRptClientEntry> entries;
   entries.reserve(rpt_clients_.size());
   for (auto& client : rpt_clients_)
   {
     entries.emplace_back();
-    RptClientEntry& rpt_entry = entries.back();
+    RdmnetRptClientEntry& rpt_entry = entries.back();
     RPTClient& rpt_cli = static_cast<RPTClient&>(*client.second);
 
     rpt_entry.cid = rpt_cli.cid.get();
@@ -343,11 +343,11 @@ void BrokerCore::SendRptClientList(BrokerMessage& bmsg, RPTClient& to_cli)
   }
 }
 
-void BrokerCore::SendEptClientList(BrokerMessage& /*bmsg*/, EPTClient& /*to_cli*/)
+void BrokerCore::SendRdmnetEptClientList(BrokerMessage& /*bmsg*/, EPTClient& /*to_cli*/)
 {
 }
 
-void BrokerCore::SendClientsAdded(rdmnet_conn_t conn_to_ignore, std::vector<RptClientEntry>& entries)
+void BrokerCore::SendClientsAdded(rdmnet_conn_t conn_to_ignore, std::vector<RdmnetRptClientEntry>& entries)
 {
   BrokerMessage bmsg;
   bmsg.vector = VECTOR_BROKER_CLIENT_ADD;
@@ -362,7 +362,7 @@ void BrokerCore::SendClientsAdded(rdmnet_conn_t conn_to_ignore, std::vector<RptC
   }
 }
 
-void BrokerCore::SendClientsRemoved(std::vector<RptClientEntry>& entries)
+void BrokerCore::SendClientsRemoved(std::vector<RdmnetRptClientEntry>& entries)
 {
   BrokerMessage bmsg;
   bmsg.vector = VECTOR_BROKER_CLIENT_REMOVE;
@@ -432,12 +432,12 @@ void BrokerCore::ProcessConnectRequest(int conn, const BrokerClientConnectMsg* c
   }
 }
 
-bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const RptClientEntry& client_entry,
+bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const RdmnetRptClientEntry& client_entry,
                                           rdmnet_connect_status_t& connect_status)
 {
   bool continue_adding = true;
   // We need to make a copy of the data because we might be changing the UID value
-  RptClientEntry updated_client_entry = client_entry;
+  RdmnetRptClientEntry updated_client_entry = client_entry;
 
   if (!components_.conn_interface->SetBlocking(handle, false))
   {
@@ -569,7 +569,7 @@ bool BrokerCore::ProcessRPTConnectRequest(rdmnet_conn_t handle, const RptClientE
     }
 
     // Update everyone
-    std::vector<RptClientEntry> entries;
+    std::vector<RdmnetRptClientEntry> entries;
     entries.push_back(updated_client_entry);
     SendClientsAdded(handle, entries);
   }
@@ -956,7 +956,7 @@ void BrokerCore::MarkConnForDestruction(rdmnet_conn_t conn, SendDisconnect send_
 void BrokerCore::DestroyMarkedClientSockets()
 {
   etcpal::WriteGuard clients_write(client_lock_);
-  std::vector<RptClientEntry> rpt_entries;
+  std::vector<RdmnetRptClientEntry> rpt_entries;
 
   if (!clients_to_destroy_.empty())
   {
@@ -975,7 +975,7 @@ void BrokerCore::DestroyMarkedClientSockets()
             devices_.erase(to_destroy);
 
           rpt_entries.emplace_back();
-          RptClientEntry& entry = rpt_entries.back();
+          RdmnetRptClientEntry& entry = rpt_entries.back();
           entry.cid = rptcli->cid.get();
           entry.uid = rptcli->uid;
           entry.type = rptcli->client_type;

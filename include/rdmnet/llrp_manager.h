@@ -47,6 +47,11 @@
 extern "C" {
 #endif
 
+/*! A handle for an instance of LLRP Manager functionality. */
+typedef int llrp_manager_t;
+/*! An invalid LLRP manager handle value. */
+#define LLRP_MANAGER_INVALID -1
+
 /*!
  * \brief An LLRP target has been discovered.
  * \param handle Handle to the LLRP manager which has discovered the target.

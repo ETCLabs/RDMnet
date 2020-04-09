@@ -31,34 +31,36 @@ extern "C" {
 #endif
 
 DECLARE_FAKE_VALUE_FUNC(size_t, broker_get_rpt_client_list_buffer_size, size_t);
-DECLARE_FAKE_VALUE_FUNC(size_t, broker_get_ept_client_list_buffer_size, const EptClientEntry*, size_t);
+DECLARE_FAKE_VALUE_FUNC(size_t, broker_get_ept_client_list_buffer_size, const RdmnetEptClientEntry*, size_t);
 DECLARE_FAKE_VALUE_FUNC(size_t, broker_get_uid_assignment_list_buffer_size, size_t);
 
-DECLARE_FAKE_VALUE_FUNC(size_t, broker_pack_connect_reply, uint8_t*, size_t, const EtcPalUuid*, const BrokerConnectReplyMsg*);
+DECLARE_FAKE_VALUE_FUNC(size_t, broker_pack_connect_reply, uint8_t*, size_t, const EtcPalUuid*,
+                        const BrokerConnectReplyMsg*);
 DECLARE_FAKE_VALUE_FUNC(size_t, broker_pack_rpt_client_list, uint8_t*, size_t, const EtcPalUuid*, uint16_t,
-                        const RptClientEntry*, size_t);
+                        const RdmnetRptClientEntry*, size_t);
 DECLARE_FAKE_VALUE_FUNC(size_t, broker_pack_ept_client_list, uint8_t*, size_t, const EtcPalUuid*, uint16_t,
-                        const EptClientEntry*, size_t);
+                        const RdmnetEptClientEntry*, size_t);
 DECLARE_FAKE_VALUE_FUNC(size_t, broker_pack_uid_assignment_list, uint8_t*, size_t, const EtcPalUuid*,
                         const BrokerDynamicUidMapping*, size_t);
 
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, broker_send_connect_reply, rdmnet_conn_t, const EtcPalUuid*, const BrokerConnectReplyMsg*);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, broker_send_connect_reply, rdmnet_conn_t, const EtcPalUuid*,
+                        const BrokerConnectReplyMsg*);
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, broker_send_fetch_client_list, rdmnet_conn_t, const EtcPalUuid*);
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, broker_send_request_dynamic_uids, rdmnet_conn_t, const EtcPalUuid*,
                         const BrokerDynamicUidRequest*, size_t);
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, broker_send_fetch_uid_assignment_list, rdmnet_conn_t, const EtcPalUuid*, const RdmUid*,
-                        size_t);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, broker_send_fetch_uid_assignment_list, rdmnet_conn_t, const EtcPalUuid*,
+                        const RdmUid*, size_t);
 
 #define RDMNET_CORE_BROKER_PROT_DO_FOR_ALL_FAKES(operation) \
-  operation(broker_get_rpt_client_list_buffer_size);                       \
-  operation(broker_get_ept_client_list_buffer_size);                       \
-  operation(broker_get_uid_assignment_list_buffer_size);           \
-  operation(broker_pack_connect_reply);                            \
-  operation(broker_pack_rpt_client_list);                          \
-  operation(broker_pack_ept_client_list);                          \
-  operation(broker_pack_uid_assignment_list);              \
-  operation(broker_send_connect_reply);                            \
-  operation(broker_send_fetch_client_list);                        \
+  operation(broker_get_rpt_client_list_buffer_size);        \
+  operation(broker_get_ept_client_list_buffer_size);        \
+  operation(broker_get_uid_assignment_list_buffer_size);    \
+  operation(broker_pack_connect_reply);                     \
+  operation(broker_pack_rpt_client_list);                   \
+  operation(broker_pack_ept_client_list);                   \
+  operation(broker_pack_uid_assignment_list);               \
+  operation(broker_send_connect_reply);                     \
+  operation(broker_send_fetch_client_list);                 \
   operation(broker_send_fetch_uid_assignment_list)
 
 #ifdef __cplusplus

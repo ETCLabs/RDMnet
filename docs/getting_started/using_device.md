@@ -13,9 +13,7 @@ happens when the library logs messages. Optionally pass an EtcPalLogParams struc
 functionality. This structure can be shared across different ETC library modules.
 
 The init function by default starts a background thread for handling periodic RDMnet functionality
-and receiving data (this behavior can be overridden at compile-time if an app wants more control
-over its threading, see #RDMNET_USE_TICK_THREAD and rdmnet_core_tick()). The deinit function joins
-this thread.
+and receiving data. The deinit function joins this thread.
 
 <!-- CODE_BLOCK_START -->
 ```c
@@ -25,12 +23,12 @@ this thread.
 EtcPalLogParams log_params;
 // Initialize log_params...
 
-etcpal_error_t init_result = rdmnet_core_init(&log_params, NULL);
+etcpal_error_t init_result = rdmnet_init(&log_params, NULL);
 // Or, to init without worrying about logs from the RDMnet library...
-etcpal_error_t init_result = rdmnet_core_init(NULL, NULL);
+etcpal_error_t init_result = rdmnet_init(NULL, NULL);
 
 // In some function called at shutdown...
-rdmnet_core_deinit();
+rdmnet_deinit();
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp

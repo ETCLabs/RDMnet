@@ -42,6 +42,22 @@ typedef int rdmnet_client_scope_t;
 #define RDMNET_CLIENT_SCOPE_INVALID -1
 
 /*!
+ * How to apply the client entries to the existing client list in a client_list_update_received
+ * callback.
+ */
+typedef enum
+{
+  /*! The client entries should be appended to the existing client list. */
+  kRdmnetClientListAppend = VECTOR_BROKER_CLIENT_ADD,
+  /*! The client entries should be removed from the existing client list. */
+  kRdmnetClientListRemove = VECTOR_BROKER_CLIENT_REMOVE,
+  /*! The client entries should be updated in the existing client list. */
+  kRdmnetClientListUpdate = VECTOR_BROKER_CLIENT_ENTRY_CHANGE,
+  /*! The existing client list should be replaced wholesale with this one. */
+  kRdmnetClientListReplace = VECTOR_BROKER_CONNECTED_CLIENT_LIST
+} client_list_action_t;
+
+/*!
  * \brief A destination address for an RDM command in RDMnet's RPT protocol.
  * \details See \ref roles_and_addressing and \ref devices_and_gateways for more information.
  */
@@ -82,13 +98,13 @@ typedef struct RdmnetClientConnectFailedInfo
   /*! The high-level reason that this connection failed. */
   rdmnet_connect_fail_event_t event;
   /*!
-   * The system error code associated with the failure; valid if event is
-   * kRdmnetConnectFailSocketFailure or kRdmnetConnectFailTcpLevel.
+   * \brief The system error code associated with the failure.
+   * \details Valid if event is kRdmnetConnectFailSocketFailure or kRdmnetConnectFailTcpLevel.
    */
   etcpal_error_t socket_err;
   /*!
-   * The reason given in the RDMnet-level connection refuse message. Valid if event is
-   * kRdmnetConnectFailRejected.
+   * \brief The reason given in the RDMnet-level connection refuse message.
+   * \details Valid if event is kRdmnetConnectFailRejected.
    */
   rdmnet_connect_status_t rdmnet_reason;
   /*!
@@ -105,20 +121,22 @@ typedef struct RdmnetClientConnectFailedInfo
   bool will_retry;
 } RdmnetClientConnectFailedInfo;
 
-/*! Information provided by the library about an RDMnet client connection that disconnected after a
- *  successful connection. */
+/*!
+ * Information provided by the library about an RDMnet client connection that disconnected after a
+ * successful connection.
+ */
 typedef struct RdmnetClientDisconnectedInfo
 {
   /*! The high-level reason for the disconnect. */
   rdmnet_disconnect_event_t event;
   /*!
-   * The system error code associated with the disconnect; valid if event is
-   * kRdmnetDisconnectAbruptClose.
+   * \brief The system error code associated with the disconnect.
+   * \details Valid if event is kRdmnetDisconnectAbruptClose.
    */
   etcpal_error_t socket_err;
   /*!
-   * The reason given in the RDMnet-level disconnect message. Valid if event is
-   * kRdmnetDisconnectGracefulRemoteInitiated.
+   * \brief The reason given in the RDMnet-level disconnect message.
+   * \details Valid if event is kRdmnetDisconnectGracefulRemoteInitiated.
    */
   rdmnet_disconnect_reason_t rdmnet_reason;
   /*!

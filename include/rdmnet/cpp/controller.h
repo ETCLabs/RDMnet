@@ -70,12 +70,14 @@ public:
   /// \param handle Handle to controller instance which has received the RDM command.
   /// \param scope_handle Handle to the scope on which the RDM command was received.
   /// \param cmd The RDM command data.
+  /// \return The action to take in response to this RDM command.
   virtual rdmnet::ResponseAction HandleRdmCommand(ControllerHandle handle, ScopeHandle scope_handle,
                                                   const RdmCommand& cmd) = 0;
 
   /// \brief An RDM command has been received over LLRP, addressed to a controller.
   /// \param handle Handle to controller instance which has received the RDM command.
   /// \param cmd The RDM command data.
+  /// \return The action to take in response to this LLRP RDM command.
   virtual rdmnet::ResponseAction HandleLlrpRdmCommand(ControllerHandle handle, const llrp::RdmCommand& cmd)
   {
     ETCPAL_UNUSED_ARG(handle);
@@ -96,21 +98,21 @@ public:
   /// \param scope_handle Handle to the scope on which the controller has connected.
   /// \param info More information about the successful connection.
   virtual void HandleConnectedToBroker(ControllerHandle handle, ScopeHandle scope_handle,
-                                       const RdmnetClientConnectedInfo& info) = 0;
+                                       const ClientConnectedInfo& info) = 0;
 
   /// \brief A connection attempt failed between a controller and a broker.
   /// \param handle Handle to controller instance which has failed to connect.
   /// \param scope_handle Handle to the scope on which the connection failed.
   /// \param info More information about the failed connection.
   virtual void HandleBrokerConnectFailed(ControllerHandle handle, ScopeHandle scope_handle,
-                                         const RdmnetClientConnectFailedInfo& info) = 0;
+                                         const ClientConnectFailedInfo& info) = 0;
 
   /// \brief A controller which was previously connected to a broker has disconnected.
   /// \param handle Handle to controller instance which has disconnected.
   /// \param scope_handle Handle to the scope on which the disconnect occurred.
   /// \param info More information about the disconnect event.
   virtual void HandleDisconnectedFromBroker(ControllerHandle handle, ScopeHandle scope_handle,
-                                            const RdmnetClientDisconnectedInfo& info) = 0;
+                                            const ClientDisconnectedInfo& info) = 0;
 
   /// \brief A client list update has been received from a broker.
   /// \param handle Handle to controller instance which has received the client list update.
@@ -119,7 +121,7 @@ public:
   ///                    cached list.
   /// \param list The list of updates.
   virtual void HandleClientListUpdate(ControllerHandle handle, ScopeHandle scope_handle,
-                                      client_list_action_t list_action, const RptClientList& list) = 0;
+                                      client_list_action_t list_action, const RdmnetRptClientList& list) = 0;
 
   /// \brief An RDM response has been received.
   /// \param handle Handle to controller instance which has received the RDM response.
@@ -189,7 +191,7 @@ inline ControllerSettings::ControllerSettings(const etcpal::Uuid& new_cid, uint1
 }
 
 /// Determine whether a ControllerSettings instance contains valid data for RDMnet operation.
-bool ControllerSettings::IsValid() const
+inline bool ControllerSettings::IsValid() const
 {
   return (!cid.IsNull() && (uid.IsStatic() || uid.IsDynamicUidRequest()));
 }
@@ -342,8 +344,8 @@ extern "C" inline void ControllerLibCbDisconnected(rdmnet_controller_t handle, r
 }
 
 extern "C" inline void ControllerLibCbClientListUpdate(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                       client_list_action_t list_action, const RptClientList* list,
-                                                       void* context)
+                                                       client_list_action_t list_action,
+                                                       const RdmnetRptClientList* list, void* context)
 {
   if (list && context)
   {

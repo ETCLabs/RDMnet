@@ -79,7 +79,9 @@ typedef enum
   /*! The destination CID in the EPT PDU could not be found. */
   kEptStatusUnknownCid = VECTOR_EPT_STATUS_UNKNOWN_CID,
   /*! An EPT PDU was received with an unsupported Vector. */
-  kEptStatusUnknownVector = VECTOR_EPT_STATUS_UNKNOWN_VECTOR
+  kEptStatusUnknownVector = VECTOR_EPT_STATUS_UNKNOWN_VECTOR,
+
+  kEptNumStatusCodes
 } ept_status_code_t;
 
 /*! Disconnect reason defines for the BrokerDisconnectMsg. */
@@ -386,6 +388,7 @@ etcpal_error_t rdmnet_init(const EtcPalLogParams* log_params, const RdmnetNetint
 void rdmnet_deinit(void);
 
 const char* rdmnet_rpt_status_code_to_string(rpt_status_code_t code);
+const char* rdmnet_ept_status_code_to_string(ept_status_code_t code);
 const char* rdmnet_connect_fail_event_to_string(rdmnet_connect_fail_event_t event);
 const char* rdmnet_disconnect_event_to_string(rdmnet_disconnect_event_t event);
 const char* rdmnet_connect_status_to_string(rdmnet_connect_status_t code);

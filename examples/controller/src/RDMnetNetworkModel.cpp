@@ -341,7 +341,7 @@ void RDMnetNetworkModel::HandleDisconnectedFromBroker(rdmnet::Controller& contro
   }
 }
 
-void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem* broker_item, const std::vector<RptClientEntry>& list)
+void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem* broker_item, const std::vector<RdmnetRptClientEntry>& list)
 {
   // Update the Controller's discovered list to match
   if (list.size() > 0)
@@ -389,7 +389,8 @@ void RDMnetNetworkModel::processAddRDMnetClients(BrokerItem* broker_item, const 
   }
 }
 
-void RDMnetNetworkModel::processRemoveRDMnetClients(BrokerItem* broker_item, const std::vector<RptClientEntry>& list)
+void RDMnetNetworkModel::processRemoveRDMnetClients(BrokerItem* broker_item,
+                                                    const std::vector<RdmnetRptClientEntry>& list)
 {
   // Update the Controller's discovered list by removing these newly lost
   // clients
@@ -990,7 +991,7 @@ RDMnetNetworkModel* RDMnetNetworkModel::makeRDMnetNetworkModel(rdmnet::Controlle
   model->setHeaderData(0, Qt::Orientation::Horizontal, tr("Property"));
   model->setHeaderData(1, Qt::Orientation::Horizontal, tr("Value"));
 
-  qRegisterMetaType<std::vector<RptClientEntry>>("std::vector<RptClientEntry>");
+  qRegisterMetaType<std::vector<RdmnetRptClientEntry>>("std::vector<RdmnetRptClientEntry>");
   qRegisterMetaType<std::vector<std::pair<uint16_t, uint8_t>>>("std::vector<std::pair<uint16_t, uint8_t>>");
   qRegisterMetaType<std::vector<RdmUid>>("std::vector<RdmUid>");
   qRegisterMetaType<std::vector<PropertyItem*>*>("std::vector<PropertyItem*>*");
@@ -1344,13 +1345,13 @@ bool RDMnetNetworkModel::setData(const QModelIndex& index, const QVariant& value
 }
 
 void RDMnetNetworkModel::HandleClientListUpdate(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
-                                                client_list_action_t action, const RptClientList& list)
+                                                client_list_action_t action, const RdmnetRptClientList& list)
 {
   etcpal::ReadGuard conn_read(conn_lock_);
 
   BrokerItem* broker_item = broker_connections_[scope_handle];
 
-  std::vector<RptClientEntry> entries;
+  std::vector<RdmnetRptClientEntry> entries;
   entries.assign(list.client_entries, list.client_entries + list.num_client_entries);
 
   // TODO the four possible actions need to be handled properly

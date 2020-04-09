@@ -31,7 +31,6 @@
 #include "rdm/uid.h"
 #include "rdmnet/client.h"
 #include "rdmnet/message.h"
-#include "rdmnet/llrp.h"
 
 /*!
  * \defgroup rdmnet_controller Controller API
@@ -55,20 +54,6 @@ extern "C" {
 typedef struct RdmnetController* rdmnet_controller_t;
 /*! An invalid RDMnet controller handle value. */
 #define RDMNET_CONTROLLER_INVALID NULL
-
-/*! How to apply the client entries to the existing client list in a client_list_update_received
- *  callback. */
-typedef enum
-{
-  /*! The client entries should be appended to the existing client list. */
-  kRdmnetClientListAppend = VECTOR_BROKER_CLIENT_ADD,
-  /*! The client entries should be removed from the existing client list. */
-  kRdmnetClientListRemove = VECTOR_BROKER_CLIENT_REMOVE,
-  /*! The client entries should be updated in the existing client list. */
-  kRdmnetClientListUpdate = VECTOR_BROKER_CLIENT_ENTRY_CHANGE,
-  /*! The existing client list should be replaced wholesale with this one. */
-  kRdmnetClientListReplace = VECTOR_BROKER_CONNECTED_CLIENT_LIST
-} client_list_action_t;
 
 /*!
  * \brief A controller has successfully connected to a broker.
@@ -112,7 +97,7 @@ typedef void (*RdmnetControllerDisconnectedCallback)(rdmnet_controller_t handle,
 typedef void (*RdmnetControllerClientListUpdateReceivedCallback)(rdmnet_controller_t handle,
                                                                  rdmnet_client_scope_t scope_handle,
                                                                  client_list_action_t list_action,
-                                                                 const RptClientList* client_list, void* context);
+                                                                 const RdmnetRptClientList* client_list, void* context);
 
 /*!
  * \brief An RDM response has been received.

@@ -21,7 +21,7 @@
 #include "rdmnet/core/client_entry.h"
 
 bool create_rpt_client_entry(const EtcPalUuid* cid, const RdmUid* uid, rpt_client_type_t client_type,
-                             const EtcPalUuid* binding_cid, RptClientEntry* entry)
+                             const EtcPalUuid* binding_cid, RdmnetRptClientEntry* entry)
 {
   if (!cid || !uid || !entry)
     return false;
@@ -36,8 +36,8 @@ bool create_rpt_client_entry(const EtcPalUuid* cid, const RdmUid* uid, rpt_clien
   return true;
 }
 
-bool create_ept_client_entry(const EtcPalUuid* cid, const EptSubProtocol* protocol_arr, size_t protocol_arr_size,
-                             EptClientEntry* entry)
+bool create_ept_client_entry(const EtcPalUuid* cid, const RdmnetEptSubProtocol* protocol_arr, size_t protocol_arr_size,
+                             RdmnetEptClientEntry* entry)
 {
   ETCPAL_UNUSED_ARG(cid);
   ETCPAL_UNUSED_ARG(protocol_arr);

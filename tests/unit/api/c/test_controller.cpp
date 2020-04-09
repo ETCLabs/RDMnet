@@ -29,7 +29,7 @@ FAKE_VOID_FUNC(handle_controller_connect_failed, rdmnet_controller_t, rdmnet_cli
 FAKE_VOID_FUNC(handle_controller_disconnected, rdmnet_controller_t, rdmnet_client_scope_t,
                const RdmnetClientDisconnectedInfo*, void*);
 FAKE_VOID_FUNC(handle_client_list_update_received, rdmnet_controller_t, rdmnet_client_scope_t, client_list_action_t,
-               const RptClientList*, void*);
+               const RdmnetRptClientList*, void*);
 FAKE_VOID_FUNC(handle_rdm_response_received, rdmnet_controller_t, rdmnet_client_scope_t, const RdmnetRdmResponse*,
                void*);
 FAKE_VOID_FUNC(handle_status_received, rdmnet_controller_t, rdmnet_client_scope_t, const RdmnetRptStatus*, void*);

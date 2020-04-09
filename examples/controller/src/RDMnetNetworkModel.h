@@ -43,8 +43,8 @@ class RDMnetNetworkModel : public QStandardItemModel, public rdmnet::ControllerN
   Q_OBJECT
 
 signals:
-  void addRDMnetClients(BrokerItem* brokerItem, const std::vector<RptClientEntry>& list);
-  void removeRDMnetClients(BrokerItem* brokerItem, const std::vector<RptClientEntry>& list);
+  void addRDMnetClients(BrokerItem* brokerItem, const std::vector<RdmnetRptClientEntry>& list);
+  void removeRDMnetClients(BrokerItem* brokerItem, const std::vector<RdmnetRptClientEntry>& list);
   void newEndpointList(RDMnetClientItem* treeClientItem, const std::vector<std::pair<uint16_t, uint8_t>>& list);
   void newResponderList(EndpointItem* treeEndpointItem, const std::vector<RdmUid>& list);
   void setPropertyData(RDMnetNetworkItem* parent, unsigned short pid, const QString& name, const QVariant& value,
@@ -78,8 +78,8 @@ public slots:
   void removeCustomLogOutputStream(LogOutputStream* stream);
 
 protected slots:
-  void processAddRDMnetClients(BrokerItem* brokerItem, const std::vector<RptClientEntry>& list);
-  void processRemoveRDMnetClients(BrokerItem* brokerItem, const std::vector<RptClientEntry>& list);
+  void processAddRDMnetClients(BrokerItem* brokerItem, const std::vector<RdmnetRptClientEntry>& list);
+  void processRemoveRDMnetClients(BrokerItem* brokerItem, const std::vector<RdmnetRptClientEntry>& list);
   void processNewEndpointList(RDMnetClientItem* treeClientItem, const std::vector<std::pair<uint16_t, uint8_t>>& list);
   void processNewResponderList(EndpointItem* treeEndpointItem, const std::vector<RdmUid>& list);
   void processSetPropertyData(RDMnetNetworkItem* parent, unsigned short pid, const QString& name, const QVariant& value,
@@ -119,7 +119,7 @@ protected:
   virtual void HandleDisconnectedFromBroker(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
                                             const RdmnetClientDisconnectedInfo& info) override;
   virtual void HandleClientListUpdate(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
-                                      client_list_action_t action, const RptClientList& list) override;
+                                      client_list_action_t action, const RdmnetRptClientList& list) override;
   virtual void HandleRdmResponse(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
                                  const RemoteRdmResponse& resp) override;
   virtual void HandleRptStatus(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,

@@ -172,3 +172,181 @@ etcpal_error_t rdmnet_free_saved_rpt_status(RdmnetSavedRptStatus* saved_status)
   ETCPAL_UNUSED_ARG(saved_status);
   return kEtcPalErrNotImpl;
 }
+
+/*!
+ * \brief Save the data in a received EPT data message for later use from a different context.
+ *
+ * RDMnet message types delivered to RDMnet callback functions do not own their data; if
+ * referencing an EPT data message after the callback has returned is desired, the data must be
+ * saved.
+ *
+ * This function does heap allocation and gives the resulting RdmnetSavedEptData struct an owned
+ * data pointer.
+ *
+ * \param[in] data Data message to save.
+ * \param[out] saved_data Message structure with copied and saved data.
+ * \return #kEtcPalErrOk: Data saved successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return #kEtcPalErrNotImpl: RDMnet was compiled with #RDMNET_DYNAMIC_MEM set to 0.
+ * \return #kEtcPalErrNoMem: Couldn't allocate memory for data.
+ */
+etcpal_error_t rdmnet_save_ept_data(const RdmnetEptData* data, RdmnetSavedEptData* saved_data)
+{
+  ETCPAL_UNUSED_ARG(data);
+  ETCPAL_UNUSED_ARG(saved_data);
+  return kEtcPalErrNotImpl;
+}
+
+/*!
+ * \brief Save the data in a received EPT status message for later use from a different context.
+ *
+ * RDMnet message types delivered to RDMnet callback functions do not own their data; if
+ * referencing an EPT status message after the callback has returned is desired, the data must be
+ * saved. This only applies to the optional EPT status string that accompanies a status message; an
+ * application that doesn't care about the status string need not use this function.
+ *
+ * This function does heap allocation to copy the status string and gives the resulting
+ * RdmnetSavedEptStatus an owned status_string pointer.
+ *
+ * \param[in] status Status message to save.
+ * \param[out] saved_status Status with copied and saved data.
+ * \return #kEtcPalErrOk: Status message saved successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return #kEtcPalErrNotImpl: RDMnet was compiled with #RDMNET_DYNAMIC_MEM set to 0.
+ * \return #kEtcPalErrNoMem: Couldn't allocate memory for status string.
+ */
+etcpal_error_t rdmnet_save_ept_status(const RdmnetEptStatus* status, RdmnetSavedEptStatus* saved_status)
+{
+  ETCPAL_UNUSED_ARG(status);
+  ETCPAL_UNUSED_ARG(saved_status);
+  return kEtcPalErrNotImpl;
+}
+
+/*!
+ * \brief Copy the data from a saved EPT data message to a different saved EPT data message.
+ *
+ * This function does heap allocation and gives the resulting RdmnetSavedEptData struct an owned
+ * data pointer.
+ *
+ * \param[in] saved_data_old Saved data message to copy from.
+ * \param[out] saved_data_new Saved data message to copy to.
+ * \return #kEtcPalErrOk: Data copied successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return #kEtcPalErrNotImpl: RDMnet was compiled with #RDMNET_DYNAMIC_MEM set to 0.
+ * \return #kEtcPalErrNoMem: Couldn't allocate memory for data.
+ */
+etcpal_error_t rdmnet_copy_saved_ept_data(const RdmnetSavedEptData* saved_data_old, RdmnetSavedEptData* saved_data_new)
+{
+  ETCPAL_UNUSED_ARG(saved_data_old);
+  ETCPAL_UNUSED_ARG(saved_data_new);
+  return kEtcPalErrNotImpl;
+}
+
+/*!
+ * \brief Copy the data from a saved EPT status message to a different saved EPT status message.
+ *
+ * This function does heap allocation to copy the status string and gives the resulting
+ * RdmnetSavedEptStatus an owned status_string pointer.
+ *
+ * \param[in] saved_status_old Saved status message to copy from.
+ * \param[out] saved_status_new Saved status message to copy to.
+ * \return #kEtcPalErrOk: Status message copied successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return #kEtcPalErrNotImpl: RDMnet was compiled with #RDMNET_DYNAMIC_MEM set to 0.
+ * \return #kEtcPalErrNoMem: Couldn't allocate memory for status string.
+ */
+etcpal_error_t rdmnet_copy_saved_ept_status(const RdmnetSavedEptStatus* saved_status_old,
+                                            RdmnetEptStatus* saved_status_new)
+{
+  ETCPAL_UNUSED_ARG(saved_status_old);
+  ETCPAL_UNUSED_ARG(saved_status_new);
+  return kEtcPalErrNotImpl;
+}
+
+/*!
+ * \brief Free the memory owned by a saved EPT data message.
+ *
+ * Frees the owned data members in the RdmnetSavedEptData struct. Make sure to do this before the
+ * struct goes out of scope.
+ *
+ * \param[in] saved_data Data message for which to free resources.
+ * \return #kEtcPalErrOk: Response freed successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return #kEtcPalErrNotImpl: RDMnet was compiled with #RDMNET_DYNAMIC_MEM set to 0.
+ */
+etcpal_error_t rdmnet_free_saved_ept_data(RdmnetSavedEptData* saved_data)
+{
+  ETCPAL_UNUSED_ARG(saved_data);
+  return kEtcPalErrNotImpl;
+}
+
+/*!
+ * \brief Free the memory owned by a saved EPT status message.
+ *
+ * Frees the owned data members in the RdmnetSavedEptStatus struct. Make sure to do this before the
+ * struct goes out of scope.
+ *
+ * \param[in] saved_status Status message for which to free resources.
+ * \return #kEtcPalErrOk: Status message freed successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return #kEtcPalErrNotImpl: RDMnet was compiled with #RDMNET_DYNAMIC_MEM set to 0.
+ */
+etcpal_error_t rdmnet_free_saved_ept_status(RdmnetSavedEptStatus* saved_status)
+{
+  ETCPAL_UNUSED_ARG(saved_status);
+  return kEtcPalErrNotImpl;
+}
+
+/*!
+ * \brief Save the data in a received LLRP RDM command for later use with API functions from a
+ *        different context.
+ *
+ * RDMnet message types delivered to RDMnet callback functions do not own their data; if not
+ * responding to a command synchronously, the command must be saved before exiting the callback.
+ * See \ref handling_rdm_commands for more information.
+ *
+ * \param[in] command Command to save.
+ * \param[out] saved_command Command with copied and saved data.
+ * \return #kEtcPalErrOk: Command saved successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ */
+etcpal_error_t rdmnet_save_llrp_rdm_command(const LlrpRdmCommand* command, LlrpSavedRdmCommand* saved_command)
+{
+  ETCPAL_UNUSED_ARG(command);
+  ETCPAL_UNUSED_ARG(saved_command);
+  return kEtcPalErrNotImpl;
+}
+
+/*!
+ * \brief Save the data in a received LLRP RDM response for later use from a different context.
+ *
+ * RDMnet message types delivered to RDMnet callback functions do not own their data; if
+ * referencing an RDM response after the callback has returned is desired, the data must be saved.
+ *
+ * \param[in] response Response to save.
+ * \param[out] saved_response Response with copied and saved data.
+ * \return #kEtcPalErrOk: Response saved successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ */
+etcpal_error_t rdmnet_save_llrp_rdm_response(const LlrpRdmResponse* response, LlrpSavedRdmResponse* saved_response)
+{
+  ETCPAL_UNUSED_ARG(response);
+  ETCPAL_UNUSED_ARG(saved_response);
+  return kEtcPalErrNotImpl;
+}
+
+/*!
+ * \brief Copy the data from a saved LLRP RDM response to a different saved LLRP RDM response.
+ *
+ * \param[in] saved_resp_old Saved response to copy from.
+ * \param[out] saved_resp_new Saved response to copy to.
+ * \return #kEtcPalErrOk: Response copied successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ */
+etcpal_error_t rdmnet_copy_saved_llrp_rdm_response(const LlrpSavedRdmResponse* saved_resp_old,
+                                                   LlrpSavedRdmResponse* saved_resp_new)
+{
+  ETCPAL_UNUSED_ARG(saved_resp_old);
+  ETCPAL_UNUSED_ARG(saved_resp_new);
+  return kEtcPalErrNotImpl;
+}

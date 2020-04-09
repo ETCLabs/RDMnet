@@ -35,7 +35,7 @@ public:
   static const char* clientType2String(rpt_client_type_t type);
 
   // RDMnetClientItem();
-  RDMnetClientItem(const RptClientEntry& entry, bool is_me);
+  RDMnetClientItem(const RdmnetRptClientEntry& entry, bool is_me);
   virtual ~RDMnetClientItem();
 
   virtual int type() const override;
@@ -52,7 +52,7 @@ public:
   uint16_t getScopeSlot(const QString& scope);
   void removeScopeSlot(const QString& scope);
 
-  RptClientEntry entry_;
+  RdmnetRptClientEntry entry_;
   std::vector<EndpointItem*> endpoints_;
 
 protected:

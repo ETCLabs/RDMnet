@@ -171,17 +171,17 @@ private:
   // Message processing and sending functions
   void ProcessRPTMessage(rdmnet_conn_t conn, const RdmnetMessage* msg);
   void ProcessConnectRequest(rdmnet_conn_t conn, const BrokerClientConnectMsg* cmsg);
-  bool ProcessRPTConnectRequest(rdmnet_conn_t conn, const RptClientEntry& client_entry,
+  bool ProcessRPTConnectRequest(rdmnet_conn_t conn, const RdmnetRptClientEntry& client_entry,
                                 rdmnet_connect_status_t& connect_status);
 
   void SendRDMBrokerResponse(rdmnet_conn_t conn, const RPTMessageRef& msg, uint8_t response_type, uint8_t command_class,
                              uint16_t param_id, uint8_t packedlen, uint8_t* pdata);
 
   void SendClientList(rdmnet_conn_t conn);
-  void SendRptClientList(BrokerMessage& bmsg, RPTClient& to_cli);
-  void SendEptClientList(BrokerMessage& bmsg, EPTClient& to_cli);
-  void SendClientsAdded(rdmnet_conn_t conn_to_ignore, std::vector<RptClientEntry>& entries);
-  void SendClientsRemoved(std::vector<RptClientEntry>& entries);
+  void SendRdmnetRptClientList(BrokerMessage& bmsg, RPTClient& to_cli);
+  void SendRdmnetEptClientList(BrokerMessage& bmsg, EPTClient& to_cli);
+  void SendClientsAdded(rdmnet_conn_t conn_to_ignore, std::vector<RdmnetRptClientEntry>& entries);
+  void SendClientsRemoved(std::vector<RdmnetRptClientEntry>& entries);
   void SendStatus(RPTController* controller, const RptHeader& header, rpt_status_code_t status_code,
                   const std::string& status_str = std::string());
 };

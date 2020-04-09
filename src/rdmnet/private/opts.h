@@ -228,7 +228,7 @@
 #endif
 
 /*!
- * \brief The maximum number of EptSubProtocol structures that can be returned with a parsed
+ * \brief The maximum number of RdmnetEptSubProtocol structures that can be returned with a parsed
  *        message.
  *
  * Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.

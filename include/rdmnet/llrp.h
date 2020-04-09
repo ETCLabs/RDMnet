@@ -40,11 +40,6 @@
 extern "C" {
 #endif
 
-/*! A handle for an instance of LLRP Manager functionality. */
-typedef int llrp_manager_t;
-/*! An invalid LLRP manager handle value. */
-#define LLRP_MANAGER_INVALID -1
-
 /*!
  * \brief A destination address for an RDM command in LLRP.
  * \brief See \ref llrp for more information.
@@ -58,76 +53,6 @@ typedef struct LlrpDestinationAddr
   /*! The sub-device to which this command is addressed, or 0 for the root device. */
   uint16_t subdevice;
 } LlrpDestinationAddr;
-
-/*! An RDM command received from a remote LLRP Manager. */
-typedef struct LlrpRdmCommand
-{
-  /*! The CID of the LLRP Manager from which this command was received. */
-  EtcPalUuid source_cid;
-  /*! The sequence number received with this command, to be echoed in the corresponding response. */
-  uint32_t seq_num;
-  /*!
-   * An ID for the network interface on which this command was received. This helps the LLRP
-   * library send the response on the same interface on which it was received.
-   */
-  RdmnetMcastNetintId netint_id;
-  /*! The header information from the encapsulated RDM command. */
-  RdmCommandHeader rdm_header;
-  /*! Pointer to buffer containing any associated RDM parameter data. */
-  const uint8_t* data;
-  /*! The length of any associated RDM parameter data. */
-  uint8_t data_len;
-} LlrpRdmCommand;
-
-/*! An RDM command received from a remote LLRP Manager. */
-typedef struct LlrpSavedRdmCommand
-{
-  /*! The CID of the LLRP Manager from which this command was received. */
-  EtcPalUuid source_cid;
-  /*! The sequence number received with this command, to be echoed in the corresponding response. */
-  uint32_t seq_num;
-  /*!
-   * An ID for the network interface on which this command was received. This helps the LLRP
-   * library send the response on the same interface on which it was received.
-   */
-  RdmnetMcastNetintId netint_id;
-  /*! The header information from the encapsulated RDM command. */
-  RdmCommandHeader rdm_header;
-  /*! Pointer to buffer containing any associated RDM parameter data. */
-  uint8_t data[RDM_MAX_PDL];
-  /*! The length of any associated RDM parameter data. */
-  uint8_t data_len;
-} LlrpSavedRdmCommand;
-
-/*! An RDM response received from a remote LLRP Target. */
-typedef struct LlrpRdmResponse
-{
-  /*! The CID of the LLRP Target from which this command was received. */
-  EtcPalUuid source_cid;
-  /*! The sequence number of this response (to be associated with a previously-sent command). */
-  uint32_t seq_num;
-  /*! The header information from the encapsulated RDM response. */
-  RdmResponseHeader rdm_header;
-  /*! Any parameter data associated with the RDM response. */
-  const uint8_t* rdm_data;
-  /*! The length of the parameter data associated with the RDM response. */
-  uint8_t rdm_data_len;
-} LlrpRdmResponse;
-
-/*! An RDM command received from a remote LLRP Manager. */
-typedef struct LlrpSavedRdmResponse
-{
-  /*! The CID of the LLRP Target from which this command was received. */
-  EtcPalUuid source_cid;
-  /*! The sequence number of this response (to be associated with a previously-sent command). */
-  uint32_t seq_num;
-  /*! The header information from the encapsulated RDM response. */
-  RdmResponseHeader rdm_header;
-  /*! Any parameter data associated with the RDM response. */
-  uint8_t rdm_data[RDM_MAX_PDL];
-  /*! The length of the parameter data associated with the RDM response. */
-  uint8_t rdm_data_len;
-} LlrpSavedRdmResponse;
 
 /*! Identifies the type of RPT Component with which an LLRP Target is associated. */
 typedef enum
@@ -156,11 +81,6 @@ typedef struct DiscoveredLlrpTarget
 } DiscoveredLlrpTarget;
 
 const char* llrp_component_type_to_string(llrp_component_t type);
-
-etcpal_error_t llrp_save_rdm_command(const LlrpRdmCommand* command, LlrpSavedRdmCommand* saved_command);
-etcpal_error_t llrp_save_rdm_response(const LlrpRdmResponse* response, LlrpSavedRdmResponse* saved_response);
-etcpal_error_t llrp_copy_saved_rdm_response(const LlrpSavedRdmResponse* saved_resp_old,
-                                            LlrpSavedRdmResponse* saved_resp_new);
 
 #ifdef __cplusplus
 }

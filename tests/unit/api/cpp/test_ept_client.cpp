@@ -17,26 +17,16 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#include "rdmnet/cpp/device.h"
+#include "rdmnet/cpp/ept_client.h"
 
 #include "gmock/gmock.h"
 #include "rdmnet_mock/common.h"
 
-class MockDeviceNotifyHandler : public rdmnet::DeviceNotifyHandler
+class MockEptClientNotifyHandler : public rdmnet::EptClientNotifyHandler
 {
-  MOCK_METHOD(void, HandleConnectedToBroker, (rdmnet::DeviceHandle handle, const rdmnet::ClientConnectedInfo& info),
-              (override));
-  MOCK_METHOD(void, HandleBrokerConnectFailed,
-              (rdmnet::DeviceHandle handle, const rdmnet::ClientConnectFailedInfo& info), (override));
-  MOCK_METHOD(void, HandleDisconnectedFromBroker,
-              (rdmnet::DeviceHandle handle, const rdmnet::ClientDisconnectedInfo& info), (override));
-  MOCK_METHOD(rdmnet::ResponseAction, HandleRdmCommand,
-              (rdmnet::DeviceHandle handle, const rdmnet::RdmCommand& command), (override));
-  MOCK_METHOD(rdmnet::ResponseAction, HandleLlrpRdmCommand,
-              (rdmnet::DeviceHandle handle, const rdmnet::llrp::RdmCommand& cmd), (override));
 };
 
-class TestCppDeviceApi : public testing::Test
+class TestCppEptClientApi : public testing::Test
 {
 protected:
   void SetUp() override
@@ -47,12 +37,3 @@ protected:
 
   void TearDown() override { rdmnet::Deinit(); }
 };
-
-TEST_F(TestCppDeviceApi, AddVirtualEndpoint)
-{
-  rdmnet::Device device;
-  MockDeviceNotifyHandler notify;
-
-  device.Startup(notify, rdmnet::DeviceSettings(etcpal::Uuid::OsPreferred(), 0x6574), "default");
-  EXPECT_EQ(device.AddVirtualEndpoint(1), kEtcPalErrOk);
-}

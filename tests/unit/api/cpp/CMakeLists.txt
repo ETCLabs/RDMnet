@@ -3,6 +3,7 @@
 rdmnet_add_unit_test(test_rdmnet_cpp_api EXCLUDE_FROM_ALL
   test_controller.cpp
   test_device.cpp
+  test_ept_client.cpp
   test_llrp_manager.cpp
   test_message.cpp
   main.cpp

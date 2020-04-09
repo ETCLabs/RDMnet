@@ -50,9 +50,9 @@ void PrintAllSizes()
   PRINT_SIZE(BrokerMessage);
 
   PRINT_HEADER_NAME("rdmnet/core/client_entry.h");
-  PRINT_SIZE(EptSubProtocol);
-  PRINT_SIZE(RptClientEntry);
-  PRINT_SIZE(EptClientEntry);
+  PRINT_SIZE(RdmnetEptSubProtocol);
+  PRINT_SIZE(RdmnetRptClientEntry);
+  PRINT_SIZE(RdmnetEptClientEntry);
   PRINT_SIZE(ClientEntry);
 
   PRINT_HEADER_NAME("rdmnet/core/connection.h");

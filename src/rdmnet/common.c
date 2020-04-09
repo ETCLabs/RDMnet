@@ -65,6 +65,15 @@ const char* rdmnet_rpt_status_code_to_string(rpt_status_code_t code)
   return NULL;
 }
 
+/*!
+ * \brief Get a string representation of an EPT status code.
+ */
+const char* rdmnet_ept_status_code_to_string(ept_status_code_t code)
+{
+  ETCPAL_UNUSED_ARG(code);
+  return NULL;
+}
+
 // clang-format off
 static const char* kRdmnetConnectFailEventStrings[] =
 {

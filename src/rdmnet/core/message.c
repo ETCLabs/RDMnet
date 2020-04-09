@@ -72,9 +72,10 @@ void free_broker_message(BrokerMessage* bmsg)
       BrokerClientList* clist = BROKER_GET_CLIENT_LIST(bmsg);
       if (BROKER_IS_EPT_CLIENT_LIST(clist))
       {
-        EptClientEntry* ept_entry_list = BROKER_GET_EPT_CLIENT_LIST(clist)->client_entries;
+        RdmnetEptClientEntry* ept_entry_list = BROKER_GET_EPT_CLIENT_LIST(clist)->client_entries;
         size_t ept_entry_list_size = BROKER_GET_EPT_CLIENT_LIST(clist)->num_client_entries;
-        for (EptClientEntry* ept_entry = ept_entry_list; ept_entry < ept_entry_list + ept_entry_list_size; ++ept_entry)
+        for (RdmnetEptClientEntry* ept_entry = ept_entry_list; ept_entry < ept_entry_list + ept_entry_list_size;
+             ++ept_entry)
         {
           FREE_EPT_SUBPROT_LIST(ept_entry->protocol_list);
         }
