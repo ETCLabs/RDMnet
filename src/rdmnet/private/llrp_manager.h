@@ -26,8 +26,8 @@
 #include "etcpal/rbtree.h"
 #include "rdm/uid.h"
 #include "rdmnet/llrp_manager.h"
-#include "rdmnet/private/core.h"
-#include "rdmnet/private/llrp_prot.h"
+//#include "rdmnet/private/core.h"
+//#include "rdmnet/private/llrp_prot.h"
 
 typedef struct DiscoveredTargetInternal DiscoveredTargetInternal;
 struct DiscoveredTargetInternal
@@ -56,7 +56,7 @@ struct LlrpManager
   etcpal_socket_t send_sock;
 
   // Send tracking
-  uint8_t send_buf[LLRP_MANAGER_MAX_MESSAGE_SIZE];
+  // uint8_t send_buf[LLRP_MANAGER_MAX_MESSAGE_SIZE];
   uint32_t transaction_number;
 
   // Discovery tracking
@@ -92,10 +92,10 @@ typedef struct TargetDiscoveredArgs
   const DiscoveredLlrpTarget* target;
 } TargetDiscoveredArgs;
 
-typedef struct RdmRespReceivedArgs
-{
-  LlrpRemoteRdmResponse resp;
-} RdmRespReceivedArgs;
+// typedef struct RdmRespReceivedArgs
+//{
+//  LlrpRemoteRdmResponse resp;
+//} RdmRespReceivedArgs;
 
 typedef struct ManagerCallbackDispatchInfo
 {
@@ -107,7 +107,7 @@ typedef struct ManagerCallbackDispatchInfo
   union
   {
     TargetDiscoveredArgs target_discovered;
-    RdmRespReceivedArgs resp_received;
+    // RdmRespReceivedArgs resp_received;
   } args;
 } ManagerCallbackDispatchInfo;
 

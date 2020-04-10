@@ -17,42 +17,29 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef RDMNET_PRIVATE_CONTROLLER_H_
-#define RDMNET_PRIVATE_CONTROLLER_H_
+#include "rdmnet/cpp/client.h"
 
-#include "rdmnet/controller.h"
-//#include "rdmnet/core/client.h"
+#include "gtest/gtest.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef enum
+TEST(TestDestinationAddr, ToDefaultResponderWorks)
 {
-  kRdmHandleMethodUseCallbacks,
-  kRdmHandleMethodUseData
-} rdm_handle_method_t;
+  auto addr = rdmnet::DestinationAddr::ToDefaultResponder(rdm::Uid(0x1234, 0x56789abc));
 
-typedef struct RdmnetController
-{
-  // rdmnet_client_t client_handle;
-  RdmnetControllerCallbacks callbacks;
-
-  rdm_handle_method_t rdm_handle_method;
-  union
-  {
-    RdmnetControllerRdmCmdHandler handler;
-    RdmnetControllerRdmData data;
-  } rdm_handler;
-
-  void* callback_context;
-} RdmnetController;
-
-etcpal_error_t rdmnet_controller_init(void);
-void rdmnet_controller_deinit(void);
-
-#ifdef __cplusplus
+  auto c_addr = addr.get();
+  EXPECT_EQ(c_addr.rdmnet_uid.manu, 0x1234);
+  EXPECT_EQ(c_addr.rdmnet_uid.id, 0x56789abcu);
+  EXPECT_EQ(c_addr.endpoint, 0);
+  EXPECT_EQ(c_addr.rdm_uid.manu, 0x1234);
+  EXPECT_EQ(c_addr.rdm_uid.id, 0x56789abcu);
+  EXPECT_EQ(c_addr.subdevice, 0);
 }
-#endif
 
-#endif /* RDMNET_PRIVATE_CONTROLLER_H_ */
+// The default constructor of a scope config should create the default scope with dynamic discovery
+TEST(TestScope, DefaultConstructorWorks)
+{
+  rdmnet::Scope scope;
+
+  EXPECT_TRUE(scope.IsDefault());
+  EXPECT_FALSE(scope.IsStatic());
+  EXPECT_EQ(scope.id_string(), E133_DEFAULT_SCOPE);
+}

@@ -28,18 +28,19 @@ FAKE_VOID_FUNC(handle_controller_connect_failed, rdmnet_controller_t, rdmnet_cli
                const RdmnetClientConnectFailedInfo*, void*);
 FAKE_VOID_FUNC(handle_controller_disconnected, rdmnet_controller_t, rdmnet_client_scope_t,
                const RdmnetClientDisconnectedInfo*, void*);
-FAKE_VOID_FUNC(handle_client_list_update_received, rdmnet_controller_t, rdmnet_client_scope_t, client_list_action_t,
-               const RdmnetRptClientList*, void*);
-FAKE_VOID_FUNC(handle_rdm_response_received, rdmnet_controller_t, rdmnet_client_scope_t, const RdmnetRdmResponse*,
+FAKE_VOID_FUNC(handle_controller_client_list_update_received, rdmnet_controller_t, rdmnet_client_scope_t,
+               client_list_action_t, const RdmnetRptClientList*, void*);
+FAKE_VOID_FUNC(handle_controller_rdm_response_received, rdmnet_controller_t, rdmnet_client_scope_t,
+               const RdmnetRdmResponse*, void*);
+FAKE_VOID_FUNC(handle_controller_status_received, rdmnet_controller_t, rdmnet_client_scope_t, const RdmnetRptStatus*,
                void*);
-FAKE_VOID_FUNC(handle_status_received, rdmnet_controller_t, rdmnet_client_scope_t, const RdmnetRptStatus*, void*);
-FAKE_VOID_FUNC(handle_responder_ids_received, rdmnet_controller_t, rdmnet_client_scope_t,
+FAKE_VOID_FUNC(handle_controller_responder_ids_received, rdmnet_controller_t, rdmnet_client_scope_t,
                const RdmnetDynamicUidAssignmentList*, void*);
 
-FAKE_VOID_FUNC(handle_rdm_command_received, rdmnet_controller_t, rdmnet_client_scope_t, const RdmnetRdmCommand*,
+FAKE_VOID_FUNC(handle_controller_rdm_command_received, rdmnet_controller_t, rdmnet_client_scope_t,
+               const RdmnetRdmCommand*, RdmnetSyncRdmResponse*, void*);
+FAKE_VOID_FUNC(handle_controller_llrp_rdm_command_received, rdmnet_controller_t, const LlrpRdmCommand*,
                RdmnetSyncRdmResponse*, void*);
-FAKE_VOID_FUNC(handle_llrp_rdm_command_received, rdmnet_controller_t, const LlrpRdmCommand*, RdmnetSyncRdmResponse*,
-               void*);
 
 class TestControllerApi : public testing::Test
 {
@@ -51,12 +52,12 @@ protected:
     RESET_FAKE(handle_controller_connected);
     RESET_FAKE(handle_controller_connect_failed);
     RESET_FAKE(handle_controller_disconnected);
-    RESET_FAKE(handle_client_list_update_received);
-    RESET_FAKE(handle_rdm_response_received);
-    RESET_FAKE(handle_status_received);
-    RESET_FAKE(handle_responder_ids_received);
-    RESET_FAKE(handle_rdm_response_received);
-    RESET_FAKE(handle_llrp_rdm_command_received);
+    RESET_FAKE(handle_controller_client_list_update_received);
+    RESET_FAKE(handle_controller_rdm_response_received);
+    RESET_FAKE(handle_controller_status_received);
+    RESET_FAKE(handle_controller_responder_ids_received);
+    RESET_FAKE(handle_controller_rdm_response_received);
+    RESET_FAKE(handle_controller_llrp_rdm_command_received);
   }
 
   void SetUp() override
@@ -65,9 +66,9 @@ protected:
     ASSERT_EQ(rdmnet_init(nullptr, nullptr), kEtcPalErrOk);
 
     rdmnet_controller_set_callbacks(&config_, handle_controller_connected, handle_controller_connect_failed,
-                                    handle_controller_disconnected, handle_client_list_update_received,
-                                    handle_rdm_response_received, handle_status_received, handle_responder_ids_received,
-                                    nullptr);
+                                    handle_controller_disconnected, handle_controller_client_list_update_received,
+                                    handle_controller_rdm_response_received, handle_controller_status_received,
+                                    handle_controller_responder_ids_received, nullptr);
   }
 
   void TearDown() override { rdmnet_deinit(); }

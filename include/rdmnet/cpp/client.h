@@ -30,6 +30,7 @@
 
 namespace rdmnet
 {
+/// \ingroup rdmnet_cpp_common
 /// \brief A destination address for an RDM command in RDMnet's RPT protocol.
 /// \details See \ref roles_and_addressing and \ref devices_and_gateways for more information.
 class DestinationAddr
@@ -42,6 +43,8 @@ public:
                                                       uint16_t subdevice = 0);
   static constexpr DestinationAddr ToSubResponder(const rdm::Uid& rdmnet_uid, uint16_t endpoint,
                                                   const rdm::Uid& rdm_uid, uint16_t subdevice = 0);
+
+  constexpr const RdmnetDestinationAddr& get() const noexcept;
 
 private:
   constexpr DestinationAddr(const RdmUid& rdmnet_uid, uint16_t endpoint, const RdmUid& rdm_uid, uint16_t subdevice);
@@ -83,6 +86,13 @@ constexpr DestinationAddr DestinationAddr::ToSubResponder(const rdm::Uid& rdmnet
   return DestinationAddr(rdmnet_uid.get(), endpoint, rdm_uid.get(), subdevice);
 }
 
+/// \brief Get a const reference to the underlying C type.
+/// \details This function should normally only be used by the library implementation.
+constexpr const RdmnetDestinationAddr& DestinationAddr::get() const noexcept
+{
+  return addr_;
+}
+
 constexpr DestinationAddr::DestinationAddr(const RdmUid& rdmnet_uid, uint16_t endpoint, const RdmUid& rdm_uid,
                                            uint16_t subdevice)
     : addr_{rdmnet_uid, endpoint, rdm_uid, subdevice}
@@ -107,7 +117,7 @@ public:
   constexpr ClientConnectedInfo(const RdmnetClientConnectedInfo& c_info) noexcept;
 
   constexpr etcpal::SockAddr broker_addr() const noexcept;
-  constexpr std::string broker_name() const;
+  std::string broker_name() const;
   constexpr const char* broker_name_c_str() const noexcept;
   constexpr etcpal::Uuid broker_cid() const noexcept;
   constexpr rdm::Uid broker_uid() const noexcept;
@@ -130,7 +140,7 @@ constexpr etcpal::SockAddr ClientConnectedInfo::broker_addr() const noexcept
 }
 
 /// Get the DNS name of the broker (if it was discovered via DNS-SD; otherwise this will be an empty string)
-constexpr std::string ClientConnectedInfo::broker_name() const
+inline std::string ClientConnectedInfo::broker_name() const
 {
   return info_.broker_name;
 }

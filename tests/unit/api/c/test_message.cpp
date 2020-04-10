@@ -17,42 +17,23 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef RDMNET_PRIVATE_CONTROLLER_H_
-#define RDMNET_PRIVATE_CONTROLLER_H_
+#include "rdmnet/message.h"
 
-#include "rdmnet/controller.h"
-//#include "rdmnet/core/client.h"
+#include <array>
+#include <cstring>
+#include "gtest/gtest.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef enum
+TEST(TestMessageApi, Placeholder)
 {
-  kRdmHandleMethodUseCallbacks,
-  kRdmHandleMethodUseData
-} rdm_handle_method_t;
+  const std::array<uint8_t, 4> kTestData{0x00, 0x01, 0x02, 0x03};
 
-typedef struct RdmnetController
-{
-  // rdmnet_client_t client_handle;
-  RdmnetControllerCallbacks callbacks;
+  RdmnetRdmCommand cmd{
+      {0x1234, 0x56789abc}, 1, 0x12345678, {0}, kTestData.data(), static_cast<uint8_t>(kTestData.size())};
 
-  rdm_handle_method_t rdm_handle_method;
-  union
-  {
-    RdmnetControllerRdmCmdHandler handler;
-    RdmnetControllerRdmData data;
-  } rdm_handler;
+  RdmnetSavedRdmCommand saved_cmd;
+  ASSERT_EQ(rdmnet_save_rdm_command(&cmd, &saved_cmd), kEtcPalErrOk);
 
-  void* callback_context;
-} RdmnetController;
-
-etcpal_error_t rdmnet_controller_init(void);
-void rdmnet_controller_deinit(void);
-
-#ifdef __cplusplus
+  // TODO test other members
+  ASSERT_EQ(saved_cmd.data_len, cmd.data_len);
+  EXPECT_EQ(0, std::memcmp(saved_cmd.data, kTestData.data(), kTestData.size()));
 }
-#endif
-
-#endif /* RDMNET_PRIVATE_CONTROLLER_H_ */

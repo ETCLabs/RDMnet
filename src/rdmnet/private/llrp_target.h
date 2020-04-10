@@ -21,6 +21,7 @@
 #define RDMNET_PRIVATE_LLRP_TARGET_H_
 
 #include "rdmnet/llrp_target.h"
+#include "etcpal/timer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,7 +33,7 @@ typedef struct LlrpTargetNetintInfo
 {
   RdmnetMcastNetintId id;
   etcpal_socket_t send_sock;
-  uint8_t send_buf[LLRP_TARGET_MAX_MESSAGE_SIZE];
+  // uint8_t send_buf[LLRP_TARGET_MAX_MESSAGE_SIZE];
 
   bool reply_pending;
   EtcPalUuid pending_reply_cid;
@@ -55,12 +56,12 @@ struct LlrpTarget
   llrp_component_t component_type;
 
   // Network interfaces on which the target is operating (value type is LlrpTargetNetintInfo)
-#if RDMNET_DYNAMIC_MEM
-  LlrpTargetNetintInfo* netints;
-#else
-  LlrpTargetNetintInfo netints[RDMNET_MAX_MCAST_NETINTS];
-#endif
-  size_t num_netints;
+  //#if RDMNET_DYNAMIC_MEM
+  //  LlrpTargetNetintInfo* netints;
+  //#else
+  //  LlrpTargetNetintInfo netints[RDMNET_MAX_MCAST_NETINTS];
+  //#endif
+  //  size_t num_netints;
 
   // Global target state info
   bool connected_to_broker;
@@ -82,7 +83,7 @@ typedef enum
 
 typedef struct RdmCmdReceivedArgs
 {
-  LlrpRemoteRdmCommand cmd;
+  LlrpRdmCommand cmd;
 } RdmCmdReceivedArgs;
 
 typedef struct TargetCallbackDispatchInfo

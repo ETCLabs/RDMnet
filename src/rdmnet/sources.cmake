@@ -31,6 +31,7 @@ set(RDMNET_API_SOURCES
   ${RDMNET_SRC}/rdmnet/common.c
   ${RDMNET_SRC}/rdmnet/controller.c
   ${RDMNET_SRC}/rdmnet/device.c
+  ${RDMNET_SRC}/rdmnet/ept_client.c
   ${RDMNET_SRC}/rdmnet/llrp.c
   ${RDMNET_SRC}/rdmnet/llrp_manager.c
   ${RDMNET_SRC}/rdmnet/llrp_target.c

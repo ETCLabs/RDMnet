@@ -27,6 +27,7 @@
 #include "rdmnet/defs.h"
 #include "rdmnet/client.h"
 #include "rdmnet/message.h"
+#include "rdmnet/core/broker_prot.h"
 
 /*
  * rdmnet/core/client.h: Implementation of RDMnet client functionality
@@ -43,6 +44,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef int rdmnet_client_t;
+#define RDMNET_CLIENT_INVALID -1
 
 typedef enum
 {
@@ -77,8 +81,8 @@ typedef struct EptClientMessage
   ept_client_msg_t type;
   union
   {
-    EptStatusMsg status;
-    EptDataMsg data;
+    RdmnetEptStatus status;
+    RdmnetEptData data;
   } payload;
 } EptClientMessage;
 

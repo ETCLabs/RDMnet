@@ -19,6 +19,8 @@
 
 #include "rdmnet/llrp.h"
 
+#include "etcpal/common.h"
+
 /*************************** Function definitions ****************************/
 
 /*!

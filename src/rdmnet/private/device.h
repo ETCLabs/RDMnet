@@ -21,7 +21,7 @@
 #define RDMNET_PRIVATE_DEVICE_H_
 
 #include "rdmnet/device.h"
-#include "rdmnet/core/client.h"
+//#include "rdmnet/core/client.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,7 +29,7 @@ extern "C" {
 
 typedef struct RdmnetDevice
 {
-  rdmnet_client_t client_handle;
+  // rdmnet_client_t client_handle;
   rdmnet_client_scope_t scope_handle;
   RdmnetDeviceCallbacks callbacks;
   void* callback_context;

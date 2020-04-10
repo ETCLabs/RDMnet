@@ -20,7 +20,6 @@
 #include "rdmnet/device.h"
 
 #include "etcpal/common.h"
-#include "rdmnet/private/core.h"
 #include "rdmnet/private/device.h"
 #include "rdmnet/private/opts.h"
 
@@ -49,30 +48,30 @@ ETCPAL_MEMPOOL_DEFINE(rdmnet_devices, RdmnetDevice, RDMNET_MAX_DEVICES);
 
 /*********************** Private function prototypes *************************/
 
-static void client_connected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                             const RdmnetClientConnectedInfo* info, void* context);
-static void client_connect_failed(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                  const RdmnetClientConnectFailedInfo* info, void* context);
-static void client_disconnected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                const RdmnetClientDisconnectedInfo* info, void* context);
-static void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                       const BrokerMessage* msg, void* context);
-static llrp_response_action_t client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand* cmd,
-                                                       LlrpSyncRdmResponse* response, void* context);
-static rdmnet_response_action_t client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                                    const RptClientMessage* msg, RdmnetSyncRdmResponse* response,
-                                                    void* context);
+// static void client_connected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+//                             const RdmnetClientConnectedInfo* info, void* context);
+// static void client_connect_failed(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+//                                  const RdmnetClientConnectFailedInfo* info, void* context);
+// static void client_disconnected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+//                                const RdmnetClientDisconnectedInfo* info, void* context);
+// static void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+//                                       const BrokerMessage* msg, void* context);
+// static llrp_response_action_t client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand* cmd,
+//                                                       LlrpSyncRdmResponse* response, void* context);
+// static rdmnet_response_action_t client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+//                                                    const RptClientMessage* msg, RdmnetSyncRdmResponse* response,
+//                                                    void* context);
 
 // clang-format off
-static const RptClientCallbacks client_callbacks =
-{
-  client_connected,
-  client_connect_failed,
-  client_disconnected,
-  client_broker_msg_received,
-  client_llrp_msg_received,
-  client_msg_received
-};
+//static const RptClientCallbacks client_callbacks =
+//{
+//  client_connected,
+//  client_connect_failed,
+//  client_disconnected,
+//  client_broker_msg_received,
+//  client_llrp_msg_received,
+//  client_msg_received
+//};
 // clang-format on
 
 /*************************** Function definitions ****************************/
@@ -113,7 +112,6 @@ void rdmnet_device_config_init(RdmnetDeviceConfig* config, uint16_t manufacturer
     memset(config, 0, sizeof(RdmnetDeviceConfig));
     RDMNET_CLIENT_SET_DEFAULT_SCOPE(&config->scope_config);
     RDMNET_INIT_DYNAMIC_UID_REQUEST(&config->uid, manufacturer_id);
-    config->search_domain = E133_DEFAULT_DOMAIN;
   }
 }
 
@@ -148,6 +146,7 @@ void rdmnet_device_set_callbacks(RdmnetDeviceConfig* config, RdmnetDeviceConnect
     config->callbacks.disconnected = disconnected;
     config->callbacks.rdm_command_received = rdm_command_received;
     config->callbacks.llrp_rdm_command_received = llrp_rdm_command_received;
+    config->callbacks.dynamic_uid_status_received = dynamic_uid_status_received;
     config->callback_context = callback_context;
   }
 }
@@ -170,43 +169,46 @@ void rdmnet_device_set_callbacks(RdmnetDeviceConfig* config, RdmnetDeviceConnect
  */
 etcpal_error_t rdmnet_device_create(const RdmnetDeviceConfig* config, rdmnet_device_t* handle)
 {
-  if (!config || !handle)
-    return kEtcPalErrInvalid;
-
-  RdmnetDevice* new_device = ALLOC_RDMNET_DEVICE();
-  if (!new_device)
-    return kEtcPalErrNoMem;
-
-  RdmnetRptClientConfig client_config;
-  client_config.type = kRPTClientTypeDevice;
-  client_config.cid = config->cid;
-  client_config.callbacks = client_callbacks;
-  client_config.callback_context = new_device;
-  // client_config.optional = config->optional;
-
-  etcpal_error_t res = rdmnet_rpt_client_create(&client_config, &new_device->client_handle);
-  if (res == kEtcPalErrOk)
-  {
-    res = rdmnet_client_add_scope(new_device->client_handle, &config->scope_config, &new_device->scope_handle);
-    if (res == kEtcPalErrOk)
-    {
-      // Do the rest of the initialization
-      new_device->callbacks = config->callbacks;
-      new_device->callback_context = config->callback_context;
-
-      *handle = new_device;
-    }
-    else
-    {
-      rdmnet_client_destroy(new_device->client_handle, kRdmnetDisconnectSoftwareFault);
-      FREE_RDMNET_DEVICE(new_device);
-    }
-  }
-  else
-  {
-    FREE_RDMNET_DEVICE(new_device);
-  }
-  return res;
+  ETCPAL_UNUSED_ARG(config);
+  ETCPAL_UNUSED_ARG(handle);
+  return kEtcPalErrNotImpl;
+  //  if (!config || !handle)
+  //    return kEtcPalErrInvalid;
+  //
+  //  RdmnetDevice* new_device = ALLOC_RDMNET_DEVICE();
+  //  if (!new_device)
+  //    return kEtcPalErrNoMem;
+  //
+  //  RdmnetRptClientConfig client_config;
+  //  client_config.type = kRPTClientTypeDevice;
+  //  client_config.cid = config->cid;
+  //  client_config.callbacks = client_callbacks;
+  //  client_config.callback_context = new_device;
+  //  // client_config.optional = config->optional;
+  //
+  //  etcpal_error_t res = rdmnet_rpt_client_create(&client_config, &new_device->client_handle);
+  //  if (res == kEtcPalErrOk)
+  //  {
+  //    res = rdmnet_client_add_scope(new_device->client_handle, &config->scope_config, &new_device->scope_handle);
+  //    if (res == kEtcPalErrOk)
+  //    {
+  //      // Do the rest of the initialization
+  //      new_device->callbacks = config->callbacks;
+  //      new_device->callback_context = config->callback_context;
+  //
+  //      *handle = new_device;
+  //    }
+  //    else
+  //    {
+  //      rdmnet_client_destroy(new_device->client_handle, kRdmnetDisconnectSoftwareFault);
+  //      FREE_RDMNET_DEVICE(new_device);
+  //    }
+  //  }
+  //  else
+  //  {
+  //    FREE_RDMNET_DEVICE(new_device);
+  //  }
+  //  return res;
 }
 
 /*!
@@ -225,14 +227,17 @@ etcpal_error_t rdmnet_device_create(const RdmnetDeviceConfig* config, rdmnet_dev
  */
 etcpal_error_t rdmnet_device_destroy(rdmnet_device_t handle, rdmnet_disconnect_reason_t disconnect_reason)
 {
-  if (!handle)
-    return kEtcPalErrInvalid;
-
-  etcpal_error_t res = rdmnet_client_destroy(handle->client_handle, disconnect_reason);
-  if (res == kEtcPalErrOk)
-    FREE_RDMNET_DEVICE(handle);
-
-  return res;
+  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(disconnect_reason);
+  return kEtcPalErrNotImpl;
+  //  if (!handle)
+  //    return kEtcPalErrInvalid;
+  //
+  //  etcpal_error_t res = rdmnet_client_destroy(handle->client_handle, disconnect_reason);
+  //  if (res == kEtcPalErrOk)
+  //    FREE_RDMNET_DEVICE(handle);
+  //
+  //  return res;
 }
 
 /*!
@@ -251,11 +256,16 @@ etcpal_error_t rdmnet_device_destroy(rdmnet_device_t handle, rdmnet_disconnect_r
 etcpal_error_t rdmnet_device_send_rdm_ack(rdmnet_device_t handle, const RdmnetSavedRdmCommand* received_cmd,
                                           const uint8_t* response_data, size_t response_data_len)
 {
-  if (!handle)
-    return kEtcPalErrInvalid;
-
-  return rdmnet_rpt_client_send_rdm_ack(handle->client_handle, handle->scope_handle, received_cmd, response_data,
-                                        response_data_len);
+  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(received_cmd);
+  ETCPAL_UNUSED_ARG(response_data);
+  ETCPAL_UNUSED_ARG(response_data_len);
+  return kEtcPalErrNotImpl;
+  //  if (!handle)
+  //    return kEtcPalErrInvalid;
+  //
+  //  return rdmnet_rpt_client_send_rdm_ack(handle->client_handle, handle->scope_handle, received_cmd, response_data,
+  //                                        response_data_len);
 }
 
 /*!
@@ -273,10 +283,14 @@ etcpal_error_t rdmnet_device_send_rdm_ack(rdmnet_device_t handle, const RdmnetSa
 etcpal_error_t rdmnet_device_send_rdm_nack(rdmnet_device_t handle, const RdmnetSavedRdmCommand* received_cmd,
                                            rdm_nack_reason_t nack_reason)
 {
-  if (!handle)
-    return kEtcPalErrInvalid;
-
-  return rdmnet_rpt_client_send_rdm_nack(handle->client_handle, handle->scope_handle, received_cmd, nack_reason);
+  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(received_cmd);
+  ETCPAL_UNUSED_ARG(nack_reason);
+  return kEtcPalErrNotImpl;
+  //  if (!handle)
+  //    return kEtcPalErrInvalid;
+  //
+  //  return rdmnet_rpt_client_send_rdm_nack(handle->client_handle, handle->scope_handle, received_cmd, nack_reason);
 }
 
 /*!
@@ -357,11 +371,16 @@ etcpal_error_t rdmnet_device_send_rdm_update_from_responder(rdmnet_device_t hand
 etcpal_error_t rdmnet_device_send_status(rdmnet_device_t handle, const RdmnetSavedRdmCommand* received_cmd,
                                          rpt_status_code_t status_code, const char* status_string)
 {
-  if (!handle)
-    return kEtcPalErrInvalid;
-
-  return rdmnet_rpt_client_send_status(handle->client_handle, handle->scope_handle, received_cmd, status_code,
-                                       status_string);
+  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(received_cmd);
+  ETCPAL_UNUSED_ARG(status_code);
+  ETCPAL_UNUSED_ARG(status_string);
+  return kEtcPalErrNotImpl;
+  //  if (!handle)
+  //    return kEtcPalErrInvalid;
+  //
+  //  return rdmnet_rpt_client_send_status(handle->client_handle, handle->scope_handle, received_cmd, status_code,
+  //                                       status_string);
 }
 
 /*!
@@ -380,10 +399,15 @@ etcpal_error_t rdmnet_device_send_status(rdmnet_device_t handle, const RdmnetSav
 etcpal_error_t rdmnet_device_send_llrp_ack(rdmnet_device_t handle, const LlrpSavedRdmCommand* received_cmd,
                                            const uint8_t* response_data, uint8_t response_data_len)
 {
-  if (!handle)
-    return kEtcPalErrInvalid;
-
-  return rdmnet_rpt_client_send_llrp_ack(handle->client_handle, received_cmd, response_data, response_data_len);
+  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(received_cmd);
+  ETCPAL_UNUSED_ARG(response_data);
+  ETCPAL_UNUSED_ARG(response_data_len);
+  return kEtcPalErrNotImpl;
+  //  if (!handle)
+  //    return kEtcPalErrInvalid;
+  //
+  //  return rdmnet_rpt_client_send_llrp_ack(handle->client_handle, received_cmd, response_data, response_data_len);
 }
 
 /*!
@@ -401,10 +425,14 @@ etcpal_error_t rdmnet_device_send_llrp_ack(rdmnet_device_t handle, const LlrpSav
 etcpal_error_t rdmnet_device_send_llrp_nack(rdmnet_device_t handle, const LlrpSavedRdmCommand* received_cmd,
                                             rdm_nack_reason_t nack_reason)
 {
-  if (!handle)
-    return kEtcPalErrInvalid;
-
-  return rdmnet_rpt_client_send_llrp_nack(handle->client_handle, received_cmd, nack_reason);
+  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(received_cmd);
+  ETCPAL_UNUSED_ARG(nack_reason);
+  return kEtcPalErrNotImpl;
+  //  if (!handle)
+  //    return kEtcPalErrInvalid;
+  //
+  //  return rdmnet_rpt_client_send_llrp_nack(handle->client_handle, received_cmd, nack_reason);
 }
 
 /*!
@@ -641,6 +669,9 @@ etcpal_error_t rdmnet_device_remove_dynamic_responders(rdmnet_device_t handle, u
                                                        const EtcPalUuid* responder_ids, size_t num_responders)
 {
   ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(endpoint_id);
+  ETCPAL_UNUSED_ARG(responder_ids);
+  ETCPAL_UNUSED_ARG(num_responders);
   return kEtcPalErrNotImpl;
 }
 
@@ -664,10 +695,15 @@ etcpal_error_t rdmnet_device_remove_dynamic_responders(rdmnet_device_t handle, u
 etcpal_error_t rdmnet_device_change_scope(rdmnet_device_t handle, const RdmnetScopeConfig* new_scope_config,
                                           rdmnet_disconnect_reason_t disconnect_reason)
 {
-  if (!handle)
-    return kEtcPalErrInvalid;
-
-  return rdmnet_client_change_scope(handle->client_handle, handle->scope_handle, new_scope_config, disconnect_reason);
+  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(new_scope_config);
+  ETCPAL_UNUSED_ARG(disconnect_reason);
+  return kEtcPalErrNotImpl;
+  //  if (!handle)
+  //    return kEtcPalErrInvalid;
+  //
+  //  return rdmnet_client_change_scope(handle->client_handle, handle->scope_handle, new_scope_config,
+  //  disconnect_reason);
 }
 
 /*!
@@ -690,88 +726,93 @@ etcpal_error_t rdmnet_device_change_scope(rdmnet_device_t handle, const RdmnetSc
 etcpal_error_t rdmnet_device_change_search_domain(rdmnet_device_t handle, const char* new_search_domain,
                                                   rdmnet_disconnect_reason_t disconnect_reason)
 {
-  if (!handle)
-    return kEtcPalErrInvalid;
-
-  return rdmnet_client_change_search_domain(handle->client_handle, new_search_domain, disconnect_reason);
-}
-
-void client_connected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo* info,
-                      void* context)
-{
   ETCPAL_UNUSED_ARG(handle);
-
-  RdmnetDevice* device = (RdmnetDevice*)context;
-  if (device && scope_handle == device->scope_handle)
-  {
-    device->callbacks.connected(device, info, device->callback_context);
-  }
+  ETCPAL_UNUSED_ARG(new_search_domain);
+  ETCPAL_UNUSED_ARG(disconnect_reason);
+  return kEtcPalErrNotImpl;
+  //  if (!handle)
+  //    return kEtcPalErrInvalid;
+  //
+  //  return rdmnet_client_change_search_domain(handle->client_handle, new_search_domain, disconnect_reason);
 }
 
-void client_connect_failed(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                           const RdmnetClientConnectFailedInfo* info, void* context)
-{
-  ETCPAL_UNUSED_ARG(handle);
-
-  RdmnetDevice* device = (RdmnetDevice*)context;
-  if (device && scope_handle == device->scope_handle)
-  {
-    device->callbacks.connect_failed(device, info, device->callback_context);
-  }
-}
-
-void client_disconnected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                         const RdmnetClientDisconnectedInfo* info, void* context)
-{
-  ETCPAL_UNUSED_ARG(handle);
-
-  RdmnetDevice* device = (RdmnetDevice*)context;
-  if (device && scope_handle == device->scope_handle)
-  {
-    device->callbacks.disconnected(device, info, device->callback_context);
-  }
-}
-
-void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const BrokerMessage* msg,
-                                void* context)
-{
-  ETCPAL_UNUSED_ARG(handle);
-  ETCPAL_UNUSED_ARG(scope_handle);
-  ETCPAL_UNUSED_ARG(context);
-
-  etcpal_log(rdmnet_log_params, ETCPAL_LOG_INFO, "Got Broker message with vector %d", msg->vector);
-}
-
-llrp_response_action_t client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand* cmd,
-                                                LlrpSyncRdmResponse* response, void* context)
-{
-  ETCPAL_UNUSED_ARG(handle);
-
-  RdmnetDevice* device = (RdmnetDevice*)context;
-  if (device)
-  {
-    return device->callbacks.llrp_rdm_command_received(device, cmd, response, device->callback_context);
-  }
-  return kLlrpResponseActionDefer;
-}
-
-rdmnet_response_action_t client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
-                                             const RptClientMessage* msg, RdmnetSyncRdmResponse* response,
-                                             void* context)
-{
-  ETCPAL_UNUSED_ARG(handle);
-
-  RdmnetDevice* device = (RdmnetDevice*)context;
-  if (device && scope_handle == device->scope_handle)
-  {
-    if (msg->type == kRptClientMsgRdmCmd)
-    {
-      return device->callbacks.rdm_command_received(device, &msg->payload.cmd, response, device->callback_context);
-    }
-    else
-    {
-      RDMNET_LOG_INFO("Device incorrectly got non-RDM-command message.");
-    }
-  }
-  return kRdmnetRdmResponseActionDefer;
-}
+// void client_connected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo*
+// info,
+//                      void* context)
+//{
+//  ETCPAL_UNUSED_ARG(handle);
+//
+//  RdmnetDevice* device = (RdmnetDevice*)context;
+//  if (device && scope_handle == device->scope_handle)
+//  {
+//    device->callbacks.connected(device, info, device->callback_context);
+//  }
+//}
+//
+// void client_connect_failed(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+//                           const RdmnetClientConnectFailedInfo* info, void* context)
+//{
+//  ETCPAL_UNUSED_ARG(handle);
+//
+//  RdmnetDevice* device = (RdmnetDevice*)context;
+//  if (device && scope_handle == device->scope_handle)
+//  {
+//    device->callbacks.connect_failed(device, info, device->callback_context);
+//  }
+//}
+//
+// void client_disconnected(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+//                         const RdmnetClientDisconnectedInfo* info, void* context)
+//{
+//  ETCPAL_UNUSED_ARG(handle);
+//
+//  RdmnetDevice* device = (RdmnetDevice*)context;
+//  if (device && scope_handle == device->scope_handle)
+//  {
+//    device->callbacks.disconnected(device, info, device->callback_context);
+//  }
+//}
+//
+// void client_broker_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle, const BrokerMessage* msg,
+//                                void* context)
+//{
+//  ETCPAL_UNUSED_ARG(handle);
+//  ETCPAL_UNUSED_ARG(scope_handle);
+//  ETCPAL_UNUSED_ARG(context);
+//
+//  etcpal_log(rdmnet_log_params, ETCPAL_LOG_INFO, "Got Broker message with vector %d", msg->vector);
+//}
+//
+// llrp_response_action_t client_llrp_msg_received(rdmnet_client_t handle, const LlrpRemoteRdmCommand* cmd,
+//                                                LlrpSyncRdmResponse* response, void* context)
+//{
+//  ETCPAL_UNUSED_ARG(handle);
+//
+//  RdmnetDevice* device = (RdmnetDevice*)context;
+//  if (device)
+//  {
+//    return device->callbacks.llrp_rdm_command_received(device, cmd, response, device->callback_context);
+//  }
+//  return kLlrpResponseActionDefer;
+//}
+//
+// rdmnet_response_action_t client_msg_received(rdmnet_client_t handle, rdmnet_client_scope_t scope_handle,
+//                                             const RptClientMessage* msg, RdmnetSyncRdmResponse* response,
+//                                             void* context)
+//{
+//  ETCPAL_UNUSED_ARG(handle);
+//
+//  RdmnetDevice* device = (RdmnetDevice*)context;
+//  if (device && scope_handle == device->scope_handle)
+//  {
+//    if (msg->type == kRptClientMsgRdmCmd)
+//    {
+//      return device->callbacks.rdm_command_received(device, &msg->payload.cmd, response, device->callback_context);
+//    }
+//    else
+//    {
+//      RDMNET_LOG_INFO("Device incorrectly got non-RDM-command message.");
+//    }
+//  }
+//  return kRdmnetRdmResponseActionDefer;
+//}

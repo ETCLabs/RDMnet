@@ -276,8 +276,8 @@ etcpal_error_t rdmnet_ept_client_request_client_list(rdmnet_ept_client_t handle,
  * \param[in] dest_cid CID of the EPT client to which send the data.
  * \param[in] manufacturer_id Manufacturer ID portion of the EPT sub-protocol identifier.
  * \param[in] protocol_id Manufacturer ID portion of the EPT sub-protocol identifier.
- * \param[in] data CID of the EPT client to which send the data.
- * \param[in] data_len The RDM command data to send, including its addressing information.
+ * \param[in] data The data to send.
+ * \param[in] data_len Size in bytes of data.
  * \return #kEtcPalErrOk: Data sent successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.

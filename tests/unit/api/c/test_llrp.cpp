@@ -17,42 +17,11 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef RDMNET_PRIVATE_CONTROLLER_H_
-#define RDMNET_PRIVATE_CONTROLLER_H_
+#include "rdmnet/llrp.h"
 
-#include "rdmnet/controller.h"
-//#include "rdmnet/core/client.h"
+#include "gtest/gtest.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef enum
+TEST(TestLlrpApi, ComponentTypeToString)
 {
-  kRdmHandleMethodUseCallbacks,
-  kRdmHandleMethodUseData
-} rdm_handle_method_t;
-
-typedef struct RdmnetController
-{
-  // rdmnet_client_t client_handle;
-  RdmnetControllerCallbacks callbacks;
-
-  rdm_handle_method_t rdm_handle_method;
-  union
-  {
-    RdmnetControllerRdmCmdHandler handler;
-    RdmnetControllerRdmData data;
-  } rdm_handler;
-
-  void* callback_context;
-} RdmnetController;
-
-etcpal_error_t rdmnet_controller_init(void);
-void rdmnet_controller_deinit(void);
-
-#ifdef __cplusplus
+  EXPECT_NE(llrp_component_type_to_string(kLlrpCompRptDevice), nullptr);
 }
-#endif
-
-#endif /* RDMNET_PRIVATE_CONTROLLER_H_ */

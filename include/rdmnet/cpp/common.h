@@ -108,7 +108,7 @@ private:
 inline ResponseAction ResponseAction::SendAck(size_t response_data_len)
 {
   ResponseAction to_return;
-  RDMNET_SYNC_SEND_ACK(&to_return.response_, response_data_len);
+  RDMNET_SYNC_SEND_RDM_ACK(&to_return.response_, response_data_len);
   return to_return;
 }
 
@@ -117,7 +117,7 @@ inline ResponseAction ResponseAction::SendAck(size_t response_data_len)
 inline ResponseAction ResponseAction::SendNack(rdm_nack_reason_t nack_reason)
 {
   ResponseAction to_return;
-  RDMNET_SYNC_SEND_NACK(&to_return.response_, nack_reason);
+  RDMNET_SYNC_SEND_RDM_NACK(&to_return.response_, nack_reason);
   return to_return;
 }
 
@@ -127,7 +127,7 @@ inline ResponseAction ResponseAction::SendNack(rdm_nack_reason_t nack_reason)
 inline ResponseAction ResponseAction::SendNack(uint16_t raw_nack_reason)
 {
   ResponseAction to_return;
-  RDMNET_SYNC_SEND_NACK(&to_return.response_, static_cast<rdm_nack_reason_t>(raw_nack_reason));
+  RDMNET_SYNC_SEND_RDM_NACK(&to_return.response_, static_cast<rdm_nack_reason_t>(raw_nack_reason));
   return to_return;
 }
 
@@ -136,7 +136,7 @@ inline ResponseAction ResponseAction::SendNack(uint16_t raw_nack_reason)
 inline ResponseAction ResponseAction::DeferResponse()
 {
   ResponseAction to_return;
-  RDMNET_SYNC_DEFER_RESPONSE(&to_return.response_);
+  RDMNET_SYNC_DEFER_RDM_RESPONSE(&to_return.response_);
   return to_return;
 }
 

@@ -46,10 +46,11 @@ namespace rdmnet
 /// \brief Settings for the Broker's DNS Discovery functionality.
 struct BrokerDnsAttributes
 {
-  /// Your unique name for this broker DNS-SD service instance. The discovery library uses
-  /// standard mechanisms to ensure that this service instance name is actually unique;
-  /// however, the application should make a reasonable effort to provide a name that will
-  /// not conflict with other brokers.
+  /// \brief Your unique name for this broker DNS-SD service instance.
+  ///
+  /// The discovery library uses standard mechanisms to ensure that this service instance name is
+  /// actually unique; however, the application should make a reasonable effort to provide a name
+  /// that will not conflict with other brokers.
   std::string service_instance_name;
 
   /// A string to identify the manufacturer of this broker instance.

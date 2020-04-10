@@ -115,6 +115,22 @@ typedef struct LlrpTargetConfig
 } LlrpTargetConfig;
 
 /*!
+ * \brief A set of default initializer values for an LlrpTargetConfig struct.
+ *
+ * Usage:
+ * \code
+ * LlrpTargetConfig config = { LLRP_TARGET_CONFIG_DEFAULT_INIT_VALUES(MY_ESTA_MANUFACTURER_ID) };
+ * // Now fill in the required portions as necessary with your data...
+ * \endcode
+ *
+ * To omit the enclosing brackets, use #LLRP_TARGET_CONFIG_DEFAULT_INIT().
+ *
+ * \param manu_id Your ESTA manufacturer ID.
+ */
+#define LLRP_TARGET_CONFIG_DEFAULT_INIT_VALUES(manu_id) \
+  {{0}}, kLlrpCompNonRdmnet, {NULL}, NULL, {(0x8000 | manu_id), 0}, NULL, 0
+
+/*!
  * \brief A default-value initializer for an LlrpTargetConfig struct.
  *
  * Usage:
@@ -125,9 +141,9 @@ typedef struct LlrpTargetConfig
  *
  * \param manu_id Your ESTA manufacturer ID.
  */
-#define LLRP_TARGET_CONFIG_DEFAULT_INIT(manu_id)                              \
-  {                                                                           \
-    {{0}}, kLlrpCompNonRdmnet, {NULL}, NULL, {(0x8000 | manu_id), 0}, NULL, 0 \
+#define LLRP_TARGET_CONFIG_DEFAULT_INIT(manu_id) \
+  {                                              \
+    LLRP_TARGET_CONFIG_DEFAULT_INIT_VALUES       \
   }
 
 void llrp_target_config_init(LlrpTargetConfig* config, uint16_t manufacturer_id);

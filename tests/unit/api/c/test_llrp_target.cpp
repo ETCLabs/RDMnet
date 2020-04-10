@@ -17,42 +17,35 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#ifndef RDMNET_PRIVATE_CONTROLLER_H_
-#define RDMNET_PRIVATE_CONTROLLER_H_
+#include "rdmnet/llrp_target.h"
 
-#include "rdmnet/controller.h"
-//#include "rdmnet/core/client.h"
+#include "gtest/gtest.h"
+#include "fff.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+FAKE_VOID_FUNC(handle_llrp_target_rdm_command_received, llrp_target_t, const LlrpRdmCommand*, RdmnetSyncRdmResponse*,
+               void*);
 
-typedef enum
+class TestLlrpTargetApi : public testing::Test
 {
-  kRdmHandleMethodUseCallbacks,
-  kRdmHandleMethodUseData
-} rdm_handle_method_t;
+protected:
+  static constexpr uint16_t kTestManufId = 0x1234;
 
-typedef struct RdmnetController
-{
-  // rdmnet_client_t client_handle;
-  RdmnetControllerCallbacks callbacks;
+  void ResetLocalFakes() { RESET_FAKE(handle_llrp_target_rdm_command_received); }
 
-  rdm_handle_method_t rdm_handle_method;
-  union
+  void SetUp() override
   {
-    RdmnetControllerRdmCmdHandler handler;
-    RdmnetControllerRdmData data;
-  } rdm_handler;
+    ResetLocalFakes();
+    ASSERT_EQ(rdmnet_init(nullptr, nullptr), kEtcPalErrOk);
+    config_.callbacks.rdm_command_received = handle_llrp_target_rdm_command_received;
+  }
 
-  void* callback_context;
-} RdmnetController;
+  void TearDown() override { rdmnet_deinit(); }
 
-etcpal_error_t rdmnet_controller_init(void);
-void rdmnet_controller_deinit(void);
+  LlrpTargetConfig config_{LLRP_TARGET_CONFIG_DEFAULT_INIT_VALUES(kTestManufId)};
+};
 
-#ifdef __cplusplus
+TEST_F(TestLlrpTargetApi, Placeholder)
+{
+  llrp_target_t handle;
+  EXPECT_EQ(llrp_target_create(&config_, &handle), kEtcPalErrOk);
 }
-#endif
-
-#endif /* RDMNET_PRIVATE_CONTROLLER_H_ */

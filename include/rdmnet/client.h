@@ -28,6 +28,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "etcpal/inet.h"
+#include "etcpal/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/common.h"
 

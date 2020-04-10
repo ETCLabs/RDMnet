@@ -24,6 +24,28 @@
 
 class MockEptClientNotifyHandler : public rdmnet::EptClientNotifyHandler
 {
+  MOCK_METHOD(void, HandleConnectedToBroker,
+              (rdmnet::EptClientHandle handle, rdmnet::ScopeHandle scope_handle,
+               const rdmnet::ClientConnectedInfo& info),
+              (override));
+  MOCK_METHOD(void, HandleBrokerConnectFailed,
+              (rdmnet::EptClientHandle handle, rdmnet::ScopeHandle scope_handle,
+               const rdmnet::ClientConnectFailedInfo& info),
+              (override));
+  MOCK_METHOD(void, HandleDisconnectedFromBroker,
+              (rdmnet::EptClientHandle handle, rdmnet::ScopeHandle scope_handle,
+               const rdmnet::ClientDisconnectedInfo& info),
+              (override));
+  MOCK_METHOD(void, HandleClientListUpdate,
+              (rdmnet::EptClientHandle handle, rdmnet::ScopeHandle scope_handle, client_list_action_t list_action,
+               const RdmnetEptClientList& list),
+              (override));
+  MOCK_METHOD(rdmnet::ResponseAction, HandleEptData,
+              (rdmnet::EptClientHandle handle, rdmnet::ScopeHandle scope_handle, const rdmnet::EptData& data),
+              (override));
+  MOCK_METHOD(void, HandleEptStatus,
+              (rdmnet::EptClientHandle handle, rdmnet::ScopeHandle scope_handle, const rdmnet::EptStatus& status),
+              (override));
 };
 
 class TestCppEptClientApi : public testing::Test
@@ -37,3 +59,15 @@ protected:
 
   void TearDown() override { rdmnet::Deinit(); }
 };
+
+TEST_F(TestCppEptClientApi, Startup)
+{
+  MockEptClientNotifyHandler notify;
+  rdmnet::EptClient ept_client;
+
+  std::vector<rdmnet::EptSubProtocol> protocols;
+  protocols.push_back(rdmnet::EptSubProtocol(0x6574, 0xdddd, "Test Protocol"));
+  rdmnet::EptClientSettings settings(etcpal::Uuid::OsPreferred(), protocols);
+
+  EXPECT_EQ(ept_client.Startup(notify, settings), kEtcPalErrOk);
+}

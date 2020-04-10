@@ -26,15 +26,15 @@ class MockControllerNotifyHandler : public rdmnet::ControllerNotifyHandler
 {
   MOCK_METHOD(void, HandleConnectedToBroker,
               (rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle,
-               const RdmnetClientConnectedInfo& info),
+               const rdmnet::ClientConnectedInfo& info),
               (override));
   MOCK_METHOD(void, HandleBrokerConnectFailed,
               (rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle,
-               const RdmnetClientConnectFailedInfo& info),
+               const rdmnet::ClientConnectFailedInfo& info),
               (override));
   MOCK_METHOD(void, HandleDisconnectedFromBroker,
               (rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle,
-               const RdmnetClientDisconnectedInfo& info),
+               const rdmnet::ClientDisconnectedInfo& info),
               (override));
   MOCK_METHOD(void, HandleClientListUpdate,
               (rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle, client_list_action_t list_action,

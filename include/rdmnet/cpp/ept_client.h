@@ -113,13 +113,15 @@ struct EptClientSettings
 
   /// Create an empty, invalid data structure by default.
   EptClientSettings() = default;
-  EptClientSettings(const etcpal::Uuid& new_cid, const std::vector<EptSubProtocol>& protocols);
+  EptClientSettings(const etcpal::Uuid& new_cid, const std::vector<EptSubProtocol>& new_protocols);
 
   bool IsValid() const;
 };
 
 /// Create an EptClientSettings instance by passing the required members explicitly.
-inline EptClientSettings::EptClientSettings(const etcpal::Uuid& new_cid, const std::vector<EptSubProtocol>& protocols)
+inline EptClientSettings::EptClientSettings(const etcpal::Uuid& new_cid,
+                                            const std::vector<EptSubProtocol>& new_protocols)
+    : cid(new_cid), protocols(new_protocols)
 {
 }
 
@@ -175,7 +177,6 @@ inline etcpal::Error EptClient::Startup(EptClientNotifyHandler& notify_handler, 
 {
   ETCPAL_UNUSED_ARG(notify_handler);
   ETCPAL_UNUSED_ARG(settings);
-  ETCPAL_UNUSED_ARG(response_buf);
   return kEtcPalErrNotImpl;
 }
 
@@ -333,6 +334,7 @@ inline EptClientNotifyHandler* EptClient::notify_handler() const
 /// \return #kEtcPalErrNotFound: EPT client not started, or scope handle not found.
 inline etcpal::Expected<Scope> EptClient::scope(ScopeHandle scope_handle) const
 {
+  ETCPAL_UNUSED_ARG(scope_handle);
   return kEtcPalErrNotImpl;
 }
 

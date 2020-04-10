@@ -109,6 +109,43 @@ typedef struct LlrpManagerConfig
   void* callback_context;
 } LlrpManagerConfig;
 
+/*!
+ * \brief A set of default initializer values for an LlrpManagerConfig struct.
+ *
+ * Usage:
+ * \code
+ * LlrpManagerConfig config = { LLRP_MANAGER_CONFIG_DEFAULT_INIT_VALUES(MY_ESTA_MANUFACTURER_ID) };
+ * // Now fill in the required portions as necessary with your data...
+ * \endcode
+ *
+ * To omit the enclosing brackets, use #LLRP_MANAGER_CONFIG_DEFAULT_INIT().
+ *
+ * \param manu_id Your ESTA manufacturer ID.
+ */
+#define LLRP_MANAGER_CONFIG_DEFAULT_INIT_VALUES(manu_id) \
+  {{0}}, {kEtcPalIpTypeInvalid, 0}, (manu_id), {NULL, NULL, NULL}, NULL
+
+/*!
+ * \brief A default-value initializer for an LlrpManagerConfig struct.
+ *
+ * Usage:
+ * \code
+ * LlrpManagerConfig config = LLRP_MANAGER_CONFIG_DEFAULT_INIT(MY_ESTA_MANUFACTURER_ID);
+ * // Now fill in the required portions as necessary with your data...
+ * \endcode
+ *
+ * \param manu_id Your ESTA manufacturer ID.
+ */
+#define LLRP_MANAGER_CONFIG_DEFAULT_INIT(manu_id) \
+  {                                               \
+    LLRP_MANAGER_CONFIG_DEFAULT_INIT_VALUES       \
+  }
+
+void llrp_manager_config_init(LlrpManagerConfig* config, uint16_t manufacturer_id);
+void llrp_manager_config_set_callbacks(LlrpManagerConfig* config, LlrpManagerTargetDiscoveredCallback target_discovered,
+                                       LlrpManagerRdmResponseReceivedCallback rdm_response_received,
+                                       LlrpManagerDiscoveryFinishedCallback discovery_finished, void* callback_context);
+
 etcpal_error_t llrp_manager_create(const LlrpManagerConfig* config, llrp_manager_t* handle);
 void llrp_manager_destroy(llrp_manager_t handle);
 

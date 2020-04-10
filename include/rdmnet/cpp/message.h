@@ -1244,12 +1244,13 @@ inline RptClientEntry::RptClientEntry(const RdmnetRptClientEntry& c_entry)
 }
 
 /// Assign an instance of the C RdmnetRptClientEntry type to an instance of this class.
-RptClientEntry& RptClientEntry::operator=(const RdmnetRptClientEntry& c_entry)
+inline RptClientEntry& RptClientEntry::operator=(const RdmnetRptClientEntry& c_entry)
 {
   cid = c_entry.cid;
   uid = c_entry.uid;
   type = c_entry.type;
   binding_cid = c_entry.binding_cid;
+  return *this;
 }
 
 /// \brief Copy a list of RPT client entries delivered to an RDMnet callback function.
@@ -1261,7 +1262,7 @@ inline std::vector<RptClientEntry> GetRptClientEntries(const RdmnetRptClientList
   std::vector<RptClientEntry> to_return;
   to_return.reserve(list.num_client_entries);
   std::transform(list.client_entries, list.client_entries + list.num_client_entries, std::back_inserter(to_return),
-                 [](const RdmnetRptClientEntry* entry) { return RptClientEntry(*entry); });
+                 [](const RdmnetRptClientEntry& entry) { return RptClientEntry(entry); });
   return to_return;
 }
 
@@ -1385,7 +1386,7 @@ constexpr size_t EptData::data_len() const noexcept
 
 /// \brief Copy the data out of an EPT data message.
 /// \return A new vector of bytes representing the EPT data.
-std::vector<uint8_t> EptData::CopyData() const
+inline std::vector<uint8_t> EptData::CopyData() const
 {
   if (data_.data && data_.data_len)
     return std::vector<uint8_t>(data_.data, data_.data + data_.data_len);
@@ -1669,6 +1670,7 @@ constexpr ept_status_code_t SavedEptStatus::status_code() const noexcept
 /// Get the optional status string accompanying this status message.
 constexpr const std::string& SavedEptStatus::status_string() const noexcept
 {
+  return status_string_;
 }
 
 /// Whether the values contained in this class are valid for an EPT status message.
@@ -1703,6 +1705,8 @@ inline bool SavedEptStatus::HasStatusString() const noexcept
 struct EptSubProtocol
 {
   EptSubProtocol() = default;
+  EptSubProtocol(uint16_t new_manufacturer_id, uint16_t new_protocol_id, const std::string& new_protocol_string);
+  EptSubProtocol(uint16_t new_manufacturer_id, uint16_t new_protocol_id, const char* new_protocol_string);
   EptSubProtocol(const RdmnetEptSubProtocol& c_prot);
   EptSubProtocol& operator=(const RdmnetEptSubProtocol& c_prot);
 
@@ -1710,6 +1714,20 @@ struct EptSubProtocol
   uint16_t protocol_id{0};      ///< The identifier for this protocol.
   std::string protocol_string;  ///< A descriptive string for the protocol.
 };
+
+/// Construct an EptSubProtocol from the required values.
+inline EptSubProtocol::EptSubProtocol(uint16_t new_manufacturer_id, uint16_t new_protocol_id,
+                                      const std::string& new_protocol_string)
+    : manufacturer_id(new_manufacturer_id), protocol_id(new_protocol_id), protocol_string(new_protocol_string)
+{
+}
+
+/// Construct an EptSubProtocol from the required values.
+inline EptSubProtocol::EptSubProtocol(uint16_t new_manufacturer_id, uint16_t new_protocol_id,
+                                      const char* new_protocol_string)
+    : manufacturer_id(new_manufacturer_id), protocol_id(new_protocol_id), protocol_string(new_protocol_string)
+{
+}
 
 /// Construct an EptSubProtocol copied from an instance of the C RdmnetEptSubProtocol type.
 inline EptSubProtocol::EptSubProtocol(const RdmnetEptSubProtocol& c_prot)
@@ -1742,17 +1760,18 @@ inline EptClientEntry::EptClientEntry(const RdmnetEptClientEntry& c_entry) : cid
 {
   protocols.reserve(c_entry.num_protocols);
   std::transform(c_entry.protocols, c_entry.protocols + c_entry.num_protocols, std::back_inserter(protocols),
-                 [](const RdmnetEptSubProtocol* protocol) { return EptSubProtocol(*protocol); });
+                 [](const RdmnetEptSubProtocol& protocol) { return EptSubProtocol(protocol); });
 }
 
 /// Assign an instance of the C RdmnetEptClientEntry type to an instance of this class.
-EptClientEntry& EptClientEntry::operator=(const RdmnetEptClientEntry& c_entry)
+inline EptClientEntry& EptClientEntry::operator=(const RdmnetEptClientEntry& c_entry)
 {
   cid = c_entry.cid;
   protocols.clear();
   protocols.reserve(c_entry.num_protocols);
   std::transform(c_entry.protocols, c_entry.protocols + c_entry.num_protocols, std::back_inserter(protocols),
-                 [](const RdmnetEptSubProtocol* protocol) { return EptSubProtocol(*protocol); });
+                 [](const RdmnetEptSubProtocol& protocol) { return EptSubProtocol(protocol); });
+  return *this;
 }
 
 /// \brief Copy a list of EPT client entries delivered to an RDMnet callback function.
@@ -1765,7 +1784,7 @@ inline std::vector<EptClientEntry> GetEptClientEntries(const RdmnetEptClientList
   std::vector<EptClientEntry> to_return;
   to_return.reserve(list.num_client_entries);
   std::transform(list.client_entries, list.client_entries + list.num_client_entries, std::back_inserter(to_return),
-                 [](const RdmnetEptClientEntry* entry) { return EptClientEntry(*entry); });
+                 [](const RdmnetEptClientEntry& entry) { return EptClientEntry(entry); });
   return to_return;
 }
 

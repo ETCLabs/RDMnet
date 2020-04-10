@@ -303,7 +303,7 @@ typedef struct BrokerMessage
     BrokerClientRedirectMsg client_redirect;
     BrokerClientList client_list;
     BrokerDynamicUidRequestList dynamic_uid_request_list;
-    BrokerDynamicUidAssignmentList dynamic_uid_assignment_list;
+    RdmnetDynamicUidAssignmentList dynamic_uid_assignment_list;
     BrokerFetchUidAssignmentList fetch_uid_assignment_list;
     BrokerDisconnectMsg disconnect;
   } data;
@@ -482,7 +482,7 @@ size_t broker_pack_rpt_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid
 size_t broker_pack_ept_client_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, uint16_t vector,
                                    const RdmnetEptClientEntry* client_entries, size_t num_client_entries);
 size_t broker_pack_uid_assignment_list(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid,
-                                       const BrokerDynamicUidMapping* mappings, size_t num_mappings);
+                                       const RdmnetDynamicUidMapping* mappings, size_t num_mappings);
 
 etcpal_error_t broker_send_connect_reply(rdmnet_conn_t handle, const EtcPalUuid* local_cid,
                                          const BrokerConnectReplyMsg* data);
