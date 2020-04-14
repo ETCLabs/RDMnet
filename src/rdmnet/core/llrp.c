@@ -331,7 +331,7 @@ void llrp_socket_activity(const EtcPalPollEvent* event, PolledSocketOpaqueData d
       else if (RDMNET_CAN_LOG(ETCPAL_LOG_WARNING))
       {
         char addr_str[ETCPAL_INET6_ADDRSTRLEN];
-        etcpal_inet_ntop(&from_addr.ip, addr_str, ETCPAL_INET6_ADDRSTRLEN);
+        etcpal_ip_to_string(&from_addr.ip, addr_str);
         RDMNET_LOG_WARNING("Couldn't reply to LLRP message from %s:%u because no reply route could be found.", addr_str,
                            from_addr.port);
       }

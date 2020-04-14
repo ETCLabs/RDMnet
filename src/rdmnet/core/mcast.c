@@ -112,7 +112,7 @@ etcpal_error_t rdmnet_mcast_init(const RdmnetNetintConfig* netint_config)
     addr_str[0] = '\0';
     if (RDMNET_CAN_LOG(ETCPAL_LOG_INFO))
     {
-      etcpal_inet_ntop(&netint->addr, addr_str, ETCPAL_INET6_ADDRSTRLEN);
+      etcpal_ip_to_string(&netint->addr, addr_str);
     }
 
     // Create a test send and receive socket on each network interface. If either one fails, we

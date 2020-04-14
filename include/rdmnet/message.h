@@ -43,6 +43,11 @@
 extern "C" {
 #endif
 
+/*!
+ * \name RDM commands and responses
+ * @{
+ */
+
 /*! An RDMnet RDM command received by this component. */
 typedef struct RdmnetRdmCommand
 {
@@ -174,6 +179,15 @@ typedef struct RdmnetSavedRdmResponse
  */
 #define RDMNET_RESP_ORIGINAL_COMMAND_INCLUDED(resp) ((resp)->seq_num == 0)
 
+/*!
+ * @}
+ */
+
+/*!
+ * \name Other RPT messages
+ * @{
+ */
+
 /*! An RDMnet RPT status message received by a local component. */
 typedef struct RdmnetRptStatus
 {
@@ -241,6 +255,15 @@ typedef struct RdmnetDynamicUidAssignmentList
    */
   bool more_coming;
 } RdmnetDynamicUidAssignmentList;
+
+/*!
+ * @}
+ */
+
+/*!
+ * \name EPT messages
+ * @{
+ */
 
 /*! An RDMnet EPT data message received by a local component. */
 typedef struct RdmnetEptData
@@ -313,6 +336,15 @@ typedef struct RdmnetSavedEptStatus
    */
   const char* status_string;
 } RdmnetSavedEptStatus;
+
+/*!
+ * @}
+ */
+
+/*!
+ * \name Client list messages
+ * @{
+ */
 
 /*! An RPT client type. */
 typedef enum
@@ -393,6 +425,15 @@ typedef struct RdmnetEptClientList
   bool more_coming;
 } RdmnetEptClientList;
 
+/*!
+ * @}
+ */
+
+/*!
+ * \name LLRP messages
+ * @{
+ */
+
 /*! An RDM command received from a remote LLRP Manager. */
 typedef struct LlrpRdmCommand
 {
@@ -462,6 +503,10 @@ typedef struct LlrpSavedRdmResponse
   /*! The length of the parameter data associated with the RDM response. */
   uint8_t rdm_data_len;
 } LlrpSavedRdmResponse;
+
+/*!
+ * @}
+ */
 
 etcpal_error_t rdmnet_save_rdm_command(const RdmnetRdmCommand* command, RdmnetSavedRdmCommand* saved_command);
 etcpal_error_t rdmnet_save_rdm_response(const RdmnetRdmResponse* response, RdmnetSavedRdmResponse* saved_response);

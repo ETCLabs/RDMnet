@@ -55,9 +55,9 @@ bool set_scope(wchar_t* arg, char* scope_buf)
 bool set_static_broker(wchar_t* arg, EtcPalSockAddr* static_broker_addr)
 {
   wchar_t* sep = wcschr(arg, ':');
-  if (sep != NULL && sep - arg < ETCPAL_INET6_ADDRSTRLEN)
+  if (sep != NULL && sep - arg < ETCPAL_IP_STRING_BYTES)
   {
-    wchar_t ip_str[ETCPAL_INET6_ADDRSTRLEN];
+    wchar_t ip_str[ETCPAL_IP_STRING_BYTES];
     ptrdiff_t ip_str_len = sep - arg;
     struct sockaddr_storage tst_addr;
 

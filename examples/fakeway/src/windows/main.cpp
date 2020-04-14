@@ -50,9 +50,9 @@ bool SetStaticBroker(const wchar_t* arg, rdmnet::Scope& scope_config)
   EtcPalSockAddr static_broker_addr;
 
   const wchar_t* sep = wcschr(arg, ':');
-  if (sep != NULL && sep - arg < ETCPAL_INET6_ADDRSTRLEN)
+  if (sep != NULL && sep - arg < ETCPAL_IP_STRING_BYTES)
   {
-    wchar_t ip_str[ETCPAL_INET6_ADDRSTRLEN];
+    wchar_t ip_str[ETCPAL_IP_STRING_BYTES];
     ptrdiff_t ip_str_len = sep - arg;
     struct sockaddr_in tst_addr;
     struct sockaddr_in6 tst_addr6;

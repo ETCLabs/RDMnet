@@ -1684,7 +1684,7 @@ void attempt_connection_on_listen_addrs(ClientScopeListEntry* scope_entry)
 
     if (RDMNET_CAN_LOG(ETCPAL_LOG_WARNING))
     {
-      etcpal_inet_ntop(&scope_entry->listen_addrs[listen_addr_index], addr_str, ETCPAL_INET6_ADDRSTRLEN);
+      etcpal_ip_to_string(&scope_entry->listen_addrs[listen_addr_index], addr_str);
     }
 
     RDMNET_LOG_INFO("Attempting broker connection on scope '%s' at address %s:%d...", scope_entry->id, addr_str,

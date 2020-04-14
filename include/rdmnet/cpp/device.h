@@ -436,6 +436,7 @@ public:
   etcpal::Error RemovePhysicalResponders(uint16_t endpoint_id, const std::vector<rdm::Uid>& responder_uids);
 
   constexpr DeviceHandle handle() const;
+  constexpr DeviceNotifyHandler* notify_handler() const;
   etcpal::Expected<Scope> scope() const;
 
 private:
@@ -1040,6 +1041,12 @@ inline etcpal::Error Device::RemovePhysicalResponders(uint16_t endpoint_id, cons
 constexpr DeviceHandle Device::handle() const
 {
   return handle_;
+}
+
+/// \brief Retrieve the DeviceNotifyHandler reference that this device was configured with.
+constexpr DeviceNotifyHandler* Device::notify_handler() const
+{
+  return notify_;
 }
 
 /// \brief Retrieve the scope configuration associated with a device instance.

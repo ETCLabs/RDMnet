@@ -37,7 +37,7 @@ void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDis
        listen_addr < broker_info->listen_addrs + broker_info->num_listen_addrs; ++listen_addr)
   {
     char addr_str[ETCPAL_INET6_ADDRSTRLEN];
-    etcpal_inet_ntop(listen_addr, addr_str, ETCPAL_INET6_ADDRSTRLEN);
+    etcpal_ip_to_string(listen_addr, addr_str);
     printf("Address: %s:%d\n", addr_str, broker_info->port);
   }
 }

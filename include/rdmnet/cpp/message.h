@@ -1400,6 +1400,10 @@ struct DynamicUidMapping
   DynamicUidMapping(const RdmnetDynamicUidMapping& c_mapping);
   DynamicUidMapping& operator=(const RdmnetDynamicUidMapping& c_mapping);
 
+  constexpr bool IsOk() const noexcept;
+  const char* CodeToCString() const noexcept;
+  std::string CodeToString() const;
+
   /// The response code - indicating whether the broker was able to assign or look up this dynamic UID.
   rdmnet_dynamic_uid_status_t status_code;
   /// The dynamic UID.
@@ -1421,6 +1425,25 @@ inline DynamicUidMapping& DynamicUidMapping::operator=(const RdmnetDynamicUidMap
   uid = c_mapping.uid;
   rid = c_mapping.rid;
   return *this;
+}
+
+/// \brief Whether a DynamicUidMapping has a status code of OK.
+/// \details An OK status code indicates a successful UID assignment or RID lookup.
+constexpr bool DynamicUidMapping::IsOk() const noexcept
+{
+  return (status_code == kRdmnetDynamicUidStatusOk);
+}
+
+/// Convert the mapping status code to a string representation.
+inline const char* DynamicUidMapping::CodeToCString() const noexcept
+{
+  return rdmnet_dynamic_uid_status_to_string(status_code);
+}
+
+/// Convert the mapping status code to a string representation.
+inline std::string DynamicUidMapping::CodeToString() const
+{
+  return rdmnet_dynamic_uid_status_to_string(status_code);
 }
 
 /// \ingroup rdmnet_cpp_common

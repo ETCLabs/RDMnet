@@ -1032,7 +1032,7 @@ void BrokerCore::HandleOtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
     for (size_t i = 0; i < broker_info.num_listen_addrs; ++i)
     {
       char addr_string[ETCPAL_INET6_ADDRSTRLEN];
-      if (kEtcPalErrOk == etcpal_inet_ntop(&broker_info.listen_addrs[i], addr_string, ETCPAL_INET6_ADDRSTRLEN))
+      if (kEtcPalErrOk == etcpal_ip_to_string(&broker_info.listen_addrs[i], addr_string))
       {
         addrs.append(addr_string);
         if (i < broker_info.num_listen_addrs - 1)

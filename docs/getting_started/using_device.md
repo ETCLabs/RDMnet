@@ -7,53 +7,16 @@ interface is a header-only wrapper around the C interface.
 
 ## Initialization and Destruction
 
-The core RDMnet init and deinit functions should be called once each at application startup and
-shutdown time. These functions interface with the EtcPal \ref etcpal_log API to configure what
-happens when the library logs messages. Optionally pass an EtcPalLogParams structure to use this 
-functionality. This structure can be shared across different ETC library modules.
-
-The init function by default starts a background thread for handling periodic RDMnet functionality
-and receiving data. The deinit function joins this thread.
-
-<!-- CODE_BLOCK_START -->
-```c
-#include "rdmnet/device.h"
-
-// In some function called at startup...
-EtcPalLogParams log_params;
-// Initialize log_params...
-
-etcpal_error_t init_result = rdmnet_init(&log_params, NULL);
-// Or, to init without worrying about logs from the RDMnet library...
-etcpal_error_t init_result = rdmnet_init(NULL, NULL);
-
-// In some function called at shutdown...
-rdmnet_deinit();
-```
-<!-- CODE_BLOCK_MID -->
-```cpp
-#include "rdmnet/cpp/device.h"
-
-// In some function called at startup...
-etcpal::Logger logger;
-// Initialize and start logger...
-
-etcpal::Error init_result = rdmnet::Init(logger);
-
-// Or, to init without worrying about logs from the RDMnet library...
-etcpal::Error init_result = rdmnet::Init();
-
-// In some function called at shutdown...
-rdmnet::Deinit();
-```
-<!-- CODE_BLOCK_END -->
+The RDMnet library must be globally initialized before using the RDMnet Device API. See
+\ref global_init_and_destroy.
 
 To create a device instance, use the rdmnet_device_create() function in C, or instantiate an
 rdmnet::Device and call its Startup() function in C++.
 
 The RDMnet device API is an asynchronous, callback-oriented API. Part of the initial configuration
 for a device instance is a set of function pointers (or abstract interface) for the library to use
-as callbacks. Callbacks are dispatched from the thread context which calls rdmnet_core_tick().
+as callbacks. Callbacks are dispatched from the background thread that is started when the RDMnet
+library is initialized.
 
 <!-- CODE_BLOCK_START -->
 ```c
@@ -178,25 +141,274 @@ any RDMnet API function from any callback.
 
 Generally the first callback a device gets will be when it has connected to a broker:
 
-
 <!-- CODE_BLOCK_START -->
 ```c
 void device_connected_callback(rdmnet_device_t handle, const RdmnetClientConnectedInfo* info, void* context)
 {
-  // Check handle and/or context as necessary...
-
-  char addr_str[ETCPAL_INET6_ADDRSTRLEN];
-  etcpal_inet_ntop(&info->broker_addr.ip, addr_str, ETCPAL_INET6_ADDRSTRLEN);
-
+  char addr_str[ETCPAL_IP_STRING_BYTES];
+  etcpal_ip_to_string(&info->broker_addr.ip, addr_str);
   printf("Connected to broker '%s' at address %s:%d\n", info->broker_name, addr_str, info->broker_addr.port);
 }
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyDeviceNotifyHandler::HandleConnectedToBroker(rdmnet::DeviceHandle handle, const RdmnetClientConnectedInfo& info)
+void MyDeviceNotifyHandler::HandleConnectedToBroker(rdmnet::DeviceHandle handle, const rdmnet::ClientConnectedInfo& info)
 {
-  // Check handle as necessary and get device instance... 
-
+  std::cout << "Connected to broker '" << info.broker_name()
+            << "' at IP address " << info.broker_addr().ToString() << '\n';
 }
 ```
 <!-- CODE_BLOCK_END -->
+
+### Connection Failure
+
+It's worth noting connection failure as a special case here. RDMnet connections can fail for many
+reasons, including user misconfiguration, network misconfiguration, components starting up or
+shutting down, programming errors, and more.
+
+The ClientConnectFailedInfo and ClientDisconnectedInfo structs passed back with the 
+"connect failed" and "disconnected" callbacks respectively have comprehensive information about the 
+failure, including enum values containing the library's categorization of the failure, protocol
+reason codes and socket errors where applicable. This information is typically used mostly for
+logging and debugging. Each of these codes has a respective `to_string()` function to aid in
+logging.
+
+For programmatic use, the structs also contain a `will_retry` member which indicates whether the
+library plans to retry this connection in the background. The only circumstances under which the 
+library will not retry is when a connection failure is determined to be either a programming error
+or a user misconfiguration. Some examples of these circumstances are:
+
+* The broker explicitly rejected a connection with a reason code indicating a configuration error,
+  such as `CONNECT_SCOPE_MISMATCH` or `CONNECT_DUPLICATE_UID`.
+* The library failed to create a network socket before the connection was initiated.
+
+## Adding Endpoints and Responders
+
+As explained in \ref devices_and_gateways, RDMnet devices can contain endpoints which serve as
+grouping mechanisms for virtual or physical RDM responders. The RDMnet device API has functionality
+for managing endpoints and responders on a local device.
+
+### Adding Physical Endpoints and Responders
+
+Physical endpoints are added using the physical endpoint configuration structure. This structure
+defines the endpoint number (an integer between 1 and 63,999) and any responders which are present
+on the endpoint initially.
+
+<!-- CODE_BLOCK_START -->
+```c
+// Create a physical endpoint numbered 1, with no responders on it initially.
+RdmnetPhysicalEndpointConfig endpoint_config = RDMNET_PHYSICAL_ENDPOINT_INIT(1);
+
+etcpal_error_t result = rdmnet_device_add_physical_endpoint(my_device_handle, &endpoint_config);
+if (result == kEtcPalErrOk)
+{
+  // The endpoint has been added. If currently connected, the library will send the proper
+  // notification which indicates to connected controllers that there is a new endpoint present.
+}
+```
+<!-- CODE_BLOCK_MID -->
+```cpp
+// Endpoint configs are constructed implicitly from endpoint numbers, so when creating an endpoint
+// with no responders on it initially, it's as simple as: 
+
+auto result = device.AddPhysicalEndpoint(1); // Create a physical endpoint numbered 1
+if (result)
+{
+  // The endpoint has been added. If currently connected, the library will send the proper
+  // notification which indicates to connected controllers that there is a new endpoint present.
+}
+```
+<!-- CODE_BLOCK_END -->
+
+Adding and removing physical responders from an endpoint will typically be done when an RDMnet
+gateway discovers or loses RDM responders on its RDM ports. For example:
+
+<!-- CODE_BLOCK_START -->
+```c
+void rdm_responder_discovered(uint16_t port_endpoint_number, const RdmUid* responder_uid)
+{
+  etcpal_error_t result = rdmnet_device_add_static_responders(my_device_handle, port_endpoint_number,
+                                                              responder_uid, 1);
+  if (result == kEtcPalErrOk)
+  {
+    // The responder has been added. If currently connected, the library will send the proper
+    // notification which indicates to connected controllers that there is a new responder present.
+  }
+}
+```
+<!-- CODE_BLOCK_MID -->
+```cpp
+void RdmResponderDiscovered(uint16_t port_endpoint_number, const rdm::Uid& responder_uid)
+{
+  auto result = device.AddPhysicalResponder(port_endpoint_number, responder_uid);
+  if (result)
+  {
+    // The responder has been added. If currently connected, the library will send the proper
+    // notification which indicates to connected controllers that there is a new responder present.
+  }
+}
+```
+<!-- CODE_BLOCK_END -->
+
+You can also add responders initially present on an endpoint at the same time as the endpoint is
+added. This should be done anytime the initial responders on an endpoint are known, as it reduces
+the volume of RDMnet messages that need to be sent.
+
+<!-- CODE_BLOCK_START -->
+```c
+// Create a physical endpoint numbered 2
+RdmnetPhysicalEndpointConfig endpoint_config = RDMNET_PHYSICAL_ENDPOINT_INIT(2);
+
+// UIDs for a group of responders that have already been discovered on this endpoint are contained
+// in the responders array below.
+RdmUid responders[3] = { 
+  { 0x6574, 0x00000001 },
+  { 0x6574, 0x00000002 },
+  { 0x6574, 0x00000003 }
+};
+endpoint_config.responders = responders;
+endpoint_config.num_responders = 3;
+
+// Add the endpoint
+etcpal_error_t result = rdmnet_device_add_physical_endpoint(my_device_handle, &endpoint_config);
+if (result == kEtcPalErrOk)
+{
+  // The endpoint has been added. If currently connected, the library will send the proper
+  // notification which indicates to connected controllers that there is a new endpoint and new
+  // responders present.
+}
+```
+<!-- CODE_BLOCK_MID -->
+```cpp
+// Create a physical endpoint numbered 2 with the UIDs of 3 previously-discovered physical
+// responders.
+std::vector<rdm::Uid> responders = {
+  { 0x6574, 0x00000001 },
+  { 0x6574, 0x00000002 },
+  { 0x6574, 0x00000003 }
+};
+rdmnet::PhysicalEndpointConfig endpoint_config(2, responders);
+
+// Add the endpoint
+auto result = device.AddPhysicalEndpoint(endpoint_config);
+if (result)
+{
+  // The endpoint has been added. If currently connected, the library will send the proper
+  // notification which indicates to connected controllers that there is a new endpoint and new
+  // responders present.
+}
+```
+<!-- CODE_BLOCK_END -->
+
+### Adding Virtual Endpoints and Responders
+
+The process for adding virtual endpoints is similar to that for physical endpoints, except that
+virtual responders can have Dynamic UIDs (see \ref roles_and_addressing for more information about
+this).
+
+<!-- CODE_BLOCK_START -->
+```c
+// Create a virtual endpoint numbered 3
+RdmnetVirtualEndpointConfig endpoint_config = RDMNET_VIRTUAL_ENDPOINT_INIT(3);
+
+// The virtual endpoint has a single responder that needs a dynamic UID. The responder needs a
+// permanent Responder ID (RID), which is a UUID that should not change over the lifetime of the
+// responder.
+EtcPalUuid rid;
+etcpal_string_to_uuid("f7c58fe2-d380-4367-91d1-b148eade448d", &rid);
+endpoint_config.dynamic_responders = &rid;
+endpoint_config.num_dynamic_responders = 1;
+
+// Add the endpoint
+etcpal_error_t result = rdmnet_device_add_virtual_endpoint(my_device_handle, &endpoint_config);
+if (result == kEtcPalErrOk)
+{
+  // The endpoint has been added. If currently connected, the library will send the proper
+  // notification which indicates to connected controllers that there is a new endpoint present,
+  // and request a dynamic UID for the responder which will be delivered to the
+  // RdmnetDeviceDynamicUidStatusCallback.
+}
+```
+<!-- CODE_BLOCK_MID -->
+```cpp
+// Create a virtual endpoint numbered 3, which has a single responder that needs a dynamic UID. The
+// responder needs a permanent Responder ID (RID), which is a UUID that should not change over the
+// lifetime of the responder.
+std::vector<etcpal::Uuid> responders = { etcpal::Uuid::FromString("f7c58fe2-d380-4367-91d1-b148eade448d") };
+rdmnet::VirtualEndpointConfig endpoint_config(3, responders);
+
+// Add the endpoint
+auto result = device.AddVirtualEndpoint(endpoint_config);
+if (result)
+{
+  // The endpoint has been added. If currently connected, the library will send the proper
+  // notification which indicates to connected controllers that there is a new endpoint present,
+  // and request a dynamic UID for the responder which will be delivered to the
+  // rdmnet::DeviceNotifyHandler::HandleDynamicUidStatus() callback.
+}
+```
+<!-- CODE_BLOCK_END -->
+
+Before dynamic virtual responders can be used, they must be assigned a dynamic UID. The status of
+dynamic UID assignment is communicated through the dynamic UID status callback.
+
+<!-- CODE_BLOCK_START -->
+```c
+void handle_dynamic_uid_status(rdmnet_device_t handle, const RdmnetDynamicUidAssignmentList* list, void* context)
+{
+  // Check handles and/or context as necessary...
+
+  for (const RdmnetDynamicUidMapping* mapping = list->mappings; mapping < list->mappings + list->num_mappings;
+       ++mapping)
+  {
+    if (mapping->status_code == kRdmnetDynamicUidStatusOk)
+    {
+      // This function is assumed to add the dynamic UID to the virtual responder's runtime data.
+      // This UID should be used to determine whether an RDM command received later is addressed to
+      // the virtual responder.
+      set_responder_dynamic_uid(&mapping->rid, &mapping->uid);
+    }
+    else
+    {
+      char cid_str[ETCPAL_UUID_STRING_BYTES];
+      etcpal_uuid_to_string(&mapping->cid, cid_str);
+      printf("Error obtaining dynamic UID for responder %s: '%s'\n", cid_str,
+             rdmnet_dynamic_uid_status_to_string(mapping->status_code));
+    }
+  }
+}
+```
+<!-- CODE_BLOCK_MID -->
+```cpp
+void MyDeviceNotifyHandler::HandleDynamicUidStatus(rdmnet::DeviceHandle handle,
+                                                   const rdmnet::DynamicUidAssignmentList& list)
+{
+  // Check handles as necessary...
+
+  for (const auto& mapping : list.GetMappings())
+  {
+    if (mapping.IsOk())
+    {
+      // This function is assumed to add the dynamic UID to the virtual responder's runtime data.
+      // This UID should be used to determine whether an RDM command received later is addressed to
+      // the virtual responder.
+      SetResponderDynamicUid(mapping.rid, mapping.uid);
+    }
+    else
+    {
+      std::cout << "Error obtaining dynamic UID for responder " << mapping.cid.ToString() << ": '"
+                << mapping.CodeToString() << "'\n";
+    }
+  }
+}
+```
+<!-- CODE_BLOCK_END -->
+
+One last thing about endpoints: if the set of physical and virtual endpoints that a device has is
+known at initialization time, they can be added to the initial configuration structures for a
+device instance, so that they don't need to be added later.
+
+## Handling RDM Commands
+
+Handling RDM commands is the main functionality of RDMnet devices. See \ref handling_rdm_commands
+for information on how to do this.

@@ -114,31 +114,26 @@ typedef struct LlrpManagerConfig
  *
  * Usage:
  * \code
- * LlrpManagerConfig config = { LLRP_MANAGER_CONFIG_DEFAULT_INIT_VALUES(MY_ESTA_MANUFACTURER_ID) };
+ * LlrpManagerConfig config = { LLRP_MANAGER_CONFIG_DEFAULT_INIT_VALUES };
  * // Now fill in the required portions as necessary with your data...
  * \endcode
  *
  * To omit the enclosing brackets, use #LLRP_MANAGER_CONFIG_DEFAULT_INIT().
- *
- * \param manu_id Your ESTA manufacturer ID.
  */
-#define LLRP_MANAGER_CONFIG_DEFAULT_INIT_VALUES(manu_id) \
-  {{0}}, {kEtcPalIpTypeInvalid, 0}, (manu_id), {NULL, NULL, NULL}, NULL
+#define LLRP_MANAGER_CONFIG_DEFAULT_INIT_VALUES {{0}}, {kEtcPalIpTypeInvalid, 0}, 0, {NULL, NULL, NULL}, NULL
 
 /*!
  * \brief A default-value initializer for an LlrpManagerConfig struct.
  *
  * Usage:
  * \code
- * LlrpManagerConfig config = LLRP_MANAGER_CONFIG_DEFAULT_INIT(MY_ESTA_MANUFACTURER_ID);
+ * LlrpManagerConfig config = LLRP_MANAGER_CONFIG_DEFAULT_INIT;
  * // Now fill in the required portions as necessary with your data...
  * \endcode
- *
- * \param manu_id Your ESTA manufacturer ID.
  */
-#define LLRP_MANAGER_CONFIG_DEFAULT_INIT(manu_id) \
-  {                                               \
-    LLRP_MANAGER_CONFIG_DEFAULT_INIT_VALUES       \
+#define LLRP_MANAGER_CONFIG_DEFAULT_INIT    \
+  {                                         \
+    LLRP_MANAGER_CONFIG_DEFAULT_INIT_VALUES \
   }
 
 void llrp_manager_config_init(LlrpManagerConfig* config, uint16_t manufacturer_id);

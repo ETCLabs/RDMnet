@@ -44,15 +44,12 @@ addressing information:
 
 <!-- CODE_BLOCK_START -->
 ```c
-RdmUid gateway_uid = { 0x0000, 0x00000001 };
+RdmnetDestinationAddr to_gateway = RDMNET_ADDR_TO_DEFAULT_RESPONDER(0x0000, 0x00000001);
 
-RdmnetRptDestinationAddr to_gateway;
-rdmnet_address_to_default_responder(&to_gateway, &gateway_uid);
-
-// This convenience function is equivalent to:
-to_gateway.rdmnet_uid = gateway_uid;
+// This convenience initialization macro is equivalent to:
+to_gateway.rdmnet_uid = gateway_uid; // { 0x0000, 0x00000001 }
 to_gateway.endpoint = E133_NULL_ENDPOINT;
-to_gateway.rdm_uid = gateway_uid;
+to_gateway.rdm_uid = gateway_uid; // { 0x0000, 0x00000001 }
 to_gateway.subdevice = 0;
 ```
 <!-- CODE_BLOCK_MID -->
@@ -68,13 +65,12 @@ gateway represents over RDMnet as endpoint 1). To address one of these responder
 ```c
 RdmUid responder_uid = {0x0000, 0x00000012};
 
-RdmnetRptDestinationAddr to_responder;
-rdmnet_address_to_sub_responder(&to_responder, &gateway_uid, 1, &responder_uid);
+RdmnetDestinationAddr to_responder = RDMNET_ADDR_TO_SUB_RESPONDER(0x0000, 0x00000001, 1, 0x0000, 0x00000012);
 
-// This convenience function is equivalent to:
-to_responder.rdmnet_uid = gateway_uid;
+// This convenience initialization macro is equivalent to:
+to_responder.rdmnet_uid = gateway_uid; // { 0x0000, 0x00000001 }
 to_responder.endpoint = 1;
-to_responder.rdm_uid = responder_uid;
+to_responder.rdm_uid = responder_uid; // { 0x0000, 0x00000012 }
 to_responder.subdevice = 0;
 ```
 <!-- CODE_BLOCK_MID -->

@@ -7,46 +7,8 @@ header-only wrapper around the C interface.
 
 ## Initialization and Destruction
 
-The core RDMnet init and deinit functions should be called once each at application startup and
-shutdown time. These functions interface with the EtcPal \ref etcpal_log API to configure what
-happens when the library logs messages. Optionally pass an EtcPalLogParams structure to use this 
-functionality. This structure can be shared across different ETC library modules.
-
-The init function by default starts a background thread for handling periodic RDMnet functionality
-and receiving data. The deinit function joins this thread.
-
-<!-- CODE_BLOCK_START -->
-```c
-#include "rdmnet/controller.h"
-
-// In some function called at startup...
-EtcPalLogParams log_params;
-// Initialize log_params...
-
-etcpal_error_t init_result = rdmnet_init(&log_params, NULL);
-// Or, to init without worrying about logs from the RDMnet library...
-etcpal_error_t init_result = rdmnet_init(NULL, NULL);
-
-// In some function called at shutdown...
-rdmnet_core_deinit();
-```
-<!-- CODE_BLOCK_MID -->
-```cpp
-#include "rdmnet/cpp/controller.h"
-
-// In some function called at startup...
-etcpal::Logger logger;
-// Initialize and start logger...
-
-etcpal::Error init_result = rdmnet::Init(logger);
-
-// Or, to init without worrying about logs from the RDMnet library...
-etcpal::Error init_result = rdmnet::Init();
-
-// In some function called at shutdown...
-rdmnet::Deinit();
-```
-<!-- CODE_BLOCK_END -->
+The RDMnet library must be globally initialized before using the RDMnet controller API. See
+\ref global_init_and_destroy.
 
 To create a controller instance, use the rdmnet_controller_create() function in C, or instantiate
 an rdmnet::Controller and call its Startup() function in C++. Most apps will only need a single
@@ -54,8 +16,8 @@ controller instance. One controller can monitor an arbitrary number of RDMnet sc
 
 The RDMnet controller API is an asynchronous, callback-oriented API. Part of the initial
 configuration for a controller instance is a set of function pointers (or abstract interface) for
-the library to use as callbacks. Callbacks are dispatched from the thread context which calls
-rdmnet_core_tick().
+the library to use as callbacks. Callbacks are dispatched from the background thread that is
+started when the RDMnet library is initialized.
 
 <!-- CODE_BLOCK_START -->
 ```c
@@ -218,9 +180,9 @@ after a successful connection:
 void controller_connected_callback(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                    const RdmnetClientConnectedInfo* info, void* context)
 {
-  char cid_str[ETCPAL_UUID_STRING_BYTES];
-  etcpal_uuid_to_string(&info->broker_cid, cid_str);
-  printf("Connected to broker %s with CID %s\n", info->broker_name, cid_str);
+  char addr_str[ETCPAL_IP_STRING_BYTES];
+  etcpal_ip_to_string(&info->broker_addr.ip, addr_str);
+  printf("Connected to broker '%s' at address %s:%d\n", info->broker_name, addr_str, info->broker_addr.port);
 
   // Check handles and/or context as necessary...
   rdmnet_controller_request_client_list(handle, scope_handle);
@@ -233,8 +195,7 @@ void MyControllerNotifyHandler::HandleConnectedToBroker(rdmnet::ControllerHandle
                                                         const rdmnet::ClientConnectedInfo& info)
 {
   std::cout << "Connected to broker '" << info.broker_name()
-            << "' with CID " << info.broker_cid().ToString() << 
-            << " at IP address " << info.broker_addr().ToString() << '\n';
+            << "' at IP address " << info.broker_addr().ToString() << '\n';
 
   // Check handles as necessary and get controller instance...
   controller.RequestClientList(scope_handle);
@@ -248,7 +209,7 @@ It's worth noting connection failure as a special case here. RDMnet connections 
 reasons, including user misconfiguration, network misconfiguration, components starting up or
 shutting down, programming errors, and more.
 
-The RdmnetClientConnectFailedInfo and RdmnetClientDisconnectedInfo structs passed back with the 
+The ClientConnectFailedInfo and ClientDisconnectedInfo structs passed back with the 
 "connect failed" and "disconnected" callbacks respectively have comprehensive information about the 
 failure, including enum values containing the library's categorization of the failure, protocol
 reason codes and socket errors where applicable. This information is typically used mostly for
@@ -279,29 +240,29 @@ void my_client_list_update_cb(rdmnet_controller_t handle, rdmnet_client_scope_t 
 {
   // Check handles and/or context as necessary...
 
-  for (const RdmnetRptClientEntry* entry = list->client_entries; entry < list->client_entries + list->num_client_entries;
-       ++entry)
+  switch (list_action)
   {
-    switch (list_action)
-    {
-      case kRdmnetClientListAppend:
-        // These are new entries to be added to the list of clients. Append the new entry to our
-        // bookkeeping.
-        break;
-      case kRdmnetClientListRemove:
-        // These are entries to be removed from the list of clients. Remove the entry from our
-        // bookkeeping.
-        break;
-      case kRdmnetClientListUpdate:
-        // These are entries to be updated in the list of clients. Update the corresponding entry
-        // in our bookkeeping.
-        break;
-      case kRdmnetClientListReplace:
-        // This is the full client list currently connected to the broker - our existing client 
-        // list should be replaced wholesale with this one. This will be the response to
-        // rdmnet_controller_request_client_list(); the other cases are sent unsolicited.
-        break;
-    }
+    case kRdmnetClientListAppend:
+      // These are new entries to be added to the list of clients. Append the new entry to our
+      // bookkeeping.
+      add_new_clients(list->client_entries, list->num_client_entries);
+      break;
+    case kRdmnetClientListRemove:
+      // These are entries to be removed from the list of clients. Remove the entry from our
+      // bookkeeping.
+      remove_clients(list->client_entries, list->num_client_entries);
+      break;
+    case kRdmnetClientListUpdate:
+      // These are entries to be updated in the list of clients. Update the corresponding entry
+      // in our bookkeeping.
+      update_clients(list->client_entries, list->num_client_entries);
+      break;
+    case kRdmnetClientListReplace:
+      // This is the full client list currently connected to the broker - our existing client 
+      // list should be replaced wholesale with this one. This will be the response to
+      // rdmnet_controller_request_client_list(); the other cases are sent unsolicited.
+      replace_client_list(list->client_entries, list->num_client_entries);
+      break;
   }
 
   if (list->more_coming)
@@ -315,7 +276,7 @@ void my_client_list_update_cb(rdmnet_controller_t handle, rdmnet_client_scope_t 
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleClientListUpdate(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
+void MyControllerNotifyHandler::HandleClientListUpdate(rdmnet::ControllerHandle controller, rdmnet::ScopeHandle scope_handle,
                                                        client_list_action_t list_action, const rdmnet::RptClientList& list)
 {
   // Check handles as necessary...
@@ -412,15 +373,24 @@ void rdm_response_callback(rdmnet_controller_t handle, rdmnet_client_scope_t sco
 
   if (resp->is_response_to_me)
   {
-    // Verify resp->seq_num against the cmd_seq_num you stored earlier.
+    // Verify resp->seq_num against the cmd_seq_num you stored earlier. This command transaction is
+    // now finished.
   }
   else
   {
-    // This is an unsolicited RDM response - an asynchronous update about a change you didn't
-    // initiate.
+    // This is either an unsolicited RDM response (an asynchronous update about a change you didn't initiate)
+    // or a response to a command by another controller. Use it to update your cached data about this
+    // RDMnet responder.
   }
 
   // If RDMNET_RESP_ORIGINAL_COMMAND_INCLUDED(resp) == true, resp->cmd will contain the original command you sent. 
+
+  handle_response_data(resp->rdm_header.param_id, resp->rdm_data, resp->rdm_data_len);
+
+  // RdmnetRdmResponse structures do not own their data and the data will be invalid when this callback
+  // ends. To save the data for later processing:
+  RdmnetSavedRdmResponse saved_resp;
+  rdmnet_save_rdm_response(resp, &saved_resp);
 
   if (resp->more_coming)
   {
@@ -436,31 +406,40 @@ void rdm_response_callback(rdmnet_controller_t handle, rdmnet_client_scope_t sco
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
+void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle,
                                                   const rdmnet::RdmResponse& resp)
 {
-  if (resp.seq_num == 0)
+  // Check handles as necessary...
+
+  if (resp.is_response_to_me())
   {
-    // This is an unsolicited RDM response - an asynchronous update about a change you didn't
-    // initiate.
+    // Verify resp.seq_num() against the command seq_num you stored earlier. This command transaction is
+    // now finished.
   }
   else
   {
-    // Verify resp.seq_num against the result of rdmnet::Controller::SendRdmCommand() you stored earlier.
+    // This is either an unsolicited RDM response (an asynchronous update about a change you didn't initiate)
+    // or a response to a command by another controller. Use it to update your cached data about this
+    // RDMnet responder.
   }
 
-  // If resp->seq_num != 0, resp.cmd will contain the command you sent.
+  // If resp.OriginalCommandIncluded() == true, the original_cmd_...() getters will contain the data
+  // of the original command that instigated this response.
 
-  for (const RdmResponse* response = resp.responses; response < resp.responses + resp.num_responses; ++response)
-  {
-    // Process the list of responses.
-  }
+  HandleResponseData(resp.param_id(), resp.data(), resp.data_len());
+
+  // RdmResponse classes do not own their data and the data will be invalid when this callback ends.
+  // To save the data for later processing:
+  auto saved_resp = resp.Save();
 
   if (resp.more_coming())
   {
     // The library ran out of memory pool space while allocating responses - after this callback
     // returns, another will be delivered with the continuation of this response.
     // If RDMNET_DYNAMIC_MEM == 1 (the default on non-embedded platforms), this flag will never be set to true.
+
+    // When more responses come, you can append their data to your saved response:
+    previously_saved_resp.AppendData(resp);
   }
 }
 ```
@@ -475,7 +454,7 @@ Status containing that same sequence number.
 
 <!-- CODE_BLOCK_START -->
 ```c
-void rpt_status_callback(rdmnet_controller_t handle, rdmnet_client_scope_t handle, const RdmnetRemoteRptStatus* status,
+void rpt_status_callback(rdmnet_controller_t handle, rdmnet_client_scope_t handle, const RdmnetRptStatus* status,
                          void* context)
 {
   // Check handles and/or context as necessary...
@@ -491,15 +470,144 @@ void rpt_status_callback(rdmnet_controller_t handle, rdmnet_client_scope_t handl
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleRptStatus(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
+void MyControllerNotifyHandler::HandleRptStatus(rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle,
                                                 const rdmnet::RptStatus& status)
 {
-  // Verify status.seq_num against the result of rdmnet::Controller::SendRdmCommand() you stored earlier.
+  // Check handles as necessary...
+
+  // Verify status.seq_num() against the result of rdmnet::Controller::SendRdmCommand() you stored earlier.
 
   std::cout << "Error sending RDM command to device " << status.source_uid().ToString() << ": '"
             << status.CodeToString() << "'\n";
 
   // Other logic as needed; remove our internal storage of the RDM transaction, etc.
+}
+```
+<!-- CODE_BLOCK_END -->
+
+## Getting Responder IDs
+
+Controllers may encounter RDMnet responders have dynamic UIDs. Base RDMnet components such as
+controllers and devices can have dynamic UIDs, as can virtual responders present on devices. See
+\ref devices_and_gateways for more information on virtual responders, and \ref roles_and_addressing
+for more information on dynamic UIDs. As a reminder, a dynamic UID is identified by the top bit of
+the Manufacturer ID portion being set and the UID not being a broadcast UID; this can be tested
+using the convenience methods in the RDM library: RDMNET_UID_IS_DYNAMIC() and/or
+rdm::Uid::IsDynamic().
+
+A responder using a dynamic UID may get a different UID at any time. For this reason, it is useful
+for a controller to be able to get a more permanent identifier for an RDMnet responder.
+
+For controllers, devices and brokers, the permanent identifier is the CID, which is present
+alongside the UID in an RPT client list entry. If you want to track these components beyond a
+single RDMnet session, be sure to store the CID.
+
+Virtual responders present on a device have a similar identifier called a Responder ID (RID) which
+has the same function as a CID for that virtual responder. The UIDs of a device's virtual
+responders are obtained using the `ENDPOINT_RESPONDERS` RDM command; however, this command's data
+does not include the RID. To obtain RIDs for a set of virtual responders, it is necessary to query
+the connected broker.
+
+<!-- CODE_BLOCK_START -->
+```c
+void handle_response_data(uint16_t param_id, const uint8_t* param_data, size_t param_data_len)
+{
+  // This code is simplified and meant to illustrate an example of discovering virtual responders
+  // using the ENDPOINT_RESPONDERS command.
+  if (param_id == E137_7_ENDPOINT_RESPONDERS)
+  {
+    size_t num_uids = ((param_data_len - 6) / 6); // 6 bytes per UID, subtract the other data field sizes
+    RdmUid* responder_uids = (RdmUid*)calloc(num_uids, sizeof(RdmUid));
+
+    // Unpack the response data into the responder_uids array...
+
+    // Now request the RIDs from the broker for the responder UIDs.
+    etcpal_error_t result = rdmnet_controller_request_responder_ids(my_controller_handle, my_scope_handle,
+                                                                    responder_uids, num_uids);
+    if (result == kEtcPalErrOk)
+    {
+      // The broker's response will be forwarded to the RdmnetControllerResponderIdsReceivedCallback,
+      // defined in the next snippet.
+    }
+
+    free(responder_uids);
+  }
+}
+```
+<!-- CODE_BLOCK_MID -->
+```cpp
+void MyControllerNotifyHandler::HandleResponseData(uint16_t param_id, const uint8_t* param_data, size_t param_data_len)
+{
+  // This code is simplified and meant to illustrate an example of discovering virtual responders
+  // using the ENDPOINT_RESPONDERS command.
+  if (param_id == E137_7_ENDPOINT_RESPONDERS)
+  {
+    std::vector<RdmUid> responder_uids;
+
+    // Unpack the response data into the responder_uids array...
+
+    // Now request the RIDs from the broker for the responder UIDs.
+    auto result = controller.RequestResponderIds(responder_uids);
+    if (result)
+    {
+      // The broker's response will be forwarded to the rdmnet::ControllerNotifyHandler::HandleResponderIdsReceived(),
+      // callback, defined in the next snippet.
+    }
+  }
+}
+```
+<!-- CODE_BLOCK_END -->
+
+The broker will respond with a list of mappings between dynamic UIDs and RIDs known as a Dynamic
+UID Assignment List. Each entry in the list will contain a status code indicating whether the RID
+was looked up successfully, followed by the UID and RID.
+
+<!-- CODE_BLOCK_START -->
+```c
+void handle_responder_ids_received(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+                                   const RdmnetDynamicUidAssignmentList* list, void* context)
+{
+  // Check handles and/or context as necessary...
+
+  for (const RdmnetDynamicUidMapping* mapping = list->mappings; mapping < list->mappings + list->num_mappings;
+       ++mapping)
+  {
+    if (mapping->status_code == kRdmnetDynamicUidStatusOk)
+    {
+      // This function is assumed to add the RID to the responder's cached data.
+      add_responder_rid(&mapping->uid, &mapping->rid);
+    }
+    else
+    {
+      char uid_str[RDM_UID_STRING_BYTES];
+      rdm_uid_to_string(&mapping->uid, uid_str);
+      printf("Error obtaining RID for responder %s: '%s'\n", uid_str,
+             rdmnet_dynamic_uid_status_to_string(mapping->status_code));
+    }
+  }
+}
+```
+<!-- CODE_BLOCK_MID -->
+```cpp
+void MyControllerNotifyHandler::HandleResponderIdsReceived(rdmnet::ControllerHandle handle,
+                                                           rdmnet::ScopeHandle scope_handle,
+                                                           const rdmnet::DynamicUidAssignmentList& list)
+{
+  // Check handles as necessary...
+
+  for (const auto& mapping : list.GetMappings())
+  {
+    if (mapping.IsOk())
+    {
+      // This function is assumed to add the RID to the responder's cached data.
+      AddResponderRid(mapping.uid, mapping.rid);
+    }
+    else
+    {
+      std::cout << "Error obtaining RID for responder " << mapping.uid.ToString() << ": '"
+                << mapping.CodeToString() << "'\n";
+    }
+  }
 }
 ```
 <!-- CODE_BLOCK_END -->
@@ -552,3 +660,5 @@ rdmnet::ControllerSettings my_settings(my_cid, MY_ESTA_MANUFACTURER_ID_VAL);
 etcpal::Error result = controller.Startup(my_controller_notify_handler, my_settings, my_rdm_cmd_handler);
 ```
 <!-- CODE_BLOCK_END -->
+
+See \ref handling_rdm_commands for information about how to handle commands through the callbacks.

@@ -13,6 +13,7 @@
 \endhtmlonly
 
 \subpage handling_rdm_commands
+\subpage global_init_and_destroy
 
 \htmlonly
 </div>

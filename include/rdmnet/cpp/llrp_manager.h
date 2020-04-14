@@ -192,10 +192,12 @@ public:
   etcpal::Expected<uint32_t> SendSetCommand(const DestinationAddr& destination, uint16_t param_id,
                                             const uint8_t* data = nullptr, uint8_t data_len = 0);
 
-  ManagerHandle handle() const;
+  constexpr ManagerHandle handle() const;
+  constexpr ManagerNotifyHandler* notify_handler() const;
 
 private:
-  ManagerHandle handle_;
+  ManagerHandle handle_{kInvalidManagerHandle};
+  ManagerNotifyHandler* notify_{nullptr};
 };
 
 /// \brief Allocate resources and startup this LLRP manager with the given configuration.
@@ -311,10 +313,16 @@ inline etcpal::Expected<uint32_t> Manager::SendSetCommand(const DestinationAddr&
   return kEtcPalErrNotImpl;
 }
 
-/// \brief Retrieve the handle of an LLRP manager instance.
-inline ManagerHandle Manager::handle() const
+/// Retrieve the handle of an LLRP manager instance.
+constexpr ManagerHandle Manager::handle() const
 {
   return handle_;
+}
+
+/// Retrieve the ManagerNotifyHandler reference that this LLRP manager was configured with.
+constexpr ManagerNotifyHandler* Manager::notify_handler() const
+{
+  return notify_;
 }
 
 };  // namespace llrp

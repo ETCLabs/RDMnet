@@ -295,10 +295,10 @@ public:
   etcpal::Error SendLlrpNack(const llrp::SavedRdmCommand& received_cmd, rdm_nack_reason_t nack_reason);
   etcpal::Error SendLlrpNack(const llrp::SavedRdmCommand& received_cmd, uint16_t raw_nack_reason);
 
-  ControllerHandle handle() const;
+  constexpr ControllerHandle handle() const;
   const ControllerRdmData& rdm_data() const;
-  ControllerNotifyHandler* notify_handler() const;
-  ControllerRdmCommandHandler* rdm_command_handler() const;
+  constexpr ControllerNotifyHandler* notify_handler() const;
+  constexpr ControllerRdmCommandHandler* rdm_command_handler() const;
   etcpal::Expected<Scope> scope(ScopeHandle scope_handle) const;
 
   void UpdateRdmData(const ControllerRdmData& new_data);
@@ -847,7 +847,7 @@ inline etcpal::Error Controller::SendLlrpNack(const llrp::SavedRdmCommand& recei
 }
 
 /// \brief Retrieve the handle of a controller instance.
-inline ControllerHandle Controller::handle() const
+constexpr ControllerHandle Controller::handle() const
 {
   return handle_;
 }
@@ -860,14 +860,14 @@ inline const ControllerRdmData& Controller::rdm_data() const
 }
 
 /// \brief Retrieve the ControllerNotifyHandler reference that this controller was configured with.
-inline ControllerNotifyHandler* Controller::notify_handler() const
+constexpr ControllerNotifyHandler* Controller::notify_handler() const
 {
   return notify_;
 }
 
 /// \brief Retrieve the ControllerRdmCommandHandler reference that this controller was configured with.
 /// \return A pointer to the handler, or nullptr if it was not provided.
-inline ControllerRdmCommandHandler* Controller::rdm_command_handler() const
+constexpr ControllerRdmCommandHandler* Controller::rdm_command_handler() const
 {
   return rdm_cmd_handler_;
 }

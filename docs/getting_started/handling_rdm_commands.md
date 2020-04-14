@@ -257,9 +257,9 @@ void rdm_command_received(rdmnet_device_t handle, const RdmnetRdmCommand* cmd, R
   RdmnetSavedRdmCommand saved_cmd;
   rdmnet_save_rdm_command(cmd, &saved_cmd);
 
-  // Add saved_cmd to some memory location to be used later
+  // Add saved_cmd to some memory location to be used later...
 
-  RDMNET_SYNC_DEFER_RESPONSE(response);
+  RDMNET_SYNC_DEFER_RDM_RESPONSE(response);
 }
 
 // Later, when the response is available...
@@ -273,7 +273,8 @@ rdmnet::ResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::DeviceHand
   // data buffer, e.g. 231 bytes.
   rdmnet::SavedRdmCommand saved_cmd = cmd.Save();
 
-  // Add saved_cmd to some memory location to be used later
+  // Add saved_cmd to some memory location to be used later...
+
   return rdmnet::ResponseAction::DeferResponse();
 }
 
