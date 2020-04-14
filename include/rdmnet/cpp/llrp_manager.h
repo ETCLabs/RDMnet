@@ -175,6 +175,8 @@ public:
   Manager() = default;
   Manager(const Manager& other) = delete;
   Manager& operator=(const Manager& other) = delete;
+  Manager(Manager&& other) = default;             ///< Move a manager instance.
+  Manager& operator=(Manager&& other) = default;  ///< Move a manager instance.
 
   etcpal::Error Startup(ManagerNotifyHandler& notify_handler, uint16_t manufacturer_id, unsigned int netint_index,
                         etcpal_iptype_t ip_type = kEtcPalIpTypeV4,

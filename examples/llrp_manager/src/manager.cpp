@@ -34,6 +34,10 @@
 #include "etcpal/socket.h"
 #include "rdmnet/version.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
+
 bool LlrpManagerExample::Startup(const etcpal::Uuid& my_cid, const etcpal::Logger& logger)
 {
   printf("ETC Example LLRP Manager version %s initializing...\n", RDMNET_VERSION_STRING);
@@ -285,7 +289,7 @@ bool LlrpManagerExample::ParseCommand(const std::string& line)
               try
               {
                 int target_handle = std::stoi(line.substr(3));
-                FactoryDefaults(target_handle);
+                SetFactoryDefaults(target_handle);
               }
               catch (std::exception)
               {
@@ -322,7 +326,7 @@ bool LlrpManagerExample::ParseCommand(const std::string& line)
               try
               {
                 int target_handle = std::stoi(line.substr(3));
-                ResetDevice(target_handle);
+                SetResetDevice(target_handle);
               }
               catch (std::exception)
               {
@@ -402,10 +406,10 @@ void LlrpManagerExample::PrintTargets()
   printf("Handle %-13s %-36s %-15s %s\n", "UID", "CID", "Type", "Hardware ID");
   for (const auto& target : targets_)
   {
-    printf("%-6d %04x:%08x %s %-15s %s\n", target.first, target.second.prot_info.uid.manu,
-           target.second.prot_info.uid.id, etcpal::Uuid(target.second.prot_info.cid).ToString().c_str(),
-           llrp_component_type_to_string(target.second.prot_info.component_type),
-           etcpal::MacAddr(target.second.prot_info.hardware_address).ToString().c_str());
+    const auto& prot_info = target.second.prot_info;
+    printf("%-6d %s %s %-15s %s\n", target.first, prot_info.uid().ToString().c_str(),
+           prot_info.cid().ToString().c_str(), llrp_component_type_to_string(prot_info.component_type()),
+           prot_info.hardware_address().ToString().c_str());
   }
 }
 
@@ -649,7 +653,7 @@ void LlrpManagerExample::SetDeviceLabel(int target_handle, const std::string& la
     auto target = targets_.find(target_handle);
     if (target != targets_.end())
     {
-      uint8_t label_truncated_size = (label.size() > 32 ? 32 : label.size());
+      uint8_t label_truncated_size = (label.size() > 32 ? 32 : static_cast<uint8_t>(label.size()));
       if (SetDataOnTarget(mgr_pair->second.manager, target->second.prot_info, E120_DEVICE_LABEL,
                           reinterpret_cast<const uint8_t*>(label.c_str()), label_truncated_size))
       {
@@ -675,16 +679,7 @@ void LlrpManagerExample::SetResetDevice(int target_handle)
     auto target = targets_.find(target_handle);
     if (target != targets_.end())
     {
-      RdmCommand cmd_data;
-      RdmResponse resp_data;
-
-      cmd_data.dest_uid = target->second.prot_info.uid;
-      cmd_data.subdevice = 0;
-      cmd_data.command_class = kRdmCCSetCommand;
-      cmd_data.param_id = E120_RESET_DEVICE;
-      cmd_data.datalen = 0;
-
-      if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
+      if (SetDataOnTarget(mgr_pair->second.manager, target->second.prot_info, E120_RESET_DEVICE))
       {
         printf("Reset device successfully.\n");
       }
@@ -708,16 +703,7 @@ void LlrpManagerExample::SetFactoryDefaults(int target_handle)
     auto target = targets_.find(target_handle);
     if (target != targets_.end())
     {
-      RdmCommand cmd_data;
-      RdmResponse resp_data;
-
-      cmd_data.dest_uid = target->second.prot_info.uid;
-      cmd_data.subdevice = 0;
-      cmd_data.command_class = kRdmCCSetCommand;
-      cmd_data.param_id = E120_FACTORY_DEFAULTS;
-      cmd_data.datalen = 0;
-
-      if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
+      if (SetDataOnTarget(mgr_pair->second.manager, target->second.prot_info, E120_FACTORY_DEFAULTS))
       {
         printf("Factory defaults successfully.\n");
       }
@@ -755,7 +741,7 @@ void LlrpManagerExample::SetComponentScope(int target_handle, int scope_slot, co
       uint8_t* cur_ptr = data;
       etcpal_pack_u16b(cur_ptr, static_cast<uint16_t>(scope_slot));
       cur_ptr += 2;
-      rdmnet_safe_strncpy((char*)cur_ptr, scope_utf8.c_str(), E133_SCOPE_STRING_PADDED_LENGTH);
+      strncpy((char*)cur_ptr, scope_utf8.c_str(), E133_SCOPE_STRING_PADDED_LENGTH);
       cur_ptr += E133_SCOPE_STRING_PADDED_LENGTH;
       if (static_config.IsV4())
       {
@@ -794,12 +780,13 @@ void LlrpManagerExample::SetComponentScope(int target_handle, int scope_slot, co
   }
 }
 
-void LlrpManagerExample::HandleLlrpTargetDiscovered(llrp::ManagerHandle handle, const llrp::DiscoveredTarget& target)
+void LlrpManagerExample::HandleLlrpTargetDiscovered(llrp::ManagerHandle /*handle*/,
+                                                    const llrp::DiscoveredTarget& target)
 {
   if (discovery_active_)
   {
     int next_target_handle = targets_.empty() ? 0 : targets_.rbegin()->first + 1;
-    printf("Adding LLRP Target, UID %04x:%08x, with handle %d\n", target.uid.manu, target.uid.id, next_target_handle);
+    printf("Adding LLRP Target, UID %s, with handle %d\n", target.uid().ToString().c_str(), next_target_handle);
 
     TargetInfo new_target_info;
     new_target_info.prot_info = target;
@@ -807,12 +794,12 @@ void LlrpManagerExample::HandleLlrpTargetDiscovered(llrp::ManagerHandle handle, 
   }
 }
 
-void LlrpManagerExample::HandleLlrpDiscoveryFinished(llrp::ManagerHandle handle)
+void LlrpManagerExample::HandleLlrpDiscoveryFinished(llrp::ManagerHandle /*handle*/)
 {
   discovery_active_ = false;
 }
 
-void LlrpManagerExample::HandleLlrpRdmResponseReceived(llrp::ManagerHandle handle, const llrp::RdmResponse& resp)
+void LlrpManagerExample::HandleLlrpRdmResponse(llrp::ManagerHandle handle, const llrp::RdmResponse& resp)
 {
   if (handle == active_manager_ && active_response_handler_)
     active_response_handler_(resp);
@@ -865,4 +852,51 @@ std::vector<uint8_t> LlrpManagerExample::GetDataFromTarget(llrp::Manager& manage
   }
 
   return to_return;
+}
+
+bool LlrpManagerExample::SetDataOnTarget(llrp::Manager& manager, const llrp::DiscoveredTarget& target,
+                                         uint16_t param_id, const uint8_t* data, uint8_t data_len)
+{
+  llrp::SavedRdmResponse response;
+  active_response_handler_ = [&](const llrp::RdmResponse& resp) { response = resp.Save(); };
+
+  auto seq_num = manager.SendSetCommand(target.address(), param_id, data, data_len);
+  if (seq_num)
+  {
+    etcpal::Timer resp_timer(LLRP_TIMEOUT_MS);
+    while (!resp_timer.IsExpired())
+    {
+      if (response.IsValid())
+        break;
+      etcpal::Thread::Sleep(100);
+    }
+
+    if (response.IsValid())
+    {
+      if (response.seq_num() == *seq_num && response.IsSetResponse() && response.param_id() == param_id)
+      {
+        // We got a response.
+        if (response.IsAck())
+          return true;
+        else if (response.IsNack())
+          printf("Received RDM NACK with reason '%s'\n", response.NackReason()->ToCString());
+        else
+          printf("Received LLRP RDM response with illegal response type %d\n", response.response_type());
+      }
+      else
+      {
+        printf("Received unexpected RDM response.\n");
+      }
+    }
+    else
+    {
+      printf("Timed out waiting for RDM response.\n");
+    }
+  }
+  else
+  {
+    printf("Error sending RDM command: '%s'\n", seq_num.error().ToCString());
+  }
+
+  return false;
 }

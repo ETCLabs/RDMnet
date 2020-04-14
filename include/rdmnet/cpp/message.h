@@ -39,6 +39,10 @@
 namespace rdmnet
 {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+// RPT client list message types
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 // RDMnet RDM Command message types
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -439,10 +443,12 @@ public:
   constexpr rdm::ResponseHeader rdm_header() const noexcept;
   constexpr const uint8_t* data() const noexcept;
   constexpr size_t data_len() const noexcept;
+  constexpr bool more_coming() const noexcept;
 
   constexpr bool OriginalCommandIncluded() const noexcept;
   constexpr bool HasData() const noexcept;
   constexpr bool IsFromDefaultResponder() const noexcept;
+  constexpr bool IsResponseToMe() const noexcept;
 
   constexpr bool IsAck() const noexcept;
   constexpr bool IsNack() const noexcept;
@@ -451,6 +457,7 @@ public:
   constexpr bool IsSetResponse() const noexcept;
 
   etcpal::Expected<rdm::NackReason> NackReason() const noexcept;
+  std::vector<uint8_t> GetData() const;
 
   constexpr const RdmnetRdmResponse& get() const noexcept;
 
@@ -504,6 +511,7 @@ public:
   constexpr bool OriginalCommandIncluded() const noexcept;
   bool HasData() const noexcept;
   constexpr bool IsFromDefaultResponder() const noexcept;
+  constexpr bool IsResponseToMe() const noexcept;
 
   constexpr bool IsAck() const noexcept;
   constexpr bool IsNack() const noexcept;
@@ -512,11 +520,16 @@ public:
   constexpr bool IsSetResponse() const noexcept;
 
   etcpal::Expected<rdm::NackReason> NackReason() const noexcept;
+  std::vector<uint8_t> GetData() const;
+
+  void AppendData(const RdmResponse& new_resp);
+  void AppendData(const uint8_t* data, size_t size);
 
 private:
   rdm::Uid rdmnet_source_uid_;
   uint16_t source_endpoint_{0};
   uint32_t seq_num_{0};
+  bool is_response_to_me_{false};
   rdm::Command original_cmd_;
   rdm::Response rdm_;
 };
@@ -642,6 +655,17 @@ constexpr size_t RdmResponse::data_len() const noexcept
   return resp_.rdm_data_len;
 }
 
+/// \brief This message contains partial RDM data.
+///
+/// This can be set when the library runs out of static memory in which to store RDM response data
+/// and must deliver a partial data buffer before continuing (this only applies to the data buffer
+/// within the RDM response). The application should store the partial data but should not act on
+/// it until another RdmResponse is received with more_coming set to false.
+constexpr bool RdmResponse::more_coming() const noexcept
+{
+  return resp_.more_coming;
+}
+
 /// \brief Whether the original RDM command is included.
 ///
 /// In RDMnet, a response to an RDM command includes the original command data. An exception to
@@ -663,6 +687,13 @@ constexpr bool RdmResponse::HasData() const noexcept
 constexpr bool RdmResponse::IsFromDefaultResponder() const noexcept
 {
   return (resp_.source_endpoint == E133_NULL_ENDPOINT);
+}
+
+/// \brief Whether the response was sent in response to a command previously sent by this controller.
+/// \details If this is false, the command was a broadcast sent to all controllers.
+constexpr bool RdmResponse::IsResponseToMe() const noexcept
+{
+  return resp_.is_response_to_me;
 }
 
 /// \brief Whether this command has an RDM response type of ACK.
@@ -704,6 +735,13 @@ inline etcpal::Expected<rdm::NackReason> RdmResponse::NackReason() const noexcep
     return etcpal_unpack_u16b(data());
   else
     return kEtcPalErrInvalid;
+}
+
+/// \brief Copy out the data in a RdmResponse.
+/// \return A copied vector containing any parameter data associated with this response.
+inline std::vector<uint8_t> RdmResponse::GetData() const
+{
+  return std::vector<uint8_t>(resp_.rdm_data, resp_.rdm_data + resp_.rdm_data_len);
 }
 
 /// Get a const reference to the underlying C type.
@@ -937,6 +975,13 @@ constexpr bool SavedRdmResponse::IsFromDefaultResponder() const noexcept
   return (source_endpoint_ == E133_NULL_ENDPOINT);
 }
 
+/// \brief Whether the response was sent in response to a command previously sent by this controller.
+/// \details If this is false, the command was a broadcast sent to all controllers.
+constexpr bool SavedRdmResponse::IsResponseToMe() const noexcept
+{
+  return is_response_to_me_;
+}
+
 /// \brief Whether this command has an RDM response type of ACK.
 ///
 /// If this is false, it implies that IsNack() is true (ACK_TIMER is not allowed in RDMnet, and the
@@ -975,6 +1020,28 @@ inline etcpal::Expected<rdm::NackReason> SavedRdmResponse::NackReason() const no
   return rdm_.NackReason();
 }
 
+/// \brief Copy out the data in a SavedRdmResponse.
+/// \return A copied vector containing any parameter data associated with this response.
+inline std::vector<uint8_t> SavedRdmResponse::GetData() const
+{
+  return rdm_.GetData();
+}
+
+/// \brief Append more data to this response's parameter data.
+/// \param new_resp An RdmResponse delivered to an RDMnet callback function as a continuation of a previous response.
+inline void SavedRdmResponse::AppendData(const RdmResponse& new_resp)
+{
+  rdm_.AppendData(new_resp.data(), new_resp.data_len());
+}
+
+/// \brief Append more data to this response's parameter data.
+/// \param data Pointer to data buffer to append.
+/// \param data_len Size of data buffer to append.
+inline void SavedRdmResponse::AppendData(const uint8_t* data, size_t data_len)
+{
+  rdm_.AppendData(data, data_len);
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // RPT Status Message Types
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -993,7 +1060,7 @@ public:
   RptStatus() = delete;
   constexpr RptStatus(const RdmnetRptStatus& c_status);
 
-  constexpr rdm::Uid rdmnet_source_uid() const noexcept;
+  constexpr rdm::Uid source_uid() const noexcept;
   constexpr uint16_t source_endpoint() const noexcept;
   constexpr uint32_t seq_num() const noexcept;
 
@@ -1025,7 +1092,7 @@ public:
   SavedRptStatus(const RptStatus& status);
   SavedRptStatus& operator=(const RptStatus& status);
 
-  constexpr const rdm::Uid& rdmnet_source_uid() const noexcept;
+  constexpr const rdm::Uid& source_uid() const noexcept;
   constexpr uint16_t source_endpoint() const noexcept;
   constexpr uint32_t seq_num() const noexcept;
 
@@ -1038,7 +1105,7 @@ public:
   bool HasStatusString() const noexcept;
 
 private:
-  rdm::Uid rdmnet_source_uid_;
+  rdm::Uid source_uid_;
   uint16_t source_endpoint_{E133_NULL_ENDPOINT};
   uint32_t seq_num_{0};
   rpt_status_code_t status_code_{kRptNumStatusCodes};
@@ -1055,9 +1122,9 @@ constexpr RptStatus::RptStatus(const RdmnetRptStatus& c_status) : status_(c_stat
 }
 
 /// Get the UID of the RDMnet component that sent this RPT status message.
-constexpr rdm::Uid RptStatus::rdmnet_source_uid() const noexcept
+constexpr rdm::Uid RptStatus::source_uid() const noexcept
 {
-  return status_.rdmnet_source_uid;
+  return status_.source_uid;
 }
 
 /// Get the endpoint from which this RPT status message was sent.
@@ -1127,7 +1194,7 @@ inline SavedRptStatus RptStatus::Save() const
 
 /// Construct a SavedRptStatus from an instance of the C RdmnetSavedRptStatus type.
 inline SavedRptStatus::SavedRptStatus(const RdmnetSavedRptStatus& c_status)
-    : rdmnet_source_uid_(c_status.rdmnet_source_uid)
+    : source_uid_(c_status.source_uid)
     , source_endpoint_(c_status.source_endpoint)
     , seq_num_(c_status.seq_num)
     , status_code_(c_status.status_code)
@@ -1139,7 +1206,7 @@ inline SavedRptStatus::SavedRptStatus(const RdmnetSavedRptStatus& c_status)
 /// Assign an instance of the C RdmnetSavedRptStatus type to an instance of this class.
 inline SavedRptStatus& SavedRptStatus::operator=(const RdmnetSavedRptStatus& c_status)
 {
-  rdmnet_source_uid_ = c_status.rdmnet_source_uid;
+  source_uid_ = c_status.source_uid;
   source_endpoint_ = c_status.source_endpoint;
   seq_num_ = c_status.seq_num;
   status_code_ = c_status.status_code;
@@ -1150,7 +1217,7 @@ inline SavedRptStatus& SavedRptStatus::operator=(const RdmnetSavedRptStatus& c_s
 
 /// Construct a SavedRptStatus from an RptStatus.
 inline SavedRptStatus::SavedRptStatus(const RptStatus& status)
-    : rdmnet_source_uid_(status.rdmnet_source_uid())
+    : source_uid_(status.source_uid())
     , source_endpoint_(status.source_endpoint())
     , seq_num_(status.seq_num())
     , status_code_(status.status_code())
@@ -1161,7 +1228,7 @@ inline SavedRptStatus::SavedRptStatus(const RptStatus& status)
 /// Assign an RptStatus to an instance of this class.
 inline SavedRptStatus& SavedRptStatus::operator=(const RptStatus& status)
 {
-  rdmnet_source_uid_ = status.rdmnet_source_uid();
+  source_uid_ = status.source_uid();
   source_endpoint_ = status.source_endpoint();
   seq_num_ = status.seq_num();
   status_code_ = status.status_code();
@@ -1170,9 +1237,9 @@ inline SavedRptStatus& SavedRptStatus::operator=(const RptStatus& status)
 }
 
 /// Get the UID of the RDMnet component that sent this RPT status message.
-constexpr const rdm::Uid& SavedRptStatus::rdmnet_source_uid() const noexcept
+constexpr const rdm::Uid& SavedRptStatus::source_uid() const noexcept
 {
-  return rdmnet_source_uid_;
+  return source_uid_;
 }
 
 /// Get the endpoint from which this RPT status message was sent.
@@ -1223,6 +1290,10 @@ inline bool SavedRptStatus::HasStatusString() const noexcept
   return !status_string_.empty();
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Misc. RPT message types
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 /// \ingroup rdmnet_cpp_common
 /// \brief A descriptive structure for an RPT client.
 struct RptClientEntry
@@ -1253,17 +1324,172 @@ inline RptClientEntry& RptClientEntry::operator=(const RdmnetRptClientEntry& c_e
   return *this;
 }
 
-/// \brief Copy a list of RPT client entries delivered to an RDMnet callback function.
+/// \ingroup rdmnet_cpp_common
+/// \brief A list of RPT client entries.
+///
+/// Not valid for use other than as a parameter to an RDMnet callback function; use
+/// RptClientList::GetClientEntries() to copy out the data.
+class RptClientList
+{
+public:
+  /// Not default-constructible.
+  RptClientList() = delete;
+  /// Not copyable - use Save() to create a copyable version.
+  RptClientList(const RptClientList& other) = delete;
+  /// Not copyable - use Save() to create a copyable version.
+  RptClientList& operator=(const RptClientList& other) = delete;
+
+  constexpr RptClientList(const RdmnetRptClientList& c_list) noexcept;
+
+  std::vector<RptClientEntry> GetClientEntries() const;
+
+  constexpr bool more_coming() const noexcept;
+  constexpr const RdmnetRptClientEntry* raw_entry_array() const noexcept;
+  constexpr size_t raw_entry_array_size() const noexcept;
+
+private:
+  const RdmnetRptClientList& list_;
+};
+
+/// Construct an RptClientList which references an instance of the C RdmnetRptClientList type.
+constexpr RptClientList::RptClientList(const RdmnetRptClientList& c_list) noexcept : list_(c_list)
+{
+}
+
+/// \brief Copy out the list of client entries.
 ///
 /// This function copies and translates the list delivered to a callback function into C++ native
 /// types.
-inline std::vector<RptClientEntry> GetRptClientEntries(const RdmnetRptClientList& list)
+inline std::vector<RptClientEntry> RptClientList::GetClientEntries() const
 {
   std::vector<RptClientEntry> to_return;
-  to_return.reserve(list.num_client_entries);
-  std::transform(list.client_entries, list.client_entries + list.num_client_entries, std::back_inserter(to_return),
+  to_return.reserve(list_.num_client_entries);
+  std::transform(list_.client_entries, list_.client_entries + list_.num_client_entries, std::back_inserter(to_return),
                  [](const RdmnetRptClientEntry& entry) { return RptClientEntry(entry); });
   return to_return;
+}
+
+/// \brief This message contains a partial list.
+///
+/// This can be set when the library runs out of static memory in which to store Client Entries and
+/// must deliver the partial list before continuing. The application should store the entries in
+/// the list but should not act on the list until another RptClientList is received with
+/// more_coming() == false.
+constexpr bool RptClientList::more_coming() const noexcept
+{
+  return list_.more_coming;
+}
+
+/// \brief Get a pointer to the raw array of client entry C structures.
+constexpr const RdmnetRptClientEntry* RptClientList::raw_entry_array() const noexcept
+{
+  return list_.client_entries;
+}
+
+/// \brief Get the size of the raw array of client entry C structures.
+constexpr size_t RptClientList::raw_entry_array_size() const noexcept
+{
+  return list_.num_client_entries;
+}
+
+/// \ingroup rdmnet_cpp_common
+/// \brief A mapping from a dynamic UID to a responder ID (RID).
+struct DynamicUidMapping
+{
+  DynamicUidMapping() = default;
+  DynamicUidMapping(const RdmnetDynamicUidMapping& c_mapping);
+  DynamicUidMapping& operator=(const RdmnetDynamicUidMapping& c_mapping);
+
+  /// The response code - indicating whether the broker was able to assign or look up this dynamic UID.
+  rdmnet_dynamic_uid_status_t status_code;
+  /// The dynamic UID.
+  rdm::Uid uid;
+  /// The corresponding RID to which the dynamic UID is mapped.
+  etcpal::Uuid rid;
+};
+
+/// Construct an DynamicUidMapping copied from an instance of the C RdmnetDynamicUidMapping type.
+inline DynamicUidMapping::DynamicUidMapping(const RdmnetDynamicUidMapping& c_mapping)
+    : status_code(c_mapping.status_code), uid(c_mapping.uid), rid(c_mapping.rid)
+{
+}
+
+/// Assign an instance of the C RdmnetDynamicUidMapping type to an instance of this class.
+inline DynamicUidMapping& DynamicUidMapping::operator=(const RdmnetDynamicUidMapping& c_mapping)
+{
+  status_code = c_mapping.status_code;
+  uid = c_mapping.uid;
+  rid = c_mapping.rid;
+  return *this;
+}
+
+/// \ingroup rdmnet_cpp_common
+/// \brief A list of mappings from dynamic UIDs to responder IDs received from an RDMnet broker.
+///
+/// Not valid for use other than as a parameter to an RDMnet callback function; use
+/// DynamicUidAssignmentList::GetMappings() to copy out the data.
+class DynamicUidAssignmentList
+{
+public:
+  /// Not default-constructible.
+  DynamicUidAssignmentList() = delete;
+  /// Not copyable - use Save() to create a copyable version.
+  DynamicUidAssignmentList(const DynamicUidAssignmentList& other) = delete;
+  /// Not copyable - use Save() to create a copyable version.
+  DynamicUidAssignmentList& operator=(const DynamicUidAssignmentList& other) = delete;
+
+  constexpr DynamicUidAssignmentList(const RdmnetDynamicUidAssignmentList& c_list) noexcept;
+
+  std::vector<DynamicUidMapping> GetMappings() const;
+
+  constexpr bool more_coming() const noexcept;
+  constexpr const RdmnetDynamicUidMapping* raw_mapping_array() const noexcept;
+  constexpr size_t raw_mapping_array_size() const noexcept;
+
+private:
+  const RdmnetDynamicUidAssignmentList& list_;
+};
+
+/// Construct an DynamicUidAssignmentList which references an instance of the C RdmnetDynamicUidAssignmentList type.
+constexpr DynamicUidAssignmentList::DynamicUidAssignmentList(const RdmnetDynamicUidAssignmentList& c_list) noexcept
+    : list_(c_list)
+{
+}
+
+/// \brief Copy out the list of dynamic UID mappings.
+///
+/// This function copies and translates the list delivered to a callback function into C++ native
+/// types.
+inline std::vector<DynamicUidMapping> DynamicUidAssignmentList::GetMappings() const
+{
+  std::vector<DynamicUidMapping> to_return;
+  to_return.reserve(list_.num_mappings);
+  std::transform(list_.mappings, list_.mappings + list_.num_mappings, std::back_inserter(to_return),
+                 [](const RdmnetDynamicUidMapping& mapping) { return DynamicUidMapping(mapping); });
+  return to_return;
+}
+
+/// \brief This message contains a partial list.
+///
+/// This can be set when the library runs out of static memory in which to store Client Entries and
+/// must deliver the partial list before continuing. The application should store the entries in
+/// the list but should not act on the list until another DynamicUidAssignmentList is received with
+/// more_coming() == false.
+constexpr bool DynamicUidAssignmentList::more_coming() const noexcept
+{
+  return list_.more_coming;
+}
+
+/// \brief Get a pointer to the raw array of client entry C structures.
+constexpr const RdmnetDynamicUidMapping* DynamicUidAssignmentList::raw_mapping_array() const noexcept
+{
+  return list_.mappings;
+}
+
+/// \brief Get the size of the raw array of client entry C structures.
+constexpr size_t DynamicUidAssignmentList::raw_mapping_array_size() const noexcept
+{
+  return list_.num_mappings;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1774,18 +2000,73 @@ inline EptClientEntry& EptClientEntry::operator=(const RdmnetEptClientEntry& c_e
   return *this;
 }
 
-/// \brief Copy a list of EPT client entries delivered to an RDMnet callback function.
+/// \ingroup rdmnet_cpp_common
+/// \brief A list of EPT client entries.
+///
+/// Not valid for use other than as a parameter to an RDMnet callback function; use
+/// EptClientList::GetClientEntries() to copy out the data.
+class EptClientList
+{
+public:
+  /// Not default-constructible.
+  EptClientList() = delete;
+  /// Not copyable - use Save() to create a copyable version.
+  EptClientList(const EptClientList& other) = delete;
+  /// Not copyable - use Save() to create a copyable version.
+  EptClientList& operator=(const EptClientList& other) = delete;
+
+  constexpr EptClientList(const RdmnetEptClientList& c_list) noexcept;
+
+  std::vector<EptClientEntry> GetClientEntries() const;
+
+  constexpr bool more_coming() const noexcept;
+  constexpr const RdmnetEptClientEntry* raw_entry_array() const noexcept;
+  constexpr size_t raw_entry_array_size() const noexcept;
+
+private:
+  const RdmnetEptClientList& list_;
+};
+
+/// Construct an EptClientList which references an instance of the C RdmnetEptClientList type.
+constexpr EptClientList::EptClientList(const RdmnetEptClientList& c_list) noexcept : list_(c_list)
+{
+}
+
+/// \brief Copy out the list of client entries.
 ///
 /// This function copies and translates the list delivered to a callback function into C++ native
 /// types. These types use C++ heap-allocating containers to store the client entry data and
 /// sub-protocol entries.
-inline std::vector<EptClientEntry> GetEptClientEntries(const RdmnetEptClientList& list)
+inline std::vector<EptClientEntry> EptClientList::GetClientEntries() const
 {
   std::vector<EptClientEntry> to_return;
-  to_return.reserve(list.num_client_entries);
-  std::transform(list.client_entries, list.client_entries + list.num_client_entries, std::back_inserter(to_return),
+  to_return.reserve(list_.num_client_entries);
+  std::transform(list_.client_entries, list_.client_entries + list_.num_client_entries, std::back_inserter(to_return),
                  [](const RdmnetEptClientEntry& entry) { return EptClientEntry(entry); });
   return to_return;
+}
+
+/// \brief This message contains a partial list.
+///
+/// This can be set when the library runs out of static memory in which to store Client Entries and
+/// must deliver the partial list before continuing. The application should store the entries in
+/// the list but should not act on the list until another EptClientList is received with
+/// more_coming() == false.
+constexpr bool EptClientList::more_coming() const noexcept
+{
+  return list_.more_coming;
+}
+
+/// \brief Get a pointer to the raw array of client entry C structures.
+constexpr const RdmnetEptClientEntry* EptClientList::raw_entry_array() const noexcept
+{
+  return list_.client_entries;
+}
+
+/// \brief Get the size of the raw array of client entry C structures.
+constexpr size_t EptClientList::raw_entry_array_size() const noexcept
+{
+  return list_.num_client_entries;
 }
 
 namespace llrp

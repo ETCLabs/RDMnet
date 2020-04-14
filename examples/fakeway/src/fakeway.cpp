@@ -91,7 +91,7 @@ void Fakeway::PrintVersion()
   std::cout << "or implied.\n";
 }
 
-bool Fakeway::Startup(const rdmnet::Scope& scope_config, etcpal::Logger& logger, const char* cid_str)
+bool Fakeway::Startup(const rdmnet::Scope& scope_config, etcpal::Logger& logger, const etcpal::Uuid& cid)
 {
   def_resp_ = std::make_unique<FakewayDefaultResponder>(scope_config, E133_DEFAULT_DOMAIN);
 
@@ -100,19 +100,7 @@ bool Fakeway::Startup(const rdmnet::Scope& scope_config, etcpal::Logger& logger,
   if (!gadget_.Startup(*this, logger))
     return false;
 
-  etcpal::Uuid my_cid;
-  if (!cid_str)
-  {
-    // A typical hardware-locked device would use etcpal::Uuid::V3() to generate a CID that is
-    // the same every time. But this example device is not locked to hardware, so a V4 UUID makes
-    // more sense.
-    my_cid = etcpal::Uuid::V4();
-  }
-  else
-  {
-    my_cid = etcpal::Uuid::FromString(cid_str);
-  }
-  auto my_settings = rdmnet::DeviceSettings(my_cid, rdm::Uid::DynamicUidRequest(0x6574));
+  auto my_settings = rdmnet::DeviceSettings(cid, rdm::Uid::DynamicUidRequest(0x6574));
   auto res = rdmnet_.Startup(*this, my_settings, scope_config);
   if (!res)
   {
@@ -134,31 +122,31 @@ void Fakeway::Shutdown()
   physical_endpoint_rev_lookup_.clear();
 }
 
-void Fakeway::HandleConnectedToBroker(rdmnet::DeviceHandle handle, const RdmnetClientConnectedInfo& info)
+void Fakeway::HandleConnectedToBroker(rdmnet::DeviceHandle /*handle*/, const rdmnet::ClientConnectedInfo& info)
 {
   connected_to_broker_ = true;
   if (log_->CanLog(ETCPAL_LOG_INFO))
   {
     log_->Info("Connected to broker for scope %s at address %s", def_resp_->scope_config().id_string().c_str(),
-               etcpal::SockAddr(info.broker_addr).ToString().c_str());
+               info.broker_addr().ToString().c_str());
   }
 }
 
-void Fakeway::HandleBrokerConnectFailed(rdmnet::DeviceHandle handle, const RdmnetClientConnectFailedInfo& info)
+void Fakeway::HandleBrokerConnectFailed(rdmnet::DeviceHandle /*handle*/, const rdmnet::ClientConnectFailedInfo& info)
 {
   connected_to_broker_ = false;
   log_->Info("Connect failed to broker for scope %s.%s", def_resp_->scope_config().id_string().c_str(),
-             info.will_retry ? " Retrying..." : "");
+             info.will_retry() ? " Retrying..." : "");
 }
 
-void Fakeway::HandleDisconnectedFromBroker(rdmnet::DeviceHandle handle, const RdmnetClientDisconnectedInfo& info)
+void Fakeway::HandleDisconnectedFromBroker(rdmnet::DeviceHandle /*handle*/, const rdmnet::ClientDisconnectedInfo& info)
 {
   connected_to_broker_ = false;
   log_->Info("Disconnected from broker for scope %s.%s", def_resp_->scope_config().id_string().c_str(),
-             info.will_retry ? " Retrying..." : "");
+             info.will_retry() ? " Retrying..." : "");
 }
 
-rdmnet::ResponseAction Fakeway::HandleRdmCommand(rdmnet::DeviceHandle handle, const rdmnet::RdmCommand& cmd)
+rdmnet::RdmResponseAction Fakeway::HandleRdmCommand(rdmnet::DeviceHandle /*handle*/, const rdmnet::RdmCommand& cmd)
 {
   if (cmd.IsToDefaultResponder())
   {
@@ -167,7 +155,7 @@ rdmnet::ResponseAction Fakeway::HandleRdmCommand(rdmnet::DeviceHandle handle, co
   else
   {
     etcpal::ReadGuard endpoint_read(endpoint_lock_);
-    auto endpoint_pair = physical_endpoints_.find(cmd.dest_endpoint);
+    auto endpoint_pair = physical_endpoints_.find(cmd.dest_endpoint());
     if (endpoint_pair != physical_endpoints_.end())
     {
       PhysicalEndpoint* endpoint = endpoint_pair->second.get();
@@ -191,31 +179,32 @@ rdmnet::ResponseAction Fakeway::HandleRdmCommand(rdmnet::DeviceHandle handle, co
       rdmnet_.SendRptStatus(cmd.Save(), kRptStatusUnknownEndpoint);
     }
   }
-  return rdmnet::ResponseAction::DeferResponse();
+  return rdmnet::RdmResponseAction::DeferResponse();
 }
 
-rdmnet::ResponseAction Fakeway::HandleLlrpRdmCommand(rdmnet::DeviceHandle handle, const rdmnet::llrp::RdmCommand& cmd)
+rdmnet::RdmResponseAction Fakeway::HandleLlrpRdmCommand(rdmnet::DeviceHandle /*handle*/,
+                                                        const rdmnet::llrp::RdmCommand& cmd)
 {
   return ProcessDefRespRdmCommand(cmd.rdm_header(), cmd.data(), cmd.data_len());
 }
 
-rdmnet::ResponseAction Fakeway::ProcessDefRespRdmCommand(const rdm::CommandHeader& cmd_header, const uint8_t* data,
-                                                         uint8_t data_len)
+rdmnet::RdmResponseAction Fakeway::ProcessDefRespRdmCommand(const rdm::CommandHeader& cmd_header, const uint8_t* data,
+                                                            uint8_t data_len)
 {
   if (!def_resp_->SupportsPid(cmd_header.param_id()))
   {
     log_->Debug("Sending NACK to Controller %04x:%08x for unknown PID 0x%04x",
                 cmd_header.source_uid().manufacturer_id(), cmd_header.source_uid().device_id(), cmd_header.param_id());
-    return rdmnet::ResponseAction::SendNack(kRdmNRUnknownPid);
+    return rdmnet::RdmResponseAction::SendNack(kRdmNRUnknownPid);
   }
-  switch (cmd_header.command_class)
+  switch (cmd_header.command_class())
   {
     case kRdmCCSetCommand:
       return def_resp_->Set(cmd_header.param_id(), data, data_len);
     case kRdmCCGetCommand:
       return def_resp_->Get(cmd_header.param_id(), data, data_len);
     default:
-      return rdmnet::ResponseAction::SendNack(kRdmNRUnsupportedCommandClass);
+      return rdmnet::RdmResponseAction::SendNack(kRdmNRUnsupportedCommandClass);
   }
 }
 
@@ -225,17 +214,21 @@ void Fakeway::HandleGadgetConnected(unsigned int gadget_id, unsigned int num_por
 {
   etcpal::WriteGuard endpoint_write(endpoint_lock_);
 
+  std::vector<rdmnet::PhysicalEndpointConfig> new_endpoint_configs;
   std::vector<uint16_t> new_endpoints;
-  new_endpoints.reserve(num_ports);
+
   for (uint8_t i = 0; i < num_ports; ++i)
   {
     uint16_t this_endpoint_id = next_endpoint_id_++;
     physical_endpoints_.insert(
         std::make_pair(this_endpoint_id, std::make_unique<PhysicalEndpoint>(this_endpoint_id, gadget_id, i + 1)));
     new_endpoints.push_back(this_endpoint_id);
+    new_endpoint_configs.push_back(this_endpoint_id);
   }
+
   physical_endpoint_rev_lookup_.insert(std::make_pair(gadget_id, new_endpoints));
-  rdmnet_.AddEndpoints(new_endpoints);
+
+  rdmnet_.AddPhysicalEndpoints(new_endpoint_configs);
 }
 
 void Fakeway::HandleGadgetDisconnected(unsigned int gadget_id)
@@ -267,7 +260,7 @@ void Fakeway::HandleNewRdmResponderDiscovered(unsigned int gadget_id, unsigned i
       rdm::Uid responder(info.manufacturer_id, info.device_id);
       if (endpt->AddResponder(responder))
       {
-        rdmnet_.AddPhysicalResponders(endpt_pair->first, &responder, 1);
+        rdmnet_.AddPhysicalResponder(endpt_pair->first, responder);
       }
     }
   }
@@ -349,7 +342,7 @@ void Fakeway::HandleRdmResponderLost(unsigned int gadget_id, unsigned int port_n
             rdmnet_.SendRptStatus(*msg, kRptStatusRdmTimeout);
         }
         orphaned_msgs.clear();
-        rdmnet_.RemovePhysicalResponders(endpt_pair->first, &uid_lost, 1);
+        rdmnet_.RemovePhysicalResponder(endpt_pair->first, uid_lost);
       }
     }
   }

@@ -86,13 +86,13 @@ public:
   /// \param handle Handle to device instance which has received the RDM command.
   /// \param cmd The RDM command data.
   /// \return The action to take in response to this RDM command.
-  virtual ResponseAction HandleRdmCommand(DeviceHandle handle, const RdmCommand& cmd) = 0;
+  virtual RdmResponseAction HandleRdmCommand(DeviceHandle handle, const RdmCommand& cmd) = 0;
 
   /// \brief An RDM command has been received over LLRP, addressed to a device.
   /// \param handle Handle to device instance which has received the RDM command.
   /// \param cmd The RDM command data.
   /// \return The action to take in response to this LLRP RDM command.
-  virtual ResponseAction HandleLlrpRdmCommand(DeviceHandle handle, const llrp::RdmCommand& cmd) = 0;
+  virtual RdmResponseAction HandleLlrpRdmCommand(DeviceHandle handle, const llrp::RdmCommand& cmd) = 0;
 
   /// \brief The dynamic UID assignment status for a set of virtual responders has been received.
   ///
@@ -104,7 +104,7 @@ public:
   ///
   /// \param handle Handle to device instance which has received the dynamic UID assignments.
   /// \param list The list of dynamic UID assignments.
-  virtual void HandleDynamicUidStatus(DeviceHandle handle, const RdmnetDynamicUidAssignmentList& list)
+  virtual void HandleDynamicUidStatus(DeviceHandle handle, const DynamicUidAssignmentList& list)
   {
     ETCPAL_UNUSED_ARG(handle);
     ETCPAL_UNUSED_ARG(list);
@@ -439,7 +439,7 @@ public:
   etcpal::Expected<Scope> scope() const;
 
 private:
-  DeviceHandle handle_{RDMNET_DEVICE_INVALID};
+  DeviceHandle handle_{kInvalidDeviceHandle};
   DeviceNotifyHandler* notify_{nullptr};
 };
 

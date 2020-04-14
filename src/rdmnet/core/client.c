@@ -1242,7 +1242,7 @@ bool handle_rpt_status(const RptMessage* rmsg, RptClientMessage* msg_out)
   //
   //  // This one is quick and simple with no failure condition
   //  msg_out->type = kRptClientMsgStatus;
-  //  status_out->rdmnet_source_uid = rmsg->header.source_uid;
+  //  status_out->source_uid = rmsg->header.source_uid;
   //  status_out->source_endpoint = rmsg->header.source_endpoint_id;
   //  status_out->seq_num = rmsg->header.seqnum;
   //  status_out->msg = *status;

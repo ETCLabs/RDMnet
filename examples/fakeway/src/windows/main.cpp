@@ -34,16 +34,22 @@ void PrintHelp(wchar_t* app_name)
   std::cout << "  --version         Output version information and exit.\n";
 }
 
-bool SetScope(wchar_t* arg, char* scope_buf)
+bool SetScope(const wchar_t* arg, rdmnet::Scope& scope_config)
 {
+  char scope_buf[E133_SCOPE_STRING_PADDED_LENGTH];
   if (WideCharToMultiByte(CP_UTF8, 0, arg, -1, scope_buf, E133_SCOPE_STRING_PADDED_LENGTH, NULL, NULL) > 0)
+  {
+    scope_config.SetIdString(scope_buf);
     return true;
+  }
   return false;
 }
 
-bool SetStaticBroker(wchar_t* arg, EtcPalSockAddr& static_broker_addr)
+bool SetStaticBroker(const wchar_t* arg, rdmnet::Scope& scope_config)
 {
-  wchar_t* sep = wcschr(arg, ':');
+  EtcPalSockAddr static_broker_addr;
+
+  const wchar_t* sep = wcschr(arg, ':');
   if (sep != NULL && sep - arg < ETCPAL_INET6_ADDRSTRLEN)
   {
     wchar_t ip_str[ETCPAL_INET6_ADDRSTRLEN];
@@ -73,8 +79,21 @@ bool SetStaticBroker(wchar_t* arg, EtcPalSockAddr& static_broker_addr)
     }
     if (convert_res == 1 && 1 == swscanf(sep + 1, L"%hu", &static_broker_addr.port))
     {
+      scope_config.SetStaticBrokerAddr(static_broker_addr);
       return true;
     }
+  }
+  return false;
+}
+
+bool SetCid(const wchar_t* arg, etcpal::Uuid& cid)
+{
+  char cid_str[ETCPAL_UUID_STRING_BYTES];
+  if (WideCharToMultiByte(CP_UTF8, 0, arg, -1, cid_str, ETCPAL_UUID_STRING_BYTES, NULL, NULL) > 0)
+  {
+    cid = etcpal::Uuid::FromString(cid_str);
+    if (!cid.IsNull())
+      return true;
   }
   return false;
 }
@@ -94,6 +113,8 @@ BOOL WINAPI ConsoleHandler(DWORD signal)
 
   return TRUE;
 }
+
+constexpr const char* kLogFileName = "fakeway.log";
 
 class WindowsLog : public etcpal::LogMessageHandler
 {
@@ -116,9 +137,9 @@ WindowsLog::WindowsLog()
 {
   etcpal_init(ETCPAL_FEATURE_LOGGING);
 
-  file_.open(file_name.c_str(), std::fstream::out);
+  file_.open(kLogFileName, std::fstream::out);
   if (file_.fail())
-    std::cout << "Fakeway Log: Couldn't open log file '" << file_name << "'." << std::endl;
+    std::cout << "Fakeway Log: Couldn't open log file '" << kLogFileName << "'.\n";
 
   TIME_ZONE_INFORMATION tzinfo;
   switch (GetTimeZoneInformation(&tzinfo))
@@ -162,16 +183,8 @@ void WindowsLog::HandleLogMessage(const EtcPalLogStrings& strings)
 int wmain(int argc, wchar_t* argv[])
 {
   bool should_exit = false;
-<<<<<<< HEAD
   rdmnet::Scope scope_config;
-  == == == = RdmnetScopeConfig scope_config;
-
-  char cid_str[ETCPAL_UUID_STRING_BYTES];
-  memset(cid_str, '\0', ETCPAL_UUID_STRING_BYTES);
-  bool cid_str_set = false;
-
-  RDMNET_CLIENT_SET_DEFAULT_SCOPE(&scope_config);
->>>>>>> develop
+  etcpal::Uuid cid;
 
   if (argc > 1)
   {
@@ -179,7 +192,7 @@ int wmain(int argc, wchar_t* argv[])
     {
       if (_wcsnicmp(argv[i], L"--scope=", 8) == 0)
       {
-        if (!SetScope(&argv[i][8], scope_config.scope))
+        if (!SetScope(&argv[i][8], scope_config))
         {
           PrintHelp(argv[0]);
           should_exit = true;
@@ -188,11 +201,7 @@ int wmain(int argc, wchar_t* argv[])
       }
       else if (_wcsnicmp(argv[i], L"--broker=", 9) == 0)
       {
-        if (SetStaticBroker(&argv[i][9], scope_config.static_broker_addr))
-        {
-          scope_config.has_static_broker_addr = true;
-        }
-        else
+        if (!SetStaticBroker(&argv[i][9], scope_config))
         {
           PrintHelp(argv[0]);
           should_exit = true;
@@ -201,8 +210,12 @@ int wmain(int argc, wchar_t* argv[])
       }
       else if (_wcsnicmp(argv[i], L"--cid=", 6) == 0)
       {
-        cid_str_set =
-            (WideCharToMultiByte(CP_UTF8, 0, &argv[i][6], -1, cid_str, ETCPAL_UUID_STRING_BYTES, NULL, NULL) > 0);
+        if (!SetCid(&argv[i][6], cid))
+        {
+          PrintHelp(argv[0]);
+          should_exit = true;
+          break;
+        }
       }
       else if (_wcsicmp(argv[i], L"--version") == 0)
       {
@@ -228,13 +241,13 @@ int wmain(int argc, wchar_t* argv[])
     return 1;
   }
 
-<<<<<<< HEAD
+  if (cid.IsNull())
+    cid = etcpal::Uuid::OsPreferred();
+
   std::cout << "Starting Fakeway...\n";
   WindowsLog log;
-  fakeway.Startup(scope_config, log.logger());
-  == == == = printf("Starting Fakeway...\n");
-  fakeway.Startup(scope_config, cid_str_set ? cid_str : nullptr);
->>>>>>> develop
+  if (!fakeway.Startup(scope_config, log.logger(), cid))
+    return 1;
 
   while (fakeway_keep_running)
   {

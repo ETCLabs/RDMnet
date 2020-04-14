@@ -30,9 +30,9 @@ class MockDeviceNotifyHandler : public rdmnet::DeviceNotifyHandler
               (rdmnet::DeviceHandle handle, const rdmnet::ClientConnectFailedInfo& info), (override));
   MOCK_METHOD(void, HandleDisconnectedFromBroker,
               (rdmnet::DeviceHandle handle, const rdmnet::ClientDisconnectedInfo& info), (override));
-  MOCK_METHOD(rdmnet::ResponseAction, HandleRdmCommand,
+  MOCK_METHOD(rdmnet::RdmResponseAction, HandleRdmCommand,
               (rdmnet::DeviceHandle handle, const rdmnet::RdmCommand& command), (override));
-  MOCK_METHOD(rdmnet::ResponseAction, HandleLlrpRdmCommand,
+  MOCK_METHOD(rdmnet::RdmResponseAction, HandleLlrpRdmCommand,
               (rdmnet::DeviceHandle handle, const rdmnet::llrp::RdmCommand& cmd), (override));
 };
 

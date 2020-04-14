@@ -72,6 +72,27 @@ etcpal_error_t rdmnet_save_rdm_response(const RdmnetRdmResponse* response, Rdmne
 }
 
 /*!
+ * \brief Append more data to a SavedRdmResponse's parameter data.
+ *
+ * This is useful after having previously saved an RdmnetRdmResponse with the more_coming flag set
+ * to true.
+ *
+ * \param[in] new_response The new response that has just been received.
+ * \param[in,out] previously_saved_response The previously saved response to which to append data.
+ * \return #kEtcPalErrOk: Data appended successfully.
+ * \return #kEtcPalErrInvalid: Invalid argument.
+ * \return #kEtcPalErrNotImpl: RDMnet was compiled with #RDMNET_DYNAMIC_MEM set to 0.
+ * \return #kEtcPalErrNoMem: Couldn't allocate memory for new response data.
+ */
+etcpal_error_t rdmnet_append_to_saved_rdm_response(const RdmnetRdmResponse* new_response,
+                                                   RdmnetSavedRdmResponse* previously_saved_response)
+{
+  ETCPAL_UNUSED_ARG(new_response);
+  ETCPAL_UNUSED_ARG(previously_saved_response);
+  return kEtcPalErrNotImpl;
+}
+
+/*!
  * \brief Save the data in a received RPT status message for later use from a different context.
  *
  * RDMnet message types delivered to RDMnet callback functions do not own their data; if

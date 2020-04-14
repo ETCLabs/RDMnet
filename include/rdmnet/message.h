@@ -89,6 +89,11 @@ typedef struct RdmnetRdmResponse
   uint16_t source_endpoint;
   /*! The sequence number of the response, for matching with a corresponding command. */
   uint32_t seq_num;
+  /*!
+   * \brief Whether the response was sent in response to a command previously sent by this controller.
+   * \details If this is false, the command was a broadcast sent to all controllers.
+   */
+  bool is_response_to_me;
 
   /*! The original command associated with this response; valid if seq_num != 0. */
   RdmCommandHeader original_cmd_header;
@@ -111,7 +116,7 @@ typedef struct RdmnetRdmResponse
    * This message contains partial RDM data. This can be set when the library runs out of static
    * memory in which to store RDM response data and must deliver a partial data buffer before
    * continuing (this only applies to the data buffer within the RDM response). The application
-   * should store the partial data but should not act on it until another RdmnetRemoteRdmResponse
+   * should store the partial data but should not act on it until another RdmnetRdmResponse
    * is received with more_coming set to false.
    */
   bool more_coming;
@@ -132,6 +137,11 @@ typedef struct RdmnetSavedRdmResponse
   uint16_t source_endpoint;
   /*! The sequence number of the response, for matching with a corresponding command. */
   uint32_t seq_num;
+  /*!
+   * \brief Whether the response was sent in response to a command previously sent by this controller.
+   * \details If this is false, the command was a broadcast sent to all controllers.
+   */
+  bool is_response_to_me;
 
   /*! The original command associated with this response; valid if seq_num != 0. */
   RdmCommandHeader original_cmd_header;
@@ -154,11 +164,21 @@ typedef struct RdmnetSavedRdmResponse
   size_t rdm_data_len;
 } RdmnetSavedRdmResponse;
 
+/*!
+ * \brief Whether the original command is included in an RdmnetRdmResponse or RdmnetSavedRdmResponse.
+ *
+ * If this is true, the members original_cmd_header, original_cmd_data and original_cmd_data_len
+ * will be valid; otherwise, they contain unspecified values.
+ *
+ * \param resp Pointer to RdmnetRdmResponse or RdmnetSavedRdmResponse to inspect.
+ */
+#define RDMNET_RESP_ORIGINAL_COMMAND_INCLUDED(resp) ((resp)->seq_num == 0)
+
 /*! An RDMnet RPT status message received by a local component. */
 typedef struct RdmnetRptStatus
 {
   /*! The UID of the RDMnet component that sent this status message. */
-  RdmUid rdmnet_source_uid;
+  RdmUid source_uid;
   /*! The endpoint from which the status message was sent. */
   uint16_t source_endpoint;
   /*! The sequence number of the status message, for matching with a corresponding command. */
@@ -180,7 +200,7 @@ typedef struct RdmnetRptStatus
 typedef struct RdmnetSavedRptStatus
 {
   /*! The UID of the RDMnet component that sent this status message. */
-  RdmUid rdmnet_source_uid;
+  RdmUid source_uid;
   /*! The endpoint from which the status message was sent. */
   uint16_t source_endpoint;
   /*! The sequence number of the status message, for matching with a corresponding command. */
@@ -195,14 +215,14 @@ typedef struct RdmnetSavedRptStatus
   const char* status_string;
 } RdmnetSavedRptStatus;
 
-/*! A response from a broker to a Dynamic UID Request. */
+/*! A mapping from a dynamic UID to a responder ID (RID). */
 typedef struct RdmnetDynamicUidMapping
 {
-  /*! The response code - indicates whether the broker was able to assign this dynamic UID. */
+  /*! The response code - indicates whether the broker was able to assign or look up dynamic UID. */
   rdmnet_dynamic_uid_status_t status_code;
-  /*! The dynamic UID - only valid if status_code is kRdmnetDynamicUidStatusOk. */
+  /*! The dynamic UID. */
   RdmUid uid;
-  /*! The corresponding RID for which the dynamic UID was requested. */
+  /*! The corresponding RID to which the dynamic UID is mapped. */
   EtcPalUuid rid;
 } RdmnetDynamicUidMapping;
 
@@ -215,9 +235,9 @@ typedef struct RdmnetDynamicUidAssignmentList
   size_t num_mappings;
   /*!
    * This message contains a partial list. This can be set when the library runs out of static
-   * memory in which to store BrokerDynamicUidMappings and must deliver the partial list before
+   * memory in which to store RdmnetDynamicUidMappings and must deliver the partial list before
    * continuing. The application should store the entries in the list but should not act on the
-   * list until another BrokerDynamicUidAssignmentList is received with more_coming set to false.
+   * list until another RdmnetDynamicUidAssignmentList is received with more_coming set to false.
    */
   bool more_coming;
 } RdmnetDynamicUidAssignmentList;
@@ -341,11 +361,7 @@ typedef struct RdmnetEptClientEntry
   size_t num_protocols;            /*!< The size of the protocols array. */
 } RdmnetEptClientEntry;
 
-/*!
- * A structure that represents a list of RPT Client Entries. Represents the data for multiple
- * Broker Protocol messages: Connected Client List, Client Incremental Addition, Client Incremental
- * Deletion, and Client Entry Change.
- */
+/*! A structure that represents a list of RPT Client Entries. */
 typedef struct RdmnetRptClientList
 {
   /*! An array of RPT Client Entries. */
@@ -356,16 +372,12 @@ typedef struct RdmnetRptClientList
    * This message contains a partial list. This can be set when the library runs out of static
    * memory in which to store Client Entries and must deliver the partial list before continuing.
    * The application should store the entries in the list but should not act on the list until
-   * another BrokerClientList is received with more_coming set to false.
+   * another RdmnetRptClientList is received with more_coming set to false.
    */
   bool more_coming;
 } RdmnetRptClientList;
 
-/*!
- * A structure that represents a list of EPT Client Entries. Represents the data for multiple
- * Broker Protocol messages: Connected Client List, Client Incremental Addition, Client Incremental
- * Deletion, and Client Entry Change.
- */
+/*! A structure that represents a list of EPT Client Entries. */
 typedef struct RdmnetEptClientList
 {
   /*! An array of EPT Client Entries. */
@@ -376,7 +388,7 @@ typedef struct RdmnetEptClientList
    * This message contains a partial list. This can be set when the library runs out of static
    * memory in which to store Client Entries and must deliver the partial list before continuing.
    * The application should store the entries in the list but should not act on the list until
-   * another BrokerClientList is received with more_coming set to false.
+   * another RdmnetEptClientList is received with more_coming set to false.
    */
   bool more_coming;
 } RdmnetEptClientList;
@@ -453,6 +465,8 @@ typedef struct LlrpSavedRdmResponse
 
 etcpal_error_t rdmnet_save_rdm_command(const RdmnetRdmCommand* command, RdmnetSavedRdmCommand* saved_command);
 etcpal_error_t rdmnet_save_rdm_response(const RdmnetRdmResponse* response, RdmnetSavedRdmResponse* saved_response);
+etcpal_error_t rdmnet_append_to_saved_rdm_response(const RdmnetRdmResponse* new_response,
+                                                   RdmnetSavedRdmResponse* previously_saved_response);
 etcpal_error_t rdmnet_save_rpt_status(const RdmnetRptStatus* status, RdmnetSavedRptStatus* saved_status);
 
 etcpal_error_t rdmnet_copy_saved_rdm_response(const RdmnetSavedRdmResponse* saved_resp_old,

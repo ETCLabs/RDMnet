@@ -100,7 +100,7 @@ void rdm_command_received(rdmnet_device_t handle, const RdmnetRdmCommand* cmd, R
   if (cmd->rdm_header.command_class == kRdmCCGetCommand && cmd->rdm_header.param_id == E120_DEVICE_INFO)
   {
     memcpy(my_rdmnet_response_buf, kMyDeviceInfoData, DEVICE_INFO_DATA_SIZE);
-    RDMNET_SYNC_SEND_ACK(response, DEVICE_INFO_DATA_SIZE);
+    RDMNET_SYNC_SEND_RDM_ACK(response, DEVICE_INFO_DATA_SIZE);
     // ACK will be sent after this function returns.
   }
 }
@@ -144,7 +144,7 @@ void rdm_command_received(rdmnet_device_t handle, const RdmnetRdmCommand* cmd, R
       // Start the physical identify operation
     }
     // Indicate an ACK should be sent with no data.
-    RDMNET_SYNC_SEND_ACK(response, 0);
+    RDMNET_SYNC_SEND_RDM_ACK(response, 0);
     // ACK will be sent after this function returns.
   }
 }
@@ -194,7 +194,7 @@ void handle_get_sensor_value(rdmnet_device_t handle, const uint8_t* data, Rdmnet
   uint8_t sensor_num = data[0];
   if (sensor_num >= NUM_SENSORS)
   {
-    RDMNET_SYNC_SEND_NACK(response, kRdmNRDataOutOfRange);
+    RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRDataOutOfRange);
     // NACK will be sent after the RDM command handler callback returns.
   }
   else
@@ -295,11 +295,22 @@ library are:
   + ENDPOINT_RESPONDER_LIST_CHANGE
 * ANSI E1.33
   + TCP_COMMS_STATUS
+  + BROKER_STATUS
+    - Will be handled according to the policies given in the broker's settings configuration.
 
 The list of PIDS partially handled by the library are:
 
 * ANSI E1.33
-  + COMPONENT_SCOPE (only GETs for this PID are handled by the library. SETs are forwarded)
+  + COMPONENT_SCOPE
+    - GETs for this PID are handled by the library.
+    - SETs for this PID are forwarded to the application for handling. If the application ACKs the
+      SET command, the library will act on the new scope configuration (disconnecting and
+      reconnecting as necessary).
+  + SEARCH_DOMAIN
+    - GETs for this PID are handled by the library.
+    - SETs for this PID are fowarded to the application for handling. If the application ACKs the
+      SET command, the library will act on the new search domain configuration (disconnecting and
+      reconnecting as necessary).
 
 There is no need to include these PID values in your response to the GET:SUPPORTED_PARAMETERS
 command; they will be automatically added by the library before sending the response.

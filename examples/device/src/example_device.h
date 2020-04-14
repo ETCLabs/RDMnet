@@ -31,11 +31,11 @@
 extern "C" {
 #endif
 
-void device_print_version();
+void device_print_version(void);
 
-etcpal_error_t device_init(const RdmnetScopeConfig* scope_config, const EtcPalLogParams* lparams);
-void device_deinit();
-void device_run();
+etcpal_error_t device_init(const EtcPalLogParams* lparams, const char* scope, const EtcPalSockAddr* static_broker_addr);
+void device_deinit(void);
+void device_run(void);
 
 #ifdef __cplusplus
 }

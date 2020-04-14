@@ -38,9 +38,9 @@ class MockEptClientNotifyHandler : public rdmnet::EptClientNotifyHandler
               (override));
   MOCK_METHOD(void, HandleClientListUpdate,
               (rdmnet::EptClientHandle handle, rdmnet::ScopeHandle scope_handle, client_list_action_t list_action,
-               const RdmnetEptClientList& list),
+               const rdmnet::EptClientList& list),
               (override));
-  MOCK_METHOD(rdmnet::ResponseAction, HandleEptData,
+  MOCK_METHOD(rdmnet::EptResponseAction, HandleEptData,
               (rdmnet::EptClientHandle handle, rdmnet::ScopeHandle scope_handle, const rdmnet::EptData& data),
               (override));
   MOCK_METHOD(void, HandleEptStatus,

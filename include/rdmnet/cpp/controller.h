@@ -71,18 +71,18 @@ public:
   /// \param scope_handle Handle to the scope on which the RDM command was received.
   /// \param cmd The RDM command data.
   /// \return The action to take in response to this RDM command.
-  virtual rdmnet::ResponseAction HandleRdmCommand(ControllerHandle handle, ScopeHandle scope_handle,
-                                                  const RdmCommand& cmd) = 0;
+  virtual RdmResponseAction HandleRdmCommand(ControllerHandle handle, ScopeHandle scope_handle,
+                                             const RdmCommand& cmd) = 0;
 
   /// \brief An RDM command has been received over LLRP, addressed to a controller.
   /// \param handle Handle to controller instance which has received the RDM command.
   /// \param cmd The RDM command data.
   /// \return The action to take in response to this LLRP RDM command.
-  virtual rdmnet::ResponseAction HandleLlrpRdmCommand(ControllerHandle handle, const llrp::RdmCommand& cmd)
+  virtual RdmResponseAction HandleLlrpRdmCommand(ControllerHandle handle, const llrp::RdmCommand& cmd)
   {
     ETCPAL_UNUSED_ARG(handle);
     ETCPAL_UNUSED_ARG(cmd);
-    return rdmnet::ResponseAction::SendNack(kRdmNRActionNotSupported);
+    return rdmnet::RdmResponseAction::SendNack(kRdmNRActionNotSupported);
   }
 };
 
@@ -121,7 +121,7 @@ public:
   ///                    cached list.
   /// \param list The list of updates.
   virtual void HandleClientListUpdate(ControllerHandle handle, ScopeHandle scope_handle,
-                                      client_list_action_t list_action, const RdmnetRptClientList& list) = 0;
+                                      client_list_action_t list_action, const RptClientList& list) = 0;
 
   /// \brief An RDM response has been received.
   /// \param handle Handle to controller instance which has received the RDM response.
@@ -144,7 +144,7 @@ public:
   /// \param scope_handle Handle to the scope on which the responder IDs were received.
   /// \param list The list of dynamic UID to responder ID mappings.
   virtual void HandleResponderIdsReceived(ControllerHandle handle, ScopeHandle scope_handle,
-                                          const RdmnetDynamicUidAssignmentList& list)
+                                          const DynamicUidAssignmentList& list)
   {
     ETCPAL_UNUSED_ARG(handle);
     ETCPAL_UNUSED_ARG(scope_handle);

@@ -463,14 +463,6 @@ typedef struct RdmnetSourceAddr
 etcpal_error_t rdmnet_client_init(void);
 void rdmnet_client_deinit(void);
 
-void rdmnet_address_to_default_responder(RdmnetDestinationAddr* addr, const RdmUid* responder_uid);
-void rdmnet_address_to_default_responder_subdevice(RdmnetDestinationAddr* addr, const RdmUid* responder_uid,
-                                                   uint16_t subdevice);
-void rdmnet_address_to_sub_responder(RdmnetDestinationAddr* addr, const RdmUid* rdmnet_uid, uint16_t endpoint,
-                                     const RdmUid* responder_uid);
-void rdmnet_address_to_sub_responder_subdevice(RdmnetDestinationAddr* addr, const RdmUid* rdmnet_uid, uint16_t endpoint,
-                                               const RdmUid* responder_uid, uint16_t subdevice);
-
 void rdmnet_rpt_client_config_init(RdmnetRptClientConfig* config, uint16_t manufacturer_id);
 void rdmnet_ept_client_config_init(RdmnetEptClientConfig* config);
 

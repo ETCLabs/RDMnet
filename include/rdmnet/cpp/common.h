@@ -88,13 +88,13 @@ inline void Deinit()
 
 /// \ingroup rdmnet_cpp_common
 /// \brief A class representing a synchronous action to take in response to a received RDM command.
-class ResponseAction
+class RdmResponseAction
 {
 public:
-  static ResponseAction SendAck(size_t response_data_len = 0);
-  static ResponseAction SendNack(rdm_nack_reason_t nack_reason);
-  static ResponseAction SendNack(uint16_t raw_nack_reason);
-  static ResponseAction DeferResponse();
+  static RdmResponseAction SendAck(size_t response_data_len = 0);
+  static RdmResponseAction SendNack(rdm_nack_reason_t nack_reason);
+  static RdmResponseAction SendNack(uint16_t raw_nack_reason);
+  static RdmResponseAction DeferResponse();
 
   constexpr const RdmnetSyncRdmResponse& get() const;
 
@@ -105,18 +105,18 @@ private:
 /// \brief Send an RDM ACK, optionally including some response data.
 /// \param response_data_len Length of the RDM response parameter data provided.
 /// \pre If response_data_len != 0, data has been copied to the buffer provided at initialization time.
-inline ResponseAction ResponseAction::SendAck(size_t response_data_len)
+inline RdmResponseAction RdmResponseAction::SendAck(size_t response_data_len)
 {
-  ResponseAction to_return;
+  RdmResponseAction to_return;
   RDMNET_SYNC_SEND_RDM_ACK(&to_return.response_, response_data_len);
   return to_return;
 }
 
 /// \brief Send an RDM NACK with a reason code.
 /// \param nack_reason The RDM NACK reason code to send with the NACK response.
-inline ResponseAction ResponseAction::SendNack(rdm_nack_reason_t nack_reason)
+inline RdmResponseAction RdmResponseAction::SendNack(rdm_nack_reason_t nack_reason)
 {
-  ResponseAction to_return;
+  RdmResponseAction to_return;
   RDMNET_SYNC_SEND_RDM_NACK(&to_return.response_, nack_reason);
   return to_return;
 }
@@ -124,24 +124,72 @@ inline ResponseAction ResponseAction::SendNack(rdm_nack_reason_t nack_reason)
 /// \brief Send an RDM NACK with a reason code.
 /// \param raw_nack_reason The NACK reason (either standard or manufacturer-specific) to send with
 ///                        the NACK response.
-inline ResponseAction ResponseAction::SendNack(uint16_t raw_nack_reason)
+inline RdmResponseAction RdmResponseAction::SendNack(uint16_t raw_nack_reason)
 {
-  ResponseAction to_return;
+  RdmResponseAction to_return;
   RDMNET_SYNC_SEND_RDM_NACK(&to_return.response_, static_cast<rdm_nack_reason_t>(raw_nack_reason));
   return to_return;
 }
 
 /// \brief Defer the RDM response to be sent later from another context.
 /// \details Make sure to Save() any RDM command data for later processing.
-inline ResponseAction ResponseAction::DeferResponse()
+inline RdmResponseAction RdmResponseAction::DeferResponse()
 {
-  ResponseAction to_return;
+  RdmResponseAction to_return;
   RDMNET_SYNC_DEFER_RDM_RESPONSE(&to_return.response_);
   return to_return;
 }
 
 /// \brief Get a const reference to the underlying C type.
-constexpr const RdmnetSyncRdmResponse& ResponseAction::get() const
+constexpr const RdmnetSyncRdmResponse& RdmResponseAction::get() const
+{
+  return response_;
+}
+
+/// \ingroup rdmnet_cpp_common
+/// \brief A class representing a synchronous action to take in response to a received EPT data message.
+class EptResponseAction
+{
+public:
+  static EptResponseAction SendEptData(size_t response_data_len);
+  static EptResponseAction SendEptStatus(ept_status_code_t status_code);
+  static EptResponseAction DeferResponse();
+
+  constexpr const RdmnetSyncEptResponse& get() const;
+
+private:
+  RdmnetSyncEptResponse response_;
+};
+
+/// \brief Send an EPT data message in response.
+/// \param response_data_len Length of the EPT response data provided.
+/// \pre Data has been copied to the buffer provided at initialization time.
+inline EptResponseAction EptResponseAction::SendEptData(size_t response_data_len)
+{
+  EptResponseAction to_return;
+  RDMNET_SYNC_SEND_EPT_DATA(&to_return.response_, response_data_len);
+  return to_return;
+}
+
+/// \brief Send an EPT status message.
+/// \param status_code EPT status code to send.
+inline EptResponseAction EptResponseAction::SendEptStatus(ept_status_code_t status_code)
+{
+  EptResponseAction to_return;
+  RDMNET_SYNC_SEND_EPT_STATUS(&to_return.response_, status_code);
+  return to_return;
+}
+
+/// \brief Defer the response to the EPT message, either to be sent later or because no response is necessary.
+inline EptResponseAction EptResponseAction::DeferResponse()
+{
+  EptResponseAction to_return;
+  RDMNET_SYNC_DEFER_EPT_RESPONSE(&to_return.response_);
+  return to_return;
+}
+
+/// \brief Get a const reference to the underlying C type.
+constexpr const RdmnetSyncEptResponse& EptResponseAction::get() const
 {
   return response_;
 }

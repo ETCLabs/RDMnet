@@ -61,6 +61,10 @@ typedef enum
 /*!
  * \brief A destination address for an RDM command in RDMnet's RPT protocol.
  * \details See \ref roles_and_addressing and \ref devices_and_gateways for more information.
+ * \sa RDMNET_ADDR_TO_DEFAULT_RESPONDER()
+ * \sa RDMNET_ADDR_TO_DEFAULT_RESPONDER_SUBDEV()
+ * \sa RDMNET_ADDR_TO_SUB_RESPONDER()
+ * \sa RDMNET_ADDR_TO_SUB_RESPONDER_SUBDEV()
  */
 typedef struct RdmnetDestinationAddr
 {
@@ -79,6 +83,54 @@ typedef struct RdmnetDestinationAddr
   /*! The sub-device to which this command is addressed, or 0 for the root device. */
   uint16_t subdevice;
 } RdmnetDestinationAddr;
+
+/*!
+ * \brief Initialize an RdmnetDestinationAddr with a default responder address.
+ * \param manu_id The manufacturer ID portion of the default responder's UID.
+ * \param dev_id The device ID portion of the default responder's UID.
+ */
+#define RDMNET_ADDR_TO_DEFAULT_RESPONDER(manu_id, dev_id)               \
+  {                                                                     \
+    {(manu_id), (dev_id)}, E133_NULL_ENDPOINT, {(manu_id), (dev_id)}, 0 \
+  }
+
+/*!
+ * \brief Initialize an RdmnetDestinationAddr with the address of a subdevice on a default responder.
+ * \param manu_id The manufacturer ID portion of the default responder's UID.
+ * \param dev_id The device ID portion of the default responder's UID.
+ * \param subdevice The subdevice to address.
+ */
+#define RDMNET_ADDR_TO_DEFAULT_RESPONDER_SUBDEV(manu_id, dev_id, subdevice)       \
+  {                                                                               \
+    {(manu_id), (dev_id)}, E133_NULL_ENDPOINT, {(manu_id), (dev_id)}, (subdevice) \
+  }
+
+/*!
+ * \brief Initialize an RdmnetDestinationAddr with the address of a sub-responder on a component.
+ * \param rdmnet_manu The manufacturer ID portion of the RDMnet component's UID.
+ * \param rdmnet_dev The device ID portion of the RDMnet component's UID.
+ * \param endpoint The endpoint the sub-responder is associated with.
+ * \param rdm_manu The manufacturer ID portion of the sub-responder's RDM UID.
+ * \param rdm_dev The device ID portion of the sub-responder's RDM UID.
+ */
+#define RDMNET_ADDR_TO_SUB_RESPONDER(rdmnet_manu, rdmnet_dev, endpoint, rdm_manu, rdm_dev) \
+  {                                                                                        \
+    {(rdmnet_manu), (rdmnet_dev)}, (endpoint), {(rdm_manu), (rdm_dev)}, 0                  \
+  }
+
+/*!
+ * \brief Initialize an RdmnetDestinationAddr with the address of a subdevice on a sub-responder.
+ * \param rdmnet_manu The manufacturer ID portion of the RDMnet component's UID.
+ * \param rdmnet_dev The device ID portion of the RDMnet component's UID.
+ * \param endpoint The endpoint the sub-responder is associated with.
+ * \param rdm_manu The manufacturer ID portion of the sub-responder's RDM UID.
+ * \param rdm_dev The device ID portion of the sub-responder's RDM UID.
+ * \param subdevice The subdevice to address.
+ */
+#define RDMNET_ADDR_TO_SUB_RESPONDER_SUBDEV(rdmnet_manu, rdmnet_dev, endpoint, rdm_manu, rdm_dev, subdevice) \
+  {                                                                                                          \
+    {(rdmnet_manu), (rdmnet_dev)}, (endpoint), {(rdm_manu), (rdm_dev)}, (subdevice)                          \
+  }
 
 /*! Information provided by the library about a successful RDMnet client connection. */
 typedef struct RdmnetClientConnectedInfo

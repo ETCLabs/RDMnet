@@ -79,7 +79,7 @@ public:
 
   void HandleLlrpTargetDiscovered(llrp::ManagerHandle handle, const llrp::DiscoveredTarget& target) override;
   void HandleLlrpDiscoveryFinished(llrp::ManagerHandle handle) override;
-  void HandleLlrpRdmResponseReceived(llrp::ManagerHandle handle, const llrp::RdmResponse& resp) override;
+  void HandleLlrpRdmResponse(llrp::ManagerHandle handle, const llrp::RdmResponse& resp) override;
 
 private:
   using RdmResponseHandler = std::function<void(const llrp::RdmResponse&)>;

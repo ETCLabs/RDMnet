@@ -50,7 +50,7 @@ public:
   static constexpr const char kManufacturerLabel[] = "ETC";
   static constexpr const char kDeviceModelDescription[] = "Example RDMnet Gateway";
 
-  FakewayDefaultResponder(const RdmnetScopeConfig& scope_config, const std::string& search_domain);
+  FakewayDefaultResponder(const rdmnet::Scope& scope_config, const std::string& search_domain);
   virtual ~FakewayDefaultResponder();
 
   const rdmnet::Scope& scope_config() const { return scope_config_; }
@@ -61,8 +61,8 @@ public:
   {
     return pids_handled_with_phys_endpt_.find(pid) != pids_handled_with_phys_endpt_.end();
   }
-  rdmnet::ResponseAction Set(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len);
-  rdmnet::ResponseAction Get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len);
+  rdmnet::RdmResponseAction Set(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len);
+  rdmnet::RdmResponseAction Get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len);
 
   void IdentifyThread();
 
@@ -100,19 +100,19 @@ private:
   //////////////////////////////////////////////////////////////////////////////////////////////////
 
   /* SET COMMANDS */
-  rdmnet::ResponseAction SetIdentifyDevice(const uint8_t* param_data, uint8_t param_data_len);
-  rdmnet::ResponseAction SetDeviceLabel(const uint8_t* param_data, uint8_t param_data_len);
-  rdmnet::ResponseAction SetComponentScope(const uint8_t* param_data, uint8_t param_data_len);
-  rdmnet::ResponseAction SetSearchDomain(const uint8_t* param_data, uint8_t param_data_len);
+  rdmnet::RdmResponseAction SetIdentifyDevice(const uint8_t* param_data, uint8_t param_data_len);
+  rdmnet::RdmResponseAction SetDeviceLabel(const uint8_t* param_data, uint8_t param_data_len);
+  rdmnet::RdmResponseAction SetComponentScope(const uint8_t* param_data, uint8_t param_data_len);
+  rdmnet::RdmResponseAction SetSearchDomain(const uint8_t* param_data, uint8_t param_data_len);
 
   /* GET COMMANDS */
-  rdmnet::ResponseAction GetIdentifyDevice(const uint8_t* param_data, uint8_t param_data_len);
-  rdmnet::ResponseAction GetDeviceInfo(const uint8_t* param_data, uint8_t param_data_len);
-  rdmnet::ResponseAction GetDeviceLabel(const uint8_t* param_data, uint8_t param_data_len);
-  rdmnet::ResponseAction GetSupportedParameters(const uint8_t* param_data, uint8_t param_data_len);
-  rdmnet::ResponseAction GetManufacturerLabel(const uint8_t* param_data, uint8_t param_data_len);
-  rdmnet::ResponseAction GetDeviceModelDescription(const uint8_t* param_data, uint8_t param_data_len);
-  rdmnet::ResponseAction GetSoftwareVersionLabel(const uint8_t* param_data, uint8_t param_data_len);
+  rdmnet::RdmResponseAction GetIdentifyDevice(const uint8_t* param_data, uint8_t param_data_len);
+  rdmnet::RdmResponseAction GetDeviceInfo(const uint8_t* param_data, uint8_t param_data_len);
+  rdmnet::RdmResponseAction GetDeviceLabel(const uint8_t* param_data, uint8_t param_data_len);
+  rdmnet::RdmResponseAction GetSupportedParameters(const uint8_t* param_data, uint8_t param_data_len);
+  rdmnet::RdmResponseAction GetManufacturerLabel(const uint8_t* param_data, uint8_t param_data_len);
+  rdmnet::RdmResponseAction GetDeviceModelDescription(const uint8_t* param_data, uint8_t param_data_len);
+  rdmnet::RdmResponseAction GetSoftwareVersionLabel(const uint8_t* param_data, uint8_t param_data_len);
 };
 
 #endif /* FAKEWAY_DEFAULT_RESPONDER_H_ */

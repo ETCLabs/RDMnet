@@ -52,6 +52,8 @@ static void device_time_callback(void* context, EtcPalLogTimestamp* time)
 
 void device_log_init(const char* file_name)
 {
+  etcpal_init(ETCPAL_FEATURE_LOGGING);
+
   s_log_file = fopen(file_name, "w");
   if (!s_log_file)
     printf("Device Log: Couldn't open log file %s\n", file_name);
@@ -88,4 +90,5 @@ const EtcPalLogParams* device_get_log_params()
 void device_log_deinit()
 {
   fclose(s_log_file);
+  etcpal_deinit(ETCPAL_FEATURE_LOGGING);
 }

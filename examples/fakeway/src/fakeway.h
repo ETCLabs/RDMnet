@@ -41,8 +41,6 @@
 class PhysicalEndpoint
 {
 public:
-  static const std::set<uint16_t> kPhysicalEndpointPIDs;
-
   PhysicalEndpoint(uint16_t id, unsigned int gadget_id, unsigned int gadget_port_num)
       : id_(id), gadget_id_(gadget_id), gadget_port_num_(gadget_port_num)
   {
@@ -72,7 +70,7 @@ public:
 
   // Starts up the RDMnet Device logic with the scope configuration provided. Also initializes the
   // USB library and begins listening for Gadgets.
-  bool Startup(const rdmnet::Scope& scope_config, etcpal::Logger& logger, const char* cid_str);
+  bool Startup(const rdmnet::Scope& scope_config, etcpal::Logger& logger, const etcpal::Uuid& cid);
   // Shuts down RDMnet and USB/RDM functionality.
   void Shutdown();
 
@@ -82,14 +80,15 @@ public:
   FakewayDefaultResponder* def_resp() const { return def_resp_.get(); }
 
 protected:
-  void HandleConnectedToBroker(rdmnet::DeviceHandle handle, const RdmnetClientConnectedInfo& info) override;
-  void HandleBrokerConnectFailed(rdmnet::DeviceHandle handle, const RdmnetClientConnectFailedInfo& info) override;
-  void HandleDisconnectedFromBroker(rdmnet::DeviceHandle handle, const RdmnetClientDisconnectedInfo& info) override;
-  rdmnet::ResponseAction HandleRdmCommand(rdmnet::DeviceHandle handle, const rdmnet::RdmCommand& cmd) override;
-  rdmnet::ResponseAction HandleLlrpRdmCommand(rdmnet::DeviceHandle handle,
-                                              const rdmnet::llrp::RdmCommand& cmd) override;
+  void HandleConnectedToBroker(rdmnet::DeviceHandle handle, const rdmnet::ClientConnectedInfo& info) override;
+  void HandleBrokerConnectFailed(rdmnet::DeviceHandle handle, const rdmnet::ClientConnectFailedInfo& info) override;
+  void HandleDisconnectedFromBroker(rdmnet::DeviceHandle handle, const rdmnet::ClientDisconnectedInfo& info) override;
+  rdmnet::RdmResponseAction HandleRdmCommand(rdmnet::DeviceHandle handle, const rdmnet::RdmCommand& cmd) override;
+  rdmnet::RdmResponseAction HandleLlrpRdmCommand(rdmnet::DeviceHandle handle,
+                                                 const rdmnet::llrp::RdmCommand& cmd) override;
 
-  rdmnet::ResponseAction ProcessDefRespRdmCommand(const rdm::CommandHeader& cmd, const uint8_t* data, uint8_t data_len);
+  rdmnet::RdmResponseAction ProcessDefRespRdmCommand(const rdm::CommandHeader& cmd, const uint8_t* data,
+                                                     uint8_t data_len);
 
   ////////////////////////////////////////////////////////////////////////////
   // GadgetNotify interface

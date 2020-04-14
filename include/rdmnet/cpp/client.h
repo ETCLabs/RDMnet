@@ -370,6 +370,7 @@ public:
   constexpr const etcpal::SockAddr& static_broker_addr() const noexcept;
 
   void SetIdString(const std::string& id);
+  void SetIdString(const char* id);
   void SetStaticBrokerAddr(const etcpal::SockAddr& static_broker_addr);
 
 private:
@@ -418,10 +419,19 @@ constexpr const etcpal::SockAddr& Scope::static_broker_addr() const noexcept
 }
 
 /// \brief Set a new ID string for this scope.
-/// \param id The ID string. Will be truncated to a maximum of 62 UTF-8 bytes.
 inline void Scope::SetIdString(const std::string& id)
 {
-  id_ = id.substr(0, E133_SCOPE_STRING_PADDED_LENGTH - 1);
+  id_ = id;
+}
+
+/// \brief Set a new ID string for this scope.
+/// \param id The ID string. Will be truncated to a maximum of 62 UTF-8 bytes.
+inline void Scope::SetIdString(const char* id)
+{
+  if (id)
+  {
+    id_ = id;
+  }
 }
 
 /// Set a new static broker IP address and port for this scope.

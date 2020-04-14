@@ -218,6 +218,10 @@ after a successful connection:
 void controller_connected_callback(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
                                    const RdmnetClientConnectedInfo* info, void* context)
 {
+  char cid_str[ETCPAL_UUID_STRING_BYTES];
+  etcpal_uuid_to_string(&info->broker_cid, cid_str);
+  printf("Connected to broker %s with CID %s\n", info->broker_name, cid_str);
+
   // Check handles and/or context as necessary...
   rdmnet_controller_request_client_list(handle, scope_handle);
 }                                   
@@ -226,8 +230,12 @@ void controller_connected_callback(rdmnet_controller_t handle, rdmnet_client_sco
 ```cpp
 void MyControllerNotifyHandler::HandleConnectedToBroker(rdmnet::ControllerHandle handle,
                                                         rdmnet::ScopeHandle scope_handle,
-                                                        const RdmnetClientConnectedInfo& info)
+                                                        const rdmnet::ClientConnectedInfo& info)
 {
+  std::cout << "Connected to broker '" << info.broker_name()
+            << "' with CID " << info.broker_cid().ToString() << 
+            << " at IP address " << info.broker_addr().ToString() << '\n';
+
   // Check handles as necessary and get controller instance...
   controller.RequestClientList(scope_handle);
 }
@@ -308,36 +316,36 @@ void my_client_list_update_cb(rdmnet_controller_t handle, rdmnet_client_scope_t 
 <!-- CODE_BLOCK_MID -->
 ```cpp
 void MyControllerNotifyHandler::HandleClientListUpdate(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
-                                                       client_list_action_t list_action, const RdmnetRptClientList& list)
+                                                       client_list_action_t list_action, const rdmnet::RptClientList& list)
 {
   // Check handles as necessary...
 
-  for (const RdmnetRptClientEntry* entry = list.client_entries; entry < list.client_entries + list.num_client_entries;
-       ++entry)
+  switch (list_action)
   {
-    switch (list_action)
-    {
-      case kRdmnetClientListAppend:
-        // These are new entries to be added to the list of clients. Append the new entry to our
-        // bookkeeping.
-        break;
-      case kRdmnetClientListRemove:
-        // These are entries to be removed from the list of clients. Remove the entry from our
-        // bookkeeping.
-        break;
-      case kRdmnetClientListUpdate:
-        // These are entries to be updated in the list of clients. Update the corresponding entry
-        // in our bookkeeping.
-        break;
-      case kRdmnetClientListReplace:
-        // This is the full client list currently connected to the broker - our existing client 
-        // list should be replaced wholesale with this one. This will be the response to
-        // rdmnet_controller_request_client_list(); the other cases are sent unsolicited.
-        break;
-    }
+    case kRdmnetClientListAppend:
+      // These are new entries to be added to the list of clients. Append the new entry to our
+      // bookkeeping.
+      AddNewClients(list.GetClientEntries());
+      break;
+    case kRdmnetClientListRemove:
+      // These are entries to be removed from the list of clients. Remove the entry from our
+      // bookkeeping.
+      RemoveClients(list.GetClientEntries());
+      break;
+    case kRdmnetClientListUpdate:
+      // These are entries to be updated in the list of clients. Update the corresponding entry
+      // in our bookkeeping.
+      UpdateClients(list.GetClientEntries());
+      break;
+    case kRdmnetClientListReplace:
+      // This is the full client list currently connected to the broker - our existing client 
+      // list should be replaced wholesale with this one. This will be the response to
+      // rdmnet_controller_request_client_list(); the other cases are sent unsolicited.
+      ReplaceClientList(list.GetClientEntries());
+      break;
   }
 
-  if (list.more_coming)
+  if (list.more_coming())
   {
     // The library ran out of memory pool space while allocating client entries - after this
     // callback returns, another will be delivered with the continuation of this response.
@@ -359,19 +367,19 @@ in each RdmnetRptClientEntry structure.
 
 ## Sending RDM Commands
 
-Build RDM commands using the RdmnetLocalRdmCommand type. The library uses a naming convention where
-names containing `Local` represent data that is generated locally, whereas names containing
-`Remote` represent data received from a remote component.
+Sending RDM commands requires a destination address structure to indicate the RDMnet component and
+RDM responder to which the command is addresses. See \ref devices_and_gateways for more information
+on the fields of the destination address structure.
+
+After sending a command, the library will provide a _sequence number_ that will be echoed in the
+corresponding RDM response. This sequence number should be saved.
 
 <!-- CODE_BLOCK_START -->
 ```c
-RdmnetLocalRdmCommand cmd;
-cmd.rdmnet_dest_uid = client_uid;
-cmd.dest_endpoint = E133_NULL_ENDPOINT; // We're addressing this command to the default responder.
-// Build the rest of the RDM command...
-
+RdmnetDestinationAddr dest = RDMNET_ADDR_TO_DEFAULT_RESPONDER(0x6574, 0x12345678);
 uint32_t cmd_seq_num;
-etcpal_error_t result = rdmnet_controller_send_rdm_command(my_controller_handle, my_scope_handle, &cmd, &cmd_seq_num);
+etcpal_error_t result = rdmnet_controller_send_get_command(my_controller_handle, my_scope_handle, &dest,
+                                                           E120_DEVICE_LABEL, NULL, 0, &cmd_seq_num);
 if (result == kEtcPalErrOk)
 {
   // cmd_seq_num identifies this command transaction. Store it for when a response is received.
@@ -379,16 +387,8 @@ if (result == kEtcPalErrOk)
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-RdmnetLocalRdmCommand cmd;
-cmd.rdmnet_dest_uid = client_uid;
-cmd.dest_endpoint = E133_NULL_ENDPOINT; // We're addressing this command to the default responder.
-// Build the rest of the RDM command...
-etcpal::Expected<uint32_t> result = controller.SendRdmCommand(my_scope_handle, cmd);
-
-// Alternatively, without using the RdmnetLocalRdmCommand structure:
-
-etcpal::Expected<uint32_t> result = controller.SendRdmCommand(my_scope_handle, client_uid, E133_NULL_ENDPOINT,
-                                                              my_rdm_command);
+auto dest_addr = rdmnet::DestinationAddr::ToDefaultResponder(0x6574, 0x12345678);
+auto result = controller.SendGetCommand(my_scope_handle, dest_addr, E120_DEVICE_LABEL);
 
 if (result)
 {
@@ -406,39 +406,38 @@ correspond to changes you requested.
 <!-- CODE_BLOCK_START -->
 ```c
 void rdm_response_callback(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                           const RdmnetRemoteRdmResponse* resp, void* context)
+                           const RdmnetRdmResponse* resp, void* context)
 {
   // Check handles and/or context as necessary...
 
-  if (resp->seq_num == 0)
+  if (resp->is_response_to_me)
+  {
+    // Verify resp->seq_num against the cmd_seq_num you stored earlier.
+  }
+  else
   {
     // This is an unsolicited RDM response - an asynchronous update about a change you didn't
     // initiate.
   }
-  else
-  {
-    // Verify resp->seq_num against the cmd_seq_num you stored earlier.
-  }
 
-  // If resp->seq_num != 0, resp->cmd will contain the original command you sent. 
-  for (const RdmResponse* response = resp->responses; response < resp->responses + resp->num_responses; ++response)
-  {
-    // Process the list of responses.
-  }
+  // If RDMNET_RESP_ORIGINAL_COMMAND_INCLUDED(resp) == true, resp->cmd will contain the original command you sent. 
 
   if (resp->more_coming)
   {
     // The library ran out of memory pool space while allocating responses - after this callback
-    // returns, another will be delivered with the continuation of this response.
+    // returns, another will be delivered with the continuation of this response data.
     // If RDMNET_DYNAMIC_MEM == 1 (the default on non-embedded platforms), this flag will never be
     // set to true.
+
+    // When more responses come, you can append their data to your saved response:
+    rdmnet_append_to_saved_rdm_response(resp, &previously_saved_resp);
   }
 }
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
 void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
-                                                  const RdmnetRemoteRdmResponse& resp)
+                                                  const rdmnet::RdmResponse& resp)
 {
   if (resp.seq_num == 0)
   {
@@ -457,7 +456,7 @@ void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::Controller& controller
     // Process the list of responses.
   }
 
-  if (resp.more_coming)
+  if (resp.more_coming())
   {
     // The library ran out of memory pool space while allocating responses - after this callback
     // returns, another will be delivered with the continuation of this response.
@@ -493,12 +492,12 @@ void rpt_status_callback(rdmnet_controller_t handle, rdmnet_client_scope_t handl
 <!-- CODE_BLOCK_MID -->
 ```cpp
 void MyControllerNotifyHandler::HandleRptStatus(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
-                                                const RdmnetRemoteRptStatus& status)
+                                                const rdmnet::RptStatus& status)
 {
   // Verify status.seq_num against the result of rdmnet::Controller::SendRdmCommand() you stored earlier.
 
-  std::cout << "Error sending RDM command to device " << rdm::Uid(status.source_uid).ToString() << ": '"
-            << rpt_status_code_to_string(status.msg.status_code) << "'\n";
+  std::cout << "Error sending RDM command to device " << status.source_uid().ToString() << ": '"
+            << status.CodeToString() << "'\n";
 
   // Other logic as needed; remove our internal storage of the RDM transaction, etc.
 }

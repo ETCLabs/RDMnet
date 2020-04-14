@@ -53,8 +53,7 @@ constexpr size_t kDeviceLabelMaxLength = 32;
 
 /*************************** Function definitions ****************************/
 
-FakewayDefaultResponder::FakewayDefaultResponder(const RdmnetScopeConfig& scope_config,
-                                                 const std::string& search_domain)
+FakewayDefaultResponder::FakewayDefaultResponder(const rdmnet::Scope& scope_config, const std::string& search_domain)
     : scope_config_(scope_config), search_domain_(search_domain)
 {
   supported_pid_list_.insert(E120_IDENTIFY_DEVICE);
@@ -77,10 +76,8 @@ FakewayDefaultResponder::~FakewayDefaultResponder()
   }
 }
 
-rdmnet::ResponseAction FakewayDefaultResponder::Set(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len)
+rdmnet::RdmResponseAction FakewayDefaultResponder::Set(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len)
 {
-  bool res = false;
-
   etcpal::WriteGuard prop_write(prop_lock_);
   switch (pid)
   {
@@ -97,16 +94,14 @@ rdmnet::ResponseAction FakewayDefaultResponder::Set(uint16_t pid, const uint8_t*
     case E120_MANUFACTURER_LABEL:
     case E120_DEVICE_MODEL_DESCRIPTION:
     case E120_SOFTWARE_VERSION_LABEL:
-      return rdmnet::ResponseAction::SendNack(kRdmNRUnsupportedCommandClass);
+      return rdmnet::RdmResponseAction::SendNack(kRdmNRUnsupportedCommandClass);
     default:
-      return rdmnet::ResponseAction::SendNack(kRdmNRUnknownPid);
+      return rdmnet::RdmResponseAction::SendNack(kRdmNRUnknownPid);
   }
 }
 
-rdmnet::ResponseAction FakewayDefaultResponder::Get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len)
+rdmnet::RdmResponseAction FakewayDefaultResponder::Get(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len)
 {
-  bool res = false;
-
   etcpal::ReadGuard prop_read(prop_lock_);
   switch (pid)
   {
@@ -125,7 +120,7 @@ rdmnet::ResponseAction FakewayDefaultResponder::Get(uint16_t pid, const uint8_t*
     case E120_SOFTWARE_VERSION_LABEL:
       return GetSoftwareVersionLabel(param_data, param_data_len);
     default:
-      return rdmnet::ResponseAction::SendNack(kRdmNRUnknownPid);
+      return rdmnet::RdmResponseAction::SendNack(kRdmNRUnknownPid);
   }
 }
 
@@ -138,7 +133,7 @@ void FakewayDefaultResponder::IdentifyThread()
   }
 }
 
-rdmnet::ResponseAction FakewayDefaultResponder::SetIdentifyDevice(const uint8_t* param_data, uint8_t param_data_len)
+rdmnet::RdmResponseAction FakewayDefaultResponder::SetIdentifyDevice(const uint8_t* param_data, uint8_t param_data_len)
 {
   if (param_data_len >= 1)
   {
@@ -148,29 +143,29 @@ rdmnet::ResponseAction FakewayDefaultResponder::SetIdentifyDevice(const uint8_t*
       identify_thread_.SetName("Identify Thread").Start(&FakewayDefaultResponder::IdentifyThread, this);
     }
     identifying_ = new_identify_setting;
-    return rdmnet::ResponseAction::SendAck();
+    return rdmnet::RdmResponseAction::SendAck();
   }
   else
   {
-    return rdmnet::ResponseAction::SendNack(kRdmNRFormatError);
+    return rdmnet::RdmResponseAction::SendNack(kRdmNRFormatError);
   }
 }
 
-rdmnet::ResponseAction FakewayDefaultResponder::SetDeviceLabel(const uint8_t* param_data, uint8_t param_data_len)
+rdmnet::RdmResponseAction FakewayDefaultResponder::SetDeviceLabel(const uint8_t* param_data, uint8_t param_data_len)
 {
   if (param_data_len >= 1)
   {
     device_label_.assign(reinterpret_cast<const char*>(param_data),
                          (param_data_len > kDeviceLabelMaxLength ? kDeviceLabelMaxLength : param_data_len));
-    return rdmnet::ResponseAction::SendAck();
+    return rdmnet::RdmResponseAction::SendAck();
   }
   else
   {
-    return rdmnet::ResponseAction::SendNack(kRdmNRFormatError);
+    return rdmnet::RdmResponseAction::SendNack(kRdmNRFormatError);
   }
 }
 
-rdmnet::ResponseAction FakewayDefaultResponder::SetComponentScope(const uint8_t* param_data, uint8_t param_data_len)
+rdmnet::RdmResponseAction FakewayDefaultResponder::SetComponentScope(const uint8_t* param_data, uint8_t param_data_len)
 {
   if (param_data_len == kComponentScopeDataLength && param_data[1 + E133_SCOPE_STRING_PADDED_LENGTH] == '\0')
   {
@@ -201,46 +196,47 @@ rdmnet::ResponseAction FakewayDefaultResponder::SetComponentScope(const uint8_t*
       }
 
       scope_config_.SetStaticBrokerAddr(static_broker);
-      return rdmnet::ResponseAction::SendAck();
+      return rdmnet::RdmResponseAction::SendAck();
     }
     else
     {
-      return rdmnet::ResponseAction::SendNack(kRdmNRDataOutOfRange);
+      return rdmnet::RdmResponseAction::SendNack(kRdmNRDataOutOfRange);
     }
   }
   else
   {
-    return rdmnet::ResponseAction::SendNack(kRdmNRFormatError);
+    return rdmnet::RdmResponseAction::SendNack(kRdmNRFormatError);
   }
 }
 
-rdmnet::ResponseAction FakewayDefaultResponder::SetSearchDomain(const uint8_t* param_data, uint8_t param_data_len)
+rdmnet::RdmResponseAction FakewayDefaultResponder::SetSearchDomain(const uint8_t* param_data, uint8_t param_data_len)
 {
   if (param_data_len > 0 && param_data_len < E133_DOMAIN_STRING_PADDED_LENGTH)
   {
     search_domain_.assign(reinterpret_cast<const char*>(param_data), param_data_len);
-    return rdmnet::ResponseAction::SendAck();
+    return rdmnet::RdmResponseAction::SendAck();
   }
   else
   {
-    return rdmnet::ResponseAction::SendNack(kRdmNRFormatError);
+    return rdmnet::RdmResponseAction::SendNack(kRdmNRFormatError);
   }
 }
 
-rdmnet::ResponseAction FakewayDefaultResponder::GetIdentifyDevice(const uint8_t* /*param_data*/,
-                                                                  uint8_t /*param_data_len*/)
+rdmnet::RdmResponseAction FakewayDefaultResponder::GetIdentifyDevice(const uint8_t* /*param_data*/,
+                                                                     uint8_t /*param_data_len*/)
 {
   response_buf_[0] = identifying_ ? 1 : 0;
-  return rdmnet::ResponseAction::SendAck(1);
+  return rdmnet::RdmResponseAction::SendAck(1);
 }
 
-rdmnet::ResponseAction FakewayDefaultResponder::GetDeviceInfo(const uint8_t* /*param_data*/, uint8_t /*param_data_len*/)
+rdmnet::RdmResponseAction FakewayDefaultResponder::GetDeviceInfo(const uint8_t* /*param_data*/,
+                                                                 uint8_t /*param_data_len*/)
 {
   memcpy(response_buf_, kDeviceInfo, sizeof kDeviceInfo);
-  return rdmnet::ResponseAction::SendAck(sizeof kDeviceInfo);
+  return rdmnet::RdmResponseAction::SendAck(sizeof kDeviceInfo);
 }
 
-rdmnet::ResponseAction FakewayDefaultResponder::GetDeviceLabel(const uint8_t* param_data, uint8_t param_data_len)
+rdmnet::RdmResponseAction FakewayDefaultResponder::GetDeviceLabel(const uint8_t* param_data, uint8_t param_data_len)
 {
   (void)param_data;
   (void)param_data_len;
@@ -248,11 +244,11 @@ rdmnet::ResponseAction FakewayDefaultResponder::GetDeviceLabel(const uint8_t* pa
   size_t response_length =
       (device_label_.length() > kDeviceLabelMaxLength ? kDeviceLabelMaxLength : device_label_.length());
   memcpy(response_buf_, device_label_.c_str(), response_length);
-  return rdmnet::ResponseAction::SendAck(response_length);
+  return rdmnet::RdmResponseAction::SendAck(response_length);
 }
 
-rdmnet::ResponseAction FakewayDefaultResponder::GetSupportedParameters(const uint8_t* /*param_data*/,
-                                                                       uint8_t /*param_data_len*/)
+rdmnet::RdmResponseAction FakewayDefaultResponder::GetSupportedParameters(const uint8_t* /*param_data*/,
+                                                                          uint8_t /*param_data_len*/)
 {
   uint8_t* cur_ptr = response_buf_;
 
@@ -261,26 +257,26 @@ rdmnet::ResponseAction FakewayDefaultResponder::GetSupportedParameters(const uin
     etcpal_pack_u16b(cur_ptr, pid);
     cur_ptr += 2;
   }
-  return rdmnet::ResponseAction::SendAck(cur_ptr - response_buf_);
+  return rdmnet::RdmResponseAction::SendAck(cur_ptr - response_buf_);
 }
 
-rdmnet::ResponseAction FakewayDefaultResponder::GetManufacturerLabel(const uint8_t* /*param_data*/,
-                                                                     uint8_t /*param_data_len*/)
-{
-  ETCPAL_MSVC_NO_DEP_WRN strcpy(reinterpret_cast<char*>(response_buf_), kManufacturerLabel);
-  return rdmnet::ResponseAction::SendAck(sizeof(kManufacturerLabel) - 1);
-}
-
-rdmnet::ResponseAction FakewayDefaultResponder::GetDeviceModelDescription(const uint8_t* /*param_data*/,
-                                                                          uint8_t /*param_data_len*/)
-{
-  ETCPAL_MSVC_NO_DEP_WRN strcpy(reinterpret_cast<char*>(response_buf_), kDeviceModelDescription);
-  return rdmnet::ResponseAction::SendAck(sizeof(kDeviceModelDescription) - 1);
-}
-
-rdmnet::ResponseAction FakewayDefaultResponder::GetSoftwareVersionLabel(const uint8_t* /*param_data*/,
+rdmnet::RdmResponseAction FakewayDefaultResponder::GetManufacturerLabel(const uint8_t* /*param_data*/,
                                                                         uint8_t /*param_data_len*/)
 {
+  ETCPAL_MSVC_NO_DEP_WRN strcpy(reinterpret_cast<char*>(response_buf_), kManufacturerLabel);
+  return rdmnet::RdmResponseAction::SendAck(sizeof(kManufacturerLabel) - 1);
+}
+
+rdmnet::RdmResponseAction FakewayDefaultResponder::GetDeviceModelDescription(const uint8_t* /*param_data*/,
+                                                                             uint8_t /*param_data_len*/)
+{
+  ETCPAL_MSVC_NO_DEP_WRN strcpy(reinterpret_cast<char*>(response_buf_), kDeviceModelDescription);
+  return rdmnet::RdmResponseAction::SendAck(sizeof(kDeviceModelDescription) - 1);
+}
+
+rdmnet::RdmResponseAction FakewayDefaultResponder::GetSoftwareVersionLabel(const uint8_t* /*param_data*/,
+                                                                           uint8_t /*param_data_len*/)
+{
   ETCPAL_MSVC_NO_DEP_WRN strcpy(reinterpret_cast<char*>(response_buf_), kSoftwareVersionLabel);
-  return rdmnet::ResponseAction::SendAck(sizeof(kSoftwareVersionLabel) - 1);
+  return rdmnet::RdmResponseAction::SendAck(sizeof(kSoftwareVersionLabel) - 1);
 }

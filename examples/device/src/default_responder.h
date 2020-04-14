@@ -38,16 +38,15 @@
 extern "C" {
 #endif
 
-void default_responder_init(const RdmnetScopeConfig* scope_config, const char* search_domain);
+void default_responder_init(const char* scope, const EtcPalSockAddr* static_broker_addr);
 void default_responder_deinit();
 
 /* Interface between the E1.33 Device logic and the default responder */
-void default_responder_get_scope_config(RdmnetScopeConfig* scope_config);
-void default_responder_get_search_domain(char* search_domain);
+const char* default_responder_get_scope(void);
+void default_responder_get_static_broker_addr(EtcPalSockAddr* addr);
+const char* default_responder_get_search_domain(void);
+
 bool default_responder_supports_pid(uint16_t pid);
-void default_responder_update_connection_status(bool connected, const EtcPalSockAddr* broker_addr);
-void default_responder_incr_unhealthy_count();
-void default_responder_reset_unhealthy_count();
 
 /* Generic PID get and set functions */
 void default_responder_set(uint16_t pid, const uint8_t* param_data, uint8_t param_data_len,

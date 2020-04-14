@@ -38,7 +38,7 @@ class MockControllerNotifyHandler : public rdmnet::ControllerNotifyHandler
               (override));
   MOCK_METHOD(void, HandleClientListUpdate,
               (rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle, client_list_action_t list_action,
-               const RdmnetRptClientList& list),
+               const rdmnet::RptClientList& list),
               (override));
   MOCK_METHOD(void, HandleRdmResponse,
               (rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle, const rdmnet::RdmResponse& resp),
@@ -50,10 +50,10 @@ class MockControllerNotifyHandler : public rdmnet::ControllerNotifyHandler
 
 class MockControllerRdmHandler : public rdmnet::ControllerRdmCommandHandler
 {
-  MOCK_METHOD(rdmnet::ResponseAction, HandleRdmCommand,
+  MOCK_METHOD(rdmnet::RdmResponseAction, HandleRdmCommand,
               (rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle, const rdmnet::RdmCommand& cmd),
               (override));
-  MOCK_METHOD(rdmnet::ResponseAction, HandleLlrpRdmCommand,
+  MOCK_METHOD(rdmnet::RdmResponseAction, HandleLlrpRdmCommand,
               (rdmnet::ControllerHandle handle, const rdmnet::llrp::RdmCommand& cmd), (override));
 };
 

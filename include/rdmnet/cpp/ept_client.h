@@ -86,14 +86,14 @@ public:
   ///                    cached list.
   /// \param list The list of updates.
   virtual void HandleClientListUpdate(EptClientHandle handle, ScopeHandle scope_handle,
-                                      client_list_action_t list_action, const RdmnetEptClientList& list) = 0;
+                                      client_list_action_t list_action, const EptClientList& list) = 0;
 
   /// \brief EPT data has been received addressed to an EPT client.
   /// \param handle Handle to EPT client instance which has received the data.
   /// \param scope_handle Handle to the scope on which the EPT data was received.
   /// \param data The EPT data.
   /// \return The action to take in response to this EPT data message.
-  virtual ResponseAction HandleEptData(EptClientHandle handle, ScopeHandle scope_handle, const EptData& data) = 0;
+  virtual EptResponseAction HandleEptData(EptClientHandle handle, ScopeHandle scope_handle, const EptData& data) = 0;
 
   /// \brief An EPT status message has been received in response to a previously-sent EPT data message.
   /// \param handle Handle to EPT client instance which has received the data.
