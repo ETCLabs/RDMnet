@@ -19,7 +19,7 @@ etcpal_error_t init_result = rdmnet_init(&log_params, NULL);
 etcpal_error_t init_result = rdmnet_init(NULL, NULL);
 
 // In some function called at shutdown...
-rdmnet_core_deinit();
+rdmnet_deinit();
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp

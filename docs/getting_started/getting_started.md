@@ -1,12 +1,19 @@
 # Getting Started                                                                {#getting_started}
 
-* For integrating the RDMnet library into your project, see \subpage building_and_integrating.
-* For an overview of how the RDMnet protocol works, see \ref how_it_works.
-* For implementing an RDMnet Controller, see \subpage using_controller.
-* For implementing an RDMnet Device, see \subpage using_device.
-* For implementing an RDMnet Broker, see \subpage using_broker.
-* For implementing an LLRP Manager, see \subpage using_llrp_manager.
-* For implementing an EPT Client, see \subpage using_ept_client.
+For integrating the RDMnet library into your project, see \subpage building_and_integrating.
+
+For an overview of how the RDMnet protocol works, see \ref how_it_works.
+
+If you already know how RDMnet works and what you want to do with it, follow this guide to the API
+that you would like to use:
+
+| Role              | Description                                                                     | API guide                   |
+|-------------------|---------------------------------------------------------------------------------|-----------------------------|
+| RDMnet Controller | Configures devices by sending RDM commands over RDMnet.                         | \subpage using_controller   |
+| RDMnet Device     | Accepts configuration by receiving and responding to RDM commands over RDMnet.  | \subpage using_device       |
+| RDMnet Broker     | Routes messages between RDMnet Controllers, Devices and EPT clients.            | \subpage using_broker       |
+| LLRP Manager      | Discovers and configures targets using \ref llrp.                               | \subpage using_llrp_manager |
+| EPT Client        | Communicates through an RDMnet broker using one or more \ref ept sub-protocols. | \subpage using_ept_client   |
 
 \htmlonly
 <div style="display:none">

@@ -41,15 +41,18 @@ rdmnet::Broker::~Broker()
 /// ephemeral port is chosen. If there are more listen_addrs, listen_port must not be 0.
 ///
 /// \param settings Settings for the broker to use for this session.
-/// \param notify A class instance that the broker will use to send asynchronous notifications
-///               about its state.
-/// \param[in] log A class instance that the broker will use to log messages.
+/// \param logger (optional) A class instance that the broker will use to log messages.
+/// \param notify (optional) A class instance that the broker will use to send asynchronous
+///               notifications about its state.
 /// \return etcpal::Error::Ok(): Broker started successfully.
-/// \return  or false (an error occurred starting broker).
-etcpal::Error rdmnet::Broker::Startup(const BrokerSettings& settings, rdmnet::BrokerNotifyHandler* notify,
-                                      etcpal::Logger* log)
+/// \return #kEtcPalErrInvalid: Invalid argument.
+/// \return #kEtcPalErrNotInit: RDMnet library not initialized.
+/// \return #kEtcPalErrSys: An internal library or system call error occurred.
+/// \return Other codes translated from system error codes are possible.
+etcpal::Error rdmnet::Broker::Startup(const BrokerSettings& settings, etcpal::Logger* logger,
+                                      BrokerNotifyHandler* notify)
 {
-  return core_->Startup(settings, notify, log);
+  return core_->Startup(settings, notify, logger);
 }
 
 /// \brief Shut down all broker functionality and threads.
@@ -73,15 +76,20 @@ void rdmnet::Broker::Shutdown(rdmnet_disconnect_reason_t disconnect_reason)
 /// \param new_scope The new scope on which the broker should operate.
 /// \param disconnect_reason Disconnect reason code to send to all connected clients on the current
 ///                          scope.
+/// \return etcpal::Error::Ok(): Scope changed successfully.
+/// \return #kEtcPalErrInvalid: Invalid argument.
+/// \return #kEtcPalErrNotInit: Broker not started.
+/// \return #kEtcPalErrSys: An internal library or system call error occurred.
 etcpal::Error rdmnet::Broker::ChangeScope(const std::string& new_scope, rdmnet_disconnect_reason_t disconnect_reason)
 {
   return core_->ChangeScope(new_scope, disconnect_reason);
 }
 
 /// \brief Get the current settings the broker is using.
+///
 /// Can be called even after Shutdown. Useful if you want to shutdown & restart the broker for any
 /// reason.
-rdmnet::BrokerSettings rdmnet::Broker::settings() const
+const rdmnet::BrokerSettings& rdmnet::Broker::settings() const
 {
   return core_->settings();
 }

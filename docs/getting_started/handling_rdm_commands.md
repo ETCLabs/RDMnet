@@ -107,17 +107,18 @@ void rdm_command_received(rdmnet_device_t handle, const RdmnetRdmCommand* cmd, R
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-// This buffer was provided as part of the rdmnet::DeviceData when the Device instance was
+// This buffer was provided as part of the rdmnet::DeviceSettings when the Device instance was
 // initialized.
 static uint8_t my_rdmnet_response_buf[kMyMaxResponseSize];
 
-rdmnet::ResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::DeviceHandle handle, const rdmnet::RdmCommand& cmd)
+rdmnet::RdmResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::DeviceHandle handle,
+                                                                 const rdmnet::RdmCommand& cmd)
 {
   // Very simplified example...
   if (cmd.IsGet() && cmd.param_id() == E120_DEVICE_INFO)
   {
     std::memcpy(my_rdmnet_response_buf, kMyDeviceInfoData, kDeviceInfoDataSize);
-    return rdmnet::ResponseAction::SendAck(kDeviceInfoDataSize);
+    return rdmnet::RdmResponseAction::SendAck(kDeviceInfoDataSize);
   }
 }
 ```
@@ -151,7 +152,8 @@ void rdm_command_received(rdmnet_device_t handle, const RdmnetRdmCommand* cmd, R
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-rdmnet::ResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::DeviceHandle handle, const rdmnet::RdmCommand& cmd)
+rdmnet::RdmResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::DeviceHandle handle,
+                                                                 const rdmnet::RdmCommand& cmd)
 {
   // Very simplified example...
   if (cmd.IsSet() && cmd.param_id() == E120_IDENTIFY_DEVICE)
@@ -165,7 +167,7 @@ rdmnet::ResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::DeviceHand
       // Start the physical identify operation
     }
     // Indicate an ACK should be sent with no data.
-    return rdmnet::ResponseAction::SendAck();
+    return rdmnet::RdmResponseAction::SendAck();
   }
 }
 ```
@@ -206,12 +208,12 @@ void handle_get_sensor_value(rdmnet_device_t handle, const uint8_t* data, Rdmnet
 <!-- CODE_BLOCK_MID -->
 ```cpp
 // Called from MyRdmnetNotifyHandler::HandleRdmCommand()
-rdmnet::ResponseAction MyRdmnetNotifyHander::HandleGetSensorValue(const uint8_t* data)
+rdmnet::RdmResponseAction MyRdmnetNotifyHander::HandleGetSensorValue(const uint8_t* data)
 {
   uint8_t sensor_num = data[0];
   if (sensor_num >= NUM_SENSORS)
   {
-    return rdmnet::ResponseAction::SendNack(kRdmNRDataOutOfRange);
+    return rdmnet::RdmResponseAction::SendNack(kRdmNRDataOutOfRange);
   }
 }
 ```
@@ -267,7 +269,8 @@ rdmnet_device_send_rdm_ack(my_device_handle, &saved_cmd, response_data, response
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-rdmnet::ResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::DeviceHandle handle, const rdmnet::RdmCommand& cmd)
+rdmnet::RdmResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::DeviceHandle handle,
+                                                                 const rdmnet::RdmCommand& cmd)
 {
   // Note that this type contains a byte array large enough for the largest possible RDM command
   // data buffer, e.g. 231 bytes.
@@ -275,7 +278,7 @@ rdmnet::ResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::DeviceHand
 
   // Add saved_cmd to some memory location to be used later...
 
-  return rdmnet::ResponseAction::DeferResponse();
+  return rdmnet::RdmResponseAction::DeferResponse();
 }
 
 // Later, when the response is available...

@@ -676,7 +676,7 @@ etcpal_error_t llrp_manager_send_set_command(llrp_manager_t handle, const LlrpDe
 //  //  {
 //  //    case VECTOR_LLRP_PROBE_REPLY:
 //  //    {
-//  //      const DiscoveredLlrpTarget* target = LLRP_MSG_GET_PROBE_REPLY(msg);
+//  //      const LlrpDiscoveredTarget* target = LLRP_MSG_GET_PROBE_REPLY(msg);
 //  //
 //  //      if (manager->discovery_active && ETCPAL_UUID_CMP(&msg->header.dest_cid, &manager->keys.cid) == 0)
 //  //      {

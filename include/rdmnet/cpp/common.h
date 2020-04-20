@@ -151,8 +151,8 @@ constexpr const RdmnetSyncRdmResponse& RdmResponseAction::get() const
 class EptResponseAction
 {
 public:
-  static EptResponseAction SendEptData(size_t response_data_len);
-  static EptResponseAction SendEptStatus(ept_status_code_t status_code);
+  static EptResponseAction SendData(size_t response_data_len);
+  static EptResponseAction SendStatus(ept_status_code_t status_code);
   static EptResponseAction DeferResponse();
 
   constexpr const RdmnetSyncEptResponse& get() const;
@@ -164,7 +164,7 @@ private:
 /// \brief Send an EPT data message in response.
 /// \param response_data_len Length of the EPT response data provided.
 /// \pre Data has been copied to the buffer provided at initialization time.
-inline EptResponseAction EptResponseAction::SendEptData(size_t response_data_len)
+inline EptResponseAction EptResponseAction::SendData(size_t response_data_len)
 {
   EptResponseAction to_return;
   RDMNET_SYNC_SEND_EPT_DATA(&to_return.response_, response_data_len);
@@ -173,7 +173,7 @@ inline EptResponseAction EptResponseAction::SendEptData(size_t response_data_len
 
 /// \brief Send an EPT status message.
 /// \param status_code EPT status code to send.
-inline EptResponseAction EptResponseAction::SendEptStatus(ept_status_code_t status_code)
+inline EptResponseAction EptResponseAction::SendStatus(ept_status_code_t status_code)
 {
   EptResponseAction to_return;
   RDMNET_SYNC_SEND_EPT_STATUS(&to_return.response_, status_code);

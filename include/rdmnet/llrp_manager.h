@@ -58,7 +58,7 @@ typedef int llrp_manager_t;
  * \param target Information about the target which has been discovered.
  * \param context Context pointer that was given at the creation of the LLRP manager instance.
  */
-typedef void (*LlrpManagerTargetDiscoveredCallback)(llrp_manager_t handle, const DiscoveredLlrpTarget* target,
+typedef void (*LlrpManagerTargetDiscoveredCallback)(llrp_manager_t handle, const LlrpDiscoveredTarget* target,
                                                     void* context);
 
 /*!

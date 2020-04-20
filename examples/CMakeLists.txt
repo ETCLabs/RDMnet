@@ -1,6 +1,6 @@
 
 if(RDMNET_BUILD_GUI_EXAMPLES)
-  add_subdirectory(controller)
+  # add_subdirectory(controller)
 endif()
 
 if(RDMNET_BUILD_CONSOLE_EXAMPLES)

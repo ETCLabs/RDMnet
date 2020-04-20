@@ -72,75 +72,59 @@ constexpr DestinationAddr::DestinationAddr(const etcpal::Uuid& cid, const rdm::U
 
 /// \ingroup llrp_manager_cpp
 /// \brief Represents an LLRP target discovered by a manager.
-class DiscoveredTarget
+struct DiscoveredTarget
 {
-public:
   /// Construct a target with null/empty values by default.
   DiscoveredTarget() = default;
-  constexpr DiscoveredTarget(const DiscoveredLlrpTarget& c_target) noexcept;
-  DiscoveredTarget& operator=(const DiscoveredLlrpTarget& c_target) noexcept;
-
-  constexpr const etcpal::Uuid& cid() const noexcept;
-  constexpr const rdm::Uid& uid() const noexcept;
-  constexpr const etcpal::MacAddr& hardware_address() const noexcept;
-  constexpr llrp_component_t component_type() const noexcept;
+  constexpr DiscoveredTarget(const LlrpDiscoveredTarget& c_target) noexcept;
+  DiscoveredTarget& operator=(const LlrpDiscoveredTarget& c_target) noexcept;
 
   constexpr DestinationAddr address(uint16_t subdevice = 0) const noexcept;
 
-private:
-  etcpal::Uuid cid_;
-  rdm::Uid uid_;
-  etcpal::MacAddr hardware_addr_;
-  llrp_component_t component_type_;
+  const char* ComponentTypeToCStr() const noexcept;
+  std::string ComponentTypeToString() const;
+
+  etcpal::Uuid cid;                  ///< The target's CID.
+  rdm::Uid uid;                      ///< The target's RDM UID.
+  etcpal::MacAddr hardware_address;  ///< The lowest hardware address of the machine the target is operating on.
+  llrp_component_t component_type;   ///< The LLRP component type of the target.
 };
 
-/// \brief Construct a DiscoveredTarget copied from an instance of the C DiscoveredLlrpTarget type.
-constexpr DiscoveredTarget::DiscoveredTarget(const DiscoveredLlrpTarget& c_target) noexcept
-    : cid_(c_target.cid)
-    , uid_(c_target.uid)
-    , hardware_addr_(c_target.hardware_address)
-    , component_type_(c_target.component_type)
+/// \brief Construct a DiscoveredTarget copied from an instance of the C LlrpDiscoveredTarget type.
+constexpr DiscoveredTarget::DiscoveredTarget(const LlrpDiscoveredTarget& c_target) noexcept
+    : cid(c_target.cid)
+    , uid(c_target.uid)
+    , hardware_address(c_target.hardware_address)
+    , component_type(c_target.component_type)
 {
 }
 
-/// \brief Assign an instance of the C DiscoveredLlrpTarget type to an instance of this class.
-inline DiscoveredTarget& DiscoveredTarget::operator=(const DiscoveredLlrpTarget& c_target) noexcept
+/// \brief Assign an instance of the C LlrpDiscoveredTarget type to an instance of this class.
+inline DiscoveredTarget& DiscoveredTarget::operator=(const LlrpDiscoveredTarget& c_target) noexcept
 {
-  cid_ = c_target.cid;
-  uid_ = c_target.uid;
-  hardware_addr_ = c_target.hardware_address;
-  component_type_ = c_target.component_type;
+  cid = c_target.cid;
+  uid = c_target.uid;
+  hardware_address = c_target.hardware_address;
+  component_type = c_target.component_type;
   return *this;
-}
-
-/// \brief Get the target's CID.
-constexpr const etcpal::Uuid& DiscoveredTarget::cid() const noexcept
-{
-  return cid_;
-}
-
-/// \brief Get the target's RDM UID.
-constexpr const rdm::Uid& DiscoveredTarget::uid() const noexcept
-{
-  return uid_;
-}
-
-/// \brief Get the lowest hardware address of the machine the target is operating on.
-constexpr const etcpal::MacAddr& DiscoveredTarget::hardware_address() const noexcept
-{
-  return hardware_addr_;
-}
-
-/// \brief Get the LLRP component type of the target.
-constexpr llrp_component_t DiscoveredTarget::component_type() const noexcept
-{
-  return component_type_;
 }
 
 /// \brief Get the target's LLRP addressing information.
 constexpr DestinationAddr DiscoveredTarget::address(uint16_t subdevice) const noexcept
 {
-  return DestinationAddr(cid_, uid_, subdevice);
+  return DestinationAddr(cid, uid, subdevice);
+}
+
+/// Convert the target's component type to a string representation.
+inline const char* DiscoveredTarget::ComponentTypeToCStr() const noexcept
+{
+  return llrp_component_type_to_string(component_type);
+}
+
+/// Convert the target's component type to a string representation.
+inline std::string DiscoveredTarget::ComponentTypeToString() const
+{
+  return llrp_component_type_to_string(component_type);
 }
 
 /// \ingroup llrp_manager_cpp

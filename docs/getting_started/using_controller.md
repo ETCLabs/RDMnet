@@ -5,7 +5,7 @@ header-only wrapper around the C interface.
 
 <!-- LANGUAGE_SELECTOR -->
 
-## Initialization and Destruction
+## Initialization
 
 The RDMnet library must be globally initialized before using the RDMnet controller API. See
 \ref global_init_and_destroy.
@@ -21,6 +21,8 @@ started when the RDMnet library is initialized.
 
 <!-- CODE_BLOCK_START -->
 ```c
+#include "rdmnet/controller.h"
+
 // Sets optional values to defaults. Must pass your ESTA manufacturer ID. If you have not yet
 // requested an ESTA manufacturer ID, the range 0x7ff0 to 0x7fff can be used for prototyping.
 RdmnetControllerConfig config = RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT(MY_ESTA_MANUFACTURER_ID_VAL);
@@ -47,11 +49,13 @@ if (result == kEtcPalErrOk)
 }
 else
 {
-  // Some error occurred, handle is not valid.
+  printf("RDMnet controller creation failed with error: %s\n", etcpal_strerror(result));
 }
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
+#include "rdmnet/cpp/controller.h"
+
 class MyControllerNotifyHandler : public rdmnet::ControllerNotifyHandler
 {
   // Implement the ControllerNotifyHandler callbacks...
@@ -59,8 +63,14 @@ class MyControllerNotifyHandler : public rdmnet::ControllerNotifyHandler
 
 MyControllerNotifyHandler my_controller_notify_handler;
 
+// Each controller is a component that must have a Component ID (CID), which is simply a UUID.
+// Software should generate and save a CID so that the same one is used on each run of the software.
+auto my_cid = etcpal::Uuid::OsPreferred();
+
 // Contains the configuration settings that the controller needs to operate. Some of these are set
-// to default values and can be changed if necessary.
+// to default values and can be changed if necessary. Must pass your ESTA manufacturer ID. If you
+// have not yet requested an ESTA manufacturer ID, the range 0x7ff0 to 0x7fff can be used for
+// prototyping.
 rdmnet::ControllerSettings my_settings(my_cid, MY_ESTA_MANUFACTURER_ID_VAL);
 
 // Needed to identify this controller to other controllers on the network. More on this later.
@@ -78,8 +88,28 @@ if (result)
 }
 else
 {
-  // Startup failed, use result.code() or result.ToString() to inspect details
+  std::cout << "RDMnet controller startup failed with error: " << result.ToString() << '\n';
 }
+```
+<!-- CODE_BLOCK_END -->
+
+## Deinitialization
+
+The controller should be shut down and destroyed gracefully before program termination. This will send
+a graceful disconnect message to any connected brokers and deallocate the controller's resources.
+
+<!-- CODE_BLOCK_START -->
+```c
+rdmnet_controller_destroy(my_controller_handle, kRdmnetDisconnectShutdown);
+
+// At this point, the controller is no longer running and its handle is no longer valid.
+```
+<!-- CODE_BLOCK_MID -->
+```cpp
+controller.Shutdown();
+
+// At this point, the controller is no longer running and its handle is no longer valid. It can be
+// started again (with a new handle) by calling Startup() again.
 ```
 <!-- CODE_BLOCK_END -->
 
@@ -87,10 +117,8 @@ else
 
 A controller instance is initially created without any configured scopes. If the app has not been
 reconfigured by a user, the E1.33 RDMnet standard requires that the RDMnet default scope be
-configured automatically. There is a shortcut function for this,
-rdmnet_controller_add_default_scope().
-
-Otherwise, use rdmnet_controller_add_scope() to add a custom configured scope. 
+configured automatically. There is a shortcut function for this. Otherwise, you can add a custom
+scope.
 
 Per the requirements of RDMnet, a scope string is always UTF-8 and is thus represented by a char[]
 in C and a std::string in C++.
@@ -122,7 +150,6 @@ if (add_res)
 }
 else
 {
-  // Handle error
   std::cout << "Error adding default scope: '" << add_res.result().ToString() << "'\n"
 }
 ```
@@ -144,7 +171,7 @@ DNS-SD discovery by providing a static configuration:
 ```c
 // Get configured static broker address
 EtcPalSockAddr static_broker_addr;
-etcpal_inet_pton(kEtcPalIpTypeV4, "192.168.2.1", &static_broker_addr.ip);
+etcpal_string_to_ip(kEtcPalIpTypeV4, "192.168.2.1", &static_broker_addr.ip);
 static_broker_addr.port = 8000;
 
 RdmnetScopeConfig config;
@@ -167,10 +194,9 @@ auto add_res = controller.AddDefaultScope(static_broker_addr);
 
 ## Handling Callbacks
 
-The library will dispatch callback notifications from the context in which rdmnet_core_tick() is
-called (in the default configuration, this is a single dedicated worker thread). It is safe to call
-any RDMnet API function from any callback; in fact, this is the recommended way of handling many
-callbacks.
+The library will dispatch callback notifications from the background thread which is started when
+rdmnet_init() is called. It is safe to call any RDMnet API function from any callback; in fact,
+this is the recommended way of handling many callbacks.
 
 For example, a very common controller behavior will be to fetch a client list from the broker
 after a successful connection:
@@ -185,6 +211,7 @@ void controller_connected_callback(rdmnet_controller_t handle, rdmnet_client_sco
   printf("Connected to broker '%s' at address %s:%d\n", info->broker_name, addr_str, info->broker_addr.port);
 
   // Check handles and/or context as necessary...
+
   rdmnet_controller_request_client_list(handle, scope_handle);
 }                                   
 ```
@@ -276,7 +303,7 @@ void my_client_list_update_cb(rdmnet_controller_t handle, rdmnet_client_scope_t 
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleClientListUpdate(rdmnet::ControllerHandle controller, rdmnet::ScopeHandle scope_handle,
+void MyControllerNotifyHandler::HandleClientListUpdate(rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle,
                                                        client_list_action_t list_action, const rdmnet::RptClientList& list)
 {
   // Check handles as necessary...
@@ -301,7 +328,7 @@ void MyControllerNotifyHandler::HandleClientListUpdate(rdmnet::ControllerHandle 
     case kRdmnetClientListReplace:
       // This is the full client list currently connected to the broker - our existing client 
       // list should be replaced wholesale with this one. This will be the response to
-      // rdmnet_controller_request_client_list(); the other cases are sent unsolicited.
+      // Controller::RequestClientList(); the other cases are sent unsolicited.
       ReplaceClientList(list.GetClientEntries());
       break;
   }
@@ -324,7 +351,7 @@ periodic callbacks notifying you of changes, with the #client_list_action_t set 
 shown above.
 
 Clients include both devices and other controllers; to differentiate the two, check the type field
-in each RdmnetRptClientEntry structure.
+in each RPT client entry structure.
 
 ## Sending RDM Commands
 
@@ -388,7 +415,7 @@ void rdm_response_callback(rdmnet_controller_t handle, rdmnet_client_scope_t sco
   handle_response_data(resp->rdm_header.param_id, resp->rdm_data, resp->rdm_data_len);
 
   // RdmnetRdmResponse structures do not own their data and the data will be invalid when this callback
-  // ends. To save the data for later processing:
+  // returns. To save the data for later processing:
   RdmnetSavedRdmResponse saved_resp;
   rdmnet_save_rdm_response(resp, &saved_resp);
 
@@ -428,7 +455,7 @@ void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::ControllerHandle handl
 
   HandleResponseData(resp.param_id(), resp.data(), resp.data_len());
 
-  // RdmResponse classes do not own their data and the data will be invalid when this callback ends.
+  // RdmResponse classes do not own their data and the data will be invalid when this callback returns.
   // To save the data for later processing:
   auto saved_resp = resp.Save();
 
@@ -444,6 +471,8 @@ void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::ControllerHandle handl
 }
 ```
 <!-- CODE_BLOCK_END -->
+
+## Handling RPT Status Messages
 
 If something went wrong while either a broker or device was processing your message, you will get a
 response called an "RPT Status". There is a separate callback for handling these messages.
@@ -463,7 +492,8 @@ void rpt_status_callback(rdmnet_controller_t handle, rdmnet_client_scope_t handl
 
   char uid_str[RDM_UID_STRING_BYTES];
   rdm_uid_to_string(&status->source_uid, uid_str);
-  printf("Error sending RDM command to device %s: '%s'\n", uid_str, rpt_status_code_to_string(status->msg.status_code));
+  printf("Error sending RDM command to device %s: '%s'\n", uid_str,
+         rdmnet_rpt_status_code_to_string(status->status_code));
   
   // Other logic as needed; remove our internal storage of the RDM transaction, etc.
 }

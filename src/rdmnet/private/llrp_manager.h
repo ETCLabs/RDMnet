@@ -89,7 +89,7 @@ typedef enum
 
 typedef struct TargetDiscoveredArgs
 {
-  const DiscoveredLlrpTarget* target;
+  const LlrpDiscoveredTarget* target;
 } TargetDiscoveredArgs;
 
 // typedef struct RdmRespReceivedArgs

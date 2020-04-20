@@ -328,7 +328,7 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCom
   return kEtcPalErrNotImpl;
 }
 
-//void process_target_state(LlrpTarget* target)
+// void process_target_state(LlrpTarget* target)
 //{
 //  for (LlrpTargetNetintInfo* netint = target->netints; netint < target->netints + target->num_netints; ++netint)
 //  {
@@ -341,14 +341,15 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCom
 //        header.dest_cid = netint->pending_reply_cid;
 //        header.transaction_number = netint->pending_reply_trans_num;
 //
-//        DiscoveredLlrpTarget target_info;
+//        LlrpDiscoveredTarget target_info;
 //        target_info.cid = target->keys.cid;
 //        target_info.uid = target->uid;
 //        target_info.hardware_address = *(rdmnet_get_lowest_mac_addr());
 //        target_info.component_type = target->component_type;
 //
 //        etcpal_error_t send_res = send_llrp_probe_reply(netint->send_sock, netint->send_buf,
-//                                                        (netint->id.ip_type == kEtcPalIpTypeV6), &header, &target_info);
+//                                                        (netint->id.ip_type == kEtcPalIpTypeV6), &header,
+//                                                        &target_info);
 //        if (send_res != kEtcPalErrOk && RDMNET_CAN_LOG(ETCPAL_LOG_WARNING))
 //        {
 //          char cid_str[ETCPAL_UUID_STRING_BYTES];
@@ -363,7 +364,7 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCom
 //  }
 //}
 //
-//void llrp_target_tick(void)
+// void llrp_target_tick(void)
 //{
 //  if (!rdmnet_core_initialized())
 //    return;
@@ -423,7 +424,7 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCom
 //  }
 //}
 //
-//void target_data_received(const uint8_t* data, size_t data_size, const RdmnetMcastNetintId* netint)
+// void target_data_received(const uint8_t* data, size_t data_size, const RdmnetMcastNetintId* netint)
 //{
 //  CB_STORAGE_CLASS TargetCallbackDispatchInfo cb;
 //  INIT_CALLBACK_INFO(&cb);
@@ -480,7 +481,7 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCom
 //  deliver_callback(&cb);
 //}
 //
-//void handle_llrp_message(const uint8_t* data, size_t data_size, LlrpTarget* target, LlrpTargetNetintInfo* netint,
+// void handle_llrp_message(const uint8_t* data, size_t data_size, LlrpTarget* target, LlrpTargetNetintInfo* netint,
 //                         TargetCallbackDispatchInfo* cb)
 //{
 //  ETCPAL_UNUSED_ARG(data);
@@ -541,14 +542,14 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCom
 //  //  }
 //}
 //
-//void fill_callback_info(const LlrpTarget* target, TargetCallbackDispatchInfo* info)
+// void fill_callback_info(const LlrpTarget* target, TargetCallbackDispatchInfo* info)
 //{
 //  info->handle = target->keys.handle;
 //  info->cbs = target->callbacks;
 //  info->context = target->callback_context;
 //}
 //
-//void deliver_callback(TargetCallbackDispatchInfo* info)
+// void deliver_callback(TargetCallbackDispatchInfo* info)
 //{
 //  ETCPAL_UNUSED_ARG(info);
 //  //  switch (info->which)
@@ -563,7 +564,7 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCom
 //  //  }
 //}
 //
-//etcpal_error_t setup_target_netint(const RdmnetMcastNetintId* netint_id, LlrpTargetNetintInfo* netint)
+// etcpal_error_t setup_target_netint(const RdmnetMcastNetintId* netint_id, LlrpTargetNetintInfo* netint)
 //{
 //  netint->id = *netint_id;
 //
@@ -583,7 +584,7 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCom
 //  return res;
 //}
 //
-//void cleanup_target_netints(LlrpTarget* target)
+// void cleanup_target_netints(LlrpTarget* target)
 //{
 //  for (const LlrpTargetNetintInfo* netint_info = target->netints; netint_info < target->netints + target->num_netints;
 //       ++netint_info)
@@ -596,7 +597,7 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCom
 //#endif
 //}
 //
-//etcpal_error_t setup_target_netints(const LlrpTargetOptionalConfig* config, LlrpTarget* target)
+// etcpal_error_t setup_target_netints(const LlrpTargetOptionalConfig* config, LlrpTarget* target)
 //{
 //  etcpal_error_t res = kEtcPalErrOk;
 //
@@ -640,7 +641,8 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCom
 //#endif
 //
 //    target->num_netints = 0;
-//    for (const RdmnetMcastNetintId* netint_id = mcast_netint_arr; netint_id < mcast_netint_arr + mcast_netint_arr_size;
+//    for (const RdmnetMcastNetintId* netint_id = mcast_netint_arr; netint_id < mcast_netint_arr +
+//    mcast_netint_arr_size;
 //         ++netint_id)
 //    {
 //      // If the user hasn't provided a list of network interfaces to operate on, failing to
@@ -662,7 +664,7 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCom
 //  return res;
 //}
 //
-//etcpal_error_t create_new_target(const LlrpTargetConfig* config, LlrpTarget** new_target)
+// etcpal_error_t create_new_target(const LlrpTargetConfig* config, LlrpTarget** new_target)
 //{
 //  etcpal_error_t res = kEtcPalErrNoMem;
 //
@@ -727,7 +729,7 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCom
 //  return res;
 //}
 //
-//etcpal_error_t get_target(llrp_target_t handle, LlrpTarget** target)
+// etcpal_error_t get_target(llrp_target_t handle, LlrpTarget** target)
 //{
 //  if (!rdmnet_core_initialized())
 //    return kEtcPalErrNotInit;
@@ -744,7 +746,7 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCom
 //  return kEtcPalErrOk;
 //}
 //
-//LlrpTargetNetintInfo* get_target_netint(LlrpTarget* target, const RdmnetMcastNetintId* id)
+// LlrpTargetNetintInfo* get_target_netint(LlrpTarget* target, const RdmnetMcastNetintId* id)
 //{
 //  RDMNET_ASSERT(target);
 //  RDMNET_ASSERT(id);
@@ -757,13 +759,13 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCom
 //  return NULL;
 //}
 //
-//void release_target(LlrpTarget* target)
+// void release_target(LlrpTarget* target)
 //{
 //  ETCPAL_UNUSED_ARG(target);
 //  rdmnet_readunlock();
 //}
 //
-//void destroy_target(LlrpTarget* target, bool remove_from_tree)
+// void destroy_target(LlrpTarget* target, bool remove_from_tree)
 //{
 //  if (target)
 //  {
@@ -775,12 +777,12 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCom
 //}
 //
 ///* Callback for IntHandleManager to determine whether a handle is in use */
-//bool target_handle_in_use(int handle_val)
+// bool target_handle_in_use(int handle_val)
 //{
 //  return etcpal_rbtree_find(&state.targets, &handle_val);
 //}
 //
-//int target_compare_by_handle(const EtcPalRbTree* self, const void* value_a, const void* value_b)
+// int target_compare_by_handle(const EtcPalRbTree* self, const void* value_a, const void* value_b)
 //{
 //  ETCPAL_UNUSED_ARG(self);
 //
@@ -789,7 +791,7 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCom
 //  return (a->keys.handle > b->keys.handle) - (a->keys.handle < b->keys.handle);
 //}
 //
-//int target_compare_by_cid(const EtcPalRbTree* self, const void* value_a, const void* value_b)
+// int target_compare_by_cid(const EtcPalRbTree* self, const void* value_a, const void* value_b)
 //{
 //  ETCPAL_UNUSED_ARG(self);
 //
@@ -798,7 +800,7 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCom
 //  return ETCPAL_UUID_CMP(&a->keys.cid, &b->keys.cid);
 //}
 //
-//EtcPalRbNode* target_node_alloc(void)
+// EtcPalRbNode* target_node_alloc(void)
 //{
 //#if RDMNET_DYNAMIC_MEM
 //  return (EtcPalRbNode*)malloc(sizeof(EtcPalRbNode));
@@ -807,7 +809,7 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t handle, const LlrpSavedRdmCom
 //#endif
 //}
 //
-//void target_node_free(EtcPalRbNode* node)
+// void target_node_free(EtcPalRbNode* node)
 //{
 //#if RDMNET_DYNAMIC_MEM
 //  free(node);

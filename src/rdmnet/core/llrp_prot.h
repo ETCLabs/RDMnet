@@ -108,7 +108,7 @@ typedef struct LlrpMessage
   union
   {
     RemoteProbeRequest probe_request;
-    DiscoveredLlrpTarget probe_reply;
+    LlrpDiscoveredTarget probe_reply;
     RdmBuffer rdm;
   } data;
 } LlrpMessage;
@@ -131,7 +131,7 @@ bool parse_llrp_message(const uint8_t* buf, size_t buflen, const LlrpMessageInte
 etcpal_error_t send_llrp_probe_request(etcpal_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
                                        const LocalProbeRequest* probe_request);
 etcpal_error_t send_llrp_probe_reply(etcpal_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
-                                     const DiscoveredLlrpTarget* target_info);
+                                     const LlrpDiscoveredTarget* target_info);
 etcpal_error_t send_llrp_rdm_command(etcpal_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
                                      const RdmBuffer* cmd);
 etcpal_error_t send_llrp_rdm_response(etcpal_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,

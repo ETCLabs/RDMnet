@@ -22,7 +22,7 @@
 #include "gtest/gtest.h"
 #include "fff.h"
 
-FAKE_VOID_FUNC(handle_llrp_manager_target_discovered, llrp_manager_t, const DiscoveredLlrpTarget*, void*);
+FAKE_VOID_FUNC(handle_llrp_manager_target_discovered, llrp_manager_t, const LlrpDiscoveredTarget*, void*);
 FAKE_VOID_FUNC(handle_llrp_manager_rdm_response_received, llrp_manager_t, const LlrpRdmResponse*, void*);
 FAKE_VOID_FUNC(handle_llrp_manager_discovery_finished, llrp_manager_t, void*);
 

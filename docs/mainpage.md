@@ -1,4 +1,4 @@
-# RDMnet                                                            {#mainpage}
+# RDMnet                                                                                {#mainpage}
 
 ## Introduction
 
@@ -81,4 +81,6 @@ version of Qt without an account [here](https://www.qt.io/download).
 
 The platform ports of RDMnet have the following dependencies:
 * Windows
-  + Windows XP SP1 or higher
+  + Windows 7 or 10
+* macOS
+  + macOS 10.14 (Mojave) or greater

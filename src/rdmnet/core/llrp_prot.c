@@ -43,7 +43,7 @@ EtcPalUuid kLlrpBroadcastCid;
 static bool parse_llrp_pdu(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest, LlrpMessage* msg);
 static bool parse_llrp_probe_request(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest,
                                      RemoteProbeRequest* request);
-static bool parse_llrp_probe_reply(const uint8_t* buf, size_t buflen, DiscoveredLlrpTarget* reply);
+static bool parse_llrp_probe_reply(const uint8_t* buf, size_t buflen, LlrpDiscoveredTarget* reply);
 static bool parse_llrp_rdm_command(const uint8_t* buf, size_t buflen, RdmBuffer* cmd);
 
 static etcpal_error_t send_llrp_rdm(etcpal_socket_t sock, uint8_t* buf, const EtcPalSockAddr* dest_addr,
@@ -223,7 +223,7 @@ bool parse_llrp_probe_request(const uint8_t* buf, size_t buflen, const LlrpMessa
   return true;
 }
 
-bool parse_llrp_probe_reply(const uint8_t* buf, size_t buflen, DiscoveredLlrpTarget* reply)
+bool parse_llrp_probe_reply(const uint8_t* buf, size_t buflen, LlrpDiscoveredTarget* reply)
 {
   if (buflen < PROBE_REPLY_PDU_SIZE)
     return false;
@@ -346,7 +346,7 @@ etcpal_error_t send_llrp_probe_request(etcpal_socket_t sock, uint8_t* buf, bool 
 #define PROBE_REPLY_RLP_DATA_SIZE (LLRP_HEADER_SIZE + PROBE_REPLY_PDU_SIZE)
 
 etcpal_error_t send_llrp_probe_reply(etcpal_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
-                                     const DiscoveredLlrpTarget* target_info)
+                                     const LlrpDiscoveredTarget* target_info)
 {
   uint8_t* cur_ptr = buf;
   uint8_t* buf_end = cur_ptr + LLRP_TARGET_MAX_MESSAGE_SIZE;

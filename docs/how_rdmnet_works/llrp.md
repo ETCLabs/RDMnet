@@ -40,6 +40,17 @@ LLRP Manager                                 LLRP Target
      ||                                          ||
 ```
 
+## Target Addressing
+
+Like in other RDMnet protocols, LLRP managers and targets have both a Component Identifier (CID)
+and an RDM UID which can be either static or dynamic. See \ref roles_and_addressing for more
+information on these identifiers.
+
+Because dynamic RDM UIDs are not guaranteed to be globally unique, LLRP managers must always use a
+combination of CID and UID to track LLRP targets. The CID uniquely and globally identifies a
+target, and the UID provides a destination address for the RDM command structures that are used to
+configure targets. 
+
 ## RDM Configuration
 
 After performing discovery, an LLRP Manager caches its list of LLRP Targets and may send RDM

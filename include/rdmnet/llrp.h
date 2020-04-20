@@ -68,7 +68,7 @@ typedef enum
 } llrp_component_t;
 
 /*! A set of information associated with an LLRP Target. */
-typedef struct DiscoveredLlrpTarget
+typedef struct LlrpDiscoveredTarget
 {
   /*! The LLRP Target's CID. */
   EtcPalUuid cid;
@@ -78,7 +78,7 @@ typedef struct DiscoveredLlrpTarget
   EtcPalMacAddr hardware_address;
   /*! The type of RPT Component this LLRP Target is associated with. */
   llrp_component_t component_type;
-} DiscoveredLlrpTarget;
+} LlrpDiscoveredTarget;
 
 const char* llrp_component_type_to_string(llrp_component_t type);
 

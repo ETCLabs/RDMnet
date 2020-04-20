@@ -27,6 +27,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include "etcpal/common.h"
 #include "etcpal/cpp/error.h"
 #include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/log.h"
@@ -96,14 +97,13 @@ struct BrokerSettings
   /// The port on which this broker should listen for incoming connections (and advertise via DNS).
   /// 0 means use an ephemeral port.
   uint16_t listen_port{0};
-  /// A list of MAC addresses representing network interfaces to listen on. If both this and
-  /// listen_addrs are empty, the broker will listen on all available interfaces. Otherwise
-  /// listening will be restricted to the interfaces specified.
-  std::set<etcpal::MacAddr> listen_macs;
-  /// A list of IP addresses representing network interfaces to listen on. If both this and
-  /// listen_macs are empty, the broker will listen on all available interfaces. Otherwise
-  /// listening will be restricted to the interfaces specified.
-  std::set<etcpal::IpAddr> listen_addrs;
+
+  /// \brief A list of strings representing the system name of network interfaces to listen on.
+  ///
+  /// Each string represents the system name for a network interface. On *nix systems, this is
+  /// typically a short identifier ending with a number, e.g. "eth0". On Windows, it is typically
+  /// a GUID.
+  std::vector<std::string> listen_interfaces;
 
   BrokerSettings() = default;
   BrokerSettings(const etcpal::Uuid& cid_in, const rdm::Uid& static_uid_in);
@@ -161,7 +161,7 @@ public:
   /// This callback is informative; no action needs to be taken to adjust broker operation to the
   /// new scope. This callback will only be called if the associated
   /// BrokerSettings::allow_remote_scope_change was set to true.
-  virtual void HandleScopeChanged(const std::string& new_scope) = 0;
+  virtual void HandleScopeChanged(const std::string& new_scope) { ETCPAL_UNUSED_ARG(new_scope); }
 };
 
 /// \ingroup rdmnet_broker
@@ -197,11 +197,12 @@ public:
   /// Move an instance of broker functionality.
   Broker& operator=(Broker&& other) = default;
 
-  etcpal::Error Startup(const BrokerSettings& settings, BrokerNotifyHandler* notify, etcpal::Logger* logger);
+  etcpal::Error Startup(const BrokerSettings& settings, etcpal::Logger* logger = nullptr,
+                        BrokerNotifyHandler* notify = nullptr);
   void Shutdown(rdmnet_disconnect_reason_t disconnect_reason = kRdmnetDisconnectShutdown);
   etcpal::Error ChangeScope(const std::string& new_scope, rdmnet_disconnect_reason_t disconnect_reason);
 
-  BrokerSettings settings() const;
+  const BrokerSettings& settings() const;
 
 private:
   std::unique_ptr<BrokerCore> core_;

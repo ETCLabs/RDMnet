@@ -5,7 +5,7 @@ interface is a header-only wrapper around the C interface.
 
 <!-- LANGUAGE_SELECTOR -->
 
-## Initialization and Destruction
+## Initialization
 
 The RDMnet library must be globally initialized before using the RDMnet Device API. See
 \ref global_init_and_destroy.
@@ -20,6 +20,8 @@ library is initialized.
 
 <!-- CODE_BLOCK_START -->
 ```c
+#include "rdmnet/device.h"
+
 // Sets optional values to defaults. Must pass your ESTA manufacturer ID. If you have not yet
 // requested an ESTA manufacturer ID, the range 0x7ff0 to 0x7fff can be used for prototyping.
 RdmnetDeviceConfig config = RDMNET_DEVICE_CONFIG_DEFAULT_INIT(MY_ESTA_MANUFACTURER_ID_VAL);
@@ -48,6 +50,8 @@ else
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
+#include "rdmnet/cpp/device.h"
+
 class MyDeviceNotifyHandler : public rdmnet::DeviceNotifyHandler
 {
   // Implement the DeviceNotifyHandler callbacks...
@@ -70,8 +74,28 @@ if (result)
 }
 else
 {
-  // Startup failed, use result.code() or result.ToString() to inspect details
+  std::cout << "RDMnet device startup failed with error: " << result.ToString() << '\n';
 }
+```
+<!-- CODE_BLOCK_END -->
+
+## Deinitialization
+
+The device should be shut down and destroyed gracefully before program termination. This will send
+a graceful disconnect message to any connected broker and deallocate the device's resources.
+
+<!-- CODE_BLOCK_START -->
+```c
+rdmnet_device_destroy(my_device_handle, kRdmnetDisconnectShutdown);
+
+// At this point, the device is no longer running and its handle is no longer valid.
+```
+<!-- CODE_BLOCK_MID -->
+```cpp
+device.Shutdown();
+
+// At this point, the device is no longer running and its handle is no longer valid. It can be
+// started again (with a new handle) by calling Startup() again.
 ```
 <!-- CODE_BLOCK_END -->
 

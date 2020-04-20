@@ -407,9 +407,9 @@ void LlrpManagerExample::PrintTargets()
   for (const auto& target : targets_)
   {
     const auto& prot_info = target.second.prot_info;
-    printf("%-6d %s %s %-15s %s\n", target.first, prot_info.uid().ToString().c_str(),
-           prot_info.cid().ToString().c_str(), llrp_component_type_to_string(prot_info.component_type()),
-           prot_info.hardware_address().ToString().c_str());
+    printf("%-6d %s %s %-15s %s\n", target.first, prot_info.uid.ToString().c_str(),
+           prot_info.cid.ToString().c_str(), llrp_component_type_to_string(prot_info.component_type),
+           prot_info.hardware_address.ToString().c_str());
   }
 }
 
@@ -786,7 +786,7 @@ void LlrpManagerExample::HandleLlrpTargetDiscovered(llrp::ManagerHandle /*handle
   if (discovery_active_)
   {
     int next_target_handle = targets_.empty() ? 0 : targets_.rbegin()->first + 1;
-    printf("Adding LLRP Target, UID %s, with handle %d\n", target.uid().ToString().c_str(), next_target_handle);
+    printf("Adding LLRP Target, UID %s, with handle %d\n", target.uid.ToString().c_str(), next_target_handle);
 
     TargetInfo new_target_info;
     new_target_info.prot_info = target;
