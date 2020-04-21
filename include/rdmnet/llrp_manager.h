@@ -110,19 +110,6 @@ typedef struct LlrpManagerConfig
 } LlrpManagerConfig;
 
 /*!
- * \brief A set of default initializer values for an LlrpManagerConfig struct.
- *
- * Usage:
- * \code
- * LlrpManagerConfig config = { LLRP_MANAGER_CONFIG_DEFAULT_INIT_VALUES };
- * // Now fill in the required portions as necessary with your data...
- * \endcode
- *
- * To omit the enclosing brackets, use LLRP_MANAGER_CONFIG_DEFAULT_INIT().
- */
-#define LLRP_MANAGER_CONFIG_DEFAULT_INIT_VALUES {{0}}, {kEtcPalIpTypeInvalid, 0}, 0, {NULL, NULL, NULL}, NULL
-
-/*!
  * \brief A default-value initializer for an LlrpManagerConfig struct.
  *
  * Usage:
@@ -131,9 +118,9 @@ typedef struct LlrpManagerConfig
  * // Now fill in the required portions as necessary with your data...
  * \endcode
  */
-#define LLRP_MANAGER_CONFIG_DEFAULT_INIT    \
-  {                                         \
-    LLRP_MANAGER_CONFIG_DEFAULT_INIT_VALUES \
+#define LLRP_MANAGER_CONFIG_DEFAULT_INIT                          \
+  {                                                               \
+    {{0}}, {kEtcPalIpTypeInvalid, 0}, 0, {NULL, NULL, NULL}, NULL \
   }
 
 void llrp_manager_config_init(LlrpManagerConfig* config, uint16_t manufacturer_id);

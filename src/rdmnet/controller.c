@@ -271,17 +271,18 @@ etcpal_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rd
  * Will disconnect from all brokers to which this controller is currently connected, sending the
  * disconnect reason provided in the disconnect_reason parameter.
  *
- * \param[in] handle Handle to controller to destroy, no longer valid after this function returns.
+ * \param[in] controller_handle Handle to controller to destroy, no longer valid after this function returns.
  * \param[in] disconnect_reason Disconnect reason code to send on all connected scopes.
  * \return #kEtcPalErrOk: Controller destroyed successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance.
+ * \return #kEtcPalErrNotFound: controller_handle is not associated with a valid controller instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle, rdmnet_disconnect_reason_t disconnect_reason)
+etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t controller_handle,
+                                         rdmnet_disconnect_reason_t disconnect_reason)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(controller_handle);
   ETCPAL_UNUSED_ARG(disconnect_reason);
   return kEtcPalErrNotImpl;
   //  if (!handle)
@@ -301,20 +302,20 @@ etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle, rdmnet_disc
  * static broker address is given); the status of these attempts will be communicated via the
  * callbacks associated with the controller instance.
  *
- * \param[in] handle Handle to controller to which to add a new scope.
+ * \param[in] controller_handle Handle to controller to which to add a new scope.
  * \param[in] scope_config Configuration parameters for the new scope.
  * \param[out] scope_handle Filled in on success with a handle to the new scope.
  * \return #kEtcPalErrOk: New scope added successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance.
+ * \return #kEtcPalErrNotFound: controller_handle is not associated with a valid controller instance.
  * \return #kEtcPalErrNoMem: No memory to allocate new scope.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const RdmnetScopeConfig* scope_config,
+etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t controller_handle, const RdmnetScopeConfig* scope_config,
                                            rdmnet_client_scope_t* scope_handle)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(controller_handle);
   ETCPAL_UNUSED_ARG(scope_config);
   ETCPAL_UNUSED_ARG(scope_handle);
   return kEtcPalErrNotImpl;
@@ -331,18 +332,19 @@ etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const Rdm
  * is to not use a statically-configured broker. If a static broker is needed on the default scope,
  * rdmnet_controller_add_scope() must be used.
  *
- * \param[in] handle Handle to controller to which to add the default scope.
+ * \param[in] controller_handle Handle to controller to which to add the default scope.
  * \param[out] scope_handle Filled in on success with a handle to the new scope.
  * \return #kEtcPalErrOk: Default scope added successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance.
+ * \return #kEtcPalErrNotFound: controller_handle is not associated with a valid controller instance.
  * \return #kEtcPalErrNoMem: No memory to allocate new scope.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_add_default_scope(rdmnet_controller_t handle, rdmnet_client_scope_t* scope_handle)
+etcpal_error_t rdmnet_controller_add_default_scope(rdmnet_controller_t controller_handle,
+                                                   rdmnet_client_scope_t* scope_handle)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(controller_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   return kEtcPalErrNotImpl;
   //  if (!handle)
@@ -358,20 +360,20 @@ etcpal_error_t rdmnet_controller_add_default_scope(rdmnet_controller_t handle, r
  *
  * After this call completes, scope_handle will no longer be valid.
  *
- * \param[in] handle Handle to the controller from which to remove a scope.
+ * \param[in] controller_handle Handle to the controller from which to remove a scope.
  * \param[in] scope_handle Handle to scope to remove.
  * \param[in] disconnect_reason RDMnet protocol disconnect reason to send to the connected broker.
  * \return #kEtcPalErrOk: Scope removed successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance, or
- *                              scope_handle is not associated with a valid scope instance.
+ * \return #kEtcPalErrNotFound: controller_handle is not associated with a valid controller instance,
+ *                              or scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t controller_handle, rdmnet_client_scope_t scope_handle,
                                               rdmnet_disconnect_reason_t disconnect_reason)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(controller_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   ETCPAL_UNUSED_ARG(disconnect_reason);
   return kEtcPalErrNotImpl;
@@ -387,22 +389,22 @@ etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet
  * Will disconnect from any connected brokers and attempt connection again using the new
  * configuration given.
  *
- * \param[in] handle Handle to the controller on which to change a scope.
+ * \param[in] controller_handle Handle to the controller on which to change a scope.
  * \param[in] scope_handle Handle to the scope for which to change the configuration.
  * \param[in] new_scope_config New configuration parameters for the scope.
  * \param[in] disconnect_reason RDMnet protocol disconnect reason to send to the connected broker.
  * \return #kEtcPalErrOk: Scope changed successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance, or
- *                              scope_handle is not associated with a valid scope instance.
+ * \return #kEtcPalErrNotFound: controller_handle is not associated with a valid controller instance,
+ *                              or scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_change_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_change_scope(rdmnet_controller_t controller_handle, rdmnet_client_scope_t scope_handle,
                                               const RdmnetScopeConfig* new_scope_config,
                                               rdmnet_disconnect_reason_t disconnect_reason)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(controller_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   ETCPAL_UNUSED_ARG(new_scope_config);
   ETCPAL_UNUSED_ARG(disconnect_reason);
@@ -412,7 +414,7 @@ etcpal_error_t rdmnet_controller_change_scope(rdmnet_controller_t handle, rdmnet
 /*!
  * \brief Retrieve the scope string of a previously-added scope.
  *
- * \param[in] handle Handle to the controller from which to retrieve the scope string.
+ * \param[in] controller_handle Handle to the controller from which to retrieve the scope string.
  * \param[in] scope_handle Handle to the scope for which to retrieve the scope string.
  * \param[out] scope_str_buf Filled in on success with the scope string. Must be at least of length
  *                           E133_SCOPE_STRING_PADDED_LENGTH.
@@ -422,14 +424,14 @@ etcpal_error_t rdmnet_controller_change_scope(rdmnet_controller_t handle, rdmnet
  * \return #kEtcPalErrOk: Scope information retrieved successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance, or
- *                              scope_handle is not associated with a valid scope instance.
+ * \return #kEtcPalErrNotFound: controller_handle is not associated with a valid controller instance,
+ *                              or scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_get_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_get_scope(rdmnet_controller_t controller_handle, rdmnet_client_scope_t scope_handle,
                                            char* scope_str_buf, EtcPalSockAddr* static_broker_addr)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(controller_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   ETCPAL_UNUSED_ARG(scope_str_buf);
   ETCPAL_UNUSED_ARG(static_broker_addr);
@@ -441,18 +443,19 @@ etcpal_error_t rdmnet_controller_get_scope(rdmnet_controller_t handle, rdmnet_cl
  *
  * The response will be delivered via the RdmnetControllerClientListUpdateReceivedCallback.
  *
- * \param[in] handle Handle to the controller from which to request the client list.
+ * \param[in] controller_handle Handle to the controller from which to request the client list.
  * \param[in] scope_handle Handle to the scope on which to request the client list.
  * \return #kEtcPalErrOk: Request sent successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance, or
- *                              scope_handle is not associated with a valid scope instance.
+ * \return #kEtcPalErrNotFound: controller_handle is not associated with a valid controller instance,
+ *                              or scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_request_client_list(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle)
+etcpal_error_t rdmnet_controller_request_client_list(rdmnet_controller_t controller_handle,
+                                                     rdmnet_client_scope_t scope_handle)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(controller_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   return kEtcPalErrNotImpl;
   // if (!handle)
@@ -466,21 +469,22 @@ etcpal_error_t rdmnet_controller_request_client_list(rdmnet_controller_t handle,
  *
  * The response will be delivered via the RdmnetControllerResponderIdsReceivedCallback.
  *
- * \param[in] handle Handle to the controller from which to request the responder IDs.
+ * \param[in] controller_handle Handle to the controller from which to request the responder IDs.
  * \param[in] scope_handle Handle to the scope on which to request the responder IDs.
  * \param[in] uids Array of dynamic RDM UIDs for which to request the corresponding responder IDs.
  * \param[in] num_uids Size of the uids array.
  * \return #kEtcPalErrOk: Request sent successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance, or
- *                              scope_handle is not associated with a valid scope instance.
+ * \return #kEtcPalErrNotFound: controller_handle is not associated with a valid controller instance,
+ *                              or scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_request_responder_ids(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                       const RdmUid* uids, size_t num_uids)
+etcpal_error_t rdmnet_controller_request_responder_ids(rdmnet_controller_t controller_handle,
+                                                       rdmnet_client_scope_t scope_handle, const RdmUid* uids,
+                                                       size_t num_uids)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(controller_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   ETCPAL_UNUSED_ARG(uids);
   ETCPAL_UNUSED_ARG(num_uids);
@@ -492,22 +496,22 @@ etcpal_error_t rdmnet_controller_request_responder_ids(rdmnet_controller_t handl
  *
  * The response will be delivered via the RdmnetControllerDynamicUidMappingsReceivedCallback.
  *
- * \param[in] handle Handle to the controller from which to request dynamic UID mappings.
+ * \param[in] controller_handle Handle to the controller from which to request dynamic UID mappings.
  * \param[in] scope_handle Handle to the scope on which to request dynamic UID mappings.
  * \param[in] uids Array of UIDs for which to request the mapped RIDs.
  * \param[in] num_uids Size of uids array.
  * \return #kEtcPalErrOk: Dynamic UID mappings requested successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid client instance, or
- *                              scope_handle is not associated with a valid scope instance.
+ * \return #kEtcPalErrNotFound: controller_handle is not associated with a valid controller instance,
+ *                              or scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_request_dynamic_uid_mappings(rdmnet_controller_t handle,
+etcpal_error_t rdmnet_controller_request_dynamic_uid_mappings(rdmnet_controller_t controller_handle,
                                                               rdmnet_client_scope_t scope_handle, const RdmUid* uids,
                                                               size_t num_uids)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(controller_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   ETCPAL_UNUSED_ARG(uids);
   ETCPAL_UNUSED_ARG(num_uids);
@@ -520,7 +524,7 @@ etcpal_error_t rdmnet_controller_request_dynamic_uid_mappings(rdmnet_controller_
  * The response will be delivered via either the RdmnetControllerRdmResponseReceived callback or
  * the RdmnetControllerStatusReceivedCallback, depending on the outcome of the command.
  *
- * \param[in] handle Handle to the controller from which to send the RDM command.
+ * \param[in] controller_handle Handle to the controller from which to send the RDM command.
  * \param[in] scope_handle Handle to the scope on which to send the RDM command.
  * \param[in] destination Addressing information for the RDMnet client and responder to which to
  *                        send the command.
@@ -533,16 +537,17 @@ etcpal_error_t rdmnet_controller_request_dynamic_uid_mappings(rdmnet_controller_
  * \return #kEtcPalErrOk: Command sent successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance, or
- *                              scope_handle is not associated with a valid scope instance.
+ * \return #kEtcPalErrNotFound: controller_handle is not associated with a valid controller instance,
+ *                              or scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t controller_handle,
+                                                  rdmnet_client_scope_t scope_handle,
                                                   const RdmnetDestinationAddr* destination,
                                                   rdmnet_command_class_t command_class, uint16_t param_id,
                                                   const uint8_t* data, uint8_t data_len, uint32_t* seq_num)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(controller_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   ETCPAL_UNUSED_ARG(destination);
   ETCPAL_UNUSED_ARG(command_class);
@@ -563,7 +568,7 @@ etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rd
  * The response will be delivered via either the RdmnetControllerRdmResponseReceived callback or
  * the RdmnetControllerStatusReceivedCallback, depending on the outcome of the command.
  *
- * \param[in] handle Handle to the controller from which to send the GET command.
+ * \param[in] controller_handle Handle to the controller from which to send the GET command.
  * \param[in] scope_handle Handle to the scope on which to send the GET command.
  * \param[in] destination Addressing information for the RDMnet client and responder to which to
  *                        send the command.
@@ -575,15 +580,16 @@ etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rd
  * \return #kEtcPalErrOk: Command sent successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance, or
- *                              scope_handle is not associated with a valid scope instance.
+ * \return #kEtcPalErrNotFound: controller_handle is not associated with a valid controller instance,
+ *                              or scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_send_get_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_send_get_command(rdmnet_controller_t controller_handle,
+                                                  rdmnet_client_scope_t scope_handle,
                                                   const RdmnetDestinationAddr* destination, uint16_t param_id,
                                                   const uint8_t* data, uint8_t data_len, uint32_t* seq_num)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(controller_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   ETCPAL_UNUSED_ARG(destination);
   ETCPAL_UNUSED_ARG(param_id);
@@ -599,7 +605,7 @@ etcpal_error_t rdmnet_controller_send_get_command(rdmnet_controller_t handle, rd
  * The response will be delivered via either the RdmnetControllerRdmResponseReceived callback or
  * the RdmnetControllerStatusReceivedCallback, depending on the outcome of the command.
  *
- * \param[in] handle Handle to the controller from which to send the SET command.
+ * \param[in] controller_handle Handle to the controller from which to send the SET command.
  * \param[in] scope_handle Handle to the scope on which to send the SET command.
  * \param[in] destination Addressing information for the RDMnet client and responder to which to
  *                        send the command.
@@ -611,15 +617,16 @@ etcpal_error_t rdmnet_controller_send_get_command(rdmnet_controller_t handle, rd
  * \return #kEtcPalErrOk: Command sent successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance, or
- *                              scope_handle is not associated with a valid scope instance.
+ * \return #kEtcPalErrNotFound: controller_handle is not associated with a valid controller instance,
+ *                              or scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_send_set_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_send_set_command(rdmnet_controller_t controller_handle,
+                                                  rdmnet_client_scope_t scope_handle,
                                                   const RdmnetDestinationAddr* destination, uint16_t param_id,
                                                   const uint8_t* data, uint8_t data_len, uint32_t* seq_num)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(controller_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   ETCPAL_UNUSED_ARG(destination);
   ETCPAL_UNUSED_ARG(param_id);
@@ -635,7 +642,7 @@ etcpal_error_t rdmnet_controller_send_set_command(rdmnet_controller_t handle, rd
  * This function should only be used if a valid RdmnetControllerRdmCmdHandler was provided with the
  * associated config struct.
  *
- * \param[in] handle Handle to the controller from which to send the RDM ACK response.
+ * \param[in] controller_handle Handle to the controller from which to send the RDM ACK response.
  * \param[in] scope_handle Handle to the scope on which to send the RDM ACK response.
  * \param[in] received_cmd Previously-received command that the ACK is a response to.
  * \param[in] response_data Parameter data that goes with this ACK, or NULL if no data.
@@ -643,15 +650,15 @@ etcpal_error_t rdmnet_controller_send_set_command(rdmnet_controller_t handle, rd
  * \return #kEtcPalErrOk: ACK response sent successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance, or
- *                              scope_handle is not associated with a valid scope instance.
+ * \return #kEtcPalErrNotFound: controller_handle is not associated with a valid controller instance,
+ *                              or scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_send_rdm_ack(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_send_rdm_ack(rdmnet_controller_t controller_handle, rdmnet_client_scope_t scope_handle,
                                               const RdmnetSavedRdmCommand* received_cmd, const uint8_t* response_data,
                                               size_t response_data_len)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(controller_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   ETCPAL_UNUSED_ARG(received_cmd);
   ETCPAL_UNUSED_ARG(response_data);
@@ -670,21 +677,22 @@ etcpal_error_t rdmnet_controller_send_rdm_ack(rdmnet_controller_t handle, rdmnet
  * This function should only be used if a valid RdmnetControllerRdmCmdHandler was provided with the
  * associated config struct.
  *
- * \param[in] handle Handle to the controller from which to send the RDM NACK response.
+ * \param[in] controller_handle Handle to the controller from which to send the RDM NACK response.
  * \param[in] scope_handle Handle to the scope on which to send the RDM NACK response.
  * \param[in] received_cmd Previously-received command that the NACK is a response to.
  * \param[in] nack_reason RDM NACK reason code to send with the NACK.
  * \return #kEtcPalErrOk: NACK response sent successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance, or
- *                              scope_handle is not associated with a valid scope instance.
+ * \return #kEtcPalErrNotFound: controller_handle is not associated with a valid controller instance,
+ *                              or scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_send_rdm_nack(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_send_rdm_nack(rdmnet_controller_t controller_handle,
+                                               rdmnet_client_scope_t scope_handle,
                                                const RdmnetSavedRdmCommand* received_cmd, rdm_nack_reason_t nack_reason)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(controller_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   ETCPAL_UNUSED_ARG(received_cmd);
   ETCPAL_UNUSED_ARG(nack_reason);
@@ -701,7 +709,7 @@ etcpal_error_t rdmnet_controller_send_rdm_nack(rdmnet_controller_t handle, rdmne
  * This function should only be used if a valid RdmnetControllerRdmCmdHandler was provided with the
  * associated config struct.
  *
- * \param[in] handle Handle to the controller from which to send the RDM update.
+ * \param[in] controller_handle Handle to the controller from which to send the RDM update.
  * \param[in] scope_handle Handle to the scope on which to send the RDM update.
  * \param[in] param_id The RDM parameter ID that has been updated.
  * \param[in] data The updated parameter data, or NULL if no data.
@@ -709,14 +717,15 @@ etcpal_error_t rdmnet_controller_send_rdm_nack(rdmnet_controller_t handle, rdmne
  * \return #kEtcPalErrOk: RDM update sent successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance, or
- *                              scope_handle is not associated with a valid scope instance.
+ * \return #kEtcPalErrNotFound: controller_handle is not associated with a valid controller instance,
+ *                              or scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_send_rdm_update(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                 uint16_t param_id, const uint8_t* data, size_t data_len)
+etcpal_error_t rdmnet_controller_send_rdm_update(rdmnet_controller_t controller_handle,
+                                                 rdmnet_client_scope_t scope_handle, uint16_t param_id,
+                                                 const uint8_t* data, size_t data_len)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(controller_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   ETCPAL_UNUSED_ARG(param_id);
   ETCPAL_UNUSED_ARG(data);
@@ -727,20 +736,21 @@ etcpal_error_t rdmnet_controller_send_rdm_update(rdmnet_controller_t handle, rdm
 /*!
  * \brief Send an LLRP RDM ACK response from a controller.
  *
- * \param[in] handle Handle to the controller from which to send the LLRP RDM ACK response.
+ * \param[in] controller_handle Handle to the controller from which to send the LLRP RDM ACK response.
  * \param[in] received_cmd Previously-received LLRP RDM command that the ACK is a response to.
  * \param[in] response_data Parameter data that goes with this ACK, or NULL if no data.
  * \param[in] response_data_len Length in bytes of response_data, or 0 if no data.
  * \return #kEtcPalErrOk: LLRP ACK response sent successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance.
+ * \return #kEtcPalErrNotFound: controller_handle is not associated with a valid controller instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_send_llrp_ack(rdmnet_controller_t handle, const LlrpSavedRdmCommand* received_cmd,
-                                               const uint8_t* response_data, uint8_t response_data_len)
+etcpal_error_t rdmnet_controller_send_llrp_ack(rdmnet_controller_t controller_handle,
+                                               const LlrpSavedRdmCommand* received_cmd, const uint8_t* response_data,
+                                               uint8_t response_data_len)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(controller_handle);
   ETCPAL_UNUSED_ARG(received_cmd);
   ETCPAL_UNUSED_ARG(response_data);
   ETCPAL_UNUSED_ARG(response_data_len);
@@ -754,19 +764,19 @@ etcpal_error_t rdmnet_controller_send_llrp_ack(rdmnet_controller_t handle, const
 /*!
  * \brief Send an LLRP RDM NACK response from a controller.
  *
- * \param[in] handle Handle to the controller from which to send the LLRP RDM NACK response.
+ * \param[in] controller_handle Handle to the controller from which to send the LLRP RDM NACK response.
  * \param[in] received_cmd Previously-received LLRP RDM command that the NACK is a response to.
  * \param[in] nack_reason RDM NACK reason code to send with the NACK.
  * \return #kEtcPalErrOk: LLRP NACK response sent successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid controller instance.
+ * \return #kEtcPalErrNotFound: controller_handle is not associated with a valid controller instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_controller_send_llrp_nack(rdmnet_controller_t handle, const LlrpSavedRdmCommand* received_cmd,
-                                                rdm_nack_reason_t nack_reason)
+etcpal_error_t rdmnet_controller_send_llrp_nack(rdmnet_controller_t controller_handle,
+                                                const LlrpSavedRdmCommand* received_cmd, rdm_nack_reason_t nack_reason)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(controller_handle);
   ETCPAL_UNUSED_ARG(received_cmd);
   ETCPAL_UNUSED_ARG(nack_reason);
   return kEtcPalErrNotImpl;

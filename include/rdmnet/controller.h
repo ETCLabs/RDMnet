@@ -51,73 +51,77 @@ extern "C" {
 #endif
 
 /*! A handle to an RDMnet controller. */
-typedef struct RdmnetController* rdmnet_controller_t;
+typedef int rdmnet_controller_t;
 /*! An invalid RDMnet controller handle value. */
-#define RDMNET_CONTROLLER_INVALID NULL
+#define RDMNET_CONTROLLER_INVALID -1
 
 /*!
  * \brief A controller has successfully connected to a broker.
- * \param[in] handle Handle to the controller which has connected.
+ * \param[in] controller_handle Handle to the controller which has connected.
  * \param[in] scope_handle Handle to the scope on which the controller has connected.
  * \param[in] info More information about the successful connection.
  * \param[in] context Context pointer that was given at the creation of the controller instance.
  */
-typedef void (*RdmnetControllerConnectedCallback)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+typedef void (*RdmnetControllerConnectedCallback)(rdmnet_controller_t controller_handle,
+                                                  rdmnet_client_scope_t scope_handle,
                                                   const RdmnetClientConnectedInfo* info, void* context);
 
 /*!
  * \brief A connection attempt failed between a controller and a broker.
- * \param[in] handle Handle to the controller which has failed to connect.
+ * \param[in] controller_handle Handle to the controller which has failed to connect.
  * \param[in] scope_handle Handle to the scope on which the connection failed.
  * \param[in] info More information about the failed connection.
  * \param[in] context Context pointer that was given at the creation of the controller instance.
  */
-typedef void (*RdmnetControllerConnectFailedCallback)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+typedef void (*RdmnetControllerConnectFailedCallback)(rdmnet_controller_t controller_handle,
+                                                      rdmnet_client_scope_t scope_handle,
                                                       const RdmnetClientConnectFailedInfo* info, void* context);
 
 /*!
  * \brief A controller which was previously connected to a broker has disconnected.
- * \param[in] handle Handle to the controller which has disconnected.
+ * \param[in] controller_handle Handle to the controller which has disconnected.
  * \param[in] scope_handle Handle to the scope on which the disconnect occurred.
  * \param[in] info More information about the disconnect event.
  * \param[in] context Context pointer that was given at the creation of the controller instance.
  */
-typedef void (*RdmnetControllerDisconnectedCallback)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+typedef void (*RdmnetControllerDisconnectedCallback)(rdmnet_controller_t controller_handle,
+                                                     rdmnet_client_scope_t scope_handle,
                                                      const RdmnetClientDisconnectedInfo* info, void* context);
 
 /*!
  * \brief A client list update has been received from a broker.
- * \param[in] handle Handle to the controller which has received the client list update.
+ * \param[in] controller_handle Handle to the controller which has received the client list update.
  * \param[in] scope_handle Handle to the scope on which the client list update was received.
  * \param[in] list_action The way the updates in client_list should be applied to the
  *                        controller's cached list.
  * \param[in] client_list The list of updates.
  * \param[in] context Context pointer that was given at the creation of the controller instance.
  */
-typedef void (*RdmnetControllerClientListUpdateReceivedCallback)(rdmnet_controller_t handle,
+typedef void (*RdmnetControllerClientListUpdateReceivedCallback)(rdmnet_controller_t controller_handle,
                                                                  rdmnet_client_scope_t scope_handle,
                                                                  client_list_action_t list_action,
                                                                  const RdmnetRptClientList* client_list, void* context);
 
 /*!
  * \brief An RDM response has been received.
- * \param[in] handle Handle to the controller which has received the RDM response.
+ * \param[in] controller_handle Handle to the controller which has received the RDM response.
  * \param[in] scope_handle Handle to the scope on which the RDM response was received.
  * \param[in] resp The RDM response data.
  * \param[in] context Context pointer that was given at the creation of the controller instance.
  */
-typedef void (*RdmnetControllerRdmResponseReceivedCallback)(rdmnet_controller_t handle,
+typedef void (*RdmnetControllerRdmResponseReceivedCallback)(rdmnet_controller_t controller_handle,
                                                             rdmnet_client_scope_t scope_handle,
                                                             const RdmnetRdmResponse* resp, void* context);
 
 /*!
  * \brief An RPT status message has been received in response to a previously-sent RDM command.
- * \param[in] handle Handle to the controller which has received the RPT status message.
+ * \param[in] controller_handle Handle to the controller which has received the RPT status message.
  * \param[in] scope_handle Handle to the scope on which the RPT status message was received.
  * \param[in] status The RPT status data.
  * \param[in] context Context pointer that was given at the creation of the controller instance.
  */
-typedef void (*RdmnetControllerStatusReceivedCallback)(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+typedef void (*RdmnetControllerStatusReceivedCallback)(rdmnet_controller_t controller_handle,
+                                                       rdmnet_client_scope_t scope_handle,
                                                        const RdmnetRptStatus* status, void* context);
 
 /*!
@@ -126,12 +130,12 @@ typedef void (*RdmnetControllerStatusReceivedCallback)(rdmnet_controller_t handl
  * This callback does not need to be implemented if the controller implementation never intends
  * to request dynamic UID mappings.
  *
- * \param[in] handle Handle to the controller which has received the dynamic UID mappings.
+ * \param[in] controller_handle Handle to the controller which has received the dynamic UID mappings.
  * \param[in] scope_handle Handle to the scope on which the dynamic UID mappings were received.
  * \param[in] list The list of dynamic UID mappings.
  * \param[in] context Context pointer that was given at the creation of the controller instance.
  */
-typedef void (*RdmnetControllerResponderIdsReceivedCallback)(rdmnet_controller_t handle,
+typedef void (*RdmnetControllerResponderIdsReceivedCallback)(rdmnet_controller_t controller_handle,
                                                              rdmnet_client_scope_t scope_handle,
                                                              const RdmnetDynamicUidAssignmentList* list, void* context);
 
@@ -149,25 +153,26 @@ typedef struct RdmnetControllerCallbacks
 
 /*!
  * \brief An RDM command has been received addressed to a controller.
- * \param[in] handle Handle to the controller which has received the RDM command.
+ * \param[in] controller_handle Handle to the controller which has received the RDM command.
  * \param[in] scope_handle Handle to the scope on which the RDM command was received.
  * \param[in] cmd The RDM command data.
  * \param[out] response Fill in with response data if responding synchronously (see \ref handling_rdm_commands).
  * \param[in] context Context pointer that was given at the creation of the controller instance.
  */
-typedef void (*RdmnetControllerRdmCommandReceivedCallback)(rdmnet_controller_t handle,
+typedef void (*RdmnetControllerRdmCommandReceivedCallback)(rdmnet_controller_t controller_handle,
                                                            rdmnet_client_scope_t scope_handle,
                                                            const RdmnetRdmCommand* cmd, RdmnetSyncRdmResponse* response,
                                                            void* context);
 
 /*!
  * \brief An RDM command has been received over LLRP, addressed to a controller.
- * \param[in] handle Handle to the controller which has received the RDM command.
+ * \param[in] controller_handle Handle to the controller which has received the RDM command.
  * \param[in] cmd The RDM command data.
  * \param[out] response Fill in with response data if responding synchronously (see \ref handling_rdm_commands).
  * \param[in] context Context pointer that was given at the creation of the controller instance.
  */
-typedef void (*RdmnetControllerLlrpRdmCommandReceivedCallback)(rdmnet_controller_t handle, const LlrpRdmCommand* cmd,
+typedef void (*RdmnetControllerLlrpRdmCommandReceivedCallback)(rdmnet_controller_t controller_handle,
+                                                               const LlrpRdmCommand* cmd,
                                                                RdmnetSyncRdmResponse* response, void* context);
 /*!
  * A buffer and set of callbacks which can be optionally provided to handle RDM commands addressed
@@ -259,23 +264,6 @@ typedef struct RdmnetControllerConfig
 } RdmnetControllerConfig;
 
 /*!
- * \brief A set of default initializer values for an RdmnetControllerConfig struct.
- *
- * Usage:
- * \code
- * RdmnetControllerConfig config = { RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT_VALUES(MY_ESTA_MANUFACTURER_ID) };
- * // Now fill in the required portions as necessary with your data...
- * \endcode
- *
- * To omit the enclosing brackets, use RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT().
- *
- * \param manu_id Your ESTA manufacturer ID.
- */
-#define RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT_VALUES(manu_id)                                                   \
-  {{0}}, {NULL, NULL, NULL, NULL, NULL, NULL, NULL}, {NULL, NULL, NULL}, {NULL, NULL, NULL, NULL, false}, NULL, \
-      {(0x8000 | manu_id), 0}, NULL, false, NULL, 0
-
-/*!
  * \brief A default-value initializer for an RdmnetControllerConfig struct.
  *
  * Usage:
@@ -286,9 +274,10 @@ typedef struct RdmnetControllerConfig
  *
  * \param manu_id Your ESTA manufacturer ID.
  */
-#define RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT(manu_id)    \
-  {                                                       \
-    RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT_VALUES(manu_id) \
+#define RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT(manu_id)                                                            \
+  {                                                                                                               \
+    {{0}}, {NULL, NULL, NULL, NULL, NULL, NULL, NULL}, {NULL, NULL, NULL}, {NULL, NULL, NULL, NULL, false}, NULL, \
+        {(0x8000 | manu_id), 0}, NULL, false, NULL, 0                                                             \
   }
 
 void rdmnet_controller_config_init(RdmnetControllerConfig* config, uint16_t manufacturer_id);
@@ -308,47 +297,56 @@ void rdmnet_controller_set_rdm_cmd_callbacks(RdmnetControllerConfig* config,
                                              RdmnetControllerLlrpRdmCommandReceivedCallback llrp_rdm_command_received);
 
 etcpal_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rdmnet_controller_t* handle);
-etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t handle, rdmnet_disconnect_reason_t reason);
+etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t controller_handle, rdmnet_disconnect_reason_t reason);
 
-etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t handle, const RdmnetScopeConfig* scope_config,
+etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t controller_handle, const RdmnetScopeConfig* scope_config,
                                            rdmnet_client_scope_t* scope_handle);
-etcpal_error_t rdmnet_controller_add_default_scope(rdmnet_controller_t handle, rdmnet_client_scope_t* scope_handle);
-etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_add_default_scope(rdmnet_controller_t controller_handle,
+                                                   rdmnet_client_scope_t* scope_handle);
+etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t controller_handle, rdmnet_client_scope_t scope_handle,
                                               rdmnet_disconnect_reason_t reason);
-etcpal_error_t rdmnet_controller_change_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_change_scope(rdmnet_controller_t controller_handle, rdmnet_client_scope_t scope_handle,
                                               const RdmnetScopeConfig* new_scope_config,
                                               rdmnet_disconnect_reason_t disconnect_reason);
-etcpal_error_t rdmnet_controller_get_scope(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_get_scope(rdmnet_controller_t controller_handle, rdmnet_client_scope_t scope_handle,
                                            char* scope_str_buf, EtcPalSockAddr* static_broker_addr);
 
-etcpal_error_t rdmnet_controller_request_client_list(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle);
-etcpal_error_t rdmnet_controller_request_responder_ids(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                       const RdmUid* uids, size_t num_uids);
+etcpal_error_t rdmnet_controller_request_client_list(rdmnet_controller_t controller_handle,
+                                                     rdmnet_client_scope_t scope_handle);
+etcpal_error_t rdmnet_controller_request_responder_ids(rdmnet_controller_t controller_handle,
+                                                       rdmnet_client_scope_t scope_handle, const RdmUid* uids,
+                                                       size_t num_uids);
 
-etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t controller_handle,
+                                                  rdmnet_client_scope_t scope_handle,
                                                   const RdmnetDestinationAddr* destination,
                                                   rdmnet_command_class_t command_class, uint16_t param_id,
                                                   const uint8_t* data, uint8_t data_len, uint32_t* seq_num);
-etcpal_error_t rdmnet_controller_send_get_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_send_get_command(rdmnet_controller_t controller_handle,
+                                                  rdmnet_client_scope_t scope_handle,
                                                   const RdmnetDestinationAddr* destination, uint16_t param_id,
                                                   const uint8_t* data, uint8_t data_len, uint32_t* seq_num);
-etcpal_error_t rdmnet_controller_send_set_command(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_send_set_command(rdmnet_controller_t controller_handle,
+                                                  rdmnet_client_scope_t scope_handle,
                                                   const RdmnetDestinationAddr* destination, uint16_t param_id,
                                                   const uint8_t* data, uint8_t data_len, uint32_t* seq_num);
 
-etcpal_error_t rdmnet_controller_send_rdm_ack(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_send_rdm_ack(rdmnet_controller_t controller_handle, rdmnet_client_scope_t scope_handle,
                                               const RdmnetSavedRdmCommand* received_cmd, const uint8_t* response_data,
                                               size_t response_data_len);
-etcpal_error_t rdmnet_controller_send_rdm_nack(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_controller_send_rdm_nack(rdmnet_controller_t controller_handle,
+                                               rdmnet_client_scope_t scope_handle,
                                                const RdmnetSavedRdmCommand* received_cmd,
                                                rdm_nack_reason_t nack_reason);
-etcpal_error_t rdmnet_controller_send_rdm_update(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                 uint16_t param_id, const uint8_t* data, size_t data_len);
+etcpal_error_t rdmnet_controller_send_rdm_update(rdmnet_controller_t controller_handle,
+                                                 rdmnet_client_scope_t scope_handle, uint16_t param_id,
+                                                 const uint8_t* data, size_t data_len);
 
-etcpal_error_t rdmnet_controller_send_llrp_ack(rdmnet_controller_t handle, const LlrpSavedRdmCommand* received_cmd,
-                                               const uint8_t* response_data, uint8_t response_data_len);
-etcpal_error_t rdmnet_controller_send_llrp_nack(rdmnet_controller_t handle, const LlrpSavedRdmCommand* received_cmd,
-                                                rdm_nack_reason_t nack_reason);
+etcpal_error_t rdmnet_controller_send_llrp_ack(rdmnet_controller_t controller_handle,
+                                               const LlrpSavedRdmCommand* received_cmd, const uint8_t* response_data,
+                                               uint8_t response_data_len);
+etcpal_error_t rdmnet_controller_send_llrp_nack(rdmnet_controller_t controller_handle,
+                                                const LlrpSavedRdmCommand* received_cmd, rdm_nack_reason_t nack_reason);
 
 #ifdef __cplusplus
 };

@@ -104,17 +104,18 @@ etcpal_error_t rdmnet_ept_client_create(const RdmnetEptClientConfig* config, rdm
  * Will disconnect from all brokers to which this EPT client is currently connected, sending the
  * disconnect reason provided in the disconnect_reason parameter.
  *
- * \param[in] handle Handle to EPT client to destroy, no longer valid after this function returns.
+ * \param[in] client_handle Handle to EPT client to destroy, no longer valid after this function returns.
  * \param[in] disconnect_reason Disconnect reason code to send on all connected scopes.
  * \return #kEtcPalErrOk: EPT client destroyed successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid EPT client instance.
+ * \return #kEtcPalErrNotFound: client_handle is not associated with a valid EPT client instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_ept_client_destroy(rdmnet_ept_client_t handle, rdmnet_disconnect_reason_t disconnect_reason)
+etcpal_error_t rdmnet_ept_client_destroy(rdmnet_ept_client_t client_handle,
+                                         rdmnet_disconnect_reason_t disconnect_reason)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(client_handle);
   ETCPAL_UNUSED_ARG(disconnect_reason);
   return kEtcPalErrNotImpl;
 }
@@ -126,20 +127,20 @@ etcpal_error_t rdmnet_ept_client_destroy(rdmnet_ept_client_t handle, rdmnet_disc
  * static broker address is given); the status of these attempts will be communicated via the
  * callbacks associated with the EPT client instance.
  *
- * \param[in] handle Handle to EPT client to which to add a new scope.
+ * \param[in] client_handle Handle to EPT client to which to add a new scope.
  * \param[in] scope_config Configuration parameters for the new scope.
  * \param[out] scope_handle Filled in on success with a handle to the new scope.
  * \return #kEtcPalErrOk: New scope added successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid EPT client instance.
+ * \return #kEtcPalErrNotFound: client_handle is not associated with a valid EPT client instance.
  * \return #kEtcPalErrNoMem: No memory to allocate new scope.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_ept_client_add_scope(rdmnet_ept_client_t handle, const RdmnetScopeConfig* scope_config,
+etcpal_error_t rdmnet_ept_client_add_scope(rdmnet_ept_client_t client_handle, const RdmnetScopeConfig* scope_config,
                                            rdmnet_client_scope_t* scope_handle)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(client_handle);
   ETCPAL_UNUSED_ARG(scope_config);
   ETCPAL_UNUSED_ARG(scope_handle);
   return kEtcPalErrNotImpl;
@@ -152,18 +153,19 @@ etcpal_error_t rdmnet_ept_client_add_scope(rdmnet_ept_client_t handle, const Rdm
  * is to not use a statically-configured broker. If a static broker is needed on the default scope,
  * rdmnet_ept_client_add_scope() must be used.
  *
- * \param[in] handle Handle to EPT client to which to add the default scope.
+ * \param[in] client_handle Handle to EPT client to which to add the default scope.
  * \param[out] scope_handle Filled in on success with a handle to the new scope.
  * \return #kEtcPalErrOk: Default scope added successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid EPT client instance.
+ * \return #kEtcPalErrNotFound: client_handle is not associated with a valid EPT client instance.
  * \return #kEtcPalErrNoMem: No memory to allocate new scope.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_ept_client_add_default_scope(rdmnet_ept_client_t handle, rdmnet_client_scope_t* scope_handle)
+etcpal_error_t rdmnet_ept_client_add_default_scope(rdmnet_ept_client_t client_handle,
+                                                   rdmnet_client_scope_t* scope_handle)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(client_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   return kEtcPalErrNotImpl;
 }
@@ -173,20 +175,20 @@ etcpal_error_t rdmnet_ept_client_add_default_scope(rdmnet_ept_client_t handle, r
  *
  * After this call completes, scope_handle will no longer be valid.
  *
- * \param[in] handle Handle to the EPT client from which to remove a scope.
+ * \param[in] client_handle Handle to the EPT client from which to remove a scope.
  * \param[in] scope_handle Handle to scope to remove.
  * \param[in] disconnect_reason RDMnet protocol disconnect reason to send to the connected broker.
  * \return #kEtcPalErrOk: Scope removed successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid EPT client instance, or
+ * \return #kEtcPalErrNotFound: client_handle is not associated with a valid EPT client instance, or
  *                              scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_ept_client_remove_scope(rdmnet_ept_client_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_ept_client_remove_scope(rdmnet_ept_client_t client_handle, rdmnet_client_scope_t scope_handle,
                                               rdmnet_disconnect_reason_t disconnect_reason)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(client_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   ETCPAL_UNUSED_ARG(disconnect_reason);
   return kEtcPalErrNotImpl;
@@ -198,22 +200,22 @@ etcpal_error_t rdmnet_ept_client_remove_scope(rdmnet_ept_client_t handle, rdmnet
  * Will disconnect from any connected brokers and attempt connection again using the new
  * configuration given.
  *
- * \param[in] handle Handle to the EPT client on which to change a scope.
+ * \param[in] client_handle Handle to the EPT client on which to change a scope.
  * \param[in] scope_handle Handle to the scope for which to change the configuration.
  * \param[in] new_scope_config New configuration parameters for the scope.
  * \param[in] disconnect_reason RDMnet protocol disconnect reason to send to the connected broker.
  * \return #kEtcPalErrOk: Scope changed successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid EPT client instance, or
+ * \return #kEtcPalErrNotFound: client_handle is not associated with a valid EPT client instance, or
  *                              scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_ept_client_change_scope(rdmnet_ept_client_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_ept_client_change_scope(rdmnet_ept_client_t client_handle, rdmnet_client_scope_t scope_handle,
                                               const RdmnetScopeConfig* new_scope_config,
                                               rdmnet_disconnect_reason_t disconnect_reason)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(client_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   ETCPAL_UNUSED_ARG(new_scope_config);
   ETCPAL_UNUSED_ARG(disconnect_reason);
@@ -223,7 +225,7 @@ etcpal_error_t rdmnet_ept_client_change_scope(rdmnet_ept_client_t handle, rdmnet
 /*!
  * \brief Retrieve the scope string of a previously-added scope.
  *
- * \param[in] handle Handle to the EPT client from which to retrieve the scope string.
+ * \param[in] client_handle Handle to the EPT client from which to retrieve the scope string.
  * \param[in] scope_handle Handle to the scope for which to retrieve the scope string.
  * \param[out] scope_str_buf Filled in on success with the scope string. Must be at least of length
  *                           E133_SCOPE_STRING_PADDED_LENGTH.
@@ -233,14 +235,14 @@ etcpal_error_t rdmnet_ept_client_change_scope(rdmnet_ept_client_t handle, rdmnet
  * \return #kEtcPalErrOk: Scope information retrieved successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid EPT client instance, or
+ * \return #kEtcPalErrNotFound: client_handle is not associated with a valid EPT client instance, or
  *                              scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_ept_client_get_scope(rdmnet_ept_client_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_ept_client_get_scope(rdmnet_ept_client_t client_handle, rdmnet_client_scope_t scope_handle,
                                            char* scope_str_buf, EtcPalSockAddr* static_broker_addr)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(client_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   ETCPAL_UNUSED_ARG(scope_str_buf);
   ETCPAL_UNUSED_ARG(static_broker_addr);
@@ -252,18 +254,19 @@ etcpal_error_t rdmnet_ept_client_get_scope(rdmnet_ept_client_t handle, rdmnet_cl
  *
  * The response will be delivered via the RdmnetEptClientClientListUpdateReceivedCallback.
  *
- * \param[in] handle Handle to the EPT client from which to request the client list.
+ * \param[in] client_handle Handle to the EPT client from which to request the client list.
  * \param[in] scope_handle Handle to the scope on which to request the client list.
  * \return #kEtcPalErrOk: Request sent successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid EPT client instance, or
+ * \return #kEtcPalErrNotFound: client_handle is not associated with a valid EPT client instance, or
  *                              scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_ept_client_request_client_list(rdmnet_ept_client_t handle, rdmnet_client_scope_t scope_handle)
+etcpal_error_t rdmnet_ept_client_request_client_list(rdmnet_ept_client_t client_handle,
+                                                     rdmnet_client_scope_t scope_handle)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(client_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   return kEtcPalErrNotImpl;
 }
@@ -271,7 +274,7 @@ etcpal_error_t rdmnet_ept_client_request_client_list(rdmnet_ept_client_t handle,
 /*!
  * \brief Send data from an EPT client on a scope.
  *
- * \param[in] handle Handle to the EPT client from which to send data.
+ * \param[in] client_handle Handle to the EPT client from which to send data.
  * \param[in] scope_handle Handle to the scope on which to send data.
  * \param[in] dest_cid CID of the EPT client to which send the data.
  * \param[in] manufacturer_id Manufacturer ID portion of the EPT sub-protocol identifier.
@@ -281,15 +284,15 @@ etcpal_error_t rdmnet_ept_client_request_client_list(rdmnet_ept_client_t handle,
  * \return #kEtcPalErrOk: Data sent successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid EPT client instance, or
+ * \return #kEtcPalErrNotFound: client_handle is not associated with a valid EPT client instance, or
  *                              scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_ept_client_send_data(rdmnet_ept_client_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_ept_client_send_data(rdmnet_ept_client_t client_handle, rdmnet_client_scope_t scope_handle,
                                            const EtcPalUuid* dest_cid, uint16_t manufacturer_id, uint16_t protocol_id,
                                            const uint8_t* data, size_t data_len)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(client_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   ETCPAL_UNUSED_ARG(dest_cid);
   ETCPAL_UNUSED_ARG(manufacturer_id);
@@ -302,7 +305,7 @@ etcpal_error_t rdmnet_ept_client_send_data(rdmnet_ept_client_t handle, rdmnet_cl
 /*!
  * \brief Send a status message from an EPT client on a scope.
  *
- * \param[in] handle Handle to the EPT client from which to send the status message.
+ * \param[in] client_handle Handle to the EPT client from which to send the status message.
  * \param[in] scope_handle Handle to the scope on which to send the status message.
  * \param[in] dest_cid CID of the EPT client to which send the status message.
  * \param[in] status_code EPT status code to send.
@@ -310,15 +313,15 @@ etcpal_error_t rdmnet_ept_client_send_data(rdmnet_ept_client_t handle, rdmnet_cl
  * \return #kEtcPalErrOk: Status sent successfully.
  * \return #kEtcPalErrInvalid: Invalid argument.
  * \return #kEtcPalErrNotInit: Module not initialized.
- * \return #kEtcPalErrNotFound: Handle is not associated with a valid EPT client instance, or
+ * \return #kEtcPalErrNotFound: client_handle is not associated with a valid EPT client instance, or
  *                              scope_handle is not associated with a valid scope instance.
  * \return #kEtcPalErrSys: An internal library or system call error occurred.
  */
-etcpal_error_t rdmnet_ept_client_send_status(rdmnet_ept_client_t handle, rdmnet_client_scope_t scope_handle,
+etcpal_error_t rdmnet_ept_client_send_status(rdmnet_ept_client_t client_handle, rdmnet_client_scope_t scope_handle,
                                              const EtcPalUuid* dest_cid, ept_status_code_t status_code,
                                              const char* status_string)
 {
-  ETCPAL_UNUSED_ARG(handle);
+  ETCPAL_UNUSED_ARG(client_handle);
   ETCPAL_UNUSED_ARG(scope_handle);
   ETCPAL_UNUSED_ARG(dest_cid);
   ETCPAL_UNUSED_ARG(status_code);

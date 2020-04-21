@@ -41,7 +41,7 @@ protected:
 
   void TearDown() override { rdmnet_deinit(); }
 
-  LlrpTargetConfig config_{LLRP_TARGET_CONFIG_DEFAULT_INIT_VALUES(kTestManufId)};
+  LlrpTargetConfig config_ = LLRP_TARGET_CONFIG_DEFAULT_INIT(kTestManufId);
 };
 
 TEST_F(TestLlrpTargetApi, Placeholder)

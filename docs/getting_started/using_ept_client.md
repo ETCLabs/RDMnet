@@ -225,7 +225,7 @@ after a successful connection:
 
 <!-- CODE_BLOCK_START -->
 ```c
-void ept_connected_callback(rdmnet_ept_client_t handle, rdmnet_client_scope_t scope_handle,
+void ept_connected_callback(rdmnet_ept_client_t client_handle, rdmnet_client_scope_t scope_handle,
                             const RdmnetClientConnectedInfo* info, void* context)
 {
   char addr_str[ETCPAL_IP_STRING_BYTES];
@@ -234,7 +234,7 @@ void ept_connected_callback(rdmnet_ept_client_t handle, rdmnet_client_scope_t sc
 
   // Check handles and/or context as necessary...
 
-  rdmnet_ept_client_request_client_list(handle, scope_handle);
+  rdmnet_ept_client_request_client_list(client_handle, scope_handle);
 }                                   
 ```
 <!-- CODE_BLOCK_MID -->
@@ -284,7 +284,7 @@ sends the appropriate request to the broker, and the reply will come back in the
 
 <!-- CODE_BLOCK_START -->
 ```c
-void my_client_list_update_cb(rdmnet_ept_client_t handle, rdmnet_client_scope_t handle,
+void my_client_list_update_cb(rdmnet_ept_client_t client_handle, rdmnet_client_scope_t scope_handle,
                               client_list_action_t list_action, const RdmnetEptClientList* list, void* context)
 {
   // Check handles and/or context as necessary...
@@ -416,7 +416,7 @@ will be delivered asynchronously through the "data received" callback.
 
 <!-- CODE_BLOCK_START -->
 ```c
-void ept_data_received_callback(rdmnet_ept_client_t handle, rdmnet_client_scope_t scope_handle,
+void ept_data_received_callback(rdmnet_ept_client_t client_handle, rdmnet_client_scope_t scope_handle,
                                 const RdmnetEptData* data, RdmnetSyncEptResponse* response, void* context)
 {
   // Check handles and/or context as necessary...
@@ -470,7 +470,7 @@ response as shown below.
 // This buffer was provided as part of the RdmnetEptClientConfig when the device handle was created.
 static uint8_t my_ept_response_buf[MY_MAX_RESPONSE_SIZE];
 
-void ept_data_received_callback(rdmnet_ept_client_t handle, rdmnet_client_scope_t scope_handle,
+void ept_data_received_callback(rdmnet_ept_client_t client_handle, rdmnet_client_scope_t scope_handle,
                                 const RdmnetEptData* data, RdmnetSyncEptResponse* response, void* context)
 {
   // After determining that the message requires a response...
@@ -505,7 +505,7 @@ also use your own method of saving the data.
 
 <!-- CODE_BLOCK_START -->
 ```c
-void ept_data_received_callback(rdmnet_ept_client_t handle, rdmnet_client_scope_t scope_handle,
+void ept_data_received_callback(rdmnet_ept_client_t client_handle, rdmnet_client_scope_t scope_handle,
                                 const RdmnetEptData* data, RdmnetSyncEptResponse* response, void* context)
 {
   // RdmnetEptData structures do not own their data and the data will be invalid when this callback
@@ -546,8 +546,8 @@ response called an "EPT Status". There is a separate callback for handling these
 
 <!-- CODE_BLOCK_START -->
 ```c
-void ept_status_callback(rdmnet_ept_client_t handle, rdmnet_client_scope_t handle, const RdmnetEptStatus* status,
-                         void* context)
+void ept_status_callback(rdmnet_ept_client_t client_handle, rdmnet_client_scope_t scope_handle,
+                         const RdmnetEptStatus* status, void* context)
 {
   // Check handles and/or context as necessary...
 

@@ -62,7 +62,7 @@ protected:
 
   void TearDown() override { rdmnet_deinit(); }
 
-  RdmnetEptClientConfig config_{RDMNET_EPT_CLIENT_CONFIG_DEFAULT_INIT_VALUES};
+  RdmnetEptClientConfig config_ = RDMNET_EPT_CLIENT_CONFIG_DEFAULT_INIT;
   RdmnetEptSubProtocol test_prot{0x1234, 1, "Test Protocol"};
 };
 

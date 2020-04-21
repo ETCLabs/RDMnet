@@ -50,9 +50,9 @@ extern "C" {
 #endif
 
 /*! A handle to an RDMnet device. */
-typedef struct RdmnetDevice* rdmnet_device_t;
-/*! An invalid RDMnet controller handle value. */
-#define RDMNET_DEVICE_INVALID NULL
+typedef int rdmnet_device_t;
+/*! An invalid RDMnet device handle value. */
+#define RDMNET_DEVICE_INVALID -1
 
 /*!
  * \brief A device has successfully connected to a broker.
@@ -150,23 +150,6 @@ typedef struct RdmnetVirtualEndpointConfig
 } RdmnetVirtualEndpointConfig;
 
 /*!
- * \brief A set of initializer values for an RdmnetVirtualEndpointConfig instance.
- *
- * Usage:
- * \code
- * // Create a virtual endpoint with an endpoint ID of 20.
- * RdmnetVirtualEndpointConfig endpoint_config = { RDMNET_VIRTUAL_ENDPOINT_INIT_VALUES(20) };
- * // Assign the other members of the struct to associate initial responders with this endpoint.
- * \endcode
- *
- * To omit the enclosing brackets, use RDMNET_VIRTUAL_ENDPOINT_INIT().
- *
- * \param endpoint_num The endpoint identifier for this endpoint. Valid values are between 1 and
- *                     63,999 inclusive.
- */
-#define RDMNET_VIRTUAL_ENDPOINT_INIT_VALUES(endpoint_num) (endpoint_num), NULL, 0, NULL, 0
-
-/*!
  * \brief An initializer for an RdmnetVirtualEndpointConfig instance.
  *
  * Usage:
@@ -179,9 +162,9 @@ typedef struct RdmnetVirtualEndpointConfig
  * \param endpoint_num The endpoint identifier for this endpoint. Valid values are between 1 and
  *                     63,999 inclusive.
  */
-#define RDMNET_VIRTUAL_ENDPOINT_INIT(endpoint_num)    \
-  {                                                   \
-    RDMNET_VIRTUAL_ENDPOINT_INIT_VALUES(endpoint_num) \
+#define RDMNET_VIRTUAL_ENDPOINT_INIT(endpoint_num) \
+  {                                                \
+    (endpoint_num), NULL, 0, NULL, 0               \
   }
 
 /*!
@@ -199,23 +182,6 @@ typedef struct RdmnetPhysicalEndpointConfig
 } RdmnetPhysicalEndpointConfig;
 
 /*!
- * \brief A set of initializer values for an RdmnetPhysicalEndpointConfig instance.
- *
- * Usage:
- * \code
- * // Create a physical endpoint with an endpoint ID of 4.
- * RdmnetPhysicalEndpointConfig endpoint_config = { RDMNET_PHYSICAL_ENDPOINT_INIT_VALUES(4) };
- * // Assign the other members of the struct to associate initial responders with this endpoint.
- * \endcode
- *
- * To omit the enclosing brackets, use RDMNET_PHYSICAL_ENDPOINT_INIT().
- *
- * \param endpoint_num The endpoint identifier for this endpoint. Valid values are between 1 and
- *                     63,999 inclusive.
- */
-#define RDMNET_PHYSICAL_ENDPOINT_INIT_VALUES(endpoint_num) (endpoint_num), NULL, 0
-
-/*!
  * \brief An initializer for an RdmnetPhysicalEndpointConfig instance.
  *
  * Usage:
@@ -228,9 +194,9 @@ typedef struct RdmnetPhysicalEndpointConfig
  * \param endpoint_num The endpoint identifier for this endpoint. Valid values are between 1 and
  *                     63,999 inclusive.
  */
-#define RDMNET_PHYSICAL_ENDPOINT_INIT(endpoint_num)    \
-  {                                                    \
-    RDMNET_PHYSICAL_ENDPOINT_INIT_VALUES(endpoint_num) \
+#define RDMNET_PHYSICAL_ENDPOINT_INIT(endpoint_num) \
+  {                                                 \
+    (endpoint_num), NULL, 0                         \
   }
 
 /*! A set of information that defines the startup parameters of an RDMnet Device. */
@@ -298,23 +264,6 @@ typedef struct RdmnetDeviceConfig
 } RdmnetDeviceConfig;
 
 /*!
- * \brief A set of default initializer values for an RdmnetDeviceConfig struct.
- *
- * Usage:
- * \code
- * RdmnetDeviceConfig config = { RDMNET_DEVICE_CONFIG_DEFAULT_INIT_VALUES(MY_ESTA_MANUFACTURER_ID) };
- * // Now fill in the required portions as necessary with your data...
- * \endcode
- *
- * To omit the enclosing brackets, use RDMNET_DEVICE_CONFIG_DEFAULT_INIT().
- *
- * \param manu_id Your ESTA manufacturer ID.
- */
-#define RDMNET_DEVICE_CONFIG_DEFAULT_INIT_VALUES(manu_id)                                                             \
-  {{0}}, {NULL, NULL, NULL, NULL, NULL, NULL}, NULL, NULL, RDMNET_SCOPE_CONFIG_DEFAULT_INIT, {(0x8000 | manu_id), 0}, \
-      NULL, NULL, 0, NULL, 0, NULL, 0
-
-/*!
  * \brief A default-value initializer for an RdmnetDeviceConfig struct.
  *
  * Usage:
@@ -325,9 +274,10 @@ typedef struct RdmnetDeviceConfig
  *
  * \param manu_id Your ESTA manufacturer ID.
  */
-#define RDMNET_DEVICE_CONFIG_DEFAULT_INIT(manu_id)    \
-  {                                                   \
-    RDMNET_DEVICE_CONFIG_DEFAULT_INIT_VALUES(manu_id) \
+#define RDMNET_DEVICE_CONFIG_DEFAULT_INIT(manu_id)                                             \
+  {                                                                                            \
+    {{0}}, {NULL, NULL, NULL, NULL, NULL, NULL}, NULL, NULL, RDMNET_SCOPE_CONFIG_DEFAULT_INIT, \
+        {(0x8000 | manu_id), 0}, NULL, NULL, 0, NULL, 0, NULL, 0                               \
   }
 
 void rdmnet_device_config_init(RdmnetDeviceConfig* config, uint16_t manufacturer_id);

@@ -172,20 +172,6 @@ typedef struct RdmnetBrokerRegisterConfig
 } RdmnetBrokerRegisterConfig;
 
 /*!
- * \brief A set of default initializer values for an RdmnetBrokerRegisterConfig struct.
- *
- * Usage:
- * \code
- * RdmnetBrokerRegisterConfig config = { RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT_VALUES };
- * // Now fill in the required portions as necessary with your data...
- * \endcode
- *
- * To omit the enclosing brackets, use #RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT.
- */
-#define RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT_VALUES \
-  {{{0}}, NULL, 0, NULL, 0, NULL, NULL, NULL}, {NULL, NULL, NULL, NULL}, NULL
-
-/*!
  * \brief A default-value initializer for an RdmnetBrokerRegisterConfig struct.
  *
  * Usage:
@@ -194,9 +180,9 @@ typedef struct RdmnetBrokerRegisterConfig
  * // Now fill in the required portions as necessary with your data...
  * \endcode
  */
-#define RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT    \
-  {                                                   \
-    RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT_VALUES \
+#define RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT                              \
+  {                                                                             \
+    {{{0}}, NULL, 0, NULL, 0, NULL, NULL, NULL}, {NULL, NULL, NULL, NULL}, NULL \
   }
 
 /*! A handle to a monitored RDMnet scope. */
@@ -262,19 +248,6 @@ typedef struct RdmnetScopeMonitorConfig
 } RdmnetScopeMonitorConfig;
 
 /*!
- * \brief A set of default initializer values for an RdmnetScopeMonitorConfig struct.
- *
- * Usage:
- * \code
- * RdmnetScopeMonitorConfig config = { RDMNET_SCOPE_MONITOR_CONFIG_DEFAULT_INIT_VALUES };
- * // Now fill in the required portions as necessary with your data...
- * \endcode
- *
- * To omit the enclosing brackets, use #RDMNET_SCOPE_MONITOR_CONFIG_DEFAULT_INIT.
- */
-#define RDMNET_SCOPE_MONITOR_CONFIG_DEFAULT_INIT_VALUES E133_DEFAULT_SCOPE, {NULL, NULL}, NULL, NULL
-
-/*!
  * \brief A default-value initializer for an RdmnetScopeMonitorConfig struct.
  *
  * Usage:
@@ -283,9 +256,9 @@ typedef struct RdmnetScopeMonitorConfig
  * // Now fill in the required portions as necessary with your data...
  * \endcode
  */
-#define RDMNET_SCOPE_MONITOR_CONFIG_DEFAULT_INIT    \
-  {                                                 \
-    RDMNET_SCOPE_MONITOR_CONFIG_DEFAULT_INIT_VALUES \
+#define RDMNET_SCOPE_MONITOR_CONFIG_DEFAULT_INIT \
+  {                                              \
+    E133_DEFAULT_SCOPE, {NULL, NULL}, NULL, NULL \
   }
 
 void rdmnet_broker_register_config_init(RdmnetBrokerRegisterConfig* config);

@@ -74,7 +74,7 @@ protected:
   void TearDown() override { rdmnet_deinit(); }
 
   std::string test_labels_{"Test"};
-  RdmnetControllerConfig config_{RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT_VALUES(kTestManufId)};
+  RdmnetControllerConfig config_ = RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT(kTestManufId);
 };
 
 TEST_F(TestControllerApi, Placeholder)

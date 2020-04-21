@@ -100,7 +100,7 @@ typedef struct RdmnetRdmResponse
    */
   bool is_response_to_me;
 
-  /*! The original command associated with this response; valid if seq_num != 0. */
+  /*! The header of the original command associated with this response; valid if seq_num != 0. */
   RdmCommandHeader original_cmd_header;
   /*! Any parameter data associated with the original RDM command; valid if seq_num != 0. */
   const uint8_t* original_cmd_data;

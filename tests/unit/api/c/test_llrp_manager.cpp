@@ -50,7 +50,7 @@ protected:
 
   void TearDown() override { rdmnet_deinit(); }
 
-  LlrpManagerConfig config_{LLRP_MANAGER_CONFIG_DEFAULT_INIT_VALUES(kTestManufId)};
+  LlrpManagerConfig config_ = LLRP_MANAGER_CONFIG_DEFAULT_INIT;
 };
 
 TEST_F(TestLlrpManagerApi, Placeholder)

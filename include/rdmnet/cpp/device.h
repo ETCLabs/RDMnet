@@ -156,7 +156,7 @@ private:
 /// \param num_dynamic_responders Size of responders array.
 inline VirtualEndpointConfig::VirtualEndpointConfig(uint16_t id, const etcpal::Uuid* dynamic_responders,
                                                     size_t num_dynamic_responders)
-    : config_{RDMNET_VIRTUAL_ENDPOINT_INIT_VALUES(id)}
+    : config_{id, nullptr, 0, nullptr, 0}
 {
   if (dynamic_responders && num_dynamic_responders)
   {
@@ -170,7 +170,7 @@ inline VirtualEndpointConfig::VirtualEndpointConfig(uint16_t id, const etcpal::U
 /// \param id Endpoint ID - must be between 1 and 63,999 inclusive.
 /// \param dynamic_responders Responder IDs identifying the initial virtual responders present on the endpoint.
 inline VirtualEndpointConfig::VirtualEndpointConfig(uint16_t id, const std::vector<etcpal::Uuid>& dynamic_responders)
-    : config_{RDMNET_VIRTUAL_ENDPOINT_INIT_VALUES(id)}
+    : config_{id, nullptr, 0, nullptr, 0}
 {
   if (!dynamic_responders.empty())
   {
@@ -192,7 +192,7 @@ inline VirtualEndpointConfig::VirtualEndpointConfig(uint16_t id, const rdm::Uid*
                                                     size_t num_static_responders,
                                                     const etcpal::Uuid* dynamic_responders,
                                                     size_t num_dynamic_responders)
-    : config_{RDMNET_VIRTUAL_ENDPOINT_INIT_VALUES(id)}
+    : config_{id, nullptr, 0, nullptr, 0}
 {
   if (static_responders && num_static_responders)
   {
@@ -215,7 +215,7 @@ inline VirtualEndpointConfig::VirtualEndpointConfig(uint16_t id, const rdm::Uid*
 ///                           with dynamic UIDs present on the end
 inline VirtualEndpointConfig::VirtualEndpointConfig(uint16_t id, const std::vector<rdm::Uid>& static_responders,
                                                     const std::vector<etcpal::Uuid>& dynamic_responders)
-    : config_{RDMNET_VIRTUAL_ENDPOINT_INIT_VALUES(id)}
+    : config_{id, nullptr, 0, nullptr, 0}
 {
   if (!static_responders.empty())
   {

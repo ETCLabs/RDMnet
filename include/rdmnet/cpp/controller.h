@@ -148,7 +148,7 @@ public:
   virtual void HandleResponderIdsReceived(ControllerHandle controller_handle, ScopeHandle scope_handle,
                                           const DynamicUidAssignmentList& list)
   {
-    ETCPAL_UNUSED_ARG(handle);
+    ETCPAL_UNUSED_ARG(controller_handle);
     ETCPAL_UNUSED_ARG(scope_handle);
     ETCPAL_UNUSED_ARG(list);
   }
@@ -318,88 +318,99 @@ private:
 
 namespace internal
 {
-extern "C" inline void ControllerLibCbConnected(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+extern "C" inline void ControllerLibCbConnected(rdmnet_controller_t controller_handle,
+                                                rdmnet_client_scope_t scope_handle,
                                                 const RdmnetClientConnectedInfo* info, void* context)
 {
   if (info && context)
   {
-    static_cast<ControllerNotifyHandler*>(context)->HandleConnectedToBroker(handle, scope_handle, *info);
+    static_cast<ControllerNotifyHandler*>(context)->HandleConnectedToBroker(controller_handle, scope_handle, *info);
   }
 }
 
-extern "C" inline void ControllerLibCbConnectFailed(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+extern "C" inline void ControllerLibCbConnectFailed(rdmnet_controller_t controller_handle,
+                                                    rdmnet_client_scope_t scope_handle,
                                                     const RdmnetClientConnectFailedInfo* info, void* context)
 {
   if (info && context)
   {
-    static_cast<ControllerNotifyHandler*>(context)->HandleBrokerConnectFailed(handle, scope_handle, *info);
+    static_cast<ControllerNotifyHandler*>(context)->HandleBrokerConnectFailed(controller_handle, scope_handle, *info);
   }
 }
 
-extern "C" inline void ControllerLibCbDisconnected(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+extern "C" inline void ControllerLibCbDisconnected(rdmnet_controller_t controller_handle,
+                                                   rdmnet_client_scope_t scope_handle,
                                                    const RdmnetClientDisconnectedInfo* info, void* context)
 {
   if (info && context)
   {
-    static_cast<ControllerNotifyHandler*>(context)->HandleDisconnectedFromBroker(handle, scope_handle, *info);
+    static_cast<ControllerNotifyHandler*>(context)->HandleDisconnectedFromBroker(controller_handle, scope_handle,
+                                                                                 *info);
   }
 }
 
-extern "C" inline void ControllerLibCbClientListUpdate(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+extern "C" inline void ControllerLibCbClientListUpdate(rdmnet_controller_t controller_handle,
+                                                       rdmnet_client_scope_t scope_handle,
                                                        client_list_action_t list_action,
                                                        const RdmnetRptClientList* list, void* context)
 {
   if (list && context)
   {
-    static_cast<ControllerNotifyHandler*>(context)->HandleClientListUpdate(handle, scope_handle, list_action, *list);
+    static_cast<ControllerNotifyHandler*>(context)->HandleClientListUpdate(controller_handle, scope_handle, list_action,
+                                                                           *list);
   }
 }
 
-extern "C" inline void ControllerLibCbRdmResponseReceived(rdmnet_controller_t handle,
+extern "C" inline void ControllerLibCbRdmResponseReceived(rdmnet_controller_t controller_handle,
                                                           rdmnet_client_scope_t scope_handle,
                                                           const RdmnetRdmResponse* resp, void* context)
 {
   if (resp && context)
   {
-    static_cast<ControllerNotifyHandler*>(context)->HandleRdmResponse(handle, scope_handle, *resp);
+    static_cast<ControllerNotifyHandler*>(context)->HandleRdmResponse(controller_handle, scope_handle, *resp);
   }
 }
 
-extern "C" inline void ControllerLibCbStatusReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
-                                                     const RdmnetRptStatus* status, void* context)
+extern "C" inline void ControllerLibCbStatusReceived(rdmnet_controller_t controller_handle,
+                                                     rdmnet_client_scope_t scope_handle, const RdmnetRptStatus* status,
+                                                     void* context)
 {
   if (status && context)
   {
-    static_cast<ControllerNotifyHandler*>(context)->HandleRptStatus(handle, scope_handle, *status);
+    static_cast<ControllerNotifyHandler*>(context)->HandleRptStatus(controller_handle, scope_handle, *status);
   }
 }
 
-extern "C" inline void ControllerLibCbResponderIdsReceived(rdmnet_controller_t handle,
+extern "C" inline void ControllerLibCbResponderIdsReceived(rdmnet_controller_t controller_handle,
                                                            rdmnet_client_scope_t scope_handle,
                                                            const RdmnetDynamicUidAssignmentList* list, void* context)
 {
   if (list && context)
   {
-    static_cast<ControllerNotifyHandler*>(context)->HandleResponderIdsReceived(handle, scope_handle, *list);
+    static_cast<ControllerNotifyHandler*>(context)->HandleResponderIdsReceived(controller_handle, scope_handle, *list);
   }
 }
 
-extern "C" inline void ControllerLibCbRdmCommandReceived(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+extern "C" inline void ControllerLibCbRdmCommandReceived(rdmnet_controller_t controller_handle,
+                                                         rdmnet_client_scope_t scope_handle,
                                                          const RdmnetRdmCommand* cmd, RdmnetSyncRdmResponse* response,
                                                          void* context)
 {
   if (cmd && context)
   {
-    *response = static_cast<ControllerRdmCommandHandler*>(context)->HandleRdmCommand(handle, scope_handle, *cmd).get();
+    *response = static_cast<ControllerRdmCommandHandler*>(context)
+                    ->HandleRdmCommand(controller_handle, scope_handle, *cmd)
+                    .get();
   }
 }
 
-extern "C" inline void ControllerLibCbLlrpRdmCommandReceived(rdmnet_controller_t handle, const LlrpRdmCommand* cmd,
-                                                             RdmnetSyncRdmResponse* response, void* context)
+extern "C" inline void ControllerLibCbLlrpRdmCommandReceived(rdmnet_controller_t controller_handle,
+                                                             const LlrpRdmCommand* cmd, RdmnetSyncRdmResponse* response,
+                                                             void* context)
 {
   if (cmd && context)
   {
-    *response = static_cast<ControllerRdmCommandHandler*>(context)->HandleLlrpRdmCommand(handle, *cmd).get();
+    *response = static_cast<ControllerRdmCommandHandler*>(context)->HandleLlrpRdmCommand(controller_handle, *cmd).get();
   }
 }
 

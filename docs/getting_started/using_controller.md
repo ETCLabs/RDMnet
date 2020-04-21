@@ -203,7 +203,7 @@ after a successful connection:
 
 <!-- CODE_BLOCK_START -->
 ```c
-void controller_connected_callback(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+void controller_connected_callback(rdmnet_controller_t controller_handle, rdmnet_client_scope_t scope_handle,
                                    const RdmnetClientConnectedInfo* info, void* context)
 {
   char addr_str[ETCPAL_IP_STRING_BYTES];
@@ -212,7 +212,7 @@ void controller_connected_callback(rdmnet_controller_t handle, rdmnet_client_sco
 
   // Check handles and/or context as necessary...
 
-  rdmnet_controller_request_client_list(handle, scope_handle);
+  rdmnet_controller_request_client_list(controller_handle, scope_handle);
 }                                   
 ```
 <!-- CODE_BLOCK_MID -->
@@ -262,7 +262,7 @@ callback:
 
 <!-- CODE_BLOCK_START -->
 ```c
-void my_client_list_update_cb(rdmnet_controller_t handle, rdmnet_client_scope_t handle,
+void my_client_list_update_cb(rdmnet_controller_t controller_handle, rdmnet_client_scope_t scope_handle,
                               client_list_action_t list_action, const RdmnetRptClientList* list, void* context)
 {
   // Check handles and/or context as necessary...
@@ -395,7 +395,7 @@ correspond to changes you requested.
 
 <!-- CODE_BLOCK_START -->
 ```c
-void rdm_response_callback(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+void rdm_response_callback(rdmnet_controller_t controller_handle, rdmnet_client_scope_t scope_handle,
                            const RdmnetRdmResponse* resp, void* context)
 {
   // Check handles and/or context as necessary...
@@ -486,8 +486,8 @@ Status containing that same sequence number.
 
 <!-- CODE_BLOCK_START -->
 ```c
-void rpt_status_callback(rdmnet_controller_t handle, rdmnet_client_scope_t handle, const RdmnetRptStatus* status,
-                         void* context)
+void rpt_status_callback(rdmnet_controller_t controller_handle, rdmnet_client_scope_t scope_handle,
+                         const RdmnetRptStatus* status, void* context)
 {
   // Check handles and/or context as necessary...
 
@@ -598,7 +598,7 @@ was looked up successfully, followed by the UID and RID.
 
 <!-- CODE_BLOCK_START -->
 ```c
-void handle_responder_ids_received(rdmnet_controller_t handle, rdmnet_client_scope_t scope_handle,
+void handle_responder_ids_received(rdmnet_controller_t controller_handle, rdmnet_client_scope_t scope_handle,
                                    const RdmnetDynamicUidAssignmentList* list, void* context)
 {
   // Check handles and/or context as necessary...
