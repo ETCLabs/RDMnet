@@ -58,7 +58,7 @@ protected:
 
   void TearDown() override { rdmnet_deinit(); }
 
-  RdmnetDeviceConfig config_{RDMNET_DEVICE_CONFIG_DEFAULT_INIT_VALUES(kTestManufId)};
+  RdmnetDeviceConfig config_ = RDMNET_DEVICE_CONFIG_DEFAULT_INIT(kTestManufId);
 };
 
 TEST_F(TestDeviceApi, Placeholder)

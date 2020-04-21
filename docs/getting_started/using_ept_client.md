@@ -239,7 +239,8 @@ void ept_connected_callback(rdmnet_ept_client_t handle, rdmnet_client_scope_t sc
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyEptNotifyHandler::HandleConnectedToBroker(rdmnet::EptClientHandle handle, rdmnet::ScopeHandle scope_handle,
+void MyEptNotifyHandler::HandleConnectedToBroker(rdmnet::EptClientHandle client_handle,
+                                                 rdmnet::ScopeHandle scope_handle,
                                                  const rdmnet::ClientConnectedInfo& info)
 {
   std::cout << "Connected to broker '" << info.broker_name()
@@ -324,8 +325,10 @@ void my_client_list_update_cb(rdmnet_ept_client_t handle, rdmnet_client_scope_t 
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyEptNotifyHandler::HandleClientListUpdate(rdmnet::EptClientHandle handle, rdmnet::ScopeHandle scope_handle,
-                                                client_list_action_t list_action, const rdmnet::EptClientList& list)
+void MyEptNotifyHandler::HandleClientListUpdate(rdmnet::EptClientHandle client_handle,
+                                                rdmnet::ScopeHandle scope_handle,
+                                                client_list_action_t list_action,
+                                                const rdmnet::EptClientList& list)
 {
   // Check handles as necessary...
 
@@ -427,7 +430,7 @@ void ept_data_received_callback(rdmnet_ept_client_t handle, rdmnet_client_scope_
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-rdmnet::EptResponseAction MyEptNotifyHandler::HandleEptData(rdmnet::EptClientHandle handle,
+rdmnet::EptResponseAction MyEptNotifyHandler::HandleEptData(rdmnet::EptClientHandle client_handle,
                                                             rdmnet::ScopeHandle scope_handle,
                                                             const rdmnet::EptData& data)
 {
@@ -482,9 +485,9 @@ void ept_data_received_callback(rdmnet_ept_client_t handle, rdmnet_client_scope_
 // was initialized.
 static uint8_t my_ept_response_buf[kMyMaxResponseSize];
 
-rdmnet::EptResponseAction MyEptNotifyHander::HandleRdmCommand(rdmnet::EptClientHandle handle,
-                                                              rdmnet::ScopeHandle scope_handle,
-                                                              const rdmnet::EptData& data)
+rdmnet::EptResponseAction MyEptNotifyHander::HandleEptData(rdmnet::EptClientHandle client_handle,
+                                                           rdmnet::ScopeHandle scope_handle,
+                                                           const rdmnet::EptData& data)
 {
   std::memcpy(my_ept_response_buf, my_response_data, kResponseDataSize);
   return rdmnet::EptResponseAction::SendData(kResponseDataSize);
@@ -518,7 +521,7 @@ void ept_data_received_callback(rdmnet_ept_client_t handle, rdmnet_client_scope_
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-rdmnet::EptResponseAction MyEptNotifyHandler::HandleEptData(rdmnet::EptClientHandle handle,
+rdmnet::EptResponseAction MyEptNotifyHandler::HandleEptData(rdmnet::EptClientHandle client_handle,
                                                             rdmnet::ScopeHandle scope_handle,
                                                             const rdmnet::EptData& data)
 {
@@ -556,7 +559,8 @@ void ept_status_callback(rdmnet_ept_client_t handle, rdmnet_client_scope_t handl
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyEptNotifyHandler::HandleEptStatus(rdmnet::EptClientHandle handle, rdmnet::ScopeHandle scope_handle,
+void MyEptNotifyHandler::HandleEptStatus(rdmnet::EptClientHandle client_handle,
+                                         rdmnet::ScopeHandle scope_handle,
                                          const rdmnet::EptStatus& status)
 {
   // Check handles as necessary...

@@ -118,7 +118,7 @@ typedef struct LlrpManagerConfig
  * // Now fill in the required portions as necessary with your data...
  * \endcode
  *
- * To omit the enclosing brackets, use #LLRP_MANAGER_CONFIG_DEFAULT_INIT().
+ * To omit the enclosing brackets, use LLRP_MANAGER_CONFIG_DEFAULT_INIT().
  */
 #define LLRP_MANAGER_CONFIG_DEFAULT_INIT_VALUES {{0}}, {kEtcPalIpTypeInvalid, 0}, 0, {NULL, NULL, NULL}, NULL
 

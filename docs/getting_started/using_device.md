@@ -394,9 +394,9 @@ void handle_dynamic_uid_status(rdmnet_device_t handle, const RdmnetDynamicUidAss
     }
     else
     {
-      char cid_str[ETCPAL_UUID_STRING_BYTES];
-      etcpal_uuid_to_string(&mapping->cid, cid_str);
-      printf("Error obtaining dynamic UID for responder %s: '%s'\n", cid_str,
+      char rid_str[ETCPAL_UUID_STRING_BYTES];
+      etcpal_uuid_to_string(&mapping->rid, rid_str);
+      printf("Error obtaining dynamic UID for responder %s: '%s'\n", rid_str,
              rdmnet_dynamic_uid_status_to_string(mapping->status_code));
     }
   }
@@ -420,7 +420,7 @@ void MyDeviceNotifyHandler::HandleDynamicUidStatus(rdmnet::DeviceHandle handle,
     }
     else
     {
-      std::cout << "Error obtaining dynamic UID for responder " << mapping.cid.ToString() << ": '"
+      std::cout << "Error obtaining dynamic UID for responder " << mapping.rid.ToString() << ": '"
                 << mapping.CodeToString() << "'\n";
     }
   }

@@ -18,6 +18,7 @@
  *****************************************************************************/
 
 /// \file rdmnet/cpp/client.h
+/// \brief C++ wrapper for RDMnet client API definitions.
 
 #ifndef RDMNET_CPP_CLIENT_H_
 #define RDMNET_CPP_CLIENT_H_

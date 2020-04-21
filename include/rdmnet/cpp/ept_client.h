@@ -59,47 +59,48 @@ class EptClientNotifyHandler
 {
 public:
   /// \brief An EPT client has successfully connected to a broker.
-  /// \param handle Handle to EPT client instance which has connected.
+  /// \param client_handle Handle to EPT client instance which has connected.
   /// \param scope_handle Handle to the scope on which the EPT client has connected.
   /// \param info More information about the successful connection.
-  virtual void HandleConnectedToBroker(EptClientHandle handle, ScopeHandle scope_handle,
+  virtual void HandleConnectedToBroker(EptClientHandle client_handle, ScopeHandle scope_handle,
                                        const ClientConnectedInfo& info) = 0;
 
   /// \brief A connection attempt failed between an EPT client and a broker.
-  /// \param handle Handle to EPT client instance which has failed to connect.
+  /// \param client_handle Handle to EPT client instance which has failed to connect.
   /// \param scope_handle Handle to the scope on which the connection failed.
   /// \param info More information about the failed connection.
-  virtual void HandleBrokerConnectFailed(EptClientHandle handle, ScopeHandle scope_handle,
+  virtual void HandleBrokerConnectFailed(EptClientHandle client_handle, ScopeHandle scope_handle,
                                          const ClientConnectFailedInfo& info) = 0;
 
   /// \brief An EPT client which was previously connected to a broker has disconnected.
-  /// \param handle Handle to EPT client instance which has disconnected.
+  /// \param client_handle Handle to EPT client instance which has disconnected.
   /// \param scope_handle Handle to the scope on which the disconnect occurred.
   /// \param info More information about the disconnect event.
-  virtual void HandleDisconnectedFromBroker(EptClientHandle handle, ScopeHandle scope_handle,
+  virtual void HandleDisconnectedFromBroker(EptClientHandle client_handle, ScopeHandle scope_handle,
                                             const ClientDisconnectedInfo& info) = 0;
 
   /// \brief A client list update has been received from a broker.
-  /// \param handle Handle to EPT client instance which has received the client list update.
+  /// \param client_handle Handle to EPT client instance which has received the client list update.
   /// \param scope_handle Handle to the scope on which the client list update was received.
   /// \param list_action The way the updates in client_list should be applied to the EPT client's
   ///                    cached list.
   /// \param list The list of updates.
-  virtual void HandleClientListUpdate(EptClientHandle handle, ScopeHandle scope_handle,
+  virtual void HandleClientListUpdate(EptClientHandle client_handle, ScopeHandle scope_handle,
                                       client_list_action_t list_action, const EptClientList& list) = 0;
 
   /// \brief EPT data has been received addressed to an EPT client.
-  /// \param handle Handle to EPT client instance which has received the data.
+  /// \param client_handle Handle to EPT client instance which has received the data.
   /// \param scope_handle Handle to the scope on which the EPT data was received.
   /// \param data The EPT data.
   /// \return The action to take in response to this EPT data message.
-  virtual EptResponseAction HandleEptData(EptClientHandle handle, ScopeHandle scope_handle, const EptData& data) = 0;
+  virtual EptResponseAction HandleEptData(EptClientHandle client_handle, ScopeHandle scope_handle,
+                                          const EptData& data) = 0;
 
   /// \brief An EPT status message has been received in response to a previously-sent EPT data message.
-  /// \param handle Handle to EPT client instance which has received the data.
+  /// \param client_handle Handle to EPT client instance which has received the data.
   /// \param scope_handle Handle to the scope on which the EPT status message was received.
   /// \param status The EPT status message.
-  virtual void HandleEptStatus(EptClientHandle handle, ScopeHandle scope_handle, const EptStatus& status) = 0;
+  virtual void HandleEptStatus(EptClientHandle client_handle, ScopeHandle scope_handle, const EptStatus& status) = 0;
 };
 
 /// A set of configuration settings that an EPT client needs to initialize.

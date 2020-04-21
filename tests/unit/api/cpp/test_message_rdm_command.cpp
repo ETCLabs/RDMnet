@@ -18,22 +18,16 @@
  *****************************************************************************/
 
 #include "gtest/gtest.h"
-#include "rdmnet/cpp/message.h"
+#include "rdmnet/cpp/message_types/rdm_command.h"
+
+TEST(TestRdmCommand, RefConstructorWorks)
+{
+  RdmnetRdmCommand c_cmd{};
+  rdmnet::RdmCommand cmd(c_cmd);
+}
 
 TEST(TestSavedRdmCommand, DefaultConstructorWorks)
 {
   rdmnet::SavedRdmCommand cmd;
   EXPECT_FALSE(cmd.IsValid());
-}
-
-TEST(TestSavedRdmResponse, DefaultConstructorWorks)
-{
-  rdmnet::SavedRdmResponse resp;
-  EXPECT_FALSE(resp.IsValid());
-}
-
-TEST(TestSavedRptStatus, DefaultConstructorWorks)
-{
-  rdmnet::SavedRptStatus status;
-  EXPECT_FALSE(status.IsValid());
 }

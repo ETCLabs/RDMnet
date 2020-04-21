@@ -243,7 +243,7 @@ typedef struct RdmnetScopeConfig
  *
  * \param configptr Pointer to RdmnetScopeConfig.
  * \param scope_str UTF-8 scope string (const char *), must remain valid for as long as this scope
- *                  config.
+ *                  config exists.
  */
 #define RDMNET_CLIENT_SET_SCOPE(configptr, scope_str)           \
   do                                                            \
@@ -275,7 +275,7 @@ typedef struct RdmnetScopeConfig
  *
  * \param configptr Pointer to RdmnetScopeConfig.
  * \param scope_str UTF-8 scope string (const char *), must remain valid for as long as this scope
- *                  config.
+ *                  config exists.
  * \param broker_addr Address and port for a static broker (EtcPalSockAddr).
  */
 #define RDMNET_CLIENT_SET_STATIC_SCOPE(configptr, scope_str, broker_addr) \

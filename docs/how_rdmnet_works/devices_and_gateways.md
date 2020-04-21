@@ -90,7 +90,9 @@ assigned to a universe of sACN. The default responder handles this command and u
 the patching of ports to DMX universes; this provides a standard way to assign universes to ports
 on RDMnet-enabled gateways.
 
-Note that this only handles basic one-to-one patching 
+Note that this only handles basic one-to-one patching of universes to ports; advanced patching
+techniques which assign portions of universes or individual addresses are outside the scope of the
+RDMnet standard and are typically done with vendor-specific configuration software.
 
 ### Virtual Endpoints and Virtual Responders
 

@@ -217,7 +217,7 @@ void controller_connected_callback(rdmnet_controller_t handle, rdmnet_client_sco
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleConnectedToBroker(rdmnet::ControllerHandle handle,
+void MyControllerNotifyHandler::HandleConnectedToBroker(rdmnet::ControllerHandle controller_handle,
                                                         rdmnet::ScopeHandle scope_handle,
                                                         const rdmnet::ClientConnectedInfo& info)
 {
@@ -303,8 +303,10 @@ void my_client_list_update_cb(rdmnet_controller_t handle, rdmnet_client_scope_t 
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleClientListUpdate(rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle,
-                                                       client_list_action_t list_action, const rdmnet::RptClientList& list)
+void MyControllerNotifyHandler::HandleClientListUpdate(rdmnet::ControllerHandle controller_handle,
+                                                       rdmnet::ScopeHandle scope_handle,
+                                                       client_list_action_t list_action,
+                                                       const rdmnet::RptClientList& list)
 {
   // Check handles as necessary...
 
@@ -356,7 +358,7 @@ in each RPT client entry structure.
 ## Sending RDM Commands
 
 Sending RDM commands requires a destination address structure to indicate the RDMnet component and
-RDM responder to which the command is addresses. See \ref devices_and_gateways for more information
+RDM responder to which the command is addressed. See \ref devices_and_gateways for more information
 on the fields of the destination address structure.
 
 After sending a command, the library will provide a _sequence number_ that will be echoed in the
@@ -433,7 +435,8 @@ void rdm_response_callback(rdmnet_controller_t handle, rdmnet_client_scope_t sco
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle,
+void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::ControllerHandle controller_handle,
+                                                  rdmnet::ScopeHandle scope_handle,
                                                   const rdmnet::RdmResponse& resp)
 {
   // Check handles as necessary...
@@ -500,7 +503,8 @@ void rpt_status_callback(rdmnet_controller_t handle, rdmnet_client_scope_t handl
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleRptStatus(rdmnet::ControllerHandle handle, rdmnet::ScopeHandle scope_handle,
+void MyControllerNotifyHandler::HandleRptStatus(rdmnet::ControllerHandle controller_handle,
+                                                rdmnet::ScopeHandle scope_handle,
                                                 const rdmnet::RptStatus& status)
 {
   // Check handles as necessary...
@@ -517,7 +521,7 @@ void MyControllerNotifyHandler::HandleRptStatus(rdmnet::ControllerHandle handle,
 
 ## Getting Responder IDs
 
-Controllers may encounter RDMnet responders have dynamic UIDs. Base RDMnet components such as
+Controllers may encounter RDMnet responders which have dynamic UIDs. Base RDMnet components such as
 controllers and devices can have dynamic UIDs, as can virtual responders present on devices. See
 \ref devices_and_gateways for more information on virtual responders, and \ref roles_and_addressing
 for more information on dynamic UIDs. As a reminder, a dynamic UID is identified by the top bit of
@@ -619,7 +623,7 @@ void handle_responder_ids_received(rdmnet_controller_t handle, rdmnet_client_sco
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleResponderIdsReceived(rdmnet::ControllerHandle handle,
+void MyControllerNotifyHandler::HandleResponderIdsReceived(rdmnet::ControllerHandle controller_handle,
                                                            rdmnet::ScopeHandle scope_handle,
                                                            const rdmnet::DynamicUidAssignmentList& list)
 {

@@ -123,7 +123,7 @@ typedef struct LlrpTargetConfig
  * // Now fill in the required portions as necessary with your data...
  * \endcode
  *
- * To omit the enclosing brackets, use #LLRP_TARGET_CONFIG_DEFAULT_INIT().
+ * To omit the enclosing brackets, use LLRP_TARGET_CONFIG_DEFAULT_INIT().
  *
  * \param manu_id Your ESTA manufacturer ID.
  */

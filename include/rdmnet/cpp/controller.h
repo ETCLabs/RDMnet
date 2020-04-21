@@ -67,20 +67,20 @@ class ControllerRdmCommandHandler
 {
 public:
   /// \brief An RDM command has been received addressed to a controller.
-  /// \param handle Handle to controller instance which has received the RDM command.
+  /// \param controller_handle Handle to controller instance which has received the RDM command.
   /// \param scope_handle Handle to the scope on which the RDM command was received.
   /// \param cmd The RDM command data.
   /// \return The action to take in response to this RDM command.
-  virtual RdmResponseAction HandleRdmCommand(ControllerHandle handle, ScopeHandle scope_handle,
+  virtual RdmResponseAction HandleRdmCommand(ControllerHandle controller_handle, ScopeHandle scope_handle,
                                              const RdmCommand& cmd) = 0;
 
   /// \brief An RDM command has been received over LLRP, addressed to a controller.
-  /// \param handle Handle to controller instance which has received the RDM command.
+  /// \param controller_handle Handle to controller instance which has received the RDM command.
   /// \param cmd The RDM command data.
   /// \return The action to take in response to this LLRP RDM command.
-  virtual RdmResponseAction HandleLlrpRdmCommand(ControllerHandle handle, const llrp::RdmCommand& cmd)
+  virtual RdmResponseAction HandleLlrpRdmCommand(ControllerHandle controller_handle, const llrp::RdmCommand& cmd)
   {
-    ETCPAL_UNUSED_ARG(handle);
+    ETCPAL_UNUSED_ARG(controller_handle);
     ETCPAL_UNUSED_ARG(cmd);
     return rdmnet::RdmResponseAction::SendNack(kRdmNRActionNotSupported);
   }
@@ -94,56 +94,58 @@ class ControllerNotifyHandler
 {
 public:
   /// \brief A controller has successfully connected to a broker.
-  /// \param handle Handle to controller instance which has connected.
+  /// \param controller_handle Handle to controller instance which has connected.
   /// \param scope_handle Handle to the scope on which the controller has connected.
   /// \param info More information about the successful connection.
-  virtual void HandleConnectedToBroker(ControllerHandle handle, ScopeHandle scope_handle,
+  virtual void HandleConnectedToBroker(ControllerHandle controller_handle, ScopeHandle scope_handle,
                                        const ClientConnectedInfo& info) = 0;
 
   /// \brief A connection attempt failed between a controller and a broker.
-  /// \param handle Handle to controller instance which has failed to connect.
+  /// \param controller_handle Handle to controller instance which has failed to connect.
   /// \param scope_handle Handle to the scope on which the connection failed.
   /// \param info More information about the failed connection.
-  virtual void HandleBrokerConnectFailed(ControllerHandle handle, ScopeHandle scope_handle,
+  virtual void HandleBrokerConnectFailed(ControllerHandle controller_handle, ScopeHandle scope_handle,
                                          const ClientConnectFailedInfo& info) = 0;
 
   /// \brief A controller which was previously connected to a broker has disconnected.
-  /// \param handle Handle to controller instance which has disconnected.
+  /// \param controller_handle Handle to controller instance which has disconnected.
   /// \param scope_handle Handle to the scope on which the disconnect occurred.
   /// \param info More information about the disconnect event.
-  virtual void HandleDisconnectedFromBroker(ControllerHandle handle, ScopeHandle scope_handle,
+  virtual void HandleDisconnectedFromBroker(ControllerHandle controller_handle, ScopeHandle scope_handle,
                                             const ClientDisconnectedInfo& info) = 0;
 
   /// \brief A client list update has been received from a broker.
-  /// \param handle Handle to controller instance which has received the client list update.
+  /// \param controller_handle Handle to controller instance which has received the client list update.
   /// \param scope_handle Handle to the scope on which the client list update was received.
   /// \param list_action The way the updates in client_list should be applied to the controller's
   ///                    cached list.
   /// \param list The list of updates.
-  virtual void HandleClientListUpdate(ControllerHandle handle, ScopeHandle scope_handle,
+  virtual void HandleClientListUpdate(ControllerHandle controller_handle, ScopeHandle scope_handle,
                                       client_list_action_t list_action, const RptClientList& list) = 0;
 
   /// \brief An RDM response has been received.
-  /// \param handle Handle to controller instance which has received the RDM response.
+  /// \param controller_handle Handle to controller instance which has received the RDM response.
   /// \param scope_handle Handle to the scope on which the RDM response was received.
   /// \param resp The RDM response data.
-  virtual void HandleRdmResponse(ControllerHandle handle, ScopeHandle scope_handle, const RdmResponse& resp) = 0;
+  virtual void HandleRdmResponse(ControllerHandle controller_handle, ScopeHandle scope_handle,
+                                 const RdmResponse& resp) = 0;
 
   /// \brief An RPT status message has been received in response to a previously-sent RDM command.
-  /// \param handle Handle to controller instance which has received the RPT status message.
+  /// \param controller_handle Handle to controller instance which has received the RPT status message.
   /// \param scope_handle Handle to the scope on which the RPT status message was received.
   /// \param status The RPT status data.
-  virtual void HandleRptStatus(ControllerHandle handle, ScopeHandle scope_handle, const RptStatus& status) = 0;
+  virtual void HandleRptStatus(ControllerHandle controller_handle, ScopeHandle scope_handle,
+                               const RptStatus& status) = 0;
 
   /// \brief A set of previously-requested mappings of dynamic UIDs to responder IDs has been received.
   ///
   /// This callback does not need to be implemented if the controller implementation never intends
   /// to request responder IDs.
   ///
-  /// \param handle Handle to controller instance which has received the responder IDs.
+  /// \param controller_handle Handle to controller instance which has received the responder IDs.
   /// \param scope_handle Handle to the scope on which the responder IDs were received.
   /// \param list The list of dynamic UID to responder ID mappings.
-  virtual void HandleResponderIdsReceived(ControllerHandle handle, ScopeHandle scope_handle,
+  virtual void HandleResponderIdsReceived(ControllerHandle controller_handle, ScopeHandle scope_handle,
                                           const DynamicUidAssignmentList& list)
   {
     ETCPAL_UNUSED_ARG(handle);

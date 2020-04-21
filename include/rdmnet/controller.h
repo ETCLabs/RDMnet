@@ -218,7 +218,7 @@ typedef struct RdmnetControllerConfig
    */
   RdmnetControllerRdmCmdHandler rdm_handler;
   /*!
-   * Data for the library to use for handling RDM commands internally. Either this or rdm_callbacks
+   * Data for the library to use for handling RDM commands internally. Either this or rdm_handler
    * must be provided.
    */
   RdmnetControllerRdmData rdm_data;
@@ -267,7 +267,7 @@ typedef struct RdmnetControllerConfig
  * // Now fill in the required portions as necessary with your data...
  * \endcode
  *
- * To omit the enclosing brackets, use #RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT().
+ * To omit the enclosing brackets, use RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT().
  *
  * \param manu_id Your ESTA manufacturer ID.
  */

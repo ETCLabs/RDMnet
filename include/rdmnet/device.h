@@ -159,7 +159,7 @@ typedef struct RdmnetVirtualEndpointConfig
  * // Assign the other members of the struct to associate initial responders with this endpoint.
  * \endcode
  *
- * To omit the enclosing brackets, use #RDMNET_VIRTUAL_ENDPOINT_INIT().
+ * To omit the enclosing brackets, use RDMNET_VIRTUAL_ENDPOINT_INIT().
  *
  * \param endpoint_num The endpoint identifier for this endpoint. Valid values are between 1 and
  *                     63,999 inclusive.
@@ -208,7 +208,7 @@ typedef struct RdmnetPhysicalEndpointConfig
  * // Assign the other members of the struct to associate initial responders with this endpoint.
  * \endcode
  *
- * To omit the enclosing brackets, use #RDMNET_PHYSICAL_ENDPOINT_INIT().
+ * To omit the enclosing brackets, use RDMNET_PHYSICAL_ENDPOINT_INIT().
  *
  * \param endpoint_num The endpoint identifier for this endpoint. Valid values are between 1 and
  *                     63,999 inclusive.
@@ -306,7 +306,7 @@ typedef struct RdmnetDeviceConfig
  * // Now fill in the required portions as necessary with your data...
  * \endcode
  *
- * To omit the enclosing brackets, use #RDMNET_DEVICE_CONFIG_DEFAULT_INIT().
+ * To omit the enclosing brackets, use RDMNET_DEVICE_CONFIG_DEFAULT_INIT().
  *
  * \param manu_id Your ESTA manufacturer ID.
  */

@@ -17,21 +17,17 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/// \file rdmnet/cpp/message.h
-/// \brief RDMnet C++ message type definitions
-
-#ifndef RDMNET_CPP_MESSAGE_H_
-#define RDMNET_CPP_MESSAGE_H_
-
-// This monolithic header includes all of the individual message types. This one is used from the
-// other API headers.
-
-#include "rdmnet/cpp/message_types/ept_data.h"
-#include "rdmnet/cpp/message_types/ept_misc.h"
-#include "rdmnet/cpp/message_types/llrp_rdm_command.h"
+#include "gtest/gtest.h"
 #include "rdmnet/cpp/message_types/llrp_rdm_response.h"
-#include "rdmnet/cpp/message_types/rdm_command.h"
-#include "rdmnet/cpp/message_types/rdm_response.h"
-#include "rdmnet/cpp/message_types/rpt_misc.h"
 
-#endif  // RDMNET_CPP_MESSAGE_H_
+TEST(TestLlrpRdmResponse, RefConstructorWorks)
+{
+  LlrpRdmResponse c_resp;
+  rdmnet::llrp::RdmResponse resp(c_resp);
+}
+
+TEST(TestLlrpSavedRdmResponse, DefaultConstructorWorks)
+{
+  rdmnet::llrp::SavedRdmResponse resp;
+  EXPECT_FALSE(resp.IsValid());
+}

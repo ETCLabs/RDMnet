@@ -107,7 +107,7 @@ for more details.
 
 ### Building RDMnet on its own
 
-If want to build the RDMnet library on its own, in order to tweak the examples or contribute
+If you want to build the RDMnet library on its own, in order to tweak the examples or contribute
 changes, follow the instructions for "Including RDMnet in non-CMake projects" above. Additionally,
 you can set some CMake options to build extras like the unit tests and examples:
 * `RDMNET_BUILD_TESTS`: Build the unit tests
