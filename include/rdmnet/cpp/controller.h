@@ -218,7 +218,6 @@ struct ControllerRdmData
 };
 
 /// Create a ControllerRdmData instance by passing all members explicitly.
-/// Pointers must remain valid until this structure is passed to rdmnet::Controller::Startup().
 inline ControllerRdmData::ControllerRdmData(const char* new_manufacturer_label,
                                             const char* new_device_model_description,
                                             const char* new_software_version_label, const char* new_device_label)
@@ -230,7 +229,6 @@ inline ControllerRdmData::ControllerRdmData(const char* new_manufacturer_label,
 }
 
 /// Create a ControllerRdmData instance by passing all members explicitly as std::strings.
-/// Strings must remain in scope until this structure is passed to rdmnet::Controller::Startup().
 inline ControllerRdmData::ControllerRdmData(const std::string& new_manufacturer_label,
                                             const std::string& new_device_model_description,
                                             const std::string& new_software_version_label,

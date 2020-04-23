@@ -277,7 +277,7 @@ etcpal_error_t rdmnet_copy_saved_ept_data(const RdmnetSavedEptData* saved_data_o
  * \return #kEtcPalErrNoMem: Couldn't allocate memory for status string.
  */
 etcpal_error_t rdmnet_copy_saved_ept_status(const RdmnetSavedEptStatus* saved_status_old,
-                                            RdmnetEptStatus* saved_status_new)
+                                            RdmnetSavedEptStatus* saved_status_new)
 {
   ETCPAL_UNUSED_ARG(saved_status_old);
   ETCPAL_UNUSED_ARG(saved_status_new);

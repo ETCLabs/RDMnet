@@ -148,7 +148,7 @@ typedef struct RdmnetSavedRdmResponse
    */
   bool is_response_to_me;
 
-  /*! The original command associated with this response; valid if seq_num != 0. */
+  /*! The header of the original command associated with this response; valid if seq_num != 0. */
   RdmCommandHeader original_cmd_header;
   /*! Any parameter data associated with the original RDM command; valid if seq_num != 0. */
   uint8_t original_cmd_data[RDM_MAX_PDL];
@@ -527,7 +527,7 @@ etcpal_error_t rdmnet_save_ept_status(const RdmnetEptStatus* status, RdmnetSaved
 
 etcpal_error_t rdmnet_copy_saved_ept_data(const RdmnetSavedEptData* saved_data_old, RdmnetSavedEptData* saved_data_new);
 etcpal_error_t rdmnet_copy_saved_ept_status(const RdmnetSavedEptStatus* saved_status_old,
-                                            RdmnetEptStatus* saved_status_new);
+                                            RdmnetSavedEptStatus* saved_status_new);
 
 etcpal_error_t rdmnet_free_saved_ept_data(RdmnetSavedEptData* saved_data);
 etcpal_error_t rdmnet_free_saved_ept_status(RdmnetSavedEptStatus* saved_status);

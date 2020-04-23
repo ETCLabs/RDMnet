@@ -23,6 +23,30 @@
   + On macOS:
     - RDMnet uses native Bonjour, which comes with every macOS distribution.
 
+## Dependencies
+
+RDMnet depends on two other ETC libraries, [RDM](https://github.com/ETCLabs/RDM) and 
+[EtcPal](https://github.com/ETCLabs/EtcPal). By default, these libraries are included in source
+form as git submodules in the RDMnet repository. CMake will automatically pull the submodules when
+building, so no other action is needed to build RDMnet in the default configuration.
+
+If you are using other libraries that have these dependencies (like ETC's
+[sACN](https://github.com/ETCLabs/sACN) library, which also depends on EtcPal, for example), you
+can make sure they are using the same version of the dependencies by cloning all of the libraries
+and dependencies at the same directory level, e.g.:
+
+```
+|- external/
+|--- EtcPal/
+|--- RDM/
+|--- RDMnet/
+|--- sACN/
+```
+
+The CMake configurations for these libraries will automatically check for their dependencies at
+this level before using submodules. You can disable this behavior by defining the CMake option
+`RDMNET_FORCE_SUBMODULE_DEPS` to ON.
+
 ## Including RDMnet in your project
 
 When adding RDMnet to your project, you can choose whether to use RDMnet in binary or source form.
