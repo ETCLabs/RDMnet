@@ -148,18 +148,18 @@ void llrp_manager_config_init(LlrpManagerConfig* config, uint16_t manufacturer_i
  * \param[in] rdm_response_received Callback called when an LLRP manager receives a response to an
  *                                  RDM command.
  * \param[in] discovery_finished (optional) Callback called when LLRP discovery has finished.
- * \param[in] callback_context (optional) Pointer to opaque data passed back with each callback.
+ * \param[in] context (optional) Pointer to opaque data passed back with each callback.
  */
 void llrp_manager_config_set_callbacks(LlrpManagerConfig* config, LlrpManagerTargetDiscoveredCallback target_discovered,
                                        LlrpManagerRdmResponseReceivedCallback rdm_response_received,
-                                       LlrpManagerDiscoveryFinishedCallback discovery_finished, void* callback_context)
+                                       LlrpManagerDiscoveryFinishedCallback discovery_finished, void* context)
 {
   if (config)
   {
     config->callbacks.target_discovered = target_discovered;
     config->callbacks.rdm_response_received = rdm_response_received;
     config->callbacks.discovery_finished = discovery_finished;
-    config->callback_context = callback_context;
+    config->callbacks.context = context;
   }
 }
 

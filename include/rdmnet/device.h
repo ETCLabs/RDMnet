@@ -126,6 +126,7 @@ typedef struct RdmnetDeviceCallbacks
   RdmnetDeviceRdmCommandReceivedCallback rdm_command_received;          /*!< Required. */
   RdmnetDeviceLlrpRdmCommandReceivedCallback llrp_rdm_command_received; /*!< Required. */
   RdmnetDeviceDynamicUidStatusCallback dynamic_uid_status_received;     /*!< Optional. */
+  void* context; /*!< (optional) Pointer to opaque data passed back with each callback. */
 } RdmnetDeviceCallbacks;
 
 /*!
@@ -221,9 +222,6 @@ typedef struct RdmnetDeviceConfig
    */
   uint8_t* response_buf;
 
-  /*! (optional) Pointer to opaque data passed back with each callback. */
-  void* callback_context;
-
   /*!
    * (optional) The device's configured RDMnet scope. Will be initialized to the RDMnet default
    * scope using the initialization functions/macros for this structure.
@@ -276,7 +274,7 @@ typedef struct RdmnetDeviceConfig
  */
 #define RDMNET_DEVICE_CONFIG_DEFAULT_INIT(manu_id)                                             \
   {                                                                                            \
-    {{0}}, {NULL, NULL, NULL, NULL, NULL, NULL}, NULL, NULL, RDMNET_SCOPE_CONFIG_DEFAULT_INIT, \
+    {{0}}, {NULL, NULL, NULL, NULL, NULL, NULL, NULL}, NULL, RDMNET_SCOPE_CONFIG_DEFAULT_INIT, \
         {(0x8000 | manu_id), 0}, NULL, NULL, 0, NULL, 0, NULL, 0                               \
   }
 
@@ -286,8 +284,7 @@ void rdmnet_device_set_callbacks(RdmnetDeviceConfig* config, RdmnetDeviceConnect
                                  RdmnetDeviceDisconnectedCallback disconnected,
                                  RdmnetDeviceRdmCommandReceivedCallback rdm_command_received,
                                  RdmnetDeviceLlrpRdmCommandReceivedCallback llrp_rdm_command_received,
-                                 RdmnetDeviceDynamicUidStatusCallback dynamic_uid_status_received,
-                                 void* callback_context);
+                                 RdmnetDeviceDynamicUidStatusCallback dynamic_uid_status_received, void* context);
 
 etcpal_error_t rdmnet_device_create(const RdmnetDeviceConfig* config, rdmnet_device_t* handle);
 etcpal_error_t rdmnet_device_destroy(rdmnet_device_t handle, rdmnet_disconnect_reason_t disconnect_reason);

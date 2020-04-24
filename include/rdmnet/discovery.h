@@ -146,6 +146,7 @@ typedef struct RdmnetDiscBrokerCallbacks
   RdmnetDiscBrokerRegisterFailedCallback broker_register_failed; /*!< Required. */
   RdmnetDiscOtherBrokerFoundCallback other_broker_found;         /*!< Required. */
   RdmnetDiscOtherBrokerLostCallback other_broker_lost;           /*!< Required. */
+  void* context; /*!< (optional) Pointer to opaque data passed back with each callback. */
 } RdmnetDiscBrokerCallbacks;
 
 /*! A set of information that defines the parameters of an RDMnet broker registered with DNS-SD. */
@@ -162,13 +163,6 @@ typedef struct RdmnetBrokerRegisterConfig
   RdmnetBrokerDiscInfo my_info;
   /*! A set of callbacks to receive notifications about the registered broker. */
   RdmnetDiscBrokerCallbacks callbacks;
-
-  /************************************************************************************************
-   * Optional Values
-   ***********************************************************************************************/
-
-  /*! (optional) Pointer to opaque data passed back with each callback. */
-  void* callback_context;
 } RdmnetBrokerRegisterConfig;
 
 /*!
@@ -180,9 +174,9 @@ typedef struct RdmnetBrokerRegisterConfig
  * // Now fill in the required portions as necessary with your data...
  * \endcode
  */
-#define RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT                              \
-  {                                                                             \
-    {{{0}}, NULL, 0, NULL, 0, NULL, NULL, NULL}, {NULL, NULL, NULL, NULL}, NULL \
+#define RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT                                \
+  {                                                                               \
+    {{{0}}, NULL, 0, NULL, 0, NULL, NULL, NULL}, { NULL, NULL, NULL, NULL, NULL } \
   }
 
 /*! A handle to a monitored RDMnet scope. */
@@ -223,6 +217,7 @@ typedef struct RdmnetScopeMonitorCallbacks
 {
   RdmnetDiscBrokerFoundCallback broker_found; /*!< Required. */
   RdmnetDiscBrokerLostCallback broker_lost;   /*!< Required. */
+  void* context;                              /*!< (optional) Pointer to opaque data passed back with each callback. */
 } RdmnetScopeMonitorCallbacks;
 
 /*! A set of information that defines the parameters of an RDMnet scope to be monitored using DNS-SD. */
@@ -241,8 +236,6 @@ typedef struct RdmnetScopeMonitorConfig
    * Optional Values
    ***********************************************************************************************/
 
-  /*! (optional) Pointer to opaque data passed back with each callback. */
-  void* callback_context;
   /*! (optional) The search domain to use for DNS discovery. NULL to use the default search domain(s). */
   const char* domain;
 } RdmnetScopeMonitorConfig;
@@ -266,13 +259,12 @@ void rdmnet_broker_register_config_set_callbacks(RdmnetBrokerRegisterConfig* con
                                                  RdmnetDiscBrokerRegisteredCallback broker_registered,
                                                  RdmnetDiscBrokerRegisterFailedCallback broker_register_failed,
                                                  RdmnetDiscOtherBrokerFoundCallback other_broker_found,
-                                                 RdmnetDiscOtherBrokerLostCallback other_broker_lost,
-                                                 void* callback_context);
+                                                 RdmnetDiscOtherBrokerLostCallback other_broker_lost, void* context);
 
 void rdmnet_scope_monitor_config_init(RdmnetScopeMonitorConfig* config);
 void rdmnet_scope_monitor_config_set_callbacks(RdmnetScopeMonitorConfig* config,
                                                RdmnetDiscBrokerFoundCallback broker_found,
-                                               RdmnetDiscBrokerLostCallback broker_lost, void* callback_context);
+                                               RdmnetDiscBrokerLostCallback broker_lost, void* context);
 
 etcpal_error_t rdmnet_disc_start_monitoring(const RdmnetScopeMonitorConfig* config, rdmnet_scope_monitor_t* handle,
                                             int* platform_specific_error);

@@ -133,7 +133,7 @@ void rdmnet_controller_config_init(RdmnetControllerConfig* config, uint16_t manu
  *                            response to an RDM command.
  * \param[in] responder_ids_received (optional) Callback called when a controller receives a set of
  *                                   dynamic UID mappings.
- * \param[in] callback_context (optional) Pointer to opaque data passed back with each callback.
+ * \param[in] context (optional) Pointer to opaque data passed back with each callback.
  */
 void rdmnet_controller_set_callbacks(RdmnetControllerConfig* config, RdmnetControllerConnectedCallback connected,
                                      RdmnetControllerConnectFailedCallback connect_failed,
@@ -141,8 +141,7 @@ void rdmnet_controller_set_callbacks(RdmnetControllerConfig* config, RdmnetContr
                                      RdmnetControllerClientListUpdateReceivedCallback client_list_update_received,
                                      RdmnetControllerRdmResponseReceivedCallback rdm_response_received,
                                      RdmnetControllerStatusReceivedCallback status_received,
-                                     RdmnetControllerResponderIdsReceivedCallback responder_ids_received,
-                                     void* callback_context)
+                                     RdmnetControllerResponderIdsReceivedCallback responder_ids_received, void* context)
 {
   if (config)
   {
@@ -153,7 +152,7 @@ void rdmnet_controller_set_callbacks(RdmnetControllerConfig* config, RdmnetContr
     config->callbacks.rdm_response_received = rdm_response_received;
     config->callbacks.status_received = status_received;
     config->callbacks.responder_ids_received = responder_ids_received;
-    config->callback_context = callback_context;
+    config->callbacks.context = context;
   }
 }
 
@@ -199,20 +198,28 @@ void rdmnet_controller_set_rdm_data(RdmnetControllerConfig* config, const char* 
  * TCP_COMMS_STATUS will still be consumed internally. See \ref using_controller for more
  * information.
  *
+ * Items marked "optional" can be NULL.
+ *
  * \param[out] config Config struct in which to set the callbacks.
  * \param[in] rdm_command_received Callback called when a controller receives an RDM command.
  * \param[in] llrp_rdm_command_received Callback called when a controller receives an RDM command
  *                                      over LLRP. Only required if `create_llrp_target == true` in
  *                                      the config struct.
+ * \param[in] response_buf (optional) A data buffer used to respond synchronously to RDM commands.
+ *                         See \ref handling_rdm_commands for more information.
+ * \param[in] context (optional) Pointer to opaque data passed back with each callback.
  */
 void rdmnet_controller_set_rdm_cmd_callbacks(RdmnetControllerConfig* config,
                                              RdmnetControllerRdmCommandReceivedCallback rdm_command_received,
-                                             RdmnetControllerLlrpRdmCommandReceivedCallback llrp_rdm_command_received)
+                                             RdmnetControllerLlrpRdmCommandReceivedCallback llrp_rdm_command_received,
+                                             uint8_t* response_buf, void* context)
 {
   if (config)
   {
     config->rdm_handler.rdm_command_received = rdm_command_received;
     config->rdm_handler.llrp_rdm_command_received = llrp_rdm_command_received;
+    config->rdm_handler.response_buf = response_buf;
+    config->rdm_handler.context = context;
   }
 }
 

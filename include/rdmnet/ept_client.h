@@ -132,6 +132,7 @@ typedef struct RdmnetEptClientCallbacks
   RdmnetEptClientClientListUpdateReceivedCallback client_list_update_received; /*!< Required. */
   RdmnetEptClientDataReceivedCallback data_received;                           /*!< Required. */
   RdmnetEptClientStatusReceivedCallback status_received;                       /*!< Required. */
+  void* context; /*!< (optional) Pointer to opaque data passed back with each callback. */
 } RdmnetEptClientCallbacks;
 
 /*! A set of information that defines the startup parameters of an EPT client. */
@@ -160,9 +161,6 @@ typedef struct RdmnetEptClientConfig
    */
   uint8_t* response_buf;
 
-  /*! (optional) Pointer to opaque data passed back with each callback. */
-  void* callback_context;
-
   /*!
    * (optional) The EPT client's configured search domain for discovery. NULL to use the default
    * search domain(s).
@@ -181,7 +179,7 @@ typedef struct RdmnetEptClientConfig
  */
 #define RDMNET_EPT_CLIENT_CONFIG_DEFAULT_INIT                              \
   {                                                                        \
-    {{0}}, {NULL, NULL, NULL, NULL, NULL, NULL}, NULL, 0, NULL, NULL, NULL \
+    {{0}}, {NULL, NULL, NULL, NULL, NULL, NULL, NULL}, NULL, 0, NULL, NULL \
   }
 
 void rdmnet_ept_client_config_init(RdmnetEptClientConfig* config);
@@ -190,7 +188,7 @@ void rdmnet_ept_client_set_callbacks(RdmnetEptClientConfig* config, RdmnetEptCli
                                      RdmnetEptClientDisconnectedCallback disconnected,
                                      RdmnetEptClientClientListUpdateReceivedCallback client_list_update_received,
                                      RdmnetEptClientDataReceivedCallback data_received,
-                                     RdmnetEptClientStatusReceivedCallback status_received, void* callback_context);
+                                     RdmnetEptClientStatusReceivedCallback status_received, void* context);
 
 etcpal_error_t rdmnet_ept_client_create(const RdmnetEptClientConfig* config, rdmnet_ept_client_t* handle);
 etcpal_error_t rdmnet_ept_client_destroy(rdmnet_ept_client_t client_handle,

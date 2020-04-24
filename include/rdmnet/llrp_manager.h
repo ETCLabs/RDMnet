@@ -83,6 +83,7 @@ typedef struct LlrpManagerCallbacks
   LlrpManagerTargetDiscoveredCallback target_discovered;        /*!< An LLRP target has been discovered. */
   LlrpManagerRdmResponseReceivedCallback rdm_response_received; /*!< An LLRP RDM response has been received. */
   LlrpManagerDiscoveryFinishedCallback discovery_finished;      /*!< LLRP discovery is finished. */
+  void* context; /*!< (optional) Pointer to opaque data passed back with each callback. */
 } LlrpManagerCallbacks;
 
 /*! A set of information that defines the startup parameters of an LLRP Manager. */
@@ -100,13 +101,6 @@ typedef struct LlrpManagerConfig
   uint16_t manu_id;
   /*! A set of callbacks for the manager to receive RDMnet notifications. */
   LlrpManagerCallbacks callbacks;
-
-  /************************************************************************************************
-   * Optional Values
-   ***********************************************************************************************/
-
-  /*! (optional) Pointer to opaque data passed back with each callback. */
-  void* callback_context;
 } LlrpManagerConfig;
 
 /*!
@@ -118,15 +112,15 @@ typedef struct LlrpManagerConfig
  * // Now fill in the required portions as necessary with your data...
  * \endcode
  */
-#define LLRP_MANAGER_CONFIG_DEFAULT_INIT                          \
-  {                                                               \
-    {{0}}, {kEtcPalIpTypeInvalid, 0}, 0, {NULL, NULL, NULL}, NULL \
+#define LLRP_MANAGER_CONFIG_DEFAULT_INIT                            \
+  {                                                                 \
+    {{0}}, {kEtcPalIpTypeInvalid, 0}, 0, { NULL, NULL, NULL, NULL } \
   }
 
 void llrp_manager_config_init(LlrpManagerConfig* config, uint16_t manufacturer_id);
 void llrp_manager_config_set_callbacks(LlrpManagerConfig* config, LlrpManagerTargetDiscoveredCallback target_discovered,
                                        LlrpManagerRdmResponseReceivedCallback rdm_response_received,
-                                       LlrpManagerDiscoveryFinishedCallback discovery_finished, void* callback_context);
+                                       LlrpManagerDiscoveryFinishedCallback discovery_finished, void* context);
 
 etcpal_error_t llrp_manager_create(const LlrpManagerConfig* config, llrp_manager_t* handle);
 void llrp_manager_destroy(llrp_manager_t handle);

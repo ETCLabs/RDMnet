@@ -149,6 +149,7 @@ typedef struct RdmnetControllerCallbacks
   RdmnetControllerRdmResponseReceivedCallback rdm_response_received;            /*!< Required. */
   RdmnetControllerStatusReceivedCallback status_received;                       /*!< Required. */
   RdmnetControllerResponderIdsReceivedCallback responder_ids_received;          /*!< Optional. */
+  void* context; /*!< (optional) Pointer to opaque data passed back with each callback. */
 } RdmnetControllerCallbacks;
 
 /*!
@@ -189,6 +190,8 @@ typedef struct RdmnetControllerRdmCmdHandler
    * \ref handling_rdm_commands for more information.
    */
   uint8_t* response_buf;
+  /*! (optional) Pointer to opaque data passed back with each callback. */
+  void* context;
 } RdmnetControllerRdmCmdHandler;
 
 /*! A set of data for the controller library to use for handling RDM commands internally. */
@@ -232,9 +235,6 @@ typedef struct RdmnetControllerConfig
    * Optional Values
    ***********************************************************************************************/
 
-  /*! (optional) Pointer to opaque data passed back with each callback. */
-  void* callback_context;
-
   /*!
    * (optional) The controller's UID. This will be initialized with a Dynamic UID request using the
    * initialization functions/macros for this structure. If you want to use a static UID instead,
@@ -274,10 +274,10 @@ typedef struct RdmnetControllerConfig
  *
  * \param manu_id Your ESTA manufacturer ID.
  */
-#define RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT(manu_id)                                                            \
-  {                                                                                                               \
-    {{0}}, {NULL, NULL, NULL, NULL, NULL, NULL, NULL}, {NULL, NULL, NULL}, {NULL, NULL, NULL, NULL, false}, NULL, \
-        {(0x8000 | manu_id), 0}, NULL, false, NULL, 0                                                             \
+#define RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT(manu_id)                                 \
+  {                                                                                    \
+    {{0}}, {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, {NULL, NULL, NULL, NULL}, \
+        {NULL, NULL, NULL, NULL, false}, {(0x8000 | manu_id), 0}, NULL, false, NULL, 0 \
   }
 
 void rdmnet_controller_config_init(RdmnetControllerConfig* config, uint16_t manufacturer_id);
@@ -288,13 +288,14 @@ void rdmnet_controller_set_callbacks(RdmnetControllerConfig* config, RdmnetContr
                                      RdmnetControllerRdmResponseReceivedCallback rdm_response_received,
                                      RdmnetControllerStatusReceivedCallback status_received,
                                      RdmnetControllerResponderIdsReceivedCallback responder_ids_received,
-                                     void* callback_context);
+                                     void* context);
 void rdmnet_controller_set_rdm_data(RdmnetControllerConfig* config, const char* manufacturer_label,
                                     const char* device_model_description, const char* software_version_label,
                                     const char* device_label, bool device_label_settable);
 void rdmnet_controller_set_rdm_cmd_callbacks(RdmnetControllerConfig* config,
                                              RdmnetControllerRdmCommandReceivedCallback rdm_command_received,
-                                             RdmnetControllerLlrpRdmCommandReceivedCallback llrp_rdm_command_received);
+                                             RdmnetControllerLlrpRdmCommandReceivedCallback llrp_rdm_command_received,
+                                             uint8_t* response_buf, void* context);
 
 etcpal_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rdmnet_controller_t* handle);
 etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t controller_handle, rdmnet_disconnect_reason_t reason);

@@ -31,7 +31,8 @@ DECLARE_FAKE_VOID_FUNC(rdmnet_controller_set_callbacks, RdmnetControllerConfig*,
 DECLARE_FAKE_VOID_FUNC(rdmnet_controller_set_rdm_data, RdmnetControllerConfig*, const char*, const char*, const char*,
                        const char*, bool);
 DECLARE_FAKE_VOID_FUNC(rdmnet_controller_set_rdm_cmd_callbacks, RdmnetControllerConfig*,
-                       RdmnetControllerRdmCommandReceivedCallback, RdmnetControllerLlrpRdmCommandReceivedCallback);
+                       RdmnetControllerRdmCommandReceivedCallback, RdmnetControllerLlrpRdmCommandReceivedCallback,
+                       uint8_t*, void*);
 
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_controller_create, const RdmnetControllerConfig*, rdmnet_controller_t*);
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_controller_destroy, rdmnet_controller_t, rdmnet_disconnect_reason_t);

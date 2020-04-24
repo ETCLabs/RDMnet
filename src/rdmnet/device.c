@@ -118,7 +118,7 @@ void rdmnet_device_config_init(RdmnetDeviceConfig* config, uint16_t manufacturer
 /*!
  * \brief Set the main callbacks in an RDMnet device configuration structure.
  *
- * All callbacks are required.
+ * Items marked "optional" can be NULL.
  *
  * \param[out] config Config struct in which to set the callbacks.
  * \param[in] connected Callback called when the device has connected to a broker.
@@ -127,17 +127,16 @@ void rdmnet_device_config_init(RdmnetDeviceConfig* config, uint16_t manufacturer
  * \param[in] rdm_command_received Callback called when a device receives an RDM command.
  * \param[in] llrp_rdm_command_received Callback called when a device receives an RDM command over
  *                                      LLRP.
- * \param[in] dynamic_uid_status_received Callback called when a device receives dynamic UID
- *                                        assignments for one or more virtual responders.
- * \param[in] callback_context (optional) Pointer to opaque data passed back with each callback.
+ * \param[in] dynamic_uid_status_received (optional) Callback called when a device receives dynamic
+ *                                        UID assignments for one or more virtual responders.
+ * \param[in] context (optional) Pointer to opaque data passed back with each callback.
  */
 void rdmnet_device_set_callbacks(RdmnetDeviceConfig* config, RdmnetDeviceConnectedCallback connected,
                                  RdmnetDeviceConnectFailedCallback connect_failed,
                                  RdmnetDeviceDisconnectedCallback disconnected,
                                  RdmnetDeviceRdmCommandReceivedCallback rdm_command_received,
                                  RdmnetDeviceLlrpRdmCommandReceivedCallback llrp_rdm_command_received,
-                                 RdmnetDeviceDynamicUidStatusCallback dynamic_uid_status_received,
-                                 void* callback_context)
+                                 RdmnetDeviceDynamicUidStatusCallback dynamic_uid_status_received, void* context)
 {
   if (config)
   {
@@ -147,7 +146,7 @@ void rdmnet_device_set_callbacks(RdmnetDeviceConfig* config, RdmnetDeviceConnect
     config->callbacks.rdm_command_received = rdm_command_received;
     config->callbacks.llrp_rdm_command_received = llrp_rdm_command_received;
     config->callbacks.dynamic_uid_status_received = dynamic_uid_status_received;
-    config->callback_context = callback_context;
+    config->callbacks.context = context;
   }
 }
 

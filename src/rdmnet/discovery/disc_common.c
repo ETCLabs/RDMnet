@@ -113,14 +113,13 @@ void rdmnet_broker_register_config_init(RdmnetBrokerRegisterConfig* config)
  *                               registered broker.
  * \param[in] other_broker_lost Callback called when a broker previously found on the same scope as
  *                              a registered broker has gone away.
- * \param[in] callback_context (optional) Pointer to opaque data passed back with each callback.
+ * \param[in] context (optional) Pointer to opaque data passed back with each callback.
  */
 void rdmnet_broker_register_config_set_callbacks(RdmnetBrokerRegisterConfig* config,
                                                  RdmnetDiscBrokerRegisteredCallback broker_registered,
                                                  RdmnetDiscBrokerRegisterFailedCallback broker_register_failed,
                                                  RdmnetDiscOtherBrokerFoundCallback other_broker_found,
-                                                 RdmnetDiscOtherBrokerLostCallback other_broker_lost,
-                                                 void* callback_context)
+                                                 RdmnetDiscOtherBrokerLostCallback other_broker_lost, void* context)
 {
   if (config)
   {
@@ -128,7 +127,7 @@ void rdmnet_broker_register_config_set_callbacks(RdmnetBrokerRegisterConfig* con
     config->callbacks.broker_register_failed = broker_register_failed;
     config->callbacks.other_broker_found = other_broker_found;
     config->callbacks.other_broker_lost = other_broker_lost;
-    config->callback_context = callback_context;
+    config->callbacks.context = context;
   }
 }
 
@@ -164,17 +163,17 @@ void rdmnet_scope_monitor_config_init(RdmnetScopeMonitorConfig* config)
  * \param[out] config Config struct in which to set the callbacks.
  * \param[in] broker_found Callback called when a broker is discovered on the scope.
  * \param[in] broker_lost Callback called when a previously-discovered broker is lost.
- * \param[in] callback_context (optional) Pointer to opaque data passed back with each callback.
+ * \param[in] context (optional) Pointer to opaque data passed back with each callback.
  */
 void rdmnet_scope_monitor_config_set_callbacks(RdmnetScopeMonitorConfig* config,
                                                RdmnetDiscBrokerFoundCallback broker_found,
-                                               RdmnetDiscBrokerLostCallback broker_lost, void* callback_context)
+                                               RdmnetDiscBrokerLostCallback broker_lost, void* context)
 {
   if (config)
   {
     config->callbacks.broker_found = broker_found;
     config->callbacks.broker_lost = broker_lost;
-    config->callback_context = callback_context;
+    config->callbacks.context = context;
   }
 }
 

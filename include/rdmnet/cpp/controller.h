@@ -446,10 +446,11 @@ inline etcpal::Error Controller::Startup(ControllerNotifyHandler& notify_handler
       internal::ControllerLibCbClientListUpdate,
       internal::ControllerLibCbRdmResponseReceived,
       internal::ControllerLibCbStatusReceived,
-      internal::ControllerLibCbResponderIdsReceived
+      internal::ControllerLibCbResponderIdsReceived,
+      &notify_handler               // Context
     },
     {                               // RDM command callback shims
-      nullptr, nullptr, nullptr
+      nullptr, nullptr, nullptr, nullptr
     },
     {                               // RDM data
       rdm_data.manufacturer_label.c_str(),
@@ -458,7 +459,6 @@ inline etcpal::Error Controller::Startup(ControllerNotifyHandler& notify_handler
       rdm_data.device_label.c_str(),
       rdm_data.device_label_settable
     },
-    &notify_handler,                // Callback context
     settings.uid.get(),             // UID
     settings.search_domain.c_str(), // Search domain
     settings.create_llrp_target,    // Create LLRP target
@@ -510,17 +510,18 @@ inline etcpal::Error Controller::Startup(ControllerNotifyHandler& notify_handler
       internal::ControllerLibCbClientListUpdate,
       internal::ControllerLibCbRdmResponseReceived,
       internal::ControllerLibCbStatusReceived,
-      internal::ControllerLibCbResponderIdsReceived
+      internal::ControllerLibCbResponderIdsReceived,
+      &notify_handler               // Context
     },
     {                               // RDM command callback shims
       internal::ControllerLibCbRdmCommandReceived,
       internal::ControllerLibCbLlrpRdmCommandReceived,
-      rdm_response_buf
+      rdm_response_buf,
+      &rdm_handler                  // Context
     },
     {                               // RDM data
       nullptr, nullptr, nullptr, nullptr, false
     },
-    &notify_handler,                // Callback context
     settings.uid.get(),             // UID
     settings.search_domain.c_str(), // Search domain
     settings.create_llrp_target,    // TODO: Create LLRP target
