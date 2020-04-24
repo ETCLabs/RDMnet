@@ -60,14 +60,14 @@ class MyDeviceNotifyHandler : public rdmnet::DeviceNotifyHandler
 MyDeviceNotifyHandler my_device_notify_handler;
 
 // Example method for generating a CID for a hardware-locked device:
-auto my_cid = etcpal::Uuid::Device("My Device Name", device_mac_addr, 0);
+etcpal::Uuid my_cid = etcpal::Uuid::Device("My Device Name", device_mac_addr, 0);
 
 rdmnet::DeviceSettings settings(my_cid, MY_ESTA_MANUFACTURER_ID_VAL);
 rdmnet::Device device;
 
 // In this example we are using the convenience method to startup with the default scope. The
 // Startup() overloads can be used to specify a scope to start on.
-auto result = device.StartupWithDefaultScope(my_device_notify_handler, settings);
+etcpal::Error result = device.StartupWithDefaultScope(my_device_notify_handler, settings);
 if (result)
 {
   // Device is valid and running.
@@ -130,10 +130,10 @@ RDMNET_CLIENT_SET_STATIC_SCOPE(&config.scope_config, "My initial scope", static_
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-auto result = device.Startup(my_device_notify_handler, settings, "My initial scope");
+etcpal::Error result = device.Startup(my_device_notify_handler, settings, "My initial scope");
 
 // Or, if configured with a static broker address...
-auto result = device.Startup(my_device_notify_handler, settings, "My initial scope", my_static_broker_addr);
+etcpal::Error result = device.Startup(my_device_notify_handler, settings, "My initial scope", my_static_broker_addr);
 ```
 <!-- CODE_BLOCK_END -->
 
@@ -153,7 +153,7 @@ etcpal_error_t result = rdmnet_device_change_scope(my_device_handle, &new_scope_
 ```cpp
 // The disconnect_reason argument provides the RDMnet disconnect reason code to send on the current
 // connected scope. Select the most appropriate value for why the scope is changing.
-auto result = device.ChangeScope("My new scope", kRdmnetDisconnectUserReconfigure);
+etcpal::Error result = device.ChangeScope("My new scope", kRdmnetDisconnectUserReconfigure);
 ```
 <!-- CODE_BLOCK_END -->
 
@@ -235,7 +235,7 @@ if (result == kEtcPalErrOk)
 // Endpoint configs are constructed implicitly from endpoint numbers, so when creating an endpoint
 // with no responders on it initially, it's as simple as: 
 
-auto result = device.AddPhysicalEndpoint(1); // Create a physical endpoint numbered 1
+etcpal::Error result = device.AddPhysicalEndpoint(1); // Create a physical endpoint numbered 1
 if (result)
 {
   // The endpoint has been added. If currently connected, the library will send the proper
@@ -264,7 +264,7 @@ void rdm_responder_discovered(uint16_t port_endpoint_number, const RdmUid* respo
 ```cpp
 void RdmResponderDiscovered(uint16_t port_endpoint_number, const rdm::Uid& responder_uid)
 {
-  auto result = device.AddPhysicalResponder(port_endpoint_number, responder_uid);
+  etcpal::Error result = device.AddPhysicalResponder(port_endpoint_number, responder_uid);
   if (result)
   {
     // The responder has been added. If currently connected, the library will send the proper
@@ -314,7 +314,7 @@ std::vector<rdm::Uid> responders = {
 rdmnet::PhysicalEndpointConfig endpoint_config(2, responders);
 
 // Add the endpoint
-auto result = device.AddPhysicalEndpoint(endpoint_config);
+etcpal::Error result = device.AddPhysicalEndpoint(endpoint_config);
 if (result)
 {
   // The endpoint has been added. If currently connected, the library will send the proper
@@ -362,7 +362,7 @@ std::vector<etcpal::Uuid> responders = { etcpal::Uuid::FromString("f7c58fe2-d380
 rdmnet::VirtualEndpointConfig endpoint_config(3, responders);
 
 // Add the endpoint
-auto result = device.AddVirtualEndpoint(endpoint_config);
+etcpal::Error result = device.AddVirtualEndpoint(endpoint_config);
 if (result)
 {
   // The endpoint has been added. If currently connected, the library will send the proper
@@ -409,7 +409,7 @@ void MyDeviceNotifyHandler::HandleDynamicUidStatus(rdmnet::DeviceHandle handle,
 {
   // Check handles as necessary...
 
-  for (const auto& mapping : list.GetMappings())
+  for (const rdmnet::DynamicUidMapping& mapping : list.GetMappings())
   {
     if (mapping.IsOk())
     {

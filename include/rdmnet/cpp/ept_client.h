@@ -171,7 +171,7 @@ private:
 /// \brief Allocate resources and start up this EPT client with the given configuration.
 /// \param notify_handler A class instance to handle callback notifications from this EPT client.
 /// \param settings Configuration settings used by this EPT client.
-/// \return etcpal::Error::Ok(): Controller started successfully.
+/// \return etcpal::Error::Ok(): EPT client started successfully.
 /// \return #kEtcPalErrInvalid: Invalid argument.
 /// \return Errors forwarded from rdmnet_ept_client_create().
 inline etcpal::Error EptClient::Startup(EptClientNotifyHandler& notify_handler, const EptClientSettings& settings)
@@ -244,7 +244,7 @@ inline etcpal::Expected<ScopeHandle> EptClient::AddDefaultScope(const etcpal::So
 ///
 /// After this call completes, scope_handle will no longer be valid.
 ///
-/// \param scope_handle Handle to scope to remove.
+/// \param scope_handle Handle to the scope to remove.
 /// \param disconnect_reason RDMnet protocol disconnect reason to send to the connected broker.
 /// \return etcpal::Error::Ok(): Scope removed successfully.
 /// \return Error codes from from rdmnet_ept_client_remove_scope().
@@ -271,9 +271,9 @@ inline etcpal::Error EptClient::RequestClientList(ScopeHandle scope_handle)
 
 /// \brief Send data from an EPT client on a scope.
 /// \param scope_handle Handle to the scope on which to send data.
-/// \param dest_cid CID of the EPT client to which send the data.
+/// \param dest_cid CID of the EPT client to which to send the data.
 /// \param manufacturer_id Manufacturer ID portion of the EPT sub-protocol identifier.
-/// \param protocol_id Manufacturer ID portion of the EPT sub-protocol identifier.
+/// \param protocol_id Protocol ID portion of the EPT sub-protocol identifier.
 /// \param data The data to send.
 /// \param data_len Size in bytes of data.
 /// \return etcpal::Error::Ok(): Data sent successfully.
@@ -298,7 +298,7 @@ inline etcpal::Error EptClient::SendData(ScopeHandle scope_handle, const etcpal:
 /// \brief Send a status message from an EPT client on a scope.
 ///
 /// \param scope_handle Handle to the scope on which to send the status message.
-/// \param dest_cid CID of the EPT client to which send the status message.
+/// \param dest_cid CID of the EPT client to which to send the status message.
 /// \param status_code EPT status code to send.
 /// \param status_string Optional status string accompanying the code.
 /// \return etcpal::Error::Ok(): Status sent successfully.

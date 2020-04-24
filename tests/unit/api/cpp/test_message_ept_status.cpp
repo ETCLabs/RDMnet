@@ -18,41 +18,16 @@
  *****************************************************************************/
 
 #include "gtest/gtest.h"
-#include "rdmnet/cpp/message_types/rpt_misc.h"
+#include "rdmnet/cpp/message_types/ept_status.h"
 
-TEST(TestRptStatus, RefConstructorWorks)
+TEST(TestEptStatus, RefConstructorWorks)
 {
-  RdmnetRptStatus c_status{};
-  rdmnet::RptStatus status(c_status);
+  RdmnetEptStatus c_status{};
+  rdmnet::EptStatus status(c_status);
 }
 
-TEST(TestSavedRptStatus, DefaultConstructorWorks)
+TEST(TestSavedEptStatus, DefaultConstructorWorks)
 {
-  rdmnet::SavedRptStatus status;
+  rdmnet::SavedEptStatus status;
   EXPECT_FALSE(status.IsValid());
-}
-
-TEST(TestRptClientEntry, DefaultConstructorWorks)
-{
-  rdmnet::RptClientEntry client_entry;
-  EXPECT_TRUE(client_entry.cid.IsNull());
-}
-
-TEST(TestRptClientList, RefConstructorWorks)
-{
-  RdmnetRptClientList c_list{};
-  rdmnet::RptClientList list(c_list);
-}
-
-TEST(TestDynamicUidMapping, DefaultConstructorWorks)
-{
-  rdmnet::DynamicUidMapping mapping;
-  EXPECT_FALSE(mapping.uid.IsValid());
-  EXPECT_TRUE(mapping.rid.IsNull());
-}
-
-TEST(TestDynamicUidAssignmentList, RefConstructorWorks)
-{
-  RdmnetDynamicUidAssignmentList c_list{};
-  rdmnet::DynamicUidAssignmentList list(c_list);
 }

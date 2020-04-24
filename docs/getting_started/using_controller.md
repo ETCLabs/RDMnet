@@ -54,6 +54,7 @@ else
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
+#include "etcpal/cpp/uuid.h"
 #include "rdmnet/cpp/controller.h"
 
 class MyControllerNotifyHandler : public rdmnet::ControllerNotifyHandler
@@ -65,7 +66,7 @@ MyControllerNotifyHandler my_controller_notify_handler;
 
 // Each controller is a component that must have a Component ID (CID), which is simply a UUID.
 // Software should generate and save a CID so that the same one is used on each run of the software.
-auto my_cid = etcpal::Uuid::OsPreferred();
+etcpal::Uuid my_cid = etcpal::Uuid::OsPreferred();
 
 // Contains the configuration settings that the controller needs to operate. Some of these are set
 // to default values and can be changed if necessary. Must pass your ESTA manufacturer ID. If you
@@ -83,7 +84,7 @@ etcpal::Error result = controller.Startup(my_controller_notify_handler, my_setti
 if (result)
 {
   // Controller is valid and running.
-  auto handle = controller.handle();
+  rdmnet::ControllerHandle handle = controller.handle();
   // Store handle for later lookup from the ControllerNotifyHandler callback functions.
 }
 else
@@ -140,9 +141,9 @@ etcpal_error_t result = rdmnet_controller_add_scope(my_controller_handle, &scope
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-auto add_res = controller.AddDefaultScope();
+etcpal::Error add_res = controller.AddDefaultScope();
 // Or...
-auto add_res = controller.AddScope("custom_scope_name");
+etcpal::Error add_res = controller.AddScope("custom_scope_name");
 
 if (add_res)
 {
@@ -185,10 +186,10 @@ etcpal_error_t result = rdmnet_controller_add_scope(my_controller_handle, &confi
 <!-- CODE_BLOCK_MID -->
 ```cpp
 // Get configured static broker address
-auto static_broker_addr = etcpal::SockAddr(etcpal::IpAddr::FromString("192.168.2.1"), 8000);
-auto add_res = controller.AddScope("my_custom_scope", static_broker_addr);
+etcpal::Sockaddr static_broker_addr(etcpal::IpAddr::FromString("192.168.2.1"), 8000);
+etcpal::Error add_res = controller.AddScope("my_custom_scope", static_broker_addr);
 // Or:
-auto add_res = controller.AddDefaultScope(static_broker_addr);
+etcpal::Error add_res = controller.AddDefaultScope(static_broker_addr);
 ```
 <!-- CODE_BLOCK_END -->
 
@@ -378,7 +379,7 @@ if (result == kEtcPalErrOk)
 <!-- CODE_BLOCK_MID -->
 ```cpp
 auto dest_addr = rdmnet::DestinationAddr::ToDefaultResponder(0x6574, 0x12345678);
-auto result = controller.SendGetCommand(my_scope_handle, dest_addr, E120_DEVICE_LABEL);
+etcpal::Expected<uint32_t> result = controller.SendGetCommand(my_scope_handle, dest_addr, E120_DEVICE_LABEL);
 
 if (result)
 {
@@ -392,6 +393,12 @@ if (result)
 Responses to commands you send will be delivered asynchronously through the "RDM response" callback.
 You may also receive "unsolicited responses" - asynchronous state updates from devices that don't
 correspond to changes you requested.
+
+Responses are always delivered atomically in RDMnet (contrast this with RDM, which uses the
+ACK_OVERFLOW mechanism to deliver responses with oversized data). This means that RDM response data
+in RDMnet can be larger than the 231-byte limit that is customary in RDM. The only time a response
+can be fragmented is if the RDMnet library was compiled with dynamic memory allocation disabled 
+(see the note on the more_coming flag below for more information on this).
 
 <!-- CODE_BLOCK_START -->
 ```c
@@ -460,7 +467,7 @@ void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::ControllerHandle contr
 
   // RdmResponse classes do not own their data and the data will be invalid when this callback returns.
   // To save the data for later processing:
-  auto saved_resp = resp.Save();
+  rdmnet::SavedRdmResponse saved_resp = resp.Save();
 
   if (resp.more_coming())
   {
@@ -581,7 +588,7 @@ void MyControllerNotifyHandler::HandleResponseData(uint16_t param_id, const uint
     // Unpack the response data into the responder_uids array...
 
     // Now request the RIDs from the broker for the responder UIDs.
-    auto result = controller.RequestResponderIds(responder_uids);
+    etcpal::Error result = controller.RequestResponderIds(responder_uids);
     if (result)
     {
       // The broker's response will be forwarded to the rdmnet::ControllerNotifyHandler::HandleResponderIdsReceived(),
@@ -629,7 +636,7 @@ void MyControllerNotifyHandler::HandleResponderIdsReceived(rdmnet::ControllerHan
 {
   // Check handles as necessary...
 
-  for (const auto& mapping : list.GetMappings())
+  for (const rdmnet::DynamicUidMapping& mapping : list.GetMappings())
   {
     if (mapping.IsOk())
     {

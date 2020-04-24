@@ -7,13 +7,16 @@ rdmnet_add_unit_test(test_rdmnet_cpp_api
   test_ept_client.cpp
   test_llrp_manager.cpp
 
+  test_message_dynamic_uid.cpp
+  test_message_ept_client.cpp
   test_message_ept_data.cpp
-  test_message_ept_misc.cpp
+  test_message_ept_status.cpp
   test_message_llrp_rdm_command.cpp
   test_message_llrp_rdm_response.cpp
   test_message_rdm_command.cpp
   test_message_rdm_response.cpp
-  test_message_rpt_misc.cpp
+  test_message_rpt_client.cpp
+  test_message_rpt_status.cpp
 
   main.cpp
 

@@ -212,7 +212,7 @@ inline VirtualEndpointConfig::VirtualEndpointConfig(uint16_t id, const rdm::Uid*
 /// \param static_responders UIDs identifying the initial virtual responders with static UIDs
 ///                          present on the endpoint.
 /// \param dynamic_responders (optional) Responder IDs identifying the initial virtual responders
-///                           with dynamic UIDs present on the end
+///                           with dynamic UIDs present on the endpoint.
 inline VirtualEndpointConfig::VirtualEndpointConfig(uint16_t id, const std::vector<rdm::Uid>& static_responders,
                                                     const std::vector<etcpal::Uuid>& dynamic_responders)
     : config_{id, nullptr, 0, nullptr, 0}
@@ -365,8 +365,7 @@ inline DeviceSettings::DeviceSettings(const etcpal::Uuid& new_cid, const rdm::Ui
 /// \brief Create a DeviceSettings instance by passing the required members explicitly.
 ///
 /// This version just takes the device's ESTA manufacturer ID and uses it to generate an RDMnet
-/// dynamic UID request. Optional members can be modified directly in the struct or through use of
-/// the setter methods.
+/// dynamic UID request. Optional members can be modified directly in the struct.
 inline DeviceSettings::DeviceSettings(const etcpal::Uuid& cid_in, uint16_t manufacturer_id)
     : cid(cid_in), uid(rdm::Uid::DynamicUidRequest(manufacturer_id))
 {
@@ -864,7 +863,7 @@ inline etcpal::Error Device::AddVirtualResponders(uint16_t endpoint_id, const st
 ///
 /// \param endpoint_id ID for the endpoint on which to add the responder.
 /// \param responder_static_uids Responder UIDs (permanent static RDM UIDs representing the responder) to add.
-/// \return etcpal::Error::Ok(): Responders added sucessfully (pending dynamic UID assignment).
+/// \return etcpal::Error::Ok(): Responders added sucessfully.
 /// \return #kEtcPalErrInvalid: Invalid argument, or the endpoint is a physical endpoint.
 /// \return #kEtcPalErrNotInit: Module not initialized.
 /// \return #kEtcPalErrNotFound: Device not started, or endpoint_id was not previously added.

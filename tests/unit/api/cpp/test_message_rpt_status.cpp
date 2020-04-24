@@ -18,35 +18,16 @@
  *****************************************************************************/
 
 #include "gtest/gtest.h"
-#include "rdmnet/cpp/message_types/ept_misc.h"
+#include "rdmnet/cpp/message_types/rpt_status.h"
 
-TEST(TestEptStatus, RefConstructorWorks)
+TEST(TestRptStatus, RefConstructorWorks)
 {
-  RdmnetEptStatus c_status{};
-  rdmnet::EptStatus status(c_status);
+  RdmnetRptStatus c_status{};
+  rdmnet::RptStatus status(c_status);
 }
 
-TEST(TestSavedEptStatus, DefaultConstructorWorks)
+TEST(TestSavedRptStatus, DefaultConstructorWorks)
 {
-  rdmnet::SavedEptStatus status;
+  rdmnet::SavedRptStatus status;
   EXPECT_FALSE(status.IsValid());
-}
-
-TEST(TestEptSubProtocol, DefaultConstructorWorks)
-{
-  rdmnet::EptSubProtocol sub_protocol;
-  EXPECT_EQ(sub_protocol.manufacturer_id, 0);
-  EXPECT_EQ(sub_protocol.protocol_id, 0);
-}
-
-TEST(TestEptClientEntry, DefaultConstructorWorks)
-{
-  rdmnet::EptClientEntry client_entry;
-  EXPECT_TRUE(client_entry.cid.IsNull());
-}
-
-TEST(TestEptClientList, RefConstructorWorks)
-{
-  RdmnetEptClientList c_list{};
-  rdmnet::EptClientList list(c_list);
 }

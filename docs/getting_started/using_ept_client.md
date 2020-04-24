@@ -77,7 +77,7 @@ MyEptNotifyHandler my_ept_notify_handler;
 
 // Each EPT client is a component that must have a Component ID (CID), which is simply a UUID.
 // Software should generate and save a CID so that the same one is used on each run of the software.
-auto my_cid = etcpal::Uuid::OsPreferred();
+etcpal::Uuid my_cid = etcpal::Uuid::OsPreferred();
 
 // Provide information about the EPT sub-protocols we support. Protocols are namespaced under your
 // ESTA manufacturer ID. If you have not yet requested an ESTA manufacturer ID, the range 0x7ff0 to
@@ -104,7 +104,7 @@ etcpal::Error result = ept_client.Startup(my_ept_notify_handler, my_settings);
 if (result)
 {
   // EPT client is valid and running.
-  auto handle = ept_client.handle();
+  rdmnet::EptClientHandle handle = ept_client.handle();
   // Store handle for later lookup from the EptClientNotifyHandler callback functions.
 }
 else
@@ -162,9 +162,9 @@ etcpal_error_t result = rdmnet_ept_client_add_scope(my_ept_client_handle, &scope
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-auto add_res = ept_client.AddDefaultScope();
+etcpal::Error add_res = ept_client.AddDefaultScope();
 // Or...
-auto add_res = ept_client.AddScope("custom_scope_name");
+etcpal::Error add_res = ept_client.AddScope("custom_scope_name");
 
 if (add_res)
 {
@@ -207,10 +207,10 @@ etcpal_error_t result = rdmnet_ept_client_add_scope(my_ept_client_handle, &confi
 <!-- CODE_BLOCK_MID -->
 ```cpp
 // Get configured static broker address
-auto static_broker_addr = etcpal::SockAddr(etcpal::IpAddr::FromString("192.168.2.1"), 8000);
-auto add_res = ept_client.AddScope("my_custom_scope", static_broker_addr);
+etcpal::SockAddr static_broker_addr(etcpal::IpAddr::FromString("192.168.2.1"), 8000);
+etcpal::Error add_res = ept_client.AddScope("my_custom_scope", static_broker_addr);
 // Or:
-auto add_res = ept_client.AddDefaultScope(static_broker_addr);
+etcpal::Error add_res = ept_client.AddDefaultScope(static_broker_addr);
 ```
 <!-- CODE_BLOCK_END -->
 
@@ -398,13 +398,14 @@ etcpal_error_t result = rdmnet_ept_client_send_data(my_ept_client_handle, my_sco
 <!-- CODE_BLOCK_MID -->
 ```cpp
 // The CID of the client we are sending the data to
-auto dest_cid = etcpal::Uuid::FromString("7f0bb8b0-fead-40c0-b657-d92d39e57586");
+etcpal::Uuid dest_cid = etcpal::Uuid::FromString("7f0bb8b0-fead-40c0-b657-d92d39e57586");
 
 std::array<uint8_t, 20> data; // An arbitrary data buffer of arbitrary size
 // Fill in data with some protocol-specific opaque data to send...
 
 // Send data for sub-protocol 1 to the client indicated by dest_cid
-auto result = ept_client.SendData(my_scope_handle, dest_cid, MY_ESTA_MANUFACTURER_ID, 1, data.data(), data.size());
+etcpal::Error result = ept_client.SendData(my_scope_handle, dest_cid, MY_ESTA_MANUFACTURER_ID, 1,
+                                           data.data(), data.size());
 ```
 <!-- CODE_BLOCK_END -->
 
@@ -528,7 +529,7 @@ rdmnet::EptResponseAction MyEptNotifyHandler::HandleEptData(rdmnet::EptClientHan
   // EptData structures do not own their data and the data will be invalid when this callback
   // returns. To save the data for later processing, you can save the entire structure with its
   // addressing data:
-  auto saved_data = data.Save();
+  rdmnet::SavedEptData saved_data = data.Save();
 
   // Or to just save the opaque data:
   std::vector<uint8_t> saved_data = data.CopyData();

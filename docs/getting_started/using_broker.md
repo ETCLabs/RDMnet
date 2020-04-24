@@ -25,7 +25,7 @@ dispatched from a background thread.
 
 // Each broker is a component that must have a Component ID (CID), which is simply a UUID.
 // Software should generate and save a CID so that the same one is used on each run of the software.
-auto my_cid = etcpal::Uuid::OsPreferred();
+etcpal::Uuid my_cid = etcpal::Uuid::OsPreferred();
 
 // Contains the configuration settings that the broker needs to operate. Some of these are set to
 // default values and can be changed if necessary. Must pass your ESTA manufacturer ID. If you have
@@ -34,7 +34,7 @@ auto my_cid = etcpal::Uuid::OsPreferred();
 rdmnet::BrokerSettings settings(my_cid, MY_ESTA_MANUFACTURER_ID_VAL);
 
 rdmnet::Broker broker;
-auto result = broker.Startup(settings);
+etcpal::Error result = broker.Startup(settings);
 if (result)
 {
   // Broker is now running
@@ -69,7 +69,7 @@ broker.Shutdown();
 The broker's scope can be changed at runtime using the ChangeScope() function.
 
 ```cpp
-auto result = broker.ChangeScope("new scope string", kRdmnetDisconnectUserReconfigure);
+etcpal::Error result = broker.ChangeScope("new scope string", kRdmnetDisconnectUserReconfigure);
 if (result)
 {
   // Broker is now using the new scope.

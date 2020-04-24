@@ -86,7 +86,7 @@ private:
 };
 
 /// \ingroup rdmnet_cpp_common
-/// \brief An RDM command received over RDMnet by a local component and saved for a later response.
+/// \brief An RDM command received over LLRP by a local component and saved for a later response.
 class SavedRdmCommand
 {
 public:
@@ -263,7 +263,7 @@ constexpr SavedRdmCommand::SavedRdmCommand(const LlrpSavedRdmCommand& c_cmd) noe
 {
 }
 
-/// Assign an instance of the C RdmnetSavedRdmCommand type to an instance of this class.
+/// Assign an instance of the C LlrpSavedRdmCommand type to an instance of this class.
 inline SavedRdmCommand& SavedRdmCommand::operator=(const LlrpSavedRdmCommand& c_cmd) noexcept
 {
   cmd_ = c_cmd;
@@ -280,6 +280,7 @@ inline SavedRdmCommand::SavedRdmCommand(const RdmCommand& command) noexcept
 inline SavedRdmCommand& SavedRdmCommand::operator=(const RdmCommand& command) noexcept
 {
   rdmnet_save_llrp_rdm_command(&command.get(), &cmd_);
+  return *this;
 }
 
 /// Get the CID of the LLRP manager that sent this command.

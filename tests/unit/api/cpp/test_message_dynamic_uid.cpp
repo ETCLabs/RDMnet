@@ -17,24 +17,18 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/// \file rdmnet/cpp/message.h
-/// \brief RDMnet C++ message type definitions
-
-#ifndef RDMNET_CPP_MESSAGE_H_
-#define RDMNET_CPP_MESSAGE_H_
-
-// This monolithic header includes all of the individual message types. This one is used from the
-// other API headers.
-
+#include "gtest/gtest.h"
 #include "rdmnet/cpp/message_types/dynamic_uid.h"
-#include "rdmnet/cpp/message_types/ept_client.h"
-#include "rdmnet/cpp/message_types/ept_data.h"
-#include "rdmnet/cpp/message_types/ept_status.h"
-#include "rdmnet/cpp/message_types/llrp_rdm_command.h"
-#include "rdmnet/cpp/message_types/llrp_rdm_response.h"
-#include "rdmnet/cpp/message_types/rdm_command.h"
-#include "rdmnet/cpp/message_types/rdm_response.h"
-#include "rdmnet/cpp/message_types/rpt_client.h"
-#include "rdmnet/cpp/message_types/rpt_status.h"
 
-#endif  // RDMNET_CPP_MESSAGE_H_
+TEST(TestDynamicUidMapping, DefaultConstructorWorks)
+{
+  rdmnet::DynamicUidMapping mapping;
+  EXPECT_FALSE(mapping.uid.IsValid());
+  EXPECT_TRUE(mapping.rid.IsNull());
+}
+
+TEST(TestDynamicUidAssignmentList, RefConstructorWorks)
+{
+  RdmnetDynamicUidAssignmentList c_list{};
+  rdmnet::DynamicUidAssignmentList list(c_list);
+}

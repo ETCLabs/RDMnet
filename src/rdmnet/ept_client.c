@@ -276,7 +276,7 @@ etcpal_error_t rdmnet_ept_client_request_client_list(rdmnet_ept_client_t client_
  *
  * \param[in] client_handle Handle to the EPT client from which to send data.
  * \param[in] scope_handle Handle to the scope on which to send data.
- * \param[in] dest_cid CID of the EPT client to which send the data.
+ * \param[in] dest_cid CID of the EPT client to which to send the data.
  * \param[in] manufacturer_id Manufacturer ID portion of the EPT sub-protocol identifier.
  * \param[in] protocol_id Manufacturer ID portion of the EPT sub-protocol identifier.
  * \param[in] data The data to send.
@@ -307,7 +307,7 @@ etcpal_error_t rdmnet_ept_client_send_data(rdmnet_ept_client_t client_handle, rd
  *
  * \param[in] client_handle Handle to the EPT client from which to send the status message.
  * \param[in] scope_handle Handle to the scope on which to send the status message.
- * \param[in] dest_cid CID of the EPT client to which send the status message.
+ * \param[in] dest_cid CID of the EPT client to which to send the status message.
  * \param[in] status_code EPT status code to send.
  * \param[in] status_string Optional status string accompanying the code.
  * \return #kEtcPalErrOk: Status sent successfully.

@@ -81,7 +81,7 @@ etcpal::Error result = manager.Startup(
 if (result)
 {
   // Manager is valid and running.
-  auto handle = manager.handle();
+  llrp::ManagerHandle handle = manager.handle();
   // Store handle for later lookup from the ManagerNotifyHandler callback functions.
 }
 else
@@ -140,13 +140,13 @@ if (result == kEtcPalErrOk)
 <!-- CODE_BLOCK_MID -->
 ```cpp
 // To discover all LLRP targets...
-auto result = manager.StartDiscovery();
+etcpal::Error result = manager.StartDiscovery();
 
 // Or, to limit discovery to targets that are not currently connected to a broker via RDMnet...
-auto result = manager.StartDiscovery(LLRP_FILTERVAL_CLIENT_CONN_INACTIVE);
+etcpal::Error result = manager.StartDiscovery(LLRP_FILTERVAL_CLIENT_CONN_INACTIVE);
 
 // Or, to limit discovery to RDMnet brokers...
-auto result = manager.StartDiscovery(LLRP_FILTERVAL_BROKERS_ONLY);
+etcpal::Error result = manager.StartDiscovery(LLRP_FILTERVAL_BROKERS_ONLY);
 
 if (result)
 {
@@ -230,7 +230,7 @@ if (result == kEtcPalErrOk)
 ```cpp
 // Send a GET:DEVICE_LABEL command to an LLRP target. Assuming we have an llrp::DiscoveredTarget
 // structure named 'target'...
-auto result = manager.SendGetCommand(target.address(), E120_DEVICE_LABEL);
+etcpal::Expected<uint32_t> result = manager.SendGetCommand(target.address(), E120_DEVICE_LABEL);
 if (result)
 {
   // *result identifies this command transaction. Store it for when a response is received.
@@ -275,7 +275,7 @@ void MyLlrpNotifyHandler::HandleLlrpRdmResponse(llrp::ManagerHandle handle, cons
 
     // llrp::RdmResponse classes do not own their data and the data will be invalid when this
     // callback ends. To save the data for later processing:
-    auto saved_resp = resp.Save();
+    llrp::SavedRdmResponse saved_resp = resp.Save();
   }
 }
 ```

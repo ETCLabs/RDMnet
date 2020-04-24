@@ -213,7 +213,7 @@ constexpr bool RdmResponse::HasData() const noexcept
   return (data_len() != 0);
 }
 
-/// \brief Whether this command has an RDM response type of ACK.
+/// \brief Whether this response has an RDM response type of ACK.
 ///
 /// If this is false, it implies that IsNack() is true (ACK_TIMER and ACK_OVERFLOW are not allowed
 /// in LLRP).
@@ -222,7 +222,7 @@ constexpr bool RdmResponse::IsAck() const noexcept
   return (resp_.rdm_header.resp_type == kRdmResponseTypeAck);
 }
 
-/// \brief Whether this command has an RDM response type of NACK_REASON.
+/// \brief Whether this response has an RDM response type of NACK_REASON.
 ///
 /// If this is false, it implies that IsAck() is true (ACK_TIMER and ACK_OVERFLOW are not allowed
 /// in LLRP).
@@ -244,8 +244,8 @@ constexpr bool RdmResponse::IsSetResponse() const noexcept
 }
 
 /// \brief Get the NACK reason code of this RDM response.
-/// \return If IsNack(), the valid NackReason instance.
-/// \return If !IsNack(), kEtcPalErrInvalid.
+/// \return If IsNack() and has valid NACK reason data, the valid NackReason instance.
+/// \return Otherwise, kEtcPalErrInvalid.
 inline etcpal::Expected<rdm::NackReason> RdmResponse::NackReason() const noexcept
 {
   if (IsNack() && data_len() >= 2)
@@ -394,7 +394,7 @@ inline bool SavedRdmResponse::HasData() const noexcept
   return rdm_.HasData();
 }
 
-/// \brief Whether this command has an RDM response type of ACK.
+/// \brief Whether this response has an RDM response type of ACK.
 ///
 /// If this is false, it implies that IsNack() is true (ACK_TIMER and ACK_OVERFLOW are not allowed
 /// in LLRP).
@@ -403,7 +403,7 @@ constexpr bool SavedRdmResponse::IsAck() const noexcept
   return rdm_.IsAck();
 }
 
-/// \brief Whether this command has an RDM response type of NACK_REASON.
+/// \brief Whether this response has an RDM response type of NACK_REASON.
 ///
 /// If this is false, it implies that IsAck() is true (ACK_TIMER and ACK_OVERFLOW are not allowed
 /// in LLRP).
