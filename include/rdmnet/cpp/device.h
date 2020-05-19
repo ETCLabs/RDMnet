@@ -48,68 +48,6 @@ namespace rdmnet
 /// of an RDMnet device.
 ///
 /// See \ref using_device for a detailed description of how to use this API.
-///
-/// @{
-
-/// A handle type used by the RDMnet library to identify device instances.
-using DeviceHandle = rdmnet_device_t;
-/// An invalid DeviceHandle value.
-constexpr DeviceHandle kInvalidDeviceHandle = RDMNET_DEVICE_INVALID;
-
-/// @}
-
-class Device;
-
-/// \ingroup rdmnet_device_cpp
-/// \brief A base class for a class that receives notification callbacks from a device.
-///
-/// See \ref using_device for details of how to use this API.
-class DeviceNotifyHandler
-{
-public:
-  /// \brief A device has successfully connected to a broker.
-  /// \param handle Handle to device instance which has connected.
-  /// \param info More information about the successful connection.
-  virtual void HandleConnectedToBroker(DeviceHandle handle, const ClientConnectedInfo& info) = 0;
-
-  /// \brief A connection attempt failed between a device and a broker.
-  /// \param handle Handle to device instance which has failed to connect.
-  /// \param info More information about the failed connection.
-  virtual void HandleBrokerConnectFailed(DeviceHandle handle, const ClientConnectFailedInfo& info) = 0;
-
-  /// \brief A device which was previously connected to a broker has disconnected.
-  /// \param handle Handle to device instance which has disconnected.
-  /// \param info More information about the disconnect event.
-  virtual void HandleDisconnectedFromBroker(DeviceHandle handle, const ClientDisconnectedInfo& info) = 0;
-
-  /// \brief An RDM command has been received addressed to a device.
-  /// \param handle Handle to device instance which has received the RDM command.
-  /// \param cmd The RDM command data.
-  /// \return The action to take in response to this RDM command.
-  virtual RdmResponseAction HandleRdmCommand(DeviceHandle handle, const RdmCommand& cmd) = 0;
-
-  /// \brief An RDM command has been received over LLRP, addressed to a device.
-  /// \param handle Handle to device instance which has received the RDM command.
-  /// \param cmd The RDM command data.
-  /// \return The action to take in response to this LLRP RDM command.
-  virtual RdmResponseAction HandleLlrpRdmCommand(DeviceHandle handle, const llrp::RdmCommand& cmd) = 0;
-
-  /// \brief The dynamic UID assignment status for a set of virtual responders has been received.
-  ///
-  /// This callback need only be implemented if adding virtual responders with dynamic UIDs. See
-  /// \ref devices_and_gateways and \ref using_device for more information.
-  ///
-  /// Note that the list may indicate failed assignments for some or all responders, with a status
-  /// code.
-  ///
-  /// \param handle Handle to device instance which has received the dynamic UID assignments.
-  /// \param list The list of dynamic UID assignments.
-  virtual void HandleDynamicUidStatus(DeviceHandle handle, const DynamicUidAssignmentList& list)
-  {
-    ETCPAL_UNUSED_ARG(handle);
-    ETCPAL_UNUSED_ARG(list);
-  }
-};
 
 /// \ingroup rdmnet_device_cpp
 /// \brief Configuration information for a virtual endpoint on a device.
@@ -326,57 +264,6 @@ inline void PhysicalEndpointConfig::UpdateConfig()
   config_.num_responders = responders_.size();
 }
 
-/// A set of configuration settings that a device needs to initialize.
-struct DeviceSettings
-{
-  etcpal::Uuid cid;           ///< The device's Component Identifier (CID).
-  rdm::Uid uid;               ///< The device's RDM UID. For a dynamic UID, use rdm::Uid::DynamicUidRequest().
-  std::string search_domain;  ///< The device's search domain for discovering brokers.
-
-  /// A data buffer to be used to respond synchronously to RDM commands. See
-  /// \ref handling_rdm_commands for more information.
-  const uint8_t* response_buf{nullptr};
-
-  /// Array of configurations for virtual endpoints that are present on the device at startup.
-  std::vector<VirtualEndpointConfig> virtual_endpoints;
-  /// Array of configurations for physical endpoints that are present on the device at startup.
-  std::vector<PhysicalEndpointConfig> physical_endpoints;
-  /// (optional) A set of network interfaces to use for the LLRP target associated with this
-  /// device. If empty, the set passed to rdmnet::Init() will be used, or all network interfaces on
-  /// the system if that was not provided.
-  std::vector<RdmnetMcastNetintId> llrp_netints;
-
-  /// Create an empty, invalid data structure by default.
-  DeviceSettings() = default;
-  DeviceSettings(const etcpal::Uuid& new_cid, const rdm::Uid& new_uid);
-  DeviceSettings(const etcpal::Uuid& new_cid, uint16_t manufacturer_id);
-
-  bool IsValid() const;
-};
-
-/// \brief Create a DeviceSettings instance by passing the required members explicitly.
-///
-/// This version takes the fully-formed RDM UID that the device will use. Optional members can be
-/// modified directly in the struct.
-inline DeviceSettings::DeviceSettings(const etcpal::Uuid& new_cid, const rdm::Uid& new_uid) : cid(new_cid), uid(new_uid)
-{
-}
-
-/// \brief Create a DeviceSettings instance by passing the required members explicitly.
-///
-/// This version just takes the device's ESTA manufacturer ID and uses it to generate an RDMnet
-/// dynamic UID request. Optional members can be modified directly in the struct.
-inline DeviceSettings::DeviceSettings(const etcpal::Uuid& cid_in, uint16_t manufacturer_id)
-    : cid(cid_in), uid(rdm::Uid::DynamicUidRequest(manufacturer_id))
-{
-}
-
-/// Determine whether a DeviceSettings instance contains valid data for RDMnet operation.
-inline bool DeviceSettings::IsValid() const
-{
-  return (!cid.IsNull() && (uid.IsStatic() || uid.IsDynamicUidRequest()));
-}
-
 /// \ingroup rdmnet_device_cpp
 /// \brief An instance of RDMnet device functionality.
 ///
@@ -384,15 +271,102 @@ inline bool DeviceSettings::IsValid() const
 class Device
 {
 public:
+  /// A handle type used by the RDMnet library to identify device instances.
+  using Handle = rdmnet_device_t;
+  /// An invalid Handle value.
+  static constexpr Handle kInvalidHandle = RDMNET_DEVICE_INVALID;
+
+  /// \ingroup rdmnet_device_cpp
+  /// \brief A base class for a class that receives notification callbacks from a device.
+  ///
+  /// See \ref using_device for details of how to use this API.
+  class NotifyHandler
+  {
+  public:
+    /// \brief A device has successfully connected to a broker.
+    /// \param handle Handle to device instance which has connected.
+    /// \param info More information about the successful connection.
+    virtual void HandleConnectedToBroker(Handle handle, const ClientConnectedInfo& info) = 0;
+
+    /// \brief A connection attempt failed between a device and a broker.
+    /// \param handle Handle to device instance which has failed to connect.
+    /// \param info More information about the failed connection.
+    virtual void HandleBrokerConnectFailed(Handle handle, const ClientConnectFailedInfo& info) = 0;
+
+    /// \brief A device which was previously connected to a broker has disconnected.
+    /// \param handle Handle to device instance which has disconnected.
+    /// \param info More information about the disconnect event.
+    virtual void HandleDisconnectedFromBroker(Handle handle, const ClientDisconnectedInfo& info) = 0;
+
+    /// \brief An RDM command has been received addressed to a device.
+    /// \param handle Handle to device instance which has received the RDM command.
+    /// \param cmd The RDM command data.
+    /// \return The action to take in response to this RDM command.
+    virtual RdmResponseAction HandleRdmCommand(Handle handle, const RdmCommand& cmd) = 0;
+
+    /// \brief An RDM command has been received over LLRP, addressed to a device.
+    /// \param handle Handle to device instance which has received the RDM command.
+    /// \param cmd The RDM command data.
+    /// \return The action to take in response to this LLRP RDM command.
+    virtual RdmResponseAction HandleLlrpRdmCommand(Handle handle, const llrp::RdmCommand& cmd) = 0;
+
+    /// \brief The dynamic UID assignment status for a set of virtual responders has been received.
+    ///
+    /// This callback need only be implemented if adding virtual responders with dynamic UIDs. See
+    /// \ref devices_and_gateways and \ref using_device for more information.
+    ///
+    /// Note that the list may indicate failed assignments for some or all responders, with a status
+    /// code.
+    ///
+    /// \param handle Handle to device instance which has received the dynamic UID assignments.
+    /// \param list The list of dynamic UID assignments.
+    virtual void HandleDynamicUidStatus(Handle handle, const DynamicUidAssignmentList& list)
+    {
+      ETCPAL_UNUSED_ARG(handle);
+      ETCPAL_UNUSED_ARG(list);
+    }
+  };
+
+  /// \ingroup rdmnet_device_cpp
+  /// \brief A set of configuration settings that a device needs to initialize.
+  struct Settings
+  {
+    etcpal::Uuid cid;           ///< The device's Component Identifier (CID).
+    rdm::Uid uid;               ///< The device's RDM UID. For a dynamic UID, use rdm::Uid::DynamicUidRequest().
+    std::string search_domain;  ///< The device's search domain for discovering brokers.
+
+    /// A data buffer to be used to respond synchronously to RDM commands. See
+    /// \ref handling_rdm_commands for more information.
+    const uint8_t* response_buf{nullptr};
+
+    /// Array of configurations for virtual endpoints that are present on the device at startup.
+    std::vector<VirtualEndpointConfig> virtual_endpoints;
+    /// Array of configurations for physical endpoints that are present on the device at startup.
+    std::vector<PhysicalEndpointConfig> physical_endpoints;
+    /// (optional) A set of network interfaces to use for the LLRP target associated with this
+    /// device. If empty, the set passed to rdmnet::Init() will be used, or all network interfaces on
+    /// the system if that was not provided.
+    std::vector<RdmnetMcastNetintId> llrp_netints;
+
+    /// Create an empty, invalid data structure by default.
+    Settings() = default;
+    Settings(const etcpal::Uuid& new_cid, const rdm::Uid& new_uid);
+    Settings(const etcpal::Uuid& new_cid, uint16_t manufacturer_id);
+
+    bool IsValid() const;
+  };
+
   Device() = default;
   Device(const Device& other) = delete;
   Device& operator=(const Device& other) = delete;
+  Device(Device&& other) = default;             ///< Move a device instance.
+  Device& operator=(Device&& other) = default;  ///< Move a device instance.
 
-  etcpal::Error StartupWithDefaultScope(DeviceNotifyHandler& notify_handler, const DeviceSettings& settings,
+  etcpal::Error StartupWithDefaultScope(NotifyHandler& notify_handler, const Settings& settings,
                                         const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
-  etcpal::Error Startup(DeviceNotifyHandler& notify_handler, const DeviceSettings& settings, const char* scope_id_str,
+  etcpal::Error Startup(NotifyHandler& notify_handler, const Settings& settings, const char* scope_id_str,
                         const etcpal::SockAddr& static_broker_addr = etcpal::SockAddr{});
-  etcpal::Error Startup(DeviceNotifyHandler& notify_handler, const DeviceSettings& settings, const Scope& scope_config);
+  etcpal::Error Startup(NotifyHandler& notify_handler, const Settings& settings, const Scope& scope_config);
   void Shutdown(rdmnet_disconnect_reason_t disconnect_reason = kRdmnetDisconnectShutdown);
 
   etcpal::Error ChangeScope(const char* new_scope_id_str, rdmnet_disconnect_reason_t disconnect_reason,
@@ -434,21 +408,44 @@ public:
   etcpal::Error RemovePhysicalResponder(uint16_t endpoint_id, const rdm::Uid& responder_uid);
   etcpal::Error RemovePhysicalResponders(uint16_t endpoint_id, const std::vector<rdm::Uid>& responder_uids);
 
-  constexpr DeviceHandle handle() const;
-  constexpr DeviceNotifyHandler* notify_handler() const;
+  constexpr Handle handle() const;
+  constexpr NotifyHandler* notify_handler() const;
   etcpal::Expected<Scope> scope() const;
 
 private:
-  DeviceHandle handle_{kInvalidDeviceHandle};
-  DeviceNotifyHandler* notify_{nullptr};
+  Handle handle_{kInvalidHandle};
+  NotifyHandler* notify_{nullptr};
 };
+
+/// \brief Create a device Settings instance by passing the required members explicitly.
+///
+/// This version takes the fully-formed RDM UID that the device will use. Optional members can be
+/// modified directly in the struct.
+inline Device::Settings::Settings(const etcpal::Uuid& new_cid, const rdm::Uid& new_uid) : cid(new_cid), uid(new_uid)
+{
+}
+
+/// \brief Create a device Settings instance by passing the required members explicitly.
+///
+/// This version just takes the device's ESTA manufacturer ID and uses it to generate an RDMnet
+/// dynamic UID request. Optional members can be modified directly in the struct.
+inline Device::Settings::Settings(const etcpal::Uuid& cid_in, uint16_t manufacturer_id)
+    : cid(cid_in), uid(rdm::Uid::DynamicUidRequest(manufacturer_id))
+{
+}
+
+/// Determine whether a device Settings instance contains valid data for RDMnet operation.
+inline bool Device::Settings::IsValid() const
+{
+  return (!cid.IsNull() && (uid.IsStatic() || uid.IsDynamicUidRequest()));
+}
 
 /// \brief Allocate resources and start up this device with the given configuration on the default
 ///        RDMnet scope.
 ///
 /// Will immediately attempt to discover and connect to a broker for the default scope (or just
 /// connect if a static broker address is given); the status of these attempts will be communicated
-/// via the associated DeviceNotifyHandler.
+/// via the associated NotifyHandler.
 ///
 /// \param notify_handler A class instance to handle callback notifications from this device.
 /// \param settings Configuration settings used by this device.
@@ -457,8 +454,7 @@ private:
 /// \return etcpal::Error::Ok(): Device started successfully.
 /// \return #kEtcPalErrInvalid: Invalid argument.
 /// \return Errors forwarded from rdmnet_device_create().
-inline etcpal::Error Device::StartupWithDefaultScope(DeviceNotifyHandler& notify_handler,
-                                                     const DeviceSettings& settings,
+inline etcpal::Error Device::StartupWithDefaultScope(NotifyHandler& notify_handler, const Settings& settings,
                                                      const etcpal::SockAddr& static_broker_addr)
 {
   ETCPAL_UNUSED_ARG(notify_handler);
@@ -472,7 +468,7 @@ inline etcpal::Error Device::StartupWithDefaultScope(DeviceNotifyHandler& notify
 ///
 /// Will immediately attempt to discover and connect to a broker for the given scope (or just
 /// connect if a static broker address is given); the status of these attempts will be communicated
-/// via the associated DeviceNotifyHandler.
+/// via the associated NotifyHandler.
 ///
 /// \param notify_handler A class instance to handle callback notifications from this device.
 /// \param settings Configuration settings used by this device.
@@ -482,8 +478,8 @@ inline etcpal::Error Device::StartupWithDefaultScope(DeviceNotifyHandler& notify
 /// \return etcpal::Error::Ok(): Device started successfully.
 /// \return #kEtcPalErrInvalid: Invalid argument.
 /// \return Errors forwarded from rdmnet_device_create().
-inline etcpal::Error Device::Startup(DeviceNotifyHandler& notify_handler, const DeviceSettings& settings,
-                                     const char* scope_id_str, const etcpal::SockAddr& static_broker_addr)
+inline etcpal::Error Device::Startup(NotifyHandler& notify_handler, const Settings& settings, const char* scope_id_str,
+                                     const etcpal::SockAddr& static_broker_addr)
 {
   ETCPAL_UNUSED_ARG(notify_handler);
   ETCPAL_UNUSED_ARG(settings);
@@ -497,7 +493,7 @@ inline etcpal::Error Device::Startup(DeviceNotifyHandler& notify_handler, const 
 ///
 /// Will immediately attempt to discover and connect to a broker for the given scope (or just
 /// connect if a static broker address is given); the status of these attempts will be communicated
-/// via the associated DeviceNotifyHandler.
+/// via the associated NotifyHandler.
 ///
 /// \param notify_handler A class instance to handle callback notifications from this device.
 /// \param settings Configuration settings used by this device.
@@ -505,8 +501,7 @@ inline etcpal::Error Device::Startup(DeviceNotifyHandler& notify_handler, const 
 /// \return etcpal::Error::Ok(): Device started successfully.
 /// \return #kEtcPalErrInvalid: Invalid argument.
 /// \return Errors forwarded from rdmnet_device_create().
-inline etcpal::Error Device::Startup(DeviceNotifyHandler& notify_handler, const DeviceSettings& settings,
-                                     const Scope& scope_config)
+inline etcpal::Error Device::Startup(NotifyHandler& notify_handler, const Settings& settings, const Scope& scope_config)
 {
   ETCPAL_UNUSED_ARG(notify_handler);
   ETCPAL_UNUSED_ARG(settings);
@@ -530,7 +525,7 @@ inline void Device::Shutdown(rdmnet_disconnect_reason_t disconnect_reason)
 /// Will disconnect from the current scope, sending the disconnect reason provided in the
 /// disconnect_reason parameter, and then attempt to discover and connect to a broker for the new
 /// scope. The status of the connection attempt will be communicated via the associated
-/// DeviceNotifyHandler.
+/// NotifyHandler.
 ///
 /// \param new_scope_id_str The ID string for the new scope.
 /// \param disconnect_reason Reason code for disconnecting from the current scope.
@@ -552,7 +547,7 @@ inline etcpal::Error Device::ChangeScope(const char* new_scope_id_str, rdmnet_di
 /// Will disconnect from the current scope, sending the disconnect reason provided in the
 /// disconnect_reason parameter, and then attempt to discover and connect to a broker for the new
 /// scope. The status of the connection attempt will be communicated via the associated
-/// DeviceNotifyHandler.
+/// NotifyHandler.
 ///
 /// \param new_scope_config Configuration information for the new scope.
 /// \param disconnect_reason Reason code for disconnecting from the current scope.
@@ -797,7 +792,7 @@ inline etcpal::Error Device::RemoveEndpoints(const std::vector<uint16_t>& endpoi
 ///
 /// This function can only be used on virtual endpoints. A dynamic UID for the responder will be
 /// requested from the broker and the assigned UID (or error code) will be delivered to
-/// DeviceNotifyHandler::HandleDynamicUidStatus(). Save this UID for comparison when handling RDM
+/// NotifyHandler::HandleDynamicUidStatus(). Save this UID for comparison when handling RDM
 /// commands addressed to the dynamic responder. Add the endpoint first with
 /// Device::AddVirtualEndpoint(). See \ref devices_and_gateways for more information on endpoints.
 ///
@@ -838,7 +833,7 @@ inline etcpal::Error Device::AddVirtualResponder(uint16_t endpoint_id, const rdm
 ///
 /// This function can only be used on virtual endpoints. Dynamic UIDs for the responders will be
 /// requested from the broker and the assigned UIDs (or error codes) will be delivered to
-/// DeviceNotifyHandler::HandleDynamicUidStatus(). Save these UIDs for comparison when handling RDM
+/// NotifyHandler::HandleDynamicUidStatus(). Save these UIDs for comparison when handling RDM
 /// commands addressed to the dynamic responders. Add the endpoint first with
 /// Device::AddVirtualEndpoint(). See \ref devices_and_gateways for more information on endpoints.
 ///
@@ -1037,13 +1032,13 @@ inline etcpal::Error Device::RemovePhysicalResponders(uint16_t endpoint_id, cons
 }
 
 /// \brief Retrieve the handle of a device instance.
-constexpr DeviceHandle Device::handle() const
+constexpr Device::Handle Device::handle() const
 {
   return handle_;
 }
 
-/// \brief Retrieve the DeviceNotifyHandler reference that this device was configured with.
-constexpr DeviceNotifyHandler* Device::notify_handler() const
+/// \brief Retrieve the NotifyHandler reference that this device was configured with.
+constexpr Device::NotifyHandler* Device::notify_handler() const
 {
   return notify_;
 }

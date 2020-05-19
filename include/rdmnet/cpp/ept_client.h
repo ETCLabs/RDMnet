@@ -41,96 +41,6 @@ namespace rdmnet
 /// RDMnet controllers and devices.
 ///
 /// See \ref using_ept_client for a detailed description of how to use this API.
-///
-/// @{
-
-/// A handle type used by the RDMnet library to identify EPT client instances.
-using EptClientHandle = rdmnet_ept_client_t;
-/// An invalid EptClientHandle value.
-constexpr EptClientHandle kInvalidEptClientHandle = RDMNET_EPT_CLIENT_INVALID;
-
-/// @}
-
-/// \ingroup rdmnet_ept_client_cpp
-/// \brief A base class for a class that receives notification callbacks from an EPT client.
-///
-/// See \ref using_ept_client for details of how to use this API.
-class EptClientNotifyHandler
-{
-public:
-  /// \brief An EPT client has successfully connected to a broker.
-  /// \param client_handle Handle to EPT client instance which has connected.
-  /// \param scope_handle Handle to the scope on which the EPT client has connected.
-  /// \param info More information about the successful connection.
-  virtual void HandleConnectedToBroker(EptClientHandle client_handle, ScopeHandle scope_handle,
-                                       const ClientConnectedInfo& info) = 0;
-
-  /// \brief A connection attempt failed between an EPT client and a broker.
-  /// \param client_handle Handle to EPT client instance which has failed to connect.
-  /// \param scope_handle Handle to the scope on which the connection failed.
-  /// \param info More information about the failed connection.
-  virtual void HandleBrokerConnectFailed(EptClientHandle client_handle, ScopeHandle scope_handle,
-                                         const ClientConnectFailedInfo& info) = 0;
-
-  /// \brief An EPT client which was previously connected to a broker has disconnected.
-  /// \param client_handle Handle to EPT client instance which has disconnected.
-  /// \param scope_handle Handle to the scope on which the disconnect occurred.
-  /// \param info More information about the disconnect event.
-  virtual void HandleDisconnectedFromBroker(EptClientHandle client_handle, ScopeHandle scope_handle,
-                                            const ClientDisconnectedInfo& info) = 0;
-
-  /// \brief A client list update has been received from a broker.
-  /// \param client_handle Handle to EPT client instance which has received the client list update.
-  /// \param scope_handle Handle to the scope on which the client list update was received.
-  /// \param list_action The way the updates in client_list should be applied to the EPT client's
-  ///                    cached list.
-  /// \param list The list of updates.
-  virtual void HandleClientListUpdate(EptClientHandle client_handle, ScopeHandle scope_handle,
-                                      client_list_action_t list_action, const EptClientList& list) = 0;
-
-  /// \brief EPT data has been received addressed to an EPT client.
-  /// \param client_handle Handle to EPT client instance which has received the data.
-  /// \param scope_handle Handle to the scope on which the EPT data was received.
-  /// \param data The EPT data.
-  /// \return The action to take in response to this EPT data message.
-  virtual EptResponseAction HandleEptData(EptClientHandle client_handle, ScopeHandle scope_handle,
-                                          const EptData& data) = 0;
-
-  /// \brief An EPT status message has been received in response to a previously-sent EPT data message.
-  /// \param client_handle Handle to EPT client instance which has received the data.
-  /// \param scope_handle Handle to the scope on which the EPT status message was received.
-  /// \param status The EPT status message.
-  virtual void HandleEptStatus(EptClientHandle client_handle, ScopeHandle scope_handle, const EptStatus& status) = 0;
-};
-
-/// A set of configuration settings that an EPT client needs to initialize.
-struct EptClientSettings
-{
-  etcpal::Uuid cid;                       ///< The EPT client's CID.
-  std::vector<EptSubProtocol> protocols;  ///< The list of EPT sub-protocols that this EPT client supports.
-  std::string search_domain;              ///< (optional) The EPT client's search domain for discovering brokers.
-  /// (optional) A data buffer to be used to respond synchronously to EPT data noficiations.
-  const uint8_t* response_buf{nullptr};
-
-  /// Create an empty, invalid data structure by default.
-  EptClientSettings() = default;
-  EptClientSettings(const etcpal::Uuid& new_cid, const std::vector<EptSubProtocol>& new_protocols);
-
-  bool IsValid() const;
-};
-
-/// Create an EptClientSettings instance by passing the required members explicitly.
-inline EptClientSettings::EptClientSettings(const etcpal::Uuid& new_cid,
-                                            const std::vector<EptSubProtocol>& new_protocols)
-    : cid(new_cid), protocols(new_protocols)
-{
-}
-
-/// Determine whether an EptClientSettings instance contains valid data for RDMnet operation.
-inline bool EptClientSettings::IsValid() const
-{
-  return (!cid.IsNull() && !protocols.empty());
-}
 
 /// \ingroup rdmnet_ept_client_cpp
 /// \brief An instance of RDMnet EPT client functionality.
@@ -139,11 +49,86 @@ inline bool EptClientSettings::IsValid() const
 class EptClient
 {
 public:
+  /// A handle type used by the RDMnet library to identify EPT client instances.
+  using Handle = rdmnet_ept_client_t;
+  /// An invalid Handle value.
+  static constexpr Handle kInvalidHandle = RDMNET_EPT_CLIENT_INVALID;
+
+  /// \ingroup rdmnet_ept_client_cpp
+  /// \brief A base class for a class that receives notification callbacks from an EPT client.
+  ///
+  /// See \ref using_ept_client for details of how to use this API.
+  class NotifyHandler
+  {
+  public:
+    /// \brief An EPT client has successfully connected to a broker.
+    /// \param client_handle Handle to EPT client instance which has connected.
+    /// \param scope_handle Handle to the scope on which the EPT client has connected.
+    /// \param info More information about the successful connection.
+    virtual void HandleConnectedToBroker(Handle client_handle, ScopeHandle scope_handle,
+                                         const ClientConnectedInfo& info) = 0;
+
+    /// \brief A connection attempt failed between an EPT client and a broker.
+    /// \param client_handle Handle to EPT client instance which has failed to connect.
+    /// \param scope_handle Handle to the scope on which the connection failed.
+    /// \param info More information about the failed connection.
+    virtual void HandleBrokerConnectFailed(Handle client_handle, ScopeHandle scope_handle,
+                                           const ClientConnectFailedInfo& info) = 0;
+
+    /// \brief An EPT client which was previously connected to a broker has disconnected.
+    /// \param client_handle Handle to EPT client instance which has disconnected.
+    /// \param scope_handle Handle to the scope on which the disconnect occurred.
+    /// \param info More information about the disconnect event.
+    virtual void HandleDisconnectedFromBroker(Handle client_handle, ScopeHandle scope_handle,
+                                              const ClientDisconnectedInfo& info) = 0;
+
+    /// \brief A client list update has been received from a broker.
+    /// \param client_handle Handle to EPT client instance which has received the client list update.
+    /// \param scope_handle Handle to the scope on which the client list update was received.
+    /// \param list_action The way the updates in client_list should be applied to the EPT client's
+    ///                    cached list.
+    /// \param list The list of updates.
+    virtual void HandleClientListUpdate(Handle client_handle, ScopeHandle scope_handle,
+                                        client_list_action_t list_action, const EptClientList& list) = 0;
+
+    /// \brief EPT data has been received addressed to an EPT client.
+    /// \param client_handle Handle to EPT client instance which has received the data.
+    /// \param scope_handle Handle to the scope on which the EPT data was received.
+    /// \param data The EPT data.
+    /// \return The action to take in response to this EPT data message.
+    virtual EptResponseAction HandleEptData(Handle client_handle, ScopeHandle scope_handle, const EptData& data) = 0;
+
+    /// \brief An EPT status message has been received in response to a previously-sent EPT data message.
+    /// \param client_handle Handle to EPT client instance which has received the data.
+    /// \param scope_handle Handle to the scope on which the EPT status message was received.
+    /// \param status The EPT status message.
+    virtual void HandleEptStatus(Handle client_handle, ScopeHandle scope_handle, const EptStatus& status) = 0;
+  };
+
+  /// \ingroup rdmnet_ept_client_cpp
+  /// \brief A set of configuration settings that an EPT client needs to initialize.
+  struct Settings
+  {
+    etcpal::Uuid cid;                       ///< The EPT client's CID.
+    std::vector<EptSubProtocol> protocols;  ///< The list of EPT sub-protocols that this EPT client supports.
+    std::string search_domain;              ///< (optional) The EPT client's search domain for discovering brokers.
+    /// (optional) A data buffer to be used to respond synchronously to EPT data noficiations.
+    const uint8_t* response_buf{nullptr};
+
+    /// Create an empty, invalid data structure by default.
+    Settings() = default;
+    Settings(const etcpal::Uuid& new_cid, const std::vector<EptSubProtocol>& new_protocols);
+
+    bool IsValid() const;
+  };
+
   EptClient() = default;
   EptClient(const EptClient& other) = delete;
   EptClient& operator=(const EptClient& other) = delete;
+  EptClient(EptClient&& other) = default;             ///< Move an EPT client instance.
+  EptClient& operator=(EptClient&& other) = default;  ///< Move an EPT client instance.
 
-  etcpal::Error Startup(EptClientNotifyHandler& notify_handler, const EptClientSettings& settings);
+  etcpal::Error Startup(NotifyHandler& notify_handler, const Settings& settings);
   void Shutdown(rdmnet_disconnect_reason_t disconnect_reason = kRdmnetDisconnectShutdown);
 
   etcpal::Expected<ScopeHandle> AddScope(const char* id,
@@ -159,14 +144,26 @@ public:
   etcpal::Error SendStatus(ScopeHandle scope_handle, const etcpal::Uuid& dest_cid, ept_status_code_t status_code,
                            const char* status_string = nullptr);
 
-  EptClientHandle handle() const;
-  EptClientNotifyHandler* notify_handler() const;
+  Handle handle() const;
+  NotifyHandler* notify_handler() const;
   etcpal::Expected<Scope> scope(ScopeHandle scope_handle) const;
 
 private:
-  EptClientHandle handle_{kInvalidEptClientHandle};
-  EptClientNotifyHandler* notify_{nullptr};
+  Handle handle_{kInvalidHandle};
+  NotifyHandler* notify_{nullptr};
 };
+
+/// Create an EPT client Settings instance by passing the required members explicitly.
+inline EptClient::Settings::Settings(const etcpal::Uuid& new_cid, const std::vector<EptSubProtocol>& new_protocols)
+    : cid(new_cid), protocols(new_protocols)
+{
+}
+
+/// Determine whether an EPT client Settings instance contains valid data for RDMnet operation.
+inline bool EptClient::Settings::IsValid() const
+{
+  return (!cid.IsNull() && !protocols.empty());
+}
 
 /// \brief Allocate resources and start up this EPT client with the given configuration.
 /// \param notify_handler A class instance to handle callback notifications from this EPT client.
@@ -174,7 +171,7 @@ private:
 /// \return etcpal::Error::Ok(): EPT client started successfully.
 /// \return #kEtcPalErrInvalid: Invalid argument.
 /// \return Errors forwarded from rdmnet_ept_client_create().
-inline etcpal::Error EptClient::Startup(EptClientNotifyHandler& notify_handler, const EptClientSettings& settings)
+inline etcpal::Error EptClient::Startup(NotifyHandler& notify_handler, const Settings& settings)
 {
   ETCPAL_UNUSED_ARG(notify_handler);
   ETCPAL_UNUSED_ARG(settings);
@@ -196,7 +193,7 @@ inline void EptClient::Shutdown(rdmnet_disconnect_reason_t disconnect_reason)
 ///
 /// The library will attempt to discover and connect to a broker for the scope (or just connect if
 /// a static broker address is given); the status of these attempts will be communicated via the
-/// associated EptClientNotifyHandler.
+/// associated NotifyHandler.
 ///
 /// \param id The scope ID string.
 /// \param static_broker_addr [optional] A static IP address and port at which to connect to the
@@ -214,7 +211,7 @@ inline etcpal::Expected<ScopeHandle> EptClient::AddScope(const char* id, const e
 ///
 /// The library will attempt to discover and connect to a broker for the scope (or just connect if
 /// a static broker address is given); the status of these attempts will be communicated via the
-/// associated EptClientNotifyHandler.
+/// associated NotifyHandler.
 ///
 /// \param scope_config Configuration information for the new scope.
 /// \return On success, a handle to the new scope, to be used with subsequent API calls.
@@ -229,7 +226,7 @@ inline etcpal::Expected<ScopeHandle> EptClient::AddScope(const Scope& scope_conf
 ///
 /// The library will attempt to discover and connect to a broker for the default scope (or just
 /// connect if a static broker address is given); the status of these attempts will be communicated
-/// via the associated EptClientNotifyHandler.
+/// via the associated NotifyHandler.
 ///
 /// \param static_broker_addr [optional] A static broker address to configure for the default scope.
 /// \return On success, a handle to the new scope, to be used with subsequent API calls.
@@ -257,8 +254,7 @@ inline etcpal::Error EptClient::RemoveScope(ScopeHandle scope_handle, rdmnet_dis
 
 /// \brief Request a client list from a broker.
 ///
-/// The response will be delivered via the EptClientNotifyHandler::HandleClientListUpdate()
-/// callback.
+/// The response will be delivered via the NotifyHandler::HandleClientListUpdate() callback.
 ///
 /// \param scope_handle Handle to the scope on which to request the client list.
 /// \return etcpal::Error::Ok(): Request sent successfully.
@@ -318,13 +314,13 @@ inline etcpal::Error EptClient::SendStatus(ScopeHandle scope_handle, const etcpa
 }
 
 /// \brief Retrieve the handle of an EPT client instance.
-inline EptClientHandle EptClient::handle() const
+inline EptClient::Handle EptClient::handle() const
 {
-  return kInvalidEptClientHandle;
+  return kInvalidHandle;
 }
 
-/// \brief Retrieve the EptClientNotifyHandler reference that this EPT client was configured with.
-inline EptClientNotifyHandler* EptClient::notify_handler() const
+/// \brief Retrieve the NotifyHandler reference that this EPT client was configured with.
+inline EptClient::NotifyHandler* EptClient::notify_handler() const
 {
   return nullptr;
 }

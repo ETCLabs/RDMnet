@@ -86,7 +86,7 @@ BrokerDiscoveryManager::BrokerDiscoveryManager()
   cur_config_.callback_context = this;
 }
 
-etcpal::Error BrokerDiscoveryManager::RegisterBroker(const rdmnet::BrokerSettings& settings)
+etcpal::Error BrokerDiscoveryManager::RegisterBroker(const rdmnet::Broker::Settings& settings)
 {
   // Start with the default information.
   RdmnetBrokerDiscInfo* my_info = &cur_config_.my_info;

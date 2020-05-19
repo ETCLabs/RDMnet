@@ -51,7 +51,7 @@ public:
   static TestBrokerDiscovery* instance;
 
   static const rdmnet_registered_broker_t kBrokerRegisterHandle;
-  rdmnet::BrokerSettings settings_;
+  rdmnet::Broker::Settings settings_;
 
 protected:
   testing::StrictMock<MockBrokerDiscoveryNotify> notify_;

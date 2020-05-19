@@ -166,7 +166,7 @@ bool LlrpManagerExample::ParseCommand(const std::string& line)
       case 'd':
         try
         {
-          llrp::ManagerHandle manager_handle = std::stoi(line.substr(2));
+          llrp::Manager::Handle manager_handle = std::stoi(line.substr(2));
           Discover(manager_handle);
         }
         catch (std::exception)
@@ -407,9 +407,8 @@ void LlrpManagerExample::PrintTargets()
   for (const auto& target : targets_)
   {
     const auto& prot_info = target.second.prot_info;
-    printf("%-6d %s %s %-15s %s\n", target.first, prot_info.uid.ToString().c_str(),
-           prot_info.cid.ToString().c_str(), llrp_component_type_to_string(prot_info.component_type),
-           prot_info.hardware_address.ToString().c_str());
+    printf("%-6d %s %s %-15s %s\n", target.first, prot_info.uid.ToString().c_str(), prot_info.cid.ToString().c_str(),
+           llrp_component_type_to_string(prot_info.component_type), prot_info.hardware_address.ToString().c_str());
   }
 }
 
@@ -780,7 +779,7 @@ void LlrpManagerExample::SetComponentScope(int target_handle, int scope_slot, co
   }
 }
 
-void LlrpManagerExample::HandleLlrpTargetDiscovered(llrp::ManagerHandle /*handle*/,
+void LlrpManagerExample::HandleLlrpTargetDiscovered(llrp::Manager::Handle /*handle*/,
                                                     const llrp::DiscoveredTarget& target)
 {
   if (discovery_active_)
@@ -794,12 +793,12 @@ void LlrpManagerExample::HandleLlrpTargetDiscovered(llrp::ManagerHandle /*handle
   }
 }
 
-void LlrpManagerExample::HandleLlrpDiscoveryFinished(llrp::ManagerHandle /*handle*/)
+void LlrpManagerExample::HandleLlrpDiscoveryFinished(llrp::Manager::Handle /*handle*/)
 {
   discovery_active_ = false;
 }
 
-void LlrpManagerExample::HandleLlrpRdmResponse(llrp::ManagerHandle handle, const llrp::RdmResponse& resp)
+void LlrpManagerExample::HandleLlrpRdmResponse(llrp::Manager::Handle handle, const llrp::RdmResponse& resp)
 {
   if (handle == active_manager_ && active_response_handler_)
     active_response_handler_(resp);

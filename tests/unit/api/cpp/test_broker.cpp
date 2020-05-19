@@ -17,24 +17,18 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#include "rdmnet/cpp/llrp_manager.h"
+#include "rdmnet/cpp/broker.h"
 
 #include "gmock/gmock.h"
 #include "rdmnet_mock/common.h"
 
-namespace llrp = rdmnet::llrp;
-
-class MockLlrpManagerNotifyHandler : public llrp::Manager::NotifyHandler
+class MockBrokerNotifyHander : public rdmnet::Broker::NotifyHandler
 {
-  MOCK_METHOD(void, HandleLlrpTargetDiscovered, (llrp::Manager::Handle handle, const llrp::DiscoveredTarget& target),
-              (override));
-  MOCK_METHOD(void, HandleLlrpDiscoveryFinished, (llrp::Manager::Handle handle), (override));
-  MOCK_METHOD(void, HandleLlrpRdmResponse, (llrp::Manager::Handle handle, const llrp::RdmResponse& resp), (override));
+  MOCK_METHOD(void, HandleScopeChanged, (const std::string& new_scope), (override));
 };
 
-class TestCppLlrpManagerApi : public testing::Test
+class TestBrokerApi : public testing::Test
 {
-protected:
   void SetUp() override
   {
     rdmnet_mock_common_reset();
@@ -44,10 +38,10 @@ protected:
   void TearDown() override { rdmnet::Deinit(); }
 };
 
-TEST_F(TestCppLlrpManagerApi, Startup)
+TEST_F(TestBrokerApi, Startup)
 {
-  MockLlrpManagerNotifyHandler notify;
-  llrp::Manager manager;
+  MockBrokerNotifyHander notify;
+  rdmnet::Broker broker;
 
-  EXPECT_EQ(manager.Startup(notify, 0x6574, 1), kEtcPalErrOk);
+  EXPECT_TRUE(broker.Startup(rdmnet::Broker::Settings(etcpal::Uuid::OsPreferred(), 0x6574)));
 }

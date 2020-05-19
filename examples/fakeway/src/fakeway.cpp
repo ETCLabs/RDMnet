@@ -100,7 +100,7 @@ bool Fakeway::Startup(const rdmnet::Scope& scope_config, etcpal::Logger& logger,
   if (!gadget_.Startup(*this, logger))
     return false;
 
-  auto my_settings = rdmnet::DeviceSettings(cid, rdm::Uid::DynamicUidRequest(0x6574));
+  auto my_settings = rdmnet::Device::Settings(cid, rdm::Uid::DynamicUidRequest(0x6574));
   auto res = rdmnet_.Startup(*this, my_settings, scope_config);
   if (!res)
   {
@@ -122,7 +122,7 @@ void Fakeway::Shutdown()
   physical_endpoint_rev_lookup_.clear();
 }
 
-void Fakeway::HandleConnectedToBroker(rdmnet::DeviceHandle /*handle*/, const rdmnet::ClientConnectedInfo& info)
+void Fakeway::HandleConnectedToBroker(rdmnet::Device::Handle /*handle*/, const rdmnet::ClientConnectedInfo& info)
 {
   connected_to_broker_ = true;
   if (log_->CanLog(ETCPAL_LOG_INFO))
@@ -132,21 +132,22 @@ void Fakeway::HandleConnectedToBroker(rdmnet::DeviceHandle /*handle*/, const rdm
   }
 }
 
-void Fakeway::HandleBrokerConnectFailed(rdmnet::DeviceHandle /*handle*/, const rdmnet::ClientConnectFailedInfo& info)
+void Fakeway::HandleBrokerConnectFailed(rdmnet::Device::Handle /*handle*/, const rdmnet::ClientConnectFailedInfo& info)
 {
   connected_to_broker_ = false;
   log_->Info("Connect failed to broker for scope %s.%s", def_resp_->scope_config().id_string().c_str(),
              info.will_retry() ? " Retrying..." : "");
 }
 
-void Fakeway::HandleDisconnectedFromBroker(rdmnet::DeviceHandle /*handle*/, const rdmnet::ClientDisconnectedInfo& info)
+void Fakeway::HandleDisconnectedFromBroker(rdmnet::Device::Handle /*handle*/,
+                                           const rdmnet::ClientDisconnectedInfo& info)
 {
   connected_to_broker_ = false;
   log_->Info("Disconnected from broker for scope %s.%s", def_resp_->scope_config().id_string().c_str(),
              info.will_retry() ? " Retrying..." : "");
 }
 
-rdmnet::RdmResponseAction Fakeway::HandleRdmCommand(rdmnet::DeviceHandle /*handle*/, const rdmnet::RdmCommand& cmd)
+rdmnet::RdmResponseAction Fakeway::HandleRdmCommand(rdmnet::Device::Handle /*handle*/, const rdmnet::RdmCommand& cmd)
 {
   if (cmd.IsToDefaultResponder())
   {
@@ -182,7 +183,7 @@ rdmnet::RdmResponseAction Fakeway::HandleRdmCommand(rdmnet::DeviceHandle /*handl
   return rdmnet::RdmResponseAction::DeferResponse();
 }
 
-rdmnet::RdmResponseAction Fakeway::HandleLlrpRdmCommand(rdmnet::DeviceHandle /*handle*/,
+rdmnet::RdmResponseAction Fakeway::HandleLlrpRdmCommand(rdmnet::Device::Handle /*handle*/,
                                                         const rdmnet::llrp::RdmCommand& cmd)
 {
   return ProcessDefRespRdmCommand(cmd.rdm_header(), cmd.data(), cmd.data_len());

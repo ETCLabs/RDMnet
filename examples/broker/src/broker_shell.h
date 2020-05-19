@@ -27,12 +27,12 @@
 #include <vector>
 #include "etcpal/cpp/inet.h"
 #include "etcpal/log.h"
-#include "rdmnet/broker.h"
+#include "rdmnet/cpp/broker.h"
 
 // BrokerShell : Platform-neutral wrapper around the Broker library from a generic console
 // application. Instantiates and drives the Broker library.
 
-class BrokerShell : public rdmnet::BrokerNotifyHandler
+class BrokerShell : public rdmnet::Broker::NotifyHandler
 {
 public:
   // Returns the code the app should exit with.
@@ -52,7 +52,7 @@ private:
   void HandleScopeChanged(const std::string& new_scope) override;
   void PrintWarningMessage();
 
-  void ApplySettingsChanges(rdmnet::BrokerSettings& settings);
+  void ApplySettingsChanges(rdmnet::Broker::Settings& settings);
 
   struct InitialData
   {

@@ -52,9 +52,9 @@ else
 ```cpp
 #include "rdmnet/cpp/device.h"
 
-class MyDeviceNotifyHandler : public rdmnet::DeviceNotifyHandler
+class MyDeviceNotifyHandler : public rdmnet::Device::NotifyHandler
 {
-  // Implement the DeviceNotifyHandler callbacks...
+  // Implement the NotifyHandler callbacks...
 };
 
 MyDeviceNotifyHandler my_device_notify_handler;
@@ -62,7 +62,7 @@ MyDeviceNotifyHandler my_device_notify_handler;
 // Example method for generating a CID for a hardware-locked device:
 etcpal::Uuid my_cid = etcpal::Uuid::Device("My Device Name", device_mac_addr, 0);
 
-rdmnet::DeviceSettings settings(my_cid, MY_ESTA_MANUFACTURER_ID_VAL);
+rdmnet::Device::Settings settings(my_cid, MY_ESTA_MANUFACTURER_ID_VAL);
 rdmnet::Device device;
 
 // In this example we are using the convenience method to startup with the default scope. The
@@ -176,7 +176,8 @@ void device_connected_callback(rdmnet_device_t handle, const RdmnetClientConnect
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyDeviceNotifyHandler::HandleConnectedToBroker(rdmnet::DeviceHandle handle, const rdmnet::ClientConnectedInfo& info)
+void MyDeviceNotifyHandler::HandleConnectedToBroker(rdmnet::Device::Handle handle,
+                                                    const rdmnet::ClientConnectedInfo& info)
 {
   std::cout << "Connected to broker '" << info.broker_name()
             << "' at IP address " << info.broker_addr().ToString() << '\n';
@@ -368,7 +369,7 @@ if (result)
   // The endpoint has been added. If currently connected, the library will send the proper
   // notification which indicates to connected controllers that there is a new endpoint present,
   // and request a dynamic UID for the responder which will be delivered to the
-  // rdmnet::DeviceNotifyHandler::HandleDynamicUidStatus() callback.
+  // MyDeviceNotifyHandler::HandleDynamicUidStatus() callback.
 }
 ```
 <!-- CODE_BLOCK_END -->
@@ -404,7 +405,7 @@ void handle_dynamic_uid_status(rdmnet_device_t handle, const RdmnetDynamicUidAss
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyDeviceNotifyHandler::HandleDynamicUidStatus(rdmnet::DeviceHandle handle,
+void MyDeviceNotifyHandler::HandleDynamicUidStatus(rdmnet::Device::Handle handle,
                                                    const rdmnet::DynamicUidAssignmentList& list)
 {
   // Check handles as necessary...

@@ -22,29 +22,29 @@
 #include "gmock/gmock.h"
 #include "rdmnet_mock/common.h"
 
-class MockEptClientNotifyHandler : public rdmnet::EptClientNotifyHandler
+class MockEptClientNotifyHandler : public rdmnet::EptClient::NotifyHandler
 {
   MOCK_METHOD(void, HandleConnectedToBroker,
-              (rdmnet::EptClientHandle handle, rdmnet::ScopeHandle scope_handle,
+              (rdmnet::EptClient::Handle handle, rdmnet::ScopeHandle scope_handle,
                const rdmnet::ClientConnectedInfo& info),
               (override));
   MOCK_METHOD(void, HandleBrokerConnectFailed,
-              (rdmnet::EptClientHandle handle, rdmnet::ScopeHandle scope_handle,
+              (rdmnet::EptClient::Handle handle, rdmnet::ScopeHandle scope_handle,
                const rdmnet::ClientConnectFailedInfo& info),
               (override));
   MOCK_METHOD(void, HandleDisconnectedFromBroker,
-              (rdmnet::EptClientHandle handle, rdmnet::ScopeHandle scope_handle,
+              (rdmnet::EptClient::Handle handle, rdmnet::ScopeHandle scope_handle,
                const rdmnet::ClientDisconnectedInfo& info),
               (override));
   MOCK_METHOD(void, HandleClientListUpdate,
-              (rdmnet::EptClientHandle handle, rdmnet::ScopeHandle scope_handle, client_list_action_t list_action,
+              (rdmnet::EptClient::Handle handle, rdmnet::ScopeHandle scope_handle, client_list_action_t list_action,
                const rdmnet::EptClientList& list),
               (override));
   MOCK_METHOD(rdmnet::EptResponseAction, HandleEptData,
-              (rdmnet::EptClientHandle handle, rdmnet::ScopeHandle scope_handle, const rdmnet::EptData& data),
+              (rdmnet::EptClient::Handle handle, rdmnet::ScopeHandle scope_handle, const rdmnet::EptData& data),
               (override));
   MOCK_METHOD(void, HandleEptStatus,
-              (rdmnet::EptClientHandle handle, rdmnet::ScopeHandle scope_handle, const rdmnet::EptStatus& status),
+              (rdmnet::EptClient::Handle handle, rdmnet::ScopeHandle scope_handle, const rdmnet::EptStatus& status),
               (override));
 };
 
@@ -67,7 +67,7 @@ TEST_F(TestCppEptClientApi, Startup)
 
   std::vector<rdmnet::EptSubProtocol> protocols;
   protocols.push_back(rdmnet::EptSubProtocol(0x6574, 0xdddd, "Test Protocol"));
-  rdmnet::EptClientSettings settings(etcpal::Uuid::OsPreferred(), protocols);
+  rdmnet::EptClient::Settings settings(etcpal::Uuid::OsPreferred(), protocols);
 
   EXPECT_EQ(ept_client.Startup(notify, settings), kEtcPalErrOk);
 }

@@ -1,4 +1,4 @@
-# Using the Broker API                                                              {#using_broker}
+# Using the Broker API {#using_broker}
 
 The RDMnet broker API exposes a C++11 interface for creating instances of RDMnet broker
 functionality.
@@ -14,14 +14,14 @@ The RDMnet library must be globally initialized before using the RDMnet broker A
 
 To create a broker instance, instantiate an rdmnet::Broker and call its Startup() function. A
 broker can operate on a single RDMnet scope at a time; the initial scope, and other configuration
-parameters the broker uses at runtime, are provided via the rdmnet::BrokerSettings struct.
+parameters the broker uses at runtime, are provided via the rdmnet::Broker::Settings struct.
 
 The RDMnet broker API is an asynchronous, callback-oriented API. Part of the initial configuration
 for a broker instance is an abstract interface for the library to use as callbacks. Callbacks are
 dispatched from a background thread.
 
 ```cpp
-#include "rdmnet/broker.h"
+#include "rdmnet/cpp/broker.h"
 
 // Each broker is a component that must have a Component ID (CID), which is simply a UUID.
 // Software should generate and save a CID so that the same one is used on each run of the software.
@@ -31,7 +31,7 @@ etcpal::Uuid my_cid = etcpal::Uuid::OsPreferred();
 // default values and can be changed if necessary. Must pass your ESTA manufacturer ID. If you have
 // not yet requested an ESTA manufacturer ID, the range 0x7ff0 to 0x7fff can be used for
 // prototyping.
-rdmnet::BrokerSettings settings(my_cid, MY_ESTA_MANUFACTURER_ID_VAL);
+rdmnet::Broker::Settings settings(my_cid, MY_ESTA_MANUFACTURER_ID_VAL);
 
 rdmnet::Broker broker;
 etcpal::Error result = broker.Startup(settings);
@@ -97,7 +97,7 @@ broker.Startup(settings, &logger);
 ```
 
 The broker logs messages at appropriate syslog-style severity levels; for example, if you set the
-logger's log mask to ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG), the broker will log _lots_ of messages
+logger's log mask to ETCPAL*LOG_UPTO(ETCPAL_LOG_DEBUG), the broker will log \_lots* of messages
 (including a message logged for every message the broker routes). If you set it to
 ETCPAL_LOG_UPTO(ETCPAL_LOG_ERR), the logging will be much more sparse and only represent error
 conditions.
@@ -109,9 +109,9 @@ Currently, these notifications are all informational; broker instances operate t
 regardless of how they are handled.
 
 ```cpp
-class MyBrokerNotifyHandler : public rdmnet::BrokerNotifyHandler
+class MyBrokerNotifyHandler : public rdmnet::Broker::NotifyHandler
 {
-  // Implement the BrokerNotifyHandler functions...
+  // Implement the NotifyHandler functions...
 }
 
 MyBrokerNotifyHandler notify_handler;
@@ -120,7 +120,7 @@ broker.Startup(settings, &logger, &notify_handler);
 
 ### Scope Changed
 
-If BrokerSettings::allow_rdm_scope_change was set to true at the initialization of a broker
+If Broker::Settings::allow_rdm_scope_change was set to true at the initialization of a broker
 instance, the broker will accept RDM commands which change its scope. When this happens, it will
 also deliver a scope changed notification to the notification handler.
 

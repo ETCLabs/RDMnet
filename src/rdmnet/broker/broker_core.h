@@ -29,7 +29,7 @@
 #include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/lock.h"
 #include "etcpal/socket.h"
-#include "rdmnet/broker.h"
+#include "rdmnet/cpp/broker.h"
 #include "broker_client.h"
 #include "broker_discovery.h"
 #include "broker_responder.h"
@@ -96,9 +96,9 @@ public:
   bool IsValidDeviceDestinationUID(const RdmUid& uid) const;
 
   etcpal::Logger* logger() const { return log_; }
-  rdmnet::BrokerSettings settings() const { return settings_; }
+  rdmnet::Broker::Settings settings() const { return settings_; }
 
-  etcpal::Error Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerNotifyHandler* notify,
+  etcpal::Error Startup(const rdmnet::Broker::Settings& settings, rdmnet::Broker::NotifyHandler* notify,
                         etcpal::Logger* logger, BrokerComponents components = BrokerComponents());
   void Shutdown();
   etcpal::Error ChangeScope(const std::string& new_scope, rdmnet_disconnect_reason_t disconnect_reason);
@@ -110,7 +110,7 @@ private:
   bool service_registered_{false};
 
   // Attributes of this broker instance
-  rdmnet::BrokerSettings settings_;
+  rdmnet::Broker::Settings settings_;
   RdmUid my_uid_{};
 
   // External (non-owned) components
@@ -118,7 +118,7 @@ private:
   // Enables the broker to log messages
   etcpal::Logger* log_{nullptr};
   // Enables the broker to notify application code when something has changed
-  rdmnet::BrokerNotifyHandler* notify_{nullptr};
+  rdmnet::Broker::NotifyHandler* notify_{nullptr};
 
   // Owned components
   BrokerComponents components_;

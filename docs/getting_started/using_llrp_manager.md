@@ -64,9 +64,9 @@ else
 // before LLRP API calls.
 namespace llrp = rdmnet::llrp;
 
-class MyLlrpNotifyHandler : public llrp::ManagerNotifyHandler
+class MyLlrpNotifyHandler : public llrp::Manager::NotifyHandler
 {
-  // Implement the ManagerNotifyHandler callbacks...
+  // Implement the NotifyHandler callbacks...
 };
 
 MyLlrpNotifyHandler my_llrp_notify_handler;
@@ -81,8 +81,8 @@ etcpal::Error result = manager.Startup(
 if (result)
 {
   // Manager is valid and running.
-  llrp::ManagerHandle handle = manager.handle();
-  // Store handle for later lookup from the ManagerNotifyHandler callback functions.
+  llrp::Manager::Handle handle = manager.handle();
+  // Store handle for later lookup from the NotifyHandler callback functions.
 }
 else
 {
@@ -183,7 +183,8 @@ void handle_llrp_discovery_finished(llrp_manager_t handle, void* context)
 ```cpp
 namespace llrp = rdmnet::llrp;
 
-void MyLlrpNotifyHandler::HandleLlrpTargetDiscovered(llrp::ManagerHandle handle, const llrp::DiscoveredTarget& target)
+void MyLlrpNotifyHandler::HandleLlrpTargetDiscovered(llrp::Manager::Handle handle,
+                                                     const llrp::DiscoveredTarget& target)
 {
   // Check handle as necessary...
 
@@ -191,7 +192,7 @@ void MyLlrpNotifyHandler::HandleLlrpTargetDiscovered(llrp::ManagerHandle handle,
             << ", target type " << target.ComponentTypeToString() << '\n';
 }
 
-void MyLlrpNotifyHandler::HandleLlrpDiscoveryFinished(llrp::ManagerHandle handle)
+void MyLlrpNotifyHandler::HandleLlrpDiscoveryFinished(llrp::Manager::Handle handle)
 {
   // Check handle as necessary...
 
@@ -264,7 +265,7 @@ void handle_llrp_rdm_response(llrp_manager_t handle, const LlrpRdmResponse* resp
 ```cpp
 namespace llrp = rdmnet::llrp;
 
-void MyLlrpNotifyHandler::HandleLlrpRdmResponse(llrp::ManagerHandle handle, const llrp::RdmResponse& resp)
+void MyLlrpNotifyHandler::HandleLlrpRdmResponse(llrp::Manager::Handle handle, const llrp::RdmResponse& resp)
 {
   // Check handle as necessary...
 

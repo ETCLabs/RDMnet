@@ -50,7 +50,7 @@ void BrokerShell::AsyncShutdown()
   shutdown_requested_ = true;
 }
 
-void BrokerShell::ApplySettingsChanges(rdmnet::BrokerSettings& settings)
+void BrokerShell::ApplySettingsChanges(rdmnet::Broker::Settings& settings)
 {
   if (!new_scope_.empty())
   {
@@ -65,7 +65,7 @@ int BrokerShell::Run(etcpal::Logger& log)
 
   log_ = &log;
 
-  rdmnet::BrokerSettings broker_settings(etcpal::Uuid::V4(), 0x6574);
+  rdmnet::Broker::Settings broker_settings(etcpal::Uuid::V4(), 0x6574);
 
   broker_settings.scope = initial_data_.scope;
   broker_settings.dns.manufacturer = "ETC";

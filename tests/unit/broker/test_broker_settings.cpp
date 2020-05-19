@@ -23,16 +23,16 @@
 
 TEST(TestBrokerSettings, DefaultConstructedSettingsIsNotValid)
 {
-  rdmnet::BrokerSettings settings;
+  rdmnet::Broker::Settings settings;
   EXPECT_FALSE(settings.valid());
 }
 
 TEST(TestBrokerSettings, ExplicitConstructedSettingsIsValid)
 {
   // Constructed using dynamic UID
-  rdmnet::BrokerSettings settings(etcpal::Uuid::OsPreferred(), 0x6574);
+  rdmnet::Broker::Settings settings(etcpal::Uuid::OsPreferred(), 0x6574);
   EXPECT_TRUE(settings.valid());
 
-  rdmnet::BrokerSettings settings_2(etcpal::Uuid::OsPreferred(), {0x6574, 0x00001234});
+  rdmnet::Broker::Settings settings_2(etcpal::Uuid::OsPreferred(), {0x6574, 0x00001234});
   EXPECT_TRUE(settings_2.valid());
 }

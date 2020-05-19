@@ -41,7 +41,7 @@ struct ManagerInfo
   EtcPalNetintInfo netint_info;
 };
 
-class LlrpManagerExample : public llrp::ManagerNotifyHandler
+class LlrpManagerExample : public llrp::Manager::NotifyHandler
 {
 public:
   bool Startup(const etcpal::Uuid& my_cid, const etcpal::Logger& logger);
@@ -61,7 +61,7 @@ public:
   void PrintCommandList();
   bool ParseCommand(const std::string& line);
 
-  void Discover(llrp::ManagerHandle handle);
+  void Discover(llrp::Manager::Handle handle);
   void PrintTargets();
   void PrintNetints();
   void GetDeviceInfo(int target_handle);
@@ -77,9 +77,9 @@ public:
   void SetFactoryDefaults(int target_handle);
   void SetResetDevice(int target_handle);
 
-  void HandleLlrpTargetDiscovered(llrp::ManagerHandle handle, const llrp::DiscoveredTarget& target) override;
-  void HandleLlrpDiscoveryFinished(llrp::ManagerHandle handle) override;
-  void HandleLlrpRdmResponse(llrp::ManagerHandle handle, const llrp::RdmResponse& resp) override;
+  void HandleLlrpTargetDiscovered(llrp::Manager::Handle handle, const llrp::DiscoveredTarget& target) override;
+  void HandleLlrpDiscoveryFinished(llrp::Manager::Handle handle) override;
+  void HandleLlrpRdmResponse(llrp::Manager::Handle handle, const llrp::RdmResponse& resp) override;
 
 private:
   using RdmResponseHandler = std::function<void(const llrp::RdmResponse&)>;
@@ -89,10 +89,10 @@ private:
   bool SetDataOnTarget(llrp::Manager& manager, const llrp::DiscoveredTarget& target, uint16_t param_id,
                        const uint8_t* data = nullptr, uint8_t data_len = 0);
 
-  std::map<llrp::ManagerHandle, ManagerInfo> managers_;
+  std::map<llrp::Manager::Handle, ManagerInfo> managers_;
 
   std::map<int, TargetInfo> targets_;
-  llrp::ManagerHandle active_manager_{llrp::kInvalidManagerHandle};
+  llrp::Manager::Handle active_manager_{llrp::Manager::kInvalidHandle};
   RdmResponseHandler active_response_handler_;
 
   bool discovery_active_{false};

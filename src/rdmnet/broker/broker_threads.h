@@ -33,7 +33,7 @@
 #include "etcpal/inet.h"
 #include "etcpal/socket.h"
 #include "rdmnet/core/connection.h"
-#include "rdmnet/broker.h"
+#include "rdmnet/cpp/broker.h"
 #include "broker_util.h"
 
 // The interface for callbacks from threads managed by the broker.

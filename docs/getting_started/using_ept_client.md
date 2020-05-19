@@ -68,9 +68,9 @@ else
 ```cpp
 #include "rdmnet/cpp/ept_client.h"
 
-class MyEptNotifyHandler : public rdmnet::EptClientNotifyHandler
+class MyEptNotifyHandler : public rdmnet::EptClient::NotifyHandler
 {
-  // Implement the EptClientNotifyHandler callbacks...
+  // Implement the NotifyHandler callbacks...
 };
 
 MyEptNotifyHandler my_ept_notify_handler;
@@ -97,15 +97,15 @@ std::vector<rdmnet::EptSubProtocol> my_protocols = {
 
 // Contains the configuration settings that the EPT client needs to operate. Some of these are set
 // to default values and can be changed if necessary. 
-rdmnet::EptClientSettings my_settings(my_cid, my_protocols);
+rdmnet::EptClient::Settings my_settings(my_cid, my_protocols);
 
 rdmnet::EptClient ept_client;
 etcpal::Error result = ept_client.Startup(my_ept_notify_handler, my_settings);
 if (result)
 {
   // EPT client is valid and running.
-  rdmnet::EptClientHandle handle = ept_client.handle();
-  // Store handle for later lookup from the EptClientNotifyHandler callback functions.
+  rdmnet::EptClient::Handle handle = ept_client.handle();
+  // Store handle for later lookup from the NotifyHandler callback functions.
 }
 else
 {
@@ -239,7 +239,7 @@ void ept_connected_callback(rdmnet_ept_client_t client_handle, rdmnet_client_sco
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyEptNotifyHandler::HandleConnectedToBroker(rdmnet::EptClientHandle client_handle,
+void MyEptNotifyHandler::HandleConnectedToBroker(rdmnet::EptClient::Handle client_handle,
                                                  rdmnet::ScopeHandle scope_handle,
                                                  const rdmnet::ClientConnectedInfo& info)
 {
@@ -325,7 +325,7 @@ void my_client_list_update_cb(rdmnet_ept_client_t client_handle, rdmnet_client_s
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyEptNotifyHandler::HandleClientListUpdate(rdmnet::EptClientHandle client_handle,
+void MyEptNotifyHandler::HandleClientListUpdate(rdmnet::EptClient::Handle client_handle,
                                                 rdmnet::ScopeHandle scope_handle,
                                                 client_list_action_t list_action,
                                                 const rdmnet::EptClientList& list)
@@ -431,7 +431,7 @@ void ept_data_received_callback(rdmnet_ept_client_t client_handle, rdmnet_client
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-rdmnet::EptResponseAction MyEptNotifyHandler::HandleEptData(rdmnet::EptClientHandle client_handle,
+rdmnet::EptResponseAction MyEptNotifyHandler::HandleEptData(rdmnet::EptClient::Handle client_handle,
                                                             rdmnet::ScopeHandle scope_handle,
                                                             const rdmnet::EptData& data)
 {
@@ -482,11 +482,11 @@ void ept_data_received_callback(rdmnet_ept_client_t client_handle, rdmnet_client
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-// This buffer was provided as part of the rdmnet::EptClientSettings when the EptClient instance
+// This buffer was provided as part of the EptClient::Settings when the EptClient instance
 // was initialized.
 static uint8_t my_ept_response_buf[kMyMaxResponseSize];
 
-rdmnet::EptResponseAction MyEptNotifyHander::HandleEptData(rdmnet::EptClientHandle client_handle,
+rdmnet::EptResponseAction MyEptNotifyHander::HandleEptData(rdmnet::EptClient::Handle client_handle,
                                                            rdmnet::ScopeHandle scope_handle,
                                                            const rdmnet::EptData& data)
 {
@@ -522,7 +522,7 @@ void ept_data_received_callback(rdmnet_ept_client_t client_handle, rdmnet_client
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-rdmnet::EptResponseAction MyEptNotifyHandler::HandleEptData(rdmnet::EptClientHandle client_handle,
+rdmnet::EptResponseAction MyEptNotifyHandler::HandleEptData(rdmnet::EptClient::Handle client_handle,
                                                             rdmnet::ScopeHandle scope_handle,
                                                             const rdmnet::EptData& data)
 {
@@ -560,7 +560,7 @@ void ept_status_callback(rdmnet_ept_client_t client_handle, rdmnet_client_scope_
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyEptNotifyHandler::HandleEptStatus(rdmnet::EptClientHandle client_handle,
+void MyEptNotifyHandler::HandleEptStatus(rdmnet::EptClient::Handle client_handle,
                                          rdmnet::ScopeHandle scope_handle,
                                          const rdmnet::EptStatus& status)
 {

@@ -57,9 +57,9 @@ else
 #include "etcpal/cpp/uuid.h"
 #include "rdmnet/cpp/controller.h"
 
-class MyControllerNotifyHandler : public rdmnet::ControllerNotifyHandler
+class MyControllerNotifyHandler : public rdmnet::Controller::NotifyHandler
 {
-  // Implement the ControllerNotifyHandler callbacks...
+  // Implement the NotifyHandler callbacks...
 };
 
 MyControllerNotifyHandler my_controller_notify_handler;
@@ -72,20 +72,20 @@ etcpal::Uuid my_cid = etcpal::Uuid::OsPreferred();
 // to default values and can be changed if necessary. Must pass your ESTA manufacturer ID. If you
 // have not yet requested an ESTA manufacturer ID, the range 0x7ff0 to 0x7fff can be used for
 // prototyping.
-rdmnet::ControllerSettings my_settings(my_cid, MY_ESTA_MANUFACTURER_ID_VAL);
+rdmnet::Controller::Settings my_settings(my_cid, MY_ESTA_MANUFACTURER_ID_VAL);
 
 // Needed to identify this controller to other controllers on the network. More on this later.
-rdmnet::ControllerRdmData my_rdm_data("My Manufacturer Name",
-                                      "My Product Name",
-                                      "1.0.0",
-                                      "My Device Label");
+rdmnet::Controller::RdmData my_rdm_data("My Manufacturer Name",
+                                        "My Product Name",
+                                        "1.0.0",
+                                        "My Device Label");
 rdmnet::Controller controller;
 etcpal::Error result = controller.Startup(my_controller_notify_handler, my_settings, my_rdm_data);
 if (result)
 {
   // Controller is valid and running.
-  rdmnet::ControllerHandle handle = controller.handle();
-  // Store handle for later lookup from the ControllerNotifyHandler callback functions.
+  rdmnet::Controller::Handle handle = controller.handle();
+  // Store handle for later lookup from the NotifyHandler callback functions.
 }
 else
 {
@@ -218,7 +218,7 @@ void controller_connected_callback(rdmnet_controller_t controller_handle, rdmnet
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleConnectedToBroker(rdmnet::ControllerHandle controller_handle,
+void MyControllerNotifyHandler::HandleConnectedToBroker(rdmnet::Controller::Handle controller_handle,
                                                         rdmnet::ScopeHandle scope_handle,
                                                         const rdmnet::ClientConnectedInfo& info)
 {
@@ -304,7 +304,7 @@ void my_client_list_update_cb(rdmnet_controller_t controller_handle, rdmnet_clie
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleClientListUpdate(rdmnet::ControllerHandle controller_handle,
+void MyControllerNotifyHandler::HandleClientListUpdate(rdmnet::Controller::Handle controller_handle,
                                                        rdmnet::ScopeHandle scope_handle,
                                                        client_list_action_t list_action,
                                                        const rdmnet::RptClientList& list)
@@ -442,7 +442,7 @@ void rdm_response_callback(rdmnet_controller_t controller_handle, rdmnet_client_
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::ControllerHandle controller_handle,
+void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::Controller::Handle controller_handle,
                                                   rdmnet::ScopeHandle scope_handle,
                                                   const rdmnet::RdmResponse& resp)
 {
@@ -510,7 +510,7 @@ void rpt_status_callback(rdmnet_controller_t controller_handle, rdmnet_client_sc
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleRptStatus(rdmnet::ControllerHandle controller_handle,
+void MyControllerNotifyHandler::HandleRptStatus(rdmnet::Controller::Handle controller_handle,
                                                 rdmnet::ScopeHandle scope_handle,
                                                 const rdmnet::RptStatus& status)
 {
@@ -591,7 +591,7 @@ void MyControllerNotifyHandler::HandleResponseData(uint16_t param_id, const uint
     etcpal::Error result = controller.RequestResponderIds(responder_uids);
     if (result)
     {
-      // The broker's response will be forwarded to the rdmnet::ControllerNotifyHandler::HandleResponderIdsReceived(),
+      // The broker's response will be forwarded to the MyControllerNotifyHandler::HandleResponderIdsReceived()
       // callback, defined in the next snippet.
     }
   }
@@ -630,7 +630,7 @@ void handle_responder_ids_received(rdmnet_controller_t controller_handle, rdmnet
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleResponderIdsReceived(rdmnet::ControllerHandle controller_handle,
+void MyControllerNotifyHandler::HandleResponderIdsReceived(rdmnet::Controller::Handle controller_handle,
                                                            rdmnet::ScopeHandle scope_handle,
                                                            const rdmnet::DynamicUidAssignmentList& list)
 {
@@ -668,7 +668,7 @@ user-settable label for the controller (`DEVICE_LABEL`). The library has access 
 information necessary for the first three items, since that information is necessary for RDMnet
 communication. Initial values for the last four items are provided to the library when creating a
 new controller instance, through the rdmnet_controller_set_rdm_data() function or the
-rdmnet::ControllerRdmData structure.
+rdmnet::Controller::RdmData structure.
 
 If you want to provide richer RDM responder functionality from your controller implementation, you
 can provide a set of callbacks to handle RDM commands. In this case, the library will no longer
@@ -690,13 +690,13 @@ etcpal_error_t result = rdmnet_controller_create(&config, &my_controller_handle)
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-class MyControllerRdmCommandHandler : public rdmnet::ControllerRdmCommandHandler
+class MyControllerRdmCommandHandler : public rdmnet::Controller::RdmCommandHandler
 {
-  // Implement the ControllerRdmCommandHandler functions...
+  // Implement the RdmCommandHandler functions...
 };
 
 MyControllerRdmCommandHandler my_rdm_cmd_handler;
-rdmnet::ControllerSettings my_settings(my_cid, MY_ESTA_MANUFACTURER_ID_VAL);
+rdmnet::Controller::Settings my_settings(my_cid, MY_ESTA_MANUFACTURER_ID_VAL);
 
 etcpal::Error result = controller.Startup(my_controller_notify_handler, my_settings, my_rdm_cmd_handler);
 ```

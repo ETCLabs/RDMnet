@@ -22,18 +22,18 @@
 #include "gmock/gmock.h"
 #include "rdmnet_mock/common.h"
 
-class MockDeviceNotifyHandler : public rdmnet::DeviceNotifyHandler
+class MockDeviceNotifyHandler : public rdmnet::Device::NotifyHandler
 {
-  MOCK_METHOD(void, HandleConnectedToBroker, (rdmnet::DeviceHandle handle, const rdmnet::ClientConnectedInfo& info),
+  MOCK_METHOD(void, HandleConnectedToBroker, (rdmnet::Device::Handle handle, const rdmnet::ClientConnectedInfo& info),
               (override));
   MOCK_METHOD(void, HandleBrokerConnectFailed,
-              (rdmnet::DeviceHandle handle, const rdmnet::ClientConnectFailedInfo& info), (override));
+              (rdmnet::Device::Handle handle, const rdmnet::ClientConnectFailedInfo& info), (override));
   MOCK_METHOD(void, HandleDisconnectedFromBroker,
-              (rdmnet::DeviceHandle handle, const rdmnet::ClientDisconnectedInfo& info), (override));
+              (rdmnet::Device::Handle handle, const rdmnet::ClientDisconnectedInfo& info), (override));
   MOCK_METHOD(rdmnet::RdmResponseAction, HandleRdmCommand,
-              (rdmnet::DeviceHandle handle, const rdmnet::RdmCommand& command), (override));
+              (rdmnet::Device::Handle handle, const rdmnet::RdmCommand& command), (override));
   MOCK_METHOD(rdmnet::RdmResponseAction, HandleLlrpRdmCommand,
-              (rdmnet::DeviceHandle handle, const rdmnet::llrp::RdmCommand& cmd), (override));
+              (rdmnet::Device::Handle handle, const rdmnet::llrp::RdmCommand& cmd), (override));
 };
 
 class TestCppDeviceApi : public testing::Test
@@ -53,6 +53,6 @@ TEST_F(TestCppDeviceApi, AddVirtualEndpoint)
   rdmnet::Device device;
   MockDeviceNotifyHandler notify;
 
-  device.Startup(notify, rdmnet::DeviceSettings(etcpal::Uuid::OsPreferred(), 0x6574), "default");
+  device.Startup(notify, rdmnet::Device::Settings(etcpal::Uuid::OsPreferred(), 0x6574), "default");
   EXPECT_EQ(device.AddVirtualEndpoint(1), kEtcPalErrOk);
 }

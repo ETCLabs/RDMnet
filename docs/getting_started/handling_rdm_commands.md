@@ -27,7 +27,8 @@ void rdm_command_received(rdmnet_device_t handle, const RdmnetRdmCommand* cmd, R
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-rdmnet::ResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::DeviceHandle handle, const rdmnet::RdmCommand& cmd)
+rdmnet::ResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::Device::Handle handle,
+                                                              const rdmnet::RdmCommand& cmd)
 {
   if (cmd.IsToDefaultResponder())
   {
@@ -107,11 +108,11 @@ void rdm_command_received(rdmnet_device_t handle, const RdmnetRdmCommand* cmd, R
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-// This buffer was provided as part of the rdmnet::DeviceSettings when the Device instance was
+// This buffer was provided as part of the Device::Settings when the Device instance was
 // initialized.
 static uint8_t my_rdmnet_response_buf[kMyMaxResponseSize];
 
-rdmnet::RdmResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::DeviceHandle handle,
+rdmnet::RdmResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::Device::Handle handle,
                                                                  const rdmnet::RdmCommand& cmd)
 {
   // Very simplified example...
@@ -152,7 +153,7 @@ void rdm_command_received(rdmnet_device_t handle, const RdmnetRdmCommand* cmd, R
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-rdmnet::RdmResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::DeviceHandle handle,
+rdmnet::RdmResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::Device::Handle handle,
                                                                  const rdmnet::RdmCommand& cmd)
 {
   // Very simplified example...
@@ -269,7 +270,7 @@ rdmnet_device_send_rdm_ack(my_device_handle, &saved_cmd, response_data, response
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-rdmnet::RdmResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::DeviceHandle handle,
+rdmnet::RdmResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::Device::Handle handle,
                                                                  const rdmnet::RdmCommand& cmd)
 {
   // Note that this type contains a byte array large enough for the largest possible RDM command

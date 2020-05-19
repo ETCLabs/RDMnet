@@ -38,7 +38,7 @@ END_INCLUDE_QT_HEADERS()
 
 void appendRowToItem(QStandardItem* parent, QStandardItem* child);
 
-class RDMnetNetworkModel : public QStandardItemModel, public rdmnet::ControllerNotifyHandler
+class RDMnetNetworkModel : public QStandardItemModel, public rdmnet::Controller::NotifyHandler
 {
   Q_OBJECT
 
@@ -111,7 +111,7 @@ public:
   virtual bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole);
 
 protected:
-  // rdmnet::ControllerNotifyHandler overrides
+  // rdmnet::Controller::NotifyHandler overrides
   virtual void HandleConnectedToBroker(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,
                                        const RdmnetClientConnectedInfo& info) override;
   virtual void HandleBrokerConnectFailed(rdmnet::Controller& controller, rdmnet::ScopeHandle scope_handle,

@@ -40,15 +40,6 @@ namespace llrp
 ///
 /// LLRP managers perform the discovery and command functionality of RDMnet's Low Level Recovery
 /// Protocol (LLRP). See \ref using_llrp_manager for details of how to use this API.
-///
-/// @{
-
-/// A handle type used by the RDMnet library to identify LLRP manager instances.
-using ManagerHandle = llrp_manager_t;
-/// An invalid ManagerHandle value.
-constexpr ManagerHandle kInvalidManagerHandle = LLRP_MANAGER_INVALID;
-
-/// @}
 
 /// \brief A destination address for an LLRP RDM command.
 /// \details Represents an LLRP Target to which an RDM command is addressed.
@@ -128,41 +119,46 @@ inline std::string DiscoveredTarget::ComponentTypeToString() const
 }
 
 /// \ingroup llrp_manager_cpp
-/// \brief A class that receives notification callbacks from an LLRP manager.
-///
-/// See \ref using_llrp_manager for details of how to use this API.
-class ManagerNotifyHandler
-{
-public:
-  /// \brief An LLRP target has been discovered.
-  /// \param handle Handle to LLRP manager instance which has discovered the target.
-  /// \param target Information about the target which has been discovered.
-  virtual void HandleLlrpTargetDiscovered(ManagerHandle handle, const DiscoveredTarget& target) = 0;
-
-  /// \brief An RDM response has been received from an LLRP target.
-  /// \param handle Handle to LLRP manager instance which has received the RDM response.
-  /// \param resp The RDM response data.
-  virtual void HandleLlrpRdmResponse(ManagerHandle handle, const RdmResponse& resp) = 0;
-
-  /// \brief The previously-started LLRP discovery process has finished.
-  /// \param handle Handle to LLRP manager instance which has finished discovery.
-  virtual void HandleLlrpDiscoveryFinished(ManagerHandle handle) { ETCPAL_UNUSED_ARG(handle); }
-};
-
-/// \ingroup llrp_manager_cpp
 /// \brief An instance of LLRP manager functionality.
 ///
 /// See \ref using_llrp_manager for details of how to use this API.
 class Manager
 {
 public:
+  /// A handle type used by the RDMnet library to identify LLRP manager instances.
+  using Handle = llrp_manager_t;
+  /// An invalid Handle value.
+  static constexpr Handle kInvalidHandle = LLRP_MANAGER_INVALID;
+
+  /// \ingroup llrp_manager_cpp
+  /// \brief A class that receives notification callbacks from an LLRP manager.
+  ///
+  /// See \ref using_llrp_manager for details of how to use this API.
+  class NotifyHandler
+  {
+  public:
+    /// \brief An LLRP target has been discovered.
+    /// \param handle Handle to LLRP manager instance which has discovered the target.
+    /// \param target Information about the target which has been discovered.
+    virtual void HandleLlrpTargetDiscovered(Handle handle, const DiscoveredTarget& target) = 0;
+
+    /// \brief An RDM response has been received from an LLRP target.
+    /// \param handle Handle to LLRP manager instance which has received the RDM response.
+    /// \param resp The RDM response data.
+    virtual void HandleLlrpRdmResponse(Handle handle, const RdmResponse& resp) = 0;
+
+    /// \brief The previously-started LLRP discovery process has finished.
+    /// \param handle Handle to LLRP manager instance which has finished discovery.
+    virtual void HandleLlrpDiscoveryFinished(Handle handle) { ETCPAL_UNUSED_ARG(handle); }
+  };
+
   Manager() = default;
   Manager(const Manager& other) = delete;
   Manager& operator=(const Manager& other) = delete;
   Manager(Manager&& other) = default;             ///< Move a manager instance.
   Manager& operator=(Manager&& other) = default;  ///< Move a manager instance.
 
-  etcpal::Error Startup(ManagerNotifyHandler& notify_handler, uint16_t manufacturer_id, unsigned int netint_index,
+  etcpal::Error Startup(NotifyHandler& notify_handler, uint16_t manufacturer_id, unsigned int netint_index,
                         etcpal_iptype_t ip_type = kEtcPalIpTypeV4,
                         const etcpal::Uuid& cid = etcpal::Uuid::OsPreferred());
   void Shutdown();
@@ -176,12 +172,12 @@ public:
   etcpal::Expected<uint32_t> SendSetCommand(const DestinationAddr& destination, uint16_t param_id,
                                             const uint8_t* data = nullptr, uint8_t data_len = 0);
 
-  constexpr ManagerHandle handle() const;
-  constexpr ManagerNotifyHandler* notify_handler() const;
+  constexpr Handle handle() const;
+  constexpr NotifyHandler* notify_handler() const;
 
 private:
-  ManagerHandle handle_{kInvalidManagerHandle};
-  ManagerNotifyHandler* notify_{nullptr};
+  Handle handle_{kInvalidHandle};
+  NotifyHandler* notify_{nullptr};
 };
 
 /// \brief Allocate resources and startup this LLRP manager with the given configuration.
@@ -192,7 +188,7 @@ private:
 /// \param cid The manager's Component Identifier (CID).
 /// \return etcpal::Error::Ok(): LLRP manager started successfully.
 /// \return Errors forwarded from llrp_manager_create().
-inline etcpal::Error Manager::Startup(ManagerNotifyHandler& notify_handler, uint16_t manufacturer_id,
+inline etcpal::Error Manager::Startup(NotifyHandler& notify_handler, uint16_t manufacturer_id,
                                       unsigned int netint_index, etcpal_iptype_t ip_type, const etcpal::Uuid& cid)
 {
   ETCPAL_UNUSED_ARG(notify_handler);
@@ -236,7 +232,7 @@ inline etcpal::Error Manager::StopDiscovery()
 
 /// \brief Send an RDM command from an LLRP manager.
 ///
-/// The response will be delivered via the ManagerNotifyHandler::HandleLlrpRdmResponse() callback.
+/// The response will be delivered via the NotifyHandler::HandleLlrpRdmResponse() callback.
 ///
 /// \param destination The destination addressing information for the RDM command.
 /// \param command_class The command's RDM command class (GET or SET).
@@ -259,7 +255,7 @@ inline etcpal::Expected<uint32_t> Manager::SendRdmCommand(const DestinationAddr&
 
 /// \brief Send an RDM GET command from an LLRP manager.
 ///
-/// The response will be delivered via the ManagerNotifyHandler::HandleLlrpRdmResponse() callback.
+/// The response will be delivered via the NotifyHandler::HandleLlrpRdmResponse() callback.
 ///
 /// \param destination The destination addressing information for the RDM command.
 /// \param param_id The command's RDM parameter ID.
@@ -279,7 +275,7 @@ inline etcpal::Expected<uint32_t> Manager::SendGetCommand(const DestinationAddr&
 
 /// \brief Send an RDM SET command from an LLRP manager.
 ///
-/// The response will be delivered via the ManagerNotifyHandler::HandleLlrpRdmResponse() callback.
+/// The response will be delivered via the NotifyHandler::HandleLlrpRdmResponse() callback.
 ///
 /// \param destination The destination addressing information for the RDM command.
 /// \param param_id The command's RDM parameter ID.
@@ -298,13 +294,13 @@ inline etcpal::Expected<uint32_t> Manager::SendSetCommand(const DestinationAddr&
 }
 
 /// Retrieve the handle of an LLRP manager instance.
-constexpr ManagerHandle Manager::handle() const
+constexpr Manager::Handle Manager::handle() const
 {
   return handle_;
 }
 
-/// Retrieve the ManagerNotifyHandler reference that this LLRP manager was configured with.
-constexpr ManagerNotifyHandler* Manager::notify_handler() const
+/// Retrieve the NotifyHandler reference that this LLRP manager was configured with.
+constexpr Manager::NotifyHandler* Manager::notify_handler() const
 {
   return notify_;
 }

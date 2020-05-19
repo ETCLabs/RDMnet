@@ -17,9 +17,9 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-// Implementation of the public rdmnet/broker API.
+// Implementation of the public rdmnet/cpp/broker API.
 
-#include "rdmnet/broker.h"
+#include "rdmnet/cpp/broker.h"
 #include "broker_core.h"
 
 /*************************** Function definitions ****************************/
@@ -49,8 +49,7 @@ rdmnet::Broker::~Broker()
 /// \return #kEtcPalErrNotInit: RDMnet library not initialized.
 /// \return #kEtcPalErrSys: An internal library or system call error occurred.
 /// \return Other codes translated from system error codes are possible.
-etcpal::Error rdmnet::Broker::Startup(const BrokerSettings& settings, etcpal::Logger* logger,
-                                      BrokerNotifyHandler* notify)
+etcpal::Error rdmnet::Broker::Startup(const Settings& settings, etcpal::Logger* logger, NotifyHandler* notify)
 {
   return core_->Startup(settings, notify, logger);
 }
@@ -69,7 +68,7 @@ void rdmnet::Broker::Shutdown(rdmnet_disconnect_reason_t disconnect_reason)
 /// \brief Change the scope on which a broker operates.
 ///
 /// This function is for changing the scope after Broker::Startup() has been called. To configure
-/// the initial scope, use the BrokerSettings::scope member. Sends disconnect messages to all
+/// the initial scope, use the Broker::Settings::scope member. Sends disconnect messages to all
 /// connected clients with the reason given before disconnecting and beginning operations on the
 /// new scope.
 ///
@@ -89,7 +88,7 @@ etcpal::Error rdmnet::Broker::ChangeScope(const std::string& new_scope, rdmnet_d
 ///
 /// Can be called even after Shutdown. Useful if you want to shutdown & restart the broker for any
 /// reason.
-const rdmnet::BrokerSettings& rdmnet::Broker::settings() const
+const rdmnet::Broker::Settings& rdmnet::Broker::settings() const
 {
   return core_->settings();
 }

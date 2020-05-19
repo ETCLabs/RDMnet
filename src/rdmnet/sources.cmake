@@ -85,7 +85,7 @@ set(RDMNET_LIB_SOURCES
 )
 
 set(RDMNET_BROKER_PUBLIC_HEADERS
-  ${RDMNET_INCLUDE}/rdmnet/broker.h
+  ${RDMNET_INCLUDE}/rdmnet/cpp/broker.h
 )
 set(RDMNET_BROKER_PRIVATE_HEADERS
   ${RDMNET_SRC}/rdmnet/broker/broker_core.h

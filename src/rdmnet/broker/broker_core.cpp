@@ -44,7 +44,7 @@ BrokerCore::~BrokerCore()
     Shutdown();
 }
 
-etcpal::Error BrokerCore::Startup(const rdmnet::BrokerSettings& settings, rdmnet::BrokerNotifyHandler* notify,
+etcpal::Error BrokerCore::Startup(const rdmnet::Broker::Settings& settings, rdmnet::Broker::NotifyHandler* notify,
                                   etcpal::Logger* logger, BrokerComponents components)
 {
   if (!started_)
@@ -62,7 +62,7 @@ etcpal::Error BrokerCore::Startup(const rdmnet::BrokerSettings& settings, rdmnet
 
     // Generate IDs if necessary
     my_uid_ = settings.uid;
-    if (settings.uid_type == rdmnet::BrokerSettings::kDynamicUid)
+    if (settings.uid_type == rdmnet::Broker::Settings::kDynamicUid)
     {
       my_uid_.id = 1;
       components_.uids.SetNextDeviceId(2);

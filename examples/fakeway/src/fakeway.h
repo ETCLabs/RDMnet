@@ -63,7 +63,7 @@ protected:
   std::map<rdm::Uid, std::vector<std::unique_ptr<rdmnet::SavedRdmCommand>>> responders_;
 };
 
-class Fakeway : public GadgetNotify, public rdmnet::DeviceNotifyHandler
+class Fakeway : public GadgetNotify, public rdmnet::Device::NotifyHandler
 {
 public:
   static void PrintVersion();
@@ -80,11 +80,11 @@ public:
   FakewayDefaultResponder* def_resp() const { return def_resp_.get(); }
 
 protected:
-  void HandleConnectedToBroker(rdmnet::DeviceHandle handle, const rdmnet::ClientConnectedInfo& info) override;
-  void HandleBrokerConnectFailed(rdmnet::DeviceHandle handle, const rdmnet::ClientConnectFailedInfo& info) override;
-  void HandleDisconnectedFromBroker(rdmnet::DeviceHandle handle, const rdmnet::ClientDisconnectedInfo& info) override;
-  rdmnet::RdmResponseAction HandleRdmCommand(rdmnet::DeviceHandle handle, const rdmnet::RdmCommand& cmd) override;
-  rdmnet::RdmResponseAction HandleLlrpRdmCommand(rdmnet::DeviceHandle handle,
+  void HandleConnectedToBroker(rdmnet::Device::Handle handle, const rdmnet::ClientConnectedInfo& info) override;
+  void HandleBrokerConnectFailed(rdmnet::Device::Handle handle, const rdmnet::ClientConnectFailedInfo& info) override;
+  void HandleDisconnectedFromBroker(rdmnet::Device::Handle handle, const rdmnet::ClientDisconnectedInfo& info) override;
+  rdmnet::RdmResponseAction HandleRdmCommand(rdmnet::Device::Handle handle, const rdmnet::RdmCommand& cmd) override;
+  rdmnet::RdmResponseAction HandleLlrpRdmCommand(rdmnet::Device::Handle handle,
                                                  const rdmnet::llrp::RdmCommand& cmd) override;
 
   rdmnet::RdmResponseAction ProcessDefRespRdmCommand(const rdm::CommandHeader& cmd, const uint8_t* data,

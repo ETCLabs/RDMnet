@@ -60,11 +60,11 @@ class MockBrokerDiscoveryManager : public BrokerDiscoveryInterface
 {
 public:
   MOCK_METHOD(void, SetNotify, (BrokerDiscoveryNotify * notify), (override));
-  MOCK_METHOD(etcpal::Error, RegisterBroker, (const rdmnet::BrokerSettings& settings), (override));
+  MOCK_METHOD(etcpal::Error, RegisterBroker, (const rdmnet::Broker::Settings& settings), (override));
   MOCK_METHOD(void, UnregisterBroker, (), (override));
 };
 
-class MockBrokerNotifyHandler : public rdmnet::BrokerNotifyHandler
+class MockBrokerNotifyHandler : public rdmnet::Broker::NotifyHandler
 {
 public:
   MOCK_METHOD(void, HandleScopeChanged, (const std::string& new_scope), (override));
@@ -110,7 +110,7 @@ protected:
   }
 
   // The way the test fixture is currently architected, this can only be called once per test.
-  bool StartBrokerWithMockComponents(const rdmnet::BrokerSettings& settings)
+  bool StartBrokerWithMockComponents(const rdmnet::Broker::Settings& settings)
   {
     return broker_.Startup(settings, &notify_, nullptr,
                            BrokerComponents(std::unique_ptr<RdmnetConnInterface>(mock_conn_),
@@ -119,7 +119,10 @@ protected:
                                             std::unique_ptr<BrokerDiscoveryInterface>(mock_disc_)));
   }
 
-  rdmnet::BrokerSettings DefaultBrokerSettings() { return rdmnet::BrokerSettings(etcpal::Uuid::OsPreferred(), 0x6574); }
+  rdmnet::Broker::Settings DefaultBrokerSettings()
+  {
+    return rdmnet::Broker::Settings(etcpal::Uuid::OsPreferred(), 0x6574);
+  }
 };
 
 // The broker should start if all dependent operations succeed. These are set up to succeed by the
@@ -132,7 +135,7 @@ TEST_F(TestBrokerCore, StartsUnderNormalConditions)
 // The broker should not start if it is given an invalid settings struct.
 TEST_F(TestBrokerCore, DoesNotStartWithInvalidSettings)
 {
-  rdmnet::BrokerSettings settings;  // A default-constructed settings is invalid
+  rdmnet::Broker::Settings settings;  // A default-constructed settings is invalid
   EXPECT_FALSE(StartBrokerWithMockComponents(settings));
 }
 
@@ -149,7 +152,7 @@ TEST_F(TestBrokerCore, DoesNotStartWhenSingleListenThreadFails)
 TEST_F(TestBrokerCore, DoesNotStartWhenAllListenThreadsFail)
 {
   EXPECT_CALL(*mock_threads_, AddListenThread(_)).WillRepeatedly(Return(false));
-  rdmnet::BrokerSettings explicit_interfaces(etcpal::Uuid::OsPreferred(), 0x6574);
+  rdmnet::Broker::Settings explicit_interfaces(etcpal::Uuid::OsPreferred(), 0x6574);
   explicit_interfaces.listen_macs = {etcpal::MacAddr({0, 0, 0, 0, 0, 1}), etcpal::MacAddr({0, 0, 0, 0, 0, 2}),
                                      etcpal::MacAddr({0, 0, 0, 0, 0, 3})};
   EXPECT_FALSE(StartBrokerWithMockComponents(explicit_interfaces));

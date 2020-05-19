@@ -19,7 +19,7 @@
 
 #include "broker_client.h"
 
-#include "rdmnet/broker.h"
+#include "rdmnet/cpp/broker.h"
 #include "rdmnet/core/connection.h"
 #include "rdmnet/private/opts.h"
 
@@ -42,8 +42,8 @@ bool BrokerClient::PushPostSizeCheck(const etcpal::Uuid& sender_cid, const Broke
       to_push.data = std::make_unique<uint8_t[]>(BROKER_CONNECT_REPLY_FULL_MSG_SIZE);
       if (to_push.data)
       {
-        to_push.size = broker_pack_connect_reply(to_push.data.get(), BROKER_CONNECT_REPLY_FULL_MSG_SIZE, &sender_cid.get(),
-                                          BROKER_GET_CONNECT_REPLY_MSG(&msg));
+        to_push.size = broker_pack_connect_reply(to_push.data.get(), BROKER_CONNECT_REPLY_FULL_MSG_SIZE,
+                                                 &sender_cid.get(), BROKER_GET_CONNECT_REPLY_MSG(&msg));
         if (to_push.size)
         {
           broker_msgs_.push(std::move(to_push));
@@ -64,7 +64,7 @@ bool BrokerClient::PushPostSizeCheck(const etcpal::Uuid& sender_cid, const Broke
         if (to_push.data)
         {
           to_push.size = broker_pack_rpt_client_list(to_push.data.get(), bufsize, &sender_cid.get(), msg.vector,
-                                              rpt_list->client_entries, rpt_list->num_client_entries);
+                                                     rpt_list->client_entries, rpt_list->num_client_entries);
           if (to_push.size)
           {
             broker_msgs_.push(std::move(to_push));
