@@ -81,14 +81,14 @@ public:
   constexpr ept_status_code_t status_code() const noexcept;
   constexpr const std::string& status_string() const noexcept;
 
-  constexpr bool IsValid() const noexcept;
+  bool IsValid() const noexcept;
   const char* CodeToCString() const noexcept;
   std::string CodeToString() const;
   bool HasStatusString() const noexcept;
 
 private:
   etcpal::Uuid source_cid_;
-  ept_status_code_t status_code_{kEptNumStatusCodes};
+  ept_status_code_t status_code_;
   std::string status_string_;
 };
 
@@ -212,9 +212,9 @@ constexpr const std::string& SavedEptStatus::status_string() const noexcept
 }
 
 /// Whether the values contained in this class are valid for an EPT status message.
-constexpr bool SavedEptStatus::IsValid() const noexcept
+inline bool SavedEptStatus::IsValid() const noexcept
 {
-  return (static_cast<int>(status_code_) < static_cast<int>(kEptNumStatusCodes));
+  return !source_cid_.IsNull();
 }
 
 /// Convert the status message's code to a string representation.

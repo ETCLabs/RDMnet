@@ -87,8 +87,8 @@ each component using RDM commands.
 
 ### Devices
 
-RDMnet devices are the primary recipents of configuration in RDMnet. A device is typically (but not
-always) a piece of hardware-locked equipment; a lighting fixture, a DMX gateway, etc.
+RDMnet devices are the primary recipients of configuration in RDMnet. A device is typically (but
+not always) a piece of hardware-locked equipment; a lighting fixture, a DMX gateway, etc.
 
 Devices can only participate in one RDMnet scope at a time. All devices must by default be
 configured to discover and connect to the default RDMnet scope (the string `default`); this can

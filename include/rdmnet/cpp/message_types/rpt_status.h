@@ -93,7 +93,7 @@ private:
   rdm::Uid source_uid_;
   uint16_t source_endpoint_{E133_NULL_ENDPOINT};
   uint32_t seq_num_{0};
-  rpt_status_code_t status_code_{kRptNumStatusCodes};
+  rpt_status_code_t status_code_{};
   std::string status_string_;
 };
 
@@ -254,7 +254,7 @@ constexpr const std::string& SavedRptStatus::status_string() const noexcept
 /// Whether the values contained in this class are valid for an RPT Status message.
 constexpr bool SavedRptStatus::IsValid() const noexcept
 {
-  return (seq_num_ != 0 && static_cast<int>(status_code_) < static_cast<int>(kRptNumStatusCodes));
+  return seq_num_ != 0;
 }
 
 /// Convert the status message's code to a string representation.

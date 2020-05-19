@@ -68,9 +68,7 @@ typedef enum
   /*! The inner PDU contained by the RPT PDU was malformed. */
   kRptStatusInvalidMessage = VECTOR_RPT_STATUS_INVALID_MESSAGE,
   /*! The Command Class of an encapsulated RDM Command was invalid. */
-  kRptStatusInvalidCommandClass = VECTOR_RPT_STATUS_INVALID_COMMAND_CLASS,
-
-  kRptNumStatusCodes
+  kRptStatusInvalidCommandClass = VECTOR_RPT_STATUS_INVALID_COMMAND_CLASS
 } rpt_status_code_t;
 
 /*! EPT status code definitions */
@@ -79,9 +77,7 @@ typedef enum
   /*! The destination CID in the EPT PDU could not be found. */
   kEptStatusUnknownCid = VECTOR_EPT_STATUS_UNKNOWN_CID,
   /*! An EPT PDU was received with an unsupported Vector. */
-  kEptStatusUnknownVector = VECTOR_EPT_STATUS_UNKNOWN_VECTOR,
-
-  kEptNumStatusCodes
+  kEptStatusUnknownVector = VECTOR_EPT_STATUS_UNKNOWN_VECTOR
 } ept_status_code_t;
 
 /*! Disconnect reason defines for the BrokerDisconnectMsg. */
