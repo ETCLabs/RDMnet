@@ -384,6 +384,9 @@ that is the primary addressing identifier you will use to send data to them.
 Send data to other EPT clients by providing the data, the EPT sub-protocol being used, and the
 destination client's CID.
 
+The caller retains ownership of any data buffers supplied to the data sending API functions. See
+\ref data_ownership for more information.
+
 <!-- CODE_BLOCK_START -->
 ```c
 EtcPalUuid dest_cid = /* The CID of the client we are sending the data to */;
@@ -414,6 +417,9 @@ etcpal::Error result = ept_client.SendData(my_scope_handle, dest_cid, MY_ESTA_MA
 EPT makes no distinction between requests and replies and has no method of correlating them; these
 features are up to sub-protocols to implement. When data arrives addressed to a local client, it
 will be delivered asynchronously through the "data received" callback.
+
+Note that data received callbacks reference data buffers owned by the library, which will be
+invalid when the callback returns. See \ref data_ownership for more information.
 
 <!-- CODE_BLOCK_START -->
 ```c

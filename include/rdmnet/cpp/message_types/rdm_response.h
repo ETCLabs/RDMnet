@@ -89,6 +89,7 @@ public:
 
   etcpal::Expected<rdm::NackReason> NackReason() const noexcept;
   std::vector<uint8_t> GetData() const;
+  std::vector<uint8_t> GetOriginalCmdData() const;
 
   constexpr const RdmnetRdmResponse& get() const noexcept;
 
@@ -373,6 +374,14 @@ inline etcpal::Expected<rdm::NackReason> RdmResponse::NackReason() const noexcep
 inline std::vector<uint8_t> RdmResponse::GetData() const
 {
   return std::vector<uint8_t>(resp_.rdm_data, resp_.rdm_data + resp_.rdm_data_len);
+}
+
+/// \brief Copy out the original RDM command data in a RdmResponse.
+/// \return A copied vector containing the parameter data associated with the original RDM command
+///         that generated this response.
+inline std::vector<uint8_t> RdmResponse::GetOriginalCmdData() const
+{
+  return std::vector<uint8_t>(resp_.original_cmd_data, resp_.original_cmd_data + resp_.original_cmd_data_len);
 }
 
 /// Get a const reference to the underlying C type.

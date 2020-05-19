@@ -362,6 +362,9 @@ Sending RDM commands requires a destination address structure to indicate the RD
 RDM responder to which the command is addressed. See \ref devices_and_gateways for more information
 on the fields of the destination address structure.
 
+The caller retains ownership of any data buffers supplied to the RDM command sending API functions.
+See \ref data_ownership for more information.
+
 After sending a command, the library will provide a _sequence number_ that will be echoed in the
 corresponding RDM response. This sequence number should be saved.
 
@@ -399,6 +402,9 @@ ACK_OVERFLOW mechanism to deliver responses with oversized data). This means tha
 in RDMnet can be larger than the 231-byte limit that is customary in RDM. The only time a response
 can be fragmented is if the RDMnet library was compiled with dynamic memory allocation disabled 
 (see the note on the more_coming flag below for more information on this).
+
+Note that response callbacks reference data buffers owned by the library, which will be invalid
+when the callback returns. See \ref data_ownership for more information.
 
 <!-- CODE_BLOCK_START -->
 ```c

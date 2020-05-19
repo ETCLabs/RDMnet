@@ -209,6 +209,9 @@ to them. LLRP targets must be tracked and addressed by a combination of RDM UID 
 structure contains both of these addressing identifiers for each discovered target, and the
 DestinationAddr structure takes them to form an LLRP destination address.
 
+The caller retains ownership of any data buffers supplied to the RDM command sending API functions.
+See \ref data_ownership for more information.
+
 After sending a command, the library will provide a _sequence number_ that will be echoed in the
 corresponding RDM response. This sequence number should be saved.
 
@@ -242,6 +245,9 @@ if (result)
 ## Handling RDM Responses
 
 Responses to commands you send will be delivered asynchronously through the "RDM response" callback.
+
+Note that response callbacks reference data buffers owned by the library, which will be invalid
+when the callback returns. See \ref data_ownership for more information.
 
 <!-- CODE_BLOCK_START -->
 ```c

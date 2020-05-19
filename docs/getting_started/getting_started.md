@@ -21,6 +21,7 @@ that you would like to use:
 
 \subpage handling_rdm_commands
 \subpage global_init_and_destroy
+\subpage data_ownership
 
 \htmlonly
 </div>
