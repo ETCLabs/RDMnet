@@ -35,6 +35,7 @@
 #include "rdmnet/core.h"
 #include "rdmnet/core/util.h"
 #include "rdmnet/version.h"
+#include "rdm/defs.h"
 
 extern "C" {
 void llrpcb_target_discovered(llrp_manager_t /*handle*/, const DiscoveredLlrpTarget* target, void* context)
@@ -166,11 +167,14 @@ void LLRPManager::PrintCommandList()
   printf("    pi: Print network interfaces\n");
   printf("    i <target_handle>: Get DEVICE_INFO from Target <target_handle>\n");
   printf("    l <target_handle>: Get DEVICE_LABEL from Target <target_handle>\n");
+  printf("    gi <target_handle>: Get LIST_INTERFACES from Target <target_handle>\n");
   printf("    sf <target_handle>: Set FACTORY_DEFAULTS on Target <target_handle>\n");
   printf("    si <target_handle>: Toggle IDENTIFY_DEVICE on/off on Target <target_handle>\n");
   printf("    sl <target_handle> <label>: Set DEVICE_LABEL to <label> on Target\n");
   printf("        <target_handle>\n");
   printf("    sr <target_handle>: Set RESET_DEVICE on Target <target_handle>\n");
+  printf("    sz <target_handle> <interface_id>: Set IPV4_ZEROCONF_MODE\n");
+  printf("        with Set INTERFACE_APPLY_CONFIGURATION on Target <target_handle>\n");
   printf("    m <target_handle>: Get MANUFACTURER_LABEL from Target <target_handle>\n");
   printf("    c <target_handle>: Get DEVICE_MODEL_DESCRIPTION from Target <target_handle>\n");
   printf("    s <target_handle> <scope_slot>: Get COMPONENT_SCOPE for Scope Slot\n");
@@ -257,6 +261,25 @@ bool LLRPManager::ParseCommand(const std::string& line)
         catch (std::exception)
         {
           printf("Command syntax: c <target_handle>\n");
+        }
+        break;
+      case 'g':
+        if (line.length() >= 2)
+        {
+          switch (line[1])
+          {
+          case 'i':
+             try
+             {
+               int target_handle = std::stoi(line.substr(3));
+               GetInterfaceList(target_handle);
+             }
+             catch (std::exception)
+             {
+               printf("Command syntax: gi <target_handle>\n");
+             }
+             break;
+          }
         }
         break;
       case 's':
@@ -357,6 +380,20 @@ bool LLRPManager::ParseCommand(const std::string& line)
                catch (std::exception)
                {
                  printf("Command syntax: sr <target_handle>\n");
+               }
+               break;
+            case 'z':
+               try
+               {
+                 std::string args = line.substr(2);
+                 size_t sp_pos = args.find_first_of(' ');
+                 int target_handle = std::stoi(args);
+                 unsigned interface_id = static_cast<unsigned>(std::stoi(args.substr(sp_pos)));
+                 SetZeroconf(target_handle, interface_id);
+               }
+               catch (std::exception)
+               {
+                 printf("Command syntax: sz <target_handle>\n");
                }
                break;
             case ' ':
@@ -795,6 +832,108 @@ void LLRPManager::ResetDevice(int target_handle)
     printf("Error sending RESET_DEVICE command.\n");
   }
 }
+
+void LLRPManager::GetInterfaceList(int target_handle)
+{
+  auto mgr_pair = managers_.find(active_manager_);
+  if (mgr_pair != managers_.end())
+  {
+    auto target = targets_.find(target_handle);
+    if (target != targets_.end())
+    {
+      RdmCommand cmd_data;
+      RdmResponse resp_data;
+
+      cmd_data.dest_uid = target->second.prot_info.uid;
+      cmd_data.subdevice = 0;
+      cmd_data.command_class = kRdmCCGetCommand;
+      cmd_data.param_id = E137_2_LIST_INTERFACES;
+      cmd_data.datalen = 0;
+
+      if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
+      {
+        if (resp_data.datalen <= 0xe6)
+        {
+          const uint8_t* cur_ptr = resp_data.data;
+          printf("List interfaces:\n");
+
+          while ((cur_ptr - resp_data.data) < resp_data.datalen)
+          {
+        	  printf("  0x%08x", etcpal_unpack_u32b(cur_ptr));
+        	  cur_ptr += 4;
+        	  printf(" 0x%04x\n", etcpal_unpack_u16b(cur_ptr));
+        	  cur_ptr += 2;
+          }
+        }
+        else
+        {
+          printf("List interfaces response malformed.\n");
+        }
+      }
+    }
+    else
+    {
+      printf("Target handle %d not found\n", target_handle);
+    }
+  }
+  else
+  {
+    printf("Error sending LIST_INTERFACES command.\n");
+  }
+}
+
+void LLRPManager::SetZeroconf(int target_handle, unsigned interface_id)
+{
+  auto mgr_pair = managers_.find(active_manager_);
+  if (mgr_pair != managers_.end())
+  {
+    auto target = targets_.find(target_handle);
+    if (target != targets_.end())
+    {
+      RdmCommand cmd_data;
+      RdmResponse resp_data;
+
+      cmd_data.dest_uid = target->second.prot_info.uid;
+      cmd_data.subdevice = 0;
+      cmd_data.command_class = kRdmCCSetCommand;
+      cmd_data.param_id = E137_2_IPV4_ZEROCONF_MODE;
+      cmd_data.datalen = 5;
+
+      uint8_t* cur_ptr = cmd_data.data;
+      etcpal_pack_u32b(cur_ptr, static_cast<uint32_t>(interface_id));
+
+      cmd_data.data[4] = 1;
+
+      if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
+      {
+        printf("Zeroconf successfully.\n");
+      }
+
+      cmd_data.dest_uid = target->second.prot_info.uid;
+      cmd_data.subdevice = 0;
+      cmd_data.command_class = kRdmCCSetCommand;
+      cmd_data.param_id = E137_2_INTERFACE_APPLY_CONFIGURATION;
+      cmd_data.datalen = 4;
+
+      cur_ptr = cmd_data.data;
+      etcpal_pack_u32b(cur_ptr, static_cast<uint32_t>(interface_id));
+
+      if (SendRDMAndGetResponse(mgr_pair->first, target->second.prot_info.cid, cmd_data, resp_data))
+      {
+        printf("Interface apply configuration successfully.\n");
+      }
+    }
+    else
+    {
+      printf("Target handle %d not found\n", target_handle);
+    }
+  }
+  else
+  {
+    printf("Error sending IPV4_ZEROCONF_MODE command.\n");
+  }
+}
+
 
 void LLRPManager::FactoryDefaults(int target_handle)
 {

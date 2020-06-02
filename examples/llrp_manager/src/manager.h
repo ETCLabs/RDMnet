@@ -69,6 +69,9 @@ public:
   void FactoryDefaults(int target_handle);
   void ResetDevice(int target_handle);
 
+  void GetInterfaceList(int target_handle);
+  void SetZeroconf(int target_handle, unsigned interface_id);
+
   void TargetDiscovered(const DiscoveredLlrpTarget& target);
   void DiscoveryFinished();
   void RdmRespReceived(const LlrpRemoteRdmResponse& resp);
