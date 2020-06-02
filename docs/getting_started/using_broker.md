@@ -97,7 +97,7 @@ broker.Startup(settings, &logger);
 ```
 
 The broker logs messages at appropriate syslog-style severity levels; for example, if you set the
-logger's log mask to ETCPAL*LOG_UPTO(ETCPAL_LOG_DEBUG), the broker will log \_lots* of messages
+logger's log mask to ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG), the broker will log _lots_ of messages
 (including a message logged for every message the broker routes). If you set it to
 ETCPAL_LOG_UPTO(ETCPAL_LOG_ERR), the logging will be much more sparse and only represent error
 conditions.

@@ -90,7 +90,7 @@ target_link_libraries(MyApp PRIVATE RDMnetBroker) # RDMnet will be linked transi
 
 RDMnet can be built on its own using CMake and its headers and binaries can be installed for
 inclusion in a non-CMake project. Typical practice is to create a clean directory to hold the build
-results named some varion of "build".
+results named some variation of "build".
 
 **NOTE**: If you are cross-compiling and/or building for an embedded target, some additional
 configuration is necessary. EtcPal helps make this possible; see the 
