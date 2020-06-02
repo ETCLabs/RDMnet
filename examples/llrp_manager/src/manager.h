@@ -69,6 +69,7 @@ public:
   void GetManufacturerLabel(int target_handle);
   void GetDeviceModelDescription(int target_handle);
   void GetComponentScope(int target_handle, int scope_slot);
+  void GetInterfaceList(int target_handle);
 
   void IdentifyDevice(int target_handle);
   void SetDeviceLabel(int target_handle, const std::string& label);
@@ -76,6 +77,7 @@ public:
                          const etcpal::SockAddr& static_config);
   void SetFactoryDefaults(int target_handle);
   void SetResetDevice(int target_handle);
+  void SetZeroconf(int target_handle, unsigned interface_id);
 
   void HandleLlrpTargetDiscovered(llrp::Manager::Handle handle, const llrp::DiscoveredTarget& target) override;
   void HandleLlrpDiscoveryFinished(llrp::Manager::Handle handle) override;
