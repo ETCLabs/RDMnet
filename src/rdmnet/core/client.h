@@ -244,6 +244,8 @@ typedef struct RCEptClientData
   RCEptClientCallbacks callbacks;
 } RCEptClientData;
 
+// RDMNET_MAX_SCOPES_PER_CLIENT dictates the length of the TCP_COMMS_STATUS response, which the
+// client module handles internally.
 #if RDMNET_MAX_SCOPES_PER_CLIENT > RDMNET_MAX_SENT_ACK_OVERFLOW_RESPONSES
 #define RC_CLIENT_STATIC_RESP_BUF_LEN (RDMNET_MAX_SCOPES_PER_CLIENT + 2)
 #else
