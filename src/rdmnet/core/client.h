@@ -202,7 +202,8 @@ typedef enum
 
 typedef struct RCClientScope
 {
-  rc_scope_state_t state;
+  rdmnet_client_scope_t handle;
+  rc_scope_state_t      state;
 
   char           id[E133_SCOPE_STRING_PADDED_LENGTH];
   EtcPalSockAddr static_broker_addr;
@@ -215,7 +216,7 @@ typedef struct RCClientScope
 #if RDMNET_DYNAMIC_MEM
   EtcPalIpAddr* broker_listen_addrs;
 #else
-  EtcPalIpAddr broker_listen_addrs[RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER];
+  EtcPalIpAddr  broker_listen_addrs[RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER];
 #endif
   size_t   num_broker_listen_addrs;
   size_t   current_listen_addr;
@@ -243,6 +244,8 @@ typedef struct RCEptClientData
   RCEptClientCallbacks callbacks;
 } RCEptClientData;
 
+// RDMNET_MAX_SCOPES_PER_CLIENT dictates the length of the TCP_COMMS_STATUS response, which the
+// client module handles internally.
 #if RDMNET_MAX_SCOPES_PER_CLIENT > RDMNET_MAX_SENT_ACK_OVERFLOW_RESPONSES
 #define RC_CLIENT_STATIC_RESP_BUF_LEN (RDMNET_MAX_SCOPES_PER_CLIENT + 2)
 #else
@@ -269,7 +272,14 @@ struct RCClient
   /////////////////////////////////////////////////////////////////////////////
 
   bool marked_for_destruction;
-  RC_DECLARE_BUF(RCClientScope, scopes, RDMNET_MAX_SCOPES_PER_CLIENT);
+
+  IntHandleManager scope_handle_manager;
+#if RDMNET_DYNAMIC_MEM
+  RCClientScope** scopes;
+  size_t          num_scopes;
+#else
+  RCClientScope scopes[RDMNET_MAX_SCOPES_PER_CLIENT];
+#endif
 
 #if !RDMNET_DYNAMIC_MEM
   RdmBuffer resp_buf[RC_CLIENT_STATIC_RESP_BUF_LEN];
@@ -298,7 +308,7 @@ etcpal_error_t rc_rpt_client_register(RCClient*                  client,
                                       const RdmnetMcastNetintId* llrp_netints,
                                       size_t                     num_llrp_netints);
 etcpal_error_t rc_ept_client_register(RCClient* client);
-etcpal_error_t rc_client_unregister(RCClient* client, rdmnet_disconnect_reason_t disconnect_reason);
+bool           rc_client_unregister(RCClient* client, rdmnet_disconnect_reason_t disconnect_reason);
 etcpal_error_t rc_client_add_scope(RCClient*                client,
                                    const RdmnetScopeConfig* scope_config,
                                    rdmnet_client_scope_t*   scope_handle);

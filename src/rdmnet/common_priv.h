@@ -193,18 +193,15 @@ typedef struct RdmnetEptClient
   bool     connected_to_broker;
 } RdmnetEptClient;
 
-RdmnetController* alloc_controller_instance(void);
-RdmnetDevice*     alloc_device_instance(void);
-LlrpManager*      alloc_llrp_manager_instance(void);
-LlrpTarget*       alloc_llrp_target_instance(void);
-RdmnetEptClient*  alloc_ept_client_instance(void);
-void              free_controller_instance(RdmnetController* controller);
-void              free_device_instance(RdmnetDevice* device);
-void              free_llrp_manager_instance(LlrpManager* manager);
-void              free_llrp_target_instance(LlrpTarget* target);
-void              free_ept_client_instance(RdmnetEptClient* ept_client);
+RdmnetController* rdmnet_alloc_controller_instance(void);
+RdmnetDevice*     rdmnet_alloc_device_instance(void);
+LlrpManager*      rdmnet_alloc_llrp_manager_instance(void);
+LlrpTarget*       rdmnet_alloc_llrp_target_instance(void);
+RdmnetEptClient*  rdmnet_alloc_ept_client_instance(void);
 
-void* find_struct_instance(int handle, rdmnet_struct_type_t type);
+void* rdmnet_find_struct_instance(int handle, rdmnet_struct_type_t type);
+void  rdmnet_unregister_struct_instance(void* instance);
+void  rdmnet_free_struct_instance(void* instance);
 
 #ifdef __cplusplus
 }

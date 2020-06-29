@@ -34,6 +34,7 @@ DECLARE_FAKE_VOID_FUNC(rc_client_connect_failed,
                        const RdmnetClientConnectFailedInfo*);
 DECLARE_FAKE_VOID_FUNC(rc_client_disconnected, RCClient*, rdmnet_client_scope_t, const RdmnetClientDisconnectedInfo*);
 DECLARE_FAKE_VOID_FUNC(rc_client_broker_msg_received, RCClient*, rdmnet_client_scope_t, const BrokerMessage*);
+DECLARE_FAKE_VOID_FUNC(rc_client_destroyed, RCClient*);
 DECLARE_FAKE_VOID_FUNC(rc_client_llrp_msg_received, RCClient*, const LlrpRdmCommand*, RdmnetSyncRdmResponse*, bool*);
 DECLARE_FAKE_VOID_FUNC(rc_client_rpt_msg_received,
                        RCClient*,
@@ -56,7 +57,8 @@ constexpr RCClientCommonCallbacks kClientFakeCommonCallbacks = {
   rc_client_connected,
   rc_client_connect_failed,
   rc_client_disconnected,
-  rc_client_broker_msg_received
+  rc_client_broker_msg_received,
+  rc_client_destroyed
 };
 
 constexpr RCRptClientCallbacks kClientFakeRptCallbacks = {
