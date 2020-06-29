@@ -2,16 +2,13 @@
 # supports broker discovery, not broker registration.
 
 set(RDMNET_DISC_PLATFORM_SOURCES
-  ${RDMNET_SRC}/rdmnet/discovery/lightweight/disc_platform_defs.h
-  ${RDMNET_SRC}/rdmnet/discovery/lightweight/rdmnet_disc_lightweight.c
-  ${RDMNET_SRC}/rdmnet/discovery/lightweight/lwmdns.h
-  ${RDMNET_SRC}/rdmnet/discovery/lightweight/lwmdns_message.h
-  ${RDMNET_SRC}/rdmnet/discovery/lightweight/lwmdns_message.c
-  ${RDMNET_SRC}/rdmnet/discovery/lightweight/lwmdns_recv.h
-  ${RDMNET_SRC}/rdmnet/discovery/lightweight/lwmdns_recv.c
+  ${RDMNET_SRC}/rdmnet/disc/lightweight/rdmnet_disc_platform_defs.h
+  ${RDMNET_SRC}/rdmnet/disc/lightweight/rdmnet_disc_lightweight.c
+  ${RDMNET_SRC}/rdmnet/disc/lightweight/lwmdns_common.h
+  ${RDMNET_SRC}/rdmnet/disc/lightweight/lwmdns_common.c
+  ${RDMNET_SRC}/rdmnet/disc/lightweight/lwmdns_recv.h
+  ${RDMNET_SRC}/rdmnet/disc/lightweight/lwmdns_recv.c
+  ${RDMNET_SRC}/rdmnet/disc/lightweight/lwmdns_send.h
+  ${RDMNET_SRC}/rdmnet/disc/lightweight/lwmdns_send.c
 )
-add_library(RDMnetDiscoveryPlatform INTERFACE)
-target_sources(RDMnetDiscoveryPlatform INTERFACE ${RDMNET_DISC_PLATFORM_SOURCES})
-target_include_directories(RDMnetDiscoveryPlatform INTERFACE
-  ${RDMNET_SRC}/rdmnet/discovery/lightweight
-)
+set(RDMNET_DISC_PLATFORM_INCLUDE_DIRS ${RDMNET_SRC}/rdmnet/disc/lightweight)

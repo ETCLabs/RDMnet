@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,18 @@
 
 #include <sstream>
 
-LogWindowGUI::LogWindowGUI(QWidget* parent) : QDialog(parent)
+LogWindowGUI::LogWindowGUI(QWidget* parent, QString log_file_name, bool has_error) : QDialog(parent)
 {
   ui.setupUi(this);
 
-  connect(this, SIGNAL(appendText(const QString&)), this, SLOT(processAppendText(const QString&)), Qt::AutoConnection);
-  connect(this, SIGNAL(clearText()), this, SLOT(processClearText()), Qt::AutoConnection);
+  if (has_error)
+  {
+    ui.fileWarningLabel->setStyleSheet("QLabel { color: red; }");
+    ui.fileWarningLabel->setText(tr("Warning: Could not open log file %1").arg(log_file_name));
+  }
+
+  connect(this, &LogWindowGUI::appendText, this, &LogWindowGUI::processAppendText, Qt::AutoConnection);
+  connect(this, &LogWindowGUI::clearText, this, &LogWindowGUI::processClearText, Qt::AutoConnection);
 
   setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 }

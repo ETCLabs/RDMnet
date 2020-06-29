@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,8 +65,8 @@ TEST_F(TestThreadManager, AddListenThreadNormalWorks)
 class TestListenThread : public ThreadTestBase
 {
 protected:
-  static constexpr uint16_t kTestPort = 8888;
-  static constexpr uint32_t kTestIpv4 = 0x0a650203;
+  static constexpr uint16_t        kTestPort = 8888;
+  static constexpr uint32_t        kTestIpv4 = 0x0a650203;
   static constexpr etcpal_socket_t kListenSocketVal = 0;
 };
 
@@ -87,7 +87,7 @@ TEST_F(TestListenThread, AcceptResultIsForwarded)
 
   etcpal_accept_fake.custom_fake = [](etcpal_socket_t socket, EtcPalSockAddr* accept_addr,
                                       etcpal_socket_t* accept_sock) {
-    EXPECT_EQ(socket, 0);
+    EXPECT_EQ(socket, (etcpal_socket_t)0);
     ETCPAL_IP_SET_V4_ADDRESS(&accept_addr->ip, kTestIpv4);
     accept_addr->port = kTestPort;
     *accept_sock = 1;

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 #pragma once
 
 #include "ControllerUtils.h"
+#include "ControllerLog.h"
 
 BEGIN_INCLUDE_QT_HEADERS()
 #include <QDialog>
@@ -32,11 +33,11 @@ class LogWindowGUI : public QDialog, public LogOutputStream
   Q_OBJECT
 
 public:
-  LogWindowGUI(QWidget* parent);
+  LogWindowGUI(QWidget* parent, QString log_file_name, bool has_error = false);
 
   // LogOutputStream implementation
   virtual LogOutputStream& operator<<(const std::string& str) override;
-  virtual void clear() override;
+  virtual void             clear() override;
 
 signals:
   void appendText(const QString& text);

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,23 +19,21 @@
 
 #pragma once
 
-#include "rdm/uid.h"
+#include "rdm/cpp/uid.h"
 #include "RDMnetNetworkItem.h"
 
 class ResponderItem : public RDMnetNetworkItem
 {
 public:
-  static const int ResponderItemType = QStandardItem::UserType + 5;
+  static constexpr int ResponderItemType = QStandardItem::UserType + 5;
 
-  // ResponderItem(uint16_t man, uint32_t dev) { m_Man = man; m_Dev = dev; m_HaveInfo = false; };
-  ResponderItem(uint16_t man, uint32_t dev);
+  ResponderItem(const rdm::Uid& uid);
 
-  RdmUid uid() const override { return uid_; }
-
-  virtual int type() const override;
+  rdm::Uid    uid() const override { return uid_; }
+  virtual int type() const override { return ResponderItemType; }
 
   bool operator==(const ResponderItem& other) { return uid_ == other.uid(); }
 
 private:
-  RdmUid uid_;
+  rdm::Uid uid_;
 };

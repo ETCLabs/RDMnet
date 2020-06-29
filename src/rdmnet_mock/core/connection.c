@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,49 +19,34 @@
 
 #include "rdmnet_mock/core/connection.h"
 
-static rdmnet_conn_t next_conn_handle;
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_conn_module_init);
+DEFINE_FAKE_VOID_FUNC(rc_conn_module_deinit);
+DEFINE_FAKE_VOID_FUNC(rc_conn_module_tick);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_conn_register, RCConnection*);
+DEFINE_FAKE_VOID_FUNC(rc_conn_unregister, RCConnection*, const rdmnet_disconnect_reason_t*);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t,
+                       rc_conn_connect,
+                       RCConnection*,
+                       const EtcPalSockAddr*,
+                       const BrokerClientConnectMsg*);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t,
+                       rc_conn_reconnect,
+                       RCConnection*,
+                       const EtcPalSockAddr*,
+                       const BrokerClientConnectMsg*,
+                       rdmnet_disconnect_reason_t);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_conn_disconnect, RCConnection*, rdmnet_disconnect_reason_t);
+DEFINE_FAKE_VALUE_FUNC(int, rc_conn_send, RCConnection*, const uint8_t*, size_t);
 
-static etcpal_error_t fake_connection_create(const RdmnetConnectionConfig* config, rdmnet_conn_t* handle);
-
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_connection_create, const RdmnetConnectionConfig*, rdmnet_conn_t*);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_connect, rdmnet_conn_t, const EtcPalSockAddr*, const ClientConnectMsg*);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_set_blocking, rdmnet_conn_t, bool);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_connection_destroy, rdmnet_conn_t, const rdmnet_disconnect_reason_t*);
-
-DEFINE_FAKE_VALUE_FUNC(int, rdmnet_send, rdmnet_conn_t, const uint8_t*, size_t);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_start_message, rdmnet_conn_t);
-DEFINE_FAKE_VALUE_FUNC(int, rdmnet_send_partial_message, rdmnet_conn_t, const uint8_t*, size_t);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_end_message, rdmnet_conn_t);
-
-DEFINE_FAKE_VOID_FUNC(rdmnet_conn_tick);
-
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_attach_existing_socket, rdmnet_conn_t, etcpal_socket_t,
-                       const EtcPalSockAddr*);
-DEFINE_FAKE_VOID_FUNC(rdmnet_socket_data_received, rdmnet_conn_t, const uint8_t*, size_t);
-DEFINE_FAKE_VOID_FUNC(rdmnet_socket_error, rdmnet_conn_t, etcpal_error_t);
-
-void rdmnet_connection_reset_all_fakes()
+void rc_connection_reset_all_fakes(void)
 {
-  RESET_FAKE(rdmnet_connection_create);
-  RESET_FAKE(rdmnet_connect);
-  RESET_FAKE(rdmnet_set_blocking);
-  RESET_FAKE(rdmnet_connection_destroy);
-  RESET_FAKE(rdmnet_send);
-  RESET_FAKE(rdmnet_start_message);
-  RESET_FAKE(rdmnet_send_partial_message);
-  RESET_FAKE(rdmnet_end_message);
-  RESET_FAKE(rdmnet_conn_tick);
-  RESET_FAKE(rdmnet_attach_existing_socket);
-  RESET_FAKE(rdmnet_socket_data_received);
-  RESET_FAKE(rdmnet_socket_error);
-
-  next_conn_handle = 0;
-  rdmnet_connection_create_fake.custom_fake = fake_connection_create;
-}
-
-etcpal_error_t fake_connection_create(const RdmnetConnectionConfig* config, rdmnet_conn_t* handle)
-{
-  (void)config;
-  *handle = next_conn_handle++;
-  return kEtcPalErrOk;
+  RESET_FAKE(rc_conn_module_init);
+  RESET_FAKE(rc_conn_module_deinit);
+  RESET_FAKE(rc_conn_module_tick);
+  RESET_FAKE(rc_conn_register);
+  RESET_FAKE(rc_conn_unregister);
+  RESET_FAKE(rc_conn_connect);
+  RESET_FAKE(rc_conn_reconnect);
+  RESET_FAKE(rc_conn_disconnect);
+  RESET_FAKE(rc_conn_send);
 }

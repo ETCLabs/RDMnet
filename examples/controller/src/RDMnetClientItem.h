@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@
 
 #pragma once
 
-#include "rdm/message.h"
-#include "rdmnet/client.h"
+#include "rdm/cpp/uid.h"
+#include "rdmnet/cpp/message.h"
 #include "EndpointItem.h"
 
 BEGIN_INCLUDE_QT_HEADERS()
@@ -32,28 +32,25 @@ class RDMnetClientItem : public RDMnetNetworkItem
 public:
   static const int RDMnetClientItemType = QStandardItem::UserType + 3;
 
-  static const char* clientType2String(rpt_client_type_t type);
-
   // RDMnetClientItem();
-  RDMnetClientItem(const ClientEntryData& entry, bool is_me);
+  RDMnetClientItem(const rdmnet::RptClientEntry& entry, bool is_me);
   virtual ~RDMnetClientItem();
 
   virtual int type() const override;
 
   bool operator==(const RDMnetClientItem& other)
   {
-    return (GET_RPT_CLIENT_ENTRY_DATA(&entry_)->client_type == GET_RPT_CLIENT_ENTRY_DATA(&other.entry_)->client_type) &&
-           (GET_RPT_CLIENT_ENTRY_DATA(&entry_)->client_uid == GET_RPT_CLIENT_ENTRY_DATA(&other.entry_)->client_uid);
+    return (entry_.type == other.entry_.type) && (entry_.uid == other.entry_.uid);
   }
 
-  RdmUid uid() const override { return GET_RPT_CLIENT_ENTRY_DATA(&entry_)->client_uid; }
-  const rpt_client_type_t ClientType() const { return GET_RPT_CLIENT_ENTRY_DATA(&entry_)->client_type; }
+  rdm::Uid                uid() const override { return entry_.uid; }
+  const rpt_client_type_t rpt_type() const { return entry_.type; }
 
-  void setScopeSlot(const QString& scope, uint16_t slot);
+  void     setScopeSlot(const QString& scope, uint16_t slot);
   uint16_t getScopeSlot(const QString& scope);
-  void removeScopeSlot(const QString& scope);
+  void     removeScopeSlot(const QString& scope);
 
-  ClientEntryData entry_;
+  rdmnet::RptClientEntry     entry_;
   std::vector<EndpointItem*> endpoints_;
 
 protected:

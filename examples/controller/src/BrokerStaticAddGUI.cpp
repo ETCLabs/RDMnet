@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,8 @@ BrokerStaticAddGUI::BrokerStaticAddGUI(QWidget* parent, IHandlesBrokerStaticAdd*
 
   ui.portEdit->setValidator(new QIntValidator(1, 65535, this));
 
-  connect(ui.addBrokerButton, SIGNAL(clicked()), this, SLOT(addBrokerTriggered()));
-  connect(ui.cancelButton, SIGNAL(clicked()), this, SLOT(cancelTriggered()));
+  connect(ui.addBrokerButton, &QPushButton::clicked, this, &BrokerStaticAddGUI::addBrokerTriggered);
+  connect(ui.cancelButton, &QPushButton::clicked, this, &BrokerStaticAddGUI::cancelTriggered);
 
   setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 }
@@ -45,16 +45,7 @@ BrokerStaticAddGUI::~BrokerStaticAddGUI()
 
 void BrokerStaticAddGUI::addBrokerTriggered()
 {
-  // QString addrQString = QString( "%1:%2" ).arg( ui.ipEdit->text(), ui.portEdit->text());
-  // std::string addrStdString = addrQString.toStdString();
-  // const char *addrString = addrStdString.data();
-
   QString scopeString = ui.scopeEdit->text();
-
-  // CIPAddr addr = CIPAddr::StringToAddr( addrString );
-
-  // QStringList ipv6Split = ui.ipEdit->text().split( "]" );
-  // QString ipEndString = ipv6Split.value( ipv6Split.length() - 1 );
 
   QMessageBox errorMessageBox;
   errorMessageBox.setIcon(QMessageBox::Icon::Critical);
@@ -62,7 +53,7 @@ void BrokerStaticAddGUI::addBrokerTriggered()
   etcpal::SockAddr brokerAddr(etcpal::IpAddr::FromString(ui.ipEdit->text().toStdString()),
                               static_cast<uint16_t>(ui.portEdit->text().toInt()));
 
-  if (!brokerAddr.ip().IsValid())
+  if (!brokerAddr.IsValid())
   {
     errorMessageBox.setText(tr("Invalid address format. Please use a correct input format."));
     errorMessageBox.exec();
@@ -81,7 +72,7 @@ void BrokerStaticAddGUI::addBrokerTriggered()
   else if (m_Handler)
   {
     close();
-    m_Handler->handleAddBrokerByIP(scopeString, brokerAddr);
+    m_Handler->HandleAddBrokerByIP(scopeString, brokerAddr);
   }
 }
 

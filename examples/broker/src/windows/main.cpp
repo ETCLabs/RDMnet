@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 
 // main.cpp: The Windows console entry point for the Broker example application.
 
+#define NOMINMAX 1
 #include <winsock2.h>
 #include <ws2ipdef.h>
 #include <iphlpapi.h>
@@ -26,6 +27,8 @@
 #include <cassert>
 #include <iostream>
 #include <map>
+#include "etcpal/common.h"
+#include "etcpal/netint.h"
 #include "broker_shell.h"
 #include "win_broker_log.h"
 
@@ -37,16 +40,10 @@ void PrintHelp(wchar_t* app_name)
   std::cout << "Options:\n";
   std::cout << "  --scope=SCOPE         Configures the RDMnet Scope this Broker runs on to\n";
   std::cout << "                        SCOPE. By default, the default RDMnet scope is used.\n";
-  std::cout << "  --ifaces=IFACE_LIST   Mutually exclusive with --macs. A comma-separated list\n";
-  std::cout << "                        of local network interface IP addresses to use, e.g.\n";
-  std::cout << "                        10.101.50.60. Note: using --macs is preferred; with\n";
-  std::cout << "                        --ifaces, if an interface IP changes, the broker will\n";
-  std::cout << "                        likely stop functioning. --ifaces is fine for quick\n";
-  std::cout << "                        tests. By default, all available interfaces are used.\n";
-  std::cout << "  --macs=MAC_LIST       Mutually exclusive with --ifaces. A comma-separated list\n";
-  std::cout << "                        of local network interface mac addresses to use, e.g.\n";
-  std::cout << "                        00:c0:16:11:da:b3. By default, all available interfaces\n";
-  std::cout << "                        are used.\n";
+  std::cout << "  --ifaces=IFACE_LIST   A comma-separated list of local network interface names\n";
+  std::cout << "                        to use. This can be the adapter's GUID (ifGuid) or its\n";
+  std::cout << "                        interface name (e.g. 'Ethernet 2', 'Wi-Fi').\n";
+  std::cout << "                        By default, all available interfaces are used.\n";
   std::cout << "  --port=PORT           The port that this broker instance should use. By\n";
   std::cout << "                        default, an ephemeral port is used.\n";
   std::cout << "  --log-level=LOG_LEVEL Set the logging output level mask, using standard syslog\n";
@@ -70,81 +67,55 @@ bool ParseAndSetScope(const LPWSTR scope_str, BrokerShell& broker_shell)
   return false;
 }
 
-// Parse the --ifaces=IFACE_LIST command line option and transfer it to the BrokerShell instance.
 bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell& broker_shell)
 {
-  std::set<etcpal::IpAddr> addrs;
+  std::vector<std::string> netint_names;
+
+  const EtcPalNetintInfo* netints = etcpal_netint_get_interfaces();
+  size_t                  num_netints = etcpal_netint_get_num_interfaces();
 
   if (wcslen(iface_list_str) != 0)
   {
     WCHAR* context;
     for (WCHAR* p = wcstok_s(iface_list_str, L",", &context); p != NULL; p = wcstok_s(NULL, L",", &context))
     {
-      etcpal::IpAddr addr;
+      int         size_needed = WideCharToMultiByte(CP_UTF8, 0, p, -1, nullptr, 0, nullptr, nullptr);
+      std::string interface_name(size_needed, 0);
+      WideCharToMultiByte(CP_UTF8, 0, p, -1, &interface_name[0], size_needed, nullptr, nullptr);
+      // Trim the trailing null
+      interface_name.pop_back();
 
-      ADDRINFOW ai_hints;
-      ai_hints.ai_flags = AI_NUMERICHOST;
-      ai_hints.ai_family = AF_UNSPEC;
-      ai_hints.ai_socktype = 0;
-      ai_hints.ai_protocol = 0;
-      ai_hints.ai_addrlen = 0;
-      ai_hints.ai_addr = nullptr;
-      ai_hints.ai_canonname = nullptr;
-      ai_hints.ai_next = nullptr;
-
-      ADDRINFOW* gai_result;
-      INT res = GetAddrInfoW(p, nullptr, &ai_hints, &gai_result);
-      if (res == 0)
+      std::string name_to_insert;
+      for (const EtcPalNetintInfo* netint = netints; netint < netints + num_netints; ++netint)
       {
-        if (gai_result->ai_addr)
+        if (interface_name == netint->id)
         {
-          ip_os_to_etcpal(gai_result->ai_addr, &addr.get());
-          addrs.insert(addr);
+          name_to_insert = interface_name;
+          break;
         }
-        FreeAddrInfoW(gai_result);
+        else if (interface_name == netint->friendly_name)
+        {
+          name_to_insert = netint->id;
+          break;
+        }
+      }
+      if (!name_to_insert.empty())
+      {
+        if (std::find(netint_names.begin(), netint_names.end(), name_to_insert) == netint_names.end())
+          netint_names.push_back(name_to_insert);
+        else
+          std::cout << "Skipping duplicate specified network interface '" << interface_name << "'.\n";
+      }
+      else
+      {
+        std::cout << "Specified network interface '" << interface_name << "' not found.\n";
       }
     }
   }
 
-  if (!addrs.empty())
+  if (!netint_names.empty())
   {
-    broker_shell.SetInitialIfaceList(addrs);
-    return true;
-  }
-  return false;
-}
-
-// Given a pointer to a string, parses out a mac addr
-void ParseMac(WCHAR* s, etcpal::MacAddr& mac)
-{
-  WCHAR* p = s;
-
-  for (int index = 0; index < ETCPAL_MAC_BYTES; ++index)
-  {
-    mac.get().data[index] = (uint8_t)wcstol(p, &p, 16);
-    ++p;  // P points at the :
-  }
-}
-
-// Parse the --macs=MAC_LIST command line option and transfer it to the BrokerShell instance.
-bool ParseAndSetMacList(const LPWSTR mac_list_str, BrokerShell& broker_shell)
-{
-  std::set<etcpal::MacAddr> macs;
-
-  if (wcslen(mac_list_str) != 0)
-  {
-    WCHAR* context;
-    for (WCHAR* p = wcstok_s(mac_list_str, L",", &context); p != NULL; p = wcstok_s(NULL, L",", &context))
-    {
-      etcpal::MacAddr mac;
-      ParseMac(p, mac);
-      macs.insert(mac);
-    }
-  }
-
-  if (!macs.empty())
-  {
-    broker_shell.SetInitialMacList(macs);
+    broker_shell.SetInitialNetintList(netint_names);
     return true;
   }
   return false;
@@ -201,44 +172,17 @@ ParseResult ParseArgs(int argc, wchar_t* argv[], BrokerShell& broker_shell, int&
 {
   if (argc > 1)
   {
-    bool iface_key_encountered = false;
-
     for (int i = 1; i < argc; ++i)
     {
       if (_wcsnicmp(argv[i], L"--scope=", 8) == 0)
       {
         if (!ParseAndSetScope(argv[i] + 8, broker_shell))
-        {
           return ParseResult::kParseErr;
-        }
       }
       else if (_wcsnicmp(argv[i], L"--ifaces=", 9) == 0)
       {
-        if (iface_key_encountered)
-        {
+        if (!ParseAndSetIfaceList(argv[i] + 9, broker_shell))
           return ParseResult::kParseErr;
-        }
-        else
-        {
-          if (ParseAndSetIfaceList(argv[i] + 9, broker_shell))
-            iface_key_encountered = true;
-          else
-            return ParseResult::kParseErr;
-        }
-      }
-      else if (_wcsnicmp(argv[i], L"--macs=", 7) == 0)
-      {
-        if (iface_key_encountered)
-        {
-          return ParseResult::kParseErr;
-        }
-        else
-        {
-          if (ParseAndSetMacList(argv[i] + 9, broker_shell))
-            iface_key_encountered = true;
-          else
-            return ParseResult::kParseErr;
-        }
       }
       else if (_wcsnicmp(argv[i], L"--port=", 7) == 0)
       {
@@ -271,7 +215,8 @@ ParseResult ParseArgs(int argc, wchar_t* argv[], BrokerShell& broker_shell, int&
 
 // The system will deliver this callback when an IPv4 or IPv6 network adapter changes state. This
 // event is passed along to the BrokerShell instance, which restarts the broker.
-VOID NETIOAPI_API_ InterfaceChangeCallback(IN PVOID CallerContext, IN PMIB_IPINTERFACE_ROW Row,
+VOID NETIOAPI_API_ InterfaceChangeCallback(IN PVOID                 CallerContext,
+                                           IN PMIB_IPINTERFACE_ROW  Row,
                                            IN MIB_NOTIFICATION_TYPE NotificationType)
 {
   (void)Row;
@@ -285,7 +230,7 @@ VOID NETIOAPI_API_ InterfaceChangeCallback(IN PVOID CallerContext, IN PMIB_IPINT
 }
 
 BrokerShell broker_shell;
-bool handled_ctrl_c_once = false;
+bool        handled_ctrl_c_once = false;
 
 BOOL WINAPI ConsoleSignalHandler(DWORD signal)
 {
@@ -303,12 +248,20 @@ BOOL WINAPI ConsoleSignalHandler(DWORD signal)
 // Parse command-line arguments and then run the platform-neutral Broker shell.
 int wmain(int argc, wchar_t* argv[])
 {
+  etcpal_error_t res = etcpal_init(ETCPAL_FEATURE_NETINTS);
+  if (res != kEtcPalErrOk)
+  {
+    std::cout << "Couldn't get system network interface information: '" << etcpal_strerror(res) << "'\n";
+    return 1;
+  }
+
   bool should_run = true;
-  int exit_code = 0;
-  int log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_INFO);
+  int  exit_code = 0;
+  int  log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_INFO);
 
   WSADATA wsa_data;
-  int ws_err = WSAStartup(MAKEWORD(2, 2), &wsa_data);
+  int     ws_err = WSAStartup(MAKEWORD(2, 2), &wsa_data);
+  ETCPAL_UNUSED_ARG(ws_err);
   assert(ws_err == 0);
 
   switch (ParseArgs(argc, argv, broker_shell, log_mask))
@@ -342,8 +295,8 @@ int wmain(int argc, wchar_t* argv[])
 
     // Startup and run the Broker.
     WindowsBrokerLog log;
-    log.Startup("RDMnetBroker.log", log_mask);
-    exit_code = broker_shell.Run(log.broker_log_instance());
+    log.Startup(log_mask);
+    exit_code = broker_shell.Run(log.log_instance());
     log.Shutdown();
 
     // Unregister/cleanup the network change detection.
@@ -351,6 +304,6 @@ int wmain(int argc, wchar_t* argv[])
   }
 
   WSACleanup();
-
+  etcpal_deinit(ETCPAL_FEATURE_NETINTS);
   return exit_code;
 }

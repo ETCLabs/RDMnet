@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,16 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#include "rdmnet/private/llrp_prot.h"
+#include "rdmnet/core/llrp_prot.h"
 
 #include <string.h>
 #include "etcpal/pack.h"
 #include "etcpal/socket.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
-#include "rdmnet/private/llrp.h"
+#include "rdmnet/core/llrp.h"
 
 /**************************** Global variables *******************************/
-
-EtcPalUuid kLlrpBroadcastCid;
 
 /*************************** Private constants *******************************/
 
@@ -41,22 +39,22 @@ EtcPalUuid kLlrpBroadcastCid;
 /*********************** Private function prototypes *************************/
 
 static bool parse_llrp_pdu(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest, LlrpMessage* msg);
-static bool parse_llrp_probe_request(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest,
-                                     RemoteProbeRequest* request);
-static bool parse_llrp_probe_reply(const uint8_t* buf, size_t buflen, DiscoveredLlrpTarget* reply);
+static bool parse_llrp_probe_request(const uint8_t*             buf,
+                                     size_t                     buflen,
+                                     const LlrpMessageInterest* interest,
+                                     RemoteProbeRequest*        request);
+static bool parse_llrp_probe_reply(const uint8_t* buf, size_t buflen, LlrpDiscoveredTarget* reply);
 static bool parse_llrp_rdm_command(const uint8_t* buf, size_t buflen, RdmBuffer* cmd);
 
-static etcpal_error_t send_llrp_rdm(etcpal_socket_t sock, uint8_t* buf, const EtcPalSockAddr* dest_addr,
-                                    const LlrpHeader* header, const RdmBuffer* rdm_msg);
+static etcpal_error_t send_llrp_rdm(etcpal_socket_t       sock,
+                                    uint8_t*              buf,
+                                    const EtcPalSockAddr* dest_addr,
+                                    const LlrpHeader*     header,
+                                    const RdmBuffer*      rdm_msg);
 
 /*************************** Function definitions ****************************/
 
-void llrp_prot_init()
-{
-  etcpal_string_to_uuid(LLRP_BROADCAST_CID, &kLlrpBroadcastCid);
-}
-
-bool get_llrp_destination_cid(const uint8_t* buf, size_t buflen, EtcPalUuid* dest_cid)
+bool rc_get_llrp_destination_cid(const uint8_t* buf, size_t buflen, EtcPalUuid* dest_cid)
 {
   if (!buf || !dest_cid || buflen < LLRP_MIN_TOTAL_MESSAGE_SIZE)
     return false;
@@ -68,14 +66,14 @@ bool get_llrp_destination_cid(const uint8_t* buf, size_t buflen, EtcPalUuid* des
 
   // Try to parse the Root Layer PDU header.
   AcnRootLayerPdu rlp;
-  AcnPdu last_pdu = ACN_PDU_INIT;
+  AcnPdu          last_pdu = ACN_PDU_INIT;
   if (!acn_parse_root_layer_pdu(preamble.rlp_block, preamble.rlp_block_len, &rlp, &last_pdu))
     return false;
 
   // Check the PDU length
   const uint8_t* cur_ptr = rlp.pdata;
-  size_t llrp_pdu_len = ACN_PDU_LENGTH(cur_ptr);
-  if (llrp_pdu_len > rlp.datalen || llrp_pdu_len < LLRP_MIN_PDU_SIZE)
+  size_t         llrp_pdu_len = ACN_PDU_LENGTH(cur_ptr);
+  if (llrp_pdu_len > rlp.data_len || llrp_pdu_len < LLRP_MIN_PDU_SIZE)
     return false;
 
   // Jump to the position of the LLRP destination CID and fill it in
@@ -84,7 +82,7 @@ bool get_llrp_destination_cid(const uint8_t* buf, size_t buflen, EtcPalUuid* des
   return true;
 }
 
-bool parse_llrp_message(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest, LlrpMessage* msg)
+bool rc_parse_llrp_message(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest, LlrpMessage* msg)
 {
   if (!buf || !msg || buflen < LLRP_MIN_TOTAL_MESSAGE_SIZE)
     return false;
@@ -96,13 +94,13 @@ bool parse_llrp_message(const uint8_t* buf, size_t buflen, const LlrpMessageInte
 
   // Try to parse the Root Layer PDU header.
   AcnRootLayerPdu rlp;
-  AcnPdu last_pdu = ACN_PDU_INIT;
+  AcnPdu          last_pdu = ACN_PDU_INIT;
   if (!acn_parse_root_layer_pdu(preamble.rlp_block, preamble.rlp_block_len, &rlp, &last_pdu))
     return false;
 
   // Fill in the data we have and try to parse the LLRP PDU.
   msg->header.sender_cid = rlp.sender_cid;
-  return parse_llrp_pdu(rlp.pdata, rlp.datalen, interest, msg);
+  return parse_llrp_pdu(rlp.pdata, rlp.data_len, interest, msg);
 }
 
 bool parse_llrp_pdu(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest, LlrpMessage* msg)
@@ -112,7 +110,7 @@ bool parse_llrp_pdu(const uint8_t* buf, size_t buflen, const LlrpMessageInterest
 
   // Check the PDU length
   const uint8_t* cur_ptr = buf;
-  size_t llrp_pdu_len = ACN_PDU_LENGTH(cur_ptr);
+  size_t         llrp_pdu_len = ACN_PDU_LENGTH(cur_ptr);
   if (llrp_pdu_len > buflen || llrp_pdu_len < LLRP_MIN_PDU_SIZE)
     return false;
 
@@ -126,7 +124,7 @@ bool parse_llrp_pdu(const uint8_t* buf, size_t buflen, const LlrpMessageInterest
   cur_ptr += 4;
 
   // Parse the next layer, based on the vector value and what the caller has registered interest in
-  if (0 == ETCPAL_UUID_CMP(&msg->header.dest_cid, &kLlrpBroadcastCid) ||
+  if (0 == ETCPAL_UUID_CMP(&msg->header.dest_cid, kLlrpBroadcastCid) ||
       0 == ETCPAL_UUID_CMP(&msg->header.dest_cid, &interest->my_cid))
   {
     switch (msg->vector)
@@ -159,15 +157,17 @@ bool parse_llrp_pdu(const uint8_t* buf, size_t buflen, const LlrpMessageInterest
   return false;
 }
 
-bool parse_llrp_probe_request(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest,
-                              RemoteProbeRequest* request)
+bool parse_llrp_probe_request(const uint8_t*             buf,
+                              size_t                     buflen,
+                              const LlrpMessageInterest* interest,
+                              RemoteProbeRequest*        request)
 {
   if (buflen < PROBE_REQUEST_PDU_MIN_SIZE)
     return false;
 
   // Check the PDU length
   const uint8_t* cur_ptr = buf;
-  size_t pdu_len = ACN_PDU_LENGTH(cur_ptr);
+  size_t         pdu_len = ACN_PDU_LENGTH(cur_ptr);
   if (pdu_len > buflen || pdu_len < PROBE_REQUEST_PDU_MIN_SIZE)
     return false;
   const uint8_t* buf_end = cur_ptr + pdu_len;
@@ -223,13 +223,13 @@ bool parse_llrp_probe_request(const uint8_t* buf, size_t buflen, const LlrpMessa
   return true;
 }
 
-bool parse_llrp_probe_reply(const uint8_t* buf, size_t buflen, DiscoveredLlrpTarget* reply)
+bool parse_llrp_probe_reply(const uint8_t* buf, size_t buflen, LlrpDiscoveredTarget* reply)
 {
   if (buflen < PROBE_REPLY_PDU_SIZE)
     return false;
 
   const uint8_t* cur_ptr = buf;
-  size_t pdu_len = ACN_PDU_LENGTH(cur_ptr);
+  size_t         pdu_len = ACN_PDU_LENGTH(cur_ptr);
   if (pdu_len != PROBE_REPLY_PDU_SIZE)
     return false;
   cur_ptr += 3;
@@ -254,7 +254,7 @@ bool parse_llrp_rdm_command(const uint8_t* buf, size_t buflen, RdmBuffer* cmd)
     return false;
 
   const uint8_t* cur_ptr = buf;
-  size_t pdu_len = ACN_PDU_LENGTH(cur_ptr);
+  size_t         pdu_len = ACN_PDU_LENGTH(cur_ptr);
   if (pdu_len > buflen || pdu_len > LLRP_RDM_CMD_PDU_MAX_SIZE || pdu_len < LLRP_RDM_CMD_PDU_MIN_SIZE)
     return false;
   cur_ptr += 3;
@@ -263,7 +263,7 @@ bool parse_llrp_rdm_command(const uint8_t* buf, size_t buflen, RdmBuffer* cmd)
     return false;
 
   memcpy(cmd->data, cur_ptr, pdu_len - 3);
-  cmd->datalen = pdu_len - 3;
+  cmd->data_len = pdu_len - 3;
   return true;
 }
 
@@ -286,8 +286,11 @@ size_t etcpal_pack_llrp_header(uint8_t* buf, size_t pdu_len, uint32_t vector, co
 #define PROBE_REQUEST_RLP_DATA_MIN_SIZE (LLRP_HEADER_SIZE + PROBE_REQUEST_PDU_MIN_SIZE)
 #define PROBE_REQUEST_RLP_DATA_MAX_SIZE (PROBE_REQUEST_RLP_DATA_MIN_SIZE + (6 * LLRP_KNOWN_UID_SIZE))
 
-etcpal_error_t send_llrp_probe_request(etcpal_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
-                                       const LocalProbeRequest* probe_request)
+etcpal_error_t rc_send_llrp_probe_request(etcpal_socket_t          sock,
+                                          uint8_t*                 buf,
+                                          bool                     ipv6,
+                                          const LlrpHeader*        header,
+                                          const LocalProbeRequest* probe_request)
 {
   if (probe_request->num_known_uids > LLRP_KNOWN_UID_SIZE)
     return kEtcPalErrInvalid;
@@ -301,17 +304,17 @@ etcpal_error_t send_llrp_probe_request(etcpal_socket_t sock, uint8_t* buf, bool 
   AcnRootLayerPdu rlp;
   rlp.vector = ACN_VECTOR_ROOT_LLRP;
   rlp.sender_cid = header->sender_cid;
-  rlp.datalen = PROBE_REQUEST_RLP_DATA_MIN_SIZE + (probe_request->num_known_uids * 6);
+  rlp.data_len = PROBE_REQUEST_RLP_DATA_MIN_SIZE + (probe_request->num_known_uids * 6);
 
   // Pack the Root Layer PDU header0
   cur_ptr += acn_pack_root_layer_header(cur_ptr, (size_t)(buf_end - cur_ptr), &rlp);
 
   // Pack the LLRP header
-  cur_ptr += etcpal_pack_llrp_header(cur_ptr, rlp.datalen, VECTOR_LLRP_PROBE_REQUEST, header);
+  cur_ptr += etcpal_pack_llrp_header(cur_ptr, rlp.data_len, VECTOR_LLRP_PROBE_REQUEST, header);
 
   // Pack the Probe Request PDU header fields
   *cur_ptr = 0xf0;
-  ACN_PDU_PACK_EXT_LEN(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
+  ACN_PDU_PACK_EXT_LEN(cur_ptr, rlp.data_len - LLRP_HEADER_SIZE);
   cur_ptr += 3;
   *cur_ptr++ = VECTOR_PROBE_REQUEST_DATA;
   etcpal_pack_u16b(cur_ptr, probe_request->lower_uid.manu);
@@ -345,8 +348,11 @@ etcpal_error_t send_llrp_probe_request(etcpal_socket_t sock, uint8_t* buf, bool 
 
 #define PROBE_REPLY_RLP_DATA_SIZE (LLRP_HEADER_SIZE + PROBE_REPLY_PDU_SIZE)
 
-etcpal_error_t send_llrp_probe_reply(etcpal_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
-                                     const DiscoveredLlrpTarget* target_info)
+etcpal_error_t rc_send_llrp_probe_reply(etcpal_socket_t             sock,
+                                        uint8_t*                    buf,
+                                        bool                        ipv6,
+                                        const LlrpHeader*           header,
+                                        const LlrpDiscoveredTarget* target_info)
 {
   uint8_t* cur_ptr = buf;
   uint8_t* buf_end = cur_ptr + LLRP_TARGET_MAX_MESSAGE_SIZE;
@@ -357,17 +363,17 @@ etcpal_error_t send_llrp_probe_reply(etcpal_socket_t sock, uint8_t* buf, bool ip
   AcnRootLayerPdu rlp;
   rlp.vector = ACN_VECTOR_ROOT_LLRP;
   rlp.sender_cid = header->sender_cid;
-  rlp.datalen = PROBE_REPLY_RLP_DATA_SIZE;
+  rlp.data_len = PROBE_REPLY_RLP_DATA_SIZE;
 
   // Pack the Root Layer PDU header
   cur_ptr += acn_pack_root_layer_header(cur_ptr, (size_t)(buf_end - cur_ptr), &rlp);
 
   // Pack the LLRP header
-  cur_ptr += etcpal_pack_llrp_header(cur_ptr, rlp.datalen, VECTOR_LLRP_PROBE_REPLY, header);
+  cur_ptr += etcpal_pack_llrp_header(cur_ptr, rlp.data_len, VECTOR_LLRP_PROBE_REPLY, header);
 
   // Pack the Probe Reply PDU
   *cur_ptr = 0xf0;
-  ACN_PDU_PACK_EXT_LEN(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
+  ACN_PDU_PACK_EXT_LEN(cur_ptr, rlp.data_len - LLRP_HEADER_SIZE);
   cur_ptr += 3;
   *cur_ptr++ = VECTOR_PROBE_REPLY_DATA;
   etcpal_pack_u16b(cur_ptr, target_info->uid.manu);
@@ -387,8 +393,11 @@ etcpal_error_t send_llrp_probe_reply(etcpal_socket_t sock, uint8_t* buf, bool ip
 
 #define RDM_CMD_RLP_DATA_MIN_SIZE (LLRP_HEADER_SIZE + 3 /* RDM cmd PDU Flags + Length */)
 
-etcpal_error_t send_llrp_rdm(etcpal_socket_t sock, uint8_t* buf, const EtcPalSockAddr* dest_addr,
-                             const LlrpHeader* header, const RdmBuffer* rdm_msg)
+etcpal_error_t send_llrp_rdm(etcpal_socket_t       sock,
+                             uint8_t*              buf,
+                             const EtcPalSockAddr* dest_addr,
+                             const LlrpHeader*     header,
+                             const RdmBuffer*      rdm_msg)
 {
   uint8_t* cur_ptr = buf;
   uint8_t* buf_end = cur_ptr + LLRP_MAX_MESSAGE_SIZE;
@@ -399,20 +408,20 @@ etcpal_error_t send_llrp_rdm(etcpal_socket_t sock, uint8_t* buf, const EtcPalSoc
   AcnRootLayerPdu rlp;
   rlp.vector = ACN_VECTOR_ROOT_LLRP;
   rlp.sender_cid = header->sender_cid;
-  rlp.datalen = RDM_CMD_RLP_DATA_MIN_SIZE + rdm_msg->datalen;
+  rlp.data_len = RDM_CMD_RLP_DATA_MIN_SIZE + rdm_msg->data_len;
 
   // Pack the Root Layer PDU header
   cur_ptr += acn_pack_root_layer_header(cur_ptr, (size_t)(buf_end - cur_ptr), &rlp);
 
   // Pack the LLRP header
-  cur_ptr += etcpal_pack_llrp_header(cur_ptr, rlp.datalen, VECTOR_LLRP_RDM_CMD, header);
+  cur_ptr += etcpal_pack_llrp_header(cur_ptr, rlp.data_len, VECTOR_LLRP_RDM_CMD, header);
 
   // Pack the RDM Command PDU
   *cur_ptr = 0xf0;
-  ACN_PDU_PACK_EXT_LEN(cur_ptr, rlp.datalen - LLRP_HEADER_SIZE);
+  ACN_PDU_PACK_EXT_LEN(cur_ptr, rlp.data_len - LLRP_HEADER_SIZE);
   cur_ptr += 3;
-  memcpy(cur_ptr, rdm_msg->data, rdm_msg->datalen);
-  cur_ptr += rdm_msg->datalen;
+  memcpy(cur_ptr, rdm_msg->data, rdm_msg->data_len);
+  cur_ptr += rdm_msg->data_len;
 
   int send_res = etcpal_sendto(sock, buf, (size_t)(cur_ptr - buf), 0, dest_addr);
   if (send_res >= 0)
@@ -421,14 +430,20 @@ etcpal_error_t send_llrp_rdm(etcpal_socket_t sock, uint8_t* buf, const EtcPalSoc
     return (etcpal_error_t)send_res;
 }
 
-etcpal_error_t send_llrp_rdm_command(etcpal_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
-                                     const RdmBuffer* cmd)
+etcpal_error_t rc_send_llrp_rdm_command(etcpal_socket_t   sock,
+                                        uint8_t*          buf,
+                                        bool              ipv6,
+                                        const LlrpHeader* header,
+                                        const RdmBuffer*  cmd)
 {
   return send_llrp_rdm(sock, buf, ipv6 ? kLlrpIpv6RequestAddr : kLlrpIpv4RequestAddr, header, cmd);
 }
 
-etcpal_error_t send_llrp_rdm_response(etcpal_socket_t sock, uint8_t* buf, bool ipv6, const LlrpHeader* header,
-                                      const RdmBuffer* resp)
+etcpal_error_t rc_send_llrp_rdm_response(etcpal_socket_t   sock,
+                                         uint8_t*          buf,
+                                         bool              ipv6,
+                                         const LlrpHeader* header,
+                                         const RdmBuffer*  resp)
 {
   return send_llrp_rdm(sock, buf, ipv6 ? kLlrpIpv6RespAddr : kLlrpIpv4RespAddr, header, resp);
 }

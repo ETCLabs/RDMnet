@@ -17,6 +17,7 @@ pr:
 variables:
   rdmnet_artifact_version: "not_initialized"
   qt_cache_dir_macos: $(Pipeline.Workspace)/Qt
+  common_cmake_options: -DRDMNET_BUILD_TESTS=ON -DRDMNET_BUILD_CONSOLE_EXAMPLES=ON
 
 stages:
   - stage: build_and_test
@@ -60,7 +61,7 @@ stages:
               mkdir build
               cd build
               cmake --version
-              cmake -G "%CMAKE_GENERATOR%" -DQTDIR=%QT_DIRECTORY% -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL% -DRDMNET_BUILD_GUI_EXAMPLES=ON ..
+              cmake -G "%CMAKE_GENERATOR%" -DQTDIR=%QT_DIRECTORY% -DCMAKE_INSTALL_PREFIX=%CMAKE_INSTALL% $(common_cmake_options) -DRDMNET_BUILD_GUI_EXAMPLES=ON ..
             displayName: "Configure Project"
           - task: VSBuild@1
             displayName: "Build Project"
@@ -132,7 +133,7 @@ stages:
               mkdir build
               cd build
               cmake --version
-              cmake -G "Unix Makefiles" -DQTDIR=$QT_DIRECTORY -DCMAKE_INSTALL_PREFIX=install -DRDMNET_BUILD_GUI_EXAMPLES=ON ..
+              cmake -G "Unix Makefiles" -DQTDIR=$QT_DIRECTORY -DCMAKE_INSTALL_PREFIX=install $(common_cmake_options) -DRDMNET_BUILD_GUI_EXAMPLES=ON ..
               make -j4
               make install
             displayName: "Build Project"
@@ -151,12 +152,41 @@ stages:
               failTaskOnFailedTests: true
           - template: tools/ci/azure_templates/initialize_artifact_version.yml
           - template: tools/ci/azure_templates/macos_build_artifacts.yml
+      - job: linux_build
+        displayName: "Linux"
+        pool:
+          vmImage: "ubuntu-18.04"
+        variables:
+          cmake_generator: "Unix Makefiles"
+          # cmake_options_linux: -DCMAKE_C_FLAGS="-fsanitize=address" -DCMAKE_CXX_FLAGS="-fsanitize=address" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address"
+        # TODO install Qt for Linux build
+        steps:
+          - script: |
+              sudo apt-get update
+              sudo apt-get install uuid-dev libavahi-client-dev
+              mkdir build
+              cd build
+              cmake --version
+              cmake -G "$(cmake_generator)" $(common_cmake_options) ..
+              cmake --build .
+            displayName: "Configure and Build Project"
+          - script: |
+              cd build
+              ctest -T Test --output-on-failure
+            displayName: "Run Tests"
+          - task: PublishTestResults@2
+            displayName: "Publish Test Results"
+            inputs:
+              testResultsFormat: "CTest"
+              testResultsFiles: "**/Test.xml"
+              testRunTitle: "Linux"
+              failTaskOnFailedTests: true
 
       - job: documentation_deploy
         displayName: "Documentation Deploy"
         pool:
           vmImage: "ubuntu-18.04"
-        condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), and(startsWith(variables['Build.SourceBranch'], 'refs/pull'), not(variables['System.PullRequest.IsFork'])))
+        condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), and(startsWith(variables['Build.SourceBranch'], 'refs/pull'), ne(variables['System.PullRequest.IsFork'], 'True')))
         steps:
           - script: |
               sudo apt-get install doxygen

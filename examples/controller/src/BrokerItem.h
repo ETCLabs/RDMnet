@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,29 +19,32 @@
 
 #pragma once
 
+#include <optional>
 #include "etcpal/cpp/inet.h"
-#include "rdmnet/client.h"
+#include "rdmnet/cpp/client.h"
 #include "RDMnetNetworkItem.h"
 #include "RDMnetClientItem.h"
-#include "ControllerUtils.h"
 
 class BrokerItem : public RDMnetNetworkItem
 {
 public:
   static const int BrokerItemType = QStandardItem::UserType + 2;
 
-  BrokerItem(const QString& scope, rdmnet_client_scope_t scope_handle,
-             const StaticBrokerConfig& static_broker = StaticBrokerConfig());
+  BrokerItem(const QString&          scope,
+             rdmnet_client_scope_t   scope_handle,
+             const etcpal::SockAddr& static_broker = etcpal::SockAddr());
   virtual ~BrokerItem();
 
-  virtual int type() const override;
+  virtual int           type() const override;
   rdmnet_client_scope_t scope_handle() const { return scope_handle_; }
 
-  void setScope(const QString& scope) { scope_ = scope; }
+  void    SetScope(const QString& scope) { scope_ = scope; }
   QString scope() const { return scope_; }
 
-  void setConnected(bool connected, const etcpal::SockAddr& broker_addr = etcpal::SockAddr());
+  void SetConnected(bool connected, const etcpal::SockAddr& broker_addr = etcpal::SockAddr());
   bool connected() const { return connected_; }
+
+  std::optional<rdmnet::DestinationAddr> FindResponder(const rdm::Uid& uid) const;
 
   std::vector<RDMnetClientItem*> rdmnet_clients_;
 
@@ -49,9 +52,9 @@ protected:
   void updateText();
 
 private:
-  QString scope_;
+  QString               scope_;
   rdmnet_client_scope_t scope_handle_{RDMNET_CLIENT_SCOPE_INVALID};
-  StaticBrokerConfig static_broker_;
-  etcpal::SockAddr broker_addr_{};
-  bool connected_{false};
+  etcpal::SockAddr      broker_addr_;
+  etcpal::SockAddr      static_broker_;
+  bool                  connected_{false};
 };

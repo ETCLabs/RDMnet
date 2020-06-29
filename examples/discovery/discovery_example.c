@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,13 @@
  *****************************************************************************/
 
 #include "etcpal/thread.h"
-#include "rdmnet/core.h"
-#include "rdmnet/core/discovery.h"
-#include "rdmnet/core/util.h"
+#include "rdmnet/discovery.h"
 #include <stdio.h>
+#include <string.h>
+
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
 
 void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info, void* context)
 {
@@ -29,50 +32,60 @@ void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDis
   (void)context;
 
   printf("A Broker was found on scope %s\n", broker_info->scope);
-  printf("Service Name: %s\n", broker_info->service_name);
-  for (EtcPalIpAddr* listen_addr = broker_info->listen_addrs; listen_addr < broker_info->listen_addrs + broker_info->num_listen_addrs; ++listen_addr)
+  printf("Service Name: %s\n", broker_info->service_instance_name);
+  for (const EtcPalIpAddr* listen_addr = broker_info->listen_addrs;
+       listen_addr < broker_info->listen_addrs + broker_info->num_listen_addrs; ++listen_addr)
   {
-    char addr_str[ETCPAL_INET6_ADDRSTRLEN];
-    etcpal_inet_ntop(listen_addr, addr_str, ETCPAL_INET6_ADDRSTRLEN);
+    char addr_str[ETCPAL_IP_STRING_BYTES];
+    etcpal_ip_to_string(listen_addr, addr_str);
     printf("Address: %s:%d\n", addr_str, broker_info->port);
   }
 }
 
-void monitorcb_broker_lost(rdmnet_scope_monitor_t handle, const char* scope, const char* service_name, void* context)
+void monitorcb_broker_updated(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info, void* context)
 {
   (void)handle;
   (void)context;
-  printf("Previously found Broker on scope %s with service name %s has been lost.\n", scope, service_name);
+
+  printf("Updated information for previously-discovered Broker on scope %s\n", broker_info->scope);
+  printf("Service Name: %s\n", broker_info->service_instance_name);
+  for (const EtcPalIpAddr* listen_addr = broker_info->listen_addrs;
+       listen_addr < broker_info->listen_addrs + broker_info->num_listen_addrs; ++listen_addr)
+  {
+    char addr_str[ETCPAL_IP_STRING_BYTES];
+    etcpal_ip_to_string(listen_addr, addr_str);
+    printf("Address: %s:%d\n", addr_str, broker_info->port);
+  }
 }
 
-void monitorcb_scope_monitor_error(rdmnet_scope_monitor_t handle, const char* scope, int platform_error, void* context)
+void monitorcb_broker_lost(rdmnet_scope_monitor_t handle,
+                           const char*            scope,
+                           const char*            service_instance_name,
+                           void*                  context)
 {
   (void)handle;
   (void)context;
-  printf("Scope monitor error %d on scope %s\n", platform_error, scope);
+  printf("Previously found Broker on scope %s with service instance name %s has been lost.\n", scope,
+         service_instance_name);
 }
 
-void regcb_broker_found(rdmnet_registered_broker_t handle, const RdmnetBrokerDiscInfo* broker_info, void* context)
+void regcb_other_broker_found(rdmnet_registered_broker_t handle, const RdmnetBrokerDiscInfo* broker_info, void* context)
 {
   (void)handle;
   (void)context;
   printf("A conflicting Broker was found on scope %s\n", broker_info->scope);
-  printf("Service Name: %s\n", broker_info->service_name);
+  printf("Service Name: %s\n", broker_info->service_instance_name);
   printf("Port: %d\n", broker_info->port);
 }
 
-void regcb_broker_lost(rdmnet_registered_broker_t handle, const char* scope, const char* service_name, void* context)
+void regcb_other_broker_lost(rdmnet_registered_broker_t handle,
+                             const char*                scope,
+                             const char*                service_name,
+                             void*                      context)
 {
   (void)handle;
   (void)context;
   printf("Previously found conflicting Broker on scope %s with service name %s has been lost.\n", scope, service_name);
-}
-
-void regcb_scope_monitor_error(rdmnet_registered_broker_t handle, const char* scope, int platform_error, void* context)
-{
-  (void)handle;
-  (void)context;
-  printf("Scope monitor error %d on scope %s\n", platform_error, scope);
 }
 
 void regcb_broker_registered(rdmnet_registered_broker_t handle, const char* assigned_service_name, void* context)
@@ -81,54 +94,39 @@ void regcb_broker_registered(rdmnet_registered_broker_t handle, const char* assi
   printf("Broker %p registered, assigned service name %s\n", handle, assigned_service_name);
 }
 
-void regcb_broker_register_error(rdmnet_registered_broker_t handle, int platform_error, void* context)
+void regcb_broker_register_failed(rdmnet_registered_broker_t handle, int platform_error, void* context)
 {
-  (void)platform_error;
   (void)context;
   printf("Broker %p register error %d!\n", handle, platform_error);
 }
 
-void set_monitor_callback_functions(RdmnetScopeMonitorCallbacks* callbacks)
-{
-  callbacks->broker_found = monitorcb_broker_found;
-  callbacks->broker_lost = monitorcb_broker_lost;
-  callbacks->scope_monitor_error = monitorcb_scope_monitor_error;
-}
-
-void set_reg_callback_functions(RdmnetDiscBrokerCallbacks* callbacks)
-{
-  callbacks->broker_found = regcb_broker_found;
-  callbacks->broker_lost = regcb_broker_lost;
-  callbacks->scope_monitor_error = regcb_scope_monitor_error;
-  callbacks->broker_registered = regcb_broker_registered;
-  callbacks->broker_register_error = regcb_broker_register_error;
-}
-
 int main(int argc, char* argv[])
 {
-  rdmnet_core_init(NULL, NULL);
+  rdmnet_init(NULL, NULL);
 
   if (argc == 2 && strcmp("broker", argv[1]) == 0)
   {
     // make a broker
-    RdmnetBrokerRegisterConfig config;
+    RdmnetBrokerRegisterConfig config = RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT;
 
-    rdmnet_disc_init_broker_info(&config.my_info);
-    etcpal_generate_v4_uuid(&config.my_info.cid);
-    rdmnet_safe_strncpy(config.my_info.service_name, "UNIQUE NAME", E133_SERVICE_NAME_STRING_PADDED_LENGTH);
-    rdmnet_safe_strncpy(config.my_info.model, "Broker prototype", E133_MODEL_STRING_PADDED_LENGTH);
-    rdmnet_safe_strncpy(config.my_info.manufacturer, "ETC", E133_MANUFACTURER_STRING_PADDED_LENGTH);
-    config.my_info.port = 0x4567;
-    set_reg_callback_functions(&config.callbacks);
-    config.callback_context = NULL;
+    etcpal_generate_v4_uuid(&config.cid);
+    config.uid.manu = 0xe574;
+    config.uid.id = 1;
+    config.service_instance_name = "UNIQUE NAME";
+    config.scope = E133_DEFAULT_SCOPE;
+    config.model = "Broker prototype";
+    config.manufacturer = "ETC";
+    config.port = 0x4567;
+    rdmnet_broker_register_config_set_callbacks(&config, regcb_broker_registered, regcb_broker_register_failed,
+                                                regcb_other_broker_found, regcb_other_broker_lost, NULL);
 
     rdmnet_registered_broker_t handle;
     if (kEtcPalErrOk == rdmnet_disc_register_broker(&config, &handle))
     {
       printf("RDMnet Broker registration started; assigned handle %p\n", handle);
-      printf("  Service Name: %s\n", config.my_info.service_name);
-      printf("  Port: %hu\n", config.my_info.port);
-      printf("  Scope: %s\n", config.my_info.scope);
+      printf("  Service Name: %s\n", config.service_instance_name);
+      printf("  Port: %hu\n", config.port);
+      printf("  Scope: %s\n", config.scope);
     }
     else
     {
@@ -137,16 +135,13 @@ int main(int argc, char* argv[])
   }
   else
   {
-    RdmnetScopeMonitorConfig config;
-
-    rdmnet_safe_strncpy(config.scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH);
-    rdmnet_safe_strncpy(config.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
-    set_monitor_callback_functions(&config.callbacks);
-    config.callback_context = NULL;
+    RdmnetScopeMonitorConfig config = RDMNET_SCOPE_MONITOR_CONFIG_DEFAULT_INIT;
+    rdmnet_scope_monitor_config_set_callbacks(&config, monitorcb_broker_found, monitorcb_broker_updated,
+                                              monitorcb_broker_lost, NULL);
 
     // start discovery
     rdmnet_scope_monitor_t handle;
-    int platform_specific_error;
+    int                    platform_specific_error;
     if (kEtcPalErrOk == rdmnet_disc_start_monitoring(&config, &handle, &platform_specific_error))
     {
       printf("Monitoring of scope %s started.\n", config.scope);
@@ -162,6 +157,6 @@ int main(int argc, char* argv[])
     etcpal_thread_sleep(500);
   }
 
-  rdmnet_core_deinit();
+  rdmnet_deinit();
   return 0;
 }

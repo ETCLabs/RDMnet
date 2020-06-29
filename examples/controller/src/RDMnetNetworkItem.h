@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "rdm/uid.h"
+#include "rdm/cpp/uid.h"
 #include "ControllerUtils.h"
 
 BEGIN_INCLUDE_QT_HEADERS()
@@ -75,16 +75,16 @@ public:
   static const int StaticIPv6DataRole = Qt::UserRole + 12;
 
 protected:
-  SupportedDeviceFeature supportedFeatures;
+  SupportedDeviceFeature supportedFeatures{kNoSupport};
 
-  bool children_search_running_;
+  bool children_search_running_{false};
 
-  QString* personalityDescriptions;
-  uint8_t numberOfDescriptionsFound;
-  uint8_t totalNumberOfDescriptions;
+  QString* personalityDescriptions{nullptr};
+  uint8_t  numberOfDescriptionsFound{0};
+  uint8_t  totalNumberOfDescriptions{0};
 
-  bool device_reset_;
-  bool device_identifying_;
+  bool device_reset_{false};
+  bool device_identifying_{false};
 
   bool rowHasSearchingStatusItem(int row);
 
@@ -106,17 +106,17 @@ public:
   void completelyRemoveChildren(int row, int count = 1, std::vector<class PropertyItem*>* alsoRemoveFromThis = NULL);
   void disableAllChildItems();
 
-  virtual RdmUid uid() const { return {0, 0}; }
-  virtual bool hasValidProperties(void) const;
+  virtual rdm::Uid uid() const { return rdm::Uid{}; }
+  virtual bool     hasValidProperties(void) const;
 
-  bool initiatePersonalityDescriptionSearch(uint8_t numberOfPersonalities);
-  void personalityDescriptionFound(uint8_t personality, uint16_t footprint, const QString& description);
-  bool allPersonalityDescriptionsFound();
+  bool        initiatePersonalityDescriptionSearch(uint8_t numberOfPersonalities);
+  void        personalityDescriptionFound(uint8_t personality, uint16_t footprint, const QString& description);
+  bool        allPersonalityDescriptionsFound();
   QStringList personalityDescriptionList();
-  QString personalityDescriptionAt(int i);
-  void setDeviceWasReset(bool reset);
-  void setDeviceIdentifying(bool identifying);
-  bool identifying();
+  QString     personalityDescriptionAt(int i);
+  void        setDeviceWasReset(bool reset);
+  void        setDeviceIdentifying(bool identifying);
+  bool        identifying();
 
   std::vector<class PropertyItem*> properties;
 };

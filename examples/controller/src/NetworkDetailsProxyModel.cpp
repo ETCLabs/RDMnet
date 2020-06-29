@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@
 
 NetworkDetailsProxyModel::NetworkDetailsProxyModel()
 {
-  sourceNetworkModel = NULL;
-  currentParentItem = NULL;
+  sourceNetworkModel = nullptr;
+  currentParentItem = nullptr;
   filterEnabled = true;
   setDynamicSortFilter(true);
 }
@@ -43,15 +43,12 @@ bool NetworkDetailsProxyModel::currentParentIsChildOfOrEqualTo(const QStandardIt
 {
   const QStandardItem* currentItem = currentParentItem;
 
-  if ((item != NULL) && (currentParentItem != NULL))
+  if (item && currentParentItem)
   {
-    while (currentItem != NULL)
+    while (currentItem)
     {
       if (currentItem == item)
-      {
         return true;
-      }
-
       currentItem = currentItem->parent();
     }
   }

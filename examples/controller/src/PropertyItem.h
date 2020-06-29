@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,11 +33,11 @@ public:
   virtual int type() const override;
 
   PropertyValueItem* getValueItem();
-  void setValueItem(PropertyValueItem* item, bool deleteItemArgumentIfCopied = true);
+  void               setValueItem(PropertyValueItem* item, bool deleteItemArgumentIfCopied = true);
 
   QString getFullName();
 
 protected:
   PropertyValueItem* m_ValueItem;
-  QString m_FullName;
+  QString            m_FullName;
 };

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,84 +22,105 @@
 
 BEGIN_INCLUDE_QT_HEADERS()
 #include <QDateTime>
+#include <QDir>
+#include <QStandardPaths>
+#include <QString>
 #include <QTimeZone>
+#include <QtGlobal>
 END_INCLUDE_QT_HEADERS()
 
-extern "C" {
-static void log_callback(void* context, const EtcPalLogStrings* strings)
-{
-  ControllerLog* log = static_cast<ControllerLog*>(context);
-  if (log)
-    log->LogFromCallback(strings->human_readable);
-}
+static const QString kLogFileBasename = "controller.log";
 
-static void time_callback(void* /*context*/, EtcPalLogTimestamp* time)
+#if defined(Q_OS_WIN)
+QString GetLogFileName()
+{
+  static const QString kRelativeLogFilePath = "ETC/RDMnet Examples";
+
+  QDir file_dir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+  if (file_dir.mkpath(kRelativeLogFilePath))
+  {
+    return QDir::toNativeSeparators(file_dir.absoluteFilePath(kRelativeLogFilePath + "/" + kLogFileBasename));
+  }
+  return QString{};
+}
+#elif defined(Q_OS_MACOS)
+QString GetLogFileName()
+{
+  static const QString kRelativeLogFilePath = "Library/Logs/ETC/RDMnetExamples";
+
+  auto home_dir = QDir::home();
+  if (home_dir.mkpath(kRelativeLogFilePath))
+  {
+    return home_dir.absoluteFilePath(kRelativeLogFilePath + "/" + kLogFileBasename);
+  }
+  return QString{};
+}
+#elif defined(Q_OS_LINUX)
+QString GetLogFileName()
+{
+  static const QString kRelativeLogFilePath = "rdmnet-examples";
+
+  QDir file_dir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+  if (file_dir.mkpath(kRelativeLogFilePath))
+  {
+    return file_dir.absoluteFilePath(kRelativeLogFilePath + "/" + kLogFileBasename);
+  }
+  return QString{};
+}
+#endif
+
+etcpal::LogTimestamp ControllerLog::GetLogTimestamp()
 {
   QDateTime now = QDateTime::currentDateTime();
-  QDate qdate = now.date();
-  QTime qtime = now.time();
-  time->second = qtime.second();
-  time->minute = qtime.minute();
-  time->hour = qtime.hour();
-  time->day = qdate.day();
-  time->month = qdate.month();
-  time->year = qdate.year();
-  time->msec = qtime.msec();
-  time->utc_offset = (QTimeZone::systemTimeZone().offsetFromUtc(now) / 60);
+  QDate     qdate = now.date();
+  QTime     qtime = now.time();
+
+  return etcpal::LogTimestamp(qdate.year(), qdate.month(), qdate.day(), qtime.hour(), qtime.minute(), qtime.second(),
+                              qtime.msec(), QTimeZone::systemTimeZone().offsetFromUtc(now) / 60);
 }
-}  // extern "C"
 
-ControllerLog::ControllerLog(const std::string& file_name) : file_name_(file_name)
+ControllerLog::ControllerLog()
 {
-  file_.open(file_name.c_str(), std::fstream::out);
+  file_name_ = GetLogFileName();
+  if (!file_name_.isEmpty())
+    file_.open(file_name_.toStdString().c_str(), std::fstream::out);
 
-  params_.action = kEtcPalLogCreateHumanReadable;
-  params_.log_fn = log_callback;
-  params_.log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG);
-  params_.time_fn = time_callback;
-  params_.context = this;
-  etcpal_validate_log_params(&params_);
+  logger_.SetLogAction(kEtcPalLogCreateHumanReadable).SetLogMask(ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG)).Startup(*this);
 
-  Log(ETCPAL_LOG_INFO, "Starting RDMnet Controller...");
+  logger_.Info("Starting RDMnet Controller...");
 }
 
 ControllerLog::~ControllerLog()
 {
+  logger_.Shutdown();
   file_.close();
 }
 
-void ControllerLog::Log(int pri, const char* format, ...)
-{
-  va_list args;
-  va_start(args, format);
-  etcpal_vlog(&params_, pri, format, args);
-  va_end(args);
-}
-
-void ControllerLog::LogFromCallback(const std::string& str)
+void ControllerLog::HandleLogMessage(const EtcPalLogStrings& strings)
 {
   if (file_.is_open())
-    file_ << str << std::endl;
+  {
+    file_ << strings.human_readable << std::endl;
+    file_.flush();
+  }
 
   for (LogOutputStream* stream : customOutputStreams)
   {
-    if (stream != NULL)
-    {
-      (*stream) << str << "\n";
-    }
+    if (stream)
+      (*stream) << strings.human_readable << "\n";
   }
 }
 
 void ControllerLog::addCustomOutputStream(LogOutputStream* stream)
 {
-  if (stream != NULL)
+  if (stream)
   {
     if (std::find(customOutputStreams.begin(), customOutputStreams.end(), stream) == customOutputStreams.end())
     {
       // Reinitialize the stream's contents to the log file's contents.
       stream->clear();
 
-      std::ifstream ifs(file_name_, std::ifstream::in);
+      std::ifstream ifs(file_name_.toStdString(), std::ifstream::in);
 
       std::string str((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 

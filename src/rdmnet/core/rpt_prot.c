@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,56 +19,58 @@
 
 #include "rdmnet/core/rpt_prot.h"
 
+#include "etcpal/common.h"
 #include "etcpal/pack.h"
 #include "rdmnet/defs.h"
-#include "rdmnet/core/util.h"
-#include "rdmnet/private/connection.h"
-#include "rdmnet/private/rpt_prot.h"
 
 /***************************** Private macros ********************************/
 
 /* Helper macros for RDM Command PDUs */
-#define RDM_CMD_PDU_LEN(rdmbufptr) ((rdmbufptr)->datalen + 3)
-#define PACK_RDM_CMD_PDU(rdmbufptr, buf)                                \
-  do                                                                    \
-  {                                                                     \
-    (buf)[0] = 0xf0;                                                    \
-    ACN_PDU_PACK_EXT_LEN(buf, RDM_CMD_PDU_LEN(rdmbufptr));           \
-    (buf)[3] = VECTOR_RDM_CMD_RDM_DATA;                                 \
-    memcpy(&(buf)[4], &(rdmbufptr)->data[1], (rdmbufptr)->datalen - 1); \
+#define RDM_CMD_PDU_LEN(rdmbufptr) ((rdmbufptr)->data_len + 3)
+#define PACK_RDM_CMD_PDU(rdmbufptr, buf)                                 \
+  do                                                                     \
+  {                                                                      \
+    (buf)[0] = 0xf0;                                                     \
+    ACN_PDU_PACK_EXT_LEN(buf, RDM_CMD_PDU_LEN(rdmbufptr));               \
+    (buf)[3] = VECTOR_RDM_CMD_RDM_DATA;                                  \
+    memcpy(&(buf)[4], &(rdmbufptr)->data[1], (rdmbufptr)->data_len - 1); \
   } while (0)
 
 /* Helper macros to pack the various RPT headers */
-#define PACK_REQUEST_HEADER(length, buf)              \
-  do                                                  \
-  {                                                   \
-    (buf)[0] = 0xf0;                                  \
-    ACN_PDU_PACK_EXT_LEN(buf, length);             \
+#define PACK_REQUEST_HEADER(length, buf)               \
+  do                                                   \
+  {                                                    \
+    (buf)[0] = 0xf0;                                   \
+    ACN_PDU_PACK_EXT_LEN(buf, length);                 \
     etcpal_pack_u32b(&buf[3], VECTOR_REQUEST_RDM_CMD); \
   } while (0)
 #define PACK_STATUS_HEADER(length, vector, buf) \
   do                                            \
   {                                             \
     (buf)[0] = 0xf0;                            \
-    ACN_PDU_PACK_EXT_LEN(buf, length);       \
-    etcpal_pack_u16b(&buf[3], vector);           \
+    ACN_PDU_PACK_EXT_LEN(buf, length);          \
+    etcpal_pack_u16b(&buf[3], vector);          \
   } while (0)
-#define PACK_NOTIFICATION_HEADER(length, buf)              \
-  do                                                       \
-  {                                                        \
-    (buf)[0] = 0xf0;                                       \
-    ACN_PDU_PACK_EXT_LEN(buf, length);                  \
+#define PACK_NOTIFICATION_HEADER(length, buf)               \
+  do                                                        \
+  {                                                         \
+    (buf)[0] = 0xf0;                                        \
+    ACN_PDU_PACK_EXT_LEN(buf, length);                      \
     etcpal_pack_u32b(&buf[3], VECTOR_NOTIFICATION_RDM_CMD); \
   } while (0)
 
 /*********************** Private function prototypes *************************/
 
-static void pack_rpt_header(size_t length, uint32_t vector, const RptHeader* header, uint8_t* buf);
-static etcpal_error_t send_rpt_header(RdmnetConnection* conn, const AcnRootLayerPdu* rlp, uint32_t rpt_vector,
-                                      const RptHeader* header, uint8_t* buf, size_t buflen);
-static size_t calc_request_pdu_size(const RdmBuffer* cmd);
-static size_t calc_status_pdu_size(const RptStatusMsg* status);
-static size_t calc_notification_pdu_size(const RdmBuffer* cmd_arr, size_t num_cmds);
+static void           pack_rpt_header(size_t length, uint32_t vector, const RptHeader* header, uint8_t* buf);
+static etcpal_error_t send_rpt_header(RCConnection*          conn,
+                                      const AcnRootLayerPdu* rlp,
+                                      uint32_t               rc_rpt_vector,
+                                      const RptHeader*       header,
+                                      uint8_t*               buf,
+                                      size_t                 buflen);
+static size_t         calc_request_pdu_size(const RdmBuffer* cmd);
+static size_t         calc_status_pdu_size(const RptStatusMsg* status);
+static size_t         calc_notification_pdu_size(const RdmBuffer* cmd_arr, size_t num_cmds);
 
 /*************************** Function definitions ****************************/
 
@@ -87,11 +89,14 @@ void pack_rpt_header(size_t length, uint32_t vector, const RptHeader* header, ui
   buf[27] = 0;
 }
 
-size_t pack_rpt_header_with_rlp(const AcnRootLayerPdu* rlp, uint8_t* buf, size_t buflen, uint32_t vector,
-                                const RptHeader* header)
+size_t pack_rpt_header_with_rlp(const AcnRootLayerPdu* rlp,
+                                uint8_t*               buf,
+                                size_t                 buflen,
+                                uint32_t               vector,
+                                const RptHeader*       header)
 {
   uint8_t* cur_ptr = buf;
-  size_t data_size = acn_root_layer_buf_size(rlp, 1);
+  size_t   data_size = acn_root_layer_buf_size(rlp, 1);
 
   if (data_size == 0)
     return 0;
@@ -108,13 +113,17 @@ size_t pack_rpt_header_with_rlp(const AcnRootLayerPdu* rlp, uint8_t* buf, size_t
   cur_ptr += data_size;
   buflen -= data_size;
 
-  pack_rpt_header(rlp->datalen, vector, header, cur_ptr);
+  pack_rpt_header(rlp->data_len, vector, header, cur_ptr);
   cur_ptr += RPT_PDU_HEADER_SIZE;
   return (size_t)(cur_ptr - buf);
 }
 
-etcpal_error_t send_rpt_header(RdmnetConnection* conn, const AcnRootLayerPdu* rlp, uint32_t rpt_vector,
-                               const RptHeader* header, uint8_t* buf, size_t buflen)
+etcpal_error_t send_rpt_header(RCConnection*          conn,
+                               const AcnRootLayerPdu* rlp,
+                               uint32_t               rc_rpt_vector,
+                               const RptHeader*       header,
+                               uint8_t*               buf,
+                               size_t                 buflen)
 {
   size_t data_size = acn_root_layer_buf_size(rlp, 1);
   if (data_size == 0)
@@ -139,7 +148,7 @@ etcpal_error_t send_rpt_header(RdmnetConnection* conn, const AcnRootLayerPdu* rl
     return (etcpal_error_t)send_res;
 
   // Pack and send the RPT PDU header
-  pack_rpt_header(rlp->datalen, rpt_vector, header, buf);
+  pack_rpt_header(rlp->data_len, rc_rpt_vector, header, buf);
   send_res = etcpal_send(conn->sock, buf, RPT_PDU_HEADER_SIZE, 0);
   if (send_res < 0)
     return (etcpal_error_t)send_res;
@@ -152,27 +161,30 @@ size_t calc_request_pdu_size(const RdmBuffer* cmd)
   return REQUEST_NOTIF_PDU_HEADER_SIZE + RDM_CMD_PDU_LEN(cmd);
 }
 
-/*! \brief Get the packed buffer size for an RPT Request message.
- *  \param[in] cmd Encapsulated RDM Command that will occupy the RPT Request message.
- *  \return Required buffer size, or 0 on error.
+/** @brief Get the packed buffer size for an RPT Request message.
+ *  @param[in] cmd Encapsulated RDM Command that will occupy the RPT Request message.
+ *  @return Required buffer size, or 0 on error.
  */
-size_t bufsize_rpt_request(const RdmBuffer* cmd)
+size_t rc_rpt_get_request_buffer_size(const RdmBuffer* cmd)
 {
   return (cmd ? (RPT_PDU_FULL_HEADER_SIZE + calc_request_pdu_size(cmd)) : 0);
 }
 
-/*! \brief Pack an RPT Request message into a buffer.
- *  \param[out] buf Buffer into which to pack the RPT Request message.
- *  \param[in] buflen Length in bytes of buf.
- *  \param[in] local_cid CID of the Component sending the RPT Request message.
- *  \param[in] header Header data for the RPT PDU that encapsulates this Request message.
- *  \param[in] cmd Encapsulated RDM Command that will occupy the RPT Request message.
- *  \return Number of bytes packed, or 0 on error.
+/** @brief Pack an RPT Request message into a buffer.
+ *  @param[out] buf Buffer into which to pack the RPT Request message.
+ *  @param[in] buflen Length in bytes of buf.
+ *  @param[in] local_cid CID of the Component sending the RPT Request message.
+ *  @param[in] header Header data for the RPT PDU that encapsulates this Request message.
+ *  @param[in] cmd Encapsulated RDM Command that will occupy the RPT Request message.
+ *  @return Number of bytes packed, or 0 on error.
  */
-size_t pack_rpt_request(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const RptHeader* header,
-                        const RdmBuffer* cmd)
+size_t rc_rpt_pack_request(uint8_t*          buf,
+                           size_t            buflen,
+                           const EtcPalUuid* local_cid,
+                           const RptHeader*  header,
+                           const RdmBuffer*  cmd)
 {
-  if (!buf || !local_cid || !header || !cmd || buflen < bufsize_rpt_request(cmd))
+  if (!buf || !local_cid || !header || !cmd || buflen < rc_rpt_get_request_buffer_size(cmd))
   {
     return 0;
   }
@@ -182,10 +194,10 @@ size_t pack_rpt_request(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_RPT;
-  rlp.datalen = RPT_PDU_HEADER_SIZE + request_pdu_size;
+  rlp.data_len = RPT_PDU_HEADER_SIZE + request_pdu_size;
 
   uint8_t* cur_ptr = buf;
-  size_t data_size = pack_rpt_header_with_rlp(&rlp, buf, buflen, VECTOR_RPT_REQUEST, header);
+  size_t   data_size = pack_rpt_header_with_rlp(&rlp, buf, buflen, VECTOR_RPT_REQUEST, header);
   if (data_size == 0)
     return 0;
   cur_ptr += data_size;
@@ -198,18 +210,20 @@ size_t pack_rpt_request(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid
   return (size_t)(cur_ptr - buf);
 }
 
-/*! \brief Send an RPT Request message on an RDMnet connection.
- *  \param[in] handle RDMnet connection handle on which to send the RPT Request message.
- *  \param[in] local_cid CID of the Component sending the RPT Request message.
- *  \param[in] header Header data for the RPT PDU that encapsulates this RPT Request message.
- *  \param[in] cmd Encapsulated RDM Command that will occupy the RPT Request message.
- *  \return #kEtcPalErrOk: Send success.\n
+/** @brief Send an RPT Request message on an RDMnet connection.
+ *  @param[in] handle RDMnet connection handle on which to send the RPT Request message.
+ *  @param[in] local_cid CID of the Component sending the RPT Request message.
+ *  @param[in] header Header data for the RPT PDU that encapsulates this RPT Request message.
+ *  @param[in] cmd Encapsulated RDM Command that will occupy the RPT Request message.
+ *  @return #kEtcPalErrOk: Send success.\n
  *          #kEtcPalErrInvalid: Invalid argument provided.\n
  *          #kEtcPalErrSys: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
-etcpal_error_t send_rpt_request(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
-                                const RdmBuffer* cmd)
+etcpal_error_t rc_rpt_send_request(RCConnection*     conn,
+                                   const EtcPalUuid* local_cid,
+                                   const RptHeader*  header,
+                                   const RdmBuffer*  cmd)
 {
   if (!local_cid || !header || !cmd)
     return kEtcPalErrInvalid;
@@ -217,71 +231,59 @@ etcpal_error_t send_rpt_request(rdmnet_conn_t handle, const EtcPalUuid* local_ci
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_RPT;
-  rlp.datalen = RPT_PDU_HEADER_SIZE + calc_request_pdu_size(cmd);
+  rlp.data_len = RPT_PDU_HEADER_SIZE + calc_request_pdu_size(cmd);
 
-  RdmnetConnection* conn;
-  etcpal_error_t res = rdmnet_start_message(handle, &conn);
+  uint8_t        buf[RDM_CMD_PDU_MAX_SIZE];
+  etcpal_error_t res = send_rpt_header(conn, &rlp, VECTOR_RPT_REQUEST, header, buf, RDM_CMD_PDU_MAX_SIZE);
   if (res != kEtcPalErrOk)
     return res;
 
-  uint8_t buf[RDM_CMD_PDU_MAX_SIZE];
-  res = send_rpt_header(conn, &rlp, VECTOR_RPT_REQUEST, header, buf, RDM_CMD_PDU_MAX_SIZE);
-  if (res != kEtcPalErrOk)
-  {
-    rdmnet_end_message(conn);
-    return res;
-  }
-
-  PACK_REQUEST_HEADER(rlp.datalen - RPT_PDU_HEADER_SIZE, buf);
+  PACK_REQUEST_HEADER(rlp.data_len - RPT_PDU_HEADER_SIZE, buf);
   int send_res = etcpal_send(conn->sock, buf, REQUEST_NOTIF_PDU_HEADER_SIZE, 0);
   if (send_res < 0)
-  {
-    rdmnet_end_message(conn);
     return (etcpal_error_t)send_res;
-  }
 
   PACK_RDM_CMD_PDU(cmd, buf);
   send_res = etcpal_send(conn->sock, buf, RDM_CMD_PDU_LEN(cmd), 0);
   if (send_res < 0)
-  {
-    rdmnet_end_message(conn);
     return (etcpal_error_t)send_res;
-  }
 
-  return rdmnet_end_message(conn);
+  return kEtcPalErrOk;
 }
 
 size_t calc_status_pdu_size(const RptStatusMsg* status)
 {
 #if RDMNET_DYNAMIC_MEM
-  return (RPT_STATUS_HEADER_SIZE +
-          (status->status_string ? strlen(status->status_string) : 0));
+  return (RPT_STATUS_HEADER_SIZE + (status->status_string ? strlen(status->status_string) : 0));
 #else
   return (RPT_STATUS_HEADER_SIZE + strlen(status->status_string));
 #endif
 }
 
-/*! \brief Get the packed buffer size for an RPT Status message.
- *  \param[in] status RPT Status message data.
- *  \return Required buffer size, or 0 on error.
+/** @brief Get the packed buffer size for an RPT Status message.
+ *  @param[in] status RPT Status message data.
+ *  @return Required buffer size, or 0 on error.
  */
-size_t bufsize_rpt_status(const RptStatusMsg* status)
+size_t rc_rpt_get_status_buffer_size(const RptStatusMsg* status)
 {
   return (status ? RPT_PDU_FULL_HEADER_SIZE + calc_status_pdu_size(status) : 0);
 }
 
-/*! \brief Pack an RPT Status message into a buffer.
- *  \param[out] buf Buffer into which to pack the RPT Status message.
- *  \param[in] buflen Length in bytes of buf.
- *  \param[in] local_cid CID of the Component sending the RPT Status message.
- *  \param[in] header Header data for the RPT PDU that encapsulates this Status message.
- *  \param[in] status RPT Status message data.
- *  \return Number of bytes packed, or 0 on error.
+/** @brief Pack an RPT Status message into a buffer.
+ *  @param[out] buf Buffer into which to pack the RPT Status message.
+ *  @param[in] buflen Length in bytes of buf.
+ *  @param[in] local_cid CID of the Component sending the RPT Status message.
+ *  @param[in] header Header data for the RPT PDU that encapsulates this Status message.
+ *  @param[in] status RPT Status message data.
+ *  @return Number of bytes packed, or 0 on error.
  */
-size_t pack_rpt_status(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const RptHeader* header,
-                       const RptStatusMsg* status)
+size_t rc_rpt_pack_status(uint8_t*            buf,
+                          size_t              buflen,
+                          const EtcPalUuid*   local_cid,
+                          const RptHeader*    header,
+                          const RptStatusMsg* status)
 {
-  if (!buf || !local_cid || !header || !status || buflen < bufsize_rpt_status(status))
+  if (!buf || !local_cid || !header || !status || buflen < rc_rpt_get_status_buffer_size(status))
   {
     return 0;
   }
@@ -291,10 +293,10 @@ size_t pack_rpt_status(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid,
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_RPT;
-  rlp.datalen = RPT_PDU_HEADER_SIZE + status_pdu_size;
+  rlp.data_len = RPT_PDU_HEADER_SIZE + status_pdu_size;
 
   uint8_t* cur_ptr = buf;
-  size_t data_size = pack_rpt_header_with_rlp(&rlp, buf, buflen, VECTOR_RPT_STATUS, header);
+  size_t   data_size = pack_rpt_header_with_rlp(&rlp, buf, buflen, VECTOR_RPT_STATUS, header);
   if (data_size == 0)
     return 0;
   cur_ptr += data_size;
@@ -303,24 +305,26 @@ size_t pack_rpt_status(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid,
   cur_ptr += RPT_STATUS_HEADER_SIZE;
   if (status_pdu_size > RPT_STATUS_HEADER_SIZE)
   {
-    RDMNET_MSVC_NO_DEP_WRN strncpy((char*)cur_ptr, status->status_string, RPT_STATUS_STRING_MAXLEN);
+    ETCPAL_MSVC_NO_DEP_WRN strncpy((char*)cur_ptr, status->status_string, RPT_STATUS_STRING_MAXLEN);
     cur_ptr += (status_pdu_size - RPT_STATUS_HEADER_SIZE);
   }
   return (size_t)(cur_ptr - buf);
 }
 
-/*! \brief Send an RPT Status message on an RDMnet connection.
- *  \param[in] handle RDMnet connection handle on which to send the RPT Status message.
- *  \param[in] local_cid CID of the Component sending the RPT Status message.
- *  \param[in] header Header data for the RPT PDU that encapsulates this Status message.
- *  \param[in] status RPT Status message data.
- *  \return #kEtcPalErrOk: Send success.\n
+/** @brief Send an RPT Status message on an RDMnet connection.
+ *  @param[in] handle RDMnet connection handle on which to send the RPT Status message.
+ *  @param[in] local_cid CID of the Component sending the RPT Status message.
+ *  @param[in] header Header data for the RPT PDU that encapsulates this Status message.
+ *  @param[in] status RPT Status message data.
+ *  @return #kEtcPalErrOk: Send success.\n
  *          #kEtcPalErrInvalid: Invalid argument provided.\n
  *          #kEtcPalErrSys: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
-etcpal_error_t send_rpt_status(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
-                               const RptStatusMsg* status)
+etcpal_error_t rc_rpt_send_status(RCConnection*       conn,
+                                  const EtcPalUuid*   local_cid,
+                                  const RptHeader*    header,
+                                  const RptStatusMsg* status)
 {
   if (!local_cid || !header || !status)
     return kEtcPalErrInvalid;
@@ -330,40 +334,26 @@ etcpal_error_t send_rpt_status(rdmnet_conn_t handle, const EtcPalUuid* local_cid
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_RPT;
-  rlp.datalen = RPT_PDU_HEADER_SIZE + status_pdu_size;
+  rlp.data_len = RPT_PDU_HEADER_SIZE + status_pdu_size;
 
-  RdmnetConnection* conn;
-  etcpal_error_t res = rdmnet_start_message(handle, &conn);
+  uint8_t        buf[RPT_PDU_HEADER_SIZE];
+  etcpal_error_t res = send_rpt_header(conn, &rlp, VECTOR_RPT_STATUS, header, buf, RPT_PDU_HEADER_SIZE);
   if (res != kEtcPalErrOk)
     return res;
-
-  uint8_t buf[RPT_PDU_HEADER_SIZE];
-  res = send_rpt_header(conn, &rlp, VECTOR_RPT_STATUS, header, buf, RPT_PDU_HEADER_SIZE);
-  if (res != kEtcPalErrOk)
-  {
-    rdmnet_end_message(conn);
-    return res;
-  }
 
   PACK_STATUS_HEADER(status_pdu_size, (uint16_t)(status->status_code), buf);
   int send_res = etcpal_send(conn->sock, buf, RPT_STATUS_HEADER_SIZE, 0);
   if (send_res < 0)
-  {
-    rdmnet_end_message(conn);
     return (etcpal_error_t)send_res;
-  }
 
   if (status_pdu_size > RPT_STATUS_HEADER_SIZE)
   {
     send_res = etcpal_send(conn->sock, (uint8_t*)status->status_string, status_pdu_size - RPT_STATUS_HEADER_SIZE, 0);
     if (send_res < 0)
-    {
-      rdmnet_end_message(conn);
       return (etcpal_error_t)send_res;
-    }
   }
 
-  return rdmnet_end_message(conn);
+  return kEtcPalErrOk;
 }
 
 size_t calc_notification_pdu_size(const RdmBuffer* cmd_arr, size_t cmd_arr_size)
@@ -377,30 +367,34 @@ size_t calc_notification_pdu_size(const RdmBuffer* cmd_arr, size_t cmd_arr_size)
   return res;
 }
 
-/*! \brief Get the packed buffer size for an RPT Notification message.
- *  \param[in] cmd_arr Array of packed RDM Commands that will occupy the RPT Notification message.
- *  \param[in] cmd_arr_size Size of packed RDM Command array.
- *  \return Required buffer size, or 0 on error.
+/** @brief Get the packed buffer size for an RPT Notification message.
+ *  @param[in] cmd_arr Array of packed RDM Commands that will occupy the RPT Notification message.
+ *  @param[in] cmd_arr_size Size of packed RDM Command array.
+ *  @return Required buffer size, or 0 on error.
  */
-size_t bufsize_rpt_notification(const RdmBuffer* cmd_arr, size_t cmd_arr_size)
+size_t rc_rpt_get_notification_buffer_size(const RdmBuffer* cmd_arr, size_t cmd_arr_size)
 {
   return (cmd_arr ? (RPT_PDU_FULL_HEADER_SIZE + calc_notification_pdu_size(cmd_arr, cmd_arr_size)) : 0);
 }
 
-/*! \brief Pack an RPT Notification message into a buffer.
- *  \param[out] buf Buffer into which to pack the RPT Notification message.
- *  \param[in] buflen Length in bytes of buf.
- *  \param[in] local_cid CID of the Component sending the RPT Notification message.
- *  \param[in] header Header data for the RPT PDU that encapsulates this RPT Notification message.
- *  \param[in] cmd_arr Array of packed RDM Commands contained in this RPT Notification.
- *  \param[in] cmd_arr_size Size of packed RDM Command array.
- *  \return Number of bytes packed, or 0 on error.
+/** @brief Pack an RPT Notification message into a buffer.
+ *  @param[out] buf Buffer into which to pack the RPT Notification message.
+ *  @param[in] buflen Length in bytes of buf.
+ *  @param[in] local_cid CID of the Component sending the RPT Notification message.
+ *  @param[in] header Header data for the RPT PDU that encapsulates this RPT Notification message.
+ *  @param[in] cmd_arr Array of packed RDM Commands contained in this RPT Notification.
+ *  @param[in] cmd_arr_size Size of packed RDM Command array.
+ *  @return Number of bytes packed, or 0 on error.
  */
-size_t pack_rpt_notification(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid, const RptHeader* header,
-                             const RdmBuffer* cmd_arr, size_t cmd_arr_size)
+size_t rc_rpt_pack_notification(uint8_t*          buf,
+                                size_t            buflen,
+                                const EtcPalUuid* local_cid,
+                                const RptHeader*  header,
+                                const RdmBuffer*  cmd_arr,
+                                size_t            cmd_arr_size)
 {
   if (!buf || !local_cid || !header || !cmd_arr || cmd_arr_size == 0 ||
-      buflen < bufsize_rpt_notification(cmd_arr, cmd_arr_size))
+      buflen < rc_rpt_get_notification_buffer_size(cmd_arr, cmd_arr_size))
   {
     return 0;
   }
@@ -410,10 +404,10 @@ size_t pack_rpt_notification(uint8_t* buf, size_t buflen, const EtcPalUuid* loca
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_RPT;
-  rlp.datalen = RPT_PDU_HEADER_SIZE + notif_pdu_size;
+  rlp.data_len = RPT_PDU_HEADER_SIZE + notif_pdu_size;
 
   uint8_t* cur_ptr = buf;
-  size_t data_size = pack_rpt_header_with_rlp(&rlp, buf, buflen, VECTOR_RPT_NOTIFICATION, header);
+  size_t   data_size = pack_rpt_header_with_rlp(&rlp, buf, buflen, VECTOR_RPT_NOTIFICATION, header);
   if (data_size == 0)
     return 0;
   cur_ptr += data_size;
@@ -429,19 +423,22 @@ size_t pack_rpt_notification(uint8_t* buf, size_t buflen, const EtcPalUuid* loca
   return (size_t)(cur_ptr - buf);
 }
 
-/*! \brief Send an RPT Notification message on an RDMnet connection.
- *  \param[in] handle RDMnet connection handle on which to send the RPT Notification message.
- *  \param[in] local_cid CID of the Component sending the RPT Notification message.
- *  \param[in] header Header data for the RPT PDU that encapsulates this RPT Notification message.
- *  \param[in] cmd_arr Array of packed RDM Commands contained in this RPT Notification.
- *  \param[in] cmd_arr_size Size of packed RDM Command array.
- *  \return #kEtcPalErrOk: Send success.\n
+/** @brief Send an RPT Notification message on an RDMnet connection.
+ *  @param[in] handle RDMnet connection handle on which to send the RPT Notification message.
+ *  @param[in] local_cid CID of the Component sending the RPT Notification message.
+ *  @param[in] header Header data for the RPT PDU that encapsulates this RPT Notification message.
+ *  @param[in] cmd_arr Array of packed RDM Commands contained in this RPT Notification.
+ *  @param[in] cmd_arr_size Size of packed RDM Command array.
+ *  @return #kEtcPalErrOk: Send success.\n
  *          #kEtcPalErrInvalid: Invalid argument provided.\n
  *          #kEtcPalErrSys: An internal library or system call error occurred.\n
  *          Note: Other error codes might be propagated from underlying socket calls.\n
  */
-etcpal_error_t send_rpt_notification(rdmnet_conn_t handle, const EtcPalUuid* local_cid, const RptHeader* header,
-                                     const RdmBuffer* cmd_arr, size_t cmd_arr_size)
+etcpal_error_t rc_rpt_send_notification(RCConnection*     conn,
+                                        const EtcPalUuid* local_cid,
+                                        const RptHeader*  header,
+                                        const RdmBuffer*  cmd_arr,
+                                        size_t            cmd_arr_size)
 {
   if (!local_cid || !header || !cmd_arr || cmd_arr_size == 0)
     return kEtcPalErrInvalid;
@@ -451,39 +448,25 @@ etcpal_error_t send_rpt_notification(rdmnet_conn_t handle, const EtcPalUuid* loc
   AcnRootLayerPdu rlp;
   rlp.sender_cid = *local_cid;
   rlp.vector = ACN_VECTOR_ROOT_RPT;
-  rlp.datalen = RPT_PDU_HEADER_SIZE + notif_pdu_size;
+  rlp.data_len = RPT_PDU_HEADER_SIZE + notif_pdu_size;
 
-  RdmnetConnection* conn;
-  etcpal_error_t res = rdmnet_start_message(handle, &conn);
+  uint8_t        buf[RDM_CMD_PDU_MAX_SIZE];
+  etcpal_error_t res = send_rpt_header(conn, &rlp, VECTOR_RPT_NOTIFICATION, header, buf, RDM_CMD_PDU_MAX_SIZE);
   if (res != kEtcPalErrOk)
     return res;
-
-  uint8_t buf[RDM_CMD_PDU_MAX_SIZE];
-  res = send_rpt_header(conn, &rlp, VECTOR_RPT_NOTIFICATION, header, buf, RDM_CMD_PDU_MAX_SIZE);
-  if (res != kEtcPalErrOk)
-  {
-    rdmnet_end_message(conn);
-    return res;
-  }
 
   PACK_NOTIFICATION_HEADER(notif_pdu_size, buf);
   int send_res = etcpal_send(conn->sock, buf, REQUEST_NOTIF_PDU_HEADER_SIZE, 0);
   if (send_res < 0)
-  {
-    rdmnet_end_message(conn);
     return (etcpal_error_t)send_res;
-  }
 
   for (const RdmBuffer* cur_cmd = cmd_arr; cur_cmd < cmd_arr + cmd_arr_size; ++cur_cmd)
   {
     PACK_RDM_CMD_PDU(cur_cmd, buf);
     send_res = etcpal_send(conn->sock, buf, RDM_CMD_PDU_LEN(cur_cmd), 0);
     if (send_res < 0)
-    {
-      rdmnet_end_message(conn);
       return (etcpal_error_t)send_res;
-    }
   }
 
-  return rdmnet_end_message(conn);
+  return kEtcPalErrOk;
 }

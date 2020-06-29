@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,10 @@
 #ifndef WIN_SOCKET_MANAGER_H_
 #define WIN_SOCKET_MANAGER_H_
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include <winsock2.h>
 #include <windows.h>
 #include <process.h>
@@ -33,15 +37,18 @@
 #include <memory>
 
 #include "etcpal/cpp/lock.h"
+#include "rdmnet/core/msg_buf.h"
 #include "broker_socket_manager.h"
 
 // Wrapper around Windows thread functions to increase the testability of this module.
 class WindowsThreadInterface
 {
 public:
+  virtual ~WindowsThreadInterface() = default;
+
   virtual HANDLE StartThread(_beginthreadex_proc_type start_address, void* arg_list) = 0;
-  virtual DWORD WaitForThreadsCompletion(DWORD count, const HANDLE* handle_arr, BOOL wait_all, DWORD milliseconds) = 0;
-  virtual BOOL CleanupThread(HANDLE thread_handle) = 0;
+  virtual DWORD  WaitForThreadsCompletion(DWORD count, const HANDLE* handle_arr, BOOL wait_all, DWORD milliseconds) = 0;
+  virtual BOOL   CleanupThread(HANDLE thread_handle) = 0;
 };
 
 class DefaultWindowsThreads : public WindowsThreadInterface
@@ -61,21 +68,23 @@ public:
 // The set of data allocated per-socket.
 struct SocketData
 {
-  SocketData(rdmnet_conn_t conn_handle_in, etcpal_socket_t socket_in) : conn_handle(conn_handle_in), socket(socket_in)
+  SocketData(BrokerClient::Handle client_handle_in, etcpal_socket_t socket_in)
+      : client_handle(client_handle_in), socket(socket_in)
   {
-    ws_recv_buf.buf = reinterpret_cast<char*>(&recv_buf);
+    rc_msg_buf_init(&recv_buf);
+    ws_recv_buf.buf = reinterpret_cast<char*>(recv_buf.buf);
     ws_recv_buf.len = RDMNET_RECV_DATA_MAX_SIZE;
   }
 
-  rdmnet_conn_t conn_handle{RDMNET_CONN_INVALID};
-  WSAOVERLAPPED overlapped{};
-  SOCKET socket{INVALID_SOCKET};
-  bool close_requested{false};
+  BrokerClient::Handle client_handle{BrokerClient::kInvalidHandle};
+  WSAOVERLAPPED        overlapped{};
+  SOCKET               socket{INVALID_SOCKET};
+  bool                 close_requested{false};
 
   // Socket receive data
   WSABUF ws_recv_buf;  // The variable Winsock uses for receive buffers
   // Receive buffer for socket recv operations
-  uint8_t recv_buf[RDMNET_RECV_DATA_MAX_SIZE];
+  RCMsgBuf recv_buf;
 };
 
 // A class to manage RDMnet Broker sockets on Windows.
@@ -96,12 +105,12 @@ public:
   bool Startup() override;
   bool Shutdown() override;
   void SetNotify(BrokerSocketNotify* notify) override { notify_ = notify; }
-  bool AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t socket) override;
-  void RemoveSocket(rdmnet_conn_t conn_handle) override;
+  bool AddSocket(BrokerClient::Handle client_handle, etcpal_socket_t socket) override;
+  void RemoveSocket(BrokerClient::Handle client_handle) override;
 
   // Callback functions called from worker threads
-  void WorkerNotifyRecvData(rdmnet_conn_t conn_handle, size_t size);
-  void WorkerNotifySocketBad(rdmnet_conn_t conn_handle, bool graceful);
+  void WorkerNotifyRecvData(BrokerClient::Handle client_handle, size_t size);
+  void WorkerNotifySocketBad(BrokerClient::Handle client_handle, bool graceful);
 
   // Accessors
   HANDLE iocp() const { return iocp_; }
@@ -110,13 +119,13 @@ private:
   bool shutting_down_{false};
 
   // Thread pool management
-  HANDLE iocp_{nullptr};
-  std::vector<HANDLE> worker_threads_;
+  HANDLE                                  iocp_{nullptr};
+  std::vector<HANDLE>                     worker_threads_;
   std::unique_ptr<WindowsThreadInterface> thread_interface_;
 
   // The set of sockets being managed.
-  std::map<rdmnet_conn_t, std::unique_ptr<SocketData>> sockets_;
-  etcpal::RwLock socket_lock_;
+  std::map<BrokerClient::Handle, std::unique_ptr<SocketData>> sockets_;
+  etcpal::RwLock                                              socket_lock_;
 
   // The callback instance
   BrokerSocketNotify* notify_{nullptr};

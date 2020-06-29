@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ BEGIN_INCLUDE_QT_HEADERS()
 #include <QPalette>
 END_INCLUDE_QT_HEADERS()
 
+#include <functional>
 #include "RDMnetNetworkModel.h"
 #include "NetworkDetailsProxyModel.h"
 #include "SimpleNetworkProxyModel.h"
@@ -31,25 +32,25 @@ END_INCLUDE_QT_HEADERS()
 #include "PropertyItem.h"
 #include "LogWindowGUI.h"
 #include "AboutGUI.h"
-
 #include "etcpal/version.h"
 #include "rdmnet/version.h"
 
-void RDMnetControllerGUI::handleAddBrokerByIP(QString scope, const etcpal::SockAddr& addr)
+void RDMnetControllerGUI::HandleAddBrokerByIP(QString scope, const etcpal::SockAddr& addr)
 {
   emit addBrokerByIPActivated(scope, addr);
 }
 
-RDMnetControllerGUI* RDMnetControllerGUI::makeRDMnetControllerGUI()
+RDMnetControllerGUI* RDMnetControllerGUI::MakeRDMnetControllerGUI()
 {
   RDMnetControllerGUI* gui = new RDMnetControllerGUI;
-  QHeaderView* networkTreeHeaderView = NULL;
+  QHeaderView*         networkTreeHeaderView = NULL;
 
-  gui->log_ = std::make_unique<ControllerLog>("RDMnetController.log");
-  gui->rdmnet_library_ = std::make_unique<RDMnetLibWrapper>(gui->log_.get());
+  gui->log_ = std::make_unique<ControllerLog>();
+
+  rdmnet::Init(gui->log_->logger());
 
   gui->main_network_model_ =
-      RDMnetNetworkModel::makeRDMnetNetworkModel(gui->rdmnet_library_.get(), gui->log_.get());  // makeTestModel();
+      RDMnetNetworkModel::MakeRDMnetNetworkModel(gui->rdmnet_controller_, gui->log_->logger());  // makeTestModel();
   gui->simple_net_proxy_ = new SimpleNetworkProxyModel;
   gui->net_details_proxy_ = new NetworkDetailsProxyModel;
 
@@ -72,52 +73,51 @@ RDMnetControllerGUI* RDMnetControllerGUI::makeRDMnetControllerGUI()
 
   qRegisterMetaType<SupportedDeviceFeature>("SupportedDeviceFeature");
 
-  connect(gui->ui.networkTreeView->selectionModel(),
-          SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)), gui,
-          SLOT(networkTreeViewSelectionChanged(const QItemSelection&, const QItemSelection&)));
+  connect(gui->ui.networkTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, gui,
+          &RDMnetControllerGUI::networkTreeViewSelectionChanged);
 
-  connect(gui->ui.addBrokerByScopeButton, SIGNAL(clicked()), gui, SLOT(addScopeTriggered()));
-  connect(gui->ui.newScopeNameEdit, SIGNAL(returnPressed()), gui, SLOT(addScopeTriggered()));
-  connect(gui, SIGNAL(addScopeActivated(QString)), gui->main_network_model_, SLOT(addScopeToMonitor(QString)));
+  connect(gui->ui.addBrokerByScopeButton, &QPushButton::clicked, gui, &RDMnetControllerGUI::addScopeTriggered);
+  connect(gui->ui.newScopeNameEdit, &QLineEdit::returnPressed, gui, &RDMnetControllerGUI::addScopeTriggered);
+  connect(gui, &RDMnetControllerGUI::addScopeActivated, gui->main_network_model_,
+          &RDMnetNetworkModel::addScopeToMonitor);
 
-  connect(gui->ui.removeSelectedBrokerButton, SIGNAL(clicked()), gui, SLOT(removeSelectedBrokerTriggered()));
-  connect(gui, SIGNAL(removeSelectedBrokerActivated(BrokerItem*)), gui->main_network_model_,
-          SLOT(removeBroker(BrokerItem*)));
+  connect(gui->ui.removeSelectedBrokerButton, &QPushButton::clicked, gui,
+          &RDMnetControllerGUI::removeSelectedBrokerTriggered);
+  connect(gui, &RDMnetControllerGUI::removeSelectedBrokerActivated, gui->main_network_model_,
+          &RDMnetNetworkModel::removeBroker);
 
-  connect(gui->ui.removeAllBrokersButton, SIGNAL(clicked()), gui, SLOT(removeAllBrokersTriggered()));
-  connect(gui, SIGNAL(removeAllBrokersActivated()), gui->main_network_model_, SLOT(removeAllBrokers()));
+  connect(gui->ui.removeAllBrokersButton, &QPushButton::clicked, gui, &RDMnetControllerGUI::removeAllBrokersTriggered);
+  connect(gui, &RDMnetControllerGUI::removeAllBrokersActivated, gui->main_network_model_,
+          &RDMnetNetworkModel::removeAllBrokers);
 
-  connect(gui->ui.resetDeviceButton, SIGNAL(clicked()), gui, SLOT(resetDeviceTriggered()));
-  connect(gui->ui.identifyDeviceButton, SIGNAL(clicked()), gui, SLOT(identifyDeviceTriggered()));
-  connect(gui, SIGNAL(featureActivated(RDMnetNetworkItem*, SupportedDeviceFeature)), gui->main_network_model_,
-          SLOT(activateFeature(RDMnetNetworkItem*, SupportedDeviceFeature)));
+  connect(gui->ui.resetDeviceButton, &QPushButton::clicked, gui, &RDMnetControllerGUI::resetDeviceTriggered);
+  connect(gui->ui.identifyDeviceButton, &QPushButton::clicked, gui, &RDMnetControllerGUI::identifyDeviceTriggered);
+  connect(gui, &RDMnetControllerGUI::featureActivated, gui->main_network_model_, &RDMnetNetworkModel::activateFeature);
 
-  connect(gui->ui.networkTreeView, SIGNAL(expanded(const QModelIndex&)), gui->simple_net_proxy_,
-          SLOT(directChildrenRevealed(const QModelIndex&)));
-  connect(gui->simple_net_proxy_, SIGNAL(expanded(const QModelIndex&)), gui->main_network_model_,
-          SLOT(directChildrenRevealed(const QModelIndex&)));
+  connect(gui->ui.networkTreeView, &QTreeView::expanded, gui->simple_net_proxy_,
+          &SimpleNetworkProxyModel::directChildrenRevealed);
+  connect(gui->simple_net_proxy_, &SimpleNetworkProxyModel::expanded, gui->main_network_model_,
+          &RDMnetNetworkModel::directChildrenRevealed);
 
-  connect(gui->ui.moreBrokerSettingsButton, SIGNAL(clicked()), gui, SLOT(openBrokerStaticAddDialog()));
+  connect(gui->ui.moreBrokerSettingsButton, &QPushButton::clicked, gui,
+          &RDMnetControllerGUI::openBrokerStaticAddDialog);
 
-  connect(gui, SIGNAL(addBrokerByIPActivated(QString, const etcpal::SockAddr&)), gui->main_network_model_,
-          SLOT(addBrokerByIP(QString, const etcpal::SockAddr&)));
+  connect(gui, &RDMnetControllerGUI::addBrokerByIPActivated, gui->main_network_model_,
+          &RDMnetNetworkModel::addBrokerByIP);
 
-  connect(gui->main_network_model_, SIGNAL(brokerItemTextUpdated(const BrokerItem*)), gui,
-          SLOT(processBrokerItemTextUpdate(const BrokerItem*)));
+  connect(gui->main_network_model_, &RDMnetNetworkModel::brokerItemTextUpdated, gui,
+          &RDMnetControllerGUI::processBrokerItemTextUpdate);
 
-  connect(gui->main_network_model_,
-          SIGNAL(featureSupportChanged(const class RDMnetNetworkItem*, SupportedDeviceFeature)), gui,
-          SLOT(processFeatureSupportChange(const class RDMnetNetworkItem*, SupportedDeviceFeature)));
+  connect(gui->main_network_model_, &RDMnetNetworkModel::featureSupportChanged, gui,
+          &RDMnetControllerGUI::processFeatureSupportChange);
 
-  connect(gui->main_network_model_, SIGNAL(expandNewItem(const QModelIndex&, int)), gui,
-          SLOT(expandNewItem(const QModelIndex&, int)));
+  connect(gui->main_network_model_, &RDMnetNetworkModel::expandNewItem, gui, &RDMnetControllerGUI::expandNewItem);
 
-  connect(gui->main_network_model_, SIGNAL(identifyChanged(const RDMnetNetworkItem*, bool)), gui,
-          SLOT(identifyChanged(const RDMnetNetworkItem*, bool)));
+  connect(gui->main_network_model_, &RDMnetNetworkModel::identifyChanged, gui, &RDMnetControllerGUI::identifyChanged);
 
-  connect(gui->ui.actionLogWindow, SIGNAL(triggered()), gui, SLOT(openLogWindowDialog()));
-  connect(gui->ui.actionExit, SIGNAL(triggered()), gui, SLOT(exitApplication()));
-  connect(gui->ui.actionAbout, SIGNAL(triggered()), gui, SLOT(openAboutDialog()));
+  connect(gui->ui.actionLogWindow, &QAction::triggered, gui, &RDMnetControllerGUI::openLogWindowDialog);
+  connect(gui->ui.actionExit, &QAction::triggered, gui, &RDMnetControllerGUI::exitApplication);
+  connect(gui->ui.actionAbout, &QAction::triggered, gui, &RDMnetControllerGUI::openAboutDialog);
 
   gui->main_network_model_->addScopeToMonitor(E133_DEFAULT_SCOPE);
 
@@ -142,10 +142,7 @@ void RDMnetControllerGUI::Shutdown()
     main_network_model_->deleteLater();
   }
 
-  if (rdmnet_library_)
-  {
-    rdmnet_library_->Shutdown();
-  }
+  rdmnet::Deinit();
 }
 
 void RDMnetControllerGUI::networkTreeViewSelectionChanged(const QItemSelection& selected,
@@ -157,8 +154,8 @@ void RDMnetControllerGUI::networkTreeViewSelectionChanged(const QItemSelection& 
 
     if (selectedIndex.isValid())
     {
-      QModelIndex sourceIndex, proxyIndex;
-      QStandardItem* selectedItem = NULL;
+      QModelIndex        sourceIndex, proxyIndex;
+      QStandardItem*     selectedItem = NULL;
       RDMnetNetworkItem* netItem = NULL;
 
       sourceIndex = simple_net_proxy_->mapToSource(selectedIndex);
@@ -279,18 +276,19 @@ void RDMnetControllerGUI::openBrokerStaticAddDialog()
 
 void RDMnetControllerGUI::openLogWindowDialog()
 {
-  if (main_network_model_ != NULL)
+  if (log_->getNumberOfCustomLogOutputStreams() == 0)
   {
-    if (main_network_model_->getNumberOfCustomLogOutputStreams() == 0)
-    {
-      LogWindowGUI* logWindowDialog = new LogWindowGUI(this);
-      logWindowDialog->setAttribute(Qt::WA_DeleteOnClose);
-      logWindowDialog->setWindowTitle(tr("Log Window"));
-      logWindowDialog->resize(QSize(static_cast<int>(logWindowDialog->width() * 1.2), logWindowDialog->height()));
-      logWindowDialog->show();
+    LogWindowGUI* logWindowDialog = new LogWindowGUI(this, log_->file_name(), log_->HasFileError());
 
-      log_->addCustomOutputStream(logWindowDialog);
-    }
+    connect(logWindowDialog, &QObject::destroyed,
+            std::bind(&ControllerLog::removeCustomOutputStream, log_.get(), logWindowDialog));
+
+    logWindowDialog->setAttribute(Qt::WA_DeleteOnClose);
+    logWindowDialog->setWindowTitle(tr("Log Window"));
+    logWindowDialog->resize(QSize(static_cast<int>(logWindowDialog->width() * 1.2), logWindowDialog->height()));
+    logWindowDialog->show();
+
+    log_->addCustomOutputStream(logWindowDialog);
   }
 }
 

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,146 +18,42 @@
  *****************************************************************************/
 
 #include "rdmnet/core/message.h"
-#include "rdmnet/private/message.h"
+#include "rdmnet/core/opts.h"
 
 /**************************** Private variables ******************************/
 
 #if !RDMNET_DYNAMIC_MEM
-ETCPAL_MEMPOOL_DEFINE(client_entries, ClientEntryData, RDMNET_MAX_CLIENT_ENTRIES);
-ETCPAL_MEMPOOL_DEFINE(ept_subprots, EptSubProtocol, RDMNET_MAX_EPT_SUBPROTS);
-ETCPAL_MEMPOOL_DEFINE(dynamic_uid_request_entries, DynamicUidRequestListEntry, RDMNET_MAX_DYNAMIC_UID_ENTRIES);
-ETCPAL_MEMPOOL_DEFINE(dynamic_uid_mappings, DynamicUidMapping, RDMNET_MAX_DYNAMIC_UID_ENTRIES);
-ETCPAL_MEMPOOL_DEFINE(fetch_uid_assignment_entries, FetchUidAssignmentListEntry, RDMNET_MAX_DYNAMIC_UID_ENTRIES);
-ETCPAL_MEMPOOL_DEFINE(rdm_commands, RdmBufListEntry, RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES);
-ETCPAL_MEMPOOL_DEFINE_ARRAY(rpt_status_strings, char, RPT_STATUS_STRING_MAXLEN + 1, 1);
+StaticMessageBuffer rdmnet_static_msg_buf;
+char                rpt_status_string_buffer[RPT_STATUS_STRING_MAXLEN + 1];
 #endif
 
 /*********************** Private function prototypes *************************/
 
 static void free_broker_message(BrokerMessage* bmsg);
+#if RDMNET_DYNAMIC_MEM
 static void free_rpt_message(RptMessage* rmsg);
+#endif
 
 /*************************** Function definitions ****************************/
 
-etcpal_error_t rdmnet_message_init()
-{
-  etcpal_error_t res = kEtcPalErrOk;
-#if !RDMNET_DYNAMIC_MEM
-  res |= etcpal_mempool_init(client_entries);
-  res |= etcpal_mempool_init(ept_subprots);
-  res |= etcpal_mempool_init(dynamic_uid_request_entries);
-  res |= etcpal_mempool_init(dynamic_uid_mappings);
-  res |= etcpal_mempool_init(fetch_uid_assignment_entries);
-  res |= etcpal_mempool_init(rdm_commands);
-  res |= etcpal_mempool_init(rpt_status_strings);
-#endif
-  return res;
-}
-
-/*! \brief Initialize a LocalRdmResponse associated with a received RemoteRdmCommand.
- *
- *  Provide the received command and the array of RdmResponses to be sent in response.
- *
- *  \param[in] received_cmd Received command.
- *  \param[in] rdm_arr Array of RDM responses to the command.
- *  \param[in] num_responses Number of RDM responses in rdm_arr.
- *  \param[out] resp Response to fill in.
+/*
+ * Free the resources held by an RdmnetMessage returned from another API function.
+ * [in] msg Pointer to message to free.
  */
-void rdmnet_create_response_from_command(const RemoteRdmCommand* received_cmd, const RdmResponse* rdm_arr,
-                                         size_t num_responses, LocalRdmResponse* resp)
-{
-  if (received_cmd && rdm_arr && num_responses > 0 && resp)
-  {
-    // If we are ACK'ing a SET_COMMAND, we broadcast the response to keep other controllers
-    // apprised of state.
-    resp->dest_uid =
-        (((received_cmd->rdm.command_class == kRdmCCSetCommand) && (rdm_arr[0].resp_type == kRdmResponseTypeAck))
-             ? kRdmnetControllerBroadcastUid
-             : received_cmd->source_uid);
-    resp->source_endpoint = received_cmd->dest_endpoint;
-    resp->seq_num = received_cmd->seq_num;
-    resp->command_included = true;
-    resp->cmd = received_cmd->rdm;
-    resp->rdm_arr = rdm_arr;
-    resp->num_responses = num_responses;
-  }
-}
-
-/*! \brief Initialize an unsolicited LocalRdmResponse (without an associated command).
- *
- *  Provide the array of RdmResponses to be sent.
- *
- *  \param[in] source_endpoint Endpoint from which this response is originating.
- *  \param[in] rdm_arr Array of RDM responses to be sent.
- *  \param[in] num_responses Number of RDM responses in rdm_arr.
- *  \param[out] resp Response to initialize.
- */
-void rdmnet_create_unsolicited_response(uint16_t source_endpoint, const RdmResponse* rdm_arr, size_t num_responses,
-                                        LocalRdmResponse* resp)
-{
-  if (rdm_arr && num_responses > 0 && resp)
-  {
-    resp->dest_uid = kRdmnetControllerBroadcastUid;
-    resp->source_endpoint = source_endpoint;
-    resp->seq_num = 0;
-    resp->command_included = false;
-    resp->rdm_arr = rdm_arr;
-    resp->num_responses = num_responses;
-  }
-}
-
-/*! \brief Initialize an RptStatusMsg containing a status string, associated with a received
- *         RemoteRdmCommand.
- *
- *  Provide the status code and string.
- *
- *  \param[in] received_cmd Received command.
- *  \param[in] status_code Status code to be sent.
- *  \param[in] status_str Status string to be sent.
- *  \param[out] status LocalRptStatus to initialize.
- */
-void rdmnet_create_status_from_command_with_str(const RemoteRdmCommand* received_cmd, rpt_status_code_t status_code,
-                                                const char* status_str, LocalRptStatus* status)
-{
-  if (received_cmd && status)
-  {
-    status->dest_uid = received_cmd->source_uid;
-    status->source_endpoint = received_cmd->dest_endpoint;
-    status->seq_num = received_cmd->seq_num;
-    status->msg.status_code = status_code;
-    status->msg.status_string = status_str;
-  }
-}
-
-/*! \brief Initialize an RptStatusMsg associated with a received RemoteRdmCommand.
- *
- *  Provide the status code.
- *
- *  \param[in] received_cmd Received command.
- *  \param[in] status_code Status code to be sent.
- *  \param[out] status LocalRptStatus to initialize.
- */
-void rdmnet_create_status_from_command(const RemoteRdmCommand* received_cmd, rpt_status_code_t status_code,
-                                       LocalRptStatus* status)
-{
-  rdmnet_create_status_from_command_with_str(received_cmd, status_code, NULL, status);
-}
-
-/*! \brief Free the resources held by an RdmnetMessage returned from another API function.
- *  \param[in] msg Pointer to message to free.
- */
-void free_rdmnet_message(RdmnetMessage* msg)
+void rc_free_message_resources(RdmnetMessage* msg)
 {
   if (msg)
   {
     switch (msg->vector)
     {
       case ACN_VECTOR_ROOT_BROKER:
-        free_broker_message(GET_BROKER_MSG(msg));
+        free_broker_message(RDMNET_GET_BROKER_MSG(msg));
         break;
+#if RDMNET_DYNAMIC_MEM
       case ACN_VECTOR_ROOT_RPT:
-        free_rpt_message(GET_RPT_MSG(msg));
+        free_rpt_message(RDMNET_GET_RPT_MSG(msg));
         break;
+#endif
       default:
         break;
     }
@@ -171,99 +67,59 @@ void free_broker_message(BrokerMessage* bmsg)
     case VECTOR_BROKER_CLIENT_ADD:
     case VECTOR_BROKER_CLIENT_REMOVE:
     case VECTOR_BROKER_CLIENT_ENTRY_CHANGE:
-    case VECTOR_BROKER_CONNECTED_CLIENT_LIST:
-    {
-      ClientList* clist = GET_CLIENT_LIST(bmsg);
-      ClientEntryData* entry = clist->client_entry_list;
-      ClientEntryData* next_entry;
-      while (entry)
+    case VECTOR_BROKER_CONNECTED_CLIENT_LIST: {
+      BrokerClientList* clist = BROKER_GET_CLIENT_LIST(bmsg);
+      if (BROKER_IS_EPT_CLIENT_LIST(clist))
       {
-        if (entry->client_protocol == E133_CLIENT_PROTOCOL_EPT)
+        RdmnetEptClientEntry* ept_entry_list = BROKER_GET_EPT_CLIENT_LIST(clist)->client_entries;
+        size_t                ept_entry_list_size = BROKER_GET_EPT_CLIENT_LIST(clist)->num_client_entries;
+        for (RdmnetEptClientEntry* ept_entry = ept_entry_list; ept_entry < ept_entry_list + ept_entry_list_size;
+             ++ept_entry)
         {
-          ClientEntryDataEpt* eptdata = GET_EPT_CLIENT_ENTRY_DATA(entry);
-          EptSubProtocol* subprot = eptdata->protocol_list;
-          EptSubProtocol* next_subprot;
-          while (subprot)
-          {
-            next_subprot = subprot->next;
-            free_ept_subprot(subprot);
-            subprot = next_subprot;
-          }
+          FREE_EPT_SUBPROT_LIST(ept_entry->protocols);
         }
-        next_entry = entry->next;
-        free_client_entry(entry);
-        entry = next_entry;
+#if RDMNET_DYNAMIC_MEM
+        free(ept_entry_list);
+#endif
       }
+#if RDMNET_DYNAMIC_MEM
+      else if (BROKER_IS_RPT_CLIENT_LIST(clist))
+      {
+        free(BROKER_GET_RPT_CLIENT_LIST(clist)->client_entries);
+      }
+#endif
       break;
     }
+#if RDMNET_DYNAMIC_MEM
     case VECTOR_BROKER_REQUEST_DYNAMIC_UIDS:
-    {
-      DynamicUidRequestList* list = GET_DYNAMIC_UID_REQUEST_LIST(bmsg);
-      DynamicUidRequestListEntry* entry = list->request_list;
-      DynamicUidRequestListEntry* next_entry;
-      while (entry)
-      {
-        next_entry = entry->next;
-        free_dynamic_uid_request_entry(entry);
-        entry = next_entry;
-      }
+      free(BROKER_GET_DYNAMIC_UID_REQUEST_LIST(bmsg)->requests);
       break;
-    }
     case VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS:
-    {
-      DynamicUidAssignmentList* list = GET_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg);
-      DynamicUidMapping* mapping = list->mapping_list;
-      DynamicUidMapping* next_mapping;
-      while (mapping)
-      {
-        next_mapping = mapping->next;
-        free_dynamic_uid_mapping(mapping);
-        mapping = next_mapping;
-      }
+      free(BROKER_GET_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg)->mappings);
       break;
-    }
     case VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST:
-    {
-      FetchUidAssignmentList* list = GET_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg);
-      FetchUidAssignmentListEntry* entry = list->assignment_list;
-      FetchUidAssignmentListEntry* next_entry;
-      while (entry)
-      {
-        next_entry = entry->next;
-        free_fetch_uid_assignment_entry(entry);
-        entry = next_entry;
-      }
+      free(BROKER_GET_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg)->uids);
       break;
-    }
+#endif
     default:
       break;
   }
 }
 
+#if RDMNET_DYNAMIC_MEM
 void free_rpt_message(RptMessage* rmsg)
 {
   switch (rmsg->vector)
   {
     case VECTOR_RPT_REQUEST:
     case VECTOR_RPT_NOTIFICATION:
-    {
-      RdmBufList* rlist = GET_RDM_BUF_LIST(rmsg);
-      RdmBufListEntry* rdmcmd = rlist->list;
-      RdmBufListEntry* next_rdmcmd;
-      while (rdmcmd)
-      {
-        next_rdmcmd = rdmcmd->next;
-        free_rdm_command(rdmcmd);
-        rdmcmd = next_rdmcmd;
-      }
+      free(RPT_GET_RDM_BUF_LIST(rmsg)->rdm_buffers);
       break;
-    }
-    case VECTOR_RPT_STATUS:
-    {
-      RptStatusMsg* status = GET_RPT_STATUS_MSG(rmsg);
+    case VECTOR_RPT_STATUS: {
+      RptStatusMsg* status = RPT_GET_STATUS_MSG(rmsg);
       if (status->status_string)
       {
-        free_rpt_status_str((char*)status->status_string);
+        free((char*)status->status_string);
         status->status_string = NULL;
       }
       break;
@@ -272,3 +128,4 @@ void free_rpt_message(RptMessage* rmsg)
       break;
   }
 }
+#endif

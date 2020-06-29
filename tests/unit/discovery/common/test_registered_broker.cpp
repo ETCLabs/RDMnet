@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,23 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#include "registered_broker.h"
+#include "rdmnet/disc/registered_broker.h"
 
 #include <array>
 #include <cstring>
 #include <memory>
 #include <string>
-#include "rdmnet/core/util.h"
+#include <vector>
+#include "etcpal/cpp/uuid.h"
+#include "rdm/cpp/uid.h"
 #include "gtest/gtest.h"
 #include "test_disc_common_fakes.h"
 #include "test_operators.h"
+
+// Disable <cstring> warnings on Windows/MSVC
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
 
 class TestRegisteredBroker : public testing::Test
 {
@@ -48,7 +55,30 @@ protected:
     return RegisteredBrokerUniquePtr(registered_broker_new(&default_config_));
   }
 
-  RdmnetBrokerRegisterConfig default_config_{};
+  RdmnetBrokerRegisterConfig                default_config_{};
+  const std::vector<unsigned int>           kDefaultConfigNetints = {1, 2};
+  const std::vector<RdmnetDnsTxtRecordItem> kDefaultAdditionalTxtItems = {
+      {"Key 1", reinterpret_cast<const uint8_t*>("Value 1"), sizeof("Value 1") - 1},
+      {"Key 2", reinterpret_cast<const uint8_t*>("Value 2"), sizeof("Value 2") - 1},
+  };
+
+  void SetUp() override
+  {
+    ASSERT_EQ(registered_broker_module_init(), kEtcPalErrOk);
+    default_config_.cid = etcpal::Uuid::FromString("50b14416-8bc9-4e86-a65f-094934b8fd1b").get();
+    default_config_.uid = rdm::Uid::FromString("6574:12345678").get();
+    default_config_.service_instance_name = "Test Service Instance Name";
+    default_config_.port = 8888;
+    default_config_.scope = "Test Scope";
+    default_config_.netints = kDefaultConfigNetints.data();
+    default_config_.num_netints = kDefaultConfigNetints.size();
+    default_config_.model = "Test Model";
+    default_config_.manufacturer = "Test Manufacturer";
+    default_config_.additional_txt_items = kDefaultAdditionalTxtItems.data();
+    default_config_.num_additional_txt_items = kDefaultAdditionalTxtItems.size();
+  }
+
+  void TearDown() override { registered_broker_module_deinit(); }
 };
 
 TEST_F(TestRegisteredBroker, NewInitializesFieldsProperly)
@@ -57,18 +87,53 @@ TEST_F(TestRegisteredBroker, NewInitializesFieldsProperly)
 
   ASSERT_NE(ref, nullptr);
 
-  EXPECT_EQ(ref->config, default_config_);
+  EXPECT_EQ(ref->cid, default_config_.cid);
+  EXPECT_EQ(ref->uid, default_config_.uid);
+  EXPECT_STREQ(ref->service_instance_name, default_config_.service_instance_name);
+  EXPECT_EQ(ref->port, default_config_.port);
+  EXPECT_STREQ(ref->scope, default_config_.scope);
+  EXPECT_STREQ(ref->model, default_config_.model);
+  EXPECT_STREQ(ref->manufacturer, default_config_.manufacturer);
+
   EXPECT_EQ(ref->scope_monitor_handle, nullptr);
   EXPECT_EQ(ref->state, kBrokerStateNotRegistered);
   EXPECT_STREQ(ref->full_service_name, "");
   EXPECT_EQ(ref->query_timeout_expired, false);
-  EXPECT_EQ(ref->next, nullptr);
+
+  ASSERT_EQ(ref->num_netints, default_config_.num_netints);
+  for (size_t i = 0; i < ref->num_netints; ++i)
+    EXPECT_EQ(ref->netints[i], default_config_.netints[i]);
+
+  ASSERT_EQ(ref->num_additional_txt_items, default_config_.num_additional_txt_items);
+  for (size_t i = 0; i < ref->num_additional_txt_items; ++i)
+  {
+    EXPECT_STREQ(ref->additional_txt_items[i].key, default_config_.additional_txt_items[i].key);
+    EXPECT_EQ(ref->additional_txt_items[i].value_len, default_config_.additional_txt_items[i].value_len);
+    EXPECT_EQ(std::memcmp(ref->additional_txt_items[i].value, default_config_.additional_txt_items[i].value,
+                          ref->additional_txt_items[i].value_len),
+              0);
+  }
+}
+
+TEST_F(TestRegisteredBroker, NewInitializesNullAndZeroArrays)
+{
+  default_config_.netints = nullptr;
+  default_config_.num_netints = 0;
+  default_config_.additional_txt_items = nullptr;
+  default_config_.num_additional_txt_items = 0;
+
+  auto ref = MakeDefaultRegisteredBroker();
+
+  EXPECT_EQ(ref->netints, nullptr);
+  EXPECT_EQ(ref->num_netints, 0u);
+  EXPECT_EQ(ref->additional_txt_items, nullptr);
+  EXPECT_EQ(ref->num_additional_txt_items, 0u);
 }
 
 TEST_F(TestRegisteredBroker, InsertWorks)
 {
   auto broker_1 = MakeDefaultRegisteredBroker();
-  rdmnet_safe_strncpy(broker_1->full_service_name, "Test Insert 1 Service Name", RDMNET_DISC_SERVICE_NAME_MAX_LENGTH);
+  strcpy(broker_1->full_service_name, "Test Insert 1 Service Name");
   registered_broker_insert(broker_1.get());
 
   // We test the presence by using the for_each function.
@@ -77,7 +142,7 @@ TEST_F(TestRegisteredBroker, InsertWorks)
       [](RdmnetBrokerRegisterRef* ref) { EXPECT_STREQ(ref->full_service_name, "Test Insert 1 Service Name"); });
 
   auto broker_2 = MakeDefaultRegisteredBroker();
-  rdmnet_safe_strncpy(broker_2->full_service_name, "Test Insert 2 Service Name", RDMNET_DISC_SERVICE_NAME_MAX_LENGTH);
+  strcpy(broker_2->full_service_name, "Test Insert 2 Service Name");
   registered_broker_insert(broker_2.get());
 
   EXPECT_TRUE(broker_register_ref_is_valid(broker_1.get()));
@@ -103,8 +168,7 @@ TEST_F(TestRegisteredBroker, ForEachWorks)
   {
     broker_names[i].second = false;
     brokers[i] = MakeDefaultRegisteredBroker();
-    rdmnet_safe_strncpy(brokers[i]->full_service_name, broker_names[i].first.c_str(),
-                        RDMNET_DISC_SERVICE_NAME_MAX_LENGTH);
+    strcpy(brokers[i]->full_service_name, broker_names[i].first.c_str());
     registered_broker_insert(brokers[i].get());
   }
 
@@ -112,7 +176,7 @@ TEST_F(TestRegisteredBroker, ForEachWorks)
   registered_broker_for_each([](RdmnetBrokerRegisterRef* ref) {
     for (auto& name : broker_names)
     {
-      if (0 == std::strncmp(ref->full_service_name, name.first.c_str(), RDMNET_DISC_SERVICE_NAME_MAX_LENGTH))
+      if (0 == std::strcmp(ref->full_service_name, name.first.c_str()))
         name.second = true;
     }
   });

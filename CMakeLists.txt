@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.12 CACHE STRING "Minimum macOS version targeted by RDMnet on macOS")
 project(RDMnet VERSION 0.3.0)
@@ -14,6 +14,8 @@ else()
 endif()
 
 if(PROJECT_SOURCE_DIR_LC STREQUAL CMAKE_SOURCE_DIR_LC)
+  set(BUILDING_RDMNET_STANDALONE TRUE)
+
   if (MSVC)
     add_compile_options(/W4 /permissive-)
   elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -28,9 +30,21 @@ if(PROJECT_SOURCE_DIR_LC STREQUAL CMAKE_SOURCE_DIR_LC)
   # Allow folder grouping in generated IDE projects
   set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-  set(OPTION_DEFAULTS ON)
-else()
-  set(OPTION_DEFAULTS OFF)
+  # Add a target to run Clang Format
+  file(GLOB_RECURSE FILES_TO_REFORMAT 
+    examples/*.c
+    examples/*.cpp
+    examples/*.h
+    include/*.h
+    src/*.c
+    src/*.cpp
+    src/*.h
+    tests/*.c
+    tests/*.cpp
+    tests/*.h
+  )
+  add_custom_target(reformat_all COMMAND clang-format -i ${FILES_TO_REFORMAT})
+  set_target_properties(reformat_all PROPERTIES FOLDER tools)
 endif()
 
 set(RDMNET_ROOT ${CMAKE_CURRENT_LIST_DIR})
@@ -39,14 +53,18 @@ set(RDMNET_SRC ${CMAKE_CURRENT_LIST_DIR}/src)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
-option(RDMNET_BUILD_TESTS "Build the RDMnet unit tests" ${OPTION_DEFAULTS})
+option(RDMNET_BUILD_TESTS "Build the RDMnet unit tests" OFF)
 option(RDMNET_BUILD_GUI_EXAMPLES "Build the RDMnet GUI example applications" OFF)
-option(RDMNET_BUILD_CONSOLE_EXAMPLES "Build the RDMnet console example applications" ${OPTION_DEFAULTS})
+option(RDMNET_BUILD_CONSOLE_EXAMPLES "Build the RDMnet console example applications" OFF)
 option(RDMNET_BUILD_TEST_TOOLS "Build the RDMnet test tools (typically used in development only)" OFF)
 
 if(RDMNET_BUILD_TESTS)
   add_subdirectory(external/fff)
 endif()
+
+################################ DNS-SD SUPPORT ###############################
+
+include(ResolveDnsSdProvider)
 
 ################################ Main libraries ###############################
 

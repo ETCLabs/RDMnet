@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,26 +18,54 @@
  *****************************************************************************/
 
 #include "macos_broker_log.h"
+#include <cerrno>
+#include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <sys/stat.h>
 
-bool MacBrokerLog::Startup(const std::string& file_name, int log_mask)
+static const std::vector<std::string> kLogFileDirComponents = {"Library", "Logs", "ETC", "RDMnetExamples"};
+static constexpr char                 kLogFileBaseName[] = "broker.log";
+
+// Gets the full path to the log file, creating intermediate directories if necessary.
+std::string GetLogFileName()
 {
-  file_.open(file_name.c_str(), std::fstream::out);
-  if (!file_.is_open())
-    std::cout << "BrokerLog couldn't open log file '" << file_name << "'.\n";
+  std::string cur_path = getenv("HOME");
+  for (const auto& directory_part : kLogFileDirComponents)
+  {
+    cur_path += "/" + directory_part;
+    if (mkdir(cur_path.c_str(), 0755) != 0)
+    {
+      if (errno != EEXIST)
+      {
+        std::cout << "Couldn't create directory " << cur_path << ": " << strerror(errno) << ".\n";
+        return std::string{};
+      }
+    }
+  }
+  return cur_path + "/" + kLogFileBaseName;
+}
 
-  log_.SetLogMask(log_mask);
-  return log_.Startup(*this);
+bool MacBrokerLog::Startup(int log_mask)
+{
+  const auto file_name = GetLogFileName();
+  if (!file_name.empty())
+  {
+    file_.open(file_name.c_str(), std::fstream::out);
+    if (!file_.is_open())
+      std::cout << "BrokerLog couldn't open log file '" << file_name << "'.\n";
+  }
+
+  return logger_.SetLogMask(log_mask).Startup(*this);
 }
 
 void MacBrokerLog::Shutdown()
 {
-  log_.Shutdown();
+  logger_.Shutdown();
   file_.close();
 }
 
-void MacBrokerLog::GetLogTime(EtcPalLogTimestamp& time_params)
+etcpal::LogTimestamp MacBrokerLog::GetLogTimestamp()
 {
   time_t cur_time;
   time(&cur_time);
@@ -46,26 +74,23 @@ void MacBrokerLog::GetLogTime(EtcPalLogTimestamp& time_params)
   // A bit of naive time zone code that probably misses tons of edge cases.
   // After all, it's just an example app...
   struct tm* timeinfo = gmtime(&cur_time);
-  time_t utc = mktime(timeinfo);
+  time_t     utc = mktime(timeinfo);
   timeinfo = localtime(&cur_time);
   time_t local = mktime(timeinfo);
   double utc_offset = difftime(local, utc) / 60.0;
   if (timeinfo->tm_isdst)
     utc_offset += 60;
 
-  time_params.year = timeinfo->tm_year + 1900;
-  time_params.month = timeinfo->tm_mon + 1;
-  time_params.day = timeinfo->tm_mday;
-  time_params.hour = timeinfo->tm_hour;
-  time_params.minute = timeinfo->tm_min;
-  time_params.second = timeinfo->tm_sec;
-  time_params.msec = 0;
-  time_params.utc_offset = static_cast<int>(utc_offset);
+  return etcpal::LogTimestamp(timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday, timeinfo->tm_hour,
+                              timeinfo->tm_min, timeinfo->tm_sec, 0, static_cast<int>(utc_offset));
 }
 
-void MacBrokerLog::OutputLogMsg(const std::string& str)
+void MacBrokerLog::HandleLogMessage(const EtcPalLogStrings& strings)
 {
-  std::cout << str << "\n";
+  std::cout << strings.human_readable << '\n';
   if (file_.is_open())
-    file_ << str << std::endl;
+  {
+    file_ << strings.human_readable << std::endl;
+    file_.flush();
+  }
 }

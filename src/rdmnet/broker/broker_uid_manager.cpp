@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 
 #include "broker_uid_manager.h"
 
-BrokerUidManager::AddResult BrokerUidManager::AddStaticUid(int conn_handle, const RdmUid& static_uid)
+BrokerUidManager::AddResult BrokerUidManager::AddStaticUid(BrokerClient::Handle client_handle, const RdmUid& static_uid)
 {
   if (uid_lookup_.size() >= max_uid_capacity_)
     return AddResult::kCapacityExceeded;
@@ -27,17 +27,18 @@ BrokerUidManager::AddResult BrokerUidManager::AddStaticUid(int conn_handle, cons
   if (uid_lookup_.find(static_uid) != uid_lookup_.end())
     return AddResult::kDuplicateId;
 
-  uid_lookup_.insert(std::make_pair(static_uid, UidData(conn_handle)));
+  uid_lookup_.insert(std::make_pair(static_uid, UidData(client_handle)));
   return AddResult::kOk;
 }
 
-BrokerUidManager::AddResult BrokerUidManager::AddDynamicUid(int conn_handle, const etcpal::Uuid& cid_or_rid,
-                                                            RdmUid& new_dynamic_uid)
+BrokerUidManager::AddResult BrokerUidManager::AddDynamicUid(BrokerClient::Handle client_handle,
+                                                            const etcpal::Uuid&  cid_or_rid,
+                                                            RdmUid&              new_dynamic_uid)
 {
   if (uid_lookup_.size() >= max_uid_capacity_)
     return AddResult::kCapacityExceeded;
 
-  UidData new_uid_data(conn_handle);
+  UidData new_uid_data(client_handle);
 
   auto reservation = reservations_.find(cid_or_rid);
   if (reservation != reservations_.end())
@@ -80,12 +81,12 @@ void BrokerUidManager::RemoveUid(const RdmUid& uid)
   }
 }
 
-bool BrokerUidManager::UidToHandle(const RdmUid& uid, int& conn_handle) const
+bool BrokerUidManager::UidToHandle(const RdmUid& uid, BrokerClient::Handle& client_handle) const
 {
   const auto uid_data = uid_lookup_.find(uid);
   if (uid_data != uid_lookup_.end())
   {
-    conn_handle = uid_data->second.connection_handle;
+    client_handle = uid_data->second.client_handle;
     return true;
   }
   else

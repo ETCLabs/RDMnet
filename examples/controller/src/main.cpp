@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ int main(int argc, char* argv[])
 {
   int retVal = 0;
 
-  QApplication a(argc, argv);
-  RDMnetControllerGUI* w = RDMnetControllerGUI::makeRDMnetControllerGUI();
+  QApplication         a(argc, argv);
+  RDMnetControllerGUI* w = RDMnetControllerGUI::MakeRDMnetControllerGUI();
 
   a.connect(&a, &QApplication::lastWindowClosed, w, &RDMnetControllerGUI::Shutdown);
 

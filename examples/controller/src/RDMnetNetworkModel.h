@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,34 +24,61 @@
 #include <cstddef>
 #include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/lock.h"
+#include "etcpal/cpp/log.h"
 #include "etcpal/cpp/uuid.h"
+#include "rdm/cpp/message.h"
+#include "rdm/cpp/uid.h"
+#include "rdmnet/version.h"
+#include "rdmnet/cpp/controller.h"
 #include "BrokerItem.h"
 #include "SearchingStatusItem.h"
 #include "PropertyValueItem.h"
 #include "ControllerUtils.h"
-#include "RDMnetLibInterface.h"
-#include "ControllerDefaultResponder.h"
-#include "ControllerLog.h"
 
 BEGIN_INCLUDE_QT_HEADERS()
 #include <QStandardItemModel>
 END_INCLUDE_QT_HEADERS()
 
-void appendRowToItem(QStandardItem* parent, QStandardItem* child);
+constexpr uint16_t kExampleControllerModelId = 0xfe00;
+constexpr uint32_t kExampleControllerSwVersionId = ((RDMNET_VERSION_MAJOR << 24) | (RDMNET_VERSION_MINOR << 16) |
+                                                    (RDMNET_VERSION_PATCH << 8) | (RDMNET_VERSION_BUILD));
 
-class RDMnetNetworkModel : public QStandardItemModel, public RDMnetLibNotify
+struct RdmDeviceInfo
+{
+  uint16_t protocol_version;
+  uint16_t model_id;
+  uint16_t category;
+  uint32_t sw_version_id;
+  uint16_t footprint;
+  uint8_t  personality;
+  uint8_t  num_personalities;
+  uint16_t dmx_address;
+  uint16_t subdevice_count;
+  uint8_t  sensor_count;
+};
+
+void AppendRowToItem(QStandardItem* parent, QStandardItem* child);
+
+class RDMnetNetworkModel : public QStandardItemModel, public rdmnet::Controller::NotifyHandler
 {
   Q_OBJECT
 
 signals:
-  void addRDMnetClients(BrokerItem* brokerItem, const std::vector<ClientEntryData>& list);
-  void removeRDMnetClients(BrokerItem* brokerItem, const std::vector<ClientEntryData>& list);
+  void addRdmnetClients(BrokerItem* brokerItem, const std::vector<rdmnet::RptClientEntry>& list);
+  void removeRdmnetClients(BrokerItem* brokerItem, const std::vector<rdmnet::RptClientEntry>& list);
   void newEndpointList(RDMnetClientItem* treeClientItem, const std::vector<std::pair<uint16_t, uint8_t>>& list);
-  void newResponderList(EndpointItem* treeEndpointItem, const std::vector<RdmUid>& list);
-  void setPropertyData(RDMnetNetworkItem* parent, unsigned short pid, const QString& name, const QVariant& value,
-                       int role = Qt::DisplayRole);
-  void removePropertiesInRange(RDMnetNetworkItem* parent, std::vector<class PropertyItem*>* properties,
-                               unsigned short pid, int role, const QVariant& min, const QVariant& max);
+  void newResponderList(EndpointItem* treeEndpointItem, const std::vector<rdm::Uid>& list);
+  void setPropertyData(RDMnetNetworkItem* parent,
+                       unsigned short     pid,
+                       const QString&     name,
+                       const QVariant&    value,
+                       int                role = Qt::DisplayRole);
+  void removePropertiesInRange(RDMnetNetworkItem*                parent,
+                               std::vector<class PropertyItem*>* properties,
+                               unsigned short                    pid,
+                               int                               role,
+                               const QVariant&                   min,
+                               const QVariant&                   max);
   void brokerItemTextUpdated(const BrokerItem* item);
   void addPropertyEntry(RDMnetNetworkItem* parent, unsigned short pid, const QString& name, int role);
   void featureSupportChanged(const class RDMnetNetworkItem* item, SupportedDeviceFeature feature);
@@ -59,183 +86,225 @@ signals:
   void identifyChanged(const RDMnetNetworkItem* item, bool identify);
 
 private:
-  ControllerLog* log_{nullptr};
-  RDMnetLibInterface* rdmnet_{nullptr};
-  etcpal::Uuid my_cid_{etcpal::Uuid::V4()};
+  etcpal::Logger*     log_{nullptr};
+  rdmnet::Controller& rdmnet_;
+  etcpal::Uuid        my_cid_{etcpal::Uuid::V4()};
 
-  ControllerDefaultResponder default_responder_;
-
-  std::map<rdmnet_client_scope_t, BrokerItem*> broker_connections_;
-  etcpal::RwLock conn_lock_;
+  std::map<rdmnet::ScopeHandle, BrokerItem*> broker_connections_;
+  etcpal::RwLock                             conn_lock_;
 
   // Keeps track of scope updates of other controllers
-  std::map<RdmUid, uint16_t> previous_slot_;
+  std::map<rdm::Uid, uint16_t> previous_slot_;
 
 public slots:
   void addScopeToMonitor(QString scope);
   void directChildrenRevealed(const QModelIndex& parentIndex);
   void addBrokerByIP(QString scope, const etcpal::SockAddr& addr);
-  void addCustomLogOutputStream(LogOutputStream* stream);
-  void removeCustomLogOutputStream(LogOutputStream* stream);
-
-protected slots:
-  void processAddRDMnetClients(BrokerItem* brokerItem, const std::vector<ClientEntryData>& list);
-  void processRemoveRDMnetClients(BrokerItem* brokerItem, const std::vector<ClientEntryData>& list);
-  void processNewEndpointList(RDMnetClientItem* treeClientItem, const std::vector<std::pair<uint16_t, uint8_t>>& list);
-  void processNewResponderList(EndpointItem* treeEndpointItem, const std::vector<RdmUid>& list);
-  void processSetPropertyData(RDMnetNetworkItem* parent, unsigned short pid, const QString& name, const QVariant& value,
-                              int role);
-  void processRemovePropertiesInRange(RDMnetNetworkItem* parent, std::vector<class PropertyItem*>* properties,
-                                      unsigned short pid, int role, const QVariant& min, const QVariant& max);
-  void processAddPropertyEntry(RDMnetNetworkItem* parent, unsigned short pid, const QString& name, int role);
-  void processPropertyButtonClick(const QPersistentModelIndex& propertyIndex);
   void removeBroker(BrokerItem* brokerItem);
   void removeAllBrokers();
   void activateFeature(RDMnetNetworkItem* device, SupportedDeviceFeature feature);
 
+protected slots:
+  void processAddRdmnetClients(BrokerItem* brokerItem, const std::vector<rdmnet::RptClientEntry>& list);
+  void processRemoveRdmnetClients(BrokerItem* brokerItem, const std::vector<rdmnet::RptClientEntry>& list);
+  void processNewEndpointList(RDMnetClientItem* treeClientItem, const std::vector<std::pair<uint16_t, uint8_t>>& list);
+  void processNewResponderList(EndpointItem* treeEndpointItem, const std::vector<rdm::Uid>& list);
+  void processSetPropertyData(RDMnetNetworkItem* parent,
+                              unsigned short     pid,
+                              const QString&     name,
+                              const QVariant&    value,
+                              int                role);
+  void processRemovePropertiesInRange(RDMnetNetworkItem*                parent,
+                                      std::vector<class PropertyItem*>* properties,
+                                      unsigned short                    pid,
+                                      int                               role,
+                                      const QVariant&                   min,
+                                      const QVariant&                   max);
+  void processAddPropertyEntry(RDMnetNetworkItem* parent, unsigned short pid, const QString& name, int role);
+  void processPropertyButtonClick(const QPersistentModelIndex& propertyIndex);
+
 protected:
-  RDMnetNetworkModel(RDMnetLibInterface* library, ControllerLog* log);
+  RDMnetNetworkModel(rdmnet::Controller& library, etcpal::Logger& log);
 
 public:
-  static RDMnetNetworkModel* makeRDMnetNetworkModel(RDMnetLibInterface* library, ControllerLog* log);
-  static RDMnetNetworkModel* makeTestModel();
+  static RDMnetNetworkModel* MakeRDMnetNetworkModel(rdmnet::Controller& library, etcpal::Logger& log);
+  // static RDMnetNetworkModel* MakeTestModel();
 
   RDMnetNetworkModel() = delete;
   void Shutdown();
 
   void searchingItemRevealed(SearchingStatusItem* searchItem);
 
-  size_t getNumberOfCustomLogOutputStreams();
+  // QStandardItemModel overrides
 
-  /******* QStandardItemModel overrides *******/
-
-  virtual bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole);
+  virtual bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
 
 protected:
-  // RDMnetLibNotify overrides
-  virtual void Connected(rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo& info) override;
-  virtual void ConnectFailed(rdmnet_client_scope_t scope_handle, const RdmnetClientConnectFailedInfo& info) override;
-  virtual void Disconnected(rdmnet_client_scope_t scope_handle, const RdmnetClientDisconnectedInfo& info) override;
-  virtual void ClientListUpdate(rdmnet_client_scope_t scope_handle, client_list_action_t action,
-                                const ClientList& list) override;
-  virtual void RdmCommandReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmCommand& cmd) override;
-  virtual void RdmResponseReceived(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse& resp) override;
-  virtual void StatusReceived(rdmnet_client_scope_t scope_handle, const RemoteRptStatus& status) override;
-  virtual void LlrpRdmCommandReceived(const LlrpRemoteRdmCommand& cmd) override;
+  // rdmnet::Controller::NotifyHandler overrides
+  virtual void HandleConnectedToBroker(rdmnet::Controller::Handle         controller_handle,
+                                       rdmnet::ScopeHandle                scope_handle,
+                                       const rdmnet::ClientConnectedInfo& info) override;
+  virtual void HandleBrokerConnectFailed(rdmnet::Controller::Handle             controller_handle,
+                                         rdmnet::ScopeHandle                    scope_handle,
+                                         const rdmnet::ClientConnectFailedInfo& info) override;
+  virtual void HandleDisconnectedFromBroker(rdmnet::Controller::Handle            controller_handle,
+                                            rdmnet::ScopeHandle                   scope_handle,
+                                            const rdmnet::ClientDisconnectedInfo& info) override;
+  virtual void HandleClientListUpdate(rdmnet::Controller::Handle   controller_handle,
+                                      rdmnet::ScopeHandle          scope_handle,
+                                      client_list_action_t         action,
+                                      const rdmnet::RptClientList& list) override;
+  virtual void HandleRdmResponse(rdmnet::Controller::Handle controller_handle,
+                                 rdmnet::ScopeHandle        scope_handle,
+                                 const rdmnet::RdmResponse& resp) override;
+  virtual void HandleRptStatus(rdmnet::Controller::Handle controller,
+                               rdmnet::ScopeHandle        scope_handle,
+                               const rdmnet::RptStatus&   status) override;
 
   /******* RDM message handling functions *******/
-  void HandleRDMAckOrAckOverflow(rdmnet_client_scope_t scope_handle, const RemoteRdmResponse& resp);
+  void HandleRdmAck(rdmnet::ScopeHandle scope_handle, const rdmnet::RdmResponse& resp);
+  void HandleRdmNack(rdmnet::ScopeHandle scope_handle, const rdmnet::RdmResponse& resp);
   // Use this with data that has identical GET_COMMAND_RESPONSE and SET_COMMAND forms.
-  void ProcessRDMGetSetData(rdmnet_client_scope_t scope_handle, uint16_t param_id, const uint8_t* data, uint8_t datalen,
-                            const RdmResponse& firstResp);
+  void ProcessRdmGetSetData(rdmnet::ScopeHandle scope_handle,
+                            uint16_t            param_id,
+                            const uint8_t*      data,
+                            uint8_t             datalen,
+                            const rdm::Uid&     source_uid);
 
-  bool SendRDMCommand(const RdmCommand& cmd, const BrokerItem* brokerItem);
-  bool SendRDMCommand(const RdmCommand& cmd, rdmnet_client_scope_t scope_handle);
-  void SendRDMGetResponses(rdmnet_client_scope_t scope_handle, const RdmUid& dest_uid, uint16_t param_id,
-                           const std::vector<RdmParamData>& resp_data_list, bool have_command = false,
-                           const RemoteRdmCommand& cmd = RemoteRdmCommand());
-  void SendRDMGetResponsesBroadcast(uint16_t param_id, const std::vector<RdmParamData>& resp_data_list);
-  void SendRDMNack(rdmnet_client_scope_t scope, const RemoteRdmCommand& received_cmd, uint16_t nack_reason);
-  void SendLlrpGetResponse(const LlrpRemoteRdmCommand& received_cmd, const std::vector<RdmParamData>& resp_data_list);
-  void SendLlrpNack(const LlrpRemoteRdmCommand& received_cmd, uint16_t nack_reason);
+  bool        SendGetCommand(const BrokerItem* broker_item,
+                             const rdm::Uid&   dest_uid,
+                             uint16_t          param_id,
+                             const uint8_t*    get_data = nullptr,
+                             uint8_t           get_data_len = 0);
+  bool        SendSetCommand(const BrokerItem* broker_item,
+                             const rdm::Uid&   dest_uid,
+                             uint16_t          param_id,
+                             const uint8_t*    set_data = nullptr,
+                             uint8_t           set_data_len = 0);
+  BrokerItem* GetBrokerItem(rdmnet::ScopeHandle scope_handle);
 
   /* GET/SET RESPONSE PROCESSING */
 
   // E1.33
   // COMPONENT_SCOPE
-  void HandleComponentScopeResponse(rdmnet_client_scope_t conn, uint16_t scopeSlot, const QString& scopeString,
-                                    const QString& staticConfigV4, const QString& staticConfigV6, uint16_t port,
-                                    const RdmResponse& resp);
+  void HandleComponentScopeResponse(rdmnet::ScopeHandle conn,
+                                    uint16_t            scopeSlot,
+                                    const QString&      scopeString,
+                                    const QString&      staticConfigV4,
+                                    const QString&      staticConfigV6,
+                                    uint16_t            port,
+                                    const rdm::Uid&     source_uid);
   // SEARCH_DOMAIN
-  void HandleSearchDomainResponse(rdmnet_client_scope_t scope_handle, const QString& domainNameString,
-                                  const RdmResponse& resp);
+  void HandleSearchDomainResponse(rdmnet::ScopeHandle scope_handle,
+                                  const QString&      domainNameString,
+                                  const rdm::Uid&     source_uid);
   // TCP_COMMS_STATUS
-  void HandleTcpCommsStatusResponse(rdmnet_client_scope_t scope_handle, const QString& scopeString,
-                                    const QString& v4AddrString, const QString& v6AddrString, uint16_t port,
-                                    uint16_t unhealthyTCPEvents, const RdmResponse& resp);
+  void HandleTcpCommsStatusResponse(rdmnet::ScopeHandle scope_handle,
+                                    const QString&      scopeString,
+                                    const QString&      v4AddrString,
+                                    const QString&      v6AddrString,
+                                    uint16_t            port,
+                                    uint16_t            unhealthyTCPEvents,
+                                    const rdm::Uid&     source_uid);
 
   // E1.37-7
   // ENDPOINT_LIST
-  void HandleEndpointListResponse(rdmnet_client_scope_t scope_handle, uint32_t changeNumber,
-                                  const std::vector<std::pair<uint16_t, uint8_t>>& list, const RdmUid& src_uid);
+  void HandleEndpointListResponse(rdmnet::ScopeHandle                              scope_handle,
+                                  uint32_t                                         change_number,
+                                  const std::vector<std::pair<uint16_t, uint8_t>>& list,
+                                  const rdm::Uid&                                  source_uid);
   // ENDPOINT_RESPONDERS
-  void HandleEndpointRespondersResponse(rdmnet_client_scope_t scope_handle, uint16_t endpoint, uint32_t changeNumber,
-                                        const std::vector<RdmUid>& list, const RdmUid& src_uid);
+  void HandleEndpointRespondersResponse(rdmnet::ScopeHandle          scope_handle,
+                                        uint16_t                     endpoint,
+                                        uint32_t                     changeNumber,
+                                        const std::vector<rdm::Uid>& list,
+                                        const rdm::Uid&              source_uid);
   // ENDPOINT_LIST_CHANGE
-  void HandleEndpointListChangeResponse(rdmnet_client_scope_t scope_handle, uint32_t changeNumber,
-                                        const RdmUid& src_uid);
+  void HandleEndpointListChangeResponse(rdmnet::ScopeHandle scope_handle,
+                                        uint32_t            changeNumber,
+                                        const rdm::Uid&     source_uid);
   // ENDPOINT_RESPONDER_LIST_CHANGE
-  void HandleResponderListChangeResponse(rdmnet_client_scope_t scope_handle, uint32_t changeNumber, uint16_t endpoint,
-                                         const RdmUid& src_uid);
+  void HandleResponderListChangeResponse(rdmnet::ScopeHandle scope_handle,
+                                         uint32_t            changeNumber,
+                                         uint16_t            endpoint,
+                                         const rdm::Uid&     source_uid);
 
   // E1.20
   // SUPPORTED_PARAMETERS
-  void HandleSupportedParametersResponse(rdmnet_client_scope_t scope_handle, const std::vector<uint16_t>& params_list,
-                                         const RdmResponse& resp);
+  void HandleSupportedParametersResponse(rdmnet::ScopeHandle          scope_handle,
+                                         const std::vector<uint16_t>& params_list,
+                                         const rdm::Uid&              source_uid);
   // DEVICE_INFO
-  void HandleDeviceInfoResponse(rdmnet_client_scope_t scope_handle, uint16_t protocolVersion, uint16_t modelId,
-                                uint16_t category, uint32_t swVersionId, uint16_t footprint, uint8_t personality,
-                                uint8_t totalPersonality, uint16_t address, uint16_t subdeviceCount,
-                                uint8_t sensorCount, const RdmResponse& resp);
+  void HandleDeviceInfoResponse(rdmnet::ScopeHandle  scope_handle,
+                                const RdmDeviceInfo& device_info,
+                                const rdm::Uid&      source_uid);
   // DEVICE_MODEL_DESCRIPTION
-  void HandleModelDescResponse(rdmnet_client_scope_t scope_handle, const QString& label, const RdmResponse& resp);
+  void HandleModelDescResponse(rdmnet::ScopeHandle scope_handle, const QString& label, const rdm::Uid& source_uid);
   // MANUFACTURER_LABEL
-  void HandleManufacturerLabelResponse(rdmnet_client_scope_t scope_handle, const QString& label,
-                                       const RdmResponse& resp);
+  void HandleManufacturerLabelResponse(rdmnet::ScopeHandle scope_handle,
+                                       const QString&      label,
+                                       const rdm::Uid&     source_uid);
   // DEVICE_LABEL
-  void HandleDeviceLabelResponse(rdmnet_client_scope_t scope_handle, const QString& label, const RdmResponse& resp);
+  void HandleDeviceLabelResponse(rdmnet::ScopeHandle scope_handle, const QString& label, const rdm::Uid& source_uid);
   // SOFTWARE_VERSION_LABEL
-  void HandleSoftwareLabelResponse(rdmnet_client_scope_t scope_handle, const QString& label, const RdmResponse& resp);
+  void HandleSoftwareLabelResponse(rdmnet::ScopeHandle scope_handle, const QString& label, const rdm::Uid& source_uid);
   // BOOT_SOFTWARE_VERSION_ID
-  void HandleBootSoftwareIdResponse(rdmnet_client_scope_t scope_handle, uint32_t id, const RdmResponse& resp);
+  void HandleBootSoftwareIdResponse(rdmnet::ScopeHandle scope_handle, uint32_t id, const rdm::Uid& source_uid);
   // BOOT_SOFTWARE_VERSION_LABEL
-  void HandleBootSoftwareLabelResponse(rdmnet_client_scope_t scope_handle, const QString& label,
-                                       const RdmResponse& resp);
+  void HandleBootSoftwareLabelResponse(rdmnet::ScopeHandle scope_handle,
+                                       const QString&      label,
+                                       const rdm::Uid&     source_uid);
   // DMX_START_ADDRESS
-  void HandleStartAddressResponse(rdmnet_client_scope_t scope_handle, uint16_t address, const RdmResponse& resp);
+  void HandleStartAddressResponse(rdmnet::ScopeHandle scope_handle, uint16_t address, const rdm::Uid& source_uid);
   // IDENTIFY_DEVICE
-  void HandleIdentifyResponse(rdmnet_client_scope_t scope_handle, bool identifying, const RdmResponse& resp);
+  void HandleIdentifyResponse(rdmnet::ScopeHandle scope_handle, bool identifying, const rdm::Uid& source_uid);
   // DMX_PERSONALITY (number may equal zero if data is not provided)
-  void HandlePersonalityResponse(rdmnet_client_scope_t scope_handle, uint8_t current, uint8_t number,
-                                 const RdmResponse& resp);
+  void HandlePersonalityResponse(rdmnet::ScopeHandle scope_handle,
+                                 uint8_t             current,
+                                 uint8_t             number,
+                                 const rdm::Uid&     source_uid);
   // DMX_PERSONALITY_DESCRIPTION
-  void HandlePersonalityDescResponse(rdmnet_client_scope_t scope_handle, uint8_t personality, uint16_t footprint,
-                                     const QString& description, const RdmResponse& resp);
+  void HandlePersonalityDescResponse(rdmnet::ScopeHandle scope_handle,
+                                     uint8_t             personality,
+                                     uint16_t            footprint,
+                                     const QString&      description,
+                                     const rdm::Uid&     source_uid);
 
   // RDM PID GET responses/updates
-  void HandleRDMNack(rdmnet_client_scope_t scope_handle, uint16_t reason, const RdmResponse& resp);
-  void HandleStatusMessagesResponse(uint8_t type, uint16_t messageId, uint16_t data1, uint16_t data2,
-                                    const RdmResponse& resp);
+  void HandleStatusMessagesResponse(uint8_t         type,
+                                    uint16_t        messageId,
+                                    uint16_t        data1,
+                                    uint16_t        data2,
+                                    const rdm::Uid& source_uid);
 
   // Message sending
-  void addPropertyEntries(RDMnetNetworkItem* parent, PIDFlags location);
-  void initializeResponderProperties(ResponderItem* parent, uint16_t manuID, uint32_t deviceID);
-  void initializeRPTClientProperties(RDMnetClientItem* parent, uint16_t manuID, uint32_t deviceID,
-                                     rpt_client_type_t clientType);
-  void sendGetControllerScopeProperties(rdmnet_client_scope_t scope_handle, uint16_t manuID, uint32_t deviceID);
-  void sendGetNextControllerScope(rdmnet_client_scope_t scope_handle, uint16_t manuID, uint32_t deviceID,
-                                  uint16_t currentSlot);
-  void sendGetCommand(BrokerItem* brokerItem, uint16_t pid, const RdmUid& dest_uid);
-  uint8_t* packIPAddressItem(const QVariant& value, etcpal_iptype_t addrType, uint8_t* packPtr, bool packPort = true);
+  void     AddPropertyEntries(RDMnetNetworkItem* item, PIDFlags location);
+  void     InitializeResponderProperties(ResponderItem* item);
+  void     InitializeRptClientProperties(RDMnetClientItem* parent, const rdm::Uid& uid, rpt_client_type_t clientType);
+  uint8_t* PackIPAddressItem(const QVariant& value, etcpal_iptype_t addrType, uint8_t* packPtr, bool packPort = true);
 
   // PID handling
-  bool pidSupportedByGUI(uint16_t pid, bool checkSupportGet);
+  bool PidSupportedByGui(uint16_t pid, bool checkSupportGet);
 
   // Item handling
-  RDMnetClientItem* GetClientItem(rdmnet_client_scope_t conn, const RdmResponse& resp);
-  RDMnetNetworkItem* GetNetworkItem(rdmnet_client_scope_t conn, const RdmResponse& resp);
-  void checkPersonalityDescriptions(RDMnetNetworkItem* device, uint8_t numberOfPersonalities, const RdmResponse& resp);
-  QVariant getPropertyData(RDMnetNetworkItem* parent, unsigned short pid, int role);
+  RDMnetClientItem*  GetClientItem(rdmnet::ScopeHandle conn, const rdm::Uid& uid);
+  RDMnetNetworkItem* GetNetworkItem(rdmnet::ScopeHandle conn, const rdm::Uid& uid);
+  void               CheckPersonalityDescriptions(RDMnetNetworkItem* device,
+                                                  uint8_t            numberOfPersonalities,
+                                                  const rdm::Uid&    source_uid);
+  QVariant           getPropertyData(RDMnetNetworkItem* parent, unsigned short pid, int role);
 
   class PropertyItem* createPropertyItem(RDMnetNetworkItem* parent, const QString& fullName);
-  QString getShortPropertyName(const QString& fullPropertyName);
-  QString getHighestGroupName(const QString& pathName);
-  QString getPathSubset(const QString& fullPath, int first, int last = -1);
+  QString             getShortPropertyName(const QString& fullPropertyName);
+  QString             getHighestGroupName(const QString& pathName);
+  QString             getPathSubset(const QString& fullPath, int first, int last = -1);
   class PropertyItem* getGroupingItem(RDMnetNetworkItem* parent, const QString& groupName);
   class PropertyItem* createGroupingItem(RDMnetNetworkItem* parent, const QString& groupName);
-  QString getChildPathName(const QString& superPathName);
+  QString             getChildPathName(const QString& superPathName);
   QString getScopeSubPropertyFullName(RDMnetClientItem* client, uint16_t pid, int32_t index, const QString& scope);
 
-  void removeScopeSlotItemsInRange(RDMnetNetworkItem* parent, std::vector<class PropertyItem*>* properties,
-                                   uint16_t firstSlot, uint16_t lastSlot);
+  void RemoveScopeSlotItemsInRange(RDMnetNetworkItem*          parent,
+                                   std::vector<PropertyItem*>* properties,
+                                   uint16_t                    firstSlot,
+                                   uint16_t                    lastSlot);
 };

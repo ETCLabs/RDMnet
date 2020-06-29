@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,42 @@
 
 #include "broker_util.h"
 
+extern "C" {
+bool IntHandleMgrValueInUse(int handle, void* context)
+{
+  auto func = static_cast<ClientHandleGenerator*>(context)->GetValueInUseFunc();
+  if (func)
+    return func(handle);
+  else
+    return false;
+}
+}
+
+ClientHandleGenerator::ClientHandleGenerator()
+{
+  init_int_handle_manager(&handle_mgr_, IntHandleMgrValueInUse, this);
+}
+
+void ClientHandleGenerator::SetValueInUseFunc(const ValueInUseFunc& value_in_use_func)
+{
+  value_in_use_ = value_in_use_func;
+}
+
+void ClientHandleGenerator::SetNextHandle(BrokerClient::Handle next_handle)
+{
+  handle_mgr_.next_handle = next_handle;
+}
+
+ClientHandleGenerator::ValueInUseFunc ClientHandleGenerator::GetValueInUseFunc() const
+{
+  return value_in_use_;
+}
+
+BrokerClient::Handle ClientHandleGenerator::GetClientHandle()
+{
+  return get_next_int_handle(&handle_mgr_);
+}
+
 RptHeader SwapHeaderData(const RptHeader& source)
 {
   RptHeader swapped_header;
@@ -29,14 +65,4 @@ RptHeader SwapHeaderData(const RptHeader& source)
   swapped_header.source_endpoint_id = source.dest_endpoint_id;
   swapped_header.source_uid = source.dest_uid;
   return swapped_header;
-}
-
-std::vector<RdmBuffer> RdmBufListToVect(const RdmBufListEntry* list_head)
-{
-  std::vector<RdmBuffer> res;
-  for (const RdmBufListEntry* entry = list_head; entry; entry = entry->next)
-  {
-    res.push_back(entry->msg);
-  }
-  return res;
 }

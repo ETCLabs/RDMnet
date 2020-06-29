@@ -14,7 +14,7 @@ if(WIN32)
   target_compile_definitions(${MANAGER_TARGET} PRIVATE UNICODE _UNICODE)
   target_link_libraries(${MANAGER_TARGET} PRIVATE rpcrt4)
 else()
-  target_sources(${MANAGER_TARGET} PRIVATE src/unix/main.cpp)
+  target_sources(${MANAGER_TARGET} PRIVATE src/posix/main.cpp)
 endif()
 
 install(TARGETS ${MANAGER_TARGET}

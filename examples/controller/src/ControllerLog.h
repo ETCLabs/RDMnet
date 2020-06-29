@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,26 +24,33 @@
 #include <string>
 #include <vector>
 #include <fstream>
-#include "etcpal/log.h"
+#include "etcpal/cpp/log.h"
+#include "ControllerUtils.h"
+
+BEGIN_INCLUDE_QT_HEADERS()
+#include <QString>
+END_INCLUDE_QT_HEADERS()
 
 class LogOutputStream
 {
 public:
   virtual LogOutputStream& operator<<(const std::string& str) = 0;
-  virtual void clear() = 0;
+  virtual void             clear() = 0;
 };
 
-class ControllerLog
+class ControllerLog : public etcpal::LogMessageHandler
 {
 public:
-  explicit ControllerLog(const std::string& file_name);
+  ControllerLog();
   virtual ~ControllerLog();
 
-  void Log(int pri, const char* format, ...);
-  bool CanLog(int pri) const { return etcpal_can_log(&params_, pri); }
-  const EtcPalLogParams* GetLogParams() const { return &params_; }
+  etcpal::Logger& logger() noexcept { return logger_; }
+  QString         file_name() { return file_name_; }
+  bool            HasFileError() { return !file_.is_open(); }
 
-  void LogFromCallback(const std::string& str);
+  // etcpal::LogMessageHandler overrides
+  etcpal::LogTimestamp GetLogTimestamp() override;
+  void                 HandleLogMessage(const EtcPalLogStrings& strings) override;
 
   void addCustomOutputStream(LogOutputStream* stream);
   void removeCustomOutputStream(LogOutputStream* stream);
@@ -51,8 +58,8 @@ public:
   size_t getNumberOfCustomLogOutputStreams();
 
 protected:
-  std::fstream file_;
-  std::string file_name_;
-  EtcPalLogParams params_;
+  std::fstream                  file_;
+  QString                       file_name_;
+  etcpal::Logger                logger_;
   std::vector<LogOutputStream*> customOutputStreams;
 };

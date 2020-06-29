@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,22 +27,21 @@
 #include <vector>
 #include "etcpal/cpp/inet.h"
 #include "etcpal/log.h"
-#include "rdmnet/broker.h"
+#include "rdmnet/cpp/broker.h"
 
 // BrokerShell : Platform-neutral wrapper around the Broker library from a generic console
 // application. Instantiates and drives the Broker library.
 
-class BrokerShell : public rdmnet::BrokerNotify
+class BrokerShell : public rdmnet::Broker::NotifyHandler
 {
 public:
   // Returns the code the app should exit with.
-  int Run(rdmnet::BrokerLog& log);
+  int         Run(etcpal::Logger& log);
   static void PrintVersion();
 
   // Options to set from the command line; must be set BEFORE Run() is called.
   void SetInitialScope(const std::string& scope) { initial_data_.scope = scope; }
-  void SetInitialIfaceList(const std::set<etcpal::IpAddr>& ifaces) { initial_data_.ifaces = ifaces; }
-  void SetInitialMacList(const std::set<etcpal::MacAddr>& macs) { initial_data_.macs = macs; }
+  void SetInitialNetintList(const std::vector<std::string>& netints) { initial_data_.netints = netints; }
   void SetInitialPort(uint16_t port) { initial_data_.port = port; }
 
   void NetworkChanged();
@@ -52,20 +51,19 @@ private:
   void HandleScopeChanged(const std::string& new_scope) override;
   void PrintWarningMessage();
 
-  void ApplySettingsChanges(rdmnet::BrokerSettings& settings);
+  void ApplySettingsChanges(rdmnet::Broker::Settings& settings);
 
   struct InitialData
   {
-    std::string scope{E133_DEFAULT_SCOPE};
-    std::set<etcpal::IpAddr> ifaces;
-    std::set<etcpal::MacAddr> macs;
-    uint16_t port{0};
+    std::string              scope{E133_DEFAULT_SCOPE};
+    std::vector<std::string> netints;
+    uint16_t                 port{0};
   } initial_data_;
 
-  rdmnet::BrokerLog* log_{nullptr};
+  etcpal::Logger*   log_{nullptr};
   std::atomic<bool> restart_requested_{false};
-  bool shutdown_requested_{false};
-  std::string new_scope_;
+  bool              shutdown_requested_{false};
+  std::string       new_scope_;
 };
 
 #endif  // BROKER_SHELL_H_

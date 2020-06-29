@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 #include "gtest/gtest.h"
 #include "broker_uid_manager.h"
 
-class TestBrokerUidManager : public ::testing::Test
+class TestBrokerUidManager : public testing::Test
 {
 protected:
   BrokerUidManager manager_;
@@ -67,7 +67,7 @@ TEST_F(TestBrokerUidManager, DynamicUid)
   manager_.SetNextDeviceId(1000);
 
   EtcPalUuid cid_1 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-  RdmUid uid_1 = {0xe574, 0};
+  RdmUid     uid_1 = {0xe574, 0};
 
   auto res = manager_.AddDynamicUid(1, cid_1, uid_1);
   ASSERT_EQ(res, BrokerUidManager::AddResult::kOk);
@@ -82,7 +82,7 @@ TEST_F(TestBrokerUidManager, DynamicUid)
 
   // Add another one
   EtcPalUuid cid_2 = {15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
-  RdmUid uid_2 = {0x8001, 0};
+  RdmUid     uid_2 = {0x8001, 0};
   res = manager_.AddDynamicUid(3, cid_2, uid_2);
   ASSERT_EQ(res, BrokerUidManager::AddResult::kOk);
   ASSERT_EQ(uid_2.manu, 0x8001u);
@@ -112,7 +112,7 @@ TEST_F(TestBrokerUidManager, HandlesWraparound)
 {
   manager_.SetNextDeviceId(1);
 
-  RdmUid test_uid = {0x8001, 0};
+  RdmUid     test_uid = {0x8001, 0};
   EtcPalUuid test_cid = {15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
 
   // Generate the first 3 dynamic UIDs in the range

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 #pragma once
 
 #include "rdm/defs.h"
-#include "rdm/uid.h"
+#include "rdm/cpp/uid.h"
 #include "ResponderItem.h"
 
 class EndpointItem : public RDMnetNetworkItem
@@ -28,12 +28,12 @@ class EndpointItem : public RDMnetNetworkItem
 public:
   static const int EndpointItemType = QStandardItem::UserType + 4;
 
-  EndpointItem(const RdmUid& parent_uid, uint16_t endpoint = 0, uint8_t type = E137_7_ENDPOINT_TYPE_VIRTUAL);
+  EndpointItem(const rdm::Uid& parent_uid, uint16_t endpoint = 0, uint8_t type = E137_7_ENDPOINT_TYPE_VIRTUAL);
   virtual ~EndpointItem();
 
-  virtual int type() const override;
-  uint16_t id() const { return endpoint_; }
-  RdmUid parent_uid() const { return parent_uid_; }
+  virtual int     type() const override;
+  uint16_t        id() const { return endpoint_; }
+  const rdm::Uid& parent_uid() const { return parent_uid_; }
 
   bool operator==(const EndpointItem& other)
   {
@@ -43,7 +43,7 @@ public:
   std::vector<ResponderItem*> responders_;
 
 private:
-  RdmUid parent_uid_;
+  rdm::Uid parent_uid_;
   uint16_t endpoint_;
-  uint8_t type_;
+  uint8_t  type_;
 };

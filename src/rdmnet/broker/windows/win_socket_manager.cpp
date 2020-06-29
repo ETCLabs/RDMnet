@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,8 @@
 
 #include "win_socket_manager.h"
 
+#include <algorithm>
+
 /* THIS IS WINDOWS BLACK MAGIC, and copied from the sample code at Microsoft
  * Lasciate ogne speranza, voi ch'intrate
  * Abandon all hope, ye who enter here.
@@ -44,10 +46,10 @@ const DWORD MS_VC_EXCEPTION = 0x406D1388;
 #pragma pack(push, 8)
 typedef struct tagTHREADNAME_INFO
 {
-  DWORD dwType;     /* Must be 0x1000. */
-  LPCSTR szName;    /* Pointer to name (in user addr space). */
-  DWORD dwThreadID; /* Thread ID (-1=caller thread). */
-  DWORD dwFlags;    /* Reserved for future use, must be zero. */
+  DWORD  dwType;     /* Must be 0x1000. */
+  LPCSTR szName;     /* Pointer to name (in user addr space). */
+  DWORD  dwThreadID; /* Thread ID (-1=caller thread). */
+  DWORD  dwFlags;    /* Reserved for future use, must be zero. */
 } THREADNAME_INFO;
 #pragma pack(pop)
 void SetThreadName(DWORD dwThreadID, const char* threadName)
@@ -88,8 +90,8 @@ unsigned __stdcall SocketWorkerThread(void* arg)
   bool keep_running = true;
   while (keep_running)
   {
-    DWORD bytes_read = 0;
-    ULONG_PTR cmd;
+    DWORD       bytes_read = 0;
+    ULONG_PTR   cmd;
     OVERLAPPED* overlapped = nullptr;
 
     BOOL result = GetQueuedCompletionStatus(sock_mgr->iocp(), &bytes_read, &cmd, &overlapped, INFINITE);
@@ -127,7 +129,7 @@ unsigned __stdcall SocketWorkerThread(void* arg)
       else
       {
         // Error occurred on the socket.
-        sock_mgr->WorkerNotifySocketBad(sock_data->conn_handle, false);
+        sock_mgr->WorkerNotifySocketBad(sock_data->client_handle, false);
       }
     }
     else
@@ -145,12 +147,12 @@ unsigned __stdcall SocketWorkerThread(void* arg)
           {
             if (bytes_read == 0)
             {
-              sock_mgr->WorkerNotifySocketBad(sock_data->conn_handle, true);
+              sock_mgr->WorkerNotifySocketBad(sock_data->client_handle, true);
               break;
             }
             else
             {
-              sock_mgr->WorkerNotifyRecvData(sock_data->conn_handle, bytes_read);
+              sock_mgr->WorkerNotifyRecvData(sock_data->client_handle, bytes_read);
               // Intentional fallthrough to start an overlapped receive operation again
             }
           }
@@ -159,13 +161,20 @@ unsigned __stdcall SocketWorkerThread(void* arg)
           {
             // Begin a new overlapped receive operation
             DWORD recv_flags = 0;
+
+            sock_data->ws_recv_buf.buf =
+                reinterpret_cast<char*>(&sock_data->recv_buf.buf[sock_data->recv_buf.cur_data_size]);
+            sock_data->ws_recv_buf.len =
+                std::min(static_cast<ULONG>(RDMNET_RECV_DATA_MAX_SIZE),
+                         static_cast<ULONG>(RC_MSG_BUF_SIZE - sock_data->recv_buf.cur_data_size));
+
             int recv_result = WSARecv(sock_data->socket, &sock_data->ws_recv_buf, 1, nullptr, &recv_flags,
                                       &sock_data->overlapped, nullptr);
             // Check for errors. Otherwise, we will be notified asynchronously through the I/O
             // completion port.
             if (recv_result != 0 && WSA_IO_PENDING != WSAGetLastError())
             {
-              sock_mgr->WorkerNotifySocketBad(sock_data->conn_handle, false);
+              sock_mgr->WorkerNotifySocketBad(sock_data->client_handle, false);
             }
           }
           break;
@@ -257,16 +266,16 @@ bool WinBrokerSocketManager::Shutdown()
   return true;
 }
 
-bool WinBrokerSocketManager::AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t socket)
+bool WinBrokerSocketManager::AddSocket(BrokerClient::Handle client_handle, etcpal_socket_t socket)
 {
   etcpal::WriteGuard socket_write(socket_lock_);
 
   // Create the data structure for the new socket
-  auto new_sock_data = std::make_unique<SocketData>(conn_handle, socket);
+  std::unique_ptr<SocketData> new_sock_data(new SocketData(client_handle, socket));
   if (new_sock_data)
   {
     // Add it to the socket map
-    auto result = sockets_.insert(std::make_pair(conn_handle, std::move(new_sock_data)));
+    auto result = sockets_.insert(std::make_pair(client_handle, std::move(new_sock_data)));
     if (result.second)
     {
       // Add the socket to our I/O completion port
@@ -280,23 +289,23 @@ bool WinBrokerSocketManager::AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_
         }
         else
         {
-          sockets_.erase(conn_handle);
+          sockets_.erase(client_handle);
         }
       }
       else
       {
-        sockets_.erase(conn_handle);
+        sockets_.erase(client_handle);
       }
     }
   }
   return false;
 }
 
-void WinBrokerSocketManager::RemoveSocket(rdmnet_conn_t conn_handle)
+void WinBrokerSocketManager::RemoveSocket(BrokerClient::Handle client_handle)
 {
   etcpal::ReadGuard socket_read(socket_lock_);
 
-  auto sock_data = sockets_.find(conn_handle);
+  auto sock_data = sockets_.find(client_handle);
   if (sock_data != sockets_.end())
   {
     if (!sock_data->second->close_requested)
@@ -309,14 +318,14 @@ void WinBrokerSocketManager::RemoveSocket(rdmnet_conn_t conn_handle)
   }
 }
 
-void WinBrokerSocketManager::WorkerNotifySocketBad(rdmnet_conn_t conn_handle, bool graceful)
+void WinBrokerSocketManager::WorkerNotifySocketBad(BrokerClient::Handle client_handle, bool graceful)
 {
   bool notify_socket_closed = false;
 
   {  // Write lock scope
     etcpal::WriteGuard socket_write(socket_lock_);
 
-    auto sock_data = sockets_.find(conn_handle);
+    auto sock_data = sockets_.find(client_handle);
     if (sock_data != sockets_.end())
     {
       if (!sock_data->second->close_requested && !shutting_down_)
@@ -329,24 +338,31 @@ void WinBrokerSocketManager::WorkerNotifySocketBad(rdmnet_conn_t conn_handle, bo
   }
 
   if (notify_socket_closed && notify_)
-    notify_->HandleSocketClosed(conn_handle, graceful);
+    notify_->HandleSocketClosed(client_handle, graceful);
 }
 
-void WinBrokerSocketManager::WorkerNotifyRecvData(rdmnet_conn_t conn_handle, size_t size)
+void WinBrokerSocketManager::WorkerNotifyRecvData(BrokerClient::Handle client_handle, size_t size)
 {
   etcpal::ReadGuard socket_read(socket_lock_);
 
-  auto sock_data = sockets_.find(conn_handle);
+  auto sock_data = sockets_.find(client_handle);
   if (sock_data != sockets_.end())
   {
-    if (!sock_data->second->close_requested && notify_)
+    sock_data->second->recv_buf.cur_data_size += size;
+    etcpal_error_t res = rc_msg_buf_parse_data(&sock_data->second->recv_buf);
+    while (res == kEtcPalErrOk)
     {
-      notify_->HandleSocketDataReceived(conn_handle, sock_data->second->recv_buf, size);
+      if (!sock_data->second->close_requested && notify_)
+      {
+        notify_->HandleSocketMessageReceived(client_handle, sock_data->second->recv_buf.msg);
+      }
+      rc_free_message_resources(&sock_data->second->recv_buf.msg);
+      res = rc_msg_buf_parse_data(&sock_data->second->recv_buf);
     }
   }
 }
 
 std::unique_ptr<BrokerSocketManager> CreateBrokerSocketManager()
 {
-  return std::make_unique<WinBrokerSocketManager>();
+  return std::unique_ptr<BrokerSocketManager>(new WinBrokerSocketManager);
 }

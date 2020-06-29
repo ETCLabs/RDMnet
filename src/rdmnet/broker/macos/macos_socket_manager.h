@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,20 +30,24 @@
 #include <pthread.h>
 
 #include "etcpal/cpp/lock.h"
+#include "rdmnet/core/message.h"
+#include "rdmnet/core/msg_buf.h"
 #include "broker_socket_manager.h"
 
 // The set of data allocated per-socket.
 struct SocketData
 {
-  SocketData(rdmnet_conn_t conn_handle_in, etcpal_socket_t socket_in) : conn_handle(conn_handle_in), socket(socket_in)
+  SocketData(BrokerClient::Handle client_handle_in, etcpal_socket_t socket_in)
+      : client_handle(client_handle_in), socket(socket_in)
   {
+    rc_msg_buf_init(&recv_buf);
   }
 
-  rdmnet_conn_t conn_handle{RDMNET_CONN_INVALID};
-  int socket{-1};
+  BrokerClient::Handle client_handle{BrokerClient::kInvalidHandle};
+  int                  socket{-1};
 
   // Receive buffer for socket recv operations
-  uint8_t recv_buf[RDMNET_RECV_DATA_MAX_SIZE];
+  RCMsgBuf recv_buf;
 };
 
 // A class to manage RDMnet Broker sockets on Mac.
@@ -60,25 +64,25 @@ public:
   bool Startup() override;
   bool Shutdown() override;
   void SetNotify(BrokerSocketNotify* notify) override { notify_ = notify; }
-  bool AddSocket(rdmnet_conn_t conn_handle, etcpal_socket_t socket) override;
-  void RemoveSocket(rdmnet_conn_t conn_handle) override;
+  bool AddSocket(BrokerClient::Handle client_handle, etcpal_socket_t socket) override;
+  void RemoveSocket(BrokerClient::Handle client_handle) override;
 
   // Callback functions called from worker threads
-  void WorkerNotifySocketReadEvent(rdmnet_conn_t conn_handle);
-  void WorkerNotifySocketBad(rdmnet_conn_t conn_handle);
+  void WorkerNotifySocketReadEvent(BrokerClient::Handle client_handle);
+  void WorkerNotifySocketBad(BrokerClient::Handle conn_handle);
 
   // Accessors
   bool keep_running() const { return !shutting_down_; }
-  int kqueue_fd() const { return kqueue_fd_; }
+  int  kqueue_fd() const { return kqueue_fd_; }
 
 private:
-  bool shutting_down_{false};
+  bool      shutting_down_{false};
   pthread_t thread_handle_;
-  int kqueue_fd_{-1};
+  int       kqueue_fd_{-1};
 
   // The set of sockets being managed.
-  std::map<rdmnet_conn_t, std::unique_ptr<SocketData>> sockets_;
-  etcpal::RwLock socket_lock_;
+  std::map<BrokerClient::Handle, std::unique_ptr<SocketData>> sockets_;
+  etcpal::RwLock                                              socket_lock_;
 
   // The callback instance
   BrokerSocketNotify* notify_{nullptr};

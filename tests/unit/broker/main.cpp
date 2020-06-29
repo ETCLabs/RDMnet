@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,12 @@
 #include "etcpal/socket.h"
 
 DEFINE_FFF_GLOBALS;
+
+extern "C" void RdmnetTestingAssertHandler(const char* expression, const char* file, unsigned int line)
+{
+  FAIL() << "Assertion failure from inside RDMnet library. Expression: " << expression << " File: " << file
+         << " Line: " << line;
+}
 
 int main(int argc, char* argv[])
 {

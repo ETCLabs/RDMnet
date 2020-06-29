@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,29 +19,34 @@
 
 #include "rdmnet_mock/core/llrp_target.h"
 
-static llrp_target_t next_target_handle;
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_llrp_target_module_init);
+DEFINE_FAKE_VOID_FUNC(rc_llrp_target_module_deinit);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_llrp_target_register, RCLlrpTarget*, const RdmnetMcastNetintId*, size_t);
+DEFINE_FAKE_VOID_FUNC(rc_llrp_target_unregister, RCLlrpTarget*);
+DEFINE_FAKE_VOID_FUNC(rc_llrp_target_update_connection_state, RCLlrpTarget*, bool);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t,
+                       rc_llrp_target_send_ack,
+                       RCLlrpTarget*,
+                       const LlrpSavedRdmCommand*,
+                       const uint8_t*,
+                       uint8_t);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t,
+                       rc_llrp_target_send_nack,
+                       RCLlrpTarget*,
+                       const LlrpSavedRdmCommand*,
+                       rdm_nack_reason_t);
+DEFINE_FAKE_VOID_FUNC(rc_llrp_target_module_tick);
+DEFINE_FAKE_VOID_FUNC(rc_llrp_target_data_received, const uint8_t*, size_t, const RdmnetMcastNetintId*);
 
-static etcpal_error_t fake_target_create(const LlrpTargetConfig* config, llrp_target_t* handle);
-
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_llrp_target_create, const LlrpTargetConfig*, llrp_target_t*);
-DEFINE_FAKE_VOID_FUNC(rdmnet_llrp_target_destroy, llrp_target_t);
-DEFINE_FAKE_VOID_FUNC(rdmnet_llrp_target_update_connection_state, llrp_target_t, bool);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_llrp_send_rdm_response, llrp_target_t, const LlrpLocalRdmResponse*);
-
-void llrp_target_reset_all_fakes(void)
+void rc_llrp_target_reset_all_fakes(void)
 {
-  RESET_FAKE(rdmnet_llrp_target_create);
-  RESET_FAKE(rdmnet_llrp_target_destroy);
-  RESET_FAKE(rdmnet_llrp_target_update_connection_state);
-  RESET_FAKE(rdmnet_llrp_send_rdm_response);
-
-  next_target_handle = 0;
-  rdmnet_llrp_target_create_fake.custom_fake = fake_target_create;
-}
-
-etcpal_error_t fake_target_create(const LlrpTargetConfig* config, llrp_target_t* handle)
-{
-  (void)config;
-  *handle = next_target_handle++;
-  return kEtcPalErrOk;
+  RESET_FAKE(rc_llrp_target_module_init);
+  RESET_FAKE(rc_llrp_target_module_deinit);
+  RESET_FAKE(rc_llrp_target_register);
+  RESET_FAKE(rc_llrp_target_unregister);
+  RESET_FAKE(rc_llrp_target_update_connection_state);
+  RESET_FAKE(rc_llrp_target_send_ack);
+  RESET_FAKE(rc_llrp_target_send_nack);
+  RESET_FAKE(rc_llrp_target_module_tick);
+  RESET_FAKE(rc_llrp_target_data_received);
 }

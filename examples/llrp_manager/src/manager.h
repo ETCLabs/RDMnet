@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,26 +17,34 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
+#include <functional>
 #include <map>
 #include <string>
 #include <vector>
 
 #include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/uuid.h"
-#include "etcpal/log.h"
-#include "rdm/message.h"
-#include "rdmnet/core/llrp_manager.h"
+#include "etcpal/cpp/log.h"
+#include "rdmnet/cpp/llrp_manager.h"
 
-struct LLRPTargetInfo
+namespace llrp = rdmnet::llrp;
+
+struct TargetInfo
 {
-  DiscoveredLlrpTarget prot_info;
-  bool identifying{false};
+  llrp::DiscoveredTarget prot_info;
+  bool                   identifying{false};
 };
 
-class LLRPManager
+struct ManagerInfo
+{
+  llrp::Manager    manager;
+  EtcPalNetintInfo netint_info;
+};
+
+class LlrpManagerExample : public llrp::Manager::NotifyHandler
 {
 public:
-  bool Startup(const etcpal::Uuid& my_cid, const EtcPalLogParams* log_params = nullptr);
+  bool Startup(const etcpal::Logger& logger);
   void Shutdown();
 
   enum class ParseResult
@@ -47,13 +55,13 @@ public:
     kPrintVersion
   };
   ParseResult ParseCommandLineArgs(const std::vector<std::string>& args);
-  void PrintUsage(const std::string& app_name);
-  void PrintVersion();
+  void        PrintUsage(const std::string& app_name);
+  void        PrintVersion();
 
   void PrintCommandList();
   bool ParseCommand(const std::string& line);
 
-  void Discover(llrp_manager_t manager_handle);
+  void Discover(llrp::Manager::Handle handle);
   void PrintTargets();
   void PrintNetints();
   void GetDeviceInfo(int target_handle);
@@ -64,33 +72,38 @@ public:
 
   void IdentifyDevice(int target_handle);
   void SetDeviceLabel(int target_handle, const std::string& label);
-  void SetComponentScope(int target_handle, int scope_slot, const std::string& scope_utf8,
+  void SetComponentScope(int                     target_handle,
+                         int                     scope_slot,
+                         const std::string&      scope_utf8,
                          const etcpal::SockAddr& static_config);
-  void FactoryDefaults(int target_handle);
-  void ResetDevice(int target_handle);
-
+  void SetFactoryDefaults(int target_handle);
+  void SetResetDevice(int target_handle);
   void GetInterfaceList(int target_handle);
   void SetZeroconf(int target_handle, unsigned interface_id);
 
-  void TargetDiscovered(const DiscoveredLlrpTarget& target);
-  void DiscoveryFinished();
-  void RdmRespReceived(const LlrpRemoteRdmResponse& resp);
+  void HandleLlrpTargetDiscovered(llrp::Manager::Handle handle, const llrp::DiscoveredTarget& target) override;
+  void HandleLlrpDiscoveryFinished(llrp::Manager::Handle handle) override;
+  void HandleLlrpRdmResponse(llrp::Manager::Handle handle, const llrp::RdmResponse& resp) override;
 
 private:
-  bool SendRDMAndGetResponse(llrp_manager_t manager, const EtcPalUuid& target_cid, const RdmCommand& cmd_data,
-                             RdmResponse& resp_data);
-  static const char* LLRPComponentTypeToString(llrp_component_t type);
+  using RdmResponseHandler = std::function<void(const llrp::RdmResponse&)>;
 
-  std::map<llrp_manager_t, EtcPalNetintInfo> managers_;
-  etcpal::Uuid cid_;
+  std::vector<uint8_t> GetDataFromTarget(llrp::Manager&                manager,
+                                         const llrp::DiscoveredTarget& target,
+                                         uint16_t                      param_id,
+                                         const uint8_t*                data = nullptr,
+                                         uint8_t                       data_len = 0);
+  bool                 SetDataOnTarget(llrp::Manager&                manager,
+                                       const llrp::DiscoveredTarget& target,
+                                       uint16_t                      param_id,
+                                       const uint8_t*                data = nullptr,
+                                       uint8_t                       data_len = 0);
 
-  std::map<int, LLRPTargetInfo> targets_;
-  llrp_manager_t active_manager_{LLRP_MANAGER_INVALID};
+  std::map<llrp::Manager::Handle, ManagerInfo> managers_;
+
+  std::map<int, TargetInfo> targets_;
+  llrp::Manager::Handle     active_manager_{llrp::Manager::kInvalidHandle};
+  RdmResponseHandler        active_response_handler_;
 
   bool discovery_active_{false};
-
-  bool pending_command_response_{false};
-  etcpal::Uuid pending_resp_cid_;
-  uint32_t pending_resp_seq_num_{0};
-  RdmResponse resp_received_{};
 };

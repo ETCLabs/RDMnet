@@ -18,19 +18,12 @@ option(RDMNET_WINDOWS_USE_BONJOUR_SDK "Use Apple's Bonjour SDK for Windows (LICE
 set(MDNSWINDOWS_INSTALL_LOC "" CACHE STRING "Override location for installed mDNSWindows binaries on Windows")
 set(MDNSWINDOWS_SRC_LOC "" CACHE STRING "Override location for mDNSWindows to build from source on Windows")
 
-# A version of the DNS-SD library with certain symbols removed for mocking.
-add_library(dnssd_mock INTERFACE)
-
 # On Windows, we use Bonjour for Windows, either through the Bonjour SDK or ETC's Bonjour fork.
 set(RDMNET_DISC_PLATFORM_SOURCES
-  ${RDMNET_SRC}/rdmnet/discovery/bonjour/disc_platform_defs.h
-  ${RDMNET_SRC}/rdmnet/discovery/bonjour/rdmnet_disc_bonjour.c
+  ${RDMNET_SRC}/rdmnet/disc/bonjour/rdmnet_disc_platform_defs.h
+  ${RDMNET_SRC}/rdmnet/disc/bonjour/rdmnet_disc_bonjour.c
 )
-add_library(RDMnetDiscoveryPlatform INTERFACE)
-target_sources(RDMnetDiscoveryPlatform INTERFACE ${RDMNET_DISC_PLATFORM_SOURCES})
-target_include_directories(RDMnetDiscoveryPlatform INTERFACE
-  ${RDMNET_SRC}/rdmnet/discovery/bonjour
-)
+set(RDMNET_DISC_PLATFORM_INCLUDE_DIRS ${RDMNET_SRC}/rdmnet/disc/bonjour)
 
 if(RDMNET_WINDOWS_USE_BONJOUR_SDK) # Using Apple's Bonjour SDK for Windows
 
@@ -59,7 +52,7 @@ if(RDMNET_WINDOWS_USE_BONJOUR_SDK) # Using Apple's Bonjour SDK for Windows
   set_target_properties(bonjour_static PROPERTIES
     IMPORTED_LOCATION ${BONJOUR_LIB_DIR}/dnssd.lib
   )
-  target_link_libraries(dnssd INTERFACE bonjour_static)
+  set(RDMNET_DISC_PLATORM_LIBS bonjour_static)
 
 else() # Using ETC's Bonjour fork
 
@@ -101,11 +94,10 @@ else() # Using ETC's Bonjour fork
     )
     add_subdirectory(${MDNSWINDOWS_SRC_LOC}/mDNSWindows/DLLStub mDNSWindows/static)
     add_subdirectory(${MDNSWINDOWS_SRC_LOC}/mDNSWindows/DLL mDNSWindows/DLL)
-    add_dependencies(dnssd dnssd_etc)
-    target_link_libraries(dnssd INTERFACE dnssdStatic)
-    target_link_libraries(dnssd_mock INTERFACE dnssdStaticMock)
-    # set_target_properties(dnssd PROPERTIES IMPORTED_LOCATION $<TARGET_FILE:dnssdStatic>)
-    set(DNS_SD_DLL $<TARGET_FILE:dnssd_etc> PARENT_SCOPE)
+    set(RDMNET_DISC_PLATFORM_DEPENDENCIES dnssd_etc)
+    set(RDMNET_DISC_PLATFORM_LIBS dnssdStatic)
+    set(RDMNET_BONJOUR_MOCK_LIB dnssdStaticMock)
+    set(DNS_SD_DLL $<TARGET_FILE:dnssd_etc>)
 
   elseif(MDNSWINDOWS_INSTALL_LOC) # Add mDNSWindows as a downloaded binary package
 
@@ -121,15 +113,15 @@ else() # Using ETC's Bonjour fork
     add_library(mdnswin STATIC IMPORTED)
     set_target_properties(mdnswin PROPERTIES IMPORTED_LOCATION ${MDNSWINDOWS_INSTALL_LOC}/lib/dnssd.lib)
     target_include_directories(mdnswin INTERFACE ${MDNSWINDOWS_INSTALL_LOC}/include)
-    target_link_libraries(dnssd INTERFACE mdnswin)
+    set(RDMNET_DISC_PLATFORM_LIBS mdnswin)
 
     # Setup the mock mDNSWindows library
     add_library(mdnswin_mock STATIC IMPORTED)
     set_target_properties(mdnswin_mock PROPERTIES IMPORTED_LOCATION ${MDNSWINDOWS_INSTALL_LOC}/lib/dnssd_mock.lib)
     target_include_directories(mdnswin_mock INTERFACE ${MDNSWINDOWS_INSTALL_LOC}/include)
-    target_link_libraries(dnssd_mock INTERFACE mdnswin_mock)
+    set(RDMNET_BONJOUR_MOCK_LIB mdnswin_mock)
 
-    set(DNS_SD_DLL ${MDNSWINDOWS_INSTALL_LOC}/dll/dnssd.dll PARENT_SCOPE)
+    set(DNS_SD_DLL ${MDNSWINDOWS_INSTALL_LOC}/dll/dnssd.dll)
     configure_file(${RDMNET_ROOT}/tools/ci/mdnsmerge.wxi.in
       ${RDMNET_ROOT}/tools/install/windows/GeneratedFiles/mdnsmerge.wxi
     )

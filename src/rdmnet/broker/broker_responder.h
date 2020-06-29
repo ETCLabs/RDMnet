@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,19 +26,30 @@
 class BrokerResponder
 {
   void ProcessRDMMessage(int conn, const RPTMessageRef& msg);
-  void SendRDMResponse(int conn, const RPTMessageRef& msg, uint8_t response_type, uint8_t command_class,
-                       uint16_t param_id, uint8_t packed_len, uint8_t* pdata);
+  void SendRDMResponse(int                  conn,
+                       const RPTMessageRef& msg,
+                       uint8_t              response_type,
+                       uint8_t              command_class,
+                       uint16_t             param_id,
+                       uint8_t              packed_len,
+                       uint8_t*             pdata);
 
   // Returns packed length
-  uint8_t PackGetParamDescResponsePD(uint8_t* pdata, uint16_t parameter, uint8_t pid_pdl_size, uint8_t param_cc,
-                                     uint8_t param_data_type, const char* desc, uint32_t min_val, uint32_t max_val,
-                                     uint32_t default_val);
-  void ProcessGetSupportedParameters(int conn, const RPTMessageRef& msg);
-  void ProcessGetParameterDescription(int conn, const RPTMessageRef& msg);
-  void ProcessGetSoftwareVersionLabel(int conn, const RPTMessageRef& msg);
-  void ProcessGetComponentScope(int conn, const RPTMessageRef& msg);
-  void ProcessSetComponentScope(int conn, const RPTMessageRef& msg);
-  void SendNack(int conn, const RPTMessageRef& msg, uint16_t pid, uint16_t reason, bool set_response);
+  uint8_t PackGetParamDescResponsePD(uint8_t*    pdata,
+                                     uint16_t    parameter,
+                                     uint8_t     pid_pdl_size,
+                                     uint8_t     param_cc,
+                                     uint8_t     param_data_type,
+                                     const char* desc,
+                                     uint32_t    min_val,
+                                     uint32_t    max_val,
+                                     uint32_t    default_val);
+  void    ProcessGetSupportedParameters(int conn, const RPTMessageRef& msg);
+  void    ProcessGetParameterDescription(int conn, const RPTMessageRef& msg);
+  void    ProcessGetSoftwareVersionLabel(int conn, const RPTMessageRef& msg);
+  void    ProcessGetComponentScope(int conn, const RPTMessageRef& msg);
+  void    ProcessSetComponentScope(int conn, const RPTMessageRef& msg);
+  void    SendNack(int conn, const RPTMessageRef& msg, uint16_t pid, uint16_t reason, bool set_response);
 };
 
 #endif  // BROKER_RESPONDER_H_

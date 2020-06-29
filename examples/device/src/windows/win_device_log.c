@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,44 @@
 
 #include <WinSock2.h>
 #include <Windows.h>
+#include <ShlObj.h>
 #include <stdio.h>
 
+static const WCHAR* kLogFileDirComponents[] = {L"ETC", L"RDMnet Examples"};
+#define LOG_FILE_BASENAME L"device.log"
+
 static EtcPalLogParams s_device_log_params;
-static FILE* s_log_file;
-static int s_utc_offset;
+static FILE*           s_log_file;
+static int             s_utc_offset;
+static WCHAR           s_log_file_name[MAX_PATH];
+
+const WCHAR* get_log_file_name(void)
+{
+  PWSTR app_data_path;
+  if (SHGetKnownFolderPath(&FOLDERID_LocalAppData, 0, NULL, &app_data_path) == S_OK)
+  {
+    wcscpy_s(s_log_file_name, MAX_PATH, app_data_path);
+    for (size_t i = 0; i < sizeof(kLogFileDirComponents) / sizeof(kLogFileDirComponents[0]); ++i)
+    {
+      wcscat_s(s_log_file_name, MAX_PATH, L"\\");
+      wcscat_s(s_log_file_name, MAX_PATH, kLogFileDirComponents[i]);
+      if (!CreateDirectoryW(s_log_file_name, NULL))
+      {
+        DWORD error = GetLastError();
+        if (error != ERROR_ALREADY_EXISTS)
+        {
+          // Something went wrong creating an intermediate directory.
+          wprintf(L"Couldn't create directory %s: Error %d.\n", s_log_file_name, error);
+          return NULL;
+        }
+      }
+    }
+    wcscat_s(s_log_file_name, MAX_PATH, L"\\");
+    wcscat_s(s_log_file_name, MAX_PATH, LOG_FILE_BASENAME);
+    return s_log_file_name;
+  }
+  return NULL;
+}
 
 static void device_log_callback(void* context, const EtcPalLogStrings* strings)
 {
@@ -50,11 +83,17 @@ static void device_time_callback(void* context, EtcPalLogTimestamp* time)
   time->utc_offset = s_utc_offset;
 }
 
-void device_log_init(const char* file_name)
+void device_log_init(void)
 {
-  s_log_file = fopen(file_name, "w");
-  if (!s_log_file)
-    printf("Device Log: Couldn't open log file %s\n", file_name);
+  etcpal_init(ETCPAL_FEATURE_LOGGING);
+
+  const WCHAR* file_name = get_log_file_name();
+  if (file_name)
+  {
+    s_log_file = _wfopen(file_name, L"w");
+    if (!s_log_file)
+      wprintf(L"Device Log: Couldn't open log file %s\n", file_name);
+  }
 
   TIME_ZONE_INFORMATION tzinfo;
   switch (GetTimeZoneInformation(&tzinfo))
@@ -80,12 +119,14 @@ void device_log_init(const char* file_name)
   etcpal_validate_log_params(&s_device_log_params);
 }
 
-const EtcPalLogParams* device_get_log_params()
+const EtcPalLogParams* device_get_log_params(void)
 {
   return &s_device_log_params;
 }
 
-void device_log_deinit()
+void device_log_deinit(void)
 {
-  fclose(s_log_file);
+  if (s_log_file)
+    fclose(s_log_file);
+  etcpal_deinit(ETCPAL_FEATURE_LOGGING);
 }

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,16 +38,16 @@ bool operator<(const uid& a, const uid& b)
 
 struct GadgetRdmCommand
 {
-  RDM_CmdC cmd;
-  unsigned int port_number;
-  const void* cookie;
+  RDM_CmdC      cmd;
+  unsigned int  port_number;
+  const void*   cookie;
   etcpal::Timer timeout;
 };
 
 struct RdmResponder
 {
   RdmDeviceInfo info;
-  unsigned int gadget_id;
+  unsigned int  gadget_id;
 
   RdmResponder(const RdmDeviceInfo& info_in, unsigned int gadget_id_in) : info(info_in), gadget_id(gadget_id_in) {}
 };
@@ -65,23 +65,23 @@ struct Gadget
 class GadgetManager
 {
 public:
-  bool Startup(GadgetNotify& notify, FakewayLog& log);
+  bool Startup(GadgetNotify& notify, etcpal::Logger& logger);
   void Shutdown();
   void Run();
 
   void SendRdmCommand(unsigned int gadget_id, unsigned int port_number, const RDM_CmdC& cmd, const void* cookie);
 
 private:
-  GadgetNotify* notify_{nullptr};
-  bool running_{false};
+  GadgetNotify*  notify_{nullptr};
+  bool           running_{false};
   etcpal::Thread thread_;
 
-  etcpal::Mutex gadget_lock_;
+  etcpal::Mutex                  gadget_lock_;
   std::map<unsigned int, Gadget> gadgets_;
-  std::map<uid, RdmResponder> responders_;
+  std::map<uid, RdmResponder>    responders_;
 
   unsigned int previous_number_of_devices_{0};
-  int last_gadget_num_{-1};
+  int          last_gadget_num_{-1};
 
   void ResolveGadgetChanges();
   void ResolveRdmResponderChanges();
@@ -90,7 +90,7 @@ private:
   bool GetResponseFromQueue(const void* cookie, RDM_CmdC& response);
 };
 
-static FakewayLog* log_instance{nullptr};
+static etcpal::Logger* log_instance{nullptr};
 
 extern "C" void __stdcall GadgetLogCallback(const char* LogData)
 {
@@ -98,10 +98,10 @@ extern "C" void __stdcall GadgetLogCallback(const char* LogData)
     log_instance->Info(LogData);
 }
 
-bool GadgetManager::Startup(GadgetNotify& notify, FakewayLog& log)
+bool GadgetManager::Startup(GadgetNotify& notify, etcpal::Logger& logger)
 {
   notify_ = &notify;
-  log_instance = &log;
+  log_instance = &logger;
 
   Gadget2_SetLogCallback(GadgetLogCallback);
   if (!Gadget2_Connect())
@@ -139,8 +139,10 @@ void GadgetManager::Run()
   }
 }
 
-void GadgetManager::SendRdmCommand(unsigned int gadget_id, unsigned int port_number, const RDM_CmdC& cmd,
-                                   const void* cookie)
+void GadgetManager::SendRdmCommand(unsigned int    gadget_id,
+                                   unsigned int    port_number,
+                                   const RDM_CmdC& cmd,
+                                   const void*     cookie)
 {
   etcpal::MutexGuard gadget_guard(gadget_lock_);
 
@@ -230,7 +232,7 @@ void GadgetManager::ResolveRdmResponderChanges()
     RdmDeviceInfo* responder = Gadget2_GetDeviceInfo(i);
     if (responder)
     {
-      uid resp_id{responder->manufacturer_id, responder->device_id};
+      uid  resp_id{responder->manufacturer_id, responder->device_id};
       auto existing_responder = responders_copy.find(resp_id);
       if (existing_responder != responders_copy.end())
       {
@@ -339,9 +341,9 @@ std::string GadgetInterface::DllVersion()
   return Gadget2_GetDllVersion();
 }
 
-bool GadgetInterface::Startup(GadgetNotify& notify, FakewayLog& log)
+bool GadgetInterface::Startup(GadgetNotify& notify, etcpal::Logger& logger)
 {
-  return impl_->Startup(notify, log);
+  return impl_->Startup(notify, logger);
 }
 
 void GadgetInterface::Shutdown()
@@ -349,8 +351,10 @@ void GadgetInterface::Shutdown()
   impl_->Shutdown();
 }
 
-void GadgetInterface::SendRdmCommand(unsigned int gadget_id, unsigned int port_number, const RDM_CmdC& cmd,
-                                     const void* cookie)
+void GadgetInterface::SendRdmCommand(unsigned int    gadget_id,
+                                     unsigned int    port_number,
+                                     const RDM_CmdC& cmd,
+                                     const void*     cookie)
 {
   impl_->SendRdmCommand(gadget_id, port_number, cmd, cookie);
 }

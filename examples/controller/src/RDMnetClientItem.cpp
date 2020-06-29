@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,28 +19,12 @@
 
 #include "RDMnetClientItem.h"
 
-#include "rdmnet/client.h"
-
-const char* RDMnetClientItem::clientType2String(rpt_client_type_t type)
-{
-  switch (type)
-  {
-    case kRPTClientTypeDevice:
-      return "Device";
-    case kRPTClientTypeController:
-      return "Controller";
-    case kRPTClientTypeUnknown:
-    default:
-      return "Unknown Client Type";
-  }
-}
-
-RDMnetClientItem::RDMnetClientItem(const ClientEntryData& entry, bool is_me)
+RDMnetClientItem::RDMnetClientItem(const rdmnet::RptClientEntry& entry, bool is_me)
     : RDMnetNetworkItem(QString("%0%1 | Manu: 0x%2 | ID: 0x%3")
-                            .arg(QString(clientType2String(GET_RPT_CLIENT_ENTRY_DATA(&entry)->client_type)))
+                            .arg(QString::fromStdString(entry.TypeToString()))
                             .arg(is_me ? QString::fromUtf8(" (me)") : QString())
-                            .arg(QString::number(GET_RPT_CLIENT_ENTRY_DATA(&entry)->client_uid.manu, 16))
-                            .arg(QString::number(GET_RPT_CLIENT_ENTRY_DATA(&entry)->client_uid.id, 16)))
+                            .arg(QString::number(entry.uid.manufacturer_id(), 16))
+                            .arg(QString::number(entry.uid.device_id(), 16)))
     , entry_(entry)
 {
 }

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#include "monitored_scope.h"
+#include "rdmnet/disc/monitored_scope.h"
 
 #include <array>
 #include <cstring>
@@ -31,6 +31,9 @@
 class TestMonitoredScope : public testing::Test
 {
 protected:
+  static constexpr const char* kDefaultTestScope = "Test Scope";
+  static constexpr const char* kDefaultTestDomain = "Test Domain";
+
   struct ScopeMonitorDeleter
   {
     void operator()(RdmnetScopeMonitorRef* ref)
@@ -43,12 +46,23 @@ protected:
 
   TestMonitoredScope() { TestDiscoveryCommonResetAllFakes(); }
 
-  ScopeMonitorUniquePtr MakeDefaultMonitoredScope()
+  ScopeMonitorUniquePtr MakeMonitoredScope(const RdmnetScopeMonitorConfig& config)
   {
-    return ScopeMonitorUniquePtr(scope_monitor_new(&default_config_));
+    return ScopeMonitorUniquePtr(scope_monitor_new(&config));
   }
 
+  ScopeMonitorUniquePtr MakeDefaultMonitoredScope() { return MakeMonitoredScope(default_config_); }
+
   RdmnetScopeMonitorConfig default_config_{};
+
+  void SetUp() override
+  {
+    ASSERT_EQ(monitored_scope_module_init(), kEtcPalErrOk);
+    default_config_.scope = kDefaultTestScope;
+    default_config_.domain = kDefaultTestDomain;
+  }
+
+  void TearDown() override { monitored_scope_module_deinit(); }
 };
 
 TEST_F(TestMonitoredScope, NewInitializesFieldsProperly)
@@ -57,24 +71,25 @@ TEST_F(TestMonitoredScope, NewInitializesFieldsProperly)
 
   ASSERT_NE(ref, nullptr);
 
-  EXPECT_EQ(ref->config, default_config_);
+  EXPECT_STREQ(ref->scope, default_config_.scope);
+  EXPECT_STREQ(ref->domain, default_config_.domain);
   EXPECT_EQ(ref->broker_handle, nullptr);
   EXPECT_EQ(ref->broker_list, nullptr);
-  EXPECT_EQ(ref->next, nullptr);
 }
 
 TEST_F(TestMonitoredScope, InsertWorks)
 {
   auto scope_1 = MakeDefaultMonitoredScope();
-  rdmnet_safe_strncpy(scope_1->config.scope, "Test Insert 1 Scope", E133_SCOPE_STRING_PADDED_LENGTH);
   scope_monitor_insert(scope_1.get());
 
   // We test the presence by using the for_each function.
   EXPECT_TRUE(scope_monitor_ref_is_valid(scope_1.get()));
-  scope_monitor_for_each([](RdmnetScopeMonitorRef* ref) { EXPECT_STREQ(ref->config.scope, "Test Insert 1 Scope"); });
+  scope_monitor_for_each([](RdmnetScopeMonitorRef* ref) { EXPECT_STREQ(ref->scope, kDefaultTestScope); });
 
-  auto scope_2 = MakeDefaultMonitoredScope();
-  rdmnet_safe_strncpy(scope_2->config.scope, "Test Insert 2 Scope", E133_SCOPE_STRING_PADDED_LENGTH);
+  RdmnetScopeMonitorConfig scope_2_config{};
+  scope_2_config.scope = "Test Insert 2 Scope";
+  scope_2_config.domain = "Test Insert 2 Domain";
+  auto scope_2 = MakeMonitoredScope(scope_2_config);
   scope_monitor_insert(scope_2.get());
 
   EXPECT_TRUE(scope_monitor_ref_is_valid(scope_1.get()));
@@ -98,9 +113,10 @@ TEST_F(TestMonitoredScope, ForEachWorks)
   // Insert each name into the list.
   for (size_t i = 0; i < kNumScopeNames; ++i)
   {
+    RdmnetScopeMonitorConfig config{};
+    config.scope = scope_names[i].first.c_str();
     scope_names[i].second = false;
-    scopes[i] = MakeDefaultMonitoredScope();
-    rdmnet_safe_strncpy(scopes[i]->config.scope, scope_names[i].first.c_str(), E133_SCOPE_STRING_PADDED_LENGTH);
+    scopes[i] = MakeMonitoredScope(config);
     scope_monitor_insert(scopes[i].get());
   }
 
@@ -108,7 +124,7 @@ TEST_F(TestMonitoredScope, ForEachWorks)
   scope_monitor_for_each([](RdmnetScopeMonitorRef* ref) {
     for (auto& name : scope_names)
     {
-      if (0 == std::strncmp(ref->config.scope, name.first.c_str(), E133_SCOPE_STRING_PADDED_LENGTH))
+      if (0 == std::strncmp(ref->scope, name.first.c_str(), E133_SCOPE_STRING_PADDED_LENGTH))
         name.second = true;
     }
   });

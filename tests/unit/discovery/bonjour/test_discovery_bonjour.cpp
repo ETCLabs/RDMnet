@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,15 +22,22 @@
 
 #include "etcpal_mock/socket.h"
 #include "etcpal/cpp/inet.h"
+#include "etcpal/cpp/uuid.h"
+#include "rdm/cpp/uid.h"
 #include "rdmnet/core/util.h"
-#include "rdmnet_mock/core.h"
-#include "rdmnet_mock/private/core.h"
-#include "disc_common.h"
+#include "rdmnet_mock/core/common.h"
+#include "rdmnet/disc/common.h"
 #include "dns_sd.h"
 #include "test_operators.h"
 
 #include "gtest/gtest.h"
 #include "fff.h"
+
+extern "C" void RdmnetTestingAssertHandler(const char* expression, const char* file, unsigned int line)
+{
+  FAIL() << "Assertion failure from inside RDMnet library. Expression: " << expression << " File: " << file
+         << " Line: " << line;
+}
 
 DEFINE_FFF_GLOBALS;
 
@@ -38,64 +45,102 @@ DEFINE_FFF_GLOBALS;
 FAKE_VALUE_FUNC(dnssd_sock_t, DNSServiceRefSockFD, DNSServiceRef);
 FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceProcessResult, DNSServiceRef);
 FAKE_VOID_FUNC(DNSServiceRefDeallocate, DNSServiceRef);
-FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceRegister, DNSServiceRef*, DNSServiceFlags, uint32_t, const char*,
-                const char*, const char*, const char*, uint16_t, uint16_t, const void*, DNSServiceRegisterReply, void*);
-FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceBrowse, DNSServiceRef*, DNSServiceFlags, uint32_t, const char*,
-                const char*, DNSServiceBrowseReply, void*);
-FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceResolve, DNSServiceRef*, DNSServiceFlags, uint32_t, const char*,
-                const char*, const char*, DNSServiceResolveReply, void*);
-FAKE_VALUE_FUNC(DNSServiceErrorType, DNSServiceGetAddrInfo, DNSServiceRef*, DNSServiceFlags, uint32_t,
-                DNSServiceProtocol, const char*, DNSServiceGetAddrInfoReply, void*);
+FAKE_VALUE_FUNC(DNSServiceErrorType,
+                DNSServiceRegister,
+                DNSServiceRef*,
+                DNSServiceFlags,
+                uint32_t,
+                const char*,
+                const char*,
+                const char*,
+                const char*,
+                uint16_t,
+                uint16_t,
+                const void*,
+                DNSServiceRegisterReply,
+                void*);
+FAKE_VALUE_FUNC(DNSServiceErrorType,
+                DNSServiceBrowse,
+                DNSServiceRef*,
+                DNSServiceFlags,
+                uint32_t,
+                const char*,
+                const char*,
+                DNSServiceBrowseReply,
+                void*);
+FAKE_VALUE_FUNC(DNSServiceErrorType,
+                DNSServiceResolve,
+                DNSServiceRef*,
+                DNSServiceFlags,
+                uint32_t,
+                const char*,
+                const char*,
+                const char*,
+                DNSServiceResolveReply,
+                void*);
+FAKE_VALUE_FUNC(DNSServiceErrorType,
+                DNSServiceGetAddrInfo,
+                DNSServiceRef*,
+                DNSServiceFlags,
+                uint32_t,
+                DNSServiceProtocol,
+                const char*,
+                DNSServiceGetAddrInfoReply,
+                void*);
 
 // Mocking the C callback function pointers
 FAKE_VOID_FUNC(regcb_broker_registered, rdmnet_registered_broker_t, const char*, void*);
 FAKE_VOID_FUNC(regcb_broker_register_error, rdmnet_registered_broker_t, int, void*);
-FAKE_VOID_FUNC(regcb_broker_found, rdmnet_registered_broker_t, const RdmnetBrokerDiscInfo*, void*);
-FAKE_VOID_FUNC(regcb_broker_lost, rdmnet_registered_broker_t, const char*, const char*, void*);
-FAKE_VOID_FUNC(regcb_scope_monitor_error, rdmnet_registered_broker_t, const char*, int, void*);
+FAKE_VOID_FUNC(regcb_other_broker_found, rdmnet_registered_broker_t, const RdmnetBrokerDiscInfo*, void*);
+FAKE_VOID_FUNC(regcb_other_broker_lost, rdmnet_registered_broker_t, const char*, const char*, void*);
 
 FAKE_VOID_FUNC(monitorcb_broker_found, rdmnet_scope_monitor_t, const RdmnetBrokerDiscInfo*, void*);
 FAKE_VOID_FUNC(monitorcb_broker_lost, rdmnet_scope_monitor_t, const char*, const char*, void*);
-FAKE_VOID_FUNC(monitorcb_scope_monitor_error, rdmnet_scope_monitor_t, const char*, int, void*);
 
 static void set_reg_callbacks(RdmnetDiscBrokerCallbacks* callbacks)
 {
-  callbacks->broker_found = regcb_broker_found;
-  callbacks->broker_lost = regcb_broker_lost;
-  callbacks->scope_monitor_error = regcb_scope_monitor_error;
+  callbacks->other_broker_found = regcb_other_broker_found;
+  callbacks->other_broker_lost = regcb_other_broker_lost;
   callbacks->broker_registered = regcb_broker_registered;
-  callbacks->broker_register_error = regcb_broker_register_error;
+  callbacks->broker_register_failed = regcb_broker_register_error;
 }
 
 static void set_monitor_callbacks(RdmnetScopeMonitorCallbacks* callbacks)
 {
   callbacks->broker_found = monitorcb_broker_found;
   callbacks->broker_lost = monitorcb_broker_lost;
-  callbacks->scope_monitor_error = monitorcb_scope_monitor_error;
 }
 
-class TestDiscoveryBonjour : public ::testing::Test
+class TestDiscoveryBonjour : public testing::Test
 {
 public:
   // clang-format off
   RdmnetBrokerDiscInfo default_discovered_broker_ =
   {
     {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}},
+    {0x6574, 0x12345678},
+    E133_DNSSD_E133VERS,
     "Test Service Name",
     8888,
     nullptr,
     0,
     "default",
     "Test Broker",
-    "ETC"
+    "ETC",
+    nullptr,
+    0
   };
   // clang-format on
 protected:
-  std::string default_full_service_name_;
-  etcpal_error_t init_result_;
-  TXTRecordRef txt_record_;
-  rdmnet_scope_monitor_t monitor_handle_;
-  std::unique_ptr<EtcPalIpAddr> default_listen_addr_;
+  std::string                               default_full_service_name_;
+  etcpal_error_t                            init_result_;
+  TXTRecordRef                              txt_record_;
+  rdmnet_scope_monitor_t                    monitor_handle_;
+  std::unique_ptr<EtcPalIpAddr>             default_listen_addr_;
+  const std::vector<RdmnetDnsTxtRecordItem> kDefaultAdditionalTxtItems = {
+      {"Key 1", reinterpret_cast<const uint8_t*>("Value 1"), sizeof("Value 1") - 1},
+      {"Key 2", reinterpret_cast<const uint8_t*>("Value 2"), sizeof("Value 2") - 1},
+  };
 
   void SetUp() override
   {
@@ -110,19 +155,17 @@ protected:
 
     RESET_FAKE(regcb_broker_registered);
     RESET_FAKE(regcb_broker_register_error);
-    RESET_FAKE(regcb_broker_found);
-    RESET_FAKE(regcb_broker_lost);
-    RESET_FAKE(regcb_scope_monitor_error);
+    RESET_FAKE(regcb_other_broker_found);
+    RESET_FAKE(regcb_other_broker_lost);
     RESET_FAKE(monitorcb_broker_found);
     RESET_FAKE(monitorcb_broker_lost);
-    RESET_FAKE(monitorcb_scope_monitor_error);
 
     etcpal_socket_reset_all_fakes();
+    rdmnet_mock_core_reset_and_init();
 
     FFF_RESET_HISTORY();
 
-    init_result_ = rdmnet_disc_init(nullptr);
-    rdmnet_core_initialized_fake.return_val = true;
+    init_result_ = rdmnet_disc_module_init(nullptr);
 
     CreateDefaultBroker();
   }
@@ -130,14 +173,14 @@ protected:
   void TearDown() override
   {
     TXTRecordDeallocate(&txt_record_);
-    rdmnet_disc_deinit();
+    rdmnet_disc_module_deinit();
   }
 
-  void CreateDefaultBroker();
-  DNSServiceBrowseReply MonitorDefaultScope();
-  DNSServiceResolveReply DriveBrowseCallback(DNSServiceBrowseReply browse_cb);
+  void                       CreateDefaultBroker();
+  DNSServiceBrowseReply      MonitorDefaultScope();
+  DNSServiceResolveReply     DriveBrowseCallback(DNSServiceBrowseReply browse_cb);
   DNSServiceGetAddrInfoReply DriveResolveCallback(DNSServiceResolveReply resolve_cb);
-  void DriveGetAddrInfoCallback(DNSServiceGetAddrInfoReply gai_cb);
+  void                       DriveGetAddrInfoCallback(DNSServiceGetAddrInfoReply gai_cb);
 };
 
 void TestDiscoveryBonjour::CreateDefaultBroker()
@@ -145,33 +188,44 @@ void TestDiscoveryBonjour::CreateDefaultBroker()
   default_listen_addr_ = std::make_unique<EtcPalIpAddr>(etcpal::IpAddr::FromString("10.101.1.1").get());
   default_discovered_broker_.listen_addrs = default_listen_addr_.get();
   default_discovered_broker_.num_listen_addrs = 1;
+  default_discovered_broker_.additional_txt_items = kDefaultAdditionalTxtItems.data();
+  default_discovered_broker_.num_additional_txt_items = kDefaultAdditionalTxtItems.size();
 
   TXTRecordCreate(&txt_record_, 0, nullptr);
   std::string txtvers = std::to_string(E133_DNSSD_TXTVERS);
-  ASSERT_EQ(kDNSServiceErr_NoError,
-            TXTRecordSetValue(&txt_record_, "TxtVers", static_cast<uint8_t>(txtvers.length()), txtvers.c_str()));
+  ASSERT_EQ(kDNSServiceErr_NoError, TXTRecordSetValue(&txt_record_, E133_TXT_VERS_KEY,
+                                                      static_cast<uint8_t>(txtvers.length()), txtvers.c_str()));
   std::string e133vers = std::to_string(E133_DNSSD_E133VERS);
-  ASSERT_EQ(kDNSServiceErr_NoError,
-            TXTRecordSetValue(&txt_record_, "E133Vers", static_cast<uint8_t>(e133vers.length()), e133vers.c_str()));
+  ASSERT_EQ(kDNSServiceErr_NoError, TXTRecordSetValue(&txt_record_, E133_TXT_E133VERS_KEY,
+                                                      static_cast<uint8_t>(e133vers.length()), e133vers.c_str()));
 
   // CID with the hyphens removed
-  char cid_buf[ETCPAL_UUID_STRING_BYTES];
-  etcpal_uuid_to_string(&default_discovered_broker_.cid, cid_buf);
-  std::string cid_str(cid_buf);
+  auto cid_str = etcpal::Uuid(default_discovered_broker_.cid).ToString();
   cid_str.erase(std::remove(cid_str.begin(), cid_str.end(), '-'), cid_str.end());
   ASSERT_EQ(kDNSServiceErr_NoError,
-            TXTRecordSetValue(&txt_record_, "CID", static_cast<uint8_t>(cid_str.length()), cid_str.c_str()));
+            TXTRecordSetValue(&txt_record_, E133_TXT_CID_KEY, static_cast<uint8_t>(cid_str.length()), cid_str.c_str()));
 
+  auto uid_str = rdm::Uid(default_discovered_broker_.uid).ToString();
+  uid_str.erase(std::remove(uid_str.begin(), uid_str.end(), ':'), uid_str.end());
   ASSERT_EQ(kDNSServiceErr_NoError,
-            TXTRecordSetValue(&txt_record_, "ConfScope", static_cast<uint8_t>(strlen(default_discovered_broker_.scope)),
-                              default_discovered_broker_.scope));
+            TXTRecordSetValue(&txt_record_, E133_TXT_UID_KEY, static_cast<uint8_t>(uid_str.length()), uid_str.c_str()));
+
+  ASSERT_EQ(kDNSServiceErr_NoError, TXTRecordSetValue(&txt_record_, E133_TXT_SCOPE_KEY,
+                                                      static_cast<uint8_t>(strlen(default_discovered_broker_.scope)),
+                                                      default_discovered_broker_.scope));
+  ASSERT_EQ(kDNSServiceErr_NoError, TXTRecordSetValue(&txt_record_, E133_TXT_MODEL_KEY,
+                                                      static_cast<uint8_t>(strlen(default_discovered_broker_.model)),
+                                                      default_discovered_broker_.model));
   ASSERT_EQ(kDNSServiceErr_NoError,
-            TXTRecordSetValue(&txt_record_, "Model", static_cast<uint8_t>(strlen(default_discovered_broker_.model)),
-                              default_discovered_broker_.model));
-  ASSERT_EQ(
-      kDNSServiceErr_NoError,
-      TXTRecordSetValue(&txt_record_, "Manuf", static_cast<uint8_t>(strlen(default_discovered_broker_.manufacturer)),
-                        default_discovered_broker_.manufacturer));
+            TXTRecordSetValue(&txt_record_, E133_TXT_MANUFACTURER_KEY,
+                              static_cast<uint8_t>(strlen(default_discovered_broker_.manufacturer)),
+                              default_discovered_broker_.manufacturer));
+
+  for (const auto& txt_item : kDefaultAdditionalTxtItems)
+  {
+    ASSERT_EQ(kDNSServiceErr_NoError,
+              TXTRecordSetValue(&txt_record_, txt_item.key, txt_item.value_len, txt_item.value));
+  }
 
   default_full_service_name_ = "Test Service Name.";
   default_full_service_name_ += E133_DNSSD_SRV_TYPE;
@@ -186,10 +240,10 @@ void TestDiscoveryBonjour::CreateDefaultBroker()
 DNSServiceBrowseReply TestDiscoveryBonjour::MonitorDefaultScope()
 {
   RdmnetScopeMonitorConfig config;
-  rdmnet_safe_strncpy(config.scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH);
-  rdmnet_safe_strncpy(config.domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH);
+  config.scope = E133_DEFAULT_SCOPE;
+  config.domain = E133_DEFAULT_DOMAIN;
   set_monitor_callbacks(&config.callbacks);
-  config.callback_context = this;
+  config.callbacks.context = this;
 
   // Assign a socket value to our service browse operation
 
@@ -220,7 +274,7 @@ DNSServiceResolveReply TestDiscoveryBonjour::DriveBrowseCallback(DNSServiceBrows
     return kDNSServiceErr_NoError;
   };
   browse_cb(DEFAULT_MONITOR_DNS_REF, kDNSServiceFlagsAdd, 0, kDNSServiceErr_NoError,
-            default_discovered_broker_.service_name, E133_DNSSD_SRV_TYPE, E133_DEFAULT_DOMAIN,
+            default_discovered_broker_.service_instance_name, E133_DNSSD_SRV_TYPE, E133_DEFAULT_DOMAIN,
             DNSServiceBrowse_fake.arg6_val);
   EXPECT_EQ(DNSServiceResolve_fake.call_count, previous_call_count + 1);
   return DNSServiceResolve_fake.arg6_val;
@@ -246,7 +300,7 @@ DNSServiceGetAddrInfoReply TestDiscoveryBonjour::DriveResolveCallback(DNSService
 void TestDiscoveryBonjour::DriveGetAddrInfoCallback(DNSServiceGetAddrInfoReply gai_cb)
 {
   struct sockaddr address;
-  EtcPalSockAddr discovered_addr;
+  EtcPalSockAddr  discovered_addr;
   discovered_addr.ip = *default_listen_addr_;
   discovered_addr.port = 0;
   sockaddr_etcpal_to_os(&discovered_addr, &address);
@@ -264,13 +318,13 @@ TEST_F(TestDiscoveryBonjour, RegisterBrokerInvalidCallsFail)
 {
   RdmnetBrokerRegisterConfig config;
 
-  config.my_info.cid = kEtcPalNullUuid;
-  config.my_info.service_name[0] = '\0';
-  config.my_info.scope[0] = '\0';
-  config.my_info.listen_addrs = nullptr;
-  config.my_info.num_listen_addrs = 0;
+  config.cid = kEtcPalNullUuid;
+  config.service_instance_name = "";
+  config.scope = "";
+  config.netints = nullptr;
+  config.num_netints = 0;
   set_reg_callbacks(&config.callbacks);
-  config.callback_context = this;
+  config.callbacks.context = this;
 
   rdmnet_registered_broker_t handle;
   EXPECT_NE(kEtcPalErrOk, rdmnet_disc_register_broker(&config, &handle));
@@ -278,7 +332,7 @@ TEST_F(TestDiscoveryBonjour, RegisterBrokerInvalidCallsFail)
   EXPECT_EQ(DNSServiceRegister_fake.call_count, 0u);
 }
 
-// Test that rdmnet_disc_tick() functions properly in the presence of various states of monitored
+// Test that rdmnet_disc_module_tick() functions properly in the presence of various states of monitored
 // scopes.
 TEST_F(TestDiscoveryBonjour, TickHandlesSocketActivity)
 {
@@ -292,7 +346,7 @@ TEST_F(TestDiscoveryBonjour, TickHandlesSocketActivity)
   etcpal_poll_wait_fake.return_val = kEtcPalErrTimedOut;
   DNSServiceProcessResult_fake.return_val = kDNSServiceErr_NoError;
 
-  rdmnet_disc_tick();
+  rdmnet_disc_module_tick();
   EXPECT_EQ(etcpal_poll_wait_fake.call_count, 1u);
   EXPECT_EQ(DNSServiceProcessResult_fake.call_count, 0u);
 
@@ -309,7 +363,7 @@ TEST_F(TestDiscoveryBonjour, TickHandlesSocketActivity)
     }
     return kEtcPalErrOk;
   };
-  rdmnet_disc_tick();
+  rdmnet_disc_module_tick();
   EXPECT_EQ(DNSServiceProcessResult_fake.call_count, 1u);
   EXPECT_EQ(DNSServiceProcessResult_fake.arg0_history[0], DEFAULT_MONITOR_DNS_REF);
 }
@@ -322,7 +376,7 @@ TEST_F(TestDiscoveryBonjour, NormalResolveWorksCorrectly)
 
   ASSERT_EQ(DNSServiceResolve_fake.call_count, 1u);
   EXPECT_EQ(DNSServiceResolve_fake.arg2_val, 0u);
-  EXPECT_STREQ(DNSServiceResolve_fake.arg3_val, default_discovered_broker_.service_name);
+  EXPECT_STREQ(DNSServiceResolve_fake.arg3_val, default_discovered_broker_.service_instance_name);
   EXPECT_STREQ(DNSServiceResolve_fake.arg4_val, E133_DNSSD_SRV_TYPE);
   EXPECT_STREQ(DNSServiceResolve_fake.arg5_val, E133_DEFAULT_DOMAIN);
 
@@ -362,8 +416,10 @@ TEST_F(TestDiscoveryBonjour, DiscoveredBrokerCleanedUpAfterResolve)
   //  etcpal_poll_fake.return_val = 0;
   //  DNSServiceProcessResult_fake.return_val = kDNSServiceErr_NoError;
   //
-  //  rdmnet_disc_tick();
+  //  rdmnet_disc_module_tick();
   //  ASSERT_EQ(etcpal_poll_fake.call_count, 1u);
   //  ASSERT_EQ(etcpal_poll_fake.arg1_history[0], 1u);
   //  ASSERT_EQ(DNSServiceProcessResult_fake.call_count, 0u);
 }
+
+// TODO tests of malformed TXT records

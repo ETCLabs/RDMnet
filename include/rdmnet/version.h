@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,9 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/*!
- * \file rdmnet/version.h
- * \brief Provides the current version of the RDMnet library and executables.
- * \author Sam Kearney
+/**
+ * @file rdmnet/version.h
+ * @brief Provides the current version of the RDMnet library and executables.
  */
 
 #ifndef RDMNET_VERSION_H_
@@ -28,40 +27,36 @@
 
 /* clang-format off */
 
-/*!
- * \defgroup rdmnet_core_lib RDMnet Core Library
- * \brief Implementation of the core functions of RDMnet.
- *
- * This includes discovery, connections, and message packing and unpacking.
- *
+/**
+ * @addtogroup rdmnet_api_common
  * @{
  */
 
-/*!
- * \name RDMnet version numbers
+/**
+ * @name RDMnet version numbers
  * @{
  */
-#define RDMNET_VERSION_MAJOR 0 /*!< The major version. */
-#define RDMNET_VERSION_MINOR 3 /*!< The minor version. */
-#define RDMNET_VERSION_PATCH 0 /*!< The patch version. */
-#define RDMNET_VERSION_BUILD 9 /*!< The build number. */
-/*!
+#define RDMNET_VERSION_MAJOR 0 /**< The major version. */
+#define RDMNET_VERSION_MINOR 3 /**< The minor version. */
+#define RDMNET_VERSION_PATCH 0 /**< The patch version. */
+#define RDMNET_VERSION_BUILD 9 /**< The build number. */
+/**
  * @}
  */
 
-/*!
- * \name RDMnet version strings
+/**
+ * @name RDMnet version strings
  * @{
  */
 #define RDMNET_VERSION_STRING "0.3.0.9"
 #define RDMNET_VERSION_DATESTR "06.Apr.2020"
 #define RDMNET_VERSION_COPYRIGHT "Copyright 2020 ETC Inc."
 #define RDMNET_VERSION_PRODUCTNAME "RDMnet"
-/*!
+/**
  * @}
  */
 
-/*!
+/**
  * @}
  */
 

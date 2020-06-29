@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,11 @@
 
 #include "etcpal/netint.h"
 #include "etcpal/rbtree.h"
+#include "rdmnet/core/llrp_manager.h"
+#include "rdmnet/core/llrp_target.h"
+#include "rdmnet/core/mcast.h"
 #include "rdmnet/core/util.h"
-#include "rdmnet/private/llrp.h"
-#include "rdmnet/private/llrp_manager.h"
-#include "rdmnet/private/llrp_target.h"
-#include "rdmnet/private/mcast.h"
-#include "rdmnet/private/opts.h"
+#include "rdmnet/core/opts.h"
 
 #if RDMNET_DYNAMIC_MEM
 #include <stdlib.h>
@@ -38,11 +37,13 @@ EtcPalSockAddr kLlrpIpv4RespAddrInternal;
 EtcPalSockAddr kLlrpIpv6RespAddrInternal;
 EtcPalSockAddr kLlrpIpv4RequestAddrInternal;
 EtcPalSockAddr kLlrpIpv6RequestAddrInternal;
+EtcPalUuid     kLlrpBroadcastCidInternal;
 
 const EtcPalSockAddr* kLlrpIpv4RespAddr = &kLlrpIpv4RespAddrInternal;
 const EtcPalSockAddr* kLlrpIpv6RespAddr = &kLlrpIpv6RespAddrInternal;
 const EtcPalSockAddr* kLlrpIpv4RequestAddr = &kLlrpIpv4RequestAddrInternal;
 const EtcPalSockAddr* kLlrpIpv6RequestAddr = &kLlrpIpv6RequestAddrInternal;
+const EtcPalUuid*     kLlrpBroadcastCid = &kLlrpBroadcastCidInternal;
 
 EtcPalMacAddr kLlrpLowestHardwareAddr;
 
@@ -51,16 +52,16 @@ EtcPalMacAddr kLlrpLowestHardwareAddr;
 typedef struct LlrpRecvNetint
 {
   RdmnetMcastNetintId id;
-  size_t ref_count;
+  size_t              ref_count;
 } LlrpRecvNetint;
 
 typedef struct LlrpRecvSocket
 {
   bool created;
 
-  llrp_socket_t llrp_type;
-  etcpal_socket_t socket;
-  PolledSocketInfo poll_info;
+  llrp_socket_t      llrp_type;
+  etcpal_socket_t    socket;
+  RCPolledSocketInfo poll_info;
 
 #if RDMNET_DYNAMIC_MEM
   LlrpRecvNetint* netints;
@@ -86,84 +87,48 @@ static void init_recv_socket(LlrpRecvSocket* sock_struct, llrp_socket_t llrp_typ
 static void deinit_recv_socket(LlrpRecvSocket* sock_struct);
 
 static const EtcPalIpAddr* get_llrp_mcast_addr(llrp_socket_t llrp_type, etcpal_iptype_t ip_type);
-static LlrpRecvSocket* get_llrp_recv_sock(llrp_socket_t llrp_type, etcpal_iptype_t ip_type);
+static LlrpRecvSocket*     get_llrp_recv_sock(llrp_socket_t llrp_type, etcpal_iptype_t ip_type);
 static etcpal_error_t create_recv_socket(llrp_socket_t llrp_type, etcpal_iptype_t ip_type, LlrpRecvSocket* sock_struct);
 
-static void llrp_socket_activity(const EtcPalPollEvent* event, PolledSocketOpaqueData data);
+static void llrp_socket_activity(const EtcPalPollEvent* event, RCPolledSocketOpaqueData data);
 static void llrp_socket_error(etcpal_error_t err);
 
 /*************************** Function definitions ****************************/
 
-etcpal_error_t rdmnet_llrp_init(void)
+etcpal_error_t rc_llrp_module_init(void)
 {
-  bool target_initted = false;
-#if RDMNET_DYNAMIC_MEM
-  bool manager_initted = false;
-#endif
-
-  etcpal_inet_pton(kEtcPalIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_RESPONSE, &kLlrpIpv4RespAddrInternal.ip);
+  etcpal_string_to_ip(kEtcPalIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_RESPONSE, &kLlrpIpv4RespAddrInternal.ip);
   kLlrpIpv4RespAddrInternal.port = LLRP_PORT;
   init_recv_socket(&state.manager_recvsock_ipv4, kLlrpSocketTypeManager);
 
-  etcpal_inet_pton(kEtcPalIpTypeV6, LLRP_MULTICAST_IPV6_ADDRESS_RESPONSE, &kLlrpIpv6RespAddrInternal.ip);
+  etcpal_string_to_ip(kEtcPalIpTypeV6, LLRP_MULTICAST_IPV6_ADDRESS_RESPONSE, &kLlrpIpv6RespAddrInternal.ip);
   kLlrpIpv6RespAddrInternal.port = LLRP_PORT;
   init_recv_socket(&state.manager_recvsock_ipv6, kLlrpSocketTypeManager);
 
-  etcpal_inet_pton(kEtcPalIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_REQUEST, &kLlrpIpv4RequestAddrInternal.ip);
+  etcpal_string_to_ip(kEtcPalIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_REQUEST, &kLlrpIpv4RequestAddrInternal.ip);
   kLlrpIpv4RequestAddrInternal.port = LLRP_PORT;
   init_recv_socket(&state.target_recvsock_ipv4, kLlrpSocketTypeTarget);
 
-  etcpal_inet_pton(kEtcPalIpTypeV6, LLRP_MULTICAST_IPV6_ADDRESS_REQUEST, &kLlrpIpv6RequestAddrInternal.ip);
+  etcpal_string_to_ip(kEtcPalIpTypeV6, LLRP_MULTICAST_IPV6_ADDRESS_REQUEST, &kLlrpIpv6RequestAddrInternal.ip);
   kLlrpIpv6RequestAddrInternal.port = LLRP_PORT;
   init_recv_socket(&state.target_recvsock_ipv6, kLlrpSocketTypeTarget);
 
-  llrp_prot_init();
+  etcpal_string_to_uuid(LLRP_BROADCAST_CID, &kLlrpBroadcastCidInternal);
 
-  etcpal_error_t res;
-  target_initted = ((res = rdmnet_llrp_target_init()) == kEtcPalErrOk);
-
-#if RDMNET_DYNAMIC_MEM
-  if (res == kEtcPalErrOk)
-    manager_initted = ((res = rdmnet_llrp_manager_init()) == kEtcPalErrOk);
-#endif
-
-  if (res != kEtcPalErrOk)
-  {
-#if RDMNET_DYNAMIC_MEM
-    if (manager_initted)
-      rdmnet_llrp_manager_deinit();
-#endif
-    if (target_initted)
-      rdmnet_llrp_target_deinit();
-  }
-
-  return res;
+  return kEtcPalErrOk;
 }
 
-void rdmnet_llrp_deinit(void)
+void rc_llrp_module_deinit(void)
 {
-  rdmnet_llrp_target_deinit();
-#if RDMNET_DYNAMIC_MEM
-  rdmnet_llrp_manager_deinit();
-#endif
-
   deinit_recv_socket(&state.manager_recvsock_ipv4);
   deinit_recv_socket(&state.manager_recvsock_ipv6);
   deinit_recv_socket(&state.target_recvsock_ipv4);
   deinit_recv_socket(&state.target_recvsock_ipv6);
 }
 
-void rdmnet_llrp_tick(void)
+etcpal_error_t rc_llrp_recv_netint_add(const RdmnetMcastNetintId* id, llrp_socket_t llrp_type)
 {
-#if RDMNET_DYNAMIC_MEM
-  rdmnet_llrp_manager_tick();
-#endif
-  rdmnet_llrp_target_tick();
-}
-
-etcpal_error_t llrp_recv_netint_add(const RdmnetMcastNetintId* id, llrp_socket_t llrp_type)
-{
-  etcpal_error_t res = kEtcPalErrNotFound;
+  etcpal_error_t  res = kEtcPalErrNotFound;
   LlrpRecvSocket* recv_sock = get_llrp_recv_sock(llrp_type, id->ip_type);
   LlrpRecvNetint* netint = recv_sock->netints;
 
@@ -186,7 +151,7 @@ etcpal_error_t llrp_recv_netint_add(const RdmnetMcastNetintId* id, llrp_socket_t
 
     if (res == kEtcPalErrOk && netint->ref_count == 0)
     {
-      res = rdmnet_subscribe_mcast_recv_socket(recv_sock->socket, &netint->id, get_llrp_mcast_addr(llrp_type, id->ip_type));
+      res = rc_mcast_subscribe_recv_socket(recv_sock->socket, &netint->id, get_llrp_mcast_addr(llrp_type, id->ip_type));
     }
 
     if (res == kEtcPalErrOk)
@@ -203,7 +168,7 @@ etcpal_error_t llrp_recv_netint_add(const RdmnetMcastNetintId* id, llrp_socket_t
   return res;
 }
 
-void llrp_recv_netint_remove(const RdmnetMcastNetintId* id, llrp_socket_t llrp_type)
+void rc_llrp_recv_netint_remove(const RdmnetMcastNetintId* id, llrp_socket_t llrp_type)
 {
   LlrpRecvSocket* recv_sock = get_llrp_recv_sock(llrp_type, id->ip_type);
   LlrpRecvNetint* netint = recv_sock->netints;
@@ -219,7 +184,7 @@ void llrp_recv_netint_remove(const RdmnetMcastNetintId* id, llrp_socket_t llrp_t
   {
     if (--netint->ref_count == 0)
     {
-      rdmnet_unsubscribe_mcast_recv_socket(recv_sock->socket, &netint->id, get_llrp_mcast_addr(llrp_type, id->ip_type));
+      rc_mcast_unsubscribe_recv_socket(recv_sock->socket, &netint->id, get_llrp_mcast_addr(llrp_type, id->ip_type));
     }
   }
 }
@@ -228,7 +193,7 @@ void init_recv_socket(LlrpRecvSocket* sock_struct, llrp_socket_t llrp_type)
 {
   // Initialize the network interface array from the global multicast network interface array.
   const RdmnetMcastNetintId* mcast_array;
-  size_t array_size = rdmnet_get_mcast_netint_array(&mcast_array);
+  size_t                     array_size = rc_mcast_get_netint_array(&mcast_array);
 
   sock_struct->num_netints = array_size;
 #if RDMNET_DYNAMIC_MEM
@@ -257,8 +222,8 @@ void deinit_recv_socket(LlrpRecvSocket* sock_struct)
     {
       if (netint->ref_count > 0)
       {
-        rdmnet_unsubscribe_mcast_recv_socket(sock_struct->socket, &netint->id,
-                                             get_llrp_mcast_addr(sock_struct->llrp_type, netint->id.ip_type));
+        rc_mcast_unsubscribe_recv_socket(sock_struct->socket, &netint->id,
+                                         get_llrp_mcast_addr(sock_struct->llrp_type, netint->id.ip_type));
         netint->ref_count = 0;
       }
     }
@@ -266,7 +231,7 @@ void deinit_recv_socket(LlrpRecvSocket* sock_struct)
     free(sock_struct->netints);
 #endif
 
-    rdmnet_core_remove_polled_socket(sock_struct->socket);
+    rc_remove_polled_socket(sock_struct->socket);
     etcpal_close(sock_struct->socket);
     sock_struct->created = false;
   }
@@ -275,13 +240,13 @@ void deinit_recv_socket(LlrpRecvSocket* sock_struct)
 etcpal_error_t create_recv_socket(llrp_socket_t llrp_type, etcpal_iptype_t ip_type, LlrpRecvSocket* sock_struct)
 {
   etcpal_error_t res =
-      rdmnet_create_mcast_recv_socket(get_llrp_mcast_addr(llrp_type, ip_type), LLRP_PORT, &sock_struct->socket);
+      rc_mcast_create_recv_socket(get_llrp_mcast_addr(llrp_type, ip_type), LLRP_PORT, &sock_struct->socket);
 
   if (res == kEtcPalErrOk)
   {
     sock_struct->poll_info.callback = llrp_socket_activity;
     sock_struct->poll_info.data.int_val = (int)llrp_type;
-    res = rdmnet_core_add_polled_socket(sock_struct->socket, ETCPAL_POLL_IN, &sock_struct->poll_info);
+    res = rc_add_polled_socket(sock_struct->socket, ETCPAL_POLL_IN, &sock_struct->poll_info);
   }
 
   if (res == kEtcPalErrOk)
@@ -296,7 +261,7 @@ etcpal_error_t create_recv_socket(llrp_socket_t llrp_type, etcpal_iptype_t ip_ty
   return res;
 }
 
-void llrp_socket_activity(const EtcPalPollEvent* event, PolledSocketOpaqueData data)
+void llrp_socket_activity(const EtcPalPollEvent* event, RCPolledSocketOpaqueData data)
 {
   static uint8_t llrp_recv_buf[LLRP_MAX_MESSAGE_SIZE];
 
@@ -307,7 +272,7 @@ void llrp_socket_activity(const EtcPalPollEvent* event, PolledSocketOpaqueData d
   else if (event->events & ETCPAL_POLL_IN)
   {
     EtcPalSockAddr from_addr;
-    int recv_res = etcpal_recvfrom(event->socket, llrp_recv_buf, LLRP_MAX_MESSAGE_SIZE, 0, &from_addr);
+    int            recv_res = etcpal_recvfrom(event->socket, llrp_recv_buf, LLRP_MAX_MESSAGE_SIZE, 0, &from_addr);
     if (recv_res <= 0)
     {
       if (recv_res != kEtcPalErrMsgSize)
@@ -323,14 +288,14 @@ void llrp_socket_activity(const EtcPalPollEvent* event, PolledSocketOpaqueData d
         netint_id.ip_type = from_addr.ip.type;
 
         if ((llrp_socket_t)data.int_val == kLlrpSocketTypeManager)
-          manager_data_received(llrp_recv_buf, (size_t)recv_res, &netint_id);
+          rc_llrp_manager_data_received(llrp_recv_buf, (size_t)recv_res, &netint_id);
         else
-          target_data_received(llrp_recv_buf, (size_t)recv_res, &netint_id);
+          rc_llrp_target_data_received(llrp_recv_buf, (size_t)recv_res, &netint_id);
       }
       else if (RDMNET_CAN_LOG(ETCPAL_LOG_WARNING))
       {
-        char addr_str[ETCPAL_INET6_ADDRSTRLEN];
-        etcpal_inet_ntop(&from_addr.ip, addr_str, ETCPAL_INET6_ADDRSTRLEN);
+        char addr_str[ETCPAL_IP_STRING_BYTES];
+        etcpal_ip_to_string(&from_addr.ip, addr_str);
         RDMNET_LOG_WARNING("Couldn't reply to LLRP message from %s:%u because no reply route could be found.", addr_str,
                            from_addr.port);
       }

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,32 +17,34 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-/// \file broker_client.h
+/// @file broker_client.h
 
 #ifndef BROKER_CLIENT_H_
 #define BROKER_CLIENT_H_
 
-#include <queue>
+#include <chrono>
 #include <memory>
 #include <map>
+#include <queue>
 #include <stdexcept>
-
+#include "etcpal/cpp/error.h"
 #include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/lock.h"
+#include "etcpal/cpp/timer.h"
 #include "etcpal/cpp/uuid.h"
+#include "etcpal/socket.h"
 #include "rdm/message.h"
-#include "rdmnet/client.h"
 #include "rdmnet/core/message.h"
 #include "rdmnet/core/rpt_prot.h"
-#include "broker_threads.h"
+#include "rdmnet/defs.h"
 
 struct MessageRef
 {
   MessageRef() : size_sent(0) {}
 
   std::unique_ptr<uint8_t[]> data;
-  size_t size;
-  size_t size_sent;
+  size_t                     size;
+  size_t                     size_sent;
 };
 
 // RPT RDM messages are two sets of data, the RPT header and the RDM message.
@@ -55,99 +57,98 @@ struct RPTMessageRef
   RdmBuffer msg;
 };
 
-/*! \brief A generic Client.
- *  Each Component that connects to a Broker is a Client. The Broker uses the
- *  common functionality defined in this class to handle each Client to which
- *  it is connected. */
+// A generic client.
+// Each component that connects to a broker is a client. The broker uses the common functionality
+// defined in this class to handle each client to which it is connected.
+//
+// A BrokerClient on its own is only capable of sending broker protocol messages and is intended to
+// represent clients that have not yet sent an RDMnet connect request (aka "pending" clients).
 class BrokerClient
 {
 public:
-  BrokerClient(rdmnet_conn_t conn) : conn_(conn) {}
-  BrokerClient(rdmnet_conn_t conn, size_t max_q_size) : conn_(conn), max_q_size_(max_q_size) {}
+  using Handle = int;
+  static constexpr Handle kInvalidHandle = -1;
+
+  BrokerClient(Handle new_handle, etcpal_socket_t new_socket, size_t new_max_q_size = 0)
+      : handle(new_handle), socket(new_socket), max_q_size(new_max_q_size)
+  {
+  }
   // Non-default copy constructor to avoid copying the message queue and lock.
   BrokerClient(const BrokerClient& other)
       : cid(other.cid)
       , client_protocol(other.client_protocol)
       , addr(other.addr)
-      , conn_(other.conn_)
-      , max_q_size_(other.max_q_size_)
+      , handle(other.handle)
+      , socket(other.socket)
+      , max_q_size(other.max_q_size)
   {
   }
   virtual ~BrokerClient() = default;
 
   virtual bool Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg);
-  virtual bool Send() { return false; }
+  virtual bool Send(const etcpal::Uuid& broker_cid);
 
-  // Read/write lock functions. Prefer use of ClientReadGuard and
-  // ClientWriteGuard to these functions where possible.
-  bool ReadLock() const { return lock_.ReadLock(); }
-  void ReadUnlock() const { lock_.ReadUnlock(); }
-  bool WriteLock() const { return lock_.WriteLock(); }
-  void WriteUnlock() const { lock_.WriteUnlock(); }
+  bool TcpConnExpired() const { return heartbeat_timer_.IsExpired(); }
+  void MessageReceived() { heartbeat_timer_.Reset(); }
 
-  etcpal::Uuid cid{};
-  client_protocol_t client_protocol{kClientProtocolUnknown};
-  etcpal::SockAddr addr{};
+  etcpal::Uuid           cid{};
+  client_protocol_t      client_protocol{kClientProtocolUnknown};
+  etcpal::SockAddr       addr{};
+  Handle                 handle{kInvalidHandle};
+  mutable etcpal::RwLock lock;
+  etcpal_socket_t        socket{ETCPAL_SOCKET_INVALID};
+  size_t                 max_q_size{0};
 
 protected:
   bool PushPostSizeCheck(const etcpal::Uuid& sender_cid, const BrokerMessage& msg);
+  bool SendNull(const etcpal::Uuid& broker_cid);
 
-  mutable etcpal::RwLock lock_;
-  rdmnet_conn_t conn_{RDMNET_CONN_INVALID};
-  size_t max_q_size_{0};
   std::queue<MessageRef> broker_msgs_;
+  etcpal::Timer          send_timer_{std::chrono::seconds(E133_TCP_HEARTBEAT_INTERVAL_SEC)};
+  etcpal::Timer          heartbeat_timer_{std::chrono::seconds(E133_HEARTBEAT_TIMEOUT_SEC)};
 };
 
 class ClientReadGuard
 {
 public:
-  explicit ClientReadGuard(BrokerClient& client) : client_(client)
-  {
-    if (!client_.ReadLock())
-    {
-      throw std::runtime_error("Broker failed to take a read lock on a client.");
-    }
-  }
-  ~ClientReadGuard() { client_.ReadUnlock(); }
+  explicit ClientReadGuard(BrokerClient& client) : rg_(client.lock) {}
 
 private:
-  BrokerClient& client_;
+  etcpal::ReadGuard rg_;
 };
 
 class ClientWriteGuard
 {
 public:
-  explicit ClientWriteGuard(BrokerClient& client) : client_(client)
-  {
-    if (!client_.WriteLock())
-    {
-      throw std::runtime_error("Broker failed to take a write lock on a client.");
-    }
-  }
-  ~ClientWriteGuard() { client_.WriteUnlock(); }
+  explicit ClientWriteGuard(BrokerClient& client) : wg_(client.lock) {}
 
 private:
-  BrokerClient& client_;
+  etcpal::WriteGuard wg_;
 };
 
 class RPTClient : public BrokerClient
 {
 public:
-  RPTClient(rpt_client_type_t new_ctype, const RdmUid& new_uid, const BrokerClient& prev_client)
-      : BrokerClient(prev_client), uid(new_uid), client_type(new_ctype)
+  RPTClient(const RdmnetRptClientEntry& client_entry, const BrokerClient& prev_client)
+      : BrokerClient(prev_client)
+      , uid(client_entry.uid)
+      , client_type(client_entry.type)
+      , binding_cid(client_entry.binding_cid)
   {
+    client_protocol = kClientProtocolRPT;
+    cid = client_entry.cid;
   }
   virtual ~RPTClient() {}
 
-  virtual bool Push(rdmnet_conn_t /*from_conn*/, const etcpal::Uuid& /*sender_cid*/, const RptMessage& /*msg*/)
+  virtual bool Push(Handle /*from_conn*/, const etcpal::Uuid& /*sender_cid*/, const RptMessage& /*msg*/)
   {
     return false;
   }
   virtual bool Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
 
-  RdmUid uid{};
+  RdmUid            uid{};
   rpt_client_type_t client_type{kRPTClientTypeUnknown};
-  etcpal::Uuid binding_cid{};
+  etcpal::Uuid      binding_cid{};
 
 protected:
   bool PushPostSizeCheck(const etcpal::Uuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg);
@@ -164,20 +165,19 @@ class RPTController : public RPTClient
 {
 public:
   // TODO max queue size
-  RPTController(size_t max_q_size, const ClientEntryData& cli_entry, const BrokerClient& prev_client)
-      : RPTClient(cli_entry.data.rpt_data.client_type, cli_entry.data.rpt_data.client_uid, prev_client)
+  RPTController(size_t new_max_q_size, const RdmnetRptClientEntry& cli_entry, const BrokerClient& prev_client)
+      : RPTClient(cli_entry, prev_client)
   {
-    max_q_size_ = max_q_size;
-    cid = cli_entry.client_cid;
-    client_protocol = cli_entry.client_protocol;
+    max_q_size = new_max_q_size;
   }
   virtual ~RPTController() {}
 
-  virtual bool Push(rdmnet_conn_t from_conn, const etcpal::Uuid& sender_cid, const RptMessage& msg) override;
+  virtual bool Push(Handle from_conn, const etcpal::Uuid& sender_cid, const RptMessage& msg) override;
   virtual bool Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
   virtual bool Push(const etcpal::Uuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg);
-  virtual bool Send() override;
+  virtual bool Send(const etcpal::Uuid& broker_cid) override;
 
+protected:
   std::queue<MessageRef> rpt_msgs_;
 };
 
@@ -185,23 +185,21 @@ public:
 class RPTDevice : public RPTClient
 {
 public:
-  RPTDevice(size_t max_q_size, const ClientEntryData& cli_entry, const BrokerClient& prev_client)
-      : RPTClient(cli_entry.data.rpt_data.client_type, cli_entry.data.rpt_data.client_uid, prev_client)
+  RPTDevice(size_t new_max_q_size, const RdmnetRptClientEntry& cli_entry, const BrokerClient& prev_client)
+      : RPTClient(cli_entry, prev_client)
   {
-    max_q_size_ = max_q_size;
-    cid = cli_entry.client_cid;
-    client_protocol = cli_entry.client_protocol;
+    max_q_size = new_max_q_size;
   }
   virtual ~RPTDevice() {}
 
-  virtual bool Push(rdmnet_conn_t from_conn, const etcpal::Uuid& sender_cid, const RptMessage& msg) override;
+  virtual bool Push(Handle from_conn, const etcpal::Uuid& sender_cid, const RptMessage& msg) override;
   virtual bool Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
-  virtual bool Send() override;
+  virtual bool Send(const etcpal::Uuid& broker_cid) override;
 
 protected:
-  rdmnet_conn_t last_controller_serviced_{RDMNET_CONN_INVALID};
-  size_t rpt_msgs_total_size_{0};
-  std::map<rdmnet_conn_t, std::queue<MessageRef>> rpt_msgs_;
+  Handle                                   last_controller_serviced_{kInvalidHandle};
+  size_t                                   rpt_msgs_total_size_{0};
+  std::map<Handle, std::queue<MessageRef>> rpt_msgs_;
 };
 
 #endif  // BROKER_CLIENT_H_

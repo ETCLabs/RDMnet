@@ -1,0 +1,18 @@
+// A notification PDU containing an RDM SET command and response
+
+41 53 43 2d 45 31 2e 31 37 00 00 00             // ACN packet identifier
+00 00 00 76                                     // Total length
+f0 00 76 00 00 00 05                            // Root layer PDU flags, length, vector
+de ad be ef ba ad f0 0d fa ce b0 0c d1 5e ea 5e // Sender CID
+f0 00 5f 00 00 00 03 // RPT PDU flags, length, vector
+12 34 56 78 aa aa    // Source UID
+00 04                // Source Endpoint ID
+ff fc ff ff ff ff    // Destination UID
+00 00                // Destination Endpoint ID
+12 34 56 78          // Sequence Number
+00                   // Reserved
+f0 00 43 00 00 00 01 // Notification PDU flags, length, vector
+f0 00 1f cc          // RDM Command PDU flags, length, vector
+01 1a 12 34 56 78 9a bc cb a9 87 65 43 21 00 00 00 00 00 30 00 f0 02 00 10 07 47 // RDM SET Command
+f0 00 1d cc          // RDM Command PDU flags, length, vector
+01 18 cb a9 87 65 43 21 12 34 56 78 9a bc 00 00 00 00 00 31 00 f0 00 07 34 // RDM SET_RESPONSE Command

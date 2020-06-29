@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,16 +22,14 @@
 #include <iostream>
 #include <cstring>
 #include "etcpal/netint.h"
-#include "etcpal/thread.h"
+#include "etcpal/cpp/thread.h"
+#include "rdmnet/cpp/common.h"
 #include "rdmnet/version.h"
 
 void BrokerShell::HandleScopeChanged(const std::string& new_scope)
 {
   if (log_)
-    log_->Info("Scope change detected, restarting broker and applying changes");
-
-  new_scope_ = new_scope;
-  restart_requested_ = true;
+    log_->Info("Broker scope changed to '%s'.", new_scope.c_str());
 }
 
 void BrokerShell::NetworkChanged()
@@ -50,7 +48,7 @@ void BrokerShell::AsyncShutdown()
   shutdown_requested_ = true;
 }
 
-void BrokerShell::ApplySettingsChanges(rdmnet::BrokerSettings& settings)
+void BrokerShell::ApplySettingsChanges(rdmnet::Broker::Settings& settings)
 {
   if (!new_scope_.empty())
   {
@@ -59,34 +57,38 @@ void BrokerShell::ApplySettingsChanges(rdmnet::BrokerSettings& settings)
   }
 }
 
-int BrokerShell::Run(rdmnet::BrokerLog& log)
+int BrokerShell::Run(etcpal::Logger& log)
 {
   PrintWarningMessage();
 
   log_ = &log;
 
-  rdmnet::BrokerSettings broker_settings(etcpal::Uuid::V4(), 0x6574);
+  auto res = rdmnet::Init(log);
+  if (!res)
+  {
+    std::cout << "RDMnet library failed to initialize: " << res.ToString() << '\n';
+    return 1;
+  }
+
+  rdmnet::Broker::Settings broker_settings(etcpal::Uuid::V4(), 0x6574);
 
   broker_settings.scope = initial_data_.scope;
   broker_settings.dns.manufacturer = "ETC";
   broker_settings.dns.model = "RDMnet Broker Example App";
   broker_settings.listen_port = initial_data_.port;
-  broker_settings.listen_macs = initial_data_.macs;
-  broker_settings.listen_addrs = initial_data_.ifaces;
 
   rdmnet::Broker broker;
 
-  if (!broker.Startup(broker_settings, this, log_))
+  res = broker.Startup(broker_settings, log_, this);
+  if (!res)
   {
-    std::cout << "Broker failed to start.\n";
+    std::cout << "Broker failed to start: " << res.ToString() << '\n';
     return 1;
   }
 
   // We want this to run forever in a console
   while (true)
   {
-    broker.Tick();
-
     if (shutdown_requested_)
     {
       break;
@@ -94,18 +96,16 @@ int BrokerShell::Run(rdmnet::BrokerLog& log)
     else if (restart_requested_)
     {
       restart_requested_ = false;
-
-      broker_settings = broker.GetSettings();
+      auto settings = broker.settings();
       broker.Shutdown();
-
-      ApplySettingsChanges(broker_settings);
-      broker.Startup(broker_settings, this, log_);
+      broker.Startup(broker_settings, log_, this);
     }
 
-    etcpal_thread_sleep(300);
+    etcpal::Thread::Sleep(300);
   }
 
   broker.Shutdown();
+  rdmnet::Deinit();
   return 0;
 }
 

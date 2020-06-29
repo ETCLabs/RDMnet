@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,10 @@
 #include "example_device.h"
 #include "win_device_log.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
+
 void print_help(wchar_t* app_name)
 {
   printf("Usage: %ls [OPTION]...\n\n", app_name);
@@ -51,21 +55,17 @@ bool set_scope(wchar_t* arg, char* scope_buf)
 bool set_static_broker(wchar_t* arg, EtcPalSockAddr* static_broker_addr)
 {
   wchar_t* sep = wcschr(arg, ':');
-  if (sep != NULL && sep - arg < ETCPAL_INET6_ADDRSTRLEN)
+  if (sep != NULL && sep - arg < ETCPAL_IP_STRING_BYTES)
   {
-    wchar_t ip_str[ETCPAL_INET6_ADDRSTRLEN];
-    ptrdiff_t ip_str_len = sep - arg;
+    wchar_t                 ip_str[ETCPAL_IP_STRING_BYTES];
+    ptrdiff_t               ip_str_len = sep - arg;
     struct sockaddr_storage tst_addr;
-
-    //    struct in_addr tst_addr;
-    //    struct in6_addr tst_addr6;
-    INT convert_res;
 
     wmemcpy(ip_str, arg, ip_str_len);
     ip_str[ip_str_len] = '\0';
 
-    /* Try to convert the address in both IPv4 and IPv6 forms. */
-    convert_res = InetPtonW(AF_INET, ip_str, &((struct sockaddr_in*)&tst_addr)->sin_addr);
+    // Try to convert the address in both IPv4 and IPv6 forms.
+    INT convert_res = InetPtonW(AF_INET, ip_str, &((struct sockaddr_in*)&tst_addr)->sin_addr);
     if (convert_res == 1)
     {
       tst_addr.ss_family = AF_INET;
@@ -101,16 +101,17 @@ BOOL WINAPI console_handler(DWORD signal)
 
 int wmain(int argc, wchar_t* argv[])
 {
-  etcpal_error_t res = kEtcPalErrOk;
-  bool should_exit = false;
-  RdmnetScopeConfig scope_config;
+  etcpal_error_t         res = kEtcPalErrOk;
+  bool                   should_exit = false;
+  static char            initial_scope[E133_SCOPE_STRING_PADDED_LENGTH];
+  EtcPalSockAddr         initial_static_broker_addr = {0, ETCPAL_IP_INVALID_INIT};
   const EtcPalLogParams* lparams;
 
   LARGE_INTEGER counter;
   QueryPerformanceCounter(&counter);
   srand(counter.LowPart);
 
-  RDMNET_CLIENT_SET_DEFAULT_SCOPE(&scope_config);
+  strcpy(initial_scope, E133_DEFAULT_SCOPE);
 
   if (argc > 1)
   {
@@ -118,7 +119,7 @@ int wmain(int argc, wchar_t* argv[])
     {
       if (_wcsnicmp(argv[i], L"--scope=", 8) == 0)
       {
-        if (!set_scope(&argv[i][8], scope_config.scope))
+        if (!set_scope(&argv[i][8], initial_scope))
         {
           print_help(argv[0]);
           should_exit = true;
@@ -127,11 +128,7 @@ int wmain(int argc, wchar_t* argv[])
       }
       else if (_wcsnicmp(argv[i], L"--broker=", 9) == 0)
       {
-        if (set_static_broker(&argv[i][9], &scope_config.static_broker_addr))
-        {
-          scope_config.has_static_broker_addr = true;
-        }
-        else
+        if (!set_static_broker(&argv[i][9], &initial_static_broker_addr))
         {
           print_help(argv[0]);
           should_exit = true;
@@ -155,21 +152,21 @@ int wmain(int argc, wchar_t* argv[])
   if (should_exit)
     return 1;
 
-  device_log_init("RDMnetDevice.log");
+  device_log_init();
   lparams = device_get_log_params();
 
-  /* Handle console signals */
+  // Handle console signals
   if (!SetConsoleCtrlHandler(console_handler, TRUE))
   {
-    etcpal_log(lparams, ETCPAL_LOG_ERR, "Could not set console signal handler.");
+    etcpal_log(lparams, ETCPAL_LOG_CRIT, "Could not set console signal handler.");
     return 1;
   }
 
-  /* Startup the device */
-  res = device_init(&scope_config, lparams);
+  // Startup the device
+  res = device_init(lparams, initial_scope, &initial_static_broker_addr);
   if (res != kEtcPalErrOk)
   {
-    etcpal_log(lparams, ETCPAL_LOG_ERR, "Device failed to initialize: '%s'", etcpal_strerror(res));
+    etcpal_log(lparams, ETCPAL_LOG_CRIT, "Device failed to initialize: '%s'", etcpal_strerror(res));
     return 1;
   }
 

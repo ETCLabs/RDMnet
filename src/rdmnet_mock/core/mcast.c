@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,43 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#include "rdmnet_mock/private/mcast.h"
+#include "rdmnet_mock/core/mcast.h"
 
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_mcast_init, const RdmnetNetintConfig*);
-DEFINE_FAKE_VOID_FUNC(rdmnet_mcast_deinit);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_mcast_module_init, const RdmnetNetintConfig*);
+DEFINE_FAKE_VOID_FUNC(rc_mcast_module_deinit);
 
-DEFINE_FAKE_VALUE_FUNC(size_t, rdmnet_get_mcast_netint_array, const RdmnetMcastNetintId**);
-DEFINE_FAKE_VALUE_FUNC(bool, rdmnet_mcast_netint_is_valid, const RdmnetMcastNetintId*);
-DEFINE_FAKE_VALUE_FUNC(const EtcPalMacAddr*, rdmnet_get_lowest_mac_addr);
+DEFINE_FAKE_VALUE_FUNC(size_t, rc_mcast_get_netint_array, const RdmnetMcastNetintId**);
+DEFINE_FAKE_VALUE_FUNC(bool, rc_mcast_netint_is_valid, const RdmnetMcastNetintId*);
+DEFINE_FAKE_VALUE_FUNC(const EtcPalMacAddr*, rc_mcast_get_lowest_mac_addr);
 
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_get_mcast_send_socket, const RdmnetMcastNetintId*, etcpal_socket_t*);
-DEFINE_FAKE_VOID_FUNC(rdmnet_release_mcast_send_socket, const RdmnetMcastNetintId*);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_create_mcast_recv_socket, const EtcPalIpAddr*, uint16_t, etcpal_socket_t*);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_subscribe_mcast_recv_socket, etcpal_socket_t, const RdmnetMcastNetintId*,
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t,
+                       rc_mcast_get_send_socket,
+                       const RdmnetMcastNetintId*,
+                       uint16_t,
+                       etcpal_socket_t*);
+DEFINE_FAKE_VOID_FUNC(rc_mcast_release_send_socket, const RdmnetMcastNetintId*, uint16_t);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_mcast_create_recv_socket, const EtcPalIpAddr*, uint16_t, etcpal_socket_t*);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t,
+                       rc_mcast_subscribe_recv_socket,
+                       etcpal_socket_t,
+                       const RdmnetMcastNetintId*,
                        const EtcPalIpAddr*);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_unsubscribe_mcast_recv_socket, etcpal_socket_t, const RdmnetMcastNetintId*,
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t,
+                       rc_mcast_unsubscribe_recv_socket,
+                       etcpal_socket_t,
+                       const RdmnetMcastNetintId*,
                        const EtcPalIpAddr*);
+
+void rc_mcast_reset_all_fakes(void)
+{
+  RESET_FAKE(rc_mcast_module_init);
+  RESET_FAKE(rc_mcast_module_deinit);
+  RESET_FAKE(rc_mcast_get_netint_array);
+  RESET_FAKE(rc_mcast_netint_is_valid);
+  RESET_FAKE(rc_mcast_get_lowest_mac_addr);
+  RESET_FAKE(rc_mcast_get_send_socket);
+  RESET_FAKE(rc_mcast_release_send_socket);
+  RESET_FAKE(rc_mcast_create_recv_socket);
+  RESET_FAKE(rc_mcast_subscribe_recv_socket);
+  RESET_FAKE(rc_mcast_unsubscribe_recv_socket);
+}

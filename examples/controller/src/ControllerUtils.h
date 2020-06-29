@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,13 +39,6 @@
 
 #endif
 
-// A representation of an optional static Broker configuration.
-struct StaticBrokerConfig
-{
-  bool valid{false};
-  etcpal::SockAddr addr;
-};
-
 // Some definitions that aren't provided elsewhere
 constexpr uint16_t kRdmnetMaxScopeSlotNumber = 0xFFFF;
-constexpr size_t kRdmDeviceLabelMaxLength = 32u;
+constexpr size_t   kRdmDeviceLabelMaxLength = 32u;

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@
 #include <map>
 #include "etcpal/cpp/uuid.h"
 #include "rdm/uid.h"
-#include "rdmnet/core/connection.h"
+#include "broker_client.h"
 
-/// \brief Keeps track of all UIDs tracked by this Broker, and generates new Dynamic UIDs upon
+/// @brief Keeps track of all UIDs tracked by this Broker, and generates new Dynamic UIDs upon
 ///        request.
 ///
 /// This class does very little validation of UIDs - that is expected to be done before this class
@@ -44,12 +44,12 @@ public:
     kDuplicateId
   };
 
-  AddResult AddStaticUid(rdmnet_conn_t conn_handle, const RdmUid& static_uid);
-  AddResult AddDynamicUid(rdmnet_conn_t conn_handle, const etcpal::Uuid& cid_or_rid, RdmUid& new_dynamic_uid);
+  AddResult AddStaticUid(BrokerClient::Handle client_handle, const RdmUid& static_uid);
+  AddResult AddDynamicUid(BrokerClient::Handle client_handle, const etcpal::Uuid& cid_or_rid, RdmUid& new_dynamic_uid);
 
   void RemoveUid(const RdmUid& uid);
 
-  bool UidToHandle(const RdmUid& uid, rdmnet_conn_t& conn_handle) const;
+  bool UidToHandle(const RdmUid& uid, BrokerClient::Handle& client_handle) const;
 
   void SetNextDeviceId(uint32_t next_device_id) { next_device_id_ = next_device_id; }
 
@@ -59,14 +59,14 @@ private:
     explicit ReservationData(const RdmUid& uid) : assigned_uid(uid) {}
 
     RdmUid assigned_uid;
-    bool currently_connected{true};
+    bool   currently_connected{true};
   };
   struct UidData
   {
-    explicit UidData(rdmnet_conn_t conn_handle) : connection_handle(conn_handle) {}
+    explicit UidData(BrokerClient::Handle client_handle_in) : client_handle(client_handle_in) {}
 
-    rdmnet_conn_t connection_handle;
-    ReservationData* reservation{nullptr};
+    BrokerClient::Handle client_handle;
+    ReservationData*     reservation{nullptr};
   };
 
   // The uid-keyed lookup table
@@ -76,7 +76,7 @@ private:
   std::map<etcpal::Uuid, ReservationData> reservations_;
   // The next dynamic RDM Device ID that will be assigned
   uint32_t next_device_id_{1};
-  size_t max_uid_capacity_{kDefaultMaxUidCapacity};
+  size_t   max_uid_capacity_{kDefaultMaxUidCapacity};
 };
 
 #endif  // BROKER_UID_MANAGER_H_

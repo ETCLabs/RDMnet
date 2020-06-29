@@ -12,7 +12,7 @@
 
 ################################################################################
 ##### Setup this script and get the current gh-pages branch.               #####
-
+echo 'Publishing documentation...'
 # Exit with nonzero exit code if anything fails
 set -e
 
@@ -20,8 +20,6 @@ set -e
 cd ${BUILD_SOURCESDIRECTORY}
 git submodule init
 git submodule update
-
-echo 'Publishing documentation...'
 
 # Create a clean working directory for this script.
 cd docs
@@ -42,7 +40,7 @@ git config user.email "azure@microsoft.com"
 ################################################################################
 ##### Generate the Doxygen code documentation and log the output.          #####
 cd ../..
-python doxygen_generate_from_ci.py
+python generate_doxygen.py
 cd build/${GH_REPO_NAME}
 
 ################################################################################

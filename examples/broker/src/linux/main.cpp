@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,12 @@
 #include <iostream>
 #include <map>
 #include <netdb.h>
+#include <string>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <vector>
+#include "etcpal/netint.h"
 #include "broker_shell.h"
 #include "linux_broker_log.h"
 
@@ -38,16 +41,9 @@ void PrintHelp(const char* app_name)
   std::cout << "Options:\n";
   std::cout << "  --scope=SCOPE         Configures the RDMnet Scope this Broker runs on to\n";
   std::cout << "                        SCOPE. By default, the default RDMnet scope is used.\n";
-  std::cout << "  --ifaces=IFACE_LIST   Mutually exclusive with --macs. A comma-separated list\n";
-  std::cout << "                        of local network interface IP addresses to use, e.g.\n";
-  std::cout << "                        10.101.50.60. Note: using --macs is preferred; with\n";
-  std::cout << "                        --ifaces, if an interface IP changes, the broker will\n";
-  std::cout << "                        likely stop functioning. --ifaces is fine for quick\n";
-  std::cout << "                        tests. By default, all available interfaces are used.\n";
-  std::cout << "  --macs=MAC_LIST       Mutually exclusive with --ifaces. A comma-separated list\n";
-  std::cout << "                        of local network interface mac addresses to use, e.g.\n";
-  std::cout << "                        00:c0:16:11:da:b3. By default, all available interfaces\n";
-  std::cout << "                        are used.\n";
+  std::cout << "  --ifaces=IFACE_LIST   A comma-separated list of local network interface names\n";
+  std::cout << "                        to use, e.g. 'eth0,wlan0'. By default, all available\n";
+  std::cout << "                        interfaces are used.\n";
   std::cout << "  --port=PORT           The port that this broker instance should use. By\n";
   std::cout << "                        default, an ephemeral port is used.\n";
   std::cout << "  --log-level=LOG_LEVEL Set the logging output level mask, using standard syslog\n";
@@ -70,66 +66,38 @@ bool ParseAndSetScope(const char* scope_str, BrokerShell& broker_shell)
 // Parse the --ifaces=IFACE_LIST command line option and transfer it to the BrokerShell instance.
 bool ParseAndSetIfaceList(char* iface_list_str, BrokerShell& broker_shell)
 {
-  std::set<etcpal::IpAddr> addrs;
+  std::vector<std::string> netint_names;
+
+  const EtcPalNetintInfo* netints = etcpal_netint_get_interfaces();
+  size_t                  num_netints = etcpal_netint_get_num_interfaces();
 
   if (strlen(iface_list_str) != 0)
   {
     char* context;
     for (char* p = strtok_r(iface_list_str, ",", &context); p != NULL; p = strtok_r(NULL, ",", &context))
     {
-      etcpal::IpAddr addr;
-
-      struct addrinfo ai_hints;
-      ai_hints.ai_flags = AI_NUMERICHOST;
-      ai_hints.ai_family = AF_UNSPEC;
-      ai_hints.ai_socktype = 0;
-      ai_hints.ai_protocol = 0;
-      ai_hints.ai_addrlen = 0;
-      ai_hints.ai_addr = nullptr;
-      ai_hints.ai_canonname = nullptr;
-      ai_hints.ai_next = nullptr;
-
-      struct addrinfo* gai_result;
-      int res = getaddrinfo(p, nullptr, &ai_hints, &gai_result);
-      if (res == 0)
+      std::string interface_name = p;
+      bool        found = false;
+      for (const EtcPalNetintInfo* netint = netints; netint < netints + num_netints; ++netint)
       {
-        if (gai_result->ai_addr)
+        if (interface_name == netint->id)
         {
-          ip_os_to_etcpal(gai_result->ai_addr, &addr.get());
-          addrs.insert(addr);
+          found = true;
+          if (std::find(netint_names.begin(), netint_names.end(), interface_name) == netint_names.end())
+            netint_names.push_back(interface_name);
+          else
+            std::cout << "Skipping duplicate specified network interface '" << interface_name << "'.\n";
+          break;
         }
-        freeaddrinfo(gai_result);
       }
+      if (!found)
+        std::cout << "Specified network interface '" << interface_name << "' not found.\n";
     }
   }
 
-  if (!addrs.empty())
+  if (!netint_names.empty())
   {
-    broker_shell.SetInitialIfaceList(addrs);
-    return true;
-  }
-  return false;
-}
-
-// Parse the --macs=MAC_LIST command line option and transfer it to the BrokerShell instance.
-bool ParseAndSetMacList(char* mac_list_str, BrokerShell& broker_shell)
-{
-  std::set<etcpal::MacAddr> macs;
-
-  if (strlen(mac_list_str) != 0)
-  {
-    char* context;
-    for (char* p = strtok_r(mac_list_str, ",", &context); p != NULL; p = strtok_r(NULL, ",", &context))
-    {
-      auto mac = etcpal::MacAddr::FromString(p);
-      if (!mac.IsNull())
-        macs.insert(mac);
-    }
-  }
-
-  if (!macs.empty())
-  {
-    broker_shell.SetInitialMacList(macs);
+    broker_shell.SetInitialNetintList(netint_names);
     return true;
   }
   return false;
@@ -186,44 +154,17 @@ ParseResult ParseArgs(int argc, char* argv[], BrokerShell& broker_shell, int& lo
 {
   if (argc > 1)
   {
-    bool iface_key_encountered = false;
-
     for (int i = 1; i < argc; ++i)
     {
       if (strncmp(argv[i], "--scope=", 8) == 0)
       {
         if (!ParseAndSetScope(argv[i] + 8, broker_shell))
-        {
           return ParseResult::kParseErr;
-        }
       }
       else if (strncmp(argv[i], "--ifaces=", 9) == 0)
       {
-        if (iface_key_encountered)
-        {
+        if (!ParseAndSetIfaceList(argv[i] + 9, broker_shell))
           return ParseResult::kParseErr;
-        }
-        else
-        {
-          if (ParseAndSetIfaceList(argv[i] + 9, broker_shell))
-            iface_key_encountered = true;
-          else
-            return ParseResult::kParseErr;
-        }
-      }
-      else if (strncmp(argv[i], "--macs=", 7) == 0)
-      {
-        if (iface_key_encountered)
-        {
-          return ParseResult::kParseErr;
-        }
-        else
-        {
-          if (ParseAndSetMacList(argv[i] + 9, broker_shell))
-            iface_key_encountered = true;
-          else
-            return ParseResult::kParseErr;
-        }
       }
       else if (strncmp(argv[i], "--port=", 7) == 0)
       {
@@ -284,9 +225,16 @@ void signal_handler(int signal)
 // Parse command-line arguments and then run the platform-neutral Broker shell.
 int main(int argc, char* argv[])
 {
+  etcpal_error_t res = etcpal_init(ETCPAL_FEATURE_NETINTS);
+  if (res != kEtcPalErrOk)
+  {
+    std::cout << "Couldn't get system network information: '" << etcpal_strerror(res) << "'.\n";
+    return 1;
+  }
+
   bool should_run = true;
-  int exit_code = 0;
-  int log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG);
+  int  exit_code = 0;
+  int  log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG);
 
   switch (ParseArgs(argc, argv, broker_shell, log_mask))
   {
@@ -324,13 +272,14 @@ int main(int argc, char* argv[])
 
     // Startup and run the Broker.
     LinuxBrokerLog log;
-    log.Startup("RDMnetBroker.log", log_mask);
-    exit_code = broker_shell.Run(log.broker_log_instance());
+    log.Startup(log_mask);
+    exit_code = broker_shell.Run(log.logger());
     log.Shutdown();
 
     // Unregister/cleanup the network change detection. (Disabled for now)
     // CancelMibChangeNotify2(change_notif_handle);
   }
 
+  etcpal_deinit(ETCPAL_FEATURE_NETINTS);
   return exit_code;
 }

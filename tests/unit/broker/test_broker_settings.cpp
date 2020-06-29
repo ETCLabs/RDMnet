@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,22 +17,22 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#include "rdmnet/broker/settings.h"
+#include "rdmnet/cpp/broker.h"
 
 #include "gtest/gtest.h"
 
 TEST(TestBrokerSettings, DefaultConstructedSettingsIsNotValid)
 {
-  rdmnet::BrokerSettings settings;
-  EXPECT_FALSE(settings.valid());
+  rdmnet::Broker::Settings settings;
+  EXPECT_FALSE(settings.IsValid());
 }
 
 TEST(TestBrokerSettings, ExplicitConstructedSettingsIsValid)
 {
   // Constructed using dynamic UID
-  rdmnet::BrokerSettings settings(etcpal::Uuid::OsPreferred(), 0x6574);
-  EXPECT_TRUE(settings.valid());
+  rdmnet::Broker::Settings settings(etcpal::Uuid::OsPreferred(), 0x6574);
+  EXPECT_TRUE(settings.IsValid());
 
-  rdmnet::BrokerSettings settings_2(etcpal::Uuid::OsPreferred(), {0x6574, 0x00001234});
-  EXPECT_TRUE(settings_2.valid());
+  rdmnet::Broker::Settings settings_2(etcpal::Uuid::OsPreferred(), {0x6574, 0x00001234});
+  EXPECT_TRUE(settings_2.IsValid());
 }

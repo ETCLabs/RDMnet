@@ -6,7 +6,6 @@ BasedOnStyle: Google
 # Brace wrapping: Allman style, except for extern "C" blocks.
 BreakBeforeBraces: Custom
 BraceWrapping:
-  AfterCaseLabel: true
   AfterClass: true
   AfterControlStatement: true
   AfterEnum: true
@@ -25,7 +24,8 @@ BraceWrapping:
 # Misc other options
 AccessModifierOffset: -2
 AlignAfterOpenBracket: Align
-AlignConsecutiveDeclarations: false
+AlignConsecutiveDeclarations: true
+BinPackParameters: false
 AlignOperands: true
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortBlocksOnASingleLine: false

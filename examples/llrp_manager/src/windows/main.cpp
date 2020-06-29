@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,37 +20,52 @@
 #include <cwchar>
 #include <iostream>
 
+#include "manager.h"
+
 #include <WinSock2.h>
 #include <Windows.h>
 #include <WS2tcpip.h>
 
-#include "etcpal/log.h"
-#include "etcpal/uuid.h"
-#include "manager.h"
-
-static int s_utc_offset;
-
-extern "C" {
-static void manager_log_callback(void* context, const EtcPalLogStrings* strings)
+class ManagerLogHandler : public etcpal::LogMessageHandler
 {
-  (void)context;
-  std::cout << strings->human_readable << "\n";
+public:
+  ManagerLogHandler();
+
+  void                 HandleLogMessage(const EtcPalLogStrings& strings) override;
+  etcpal::LogTimestamp GetLogTimestamp() override;
+
+private:
+  int utc_offset_{0};
+};
+
+ManagerLogHandler::ManagerLogHandler()
+{
+  TIME_ZONE_INFORMATION tzinfo;
+  switch (GetTimeZoneInformation(&tzinfo))
+  {
+    case TIME_ZONE_ID_UNKNOWN:
+    case TIME_ZONE_ID_STANDARD:
+      utc_offset_ = -(tzinfo.Bias + tzinfo.StandardBias);
+      break;
+    case TIME_ZONE_ID_DAYLIGHT:
+      utc_offset_ = -(tzinfo.Bias + tzinfo.DaylightBias);
+      break;
+    default:
+      break;
+  }
 }
 
-static void manager_time_callback(void* context, EtcPalLogTimestamp* time)
+void ManagerLogHandler::HandleLogMessage(const EtcPalLogStrings& strings)
+{
+  std::cout << strings.human_readable << '\n';
+}
+
+etcpal::LogTimestamp ManagerLogHandler::GetLogTimestamp()
 {
   SYSTEMTIME win_time;
-  (void)context;
   GetLocalTime(&win_time);
-  time->year = win_time.wYear;
-  time->month = win_time.wMonth;
-  time->day = win_time.wDay;
-  time->hour = win_time.wHour;
-  time->minute = win_time.wMinute;
-  time->second = win_time.wSecond;
-  time->msec = win_time.wMilliseconds;
-  time->utc_offset = s_utc_offset;
-}
+  return etcpal::LogTimestamp(win_time.wYear, win_time.wMonth, win_time.wDay, win_time.wHour, win_time.wMinute,
+                              win_time.wSecond, win_time.wMilliseconds, utc_offset_);
 }
 
 static std::string WCharToUtf8String(const wchar_t* str_in)
@@ -59,7 +74,7 @@ static std::string WCharToUtf8String(const wchar_t* str_in)
   if (size_needed > 0)
   {
     std::string str_res(size_needed, '\0');
-    int convert_res = WideCharToMultiByte(CP_UTF8, 0, str_in, -1, &str_res[0], size_needed, NULL, NULL);
+    int         convert_res = WideCharToMultiByte(CP_UTF8, 0, str_in, -1, &str_res[0], size_needed, NULL, NULL);
     if (convert_res > 0)
     {
       // Remove the NULL from being included in the string's count
@@ -91,52 +106,35 @@ std::string ConsoleInputToUtf8(const std::wstring& input)
 
 int wmain(int argc, wchar_t* argv[])
 {
-  LLRPManager mgr;
+  LlrpManagerExample mgr;
 
   std::vector<std::string> args_utf8;
   args_utf8.reserve(argc);
   ConvertArgsToUtf8(argc, argv, args_utf8);
   switch (mgr.ParseCommandLineArgs(args_utf8))
   {
-    case LLRPManager::ParseResult::kParseErr:
+    case LlrpManagerExample::ParseResult::kParseErr:
       mgr.PrintUsage(args_utf8[0]);
       return 1;
-    case LLRPManager::ParseResult::kPrintHelp:
+    case LlrpManagerExample::ParseResult::kPrintHelp:
       mgr.PrintUsage(args_utf8[0]);
       return 0;
-    case LLRPManager::ParseResult::kPrintVersion:
+    case LlrpManagerExample::ParseResult::kPrintVersion:
       mgr.PrintVersion();
       return 0;
     default:
       break;
   }
 
-  auto manager_cid = etcpal::Uuid::OsPreferred();
+  ManagerLogHandler log_handler;
+  etcpal::Logger    logger;
+  logger.SetLogAction(kEtcPalLogCreateHumanReadable).SetLogMask(ETCPAL_LOG_UPTO(ETCPAL_LOG_INFO)).Startup(log_handler);
 
-  TIME_ZONE_INFORMATION tzinfo;
-  switch (GetTimeZoneInformation(&tzinfo))
+  if (!mgr.Startup(logger))
   {
-    case TIME_ZONE_ID_UNKNOWN:
-    case TIME_ZONE_ID_STANDARD:
-      s_utc_offset = -(tzinfo.Bias + tzinfo.StandardBias);
-      break;
-    case TIME_ZONE_ID_DAYLIGHT:
-      s_utc_offset = -(tzinfo.Bias + tzinfo.DaylightBias);
-      break;
-    default:
-      break;
-  }
-
-  EtcPalLogParams params;
-  params.action = kEtcPalLogCreateHumanReadable;
-  params.log_fn = manager_log_callback;
-  params.log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_INFO);
-  params.time_fn = manager_time_callback;
-  params.context = nullptr;
-  etcpal_validate_log_params(&params);
-
-  if (!mgr.Startup(manager_cid, &params))
+    logger.Shutdown();
     return 1;
+  }
 
   printf("Discovered network interfaces:\n");
   mgr.PrintNetints();
@@ -149,5 +147,6 @@ int wmain(int argc, wchar_t* argv[])
   } while (mgr.ParseCommand(ConsoleInputToUtf8(input)));
 
   mgr.Shutdown();
+  logger.Shutdown();
   return 0;
 }

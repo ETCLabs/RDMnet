@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,21 +27,21 @@
 #include "etcpal/log.h"
 #include "etcpal/thread.h"
 #include "etcpal/lock.h"
-#include "rdmnet/broker/log.h"
+#include "etcpal/cpp/log.h"
 
-class LinuxBrokerLog : public rdmnet::BrokerLog
+class LinuxBrokerLog : public etcpal::LogMessageHandler
 {
 public:
-  bool Startup(const std::string& file_name, int log_mask);
+  bool Startup(int log_mask);
   void Shutdown();
 
-  void OutputLogMsg(const std::string& str) override;
-  void GetLogTime(EtcPalLogTimestamp& time) override;
+  void                 HandleLogMessage(const EtcPalLogStrings& strings) override;
+  etcpal::LogTimestamp GetLogTimestamp() override;
 
-  rdmnet::BrokerLog& broker_log_instance() { return log_; }
+  etcpal::Logger& logger() { return logger_; }
 
 private:
-  rdmnet::BrokerLog log_;
+  etcpal::Logger logger_;
 
   std::fstream file_;
 };

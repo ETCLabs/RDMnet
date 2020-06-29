@@ -1,0 +1,25 @@
+digraph G {
+  "Not Started" -> "Connect Pending" [ label = "rc_conn_connect()" ];
+  "Connect Pending" -> "Not Started" [ label = "rc_conn_disconnect()" ];
+  "Connect Pending" -> "Backoff" [ label = "Previous RDMnet fail event" ];
+  "Connect Pending" -> "TCP Conn Pending" [ label = "No previous RDMnet fail event" ];
+  "Backoff" -> "TCP Conn Pending" [ label = "Backoff Timer Expires" ];
+  "Backoff" -> "Not Started" [ label = "rc_conn_disconnect()" ];
+  "Backoff" -> "Connect Pending" [ label = "rc_conn_reconnect()" ];
+  "TCP Conn Pending" -> "RDMnet Conn Pending" [ label = "TCP connection established" ];
+  "TCP Conn Pending" -> "Not Started" [ label = "Connection error" ];
+  "TCP Conn Pending" -> "Reconnect Pending" [ label = "rc_conn_reconnect()" ];
+  "TCP Conn Pending" -> "Disconnect Pending" [ label = "rc_conn_disconnect()" ];
+  "RDMnet Conn Pending" -> "Heartbeat" [ label = "Connect accepted" ];
+  "RDMnet Conn Pending" -> "Not Started" [ label = "Connection error" ];
+  "RDMnet Conn Pending" -> "Reconnect Pending" [ label = "rc_conn_reconnect()" ];
+  "RDMnet Conn Pending" -> "Disconnect Pending" [ label = "rc_conn_disconnect()" ];
+  "Heartbeat" -> "Disconnect Pending" [ label = "rc_conn_disconnect()" ];
+  "Heartbeat" -> "Reconnect Pending" [ label = "rc_conn_reconnect()" ];
+  "Heartbeat" -> "Not Started" [ label = "Disconnect event" ];
+  "Disconnect Pending" -> "Not Started" [ label = "Tick cycle" ];
+  "Disconnect Pending" -> "Reconnect Pending" [ label = "rc_conn_connect()" ];
+  "Reconnect Pending" -> "Disconnect Pending" [ label = "rc_conn_disconnect()" ];
+  "Reconnect Pending" -> "TCP Conn Pending" [ label = "Tick cycle" ];
+  "Reconnect Pending" -> "Reconnect Pending" [ label = "rc_conn_reconnect()" ];
+}

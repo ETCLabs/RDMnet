@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ END_INCLUDE_QT_HEADERS()
 class IHandlesBrokerStaticAdd
 {
 public:
-  virtual void handleAddBrokerByIP(QString scope, const etcpal::SockAddr& addr) = 0;
+  virtual void HandleAddBrokerByIP(QString scope, const etcpal::SockAddr& addr) = 0;
 };
 
 class BrokerStaticAddGUI : public QDialog

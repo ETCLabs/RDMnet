@@ -1,0 +1,7 @@
+// A fetch client list message
+
+41 53 43 2d 45 31 2e 31 37 00 00 00             // ACN packet identifier
+00 00 00 1c                                     // Total length
+f0 00 1c 00 00 00 09                            // Root layer PDU flags, length, vector
+15 db e4 a5 6b 70 41 55 85 99 bc 5b d3 78 79 3f // Sender CID
+f0 00 05 00 06                                  // Broker PDU flags, length, vector

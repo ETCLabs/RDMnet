@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,34 +17,37 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
+#include "etcpal/common.h"
 #include "rdmnet/core/client_entry.h"
-#include "rdmnet/core/util.h"
 
-bool create_rpt_client_entry(const EtcPalUuid* cid, const RdmUid* uid, rpt_client_type_t client_type,
-                             const EtcPalUuid* binding_cid, ClientEntryData* entry)
+bool rc_create_rpt_client_entry(const EtcPalUuid*     cid,
+                                const RdmUid*         uid,
+                                rpt_client_type_t     client_type,
+                                const EtcPalUuid*     binding_cid,
+                                RdmnetRptClientEntry* entry)
 {
   if (!cid || !uid || !entry)
     return false;
 
-  entry->client_protocol = kClientProtocolRPT;
-  entry->client_cid = *cid;
-  entry->data.rpt_data.client_uid = *uid;
-  entry->data.rpt_data.client_type = client_type;
+  entry->cid = *cid;
+  entry->uid = *uid;
+  entry->type = client_type;
   if (binding_cid)
-    entry->data.rpt_data.binding_cid = *binding_cid;
+    entry->binding_cid = *binding_cid;
   else
-    memset(entry->data.rpt_data.binding_cid.data, 0, ETCPAL_UUID_BYTES);
-  entry->next = NULL;
+    entry->binding_cid = kEtcPalNullUuid;
   return true;
 }
 
-bool create_ept_client_entry(const EtcPalUuid* cid, const EptSubProtocol* protocol_arr, size_t protocol_arr_size,
-                             ClientEntryData* entry)
+bool rc_create_ept_client_entry(const EtcPalUuid*           cid,
+                                const RdmnetEptSubProtocol* protocol_arr,
+                                size_t                      protocol_arr_size,
+                                RdmnetEptClientEntry*       entry)
 {
-  RDMNET_UNUSED_ARG(cid);
-  RDMNET_UNUSED_ARG(protocol_arr);
-  RDMNET_UNUSED_ARG(protocol_arr_size);
-  RDMNET_UNUSED_ARG(entry);
+  ETCPAL_UNUSED_ARG(cid);
+  ETCPAL_UNUSED_ARG(protocol_arr);
+  ETCPAL_UNUSED_ARG(protocol_arr_size);
+  ETCPAL_UNUSED_ARG(entry);
   // TODO
   return false;
 }

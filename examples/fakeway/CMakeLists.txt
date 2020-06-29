@@ -10,15 +10,11 @@ set(FAKEWAY_TARGET rdmnet_gateway_example)
 add_executable(${FAKEWAY_TARGET}
   src/fakeway_default_responder.h
   src/fakeway_default_responder.cpp
-  src/fakeway_log.h
   src/fakeway.h
   src/fakeway.cpp
   src/gadget_interface.h
   src/gadget_interface.cpp
-  src/rdmnet_lib_wrapper.h
-  src/rdmnet_lib_wrapper.cpp
 
-  src/windows/fakeway_log.cpp
   src/windows/main.cpp
 )
 target_include_directories(${FAKEWAY_TARGET} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src)

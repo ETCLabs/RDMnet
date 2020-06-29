@@ -1,45 +1,38 @@
 # Determines the provider of mDNS and DNS-SD support based on the compilation
 # platform and user input variables.
 #
-# Adds the following targets which are used by source builds:
-# - dnssd: Platform DNS-SD library (if any)
-# - RDMnetDiscoveryCommon: Interface library containing only the platform-neutral discovery sources.
-# - RDMnetDiscoveryPlatform: Interface library containing the platform-specific discovery sources.
+# Platform-specific configuration sets the following variables:
+#   RDMNET_DISC_PLATFORM_SOURCES: Additional sources to compile to interface with the platform DNS-SD.
+#   RDMNET_DISC_PLATFORM_INCLUDE_DIRS: Additional include directories necessary to bring in platform DNS-SD headers.
+#   RDMNET_DISC_PLATFORM_LIBS: Additional DNS-SD libraries or CMake targets to link RDMnet to.
+#   RDMNET_DISC_PLATFORM_DEPENDENCIES: Targets that RDMnet should be made dependent on for DNS-SD, e.g. building a DLL.
 
-# The imported DNS-SD library. This will have its properties set in the platform scripts
-# (dnssd/[option].cmake)
-add_library(dnssd INTERFACE)
+# The Windows config also sets the special variable:
+#   RDMNET_BONJOUR_MOCK_LIB: The target representing the Bonjour mocking library.
 
 # The platform-neutral portion of the discovery library.
 set(RDMNET_DISC_PUBLIC_HEADERS
-  ${RDMNET_INCLUDE}/rdmnet/core/discovery.h
+  ${RDMNET_INCLUDE}/rdmnet/discovery.h
 )
 set(RDMNET_DISC_COMMON_SOURCES
-  ${RDMNET_SRC}/rdmnet/discovery/disc_common.h
-  ${RDMNET_SRC}/rdmnet/discovery/disc_platform_api.h
-  ${RDMNET_SRC}/rdmnet/discovery/discovered_broker.h
-  ${RDMNET_SRC}/rdmnet/discovery/monitored_scope.h
-  ${RDMNET_SRC}/rdmnet/discovery/registered_broker.h
+  ${RDMNET_SRC}/rdmnet/disc/common.h
+  ${RDMNET_SRC}/rdmnet/disc/platform_api.h
+  ${RDMNET_SRC}/rdmnet/disc/discovered_broker.h
+  ${RDMNET_SRC}/rdmnet/disc/monitored_scope.h
+  ${RDMNET_SRC}/rdmnet/disc/registered_broker.h
 
-  ${RDMNET_SRC}/rdmnet/discovery/disc_common.c
-  ${RDMNET_SRC}/rdmnet/discovery/discovered_broker.c
-  ${RDMNET_SRC}/rdmnet/discovery/monitored_scope.c
-  ${RDMNET_SRC}/rdmnet/discovery/registered_broker.c
-)
-add_library(RDMnetDiscoveryCommon INTERFACE)
-target_sources(RDMnetDiscoveryCommon INTERFACE
-  ${RDMNET_DISC_PUBLIC_HEADERS}
-  ${RDMNET_DISC_COMMON_SOURCES}
-)
-target_include_directories(RDMnetDiscoveryCommon INTERFACE
-  ${RDMNET_INCLUDE}
-  ${RDMNET_SRC}
-  ${RDMNET_SRC}/rdmnet/discovery
+  ${RDMNET_SRC}/rdmnet/disc/common.c
+  ${RDMNET_SRC}/rdmnet/disc/discovered_broker.c
+  ${RDMNET_SRC}/rdmnet/disc/monitored_scope.c
+  ${RDMNET_SRC}/rdmnet/disc/registered_broker.c
 )
 
 # Include the platform-specific configuration based on our target platform.
 
-option(RDMNET_FORCE_LIGHTWEIGHT_DNS_QUERIER OFF)
+option(RDMNET_FORCE_LIGHTWEIGHT_DNS_QUERIER 
+  "Use RDMnet's built-in lightweight mDNS querier even when targeting systems that have other mDNS solutions"
+  OFF
+)
 
 if(NOT ${RDMNET_FORCE_LIGHTWEIGHT_DNS_QUERIER})
   if(WIN32)

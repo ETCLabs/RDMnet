@@ -28,11 +28,17 @@ if(WIN32)
       COMMENT "Copying DNS-SD dll to executable directory..."
     )
   endif()
+elseif(APPLE)
+  target_sources(${DEVICE_TARGET} PRIVATE
+    src/macos/macos_device_log.h
+    src/macos/macos_device_log.c
+    src/macos/main.c
+  )
 else()
   target_sources(${DEVICE_TARGET} PRIVATE
-    src/posix/posix_device_log.h
-    src/posix/posix_device_log.c
-    src/posix/main.c
+    src/linux/linux_device_log.h
+    src/linux/linux_device_log.c
+    src/linux/main.c
   )
 endif()
 

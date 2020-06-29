@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,38 +21,32 @@
 #define TEST_DISC_COMMON_FAKES_H_
 
 #include "fff.h"
-#include "rdmnet/core/discovery.h"
-#include "disc_platform_api.h"
+#include "rdmnet/discovery.h"
+#include "rdmnet/disc/platform_api.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// rdmnet_core
-DECLARE_FAKE_VALUE_FUNC(bool, rdmnet_core_initialized);
-
 // Platform-specific rdmnet_disc sources
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_platform_init, const RdmnetNetintConfig*);
 DECLARE_FAKE_VOID_FUNC(rdmnet_disc_platform_deinit);
 DECLARE_FAKE_VOID_FUNC(rdmnet_disc_platform_tick);
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_platform_start_monitoring, const RdmnetScopeMonitorConfig*,
-                        RdmnetScopeMonitorRef*, int*);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_platform_start_monitoring, RdmnetScopeMonitorRef*, int*);
 DECLARE_FAKE_VOID_FUNC(rdmnet_disc_platform_stop_monitoring, RdmnetScopeMonitorRef*);
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_platform_register_broker, const RdmnetBrokerDiscInfo*,
-                        RdmnetBrokerRegisterRef*, int*);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_platform_register_broker, RdmnetBrokerRegisterRef*, int*);
 DECLARE_FAKE_VOID_FUNC(rdmnet_disc_platform_unregister_broker, rdmnet_registered_broker_t);
 DECLARE_FAKE_VOID_FUNC(discovered_broker_free_platform_resources, DiscoveredBroker*);
 
 // rdmnet_disc callbacks
 DECLARE_FAKE_VOID_FUNC(monitorcb_broker_found, rdmnet_scope_monitor_t, const RdmnetBrokerDiscInfo*, void*);
+DECLARE_FAKE_VOID_FUNC(monitorcb_broker_updated, rdmnet_scope_monitor_t, const RdmnetBrokerDiscInfo*, void*);
 DECLARE_FAKE_VOID_FUNC(monitorcb_broker_lost, rdmnet_scope_monitor_t, const char*, const char*, void*);
-DECLARE_FAKE_VOID_FUNC(monitorcb_scope_monitor_error, rdmnet_scope_monitor_t, const char*, int, void*);
 
 DECLARE_FAKE_VOID_FUNC(regcb_broker_registered, rdmnet_registered_broker_t, const char*, void*);
 DECLARE_FAKE_VOID_FUNC(regcb_broker_register_error, rdmnet_registered_broker_t, int, void*);
-DECLARE_FAKE_VOID_FUNC(regcb_broker_found, rdmnet_registered_broker_t, const RdmnetBrokerDiscInfo*, void*);
-DECLARE_FAKE_VOID_FUNC(regcb_broker_lost, rdmnet_registered_broker_t, const char*, const char*, void*);
-DECLARE_FAKE_VOID_FUNC(regcb_scope_monitor_error, rdmnet_registered_broker_t, const char*, int, void*);
+DECLARE_FAKE_VOID_FUNC(regcb_other_broker_found, rdmnet_registered_broker_t, const RdmnetBrokerDiscInfo*, void*);
+DECLARE_FAKE_VOID_FUNC(regcb_other_broker_lost, rdmnet_registered_broker_t, const char*, const char*, void*);
 
 #ifdef __cplusplus
 }
@@ -60,8 +54,6 @@ DECLARE_FAKE_VOID_FUNC(regcb_scope_monitor_error, rdmnet_registered_broker_t, co
 
 inline void TestDiscoveryCommonResetAllFakes()
 {
-  RESET_FAKE(rdmnet_core_initialized);
-
   RESET_FAKE(rdmnet_disc_platform_init);
   RESET_FAKE(rdmnet_disc_platform_deinit);
   RESET_FAKE(rdmnet_disc_platform_tick);
@@ -72,14 +64,13 @@ inline void TestDiscoveryCommonResetAllFakes()
   RESET_FAKE(discovered_broker_free_platform_resources);
 
   RESET_FAKE(monitorcb_broker_found);
+  RESET_FAKE(monitorcb_broker_updated);
   RESET_FAKE(monitorcb_broker_lost);
-  RESET_FAKE(monitorcb_scope_monitor_error);
 
   RESET_FAKE(regcb_broker_registered);
   RESET_FAKE(regcb_broker_register_error);
-  RESET_FAKE(regcb_broker_found);
-  RESET_FAKE(regcb_broker_lost);
-  RESET_FAKE(regcb_scope_monitor_error);
+  RESET_FAKE(regcb_other_broker_found);
+  RESET_FAKE(regcb_other_broker_lost);
 }
 
 #endif /* TEST_DISC_COMMON_FAKES_H_ */

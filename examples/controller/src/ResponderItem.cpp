@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,10 @@
 
 #include "ResponderItem.h"
 
-ResponderItem::ResponderItem(uint16_t man, uint32_t dev)
-    : RDMnetNetworkItem(QString("Manu: 0x%0 | ID: 0x%1").arg(QString::number(man, 16)).arg(QString::number(dev, 16)))
+ResponderItem::ResponderItem(const rdm::Uid& uid)
+    : RDMnetNetworkItem(QString("Manu: 0x%0 | ID: 0x%1")
+                            .arg(QString::number(uid.manufacturer_id(), 16))
+                            .arg(QString::number(uid.device_id(), 16)))
+    , uid_(uid)
 {
-  uid_.manu = man;
-  uid_.id = dev;
-}
-
-int ResponderItem::type() const
-{
-  return ResponderItemType;
 }

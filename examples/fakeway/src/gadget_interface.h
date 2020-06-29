@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,23 +22,28 @@
 
 #include <memory>
 #include <string>
+#include "etcpal/cpp/log.h"
 #include "RdmDeviceInfo.h"
 #include "uid.h"
 #include "RDM_CmdC.h"
-#include "fakeway_log.h"
 
 class GadgetNotify
 {
 public:
   virtual void HandleGadgetConnected(unsigned int gadget_id, unsigned int num_ports) = 0;
   virtual void HandleGadgetDisconnected(unsigned int gadget_id) = 0;
-  virtual void HandleNewRdmResponderDiscovered(unsigned int gadget_id, unsigned int port_number,
+  virtual void HandleNewRdmResponderDiscovered(unsigned int         gadget_id,
+                                               unsigned int         port_number,
                                                const RdmDeviceInfo& info) = 0;
   virtual void HandleRdmResponderLost(unsigned int gadget_id, unsigned int port_number, uid id) = 0;
-  virtual void HandleRdmResponse(unsigned int gadget_id, unsigned int port_number, const RDM_CmdC& response,
-                                 const void* cookie) = 0;
-  virtual void HandleRdmTimeout(unsigned int gadget_id, unsigned int port_number, const RDM_CmdC& orig_cmd,
-                                const void* cookie) = 0;
+  virtual void HandleRdmResponse(unsigned int    gadget_id,
+                                 unsigned int    port_number,
+                                 const RDM_CmdC& response,
+                                 const void*     cookie) = 0;
+  virtual void HandleRdmTimeout(unsigned int    gadget_id,
+                                unsigned int    port_number,
+                                const RDM_CmdC& orig_cmd,
+                                const void*     cookie) = 0;
 
   virtual void HandleGadgetLogMsg(const char* str) = 0;
 };
@@ -53,7 +58,7 @@ public:
 
   static std::string DllVersion();
 
-  bool Startup(GadgetNotify& notify, FakewayLog& log);
+  bool Startup(GadgetNotify& notify, etcpal::Logger& log);
   void Shutdown();
 
   void SendRdmCommand(unsigned int gadget_id, unsigned int port_number, const RDM_CmdC& cmd, const void* cookie);

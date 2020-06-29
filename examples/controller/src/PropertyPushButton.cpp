@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 PropertyPushButton::PropertyPushButton(QWidget* parent, const QPersistentModelIndex& propertyIndex)
     : QPushButton(parent), idx(propertyIndex)
 {
-  connect(this, SIGNAL(clicked()), this, SLOT(forwardClicked()));
+  connect(this, &PropertyPushButton::clicked, this, &PropertyPushButton::forwardClicked);
 }
 
 void PropertyPushButton::forwardClicked()

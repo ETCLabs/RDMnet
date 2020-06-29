@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ AboutGUI::AboutGUI(QWidget* parent, QString qt_version, QString rdmnet_version, 
   ui.etcLinkLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
   ui.etcLinkLabel->setOpenExternalLinks(true);
 
-  connect(ui.okButton, SIGNAL(clicked()), this, SLOT(okButtonClicked()));
+  connect(ui.okButton, &QPushButton::clicked, this, &AboutGUI::okButtonClicked);
 
   setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 }

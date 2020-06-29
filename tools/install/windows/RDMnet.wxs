@@ -28,7 +28,7 @@
       <Directory Id="$(var.ProgramFilesFolder)">
         <Directory Id="ETC" Name="ETC">
           <Directory Id="INSTALLDIR" Name="RDMnet" FileSource="$(var.InstallSourceDir)">
-            <Directory Id="CommandLineRuntime" Name="bin">
+            <Directory Id="Runtime" Name="bin">
               <Component Id="Broker" Guid="CE63588F-0717-4D20-B0AB-D004975A5E38">
                 <File Id="BrokerExe" Name="rdmnet_broker_example.exe" DiskId="1" KeyPath="yes" />
               </Component>

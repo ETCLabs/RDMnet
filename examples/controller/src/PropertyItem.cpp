@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 #include "PropertyItem.h"
 
 PropertyItem::PropertyItem(const QString& fullName, const QString& displayText)
-    : RDMnetNetworkItem(displayText), m_ValueItem(NULL)
+    : RDMnetNetworkItem(displayText), m_ValueItem(nullptr)
 {
   m_FullName = fullName;
 }
@@ -41,9 +41,9 @@ PropertyValueItem* PropertyItem::getValueItem()
 
 void PropertyItem::setValueItem(PropertyValueItem* item, bool deleteItemArgumentIfCopied)
 {
-  if (item != NULL)
+  if (item)
   {
-    if (m_ValueItem != NULL)
+    if (m_ValueItem)
     {
       m_ValueItem->setData(item->data(Qt::DisplayRole),
                            Qt::DisplayRole);  // Copy the data to the existing item

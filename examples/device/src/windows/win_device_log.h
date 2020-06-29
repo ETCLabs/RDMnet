@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,10 @@
 #ifndef WIN_DEVICE_LOG_H_
 #define WIN_DEVICE_LOG_H_
 
-#include <stdbool.h>
 #include "etcpal/log.h"
 
-void device_log_init(const char* file_name);
-const EtcPalLogParams* device_get_log_params();
-void device_log_deinit();
+void                   device_log_init(void);
+const EtcPalLogParams* device_get_log_params(void);
+void                   device_log_deinit(void);
 
 #endif /* WIN_DEVICE_LOG_H_ */

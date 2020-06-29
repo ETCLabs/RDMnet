@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,23 +26,24 @@
 
 /*************************** Function definitions ****************************/
 
-bool ListenThread::Start()
+etcpal::Error ListenThread::Start()
 {
   if (socket_ == ETCPAL_SOCKET_INVALID)
-    return false;
+    return kEtcPalErrInvalid;
 
   terminated_ = false;
-  if (!thread_.SetName("ListenThread").Start(&ListenThread::Run, this))
+
+  auto start_res = thread_.SetName("ListenThread").Start(&ListenThread::Run, this);
+  if (!start_res)
   {
     terminated_ = true;
     etcpal_close(socket_);
     socket_ = ETCPAL_SOCKET_INVALID;
     if (log_)
       log_->Critical("ListenThread: Failed to start thread.");
-    return false;
   }
 
-  return true;
+  return start_res;
 }
 
 void ListenThread::Run()
@@ -60,7 +61,7 @@ void ListenThread::ReadSocket()
   if (socket_ != ETCPAL_SOCKET_INVALID)
   {
     etcpal_socket_t conn_sock;
-    EtcPalSockAddr new_addr;
+    EtcPalSockAddr  new_addr;
 
     etcpal::Error res = etcpal_accept(socket_, &new_addr, &conn_sock);
 
@@ -85,7 +86,7 @@ void ListenThread::ReadSocket()
   }
   else
   {
-    etcpal_thread_sleep(10);
+    etcpal::Thread::Sleep(10);
   }
 }
 
@@ -107,10 +108,10 @@ ListenThread::~ListenThread()
   }
 }
 
-bool ClientServiceThread::Start()
+etcpal::Error ClientServiceThread::Start()
 {
   terminated_ = false;
-  return thread_.SetName("ClientServiceThread").Start(&ClientServiceThread::Run, this).IsOk();
+  return thread_.SetName("ClientServiceThread").Start(&ClientServiceThread::Run, this);
 }
 
 void ClientServiceThread::Run()
@@ -123,7 +124,7 @@ void ClientServiceThread::Run()
     // As long as clients need to be processed, we won't sleep.
     while (notify_->ServiceClients())
       ;
-    etcpal_thread_sleep(kSleepMs);
+    etcpal::Thread::Sleep(kSleepMs);
   }
 }
 
@@ -136,32 +137,26 @@ ClientServiceThread::~ClientServiceThread()
   }
 }
 
-bool BrokerThreadManager::AddListenThread(etcpal_socket_t listen_sock)
+etcpal::Error BrokerThreadManager::AddListenThread(etcpal_socket_t listen_sock)
 {
-  auto new_thread = std::make_unique<ListenThread>(listen_sock, notify_, log_);
-  if (new_thread->Start())
-  {
+  std::unique_ptr<ListenThread> new_thread(new ListenThread(listen_sock, notify_, log_));
+
+  auto start_res = new_thread->Start();
+  if (start_res)
     threads_.push_back(std::move(new_thread));
-    return true;
-  }
-  else
-  {
-    return false;
-  }
+
+  return start_res;
 }
 
-bool BrokerThreadManager::AddClientServiceThread()
+etcpal::Error BrokerThreadManager::AddClientServiceThread()
 {
-  auto new_thread = std::make_unique<ClientServiceThread>(notify_);
-  if (new_thread->Start())
-  {
+  std::unique_ptr<ClientServiceThread> new_thread(new ClientServiceThread(notify_));
+
+  auto start_res = new_thread->Start();
+  if (start_res)
     threads_.push_back(std::move(new_thread));
-    return true;
-  }
-  else
-  {
-    return false;
-  }
+
+  return start_res;
 }
 
 void BrokerThreadManager::StopThreads()

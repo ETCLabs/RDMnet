@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,15 +19,72 @@
 
 #include "rdmnet_mock/core/broker_prot.h"
 
-DEFINE_FAKE_VALUE_FUNC(size_t, bufsize_client_list, const ClientEntryData*);
-DEFINE_FAKE_VALUE_FUNC(size_t, bufsize_dynamic_uid_assignment_list, const DynamicUidMapping*);
-DEFINE_FAKE_VALUE_FUNC(size_t, pack_connect_reply, uint8_t*, size_t, const EtcPalUuid*, const ConnectReplyMsg*);
-DEFINE_FAKE_VALUE_FUNC(size_t, pack_client_list, uint8_t*, size_t, const EtcPalUuid*, uint16_t, const ClientEntryData*);
-DEFINE_FAKE_VALUE_FUNC(size_t, pack_dynamic_uid_assignment_list, uint8_t*, size_t, const EtcPalUuid*,
-                       const DynamicUidMapping*);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, send_connect_reply, rdmnet_conn_t, const EtcPalUuid*, const ConnectReplyMsg*);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, send_fetch_client_list, rdmnet_conn_t, const EtcPalUuid*);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, send_request_dynamic_uids, rdmnet_conn_t, const EtcPalUuid*,
-                       const DynamicUidRequestListEntry*);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, send_fetch_uid_assignment_list, rdmnet_conn_t, const EtcPalUuid*,
-                       const FetchUidAssignmentListEntry*);
+DEFINE_FAKE_VALUE_FUNC(size_t, rc_broker_get_rpt_client_list_buffer_size, size_t);
+DEFINE_FAKE_VALUE_FUNC(size_t, rc_broker_get_ept_client_list_buffer_size, const RdmnetEptClientEntry*, size_t);
+DEFINE_FAKE_VALUE_FUNC(size_t, rc_broker_get_uid_assignment_list_buffer_size, size_t);
+
+DEFINE_FAKE_VALUE_FUNC(size_t,
+                       rc_broker_pack_connect_reply,
+                       uint8_t*,
+                       size_t,
+                       const EtcPalUuid*,
+                       const BrokerConnectReplyMsg*);
+DEFINE_FAKE_VALUE_FUNC(size_t,
+                       rc_broker_pack_rpt_client_list,
+                       uint8_t*,
+                       size_t,
+                       const EtcPalUuid*,
+                       uint16_t,
+                       const RdmnetRptClientEntry*,
+                       size_t);
+DEFINE_FAKE_VALUE_FUNC(size_t,
+                       rc_broker_pack_ept_client_list,
+                       uint8_t*,
+                       size_t,
+                       const EtcPalUuid*,
+                       uint16_t,
+                       const RdmnetEptClientEntry*,
+                       size_t);
+DEFINE_FAKE_VALUE_FUNC(size_t,
+                       rc_broker_pack_uid_assignment_list,
+                       uint8_t*,
+                       size_t,
+                       const EtcPalUuid*,
+                       const RdmnetDynamicUidMapping*,
+                       size_t);
+DEFINE_FAKE_VALUE_FUNC(size_t, rc_broker_pack_null, uint8_t*, size_t, const EtcPalUuid*);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_broker_send_client_connect, RCConnection*, const BrokerClientConnectMsg*);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_broker_send_fetch_client_list, RCConnection*, const EtcPalUuid*);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t,
+                       rc_broker_send_request_dynamic_uids,
+                       RCConnection*,
+                       const EtcPalUuid*,
+                       uint16_t,
+                       const EtcPalUuid*,
+                       size_t);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t,
+                       rc_broker_send_fetch_uid_assignment_list,
+                       RCConnection*,
+                       const EtcPalUuid*,
+                       const RdmUid*,
+                       size_t);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_broker_send_disconnect, RCConnection*, const BrokerDisconnectMsg*);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_broker_send_null, RCConnection*);
+
+void rc_broker_prot_reset_all_fakes(void)
+{
+  RESET_FAKE(rc_broker_get_rpt_client_list_buffer_size);
+  RESET_FAKE(rc_broker_get_ept_client_list_buffer_size);
+  RESET_FAKE(rc_broker_get_uid_assignment_list_buffer_size);
+  RESET_FAKE(rc_broker_pack_connect_reply);
+  RESET_FAKE(rc_broker_pack_rpt_client_list);
+  RESET_FAKE(rc_broker_pack_ept_client_list);
+  RESET_FAKE(rc_broker_pack_uid_assignment_list);
+  RESET_FAKE(rc_broker_pack_null);
+  RESET_FAKE(rc_broker_send_client_connect);
+  RESET_FAKE(rc_broker_send_fetch_client_list);
+  RESET_FAKE(rc_broker_send_request_dynamic_uids);
+  RESET_FAKE(rc_broker_send_fetch_uid_assignment_list);
+  RESET_FAKE(rc_broker_send_disconnect);
+  RESET_FAKE(rc_broker_send_null);
+}

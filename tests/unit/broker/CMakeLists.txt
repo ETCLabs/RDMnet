@@ -1,23 +1,30 @@
 # RDMnet Broker library unit tests
 
-add_executable(test_rdmnet_broker
+rdmnet_add_unit_test(test_rdmnet_broker
   # RDMnet Broker lib unit test sources
-  main.cpp
-  test_broker_core.cpp
+  broker_mocks.h
+  test_broker_client.cpp
+  test_broker_core_connect_handling
+  test_broker_core_startup.cpp
+  test_broker_message_handling.cpp
   test_broker_discovery.cpp
-  # test_broker_log.cpp
   test_broker_threads.cpp
   test_broker_uid_manager.cpp
   test_broker_settings.cpp
+  test_broker_util.cpp
+  test_dns_txt_record_item.cpp
+  main.cpp
+
+  ${RDMNET_BROKER_SOURCES}
+  # ${RDMNET_MOCK_ALL_SOURCES}
+  ${RDMNET_SRC}/rdmnet/common.c
+  ${RDMNET_SRC}/rdmnet/core/broker_prot.c
+  ${RDMNET_SRC}/rdmnet/core/message.c
+  ${RDMNET_SRC}/rdmnet/core/msg_buf.c
+  ${RDMNET_SRC}/rdmnet/core/rpt_prot.c
+  ${RDMNET_SRC}/rdmnet/core/util.c
+  ${RDMNET_SRC}/rdmnet_mock/core/common.c
+  ${RDMNET_SRC}/rdmnet_mock/discovery.c
 )
 target_include_directories(test_rdmnet_broker PRIVATE ${RDMNET_SRC}/rdmnet/broker)
-target_link_libraries(test_rdmnet_broker PRIVATE
-  RDMnetBrokerCore
-  gmock
-  RDMnetCoreMock
-  RDMnetDiscoveryMock
-  EtcPalMock
-  RDMMock
-)
-set_target_properties(test_rdmnet_broker PROPERTIES CXX_STANDARD 14 FOLDER tests)
-gtest_add_tests(TARGET test_rdmnet_broker SKIP_DEPENDENCY)
+target_link_libraries(test_rdmnet_broker PRIVATE EtcPalMock RDMMock)

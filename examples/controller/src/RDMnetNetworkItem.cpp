@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,13 +33,6 @@ bool RDMnetNetworkItem::rowHasSearchingStatusItem(int row)
 }
 
 RDMnetNetworkItem::RDMnetNetworkItem()
-    : children_search_running_(false)
-    , supportedFeatures(kNoSupport)
-    , device_reset_(false)
-    , device_identifying_(false)
-    , personalityDescriptions(NULL)
-    , numberOfDescriptionsFound(0)
-    , totalNumberOfDescriptions(0)
 {
   setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
 
@@ -47,14 +40,6 @@ RDMnetNetworkItem::RDMnetNetworkItem()
 }
 
 RDMnetNetworkItem::RDMnetNetworkItem(const QVariant& data)
-    : QStandardItem()
-    , children_search_running_(false)
-    , supportedFeatures(kNoSupport)
-    , device_reset_(false)
-    , device_identifying_(false)
-    , personalityDescriptions(NULL)
-    , numberOfDescriptionsFound(0)
-    , totalNumberOfDescriptions(0)
 {
   setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
 
@@ -71,14 +56,6 @@ RDMnetNetworkItem::RDMnetNetworkItem(const QVariant& data)
 }
 
 RDMnetNetworkItem::RDMnetNetworkItem(const QVariant& data, int role)
-    : QStandardItem()
-    , children_search_running_(false)
-    , supportedFeatures(kNoSupport)
-    , device_reset_(false)
-    , device_identifying_(false)
-    , personalityDescriptions(NULL)
-    , numberOfDescriptionsFound(0)
-    , totalNumberOfDescriptions(0)
 {
   setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
 
@@ -151,7 +128,8 @@ void RDMnetNetworkItem::enableFeature(SupportedDeviceFeature feature)
   supportedFeatures |= feature;
 }
 
-void RDMnetNetworkItem::completelyRemoveChildren(int row, int count,
+void RDMnetNetworkItem::completelyRemoveChildren(int                               row,
+                                                 int                               count,
                                                  std::vector<class PropertyItem*>* alsoRemoveFromThis)
 {
   for (int i = row; i < (row + count); ++i)
@@ -198,7 +176,7 @@ bool RDMnetNetworkItem::hasValidProperties(void) const
 
 bool RDMnetNetworkItem::initiatePersonalityDescriptionSearch(uint8_t numberOfPersonalities)
 {
-  if (personalityDescriptions == NULL)
+  if (!personalityDescriptions)
   {
     totalNumberOfDescriptions = numberOfPersonalities;
     personalityDescriptions = new QString[numberOfPersonalities];
@@ -208,7 +186,8 @@ bool RDMnetNetworkItem::initiatePersonalityDescriptionSearch(uint8_t numberOfPer
   return false;
 }
 
-void RDMnetNetworkItem::personalityDescriptionFound(uint8_t personality, uint16_t /*footprint*/,
+void RDMnetNetworkItem::personalityDescriptionFound(uint8_t personality,
+                                                    uint16_t /*footprint*/,
                                                     const QString& description)
 {
   if (personality <= totalNumberOfDescriptions)

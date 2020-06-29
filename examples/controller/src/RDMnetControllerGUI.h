@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 #pragma once
 
 #include <memory>
+#include "rdmnet/cpp/controller.h"
 #include "ControllerUtils.h"
 
 BEGIN_INCLUDE_QT_HEADERS()
@@ -29,7 +30,6 @@ BEGIN_INCLUDE_QT_HEADERS()
 END_INCLUDE_QT_HEADERS()
 
 #include "ControllerLog.h"
-#include "RDMnetLibWrapper.h"
 #include "BrokerStaticAddGUI.h"
 #include "RDMnetNetworkModel.h"
 #include "SimpleNetworkProxyModel.h"
@@ -41,9 +41,9 @@ class RDMnetControllerGUI : public QMainWindow, public IHandlesBrokerStaticAdd
   Q_OBJECT
 
 public:
-  static RDMnetControllerGUI* makeRDMnetControllerGUI();
+  static RDMnetControllerGUI* MakeRDMnetControllerGUI();
 
-  virtual void handleAddBrokerByIP(QString scope, const etcpal::SockAddr& addr);
+  virtual void HandleAddBrokerByIP(QString scope, const etcpal::SockAddr& addr);
 
 public slots:
 
@@ -77,11 +77,11 @@ private:
 
   Ui::RDMnetControllerGUIClass ui;
 
-  RDMnetNetworkModel* main_network_model_{nullptr};
-  SimpleNetworkProxyModel* simple_net_proxy_{nullptr};
-  NetworkDetailsProxyModel* net_details_proxy_{nullptr};
+  RDMnetNetworkModel*            main_network_model_{nullptr};
+  SimpleNetworkProxyModel*       simple_net_proxy_{nullptr};
+  NetworkDetailsProxyModel*      net_details_proxy_{nullptr};
   std::unique_ptr<ControllerLog> log_;
-  std::unique_ptr<RDMnetLibWrapper> rdmnet_library_;
-  BrokerItem* currently_selected_broker_item_{nullptr};
-  RDMnetNetworkItem* currently_selected_network_item_{nullptr};
+  rdmnet::Controller             rdmnet_controller_;
+  BrokerItem*                    currently_selected_broker_item_{nullptr};
+  RDMnetNetworkItem*             currently_selected_network_item_{nullptr};
 };

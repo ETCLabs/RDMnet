@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ inline PIDFlags operator&(PIDFlags a, PIDFlags b)
 struct PIDInfo
 {
   QVariant::Type dataType;
-  int32_t role;
+  int32_t        role;
 
   int32_t rangeMin;
   int32_t rangeMax;
@@ -75,17 +75,17 @@ public:
 
   static bool pidInfoExists(uint16_t pid);
 
-  static bool pidSupportsGet(uint16_t pid);
-  static bool pidSupportsSet(uint16_t pid);
-  static bool excludePIDFromModel(uint16_t pid);
-  static bool pidStartEnabled(uint16_t pid);
+  static bool           pidSupportsGet(uint16_t pid);
+  static bool           pidSupportsSet(uint16_t pid);
+  static bool           excludePIDFromModel(uint16_t pid);
+  static bool           pidStartEnabled(uint16_t pid);
   static QVariant::Type pidDataType(uint16_t pid);
-  static int32_t pidDataRole(uint16_t pid);
-  static int32_t pidDomainMin(uint16_t pid);
-  static int32_t pidDomainMax(uint16_t pid);
-  static uint8_t pidMaxBufferSize(uint16_t pid);
-  static QString pidPropertyDisplayName(uint16_t pid, int32_t index = 0);
-  static PIDFlags pidFlags(uint16_t pid);
+  static int32_t        pidDataRole(uint16_t pid);
+  static int32_t        pidDomainMin(uint16_t pid);
+  static int32_t        pidDomainMax(uint16_t pid);
+  static uint8_t        pidMaxBufferSize(uint16_t pid);
+  static QString        pidPropertyDisplayName(uint16_t pid, int32_t index = 0);
+  static PIDFlags       pidFlags(uint16_t pid);
 
   static void setPIDInfo(uint16_t pid, PIDFlags flags, QVariant::Type dataType, int32_t role = Qt::EditRole);
   static void setPIDNumericDomain(uint16_t pid, int32_t min, int32_t max);
@@ -101,7 +101,7 @@ public:
 
   virtual int type() const override;
 
-  void setPID(uint16_t pid);
+  void     setPID(uint16_t pid);
   uint16_t getPID();
 
 protected:

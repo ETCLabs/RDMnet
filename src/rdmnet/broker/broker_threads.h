@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2019 ETC Inc.
+ * Copyright 2020 ETC Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +27,13 @@
 #include <memory>
 #include <vector>
 
+#include "etcpal/cpp/error.h"
 #include "etcpal/cpp/thread.h"
 #include "etcpal/lock.h"
 #include "etcpal/inet.h"
 #include "etcpal/socket.h"
 #include "rdmnet/core/connection.h"
-#include "rdmnet/broker.h"
+#include "rdmnet/cpp/broker.h"
 #include "broker_util.h"
 
 // The interface for callbacks from threads managed by the broker.
@@ -49,54 +50,40 @@ public:
   virtual bool ServiceClients() = 0;
 };
 
-class BrokerThreadInterface
-{
-public:
-  virtual ~BrokerThreadInterface() = default;
-
-  virtual void SetNotify(BrokerThreadNotify* notify) = 0;
-
-  virtual bool AddListenThread(etcpal_socket_t listen_sock) = 0;
-
-  virtual bool AddClientServiceThread() = 0;
-
-  virtual void StopThreads() = 0;
-};
-
 class BrokerThread
 {
 public:
   BrokerThread(BrokerThreadNotify* notify) : notify_(notify) {}
   virtual ~BrokerThread() {}
 
-  virtual bool Start() = 0;
-  virtual void Run() = 0;
+  virtual etcpal::Error Start() = 0;
+  virtual void          Run() = 0;
 
   bool terminated() const { return terminated_; }
 
 protected:
-  etcpal::Thread thread_;
+  etcpal::Thread      thread_;
   BrokerThreadNotify* notify_{nullptr};
-  bool terminated_{true};
+  bool                terminated_{true};
 };
 
 class ListenThread : public BrokerThread
 {
 public:
-  ListenThread(etcpal_socket_t listen_sock, BrokerThreadNotify* notify, rdmnet::BrokerLog* log)
+  ListenThread(etcpal_socket_t listen_sock, BrokerThreadNotify* notify, etcpal::Logger* log)
       : BrokerThread(notify), socket_(listen_sock), log_(log)
   {
   }
   ~ListenThread() override;
 
-  bool Start() override;
-  void Run() override;
+  etcpal::Error Start() override;
+  void          Run() override;
 
   void ReadSocket();
 
 private:
   etcpal_socket_t socket_{ETCPAL_SOCKET_INVALID};
-  rdmnet::BrokerLog* log_{nullptr};
+  etcpal::Logger* log_{nullptr};
 };
 
 class ClientServiceThread : public BrokerThread
@@ -105,11 +92,25 @@ public:
   ClientServiceThread(BrokerThreadNotify* notify) : BrokerThread(notify) {}
   ~ClientServiceThread() override;
 
-  bool Start() override;
-  void Run() override;
+  etcpal::Error Start() override;
+  void          Run() override;
 
 protected:
   static constexpr int kSleepMs{1};
+};
+
+class BrokerThreadInterface
+{
+public:
+  virtual ~BrokerThreadInterface() = default;
+
+  virtual void SetNotify(BrokerThreadNotify* notify) = 0;
+
+  virtual etcpal::Error AddListenThread(etcpal_socket_t listen_sock) = 0;
+
+  virtual etcpal::Error AddClientServiceThread() = 0;
+
+  virtual void StopThreads() = 0;
 };
 
 class BrokerThreadManager : public BrokerThreadInterface
@@ -117,8 +118,8 @@ class BrokerThreadManager : public BrokerThreadInterface
 public:
   void SetNotify(BrokerThreadNotify* notify) override { notify_ = notify; }
 
-  bool AddListenThread(etcpal_socket_t listen_sock) override;
-  bool AddClientServiceThread() override;
+  etcpal::Error AddListenThread(etcpal_socket_t listen_sock) override;
+  etcpal::Error AddClientServiceThread() override;
 
   void StopThreads() override;
 
@@ -129,7 +130,7 @@ private:
 
   std::vector<std::unique_ptr<BrokerThread>> threads_;
 
-  rdmnet::BrokerLog* log_{nullptr};
+  etcpal::Logger* log_{nullptr};
 };
 
 #endif  // BROKER_THREADS_H_
