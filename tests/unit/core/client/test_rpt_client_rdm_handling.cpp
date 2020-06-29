@@ -37,6 +37,7 @@
 #include "rdmnet_mock/core/broker_prot.h"
 #include "rdmnet_mock/core/common.h"
 #include "rdmnet_mock/core/connection.h"
+#include "rdmnet_mock/core/llrp_target.h"
 #include "rdmnet_mock/core/rpt_prot.h"
 #include "rdmnet_mock/discovery.h"
 #include "rdmnet_client_fake_callbacks.h"
@@ -45,10 +46,17 @@
 
 extern "C" {
 static RCConnection* last_conn;
+static RCLlrpTarget* last_llrp_target;
 
 static etcpal_error_t register_and_save_conn(RCConnection* conn)
 {
   last_conn = conn;
+  return kEtcPalErrOk;
+}
+
+static etcpal_error_t register_and_save_llrp_target(RCLlrpTarget* target, const RdmnetMcastNetintId*, size_t)
+{
+  last_llrp_target = target;
   return kEtcPalErrOk;
 }
 }
@@ -79,6 +87,7 @@ protected:
     etcpal_reset_all_fakes();
 
     rc_conn_register_fake.custom_fake = register_and_save_conn;
+    rc_llrp_target_register_fake.custom_fake = register_and_save_llrp_target;
 
     // Capture the RdmBuffer lists sent by rc_rpt_send_notification()
     last_sent_buf_list.clear();
@@ -108,7 +117,11 @@ protected:
 
   void TearDown() override
   {
-    ASSERT_EQ(kEtcPalErrOk, rc_client_unregister(&client_, kRdmnetDisconnectShutdown));
+    if (!rc_client_unregister(&client_, kRdmnetDisconnectShutdown))
+    {
+      last_conn->callbacks.destroyed(last_conn);
+      last_llrp_target->callbacks.destroyed(last_llrp_target);
+    }
     rc_client_module_deinit();
   }
 

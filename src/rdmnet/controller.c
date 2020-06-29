@@ -328,8 +328,12 @@ etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t        controller_h
   if (res != kEtcPalErrOk)
     return res;
 
-  res = rc_client_unregister(&controller->client, disconnect_reason);
+  bool destroy_immediately = rc_client_unregister(&controller->client, disconnect_reason);
+  rdmnet_unregister_struct_instance(controller);
   release_controller(controller);
+
+  if (destroy_immediately)
+    rdmnet_free_struct_instance(controller);
   return res;
 }
 
@@ -891,7 +895,7 @@ etcpal_error_t create_new_controller(const RdmnetControllerConfig* config, rdmne
 {
   etcpal_error_t res = kEtcPalErrNoMem;
 
-  RdmnetController* new_controller = alloc_controller_instance();
+  RdmnetController* new_controller = rdmnet_alloc_controller_instance();
   if (!new_controller)
     return res;
 
@@ -911,7 +915,8 @@ etcpal_error_t create_new_controller(const RdmnetControllerConfig* config, rdmne
   res = rc_rpt_client_register(client, config->create_llrp_target, config->llrp_netints, config->num_llrp_netints);
   if (res != kEtcPalErrOk)
   {
-    free_controller_instance(new_controller);
+    rdmnet_unregister_struct_instance(new_controller);
+    rdmnet_free_struct_instance(new_controller);
     return res;
   }
 
@@ -940,7 +945,8 @@ etcpal_error_t get_controller(rdmnet_controller_t handle, RdmnetController** con
   if (!rdmnet_readlock())
     return kEtcPalErrSys;
 
-  RdmnetController* found_controller = (RdmnetController*)find_struct_instance(handle, kRdmnetStructTypeController);
+  RdmnetController* found_controller =
+      (RdmnetController*)rdmnet_find_struct_instance(handle, kRdmnetStructTypeController);
   if (!found_controller)
   {
     rdmnet_readunlock();
@@ -1028,7 +1034,7 @@ void client_destroyed(RCClient* client)
 {
   RDMNET_ASSERT(client);
   RdmnetController* controller = GET_CONTROLLER_FROM_CLIENT(client);
-  free_controller_instance(controller);
+  rdmnet_free_struct_instance(controller);
 }
 
 void client_llrp_msg_received(RCClient*              client,
@@ -1276,19 +1282,21 @@ void handle_component_scope(RdmnetController*       controller,
   uint16_t scope_slot = etcpal_unpack_u16b(data);
 
   // This is a bit of a hack and relies on knowledge of how the client struct works.
-  // We use a convention that the scope slot corresponds to the scope handle plus 1.
+  // We use a convention that the scope slot corresponds to the scope's index in the client's
+  // scopes array plus 1.
   RCClient* client = &controller->client;
+#if RDMNET_DYNAMIC_MEM
   if (scope_slot == 0 || scope_slot > client->num_scopes)
   {
     RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRDataOutOfRange);
     return;
   }
 
-  RCClientScope* scope = &client->scopes[scope_slot - 1];
-  while ((scope->state == kRCScopeStateInactive || scope->state == kRCScopeStateMarkedForDestruction))
+  RCClientScope* scope = client->scopes[scope_slot - 1];
+  while ((scope->handle == RDMNET_CLIENT_SCOPE_INVALID || scope->state == kRCScopeStateMarkedForDestruction))
   {
     if (++scope_slot <= client->num_scopes)
-      scope = &client->scopes[scope_slot - 1];
+      scope = client->scopes[scope_slot - 1];
     else
       break;
   }
@@ -1298,6 +1306,28 @@ void handle_component_scope(RdmnetController*       controller,
     RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRDataOutOfRange);
     return;
   }
+#else
+  if (scope_slot == 0 || scope_slot > RDMNET_MAX_SCOPES_PER_CLIENT)
+  {
+    RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRDataOutOfRange);
+    return;
+  }
+
+  RCClientScope* scope = &client->scopes[scope_slot - 1];
+  while ((scope->handle == RDMNET_CLIENT_SCOPE_INVALID || scope->state == kRCScopeStateMarkedForDestruction))
+  {
+    if (++scope_slot <= RDMNET_MAX_SCOPES_PER_CLIENT)
+      scope = &client->scopes[scope_slot - 1];
+    else
+      break;
+  }
+
+  if (scope_slot > RDMNET_MAX_SCOPES_PER_CLIENT)
+  {
+    RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRDataOutOfRange);
+    return;
+  }
+#endif
 
   // Pack the scope information
   uint8_t* cur_ptr = buf;

@@ -35,6 +35,7 @@
 #include <vector>
 
 #include "gtest/gtest.h"
+#include "rdmnet/core/message.h"
 #include "rdmnet/core/msg_buf.h"
 #include "test_file_manifest.h"
 #include "load_test_data.h"
@@ -139,6 +140,7 @@ TEST_P(TestMsgBuf, ParseMessageInFull)
   buf_.cur_data_size += test_data.size();
   ASSERT_EQ(kEtcPalErrOk, rc_msg_buf_parse_data(&buf_));
   ExpectMessagesEqual(buf_.msg, GetParam().second);
+  rc_free_message_resources(&buf_.msg);
 }
 
 // Test parsing the message after dividing it into a number of randomly-sized chunks and simulating
@@ -198,6 +200,7 @@ TEST_P(TestMsgBuf, ParseMessageInRandomChunks)
     // Validate the parse result
     SCOPED_TRACE("While validating RdmnetMessage parsed from rc_msg_buf_recv() using ExpectMessagesEqual()");
     ExpectMessagesEqual(buf_.msg, GetParam().second);
+    rc_free_message_resources(&buf_.msg);
 #if !DEBUGGING_TEST_FAILURE
   }
 #endif

@@ -156,7 +156,7 @@ TEST_F(TestBaseBrokerClient, TransfersInformationToRptDevice)
   EXPECT_EQ(device.binding_cid, client_entry.binding_cid);
 }
 
-class TestRptController : public testing::Test
+class TestBrokerClientRptController : public testing::Test
 {
 protected:
   static constexpr BrokerClient::Handle kClientHandle = 0;
@@ -172,10 +172,11 @@ protected:
   RptStatusMsg         status_msg_{};
   RdmBuffer            rdm_buf_{};
   RptMessage           request_{};
+  RdmnetRptClientEntry rpt_client_entry_{};
   BrokerMessage        broker_msg_{};
   BrokerClient::Handle sending_controller_handle_{static_cast<BrokerClient::Handle>(1)};
 
-  TestRptController()
+  TestBrokerClientRptController()
   {
     etcpal_reset_all_fakes();
 
@@ -185,10 +186,9 @@ protected:
     RPT_GET_RDM_BUF_LIST(&request_)->num_rdm_buffers = 1;
 
     broker_msg_.vector = VECTOR_BROKER_CLIENT_ADD;
-    RdmnetRptClientEntry entry{};
     BROKER_GET_CLIENT_LIST(&broker_msg_)->client_protocol = kClientProtocolRPT;
     RdmnetRptClientList* rpt_list = BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&broker_msg_));
-    rpt_list->client_entries = &entry;
+    rpt_list->client_entries = &rpt_client_entry_;
     rpt_list->num_client_entries = 1;
 
     BrokerClient bc(kClientHandle, kClientSocket);
@@ -197,7 +197,7 @@ protected:
 };
 
 // Controllers should send periodic heartbeat messages.
-TEST_F(TestRptController, SendsHeartbeat)
+TEST_F(TestBrokerClientRptController, SendsHeartbeat)
 {
   // Advance time so that the heartbeat send interval has passed
   etcpal_getms_fake.return_val = (E133_TCP_HEARTBEAT_INTERVAL_SEC * 1000) + 500;
@@ -212,14 +212,14 @@ TEST_F(TestRptController, SendsHeartbeat)
   EXPECT_EQ(etcpal_send_fake.call_count, 1u);
 }
 
-TEST_F(TestRptController, HandlesHeartbeatTimeout)
+TEST_F(TestBrokerClientRptController, HandlesHeartbeatTimeout)
 {
   // Advance time so that the heartbeat timeout has passed.
   etcpal_getms_fake.return_val = (E133_HEARTBEAT_TIMEOUT_SEC * 1000) + 500;
   EXPECT_TRUE(controller_->TcpConnExpired());
 }
 
-TEST_F(TestRptController, HonorsMaxQSize)
+TEST_F(TestBrokerClientRptController, HonorsMaxQSize)
 {
   for (size_t i = 0; i < kMaxQSize; ++i)
   {
@@ -236,7 +236,7 @@ TEST_F(TestRptController, HonorsMaxQSize)
   EXPECT_FALSE(controller_->Push(sending_controller_handle_, broker_cid_, request_));
 }
 
-TEST_F(TestRptController, InfiniteMaxQSize)
+TEST_F(TestBrokerClientRptController, InfiniteMaxQSize)
 {
   // Max Q Size of 0 should mean infinite
   controller_->max_q_size = 0;
@@ -252,7 +252,7 @@ TEST_F(TestRptController, InfiniteMaxQSize)
   }
 }
 
-class TestRptDevice : public testing::Test
+class TestBrokerClientRptDevice : public testing::Test
 {
 public:
   static constexpr etcpal_socket_t kClientSocket = static_cast<etcpal_socket_t>(0);
@@ -268,11 +268,12 @@ protected:
   std::unique_ptr<RPTDevice> device_;
   etcpal::Uuid               broker_cid_ = etcpal::Uuid::OsPreferred();
 
-  RdmBuffer     rdm_buf_{};
-  RptMessage    request_{};
-  BrokerMessage broker_msg_{};
+  RdmBuffer            rdm_buf_{};
+  RptMessage           request_{};
+  RdmnetRptClientEntry rpt_client_entry_{};
+  BrokerMessage        broker_msg_{};
 
-  TestRptDevice()
+  TestBrokerClientRptDevice()
   {
     etcpal_reset_all_fakes();
 
@@ -282,10 +283,9 @@ protected:
     RPT_GET_RDM_BUF_LIST(&request_)->num_rdm_buffers = 1;
 
     broker_msg_.vector = VECTOR_BROKER_CLIENT_ADD;
-    RdmnetRptClientEntry entry{};
     BROKER_GET_CLIENT_LIST(&broker_msg_)->client_protocol = kClientProtocolRPT;
     RdmnetRptClientList* rpt_list = BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&broker_msg_));
-    rpt_list->client_entries = &entry;
+    rpt_list->client_entries = &rpt_client_entry_;
     rpt_list->num_client_entries = 1;
 
     BrokerClient bc(kClientHandle, kClientSocket);
@@ -294,7 +294,7 @@ protected:
 };
 
 // Devices should send periodic heartbeat messages.
-TEST_F(TestRptDevice, SendsHeartbeat)
+TEST_F(TestBrokerClientRptDevice, SendsHeartbeat)
 {
   // Advance time so that the heartbeat send interval has passed
   etcpal_getms_fake.return_val = (E133_TCP_HEARTBEAT_INTERVAL_SEC * 1000) + 500;
@@ -309,14 +309,14 @@ TEST_F(TestRptDevice, SendsHeartbeat)
   EXPECT_EQ(etcpal_send_fake.call_count, 1u);
 }
 
-TEST_F(TestRptDevice, HandlesHeartbeatTimeout)
+TEST_F(TestBrokerClientRptDevice, HandlesHeartbeatTimeout)
 {
   // Advance time so that the heartbeat timeout has passed.
   etcpal_getms_fake.return_val = (E133_HEARTBEAT_TIMEOUT_SEC * 1000) + 500;
   EXPECT_TRUE(device_->TcpConnExpired());
 }
 
-TEST_F(TestRptDevice, HonorsMaxQSize)
+TEST_F(TestBrokerClientRptDevice, HonorsMaxQSize)
 {
   for (size_t i = 0; i < kMaxQSize; ++i)
   {
@@ -335,7 +335,7 @@ TEST_F(TestRptDevice, HonorsMaxQSize)
   EXPECT_FALSE(device_->Push(kClientHandle + 1, broker_cid_, request_));
 }
 
-TEST_F(TestRptDevice, InfiniteMaxQSize)
+TEST_F(TestBrokerClientRptDevice, InfiniteMaxQSize)
 {
   // Max Q Size of 0 should mean infinite
   device_->max_q_size = 0;
@@ -373,7 +373,7 @@ void SendAndVerify(RPTDevice* device, const etcpal::Uuid& broker_cid)
 
   RESET_FAKE(etcpal_send);
   etcpal_send_fake.custom_fake = [](etcpal_socket_t socket, const void* data, size_t size, int /*flags*/) {
-    EXPECT_EQ(socket, TestRptDevice::kClientSocket);
+    EXPECT_EQ(socket, TestBrokerClientRptDevice::kClientSocket);
     EXPECT_EQ(std::memcmp(&(reinterpret_cast<const uint8_t*>(data))[23], controllers[Controller - 1]->data(), 16), 0);
     return (int)size;
   };
@@ -381,7 +381,7 @@ void SendAndVerify(RPTDevice* device, const etcpal::Uuid& broker_cid)
   EXPECT_EQ(etcpal_send_fake.call_count, 1u);
 }
 
-TEST_F(TestRptDevice, FairScheduler)
+TEST_F(TestBrokerClientRptDevice, FairScheduler)
 {
   RptMessage request{};
   request.vector = VECTOR_RPT_REQUEST;

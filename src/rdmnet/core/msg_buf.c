@@ -119,7 +119,9 @@ static size_t                parse_rpt_client_list(ClientListState*     clstate,
                                                    RdmnetRptClientList* clist,
                                                    rc_parse_result_t*   result);
 static RdmnetRptClientEntry* alloc_next_rpt_client_entry(RdmnetRptClientList* clist);
+#if 0
 static RdmnetEptClientEntry* alloc_next_ept_client_entry(RdmnetEptClientList* clist);
+#endif
 
 /*************************** Function definitions ****************************/
 
@@ -939,6 +941,7 @@ RdmnetRptClientEntry* alloc_next_rpt_client_entry(RdmnetRptClientList* clist)
   }
 }
 
+#if 0
 RdmnetEptClientEntry* alloc_next_ept_client_entry(RdmnetEptClientList* clist)
 {
   if (clist->client_entries)
@@ -962,6 +965,7 @@ RdmnetEptClientEntry* alloc_next_ept_client_entry(RdmnetEptClientList* clist)
     return clist->client_entries;
   }
 }
+#endif
 
 size_t parse_request_dynamic_uid_assignment(GenericListState*            lstate,
                                             const uint8_t*               data,

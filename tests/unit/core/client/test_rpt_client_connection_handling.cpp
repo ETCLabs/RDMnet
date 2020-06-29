@@ -25,6 +25,7 @@
 #include <array>
 #include <cstdint>
 #include <string>
+#include <vector>
 #include "etcpal/common.h"
 #include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/lock.h"
@@ -33,7 +34,6 @@
 #include "rdmnet_mock/core/broker_prot.h"
 #include "rdmnet_mock/core/common.h"
 #include "rdmnet_mock/core/connection.h"
-#include "rdmnet_mock/core/llrp_target.h"
 #include "rdmnet_mock/core/rpt_prot.h"
 #include "rdmnet_mock/discovery.h"
 #include "rdmnet_client_fake_callbacks.h"
@@ -52,10 +52,9 @@ struct SavedScopeMonitorConfig
   }
 };
 
-static intptr_t                last_monitor_handle = 0xdead;
-static SavedScopeMonitorConfig last_monitor_config;
-static RCConnection*           last_static_conn;
-static RCConnection*           last_dynamic_conn;
+static intptr_t                   last_monitor_handle = 0xdead;
+static SavedScopeMonitorConfig    last_monitor_config;
+static std::vector<RCConnection*> conns_registered;
 
 rdmnet_scope_monitor_t GetLastMonitorHandle()
 {
@@ -70,6 +69,12 @@ static etcpal_error_t start_monitoring_and_save_config(const RdmnetScopeMonitorC
   ETCPAL_UNUSED_ARG(platform_specific_error);
   *handle = reinterpret_cast<rdmnet_scope_monitor_t>(++last_monitor_handle);
   last_monitor_config = *config;
+  return kEtcPalErrOk;
+}
+
+static etcpal_error_t register_and_save_conn(RCConnection* conn)
+{
+  conns_registered.push_back(conn);
   return kEtcPalErrOk;
 }
 
@@ -149,8 +154,8 @@ protected:
     rdmnet_disc_reset_all_fakes();
     etcpal_reset_all_fakes();
 
-    last_static_conn = nullptr;
-    last_dynamic_conn = nullptr;
+    conns_registered.clear();
+    rc_conn_register_fake.custom_fake = register_and_save_conn;
 
     RDMNET_CLIENT_SET_DEFAULT_SCOPE(&default_dynamic_scope_);
     auto static_broker = etcpal::SockAddr(etcpal::IpAddr::FromString("10.101.1.1"), 8888);
@@ -177,12 +182,15 @@ protected:
 
     // Create client
     ASSERT_EQ(kEtcPalErrOk, rc_client_module_init());
-    ASSERT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, true, nullptr, 0));
+    ASSERT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, false, nullptr, 0));
   }
 
   void TearDown() override
   {
-    ASSERT_EQ(kEtcPalErrOk, rc_client_unregister(&client_, kRdmnetDisconnectShutdown));
+    rc_client_unregister(&client_, kRdmnetDisconnectShutdown);
+    for (auto conn : conns_registered)
+      conn->callbacks.destroyed(conn);
+
     rc_client_module_deinit();
   }
 
@@ -192,12 +200,9 @@ protected:
     RESET_FAKE(rc_conn_register);
     RESET_FAKE(rc_conn_connect);
     RESET_FAKE(rc_client_connected);
-
-    rc_conn_register_fake.custom_fake = [](RCConnection* conn) {
-      last_dynamic_conn = conn;
-      return kEtcPalErrOk;
-    };
+    rc_conn_register_fake.custom_fake = register_and_save_conn;
     rdmnet_disc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
+    size_t next_conn_index = conns_registered.size();
 
     ASSERT_EQ(kEtcPalErrOk, rc_client_add_scope(&client_, &default_dynamic_scope_, &dynamic_scope_handle_));
 
@@ -216,7 +221,7 @@ protected:
     connected_info.broker_uid = {20, 40};
     connected_info.client_uid = {1, 2};
     connected_info.connected_addr = {8888, listen_addrs_[0]};
-    last_dynamic_conn->callbacks.connected(last_dynamic_conn, &connected_info);
+    conns_registered[next_conn_index]->callbacks.connected(conns_registered[next_conn_index], &connected_info);
 
     EXPECT_EQ(rc_client_connected_fake.call_count, 1u);
     EXPECT_EQ(client_connected_info.broker_addr, connected_info.connected_addr);
@@ -230,11 +235,8 @@ protected:
     RESET_FAKE(rc_conn_register);
     RESET_FAKE(rc_conn_connect);
     RESET_FAKE(rc_client_connected);
-
-    rc_conn_register_fake.custom_fake = [](RCConnection* conn) {
-      last_static_conn = conn;
-      return kEtcPalErrOk;
-    };
+    rc_conn_register_fake.custom_fake = register_and_save_conn;
+    size_t next_conn_index = conns_registered.size();
 
     ASSERT_EQ(kEtcPalErrOk, rc_client_add_scope(&client_, &default_static_scope_, &static_scope_handle_));
 
@@ -248,7 +250,7 @@ protected:
     connected_info.broker_uid = {20, 40};
     connected_info.client_uid = {1, 2};
     connected_info.connected_addr = default_static_scope_.static_broker_addr;
-    last_static_conn->callbacks.connected(last_static_conn, &connected_info);
+    conns_registered[next_conn_index]->callbacks.connected(conns_registered[next_conn_index], &connected_info);
 
     EXPECT_EQ(rc_client_connected_fake.call_count, 1u);
     EXPECT_EQ(client_connected_info.broker_addr, connected_info.connected_addr);
@@ -317,7 +319,7 @@ TEST_F(TestDynamicRptClientConnectionHandling, HandlesBrokerUpdated)
   RCDisconnectedInfo disconn_info{};
   disconn_info.event = kRdmnetDisconnectAbruptClose;
   disconn_info.socket_err = kEtcPalErrConnReset;
-  last_dynamic_conn->callbacks.disconnected(last_dynamic_conn, &disconn_info);
+  conns_registered[0]->callbacks.disconnected(conns_registered[0], &disconn_info);
 
   EXPECT_EQ(rc_conn_connect_fake.call_count, 1u);
   // The retry should use the new Broker listen address.
@@ -336,7 +338,7 @@ TEST_F(TestDynamicRptClientConnectionHandling, HandlesReconnectionErrors)
   RCDisconnectedInfo disconn_info{};
   disconn_info.event = kRdmnetDisconnectAbruptClose;
   disconn_info.socket_err = kEtcPalErrConnReset;
-  last_dynamic_conn->callbacks.disconnected(last_dynamic_conn, &disconn_info);
+  conns_registered[0]->callbacks.disconnected(conns_registered[0], &disconn_info);
 
   // Make sure it tries all possible listen addresses, then reports an error.
   EXPECT_EQ(rc_conn_connect_fake.call_count, listen_addrs_.size());
@@ -348,10 +350,7 @@ TEST_F(TestDynamicRptClientConnectionHandling, HandlesReconnectionErrors)
 TEST_F(TestDynamicRptClientConnectionHandling, ClientRetriesOnConnectFail)
 {
   rdmnet_disc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
-  rc_conn_register_fake.custom_fake = [](RCConnection* conn) {
-    last_dynamic_conn = conn;
-    return kEtcPalErrOk;
-  };
+  rc_conn_register_fake.custom_fake = register_and_save_conn;
   rc_conn_connect_fake.custom_fake = connect_and_save_address;
   rc_client_connect_failed_fake.custom_fake = custom_connect_failed_cb;
 
@@ -373,7 +372,7 @@ TEST_F(TestDynamicRptClientConnectionHandling, ClientRetriesOnConnectFail)
   RCConnectFailedInfo failed_info{};
   failed_info.event = kRdmnetConnectFailTcpLevel;
   failed_info.socket_err = kEtcPalErrTimedOut;
-  last_dynamic_conn->callbacks.connect_failed(last_dynamic_conn, &failed_info);
+  conns_registered[0]->callbacks.connect_failed(conns_registered[0], &failed_info);
 
   EXPECT_EQ(rc_client_connect_failed_fake.call_count, 1u);
   EXPECT_TRUE(client_connect_failed_info.will_retry);
@@ -383,13 +382,10 @@ TEST_F(TestDynamicRptClientConnectionHandling, ClientRetriesOnConnectFail)
   EXPECT_EQ(last_connect_addr.port, discovered_broker_.port);
 }
 
-TEST_F(TestDynamicRptClientConnectionHandling, ScopeCleanedUpOnFatalConnectFail)
+TEST_F(TestDynamicRptClientConnectionHandling, ScopeStillExistsOnFatalConnectFail)
 {
   rdmnet_disc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
-  rc_conn_register_fake.custom_fake = [](RCConnection* conn) {
-    last_dynamic_conn = conn;
-    return kEtcPalErrOk;
-  };
+  rc_conn_register_fake.custom_fake = register_and_save_conn;
   rc_conn_connect_fake.custom_fake = connect_and_save_address;
   rc_client_connect_failed_fake.custom_fake = custom_connect_failed_cb;
 
@@ -411,7 +407,7 @@ TEST_F(TestDynamicRptClientConnectionHandling, ScopeCleanedUpOnFatalConnectFail)
   RCConnectFailedInfo failed_info{};
   failed_info.event = kRdmnetConnectFailRejected;
   failed_info.rdmnet_reason = kRdmnetConnectDuplicateUid;
-  last_dynamic_conn->callbacks.connect_failed(last_dynamic_conn, &failed_info);
+  conns_registered[0]->callbacks.connect_failed(conns_registered[0], &failed_info);
 
   EXPECT_EQ(rc_client_connect_failed_fake.call_count, 1u);
   EXPECT_FALSE(client_connect_failed_info.will_retry);
@@ -419,11 +415,19 @@ TEST_F(TestDynamicRptClientConnectionHandling, ScopeCleanedUpOnFatalConnectFail)
   EXPECT_EQ(client_connect_failed_info.rdmnet_reason, kRdmnetConnectDuplicateUid);
 
   EXPECT_EQ(rc_conn_connect_fake.call_count, 0u);
-  EXPECT_EQ(rc_conn_unregister_fake.call_count, 1u);
+  EXPECT_EQ(rc_conn_unregister_fake.call_count, 0u);
 
   char           scope_buf[E133_SCOPE_STRING_PADDED_LENGTH];
   EtcPalSockAddr static_broker_addr;
-  EXPECT_EQ(rc_client_get_scope(&client_, dynamic_scope_handle_, scope_buf, &static_broker_addr), kEtcPalErrNotFound);
+  EXPECT_EQ(rc_client_get_scope(&client_, dynamic_scope_handle_, scope_buf, &static_broker_addr), kEtcPalErrOk);
+  EXPECT_STREQ(scope_buf, default_dynamic_scope_.scope);
+  EXPECT_TRUE(ETCPAL_IP_IS_INVALID(&static_broker_addr.ip));
+
+  default_dynamic_scope_.scope = "Changed Test Scope";
+  EXPECT_EQ(rc_client_change_scope(&client_, dynamic_scope_handle_, &default_dynamic_scope_,
+                                   kRdmnetDisconnectUserReconfigure),
+            kEtcPalErrOk);
+  EXPECT_EQ(rdmnet_disc_start_monitoring_fake.call_count, 2u);
 }
 
 TEST_F(TestDynamicRptClientConnectionHandling, ChangeScopeHasCorrectSideEffects)
@@ -434,7 +438,9 @@ TEST_F(TestDynamicRptClientConnectionHandling, ChangeScopeHasCorrectSideEffects)
   rdmnet_disc_start_monitoring_fake.custom_fake = start_monitoring_and_save_config;
 
   default_dynamic_scope_.scope = "Changed Test Scope";
-  rc_client_change_scope(&client_, dynamic_scope_handle_, &default_dynamic_scope_, kRdmnetDisconnectUserReconfigure);
+  ASSERT_EQ(rc_client_change_scope(&client_, dynamic_scope_handle_, &default_dynamic_scope_,
+                                   kRdmnetDisconnectUserReconfigure),
+            kEtcPalErrOk);
 
   EXPECT_EQ(rc_conn_disconnect_fake.call_count, 1u);
   EXPECT_EQ(rc_conn_disconnect_fake.arg1_val, kRdmnetDisconnectUserReconfigure);
@@ -474,7 +480,7 @@ TEST_F(TestDynamicRptClientConnectionHandling, ReportsDisconnectAfterScopeChange
 
   RCDisconnectedInfo disconn_info{};
   disconn_info.event = kRdmnetDisconnectGracefulLocalInitiated;
-  last_dynamic_conn->callbacks.disconnected(last_dynamic_conn, &disconn_info);
+  conns_registered[0]->callbacks.disconnected(conns_registered[0], &disconn_info);
 
   EXPECT_EQ(rc_client_disconnected_fake.call_count, 1u);
 
@@ -558,7 +564,7 @@ TEST_F(TestStaticRptClientConnectionHandling, ClientRetriesOnDisconnect)
   disconn_info.event = kRdmnetDisconnectGracefulRemoteInitiated;
   disconn_info.rdmnet_reason = kRdmnetDisconnectShutdown;
   disconn_info.socket_err = kEtcPalErrOk;
-  last_static_conn->callbacks.disconnected(last_static_conn, &disconn_info);
+  conns_registered[0]->callbacks.disconnected(conns_registered[0], &disconn_info);
 
   EXPECT_EQ(rc_client_disconnected_fake.call_count, 1u);
   EXPECT_TRUE(client_disconn_info.will_retry);
@@ -567,10 +573,7 @@ TEST_F(TestStaticRptClientConnectionHandling, ClientRetriesOnDisconnect)
 
 TEST_F(TestStaticRptClientConnectionHandling, ClientRetriesOnConnectFail)
 {
-  rc_conn_register_fake.custom_fake = [](RCConnection* conn) {
-    last_static_conn = conn;
-    return kEtcPalErrOk;
-  };
+  rc_conn_register_fake.custom_fake = register_and_save_conn;
 
   ASSERT_EQ(kEtcPalErrOk, rc_client_add_scope(&client_, &default_static_scope_, &static_scope_handle_));
 
@@ -583,7 +586,7 @@ TEST_F(TestStaticRptClientConnectionHandling, ClientRetriesOnConnectFail)
   RCConnectFailedInfo failed_info{};
   failed_info.event = kRdmnetConnectFailTcpLevel;
   failed_info.socket_err = kEtcPalErrTimedOut;
-  last_static_conn->callbacks.connect_failed(last_static_conn, &failed_info);
+  conns_registered[0]->callbacks.connect_failed(conns_registered[0], &failed_info);
 
   EXPECT_EQ(rc_client_connect_failed_fake.call_count, 1u);
   EXPECT_TRUE(client_connect_failed_info.will_retry);
@@ -592,10 +595,8 @@ TEST_F(TestStaticRptClientConnectionHandling, ClientRetriesOnConnectFail)
 
 TEST_F(TestStaticRptClientConnectionHandling, ClientDoesNotRetryOnFatalConnectFail)
 {
-  rc_conn_register_fake.custom_fake = [](RCConnection* conn) {
-    last_static_conn = conn;
-    return kEtcPalErrOk;
-  };
+  rc_conn_register_fake.custom_fake = register_and_save_conn;
+
   ASSERT_EQ(kEtcPalErrOk, rc_client_add_scope(&client_, &default_static_scope_, &static_scope_handle_));
 
   EXPECT_EQ(rc_conn_register_fake.call_count, 1u);
@@ -607,7 +608,7 @@ TEST_F(TestStaticRptClientConnectionHandling, ClientDoesNotRetryOnFatalConnectFa
   RCConnectFailedInfo failed_info{};
   failed_info.event = kRdmnetConnectFailRejected;
   failed_info.rdmnet_reason = kRdmnetConnectScopeMismatch;
-  last_static_conn->callbacks.connect_failed(last_static_conn, &failed_info);
+  conns_registered[0]->callbacks.connect_failed(conns_registered[0], &failed_info);
 
   EXPECT_EQ(rc_client_connect_failed_fake.call_count, 1u);
   EXPECT_FALSE(client_connect_failed_info.will_retry);
@@ -635,7 +636,7 @@ TEST_F(TestMultipleScopeRptClientConnectionHandling, ChangeDomainHasCorrectSideE
 
   // We should only disconnect from the dynamic scope
   EXPECT_EQ(rc_conn_disconnect_fake.call_count, 1u);
-  EXPECT_EQ(rc_conn_disconnect_fake.arg0_val, last_dynamic_conn);
+  EXPECT_EQ(rc_conn_disconnect_fake.arg0_val, conns_registered[1]);
   EXPECT_EQ(rc_conn_disconnect_fake.arg1_val, kRdmnetDisconnectUserReconfigure);
 
   EXPECT_EQ(rdmnet_disc_stop_monitoring_fake.call_count, 1u);
@@ -665,7 +666,7 @@ TEST_F(TestMultipleScopeRptClientConnectionHandling, ReportsDisconnectAfterDomai
 
   RCDisconnectedInfo disconn_info{};
   disconn_info.event = kRdmnetDisconnectGracefulLocalInitiated;
-  last_dynamic_conn->callbacks.disconnected(last_dynamic_conn, &disconn_info);
+  conns_registered[1]->callbacks.disconnected(conns_registered[1], &disconn_info);
 
   EXPECT_EQ(rc_client_disconnected_fake.call_count, 1u);
 
