@@ -1,0 +1,413 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen 1.8.13" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RDMnet: Data Fields - Functions</title>
+  <link href="tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="dynsections.js"></script>
+  <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+</script>
+  <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css" />
+  <!--BEGIN CUSTOM SCRIPTS-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <script type="text/javascript">
+    $(function () { selectAllC() });
+  </script>
+  <script type="text/javascript">
+    function selectAllC() {
+      // Enable all C-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_c")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_c")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectAllCpp() {
+      // Enable all C++-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_cpp")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C++-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_cpp")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectLanguage(evt, block_id, language) {
+      // Get all elements with class="tabcontent" and hide them
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.startsWith("div_" + block_id)) {
+          tabcontent[i].style.display = "none";
+        }
+      }
+      // Get all elements with class="tablinks" and remove the class "active"
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.startsWith("button_" + block_id)) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById("div_" + block_id + "_" + language).style.display = "block";
+      if (!evt.currentTarget.className.includes("active")) {
+        evt.currentTarget.className += " active";
+      }
+    }
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">RDMnet
+                &#160;<span id="projectnumber">Staging for pull request 36</span>
+              </div>
+              <div id="projectbrief">Implementation of ANSI E1.33 (RDMnet)</div>
+            </td>
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- end header part -->
+<!-- Generated by Doxygen 1.8.13 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Search');
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('functions_func_s.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="contents">
+&#160;
+
+<h3><a id="index_s"></a>- s -</h3><ul>
+<li>Save()
+: <a class="el" href="classrdmnet_1_1_ept_data.html#ac6016bf32c210897a6a47f0262152e9c">rdmnet::EptData</a>
+, <a class="el" href="classrdmnet_1_1_ept_status.html#a3f9f6dc6b4fb61595617affcb781b169">rdmnet::EptStatus</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_rdm_command.html#a6070d269a6678cfc0a9ecc57fb0f2e27">rdmnet::llrp::RdmCommand</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_rdm_response.html#aabcd92291398a8386d843a92e9368c97">rdmnet::llrp::RdmResponse</a>
+, <a class="el" href="classrdmnet_1_1_rdm_command.html#a78e3d10f3f539e2314643d7017a6beb7">rdmnet::RdmCommand</a>
+, <a class="el" href="classrdmnet_1_1_rdm_response.html#a910a0f0e0e0127452911439cde553974">rdmnet::RdmResponse</a>
+, <a class="el" href="classrdmnet_1_1_rpt_status.html#a401bcd20f188e7582b6421a3a0c9be0f">rdmnet::RptStatus</a>
+</li>
+<li>SavedEptData()
+: <a class="el" href="classrdmnet_1_1_saved_ept_data.html#a9e7fcbf62ae348239369ab62716094f7">rdmnet::SavedEptData</a>
+</li>
+<li>SavedEptStatus()
+: <a class="el" href="classrdmnet_1_1_saved_ept_status.html#a48de1b73d7f9045f8549b66eb977b97e">rdmnet::SavedEptStatus</a>
+</li>
+<li>SavedRdmCommand()
+: <a class="el" href="classrdmnet_1_1llrp_1_1_saved_rdm_command.html#aad282d458c06854d43c40790da3eef65">rdmnet::llrp::SavedRdmCommand</a>
+, <a class="el" href="classrdmnet_1_1_saved_rdm_command.html#ab2022d4e403aae9bcf52a5409e0a0c5a">rdmnet::SavedRdmCommand</a>
+</li>
+<li>SavedRdmResponse()
+: <a class="el" href="classrdmnet_1_1llrp_1_1_saved_rdm_response.html#aae8ce8fb306413641ee5013d1b49fa8d">rdmnet::llrp::SavedRdmResponse</a>
+, <a class="el" href="classrdmnet_1_1_saved_rdm_response.html#ae11c6a941dee2e5eb963f836d22b9cae">rdmnet::SavedRdmResponse</a>
+</li>
+<li>SavedRptStatus()
+: <a class="el" href="classrdmnet_1_1_saved_rpt_status.html#a4d437a3afc1067655ce88cefb7f21cb8">rdmnet::SavedRptStatus</a>
+</li>
+<li>scope()
+: <a class="el" href="classrdmnet_1_1_controller.html#ad79553c8d464a3831557e0dd99329189">rdmnet::Controller</a>
+, <a class="el" href="classrdmnet_1_1_device.html#a3f46dd4c3976eff06bfb157008fcf9b9">rdmnet::Device</a>
+, <a class="el" href="classrdmnet_1_1_ept_client.html#a4936281394e537dc67da1c9545dafea5">rdmnet::EptClient</a>
+</li>
+<li>Scope()
+: <a class="el" href="classrdmnet_1_1_scope.html#a4a6d3e3e408e84d37c7afd04119d267d">rdmnet::Scope</a>
+</li>
+<li>SendAck()
+: <a class="el" href="classrdmnet_1_1_rdm_response_action.html#a66301810814d353b92754a177d92dcaa">rdmnet::RdmResponseAction</a>
+</li>
+<li>SendData()
+: <a class="el" href="classrdmnet_1_1_ept_client.html#ab64b62efe1efb21827dcc87d1059ceed">rdmnet::EptClient</a>
+, <a class="el" href="classrdmnet_1_1_ept_response_action.html#ac648b8c90bc48b9d7982b5daee8e2b60">rdmnet::EptResponseAction</a>
+</li>
+<li>SendGetCommand()
+: <a class="el" href="classrdmnet_1_1_controller.html#a1cbb710605f06cddd4e043ce71653390">rdmnet::Controller</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_manager.html#a02a5129770ac898eceb3d9b1c909ef2c">rdmnet::llrp::Manager</a>
+</li>
+<li>SendLlrpAck()
+: <a class="el" href="classrdmnet_1_1_controller.html#aa8895c75dc3f9da25ef4072294810183">rdmnet::Controller</a>
+, <a class="el" href="classrdmnet_1_1_device.html#aaf4491f3d76f1d0092cc94f28ecc31b8">rdmnet::Device</a>
+</li>
+<li>SendLlrpNack()
+: <a class="el" href="classrdmnet_1_1_controller.html#a2c27dc33ed9bcb1963c2c15e6c43cdbd">rdmnet::Controller</a>
+, <a class="el" href="classrdmnet_1_1_device.html#a5121e1897edbcb40d9a078723a9cd21f">rdmnet::Device</a>
+</li>
+<li>SendNack()
+: <a class="el" href="classrdmnet_1_1_rdm_response_action.html#a0f084460d0d89d9af564dd573720d251">rdmnet::RdmResponseAction</a>
+</li>
+<li>SendRdmAck()
+: <a class="el" href="classrdmnet_1_1_controller.html#a018ee22d658081c4c7f38e5b0eaaeb83">rdmnet::Controller</a>
+, <a class="el" href="classrdmnet_1_1_device.html#a5795a6031e8903bc294f0afa4a224472">rdmnet::Device</a>
+</li>
+<li>SendRdmCommand()
+: <a class="el" href="classrdmnet_1_1_controller.html#aec1f580278dd1703dfeb7e1030413a90">rdmnet::Controller</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_manager.html#ac9182889f3f01eaca26dbadf6742dfdb">rdmnet::llrp::Manager</a>
+</li>
+<li>SendRdmNack()
+: <a class="el" href="classrdmnet_1_1_controller.html#a3c83896568e8827df9550bc946fa266e">rdmnet::Controller</a>
+, <a class="el" href="classrdmnet_1_1_device.html#ae7675ffb54dda6f55c0eb2f54da65c24">rdmnet::Device</a>
+</li>
+<li>SendRdmUpdate()
+: <a class="el" href="classrdmnet_1_1_controller.html#a2950696b66420a00fc29de75167b9d36">rdmnet::Controller</a>
+, <a class="el" href="classrdmnet_1_1_device.html#aeb4d4b1e2f5867bd99387fbc76d01aa2">rdmnet::Device</a>
+</li>
+<li>SendRptStatus()
+: <a class="el" href="classrdmnet_1_1_device.html#ad2f2a87844ed172ccc142792b03053f8">rdmnet::Device</a>
+</li>
+<li>SendSetCommand()
+: <a class="el" href="classrdmnet_1_1_controller.html#a7bfc2c6acd240a4200c2ee77d5a31e9e">rdmnet::Controller</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_manager.html#acd8fb27ed33618db7f9322ccedbed550">rdmnet::llrp::Manager</a>
+</li>
+<li>SendStatus()
+: <a class="el" href="classrdmnet_1_1_ept_client.html#ac82d42bd0424940331b7e72ea79687dd">rdmnet::EptClient</a>
+, <a class="el" href="classrdmnet_1_1_ept_response_action.html#a38c5fb57a5485e33d2565655ab636f19">rdmnet::EptResponseAction</a>
+</li>
+<li>seq_num()
+: <a class="el" href="classrdmnet_1_1llrp_1_1_rdm_command.html#ab8cde2c7d9bdf26afe9addf1f7a880de">rdmnet::llrp::RdmCommand</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_rdm_response.html#ac330c2970b7a9c554c33f64fc7888189">rdmnet::llrp::RdmResponse</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_saved_rdm_command.html#adb251237bd18655c3ef175c5a5d21b0f">rdmnet::llrp::SavedRdmCommand</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_saved_rdm_response.html#a50707cdd88ddb0b583d4d8d541786c1e">rdmnet::llrp::SavedRdmResponse</a>
+, <a class="el" href="classrdmnet_1_1_rdm_command.html#a54c733bba0391a83d2e434b023035028">rdmnet::RdmCommand</a>
+, <a class="el" href="classrdmnet_1_1_rdm_response.html#aa638c83f8599f07968c6a26de2d5a0b1">rdmnet::RdmResponse</a>
+, <a class="el" href="classrdmnet_1_1_rpt_status.html#a87bb2e53322efe7a63cecee71e419d58">rdmnet::RptStatus</a>
+, <a class="el" href="classrdmnet_1_1_saved_rdm_command.html#a8d832053aa92b9072bfb14b0c8c8963b">rdmnet::SavedRdmCommand</a>
+, <a class="el" href="classrdmnet_1_1_saved_rdm_response.html#adb430bae13348aec3a8fd86fcae94d14">rdmnet::SavedRdmResponse</a>
+, <a class="el" href="classrdmnet_1_1_saved_rpt_status.html#ab565b2f4b4df4ce40d52cfb3f0601974">rdmnet::SavedRptStatus</a>
+</li>
+<li>SetDefaultServiceInstanceName()
+: <a class="el" href="structrdmnet_1_1_broker_1_1_settings.html#a27eeb33182c3a9dcda479f0de628ea06">rdmnet::Broker::Settings</a>
+</li>
+<li>SetIdString()
+: <a class="el" href="classrdmnet_1_1_scope.html#ae060068e376a8874fea43a1f1384f903">rdmnet::Scope</a>
+</li>
+<li>SetStaticBrokerAddr()
+: <a class="el" href="classrdmnet_1_1_scope.html#acd3b0ada9c266938d142d1d9bed35d4c">rdmnet::Scope</a>
+</li>
+<li>settings()
+: <a class="el" href="classrdmnet_1_1_broker.html#a62359c965edaa83bc90528abd7ce6f5b">rdmnet::Broker</a>
+</li>
+<li>Settings()
+: <a class="el" href="structrdmnet_1_1_broker_1_1_settings.html#a5fdc96845a1512c36876a363c04daf7a">rdmnet::Broker::Settings</a>
+, <a class="el" href="structrdmnet_1_1_controller_1_1_settings.html#aab2e67a099541123f8896dcacf01ed69">rdmnet::Controller::Settings</a>
+, <a class="el" href="structrdmnet_1_1_device_1_1_settings.html#ab9449fc03b71cecd1479551b25725483">rdmnet::Device::Settings</a>
+, <a class="el" href="structrdmnet_1_1_ept_client_1_1_settings.html#aae06aa7f6241b1adf3d29a087f7e7c10">rdmnet::EptClient::Settings</a>
+</li>
+<li>Shutdown()
+: <a class="el" href="classrdmnet_1_1_broker.html#a4e19a613a75c27cf09fd60446433ca5b">rdmnet::Broker</a>
+, <a class="el" href="classrdmnet_1_1_controller.html#a05affd966d0250020eaba3ceb39bbd8d">rdmnet::Controller</a>
+, <a class="el" href="classrdmnet_1_1_device.html#a84538ed8fcb63d968c760649df74c61c">rdmnet::Device</a>
+, <a class="el" href="classrdmnet_1_1_ept_client.html#a4590d3e0925a92a92c028661a8415c36">rdmnet::EptClient</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_manager.html#a2e909cab686137f8d61c581c6a4906af">rdmnet::llrp::Manager</a>
+</li>
+<li>socket_err()
+: <a class="el" href="classrdmnet_1_1_client_connect_failed_info.html#acce32f5cff2a9b2a0e56991019ca3bd9">rdmnet::ClientConnectFailedInfo</a>
+, <a class="el" href="classrdmnet_1_1_client_disconnected_info.html#a1e297f825a0089fe3451c48a53ea9c8f">rdmnet::ClientDisconnectedInfo</a>
+</li>
+<li>source_cid()
+: <a class="el" href="classrdmnet_1_1_ept_data.html#a953220dfdd8a88b3275b73ed2e8d03bb">rdmnet::EptData</a>
+, <a class="el" href="classrdmnet_1_1_ept_status.html#abee5c6ea63d7dc369301cc5dda8393d9">rdmnet::EptStatus</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_rdm_command.html#a402630dbf2ce5dae255afd4ca6c579b5">rdmnet::llrp::RdmCommand</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_rdm_response.html#a4f3ec92ee33199c02959f829f183f74a">rdmnet::llrp::RdmResponse</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_saved_rdm_command.html#a81a7a903a5cbf39cefce19285add3cdc">rdmnet::llrp::SavedRdmCommand</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_saved_rdm_response.html#a149d949abe4c1bd4c2a9340deb61d336">rdmnet::llrp::SavedRdmResponse</a>
+, <a class="el" href="classrdmnet_1_1_saved_ept_data.html#a868d475f94cb3f675502442427213e66">rdmnet::SavedEptData</a>
+, <a class="el" href="classrdmnet_1_1_saved_ept_status.html#a13a72d8427a4356abc77907700fd93e5">rdmnet::SavedEptStatus</a>
+</li>
+<li>source_endpoint()
+: <a class="el" href="classrdmnet_1_1_rdm_response.html#abe1f725094eb7788d03ff97b8654849d">rdmnet::RdmResponse</a>
+, <a class="el" href="classrdmnet_1_1_rpt_status.html#a4f103daf4882d624b48c734bdf3c5c62">rdmnet::RptStatus</a>
+, <a class="el" href="classrdmnet_1_1_saved_rdm_response.html#a29ef58b15ce1c5409f9be111085fc7d5">rdmnet::SavedRdmResponse</a>
+, <a class="el" href="classrdmnet_1_1_saved_rpt_status.html#ad3714ad4014b0edbc4ef2e323174a394">rdmnet::SavedRptStatus</a>
+</li>
+<li>source_uid()
+: <a class="el" href="classrdmnet_1_1llrp_1_1_rdm_command.html#a7fb6d9c91daa359fb18eb4f25aad5846">rdmnet::llrp::RdmCommand</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_rdm_response.html#a98bab5de06b1da481642bba4f99980d2">rdmnet::llrp::RdmResponse</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_saved_rdm_command.html#a5b34effa344a02712aa6e79cd0a3940c">rdmnet::llrp::SavedRdmCommand</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_saved_rdm_response.html#aaa6374423355afd289c59d52e9c2fc9c">rdmnet::llrp::SavedRdmResponse</a>
+, <a class="el" href="classrdmnet_1_1_rpt_status.html#a6507230a0c2c36aa6a55cfb75ab302ed">rdmnet::RptStatus</a>
+, <a class="el" href="classrdmnet_1_1_saved_rpt_status.html#aad0f924a96bd819b4ccd723d06d7f094">rdmnet::SavedRptStatus</a>
+</li>
+<li>SourceAddr()
+: <a class="el" href="classrdmnet_1_1_source_addr.html#ab88fee9a38030a445e9b04bce5dbbbb1">rdmnet::SourceAddr</a>
+</li>
+<li>StartDiscovery()
+: <a class="el" href="classrdmnet_1_1llrp_1_1_manager.html#aa734622721edcdad5ce323398b0b977c">rdmnet::llrp::Manager</a>
+</li>
+<li>Startup()
+: <a class="el" href="classrdmnet_1_1_broker.html#a84c82ebc558d7c67473fdd52944d4d67">rdmnet::Broker</a>
+, <a class="el" href="classrdmnet_1_1_controller.html#a1d0150d73e64cfff241b351f7b8efd55">rdmnet::Controller</a>
+, <a class="el" href="classrdmnet_1_1_device.html#a32723797de36ba15ef1b8b6497090f1e">rdmnet::Device</a>
+, <a class="el" href="classrdmnet_1_1_ept_client.html#ae338508e79fbeb7183e396ac9efbd951">rdmnet::EptClient</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_manager.html#ac766b4067688119fbc78d32bb7f0f75a">rdmnet::llrp::Manager</a>
+</li>
+<li>StartupWithDefaultScope()
+: <a class="el" href="classrdmnet_1_1_device.html#afe17981d3035416d657b269ad2034960">rdmnet::Device</a>
+</li>
+<li>static_broker_addr()
+: <a class="el" href="classrdmnet_1_1_scope.html#a0527cf3d942eca70a1f28c44575ee255">rdmnet::Scope</a>
+</li>
+<li>status_c_str()
+: <a class="el" href="classrdmnet_1_1_ept_status.html#ad7518a9c361b0be0fe5c181e9e876f2b">rdmnet::EptStatus</a>
+, <a class="el" href="classrdmnet_1_1_rpt_status.html#a087aa05e2cb2bb05ae46f6f7f5ada9fa">rdmnet::RptStatus</a>
+</li>
+<li>status_code()
+: <a class="el" href="classrdmnet_1_1_ept_status.html#a31421c227703421f86973fd684566cb2">rdmnet::EptStatus</a>
+, <a class="el" href="classrdmnet_1_1_rpt_status.html#a8fd94fd0b170cc6b385b6d2e5720575a">rdmnet::RptStatus</a>
+, <a class="el" href="classrdmnet_1_1_saved_ept_status.html#aa590ca92c2f2eec5997f2e248b4a31be">rdmnet::SavedEptStatus</a>
+, <a class="el" href="classrdmnet_1_1_saved_rpt_status.html#ad959c6259e0809486e7ad048d21cccb5">rdmnet::SavedRptStatus</a>
+</li>
+<li>status_string()
+: <a class="el" href="classrdmnet_1_1_ept_status.html#a217530f9a48d57811a14d6c97e0dba83">rdmnet::EptStatus</a>
+, <a class="el" href="classrdmnet_1_1_rpt_status.html#ab3ded5af40ea10f2351aeadb87ec64cb">rdmnet::RptStatus</a>
+, <a class="el" href="classrdmnet_1_1_saved_ept_status.html#a9651039086fb2fe49a6bef91a767a3ea">rdmnet::SavedEptStatus</a>
+, <a class="el" href="classrdmnet_1_1_saved_rpt_status.html#ab339e4f326709407b743477ac680501f">rdmnet::SavedRptStatus</a>
+</li>
+<li>StopDiscovery()
+: <a class="el" href="classrdmnet_1_1llrp_1_1_manager.html#a8d46615ee9fc87bc07b9da606e406788">rdmnet::llrp::Manager</a>
+</li>
+<li>sub_protocol()
+: <a class="el" href="classrdmnet_1_1_ept_data.html#ae44461e570c83f79b7401624ace8eed7">rdmnet::EptData</a>
+, <a class="el" href="classrdmnet_1_1_saved_ept_data.html#a25b518e4d2f56dc997fbda113ea49034">rdmnet::SavedEptData</a>
+</li>
+<li>subdevice()
+: <a class="el" href="classrdmnet_1_1llrp_1_1_rdm_command.html#a502263cb42667492da1a8af3d3ea1ace">rdmnet::llrp::RdmCommand</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_rdm_response.html#ab11193c3281e8c6aebd9223205886bb6">rdmnet::llrp::RdmResponse</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_saved_rdm_command.html#aa457ee8940ba23311ae64ed719311d9e">rdmnet::llrp::SavedRdmCommand</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_saved_rdm_response.html#a3445253ff79b5870fe4b7c2fdf503ead">rdmnet::llrp::SavedRdmResponse</a>
+, <a class="el" href="classrdmnet_1_1_rdm_command.html#a080360a8192893acfc1d76f729063157">rdmnet::RdmCommand</a>
+, <a class="el" href="classrdmnet_1_1_rdm_response.html#ae5da507e3dc32f1892ec360a637955ae">rdmnet::RdmResponse</a>
+, <a class="el" href="classrdmnet_1_1_saved_rdm_command.html#a090fb7c94f2225f56956e0e84b24dc0e">rdmnet::SavedRdmCommand</a>
+, <a class="el" href="classrdmnet_1_1_saved_rdm_response.html#ae4c544e6f1e2cb3045ba4259fc66ffba">rdmnet::SavedRdmResponse</a>
+</li>
+</ul>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">Generated by
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>
+  </ul>
+</div>
+</body>
+</html>
