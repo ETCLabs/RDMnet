@@ -5,6 +5,7 @@ endif()
 
 if(RDMNET_BUILD_CONSOLE_EXAMPLES)
   if(WIN32)
+    include(AddLibGadget)
     add_subdirectory(fakeway)
   endif()
   add_subdirectory(broker)
