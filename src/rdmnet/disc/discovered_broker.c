@@ -159,6 +159,12 @@ static bool expand_txt_record_arrays(DiscoveredBroker* db)
       if (new_data_arr)
       {
         db->additional_txt_items_data = new_data_arr;
+        // Reset the references from additional_txt_items_array to additional_txt_items_data
+        for (size_t i = 0; i < db->num_additional_txt_items; ++i)
+        {
+          db->additional_txt_items_array[i].key = db->additional_txt_items_data[i].key;
+          db->additional_txt_items_array[i].value = db->additional_txt_items_data[i].value;
+        }
         ++db->num_additional_txt_items;
         return true;
       }

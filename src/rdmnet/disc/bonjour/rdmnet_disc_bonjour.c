@@ -312,7 +312,7 @@ void rdmnet_disc_platform_tick()
         etcpal_close(event.socket);
       }
     }
-    else if (poll_res != kEtcPalErrTimedOut && !logged_poll_error)
+    else if ((poll_res != kEtcPalErrTimedOut && poll_res != kEtcPalErrNoSockets) && !logged_poll_error)
     {
       RDMNET_LOG_CRIT("Socket poll operation for RDMnet discovery failed: '%s'", etcpal_strerror(poll_res));
       logged_poll_error = true;

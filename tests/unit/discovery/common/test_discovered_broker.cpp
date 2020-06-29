@@ -149,6 +149,38 @@ TEST_F(TestDiscoveredBroker, AddTxtRecordItemWorks)
   EXPECT_EQ(db->additional_txt_items_array[0], test_txt_item);
 }
 
+TEST_F(TestDiscoveredBroker, AddMultipleTxtRecordItemsWorks)
+{
+  auto db = MakeDefaultDiscoveredBroker();
+
+  const std::string kKeyBase = "Test Key ";
+  const std::string kValueBase = "Test Value ";
+
+  for (size_t i = 0; i < 100; ++i)
+  {
+    const std::string key = kKeyBase + std::to_string(i);
+    const std::string value = kValueBase + std::to_string(i);
+    ASSERT_TRUE(discovered_broker_add_txt_record_item(
+        db.get(), key.c_str(), reinterpret_cast<const uint8_t*>(value.c_str()), static_cast<uint8_t>(value.length())));
+  }
+
+  EXPECT_EQ(db->num_additional_txt_items, 100);
+
+  for (size_t i = 0; i < 100; ++i)
+  {
+    const std::string key = kKeyBase + std::to_string(i);
+    const std::string value = kValueBase + std::to_string(i);
+
+    EXPECT_STREQ(db->additional_txt_items_array[i].key, key.c_str());
+    ASSERT_EQ(db->additional_txt_items_array[i].value_len, static_cast<uint8_t>(value.length()));
+    EXPECT_EQ(std::memcmp(db->additional_txt_items_array[i].value, value.c_str(), value.length()), 0);
+
+    EXPECT_STREQ(db->additional_txt_items_data[i].key, key.c_str());
+    ASSERT_EQ(db->additional_txt_items_data[i].value_len, static_cast<uint8_t>(value.length()));
+    EXPECT_EQ(std::memcmp(db->additional_txt_items_data[i].value, value.c_str(), value.length()), 0);
+  }
+}
+
 TEST_F(TestDiscoveredBroker, FindByNameWorks)
 {
   // An array of DiscoveredBroker pointers that will automatically call discovered_broker_delete()
