@@ -16,14 +16,14 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
     <WixVariables>
     </WixVariables>
-    <DefineConstants>InstallSourceDir=$(InstallSourceDir);ControllerSourceDir=$(InstallSourceDir)\controller</DefineConstants>
+    <DefineConstants>InstallSourceDir=$(InstallSourceDir);ControllerSourceDir=$(InstallSourceDir)\controller;RdmnetHeadersDir=$(InstallSourceDir)\include;RdmnetLibsDir=$(InstallSourceDir)\lib</DefineConstants>
     <SuppressSpecificWarnings>5150</SuppressSpecificWarnings>
     <SuppressIces>ICE03</SuppressIces>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
     <WixVariables>
     </WixVariables>
-    <DefineConstants>Debug;InstallSourceDir=$(InstallSourceDir);ControllerSourceDir=$(InstallSourceDir)\controller</DefineConstants>
+    <DefineConstants>Debug;InstallSourceDir=$(InstallSourceDir);ControllerSourceDir=$(InstallSourceDir)\controller;RdmnetHeadersDir=$(InstallSourceDir)\include;RdmnetLibsDir=$(InstallSourceDir)\lib</DefineConstants>
     <SuppressSpecificWarnings>5150</SuppressSpecificWarnings>
   </PropertyGroup>
   <ItemGroup>
@@ -31,6 +31,18 @@
       <PreprocessorVariable>var.ControllerSourceDir</PreprocessorVariable>
       <DirectoryRefId>Runtime</DirectoryRefId>
       <ComponentGroupName>Controller</ComponentGroupName>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
+    </HarvestDirectory>
+    <HarvestDirectory Include="$(InstallSourceDir)\include">
+      <PreprocessorVariable>var.RdmnetHeadersDir</PreprocessorVariable>
+      <DirectoryRefId>Include</DirectoryRefId>
+      <ComponentGroupName>RdmnetHeaders</ComponentGroupName>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
+    </HarvestDirectory>
+    <HarvestDirectory Include="$(InstallSourceDir)\lib">
+      <PreprocessorVariable>var.RdmnetLibsDir</PreprocessorVariable>
+      <DirectoryRefId>Lib</DirectoryRefId>
+      <ComponentGroupName>RdmnetLibs</ComponentGroupName>
       <SuppressRootDirectory>true</SuppressRootDirectory>
     </HarvestDirectory>
     <WixExtension Include="WixUIExtension">

@@ -94,5 +94,4 @@ endif()
 # the installer.
 if(DEFINED DNS_SD_DLL)
   install(FILES ${DNS_SD_DLL} DESTINATION bin)
-  install(FILES ${DNS_SD_DLL} DESTINATION controller)
 endif()

@@ -48,6 +48,8 @@
                 <File Id="GadgetDll" Name="GadgetDLL.dll" DiskId="1" KeyPath="yes" />
               </Component>
             </Directory>
+            <Directory Id="Include" Name="include" />
+            <Directory Id="Lib" Name="lib" />
           </Directory>
         </Directory>
       </Directory>
@@ -61,11 +63,16 @@
 
     <Feature Id="Complete" Title="RDMnet $(var.VersionNumber)" Description="The RDMnet SDK and example apps."
         Display="expand" Level="1" ConfigurableDirectory="INSTALLDIR">
+      <Feature Id="RdmnetSDK" Title="RDMnet SDK" Description="The RDMnet Windows SDK." Display="expand" Level="1">
+        <ComponentGroupRef Id="RdmnetHeaders" />
+        <ComponentGroupRef Id="RdmnetLibs" />
+      </Feature>
       <Feature Id="ExampleApps" Title="RDMnet Example Apps" Description="The RDMnet example apps."
           Display="expand" Level="1">
         <Feature Id="Controller" Title="RDMnet Controller App"
             Description="The RDMnet Controller Example GUI application." Level="1">
           <ComponentGroupRef Id="Controller" />
+          <ComponentRef Id="DnsSdDll" />
         </Feature>
         <Feature Id="Broker" Title="RDMnet Broker App" Description="The RDMnet Broker example app."
             Level="1">
