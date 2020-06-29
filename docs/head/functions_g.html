@@ -1,0 +1,255 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen 1.8.13" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RDMnet: Data Fields</title>
+  <link href="tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="dynsections.js"></script>
+  <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+</script>
+  <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css" />
+  <!--BEGIN CUSTOM SCRIPTS-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <script type="text/javascript">
+    $(function () { selectAllC() });
+  </script>
+  <script type="text/javascript">
+    function selectAllC() {
+      // Enable all C-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_c")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_c")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectAllCpp() {
+      // Enable all C++-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_cpp")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C++-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_cpp")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectLanguage(evt, block_id, language) {
+      // Get all elements with class="tabcontent" and hide them
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.startsWith("div_" + block_id)) {
+          tabcontent[i].style.display = "none";
+        }
+      }
+      // Get all elements with class="tablinks" and remove the class "active"
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.startsWith("button_" + block_id)) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById("div_" + block_id + "_" + language).style.display = "block";
+      if (!evt.currentTarget.className.includes("active")) {
+        evt.currentTarget.className += " active";
+      }
+    }
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">RDMnet
+                &#160;<span id="projectnumber">HEAD (unstable)</span>
+              </div>
+              <div id="projectbrief">Implementation of ANSI E1.33 (RDMnet)</div>
+            </td>
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- end header part -->
+<!-- Generated by Doxygen 1.8.13 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Search');
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('functions_g.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="contents">
+<div class="textblock">Here is a list of all documented struct and union fields with links to the struct/union documentation for each field:</div>
+
+<h3><a id="index_g"></a>- g -</h3><ul>
+<li>get()
+: <a class="el" href="classrdmnet_1_1_client_connected_info.html#a51c2357d5d4bfd07d36c18f02854d38c">rdmnet::ClientConnectedInfo</a>
+, <a class="el" href="classrdmnet_1_1_client_connect_failed_info.html#a4a98baff78c5293caec3311f70cbfb8e">rdmnet::ClientConnectFailedInfo</a>
+, <a class="el" href="classrdmnet_1_1_client_disconnected_info.html#a6d9f47fefe0c6b67a13a3ee5d20384c9">rdmnet::ClientDisconnectedInfo</a>
+, <a class="el" href="classrdmnet_1_1_destination_addr.html#a7a38c980daec9669ee4c8f33a072c2bc">rdmnet::DestinationAddr</a>
+, <a class="el" href="classrdmnet_1_1_ept_data.html#a125f5284ffea464376e8f0802810febf">rdmnet::EptData</a>
+, <a class="el" href="classrdmnet_1_1_ept_response_action.html#a8f9fc22ec2d160b819e339d22792c843">rdmnet::EptResponseAction</a>
+, <a class="el" href="classrdmnet_1_1_ept_status.html#a3797a741d76b30fa8dc7f729dadb6f8a">rdmnet::EptStatus</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_destination_addr.html#a6cdfe5f8e2322672e46c172f86b78d41">rdmnet::llrp::DestinationAddr</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_rdm_command.html#a7db88b8dee5604358fb8f59a33ba1df8">rdmnet::llrp::RdmCommand</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_rdm_response.html#ade7422e08ae5c88ab94f056c25b3d39f">rdmnet::llrp::RdmResponse</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_saved_rdm_command.html#a9e0f310d335d0c98dc87d67c5606ae2e">rdmnet::llrp::SavedRdmCommand</a>
+, <a class="el" href="classrdmnet_1_1_physical_endpoint_config.html#a6defbbaf9dfa5f326372e9fef8e139f0">rdmnet::PhysicalEndpointConfig</a>
+, <a class="el" href="classrdmnet_1_1_physical_endpoint_responder.html#ac89bd1a476e261075f41a0b56ece4c4c">rdmnet::PhysicalEndpointResponder</a>
+, <a class="el" href="classrdmnet_1_1_rdm_command.html#af03918b2f66a2cc408850e98a74b8a33">rdmnet::RdmCommand</a>
+, <a class="el" href="classrdmnet_1_1_rdm_response.html#a16ae1814b2aa43f20b698daec7e14b6d">rdmnet::RdmResponse</a>
+, <a class="el" href="classrdmnet_1_1_rdm_response_action.html#a7c541d55c17afb5ac264f3e2b0dd1ef9">rdmnet::RdmResponseAction</a>
+, <a class="el" href="classrdmnet_1_1_rpt_status.html#af0e3276c0a11a611e25b978a340a1581">rdmnet::RptStatus</a>
+, <a class="el" href="classrdmnet_1_1_saved_rdm_command.html#a8f34bea9e393f9eebd033c7cb4579842">rdmnet::SavedRdmCommand</a>
+, <a class="el" href="classrdmnet_1_1_source_addr.html#a24f6c3b1d5afe47f54a264720a76e2b7">rdmnet::SourceAddr</a>
+, <a class="el" href="classrdmnet_1_1_virtual_endpoint_config.html#a1f44f6d4acf21d309564a53befc0f656">rdmnet::VirtualEndpointConfig</a>
+</li>
+<li>GetClientEntries()
+: <a class="el" href="classrdmnet_1_1_ept_client_list.html#a4a3dac5970f7c74e42009f8ef14b6de2">rdmnet::EptClientList</a>
+, <a class="el" href="classrdmnet_1_1_rpt_client_list.html#a0899bb62646ac3b9220986a144219917">rdmnet::RptClientList</a>
+</li>
+<li>GetData()
+: <a class="el" href="classrdmnet_1_1_rdm_response.html#ac03a6034914006c9d1ec0b4cea65590c">rdmnet::RdmResponse</a>
+, <a class="el" href="classrdmnet_1_1_saved_rdm_response.html#a2700f85b27d5d013cb45b22882434022">rdmnet::SavedRdmResponse</a>
+</li>
+<li>GetMappings()
+: <a class="el" href="classrdmnet_1_1_dynamic_uid_assignment_list.html#adcbcc8c9912e129b23d55e15565433d6">rdmnet::DynamicUidAssignmentList</a>
+</li>
+<li>GetNackReason()
+: <a class="el" href="classrdmnet_1_1llrp_1_1_rdm_response.html#af64faaa83f84bf8b54a117b6f0619a34">rdmnet::llrp::RdmResponse</a>
+, <a class="el" href="classrdmnet_1_1llrp_1_1_saved_rdm_response.html#a34ed75ac1eff6d7cf3f2014d97523388">rdmnet::llrp::SavedRdmResponse</a>
+, <a class="el" href="classrdmnet_1_1_rdm_response.html#aeba83b185c5748ce9bd6d5dfd5dbf9a7">rdmnet::RdmResponse</a>
+, <a class="el" href="classrdmnet_1_1_saved_rdm_response.html#ae4133e68352488f71de39163b7ed7159">rdmnet::SavedRdmResponse</a>
+</li>
+<li>GetOriginalCmdData()
+: <a class="el" href="classrdmnet_1_1_rdm_response.html#a6d28786366e6bb07e1e904f1d741c2e3">rdmnet::RdmResponse</a>
+</li>
+</ul>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">Generated by
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>
+  </ul>
+</div>
+</body>
+</html>

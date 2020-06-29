@@ -1,0 +1,271 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen 1.8.13" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RDMnet: Low-Level Recovery Protocol (LLRP)</title>
+  <link href="tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="dynsections.js"></script>
+  <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+</script>
+  <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css" />
+  <!--BEGIN CUSTOM SCRIPTS-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <script type="text/javascript">
+    $(function () { selectAllC() });
+  </script>
+  <script type="text/javascript">
+    function selectAllC() {
+      // Enable all C-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_c")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_c")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectAllCpp() {
+      // Enable all C++-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_cpp")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C++-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_cpp")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectLanguage(evt, block_id, language) {
+      // Get all elements with class="tabcontent" and hide them
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.startsWith("div_" + block_id)) {
+          tabcontent[i].style.display = "none";
+        }
+      }
+      // Get all elements with class="tablinks" and remove the class "active"
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.startsWith("button_" + block_id)) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById("div_" + block_id + "_" + language).style.display = "block";
+      if (!evt.currentTarget.className.includes("active")) {
+        evt.currentTarget.className += " active";
+      }
+    }
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">RDMnet
+                &#160;<span id="projectnumber">HEAD (unstable)</span>
+              </div>
+              <div id="projectbrief">Implementation of ANSI E1.33 (RDMnet)</div>
+            </td>
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- end header part -->
+<!-- Generated by Doxygen 1.8.13 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Search');
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('llrp.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">Low-Level Recovery Protocol (LLRP) </div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><p>RDMnet includes a protocol called the Low-Level Recovery Protocol (LLRP) which operates somewhat independently of the rest of its protocols. LLRP provides a standard way to discover and communicate with RDMnet-capable devices even if they don't currently have valid IP settings. The main purpose of LLRP is to correct misconfigured devices such that the other protocols of RDMnet can work properly.</p>
+<p>All messaging in LLRP is sent via UDP multicast (this is what enables it to work even in the presence of misconfigured IP settings). There are two roles in LLRP: an <em>LLRP Manager</em> initiates discovery and sends RDM commands to <em>LLRP Targets</em>, which respond to those commands.</p>
+<p>To help increase the number of situations in which LLRP is useful, the RDMnet standard requires all RDMnet devices and brokers to also operate as LLRP Targets. This RDMnet library handles that functionality automatically when using the Device or Broker APIs.</p>
+<p><b>IMPORTANT NOTE:</b> LLRP is not inherently scalable and is meant solely as a "bootstrapping" protocol which contains just enough functionality to get RDMnet communication working again. Because of this, the RDMnet standard limits the set of RDM commands allowed for sending via LLRP. See "RDM PIDs Supported" below for more information.</p>
+<h2>Discovery</h2>
+<p>Discovery in LLRP is initiated by a manager sending a <em>Probe Request</em> to a well-known multicast address. Any targets which receive the probe request and meet certain criteria respond with a <em>Probe Reply</em>.</p>
+<p>The discovery process also contains some response-suppression mechanisms intended to assist discovery where more than a few hundred LLRP targets are present. This is an implementation detail of the protocol and is not discussed here.</p>
+<div class="fragment"><div class="line">LLRP Manager                                 LLRP Target</div><div class="line">     ||                                          ||</div><div class="line">     ||  Probe Request                           ||</div><div class="line">     ||-----------------&gt; 239.255.250.133        ||</div><div class="line">     ||                                          ||</div><div class="line">     ||                             Probe Reply  ||</div><div class="line">     ||          239.255.250.134 &lt;---------------||</div><div class="line">     ||                                          ||</div></div><!-- fragment --><h2>Target Addressing</h2>
+<p>Like in other RDMnet protocols, LLRP managers and targets have both a Component Identifier (CID) and an RDM UID which can be either static or dynamic. See <a class="el" href="roles_and_addressing.html">Roles and Addressing</a> for more information on these identifiers.</p>
+<p>Because dynamic RDM UIDs are not guaranteed to be globally unique, LLRP managers must always use a combination of CID and UID to track LLRP targets. The CID uniquely and globally identifies a target, and the UID provides a destination address for the RDM command structures that are used to configure targets.</p>
+<h2>RDM Configuration</h2>
+<p>After performing discovery, an LLRP Manager caches its list of LLRP Targets and may send RDM commands to them to retrieve or change their current configuration. Common RDM PIDs sent over LLRP include the IP addressing PIDs defined in ANSI E1.37-2, and the <code>COMPONENT_SCOPE</code> PID defined in the RDMnet standard.</p>
+<div class="fragment"><div class="line">LLRP Manager                                 LLRP Target</div><div class="line">     ||                                          ||</div><div class="line">     ||  RDM Command                             ||</div><div class="line">     ||---------------&gt; 239.255.250.133          ||</div><div class="line">     ||                                          ||</div><div class="line">     ||                            RDM Response  ||</div><div class="line">     ||         239.255.250.134 &lt;----------------||</div><div class="line">     ||                                          ||</div></div><!-- fragment --><p>Since LLRP RDM commands are sent via multicast UDP, delivery is done on a best-effort basis and the LLRP Manager considers the response to an RDM command to be lost if it is not received within 2 seconds.</p>
+<h3>RDM PIDs supported</h3>
+<p>The list of RDM PIDs allowed over LLRP in the current revision of the standard is below. The standards specified can all be downloaded free of charge from the <a href="https://tsp.esta.org/tsp/documents/published_docs.php">ESTA TSP website</a>.</p>
+<ul>
+<li>ANSI E1.33:<ul>
+<li><code>COMPONENT_SCOPE</code></li>
+<li><code>SEARCH_DOMAIN</code> (RDMnet Devices only)</li>
+<li><code>TCP_COMMS_STATUS</code> (RDMnet Devices only)</li>
+<li><code>BROKER_STATUS</code> (RDMnet Brokers only)</li>
+</ul>
+</li>
+<li>ANSI E1.20:<ul>
+<li><code>SUPPORTED_PARAMETERS</code></li>
+<li><code>DEVICE_INFO</code></li>
+<li><code>RESET_DEVICE</code></li>
+<li><code>FACTORY_DEFAULTS</code></li>
+<li><code>DEVICE_LABEL</code></li>
+<li><code>MANUFACTURER_LABEL</code></li>
+<li><code>DEVICE_MODEL_DESCRIPTION</code></li>
+<li><code>IDENTIFY_DEVICE</code></li>
+</ul>
+</li>
+<li>ANSI E1.37-1:<ul>
+<li><code>LOCK_STATE_DESCRIPTION</code></li>
+<li><code>LOCK_STATE</code></li>
+</ul>
+</li>
+<li>ANSI E1.37-2:<ul>
+<li><code>LIST_INTERFACES</code></li>
+<li><code>INTERFACE_LABEL</code></li>
+<li><code>INTERFACE_HARDWARE_ADDRESS_TYPE1</code></li>
+<li><code>IPV4_DHCP_MODE</code></li>
+<li><code>IPV4_ZEROCONF_MODE</code></li>
+<li><code>IPV4_CURRENT_ADDRESS</code></li>
+<li><code>IPV4_STATIC_ADDRESS</code></li>
+<li><code>INTERFACE_RENEW_DHCP</code></li>
+<li><code>INTERFACE_RELEASE_DHCP</code></li>
+<li><code>INTERFACE_APPLY_CONFIGURATION</code></li>
+<li><code>IPV4_DEFAULT_ROUTE</code></li>
+<li><code>DNS_IPV4_NAME_SERVER</code></li>
+<li><code>DNS_HOSTNAME</code></li>
+<li><code>DNS_DOMAIN_NAME</code> </li>
+</ul>
+</li>
+</ul>
+</div></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="how_it_works.html">How RDMnet Works</a></li>
+    <li class="footer">Generated by
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>
+  </ul>
+</div>
+</body>
+</html>

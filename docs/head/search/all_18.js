@@ -1,5 +1,6 @@
 var searchData=
 [
+  ['_7ebroker',['~Broker',['../classrdmnet_1_1_broker.html#a1a00404584141e06f14f209686b068dd',1,'rdmnet::Broker']]],
   ['_7eexpected',['~Expected',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_expected.html#a8da4910031b4040699233168372b0102',1,'etcpal::Expected']]],
   ['_7emutex',['~Mutex',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_mutex.html#a205e2c334b25cb96e4f1303a4fde6b0c',1,'etcpal::Mutex']]],
   ['_7emutexguard',['~MutexGuard',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_mutex_guard.html#a310e9063e3e9794762a2cf28c6148334',1,'etcpal::MutexGuard']]],

@@ -1,11 +1,5 @@
 var searchData=
 [
-  ['lock_20_28locks_20and_20synchronization_29',['lock (Locks and Synchronization)',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__cpp__lock.html',1,'']]],
-  ['log_20_28logging_29',['log (Logging)',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__cpp__log.html',1,'']]],
-  ['lock_20_28locks_20and_20synchronization_29',['lock (Locks and Synchronization)',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__lock.html',1,'']]],
-  ['log_20_28logging_29',['log (Logging)',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__log.html',1,'']]],
-  ['llrp',['LLRP',['../group__llrp.html',1,'']]],
-  ['llrp_20manager',['LLRP Manager',['../group__llrp__manager.html',1,'']]],
-  ['llrp_20target',['LLRP Target',['../group__llrp__target.html',1,'']]],
-  ['llrp',['LLRP',['../group__rdmnetopts__llrp.html',1,'']]]
+  ['inet_20_28internet_20addressing_29',['inet (Internet Addressing)',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__cpp__inet.html',1,'']]],
+  ['inet_20_28internet_20addressing_29',['inet (Internet Addressing)',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__inet.html',1,'']]]
 ];

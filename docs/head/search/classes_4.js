@@ -1,11 +1,12 @@
 var searchData=
 [
-  ['eptclientcallbacks',['EptClientCallbacks',['../struct_ept_client_callbacks.html',1,'']]],
-  ['eptclientmessage',['EptClientMessage',['../struct_ept_client_message.html',1,'']]],
-  ['eptdatamsg',['EptDataMsg',['../struct_ept_data_msg.html',1,'']]],
-  ['eptmessage',['EptMessage',['../struct_ept_message.html',1,'']]],
-  ['eptstatusmsg',['EptStatusMsg',['../struct_ept_status_msg.html',1,'']]],
-  ['eptsubprotocol',['EptSubProtocol',['../struct_ept_sub_protocol.html',1,'']]],
+  ['eptclient',['EptClient',['../classrdmnet_1_1_ept_client.html',1,'rdmnet']]],
+  ['eptcliententry',['EptClientEntry',['../structrdmnet_1_1_ept_client_entry.html',1,'rdmnet']]],
+  ['eptclientlist',['EptClientList',['../classrdmnet_1_1_ept_client_list.html',1,'rdmnet']]],
+  ['eptdata',['EptData',['../classrdmnet_1_1_ept_data.html',1,'rdmnet']]],
+  ['eptresponseaction',['EptResponseAction',['../classrdmnet_1_1_ept_response_action.html',1,'rdmnet']]],
+  ['eptstatus',['EptStatus',['../classrdmnet_1_1_ept_status.html',1,'rdmnet']]],
+  ['eptsubprotocol',['EptSubProtocol',['../structrdmnet_1_1_ept_sub_protocol.html',1,'rdmnet']]],
   ['error',['Error',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html',1,'etcpal']]],
   ['etcpaladdrinfo',['EtcPalAddrinfo',['https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_addrinfo.html',1,'']]],
   ['etcpalgroupreq',['EtcPalGroupReq',['https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_group_req.html',1,'']]],

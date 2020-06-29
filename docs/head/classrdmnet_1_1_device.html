@@ -1,0 +1,2323 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen 1.8.13" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RDMnet: rdmnet::Device Class Reference</title>
+  <link href="tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="dynsections.js"></script>
+  <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+</script>
+  <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css" />
+  <!--BEGIN CUSTOM SCRIPTS-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <script type="text/javascript">
+    $(function () { selectAllC() });
+  </script>
+  <script type="text/javascript">
+    function selectAllC() {
+      // Enable all C-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_c")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_c")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectAllCpp() {
+      // Enable all C++-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_cpp")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C++-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_cpp")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectLanguage(evt, block_id, language) {
+      // Get all elements with class="tabcontent" and hide them
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.startsWith("div_" + block_id)) {
+          tabcontent[i].style.display = "none";
+        }
+      }
+      // Get all elements with class="tablinks" and remove the class "active"
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.startsWith("button_" + block_id)) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById("div_" + block_id + "_" + language).style.display = "block";
+      if (!evt.currentTarget.className.includes("active")) {
+        evt.currentTarget.className += " active";
+      }
+    }
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">RDMnet
+                &#160;<span id="projectnumber">HEAD (unstable)</span>
+              </div>
+              <div id="projectbrief">Implementation of ANSI E1.33 (RDMnet)</div>
+            </td>
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- end header part -->
+<!-- Generated by Doxygen 1.8.13 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Search');
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('classrdmnet_1_1_device.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#nested-classes">Data Structures</a> &#124;
+<a href="#pub-types">Public Types</a> &#124;
+<a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-attribs">Static Public Attributes</a>  </div>
+  <div class="headertitle">
+<div class="title">rdmnet::Device Class Reference<div class="ingroups"><a class="el" href="group__rdmnet__cpp__api.html">RDMnet C++ Language APIs</a> &raquo; <a class="el" href="group__rdmnet__device__cpp.html">Device API</a></div></div>  </div>
+</div><!--header-->
+<div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>An instance of RDMnet device functionality. </p>
+<p>See <a class="el" href="using_device.html">Using the Device API</a> for details of how to use this API. </p>
+</div>
+<p><code>#include &lt;<a class="el" href="cpp_2device_8h_source.html">rdmnet/cpp/device.h</a>&gt;</code></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Data Structures</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device_1_1_notify_handler.html">NotifyHandler</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A base class for a class that receives notification callbacks from a device.  <a href="classrdmnet_1_1_device_1_1_notify_handler.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrdmnet_1_1_device_1_1_settings.html">Settings</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A set of configuration settings that a device needs to initialize.  <a href="structrdmnet_1_1_device_1_1_settings.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a7e0d6654da08564c996e6518ebe5def9"><td class="memItemLeft" align="right" valign="top"><a id="a7e0d6654da08564c996e6518ebe5def9"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a7e0d6654da08564c996e6518ebe5def9">Handle</a> = <a class="el" href="group__rdmnet__device.html#gad17bb8836a86ad4c8a774cd94a01d63c">rdmnet_device_t</a></td></tr>
+<tr class="memdesc:a7e0d6654da08564c996e6518ebe5def9"><td class="mdescLeft">&#160;</td><td class="mdescRight">A handle type used by the RDMnet library to identify device instances. <br /></td></tr>
+<tr class="separator:a7e0d6654da08564c996e6518ebe5def9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
+Public Member Functions</h2></td></tr>
+<tr class="memitem:aee259ce8b2a5cc1148e9eb12f8b32ffa"><td class="memItemLeft" align="right" valign="top"><a id="aee259ce8b2a5cc1148e9eb12f8b32ffa"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Device</b> (const <a class="el" href="classrdmnet_1_1_device.html">Device</a> &amp;other)=delete</td></tr>
+<tr class="separator:aee259ce8b2a5cc1148e9eb12f8b32ffa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac689b7b8ddccfd560bc8067b8e840ae0"><td class="memItemLeft" align="right" valign="top"><a id="ac689b7b8ddccfd560bc8067b8e840ae0"></a>
+<a class="el" href="classrdmnet_1_1_device.html">Device</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (const <a class="el" href="classrdmnet_1_1_device.html">Device</a> &amp;other)=delete</td></tr>
+<tr class="separator:ac689b7b8ddccfd560bc8067b8e840ae0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a238cd08406976efabb25d28c075049d2"><td class="memItemLeft" align="right" valign="top"><a id="a238cd08406976efabb25d28c075049d2"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a238cd08406976efabb25d28c075049d2">Device</a> (<a class="el" href="classrdmnet_1_1_device.html">Device</a> &amp;&amp;other)=default</td></tr>
+<tr class="memdesc:a238cd08406976efabb25d28c075049d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move a device instance. <br /></td></tr>
+<tr class="separator:a238cd08406976efabb25d28c075049d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3e314dd90c2021ab5d4c3352d030e6da"><td class="memItemLeft" align="right" valign="top"><a id="a3e314dd90c2021ab5d4c3352d030e6da"></a>
+<a class="el" href="classrdmnet_1_1_device.html">Device</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a3e314dd90c2021ab5d4c3352d030e6da">operator=</a> (<a class="el" href="classrdmnet_1_1_device.html">Device</a> &amp;&amp;other)=default</td></tr>
+<tr class="memdesc:a3e314dd90c2021ab5d4c3352d030e6da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move a device instance. <br /></td></tr>
+<tr class="separator:a3e314dd90c2021ab5d4c3352d030e6da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afe17981d3035416d657b269ad2034960"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#afe17981d3035416d657b269ad2034960">StartupWithDefaultScope</a> (<a class="el" href="classrdmnet_1_1_device_1_1_notify_handler.html">NotifyHandler</a> &amp;<a class="el" href="classrdmnet_1_1_device.html#a646ed4c0fac6dc42ddd0737c8376d543">notify_handler</a>, const <a class="el" href="structrdmnet_1_1_device_1_1_settings.html">Settings</a> &amp;settings, const <a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_sock_addr.html">etcpal::SockAddr</a> &amp;static_broker_addr=<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_sock_addr.html">etcpal::SockAddr</a>{})</td></tr>
+<tr class="memdesc:afe17981d3035416d657b269ad2034960"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate resources and start up this device with the given configuration on the default RDMnet scope.  <a href="#afe17981d3035416d657b269ad2034960">More...</a><br /></td></tr>
+<tr class="separator:afe17981d3035416d657b269ad2034960"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4573244d38d30c40900484f53b9fbe7"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#ab4573244d38d30c40900484f53b9fbe7">Startup</a> (<a class="el" href="classrdmnet_1_1_device_1_1_notify_handler.html">NotifyHandler</a> &amp;<a class="el" href="classrdmnet_1_1_device.html#a646ed4c0fac6dc42ddd0737c8376d543">notify_handler</a>, const <a class="el" href="structrdmnet_1_1_device_1_1_settings.html">Settings</a> &amp;settings, const char *scope_id_str, const <a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_sock_addr.html">etcpal::SockAddr</a> &amp;static_broker_addr=<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_sock_addr.html">etcpal::SockAddr</a>{})</td></tr>
+<tr class="memdesc:ab4573244d38d30c40900484f53b9fbe7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate resources and start up this device with the given configuration on the given RDMnet scope.  <a href="#ab4573244d38d30c40900484f53b9fbe7">More...</a><br /></td></tr>
+<tr class="separator:ab4573244d38d30c40900484f53b9fbe7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a32723797de36ba15ef1b8b6497090f1e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a32723797de36ba15ef1b8b6497090f1e">Startup</a> (<a class="el" href="classrdmnet_1_1_device_1_1_notify_handler.html">NotifyHandler</a> &amp;<a class="el" href="classrdmnet_1_1_device.html#a646ed4c0fac6dc42ddd0737c8376d543">notify_handler</a>, const <a class="el" href="structrdmnet_1_1_device_1_1_settings.html">Settings</a> &amp;settings, const <a class="el" href="classrdmnet_1_1_scope.html">Scope</a> &amp;scope_config)</td></tr>
+<tr class="memdesc:a32723797de36ba15ef1b8b6497090f1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate resources and start up this device with the given configuration on the given RDMnet scope.  <a href="#a32723797de36ba15ef1b8b6497090f1e">More...</a><br /></td></tr>
+<tr class="separator:a32723797de36ba15ef1b8b6497090f1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84538ed8fcb63d968c760649df74c61c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a84538ed8fcb63d968c760649df74c61c">Shutdown</a> (<a class="el" href="group__rdmnet__api__common.html#ga3eb1adaf6e830a807d1dcfbc64197222">rdmnet_disconnect_reason_t</a> disconnect_reason=<a class="el" href="group__rdmnet__api__common.html#gga3eb1adaf6e830a807d1dcfbc64197222a336a46d8d36f5b1f32fac4653913cdd2">kRdmnetDisconnectShutdown</a>)</td></tr>
+<tr class="memdesc:a84538ed8fcb63d968c760649df74c61c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shut down this device and deallocate resources.  <a href="#a84538ed8fcb63d968c760649df74c61c">More...</a><br /></td></tr>
+<tr class="separator:a84538ed8fcb63d968c760649df74c61c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f0e9d76c4ce0487b0fd38edec014fe4"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a9f0e9d76c4ce0487b0fd38edec014fe4">ChangeScope</a> (const char *new_scope_id_str, <a class="el" href="group__rdmnet__api__common.html#ga3eb1adaf6e830a807d1dcfbc64197222">rdmnet_disconnect_reason_t</a> disconnect_reason, const <a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_sock_addr.html">etcpal::SockAddr</a> &amp;static_broker_addr=<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_sock_addr.html">etcpal::SockAddr</a>{})</td></tr>
+<tr class="memdesc:a9f0e9d76c4ce0487b0fd38edec014fe4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Change the device's RDMnet scope.  <a href="#a9f0e9d76c4ce0487b0fd38edec014fe4">More...</a><br /></td></tr>
+<tr class="separator:a9f0e9d76c4ce0487b0fd38edec014fe4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa6f14e00577959677d438a293c6c8032"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#aa6f14e00577959677d438a293c6c8032">ChangeScope</a> (const <a class="el" href="classrdmnet_1_1_scope.html">Scope</a> &amp;new_scope_config, <a class="el" href="group__rdmnet__api__common.html#ga3eb1adaf6e830a807d1dcfbc64197222">rdmnet_disconnect_reason_t</a> disconnect_reason)</td></tr>
+<tr class="memdesc:aa6f14e00577959677d438a293c6c8032"><td class="mdescLeft">&#160;</td><td class="mdescRight">Change the device's RDMnet scope.  <a href="#aa6f14e00577959677d438a293c6c8032">More...</a><br /></td></tr>
+<tr class="separator:aa6f14e00577959677d438a293c6c8032"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81178d9ad914cda39d999779162955cc"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a81178d9ad914cda39d999779162955cc">ChangeSearchDomain</a> (const char *new_search_domain, <a class="el" href="group__rdmnet__api__common.html#ga3eb1adaf6e830a807d1dcfbc64197222">rdmnet_disconnect_reason_t</a> disconnect_reason)</td></tr>
+<tr class="memdesc:a81178d9ad914cda39d999779162955cc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Change the device's DNS search domain.  <a href="#a81178d9ad914cda39d999779162955cc">More...</a><br /></td></tr>
+<tr class="separator:a81178d9ad914cda39d999779162955cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5795a6031e8903bc294f0afa4a224472"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a5795a6031e8903bc294f0afa4a224472">SendRdmAck</a> (const <a class="el" href="classrdmnet_1_1_saved_rdm_command.html">SavedRdmCommand</a> &amp;received_cmd, const uint8_t *response_data=nullptr, size_t response_data_len=0)</td></tr>
+<tr class="memdesc:a5795a6031e8903bc294f0afa4a224472"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send an acknowledge (ACK) response to an RDM command received by a device.  <a href="#a5795a6031e8903bc294f0afa4a224472">More...</a><br /></td></tr>
+<tr class="separator:a5795a6031e8903bc294f0afa4a224472"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae7675ffb54dda6f55c0eb2f54da65c24"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#ae7675ffb54dda6f55c0eb2f54da65c24">SendRdmNack</a> (const <a class="el" href="classrdmnet_1_1_saved_rdm_command.html">SavedRdmCommand</a> &amp;received_cmd, <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/group__message.html#gaa11fc36923818f02895f40dafd228474">rdm_nack_reason_t</a> nack_reason)</td></tr>
+<tr class="memdesc:ae7675ffb54dda6f55c0eb2f54da65c24"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send a negative acknowledge (NACK) response to an RDM command received by a device.  <a href="#ae7675ffb54dda6f55c0eb2f54da65c24">More...</a><br /></td></tr>
+<tr class="separator:ae7675ffb54dda6f55c0eb2f54da65c24"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61c71ff57e48534819eb51aa7b2d21d1"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a61c71ff57e48534819eb51aa7b2d21d1">SendRdmNack</a> (const <a class="el" href="classrdmnet_1_1_saved_rdm_command.html">SavedRdmCommand</a> &amp;received_cmd, uint16_t raw_nack_reason)</td></tr>
+<tr class="memdesc:a61c71ff57e48534819eb51aa7b2d21d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send a negative acknowledge (NACK) response to an RDM command received by a device.  <a href="#a61c71ff57e48534819eb51aa7b2d21d1">More...</a><br /></td></tr>
+<tr class="separator:a61c71ff57e48534819eb51aa7b2d21d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb4d4b1e2f5867bd99387fbc76d01aa2"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#aeb4d4b1e2f5867bd99387fbc76d01aa2">SendRdmUpdate</a> (uint16_t param_id, const uint8_t *data=nullptr, size_t data_len=0)</td></tr>
+<tr class="memdesc:aeb4d4b1e2f5867bd99387fbc76d01aa2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send an asynchronous RDM GET response to update the value of a local parameter.  <a href="#aeb4d4b1e2f5867bd99387fbc76d01aa2">More...</a><br /></td></tr>
+<tr class="separator:aeb4d4b1e2f5867bd99387fbc76d01aa2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6126e13c9c64c3758f229cc973d8221"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#af6126e13c9c64c3758f229cc973d8221">SendRdmUpdate</a> (uint16_t subdevice, uint16_t param_id, const uint8_t *data=nullptr, size_t data_len=0)</td></tr>
+<tr class="memdesc:af6126e13c9c64c3758f229cc973d8221"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send an asynchronous RDM GET response to update the value of a local parameter.  <a href="#af6126e13c9c64c3758f229cc973d8221">More...</a><br /></td></tr>
+<tr class="separator:af6126e13c9c64c3758f229cc973d8221"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c58f5eb5b3aa1b09a5fd2242d5e420b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a5c58f5eb5b3aa1b09a5fd2242d5e420b">SendRdmUpdate</a> (const <a class="el" href="classrdmnet_1_1_source_addr.html">SourceAddr</a> &amp;source_addr, uint16_t param_id, const uint8_t *data=nullptr, size_t data_len=0)</td></tr>
+<tr class="memdesc:a5c58f5eb5b3aa1b09a5fd2242d5e420b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send an asynchronous RDM GET response to update the value of a parameter on a sub-responder.  <a href="#a5c58f5eb5b3aa1b09a5fd2242d5e420b">More...</a><br /></td></tr>
+<tr class="separator:a5c58f5eb5b3aa1b09a5fd2242d5e420b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad2f2a87844ed172ccc142792b03053f8"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#ad2f2a87844ed172ccc142792b03053f8">SendRptStatus</a> (const <a class="el" href="classrdmnet_1_1_saved_rdm_command.html">SavedRdmCommand</a> &amp;received_cmd, <a class="el" href="group__rdmnet__api__common.html#gaa9aca0658bfae057363a520c0d9907c2">rpt_status_code_t</a> status_code, const char *status_string=nullptr)</td></tr>
+<tr class="memdesc:ad2f2a87844ed172ccc142792b03053f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send an RPT status message from a device.  <a href="#ad2f2a87844ed172ccc142792b03053f8">More...</a><br /></td></tr>
+<tr class="separator:ad2f2a87844ed172ccc142792b03053f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf4491f3d76f1d0092cc94f28ecc31b8"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#aaf4491f3d76f1d0092cc94f28ecc31b8">SendLlrpAck</a> (const <a class="el" href="classrdmnet_1_1llrp_1_1_saved_rdm_command.html">llrp::SavedRdmCommand</a> &amp;received_cmd, const uint8_t *response_data=nullptr, uint8_t response_data_len=0)</td></tr>
+<tr class="memdesc:aaf4491f3d76f1d0092cc94f28ecc31b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send an acknowledge (ACK) response to an RDM command received by a device over LLRP.  <a href="#aaf4491f3d76f1d0092cc94f28ecc31b8">More...</a><br /></td></tr>
+<tr class="separator:aaf4491f3d76f1d0092cc94f28ecc31b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5121e1897edbcb40d9a078723a9cd21f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a5121e1897edbcb40d9a078723a9cd21f">SendLlrpNack</a> (const <a class="el" href="classrdmnet_1_1llrp_1_1_saved_rdm_command.html">llrp::SavedRdmCommand</a> &amp;received_cmd, <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/group__message.html#gaa11fc36923818f02895f40dafd228474">rdm_nack_reason_t</a> nack_reason)</td></tr>
+<tr class="memdesc:a5121e1897edbcb40d9a078723a9cd21f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send a negative acknowledge (NACK) response to an RDM command received by a device over LLRP.  <a href="#a5121e1897edbcb40d9a078723a9cd21f">More...</a><br /></td></tr>
+<tr class="separator:a5121e1897edbcb40d9a078723a9cd21f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a44fdd13593b0edc5e211fe87e954b5fc"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a44fdd13593b0edc5e211fe87e954b5fc">SendLlrpNack</a> (const <a class="el" href="classrdmnet_1_1llrp_1_1_saved_rdm_command.html">llrp::SavedRdmCommand</a> &amp;received_cmd, uint16_t raw_nack_reason)</td></tr>
+<tr class="memdesc:a44fdd13593b0edc5e211fe87e954b5fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send a negative acknowledge (NACK) response to an RDM command received by a device over LLRP.  <a href="#a44fdd13593b0edc5e211fe87e954b5fc">More...</a><br /></td></tr>
+<tr class="separator:a44fdd13593b0edc5e211fe87e954b5fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a99f7314c8662242597afe5c54b4800d7"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a99f7314c8662242597afe5c54b4800d7">AddVirtualEndpoint</a> (const <a class="el" href="classrdmnet_1_1_virtual_endpoint_config.html">VirtualEndpointConfig</a> &amp;endpoint_config)</td></tr>
+<tr class="memdesc:a99f7314c8662242597afe5c54b4800d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a virtual endpoint to a device.  <a href="#a99f7314c8662242597afe5c54b4800d7">More...</a><br /></td></tr>
+<tr class="separator:a99f7314c8662242597afe5c54b4800d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa3f32fc44e4daf227f30f88e2b63debe"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#aa3f32fc44e4daf227f30f88e2b63debe">AddVirtualEndpoints</a> (const std::vector&lt; <a class="el" href="classrdmnet_1_1_virtual_endpoint_config.html">VirtualEndpointConfig</a> &gt; &amp;endpoint_configs)</td></tr>
+<tr class="memdesc:aa3f32fc44e4daf227f30f88e2b63debe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add multiple virtual endpoints to a device.  <a href="#aa3f32fc44e4daf227f30f88e2b63debe">More...</a><br /></td></tr>
+<tr class="separator:aa3f32fc44e4daf227f30f88e2b63debe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a875fae87db81a2fe2236566e45892f1b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a875fae87db81a2fe2236566e45892f1b">AddPhysicalEndpoint</a> (const <a class="el" href="classrdmnet_1_1_physical_endpoint_config.html">PhysicalEndpointConfig</a> &amp;physical_config)</td></tr>
+<tr class="memdesc:a875fae87db81a2fe2236566e45892f1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a physical endpoint to a device.  <a href="#a875fae87db81a2fe2236566e45892f1b">More...</a><br /></td></tr>
+<tr class="separator:a875fae87db81a2fe2236566e45892f1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a23a6155274bbee85098edd578cfa9e39"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a23a6155274bbee85098edd578cfa9e39">AddPhysicalEndpoints</a> (const std::vector&lt; <a class="el" href="classrdmnet_1_1_physical_endpoint_config.html">PhysicalEndpointConfig</a> &gt; &amp;endpoint_configs)</td></tr>
+<tr class="memdesc:a23a6155274bbee85098edd578cfa9e39"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add multiple physical endpoints to a device.  <a href="#a23a6155274bbee85098edd578cfa9e39">More...</a><br /></td></tr>
+<tr class="separator:a23a6155274bbee85098edd578cfa9e39"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07e0aced596e0f67936b1e544f592c1f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a07e0aced596e0f67936b1e544f592c1f">RemoveEndpoint</a> (uint16_t endpoint_id)</td></tr>
+<tr class="memdesc:a07e0aced596e0f67936b1e544f592c1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove an endpoint from a device.  <a href="#a07e0aced596e0f67936b1e544f592c1f">More...</a><br /></td></tr>
+<tr class="separator:a07e0aced596e0f67936b1e544f592c1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06beb4f58f364c6917711f7362a919eb"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a06beb4f58f364c6917711f7362a919eb">RemoveEndpoints</a> (const std::vector&lt; uint16_t &gt; &amp;endpoint_ids)</td></tr>
+<tr class="memdesc:a06beb4f58f364c6917711f7362a919eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove multiple endpoints from a device.  <a href="#a06beb4f58f364c6917711f7362a919eb">More...</a><br /></td></tr>
+<tr class="separator:a06beb4f58f364c6917711f7362a919eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5e0bde652783c4be56d6d96789c6b77a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a5e0bde652783c4be56d6d96789c6b77a">AddVirtualResponder</a> (uint16_t endpoint_id, const <a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html">etcpal::Uuid</a> &amp;responder_id)</td></tr>
+<tr class="memdesc:a5e0bde652783c4be56d6d96789c6b77a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a responder with a dynamic UID to a virtual endpoint.  <a href="#a5e0bde652783c4be56d6d96789c6b77a">More...</a><br /></td></tr>
+<tr class="separator:a5e0bde652783c4be56d6d96789c6b77a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a64dcf8e2f82f2fd72897b35c43bc3cd5"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a64dcf8e2f82f2fd72897b35c43bc3cd5">AddVirtualResponder</a> (uint16_t endpoint_id, const <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a> &amp;responder_static_uid)</td></tr>
+<tr class="memdesc:a64dcf8e2f82f2fd72897b35c43bc3cd5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a responder with a static UID to a virtual endpoint.  <a href="#a64dcf8e2f82f2fd72897b35c43bc3cd5">More...</a><br /></td></tr>
+<tr class="separator:a64dcf8e2f82f2fd72897b35c43bc3cd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ace9161e9472e747f488271f2f61c8284"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#ace9161e9472e747f488271f2f61c8284">AddVirtualResponders</a> (uint16_t endpoint_id, const std::vector&lt; <a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html">etcpal::Uuid</a> &gt; &amp;responder_ids)</td></tr>
+<tr class="memdesc:ace9161e9472e747f488271f2f61c8284"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add multiple responders with dynamic UIDs to a virtual endpoint.  <a href="#ace9161e9472e747f488271f2f61c8284">More...</a><br /></td></tr>
+<tr class="separator:ace9161e9472e747f488271f2f61c8284"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f9a953b5dfe60d16f3af293400c9eb5"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a1f9a953b5dfe60d16f3af293400c9eb5">AddVirtualResponders</a> (uint16_t endpoint_id, const std::vector&lt; <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a> &gt; &amp;responder_static_uids)</td></tr>
+<tr class="memdesc:a1f9a953b5dfe60d16f3af293400c9eb5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add multiple responders with static UIDs to a virtual endpoint.  <a href="#a1f9a953b5dfe60d16f3af293400c9eb5">More...</a><br /></td></tr>
+<tr class="separator:a1f9a953b5dfe60d16f3af293400c9eb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa55f54189e6601365456952655cc1c4f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#aa55f54189e6601365456952655cc1c4f">AddPhysicalResponder</a> (uint16_t endpoint_id, const <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a> &amp;responder_uid, uint16_t control_field, const <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a> &amp;binding_uid=<a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a>{})</td></tr>
+<tr class="memdesc:aa55f54189e6601365456952655cc1c4f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a responder to a physical endpoint.  <a href="#aa55f54189e6601365456952655cc1c4f">More...</a><br /></td></tr>
+<tr class="separator:aa55f54189e6601365456952655cc1c4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acff56b89306a8af9bb7ef156dd317adc"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#acff56b89306a8af9bb7ef156dd317adc">AddPhysicalResponder</a> (uint16_t endpoint_id, const <a class="el" href="classrdmnet_1_1_physical_endpoint_responder.html">PhysicalEndpointResponder</a> &amp;responder)</td></tr>
+<tr class="memdesc:acff56b89306a8af9bb7ef156dd317adc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a responder to a physical endpoint.  <a href="#acff56b89306a8af9bb7ef156dd317adc">More...</a><br /></td></tr>
+<tr class="separator:acff56b89306a8af9bb7ef156dd317adc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1b4a5d60f2814627c22ac02c47ac2e7f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a1b4a5d60f2814627c22ac02c47ac2e7f">AddPhysicalResponders</a> (uint16_t endpoint_id, const std::vector&lt; <a class="el" href="classrdmnet_1_1_physical_endpoint_responder.html">PhysicalEndpointResponder</a> &gt; &amp;responders)</td></tr>
+<tr class="memdesc:a1b4a5d60f2814627c22ac02c47ac2e7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add multiple responders to a physical endpoint.  <a href="#a1b4a5d60f2814627c22ac02c47ac2e7f">More...</a><br /></td></tr>
+<tr class="separator:a1b4a5d60f2814627c22ac02c47ac2e7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a313ee7f3528e61f6f564e8a1ba255edb"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a313ee7f3528e61f6f564e8a1ba255edb">RemoveVirtualResponder</a> (uint16_t endpoint_id, const <a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html">etcpal::Uuid</a> &amp;responder_id)</td></tr>
+<tr class="memdesc:a313ee7f3528e61f6f564e8a1ba255edb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove a responder with a dynamic UID from a virtual endpoint.  <a href="#a313ee7f3528e61f6f564e8a1ba255edb">More...</a><br /></td></tr>
+<tr class="separator:a313ee7f3528e61f6f564e8a1ba255edb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4684778a6ef320365b8a707709774f4"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#af4684778a6ef320365b8a707709774f4">RemoveVirtualResponder</a> (uint16_t endpoint_id, const <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a> &amp;responder_static_uid)</td></tr>
+<tr class="memdesc:af4684778a6ef320365b8a707709774f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove a responder with a static UID from a virtual endpoint.  <a href="#af4684778a6ef320365b8a707709774f4">More...</a><br /></td></tr>
+<tr class="separator:af4684778a6ef320365b8a707709774f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa44a3a6e5fe462073de21798ca3ed479"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#aa44a3a6e5fe462073de21798ca3ed479">RemoveVirtualResponders</a> (uint16_t endpoint_id, const std::vector&lt; <a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html">etcpal::Uuid</a> &gt; &amp;responder_ids)</td></tr>
+<tr class="memdesc:aa44a3a6e5fe462073de21798ca3ed479"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove multiple responder with dynamic UIDs from a virtual endpoint.  <a href="#aa44a3a6e5fe462073de21798ca3ed479">More...</a><br /></td></tr>
+<tr class="separator:aa44a3a6e5fe462073de21798ca3ed479"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae9fda389c24c0e7fb16fa599ac11bf0a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#ae9fda389c24c0e7fb16fa599ac11bf0a">RemoveVirtualResponders</a> (uint16_t endpoint_id, const std::vector&lt; <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a> &gt; &amp;responder_static_uids)</td></tr>
+<tr class="memdesc:ae9fda389c24c0e7fb16fa599ac11bf0a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove multiple responders with static UIDs from a virtual endpoint.  <a href="#ae9fda389c24c0e7fb16fa599ac11bf0a">More...</a><br /></td></tr>
+<tr class="separator:ae9fda389c24c0e7fb16fa599ac11bf0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3e35f9850d125d12036ec75b9ddfcb97"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a3e35f9850d125d12036ec75b9ddfcb97">RemovePhysicalResponder</a> (uint16_t endpoint_id, const <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a> &amp;responder_uid)</td></tr>
+<tr class="memdesc:a3e35f9850d125d12036ec75b9ddfcb97"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove a responder from a physical endpoint.  <a href="#a3e35f9850d125d12036ec75b9ddfcb97">More...</a><br /></td></tr>
+<tr class="separator:a3e35f9850d125d12036ec75b9ddfcb97"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1bf9f11a6cb5b5b773063d44e5cd081b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a1bf9f11a6cb5b5b773063d44e5cd081b">RemovePhysicalResponders</a> (uint16_t endpoint_id, const std::vector&lt; <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a> &gt; &amp;responder_uids)</td></tr>
+<tr class="memdesc:a1bf9f11a6cb5b5b773063d44e5cd081b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove multiple responders from a physical endpoint.  <a href="#a1bf9f11a6cb5b5b773063d44e5cd081b">More...</a><br /></td></tr>
+<tr class="separator:a1bf9f11a6cb5b5b773063d44e5cd081b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a92857222f73fbda03c2bf6ba5d95edc3"><td class="memItemLeft" align="right" valign="top"><a id="a92857222f73fbda03c2bf6ba5d95edc3"></a>
+constexpr <a class="el" href="classrdmnet_1_1_device.html#a7e0d6654da08564c996e6518ebe5def9">Handle</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a92857222f73fbda03c2bf6ba5d95edc3">handle</a> () const</td></tr>
+<tr class="memdesc:a92857222f73fbda03c2bf6ba5d95edc3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the handle of a device instance. <br /></td></tr>
+<tr class="separator:a92857222f73fbda03c2bf6ba5d95edc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a646ed4c0fac6dc42ddd0737c8376d543"><td class="memItemLeft" align="right" valign="top"><a id="a646ed4c0fac6dc42ddd0737c8376d543"></a>
+constexpr <a class="el" href="classrdmnet_1_1_device_1_1_notify_handler.html">NotifyHandler</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a646ed4c0fac6dc42ddd0737c8376d543">notify_handler</a> () const</td></tr>
+<tr class="memdesc:a646ed4c0fac6dc42ddd0737c8376d543"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the <a class="el" href="classrdmnet_1_1_device_1_1_notify_handler.html" title="A base class for a class that receives notification callbacks from a device. ">NotifyHandler</a> reference that this device was configured with. <br /></td></tr>
+<tr class="separator:a646ed4c0fac6dc42ddd0737c8376d543"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f46dd4c3976eff06bfb157008fcf9b9"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_expected.html">etcpal::Expected</a>&lt; <a class="el" href="classrdmnet_1_1_scope.html">Scope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#a3f46dd4c3976eff06bfb157008fcf9b9">scope</a> () const</td></tr>
+<tr class="memdesc:a3f46dd4c3976eff06bfb157008fcf9b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the scope configuration associated with a device instance.  <a href="#a3f46dd4c3976eff06bfb157008fcf9b9">More...</a><br /></td></tr>
+<tr class="separator:a3f46dd4c3976eff06bfb157008fcf9b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
+Static Public Attributes</h2></td></tr>
+<tr class="memitem:ada2390256d95fdca156ac47f09f12fe8"><td class="memItemLeft" align="right" valign="top"><a id="ada2390256d95fdca156ac47f09f12fe8"></a>
+static constexpr <a class="el" href="classrdmnet_1_1_device.html#a7e0d6654da08564c996e6518ebe5def9">Handle</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_device.html#ada2390256d95fdca156ac47f09f12fe8">kInvalidHandle</a> = <a class="el" href="group__rdmnet__device.html#ga42be52a101f03361b7db0b29a063516a">RDMNET_DEVICE_INVALID</a></td></tr>
+<tr class="memdesc:ada2390256d95fdca156ac47f09f12fe8"><td class="mdescLeft">&#160;</td><td class="mdescRight">An invalid Handle value. <br /></td></tr>
+<tr class="separator:ada2390256d95fdca156ac47f09f12fe8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a875fae87db81a2fe2236566e45892f1b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a875fae87db81a2fe2236566e45892f1b">&#9670;&nbsp;</a></span>AddPhysicalEndpoint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::AddPhysicalEndpoint </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classrdmnet_1_1_physical_endpoint_config.html">PhysicalEndpointConfig</a> &amp;&#160;</td>
+          <td class="paramname"><em>endpoint_config</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Add a physical endpoint to a device. </p>
+<p>See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information about endpoints. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_config</td><td>Configuration information for the new physical endpoint. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Endpoint added successfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started - call <a class="el" href="classrdmnet_1_1_device.html#ab4573244d38d30c40900484f53b9fbe7" title="Allocate resources and start up this device with the given configuration on the given RDMnet scope...">Device::Startup()</a> first. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="a23a6155274bbee85098edd578cfa9e39"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a23a6155274bbee85098edd578cfa9e39">&#9670;&nbsp;</a></span>AddPhysicalEndpoints()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::AddPhysicalEndpoints </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classrdmnet_1_1_physical_endpoint_config.html">PhysicalEndpointConfig</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>endpoint_configs</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Add multiple physical endpoints to a device. </p>
+<p>See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information about endpoints. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_configs</td><td>Configuration information for the new physical endpoints. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Endpoints added successfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started - call <a class="el" href="classrdmnet_1_1_device.html#ab4573244d38d30c40900484f53b9fbe7" title="Allocate resources and start up this device with the given configuration on the given RDMnet scope...">Device::Startup()</a> first. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="aa55f54189e6601365456952655cc1c4f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa55f54189e6601365456952655cc1c4f">&#9670;&nbsp;</a></span>AddPhysicalResponder() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::AddPhysicalResponder </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>endpoint_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a> &amp;&#160;</td>
+          <td class="paramname"><em>responder_uid</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>control_field</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a> &amp;&#160;</td>
+          <td class="paramname"><em>binding_uid</em> = <code><a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a>{}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Add a responder to a physical endpoint. </p>
+<p>Add the endpoint first with <a class="el" href="classrdmnet_1_1_device.html#a875fae87db81a2fe2236566e45892f1b" title="Add a physical endpoint to a device. ">Device::AddPhysicalEndpoint()</a>. See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information on endpoints.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_id</td><td>ID for the endpoint on which to add the responder. </td></tr>
+    <tr><td class="paramname">responder_uid</td><td>The responder's RDM UID. </td></tr>
+    <tr><td class="paramname">control_field</td><td>The control field received in the DISC_MUTE message from this responder. </td></tr>
+    <tr><td class="paramname">binding_uid</td><td>The binding UID received in the DISC_MUTE message from this responder. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Responder added sucessfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument, or the endpoint is a virtual endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started, or endpoint_id was not previously added. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="acff56b89306a8af9bb7ef156dd317adc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acff56b89306a8af9bb7ef156dd317adc">&#9670;&nbsp;</a></span>AddPhysicalResponder() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::AddPhysicalResponder </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>endpoint_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classrdmnet_1_1_physical_endpoint_responder.html">PhysicalEndpointResponder</a> &amp;&#160;</td>
+          <td class="paramname"><em>responder</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Add a responder to a physical endpoint. </p>
+<p>Add the endpoint first with <a class="el" href="classrdmnet_1_1_device.html#a875fae87db81a2fe2236566e45892f1b" title="Add a physical endpoint to a device. ">Device::AddPhysicalEndpoint()</a>. See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information on endpoints.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_id</td><td>ID for the endpoint on which to add the responder. </td></tr>
+    <tr><td class="paramname">responder</td><td>Identifying information for the responder to add. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Responder added sucessfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument, or the endpoint is a virtual endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started, or endpoint_id was not previously added. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="a1b4a5d60f2814627c22ac02c47ac2e7f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1b4a5d60f2814627c22ac02c47ac2e7f">&#9670;&nbsp;</a></span>AddPhysicalResponders()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::AddPhysicalResponders </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>endpoint_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classrdmnet_1_1_physical_endpoint_responder.html">PhysicalEndpointResponder</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>responders</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Add multiple responders to a physical endpoint. </p>
+<p>Add the endpoint first with <a class="el" href="classrdmnet_1_1_device.html#a875fae87db81a2fe2236566e45892f1b" title="Add a physical endpoint to a device. ">Device::AddPhysicalEndpoint()</a>. See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information on endpoints.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_id</td><td>ID for the endpoint on which to add the responders. </td></tr>
+    <tr><td class="paramname">responders</td><td>Identifying information for responders to add. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Responders added sucessfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument, or the endpoint is a virtual endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started, or endpoint_id was not previously added. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="a99f7314c8662242597afe5c54b4800d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a99f7314c8662242597afe5c54b4800d7">&#9670;&nbsp;</a></span>AddVirtualEndpoint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::AddVirtualEndpoint </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classrdmnet_1_1_virtual_endpoint_config.html">VirtualEndpointConfig</a> &amp;&#160;</td>
+          <td class="paramname"><em>endpoint_config</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Add a virtual endpoint to a device. </p>
+<p>See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information about endpoints. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_config</td><td>Configuration information for the new virtual endpoint. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Endpoint added successfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started - call <a class="el" href="classrdmnet_1_1_device.html#ab4573244d38d30c40900484f53b9fbe7" title="Allocate resources and start up this device with the given configuration on the given RDMnet scope...">Device::Startup()</a> first. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="aa3f32fc44e4daf227f30f88e2b63debe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa3f32fc44e4daf227f30f88e2b63debe">&#9670;&nbsp;</a></span>AddVirtualEndpoints()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::AddVirtualEndpoints </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classrdmnet_1_1_virtual_endpoint_config.html">VirtualEndpointConfig</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>endpoint_configs</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Add multiple virtual endpoints to a device. </p>
+<p>See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information about endpoints. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_configs</td><td>Configuration information for the new virtual endpoints. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Endpoints added successfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started - call <a class="el" href="classrdmnet_1_1_device.html#ab4573244d38d30c40900484f53b9fbe7" title="Allocate resources and start up this device with the given configuration on the given RDMnet scope...">Device::Startup()</a> first. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="a5e0bde652783c4be56d6d96789c6b77a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5e0bde652783c4be56d6d96789c6b77a">&#9670;&nbsp;</a></span>AddVirtualResponder() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::AddVirtualResponder </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>endpoint_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html">etcpal::Uuid</a> &amp;&#160;</td>
+          <td class="paramname"><em>responder_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Add a responder with a dynamic UID to a virtual endpoint. </p>
+<p>This function can only be used on virtual endpoints. A dynamic UID for the responder will be requested from the broker and the assigned UID (or error code) will be delivered to <a class="el" href="classrdmnet_1_1_device_1_1_notify_handler.html#a4d4c808de576d3c9e241edc2a897a0f7" title="The dynamic UID assignment status for a set of virtual responders has been received. ">NotifyHandler::HandleDynamicUidStatus()</a>. Save this UID for comparison when handling RDM commands addressed to the dynamic responder. Add the endpoint first with <a class="el" href="classrdmnet_1_1_device.html#a99f7314c8662242597afe5c54b4800d7" title="Add a virtual endpoint to a device. ">Device::AddVirtualEndpoint()</a>. See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information on endpoints.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_id</td><td>ID for the endpoint on which to add the responder. </td></tr>
+    <tr><td class="paramname">responder_id</td><td>Responder ID (permanent UUID representing the responder) to add. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Responder added sucessfully (pending dynamic UID assignment). </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument, or the endpoint is a physical endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started, or endpoint_id was not previously added. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="a64dcf8e2f82f2fd72897b35c43bc3cd5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a64dcf8e2f82f2fd72897b35c43bc3cd5">&#9670;&nbsp;</a></span>AddVirtualResponder() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::AddVirtualResponder </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>endpoint_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a> &amp;&#160;</td>
+          <td class="paramname"><em>responder_static_uid</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Add a responder with a static UID to a virtual endpoint. </p>
+<p>Add the endpoint first with <a class="el" href="classrdmnet_1_1_device.html#a99f7314c8662242597afe5c54b4800d7" title="Add a virtual endpoint to a device. ">Device::AddVirtualEndpoint()</a>. See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information on endpoints.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_id</td><td>ID for the endpoint on which to add the responder. </td></tr>
+    <tr><td class="paramname">responder_static_uid</td><td>Responder UID (permanent static RDM UID representing the responder) to add. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Responder added sucessfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument, or the endpoint is a physical endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started, or endpoint_id was not previously added. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="ace9161e9472e747f488271f2f61c8284"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ace9161e9472e747f488271f2f61c8284">&#9670;&nbsp;</a></span>AddVirtualResponders() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::AddVirtualResponders </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>endpoint_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; <a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html">etcpal::Uuid</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>responder_ids</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Add multiple responders with dynamic UIDs to a virtual endpoint. </p>
+<p>This function can only be used on virtual endpoints. Dynamic UIDs for the responders will be requested from the broker and the assigned UIDs (or error codes) will be delivered to <a class="el" href="classrdmnet_1_1_device_1_1_notify_handler.html#a4d4c808de576d3c9e241edc2a897a0f7" title="The dynamic UID assignment status for a set of virtual responders has been received. ">NotifyHandler::HandleDynamicUidStatus()</a>. Save these UIDs for comparison when handling RDM commands addressed to the dynamic responders. Add the endpoint first with <a class="el" href="classrdmnet_1_1_device.html#a99f7314c8662242597afe5c54b4800d7" title="Add a virtual endpoint to a device. ">Device::AddVirtualEndpoint()</a>. See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information on endpoints.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_id</td><td>ID for the endpoint on which to add the responders. </td></tr>
+    <tr><td class="paramname">responder_ids</td><td>Responder IDs (permanent UUIDs representing the responder) to add. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Responders added sucessfully (pending dynamic UID assignment). </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument, or the endpoint is a physical endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started, or endpoint_id was not previously added. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="a1f9a953b5dfe60d16f3af293400c9eb5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f9a953b5dfe60d16f3af293400c9eb5">&#9670;&nbsp;</a></span>AddVirtualResponders() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::AddVirtualResponders </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>endpoint_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>responder_static_uids</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Add multiple responders with static UIDs to a virtual endpoint. </p>
+<p>Add the endpoint first with <a class="el" href="classrdmnet_1_1_device.html#a99f7314c8662242597afe5c54b4800d7" title="Add a virtual endpoint to a device. ">Device::AddVirtualEndpoint()</a>. See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information on endpoints.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_id</td><td>ID for the endpoint on which to add the responder. </td></tr>
+    <tr><td class="paramname">responder_static_uids</td><td>Responder UIDs (permanent static RDM UIDs representing the responder) to add. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Responders added sucessfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument, or the endpoint is a physical endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started, or endpoint_id was not previously added. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="a9f0e9d76c4ce0487b0fd38edec014fe4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f0e9d76c4ce0487b0fd38edec014fe4">&#9670;&nbsp;</a></span>ChangeScope() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::ChangeScope </td>
+          <td>(</td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>new_scope_id_str</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__rdmnet__api__common.html#ga3eb1adaf6e830a807d1dcfbc64197222">rdmnet_disconnect_reason_t</a>&#160;</td>
+          <td class="paramname"><em>disconnect_reason</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_sock_addr.html">etcpal::SockAddr</a> &amp;&#160;</td>
+          <td class="paramname"><em>static_broker_addr</em> = <code><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_sock_addr.html">etcpal::SockAddr</a>{}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Change the device's RDMnet scope. </p>
+<p>Will disconnect from the current scope, sending the disconnect reason provided in the disconnect_reason parameter, and then attempt to discover and connect to a broker for the new scope. The status of the connection attempt will be communicated via the associated <a class="el" href="classrdmnet_1_1_device_1_1_notify_handler.html" title="A base class for a class that receives notification callbacks from a device. ">NotifyHandler</a>.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">new_scope_id_str</td><td>The ID string for the new scope. </td></tr>
+    <tr><td class="paramname">disconnect_reason</td><td>Reason code for disconnecting from the current scope. </td></tr>
+    <tr><td class="paramname">static_broker_addr</td><td>[optional] A static IP address and port at which to connect to the broker for the new scope. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: <a class="el" href="classrdmnet_1_1_scope.html" title="An RDMnet scope configuration. ">Scope</a> changed successfully. </dd>
+<dd>
+Errors forwarded from <a class="el" href="group__rdmnet__device.html#ga632bb5b71db04e29a77193ecd33b90d5" title="Change the device&#39;s scope. ">rdmnet_device_change_scope()</a>. </dd></dl>
+
+</div>
+</div>
+<a id="aa6f14e00577959677d438a293c6c8032"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa6f14e00577959677d438a293c6c8032">&#9670;&nbsp;</a></span>ChangeScope() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::ChangeScope </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classrdmnet_1_1_scope.html">Scope</a> &amp;&#160;</td>
+          <td class="paramname"><em>new_scope_config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__rdmnet__api__common.html#ga3eb1adaf6e830a807d1dcfbc64197222">rdmnet_disconnect_reason_t</a>&#160;</td>
+          <td class="paramname"><em>disconnect_reason</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Change the device's RDMnet scope. </p>
+<p>Will disconnect from the current scope, sending the disconnect reason provided in the disconnect_reason parameter, and then attempt to discover and connect to a broker for the new scope. The status of the connection attempt will be communicated via the associated <a class="el" href="classrdmnet_1_1_device_1_1_notify_handler.html" title="A base class for a class that receives notification callbacks from a device. ">NotifyHandler</a>.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">new_scope_config</td><td>Configuration information for the new scope. </td></tr>
+    <tr><td class="paramname">disconnect_reason</td><td>Reason code for disconnecting from the current scope. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: <a class="el" href="classrdmnet_1_1_scope.html" title="An RDMnet scope configuration. ">Scope</a> changed successfully. </dd>
+<dd>
+Errors forwarded from <a class="el" href="group__rdmnet__device.html#ga632bb5b71db04e29a77193ecd33b90d5" title="Change the device&#39;s scope. ">rdmnet_device_change_scope()</a>. </dd></dl>
+
+</div>
+</div>
+<a id="a81178d9ad914cda39d999779162955cc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a81178d9ad914cda39d999779162955cc">&#9670;&nbsp;</a></span>ChangeSearchDomain()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::ChangeSearchDomain </td>
+          <td>(</td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>new_search_domain</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__rdmnet__api__common.html#ga3eb1adaf6e830a807d1dcfbc64197222">rdmnet_disconnect_reason_t</a>&#160;</td>
+          <td class="paramname"><em>disconnect_reason</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Change the device's DNS search domain. </p>
+<p>Non-default search domains are considered advanced usage. If the device's scope does not have a static broker configuration, the scope will be disconnected, sending the disconnect reason provided in the disconnect_reason parameter. Then discovery will be re-attempted on the new search domain.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">new_search_domain</td><td>New search domain to use for discovery. </td></tr>
+    <tr><td class="paramname">disconnect_reason</td><td>Disconnect reason to send to the broker, if connected. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Search domain changed successfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: Handle is not associated with a valid device instance. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="a07e0aced596e0f67936b1e544f592c1f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a07e0aced596e0f67936b1e544f592c1f">&#9670;&nbsp;</a></span>RemoveEndpoint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::RemoveEndpoint </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>endpoint_id</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Remove an endpoint from a device. </p>
+<p>See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information about endpoints. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_id</td><td>ID of the endpoint to remove. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Endpoint removed successfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started or endpoint_id was not previously added. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="a06beb4f58f364c6917711f7362a919eb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a06beb4f58f364c6917711f7362a919eb">&#9670;&nbsp;</a></span>RemoveEndpoints()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::RemoveEndpoints </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; uint16_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>endpoint_ids</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Remove multiple endpoints from a device. </p>
+<p>See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information about endpoints. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_ids</td><td>IDs of the endpoints to remove. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Endpoints removed successfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started, or one or more endpoint IDs was not previously added. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="a3e35f9850d125d12036ec75b9ddfcb97"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3e35f9850d125d12036ec75b9ddfcb97">&#9670;&nbsp;</a></span>RemovePhysicalResponder()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::RemovePhysicalResponder </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>endpoint_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a> &amp;&#160;</td>
+          <td class="paramname"><em>responder_uid</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Remove a responder from a physical endpoint. </p>
+<p>This function can only be used on physical endpoints. See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information on endpoints.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_id</td><td>ID for the endpoint on which to remove the responder. </td></tr>
+    <tr><td class="paramname">responder_uid</td><td>RDM UID of responder to remove. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Responder removed sucessfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument, or the endpoint is a virtual endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started, endpoint_id was not previously added, or responder_uid was not previously added to the endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="a1bf9f11a6cb5b5b773063d44e5cd081b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1bf9f11a6cb5b5b773063d44e5cd081b">&#9670;&nbsp;</a></span>RemovePhysicalResponders()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::RemovePhysicalResponders </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>endpoint_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>responder_uids</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Remove multiple responders from a physical endpoint. </p>
+<p>This function can only be used on physical endpoints. See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information on endpoints.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_id</td><td>ID for the endpoint on which to remove the responders. </td></tr>
+    <tr><td class="paramname">responder_uids</td><td>RDM UIDs of responders to remove. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Responders removed sucessfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument, or the endpoint is a virtual endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started, endpoint_id was not previously added, or one or more responder UIDs were not previously added to the endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="a313ee7f3528e61f6f564e8a1ba255edb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a313ee7f3528e61f6f564e8a1ba255edb">&#9670;&nbsp;</a></span>RemoveVirtualResponder() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::RemoveVirtualResponder </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>endpoint_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html">etcpal::Uuid</a> &amp;&#160;</td>
+          <td class="paramname"><em>responder_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Remove a responder with a dynamic UID from a virtual endpoint. </p>
+<p>This function can only be used on virtual endpoints. See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information on endpoints.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_id</td><td>ID for the endpoint on which to remove the responder. </td></tr>
+    <tr><td class="paramname">responder_id</td><td>Responder ID to remove. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Responder removed sucessfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument, or the endpoint is a physical endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started, endpoint_id was not previously added, or responder_id was not previously added to the endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="af4684778a6ef320365b8a707709774f4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4684778a6ef320365b8a707709774f4">&#9670;&nbsp;</a></span>RemoveVirtualResponder() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::RemoveVirtualResponder </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>endpoint_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a> &amp;&#160;</td>
+          <td class="paramname"><em>responder_static_uid</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Remove a responder with a static UID from a virtual endpoint. </p>
+<p>This function can only be used on virtual endpoints. See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information on endpoints.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_id</td><td>ID for the endpoint on which to remove the responder. </td></tr>
+    <tr><td class="paramname">responder_static_uid</td><td>RDM UID of responder to remove. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Responder removed sucessfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument, or the endpoint is a physical endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started, endpoint_id was not previously added, or responder_static_uid was not previously added to the endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="aa44a3a6e5fe462073de21798ca3ed479"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa44a3a6e5fe462073de21798ca3ed479">&#9670;&nbsp;</a></span>RemoveVirtualResponders() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::RemoveVirtualResponders </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>endpoint_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; <a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html">etcpal::Uuid</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>responder_ids</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Remove multiple responder with dynamic UIDs from a virtual endpoint. </p>
+<p>This function can only be used on virtual endpoints. See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information on endpoints.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_id</td><td>ID for the endpoint on which to remove the responders. </td></tr>
+    <tr><td class="paramname">responder_ids</td><td>Responder IDs to remove. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Responders removed sucessfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument, or the endpoint is a physical endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started, endpoint_id was not previously added, or one or more responder IDs were not previously added to the endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="ae9fda389c24c0e7fb16fa599ac11bf0a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae9fda389c24c0e7fb16fa599ac11bf0a">&#9670;&nbsp;</a></span>RemoveVirtualResponders() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::RemoveVirtualResponders </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>endpoint_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>responder_static_uids</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Remove multiple responders with static UIDs from a virtual endpoint. </p>
+<p>This function can only be used on virtual endpoints. See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information on endpoints.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">endpoint_id</td><td>ID for the endpoint on which to remove the responders. </td></tr>
+    <tr><td class="paramname">responder_static_uids</td><td>RDM UIDs of the responders to remove. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: Responders removed sucessfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument, or the endpoint is a physical endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started, endpoint_id was not previously added, or one or more responder UIDs were not previously added to the endpoint. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="a3f46dd4c3976eff06bfb157008fcf9b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f46dd4c3976eff06bfb157008fcf9b9">&#9670;&nbsp;</a></span>scope()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_expected.html">etcpal::Expected</a>&lt; <a class="el" href="classrdmnet_1_1_scope.html">Scope</a> &gt; rdmnet::Device::scope </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Retrieve the scope configuration associated with a device instance. </p>
+<dl class="section return"><dt>Returns</dt><dd>The scope configuration on success. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> not started. </dd></dl>
+
+</div>
+</div>
+<a id="aaf4491f3d76f1d0092cc94f28ecc31b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf4491f3d76f1d0092cc94f28ecc31b8">&#9670;&nbsp;</a></span>SendLlrpAck()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::SendLlrpAck </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classrdmnet_1_1llrp_1_1_saved_rdm_command.html">llrp::SavedRdmCommand</a> &amp;&#160;</td>
+          <td class="paramname"><em>received_cmd</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const uint8_t *&#160;</td>
+          <td class="paramname"><em>response_data</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint8_t&#160;</td>
+          <td class="paramname"><em>response_data_len</em> = <code>0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Send an acknowledge (ACK) response to an RDM command received by a device over LLRP. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">received_cmd</td><td>The command to which this ACK is a response. </td></tr>
+    <tr><td class="paramname">response_data</td><td>[optional] The response's RDM parameter data, if it has any. </td></tr>
+    <tr><td class="paramname">response_data_len</td><td>[optional] The length of the RDM parameter data (or 0 if data is nullptr). </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: ACK sent successfully. </dd>
+<dd>
+Error codes from <a class="el" href="group__rdmnet__device.html#gacb846f916ae63fe3496cc08a498a066c" title="Send an ACK response to an RDM command received over LLRP. ">rdmnet_device_send_llrp_ack()</a>. </dd></dl>
+
+</div>
+</div>
+<a id="a5121e1897edbcb40d9a078723a9cd21f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5121e1897edbcb40d9a078723a9cd21f">&#9670;&nbsp;</a></span>SendLlrpNack() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::SendLlrpNack </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classrdmnet_1_1llrp_1_1_saved_rdm_command.html">llrp::SavedRdmCommand</a> &amp;&#160;</td>
+          <td class="paramname"><em>received_cmd</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/group__message.html#gaa11fc36923818f02895f40dafd228474">rdm_nack_reason_t</a>&#160;</td>
+          <td class="paramname"><em>nack_reason</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Send a negative acknowledge (NACK) response to an RDM command received by a device over LLRP. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">received_cmd</td><td>The command to which this NACK is a response. </td></tr>
+    <tr><td class="paramname">nack_reason</td><td>The RDM NACK reason to send with the NACK response. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: NACK sent successfully. </dd>
+<dd>
+Error codes from <a class="el" href="group__rdmnet__device.html#gaaec37bb135320e668870154e1efee577" title="Send an ACK response to an RDM command received over LLRP. ">rdmnet_device_send_llrp_nack()</a>. </dd></dl>
+
+</div>
+</div>
+<a id="a44fdd13593b0edc5e211fe87e954b5fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a44fdd13593b0edc5e211fe87e954b5fc">&#9670;&nbsp;</a></span>SendLlrpNack() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::SendLlrpNack </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classrdmnet_1_1llrp_1_1_saved_rdm_command.html">llrp::SavedRdmCommand</a> &amp;&#160;</td>
+          <td class="paramname"><em>received_cmd</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>raw_nack_reason</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Send a negative acknowledge (NACK) response to an RDM command received by a device over LLRP. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">received_cmd</td><td>The command to which this NACK is a response. </td></tr>
+    <tr><td class="paramname">raw_nack_reason</td><td>The NACK reason (either standard or manufacturer-specific) to send with the NACK response. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: NACK sent successfully. </dd>
+<dd>
+Error codes from <a class="el" href="group__rdmnet__device.html#gaaec37bb135320e668870154e1efee577" title="Send an ACK response to an RDM command received over LLRP. ">rdmnet_device_send_llrp_nack()</a>. </dd></dl>
+
+</div>
+</div>
+<a id="a5795a6031e8903bc294f0afa4a224472"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5795a6031e8903bc294f0afa4a224472">&#9670;&nbsp;</a></span>SendRdmAck()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::SendRdmAck </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classrdmnet_1_1_saved_rdm_command.html">SavedRdmCommand</a> &amp;&#160;</td>
+          <td class="paramname"><em>received_cmd</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const uint8_t *&#160;</td>
+          <td class="paramname"><em>response_data</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>response_data_len</em> = <code>0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Send an acknowledge (ACK) response to an RDM command received by a device. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">received_cmd</td><td>The command to which this ACK is a response. </td></tr>
+    <tr><td class="paramname">response_data</td><td>[optional] The response's RDM parameter data, if it has any. </td></tr>
+    <tr><td class="paramname">response_data_len</td><td>[optional] The length of the RDM parameter data (or 0 if data is nullptr). </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: ACK sent successfully. </dd>
+<dd>
+Error codes from <a class="el" href="group__rdmnet__device.html#gace1ea6c76a6b3f441c1f7ccaa27e9aa6" title="Send an RDM ACK response from a device. ">rdmnet_device_send_rdm_ack()</a>. </dd></dl>
+
+</div>
+</div>
+<a id="ae7675ffb54dda6f55c0eb2f54da65c24"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae7675ffb54dda6f55c0eb2f54da65c24">&#9670;&nbsp;</a></span>SendRdmNack() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::SendRdmNack </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classrdmnet_1_1_saved_rdm_command.html">SavedRdmCommand</a> &amp;&#160;</td>
+          <td class="paramname"><em>received_cmd</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/group__message.html#gaa11fc36923818f02895f40dafd228474">rdm_nack_reason_t</a>&#160;</td>
+          <td class="paramname"><em>nack_reason</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Send a negative acknowledge (NACK) response to an RDM command received by a device. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">received_cmd</td><td>The command to which this NACK is a response. </td></tr>
+    <tr><td class="paramname">nack_reason</td><td>The RDM NACK reason to send with the NACK response. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: NACK sent successfully. </dd>
+<dd>
+Error codes from <a class="el" href="group__rdmnet__device.html#ga1b76b6f44ed938ecbeb8b6edd8d2eea7" title="Send an RDM NACK response from a device. ">rdmnet_device_send_rdm_nack()</a>. </dd></dl>
+
+</div>
+</div>
+<a id="a61c71ff57e48534819eb51aa7b2d21d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a61c71ff57e48534819eb51aa7b2d21d1">&#9670;&nbsp;</a></span>SendRdmNack() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::SendRdmNack </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classrdmnet_1_1_saved_rdm_command.html">SavedRdmCommand</a> &amp;&#160;</td>
+          <td class="paramname"><em>received_cmd</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>raw_nack_reason</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Send a negative acknowledge (NACK) response to an RDM command received by a device. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">received_cmd</td><td>The command to which this NACK is a response. </td></tr>
+    <tr><td class="paramname">raw_nack_reason</td><td>The NACK reason (either standard or manufacturer-specific) to send with the NACK response. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: NACK sent successfully. </dd>
+<dd>
+Error codes from <a class="el" href="group__rdmnet__device.html#ga1b76b6f44ed938ecbeb8b6edd8d2eea7" title="Send an RDM NACK response from a device. ">rdmnet_device_send_rdm_nack()</a>. </dd></dl>
+
+</div>
+</div>
+<a id="aeb4d4b1e2f5867bd99387fbc76d01aa2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb4d4b1e2f5867bd99387fbc76d01aa2">&#9670;&nbsp;</a></span>SendRdmUpdate() <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::SendRdmUpdate </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>param_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const uint8_t *&#160;</td>
+          <td class="paramname"><em>data</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>data_len</em> = <code>0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Send an asynchronous RDM GET response to update the value of a local parameter. </p>
+<p>This overload is for updating a parameter on the device's default responder - see <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">param_id</td><td>The RDM parameter ID that has been updated. </td></tr>
+    <tr><td class="paramname">data</td><td>[optional] The updated parameter data, if any. </td></tr>
+    <tr><td class="paramname">data_len</td><td>[optional] The length of the parameter data, if any. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: RDM update sent successfully. </dd>
+<dd>
+Error codes from <a class="el" href="group__rdmnet__device.html#ga72a289e9c87633805e4c1e9b5dbc3f07" title="Send an asynchronous RDM GET response to update the value of a local parameter. ">rdmnet_device_send_rdm_update()</a>. </dd></dl>
+
+</div>
+</div>
+<a id="af6126e13c9c64c3758f229cc973d8221"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af6126e13c9c64c3758f229cc973d8221">&#9670;&nbsp;</a></span>SendRdmUpdate() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::SendRdmUpdate </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>subdevice</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>param_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const uint8_t *&#160;</td>
+          <td class="paramname"><em>data</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>data_len</em> = <code>0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Send an asynchronous RDM GET response to update the value of a local parameter. </p>
+<p>This overload is for updating a parameter on a subdevice of the device's default responder - see <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">subdevice</td><td>The subdevice from which the update is being sent. </td></tr>
+    <tr><td class="paramname">param_id</td><td>The RDM parameter ID that has been updated. </td></tr>
+    <tr><td class="paramname">data</td><td>[optional] The updated parameter data, if any. </td></tr>
+    <tr><td class="paramname">data_len</td><td>[optional] The length of the parameter data, if any. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: RDM update sent successfully. </dd>
+<dd>
+Error codes from <a class="el" href="group__rdmnet__device.html#ga72a289e9c87633805e4c1e9b5dbc3f07" title="Send an asynchronous RDM GET response to update the value of a local parameter. ">rdmnet_device_send_rdm_update()</a>. </dd></dl>
+
+</div>
+</div>
+<a id="a5c58f5eb5b3aa1b09a5fd2242d5e420b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c58f5eb5b3aa1b09a5fd2242d5e420b">&#9670;&nbsp;</a></span>SendRdmUpdate() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::SendRdmUpdate </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classrdmnet_1_1_source_addr.html">SourceAddr</a> &amp;&#160;</td>
+          <td class="paramname"><em>source_addr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>param_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const uint8_t *&#160;</td>
+          <td class="paramname"><em>data</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>data_len</em> = <code>0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Send an asynchronous RDM GET response to update the value of a parameter on a sub-responder. </p>
+<p>This overload is for updating a parameter on a physical or virtual responder associated with one of a device's endpoints. In particular, this is the one for a gateway to use when it collects a new queued message from a responder. See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">source_addr</td><td>The addressing information of the responder that has an updated parameter. </td></tr>
+    <tr><td class="paramname">param_id</td><td>The RDM parameter ID that has been updated. </td></tr>
+    <tr><td class="paramname">data</td><td>[optional] The updated parameter data, if any. </td></tr>
+    <tr><td class="paramname">data_len</td><td>[optional] The length of the parameter data, if any. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: RDM update sent successfully. </dd>
+<dd>
+Error codes from <a class="el" href="group__rdmnet__device.html#ga45e7e46d66915ae79392f054a2f5e880" title="Send an asynchronous RDM GET response to update the value of a parameter on a sub-responder. ">rdmnet_device_send_rdm_update_from_responder()</a>. </dd></dl>
+
+</div>
+</div>
+<a id="ad2f2a87844ed172ccc142792b03053f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad2f2a87844ed172ccc142792b03053f8">&#9670;&nbsp;</a></span>SendRptStatus()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::SendRptStatus </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classrdmnet_1_1_saved_rdm_command.html">SavedRdmCommand</a> &amp;&#160;</td>
+          <td class="paramname"><em>received_cmd</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__rdmnet__api__common.html#gaa9aca0658bfae057363a520c0d9907c2">rpt_status_code_t</a>&#160;</td>
+          <td class="paramname"><em>status_code</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>status_string</em> = <code>nullptr</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Send an RPT status message from a device. </p>
+<p>All RPT status messages are handled internally except those associated with RDMnet gateways. If not implementing an RDMnet gateway, this method should not be used. See <a class="el" href="handling_rdm_commands.html">Handling RDM Commands</a> for more information.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">received_cmd</td><td>The command to which this RPT status is a response. </td></tr>
+    <tr><td class="paramname">status_code</td><td>A code indicating the result of the command. </td></tr>
+    <tr><td class="paramname">status_string</td><td>[optional] A string with more information about the status condition. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: RPT status sent successfully. </dd>
+<dd>
+Error codes from <a class="el" href="group__rdmnet__device.html#gaff1d43c2f68cd8670d15fa5459d41375" title="Send an RPT status message from a device. ">rdmnet_device_send_status()</a>. </dd></dl>
+
+</div>
+</div>
+<a id="a84538ed8fcb63d968c760649df74c61c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a84538ed8fcb63d968c760649df74c61c">&#9670;&nbsp;</a></span>Shutdown()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void rdmnet::Device::Shutdown </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__rdmnet__api__common.html#ga3eb1adaf6e830a807d1dcfbc64197222">rdmnet_disconnect_reason_t</a>&#160;</td>
+          <td class="paramname"><em>disconnect_reason</em> = <code><a class="el" href="group__rdmnet__api__common.html#gga3eb1adaf6e830a807d1dcfbc64197222a336a46d8d36f5b1f32fac4653913cdd2">kRdmnetDisconnectShutdown</a></code></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Shut down this device and deallocate resources. </p>
+<p>Will disconnect any scope to which this device is currently connected, sending the disconnect reason provided in the disconnect_reason parameter.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">disconnect_reason</td><td>Reason code for disconnecting from the current scope. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ab4573244d38d30c40900484f53b9fbe7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4573244d38d30c40900484f53b9fbe7">&#9670;&nbsp;</a></span>Startup() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::Startup </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classrdmnet_1_1_device_1_1_notify_handler.html">NotifyHandler</a> &amp;&#160;</td>
+          <td class="paramname"><em>notify_handler</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structrdmnet_1_1_device_1_1_settings.html">Settings</a> &amp;&#160;</td>
+          <td class="paramname"><em>settings</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>scope_id_str</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_sock_addr.html">etcpal::SockAddr</a> &amp;&#160;</td>
+          <td class="paramname"><em>static_broker_addr</em> = <code><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_sock_addr.html">etcpal::SockAddr</a>{}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Allocate resources and start up this device with the given configuration on the given RDMnet scope. </p>
+<p>Will immediately attempt to discover and connect to a broker for the given scope (or just connect if a static broker address is given); the status of these attempts will be communicated via the associated <a class="el" href="classrdmnet_1_1_device_1_1_notify_handler.html" title="A base class for a class that receives notification callbacks from a device. ">NotifyHandler</a>.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">notify_handler</td><td>A class instance to handle callback notifications from this device. </td></tr>
+    <tr><td class="paramname">settings</td><td>Configuration settings used by this device. </td></tr>
+    <tr><td class="paramname">scope_id_str</td><td>The scope ID string. </td></tr>
+    <tr><td class="paramname">static_broker_addr</td><td>[optional] A static IP address and port at which to connect to a broker for this scope. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> started successfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument. </dd>
+<dd>
+Errors forwarded from <a class="el" href="group__rdmnet__device.html#gaeed7f09d54c4f10901ab68a7c3df5fdd" title="Create a new instance of RDMnet device functionality. ">rdmnet_device_create()</a>. </dd></dl>
+
+</div>
+</div>
+<a id="a32723797de36ba15ef1b8b6497090f1e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a32723797de36ba15ef1b8b6497090f1e">&#9670;&nbsp;</a></span>Startup() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::Startup </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classrdmnet_1_1_device_1_1_notify_handler.html">NotifyHandler</a> &amp;&#160;</td>
+          <td class="paramname"><em>notify_handler</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structrdmnet_1_1_device_1_1_settings.html">Settings</a> &amp;&#160;</td>
+          <td class="paramname"><em>settings</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classrdmnet_1_1_scope.html">Scope</a> &amp;&#160;</td>
+          <td class="paramname"><em>scope_config</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Allocate resources and start up this device with the given configuration on the given RDMnet scope. </p>
+<p>Will immediately attempt to discover and connect to a broker for the given scope (or just connect if a static broker address is given); the status of these attempts will be communicated via the associated <a class="el" href="classrdmnet_1_1_device_1_1_notify_handler.html" title="A base class for a class that receives notification callbacks from a device. ">NotifyHandler</a>.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">notify_handler</td><td>A class instance to handle callback notifications from this device. </td></tr>
+    <tr><td class="paramname">settings</td><td>Configuration settings used by this device. </td></tr>
+    <tr><td class="paramname">scope_config</td><td>Configuration information for the device's RDMnet scope. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> started successfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument. </dd>
+<dd>
+Errors forwarded from <a class="el" href="group__rdmnet__device.html#gaeed7f09d54c4f10901ab68a7c3df5fdd" title="Create a new instance of RDMnet device functionality. ">rdmnet_device_create()</a>. </dd></dl>
+
+</div>
+</div>
+<a id="afe17981d3035416d657b269ad2034960"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afe17981d3035416d657b269ad2034960">&#9670;&nbsp;</a></span>StartupWithDefaultScope()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> rdmnet::Device::StartupWithDefaultScope </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classrdmnet_1_1_device_1_1_notify_handler.html">NotifyHandler</a> &amp;&#160;</td>
+          <td class="paramname"><em>notify_handler</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structrdmnet_1_1_device_1_1_settings.html">Settings</a> &amp;&#160;</td>
+          <td class="paramname"><em>settings</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_sock_addr.html">etcpal::SockAddr</a> &amp;&#160;</td>
+          <td class="paramname"><em>static_broker_addr</em> = <code><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_sock_addr.html">etcpal::SockAddr</a>{}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Allocate resources and start up this device with the given configuration on the default RDMnet scope. </p>
+<p>Will immediately attempt to discover and connect to a broker for the default scope (or just connect if a static broker address is given); the status of these attempts will be communicated via the associated <a class="el" href="classrdmnet_1_1_device_1_1_notify_handler.html" title="A base class for a class that receives notification callbacks from a device. ">NotifyHandler</a>.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">notify_handler</td><td>A class instance to handle callback notifications from this device. </td></tr>
+    <tr><td class="paramname">settings</td><td>Configuration settings used by this device. </td></tr>
+    <tr><td class="paramname">static_broker_addr</td><td>[optional] A static IP address and port at which to connect to a broker for the default scope. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49">etcpal::Error::Ok()</a>: <a class="el" href="classrdmnet_1_1_device.html" title="An instance of RDMnet device functionality. ">Device</a> started successfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument. </dd>
+<dd>
+Errors forwarded from <a class="el" href="group__rdmnet__device.html#gaeed7f09d54c4f10901ab68a7c3df5fdd" title="Create a new instance of RDMnet device functionality. ">rdmnet_device_create()</a>. </dd></dl>
+
+</div>
+</div>
+<hr/>The documentation for this class was generated from the following file:<ul>
+<li>include/rdmnet/cpp/<a class="el" href="cpp_2device_8h_source.html">device.h</a></li>
+</ul>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="namespacerdmnet.html">rdmnet</a></li><li class="navelem"><a class="el" href="classrdmnet_1_1_device.html">Device</a></li>
+    <li class="footer">Generated by
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>
+  </ul>
+</div>
+</body>
+</html>

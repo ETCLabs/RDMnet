@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['pack_20_28buffer_20packing_20and_20unpacking_29',['pack (Buffer Packing and Unpacking)',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__pack.html',1,'']]]
+  ['netint_20_28network_20interfaces_29',['netint (Network Interfaces)',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__netint.html',1,'']]]
 ];
