@@ -81,6 +81,7 @@ protected:
   void TearDown() override { registered_broker_module_deinit(); }
 };
 
+#if RDMNET_DYNAMIC_MEM
 TEST_F(TestRegisteredBroker, NewInitializesFieldsProperly)
 {
   auto ref = MakeDefaultRegisteredBroker();
@@ -234,3 +235,9 @@ TEST_F(TestRegisteredBroker, DeleteAllWorks)
   broker_1.release();
   broker_2.release();
 }
+#else
+TEST_F(TestRegisteredBroker, CannotAllocateWhenBuiltStatic)
+{
+  EXPECT_EQ(registered_broker_new(&default_config_), nullptr);
+}
+#endif

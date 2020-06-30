@@ -541,7 +541,8 @@ void discovered_target_node_dealloc(EtcPalRbNode* node)
 #if RDMNET_DYNAMIC_MEM
   free(node);
 #else
-// TODO
+  // TODO
+  ETCPAL_UNUSED_ARG(node);
 #endif
 }
 

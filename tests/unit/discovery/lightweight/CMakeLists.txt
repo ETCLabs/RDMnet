@@ -5,8 +5,8 @@ rdmnet_add_unit_test(test_discovery_lightweight
   test_lwmdns_common.cpp
   test_lwmdns_send.cpp
 
-  ${UNIT_TEST_DIR}/test_shared/fake_mcast.h
-  ${UNIT_TEST_DIR}/test_shared/fake_mcast.cpp
+  ${UNIT_TEST_DIR}/shared/fake_mcast.h
+  ${UNIT_TEST_DIR}/shared/fake_mcast.cpp
 
   ${RDMNET_DISC_COMMON_SOURCES}
   ${RDMNET_DISC_PLATFORM_SOURCES}

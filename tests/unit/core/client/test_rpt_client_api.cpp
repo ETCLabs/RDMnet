@@ -25,6 +25,7 @@
 
 #include "etcpal/cpp/lock.h"
 #include "etcpal_mock/common.h"
+#include "rdmnet/core/opts.h"
 #include "rdmnet_mock/core/broker_prot.h"
 #include "rdmnet_mock/core/common.h"
 #include "rdmnet_mock/core/connection.h"
@@ -139,21 +140,35 @@ TEST_F(TestRptClientApi, ClientAddMultipleScopesWorks)
     return kEtcPalErrOk;
   };
 
+#if RDMNET_DYNAMIC_MEM
+  constexpr size_t kMaxScopesToAdd = 100;
+#else
+  constexpr size_t kMaxScopesToAdd = RDMNET_MAX_SCOPES_PER_CLIENT;
+#endif
+
   // Add 100 scopes
-  for (size_t i = 0; i < 100; ++i)
+  RdmnetScopeConfig     tmp_scope;
+  rdmnet_client_scope_t tmp_handle = RDMNET_CLIENT_SCOPE_INVALID;
+  for (size_t i = 0; i < kMaxScopesToAdd; ++i)
   {
     unsigned int last_call_count = rc_conn_register_fake.call_count;
 
-    std::string       scope_str = E133_DEFAULT_SCOPE + std::to_string(i);
-    RdmnetScopeConfig tmp_scope;
+    std::string scope_str = E133_DEFAULT_SCOPE + std::to_string(i);
     RDMNET_CLIENT_SET_SCOPE(&tmp_scope, scope_str.c_str());
-    rdmnet_client_scope_t tmp_handle = RDMNET_CLIENT_SCOPE_INVALID;
     ASSERT_EQ(kEtcPalErrOk, rc_client_add_scope(&client_, &tmp_scope, &tmp_handle));
     EXPECT_NE(tmp_handle, RDMNET_CLIENT_SCOPE_INVALID);
 
     EXPECT_EQ(rc_conn_register_fake.call_count, last_call_count + 1);
     scope_refs.back().handle = tmp_handle;
   }
+
+#if !RDMNET_DYNAMIC_MEM
+  std::string scope_str = E133_DEFAULT_SCOPE + std::to_string(kMaxScopesToAdd);
+  RDMNET_CLIENT_SET_SCOPE(&tmp_scope, scope_str.c_str());
+  tmp_handle = RDMNET_CLIENT_SCOPE_INVALID;
+  EXPECT_EQ(kEtcPalErrNoMem, rc_client_add_scope(&client_, &tmp_scope, &tmp_handle));
+  EXPECT_EQ(tmp_handle, RDMNET_CLIENT_SCOPE_INVALID);
+#endif
 
   // Remove all scopes
   EXPECT_FALSE(rc_client_unregister(&client_, kRdmnetDisconnectShutdown));

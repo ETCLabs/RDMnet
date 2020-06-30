@@ -31,6 +31,7 @@
 #include "rdmnet_mock/core/common.h"
 #include "gtest/gtest.h"
 #include "test_disc_common_fakes.h"
+#include "rdmnet_config.h"
 
 // Disable <cstring> warnings on Windows/MSVC
 #ifdef _MSC_VER
@@ -115,6 +116,7 @@ TEST_F(TestDiscoveryCommon, StartMonitoringWorksWithNormalArgs)
   EXPECT_EQ(rdmnet_disc_platform_start_monitoring_fake.call_count, 1u);
 }
 
+#if RDMNET_DYNAMIC_MEM
 TEST_F(TestDiscoveryCommon, BrokerRegisterSucceedsUnderNormalConditions)
 {
   rdmnet_registered_broker_t broker_handle;
@@ -161,6 +163,7 @@ TEST_F(TestDiscoveryCommon, BrokerNotRegisteredWhenConflictingBrokersPresent)
   // Make sure the broker has not been registered
   EXPECT_EQ(rdmnet_disc_platform_register_broker_fake.call_count, 0u);
 }
+#endif
 
 TEST_F(TestDiscoveryCommon, DeinitUnmonitorsScope)
 {
@@ -180,6 +183,7 @@ TEST_F(TestDiscoveryCommon, DeinitUnmonitorsScope)
   deinitted_during_test_ = true;
 }
 
+#if RDMNET_DYNAMIC_MEM
 TEST_F(TestDiscoveryCommon, DeinitUnregistersBrokerIfRegistered)
 {
   RegisterBroker();
@@ -194,3 +198,4 @@ TEST_F(TestDiscoveryCommon, DeinitUnregistersBrokerIfRegistered)
   // Stop the destructor from doing a double deinit
   deinitted_during_test_ = true;
 }
+#endif

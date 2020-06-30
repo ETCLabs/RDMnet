@@ -50,15 +50,9 @@ typedef struct SupportedParameter
 
 /*************************** Private constants *******************************/
 
-#if RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
-#define CB_STORAGE_CLASS
-#else
-#define CB_STORAGE_CLASS static
-#endif
-
 #define INITIAL_SCOPES_CAPACITY 5
 
-#define RDM_RESP_BUF_STATIC_SIZE (RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES * RDM_MAX_PDL)
+#define RDM_RESP_BUF_STATIC_SIZE (RDMNET_PARSER_MAX_ACK_OVERFLOW_RESPONSES * RDM_MAX_PDL)
 
 // Calculation of the internal response buffer size
 
@@ -319,8 +313,13 @@ etcpal_error_t rc_rpt_client_register(RCClient*                  client,
   init_int_handle_manager(&client->scope_handle_manager, scope_handle_in_use, client);
 #if RDMNET_DYNAMIC_MEM
   client->scopes = NULL;
-#endif
   client->num_scopes = 0;
+#else
+  for (RCClientScope* scope = client->scopes; scope < client->scopes + RDMNET_MAX_SCOPES_PER_CLIENT; ++scope)
+  {
+    scope->handle = RDMNET_CLIENT_SCOPE_INVALID;
+  }
+#endif
 
   if (create_llrp_target)
   {
@@ -1461,7 +1460,11 @@ void handle_tcp_comms_status(RCClient* client, const RdmnetRdmCommand* cmd, Rdmn
   const RdmCommandHeader* cmd_header = &cmd->rdm_header;
   if (cmd_header->command_class == kRdmCCGetCommand)
   {
-    size_t   pd_len = TCP_COMMS_STATUS_PD_SIZE * client->num_scopes;
+#if RDMNET_DYNAMIC_MEM
+    size_t pd_len = TCP_COMMS_STATUS_PD_SIZE * client->num_scopes;
+#else
+    size_t pd_len = TCP_COMMS_STATUS_PD_SIZE * RDMNET_MAX_SCOPES_PER_CLIENT;
+#endif
     uint8_t* buf = rc_client_get_internal_response_buf(pd_len);
     if (!buf)
     {
@@ -1472,7 +1475,7 @@ void handle_tcp_comms_status(RCClient* client, const RdmnetRdmCommand* cmd, Rdmn
     uint8_t* cur_ptr = buf;
     BEGIN_FOR_EACH_CLIENT_SCOPE(client)
     {
-      if (scope->state == kRCScopeStateMarkedForDestruction)
+      if (scope->handle == RDMNET_CLIENT_SCOPE_INVALID || scope->state == kRCScopeStateMarkedForDestruction)
       {
         pd_len -= TCP_COMMS_STATUS_PD_SIZE;
         continue;
@@ -1754,9 +1757,9 @@ bool client_fully_destroyed(RCClient* client)
   }
   END_FOR_EACH_CLIENT_SCOPE(client)
 
+#if RDMNET_DYNAMIC_MEM
   if (fully_destroyed)
   {
-#if RDMNET_DYNAMIC_MEM
     if (client->scopes)
     {
       for (RCClientScope** scope_ptr = client->scopes; scope_ptr < client->scopes + client->num_scopes; ++scope_ptr)
@@ -1766,9 +1769,9 @@ bool client_fully_destroyed(RCClient* client)
       }
       free(client->scopes);
     }
-#endif
     client->num_scopes = 0;
   }
+#endif
   return fully_destroyed;
 }
 
@@ -1937,7 +1940,7 @@ etcpal_error_t send_rdm_ack_internal(RCClient*               client,
   if (!resp_buf)
     return kEtcPalErrNoMem;
 #else
-  if (resp_size <= RDMNET_MAX_SENT_ACK_OVERFLOW_RESPONSES)
+  if (total_resp_size + 1 <= RC_CLIENT_STATIC_RESP_BUF_LEN)
     resp_buf = client->resp_buf;
   else
     return kEtcPalErrMsgSize;
@@ -2185,5 +2188,7 @@ void free_rdm_response_data_buf(uint8_t* buf)
 {
 #if RDMNET_DYNAMIC_MEM
   free(buf);
+#else
+  ETCPAL_UNUSED_ARG(buf);
 #endif
 }
