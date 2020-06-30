@@ -187,13 +187,15 @@ bool rc_ref_list_add_ref(RCRefList* list, void* to_add)
 void rc_ref_list_remove_ref(RCRefList* list, const void* to_remove)
 {
   RDMNET_ASSERT(list);
+  if (!list->num_refs)
+    return;
 
   int index = rc_ref_list_find_ref_index(list, to_remove);
   if (index >= 0)
   {
-    if ((size_t)index < list->num_refs)
+    if ((size_t)index < list->num_refs - 1)
     {
-      memmove(&list->refs[index], &list->refs[index + 1], (list->num_refs - index) * sizeof(void*));
+      memmove(&list->refs[index], &list->refs[index + 1], (list->num_refs - (index + 1)) * sizeof(void*));
     }
     --list->num_refs;
   }

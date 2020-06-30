@@ -78,11 +78,11 @@ class MockControllerRdmHandler : public rdmnet::Controller::RdmCommandHandler
               (override));
 };
 
+constexpr rdmnet::Controller::Handle kControllerHandle{1};
+
 class TestCppControllerApi : public testing::Test
 {
 protected:
-  static constexpr rdmnet::Controller::Handle kControllerHandle{1};
-
   MockControllerNotifyHandler notify_;
   MockControllerRdmHandler    rdm_handler_;
   rdmnet::Controller::RdmData rdm_data_{1u, 2u, "Test", "Test", "Test", "Test"};

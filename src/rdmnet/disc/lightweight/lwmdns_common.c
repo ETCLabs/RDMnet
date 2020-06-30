@@ -150,7 +150,7 @@ const uint8_t* lwmdns_parse_resource_record(const uint8_t*     buf_begin,
   return NULL;
 }
 
-bool txt_record_to_broker_info(const uint8_t* txt_data, uint16_t txt_data_len, DiscoveredBroker* db)
+bool lwmdns_txt_record_to_broker_info(const uint8_t* txt_data, uint16_t txt_data_len, DiscoveredBroker* db)
 {
   /*
   bool data_changed = false;
@@ -174,4 +174,24 @@ bool txt_record_to_broker_info(const uint8_t* txt_data, uint16_t txt_data_len, D
   ETCPAL_UNUSED_ARG(txt_data_len);
   ETCPAL_UNUSED_ARG(db);
   return false;
+}
+
+bool lwmdns_domain_name_matches_service(const DnsDomainName* name,
+                                        const char*          service_instance_name,
+                                        const char*          service_type,
+                                        const char*          domain)
+{
+  // TODO
+  ETCPAL_UNUSED_ARG(name);
+  ETCPAL_UNUSED_ARG(service_instance_name);
+  ETCPAL_UNUSED_ARG(service_type);
+  ETCPAL_UNUSED_ARG(domain);
+  return false;
+}
+
+void lwmdns_convert_domain_name_to_string(const DnsDomainName* name, char* str_buf)
+{
+  // TODO
+  ETCPAL_UNUSED_ARG(name);
+  ETCPAL_UNUSED_ARG(str_buf);
 }
