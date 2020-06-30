@@ -141,9 +141,9 @@ etcpal_error_t result = rdmnet_controller_add_scope(my_controller_handle, &scope
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-etcpal::Error add_res = controller.AddDefaultScope();
+etcpal::Expected<rdmnet::ScopeHandle> add_res = controller.AddDefaultScope();
 // Or...
-etcpal::Error add_res = controller.AddScope("custom_scope_name");
+etcpal::Expected<rdmnet::ScopeHandle> add_res = controller.AddScope("custom_scope_name");
 
 if (add_res)
 {
@@ -187,9 +187,9 @@ etcpal_error_t result = rdmnet_controller_add_scope(my_controller_handle, &confi
 ```cpp
 // Get configured static broker address
 etcpal::Sockaddr static_broker_addr(etcpal::IpAddr::FromString("192.168.2.1"), 8000);
-etcpal::Error add_res = controller.AddScope("my_custom_scope", static_broker_addr);
+etcpal::Expected<rdmnet::ScopeHandle> add_res = controller.AddScope("my_custom_scope", static_broker_addr);
 // Or:
-etcpal::Error add_res = controller.AddDefaultScope(static_broker_addr);
+etcpal::Expected<rdmnet::ScopeHandle> add_res = controller.AddDefaultScope(static_broker_addr);
 ```
 <!-- CODE_BLOCK_END -->
 
