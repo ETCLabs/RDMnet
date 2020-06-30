@@ -181,6 +181,35 @@ stages:
               testResultsFiles: "**/Test.xml"
               testRunTitle: "Linux"
               failTaskOnFailedTests: true
+      - job: linux_static_build
+        displayName: "Linux (Static Memory)"
+        pool:
+          vmImage: "ubuntu-18.04"
+        variables:
+          cmake_generator: "Unix Makefiles"
+          cmake_options_linux: -DRDMNET_BUILD_TESTS_STATIC=ON -DRDMNET_FORCE_LIGHTWEIGHT_DNS_QUERIER=ON -DCMAKE_C_FLAGS="-fsanitize=address" -DCMAKE_CXX_FLAGS="-fsanitize=address" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address"
+        # TODO install Qt for Linux build
+        steps:
+          - script: |
+              sudo apt-get update
+              sudo apt-get install uuid-dev libavahi-client-dev
+              mkdir build
+              cd build
+              cmake --version
+              cmake -G "$(cmake_generator)" $(common_cmake_options) $(cmake_options_linux) ..
+              cmake --build .
+            displayName: "Configure and Build Project"
+          - script: |
+              cd build
+              ctest -T Test --output-on-failure
+            displayName: "Run Tests"
+          - task: PublishTestResults@2
+            displayName: "Publish Test Results"
+            inputs:
+              testResultsFormat: "CTest"
+              testResultsFiles: "**/Test.xml"
+              testRunTitle: "Linux"
+              failTaskOnFailedTests: true
 
       - job: documentation_deploy
         displayName: "Documentation Deploy"

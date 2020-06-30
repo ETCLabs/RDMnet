@@ -230,6 +230,15 @@
 #define RDMNET_MAX_SENT_ACK_OVERFLOW_RESPONSES 1
 #endif
 
+#ifndef RDMNET_MAX_CONNECTIONS
+#define RDMNET_MAX_CONNECTIONS RDMNET_MAX_CLIENTS
+#endif
+
+#if RDMNET_MAX_CONNECTIONS < 1
+#undef RDMNET_MAX_CONNECTIONS
+#define RDMNET_MAX_CONNECTIONS 1
+#endif
+
 /** @endcond */
 
 /**
@@ -244,34 +253,18 @@
  */
 
 /**
- * @brief The maximum number of RDMnet connections that can be created.
- *
- * Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0. This setting should be left at default
- * if you have configured #RDMNET_MAX_CONTROLLERS, #RDMNET_MAX_DEVICES and/or
- * #RDMNET_MAX_EPT_CLIENTS, as those settings will propagate to this one appropriately.
- */
-#ifndef RDMNET_MAX_CONNECTIONS
-#define RDMNET_MAX_CONNECTIONS RDMNET_MAX_CLIENTS
-#endif
-
-#if RDMNET_MAX_CONNECTIONS < 1
-#undef RDMNET_MAX_CONNECTIONS
-#define RDMNET_MAX_CONNECTIONS 1
-#endif
-
-/**
  * @brief The maximum number of ClientEntryData structures that can be returned with a parsed
  *        message.
  *
  * Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
  */
-#ifndef RDMNET_MAX_CLIENT_ENTRIES
-#define RDMNET_MAX_CLIENT_ENTRIES 5
+#ifndef RDMNET_PARSER_MAX_CLIENT_ENTRIES
+#define RDMNET_PARSER_MAX_CLIENT_ENTRIES 5
 #endif
 
-#if RDMNET_MAX_CLIENT_ENTRIES < 1
-#undef RDMNET_MAX_CLIENT_ENTRIES
-#define RDMNET_MAX_CLIENT_ENTRIES 1
+#if RDMNET_PARSER_MAX_CLIENT_ENTRIES < 1
+#undef RDMNET_PARSER_MAX_CLIENT_ENTRIES
+#define RDMNET_PARSER_MAX_CLIENT_ENTRIES 1
 #endif
 
 /**
@@ -280,13 +273,13 @@
  *
  * Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
  */
-#ifndef RDMNET_MAX_EPT_SUBPROTS
-#define RDMNET_MAX_EPT_SUBPROTS 5
+#ifndef RDMNET_PARSER_MAX_EPT_SUBPROTS
+#define RDMNET_PARSER_MAX_EPT_SUBPROTS 5
 #endif
 
-#if RDMNET_MAX_EPT_SUBPROTS < 1
-#undef RDMNET_MAX_EPT_SUBPROTS
-#define RDMNET_MAX_EPT_SUBPROTS 1
+#if RDMNET_PARSER_MAX_EPT_SUBPROTS < 1
+#undef RDMNET_PARSER_MAX_EPT_SUBPROTS
+#define RDMNET_PARSER_MAX_EPT_SUBPROTS 1
 #endif
 
 /**
@@ -296,13 +289,13 @@
  * This option applies to BrokerDynamicUidRequestListEntry, BrokerDynamicUidMapping, and
  * BrokerFetchUidAssignmentListEntry structures. Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
  */
-#ifndef RDMNET_MAX_DYNAMIC_UID_ENTRIES
-#define RDMNET_MAX_DYNAMIC_UID_ENTRIES 5
+#ifndef RDMNET_PARSER_MAX_DYNAMIC_UID_ENTRIES
+#define RDMNET_PARSER_MAX_DYNAMIC_UID_ENTRIES 5
 #endif
 
-#if RDMNET_MAX_DYNAMIC_UID_ENTRIES < 1
-#undef RDMNET_MAX_DYNAMIC_UID_ENTRIES
-#define RDMNET_MAX_DYNAMIC_UID_ENTRIES 1
+#if RDMNET_PARSER_MAX_DYNAMIC_UID_ENTRIES < 1
+#undef RDMNET_PARSER_MAX_DYNAMIC_UID_ENTRIES
+#define RDMNET_PARSER_MAX_DYNAMIC_UID_ENTRIES 1
 #endif
 
 /**
@@ -313,13 +306,13 @@
  * more ACK_OVERFLOW responses than this number, they will be delivered in batches of this number
  * with the "partial" flag set to true on all but the last batch.
  */
-#ifndef RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES
-#define RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES 5
+#ifndef RDMNET_PARSER_MAX_ACK_OVERFLOW_RESPONSES
+#define RDMNET_PARSER_MAX_ACK_OVERFLOW_RESPONSES 5
 #endif
 
-#if RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES < 1
-#undef RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES
-#define RDMNET_MAX_RECEIVED_ACK_OVERFLOW_RESPONSES 1
+#if RDMNET_PARSER_MAX_ACK_OVERFLOW_RESPONSES < 1
+#undef RDMNET_PARSER_MAX_ACK_OVERFLOW_RESPONSES
+#define RDMNET_PARSER_MAX_ACK_OVERFLOW_RESPONSES 1
 #endif
 
 /**
@@ -350,20 +343,6 @@
 #ifndef RDMNET_BIND_MCAST_SOCKETS_TO_MCAST_ADDRESS
 #define RDMNET_BIND_MCAST_SOCKETS_TO_MCAST_ADDRESS !RDMNET_WINDOWS_HINT
 #endif
-
-/** @cond deprecated */
-/*
- * [DEPRECATED]
- * @brief Whether to allow sockets associated with connections to be polled externally.
- *
- * If this option is defined to 0, the externally-managed-socket functions in the RDMnet connection
- * API will not be implemented. Most applications will want the default behavior, unless scaling
- * the number of connections is a concern. Broker applications will set this to 1.
- */
-#ifndef RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS
-#define RDMNET_ALLOW_EXTERNALLY_MANAGED_SOCKETS RDMNET_FULL_OS_AVAILABLE_HINT
-#endif
-/** @endcond */
 
 /**
  * @brief The priority of the tick thread.
@@ -426,6 +405,21 @@
 
 #if !RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER
 #error "RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER must be at least 1"
+#endif
+
+/**
+ * @brief How many additional TXT record items can be resolved for each discovered broker.
+ *
+ * Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0. This is above and beyond the TXT record
+ * key/value pairs that RDMnet requires (which there is always room for).
+ */
+#ifndef RDMNET_MAX_ADDITIONAL_TXT_ITEMS_PER_DISCOVERED_BROKER
+#define RDMNET_MAX_ADDITIONAL_TXT_ITEMS_PER_DISCOVERED_BROKER 5
+#endif
+
+#if RDMNET_MAX_ADDITIONAL_TXT_ITEMS_PER_DISCOVERED_BROKER < 1
+#undef RDMNET_MAX_ADDITIONAL_TXT_ITEMS_PER_DISCOVERED_BROKER
+#define RDMNET_MAX_ADDITIONAL_TXT_ITEMS_PER_DISCOVERED_BROKER 1
 #endif
 
 /**

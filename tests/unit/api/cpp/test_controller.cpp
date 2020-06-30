@@ -78,9 +78,17 @@ class MockControllerRdmHandler : public rdmnet::Controller::RdmCommandHandler
               (override));
 };
 
+constexpr rdmnet::Controller::Handle kControllerHandle{1};
+
 class TestCppControllerApi : public testing::Test
 {
 protected:
+  MockControllerNotifyHandler notify_;
+  MockControllerRdmHandler    rdm_handler_;
+  rdmnet::Controller::RdmData rdm_data_{1u, 2u, "Test", "Test", "Test", "Test"};
+
+  rdmnet::Controller controller_;
+
   void SetUp() override
   {
     rdmnet_mock_common_reset();
@@ -89,22 +97,89 @@ protected:
   }
 
   void TearDown() override { rdmnet::Deinit(); }
+
+  void StartControllerDefault()
+  {
+    rdmnet_controller_create_fake.custom_fake = [](const RdmnetControllerConfig*, rdmnet_controller_t* handle) {
+      *handle = kControllerHandle;
+      return kEtcPalErrOk;
+    };
+    ASSERT_TRUE(
+        controller_.Startup(notify_, rdmnet::Controller::Settings(etcpal::Uuid::OsPreferred(), 0x6574), rdm_data_));
+    ASSERT_EQ(controller_.handle(), kControllerHandle);
+  }
 };
 
 TEST_F(TestCppControllerApi, StartupWithRdmData)
 {
-  MockControllerNotifyHandler notify;
-  rdmnet::Controller::RdmData rdm(1u, 2u, "Test", "Test", "Test", "Test");
-  rdmnet::Controller          controller;
-
-  EXPECT_TRUE(controller.Startup(notify, rdmnet::Controller::Settings(etcpal::Uuid::OsPreferred(), 0x6574), rdm));
+  EXPECT_TRUE(
+      controller_.Startup(notify_, rdmnet::Controller::Settings(etcpal::Uuid::OsPreferred(), 0x6574), rdm_data_));
 }
 
 TEST_F(TestCppControllerApi, StartupWithRdmHandler)
 {
-  MockControllerNotifyHandler notify;
-  MockControllerRdmHandler    rdm;
-  rdmnet::Controller          controller;
+  EXPECT_TRUE(
+      controller_.Startup(notify_, rdmnet::Controller::Settings(etcpal::Uuid::OsPreferred(), 0x6574), rdm_handler_));
+}
 
-  EXPECT_TRUE(controller.Startup(notify, rdmnet::Controller::Settings(etcpal::Uuid::OsPreferred(), 0x6574), rdm));
+TEST_F(TestCppControllerApi, AddScopeStringOverloadWorks)
+{
+  static constexpr rdmnet::ScopeHandle kScopeHandle{2};
+  static constexpr char                kScopeName[] = "Test Scope Name";
+
+  StartControllerDefault();
+
+  rdmnet_controller_add_scope_fake.custom_fake = [](rdmnet_controller_t    controller_handle, const RdmnetScopeConfig*,
+                                                    rdmnet_client_scope_t* scope_handle) {
+    EXPECT_EQ(controller_handle, kControllerHandle);
+    EXPECT_NE(scope_handle, nullptr);
+    *scope_handle = kScopeHandle;
+    return kEtcPalErrOk;
+  };
+  auto scope_handle = controller_.AddScope(kScopeName);
+  EXPECT_TRUE(scope_handle);
+  EXPECT_EQ(*scope_handle, kScopeHandle);
+}
+
+TEST_F(TestCppControllerApi, AddScopeStringOverloadFailsOnError)
+{
+  StartControllerDefault();
+
+  rdmnet_controller_add_scope_fake.return_val = kEtcPalErrSys;
+  auto scope_handle = controller_.AddScope("Test Scope");
+  EXPECT_FALSE(scope_handle);
+  EXPECT_EQ(scope_handle.error_code(), kEtcPalErrSys);
+}
+
+TEST_F(TestCppControllerApi, SendRdmCommandFailsOnError)
+{
+  StartControllerDefault();
+
+  rdmnet_controller_send_rdm_command_fake.return_val = kEtcPalErrSys;
+  auto seq_num = controller_.SendRdmCommand(1, rdmnet::DestinationAddr::ToDefaultResponder(0x6574, 0x1234),
+                                            kRdmnetCCGetCommand, E120_SUPPORTED_PARAMETERS);
+  EXPECT_FALSE(seq_num);
+  EXPECT_EQ(seq_num.error_code(), kEtcPalErrSys);
+}
+
+TEST_F(TestCppControllerApi, SendGetCommandFailsOnError)
+{
+  StartControllerDefault();
+
+  rdmnet_controller_send_get_command_fake.return_val = kEtcPalErrSys;
+  auto seq_num = controller_.SendGetCommand(1, rdmnet::DestinationAddr::ToDefaultResponder(0x6574, 0x1234),
+                                            E120_SUPPORTED_PARAMETERS);
+  EXPECT_FALSE(seq_num);
+  EXPECT_EQ(seq_num.error_code(), kEtcPalErrSys);
+}
+
+TEST_F(TestCppControllerApi, SendSetCommandFailsOnError)
+{
+  StartControllerDefault();
+
+  rdmnet_controller_send_set_command_fake.return_val = kEtcPalErrSys;
+  auto seq_num =
+      controller_.SendSetCommand(1, rdmnet::DestinationAddr::ToDefaultResponder(0x6574, 0x1234), E120_RESET_DEVICE);
+  EXPECT_FALSE(seq_num);
+  EXPECT_EQ(seq_num.error_code(), kEtcPalErrSys);
 }

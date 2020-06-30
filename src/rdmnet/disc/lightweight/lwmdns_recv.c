@@ -88,9 +88,11 @@ static void           handle_srv_record(const DnsResourceRecord* rr);
 static void           handle_address_record(const DnsResourceRecord* rr);
 static void           handle_txt_record(const DnsResourceRecord* rr);
 
+#if 0
 static bool service_instance_name_matches(const RdmnetScopeMonitorRef* ref,
                                           const DiscoveredBroker*      db,
                                           const void*                  context);
+#endif
 
 /******************************************************************************
  * Function Definitions
@@ -345,6 +347,7 @@ void handle_txt_record(const DnsResourceRecord* rr)
   */
 }
 
+#if 0
 bool service_instance_name_matches(const RdmnetScopeMonitorRef* ref, const DiscoveredBroker* db, const void* context)
 {
   ETCPAL_UNUSED_ARG(ref);
@@ -352,3 +355,4 @@ bool service_instance_name_matches(const RdmnetScopeMonitorRef* ref, const Disco
   return lwmdns_domain_name_matches_service(&rr->name, db->service_instance_name, E133_DNSSD_SRV_TYPE,
                                             E133_DEFAULT_DOMAIN);
 }
+#endif
