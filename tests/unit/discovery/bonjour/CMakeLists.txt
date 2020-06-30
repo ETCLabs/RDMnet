@@ -10,7 +10,7 @@ add_executable(test_discovery_bonjour
   ${RDMNET_SRC}/rdmnet_mock/core/common.c
 )
 target_include_directories(test_discovery_bonjour PRIVATE
-  ${UNIT_TEST_DIR}/test_shared
+  ${UNIT_TEST_DIR}/shared
   ${RDMNET_INCLUDE}
   ${RDMNET_SRC}
   ${RDMNET_DISC_PLATFORM_INCLUDE_DIRS}

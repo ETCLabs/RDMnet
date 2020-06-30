@@ -22,7 +22,6 @@
 
 #include <stdint.h>
 
-#define MAX_TXT_RECORD_ITEMS_PER_BROKER 5
 #define DNS_TXT_RECORD_COMPONENT_MAX_LENGTH 256
 
 typedef struct DnsTxtRecordItemInternal

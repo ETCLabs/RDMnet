@@ -3,8 +3,8 @@
 
 rdmnet_add_unit_test(test_rdmnet_core_llrp
   # RDMnet LLRP unit test sources
-  ${UNIT_TEST_DIR}/test_shared/fake_mcast.h
-  ${UNIT_TEST_DIR}/test_shared/fake_mcast.cpp
+  ${UNIT_TEST_DIR}/shared/fake_mcast.h
+  ${UNIT_TEST_DIR}/shared/fake_mcast.cpp
   test_llrp_manager.cpp
   test_llrp_target.cpp
   main.cpp

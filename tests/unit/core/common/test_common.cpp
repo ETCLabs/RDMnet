@@ -21,6 +21,7 @@
 
 #include <array>
 #include <random>
+#include <string>
 #include <vector>
 #include "etcpal_mock/common.h"
 #include "rdmnet_mock/core/client.h"
@@ -29,6 +30,7 @@
 #include "rdmnet_mock/core/llrp_target.h"
 #include "rdmnet_mock/core/llrp_manager.h"
 #include "rdmnet_mock/disc/common.h"
+#include "rdmnet_config.h"
 #include "gtest/gtest.h"
 
 struct ModuleFakeFunctionRef
@@ -37,7 +39,7 @@ struct ModuleFakeFunctionRef
   unsigned int&         init_call_count;
   unsigned int&         deinit_call_count;
   std::function<void()> reset_all_fakes{};
-  const char*           module_name{""};
+  const std::string     module_name;
 
   template <typename InitFake, typename DeinitFake>
   ModuleFakeFunctionRef(InitFake& init_fake, DeinitFake& deinit_fake, std::function<void()> reset_all, const char* name)
@@ -80,7 +82,16 @@ TEST_F(TestCoreCommon, InitWorks)
   ASSERT_EQ(rc_init(nullptr, nullptr), kEtcPalErrOk);
 
   for (const auto& module_ref : kModuleRefs)
+  {
+#if RDMNET_DYNAMIC_MEM
     EXPECT_EQ(module_ref.init_call_count, 1u) << "Module: " << module_ref.module_name;
+#else
+    if (module_ref.module_name == "LLRP Manager")
+      EXPECT_EQ(module_ref.init_call_count, 0u) << "Module: " << module_ref.module_name;
+    else
+      EXPECT_EQ(module_ref.init_call_count, 1u) << "Module: " << module_ref.module_name;
+#endif
+  }
 
   rc_deinit();
 }
@@ -92,7 +103,16 @@ TEST_F(TestCoreCommon, DeinitWorks)
   rc_deinit();
 
   for (const auto& module_ref : kModuleRefs)
+  {
+#if RDMNET_DYNAMIC_MEM
     EXPECT_EQ(module_ref.deinit_call_count, 1u) << "Module: " << module_ref.module_name;
+#else
+    if (module_ref.module_name == "LLRP Manager")
+      EXPECT_EQ(module_ref.deinit_call_count, 0u) << "Module: " << module_ref.module_name;
+    else
+      EXPECT_EQ(module_ref.deinit_call_count, 1u) << "Module: " << module_ref.module_name;
+#endif
+  }
 }
 
 TEST_F(TestCoreCommon, InitFailsGracefullyAndCleansUp)

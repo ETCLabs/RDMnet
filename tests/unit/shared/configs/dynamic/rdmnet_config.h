@@ -13,3 +13,5 @@ void RdmnetTestingAssertHandler(const char* expression, const char* file, unsign
 #define RDMNET_ASSERT(expr) \
   if (!(expr))              \
   RdmnetTestingAssertHandler(#expr, __FILE__, __LINE__)
+
+#define RDMNET_DYNAMIC_MEM 1

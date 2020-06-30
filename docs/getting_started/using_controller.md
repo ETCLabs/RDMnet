@@ -151,7 +151,7 @@ if (add_res)
 }
 else
 {
-  std::cout << "Error adding default scope: '" << add_res.result().ToString() << "'\n"
+  std::cout << "Error adding default scope: '" << add_res.error().ToString() << "'\n"
 }
 ```
 <!-- CODE_BLOCK_END -->
