@@ -1,7 +1,5 @@
 var NAVTREEINDEX7 =
 {
-"structrdmnet_1_1_controller_1_1_rdm_data.html#aa1394a3aa76801eed0cf27deb285de86":[2,1,2,3,11],
-"structrdmnet_1_1_controller_1_1_rdm_data.html#ae5f04e4163189d7d3f4ee097630d2288":[2,1,2,3,0],
 "structrdmnet_1_1_controller_1_1_rdm_data.html#af00529ba252be1766e3088321969697c":[2,1,2,3,2],
 "structrdmnet_1_1_controller_1_1_settings.html":[2,1,2,2],
 "structrdmnet_1_1_controller_1_1_settings.html#a0095f02c244eebc7f5f922231d028e52":[2,1,2,2,6],

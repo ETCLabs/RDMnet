@@ -215,8 +215,28 @@ Macros</h2></td></tr>
 <tr class="memitem:ga7c12ec677842ecde91652146b67be719"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnetopts__disc.html#ga7c12ec677842ecde91652146b67be719">RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER</a>&#160;&#160;&#160;2</td></tr>
 <tr class="memdesc:ga7c12ec677842ecde91652146b67be719"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many listen addresses can be resolved for each discovered broker.  <a href="#ga7c12ec677842ecde91652146b67be719">More...</a><br /></td></tr>
 <tr class="separator:ga7c12ec677842ecde91652146b67be719"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga930e7b52cb13c8df86976674be229851"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnetopts__disc.html#ga930e7b52cb13c8df86976674be229851">RDMNET_MAX_ADDITIONAL_TXT_ITEMS_PER_DISCOVERED_BROKER</a>&#160;&#160;&#160;5</td></tr>
+<tr class="memdesc:ga930e7b52cb13c8df86976674be229851"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many additional TXT record items can be resolved for each discovered broker.  <a href="#ga930e7b52cb13c8df86976674be229851">More...</a><br /></td></tr>
+<tr class="separator:ga930e7b52cb13c8df86976674be229851"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="ga930e7b52cb13c8df86976674be229851"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga930e7b52cb13c8df86976674be229851">&#9670;&nbsp;</a></span>RDMNET_MAX_ADDITIONAL_TXT_ITEMS_PER_DISCOVERED_BROKER</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define RDMNET_MAX_ADDITIONAL_TXT_ITEMS_PER_DISCOVERED_BROKER&#160;&#160;&#160;5</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>How many additional TXT record items can be resolved for each discovered broker. </p>
+<p>Meaningful only if <a class="el" href="group__rdmnetopts__global.html#ga713876c29d15cbbc1c2ad1b4a2537555" title="Use dynamic memory allocation. ">RDMNET_DYNAMIC_MEM</a> is defined to 0. This is above and beyond the TXT record key/value pairs that RDMnet requires (which there is always room for). </p>
+
+</div>
+</div>
 <a id="ga7c12ec677842ecde91652146b67be719"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga7c12ec677842ecde91652146b67be719">&#9670;&nbsp;</a></span>RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER</h2>
 

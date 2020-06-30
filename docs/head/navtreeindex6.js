@@ -1,7 +1,5 @@
 var NAVTREEINDEX6 =
 {
-"struct_rdmnet_controller_config.html#ac00900edb0e5e53c28cbbf61d6521b50":[2,0,1,3,4],
-"struct_rdmnet_controller_config.html#ad81c10566f86d3bd8faa5416d0462800":[2,0,1,3,3],
 "struct_rdmnet_controller_config.html#ae49dce81d475e7a7973c6b7cdee8620e":[2,0,1,3,5],
 "struct_rdmnet_controller_config.html#af56b3c2e7928ec0bdff9274cc5da2902":[2,0,1,3,8],
 "struct_rdmnet_controller_rdm_cmd_handler.html":[2,0,1,1],
@@ -249,5 +247,7 @@ var NAVTREEINDEX6 =
 "structrdmnet_1_1_controller_1_1_rdm_data.html#a3ed75c9f52becb20a0433b250662d4f2":[2,1,2,3,10],
 "structrdmnet_1_1_controller_1_1_rdm_data.html#a4edb9f0d1df0f094d07b4d685f8fa9ad":[2,1,2,3,7],
 "structrdmnet_1_1_controller_1_1_rdm_data.html#a5316dd6ce6587d1f3b8aa2e624ca7b51":[2,1,2,3,1],
-"structrdmnet_1_1_controller_1_1_rdm_data.html#a7548054844af12de9d046f3710e90eab":[2,1,2,3,4]
+"structrdmnet_1_1_controller_1_1_rdm_data.html#a7548054844af12de9d046f3710e90eab":[2,1,2,3,4],
+"structrdmnet_1_1_controller_1_1_rdm_data.html#aa1394a3aa76801eed0cf27deb285de86":[2,1,2,3,11],
+"structrdmnet_1_1_controller_1_1_rdm_data.html#ae5f04e4163189d7d3f4ee097630d2288":[2,1,2,3,0]
 };
