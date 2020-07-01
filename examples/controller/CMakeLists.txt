@@ -134,6 +134,8 @@ elseif(APPLE)
   install(CODE
     "execute_process(COMMAND install_name_tool -add_rpath \"@executable_path/../Frameworks\" \"${CONTROLLER_OUTPUT_NAME}.app/Contents/MacOS/${CONTROLLER_OUTPUT_NAME}\" WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX})"
   )
+elseif(UNIX)
+  install(TARGETS ${CONTROLLER_TARGET} RUNTIME DESTINATION bin)
 endif()
 
 ############################## Allow Qt Debugging #############################
