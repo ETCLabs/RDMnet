@@ -32,6 +32,7 @@
       <DirectoryRefId>Runtime</DirectoryRefId>
       <ComponentGroupName>Controller</ComponentGroupName>
       <SuppressRootDirectory>true</SuppressRootDirectory>
+      <Transforms>AddControllerFileId.xsl</Transforms>
     </HarvestDirectory>
     <HarvestDirectory Include="$(InstallSourceDir)\include">
       <PreprocessorVariable>var.RdmnetHeadersDir</PreprocessorVariable>
@@ -51,7 +52,15 @@
     </WixExtension>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MiscOptionsDialog.wxs" />
     <Compile Include="RDMnet.wxs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="..\" />
+    <Folder Include="..\..\" />
+    <Folder Include="..\..\..\" />
+    <Folder Include="..\..\..\build\" />
+    <Folder Include="..\..\..\build\install_x64\" />
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" Condition=" '$(WixTargetsPath)' != '' " />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets" Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') " />

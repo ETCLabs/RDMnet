@@ -32,6 +32,7 @@
       <DirectoryRefId>Runtime</DirectoryRefId>
       <ComponentGroupName>Controller</ComponentGroupName>
       <SuppressRootDirectory>true</SuppressRootDirectory>
+      <Transforms>AddControllerFileId.xsl</Transforms>
     </HarvestDirectory>
     <HarvestDirectory Include="$(InstallSourceDir)\include">
       <PreprocessorVariable>var.RdmnetHeadersDir</PreprocessorVariable>
@@ -51,6 +52,7 @@
     </WixExtension>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MiscOptionsDialog.wxs" />
     <Compile Include="RDMnet.wxs" />
   </ItemGroup>
   <ItemGroup>

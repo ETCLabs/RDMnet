@@ -24,6 +24,9 @@
 
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
 
+    <Property Id="CREATESHORTCUT">1</Property>
+    <Property Id="CREATESTARTMENU">1</Property>
+
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="$(var.ProgramFilesFolder)">
         <Directory Id="ETC" Name="ETC">
@@ -52,6 +55,34 @@
             <Directory Id="Lib" Name="lib" />
           </Directory>
         </Directory>
+        <Directory Id="ProgramMenuFolder">
+          <Directory Id="StartMenuETC" Name="ETC">
+            <Component Id="ControllerStartMenuShortcut" Guid="E5B3A20A-38B1-4DC1-AD85-39EE00A450D4">
+              <Condition>CREATESTARTMENU = 1</Condition>
+              <Shortcut
+                Id="ControllerStartMenuShortcut"
+                Name="RDMnet Controller Example"
+                Target="[#ControllerExe]"
+                WorkingDirectory="Runtime" />
+              <RemoveFolder Id="CleanUpControllerStartMenuShortcut"  On="uninstall" />
+              <RegistryValue Root="HKCU" Key="Software\ETC\RDMnet" Name="StartMenuShortcut"
+                  Value="1" Type="integer" KeyPath="yes" />
+            </Component>
+          </Directory>
+        </Directory>
+        <Directory Id="DesktopFolder" Name="Desktop">
+          <Component Id="ControllerDesktopShortcut" Guid="DB9FC9CE-8A51-46EA-98BF-2B119B2217CE">
+            <Condition>CREATESHORTCUT = 1</Condition>
+            <Shortcut
+              Id="ControllerDesktopShortcut"
+              Name="RDMnet Controller Example"
+              Target="[#ControllerExe]"
+              WorkingDirectory="Runtime" />
+            <RemoveFolder Id="CleanUpControllerDesktopShortcut"  On="uninstall" />
+            <RegistryValue Root="HKCU" Key="Software\ETC\RDMnet" Name="DesktopShortcut"
+                Value="1" Type="integer" KeyPath="yes" />
+          </Component>
+        </Directory>
       </Directory>
 
       <Merge Id="VCRedistx86" SourceFile="$(var.VcRedistMergeModulex86)" DiskId="1" Language="0" />
@@ -60,6 +91,14 @@
       <?endif ?>
       <Merge Id="mDNSResponder" SourceFile="$(var.mDNSMergeModule)" DiskId="1" Language="0" />
     </Directory>
+
+    <Component Id="UpdatePath" Directory="INSTALLDIR">
+      <Condition>ADDTOPATH = 1</Condition>
+      <RegistryValue Root="HKLM" Key="Software\ETC\RDMnet" Name="InstallFolder" Value="[INSTALLDIR]"
+          Type="string" />
+      <Environment Id="UpdatePath" Name="PATH" Action="set" Permanent="no" System="yes"
+          Part="last" Value="[Runtime]" />
+    </Component>
 
     <Feature Id="Complete" Title="RDMnet $(var.VersionNumber)" Description="The RDMnet SDK and example apps."
         Display="expand" Level="1" ConfigurableDirectory="INSTALLDIR">
@@ -72,27 +111,34 @@
         <Feature Id="Controller" Title="RDMnet Controller App"
             Description="The RDMnet Controller Example GUI application." Level="1">
           <ComponentGroupRef Id="Controller" />
+          <ComponentRef Id="ControllerStartMenuShortcut" />
+          <ComponentRef Id="ControllerDesktopShortcut" />
           <ComponentRef Id="DnsSdDll" />
+          <ComponentRef Id="UpdatePath" />
         </Feature>
         <Feature Id="Broker" Title="RDMnet Broker App" Description="The RDMnet Broker example app."
             Level="1">
           <ComponentRef Id="Broker" />
           <ComponentRef Id="DnsSdDll" />
+          <ComponentRef Id="UpdatePath" />
         </Feature>
         <Feature Id="Device" Title="RDMnet Device App" Description="The RDMnet Device example app."
             Level="1">
           <ComponentRef Id="Device" />
           <ComponentRef Id="DnsSdDll" />
+          <ComponentRef Id="UpdatePath" />
         </Feature>
         <Feature Id="Fakeway" Title="RDMnet Gateway App (&quot;Fakeway&quot;)" Description="The RDMnet Gateway example app."
             Level="1">
           <ComponentRef Id="Fakeway" />
           <ComponentRef Id="DnsSdDll" />
           <ComponentRef Id="GadgetDll" />
+          <ComponentRef Id="UpdatePath" />
         </Feature>
         <Feature Id="LlrpManager" Title="LLRP Manager App"
             Description="The LLRP Manager example app." Level="1">
           <ComponentRef Id="LlrpManager" />
+          <ComponentRef Id="UpdatePath" />
         </Feature>
       </Feature>
     </Feature>
@@ -110,8 +156,13 @@
       <MergeRef Id="mDNSResponder" />
     </Feature>
 
-    <UIRef Id="WixUI_FeatureTree" />
-    <UIRef Id="WixUI_ErrorProgressText" />
+    <UI Id="MyWixUI_FeatureTree">
+      <UIRef Id="WixUI_FeatureTree" />
+      <UIRef Id="WixUI_ErrorProgressText" />
+      <DialogRef Id="MiscOptionsDlg" />
+      <Publish Dialog="CustomizeDlg" Control="Next" Event="NewDialog" Value="MiscOptionsDlg">NOT Installed</Publish>
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MiscOptionsDlg">NOT Installed</Publish>
+    </UI>
     <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
 
   </Product>
