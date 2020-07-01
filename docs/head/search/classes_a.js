@@ -49,7 +49,7 @@ var searchData=
   ['rdmnetsynceptresponse',['RdmnetSyncEptResponse',['../struct_rdmnet_sync_ept_response.html',1,'']]],
   ['rdmnetsyncrdmresponse',['RdmnetSyncRdmResponse',['../struct_rdmnet_sync_rdm_response.html',1,'']]],
   ['rdmnetvirtualendpointconfig',['RdmnetVirtualEndpointConfig',['../struct_rdmnet_virtual_endpoint_config.html',1,'']]],
-  ['rdmresponse',['RdmResponse',['../classrdmnet_1_1_rdm_response.html',1,'rdmnet::RdmResponse'],['../classrdmnet_1_1llrp_1_1_rdm_response.html',1,'rdmnet::llrp::RdmResponse']]],
+  ['rdmresponse',['RdmResponse',['../classrdmnet_1_1llrp_1_1_rdm_response.html',1,'rdmnet::llrp::RdmResponse'],['../classrdmnet_1_1_rdm_response.html',1,'rdmnet::RdmResponse']]],
   ['rdmresponseaction',['RdmResponseAction',['../classrdmnet_1_1_rdm_response_action.html',1,'rdmnet']]],
   ['rdmresponseheader',['RdmResponseHeader',['https://etclabs.github.io/RDM/docs/head/struct_rdm_response_header.html',1,'']]],
   ['rdmuid',['RdmUid',['https://etclabs.github.io/RDM/docs/head/struct_rdm_uid.html',1,'']]],
