@@ -20,6 +20,8 @@
 #include "rdmnet/cpp/device.h"
 
 #include "gmock/gmock.h"
+#include "etcpal/cpp/uuid.h"
+#include "rdm/cpp/uid.h"
 #include "rdmnet_mock/common.h"
 #include "rdmnet_mock/device.h"
 
@@ -50,6 +52,9 @@ class MockDeviceNotifyHandler : public rdmnet::Device::NotifyHandler
 class TestCppDeviceApi : public testing::Test
 {
 protected:
+  rdmnet::Device          device_;
+  MockDeviceNotifyHandler notify_;
+
   void SetUp() override
   {
     rdmnet_mock_common_reset();
@@ -60,11 +65,56 @@ protected:
   void TearDown() override { rdmnet::Deinit(); }
 };
 
+TEST_F(TestCppDeviceApi, InitialEndpointsAreTranslated)
+{
+  static const auto virtual_endpoint_responder = etcpal::Uuid::FromString("7f94c037-dbb2-44b6-ad68-9fe3159f1699");
+  static const auto virtual_endpoint_static_responder = rdm::Uid::FromString("6574:12345678");
+  static const auto physical_endpoint_responder = rdmnet::PhysicalEndpointResponder(
+      rdm::Uid::FromString("6574:87654321"), 0x8, rdm::Uid::FromString("6574:0000001"));
+
+  rdmnet::Device::Settings settings(etcpal::Uuid::OsPreferred(), 0x6574);
+  settings.virtual_endpoints.push_back(1);
+  settings.virtual_endpoints.push_back(
+      rdmnet::VirtualEndpointConfig(2, {virtual_endpoint_static_responder}, {virtual_endpoint_responder}));
+  settings.physical_endpoints.push_back(3);
+  settings.physical_endpoints.push_back(rdmnet::PhysicalEndpointConfig(4, {physical_endpoint_responder}));
+
+  rdmnet_device_create_fake.custom_fake = [](const RdmnetDeviceConfig* config, rdmnet_device_t* handle) {
+    EXPECT_EQ(config->num_virtual_endpoints, 2u);
+    EXPECT_EQ(config->num_physical_endpoints, 2u);
+
+    EXPECT_EQ(config->virtual_endpoints[0].endpoint_id, 1u);
+    EXPECT_EQ(config->virtual_endpoints[0].dynamic_responders, nullptr);
+    EXPECT_EQ(config->virtual_endpoints[0].num_dynamic_responders, 0u);
+    EXPECT_EQ(config->virtual_endpoints[0].static_responders, nullptr);
+    EXPECT_EQ(config->virtual_endpoints[0].num_static_responders, 0u);
+
+    EXPECT_EQ(config->virtual_endpoints[1].endpoint_id, 2u);
+    EXPECT_EQ(config->virtual_endpoints[1].num_dynamic_responders, 1u);
+    EXPECT_EQ(config->virtual_endpoints[1].dynamic_responders[0], virtual_endpoint_responder);
+    EXPECT_EQ(config->virtual_endpoints[1].num_static_responders, 1u);
+    EXPECT_EQ(config->virtual_endpoints[1].static_responders[0], virtual_endpoint_static_responder);
+
+    EXPECT_EQ(config->physical_endpoints[0].endpoint_id, 3u);
+    EXPECT_EQ(config->physical_endpoints[0].responders, nullptr);
+    EXPECT_EQ(config->physical_endpoints[0].num_responders, 0u);
+
+    EXPECT_EQ(config->physical_endpoints[1].endpoint_id, 4u);
+    EXPECT_EQ(config->physical_endpoints[1].num_responders, 1u);
+    EXPECT_EQ(config->physical_endpoints[1].responders[0].uid, physical_endpoint_responder.get().uid);
+    EXPECT_EQ(config->physical_endpoints[1].responders[0].control_field, physical_endpoint_responder.get().control_field);
+    EXPECT_EQ(config->physical_endpoints[1].responders[0].binding_uid, physical_endpoint_responder.get().binding_uid);
+
+    *handle = 0;
+    return kEtcPalErrOk;
+  };
+
+  ASSERT_TRUE(device_.Startup(notify_, settings, "default"));
+  EXPECT_EQ(rdmnet_device_create_fake.call_count, 1u);
+}
+
 TEST_F(TestCppDeviceApi, AddVirtualEndpoint)
 {
-  rdmnet::Device          device;
-  MockDeviceNotifyHandler notify;
-
-  device.Startup(notify, rdmnet::Device::Settings(etcpal::Uuid::OsPreferred(), 0x6574), "default");
-  EXPECT_EQ(device.AddVirtualEndpoint(1), kEtcPalErrOk);
+  ASSERT_TRUE(device_.Startup(notify_, rdmnet::Device::Settings(etcpal::Uuid::OsPreferred(), 0x6574), "default"));
+  EXPECT_EQ(device_.AddVirtualEndpoint(1), kEtcPalErrOk);
 }
