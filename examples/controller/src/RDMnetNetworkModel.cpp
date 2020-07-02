@@ -733,7 +733,7 @@ void RDMnetNetworkModel::activateFeature(RDMnetNetworkItem* device, SupportedDev
       memset(data.get(), 0, data_len);
       data[0] = device->identifying() ? 0x00 : 0x01;
 
-      SendSetCommand(GetNearestParentItemOfType<BrokerItem>(device), device->uid(), E120_RESET_DEVICE, data.get(),
+      SendSetCommand(GetNearestParentItemOfType<BrokerItem>(device), device->uid(), E120_IDENTIFY_DEVICE, data.get(),
                      data_len);
     }
   }
