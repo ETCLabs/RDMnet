@@ -869,7 +869,7 @@ etcpal_error_t rdmnet_device_add_physical_responders(rdmnet_device_t            
   DeviceEndpoint* endpoint = find_endpoint(device, endpoint_id);
   if (!endpoint)
     res = kEtcPalErrNotFound;
-  else if (endpoint->type != kDeviceEndpointTypeVirtual)
+  else if (endpoint->type != kDeviceEndpointTypePhysical)
     res = kEtcPalErrInvalid;
 
   if (res == kEtcPalErrOk)
