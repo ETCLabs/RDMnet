@@ -253,11 +253,7 @@ etcpal_error_t rc_rpt_send_request(RCConnection*     conn,
 
 size_t calc_status_pdu_size(const RptStatusMsg* status)
 {
-#if RDMNET_DYNAMIC_MEM
   return (RPT_STATUS_HEADER_SIZE + (status->status_string ? strlen(status->status_string) : 0));
-#else
-  return (RPT_STATUS_HEADER_SIZE + strlen(status->status_string));
-#endif
 }
 
 /** @brief Get the packed buffer size for an RPT Status message.
@@ -305,7 +301,7 @@ size_t rc_rpt_pack_status(uint8_t*            buf,
   cur_ptr += RPT_STATUS_HEADER_SIZE;
   if (status_pdu_size > RPT_STATUS_HEADER_SIZE)
   {
-    ETCPAL_MSVC_NO_DEP_WRN strncpy((char*)cur_ptr, status->status_string, RPT_STATUS_STRING_MAXLEN);
+    ETCPAL_MSVC_NO_DEP_WRN strncpy((char*)cur_ptr, status->status_string, status_pdu_size - RPT_STATUS_HEADER_SIZE);
     cur_ptr += (status_pdu_size - RPT_STATUS_HEADER_SIZE);
   }
   return (size_t)(cur_ptr - buf);
