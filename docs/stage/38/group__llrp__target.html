@@ -1,0 +1,632 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen 1.8.13" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RDMnet: LLRP Target API</title>
+  <link href="tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="dynsections.js"></script>
+  <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+</script>
+  <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css" />
+  <!--BEGIN CUSTOM SCRIPTS-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <script type="text/javascript">
+    $(function () { selectAllC() });
+  </script>
+  <script type="text/javascript">
+    function selectAllC() {
+      // Enable all C-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_c")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_c")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectAllCpp() {
+      // Enable all C++-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_cpp")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C++-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_cpp")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectLanguage(evt, block_id, language) {
+      // Get all elements with class="tabcontent" and hide them
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.startsWith("div_" + block_id)) {
+          tabcontent[i].style.display = "none";
+        }
+      }
+      // Get all elements with class="tablinks" and remove the class "active"
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.startsWith("button_" + block_id)) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById("div_" + block_id + "_" + language).style.display = "block";
+      if (!evt.currentTarget.className.includes("active")) {
+        evt.currentTarget.className += " active";
+      }
+    }
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">RDMnet
+                &#160;<span id="projectnumber">Staging for pull request 38</span>
+              </div>
+              <div id="projectbrief">Implementation of ANSI E1.33 (RDMnet)</div>
+            </td>
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- end header part -->
+<!-- Generated by Doxygen 1.8.13 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Search');
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('group__llrp__target.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#nested-classes">Data Structures</a> &#124;
+<a href="#define-members">Macros</a> &#124;
+<a href="#typedef-members">Typedefs</a> &#124;
+<a href="#func-members">Functions</a>  </div>
+  <div class="headertitle">
+<div class="title">LLRP Target API<div class="ingroups"><a class="el" href="group__rdmnet__api.html">RDMnet C Language APIs</a></div></div>  </div>
+</div><!--header-->
+<div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<p>Implement the functionality required by an LLRP Target in E1.33. </p>
+<p>Typically, this API is called automatically when using the role APIs:</p>
+<ul>
+<li><a class="el" href="group__rdmnet__controller.html">Controller API</a></li>
+<li><a class="el" href="group__rdmnet__device.html">Device API</a></li>
+<li><a class="el" href="group__rdmnet__broker.html">Broker API</a></li>
+</ul>
+<p>And thus these functions should not typically need to be used directly. </p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Data Structures</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_llrp_target_callbacks.html">LlrpTargetCallbacks</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A set of notification callbacks received about an LLRP target.  <a href="struct_llrp_target_callbacks.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_llrp_target_config.html">LlrpTargetConfig</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A set of information that defines the startup parameters of an LLRP Target.  <a href="struct_llrp_target_config.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
+Macros</h2></td></tr>
+<tr class="memitem:gac6d1a1686faa05c243c1699ed22e7a6d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__llrp__target.html#gac6d1a1686faa05c243c1699ed22e7a6d">LLRP_TARGET_INVALID</a>&#160;&#160;&#160;-1</td></tr>
+<tr class="memdesc:gac6d1a1686faa05c243c1699ed22e7a6d"><td class="mdescLeft">&#160;</td><td class="mdescRight">An invalid LLRP target handle value.  <a href="#gac6d1a1686faa05c243c1699ed22e7a6d">More...</a><br /></td></tr>
+<tr class="separator:gac6d1a1686faa05c243c1699ed22e7a6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf1f8789b0572dd7278b78f16f38577d6"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__llrp__target.html#gaf1f8789b0572dd7278b78f16f38577d6">LLRP_TARGET_CONFIG_DEFAULT_INIT</a>(manu_id)</td></tr>
+<tr class="memdesc:gaf1f8789b0572dd7278b78f16f38577d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">A default-value initializer for an <a class="el" href="struct_llrp_target_config.html" title="A set of information that defines the startup parameters of an LLRP Target. ">LlrpTargetConfig</a> struct.  <a href="#gaf1f8789b0572dd7278b78f16f38577d6">More...</a><br /></td></tr>
+<tr class="separator:gaf1f8789b0572dd7278b78f16f38577d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:ga1815e7492bd00c1b7c1afda7de00e2b3"><td class="memItemLeft" align="right" valign="top">typedef int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__llrp__target.html#ga1815e7492bd00c1b7c1afda7de00e2b3">llrp_target_t</a></td></tr>
+<tr class="memdesc:ga1815e7492bd00c1b7c1afda7de00e2b3"><td class="mdescLeft">&#160;</td><td class="mdescRight">A handle for an instance of LLRP Target functionality.  <a href="#ga1815e7492bd00c1b7c1afda7de00e2b3">More...</a><br /></td></tr>
+<tr class="separator:ga1815e7492bd00c1b7c1afda7de00e2b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae38beb2010553aa1b85201f56ede1fe7"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__llrp__target.html#gae38beb2010553aa1b85201f56ede1fe7">LlrpTargetRdmCommandReceivedCallback</a>) (<a class="el" href="group__llrp__target.html#ga1815e7492bd00c1b7c1afda7de00e2b3">llrp_target_t</a> handle, const <a class="el" href="struct_llrp_rdm_command.html">LlrpRdmCommand</a> *cmd, <a class="el" href="struct_rdmnet_sync_rdm_response.html">RdmnetSyncRdmResponse</a> *response, void *context)</td></tr>
+<tr class="memdesc:gae38beb2010553aa1b85201f56ede1fe7"><td class="mdescLeft">&#160;</td><td class="mdescRight">An RDM command has been received addressed to an LLRP target.  <a href="#gae38beb2010553aa1b85201f56ede1fe7">More...</a><br /></td></tr>
+<tr class="separator:gae38beb2010553aa1b85201f56ede1fe7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga24174bb59ca905cd99c68968a761bf30"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct_llrp_target_callbacks.html">LlrpTargetCallbacks</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__llrp__target.html#ga24174bb59ca905cd99c68968a761bf30">LlrpTargetCallbacks</a></td></tr>
+<tr class="memdesc:ga24174bb59ca905cd99c68968a761bf30"><td class="mdescLeft">&#160;</td><td class="mdescRight">A set of notification callbacks received about an LLRP target.  <a href="#ga24174bb59ca905cd99c68968a761bf30">More...</a><br /></td></tr>
+<tr class="separator:ga24174bb59ca905cd99c68968a761bf30"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga90c1d4c1541155ce8aa1231bb81c8382"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct_llrp_target_config.html">LlrpTargetConfig</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__llrp__target.html#ga90c1d4c1541155ce8aa1231bb81c8382">LlrpTargetConfig</a></td></tr>
+<tr class="memdesc:ga90c1d4c1541155ce8aa1231bb81c8382"><td class="mdescLeft">&#160;</td><td class="mdescRight">A set of information that defines the startup parameters of an LLRP Target.  <a href="#ga90c1d4c1541155ce8aa1231bb81c8382">More...</a><br /></td></tr>
+<tr class="separator:ga90c1d4c1541155ce8aa1231bb81c8382"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:ga70c8bbd6b8bbdeb225887a83c1a2c3a5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__llrp__target.html#ga70c8bbd6b8bbdeb225887a83c1a2c3a5">llrp_target_config_init</a> (<a class="el" href="struct_llrp_target_config.html">LlrpTargetConfig</a> *config, uint16_t manufacturer_id)</td></tr>
+<tr class="memdesc:ga70c8bbd6b8bbdeb225887a83c1a2c3a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize an <a class="el" href="struct_llrp_target_config.html" title="A set of information that defines the startup parameters of an LLRP Target. ">LlrpTargetConfig</a> with default values for the optional config options.  <a href="#ga70c8bbd6b8bbdeb225887a83c1a2c3a5">More...</a><br /></td></tr>
+<tr class="separator:ga70c8bbd6b8bbdeb225887a83c1a2c3a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0f7ab74fdf8dfdf13dd9294a1102e579"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#ga743b0648f0ca798ef29c9f69c6e255af">etcpal_error_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__llrp__target.html#ga0f7ab74fdf8dfdf13dd9294a1102e579">llrp_target_create</a> (const <a class="el" href="struct_llrp_target_config.html">LlrpTargetConfig</a> *config, <a class="el" href="group__llrp__target.html#ga1815e7492bd00c1b7c1afda7de00e2b3">llrp_target_t</a> *handle)</td></tr>
+<tr class="memdesc:ga0f7ab74fdf8dfdf13dd9294a1102e579"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new LLRP target instance.  <a href="#ga0f7ab74fdf8dfdf13dd9294a1102e579">More...</a><br /></td></tr>
+<tr class="separator:ga0f7ab74fdf8dfdf13dd9294a1102e579"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac4022cf92cf57c693d4d841cd3f8e3f1"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#ga743b0648f0ca798ef29c9f69c6e255af">etcpal_error_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__llrp__target.html#gac4022cf92cf57c693d4d841cd3f8e3f1">llrp_target_destroy</a> (<a class="el" href="group__llrp__target.html#ga1815e7492bd00c1b7c1afda7de00e2b3">llrp_target_t</a> handle)</td></tr>
+<tr class="memdesc:gac4022cf92cf57c693d4d841cd3f8e3f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destroy an LLRP target instance.  <a href="#gac4022cf92cf57c693d4d841cd3f8e3f1">More...</a><br /></td></tr>
+<tr class="separator:gac4022cf92cf57c693d4d841cd3f8e3f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaab9570b68a7b78a18ea3995198da6fde"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#ga743b0648f0ca798ef29c9f69c6e255af">etcpal_error_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__llrp__target.html#gaab9570b68a7b78a18ea3995198da6fde">llrp_target_send_ack</a> (<a class="el" href="group__llrp__target.html#ga1815e7492bd00c1b7c1afda7de00e2b3">llrp_target_t</a> handle, const <a class="el" href="struct_llrp_saved_rdm_command.html">LlrpSavedRdmCommand</a> *received_cmd, const uint8_t *response_data, uint8_t response_data_len)</td></tr>
+<tr class="memdesc:gaab9570b68a7b78a18ea3995198da6fde"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send an RDM ACK response from an LLRP target.  <a href="#gaab9570b68a7b78a18ea3995198da6fde">More...</a><br /></td></tr>
+<tr class="separator:gaab9570b68a7b78a18ea3995198da6fde"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab737bdf978748d56a824b95055bd0147"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#ga743b0648f0ca798ef29c9f69c6e255af">etcpal_error_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__llrp__target.html#gab737bdf978748d56a824b95055bd0147">llrp_target_send_nack</a> (<a class="el" href="group__llrp__target.html#ga1815e7492bd00c1b7c1afda7de00e2b3">llrp_target_t</a> handle, const <a class="el" href="struct_llrp_saved_rdm_command.html">LlrpSavedRdmCommand</a> *received_cmd, <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/group__message.html#gaa11fc36923818f02895f40dafd228474">rdm_nack_reason_t</a> nack_reason)</td></tr>
+<tr class="memdesc:gab737bdf978748d56a824b95055bd0147"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send an RDM NACK response from an LLRP target.  <a href="#gab737bdf978748d56a824b95055bd0147">More...</a><br /></td></tr>
+<tr class="separator:gab737bdf978748d56a824b95055bd0147"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="gaf1f8789b0572dd7278b78f16f38577d6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf1f8789b0572dd7278b78f16f38577d6">&#9670;&nbsp;</a></span>LLRP_TARGET_CONFIG_DEFAULT_INIT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define LLRP_TARGET_CONFIG_DEFAULT_INIT</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">manu_id</td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Value:</b><div class="fragment"><div class="line">{                                                             \</div><div class="line">    {{0}}, {NULL, NULL}, NULL, {(0x8000 | manu_id), 0}, NULL, 0 \</div><div class="line">  }</div></div><!-- fragment -->
+<p>A default-value initializer for an <a class="el" href="struct_llrp_target_config.html" title="A set of information that defines the startup parameters of an LLRP Target. ">LlrpTargetConfig</a> struct. </p>
+<p>Usage: </p><div class="fragment"><div class="line"><a class="code" href="struct_llrp_target_config.html">LlrpTargetConfig</a> config = <a class="code" href="group__llrp__target.html#gaf1f8789b0572dd7278b78f16f38577d6">LLRP_TARGET_CONFIG_DEFAULT_INIT</a>(MY_ESTA_MANUFACTURER_ID);</div><div class="line"><span class="comment">// Now fill in the required portions as necessary with your data...</span></div></div><!-- fragment --><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">manu_id</td><td>Your ESTA manufacturer ID. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="gac6d1a1686faa05c243c1699ed22e7a6d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gac6d1a1686faa05c243c1699ed22e7a6d">&#9670;&nbsp;</a></span>LLRP_TARGET_INVALID</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define LLRP_TARGET_INVALID&#160;&#160;&#160;-1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>An invalid LLRP target handle value. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Typedef Documentation</h2>
+<a id="ga1815e7492bd00c1b7c1afda7de00e2b3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1815e7492bd00c1b7c1afda7de00e2b3">&#9670;&nbsp;</a></span>llrp_target_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef int <a class="el" href="group__llrp__target.html#ga1815e7492bd00c1b7c1afda7de00e2b3">llrp_target_t</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>A handle for an instance of LLRP Target functionality. </p>
+
+</div>
+</div>
+<a id="ga24174bb59ca905cd99c68968a761bf30"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga24174bb59ca905cd99c68968a761bf30">&#9670;&nbsp;</a></span>LlrpTargetCallbacks</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="struct_llrp_target_callbacks.html">LlrpTargetCallbacks</a>  <a class="el" href="struct_llrp_target_callbacks.html">LlrpTargetCallbacks</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>A set of notification callbacks received about an LLRP target. </p>
+
+</div>
+</div>
+<a id="ga90c1d4c1541155ce8aa1231bb81c8382"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga90c1d4c1541155ce8aa1231bb81c8382">&#9670;&nbsp;</a></span>LlrpTargetConfig</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="struct_llrp_target_config.html">LlrpTargetConfig</a>  <a class="el" href="struct_llrp_target_config.html">LlrpTargetConfig</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>A set of information that defines the startup parameters of an LLRP Target. </p>
+
+</div>
+</div>
+<a id="gae38beb2010553aa1b85201f56ede1fe7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae38beb2010553aa1b85201f56ede1fe7">&#9670;&nbsp;</a></span>LlrpTargetRdmCommandReceivedCallback</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef void(* LlrpTargetRdmCommandReceivedCallback) (<a class="el" href="group__llrp__target.html#ga1815e7492bd00c1b7c1afda7de00e2b3">llrp_target_t</a> handle, const <a class="el" href="struct_llrp_rdm_command.html">LlrpRdmCommand</a> *cmd, <a class="el" href="struct_rdmnet_sync_rdm_response.html">RdmnetSyncRdmResponse</a> *response, void *context)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>An RDM command has been received addressed to an LLRP target. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">handle</td><td>Handle to the LLRP target which has received the RDM command. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">cmd</td><td>The RDM command data. </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">response</td><td>Fill in with response data if responding synchronously (see <a class="el" href="handling_rdm_commands.html">Handling RDM Commands</a>). </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">context</td><td>Context pointer that was given at the creation of the LLRP target instance. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="ga70c8bbd6b8bbdeb225887a83c1a2c3a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga70c8bbd6b8bbdeb225887a83c1a2c3a5">&#9670;&nbsp;</a></span>llrp_target_config_init()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void llrp_target_config_init </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_llrp_target_config.html">LlrpTargetConfig</a> *&#160;</td>
+          <td class="paramname"><em>config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>manufacturer_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Initialize an <a class="el" href="struct_llrp_target_config.html" title="A set of information that defines the startup parameters of an LLRP Target. ">LlrpTargetConfig</a> with default values for the optional config options. </p>
+<p>The config struct members not marked 'optional' are not meaningfully initialized by this function. Those members do not have default values and must be initialized manually before passing the config struct to an API function.</p>
+<p>Usage example: </p><div class="fragment"><div class="line"><a class="code" href="struct_llrp_target_config.html">LlrpTargetConfig</a> config;</div><div class="line"><a class="code" href="group__llrp__target.html#ga70c8bbd6b8bbdeb225887a83c1a2c3a5">llrp_target_config_init</a>(&amp;config, 0x6574);</div></div><!-- fragment --><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">config</td><td>Pointer to <a class="el" href="struct_llrp_target_config.html" title="A set of information that defines the startup parameters of an LLRP Target. ">LlrpTargetConfig</a> to init. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">manufacturer_id</td><td>ESTA manufacturer ID. All LLRP targets must have one. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ga0f7ab74fdf8dfdf13dd9294a1102e579"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0f7ab74fdf8dfdf13dd9294a1102e579">&#9670;&nbsp;</a></span>llrp_target_create()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#ga743b0648f0ca798ef29c9f69c6e255af">etcpal_error_t</a> llrp_target_create </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="struct_llrp_target_config.html">LlrpTargetConfig</a> *&#160;</td>
+          <td class="paramname"><em>config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__llrp__target.html#ga1815e7492bd00c1b7c1afda7de00e2b3">llrp_target_t</a> *&#160;</td>
+          <td class="paramname"><em>handle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Create a new LLRP target instance. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">config</td><td>Configuration parameters for the LLRP target to be created. </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">handle</td><td>Handle to the newly-created target instance. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afae403d046b4ba4e81dce121266c2cca8d">kEtcPalErrOk</a>: Target created successfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument provided. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afad16b0fe51e8664f8b30b740ea1e51599">kEtcPalErrNoMem</a>: No memory to allocate additional target instance. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd>
+<dd>
+Note: Other error codes might be propagated from underlying socket calls. </dd></dl>
+
+</div>
+</div>
+<a id="gac4022cf92cf57c693d4d841cd3f8e3f1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gac4022cf92cf57c693d4d841cd3f8e3f1">&#9670;&nbsp;</a></span>llrp_target_destroy()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#ga743b0648f0ca798ef29c9f69c6e255af">etcpal_error_t</a> llrp_target_destroy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__llrp__target.html#ga1815e7492bd00c1b7c1afda7de00e2b3">llrp_target_t</a>&#160;</td>
+          <td class="paramname"><em>handle</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Destroy an LLRP target instance. </p>
+<p>The handle will be invalidated for any future calls to API functions.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">handle</td><td>Handle to target to destroy. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afae403d046b4ba4e81dce121266c2cca8d">kEtcPalErrOk</a>: LLRP target destroyed successfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: Handle is not associated with a valid LLRP target instance. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa38404e113508a0e291dbcc6c73743ae8">kEtcPalErrSys</a>: An internal library or system call error occurred. </dd></dl>
+
+</div>
+</div>
+<a id="gaab9570b68a7b78a18ea3995198da6fde"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaab9570b68a7b78a18ea3995198da6fde">&#9670;&nbsp;</a></span>llrp_target_send_ack()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#ga743b0648f0ca798ef29c9f69c6e255af">etcpal_error_t</a> llrp_target_send_ack </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__llrp__target.html#ga1815e7492bd00c1b7c1afda7de00e2b3">llrp_target_t</a>&#160;</td>
+          <td class="paramname"><em>handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="struct_llrp_saved_rdm_command.html">LlrpSavedRdmCommand</a> *&#160;</td>
+          <td class="paramname"><em>received_cmd</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const uint8_t *&#160;</td>
+          <td class="paramname"><em>response_data</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint8_t&#160;</td>
+          <td class="paramname"><em>response_data_len</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Send an RDM ACK response from an LLRP target. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">handle</td><td>Handle to LLRP target from which to send the response. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">received_cmd</td><td>Previously-received command that the ACK is a response to. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">response_data</td><td>Parameter data that goes with this ACK, or NULL if no data. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">response_data_len</td><td>Length in bytes of response_data, or 0 if no data. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afae403d046b4ba4e81dce121266c2cca8d">kEtcPalErrOk</a>: ACK sent successfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument provided. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: Handle is not associated with a valid LLRP target instance. </dd>
+<dd>
+Note: Other error codes might be propagated from underlying socket calls. </dd></dl>
+
+</div>
+</div>
+<a id="gab737bdf978748d56a824b95055bd0147"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gab737bdf978748d56a824b95055bd0147">&#9670;&nbsp;</a></span>llrp_target_send_nack()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#ga743b0648f0ca798ef29c9f69c6e255af">etcpal_error_t</a> llrp_target_send_nack </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__llrp__target.html#ga1815e7492bd00c1b7c1afda7de00e2b3">llrp_target_t</a>&#160;</td>
+          <td class="paramname"><em>handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="struct_llrp_saved_rdm_command.html">LlrpSavedRdmCommand</a> *&#160;</td>
+          <td class="paramname"><em>received_cmd</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/group__message.html#gaa11fc36923818f02895f40dafd228474">rdm_nack_reason_t</a>&#160;</td>
+          <td class="paramname"><em>nack_reason</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Send an RDM NACK response from an LLRP target. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">handle</td><td>Handle to LLRP target from which to send the response. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">received_cmd</td><td>Previously-received command that the NACK is a response to. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">nack_reason</td><td>RDM NACK reason code to send with the NACK. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afae403d046b4ba4e81dce121266c2cca8d">kEtcPalErrOk</a>: NACK sent successfully. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadb17bb2ec24e7755170e8afbd5b10bc2">kEtcPalErrInvalid</a>: Invalid argument provided. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afadfb4ade13d03ed30f6309d2f130f05f7">kEtcPalErrNotInit</a>: Module not initialized. </dd>
+<dd>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afa62c704cfc2d72f1fa91c04efe508c60f">kEtcPalErrNotFound</a>: Handle is not associated with a valid LLRP target instance. </dd>
+<dd>
+Note: Other error codes might be propagated from underlying socket calls. </dd></dl>
+
+</div>
+</div>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">Generated by
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>
+  </ul>
+</div>
+</body>
+</html>
