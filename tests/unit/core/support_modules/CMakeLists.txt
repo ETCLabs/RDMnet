@@ -5,12 +5,14 @@ rdmnet_add_unit_test(test_rdmnet_core_support_modules
   test_broker_prot.cpp
   test_mcast.cpp
   test_msg_buf.cpp
+  test_rpt_prot.cpp
   main.cpp
 
   # Sources under test
   ${RDMNET_SRC}/rdmnet/core/broker_prot.c
   ${RDMNET_SRC}/rdmnet/core/mcast.c
   ${RDMNET_SRC}/rdmnet/core/msg_buf.c
+  ${RDMNET_SRC}/rdmnet/core/rpt_prot.c
   ${RDMNET_SRC}/rdmnet/core/util.c
 
   # Real dependencies
