@@ -1086,9 +1086,11 @@ bool RDMnetNetworkModel::setData(const QModelIndex& index, const QVariant& value
                 {
                   case 2:
                     etcpal_pack_u16b(pack_ptr, static_cast<uint16_t>(value.toInt()));
+                    pack_ptr += 2;
                     break;
                   case 4:
                     etcpal_pack_u32b(pack_ptr, static_cast<uint32_t>(value.toInt()));
+                    pack_ptr += 4;
                     break;
                 }
                 break;
@@ -1098,6 +1100,7 @@ bool RDMnetNetworkModel::setData(const QModelIndex& index, const QVariant& value
                 newValue = qstr;
                 auto stdstr = qstr.toStdString();
                 memcpy(pack_ptr, stdstr.data(), stdstr.length());
+                pack_ptr += stdstr.length();
                 break;
               }
               case QVariant::Type::Bool:
@@ -1105,9 +1108,11 @@ bool RDMnetNetworkModel::setData(const QModelIndex& index, const QVariant& value
                   pack_ptr[0] = 1;
                 else
                   pack_ptr[0] = 0;
+                ++pack_ptr;
                 break;
               case QVariant::Type::Char:
                 pack_ptr[0] = static_cast<uint8_t>(value.toInt());
+                ++pack_ptr;
                 break;
               default:
                 if (pid == E133_COMPONENT_SCOPE)
@@ -1312,7 +1317,7 @@ void RDMnetNetworkModel::HandleRdmAck(rdmnet::ScopeHandle scope_handle, const rd
   if (resp.IsGetResponse())
   {
     log_->Info("Got GET_COMMAND_RESPONSE with PID 0x%04x from responder %s", resp.param_id(),
-               resp.rdmnet_source_uid().ToString().c_str());
+               resp.rdm_source_uid().ToString().c_str());
 
     switch (resp.param_id())
     {
@@ -1341,7 +1346,7 @@ void RDMnetNetworkModel::HandleRdmAck(rdmnet::ScopeHandle scope_handle, const rd
         }
 
         if (!param_list.empty())
-          HandleSupportedParametersResponse(scope_handle, param_list, resp.rdmnet_source_uid());
+          HandleSupportedParametersResponse(scope_handle, param_list, resp.rdm_source_uid());
         break;
       }
       case E120_DEVICE_INFO: {
@@ -1365,7 +1370,7 @@ void RDMnetNetworkModel::HandleRdmAck(rdmnet::ScopeHandle scope_handle, const rd
               etcpal_unpack_u16b(&resp_data[16]),
               resp_data[18],
           };
-          HandleDeviceInfoResponse(scope_handle, dev_info, resp.rdmnet_source_uid());
+          HandleDeviceInfoResponse(scope_handle, dev_info, resp.rdm_source_uid());
         }
         break;
       }
@@ -1380,19 +1385,19 @@ void RDMnetNetworkModel::HandleRdmAck(rdmnet::ScopeHandle scope_handle, const rd
         switch (resp.param_id())
         {
           case E120_DEVICE_MODEL_DESCRIPTION:
-            HandleModelDescResponse(scope_handle, QString::fromUtf8(label), resp.rdmnet_source_uid());
+            HandleModelDescResponse(scope_handle, QString::fromUtf8(label), resp.rdm_source_uid());
             break;
           case E120_SOFTWARE_VERSION_LABEL:
-            HandleSoftwareLabelResponse(scope_handle, QString::fromUtf8(label), resp.rdmnet_source_uid());
+            HandleSoftwareLabelResponse(scope_handle, QString::fromUtf8(label), resp.rdm_source_uid());
             break;
           case E120_MANUFACTURER_LABEL:
-            HandleManufacturerLabelResponse(scope_handle, QString::fromUtf8(label), resp.rdmnet_source_uid());
+            HandleManufacturerLabelResponse(scope_handle, QString::fromUtf8(label), resp.rdm_source_uid());
             break;
           case E120_DEVICE_LABEL:
-            HandleDeviceLabelResponse(scope_handle, QString::fromUtf8(label), resp.rdmnet_source_uid());
+            HandleDeviceLabelResponse(scope_handle, QString::fromUtf8(label), resp.rdm_source_uid());
             break;
           case E120_BOOT_SOFTWARE_VERSION_LABEL:
-            HandleBootSoftwareLabelResponse(scope_handle, QString::fromUtf8(label), resp.rdmnet_source_uid());
+            HandleBootSoftwareLabelResponse(scope_handle, QString::fromUtf8(label), resp.rdm_source_uid());
             break;
         }
         break;
@@ -1400,13 +1405,13 @@ void RDMnetNetworkModel::HandleRdmAck(rdmnet::ScopeHandle scope_handle, const rd
       case E120_BOOT_SOFTWARE_VERSION_ID:
         if (resp.data_len() >= 4)
         {
-          HandleBootSoftwareIdResponse(scope_handle, etcpal_unpack_u32b(resp.data()), resp.rdmnet_source_uid());
+          HandleBootSoftwareIdResponse(scope_handle, etcpal_unpack_u32b(resp.data()), resp.rdm_source_uid());
         }
         break;
       case E120_DMX_PERSONALITY:
         if (resp.data_len() >= 2)
         {
-          HandlePersonalityResponse(scope_handle, resp.data()[0], resp.data()[1], resp.rdmnet_source_uid());
+          HandlePersonalityResponse(scope_handle, resp.data()[0], resp.data()[1], resp.rdm_source_uid());
         }
         break;
       case E120_DMX_PERSONALITY_DESCRIPTION:
@@ -1417,7 +1422,7 @@ void RDMnetNetworkModel::HandleRdmAck(rdmnet::ScopeHandle scope_handle, const rd
           memcpy(description, &resp.data()[3], (descriptionLength > 32) ? 32 : descriptionLength);
 
           HandlePersonalityDescResponse(scope_handle, resp.data()[0], etcpal_unpack_u16b(&resp.data()[1]),
-                                        QString::fromUtf8(description), resp.rdmnet_source_uid());
+                                        QString::fromUtf8(description), resp.rdm_source_uid());
         }
         break;
       case E137_7_ENDPOINT_LIST:
@@ -1431,7 +1436,7 @@ void RDMnetNetworkModel::HandleRdmAck(rdmnet::ScopeHandle scope_handle, const rd
             uint8_t  endpoint_type = *(offset + 2);
             list.push_back(std::make_pair(endpoint_id, endpoint_type));
           }
-          HandleEndpointListResponse(scope_handle, change_number, list, resp.rdmnet_source_uid());
+          HandleEndpointListResponse(scope_handle, change_number, list, resp.rdm_source_uid());
         }
         break;
       case E137_7_ENDPOINT_RESPONDERS:
@@ -1446,14 +1451,14 @@ void RDMnetNetworkModel::HandleRdmAck(rdmnet::ScopeHandle scope_handle, const rd
             list.push_back(rdm::Uid(etcpal_unpack_u16b(offset), etcpal_unpack_u32b(offset + 2)));
           }
 
-          HandleEndpointRespondersResponse(scope_handle, endpoint_id, change_number, list, resp.rdmnet_source_uid());
+          HandleEndpointRespondersResponse(scope_handle, endpoint_id, change_number, list, resp.rdm_source_uid());
         }
         break;
       case E137_7_ENDPOINT_LIST_CHANGE:
         if (resp.data_len() >= 4)
         {
           uint32_t change_number = etcpal_unpack_u32b(resp.data());
-          HandleEndpointListChangeResponse(scope_handle, change_number, resp.rdmnet_source_uid());
+          HandleEndpointListChangeResponse(scope_handle, change_number, resp.rdm_source_uid());
         }
         break;
       case E137_7_ENDPOINT_RESPONDER_LIST_CHANGE:
@@ -1461,7 +1466,7 @@ void RDMnetNetworkModel::HandleRdmAck(rdmnet::ScopeHandle scope_handle, const rd
         {
           uint16_t endpoint_id = etcpal_unpack_u16b(resp.data());
           uint32_t change_num = etcpal_unpack_u32b(&resp.data()[2]);
-          HandleResponderListChangeResponse(scope_handle, change_num, endpoint_id, resp.rdmnet_source_uid());
+          HandleResponderListChangeResponse(scope_handle, change_num, endpoint_id, resp.rdm_source_uid());
         }
         break;
       case E133_TCP_COMMS_STATUS: {
@@ -1476,7 +1481,7 @@ void RDMnetNetworkModel::HandleRdmAck(rdmnet::ScopeHandle scope_handle, const rd
               etcpal_unpack_u16b(offset + E133_SCOPE_STRING_PADDED_LENGTH + 4 + ETCPAL_IPV6_BYTES + 2);
 
           HandleTcpCommsStatusResponse(scope_handle, QString::fromUtf8(scopeString), v4AddrString, v6AddrString, port,
-                                       unhealthyTCPEvents, resp.rdmnet_source_uid());
+                                       unhealthyTCPEvents, resp.rdm_source_uid());
         }
 
         break;
@@ -1484,7 +1489,7 @@ void RDMnetNetworkModel::HandleRdmAck(rdmnet::ScopeHandle scope_handle, const rd
       default: {
         // Process data for PIDs that support get and set, where the data has the same form in either case.
         ProcessRdmGetSetData(scope_handle, resp.param_id(), resp.data(), static_cast<uint8_t>(resp.data_len()),
-                             resp.rdmnet_source_uid());
+                             resp.rdm_source_uid());
         break;
       }
     }
@@ -1492,7 +1497,7 @@ void RDMnetNetworkModel::HandleRdmAck(rdmnet::ScopeHandle scope_handle, const rd
   else if (resp.IsSetResponse())
   {
     log_->Info("Got SET_COMMAND_RESPONSE with PID 0x%04x from responder %s", resp.param_id(),
-               resp.rdmnet_source_uid().ToString().c_str());
+               resp.rdm_source_uid().ToString().c_str());
 
     if (resp.OriginalCommandIncluded())
     {
@@ -1501,13 +1506,13 @@ void RDMnetNetworkModel::HandleRdmAck(rdmnet::ScopeHandle scope_handle, const rd
       {
         case E120_DMX_PERSONALITY: {
           if (resp.original_cmd_data_len() >= 2)
-            HandlePersonalityResponse(scope_handle, resp.original_cmd_data()[0], 0, resp.rdmnet_source_uid());
+            HandlePersonalityResponse(scope_handle, resp.original_cmd_data()[0], 0, resp.rdm_source_uid());
           break;
         }
         default: {
           // Process PIDs with data that is in the same format for get and set.
           ProcessRdmGetSetData(scope_handle, resp.param_id(), resp.original_cmd_data(), resp.original_cmd_data_len(),
-                               resp.rdmnet_source_uid());
+                               resp.rdm_source_uid());
           break;
         }
       }
@@ -1680,25 +1685,25 @@ void RDMnetNetworkModel::HandleRdmNack(rdmnet::ScopeHandle scope_handle, const r
     {
       uint8_t data[2];
       etcpal_pack_u16b(data, 0x0001);  // Scope slot, default to 1 for RPT Devices (non-controllers, non-brokers).
-      SendGetCommand(GetBrokerItem(scope_handle), resp.rdmnet_source_uid(), resp.param_id(), data, 2);
+      SendGetCommand(GetBrokerItem(scope_handle), resp.rdm_source_uid(), resp.param_id(), data, 2);
     }
     else
     {
-      SendGetCommand(GetBrokerItem(scope_handle), resp.rdmnet_source_uid(), resp.param_id());
+      SendGetCommand(GetBrokerItem(scope_handle), resp.rdm_source_uid(), resp.param_id());
     }
   }
   else if (resp.IsGetResponse() && (resp.param_id() == E133_COMPONENT_SCOPE) &&
            (resp.GetNackReason()->code() == kRdmNRDataOutOfRange))
   {
-    RDMnetClientItem*  client = GetClientItem(scope_handle, resp.rdmnet_source_uid());
+    RDMnetClientItem*  client = GetClientItem(scope_handle, resp.rdm_source_uid());
     RDMnetNetworkItem* rdmNetGroup = dynamic_cast<RDMnetNetworkItem*>(
         client->child(0)->data() == tr("RDMnet") ? client->child(0) : client->child(1));
 
-    RemoveScopeSlotItemsInRange(rdmNetGroup, &client->properties, previous_slot_[resp.rdmnet_source_uid()] + 1, 0xFFFF);
+    RemoveScopeSlotItemsInRange(rdmNetGroup, &client->properties, previous_slot_[resp.rdm_source_uid()] + 1, 0xFFFF);
 
     // We have all of this controller's scope-slot pairs. Now request scope-specific properties.
-    previous_slot_[resp.rdmnet_source_uid()] = 0;
-    SendGetCommand(GetBrokerItem(scope_handle), resp.rdmnet_source_uid(), E133_TCP_COMMS_STATUS);
+    previous_slot_[resp.rdm_source_uid()] = 0;
+    SendGetCommand(GetBrokerItem(scope_handle), resp.rdm_source_uid(), E133_TCP_COMMS_STATUS);
   }
 }
 
@@ -2335,7 +2340,7 @@ void RDMnetNetworkModel::CheckPersonalityDescriptions(RDMnetNetworkItem* device,
       // Get descriptions for all supported personalities of this device
       for (uint8_t personality_num = 1; personality_num <= numberOfPersonalities; ++personality_num)
       {
-        SendGetCommand(GetNearestParentItemOfType<BrokerItem>(device), source_uid, E120_DMX_PERSONALITY,
+        SendGetCommand(GetNearestParentItemOfType<BrokerItem>(device), source_uid, E120_DMX_PERSONALITY_DESCRIPTION,
                        &personality_num, 1);
       }
     }
