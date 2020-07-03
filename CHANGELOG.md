@@ -7,10 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Platform port and binary package: macOS
+- Platform port: Linux
 
 ### Changed
 - Update to comply with final published ANSI E1.33-2019
-- Minor changes to API functions for style
+- Complete overhaul of API following API design review and requirements review
 
 ## [0.2.0] - 2019-06-20
 ### Added

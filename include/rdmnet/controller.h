@@ -274,12 +274,12 @@ typedef struct RdmnetControllerConfig
   RdmnetControllerCallbacks callbacks;
   /**
    * Callbacks and a buffer for the controller to receive RDM commands over RDMnet. Either this or
-   * rdm_data must be provided.
+   * rdm_data must be provided; see @ref using_controller for more information.
    */
   RdmnetControllerRdmCmdHandler rdm_handler;
   /**
    * Data for the library to use for handling RDM commands internally. Either this or rdm_handler
-   * must be provided.
+   * must be provided; see @ref using_controller for more information.
    */
   RdmnetControllerRdmData rdm_data;
 
@@ -342,12 +342,6 @@ void rdmnet_controller_set_callbacks(RdmnetControllerConfig*                    
                                      RdmnetControllerStatusReceivedCallback           status_received,
                                      RdmnetControllerResponderIdsReceivedCallback     responder_ids_received,
                                      void*                                            context);
-void rdmnet_controller_set_rdm_data(RdmnetControllerConfig* config,
-                                    const char*             manufacturer_label,
-                                    const char*             device_model_description,
-                                    const char*             software_version_label,
-                                    const char*             device_label,
-                                    bool                    device_label_settable);
 void rdmnet_controller_set_rdm_cmd_callbacks(RdmnetControllerConfig*                        config,
                                              RdmnetControllerRdmCommandReceivedCallback     rdm_command_received,
                                              RdmnetControllerLlrpRdmCommandReceivedCallback llrp_rdm_command_received,

@@ -197,42 +197,6 @@ void rdmnet_controller_set_callbacks(RdmnetControllerConfig*                    
 }
 
 /**
- * @brief Provide a set of basic information that the library will use for responding to RDM commands.
- *
- * RDMnet controllers are required to respond to a basic set of RDM commands. This library provides
- * two possible approaches to this. With this approach, the library stores some basic data about
- * a controller instance and handles and responds to all RDM commands internally. Use this function
- * to set that data in the configuration structure. See @ref using_controller for more information.
- *
- * @param[out] config Config struct in which to set the data. This doesn't copy the strings
- *                    themselves yet; they must remain valid in their original location until the
- *                    config struct is passed to rdmnet_controller_create().
- * @param[in] manufacturer_label A string representing the manufacturer of the controller.
- * @param[in] device_model_description A string representing the name of the product model
- *                                     implementing the controller.
- * @param[in] software_version_label A string representing the software version of the controller.
- * @param[in] device_label A string representing a user-settable name for this controller instance.
- * @param[in] device_label_settable Whether the library should allow the device label to be changed
- *                                  remotely.
- */
-void rdmnet_controller_set_rdm_data(RdmnetControllerConfig* config,
-                                    const char*             manufacturer_label,
-                                    const char*             device_model_description,
-                                    const char*             software_version_label,
-                                    const char*             device_label,
-                                    bool                    device_label_settable)
-{
-  if (config)
-  {
-    config->rdm_data.manufacturer_label = manufacturer_label;
-    config->rdm_data.device_model_description = device_model_description;
-    config->rdm_data.software_version_label = software_version_label;
-    config->rdm_data.device_label = device_label;
-    config->rdm_data.device_label_settable = device_label_settable;
-  }
-}
-
-/**
  * @brief Set callbacks to handle RDM commands in an RDMnet controller configuration structure.
  *
  * RDMnet controllers are required to respond to a basic set of RDM commands. This library provides
