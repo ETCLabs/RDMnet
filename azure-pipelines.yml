@@ -75,6 +75,7 @@ stages:
             displayName: "Run Tests"
           - task: PublishTestResults@2
             displayName: "Publish Test Results"
+            condition: always()
             inputs:
               testResultsFormat: "CTest"
               testResultsFiles: "**/Test.xml"
@@ -145,6 +146,7 @@ stages:
             displayName: "Run Tests"
           - task: PublishTestResults@2
             displayName: "Publish Test Results"
+            condition: always()
             inputs:
               testResultsFormat: "CTest"
               testResultsFiles: "**/Test.xml"
@@ -176,6 +178,7 @@ stages:
             displayName: "Run Tests"
           - task: PublishTestResults@2
             displayName: "Publish Test Results"
+            condition: always()
             inputs:
               testResultsFormat: "CTest"
               testResultsFiles: "**/Test.xml"
@@ -205,6 +208,7 @@ stages:
             displayName: "Run Tests"
           - task: PublishTestResults@2
             displayName: "Publish Test Results"
+            condition: always()
             inputs:
               testResultsFormat: "CTest"
               testResultsFiles: "**/Test.xml"
