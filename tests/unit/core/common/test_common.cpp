@@ -122,6 +122,10 @@ TEST_F(TestCoreCommon, InitFailsGracefullyAndCleansUp)
   std::uniform_int_distribution<size_t> distrib(0, kModuleRefs.size() - 1);
 
   auto fn_to_fail = distrib(random_gen);
+#if !RDMNET_DYNAMIC_MEM
+  while (kModuleRefs[fn_to_fail].module_name == "LLRP Manager")
+    fn_to_fail = distrib(random_gen);
+#endif
   kModuleRefs[fn_to_fail].init_return_val = kEtcPalErrSys;
 
   ASSERT_EQ(rc_init(nullptr, nullptr), kEtcPalErrSys);
