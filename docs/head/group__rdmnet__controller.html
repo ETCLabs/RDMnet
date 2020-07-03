@@ -289,9 +289,6 @@ Functions</h2></td></tr>
 <tr class="memitem:ga561941b5e39514b8015e936130c6e544"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__controller.html#ga561941b5e39514b8015e936130c6e544">rdmnet_controller_set_callbacks</a> (<a class="el" href="struct_rdmnet_controller_config.html">RdmnetControllerConfig</a> *config, <a class="el" href="group__rdmnet__controller.html#ga55532c618eaa3bbc7075c2d3b899af49">RdmnetControllerConnectedCallback</a> connected, <a class="el" href="group__rdmnet__controller.html#ga0162b518e675c81ea3487780d906d739">RdmnetControllerConnectFailedCallback</a> connect_failed, <a class="el" href="group__rdmnet__controller.html#ga1d970ae86e7af2ac11f4139e3927980e">RdmnetControllerDisconnectedCallback</a> disconnected, <a class="el" href="group__rdmnet__controller.html#ga1712f68a36314a1ff1534ccefb799bb5">RdmnetControllerClientListUpdateReceivedCallback</a> client_list_update_received, <a class="el" href="group__rdmnet__controller.html#ga936e8ddb41d707184b48439bbab5eb7e">RdmnetControllerRdmResponseReceivedCallback</a> rdm_response_received, <a class="el" href="group__rdmnet__controller.html#gad09b6820907dc813fba7e67bf93f2453">RdmnetControllerStatusReceivedCallback</a> status_received, <a class="el" href="group__rdmnet__controller.html#ga4408acb283a85c751fae58102a4038f3">RdmnetControllerResponderIdsReceivedCallback</a> responder_ids_received, void *context)</td></tr>
 <tr class="memdesc:ga561941b5e39514b8015e936130c6e544"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the main callbacks in an RDMnet controller configuration structure.  <a href="#ga561941b5e39514b8015e936130c6e544">More...</a><br /></td></tr>
 <tr class="separator:ga561941b5e39514b8015e936130c6e544"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gabe33db1a11bf3b2b14e7c7a51f612a42"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__controller.html#gabe33db1a11bf3b2b14e7c7a51f612a42">rdmnet_controller_set_rdm_data</a> (<a class="el" href="struct_rdmnet_controller_config.html">RdmnetControllerConfig</a> *config, const char *manufacturer_label, const char *device_model_description, const char *software_version_label, const char *device_label, bool device_label_settable)</td></tr>
-<tr class="memdesc:gabe33db1a11bf3b2b14e7c7a51f612a42"><td class="mdescLeft">&#160;</td><td class="mdescRight">Provide a set of basic information that the library will use for responding to RDM commands.  <a href="#gabe33db1a11bf3b2b14e7c7a51f612a42">More...</a><br /></td></tr>
-<tr class="separator:gabe33db1a11bf3b2b14e7c7a51f612a42"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga93c798fdaf4d9fc3f97fab91605db300"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__controller.html#ga93c798fdaf4d9fc3f97fab91605db300">rdmnet_controller_set_rdm_cmd_callbacks</a> (<a class="el" href="struct_rdmnet_controller_config.html">RdmnetControllerConfig</a> *config, <a class="el" href="group__rdmnet__controller.html#gaaa476968b549c871baabcee7c82d6a2a">RdmnetControllerRdmCommandReceivedCallback</a> rdm_command_received, <a class="el" href="group__rdmnet__controller.html#gaf6e70216a637a3fa632bb77d22c27b0c">RdmnetControllerLlrpRdmCommandReceivedCallback</a> llrp_rdm_command_received, uint8_t *response_buf, void *context)</td></tr>
 <tr class="memdesc:ga93c798fdaf4d9fc3f97fab91605db300"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set callbacks to handle RDM commands in an RDMnet controller configuration structure.  <a href="#ga93c798fdaf4d9fc3f97fab91605db300">More...</a><br /></td></tr>
 <tr class="separator:ga93c798fdaf4d9fc3f97fab91605db300"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2005,72 +2002,6 @@ Functions</h2></td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">llrp_rdm_command_received</td><td>Callback called when a controller receives an RDM command over LLRP. Only required if <code>create_llrp_target == true</code> in the config struct. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">response_buf</td><td>(optional) A data buffer used to respond synchronously to RDM commands. See <a class="el" href="handling_rdm_commands.html">Handling RDM Commands</a> for more information. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">context</td><td>(optional) Pointer to opaque data passed back with each callback. </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="gabe33db1a11bf3b2b14e7c7a51f612a42"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gabe33db1a11bf3b2b14e7c7a51f612a42">&#9670;&nbsp;</a></span>rdmnet_controller_set_rdm_data()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void rdmnet_controller_set_rdm_data </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_rdmnet_controller_config.html">RdmnetControllerConfig</a> *&#160;</td>
-          <td class="paramname"><em>config</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>manufacturer_label</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>device_model_description</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>software_version_label</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>device_label</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>device_label_settable</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Provide a set of basic information that the library will use for responding to RDM commands. </p>
-<p>RDMnet controllers are required to respond to a basic set of RDM commands. This library provides two possible approaches to this. With this approach, the library stores some basic data about a controller instance and handles and responds to all RDM commands internally. Use this function to set that data in the configuration structure. See <a class="el" href="using_controller.html">Using the Controller API</a> for more information.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[out]</td><td class="paramname">config</td><td>Config struct in which to set the data. This doesn't copy the strings themselves yet; they must remain valid in their original location until the config struct is passed to <a class="el" href="group__rdmnet__controller.html#ga1860f48d433795826ce3edc8f6963c51" title="Create a new instance of RDMnet controller functionality. ">rdmnet_controller_create()</a>. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">manufacturer_label</td><td>A string representing the manufacturer of the controller. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">device_model_description</td><td>A string representing the name of the product model implementing the controller. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">software_version_label</td><td>A string representing the software version of the controller. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">device_label</td><td>A string representing a user-settable name for this controller instance. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">device_label_settable</td><td>Whether the library should allow the device label to be changed remotely. </td></tr>
   </table>
   </dd>
 </dl>

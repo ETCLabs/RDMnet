@@ -214,10 +214,7 @@ The full API reference is organized by <a href="modules.html">module</a>.
 <li>Standardization of the behavior of interfaces between IP and DMX512 (commonly referred to as <em>gateways</em>)</li>
 </ul>
 <h2>Platforms</h2>
-<p>RDMnet is currently ported for the following platforms:</p><ul>
-<li>macOS</li>
-<li>Microsoft Windows</li>
-</ul>
+<p>RDMnet supports all platforms targeted by <a href="https://github.com/ETCLabs/EtcPal">EtcPal</a>, including Microsoft Windows, macOS, Linux and several embedded RTOS platforms.</p>
 <h2>Dependencies</h2>
 <h3>EtcPal</h3>
 <p>RDMnet depends on ETC's Platform Abstraction Layer (EtcPal) so that it can be platform-neutral. By default, EtcPal is automatically included as a submodule in the <code>external</code> directory for RDMnet source builds. The CMake configuration will automatically update and pull the submodule before building.</p>

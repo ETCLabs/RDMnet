@@ -74,6 +74,5 @@ var group__rdmnet__controller =
     [ "rdmnet_controller_send_rdm_update", "group__rdmnet__controller.html#ga3cfdd5724ba85da7a3824281aab9e967", null ],
     [ "rdmnet_controller_send_set_command", "group__rdmnet__controller.html#ga6aa332a269e9e540030cbcb6ece7721e", null ],
     [ "rdmnet_controller_set_callbacks", "group__rdmnet__controller.html#ga561941b5e39514b8015e936130c6e544", null ],
-    [ "rdmnet_controller_set_rdm_cmd_callbacks", "group__rdmnet__controller.html#ga93c798fdaf4d9fc3f97fab91605db300", null ],
-    [ "rdmnet_controller_set_rdm_data", "group__rdmnet__controller.html#gabe33db1a11bf3b2b14e7c7a51f612a42", null ]
+    [ "rdmnet_controller_set_rdm_cmd_callbacks", "group__rdmnet__controller.html#ga93c798fdaf4d9fc3f97fab91605db300", null ]
 ];
