@@ -75,6 +75,10 @@ source_group(TREE ${RDMNET_INCLUDE}/rdmnet PREFIX include FILES
    ${RDMNET_API_PUBLIC_HEADERS}
 )
 
+# Write a pkg-config file
+set(RDMNET_PKGCONFIG_INTERMEDIATE_FILE ${CMAKE_BINARY_DIR}/${RDMNET_LIB_TARGET_NAME}.pc)
+configure_file(${RDMNET_ROOT}/cmake/RDMnet.pc.in ${RDMNET_PKGCONFIG_INTERMEDIATE_FILE} @ONLY)
+
 # Installation
 install(TARGETS ${RDMNET_LIB_TARGET_NAME}
   EXPORT ${RDMNET_TARGETS_EXPORT_NAME}
@@ -82,6 +86,7 @@ install(TARGETS ${RDMNET_LIB_TARGET_NAME}
   INCLUDES DESTINATION include
 )
 install(DIRECTORY ${RDMNET_ROOT}/include/rdmnet DESTINATION include FILES_MATCHING PATTERN "*.h")
+install(FILES ${RDMNET_PKGCONFIG_INTERMEDIATE_FILE} DESTINATION lib/pkgconfig)
 
 #################################### Broker ###################################
 
@@ -107,12 +112,17 @@ if(WIN32 OR APPLE OR UNIX)
     ${RDMNET_BROKER_PUBLIC_HEADERS}
   )
 
+  # Write a pkg-config file
+  set(RDMNET_BROKER_PKGCONFIG_INTERMEDIATE_FILE ${CMAKE_BINARY_DIR}/${RDMNET_BROKER_LIB_TARGET_NAME}.pc)
+  configure_file(${RDMNET_ROOT}/cmake/RDMnetBroker.pc.in ${RDMNET_BROKER_PKGCONFIG_INTERMEDIATE_FILE} @ONLY)
+
+  # Installation
   install(TARGETS ${RDMNET_BROKER_LIB_TARGET_NAME}
     EXPORT ${RDMNET_TARGETS_EXPORT_NAME}
     ARCHIVE DESTINATION lib
     INCLUDES DESTINATION include
   )
-
+  install(FILES ${RDMNET_BROKER_PKGCONFIG_INTERMEDIATE_FILE} DESTINATION lib/pkgconfig)
 endif()
 
 ## Create the CMake config files that will be exported with the built DLL

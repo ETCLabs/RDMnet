@@ -1,0 +1,12 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+includedir=${prefix}/include
+libdir=${exec_prefix}/lib
+
+Name: @RDMNET_BROKER_LIB_TARGET_NAME@
+Description: Implementation of RDMnet (ANSI E1.33) Broker functionality
+Version: @PROJECT_VERSION@
+URL: https://github.com/ETCLabs/RDMnet
+Requires: @RDMNET_LIB_TARGET_NAME@ >= @PROJECT_VERSION@
+Cflags: -I${includedir}
+Libs: -L${libdir} -l@RDMNET_BROKER_LIB_TARGET_NAME@
