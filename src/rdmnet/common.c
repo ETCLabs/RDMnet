@@ -211,6 +211,7 @@ void rdmnet_deinit(void)
 // clang-format off
 static const char* kRptStatusCodeStrings[] =
 {
+  "Invalid RPT Status code",
   "Destination RPT UID not found",
   "Timeout waiting for RDM response from responder",
   "Invalid RDM response received from responder",
