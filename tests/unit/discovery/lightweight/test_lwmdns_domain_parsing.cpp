@@ -23,7 +23,7 @@
 #include "gtest/gtest.h"
 #include "etcpal_mock/common.h"
 
-class TestLwMdnsCommon : public testing::Test
+class TestLwMdnsDomainParsing : public testing::Test
 {
 protected:
   void SetUp() override
@@ -35,7 +35,7 @@ protected:
   void TearDown() override { lwmdns_common_module_deinit(); }
 };
 
-TEST_F(TestLwMdnsCommon, ParsesNormalDomainName)
+TEST_F(TestLwMdnsDomainParsing, ParsesNormalDomainName)
 {
   // clang-format off
   const uint8_t msg[] = {
@@ -54,7 +54,7 @@ TEST_F(TestLwMdnsCommon, ParsesNormalDomainName)
   EXPECT_EQ(name.name_ptr, nullptr);
 }
 
-TEST_F(TestLwMdnsCommon, ParsesDomainNameWithPointer)
+TEST_F(TestLwMdnsDomainParsing, ParsesDomainNameWithPointer)
 {
   // clang-format off
   const uint8_t msg[] = {
@@ -80,7 +80,7 @@ TEST_F(TestLwMdnsCommon, ParsesDomainNameWithPointer)
   EXPECT_EQ(name.name_ptr, &msg[22]);
 }
 
-TEST_F(TestLwMdnsCommon, HandlesMalformedDomainNameTooShort)
+TEST_F(TestLwMdnsDomainParsing, HandlesMalformedDomainNameTooShort)
 {
   // clang-format off
   const uint8_t msg[] = {
@@ -96,7 +96,7 @@ TEST_F(TestLwMdnsCommon, HandlesMalformedDomainNameTooShort)
   EXPECT_EQ(lwmdns_parse_domain_name(msg, msg, sizeof(msg), &name), nullptr);
 }
 
-TEST_F(TestLwMdnsCommon, HandlesMalformedDomainNameMissingNull)
+TEST_F(TestLwMdnsDomainParsing, HandlesMalformedDomainNameMissingNull)
 {
   // clang-format off
   const uint8_t msg[] = {
@@ -110,4 +110,68 @@ TEST_F(TestLwMdnsCommon, HandlesMalformedDomainNameMissingNull)
 
   DnsDomainName name;
   EXPECT_EQ(lwmdns_parse_domain_name(msg, msg, sizeof(msg), &name), nullptr);
+}
+
+TEST_F(TestLwMdnsDomainParsing, DomainNameMatchesServiceWorksWithLocalDomain)
+{
+  const uint8_t msg[] = {
+      21, 84,  101, 115, 116, 32,  83,  101, 114, 118, 105,
+      99, 101, 32,  73,  110, 115, 116, 97,  110, 99,  101,  // Test Service Instance
+      7,  95,  114, 100, 109, 110, 101, 116,                 // _rdmnet
+      4,  95,  116, 99,  112,                                // _tcp
+      5,  108, 111, 99,  97,  108, 0                         // local
+  };
+
+  DnsDomainName name;
+  name.name = msg;
+  EXPECT_TRUE(lwmdns_domain_name_matches_service(&name, "Test Service Instance", "_rdmnet._tcp", "local"));
+  EXPECT_TRUE(lwmdns_domain_name_matches_service(&name, "Test Service Instance", "_rdmnet._tcp", "local."));
+  EXPECT_FALSE(lwmdns_domain_name_matches_service(&name, "Test Service Instanc", "_rdmnet._tcp", "local"));
+  EXPECT_FALSE(lwmdns_domain_name_matches_service(&name, "Test Service Instance", "_rdmnet._udp", "local"));
+  EXPECT_FALSE(lwmdns_domain_name_matches_service(&name, "Test Service Instance", "_rdmnet._tcp", "example.com"));
+}
+
+TEST_F(TestLwMdnsDomainParsing, DomainNameMatchesServiceWorksWithNonLocalDomain)
+{
+  const uint8_t msg[] = {
+      21, 84,  101, 115, 116, 32,  83,  101, 114, 118, 105,
+      99, 101, 32,  73,  110, 115, 116, 97,  110, 99,  101,  // Test Service Instance
+      7,  95,  114, 100, 109, 110, 101, 116,                 // _rdmnet
+      4,  95,  116, 99,  112,                                // _tcp
+      9,  100, 110, 115, 109, 105, 114, 114, 111, 114,       // dnsmirror
+      7,  101, 120, 97,  109, 112, 108, 101,                 // example
+      3,  99,  111, 109, 0                                   // com
+  };
+
+  DnsDomainName name;
+  name.name = msg;
+  EXPECT_TRUE(
+      lwmdns_domain_name_matches_service(&name, "Test Service Instance", "_rdmnet._tcp", "dnsmirror.example.com"));
+  EXPECT_TRUE(
+      lwmdns_domain_name_matches_service(&name, "Test Service Instance", "_rdmnet._tcp", "dnsmirror.example.com."));
+  EXPECT_FALSE(
+      lwmdns_domain_name_matches_service(&name, "Test Service Instanc", "_rdmnet._tcp", "dnsmirror.example.com"));
+  EXPECT_FALSE(
+      lwmdns_domain_name_matches_service(&name, "Test Service Instance", "_rdmnet._udp", "dnsmirror.example.com"));
+  EXPECT_FALSE(lwmdns_domain_name_matches_service(&name, "Test Service Instance", "_rdmnet._tcp", "local"));
+}
+
+TEST_F(TestLwMdnsDomainParsing, DomainNameMatchesServiceHandlesMalformed)
+{
+  const uint8_t msg[] = {
+      21, 84,  101, 115, 116, 32,  83,  101, 114, 118, 105,
+      99, 101, 32,  73,  110, 115, 116, 97,  110, 99,  101,  // Test Service Instance
+      7,  95,  114, 100, 109, 110, 101, 116,                 // _rdmnet
+      4,  95,  116, 99,  112,                                // _tcp
+      5,  108, 111, 99,  97,  108, 0                         // local
+  };
+
+  DnsDomainName name;
+  name.name = msg;
+  EXPECT_FALSE(lwmdns_domain_name_matches_service(&name, NULL, "_rdmnet._tcp", "local"));
+  EXPECT_FALSE(lwmdns_domain_name_matches_service(&name, "Test Service Instance", NULL, "local"));
+  EXPECT_FALSE(lwmdns_domain_name_matches_service(&name, "Test Service Instance", "_rdmnet._tcp", NULL));
+  EXPECT_FALSE(lwmdns_domain_name_matches_service(&name, "Test Service Instance", "_rdmnet", "local"));
+  EXPECT_FALSE(lwmdns_domain_name_matches_service(&name, "Test Service Instance", "_rdmnet.", "local"));
+  EXPECT_FALSE(lwmdns_domain_name_matches_service(&name, "Test Service Instance", "._tcp", "local"));
 }

@@ -118,6 +118,13 @@ typedef struct DnsTxtRecord
 } DnxTxtRecord;
 */
 
+typedef enum
+{
+  kTxtRecordParseOkDataChanged,
+  kTxtRecordParseOkNoDataChanged,
+  kTxtRecordParseError
+} txt_record_parse_result_t;
+
 extern const EtcPalIpAddr* kMdnsIpv4Address;
 extern const EtcPalIpAddr* kMdnsIpv6Address;
 
@@ -140,7 +147,9 @@ bool           lwmdns_domain_name_matches_service(const DnsDomainName* name,
                                                   const char*          domain);
 void           lwmdns_convert_domain_name_to_string(const DnsDomainName* name, char* str_buf);
 
-bool lwmdns_txt_record_to_broker_info(const uint8_t* txt_data, uint16_t txt_data_len, DiscoveredBroker* db);
+txt_record_parse_result_t lwmdns_txt_record_to_broker_info(const uint8_t*    txt_data,
+                                                           uint16_t          txt_data_len,
+                                                           DiscoveredBroker* db);
 
 #ifdef __cplusplus
 }

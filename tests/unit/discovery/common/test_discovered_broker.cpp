@@ -20,8 +20,10 @@
 #include "rdmnet/disc/discovered_broker.h"
 
 #include <array>
+#include <cstring>
 #include <memory>
 #include <string>
+#include <vector>
 #include "etcpal/cpp/uuid.h"
 #include "etcpal/cpp/inet.h"
 #include "rdm/cpp/uid.h"
@@ -199,6 +201,24 @@ TEST_F(TestDiscoveredBroker, AddMultipleTxtRecordItemsWorks)
     ASSERT_EQ(db->additional_txt_items_data[i].value_len, static_cast<uint8_t>(value.length()));
     EXPECT_EQ(std::memcmp(db->additional_txt_items_data[i].value, value.c_str(), value.length()), 0);
   }
+}
+
+TEST_F(TestDiscoveredBroker, AddBinaryTxtRecordItemWorks)
+{
+  auto db = MakeDefaultDiscoveredBroker();
+
+  const std::vector<uint8_t> key = {0x54, 0x65, 0x73, 0x74, 0x20, 0x4b, 0x65, 0x79};                // Test Key
+  const std::vector<uint8_t> value = {0x54, 0x65, 0x73, 0x74, 0x20, 0x76, 0x61, 0x6C, 0x75, 0x65};  // Test Value
+
+  ASSERT_TRUE(discovered_broker_add_binary_txt_record_item(db.get(), key.data(), static_cast<uint8_t>(key.size()),
+                                                           value.data(), static_cast<uint8_t>(value.size())));
+
+  EXPECT_EQ(db->num_additional_txt_items, 1u);
+
+  ASSERT_NE(db->additional_txt_items_array, nullptr);
+  EXPECT_STREQ(db->additional_txt_items_array[0].key, "Test Key");
+  EXPECT_EQ(db->additional_txt_items_array[0].value_len, value.size());
+  EXPECT_EQ(std::memcmp(db->additional_txt_items_array[0].value, value.data(), value.size()), 0);
 }
 
 TEST_F(TestDiscoveredBroker, FindByNameWorks)

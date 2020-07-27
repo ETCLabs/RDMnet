@@ -87,6 +87,12 @@ bool              discovered_broker_add_txt_record_item(DiscoveredBroker* db,
                                                         const char*       key,
                                                         const uint8_t*    value,
                                                         uint8_t           value_len);
+bool              discovered_broker_add_binary_txt_record_item(DiscoveredBroker* db,
+                                                               const uint8_t*    key,
+                                                               uint8_t           key_len,
+                                                               const uint8_t*    value,
+                                                               uint8_t           value_len);
+
 void              discovered_broker_fill_disc_info(const DiscoveredBroker* db, RdmnetBrokerDiscInfo* broker_info);
 DiscoveredBroker* discovered_broker_find(DiscoveredBroker*                 list_head,
                                          DiscoveredBrokerPredicateFunction predicate,
