@@ -1,0 +1,939 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen 1.8.13" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RDMnet: Globals</title>
+  <link href="tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="dynsections.js"></script>
+  <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+</script>
+  <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css" />
+  <!--BEGIN CUSTOM SCRIPTS-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <script type="text/javascript">
+    $(function () { selectAllC() });
+  </script>
+  <script type="text/javascript">
+    function selectAllC() {
+      // Enable all C-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_c")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_c")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectAllCpp() {
+      // Enable all C++-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_cpp")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C++-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_cpp")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectLanguage(evt, block_id, language) {
+      // Get all elements with class="tabcontent" and hide them
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.startsWith("div_" + block_id)) {
+          tabcontent[i].style.display = "none";
+        }
+      }
+      // Get all elements with class="tablinks" and remove the class "active"
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.startsWith("button_" + block_id)) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById("div_" + block_id + "_" + language).style.display = "block";
+      if (!evt.currentTarget.className.includes("active")) {
+        evt.currentTarget.className += " active";
+      }
+    }
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">RDMnet
+                &#160;<span id="projectnumber">Staging for pull request 39</span>
+              </div>
+              <div id="projectbrief">Implementation of ANSI E1.33 (RDMnet)</div>
+            </td>
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- end header part -->
+<!-- Generated by Doxygen 1.8.13 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Search');
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('globals_r.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="contents">
+<div class="textblock">Here is a list of all documented functions, variables, defines, enums, and typedefs with links to the documentation:</div>
+
+<h3><a id="index_r"></a>- r -</h3><ul>
+<li>RDMNET_ADDR_TO_DEFAULT_RESPONDER
+: <a class="el" href="group__rdmnet__api__common.html#ga58f3b5c690b7ebd792e8d2851af95ea0">client.h</a>
+</li>
+<li>RDMNET_ADDR_TO_DEFAULT_RESPONDER_SUBDEV
+: <a class="el" href="group__rdmnet__api__common.html#gab46477ea3121a6d1d607839979b169ed">client.h</a>
+</li>
+<li>RDMNET_ADDR_TO_SUB_RESPONDER
+: <a class="el" href="group__rdmnet__api__common.html#ga72d760619ede4c36a44fc4a0fd6913e5">client.h</a>
+</li>
+<li>RDMNET_ADDR_TO_SUB_RESPONDER_SUBDEV
+: <a class="el" href="group__rdmnet__api__common.html#gae9f53dd59d67caf9d97adfd8778191ce">client.h</a>
+</li>
+<li>rdmnet_append_to_saved_rdm_response()
+: <a class="el" href="group__rdmnet__api__common.html#ga480d58441aecb63a71b68b2fce5ba8b5">message.h</a>
+</li>
+<li>RDMNET_ASSERT
+: <a class="el" href="group__rdmnetopts__global.html#gafb1e42a2bf6953c86b78899550950e61">opts.h</a>
+</li>
+<li>RDMNET_BIND_MCAST_SOCKETS_TO_MCAST_ADDRESS
+: <a class="el" href="group__rdmnetopts__core.html#gaabb88c0b6425ab4f5f3c9ba21d98de2e">opts.h</a>
+</li>
+<li>RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT
+: <a class="el" href="group__rdmnet__disc.html#ga235693e0cee6703b1698639bf1a8505d">discovery.h</a>
+</li>
+<li>rdmnet_broker_register_config_init()
+: <a class="el" href="group__rdmnet__disc.html#gaf23b746209600eae870283926e7f7ae1">discovery.h</a>
+</li>
+<li>rdmnet_broker_register_config_set_callbacks()
+: <a class="el" href="group__rdmnet__disc.html#ga1f926a1331a5c44bd69d50786cf453f8">discovery.h</a>
+</li>
+<li>RDMNET_CLIENT_SCOPE_INVALID
+: <a class="el" href="group__rdmnet__api__common.html#gad592a80648a3e35675ff9820831ec85f">client.h</a>
+</li>
+<li>rdmnet_client_scope_t
+: <a class="el" href="group__rdmnet__api__common.html#ga7244ab5c8edb8bc9c1e4792a6c64f798">client.h</a>
+</li>
+<li>RDMNET_CLIENT_SET_DEFAULT_SCOPE
+: <a class="el" href="group__rdmnet__api__common.html#ga8fb92dc67b794d5e54a37ca84331e207">client.h</a>
+</li>
+<li>RDMNET_CLIENT_SET_SCOPE
+: <a class="el" href="group__rdmnet__api__common.html#ga0b906d1d6ed5fcc678e9c530e440b62f">client.h</a>
+</li>
+<li>RDMNET_CLIENT_SET_STATIC_DEFAULT_SCOPE
+: <a class="el" href="group__rdmnet__api__common.html#gab2855ff14aba079140f1070f80140247">client.h</a>
+</li>
+<li>RDMNET_CLIENT_SET_STATIC_SCOPE
+: <a class="el" href="group__rdmnet__api__common.html#ga500c0af02a2db3a6b835f26cf304da85">client.h</a>
+</li>
+<li>rdmnet_command_class_t
+: <a class="el" href="group__rdmnet__api__common.html#ga4139f829781c81c9260601ae9c92cc24">common.h</a>
+</li>
+<li>RDMNET_COMMAND_IS_TO_DEFAULT_RESPONDER
+: <a class="el" href="group__rdmnet__api__common.html#gaacb0f33f5d6610d7ce65b7debccfccd0">message.h</a>
+</li>
+<li>rdmnet_connect_fail_event_t
+: <a class="el" href="group__rdmnet__api__common.html#ga496e65ee0af4670795917a7ba2436fd5">common.h</a>
+</li>
+<li>rdmnet_connect_fail_event_to_string()
+: <a class="el" href="group__rdmnet__api__common.html#ga6113acd9f138cef8466e9cab20e4b086">common.h</a>
+</li>
+<li>rdmnet_connect_status_t
+: <a class="el" href="group__rdmnet__api__common.html#gad6fe81536dc232de7ebab51774ed7b5d">common.h</a>
+</li>
+<li>rdmnet_connect_status_to_string()
+: <a class="el" href="group__rdmnet__api__common.html#gae13ee8a4f55789aedb2cf0bbcf2ca5da">common.h</a>
+</li>
+<li>rdmnet_controller_add_default_scope()
+: <a class="el" href="group__rdmnet__controller.html#ga95f857453eb6b8da8cadaa373420ab61">controller.h</a>
+</li>
+<li>rdmnet_controller_add_scope()
+: <a class="el" href="group__rdmnet__controller.html#ga4363e0f31f3f85f5526b55d2c034ed4e">controller.h</a>
+</li>
+<li>rdmnet_controller_change_scope()
+: <a class="el" href="group__rdmnet__controller.html#ga177468b8bcc585463cd96b862a60b568">controller.h</a>
+</li>
+<li>rdmnet_controller_change_search_domain()
+: <a class="el" href="group__rdmnet__controller.html#ga9649f1ecd380cb951d79e48147e321bc">controller.h</a>
+</li>
+<li>RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT
+: <a class="el" href="group__rdmnet__controller.html#gab61905ff5228301100c6d70c58e77661">controller.h</a>
+</li>
+<li>rdmnet_controller_config_init()
+: <a class="el" href="group__rdmnet__controller.html#ga8e67a03091de017e06c0821abc29281b">controller.h</a>
+</li>
+<li>rdmnet_controller_create()
+: <a class="el" href="group__rdmnet__controller.html#ga1860f48d433795826ce3edc8f6963c51">controller.h</a>
+</li>
+<li>rdmnet_controller_destroy()
+: <a class="el" href="group__rdmnet__controller.html#ga69f5287dd825ac492abe10847189d777">controller.h</a>
+</li>
+<li>rdmnet_controller_get_scope()
+: <a class="el" href="group__rdmnet__controller.html#ga9853c984a7a89db2d947709e5206f852">controller.h</a>
+</li>
+<li>RDMNET_CONTROLLER_INVALID
+: <a class="el" href="group__rdmnet__controller.html#ga7f5f9c4cd35fc571ee83cf0a0758177b">controller.h</a>
+</li>
+<li>RDMNET_CONTROLLER_RDM_DATA_DEFAULT_INIT
+: <a class="el" href="group__rdmnet__controller.html#gae0e7e8985e5fe46c4658a3606101421b">controller.h</a>
+</li>
+<li>rdmnet_controller_remove_scope()
+: <a class="el" href="group__rdmnet__controller.html#gad0fd4619e23d92a9e6352f2b05fa0c61">controller.h</a>
+</li>
+<li>rdmnet_controller_request_client_list()
+: <a class="el" href="group__rdmnet__controller.html#ga6d30907e6d09ada38a1be228d0f6809c">controller.h</a>
+</li>
+<li>rdmnet_controller_request_responder_ids()
+: <a class="el" href="group__rdmnet__controller.html#ga94cd30fd8391da362ba2331d24ffadae">controller.h</a>
+</li>
+<li>rdmnet_controller_send_get_command()
+: <a class="el" href="group__rdmnet__controller.html#ga872fb3896fb620b339635bd40830e03f">controller.h</a>
+</li>
+<li>rdmnet_controller_send_llrp_ack()
+: <a class="el" href="group__rdmnet__controller.html#ga32a8dbb19fa5c5676e924d2b9a2cf6b1">controller.h</a>
+</li>
+<li>rdmnet_controller_send_llrp_nack()
+: <a class="el" href="group__rdmnet__controller.html#gad603ab1e8bc654eceb93bfc44b1aaf82">controller.h</a>
+</li>
+<li>rdmnet_controller_send_rdm_ack()
+: <a class="el" href="group__rdmnet__controller.html#ga35282bdf188141931262e70be1259054">controller.h</a>
+</li>
+<li>rdmnet_controller_send_rdm_command()
+: <a class="el" href="group__rdmnet__controller.html#gac9c429fe45d5bd09b5d6d9edd18da341">controller.h</a>
+</li>
+<li>rdmnet_controller_send_rdm_nack()
+: <a class="el" href="group__rdmnet__controller.html#gad06e68dc41f45aa388491cf89dedb737">controller.h</a>
+</li>
+<li>rdmnet_controller_send_rdm_update()
+: <a class="el" href="group__rdmnet__controller.html#ga3cfdd5724ba85da7a3824281aab9e967">controller.h</a>
+</li>
+<li>rdmnet_controller_send_set_command()
+: <a class="el" href="group__rdmnet__controller.html#ga6aa332a269e9e540030cbcb6ece7721e">controller.h</a>
+</li>
+<li>rdmnet_controller_set_callbacks()
+: <a class="el" href="group__rdmnet__controller.html#ga561941b5e39514b8015e936130c6e544">controller.h</a>
+</li>
+<li>rdmnet_controller_set_rdm_cmd_callbacks()
+: <a class="el" href="group__rdmnet__controller.html#ga93c798fdaf4d9fc3f97fab91605db300">controller.h</a>
+</li>
+<li>rdmnet_controller_t
+: <a class="el" href="group__rdmnet__controller.html#gae857478c160127b99ef4c092ac608fcb">controller.h</a>
+</li>
+<li>rdmnet_copy_saved_ept_data()
+: <a class="el" href="group__rdmnet__api__common.html#ga6e9e2c2e2abd61cb59db234583e90a77">message.h</a>
+</li>
+<li>rdmnet_copy_saved_ept_status()
+: <a class="el" href="group__rdmnet__api__common.html#gadbee09c7332dd56aed9be717689d4904">message.h</a>
+</li>
+<li>rdmnet_copy_saved_llrp_rdm_response()
+: <a class="el" href="group__rdmnet__api__common.html#ga3f9e20a7230b89ba6a9c99bafb3ff60d">message.h</a>
+</li>
+<li>rdmnet_copy_saved_rdm_response()
+: <a class="el" href="group__rdmnet__api__common.html#ga0ef8939b66788309e425357245cda524">message.h</a>
+</li>
+<li>rdmnet_copy_saved_rpt_status()
+: <a class="el" href="group__rdmnet__api__common.html#gac82388d3b3fe3487842c3157ad7889ba">message.h</a>
+</li>
+<li>rdmnet_deinit()
+: <a class="el" href="group__rdmnet__api__common.html#gaba69f27b44e5b49f8635a75514a6c4da">common.h</a>
+</li>
+<li>rdmnet_device_add_dynamic_responders()
+: <a class="el" href="group__rdmnet__device.html#gaccaa7f6e0c7393243948ae6f84bad518">device.h</a>
+</li>
+<li>rdmnet_device_add_physical_endpoint()
+: <a class="el" href="group__rdmnet__device.html#ga669ad8832cd619410d3baa0b7cdcdee5">device.h</a>
+</li>
+<li>rdmnet_device_add_physical_endpoints()
+: <a class="el" href="group__rdmnet__device.html#ga9be0a0a2eac339ced29d45553ebf59f4">device.h</a>
+</li>
+<li>rdmnet_device_add_physical_responders()
+: <a class="el" href="group__rdmnet__device.html#ga24588d30c5f1613587bf8dc3ecaa5e8c">device.h</a>
+</li>
+<li>rdmnet_device_add_static_responders()
+: <a class="el" href="group__rdmnet__device.html#ga1137858602cb0aa4b57ad5c16804225c">device.h</a>
+</li>
+<li>rdmnet_device_add_virtual_endpoint()
+: <a class="el" href="group__rdmnet__device.html#gaa4712d4dc1131e6d6390ce157c0aeb11">device.h</a>
+</li>
+<li>rdmnet_device_add_virtual_endpoints()
+: <a class="el" href="group__rdmnet__device.html#gaa07ae1f6ddeb9c25ed4b4317dbc3cac3">device.h</a>
+</li>
+<li>rdmnet_device_change_scope()
+: <a class="el" href="group__rdmnet__device.html#ga632bb5b71db04e29a77193ecd33b90d5">device.h</a>
+</li>
+<li>rdmnet_device_change_search_domain()
+: <a class="el" href="group__rdmnet__device.html#gac29a08a37d26b75aa9bb1f554de996fb">device.h</a>
+</li>
+<li>RDMNET_DEVICE_CONFIG_DEFAULT_INIT
+: <a class="el" href="group__rdmnet__device.html#gac8e03e329deb576755450ed19c0d5ca8">device.h</a>
+</li>
+<li>rdmnet_device_config_init()
+: <a class="el" href="group__rdmnet__device.html#gad3235f1353f3806a765eae12b7e3d199">device.h</a>
+</li>
+<li>rdmnet_device_create()
+: <a class="el" href="group__rdmnet__device.html#gaeed7f09d54c4f10901ab68a7c3df5fdd">device.h</a>
+</li>
+<li>rdmnet_device_destroy()
+: <a class="el" href="group__rdmnet__device.html#ga11d7eec0a099562a80d9243d8c08042c">device.h</a>
+</li>
+<li>rdmnet_device_get_scope()
+: <a class="el" href="group__rdmnet__device.html#gae1083532f027fa65abbc8c0f38c3c425">device.h</a>
+</li>
+<li>RDMNET_DEVICE_INVALID
+: <a class="el" href="group__rdmnet__device.html#ga42be52a101f03361b7db0b29a063516a">device.h</a>
+</li>
+<li>rdmnet_device_remove_dynamic_responders()
+: <a class="el" href="group__rdmnet__device.html#gafb80747a8278cc5102a0cf024072a3a1">device.h</a>
+</li>
+<li>rdmnet_device_remove_endpoint()
+: <a class="el" href="group__rdmnet__device.html#ga1002d3ef2a1e59f4d501023e88032cb1">device.h</a>
+</li>
+<li>rdmnet_device_remove_endpoints()
+: <a class="el" href="group__rdmnet__device.html#gafa8247fec4c7b2289c6775e8a641c076">device.h</a>
+</li>
+<li>rdmnet_device_remove_physical_responders()
+: <a class="el" href="group__rdmnet__device.html#ga238895e8a492e4aafcbe544278b144b8">device.h</a>
+</li>
+<li>rdmnet_device_remove_static_responders()
+: <a class="el" href="group__rdmnet__device.html#gaa0075ff40f1a681f558e10d586df89e8">device.h</a>
+</li>
+<li>rdmnet_device_send_llrp_ack()
+: <a class="el" href="group__rdmnet__device.html#gacb846f916ae63fe3496cc08a498a066c">device.h</a>
+</li>
+<li>rdmnet_device_send_llrp_nack()
+: <a class="el" href="group__rdmnet__device.html#gaaec37bb135320e668870154e1efee577">device.h</a>
+</li>
+<li>rdmnet_device_send_rdm_ack()
+: <a class="el" href="group__rdmnet__device.html#gace1ea6c76a6b3f441c1f7ccaa27e9aa6">device.h</a>
+</li>
+<li>rdmnet_device_send_rdm_nack()
+: <a class="el" href="group__rdmnet__device.html#ga1b76b6f44ed938ecbeb8b6edd8d2eea7">device.h</a>
+</li>
+<li>rdmnet_device_send_rdm_update()
+: <a class="el" href="group__rdmnet__device.html#ga72a289e9c87633805e4c1e9b5dbc3f07">device.h</a>
+</li>
+<li>rdmnet_device_send_rdm_update_from_responder()
+: <a class="el" href="group__rdmnet__device.html#ga45e7e46d66915ae79392f054a2f5e880">device.h</a>
+</li>
+<li>rdmnet_device_send_status()
+: <a class="el" href="group__rdmnet__device.html#gaff1d43c2f68cd8670d15fa5459d41375">device.h</a>
+</li>
+<li>rdmnet_device_set_callbacks()
+: <a class="el" href="group__rdmnet__device.html#ga420e494f9989ee6f1add982049b35050">device.h</a>
+</li>
+<li>rdmnet_device_t
+: <a class="el" href="group__rdmnet__device.html#gad17bb8836a86ad4c8a774cd94a01d63c">device.h</a>
+</li>
+<li>rdmnet_disc_register_broker()
+: <a class="el" href="group__rdmnet__disc.html#ga3eb488508ecde87c1c721b5bb1dbc14b">discovery.h</a>
+</li>
+<li>rdmnet_disc_start_monitoring()
+: <a class="el" href="group__rdmnet__disc.html#ga1999940ffed68c70e24de44855ffea09">discovery.h</a>
+</li>
+<li>rdmnet_disc_stop_monitoring()
+: <a class="el" href="group__rdmnet__disc.html#ga4633144d80e2e43f3fcc04104e958ef6">discovery.h</a>
+</li>
+<li>rdmnet_disc_stop_monitoring_all()
+: <a class="el" href="group__rdmnet__disc.html#gaca3cf1d904824d84518f1aa9f8c1207b">discovery.h</a>
+</li>
+<li>rdmnet_disc_unregister_broker()
+: <a class="el" href="group__rdmnet__disc.html#gaba7836f5a2dda01823ed110d9033970d">discovery.h</a>
+</li>
+<li>rdmnet_disconnect_event_t
+: <a class="el" href="group__rdmnet__api__common.html#ga5c1cfd964635eb67c610f2007b4a1f3f">common.h</a>
+</li>
+<li>rdmnet_disconnect_event_to_string()
+: <a class="el" href="group__rdmnet__api__common.html#ga6b05d48dd09416378ee1711c2cf126ae">common.h</a>
+</li>
+<li>rdmnet_disconnect_reason_t
+: <a class="el" href="group__rdmnet__api__common.html#ga3eb1adaf6e830a807d1dcfbc64197222">common.h</a>
+</li>
+<li>rdmnet_disconnect_reason_to_string()
+: <a class="el" href="group__rdmnet__api__common.html#gac008933ba41562152f5f197f9bbda680">common.h</a>
+</li>
+<li>RDMNET_DYNAMIC_MEM
+: <a class="el" href="group__rdmnetopts__global.html#ga713876c29d15cbbc1c2ad1b4a2537555">opts.h</a>
+</li>
+<li>rdmnet_dynamic_uid_status_t
+: <a class="el" href="group__rdmnet__api__common.html#gafc5c9ee7dffbca259051716bacea9620">common.h</a>
+</li>
+<li>rdmnet_dynamic_uid_status_to_string()
+: <a class="el" href="group__rdmnet__api__common.html#ga362e057a96421081d8551d65bf403b6a">common.h</a>
+</li>
+<li>rdmnet_ept_client_add_default_scope()
+: <a class="el" href="group__rdmnet__ept__client.html#gae1c2cc3b36ff8712cea0e62416c326af">ept_client.h</a>
+</li>
+<li>rdmnet_ept_client_add_scope()
+: <a class="el" href="group__rdmnet__ept__client.html#gaabb006c941893a84cf4727d672322a94">ept_client.h</a>
+</li>
+<li>rdmnet_ept_client_change_scope()
+: <a class="el" href="group__rdmnet__ept__client.html#ga628b145c7da24f890c9b8de9cb0e215c">ept_client.h</a>
+</li>
+<li>RDMNET_EPT_CLIENT_CONFIG_DEFAULT_INIT
+: <a class="el" href="group__rdmnet__ept__client.html#gae4f33c5d2b6c8e0e84871337f41b16ea">ept_client.h</a>
+</li>
+<li>rdmnet_ept_client_config_init()
+: <a class="el" href="group__rdmnet__ept__client.html#ga302e0f0b644d80da1fcbe00a078b748e">ept_client.h</a>
+</li>
+<li>rdmnet_ept_client_create()
+: <a class="el" href="group__rdmnet__ept__client.html#ga3f36b435183b71dcb303901bb814faa8">ept_client.h</a>
+</li>
+<li>rdmnet_ept_client_destroy()
+: <a class="el" href="group__rdmnet__ept__client.html#ga6d22de48655c9f453b2b246e904e6c57">ept_client.h</a>
+</li>
+<li>rdmnet_ept_client_get_scope()
+: <a class="el" href="group__rdmnet__ept__client.html#gaf944404ecb00c42068769459f053ad06">ept_client.h</a>
+</li>
+<li>RDMNET_EPT_CLIENT_INVALID
+: <a class="el" href="group__rdmnet__ept__client.html#ga603271eb3751c5563831ffbb4e7a4476">ept_client.h</a>
+</li>
+<li>rdmnet_ept_client_remove_scope()
+: <a class="el" href="group__rdmnet__ept__client.html#ga60c152358cb382db23a213d7cbe8999f">ept_client.h</a>
+</li>
+<li>rdmnet_ept_client_request_client_list()
+: <a class="el" href="group__rdmnet__ept__client.html#ga0614b05c349bde99fcac03b5b9ae54dd">ept_client.h</a>
+</li>
+<li>rdmnet_ept_client_send_data()
+: <a class="el" href="group__rdmnet__ept__client.html#ga86c921be6d2aac5dbbb3c66b207947a2">ept_client.h</a>
+</li>
+<li>rdmnet_ept_client_send_status()
+: <a class="el" href="group__rdmnet__ept__client.html#gae13e69030d9049c44ed05cced3092b27">ept_client.h</a>
+</li>
+<li>rdmnet_ept_client_set_callbacks()
+: <a class="el" href="group__rdmnet__ept__client.html#gac3fcdb73055eb584ce97263b1f1a15fa">ept_client.h</a>
+</li>
+<li>rdmnet_ept_client_t
+: <a class="el" href="group__rdmnet__ept__client.html#gafe4439590493e7a8abedabc8de8ab51c">ept_client.h</a>
+</li>
+<li>rdmnet_ept_response_action_t
+: <a class="el" href="group__rdmnet__api__common.html#ga0eb0a252159c7ae727d1e5b2b0244687">common.h</a>
+</li>
+<li>rdmnet_ept_status_code_to_string()
+: <a class="el" href="group__rdmnet__api__common.html#ga1d378dff587acdfa8306c1075e316f4a">common.h</a>
+</li>
+<li>rdmnet_free_saved_ept_data()
+: <a class="el" href="group__rdmnet__api__common.html#gab0ef2d0dace2d4047327c3a6f1d33baf">message.h</a>
+</li>
+<li>rdmnet_free_saved_ept_status()
+: <a class="el" href="group__rdmnet__api__common.html#ga1a0311e9decd926ae40ab2afc1063b9b">message.h</a>
+</li>
+<li>rdmnet_free_saved_rdm_response()
+: <a class="el" href="group__rdmnet__api__common.html#ga192b92f8d612f8098f799ef87e4bea11">message.h</a>
+</li>
+<li>rdmnet_free_saved_rpt_status()
+: <a class="el" href="group__rdmnet__api__common.html#ga5f98ea42e26733ec7923afee2975b6b4">message.h</a>
+</li>
+<li>rdmnet_init()
+: <a class="el" href="group__rdmnet__api__common.html#gac35e678c3cc099a73e9314614215e1d8">common.h</a>
+</li>
+<li>RDMNET_LOG_MSG_PREFIX
+: <a class="el" href="group__rdmnetopts__global.html#ga5f0474e77d60dada179f04312ddb3f56">opts.h</a>
+</li>
+<li>RDMNET_MAX_ADDITIONAL_TXT_ITEMS_PER_DISCOVERED_BROKER
+: <a class="el" href="group__rdmnetopts__disc.html#ga930e7b52cb13c8df86976674be229851">opts.h</a>
+</li>
+<li>RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER
+: <a class="el" href="group__rdmnetopts__disc.html#ga7c12ec677842ecde91652146b67be719">opts.h</a>
+</li>
+<li>RDMNET_MAX_CONTROLLERS
+: <a class="el" href="group__rdmnetopts__client.html#gac9e623b18dcb38277b287d3bb8e7567e">opts.h</a>
+</li>
+<li>RDMNET_MAX_DEVICES
+: <a class="el" href="group__rdmnetopts__client.html#ga70cb0df8a1d90d47d3089ec0e55eaf6c">opts.h</a>
+</li>
+<li>RDMNET_MAX_DISCOVERED_BROKERS
+: <a class="el" href="group__rdmnetopts__disc.html#gab83b8f8cddbd36051c75f84268d001ea">opts.h</a>
+</li>
+<li>RDMNET_MAX_ENDPOINTS_PER_DEVICE
+: <a class="el" href="group__rdmnetopts__client.html#gaf2e797d5e45375b925f1f6bf55d64961">opts.h</a>
+</li>
+<li>RDMNET_MAX_EPT_CLIENTS
+: <a class="el" href="group__rdmnetopts__client.html#ga43d00c5a3e53b74b5e58bdfc0d60d6b8">opts.h</a>
+</li>
+<li>RDMNET_MAX_LLRP_TARGETS
+: <a class="el" href="group__rdmnetopts__llrp.html#ga83f287dd60670a447f5f5e7fbf314dd9">opts.h</a>
+</li>
+<li>RDMNET_MAX_MCAST_NETINTS
+: <a class="el" href="group__rdmnetopts__core.html#gac78f794414f9c445454ba9bfd8ddbcd4">opts.h</a>
+</li>
+<li>RDMNET_MAX_MONITORED_SCOPES
+: <a class="el" href="group__rdmnetopts__disc.html#gae9812fcf31d8d70fd3a79b96824d00aa">opts.h</a>
+</li>
+<li>RDMNET_MAX_PROTOCOLS_PER_EPT_CLIENT
+: <a class="el" href="group__rdmnetopts__client.html#ga1c50a4d51539fa49a2507a6bb039a609">opts.h</a>
+</li>
+<li>RDMNET_MAX_RESPONDERS_PER_DEVICE_ENDPOINT
+: <a class="el" href="group__rdmnetopts__client.html#ga6e15b0a545dc66b5dfe841bcfeed67d4">opts.h</a>
+</li>
+<li>RDMNET_MAX_SCOPES_PER_CONTROLLER
+: <a class="el" href="group__rdmnetopts__client.html#gae7827cb85bcf2d33c8cef1ece557633b">opts.h</a>
+</li>
+<li>RDMNET_MAX_SENT_ACK_OVERFLOW_RESPONSES
+: <a class="el" href="group__rdmnetopts__client.html#ga2dfe29380b1a6c39a8e0fed52332ed36">opts.h</a>
+</li>
+<li>RDMNET_PARSER_MAX_ACK_OVERFLOW_RESPONSES
+: <a class="el" href="group__rdmnetopts__core.html#ga39d8d2e6c1e0310c65ded1b6141d72f4">opts.h</a>
+</li>
+<li>RDMNET_PARSER_MAX_CLIENT_ENTRIES
+: <a class="el" href="group__rdmnetopts__core.html#ga8b82927b885b1c525f58141030a31e45">opts.h</a>
+</li>
+<li>RDMNET_PARSER_MAX_DYNAMIC_UID_ENTRIES
+: <a class="el" href="group__rdmnetopts__core.html#gae5f0432bbffcd8774fae6aae0a17ca5e">opts.h</a>
+</li>
+<li>RDMNET_PARSER_MAX_EPT_SUBPROTS
+: <a class="el" href="group__rdmnetopts__core.html#ga30214a9f1686c87bc276b237fd7a088a">opts.h</a>
+</li>
+<li>RDMNET_PHYSICAL_ENDPOINT_INIT
+: <a class="el" href="group__rdmnet__device.html#gae49152ddbe7def8c181623e8a41590bb">device.h</a>
+</li>
+<li>rdmnet_rdm_response_action_t
+: <a class="el" href="group__rdmnet__api__common.html#gabef0caf0d0a3748a4dd53b2af3b0896a">common.h</a>
+</li>
+<li>RDMNET_REGISTERED_BROKER_INVALID
+: <a class="el" href="group__rdmnet__disc.html#gabe9e133bbe5780a6938b2b7000b36519">discovery.h</a>
+</li>
+<li>rdmnet_registered_broker_t
+: <a class="el" href="group__rdmnet__disc.html#gabd41ce451024533d6fed8d04192cb451">discovery.h</a>
+</li>
+<li>RDMNET_RESP_ORIGINAL_COMMAND_INCLUDED
+: <a class="el" href="group__rdmnet__api__common.html#gae3d2636f051536b2224118cdac2b5770">message.h</a>
+</li>
+<li>rdmnet_rpt_client_type_to_string()
+: <a class="el" href="group__rdmnet__api__common.html#gad9fa849981e1ebf2109c58febd774cf0">message.h</a>
+</li>
+<li>rdmnet_rpt_status_code_to_string()
+: <a class="el" href="group__rdmnet__api__common.html#ga1b678629569257697ec6a7e855c71623">common.h</a>
+</li>
+<li>rdmnet_save_ept_data()
+: <a class="el" href="group__rdmnet__api__common.html#gaa415286760ac23790d49a89bcc75c5ea">message.h</a>
+</li>
+<li>rdmnet_save_ept_status()
+: <a class="el" href="group__rdmnet__api__common.html#gaedd5a417910f696872456a39f15e53fc">message.h</a>
+</li>
+<li>rdmnet_save_llrp_rdm_command()
+: <a class="el" href="group__rdmnet__api__common.html#gaa5f28f78f4a446b9d58cd1a27e8f6764">message.h</a>
+</li>
+<li>rdmnet_save_llrp_rdm_response()
+: <a class="el" href="group__rdmnet__api__common.html#ga534978db963058f2913a62ac143f3a09">message.h</a>
+</li>
+<li>rdmnet_save_rdm_command()
+: <a class="el" href="group__rdmnet__api__common.html#ga5d5b5c221b97833f4480af01b05ca02d">message.h</a>
+</li>
+<li>rdmnet_save_rdm_response()
+: <a class="el" href="group__rdmnet__api__common.html#gad5d372571287234f8d82988755a1e967">message.h</a>
+</li>
+<li>rdmnet_save_rpt_status()
+: <a class="el" href="group__rdmnet__api__common.html#gac21c16cd05695c03c5833ae57d0506c6">message.h</a>
+</li>
+<li>RDMNET_SCOPE_CONFIG_DEFAULT_INIT
+: <a class="el" href="group__rdmnet__api__common.html#gac8a93b214f8dc87d944bc1d6e3e216f4">client.h</a>
+</li>
+<li>RDMNET_SCOPE_MONITOR_CONFIG_DEFAULT_INIT
+: <a class="el" href="group__rdmnet__disc.html#gaffcf02e4e04833828dd8b1e5ea56fa67">discovery.h</a>
+</li>
+<li>rdmnet_scope_monitor_config_init()
+: <a class="el" href="group__rdmnet__disc.html#ga13ad9fa196dd654b8c68bdba2b454812">discovery.h</a>
+</li>
+<li>rdmnet_scope_monitor_config_set_callbacks()
+: <a class="el" href="group__rdmnet__disc.html#ga6a992b031bed7a5185188376597562e5">discovery.h</a>
+</li>
+<li>RDMNET_SCOPE_MONITOR_INVALID
+: <a class="el" href="group__rdmnet__disc.html#ga6ae92681c55ea4e6dce5fc3ee5ce49f0">discovery.h</a>
+</li>
+<li>rdmnet_scope_monitor_t
+: <a class="el" href="group__rdmnet__disc.html#ga96dcc3595a69e9f63acad60d3a07eed8">discovery.h</a>
+</li>
+<li>RDMNET_SYNC_DEFER_EPT_RESPONSE
+: <a class="el" href="group__rdmnet__api__common.html#ga552e1d71c574e91cc6436e75465b35e9">common.h</a>
+</li>
+<li>RDMNET_SYNC_DEFER_RDM_RESPONSE
+: <a class="el" href="group__rdmnet__api__common.html#gae50ccf46c68476302b14c450929ba43d">common.h</a>
+</li>
+<li>RDMNET_SYNC_SEND_EPT_DATA
+: <a class="el" href="group__rdmnet__api__common.html#ga5075bf8b8590d72ad8f2626eb4b19bb9">common.h</a>
+</li>
+<li>RDMNET_SYNC_SEND_EPT_STATUS
+: <a class="el" href="group__rdmnet__api__common.html#gaead1ffc05edef5d42829d8247ff558c0">common.h</a>
+</li>
+<li>RDMNET_SYNC_SEND_RDM_ACK
+: <a class="el" href="group__rdmnet__api__common.html#gaf4ea2570562bd8f38159f2d7413ca188">common.h</a>
+</li>
+<li>RDMNET_SYNC_SEND_RDM_NACK
+: <a class="el" href="group__rdmnet__api__common.html#ga91e96da81698ff84a605e9c21fdc46b3">common.h</a>
+</li>
+<li>RDMNET_TICK_THREAD_PRIORITY
+: <a class="el" href="group__rdmnetopts__core.html#ga01c981e26f97509ad1f1993e8b942cc7">opts.h</a>
+</li>
+<li>RDMNET_TICK_THREAD_STACK
+: <a class="el" href="group__rdmnetopts__core.html#ga4c498e0e0a0e402b62a5212cf6a2fbee">opts.h</a>
+</li>
+<li>RDMNET_VERSION_BUILD
+: <a class="el" href="group__rdmnet__api__common.html#ga6d910673f1cb3154c6ebe4a47337e6e0">version.h</a>
+</li>
+<li>RDMNET_VERSION_MAJOR
+: <a class="el" href="group__rdmnet__api__common.html#ga415a90f88a151b6a40ea40084fd9b75c">version.h</a>
+</li>
+<li>RDMNET_VERSION_MINOR
+: <a class="el" href="group__rdmnet__api__common.html#gabd048d4e3fa00c70c607e93198690551">version.h</a>
+</li>
+<li>RDMNET_VERSION_PATCH
+: <a class="el" href="group__rdmnet__api__common.html#ga38879d6dc103ebeae759b9408eda3056">version.h</a>
+</li>
+<li>RDMNET_VIRTUAL_ENDPOINT_INIT
+: <a class="el" href="group__rdmnet__device.html#ga95829f618daae7db1a9ba04049fc46c6">device.h</a>
+</li>
+<li>RdmnetBrokerDiscInfo
+: <a class="el" href="group__rdmnet__disc.html#ga8fdb89d97255bf07d67dbf695c253648">discovery.h</a>
+</li>
+<li>RdmnetBrokerRegisterConfig
+: <a class="el" href="group__rdmnet__disc.html#ga5cfe4738610c6fc11697adab598ce0d4">discovery.h</a>
+</li>
+<li>RdmnetClientConnectedInfo
+: <a class="el" href="group__rdmnet__api__common.html#gaaf1124635d6b5b294eb793b30fa98c31">client.h</a>
+</li>
+<li>RdmnetClientConnectFailedInfo
+: <a class="el" href="group__rdmnet__api__common.html#ga57b88373159e706810140dd07afa45fd">client.h</a>
+</li>
+<li>RdmnetClientDisconnectedInfo
+: <a class="el" href="group__rdmnet__api__common.html#ga4b4913720598f709c36d429277ee33a8">client.h</a>
+</li>
+<li>RdmnetControllerCallbacks
+: <a class="el" href="group__rdmnet__controller.html#ga1e4f8f8a65b1fc0c50ca953f64743c7f">controller.h</a>
+</li>
+<li>RdmnetControllerClientListUpdateReceivedCallback
+: <a class="el" href="group__rdmnet__controller.html#ga1712f68a36314a1ff1534ccefb799bb5">controller.h</a>
+</li>
+<li>RdmnetControllerConfig
+: <a class="el" href="group__rdmnet__controller.html#ga9f6e6ae554f8c5337fd85a92ccdb197b">controller.h</a>
+</li>
+<li>RdmnetControllerConnectedCallback
+: <a class="el" href="group__rdmnet__controller.html#ga55532c618eaa3bbc7075c2d3b899af49">controller.h</a>
+</li>
+<li>RdmnetControllerConnectFailedCallback
+: <a class="el" href="group__rdmnet__controller.html#ga0162b518e675c81ea3487780d906d739">controller.h</a>
+</li>
+<li>RdmnetControllerDisconnectedCallback
+: <a class="el" href="group__rdmnet__controller.html#ga1d970ae86e7af2ac11f4139e3927980e">controller.h</a>
+</li>
+<li>RdmnetControllerLlrpRdmCommandReceivedCallback
+: <a class="el" href="group__rdmnet__controller.html#gaf6e70216a637a3fa632bb77d22c27b0c">controller.h</a>
+</li>
+<li>RdmnetControllerRdmCmdHandler
+: <a class="el" href="group__rdmnet__controller.html#ga189d86ac26a4d8907672954d3f849e60">controller.h</a>
+</li>
+<li>RdmnetControllerRdmCommandReceivedCallback
+: <a class="el" href="group__rdmnet__controller.html#gaaa476968b549c871baabcee7c82d6a2a">controller.h</a>
+</li>
+<li>RdmnetControllerRdmData
+: <a class="el" href="group__rdmnet__controller.html#ga71a422d054c37caa257aa6c75a58f11e">controller.h</a>
+</li>
+<li>RdmnetControllerRdmResponseReceivedCallback
+: <a class="el" href="group__rdmnet__controller.html#ga936e8ddb41d707184b48439bbab5eb7e">controller.h</a>
+</li>
+<li>RdmnetControllerResponderIdsReceivedCallback
+: <a class="el" href="group__rdmnet__controller.html#ga4408acb283a85c751fae58102a4038f3">controller.h</a>
+</li>
+<li>RdmnetControllerStatusReceivedCallback
+: <a class="el" href="group__rdmnet__controller.html#gad09b6820907dc813fba7e67bf93f2453">controller.h</a>
+</li>
+<li>RdmnetDestinationAddr
+: <a class="el" href="group__rdmnet__api__common.html#gaa9d19cf644c1b1dd92e6a63302c4d1ef">client.h</a>
+</li>
+<li>RdmnetDeviceCallbacks
+: <a class="el" href="group__rdmnet__device.html#gad43a7eb810a6130f7226bc074254cb2e">device.h</a>
+</li>
+<li>RdmnetDeviceConfig
+: <a class="el" href="group__rdmnet__device.html#ga4c6c6bc91904de414b9ca7f9a7a0545f">device.h</a>
+</li>
+<li>RdmnetDeviceConnectedCallback
+: <a class="el" href="group__rdmnet__device.html#gac8f5b31580a4e3a83073663145a21cc1">device.h</a>
+</li>
+<li>RdmnetDeviceConnectFailedCallback
+: <a class="el" href="group__rdmnet__device.html#ga084001e5a7ff5e7c36cccfa199016155">device.h</a>
+</li>
+<li>RdmnetDeviceDisconnectedCallback
+: <a class="el" href="group__rdmnet__device.html#gaced5affc0d338a713b8c45a2ecb3cd98">device.h</a>
+</li>
+<li>RdmnetDeviceDynamicUidStatusCallback
+: <a class="el" href="group__rdmnet__device.html#gada39ef5521e34b3f51d0e43b9e8f29b0">device.h</a>
+</li>
+<li>RdmnetDeviceLlrpRdmCommandReceivedCallback
+: <a class="el" href="group__rdmnet__device.html#ga6ebefeca2e43484a63caeb3431897e7c">device.h</a>
+</li>
+<li>RdmnetDeviceRdmCommandReceivedCallback
+: <a class="el" href="group__rdmnet__device.html#gad0318dc92f521b1a7cf0a00fc86b02ca">device.h</a>
+</li>
+<li>RdmnetDiscBrokerCallbacks
+: <a class="el" href="group__rdmnet__disc.html#gafc448d22cd010a657d0475a0eafb4f4c">discovery.h</a>
+</li>
+<li>RdmnetDiscBrokerFoundCallback
+: <a class="el" href="group__rdmnet__disc.html#ga8f9d261879f95bec257939fb2a4128ef">discovery.h</a>
+</li>
+<li>RdmnetDiscBrokerLostCallback
+: <a class="el" href="group__rdmnet__disc.html#ga242b140792d3a4d16312af7b136f127f">discovery.h</a>
+</li>
+<li>RdmnetDiscBrokerRegisteredCallback
+: <a class="el" href="group__rdmnet__disc.html#ga9adf69f1f9bad6706d034c49d72218d5">discovery.h</a>
+</li>
+<li>RdmnetDiscBrokerRegisterFailedCallback
+: <a class="el" href="group__rdmnet__disc.html#ga04e9844ae14599d7c0598347601ce28a">discovery.h</a>
+</li>
+<li>RdmnetDiscBrokerUpdatedCallback
+: <a class="el" href="group__rdmnet__disc.html#ga7d7aee925082d4817e0b9426b9c8a04e">discovery.h</a>
+</li>
+<li>RdmnetDiscOtherBrokerFoundCallback
+: <a class="el" href="group__rdmnet__disc.html#ga4bcbc84743b2c73d65e42eb0f5c7d928">discovery.h</a>
+</li>
+<li>RdmnetDiscOtherBrokerLostCallback
+: <a class="el" href="group__rdmnet__disc.html#ga056b842a9491951d139807482ac643e9">discovery.h</a>
+</li>
+<li>RdmnetDnsTxtRecordItem
+: <a class="el" href="group__rdmnet__disc.html#ga2098ae93683332e801ce84ec8582fef4">discovery.h</a>
+</li>
+<li>RdmnetDynamicUidAssignmentList
+: <a class="el" href="group__rdmnet__api__common.html#gad0ac3b72f7f0602d60f977f97b3cb79b">message.h</a>
+</li>
+<li>RdmnetDynamicUidMapping
+: <a class="el" href="group__rdmnet__api__common.html#gae012cc1a1a74ee02b7cda91018576b3d">message.h</a>
+</li>
+<li>RdmnetEptClientCallbacks
+: <a class="el" href="group__rdmnet__ept__client.html#ga43cb9fc87073eaf0448bcfba30679183">ept_client.h</a>
+</li>
+<li>RdmnetEptClientClientListUpdateReceivedCallback
+: <a class="el" href="group__rdmnet__ept__client.html#ga9d598e9a448d1fceed5659aa52d47870">ept_client.h</a>
+</li>
+<li>RdmnetEptClientConfig
+: <a class="el" href="group__rdmnet__ept__client.html#gaeb19a148edecf924f22c11611a9de556">ept_client.h</a>
+</li>
+<li>RdmnetEptClientConnectedCallback
+: <a class="el" href="group__rdmnet__ept__client.html#ga5cac8658cabfb8fea96ffa87b64d2aad">ept_client.h</a>
+</li>
+<li>RdmnetEptClientConnectFailedCallback
+: <a class="el" href="group__rdmnet__ept__client.html#gafe2081314ef4d525337b56f2487f110a">ept_client.h</a>
+</li>
+<li>RdmnetEptClientDataReceivedCallback
+: <a class="el" href="group__rdmnet__ept__client.html#ga5c8783fcc14a31e94e6a055985b200bd">ept_client.h</a>
+</li>
+<li>RdmnetEptClientDisconnectedCallback
+: <a class="el" href="group__rdmnet__ept__client.html#ga3bf4201992ab95997d7691717b97ed0f">ept_client.h</a>
+</li>
+<li>RdmnetEptClientEntry
+: <a class="el" href="group__rdmnet__api__common.html#ga8cb0e4069f71b0faeb84a60a3d29166d">message.h</a>
+</li>
+<li>RdmnetEptClientList
+: <a class="el" href="group__rdmnet__api__common.html#gab4d433ca6306cc11bd70709fb14b602a">message.h</a>
+</li>
+<li>RdmnetEptClientStatusReceivedCallback
+: <a class="el" href="group__rdmnet__ept__client.html#ga90524a0a57526525f28ea5d218bb1970">ept_client.h</a>
+</li>
+<li>RdmnetEptData
+: <a class="el" href="group__rdmnet__api__common.html#gad09ef23794c2c57b0866264ab6fc3c77">message.h</a>
+</li>
+<li>RdmnetEptStatus
+: <a class="el" href="group__rdmnet__api__common.html#ga42b7ff9d931c10eda4c28655ba0b60aa">message.h</a>
+</li>
+<li>RdmnetEptSubProtocol
+: <a class="el" href="group__rdmnet__api__common.html#gabb8fcfc324bf7a05246136cd267effa3">message.h</a>
+</li>
+<li>RdmnetMcastNetintId
+: <a class="el" href="group__rdmnet__api__common.html#ga622515e8d0062f95e201248449580e0d">common.h</a>
+</li>
+<li>RdmnetNetintConfig
+: <a class="el" href="group__rdmnet__api__common.html#gad7eaa2e7e203dec8364379769c3699dc">common.h</a>
+</li>
+<li>RdmnetPhysicalEndpointConfig
+: <a class="el" href="group__rdmnet__device.html#ga60fef8c39bee2d09edec229004c5d952">device.h</a>
+</li>
+<li>RdmnetPhysicalEndpointResponder
+: <a class="el" href="group__rdmnet__device.html#ga5d918984ca29220bfe2e59e6fc4cd83c">device.h</a>
+</li>
+<li>RdmnetRdmCommand
+: <a class="el" href="group__rdmnet__api__common.html#gad5185b3296d5b1d9ad4826aae03f6a13">message.h</a>
+</li>
+<li>RdmnetRdmResponse
+: <a class="el" href="group__rdmnet__api__common.html#ga021be85136dc2e3757a03725baf9a987">message.h</a>
+</li>
+<li>RdmnetRptClientEntry
+: <a class="el" href="group__rdmnet__api__common.html#ga8fd76e01f7b8e3f7b72bc6a3669c672e">message.h</a>
+</li>
+<li>RdmnetRptClientList
+: <a class="el" href="group__rdmnet__api__common.html#ga502452095b273545b0888b244abd8a35">message.h</a>
+</li>
+<li>RdmnetRptStatus
+: <a class="el" href="group__rdmnet__api__common.html#gadb96ff8d6957ba986898d8cbc68c59ad">message.h</a>
+</li>
+<li>RdmnetSavedEptData
+: <a class="el" href="group__rdmnet__api__common.html#gad906c38025a28d04334ec523e7692a4a">message.h</a>
+</li>
+<li>RdmnetSavedEptStatus
+: <a class="el" href="group__rdmnet__api__common.html#ga944b3eeb31ed0bc863139a596c4db8a1">message.h</a>
+</li>
+<li>RdmnetSavedRdmCommand
+: <a class="el" href="group__rdmnet__api__common.html#ga28ca2f3263ea7a9fa590f43fe08f6403">message.h</a>
+</li>
+<li>RdmnetSavedRdmResponse
+: <a class="el" href="group__rdmnet__api__common.html#gae47d346cb7760bd12b4371c6a608ca59">message.h</a>
+</li>
+<li>RdmnetSavedRptStatus
+: <a class="el" href="group__rdmnet__api__common.html#gaeaf91d59d14128464dca42653c1ee3f9">message.h</a>
+</li>
+<li>RdmnetScopeConfig
+: <a class="el" href="group__rdmnet__api__common.html#gab890eff22b533de22305dd0df209889b">client.h</a>
+</li>
+<li>RdmnetScopeMonitorCallbacks
+: <a class="el" href="group__rdmnet__disc.html#ga3fa0cbb714c04bfd67fc0fe3d8b8285a">discovery.h</a>
+</li>
+<li>RdmnetScopeMonitorConfig
+: <a class="el" href="group__rdmnet__disc.html#ga200d7ce88db55c373a534bf94fe480e5">discovery.h</a>
+</li>
+<li>RdmnetSourceAddr
+: <a class="el" href="group__rdmnet__api__common.html#gac672e1438b76c210ba472109dbe786c0">client.h</a>
+</li>
+<li>RdmnetSyncEptResponse
+: <a class="el" href="group__rdmnet__api__common.html#ga8ab42acc61433c9f28ffdccd5282c2fe">common.h</a>
+</li>
+<li>RdmnetSyncRdmResponse
+: <a class="el" href="group__rdmnet__api__common.html#ga986b8fa634550df16b69189e63275bd3">common.h</a>
+</li>
+<li>RdmnetVirtualEndpointConfig
+: <a class="el" href="group__rdmnet__device.html#ga5c56f2ceee04b243143e174e007fd59b">device.h</a>
+</li>
+<li>rpt_client_type_t
+: <a class="el" href="group__rdmnet__api__common.html#gaa736f925394f04b673b5070a6b4203b1">message.h</a>
+</li>
+<li>rpt_status_code_t
+: <a class="el" href="group__rdmnet__api__common.html#gaa9aca0658bfae057363a520c0d9907c2">common.h</a>
+</li>
+</ul>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">Generated by
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>
+  </ul>
+</div>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen 1.8.13" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RDMnet: include/rdmnet/cpp/message_types/rpt_client.h Source File</title>
+  <link href="tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="dynsections.js"></script>
+  <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+</script>
+  <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css" />
+  <!--BEGIN CUSTOM SCRIPTS-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <script type="text/javascript">
+    $(function () { selectAllC() });
+  </script>
+  <script type="text/javascript">
+    function selectAllC() {
+      // Enable all C-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_c")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_c")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectAllCpp() {
+      // Enable all C++-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_cpp")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C++-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_cpp")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectLanguage(evt, block_id, language) {
+      // Get all elements with class="tabcontent" and hide them
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.startsWith("div_" + block_id)) {
+          tabcontent[i].style.display = "none";
+        }
+      }
+      // Get all elements with class="tablinks" and remove the class "active"
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.startsWith("button_" + block_id)) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById("div_" + block_id + "_" + language).style.display = "block";
+      if (!evt.currentTarget.className.includes("active")) {
+        evt.currentTarget.className += " active";
+      }
+    }
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">RDMnet
+                &#160;<span id="projectnumber">Staging for pull request 39</span>
+              </div>
+              <div id="projectbrief">Implementation of ANSI E1.33 (RDMnet)</div>
+            </td>
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- end header part -->
+<!-- Generated by Doxygen 1.8.13 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Search');
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('rpt__client_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">rpt_client.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<a href="rpt__client_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">/******************************************************************************</span></div><div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment"> * Copyright 2020 ETC Inc.</span></div><div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"> *</span></div><div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment"> * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div><div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment"> * you may not use this file except in compliance with the License.</span></div><div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment"> * You may obtain a copy of the License at</span></div><div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment"> *</span></div><div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment"> *    http://www.apache.org/licenses/LICENSE-2.0</span></div><div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment"> *</span></div><div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="comment"> * Unless required by applicable law or agreed to in writing, software</span></div><div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="comment"> * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span></div><div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="comment"> * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span></div><div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="comment"> * See the License for the specific language governing permissions and</span></div><div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="comment"> * limitations under the License.</span></div><div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="comment"> ******************************************************************************</span></div><div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="comment"> * This file is a part of RDMnet. For more information, go to:</span></div><div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment"> * https://github.com/ETCLabs/RDMnet</span></div><div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment"> *****************************************************************************/</span></div><div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;</div><div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;</div><div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#ifndef RDMNET_CPP_MESSAGE_TYPES_RPT_CLIENT_H_</span></div><div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#define RDMNET_CPP_MESSAGE_TYPES_RPT_CLIENT_H_</span></div><div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;</div><div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;algorithm&gt;</span></div><div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;cstddef&gt;</span></div><div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;string&gt;</span></div><div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;utility&gt;</span></div><div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &lt;vector&gt;</span></div><div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &quot;<a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/cpp_2uuid_8h.html">etcpal/cpp/uuid.h</a>&quot;</span></div><div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#include &quot;<a class="codeRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/cpp_2uid_8h.html">rdm/cpp/uid.h</a>&quot;</span></div><div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="message_8h.html">rdmnet/message.h</a>&quot;</span></div><div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;</div><div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacerdmnet.html">rdmnet</a></div><div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;{</div><div class="line"><a name="l00039"></a><span class="lineno"><a class="line" href="structrdmnet_1_1_rpt_client_entry.html">   39</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structrdmnet_1_1_rpt_client_entry.html">RptClientEntry</a></div><div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;{</div><div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;  <a class="code" href="structrdmnet_1_1_rpt_client_entry.html">RptClientEntry</a>() = <span class="keywordflow">default</span>;</div><div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;  <a class="code" href="structrdmnet_1_1_rpt_client_entry.html">RptClientEntry</a>(<span class="keyword">const</span> <a class="code" href="struct_rdmnet_rpt_client_entry.html">RdmnetRptClientEntry</a>&amp; c_entry);</div><div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;  <a class="code" href="structrdmnet_1_1_rpt_client_entry.html">RptClientEntry</a>&amp; <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a0f3401294300ed88e95f82f6b6a2f1f6">operator=</a>(<span class="keyword">const</span> <a class="code" href="struct_rdmnet_rpt_client_entry.html">RdmnetRptClientEntry</a>&amp; c_entry);</div><div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;</div><div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;  <span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a2fdeba03048dd553c70bcc0d3dc820d5">TypeToCString</a>() <span class="keyword">const</span> noexcept;</div><div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;  std::string <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a13df7611b02b3dd53b3926ae82b4196e">TypeToString</a>() <span class="keyword">const</span>;</div><div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;</div><div class="line"><a name="l00048"></a><span class="lineno"><a class="line" href="structrdmnet_1_1_rpt_client_entry.html#a8d8bccf2f634d2f57dd5efd8943e3d86">   48</a></span>&#160;  <a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html">etcpal::Uuid</a>      <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a8d8bccf2f634d2f57dd5efd8943e3d86">cid</a>;          </div><div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="structrdmnet_1_1_rpt_client_entry.html#a90a315be27a6ec997d2e6b76b87efd75">   49</a></span>&#160;  <a class="codeRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a>          <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a90a315be27a6ec997d2e6b76b87efd75">uid</a>;          </div><div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="structrdmnet_1_1_rpt_client_entry.html#aafc3334adff830cb86c3398ebfb4f9f4">   50</a></span>&#160;  <a class="code" href="group__rdmnet__api__common.html#gaa736f925394f04b673b5070a6b4203b1">rpt_client_type_t</a> <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#aafc3334adff830cb86c3398ebfb4f9f4">type</a>;         </div><div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="structrdmnet_1_1_rpt_client_entry.html#a6eb6fd6a6ed190500e119be751d0efc3">   51</a></span>&#160;  <a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html">etcpal::Uuid</a>      <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a6eb6fd6a6ed190500e119be751d0efc3">binding_cid</a>;  </div><div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;};</div><div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;</div><div class="line"><a name="l00055"></a><span class="lineno"><a class="line" href="structrdmnet_1_1_rpt_client_entry.html#a83b049a0d407fa389c7180a2c23a1b15">   55</a></span>&#160;<span class="keyword">inline</span> RptClientEntry::RptClientEntry(<span class="keyword">const</span> <a class="code" href="struct_rdmnet_rpt_client_entry.html">RdmnetRptClientEntry</a>&amp; c_entry)</div><div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    : <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a8d8bccf2f634d2f57dd5efd8943e3d86">cid</a>(c_entry.<a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a8d8bccf2f634d2f57dd5efd8943e3d86">cid</a>), <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a90a315be27a6ec997d2e6b76b87efd75">uid</a>(c_entry.<a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a90a315be27a6ec997d2e6b76b87efd75">uid</a>), <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#aafc3334adff830cb86c3398ebfb4f9f4">type</a>(c_entry.<a class="code" href="structrdmnet_1_1_rpt_client_entry.html#aafc3334adff830cb86c3398ebfb4f9f4">type</a>), <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a6eb6fd6a6ed190500e119be751d0efc3">binding_cid</a>(c_entry.<a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a6eb6fd6a6ed190500e119be751d0efc3">binding_cid</a>)</div><div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;{</div><div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;}</div><div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;</div><div class="line"><a name="l00061"></a><span class="lineno"><a class="line" href="structrdmnet_1_1_rpt_client_entry.html#a0f3401294300ed88e95f82f6b6a2f1f6">   61</a></span>&#160;<span class="keyword">inline</span> <a class="code" href="structrdmnet_1_1_rpt_client_entry.html">RptClientEntry</a>&amp; <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a0f3401294300ed88e95f82f6b6a2f1f6">RptClientEntry::operator=</a>(<span class="keyword">const</span> <a class="code" href="struct_rdmnet_rpt_client_entry.html">RdmnetRptClientEntry</a>&amp; c_entry)</div><div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;{</div><div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;  <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a8d8bccf2f634d2f57dd5efd8943e3d86">cid</a> = c_entry.<a class="code" href="struct_rdmnet_rpt_client_entry.html#adefb8e2be2ed7250cd5c636d0d396a2d">cid</a>;</div><div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;  <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a90a315be27a6ec997d2e6b76b87efd75">uid</a> = c_entry.<a class="code" href="struct_rdmnet_rpt_client_entry.html#aeedb7a29e8587dc82a1586f72b0afcee">uid</a>;</div><div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;  <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#aafc3334adff830cb86c3398ebfb4f9f4">type</a> = c_entry.<a class="code" href="struct_rdmnet_rpt_client_entry.html#ae47f295713b57d8238f420a70e1b7289">type</a>;</div><div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;  <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a6eb6fd6a6ed190500e119be751d0efc3">binding_cid</a> = c_entry.<a class="code" href="struct_rdmnet_rpt_client_entry.html#ad8287f6a5cbefde06a7e70ff4eee0091">binding_cid</a>;</div><div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;  <span class="keywordflow">return</span> *<span class="keyword">this</span>;</div><div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;}</div><div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;</div><div class="line"><a name="l00071"></a><span class="lineno"><a class="line" href="structrdmnet_1_1_rpt_client_entry.html#a2fdeba03048dd553c70bcc0d3dc820d5">   71</a></span>&#160;<span class="keyword">inline</span> <span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a2fdeba03048dd553c70bcc0d3dc820d5">RptClientEntry::TypeToCString</a>() const noexcept</div><div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;{</div><div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;  <span class="keywordflow">return</span> <a class="code" href="group__rdmnet__api__common.html#gad9fa849981e1ebf2109c58febd774cf0">rdmnet_rpt_client_type_to_string</a>(<a class="code" href="structrdmnet_1_1_rpt_client_entry.html#aafc3334adff830cb86c3398ebfb4f9f4">type</a>);</div><div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;}</div><div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;</div><div class="line"><a name="l00077"></a><span class="lineno"><a class="line" href="structrdmnet_1_1_rpt_client_entry.html#a13df7611b02b3dd53b3926ae82b4196e">   77</a></span>&#160;<span class="keyword">inline</span> std::string <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a13df7611b02b3dd53b3926ae82b4196e">RptClientEntry::TypeToString</a>()<span class="keyword"> const</span></div><div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="keyword"></span>{</div><div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;  <span class="keywordflow">return</span> <a class="code" href="group__rdmnet__api__common.html#gad9fa849981e1ebf2109c58febd774cf0">rdmnet_rpt_client_type_to_string</a>(<a class="code" href="structrdmnet_1_1_rpt_client_entry.html#aafc3334adff830cb86c3398ebfb4f9f4">type</a>);</div><div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;}</div><div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;</div><div class="line"><a name="l00087"></a><span class="lineno"><a class="line" href="classrdmnet_1_1_rpt_client_list.html">   87</a></span>&#160;<span class="keyword">class </span><a class="code" href="classrdmnet_1_1_rpt_client_list.html">RptClientList</a></div><div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;{</div><div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="keyword">public</span>:</div><div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;  <a class="code" href="classrdmnet_1_1_rpt_client_list.html">RptClientList</a>() = <span class="keyword">delete</span>;</div><div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;  <a class="code" href="classrdmnet_1_1_rpt_client_list.html">RptClientList</a>(<span class="keyword">const</span> <a class="code" href="classrdmnet_1_1_rpt_client_list.html">RptClientList</a>&amp; other) = <span class="keyword">delete</span>;</div><div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;  <a class="code" href="classrdmnet_1_1_rpt_client_list.html">RptClientList</a>&amp; <a class="code" href="structrdmnet_1_1_rpt_client_entry.html#a0f3401294300ed88e95f82f6b6a2f1f6">operator=</a>(<span class="keyword">const</span> <a class="code" href="classrdmnet_1_1_rpt_client_list.html">RptClientList</a>&amp; other) = <span class="keyword">delete</span>;</div><div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;</div><div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;  constexpr <a class="code" href="classrdmnet_1_1_rpt_client_list.html">RptClientList</a>(<span class="keyword">const</span> <a class="code" href="struct_rdmnet_rpt_client_list.html">RdmnetRptClientList</a>&amp; c_list) noexcept;</div><div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;</div><div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;  std::vector&lt;RptClientEntry&gt; GetClientEntries() <span class="keyword">const</span>;</div><div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;</div><div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;  constexpr <span class="keywordtype">bool</span>                        more_coming() <span class="keyword">const</span> noexcept;</div><div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;  constexpr <span class="keyword">const</span> <a class="code" href="struct_rdmnet_rpt_client_entry.html">RdmnetRptClientEntry</a>* raw_entry_array() <span class="keyword">const</span> noexcept;</div><div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;  constexpr <span class="keywordtype">size_t</span>                      raw_entry_array_size() <span class="keyword">const</span> noexcept;</div><div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;</div><div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;<span class="keyword">private</span>:</div><div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;  <span class="keyword">const</span> <a class="code" href="struct_rdmnet_rpt_client_list.html">RdmnetRptClientList</a>&amp; list_;</div><div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;};</div><div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;</div><div class="line"><a name="l00110"></a><span class="lineno"><a class="line" href="classrdmnet_1_1_rpt_client_list.html#a38c9e74442e769d2d5b4dfaebff77f34">  110</a></span>&#160;constexpr <a class="code" href="classrdmnet_1_1_rpt_client_list.html#a2744dc9ee79db88b1bfb368a61249f3c">RptClientList::RptClientList</a>(<span class="keyword">const</span> <a class="code" href="struct_rdmnet_rpt_client_list.html">RdmnetRptClientList</a>&amp; c_list) noexcept : list_(c_list)</div><div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;{</div><div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;}</div><div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;</div><div class="line"><a name="l00118"></a><span class="lineno"><a class="line" href="classrdmnet_1_1_rpt_client_list.html#a0899bb62646ac3b9220986a144219917">  118</a></span>&#160;<span class="keyword">inline</span> std::vector&lt;RptClientEntry&gt; <a class="code" href="classrdmnet_1_1_rpt_client_list.html#a0899bb62646ac3b9220986a144219917">RptClientList::GetClientEntries</a>()<span class="keyword"> const</span></div><div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;<span class="keyword"></span>{</div><div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;  std::vector&lt;RptClientEntry&gt; to_return;</div><div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;  to_return.reserve(list_.num_client_entries);</div><div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;  std::transform(list_.client_entries, list_.client_entries + list_.num_client_entries, std::back_inserter(to_return),</div><div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;                 [](<span class="keyword">const</span> <a class="code" href="struct_rdmnet_rpt_client_entry.html">RdmnetRptClientEntry</a>&amp; entry) { return RptClientEntry(entry); });</div><div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;  <span class="keywordflow">return</span> to_return;</div><div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;}</div><div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;</div><div class="line"><a name="l00133"></a><span class="lineno"><a class="line" href="classrdmnet_1_1_rpt_client_list.html#aab88e3093b96c76a3e9fbe99a67968e7">  133</a></span>&#160;constexpr <span class="keywordtype">bool</span> <a class="code" href="classrdmnet_1_1_rpt_client_list.html#aab88e3093b96c76a3e9fbe99a67968e7">RptClientList::more_coming</a>() const noexcept</div><div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;{</div><div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;  <span class="keywordflow">return</span> list_.more_coming;</div><div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;}</div><div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;</div><div class="line"><a name="l00139"></a><span class="lineno"><a class="line" href="classrdmnet_1_1_rpt_client_list.html#a7da28fd5933191a6e3df8c0a32376947">  139</a></span>&#160;constexpr <span class="keyword">const</span> <a class="code" href="struct_rdmnet_rpt_client_entry.html">RdmnetRptClientEntry</a>* <a class="code" href="classrdmnet_1_1_rpt_client_list.html#a7da28fd5933191a6e3df8c0a32376947">RptClientList::raw_entry_array</a>() const noexcept</div><div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;{</div><div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;  <span class="keywordflow">return</span> list_.client_entries;</div><div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;}</div><div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;</div><div class="line"><a name="l00145"></a><span class="lineno"><a class="line" href="classrdmnet_1_1_rpt_client_list.html#a9b9eada5fff8ccdfda5a1f0542510b8b">  145</a></span>&#160;constexpr <span class="keywordtype">size_t</span> <a class="code" href="classrdmnet_1_1_rpt_client_list.html#a9b9eada5fff8ccdfda5a1f0542510b8b">RptClientList::raw_entry_array_size</a>() const noexcept</div><div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;{</div><div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;  <span class="keywordflow">return</span> list_.num_client_entries;</div><div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;}</div><div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;};  <span class="comment">// namespace rdmnet</span></div><div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;</div><div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;<span class="preprocessor">#endif  // RDMNET_CPP_MESSAGE_TYPES_RPT_CLIENT_H_</span></div><div class="ttc" id="struct_rdmnet_rpt_client_entry_html_ae47f295713b57d8238f420a70e1b7289"><div class="ttname"><a href="struct_rdmnet_rpt_client_entry.html#ae47f295713b57d8238f420a70e1b7289">RdmnetRptClientEntry::type</a></div><div class="ttdeci">rpt_client_type_t type</div><div class="ttdoc">Whether the client is a controller or device. </div><div class="ttdef"><b>Definition:</b> message.h:365</div></div>
+<div class="ttc" id="struct_rdmnet_rpt_client_list_html"><div class="ttname"><a href="struct_rdmnet_rpt_client_list.html">RdmnetRptClientList</a></div><div class="ttdoc">A structure that represents a list of RPT Client Entries. </div><div class="ttdef"><b>Definition:</b> message.h:397</div></div>
+<div class="ttc" id="struct_rdmnet_rpt_client_entry_html_adefb8e2be2ed7250cd5c636d0d396a2d"><div class="ttname"><a href="struct_rdmnet_rpt_client_entry.html#adefb8e2be2ed7250cd5c636d0d396a2d">RdmnetRptClientEntry::cid</a></div><div class="ttdeci">EtcPalUuid cid</div><div class="ttdoc">The client&amp;#39;s Component Identifier (CID). </div><div class="ttdef"><b>Definition:</b> message.h:363</div></div>
+<div class="ttc" id="classrdmnet_1_1_rpt_client_list_html_a7da28fd5933191a6e3df8c0a32376947"><div class="ttname"><a href="classrdmnet_1_1_rpt_client_list.html#a7da28fd5933191a6e3df8c0a32376947">rdmnet::RptClientList::raw_entry_array</a></div><div class="ttdeci">constexpr const RdmnetRptClientEntry * raw_entry_array() const noexcept</div><div class="ttdoc">Get a pointer to the raw array of client entry C structures. </div><div class="ttdef"><b>Definition:</b> rpt_client.h:139</div></div>
+<div class="ttc" id="cpp_2uuid_8h_html"><div class="ttname"><a href="https://etclabs.github.io/EtcPal/docs/head/cpp_2uuid_8h.html">uuid.h</a></div></div>
+<div class="ttc" id="cpp_2uid_8h_html"><div class="ttname"><a href="https://etclabs.github.io/RDM/docs/head/cpp_2uid_8h.html">uid.h</a></div></div>
+<div class="ttc" id="namespacerdmnet_html"><div class="ttname"><a href="namespacerdmnet.html">rdmnet</a></div><div class="ttdoc">A namespace which contains all C++ language definitions in the RDMnet library. </div><div class="ttdef"><b>Definition:</b> broker.h:44</div></div>
+<div class="ttc" id="structrdmnet_1_1_rpt_client_entry_html_a6eb6fd6a6ed190500e119be751d0efc3"><div class="ttname"><a href="structrdmnet_1_1_rpt_client_entry.html#a6eb6fd6a6ed190500e119be751d0efc3">rdmnet::RptClientEntry::binding_cid</a></div><div class="ttdeci">etcpal::Uuid binding_cid</div><div class="ttdoc">An optional identifier for another component that the client is associated with. </div><div class="ttdef"><b>Definition:</b> rpt_client.h:51</div></div>
+<div class="ttc" id="structrdmnet_1_1_rpt_client_entry_html"><div class="ttname"><a href="structrdmnet_1_1_rpt_client_entry.html">rdmnet::RptClientEntry</a></div><div class="ttdoc">A descriptive structure for an RPT client. </div><div class="ttdef"><b>Definition:</b> rpt_client.h:39</div></div>
+<div class="ttc" id="classrdmnet_1_1_rpt_client_list_html_a9b9eada5fff8ccdfda5a1f0542510b8b"><div class="ttname"><a href="classrdmnet_1_1_rpt_client_list.html#a9b9eada5fff8ccdfda5a1f0542510b8b">rdmnet::RptClientList::raw_entry_array_size</a></div><div class="ttdeci">constexpr size_t raw_entry_array_size() const noexcept</div><div class="ttdoc">Get the size of the raw array of client entry C structures. </div><div class="ttdef"><b>Definition:</b> rpt_client.h:145</div></div>
+<div class="ttc" id="message_8h_html"><div class="ttname"><a href="message_8h.html">message.h</a></div><div class="ttdoc">Basic types for parsed RDMnet messages. </div></div>
+<div class="ttc" id="struct_rdmnet_rpt_client_entry_html_ad8287f6a5cbefde06a7e70ff4eee0091"><div class="ttname"><a href="struct_rdmnet_rpt_client_entry.html#ad8287f6a5cbefde06a7e70ff4eee0091">RdmnetRptClientEntry::binding_cid</a></div><div class="ttdeci">EtcPalUuid binding_cid</div><div class="ttdoc">An optional identifier for another component that the client is associated with. </div><div class="ttdef"><b>Definition:</b> message.h:366</div></div>
+<div class="ttc" id="structrdmnet_1_1_rpt_client_entry_html_a13df7611b02b3dd53b3926ae82b4196e"><div class="ttname"><a href="structrdmnet_1_1_rpt_client_entry.html#a13df7611b02b3dd53b3926ae82b4196e">rdmnet::RptClientEntry::TypeToString</a></div><div class="ttdeci">std::string TypeToString() const</div><div class="ttdoc">Get the client&amp;#39;s RPT client type (controller or device) as a string. </div><div class="ttdef"><b>Definition:</b> rpt_client.h:77</div></div>
+<div class="ttc" id="classetcpal_1_1_uuid_html"><div class="ttname"><a href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html">etcpal::Uuid</a></div></div>
+<div class="ttc" id="structrdmnet_1_1_rpt_client_entry_html_a90a315be27a6ec997d2e6b76b87efd75"><div class="ttname"><a href="structrdmnet_1_1_rpt_client_entry.html#a90a315be27a6ec997d2e6b76b87efd75">rdmnet::RptClientEntry::uid</a></div><div class="ttdeci">rdm::Uid uid</div><div class="ttdoc">The client&amp;#39;s RDM UID. </div><div class="ttdef"><b>Definition:</b> rpt_client.h:49</div></div>
+<div class="ttc" id="structrdmnet_1_1_rpt_client_entry_html_a2fdeba03048dd553c70bcc0d3dc820d5"><div class="ttname"><a href="structrdmnet_1_1_rpt_client_entry.html#a2fdeba03048dd553c70bcc0d3dc820d5">rdmnet::RptClientEntry::TypeToCString</a></div><div class="ttdeci">const char * TypeToCString() const noexcept</div><div class="ttdoc">Get the client&amp;#39;s RPT client type (controller or device) as a C-style string. </div><div class="ttdef"><b>Definition:</b> rpt_client.h:71</div></div>
+<div class="ttc" id="structrdmnet_1_1_rpt_client_entry_html_aafc3334adff830cb86c3398ebfb4f9f4"><div class="ttname"><a href="structrdmnet_1_1_rpt_client_entry.html#aafc3334adff830cb86c3398ebfb4f9f4">rdmnet::RptClientEntry::type</a></div><div class="ttdeci">rpt_client_type_t type</div><div class="ttdoc">Whether the client is a controller or a device. </div><div class="ttdef"><b>Definition:</b> rpt_client.h:50</div></div>
+<div class="ttc" id="classrdmnet_1_1_rpt_client_list_html_a0899bb62646ac3b9220986a144219917"><div class="ttname"><a href="classrdmnet_1_1_rpt_client_list.html#a0899bb62646ac3b9220986a144219917">rdmnet::RptClientList::GetClientEntries</a></div><div class="ttdeci">std::vector&lt; RptClientEntry &gt; GetClientEntries() const</div><div class="ttdoc">Copy out the list of client entries. </div><div class="ttdef"><b>Definition:</b> rpt_client.h:118</div></div>
+<div class="ttc" id="group__rdmnet__api__common_html_gaa736f925394f04b673b5070a6b4203b1"><div class="ttname"><a href="group__rdmnet__api__common.html#gaa736f925394f04b673b5070a6b4203b1">rpt_client_type_t</a></div><div class="ttdeci">rpt_client_type_t</div><div class="ttdoc">An RPT client type. </div><div class="ttdef"><b>Definition:</b> message.h:350</div></div>
+<div class="ttc" id="structrdmnet_1_1_rpt_client_entry_html_a8d8bccf2f634d2f57dd5efd8943e3d86"><div class="ttname"><a href="structrdmnet_1_1_rpt_client_entry.html#a8d8bccf2f634d2f57dd5efd8943e3d86">rdmnet::RptClientEntry::cid</a></div><div class="ttdeci">etcpal::Uuid cid</div><div class="ttdoc">The client&amp;#39;s Component Identifier (CID). </div><div class="ttdef"><b>Definition:</b> rpt_client.h:48</div></div>
+<div class="ttc" id="classrdmnet_1_1_rpt_client_list_html_aab88e3093b96c76a3e9fbe99a67968e7"><div class="ttname"><a href="classrdmnet_1_1_rpt_client_list.html#aab88e3093b96c76a3e9fbe99a67968e7">rdmnet::RptClientList::more_coming</a></div><div class="ttdeci">constexpr bool more_coming() const noexcept</div><div class="ttdoc">This message contains a partial list. </div><div class="ttdef"><b>Definition:</b> rpt_client.h:133</div></div>
+<div class="ttc" id="classrdm_1_1_uid_html"><div class="ttname"><a href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a></div></div>
+<div class="ttc" id="structrdmnet_1_1_rpt_client_entry_html_a0f3401294300ed88e95f82f6b6a2f1f6"><div class="ttname"><a href="structrdmnet_1_1_rpt_client_entry.html#a0f3401294300ed88e95f82f6b6a2f1f6">rdmnet::RptClientEntry::operator=</a></div><div class="ttdeci">RptClientEntry &amp; operator=(const RdmnetRptClientEntry &amp;c_entry)</div><div class="ttdoc">Assign an instance of the C RdmnetRptClientEntry type to an instance of this class. </div><div class="ttdef"><b>Definition:</b> rpt_client.h:61</div></div>
+<div class="ttc" id="classrdmnet_1_1_rpt_client_list_html_a2744dc9ee79db88b1bfb368a61249f3c"><div class="ttname"><a href="classrdmnet_1_1_rpt_client_list.html#a2744dc9ee79db88b1bfb368a61249f3c">rdmnet::RptClientList::RptClientList</a></div><div class="ttdeci">RptClientList()=delete</div><div class="ttdoc">Not default-constructible. </div></div>
+<div class="ttc" id="group__rdmnet__api__common_html_gad9fa849981e1ebf2109c58febd774cf0"><div class="ttname"><a href="group__rdmnet__api__common.html#gad9fa849981e1ebf2109c58febd774cf0">rdmnet_rpt_client_type_to_string</a></div><div class="ttdeci">const char * rdmnet_rpt_client_type_to_string(rpt_client_type_t client_type)</div><div class="ttdoc">Get a string description of an RPT client type. </div><div class="ttdef"><b>Definition:</b> message.c:50</div></div>
+<div class="ttc" id="struct_rdmnet_rpt_client_entry_html_aeedb7a29e8587dc82a1586f72b0afcee"><div class="ttname"><a href="struct_rdmnet_rpt_client_entry.html#aeedb7a29e8587dc82a1586f72b0afcee">RdmnetRptClientEntry::uid</a></div><div class="ttdeci">RdmUid uid</div><div class="ttdoc">The client&amp;#39;s RDM UID. </div><div class="ttdef"><b>Definition:</b> message.h:364</div></div>
+<div class="ttc" id="classrdmnet_1_1_rpt_client_list_html"><div class="ttname"><a href="classrdmnet_1_1_rpt_client_list.html">rdmnet::RptClientList</a></div><div class="ttdoc">A list of RPT client entries. </div><div class="ttdef"><b>Definition:</b> rpt_client.h:87</div></div>
+<div class="ttc" id="struct_rdmnet_rpt_client_entry_html"><div class="ttname"><a href="struct_rdmnet_rpt_client_entry.html">RdmnetRptClientEntry</a></div><div class="ttdoc">A descriptive structure for an RPT client. </div><div class="ttdef"><b>Definition:</b> message.h:361</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a class="el" href="dir_49dbbb66e43847c8e8768031ecdea882.html">rdmnet</a></li><li class="navelem"><a class="el" href="dir_56a07074218ae837ed782f65ea831127.html">cpp</a></li><li class="navelem"><a class="el" href="dir_44b35b2fc18b63c6e4c63f3bb567432d.html">message_types</a></li><li class="navelem"><a class="el" href="rpt__client_8h.html">rpt_client.h</a></li>
+    <li class="footer">Generated by
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>
+  </ul>
+</div>
+</body>
+</html>
