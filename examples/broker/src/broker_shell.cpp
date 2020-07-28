@@ -76,11 +76,7 @@ int BrokerShell::Run(etcpal::Logger& log)
   broker_settings.dns.manufacturer = "ETC";
   broker_settings.dns.model = "RDMnet Broker Example App";
   broker_settings.listen_port = initial_data_.port;
-
-  if (!initial_data_.netints.empty())
-  {
-    broker_settings.listen_interfaces = initial_data_.netints;
-  }
+  broker_settings.listen_interfaces = initial_data_.netints;
 
   rdmnet::Broker broker;
 
