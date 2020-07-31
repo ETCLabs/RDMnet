@@ -1586,7 +1586,7 @@ bool connect_failed_will_retry(rdmnet_connect_fail_event_t event, rdmnet_connect
     case kRdmnetConnectFailSocketFailure:
       return false;
     case kRdmnetConnectFailRejected:
-      return (status == kRdmnetConnectCapacityExceeded);
+      return ((status == kRdmnetConnectCapacityExceeded) || (status == kRdmnetConnectDuplicateUid));
     case kRdmnetConnectFailTcpLevel:
     case kRdmnetConnectFailNoReply:
     default:
