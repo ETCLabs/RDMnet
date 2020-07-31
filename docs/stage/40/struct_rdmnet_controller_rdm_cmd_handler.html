@@ -1,0 +1,306 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen 1.8.13" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RDMnet: RdmnetControllerRdmCmdHandler Struct Reference</title>
+  <link href="tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="dynsections.js"></script>
+  <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+</script>
+  <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css" />
+  <!--BEGIN CUSTOM SCRIPTS-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <script type="text/javascript">
+    $(function () { selectAllC() });
+  </script>
+  <script type="text/javascript">
+    function selectAllC() {
+      // Enable all C-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_c")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_c")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectAllCpp() {
+      // Enable all C++-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_cpp")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C++-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_cpp")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectLanguage(evt, block_id, language) {
+      // Get all elements with class="tabcontent" and hide them
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.startsWith("div_" + block_id)) {
+          tabcontent[i].style.display = "none";
+        }
+      }
+      // Get all elements with class="tablinks" and remove the class "active"
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.startsWith("button_" + block_id)) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById("div_" + block_id + "_" + language).style.display = "block";
+      if (!evt.currentTarget.className.includes("active")) {
+        evt.currentTarget.className += " active";
+      }
+    }
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">RDMnet
+                &#160;<span id="projectnumber">Staging for pull request 40</span>
+              </div>
+              <div id="projectbrief">Implementation of ANSI E1.33 (RDMnet)</div>
+            </td>
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- end header part -->
+<!-- Generated by Doxygen 1.8.13 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Search');
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('struct_rdmnet_controller_rdm_cmd_handler.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#pub-attribs">Data Fields</a>  </div>
+  <div class="headertitle">
+<div class="title">RdmnetControllerRdmCmdHandler Struct Reference<div class="ingroups"><a class="el" href="group__rdmnet__api.html">RDMnet C Language APIs</a> &raquo; <a class="el" href="group__rdmnet__controller.html">Controller API</a></div></div>  </div>
+</div><!--header-->
+<div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>A buffer and set of callbacks which can be optionally provided to handle RDM commands addressed to a controller. </p>
+<p>See <a class="el" href="handling_rdm_commands.html">Handling RDM Commands</a> for more information. </p>
+</div>
+<p><code>#include &lt;<a class="el" href="controller_8h_source.html">rdmnet/controller.h</a>&gt;</code></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
+Data Fields</h2></td></tr>
+<tr class="memitem:a0fd9d14c69abf4fe2d37b3226d188837"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__rdmnet__controller.html#gaaa476968b549c871baabcee7c82d6a2a">RdmnetControllerRdmCommandReceivedCallback</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_controller_rdm_cmd_handler.html#a0fd9d14c69abf4fe2d37b3226d188837">rdm_command_received</a></td></tr>
+<tr class="memdesc:a0fd9d14c69abf4fe2d37b3226d188837"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback called when an RDM command is received from a controller.  <a href="#a0fd9d14c69abf4fe2d37b3226d188837">More...</a><br /></td></tr>
+<tr class="separator:a0fd9d14c69abf4fe2d37b3226d188837"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96c3c2b2115cf0e44a9887968bf6381c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__rdmnet__controller.html#gaf6e70216a637a3fa632bb77d22c27b0c">RdmnetControllerLlrpRdmCommandReceivedCallback</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_controller_rdm_cmd_handler.html#a96c3c2b2115cf0e44a9887968bf6381c">llrp_rdm_command_received</a></td></tr>
+<tr class="memdesc:a96c3c2b2115cf0e44a9887968bf6381c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback called when an RDM command is received over LLRP.  <a href="#a96c3c2b2115cf0e44a9887968bf6381c">More...</a><br /></td></tr>
+<tr class="separator:a96c3c2b2115cf0e44a9887968bf6381c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65c562df58411327ebfac21055746fcb"><td class="memItemLeft" align="right" valign="top">uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_controller_rdm_cmd_handler.html#a65c562df58411327ebfac21055746fcb">response_buf</a></td></tr>
+<tr class="memdesc:a65c562df58411327ebfac21055746fcb"><td class="mdescLeft">&#160;</td><td class="mdescRight">(optional) A data buffer used to respond synchronously to RDM commands.  <a href="#a65c562df58411327ebfac21055746fcb">More...</a><br /></td></tr>
+<tr class="separator:a65c562df58411327ebfac21055746fcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee5bd4c2691db4ee3df5e233bfac7035"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_controller_rdm_cmd_handler.html#aee5bd4c2691db4ee3df5e233bfac7035">context</a></td></tr>
+<tr class="memdesc:aee5bd4c2691db4ee3df5e233bfac7035"><td class="mdescLeft">&#160;</td><td class="mdescRight">(optional) Pointer to opaque data passed back with each callback.  <a href="#aee5bd4c2691db4ee3df5e233bfac7035">More...</a><br /></td></tr>
+<tr class="separator:aee5bd4c2691db4ee3df5e233bfac7035"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<h2 class="groupheader">Field Documentation</h2>
+<a id="aee5bd4c2691db4ee3df5e233bfac7035"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee5bd4c2691db4ee3df5e233bfac7035">&#9670;&nbsp;</a></span>context</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void* RdmnetControllerRdmCmdHandler::context</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>(optional) Pointer to opaque data passed back with each callback. </p>
+
+</div>
+</div>
+<a id="a96c3c2b2115cf0e44a9887968bf6381c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96c3c2b2115cf0e44a9887968bf6381c">&#9670;&nbsp;</a></span>llrp_rdm_command_received</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__rdmnet__controller.html#gaf6e70216a637a3fa632bb77d22c27b0c">RdmnetControllerLlrpRdmCommandReceivedCallback</a> RdmnetControllerRdmCmdHandler::llrp_rdm_command_received</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Callback called when an RDM command is received over LLRP. </p>
+
+</div>
+</div>
+<a id="a0fd9d14c69abf4fe2d37b3226d188837"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0fd9d14c69abf4fe2d37b3226d188837">&#9670;&nbsp;</a></span>rdm_command_received</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__rdmnet__controller.html#gaaa476968b549c871baabcee7c82d6a2a">RdmnetControllerRdmCommandReceivedCallback</a> RdmnetControllerRdmCmdHandler::rdm_command_received</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Callback called when an RDM command is received from a controller. </p>
+
+</div>
+</div>
+<a id="a65c562df58411327ebfac21055746fcb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a65c562df58411327ebfac21055746fcb">&#9670;&nbsp;</a></span>response_buf</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t* RdmnetControllerRdmCmdHandler::response_buf</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>(optional) A data buffer used to respond synchronously to RDM commands. </p>
+<p>See <a class="el" href="handling_rdm_commands.html">Handling RDM Commands</a> for more information. </p>
+
+</div>
+</div>
+<hr/>The documentation for this struct was generated from the following file:<ul>
+<li>include/rdmnet/<a class="el" href="controller_8h_source.html">controller.h</a></li>
+</ul>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="struct_rdmnet_controller_rdm_cmd_handler.html">RdmnetControllerRdmCmdHandler</a></li>
+    <li class="footer">Generated by
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>
+  </ul>
+</div>
+</body>
+</html>
