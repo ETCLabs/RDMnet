@@ -531,6 +531,7 @@ std::vector<BrokerClient::Handle> BrokerCore::GetClientSnapshot(bool     include
 
 // This function grabs a read lock on client_lock_.
 // Optionally sends a RDMnet-level message to the client before destroying it.
+// Also removes the client's UID from the BrokerUidManager if it's an RPT client.
 void BrokerCore::MarkClientForDestruction(BrokerClient::Handle client_handle, ClientDestroyAction destroy_action)
 {
   bool log_message = false;
@@ -554,9 +555,17 @@ void BrokerCore::MarkClientForDestruction(BrokerClient::Handle client_handle, Cl
 
 // This function marks a client for destruction when it is already write-locked.
 // Optionally sends a RDMnet-level message to the client before destroying it.
+// Also removes the client's UID from the BrokerUidManager if it's an RPT client.
 bool BrokerCore::MarkLockedClientForDestruction(BrokerClient& client, ClientDestroyAction destroy_action)
 {
   destroy_action.Apply(my_uid_, settings_.cid, client);
+
+  if (client.client_protocol == E133_CLIENT_PROTOCOL_RPT)
+  {
+    RPTClient* rptcli = static_cast<RPTClient*>(&client);
+    components_.uids.RemoveUid(rptcli->uid);
+  }
+
   return clients_to_destroy_.insert(client.handle).second;
 }
 
@@ -579,7 +588,6 @@ void BrokerCore::DestroyMarkedClients()
         if (client->second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
         {
           RPTClient* rptcli = static_cast<RPTClient*>(client->second.get());
-          components_.uids.RemoveUid(rptcli->uid);
           rpt_clients_.erase(to_destroy);
           if (rptcli->client_type == kRPTClientTypeController)
             controllers_.erase(to_destroy);
