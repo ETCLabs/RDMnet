@@ -22,6 +22,7 @@
 
 #include <map>
 #include "etcpal/cpp/uuid.h"
+#include "etcpal/cpp/lock.h"
 #include "rdm/uid.h"
 #include "broker_client.h"
 
