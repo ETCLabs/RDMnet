@@ -54,7 +54,7 @@ public:
 
   void SetNextDeviceId(uint32_t next_device_id)
   {
-    etcpal::WriteGuard write_guard(uid_manager_lock_);
+    etcpal::WriteGuard write_guard(*uid_manager_lock_);
     next_device_id_ = next_device_id;
   }
 
@@ -83,7 +83,7 @@ private:
   uint32_t next_device_id_{1};
   size_t   max_uid_capacity_{kDefaultMaxUidCapacity};
   // Protects the members of BrokerUidManager
-  mutable etcpal::RwLock uid_manager_lock_;
+  mutable std::unique_ptr<etcpal::RwLock> uid_manager_lock_;
 };
 
 #endif  // BROKER_UID_MANAGER_H_
