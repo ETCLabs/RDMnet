@@ -19,8 +19,8 @@
 
 // Test the rdmnet/private/msg_buf.c module
 // The msg_buf module is the TCP stream parser that parses the RDMnet TCP-based protocols: Broker,
-// RPT and EPT. This module works using a small testing library which deserializes a set of golden
-// master RDMnet protocol messages which live in tests/data/messages and validates them.
+// RPT and EPT. This module works using a small testing library which deserializes a set of RDMnet
+// protocol messages which live in tests/data/messages and validates them.
 
 // This test suite makes use of GoogleTest's Value-Parameterized Tests functionality:
 // https://github.com/google/googletest/blob/master/googletest/docs/advanced.md#value-parameterized-tests
