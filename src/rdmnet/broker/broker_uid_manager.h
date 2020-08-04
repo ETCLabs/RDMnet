@@ -34,8 +34,11 @@
 class BrokerUidManager
 {
 public:
-  BrokerUidManager() = default;
-  explicit BrokerUidManager(size_t max_uid_capacity) : max_uid_capacity_(max_uid_capacity) {}
+  BrokerUidManager() : uid_manager_lock_(new etcpal::RwLock) {}
+  explicit BrokerUidManager(size_t max_uid_capacity)
+      : uid_manager_lock_(new etcpal::RwLock), max_uid_capacity_(max_uid_capacity)
+  {
+  }
 
   static constexpr size_t kDefaultMaxUidCapacity = 1000000;
   enum class AddResult
