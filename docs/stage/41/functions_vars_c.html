@@ -1,0 +1,289 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen 1.8.13" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RDMnet: Data Fields - Variables</title>
+  <link href="tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="dynsections.js"></script>
+  <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+</script>
+  <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css" />
+  <!--BEGIN CUSTOM SCRIPTS-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <script type="text/javascript">
+    $(function () { selectAllC() });
+  </script>
+  <script type="text/javascript">
+    function selectAllC() {
+      // Enable all C-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_c")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_c")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectAllCpp() {
+      // Enable all C++-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_cpp")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C++-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_cpp")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectLanguage(evt, block_id, language) {
+      // Get all elements with class="tabcontent" and hide them
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.startsWith("div_" + block_id)) {
+          tabcontent[i].style.display = "none";
+        }
+      }
+      // Get all elements with class="tablinks" and remove the class "active"
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.startsWith("button_" + block_id)) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById("div_" + block_id + "_" + language).style.display = "block";
+      if (!evt.currentTarget.className.includes("active")) {
+        evt.currentTarget.className += " active";
+      }
+    }
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">RDMnet
+                &#160;<span id="projectnumber">Staging for pull request 41</span>
+              </div>
+              <div id="projectbrief">Implementation of ANSI E1.33 (RDMnet)</div>
+            </td>
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- end header part -->
+<!-- Generated by Doxygen 1.8.13 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Search');
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('functions_vars_c.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="contents">
+&#160;
+
+<h3><a id="index_c"></a>- c -</h3><ul>
+<li>callbacks
+: <a class="el" href="struct_llrp_manager_config.html#aacd8c71d1797bfd725d5848dd623000d">LlrpManagerConfig</a>
+, <a class="el" href="struct_llrp_target_config.html#a57316fbd4380729877e8fa60f4c1fd29">LlrpTargetConfig</a>
+, <a class="el" href="struct_rdmnet_broker_register_config.html#adde95071364c9aa4d98d77e7d697d520">RdmnetBrokerRegisterConfig</a>
+, <a class="el" href="struct_rdmnet_controller_config.html#a65e405aed6445b0d35fe6910ea2c155f">RdmnetControllerConfig</a>
+, <a class="el" href="struct_rdmnet_device_config.html#abc6d70dbf56e1ddc2c7e4bafa71db8c1">RdmnetDeviceConfig</a>
+, <a class="el" href="struct_rdmnet_ept_client_config.html#a23e0cb48e4773b03e46cdd05f1d191ed">RdmnetEptClientConfig</a>
+, <a class="el" href="struct_rdmnet_scope_monitor_config.html#aee5f4f7db4785e3fc34e399ebc82bf5c">RdmnetScopeMonitorConfig</a>
+</li>
+<li>cid
+: <a class="el" href="struct_llrp_discovered_target.html#ac9def492d345d0f22a59c329f710146f">LlrpDiscoveredTarget</a>
+, <a class="el" href="struct_llrp_manager_config.html#a68b1eac8be5285f8cdf20c94caa744ea">LlrpManagerConfig</a>
+, <a class="el" href="struct_llrp_target_config.html#afbe7039278c67df56d21ff4fe348988b">LlrpTargetConfig</a>
+, <a class="el" href="structrdmnet_1_1_broker_1_1_settings.html#a2f144da96f88502384709ba8a9397daa">rdmnet::Broker::Settings</a>
+, <a class="el" href="structrdmnet_1_1_controller_1_1_settings.html#a24057441a99e645c718af96ce37c2dcd">rdmnet::Controller::Settings</a>
+, <a class="el" href="structrdmnet_1_1_device_1_1_settings.html#ab0c9382f704d9aa093d957c3ca7351bd">rdmnet::Device::Settings</a>
+, <a class="el" href="structrdmnet_1_1_ept_client_1_1_settings.html#a6671ba5fc1e7952086e23f1b19fd20be">rdmnet::EptClient::Settings</a>
+, <a class="el" href="structrdmnet_1_1_ept_client_entry.html#aaf41185c54c83b1bc3aef791482a360c">rdmnet::EptClientEntry</a>
+, <a class="el" href="structrdmnet_1_1llrp_1_1_discovered_target.html#a43b92fed06bf3ebf36ac27dec5575381">rdmnet::llrp::DiscoveredTarget</a>
+, <a class="el" href="structrdmnet_1_1_rpt_client_entry.html#a8d8bccf2f634d2f57dd5efd8943e3d86">rdmnet::RptClientEntry</a>
+, <a class="el" href="struct_rdmnet_broker_disc_info.html#a9891833bc86684e7aff6a70a7cee9080">RdmnetBrokerDiscInfo</a>
+, <a class="el" href="struct_rdmnet_broker_register_config.html#a21217c047bd861134bf82771cde2f17c">RdmnetBrokerRegisterConfig</a>
+, <a class="el" href="struct_rdmnet_controller_config.html#a88afa036a301ef655052aaf77bbe013e">RdmnetControllerConfig</a>
+, <a class="el" href="struct_rdmnet_device_config.html#ae68596928501f9b5f49882a35470d6dc">RdmnetDeviceConfig</a>
+, <a class="el" href="struct_rdmnet_ept_client_config.html#ae618cb974a2e9b1250a78d572a6a3094">RdmnetEptClientConfig</a>
+, <a class="el" href="struct_rdmnet_ept_client_entry.html#a0fc4f36b08efe7fb323753a7a4399227">RdmnetEptClientEntry</a>
+, <a class="el" href="struct_rdmnet_rpt_client_entry.html#adefb8e2be2ed7250cd5c636d0d396a2d">RdmnetRptClientEntry</a>
+</li>
+<li>client_entries
+: <a class="el" href="struct_rdmnet_ept_client_list.html#a3c76e64783b650c4253bc90f8c28b090">RdmnetEptClientList</a>
+, <a class="el" href="struct_rdmnet_rpt_client_list.html#ab83c415e9196e74a3fa20b73d3407586">RdmnetRptClientList</a>
+</li>
+<li>client_list_update_received
+: <a class="el" href="struct_rdmnet_controller_callbacks.html#a7cee8891f9af4e34f3b44f8fdc0bf419">RdmnetControllerCallbacks</a>
+, <a class="el" href="struct_rdmnet_ept_client_callbacks.html#ae8fc20722ac48324c79eb14a95302f6d">RdmnetEptClientCallbacks</a>
+</li>
+<li>component_type
+: <a class="el" href="struct_llrp_discovered_target.html#aece7714b9daea51ddb2a14091c3d9ace">LlrpDiscoveredTarget</a>
+, <a class="el" href="structrdmnet_1_1llrp_1_1_discovered_target.html#a0e8f36f0e67eec79e77d13a110279279">rdmnet::llrp::DiscoveredTarget</a>
+</li>
+<li>connect_failed
+: <a class="el" href="struct_rdmnet_controller_callbacks.html#aa6431e285774c0fa74e5c3327ebc3d01">RdmnetControllerCallbacks</a>
+, <a class="el" href="struct_rdmnet_device_callbacks.html#ad1e27cadde6c64dabbbdf43837a79beb">RdmnetDeviceCallbacks</a>
+, <a class="el" href="struct_rdmnet_ept_client_callbacks.html#a2b148a13f8d6b5a32c9e7922a542a28f">RdmnetEptClientCallbacks</a>
+</li>
+<li>connected
+: <a class="el" href="struct_rdmnet_controller_callbacks.html#aa049d14bc899f39c8206df41918f2873">RdmnetControllerCallbacks</a>
+, <a class="el" href="struct_rdmnet_device_callbacks.html#af89447bd4fa95c36278bb19ea29622ce">RdmnetDeviceCallbacks</a>
+, <a class="el" href="struct_rdmnet_ept_client_callbacks.html#a636810b26dd423b2389f5627bd62f06b">RdmnetEptClientCallbacks</a>
+</li>
+<li>connections
+: <a class="el" href="structrdmnet_1_1_broker_1_1_limits.html#a041ab4ddfc9e0a89ed168aeedf7c0784">rdmnet::Broker::Limits</a>
+</li>
+<li>context
+: <a class="el" href="struct_llrp_manager_callbacks.html#af19c1533fa3da0c037aea35fbd0c7640">LlrpManagerCallbacks</a>
+, <a class="el" href="struct_llrp_target_callbacks.html#ae45836c7388e621658bc9a7555556a47">LlrpTargetCallbacks</a>
+, <a class="el" href="struct_rdmnet_controller_callbacks.html#a51c335237aff6c8f80caacd8584f35cf">RdmnetControllerCallbacks</a>
+, <a class="el" href="struct_rdmnet_controller_rdm_cmd_handler.html#aee5bd4c2691db4ee3df5e233bfac7035">RdmnetControllerRdmCmdHandler</a>
+, <a class="el" href="struct_rdmnet_device_callbacks.html#aea855069f3e85a29407be8a1fa27b2ad">RdmnetDeviceCallbacks</a>
+, <a class="el" href="struct_rdmnet_disc_broker_callbacks.html#af19ce77a037bc7c16d7abbb6680eb3d8">RdmnetDiscBrokerCallbacks</a>
+, <a class="el" href="struct_rdmnet_ept_client_callbacks.html#a426437829d4f26053b0ee9353a575283">RdmnetEptClientCallbacks</a>
+, <a class="el" href="struct_rdmnet_scope_monitor_callbacks.html#acd8ca85db8de30d5798bcd33070883cc">RdmnetScopeMonitorCallbacks</a>
+</li>
+<li>control_field
+: <a class="el" href="struct_rdmnet_physical_endpoint_responder.html#acf409850ecf2ca32dd2d999c602f00af">RdmnetPhysicalEndpointResponder</a>
+</li>
+<li>controller_messages
+: <a class="el" href="structrdmnet_1_1_broker_1_1_limits.html#a8cf2788e87261ff7648bed8e4999efe5">rdmnet::Broker::Limits</a>
+</li>
+<li>controllers
+: <a class="el" href="structrdmnet_1_1_broker_1_1_limits.html#abc3a7d5b02fd63dc6b009f22d60fecdc">rdmnet::Broker::Limits</a>
+</li>
+<li>create_llrp_target
+: <a class="el" href="structrdmnet_1_1_controller_1_1_settings.html#a1e92fb9a942c37aec8b7cb94175ab4e1">rdmnet::Controller::Settings</a>
+, <a class="el" href="struct_rdmnet_controller_config.html#aaad1507118f9a56d6ed29a9feb6582f3">RdmnetControllerConfig</a>
+</li>
+</ul>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">Generated by
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>
+  </ul>
+</div>
+</body>
+</html>
