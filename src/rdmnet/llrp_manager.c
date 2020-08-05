@@ -168,6 +168,7 @@ etcpal_error_t llrp_manager_destroy(llrp_manager_t handle)
     return res;
 
   rc_llrp_manager_unregister(&manager->rc_manager);
+  rdmnet_unregister_struct_instance(manager);
   release_manager(manager);
   return res;
 }
@@ -345,7 +346,7 @@ etcpal_error_t create_new_manager(const LlrpManagerConfig* config, llrp_manager_
 {
   etcpal_error_t res = kEtcPalErrNoMem;
 
-  LlrpManager* new_manager = alloc_llrp_manager_instance();
+  LlrpManager* new_manager = rdmnet_alloc_llrp_manager_instance();
   if (!new_manager)
     return res;
 
@@ -359,7 +360,7 @@ etcpal_error_t create_new_manager(const LlrpManagerConfig* config, llrp_manager_
   res = rc_llrp_manager_register(rc_manager);
   if (res != kEtcPalErrOk)
   {
-    free_llrp_manager_instance(new_manager);
+    rdmnet_free_struct_instance(new_manager);
     return res;
   }
 
@@ -377,7 +378,7 @@ etcpal_error_t get_manager(llrp_manager_t handle, LlrpManager** manager)
   if (!rdmnet_readlock())
     return kEtcPalErrSys;
 
-  LlrpManager* found_manager = (LlrpManager*)find_struct_instance(handle, kRdmnetStructTypeLlrpManager);
+  LlrpManager* found_manager = (LlrpManager*)rdmnet_find_struct_instance(handle, kRdmnetStructTypeLlrpManager);
   if (!found_manager)
   {
     rdmnet_readunlock();
@@ -426,5 +427,5 @@ void handle_manager_destroyed(RCLlrpManager* rc_manager)
 {
   RDMNET_ASSERT(rc_manager);
   LlrpManager* manager = GET_ENCOMPASSING_MANAGER(rc_manager);
-  free_llrp_manager_instance(manager);
+  rdmnet_free_struct_instance(manager);
 }

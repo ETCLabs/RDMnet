@@ -23,7 +23,9 @@
 #include "gtest/gtest.h"
 #include "rdmnet/core/client.h"
 
+#include "etcpal/cpp/lock.h"
 #include "etcpal_mock/common.h"
+#include "rdmnet/core/opts.h"
 #include "rdmnet_mock/core/broker_prot.h"
 #include "rdmnet_mock/core/common.h"
 #include "rdmnet_mock/core/connection.h"
@@ -37,13 +39,13 @@ class TestRptClientApi : public testing::Test
 protected:
   RdmnetScopeConfig default_dynamic_scope_{};
   RCClient          client_{};
-  etcpal_mutex_t    fake_client_lock_;
+  etcpal::Mutex     client_lock_;
 
   TestRptClientApi()
   {
     RDMNET_CLIENT_SET_DEFAULT_SCOPE(&default_dynamic_scope_);
 
-    client_.lock = &fake_client_lock_;
+    client_.lock = &client_lock_.get();
     client_.type = kClientProtocolRPT;
     client_.cid = {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}};
     RC_RPT_CLIENT_DATA(&client_)->type = kRPTClientTypeController;
@@ -74,6 +76,7 @@ protected:
 TEST_F(TestRptClientApi, ClientRegisterWorks)
 {
   EXPECT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, false, nullptr, 0));
+  EXPECT_TRUE(rc_client_unregister(&client_, kRdmnetDisconnectShutdown));
 }
 
 // Test that the client registers an associated LLRP target when requested to do so.
@@ -90,31 +93,91 @@ TEST_F(TestRptClientApi, ClientCreateLlrpTargetWorks)
   EXPECT_EQ(client_.cid, client_.llrp_target.cid);
   EXPECT_EQ(RC_RPT_CLIENT_DATA(&client_)->uid, client_.llrp_target.uid);
   EXPECT_EQ(client_.llrp_target.component_type, kLlrpCompRptController);
+
+  EXPECT_FALSE(rc_client_unregister(&client_, kRdmnetDisconnectShutdown));
+  client_.llrp_target.callbacks.destroyed(&client_.llrp_target);
+  EXPECT_EQ(rc_client_destroyed_fake.call_count, 1u);
 }
 
 TEST_F(TestRptClientApi, ClientAddScopeWorks)
 {
   ASSERT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, false, nullptr, 0));
 
+  static RCConnection* conn;
+  conn = nullptr;
+
+  rc_conn_register_fake.custom_fake = [](RCConnection* reg_conn) {
+    conn = reg_conn;
+    return kEtcPalErrOk;
+  };
+
   rdmnet_client_scope_t scope_handle = RDMNET_CLIENT_SCOPE_INVALID;
   EXPECT_EQ(kEtcPalErrOk, rc_client_add_scope(&client_, &default_dynamic_scope_, &scope_handle));
   EXPECT_NE(scope_handle, RDMNET_CLIENT_SCOPE_INVALID);
+
+  EXPECT_EQ(rc_conn_register_fake.call_count, 1u);
+  ASSERT_NE(conn, nullptr);
+
+  EXPECT_FALSE(rc_client_unregister(&client_, kRdmnetDisconnectShutdown));
+  conn->callbacks.destroyed(conn);
+  EXPECT_EQ(rc_client_destroyed_fake.call_count, 1u);
 }
 
 TEST_F(TestRptClientApi, ClientAddMultipleScopesWorks)
 {
   ASSERT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, false, nullptr, 0));
 
-  // Add 100 scopes
-  for (size_t i = 0; i < 100; ++i)
+  struct ScopeRef
   {
-    std::string       scope_str = E133_DEFAULT_SCOPE + std::to_string(i);
-    RdmnetScopeConfig tmp_scope;
+    rdmnet_client_scope_t handle;
+    RCConnection*         conn;
+  };
+
+  static std::vector<ScopeRef> scope_refs;
+
+  rc_conn_register_fake.custom_fake = [](RCConnection* conn) {
+    scope_refs.push_back(ScopeRef{RDMNET_CLIENT_SCOPE_INVALID, conn});
+    return kEtcPalErrOk;
+  };
+
+#if RDMNET_DYNAMIC_MEM
+  constexpr size_t kMaxScopesToAdd = 100;
+#else
+  constexpr size_t kMaxScopesToAdd = RDMNET_MAX_SCOPES_PER_CLIENT;
+#endif
+
+  // Add 100 scopes
+  RdmnetScopeConfig     tmp_scope;
+  rdmnet_client_scope_t tmp_handle = RDMNET_CLIENT_SCOPE_INVALID;
+  for (size_t i = 0; i < kMaxScopesToAdd; ++i)
+  {
+    unsigned int last_call_count = rc_conn_register_fake.call_count;
+
+    std::string scope_str = E133_DEFAULT_SCOPE + std::to_string(i);
     RDMNET_CLIENT_SET_SCOPE(&tmp_scope, scope_str.c_str());
-    rdmnet_client_scope_t tmp_handle = RDMNET_CLIENT_SCOPE_INVALID;
     ASSERT_EQ(kEtcPalErrOk, rc_client_add_scope(&client_, &tmp_scope, &tmp_handle));
     EXPECT_NE(tmp_handle, RDMNET_CLIENT_SCOPE_INVALID);
+
+    EXPECT_EQ(rc_conn_register_fake.call_count, last_call_count + 1);
+    scope_refs.back().handle = tmp_handle;
   }
+
+#if !RDMNET_DYNAMIC_MEM
+  std::string scope_str = E133_DEFAULT_SCOPE + std::to_string(kMaxScopesToAdd);
+  RDMNET_CLIENT_SET_SCOPE(&tmp_scope, scope_str.c_str());
+  tmp_handle = RDMNET_CLIENT_SCOPE_INVALID;
+  EXPECT_EQ(kEtcPalErrNoMem, rc_client_add_scope(&client_, &tmp_scope, &tmp_handle));
+  EXPECT_EQ(tmp_handle, RDMNET_CLIENT_SCOPE_INVALID);
+#endif
+
+  // Remove all scopes
+  EXPECT_FALSE(rc_client_unregister(&client_, kRdmnetDisconnectShutdown));
+
+  for (const auto& ref : scope_refs)
+  {
+    ref.conn->callbacks.destroyed(ref.conn);
+  }
+  EXPECT_EQ(rc_client_destroyed_fake.call_count, 1u);
 }
 
 // TEST_F(TestRptClientApi, SendRdmCommandInvalidCallsFail)

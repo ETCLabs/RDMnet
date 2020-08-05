@@ -23,6 +23,7 @@
 #include <cstring>
 #include <string>
 #include "gtest/gtest.h"
+#include "rdmnet_config.h"
 
 void ExpectRdmCommandHeadersEqual(const RdmCommandHeader& header_a, const RdmCommandHeader& header_b)
 {
@@ -86,6 +87,7 @@ TEST(TestMessageApi, SaveRdmResponseWorks)
       false};
 
   RdmnetSavedRdmResponse saved_resp{};
+#if RDMNET_DYNAMIC_MEM
   ASSERT_EQ(rdmnet_save_rdm_response(&resp, &saved_resp), kEtcPalErrOk);
 
   EXPECT_EQ(saved_resp.rdmnet_source_uid, resp.rdmnet_source_uid);
@@ -100,6 +102,9 @@ TEST(TestMessageApi, SaveRdmResponseWorks)
   EXPECT_EQ(0, std::memcmp(saved_resp.rdm_data, kTestRespData.data(), kTestRespData.size()));
 
   EXPECT_EQ(rdmnet_free_saved_rdm_response(&saved_resp), kEtcPalErrOk);
+#else
+  EXPECT_EQ(rdmnet_save_rdm_response(&resp, &saved_resp), kEtcPalErrNotImpl);
+#endif
 }
 
 TEST(TestMessageApi, AppendToSavedRdmResponseWorks)
@@ -114,6 +119,7 @@ TEST(TestMessageApi, SaveRptStatusWorks)
   RdmnetRptStatus status{{0x1234, 0x56789abc}, 1, 0x12345678, kRptStatusUnknownVector, status_str.c_str()};
 
   RdmnetSavedRptStatus saved_status{};
+#if RDMNET_DYNAMIC_MEM
   ASSERT_EQ(rdmnet_save_rpt_status(&status, &saved_status), kEtcPalErrOk);
 
   EXPECT_EQ(saved_status.source_uid, status.source_uid);
@@ -123,6 +129,9 @@ TEST(TestMessageApi, SaveRptStatusWorks)
   EXPECT_STREQ(saved_status.status_string, status.status_string);
 
   EXPECT_EQ(rdmnet_free_saved_rpt_status(&saved_status), kEtcPalErrOk);
+#else
+  EXPECT_EQ(rdmnet_save_rpt_status(&status, &saved_status), kEtcPalErrNotImpl);
+#endif
 }
 
 TEST(TestMessageApi, CopySavedRdmResponseWorks)

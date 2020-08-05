@@ -476,10 +476,20 @@ public:
   etcpal::Expected<Scope>  scope() const;
 
 private:
-  RdmnetDeviceConfig TranslateConfig(const Settings&         settings,
-                                     NotifyHandler&          notify_handler,
-                                     const char*             scope,
-                                     const etcpal::SockAddr& static_broker_addr);
+  class TranslatedConfig
+  {
+  public:
+    TranslatedConfig(const Settings&         settings,
+                     NotifyHandler&          notify_handler,
+                     const char*             scope,
+                     const etcpal::SockAddr& static_broker_addr);
+    const RdmnetDeviceConfig& get() noexcept;
+
+  private:
+    std::vector<RdmnetPhysicalEndpointConfig> physical_endpoints_;
+    std::vector<RdmnetVirtualEndpointConfig>  virtual_endpoints_;
+    RdmnetDeviceConfig                        config_;
+  };
 
   Handle         handle_{kInvalidHandle};
   NotifyHandler* notify_{nullptr};
@@ -597,8 +607,8 @@ inline etcpal::Error Device::StartupWithDefaultScope(NotifyHandler&          not
                                                      const Settings&         settings,
                                                      const etcpal::SockAddr& static_broker_addr)
 {
-  RdmnetDeviceConfig config = TranslateConfig(settings, notify_handler, E133_DEFAULT_SCOPE, static_broker_addr);
-  return rdmnet_device_create(&config, &handle_);
+  TranslatedConfig config(settings, notify_handler, E133_DEFAULT_SCOPE, static_broker_addr);
+  return rdmnet_device_create(&config.get(), &handle_);
 }
 
 /// @brief Allocate resources and start up this device with the given configuration on the given
@@ -621,8 +631,8 @@ inline etcpal::Error Device::Startup(NotifyHandler&          notify_handler,
                                      const char*             scope_id_str,
                                      const etcpal::SockAddr& static_broker_addr)
 {
-  RdmnetDeviceConfig config = TranslateConfig(settings, notify_handler, scope_id_str, static_broker_addr);
-  return rdmnet_device_create(&config, &handle_);
+  TranslatedConfig config(settings, notify_handler, scope_id_str, static_broker_addr);
+  return rdmnet_device_create(&config.get(), &handle_);
 }
 
 /// @brief Allocate resources and start up this device with the given configuration on the given
@@ -640,9 +650,9 @@ inline etcpal::Error Device::Startup(NotifyHandler&          notify_handler,
 /// @return Errors forwarded from rdmnet_device_create().
 inline etcpal::Error Device::Startup(NotifyHandler& notify_handler, const Settings& settings, const Scope& scope_config)
 {
-  RdmnetDeviceConfig config =
-      TranslateConfig(settings, notify_handler, scope_config.id_string().c_str(), scope_config.static_broker_addr());
-  return rdmnet_device_create(&config, &handle_);
+  TranslatedConfig config(settings, notify_handler, scope_config.id_string().c_str(),
+                          scope_config.static_broker_addr());
+  return rdmnet_device_create(&config.get(), &handle_);
 }
 
 /// @brief Shut down this device and deallocate resources.
@@ -1270,71 +1280,78 @@ inline etcpal::Expected<Scope> Device::scope() const
     return res;
 }
 
-inline RdmnetDeviceConfig Device::TranslateConfig(const Settings&         settings,
+inline const RdmnetDeviceConfig& Device::TranslatedConfig::get() noexcept
+{
+  if (!physical_endpoints_.empty())
+  {
+    config_.physical_endpoints = physical_endpoints_.data();
+    config_.num_physical_endpoints = physical_endpoints_.size();
+  }
+  if (!virtual_endpoints_.empty())
+  {
+    config_.virtual_endpoints = virtual_endpoints_.data();
+    config_.num_virtual_endpoints = virtual_endpoints_.size();
+  }
+  return config_;
+}
+
+// clang-format off
+inline Device::TranslatedConfig::TranslatedConfig(const Settings&         settings,
                                                   NotifyHandler&          notify_handler,
                                                   const char*             scope,
                                                   const etcpal::SockAddr& static_broker_addr)
+  : config_{
+      settings.cid.get(),
+      {
+        ::rdmnet::internal::DeviceLibCbConnected,
+        ::rdmnet::internal::DeviceLibCbConnectFailed,
+        ::rdmnet::internal::DeviceLibCbDisconnected,
+        ::rdmnet::internal::DeviceLibCbRdmCommandReceived,
+        ::rdmnet::internal::DeviceLibCbLlrpRdmCommandReceived,
+        ::rdmnet::internal::DeviceLibCbDynamicUidStatus,
+        &notify_handler
+      },
+      settings.response_buf,
+      {
+        scope,
+        static_broker_addr.get()
+      },
+      settings.uid.get(),
+      settings.search_domain.c_str(),
+      nullptr,
+      0,
+      nullptr,
+      0,
+      nullptr,
+      0
+    }
 {
-  // clang-format off
-  RdmnetDeviceConfig config = {
-    settings.cid.get(),
-    {
-      internal::DeviceLibCbConnected,
-      internal::DeviceLibCbConnectFailed,
-      internal::DeviceLibCbDisconnected,
-      internal::DeviceLibCbRdmCommandReceived,
-      internal::DeviceLibCbLlrpRdmCommandReceived,
-      internal::DeviceLibCbDynamicUidStatus,
-      &notify_handler
-    },
-    settings.response_buf,
-    {
-      scope,
-      static_broker_addr.get()
-    },
-    settings.uid.get(),
-    settings.search_domain.c_str(),
-    nullptr,
-    0,
-    nullptr,
-    0,
-    nullptr,
-    0
-  };
   // clang-format on
 
   // Physical endpoints
-  std::vector<RdmnetPhysicalEndpointConfig> physical_endpts;
-  if (!settings.virtual_endpoints.empty())
+  if (!settings.physical_endpoints.empty())
   {
-    physical_endpts.reserve(settings.physical_endpoints.size());
+    physical_endpoints_.reserve(settings.physical_endpoints.size());
     std::transform(settings.physical_endpoints.begin(), settings.physical_endpoints.end(),
-                   std::back_inserter(physical_endpts),
+                   std::back_inserter(physical_endpoints_),
                    [](const PhysicalEndpointConfig& config) { return config.get(); });
-    config.physical_endpoints = physical_endpts.data();
-    config.num_physical_endpoints = physical_endpts.size();
   }
 
   // Virtual endpoints
-  std::vector<RdmnetVirtualEndpointConfig> virtual_endpts;
   if (!settings.virtual_endpoints.empty())
   {
-    virtual_endpts.reserve(settings.virtual_endpoints.size());
+    virtual_endpoints_.reserve(settings.virtual_endpoints.size());
     std::transform(settings.virtual_endpoints.begin(), settings.virtual_endpoints.end(),
-                   std::back_inserter(virtual_endpts),
+                   std::back_inserter(virtual_endpoints_),
                    [](const VirtualEndpointConfig& config) { return config.get(); });
-    config.virtual_endpoints = virtual_endpts.data();
-    config.num_virtual_endpoints = virtual_endpts.size();
   }
 
   // LLRP network interfaces
   if (!settings.llrp_netints.empty())
   {
-    config.llrp_netints = settings.llrp_netints.data();
-    config.num_llrp_netints = settings.llrp_netints.size();
+    config_.llrp_netints = settings.llrp_netints.data();
+    config_.num_llrp_netints = settings.llrp_netints.size();
   }
-
-  return config;
 }
 
 };  // namespace rdmnet

@@ -1,0 +1,13 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+includedir=${prefix}/include
+libdir=${exec_prefix}/lib
+
+Name: @PROJECT_NAME@
+Description: Implementation of ANSI E1.33 (RDMnet)
+Version: @PROJECT_VERSION@
+URL: https://github.com/ETCLabs/RDMnet
+Requires: EtcPal >= 0.3, RDM >= 0.2
+Cflags: -I${includedir}
+Libs: -L${libdir} -l@RDMNET_LIB_TARGET_NAME@
+

@@ -248,7 +248,7 @@ bool LlrpManagerExample::ParseCommand(const std::string& line)
                 int target_handle = std::stoi(line.substr(3));
                 GetInterfaceList(target_handle);
               }
-              catch (std::exception)
+              catch (const std::exception&)
               {
                 printf("Command syntax: gi <target_handle>\n");
               }

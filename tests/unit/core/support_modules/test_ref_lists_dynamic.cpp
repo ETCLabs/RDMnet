@@ -137,6 +137,20 @@ TEST_F(TestRefLists, AddPendingRefsWorks)
 
 #define DESTROY_MARKED_REFS_CONTEXT_PTR reinterpret_cast<const void*>(30)
 
+TEST_F(TestRefLists, RemoveMarkedRefFromOneElementPending)
+{
+  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.pending, reinterpret_cast<void*>(0)));
+  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.to_remove, reinterpret_cast<void*>(0)));
+  ASSERT_EQ(test_refs.to_remove.num_refs, 1u);
+
+  rc_ref_lists_remove_marked(&test_refs, ref_function, DESTROY_MARKED_REFS_CONTEXT_PTR);
+  EXPECT_EQ(ref_function_fake.call_count, 1u);
+  EXPECT_EQ(ref_function_fake.arg0_val, reinterpret_cast<void*>(0));
+  EXPECT_EQ(ref_function_fake.arg1_val, DESTROY_MARKED_REFS_CONTEXT_PTR);
+  EXPECT_EQ(test_refs.pending.num_refs, 0u);
+  EXPECT_EQ(test_refs.to_remove.num_refs, 0u);
+}
+
 TEST_F(TestRefLists, RemoveMarkedRefFromPending)
 {
   AddRefsZeroThroughTwo(&test_refs.pending);
@@ -149,6 +163,20 @@ TEST_F(TestRefLists, RemoveMarkedRefFromPending)
   EXPECT_EQ(ref_function_fake.arg0_val, reinterpret_cast<void*>(1));
   EXPECT_EQ(ref_function_fake.arg1_val, DESTROY_MARKED_REFS_CONTEXT_PTR);
   EXPECT_EQ(test_refs.pending.num_refs, 2u);
+  EXPECT_EQ(test_refs.to_remove.num_refs, 0u);
+}
+
+TEST_F(TestRefLists, RemoveMarkedRefFromOneElementActive)
+{
+  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.active, reinterpret_cast<void*>(0)));
+  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.to_remove, reinterpret_cast<void*>(0)));
+  ASSERT_EQ(test_refs.to_remove.num_refs, 1u);
+
+  rc_ref_lists_remove_marked(&test_refs, ref_function, DESTROY_MARKED_REFS_CONTEXT_PTR);
+  EXPECT_EQ(ref_function_fake.call_count, 1u);
+  EXPECT_EQ(ref_function_fake.arg0_val, reinterpret_cast<void*>(0));
+  EXPECT_EQ(ref_function_fake.arg1_val, DESTROY_MARKED_REFS_CONTEXT_PTR);
+  EXPECT_EQ(test_refs.active.num_refs, 0u);
   EXPECT_EQ(test_refs.to_remove.num_refs, 0u);
 }
 

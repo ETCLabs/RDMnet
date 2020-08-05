@@ -197,42 +197,6 @@ void rdmnet_controller_set_callbacks(RdmnetControllerConfig*                    
 }
 
 /**
- * @brief Provide a set of basic information that the library will use for responding to RDM commands.
- *
- * RDMnet controllers are required to respond to a basic set of RDM commands. This library provides
- * two possible approaches to this. With this approach, the library stores some basic data about
- * a controller instance and handles and responds to all RDM commands internally. Use this function
- * to set that data in the configuration structure. See @ref using_controller for more information.
- *
- * @param[out] config Config struct in which to set the data. This doesn't copy the strings
- *                    themselves yet; they must remain valid in their original location until the
- *                    config struct is passed to rdmnet_controller_create().
- * @param[in] manufacturer_label A string representing the manufacturer of the controller.
- * @param[in] device_model_description A string representing the name of the product model
- *                                     implementing the controller.
- * @param[in] software_version_label A string representing the software version of the controller.
- * @param[in] device_label A string representing a user-settable name for this controller instance.
- * @param[in] device_label_settable Whether the library should allow the device label to be changed
- *                                  remotely.
- */
-void rdmnet_controller_set_rdm_data(RdmnetControllerConfig* config,
-                                    const char*             manufacturer_label,
-                                    const char*             device_model_description,
-                                    const char*             software_version_label,
-                                    const char*             device_label,
-                                    bool                    device_label_settable)
-{
-  if (config)
-  {
-    config->rdm_data.manufacturer_label = manufacturer_label;
-    config->rdm_data.device_model_description = device_model_description;
-    config->rdm_data.software_version_label = software_version_label;
-    config->rdm_data.device_label = device_label;
-    config->rdm_data.device_label_settable = device_label_settable;
-  }
-}
-
-/**
  * @brief Set callbacks to handle RDM commands in an RDMnet controller configuration structure.
  *
  * RDMnet controllers are required to respond to a basic set of RDM commands. This library provides
@@ -328,8 +292,12 @@ etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t        controller_h
   if (res != kEtcPalErrOk)
     return res;
 
-  res = rc_client_unregister(&controller->client, disconnect_reason);
+  bool destroy_immediately = rc_client_unregister(&controller->client, disconnect_reason);
+  rdmnet_unregister_struct_instance(controller);
   release_controller(controller);
+
+  if (destroy_immediately)
+    rdmnet_free_struct_instance(controller);
   return res;
 }
 
@@ -891,7 +859,7 @@ etcpal_error_t create_new_controller(const RdmnetControllerConfig* config, rdmne
 {
   etcpal_error_t res = kEtcPalErrNoMem;
 
-  RdmnetController* new_controller = alloc_controller_instance();
+  RdmnetController* new_controller = rdmnet_alloc_controller_instance();
   if (!new_controller)
     return res;
 
@@ -911,7 +879,8 @@ etcpal_error_t create_new_controller(const RdmnetControllerConfig* config, rdmne
   res = rc_rpt_client_register(client, config->create_llrp_target, config->llrp_netints, config->num_llrp_netints);
   if (res != kEtcPalErrOk)
   {
-    free_controller_instance(new_controller);
+    rdmnet_unregister_struct_instance(new_controller);
+    rdmnet_free_struct_instance(new_controller);
     return res;
   }
 
@@ -940,7 +909,8 @@ etcpal_error_t get_controller(rdmnet_controller_t handle, RdmnetController** con
   if (!rdmnet_readlock())
     return kEtcPalErrSys;
 
-  RdmnetController* found_controller = (RdmnetController*)find_struct_instance(handle, kRdmnetStructTypeController);
+  RdmnetController* found_controller =
+      (RdmnetController*)rdmnet_find_struct_instance(handle, kRdmnetStructTypeController);
   if (!found_controller)
   {
     rdmnet_readunlock();
@@ -1028,7 +998,7 @@ void client_destroyed(RCClient* client)
 {
   RDMNET_ASSERT(client);
   RdmnetController* controller = GET_CONTROLLER_FROM_CLIENT(client);
-  free_controller_instance(controller);
+  rdmnet_free_struct_instance(controller);
 }
 
 void client_llrp_msg_received(RCClient*              client,
@@ -1276,19 +1246,21 @@ void handle_component_scope(RdmnetController*       controller,
   uint16_t scope_slot = etcpal_unpack_u16b(data);
 
   // This is a bit of a hack and relies on knowledge of how the client struct works.
-  // We use a convention that the scope slot corresponds to the scope handle plus 1.
+  // We use a convention that the scope slot corresponds to the scope's index in the client's
+  // scopes array plus 1.
   RCClient* client = &controller->client;
+#if RDMNET_DYNAMIC_MEM
   if (scope_slot == 0 || scope_slot > client->num_scopes)
   {
     RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRDataOutOfRange);
     return;
   }
 
-  RCClientScope* scope = &client->scopes[scope_slot - 1];
-  while ((scope->state == kRCScopeStateInactive || scope->state == kRCScopeStateMarkedForDestruction))
+  RCClientScope* scope = client->scopes[scope_slot - 1];
+  while ((scope->handle == RDMNET_CLIENT_SCOPE_INVALID || scope->state == kRCScopeStateMarkedForDestruction))
   {
     if (++scope_slot <= client->num_scopes)
-      scope = &client->scopes[scope_slot - 1];
+      scope = client->scopes[scope_slot - 1];
     else
       break;
   }
@@ -1298,6 +1270,28 @@ void handle_component_scope(RdmnetController*       controller,
     RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRDataOutOfRange);
     return;
   }
+#else
+  if (scope_slot == 0 || scope_slot > RDMNET_MAX_SCOPES_PER_CLIENT)
+  {
+    RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRDataOutOfRange);
+    return;
+  }
+
+  RCClientScope* scope = &client->scopes[scope_slot - 1];
+  while ((scope->handle == RDMNET_CLIENT_SCOPE_INVALID || scope->state == kRCScopeStateMarkedForDestruction))
+  {
+    if (++scope_slot <= RDMNET_MAX_SCOPES_PER_CLIENT)
+      scope = &client->scopes[scope_slot - 1];
+    else
+      break;
+  }
+
+  if (scope_slot > RDMNET_MAX_SCOPES_PER_CLIENT)
+  {
+    RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRDataOutOfRange);
+    return;
+  }
+#endif
 
   // Pack the scope information
   uint8_t* cur_ptr = buf;

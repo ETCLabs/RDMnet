@@ -261,8 +261,12 @@ etcpal_error_t rdmnet_device_destroy(rdmnet_device_t handle, rdmnet_disconnect_r
   if (res != kEtcPalErrOk)
     return res;
 
-  res = rc_client_unregister(&device->client, disconnect_reason);
+  bool destroy_immediately = rc_client_unregister(&device->client, disconnect_reason);
+  rdmnet_unregister_struct_instance(device);
   release_device(device);
+
+  if (destroy_immediately)
+    rdmnet_free_struct_instance(device);
   return res;
 }
 
@@ -865,7 +869,7 @@ etcpal_error_t rdmnet_device_add_physical_responders(rdmnet_device_t            
   DeviceEndpoint* endpoint = find_endpoint(device, endpoint_id);
   if (!endpoint)
     res = kEtcPalErrNotFound;
-  else if (endpoint->type != kDeviceEndpointTypeVirtual)
+  else if (endpoint->type != kDeviceEndpointTypePhysical)
     res = kEtcPalErrInvalid;
 
   if (res == kEtcPalErrOk)
@@ -1299,7 +1303,7 @@ etcpal_error_t create_new_device(const RdmnetDeviceConfig* config, rdmnet_device
 {
   etcpal_error_t res = kEtcPalErrNoMem;
 
-  RdmnetDevice* new_device = alloc_device_instance();
+  RdmnetDevice* new_device = rdmnet_alloc_device_instance();
   if (!new_device)
     return res;
 
@@ -1308,13 +1312,15 @@ etcpal_error_t create_new_device(const RdmnetDeviceConfig* config, rdmnet_device
 
   if (!add_physical_endpoints(new_device, config->physical_endpoints, config->num_physical_endpoints))
   {
-    free_device_instance(new_device);
+    rdmnet_unregister_struct_instance(new_device);
+    rdmnet_free_struct_instance(new_device);
     return res;
   }
 
   if (!add_virtual_endpoints(new_device, config->virtual_endpoints, config->num_virtual_endpoints))
   {
-    free_device_instance(new_device);
+    rdmnet_unregister_struct_instance(new_device);
+    rdmnet_free_struct_instance(new_device);
     return res;
   }
 
@@ -1335,15 +1341,18 @@ etcpal_error_t create_new_device(const RdmnetDeviceConfig* config, rdmnet_device
   res = rc_rpt_client_register(client, true, config->llrp_netints, config->num_llrp_netints);
   if (res != kEtcPalErrOk)
   {
-    free_device_instance(new_device);
+    rdmnet_unregister_struct_instance(new_device);
+    rdmnet_free_struct_instance(new_device);
     return res;
   }
 
   res = rc_client_add_scope(client, &config->scope_config, &new_device->scope_handle);
   if (res != kEtcPalErrOk)
   {
-    rc_client_unregister(client, kRdmnetDisconnectShutdown);
-    free_device_instance(new_device);
+    rdmnet_unregister_struct_instance(new_device);
+    bool destroy_immediately = rc_client_unregister(client, kRdmnetDisconnectShutdown);
+    if (destroy_immediately)
+      rdmnet_free_struct_instance(new_device);
     return res;
   }
 
@@ -1362,7 +1371,7 @@ etcpal_error_t get_device(rdmnet_device_t handle, RdmnetDevice** device)
   if (!rdmnet_readlock())
     return kEtcPalErrSys;
 
-  RdmnetDevice* found_device = (RdmnetDevice*)find_struct_instance(handle, kRdmnetStructTypeDevice);
+  RdmnetDevice* found_device = (RdmnetDevice*)rdmnet_find_struct_instance(handle, kRdmnetStructTypeDevice);
   if (!found_device)
   {
     rdmnet_readunlock();
@@ -1658,7 +1667,7 @@ void client_destroyed(RCClient* client)
 {
   RDMNET_ASSERT(client);
   RdmnetDevice* device = GET_DEVICE_FROM_CLIENT(client);
-  free_device_instance(device);
+  rdmnet_free_struct_instance(device);
 }
 
 void client_llrp_msg_received(RCClient*              client,

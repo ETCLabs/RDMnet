@@ -126,7 +126,7 @@ static void free_llrp_manager_resources(LlrpManager* manager);
 static void free_llrp_target_resources(LlrpTarget* target);
 static void free_ept_client_resources(RdmnetEptClient* ept_client);
 
-static void free_instance_internal(const EtcPalRbTree* self, EtcPalRbNode* node);
+static void tree_clear_cb(const EtcPalRbTree* self, EtcPalRbNode* node);
 
 /*************************** Function definitions ****************************/
 
@@ -205,12 +205,13 @@ void rdmnet_deinit(void)
 
   rc_deinit();
 
-  etcpal_rbtree_clear_with_cb(&handles, free_instance_internal);
+  etcpal_rbtree_clear_with_cb(&handles, tree_clear_cb);
 }
 
 // clang-format off
 static const char* kRptStatusCodeStrings[] =
 {
+  "Invalid RPT Status code",
   "Destination RPT UID not found",
   "Timeout waiting for RDM response from responder",
   "Invalid RDM response received from responder",
@@ -395,7 +396,11 @@ const char* rdmnet_dynamic_uid_status_to_string(rdmnet_dynamic_uid_status_t code
   return "Invalid Dynamic UID status code";
 }
 
-RdmnetController* alloc_controller_instance(void)
+/******************************************************************************
+ * Internal definitions
+ *****************************************************************************/
+
+RdmnetController* rdmnet_alloc_controller_instance(void)
 {
   int new_handle = get_next_int_handle(&handle_manager);
   if (new_handle == -1)
@@ -425,7 +430,7 @@ RdmnetController* alloc_controller_instance(void)
   return new_controller;
 }
 
-RdmnetDevice* alloc_device_instance(void)
+RdmnetDevice* rdmnet_alloc_device_instance(void)
 {
   int new_handle = get_next_int_handle(&handle_manager);
   if (new_handle == -1)
@@ -463,7 +468,7 @@ RdmnetDevice* alloc_device_instance(void)
   return new_device;
 }
 
-LlrpManager* alloc_llrp_manager_instance(void)
+LlrpManager* rdmnet_alloc_llrp_manager_instance(void)
 {
   int new_handle = get_next_int_handle(&handle_manager);
   if (new_handle == -1)
@@ -493,7 +498,7 @@ LlrpManager* alloc_llrp_manager_instance(void)
   return new_manager;
 }
 
-LlrpTarget* alloc_llrp_target_instance(void)
+LlrpTarget* rdmnet_alloc_llrp_target_instance(void)
 {
   int new_handle = get_next_int_handle(&handle_manager);
   if (new_handle == -1)
@@ -523,35 +528,38 @@ LlrpTarget* alloc_llrp_target_instance(void)
   return new_target;
 }
 
-void free_controller_instance(RdmnetController* controller)
+void rdmnet_unregister_struct_instance(void* instance)
 {
-  RDMNET_ASSERT(controller);
-  etcpal_rbtree_remove(&handles, controller);
-  free_controller_resources(controller);
+  RDMNET_ASSERT(instance);
+  etcpal_rbtree_remove(&handles, instance);
 }
 
-void free_device_instance(RdmnetDevice* device)
+void rdmnet_free_struct_instance(void* instance)
 {
-  RDMNET_ASSERT(device);
-  etcpal_rbtree_remove(&handles, device);
-  free_device_resources(device);
+  RDMNET_ASSERT(instance);
+  RdmnetStructId* id = (RdmnetStructId*)instance;
+  switch (id->type)
+  {
+    case kRdmnetStructTypeController:
+      free_controller_resources((RdmnetController*)id);
+      break;
+    case kRdmnetStructTypeDevice:
+      free_device_resources((RdmnetDevice*)id);
+      break;
+    case kRdmnetStructTypeLlrpManager:
+      free_llrp_manager_resources((LlrpManager*)id);
+      break;
+    case kRdmnetStructTypeLlrpTarget:
+      free_llrp_target_resources((LlrpTarget*)id);
+      break;
+    case kRdmnetStructTypeEptClient:
+      free_ept_client_resources((RdmnetEptClient*)id);
+    default:
+      break;
+  }
 }
 
-void free_llrp_manager_instance(LlrpManager* manager)
-{
-  RDMNET_ASSERT(manager);
-  etcpal_rbtree_remove(&handles, manager);
-  free_llrp_manager_resources(manager);
-}
-
-void free_llrp_target_instance(LlrpTarget* target)
-{
-  RDMNET_ASSERT(target);
-  etcpal_rbtree_remove(&handles, target);
-  free_llrp_target_resources(target);
-}
-
-void* find_struct_instance(int handle, rdmnet_struct_type_t type)
+void* rdmnet_find_struct_instance(int handle, rdmnet_struct_type_t type)
 {
   RdmnetStructId* id = (RdmnetStructId*)etcpal_rbtree_find(&handles, &handle);
   if (id && id->type == type)
@@ -637,26 +645,9 @@ void free_ept_client_resources(RdmnetEptClient* ept_client)
   FREE_RDMNET_EPT_CLIENT(ept_client);
 }
 
-void free_instance_internal(const EtcPalRbTree* self, EtcPalRbNode* node)
+void tree_clear_cb(const EtcPalRbTree* self, EtcPalRbNode* node)
 {
   ETCPAL_UNUSED_ARG(self);
-  RdmnetStructId* id = (RdmnetStructId*)node->value;
-  switch (id->type)
-  {
-    case kRdmnetStructTypeController:
-      free_controller_resources((RdmnetController*)id);
-      break;
-    case kRdmnetStructTypeDevice:
-      free_device_resources((RdmnetDevice*)id);
-      break;
-    case kRdmnetStructTypeLlrpManager:
-      free_llrp_manager_resources((LlrpManager*)id);
-      break;
-    case kRdmnetStructTypeLlrpTarget:
-      free_llrp_target_resources((LlrpTarget*)id);
-      break;
-    default:
-      break;
-  }
+  rdmnet_free_struct_instance(node->value);
   node_dealloc(node);
 }

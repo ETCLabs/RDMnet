@@ -26,6 +26,7 @@
 #include "etcpal/cpp/inet.h"
 #include "rdm/cpp/uid.h"
 #include "gtest/gtest.h"
+#include "rdmnet/core/opts.h"
 #include "test_disc_common_fakes.h"
 #include "test_operators.h"
 
@@ -42,7 +43,11 @@ protected:
   };
   using DiscoveredBrokerUniquePtr = std::unique_ptr<DiscoveredBroker, DiscoveredBrokerDeleter>;
 
-  TestDiscoveredBroker() { TestDiscoveryCommonResetAllFakes(); }
+  TestDiscoveredBroker()
+  {
+    TestDiscoveryCommonResetAllFakes();
+    discovered_broker_module_init();
+  }
 
   DiscoveredBrokerUniquePtr MakeDefaultDiscoveredBroker()
   {
@@ -149,17 +154,67 @@ TEST_F(TestDiscoveredBroker, AddTxtRecordItemWorks)
   EXPECT_EQ(db->additional_txt_items_array[0], test_txt_item);
 }
 
+TEST_F(TestDiscoveredBroker, AddMultipleTxtRecordItemsWorks)
+{
+  auto db = MakeDefaultDiscoveredBroker();
+
+  const std::string kKeyBase = "Test Key ";
+  const std::string kValueBase = "Test Value ";
+
+#if RDMNET_DYNAMIC_MEM
+  constexpr size_t kNumTxtItems = 100;
+#else
+  constexpr size_t kNumTxtItems = RDMNET_MAX_ADDITIONAL_TXT_ITEMS_PER_DISCOVERED_BROKER;
+#endif
+
+  std::string key;
+  std::string value;
+  for (size_t i = 0; i < kNumTxtItems; ++i)
+  {
+    key = kKeyBase + std::to_string(i);
+    value = kValueBase + std::to_string(i);
+    ASSERT_TRUE(discovered_broker_add_txt_record_item(
+        db.get(), key.c_str(), reinterpret_cast<const uint8_t*>(value.c_str()), static_cast<uint8_t>(value.length())));
+  }
+
+  EXPECT_EQ(db->num_additional_txt_items, kNumTxtItems);
+
+#if !RDMNET_DYNAMIC_MEM
+  key = kKeyBase + std::to_string(kNumTxtItems);
+  value = kValueBase + std::to_string(kNumTxtItems);
+  EXPECT_FALSE(discovered_broker_add_txt_record_item(
+      db.get(), key.c_str(), reinterpret_cast<const uint8_t*>(value.c_str()), static_cast<uint8_t>(value.length())));
+#endif
+
+  for (size_t i = 0; i < kNumTxtItems; ++i)
+  {
+    key = kKeyBase + std::to_string(i);
+    value = kValueBase + std::to_string(i);
+
+    EXPECT_STREQ(db->additional_txt_items_array[i].key, key.c_str());
+    ASSERT_EQ(db->additional_txt_items_array[i].value_len, static_cast<uint8_t>(value.length()));
+    EXPECT_EQ(std::memcmp(db->additional_txt_items_array[i].value, value.c_str(), value.length()), 0);
+
+    EXPECT_STREQ(db->additional_txt_items_data[i].key, key.c_str());
+    ASSERT_EQ(db->additional_txt_items_data[i].value_len, static_cast<uint8_t>(value.length()));
+    EXPECT_EQ(std::memcmp(db->additional_txt_items_data[i].value, value.c_str(), value.length()), 0);
+  }
+}
+
 TEST_F(TestDiscoveredBroker, FindByNameWorks)
 {
   // An array of DiscoveredBroker pointers that will automatically call discovered_broker_delete()
   // on each one on destruction.
-  constexpr int                                      kNumBrokers = 10;
+#if RDMNET_DYNAMIC_MEM
+  constexpr size_t kNumBrokers = 10;
+#else
+  constexpr size_t kNumBrokers = RDMNET_MAX_DISCOVERED_BROKERS;
+#endif
   std::array<DiscoveredBrokerUniquePtr, kNumBrokers> brokers;
-
-  DiscoveredBroker* list = nullptr;
+  DiscoveredBroker*                                  list = nullptr;
 
   // Fill the array and linked list of DiscoveredBrokers
-  for (int i = 0; i < 10; ++i)
+  for (int i = 0; i < kNumBrokers; ++i)
   {
     const auto this_full_service_name = full_service_name_ + " " + std::to_string(i);
     brokers[i].reset(

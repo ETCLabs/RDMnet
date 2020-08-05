@@ -35,9 +35,8 @@ network. RDMnet contains several key features to accomplish this end and to buil
 
 ## Platforms
 
-RDMnet is currently ported for the following platforms:
-* macOS
-* Microsoft Windows
+RDMnet supports all platforms targeted by [EtcPal](https://github.com/ETCLabs/EtcPal), including
+Microsoft Windows, macOS, Linux and several embedded RTOS platforms.
 
 ## Dependencies
 

@@ -60,8 +60,8 @@ struct DiscoveredBroker
   RdmnetDnsTxtRecordItem*   additional_txt_items_array;
   DnsTxtRecordItemInternal* additional_txt_items_data;
 #else
-  RdmnetDnsTxtRecordItem   additional_txt_items_array[MAX_TXT_RECORD_ITEMS_PER_BROKER];
-  DnsTxtRecordItemInternal additional_txt_items_data[MAX_TXT_RECORD_ITEMS_PER_BROKER];
+  RdmnetDnsTxtRecordItem   additional_txt_items_array[RDMNET_MAX_ADDITIONAL_TXT_ITEMS_PER_DISCOVERED_BROKER];
+  DnsTxtRecordItemInternal additional_txt_items_data[RDMNET_MAX_ADDITIONAL_TXT_ITEMS_PER_DISCOVERED_BROKER];
 #endif
   size_t num_additional_txt_items;
 

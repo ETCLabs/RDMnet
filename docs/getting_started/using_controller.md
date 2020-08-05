@@ -39,7 +39,13 @@ rdmnet_controller_set_callbacks(&config, my_controller_connected_cb, my_controll
                                 p_some_opaque_data);
 
 // Needed to identify this controller to other controllers on the network. More on this later.
-rdmnet_controller_set_rdm_data(&config, "My Manufacturer Name", "My Product Name", "1.0.0", "My Device Label", true);
+config.rdm_data.model_id = 0x0001;
+config.rdm_data.software_version_id = 0x01000000;
+config.rdm_data.manufacturer_label = "My Manufacturer Name";
+config.rdm_data.device_model_description = "My Product Name";
+config.rdm_data.software_version_label = "1.0.0";
+config.rdm_data.device_label = "My Device Label";
+config.rdm_data.device_label_settable = true;
 
 rdmnet_controller_t my_controller_handle;
 etcpal_error_t result = rdmnet_controller_create(&config, &my_controller_handle);
@@ -75,10 +81,13 @@ etcpal::Uuid my_cid = etcpal::Uuid::OsPreferred();
 rdmnet::Controller::Settings my_settings(my_cid, MY_ESTA_MANUFACTURER_ID_VAL);
 
 // Needed to identify this controller to other controllers on the network. More on this later.
-rdmnet::Controller::RdmData my_rdm_data("My Manufacturer Name",
-                                        "My Product Name",
-                                        "1.0.0",
-                                        "My Device Label");
+
+rdmnet::Controller::RdmData my_rdm_data(0x0001,                   // Device Model ID
+                                        0x01000000,               // Software Version ID
+                                        "My Manufacturer Name",   // Manufacturer Label
+                                        "My Product Name",        // Device Model Description
+                                        "1.0.0",                  // Software Version Label
+                                        "My Device Label");       // Device Label
 rdmnet::Controller controller;
 etcpal::Error result = controller.Startup(my_controller_notify_handler, my_settings, my_rdm_data);
 if (result)
@@ -141,9 +150,9 @@ etcpal_error_t result = rdmnet_controller_add_scope(my_controller_handle, &scope
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-etcpal::Error add_res = controller.AddDefaultScope();
+etcpal::Expected<rdmnet::ScopeHandle> add_res = controller.AddDefaultScope();
 // Or...
-etcpal::Error add_res = controller.AddScope("custom_scope_name");
+etcpal::Expected<rdmnet::ScopeHandle> add_res = controller.AddScope("custom_scope_name");
 
 if (add_res)
 {
@@ -151,7 +160,7 @@ if (add_res)
 }
 else
 {
-  std::cout << "Error adding default scope: '" << add_res.result().ToString() << "'\n"
+  std::cout << "Error adding default scope: '" << add_res.error().ToString() << "'\n"
 }
 ```
 <!-- CODE_BLOCK_END -->
@@ -187,9 +196,9 @@ etcpal_error_t result = rdmnet_controller_add_scope(my_controller_handle, &confi
 ```cpp
 // Get configured static broker address
 etcpal::Sockaddr static_broker_addr(etcpal::IpAddr::FromString("192.168.2.1"), 8000);
-etcpal::Error add_res = controller.AddScope("my_custom_scope", static_broker_addr);
+etcpal::Expected<rdmnet::ScopeHandle> add_res = controller.AddScope("my_custom_scope", static_broker_addr);
 // Or:
-etcpal::Error add_res = controller.AddDefaultScope(static_broker_addr);
+etcpal::Expected<rdmnet::ScopeHandle> add_res = controller.AddDefaultScope(static_broker_addr);
 ```
 <!-- CODE_BLOCK_END -->
 

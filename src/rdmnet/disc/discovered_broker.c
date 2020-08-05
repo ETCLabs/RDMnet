@@ -159,6 +159,12 @@ static bool expand_txt_record_arrays(DiscoveredBroker* db)
       if (new_data_arr)
       {
         db->additional_txt_items_data = new_data_arr;
+        // Reset the references from additional_txt_items_array to additional_txt_items_data
+        for (size_t i = 0; i < db->num_additional_txt_items; ++i)
+        {
+          db->additional_txt_items_array[i].key = db->additional_txt_items_data[i].key;
+          db->additional_txt_items_array[i].value = db->additional_txt_items_data[i].value;
+        }
         ++db->num_additional_txt_items;
         return true;
       }
@@ -185,7 +191,7 @@ bool discovered_broker_add_txt_record_item(DiscoveredBroker* db,
     new_item_data = &db->additional_txt_items_data[db->num_additional_txt_items - 1];
   }
 #else
-  if (db->num_additional_txt_items >= MAX_TXT_RECORD_ITEMS_PER_BROKER)
+  if (db->num_additional_txt_items >= RDMNET_MAX_ADDITIONAL_TXT_ITEMS_PER_DISCOVERED_BROKER)
     return false;
   new_item = &db->additional_txt_items_array[db->num_additional_txt_items];
   new_item_data = &db->additional_txt_items_data[db->num_additional_txt_items];

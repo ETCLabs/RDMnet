@@ -20,10 +20,14 @@
 #ifndef TEST_DATA_UTIL_H_
 #define TEST_DATA_UTIL_H_
 
-#include <string>
+#include <algorithm>
 #include <cstring>
+#include <fstream>
+#include <string>
 #include "rdmnet/core/message.h"
 #include "gtest/gtest.h"
+#include "test_file_manifest.h"
+#include "load_test_data.h"
 
 inline void ExpectRptClientEntriesEqual(const RdmnetRptClientEntry& a, const RdmnetRptClientEntry& b)
 {
@@ -404,6 +408,22 @@ inline void ExpectMessagesEqual(const RdmnetMessage& a, const RdmnetMessage& b)
         break;
     }
   }
+}
+
+inline bool GetTestFileByBasename(const std::string& basename, std::vector<uint8_t>& bytes, RdmnetMessage& msg)
+{
+  auto found = std::find_if(kRdmnetTestDataFiles.begin(), kRdmnetTestDataFiles.end(), [&](const DataValidationPair& p) {
+    std::string file_name = p.first;
+    return file_name.find(basename) != std::string::npos;
+  });
+  if (found != kRdmnetTestDataFiles.end())
+  {
+    std::ifstream test_data_file(found->first);
+    bytes = rdmnet::testing::LoadTestData(test_data_file);
+    msg = found->second;
+    return !bytes.empty();
+  }
+  return false;
 }
 
 #endif  // TEST_DATA_UTIL_H_

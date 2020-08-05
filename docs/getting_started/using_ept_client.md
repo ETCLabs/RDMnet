@@ -162,9 +162,9 @@ etcpal_error_t result = rdmnet_ept_client_add_scope(my_ept_client_handle, &scope
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-etcpal::Error add_res = ept_client.AddDefaultScope();
+etcpal::Expected<rdmnet::ScopeHandle> add_res = ept_client.AddDefaultScope();
 // Or...
-etcpal::Error add_res = ept_client.AddScope("custom_scope_name");
+etcpal::Expected<rdmnet::ScopeHandle> add_res = ept_client.AddScope("custom_scope_name");
 
 if (add_res)
 {
@@ -172,7 +172,7 @@ if (add_res)
 }
 else
 {
-  std::cout << "Error adding default scope: '" << add_res.result().ToString() << "'\n"
+  std::cout << "Error adding default scope: '" << add_res.error().ToString() << "'\n"
 }
 ```
 <!-- CODE_BLOCK_END -->
@@ -208,9 +208,9 @@ etcpal_error_t result = rdmnet_ept_client_add_scope(my_ept_client_handle, &confi
 ```cpp
 // Get configured static broker address
 etcpal::SockAddr static_broker_addr(etcpal::IpAddr::FromString("192.168.2.1"), 8000);
-etcpal::Error add_res = ept_client.AddScope("my_custom_scope", static_broker_addr);
+etcpal::Expected<rdmnet::ScopeHandle> add_res = ept_client.AddScope("my_custom_scope", static_broker_addr);
 // Or:
-etcpal::Error add_res = ept_client.AddDefaultScope(static_broker_addr);
+etcpal::Expected<rdmnet::ScopeHandle> add_res = ept_client.AddDefaultScope(static_broker_addr);
 ```
 <!-- CODE_BLOCK_END -->
 

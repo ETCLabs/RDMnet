@@ -134,6 +134,7 @@ etcpal_error_t llrp_target_destroy(llrp_target_t handle)
     return res;
 
   rc_llrp_target_unregister(&target->rc_target);
+  rdmnet_unregister_struct_instance(target);
   release_target(target);
   return res;
 }
@@ -206,7 +207,7 @@ etcpal_error_t create_new_target(const LlrpTargetConfig* config, llrp_target_t* 
 {
   etcpal_error_t res = kEtcPalErrNoMem;
 
-  LlrpTarget* new_target = alloc_llrp_target_instance();
+  LlrpTarget* new_target = rdmnet_alloc_llrp_target_instance();
   if (!new_target)
     return res;
 
@@ -220,7 +221,7 @@ etcpal_error_t create_new_target(const LlrpTargetConfig* config, llrp_target_t* 
   res = rc_llrp_target_register(rc_target, config->netints, config->num_netints);
   if (res != kEtcPalErrOk)
   {
-    free_llrp_target_instance(new_target);
+    rdmnet_free_struct_instance(new_target);
     return res;
   }
 
@@ -239,7 +240,7 @@ etcpal_error_t get_target(llrp_target_t handle, LlrpTarget** target)
   if (!rdmnet_readlock())
     return kEtcPalErrSys;
 
-  LlrpTarget* found_target = (LlrpTarget*)find_struct_instance(handle, kRdmnetStructTypeLlrpTarget);
+  LlrpTarget* found_target = (LlrpTarget*)rdmnet_find_struct_instance(handle, kRdmnetStructTypeLlrpTarget);
   if (!found_target)
   {
     rdmnet_readunlock();
@@ -276,5 +277,5 @@ void handle_target_destroyed(RCLlrpTarget* rc_target)
 {
   RDMNET_ASSERT(rc_target);
   LlrpTarget* target = GET_ENCOMPASSING_TARGET(rc_target);
-  free_llrp_target_instance(target);
+  rdmnet_free_struct_instance(target);
 }

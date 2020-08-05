@@ -643,7 +643,10 @@ inline etcpal::Expected<ScopeHandle> Controller::AddScope(const char* id, const 
   RdmnetScopeConfig     scope_config = {id, static_broker_addr.get()};
   rdmnet_client_scope_t scope_handle;
   auto                  result = rdmnet_controller_add_scope(handle_, &scope_config, &scope_handle);
-  return (result == kEtcPalErrOk ? scope_handle : result);
+  if (result == kEtcPalErrOk)
+    return scope_handle;
+  else
+    return result;
 }
 
 /// @brief Add a new scope to this controller instance.
@@ -789,7 +792,10 @@ inline etcpal::Expected<uint32_t> Controller::SendRdmCommand(ScopeHandle        
   uint32_t       seq_num;
   etcpal_error_t res = rdmnet_controller_send_rdm_command(handle_, scope_handle, &destination.get(), command_class,
                                                           param_id, data, data_len, &seq_num);
-  return (res == kEtcPalErrOk ? seq_num : res);
+  if (res == kEtcPalErrOk)
+    return seq_num;
+  else
+    return res;
 }
 
 /// @brief Send an RDM GET command from a controller on a scope.
@@ -812,7 +818,10 @@ inline etcpal::Expected<uint32_t> Controller::SendGetCommand(ScopeHandle        
   uint32_t       seq_num;
   etcpal_error_t res =
       rdmnet_controller_send_get_command(handle_, scope_handle, &destination.get(), param_id, data, data_len, &seq_num);
-  return (res == kEtcPalErrOk ? seq_num : res);
+  if (res == kEtcPalErrOk)
+    return seq_num;
+  else
+    return res;
 }
 
 /// @brief Send an RDM SET command from a controller on a scope.
@@ -835,7 +844,10 @@ inline etcpal::Expected<uint32_t> Controller::SendSetCommand(ScopeHandle        
   uint32_t       seq_num;
   etcpal_error_t res =
       rdmnet_controller_send_set_command(handle_, scope_handle, &destination.get(), param_id, data, data_len, &seq_num);
-  return (res == kEtcPalErrOk ? seq_num : res);
+  if (res == kEtcPalErrOk)
+    return seq_num;
+  else
+    return res;
 }
 
 /// @brief Request a client list from a broker.
