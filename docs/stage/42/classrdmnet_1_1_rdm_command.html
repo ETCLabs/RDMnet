@@ -1,0 +1,371 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen 1.8.13" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RDMnet: rdmnet::RdmCommand Class Reference</title>
+  <link href="tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="dynsections.js"></script>
+  <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+</script>
+  <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css" />
+  <!--BEGIN CUSTOM SCRIPTS-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <script type="text/javascript">
+    $(function () { selectAllC() });
+  </script>
+  <script type="text/javascript">
+    function selectAllC() {
+      // Enable all C-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_c")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_c")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectAllCpp() {
+      // Enable all C++-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_cpp")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C++-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_cpp")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectLanguage(evt, block_id, language) {
+      // Get all elements with class="tabcontent" and hide them
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.startsWith("div_" + block_id)) {
+          tabcontent[i].style.display = "none";
+        }
+      }
+      // Get all elements with class="tablinks" and remove the class "active"
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.startsWith("button_" + block_id)) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById("div_" + block_id + "_" + language).style.display = "block";
+      if (!evt.currentTarget.className.includes("active")) {
+        evt.currentTarget.className += " active";
+      }
+    }
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">RDMnet
+                &#160;<span id="projectnumber">Staging for pull request 42</span>
+              </div>
+              <div id="projectbrief">Implementation of ANSI E1.33 (RDMnet)</div>
+            </td>
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- end header part -->
+<!-- Generated by Doxygen 1.8.13 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Search');
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('classrdmnet_1_1_rdm_command.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public Member Functions</a>  </div>
+  <div class="headertitle">
+<div class="title">rdmnet::RdmCommand Class Reference<div class="ingroups"><a class="el" href="group__rdmnet__cpp__api.html">RDMnet C++ Language APIs</a> &raquo; <a class="el" href="group__rdmnet__cpp__common.html">Common Definitions</a></div></div>  </div>
+</div><!--header-->
+<div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>An RDM command received over RDMnet and delivered to an RDMnet callback function. </p>
+<p>Not valid for use other than as a parameter to an RDMnet callback function; use <a class="el" href="classrdmnet_1_1_rdm_command.html#a78e3d10f3f539e2314643d7017a6beb7" title="Save the data in this command for later use with API functions from a different context. ">RdmCommand::Save()</a> to create a copyable version. </p>
+</div>
+<p><code>#include &lt;<a class="el" href="rdm__command_8h_source.html">rdmnet/cpp/message_types/rdm_command.h</a>&gt;</code></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
+Public Member Functions</h2></td></tr>
+<tr class="memitem:a3299b654e3bbd47e543b81bae118bdac"><td class="memItemLeft" align="right" valign="top"><a id="a3299b654e3bbd47e543b81bae118bdac"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#a3299b654e3bbd47e543b81bae118bdac">RdmCommand</a> ()=delete</td></tr>
+<tr class="memdesc:a3299b654e3bbd47e543b81bae118bdac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Not default-constructible. <br /></td></tr>
+<tr class="separator:a3299b654e3bbd47e543b81bae118bdac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a050574a4910350565f3c2a3109aa7090"><td class="memItemLeft" align="right" valign="top"><a id="a050574a4910350565f3c2a3109aa7090"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#a050574a4910350565f3c2a3109aa7090">RdmCommand</a> (const <a class="el" href="classrdmnet_1_1_rdm_command.html">RdmCommand</a> &amp;other)=delete</td></tr>
+<tr class="memdesc:a050574a4910350565f3c2a3109aa7090"><td class="mdescLeft">&#160;</td><td class="mdescRight">Not copyable - use <a class="el" href="classrdmnet_1_1_rdm_command.html#a78e3d10f3f539e2314643d7017a6beb7" title="Save the data in this command for later use with API functions from a different context. ">Save()</a> to create a copyable version. <br /></td></tr>
+<tr class="separator:a050574a4910350565f3c2a3109aa7090"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c71296cfa540195b8e82fe27b70e35d"><td class="memItemLeft" align="right" valign="top"><a id="a0c71296cfa540195b8e82fe27b70e35d"></a>
+<a class="el" href="classrdmnet_1_1_rdm_command.html">RdmCommand</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#a0c71296cfa540195b8e82fe27b70e35d">operator=</a> (const <a class="el" href="classrdmnet_1_1_rdm_command.html">RdmCommand</a> &amp;other)=delete</td></tr>
+<tr class="memdesc:a0c71296cfa540195b8e82fe27b70e35d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Not copyable - use <a class="el" href="classrdmnet_1_1_rdm_command.html#a78e3d10f3f539e2314643d7017a6beb7" title="Save the data in this command for later use with API functions from a different context. ">Save()</a> to create a copyable version. <br /></td></tr>
+<tr class="separator:a0c71296cfa540195b8e82fe27b70e35d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1ac399d190d331ffd8780f269607cd2c"><td class="memItemLeft" align="right" valign="top"><a id="a1ac399d190d331ffd8780f269607cd2c"></a>
+constexpr&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#a1ac399d190d331ffd8780f269607cd2c">RdmCommand</a> (const <a class="el" href="struct_rdmnet_rdm_command.html">RdmnetRdmCommand</a> &amp;c_cmd) noexcept</td></tr>
+<tr class="memdesc:a1ac399d190d331ffd8780f269607cd2c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct an <a class="el" href="classrdmnet_1_1_rdm_command.html" title="An RDM command received over RDMnet and delivered to an RDMnet callback function. ...">RdmCommand</a> which references an instance of the C <a class="el" href="struct_rdmnet_rdm_command.html" title="An RDMnet RDM command received by this component. ">RdmnetRdmCommand</a> type. <br /></td></tr>
+<tr class="separator:a1ac399d190d331ffd8780f269607cd2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afe1148cd27d694b5abe4a625a51d7df7"><td class="memItemLeft" align="right" valign="top"><a id="afe1148cd27d694b5abe4a625a51d7df7"></a>
+constexpr <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#afe1148cd27d694b5abe4a625a51d7df7">rdmnet_source_uid</a> () const noexcept</td></tr>
+<tr class="memdesc:afe1148cd27d694b5abe4a625a51d7df7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the UID of the RDMnet controller that sent this command. <br /></td></tr>
+<tr class="separator:afe1148cd27d694b5abe4a625a51d7df7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac03f08627a9806c1efc51d8f5a554d7e"><td class="memItemLeft" align="right" valign="top"><a id="ac03f08627a9806c1efc51d8f5a554d7e"></a>
+constexpr uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#ac03f08627a9806c1efc51d8f5a554d7e">dest_endpoint</a> () const noexcept</td></tr>
+<tr class="memdesc:ac03f08627a9806c1efc51d8f5a554d7e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the endpoint to which this command is addressed. <br /></td></tr>
+<tr class="separator:ac03f08627a9806c1efc51d8f5a554d7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54c733bba0391a83d2e434b023035028"><td class="memItemLeft" align="right" valign="top"><a id="a54c733bba0391a83d2e434b023035028"></a>
+constexpr uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#a54c733bba0391a83d2e434b023035028">seq_num</a> () const noexcept</td></tr>
+<tr class="memdesc:a54c733bba0391a83d2e434b023035028"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the RDMnet sequence number of this command. <br /></td></tr>
+<tr class="separator:a54c733bba0391a83d2e434b023035028"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ce57f42fdb337f67e7a08d047e2a4ec"><td class="memItemLeft" align="right" valign="top"><a id="a8ce57f42fdb337f67e7a08d047e2a4ec"></a>
+constexpr <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#a8ce57f42fdb337f67e7a08d047e2a4ec">rdm_source_uid</a> () const noexcept</td></tr>
+<tr class="memdesc:a8ce57f42fdb337f67e7a08d047e2a4ec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the UID of the RDM controller that has sent this command. <br /></td></tr>
+<tr class="separator:a8ce57f42fdb337f67e7a08d047e2a4ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a70c668b4816e0ff4a32ecfe02b9a4eaa"><td class="memItemLeft" align="right" valign="top"><a id="a70c668b4816e0ff4a32ecfe02b9a4eaa"></a>
+constexpr <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#a70c668b4816e0ff4a32ecfe02b9a4eaa">rdm_dest_uid</a> () const noexcept</td></tr>
+<tr class="memdesc:a70c668b4816e0ff4a32ecfe02b9a4eaa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the UID of the RDM responder to which this command is addressed. <br /></td></tr>
+<tr class="separator:a70c668b4816e0ff4a32ecfe02b9a4eaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a080360a8192893acfc1d76f729063157"><td class="memItemLeft" align="right" valign="top"><a id="a080360a8192893acfc1d76f729063157"></a>
+constexpr uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#a080360a8192893acfc1d76f729063157">subdevice</a> () const noexcept</td></tr>
+<tr class="memdesc:a080360a8192893acfc1d76f729063157"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the RDM subdevice to which this command is addressed (0 means the root device). <br /></td></tr>
+<tr class="separator:a080360a8192893acfc1d76f729063157"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af7e9f1d440d9f1f181017987c1c791d3"><td class="memItemLeft" align="right" valign="top"><a id="af7e9f1d440d9f1f181017987c1c791d3"></a>
+constexpr <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/group__message.html#gafda6b6d4c08788e755cb3cb6c1ca021b">rdm_command_class_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#af7e9f1d440d9f1f181017987c1c791d3">command_class</a> () const noexcept</td></tr>
+<tr class="memdesc:af7e9f1d440d9f1f181017987c1c791d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the RDM command class of this command. <br /></td></tr>
+<tr class="separator:af7e9f1d440d9f1f181017987c1c791d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a63629cb9cb2169388593a9161a32c72f"><td class="memItemLeft" align="right" valign="top"><a id="a63629cb9cb2169388593a9161a32c72f"></a>
+constexpr uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#a63629cb9cb2169388593a9161a32c72f">param_id</a> () const noexcept</td></tr>
+<tr class="memdesc:a63629cb9cb2169388593a9161a32c72f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the RDM parameter ID (PID) of this command. <br /></td></tr>
+<tr class="separator:a63629cb9cb2169388593a9161a32c72f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec10eb40a1f23431f3ca1aef566a0dcc"><td class="memItemLeft" align="right" valign="top"><a id="aec10eb40a1f23431f3ca1aef566a0dcc"></a>
+constexpr <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_command_header.html">rdm::CommandHeader</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#aec10eb40a1f23431f3ca1aef566a0dcc">rdm_header</a> () const noexcept</td></tr>
+<tr class="memdesc:aec10eb40a1f23431f3ca1aef566a0dcc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the RDM protocol header contained within this command. <br /></td></tr>
+<tr class="separator:aec10eb40a1f23431f3ca1aef566a0dcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af91050edbb54819c0cefa6a5483a3e00"><td class="memItemLeft" align="right" valign="top"><a id="af91050edbb54819c0cefa6a5483a3e00"></a>
+constexpr const uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#af91050edbb54819c0cefa6a5483a3e00">data</a> () const noexcept</td></tr>
+<tr class="memdesc:af91050edbb54819c0cefa6a5483a3e00"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a pointer to the RDM parameter data buffer contained within this command. <br /></td></tr>
+<tr class="separator:af91050edbb54819c0cefa6a5483a3e00"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a028cfb7b0a4a762dea6b5b0144639bee"><td class="memItemLeft" align="right" valign="top"><a id="a028cfb7b0a4a762dea6b5b0144639bee"></a>
+constexpr uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#a028cfb7b0a4a762dea6b5b0144639bee">data_len</a> () const noexcept</td></tr>
+<tr class="memdesc:a028cfb7b0a4a762dea6b5b0144639bee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the length of the RDM parameter data contained within this command. <br /></td></tr>
+<tr class="separator:a028cfb7b0a4a762dea6b5b0144639bee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a640263cede1cafe23b486a6ff033eb84"><td class="memItemLeft" align="right" valign="top"><a id="a640263cede1cafe23b486a6ff033eb84"></a>
+constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#a640263cede1cafe23b486a6ff033eb84">HasData</a> () const noexcept</td></tr>
+<tr class="memdesc:a640263cede1cafe23b486a6ff033eb84"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether this command has any associated RDM parameter data. <br /></td></tr>
+<tr class="separator:a640263cede1cafe23b486a6ff033eb84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18ab3142115df0d52a43673c8af4527e"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#a18ab3142115df0d52a43673c8af4527e">IsToDefaultResponder</a> () const noexcept</td></tr>
+<tr class="memdesc:a18ab3142115df0d52a43673c8af4527e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether this command is addressed to the RDMnet default responder.  <a href="#a18ab3142115df0d52a43673c8af4527e">More...</a><br /></td></tr>
+<tr class="separator:a18ab3142115df0d52a43673c8af4527e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af01ca868e13240d0a4ddb07f82d9907e"><td class="memItemLeft" align="right" valign="top"><a id="af01ca868e13240d0a4ddb07f82d9907e"></a>
+constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#af01ca868e13240d0a4ddb07f82d9907e">IsGet</a> () const noexcept</td></tr>
+<tr class="memdesc:af01ca868e13240d0a4ddb07f82d9907e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether this command is an RDM GET command. <br /></td></tr>
+<tr class="separator:af01ca868e13240d0a4ddb07f82d9907e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1ba8dc7d0870637e96d7d2882305cc83"><td class="memItemLeft" align="right" valign="top"><a id="a1ba8dc7d0870637e96d7d2882305cc83"></a>
+constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#a1ba8dc7d0870637e96d7d2882305cc83">IsSet</a> () const noexcept</td></tr>
+<tr class="memdesc:a1ba8dc7d0870637e96d7d2882305cc83"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether this command is an RDM SET command. <br /></td></tr>
+<tr class="separator:a1ba8dc7d0870637e96d7d2882305cc83"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af03918b2f66a2cc408850e98a74b8a33"><td class="memItemLeft" align="right" valign="top"><a id="af03918b2f66a2cc408850e98a74b8a33"></a>
+constexpr const <a class="el" href="struct_rdmnet_rdm_command.html">RdmnetRdmCommand</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#af03918b2f66a2cc408850e98a74b8a33">get</a> () const noexcept</td></tr>
+<tr class="memdesc:af03918b2f66a2cc408850e98a74b8a33"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a const reference to the underlying C type. <br /></td></tr>
+<tr class="separator:af03918b2f66a2cc408850e98a74b8a33"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8313285ec0254faef5f534daa9d33d62"><td class="memItemLeft" align="right" valign="top"><a id="a8313285ec0254faef5f534daa9d33d62"></a>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_command.html">rdm::Command</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#a8313285ec0254faef5f534daa9d33d62">ToRdm</a> () const</td></tr>
+<tr class="memdesc:a8313285ec0254faef5f534daa9d33d62"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert the RDM data in this command to an RDM command type. <br /></td></tr>
+<tr class="separator:a8313285ec0254faef5f534daa9d33d62"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78e3d10f3f539e2314643d7017a6beb7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classrdmnet_1_1_saved_rdm_command.html">SavedRdmCommand</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_rdm_command.html#a78e3d10f3f539e2314643d7017a6beb7">Save</a> () const</td></tr>
+<tr class="memdesc:a78e3d10f3f539e2314643d7017a6beb7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Save the data in this command for later use with API functions from a different context.  <a href="#a78e3d10f3f539e2314643d7017a6beb7">More...</a><br /></td></tr>
+<tr class="separator:a78e3d10f3f539e2314643d7017a6beb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a18ab3142115df0d52a43673c8af4527e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18ab3142115df0d52a43673c8af4527e">&#9670;&nbsp;</a></span>IsToDefaultResponder()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr bool rdmnet::RdmCommand::IsToDefaultResponder </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Whether this command is addressed to the RDMnet default responder. </p>
+<p>See <a class="el" href="devices_and_gateways.html">Devices and Gateways</a> for more information. </p>
+
+</div>
+</div>
+<a id="a78e3d10f3f539e2314643d7017a6beb7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a78e3d10f3f539e2314643d7017a6beb7">&#9670;&nbsp;</a></span>Save()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classrdmnet_1_1_saved_rdm_command.html">SavedRdmCommand</a> rdmnet::RdmCommand::Save </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Save the data in this command for later use with API functions from a different context. </p>
+<dl class="section return"><dt>Returns</dt><dd>A <a class="el" href="classrdmnet_1_1_saved_rdm_command.html" title="An RDM command received over RDMnet by a local component and saved for a later response. ">SavedRdmCommand</a> containing the copied data. </dd></dl>
+
+</div>
+</div>
+<hr/>The documentation for this class was generated from the following file:<ul>
+<li>include/rdmnet/cpp/message_types/<a class="el" href="rdm__command_8h_source.html">rdm_command.h</a></li>
+</ul>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="namespacerdmnet.html">rdmnet</a></li><li class="navelem"><a class="el" href="classrdmnet_1_1_rdm_command.html">RdmCommand</a></li>
+    <li class="footer">Generated by
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>
+  </ul>
+</div>
+</body>
+</html>

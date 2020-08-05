@@ -1,0 +1,380 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen 1.8.13" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RDMnet: RdmnetControllerCallbacks Struct Reference</title>
+  <link href="tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="dynsections.js"></script>
+  <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+</script>
+  <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css" />
+  <!--BEGIN CUSTOM SCRIPTS-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <script type="text/javascript">
+    $(function () { selectAllC() });
+  </script>
+  <script type="text/javascript">
+    function selectAllC() {
+      // Enable all C-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_c")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_c")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectAllCpp() {
+      // Enable all C++-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_cpp")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C++-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_cpp")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectLanguage(evt, block_id, language) {
+      // Get all elements with class="tabcontent" and hide them
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.startsWith("div_" + block_id)) {
+          tabcontent[i].style.display = "none";
+        }
+      }
+      // Get all elements with class="tablinks" and remove the class "active"
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.startsWith("button_" + block_id)) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById("div_" + block_id + "_" + language).style.display = "block";
+      if (!evt.currentTarget.className.includes("active")) {
+        evt.currentTarget.className += " active";
+      }
+    }
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">RDMnet
+                &#160;<span id="projectnumber">Staging for pull request 42</span>
+              </div>
+              <div id="projectbrief">Implementation of ANSI E1.33 (RDMnet)</div>
+            </td>
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- end header part -->
+<!-- Generated by Doxygen 1.8.13 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Search');
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('struct_rdmnet_controller_callbacks.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#pub-attribs">Data Fields</a>  </div>
+  <div class="headertitle">
+<div class="title">RdmnetControllerCallbacks Struct Reference<div class="ingroups"><a class="el" href="group__rdmnet__api.html">RDMnet C Language APIs</a> &raquo; <a class="el" href="group__rdmnet__controller.html">Controller API</a></div></div>  </div>
+</div><!--header-->
+<div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>A set of notification callbacks received about a controller. </p>
+</div>
+<p><code>#include &lt;<a class="el" href="controller_8h_source.html">rdmnet/controller.h</a>&gt;</code></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
+Data Fields</h2></td></tr>
+<tr class="memitem:aa049d14bc899f39c8206df41918f2873"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__rdmnet__controller.html#ga55532c618eaa3bbc7075c2d3b899af49">RdmnetControllerConnectedCallback</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_controller_callbacks.html#aa049d14bc899f39c8206df41918f2873">connected</a></td></tr>
+<tr class="memdesc:aa049d14bc899f39c8206df41918f2873"><td class="mdescLeft">&#160;</td><td class="mdescRight">Required.  <a href="#aa049d14bc899f39c8206df41918f2873">More...</a><br /></td></tr>
+<tr class="separator:aa049d14bc899f39c8206df41918f2873"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa6431e285774c0fa74e5c3327ebc3d01"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__rdmnet__controller.html#ga0162b518e675c81ea3487780d906d739">RdmnetControllerConnectFailedCallback</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_controller_callbacks.html#aa6431e285774c0fa74e5c3327ebc3d01">connect_failed</a></td></tr>
+<tr class="memdesc:aa6431e285774c0fa74e5c3327ebc3d01"><td class="mdescLeft">&#160;</td><td class="mdescRight">Required.  <a href="#aa6431e285774c0fa74e5c3327ebc3d01">More...</a><br /></td></tr>
+<tr class="separator:aa6431e285774c0fa74e5c3327ebc3d01"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4307e7b3f04926772c74a27cae890a3f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__rdmnet__controller.html#ga1d970ae86e7af2ac11f4139e3927980e">RdmnetControllerDisconnectedCallback</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_controller_callbacks.html#a4307e7b3f04926772c74a27cae890a3f">disconnected</a></td></tr>
+<tr class="memdesc:a4307e7b3f04926772c74a27cae890a3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Required.  <a href="#a4307e7b3f04926772c74a27cae890a3f">More...</a><br /></td></tr>
+<tr class="separator:a4307e7b3f04926772c74a27cae890a3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7cee8891f9af4e34f3b44f8fdc0bf419"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__rdmnet__controller.html#ga1712f68a36314a1ff1534ccefb799bb5">RdmnetControllerClientListUpdateReceivedCallback</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_controller_callbacks.html#a7cee8891f9af4e34f3b44f8fdc0bf419">client_list_update_received</a></td></tr>
+<tr class="memdesc:a7cee8891f9af4e34f3b44f8fdc0bf419"><td class="mdescLeft">&#160;</td><td class="mdescRight">Required.  <a href="#a7cee8891f9af4e34f3b44f8fdc0bf419">More...</a><br /></td></tr>
+<tr class="separator:a7cee8891f9af4e34f3b44f8fdc0bf419"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac1eb20fa6a8d9dac6ea10649ba3a06ba"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__rdmnet__controller.html#ga936e8ddb41d707184b48439bbab5eb7e">RdmnetControllerRdmResponseReceivedCallback</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_controller_callbacks.html#ac1eb20fa6a8d9dac6ea10649ba3a06ba">rdm_response_received</a></td></tr>
+<tr class="memdesc:ac1eb20fa6a8d9dac6ea10649ba3a06ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Required.  <a href="#ac1eb20fa6a8d9dac6ea10649ba3a06ba">More...</a><br /></td></tr>
+<tr class="separator:ac1eb20fa6a8d9dac6ea10649ba3a06ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c605d0196b94746f688cbdf98284387"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__rdmnet__controller.html#gad09b6820907dc813fba7e67bf93f2453">RdmnetControllerStatusReceivedCallback</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_controller_callbacks.html#a2c605d0196b94746f688cbdf98284387">status_received</a></td></tr>
+<tr class="memdesc:a2c605d0196b94746f688cbdf98284387"><td class="mdescLeft">&#160;</td><td class="mdescRight">Required.  <a href="#a2c605d0196b94746f688cbdf98284387">More...</a><br /></td></tr>
+<tr class="separator:a2c605d0196b94746f688cbdf98284387"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb12bf77447029861e4dfb57838e0a5b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__rdmnet__controller.html#ga4408acb283a85c751fae58102a4038f3">RdmnetControllerResponderIdsReceivedCallback</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_controller_callbacks.html#abb12bf77447029861e4dfb57838e0a5b">responder_ids_received</a></td></tr>
+<tr class="memdesc:abb12bf77447029861e4dfb57838e0a5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Optional.  <a href="#abb12bf77447029861e4dfb57838e0a5b">More...</a><br /></td></tr>
+<tr class="separator:abb12bf77447029861e4dfb57838e0a5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a51c335237aff6c8f80caacd8584f35cf"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_controller_callbacks.html#a51c335237aff6c8f80caacd8584f35cf">context</a></td></tr>
+<tr class="memdesc:a51c335237aff6c8f80caacd8584f35cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">(optional) Pointer to opaque data passed back with each callback.  <a href="#a51c335237aff6c8f80caacd8584f35cf">More...</a><br /></td></tr>
+<tr class="separator:a51c335237aff6c8f80caacd8584f35cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<h2 class="groupheader">Field Documentation</h2>
+<a id="a7cee8891f9af4e34f3b44f8fdc0bf419"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7cee8891f9af4e34f3b44f8fdc0bf419">&#9670;&nbsp;</a></span>client_list_update_received</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__rdmnet__controller.html#ga1712f68a36314a1ff1534ccefb799bb5">RdmnetControllerClientListUpdateReceivedCallback</a> RdmnetControllerCallbacks::client_list_update_received</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Required. </p>
+
+</div>
+</div>
+<a id="aa6431e285774c0fa74e5c3327ebc3d01"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa6431e285774c0fa74e5c3327ebc3d01">&#9670;&nbsp;</a></span>connect_failed</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__rdmnet__controller.html#ga0162b518e675c81ea3487780d906d739">RdmnetControllerConnectFailedCallback</a> RdmnetControllerCallbacks::connect_failed</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Required. </p>
+
+</div>
+</div>
+<a id="aa049d14bc899f39c8206df41918f2873"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa049d14bc899f39c8206df41918f2873">&#9670;&nbsp;</a></span>connected</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__rdmnet__controller.html#ga55532c618eaa3bbc7075c2d3b899af49">RdmnetControllerConnectedCallback</a> RdmnetControllerCallbacks::connected</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Required. </p>
+
+</div>
+</div>
+<a id="a51c335237aff6c8f80caacd8584f35cf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a51c335237aff6c8f80caacd8584f35cf">&#9670;&nbsp;</a></span>context</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void* RdmnetControllerCallbacks::context</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>(optional) Pointer to opaque data passed back with each callback. </p>
+
+</div>
+</div>
+<a id="a4307e7b3f04926772c74a27cae890a3f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4307e7b3f04926772c74a27cae890a3f">&#9670;&nbsp;</a></span>disconnected</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__rdmnet__controller.html#ga1d970ae86e7af2ac11f4139e3927980e">RdmnetControllerDisconnectedCallback</a> RdmnetControllerCallbacks::disconnected</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Required. </p>
+
+</div>
+</div>
+<a id="ac1eb20fa6a8d9dac6ea10649ba3a06ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac1eb20fa6a8d9dac6ea10649ba3a06ba">&#9670;&nbsp;</a></span>rdm_response_received</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__rdmnet__controller.html#ga936e8ddb41d707184b48439bbab5eb7e">RdmnetControllerRdmResponseReceivedCallback</a> RdmnetControllerCallbacks::rdm_response_received</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Required. </p>
+
+</div>
+</div>
+<a id="abb12bf77447029861e4dfb57838e0a5b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abb12bf77447029861e4dfb57838e0a5b">&#9670;&nbsp;</a></span>responder_ids_received</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__rdmnet__controller.html#ga4408acb283a85c751fae58102a4038f3">RdmnetControllerResponderIdsReceivedCallback</a> RdmnetControllerCallbacks::responder_ids_received</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Optional. </p>
+
+</div>
+</div>
+<a id="a2c605d0196b94746f688cbdf98284387"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2c605d0196b94746f688cbdf98284387">&#9670;&nbsp;</a></span>status_received</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__rdmnet__controller.html#gad09b6820907dc813fba7e67bf93f2453">RdmnetControllerStatusReceivedCallback</a> RdmnetControllerCallbacks::status_received</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Required. </p>
+
+</div>
+</div>
+<hr/>The documentation for this struct was generated from the following file:<ul>
+<li>include/rdmnet/<a class="el" href="controller_8h_source.html">controller.h</a></li>
+</ul>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="struct_rdmnet_controller_callbacks.html">RdmnetControllerCallbacks</a></li>
+    <li class="footer">Generated by
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>
+  </ul>
+</div>
+</body>
+</html>
