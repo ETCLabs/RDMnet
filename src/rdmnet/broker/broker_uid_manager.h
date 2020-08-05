@@ -22,6 +22,7 @@
 
 #include <map>
 #include "etcpal/cpp/uuid.h"
+#include "etcpal/cpp/lock.h"
 #include "rdm/uid.h"
 #include "broker_client.h"
 
@@ -51,7 +52,11 @@ public:
 
   bool UidToHandle(const RdmUid& uid, BrokerClient::Handle& client_handle) const;
 
-  void SetNextDeviceId(uint32_t next_device_id) { next_device_id_ = next_device_id; }
+  void SetNextDeviceId(uint32_t next_device_id)
+  {
+    etcpal::WriteGuard write_guard(*lock_);
+    next_device_id_ = next_device_id;
+  }
 
 private:
   struct ReservationData
@@ -77,6 +82,8 @@ private:
   // The next dynamic RDM Device ID that will be assigned
   uint32_t next_device_id_{1};
   size_t   max_uid_capacity_{kDefaultMaxUidCapacity};
+  // Protects the members of BrokerUidManager
+  mutable std::unique_ptr<etcpal::RwLock> lock_{new etcpal::RwLock};
 };
 
 #endif  // BROKER_UID_MANAGER_H_
