@@ -183,7 +183,7 @@ typedef struct RdmnetClientConnectFailedInfo
    * that the connection failed for a reason that usually must be corrected by a user or
    * application developer. Some possible reasons for this to be false include:
    * - The wrong scope was specified for a statically-configured broker
-   * - A static UID was given that was invalid or duplicate with another UID in the system
+   * - A static UID was given that was invalid
    */
   bool will_retry;
 } RdmnetClientConnectFailedInfo;
