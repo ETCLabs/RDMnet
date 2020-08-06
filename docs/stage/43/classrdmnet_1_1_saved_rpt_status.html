@@ -1,0 +1,283 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen 1.8.13" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RDMnet: rdmnet::SavedRptStatus Class Reference</title>
+  <link href="tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="dynsections.js"></script>
+  <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+</script>
+  <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css" />
+  <!--BEGIN CUSTOM SCRIPTS-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <script type="text/javascript">
+    $(function () { selectAllC() });
+  </script>
+  <script type="text/javascript">
+    function selectAllC() {
+      // Enable all C-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_c")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_c")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectAllCpp() {
+      // Enable all C++-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_cpp")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C++-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_cpp")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectLanguage(evt, block_id, language) {
+      // Get all elements with class="tabcontent" and hide them
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.startsWith("div_" + block_id)) {
+          tabcontent[i].style.display = "none";
+        }
+      }
+      // Get all elements with class="tablinks" and remove the class "active"
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.startsWith("button_" + block_id)) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById("div_" + block_id + "_" + language).style.display = "block";
+      if (!evt.currentTarget.className.includes("active")) {
+        evt.currentTarget.className += " active";
+      }
+    }
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">RDMnet
+                &#160;<span id="projectnumber">Staging for pull request 43</span>
+              </div>
+              <div id="projectbrief">Implementation of ANSI E1.33 (RDMnet)</div>
+            </td>
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- end header part -->
+<!-- Generated by Doxygen 1.8.13 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Search');
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('classrdmnet_1_1_saved_rpt_status.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public Member Functions</a>  </div>
+  <div class="headertitle">
+<div class="title">rdmnet::SavedRptStatus Class Reference<div class="ingroups"><a class="el" href="group__rdmnet__cpp__api.html">RDMnet C++ Language APIs</a> &raquo; <a class="el" href="group__rdmnet__cpp__common.html">Common Definitions</a></div></div>  </div>
+</div><!--header-->
+<div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>An RPT status message received over RDMnet and saved for later processing. </p>
+</div>
+<p><code>#include &lt;<a class="el" href="rpt__status_8h_source.html">rdmnet/cpp/message_types/rpt_status.h</a>&gt;</code></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
+Public Member Functions</h2></td></tr>
+<tr class="memitem:a4d437a3afc1067655ce88cefb7f21cb8"><td class="memItemLeft" align="right" valign="top"><a id="a4d437a3afc1067655ce88cefb7f21cb8"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_saved_rpt_status.html#a4d437a3afc1067655ce88cefb7f21cb8">SavedRptStatus</a> ()=default</td></tr>
+<tr class="memdesc:a4d437a3afc1067655ce88cefb7f21cb8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs an empty, invalid RPT status by default. <br /></td></tr>
+<tr class="separator:a4d437a3afc1067655ce88cefb7f21cb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0d1b9fcd548efd4f70925e61dd427aae"><td class="memItemLeft" align="right" valign="top"><a id="a0d1b9fcd548efd4f70925e61dd427aae"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_saved_rpt_status.html#a0d1b9fcd548efd4f70925e61dd427aae">SavedRptStatus</a> (const <a class="el" href="struct_rdmnet_saved_rpt_status.html">RdmnetSavedRptStatus</a> &amp;c_status)</td></tr>
+<tr class="memdesc:a0d1b9fcd548efd4f70925e61dd427aae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a <a class="el" href="classrdmnet_1_1_saved_rpt_status.html" title="An RPT status message received over RDMnet and saved for later processing. ">SavedRptStatus</a> from an instance of the C <a class="el" href="struct_rdmnet_saved_rpt_status.html" title="An RPT status received over RDMnet and saved for later processing. ">RdmnetSavedRptStatus</a> type. <br /></td></tr>
+<tr class="separator:a0d1b9fcd548efd4f70925e61dd427aae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0043304fa336d5f7f5ace1c85bbd0a3e"><td class="memItemLeft" align="right" valign="top"><a id="a0043304fa336d5f7f5ace1c85bbd0a3e"></a>
+<a class="el" href="classrdmnet_1_1_saved_rpt_status.html">SavedRptStatus</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_saved_rpt_status.html#a0043304fa336d5f7f5ace1c85bbd0a3e">operator=</a> (const <a class="el" href="struct_rdmnet_saved_rpt_status.html">RdmnetSavedRptStatus</a> &amp;c_status)</td></tr>
+<tr class="memdesc:a0043304fa336d5f7f5ace1c85bbd0a3e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Assign an instance of the C <a class="el" href="struct_rdmnet_saved_rpt_status.html" title="An RPT status received over RDMnet and saved for later processing. ">RdmnetSavedRptStatus</a> type to an instance of this class. <br /></td></tr>
+<tr class="separator:a0043304fa336d5f7f5ace1c85bbd0a3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39a53524aefd929e873880efaab95f7e"><td class="memItemLeft" align="right" valign="top"><a id="a39a53524aefd929e873880efaab95f7e"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_saved_rpt_status.html#a39a53524aefd929e873880efaab95f7e">SavedRptStatus</a> (const <a class="el" href="classrdmnet_1_1_rpt_status.html">RptStatus</a> &amp;status)</td></tr>
+<tr class="memdesc:a39a53524aefd929e873880efaab95f7e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a <a class="el" href="classrdmnet_1_1_saved_rpt_status.html" title="An RPT status message received over RDMnet and saved for later processing. ">SavedRptStatus</a> from an <a class="el" href="classrdmnet_1_1_rpt_status.html" title="An RPT status message received over RDMnet and delivered to an RDMnet callback function. ">RptStatus</a>. <br /></td></tr>
+<tr class="separator:a39a53524aefd929e873880efaab95f7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a481fce60ca89a66af9115b786e4d6ca3"><td class="memItemLeft" align="right" valign="top"><a id="a481fce60ca89a66af9115b786e4d6ca3"></a>
+<a class="el" href="classrdmnet_1_1_saved_rpt_status.html">SavedRptStatus</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_saved_rpt_status.html#a481fce60ca89a66af9115b786e4d6ca3">operator=</a> (const <a class="el" href="classrdmnet_1_1_rpt_status.html">RptStatus</a> &amp;status)</td></tr>
+<tr class="memdesc:a481fce60ca89a66af9115b786e4d6ca3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Assign an <a class="el" href="classrdmnet_1_1_rpt_status.html" title="An RPT status message received over RDMnet and delivered to an RDMnet callback function. ">RptStatus</a> to an instance of this class. <br /></td></tr>
+<tr class="separator:a481fce60ca89a66af9115b786e4d6ca3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad0f924a96bd819b4ccd723d06d7f094"><td class="memItemLeft" align="right" valign="top"><a id="aad0f924a96bd819b4ccd723d06d7f094"></a>
+const <a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_saved_rpt_status.html#aad0f924a96bd819b4ccd723d06d7f094">source_uid</a> () const noexcept</td></tr>
+<tr class="memdesc:aad0f924a96bd819b4ccd723d06d7f094"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the UID of the RDMnet component that sent this RPT status message. <br /></td></tr>
+<tr class="separator:aad0f924a96bd819b4ccd723d06d7f094"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad3714ad4014b0edbc4ef2e323174a394"><td class="memItemLeft" align="right" valign="top"><a id="ad3714ad4014b0edbc4ef2e323174a394"></a>
+uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_saved_rpt_status.html#ad3714ad4014b0edbc4ef2e323174a394">source_endpoint</a> () const noexcept</td></tr>
+<tr class="memdesc:ad3714ad4014b0edbc4ef2e323174a394"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the endpoint from which this RPT status message was sent. <br /></td></tr>
+<tr class="separator:ad3714ad4014b0edbc4ef2e323174a394"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab565b2f4b4df4ce40d52cfb3f0601974"><td class="memItemLeft" align="right" valign="top"><a id="ab565b2f4b4df4ce40d52cfb3f0601974"></a>
+uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_saved_rpt_status.html#ab565b2f4b4df4ce40d52cfb3f0601974">seq_num</a> () const noexcept</td></tr>
+<tr class="memdesc:ab565b2f4b4df4ce40d52cfb3f0601974"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the RDMnet sequence number of this RPT status message, for matching with a corresponding command. <br /></td></tr>
+<tr class="separator:ab565b2f4b4df4ce40d52cfb3f0601974"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad959c6259e0809486e7ad048d21cccb5"><td class="memItemLeft" align="right" valign="top"><a id="ad959c6259e0809486e7ad048d21cccb5"></a>
+<a class="el" href="group__rdmnet__api__common.html#gaa9aca0658bfae057363a520c0d9907c2">rpt_status_code_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_saved_rpt_status.html#ad959c6259e0809486e7ad048d21cccb5">status_code</a> () const noexcept</td></tr>
+<tr class="memdesc:ad959c6259e0809486e7ad048d21cccb5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the RPT status code of this status message. <br /></td></tr>
+<tr class="separator:ad959c6259e0809486e7ad048d21cccb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab339e4f326709407b743477ac680501f"><td class="memItemLeft" align="right" valign="top"><a id="ab339e4f326709407b743477ac680501f"></a>
+const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_saved_rpt_status.html#ab339e4f326709407b743477ac680501f">status_string</a> () const noexcept</td></tr>
+<tr class="memdesc:ab339e4f326709407b743477ac680501f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the optional status string accompanying this status message. <br /></td></tr>
+<tr class="separator:ab339e4f326709407b743477ac680501f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5307cdc09f12e0e967ab6056e0591e34"><td class="memItemLeft" align="right" valign="top"><a id="a5307cdc09f12e0e967ab6056e0591e34"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_saved_rpt_status.html#a5307cdc09f12e0e967ab6056e0591e34">IsValid</a> () const noexcept</td></tr>
+<tr class="memdesc:a5307cdc09f12e0e967ab6056e0591e34"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the values contained in this class are valid for an RPT Status message. <br /></td></tr>
+<tr class="separator:a5307cdc09f12e0e967ab6056e0591e34"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af8bb79d7d6ddd7a3bd3e681da3d6e6be"><td class="memItemLeft" align="right" valign="top"><a id="af8bb79d7d6ddd7a3bd3e681da3d6e6be"></a>
+const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_saved_rpt_status.html#af8bb79d7d6ddd7a3bd3e681da3d6e6be">CodeToCString</a> () const noexcept</td></tr>
+<tr class="memdesc:af8bb79d7d6ddd7a3bd3e681da3d6e6be"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert the status message's code to a string representation. <br /></td></tr>
+<tr class="separator:af8bb79d7d6ddd7a3bd3e681da3d6e6be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7fe8ca06b66ce301c86bcdb671ba0f80"><td class="memItemLeft" align="right" valign="top"><a id="a7fe8ca06b66ce301c86bcdb671ba0f80"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_saved_rpt_status.html#a7fe8ca06b66ce301c86bcdb671ba0f80">CodeToString</a> () const</td></tr>
+<tr class="memdesc:a7fe8ca06b66ce301c86bcdb671ba0f80"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert the status message's code to a string representation. <br /></td></tr>
+<tr class="separator:a7fe8ca06b66ce301c86bcdb671ba0f80"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ce9d8d2c54d446888b8fbd9e7e2d0e7"><td class="memItemLeft" align="right" valign="top"><a id="a4ce9d8d2c54d446888b8fbd9e7e2d0e7"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classrdmnet_1_1_saved_rpt_status.html#a4ce9d8d2c54d446888b8fbd9e7e2d0e7">HasStatusString</a> () const noexcept</td></tr>
+<tr class="memdesc:a4ce9d8d2c54d446888b8fbd9e7e2d0e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine whether the optional RPT status string is present. <br /></td></tr>
+<tr class="separator:a4ce9d8d2c54d446888b8fbd9e7e2d0e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<hr/>The documentation for this class was generated from the following file:<ul>
+<li>include/rdmnet/cpp/message_types/<a class="el" href="rpt__status_8h_source.html">rpt_status.h</a></li>
+</ul>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="namespacerdmnet.html">rdmnet</a></li><li class="navelem"><a class="el" href="classrdmnet_1_1_saved_rpt_status.html">SavedRptStatus</a></li>
+    <li class="footer">Generated by
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>
+  </ul>
+</div>
+</body>
+</html>
