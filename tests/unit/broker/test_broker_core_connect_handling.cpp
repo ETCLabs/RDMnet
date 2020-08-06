@@ -116,3 +116,18 @@ TEST_F(TestBrokerCoreConnectHandling, RejectsScopeMismatch)
   mocks_.broker_callbacks->ServiceClients();
   EXPECT_EQ(broker_.GetNumClients(), 0u);
 }
+
+TEST_F(TestBrokerCoreConnectHandling, HandlesRemoveUidOnDisconnect)
+{
+  auto                 client_cid = etcpal::Uuid::OsPreferred();
+  BrokerClient::Handle conn_handle = AddTcpConn();
+  RdmnetMessage        connect_msg = testmsgs::ClientConnect(client_cid);
+  RdmnetMessage        disconnect_msg = testmsgs::ClientDisconnect(client_cid, kRdmnetDisconnectShutdown);
+
+  mocks_.broker_callbacks->HandleSocketMessageReceived(conn_handle, connect_msg);
+  EXPECT_TRUE(broker_.IsValidControllerDestinationUID(rdm::Uid(0x6574, 0x00000001).get()));
+
+  // Use IsValidControllerDestinationUID to verify that RemoveUid gets called immediately.
+  mocks_.broker_callbacks->HandleSocketMessageReceived(conn_handle, disconnect_msg);
+  EXPECT_FALSE(broker_.IsValidControllerDestinationUID(rdm::Uid(0x6574, 0x00000001).get()));
+}
