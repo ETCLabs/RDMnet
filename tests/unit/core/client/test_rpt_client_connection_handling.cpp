@@ -406,13 +406,13 @@ TEST_F(TestDynamicRptClientConnectionHandling, ScopeStillExistsOnFatalConnectFai
 
   RCConnectFailedInfo failed_info{};
   failed_info.event = kRdmnetConnectFailRejected;
-  failed_info.rdmnet_reason = kRdmnetConnectDuplicateUid;
+  failed_info.rdmnet_reason = kRdmnetConnectInvalidUid;
   conns_registered[0]->callbacks.connect_failed(conns_registered[0], &failed_info);
 
   EXPECT_EQ(rc_client_connect_failed_fake.call_count, 1u);
   EXPECT_FALSE(client_connect_failed_info.will_retry);
   EXPECT_EQ(client_connect_failed_info.event, kRdmnetConnectFailRejected);
-  EXPECT_EQ(client_connect_failed_info.rdmnet_reason, kRdmnetConnectDuplicateUid);
+  EXPECT_EQ(client_connect_failed_info.rdmnet_reason, kRdmnetConnectInvalidUid);
 
   EXPECT_EQ(rc_conn_connect_fake.call_count, 0u);
   EXPECT_EQ(rc_conn_unregister_fake.call_count, 0u);

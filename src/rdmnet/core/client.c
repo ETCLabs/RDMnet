@@ -233,11 +233,12 @@ static etcpal_error_t client_send_update_internal(RCClient*               client
                                                   const uint8_t*          data,
                                                   size_t                  data_len);
 
-// Some special checks when handling RDM responses from the application
+// Some special functions for handling RDM responses from the application
 static void append_to_supported_parameters(RCClient*               client,
                                            const RdmCommandHeader* received_cmd_header,
                                            RdmBuffer*              resp_buf,
                                            size_t*                 total_resp_size);
+static void change_destination_to_broadcast(RdmBuffer* resp_buf, size_t total_resp_size);
 
 // Manage callbacks
 static bool connect_failed_will_retry(rdmnet_connect_fail_event_t event, rdmnet_connect_status_t status);
@@ -678,7 +679,10 @@ etcpal_error_t rc_client_send_rdm_ack(RCClient*                    client,
   RptHeader header;
   header.source_uid = scope->uid;
   header.source_endpoint_id = received_cmd->dest_endpoint;
-  header.dest_uid = received_cmd->rdmnet_source_uid;
+  if (received_cmd->rdm_header.command_class == kRdmCCSetCommand)
+    header.dest_uid = kRdmnetControllerBroadcastUid;
+  else
+    header.dest_uid = received_cmd->rdmnet_source_uid;
   header.dest_endpoint_id = E133_NULL_ENDPOINT;
   header.seqnum = received_cmd->seq_num;
 
@@ -1395,7 +1399,10 @@ void send_rdm_response_if_requested(RCClient*               client,
       RptHeader header;
       header.source_uid = scope->uid;
       header.source_endpoint_id = received_cmd->dest_endpoint;
-      header.dest_uid = received_cmd->rdmnet_source_uid;
+      if (received_cmd->rdm_header.command_class == kRdmCCSetCommand)
+        header.dest_uid = kRdmnetControllerBroadcastUid;
+      else
+        header.dest_uid = received_cmd->rdmnet_source_uid;
       header.dest_endpoint_id = E133_NULL_ENDPOINT;
       header.seqnum = received_cmd->seq_num;
 
@@ -1579,7 +1586,7 @@ bool connect_failed_will_retry(rdmnet_connect_fail_event_t event, rdmnet_connect
     case kRdmnetConnectFailSocketFailure:
       return false;
     case kRdmnetConnectFailRejected:
-      return (status == kRdmnetConnectCapacityExceeded);
+      return ((status == kRdmnetConnectCapacityExceeded) || (status == kRdmnetConnectDuplicateUid));
     case kRdmnetConnectFailTcpLevel:
     case kRdmnetConnectFailNoReply:
     default:
@@ -1956,6 +1963,9 @@ etcpal_error_t send_rdm_ack_internal(RCClient*               client,
   {
     if (received_cmd_header->param_id == E120_SUPPORTED_PARAMETERS)
       append_to_supported_parameters(client, received_cmd_header, resp_buf, &total_resp_size);
+    if (received_cmd_header->command_class == kRdmCCSetCommand)
+      change_destination_to_broadcast(resp_buf, total_resp_size);
+
     res = rc_rpt_send_notification(&scope->conn, &client->cid, rpt_header, resp_buf, total_resp_size);
   }
 
@@ -2146,6 +2156,24 @@ void append_to_supported_parameters(RCClient*               client,
     rdm_pack_response(received_cmd_header, 0, &params_to_append_buf[last_resp_remaining_param_len],
                       params_to_append_size - last_resp_remaining_param_len, new_resp);
     (*total_resp_size)++;
+  }
+}
+
+void change_destination_to_broadcast(RdmBuffer* resp_buf, size_t total_resp_size)
+{
+  RDMNET_ASSERT(resp_buf);
+  RDMNET_ASSERT(total_resp_size > 1);
+
+  for (RdmBuffer* rdm_buf = resp_buf + 1; rdm_buf < resp_buf + total_resp_size; ++rdm_buf)
+  {
+    uint8_t* checksum_offset = rdm_buf->data + RDM_OFFSET_PARAM_DATA + rdm_buf->data[RDM_OFFSET_PARAM_DATA_LEN];
+    uint32_t checksum = (uint32_t)etcpal_unpack_u16b(checksum_offset);
+    for (size_t i = 0; i < 6; ++i)
+      checksum += (0xff - rdm_buf->data[RDM_OFFSET_DEST_MANUFACTURER + i]);
+
+    etcpal_pack_u16b(&rdm_buf->data[RDM_OFFSET_DEST_MANUFACTURER], kRdmBroadcastUid.manu);
+    etcpal_pack_u32b(&rdm_buf->data[RDM_OFFSET_DEST_DEVICE], kRdmBroadcastUid.id);
+    etcpal_pack_u16b(checksum_offset, (uint16_t)checksum);
   }
 }
 

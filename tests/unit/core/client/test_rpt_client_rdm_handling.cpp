@@ -61,6 +61,7 @@ static etcpal_error_t register_and_save_llrp_target(RCLlrpTarget* target, const 
 }
 }
 
+RptHeader              last_sent_header;
 std::vector<RdmBuffer> last_sent_buf_list;
 
 static constexpr RdmUid kClientUid{0x6574, 0x1234};
@@ -91,8 +92,9 @@ protected:
 
     // Capture the RdmBuffer lists sent by rc_rpt_send_notification()
     last_sent_buf_list.clear();
-    rc_rpt_send_notification_fake.custom_fake = [](RCConnection*, const EtcPalUuid*, const RptHeader*,
+    rc_rpt_send_notification_fake.custom_fake = [](RCConnection*, const EtcPalUuid*, const RptHeader* header,
                                                    const RdmBuffer* cmd_arr, size_t cmd_arr_size) {
+      last_sent_header = *header;
       last_sent_buf_list.assign(cmd_arr, cmd_arr + cmd_arr_size);
       return kEtcPalErrOk;
     };
@@ -525,4 +527,41 @@ TEST_F(TestRptClientRdmHandling, ParsesOverflowNotificationWithoutCommand)
   };
   last_conn->callbacks.message_received(last_conn, &test_resp.msg);
   EXPECT_EQ(rc_client_rpt_msg_received_fake.call_count, 1u);
+}
+
+// clang-format off
+const RdmnetSavedRdmCommand kSetDeviceInfoSavedCmd{
+  {1, 2},
+  E133_NULL_ENDPOINT,
+  20,
+  {
+    {1, 2},
+    kClientUid,
+    20,
+    1,
+    0,
+    kRdmCCSetCommand,
+    E120_DEVICE_LABEL
+  },
+  { 0x64, 0x65, 0x76, 0x69, 0x63, 0x65 },
+  6
+};
+// clang-format on
+
+TEST_F(TestRptClientRdmHandling, RespondsBroadcastToSetCommands)
+{
+  ASSERT_EQ(rc_client_send_rdm_ack(&client_, scope_handle_, &kSetDeviceInfoSavedCmd, nullptr, 0), kEtcPalErrOk);
+  ASSERT_EQ(rc_rpt_send_notification_fake.call_count, 1u);
+
+  EXPECT_EQ(last_sent_buf_list.size(), 2u);
+  EXPECT_TRUE(rdm_validate_msg(&last_sent_buf_list[0]));
+  EXPECT_TRUE(rdm_validate_msg(&last_sent_buf_list[1]));
+
+  EXPECT_EQ(last_sent_header.dest_uid, kRdmnetControllerBroadcastUid);
+
+  const RdmBuffer& response = last_sent_buf_list[1];
+  RdmUid           rdm_dest_uid;
+  rdm_dest_uid.manu = etcpal_unpack_u16b(&response.data[RDM_OFFSET_DEST_MANUFACTURER]);
+  rdm_dest_uid.id = etcpal_unpack_u32b(&response.data[RDM_OFFSET_DEST_DEVICE]);
+  EXPECT_EQ(rdm_dest_uid, kRdmBroadcastUid);
 }
