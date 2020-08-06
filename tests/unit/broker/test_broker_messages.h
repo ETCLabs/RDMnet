@@ -63,6 +63,21 @@ inline RdmnetMessage ClientConnect(const etcpal::Uuid& cid, std::string scope = 
   return connect_msg;
 }
 
+inline RdmnetMessage ClientDisconnect(const etcpal::Uuid& cid, rdmnet_disconnect_reason_t disconnect_reason)
+{
+  RdmnetMessage disconnect_msg;
+  disconnect_msg.vector = ACN_VECTOR_ROOT_BROKER;
+  disconnect_msg.sender_cid = cid.get();
+
+  BrokerMessage* broker_msg = RDMNET_GET_BROKER_MSG(&disconnect_msg);
+  broker_msg->vector = VECTOR_BROKER_DISCONNECT;
+
+  BrokerDisconnectMsg* client_disconnect = BROKER_GET_DISCONNECT_MSG(broker_msg);
+  client_disconnect->disconnect_reason = disconnect_reason;
+
+  return disconnect_msg;
+}
+
 inline RdmnetMessage Null(const etcpal::Uuid& cid)
 {
   RdmnetMessage null_msg;
