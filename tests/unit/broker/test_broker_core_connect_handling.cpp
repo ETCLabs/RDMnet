@@ -125,9 +125,9 @@ TEST_F(TestBrokerCoreConnectHandling, HandlesRemoveUidOnDisconnect)
   RdmnetMessage        disconnect_msg = testmsgs::ClientDisconnect(client_cid, kRdmnetDisconnectShutdown);
 
   mocks_.broker_callbacks->HandleSocketMessageReceived(conn_handle, connect_msg);
-  EXPECT_TRUE(broker_.IsValidControllerDestinationUID(rdm::Uid(0x6574, 0x00000001).get()));
+  EXPECT_TRUE(broker_.IsValidControllerDestinationUID(rdm::Uid(0xe574, 0x00000002).get()));
 
   // Use IsValidControllerDestinationUID to verify that RemoveUid gets called immediately.
   mocks_.broker_callbacks->HandleSocketMessageReceived(conn_handle, disconnect_msg);
-  EXPECT_FALSE(broker_.IsValidControllerDestinationUID(rdm::Uid(0x6574, 0x00000001).get()));
+  EXPECT_FALSE(broker_.IsValidControllerDestinationUID(rdm::Uid(0xe574, 0x00000002).get()));
 }
