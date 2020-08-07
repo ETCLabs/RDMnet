@@ -27,14 +27,14 @@
   * Add the version number to `versions.txt` on the `gh-pages` branch and mark it as latest
   * `PROJECT_NUMBER` in the Doxyfile should be correct but might need to be updated for patch
     versions
-- [ ] Merge changes to `master`
-  * `git checkout master`
+- [ ] Merge changes to `stable`
+  * `git checkout stable`
   * `git merge --no-ff [develop|release/v*]`
 - [ ] Create the release tag in the form `vM.m.p`
   * `git tag -a vM.m.p -m "RDMnet release version M.m.p"`
 - [ ] Mark as release on the releases page
 - [ ] Create build report
-- [ ] Merge `master` back into `develop`
+- [ ] Merge `stable` back into `develop`
 
 ## Starting work on a new release
 

@@ -10,7 +10,7 @@ EtcPal (https://github.com/ETCLabs/EtcPal)
 RDMnet depends on the EtcPal library, which is maintained by ETC but in turn
 incorporates components of third-party software. A listing of the third-party
 software incorporated by the EtcPal library can be found at
-https://github.com/ETCLabs/EtcPal/raw/master/ThirdPartySoftware.txt.
+https://github.com/ETCLabs/EtcPal/raw/stable/ThirdPartySoftware.txt.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 RDM (https://github.com/ETCLabs/RDM)
@@ -19,7 +19,7 @@ RDM (https://github.com/ETCLabs/RDM)
 RDMnet depends on the RDM library, which is maintained by ETC but in turn
 incorporates components of third-party software. A listing of the third-party
 software incorporated by the RDM library can be found at
-https://github.com/ETCLabs/RDM/raw/master/ThirdPartySoftware.txt.
+https://github.com/ETCLabs/RDM/raw/stable/ThirdPartySoftware.txt.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mDNSWindows (https://github.com/ETCLabs/mDNSWindows)
