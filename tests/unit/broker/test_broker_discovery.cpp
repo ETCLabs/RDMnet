@@ -51,8 +51,9 @@ public:
   static TestBrokerDiscovery* instance;
 
   static const rdmnet_registered_broker_t kBrokerRegisterHandle;
-  rdmnet::Broker::Settings                settings_;
-  std::vector<unsigned int>               netints;
+  rdmnet::Broker::Settings  settings_{etcpal::Uuid::FromString("22672657-407a-4a83-b34c-0929ec6d0bfb"), 0x6574};
+  rdm::Uid                  my_uid_{rdm::Uid::FromString("6574:00112233")};
+  std::vector<unsigned int> netints;
 
 protected:
   testing::StrictMock<MockBrokerDiscoveryNotify> notify_;
@@ -65,12 +66,12 @@ protected:
 
     disc_mgr_.SetNotify(&notify_);
 
-    settings_.cid = etcpal::Uuid::FromString("22672657-407a-4a83-b34c-0929ec6d0bfb");
     settings_.dns.manufacturer = "Test";
     settings_.dns.model = "Test Broker";
     settings_.dns.service_instance_name = "Test Broker Service Instance";
     settings_.scope = "Test Scope";
     settings_.dns.additional_txt_record_items.push_back(rdmnet::DnsTxtRecordItem("Key", "Value"));
+    ASSERT_TRUE(settings_.IsValid());
 
     netints.push_back(1);
 
@@ -81,7 +82,7 @@ protected:
 
   void RegisterBroker()
   {
-    ASSERT_TRUE(disc_mgr_.RegisterBroker(settings_, netints));
+    ASSERT_TRUE(disc_mgr_.RegisterBroker(settings_, my_uid_, netints));
 
     EXPECT_CALL(notify_, HandleBrokerRegistered(settings_.dns.service_instance_name));
     disc_mgr_.LibNotifyBrokerRegistered(kBrokerRegisterHandle, settings_.dns.service_instance_name.c_str());
@@ -103,7 +104,7 @@ extern "C" etcpal_error_t rdmnet_disc_register_broker_and_set_handle(const Rdmne
 
   // Make sure we were registered with the correct settings
   EXPECT_EQ(config->cid, test->settings_.cid);
-  EXPECT_EQ(config->uid, test->settings_.uid);
+  EXPECT_EQ(config->uid, test->my_uid_);
   EXPECT_EQ(config->service_instance_name, test->settings_.dns.service_instance_name);
   EXPECT_EQ(config->port, test->settings_.listen_port);
   EXPECT_EQ(config->scope, test->settings_.scope);
@@ -172,7 +173,7 @@ TEST_F(TestBrokerDiscovery, SyncRegisterErrorIsHandled)
 {
   rdmnet_disc_register_broker_fake.custom_fake = nullptr;
   rdmnet_disc_register_broker_fake.return_val = kEtcPalErrSys;
-  auto result = disc_mgr_.RegisterBroker(settings_, netints);
+  auto result = disc_mgr_.RegisterBroker(settings_, my_uid_, netints);
 
   EXPECT_FALSE(result.IsOk());
   EXPECT_EQ(result.code(), kEtcPalErrSys);
@@ -180,7 +181,7 @@ TEST_F(TestBrokerDiscovery, SyncRegisterErrorIsHandled)
 
 TEST_F(TestBrokerDiscovery, AsyncRegisterErrorIsForwarded)
 {
-  ASSERT_TRUE(disc_mgr_.RegisterBroker(settings_, netints));
+  ASSERT_TRUE(disc_mgr_.RegisterBroker(settings_, my_uid_, netints));
 
   int platform_error = 42;
   EXPECT_CALL(notify_, HandleBrokerRegisterError(platform_error));
@@ -191,7 +192,7 @@ TEST_F(TestBrokerDiscovery, ServiceNameChangeIsHandled)
 {
   constexpr const char* kActualServiceName = "A different service name";
 
-  ASSERT_TRUE(disc_mgr_.RegisterBroker(settings_, netints));
+  ASSERT_TRUE(disc_mgr_.RegisterBroker(settings_, my_uid_, netints));
 
   EXPECT_CALL(notify_, HandleBrokerRegistered(kActualServiceName));
   disc_mgr_.LibNotifyBrokerRegistered(kBrokerRegisterHandle, kActualServiceName);

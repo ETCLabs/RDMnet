@@ -110,7 +110,7 @@ etcpal::Error BrokerCore::Startup(const rdmnet::Broker::Settings& settings,
 
     started_ = true;
 
-    components_.disc->RegisterBroker(settings_, listen_interfaces_);
+    components_.disc->RegisterBroker(settings_, my_uid_, listen_interfaces_);
 
     BROKER_LOG_INFO("%s RDMnet Broker Version %s", settings_.dns.manufacturer.c_str(), RDMNET_VERSION_STRING);
     BROKER_LOG_INFO("Broker starting at scope \"%s\", listening on port %d.", settings_.scope.c_str(),
@@ -582,7 +582,7 @@ bool BrokerCore::MarkLockedClientForDestruction(BrokerClient& client, ClientDest
 // These functions will take a write lock on client_lock_.
 void BrokerCore::DestroyMarkedClients()
 {
-  etcpal::WriteGuard                clients_write(client_lock_);
+  etcpal::WriteGuard clients_write(client_lock_);
 
   if (!clients_to_destroy_.empty())
   {
