@@ -36,7 +36,7 @@
 
 #include <algorithm>
 
-/* THIS IS WINDOWS BLACK MAGIC, and copied from the sample code at Microsoft
+/* THIS IS WINDOWS MAGIC, and copied from the sample code at Microsoft
  * Lasciate ogne speranza, voi ch'intrate
  * Abandon all hope, ye who enter here.
  *

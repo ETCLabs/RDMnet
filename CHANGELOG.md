@@ -35,6 +35,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implementation of draft standard BSR E1.33 rev 63.
 - Initial Broker, Controller, Device and LLRP Manager example applications.
 
-[Unreleased]: https://github.com/ETCLabs/RDMnet/compare/master...develop
+[Unreleased]: https://github.com/ETCLabs/RDMnet/compare/stable...develop
 [0.2.0]: https://github.com/ETCLabs/RDMnet/compare/v0.1.0.4...v0.2.0
 [0.1.0]: https://github.com/ETCLabs/RDMnet/releases/tag/v0.1.0.4
