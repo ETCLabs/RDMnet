@@ -241,14 +241,24 @@ void discovered_broker_fill_disc_info(const DiscoveredBroker* db, RdmnetBrokerDi
   }
 }
 
+DiscoveredBroker* discovered_broker_find(DiscoveredBroker*                 list_head,
+                                         DiscoveredBrokerPredicateFunction predicate,
+                                         const void*                       context)
+{
+  for (DiscoveredBroker* current = list_head; current; current = current->next)
+  {
+    if (predicate(current, context))
+      return current;
+  }
+  return NULL;
+}
+
 DiscoveredBroker* discovered_broker_find_by_name(DiscoveredBroker* list_head, const char* full_name)
 {
   for (DiscoveredBroker* current = list_head; current; current = current->next)
   {
     if (strcmp(current->full_service_name, full_name) == 0)
-    {
       return current;
-    }
   }
   return NULL;
 }

@@ -40,6 +40,17 @@ typedef struct TxtRecordItemRef
   uint8_t        value_len;
 } TxtRecordItemRef;
 
+typedef struct DomainNameLabel
+{
+  uint8_t        length;
+  const uint8_t* label;
+} DomainNameLabel;
+
+#define DOMAIN_NAME_LABEL_INIT \
+  {                            \
+    0, NULL                    \
+  }
+
 /******************************************************************************
  * Private Constants
  *****************************************************************************/
@@ -91,6 +102,9 @@ static bool parse_manufacturer_item(const TxtRecordItemRef* item,
                                     txt_keys_found_mask_t*  found_mask);
 static int  binary_atoi(const uint8_t* ascii_val, uint8_t ascii_val_len);
 
+static bool get_domain_name_label(const uint8_t* buf_begin, const uint8_t* name_begin, DomainNameLabel* label);
+static bool is_rdmnet_service_type_and_domain(const uint8_t* buf_begin, DomainNameLabel* last_non_service_label);
+
 /******************************************************************************
  * Function Definitions
  *****************************************************************************/
@@ -124,61 +138,18 @@ const uint8_t* lwmdns_parse_dns_header(const uint8_t* buf, int buf_len, DnsHeade
   return buf + DNS_HEADER_BYTES;
 }
 
-const uint8_t* lwmdns_parse_domain_name(const uint8_t* buf_begin,
-                                        const uint8_t* offset,
-                                        int            total_remaining_length,
-                                        DnsDomainName* name)
-{
-  int            remaining_length = total_remaining_length;
-  const uint8_t* cur_ptr = offset;
-
-  name->name = NULL;
-  name->name_ptr = NULL;
-
-  while (*cur_ptr != 0)
-  {
-    if (*cur_ptr & DNS_NAME_POINTER_MASK)
-    {
-      if (remaining_length >= 2)
-      {
-        name->name_ptr = buf_begin + (etcpal_unpack_u16b(cur_ptr) & 0x3fffu);
-        return cur_ptr + 2;
-      }
-      else
-      {
-        return NULL;
-      }
-    }
-    else
-    {
-      uint8_t cur_label_length = *cur_ptr;
-      if (remaining_length >= (((int)cur_label_length) + 2))
-      {
-        if (name->name == NULL)
-          name->name = cur_ptr;
-        cur_ptr += cur_label_length + 1;
-        remaining_length -= (cur_label_length + 1);
-      }
-      else
-      {
-        return NULL;
-      }
-    }
-  }
-  return cur_ptr + 1;
-}
-
 const uint8_t* lwmdns_parse_resource_record(const uint8_t*     buf_begin,
-                                            const uint8_t*     offset,
+                                            const uint8_t*     rr_ptr,
                                             int                total_remaining_length,
                                             DnsResourceRecord* rr)
 {
-  const uint8_t* cur_ptr = lwmdns_parse_domain_name(buf_begin, offset, total_remaining_length, &rr->name);
+  const uint8_t* cur_ptr = lwmdns_parse_domain_name(buf_begin, rr_ptr, total_remaining_length);
   if (!cur_ptr)
     return cur_ptr;
 
-  if (total_remaining_length - (cur_ptr - offset) >= 10)
+  if (total_remaining_length - (cur_ptr - rr_ptr) >= 10)
   {
+    rr->name = rr_ptr;
     rr->record_type = (dns_record_type_t)etcpal_unpack_u16b(cur_ptr);
     cur_ptr += 2;
     uint16_t class = etcpal_unpack_u16b(cur_ptr);
@@ -195,7 +166,7 @@ const uint8_t* lwmdns_parse_resource_record(const uint8_t*     buf_begin,
       rr->data_ptr = NULL;
       return cur_ptr;
     }
-    else if (total_remaining_length - (cur_ptr - offset) >= rr->data_len)
+    else if (total_remaining_length - (cur_ptr - rr_ptr) >= rr->data_len)
     {
       rr->data_ptr = cur_ptr;
       cur_ptr += rr->data_len;
@@ -207,6 +178,165 @@ const uint8_t* lwmdns_parse_resource_record(const uint8_t*     buf_begin,
     }
   }
   return NULL;
+}
+
+const uint8_t* lwmdns_parse_domain_name(const uint8_t* buf_begin, const uint8_t* offset, int total_remaining_length)
+{
+  int            remaining_length = total_remaining_length;
+  const uint8_t* cur_ptr = offset;
+
+  while (*cur_ptr != 0)
+  {
+    if (*cur_ptr & DNS_NAME_POINTER_MASK)
+    {
+      if (remaining_length >= 2)
+      {
+        uint16_t pointer_offset = (etcpal_unpack_u16b(cur_ptr) & 0x3fffu);
+        if (buf_begin + pointer_offset < offset)
+          return cur_ptr + 2;
+        else
+          return NULL;
+      }
+      else
+      {
+        return NULL;
+      }
+    }
+    else
+    {
+      uint8_t cur_label_length = *cur_ptr;
+      if (remaining_length >= (((int)cur_label_length) + 2))
+      {
+        cur_ptr += cur_label_length + 1;
+        remaining_length -= (cur_label_length + 1);
+      }
+      else
+      {
+        return NULL;
+      }
+    }
+  }
+  return cur_ptr + 1;
+}
+
+uint8_t lwmdns_copy_domain_name(const uint8_t* buf_begin, const uint8_t* name_ptr, uint8_t* buf)
+{
+  size_t          size_copied = 0;
+  DomainNameLabel label = DOMAIN_NAME_LABEL_INIT;
+  if (!get_domain_name_label(buf_begin, name_ptr, &label))
+    return 0;
+
+  do
+  {
+    if (size_copied + label.length + 2 > DNS_FQDN_MAX_LENGTH)
+      return 0;
+
+    memcpy(&buf[size_copied], label.label - 1, label.length + 1);
+    size_copied += label.length + 1;
+  } while (get_domain_name_label(buf_begin, NULL, &label));
+
+  buf[size_copied] = 0;
+  return (uint8_t)(size_copied + 1);
+}
+
+uint8_t lwmdns_domain_name_length(const uint8_t* buf_begin, const uint8_t* name_ptr)
+{
+  size_t          length = 0;
+  DomainNameLabel label = DOMAIN_NAME_LABEL_INIT;
+  if (!get_domain_name_label(buf_begin, name_ptr, &label))
+    return 0;
+
+  do
+  {
+    if (length + label.length + 2 > DNS_FQDN_MAX_LENGTH)
+      return 0;
+    length += label.length + 1;
+  } while (get_domain_name_label(buf_begin, NULL, &label));
+  return (uint8_t)(length + 1);
+}
+
+bool lwmdns_domain_names_equal(const uint8_t* buf_begin_a,
+                               const uint8_t* name_a,
+                               const uint8_t* buf_begin_b,
+                               const uint8_t* name_b)
+{
+  DomainNameLabel label_a = DOMAIN_NAME_LABEL_INIT;
+  DomainNameLabel label_b = DOMAIN_NAME_LABEL_INIT;
+
+  bool a_result = get_domain_name_label(buf_begin_a, name_a, &label_a);
+  bool b_result = get_domain_name_label(buf_begin_b, name_b, &label_b);
+  while (a_result && b_result)
+  {
+    if (label_a.length != label_b.length || memcmp(label_a.label, label_b.label, label_a.length) != 0)
+      return false;
+    a_result = get_domain_name_label(buf_begin_a, NULL, &label_a);
+    b_result = get_domain_name_label(buf_begin_b, NULL, &label_b);
+  }
+  return a_result == b_result;
+}
+
+bool lwmdns_domain_name_matches_service_instance(const uint8_t* buf_begin,
+                                                 const uint8_t* name_ptr,
+                                                 const char*    service_instance_name)
+{
+  if (!buf_begin || !name_ptr || !service_instance_name)
+    return false;
+
+  size_t service_name_len = strlen(service_instance_name);
+  if (service_name_len > DNS_LABEL_MAX_LEN)
+    return false;
+
+  DomainNameLabel label = DOMAIN_NAME_LABEL_INIT;
+  // Compare the service instance name
+  if (!get_domain_name_label(buf_begin, name_ptr, &label) || label.length != (uint8_t)service_name_len ||
+      memcmp(label.label, service_instance_name, service_name_len) != 0)
+  {
+    return false;
+  }
+
+  return is_rdmnet_service_type_and_domain(buf_begin, &label);
+}
+
+bool lwmdns_domain_name_matches_service_subtype(const uint8_t* buf_begin, const uint8_t* name_ptr, const char* scope)
+{
+  if (!buf_begin || !name_ptr || !scope)
+    return false;
+
+  size_t scope_len = strlen(scope);
+  if (scope_len > DNS_LABEL_MAX_LEN - 1)
+    return false;
+
+  DomainNameLabel label = DOMAIN_NAME_LABEL_INIT;
+  // Compare the scope - it should be prefixed with an underscore in the domain name
+  if (!get_domain_name_label(buf_begin, name_ptr, &label) || label.length != ((uint8_t)scope_len) + 1 ||
+      label.label[0] != (uint8_t)'_' || memcmp(&label.label[1], scope, scope_len) != 0)
+  {
+    return false;
+  }
+
+  // Compare the subtype separator (_sub)
+  if (!get_domain_name_label(buf_begin, NULL, &label) || (label.length != (sizeof("_sub") - 1)) ||
+      memcmp(label.label, "_sub", sizeof("_sub") - 1) != 0)
+  {
+    return false;
+  }
+
+  return is_rdmnet_service_type_and_domain(buf_begin, &label);
+}
+
+bool lwmdns_domain_label_to_string(const uint8_t* buf_begin, const uint8_t* label, char* str_buf)
+{
+  if (!buf_begin || !label || !str_buf)
+    return false;
+
+  DomainNameLabel label_data = DOMAIN_NAME_LABEL_INIT;
+  if (get_domain_name_label(buf_begin, label, &label_data))
+  {
+    memcpy(str_buf, label_data.label, label_data.length);
+    str_buf[label_data.length] = '\0';
+    return true;
+  }
+  return false;
 }
 
 txt_record_parse_result_t lwmdns_txt_record_to_broker_info(const uint8_t*    txt_data,
@@ -280,95 +410,6 @@ txt_record_parse_result_t lwmdns_txt_record_to_broker_info(const uint8_t*    txt
   {
     return kTxtRecordParseError;
   }
-}
-
-typedef struct DomainNameLabel
-{
-  uint8_t        length;
-  bool           followed_ptr;
-  const uint8_t* label;
-} DomainNameLabel;
-
-#define DOMAIN_NAME_LABEL_INIT \
-  {                            \
-    0, false, NULL             \
-  }
-
-bool get_next_domain_name_label(const DomainNameLabel* previous, DomainNameLabel* next)
-{
-}
-
-bool lwmdns_domain_name_matches_service(const DnsDomainName* name,
-                                        const char*          service_instance_name,
-                                        const char*          service_type,
-                                        const char*          domain)
-{
-  size_t service_name_len = strlen(service_instance_name);
-  size_t service_type_len = strlen(service_type);
-  size_t domain_len = strlen(domain);
-
-  if (service_name_len > DNS_LABEL_MAX_LEN || service_type_len > DNS_SD_SERVICE_TYPE_MAX_LEN)
-    return false;
-
-  const char* service_type_sep = NULL;
-  for (const char* c = service_type; c < service_type + service_type_len; ++c)
-  {
-    if (*c == '.')
-    {
-      service_type_sep = c;
-      break;
-    }
-  }
-
-  if (!service_type_sep || service_type_sep - service_type == 0 || service_type_sep - service_type == service_type_len)
-    return false;
-  size_t service_protocol_len = (service_type + service_type_len) - service_type_sep - 1;
-  service_type_len = service_type_sep - service_type;
-
-  DomainNameLabel label = DOMAIN_NAME_LABEL_INIT;
-  // Compare the service instance name
-  if (!get_next_domain_name_label(NULL, &label) || label.length != (uint8_t)service_name_len ||
-      memcmp(label.label, service_instance_name, service_name_len) != 0)
-  {
-    return false;
-  }
-
-  // Compare the service type (e.g. _rdmnet)
-  if (!get_next_domain_name_label(&label, &label) || label.length != service_type_len ||
-      memcmp(label.label, service_type, service_type_len) != 0)
-  {
-    return false;
-  }
-
-  // Compare the service protocol (e.g. _tcp)
-  if (!get_next_domain_name_label(&label, &label) || label.length != service_protocol_len ||
-      memcmp(label.label, service_type_sep + 1, service_protocol_len) != 0)
-  {
-    return false;
-  }
-
-  if (!get_next_domain_name_label(&label, &label))
-    return false;
-
-  const char* cur_ptr = domain;
-  do
-  {
-    if (label.length > domain_len)
-      return false;
-    if (memcmp(label.label, cur_ptr, label.length) != 0)
-      return false;
-    cur_ptr += label.length;
-    domain_len -= label.length;
-  } while (get_next_domain_name_label(&label, &label));
-
-  return true;
-}
-
-void lwmdns_convert_domain_name_to_string(const DnsDomainName* name, char* str_buf)
-{
-  // TODO
-  ETCPAL_UNUSED_ARG(name);
-  ETCPAL_UNUSED_ARG(str_buf);
 }
 
 bool parse_txt_vers(const TxtRecordItemRef* item)
@@ -558,4 +599,55 @@ int binary_atoi(const uint8_t* ascii_val, uint8_t ascii_val_len)
     }
   }
   return res;
+}
+
+bool get_domain_name_label(const uint8_t* buf_begin, const uint8_t* name_ptr, DomainNameLabel* label)
+{
+  const uint8_t* next_length_offset = NULL;
+  if (!label->label)
+    next_length_offset = name_ptr;
+  else
+    next_length_offset = label->label + label->length;
+
+  if (!next_length_offset)
+    return false;
+
+  if (*next_length_offset & DNS_NAME_POINTER_MASK)
+    next_length_offset = buf_begin + (etcpal_unpack_u16b(next_length_offset) & 0x3fff);
+  if (*next_length_offset == 0 || *next_length_offset > 63)
+    return false;
+  label->length = *next_length_offset;
+  label->label = next_length_offset + 1;
+  return true;
+}
+
+bool is_rdmnet_service_type_and_domain(const uint8_t* buf_begin, DomainNameLabel* last_non_service_label)
+{
+  DomainNameLabel label = *last_non_service_label;
+
+  // Compare the service type (e.g. _rdmnet)
+  if (!get_domain_name_label(buf_begin, NULL, &label) || (label.length != (sizeof("_rdmnet") - 1)) ||
+      memcmp(label.label, "_rdmnet", sizeof("_rdmnet") - 1) != 0)
+  {
+    return false;
+  }
+
+  // Compare the service protocol (e.g. _tcp)
+  if (!get_domain_name_label(buf_begin, NULL, &label) || (label.length != (sizeof("_tcp") - 1)) ||
+      memcmp(label.label, "_tcp", sizeof("_tcp") - 1) != 0)
+  {
+    return false;
+  }
+
+  // Compare the search domain (e.g. local)
+  if (!get_domain_name_label(buf_begin, NULL, &label) || (label.length != (sizeof("local") - 1)) ||
+      memcmp(label.label, "local", sizeof("local") - 1) != 0)
+  {
+    return false;
+  }
+
+  if (get_domain_name_label(buf_begin, NULL, &label))
+    return false;
+
+  return true;
 }

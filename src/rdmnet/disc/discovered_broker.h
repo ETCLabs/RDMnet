@@ -72,7 +72,7 @@ struct DiscoveredBroker
   DiscoveredBroker*                  next;
 };
 
-typedef bool (*DiscoveredBrokerPredicateFunction)(DiscoveredBroker* db, const void* context);
+typedef bool (*DiscoveredBrokerPredicateFunction)(const DiscoveredBroker* db, const void* context);
 
 // None of these functions are thread-safe and as such they should always be called within
 // appropriate locks.
