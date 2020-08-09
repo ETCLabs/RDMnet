@@ -354,6 +354,50 @@ TEST_F(TestBrokerClientRptDevice, HonorsMaxQSize)
   EXPECT_EQ(device_->Push(kClientHandle + 1, broker_cid_, request_), BrokerClient::PushResult::QueueFull);
 }
 
+TEST_F(TestBrokerClientRptDevice, QEmptiesAndFillsCorrectly)
+{
+  // Make send return success
+  etcpal_send_fake.custom_fake = [](etcpal_socket_t socket, const void*, size_t size, int /*flags*/) {
+    EXPECT_EQ(socket, TestBrokerClientRptDevice::kClientSocket);
+    return (int)size;
+  };
+
+  for (size_t i = 0; i < kMaxQSize; ++i)
+  {
+    if (i % 2 == 0)
+    {
+      ASSERT_EQ(device_->Push(broker_cid_, broker_msg_), BrokerClient::PushResult::Ok) << "Failed on iteration " << i;
+    }
+    else
+    {
+      ASSERT_EQ(device_->Push(static_cast<BrokerClient::Handle>(kClientHandle + i), broker_cid_, request_),
+                BrokerClient::PushResult::Ok)
+          << "Failed on iteration " << i;
+    }
+  }
+
+  EXPECT_EQ(device_->Push(broker_cid_, broker_msg_), BrokerClient::PushResult::QueueFull);
+  EXPECT_EQ(device_->Push(kClientHandle + 1, broker_cid_, request_), BrokerClient::PushResult::QueueFull);
+
+  // Send all the messages, then fill the queue again.
+  for (size_t i = 0; i < kMaxQSize; ++i)
+    ASSERT_TRUE(device_->Send(broker_cid_));
+
+  for (size_t i = 0; i < kMaxQSize; ++i)
+  {
+    if (i % 2 == 0)
+    {
+      ASSERT_EQ(device_->Push(broker_cid_, broker_msg_), BrokerClient::PushResult::Ok) << "Failed on iteration " << i;
+    }
+    else
+    {
+      ASSERT_EQ(device_->Push(static_cast<BrokerClient::Handle>(kClientHandle + i), broker_cid_, request_),
+                BrokerClient::PushResult::Ok)
+          << "Failed on iteration " << i;
+    }
+  }
+}
+
 TEST_F(TestBrokerClientRptDevice, InfiniteMaxQSize)
 {
   // Max Q Size of 0 should mean infinite

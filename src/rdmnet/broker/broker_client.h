@@ -204,9 +204,24 @@ public:
   virtual bool       Send(const etcpal::Uuid& broker_cid) override;
 
 protected:
-  Handle                                   last_controller_serviced_{kInvalidHandle};
-  size_t                                   rpt_msgs_total_size_{0};
-  std::map<Handle, std::queue<MessageRef>> rpt_msgs_;
+  // A special queue-like class that organizes messages by source controller for fair scheduling.
+  class RptMsgQ
+  {
+  public:
+    bool        empty() const;
+    MessageRef* front();
+    void        pop();
+    void        push(Handle controller, MessageRef&& value);
+    size_t      size() const;
+
+    void RemoveCurrentController();
+
+  private:
+    size_t                                   total_msg_count_{0};
+    std::map<Handle, std::queue<MessageRef>> rpt_msgs_;
+    Handle                                   current_controller_{kInvalidHandle};
+  };
+  RptMsgQ rpt_msgs_;
 };
 
 #endif  // BROKER_CLIENT_H_

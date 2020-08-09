@@ -278,7 +278,7 @@ BrokerClient::PushResult RPTDevice::Push(BrokerClient::Handle from_client,
                                          const etcpal::Uuid&  sender_cid,
                                          const RptMessage&    msg)
 {
-  if (max_q_size != 0 && (status_msgs_.size() + broker_msgs_.size() + rpt_msgs_total_size_) >= max_q_size)
+  if (max_q_size != 0 && (status_msgs_.size() + broker_msgs_.size() + rpt_msgs_.size()) >= max_q_size)
   {
     return PushResult::QueueFull;
   }
@@ -301,8 +301,7 @@ BrokerClient::PushResult RPTDevice::Push(BrokerClient::Handle from_client,
                                            RPT_GET_RDM_BUF_LIST(&msg)->rdm_buffers);
         if (to_push.size)
         {
-          rpt_msgs_[from_client].push(std::move(to_push));
-          ++rpt_msgs_total_size_;
+          rpt_msgs_.push(from_client, std::move(to_push));
           res = PushResult::Ok;
         }
       }
@@ -317,7 +316,7 @@ BrokerClient::PushResult RPTDevice::Push(BrokerClient::Handle from_client,
 
 BrokerClient::PushResult RPTDevice::Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg)
 {
-  if (max_q_size != 0 && (status_msgs_.size() + broker_msgs_.size() + rpt_msgs_total_size_) >= max_q_size)
+  if (max_q_size != 0 && (status_msgs_.size() + broker_msgs_.size() + rpt_msgs_.size()) >= max_q_size)
   {
     return PushResult::QueueFull;
   }
@@ -326,9 +325,8 @@ BrokerClient::PushResult RPTDevice::Push(const etcpal::Uuid& sender_cid, const B
 
 bool RPTDevice::Send(const etcpal::Uuid& broker_cid)
 {
-  MessageRef*             msg = nullptr;
-  std::queue<MessageRef>* q = nullptr;
-  bool                    is_rpt = false;
+  MessageRef* msg = nullptr;
+  bool        is_rpt = false;
 
   // We should never push a status message to a Device.
   RDMNET_ASSERT(status_msgs_.empty());
@@ -336,37 +334,16 @@ bool RPTDevice::Send(const etcpal::Uuid& broker_cid)
   // Broker messages are first priority, then RPT messages.
   if (!broker_msgs_.empty())
   {
-    q = &broker_msgs_;
     msg = &broker_msgs_.front();
   }
   else if (!rpt_msgs_.empty())
   {
-    // Fair scheduler - we iterate through the controller map in order, starting from the last
-    // controller serviced.
-    auto con_pair = rpt_msgs_.upper_bound(last_controller_serviced_);
-    if (con_pair == rpt_msgs_.end())
-      con_pair = rpt_msgs_.begin();
-    while (con_pair->first != last_controller_serviced_)
-    {
-      if (!con_pair->second.empty())
-      {
-        // Found a controller ready to service.
-        break;
-      }
-
-      if (++con_pair == rpt_msgs_.end())
-        con_pair = rpt_msgs_.begin();
-    }
-    if (!con_pair->second.empty())
-    {
-      q = &con_pair->second;
-      msg = &con_pair->second.front();
-      last_controller_serviced_ = con_pair->first;
-    }
+    is_rpt = true;
+    msg = rpt_msgs_.front();
   }
 
   // Try to send the message.
-  if (msg && q)
+  if (msg)
   {
     int res = etcpal_send(socket, &msg->data.get()[msg->size_sent], msg->size - msg->size_sent, 0);
     if (res >= 0)
@@ -376,7 +353,10 @@ bool RPTDevice::Send(const etcpal::Uuid& broker_cid)
       {
         // We are done with this message.
         send_timer_.Reset();
-        q->pop();
+        if (is_rpt)
+          rpt_msgs_.pop();
+        else
+          broker_msgs_.pop();
       }
       return true;
     }
@@ -385,7 +365,7 @@ bool RPTDevice::Send(const etcpal::Uuid& broker_cid)
       // Error in sending. If this is an RPT message, delete the reference to this controller (and
       // clear out the queue)
       if (is_rpt)
-        rpt_msgs_.erase(last_controller_serviced_);
+        rpt_msgs_.RemoveCurrentController();
     }
   }
   else if (send_timer_.IsExpired())
@@ -397,4 +377,65 @@ bool RPTDevice::Send(const etcpal::Uuid& broker_cid)
     }
   }
   return false;
+}
+
+bool RPTDevice::RptMsgQ::empty() const
+{
+  return total_msg_count_ == 0;
+}
+
+MessageRef* RPTDevice::RptMsgQ::front()
+{
+  // Fair scheduler - we iterate through the controller map in order, starting from the last
+  // controller serviced.
+  auto con_pair = rpt_msgs_.upper_bound(current_controller_);
+  if (con_pair == rpt_msgs_.end())
+    con_pair = rpt_msgs_.begin();
+  while (con_pair->first != current_controller_)
+  {
+    if (!con_pair->second.empty())
+    {
+      // Found a controller ready to service.
+      break;
+    }
+
+    if (++con_pair == rpt_msgs_.end())
+      con_pair = rpt_msgs_.begin();
+  }
+  if (!con_pair->second.empty())
+  {
+    current_controller_ = con_pair->first;
+    return &con_pair->second.front();
+  }
+  return nullptr;
+}
+
+void RPTDevice::RptMsgQ::pop()
+{
+  if (current_controller_ != kInvalidHandle)
+  {
+    rpt_msgs_[current_controller_].pop();
+    --total_msg_count_;
+  }
+}
+
+void RPTDevice::RptMsgQ::push(Handle controller, MessageRef&& value)
+{
+  rpt_msgs_[controller].push(std::move(value));
+  ++total_msg_count_;
+}
+
+size_t RPTDevice::RptMsgQ::size() const
+{
+  return total_msg_count_;
+}
+
+void RPTDevice::RptMsgQ::RemoveCurrentController()
+{
+  auto controller_pair = rpt_msgs_.find(current_controller_);
+  if (controller_pair != rpt_msgs_.end())
+  {
+    total_msg_count_ -= controller_pair->second.size();
+    rpt_msgs_.erase(controller_pair);
+  }
 }
