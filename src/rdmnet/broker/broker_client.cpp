@@ -75,6 +75,19 @@ BrokerClient::PushResult BrokerClient::PushPostSizeCheck(const etcpal::Uuid& sen
       // else TODO EPT
       break;
     }
+    case VECTOR_BROKER_DISCONNECT:
+      to_push.data.reset(new uint8_t[BROKER_DISCONNECT_FULL_MSG_SIZE]);
+      if (to_push.data)
+      {
+        to_push.size = rc_broker_pack_disconnect(to_push.data.get(), BROKER_DISCONNECT_FULL_MSG_SIZE, &sender_cid.get(),
+                                                 BROKER_GET_DISCONNECT_MSG(&msg));
+        if (to_push.size)
+        {
+          broker_msgs_.push(std::move(to_push));
+          res = PushResult::Ok;
+        }
+      }
+      break;
     default:
       break;
   }

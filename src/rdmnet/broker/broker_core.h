@@ -161,6 +161,7 @@ private:
                                                              ClientDestroyAction  destroy_action = ClientDestroyAction());
   bool MarkLockedClientForDestruction(BrokerClient& client, ClientDestroyAction destroy_action = ClientDestroyAction());
   void DestroyMarkedClients();
+  void DestroyMarkedClientsLocked();
 
   // BrokerSocketNotify messages
   virtual void HandleSocketClosed(BrokerClient::Handle client_handle, bool graceful) override;

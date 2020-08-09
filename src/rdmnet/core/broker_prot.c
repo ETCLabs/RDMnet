@@ -583,6 +583,28 @@ etcpal_error_t rc_broker_send_fetch_uid_assignment_list(RCConnection*     conn,
 
 /******************************** Disconnect *********************************/
 
+size_t rc_broker_pack_disconnect(uint8_t*                   buf,
+                                 size_t                     buflen,
+                                 const EtcPalUuid*          local_cid,
+                                 const BrokerDisconnectMsg* data)
+{
+  if (!buf || buflen < BROKER_DISCONNECT_FULL_MSG_SIZE || !local_cid || !data)
+    return 0;
+
+  AcnRootLayerPdu rlp;
+  rlp.sender_cid = *local_cid;
+  rlp.vector = ACN_VECTOR_ROOT_BROKER;
+  rlp.data_len = BROKER_DISCONNECT_MSG_SIZE;
+
+  // The null message is just the broker header by itself
+  size_t data_size = pack_broker_header_with_rlp(&rlp, buf, buflen, VECTOR_BROKER_DISCONNECT);
+  if (data_size == 0)
+    return 0;
+
+  etcpal_pack_u16b(&buf[data_size], (uint16_t)data->disconnect_reason);
+  return BROKER_DISCONNECT_FULL_MSG_SIZE;
+}
+
 etcpal_error_t rc_broker_send_disconnect(RCConnection* conn, const BrokerDisconnectMsg* data)
 {
   AcnRootLayerPdu rlp;

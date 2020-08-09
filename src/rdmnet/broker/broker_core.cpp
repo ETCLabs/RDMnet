@@ -349,12 +349,16 @@ void BrokerCore::StopBrokerServices(rdmnet_disconnect_reason_t disconnect_reason
   components_.threads->StopThreads();
 
   // No new connections coming in, manually shut down the existing ones.
-  auto clients = GetClientSnapshot(true, true, true);
+  etcpal::WriteGuard clients_write(client_lock_);
+  for (auto& client_pair : clients_)
+  {
+    ClientWriteGuard client_write(*client_pair.second);
+    MarkLockedClientForDestruction(*client_pair.second, ClientDestroyAction::SendDisconnect(disconnect_reason));
+    while (client_pair.second->Send(settings_.cid))
+      ;
+  }
 
-  for (auto& client : clients)
-    MarkClientForDestruction(client, ClientDestroyAction::SendDisconnect(disconnect_reason));
-
-  DestroyMarkedClients();
+  DestroyMarkedClientsLocked();
 }
 
 bool BrokerCore::HandleNewConnection(etcpal_socket_t new_sock, const etcpal::SockAddr& addr)
@@ -583,7 +587,11 @@ bool BrokerCore::MarkLockedClientForDestruction(BrokerClient& client, ClientDest
 void BrokerCore::DestroyMarkedClients()
 {
   etcpal::WriteGuard clients_write(client_lock_);
+  DestroyMarkedClientsLocked();
+}
 
+void BrokerCore::DestroyMarkedClientsLocked()
+{
   if (!clients_to_destroy_.empty())
   {
     for (auto to_destroy : clients_to_destroy_)

@@ -187,6 +187,10 @@ size_t rc_broker_pack_uid_assignment_list(uint8_t*                       buf,
                                           const EtcPalUuid*              local_cid,
                                           const RdmnetDynamicUidMapping* mappings,
                                           size_t                         num_mappings);
+size_t rc_broker_pack_disconnect(uint8_t*                   buf,
+                                 size_t                     buflen,
+                                 const EtcPalUuid*          local_cid,
+                                 const BrokerDisconnectMsg* data);
 size_t rc_broker_pack_null(uint8_t* buf, size_t buflen, const EtcPalUuid* local_cid);
 
 etcpal_error_t rc_broker_send_client_connect(RCConnection* conn, const BrokerClientConnectMsg* data);

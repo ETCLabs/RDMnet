@@ -239,6 +239,7 @@ bool WinBrokerSocketManager::Shutdown()
     {
       // Trigger the worker thread to stop processing each socket.
       sock_data.second->close_requested = true;
+      shutdown(sock_data.second->socket, SD_BOTH);
       closesocket(sock_data.second->socket);
     }
   }
@@ -313,6 +314,7 @@ void WinBrokerSocketManager::RemoveSocket(BrokerClient::Handle client_handle)
       sock_data->second->close_requested = true;
       // This will cause a worker to wake up and notify that the socket was closed,
       // triggering the rest of the destruction.
+      shutdown(sock_data->second->socket, SD_BOTH);
       closesocket(sock_data->second->socket);
     }
   }

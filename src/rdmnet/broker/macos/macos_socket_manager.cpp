@@ -93,6 +93,7 @@ bool MacBrokerSocketManager::Shutdown()
     for (auto& sock_data : sockets_)
     {
       // Close each socket. Doesn't affect the epoll operation.
+      shutdown(sock_data.second->socket, SHUT_RDWR);
       close(sock_data.second->socket);
     }
   }
