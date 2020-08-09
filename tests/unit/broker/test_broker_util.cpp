@@ -71,7 +71,7 @@ class MockBrokerClient : public BrokerClient
 public:
   MockBrokerClient() : BrokerClient(0, 0) {}
 
-  MOCK_METHOD(bool, Push, (const etcpal::Uuid& sender_cid, const BrokerMessage& msg), (override));
+  MOCK_METHOD(BrokerClient::PushResult, Push, (const etcpal::Uuid& sender_cid, const BrokerMessage& msg), (override));
 };
 
 using testing::_;
@@ -97,7 +97,8 @@ TEST(TestClientDestroyAction, PushesConnectReply)
   MockBrokerClient client;
 
   auto cid = etcpal::Uuid::OsPreferred();
-  EXPECT_CALL(client, Push(cid, IsConnectReplyContainingStatus(kRdmnetConnectCapacityExceeded))).WillOnce(Return(true));
+  EXPECT_CALL(client, Push(cid, IsConnectReplyContainingStatus(kRdmnetConnectCapacityExceeded)))
+      .WillOnce(Return(BrokerClient::PushResult::Ok));
   action.Apply(rdm::Uid(0x6574, 0x12345678), cid, client);
 }
 
@@ -112,7 +113,8 @@ TEST(TestClientDestroyAction, PushesDisconnect)
   MockBrokerClient client;
 
   auto cid = etcpal::Uuid::OsPreferred();
-  EXPECT_CALL(client, Push(cid, IsDisconnectContainingReason(kRdmnetDisconnectShutdown))).WillOnce(Return(true));
+  EXPECT_CALL(client, Push(cid, IsDisconnectContainingReason(kRdmnetDisconnectShutdown)))
+      .WillOnce(Return(BrokerClient::PushResult::Ok));
   action.Apply(rdm::Uid(0x6574, 0x12345678), cid, client);
 }
 

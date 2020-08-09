@@ -69,6 +69,13 @@ public:
   using Handle = int;
   static constexpr Handle kInvalidHandle = -1;
 
+  enum class PushResult
+  {
+    Ok,
+    QueueFull,
+    Error
+  };
+
   BrokerClient(Handle new_handle, etcpal_socket_t new_socket, size_t new_max_q_size = 0)
       : handle(new_handle), socket(new_socket), max_q_size(new_max_q_size)
   {
@@ -85,8 +92,8 @@ public:
   }
   virtual ~BrokerClient() = default;
 
-  virtual bool Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg);
-  virtual bool Send(const etcpal::Uuid& broker_cid);
+  virtual PushResult Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg);
+  virtual bool       Send(const etcpal::Uuid& broker_cid);
 
   bool TcpConnExpired() const { return heartbeat_timer_.IsExpired(); }
   void MessageReceived() { heartbeat_timer_.Reset(); }
@@ -100,8 +107,8 @@ public:
   size_t                 max_q_size{0};
 
 protected:
-  bool PushPostSizeCheck(const etcpal::Uuid& sender_cid, const BrokerMessage& msg);
-  bool SendNull(const etcpal::Uuid& broker_cid);
+  PushResult PushPostSizeCheck(const etcpal::Uuid& sender_cid, const BrokerMessage& msg);
+  bool       SendNull(const etcpal::Uuid& broker_cid);
 
   std::queue<MessageRef> broker_msgs_;
   etcpal::Timer          send_timer_{std::chrono::seconds(E133_TCP_HEARTBEAT_INTERVAL_SEC)};
@@ -140,18 +147,18 @@ public:
   }
   virtual ~RPTClient() {}
 
-  virtual bool Push(Handle /*from_conn*/, const etcpal::Uuid& /*sender_cid*/, const RptMessage& /*msg*/)
+  virtual PushResult Push(Handle /*from_conn*/, const etcpal::Uuid& /*sender_cid*/, const RptMessage& /*msg*/)
   {
-    return false;
+    return PushResult::Error;
   }
-  virtual bool Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
+  virtual PushResult Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
 
   RdmUid            uid{};
   rpt_client_type_t client_type{kRPTClientTypeUnknown};
   etcpal::Uuid      binding_cid{};
 
 protected:
-  bool PushPostSizeCheck(const etcpal::Uuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg);
+  PushResult PushPostSizeCheck(const etcpal::Uuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg);
 
   std::queue<MessageRef> status_msgs_;
 };
@@ -172,10 +179,10 @@ public:
   }
   virtual ~RPTController() {}
 
-  virtual bool Push(Handle from_conn, const etcpal::Uuid& sender_cid, const RptMessage& msg) override;
-  virtual bool Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
-  virtual bool Push(const etcpal::Uuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg);
-  virtual bool Send(const etcpal::Uuid& broker_cid) override;
+  virtual PushResult Push(Handle from_conn, const etcpal::Uuid& sender_cid, const RptMessage& msg) override;
+  virtual PushResult Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
+  virtual PushResult Push(const etcpal::Uuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg);
+  virtual bool       Send(const etcpal::Uuid& broker_cid) override;
 
 protected:
   std::queue<MessageRef> rpt_msgs_;
@@ -192,9 +199,9 @@ public:
   }
   virtual ~RPTDevice() {}
 
-  virtual bool Push(Handle from_conn, const etcpal::Uuid& sender_cid, const RptMessage& msg) override;
-  virtual bool Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
-  virtual bool Send(const etcpal::Uuid& broker_cid) override;
+  virtual PushResult Push(Handle from_conn, const etcpal::Uuid& sender_cid, const RptMessage& msg) override;
+  virtual PushResult Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
+  virtual bool       Send(const etcpal::Uuid& broker_cid) override;
 
 protected:
   Handle                                   last_controller_serviced_{kInvalidHandle};

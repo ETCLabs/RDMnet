@@ -175,6 +175,8 @@ private:
                            RdmnetRptClientEntry&    client_entry,
                            rdmnet_connect_status_t& connect_status);
   void ProcessRPTMessage(BrokerClient::Handle client_handle, const RdmnetMessage* msg);
+  void RouteRPTMessage(BrokerClient::Handle client_handle, const RdmnetMessage* msg);
+  void HandleRPTClientBadPushResult(RPTClient& client, BrokerClient::PushResult result);
   void ResetClientHeartbeatTimer(BrokerClient::Handle client_handle);
 
   void SendRDMBrokerResponse(BrokerClient::Handle client_handle,

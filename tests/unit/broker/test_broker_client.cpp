@@ -54,7 +54,7 @@ TEST_F(TestBaseBrokerClient, SendsBrokerMessage)
   BrokerMessage msg{};
   msg.vector = VECTOR_BROKER_CONNECT_REPLY;
 
-  EXPECT_TRUE(client_->Push(broker_cid_, msg));
+  EXPECT_EQ(client_->Push(broker_cid_, msg), BrokerClient::PushResult::Ok);
   EXPECT_TRUE(client_->Send(broker_cid_));
   EXPECT_EQ(etcpal_send_fake.call_count, 1u);
 }
@@ -96,9 +96,9 @@ TEST_F(TestBaseBrokerClient, HonorsMaxQSize)
 
   for (size_t i = 0; i < kMaxQSize; ++i)
   {
-    ASSERT_TRUE(client_->Push(broker_cid_, msg)) << "Failed on iteration " << i;
+    ASSERT_EQ(client_->Push(broker_cid_, msg), BrokerClient::PushResult::Ok) << "Failed on iteration " << i;
   }
-  EXPECT_FALSE(client_->Push(broker_cid_, msg));
+  EXPECT_EQ(client_->Push(broker_cid_, msg), BrokerClient::PushResult::QueueFull);
 }
 
 TEST_F(TestBaseBrokerClient, MaxQSizeInfinite)
@@ -118,7 +118,7 @@ TEST_F(TestBaseBrokerClient, MaxQSizeInfinite)
 
   for (size_t i = 0; i < 1000; ++i)
   {
-    ASSERT_TRUE(client_->Push(broker_cid_, msg)) << "Failed on iteration " << i;
+    ASSERT_EQ(client_->Push(broker_cid_, msg), BrokerClient::PushResult::Ok) << "Failed on iteration " << i;
   }
 }
 
@@ -224,16 +224,25 @@ TEST_F(TestBrokerClientRptController, HonorsMaxQSize)
   for (size_t i = 0; i < kMaxQSize; ++i)
   {
     if (i % 3 == 0)
-      ASSERT_TRUE(controller_->Push(broker_cid_, broker_msg_)) << "Failed on iteration " << i;
+    {
+      ASSERT_EQ(controller_->Push(broker_cid_, broker_msg_), BrokerClient::PushResult::Ok)
+          << "Failed on iteration " << i;
+    }
     else if (i % 3 == 1)
-      ASSERT_TRUE(controller_->Push(broker_cid_, rpt_header_, status_msg_)) << "Failed on iteration " << i;
+    {
+      ASSERT_EQ(controller_->Push(broker_cid_, rpt_header_, status_msg_), BrokerClient::PushResult::Ok)
+          << "Failed on iteration " << i;
+    }
     else
-      ASSERT_TRUE(controller_->Push(sending_controller_handle_, broker_cid_, request_)) << "Failed on iteration " << i;
+    {
+      ASSERT_EQ(controller_->Push(sending_controller_handle_, broker_cid_, request_), BrokerClient::PushResult::Ok)
+          << "Failed on iteration " << i;
+    }
   }
 
-  EXPECT_FALSE(controller_->Push(broker_cid_, broker_msg_));
-  EXPECT_FALSE(controller_->Push(broker_cid_, rpt_header_, status_msg_));
-  EXPECT_FALSE(controller_->Push(sending_controller_handle_, broker_cid_, request_));
+  EXPECT_EQ(controller_->Push(broker_cid_, broker_msg_), BrokerClient::PushResult::QueueFull);
+  EXPECT_EQ(controller_->Push(broker_cid_, rpt_header_, status_msg_), BrokerClient::PushResult::QueueFull);
+  EXPECT_EQ(controller_->Push(sending_controller_handle_, broker_cid_, request_), BrokerClient::PushResult::QueueFull);
 }
 
 TEST_F(TestBrokerClientRptController, InfiniteMaxQSize)
@@ -244,11 +253,20 @@ TEST_F(TestBrokerClientRptController, InfiniteMaxQSize)
   for (size_t i = 0; i < 1000u; ++i)
   {
     if (i % 3 == 0)
-      ASSERT_TRUE(controller_->Push(broker_cid_, broker_msg_)) << "Failed on iteration " << i;
+    {
+      ASSERT_EQ(controller_->Push(broker_cid_, broker_msg_), BrokerClient::PushResult::Ok)
+          << "Failed on iteration " << i;
+    }
     else if (i % 3 == 1)
-      ASSERT_TRUE(controller_->Push(broker_cid_, rpt_header_, status_msg_)) << "Failed on iteration " << i;
+    {
+      ASSERT_EQ(controller_->Push(broker_cid_, rpt_header_, status_msg_), BrokerClient::PushResult::Ok)
+          << "Failed on iteration " << i;
+    }
     else
-      ASSERT_TRUE(controller_->Push(sending_controller_handle_, broker_cid_, request_)) << "Failed on iteration " << i;
+    {
+      ASSERT_EQ(controller_->Push(sending_controller_handle_, broker_cid_, request_), BrokerClient::PushResult::Ok)
+          << "Failed on iteration " << i;
+    }
   }
 }
 
@@ -322,17 +340,18 @@ TEST_F(TestBrokerClientRptDevice, HonorsMaxQSize)
   {
     if (i % 2 == 0)
     {
-      ASSERT_TRUE(device_->Push(broker_cid_, broker_msg_)) << "Failed on iteration " << i;
+      ASSERT_EQ(device_->Push(broker_cid_, broker_msg_), BrokerClient::PushResult::Ok) << "Failed on iteration " << i;
     }
     else
     {
-      ASSERT_TRUE(device_->Push(static_cast<BrokerClient::Handle>(kClientHandle + i), broker_cid_, request_))
+      ASSERT_EQ(device_->Push(static_cast<BrokerClient::Handle>(kClientHandle + i), broker_cid_, request_),
+                BrokerClient::PushResult::Ok)
           << "Failed on iteration " << i;
     }
   }
 
-  EXPECT_FALSE(device_->Push(broker_cid_, broker_msg_));
-  EXPECT_FALSE(device_->Push(kClientHandle + 1, broker_cid_, request_));
+  EXPECT_EQ(device_->Push(broker_cid_, broker_msg_), BrokerClient::PushResult::QueueFull);
+  EXPECT_EQ(device_->Push(kClientHandle + 1, broker_cid_, request_), BrokerClient::PushResult::QueueFull);
 }
 
 TEST_F(TestBrokerClientRptDevice, InfiniteMaxQSize)
@@ -344,11 +363,12 @@ TEST_F(TestBrokerClientRptDevice, InfiniteMaxQSize)
   {
     if (i % 2 == 0)
     {
-      ASSERT_TRUE(device_->Push(broker_cid_, broker_msg_)) << "Failed on iteration " << i;
+      ASSERT_EQ(device_->Push(broker_cid_, broker_msg_), BrokerClient::PushResult::Ok) << "Failed on iteration " << i;
     }
     else
     {
-      ASSERT_TRUE(device_->Push(static_cast<BrokerClient::Handle>(kClientHandle + i), broker_cid_, request_))
+      ASSERT_EQ(device_->Push(static_cast<BrokerClient::Handle>(kClientHandle + i), broker_cid_, request_),
+                BrokerClient::PushResult::Ok)
           << "Failed on iteration " << i;
     }
   }
@@ -401,7 +421,7 @@ TEST_F(TestBrokerClientRptDevice, FairScheduler)
   const auto controller_1_handle = kClientHandle + 1;
   for (size_t i = 0; i < 10; ++i)
   {
-    EXPECT_TRUE(device_->Push(controller_1_handle, kController1Cid, request));
+    EXPECT_EQ(device_->Push(controller_1_handle, kController1Cid, request), BrokerClient::PushResult::Ok);
     ++request.header.seqnum;
   }
 
@@ -409,15 +429,15 @@ TEST_F(TestBrokerClientRptDevice, FairScheduler)
   const auto controller_2_handle = kClientHandle + 2;
   request.header.source_uid = RdmUid{0x6574, 2};
   request.header.seqnum = 1;
-  EXPECT_TRUE(device_->Push(controller_2_handle, kController2Cid, request));
+  EXPECT_EQ(device_->Push(controller_2_handle, kController2Cid, request), BrokerClient::PushResult::Ok);
 
   // Push 2 requests from controller 3
   const auto controller_3_handle = kClientHandle + 3;
   request.header.source_uid = RdmUid{0x6574, 3};
   request.header.seqnum = 1;
-  EXPECT_TRUE(device_->Push(controller_3_handle, kController3Cid, request));
+  EXPECT_EQ(device_->Push(controller_3_handle, kController3Cid, request), BrokerClient::PushResult::Ok);
   ++request.header.seqnum;
-  EXPECT_TRUE(device_->Push(controller_3_handle, kController3Cid, request));
+  EXPECT_EQ(device_->Push(controller_3_handle, kController3Cid, request), BrokerClient::PushResult::Ok);
 
   // We have 10 messages from controller 1, 1 from controller 2, and 2 from controller 3.
   // The order should be 1, 2, 3, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1.
