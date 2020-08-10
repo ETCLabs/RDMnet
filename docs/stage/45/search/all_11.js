@@ -180,7 +180,7 @@ var searchData=
   ['rdmnet_5fmax_5faddrs_5fper_5fdiscovered_5fbroker',['RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER',['../group__rdmnetopts__disc.html#ga7c12ec677842ecde91652146b67be719',1,'opts.h']]],
   ['rdmnet_5fmax_5fcontrollers',['RDMNET_MAX_CONTROLLERS',['../group__rdmnetopts__client.html#gac9e623b18dcb38277b287d3bb8e7567e',1,'opts.h']]],
   ['rdmnet_5fmax_5fdevices',['RDMNET_MAX_DEVICES',['../group__rdmnetopts__client.html#ga70cb0df8a1d90d47d3089ec0e55eaf6c',1,'opts.h']]],
-  ['rdmnet_5fmax_5fdiscovered_5fbrokers',['RDMNET_MAX_DISCOVERED_BROKERS',['../group__rdmnetopts__disc.html#gab83b8f8cddbd36051c75f84268d001ea',1,'opts.h']]],
+  ['rdmnet_5fmax_5fdiscovered_5fbrokers_5fper_5fscope',['RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE',['../group__rdmnetopts__disc.html#ga3ad9ca9d18e25405c6e00738efefb9aa',1,'opts.h']]],
   ['rdmnet_5fmax_5fendpoints_5fper_5fdevice',['RDMNET_MAX_ENDPOINTS_PER_DEVICE',['../group__rdmnetopts__client.html#gaf2e797d5e45375b925f1f6bf55d64961',1,'opts.h']]],
   ['rdmnet_5fmax_5fept_5fclients',['RDMNET_MAX_EPT_CLIENTS',['../group__rdmnetopts__client.html#ga43d00c5a3e53b74b5e58bdfc0d60d6b8',1,'opts.h']]],
   ['rdmnet_5fmax_5fllrp_5ftargets',['RDMNET_MAX_LLRP_TARGETS',['../group__rdmnetopts__llrp.html#ga83f287dd60670a447f5f5e7fbf314dd9',1,'opts.h']]],
