@@ -43,25 +43,29 @@ TEST(TestLwMdnsTxtRecordParsing, ParsesNormalTxtRecord)
       "\011TxtVers=1\021E133Scope=default\012E133Vers=1\044CID=da30bf9383174140a7714840483f71d7\020UID="
       "6574d574a27a\016Model=Test App\011Manuf=ETC\021XtraItem=BlahBlah\13XtraKeyOnly\14XtraNoValue=";
 
+  DiscoveredBroker* db = discovered_broker_new((rdmnet_scope_monitor_t)0, "service", "service");
+  ASSERT_NE(db, nullptr);
+
   auto             txt_bytes = StringToBytes(kNormalTxtRecord);
-  DiscoveredBroker db{};
-  EXPECT_EQ(lwmdns_txt_record_to_broker_info(txt_bytes.data(), static_cast<uint16_t>(txt_bytes.size()), &db),
+  EXPECT_EQ(lwmdns_txt_record_to_broker_info(txt_bytes.data(), static_cast<uint16_t>(txt_bytes.size()), db),
             kTxtRecordParseOkDataChanged);
 
-  EXPECT_STREQ(db.scope, "default");
-  EXPECT_EQ(db.cid, etcpal::Uuid::FromString("da30bf93-8317-4140-a771-4840483f71d7"));
-  EXPECT_EQ(db.uid, rdm::Uid::FromString("6574:d574a27a"));
-  EXPECT_STREQ(db.model, "Test App");
-  EXPECT_STREQ(db.manufacturer, "ETC");
+  EXPECT_STREQ(db->scope, "default");
+  EXPECT_EQ(db->cid, etcpal::Uuid::FromString("da30bf93-8317-4140-a771-4840483f71d7"));
+  EXPECT_EQ(db->uid, rdm::Uid::FromString("6574:d574a27a"));
+  EXPECT_STREQ(db->model, "Test App");
+  EXPECT_STREQ(db->manufacturer, "ETC");
 
-  ASSERT_EQ(db.num_additional_txt_items, 3u);
-  EXPECT_STREQ(db.additional_txt_items_array[0].key, "XtraItem");
-  EXPECT_EQ(db.additional_txt_items_array[0].value_len, 8);
-  EXPECT_EQ(std::memcmp(db.additional_txt_items_array[0].value, "BlahBlah", sizeof("BlahBlah") - 1), 0);
-  EXPECT_STREQ(db.additional_txt_items_array[1].key, "XtraKeyOnly");
-  EXPECT_EQ(db.additional_txt_items_array[1].value_len, 0);
-  EXPECT_STREQ(db.additional_txt_items_array[2].key, "XtraNoValue");
-  EXPECT_EQ(db.additional_txt_items_array[2].value_len, 0);
+  ASSERT_EQ(db->num_additional_txt_items, 3u);
+  EXPECT_STREQ(db->additional_txt_items_array[0].key, "XtraItem");
+  EXPECT_EQ(db->additional_txt_items_array[0].value_len, 8);
+  EXPECT_EQ(std::memcmp(db->additional_txt_items_array[0].value, "BlahBlah", sizeof("BlahBlah") - 1), 0);
+  EXPECT_STREQ(db->additional_txt_items_array[1].key, "XtraKeyOnly");
+  EXPECT_EQ(db->additional_txt_items_array[1].value_len, 0);
+  EXPECT_STREQ(db->additional_txt_items_array[2].key, "XtraNoValue");
+  EXPECT_EQ(db->additional_txt_items_array[2].value_len, 0);
+
+  discovered_broker_delete(db);
 }
 
 TEST(TestLwMdnsTxtRecordParsing, DoesNotParseWhenTxtVersMissing)
@@ -122,6 +126,8 @@ TEST(TestLwMdnsTxtRecordParsing, RecognizesNoDataChanged)
   EXPECT_STREQ(db->additional_txt_items_array[0].key, "XtraItem");
   EXPECT_EQ(db->additional_txt_items_array[0].value_len, 8);
   EXPECT_EQ(std::memcmp(db->additional_txt_items_array[0].value, "BlahBlah", sizeof("BlahBlah") - 1), 0);
+
+  discovered_broker_delete(db);
 }
 
 TEST(TestLwMdnsTxtRecordParsing, RecognizesStandardDataChanged)
@@ -157,6 +163,8 @@ TEST(TestLwMdnsTxtRecordParsing, RecognizesStandardDataChanged)
   EXPECT_STREQ(db->additional_txt_items_array[0].key, "XtraItem");
   EXPECT_EQ(db->additional_txt_items_array[0].value_len, 8);
   EXPECT_EQ(std::memcmp(db->additional_txt_items_array[0].value, "BlahBlah", sizeof("BlahBlah") - 1), 0);
+
+  discovered_broker_delete(db);
 }
 
 TEST(TestLwMdnsTxtRecordParsing, RecognizesAdditionalDataChanged)
@@ -194,6 +202,8 @@ TEST(TestLwMdnsTxtRecordParsing, RecognizesAdditionalDataChanged)
   EXPECT_EQ(memcmp(db->additional_txt_items_array[0].value, "BlahBlah", sizeof("BlahBlah") - 1), 0);
   EXPECT_STREQ(db->additional_txt_items_array[1].key, "XtraItem2");
   EXPECT_EQ(db->additional_txt_items_array[1].value_len, 0);
+
+  discovered_broker_delete(db);
 }
 
 TEST(TestLwMdnsTxtRecordParsing, MalformedStandardKey)
@@ -203,7 +213,9 @@ TEST(TestLwMdnsTxtRecordParsing, MalformedStandardKey)
       "6574d574a27a\016Model=Test App\011Manuf=ETC\021XtraItem=BlahBlah\13XtraKeyOnly\14XtraNoValue=";
 
   auto             txt_bytes = StringToBytes(kTxtRecordMalformedStandardKey);
-  DiscoveredBroker db{};
-  EXPECT_EQ(lwmdns_txt_record_to_broker_info(txt_bytes.data(), static_cast<uint16_t>(txt_bytes.size()), &db),
+  DiscoveredBroker* db = discovered_broker_new((rdmnet_scope_monitor_t)0, "service", "service");
+  ASSERT_NE(db, nullptr);
+  EXPECT_EQ(lwmdns_txt_record_to_broker_info(txt_bytes.data(), static_cast<uint16_t>(txt_bytes.size()), db),
             kTxtRecordParseError);
+  discovered_broker_delete(db);
 }

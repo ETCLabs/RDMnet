@@ -20,6 +20,7 @@
 #include "lwmdns_common.h"
 
 #include <array>
+#include <cstring>
 #include "gtest/gtest.h"
 #include "etcpal_mock/common.h"
 
