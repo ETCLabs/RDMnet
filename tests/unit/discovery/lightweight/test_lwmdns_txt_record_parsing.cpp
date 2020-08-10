@@ -31,13 +31,18 @@
 #pragma warning(disable : 4996)
 #endif
 
+class TestLwMdnsTxtRecordParsing : public testing::Test
+{
+  void SetUp() override { ASSERT_EQ(discovered_broker_module_init(), kEtcPalErrOk); }
+};
+
 std::vector<uint8_t> StringToBytes(const char* str)
 {
   size_t str_len = std::strlen(str);
   return std::vector<uint8_t>(reinterpret_cast<const uint8_t*>(str), reinterpret_cast<const uint8_t*>(str + str_len));
 }
 
-TEST(TestLwMdnsTxtRecordParsing, ParsesNormalTxtRecord)
+TEST_F(TestLwMdnsTxtRecordParsing, ParsesNormalTxtRecord)
 {
   constexpr const char* kNormalTxtRecord =
       "\011TxtVers=1\021E133Scope=default\012E133Vers=1\044CID=da30bf9383174140a7714840483f71d7\020UID="
@@ -46,7 +51,7 @@ TEST(TestLwMdnsTxtRecordParsing, ParsesNormalTxtRecord)
   DiscoveredBroker* db = discovered_broker_new((rdmnet_scope_monitor_t)0, "service", "service");
   ASSERT_NE(db, nullptr);
 
-  auto             txt_bytes = StringToBytes(kNormalTxtRecord);
+  auto txt_bytes = StringToBytes(kNormalTxtRecord);
   EXPECT_EQ(lwmdns_txt_record_to_broker_info(txt_bytes.data(), static_cast<uint16_t>(txt_bytes.size()), db),
             kTxtRecordParseOkDataChanged);
 
@@ -68,7 +73,7 @@ TEST(TestLwMdnsTxtRecordParsing, ParsesNormalTxtRecord)
   discovered_broker_delete(db);
 }
 
-TEST(TestLwMdnsTxtRecordParsing, DoesNotParseWhenTxtVersMissing)
+TEST_F(TestLwMdnsTxtRecordParsing, DoesNotParseWhenTxtVersMissing)
 {
   constexpr const char* kTxtRecordTxtVersMissing =
       "\021E133Scope=default\012E133Vers=1\044CID=da30bf9383174140a7714840483f71d7\020UID="
@@ -80,7 +85,7 @@ TEST(TestLwMdnsTxtRecordParsing, DoesNotParseWhenTxtVersMissing)
             kTxtRecordParseError);
 }
 
-TEST(TestLwMdnsTxtRecordParsing, DoesNotParseWhenTxtVersTooHigh)
+TEST_F(TestLwMdnsTxtRecordParsing, DoesNotParseWhenTxtVersTooHigh)
 {
   constexpr const char* kTxtRecordTxtVersTooHigh =
       "\011TxtVers=2\021E133Scope=default\012E133Vers=1\044CID=da30bf9383174140a7714840483f71d7\020UID="
@@ -92,7 +97,7 @@ TEST(TestLwMdnsTxtRecordParsing, DoesNotParseWhenTxtVersTooHigh)
             kTxtRecordParseError);
 }
 
-TEST(TestLwMdnsTxtRecordParsing, RecognizesNoDataChanged)
+TEST_F(TestLwMdnsTxtRecordParsing, RecognizesNoDataChanged)
 {
   constexpr const char* kNormalTxtRecord =
       "\011TxtVers=1\021E133Scope=default\012E133Vers=1\044CID=da30bf9383174140a7714840483f71d7\020UID="
@@ -130,7 +135,7 @@ TEST(TestLwMdnsTxtRecordParsing, RecognizesNoDataChanged)
   discovered_broker_delete(db);
 }
 
-TEST(TestLwMdnsTxtRecordParsing, RecognizesStandardDataChanged)
+TEST_F(TestLwMdnsTxtRecordParsing, RecognizesStandardDataChanged)
 {
   constexpr const char* kNormalTxtRecord =
       "\011TxtVers=1\025E133Scope=not default\012E133Vers=1\044CID=da30bf9383174140a7714840483f71d7\020UID="
@@ -167,7 +172,7 @@ TEST(TestLwMdnsTxtRecordParsing, RecognizesStandardDataChanged)
   discovered_broker_delete(db);
 }
 
-TEST(TestLwMdnsTxtRecordParsing, RecognizesAdditionalDataChanged)
+TEST_F(TestLwMdnsTxtRecordParsing, RecognizesAdditionalDataChanged)
 {
   constexpr const char* kNormalTxtRecord =
       "\011TxtVers=1\021E133Scope=default\012E133Vers=1\044CID=da30bf9383174140a7714840483f71d7\020UID="
@@ -206,13 +211,13 @@ TEST(TestLwMdnsTxtRecordParsing, RecognizesAdditionalDataChanged)
   discovered_broker_delete(db);
 }
 
-TEST(TestLwMdnsTxtRecordParsing, MalformedStandardKey)
+TEST_F(TestLwMdnsTxtRecordParsing, MalformedStandardKey)
 {
   constexpr const char* kTxtRecordMalformedStandardKey =
       "\011TxtVers=1\012E133Scope=\012E133Vers=1\044CID=da30bf9383174140a7714840483f71d7\020UID="
       "6574d574a27a\016Model=Test App\011Manuf=ETC\021XtraItem=BlahBlah\13XtraKeyOnly\14XtraNoValue=";
 
-  auto             txt_bytes = StringToBytes(kTxtRecordMalformedStandardKey);
+  auto              txt_bytes = StringToBytes(kTxtRecordMalformedStandardKey);
   DiscoveredBroker* db = discovered_broker_new((rdmnet_scope_monitor_t)0, "service", "service");
   ASSERT_NE(db, nullptr);
   EXPECT_EQ(lwmdns_txt_record_to_broker_info(txt_bytes.data(), static_cast<uint16_t>(txt_bytes.size()), db),

@@ -384,12 +384,12 @@
 #endif
 
 /**
- * @brief How many brokers can be discovered at the same time across all monitored scopes.
+ * @brief How many brokers can be discovered at the same time on a given scope.
  *
  * Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
  */
-#ifndef RDMNET_MAX_DISCOVERED_BROKERS
-#define RDMNET_MAX_DISCOVERED_BROKERS RDMNET_MAX_MONITORED_SCOPES
+#ifndef RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE
+#define RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE 1
 #endif
 
 /**

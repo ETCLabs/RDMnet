@@ -37,7 +37,7 @@
 #if RDMNET_DYNAMIC_MEM
 #define ALLOC_DISCOVERED_BROKER() (DiscoveredBroker*)malloc(sizeof(DiscoveredBroker))
 #define FREE_DISCOVERED_BROKER(ptr) free(ptr)
-#elif RDMNET_MAX_DISCOVERED_BROKERS
+#elif RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE
 #define ALLOC_DISCOVERED_BROKER() (DiscoveredBroker*)etcpal_mempool_alloc(discovered_brokers)
 #define FREE_DISCOVERED_BROKER(ptr) etcpal_mempool_free(discovered_brokers, ptr)
 #else
@@ -47,8 +47,10 @@
 
 /**************************** Private variables ******************************/
 
-#if !RDMNET_DYNAMIC_MEM && RDMNET_MAX_DISCOVERED_BROKERS
-ETCPAL_MEMPOOL_DEFINE(discovered_brokers, DiscoveredBroker, RDMNET_MAX_DISCOVERED_BROKERS);
+#if !RDMNET_DYNAMIC_MEM && RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE
+ETCPAL_MEMPOOL_DEFINE(discovered_brokers,
+                      DiscoveredBroker,
+                      (RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE * RDMNET_MAX_MONITORED_SCOPES));
 #endif
 
 etcpal_error_t discovered_broker_module_init(void)

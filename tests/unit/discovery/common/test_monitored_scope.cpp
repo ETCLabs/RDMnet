@@ -24,6 +24,7 @@
 #include <memory>
 #include <string>
 #include "rdmnet/core/util.h"
+#include "rdmnet/disc/discovered_broker.h"
 #include "gtest/gtest.h"
 #include "test_disc_common_fakes.h"
 #include "test_operators.h"
@@ -62,6 +63,7 @@ protected:
   void SetUp() override
   {
     ASSERT_EQ(monitored_scope_module_init(), kEtcPalErrOk);
+    ASSERT_EQ(discovered_broker_module_init(), kEtcPalErrOk);
     default_config_.scope = kDefaultTestScope;
     default_config_.domain = kDefaultTestDomain;
   }
@@ -175,14 +177,17 @@ TEST_F(TestMonitoredScope, FindScopeAndBrokerWorks)
 {
   std::vector<ScopeMonitorUniquePtr> scopes;
 
-  for (int i = 0; i < 3; ++i)
+  for (int i = 0; i < RDMNET_MAX_MONITORED_SCOPES; ++i)
   {
     auto scope = MakeDefaultMonitoredScope();
     std::strcpy(scope->scope, std::string("Test Scope " + std::to_string(i)).c_str());
-    for (int j = 0; j < 5; ++j)
+    for (int j = 0; j < RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE; ++j)
     {
-      auto db = discovered_broker_new(scope.get(),
-                                      std::string("Test Service Instance " + std::to_string(i * 5 + j)).c_str(), "");
+      auto db = discovered_broker_new(
+          scope.get(),
+          std::string("Test Service Instance " + std::to_string(i * RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE + j))
+              .c_str(),
+          "");
       ASSERT_NE(db, nullptr);
       discovered_broker_insert(&scope->broker_list, db);
     }

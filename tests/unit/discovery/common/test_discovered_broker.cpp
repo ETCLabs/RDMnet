@@ -228,7 +228,7 @@ TEST_F(TestDiscoveredBroker, FindByNameWorks)
 #if RDMNET_DYNAMIC_MEM
   constexpr size_t kNumBrokers = 10;
 #else
-  constexpr size_t kNumBrokers = RDMNET_MAX_DISCOVERED_BROKERS;
+  constexpr size_t kNumBrokers = RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE;
 #endif
   std::array<DiscoveredBrokerUniquePtr, kNumBrokers> brokers;
   DiscoveredBroker*                                  list = nullptr;
@@ -256,7 +256,7 @@ TEST_F(TestDiscoveredBroker, FindByPredicateWorks)
 #if RDMNET_DYNAMIC_MEM
   constexpr size_t kNumBrokers = 10;
 #else
-  constexpr size_t kNumBrokers = RDMNET_MAX_DISCOVERED_BROKERS;
+  constexpr size_t kNumBrokers = RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE;
 #endif
   std::array<DiscoveredBrokerUniquePtr, kNumBrokers> brokers;
   DiscoveredBroker*                                  list = nullptr;
