@@ -1,0 +1,235 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen 1.8.13" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RDMnet: include/rdmnet/llrp.h Source File</title>
+  <link href="tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="dynsections.js"></script>
+  <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+</script>
+  <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css" />
+  <!--BEGIN CUSTOM SCRIPTS-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <script type="text/javascript">
+    $(function () { selectAllC() });
+  </script>
+  <script type="text/javascript">
+    function selectAllC() {
+      // Enable all C-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_c")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_c")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectAllCpp() {
+      // Enable all C++-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_cpp")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C++-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_cpp")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectLanguage(evt, block_id, language) {
+      // Get all elements with class="tabcontent" and hide them
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.startsWith("div_" + block_id)) {
+          tabcontent[i].style.display = "none";
+        }
+      }
+      // Get all elements with class="tablinks" and remove the class "active"
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.startsWith("button_" + block_id)) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById("div_" + block_id + "_" + language).style.display = "block";
+      if (!evt.currentTarget.className.includes("active")) {
+        evt.currentTarget.className += " active";
+      }
+    }
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">RDMnet
+                &#160;<span id="projectnumber">Staging for pull request 44</span>
+              </div>
+              <div id="projectbrief">Implementation of ANSI E1.33 (RDMnet)</div>
+            </td>
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- end header part -->
+<!-- Generated by Doxygen 1.8.13 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Search');
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('llrp_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">llrp.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<a href="llrp_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">/******************************************************************************</span></div><div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment"> * Copyright 2020 ETC Inc.</span></div><div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"> *</span></div><div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment"> * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span></div><div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment"> * you may not use this file except in compliance with the License.</span></div><div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment"> * You may obtain a copy of the License at</span></div><div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment"> *</span></div><div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment"> *    http://www.apache.org/licenses/LICENSE-2.0</span></div><div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment"> *</span></div><div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="comment"> * Unless required by applicable law or agreed to in writing, software</span></div><div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="comment"> * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span></div><div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="comment"> * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span></div><div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="comment"> * See the License for the specific language governing permissions and</span></div><div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="comment"> * limitations under the License.</span></div><div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="comment"> ******************************************************************************</span></div><div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="comment"> * This file is a part of RDMnet. For more information, go to:</span></div><div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment"> * https://github.com/ETCLabs/RDMnet</span></div><div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment"> *****************************************************************************/</span></div><div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;</div><div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#ifndef RDMNET_LLRP_H_</span></div><div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#define RDMNET_LLRP_H_</span></div><div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;</div><div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;stdint.h&gt;</span></div><div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &quot;etcpal/inet.h&quot;</span></div><div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &quot;etcpal/uuid.h&quot;</span></div><div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &quot;<a class="codeRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/uid_8h.html">rdm/uid.h</a>&quot;</span></div><div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#include &quot;rdmnet/defs.h&quot;</span></div><div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;</div><div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div><div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span> {</div><div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="preprocessor">#endif</span></div><div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;</div><div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="struct_llrp_destination_addr.html">   47</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct_llrp_destination_addr.html">LlrpDestinationAddr</a></div><div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;{</div><div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="struct_llrp_destination_addr.html#ae278a51f1e043076640f187c9a9ce88c">   50</a></span>&#160;  <a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_uuid.html">EtcPalUuid</a> <a class="code" href="struct_llrp_destination_addr.html#ae278a51f1e043076640f187c9a9ce88c">dest_cid</a>;</div><div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="struct_llrp_destination_addr.html#a5376b761b4d63561725f2e44ac8ef363">   52</a></span>&#160;  <a class="codeRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/struct_rdm_uid.html">RdmUid</a> <a class="code" href="struct_llrp_destination_addr.html#a5376b761b4d63561725f2e44ac8ef363">dest_uid</a>;</div><div class="line"><a name="l00054"></a><span class="lineno"><a class="line" href="struct_llrp_destination_addr.html#a171ea239f97a7af54496f10c88855c48">   54</a></span>&#160;  uint16_t <a class="code" href="struct_llrp_destination_addr.html#a171ea239f97a7af54496f10c88855c48">subdevice</a>;</div><div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;} <a class="code" href="group__rdmnet__api__common.html#gacf1644b0c5946393e1178c0ecb102d3f">LlrpDestinationAddr</a>;</div><div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;</div><div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="group__rdmnet__api__common.html#ga994bb762a1d4572348671a0b1e73d567">   58</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">enum</span></div><div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;{</div><div class="line"><a name="l00061"></a><span class="lineno"><a class="line" href="group__rdmnet__api__common.html#gga994bb762a1d4572348671a0b1e73d567a3235732abcf7cbc2c7217a145d4bd042">   61</a></span>&#160;  <a class="code" href="group__rdmnet__api__common.html#gga994bb762a1d4572348671a0b1e73d567a3235732abcf7cbc2c7217a145d4bd042">kLlrpCompRptDevice</a> = LLRP_COMPONENT_TYPE_RPT_DEVICE,</div><div class="line"><a name="l00063"></a><span class="lineno"><a class="line" href="group__rdmnet__api__common.html#gga994bb762a1d4572348671a0b1e73d567ad13a83299231136b19e758188751ed30">   63</a></span>&#160;  <a class="code" href="group__rdmnet__api__common.html#gga994bb762a1d4572348671a0b1e73d567ad13a83299231136b19e758188751ed30">kLlrpCompRptController</a> = LLRP_COMPONENT_TYPE_RPT_CONTROLLER,</div><div class="line"><a name="l00065"></a><span class="lineno"><a class="line" href="group__rdmnet__api__common.html#gga994bb762a1d4572348671a0b1e73d567ac8c4f58e05975698405b6c05e69caacb">   65</a></span>&#160;  <a class="code" href="group__rdmnet__api__common.html#gga994bb762a1d4572348671a0b1e73d567ac8c4f58e05975698405b6c05e69caacb">kLlrpCompBroker</a> = LLRP_COMPONENT_TYPE_BROKER,</div><div class="line"><a name="l00067"></a><span class="lineno"><a class="line" href="group__rdmnet__api__common.html#gga994bb762a1d4572348671a0b1e73d567ad8612edf0e00d0a13524c02c6ae652f6">   67</a></span>&#160;  <a class="code" href="group__rdmnet__api__common.html#gga994bb762a1d4572348671a0b1e73d567ad8612edf0e00d0a13524c02c6ae652f6">kLlrpCompNonRdmnet</a> = LLRP_COMPONENT_TYPE_NONRDMNET</div><div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;} <a class="code" href="group__rdmnet__api__common.html#ga994bb762a1d4572348671a0b1e73d567">llrp_component_t</a>;</div><div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;</div><div class="line"><a name="l00071"></a><span class="lineno"><a class="line" href="struct_llrp_discovered_target.html">   71</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct_llrp_discovered_target.html">LlrpDiscoveredTarget</a></div><div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;{</div><div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="struct_llrp_discovered_target.html#ac9def492d345d0f22a59c329f710146f">   74</a></span>&#160;  <a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_uuid.html">EtcPalUuid</a> <a class="code" href="struct_llrp_discovered_target.html#ac9def492d345d0f22a59c329f710146f">cid</a>;</div><div class="line"><a name="l00076"></a><span class="lineno"><a class="line" href="struct_llrp_discovered_target.html#a7740f59bfe2b2ad12087d2290f5bdf03">   76</a></span>&#160;  <a class="codeRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/struct_rdm_uid.html">RdmUid</a> <a class="code" href="struct_llrp_discovered_target.html#a7740f59bfe2b2ad12087d2290f5bdf03">uid</a>;</div><div class="line"><a name="l00078"></a><span class="lineno"><a class="line" href="struct_llrp_discovered_target.html#a29ce14286cb41c556483aacecd347391">   78</a></span>&#160;  <a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_mac_addr.html">EtcPalMacAddr</a> <a class="code" href="struct_llrp_discovered_target.html#a29ce14286cb41c556483aacecd347391">hardware_address</a>;</div><div class="line"><a name="l00080"></a><span class="lineno"><a class="line" href="struct_llrp_discovered_target.html#aece7714b9daea51ddb2a14091c3d9ace">   80</a></span>&#160;  llrp_component_t <a class="code" href="struct_llrp_discovered_target.html#aece7714b9daea51ddb2a14091c3d9ace">component_type</a>;</div><div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;} <a class="code" href="group__rdmnet__api__common.html#ga8a0652cd9550b005854b92a2329c0869">LlrpDiscoveredTarget</a>;</div><div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;</div><div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code" href="group__rdmnet__api__common.html#ga953e59c75bae61dcd3f38fbc9227e888">llrp_component_type_to_string</a>(llrp_component_t type);</div><div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;</div><div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div><div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;}</div><div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="preprocessor">#endif</span></div><div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;</div><div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* RDMNET_LLRP_H_ */</span><span class="preprocessor"></span></div><div class="ttc" id="uid_8h_html"><div class="ttname"><a href="https://etclabs.github.io/RDM/docs/head/uid_8h.html">uid.h</a></div></div>
+<div class="ttc" id="struct_rdm_uid_html"><div class="ttname"><a href="https://etclabs.github.io/RDM/docs/head/struct_rdm_uid.html">RdmUid</a></div></div>
+<div class="ttc" id="struct_llrp_destination_addr_html"><div class="ttname"><a href="struct_llrp_destination_addr.html">LlrpDestinationAddr</a></div><div class="ttdoc">A destination address for an RDM command in LLRP. </div><div class="ttdef"><b>Definition:</b> llrp.h:47</div></div>
+<div class="ttc" id="group__rdmnet__api__common_html_ga994bb762a1d4572348671a0b1e73d567"><div class="ttname"><a href="group__rdmnet__api__common.html#ga994bb762a1d4572348671a0b1e73d567">llrp_component_t</a></div><div class="ttdeci">llrp_component_t</div><div class="ttdoc">Identifies the type of RPT Component with which an LLRP Target is associated. </div><div class="ttdef"><b>Definition:</b> llrp.h:58</div></div>
+<div class="ttc" id="struct_llrp_discovered_target_html_ac9def492d345d0f22a59c329f710146f"><div class="ttname"><a href="struct_llrp_discovered_target.html#ac9def492d345d0f22a59c329f710146f">LlrpDiscoveredTarget::cid</a></div><div class="ttdeci">EtcPalUuid cid</div><div class="ttdoc">The LLRP Target&amp;#39;s CID. </div><div class="ttdef"><b>Definition:</b> llrp.h:74</div></div>
+<div class="ttc" id="struct_etc_pal_mac_addr_html"><div class="ttname"><a href="https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_mac_addr.html">EtcPalMacAddr</a></div></div>
+<div class="ttc" id="struct_llrp_destination_addr_html_a171ea239f97a7af54496f10c88855c48"><div class="ttname"><a href="struct_llrp_destination_addr.html#a171ea239f97a7af54496f10c88855c48">LlrpDestinationAddr::subdevice</a></div><div class="ttdeci">uint16_t subdevice</div><div class="ttdoc">The sub-device to which this command is addressed, or 0 for the root device. </div><div class="ttdef"><b>Definition:</b> llrp.h:54</div></div>
+<div class="ttc" id="group__rdmnet__api__common_html_gacf1644b0c5946393e1178c0ecb102d3f"><div class="ttname"><a href="group__rdmnet__api__common.html#gacf1644b0c5946393e1178c0ecb102d3f">LlrpDestinationAddr</a></div><div class="ttdeci">struct LlrpDestinationAddr LlrpDestinationAddr</div><div class="ttdoc">A destination address for an RDM command in LLRP. </div></div>
+<div class="ttc" id="group__rdmnet__api__common_html_ga953e59c75bae61dcd3f38fbc9227e888"><div class="ttname"><a href="group__rdmnet__api__common.html#ga953e59c75bae61dcd3f38fbc9227e888">llrp_component_type_to_string</a></div><div class="ttdeci">const char * llrp_component_type_to_string(llrp_component_t type)</div><div class="ttdoc">Get a string description of an LLRP component type. </div><div class="ttdef"><b>Definition:</b> llrp.c:46</div></div>
+<div class="ttc" id="struct_llrp_destination_addr_html_ae278a51f1e043076640f187c9a9ce88c"><div class="ttname"><a href="struct_llrp_destination_addr.html#ae278a51f1e043076640f187c9a9ce88c">LlrpDestinationAddr::dest_cid</a></div><div class="ttdeci">EtcPalUuid dest_cid</div><div class="ttdoc">The CID of the LLRP Target to which this command is addressed. </div><div class="ttdef"><b>Definition:</b> llrp.h:50</div></div>
+<div class="ttc" id="group__rdmnet__api__common_html_gga994bb762a1d4572348671a0b1e73d567ac8c4f58e05975698405b6c05e69caacb"><div class="ttname"><a href="group__rdmnet__api__common.html#gga994bb762a1d4572348671a0b1e73d567ac8c4f58e05975698405b6c05e69caacb">kLlrpCompBroker</a></div><div class="ttdoc">This LLRP Target is associated with a Broker. </div><div class="ttdef"><b>Definition:</b> llrp.h:65</div></div>
+<div class="ttc" id="struct_llrp_discovered_target_html"><div class="ttname"><a href="struct_llrp_discovered_target.html">LlrpDiscoveredTarget</a></div><div class="ttdoc">A set of information associated with an LLRP Target. </div><div class="ttdef"><b>Definition:</b> llrp.h:71</div></div>
+<div class="ttc" id="struct_etc_pal_uuid_html"><div class="ttname"><a href="https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_uuid.html">EtcPalUuid</a></div></div>
+<div class="ttc" id="group__rdmnet__api__common_html_ga8a0652cd9550b005854b92a2329c0869"><div class="ttname"><a href="group__rdmnet__api__common.html#ga8a0652cd9550b005854b92a2329c0869">LlrpDiscoveredTarget</a></div><div class="ttdeci">struct LlrpDiscoveredTarget LlrpDiscoveredTarget</div><div class="ttdoc">A set of information associated with an LLRP Target. </div></div>
+<div class="ttc" id="struct_llrp_discovered_target_html_a29ce14286cb41c556483aacecd347391"><div class="ttname"><a href="struct_llrp_discovered_target.html#a29ce14286cb41c556483aacecd347391">LlrpDiscoveredTarget::hardware_address</a></div><div class="ttdeci">EtcPalMacAddr hardware_address</div><div class="ttdoc">The LLRP Target&amp;#39;s hardware address (usually the MAC address). </div><div class="ttdef"><b>Definition:</b> llrp.h:78</div></div>
+<div class="ttc" id="struct_llrp_discovered_target_html_a7740f59bfe2b2ad12087d2290f5bdf03"><div class="ttname"><a href="struct_llrp_discovered_target.html#a7740f59bfe2b2ad12087d2290f5bdf03">LlrpDiscoveredTarget::uid</a></div><div class="ttdeci">RdmUid uid</div><div class="ttdoc">The LLRP Target&amp;#39;s UID. </div><div class="ttdef"><b>Definition:</b> llrp.h:76</div></div>
+<div class="ttc" id="group__rdmnet__api__common_html_gga994bb762a1d4572348671a0b1e73d567ad8612edf0e00d0a13524c02c6ae652f6"><div class="ttname"><a href="group__rdmnet__api__common.html#gga994bb762a1d4572348671a0b1e73d567ad8612edf0e00d0a13524c02c6ae652f6">kLlrpCompNonRdmnet</a></div><div class="ttdoc">This LLRP Target does not implement any RDMnet protocol other than LLRP. </div><div class="ttdef"><b>Definition:</b> llrp.h:67</div></div>
+<div class="ttc" id="struct_llrp_destination_addr_html_a5376b761b4d63561725f2e44ac8ef363"><div class="ttname"><a href="struct_llrp_destination_addr.html#a5376b761b4d63561725f2e44ac8ef363">LlrpDestinationAddr::dest_uid</a></div><div class="ttdeci">RdmUid dest_uid</div><div class="ttdoc">The UID of the LLRP Target to which this command is addressed. </div><div class="ttdef"><b>Definition:</b> llrp.h:52</div></div>
+<div class="ttc" id="struct_llrp_discovered_target_html_aece7714b9daea51ddb2a14091c3d9ace"><div class="ttname"><a href="struct_llrp_discovered_target.html#aece7714b9daea51ddb2a14091c3d9ace">LlrpDiscoveredTarget::component_type</a></div><div class="ttdeci">llrp_component_t component_type</div><div class="ttdoc">The type of RPT Component this LLRP Target is associated with. </div><div class="ttdef"><b>Definition:</b> llrp.h:80</div></div>
+<div class="ttc" id="group__rdmnet__api__common_html_gga994bb762a1d4572348671a0b1e73d567a3235732abcf7cbc2c7217a145d4bd042"><div class="ttname"><a href="group__rdmnet__api__common.html#gga994bb762a1d4572348671a0b1e73d567a3235732abcf7cbc2c7217a145d4bd042">kLlrpCompRptDevice</a></div><div class="ttdoc">This LLRP Target is associated with an RPT Device. </div><div class="ttdef"><b>Definition:</b> llrp.h:61</div></div>
+<div class="ttc" id="group__rdmnet__api__common_html_gga994bb762a1d4572348671a0b1e73d567ad13a83299231136b19e758188751ed30"><div class="ttname"><a href="group__rdmnet__api__common.html#gga994bb762a1d4572348671a0b1e73d567ad13a83299231136b19e758188751ed30">kLlrpCompRptController</a></div><div class="ttdoc">This LLRP Target is associated with an RPT Controller. </div><div class="ttdef"><b>Definition:</b> llrp.h:63</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a class="el" href="dir_49dbbb66e43847c8e8768031ecdea882.html">rdmnet</a></li><li class="navelem"><a class="el" href="llrp_8h.html">llrp.h</a></li>
+    <li class="footer">Generated by
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>
+  </ul>
+</div>
+</body>
+</html>

@@ -1,0 +1,261 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen 1.8.13" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RDMnet: How RDMnet Works</title>
+  <link href="tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="dynsections.js"></script>
+  <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+</script>
+  <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css" />
+  <!--BEGIN CUSTOM SCRIPTS-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <script type="text/javascript">
+    $(function () { selectAllC() });
+  </script>
+  <script type="text/javascript">
+    function selectAllC() {
+      // Enable all C-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_c")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_c")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectAllCpp() {
+      // Enable all C++-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_cpp")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C++-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_cpp")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectLanguage(evt, block_id, language) {
+      // Get all elements with class="tabcontent" and hide them
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.startsWith("div_" + block_id)) {
+          tabcontent[i].style.display = "none";
+        }
+      }
+      // Get all elements with class="tablinks" and remove the class "active"
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.startsWith("button_" + block_id)) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById("div_" + block_id + "_" + language).style.display = "block";
+      if (!evt.currentTarget.className.includes("active")) {
+        evt.currentTarget.className += " active";
+      }
+    }
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">RDMnet
+                &#160;<span id="projectnumber">Staging for pull request 44</span>
+              </div>
+              <div id="projectbrief">Implementation of ANSI E1.33 (RDMnet)</div>
+            </td>
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- end header part -->
+<!-- Generated by Doxygen 1.8.13 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Search');
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('how_it_works.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">How RDMnet Works </div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><p>This overview assumes a working familiarity with RDM. For more information about RDM, go to <a href="http://www.rdmprotocol.org">http://www.rdmprotocol.org</a>.</p>
+<p>In RDM, the transaction for obtaining or modifying data from a piece of equipment is quite simple. An RDM Controller sends an RDM command to an RDM Responder. The RDM Responder replies with an RDM response.</p>
+<div class="fragment"><div class="line">RDM Controller        RDM Responder</div><div class="line">      ||                    ||</div><div class="line">      ||    RDM command     ||</div><div class="line">      || -----------------&gt; ||</div><div class="line">      ||    RDM response    ||</div><div class="line">      || &lt;----------------- ||</div><div class="line">      ||                    ||</div></div><!-- fragment --><p>This transaction takes place on the DMX512 physical layer.</p>
+<p>RDMnet allows RDM commands and responses to be sent in almost the same way, with two key differences:</p>
+<ul>
+<li>The messages are sent over an IP network.</li>
+<li>The messages are passed through an intermediary called a Broker.</li>
+</ul>
+<div class="fragment"><div class="line">RDM Controller            Broker            RDM Responder</div><div class="line">      ||                    ||                    ||</div><div class="line">      ||    RDM command     ||                    ||</div><div class="line">      || -----------------&gt; ||    RDM command     ||</div><div class="line">      ||                    || -----------------&gt; ||</div><div class="line">      ||                    ||    RDM response    ||</div><div class="line">      ||    RDM response    || &lt;----------------- ||</div><div class="line">      || &lt;----------------- ||                    ||</div><div class="line">      ||                    ||                    ||</div></div><!-- fragment --><p>Why is the broker necessary? We'll get back to that. First, some new terminology.</p>
+<p>In RDMnet, the protocol that carries RDM messages is called <b>RDM Packet Transport (RPT)</b>. Something that originates RDM commands using RPT and receives responses is called an <b>RPT Controller</b>, and something that receives RDM commands using RPT and sends responses is called an <b>RPT Device</b>. When discussing RDMnet, these are often shortened to simply <em>controller</em> and <em>device</em>.</p>
+<p>Let's update our diagram to reflect the proper terminology:</p>
+<div class="fragment"><div class="line">RPT Controller            Broker              RPT Device</div><div class="line">      ||                    ||                    ||</div><div class="line">      ||    RDM command     ||                    ||</div><div class="line">      || -----------------&gt; ||    RDM command     ||</div><div class="line">      ||                    || -----------------&gt; ||</div><div class="line">      ||                    ||    RDM response    ||</div><div class="line">      ||    RDM response    || &lt;----------------- ||</div><div class="line">      || &lt;----------------- ||                    ||</div><div class="line">      ||                    ||                    ||</div></div><!-- fragment --><p>All three of these components are necessary for message transport in RDMnet; <b>an RDMnet system is not functional without a broker</b>.</p>
+<p>Requiring a broker may seem like a burden, but its presence provides RDMnet with many helpful features.</p>
+<h2>Benefits of the broker model</h2>
+<h3>Multi-Controller functionality</h3>
+<p>RDM is a single-controller environment. In RDMnet, you can have as many controllers on the network as you want. The broker keeps everyone up-to-date on the state of each Device by forwarding the responses to RDM SET commands to all connected controllers.</p>
+<div class="fragment"><div class="line">Controller 1             Broker                Device</div><div class="line">     ||                    ||                    ||</div><div class="line">     ||    SET command     ||                    ||</div><div class="line">     || -----------------&gt; ||    SET command     ||</div><div class="line">     ||                    || -----------------&gt; ||</div><div class="line">     ||                    ||    SET response    ||</div><div class="line">     ||    SET response    || &lt;----------------- ||</div><div class="line">     || &lt;----------------- ||                    ||</div><div class="line">                           ||                    ||</div><div class="line">Controller 2               ||                    ||</div><div class="line">     ||                    ||                    ||</div><div class="line">     ||    SET response    ||                    ||</div><div class="line">     || &lt;----------------- ||                    ||</div><div class="line">                           ||                    ||</div><div class="line">Controller 3               ||                    ||</div><div class="line">     ||                    ||                    ||</div><div class="line">     ||    SET response    ||                    ||</div><div class="line">     || &lt;----------------- ||                    ||</div></div><!-- fragment --><h3>Scalability</h3>
+<p>In RDMnet, each controller and device implementation only needs to worry about one connection: its connection to the broker. Resource-constrained device implementations need not shoulder the burden of keeping track of many controller connections and handling subscriptions and updates. The scalability of an RDMnet system is limited only by the scalability of its broker.</p>
+<p>When a broker is run on non-resource-constrained hardware such as a modern PC or server, an RDMnet system can easily scale to hundreds of controllers and tens of thousands of devices.</p>
+<h3>Simplicity</h3>
+<p>Having a broker makes implementing controllers and devices easy. Take a look at <code>example_device.c</code> in the example Device application for proof of this. The startup steps for a device are simple:</p>
+<ul>
+<li>Discover a broker</li>
+<li>Connect using TCP</li>
+<li>Start listening for RDM commands</li>
+</ul>
+<p>For a controller, there is one additional step:</p>
+<ul>
+<li>Discover a broker</li>
+<li>Connect using TCP</li>
+<li>Ask the broker for a device list</li>
+<li>Send RDM commands to one or more devices</li>
+</ul>
+<h2>Scopes</h2>
+<p>A broker has a scope, which affects which controllers and devices connect to it. A controller or device will only connect to a broker with a matching scope.</p>
+<p>Scopes are UTF-8 strings from 1 to 62 bytes in length (this limitation is imposed by the requirements of DNS-SD, which is used to discover brokers). The standard requires all RDMnet equipment or software to be shipped with a scope configured to the string <code>default</code>, which simplifies initial setup and operation. Most applications will have no need to change the Scope from the default setting, but it can be useful for large-scale and advanced setups.</p>
+<h2>Broker Setups</h2>
+<p>To simplify RDMnet for end-users, a common way to ship brokers is to co-locate a broker and controller on the same piece of physical hardware (e.g. a laptop or lighting console). In this setup, the broker generally runs as a system service or daemon which communicates with the controller via the local network stack. For mobile platforms, which are generally unfriendly to background processes, a single app can implement both controller and broker functionality.</p>
+<p>Alternatively, a broker can be designed to be run on a more traditional standalone server, such that the broker is "always on" on the lighting network.</p>
+<h2>Deeper Dives</h2>
+<p>To learn more about specific aspects of RDMnet, take a look at one of the topic pages below.</p>
+<ul>
+<li><a class="el" href="roles_and_addressing.html">Roles and Addressing</a></li>
+<li><a class="el" href="devices_and_gateways.html">Devices and Gateways</a></li>
+<li><a class="el" href="discovery.html">Discovery</a></li>
+<li><a class="el" href="llrp.html">Low-Level Recovery Protocol (LLRP)</a></li>
+<li><a class="el" href="ept.html">Extensible Packet Transport (EPT)</a> </li>
+</ul>
+</div></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">Generated by
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>
+  </ul>
+</div>
+</body>
+</html>
