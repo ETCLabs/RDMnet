@@ -176,18 +176,22 @@ TEST_F(TestMonitoredScope, FindWorks)
 TEST_F(TestMonitoredScope, FindScopeAndBrokerWorks)
 {
   std::vector<ScopeMonitorUniquePtr> scopes;
+  constexpr size_t                   kNumScopes = 3;
+  constexpr size_t                   kNumBrokersPerScope = 5;
 
-  for (int i = 0; i < RDMNET_MAX_MONITORED_SCOPES; ++i)
+#if !RDMNET_DYNAMIC_MEM
+  static_assert(RDMNET_MAX_MONITORED_SCOPES >= kNumScopes);
+  static_assert(RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE >= kNumBrokersPerScope);
+#endif
+
+  for (int i = 0; i < kNumScopes; ++i)
   {
     auto scope = MakeDefaultMonitoredScope();
     std::strcpy(scope->scope, std::string("Test Scope " + std::to_string(i)).c_str());
-    for (int j = 0; j < RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE; ++j)
+    for (int j = 0; j < kNumBrokersPerScope; ++j)
     {
       auto db = discovered_broker_new(
-          scope.get(),
-          std::string("Test Service Instance " + std::to_string(i * RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE + j))
-              .c_str(),
-          "");
+          scope.get(), std::string("Test Service Instance " + std::to_string(i * kNumBrokersPerScope + j)).c_str(), "");
       ASSERT_NE(db, nullptr);
       discovered_broker_insert(&scope->broker_list, db);
     }
