@@ -157,9 +157,11 @@ private:
                                                       bool     include_controllers,
                                                       bool     include_unknown,
                                                       uint16_t manufacturer_filter = 0xffff);
-  void                              MarkClientForDestruction(BrokerClient::Handle client,
-                                                             ClientDestroyAction  destroy_action = ClientDestroyAction());
-  bool MarkLockedClientForDestruction(BrokerClient& client, ClientDestroyAction destroy_action = ClientDestroyAction());
+
+  void MarkClientForDestruction(BrokerClient::Handle       client,
+                                const ClientDestroyAction& destroy_action = ClientDestroyAction::DoNothing());
+  bool MarkLockedClientForDestruction(BrokerClient&              client,
+                                      const ClientDestroyAction& destroy_action = ClientDestroyAction::DoNothing());
   void DestroyMarkedClients();
   void DestroyMarkedClientsLocked();
 
@@ -177,7 +179,7 @@ private:
                            rdmnet_connect_status_t& connect_status);
   void ProcessRPTMessage(BrokerClient::Handle client_handle, const RdmnetMessage* msg);
   void RouteRPTMessage(BrokerClient::Handle client_handle, const RdmnetMessage* msg);
-  void HandleRPTClientBadPushResult(RPTClient& client, BrokerClient::PushResult result);
+  void HandleRPTClientBadPushResult(RPTClient& client, ClientPushResult result);
   void ResetClientHeartbeatTimer(BrokerClient::Handle client_handle);
 
   void SendRDMBrokerResponse(BrokerClient::Handle client_handle,

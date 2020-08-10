@@ -354,8 +354,7 @@ void BrokerCore::StopBrokerServices(rdmnet_disconnect_reason_t disconnect_reason
   {
     ClientWriteGuard client_write(*client_pair.second);
     MarkLockedClientForDestruction(*client_pair.second, ClientDestroyAction::SendDisconnect(disconnect_reason));
-    while (client_pair.second->Send(settings_.cid))
-      ;
+    client_pair.second->Send(settings_.cid);
   }
 
   DestroyMarkedClientsLocked();
@@ -536,7 +535,7 @@ std::vector<BrokerClient::Handle> BrokerCore::GetClientSnapshot(bool     include
 // This function grabs a read lock on client_lock_.
 // Optionally sends a RDMnet-level message to the client before destroying it.
 // Also removes the client's UID from the BrokerUidManager and sends a client removed message, if it's an RPT client.
-void BrokerCore::MarkClientForDestruction(BrokerClient::Handle client_handle, ClientDestroyAction destroy_action)
+void BrokerCore::MarkClientForDestruction(BrokerClient::Handle client_handle, const ClientDestroyAction& destroy_action)
 {
   bool log_message = false;
 
@@ -560,9 +559,9 @@ void BrokerCore::MarkClientForDestruction(BrokerClient::Handle client_handle, Cl
 // This function marks a client for destruction when it is already write-locked.
 // Optionally sends a RDMnet-level message to the client before destroying it.
 // Also removes the client's UID from the BrokerUidManager and sends a client removed message, if it's an RPT client.
-bool BrokerCore::MarkLockedClientForDestruction(BrokerClient& client, ClientDestroyAction destroy_action)
+bool BrokerCore::MarkLockedClientForDestruction(BrokerClient& client, const ClientDestroyAction& destroy_action)
 {
-  destroy_action.Apply(my_uid_, settings_.cid, client);
+  client.MarkForDestruction(settings_.cid, my_uid_, destroy_action);
 
   if (client.client_protocol == E133_CLIENT_PROTOCOL_RPT)
   {
@@ -959,9 +958,8 @@ void BrokerCore::RouteRPTMessage(BrokerClient::Handle client_handle, const Rdmne
     {
       ClientWriteGuard client_write(*controller.second);
       auto             push_res = controller.second->Push(client_handle, msg->sender_cid, *rptmsg);
-      if (push_res != BrokerClient::PushResult::Ok)
-      {
-      }
+      if (push_res != ClientPushResult::Ok)
+        HandleRPTClientBadPushResult(*controller.second, push_res);
     }
   }
   else if (RDMNET_UID_IS_DEVICE_BROADCAST(&rptmsg->header.dest_uid))
@@ -972,7 +970,7 @@ void BrokerCore::RouteRPTMessage(BrokerClient::Handle client_handle, const Rdmne
     {
       ClientWriteGuard client_write(*device.second);
       auto             push_res = device.second->Push(client_handle, msg->sender_cid, *rptmsg);
-      if (push_res != BrokerClient::PushResult::Ok)
+      if (push_res != ClientPushResult::Ok)
         HandleRPTClientBadPushResult(*device.second, push_res);
     }
   }
@@ -986,7 +984,7 @@ void BrokerCore::RouteRPTMessage(BrokerClient::Handle client_handle, const Rdmne
       {
         ClientWriteGuard client_write(*device.second);
         auto             push_res = device.second->Push(client_handle, msg->sender_cid, *rptmsg);
-        if (push_res != BrokerClient::PushResult::Ok)
+        if (push_res != ClientPushResult::Ok)
           HandleRPTClientBadPushResult(*device.second, push_res);
       }
     }
@@ -1003,7 +1001,7 @@ void BrokerCore::RouteRPTMessage(BrokerClient::Handle client_handle, const Rdmne
         ClientWriteGuard client_write(*dest_client->second);
         auto             push_res =
             static_cast<RPTClient*>(dest_client->second.get())->Push(client_handle, msg->sender_cid, *rptmsg);
-        if (push_res == BrokerClient::PushResult::Ok)
+        if (push_res == ClientPushResult::Ok)
         {
           BROKER_LOG_DEBUG("Routing RPT PDU from Client %04x:%08x to Client %04x:%08x", rptmsg->header.source_uid.manu,
                            rptmsg->header.source_uid.id, rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id);
@@ -1023,15 +1021,15 @@ void BrokerCore::RouteRPTMessage(BrokerClient::Handle client_handle, const Rdmne
   }
 }
 
-void BrokerCore::HandleRPTClientBadPushResult(RPTClient& client, BrokerClient::PushResult result)
+void BrokerCore::HandleRPTClientBadPushResult(RPTClient& client, ClientPushResult result)
 {
-  if (result == BrokerClient::PushResult::QueueFull)
+  if (result == ClientPushResult::QueueFull)
   {
     BROKER_LOG_ERR("Error pushing to send queue for RPT %s %d: queue is full at %zu messages.",
                    client.client_type == kRPTClientTypeController ? "Controller" : "Device", client.handle,
                    client.max_q_size);
   }
-  else if (result == BrokerClient::PushResult::Error)
+  else if (result == ClientPushResult::Error)
   {
     BROKER_LOG_CRIT("Error pushing to send queue for RPT %s %d: internal error occurred!",
                     client.client_type == kRPTClientTypeController ? "Controller" : "Device", client.handle);
@@ -1143,7 +1141,7 @@ void BrokerCore::SendStatus(RPTController*     controller,
     status.status_string = nullptr;
 
   auto push_res = controller->Push(settings_.cid, new_header, status);
-  if (push_res == BrokerClient::PushResult::Ok)
+  if (push_res == ClientPushResult::Ok)
   {
     BROKER_LOG_WARNING("Sending RPT Status code %d to Controller %s", status_code, controller->cid.ToString().c_str());
   }

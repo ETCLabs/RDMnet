@@ -29,6 +29,26 @@
 #include "etcpal_mock/socket.h"
 #include "rdm/cpp/uid.h"
 
+// A generic broker message to be used for filling up queues of clients.
+// We use the CLIENT_ADD vector.
+class GenericBrokerMessage
+{
+public:
+  GenericBrokerMessage()
+  {
+    msg.vector = VECTOR_BROKER_CLIENT_ADD;
+    BROKER_GET_CLIENT_LIST(&msg)->client_protocol = kClientProtocolRPT;
+    RdmnetRptClientList* rpt_list = BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&msg));
+    rpt_list->client_entries = &entry_;
+    rpt_list->num_client_entries = 1;
+  }
+
+  BrokerMessage msg;
+
+private:
+  RdmnetRptClientEntry entry_{};
+};
+
 class TestBaseBrokerClient : public testing::Test
 {
 protected:
@@ -38,6 +58,7 @@ protected:
 
   std::unique_ptr<BrokerClient> client_;
   etcpal::Uuid                  broker_cid_ = etcpal::Uuid::OsPreferred();
+  rdm::Uid                      broker_uid_ = rdm::Uid::FromString("6574:12345678");
 
   TestBaseBrokerClient()
   {
@@ -54,7 +75,7 @@ TEST_F(TestBaseBrokerClient, SendsBrokerMessage)
   BrokerMessage msg{};
   msg.vector = VECTOR_BROKER_CONNECT_REPLY;
 
-  EXPECT_EQ(client_->Push(broker_cid_, msg), BrokerClient::PushResult::Ok);
+  EXPECT_EQ(client_->Push(broker_cid_, msg), ClientPushResult::Ok);
   EXPECT_TRUE(client_->Send(broker_cid_));
   EXPECT_EQ(etcpal_send_fake.call_count, 1u);
 }
@@ -84,41 +105,24 @@ TEST_F(TestBaseBrokerClient, HandlesHeartbeatTimeout)
 
 TEST_F(TestBaseBrokerClient, HonorsMaxQSize)
 {
-  BrokerMessage msg{};
-  msg.vector = VECTOR_BROKER_CLIENT_ADD;
-
-  RdmnetRptClientEntry entry{};
-
-  BROKER_GET_CLIENT_LIST(&msg)->client_protocol = kClientProtocolRPT;
-  RdmnetRptClientList* rpt_list = BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&msg));
-  rpt_list->client_entries = &entry;
-  rpt_list->num_client_entries = 1;
+  GenericBrokerMessage msg;
 
   for (size_t i = 0; i < kMaxQSize; ++i)
   {
-    ASSERT_EQ(client_->Push(broker_cid_, msg), BrokerClient::PushResult::Ok) << "Failed on iteration " << i;
+    ASSERT_EQ(client_->Push(broker_cid_, msg.msg), ClientPushResult::Ok) << "Failed on iteration " << i;
   }
-  EXPECT_EQ(client_->Push(broker_cid_, msg), BrokerClient::PushResult::QueueFull);
+  EXPECT_EQ(client_->Push(broker_cid_, msg.msg), ClientPushResult::QueueFull);
 }
 
 TEST_F(TestBaseBrokerClient, MaxQSizeInfinite)
 {
   // Max Q Size of 0 should mean infinite
   client_->max_q_size = 0;
-
-  BrokerMessage msg{};
-  msg.vector = VECTOR_BROKER_CLIENT_ADD;
-
-  RdmnetRptClientEntry entry{};
-
-  BROKER_GET_CLIENT_LIST(&msg)->client_protocol = kClientProtocolRPT;
-  RdmnetRptClientList* rpt_list = BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&msg));
-  rpt_list->client_entries = &entry;
-  rpt_list->num_client_entries = 1;
+  GenericBrokerMessage msg;
 
   for (size_t i = 0; i < 1000; ++i)
   {
-    ASSERT_EQ(client_->Push(broker_cid_, msg), BrokerClient::PushResult::Ok) << "Failed on iteration " << i;
+    ASSERT_EQ(client_->Push(broker_cid_, msg.msg), ClientPushResult::Ok) << "Failed on iteration " << i;
   }
 }
 
@@ -156,6 +160,77 @@ TEST_F(TestBaseBrokerClient, TransfersInformationToRptDevice)
   EXPECT_EQ(device.binding_cid, client_entry.binding_cid);
 }
 
+TEST_F(TestBaseBrokerClient, CannotPushWhenMarkedForDestruction)
+{
+  client_->MarkForDestruction(broker_cid_, broker_uid_, ClientDestroyAction::DoNothing());
+
+  GenericBrokerMessage msg;
+  EXPECT_EQ(client_->Push(broker_cid_, msg.msg), ClientPushResult::Error);
+}
+
+TEST_F(TestBaseBrokerClient, MarkForDestructionSendConnectReplyWorks)
+{
+  GenericBrokerMessage msg;
+
+  // Push a few messages to the client's queue
+  for (int i = 0; i < 10; ++i)
+    client_->Push(broker_cid_, msg.msg);
+
+  // Mark for destruction should clear out the queue and put in the connect reply.
+  client_->MarkForDestruction(broker_cid_, broker_uid_,
+                              ClientDestroyAction::SendConnectReply(kRdmnetConnectCapacityExceeded));
+
+  etcpal_send_fake.custom_fake = [](etcpal_socket_t /*socket*/, const void* data, size_t size, int /*flags*/) {
+    EXPECT_EQ(size, 60u);
+    const uint8_t* byte_data = reinterpret_cast<const uint8_t*>(data);
+    EXPECT_EQ(etcpal_unpack_u16b(&byte_data[42]), VECTOR_BROKER_CONNECT_REPLY);
+    EXPECT_EQ(etcpal_unpack_u16b(&byte_data[44]), E133_CONNECT_CAPACITY_EXCEEDED);
+    return 60;
+  };
+
+  EXPECT_TRUE(client_->Send(broker_cid_));
+  EXPECT_EQ(etcpal_send_fake.call_count, 1u);
+}
+
+TEST_F(TestBaseBrokerClient, MarkForDestructionSendDisconnectWorks)
+{
+  GenericBrokerMessage msg;
+
+  // Push a few messages to the client's queue
+  for (int i = 0; i < 10; ++i)
+    client_->Push(broker_cid_, msg.msg);
+
+  // Mark for destruction should clear out the queue and put in the disconnect.
+  client_->MarkForDestruction(broker_cid_, broker_uid_, ClientDestroyAction::SendDisconnect(kRdmnetDisconnectShutdown));
+
+  etcpal_send_fake.custom_fake = [](etcpal_socket_t /*socket*/, const void* data, size_t size, int /*flags*/) {
+    EXPECT_EQ(size, 46u);
+    const uint8_t* byte_data = reinterpret_cast<const uint8_t*>(data);
+    EXPECT_EQ(etcpal_unpack_u16b(&byte_data[42]), VECTOR_BROKER_DISCONNECT);
+    EXPECT_EQ(etcpal_unpack_u16b(&byte_data[44]), E133_DISCONNECT_SHUTDOWN);
+    return 46;
+  };
+
+  EXPECT_TRUE(client_->Send(broker_cid_));
+  EXPECT_EQ(etcpal_send_fake.call_count, 1u);
+}
+
+TEST_F(TestBaseBrokerClient, MarkForDestructionMarkSocketInvalidWorks)
+{
+  client_->socket = (etcpal_socket_t)20;
+
+  // Push a few messages to the client's queue
+  GenericBrokerMessage msg;
+  for (int i = 0; i < 10; ++i)
+    client_->Push(broker_cid_, msg.msg);
+
+  // Mark for destruction should clear out the queue and mark the socket invalid.
+  client_->MarkForDestruction(broker_cid_, broker_uid_, ClientDestroyAction::MarkSocketInvalid());
+  EXPECT_FALSE(client_->Send(broker_cid_));
+  EXPECT_EQ(etcpal_send_fake.call_count, 0u);
+  EXPECT_EQ(client_->socket, ETCPAL_SOCKET_INVALID);
+}
+
 class TestBrokerClientRptController : public testing::Test
 {
 protected:
@@ -172,8 +247,6 @@ protected:
   RptStatusMsg         status_msg_{};
   RdmBuffer            rdm_buf_{};
   RptMessage           request_{};
-  RdmnetRptClientEntry rpt_client_entry_{};
-  BrokerMessage        broker_msg_{};
   BrokerClient::Handle sending_controller_handle_{static_cast<BrokerClient::Handle>(1)};
 
   TestBrokerClientRptController()
@@ -184,12 +257,6 @@ protected:
     request_.vector = VECTOR_RPT_REQUEST;
     RPT_GET_RDM_BUF_LIST(&request_)->rdm_buffers = &rdm_buf_;
     RPT_GET_RDM_BUF_LIST(&request_)->num_rdm_buffers = 1;
-
-    broker_msg_.vector = VECTOR_BROKER_CLIENT_ADD;
-    BROKER_GET_CLIENT_LIST(&broker_msg_)->client_protocol = kClientProtocolRPT;
-    RdmnetRptClientList* rpt_list = BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&broker_msg_));
-    rpt_list->client_entries = &rpt_client_entry_;
-    rpt_list->num_client_entries = 1;
 
     BrokerClient bc(kClientHandle, kClientSocket);
     controller_ = std::make_unique<RPTController>(kMaxQSize, client_entry_, bc);
@@ -221,28 +288,28 @@ TEST_F(TestBrokerClientRptController, HandlesHeartbeatTimeout)
 
 TEST_F(TestBrokerClientRptController, HonorsMaxQSize)
 {
+  GenericBrokerMessage broker_msg;
   for (size_t i = 0; i < kMaxQSize; ++i)
   {
     if (i % 3 == 0)
     {
-      ASSERT_EQ(controller_->Push(broker_cid_, broker_msg_), BrokerClient::PushResult::Ok)
-          << "Failed on iteration " << i;
+      ASSERT_EQ(controller_->Push(broker_cid_, broker_msg.msg), ClientPushResult::Ok) << "Failed on iteration " << i;
     }
     else if (i % 3 == 1)
     {
-      ASSERT_EQ(controller_->Push(broker_cid_, rpt_header_, status_msg_), BrokerClient::PushResult::Ok)
+      ASSERT_EQ(controller_->Push(broker_cid_, rpt_header_, status_msg_), ClientPushResult::Ok)
           << "Failed on iteration " << i;
     }
     else
     {
-      ASSERT_EQ(controller_->Push(sending_controller_handle_, broker_cid_, request_), BrokerClient::PushResult::Ok)
+      ASSERT_EQ(controller_->Push(sending_controller_handle_, broker_cid_, request_), ClientPushResult::Ok)
           << "Failed on iteration " << i;
     }
   }
 
-  EXPECT_EQ(controller_->Push(broker_cid_, broker_msg_), BrokerClient::PushResult::QueueFull);
-  EXPECT_EQ(controller_->Push(broker_cid_, rpt_header_, status_msg_), BrokerClient::PushResult::QueueFull);
-  EXPECT_EQ(controller_->Push(sending_controller_handle_, broker_cid_, request_), BrokerClient::PushResult::QueueFull);
+  EXPECT_EQ(controller_->Push(broker_cid_, broker_msg.msg), ClientPushResult::QueueFull);
+  EXPECT_EQ(controller_->Push(broker_cid_, rpt_header_, status_msg_), ClientPushResult::QueueFull);
+  EXPECT_EQ(controller_->Push(sending_controller_handle_, broker_cid_, request_), ClientPushResult::QueueFull);
 }
 
 TEST_F(TestBrokerClientRptController, InfiniteMaxQSize)
@@ -250,21 +317,21 @@ TEST_F(TestBrokerClientRptController, InfiniteMaxQSize)
   // Max Q Size of 0 should mean infinite
   controller_->max_q_size = 0;
 
+  GenericBrokerMessage broker_msg;
   for (size_t i = 0; i < 1000u; ++i)
   {
     if (i % 3 == 0)
     {
-      ASSERT_EQ(controller_->Push(broker_cid_, broker_msg_), BrokerClient::PushResult::Ok)
-          << "Failed on iteration " << i;
+      ASSERT_EQ(controller_->Push(broker_cid_, broker_msg.msg), ClientPushResult::Ok) << "Failed on iteration " << i;
     }
     else if (i % 3 == 1)
     {
-      ASSERT_EQ(controller_->Push(broker_cid_, rpt_header_, status_msg_), BrokerClient::PushResult::Ok)
+      ASSERT_EQ(controller_->Push(broker_cid_, rpt_header_, status_msg_), ClientPushResult::Ok)
           << "Failed on iteration " << i;
     }
     else
     {
-      ASSERT_EQ(controller_->Push(sending_controller_handle_, broker_cid_, request_), BrokerClient::PushResult::Ok)
+      ASSERT_EQ(controller_->Push(sending_controller_handle_, broker_cid_, request_), ClientPushResult::Ok)
           << "Failed on iteration " << i;
     }
   }
@@ -286,10 +353,8 @@ protected:
   std::unique_ptr<RPTDevice> device_;
   etcpal::Uuid               broker_cid_ = etcpal::Uuid::OsPreferred();
 
-  RdmBuffer            rdm_buf_{};
-  RptMessage           request_{};
-  RdmnetRptClientEntry rpt_client_entry_{};
-  BrokerMessage        broker_msg_{};
+  RdmBuffer  rdm_buf_{};
+  RptMessage request_{};
 
   TestBrokerClientRptDevice()
   {
@@ -299,12 +364,6 @@ protected:
     request_.vector = VECTOR_RPT_REQUEST;
     RPT_GET_RDM_BUF_LIST(&request_)->rdm_buffers = &rdm_buf_;
     RPT_GET_RDM_BUF_LIST(&request_)->num_rdm_buffers = 1;
-
-    broker_msg_.vector = VECTOR_BROKER_CLIENT_ADD;
-    BROKER_GET_CLIENT_LIST(&broker_msg_)->client_protocol = kClientProtocolRPT;
-    RdmnetRptClientList* rpt_list = BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&broker_msg_));
-    rpt_list->client_entries = &rpt_client_entry_;
-    rpt_list->num_client_entries = 1;
 
     BrokerClient bc(kClientHandle, kClientSocket);
     device_ = std::make_unique<RPTDevice>(kMaxQSize, client_entry_, bc);
@@ -336,22 +395,23 @@ TEST_F(TestBrokerClientRptDevice, HandlesHeartbeatTimeout)
 
 TEST_F(TestBrokerClientRptDevice, HonorsMaxQSize)
 {
+  GenericBrokerMessage broker_msg;
   for (size_t i = 0; i < kMaxQSize; ++i)
   {
     if (i % 2 == 0)
     {
-      ASSERT_EQ(device_->Push(broker_cid_, broker_msg_), BrokerClient::PushResult::Ok) << "Failed on iteration " << i;
+      ASSERT_EQ(device_->Push(broker_cid_, broker_msg.msg), ClientPushResult::Ok) << "Failed on iteration " << i;
     }
     else
     {
       ASSERT_EQ(device_->Push(static_cast<BrokerClient::Handle>(kClientHandle + i), broker_cid_, request_),
-                BrokerClient::PushResult::Ok)
+                ClientPushResult::Ok)
           << "Failed on iteration " << i;
     }
   }
 
-  EXPECT_EQ(device_->Push(broker_cid_, broker_msg_), BrokerClient::PushResult::QueueFull);
-  EXPECT_EQ(device_->Push(kClientHandle + 1, broker_cid_, request_), BrokerClient::PushResult::QueueFull);
+  EXPECT_EQ(device_->Push(broker_cid_, broker_msg.msg), ClientPushResult::QueueFull);
+  EXPECT_EQ(device_->Push(kClientHandle + 1, broker_cid_, request_), ClientPushResult::QueueFull);
 }
 
 TEST_F(TestBrokerClientRptDevice, QEmptiesAndFillsCorrectly)
@@ -362,22 +422,23 @@ TEST_F(TestBrokerClientRptDevice, QEmptiesAndFillsCorrectly)
     return (int)size;
   };
 
+  GenericBrokerMessage broker_msg;
   for (size_t i = 0; i < kMaxQSize; ++i)
   {
     if (i % 2 == 0)
     {
-      ASSERT_EQ(device_->Push(broker_cid_, broker_msg_), BrokerClient::PushResult::Ok) << "Failed on iteration " << i;
+      ASSERT_EQ(device_->Push(broker_cid_, broker_msg.msg), ClientPushResult::Ok) << "Failed on iteration " << i;
     }
     else
     {
       ASSERT_EQ(device_->Push(static_cast<BrokerClient::Handle>(kClientHandle + i), broker_cid_, request_),
-                BrokerClient::PushResult::Ok)
+                ClientPushResult::Ok)
           << "Failed on iteration " << i;
     }
   }
 
-  EXPECT_EQ(device_->Push(broker_cid_, broker_msg_), BrokerClient::PushResult::QueueFull);
-  EXPECT_EQ(device_->Push(kClientHandle + 1, broker_cid_, request_), BrokerClient::PushResult::QueueFull);
+  EXPECT_EQ(device_->Push(broker_cid_, broker_msg.msg), ClientPushResult::QueueFull);
+  EXPECT_EQ(device_->Push(kClientHandle + 1, broker_cid_, request_), ClientPushResult::QueueFull);
 
   // Send all the messages, then fill the queue again.
   for (size_t i = 0; i < kMaxQSize; ++i)
@@ -387,12 +448,12 @@ TEST_F(TestBrokerClientRptDevice, QEmptiesAndFillsCorrectly)
   {
     if (i % 2 == 0)
     {
-      ASSERT_EQ(device_->Push(broker_cid_, broker_msg_), BrokerClient::PushResult::Ok) << "Failed on iteration " << i;
+      ASSERT_EQ(device_->Push(broker_cid_, broker_msg.msg), ClientPushResult::Ok) << "Failed on iteration " << i;
     }
     else
     {
       ASSERT_EQ(device_->Push(static_cast<BrokerClient::Handle>(kClientHandle + i), broker_cid_, request_),
-                BrokerClient::PushResult::Ok)
+                ClientPushResult::Ok)
           << "Failed on iteration " << i;
     }
   }
@@ -403,16 +464,17 @@ TEST_F(TestBrokerClientRptDevice, InfiniteMaxQSize)
   // Max Q Size of 0 should mean infinite
   device_->max_q_size = 0;
 
+  GenericBrokerMessage broker_msg;
   for (size_t i = 0; i < 1000u; ++i)
   {
     if (i % 2 == 0)
     {
-      ASSERT_EQ(device_->Push(broker_cid_, broker_msg_), BrokerClient::PushResult::Ok) << "Failed on iteration " << i;
+      ASSERT_EQ(device_->Push(broker_cid_, broker_msg.msg), ClientPushResult::Ok) << "Failed on iteration " << i;
     }
     else
     {
       ASSERT_EQ(device_->Push(static_cast<BrokerClient::Handle>(kClientHandle + i), broker_cid_, request_),
-                BrokerClient::PushResult::Ok)
+                ClientPushResult::Ok)
           << "Failed on iteration " << i;
     }
   }
@@ -465,7 +527,7 @@ TEST_F(TestBrokerClientRptDevice, FairScheduler)
   const auto controller_1_handle = kClientHandle + 1;
   for (size_t i = 0; i < 10; ++i)
   {
-    EXPECT_EQ(device_->Push(controller_1_handle, kController1Cid, request), BrokerClient::PushResult::Ok);
+    EXPECT_EQ(device_->Push(controller_1_handle, kController1Cid, request), ClientPushResult::Ok);
     ++request.header.seqnum;
   }
 
@@ -473,15 +535,15 @@ TEST_F(TestBrokerClientRptDevice, FairScheduler)
   const auto controller_2_handle = kClientHandle + 2;
   request.header.source_uid = RdmUid{0x6574, 2};
   request.header.seqnum = 1;
-  EXPECT_EQ(device_->Push(controller_2_handle, kController2Cid, request), BrokerClient::PushResult::Ok);
+  EXPECT_EQ(device_->Push(controller_2_handle, kController2Cid, request), ClientPushResult::Ok);
 
   // Push 2 requests from controller 3
   const auto controller_3_handle = kClientHandle + 3;
   request.header.source_uid = RdmUid{0x6574, 3};
   request.header.seqnum = 1;
-  EXPECT_EQ(device_->Push(controller_3_handle, kController3Cid, request), BrokerClient::PushResult::Ok);
+  EXPECT_EQ(device_->Push(controller_3_handle, kController3Cid, request), ClientPushResult::Ok);
   ++request.header.seqnum;
-  EXPECT_EQ(device_->Push(controller_3_handle, kController3Cid, request), BrokerClient::PushResult::Ok);
+  EXPECT_EQ(device_->Push(controller_3_handle, kController3Cid, request), ClientPushResult::Ok);
 
   // We have 10 messages from controller 1, 1 from controller 2, and 2 from controller 3.
   // The order should be 1, 2, 3, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1.
