@@ -187,7 +187,7 @@ const uint8_t* lwmdns_parse_domain_name(const uint8_t* buf_begin, const uint8_t*
 
   while (*cur_ptr != 0)
   {
-    if (*cur_ptr & DNS_NAME_POINTER_MASK)
+    if ((*cur_ptr & DNS_NAME_POINTER_MASK) == DNS_NAME_POINTER_MASK)
     {
       if (remaining_length >= 2)
       {
@@ -202,7 +202,7 @@ const uint8_t* lwmdns_parse_domain_name(const uint8_t* buf_begin, const uint8_t*
         return NULL;
       }
     }
-    else
+    else if (*cur_ptr < 64)
     {
       uint8_t cur_label_length = *cur_ptr;
       if (remaining_length >= (((int)cur_label_length) + 2))
@@ -214,6 +214,10 @@ const uint8_t* lwmdns_parse_domain_name(const uint8_t* buf_begin, const uint8_t*
       {
         return NULL;
       }
+    }
+    else
+    {
+      return NULL;
     }
   }
   return cur_ptr + 1;
@@ -612,7 +616,7 @@ bool get_domain_name_label(const uint8_t* buf_begin, const uint8_t* name_ptr, Do
   if (!next_length_offset)
     return false;
 
-  if (*next_length_offset & DNS_NAME_POINTER_MASK)
+  if ((*next_length_offset & DNS_NAME_POINTER_MASK) == DNS_NAME_POINTER_MASK)
     next_length_offset = buf_begin + (etcpal_unpack_u16b(next_length_offset) & 0x3fff);
   if (*next_length_offset == 0 || *next_length_offset > 63)
     return false;
