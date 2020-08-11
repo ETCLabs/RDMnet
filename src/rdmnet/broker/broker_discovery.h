@@ -52,6 +52,7 @@ public:
   virtual void SetNotify(BrokerDiscoveryNotify* notify) = 0;
 
   virtual etcpal::Error RegisterBroker(const rdmnet::Broker::Settings&  settings,
+                                       const rdm::Uid&                  my_uid,
                                        const std::vector<unsigned int>& resolved_interface_indexes) = 0;
   virtual void          UnregisterBroker() = 0;
 };
@@ -64,6 +65,7 @@ public:
 
   // Registration actions
   etcpal::Error RegisterBroker(const rdmnet::Broker::Settings&  settings,
+                               const rdm::Uid&                  my_uid,
                                const std::vector<unsigned int>& resolved_interface_indexes) override;
   void          UnregisterBroker() override;
 

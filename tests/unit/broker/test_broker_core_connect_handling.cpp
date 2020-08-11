@@ -82,12 +82,14 @@ TEST_F(TestBrokerCoreConnectHandling, HandlesConnect)
     EXPECT_EQ(etcpal_unpack_u32b(&byte_data[kRootVectorOffset]), ACN_VECTOR_ROOT_BROKER);
     EXPECT_EQ(etcpal_unpack_u16b(&byte_data[kBrokerVectorOffset]), VECTOR_BROKER_CONNECT_REPLY);
     EXPECT_EQ(etcpal_unpack_u16b(&byte_data[kConnectReplyCodeOffset]), E133_CONNECT_OK);
-    return kEtcPalErrOk;
+    return static_cast<int>(data_size);
   };
   mocks_.broker_callbacks->HandleSocketMessageReceived(conn_handle, connect_msg);
   EXPECT_TRUE(mocks_.broker_callbacks->ServiceClients());
   EXPECT_EQ(etcpal_send_fake.call_count, 1u);
   EXPECT_EQ(broker_.GetNumClients(), 1u);
+
+  RESET_FAKE(etcpal_send);
 }
 
 TEST_F(TestBrokerCoreConnectHandling, RejectsScopeMismatch)
@@ -104,7 +106,7 @@ TEST_F(TestBrokerCoreConnectHandling, RejectsScopeMismatch)
     EXPECT_EQ(etcpal_unpack_u32b(&byte_data[kRootVectorOffset]), ACN_VECTOR_ROOT_BROKER);
     EXPECT_EQ(etcpal_unpack_u16b(&byte_data[kBrokerVectorOffset]), VECTOR_BROKER_CONNECT_REPLY);
     EXPECT_EQ(etcpal_unpack_u16b(&byte_data[kConnectReplyCodeOffset]), E133_CONNECT_SCOPE_MISMATCH);
-    return kEtcPalErrOk;
+    return static_cast<int>(data_size);
   };
 
   mocks_.broker_callbacks->HandleSocketMessageReceived(conn_handle, connect_msg);

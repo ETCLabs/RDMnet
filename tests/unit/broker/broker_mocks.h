@@ -53,7 +53,9 @@ public:
   MOCK_METHOD(void, SetNotify, (BrokerDiscoveryNotify * notify), (override));
   MOCK_METHOD(etcpal::Error,
               RegisterBroker,
-              (const rdmnet::Broker::Settings& settings, const std::vector<unsigned int>& resolved_interface_indexes),
+              (const rdmnet::Broker::Settings&  settings,
+               const rdm::Uid&                  my_uid,
+               const std::vector<unsigned int>& resolved_interface_indexes),
               (override));
   MOCK_METHOD(void, UnregisterBroker, (), (override));
 };
@@ -87,7 +89,8 @@ struct BrokerMocks
     ON_CALL(*socket_mgr, Startup()).WillByDefault(testing::Return(true));
     ON_CALL(*threads, AddListenThread(testing::_)).WillByDefault(testing::Return(etcpal::Error::Ok()));
     ON_CALL(*threads, AddClientServiceThread()).WillByDefault(testing::Return(etcpal::Error::Ok()));
-    ON_CALL(*disc, RegisterBroker(testing::_, testing::_)).WillByDefault(testing::Return(etcpal::Error::Ok()));
+    ON_CALL(*disc, RegisterBroker(testing::_, testing::_, testing::_))
+        .WillByDefault(testing::Return(etcpal::Error::Ok()));
   }
 
   static BrokerMocks Nice()

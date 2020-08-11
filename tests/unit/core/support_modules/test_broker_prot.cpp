@@ -17,14 +17,13 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
-#include "gtest/gtest.h"
 #include "rdmnet/core/broker_prot.h"
 
-class TestBrokerProt : public testing::Test
-{
-};
+#include <cstring>
+#include "gtest/gtest.h"
+#include "etcpal/cpp/uuid.h"
 
-TEST_F(TestBrokerProt, MessageIdentMacrosWork)
+TEST(TestBrokerProt, MessageIdentMacrosWork)
 {
   BrokerMessage bmsg;
 
@@ -68,7 +67,7 @@ TEST_F(TestBrokerProt, MessageIdentMacrosWork)
   EXPECT_EQ(BROKER_GET_DISCONNECT_MSG(&bmsg), &bmsg.data.disconnect);
 }
 
-TEST_F(TestBrokerProt, MessageStringMacrosWork)
+TEST(TestBrokerProt, MessageStringMacrosWork)
 {
   BrokerClientConnectMsg ccmsg;
 
@@ -126,4 +125,30 @@ TEST_F(TestBrokerProt, MessageStringMacrosWork)
       "long.domai";
   BROKER_CLIENT_CONNECT_MSG_SET_SEARCH_DOMAIN(&ccmsg, domain_too_long);
   EXPECT_STREQ(ccmsg.search_domain, domain_truncated);
+}
+
+TEST(TestBrokerProt, PackBrokerDisconnectWorks)
+{
+  const uint8_t kCorrectDisconnectMsg[] = {
+      // TCP preamble
+      0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,  // ACN packet identifier
+      0x00, 0x00, 0x00, 0x1e,                                                  // PDU block size
+      // Root Layer PDU
+      0xf0, 0x00, 0x1e,        // Flags and Length
+      0x00, 0x00, 0x00, 0x09,  // VECTOR_ROOT_BROKER
+      0x9e, 0xfb, 0x97, 0x13, 0x2b, 0x82, 0x41, 0x21, 0x8a, 0xe0, 0x9c, 0xa0, 0x45, 0x08, 0x6f, 0xe6,  // Sender CID
+      // Broker PDU
+      0xf0, 0x00, 0x07,  // Flags & Length
+      0x00, 0x0e,        // VECTOR_BROKER_DISCONNECT
+      0x00, 0x04,        // DISCONNECT_SOFTWARE_RESET
+  };
+  uint8_t buf[BROKER_DISCONNECT_FULL_MSG_SIZE];
+
+  BrokerDisconnectMsg msg_data;
+  msg_data.disconnect_reason = kRdmnetDisconnectSoftwareReset;
+  size_t size =
+      rc_broker_pack_disconnect(buf, BROKER_DISCONNECT_FULL_MSG_SIZE,
+                                &etcpal::Uuid::FromString("9efb9713-2b82-4121-8ae0-9ca045086fe6").get(), &msg_data);
+  ASSERT_EQ(size, sizeof(kCorrectDisconnectMsg));
+  EXPECT_EQ(std::memcmp(buf, kCorrectDisconnectMsg, sizeof(kCorrectDisconnectMsg)), 0);
 }

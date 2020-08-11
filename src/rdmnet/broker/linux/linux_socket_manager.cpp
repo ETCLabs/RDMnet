@@ -95,7 +95,10 @@ bool LinuxBrokerSocketManager::Shutdown()
 
   etcpal::MutexGuard socket_guard(socket_lock_);
   for (auto& sock_data : sockets_)
+  {
+    shutdown(sock_data.second->socket, SHUT_RDWR);
     close(sock_data.second->socket);
+  }
   sockets_.clear();
 
   return true;

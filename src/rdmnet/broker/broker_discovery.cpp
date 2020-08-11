@@ -72,11 +72,13 @@ void disccb_other_broker_lost(rdmnet_registered_broker_t handle,
 }  // extern "C"
 
 etcpal::Error BrokerDiscoveryManager::RegisterBroker(const rdmnet::Broker::Settings&  settings,
+                                                     const rdm::Uid&                  my_uid,
                                                      const std::vector<unsigned int>& resolved_interface_indexes)
 {
   RdmnetBrokerRegisterConfig config = RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT;
 
   config.cid = settings.cid.get();
+  config.uid = my_uid.get();
   config.service_instance_name = settings.dns.service_instance_name.c_str();
   config.port = settings.listen_port;
   if (!resolved_interface_indexes.empty())

@@ -25,7 +25,7 @@
 #include <chrono>
 #include <memory>
 #include <map>
-#include <queue>
+#include <deque>
 #include <stdexcept>
 #include "etcpal/cpp/error.h"
 #include "etcpal/cpp/inet.h"
@@ -33,6 +33,7 @@
 #include "etcpal/cpp/timer.h"
 #include "etcpal/cpp/uuid.h"
 #include "etcpal/socket.h"
+#include "rdm/cpp/uid.h"
 #include "rdm/message.h"
 #include "rdmnet/core/message.h"
 #include "rdmnet/core/rpt_prot.h"
@@ -40,11 +41,12 @@
 
 struct MessageRef
 {
-  MessageRef() : size_sent(0) {}
+  MessageRef() = default;
+  MessageRef(size_t alloc_size) : data(new uint8_t[alloc_size]) {}
 
   std::unique_ptr<uint8_t[]> data;
-  size_t                     size;
-  size_t                     size_sent;
+  size_t                     size{0};
+  size_t                     size_sent{0};
 };
 
 // RPT RDM messages are two sets of data, the RPT header and the RDM message.
@@ -55,6 +57,75 @@ struct RPTMessageRef
 
   RptHeader header;
   RdmBuffer msg;
+};
+
+// Represents an action to take before destroying a client. The default-constructed object means
+// take no action.
+class ClientDestroyAction
+{
+public:
+  enum class Action
+  {
+    DoNothing,
+    SendDisconnect,
+    SendConnectReply,
+    MarkSocketInvalid
+  };
+
+  ClientDestroyAction() = default;
+
+  static ClientDestroyAction DoNothing();
+  static ClientDestroyAction SendConnectReply(rdmnet_connect_status_t connect_status);
+  static ClientDestroyAction SendDisconnect(rdmnet_disconnect_reason_t reason);
+  static ClientDestroyAction MarkSocketInvalid();
+
+  Action                     action() const noexcept { return action_; }
+  rdmnet_disconnect_reason_t disconnect_reason() const noexcept { return data_.disconnect_reason; }
+  rdmnet_connect_status_t    connect_status() const noexcept { return data_.connect_status; }
+
+private:
+  Action action_{Action::DoNothing};
+  union
+  {
+    rdmnet_disconnect_reason_t disconnect_reason;
+    rdmnet_connect_status_t    connect_status;
+  } data_{};
+};
+
+inline ClientDestroyAction ClientDestroyAction::DoNothing()
+{
+  return ClientDestroyAction{};
+}
+
+inline ClientDestroyAction ClientDestroyAction::SendConnectReply(rdmnet_connect_status_t connect_status)
+{
+  ClientDestroyAction to_return;
+  to_return.action_ = Action::SendConnectReply;
+  to_return.data_.connect_status = connect_status;
+  return to_return;
+}
+
+inline ClientDestroyAction ClientDestroyAction::SendDisconnect(rdmnet_disconnect_reason_t reason)
+{
+  ClientDestroyAction to_return;
+  to_return.action_ = Action::SendDisconnect;
+  to_return.data_.disconnect_reason = reason;
+  return to_return;
+}
+
+inline ClientDestroyAction ClientDestroyAction::MarkSocketInvalid()
+{
+  ClientDestroyAction to_return;
+  to_return.action_ = Action::MarkSocketInvalid;
+  return to_return;
+}
+
+// The result of attempting to push to a client's outgoing send queue.
+enum class ClientPushResult
+{
+  Ok,         // Push successful
+  QueueFull,  // The send queue is full
+  Error       // Other classes of error, e.g. could not allocate memory
 };
 
 // A generic client.
@@ -85,8 +156,11 @@ public:
   }
   virtual ~BrokerClient() = default;
 
-  virtual bool Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg);
-  virtual bool Send(const etcpal::Uuid& broker_cid);
+  virtual ClientPushResult Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg);
+  virtual bool             Send(const etcpal::Uuid& broker_cid);
+  void                     MarkForDestruction(const etcpal::Uuid&        broker_cid,
+                                              const rdm::Uid&            broker_uid,
+                                              const ClientDestroyAction& destroy_action);
 
   bool TcpConnExpired() const { return heartbeat_timer_.IsExpired(); }
   void MessageReceived() { heartbeat_timer_.Reset(); }
@@ -98,12 +172,18 @@ public:
   mutable etcpal::RwLock lock;
   etcpal_socket_t        socket{ETCPAL_SOCKET_INVALID};
   size_t                 max_q_size{0};
+  bool                   marked_for_destruction{false};
 
 protected:
-  bool PushPostSizeCheck(const etcpal::Uuid& sender_cid, const BrokerMessage& msg);
-  bool SendNull(const etcpal::Uuid& broker_cid);
+  ClientPushResult PushPostSizeCheck(const etcpal::Uuid& sender_cid, const BrokerMessage& msg);
+  bool             SendNull(const etcpal::Uuid& broker_cid);
+  void             ApplyDestroyAction(const etcpal::Uuid&        broker_cid,
+                                      const rdm::Uid&            broker_uid,
+                                      const ClientDestroyAction& destroy_action);
 
-  std::queue<MessageRef> broker_msgs_;
+  virtual void ClearAllQueues() { broker_msgs_.clear(); }
+
+  std::deque<MessageRef> broker_msgs_;
   etcpal::Timer          send_timer_{std::chrono::seconds(E133_TCP_HEARTBEAT_INTERVAL_SEC)};
   etcpal::Timer          heartbeat_timer_{std::chrono::seconds(E133_HEARTBEAT_TIMEOUT_SEC)};
 };
@@ -140,20 +220,21 @@ public:
   }
   virtual ~RPTClient() {}
 
-  virtual bool Push(Handle /*from_conn*/, const etcpal::Uuid& /*sender_cid*/, const RptMessage& /*msg*/)
+  virtual ClientPushResult Push(Handle /*from_conn*/, const etcpal::Uuid& /*sender_cid*/, const RptMessage& /*msg*/)
   {
-    return false;
+    return ClientPushResult::Error;
   }
-  virtual bool Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
+  virtual ClientPushResult Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
 
   RdmUid            uid{};
   rpt_client_type_t client_type{kRPTClientTypeUnknown};
   etcpal::Uuid      binding_cid{};
 
 protected:
-  bool PushPostSizeCheck(const etcpal::Uuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg);
+  ClientPushResult PushPostSizeCheck(const etcpal::Uuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg);
+  virtual void     ClearAllQueues();
 
-  std::queue<MessageRef> status_msgs_;
+  std::deque<MessageRef> status_msgs_;
 };
 
 struct EPTClient : public BrokerClient
@@ -172,13 +253,16 @@ public:
   }
   virtual ~RPTController() {}
 
-  virtual bool Push(Handle from_conn, const etcpal::Uuid& sender_cid, const RptMessage& msg) override;
-  virtual bool Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
-  virtual bool Push(const etcpal::Uuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg);
-  virtual bool Send(const etcpal::Uuid& broker_cid) override;
+  virtual ClientPushResult Push(Handle from_conn, const etcpal::Uuid& sender_cid, const RptMessage& msg) override;
+  virtual ClientPushResult Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
+  virtual ClientPushResult Push(const etcpal::Uuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg);
+  virtual bool             Send(const etcpal::Uuid& broker_cid) override;
 
 protected:
-  std::queue<MessageRef> rpt_msgs_;
+  bool         HasRoomToPush();
+  virtual void ClearAllQueues();
+
+  std::deque<MessageRef> rpt_msgs_;
 };
 
 // State data about each device
@@ -192,14 +276,33 @@ public:
   }
   virtual ~RPTDevice() {}
 
-  virtual bool Push(Handle from_conn, const etcpal::Uuid& sender_cid, const RptMessage& msg) override;
-  virtual bool Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
-  virtual bool Send(const etcpal::Uuid& broker_cid) override;
+  virtual ClientPushResult Push(Handle from_conn, const etcpal::Uuid& sender_cid, const RptMessage& msg) override;
+  virtual ClientPushResult Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
+  virtual bool             Send(const etcpal::Uuid& broker_cid) override;
 
 protected:
-  Handle                                   last_controller_serviced_{kInvalidHandle};
-  size_t                                   rpt_msgs_total_size_{0};
-  std::map<Handle, std::queue<MessageRef>> rpt_msgs_;
+  bool         HasRoomToPush();
+  virtual void ClearAllQueues();
+
+  // A special queue-like class that organizes messages by source controller for fair scheduling.
+  class RptMsgQ
+  {
+  public:
+    bool        empty() const;
+    MessageRef* front();
+    void        pop_front();
+    void        push_back(Handle controller, MessageRef&& value);
+    size_t      size() const;
+    void        clear();
+
+    void RemoveCurrentController();
+
+  private:
+    size_t                                   total_msg_count_{0};
+    std::map<Handle, std::deque<MessageRef>> rpt_msgs_;
+    Handle                                   current_controller_{kInvalidHandle};
+  };
+  RptMsgQ rpt_msgs_;
 };
 
 #endif  // BROKER_CLIENT_H_
