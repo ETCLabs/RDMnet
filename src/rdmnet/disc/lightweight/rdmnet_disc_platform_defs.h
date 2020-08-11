@@ -27,18 +27,20 @@
 #define RDMNET_DISC_SERVICE_NAME_MAX_LENGTH 1
 #define DNS_FQDN_MAX_LENGTH 255
 
-typedef enum
-{
-  kResolveStateServiceQuerySent,
-  kResolveStateHostQuerySent,
-  kResolveStateDone,
-} broker_resolve_state_t;
-
 typedef struct RdmnetDiscoveredBrokerPlatformData
 {
-  broker_resolve_state_t resolve_state;
-  uint8_t                wire_host_name[DNS_FQDN_MAX_LENGTH];
-  EtcPalTimer            ttl_timer;
+  bool     srv_record_received;
+  bool     txt_record_received;
+  bool     initial_notification_sent;
+  bool     update_pending;
+  bool     destruction_pending;
+  uint8_t  wire_host_name[DNS_FQDN_MAX_LENGTH];
+  uint16_t srv_priority;
+
+  bool        sent_service_query;
+  bool        sent_host_query;
+  EtcPalTimer query_timer;
+  EtcPalTimer ttl_timer;
 } RdmnetDiscoveredBrokerPlatformData;
 
 typedef struct RdmnetScopeMonitorPlatformData

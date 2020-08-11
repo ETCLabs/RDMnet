@@ -24,9 +24,14 @@
 #include <memory>
 #include <string>
 #include "rdmnet/core/util.h"
+#include "rdmnet/disc/discovered_broker.h"
 #include "gtest/gtest.h"
 #include "test_disc_common_fakes.h"
 #include "test_operators.h"
+
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
 
 class TestMonitoredScope : public testing::Test
 {
@@ -58,6 +63,7 @@ protected:
   void SetUp() override
   {
     ASSERT_EQ(monitored_scope_module_init(), kEtcPalErrOk);
+    ASSERT_EQ(discovered_broker_module_init(), kEtcPalErrOk);
     default_config_.scope = kDefaultTestScope;
     default_config_.domain = kDefaultTestDomain;
   }
@@ -132,6 +138,82 @@ TEST_F(TestMonitoredScope, ForEachWorks)
   // Make sure we've hit each of the names.
   for (const auto& name : scope_names)
     EXPECT_EQ(name.second, true);
+}
+
+TEST_F(TestMonitoredScope, FindWorks)
+{
+  // An array of RdmnetScopeMonitorRef pointers that will automatically remove and delete each one
+  // on destruction.
+#if RDMNET_DYNAMIC_MEM
+  constexpr size_t kNumScopes = 10;
+#else
+  constexpr size_t kNumScopes = RDMNET_MAX_MONITORED_SCOPES;
+#endif
+  std::array<ScopeMonitorUniquePtr, kNumScopes> scopes;
+
+  static const void* kContext = reinterpret_cast<const void*>(0x12345678);
+
+  // Fill the array and linked list of DiscoveredScopes
+  for (int i = 0; i < kNumScopes; ++i)
+  {
+    scopes[i] = MakeDefaultMonitoredScope();
+    std::strcpy(scopes[i]->scope, std::string("Test Scope " + std::to_string(i)).c_str());
+    scope_monitor_insert(scopes[i].get());
+  }
+
+  // Find the kNumScopes / 2 scope monitor instance by scope string using a predicate function.
+  static const std::string scope_to_find("Test Scope " + std::to_string(kNumScopes / 2));
+  auto                     found_scope = scope_monitor_find(
+      [](const RdmnetScopeMonitorRef* ref, const void* context) {
+        EXPECT_EQ(context, kContext);
+        return ref->scope == scope_to_find;
+      },
+      kContext);
+  ASSERT_NE(found_scope, nullptr);
+  EXPECT_STREQ(found_scope->scope, scope_to_find.c_str());
+}
+
+TEST_F(TestMonitoredScope, FindScopeAndBrokerWorks)
+{
+  std::vector<ScopeMonitorUniquePtr> scopes;
+  constexpr size_t                   kNumScopes = 3;
+  constexpr size_t                   kNumBrokersPerScope = 5;
+
+#if !RDMNET_DYNAMIC_MEM
+  static_assert(RDMNET_MAX_MONITORED_SCOPES >= kNumScopes);
+  static_assert(RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE >= kNumBrokersPerScope);
+#endif
+
+  for (int i = 0; i < kNumScopes; ++i)
+  {
+    auto scope = MakeDefaultMonitoredScope();
+    std::strcpy(scope->scope, std::string("Test Scope " + std::to_string(i)).c_str());
+    for (int j = 0; j < kNumBrokersPerScope; ++j)
+    {
+      auto db = discovered_broker_new(
+          scope.get(), std::string("Test Service Instance " + std::to_string(i * kNumBrokersPerScope + j)).c_str(), "");
+      ASSERT_NE(db, nullptr);
+      discovered_broker_insert(&scope->broker_list, db);
+    }
+    scope_monitor_insert(scope.get());
+    scopes.push_back(std::move(scope));
+  }
+
+  static const void* kContext = reinterpret_cast<const void*>(0x12345678);
+
+  static const std::string service_instance_to_find("Test Service Instance " + std::to_string(8));
+  RdmnetScopeMonitorRef*   found_ref = nullptr;
+  DiscoveredBroker*        found_db = nullptr;
+  ASSERT_TRUE(scope_monitor_and_discovered_broker_find(
+      [](const RdmnetScopeMonitorRef*, const DiscoveredBroker* db, const void* context) {
+        EXPECT_EQ(context, kContext);
+        return db->service_instance_name == service_instance_to_find;
+      },
+      kContext, &found_ref, &found_db));
+  ASSERT_NE(found_ref, nullptr);
+  ASSERT_NE(found_db, nullptr);
+  EXPECT_STREQ(found_ref->scope, "Test Scope 1");
+  EXPECT_STREQ(found_db->service_instance_name, "Test Service Instance 8");
 }
 
 // Needs to be at file scope because of C function pointers/stateless lambdas

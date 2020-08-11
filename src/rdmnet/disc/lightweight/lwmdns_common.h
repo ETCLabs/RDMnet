@@ -20,6 +20,7 @@
 #ifndef LWMDNS_COMMON_H_
 #define LWMDNS_COMMON_H_
 
+#include <stdbool.h>
 #include <stdint.h>
 #include "etcpal/inet.h"
 #include "rdmnet/disc/discovered_broker.h"
@@ -70,23 +71,9 @@ typedef struct DnsHeader
   uint16_t additional_count;
 } DnsHeader;
 
-/*
-typedef struct DnsQuestion
-{
-  const char*       name;
-  dns_record_type_t type;
-} DnsQuestion;
-*/
-
-typedef struct DnsDomainName
-{
-  const uint8_t* name;
-  const uint8_t* name_ptr;
-} DnsDomainName;
-
 typedef struct DnsResourceRecord
 {
-  DnsDomainName     name;
+  const uint8_t*    name;
   dns_record_type_t record_type;
   bool              cache_flush;
   uint32_t          ttl;
@@ -94,29 +81,12 @@ typedef struct DnsResourceRecord
   const uint8_t*    data_ptr;
 } DnsResourceRecord;
 
-/*
-typedef struct DnsPtrRecord
+typedef enum
 {
-  DnsRRHeader header;
-  const char* ptr_domain_name;
-} DnsPtrRecord;
-
-typedef struct DnsARecord
-{
-  DnsRRHeader  header;
-  EtcPalIpAddr ip;
-} DnsARecord;
-
-typedef struct DnsSrvRecord
-{
-  DnsRRHeader header;
-} DnsSrvRecord;
-
-typedef struct DnsTxtRecord
-{
-  DnsRRHeader header;
-} DnxTxtRecord;
-*/
+  kTxtRecordParseOkDataChanged,
+  kTxtRecordParseOkNoDataChanged,
+  kTxtRecordParseError
+} txt_record_parse_result_t;
 
 extern const EtcPalIpAddr* kMdnsIpv4Address;
 extern const EtcPalIpAddr* kMdnsIpv6Address;
@@ -126,21 +96,26 @@ void           lwmdns_common_module_deinit(void);
 
 const uint8_t* lwmdns_parse_dns_header(const uint8_t* buf, int buf_len, DnsHeader* header);
 const uint8_t* lwmdns_parse_resource_record(const uint8_t*     buf_begin,
-                                            const uint8_t*     offset,
+                                            const uint8_t*     rr_ptr,
                                             int                total_remaining_length,
                                             DnsResourceRecord* rr);
 
-const uint8_t* lwmdns_parse_domain_name(const uint8_t* buf_begin,
-                                        const uint8_t* offset,
-                                        int            total_remaining_length,
-                                        DnsDomainName* name);
-bool           lwmdns_domain_name_matches_service(const DnsDomainName* name,
-                                                  const char*          service_instance_name,
-                                                  const char*          service_type,
-                                                  const char*          domain);
-void           lwmdns_convert_domain_name_to_string(const DnsDomainName* name, char* str_buf);
+const uint8_t* lwmdns_parse_domain_name(const uint8_t* buf_begin, const uint8_t* name_ptr, int total_remaining_length);
+uint8_t        lwmdns_copy_domain_name(const uint8_t* buf_begin, const uint8_t* name_ptr, uint8_t* buf);
+uint8_t        lwmdns_domain_name_length(const uint8_t* buf_begin, const uint8_t* name_ptr);
+bool           lwmdns_domain_names_equal(const uint8_t* buf_begin_a,
+                                         const uint8_t* name_a,
+                                         const uint8_t* buf_begin_b,
+                                         const uint8_t* name_b);
+bool           lwmdns_domain_name_matches_service_instance(const uint8_t* buf_begin,
+                                                           const uint8_t* name_ptr,
+                                                           const char*    service_instance_name);
+bool lwmdns_domain_name_matches_service_subtype(const uint8_t* buf_begin, const uint8_t* name_ptr, const char* subtype);
+bool lwmdns_domain_label_to_string(const uint8_t* buf_begin, const uint8_t* label, char* str_buf);
 
-bool lwmdns_txt_record_to_broker_info(const uint8_t* txt_data, uint16_t txt_data_len, DiscoveredBroker* db);
+txt_record_parse_result_t lwmdns_txt_record_to_broker_info(const uint8_t*    txt_data,
+                                                           uint16_t          txt_data_len,
+                                                           DiscoveredBroker* db);
 
 #ifdef __cplusplus
 }

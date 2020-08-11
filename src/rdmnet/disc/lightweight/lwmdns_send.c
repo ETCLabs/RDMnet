@@ -161,10 +161,13 @@ void lwmdns_send_module_deinit(void)
     free(send_sockets);
   }
 #endif
+  num_send_sockets = 0;
 }
 
-etcpal_error_t lwmdns_send_query(const RdmnetScopeMonitorRef* ref)
+void lwmdns_send_ptr_query(const RdmnetScopeMonitorRef* ref)
 {
+  RDMNET_ASSERT(ref);
+
   // Start with a zeroed header
   uint8_t* cur_ptr = mdns_send_buf;
   memset(cur_ptr, 0, DNS_HEADER_BYTES);
@@ -179,8 +182,10 @@ etcpal_error_t lwmdns_send_query(const RdmnetScopeMonitorRef* ref)
   memcpy(cur_ptr, ref->scope, scope_len);
   cur_ptr += scope_len;
 
-  uint8_t* service_offset = cur_ptr;
+  memcpy(cur_ptr, kSubLabelBytes, sizeof(kSubLabelBytes));
+  cur_ptr += sizeof(kSubLabelBytes);
 
+  uint8_t* service_offset = cur_ptr;
   memcpy(cur_ptr, kRdmnetServiceSuffixBytes, sizeof(kRdmnetServiceSuffixBytes));
   cur_ptr += sizeof(kRdmnetServiceSuffixBytes);
 
@@ -216,8 +221,8 @@ etcpal_error_t lwmdns_send_query(const RdmnetScopeMonitorRef* ref)
     cur_ptr += 2;
     etcpal_pack_u16b(cur_ptr, DNS_CLASS_IN);
     cur_ptr += 2;
-    etcpal_pack_u16b(cur_ptr, (uint16_t)(etcpal_timer_remaining(&db->platform_data.ttl_timer) / 1000));
-    cur_ptr += 2;
+    etcpal_pack_u32b(cur_ptr, etcpal_timer_remaining(&db->platform_data.ttl_timer) / 1000);
+    cur_ptr += 4;
     etcpal_pack_u16b(cur_ptr, name_size + 3);
     cur_ptr += 2;
     *cur_ptr++ = name_size;
@@ -228,8 +233,69 @@ etcpal_error_t lwmdns_send_query(const RdmnetScopeMonitorRef* ref)
     ++num_answers;
   }
 
+  etcpal_pack_u16b(&mdns_send_buf[DNS_HEADER_OFFSET_ANSWER_COUNT], num_answers);
   send_buf(cur_ptr - mdns_send_buf);
-  return kEtcPalErrOk;
+}
+
+void lwmdns_send_any_query_on_service(const DiscoveredBroker* db)
+{
+  RDMNET_ASSERT(db);
+
+  // Start with a zeroed header
+  uint8_t* cur_ptr = mdns_send_buf;
+  memset(cur_ptr, 0, DNS_HEADER_BYTES);
+  cur_ptr += DNS_HEADER_BYTES;
+
+  // Pack the ANY query
+  uint8_t service_instance_len = (uint8_t)strlen(db->service_instance_name);
+  *cur_ptr++ = service_instance_len;
+  memcpy(cur_ptr, db->service_instance_name, service_instance_len);
+  cur_ptr += service_instance_len;
+
+  memcpy(cur_ptr, kRdmnetServiceSuffixBytes, sizeof(kRdmnetServiceSuffixBytes));
+  cur_ptr += sizeof(kRdmnetServiceSuffixBytes);
+
+  etcpal_pack_u16b(cur_ptr, (uint16_t)kDnsRecordTypeANY);
+  cur_ptr += 2;
+  uint16_t class_val = DNS_CLASS_IN;
+  if (!db->platform_data.sent_service_query)
+    class_val |= 0x8000u;
+  etcpal_pack_u16b(cur_ptr, class_val);
+  cur_ptr += 2;
+  // Update the question count
+  etcpal_pack_u16b(&mdns_send_buf[DNS_HEADER_OFFSET_QUESTION_COUNT], 1u);
+
+  // TODO known answer suppression
+
+  send_buf(cur_ptr - mdns_send_buf);
+}
+
+void lwmdns_send_any_query_on_hostname(const DiscoveredBroker* db)
+{
+  RDMNET_ASSERT(db);
+
+  // Start with a zeroed header
+  uint8_t* cur_ptr = mdns_send_buf;
+  memset(cur_ptr, 0, DNS_HEADER_BYTES);
+  cur_ptr += DNS_HEADER_BYTES;
+
+  // Pack the ANY query
+  lwmdns_copy_domain_name(db->platform_data.wire_host_name, db->platform_data.wire_host_name, cur_ptr);
+  cur_ptr += lwmdns_domain_name_length(db->platform_data.wire_host_name, db->platform_data.wire_host_name);
+
+  etcpal_pack_u16b(cur_ptr, (uint16_t)kDnsRecordTypeANY);
+  cur_ptr += 2;
+  uint16_t class_val = DNS_CLASS_IN;
+  if (!db->platform_data.sent_service_query)
+    class_val |= 0x8000u;
+  etcpal_pack_u16b(cur_ptr, class_val);
+  cur_ptr += 2;
+  // Update the question count
+  etcpal_pack_u16b(&mdns_send_buf[DNS_HEADER_OFFSET_QUESTION_COUNT], 1u);
+
+  // TODO known answer suppression
+
+  send_buf(cur_ptr - mdns_send_buf);
 }
 
 static void init_send_sockets_array(size_t array_size)
