@@ -8,7 +8,7 @@ var opts_8h =
     [ "RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER", "group__rdmnetopts__disc.html#ga7c12ec677842ecde91652146b67be719", null ],
     [ "RDMNET_MAX_CONTROLLERS", "group__rdmnetopts__client.html#gac9e623b18dcb38277b287d3bb8e7567e", null ],
     [ "RDMNET_MAX_DEVICES", "group__rdmnetopts__client.html#ga70cb0df8a1d90d47d3089ec0e55eaf6c", null ],
-    [ "RDMNET_MAX_DISCOVERED_BROKERS", "group__rdmnetopts__disc.html#gab83b8f8cddbd36051c75f84268d001ea", null ],
+    [ "RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE", "group__rdmnetopts__disc.html#ga3ad9ca9d18e25405c6e00738efefb9aa", null ],
     [ "RDMNET_MAX_ENDPOINTS_PER_DEVICE", "group__rdmnetopts__client.html#gaf2e797d5e45375b925f1f6bf55d64961", null ],
     [ "RDMNET_MAX_EPT_CLIENTS", "group__rdmnetopts__client.html#ga43d00c5a3e53b74b5e58bdfc0d60d6b8", null ],
     [ "RDMNET_MAX_LLRP_TARGETS", "group__rdmnetopts__llrp.html#ga83f287dd60670a447f5f5e7fbf314dd9", null ],

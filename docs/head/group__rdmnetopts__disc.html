@@ -209,9 +209,9 @@ Macros</h2></td></tr>
 <tr class="memitem:gae9812fcf31d8d70fd3a79b96824d00aa"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnetopts__disc.html#gae9812fcf31d8d70fd3a79b96824d00aa">RDMNET_MAX_MONITORED_SCOPES</a>&#160;&#160;&#160;((<a class="el" href="group__rdmnetopts__client.html#gae7827cb85bcf2d33c8cef1ece557633b">RDMNET_MAX_SCOPES_PER_CONTROLLER</a> * <a class="el" href="group__rdmnetopts__client.html#gac9e623b18dcb38277b287d3bb8e7567e">RDMNET_MAX_CONTROLLERS</a>) + <a class="el" href="group__rdmnetopts__client.html#ga70cb0df8a1d90d47d3089ec0e55eaf6c">RDMNET_MAX_DEVICES</a>)</td></tr>
 <tr class="memdesc:gae9812fcf31d8d70fd3a79b96824d00aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many RDMnet scopes can be monitored simultaneously.  <a href="#gae9812fcf31d8d70fd3a79b96824d00aa">More...</a><br /></td></tr>
 <tr class="separator:gae9812fcf31d8d70fd3a79b96824d00aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab83b8f8cddbd36051c75f84268d001ea"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnetopts__disc.html#gab83b8f8cddbd36051c75f84268d001ea">RDMNET_MAX_DISCOVERED_BROKERS</a>&#160;&#160;&#160;<a class="el" href="group__rdmnetopts__disc.html#gae9812fcf31d8d70fd3a79b96824d00aa">RDMNET_MAX_MONITORED_SCOPES</a></td></tr>
-<tr class="memdesc:gab83b8f8cddbd36051c75f84268d001ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many brokers can be discovered at the same time across all monitored scopes.  <a href="#gab83b8f8cddbd36051c75f84268d001ea">More...</a><br /></td></tr>
-<tr class="separator:gab83b8f8cddbd36051c75f84268d001ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3ad9ca9d18e25405c6e00738efefb9aa"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnetopts__disc.html#ga3ad9ca9d18e25405c6e00738efefb9aa">RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE</a>&#160;&#160;&#160;1</td></tr>
+<tr class="memdesc:ga3ad9ca9d18e25405c6e00738efefb9aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many brokers can be discovered at the same time on a given scope.  <a href="#ga3ad9ca9d18e25405c6e00738efefb9aa">More...</a><br /></td></tr>
+<tr class="separator:ga3ad9ca9d18e25405c6e00738efefb9aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga7c12ec677842ecde91652146b67be719"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnetopts__disc.html#ga7c12ec677842ecde91652146b67be719">RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER</a>&#160;&#160;&#160;2</td></tr>
 <tr class="memdesc:ga7c12ec677842ecde91652146b67be719"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many listen addresses can be resolved for each discovered broker.  <a href="#ga7c12ec677842ecde91652146b67be719">More...</a><br /></td></tr>
 <tr class="separator:ga7c12ec677842ecde91652146b67be719"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -254,19 +254,19 @@ Macros</h2></td></tr>
 
 </div>
 </div>
-<a id="gab83b8f8cddbd36051c75f84268d001ea"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gab83b8f8cddbd36051c75f84268d001ea">&#9670;&nbsp;</a></span>RDMNET_MAX_DISCOVERED_BROKERS</h2>
+<a id="ga3ad9ca9d18e25405c6e00738efefb9aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3ad9ca9d18e25405c6e00738efefb9aa">&#9670;&nbsp;</a></span>RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define RDMNET_MAX_DISCOVERED_BROKERS&#160;&#160;&#160;<a class="el" href="group__rdmnetopts__disc.html#gae9812fcf31d8d70fd3a79b96824d00aa">RDMNET_MAX_MONITORED_SCOPES</a></td>
+          <td class="memname">#define RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE&#160;&#160;&#160;1</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>How many brokers can be discovered at the same time across all monitored scopes. </p>
+<p>How many brokers can be discovered at the same time on a given scope. </p>
 <p>Meaningful only if <a class="el" href="group__rdmnetopts__global.html#ga713876c29d15cbbc1c2ad1b4a2537555" title="Use dynamic memory allocation. ">RDMNET_DYNAMIC_MEM</a> is defined to 0. </p>
 
 </div>
