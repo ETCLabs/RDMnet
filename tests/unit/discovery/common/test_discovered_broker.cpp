@@ -20,8 +20,10 @@
 #include "rdmnet/disc/discovered_broker.h"
 
 #include <array>
+#include <cstring>
 #include <memory>
 #include <string>
+#include <vector>
 #include "etcpal/cpp/uuid.h"
 #include "etcpal/cpp/inet.h"
 #include "rdm/cpp/uid.h"
@@ -201,6 +203,24 @@ TEST_F(TestDiscoveredBroker, AddMultipleTxtRecordItemsWorks)
   }
 }
 
+TEST_F(TestDiscoveredBroker, AddBinaryTxtRecordItemWorks)
+{
+  auto db = MakeDefaultDiscoveredBroker();
+
+  const std::vector<uint8_t> key = {0x54, 0x65, 0x73, 0x74, 0x20, 0x4b, 0x65, 0x79};                // Test Key
+  const std::vector<uint8_t> value = {0x54, 0x65, 0x73, 0x74, 0x20, 0x76, 0x61, 0x6C, 0x75, 0x65};  // Test Value
+
+  ASSERT_TRUE(discovered_broker_add_binary_txt_record_item(db.get(), key.data(), static_cast<uint8_t>(key.size()),
+                                                           value.data(), static_cast<uint8_t>(value.size())));
+
+  EXPECT_EQ(db->num_additional_txt_items, 1u);
+
+  ASSERT_NE(db->additional_txt_items_array, nullptr);
+  EXPECT_STREQ(db->additional_txt_items_array[0].key, "Test Key");
+  EXPECT_EQ(db->additional_txt_items_array[0].value_len, value.size());
+  EXPECT_EQ(std::memcmp(db->additional_txt_items_array[0].value, value.data(), value.size()), 0);
+}
+
 TEST_F(TestDiscoveredBroker, FindByNameWorks)
 {
   // An array of DiscoveredBroker pointers that will automatically call discovered_broker_delete()
@@ -208,7 +228,7 @@ TEST_F(TestDiscoveredBroker, FindByNameWorks)
 #if RDMNET_DYNAMIC_MEM
   constexpr size_t kNumBrokers = 10;
 #else
-  constexpr size_t kNumBrokers = RDMNET_MAX_DISCOVERED_BROKERS;
+  constexpr size_t kNumBrokers = RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE;
 #endif
   std::array<DiscoveredBrokerUniquePtr, kNumBrokers> brokers;
   DiscoveredBroker*                                  list = nullptr;
@@ -227,6 +247,44 @@ TEST_F(TestDiscoveredBroker, FindByNameWorks)
       list, std::string(full_service_name_ + " " + std::to_string(kNumBrokers / 2)).c_str());
   ASSERT_NE(found_db, nullptr);
   ASSERT_EQ(found_db->full_service_name, full_service_name_ + " " + std::to_string(kNumBrokers / 2));
+}
+
+TEST_F(TestDiscoveredBroker, FindByPredicateWorks)
+{
+  // An array of DiscoveredBroker pointers that will automatically call discovered_broker_delete()
+  // on each one on destruction.
+#if RDMNET_DYNAMIC_MEM
+  constexpr size_t kNumBrokers = 10;
+#else
+  constexpr size_t kNumBrokers = RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE;
+#endif
+  std::array<DiscoveredBrokerUniquePtr, kNumBrokers> brokers;
+  DiscoveredBroker*                                  list = nullptr;
+
+  static const etcpal::Uuid kCidToFind = etcpal::Uuid::FromString("6ac29c1d-515a-437f-a7bf-e8624b4ee7ec");
+  static const void*        kContext = reinterpret_cast<const void*>(0x12345678);
+
+  // Fill the array and linked list of DiscoveredBrokers
+  for (int i = 0; i < kNumBrokers; ++i)
+  {
+    brokers[i] = MakeDefaultDiscoveredBroker();
+    if (i == kNumBrokers / 2)
+      brokers[i]->cid = kCidToFind.get();
+    else
+      brokers[i]->cid = etcpal::Uuid::V4().get();
+    discovered_broker_insert(&list, brokers[i].get());
+  }
+
+  // Find the kNumBrokers / 2 broker instance by CID using a predicate function.
+  auto found_db = discovered_broker_find(
+      list,
+      [](const DiscoveredBroker* db, const void* context) {
+        EXPECT_EQ(context, kContext);
+        return (db->cid == kCidToFind);
+      },
+      kContext);
+  ASSERT_NE(found_db, nullptr);
+  ASSERT_EQ(found_db->cid, kCidToFind);
 }
 
 TEST_F(TestDiscoveredBroker, ConvertToDiscInfoWorks)

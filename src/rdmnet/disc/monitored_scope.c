@@ -114,6 +114,45 @@ void scope_monitor_for_each(ScopeMonitorRefFunction func)
   }
 }
 
+RdmnetScopeMonitorRef* scope_monitor_find(ScopeMonitorRefPredicateFunction predicate, const void* context)
+{
+  RDMNET_ASSERT(predicate);
+
+  for (void** ref_ptr = scope_monitor_refs.refs; ref_ptr < scope_monitor_refs.refs + scope_monitor_refs.num_refs;
+       ++ref_ptr)
+  {
+    if (predicate(*ref_ptr, context))
+      return *ref_ptr;
+  }
+  return NULL;
+}
+
+bool scope_monitor_and_discovered_broker_find(ScopeMonitorAndDBPredicateFunction predicate,
+                                              const void*                        context,
+                                              RdmnetScopeMonitorRef**            found_ref,
+                                              DiscoveredBroker**                 found_db)
+{
+  RDMNET_ASSERT(predicate);
+  RDMNET_ASSERT(found_ref);
+  RDMNET_ASSERT(found_db);
+
+  for (void** ref_ptr = scope_monitor_refs.refs; ref_ptr < scope_monitor_refs.refs + scope_monitor_refs.num_refs;
+       ++ref_ptr)
+  {
+    RdmnetScopeMonitorRef* ref = *(RdmnetScopeMonitorRef**)ref_ptr;
+    for (DiscoveredBroker* db = ref->broker_list; db; db = db->next)
+    {
+      if (predicate(ref, db, context))
+      {
+        *found_ref = ref;
+        *found_db = db;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 /* Removes an entry from scope_ref_list. Assumes a lock is already taken. */
 void scope_monitor_remove(const RdmnetScopeMonitorRef* ref)
 {

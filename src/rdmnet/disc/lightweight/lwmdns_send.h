@@ -31,7 +31,9 @@ extern "C" {
 etcpal_error_t lwmdns_send_module_init(const RdmnetNetintConfig* netint_config);
 void           lwmdns_send_module_deinit(void);
 
-etcpal_error_t lwmdns_send_query(const RdmnetScopeMonitorRef* ref);
+void lwmdns_send_ptr_query(const RdmnetScopeMonitorRef* ref);
+void lwmdns_send_any_query_on_service(const DiscoveredBroker* db);
+void lwmdns_send_any_query_on_hostname(const DiscoveredBroker* db);
 
 #ifdef __cplusplus
 }
