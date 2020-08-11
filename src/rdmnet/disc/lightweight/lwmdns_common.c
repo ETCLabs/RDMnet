@@ -101,8 +101,13 @@ static bool parse_manufacturer_item(const TxtRecordItemRef* item,
                                     DiscoveredBroker*       db,
                                     txt_keys_found_mask_t*  found_mask);
 static int  binary_atoi(const uint8_t* ascii_val, uint8_t ascii_val_len);
+static bool txt_item_matches_key(const TxtRecordItemRef* item, const char* key, size_t key_static_size);
+static bool txt_item_value_matches_string(const TxtRecordItemRef* item, const char* value);
 
 static bool get_domain_name_label(const uint8_t* buf_begin, const uint8_t* name_begin, DomainNameLabel* label);
+static bool domain_name_label_matches_string(const DomainNameLabel* label,
+                                             const char*            string,
+                                             size_t                 string_static_size);
 static bool is_rdmnet_service_type_and_domain(const uint8_t* buf_begin, DomainNameLabel* last_non_service_label);
 
 /******************************************************************************
@@ -418,10 +423,7 @@ txt_record_parse_result_t lwmdns_txt_record_to_broker_info(const uint8_t*    txt
 
 bool parse_txt_vers(const TxtRecordItemRef* item)
 {
-  if (item->key_len != sizeof(E133_TXT_VERS_KEY) - 1)
-    return false;
-
-  if (memcmp(item->key, E133_TXT_VERS_KEY, sizeof(E133_TXT_VERS_KEY) - 1) != 0)
+  if (!txt_item_matches_key(item, E133_TXT_VERS_KEY, sizeof(E133_TXT_VERS_KEY)))
     return false;
 
   if (binary_atoi(item->value, item->value_len) != E133_DNSSD_TXTVERS)
@@ -432,47 +434,20 @@ bool parse_txt_vers(const TxtRecordItemRef* item)
 
 bool parse_txt_item(const TxtRecordItemRef* item, DiscoveredBroker* db, txt_keys_found_mask_t* found_mask)
 {
-  // E133Scope
-  if (item->key_len == sizeof(E133_TXT_SCOPE_KEY) - 1 &&
-      memcmp(item->key, E133_TXT_SCOPE_KEY, sizeof(E133_TXT_SCOPE_KEY) - 1) == 0)
-  {
+  if (txt_item_matches_key(item, E133_TXT_SCOPE_KEY, sizeof(E133_TXT_SCOPE_KEY)))
     return parse_e133_scope_item(item, db, found_mask);
-  }
-  // E133Vers
-  else if (item->key_len == sizeof(E133_TXT_E133VERS_KEY) - 1 &&
-           memcmp(item->key, E133_TXT_E133VERS_KEY, sizeof(E133_TXT_E133VERS_KEY) - 1) == 0)
-  {
+  else if (txt_item_matches_key(item, E133_TXT_E133VERS_KEY, sizeof(E133_TXT_E133VERS_KEY)))
     return parse_e133_vers_item(item, db, found_mask);
-  }
-  // CID
-  else if (item->key_len == sizeof(E133_TXT_CID_KEY) - 1 &&
-           memcmp(item->key, E133_TXT_CID_KEY, sizeof(E133_TXT_CID_KEY) - 1) == 0)
-  {
+  else if (txt_item_matches_key(item, E133_TXT_CID_KEY, sizeof(E133_TXT_CID_KEY)))
     return parse_cid_item(item, db, found_mask);
-  }
-  // UID
-  else if (item->key_len == sizeof(E133_TXT_UID_KEY) - 1 &&
-           memcmp(item->key, E133_TXT_UID_KEY, sizeof(E133_TXT_UID_KEY) - 1) == 0)
-  {
+  else if (txt_item_matches_key(item, E133_TXT_UID_KEY, sizeof(E133_TXT_UID_KEY)))
     return parse_uid_item(item, db, found_mask);
-  }
-  // Model
-  else if (item->key_len == sizeof(E133_TXT_MODEL_KEY) - 1 &&
-           memcmp(item->key, E133_TXT_MODEL_KEY, sizeof(E133_TXT_MODEL_KEY) - 1) == 0)
-  {
+  else if (txt_item_matches_key(item, E133_TXT_MODEL_KEY, sizeof(E133_TXT_MODEL_KEY)))
     return parse_model_item(item, db, found_mask);
-  }
-  // Manufacturer
-  else if (item->key_len == sizeof(E133_TXT_MANUFACTURER_KEY) - 1 &&
-           memcmp(item->key, E133_TXT_MANUFACTURER_KEY, sizeof(E133_TXT_MANUFACTURER_KEY) - 1) == 0)
-  {
+  else if (txt_item_matches_key(item, E133_TXT_MANUFACTURER_KEY, sizeof(E133_TXT_MANUFACTURER_KEY)))
     return parse_manufacturer_item(item, db, found_mask);
-  }
-  // Additional/unknown
   else
-  {
     return discovered_broker_add_binary_txt_record_item(db, item->key, item->key_len, item->value, item->value_len);
-  }
 }
 
 bool parse_e133_scope_item(const TxtRecordItemRef* item, DiscoveredBroker* db, txt_keys_found_mask_t* found_mask)
@@ -480,7 +455,7 @@ bool parse_e133_scope_item(const TxtRecordItemRef* item, DiscoveredBroker* db, t
   if (item->value_len > 0 && item->value_len <= E133_SCOPE_STRING_PADDED_LENGTH - 1)
   {
     *found_mask |= TXT_KEY_E133SCOPE_FOUND_MASK;
-    if (strlen(db->scope) != item->value_len || memcmp(db->scope, item->value, item->value_len) != 0)
+    if (!txt_item_value_matches_string(item, db->scope))
     {
       memcpy(db->scope, item->value, item->value_len);
       db->scope[item->value_len] = '\0';
@@ -554,7 +529,7 @@ bool parse_model_item(const TxtRecordItemRef* item, DiscoveredBroker* db, txt_ke
   if (item->value_len > 0 && item->value_len < E133_MODEL_STRING_PADDED_LENGTH)
   {
     *found_mask |= TXT_KEY_MODEL_FOUND_MASK;
-    if (strlen(db->model) != item->value_len || memcmp(db->model, item->value, item->value_len) != 0)
+    if (!txt_item_value_matches_string(item, db->model))
     {
       memcpy(db->model, item->value, item->value_len);
       db->model[item->value_len] = '\0';
@@ -569,7 +544,7 @@ bool parse_manufacturer_item(const TxtRecordItemRef* item, DiscoveredBroker* db,
   if (item->value_len > 0 && item->value_len < E133_MANUFACTURER_STRING_PADDED_LENGTH)
   {
     *found_mask |= TXT_KEY_MANUF_FOUND_MASK;
-    if (strlen(db->manufacturer) != item->value_len || memcmp(db->manufacturer, item->value, item->value_len) != 0)
+    if (!txt_item_value_matches_string(item, db->manufacturer))
     {
       memcpy(db->manufacturer, item->value, item->value_len);
       db->manufacturer[item->value_len] = '\0';
@@ -605,6 +580,16 @@ int binary_atoi(const uint8_t* ascii_val, uint8_t ascii_val_len)
   return res;
 }
 
+bool txt_item_matches_key(const TxtRecordItemRef* item, const char* key, size_t key_static_size)
+{
+  return (item->key_len == key_static_size - 1 && memcmp(item->key, key, key_static_size - 1) == 0);
+}
+
+bool txt_item_value_matches_string(const TxtRecordItemRef* item, const char* value)
+{
+  return (strlen(value) == item->value_len && memcmp(item->value, value, item->value_len) == 0);
+}
+
 bool get_domain_name_label(const uint8_t* buf_begin, const uint8_t* name_ptr, DomainNameLabel* label)
 {
   const uint8_t* next_length_offset = NULL;
@@ -625,27 +610,32 @@ bool get_domain_name_label(const uint8_t* buf_begin, const uint8_t* name_ptr, Do
   return true;
 }
 
+bool domain_name_label_matches_string(const DomainNameLabel* label, const char* string, size_t string_static_size)
+{
+  return (label->length == string_static_size - 1 && memcmp(label->label, string, string_static_size - 1) == 0);
+}
+
 bool is_rdmnet_service_type_and_domain(const uint8_t* buf_begin, DomainNameLabel* last_non_service_label)
 {
   DomainNameLabel label = *last_non_service_label;
 
   // Compare the service type (e.g. _rdmnet)
-  if (!get_domain_name_label(buf_begin, NULL, &label) || (label.length != (sizeof("_rdmnet") - 1)) ||
-      memcmp(label.label, "_rdmnet", sizeof("_rdmnet") - 1) != 0)
+  if (!get_domain_name_label(buf_begin, NULL, &label) ||
+      !domain_name_label_matches_string(&label, "_rdmnet", sizeof("_rdmnet")))
   {
     return false;
   }
 
   // Compare the service protocol (e.g. _tcp)
-  if (!get_domain_name_label(buf_begin, NULL, &label) || (label.length != (sizeof("_tcp") - 1)) ||
-      memcmp(label.label, "_tcp", sizeof("_tcp") - 1) != 0)
+  if (!get_domain_name_label(buf_begin, NULL, &label) ||
+      !domain_name_label_matches_string(&label, "_tcp", sizeof("_tcp")))
   {
     return false;
   }
 
   // Compare the search domain (e.g. local)
-  if (!get_domain_name_label(buf_begin, NULL, &label) || (label.length != (sizeof("local") - 1)) ||
-      memcmp(label.label, "local", sizeof("local") - 1) != 0)
+  if (!get_domain_name_label(buf_begin, NULL, &label) ||
+      !domain_name_label_matches_string(&label, "local", sizeof("local")))
   {
     return false;
   }
