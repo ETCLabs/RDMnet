@@ -26,6 +26,8 @@
 
 ClientPushResult BrokerClient::Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg)
 {
+  if (marked_for_destruction)
+    return ClientPushResult::Error;
   if (max_q_size != 0 && broker_msgs_.size() >= max_q_size)
     return ClientPushResult::QueueFull;
 
@@ -176,6 +178,8 @@ void BrokerClient::ApplyDestroyAction(const etcpal::Uuid&        broker_cid,
 
 ClientPushResult RPTClient::Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg)
 {
+  if (marked_for_destruction)
+    return ClientPushResult::Error;
   if (broker_msgs_.size() + status_msgs_.size() >= max_q_size)
     return ClientPushResult::QueueFull;
 
@@ -212,10 +216,10 @@ ClientPushResult RPTController::Push(BrokerClient::Handle /*from_client*/,
                                      const etcpal::Uuid& sender_cid,
                                      const RptMessage&   msg)
 {
-  if (max_q_size != 0 && (status_msgs_.size() + broker_msgs_.size() + rpt_msgs_.size()) >= max_q_size)
-  {
+  if (marked_for_destruction)
+    return ClientPushResult::Error;
+  if (!HasRoomToPush())
     return ClientPushResult::QueueFull;
-  }
 
   ClientPushResult res = ClientPushResult::Error;
 
@@ -270,17 +274,17 @@ ClientPushResult RPTController::Push(const etcpal::Uuid& sender_cid, const Broke
 {
   if (marked_for_destruction)
     return ClientPushResult::Error;
-
-  if (max_q_size != 0 && (status_msgs_.size() + broker_msgs_.size() + rpt_msgs_.size()) >= max_q_size)
-  {
+  if (!HasRoomToPush())
     return ClientPushResult::QueueFull;
-  }
+
   return BrokerClient::PushPostSizeCheck(sender_cid, msg);
 }
 
 ClientPushResult RPTController::Push(const etcpal::Uuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg)
 {
-  if (max_q_size != 0 && (status_msgs_.size() + broker_msgs_.size() + rpt_msgs_.size()) >= max_q_size)
+  if (marked_for_destruction)
+    return ClientPushResult::Error;
+  if (!HasRoomToPush())
     return ClientPushResult::QueueFull;
 
   return PushPostSizeCheck(sender_cid, header, msg);
@@ -335,6 +339,11 @@ bool RPTController::Send(const etcpal::Uuid& broker_cid)
   return false;
 }
 
+bool RPTController::HasRoomToPush()
+{
+  return (max_q_size == 0 || (status_msgs_.size() + broker_msgs_.size() + rpt_msgs_.size()) < max_q_size);
+}
+
 void RPTController::ClearAllQueues()
 {
   rpt_msgs_.clear();
@@ -346,10 +355,10 @@ ClientPushResult RPTDevice::Push(BrokerClient::Handle from_client,
                                  const etcpal::Uuid&  sender_cid,
                                  const RptMessage&    msg)
 {
-  if (max_q_size != 0 && (status_msgs_.size() + broker_msgs_.size() + rpt_msgs_.size()) >= max_q_size)
-  {
+  if (marked_for_destruction)
+    return ClientPushResult::Error;
+  if (!HasRoomToPush())
     return ClientPushResult::QueueFull;
-  }
 
   ClientPushResult res = ClientPushResult::Error;
 
@@ -383,10 +392,11 @@ ClientPushResult RPTDevice::Push(BrokerClient::Handle from_client,
 
 ClientPushResult RPTDevice::Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg)
 {
-  if (max_q_size != 0 && (status_msgs_.size() + broker_msgs_.size() + rpt_msgs_.size()) >= max_q_size)
-  {
+  if (marked_for_destruction)
+    return ClientPushResult::Error;
+  if (!HasRoomToPush())
     return ClientPushResult::QueueFull;
-  }
+
   return BrokerClient::PushPostSizeCheck(sender_cid, msg);
 }
 
@@ -444,6 +454,11 @@ bool RPTDevice::Send(const etcpal::Uuid& broker_cid)
     }
   }
   return false;
+}
+
+bool RPTDevice::HasRoomToPush()
+{
+  return (max_q_size == 0 || (status_msgs_.size() + broker_msgs_.size() + rpt_msgs_.size()) < max_q_size);
 }
 
 void RPTDevice::ClearAllQueues()

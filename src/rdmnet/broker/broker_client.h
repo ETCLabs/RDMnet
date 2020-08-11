@@ -259,6 +259,7 @@ public:
   virtual bool             Send(const etcpal::Uuid& broker_cid) override;
 
 protected:
+  bool         HasRoomToPush();
   virtual void ClearAllQueues();
 
   std::deque<MessageRef> rpt_msgs_;
@@ -280,6 +281,7 @@ public:
   virtual bool             Send(const etcpal::Uuid& broker_cid) override;
 
 protected:
+  bool         HasRoomToPush();
   virtual void ClearAllQueues();
 
   // A special queue-like class that organizes messages by source controller for fair scheduling.
