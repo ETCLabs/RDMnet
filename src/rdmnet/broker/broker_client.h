@@ -41,11 +41,12 @@
 
 struct MessageRef
 {
-  MessageRef() : size_sent(0) {}
+  MessageRef() = default;
+  MessageRef(size_t alloc_size) : data(new uint8_t[alloc_size]) {}
 
   std::unique_ptr<uint8_t[]> data;
-  size_t                     size;
-  size_t                     size_sent;
+  size_t                     size{0};
+  size_t                     size_sent{0};
 };
 
 // RPT RDM messages are two sets of data, the RPT header and the RDM message.

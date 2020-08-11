@@ -76,13 +76,12 @@ ClientPushResult BrokerClient::PushPostSizeCheck(const etcpal::Uuid& sender_cid,
   if (marked_for_destruction)
     return ClientPushResult::Error;
 
-  MessageRef       to_push;
   ClientPushResult res = ClientPushResult::Error;
 
   switch (msg.vector)
   {
-    case VECTOR_BROKER_CONNECT_REPLY:
-      to_push.data.reset(new uint8_t[BROKER_CONNECT_REPLY_FULL_MSG_SIZE]);
+    case VECTOR_BROKER_CONNECT_REPLY: {
+      MessageRef to_push(BROKER_CONNECT_REPLY_FULL_MSG_SIZE);
       if (to_push.data)
       {
         to_push.size = rc_broker_pack_connect_reply(to_push.data.get(), BROKER_CONNECT_REPLY_FULL_MSG_SIZE,
@@ -93,7 +92,8 @@ ClientPushResult BrokerClient::PushPostSizeCheck(const etcpal::Uuid& sender_cid,
           res = ClientPushResult::Ok;
         }
       }
-      break;
+    }
+    break;
     case VECTOR_BROKER_CONNECTED_CLIENT_LIST:
     case VECTOR_BROKER_CLIENT_ADD:
     case VECTOR_BROKER_CLIENT_REMOVE:
@@ -102,7 +102,7 @@ ClientPushResult BrokerClient::PushPostSizeCheck(const etcpal::Uuid& sender_cid,
       {
         const RdmnetRptClientList* rpt_list = BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&msg));
         size_t                     bufsize = rc_broker_get_rpt_client_list_buffer_size(rpt_list->num_client_entries);
-        to_push.data.reset(new uint8_t[bufsize]);
+        MessageRef                 to_push(bufsize);
         if (to_push.data)
         {
           to_push.size = rc_broker_pack_rpt_client_list(to_push.data.get(), bufsize, &sender_cid.get(), msg.vector,
@@ -117,8 +117,8 @@ ClientPushResult BrokerClient::PushPostSizeCheck(const etcpal::Uuid& sender_cid,
       // else TODO EPT
       break;
     }
-    case VECTOR_BROKER_DISCONNECT:
-      to_push.data.reset(new uint8_t[BROKER_DISCONNECT_FULL_MSG_SIZE]);
+    case VECTOR_BROKER_DISCONNECT: {
+      MessageRef to_push(BROKER_DISCONNECT_FULL_MSG_SIZE);
       if (to_push.data)
       {
         to_push.size = rc_broker_pack_disconnect(to_push.data.get(), BROKER_DISCONNECT_FULL_MSG_SIZE, &sender_cid.get(),
@@ -129,7 +129,8 @@ ClientPushResult BrokerClient::PushPostSizeCheck(const etcpal::Uuid& sender_cid,
           res = ClientPushResult::Ok;
         }
       }
-      break;
+    }
+    break;
     default:
       break;
   }
@@ -186,10 +187,9 @@ ClientPushResult RPTClient::PushPostSizeCheck(const etcpal::Uuid& sender_cid,
                                               const RptStatusMsg& msg)
 {
   ClientPushResult res = ClientPushResult::Error;
-  MessageRef       to_push;
 
-  size_t bufsize = rc_rpt_get_status_buffer_size(&msg);
-  to_push.data.reset(new uint8_t[bufsize]);
+  size_t     bufsize = rc_rpt_get_status_buffer_size(&msg);
+  MessageRef to_push(bufsize);
   if (to_push.data)
   {
     to_push.size = rc_rpt_pack_status(to_push.data.get(), bufsize, &sender_cid.get(), &header, &msg);
@@ -222,9 +222,8 @@ ClientPushResult RPTController::Push(BrokerClient::Handle /*from_client*/,
   switch (msg.vector)
   {
     case VECTOR_RPT_REQUEST: {
-      MessageRef to_push;
       size_t     bufsize = rc_rpt_get_request_buffer_size(RPT_GET_RDM_BUF_LIST(&msg)->rdm_buffers);
-      to_push.data.reset(new uint8_t[bufsize]);
+      MessageRef to_push(bufsize);
       if (to_push.data)
       {
         to_push.size = rc_rpt_pack_request(to_push.data.get(), bufsize, &sender_cid.get(), &msg.header,
@@ -243,12 +242,11 @@ ClientPushResult RPTController::Push(BrokerClient::Handle /*from_client*/,
       break;
 
     case VECTOR_RPT_NOTIFICATION: {
-      MessageRef       to_push;
       const RdmBuffer* buffers = RPT_GET_RDM_BUF_LIST(&msg)->rdm_buffers;
       const size_t     num_buffers = RPT_GET_RDM_BUF_LIST(&msg)->num_rdm_buffers;
 
-      size_t bufsize = rc_rpt_get_notification_buffer_size(buffers, num_buffers);
-      to_push.data.reset(new uint8_t[bufsize]);
+      size_t     bufsize = rc_rpt_get_notification_buffer_size(buffers, num_buffers);
+      MessageRef to_push(bufsize);
       if (to_push.data)
       {
         to_push.size =
@@ -362,9 +360,8 @@ ClientPushResult RPTDevice::Push(BrokerClient::Handle from_client,
       break;
 
     case VECTOR_RPT_REQUEST: {
-      MessageRef to_push;
       size_t     bufsize = rc_rpt_get_request_buffer_size(RPT_GET_RDM_BUF_LIST(&msg)->rdm_buffers);
-      to_push.data.reset(new uint8_t[bufsize]);
+      MessageRef to_push(bufsize);
       if (to_push.data)
       {
         to_push.size = rc_rpt_pack_request(to_push.data.get(), bufsize, &sender_cid.get(), &msg.header,
