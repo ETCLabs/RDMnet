@@ -127,7 +127,7 @@ def prompt_to_continue():
     return True if choice == 'y' else False
 
 
-def commit_and_tag(repo, new_version):
+def commit_and_tag(repo, new_version, release_build):
     """Commit the updated version files and tag the version."""
     index = repo.index
 
@@ -137,9 +137,13 @@ def commit_and_tag(repo, new_version):
     index.add(out_file_abs_paths)
 
     # Commit and tag
-    vers_string = '{}.{}.{}.{}'.format(new_version[0], new_version[1], new_version[2], new_version[3])
-    index.commit(COMMIT_MSG_TEMPLATE.format(vers_string))
-    repo.create_tag('v' + vers_string, message=TAG_MSG_TEMPLATE.format(vers_string))
+    vers_string_long = f'{new_version[0]}.{new_version[1]}.{new_version[2]}.{new_version[3]}'
+    vers_string_short = f'{new_version[0]}.{new_version[1]}.{new_version[2]}'
+
+    index.commit(COMMIT_MSG_TEMPLATE.format(vers_string_long))
+    repo.create_tag('v' + vers_string_long, message=TAG_MSG_TEMPLATE.format(vers_string_long))
+    if release_build:
+        repo.create_tag('v' + vers_string_short, message=RELEASE_TAG_MSG_TEMPLATE.format(vers_string_short))
 
 
 def main():
@@ -148,6 +152,7 @@ def main():
     # Parse the command-line arguments.
     parser = argparse.ArgumentParser(description='Create a new versioned build of RDMnet')
     parser.add_argument('new_version', help='New version number (format M.m.p.b)')
+    parser.add_argument('-r', '--release', action='store_true', help='Tag a release build of RDM.')
     args = parser.parse_args()
 
     new_version = parse_version(args.new_version)
@@ -167,9 +172,13 @@ def main():
     if not prompt_to_continue():
         sys.exit(0)
 
-    commit_and_tag(rdmnet_repo, new_version)
+    commit_and_tag(rdmnet_repo, new_version, args.release)
 
     print("Done - now push using 'git push origin [branch] --tags'.")
+    print("Then, to build and deploy the binary packages:")
+    print("* Go to https://dev.azure.com/ETCLabs/RDMnet/_build?definitionId=2")
+    print('* Click "Run pipeline"')
+    print(f'* Enter "refs/tags/v{new_version[0]}/{new_version[1]}/{new_version[2]}/{new_version[3]}" for the source branch/tag.')
 
 
 if __name__ == '__main__':
