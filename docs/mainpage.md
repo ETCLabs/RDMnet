@@ -70,16 +70,11 @@ RDMnet requires a DNS-SD library. It is ported to use the following providers:
 - On Linux:
   + [avahi-client](https://www.avahi.org/) v0.7
     * For compiling RDMnet on Debian-based distributions: `sudo apt-get install libavahi-client-dev`
+- On other platforms:
+  + RDMnet includes its own lightweight implementation of mDNS/DNS-SD querying functionality that
+    is used on lower-level RTOS targets.
 
 ### Qt
 
 The controller example application depends on Qt 5.9.7 or higher. You can download the open-source 
 version of Qt without an account [here](https://www.qt.io/download).
-
-### Platform Dependencies
-
-The platform ports of RDMnet have the following dependencies:
-* Windows
-  + Windows 7 or 10
-* macOS
-  + macOS 10.14 (Mojave) or greater

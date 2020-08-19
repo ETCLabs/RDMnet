@@ -6,12 +6,17 @@ various CI configurations, printing warnings in a format that can be parsed by A
 the addition of language selector panels on the how-to markdown pages.
 """
 
+import argparse
 import os
 import re
 import shutil
 import subprocess
 import sys
 import time
+
+parser = argparse.ArgumentParser(description="Generate the RDMnet documentation")
+parser.add_argument("-r", "--release", help="The release number that this documentation is being generated for.")
+args = parser.parse_args()
 
 THIS_SCRIPT_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 
@@ -102,6 +107,10 @@ if os.getenv("BUILD_REASON", "IndividualCI") == "PullRequest":
     output_dir = "build/{}/docs/stage/{}".format(
         os.getenv("GH_REPO_NAME", "RDMnet"), os.getenv("SYSTEM_PULLREQUEST_PULLREQUESTNUMBER"),
     )
+elif args.release:
+    project_number = args.release
+    (vers_maj, vers_min, _) = args.release.split(".")
+    output_dir = "build/{}/docs/v{}".format(os.getenv("GH_REPO_NAME", "RDMnet"), f"{vers_maj}.{vers_min}")
 else:
     project_number = "HEAD (unstable)"
     output_dir = "build/{}/docs/head".format(os.getenv("GH_REPO_NAME", "RDMnet"))

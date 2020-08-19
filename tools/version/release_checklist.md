@@ -25,6 +25,7 @@
   * Follow `tools/ci/publish_docs.sh` manually, except replace "head" with version number in the
     form "vM.m"
   * Add the version number to `versions.txt` on the `gh-pages` branch and mark it as latest
+  * Prune any unused stage/ directories on the `gh-pages` branch.
   * `PROJECT_NUMBER` in the Doxyfile should be correct but might need to be updated for patch
     versions
 - [ ] Merge changes to `stable`
