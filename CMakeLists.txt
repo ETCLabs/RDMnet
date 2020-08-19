@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.12 CACHE STRING "Minimum macOS version targeted by RDMnet on macOS")
-project(RDMnet VERSION 0.3.0)
+project(RDMnet VERSION 0.4.0)
 
 # Sometimes the seems to be some weirdness with drive letter capitalization on Windows, so do a
 # case-insensitive comparision

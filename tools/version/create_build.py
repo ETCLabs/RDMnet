@@ -178,7 +178,7 @@ def main():
     print("Then, to build and deploy the binary packages:")
     print("* Go to https://dev.azure.com/ETCLabs/RDMnet/_build?definitionId=2")
     print('* Click "Run pipeline"')
-    print(f'* Enter "refs/tags/v{new_version[0]}/{new_version[1]}/{new_version[2]}/{new_version[3]}" for the source branch/tag.')
+    print(f'* Enter "refs/tags/v{new_version[0]}.{new_version[1]}.{new_version[2]}.{new_version[3]}" for the source branch/tag.')
 
 
 if __name__ == '__main__':
