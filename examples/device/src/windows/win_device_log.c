@@ -110,7 +110,7 @@ void device_log_init(void)
       break;
   }
 
-  s_device_log_params.action = kEtcPalLogCreateHumanReadable;
+  s_device_log_params.action = ETCPAL_LOG_CREATE_HUMAN_READABLE;
   s_device_log_params.log_fn = device_log_callback;
   s_device_log_params.log_mask = ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG);
   s_device_log_params.time_fn = device_time_callback;

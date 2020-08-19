@@ -159,7 +159,7 @@ WindowsLog::WindowsLog()
       break;
   }
 
-  logger_.SetLogAction(kEtcPalLogCreateHumanReadable).SetLogMask(ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG)).Startup(*this);
+  logger_.SetLogAction(ETCPAL_LOG_CREATE_HUMAN_READABLE).SetLogMask(ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG)).Startup(*this);
 }
 
 WindowsLog::~WindowsLog()

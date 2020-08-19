@@ -128,7 +128,9 @@ int wmain(int argc, wchar_t* argv[])
 
   ManagerLogHandler log_handler;
   etcpal::Logger    logger;
-  logger.SetLogAction(kEtcPalLogCreateHumanReadable).SetLogMask(ETCPAL_LOG_UPTO(ETCPAL_LOG_INFO)).Startup(log_handler);
+  logger.SetLogAction(ETCPAL_LOG_CREATE_HUMAN_READABLE)
+      .SetLogMask(ETCPAL_LOG_UPTO(ETCPAL_LOG_INFO))
+      .Startup(log_handler);
 
   if (!mgr.Startup(logger))
   {

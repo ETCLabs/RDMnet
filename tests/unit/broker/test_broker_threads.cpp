@@ -20,11 +20,17 @@
 #include "broker_threads.h"
 
 #include "gmock/gmock.h"
+#include "fff.h"
 #include "etcpal_mock/thread.h"
 #include "etcpal_mock/socket.h"
 
 using testing::_;
 using testing::Return;
+
+// TODO temporary workaround for etcpal_thread_timed_join not being in EtcPalMock in 0.3.0
+extern "C" {
+FAKE_VALUE_FUNC(etcpal_error_t, etcpal_thread_timed_join, etcpal_thread_t*, int);
+}
 
 class MockBrokerThreadNotify : public BrokerThreadNotify
 {
@@ -41,6 +47,7 @@ protected:
   void SetUp() override
   {
     etcpal_thread_reset_all_fakes();
+    RESET_FAKE(etcpal_thread_timed_join);  // TODO remove
     etcpal_socket_reset_all_fakes();
   }
 };

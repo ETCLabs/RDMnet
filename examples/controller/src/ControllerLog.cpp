@@ -85,7 +85,7 @@ ControllerLog::ControllerLog()
   if (!file_name_.isEmpty())
     file_.open(file_name_.toStdString().c_str(), std::fstream::out);
 
-  logger_.SetLogAction(kEtcPalLogCreateHumanReadable).SetLogMask(ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG)).Startup(*this);
+  logger_.SetLogAction(ETCPAL_LOG_CREATE_HUMAN_READABLE).SetLogMask(ETCPAL_LOG_UPTO(ETCPAL_LOG_DEBUG)).Startup(*this);
 
   logger_.Info("Starting RDMnet Controller...");
 }
