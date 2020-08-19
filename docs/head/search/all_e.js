@@ -1,5 +1,6 @@
 var searchData=
 [
+  ['os_20abstraction_20modules',['OS Abstraction Modules',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__os.html',1,'']]],
   ['ok',['Ok',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#acbb5c12c9926c6fc2722da18881b8a49',1,'etcpal::Error']]],
   ['onoff',['onoff',['https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_linger.html#a7730494d5c90b034d5937c758f354997',1,'EtcPalLinger']]],
   ['operator_20bool',['operator bool',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#a7990d8e87d9eab2383f94c88c23a6488',1,'etcpal::Error::operator bool()'],['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_expected.html#a7990d8e87d9eab2383f94c88c23a6488',1,'etcpal::Expected::operator bool()']]],

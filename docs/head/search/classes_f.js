@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['writeguard',['WriteGuard',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_write_guard.html',1,'etcpal']]]
+  ['virtualendpointconfig',['VirtualEndpointConfig',['../classrdmnet_1_1_virtual_endpoint_config.html',1,'rdmnet']]]
 ];

@@ -1,5 +1,6 @@
 var searchData=
 [
+  ['legacy_5fsyslog',['legacy_syslog',['https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_log_strings.html#a7c969c4f61944571b31c58080a53f968',1,'EtcPalLogStrings']]],
   ['limits',['limits',['../structrdmnet_1_1_broker_1_1_settings.html#a0179281be8c14cf532d7895c42f46a64',1,'rdmnet::Broker::Settings']]],
   ['linger',['linger',['https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_linger.html#a21667e862207c7c116b20764fcb8f931',1,'EtcPalLinger']]],
   ['link',['link',['https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_rb_node.html#a629e7a1728cfe5d93fe2381d793ef93f',1,'EtcPalRbNode']]],
