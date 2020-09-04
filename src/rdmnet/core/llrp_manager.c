@@ -20,6 +20,7 @@
 #include "rdmnet/core/llrp_manager.h"
 
 #include "etcpal/common.h"
+#include "etcpal/inet.h"
 #include "rdm/uid.h"
 #include "rdmnet/core/common.h"
 #include "rdmnet/core/llrp.h"
@@ -64,7 +65,7 @@ typedef struct RCLlrpManagerEvent
 typedef struct RCLlrpManagerKeys
 {
   EtcPalUuid                 cid;
-  const RdmnetMcastNetintId* netint;
+  const EtcPalMcastNetintId* netint;
 } RCLlrpManagerKeys;
 
 /***************************** Private macros ********************************/
@@ -240,7 +241,7 @@ void rc_llrp_manager_module_tick(void)
   rc_ref_list_for_each(&managers.active, (RCRefFunction)process_manager_state, NULL);
 }
 
-void rc_llrp_manager_data_received(const uint8_t* data, size_t data_len, const RdmnetMcastNetintId* netint)
+void rc_llrp_manager_data_received(const uint8_t* data, size_t data_len, const EtcPalMcastNetintId* netint)
 {
   RCLlrpManagerEvent event = RC_LLRP_MANAGER_EVENT_INIT;
 

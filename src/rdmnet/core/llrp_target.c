@@ -19,6 +19,7 @@
 
 #include "rdmnet/core/llrp_target.h"
 
+#include "etcpal/inet.h"
 #include "rdm/responder.h"
 #include "rdmnet/core/common.h"
 #include "rdmnet/core/mcast.h"
@@ -47,7 +48,7 @@ typedef struct LlrpTargetIncomingMessage
 {
   const uint8_t*             data;
   size_t                     data_len;
-  const RdmnetMcastNetintId* netint;
+  const EtcPalMcastNetintId* netint;
 } LlrpTargetIncomingMessage;
 
 /***************************** Private macros ********************************/
@@ -63,11 +64,11 @@ RC_DECLARE_REF_LISTS(targets, RC_MAX_LLRP_TARGETS);
 
 // Target setup and cleanup
 static etcpal_error_t setup_target_netints(RCLlrpTarget*              target,
-                                           const RdmnetMcastNetintId* netints,
+                                           const EtcPalMcastNetintId* netints,
                                            size_t                     num_netints);
-static etcpal_error_t setup_target_netint(const RdmnetMcastNetintId* netint_id, RCLlrpTargetNetintInfo* netint);
+static etcpal_error_t setup_target_netint(const EtcPalMcastNetintId* netint_id, RCLlrpTargetNetintInfo* netint);
 static void           cleanup_target_netints(RCLlrpTarget* target);
-static RCLlrpTargetNetintInfo* get_target_netint(RCLlrpTarget* target, const RdmnetMcastNetintId* id);
+static RCLlrpTargetNetintInfo* get_target_netint(RCLlrpTarget* target, const EtcPalMcastNetintId* id);
 static void                    cleanup_target_resources(RCLlrpTarget* target, const void* context);
 
 // Periodic state processing
@@ -83,14 +84,14 @@ static etcpal_error_t target_send_ack_internal(RCLlrpTarget*              target
                                                const EtcPalUuid*          dest_cid,
                                                uint32_t                   received_seq_num,
                                                const RdmCommandHeader*    received_rdm_header,
-                                               const RdmnetMcastNetintId* received_netint_id,
+                                               const EtcPalMcastNetintId* received_netint_id,
                                                const uint8_t*             response_data,
                                                uint8_t                    response_data_len);
 static etcpal_error_t target_send_nack_internal(RCLlrpTarget*              target,
                                                 const EtcPalUuid*          dest_cid,
                                                 uint32_t                   received_seq_num,
                                                 const RdmCommandHeader*    received_rdm_header,
-                                                const RdmnetMcastNetintId* received_netint_id,
+                                                const EtcPalMcastNetintId* received_netint_id,
                                                 rdm_nack_reason_t          nack_reason);
 
 // Utilities
@@ -123,7 +124,7 @@ void rc_llrp_target_module_deinit(void)
 /*
  * Initialize and add an RCLlrpTarget structure to the list to be processed as LLRP Targets.
  */
-etcpal_error_t rc_llrp_target_register(RCLlrpTarget* target, const RdmnetMcastNetintId* netints, size_t num_netints)
+etcpal_error_t rc_llrp_target_register(RCLlrpTarget* target, const EtcPalMcastNetintId* netints, size_t num_netints)
 {
   RDMNET_ASSERT(target);
 
@@ -204,7 +205,7 @@ void rc_llrp_target_module_tick(void)
   rc_ref_list_for_each(&targets.active, (RCRefFunction)process_target_state, NULL);
 }
 
-void rc_llrp_target_data_received(const uint8_t* data, size_t data_len, const RdmnetMcastNetintId* netint)
+void rc_llrp_target_data_received(const uint8_t* data, size_t data_len, const EtcPalMcastNetintId* netint)
 {
   EtcPalUuid dest_cid;
   if (rc_get_llrp_destination_cid(data, data_len, &dest_cid))
@@ -240,7 +241,7 @@ void rc_llrp_target_data_received(const uint8_t* data, size_t data_len, const Rd
   }
 }
 
-etcpal_error_t setup_target_netints(RCLlrpTarget* target, const RdmnetMcastNetintId* netints, size_t num_netints)
+etcpal_error_t setup_target_netints(RCLlrpTarget* target, const EtcPalMcastNetintId* netints, size_t num_netints)
 {
   etcpal_error_t res = kEtcPalErrOk;
 
@@ -274,7 +275,7 @@ etcpal_error_t setup_target_netints(RCLlrpTarget* target, const RdmnetMcastNetin
   else
   {
     // Check or initialize the target's network interface array.
-    const RdmnetMcastNetintId* mcast_netint_arr;
+    const EtcPalMcastNetintId* mcast_netint_arr;
     size_t                     mcast_netint_arr_size = rc_mcast_get_netint_array(&mcast_netint_arr);
 
 #if RDMNET_DYNAMIC_MEM
@@ -284,7 +285,7 @@ etcpal_error_t setup_target_netints(RCLlrpTarget* target, const RdmnetMcastNetin
 #endif
 
     target->num_netints = 0;
-    for (const RdmnetMcastNetintId* netint_id = mcast_netint_arr; netint_id < mcast_netint_arr + mcast_netint_arr_size;
+    for (const EtcPalMcastNetintId* netint_id = mcast_netint_arr; netint_id < mcast_netint_arr + mcast_netint_arr_size;
          ++netint_id)
     {
       // If the user hasn't provided a list of network interfaces to operate on, failing to
@@ -306,7 +307,7 @@ etcpal_error_t setup_target_netints(RCLlrpTarget* target, const RdmnetMcastNetin
   return res;
 }
 
-etcpal_error_t setup_target_netint(const RdmnetMcastNetintId* netint_id, RCLlrpTargetNetintInfo* netint)
+etcpal_error_t setup_target_netint(const EtcPalMcastNetintId* netint_id, RCLlrpTargetNetintInfo* netint)
 {
   netint->id = *netint_id;
 
@@ -339,7 +340,7 @@ void cleanup_target_netints(RCLlrpTarget* target)
 #endif
 }
 
-RCLlrpTargetNetintInfo* get_target_netint(RCLlrpTarget* target, const RdmnetMcastNetintId* id)
+RCLlrpTargetNetintInfo* get_target_netint(RCLlrpTarget* target, const EtcPalMcastNetintId* id)
 {
   RDMNET_ASSERT(target);
   RDMNET_ASSERT(id);
@@ -561,7 +562,7 @@ etcpal_error_t target_send_ack_internal(RCLlrpTarget*              target,
                                         const EtcPalUuid*          dest_cid,
                                         uint32_t                   received_seq_num,
                                         const RdmCommandHeader*    received_rdm_header,
-                                        const RdmnetMcastNetintId* received_netint_id,
+                                        const EtcPalMcastNetintId* received_netint_id,
                                         const uint8_t*             response_data,
                                         uint8_t                    response_data_len)
 {
@@ -592,7 +593,7 @@ etcpal_error_t target_send_nack_internal(RCLlrpTarget*              target,
                                          const EtcPalUuid*          dest_cid,
                                          uint32_t                   received_seq_num,
                                          const RdmCommandHeader*    received_rdm_header,
-                                         const RdmnetMcastNetintId* received_netint_id,
+                                         const EtcPalMcastNetintId* received_netint_id,
                                          rdm_nack_reason_t          nack_reason)
 {
   RCLlrpTargetNetintInfo* netint = get_target_netint(target, received_netint_id);

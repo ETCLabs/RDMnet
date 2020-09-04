@@ -52,7 +52,7 @@ namespace rdmnet
 /// @return etcpal::Error::Ok(): Initialization successful.
 /// @return Errors from rdmnet_init().
 inline etcpal::Error Init(const EtcPalLogParams*                  log_params = nullptr,
-                          const std::vector<RdmnetMcastNetintId>& mcast_netints = std::vector<RdmnetMcastNetintId>{})
+                          const std::vector<EtcPalMcastNetintId>& mcast_netints = std::vector<EtcPalMcastNetintId>{})
 {
   if (mcast_netints.empty())
   {
@@ -77,7 +77,7 @@ inline etcpal::Error Init(const EtcPalLogParams*                  log_params = n
 /// @return etcpal::Error::Ok(): Initialization successful.
 /// @return Errors from rdmnet_init().
 inline etcpal::Error Init(const etcpal::Logger&                   logger,
-                          const std::vector<RdmnetMcastNetintId>& mcast_netints = std::vector<RdmnetMcastNetintId>{})
+                          const std::vector<EtcPalMcastNetintId>& mcast_netints = std::vector<EtcPalMcastNetintId>{})
 {
   if (mcast_netints.empty())
   {

@@ -27,7 +27,7 @@
 #include "etcpal/cpp/inet.h"
 #include "rdmnet/common.h"
 
-extern const std::vector<RdmnetMcastNetintId> kFakeNetints;
+extern const std::vector<EtcPalMcastNetintId> kFakeNetints;
 extern const etcpal::MacAddr                  kLowestMacAddr;
 
 void SetUpFakeMcastEnvironment();

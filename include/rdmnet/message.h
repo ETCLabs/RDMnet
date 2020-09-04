@@ -29,6 +29,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "etcpal/acn_rlp.h"
+#include "etcpal/inet.h"
 #include "etcpal/uuid.h"
 #include "rdm/message.h"
 #include "rdm/uid.h"
@@ -445,7 +446,7 @@ typedef struct LlrpRdmCommand
    * An ID for the network interface on which this command was received. This helps the LLRP
    * library send the response on the same interface on which it was received.
    */
-  RdmnetMcastNetintId netint_id;
+  EtcPalMcastNetintId netint_id;
   /** The header information from the encapsulated RDM command. */
   RdmCommandHeader rdm_header;
   /** Pointer to buffer containing any associated RDM parameter data. */
@@ -465,7 +466,7 @@ typedef struct LlrpSavedRdmCommand
    * An ID for the network interface on which this command was received. This helps the LLRP
    * library send the response on the same interface on which it was received.
    */
-  RdmnetMcastNetintId netint_id;
+  EtcPalMcastNetintId netint_id;
   /** The header information from the encapsulated RDM command. */
   RdmCommandHeader rdm_header;
   /** Pointer to buffer containing any associated RDM parameter data. */

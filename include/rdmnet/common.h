@@ -355,27 +355,13 @@ typedef enum
 } rdmnet_command_class_t;
 
 /**
- * A set of identifying information for a network interface, for multicast purposes. RDMnet uses
- * two multicast protocols, LLRP and mDNS. When creating sockets to use with these protocols, the
- * interface IP addresses don't matter and the primary key for a network interface is simply a
- * combination of the interface index and the IP protocol used.
- */
-typedef struct RdmnetMcastNetintId
-{
-  /** The IP protocol used on the network interface. */
-  etcpal_iptype_t ip_type;
-  /** The index of the network interface. See @ref interface_indexes for more information. */
-  unsigned int index;
-} RdmnetMcastNetintId;
-
-/**
  * Network interface configuration information to give the RDMnet library at initialization. LLRP
  * multicast and discovery traffic will be restricted to the network interfaces given.
  */
 typedef struct RdmnetNetintConfig
 {
   /** An array of network interface IDs to which to restrict RDMnet traffic. */
-  const RdmnetMcastNetintId* netints;
+  const EtcPalMcastNetintId* netints;
   /** Size of netints array. */
   size_t num_netints;
 } RdmnetNetintConfig;

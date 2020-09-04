@@ -54,7 +54,7 @@ static etcpal_error_t register_and_save_conn(RCConnection* conn)
   return kEtcPalErrOk;
 }
 
-static etcpal_error_t register_and_save_llrp_target(RCLlrpTarget* target, const RdmnetMcastNetintId*, size_t)
+static etcpal_error_t register_and_save_llrp_target(RCLlrpTarget* target, const EtcPalMcastNetintId*, size_t)
 {
   last_llrp_target = target;
   return kEtcPalErrOk;

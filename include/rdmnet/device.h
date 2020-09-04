@@ -26,6 +26,7 @@
 #define RDMNET_DEVICE_H_
 
 #include <stdbool.h>
+#include "etcpal/inet.h"
 #include "etcpal/uuid.h"
 #include "rdm/uid.h"
 #include "rdmnet/client.h"
@@ -278,7 +279,7 @@ typedef struct RdmnetDeviceConfig
    * If NULL, the set passed to rdmnet_init() will be used, or all network interfaces on the system
    * if that was not provided.
    */
-  const RdmnetMcastNetintId* llrp_netints;
+  const EtcPalMcastNetintId* llrp_netints;
   /** (optional) The size of the llrp_netints array. */
   size_t num_llrp_netints;
 } RdmnetDeviceConfig;

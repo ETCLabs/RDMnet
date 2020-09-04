@@ -32,18 +32,18 @@ extern "C" {
 etcpal_error_t rc_mcast_module_init(const RdmnetNetintConfig* netint_config);
 void           rc_mcast_module_deinit(void);
 
-size_t               rc_mcast_get_netint_array(const RdmnetMcastNetintId** array);
-bool                 rc_mcast_netint_is_valid(const RdmnetMcastNetintId* id);
+size_t               rc_mcast_get_netint_array(const EtcPalMcastNetintId** array);
+bool                 rc_mcast_netint_is_valid(const EtcPalMcastNetintId* id);
 const EtcPalMacAddr* rc_mcast_get_lowest_mac_addr(void);
 
-etcpal_error_t rc_mcast_get_send_socket(const RdmnetMcastNetintId* id, uint16_t source_port, etcpal_socket_t* socket);
-void           rc_mcast_release_send_socket(const RdmnetMcastNetintId* id, uint16_t source_port);
+etcpal_error_t rc_mcast_get_send_socket(const EtcPalMcastNetintId* id, uint16_t source_port, etcpal_socket_t* socket);
+void           rc_mcast_release_send_socket(const EtcPalMcastNetintId* id, uint16_t source_port);
 etcpal_error_t rc_mcast_create_recv_socket(const EtcPalIpAddr* group, uint16_t port, etcpal_socket_t* socket);
 etcpal_error_t rc_mcast_subscribe_recv_socket(etcpal_socket_t            socket,
-                                              const RdmnetMcastNetintId* netint,
+                                              const EtcPalMcastNetintId* netint,
                                               const EtcPalIpAddr*        group);
 etcpal_error_t rc_mcast_unsubscribe_recv_socket(etcpal_socket_t            socket,
-                                                const RdmnetMcastNetintId* netint,
+                                                const EtcPalMcastNetintId* netint,
                                                 const EtcPalIpAddr*        group);
 
 #ifdef __cplusplus

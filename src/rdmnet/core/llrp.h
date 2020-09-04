@@ -47,8 +47,8 @@ extern const EtcPalUuid*     kLlrpBroadcastCid;
 etcpal_error_t rc_llrp_module_init(void);
 void           rc_llrp_module_deinit(void);
 
-etcpal_error_t rc_llrp_recv_netint_add(const RdmnetMcastNetintId* netint, llrp_socket_t llrp_type);
-void           rc_llrp_recv_netint_remove(const RdmnetMcastNetintId* netint, llrp_socket_t llrp_type);
+etcpal_error_t rc_llrp_recv_netint_add(const EtcPalMcastNetintId* netint, llrp_socket_t llrp_type);
+void           rc_llrp_recv_netint_remove(const EtcPalMcastNetintId* netint, llrp_socket_t llrp_type);
 
 #ifdef __cplusplus
 }

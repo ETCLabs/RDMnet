@@ -136,7 +136,7 @@ protected:
 TEST_F(TestControllerApi, CreateRegistersClientCorrectly)
 {
   rc_rpt_client_register_fake.custom_fake = [](RCClient* client, bool create_llrp_target,
-                                               const RdmnetMcastNetintId* llrp_netints, size_t num_llrp_netints) {
+                                               const EtcPalMcastNetintId* llrp_netints, size_t num_llrp_netints) {
     EXPECT_NE(client->lock, nullptr);
     EXPECT_EQ(client->type, kClientProtocolRPT);
     EXPECT_EQ(client->cid, current_test_fixture->config.cid);

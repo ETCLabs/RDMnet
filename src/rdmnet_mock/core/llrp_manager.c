@@ -35,7 +35,7 @@ DEFINE_FAKE_VALUE_FUNC(etcpal_error_t,
                        uint8_t,
                        uint32_t*);
 DEFINE_FAKE_VOID_FUNC(rc_llrp_manager_module_tick);
-DEFINE_FAKE_VOID_FUNC(rc_llrp_manager_data_received, const uint8_t*, size_t, const RdmnetMcastNetintId*);
+DEFINE_FAKE_VOID_FUNC(rc_llrp_manager_data_received, const uint8_t*, size_t, const EtcPalMcastNetintId*);
 
 void rc_llrp_manager_reset_all_fakes(void)
 {

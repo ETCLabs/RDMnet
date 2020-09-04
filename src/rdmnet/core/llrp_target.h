@@ -20,6 +20,7 @@
 #ifndef RDMNET_CORE_LLRP_TARGET_H_
 #define RDMNET_CORE_LLRP_TARGET_H_
 
+#include "etcpal/inet.h"
 #include "etcpal/timer.h"
 #include "rdmnet/llrp_target.h"
 #include "rdmnet/core/common.h"
@@ -62,7 +63,7 @@ typedef struct RCLlrpTargetCallbacks
 
 typedef struct RCLlrpTargetNetintInfo
 {
-  RdmnetMcastNetintId id;
+  EtcPalMcastNetintId id;
   etcpal_socket_t     send_sock;
   uint8_t             send_buf[LLRP_TARGET_MAX_MESSAGE_SIZE];
 
@@ -94,7 +95,7 @@ typedef struct RCLlrpTarget
 etcpal_error_t rc_llrp_target_module_init(void);
 void           rc_llrp_target_module_deinit(void);
 
-etcpal_error_t rc_llrp_target_register(RCLlrpTarget* target, const RdmnetMcastNetintId* netints, size_t num_netints);
+etcpal_error_t rc_llrp_target_register(RCLlrpTarget* target, const EtcPalMcastNetintId* netints, size_t num_netints);
 void           rc_llrp_target_unregister(RCLlrpTarget* target);
 void           rc_llrp_target_update_connection_state(RCLlrpTarget* target, bool connected_to_broker);
 
@@ -107,7 +108,7 @@ etcpal_error_t rc_llrp_target_send_nack(RCLlrpTarget*              target,
                                         rdm_nack_reason_t          nack_reason);
 
 void rc_llrp_target_module_tick(void);
-void rc_llrp_target_data_received(const uint8_t* data, size_t data_len, const RdmnetMcastNetintId* netint);
+void rc_llrp_target_data_received(const uint8_t* data, size_t data_len, const EtcPalMcastNetintId* netint);
 
 #ifdef __cplusplus
 }
