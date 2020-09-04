@@ -21,6 +21,7 @@
 
 #include "gtest/gtest.h"
 #include "fff.h"
+#include "etcpal/inet.h"
 #include "etcpal/pack.h"
 #include "etcpal_mock/timer.h"
 #include "etcpal_mock/common.h"
@@ -62,7 +63,7 @@ TEST_F(TestLwMdnsSendInit, InitWorksWithConfig)
   netint_config.netints = kFakeNetints.data();
   netint_config.num_netints = 1;
 
-  rc_mcast_get_send_socket_fake.custom_fake = [](const RdmnetMcastNetintId* netint_id, uint16_t source_port,
+  rc_mcast_get_send_socket_fake.custom_fake = [](const EtcPalMcastNetintId* netint_id, uint16_t source_port,
                                                  etcpal_socket_t* socket) {
     EXPECT_EQ(netint_id->index, kFakeNetints[0].index);
     EXPECT_EQ(netint_id->ip_type, kFakeNetints[0].ip_type);
