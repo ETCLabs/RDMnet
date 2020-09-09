@@ -191,7 +191,7 @@ var group__rdmnet__cpp__common =
       [ "HasData", "classrdmnet_1_1llrp_1_1_rdm_command.html#ac0981652f541b21dd359178dbd7eda11", null ],
       [ "IsGet", "classrdmnet_1_1llrp_1_1_rdm_command.html#a6c20ecfa9c3ef1f63060041e5130e2e2", null ],
       [ "IsSet", "classrdmnet_1_1llrp_1_1_rdm_command.html#a930b88515698cfb5f9383393d6c09409", null ],
-      [ "netint_id", "classrdmnet_1_1llrp_1_1_rdm_command.html#abda9a0384c8f0a29832b54838626ffba", null ],
+      [ "netint_id", "classrdmnet_1_1llrp_1_1_rdm_command.html#a9c3c1150cb1ded3d85ca9444d34e143e", null ],
       [ "netint_index", "classrdmnet_1_1llrp_1_1_rdm_command.html#a8574b82f4a8c06d337efc1135af8330e", null ],
       [ "netint_ip_type", "classrdmnet_1_1llrp_1_1_rdm_command.html#a3bd6fe415e391aee06a3d6cb63730662", null ],
       [ "operator=", "classrdmnet_1_1llrp_1_1_rdm_command.html#a2e18126dafe8b21666b36eff032da902", null ],
@@ -218,7 +218,7 @@ var group__rdmnet__cpp__common =
       [ "IsGet", "classrdmnet_1_1llrp_1_1_saved_rdm_command.html#ab5942a6954aaaaaac0f242a2e357d596", null ],
       [ "IsSet", "classrdmnet_1_1llrp_1_1_saved_rdm_command.html#adeb8e3b5b96ece397a8cb9a644e875cf", null ],
       [ "IsValid", "classrdmnet_1_1llrp_1_1_saved_rdm_command.html#af93d597d960ba7268fb2620d4a7af9b2", null ],
-      [ "netint_id", "classrdmnet_1_1llrp_1_1_saved_rdm_command.html#af9c88fb0411e7550cf106f6bce177eee", null ],
+      [ "netint_id", "classrdmnet_1_1llrp_1_1_saved_rdm_command.html#aa159a33fa7c14bcd5275161d68a7c847", null ],
       [ "netint_index", "classrdmnet_1_1llrp_1_1_saved_rdm_command.html#a6991ba43c1e1b4b9c5ee8b617677d88a", null ],
       [ "netint_ip_type", "classrdmnet_1_1llrp_1_1_saved_rdm_command.html#ab04dc028992c2bab1fd7f26f1b0ee06d", null ],
       [ "operator=", "classrdmnet_1_1llrp_1_1_saved_rdm_command.html#a0640effd439a873445a8f9a49f8960e6", null ],
@@ -465,7 +465,7 @@ var group__rdmnet__cpp__common =
     ] ],
     [ "ScopeHandle", "group__rdmnet__cpp__common.html#gadf5994aa4727265c21622c5a0f997ceb", null ],
     [ "Deinit", "group__rdmnet__cpp__common.html#ga630a9b2c8c84ea45bc9c2aa4672055fb", null ],
-    [ "Init", "group__rdmnet__cpp__common.html#ga29e1f681524b195a8b5767061960d8b7", null ],
-    [ "Init", "group__rdmnet__cpp__common.html#ga5938f415824a82d7789389b01345abd4", null ],
+    [ "Init", "group__rdmnet__cpp__common.html#gaf67a5727b5378a590e097df2dd9b0539", null ],
+    [ "Init", "group__rdmnet__cpp__common.html#ga33143f39de2d03ca97b963db7df4dbf1", null ],
     [ "kNullEndpoint", "group__rdmnet__cpp__common.html#gab66ff85b4e9f9a9221f3c31ff62d0c65", null ]
 ];

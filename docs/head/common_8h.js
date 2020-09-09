@@ -6,7 +6,6 @@ var common_8h =
     [ "RDMNET_SYNC_SEND_EPT_STATUS", "group__rdmnet__api__common.html#gaead1ffc05edef5d42829d8247ff558c0", null ],
     [ "RDMNET_SYNC_SEND_RDM_ACK", "group__rdmnet__api__common.html#gaf4ea2570562bd8f38159f2d7413ca188", null ],
     [ "RDMNET_SYNC_SEND_RDM_NACK", "group__rdmnet__api__common.html#ga91e96da81698ff84a605e9c21fdc46b3", null ],
-    [ "RdmnetMcastNetintId", "group__rdmnet__api__common.html#ga622515e8d0062f95e201248449580e0d", null ],
     [ "RdmnetNetintConfig", "group__rdmnet__api__common.html#gad7eaa2e7e203dec8364379769c3699dc", null ],
     [ "RdmnetSyncEptResponse", "group__rdmnet__api__common.html#ga8ab42acc61433c9f28ffdccd5282c2fe", null ],
     [ "RdmnetSyncRdmResponse", "group__rdmnet__api__common.html#ga986b8fa634550df16b69189e63275bd3", null ],

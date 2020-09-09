@@ -45,12 +45,8 @@ var group__rdmnet__api__common =
       [ "response_data_len", "struct_rdmnet_sync_ept_response.html#a5f715590acfda9084b8e6921a6beefe5", null ],
       [ "status_code", "struct_rdmnet_sync_ept_response.html#a47005d788d7e5daab00018bdb7574e0e", null ]
     ] ],
-    [ "RdmnetMcastNetintId", "struct_rdmnet_mcast_netint_id.html", [
-      [ "index", "struct_rdmnet_mcast_netint_id.html#a96926c16976f31f92fb076adf001ef94", null ],
-      [ "ip_type", "struct_rdmnet_mcast_netint_id.html#a4d56ed87c8919fe9b6e40081f3140ffd", null ]
-    ] ],
     [ "RdmnetNetintConfig", "struct_rdmnet_netint_config.html", [
-      [ "netints", "struct_rdmnet_netint_config.html#af14d06f18046f4345d29b3aef41755cf", null ],
+      [ "netints", "struct_rdmnet_netint_config.html#afdc860aa58c95fc16c3925d4d3370f06", null ],
       [ "num_netints", "struct_rdmnet_netint_config.html#a4e2166c863a92fa525273a5408c4e1e7", null ]
     ] ],
     [ "LlrpDestinationAddr", "struct_llrp_destination_addr.html", [
@@ -182,7 +178,7 @@ var group__rdmnet__api__common =
     [ "LlrpRdmCommand", "struct_llrp_rdm_command.html", [
       [ "data", "struct_llrp_rdm_command.html#a60f1091f83ec8393398deed1d2d1a37a", null ],
       [ "data_len", "struct_llrp_rdm_command.html#a763d1cac0bc8523e476f9ae7b8500ced", null ],
-      [ "netint_id", "struct_llrp_rdm_command.html#ad39302d517c6246b59a56124604b9231", null ],
+      [ "netint_id", "struct_llrp_rdm_command.html#a5a3997de8a6704fbb939261246e926dd", null ],
       [ "rdm_header", "struct_llrp_rdm_command.html#acf33c16492790e3160911c5f99a36e92", null ],
       [ "seq_num", "struct_llrp_rdm_command.html#a433153fa2fb35528a9f63dd3a48b64f4", null ],
       [ "source_cid", "struct_llrp_rdm_command.html#aa688f2c0f827d70cb107209af801368f", null ]
@@ -190,7 +186,7 @@ var group__rdmnet__api__common =
     [ "LlrpSavedRdmCommand", "struct_llrp_saved_rdm_command.html", [
       [ "data", "struct_llrp_saved_rdm_command.html#a45918b3a17e8ec7749291da088a6f8b3", null ],
       [ "data_len", "struct_llrp_saved_rdm_command.html#a4937489b97342810f9dfa7f73e4c5f4d", null ],
-      [ "netint_id", "struct_llrp_saved_rdm_command.html#ae416788cd9ea1947420d050cbbe07f4f", null ],
+      [ "netint_id", "struct_llrp_saved_rdm_command.html#ab309bc4f97e2bb652c088fe88278a5ba", null ],
       [ "rdm_header", "struct_llrp_saved_rdm_command.html#aa0ba4319bb4c7c569edf61cc5823ec3b", null ],
       [ "seq_num", "struct_llrp_saved_rdm_command.html#a7a504e2d58f615ef13e9aae517fa71d1", null ],
       [ "source_cid", "struct_llrp_saved_rdm_command.html#aa43ea8b98025c660bc2c8afe5d004c07", null ]
@@ -250,7 +246,6 @@ var group__rdmnet__api__common =
     [ "RdmnetEptData", "group__rdmnet__api__common.html#gad09ef23794c2c57b0866264ab6fc3c77", null ],
     [ "RdmnetEptStatus", "group__rdmnet__api__common.html#ga42b7ff9d931c10eda4c28655ba0b60aa", null ],
     [ "RdmnetEptSubProtocol", "group__rdmnet__api__common.html#gabb8fcfc324bf7a05246136cd267effa3", null ],
-    [ "RdmnetMcastNetintId", "group__rdmnet__api__common.html#ga622515e8d0062f95e201248449580e0d", null ],
     [ "RdmnetNetintConfig", "group__rdmnet__api__common.html#gad7eaa2e7e203dec8364379769c3699dc", null ],
     [ "RdmnetRdmCommand", "group__rdmnet__api__common.html#gad5185b3296d5b1d9ad4826aae03f6a13", null ],
     [ "RdmnetRdmResponse", "group__rdmnet__api__common.html#ga021be85136dc2e3757a03725baf9a987", null ],

@@ -10,7 +10,7 @@ var group__llrp__manager =
       [ "callbacks", "struct_llrp_manager_config.html#aacd8c71d1797bfd725d5848dd623000d", null ],
       [ "cid", "struct_llrp_manager_config.html#a68b1eac8be5285f8cdf20c94caa744ea", null ],
       [ "manu_id", "struct_llrp_manager_config.html#ab8867871acbf245a931cb57bdd7a6eee", null ],
-      [ "netint", "struct_llrp_manager_config.html#af02bdd2c50b185f560bc6b23fa5f3556", null ]
+      [ "netint", "struct_llrp_manager_config.html#abd8e9d1ed1eaa7a9461cc88858ca093e", null ]
     ] ],
     [ "LLRP_MANAGER_CONFIG_DEFAULT_INIT", "group__llrp__manager.html#ga463839b4dde4a691b121a41c4bf4a702", null ],
     [ "LLRP_MANAGER_INVALID", "group__llrp__manager.html#ga56b417bccb351a737a88b1ee11b4e355", null ],

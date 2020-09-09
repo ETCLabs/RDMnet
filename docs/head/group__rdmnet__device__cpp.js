@@ -31,7 +31,7 @@ var group__rdmnet__device__cpp =
       [ "Settings", "structrdmnet_1_1_device_1_1_settings.html#a63b83cc3b3483ba66c76a02d145403da", null ],
       [ "IsValid", "structrdmnet_1_1_device_1_1_settings.html#a3cc9ba9c04d477c53c9374a9d0405571", null ],
       [ "cid", "structrdmnet_1_1_device_1_1_settings.html#ab0c9382f704d9aa093d957c3ca7351bd", null ],
-      [ "llrp_netints", "structrdmnet_1_1_device_1_1_settings.html#a49940df3748d514b4b11ace8026c13ff", null ],
+      [ "llrp_netints", "structrdmnet_1_1_device_1_1_settings.html#a410c057d2354817c6a7e7a6ba9041dfc", null ],
       [ "physical_endpoints", "structrdmnet_1_1_device_1_1_settings.html#ad7b27ae126eab0e247113434862f728c", null ],
       [ "response_buf", "structrdmnet_1_1_device_1_1_settings.html#a302ef2e81eed8a3821484836529f7748", null ],
       [ "search_domain", "structrdmnet_1_1_device_1_1_settings.html#a9be26a4d820a603f6391f0712341adf1", null ],

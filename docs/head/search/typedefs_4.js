@@ -59,7 +59,6 @@ var searchData=
   ['rdmneteptdata',['RdmnetEptData',['../group__rdmnet__api__common.html#gad09ef23794c2c57b0866264ab6fc3c77',1,'message.h']]],
   ['rdmneteptstatus',['RdmnetEptStatus',['../group__rdmnet__api__common.html#ga42b7ff9d931c10eda4c28655ba0b60aa',1,'message.h']]],
   ['rdmneteptsubprotocol',['RdmnetEptSubProtocol',['../group__rdmnet__api__common.html#gabb8fcfc324bf7a05246136cd267effa3',1,'message.h']]],
-  ['rdmnetmcastnetintid',['RdmnetMcastNetintId',['../group__rdmnet__api__common.html#ga622515e8d0062f95e201248449580e0d',1,'common.h']]],
   ['rdmnetnetintconfig',['RdmnetNetintConfig',['../group__rdmnet__api__common.html#gad7eaa2e7e203dec8364379769c3699dc',1,'common.h']]],
   ['rdmnetphysicalendpointconfig',['RdmnetPhysicalEndpointConfig',['../group__rdmnet__device.html#ga60fef8c39bee2d09edec229004c5d952',1,'device.h']]],
   ['rdmnetphysicalendpointresponder',['RdmnetPhysicalEndpointResponder',['../group__rdmnet__device.html#ga5d918984ca29220bfe2e59e6fc4cd83c',1,'device.h']]],

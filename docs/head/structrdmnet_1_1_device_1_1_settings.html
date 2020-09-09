@@ -249,9 +249,9 @@ std::vector&lt; <a class="el" href="classrdmnet_1_1_virtual_endpoint_config.html
 std::vector&lt; <a class="el" href="classrdmnet_1_1_physical_endpoint_config.html">PhysicalEndpointConfig</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrdmnet_1_1_device_1_1_settings.html#ad7b27ae126eab0e247113434862f728c">physical_endpoints</a></td></tr>
 <tr class="memdesc:ad7b27ae126eab0e247113434862f728c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Array of configurations for physical endpoints that are present on the device at startup. <br /></td></tr>
 <tr class="separator:ad7b27ae126eab0e247113434862f728c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a49940df3748d514b4b11ace8026c13ff"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="struct_rdmnet_mcast_netint_id.html">RdmnetMcastNetintId</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrdmnet_1_1_device_1_1_settings.html#a49940df3748d514b4b11ace8026c13ff">llrp_netints</a></td></tr>
-<tr class="memdesc:a49940df3748d514b4b11ace8026c13ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">(optional) A set of network interfaces to use for the LLRP target associated with this device.  <a href="#a49940df3748d514b4b11ace8026c13ff">More...</a><br /></td></tr>
-<tr class="separator:a49940df3748d514b4b11ace8026c13ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a410c057d2354817c6a7e7a6ba9041dfc"><td class="memItemLeft" align="right" valign="top">std::vector&lt; EtcPalMcastNetintId &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrdmnet_1_1_device_1_1_settings.html#a410c057d2354817c6a7e7a6ba9041dfc">llrp_netints</a></td></tr>
+<tr class="memdesc:a410c057d2354817c6a7e7a6ba9041dfc"><td class="mdescLeft">&#160;</td><td class="mdescRight">(optional) A set of network interfaces to use for the LLRP target associated with this device.  <a href="#a410c057d2354817c6a7e7a6ba9041dfc">More...</a><br /></td></tr>
+<tr class="separator:a410c057d2354817c6a7e7a6ba9041dfc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="abc518bf17e5f4dd6d9931793e7992d91"></a>
@@ -333,20 +333,20 @@ std::vector&lt; <a class="el" href="classrdmnet_1_1_physical_endpoint_config.htm
 </div>
 </div>
 <h2 class="groupheader">Field Documentation</h2>
-<a id="a49940df3748d514b4b11ace8026c13ff"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a49940df3748d514b4b11ace8026c13ff">&#9670;&nbsp;</a></span>llrp_netints</h2>
+<a id="a410c057d2354817c6a7e7a6ba9041dfc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a410c057d2354817c6a7e7a6ba9041dfc">&#9670;&nbsp;</a></span>llrp_netints</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;<a class="el" href="struct_rdmnet_mcast_netint_id.html">RdmnetMcastNetintId</a>&gt; rdmnet::Device::Settings::llrp_netints</td>
+          <td class="memname">std::vector&lt;EtcPalMcastNetintId&gt; rdmnet::Device::Settings::llrp_netints</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>(optional) A set of network interfaces to use for the LLRP target associated with this device. </p>
-<p>If empty, the set passed to <a class="el" href="group__rdmnet__cpp__common.html#ga29e1f681524b195a8b5767061960d8b7" title="Initialize the RDMnet library. ">rdmnet::Init()</a> will be used, or all network interfaces on the system if that was not provided. </p>
+<p>If empty, the set passed to <a class="el" href="group__rdmnet__cpp__common.html#gaf67a5727b5378a590e097df2dd9b0539" title="Initialize the RDMnet library. ">rdmnet::Init()</a> will be used, or all network interfaces on the system if that was not provided. </p>
 
 </div>
 </div>

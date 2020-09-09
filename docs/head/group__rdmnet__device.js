@@ -29,7 +29,7 @@ var group__rdmnet__device =
     [ "RdmnetDeviceConfig", "struct_rdmnet_device_config.html", [
       [ "callbacks", "struct_rdmnet_device_config.html#abc6d70dbf56e1ddc2c7e4bafa71db8c1", null ],
       [ "cid", "struct_rdmnet_device_config.html#ae68596928501f9b5f49882a35470d6dc", null ],
-      [ "llrp_netints", "struct_rdmnet_device_config.html#a165b466062de4e8f35937ec7a8bfdb25", null ],
+      [ "llrp_netints", "struct_rdmnet_device_config.html#a6285754f82af8ebffc942c8b62af4361", null ],
       [ "num_llrp_netints", "struct_rdmnet_device_config.html#a6d4cbb0439785d6fa6d82a66a8a5dc89", null ],
       [ "num_physical_endpoints", "struct_rdmnet_device_config.html#ac4577e78a0af247b77bc02bbbe63fa4f", null ],
       [ "num_virtual_endpoints", "struct_rdmnet_device_config.html#aa72098b0a6479ed77f1371a8c1e04b03", null ],

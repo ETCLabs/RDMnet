@@ -361,9 +361,6 @@ Data Structures</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_sync_ept_response.html">RdmnetSyncEptResponse</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This structure should not be manipulated directly - use the macros to access it:  <a href="struct_rdmnet_sync_ept_response.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_mcast_netint_id.html">RdmnetMcastNetintId</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A set of identifying information for a network interface, for multicast purposes.  <a href="struct_rdmnet_mcast_netint_id.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_netint_config.html">RdmnetNetintConfig</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Network interface configuration information to give the RDMnet library at initialization.  <a href="struct_rdmnet_netint_config.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -519,9 +516,6 @@ typedef struct <a class="el" href="struct_rdmnet_scope_config.html">RdmnetScopeC
 <tr class="memitem:ga8ab42acc61433c9f28ffdccd5282c2fe"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct_rdmnet_sync_ept_response.html">RdmnetSyncEptResponse</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#ga8ab42acc61433c9f28ffdccd5282c2fe">RdmnetSyncEptResponse</a></td></tr>
 <tr class="memdesc:ga8ab42acc61433c9f28ffdccd5282c2fe"><td class="mdescLeft">&#160;</td><td class="mdescRight">This structure should not be manipulated directly - use the macros to access it:  <a href="#ga8ab42acc61433c9f28ffdccd5282c2fe">More...</a><br /></td></tr>
 <tr class="separator:ga8ab42acc61433c9f28ffdccd5282c2fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga622515e8d0062f95e201248449580e0d"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct_rdmnet_mcast_netint_id.html">RdmnetMcastNetintId</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#ga622515e8d0062f95e201248449580e0d">RdmnetMcastNetintId</a></td></tr>
-<tr class="memdesc:ga622515e8d0062f95e201248449580e0d"><td class="mdescLeft">&#160;</td><td class="mdescRight">A set of identifying information for a network interface, for multicast purposes.  <a href="#ga622515e8d0062f95e201248449580e0d">More...</a><br /></td></tr>
-<tr class="separator:ga622515e8d0062f95e201248449580e0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gad7eaa2e7e203dec8364379769c3699dc"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct_rdmnet_netint_config.html">RdmnetNetintConfig</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#gad7eaa2e7e203dec8364379769c3699dc">RdmnetNetintConfig</a></td></tr>
 <tr class="memdesc:gad7eaa2e7e203dec8364379769c3699dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Network interface configuration information to give the RDMnet library at initialization.  <a href="#gad7eaa2e7e203dec8364379769c3699dc">More...</a><br /></td></tr>
 <tr class="separator:gad7eaa2e7e203dec8364379769c3699dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1782,23 +1776,6 @@ const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 
 <p>A description of an EPT sub-protocol. </p>
 <p>EPT clients can implement multiple protocols, each of which is identified by a two-part identifier including an ESTA manufacturer ID and a protocol ID. </p>
-
-</div>
-</div>
-<a id="ga622515e8d0062f95e201248449580e0d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga622515e8d0062f95e201248449580e0d">&#9670;&nbsp;</a></span>RdmnetMcastNetintId</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct <a class="el" href="struct_rdmnet_mcast_netint_id.html">RdmnetMcastNetintId</a>  <a class="el" href="struct_rdmnet_mcast_netint_id.html">RdmnetMcastNetintId</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>A set of identifying information for a network interface, for multicast purposes. </p>
-<p>RDMnet uses two multicast protocols, LLRP and mDNS. When creating sockets to use with these protocols, the interface IP addresses don't matter and the primary key for a network interface is simply a combination of the interface index and the IP protocol used. </p>
 
 </div>
 </div>
