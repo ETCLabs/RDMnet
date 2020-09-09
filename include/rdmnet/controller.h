@@ -310,7 +310,7 @@ typedef struct RdmnetControllerConfig
    * controller. If NULL, the set passed to rdmnet_init() will be used, or all network interfaces
    * on the system if that was not provided.
    */
-  const RdmnetMcastNetintId* llrp_netints;
+  const EtcPalMcastNetintId* llrp_netints;
   /** (optional) The size of the llrp_netints array. */
   size_t num_llrp_netints;
 } RdmnetControllerConfig;

@@ -98,7 +98,7 @@ typedef struct LlrpManagerConfig
   /** The manager's CID. */
   EtcPalUuid cid;
   /** The network interface that this manager operates on. */
-  RdmnetMcastNetintId netint;
+  EtcPalMcastNetintId netint;
   /** The manager's ESTA manufacturer ID. */
   uint16_t manu_id;
   /** A set of callbacks for the manager to receive RDMnet notifications. */

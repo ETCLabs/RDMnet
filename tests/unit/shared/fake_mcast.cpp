@@ -23,7 +23,7 @@
 #include "gtest/gtest.h"
 
 // clang-format off
-const std::vector<RdmnetMcastNetintId> kFakeNetints = {
+const std::vector<EtcPalMcastNetintId> kFakeNetints = {
   { kEtcPalIpTypeV4, 1 },
   { kEtcPalIpTypeV6, 1 },
   { kEtcPalIpTypeV6, 2 },
@@ -32,19 +32,19 @@ const std::vector<RdmnetMcastNetintId> kFakeNetints = {
 
 const etcpal::MacAddr kLowestMacAddr = etcpal::MacAddr::FromString("00:c0:16:a8:ec:82");
 
-bool operator==(const RdmnetMcastNetintId& a, const RdmnetMcastNetintId& b)
+bool operator==(const EtcPalMcastNetintId& a, const EtcPalMcastNetintId& b)
 {
   return (a.index == b.index && a.ip_type == b.ip_type);
 }
 
 void SetUpFakeMcastEnvironment()
 {
-  rc_mcast_get_netint_array_fake.custom_fake = [](const RdmnetMcastNetintId** array) {
+  rc_mcast_get_netint_array_fake.custom_fake = [](const EtcPalMcastNetintId** array) {
     EXPECT_TRUE(array);
     *array = kFakeNetints.data();
     return kFakeNetints.size();
   };
-  rc_mcast_netint_is_valid_fake.custom_fake = [](const RdmnetMcastNetintId* id) {
+  rc_mcast_netint_is_valid_fake.custom_fake = [](const EtcPalMcastNetintId* id) {
     EXPECT_TRUE(id);
     return (std::find(kFakeNetints.begin(), kFakeNetints.end(), *id) != kFakeNetints.end());
   };

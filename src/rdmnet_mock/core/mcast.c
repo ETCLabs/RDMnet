@@ -22,26 +22,26 @@
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_mcast_module_init, const RdmnetNetintConfig*);
 DEFINE_FAKE_VOID_FUNC(rc_mcast_module_deinit);
 
-DEFINE_FAKE_VALUE_FUNC(size_t, rc_mcast_get_netint_array, const RdmnetMcastNetintId**);
-DEFINE_FAKE_VALUE_FUNC(bool, rc_mcast_netint_is_valid, const RdmnetMcastNetintId*);
+DEFINE_FAKE_VALUE_FUNC(size_t, rc_mcast_get_netint_array, const EtcPalMcastNetintId**);
+DEFINE_FAKE_VALUE_FUNC(bool, rc_mcast_netint_is_valid, const EtcPalMcastNetintId*);
 DEFINE_FAKE_VALUE_FUNC(const EtcPalMacAddr*, rc_mcast_get_lowest_mac_addr);
 
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t,
                        rc_mcast_get_send_socket,
-                       const RdmnetMcastNetintId*,
+                       const EtcPalMcastNetintId*,
                        uint16_t,
                        etcpal_socket_t*);
-DEFINE_FAKE_VOID_FUNC(rc_mcast_release_send_socket, const RdmnetMcastNetintId*, uint16_t);
+DEFINE_FAKE_VOID_FUNC(rc_mcast_release_send_socket, const EtcPalMcastNetintId*, uint16_t);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_mcast_create_recv_socket, const EtcPalIpAddr*, uint16_t, etcpal_socket_t*);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t,
                        rc_mcast_subscribe_recv_socket,
                        etcpal_socket_t,
-                       const RdmnetMcastNetintId*,
+                       const EtcPalMcastNetintId*,
                        const EtcPalIpAddr*);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t,
                        rc_mcast_unsubscribe_recv_socket,
                        etcpal_socket_t,
-                       const RdmnetMcastNetintId*,
+                       const EtcPalMcastNetintId*,
                        const EtcPalIpAddr*);
 
 void rc_mcast_reset_all_fakes(void)

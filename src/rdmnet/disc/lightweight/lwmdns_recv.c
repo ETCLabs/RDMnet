@@ -48,9 +48,9 @@ typedef struct MdnsRecvSocket
   etcpal_socket_t    socket;
   RCPolledSocketInfo poll_info;
 #if RDMNET_DYNAMIC_MEM
-  RdmnetMcastNetintId* netints;
+  EtcPalMcastNetintId* netints;
 #else
-  RdmnetMcastNetintId netints[RDMNET_MAX_MCAST_NETINTS];
+  EtcPalMcastNetintId netints[RDMNET_MAX_MCAST_NETINTS];
 #endif
   size_t num_netints;
 } MdnsRecvSocket;
@@ -75,7 +75,7 @@ static etcpal_error_t init_recv_socket(MdnsRecvSocket*           sock_struct,
                                        const RdmnetNetintConfig* netint_config);
 static etcpal_error_t setup_recv_netints(MdnsRecvSocket*            sock_struct,
                                          const EtcPalIpAddr*        mcast_group,
-                                         const RdmnetMcastNetintId* mcast_netint_arr,
+                                         const EtcPalMcastNetintId* mcast_netint_arr,
                                          size_t                     mcast_netint_arr_size,
                                          const RdmnetNetintConfig*  netint_config);
 static void           deinit_recv_socket(MdnsRecvSocket* sock_struct, const EtcPalIpAddr* mcast_group);
@@ -144,13 +144,13 @@ etcpal_error_t init_recv_socket(MdnsRecvSocket*           sock_struct,
                                 const RdmnetNetintConfig* netint_config)
 {
   // Initialize the network interface array from the global multicast network interface array.
-  const RdmnetMcastNetintId* mcast_array;
+  const EtcPalMcastNetintId* mcast_array;
   size_t                     mcast_array_size = rc_mcast_get_netint_array(&mcast_array);
 
   size_t num_netints_requested = (netint_config ? netint_config->num_netints : mcast_array_size);
 #if RDMNET_DYNAMIC_MEM
 #define DEALLOC_NETINTS() free(sock_struct->netints)
-  sock_struct->netints = (RdmnetMcastNetintId*)calloc(num_netints_requested, sizeof(RdmnetMcastNetintId));
+  sock_struct->netints = (EtcPalMcastNetintId*)calloc(num_netints_requested, sizeof(EtcPalMcastNetintId));
   if (!sock_struct->netints)
     return kEtcPalErrNoMem;
 #else
@@ -194,7 +194,7 @@ void deinit_recv_socket(MdnsRecvSocket* sock_struct, const EtcPalIpAddr* mcast_g
 
 etcpal_error_t setup_recv_netints(MdnsRecvSocket*            sock_struct,
                                   const EtcPalIpAddr*        mcast_group,
-                                  const RdmnetMcastNetintId* mcast_netint_arr,
+                                  const EtcPalMcastNetintId* mcast_netint_arr,
                                   size_t                     mcast_netint_arr_size,
                                   const RdmnetNetintConfig*  netint_config)
 {
@@ -202,7 +202,7 @@ etcpal_error_t setup_recv_netints(MdnsRecvSocket*            sock_struct,
   sock_struct->num_netints = 0;
   if (netint_config)
   {
-    for (const RdmnetMcastNetintId* netint = netint_config->netints;
+    for (const EtcPalMcastNetintId* netint = netint_config->netints;
          netint < netint_config->netints + netint_config->num_netints; ++netint)
     {
       if (netint->ip_type == mcast_group->type)
@@ -216,7 +216,7 @@ etcpal_error_t setup_recv_netints(MdnsRecvSocket*            sock_struct,
   }
   else
   {
-    for (const RdmnetMcastNetintId* netint = mcast_netint_arr; netint < mcast_netint_arr + mcast_netint_arr_size;
+    for (const EtcPalMcastNetintId* netint = mcast_netint_arr; netint < mcast_netint_arr + mcast_netint_arr_size;
          ++netint)
     {
       if (netint->ip_type == mcast_group->type)
@@ -233,7 +233,7 @@ etcpal_error_t setup_recv_netints(MdnsRecvSocket*            sock_struct,
 
 void cleanup_recv_netints(MdnsRecvSocket* sock_struct, const EtcPalIpAddr* mcast_group)
 {
-  for (RdmnetMcastNetintId* netint = sock_struct->netints; netint < sock_struct->netints + sock_struct->num_netints;
+  for (EtcPalMcastNetintId* netint = sock_struct->netints; netint < sock_struct->netints + sock_struct->num_netints;
        ++netint)
   {
     rc_mcast_unsubscribe_recv_socket(sock_struct->socket, netint, mcast_group);

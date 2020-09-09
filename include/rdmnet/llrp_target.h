@@ -113,7 +113,7 @@ typedef struct LlrpTargetConfig
    * passed to rdmnet_init() will be used, or all network interfaces on the system if that was not
    * provided.
    */
-  const RdmnetMcastNetintId* netints;
+  const EtcPalMcastNetintId* netints;
   /** (optional) The size of the netints array. */
   size_t num_netints;
 } LlrpTargetConfig;

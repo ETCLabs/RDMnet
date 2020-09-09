@@ -56,7 +56,7 @@ public:
 
   constexpr etcpal::Uuid        source_cid() const noexcept;
   constexpr uint32_t            seq_num() const noexcept;
-  constexpr RdmnetMcastNetintId netint_id() const noexcept;
+  constexpr EtcPalMcastNetintId netint_id() const noexcept;
   constexpr etcpal_iptype_t     netint_ip_type() const noexcept;
   constexpr unsigned int        netint_index() const noexcept;
 
@@ -99,7 +99,7 @@ public:
 
   constexpr etcpal::Uuid        source_cid() const noexcept;
   constexpr uint32_t            seq_num() const noexcept;
-  constexpr RdmnetMcastNetintId netint_id() const noexcept;
+  constexpr EtcPalMcastNetintId netint_id() const noexcept;
   constexpr etcpal_iptype_t     netint_ip_type() const noexcept;
   constexpr unsigned int        netint_index() const noexcept;
 
@@ -152,7 +152,7 @@ constexpr uint32_t RdmCommand::seq_num() const noexcept
 
 /// @brief Get the network interface ID on which this command was received.
 /// @details This helps the LLRP library send the response on the same interface.
-constexpr RdmnetMcastNetintId RdmCommand::netint_id() const noexcept
+constexpr EtcPalMcastNetintId RdmCommand::netint_id() const noexcept
 {
   return cmd_.netint_id;
 }
@@ -297,7 +297,7 @@ constexpr uint32_t SavedRdmCommand::seq_num() const noexcept
 
 /// @brief Get the network interface ID on which this command was received.
 /// @details This helps the LLRP library send the response on the same interface.
-constexpr RdmnetMcastNetintId SavedRdmCommand::netint_id() const noexcept
+constexpr EtcPalMcastNetintId SavedRdmCommand::netint_id() const noexcept
 {
   return cmd_.netint_id;
 }

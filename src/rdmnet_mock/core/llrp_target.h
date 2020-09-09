@@ -34,7 +34,7 @@ extern "C" {
 
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rc_llrp_target_module_init);
 DECLARE_FAKE_VOID_FUNC(rc_llrp_target_module_deinit);
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rc_llrp_target_register, RCLlrpTarget*, const RdmnetMcastNetintId*, size_t);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rc_llrp_target_register, RCLlrpTarget*, const EtcPalMcastNetintId*, size_t);
 DECLARE_FAKE_VOID_FUNC(rc_llrp_target_unregister, RCLlrpTarget*);
 DECLARE_FAKE_VOID_FUNC(rc_llrp_target_update_connection_state, RCLlrpTarget*, bool);
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t,
@@ -49,7 +49,7 @@ DECLARE_FAKE_VALUE_FUNC(etcpal_error_t,
                         const LlrpSavedRdmCommand*,
                         rdm_nack_reason_t);
 DECLARE_FAKE_VOID_FUNC(rc_llrp_target_module_tick);
-DECLARE_FAKE_VOID_FUNC(rc_llrp_target_data_received, const uint8_t*, size_t, const RdmnetMcastNetintId*);
+DECLARE_FAKE_VOID_FUNC(rc_llrp_target_data_received, const uint8_t*, size_t, const EtcPalMcastNetintId*);
 
 void rc_llrp_target_reset_all_fakes(void);
 

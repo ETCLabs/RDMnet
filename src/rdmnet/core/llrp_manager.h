@@ -20,6 +20,7 @@
 #ifndef RDMNET_CORE_LLRP_MANAGER_H_
 #define RDMNET_CORE_LLRP_MANAGER_H_
 
+#include "etcpal/inet.h"
 #include "etcpal/lock.h"
 #include "etcpal/rbtree.h"
 #include "etcpal/timer.h"
@@ -62,7 +63,7 @@ struct RCLlrpManager
   // Fill this in before initialization.
   EtcPalUuid             cid;
   RdmUid                 uid;
-  RdmnetMcastNetintId    netint;
+  EtcPalMcastNetintId    netint;
   RCLlrpManagerCallbacks callbacks;
   etcpal_mutex_t*        lock;
 
@@ -103,7 +104,7 @@ etcpal_error_t rc_llrp_manager_send_rdm_command(RCLlrpManager*             manag
                                                 uint32_t*                  seq_num);
 
 void rc_llrp_manager_module_tick(void);
-void rc_llrp_manager_data_received(const uint8_t* data, size_t data_len, const RdmnetMcastNetintId* netint);
+void rc_llrp_manager_data_received(const uint8_t* data, size_t data_len, const EtcPalMcastNetintId* netint);
 
 #ifdef __cplusplus
 }

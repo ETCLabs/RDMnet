@@ -305,7 +305,7 @@ void           rc_client_module_deinit(void);
 
 etcpal_error_t rc_rpt_client_register(RCClient*                  client,
                                       bool                       create_llrp_target,
-                                      const RdmnetMcastNetintId* llrp_netints,
+                                      const EtcPalMcastNetintId* llrp_netints,
                                       size_t                     num_llrp_netints);
 etcpal_error_t rc_ept_client_register(RCClient* client);
 bool           rc_client_unregister(RCClient* client, rdmnet_disconnect_reason_t disconnect_reason);

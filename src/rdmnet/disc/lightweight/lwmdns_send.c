@@ -20,6 +20,7 @@
 #include "lwmdns_send.h"
 
 #include <string.h>
+#include "etcpal/inet.h"
 #include "etcpal/pack.h"
 #include "rdmnet/defs.h"
 #include "rdmnet/core/mcast.h"
@@ -44,7 +45,7 @@
 typedef struct SendSocket
 {
   etcpal_socket_t     socket;
-  RdmnetMcastNetintId netint_id;
+  EtcPalMcastNetintId netint_id;
 } SendSocket;
 
 /******************************************************************************
@@ -114,7 +115,7 @@ etcpal_error_t lwmdns_send_module_init(const RdmnetNetintConfig* netint_config)
   }
   else
   {
-    const RdmnetMcastNetintId* mcast_netint_arr;
+    const EtcPalMcastNetintId* mcast_netint_arr;
     size_t                     mcast_netint_arr_size = rc_mcast_get_netint_array(&mcast_netint_arr);
 
 #if RDMNET_DYNAMIC_MEM

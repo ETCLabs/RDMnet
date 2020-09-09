@@ -92,7 +92,7 @@ TEST_F(TestMcast, InitWorksWithNoConfig)
 TEST_F(TestMcast, InitWorksWithConfigProvided)
 {
   // Create a config that only specifies interface 1
-  RdmnetMcastNetintId interface_1;
+  EtcPalMcastNetintId interface_1;
   interface_1.index = 1;
   interface_1.ip_type = kEtcPalIpTypeV4;
 
@@ -109,7 +109,7 @@ TEST_F(TestMcast, InvalidConfigFails)
 {
   initted_in_test_ = false;
 
-  RdmnetMcastNetintId interface_id;
+  EtcPalMcastNetintId interface_id;
   RdmnetNetintConfig  config;
   config.netints = nullptr;
   config.num_netints = 0;
@@ -141,7 +141,7 @@ TEST_F(TestMcast, ReportsCorrectNumberOfInterfacesWithNoConfig)
 {
   ASSERT_EQ(kEtcPalErrOk, rc_mcast_module_init(nullptr));
 
-  const RdmnetMcastNetintId* netint_array;
+  const EtcPalMcastNetintId* netint_array;
   ASSERT_EQ(sys_netints_.size(), rc_mcast_get_netint_array(&netint_array));
 
   for (size_t i = 0; i < sys_netints_.size(); ++i)
@@ -159,7 +159,7 @@ TEST_F(TestMcast, ReportsCorrectNumberOfInterfacesWithNoConfig)
 TEST_F(TestMcast, ReportsCorrectNumberOfInterfacesWithConfig)
 {
   // Create a config that only specifies interface 1
-  RdmnetMcastNetintId interface_1;
+  EtcPalMcastNetintId interface_1;
   interface_1.index = 1;
   interface_1.ip_type = kEtcPalIpTypeV4;
 
@@ -169,7 +169,7 @@ TEST_F(TestMcast, ReportsCorrectNumberOfInterfacesWithConfig)
 
   ASSERT_EQ(kEtcPalErrOk, rc_mcast_module_init(&config));
 
-  const RdmnetMcastNetintId* netint_array;
+  const EtcPalMcastNetintId* netint_array;
   ASSERT_EQ(1u, rc_mcast_get_netint_array(&netint_array));
   EXPECT_EQ(netint_array[0].index, interface_1.index);
   EXPECT_EQ(netint_array[0].ip_type, interface_1.ip_type);
@@ -185,7 +185,7 @@ TEST_F(TestMcast, SendSocketsRefcounted)
     return kEtcPalErrOk;
   };
 
-  RdmnetMcastNetintId interface_1;
+  EtcPalMcastNetintId interface_1;
   interface_1.index = 1;
   interface_1.ip_type = kEtcPalIpTypeV4;
 
@@ -205,7 +205,7 @@ TEST_F(TestMcast, SendSocketsMultiplexedBySourcePort)
   ASSERT_EQ(kEtcPalErrOk, rc_mcast_module_init(nullptr));
   etcpal_socket_reset_all_fakes();
 
-  RdmnetMcastNetintId interface_1;
+  EtcPalMcastNetintId interface_1;
   interface_1.index = 1;
   interface_1.ip_type = kEtcPalIpTypeV4;
 
@@ -246,7 +246,7 @@ TEST_F(TestMcast, SocketsRefcountedBySourcePort)
     return kEtcPalErrOk;
   };
 
-  RdmnetMcastNetintId interface_1;
+  EtcPalMcastNetintId interface_1;
   interface_1.index = 1;
   interface_1.ip_type = kEtcPalIpTypeV4;
 
@@ -279,7 +279,7 @@ TEST_F(TestMcast, SetsReuseAddrWhenSourcePortSpecified)
     return kEtcPalErrOk;
   };
 
-  RdmnetMcastNetintId interface_1;
+  EtcPalMcastNetintId interface_1;
   interface_1.index = 1;
   interface_1.ip_type = kEtcPalIpTypeV4;
 

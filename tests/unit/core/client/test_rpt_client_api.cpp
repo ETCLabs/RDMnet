@@ -82,7 +82,7 @@ TEST_F(TestRptClientApi, ClientRegisterWorks)
 // Test that the client registers an associated LLRP target when requested to do so.
 TEST_F(TestRptClientApi, ClientCreateLlrpTargetWorks)
 {
-  RdmnetMcastNetintId llrp_netint = {kEtcPalIpTypeV4, 1};
+  EtcPalMcastNetintId llrp_netint = {kEtcPalIpTypeV4, 1};
   ASSERT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, true, &llrp_netint, 1));
 
   EXPECT_EQ(rc_llrp_target_register_fake.call_count, 1u);

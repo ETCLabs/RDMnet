@@ -51,7 +51,7 @@ EtcPalMacAddr kLlrpLowestHardwareAddr;
 
 typedef struct LlrpRecvNetint
 {
-  RdmnetMcastNetintId id;
+  EtcPalMcastNetintId id;
   size_t              ref_count;
 } LlrpRecvNetint;
 
@@ -126,7 +126,7 @@ void rc_llrp_module_deinit(void)
   deinit_recv_socket(&state.target_recvsock_ipv6);
 }
 
-etcpal_error_t rc_llrp_recv_netint_add(const RdmnetMcastNetintId* id, llrp_socket_t llrp_type)
+etcpal_error_t rc_llrp_recv_netint_add(const EtcPalMcastNetintId* id, llrp_socket_t llrp_type)
 {
   etcpal_error_t  res = kEtcPalErrNotFound;
   LlrpRecvSocket* recv_sock = get_llrp_recv_sock(llrp_type, id->ip_type);
@@ -168,7 +168,7 @@ etcpal_error_t rc_llrp_recv_netint_add(const RdmnetMcastNetintId* id, llrp_socke
   return res;
 }
 
-void rc_llrp_recv_netint_remove(const RdmnetMcastNetintId* id, llrp_socket_t llrp_type)
+void rc_llrp_recv_netint_remove(const EtcPalMcastNetintId* id, llrp_socket_t llrp_type)
 {
   LlrpRecvSocket* recv_sock = get_llrp_recv_sock(llrp_type, id->ip_type);
   LlrpRecvNetint* netint = recv_sock->netints;
@@ -192,7 +192,7 @@ void rc_llrp_recv_netint_remove(const RdmnetMcastNetintId* id, llrp_socket_t llr
 void init_recv_socket(LlrpRecvSocket* sock_struct, llrp_socket_t llrp_type)
 {
   // Initialize the network interface array from the global multicast network interface array.
-  const RdmnetMcastNetintId* mcast_array;
+  const EtcPalMcastNetintId* mcast_array;
   size_t                     array_size = rc_mcast_get_netint_array(&mcast_array);
 
   sock_struct->num_netints = array_size;
@@ -282,7 +282,7 @@ void llrp_socket_activity(const EtcPalPollEvent* event, RCPolledSocketOpaqueData
     }
     else
     {
-      RdmnetMcastNetintId netint_id;
+      EtcPalMcastNetintId netint_id;
       if (kEtcPalErrOk == etcpal_netint_get_interface_for_dest(&from_addr.ip, &netint_id.index))
       {
         netint_id.ip_type = from_addr.ip.type;

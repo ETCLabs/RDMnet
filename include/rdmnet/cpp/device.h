@@ -391,7 +391,7 @@ public:
     /// (optional) A set of network interfaces to use for the LLRP target associated with this
     /// device. If empty, the set passed to rdmnet::Init() will be used, or all network interfaces on
     /// the system if that was not provided.
-    std::vector<RdmnetMcastNetintId> llrp_netints;
+    std::vector<EtcPalMcastNetintId> llrp_netints;
 
     /// Create an empty, invalid data structure by default.
     Settings() = default;

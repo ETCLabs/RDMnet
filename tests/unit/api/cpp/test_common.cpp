@@ -53,7 +53,7 @@ TEST_F(TestCommon, InitLogParamsNoNetints)
 TEST_F(TestCommon, InitNetintsNoLogParams)
 {
   // clang-format off
-  const std::vector<RdmnetMcastNetintId> netints = {
+  const std::vector<EtcPalMcastNetintId> netints = {
     {
       kEtcPalIpTypeV4,
       1
