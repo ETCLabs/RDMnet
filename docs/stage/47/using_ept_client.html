@@ -1,0 +1,418 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen 1.8.13" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RDMnet: Using the EPT Client API</title>
+  <link href="tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="dynsections.js"></script>
+  <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+</script>
+  <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css" />
+  <!--BEGIN CUSTOM SCRIPTS-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <script type="text/javascript">
+    $(function () { selectAllC() });
+  </script>
+  <script type="text/javascript">
+    function selectAllC() {
+      // Enable all C-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_c")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_c")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectAllCpp() {
+      // Enable all C++-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_cpp")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C++-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_cpp")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectLanguage(evt, block_id, language) {
+      // Get all elements with class="tabcontent" and hide them
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.startsWith("div_" + block_id)) {
+          tabcontent[i].style.display = "none";
+        }
+      }
+      // Get all elements with class="tablinks" and remove the class "active"
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.startsWith("button_" + block_id)) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById("div_" + block_id + "_" + language).style.display = "block";
+      if (!evt.currentTarget.className.includes("active")) {
+        evt.currentTarget.className += " active";
+      }
+    }
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">RDMnet
+                &#160;<span id="projectnumber">Staging for pull request 47</span>
+              </div>
+              <div id="projectbrief">Implementation of ANSI E1.33 (RDMnet)</div>
+            </td>
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- end header part -->
+<!-- Generated by Doxygen 1.8.13 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Search');
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('using_ept_client.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">Using the EPT Client API </div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><p>The EPT Client API exposes both a C and C++ language interface. The C++ interface is a header-only wrapper around the C interface.</p>
+<p> 
+<div class="tab">
+  <button id="button_1_c" class="tablinks" onclick="selectAllC()">Show All C Snippets</button>
+  <button id="button_1_cpp" class="tablinks" onclick="selectAllCpp()">Show All C++ Snippets</button>
+</div>
+</p>
+<h2>Initialization</h2>
+<p>The RDMnet library must be globally initialized before using the EPT Client API. See <a class="el" href="global_init_and_destroy.html">Global Initialization and Destruction</a>.</p>
+<p>To create an EPT client instance, use the <a class="el" href="group__rdmnet__ept__client.html#ga3f36b435183b71dcb303901bb814faa8" title="Create a new instance of RDMnet EPT client functionality. ">rdmnet_ept_client_create()</a> function in C, or instantiate an <a class="el" href="classrdmnet_1_1_ept_client.html" title="An instance of RDMnet EPT client functionality. ">rdmnet::EptClient</a> and call its Startup() function in C++.</p>
+<p>The EPT Client API is an asynchronous, callback-oriented API. Part of the initial configuration for an EPT client instance is a set of function pointers (or abstract interface) for the library to use as callbacks. Callbacks are dispatched from the background thread that is started when the RDMnet library is initialized.</p>
+<p> 
+<div class="tab">
+  <button id="button_2_c" class="tablinks" onclick="selectLanguage(event, '2', 'c')">C</button>
+  <button id="button_2_cpp" class="tablinks" onclick="selectLanguage(event, '2', 'cpp')">C++</button>
+</div>
+<div id="div_2_c" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="ept__client_8h.html">rdmnet/ept_client.h</a>&quot;</span></div><div class="line"></div><div class="line"><span class="comment">// Sets optional values to defaults. </span></div><div class="line"><a class="code" href="struct_rdmnet_ept_client_config.html">RdmnetEptClientConfig</a> config = <a class="code" href="group__rdmnet__ept__client.html#gae4f33c5d2b6c8e0e84871337f41b16ea">RDMNET_EPT_CLIENT_CONFIG_DEFAULT_INIT</a>;</div><div class="line"></div><div class="line"><span class="comment">// Each EPT client is a component that must have a Component ID (CID), which is simply a UUID.</span></div><div class="line"><span class="comment">// Software should generate and save a CID so that the same one is used on each run of the software.</span></div><div class="line"><a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__uuid.html#gabb977b5a218b4b62224c016bf3932f10">etcpal_generate_os_preferred_uuid</a>(&amp;config.<a class="code" href="struct_rdmnet_ept_client_config.html#ae618cb974a2e9b1250a78d572a6a3094">cid</a>);</div><div class="line"></div><div class="line"><span class="comment">// Set the callback functions - defined elsewhere</span></div><div class="line"><span class="comment">// p_some_opaque_data is an opaque data pointer that will be passed back to each callback function</span></div><div class="line"><a class="code" href="group__rdmnet__ept__client.html#gac3fcdb73055eb584ce97263b1f1a15fa">rdmnet_ept_client_set_callbacks</a>(&amp;config, my_ept_connected_cb, my_ept_connect_failed_cb, my_ept_disconnected_cb,</div><div class="line">                                my_ept_client_list_update_received_cb, my_ept_data_received_cb,</div><div class="line">                                my_ept_status_received_cb, p_some_opaque_data);</div><div class="line"></div><div class="line"><span class="comment">// Provide information about the EPT sub-protocols we support. Protocols are namespaced under your</span></div><div class="line"><span class="comment">// ESTA manufacturer ID. If you have not yet requested an ESTA manufacturer ID, the range 0x7ff0 to</span></div><div class="line"><span class="comment">// 0x7fff can be used for prototyping.</span></div><div class="line"><a class="code" href="struct_rdmnet_ept_sub_protocol.html">RdmnetEptSubProtocol</a> my_protocols[2] = {</div><div class="line">  {</div><div class="line">    MY_ESTA_MANUFACTURER_ID, <span class="comment">// Our ESTA manufacturer ID.</span></div><div class="line">    1,                       <span class="comment">// The protocol number.</span></div><div class="line">    <span class="stringliteral">&quot;My protocol 1&quot;</span>          <span class="comment">// A descriptive string about the protocol.</span></div><div class="line">  },</div><div class="line">  {</div><div class="line">    MY_ESTA_MANUFACTURER_ID,</div><div class="line">    2,</div><div class="line">    <span class="stringliteral">&quot;My protocol 2&quot;</span></div><div class="line">  }</div><div class="line">};</div><div class="line">config.<a class="code" href="struct_rdmnet_ept_client_config.html#a04d0c31184e6bc3c9818bcd27f390626">protocols</a> = my_protocols;</div><div class="line">config.<a class="code" href="struct_rdmnet_ept_client_config.html#adc7213b80e2fb086ec1ed3d8bea7d531">num_protocols</a> = 2;</div><div class="line"></div><div class="line"><a class="code" href="group__rdmnet__ept__client.html#gafe4439590493e7a8abedabc8de8ab51c">rdmnet_ept_client_t</a> my_ept_client_handle;</div><div class="line"><a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#ga743b0648f0ca798ef29c9f69c6e255af">etcpal_error_t</a> result = <a class="code" href="group__rdmnet__ept__client.html#ga3f36b435183b71dcb303901bb814faa8">rdmnet_ept_client_create</a>(&amp;config, &amp;my_ept_client_handle);</div><div class="line"><span class="keywordflow">if</span> (result == <a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#gga743b0648f0ca798ef29c9f69c6e255afae403d046b4ba4e81dce121266c2cca8d">kEtcPalErrOk</a>)</div><div class="line">{</div><div class="line">  <span class="comment">// Handle is valid and may be referenced in later calls to API functions.</span></div><div class="line">}</div><div class="line"><span class="keywordflow">else</span></div><div class="line">{</div><div class="line">  printf(<span class="stringliteral">&quot;RDMnet EPT client creation failed with error: %s\n&quot;</span>, <a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#ga4902a840d9801e02baebd4c70924c4b0">etcpal_strerror</a>(result));</div><div class="line">}</div></div><!-- fragment --><p> 
+</div>
+<div id="div_2_cpp" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="cpp_2ept__client_8h.html">rdmnet/cpp/ept_client.h</a>&quot;</span></div><div class="line"></div><div class="line"><span class="keyword">class </span>MyEptNotifyHandler : <span class="keyword">public</span> <a class="code" href="classrdmnet_1_1_ept_client_1_1_notify_handler.html">rdmnet::EptClient::NotifyHandler</a></div><div class="line">{</div><div class="line">  <span class="comment">// Implement the NotifyHandler callbacks...</span></div><div class="line">};</div><div class="line"></div><div class="line">MyEptNotifyHandler my_ept_notify_handler;</div><div class="line"></div><div class="line"><span class="comment">// Each EPT client is a component that must have a Component ID (CID), which is simply a UUID.</span></div><div class="line"><span class="comment">// Software should generate and save a CID so that the same one is used on each run of the software.</span></div><div class="line"><a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html">etcpal::Uuid</a> my_cid = <a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html#ae1ccf480526751a937afb32a2db7346a">etcpal::Uuid::OsPreferred</a>();</div><div class="line"></div><div class="line"><span class="comment">// Provide information about the EPT sub-protocols we support. Protocols are namespaced under your</span></div><div class="line"><span class="comment">// ESTA manufacturer ID. If you have not yet requested an ESTA manufacturer ID, the range 0x7ff0 to</span></div><div class="line"><span class="comment">// 0x7fff can be used for prototyping.</span></div><div class="line">std::vector&lt;rdmnet::EptSubProtocol&gt; my_protocols = {</div><div class="line">  {</div><div class="line">    MY_ESTA_MANUFACTURER_ID, <span class="comment">// Our ESTA manufacturer ID.</span></div><div class="line">    1,                       <span class="comment">// The protocol number.</span></div><div class="line">    <span class="stringliteral">&quot;My protocol 1&quot;</span>          <span class="comment">// A descriptive string about the protocol.</span></div><div class="line">  },</div><div class="line">  {</div><div class="line">    MY_ESTA_MANUFACTURER_ID,</div><div class="line">    2,</div><div class="line">    <span class="stringliteral">&quot;My protocol 2&quot;</span></div><div class="line">  }</div><div class="line">};</div><div class="line"></div><div class="line"><span class="comment">// Contains the configuration settings that the EPT client needs to operate. Some of these are set</span></div><div class="line"><span class="comment">// to default values and can be changed if necessary. </span></div><div class="line"><a class="code" href="structrdmnet_1_1_ept_client_1_1_settings.html">rdmnet::EptClient::Settings</a> my_settings(my_cid, my_protocols);</div><div class="line"></div><div class="line"><a class="code" href="classrdmnet_1_1_ept_client.html">rdmnet::EptClient</a> ept_client;</div><div class="line"><a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> result = ept_client.<a class="code" href="classrdmnet_1_1_ept_client.html#ae338508e79fbeb7183e396ac9efbd951">Startup</a>(my_ept_notify_handler, my_settings);</div><div class="line"><span class="keywordflow">if</span> (result)</div><div class="line">{</div><div class="line">  <span class="comment">// EPT client is valid and running.</span></div><div class="line">  <a class="code" href="classrdmnet_1_1_ept_client.html#a36b8fa2d0851a29b79c4ae6824484af6">rdmnet::EptClient::Handle</a> handle = ept_client.<a class="code" href="classrdmnet_1_1_ept_client.html#adf5e53f23d12edf16c30a1ef2f9b1fc8">handle</a>();</div><div class="line">  <span class="comment">// Store handle for later lookup from the NotifyHandler callback functions.</span></div><div class="line">}</div><div class="line"><span class="keywordflow">else</span></div><div class="line">{</div><div class="line">  std::cout &lt;&lt; <span class="stringliteral">&quot;RDMnet EPT client startup failed with error: &quot;</span> &lt;&lt; result.<a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html#a19c380b03cea21d7ac7325136a131ff0">ToString</a>() &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div><div class="line">}</div></div><!-- fragment --><p> 
+</div>
+</p>
+<h2>Deinitialization</h2>
+<p>The EPT client should be shut down and destroyed gracefully before program termination. This will send a graceful disconnect message to any connected brokers and deallocate the EPT client's resources.</p>
+<p> 
+<div class="tab">
+  <button id="button_3_c" class="tablinks" onclick="selectLanguage(event, '3', 'c')">C</button>
+  <button id="button_3_cpp" class="tablinks" onclick="selectLanguage(event, '3', 'cpp')">C++</button>
+</div>
+<div id="div_3_c" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><a class="code" href="group__rdmnet__ept__client.html#ga6d22de48655c9f453b2b246e904e6c57">rdmnet_ept_client_destroy</a>(my_ept_client_handle, <a class="code" href="group__rdmnet__api__common.html#gga3eb1adaf6e830a807d1dcfbc64197222a336a46d8d36f5b1f32fac4653913cdd2">kRdmnetDisconnectShutdown</a>);</div><div class="line"></div><div class="line"><span class="comment">// At this point, the EPT client is no longer running and its handle is no longer valid.</span></div></div><!-- fragment --><p> 
+</div>
+<div id="div_3_cpp" class="tabcontent">
+</p>
+<div class="fragment"><div class="line">ept_client.<a class="code" href="classrdmnet_1_1_ept_client.html#a4590d3e0925a92a92c028661a8415c36">Shutdown</a>();</div><div class="line"></div><div class="line"><span class="comment">// At this point, the EPT client is no longer running and its handle is no longer valid. It can be</span></div><div class="line"><span class="comment">// started again (with a new handle) by calling Startup() again.</span></div></div><!-- fragment --><p> 
+</div>
+</p>
+<h2>Managing Scopes</h2>
+<p>An EPT client instance is initially created without any configured scopes. If the app has not been reconfigured by a user, the E1.33 RDMnet standard requires that the RDMnet default scope be configured automatically. There is a shortcut function for this. Otherwise, you can add a custom scope.</p>
+<p>Per the requirements of RDMnet, a scope string is always UTF-8 and is thus represented by a char[] in C and a std::string in C++.</p>
+<p>See the "Scopes" section in <a class="el" href="how_it_works.html">How RDMnet Works</a> for more information on scopes.</p>
+<p> 
+<div class="tab">
+  <button id="button_4_c" class="tablinks" onclick="selectLanguage(event, '4', 'c')">C</button>
+  <button id="button_4_cpp" class="tablinks" onclick="selectLanguage(event, '4', 'cpp')">C++</button>
+</div>
+<div id="div_4_c" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><span class="comment">// Add a default scope</span></div><div class="line"><a class="code" href="group__rdmnet__api__common.html#ga7244ab5c8edb8bc9c1e4792a6c64f798">rdmnet_client_scope_t</a> default_scope_handle;</div><div class="line"><a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#ga743b0648f0ca798ef29c9f69c6e255af">etcpal_error_t</a> result = <a class="code" href="group__rdmnet__ept__client.html#gae1c2cc3b36ff8712cea0e62416c326af">rdmnet_ept_client_add_default_scope</a>(my_ept_client_handle, &amp;default_scope_handle);</div><div class="line"></div><div class="line"><span class="comment">// Add a custom scope</span></div><div class="line"><a class="code" href="struct_rdmnet_scope_config.html">RdmnetScopeConfig</a> scope_config;</div><div class="line"><a class="code" href="group__rdmnet__api__common.html#ga0b906d1d6ed5fcc678e9c530e440b62f">RDMNET_CLIENT_SET_SCOPE</a>(&amp;scope_config, <span class="stringliteral">&quot;custom_scope_name&quot;</span>);</div><div class="line"></div><div class="line"><a class="code" href="group__rdmnet__api__common.html#ga7244ab5c8edb8bc9c1e4792a6c64f798">rdmnet_client_scope_t</a> custom_scope_handle;</div><div class="line"><a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#ga743b0648f0ca798ef29c9f69c6e255af">etcpal_error_t</a> result = <a class="code" href="group__rdmnet__ept__client.html#gaabb006c941893a84cf4727d672322a94">rdmnet_ept_client_add_scope</a>(my_ept_client_handle, &amp;scope_config, &amp;custom_scope_handle);</div></div><!-- fragment --><p> 
+</div>
+<div id="div_4_cpp" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_expected.html">etcpal::Expected&lt;rdmnet::ScopeHandle&gt;</a> add_res = ept_client.<a class="code" href="classrdmnet_1_1_ept_client.html#a555b53b301e2b732058df8c0e805dc62">AddDefaultScope</a>();</div><div class="line"><span class="comment">// Or...</span></div><div class="line"><a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_expected.html">etcpal::Expected&lt;rdmnet::ScopeHandle&gt;</a> add_res = ept_client.<a class="code" href="classrdmnet_1_1_ept_client.html#aebcb6c7c8d9b16280766525ca25b524b">AddScope</a>(<span class="stringliteral">&quot;custom_scope_name&quot;</span>);</div><div class="line"></div><div class="line"><span class="keywordflow">if</span> (add_res)</div><div class="line">{</div><div class="line">  <a class="code" href="group__rdmnet__cpp__common.html#gadf5994aa4727265c21622c5a0f997ceb">rdmnet::ScopeHandle</a> default_scope_handle = *add_res;</div><div class="line">}</div><div class="line"><span class="keywordflow">else</span></div><div class="line">{</div><div class="line">  std::cout &lt;&lt; <span class="stringliteral">&quot;Error adding default scope: &#39;&quot;</span> &lt;&lt; add_res.<a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_expected.html#a60850b440a4ff7f769627b46d79043f6">error</a>().ToString() &lt;&lt; <span class="stringliteral">&quot;&#39;\n&quot;</span></div><div class="line">}</div></div><!-- fragment --><p> 
+</div>
+</p>
+<h3>Dynamic vs Static Scopes</h3>
+<p>Adding a scope will immediately begin the scope connection state machine from the RDMnet tick thread. If a static configuration is not provided (using the <a class="el" href="group__rdmnet__api__common.html#ga0b906d1d6ed5fcc678e9c530e440b62f" title="Initialize an RdmnetScopeConfig struct with a scope string. ">RDMNET_CLIENT_SET_SCOPE()</a> macro to initialize an <a class="el" href="struct_rdmnet_scope_config.html" title="A set of configuration information for a single scope in which an RDMnet client is participating...">RdmnetScopeConfig</a>, or calling <a class="el" href="classrdmnet_1_1_ept_client.html#aebcb6c7c8d9b16280766525ca25b524b" title="Add a new scope to this EPT client instance. ">rdmnet::EptClient::AddScope()</a> with only one argument) the first action will be to attempt to discover brokers for this scope using DNS-SD. Once a broker is found, connection will be initiated automatically, and the result will be delivered via either the connected or connect_failed callback.</p>
+<p>If a broker for a given scope has been configured with a static IP address and port, you can skip DNS-SD discovery by providing a static configuration:</p>
+<p> 
+<div class="tab">
+  <button id="button_5_c" class="tablinks" onclick="selectLanguage(event, '5', 'c')">C</button>
+  <button id="button_5_cpp" class="tablinks" onclick="selectLanguage(event, '5', 'cpp')">C++</button>
+</div>
+<div id="div_5_c" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><span class="comment">// Get configured static broker address</span></div><div class="line"><a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_sock_addr.html">EtcPalSockAddr</a> static_broker_addr;</div><div class="line"><a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__inet.html#ga92ba01cb2c81a8a97b9555ecf0ab2fe5">etcpal_string_to_ip</a>(<a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__inet.html#gga847282e3fd17bf75ec83292326c455eea73ea615eceba61f26d92a63f3738f635">kEtcPalIpTypeV4</a>, <span class="stringliteral">&quot;192.168.2.1&quot;</span>, &amp;static_broker_addr.<a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_sock_addr.html#a19cc8016f534a565f984438cfe911a9e">ip</a>);</div><div class="line">static_broker_addr.<a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_sock_addr.html#a8e0798404bf2cf5dabb84c5ba9a4f236">port</a> = 8000;</div><div class="line"></div><div class="line"><a class="code" href="struct_rdmnet_scope_config.html">RdmnetScopeConfig</a> config;</div><div class="line"><a class="code" href="group__rdmnet__api__common.html#ga500c0af02a2db3a6b835f26cf304da85">RDMNET_CLIENT_SET_STATIC_SCOPE</a>(&amp;config, <span class="stringliteral">&quot;my_custom_scope&quot;</span>, static_broker_addr);</div><div class="line"><span class="comment">// Or:</span></div><div class="line"><a class="code" href="group__rdmnet__api__common.html#gab2855ff14aba079140f1070f80140247">RDMNET_CLIENT_SET_STATIC_DEFAULT_SCOPE</a>(&amp;config, static_broker_addr);</div><div class="line"></div><div class="line"><a class="code" href="group__rdmnet__api__common.html#ga7244ab5c8edb8bc9c1e4792a6c64f798">rdmnet_client_scope_t</a> scope_handle;</div><div class="line"><a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#ga743b0648f0ca798ef29c9f69c6e255af">etcpal_error_t</a> result = <a class="code" href="group__rdmnet__ept__client.html#gaabb006c941893a84cf4727d672322a94">rdmnet_ept_client_add_scope</a>(my_ept_client_handle, &amp;config, &amp;scope_handle);</div></div><!-- fragment --><p> 
+</div>
+<div id="div_5_cpp" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><span class="comment">// Get configured static broker address</span></div><div class="line"><a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_sock_addr.html">etcpal::SockAddr</a> static_broker_addr(<a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_ip_addr.html#a431892e2354d1b617e2dd0278b8a9f30">etcpal::IpAddr::FromString</a>(<span class="stringliteral">&quot;192.168.2.1&quot;</span>), 8000);</div><div class="line"><a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_expected.html">etcpal::Expected&lt;rdmnet::ScopeHandle&gt;</a> add_res = ept_client.<a class="code" href="classrdmnet_1_1_ept_client.html#aebcb6c7c8d9b16280766525ca25b524b">AddScope</a>(<span class="stringliteral">&quot;my_custom_scope&quot;</span>, static_broker_addr);</div><div class="line"><span class="comment">// Or:</span></div><div class="line"><a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_expected.html">etcpal::Expected&lt;rdmnet::ScopeHandle&gt;</a> add_res = ept_client.<a class="code" href="classrdmnet_1_1_ept_client.html#a555b53b301e2b732058df8c0e805dc62">AddDefaultScope</a>(static_broker_addr);</div></div><!-- fragment --><p> 
+</div>
+</p>
+<h2>Handling Callbacks</h2>
+<p>The library will dispatch callback notifications from the background thread which is started when <a class="el" href="group__rdmnet__api__common.html#gac35e678c3cc099a73e9314614215e1d8" title="Initialize the RDMnet library. ">rdmnet_init()</a> is called. It is safe to call any RDMnet API function from any callback; in fact, this is the recommended way of handling many callbacks.</p>
+<p>For example, a very common EPT client behavior will be to fetch a client list from the broker after a successful connection:</p>
+<p> 
+<div class="tab">
+  <button id="button_6_c" class="tablinks" onclick="selectLanguage(event, '6', 'c')">C</button>
+  <button id="button_6_cpp" class="tablinks" onclick="selectLanguage(event, '6', 'cpp')">C++</button>
+</div>
+<div id="div_6_c" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><span class="keywordtype">void</span> ept_connected_callback(<a class="code" href="group__rdmnet__ept__client.html#gafe4439590493e7a8abedabc8de8ab51c">rdmnet_ept_client_t</a> client_handle, <a class="code" href="group__rdmnet__api__common.html#ga7244ab5c8edb8bc9c1e4792a6c64f798">rdmnet_client_scope_t</a> scope_handle,</div><div class="line">                            <span class="keyword">const</span> <a class="code" href="struct_rdmnet_client_connected_info.html">RdmnetClientConnectedInfo</a>* info, <span class="keywordtype">void</span>* context)</div><div class="line">{</div><div class="line">  <span class="keywordtype">char</span> addr_str[<a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__inet.html#gacd7ec0d81e171166483c7629669bf05d">ETCPAL_IP_STRING_BYTES</a>];</div><div class="line">  <a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__inet.html#gaf98da0ae21f7960b5e046c55b8d79c4a">etcpal_ip_to_string</a>(&amp;info-&gt;<a class="code" href="struct_rdmnet_client_connected_info.html#a39d671dfd8919b93fe23dba6dbfba905">broker_addr</a>.<a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_sock_addr.html#a19cc8016f534a565f984438cfe911a9e">ip</a>, addr_str);</div><div class="line">  printf(<span class="stringliteral">&quot;Connected to broker &#39;%s&#39; at address %s:%d\n&quot;</span>, info-&gt;<a class="code" href="struct_rdmnet_client_connected_info.html#a09b4687edadab4b4334a33b38d00cf2f">broker_name</a>, addr_str, info-&gt;<a class="code" href="struct_rdmnet_client_connected_info.html#a39d671dfd8919b93fe23dba6dbfba905">broker_addr</a>.<a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_sock_addr.html#a8e0798404bf2cf5dabb84c5ba9a4f236">port</a>);</div><div class="line"></div><div class="line">  <span class="comment">// Check handles and/or context as necessary...</span></div><div class="line"></div><div class="line">  <a class="code" href="group__rdmnet__ept__client.html#ga0614b05c349bde99fcac03b5b9ae54dd">rdmnet_ept_client_request_client_list</a>(client_handle, scope_handle);</div><div class="line">}                                   </div></div><!-- fragment --><p> 
+</div>
+<div id="div_6_cpp" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><span class="keywordtype">void</span> MyEptNotifyHandler::HandleConnectedToBroker(<a class="code" href="classrdmnet_1_1_ept_client.html#a36b8fa2d0851a29b79c4ae6824484af6">rdmnet::EptClient::Handle</a> client_handle,</div><div class="line">                                                 <a class="code" href="group__rdmnet__cpp__common.html#gadf5994aa4727265c21622c5a0f997ceb">rdmnet::ScopeHandle</a> scope_handle,</div><div class="line">                                                 <span class="keyword">const</span> <a class="code" href="classrdmnet_1_1_client_connected_info.html">rdmnet::ClientConnectedInfo</a>&amp; info)</div><div class="line">{</div><div class="line">  std::cout &lt;&lt; <span class="stringliteral">&quot;Connected to broker &#39;&quot;</span> &lt;&lt; info.<a class="code" href="classrdmnet_1_1_client_connected_info.html#a751d070cb4c1f89d838955298270b6cf">broker_name</a>()</div><div class="line">            &lt;&lt; <span class="stringliteral">&quot;&#39; at IP address &quot;</span> &lt;&lt; info.<a class="code" href="classrdmnet_1_1_client_connected_info.html#af30653fa66bd5b267c54cf81a8c7eb3d">broker_addr</a>().<a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_sock_addr.html#a19c380b03cea21d7ac7325136a131ff0">ToString</a>() &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div><div class="line"></div><div class="line">  <span class="comment">// Check handles as necessary and get EPT client instance...</span></div><div class="line">  ept_client.<a class="code" href="classrdmnet_1_1_ept_client.html#a6afbaee81d5049431a8a6e0747c27b93">RequestClientList</a>(scope_handle);</div><div class="line">}</div></div><!-- fragment --><p> 
+</div>
+</p>
+<h3>Connection Failure</h3>
+<p>It's worth noting connection failure as a special case here. RDMnet connections can fail for many reasons, including user misconfiguration, network misconfiguration, components starting up or shutting down, programming errors, and more.</p>
+<p>The ClientConnectFailedInfo and ClientDisconnectedInfo structs passed back with the "connect failed" and "disconnected" callbacks respectively have comprehensive information about the failure, including enum values containing the library's categorization of the failure, protocol reason codes and socket errors where applicable. This information is typically used mostly for logging and debugging. Each of these codes has a respective <code>to_string()</code> function to aid in logging.</p>
+<p>For programmatic use, the structs also contain a <code>will_retry</code> member which indicates whether the library plans to retry this connection in the background. The only circumstances under which the library will not retry is when a connection failure is determined to be either a programming error or a user misconfiguration. Some examples of these circumstances are:</p>
+<ul>
+<li>The broker explicitly rejected a connection with a reason code indicating a configuration error, such as <code>CONNECT_SCOPE_MISMATCH</code> or <code>CONNECT_DUPLICATE_UID</code>.</li>
+<li>The library failed to create a network socket before the connection was initiated.</li>
+</ul>
+<h2>Discovering Other Clients</h2>
+<p>To discover other EPT clients in RDMnet, you need to request a <em>Client List</em> from the broker you're connected to. In our API, this is very easy - as we saw in the callbacks section earlier, we can just call <a class="el" href="group__rdmnet__ept__client.html#ga0614b05c349bde99fcac03b5b9ae54dd" title="Request a client list from a broker. ">rdmnet_ept_client_request_client_list()</a> or <a class="el" href="classrdmnet_1_1_ept_client.html#a6afbaee81d5049431a8a6e0747c27b93" title="Request a client list from a broker. ">rdmnet::EptClient::RequestClientList()</a>. This sends the appropriate request to the broker, and the reply will come back in the "Client List Update" callback:</p>
+<p> 
+<div class="tab">
+  <button id="button_7_c" class="tablinks" onclick="selectLanguage(event, '7', 'c')">C</button>
+  <button id="button_7_cpp" class="tablinks" onclick="selectLanguage(event, '7', 'cpp')">C++</button>
+</div>
+<div id="div_7_c" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><span class="keywordtype">void</span> my_client_list_update_cb(<a class="code" href="group__rdmnet__ept__client.html#gafe4439590493e7a8abedabc8de8ab51c">rdmnet_ept_client_t</a> client_handle, <a class="code" href="group__rdmnet__api__common.html#ga7244ab5c8edb8bc9c1e4792a6c64f798">rdmnet_client_scope_t</a> scope_handle,</div><div class="line">                              <a class="code" href="group__rdmnet__api__common.html#ga47e9b8ab4e35d074085d3d9a91f77ac2">client_list_action_t</a> list_action, <span class="keyword">const</span> <a class="code" href="struct_rdmnet_ept_client_list.html">RdmnetEptClientList</a>* list, <span class="keywordtype">void</span>* context)</div><div class="line">{</div><div class="line">  <span class="comment">// Check handles and/or context as necessary...</span></div><div class="line"></div><div class="line">  <span class="keywordflow">switch</span> (list_action)</div><div class="line">  {</div><div class="line">    <span class="keywordflow">case</span> <a class="code" href="group__rdmnet__api__common.html#gga47e9b8ab4e35d074085d3d9a91f77ac2a28f365664cab7adfffbad8c478ca3a09">kRdmnetClientListAppend</a>:</div><div class="line">      <span class="comment">// These are new entries to be added to the list of clients. Append the new entry to our</span></div><div class="line">      <span class="comment">// bookkeeping.</span></div><div class="line">      add_new_clients(list-&gt;<a class="code" href="struct_rdmnet_ept_client_list.html#a3c76e64783b650c4253bc90f8c28b090">client_entries</a>, list-&gt;<a class="code" href="struct_rdmnet_ept_client_list.html#a4e70cc13f7c860f2f2e47f2d443a9414">num_client_entries</a>);</div><div class="line">      <span class="keywordflow">break</span>;</div><div class="line">    <span class="keywordflow">case</span> <a class="code" href="group__rdmnet__api__common.html#gga47e9b8ab4e35d074085d3d9a91f77ac2a62a9556be67db06e0fd26dbd5a20ff45">kRdmnetClientListRemove</a>:</div><div class="line">      <span class="comment">// These are entries to be removed from the list of clients. Remove the entry from our</span></div><div class="line">      <span class="comment">// bookkeeping.</span></div><div class="line">      remove_clients(list-&gt;<a class="code" href="struct_rdmnet_ept_client_list.html#a3c76e64783b650c4253bc90f8c28b090">client_entries</a>, list-&gt;<a class="code" href="struct_rdmnet_ept_client_list.html#a4e70cc13f7c860f2f2e47f2d443a9414">num_client_entries</a>);</div><div class="line">      <span class="keywordflow">break</span>;</div><div class="line">    <span class="keywordflow">case</span> <a class="code" href="group__rdmnet__api__common.html#gga47e9b8ab4e35d074085d3d9a91f77ac2a8401f8f58863ec76c40f9f1fd84d3440">kRdmnetClientListUpdate</a>:</div><div class="line">      <span class="comment">// These are entries to be updated in the list of clients. Update the corresponding entry</span></div><div class="line">      <span class="comment">// in our bookkeeping.</span></div><div class="line">      update_clients(list-&gt;<a class="code" href="struct_rdmnet_ept_client_list.html#a3c76e64783b650c4253bc90f8c28b090">client_entries</a>, list-&gt;<a class="code" href="struct_rdmnet_ept_client_list.html#a4e70cc13f7c860f2f2e47f2d443a9414">num_client_entries</a>);</div><div class="line">      <span class="keywordflow">break</span>;</div><div class="line">    <span class="keywordflow">case</span> <a class="code" href="group__rdmnet__api__common.html#gga47e9b8ab4e35d074085d3d9a91f77ac2a93835bbdfa444ea89287ecb5416b1704">kRdmnetClientListReplace</a>:</div><div class="line">      <span class="comment">// This is the full client list currently connected to the broker - our existing client </span></div><div class="line">      <span class="comment">// list should be replaced wholesale with this one. This will be the response to</span></div><div class="line">      <span class="comment">// rdmnet_ept_client_request_client_list(); the other cases are sent unsolicited.</span></div><div class="line">      replace_client_list(list-&gt;<a class="code" href="struct_rdmnet_ept_client_list.html#a3c76e64783b650c4253bc90f8c28b090">client_entries</a>, list-&gt;<a class="code" href="struct_rdmnet_ept_client_list.html#a4e70cc13f7c860f2f2e47f2d443a9414">num_client_entries</a>);</div><div class="line">      <span class="keywordflow">break</span>;</div><div class="line">  }</div><div class="line"></div><div class="line">  <span class="keywordflow">if</span> (list-&gt;<a class="code" href="struct_rdmnet_ept_client_list.html#a431174f9f4f6fd45a4178c5484f12415">more_coming</a>)</div><div class="line">  {</div><div class="line">    <span class="comment">// The library ran out of memory pool space while allocating client entries - after this</span></div><div class="line">    <span class="comment">// callback returns, another will be delivered with the continuation of this response.</span></div><div class="line">    <span class="comment">// If RDMNET_DYNAMIC_MEM == 1 (the default on non-embedded platforms), this flag will never be</span></div><div class="line">    <span class="comment">// set to true and does not need to be checked.</span></div><div class="line">  }</div><div class="line">}</div></div><!-- fragment --><p> 
+</div>
+<div id="div_7_cpp" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><span class="keywordtype">void</span> MyEptNotifyHandler::HandleClientListUpdate(<a class="code" href="classrdmnet_1_1_ept_client.html#a36b8fa2d0851a29b79c4ae6824484af6">rdmnet::EptClient::Handle</a> client_handle,</div><div class="line">                                                <a class="code" href="group__rdmnet__cpp__common.html#gadf5994aa4727265c21622c5a0f997ceb">rdmnet::ScopeHandle</a> scope_handle,</div><div class="line">                                                <a class="code" href="group__rdmnet__api__common.html#ga47e9b8ab4e35d074085d3d9a91f77ac2">client_list_action_t</a> list_action,</div><div class="line">                                                <span class="keyword">const</span> <a class="code" href="classrdmnet_1_1_ept_client_list.html">rdmnet::EptClientList</a>&amp; list)</div><div class="line">{</div><div class="line">  <span class="comment">// Check handles as necessary...</span></div><div class="line"></div><div class="line">  <span class="keywordflow">switch</span> (list_action)</div><div class="line">  {</div><div class="line">    <span class="keywordflow">case</span> <a class="code" href="group__rdmnet__api__common.html#gga47e9b8ab4e35d074085d3d9a91f77ac2a28f365664cab7adfffbad8c478ca3a09">kRdmnetClientListAppend</a>:</div><div class="line">      <span class="comment">// These are new entries to be added to the list of clients. Append the new entry to our</span></div><div class="line">      <span class="comment">// bookkeeping.</span></div><div class="line">      AddNewClients(list.<a class="code" href="classrdmnet_1_1_ept_client_list.html#a4a3dac5970f7c74e42009f8ef14b6de2">GetClientEntries</a>());</div><div class="line">      <span class="keywordflow">break</span>;</div><div class="line">    <span class="keywordflow">case</span> <a class="code" href="group__rdmnet__api__common.html#gga47e9b8ab4e35d074085d3d9a91f77ac2a62a9556be67db06e0fd26dbd5a20ff45">kRdmnetClientListRemove</a>:</div><div class="line">      <span class="comment">// These are entries to be removed from the list of clients. Remove the entry from our</span></div><div class="line">      <span class="comment">// bookkeeping.</span></div><div class="line">      RemoveClients(list.<a class="code" href="classrdmnet_1_1_ept_client_list.html#a4a3dac5970f7c74e42009f8ef14b6de2">GetClientEntries</a>());</div><div class="line">      <span class="keywordflow">break</span>;</div><div class="line">    <span class="keywordflow">case</span> <a class="code" href="group__rdmnet__api__common.html#gga47e9b8ab4e35d074085d3d9a91f77ac2a8401f8f58863ec76c40f9f1fd84d3440">kRdmnetClientListUpdate</a>:</div><div class="line">      <span class="comment">// These are entries to be updated in the list of clients. Update the corresponding entry</span></div><div class="line">      <span class="comment">// in our bookkeeping.</span></div><div class="line">      UpdateClients(list.<a class="code" href="classrdmnet_1_1_ept_client_list.html#a4a3dac5970f7c74e42009f8ef14b6de2">GetClientEntries</a>());</div><div class="line">      <span class="keywordflow">break</span>;</div><div class="line">    <span class="keywordflow">case</span> <a class="code" href="group__rdmnet__api__common.html#gga47e9b8ab4e35d074085d3d9a91f77ac2a93835bbdfa444ea89287ecb5416b1704">kRdmnetClientListReplace</a>:</div><div class="line">      <span class="comment">// This is the full client list currently connected to the broker - our existing client </span></div><div class="line">      <span class="comment">// list should be replaced wholesale with this one. This will be the response to</span></div><div class="line">      <span class="comment">// EptClient::RequestClientList(); the other cases are sent unsolicited.</span></div><div class="line">      ReplaceClientList(list.<a class="code" href="classrdmnet_1_1_ept_client_list.html#a4a3dac5970f7c74e42009f8ef14b6de2">GetClientEntries</a>());</div><div class="line">      <span class="keywordflow">break</span>;</div><div class="line">  }</div><div class="line"></div><div class="line">  <span class="keywordflow">if</span> (list.<a class="code" href="classrdmnet_1_1_ept_client_list.html#a4fab208b004476e6474cf439f668c3ae">more_coming</a>())</div><div class="line">  {</div><div class="line">    <span class="comment">// The library ran out of memory pool space while allocating client entries - after this</span></div><div class="line">    <span class="comment">// callback returns, another will be delivered with the continuation of this response.</span></div><div class="line">    <span class="comment">// If RDMNET_DYNAMIC_MEM == 1 (the default on non-embedded platforms), this flag will never be</span></div><div class="line">    <span class="comment">// set to true and does not need to be checked.</span></div><div class="line">  }</div><div class="line">}</div></div><!-- fragment --><p> 
+</div>
+</p>
+<p>Brokers also send Client List Update messages asynchronously when things change; these messages contain only the differences from the last client list sent to a given controller. This means you should only have to request a full client list when a new connection completes; after that, expect periodic callbacks notifying you of changes, with the <a class="el" href="group__rdmnet__api__common.html#ga47e9b8ab4e35d074085d3d9a91f77ac2" title="How to apply the client entries to the existing client list in a client_list_update_received callback...">client_list_action_t</a> set appropriately as shown above.</p>
+<p>Each EPT client entry structure contains a list of sub-protocols that client supports (along with its CID). This list should be checked for protocols that match those of the local EPT client to determine which clients you are interested in talking to. Make sure to save those clients' CIDs; that is the primary addressing identifier you will use to send data to them.</p>
+<h2>Sending Data</h2>
+<p>Send data to other EPT clients by providing the data, the EPT sub-protocol being used, and the destination client's CID.</p>
+<p>The caller retains ownership of any data buffers supplied to the data sending API functions. See <a class="el" href="data_ownership.html">Data Ownership Paradigms in the RDMnet Library</a> for more information.</p>
+<p> 
+<div class="tab">
+  <button id="button_8_c" class="tablinks" onclick="selectLanguage(event, '8', 'c')">C</button>
+  <button id="button_8_cpp" class="tablinks" onclick="selectLanguage(event, '8', 'cpp')">C++</button>
+</div>
+<div id="div_8_c" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_uuid.html">EtcPalUuid</a> dest_cid = <span class="comment">/* The CID of the client we are sending the data to */</span>;</div><div class="line"></div><div class="line">uint8_t data[20]; <span class="comment">// An arbitrary data buffer of arbitrary size</span></div><div class="line"><span class="comment">// Fill in data with some protocol-specific opaque data to send...</span></div><div class="line"></div><div class="line"><span class="comment">// Send data for sub-protocol 1 to the client indicated by dest_cid</span></div><div class="line"><a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#ga743b0648f0ca798ef29c9f69c6e255af">etcpal_error_t</a> result = <a class="code" href="group__rdmnet__ept__client.html#ga86c921be6d2aac5dbbb3c66b207947a2">rdmnet_ept_client_send_data</a>(my_ept_client_handle, my_scope_handle, &amp;dest_cid,</div><div class="line">                                                    MY_ESTA_MANUFACTURER_ID, 1, data, 20);</div></div><!-- fragment --><p> 
+</div>
+<div id="div_8_cpp" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><span class="comment">// The CID of the client we are sending the data to</span></div><div class="line"><a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html">etcpal::Uuid</a> dest_cid = <a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html#ab017791f5f66829527591d8bd6bd840f">etcpal::Uuid::FromString</a>(<span class="stringliteral">&quot;7f0bb8b0-fead-40c0-b657-d92d39e57586&quot;</span>);</div><div class="line"></div><div class="line">std::array&lt;uint8_t, 20&gt; data; <span class="comment">// An arbitrary data buffer of arbitrary size</span></div><div class="line"><span class="comment">// Fill in data with some protocol-specific opaque data to send...</span></div><div class="line"></div><div class="line"><span class="comment">// Send data for sub-protocol 1 to the client indicated by dest_cid</span></div><div class="line"><a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_error.html">etcpal::Error</a> result = ept_client.<a class="code" href="classrdmnet_1_1_ept_client.html#ab64b62efe1efb21827dcc87d1059ceed">SendData</a>(my_scope_handle, dest_cid, MY_ESTA_MANUFACTURER_ID, 1,</div><div class="line">                                           data.<a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html#a21b8e060baa6eeed3e5e45e6d760b54c">data</a>(), data.size());</div></div><!-- fragment --><p> 
+</div>
+</p>
+<h2>Handling Data</h2>
+<p>EPT makes no distinction between requests and replies and has no method of correlating them; these features are up to sub-protocols to implement. When data arrives addressed to a local client, it will be delivered asynchronously through the "data received" callback.</p>
+<p>Note that data received callbacks reference data buffers owned by the library, which will be invalid when the callback returns. See <a class="el" href="data_ownership.html">Data Ownership Paradigms in the RDMnet Library</a> for more information.</p>
+<p> 
+<div class="tab">
+  <button id="button_9_c" class="tablinks" onclick="selectLanguage(event, '9', 'c')">C</button>
+  <button id="button_9_cpp" class="tablinks" onclick="selectLanguage(event, '9', 'cpp')">C++</button>
+</div>
+<div id="div_9_c" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><span class="keywordtype">void</span> ept_data_received_callback(<a class="code" href="group__rdmnet__ept__client.html#gafe4439590493e7a8abedabc8de8ab51c">rdmnet_ept_client_t</a> client_handle, <a class="code" href="group__rdmnet__api__common.html#ga7244ab5c8edb8bc9c1e4792a6c64f798">rdmnet_client_scope_t</a> scope_handle,</div><div class="line">                                <span class="keyword">const</span> <a class="code" href="struct_rdmnet_ept_data.html">RdmnetEptData</a>* data, <a class="code" href="struct_rdmnet_sync_ept_response.html">RdmnetSyncEptResponse</a>* response, <span class="keywordtype">void</span>* context)</div><div class="line">{</div><div class="line">  <span class="comment">// Check handles and/or context as necessary...</span></div><div class="line"></div><div class="line">  <span class="keywordtype">char</span> cid_str[<a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__uuid.html#gabab14207e273082491f7be2a21275092">ETCPAL_UUID_STRING_BYTES</a>];</div><div class="line">  <a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__uuid.html#ga479b00b02ab33cf757e9476ad3286336">etcpal_uuid_to_string</a>(&amp;data-&gt;<a class="code" href="struct_rdmnet_ept_data.html#a3fe836dace9e08c161884ad21c8f26c6">source_cid</a>, cid_str);</div><div class="line">  printf(<span class="stringliteral">&quot;Got data from client %s for protocol %04x:%04x...\n&quot;</span>, cid_str, data-&gt;<a class="code" href="struct_rdmnet_ept_data.html#a6880f02c4ef621c6f6eff8e549514bb7">manufacturer_id</a>, data-&gt;<a class="code" href="struct_rdmnet_ept_data.html#a5129aa3cbcb00c91df302116d657b465">protocol_id</a>);</div><div class="line"></div><div class="line">  <span class="comment">// data-&gt;data and data-&gt;data_len will point to the actual protocol-specific opaque-data.</span></div><div class="line">}</div></div><!-- fragment --><p> 
+</div>
+<div id="div_9_cpp" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><a class="code" href="classrdmnet_1_1_ept_response_action.html">rdmnet::EptResponseAction</a> MyEptNotifyHandler::HandleEptData(<a class="code" href="classrdmnet_1_1_ept_client.html#a36b8fa2d0851a29b79c4ae6824484af6">rdmnet::EptClient::Handle</a> client_handle,</div><div class="line">                                                            <a class="code" href="group__rdmnet__cpp__common.html#gadf5994aa4727265c21622c5a0f997ceb">rdmnet::ScopeHandle</a> scope_handle,</div><div class="line">                                                            <span class="keyword">const</span> <a class="code" href="classrdmnet_1_1_ept_data.html">rdmnet::EptData</a>&amp; data)</div><div class="line">{</div><div class="line">  <span class="comment">// Check handles as necessary...</span></div><div class="line"></div><div class="line">  std::cout &lt;&lt; <span class="stringliteral">&quot;Got data from client &quot;</span> &lt;&lt; data.<a class="code" href="classrdmnet_1_1_ept_data.html#a953220dfdd8a88b3275b73ed2e8d03bb">source_cid</a>().<a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html#a19c380b03cea21d7ac7325136a131ff0">ToString</a>()</div><div class="line">            &lt;&lt; <span class="stringliteral">&quot; for protocol &quot;</span> &lt;&lt; data.<a class="code" href="classrdmnet_1_1_ept_data.html#a8d7fa5dee2b4e5c2a27bf9fca7cc200f">manufacturer_id</a>() &lt;&lt; <span class="charliteral">&#39;:&#39;</span> &lt;&lt; data.<a class="code" href="classrdmnet_1_1_ept_data.html#af663a739f8d7204b92c6627aac770c34">protocol_id</a>() &lt;&lt; <span class="stringliteral">&quot;...\n&quot;</span>;</div><div class="line"></div><div class="line">  <span class="comment">// data.data() and data.data_len() will point to the actual protocol-specific opaque data.</span></div><div class="line"></div><div class="line">  <span class="comment">// More on this below...</span></div><div class="line">  <span class="keywordflow">return</span> <a class="code" href="classrdmnet_1_1_ept_response_action.html#a549151dc877bdd04a443a5016fd25a13">rdmnet::EptResponseAction::DeferResponse</a>();</div><div class="line">}</div></div><!-- fragment --><p> 
+</div>
+</p>
+<h3>Responding Synchronously to EPT Data</h3>
+<p>If you receive EPT data that motivates a response, and you can access the data with which to respond relatively quickly from the code path of the notification callback, it's convenient to respond synchronously. The EPT data received notification callbacks provide a way to set the response information directly from the callback, which the library will use to send a response after the callback returns.</p>
+<p><em>Important note: Do not do this when accessing response data may block for a significant time.</em></p>
+<p>When responding with EPT data, it should be copied into the buffer that was provided when the EPT client handle was created, before returning from the callback function. All notifications for any given RDMnet handle are delivered from the same thread, so accesses to this buffer from the callback context are thread-safe.</p>
+<p>After copying the data, use the API-specific method to indicate that data should be sent in response as shown below.</p>
+<p> 
+<div class="tab">
+  <button id="button_10_c" class="tablinks" onclick="selectLanguage(event, '10', 'c')">C</button>
+  <button id="button_10_cpp" class="tablinks" onclick="selectLanguage(event, '10', 'cpp')">C++</button>
+</div>
+<div id="div_10_c" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><span class="comment">// This buffer was provided as part of the RdmnetEptClientConfig when the device handle was created.</span></div><div class="line"><span class="keyword">static</span> uint8_t my_ept_response_buf[MY_MAX_RESPONSE_SIZE];</div><div class="line"></div><div class="line"><span class="keywordtype">void</span> ept_data_received_callback(<a class="code" href="group__rdmnet__ept__client.html#gafe4439590493e7a8abedabc8de8ab51c">rdmnet_ept_client_t</a> client_handle, <a class="code" href="group__rdmnet__api__common.html#ga7244ab5c8edb8bc9c1e4792a6c64f798">rdmnet_client_scope_t</a> scope_handle,</div><div class="line">                                <span class="keyword">const</span> <a class="code" href="struct_rdmnet_ept_data.html">RdmnetEptData</a>* data, <a class="code" href="struct_rdmnet_sync_ept_response.html">RdmnetSyncEptResponse</a>* response, <span class="keywordtype">void</span>* context)</div><div class="line">{</div><div class="line">  <span class="comment">// After determining that the message requires a response...</span></div><div class="line">  memcpy(my_ept_response_buf, my_response_data, RESPONSE_DATA_SIZE);</div><div class="line">  <a class="code" href="group__rdmnet__api__common.html#ga5075bf8b8590d72ad8f2626eb4b19bb9">RDMNET_SYNC_SEND_EPT_DATA</a>(response, RESPONSE_DATA_SIZE);</div><div class="line">  <span class="comment">// Data will be sent after this function returns.</span></div><div class="line">}</div></div><!-- fragment --><p> 
+</div>
+<div id="div_10_cpp" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><span class="comment">// This buffer was provided as part of the EptClient::Settings when the EptClient instance</span></div><div class="line"><span class="comment">// was initialized.</span></div><div class="line"><span class="keyword">static</span> uint8_t my_ept_response_buf[kMyMaxResponseSize];</div><div class="line"></div><div class="line"><a class="code" href="classrdmnet_1_1_ept_response_action.html">rdmnet::EptResponseAction</a> MyEptNotifyHander::HandleEptData(<a class="code" href="classrdmnet_1_1_ept_client.html#a36b8fa2d0851a29b79c4ae6824484af6">rdmnet::EptClient::Handle</a> client_handle,</div><div class="line">                                                           <a class="code" href="group__rdmnet__cpp__common.html#gadf5994aa4727265c21622c5a0f997ceb">rdmnet::ScopeHandle</a> scope_handle,</div><div class="line">                                                           <span class="keyword">const</span> <a class="code" href="classrdmnet_1_1_ept_data.html">rdmnet::EptData</a>&amp; data)</div><div class="line">{</div><div class="line">  std::memcpy(my_ept_response_buf, my_response_data, kResponseDataSize);</div><div class="line">  <span class="keywordflow">return</span> <a class="code" href="classrdmnet_1_1_ept_response_action.html#ac648b8c90bc48b9d7982b5daee8e2b60">rdmnet::EptResponseAction::SendData</a>(kResponseDataSize);</div><div class="line">}</div></div><!-- fragment --><p> 
+</div>
+</p>
+<h3>Responding Asynchronously or Not Responding</h3>
+<p>If EPT data does not require a response, or if you choose to defer the response to be sent at a later time, this can be indicated in the data received callback as well. Note that if you want to save the EPT data you received, it must be copied out (data delivered to callbacks is still owned by the library). There are RDMnet API functions to save EPT data using heap allocation; you can also use your own method of saving the data.</p>
+<p> 
+<div class="tab">
+  <button id="button_11_c" class="tablinks" onclick="selectLanguage(event, '11', 'c')">C</button>
+  <button id="button_11_cpp" class="tablinks" onclick="selectLanguage(event, '11', 'cpp')">C++</button>
+</div>
+<div id="div_11_c" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><span class="keywordtype">void</span> ept_data_received_callback(<a class="code" href="group__rdmnet__ept__client.html#gafe4439590493e7a8abedabc8de8ab51c">rdmnet_ept_client_t</a> client_handle, <a class="code" href="group__rdmnet__api__common.html#ga7244ab5c8edb8bc9c1e4792a6c64f798">rdmnet_client_scope_t</a> scope_handle,</div><div class="line">                                <span class="keyword">const</span> <a class="code" href="struct_rdmnet_ept_data.html">RdmnetEptData</a>* data, <a class="code" href="struct_rdmnet_sync_ept_response.html">RdmnetSyncEptResponse</a>* response, <span class="keywordtype">void</span>* context)</div><div class="line">{</div><div class="line">  <span class="comment">// RdmnetEptData structures do not own their data and the data will be invalid when this callback</span></div><div class="line">  <span class="comment">// returns. To save the data for later processing:</span></div><div class="line">  <a class="code" href="struct_rdmnet_saved_ept_data.html">RdmnetSavedEptData</a> saved_data;</div><div class="line">  <a class="code" href="group__rdmnet__api__common.html#gaa415286760ac23790d49a89bcc75c5ea">rdmnet_save_ept_data</a>(&amp;data, &amp;saved_data);</div><div class="line"></div><div class="line">  <span class="comment">// This structure must then be freed before going out of scope, using rdmnet_free_saved_ept_data().</span></div><div class="line"></div><div class="line">  <span class="comment">// response will be set to take no action (DEFER_RESPONSE) by default, so no action is necessary</span></div><div class="line">  <span class="comment">// here.</span></div><div class="line">}</div></div><!-- fragment --><p> 
+</div>
+<div id="div_11_cpp" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><a class="code" href="classrdmnet_1_1_ept_response_action.html">rdmnet::EptResponseAction</a> MyEptNotifyHandler::HandleEptData(<a class="code" href="classrdmnet_1_1_ept_client.html#a36b8fa2d0851a29b79c4ae6824484af6">rdmnet::EptClient::Handle</a> client_handle,</div><div class="line">                                                            <a class="code" href="group__rdmnet__cpp__common.html#gadf5994aa4727265c21622c5a0f997ceb">rdmnet::ScopeHandle</a> scope_handle,</div><div class="line">                                                            <span class="keyword">const</span> <a class="code" href="classrdmnet_1_1_ept_data.html">rdmnet::EptData</a>&amp; data)</div><div class="line">{</div><div class="line">  <span class="comment">// EptData structures do not own their data and the data will be invalid when this callback</span></div><div class="line">  <span class="comment">// returns. To save the data for later processing, you can save the entire structure with its</span></div><div class="line">  <span class="comment">// addressing data:</span></div><div class="line">  <a class="code" href="classrdmnet_1_1_saved_ept_data.html">rdmnet::SavedEptData</a> saved_data = data.<a class="code" href="classrdmnet_1_1_ept_data.html#ac6016bf32c210897a6a47f0262152e9c">Save</a>();</div><div class="line"></div><div class="line">  <span class="comment">// Or to just save the opaque data:</span></div><div class="line">  std::vector&lt;uint8_t&gt; saved_data = data.<a class="code" href="classrdmnet_1_1_ept_data.html#a0ad6e38f7e2047f51194be39eccb7056">CopyData</a>();</div><div class="line"></div><div class="line">  <span class="comment">// Indicate that we will take no response action directly from this callback.</span></div><div class="line">  <span class="keywordflow">return</span> <a class="code" href="classrdmnet_1_1_ept_response_action.html#a549151dc877bdd04a443a5016fd25a13">rdmnet::EptResponseAction::DeferResponse</a>();</div><div class="line">}</div></div><!-- fragment --><p> 
+</div>
+</p>
+<h2>Handling EPT Status Messages</h2>
+<p>If something went wrong while a broker or an EPT client was processing your message, you will get a response called an "EPT Status". There is a separate callback for handling these messages.</p>
+<p> 
+<div class="tab">
+  <button id="button_12_c" class="tablinks" onclick="selectLanguage(event, '12', 'c')">C</button>
+  <button id="button_12_cpp" class="tablinks" onclick="selectLanguage(event, '12', 'cpp')">C++</button>
+</div>
+<div id="div_12_c" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><span class="keywordtype">void</span> ept_status_callback(<a class="code" href="group__rdmnet__ept__client.html#gafe4439590493e7a8abedabc8de8ab51c">rdmnet_ept_client_t</a> client_handle, <a class="code" href="group__rdmnet__api__common.html#ga7244ab5c8edb8bc9c1e4792a6c64f798">rdmnet_client_scope_t</a> scope_handle,</div><div class="line">                         <span class="keyword">const</span> <a class="code" href="struct_rdmnet_ept_status.html">RdmnetEptStatus</a>* status, <span class="keywordtype">void</span>* context)</div><div class="line">{</div><div class="line">  <span class="comment">// Check handles and/or context as necessary...</span></div><div class="line"></div><div class="line">  <span class="keywordtype">char</span> cid_str[<a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__uuid.html#gabab14207e273082491f7be2a21275092">ETCPAL_UUID_STRING_BYTES</a>];</div><div class="line">  <a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__uuid.html#ga479b00b02ab33cf757e9476ad3286336">etcpal_uuid_to_string</a>(&amp;status-&gt;<a class="code" href="struct_rdmnet_ept_status.html#a0393a00733c2f0a144f436dd1fcb8456">source_cid</a>, cid_str);</div><div class="line">  printf(<span class="stringliteral">&quot;Error sending EPT data to component %s: &#39;%s&#39;\n&quot;</span>, cid_str,</div><div class="line">         <a class="code" href="group__rdmnet__api__common.html#ga1d378dff587acdfa8306c1075e316f4a">rdmnet_ept_status_code_to_string</a>(status-&gt;<a class="code" href="struct_rdmnet_ept_status.html#ad2e681d1a760b87719d5192727b91e60">status_code</a>));</div><div class="line">}</div></div><!-- fragment --><p> 
+</div>
+<div id="div_12_cpp" class="tabcontent">
+</p>
+<div class="fragment"><div class="line"><span class="keywordtype">void</span> MyEptNotifyHandler::HandleEptStatus(<a class="code" href="classrdmnet_1_1_ept_client.html#a36b8fa2d0851a29b79c4ae6824484af6">rdmnet::EptClient::Handle</a> client_handle,</div><div class="line">                                         <a class="code" href="group__rdmnet__cpp__common.html#gadf5994aa4727265c21622c5a0f997ceb">rdmnet::ScopeHandle</a> scope_handle,</div><div class="line">                                         <span class="keyword">const</span> <a class="code" href="classrdmnet_1_1_ept_status.html">rdmnet::EptStatus</a>&amp; status)</div><div class="line">{</div><div class="line">  <span class="comment">// Check handles as necessary...</span></div><div class="line"></div><div class="line">  std::cout &lt;&lt; <span class="stringliteral">&quot;Error sending EPT data to component &quot;</span> &lt;&lt; status.<a class="code" href="classrdmnet_1_1_ept_status.html#abee5c6ea63d7dc369301cc5dda8393d9">source_cid</a>().<a class="codeRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html#a19c380b03cea21d7ac7325136a131ff0">ToString</a>() &lt;&lt; <span class="stringliteral">&quot;: &#39;&quot;</span></div><div class="line">            &lt;&lt; status.<a class="code" href="classrdmnet_1_1_ept_status.html#a3c9c36a852d314a02f05d6e98a261c18">CodeToString</a>() &lt;&lt; <span class="stringliteral">&quot;&#39;\n&quot;</span>;</div><div class="line">}</div></div><!-- fragment --><p> 
+</div>
+ </p>
+</div></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="getting_started.html">Getting Started</a></li>
+    <li class="footer">Generated by
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>
+  </ul>
+</div>
+</body>
+</html>

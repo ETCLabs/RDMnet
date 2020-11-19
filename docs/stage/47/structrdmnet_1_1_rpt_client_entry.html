@@ -1,0 +1,263 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen 1.8.13" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RDMnet: rdmnet::RptClientEntry Struct Reference</title>
+  <link href="tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="dynsections.js"></script>
+  <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+</script>
+  <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css" />
+  <!--BEGIN CUSTOM SCRIPTS-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <script type="text/javascript">
+    $(function () { selectAllC() });
+  </script>
+  <script type="text/javascript">
+    function selectAllC() {
+      // Enable all C-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_c")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_c")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectAllCpp() {
+      // Enable all C++-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_cpp")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C++-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_cpp")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectLanguage(evt, block_id, language) {
+      // Get all elements with class="tabcontent" and hide them
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.startsWith("div_" + block_id)) {
+          tabcontent[i].style.display = "none";
+        }
+      }
+      // Get all elements with class="tablinks" and remove the class "active"
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.startsWith("button_" + block_id)) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById("div_" + block_id + "_" + language).style.display = "block";
+      if (!evt.currentTarget.className.includes("active")) {
+        evt.currentTarget.className += " active";
+      }
+    }
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">RDMnet
+                &#160;<span id="projectnumber">Staging for pull request 47</span>
+              </div>
+              <div id="projectbrief">Implementation of ANSI E1.33 (RDMnet)</div>
+            </td>
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- end header part -->
+<!-- Generated by Doxygen 1.8.13 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Search');
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('structrdmnet_1_1_rpt_client_entry.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-attribs">Data Fields</a>  </div>
+  <div class="headertitle">
+<div class="title">rdmnet::RptClientEntry Struct Reference<div class="ingroups"><a class="el" href="group__rdmnet__cpp__api.html">RDMnet C++ Language APIs</a> &raquo; <a class="el" href="group__rdmnet__cpp__common.html">Common Definitions</a></div></div>  </div>
+</div><!--header-->
+<div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>A descriptive structure for an RPT client. </p>
+</div>
+<p><code>#include &lt;<a class="el" href="rpt__client_8h_source.html">rdmnet/cpp/message_types/rpt_client.h</a>&gt;</code></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
+Public Member Functions</h2></td></tr>
+<tr class="memitem:a83b049a0d407fa389c7180a2c23a1b15"><td class="memItemLeft" align="right" valign="top"><a id="a83b049a0d407fa389c7180a2c23a1b15"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrdmnet_1_1_rpt_client_entry.html#a83b049a0d407fa389c7180a2c23a1b15">RptClientEntry</a> (const <a class="el" href="struct_rdmnet_rpt_client_entry.html">RdmnetRptClientEntry</a> &amp;c_entry)</td></tr>
+<tr class="memdesc:a83b049a0d407fa389c7180a2c23a1b15"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct an <a class="el" href="structrdmnet_1_1_rpt_client_entry.html" title="A descriptive structure for an RPT client. ">RptClientEntry</a> copied from an instance of the C <a class="el" href="struct_rdmnet_rpt_client_entry.html" title="A descriptive structure for an RPT client. ">RdmnetRptClientEntry</a> type. <br /></td></tr>
+<tr class="separator:a83b049a0d407fa389c7180a2c23a1b15"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0f3401294300ed88e95f82f6b6a2f1f6"><td class="memItemLeft" align="right" valign="top"><a id="a0f3401294300ed88e95f82f6b6a2f1f6"></a>
+<a class="el" href="structrdmnet_1_1_rpt_client_entry.html">RptClientEntry</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrdmnet_1_1_rpt_client_entry.html#a0f3401294300ed88e95f82f6b6a2f1f6">operator=</a> (const <a class="el" href="struct_rdmnet_rpt_client_entry.html">RdmnetRptClientEntry</a> &amp;c_entry)</td></tr>
+<tr class="memdesc:a0f3401294300ed88e95f82f6b6a2f1f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Assign an instance of the C <a class="el" href="struct_rdmnet_rpt_client_entry.html" title="A descriptive structure for an RPT client. ">RdmnetRptClientEntry</a> type to an instance of this class. <br /></td></tr>
+<tr class="separator:a0f3401294300ed88e95f82f6b6a2f1f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2fdeba03048dd553c70bcc0d3dc820d5"><td class="memItemLeft" align="right" valign="top"><a id="a2fdeba03048dd553c70bcc0d3dc820d5"></a>
+const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrdmnet_1_1_rpt_client_entry.html#a2fdeba03048dd553c70bcc0d3dc820d5">TypeToCString</a> () const noexcept</td></tr>
+<tr class="memdesc:a2fdeba03048dd553c70bcc0d3dc820d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the client's RPT client type (controller or device) as a C-style string. <br /></td></tr>
+<tr class="separator:a2fdeba03048dd553c70bcc0d3dc820d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a13df7611b02b3dd53b3926ae82b4196e"><td class="memItemLeft" align="right" valign="top"><a id="a13df7611b02b3dd53b3926ae82b4196e"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrdmnet_1_1_rpt_client_entry.html#a13df7611b02b3dd53b3926ae82b4196e">TypeToString</a> () const</td></tr>
+<tr class="memdesc:a13df7611b02b3dd53b3926ae82b4196e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the client's RPT client type (controller or device) as a string. <br /></td></tr>
+<tr class="separator:a13df7611b02b3dd53b3926ae82b4196e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
+Data Fields</h2></td></tr>
+<tr class="memitem:a8d8bccf2f634d2f57dd5efd8943e3d86"><td class="memItemLeft" align="right" valign="top"><a id="a8d8bccf2f634d2f57dd5efd8943e3d86"></a>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html">etcpal::Uuid</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrdmnet_1_1_rpt_client_entry.html#a8d8bccf2f634d2f57dd5efd8943e3d86">cid</a></td></tr>
+<tr class="memdesc:a8d8bccf2f634d2f57dd5efd8943e3d86"><td class="mdescLeft">&#160;</td><td class="mdescRight">The client's Component Identifier (CID). <br /></td></tr>
+<tr class="separator:a8d8bccf2f634d2f57dd5efd8943e3d86"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90a315be27a6ec997d2e6b76b87efd75"><td class="memItemLeft" align="right" valign="top"><a id="a90a315be27a6ec997d2e6b76b87efd75"></a>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/classrdm_1_1_uid.html">rdm::Uid</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrdmnet_1_1_rpt_client_entry.html#a90a315be27a6ec997d2e6b76b87efd75">uid</a></td></tr>
+<tr class="memdesc:a90a315be27a6ec997d2e6b76b87efd75"><td class="mdescLeft">&#160;</td><td class="mdescRight">The client's RDM UID. <br /></td></tr>
+<tr class="separator:a90a315be27a6ec997d2e6b76b87efd75"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aafc3334adff830cb86c3398ebfb4f9f4"><td class="memItemLeft" align="right" valign="top"><a id="aafc3334adff830cb86c3398ebfb4f9f4"></a>
+<a class="el" href="group__rdmnet__api__common.html#gaa736f925394f04b673b5070a6b4203b1">rpt_client_type_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrdmnet_1_1_rpt_client_entry.html#aafc3334adff830cb86c3398ebfb4f9f4">type</a></td></tr>
+<tr class="memdesc:aafc3334adff830cb86c3398ebfb4f9f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the client is a controller or a device. <br /></td></tr>
+<tr class="separator:aafc3334adff830cb86c3398ebfb4f9f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6eb6fd6a6ed190500e119be751d0efc3"><td class="memItemLeft" align="right" valign="top"><a id="a6eb6fd6a6ed190500e119be751d0efc3"></a>
+<a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_uuid.html">etcpal::Uuid</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structrdmnet_1_1_rpt_client_entry.html#a6eb6fd6a6ed190500e119be751d0efc3">binding_cid</a></td></tr>
+<tr class="memdesc:a6eb6fd6a6ed190500e119be751d0efc3"><td class="mdescLeft">&#160;</td><td class="mdescRight">An optional identifier for another component that the client is associated with. <br /></td></tr>
+<tr class="separator:a6eb6fd6a6ed190500e119be751d0efc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<hr/>The documentation for this struct was generated from the following file:<ul>
+<li>include/rdmnet/cpp/message_types/<a class="el" href="rpt__client_8h_source.html">rpt_client.h</a></li>
+</ul>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="namespacerdmnet.html">rdmnet</a></li><li class="navelem"><a class="el" href="structrdmnet_1_1_rpt_client_entry.html">RptClientEntry</a></li>
+    <li class="footer">Generated by
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>
+  </ul>
+</div>
+</body>
+</html>

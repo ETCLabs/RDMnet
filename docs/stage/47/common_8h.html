@@ -1,0 +1,446 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen 1.8.13" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RDMnet: include/rdmnet/common.h File Reference</title>
+  <link href="tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="dynsections.js"></script>
+  <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+</script>
+  <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css" />
+  <!--BEGIN CUSTOM SCRIPTS-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <script type="text/javascript">
+    $(function () { selectAllC() });
+  </script>
+  <script type="text/javascript">
+    function selectAllC() {
+      // Enable all C-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_c")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_c")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectAllCpp() {
+      // Enable all C++-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_cpp")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C++-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_cpp")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectLanguage(evt, block_id, language) {
+      // Get all elements with class="tabcontent" and hide them
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.startsWith("div_" + block_id)) {
+          tabcontent[i].style.display = "none";
+        }
+      }
+      // Get all elements with class="tablinks" and remove the class "active"
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.startsWith("button_" + block_id)) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById("div_" + block_id + "_" + language).style.display = "block";
+      if (!evt.currentTarget.className.includes("active")) {
+        evt.currentTarget.className += " active";
+      }
+    }
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">RDMnet
+                &#160;<span id="projectnumber">Staging for pull request 47</span>
+              </div>
+              <div id="projectbrief">Implementation of ANSI E1.33 (RDMnet)</div>
+            </td>
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- end header part -->
+<!-- Generated by Doxygen 1.8.13 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Search');
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('common_8h.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#nested-classes">Data Structures</a> &#124;
+<a href="#define-members">Macros</a> &#124;
+<a href="#typedef-members">Typedefs</a> &#124;
+<a href="#enum-members">Enumerations</a> &#124;
+<a href="#func-members">Functions</a>  </div>
+  <div class="headertitle">
+<div class="title">common.h File Reference</div>  </div>
+</div><!--header-->
+<div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Functions and definitions common to all RDMnet API modules. </p>
+</div><div class="textblock"><code>#include &quot;etcpal/error.h&quot;</code><br />
+<code>#include &quot;etcpal/inet.h&quot;</code><br />
+<code>#include &quot;etcpal/log.h&quot;</code><br />
+<code>#include &quot;<a class="elRef" doxygen="/home/vsts/work/1/s/external/RDM/docs/RDM.tag:https://etclabs.github.io/RDM/docs/head/" href="https://etclabs.github.io/RDM/docs/head/message_8h.html">rdm/message.h</a>&quot;</code><br />
+<code>#include &quot;rdmnet/defs.h&quot;</code><br />
+</div>
+<p><a href="common_8h_source.html">Go to the source code of this file.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Data Structures</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_sync_rdm_response.html">RdmnetSyncRdmResponse</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This structure should not be manipulated directly - use the macros to access it:  <a href="struct_rdmnet_sync_rdm_response.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_sync_ept_response.html">RdmnetSyncEptResponse</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This structure should not be manipulated directly - use the macros to access it:  <a href="struct_rdmnet_sync_ept_response.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_netint_config.html">RdmnetNetintConfig</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Network interface configuration information to give the RDMnet library at initialization.  <a href="struct_rdmnet_netint_config.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
+Macros</h2></td></tr>
+<tr class="memitem:gaf4ea2570562bd8f38159f2d7413ca188"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#gaf4ea2570562bd8f38159f2d7413ca188">RDMNET_SYNC_SEND_RDM_ACK</a>(response_ptr,  response_data_len_in)</td></tr>
+<tr class="memdesc:gaf4ea2570562bd8f38159f2d7413ca188"><td class="mdescLeft">&#160;</td><td class="mdescRight">Indicate that an RDM ACK should be sent when this callback returns.  <a href="group__rdmnet__api__common.html#gaf4ea2570562bd8f38159f2d7413ca188">More...</a><br /></td></tr>
+<tr class="separator:gaf4ea2570562bd8f38159f2d7413ca188"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga91e96da81698ff84a605e9c21fdc46b3"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#ga91e96da81698ff84a605e9c21fdc46b3">RDMNET_SYNC_SEND_RDM_NACK</a>(response_ptr,  nack_reason_in)</td></tr>
+<tr class="memdesc:ga91e96da81698ff84a605e9c21fdc46b3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Indicate that an RDM NACK should be sent when this callback returns.  <a href="group__rdmnet__api__common.html#ga91e96da81698ff84a605e9c21fdc46b3">More...</a><br /></td></tr>
+<tr class="separator:ga91e96da81698ff84a605e9c21fdc46b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae50ccf46c68476302b14c450929ba43d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#gae50ccf46c68476302b14c450929ba43d">RDMNET_SYNC_DEFER_RDM_RESPONSE</a>(response_ptr)&#160;&#160;&#160;((response_ptr)-&gt;response_action = <a class="el" href="group__rdmnet__api__common.html#ggabef0caf0d0a3748a4dd53b2af3b0896aad453c180836d55ee1251b28ecd1d9cc2">kRdmnetRdmResponseActionDefer</a>)</td></tr>
+<tr class="memdesc:gae50ccf46c68476302b14c450929ba43d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Defer the RDM response to be sent later from another context.  <a href="group__rdmnet__api__common.html#gae50ccf46c68476302b14c450929ba43d">More...</a><br /></td></tr>
+<tr class="separator:gae50ccf46c68476302b14c450929ba43d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5075bf8b8590d72ad8f2626eb4b19bb9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#ga5075bf8b8590d72ad8f2626eb4b19bb9">RDMNET_SYNC_SEND_EPT_DATA</a>(response_ptr,  response_data_len_in)</td></tr>
+<tr class="memdesc:ga5075bf8b8590d72ad8f2626eb4b19bb9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Indicate that an EPT data message should be sent when this callback returns.  <a href="group__rdmnet__api__common.html#ga5075bf8b8590d72ad8f2626eb4b19bb9">More...</a><br /></td></tr>
+<tr class="separator:ga5075bf8b8590d72ad8f2626eb4b19bb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaead1ffc05edef5d42829d8247ff558c0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#gaead1ffc05edef5d42829d8247ff558c0">RDMNET_SYNC_SEND_EPT_STATUS</a>(response_ptr,  status_code_in)</td></tr>
+<tr class="memdesc:gaead1ffc05edef5d42829d8247ff558c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Indicate that an EPT status message should be sent when this callback returns.  <a href="group__rdmnet__api__common.html#gaead1ffc05edef5d42829d8247ff558c0">More...</a><br /></td></tr>
+<tr class="separator:gaead1ffc05edef5d42829d8247ff558c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga552e1d71c574e91cc6436e75465b35e9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#ga552e1d71c574e91cc6436e75465b35e9">RDMNET_SYNC_DEFER_EPT_RESPONSE</a>(response_ptr)&#160;&#160;&#160;((response_ptr)-&gt;response_action = <a class="el" href="group__rdmnet__api__common.html#gga0eb0a252159c7ae727d1e5b2b0244687afd522d7eba98ff9ca5cea835f40f8d32">kRdmnetEptResponseActionDefer</a>)</td></tr>
+<tr class="memdesc:ga552e1d71c574e91cc6436e75465b35e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Defer the response to the EPT message, either to be sent later or because no response is necessary.  <a href="group__rdmnet__api__common.html#ga552e1d71c574e91cc6436e75465b35e9">More...</a><br /></td></tr>
+<tr class="separator:ga552e1d71c574e91cc6436e75465b35e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:ga986b8fa634550df16b69189e63275bd3"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct_rdmnet_sync_rdm_response.html">RdmnetSyncRdmResponse</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#ga986b8fa634550df16b69189e63275bd3">RdmnetSyncRdmResponse</a></td></tr>
+<tr class="memdesc:ga986b8fa634550df16b69189e63275bd3"><td class="mdescLeft">&#160;</td><td class="mdescRight">This structure should not be manipulated directly - use the macros to access it:  <a href="group__rdmnet__api__common.html#ga986b8fa634550df16b69189e63275bd3">More...</a><br /></td></tr>
+<tr class="separator:ga986b8fa634550df16b69189e63275bd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8ab42acc61433c9f28ffdccd5282c2fe"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct_rdmnet_sync_ept_response.html">RdmnetSyncEptResponse</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#ga8ab42acc61433c9f28ffdccd5282c2fe">RdmnetSyncEptResponse</a></td></tr>
+<tr class="memdesc:ga8ab42acc61433c9f28ffdccd5282c2fe"><td class="mdescLeft">&#160;</td><td class="mdescRight">This structure should not be manipulated directly - use the macros to access it:  <a href="group__rdmnet__api__common.html#ga8ab42acc61433c9f28ffdccd5282c2fe">More...</a><br /></td></tr>
+<tr class="separator:ga8ab42acc61433c9f28ffdccd5282c2fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad7eaa2e7e203dec8364379769c3699dc"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct_rdmnet_netint_config.html">RdmnetNetintConfig</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#gad7eaa2e7e203dec8364379769c3699dc">RdmnetNetintConfig</a></td></tr>
+<tr class="memdesc:gad7eaa2e7e203dec8364379769c3699dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Network interface configuration information to give the RDMnet library at initialization.  <a href="group__rdmnet__api__common.html#gad7eaa2e7e203dec8364379769c3699dc">More...</a><br /></td></tr>
+<tr class="separator:gad7eaa2e7e203dec8364379769c3699dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:gaa9aca0658bfae057363a520c0d9907c2"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#gaa9aca0658bfae057363a520c0d9907c2">rpt_status_code_t</a> { <br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggaa9aca0658bfae057363a520c0d9907c2af30548e86cb4ffea1370501b566ccb4b">kRptStatusUnknownRptUid</a> = VECTOR_RPT_STATUS_UNKNOWN_RPT_UID, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggaa9aca0658bfae057363a520c0d9907c2a08699760f9bff1a12623953eb3ca513b">kRptStatusRdmTimeout</a> = VECTOR_RPT_STATUS_RDM_TIMEOUT, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggaa9aca0658bfae057363a520c0d9907c2aacb7604870f3fafd5847d235ec8cbc1f">kRptStatusInvalidRdmResponse</a> = VECTOR_RPT_STATUS_RDM_INVALID_RESPONSE, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggaa9aca0658bfae057363a520c0d9907c2adc85d110baa8e6f493a4e193f83a82fc">kRptStatusUnknownRdmUid</a> = VECTOR_RPT_STATUS_UNKNOWN_RDM_UID, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggaa9aca0658bfae057363a520c0d9907c2a196f60d23a101c1dcb4c543285129043">kRptStatusUnknownEndpoint</a> = VECTOR_RPT_STATUS_UNKNOWN_ENDPOINT, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggaa9aca0658bfae057363a520c0d9907c2ac057a735905bfc371c7a577a2583a922">kRptStatusBroadcastComplete</a> = VECTOR_RPT_STATUS_BROADCAST_COMPLETE, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggaa9aca0658bfae057363a520c0d9907c2a57eb7961b3b8e07041126584172495fb">kRptStatusUnknownVector</a> = VECTOR_RPT_STATUS_UNKNOWN_VECTOR, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggaa9aca0658bfae057363a520c0d9907c2a64656d8b931ee3468a3f17c2619d1517">kRptStatusInvalidMessage</a> = VECTOR_RPT_STATUS_INVALID_MESSAGE, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggaa9aca0658bfae057363a520c0d9907c2ab5343b3586658f6a836febf088617f90">kRptStatusInvalidCommandClass</a> = VECTOR_RPT_STATUS_INVALID_COMMAND_CLASS
+<br />
+ }<tr class="memdesc:gaa9aca0658bfae057363a520c0d9907c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">RPT status code definitions.  <a href="group__rdmnet__api__common.html#gaa9aca0658bfae057363a520c0d9907c2">More...</a><br /></td></tr>
+</td></tr>
+<tr class="separator:gaa9aca0658bfae057363a520c0d9907c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga32d742eda6003b7ca62688f6f0bfac9d"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#ga32d742eda6003b7ca62688f6f0bfac9d">ept_status_code_t</a> { <br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga32d742eda6003b7ca62688f6f0bfac9dabc6024295034c76253b60c16b0ae30c8">kEptStatusUnknownCid</a> = VECTOR_EPT_STATUS_UNKNOWN_CID, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga32d742eda6003b7ca62688f6f0bfac9dadc5453e8cf05b8a3a7aa0ed42c73936f">kEptStatusUnknownVector</a> = VECTOR_EPT_STATUS_UNKNOWN_VECTOR
+<br />
+ }<tr class="memdesc:ga32d742eda6003b7ca62688f6f0bfac9d"><td class="mdescLeft">&#160;</td><td class="mdescRight">EPT status code definitions.  <a href="group__rdmnet__api__common.html#ga32d742eda6003b7ca62688f6f0bfac9d">More...</a><br /></td></tr>
+</td></tr>
+<tr class="separator:ga32d742eda6003b7ca62688f6f0bfac9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3eb1adaf6e830a807d1dcfbc64197222"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#ga3eb1adaf6e830a807d1dcfbc64197222">rdmnet_disconnect_reason_t</a> { <br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga3eb1adaf6e830a807d1dcfbc64197222a336a46d8d36f5b1f32fac4653913cdd2">kRdmnetDisconnectShutdown</a> = E133_DISCONNECT_SHUTDOWN, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga3eb1adaf6e830a807d1dcfbc64197222af8551ebef742922f59d653e9cee78dca">kRdmnetDisconnectCapacityExhausted</a> = E133_DISCONNECT_CAPACITY_EXHAUSTED, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga3eb1adaf6e830a807d1dcfbc64197222a2a6f6959bb53f71f79a70e49dd761740">kRdmnetDisconnectHardwareFault</a> = E133_DISCONNECT_HARDWARE_FAULT, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga3eb1adaf6e830a807d1dcfbc64197222a0f4c75a40aa7b19814286f5cda780f00">kRdmnetDisconnectSoftwareFault</a> = E133_DISCONNECT_SOFTWARE_FAULT, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga3eb1adaf6e830a807d1dcfbc64197222ae08a0c676dc02990e72a886bd78dc9dc">kRdmnetDisconnectSoftwareReset</a> = E133_DISCONNECT_SOFTWARE_RESET, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga3eb1adaf6e830a807d1dcfbc64197222ac834a41cb60b5be59eb799d7f9869430">kRdmnetDisconnectIncorrectScope</a> = E133_DISCONNECT_INCORRECT_SCOPE, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga3eb1adaf6e830a807d1dcfbc64197222a5b1ec1079772a0ea8fb52bd78fd0484d">kRdmnetDisconnectRptReconfigure</a> = E133_DISCONNECT_RPT_RECONFIGURE, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga3eb1adaf6e830a807d1dcfbc64197222acbd0565094552134a92c966360bf21be">kRdmnetDisconnectLlrpReconfigure</a> = E133_DISCONNECT_LLRP_RECONFIGURE, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga3eb1adaf6e830a807d1dcfbc64197222a25de5a2953a7a4ae379975bb300d8165">kRdmnetDisconnectUserReconfigure</a> = E133_DISCONNECT_USER_RECONFIGURE
+<br />
+ }<tr class="memdesc:ga3eb1adaf6e830a807d1dcfbc64197222"><td class="mdescLeft">&#160;</td><td class="mdescRight">Disconnect reason defines for the BrokerDisconnectMsg.  <a href="group__rdmnet__api__common.html#ga3eb1adaf6e830a807d1dcfbc64197222">More...</a><br /></td></tr>
+</td></tr>
+<tr class="separator:ga3eb1adaf6e830a807d1dcfbc64197222"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad6fe81536dc232de7ebab51774ed7b5d"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#gad6fe81536dc232de7ebab51774ed7b5d">rdmnet_connect_status_t</a> { <br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggad6fe81536dc232de7ebab51774ed7b5da66ffc56e2f784006f9eec44b494d5ca0">kRdmnetConnectOk</a> = E133_CONNECT_OK, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggad6fe81536dc232de7ebab51774ed7b5dadb01bf03eaf8392156bca686e5518c6b">kRdmnetConnectScopeMismatch</a> = E133_CONNECT_SCOPE_MISMATCH, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggad6fe81536dc232de7ebab51774ed7b5daf3691a57517a4a9ec6931428e2f32ca3">kRdmnetConnectCapacityExceeded</a> = E133_CONNECT_CAPACITY_EXCEEDED, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggad6fe81536dc232de7ebab51774ed7b5da469391aebce895c801714efe912508ae">kRdmnetConnectDuplicateUid</a> = E133_CONNECT_DUPLICATE_UID, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggad6fe81536dc232de7ebab51774ed7b5da050f83d901eeb434a4635da7321f0106">kRdmnetConnectInvalidClientEntry</a> = E133_CONNECT_INVALID_CLIENT_ENTRY, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggad6fe81536dc232de7ebab51774ed7b5dac0164ca107aaf341315da24bd0912a47">kRdmnetConnectInvalidUid</a> = E133_CONNECT_INVALID_UID
+<br />
+ }<tr class="memdesc:gad6fe81536dc232de7ebab51774ed7b5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connect status defines for the BrokerConnectReplyMsg.  <a href="group__rdmnet__api__common.html#gad6fe81536dc232de7ebab51774ed7b5d">More...</a><br /></td></tr>
+</td></tr>
+<tr class="separator:gad6fe81536dc232de7ebab51774ed7b5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafc5c9ee7dffbca259051716bacea9620"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#gafc5c9ee7dffbca259051716bacea9620">rdmnet_dynamic_uid_status_t</a> { <br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggafc5c9ee7dffbca259051716bacea9620a1b3e6c28f0859c283862abf73923b388">kRdmnetDynamicUidStatusOk</a> = E133_DYNAMIC_UID_STATUS_OK, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggafc5c9ee7dffbca259051716bacea9620ae1a1281711aa7b04828d00625cad0ba9">kRdmnetDynamicUidStatusInvalidRequest</a> = E133_DYNAMIC_UID_STATUS_INVALID_REQUEST, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggafc5c9ee7dffbca259051716bacea9620a82970552aa0c816929df4e6d1d8565b8">kRdmnetDynamicUidStatusUidNotFound</a> = E133_DYNAMIC_UID_STATUS_UID_NOT_FOUND, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggafc5c9ee7dffbca259051716bacea9620ad345e4c475e2ad6f898fa9bbf8a39290">kRdmnetDynamicUidStatusDuplicateRid</a> = E133_DYNAMIC_UID_STATUS_DUPLICATE_RID, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggafc5c9ee7dffbca259051716bacea9620ac9fd8b6fd5d858a502d777c67475cfbf">kRdmnetDynamicUidStatusCapacityExhausted</a> = E133_DYNAMIC_UID_STATUS_CAPACITY_EXHAUSTED
+<br />
+ }<tr class="memdesc:gafc5c9ee7dffbca259051716bacea9620"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dynamic UID Status Codes for the BrokerDynamicUidMapping struct.  <a href="group__rdmnet__api__common.html#gafc5c9ee7dffbca259051716bacea9620">More...</a><br /></td></tr>
+</td></tr>
+<tr class="separator:gafc5c9ee7dffbca259051716bacea9620"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga496e65ee0af4670795917a7ba2436fd5"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#ga496e65ee0af4670795917a7ba2436fd5">rdmnet_connect_fail_event_t</a> { <br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga496e65ee0af4670795917a7ba2436fd5ad10a6c8fa911e712c9c3fde14fc29908">kRdmnetConnectFailSocketFailure</a>, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga496e65ee0af4670795917a7ba2436fd5aff55f14de58c3a3da897f02c9793196b">kRdmnetConnectFailTcpLevel</a>, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga496e65ee0af4670795917a7ba2436fd5aa70222d36dc4d526039a25e56ecc1faf">kRdmnetConnectFailNoReply</a>, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga496e65ee0af4670795917a7ba2436fd5a9f6b2bca5751f6e58796d863750bcd8c">kRdmnetConnectFailRejected</a>
+<br />
+ }<tr class="memdesc:ga496e65ee0af4670795917a7ba2436fd5"><td class="mdescLeft">&#160;</td><td class="mdescRight">A high-level reason for RDMnet connection failure.  <a href="group__rdmnet__api__common.html#ga496e65ee0af4670795917a7ba2436fd5">More...</a><br /></td></tr>
+</td></tr>
+<tr class="separator:ga496e65ee0af4670795917a7ba2436fd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5c1cfd964635eb67c610f2007b4a1f3f"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#ga5c1cfd964635eb67c610f2007b4a1f3f">rdmnet_disconnect_event_t</a> { <br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga5c1cfd964635eb67c610f2007b4a1f3fac17bea4f8f0f27c0cebb5036b94a0b96">kRdmnetDisconnectAbruptClose</a>, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga5c1cfd964635eb67c610f2007b4a1f3fa001989dd3f1073a64b6ae6e0ba87ba2e">kRdmnetDisconnectNoHeartbeat</a>, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga5c1cfd964635eb67c610f2007b4a1f3fa4fd652506c5bec9d0253abf565fbbf6c">kRdmnetDisconnectRedirected</a>, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga5c1cfd964635eb67c610f2007b4a1f3fad2a8a5dfee982eede7ede276e511f386">kRdmnetDisconnectGracefulRemoteInitiated</a>, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga5c1cfd964635eb67c610f2007b4a1f3fad5bde9e748fdc058de5905e90a1b5413">kRdmnetDisconnectGracefulLocalInitiated</a>
+<br />
+ }<tr class="memdesc:ga5c1cfd964635eb67c610f2007b4a1f3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">A high-level reason for RDMnet connection to be disconnected after successful connection.  <a href="group__rdmnet__api__common.html#ga5c1cfd964635eb67c610f2007b4a1f3f">More...</a><br /></td></tr>
+</td></tr>
+<tr class="separator:ga5c1cfd964635eb67c610f2007b4a1f3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabef0caf0d0a3748a4dd53b2af3b0896a"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#gabef0caf0d0a3748a4dd53b2af3b0896a">rdmnet_rdm_response_action_t</a> { <br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggabef0caf0d0a3748a4dd53b2af3b0896aaecf57cdc3719865e3ca28d882952db1f">kRdmnetRdmResponseActionSendAck</a>, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggabef0caf0d0a3748a4dd53b2af3b0896aa61888ac5fad6e0bb0c0d93536c34a42a">kRdmnetRdmResponseActionSendNack</a>, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#ggabef0caf0d0a3748a4dd53b2af3b0896aad453c180836d55ee1251b28ecd1d9cc2">kRdmnetRdmResponseActionDefer</a>
+<br />
+ }<tr class="memdesc:gabef0caf0d0a3748a4dd53b2af3b0896a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enumeration representing an action to take after an "RDM command received" callback completes.  <a href="group__rdmnet__api__common.html#gabef0caf0d0a3748a4dd53b2af3b0896a">More...</a><br /></td></tr>
+</td></tr>
+<tr class="separator:gabef0caf0d0a3748a4dd53b2af3b0896a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0eb0a252159c7ae727d1e5b2b0244687"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#ga0eb0a252159c7ae727d1e5b2b0244687">rdmnet_ept_response_action_t</a> { <br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga0eb0a252159c7ae727d1e5b2b0244687aec5d73811c5aad22b9808bc8ec26b4ac">kRdmnetEptResponseActionSendData</a>, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga0eb0a252159c7ae727d1e5b2b0244687ae1249ee8597f072dcda17e1bb1f82a0f">kRdmnetEptResponseActionSendStatus</a>, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga0eb0a252159c7ae727d1e5b2b0244687afd522d7eba98ff9ca5cea835f40f8d32">kRdmnetEptResponseActionDefer</a>
+<br />
+ }<tr class="memdesc:ga0eb0a252159c7ae727d1e5b2b0244687"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enumeration representing an action to take after an "EPT data received" callback completes.  <a href="group__rdmnet__api__common.html#ga0eb0a252159c7ae727d1e5b2b0244687">More...</a><br /></td></tr>
+</td></tr>
+<tr class="separator:ga0eb0a252159c7ae727d1e5b2b0244687"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4139f829781c81c9260601ae9c92cc24"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#ga4139f829781c81c9260601ae9c92cc24">rdmnet_command_class_t</a> { <br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga4139f829781c81c9260601ae9c92cc24a7973a0eeba9d1b6cc25ba6449a75a46f">kRdmnetCCGetCommand</a> = 0x20, 
+<br />
+&#160;&#160;<a class="el" href="group__rdmnet__api__common.html#gga4139f829781c81c9260601ae9c92cc24a023311654de675399ce2d382f4fa1e67">kRdmnetCCSetCommand</a> = 0x30
+<br />
+ }<tr class="memdesc:ga4139f829781c81c9260601ae9c92cc24"><td class="mdescLeft">&#160;</td><td class="mdescRight">An RDM command class, for RDMnet purposes.  <a href="group__rdmnet__api__common.html#ga4139f829781c81c9260601ae9c92cc24">More...</a><br /></td></tr>
+</td></tr>
+<tr class="separator:ga4139f829781c81c9260601ae9c92cc24"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:gac35e678c3cc099a73e9314614215e1d8"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#ga743b0648f0ca798ef29c9f69c6e255af">etcpal_error_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#gac35e678c3cc099a73e9314614215e1d8">rdmnet_init</a> (const <a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_log_params.html">EtcPalLogParams</a> *log_params, const <a class="el" href="struct_rdmnet_netint_config.html">RdmnetNetintConfig</a> *netint_config)</td></tr>
+<tr class="memdesc:gac35e678c3cc099a73e9314614215e1d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the RDMnet library.  <a href="group__rdmnet__api__common.html#gac35e678c3cc099a73e9314614215e1d8">More...</a><br /></td></tr>
+<tr class="separator:gac35e678c3cc099a73e9314614215e1d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaba69f27b44e5b49f8635a75514a6c4da"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#gaba69f27b44e5b49f8635a75514a6c4da">rdmnet_deinit</a> (void)</td></tr>
+<tr class="memdesc:gaba69f27b44e5b49f8635a75514a6c4da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deinitialize the RDMnet library.  <a href="group__rdmnet__api__common.html#gaba69f27b44e5b49f8635a75514a6c4da">More...</a><br /></td></tr>
+<tr class="separator:gaba69f27b44e5b49f8635a75514a6c4da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1b678629569257697ec6a7e855c71623"><td class="memItemLeft" align="right" valign="top">
+const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#ga1b678629569257697ec6a7e855c71623">rdmnet_rpt_status_code_to_string</a> (<a class="el" href="group__rdmnet__api__common.html#gaa9aca0658bfae057363a520c0d9907c2">rpt_status_code_t</a> code)</td></tr>
+<tr class="memdesc:ga1b678629569257697ec6a7e855c71623"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a string representation of an RPT status code. <br /></td></tr>
+<tr class="separator:ga1b678629569257697ec6a7e855c71623"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1d378dff587acdfa8306c1075e316f4a"><td class="memItemLeft" align="right" valign="top">
+const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#ga1d378dff587acdfa8306c1075e316f4a">rdmnet_ept_status_code_to_string</a> (<a class="el" href="group__rdmnet__api__common.html#ga32d742eda6003b7ca62688f6f0bfac9d">ept_status_code_t</a> code)</td></tr>
+<tr class="memdesc:ga1d378dff587acdfa8306c1075e316f4a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a string representation of an EPT status code. <br /></td></tr>
+<tr class="separator:ga1d378dff587acdfa8306c1075e316f4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6113acd9f138cef8466e9cab20e4b086"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#ga6113acd9f138cef8466e9cab20e4b086">rdmnet_connect_fail_event_to_string</a> (<a class="el" href="group__rdmnet__api__common.html#ga496e65ee0af4670795917a7ba2436fd5">rdmnet_connect_fail_event_t</a> event)</td></tr>
+<tr class="memdesc:ga6113acd9f138cef8466e9cab20e4b086"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a string description of an RDMnet connection failure event.  <a href="group__rdmnet__api__common.html#ga6113acd9f138cef8466e9cab20e4b086">More...</a><br /></td></tr>
+<tr class="separator:ga6113acd9f138cef8466e9cab20e4b086"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6b05d48dd09416378ee1711c2cf126ae"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#ga6b05d48dd09416378ee1711c2cf126ae">rdmnet_disconnect_event_to_string</a> (<a class="el" href="group__rdmnet__api__common.html#ga5c1cfd964635eb67c610f2007b4a1f3f">rdmnet_disconnect_event_t</a> event)</td></tr>
+<tr class="memdesc:ga6b05d48dd09416378ee1711c2cf126ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a string description of an RDMnet disconnect event.  <a href="group__rdmnet__api__common.html#ga6b05d48dd09416378ee1711c2cf126ae">More...</a><br /></td></tr>
+<tr class="separator:ga6b05d48dd09416378ee1711c2cf126ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae13ee8a4f55789aedb2cf0bbcf2ca5da"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#gae13ee8a4f55789aedb2cf0bbcf2ca5da">rdmnet_connect_status_to_string</a> (<a class="el" href="group__rdmnet__api__common.html#gad6fe81536dc232de7ebab51774ed7b5d">rdmnet_connect_status_t</a> code)</td></tr>
+<tr class="memdesc:gae13ee8a4f55789aedb2cf0bbcf2ca5da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a string description of an RDMnet connect status code.  <a href="group__rdmnet__api__common.html#gae13ee8a4f55789aedb2cf0bbcf2ca5da">More...</a><br /></td></tr>
+<tr class="separator:gae13ee8a4f55789aedb2cf0bbcf2ca5da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac008933ba41562152f5f197f9bbda680"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#gac008933ba41562152f5f197f9bbda680">rdmnet_disconnect_reason_to_string</a> (<a class="el" href="group__rdmnet__api__common.html#ga3eb1adaf6e830a807d1dcfbc64197222">rdmnet_disconnect_reason_t</a> code)</td></tr>
+<tr class="memdesc:gac008933ba41562152f5f197f9bbda680"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a string description of an RDMnet disconnect reason code.  <a href="group__rdmnet__api__common.html#gac008933ba41562152f5f197f9bbda680">More...</a><br /></td></tr>
+<tr class="separator:gac008933ba41562152f5f197f9bbda680"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga362e057a96421081d8551d65bf403b6a"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__api__common.html#ga362e057a96421081d8551d65bf403b6a">rdmnet_dynamic_uid_status_to_string</a> (<a class="el" href="group__rdmnet__api__common.html#gafc5c9ee7dffbca259051716bacea9620">rdmnet_dynamic_uid_status_t</a> code)</td></tr>
+<tr class="memdesc:ga362e057a96421081d8551d65bf403b6a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a string description of an RDMnet Dynamic UID status code.  <a href="group__rdmnet__api__common.html#ga362e057a96421081d8551d65bf403b6a">More...</a><br /></td></tr>
+<tr class="separator:ga362e057a96421081d8551d65bf403b6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a class="el" href="dir_49dbbb66e43847c8e8768031ecdea882.html">rdmnet</a></li><li class="navelem"><a class="el" href="common_8h.html">common.h</a></li>
+    <li class="footer">Generated by
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>
+  </ul>
+</div>
+</body>
+</html>
