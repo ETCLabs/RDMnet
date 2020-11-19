@@ -38,6 +38,7 @@
 #include "etcpal/log.h"
 #include "etcpal/error.h"
 #include "etcpal/inet.h"
+#include "etcpal/mutex.h"
 #include "etcpal/timer.h"
 #include "etcpal/socket.h"
 #include "rdmnet/core/common.h"
