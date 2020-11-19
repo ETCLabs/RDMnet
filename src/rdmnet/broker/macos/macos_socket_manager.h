@@ -29,7 +29,7 @@
 #include <memory>
 #include <pthread.h>
 
-#include "etcpal/cpp/lock.h"
+#include "etcpal/cpp/rwlock.h"
 #include "rdmnet/core/message.h"
 #include "rdmnet/core/msg_buf.h"
 #include "broker_socket_manager.h"

@@ -23,7 +23,7 @@
 #include "gtest/gtest.h"
 #include "rdmnet/core/client.h"
 
-#include "etcpal/cpp/lock.h"
+#include "etcpal/cpp/mutex.h"
 #include "etcpal_mock/common.h"
 #include "rdmnet/core/opts.h"
 #include "rdmnet_mock/core/broker_prot.h"

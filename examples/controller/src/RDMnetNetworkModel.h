@@ -23,8 +23,8 @@
 #include <vector>
 #include <cstddef>
 #include "etcpal/cpp/inet.h"
-#include "etcpal/cpp/lock.h"
 #include "etcpal/cpp/log.h"
+#include "etcpal/cpp/rwlock.h"
 #include "etcpal/cpp/uuid.h"
 #include "rdm/cpp/message.h"
 #include "rdm/cpp/uid.h"

@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #include "etcpal/common.h"
-#include "etcpal/lock.h"
+#include "etcpal/mutex.h"
 #include "etcpal/rbtree.h"
 #include "etcpal/socket.h"
 #include "rdmnet/core/message.h"

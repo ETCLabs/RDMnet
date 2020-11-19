@@ -20,6 +20,7 @@
 #include "rdmnet/core/common.h"
 
 #include "etcpal/common.h"
+#include "etcpal/rwlock.h"
 #include "etcpal/socket.h"
 #include "etcpal/timer.h"
 #include "rdmnet/discovery.h"

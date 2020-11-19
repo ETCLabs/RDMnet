@@ -29,7 +29,6 @@
 
 #include "etcpal/cpp/error.h"
 #include "etcpal/cpp/thread.h"
-#include "etcpal/lock.h"
 #include "etcpal/inet.h"
 #include "etcpal/socket.h"
 #include "rdmnet/core/connection.h"

@@ -22,7 +22,7 @@
 #include <stddef.h>
 #include <string.h>
 #include "etcpal/common.h"
-#include "etcpal/lock.h"
+#include "etcpal/mutex.h"
 #include "etcpal/pack.h"
 #include "etcpal/rbtree.h"
 #include "rdmnet/common_priv.h"
