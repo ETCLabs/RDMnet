@@ -34,7 +34,7 @@
 
 #include "etcpal/uuid.h"
 #include "etcpal/inet.h"
-#include "etcpal/lock.h"
+#include "etcpal/mutex.h"
 #include "rdm/uid.h"
 #include "rdm/message.h"
 #include "rdmnet/defs.h"

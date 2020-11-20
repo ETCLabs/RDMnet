@@ -21,7 +21,6 @@
 #define RDMNET_CORE_COMMON_H_
 
 #include <string.h>
-#include "etcpal/lock.h"
 #include "etcpal/log.h"
 #include "etcpal/socket.h"
 #include "rdmnet/common.h"

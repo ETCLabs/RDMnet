@@ -26,7 +26,6 @@
 #include <queue>
 #include "etcpal/log.h"
 #include "etcpal/thread.h"
-#include "etcpal/lock.h"
 #include "etcpal/cpp/log.h"
 
 class LinuxBrokerLog : public etcpal::LogMessageHandler

@@ -27,7 +27,6 @@
 #include <avahi-common/malloc.h>
 #include <avahi-common/simple-watch.h>
 #include "etcpal/common.h"
-#include "etcpal/lock.h"
 #include "rdmnet/core/util.h"
 #include "rdmnet/core/common.h"
 #include "rdmnet/core/opts.h"

@@ -21,7 +21,7 @@
 #define RDMNET_CORE_LLRP_MANAGER_H_
 
 #include "etcpal/inet.h"
-#include "etcpal/lock.h"
+#include "etcpal/mutex.h"
 #include "etcpal/rbtree.h"
 #include "etcpal/timer.h"
 #include "etcpal/uuid.h"

@@ -22,7 +22,7 @@
 #include "etcpal/common.h"
 #include "etcpal/cpp/uuid.h"
 #include "etcpal/cpp/inet.h"
-#include "etcpal/cpp/lock.h"
+#include "etcpal/cpp/mutex.h"
 #include "etcpal_mock/common.h"
 #include "etcpal_mock/socket.h"
 #include "etcpal_mock/timer.h"

@@ -29,8 +29,9 @@
 #include <cassert>
 
 #include "etcpal/cpp/inet.h"
-#include "etcpal/cpp/lock.h"
+#include "etcpal/cpp/mutex.h"
 #include "etcpal/cpp/log.h"
+#include "etcpal/cpp/rwlock.h"
 #include "etcpal/cpp/uuid.h"
 #include "rdm/cpp/uid.h"
 #include "rdmnet/cpp/device.h"

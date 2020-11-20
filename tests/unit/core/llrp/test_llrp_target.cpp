@@ -21,7 +21,7 @@
 
 #include "gtest/gtest.h"
 #include "fff.h"
-#include "etcpal/cpp/lock.h"
+#include "etcpal/cpp/mutex.h"
 #include "etcpal/cpp/uuid.h"
 #include "etcpal_mock/common.h"
 #include "rdm/cpp/uid.h"

@@ -21,6 +21,7 @@
 #define RDMNET_CORE_LLRP_TARGET_H_
 
 #include "etcpal/inet.h"
+#include "etcpal/mutex.h"
 #include "etcpal/timer.h"
 #include "rdmnet/llrp_target.h"
 #include "rdmnet/core/common.h"

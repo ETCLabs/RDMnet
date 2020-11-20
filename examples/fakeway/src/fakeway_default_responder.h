@@ -27,7 +27,7 @@
 #include <cstddef>
 #include <cstdint>
 #include "etcpal/cpp/inet.h"
-#include "etcpal/cpp/lock.h"
+#include "etcpal/cpp/rwlock.h"
 #include "etcpal/cpp/thread.h"
 #include "rdmnet/version.h"
 #include "rdmnet/cpp/device.h"

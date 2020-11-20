@@ -21,7 +21,7 @@
 
 #include <map>
 #include <vector>
-#include "etcpal/cpp/lock.h"
+#include "etcpal/cpp/mutex.h"
 #include "etcpal/cpp/thread.h"
 #include "etcpal/cpp/timer.h"
 #include "GadgetDLL.h"

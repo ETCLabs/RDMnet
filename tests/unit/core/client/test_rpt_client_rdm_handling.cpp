@@ -28,7 +28,7 @@
 #include <set>
 #include <vector>
 #include "etcpal/cpp/inet.h"
-#include "etcpal/cpp/lock.h"
+#include "etcpal/cpp/mutex.h"
 #include "etcpal/cpp/uuid.h"
 #include "etcpal/pack.h"
 #include "etcpal_mock/common.h"

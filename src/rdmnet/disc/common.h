@@ -25,7 +25,7 @@
 #ifndef RDMNET_DISC_COMMON_H_
 #define RDMNET_DISC_COMMON_H_
 
-#include "etcpal/lock.h"
+#include "etcpal/mutex.h"
 #include "etcpal/timer.h"
 #include "rdmnet/common.h"
 #include "rdmnet/discovery.h"

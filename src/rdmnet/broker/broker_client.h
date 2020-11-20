@@ -29,7 +29,7 @@
 #include <stdexcept>
 #include "etcpal/cpp/error.h"
 #include "etcpal/cpp/inet.h"
-#include "etcpal/cpp/lock.h"
+#include "etcpal/cpp/rwlock.h"
 #include "etcpal/cpp/timer.h"
 #include "etcpal/cpp/uuid.h"
 #include "etcpal/socket.h"
