@@ -1,7 +1,10 @@
 var searchData=
 [
+  ['recursive_5fmutex_20_28recursive_20mutexes_29',['recursive_mutex (Recursive Mutexes)',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__cpp__recursive__mutex.html',1,'']]],
+  ['rwlock_20_28read_2dwrite_20locks_29',['rwlock (Read-Write Locks)',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__cpp__rwlock.html',1,'']]],
   ['rbtree_20_28red_2dblack_20trees_29',['rbtree (Red-Black Trees)',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__rbtree.html',1,'']]],
-  ['read_2dwrite_20locks',['Read-Write Locks',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__rwlock.html',1,'']]],
+  ['recursive_5fmutex_20_28recursive_20mutexes_29',['recursive_mutex (Recursive Mutexes)',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__recursive__mutex.html',1,'']]],
+  ['rwlock_20_28read_2dwrite_20locks_29',['rwlock (Read-Write Locks)',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__rwlock.html',1,'']]],
   ['rdmnet',['RDMnet',['../index.html',1,'']]],
   ['llrp',['llrp',['../namespacerdmnet_1_1llrp.html',1,'rdmnet']]],
   ['raw',['raw',['https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_log_strings.html#a8129637af8920bc9328bbce2a00bfeb4',1,'EtcPalLogStrings']]],
@@ -312,6 +315,10 @@ var searchData=
   ['readlock',['ReadLock',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_rw_lock.html#af760aebc292f4430c5d554b1fb239284',1,'etcpal::RwLock']]],
   ['readunlock',['ReadUnlock',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_rw_lock.html#a1860d89c46fea6b62da4c7c39756fc4e',1,'etcpal::RwLock']]],
   ['receive',['Receive',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_queue.html#ae2bd22bccd067e5b8558810eb878f7bf',1,'etcpal::Queue::Receive(T &amp;data, int timeout_ms=ETCPAL_WAIT_FOREVER)'],['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_queue.html#a2e1a4a59421e30ad677c4aab766a6683',1,'etcpal::Queue::Receive(T &amp;data, const std::chrono::duration&lt; Rep, Period &gt; &amp;timeout)']]],
+  ['receivefromisr',['ReceiveFromIsr',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_queue.html#a6d23c1b53807ebce980dce934789a4e4',1,'etcpal::Queue']]],
+  ['recursive_5fmutex_2eh',['recursive_mutex.h',['https://etclabs.github.io/EtcPal/docs/head/cpp_2recursive__mutex_8h.html',1,'']]],
+  ['recursivemutex',['RecursiveMutex',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_recursive_mutex.html',1,'etcpal::RecursiveMutex'],['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_recursive_mutex.html#a8629c480ab7a14342fd8428e12758ab8',1,'etcpal::RecursiveMutex::RecursiveMutex()']]],
+  ['recursivemutexguard',['RecursiveMutexGuard',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_recursive_mutex_guard.html',1,'etcpal::RecursiveMutexGuard'],['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_recursive_mutex_guard.html#a75626f673c69debf3f5926caf1458841',1,'etcpal::RecursiveMutexGuard::RecursiveMutexGuard(RecursiveMutex &amp;mutex)'],['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_recursive_mutex_guard.html#a5eef5a4428ec8e93b1b066d440117742',1,'etcpal::RecursiveMutexGuard::RecursiveMutexGuard(etcpal_recursive_mutex_t &amp;mutex)']]],
   ['red',['red',['https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_rb_node.html#a6761340706096510fd89edca40a63b9b',1,'EtcPalRbNode']]],
   ['reject_5fconnections',['reject_connections',['../structrdmnet_1_1_broker_1_1_limits.html#a97154684dffc3902577b1bfd09fe48e9',1,'rdmnet::Broker::Limits']]],
   ['removeendpoint',['RemoveEndpoint',['../classrdmnet_1_1_device.html#a07e0aced596e0f67936b1e544f592c1f',1,'rdmnet::Device']]],
@@ -351,5 +358,6 @@ var searchData=
   ['rptcliententry',['RptClientEntry',['../structrdmnet_1_1_rpt_client_entry.html',1,'rdmnet::RptClientEntry'],['../structrdmnet_1_1_rpt_client_entry.html#a83b049a0d407fa389c7180a2c23a1b15',1,'rdmnet::RptClientEntry::RptClientEntry()']]],
   ['rptclientlist',['RptClientList',['../classrdmnet_1_1_rpt_client_list.html',1,'rdmnet::RptClientList'],['../classrdmnet_1_1_rpt_client_list.html#a2744dc9ee79db88b1bfb368a61249f3c',1,'rdmnet::RptClientList::RptClientList()=delete'],['../classrdmnet_1_1_rpt_client_list.html#aeff442c1fe423934c59aea7e1d8dd298',1,'rdmnet::RptClientList::RptClientList(const RptClientList &amp;other)=delete'],['../classrdmnet_1_1_rpt_client_list.html#a38c9e74442e769d2d5b4dfaebff77f34',1,'rdmnet::RptClientList::RptClientList(const RdmnetRptClientList &amp;c_list) noexcept']]],
   ['rptstatus',['RptStatus',['../classrdmnet_1_1_rpt_status.html',1,'rdmnet::RptStatus'],['../classrdmnet_1_1_rpt_status.html#a0a441bc62942c0f2b541de8b6608417f',1,'rdmnet::RptStatus::RptStatus()=delete'],['../classrdmnet_1_1_rpt_status.html#a83df8942f5ecb1f6290ff221894bb4d5',1,'rdmnet::RptStatus::RptStatus(const RdmnetRptStatus &amp;c_status)']]],
-  ['rwlock',['RwLock',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_rw_lock.html',1,'etcpal::RwLock'],['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_rw_lock.html#ad5ce7091375083d76ae798cabac53a21',1,'etcpal::RwLock::RwLock()']]]
+  ['rwlock',['RwLock',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_rw_lock.html',1,'etcpal::RwLock'],['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_rw_lock.html#ad5ce7091375083d76ae798cabac53a21',1,'etcpal::RwLock::RwLock()']]],
+  ['rwlock_2eh',['rwlock.h',['https://etclabs.github.io/EtcPal/docs/head/cpp_2rwlock_8h.html',1,'']]]
 ];

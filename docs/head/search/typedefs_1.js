@@ -1,8 +1,11 @@
 var searchData=
 [
+  ['etcpal_5fevent_5fbits_5ft',['etcpal_event_bits_t',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__event__group.html#ga70de7127d1f9721ed1b012b5aebd1f98',1,]]],
+  ['etcpal_5fevent_5fgroup_5ft',['etcpal_event_group_t',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__event__group.html#gad366db88a3a26f1ff9451f8ed3333c4e',1,]]],
   ['etcpal_5ffeatures_5ft',['etcpal_features_t',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal.html#gae77772998c26f45618c26de1e1fc8305',1,]]],
   ['etcpal_5fmutex_5ft',['etcpal_mutex_t',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__mutex.html#ga7360372b14b0feb1ad9f22d2a42734a9',1,]]],
   ['etcpal_5fpoll_5fevents_5ft',['etcpal_poll_events_t',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__socket.html#ga625b9f37c09cda6d3f13330094fa97d9',1,]]],
+  ['etcpal_5frecursive_5fmutex_5ft',['etcpal_recursive_mutex_t',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__recursive__mutex.html#gab023065e9028d318e1c559e6c7493e6b',1,]]],
   ['etcpal_5frwlock_5ft',['etcpal_rwlock_t',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__rwlock.html#ga5949678b1acff7d9829e257a9bee8d8e',1,]]],
   ['etcpal_5fsem_5ft',['etcpal_sem_t',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__sem.html#ga90664f75ae59f03b85b45cc19d3a55ef',1,]]],
   ['etcpal_5fsignal_5ft',['etcpal_signal_t',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__signal.html#gab450fff060bfcede49357b2e00357669',1,]]],
@@ -18,6 +21,7 @@ var searchData=
   ['etcpallogtimefn',['EtcPalLogTimeFn',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__log.html#gae62cd1cd05e3e42c5df41cab8df8e9e3',1,]]],
   ['etcpallogtimestamp',['EtcPalLogTimestamp',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__log.html#ga6ce3e6fd83a776f1696163386ed4fde0',1,]]],
   ['etcpalmacaddr',['EtcPalMacAddr',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__inet.html#gac0911b094d33366046d9b947b24cc63f',1,]]],
+  ['etcpalmcastnetintid',['EtcPalMcastNetintId',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__inet.html#ga0e06e2959af0b9a03a0845683017a144',1,]]],
   ['etcpalmreq',['EtcPalMreq',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__socket.html#ga3ca1dc73415b552ebca00df10e53a5e1',1,]]],
   ['etcpalnetintinfo',['EtcPalNetintInfo',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__inet.html#gaed988a9502c1d15538ef945b3b5b234b',1,]]],
   ['etcpalpollcontext',['EtcPalPollContext',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__socket.html#ga906fd2bcb17663f4de3fefd0b335656e',1,]]],

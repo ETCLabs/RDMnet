@@ -53,6 +53,8 @@ var searchData=
   ['rdmresponseheader',['RdmResponseHeader',['https://etclabs.github.io/RDM/docs/head/struct_rdm_response_header.html',1,'']]],
   ['rdmuid',['RdmUid',['https://etclabs.github.io/RDM/docs/head/struct_rdm_uid.html',1,'']]],
   ['readguard',['ReadGuard',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_read_guard.html',1,'etcpal']]],
+  ['recursivemutex',['RecursiveMutex',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_recursive_mutex.html',1,'etcpal']]],
+  ['recursivemutexguard',['RecursiveMutexGuard',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_recursive_mutex_guard.html',1,'etcpal']]],
   ['response',['Response',['https://etclabs.github.io/RDM/docs/head/classrdm_1_1_response.html',1,'rdm']]],
   ['responseheader',['ResponseHeader',['https://etclabs.github.io/RDM/docs/head/classrdm_1_1_response_header.html',1,'rdm']]],
   ['rptcliententry',['RptClientEntry',['../structrdmnet_1_1_rpt_client_entry.html',1,'rdmnet']]],

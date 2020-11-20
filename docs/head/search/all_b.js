@@ -1,8 +1,6 @@
 var searchData=
 [
-  ['lock_20_28locks_20and_20synchronization_29',['lock (Locks and Synchronization)',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__cpp__lock.html',1,'']]],
   ['log_20_28logging_29',['log (Logging)',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__cpp__log.html',1,'']]],
-  ['lock_20_28locks_20and_20synchronization_29',['lock (Locks and Synchronization)',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__lock.html',1,'']]],
   ['log_20_28logging_29',['log (Logging)',['https://etclabs.github.io/EtcPal/docs/head/group__etcpal__log.html',1,'']]],
   ['legacy_5fsyslog',['legacy_syslog',['https://etclabs.github.io/EtcPal/docs/head/struct_etc_pal_log_strings.html#a7c969c4f61944571b31c58080a53f968',1,'EtcPalLogStrings']]],
   ['limits',['Limits',['../structrdmnet_1_1_broker_1_1_limits.html',1,'rdmnet::Broker::Limits'],['../structrdmnet_1_1_broker_1_1_settings.html#a0179281be8c14cf532d7895c42f46a64',1,'rdmnet::Broker::Settings::limits()']]],
@@ -57,8 +55,7 @@ var searchData=
   ['llrptargetcallbacks',['LlrpTargetCallbacks',['../struct_llrp_target_callbacks.html',1,'LlrpTargetCallbacks'],['../group__llrp__target.html#ga24174bb59ca905cd99c68968a761bf30',1,'LlrpTargetCallbacks():&#160;llrp_target.h']]],
   ['llrptargetconfig',['LlrpTargetConfig',['../struct_llrp_target_config.html',1,'LlrpTargetConfig'],['../group__llrp__target.html#ga90c1d4c1541155ce8aa1231bb81c8382',1,'LlrpTargetConfig():&#160;llrp_target.h']]],
   ['llrptargetrdmcommandreceivedcallback',['LlrpTargetRdmCommandReceivedCallback',['../group__llrp__target.html#gae38beb2010553aa1b85201f56ede1fe7',1,'llrp_target.h']]],
-  ['lock',['Lock',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_mutex.html#a747fd95916e116a6ed37cc641e394c69',1,'etcpal::Mutex']]],
-  ['lock_2eh',['lock.h',['https://etclabs.github.io/EtcPal/docs/head/cpp_2lock_8h.html',1,'']]],
+  ['lock',['Lock',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_mutex.html#a747fd95916e116a6ed37cc641e394c69',1,'etcpal::Mutex::Lock()'],['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_recursive_mutex.html#a747fd95916e116a6ed37cc641e394c69',1,'etcpal::RecursiveMutex::Lock()']]],
   ['log',['Log',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_logger.html#aa613ebedf6ebc98cccf35990217e2eab',1,'etcpal::Logger']]],
   ['log_2eh',['log.h',['https://etclabs.github.io/EtcPal/docs/head/cpp_2log_8h.html',1,'']]],
   ['log_5faction',['log_action',['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_logger.html#a5763d3286470e0ddf797daac285d7e40',1,'etcpal::Logger::log_action() const noexcept'],['https://etclabs.github.io/EtcPal/docs/head/classetcpal_1_1_logger.html#a5763d3286470e0ddf797daac285d7e40',1,'etcpal::Logger::log_action() const noexcept']]],
