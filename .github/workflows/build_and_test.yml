@@ -1,0 +1,67 @@
+name: Build and Test RDMnet
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+
+env:
+  cmake_options: -DRDMNET_BUILD_TESTS=ON -DRDMNET_BUILD_CONSOLE_EXAMPLES=ON -DRDMNET_BUILD_GUI_EXAMPLES=ON
+
+jobs:
+  windows:
+    name: Windows
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        include:
+          - artifact_type: x86
+            cmake_arch: Win32
+            qt_dir: C:\Qt\5.12.7\msvc2019
+            aqt_arch: win32_msvc2019
+            vcvarsall_platform: x86
+          - artifact_type: x64
+            cmake_arch: x64
+            qt_dir: C:\Qt\5.12.7\msvc2019_64
+            aqt_arch: win64_msvc2019_64
+            vcvarsall_platform: amd64
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache/Restore Qt
+        id: cache-qt
+        uses: actions/cache@v2
+        with:
+          path: C:/Qt
+          key: qt5127-${{ matrix.aqt_arch }}-${{ runner.os }}
+      - name: Set Up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install Qt
+        if: steps.cache-qt.outputs.cache-hit != 'true'
+        run: |
+          python -m pip install aqtinstall
+          python -m aqt install 5.12.7 windows desktop ${{ matrix.aqt_arch }} -O C:/Qt
+      - name: Configure and Build Project
+        run: |
+          mkdir build
+          cd build
+          cmake -G "Visual Studio 16 2019" ^
+                -A ${{ matrix.cmake_arch }} ^
+                ${{ env.cmake_options }} ^
+                -DQTDIR=${{ matrix.qt_dir }} ^
+                -DCMAKE_INSTALL_PREFIX=install_${{ matrix.artifact_type }} ^
+                ..
+          cmake --build . --config Release
+      - name: Run Tests
+        run: |
+          cd build
+          ctest -C Release -T Test --output-on-failure
+
+        
+
+
+
