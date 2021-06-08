@@ -1,0 +1,349 @@
+<!-- HTML header for doxygen 1.8.14-->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta name="generator" content="Doxygen 1.8.13" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RDMnet: include/rdmnet/discovery.h File Reference</title>
+  <link href="tabs.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="dynsections.js"></script>
+  <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+</script>
+  <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css" />
+  <!--BEGIN CUSTOM SCRIPTS-->
+  <script type="text/javascript">
+    $(function () {
+      $.get('/RDMnet/docs/versions.txt', function (data) {
+        if (data) {
+          var lines = data.split('\n');
+          if (lines.length > 0) {
+            var version_select = $("#version_select").empty();
+            lines.forEach(function (line) {
+              line = line.trim();
+              if (!line) {
+                return;
+              }
+              line = line.split(':');
+              var option_name = line[0].replace(/^v/, '');
+              if (line.length > 1) {
+                option_name += ' (' + line[1] + ')';
+              }
+              var option_val = '/RDMnet/docs/' + line[0];
+              var option = $('<option></option>').attr("value", option_val)
+                .text(option_name);
+              if (window.location.pathname.match('docs/' + line[0])) {
+                option = option.attr("selected", "selected");
+              }
+              version_select.append(option);
+            });
+          }
+        }
+      }, 'text');
+    });
+  </script>
+  <script type="text/javascript">
+    $(function () { selectAllC() });
+  </script>
+  <script type="text/javascript">
+    function selectAllC() {
+      // Enable all C-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_c")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_c")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectAllCpp() {
+      // Enable all C++-language blocks
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.endsWith("_cpp")) {
+          tabcontent[i].style.display = "block";
+        } else {
+          tabcontent[i].style.display = "none"
+        }
+      }
+      // Enable all C++-language buttons
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.endsWith("_cpp")) {
+          if (!tablinks[i].className.includes("active")) {
+            tablinks[i].className = tablinks[i].className += " active";
+          }
+        } else {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+    }
+    function selectLanguage(evt, block_id, language) {
+      // Get all elements with class="tabcontent" and hide them
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        if (tabcontent[i].id.startsWith("div_" + block_id)) {
+          tabcontent[i].style.display = "none";
+        }
+      }
+      // Get all elements with class="tablinks" and remove the class "active"
+      var tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        if (tablinks[i].id.startsWith("button_" + block_id)) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+      }
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      document.getElementById("div_" + block_id + "_" + language).style.display = "block";
+      if (!evt.currentTarget.className.includes("active")) {
+        evt.currentTarget.className += " active";
+      }
+    }
+  </script>
+  <!--END CUSTOM SCRIPT-->
+</head>
+<body>
+  <div id="top">
+    <!-- do not remove this div, it is closed by doxygen! -->
+    <div id="titlearea">
+      <table cellspacing="0" cellpadding="0" style="width: 100%">
+        <tbody>
+          <tr style="height: 56px;">
+            <td id="projectalign" style="padding-left: 0.5em;">
+              <div id="projectname">RDMnet
+                &#160;<span id="projectnumber">Staging for pull request 48</span>
+              </div>
+              <div id="projectbrief">Implementation of ANSI E1.33 (RDMnet)</div>
+            </td>
+            <!--BEGIN CUSTOM INSERTED SECTION-->
+            <td style="text-align: right; padding-right: 0.5em">
+              <div id="otherversions">
+                View other versions:
+                <select id="version_select" onchange="location = this.value">
+                </select>
+              </div>
+            </td>
+            <!--END CUSTOM INSERTED SECTION-->
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- end header part -->
+<!-- Generated by Doxygen 1.8.13 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'Search');
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Search');
+  $(document).ready(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('discovery_8h.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#nested-classes">Data Structures</a> &#124;
+<a href="#define-members">Macros</a> &#124;
+<a href="#typedef-members">Typedefs</a> &#124;
+<a href="#func-members">Functions</a>  </div>
+  <div class="headertitle">
+<div class="title">discovery.h File Reference</div>  </div>
+</div><!--header-->
+<div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>RDMnet Discovery API definitions. </p>
+<p>Functions to discover a Broker and/or register a Broker for discovery. Uses mDNS and DNS-SD under the hood. </p>
+</div><div class="textblock"><code>#include &lt;stddef.h&gt;</code><br />
+<code>#include &lt;stdint.h&gt;</code><br />
+<code>#include &lt;string.h&gt;</code><br />
+<code>#include &quot;etcpal/error.h&quot;</code><br />
+<code>#include &quot;etcpal/uuid.h&quot;</code><br />
+<code>#include &quot;etcpal/socket.h&quot;</code><br />
+<code>#include &quot;<a class="el" href="common_8h_source.html">rdmnet/common.h</a>&quot;</code><br />
+<code>#include &quot;rdmnet/defs.h&quot;</code><br />
+</div>
+<p><a href="discovery_8h_source.html">Go to the source code of this file.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Data Structures</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_dns_txt_record_item.html">RdmnetDnsTxtRecordItem</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">An extra key/value pair in a broker's DNS TXT record that does not have a standard RDMnet use.  <a href="struct_rdmnet_dns_txt_record_item.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_broker_disc_info.html">RdmnetBrokerDiscInfo</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Information about a broker discovered or registered using DNS-SD.  <a href="struct_rdmnet_broker_disc_info.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_disc_broker_callbacks.html">RdmnetDiscBrokerCallbacks</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A set of notification callbacks received by a registered broker instance.  <a href="struct_rdmnet_disc_broker_callbacks.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_broker_register_config.html">RdmnetBrokerRegisterConfig</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A set of information that defines the parameters of an RDMnet broker registered with DNS-SD.  <a href="struct_rdmnet_broker_register_config.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_scope_monitor_callbacks.html">RdmnetScopeMonitorCallbacks</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A set of notification callbacks received by a scope monitor instance.  <a href="struct_rdmnet_scope_monitor_callbacks.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_rdmnet_scope_monitor_config.html">RdmnetScopeMonitorConfig</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A set of information that defines the parameters of an RDMnet scope to be monitored using DNS-SD.  <a href="struct_rdmnet_scope_monitor_config.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
+Macros</h2></td></tr>
+<tr class="memitem:gabe9e133bbe5780a6938b2b7000b36519"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#gabe9e133bbe5780a6938b2b7000b36519">RDMNET_REGISTERED_BROKER_INVALID</a>&#160;&#160;&#160;NULL</td></tr>
+<tr class="memdesc:gabe9e133bbe5780a6938b2b7000b36519"><td class="mdescLeft">&#160;</td><td class="mdescRight">An invalid registered broker value.  <a href="group__rdmnet__disc.html#gabe9e133bbe5780a6938b2b7000b36519">More...</a><br /></td></tr>
+<tr class="separator:gabe9e133bbe5780a6938b2b7000b36519"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga235693e0cee6703b1698639bf1a8505d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga235693e0cee6703b1698639bf1a8505d">RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT</a></td></tr>
+<tr class="memdesc:ga235693e0cee6703b1698639bf1a8505d"><td class="mdescLeft">&#160;</td><td class="mdescRight">A default-value initializer for an <a class="el" href="struct_rdmnet_broker_register_config.html" title="A set of information that defines the parameters of an RDMnet broker registered with DNS-SD...">RdmnetBrokerRegisterConfig</a> struct.  <a href="group__rdmnet__disc.html#ga235693e0cee6703b1698639bf1a8505d">More...</a><br /></td></tr>
+<tr class="separator:ga235693e0cee6703b1698639bf1a8505d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6ae92681c55ea4e6dce5fc3ee5ce49f0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga6ae92681c55ea4e6dce5fc3ee5ce49f0">RDMNET_SCOPE_MONITOR_INVALID</a>&#160;&#160;&#160;NULL</td></tr>
+<tr class="memdesc:ga6ae92681c55ea4e6dce5fc3ee5ce49f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">An invalid monitored scope handle value.  <a href="group__rdmnet__disc.html#ga6ae92681c55ea4e6dce5fc3ee5ce49f0">More...</a><br /></td></tr>
+<tr class="separator:ga6ae92681c55ea4e6dce5fc3ee5ce49f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaffcf02e4e04833828dd8b1e5ea56fa67"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#gaffcf02e4e04833828dd8b1e5ea56fa67">RDMNET_SCOPE_MONITOR_CONFIG_DEFAULT_INIT</a></td></tr>
+<tr class="memdesc:gaffcf02e4e04833828dd8b1e5ea56fa67"><td class="mdescLeft">&#160;</td><td class="mdescRight">A default-value initializer for an <a class="el" href="struct_rdmnet_scope_monitor_config.html" title="A set of information that defines the parameters of an RDMnet scope to be monitored using DNS-SD...">RdmnetScopeMonitorConfig</a> struct.  <a href="group__rdmnet__disc.html#gaffcf02e4e04833828dd8b1e5ea56fa67">More...</a><br /></td></tr>
+<tr class="separator:gaffcf02e4e04833828dd8b1e5ea56fa67"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:ga2098ae93683332e801ce84ec8582fef4"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct_rdmnet_dns_txt_record_item.html">RdmnetDnsTxtRecordItem</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga2098ae93683332e801ce84ec8582fef4">RdmnetDnsTxtRecordItem</a></td></tr>
+<tr class="memdesc:ga2098ae93683332e801ce84ec8582fef4"><td class="mdescLeft">&#160;</td><td class="mdescRight">An extra key/value pair in a broker's DNS TXT record that does not have a standard RDMnet use.  <a href="group__rdmnet__disc.html#ga2098ae93683332e801ce84ec8582fef4">More...</a><br /></td></tr>
+<tr class="separator:ga2098ae93683332e801ce84ec8582fef4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabd41ce451024533d6fed8d04192cb451"><td class="memItemLeft" align="right" valign="top">typedef struct RdmnetBrokerRegisterRef *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#gabd41ce451024533d6fed8d04192cb451">rdmnet_registered_broker_t</a></td></tr>
+<tr class="memdesc:gabd41ce451024533d6fed8d04192cb451"><td class="mdescLeft">&#160;</td><td class="mdescRight">A handle to an RDMnet broker's DNS-SD registration.  <a href="group__rdmnet__disc.html#gabd41ce451024533d6fed8d04192cb451">More...</a><br /></td></tr>
+<tr class="separator:gabd41ce451024533d6fed8d04192cb451"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8fdb89d97255bf07d67dbf695c253648"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct_rdmnet_broker_disc_info.html">RdmnetBrokerDiscInfo</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga8fdb89d97255bf07d67dbf695c253648">RdmnetBrokerDiscInfo</a></td></tr>
+<tr class="memdesc:ga8fdb89d97255bf07d67dbf695c253648"><td class="mdescLeft">&#160;</td><td class="mdescRight">Information about a broker discovered or registered using DNS-SD.  <a href="group__rdmnet__disc.html#ga8fdb89d97255bf07d67dbf695c253648">More...</a><br /></td></tr>
+<tr class="separator:ga8fdb89d97255bf07d67dbf695c253648"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafc448d22cd010a657d0475a0eafb4f4c"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct_rdmnet_disc_broker_callbacks.html">RdmnetDiscBrokerCallbacks</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#gafc448d22cd010a657d0475a0eafb4f4c">RdmnetDiscBrokerCallbacks</a></td></tr>
+<tr class="memdesc:gafc448d22cd010a657d0475a0eafb4f4c"><td class="mdescLeft">&#160;</td><td class="mdescRight">A set of notification callbacks received by a registered broker instance.  <a href="group__rdmnet__disc.html#gafc448d22cd010a657d0475a0eafb4f4c">More...</a><br /></td></tr>
+<tr class="separator:gafc448d22cd010a657d0475a0eafb4f4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5cfe4738610c6fc11697adab598ce0d4"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct_rdmnet_broker_register_config.html">RdmnetBrokerRegisterConfig</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga5cfe4738610c6fc11697adab598ce0d4">RdmnetBrokerRegisterConfig</a></td></tr>
+<tr class="memdesc:ga5cfe4738610c6fc11697adab598ce0d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">A set of information that defines the parameters of an RDMnet broker registered with DNS-SD.  <a href="group__rdmnet__disc.html#ga5cfe4738610c6fc11697adab598ce0d4">More...</a><br /></td></tr>
+<tr class="separator:ga5cfe4738610c6fc11697adab598ce0d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga96dcc3595a69e9f63acad60d3a07eed8"><td class="memItemLeft" align="right" valign="top">typedef struct RdmnetScopeMonitorRef *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga96dcc3595a69e9f63acad60d3a07eed8">rdmnet_scope_monitor_t</a></td></tr>
+<tr class="memdesc:ga96dcc3595a69e9f63acad60d3a07eed8"><td class="mdescLeft">&#160;</td><td class="mdescRight">A handle to a monitored RDMnet scope.  <a href="group__rdmnet__disc.html#ga96dcc3595a69e9f63acad60d3a07eed8">More...</a><br /></td></tr>
+<tr class="separator:ga96dcc3595a69e9f63acad60d3a07eed8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3fa0cbb714c04bfd67fc0fe3d8b8285a"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct_rdmnet_scope_monitor_callbacks.html">RdmnetScopeMonitorCallbacks</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga3fa0cbb714c04bfd67fc0fe3d8b8285a">RdmnetScopeMonitorCallbacks</a></td></tr>
+<tr class="memdesc:ga3fa0cbb714c04bfd67fc0fe3d8b8285a"><td class="mdescLeft">&#160;</td><td class="mdescRight">A set of notification callbacks received by a scope monitor instance.  <a href="group__rdmnet__disc.html#ga3fa0cbb714c04bfd67fc0fe3d8b8285a">More...</a><br /></td></tr>
+<tr class="separator:ga3fa0cbb714c04bfd67fc0fe3d8b8285a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga200d7ce88db55c373a534bf94fe480e5"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="struct_rdmnet_scope_monitor_config.html">RdmnetScopeMonitorConfig</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga200d7ce88db55c373a534bf94fe480e5">RdmnetScopeMonitorConfig</a></td></tr>
+<tr class="memdesc:ga200d7ce88db55c373a534bf94fe480e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">A set of information that defines the parameters of an RDMnet scope to be monitored using DNS-SD.  <a href="group__rdmnet__disc.html#ga200d7ce88db55c373a534bf94fe480e5">More...</a><br /></td></tr>
+<tr class="separator:ga200d7ce88db55c373a534bf94fe480e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr><td colspan="2"><div class="groupHeader">Registered Broker Callbacks</div></td></tr>
+<tr class="memitem:ga9adf69f1f9bad6706d034c49d72218d5"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga9adf69f1f9bad6706d034c49d72218d5">RdmnetDiscBrokerRegisteredCallback</a>) (<a class="el" href="group__rdmnet__disc.html#gabd41ce451024533d6fed8d04192cb451">rdmnet_registered_broker_t</a> handle, const char *assigned_service_instance_name, void *context)</td></tr>
+<tr class="memdesc:ga9adf69f1f9bad6706d034c49d72218d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">A broker has been registered successfully with the DNS-SD service.  <a href="group__rdmnet__disc.html#ga9adf69f1f9bad6706d034c49d72218d5">More...</a><br /></td></tr>
+<tr class="separator:ga9adf69f1f9bad6706d034c49d72218d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga04e9844ae14599d7c0598347601ce28a"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga04e9844ae14599d7c0598347601ce28a">RdmnetDiscBrokerRegisterFailedCallback</a>) (<a class="el" href="group__rdmnet__disc.html#gabd41ce451024533d6fed8d04192cb451">rdmnet_registered_broker_t</a> handle, int platform_error, void *context)</td></tr>
+<tr class="memdesc:ga04e9844ae14599d7c0598347601ce28a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Broker registration has failed.  <a href="group__rdmnet__disc.html#ga04e9844ae14599d7c0598347601ce28a">More...</a><br /></td></tr>
+<tr class="separator:ga04e9844ae14599d7c0598347601ce28a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4bcbc84743b2c73d65e42eb0f5c7d928"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga4bcbc84743b2c73d65e42eb0f5c7d928">RdmnetDiscOtherBrokerFoundCallback</a>) (<a class="el" href="group__rdmnet__disc.html#gabd41ce451024533d6fed8d04192cb451">rdmnet_registered_broker_t</a> handle, const <a class="el" href="struct_rdmnet_broker_disc_info.html">RdmnetBrokerDiscInfo</a> *broker_info, void *context)</td></tr>
+<tr class="memdesc:ga4bcbc84743b2c73d65e42eb0f5c7d928"><td class="mdescLeft">&#160;</td><td class="mdescRight">Another broker has been found on the scope on which this broker is registered.  <a href="group__rdmnet__disc.html#ga4bcbc84743b2c73d65e42eb0f5c7d928">More...</a><br /></td></tr>
+<tr class="separator:ga4bcbc84743b2c73d65e42eb0f5c7d928"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga056b842a9491951d139807482ac643e9"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga056b842a9491951d139807482ac643e9">RdmnetDiscOtherBrokerLostCallback</a>) (<a class="el" href="group__rdmnet__disc.html#gabd41ce451024533d6fed8d04192cb451">rdmnet_registered_broker_t</a> handle, const char *scope, const char *service_instance_name, void *context)</td></tr>
+<tr class="memdesc:ga056b842a9491951d139807482ac643e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">A broker which was previously detected on the same scope as a registered broker has been lost.  <a href="group__rdmnet__disc.html#ga056b842a9491951d139807482ac643e9">More...</a><br /></td></tr>
+<tr class="separator:ga056b842a9491951d139807482ac643e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr><td colspan="2"><div class="groupHeader">Scope Monitor Callbacks</div></td></tr>
+<tr class="memitem:ga8f9d261879f95bec257939fb2a4128ef"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga8f9d261879f95bec257939fb2a4128ef">RdmnetDiscBrokerFoundCallback</a>) (<a class="el" href="group__rdmnet__disc.html#ga96dcc3595a69e9f63acad60d3a07eed8">rdmnet_scope_monitor_t</a> handle, const <a class="el" href="struct_rdmnet_broker_disc_info.html">RdmnetBrokerDiscInfo</a> *broker_info, void *context)</td></tr>
+<tr class="memdesc:ga8f9d261879f95bec257939fb2a4128ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">An RDMnet broker has been found on a monitored scope.  <a href="group__rdmnet__disc.html#ga8f9d261879f95bec257939fb2a4128ef">More...</a><br /></td></tr>
+<tr class="separator:ga8f9d261879f95bec257939fb2a4128ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7d7aee925082d4817e0b9426b9c8a04e"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga7d7aee925082d4817e0b9426b9c8a04e">RdmnetDiscBrokerUpdatedCallback</a>) (<a class="el" href="group__rdmnet__disc.html#ga96dcc3595a69e9f63acad60d3a07eed8">rdmnet_scope_monitor_t</a> handle, const <a class="el" href="struct_rdmnet_broker_disc_info.html">RdmnetBrokerDiscInfo</a> *updated_broker_info, void *context)</td></tr>
+<tr class="memdesc:ga7d7aee925082d4817e0b9426b9c8a04e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updated information has been received for a previously-discovered RDMnet broker.  <a href="group__rdmnet__disc.html#ga7d7aee925082d4817e0b9426b9c8a04e">More...</a><br /></td></tr>
+<tr class="separator:ga7d7aee925082d4817e0b9426b9c8a04e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga242b140792d3a4d16312af7b136f127f"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga242b140792d3a4d16312af7b136f127f">RdmnetDiscBrokerLostCallback</a>) (<a class="el" href="group__rdmnet__disc.html#ga96dcc3595a69e9f63acad60d3a07eed8">rdmnet_scope_monitor_t</a> handle, const char *scope, const char *service_instance_name, void *context)</td></tr>
+<tr class="memdesc:ga242b140792d3a4d16312af7b136f127f"><td class="mdescLeft">&#160;</td><td class="mdescRight">A previously-discovered RDMnet broker has been lost on a monitored scope.  <a href="group__rdmnet__disc.html#ga242b140792d3a4d16312af7b136f127f">More...</a><br /></td></tr>
+<tr class="separator:ga242b140792d3a4d16312af7b136f127f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:gaf23b746209600eae870283926e7f7ae1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#gaf23b746209600eae870283926e7f7ae1">rdmnet_broker_register_config_init</a> (<a class="el" href="struct_rdmnet_broker_register_config.html">RdmnetBrokerRegisterConfig</a> *config)</td></tr>
+<tr class="memdesc:gaf23b746209600eae870283926e7f7ae1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize an <a class="el" href="struct_rdmnet_broker_register_config.html" title="A set of information that defines the parameters of an RDMnet broker registered with DNS-SD...">RdmnetBrokerRegisterConfig</a> with default values for the optional config options.  <a href="group__rdmnet__disc.html#gaf23b746209600eae870283926e7f7ae1">More...</a><br /></td></tr>
+<tr class="separator:gaf23b746209600eae870283926e7f7ae1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1f926a1331a5c44bd69d50786cf453f8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga1f926a1331a5c44bd69d50786cf453f8">rdmnet_broker_register_config_set_callbacks</a> (<a class="el" href="struct_rdmnet_broker_register_config.html">RdmnetBrokerRegisterConfig</a> *config, <a class="el" href="group__rdmnet__disc.html#ga9adf69f1f9bad6706d034c49d72218d5">RdmnetDiscBrokerRegisteredCallback</a> broker_registered, <a class="el" href="group__rdmnet__disc.html#ga04e9844ae14599d7c0598347601ce28a">RdmnetDiscBrokerRegisterFailedCallback</a> broker_register_failed, <a class="el" href="group__rdmnet__disc.html#ga4bcbc84743b2c73d65e42eb0f5c7d928">RdmnetDiscOtherBrokerFoundCallback</a> other_broker_found, <a class="el" href="group__rdmnet__disc.html#ga056b842a9491951d139807482ac643e9">RdmnetDiscOtherBrokerLostCallback</a> other_broker_lost, void *context)</td></tr>
+<tr class="memdesc:ga1f926a1331a5c44bd69d50786cf453f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the callbacks in an RDMnet broker register configuration structure.  <a href="group__rdmnet__disc.html#ga1f926a1331a5c44bd69d50786cf453f8">More...</a><br /></td></tr>
+<tr class="separator:ga1f926a1331a5c44bd69d50786cf453f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga13ad9fa196dd654b8c68bdba2b454812"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga13ad9fa196dd654b8c68bdba2b454812">rdmnet_scope_monitor_config_init</a> (<a class="el" href="struct_rdmnet_scope_monitor_config.html">RdmnetScopeMonitorConfig</a> *config)</td></tr>
+<tr class="memdesc:ga13ad9fa196dd654b8c68bdba2b454812"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize an <a class="el" href="struct_rdmnet_scope_monitor_config.html" title="A set of information that defines the parameters of an RDMnet scope to be monitored using DNS-SD...">RdmnetScopeMonitorConfig</a> with default values for the optional config options.  <a href="group__rdmnet__disc.html#ga13ad9fa196dd654b8c68bdba2b454812">More...</a><br /></td></tr>
+<tr class="separator:ga13ad9fa196dd654b8c68bdba2b454812"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6a992b031bed7a5185188376597562e5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga6a992b031bed7a5185188376597562e5">rdmnet_scope_monitor_config_set_callbacks</a> (<a class="el" href="struct_rdmnet_scope_monitor_config.html">RdmnetScopeMonitorConfig</a> *config, <a class="el" href="group__rdmnet__disc.html#ga8f9d261879f95bec257939fb2a4128ef">RdmnetDiscBrokerFoundCallback</a> broker_found, <a class="el" href="group__rdmnet__disc.html#ga7d7aee925082d4817e0b9426b9c8a04e">RdmnetDiscBrokerUpdatedCallback</a> broker_udpated, <a class="el" href="group__rdmnet__disc.html#ga242b140792d3a4d16312af7b136f127f">RdmnetDiscBrokerLostCallback</a> broker_lost, void *context)</td></tr>
+<tr class="memdesc:ga6a992b031bed7a5185188376597562e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the callbacks in an RDMnet scope monitor configuration structure.  <a href="group__rdmnet__disc.html#ga6a992b031bed7a5185188376597562e5">More...</a><br /></td></tr>
+<tr class="separator:ga6a992b031bed7a5185188376597562e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1999940ffed68c70e24de44855ffea09"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#ga743b0648f0ca798ef29c9f69c6e255af">etcpal_error_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga1999940ffed68c70e24de44855ffea09">rdmnet_disc_start_monitoring</a> (const <a class="el" href="struct_rdmnet_scope_monitor_config.html">RdmnetScopeMonitorConfig</a> *config, <a class="el" href="group__rdmnet__disc.html#ga96dcc3595a69e9f63acad60d3a07eed8">rdmnet_scope_monitor_t</a> *handle, int *platform_specific_error)</td></tr>
+<tr class="memdesc:ga1999940ffed68c70e24de44855ffea09"><td class="mdescLeft">&#160;</td><td class="mdescRight">Begin monitoring an RDMnet scope for brokers.  <a href="group__rdmnet__disc.html#ga1999940ffed68c70e24de44855ffea09">More...</a><br /></td></tr>
+<tr class="separator:ga1999940ffed68c70e24de44855ffea09"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4633144d80e2e43f3fcc04104e958ef6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga4633144d80e2e43f3fcc04104e958ef6">rdmnet_disc_stop_monitoring</a> (<a class="el" href="group__rdmnet__disc.html#ga96dcc3595a69e9f63acad60d3a07eed8">rdmnet_scope_monitor_t</a> handle)</td></tr>
+<tr class="memdesc:ga4633144d80e2e43f3fcc04104e958ef6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stop monitoring an RDMnet scope for brokers.  <a href="group__rdmnet__disc.html#ga4633144d80e2e43f3fcc04104e958ef6">More...</a><br /></td></tr>
+<tr class="separator:ga4633144d80e2e43f3fcc04104e958ef6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaca3cf1d904824d84518f1aa9f8c1207b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#gaca3cf1d904824d84518f1aa9f8c1207b">rdmnet_disc_stop_monitoring_all</a> (void)</td></tr>
+<tr class="memdesc:gaca3cf1d904824d84518f1aa9f8c1207b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stop monitoring all RDMnet scopes for brokers.  <a href="group__rdmnet__disc.html#gaca3cf1d904824d84518f1aa9f8c1207b">More...</a><br /></td></tr>
+<tr class="separator:gaca3cf1d904824d84518f1aa9f8c1207b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3eb488508ecde87c1c721b5bb1dbc14b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" doxygen="/home/vsts/work/1/s/external/EtcPal/docs/etcpal.tag:https://etclabs.github.io/EtcPal/docs/head/" href="https://etclabs.github.io/EtcPal/docs/head/group__etcpal__error.html#ga743b0648f0ca798ef29c9f69c6e255af">etcpal_error_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#ga3eb488508ecde87c1c721b5bb1dbc14b">rdmnet_disc_register_broker</a> (const <a class="el" href="struct_rdmnet_broker_register_config.html">RdmnetBrokerRegisterConfig</a> *config, <a class="el" href="group__rdmnet__disc.html#gabd41ce451024533d6fed8d04192cb451">rdmnet_registered_broker_t</a> *handle)</td></tr>
+<tr class="memdesc:ga3eb488508ecde87c1c721b5bb1dbc14b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register an RDMnet broker on a scope.  <a href="group__rdmnet__disc.html#ga3eb488508ecde87c1c721b5bb1dbc14b">More...</a><br /></td></tr>
+<tr class="separator:ga3eb488508ecde87c1c721b5bb1dbc14b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaba7836f5a2dda01823ed110d9033970d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__rdmnet__disc.html#gaba7836f5a2dda01823ed110d9033970d">rdmnet_disc_unregister_broker</a> (<a class="el" href="group__rdmnet__disc.html#gabd41ce451024533d6fed8d04192cb451">rdmnet_registered_broker_t</a> handle)</td></tr>
+<tr class="memdesc:gaba7836f5a2dda01823ed110d9033970d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unegister an RDMnet broker on a scope.  <a href="group__rdmnet__disc.html#gaba7836f5a2dda01823ed110d9033970d">More...</a><br /></td></tr>
+<tr class="separator:gaba7836f5a2dda01823ed110d9033970d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a class="el" href="dir_49dbbb66e43847c8e8768031ecdea882.html">rdmnet</a></li><li class="navelem"><a class="el" href="discovery_8h.html">discovery.h</a></li>
+    <li class="footer">Generated by
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.13 </li>
+  </ul>
+</div>
+</body>
+</html>
