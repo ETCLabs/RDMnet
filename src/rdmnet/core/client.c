@@ -236,7 +236,8 @@ static etcpal_error_t client_send_update_internal(RCClient*               client
 // Some special functions for handling RDM responses from the application
 static void append_to_supported_parameters(RCClient*               client,
                                            const RdmCommandHeader* received_cmd_header,
-                                           RdmBuffer*              resp_buf,
+                                           RdmBuffer*              param_resp_buf,
+                                           size_t                  param_num_buffers,
                                            size_t*                 total_resp_size);
 static void change_destination_to_broadcast(RdmBuffer* resp_buf, size_t total_resp_size);
 
@@ -1962,7 +1963,7 @@ etcpal_error_t send_rdm_ack_internal(RCClient*               client,
   if (res == kEtcPalErrOk)
   {
     if (received_cmd_header->param_id == E120_SUPPORTED_PARAMETERS)
-      append_to_supported_parameters(client, received_cmd_header, resp_buf, &total_resp_size);
+      append_to_supported_parameters(client, received_cmd_header, &resp_buf[1], resp_size, &total_resp_size);
     if (received_cmd_header->command_class == kRdmCCSetCommand)
       change_destination_to_broadcast(resp_buf, total_resp_size);
 
@@ -2053,7 +2054,7 @@ etcpal_error_t client_send_update_internal(RCClient*               client,
   if (res == kEtcPalErrOk)
   {
     if (param_id == E120_SUPPORTED_PARAMETERS)
-      append_to_supported_parameters(client, &fake_rdm_header, resp_buf, &resp_size);
+      append_to_supported_parameters(client, &fake_rdm_header, resp_buf, resp_size, &resp_size);
 
     // Hack - need to add the destination broadcast UID in each response. This is needed here
     // because it's allowed in RDMnet but not RDM, so rdm_pack_full_response() will not work
@@ -2084,12 +2085,14 @@ static int supported_param_compare(const void* a, const void* b)
 
 void append_to_supported_parameters(RCClient*               client,
                                     const RdmCommandHeader* received_cmd_header,
-                                    RdmBuffer*              resp_buf,
+                                    RdmBuffer*              param_resp_buf,
+                                    size_t                  param_num_buffers,
                                     size_t*                 total_resp_size)
 {
-  RDMNET_ASSERT(resp_buf);
+  RDMNET_ASSERT(param_resp_buf);
+  RDMNET_ASSERT(param_num_buffers >= 1);
   RDMNET_ASSERT(total_resp_size);
-  RDMNET_ASSERT(*total_resp_size >= 2);
+  RDMNET_ASSERT(*total_resp_size >= 1);
 
   // Reset the checklist
   for (SupportedParameter* param = kSupportedParametersChecklist;
@@ -2100,7 +2103,7 @@ void append_to_supported_parameters(RCClient*               client,
 
   size_t num_params_found = 0;
 
-  for (RdmBuffer* resp = &resp_buf[1]; resp < resp_buf + *total_resp_size; ++resp)
+  for (RdmBuffer* resp = param_resp_buf; resp < param_resp_buf + param_num_buffers; ++resp)
   {
     uint8_t* pd_ptr = &resp->data[RDM_OFFSET_PARAM_DATA];
     while (pd_ptr < &resp->data[RDM_OFFSET_PARAM_DATA] + resp->data[RDM_OFFSET_PARAM_DATA_LEN])
@@ -2118,7 +2121,7 @@ void append_to_supported_parameters(RCClient*               client,
     }
   }
 
-  RdmBuffer* last_resp = &resp_buf[*total_resp_size - 1];
+  RdmBuffer* last_resp = &param_resp_buf[param_num_buffers - 1];
   uint8_t    last_resp_remaining_param_len = 230 - last_resp->data[RDM_OFFSET_PARAM_DATA_LEN];
 
   uint8_t params_to_append_buf[SUPPORTED_PARAMETERS_CHECKLIST_SIZE * 2];
@@ -2152,7 +2155,7 @@ void append_to_supported_parameters(RCClient*               client,
     etcpal_pack_u16b(checksum_offset, etcpal_unpack_u16b(checksum_offset) + 3);
 
     // Create a new response
-    RdmBuffer* new_resp = &resp_buf[*total_resp_size];
+    RdmBuffer* new_resp = &param_resp_buf[param_num_buffers];
     rdm_pack_response(received_cmd_header, 0, &params_to_append_buf[last_resp_remaining_param_len],
                       params_to_append_size - last_resp_remaining_param_len, new_resp);
     (*total_resp_size)++;
