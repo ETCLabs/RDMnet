@@ -116,7 +116,7 @@ stages:
             condition: or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/tags'))
           - script: |
               brew update
-              brew cask install packages
+              brew install packages
             displayName: "Install dependencies"
           - template: tools/ci/azure_templates/get_qt.yml
             parameters:

@@ -268,6 +268,33 @@ TEST_F(TestRptClientRdmHandling, AppendsRequiredSupportedParamsDevice)
     EXPECT_NE(params_found.find(param), params_found.end()) << "Parameter value: " << param;
 }
 
+TEST_F(TestRptClientRdmHandling, AppendsSupportedParamsToUpdate)
+{
+  uint8_t data_buf[2];
+  etcpal_pack_u16b(data_buf, E120_DEVICE_INFO);
+
+  ASSERT_EQ(rc_client_send_rdm_update(&client_, scope_handle_, 0, E120_SUPPORTED_PARAMETERS, data_buf, 2),
+            kEtcPalErrOk);
+  ASSERT_EQ(rc_rpt_send_notification_fake.call_count, 1u);
+
+  EXPECT_EQ(last_sent_buf_list.size(), 1u);
+  EXPECT_TRUE(rdm_validate_msg(&last_sent_buf_list[0]));
+
+  const RdmBuffer&   response = last_sent_buf_list[0];
+  uint8_t            pdl = response.data[RDM_OFFSET_PARAM_DATA_LEN];
+  std::set<uint16_t> params_found;
+  for (const uint8_t* cur_ptr = &response.data[RDM_OFFSET_PARAM_DATA];
+       cur_ptr < &response.data[RDM_OFFSET_PARAM_DATA] + pdl; cur_ptr += 2)
+  {
+    EXPECT_TRUE(params_found.insert(etcpal_unpack_u16b(cur_ptr)).second);
+  }
+
+  EXPECT_EQ(params_found.size(), kSupportedParamsAll.size() + 1);
+  EXPECT_NE(params_found.find(E120_DEVICE_INFO), params_found.end());
+  for (const auto& param : kSupportedParamsAll)
+    EXPECT_NE(params_found.find(param), params_found.end()) << "Parameter value: " << param;
+}
+
 TEST_F(TestRptClientRdmHandling, DoesNotAppendDuplicateSupportedParams)
 {
   auto supported_params = kSupportedParamsAll;
