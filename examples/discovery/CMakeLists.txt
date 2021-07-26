@@ -1,3 +1,0 @@
-add_executable(discovery_example discovery_example.c)
-set_target_properties(discovery_example PROPERTIES FOLDER examples)
-target_link_libraries(discovery_example PRIVATE RDMnet)

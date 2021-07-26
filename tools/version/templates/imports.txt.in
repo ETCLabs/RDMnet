@@ -1,3 +1,0 @@
-import RDMnet/... //GITHUB_RDMnet/main_latest/...@RDMnet_@RDMNET_VERSION_STRING@
-import RDM/... //GITHUB_RDM/main_latest/...@GHRDM_@RDM_VERSION_STRING@
-import EtcPal/... //GITHUB_EtcPal/main_latest/...@EtcPal_@ETCPAL_VERSION_STRING@

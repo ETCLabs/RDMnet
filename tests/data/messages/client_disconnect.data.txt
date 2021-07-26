@@ -1,8 +1,0 @@
-// A client disconnect message
-
-41 53 43 2d 45 31 2e 31 37 00 00 00             // ACN packet identifier
-00 00 00 1e                                     // Total length
-f0 00 1e 00 00 00 09                            // Root layer PDU flags, length, vector
-9a ad 1b 1e 32 fa 43 d2 ae 31 39 2a e8 8b 19 a0 // Sender CID
-f0 00 07 00 0e                                  // Broker PDU flags, length, vector
-00 01                                           // Disconnect reason code
