@@ -47,6 +47,7 @@ namespace rdmnet
 /// @ingroup rdmnet_cpp_api
 /// @brief Implementation of RDMnet broker functionality; see @ref using_broker.
 
+/// @ingroup rdmnet_broker
 /// @brief A key/value pair representing a DNS TXT record item.
 /// @details The key and value combined cannot be more than 255 bytes in length.
 struct DnsTxtRecordItem
@@ -133,7 +134,8 @@ public:
     std::vector<DnsTxtRecordItem> additional_txt_record_items;
   };
 
-  /// A set of limits for broker operation.
+  /// @ingroup rdmnet_broker
+  /// @brief A set of limits for broker operation.
   struct Limits
   {
     /// The maximum number of client connections supported. 0 means infinite.
@@ -262,7 +264,5 @@ inline bool Broker::Settings::IsValid() const
 }
 
 };  // namespace rdmnet
-
-/// @}
 
 #endif  // RDMNET_CPP_BROKER_H_

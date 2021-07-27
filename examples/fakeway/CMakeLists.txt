@@ -1,7 +1,7 @@
 if(CMAKE_SIZEOF_VOID_P STREQUAL 4)
-  list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_LIST_DIR}/../../external/libGadget/Win32)
+  list(APPEND CMAKE_PREFIX_PATH ${libgadget_SOURCE_DIR}/Win32)
 else()
-  list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_LIST_DIR}/../../external/libGadget/x64)
+  list(APPEND CMAKE_PREFIX_PATH ${libgadget_SOURCE_DIR}/x64)
 endif()
 
 find_package(GadgetDLL 2.1.0 REQUIRED)

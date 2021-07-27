@@ -48,10 +48,10 @@
  * @name RDMnet version strings
  * @{
  */
-#define RDMNET_VERSION_STRING "0.4.0.1"
-#define RDMNET_VERSION_DATESTR "20.Nov.2020"
-#define RDMNET_VERSION_COPYRIGHT "Copyright 2020 ETC Inc."
-#define RDMNET_VERSION_PRODUCTNAME "RDMnet"
+#define RDMNET_VERSION_STRING "0.4.0.1" /**< The version number as a string. */
+#define RDMNET_VERSION_DATESTR "20.Nov.2020" /**< The date this version was created. */
+#define RDMNET_VERSION_COPYRIGHT "Copyright 2020 ETC Inc." /**< A copyright string for this library. */
+#define RDMNET_VERSION_PRODUCTNAME "RDMnet" /**< The name of the library as a string. */
 /**
  * @}
  */

@@ -6,18 +6,17 @@ import subprocess
 import sys
 import time
 
-# This script requires an unlocked keychain on the keychain search path with the ETC macOS identities pre-installed.
-# It is mostly run in the environment of Azure Pipelines CI, where those prerequisites are met.
+PACKAGE_BUNDLE_ID = "com.etcconnect.pkg.RDMnet"
+
 MACOS_APPLICATION_SIGNING_IDENTITY = os.getenv(
-    "MACOS_APPLICATION_SIGNING_IDENTITY",
+    "RDMNET_MACOS_APPLICATION_SIGNING_IDENTITY",
     "Developer ID Application: Electronic Theatre Controls, Inc. (8AVSFD7ZED)",
 )
 MACOS_INSTALLER_SIGNING_IDENTITY = os.getenv(
-    "MACOS_INSTALLER_SIGNING_IDENTITY",
+    "RDMNET_MACOS_INSTALLER_SIGNING_IDENTITY",
     "Developer ID Installer: Electronic Theatre Controls, Inc. (8AVSFD7ZED)",
 )
-
-PACKAGE_BUNDLE_ID = "com.etcconnect.pkg.RDMnet"
+KEYCHAIN_PASSWORD = os.getenv("RDMNET_MACOS_KEYCHAIN_PASSWORD")
 
 DEVEL_ID_USERNAME = os.getenv("RDMNET_APPLE_DEVELOPER_ID_USER")
 DEVEL_ID_PASSWORD = os.getenv("RDMNET_APPLE_DEVELOPER_ID_PW")
@@ -31,6 +30,17 @@ if not DEVEL_ID_USERNAME or not DEVEL_ID_PASSWORD:
 ###############################################################################
 
 print("Codesigning binaries...")
+
+subprocess.run(
+    [
+        "security",
+        "unlock-keychain",
+        "-p",
+        f"{KEYCHAIN_PASSWORD}",
+        "/Users/gitlab-runner/Library/Keychains/login.keychain-db",
+    ],
+    check=True,
+)
 
 subprocess.run(
     [

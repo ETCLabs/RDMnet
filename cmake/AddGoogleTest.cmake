@@ -1,25 +1,16 @@
-# 
-#
-# Downloads GTest and provides a helper macro to add tests. Add make check, as well, which
-# gives output on failed tests without having to set an environment variable.
-#
-#
+message(STATUS "Adding GoogleTest...")
 
-find_package(Git QUIET)
-if(GIT_FOUND AND EXISTS ${RDMNET_ROOT}/.git)
-  # Update the submodules to bring in googletest
-  execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init external/googletest
-                  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-                  RESULT_VARIABLE GIT_SUBMOD_RESULT)
-  if(NOT GIT_SUBMOD_RESULT EQUAL "0")
-    message(FATAL_ERROR "git submodule update --init failed for external/googletest with ${GIT_SUBMOD_RESULT}, please checkout submodules")
-  endif()
-endif()
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG 96f4ce02a3a78d63981c67acbd368945d11d7d70
+)
 
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 
-add_subdirectory(external/googletest)
+FetchContent_MakeAvailable(googletest)
 
 mark_as_advanced(
   gmock_build_tests

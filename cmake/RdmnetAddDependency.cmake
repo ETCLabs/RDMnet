@@ -29,7 +29,7 @@ function(rdmnet_add_dependency target loc_variable)
       if(GIT_FOUND AND EXISTS ${RDMNET_ROOT}/.git)
         # Update submodules as needed
         execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init external/${target}
-                        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                        WORKING_DIRECTORY ${RDMNET_ROOT}
                         RESULT_VARIABLE GIT_SUBMOD_RESULT)
         if(NOT GIT_SUBMOD_RESULT EQUAL "0")
           message(FATAL_ERROR "git submodule update --init failed for external/${target} with ${GIT_SUBMOD_RESULT}, please checkout submodules")

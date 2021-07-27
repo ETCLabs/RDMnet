@@ -1,0 +1,137 @@
+workflow:
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+
+variables:
+  GIT_STRATEGY: clone
+  GIT_SUBMODULE_STRATEGY: normal
+  GLOBAL_CMAKE_OPTIONS: -DRDMNET_BUILD_TESTS=ON -DRDMNET_BUILD_CONSOLE_EXAMPLES=ON
+  PROJECT_BOT_USER: project_270_bot
+
+windows-build:
+  stage: build
+  tags:
+    - ct-windows
+  parallel:
+    matrix:
+      - CMAKE_GENERATOR: Visual Studio 15 2017
+        QT_DIRECTORY: C:\Qt_os\5.12.11\msvc2017
+        CMAKE_INSTALL: install_x86
+        VCVARSALL_PLATFORM: x86
+        ARTIFACT_TYPE: x86
+      - CMAKE_GENERATOR: Visual Studio 15 2017 Win64
+        QT_DIRECTORY: C:\Qt_os\5.12.11\msvc2017_64
+        CMAKE_INSTALL: install_x64
+        VCVARSALL_PLATFORM: amd64
+        ARTIFACT_TYPE: x64
+  script:
+    - python tools\ci\update_artifact_version.py
+    - mkdir build
+    - cd build
+    - cmake -G "$env:CMAKE_GENERATOR" "-DQTDIR=$env:QT_DIRECTORY" "-DCMAKE_INSTALL_PREFIX=$env:CMAKE_INSTALL" $env:GLOBAL_CMAKE_OPTIONS.Split(" ") -DRDMNET_BUILD_GUI_EXAMPLES=ON ..
+    - cmake --build . --config Release -j
+    - ctest -C Release --output-on-failure
+    - cmake -P cmake_install.cmake
+    - cd ..
+    - .\tools\ci\windows_build_installer.bat
+  artifacts:
+    when: always
+    paths:
+      - RDMnetSetup_$ARTIFACT_TYPE.msi
+    reports:
+      junit: build/tests/test-results/*.xml
+
+macos-build:
+  stage: build
+  tags:
+    - ct-macos
+  variables:
+    QT_DIRECTORY: /Users/Shared/Qt/5.9.7/clang_64
+  script:
+    - python3 tools/ci/update_artifact_version.py
+    - mkdir build
+    - cd build
+    - cmake -G "Unix Makefiles" -DQTDIR=${QT_DIRECTORY} -DCMAKE_INSTALL_PREFIX=install ${GLOBAL_CMAKE_OPTIONS} -DRDMNET_BUILD_GUI_EXAMPLES=ON ..
+    - make -j
+    - make install
+    - ctest --output-on-failure
+    - cd ..
+    - python3 tools/install/macos/macos_build_package.py
+  artifacts:
+    when: always
+    paths:
+      - RDMnet.pkg
+    reports:
+      junit: build/tests/test-results/*.xml
+
+linux-build:
+  stage: build
+  tags:
+    - etc-linux-docker
+  image: etc-docker.artifactory-mid.etcconnect.com/rikorose/gcc-cmake:latest
+  variables:
+    CMAKE_LINUX_ASAN_OPTIONS: -DCMAKE_C_FLAGS="-fsanitize=address" -DCMAKE_CXX_FLAGS="-fsanitize=address" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address"
+  parallel:
+    matrix:
+      - CMAKE_LINUX_OPTIONS: -DRDMNET_BUILD_TESTS_STATIC=OFF
+      - CMAKE_LINUX_OPTIONS: -DRDMNET_BUILD_TESTS_STATIC=ON -DRDMNET_FORCE_LIGHTWEIGHT_DNS_QUERIER=ON
+  script:
+    - apt-get update && apt-get install -y --no-install-recommends uuid-dev libavahi-client-dev
+    - mkdir build
+    - cd build
+    - cmake -G "Unix Makefiles" ${GLOBAL_CMAKE_OPTIONS} ${CMAKE_LINUX_ASAN_OPTIONS} ${CMAKE_LINUX_OPTIONS} ..
+    - make
+    - ctest --output-on-failure
+  artifacts:
+    when: always
+    reports:
+      junit: build/tests/test-results/*.xml
+
+docs-test:
+  stage: build
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  tags:
+    - etc-linux-docker
+  image: etc-docker.artifactory-mid.etcconnect.com/common-tech/doxygen:1.9.1
+  variables:
+    GIT_DEPTH: 0
+  script:
+    - etclibtool docs -c tools/ci/etclibtool_config.json . 1.9.1
+
+deploy-docs:
+  stage: build
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+  tags:
+    - etc-linux-docker
+  image: etc-docker.artifactory-mid.etcconnect.com/common-tech/doxygen:1.9.1
+  variables:
+    GIT_DEPTH: 0
+    GH_REPO_NAME: RDMnetDocs
+    GH_REPO_REF: github.com/ETCLabs/RDMnetDocs.git
+    GH_REPO_TOKEN: $SVC_ETCLABS_REPO_TOKEN
+  script:
+    - chmod +x tools/ci/publish_docs.sh
+    - tools/ci/publish_docs.sh
+
+# Deploy versioned build
+include:
+  - project: 'etc/common-tech/tools/gitlab-ci-util'
+    ref: v1.1.0
+    file: '/ci-yml/deploy-versioned-build.yml'
+
+deploy-artifacts:
+  stage: deploy
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "web" && $NEW_BUILD_VERSION =~ /^\d+\.\d+\.\d+\.\d+$/ && $CI_COMMIT_REF_NAME == "main"'
+  tags:
+    - ct-linux-docker
+  image: etc-docker.artifactory-mid.etcconnect.com/python:latest
+  script:
+    - pip config set global.index-url https://artifactory-mid.etcconnect.com/artifactory/api/pypi/ETC-PyPI/simple
+    - pip config set global.trusted-host artifactory-mid.etcconnect.com
+    - pip install requests etclibtool PyGithub
+    - python3 tools/ci/deploy_to_github_release.py ${NEW_BUILD_VERSION}

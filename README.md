@@ -1,20 +1,5 @@
 # RDMnet
 
-| Test Platform         | Build & Test Status |
-|-----------------------|:-------------------:|
-| Linux                 | [![Build & Test Status][linux-build-badge]][azure-devops-link] |
-| Linux (Static Memory) | [![Build & Test Status][linux-static-build-badge]][azure-devops-link] |
-| macOS                 | [![Build & Test Status][macos-build-badge]][azure-devops-link] |
-| Windows 32-bit        | [![Build & Test Status][win32-build-badge]][azure-devops-link] |
-| Windows 64-bit        | [![Build & Test Status][win64-build-badge]][azure-devops-link] |
-
-[win32-build-badge]: https://dev.azure.com/ETCLabs/RDMnet/_apis/build/status/ETCLabs.RDMnet?branchName=develop&stageName=Build%20and%20Test%20RDMnet&jobName=Windows&configuration=Windows%20Win32
-[win64-build-badge]: https://dev.azure.com/ETCLabs/RDMnet/_apis/build/status/ETCLabs.RDMnet?branchName=develop&stageName=Build%20and%20Test%20RDMnet&jobName=Windows&configuration=Windows%20x64
-[macos-build-badge]: https://dev.azure.com/ETCLabs/RDMnet/_apis/build/status/ETCLabs.RDMnet?branchName=develop&stageName=Build%20and%20Test%20RDMnet&jobName=macOS
-[linux-build-badge]: https://dev.azure.com/ETCLabs/RDMnet/_apis/build/status/ETCLabs.RDMnet?branchName=develop&stageName=Build%20and%20Test%20RDMnet&jobName=Linux
-[linux-static-build-badge]: https://dev.azure.com/ETCLabs/RDMnet/_apis/build/status/ETCLabs.RDMnet?branchName=develop&stageName=Build%20and%20Test%20RDMnet&jobName=Linux%20(Static%20Memory)
-[azure-devops-link]: https://dev.azure.com/ETCLabs/RDMnet/_build/latest?definitionId=2&branchName=develop
-
 *RDMnet* is an ANSI standard for entertainment technology by [ESTA](http://tsp.esta.org) for
 transmission of [RDM](http://www.rdmprotocol.org) over IP networks. RDMnet leverages and extends
 the widely-adopted RDM message set and provides a standard method for configuring both IP-based
@@ -42,7 +27,8 @@ example applications that demonstrate the roles of Components in RDMnet:
   affectionately referred to as the "Fakeway". Uses ETC Gadget 2 devices to simulate gateway ports.
 * *llrp_manager_example*: A console application which implements a basic LLRP Manager.
 
-The applications are available as a binary package [here](https://etclabs.github.io/RDMnet).
+The applications are available as a binary package
+[on the Releases page](https://github.com/ETCLabs/RDMnet/releases).
 
 The example applications currently support Microsoft Windows, macOS, and Linux, and are built using
 CMake. In addition to these platforms, the RDMnet library also supports any plaform targeted by
@@ -52,13 +38,13 @@ CMake. In addition to these platforms, the RDMnet library also supports any plaf
 
 For instructions on building the RDMnet library and applications, as well as an
 RDMnet overview and in-depth documentation, please see the
-[documentation](https://etclabs.github.io/RDMnet/docs/index.html).
+[documentation](https://etclabs.github.io/RDMnetDocs).
 
 ## Future Plans
 
 This library is maintained by [ETC](http://www.etcconnect.com). This open-source implementation of
 an industry standard is intended to encourage adoption of RDMnet throughout the entertainment
-industry. The code is licensed under the Apache License 2.0, which allows usage of this library in 
+industry. The code is licensed under the Apache License 2.0, which allows usage of this library in
 commercial and/or closed-source applications.
 
 The current prototypes are mostly compliant with the current standard version, with a few

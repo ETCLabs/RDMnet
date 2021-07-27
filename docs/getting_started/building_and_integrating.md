@@ -50,8 +50,8 @@ this level before using submodules. You can disable this behavior by defining th
 ## Including RDMnet in your project
 
 When adding RDMnet to your project, you can choose whether to use RDMnet in binary or source form.
-RDMnet publishes a small set of built binaries for specific platforms and toolchains to
-[JFrog Bintray](https://bintray.com/beta/#/etclabs/rdmnet_bin?tab=packages).
+RDMnet publishes a small set of built binaries for specific platforms and toolchains to its
+[Releases page](https://github.com/ETCLabs/RDMnet/releases).
 
 ### Including RDMnet in CMake projects
 
@@ -94,7 +94,7 @@ results named some varion of "build".
 
 **NOTE**: If you are cross-compiling and/or building for an embedded target, some additional
 configuration is necessary. EtcPal helps make this possible; see the 
-[EtcPal embedded build documentation](https://etclabs.github.io/EtcPal/docs/head/building_for_embedded.html)
+[EtcPal embedded build documentation](https://etclabs.github.io/EtcPalDocs/head/building_for_embedded.html)
 for more details.
 
 1. Create a directory in your location of choice (a directory called 'build' at the repository root

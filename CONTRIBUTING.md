@@ -8,7 +8,7 @@ Thanks for your interest in contributing code to the RDMnet library!
 
 ### Building and Debugging the Library
 
-Check out the relevant [docs page](https://etclabs.github.io/RDMnet/docs/head/building_and_integrating.html)
+Check out the relevant [docs page](https://etclabs.github.io/RDMnetDocs/head/building_and_integrating.html)
 for how to build RDMnet, especially the section titled "Building RDMnet on its own".
 
 When configuring with CMake, you will want to define `RDMNET_BUILD_TESTS=ON` so that you can check
@@ -25,7 +25,7 @@ information).
 
 * Make sure the unit tests pass
 * Add unit tests if applicable for any regressions or new features you have added to the core library
-  + (This is not necessary if just modifying the example apps as they do not have test coverage)
+  * (This is not necessary if just modifying the example apps as they do not have test coverage)
 * Format the code you've touched using clang-format (CMake creates a convenient target `reformat_all`
   which runs clang-format on all of the RDMnet sources if it is available on your PATH)
 

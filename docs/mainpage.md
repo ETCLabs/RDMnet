@@ -15,6 +15,12 @@ See @ref how_it_works for an RDMnet primer, or if you already know how it works,
 The full API reference is organized by <a href="modules.html">module</a>.
 
 \endhtmlonly
+
+To download prebuilt binaries for the RDMnet SDK and example applications, please visit the
+[Releases page](https://github.com/ETCLabs/RDMnet/releases). The
+[changelog](https://github.com/ETCLabs/RDMnet/blob/main/CHANGELOG.md) describes what changed in
+each release.
+
 ## What is RDMnet?
 
 RDMnet is an extension of [RDM](http://www.rdmprotocol.org), a protocol for discovery and remote
@@ -47,7 +53,7 @@ default, EtcPal is automatically included as a submodule in the `external` direc
 source builds. The CMake configuration will automatically update and pull the submodule before
 building.
 
-See the [documentation for EtcPal](https://etclabs.github.io/EtcPal).
+See the [documentation for EtcPal](https://etclabs.github.io/EtcPalDocs).
 
 ### RDM
 
@@ -60,21 +66,22 @@ See the [documentation for RDM](https://etclabs.github.io/RDM).
 ### DNS-SD
 
 RDMnet requires a DNS-SD library. It is ported to use the following providers:
-- On Windows:
-  + [Bonjour SDK for Windows](https://developer.apple.com/bonjour/) v3.0
-  + [ETCLabs/mDNSWindows](https://github.com/ETCLabs/mDNSWindows) (fork of Bonjour with permissive 
-    licensing) v1.2.0
+
+* On Windows:
+  * [Bonjour SDK for Windows](https://developer.apple.com/bonjour/) v3.0
+  * [ETCLabs/mDNSWindows](https://github.com/ETCLabs/mDNSWindows) (fork of Bonjour with permissive
+    licensing)
     * Note: The Windows CMake configuration will download these binaries by default
-- On macOS:
-  + Native Bonjour (installed by default)
-- On Linux:
-  + [avahi-client](https://www.avahi.org/) v0.7
+* On macOS:
+  * Native Bonjour (installed by default)
+* On Linux:
+  * [avahi-client](https://www.avahi.org/) v0.7
     * For compiling RDMnet on Debian-based distributions: `sudo apt-get install libavahi-client-dev`
-- On other platforms:
-  + RDMnet includes its own lightweight implementation of mDNS/DNS-SD querying functionality that
+* On other platforms:
+  * RDMnet includes its own lightweight implementation of mDNS/DNS-SD querying functionality that
     is used on lower-level RTOS targets.
 
 ### Qt
 
-The controller example application depends on Qt 5.9.7 or higher. You can download the open-source 
-version of Qt without an account [here](https://www.qt.io/download).
+The controller example application depends on Qt 5.9.7 or higher. You can download the open-source
+version of Qt [here](https://www.qt.io/download).
