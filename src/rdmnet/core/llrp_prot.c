@@ -46,6 +46,8 @@ static bool parse_llrp_probe_request(const uint8_t*             buf,
 static bool parse_llrp_probe_reply(const uint8_t* buf, size_t buflen, LlrpDiscoveredTarget* reply);
 static bool parse_llrp_rdm_command(const uint8_t* buf, size_t buflen, RdmBuffer* cmd);
 
+static size_t pack_llrp_header(uint8_t* buf, size_t pdu_len, uint32_t vector, const LlrpHeader* header);
+
 static etcpal_error_t send_llrp_rdm(etcpal_socket_t       sock,
                                     uint8_t*              buf,
                                     const EtcPalSockAddr* dest_addr,
@@ -267,7 +269,7 @@ bool parse_llrp_rdm_command(const uint8_t* buf, size_t buflen, RdmBuffer* cmd)
   return true;
 }
 
-size_t etcpal_pack_llrp_header(uint8_t* buf, size_t pdu_len, uint32_t vector, const LlrpHeader* header)
+size_t pack_llrp_header(uint8_t* buf, size_t pdu_len, uint32_t vector, const LlrpHeader* header)
 {
   uint8_t* cur_ptr = buf;
 
@@ -310,7 +312,7 @@ etcpal_error_t rc_send_llrp_probe_request(etcpal_socket_t          sock,
   cur_ptr += acn_pack_root_layer_header(cur_ptr, (size_t)(buf_end - cur_ptr), &rlp);
 
   // Pack the LLRP header
-  cur_ptr += etcpal_pack_llrp_header(cur_ptr, rlp.data_len, VECTOR_LLRP_PROBE_REQUEST, header);
+  cur_ptr += pack_llrp_header(cur_ptr, rlp.data_len, VECTOR_LLRP_PROBE_REQUEST, header);
 
   // Pack the Probe Request PDU header fields
   *cur_ptr = 0xf0;
@@ -369,7 +371,7 @@ etcpal_error_t rc_send_llrp_probe_reply(etcpal_socket_t             sock,
   cur_ptr += acn_pack_root_layer_header(cur_ptr, (size_t)(buf_end - cur_ptr), &rlp);
 
   // Pack the LLRP header
-  cur_ptr += etcpal_pack_llrp_header(cur_ptr, rlp.data_len, VECTOR_LLRP_PROBE_REPLY, header);
+  cur_ptr += pack_llrp_header(cur_ptr, rlp.data_len, VECTOR_LLRP_PROBE_REPLY, header);
 
   // Pack the Probe Reply PDU
   *cur_ptr = 0xf0;
@@ -414,7 +416,7 @@ etcpal_error_t send_llrp_rdm(etcpal_socket_t       sock,
   cur_ptr += acn_pack_root_layer_header(cur_ptr, (size_t)(buf_end - cur_ptr), &rlp);
 
   // Pack the LLRP header
-  cur_ptr += etcpal_pack_llrp_header(cur_ptr, rlp.data_len, VECTOR_LLRP_RDM_CMD, header);
+  cur_ptr += pack_llrp_header(cur_ptr, rlp.data_len, VECTOR_LLRP_RDM_CMD, header);
 
   // Pack the RDM Command PDU
   *cur_ptr = 0xf0;

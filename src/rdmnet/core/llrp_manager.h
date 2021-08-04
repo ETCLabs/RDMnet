@@ -76,6 +76,7 @@ struct RCLlrpManager
 
   // Discovery tracking
   bool         discovery_active;
+  bool         response_received_since_last_probe;
   unsigned int num_clean_sends;
   EtcPalTimer  disc_timer;
   uint16_t     disc_filter;

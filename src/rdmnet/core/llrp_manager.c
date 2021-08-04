@@ -134,6 +134,7 @@ etcpal_error_t rc_llrp_manager_register(RCLlrpManager* manager)
 
   manager->transaction_number = 0;
   manager->discovery_active = false;
+  manager->response_received_since_last_probe = false;
   manager->num_clean_sends = 0;
   manager->disc_filter = 0;
   manager->num_known_uids = 0;
@@ -158,6 +159,7 @@ etcpal_error_t rc_llrp_manager_start_discovery(RCLlrpManager* manager, uint16_t 
     manager->cur_range_low.manu = 0;
     manager->cur_range_low.id = 0;
     manager->cur_range_high = kRdmBroadcastUid;
+    manager->response_received_since_last_probe = false;
     manager->num_clean_sends = 0;
     manager->discovery_active = true;
     manager->disc_filter = filter;
@@ -321,6 +323,16 @@ void process_manager_state(RCLlrpManager* manager, const void* context)
     {
       if (etcpal_timer_is_expired(&manager->disc_timer))
       {
+        if (manager->response_received_since_last_probe)
+        {
+          manager->response_received_since_last_probe = false;
+          manager->num_clean_sends = 0;
+        }
+        else
+        {
+          ++manager->num_clean_sends;
+        }
+
         if (!send_next_probe(manager))
         {
           event.which = kRCLlrpManagerEventDiscoveryFinished;
@@ -355,7 +367,6 @@ bool send_next_probe(RCLlrpManager* manager)
     if (send_res == kEtcPalErrOk)
     {
       etcpal_timer_start(&manager->disc_timer, LLRP_TIMEOUT_MS);
-      ++manager->num_clean_sends;
       return true;
     }
     else
@@ -442,6 +453,8 @@ void handle_llrp_message(RCLlrpManager* manager, const LlrpMessage* msg, RCLlrpM
 
         if (manager->discovery_active && (ETCPAL_UUID_CMP(&msg->header.dest_cid, &manager->cid) == 0))
         {
+          manager->response_received_since_last_probe = true;
+
           DiscoveredTargetInternal* new_target = (DiscoveredTargetInternal*)malloc(sizeof(DiscoveredTargetInternal));
           if (new_target)
           {

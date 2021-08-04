@@ -5,7 +5,6 @@ rdmnet_add_unit_test(test_rdmnet_core_llrp
   # RDMnet LLRP unit test sources
   ${UNIT_TEST_DIR}/shared/fake_mcast.h
   ${UNIT_TEST_DIR}/shared/fake_mcast.cpp
-  test_llrp_manager.cpp
   test_llrp_target.cpp
   main.cpp
 
@@ -23,3 +22,11 @@ rdmnet_add_unit_test(test_rdmnet_core_llrp
   ${RDMNET_SRC}/rdmnet/core/util.c
 )
 target_link_libraries(test_rdmnet_core_llrp PRIVATE EtcPalMock RDM)
+
+if(NOT RDMNET_BUILD_TESTS_STATIC)
+  target_sources(test_rdmnet_core_llrp PRIVATE
+    test_llrp_manager.cpp
+    mock_llrp_network.h
+    mock_llrp_network.cpp
+  )
+endif()
