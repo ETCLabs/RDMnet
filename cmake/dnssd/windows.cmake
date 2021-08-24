@@ -87,7 +87,7 @@ macro(use_bonjour_sdk)
   set_target_properties(RDMnetBonjourStatic PROPERTIES
     IMPORTED_LOCATION ${BONJOUR_LIB_DIR}/dnssd.lib
   )
-  set(RDMNET_DISC_PLATORM_LIBS RDMnetBonjourStatic)
+  set(RDMNET_DISC_PLATFORM_LIBS RDMnetBonjourStatic)
 endmacro()
 
 ###################################################################################################
