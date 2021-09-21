@@ -24,6 +24,7 @@
 
 #include <functional>
 #include "etcpal/common.h"
+#include "etcpal/handle_manager.h"
 #include "rdmnet/core/rpt_prot.h"
 #include "rdmnet/core/util.h"
 #include "broker_client.h"

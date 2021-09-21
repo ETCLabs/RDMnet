@@ -20,6 +20,7 @@
 #include "rdmnet/common.h"
 
 #include "etcpal/common.h"
+#include "etcpal/handle_manager.h"
 #include "rdmnet/common_priv.h"
 #include "rdmnet/core/common.h"
 #include "rdmnet/core/opts.h"
@@ -183,7 +184,7 @@ etcpal_error_t rdmnet_init(const EtcPalLogParams* log_params, const RdmnetNetint
   if (res == kEtcPalErrOk)
   {
     etcpal_rbtree_init(&handles, handle_compare, node_alloc, node_dealloc);
-    init_int_handle_manager(&handle_manager, handle_in_use, NULL);
+    init_int_handle_manager(&handle_manager, -1, handle_in_use, NULL);
   }
   else
   {

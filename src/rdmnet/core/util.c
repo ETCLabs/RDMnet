@@ -298,48 +298,6 @@ void rc_ref_lists_remove_all(RCRefLists* lists, RCRefFunction on_remove, const v
   rc_ref_list_remove_all(active, on_remove, context);
 }
 
-/**************************************************************************************************
- * IntHandleManager functions
- *************************************************************************************************/
-
-void init_int_handle_manager(IntHandleManager* manager, HandleValueInUseFunction value_in_use_func, void* context)
-{
-  manager->next_handle = 0;
-  manager->handle_has_wrapped_around = false;
-  manager->value_in_use = value_in_use_func;
-  manager->context = context;
-}
-
-int get_next_int_handle(IntHandleManager* manager)
-{
-  int new_handle = manager->next_handle;
-  if (++manager->next_handle < 0)
-  {
-    manager->next_handle = 0;
-    manager->handle_has_wrapped_around = true;
-  }
-  // Optimization - keep track of whether the handle counter has wrapped around.
-  // If not, we don't need to check if the new handle is in use.
-  if (manager->handle_has_wrapped_around)
-  {
-    // We have wrapped around at least once, we need to check for handles in use
-    int original = new_handle;
-    while (manager->value_in_use(new_handle, manager->context))
-    {
-      if (manager->next_handle == original)
-      {
-        // Incredibly unlikely case of all handles used
-        new_handle = -1;
-        break;
-      }
-      new_handle = manager->next_handle;
-      if (++manager->next_handle < 0)
-        manager->next_handle = 0;
-    }
-  }
-  return new_handle;
-}
-
 /*
  * A wrapper for the C library function strncpy() which truncates safely.
  *

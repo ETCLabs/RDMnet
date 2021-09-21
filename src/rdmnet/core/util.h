@@ -179,35 +179,6 @@ void rc_ref_lists_add_pending(RCRefLists* lists);
 void rc_ref_lists_remove_marked(RCRefLists* lists, RCRefFunction on_remove, const void* context);
 void rc_ref_lists_remove_all(RCRefLists* lists, RCRefFunction on_remove, const void* context);
 
-/**************************************************************************************************
- * IntHandleManager
- *************************************************************************************************/
-
-typedef bool (*HandleValueInUseFunction)(int handle_val, void* context);
-
-/*
- * Manage generic integer handle values.
- *
- * This struct and the accompanying functions are a utility to manage handing out integer handles
- * to resources. It first assigns monotonically-increasing positive values starting at 0 to handles;
- * after wraparound, it uses the value_in_use function to find holes where new handle values can be
- * assigned.
- */
-typedef struct IntHandleManager
-{
-  int next_handle;
-  /* Optimize the handle generation algorithm by tracking whether the handle value has wrapped around. */
-  bool handle_has_wrapped_around;
-  /* Function pointer to determine if a handle value is currently in use. Used only after the handle
-   * value has wrapped around once. */
-  HandleValueInUseFunction value_in_use;
-  /* Opaque context to pass to the handle in use function. */
-  void* context;
-} IntHandleManager;
-
-void init_int_handle_manager(IntHandleManager* manager, HandleValueInUseFunction value_in_use_func, void* context);
-int  get_next_int_handle(IntHandleManager* manager);
-
 char* rdmnet_safe_strncpy(char* destination, const char* source, size_t num);
 
 #ifdef __cplusplus

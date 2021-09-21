@@ -312,7 +312,7 @@ etcpal_error_t rc_rpt_client_register(RCClient*                  client,
   RDMNET_ASSERT(client);
   client->marked_for_destruction = false;
 
-  init_int_handle_manager(&client->scope_handle_manager, scope_handle_in_use, client);
+  init_int_handle_manager(&client->scope_handle_manager, -1, scope_handle_in_use, client);
 #if RDMNET_DYNAMIC_MEM
   client->scopes = NULL;
   client->num_scopes = 0;

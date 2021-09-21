@@ -32,7 +32,7 @@ bool IntHandleMgrValueInUse(int handle, void* context)
 
 ClientHandleGenerator::ClientHandleGenerator()
 {
-  init_int_handle_manager(&handle_mgr_, IntHandleMgrValueInUse, this);
+  init_int_handle_manager(&handle_mgr_, -1, IntHandleMgrValueInUse, this);
 }
 
 void ClientHandleGenerator::SetValueInUseFunc(const ValueInUseFunc& value_in_use_func)
@@ -42,7 +42,7 @@ void ClientHandleGenerator::SetValueInUseFunc(const ValueInUseFunc& value_in_use
 
 void ClientHandleGenerator::SetNextHandle(BrokerClient::Handle next_handle)
 {
-  handle_mgr_.next_handle = next_handle;
+  handle_mgr_.last_handle = next_handle - 1;
 }
 
 ClientHandleGenerator::ValueInUseFunc ClientHandleGenerator::GetValueInUseFunc() const

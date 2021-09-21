@@ -33,6 +33,7 @@
 #define RDMNET_CORE_CLIENT_H_
 
 #include "etcpal/uuid.h"
+#include "etcpal/handle_manager.h"
 #include "etcpal/inet.h"
 #include "etcpal/mutex.h"
 #include "rdm/uid.h"
