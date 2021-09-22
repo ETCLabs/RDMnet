@@ -23,7 +23,6 @@ if(DEFINED RDMNET_CONFIG_LOC)
     ABSOLUTE
     BASE_DIR ${CMAKE_BINARY_DIR}
   )
-  get_filename_component(RDMNET_CONFIG_LOC ${RDMNET_CONFIG_LOC} DIRECTORY)
 endif()
 
 ################################ RDMnet library ###############################
