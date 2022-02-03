@@ -101,7 +101,7 @@ protected:
   void StartControllerDefault()
   {
     rdmnet_controller_create_fake.custom_fake = [](const RdmnetControllerConfig*, rdmnet_controller_t* handle) {
-      *handle = kControllerHandle;
+      *handle = kControllerHandle.value();
       return kEtcPalErrOk;
     };
     ASSERT_TRUE(
@@ -131,9 +131,9 @@ TEST_F(TestCppControllerApi, AddScopeStringOverloadWorks)
 
   rdmnet_controller_add_scope_fake.custom_fake = [](rdmnet_controller_t    controller_handle, const RdmnetScopeConfig*,
                                                     rdmnet_client_scope_t* scope_handle) {
-    EXPECT_EQ(controller_handle, kControllerHandle);
+    EXPECT_EQ(controller_handle, kControllerHandle.value());
     EXPECT_NE(scope_handle, nullptr);
-    *scope_handle = kScopeHandle;
+    *scope_handle = kScopeHandle.value();
     return kEtcPalErrOk;
   };
   auto scope_handle = controller_.AddScope(kScopeName);
@@ -156,8 +156,9 @@ TEST_F(TestCppControllerApi, SendRdmCommandFailsOnError)
   StartControllerDefault();
 
   rdmnet_controller_send_rdm_command_fake.return_val = kEtcPalErrSys;
-  auto seq_num = controller_.SendRdmCommand(1, rdmnet::DestinationAddr::ToDefaultResponder(0x6574, 0x1234),
-                                            kRdmnetCCGetCommand, E120_SUPPORTED_PARAMETERS);
+  auto seq_num =
+      controller_.SendRdmCommand(rdmnet::ScopeHandle(1), rdmnet::DestinationAddr::ToDefaultResponder(0x6574, 0x1234),
+                                 kRdmnetCCGetCommand, E120_SUPPORTED_PARAMETERS);
   EXPECT_FALSE(seq_num);
   EXPECT_EQ(seq_num.error_code(), kEtcPalErrSys);
 }
@@ -167,8 +168,8 @@ TEST_F(TestCppControllerApi, SendGetCommandFailsOnError)
   StartControllerDefault();
 
   rdmnet_controller_send_get_command_fake.return_val = kEtcPalErrSys;
-  auto seq_num = controller_.SendGetCommand(1, rdmnet::DestinationAddr::ToDefaultResponder(0x6574, 0x1234),
-                                            E120_SUPPORTED_PARAMETERS);
+  auto seq_num = controller_.SendGetCommand(
+      rdmnet::ScopeHandle(1), rdmnet::DestinationAddr::ToDefaultResponder(0x6574, 0x1234), E120_SUPPORTED_PARAMETERS);
   EXPECT_FALSE(seq_num);
   EXPECT_EQ(seq_num.error_code(), kEtcPalErrSys);
 }
@@ -178,8 +179,8 @@ TEST_F(TestCppControllerApi, SendSetCommandFailsOnError)
   StartControllerDefault();
 
   rdmnet_controller_send_set_command_fake.return_val = kEtcPalErrSys;
-  auto seq_num =
-      controller_.SendSetCommand(1, rdmnet::DestinationAddr::ToDefaultResponder(0x6574, 0x1234), E120_RESET_DEVICE);
+  auto seq_num = controller_.SendSetCommand(
+      rdmnet::ScopeHandle(1), rdmnet::DestinationAddr::ToDefaultResponder(0x6574, 0x1234), E120_RESET_DEVICE);
   EXPECT_FALSE(seq_num);
   EXPECT_EQ(seq_num.error_code(), kEtcPalErrSys);
 }

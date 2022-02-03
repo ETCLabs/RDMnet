@@ -31,6 +31,7 @@
 #include "etcpal/cpp/common.h"
 #include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/log.h"
+#include "etcpal/cpp/opaque_id.h"
 #include "rdm/cpp/uid.h"
 #include "rdmnet/device.h"
 #include "rdmnet/cpp/common.h"
@@ -48,6 +49,13 @@ namespace rdmnet
 /// of an RDMnet device.
 ///
 /// See @ref using_device for a detailed description of how to use this API.
+
+namespace detail
+{
+class DeviceHandleType
+{
+};
+};  // namespace detail
 
 /// @ingroup rdmnet_device_cpp
 /// @brief Configuration information for a virtual endpoint on a device.
@@ -315,9 +323,7 @@ class Device
 {
 public:
   /// A handle type used by the RDMnet library to identify device instances.
-  using Handle = rdmnet_device_t;
-  /// An invalid Handle value.
-  static constexpr Handle kInvalidHandle = RDMNET_DEVICE_INVALID;
+  using Handle = etcpal::OpaqueId<detail::DeviceHandleType, rdmnet_device_t, RDMNET_DEVICE_INVALID>;
 
   /// @ingroup rdmnet_device_cpp
   /// @brief A base class for a class that receives notification callbacks from a device.
@@ -491,7 +497,7 @@ private:
     RdmnetDeviceConfig                        config_;
   };
 
-  Handle         handle_{kInvalidHandle};
+  Handle         handle_;
   NotifyHandler* notify_{nullptr};
 };
 
@@ -506,7 +512,7 @@ extern "C" inline void DeviceLibCbConnected(rdmnet_device_t                  han
 {
   if (info && context)
   {
-    static_cast<Device::NotifyHandler*>(context)->HandleConnectedToBroker(handle, *info);
+    static_cast<Device::NotifyHandler*>(context)->HandleConnectedToBroker(Device::Handle(handle), *info);
   }
 }
 
@@ -516,7 +522,7 @@ extern "C" inline void DeviceLibCbConnectFailed(rdmnet_device_t                 
 {
   if (info && context)
   {
-    static_cast<Device::NotifyHandler*>(context)->HandleBrokerConnectFailed(handle, *info);
+    static_cast<Device::NotifyHandler*>(context)->HandleBrokerConnectFailed(Device::Handle(handle), *info);
   }
 }
 
@@ -526,7 +532,7 @@ extern "C" inline void DeviceLibCbDisconnected(rdmnet_device_t                  
 {
   if (info && context)
   {
-    static_cast<Device::NotifyHandler*>(context)->HandleDisconnectedFromBroker(handle, *info);
+    static_cast<Device::NotifyHandler*>(context)->HandleDisconnectedFromBroker(Device::Handle(handle), *info);
   }
 }
 
@@ -537,7 +543,7 @@ extern "C" inline void DeviceLibCbRdmCommandReceived(rdmnet_device_t         han
 {
   if (cmd && context)
   {
-    *response = static_cast<Device::NotifyHandler*>(context)->HandleRdmCommand(handle, *cmd).get();
+    *response = static_cast<Device::NotifyHandler*>(context)->HandleRdmCommand(Device::Handle(handle), *cmd).get();
   }
 }
 
@@ -548,7 +554,7 @@ extern "C" inline void DeviceLibCbLlrpRdmCommandReceived(rdmnet_device_t        
 {
   if (cmd && context)
   {
-    *response = static_cast<Device::NotifyHandler*>(context)->HandleLlrpRdmCommand(handle, *cmd).get();
+    *response = static_cast<Device::NotifyHandler*>(context)->HandleLlrpRdmCommand(Device::Handle(handle), *cmd).get();
   }
 }
 
@@ -558,7 +564,7 @@ extern "C" inline void DeviceLibCbDynamicUidStatus(rdmnet_device_t              
 {
   if (list && context)
   {
-    static_cast<Device::NotifyHandler*>(context)->HandleDynamicUidStatus(handle, *list);
+    static_cast<Device::NotifyHandler*>(context)->HandleDynamicUidStatus(Device::Handle(handle), *list);
   }
 }
 
@@ -608,7 +614,13 @@ inline etcpal::Error Device::StartupWithDefaultScope(NotifyHandler&          not
                                                      const etcpal::SockAddr& static_broker_addr)
 {
   TranslatedConfig config(settings, notify_handler, E133_DEFAULT_SCOPE, static_broker_addr);
-  return rdmnet_device_create(&config.get(), &handle_);
+
+  rdmnet_device_t c_handle = RDMNET_DEVICE_INVALID;
+  etcpal::Error   result = rdmnet_device_create(&config.get(), &c_handle);
+
+  handle_.SetValue(c_handle);
+
+  return result;
 }
 
 /// @brief Allocate resources and start up this device with the given configuration on the given
@@ -632,7 +644,13 @@ inline etcpal::Error Device::Startup(NotifyHandler&          notify_handler,
                                      const etcpal::SockAddr& static_broker_addr)
 {
   TranslatedConfig config(settings, notify_handler, scope_id_str, static_broker_addr);
-  return rdmnet_device_create(&config.get(), &handle_);
+
+  rdmnet_device_t c_handle = RDMNET_DEVICE_INVALID;
+  etcpal::Error   result = rdmnet_device_create(&config.get(), &c_handle);
+
+  handle_.SetValue(c_handle);
+
+  return result;
 }
 
 /// @brief Allocate resources and start up this device with the given configuration on the given
@@ -652,7 +670,13 @@ inline etcpal::Error Device::Startup(NotifyHandler& notify_handler, const Settin
 {
   TranslatedConfig config(settings, notify_handler, scope_config.id_string().c_str(),
                           scope_config.static_broker_addr());
-  return rdmnet_device_create(&config.get(), &handle_);
+
+  rdmnet_device_t c_handle = RDMNET_DEVICE_INVALID;
+  etcpal::Error   result = rdmnet_device_create(&config.get(), &c_handle);
+
+  handle_.SetValue(c_handle);
+
+  return result;
 }
 
 /// @brief Shut down this device and deallocate resources.
@@ -663,8 +687,8 @@ inline etcpal::Error Device::Startup(NotifyHandler& notify_handler, const Settin
 /// @param disconnect_reason Reason code for disconnecting from the current scope.
 inline void Device::Shutdown(rdmnet_disconnect_reason_t disconnect_reason)
 {
-  rdmnet_device_destroy(handle_, disconnect_reason);
-  handle_ = kInvalidHandle;
+  rdmnet_device_destroy(handle_.value(), disconnect_reason);
+  handle_.Clear();
 }
 
 /// @brief Change the device's RDMnet scope.
@@ -685,7 +709,7 @@ inline etcpal::Error Device::ChangeScope(const char*                new_scope_id
                                          const etcpal::SockAddr&    static_broker_addr)
 {
   RdmnetScopeConfig new_scope_config = {new_scope_id_str, static_broker_addr.get()};
-  return rdmnet_device_change_scope(handle_, &new_scope_config, disconnect_reason);
+  return rdmnet_device_change_scope(handle_.value(), &new_scope_config, disconnect_reason);
 }
 
 /// @brief Change the device's RDMnet scope.
@@ -703,7 +727,7 @@ inline etcpal::Error Device::ChangeScope(const Scope& new_scope_config, rdmnet_d
 {
   RdmnetScopeConfig translated_config = {new_scope_config.id_string().c_str(),
                                          new_scope_config.static_broker_addr().get()};
-  return rdmnet_device_change_scope(handle_, &translated_config, disconnect_reason);
+  return rdmnet_device_change_scope(handle_.value(), &translated_config, disconnect_reason);
 }
 
 /// @brief Change the device's DNS search domain.
@@ -723,7 +747,7 @@ inline etcpal::Error Device::ChangeScope(const Scope& new_scope_config, rdmnet_d
 inline etcpal::Error Device::ChangeSearchDomain(const char*                new_search_domain,
                                                 rdmnet_disconnect_reason_t disconnect_reason)
 {
-  return rdmnet_device_change_search_domain(handle_, new_search_domain, disconnect_reason);
+  return rdmnet_device_change_search_domain(handle_.value(), new_search_domain, disconnect_reason);
 }
 
 /// @brief Send an acknowledge (ACK) response to an RDM command received by a device.
@@ -736,7 +760,7 @@ inline etcpal::Error Device::SendRdmAck(const SavedRdmCommand& received_cmd,
                                         const uint8_t*         response_data,
                                         size_t                 response_data_len)
 {
-  return rdmnet_device_send_rdm_ack(handle_, &received_cmd.get(), response_data, response_data_len);
+  return rdmnet_device_send_rdm_ack(handle_.value(), &received_cmd.get(), response_data, response_data_len);
 }
 
 /// @brief Send a negative acknowledge (NACK) response to an RDM command received by a device.
@@ -746,7 +770,7 @@ inline etcpal::Error Device::SendRdmAck(const SavedRdmCommand& received_cmd,
 /// @return Error codes from rdmnet_device_send_rdm_nack().
 inline etcpal::Error Device::SendRdmNack(const SavedRdmCommand& received_cmd, rdm_nack_reason_t nack_reason)
 {
-  return rdmnet_device_send_rdm_nack(handle_, &received_cmd.get(), nack_reason);
+  return rdmnet_device_send_rdm_nack(handle_.value(), &received_cmd.get(), nack_reason);
 }
 
 /// @brief Send a negative acknowledge (NACK) response to an RDM command received by a device.
@@ -757,7 +781,8 @@ inline etcpal::Error Device::SendRdmNack(const SavedRdmCommand& received_cmd, rd
 /// @return Error codes from rdmnet_device_send_rdm_nack().
 inline etcpal::Error Device::SendRdmNack(const SavedRdmCommand& received_cmd, uint16_t raw_nack_reason)
 {
-  return rdmnet_device_send_rdm_nack(handle_, &received_cmd.get(), static_cast<rdm_nack_reason_t>(raw_nack_reason));
+  return rdmnet_device_send_rdm_nack(handle_.value(), &received_cmd.get(),
+                                     static_cast<rdm_nack_reason_t>(raw_nack_reason));
 }
 
 /// @brief Send an asynchronous RDM GET response to update the value of a local parameter.
@@ -772,7 +797,7 @@ inline etcpal::Error Device::SendRdmNack(const SavedRdmCommand& received_cmd, ui
 /// @return Error codes from rdmnet_device_send_rdm_update().
 inline etcpal::Error Device::SendRdmUpdate(uint16_t param_id, const uint8_t* data, size_t data_len)
 {
-  return rdmnet_device_send_rdm_update(handle_, 0, param_id, data, data_len);
+  return rdmnet_device_send_rdm_update(handle_.value(), 0, param_id, data, data_len);
 }
 
 /// @brief Send an asynchronous RDM GET response to update the value of a local parameter.
@@ -788,7 +813,7 @@ inline etcpal::Error Device::SendRdmUpdate(uint16_t param_id, const uint8_t* dat
 /// @return Error codes from rdmnet_device_send_rdm_update().
 inline etcpal::Error Device::SendRdmUpdate(uint16_t subdevice, uint16_t param_id, const uint8_t* data, size_t data_len)
 {
-  return rdmnet_device_send_rdm_update(handle_, subdevice, param_id, data, data_len);
+  return rdmnet_device_send_rdm_update(handle_.value(), subdevice, param_id, data, data_len);
 }
 
 /// @brief Send an asynchronous RDM GET response to update the value of a parameter on a sub-responder.
@@ -809,7 +834,7 @@ inline etcpal::Error Device::SendRdmUpdate(const SourceAddr& source_addr,
                                            const uint8_t*    data,
                                            size_t            data_len)
 {
-  return rdmnet_device_send_rdm_update_from_responder(handle_, &source_addr.get(), param_id, data, data_len);
+  return rdmnet_device_send_rdm_update_from_responder(handle_.value(), &source_addr.get(), param_id, data, data_len);
 }
 
 /// @brief Send an RPT status message from a device.
@@ -827,7 +852,7 @@ inline etcpal::Error Device::SendRptStatus(const SavedRdmCommand& received_cmd,
                                            rpt_status_code_t      status_code,
                                            const char*            status_string)
 {
-  return rdmnet_device_send_status(handle_, &received_cmd.get(), status_code, status_string);
+  return rdmnet_device_send_status(handle_.value(), &received_cmd.get(), status_code, status_string);
 }
 
 /// @brief Send an acknowledge (ACK) response to an RDM command received by a device over LLRP.
@@ -840,7 +865,7 @@ inline etcpal::Error Device::SendLlrpAck(const llrp::SavedRdmCommand& received_c
                                          const uint8_t*               response_data,
                                          uint8_t                      response_data_len)
 {
-  return rdmnet_device_send_llrp_ack(handle_, &received_cmd.get(), response_data, response_data_len);
+  return rdmnet_device_send_llrp_ack(handle_.value(), &received_cmd.get(), response_data, response_data_len);
 }
 
 /// @brief Send a negative acknowledge (NACK) response to an RDM command received by a device over LLRP.
@@ -850,7 +875,7 @@ inline etcpal::Error Device::SendLlrpAck(const llrp::SavedRdmCommand& received_c
 /// @return Error codes from rdmnet_device_send_llrp_nack().
 inline etcpal::Error Device::SendLlrpNack(const llrp::SavedRdmCommand& received_cmd, rdm_nack_reason_t nack_reason)
 {
-  return rdmnet_device_send_llrp_nack(handle_, &received_cmd.get(), nack_reason);
+  return rdmnet_device_send_llrp_nack(handle_.value(), &received_cmd.get(), nack_reason);
 }
 
 /// @brief Send a negative acknowledge (NACK) response to an RDM command received by a device over LLRP.
@@ -861,7 +886,8 @@ inline etcpal::Error Device::SendLlrpNack(const llrp::SavedRdmCommand& received_
 /// @return Error codes from rdmnet_device_send_llrp_nack().
 inline etcpal::Error Device::SendLlrpNack(const llrp::SavedRdmCommand& received_cmd, uint16_t raw_nack_reason)
 {
-  return rdmnet_device_send_llrp_nack(handle_, &received_cmd.get(), static_cast<rdm_nack_reason_t>(raw_nack_reason));
+  return rdmnet_device_send_llrp_nack(handle_.value(), &received_cmd.get(),
+                                      static_cast<rdm_nack_reason_t>(raw_nack_reason));
 }
 
 /// @brief Add a virtual endpoint to a device.
@@ -874,7 +900,7 @@ inline etcpal::Error Device::SendLlrpNack(const llrp::SavedRdmCommand& received_
 /// @return #kEtcPalErrSys: An internal library or system call error occurred.
 inline etcpal::Error Device::AddVirtualEndpoint(const VirtualEndpointConfig& endpoint_config)
 {
-  return rdmnet_device_add_virtual_endpoint(handle_, &endpoint_config.get());
+  return rdmnet_device_add_virtual_endpoint(handle_.value(), &endpoint_config.get());
 }
 
 /// @brief Add multiple virtual endpoints to a device.
@@ -895,7 +921,7 @@ inline etcpal::Error Device::AddVirtualEndpoints(const std::vector<VirtualEndpoi
   std::transform(endpoint_configs.begin(), endpoint_configs.end(), std::back_inserter(virtual_endpts),
                  [](const VirtualEndpointConfig& config) { return config.get(); });
 
-  return rdmnet_device_add_virtual_endpoints(handle_, virtual_endpts.data(), virtual_endpts.size());
+  return rdmnet_device_add_virtual_endpoints(handle_.value(), virtual_endpts.data(), virtual_endpts.size());
 }
 
 /// @brief Add a physical endpoint to a device.
@@ -908,7 +934,7 @@ inline etcpal::Error Device::AddVirtualEndpoints(const std::vector<VirtualEndpoi
 /// @return #kEtcPalErrSys: An internal library or system call error occurred.
 inline etcpal::Error Device::AddPhysicalEndpoint(const PhysicalEndpointConfig& endpoint_config)
 {
-  return rdmnet_device_add_physical_endpoint(handle_, &endpoint_config.get());
+  return rdmnet_device_add_physical_endpoint(handle_.value(), &endpoint_config.get());
 }
 
 /// @brief Add multiple physical endpoints to a device.
@@ -929,7 +955,7 @@ inline etcpal::Error Device::AddPhysicalEndpoints(const std::vector<PhysicalEndp
   std::transform(endpoint_configs.begin(), endpoint_configs.end(), std::back_inserter(physical_endpts),
                  [](const PhysicalEndpointConfig& config) { return config.get(); });
 
-  return rdmnet_device_add_physical_endpoints(handle_, physical_endpts.data(), physical_endpts.size());
+  return rdmnet_device_add_physical_endpoints(handle_.value(), physical_endpts.data(), physical_endpts.size());
 }
 
 /// @brief Remove an endpoint from a device.
@@ -942,7 +968,7 @@ inline etcpal::Error Device::AddPhysicalEndpoints(const std::vector<PhysicalEndp
 /// @return #kEtcPalErrSys: An internal library or system call error occurred.
 inline etcpal::Error Device::RemoveEndpoint(uint16_t endpoint_id)
 {
-  return rdmnet_device_remove_endpoint(handle_, endpoint_id);
+  return rdmnet_device_remove_endpoint(handle_.value(), endpoint_id);
 }
 
 /// @brief Remove multiple endpoints from a device.
@@ -959,7 +985,7 @@ inline etcpal::Error Device::RemoveEndpoints(const std::vector<uint16_t>& endpoi
   if (endpoint_ids.empty())
     return kEtcPalErrInvalid;
 
-  return rdmnet_device_remove_endpoints(handle_, endpoint_ids.data(), endpoint_ids.size());
+  return rdmnet_device_remove_endpoints(handle_.value(), endpoint_ids.data(), endpoint_ids.size());
 }
 
 /// @brief Add a responder with a dynamic UID to a virtual endpoint.
@@ -979,7 +1005,7 @@ inline etcpal::Error Device::RemoveEndpoints(const std::vector<uint16_t>& endpoi
 /// @return #kEtcPalErrSys: An internal library or system call error occurred.
 inline etcpal::Error Device::AddVirtualResponder(uint16_t endpoint_id, const etcpal::Uuid& responder_id)
 {
-  return rdmnet_device_add_dynamic_responders(handle_, endpoint_id, &responder_id.get(), 1);
+  return rdmnet_device_add_dynamic_responders(handle_.value(), endpoint_id, &responder_id.get(), 1);
 }
 
 /// @brief Add a responder with a static UID to a virtual endpoint.
@@ -996,7 +1022,7 @@ inline etcpal::Error Device::AddVirtualResponder(uint16_t endpoint_id, const etc
 /// @return #kEtcPalErrSys: An internal library or system call error occurred.
 inline etcpal::Error Device::AddVirtualResponder(uint16_t endpoint_id, const rdm::Uid& responder_static_uid)
 {
-  return rdmnet_device_add_static_responders(handle_, endpoint_id, &responder_static_uid.get(), 1);
+  return rdmnet_device_add_static_responders(handle_.value(), endpoint_id, &responder_static_uid.get(), 1);
 }
 
 /// @brief Add multiple responders with dynamic UIDs to a virtual endpoint.
@@ -1024,7 +1050,7 @@ inline etcpal::Error Device::AddVirtualResponders(uint16_t endpoint_id, const st
   std::transform(responder_ids.begin(), responder_ids.end(), std::back_inserter(ids),
                  [](const etcpal::Uuid& id) { return id.get(); });
 
-  return rdmnet_device_add_dynamic_responders(handle_, endpoint_id, ids.data(), ids.size());
+  return rdmnet_device_add_dynamic_responders(handle_.value(), endpoint_id, ids.data(), ids.size());
 }
 
 /// @brief Add multiple responders with static UIDs to a virtual endpoint.
@@ -1050,7 +1076,7 @@ inline etcpal::Error Device::AddVirtualResponders(uint16_t                     e
   std::transform(responder_static_uids.begin(), responder_static_uids.end(), std::back_inserter(uids),
                  [](const rdm::Uid& uid) { return uid.get(); });
 
-  return rdmnet_device_add_static_responders(handle_, endpoint_id, uids.data(), uids.size());
+  return rdmnet_device_add_static_responders(handle_.value(), endpoint_id, uids.data(), uids.size());
 }
 
 /// @brief Add a responder to a physical endpoint.
@@ -1073,7 +1099,7 @@ inline etcpal::Error Device::AddPhysicalResponder(uint16_t        endpoint_id,
                                                   const rdm::Uid& binding_uid)
 {
   RdmnetPhysicalEndpointResponder responder = {responder_uid.get(), control_field, binding_uid.get()};
-  return rdmnet_device_add_physical_responders(handle_, endpoint_id, &responder, 1);
+  return rdmnet_device_add_physical_responders(handle_.value(), endpoint_id, &responder, 1);
 }
 
 /// @brief Add a responder to a physical endpoint.
@@ -1090,7 +1116,7 @@ inline etcpal::Error Device::AddPhysicalResponder(uint16_t        endpoint_id,
 /// @return #kEtcPalErrSys: An internal library or system call error occurred.
 inline etcpal::Error Device::AddPhysicalResponder(uint16_t endpoint_id, const PhysicalEndpointResponder& responder)
 {
-  return rdmnet_device_add_physical_responders(handle_, endpoint_id, &responder.get(), 1);
+  return rdmnet_device_add_physical_responders(handle_.value(), endpoint_id, &responder.get(), 1);
 }
 
 /// @brief Add multiple responders to a physical endpoint.
@@ -1116,7 +1142,7 @@ inline etcpal::Error Device::AddPhysicalResponders(uint16_t                     
   std::transform(responders.begin(), responders.end(), std::back_inserter(resps),
                  [](const PhysicalEndpointResponder& responder) { return responder.get(); });
 
-  return rdmnet_device_add_physical_responders(handle_, endpoint_id, resps.data(), resps.size());
+  return rdmnet_device_add_physical_responders(handle_.value(), endpoint_id, resps.data(), resps.size());
 }
 
 /// @brief Remove a responder with a dynamic UID from a virtual endpoint.
@@ -1134,7 +1160,7 @@ inline etcpal::Error Device::AddPhysicalResponders(uint16_t                     
 /// @return #kEtcPalErrSys: An internal library or system call error occurred.
 inline etcpal::Error Device::RemoveVirtualResponder(uint16_t endpoint_id, const etcpal::Uuid& responder_id)
 {
-  return rdmnet_device_remove_dynamic_responders(handle_, endpoint_id, &responder_id.get(), 1);
+  return rdmnet_device_remove_dynamic_responders(handle_.value(), endpoint_id, &responder_id.get(), 1);
 }
 
 /// @brief Remove a responder with a static UID from a virtual endpoint.
@@ -1152,7 +1178,7 @@ inline etcpal::Error Device::RemoveVirtualResponder(uint16_t endpoint_id, const 
 /// @return #kEtcPalErrSys: An internal library or system call error occurred.
 inline etcpal::Error Device::RemoveVirtualResponder(uint16_t endpoint_id, const rdm::Uid& responder_static_uid)
 {
-  return rdmnet_device_remove_static_responders(handle_, endpoint_id, &responder_static_uid.get(), 1);
+  return rdmnet_device_remove_static_responders(handle_.value(), endpoint_id, &responder_static_uid.get(), 1);
 }
 
 /// @brief Remove multiple responder with dynamic UIDs from a virtual endpoint.
@@ -1179,7 +1205,7 @@ inline etcpal::Error Device::RemoveVirtualResponders(uint16_t                   
   std::transform(responder_ids.begin(), responder_ids.end(), std::back_inserter(ids),
                  [](const etcpal::Uuid& id) { return id.get(); });
 
-  return rdmnet_device_remove_dynamic_responders(handle_, endpoint_id, ids.data(), ids.size());
+  return rdmnet_device_remove_dynamic_responders(handle_.value(), endpoint_id, ids.data(), ids.size());
 }
 
 /// @brief Remove multiple responders with static UIDs from a virtual endpoint.
@@ -1206,7 +1232,7 @@ inline etcpal::Error Device::RemoveVirtualResponders(uint16_t                   
   std::transform(responder_static_uids.begin(), responder_static_uids.end(), std::back_inserter(uids),
                  [](const rdm::Uid& uid) { return uid.get(); });
 
-  return rdmnet_device_remove_static_responders(handle_, endpoint_id, uids.data(), uids.size());
+  return rdmnet_device_remove_static_responders(handle_.value(), endpoint_id, uids.data(), uids.size());
 }
 
 /// @brief Remove a responder from a physical endpoint.
@@ -1224,7 +1250,7 @@ inline etcpal::Error Device::RemoveVirtualResponders(uint16_t                   
 /// @return #kEtcPalErrSys: An internal library or system call error occurred.
 inline etcpal::Error Device::RemovePhysicalResponder(uint16_t endpoint_id, const rdm::Uid& responder_uid)
 {
-  return rdmnet_device_remove_physical_responders(handle_, endpoint_id, &responder_uid.get(), 1);
+  return rdmnet_device_remove_physical_responders(handle_.value(), endpoint_id, &responder_uid.get(), 1);
 }
 
 /// @brief Remove multiple responders from a physical endpoint.
@@ -1250,7 +1276,7 @@ inline etcpal::Error Device::RemovePhysicalResponders(uint16_t endpoint_id, cons
   std::transform(responder_uids.begin(), responder_uids.end(), std::back_inserter(uids),
                  [](const rdm::Uid& uid) { return uid.get(); });
 
-  return rdmnet_device_remove_physical_responders(handle_, endpoint_id, uids.data(), uids.size());
+  return rdmnet_device_remove_physical_responders(handle_.value(), endpoint_id, uids.data(), uids.size());
 }
 
 /// @brief Retrieve the handle of a device instance.
@@ -1273,7 +1299,7 @@ inline etcpal::Expected<Scope> Device::scope() const
 {
   std::string    scope_id(E133_SCOPE_STRING_PADDED_LENGTH, 0);
   EtcPalSockAddr static_broker_addr;
-  etcpal_error_t res = rdmnet_device_get_scope(handle_, &scope_id[0], &static_broker_addr);
+  etcpal_error_t res = rdmnet_device_get_scope(handle_.value(), &scope_id[0], &static_broker_addr);
   if (res == kEtcPalErrOk)
     return Scope(scope_id, static_broker_addr);
   else

@@ -31,6 +31,7 @@
 #include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/uuid.h"
 #include "etcpal/cpp/log.h"
+#include "etcpal/cpp/opaque_id.h"
 #include "rdm/cpp/uid.h"
 #include "rdm/cpp/message.h"
 #include "rdmnet/cpp/client.h"
@@ -51,6 +52,13 @@ namespace rdmnet
 ///
 /// See @ref using_controller for details of how to use this API.
 
+namespace detail
+{
+class ControllerHandleType
+{
+};
+};  // namespace detail
+
 /// @ingroup rdmnet_controller_cpp
 /// @brief An instance of RDMnet controller functionality.
 ///
@@ -59,9 +67,7 @@ class Controller
 {
 public:
   /// A handle type used by the RDMnet library to identify controller instances.
-  using Handle = rdmnet_controller_t;
-  /// An invalid Handle value.
-  static constexpr Handle kInvalidHandle = RDMNET_CONTROLLER_INVALID;
+  using Handle = etcpal::OpaqueId<detail::ControllerHandleType, rdmnet_controller_t, RDMNET_CONTROLLER_INVALID>;
 
   /// @ingroup rdmnet_controller_cpp
   /// @brief A base class for a class that receives notification callbacks from a controller.
@@ -304,7 +310,7 @@ public:
   void UpdateRdmData(const RdmData& new_data);
 
 private:
-  Handle  handle_{kInvalidHandle};
+  Handle  handle_;
   RdmData my_rdm_data_;
 
   RdmCommandHandler* rdm_cmd_handler_{nullptr};
@@ -323,7 +329,8 @@ extern "C" inline void ControllerLibCbConnected(rdmnet_controller_t             
 {
   if (info && context)
   {
-    static_cast<Controller::NotifyHandler*>(context)->HandleConnectedToBroker(controller_handle, scope_handle, *info);
+    static_cast<Controller::NotifyHandler*>(context)->HandleConnectedToBroker(Controller::Handle(controller_handle),
+                                                                              ScopeHandle(scope_handle), *info);
   }
 }
 
@@ -334,7 +341,8 @@ extern "C" inline void ControllerLibCbConnectFailed(rdmnet_controller_t         
 {
   if (info && context)
   {
-    static_cast<Controller::NotifyHandler*>(context)->HandleBrokerConnectFailed(controller_handle, scope_handle, *info);
+    static_cast<Controller::NotifyHandler*>(context)->HandleBrokerConnectFailed(Controller::Handle(controller_handle),
+                                                                                ScopeHandle(scope_handle), *info);
   }
 }
 
@@ -345,8 +353,8 @@ extern "C" inline void ControllerLibCbDisconnected(rdmnet_controller_t          
 {
   if (info && context)
   {
-    static_cast<Controller::NotifyHandler*>(context)->HandleDisconnectedFromBroker(controller_handle, scope_handle,
-                                                                                   *info);
+    static_cast<Controller::NotifyHandler*>(context)->HandleDisconnectedFromBroker(
+        Controller::Handle(controller_handle), ScopeHandle(scope_handle), *info);
   }
 }
 
@@ -358,8 +366,8 @@ extern "C" inline void ControllerLibCbClientListUpdate(rdmnet_controller_t      
 {
   if (list && context)
   {
-    static_cast<Controller::NotifyHandler*>(context)->HandleClientListUpdate(controller_handle, scope_handle,
-                                                                             list_action, *list);
+    static_cast<Controller::NotifyHandler*>(context)->HandleClientListUpdate(
+        Controller::Handle(controller_handle), ScopeHandle(scope_handle), list_action, *list);
   }
 }
 
@@ -370,7 +378,8 @@ extern "C" inline void ControllerLibCbRdmResponseReceived(rdmnet_controller_t   
 {
   if (resp && context)
   {
-    static_cast<Controller::NotifyHandler*>(context)->HandleRdmResponse(controller_handle, scope_handle, *resp);
+    static_cast<Controller::NotifyHandler*>(context)->HandleRdmResponse(Controller::Handle(controller_handle),
+                                                                        ScopeHandle(scope_handle), *resp);
   }
 }
 
@@ -381,7 +390,8 @@ extern "C" inline void ControllerLibCbStatusReceived(rdmnet_controller_t    cont
 {
   if (status && context)
   {
-    static_cast<Controller::NotifyHandler*>(context)->HandleRptStatus(controller_handle, scope_handle, *status);
+    static_cast<Controller::NotifyHandler*>(context)->HandleRptStatus(Controller::Handle(controller_handle),
+                                                                      ScopeHandle(scope_handle), *status);
   }
 }
 
@@ -392,8 +402,8 @@ extern "C" inline void ControllerLibCbResponderIdsReceived(rdmnet_controller_t  
 {
   if (list && context)
   {
-    static_cast<Controller::NotifyHandler*>(context)->HandleResponderIdsReceived(controller_handle, scope_handle,
-                                                                                 *list);
+    static_cast<Controller::NotifyHandler*>(context)->HandleResponderIdsReceived(Controller::Handle(controller_handle),
+                                                                                 ScopeHandle(scope_handle), *list);
   }
 }
 
@@ -406,7 +416,7 @@ extern "C" inline void ControllerLibCbRdmCommandReceived(rdmnet_controller_t    
   if (cmd && context)
   {
     *response = static_cast<Controller::RdmCommandHandler*>(context)
-                    ->HandleRdmCommand(controller_handle, scope_handle, *cmd)
+                    ->HandleRdmCommand(Controller::Handle(controller_handle), ScopeHandle(scope_handle), *cmd)
                     .get();
   }
 }
@@ -418,8 +428,9 @@ extern "C" inline void ControllerLibCbLlrpRdmCommandReceived(rdmnet_controller_t
 {
   if (cmd && context)
   {
-    *response =
-        static_cast<Controller::RdmCommandHandler*>(context)->HandleLlrpRdmCommand(controller_handle, *cmd).get();
+    *response = static_cast<Controller::RdmCommandHandler*>(context)
+                    ->HandleLlrpRdmCommand(Controller::Handle(controller_handle), *cmd)
+                    .get();
   }
 }
 
@@ -549,7 +560,12 @@ inline etcpal::Error Controller::Startup(NotifyHandler&  notify_handler,
     config.num_llrp_netints = settings.llrp_netints.size();
   }
 
-  return rdmnet_controller_create(&config, &handle_);
+  rdmnet_controller_t c_handle = RDMNET_CONTROLLER_INVALID;
+  etcpal::Error       result = rdmnet_controller_create(&config, &c_handle);
+
+  handle_.SetValue(c_handle);
+
+  return result;
 }
 
 /// @brief Allocate resources and start up this controller with the given configuration.
@@ -612,7 +628,12 @@ inline etcpal::Error Controller::Startup(NotifyHandler&     notify_handler,
     config.num_llrp_netints = settings.llrp_netints.size();
   }
 
-  return rdmnet_controller_create(&config, &handle_);
+  rdmnet_controller_t c_handle = RDMNET_CONTROLLER_INVALID;
+  etcpal::Error       result = rdmnet_controller_create(&config, &c_handle);
+
+  handle_.SetValue(c_handle);
+
+  return result;
 }
 
 /// @brief Shut down this controller and deallocate resources.
@@ -623,8 +644,8 @@ inline etcpal::Error Controller::Startup(NotifyHandler&     notify_handler,
 /// @param disconnect_reason Reason code for disconnecting from each scope.
 inline void Controller::Shutdown(rdmnet_disconnect_reason_t disconnect_reason)
 {
-  rdmnet_controller_destroy(handle_, disconnect_reason);
-  handle_ = kInvalidHandle;
+  rdmnet_controller_destroy(handle_.value(), disconnect_reason);
+  handle_.Clear();
 }
 
 /// @brief Add a new scope to this controller instance.
@@ -642,9 +663,9 @@ inline etcpal::Expected<ScopeHandle> Controller::AddScope(const char* id, const 
 {
   RdmnetScopeConfig     scope_config = {id, static_broker_addr.get()};
   rdmnet_client_scope_t scope_handle;
-  auto                  result = rdmnet_controller_add_scope(handle_, &scope_config, &scope_handle);
+  auto                  result = rdmnet_controller_add_scope(handle_.value(), &scope_config, &scope_handle);
   if (result == kEtcPalErrOk)
-    return scope_handle;
+    return ScopeHandle(scope_handle);
   else
     return result;
 }
@@ -704,7 +725,7 @@ inline etcpal::Expected<ScopeHandle> Controller::AddDefaultScope(const etcpal::S
 /// @return Error codes from from rdmnet_controller_remove_scope().
 inline etcpal::Error Controller::RemoveScope(ScopeHandle scope_handle, rdmnet_disconnect_reason_t disconnect_reason)
 {
-  return rdmnet_controller_remove_scope(handle_, scope_handle, disconnect_reason);
+  return rdmnet_controller_remove_scope(handle_.value(), scope_handle.value(), disconnect_reason);
 }
 
 /// @brief Change the configuration of a scope on a controller.
@@ -728,7 +749,7 @@ inline etcpal::Error Controller::ChangeScope(ScopeHandle                scope_ha
                                              const etcpal::SockAddr&    new_static_broker_addr)
 {
   RdmnetScopeConfig new_scope_config = {new_scope_id_str, new_static_broker_addr.get()};
-  return rdmnet_controller_change_scope(handle_, scope_handle, &new_scope_config, disconnect_reason);
+  return rdmnet_controller_change_scope(handle_.value(), scope_handle.value(), &new_scope_config, disconnect_reason);
 }
 
 /// @brief Change the configuration of a scope on a controller.
@@ -767,7 +788,7 @@ inline etcpal::Error Controller::ChangeScope(ScopeHandle                scope_ha
 inline etcpal::Error Controller::ChangeSearchDomain(const char*                new_search_domain,
                                                     rdmnet_disconnect_reason_t disconnect_reason)
 {
-  return rdmnet_controller_change_search_domain(handle_, new_search_domain, disconnect_reason);
+  return rdmnet_controller_change_search_domain(handle_.value(), new_search_domain, disconnect_reason);
 }
 
 /// @brief Send an RDM command from a controller on a scope.
@@ -790,8 +811,8 @@ inline etcpal::Expected<uint32_t> Controller::SendRdmCommand(ScopeHandle        
                                                              uint8_t                data_len)
 {
   uint32_t       seq_num;
-  etcpal_error_t res = rdmnet_controller_send_rdm_command(handle_, scope_handle, &destination.get(), command_class,
-                                                          param_id, data, data_len, &seq_num);
+  etcpal_error_t res = rdmnet_controller_send_rdm_command(handle_.value(), scope_handle.value(), &destination.get(),
+                                                          command_class, param_id, data, data_len, &seq_num);
   if (res == kEtcPalErrOk)
     return seq_num;
   else
@@ -816,8 +837,8 @@ inline etcpal::Expected<uint32_t> Controller::SendGetCommand(ScopeHandle        
                                                              uint8_t                data_len)
 {
   uint32_t       seq_num;
-  etcpal_error_t res =
-      rdmnet_controller_send_get_command(handle_, scope_handle, &destination.get(), param_id, data, data_len, &seq_num);
+  etcpal_error_t res = rdmnet_controller_send_get_command(handle_.value(), scope_handle.value(), &destination.get(),
+                                                          param_id, data, data_len, &seq_num);
   if (res == kEtcPalErrOk)
     return seq_num;
   else
@@ -842,8 +863,8 @@ inline etcpal::Expected<uint32_t> Controller::SendSetCommand(ScopeHandle        
                                                              uint8_t                data_len)
 {
   uint32_t       seq_num;
-  etcpal_error_t res =
-      rdmnet_controller_send_set_command(handle_, scope_handle, &destination.get(), param_id, data, data_len, &seq_num);
+  etcpal_error_t res = rdmnet_controller_send_set_command(handle_.value(), scope_handle.value(), &destination.get(),
+                                                          param_id, data, data_len, &seq_num);
   if (res == kEtcPalErrOk)
     return seq_num;
   else
@@ -860,7 +881,7 @@ inline etcpal::Expected<uint32_t> Controller::SendSetCommand(ScopeHandle        
 /// @return Error codes from rdmnet_controller_request_client_list().
 inline etcpal::Error Controller::RequestClientList(ScopeHandle scope_handle)
 {
-  return rdmnet_controller_request_client_list(handle_, scope_handle);
+  return rdmnet_controller_request_client_list(handle_.value(), scope_handle.value());
 }
 
 /// @brief Request mappings from dynamic UIDs to Responder IDs (RIDs).
@@ -881,7 +902,7 @@ inline etcpal::Error Controller::RequestResponderIds(ScopeHandle scope_handle, c
   std::vector<RdmUid> c_uids;
   c_uids.reserve(num_uids);
   std::transform(uids, uids + num_uids, std::back_inserter(c_uids), [](const rdm::Uid& uid) { return uid.get(); });
-  return rdmnet_controller_request_responder_ids(handle_, scope_handle, c_uids.data(), c_uids.size());
+  return rdmnet_controller_request_responder_ids(handle_.value(), scope_handle.value(), c_uids.data(), c_uids.size());
 }
 
 /// @brief Request mappings from dynamic UIDs to Responder IDs (RIDs).
@@ -914,7 +935,8 @@ inline etcpal::Error Controller::SendRdmAck(ScopeHandle            scope_handle,
                                             const uint8_t*         response_data,
                                             size_t                 response_data_len)
 {
-  return rdmnet_controller_send_rdm_ack(handle_, scope_handle, &received_cmd.get(), response_data, response_data_len);
+  return rdmnet_controller_send_rdm_ack(handle_.value(), scope_handle.value(), &received_cmd.get(), response_data,
+                                        response_data_len);
 }
 
 /// @brief Send a negative acknowledge (NACK) response to an RDM command received by a controller.
@@ -931,7 +953,7 @@ inline etcpal::Error Controller::SendRdmNack(ScopeHandle            scope_handle
                                              const SavedRdmCommand& received_cmd,
                                              rdm_nack_reason_t      nack_reason)
 {
-  return rdmnet_controller_send_rdm_nack(handle_, scope_handle, &received_cmd.get(), nack_reason);
+  return rdmnet_controller_send_rdm_nack(handle_.value(), scope_handle.value(), &received_cmd.get(), nack_reason);
 }
 
 /// @brief Send a negative acknowledge (NACK) response to an RDM command received by a controller.
@@ -949,7 +971,7 @@ inline etcpal::Error Controller::SendRdmNack(ScopeHandle            scope_handle
                                              const SavedRdmCommand& received_cmd,
                                              uint16_t               raw_nack_reason)
 {
-  return rdmnet_controller_send_rdm_nack(handle_, scope_handle, &received_cmd.get(),
+  return rdmnet_controller_send_rdm_nack(handle_.value(), scope_handle.value(), &received_cmd.get(),
                                          static_cast<rdm_nack_reason_t>(raw_nack_reason));
 }
 
@@ -969,7 +991,7 @@ inline etcpal::Error Controller::SendRdmUpdate(ScopeHandle    scope_handle,
                                                const uint8_t* data,
                                                size_t         data_len)
 {
-  return rdmnet_controller_send_rdm_update(handle_, scope_handle, 0, param_id, data, data_len);
+  return rdmnet_controller_send_rdm_update(handle_.value(), scope_handle.value(), 0, param_id, data, data_len);
 }
 
 /// @brief Send an acknowledge (ACK) response to an LLRP RDM command received by a controller.
@@ -986,7 +1008,7 @@ inline etcpal::Error Controller::SendLlrpAck(const llrp::SavedRdmCommand& receiv
                                              const uint8_t*               response_data,
                                              uint8_t                      response_data_len)
 {
-  return rdmnet_controller_send_llrp_ack(handle_, &received_cmd.get(), response_data, response_data_len);
+  return rdmnet_controller_send_llrp_ack(handle_.value(), &received_cmd.get(), response_data, response_data_len);
 }
 
 /// @brief Send a negative acknowledge (NACK) response to an LLRP RDM command received by a controller.
@@ -1000,7 +1022,7 @@ inline etcpal::Error Controller::SendLlrpAck(const llrp::SavedRdmCommand& receiv
 /// @return Error codes from rdmnet_controller_send_llrp_nack().
 inline etcpal::Error Controller::SendLlrpNack(const llrp::SavedRdmCommand& received_cmd, rdm_nack_reason_t nack_reason)
 {
-  return rdmnet_controller_send_llrp_nack(handle_, &received_cmd.get(), nack_reason);
+  return rdmnet_controller_send_llrp_nack(handle_.value(), &received_cmd.get(), nack_reason);
 }
 
 /// @brief Send a negative acknowledge (NACK) response to an LLRP RDM command received by a controller.
@@ -1015,7 +1037,7 @@ inline etcpal::Error Controller::SendLlrpNack(const llrp::SavedRdmCommand& recei
 /// @return Error codes from rdmnet_controller_send_llrp_nack().
 inline etcpal::Error Controller::SendLlrpNack(const llrp::SavedRdmCommand& received_cmd, uint16_t raw_nack_reason)
 {
-  return rdmnet_controller_send_llrp_nack(handle_, &received_cmd.get(),
+  return rdmnet_controller_send_llrp_nack(handle_.value(), &received_cmd.get(),
                                           static_cast<rdm_nack_reason_t>(raw_nack_reason));
 }
 
@@ -1053,7 +1075,8 @@ inline etcpal::Expected<Scope> Controller::scope(ScopeHandle scope_handle) const
 {
   std::string    scope_id(E133_SCOPE_STRING_PADDED_LENGTH, 0);
   EtcPalSockAddr static_broker_addr;
-  etcpal_error_t res = rdmnet_controller_get_scope(handle_, scope_handle, &scope_id[0], &static_broker_addr);
+  etcpal_error_t res =
+      rdmnet_controller_get_scope(handle_.value(), scope_handle.value(), &scope_id[0], &static_broker_addr);
 
   if (res == kEtcPalErrOk)
     return Scope(scope_id, static_broker_addr);

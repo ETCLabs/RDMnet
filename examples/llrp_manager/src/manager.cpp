@@ -170,7 +170,7 @@ bool LlrpManagerExample::ParseCommand(const std::string& line)
       case 'd':
         try
         {
-          llrp::Manager::Handle manager_handle = std::stoi(line.substr(2));
+          llrp::Manager::Handle manager_handle(std::stoi(line.substr(2)));
           Discover(manager_handle);
         }
         catch (const std::exception&)
@@ -408,7 +408,7 @@ bool LlrpManagerExample::ParseCommand(const std::string& line)
   return res;
 }
 
-void LlrpManagerExample::Discover(llrp_manager_t manager_handle)
+void LlrpManagerExample::Discover(llrp::Manager::Handle manager_handle)
 {
   auto mgr_pair = managers_.find(manager_handle);
   if (mgr_pair == managers_.end())

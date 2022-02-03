@@ -31,12 +31,12 @@ public:
   static const int BrokerItemType = QStandardItem::UserType + 2;
 
   BrokerItem(const QString&          scope,
-             rdmnet_client_scope_t   scope_handle,
+             rdmnet::ScopeHandle     scope_handle,
              const etcpal::SockAddr& static_broker = etcpal::SockAddr());
   virtual ~BrokerItem();
 
   virtual int           type() const override;
-  rdmnet_client_scope_t scope_handle() const { return scope_handle_; }
+  rdmnet::ScopeHandle scope_handle() const { return scope_handle_; }
 
   void    SetScope(const QString& scope) { scope_ = scope; }
   QString scope() const { return scope_; }
@@ -53,7 +53,7 @@ protected:
 
 private:
   QString               scope_;
-  rdmnet_client_scope_t scope_handle_{RDMNET_CLIENT_SCOPE_INVALID};
+  rdmnet::ScopeHandle   scope_handle_;
   etcpal::SockAddr      broker_addr_;
   etcpal::SockAddr      static_broker_;
   bool                  connected_{false};

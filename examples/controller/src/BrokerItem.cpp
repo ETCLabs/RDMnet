@@ -19,7 +19,7 @@
 #include "BrokerItem.h"
 
 BrokerItem::BrokerItem(const QString&          scope,
-                       rdmnet_client_scope_t   scope_handle,
+                       rdmnet::ScopeHandle     scope_handle,
                        const etcpal::SockAddr& static_broker /* = etcpal::SockAddr() */)
     : RDMnetNetworkItem(), scope_(scope), scope_handle_(scope_handle), static_broker_(static_broker)
 {

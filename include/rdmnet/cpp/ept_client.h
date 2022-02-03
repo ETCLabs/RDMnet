@@ -24,6 +24,7 @@
 #define RDMNET_CPP_EPT_CLIENT_H_
 
 #include "etcpal/common.h"
+#include "etcpal/cpp/opaque_id.h"
 #include "rdmnet/cpp/client.h"
 #include "rdmnet/cpp/common.h"
 #include "rdmnet/cpp/message.h"
@@ -42,6 +43,13 @@ namespace rdmnet
 ///
 /// See @ref using_ept_client for a detailed description of how to use this API.
 
+namespace detail
+{
+class EptClientHandleType
+{
+};
+};  // namespace detail
+
 /// @ingroup rdmnet_ept_client_cpp
 /// @brief An instance of RDMnet EPT client functionality.
 ///
@@ -50,9 +58,7 @@ class EptClient
 {
 public:
   /// A handle type used by the RDMnet library to identify EPT client instances.
-  using Handle = rdmnet_ept_client_t;
-  /// An invalid Handle value.
-  static constexpr Handle kInvalidHandle = RDMNET_EPT_CLIENT_INVALID;
+  using Handle = etcpal::OpaqueId<detail::EptClientHandleType, rdmnet_ept_client_t, RDMNET_EPT_CLIENT_INVALID>;
 
   /// @ingroup rdmnet_ept_client_cpp
   /// @brief A base class for a class that receives notification callbacks from an EPT client.
@@ -162,7 +168,7 @@ public:
   etcpal::Expected<Scope> scope(ScopeHandle scope_handle) const;
 
 private:
-  Handle         handle_{kInvalidHandle};
+  Handle         handle_;
   NotifyHandler* notify_{nullptr};
 };
 
@@ -334,7 +340,7 @@ inline etcpal::Error EptClient::SendStatus(ScopeHandle         scope_handle,
 /// @brief Retrieve the handle of an EPT client instance.
 inline EptClient::Handle EptClient::handle() const
 {
-  return kInvalidHandle;
+  return EptClient::Handle();
 }
 
 /// @brief Retrieve the NotifyHandler reference that this EPT client was configured with.

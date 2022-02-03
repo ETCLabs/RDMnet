@@ -24,6 +24,7 @@
 #include "etcpal/common.h"
 #include "etcpal/cpp/error.h"
 #include "etcpal/cpp/inet.h"
+#include "etcpal/cpp/opaque_id.h"
 #include "etcpal/cpp/uuid.h"
 #include "rdmnet/llrp_manager.h"
 #include "rdmnet/cpp/common.h"
@@ -31,6 +32,14 @@
 
 namespace rdmnet
 {
+
+namespace detail
+{
+class LlrpManagerHandleType
+{
+};
+};  // namespace detail
+
 /// @brief A namespace which contains all LLRP C++ language definitions.
 namespace llrp
 {
@@ -135,9 +144,7 @@ class Manager
 {
 public:
   /// A handle type used by the RDMnet library to identify LLRP manager instances.
-  using Handle = llrp_manager_t;
-  /// An invalid Handle value.
-  static constexpr Handle kInvalidHandle = LLRP_MANAGER_INVALID;
+  using Handle = etcpal::OpaqueId<detail::LlrpManagerHandleType, llrp_manager_t, LLRP_MANAGER_INVALID>;
 
   /// @ingroup llrp_manager_cpp
   /// @brief A class that receives notification callbacks from an LLRP manager.
@@ -196,7 +203,7 @@ public:
   constexpr NotifyHandler* notify_handler() const;
 
 private:
-  Handle         handle_{kInvalidHandle};
+  Handle         handle_;
   NotifyHandler* notify_{nullptr};
 };
 
@@ -211,7 +218,7 @@ extern "C" inline void LlrpManagerLibCbTargetDiscovered(llrp_manager_t          
 {
   if (target && context)
   {
-    static_cast<Manager::NotifyHandler*>(context)->HandleLlrpTargetDiscovered(handle, *target);
+    static_cast<Manager::NotifyHandler*>(context)->HandleLlrpTargetDiscovered(Manager::Handle(handle), *target);
   }
 }
 
@@ -221,7 +228,7 @@ extern "C" inline void LlrpManagerLibCbRdmResponseReceived(llrp_manager_t       
 {
   if (resp && context)
   {
-    static_cast<Manager::NotifyHandler*>(context)->HandleLlrpRdmResponse(handle, *resp);
+    static_cast<Manager::NotifyHandler*>(context)->HandleLlrpRdmResponse(Manager::Handle(handle), *resp);
   }
 }
 
@@ -229,7 +236,7 @@ extern "C" inline void LlrpManagerLibCbDiscoveryFinished(llrp_manager_t handle, 
 {
   if (context)
   {
-    static_cast<Manager::NotifyHandler*>(context)->HandleLlrpDiscoveryFinished(handle);
+    static_cast<Manager::NotifyHandler*>(context)->HandleLlrpDiscoveryFinished(Manager::Handle(handle));
   }
 }
 };  // namespace internal
@@ -269,14 +276,19 @@ inline etcpal::Error Manager::Startup(NotifyHandler&      notify_handler,
   };
   // clang-format on
 
-  return llrp_manager_create(&config, &handle_);
+  llrp_manager_t c_handle = LLRP_MANAGER_INVALID;
+  etcpal::Error  result = llrp_manager_create(&config, &c_handle);
+
+  handle_.SetValue(c_handle);
+
+  return result;
 }
 
 /// @brief Shut down this LLRP manager and deallocate resources.
 inline void Manager::Shutdown()
 {
-  llrp_manager_destroy(handle_);
-  handle_ = kInvalidHandle;
+  llrp_manager_destroy(handle_.value());
+  handle_.Clear();
 }
 
 /// @brief Start LLRP discovery.
@@ -290,7 +302,7 @@ inline void Manager::Shutdown()
 /// @return Errors from llrp_manager_start_discovery().
 inline etcpal::Error Manager::StartDiscovery(uint16_t filter)
 {
-  return llrp_manager_start_discovery(handle_, filter);
+  return llrp_manager_start_discovery(handle_.value(), filter);
 }
 
 /// @brief Stop LLRP discovery.
@@ -301,7 +313,7 @@ inline etcpal::Error Manager::StartDiscovery(uint16_t filter)
 /// @return Errors from llrp_manager_stop_discovery().
 inline etcpal::Error Manager::StopDiscovery()
 {
-  return llrp_manager_stop_discovery(handle_);
+  return llrp_manager_stop_discovery(handle_.value());
 }
 
 /// @brief Send an RDM command from an LLRP manager.
@@ -322,8 +334,8 @@ inline etcpal::Expected<uint32_t> Manager::SendRdmCommand(const DestinationAddr&
                                                           uint8_t                data_len)
 {
   uint32_t       seq_num;
-  etcpal_error_t res =
-      llrp_manager_send_rdm_command(handle_, &destination.get(), command_class, param_id, data, data_len, &seq_num);
+  etcpal_error_t res = llrp_manager_send_rdm_command(handle_.value(), &destination.get(), command_class, param_id, data,
+                                                     data_len, &seq_num);
   return (res == kEtcPalErrOk ? seq_num : res);
 }
 
@@ -343,7 +355,8 @@ inline etcpal::Expected<uint32_t> Manager::SendGetCommand(const DestinationAddr&
                                                           uint8_t                data_len)
 {
   uint32_t       seq_num;
-  etcpal_error_t res = llrp_manager_send_get_command(handle_, &destination.get(), param_id, data, data_len, &seq_num);
+  etcpal_error_t res =
+      llrp_manager_send_get_command(handle_.value(), &destination.get(), param_id, data, data_len, &seq_num);
   return (res == kEtcPalErrOk ? seq_num : res);
 }
 
@@ -363,7 +376,8 @@ inline etcpal::Expected<uint32_t> Manager::SendSetCommand(const DestinationAddr&
                                                           uint8_t                data_len)
 {
   uint32_t       seq_num;
-  etcpal_error_t res = llrp_manager_send_set_command(handle_, &destination.get(), param_id, data, data_len, &seq_num);
+  etcpal_error_t res =
+      llrp_manager_send_set_command(handle_.value(), &destination.get(), param_id, data, data_len, &seq_num);
   return (res == kEtcPalErrOk ? seq_num : res);
 }
 

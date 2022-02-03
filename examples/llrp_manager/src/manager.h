@@ -102,7 +102,7 @@ private:
   std::map<llrp::Manager::Handle, ManagerInfo> managers_;
 
   std::map<int, TargetInfo> targets_;
-  llrp::Manager::Handle     active_manager_{llrp::Manager::kInvalidHandle};
+  llrp::Manager::Handle     active_manager_;
   RdmResponseHandler        active_response_handler_;
 
   bool discovery_active_{false};
