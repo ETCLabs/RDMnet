@@ -57,6 +57,7 @@ option(RDMNET_BUILD_TESTS "Build the RDMnet unit tests" OFF)
 option(RDMNET_BUILD_GUI_EXAMPLES "Build the RDMnet GUI example applications" OFF)
 option(RDMNET_BUILD_CONSOLE_EXAMPLES "Build the RDMnet console example applications" OFF)
 option(RDMNET_BUILD_TEST_TOOLS "Build the RDMnet test tools (typically used in development only)" OFF)
+option(RDMNET_INSTALL_PDBS "Include PDBs in RDMnet install target" ON)
 
 if(RDMNET_BUILD_TESTS)
   add_subdirectory(external/fff)
