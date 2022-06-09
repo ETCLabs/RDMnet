@@ -36,29 +36,74 @@ public:
   RdmnetMessage msg{};
   RdmBuffer     buf;
 
+  static TestRdmCommand Get(const RdmUid&  dest_uid,
+                            uint16_t       param_id,
+                            const uint8_t* data = nullptr,
+                            uint8_t        data_len = 0);
   static TestRdmCommand Get(const RCClient& client,
                             uint16_t        param_id,
                             const uint8_t*  data = nullptr,
                             uint8_t         data_len = 0);
+  static TestRdmCommand GetBroadcast(uint16_t param_id, const uint8_t* data = nullptr, uint8_t data_len = 0);
+  static TestRdmCommand GetManuBroadcast(uint16_t       dest_manu,
+                                         uint16_t       param_id,
+                                         const uint8_t* data = nullptr,
+                                         uint8_t        data_len = 0);
+  static TestRdmCommand Set(const RdmUid&  dest_uid,
+                            uint16_t       param_id,
+                            const uint8_t* data = nullptr,
+                            uint8_t        data_len = 0);
   static TestRdmCommand Set(const RCClient& client,
                             uint16_t        param_id,
                             const uint8_t*  data = nullptr,
                             uint8_t         data_len = 0);
 
 private:
-  TestRdmCommand(const RCClient&     client,
+  TestRdmCommand(const RdmUid&       dest_uid,
                  rdm_command_class_t command_class,
                  uint16_t            param_id,
                  const uint8_t*      data,
                  uint8_t             data_len);
 };
 
+inline TestRdmCommand TestRdmCommand::Get(const RdmUid&  dest_uid,
+                                          uint16_t       param_id,
+                                          const uint8_t* data,
+                                          uint8_t        data_len)
+{
+  return TestRdmCommand(dest_uid, kRdmCCGetCommand, param_id, data, data_len);
+}
+
 inline TestRdmCommand TestRdmCommand::Get(const RCClient& client,
                                           uint16_t        param_id,
                                           const uint8_t*  data,
                                           uint8_t         data_len)
 {
-  return TestRdmCommand(client, kRdmCCGetCommand, param_id, data, data_len);
+  return TestRdmCommand(RC_RPT_CLIENT_DATA(&client)->uid, kRdmCCGetCommand, param_id, data, data_len);
+}
+
+inline TestRdmCommand TestRdmCommand::GetBroadcast(uint16_t param_id, const uint8_t* data, uint8_t data_len)
+{
+  return TestRdmCommand(kRdmnetDeviceBroadcastUid, kRdmCCGetCommand, param_id, data, data_len);
+}
+
+inline TestRdmCommand TestRdmCommand::GetManuBroadcast(uint16_t       dest_manu,
+                                                       uint16_t       param_id,
+                                                       const uint8_t* data,
+                                                       uint8_t        data_len)
+{
+  RdmUid device_manu_broadcast_uid;
+  RDMNET_INIT_DEVICE_MANU_BROADCAST(&device_manu_broadcast_uid, dest_manu);
+
+  return TestRdmCommand(device_manu_broadcast_uid, kRdmCCGetCommand, param_id, data, data_len);
+}
+
+inline TestRdmCommand TestRdmCommand::Set(const RdmUid&  dest_uid,
+                                          uint16_t       param_id,
+                                          const uint8_t* data,
+                                          uint8_t        data_len)
+{
+  return TestRdmCommand(dest_uid, kRdmCCSetCommand, param_id, data, data_len);
 }
 
 inline TestRdmCommand TestRdmCommand::Set(const RCClient& client,
@@ -66,10 +111,10 @@ inline TestRdmCommand TestRdmCommand::Set(const RCClient& client,
                                           const uint8_t*  data,
                                           uint8_t         data_len)
 {
-  return TestRdmCommand(client, kRdmCCSetCommand, param_id, data, data_len);
+  return TestRdmCommand(RC_RPT_CLIENT_DATA(&client)->uid, kRdmCCSetCommand, param_id, data, data_len);
 }
 
-inline TestRdmCommand::TestRdmCommand(const RCClient&     client,
+inline TestRdmCommand::TestRdmCommand(const RdmUid&       dest_uid,
                                       rdm_command_class_t command_class,
                                       uint16_t            param_id,
                                       const uint8_t*      data,
@@ -82,13 +127,13 @@ inline TestRdmCommand::TestRdmCommand(const RCClient&     client,
   rpt_msg->vector = VECTOR_RPT_REQUEST;
   rpt_msg->header.source_uid = kTestRdmCmdsSrcUid;
   rpt_msg->header.source_endpoint_id = E133_NULL_ENDPOINT;
-  rpt_msg->header.dest_uid = RC_RPT_CLIENT_DATA(&client)->uid;
+  rpt_msg->header.dest_uid = dest_uid;
   rpt_msg->header.dest_endpoint_id = E133_NULL_ENDPOINT;
   rpt_msg->header.seqnum = kTestRdmCmdsSeqNum;
 
   RdmCommandHeader rdm_header;
   rdm_header.source_uid = kTestRdmCmdsSrcUid;
-  rdm_header.dest_uid = RC_RPT_CLIENT_DATA(&client)->uid;
+  rdm_header.dest_uid = dest_uid;
   rdm_header.transaction_num = kTestRdmCmdsTransactionNum;
   rdm_header.port_id = 1;
   rdm_header.subdevice = 0;
@@ -108,18 +153,36 @@ public:
   RdmnetMessage          msg{};
   std::vector<RdmBuffer> bufs;
 
+  static TestRdmResponse GetResponse(const RdmUid&  dest_uid,
+                                     uint16_t       param_id,
+                                     const uint8_t* data = nullptr,
+                                     size_t         data_len = 0,
+                                     const uint8_t* cmd_data = nullptr,
+                                     uint8_t        cmd_data_len = 0);
   static TestRdmResponse GetResponse(const RCClient& client,
                                      uint16_t        param_id,
                                      const uint8_t*  data = nullptr,
                                      size_t          data_len = 0,
                                      const uint8_t*  cmd_data = nullptr,
                                      uint8_t         cmd_data_len = 0);
+  static TestRdmResponse GetResponseBroadcast(const RdmUid&  controller_uid,
+                                              uint16_t       param_id,
+                                              const uint8_t* data = nullptr,
+                                              size_t         data_len = 0,
+                                              const uint8_t* cmd_data = nullptr,
+                                              uint8_t        cmd_data_len = 0);
   static TestRdmResponse GetResponseBroadcast(const RCClient& client,
                                               uint16_t        param_id,
                                               const uint8_t*  data = nullptr,
                                               size_t          data_len = 0,
                                               const uint8_t*  cmd_data = nullptr,
                                               uint8_t         cmd_data_len = 0);
+  static TestRdmResponse SetResponse(const RdmUid&  dest_uid,
+                                     uint16_t       param_id,
+                                     const uint8_t* data = nullptr,
+                                     size_t         data_len = 0,
+                                     const uint8_t* cmd_data = nullptr,
+                                     uint8_t        cmd_data_len = 0);
   static TestRdmResponse SetResponse(const RCClient& client,
                                      uint16_t        param_id,
                                      const uint8_t*  data = nullptr,
@@ -128,7 +191,7 @@ public:
                                      uint8_t         cmd_data_len = 0);
 
 private:
-  TestRdmResponse(const RCClient&     client,
+  TestRdmResponse(const RdmUid&       controller_uid,
                   rdm_command_class_t command_class,
                   uint16_t            param_id,
                   const uint8_t*      data,
@@ -138,6 +201,16 @@ private:
                   uint8_t             cmd_data_len);
 };
 
+inline TestRdmResponse TestRdmResponse::GetResponse(const RdmUid&  dest_uid,
+                                                    uint16_t       param_id,
+                                                    const uint8_t* data,
+                                                    size_t         data_len,
+                                                    const uint8_t* cmd_data,
+                                                    uint8_t        cmd_data_len)
+{
+  return TestRdmResponse(dest_uid, kRdmCCGetCommandResponse, param_id, data, data_len, false, cmd_data, cmd_data_len);
+}
+
 inline TestRdmResponse TestRdmResponse::GetResponse(const RCClient& client,
                                                     uint16_t        param_id,
                                                     const uint8_t*  data,
@@ -145,7 +218,19 @@ inline TestRdmResponse TestRdmResponse::GetResponse(const RCClient& client,
                                                     const uint8_t*  cmd_data,
                                                     uint8_t         cmd_data_len)
 {
-  return TestRdmResponse(client, kRdmCCGetCommandResponse, param_id, data, data_len, false, cmd_data, cmd_data_len);
+  return TestRdmResponse(RC_RPT_CLIENT_DATA(&client)->uid, kRdmCCGetCommandResponse, param_id, data, data_len, false,
+                         cmd_data, cmd_data_len);
+}
+
+inline TestRdmResponse TestRdmResponse::GetResponseBroadcast(const RdmUid&  controller_uid,
+                                                             uint16_t       param_id,
+                                                             const uint8_t* data,
+                                                             size_t         data_len,
+                                                             const uint8_t* cmd_data,
+                                                             uint8_t        cmd_data_len)
+{
+  return TestRdmResponse(controller_uid, kRdmCCGetCommandResponse, param_id, data, data_len, true, cmd_data,
+                         cmd_data_len);
 }
 
 inline TestRdmResponse TestRdmResponse::GetResponseBroadcast(const RCClient& client,
@@ -155,7 +240,18 @@ inline TestRdmResponse TestRdmResponse::GetResponseBroadcast(const RCClient& cli
                                                              const uint8_t*  cmd_data,
                                                              uint8_t         cmd_data_len)
 {
-  return TestRdmResponse(client, kRdmCCGetCommandResponse, param_id, data, data_len, true, cmd_data, cmd_data_len);
+  return TestRdmResponse(RC_RPT_CLIENT_DATA(&client)->uid, kRdmCCGetCommandResponse, param_id, data, data_len, true,
+                         cmd_data, cmd_data_len);
+}
+
+inline TestRdmResponse TestRdmResponse::SetResponse(const RdmUid&  dest_uid,
+                                                    uint16_t       param_id,
+                                                    const uint8_t* data,
+                                                    size_t         data_len,
+                                                    const uint8_t* cmd_data,
+                                                    uint8_t        cmd_data_len)
+{
+  return TestRdmResponse(dest_uid, kRdmCCSetCommandResponse, param_id, data, data_len, false, cmd_data, cmd_data_len);
 }
 
 inline TestRdmResponse TestRdmResponse::SetResponse(const RCClient& client,
@@ -165,10 +261,11 @@ inline TestRdmResponse TestRdmResponse::SetResponse(const RCClient& client,
                                                     const uint8_t*  cmd_data,
                                                     uint8_t         cmd_data_len)
 {
-  return TestRdmResponse(client, kRdmCCSetCommandResponse, param_id, data, data_len, false, cmd_data, cmd_data_len);
+  return TestRdmResponse(RC_RPT_CLIENT_DATA(&client)->uid, kRdmCCSetCommandResponse, param_id, data, data_len, false,
+                         cmd_data, cmd_data_len);
 }
 
-inline TestRdmResponse::TestRdmResponse(const RCClient&     client,
+inline TestRdmResponse::TestRdmResponse(const RdmUid&       controller_uid,
                                         rdm_command_class_t command_class,
                                         uint16_t            param_id,
                                         const uint8_t*      data,
@@ -184,12 +281,12 @@ inline TestRdmResponse::TestRdmResponse(const RCClient&     client,
   rpt_msg->vector = VECTOR_RPT_NOTIFICATION;
   rpt_msg->header.source_uid = kTestRdmCmdsSrcUid;
   rpt_msg->header.source_endpoint_id = E133_NULL_ENDPOINT;
-  rpt_msg->header.dest_uid = broadcast ? kRdmnetControllerBroadcastUid : RC_RPT_CLIENT_DATA(&client)->uid;
+  rpt_msg->header.dest_uid = broadcast ? kRdmnetControllerBroadcastUid : controller_uid;
   rpt_msg->header.dest_endpoint_id = E133_NULL_ENDPOINT;
   rpt_msg->header.seqnum = kTestRdmCmdsSeqNum;
 
   RdmCommandHeader rdm_header;
-  rdm_header.source_uid = RC_RPT_CLIENT_DATA(&client)->uid;
+  rdm_header.source_uid = controller_uid;
   rdm_header.dest_uid = kTestRdmCmdsSrcUid;
   rdm_header.transaction_num = kTestRdmCmdsTransactionNum;
   rdm_header.port_id = 1;

@@ -4,7 +4,8 @@ rdmnet_add_unit_test(test_rdmnet_broker
   # RDMnet Broker lib unit test sources
   broker_mocks.h
   test_broker_client.cpp
-  test_broker_core_connect_handling
+  test_broker_core_connect_handling.cpp
+  test_broker_core_rpt_handling.cpp
   test_broker_core_startup.cpp
   test_broker_message_handling.cpp
   test_broker_discovery.cpp
@@ -27,4 +28,4 @@ rdmnet_add_unit_test(test_rdmnet_broker
   ${RDMNET_SRC}/rdmnet_mock/discovery.c
 )
 target_include_directories(test_rdmnet_broker PRIVATE ${RDMNET_SRC}/rdmnet/broker)
-target_link_libraries(test_rdmnet_broker PRIVATE EtcPalMock RDMMock)
+target_link_libraries(test_rdmnet_broker PRIVATE EtcPalMock RDM)

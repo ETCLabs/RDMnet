@@ -161,7 +161,7 @@ bool BrokerCore::IsDeviceManuBroadcastUID(const RdmUid& uid, uint16_t& manu)
 
 bool BrokerCore::IsValidControllerDestinationUID(const RdmUid& uid) const
 {
-  if (RDMNET_UID_IS_CONTROLLER_BROADCAST(&uid) || (uid == my_uid_))
+  if (RDMNET_UID_IS_DEVICE_BROADCAST(&uid) || RDMNET_UID_IS_DEVICE_MANU_BROADCAST(&uid) || (uid == my_uid_))
     return true;
 
   // TODO this should only check devices
@@ -391,7 +391,7 @@ bool BrokerCore::HandleNewConnection(etcpal_socket_t new_sock, const etcpal::Soc
       // Before inserting the connection, make sure we can attach the socket.
       if (client)
       {
-        client->addr = addr;
+        client->addr_ = addr;
         clients_.insert(std::make_pair(new_handle, std::move(client)));
         components_.socket_mgr->AddSocket(new_handle, new_sock);
         result = true;
@@ -518,10 +518,10 @@ std::vector<BrokerClient::Handle> BrokerCore::GetClientSnapshot(bool     include
       if (client.second)
       {
         RPTClient* rpt = static_cast<RPTClient*>(client.second.get());
-        if (((include_devices && (rpt->client_type == kRPTClientTypeDevice)) ||
-             (include_controllers && (rpt->client_type == kRPTClientTypeController)) ||
-             (include_unknown && (rpt->client_type == kRPTClientTypeUnknown))) &&
-            ((manufacturer_filter == 0xffff) || (manufacturer_filter == rpt->uid.manu)))
+        if (((include_devices && (rpt->client_type_ == kRPTClientTypeDevice)) ||
+             (include_controllers && (rpt->client_type_ == kRPTClientTypeController)) ||
+             (include_unknown && (rpt->client_type_ == kRPTClientTypeUnknown))) &&
+            ((manufacturer_filter == 0xffff) || (manufacturer_filter == rpt->uid_.manu)))
         {
           client_handles.push_back(client.first);
         }
@@ -563,23 +563,23 @@ bool BrokerCore::MarkLockedClientForDestruction(BrokerClient& client, const Clie
 {
   client.MarkForDestruction(settings_.cid, my_uid_, destroy_action);
 
-  if (client.client_protocol == E133_CLIENT_PROTOCOL_RPT)
+  if (client.client_protocol_ == E133_CLIENT_PROTOCOL_RPT)
   {
     RPTClient* rptcli = static_cast<RPTClient*>(&client);
-    components_.uids.RemoveUid(rptcli->uid);
+    components_.uids.RemoveUid(rptcli->uid_);
 
     std::vector<RdmnetRptClientEntry> rpt_entries;
     rpt_entries.emplace_back();
     RdmnetRptClientEntry& entry = rpt_entries.back();
-    entry.cid = rptcli->cid.get();
-    entry.uid = rptcli->uid;
-    entry.type = rptcli->client_type;
-    entry.binding_cid = rptcli->binding_cid.get();
+    entry.cid = rptcli->cid_.get();
+    entry.uid = rptcli->uid_;
+    entry.type = rptcli->client_type_;
+    entry.binding_cid = rptcli->binding_cid_.get();
 
     SendClientsRemoved(rpt_entries);
   }
 
-  return clients_to_destroy_.insert(client.handle).second;
+  return clients_to_destroy_.insert(client.handle_).second;
 }
 
 // These functions will take a write lock on client_lock_.
@@ -598,16 +598,16 @@ void BrokerCore::DestroyMarkedClientsLocked()
       auto client = clients_.find(to_destroy);
       if (client != clients_.end())
       {
-        if (client->second->socket != ETCPAL_SOCKET_INVALID)
-          components_.socket_mgr->RemoveSocket(client->second->handle);
+        if (client->second->socket_ != ETCPAL_SOCKET_INVALID)
+          components_.socket_mgr->RemoveSocket(client->second->handle_);
 
-        if (client->second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
+        if (client->second->client_protocol_ == E133_CLIENT_PROTOCOL_RPT)
         {
           RPTClient* rptcli = static_cast<RPTClient*>(client->second.get());
           rpt_clients_.erase(to_destroy);
-          if (rptcli->client_type == kRPTClientTypeController)
+          if (rptcli->client_type_ == kRPTClientTypeController)
             controllers_.erase(to_destroy);
-          else if (rptcli->client_type == kRPTClientTypeDevice)
+          else if (rptcli->client_type_ == kRPTClientTypeDevice)
             devices_.erase(to_destroy);
         }
         clients_.erase(client);
@@ -626,8 +626,12 @@ void BrokerCore::HandleSocketClosed(BrokerClient::Handle client_handle, bool /*g
   MarkClientForDestruction(client_handle, ClientDestroyAction::MarkSocketInvalid());
 }
 
-void BrokerCore::HandleSocketMessageReceived(BrokerClient::Handle client_handle, const RdmnetMessage& message)
+HandleMessageResult BrokerCore::HandleSocketMessageReceived(BrokerClient::Handle client_handle,
+                                                            const RdmnetMessage& message)
 {
+  // Assume the next message should be received by default. Only certain cases require retrying/throttling.
+  HandleMessageResult result = HandleMessageResult::kGetNextMessage;
+
   // Any well-formed Root Layer PDU message resets the heartbeat timer.
   ResetClientHeartbeatTimer(client_handle);
 
@@ -659,13 +663,15 @@ void BrokerCore::HandleSocketMessageReceived(BrokerClient::Handle client_handle,
     }
 
     case ACN_VECTOR_ROOT_RPT:
-      ProcessRPTMessage(client_handle, &message);
+      result = ProcessRPTMessage(client_handle, &message);
       break;
 
     default:
       BROKER_LOG_DEBUG("Received Root Layer PDU with unknown or unhandled vector %d", message.vector);
       break;
   }
+
+  return result;
 }
 
 void BrokerCore::ProcessConnectRequest(BrokerClient::Handle client_handle, const BrokerClientConnectMsg* cmsg)
@@ -781,8 +787,8 @@ bool BrokerCore::ProcessRPTConnectRequest(BrokerClient::Handle        client_han
     if (BROKER_CAN_LOG(ETCPAL_LOG_INFO))
     {
       BROKER_LOG_INFO("Successfully processed RPT Connect request from %s (connection %d), UID %04x:%08x",
-                      new_client->client_type == kRPTClientTypeController ? "Controller" : "Device", client_handle,
-                      new_client->uid.manu, new_client->uid.id);
+                      new_client->client_type_ == kRPTClientTypeController ? "Controller" : "Device", client_handle,
+                      new_client->uid_.manu, new_client->uid_.id);
     }
 
     // Update everyone
@@ -838,9 +844,11 @@ bool BrokerCore::ResolveNewClientUid(BrokerClient::Handle     client_handle,
   }
 }
 
-void BrokerCore::ProcessRPTMessage(BrokerClient::Handle client_handle, const RdmnetMessage* msg)
+HandleMessageResult BrokerCore::ProcessRPTMessage(BrokerClient::Handle client_handle, const RdmnetMessage* msg)
 {
   etcpal::ReadGuard clients_read(client_lock_);
+
+  HandleMessageResult result = HandleMessageResult::kGetNextMessage;
 
   const RptMessage* rptmsg = RDMNET_GET_RPT_MSG(msg);
   bool              route_msg = false;
@@ -852,19 +860,19 @@ void BrokerCore::ProcessRPTMessage(BrokerClient::Handle client_handle, const Rdm
 
     client->second->MessageReceived();
 
-    if (client->second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
+    if (client->second->client_protocol_ == E133_CLIENT_PROTOCOL_RPT)
     {
       RPTClient* rptcli = static_cast<RPTClient*>(client->second.get());
 
       switch (rptmsg->vector)
       {
         case VECTOR_RPT_REQUEST:
-          if (rptcli->client_type == kRPTClientTypeController)
+          if (rptcli->client_type_ == kRPTClientTypeController)
           {
             RPTController* controller = static_cast<RPTController*>(rptcli);
             if (!IsValidControllerDestinationUID(rptmsg->header.dest_uid))
             {
-              SendStatus(controller, rptmsg->header, kRptStatusUnknownRptUid);
+              result = SendStatus(controller, rptmsg->header, kRptStatusUnknownRptUid);
               BROKER_LOG_DEBUG(
                   "Received Request PDU addressed to invalid or not found UID %04x:%08x from Controller %d",
                   rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, client_handle);
@@ -872,7 +880,7 @@ void BrokerCore::ProcessRPTMessage(BrokerClient::Handle client_handle, const Rdm
             else if (RPT_GET_RDM_BUF_LIST(rptmsg)->num_rdm_buffers > 1)
             {
               // There should only ever be one RDM command in an RPT request.
-              SendStatus(controller, rptmsg->header, kRptStatusInvalidMessage);
+              result = SendStatus(controller, rptmsg->header, kRptStatusInvalidMessage);
               BROKER_LOG_DEBUG(
                   "Received Request PDU from Controller %d which incorrectly contains multiple RDM Command PDUs",
                   client_handle);
@@ -889,7 +897,7 @@ void BrokerCore::ProcessRPTMessage(BrokerClient::Handle client_handle, const Rdm
           break;
 
         case VECTOR_RPT_STATUS:
-          if (rptcli->client_type == kRPTClientTypeDevice)
+          if (rptcli->client_type_ == kRPTClientTypeDevice)
           {
             if (IsValidDeviceDestinationUID(rptmsg->header.dest_uid))
             {
@@ -911,7 +919,7 @@ void BrokerCore::ProcessRPTMessage(BrokerClient::Handle client_handle, const Rdm
           break;
 
         case VECTOR_RPT_NOTIFICATION:
-          if (rptcli->client_type != kRPTClientTypeUnknown)
+          if (rptcli->client_type_ != kRPTClientTypeUnknown)
           {
             if (IsValidDeviceDestinationUID(rptmsg->header.dest_uid))
             {
@@ -939,102 +947,227 @@ void BrokerCore::ProcessRPTMessage(BrokerClient::Handle client_handle, const Rdm
   }
 
   if (route_msg)
-  {
-    RouteRPTMessage(client_handle, msg);
-  }
+    result = RouteRPTMessage(client_handle, msg);
+
+  return result;
 }
 
-void BrokerCore::RouteRPTMessage(BrokerClient::Handle client_handle, const RdmnetMessage* msg)
+// Needs read lock on client_lock_
+HandleMessageResult BrokerCore::RouteRPTMessage(BrokerClient::Handle client_handle, const RdmnetMessage* msg)
 {
-  const RptMessage*    rptmsg = RDMNET_GET_RPT_MSG(msg);
-  uint16_t             device_manu;
-  BrokerClient::Handle dest_client_handle;
+  const RptMessage* rptmsg = RDMNET_GET_RPT_MSG(msg);
+  uint16_t          device_manu;
+
+  ClientPushResult push_result = ClientPushResult::Error;
 
   if (RDMNET_UID_IS_CONTROLLER_BROADCAST(&rptmsg->header.dest_uid))
   {
     BROKER_LOG_DEBUG("Broadcasting RPT message from Device %04x:%08x to all Controllers",
                      rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id);
-    for (auto controller : controllers_)
-    {
-      ClientWriteGuard client_write(*controller.second);
-      auto             push_res = controller.second->Push(client_handle, msg->sender_cid, *rptmsg);
-      if (push_res != ClientPushResult::Ok)
-        HandleRPTClientBadPushResult(*controller.second, push_res);
-    }
+
+    push_result = PushToAllControllers(client_handle, msg);
   }
   else if (RDMNET_UID_IS_DEVICE_BROADCAST(&rptmsg->header.dest_uid))
   {
     BROKER_LOG_DEBUG("Broadcasting RPT message from Controller %04x:%08x to all Devices",
                      rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id);
-    for (auto device : devices_)
-    {
-      ClientWriteGuard client_write(*device.second);
-      auto             push_res = device.second->Push(client_handle, msg->sender_cid, *rptmsg);
-      if (push_res != ClientPushResult::Ok)
-        HandleRPTClientBadPushResult(*device.second, push_res);
-    }
+
+    push_result = PushToAllDevices(client_handle, msg);
   }
   else if (IsDeviceManuBroadcastUID(rptmsg->header.dest_uid, device_manu))
   {
     BROKER_LOG_DEBUG("Broadcasting RPT message from Controller %04x:%08x to all Devices from manufacturer %04x",
                      rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id, device_manu);
-    for (auto device : devices_)
-    {
-      if (device.second->uid.manu == device_manu)
-      {
-        ClientWriteGuard client_write(*device.second);
-        auto             push_res = device.second->Push(client_handle, msg->sender_cid, *rptmsg);
-        if (push_res != ClientPushResult::Ok)
-          HandleRPTClientBadPushResult(*device.second, push_res);
-      }
-    }
+
+    push_result = PushToManuSpecificDevices(client_handle, msg, device_manu);
   }
   else
   {
-    bool found_dest_client = false;
-    if (components_.uids.UidToHandle(rptmsg->header.dest_uid, dest_client_handle))
+    push_result = PushToSpecificRptClient(client_handle, msg);
+    if (push_result == ClientPushResult::Ok)
     {
-      auto dest_client = clients_.find(dest_client_handle);
-      if (dest_client != clients_.end())
-      {
-        found_dest_client = true;
-        ClientWriteGuard client_write(*dest_client->second);
-        auto             push_res =
-            static_cast<RPTClient*>(dest_client->second.get())->Push(client_handle, msg->sender_cid, *rptmsg);
-        if (push_res == ClientPushResult::Ok)
-        {
-          BROKER_LOG_DEBUG("Routing RPT PDU from Client %04x:%08x to Client %04x:%08x", rptmsg->header.source_uid.manu,
-                           rptmsg->header.source_uid.id, rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id);
-        }
-        else
-        {
-          HandleRPTClientBadPushResult(*static_cast<RPTClient*>(dest_client->second.get()), push_res);
-        }
-      }
-    }
-    if (!found_dest_client)
-    {
-      BROKER_LOG_ERR("Could not route message from RPT Client %d (%04x:%08x): Destination UID %04x:%08x not found.",
-                     client_handle, rptmsg->header.source_uid.manu, rptmsg->header.source_uid.id,
-                     rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id);
+      BROKER_LOG_DEBUG("Routing RPT PDU from Client %04x:%08x to Client %04x:%08x", rptmsg->header.source_uid.manu,
+                       rptmsg->header.source_uid.id, rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id);
     }
   }
+
+  if (push_result == ClientPushResult::Ok)
+    return HandleMessageResult::kGetNextMessage;
+
+  return HandleRPTClientBadPushResult(rptmsg->header, push_result);
 }
 
-void BrokerCore::HandleRPTClientBadPushResult(RPTClient& client, ClientPushResult result)
+template <class ClientMap, class FilterFunction>
+ClientPushResult PushToRptClients(BrokerClient::Handle sender_handle,
+                                  const RdmnetMessage* msg,
+                                  ClientMap&           dest_clients,
+                                  FilterFunction       dest_filter)
 {
-  if (result == ClientPushResult::QueueFull)
+  ClientPushResult result = ClientPushResult::Ok;
+
+  const RptMessage* rptmsg = RDMNET_GET_RPT_MSG(msg);
+
+  // Lock all destination clients
+  int num_successful_locks = 0;
+  for (auto dest = dest_clients.begin(); dest != dest_clients.end(); ++dest)
   {
-    BROKER_LOG_ERR("Error pushing to send queue for RPT %s %d: queue is full at %zu messages.",
-                   client.client_type == kRPTClientTypeController ? "Controller" : "Device", client.handle,
-                   client.max_q_size);
+    if (dest_filter(dest))
+    {
+      if (dest->second->lock_.WriteLock())
+      {
+        ++num_successful_locks;
+      }
+      else
+      {
+        result = ClientPushResult::Error;
+        break;
+      }
+    }
+  }
+
+  // If all locks succeeded, check if any destination client queues are full
+  if (result == ClientPushResult::Ok)
+  {
+    for (auto dest = dest_clients.begin(); dest != dest_clients.end(); ++dest)
+    {
+      if (dest_filter(dest) && !dest->second->HasRoomToPush())
+        result = ClientPushResult::QueueFull;
+    }
+  }
+
+  // If no queues are full, push to all queues
+  if (result == ClientPushResult::Ok)
+  {
+    for (auto dest = dest_clients.begin(); dest != dest_clients.end(); ++dest)
+    {
+      if (dest_filter(dest))
+      {
+        auto push_res = dest->second->Push(sender_handle, msg->sender_cid, *rptmsg);
+
+        if (result == ClientPushResult::Ok)
+          result = push_res;
+      }
+    }
+  }
+
+  // Unlock all destination clients that locked successfully
+  for (auto dest = dest_clients.begin(); dest != dest_clients.end(); ++dest)
+  {
+    if (num_successful_locks == 0)
+      break;
+
+    if (dest_filter(dest))
+    {
+      dest->second->lock_.WriteUnlock();
+      --num_successful_locks;
+    }
+  }
+
+  return result;
+}
+
+// Needs read lock on client_lock_
+ClientPushResult BrokerCore::PushToAllControllers(BrokerClient::Handle sender_handle, const RdmnetMessage* msg)
+{
+  // Push to every controller in controllers_
+  auto dest_filter = [](const RptControllerMap::iterator& /*dest*/) { return true; };
+  return PushToRptClients(sender_handle, msg, controllers_, dest_filter);
+}
+
+// Needs read lock on client_lock_
+ClientPushResult BrokerCore::PushToAllDevices(BrokerClient::Handle sender_handle, const RdmnetMessage* msg)
+{
+  // Push to every device in devices_
+  auto dest_filter = [](const RptDeviceMap::iterator& /*dest*/) { return true; };
+  return PushToRptClients(sender_handle, msg, devices_, dest_filter);
+}
+
+// Needs read lock on client_lock_
+ClientPushResult BrokerCore::PushToManuSpecificDevices(BrokerClient::Handle sender_handle,
+                                                       const RdmnetMessage* msg,
+                                                       uint16_t             manu)
+{
+  // Push to each device in devices_ that matches manu
+  auto dest_filter = [&](const RptDeviceMap::iterator& dest) { return ((dest->second->uid_.manu & 0x7fffu) == manu); };
+  return PushToRptClients(sender_handle, msg, devices_, dest_filter);
+}
+
+// Needs read lock on client_lock_
+ClientPushResult BrokerCore::PushToSpecificRptClient(BrokerClient::Handle sender_handle, const RdmnetMessage* msg)
+{
+  const RptMessage* rptmsg = RDMNET_GET_RPT_MSG(msg);
+
+  auto dest_client = FindRptClient(rptmsg->header.dest_uid);
+  if (dest_client != rpt_clients_.end())
+  {
+    // For performance, since this is a single client, lock and call Push directly instead of calling PushToRptClients.
+    ClientWriteGuard client_write(*dest_client->second);
+    return dest_client->second->Push(sender_handle, msg->sender_cid, *rptmsg);
+  }
+
+  return ClientPushResult::Error;
+}
+
+// Needs read lock on client_lock_
+BrokerCore::RptClientMap::iterator BrokerCore::FindRptClient(const RdmUid& uid)
+{
+  BrokerClient::Handle handle;
+  if (components_.uids.UidToHandle(uid, handle))
+    return rpt_clients_.find(handle);
+
+  return rpt_clients_.end();
+}
+
+// Needs read lock on client_lock_
+HandleMessageResult BrokerCore::HandleRPTClientBadPushResult(const RptHeader& header, ClientPushResult result)
+{
+  std::string dest_type("Unknown");
+  bool        not_found = false;
+  uint16_t    tmp = 0u;
+  if (RDMNET_UID_IS_CONTROLLER_BROADCAST(&header.dest_uid))
+  {
+    dest_type = "Controller Broadcast";
+  }
+  else if (RDMNET_UID_IS_DEVICE_BROADCAST(&header.dest_uid))
+  {
+    dest_type = "Device Broadcast";
+  }
+  else if (IsDeviceManuBroadcastUID(header.dest_uid, tmp))
+  {
+    dest_type = "Manufacturer-Specific Device Broadcast";
+  }
+  else
+  {
+    auto dest_client = FindRptClient(header.dest_uid);
+    if (dest_client == rpt_clients_.end())
+      not_found = true;
+    else if (dest_client->second->client_type_ == kRPTClientTypeDevice)
+      dest_type = "Device";
+    else if (dest_client->second->client_type_ == kRPTClientTypeController)
+      dest_type = "Controller";
+  }
+
+  if (not_found)
+  {
+    BROKER_LOG_ERR("Could not route message from RPT Client UID %04x:%08x: Destination UID %04x:%08x not found.",
+                   header.source_uid.manu, header.source_uid.id, header.dest_uid.manu, header.dest_uid.id);
   }
   else if (result == ClientPushResult::Error)
   {
-    BROKER_LOG_CRIT("Error pushing to send queue for RPT %s %d: internal error occurred!",
-                    client.client_type == kRPTClientTypeController ? "Controller" : "Device", client.handle);
+    BROKER_LOG_CRIT("Error sending message to UID %04x:%08x (%s): internal error occurred!", header.dest_uid.manu,
+                    header.dest_uid.id, dest_type.c_str());
+    // TODO figure out what to do here... probably disconnect the client.
   }
-  // TODO figure out what to do here... probably disconnect the client.
+  else if (result == ClientPushResult::QueueFull)
+  {
+    BROKER_LOG_DEBUG("Couldn't send message to UID %04x:%08x (%s): one or more queues are full. Retrying later.",
+                     header.dest_uid.manu, header.dest_uid.id, dest_type.c_str());
+
+    // Full queue, so delay processing of the message.
+    return HandleMessageResult::kRetryLater;
+  }
+
+  return HandleMessageResult::kGetNextMessage;
 }
 
 void BrokerCore::ResetClientHeartbeatTimer(BrokerClient::Handle client_handle)
@@ -1057,7 +1190,7 @@ void BrokerCore::SendClientList(BrokerClient::Handle client_handle)
   auto              to_client = clients_.find(client_handle);
   if (to_client != clients_.end())
   {
-    if (to_client->second->client_protocol == E133_CLIENT_PROTOCOL_RPT)
+    if (to_client->second->client_protocol_ == E133_CLIENT_PROTOCOL_RPT)
       SendRptClientList(bmsg, static_cast<RPTClient&>(*to_client->second));
     else
       SendEptClientList(bmsg, static_cast<EPTClient&>(*to_client->second));
@@ -1074,10 +1207,10 @@ void BrokerCore::SendRptClientList(BrokerMessage& bmsg, RPTClient& to_cli)
     RdmnetRptClientEntry& rpt_entry = entries.back();
     RPTClient&            rpt_cli = static_cast<RPTClient&>(*client.second);
 
-    rpt_entry.cid = rpt_cli.cid.get();
-    rpt_entry.uid = rpt_cli.uid;
-    rpt_entry.type = rpt_cli.client_type;
-    rpt_entry.binding_cid = rpt_cli.binding_cid.get();
+    rpt_entry.cid = rpt_cli.cid_.get();
+    rpt_entry.uid = rpt_cli.uid_;
+    rpt_entry.type = rpt_cli.client_type_;
+    rpt_entry.binding_cid = rpt_cli.binding_cid_.get();
   }
   if (!entries.empty())
   {
@@ -1121,10 +1254,11 @@ void BrokerCore::SendClientsRemoved(std::vector<RdmnetRptClientEntry>& entries)
   }
 }
 
-void BrokerCore::SendStatus(RPTController*     controller,
-                            const RptHeader&   header,
-                            rpt_status_code_t  status_code,
-                            const std::string& status_str)
+// Needs read lock on client_lock_
+HandleMessageResult BrokerCore::SendStatus(RPTController*     controller,
+                                           const RptHeader&   header,
+                                           rpt_status_code_t  status_code,
+                                           const std::string& status_str)
 {
   RptHeader new_header;
   new_header.dest_endpoint_id = header.source_endpoint_id;
@@ -1143,10 +1277,9 @@ void BrokerCore::SendStatus(RPTController*     controller,
   auto push_res = controller->Push(settings_.cid, new_header, status);
   if (push_res == ClientPushResult::Ok)
   {
-    BROKER_LOG_WARNING("Sending RPT Status code %d to Controller %s", status_code, controller->cid.ToString().c_str());
+    BROKER_LOG_WARNING("Sending RPT Status code %d to Controller %s", status_code, controller->cid_.ToString().c_str());
+    return HandleMessageResult::kGetNextMessage;
   }
-  else
-  {
-    HandleRPTClientBadPushResult(*controller, push_res);
-  }
+
+  return HandleRPTClientBadPushResult(new_header, push_res);
 }

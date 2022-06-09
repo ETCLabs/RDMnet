@@ -28,17 +28,31 @@
 // The corresponding sources for this file are found in the platform-specific subfolders for each
 // Broker platform.
 
+/// @brief A status returned by HandleSocketMessageReceived.
+///
+/// This is used to determine if the worker thread should move on to the next message, or call
+/// HandleSocketMessageReceived with the same message later (potentially throttling the TCP connection).
+enum class HandleMessageResult
+{
+  kRetryLater,
+  kGetNextMessage
+};
+
 class BrokerSocketNotify
 {
 public:
   /// @brief An RDMnet message was received on a socket.
   ///
-  /// The data should be handled immediately - the socket manager keeps ownership of the message
-  /// and will reuse it when the callback finishes.
+  /// If the message can't be processed right now, set throttle to true to delay this message to a future notification.
+  /// Otherwise, the data should be handled immediately. The socket manager keeps ownership of the message and will
+  /// reuse it when the callback finishes.
   ///
-  /// @param handle The client handle on which data was received.
-  /// @param message The parsed message which was received on the socket.
-  virtual void HandleSocketMessageReceived(BrokerClient::Handle handle, const RdmnetMessage& message) = 0;
+  /// @param[in] handle The client handle on which data was received.
+  /// @param[in] message The parsed message which was received on the socket.
+  /// @return #kRetryLater: The message couldn't be processed and should be delayed to a future notification.
+  /// @return #kGetNextMessage: Ready to move on to the next message.
+  virtual HandleMessageResult HandleSocketMessageReceived(BrokerClient::Handle handle,
+                                                          const RdmnetMessage& message) = 0;
 
   /// @brief A socket was closed remotely.
   ///
@@ -46,8 +60,8 @@ public:
   /// BrokerSocketManager::RemoveSocket() or any other API function from this callback as it is
   /// unnecessary and may cause a deadlock.
   ///
-  /// @param handle The client handle for which the socket was closed.
-  /// @param graceful Whether the TCP connection was closed gracefully.
+  /// @param[in] handle The client handle for which the socket was closed.
+  /// @param[in] graceful Whether the TCP connection was closed gracefully.
   virtual void HandleSocketClosed(BrokerClient::Handle handle, bool graceful) = 0;
 };
 

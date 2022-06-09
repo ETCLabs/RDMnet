@@ -38,7 +38,10 @@ constexpr size_t kDisconnectCodeOffset = 44;
 
 namespace testmsgs
 {
-inline RdmnetMessage ClientConnect(const etcpal::Uuid& cid, std::string scope = E133_DEFAULT_SCOPE)
+inline RdmnetMessage ClientConnect(const etcpal::Uuid& cid,
+                                   std::string         scope = E133_DEFAULT_SCOPE,
+                                   rpt_client_type_t   type = kRPTClientTypeController,
+                                   uint16_t            manu = 0x6574)
 {
   RdmnetMessage connect_msg;
   connect_msg.vector = ACN_VECTOR_ROOT_BROKER;
@@ -57,8 +60,8 @@ inline RdmnetMessage ClientConnect(const etcpal::Uuid& cid, std::string scope = 
   RdmnetRptClientEntry* rpt_entry = GET_RPT_CLIENT_ENTRY(&client_connect->client_entry);
   rpt_entry->cid = cid.get();
   rpt_entry->binding_cid = etcpal::Uuid().get();
-  rpt_entry->uid = rdm::Uid::DynamicUidRequest(0x6574).get();
-  rpt_entry->type = kRPTClientTypeController;
+  rpt_entry->uid = rdm::Uid::DynamicUidRequest(manu).get();
+  rpt_entry->type = type;
 
   return connect_msg;
 }

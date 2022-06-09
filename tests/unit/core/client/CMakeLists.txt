@@ -8,7 +8,7 @@ rdmnet_add_unit_test(test_rdmnet_core_client
   rdmnet_client_fake_callbacks.h
   rdmnet_client_fake_callbacks.c
 
-  test_rdm_commands.h
+  ${UNIT_TEST_DIR}/shared/test_rdm_commands.h
 
   main.cpp
 

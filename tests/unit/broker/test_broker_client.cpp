@@ -66,7 +66,7 @@ protected:
     // Client can't be a direct member because we must reset EtcPal before it is constructed.
     // Mainly so the timers work out correctly.
     client_ = std::make_unique<BrokerClient>(kClientHandle, kClientSocket, kMaxQSize);
-    client_->addr = etcpal::SockAddr(etcpal::IpAddr::FromString("10.101.20.30"), 45000);
+    client_->addr_ = etcpal::SockAddr(etcpal::IpAddr::FromString("10.101.20.30"), 45000);
   }
 };
 
@@ -116,8 +116,7 @@ TEST_F(TestBaseBrokerClient, HonorsMaxQSize)
 
 TEST_F(TestBaseBrokerClient, MaxQSizeInfinite)
 {
-  // Max Q Size of 0 should mean infinite
-  client_->max_q_size = 0;
+  client_->max_q_size_ = BrokerClient::kLimitlessQueueSize;
   GenericBrokerMessage msg;
 
   for (size_t i = 0; i < 1000; ++i)
@@ -132,15 +131,15 @@ TEST_F(TestBaseBrokerClient, TransfersInformationToRptController)
                                     kRPTClientTypeController, etcpal::Uuid::OsPreferred().get()};
   RPTController        controller(40, client_entry, *client_);
 
-  EXPECT_EQ(controller.cid, client_entry.cid);
-  EXPECT_EQ(controller.client_protocol, kClientProtocolRPT);
-  EXPECT_EQ(controller.addr, client_->addr);
-  EXPECT_EQ(controller.handle, kClientHandle);
-  EXPECT_EQ(controller.socket, kClientSocket);
-  EXPECT_EQ(controller.max_q_size, 40u);
-  EXPECT_EQ(controller.uid, client_entry.uid);
-  EXPECT_EQ(controller.client_type, client_entry.type);
-  EXPECT_EQ(controller.binding_cid, client_entry.binding_cid);
+  EXPECT_EQ(controller.cid_, client_entry.cid);
+  EXPECT_EQ(controller.client_protocol_, kClientProtocolRPT);
+  EXPECT_EQ(controller.addr_, client_->addr_);
+  EXPECT_EQ(controller.handle_, kClientHandle);
+  EXPECT_EQ(controller.socket_, kClientSocket);
+  EXPECT_EQ(controller.max_q_size_, 40u);
+  EXPECT_EQ(controller.uid_, client_entry.uid);
+  EXPECT_EQ(controller.client_type_, client_entry.type);
+  EXPECT_EQ(controller.binding_cid_, client_entry.binding_cid);
 }
 
 TEST_F(TestBaseBrokerClient, TransfersInformationToRptDevice)
@@ -149,15 +148,15 @@ TEST_F(TestBaseBrokerClient, TransfersInformationToRptDevice)
                                     kRPTClientTypeDevice, etcpal::Uuid::OsPreferred().get()};
   RPTDevice            device(40, client_entry, *client_);
 
-  EXPECT_EQ(device.cid, client_entry.cid);
-  EXPECT_EQ(device.client_protocol, kClientProtocolRPT);
-  EXPECT_EQ(device.addr, client_->addr);
-  EXPECT_EQ(device.handle, kClientHandle);
-  EXPECT_EQ(device.socket, kClientSocket);
-  EXPECT_EQ(device.max_q_size, 40u);
-  EXPECT_EQ(device.uid, client_entry.uid);
-  EXPECT_EQ(device.client_type, client_entry.type);
-  EXPECT_EQ(device.binding_cid, client_entry.binding_cid);
+  EXPECT_EQ(device.cid_, client_entry.cid);
+  EXPECT_EQ(device.client_protocol_, kClientProtocolRPT);
+  EXPECT_EQ(device.addr_, client_->addr_);
+  EXPECT_EQ(device.handle_, kClientHandle);
+  EXPECT_EQ(device.socket_, kClientSocket);
+  EXPECT_EQ(device.max_q_size_, 40u);
+  EXPECT_EQ(device.uid_, client_entry.uid);
+  EXPECT_EQ(device.client_type_, client_entry.type);
+  EXPECT_EQ(device.binding_cid_, client_entry.binding_cid);
 }
 
 TEST_F(TestBaseBrokerClient, CannotPushWhenMarkedForDestruction)
@@ -217,7 +216,7 @@ TEST_F(TestBaseBrokerClient, MarkForDestructionSendDisconnectWorks)
 
 TEST_F(TestBaseBrokerClient, MarkForDestructionMarkSocketInvalidWorks)
 {
-  client_->socket = (etcpal_socket_t)20;
+  client_->socket_ = (etcpal_socket_t)20;
 
   // Push a few messages to the client's queue
   GenericBrokerMessage msg;
@@ -228,7 +227,7 @@ TEST_F(TestBaseBrokerClient, MarkForDestructionMarkSocketInvalidWorks)
   client_->MarkForDestruction(broker_cid_, broker_uid_, ClientDestroyAction::MarkSocketInvalid());
   EXPECT_FALSE(client_->Send(broker_cid_));
   EXPECT_EQ(etcpal_send_fake.call_count, 0u);
-  EXPECT_EQ(client_->socket, ETCPAL_SOCKET_INVALID);
+  EXPECT_EQ(client_->socket_, ETCPAL_SOCKET_INVALID);
 }
 
 class TestBrokerClientRptController : public testing::Test
@@ -314,8 +313,7 @@ TEST_F(TestBrokerClientRptController, HonorsMaxQSize)
 
 TEST_F(TestBrokerClientRptController, InfiniteMaxQSize)
 {
-  // Max Q Size of 0 should mean infinite
-  controller_->max_q_size = 0;
+  controller_->max_q_size_ = BrokerClient::kLimitlessQueueSize;
 
   GenericBrokerMessage broker_msg;
   for (size_t i = 0; i < 1000u; ++i)
@@ -461,8 +459,7 @@ TEST_F(TestBrokerClientRptDevice, QEmptiesAndFillsCorrectly)
 
 TEST_F(TestBrokerClientRptDevice, InfiniteMaxQSize)
 {
-  // Max Q Size of 0 should mean infinite
-  device_->max_q_size = 0;
+  device_->max_q_size_ = BrokerClient::kLimitlessQueueSize;
 
   GenericBrokerMessage broker_msg;
   for (size_t i = 0; i < 1000u; ++i)

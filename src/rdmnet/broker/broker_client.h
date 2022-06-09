@@ -80,15 +80,15 @@ public:
   static ClientDestroyAction MarkSocketInvalid();
 
   Action                     action() const noexcept { return action_; }
-  rdmnet_disconnect_reason_t disconnect_reason() const noexcept { return data_.disconnect_reason; }
-  rdmnet_connect_status_t    connect_status() const noexcept { return data_.connect_status; }
+  rdmnet_disconnect_reason_t disconnect_reason() const noexcept { return data_.disconnect_reason_; }
+  rdmnet_connect_status_t    connect_status() const noexcept { return data_.connect_status_; }
 
 private:
   Action action_{Action::DoNothing};
   union
   {
-    rdmnet_disconnect_reason_t disconnect_reason;
-    rdmnet_connect_status_t    connect_status;
+    rdmnet_disconnect_reason_t disconnect_reason_;
+    rdmnet_connect_status_t    connect_status_;
   } data_{};
 };
 
@@ -101,7 +101,7 @@ inline ClientDestroyAction ClientDestroyAction::SendConnectReply(rdmnet_connect_
 {
   ClientDestroyAction to_return;
   to_return.action_ = Action::SendConnectReply;
-  to_return.data_.connect_status = connect_status;
+  to_return.data_.connect_status_ = connect_status;
   return to_return;
 }
 
@@ -109,7 +109,7 @@ inline ClientDestroyAction ClientDestroyAction::SendDisconnect(rdmnet_disconnect
 {
   ClientDestroyAction to_return;
   to_return.action_ = Action::SendDisconnect;
-  to_return.data_.disconnect_reason = reason;
+  to_return.data_.disconnect_reason_ = reason;
   return to_return;
 }
 
@@ -138,24 +138,27 @@ class BrokerClient
 {
 public:
   using Handle = int;
+
   static constexpr Handle kInvalidHandle = -1;
+  static constexpr size_t kLimitlessQueueSize = 0u;
 
   BrokerClient(Handle new_handle, etcpal_socket_t new_socket, size_t new_max_q_size = 0)
-      : handle(new_handle), socket(new_socket), max_q_size(new_max_q_size)
+      : handle_(new_handle), socket_(new_socket), max_q_size_(new_max_q_size)
   {
   }
   // Non-default copy constructor to avoid copying the message queue and lock.
   BrokerClient(const BrokerClient& other)
-      : cid(other.cid)
-      , client_protocol(other.client_protocol)
-      , addr(other.addr)
-      , handle(other.handle)
-      , socket(other.socket)
-      , max_q_size(other.max_q_size)
+      : cid_(other.cid_)
+      , client_protocol_(other.client_protocol_)
+      , addr_(other.addr_)
+      , handle_(other.handle_)
+      , socket_(other.socket_)
+      , max_q_size_(other.max_q_size_)
   {
   }
   virtual ~BrokerClient() = default;
 
+  virtual bool             HasRoomToPush();
   virtual ClientPushResult Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg);
   virtual bool             Send(const etcpal::Uuid& broker_cid);
   void                     MarkForDestruction(const etcpal::Uuid&        broker_cid,
@@ -165,14 +168,14 @@ public:
   bool TcpConnExpired() const { return heartbeat_timer_.IsExpired(); }
   void MessageReceived() { heartbeat_timer_.Reset(); }
 
-  etcpal::Uuid           cid{};
-  client_protocol_t      client_protocol{kClientProtocolUnknown};
-  etcpal::SockAddr       addr{};
-  Handle                 handle{kInvalidHandle};
-  mutable etcpal::RwLock lock;
-  etcpal_socket_t        socket{ETCPAL_SOCKET_INVALID};
-  size_t                 max_q_size{0};
-  bool                   marked_for_destruction{false};
+  etcpal::Uuid           cid_{};
+  client_protocol_t      client_protocol_{kClientProtocolUnknown};
+  etcpal::SockAddr       addr_{};
+  Handle                 handle_{kInvalidHandle};
+  mutable etcpal::RwLock lock_;
+  etcpal_socket_t        socket_{ETCPAL_SOCKET_INVALID};
+  size_t                 max_q_size_{kLimitlessQueueSize};
+  bool                   marked_for_destruction_{false};
 
 protected:
   ClientPushResult PushPostSizeCheck(const etcpal::Uuid& sender_cid, const BrokerMessage& msg);
@@ -191,7 +194,7 @@ protected:
 class ClientReadGuard
 {
 public:
-  explicit ClientReadGuard(BrokerClient& client) : rg_(client.lock) {}
+  explicit ClientReadGuard(BrokerClient& client) : rg_(client.lock_) {}
 
 private:
   etcpal::ReadGuard rg_;
@@ -200,7 +203,7 @@ private:
 class ClientWriteGuard
 {
 public:
-  explicit ClientWriteGuard(BrokerClient& client) : wg_(client.lock) {}
+  explicit ClientWriteGuard(BrokerClient& client) : wg_(client.lock_) {}
 
 private:
   etcpal::WriteGuard wg_;
@@ -211,12 +214,12 @@ class RPTClient : public BrokerClient
 public:
   RPTClient(const RdmnetRptClientEntry& client_entry, const BrokerClient& prev_client)
       : BrokerClient(prev_client)
-      , uid(client_entry.uid)
-      , client_type(client_entry.type)
-      , binding_cid(client_entry.binding_cid)
+      , uid_(client_entry.uid)
+      , client_type_(client_entry.type)
+      , binding_cid_(client_entry.binding_cid)
   {
-    client_protocol = kClientProtocolRPT;
-    cid = client_entry.cid;
+    client_protocol_ = kClientProtocolRPT;
+    cid_ = client_entry.cid;
   }
   virtual ~RPTClient() {}
 
@@ -224,11 +227,13 @@ public:
   {
     return ClientPushResult::Error;
   }
+
+  virtual bool             HasRoomToPush() override;
   virtual ClientPushResult Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
 
-  RdmUid            uid{};
-  rpt_client_type_t client_type{kRPTClientTypeUnknown};
-  etcpal::Uuid      binding_cid{};
+  RdmUid            uid_{};
+  rpt_client_type_t client_type_{kRPTClientTypeUnknown};
+  etcpal::Uuid      binding_cid_{};
 
 protected:
   ClientPushResult PushPostSizeCheck(const etcpal::Uuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg);
@@ -245,21 +250,20 @@ struct EPTClient : public BrokerClient
 class RPTController : public RPTClient
 {
 public:
-  // TODO max queue size
   RPTController(size_t new_max_q_size, const RdmnetRptClientEntry& cli_entry, const BrokerClient& prev_client)
       : RPTClient(cli_entry, prev_client)
   {
-    max_q_size = new_max_q_size;
+    max_q_size_ = new_max_q_size;
   }
   virtual ~RPTController() {}
 
+  virtual bool             HasRoomToPush() override;
   virtual ClientPushResult Push(Handle from_conn, const etcpal::Uuid& sender_cid, const RptMessage& msg) override;
   virtual ClientPushResult Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
   virtual ClientPushResult Push(const etcpal::Uuid& sender_cid, const RptHeader& header, const RptStatusMsg& msg);
   virtual bool             Send(const etcpal::Uuid& broker_cid) override;
 
 protected:
-  bool         HasRoomToPush();
   virtual void ClearAllQueues();
 
   std::deque<MessageRef> rpt_msgs_;
@@ -272,16 +276,16 @@ public:
   RPTDevice(size_t new_max_q_size, const RdmnetRptClientEntry& cli_entry, const BrokerClient& prev_client)
       : RPTClient(cli_entry, prev_client)
   {
-    max_q_size = new_max_q_size;
+    max_q_size_ = new_max_q_size;
   }
   virtual ~RPTDevice() {}
 
+  virtual bool             HasRoomToPush() override;
   virtual ClientPushResult Push(Handle from_conn, const etcpal::Uuid& sender_cid, const RptMessage& msg) override;
   virtual ClientPushResult Push(const etcpal::Uuid& sender_cid, const BrokerMessage& msg) override;
   virtual bool             Send(const etcpal::Uuid& broker_cid) override;
 
 protected:
-  bool         HasRoomToPush();
   virtual void ClearAllQueues();
 
   // A special queue-like class that organizes messages by source controller for fair scheduling.

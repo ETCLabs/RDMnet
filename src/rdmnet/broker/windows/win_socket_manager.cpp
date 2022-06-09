@@ -356,8 +356,13 @@ void WinBrokerSocketManager::WorkerNotifyRecvData(BrokerClient::Handle client_ha
     {
       if (!sock_data->second->close_requested && notify_)
       {
-        notify_->HandleSocketMessageReceived(client_handle, sock_data->second->recv_buf.msg);
+        while (notify_->HandleSocketMessageReceived(client_handle, sock_data->second->recv_buf.msg) ==
+               HandleMessageResult::kRetryLater)
+        {
+          Sleep(10);  // Sleep to avoid busy loop.
+        }
       }
+
       rc_free_message_resources(&sock_data->second->recv_buf.msg);
       res = rc_msg_buf_parse_data(&sock_data->second->recv_buf);
     }
