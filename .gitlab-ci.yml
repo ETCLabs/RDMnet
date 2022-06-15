@@ -70,7 +70,7 @@ linux-build:
   stage: build
   tags:
     - etc-linux-docker
-  image: etc-docker.artifactory-mid.etcconnect.com/rikorose/gcc-cmake:latest
+  image: etc-docker.artifactory.etcconnect.com/rikorose/gcc-cmake:latest
   variables:
     CMAKE_LINUX_ASAN_OPTIONS: -DCMAKE_C_FLAGS="-fsanitize=address" -DCMAKE_CXX_FLAGS="-fsanitize=address" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address"
   parallel:
@@ -95,7 +95,7 @@ docs-test:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   tags:
     - etc-linux-docker
-  image: etc-docker.artifactory-mid.etcconnect.com/common-tech/doxygen:1.9.1
+  image: etc-docker.artifactory.etcconnect.com/common-tech/doxygen:1.9.1
   variables:
     GIT_DEPTH: 0
   script:
@@ -107,7 +107,7 @@ deploy-docs:
     - if: '$CI_COMMIT_REF_NAME == "main"'
   tags:
     - etc-linux-docker
-  image: etc-docker.artifactory-mid.etcconnect.com/common-tech/doxygen:1.9.1
+  image: etc-docker.artifactory.etcconnect.com/common-tech/doxygen:1.9.1
   variables:
     GIT_DEPTH: 0
     GH_REPO_NAME: RDMnetDocs
@@ -129,9 +129,9 @@ deploy-artifacts:
     - if: '$CI_PIPELINE_SOURCE == "web" && $NEW_BUILD_VERSION =~ /^\d+\.\d+\.\d+\.\d+$/ && $CI_COMMIT_REF_NAME == "main"'
   tags:
     - ct-linux-docker
-  image: etc-docker.artifactory-mid.etcconnect.com/python:latest
+  image: etc-docker.artifactory.etcconnect.com/python:latest
   script:
-    - pip config set global.index-url https://artifactory-mid.etcconnect.com/artifactory/api/pypi/ETC-PyPI/simple
-    - pip config set global.trusted-host artifactory-mid.etcconnect.com
+    - pip config set global.index-url https://artifactory.etcconnect.com/artifactory/api/pypi/ETC-PyPI/simple
+    - pip config set global.trusted-host artifactory.etcconnect.com
     - pip install requests etclibtool PyGithub
     - python3 tools/ci/deploy_to_github_release.py ${NEW_BUILD_VERSION}
