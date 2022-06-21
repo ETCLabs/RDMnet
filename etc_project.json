@@ -1,0 +1,46 @@
+{
+  "dependencies": [
+    {
+      "name": "EtcPal",
+      "gitlabPath": "etc/common-tech/general/etcpal",
+      "version": "0.4.0.9"
+    },
+    {
+      "name": "RDM",
+      "gitlabPath": "etc/common-tech/net/githubrdm",
+      "version": "0.2.0"
+    }
+  ],
+  "devToolConfig": {
+    "version": {
+      "fileTemplates": {
+        "tools/templates/version.h.in": "include/rdmnet/version.h"
+      },
+      "jira": {
+        "project": "RDMNET"
+      }
+    },
+    "docs": {
+      "tags": [
+        {
+          "name": "EtcPal",
+          "site": "https://etclabs.github.io/EtcPalDocs"
+        },
+        {
+          "webPath": "https://upload.cppreference.com/mwiki/images/f/f8/cppreference-doxygen-web.tag.xml",
+          "site": "https://en.cppreference.com/w"
+        }
+      ]
+    },
+    "release-lib": {
+      "projectName": "RDMnet",
+      "jira": {
+        "project": "RDMNET"
+      },
+      "legacyP4Mirror": {
+        "name": "GITHUB_RDMnet",
+        "labelPrefix": "RDMnet"
+      }
+    }
+  }
+}
