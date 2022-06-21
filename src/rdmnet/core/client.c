@@ -139,11 +139,11 @@ static const RdmnetScopeMonitorCallbacks disc_callbacks =
 };
 // clang-format on
 
-static void conncb_connected(RCConnection* conn, const RCConnectedInfo* connected_info);
-static void conncb_connect_failed(RCConnection* conn, const RCConnectFailedInfo* failed_info);
-static void conncb_disconnected(RCConnection* conn, const RCDisconnectedInfo* disconn_info);
-static void conncb_msg_received(RCConnection* conn, const RdmnetMessage* message);
-static void conncb_destroyed(RCConnection* conn);
+static void                conncb_connected(RCConnection* conn, const RCConnectedInfo* connected_info);
+static void                conncb_connect_failed(RCConnection* conn, const RCConnectFailedInfo* failed_info);
+static void                conncb_disconnected(RCConnection* conn, const RCDisconnectedInfo* disconn_info);
+static rc_message_action_t conncb_msg_received(RCConnection* conn, const RdmnetMessage* message);
+static void                conncb_destroyed(RCConnection* conn);
 
 // clang-format off
 static const RCConnectionCallbacks kConnCallbacks =
@@ -887,7 +887,7 @@ static bool copy_broker_listen_addrs(RCClientScope* scope, const RdmnetBrokerDis
 #else
   size_t num_addrs_to_copy =
       (broker_info->num_listen_addrs > RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER ? RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER
-                                                                              : broker_info->num_listen_addrs);
+                                                                                       : broker_info->num_listen_addrs);
   memcpy(scope->broker_listen_addrs, broker_info->listen_addrs, num_addrs_to_copy * sizeof(EtcPalIpAddr));
 #endif
   scope->num_broker_listen_addrs = broker_info->num_listen_addrs;
@@ -1135,8 +1135,10 @@ void conncb_disconnected(RCConnection* conn, const RCDisconnectedInfo* disconn_i
   client->callbacks.disconnected(client, scope->handle, &cli_disconn_info);
 }
 
-void conncb_msg_received(RCConnection* conn, const RdmnetMessage* message)
+rc_message_action_t conncb_msg_received(RCConnection* conn, const RdmnetMessage* message)
 {
+  rc_message_action_t action = kRCMessageActionProcessNext;
+
   RCClientScope* scope = GET_CLIENT_SCOPE_FROM_CONN(conn);
   RCClient*      client = scope->client;
 
@@ -1149,7 +1151,7 @@ void conncb_msg_received(RCConnection* conn, const RdmnetMessage* message)
     RC_CLIENT_UNLOCK(client);
   }
   if (should_return)
-    return;
+    return kRCMessageActionProcessNext;
 
   switch (message->vector)
   {
@@ -1173,6 +1175,9 @@ void conncb_msg_received(RCConnection* conn, const RdmnetMessage* message)
           {
             RC_RPT_CLIENT_DATA(client)->callbacks.rpt_msg_received(client, scope->handle, &client_msg, &resp,
                                                                    &use_internal_buf_for_response);
+
+            if (resp.response_action == kRdmnetRdmResponseActionRetryLater)
+              action = kRCMessageActionRetryLater;
           }
           send_rdm_response_if_requested(client, scope, &client_msg, &resp, use_internal_buf_for_response);
           free_rpt_client_message(&client_msg);
@@ -1192,6 +1197,8 @@ void conncb_msg_received(RCConnection* conn, const RdmnetMessage* message)
       // handle);
       break;
   }
+
+  return action;
 }
 
 void conncb_destroyed(RCConnection* conn)

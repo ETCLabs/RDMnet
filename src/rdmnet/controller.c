@@ -1052,8 +1052,11 @@ void client_rpt_msg_received(RCClient*               client,
         }
         break;
       case kRptClientMsgRdmResp:
-        controller->callbacks.rdm_response_received(controller->id.handle, scope_handle, RDMNET_GET_RDM_RESPONSE(msg),
-                                                    controller->callbacks.context);
+        if (!controller->callbacks.rdm_response_received(controller->id.handle, scope_handle,
+                                                         RDMNET_GET_RDM_RESPONSE(msg), controller->callbacks.context))
+        {
+          RDMNET_SYNC_RETRY_LATER(response);
+        }
         break;
       case kRptClientMsgStatus:
         controller->callbacks.status_received(controller->id.handle, scope_handle, RDMNET_GET_RPT_STATUS(msg),

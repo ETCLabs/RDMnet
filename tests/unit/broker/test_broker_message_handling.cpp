@@ -67,8 +67,8 @@ BrokerClient::Handle TestBrokerCoreMessageHandling::AddClient(const etcpal::Uuid
   static bool got_connect_reply;
   got_connect_reply = false;
 
-  RESET_FAKE(etcpal_send);
-  etcpal_send_fake.custom_fake = [](etcpal_socket_t, const void* data, size_t data_size, int) -> int {
+  RESET_FAKE(rc_send);
+  rc_send_fake.custom_fake = [](etcpal_socket_t, const void* data, size_t data_size, int) -> int {
     EXPECT_NE(data, nullptr);
     const uint8_t* byte_data = reinterpret_cast<const uint8_t*>(data);
     if (data_size > kBrokerVectorOffset + 2 &&
@@ -85,7 +85,7 @@ BrokerClient::Handle TestBrokerCoreMessageHandling::AddClient(const etcpal::Uuid
   mocks_.broker_callbacks->HandleSocketMessageReceived(new_conn_handle, connect_msg);
   EXPECT_TRUE(mocks_.broker_callbacks->ServiceClients());
   EXPECT_TRUE(got_connect_reply);
-  RESET_FAKE(etcpal_send);
+  RESET_FAKE(rc_send);
 
   return new_conn_handle;
 }
@@ -164,8 +164,8 @@ TEST_F(TestBrokerCoreMessageHandling, SendsRptClientListOnRequest)
   static bool got_client_list;
   got_client_list = false;
 
-  RESET_FAKE(etcpal_send);
-  etcpal_send_fake.custom_fake = [](etcpal_socket_t, const void* data, size_t data_size, int) -> int {
+  RESET_FAKE(rc_send);
+  rc_send_fake.custom_fake = [](etcpal_socket_t, const void* data, size_t data_size, int) -> int {
     EXPECT_NE(data, nullptr);
     const uint8_t* byte_data = reinterpret_cast<const uint8_t*>(data);
     if (data_size > kBrokerVectorOffset + 2 &&

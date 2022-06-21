@@ -47,11 +47,12 @@ FAKE_VOID_FUNC(handle_controller_client_list_update_received,
                client_list_action_t,
                const RdmnetRptClientList*,
                void*);
-FAKE_VOID_FUNC(handle_controller_rdm_response_received,
-               rdmnet_controller_t,
-               rdmnet_client_scope_t,
-               const RdmnetRdmResponse*,
-               void*);
+FAKE_VALUE_FUNC(bool,
+                handle_controller_rdm_response_received,
+                rdmnet_controller_t,
+                rdmnet_client_scope_t,
+                const RdmnetRdmResponse*,
+                void*);
 FAKE_VOID_FUNC(handle_controller_status_received,
                rdmnet_controller_t,
                rdmnet_client_scope_t,

@@ -102,6 +102,8 @@ etcpal_error_t rc_add_polled_socket(etcpal_socket_t socket, etcpal_poll_events_t
 etcpal_error_t rc_modify_polled_socket(etcpal_socket_t socket, etcpal_poll_events_t events, RCPolledSocketInfo* info);
 void           rc_remove_polled_socket(etcpal_socket_t socket);
 
+int rc_send(etcpal_socket_t id, const void* message, size_t length, int flags);
+
 #ifdef __cplusplus
 }
 #endif

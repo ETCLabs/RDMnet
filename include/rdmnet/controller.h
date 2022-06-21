@@ -112,8 +112,10 @@ typedef void (*RdmnetControllerClientListUpdateReceivedCallback)(rdmnet_controll
  * @param[in] scope_handle Handle to the scope on which the RDM response was received.
  * @param[in] resp The RDM response data.
  * @param[in] context Context pointer that was given at the creation of the controller instance.
+ * @return True if the response has been (or will be) processed and doesn't need to be notified for again.
+ * @return False if another notification for this response should be triggered later.
  */
-typedef void (*RdmnetControllerRdmResponseReceivedCallback)(rdmnet_controller_t      controller_handle,
+typedef bool (*RdmnetControllerRdmResponseReceivedCallback)(rdmnet_controller_t      controller_handle,
                                                             rdmnet_client_scope_t    scope_handle,
                                                             const RdmnetRdmResponse* resp,
                                                             void*                    context);

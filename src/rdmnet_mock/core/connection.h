@@ -50,8 +50,6 @@ DECLARE_FAKE_VALUE_FUNC(etcpal_error_t,
                         rdmnet_disconnect_reason_t);
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rc_conn_disconnect, RCConnection*, rdmnet_disconnect_reason_t);
 
-DECLARE_FAKE_VALUE_FUNC(int, rc_conn_send, RCConnection*, const uint8_t*, size_t);
-
 void rc_connection_reset_all_fakes(void);
 
 #ifdef __cplusplus

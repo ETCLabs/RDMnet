@@ -55,7 +55,7 @@ protected:
     etcpal_reset_all_fakes();
     rdmnet_mock_core_reset_and_init();
 
-    etcpal_send_fake.custom_fake = [](etcpal_socket_t, const void*, size_t data_size, int) -> int {
+    rc_send_fake.custom_fake = [](etcpal_socket_t, const void*, size_t data_size, int) -> int {
       return (int)data_size;
     };
 

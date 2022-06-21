@@ -154,7 +154,7 @@ protected:
                                       rdmnet::ScopeHandle          scope_handle,
                                       client_list_action_t         action,
                                       const rdmnet::RptClientList& list) override;
-  virtual void HandleRdmResponse(rdmnet::Controller::Handle controller_handle,
+  virtual bool HandleRdmResponse(rdmnet::Controller::Handle controller_handle,
                                  rdmnet::ScopeHandle        scope_handle,
                                  const rdmnet::RdmResponse& resp) override;
   virtual void HandleRptStatus(rdmnet::Controller::Handle controller,

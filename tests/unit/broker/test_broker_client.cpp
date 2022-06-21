@@ -27,6 +27,7 @@
 #include "etcpal_mock/common.h"
 #include "etcpal_mock/timer.h"
 #include "etcpal_mock/socket.h"
+#include "rdmnet_mock/core/common.h"
 #include "rdm/cpp/uid.h"
 
 // A generic broker message to be used for filling up queues of clients.
@@ -63,6 +64,7 @@ protected:
   TestBaseBrokerClient()
   {
     etcpal_reset_all_fakes();
+    rdmnet_mock_core_reset_and_init();
     // Client can't be a direct member because we must reset EtcPal before it is constructed.
     // Mainly so the timers work out correctly.
     client_ = std::make_unique<BrokerClient>(kClientHandle, kClientSocket, kMaxQSize);
@@ -77,7 +79,7 @@ TEST_F(TestBaseBrokerClient, SendsBrokerMessage)
 
   EXPECT_EQ(client_->Push(broker_cid_, msg), ClientPushResult::Ok);
   EXPECT_TRUE(client_->Send(broker_cid_));
-  EXPECT_EQ(etcpal_send_fake.call_count, 1u);
+  EXPECT_EQ(rc_send_fake.call_count, 1u);
 }
 
 // Generic/unknown clients should send periodic heartbeat messages.
@@ -86,14 +88,14 @@ TEST_F(TestBaseBrokerClient, SendsHeartbeat)
   // Advance time so that the heartbeat send interval has passed
   etcpal_getms_fake.return_val = (E133_TCP_HEARTBEAT_INTERVAL_SEC * 1000) + 500;
 
-  etcpal_send_fake.custom_fake = [](etcpal_socket_t /*socket*/, const void* data, size_t size, int /*flags*/) {
+  rc_send_fake.custom_fake = [](etcpal_socket_t /*socket*/, const void* data, size_t size, int /*flags*/) {
     EXPECT_EQ(size, 44u);
     EXPECT_EQ(etcpal_unpack_u16b(&(reinterpret_cast<const uint8_t*>(data))[42]), VECTOR_BROKER_NULL);
     return 44;
   };
 
   EXPECT_TRUE(client_->Send(broker_cid_));
-  EXPECT_EQ(etcpal_send_fake.call_count, 1u);
+  EXPECT_EQ(rc_send_fake.call_count, 1u);
 }
 
 TEST_F(TestBaseBrokerClient, HandlesHeartbeatTimeout)
@@ -179,7 +181,7 @@ TEST_F(TestBaseBrokerClient, MarkForDestructionSendConnectReplyWorks)
   client_->MarkForDestruction(broker_cid_, broker_uid_,
                               ClientDestroyAction::SendConnectReply(kRdmnetConnectCapacityExceeded));
 
-  etcpal_send_fake.custom_fake = [](etcpal_socket_t /*socket*/, const void* data, size_t size, int /*flags*/) {
+  rc_send_fake.custom_fake = [](etcpal_socket_t /*socket*/, const void* data, size_t size, int /*flags*/) {
     EXPECT_EQ(size, 60u);
     const uint8_t* byte_data = reinterpret_cast<const uint8_t*>(data);
     EXPECT_EQ(etcpal_unpack_u16b(&byte_data[42]), VECTOR_BROKER_CONNECT_REPLY);
@@ -188,7 +190,7 @@ TEST_F(TestBaseBrokerClient, MarkForDestructionSendConnectReplyWorks)
   };
 
   EXPECT_TRUE(client_->Send(broker_cid_));
-  EXPECT_EQ(etcpal_send_fake.call_count, 1u);
+  EXPECT_EQ(rc_send_fake.call_count, 1u);
 }
 
 TEST_F(TestBaseBrokerClient, MarkForDestructionSendDisconnectWorks)
@@ -202,7 +204,7 @@ TEST_F(TestBaseBrokerClient, MarkForDestructionSendDisconnectWorks)
   // Mark for destruction should clear out the queue and put in the disconnect.
   client_->MarkForDestruction(broker_cid_, broker_uid_, ClientDestroyAction::SendDisconnect(kRdmnetDisconnectShutdown));
 
-  etcpal_send_fake.custom_fake = [](etcpal_socket_t /*socket*/, const void* data, size_t size, int /*flags*/) {
+  rc_send_fake.custom_fake = [](etcpal_socket_t /*socket*/, const void* data, size_t size, int /*flags*/) {
     EXPECT_EQ(size, 46u);
     const uint8_t* byte_data = reinterpret_cast<const uint8_t*>(data);
     EXPECT_EQ(etcpal_unpack_u16b(&byte_data[42]), VECTOR_BROKER_DISCONNECT);
@@ -211,7 +213,7 @@ TEST_F(TestBaseBrokerClient, MarkForDestructionSendDisconnectWorks)
   };
 
   EXPECT_TRUE(client_->Send(broker_cid_));
-  EXPECT_EQ(etcpal_send_fake.call_count, 1u);
+  EXPECT_EQ(rc_send_fake.call_count, 1u);
 }
 
 TEST_F(TestBaseBrokerClient, MarkForDestructionMarkSocketInvalidWorks)
@@ -226,7 +228,7 @@ TEST_F(TestBaseBrokerClient, MarkForDestructionMarkSocketInvalidWorks)
   // Mark for destruction should clear out the queue and mark the socket invalid.
   client_->MarkForDestruction(broker_cid_, broker_uid_, ClientDestroyAction::MarkSocketInvalid());
   EXPECT_FALSE(client_->Send(broker_cid_));
-  EXPECT_EQ(etcpal_send_fake.call_count, 0u);
+  EXPECT_EQ(rc_send_fake.call_count, 0u);
   EXPECT_EQ(client_->socket_, ETCPAL_SOCKET_INVALID);
 }
 
@@ -251,6 +253,7 @@ protected:
   TestBrokerClientRptController()
   {
     etcpal_reset_all_fakes();
+    rdmnet_mock_core_reset_and_init();
 
     rdm_buf_.data_len = RDM_MIN_BYTES;
     request_.vector = VECTOR_RPT_REQUEST;
@@ -268,14 +271,14 @@ TEST_F(TestBrokerClientRptController, SendsHeartbeat)
   // Advance time so that the heartbeat send interval has passed
   etcpal_getms_fake.return_val = (E133_TCP_HEARTBEAT_INTERVAL_SEC * 1000) + 500;
 
-  etcpal_send_fake.custom_fake = [](etcpal_socket_t /*socket*/, const void* data, size_t size, int /*flags*/) {
+  rc_send_fake.custom_fake = [](etcpal_socket_t /*socket*/, const void* data, size_t size, int /*flags*/) {
     EXPECT_EQ(size, 44u);
     EXPECT_EQ(etcpal_unpack_u16b(&(reinterpret_cast<const uint8_t*>(data))[42]), VECTOR_BROKER_NULL);
     return 44;
   };
 
   EXPECT_TRUE(controller_->Send(broker_cid_));
-  EXPECT_EQ(etcpal_send_fake.call_count, 1u);
+  EXPECT_EQ(rc_send_fake.call_count, 1u);
 }
 
 TEST_F(TestBrokerClientRptController, HandlesHeartbeatTimeout)
@@ -357,6 +360,7 @@ protected:
   TestBrokerClientRptDevice()
   {
     etcpal_reset_all_fakes();
+    rdmnet_mock_core_reset_and_init();
 
     rdm_buf_.data_len = RDM_MIN_BYTES;
     request_.vector = VECTOR_RPT_REQUEST;
@@ -374,14 +378,14 @@ TEST_F(TestBrokerClientRptDevice, SendsHeartbeat)
   // Advance time so that the heartbeat send interval has passed
   etcpal_getms_fake.return_val = (E133_TCP_HEARTBEAT_INTERVAL_SEC * 1000) + 500;
 
-  etcpal_send_fake.custom_fake = [](etcpal_socket_t /*socket*/, const void* data, size_t size, int /*flags*/) {
+  rc_send_fake.custom_fake = [](etcpal_socket_t /*socket*/, const void* data, size_t size, int /*flags*/) {
     EXPECT_EQ(size, 44u);
     EXPECT_EQ(etcpal_unpack_u16b(&(reinterpret_cast<const uint8_t*>(data))[42]), VECTOR_BROKER_NULL);
     return 44;
   };
 
   EXPECT_TRUE(device_->Send(broker_cid_));
-  EXPECT_EQ(etcpal_send_fake.call_count, 1u);
+  EXPECT_EQ(rc_send_fake.call_count, 1u);
 }
 
 TEST_F(TestBrokerClientRptDevice, HandlesHeartbeatTimeout)
@@ -415,7 +419,7 @@ TEST_F(TestBrokerClientRptDevice, HonorsMaxQSize)
 TEST_F(TestBrokerClientRptDevice, QEmptiesAndFillsCorrectly)
 {
   // Make send return success
-  etcpal_send_fake.custom_fake = [](etcpal_socket_t socket, const void*, size_t size, int /*flags*/) {
+  rc_send_fake.custom_fake = [](etcpal_socket_t socket, const void*, size_t size, int /*flags*/) {
     EXPECT_EQ(socket, TestBrokerClientRptDevice::kClientSocket);
     return (int)size;
   };
@@ -484,7 +488,7 @@ static const etcpal::Uuid kController2Cid({1, 2, 3, 4, 255, 254, 253, 252});
 static const etcpal::Uuid kController3Cid({255, 254, 253, 252, 251, 250, 249, 248});
 
 // Sends the next queue message from an RPTDevice and verifies that the buffer given to
-// etcpal_send() contains a given controller's CID. The CIDs are predefined globally because
+// rc_send() contains a given controller's CID. The CIDs are predefined globally because
 // the fake function pointer must be stateless.
 template <size_t Controller>
 void SendAndVerify(RPTDevice* device, const etcpal::Uuid& broker_cid)
@@ -494,14 +498,14 @@ void SendAndVerify(RPTDevice* device, const etcpal::Uuid& broker_cid)
 
   SCOPED_TRACE(std::string("While verifying CID for controller ") + std::to_string(Controller));
 
-  RESET_FAKE(etcpal_send);
-  etcpal_send_fake.custom_fake = [](etcpal_socket_t socket, const void* data, size_t size, int /*flags*/) {
+  RESET_FAKE(rc_send);
+  rc_send_fake.custom_fake = [](etcpal_socket_t socket, const void* data, size_t size, int /*flags*/) {
     EXPECT_EQ(socket, TestBrokerClientRptDevice::kClientSocket);
     EXPECT_EQ(std::memcmp(&(reinterpret_cast<const uint8_t*>(data))[23], controllers[Controller - 1]->data(), 16), 0);
     return (int)size;
   };
   EXPECT_TRUE(device->Send(broker_cid));
-  EXPECT_EQ(etcpal_send_fake.call_count, 1u);
+  EXPECT_EQ(rc_send_fake.call_count, 1u);
 }
 
 TEST_F(TestBrokerClientRptDevice, FairScheduler)

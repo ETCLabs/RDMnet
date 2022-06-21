@@ -135,23 +135,36 @@ void rc_msg_buf_init(RCMsgBuf* msg_buf)
 etcpal_error_t rc_msg_buf_recv(RCMsgBuf* msg_buf, etcpal_socket_t socket)
 {
   RDMNET_ASSERT(msg_buf);
-  RDMNET_ASSERT(msg_buf->cur_data_size < RC_MSG_BUF_SIZE);
+  RDMNET_ASSERT(msg_buf->cur_data_size <= RC_MSG_BUF_SIZE);
 
-  int recv_res =
-      etcpal_recv(socket, &msg_buf->buf[msg_buf->cur_data_size], RC_MSG_BUF_SIZE - msg_buf->cur_data_size, 0);
+  size_t original_data_size = msg_buf->cur_data_size;
+
+  int recv_res = 0;
+  do
+  {
+    size_t remaining_length = RC_MSG_BUF_SIZE - msg_buf->cur_data_size;
+    if (remaining_length > 0)
+      recv_res = etcpal_recv(socket, &msg_buf->buf[msg_buf->cur_data_size], remaining_length, 0);
+    else
+      recv_res = kEtcPalErrWouldBlock;
+
+    if (recv_res > 0)
+      msg_buf->cur_data_size += recv_res;
+  } while (recv_res > 0);
+
   if (recv_res < 0)
   {
-    return (etcpal_error_t)recv_res;
+    if ((etcpal_error_t)recv_res != kEtcPalErrWouldBlock)
+      return (etcpal_error_t)recv_res;
+    if (msg_buf->cur_data_size == original_data_size)
+      return kEtcPalErrWouldBlock;
   }
   else if (recv_res == 0)
   {
     return kEtcPalErrConnClosed;
   }
-  else
-  {
-    msg_buf->cur_data_size += recv_res;
-    return kEtcPalErrOk;
-  }
+
+  return kEtcPalErrOk;
 }
 
 etcpal_error_t rc_msg_buf_parse_data(RCMsgBuf* msg_buf)

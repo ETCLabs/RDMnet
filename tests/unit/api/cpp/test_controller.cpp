@@ -50,7 +50,7 @@ class MockControllerNotifyHandler : public rdmnet::Controller::NotifyHandler
                client_list_action_t         list_action,
                const rdmnet::RptClientList& list),
               (override));
-  MOCK_METHOD(void,
+  MOCK_METHOD(bool,
               HandleRdmResponse,
               (rdmnet::Controller::Handle controller_handle,
                rdmnet::ScopeHandle        scope_handle,

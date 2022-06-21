@@ -226,6 +226,22 @@ void rc_remove_polled_socket(etcpal_socket_t socket)
 }
 
 /*
+ * Since all RDMnet sockets need to be non-blocking for receiving, this function provides a blocking send in order to
+ * support TCP throttling.
+ */
+int rc_send(etcpal_socket_t id, const void* message, size_t length, int flags)
+{
+  int res = etcpal_send(id, message, length, flags);
+  while ((etcpal_error_t)res == kEtcPalErrWouldBlock)
+  {
+    etcpal_thread_sleep(10);
+    res = etcpal_send(id, message, length, flags);
+  }
+
+  return res;
+}
+
+/*
  * Process RDMnet background tasks.
  *
  * This includes polling for data on incoming network connections, checking various timeouts, and

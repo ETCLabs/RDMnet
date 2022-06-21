@@ -417,7 +417,7 @@ when the callback returns. See @ref data_ownership for more information.
 
 <!-- CODE_BLOCK_START -->
 ```c
-void rdm_response_callback(rdmnet_controller_t controller_handle, rdmnet_client_scope_t scope_handle,
+bool rdm_response_callback(rdmnet_controller_t controller_handle, rdmnet_client_scope_t scope_handle,
                            const RdmnetRdmResponse* resp, void* context)
 {
   // Check handles and/or context as necessary...
@@ -453,11 +453,14 @@ void rdm_response_callback(rdmnet_controller_t controller_handle, rdmnet_client_
     // When more responses come, you can append their data to your saved response:
     rdmnet_append_to_saved_rdm_response(resp, &previously_saved_resp);
   }
+
+  // Ready to process the next response, so return true.
+  return true;
 }
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::Controller::Handle controller_handle,
+bool MyControllerNotifyHandler::HandleRdmResponse(rdmnet::Controller::Handle controller_handle,
                                                   rdmnet::ScopeHandle scope_handle,
                                                   const rdmnet::RdmResponse& resp)
 {
@@ -493,9 +496,63 @@ void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::Controller::Handle con
     // When more responses come, you can append their data to your saved response:
     previously_saved_resp.AppendData(resp);
   }
+
+  // Ready to process the next response, so return true.
+  return true;
 }
 ```
 <!-- CODE_BLOCK_END -->
+
+### Delaying Processing of RDM Responses
+
+In the case where your application doesn't have the resources to process an RDM response, you can
+return false to trigger another notification for the same response at a later time:
+
+<!-- CODE_BLOCK_START -->
+```c
+bool rdm_response_callback(rdmnet_controller_t controller_handle, rdmnet_client_scope_t scope_handle,
+                           const RdmnetRdmResponse* resp, void* context)
+{
+  // Check handles and/or context as necessary...
+
+  if(my_app.rdm_response_queue_has_room)
+  {
+    // Save response and add it to the queue...
+
+    // Ready for the next response, so return true.
+    return true;
+  }
+  
+  // Can't queue this response yet, so return false. This function will be called again later with the same response.
+  return false;
+}
+```
+<!-- CODE_BLOCK_MID -->
+```cpp
+bool MyControllerNotifyHandler::HandleRdmResponse(rdmnet::Controller::Handle controller_handle,
+                                                  rdmnet::ScopeHandle scope_handle,
+                                                  const rdmnet::RdmResponse& resp)
+{
+  // Check handles as necessary...
+
+  if(my_app_.RdmResponseQueueHasRoom())
+  {
+    // Save response and add it to the queue...
+
+    // Ready for the next response, so return true.
+    return true;
+  }
+  
+  // Can't queue this response yet, so return false. This function will be called again later with the same response.
+  return false;
+}
+```
+<!-- CODE_BLOCK_END -->
+
+The application can do this consecutively for as long as needed, but keep in mind that this will
+delay the library's processing of future messages from the broker (ultimately delaying potential
+notifications), and may also narrow the TCP window of the connection with the broker, potentially
+resulting in backpressure.
 
 ## Handling RPT Status Messages
 

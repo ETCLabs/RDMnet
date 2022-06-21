@@ -74,7 +74,7 @@ TEST_F(TestBrokerCoreConnectHandling, HandlesConnect)
   BrokerClient::Handle conn_handle = AddTcpConn();
   RdmnetMessage        connect_msg = testmsgs::ClientConnect(client_cid);
 
-  etcpal_send_fake.custom_fake = [](etcpal_socket_t, const void* data, size_t data_size, int) -> int {
+  rc_send_fake.custom_fake = [](etcpal_socket_t, const void* data, size_t data_size, int) -> int {
     EXPECT_EQ(data_size, static_cast<size_t>(BROKER_CONNECT_REPLY_FULL_MSG_SIZE));
     EXPECT_NE(data, nullptr);
 
@@ -86,10 +86,10 @@ TEST_F(TestBrokerCoreConnectHandling, HandlesConnect)
   };
   mocks_.broker_callbacks->HandleSocketMessageReceived(conn_handle, connect_msg);
   EXPECT_TRUE(mocks_.broker_callbacks->ServiceClients());
-  EXPECT_EQ(etcpal_send_fake.call_count, 1u);
+  EXPECT_EQ(rc_send_fake.call_count, 1u);
   EXPECT_EQ(broker_.GetNumClients(), 1u);
 
-  RESET_FAKE(etcpal_send);
+  RESET_FAKE(rc_send);
 }
 
 TEST_F(TestBrokerCoreConnectHandling, RejectsScopeMismatch)
@@ -98,7 +98,7 @@ TEST_F(TestBrokerCoreConnectHandling, RejectsScopeMismatch)
   BrokerClient::Handle conn_handle = AddTcpConn();
   RdmnetMessage        connect_msg = testmsgs::ClientConnect(client_cid, "Not Default Scope");
 
-  etcpal_send_fake.custom_fake = [](etcpal_socket_t, const void* data, size_t data_size, int) -> int {
+  rc_send_fake.custom_fake = [](etcpal_socket_t, const void* data, size_t data_size, int) -> int {
     EXPECT_EQ(data_size, static_cast<size_t>(BROKER_CONNECT_REPLY_FULL_MSG_SIZE));
     EXPECT_NE(data, nullptr);
 
@@ -111,7 +111,7 @@ TEST_F(TestBrokerCoreConnectHandling, RejectsScopeMismatch)
 
   mocks_.broker_callbacks->HandleSocketMessageReceived(conn_handle, connect_msg);
   EXPECT_TRUE(mocks_.broker_callbacks->ServiceClients());
-  EXPECT_EQ(etcpal_send_fake.call_count, 1u);
+  EXPECT_EQ(rc_send_fake.call_count, 1u);
 
   // Rejected client should be cleaned up
   etcpal_getms_fake.return_val += 1000;

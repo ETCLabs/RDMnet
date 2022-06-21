@@ -1290,7 +1290,7 @@ BrokerItem* RDMnetNetworkModel::GetBrokerItem(rdmnet::ScopeHandle scope_handle)
   return nullptr;
 }
 
-void RDMnetNetworkModel::HandleRdmResponse(rdmnet::Controller::Handle /* controller_handle */,
+bool RDMnetNetworkModel::HandleRdmResponse(rdmnet::Controller::Handle /* controller_handle */,
                                            rdmnet::ScopeHandle        scope_handle,
                                            const rdmnet::RdmResponse& resp)
 {
@@ -1310,6 +1310,8 @@ void RDMnetNetworkModel::HandleRdmResponse(rdmnet::Controller::Handle /* control
     default:
       break;
   }
+
+  return true;
 }
 
 void RDMnetNetworkModel::HandleRdmAck(rdmnet::ScopeHandle scope_handle, const rdmnet::RdmResponse& resp)

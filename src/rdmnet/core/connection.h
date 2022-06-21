@@ -89,6 +89,14 @@ typedef struct RCDisconnectedInfo
   rdmnet_disconnect_reason_t rdmnet_reason;
 } RCDisconnectedInfo;
 
+// When an RDMnet message is received, this determines whether to retry processing this message later (which will narrow
+// the TCP window, potentially throttling the connection), or move on to the next message.
+typedef enum
+{
+  kRCMessageActionRetryLater,
+  kRCMessageActionProcessNext
+} rc_message_action_t;
+
 // An RDMnet connection has connected successfully. connect_info contains more information about
 // the successful connection.
 typedef void (*RCConnConnectedCallback)(RCConnection* conn, const RCConnectedInfo* connect_info);
@@ -106,7 +114,10 @@ typedef void (*RCConnDisconnectedCallback)(RCConnection* conn, const RCDisconnec
 // this callback. All other valid messages will be delivered.
 //
 // Use the macros in rdmnet/core/message.h to decode the message type.
-typedef void (*RCConnMessageReceivedCallback)(RCConnection* conn, const RdmnetMessage* message);
+//
+// Return kRCMessageActionRetryLater if resources are not available to process the message at this time. Otherwise, if
+// the message has been processed or should be dropped, return kRCMessageActionProcessNext.
+typedef rc_message_action_t (*RCConnMessageReceivedCallback)(RCConnection* conn, const RdmnetMessage* message);
 
 // An RDMnet connection has been destroyed and unregistered. This is called from the background
 // thread, after the resources associated with the connection (e.g. sockets) have been cleaned up.
@@ -148,7 +159,6 @@ struct RCConnection
   EtcPalUuid            local_cid;
   etcpal_mutex_t*       lock;
   RCConnectionCallbacks callbacks;
-  bool                  is_blocking;
 
   /////////////////////////////////////////////////////////////////////////////
 
@@ -166,6 +176,7 @@ struct RCConnection
 
   // Send and receive tracking
   RCMsgBuf recv_buf;
+  bool     retry_current_message;  // recv_buf.msg couldn't be processed - retry processing it at a later time.
 };
 
 etcpal_error_t rc_conn_module_init(void);
@@ -182,7 +193,6 @@ etcpal_error_t rc_conn_reconnect(RCConnection*                 conn,
                                  const BrokerClientConnectMsg* new_connect_data,
                                  rdmnet_disconnect_reason_t    disconnect_reason);
 etcpal_error_t rc_conn_disconnect(RCConnection* conn, rdmnet_disconnect_reason_t disconnect_reason);
-int            rc_conn_send(RCConnection* conn, const uint8_t* data, size_t size);
 
 #ifdef __cplusplus
 }

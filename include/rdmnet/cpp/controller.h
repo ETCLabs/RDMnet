@@ -117,7 +117,9 @@ public:
     /// @param controller_handle Handle to controller instance which has received the RDM response.
     /// @param scope_handle Handle to the scope on which the RDM response was received.
     /// @param resp The RDM response data.
-    virtual void HandleRdmResponse(Handle controller_handle, ScopeHandle scope_handle, const RdmResponse& resp) = 0;
+    /// @return True if the response has been (or will be) processed and doesn't need to be notified for again.
+    /// @return False if another notification for this response should be triggered later.
+    virtual bool HandleRdmResponse(Handle controller_handle, ScopeHandle scope_handle, const RdmResponse& resp) = 0;
 
     /// @brief An RPT status message has been received in response to a previously-sent RDM command.
     /// @param controller_handle Handle to controller instance which has received the RPT status message.
@@ -371,16 +373,18 @@ extern "C" inline void ControllerLibCbClientListUpdate(rdmnet_controller_t      
   }
 }
 
-extern "C" inline void ControllerLibCbRdmResponseReceived(rdmnet_controller_t      controller_handle,
+extern "C" inline bool ControllerLibCbRdmResponseReceived(rdmnet_controller_t      controller_handle,
                                                           rdmnet_client_scope_t    scope_handle,
                                                           const RdmnetRdmResponse* resp,
                                                           void*                    context)
 {
   if (resp && context)
   {
-    static_cast<Controller::NotifyHandler*>(context)->HandleRdmResponse(Controller::Handle(controller_handle),
-                                                                        ScopeHandle(scope_handle), *resp);
+    return static_cast<Controller::NotifyHandler*>(context)->HandleRdmResponse(Controller::Handle(controller_handle),
+                                                                               ScopeHandle(scope_handle), *resp);
   }
+
+  return true;  // Error condition, drop response.
 }
 
 extern "C" inline void ControllerLibCbStatusReceived(rdmnet_controller_t    controller_handle,

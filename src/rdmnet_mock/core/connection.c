@@ -36,7 +36,6 @@ DEFINE_FAKE_VALUE_FUNC(etcpal_error_t,
                        const BrokerClientConnectMsg*,
                        rdmnet_disconnect_reason_t);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_conn_disconnect, RCConnection*, rdmnet_disconnect_reason_t);
-DEFINE_FAKE_VALUE_FUNC(int, rc_conn_send, RCConnection*, const uint8_t*, size_t);
 
 void rc_connection_reset_all_fakes(void)
 {
@@ -48,5 +47,4 @@ void rc_connection_reset_all_fakes(void)
   RESET_FAKE(rc_conn_connect);
   RESET_FAKE(rc_conn_reconnect);
   RESET_FAKE(rc_conn_disconnect);
-  RESET_FAKE(rc_conn_send);
 }

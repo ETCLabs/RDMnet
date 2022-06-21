@@ -21,6 +21,7 @@
 
 #include "etcpal/common.h"
 #include "etcpal/pack.h"
+#include "rdmnet/core/common.h"
 #include "rdmnet/defs.h"
 
 /***************************** Private macros ********************************/
@@ -134,7 +135,7 @@ etcpal_error_t send_rpt_header(RCConnection*          conn,
   if (data_size == 0)
     return kEtcPalErrProtocol;
 
-  int send_res = etcpal_send(conn->sock, buf, data_size, 0);
+  int send_res = rc_send(conn->sock, buf, data_size, 0);
   if (send_res < 0)
     return (etcpal_error_t)send_res;
 
@@ -143,13 +144,13 @@ etcpal_error_t send_rpt_header(RCConnection*          conn,
   if (data_size == 0)
     return kEtcPalErrProtocol;
 
-  send_res = etcpal_send(conn->sock, buf, data_size, 0);
+  send_res = rc_send(conn->sock, buf, data_size, 0);
   if (send_res < 0)
     return (etcpal_error_t)send_res;
 
   // Pack and send the RPT PDU header
   pack_rpt_header(rlp->data_len, rc_rpt_vector, header, buf);
-  send_res = etcpal_send(conn->sock, buf, RPT_PDU_HEADER_SIZE, 0);
+  send_res = rc_send(conn->sock, buf, RPT_PDU_HEADER_SIZE, 0);
   if (send_res < 0)
     return (etcpal_error_t)send_res;
 
@@ -239,12 +240,12 @@ etcpal_error_t rc_rpt_send_request(RCConnection*     conn,
     return res;
 
   PACK_REQUEST_HEADER(rlp.data_len - RPT_PDU_HEADER_SIZE, buf);
-  int send_res = etcpal_send(conn->sock, buf, REQUEST_NOTIF_PDU_HEADER_SIZE, 0);
+  int send_res = rc_send(conn->sock, buf, REQUEST_NOTIF_PDU_HEADER_SIZE, 0);
   if (send_res < 0)
     return (etcpal_error_t)send_res;
 
   PACK_RDM_CMD_PDU(cmd, buf);
-  send_res = etcpal_send(conn->sock, buf, RDM_CMD_PDU_LEN(cmd), 0);
+  send_res = rc_send(conn->sock, buf, RDM_CMD_PDU_LEN(cmd), 0);
   if (send_res < 0)
     return (etcpal_error_t)send_res;
 
@@ -338,13 +339,13 @@ etcpal_error_t rc_rpt_send_status(RCConnection*       conn,
     return res;
 
   PACK_STATUS_HEADER(status_pdu_size, (uint16_t)(status->status_code), buf);
-  int send_res = etcpal_send(conn->sock, buf, RPT_STATUS_HEADER_SIZE, 0);
+  int send_res = rc_send(conn->sock, buf, RPT_STATUS_HEADER_SIZE, 0);
   if (send_res < 0)
     return (etcpal_error_t)send_res;
 
   if (status_pdu_size > RPT_STATUS_HEADER_SIZE)
   {
-    send_res = etcpal_send(conn->sock, (uint8_t*)status->status_string, status_pdu_size - RPT_STATUS_HEADER_SIZE, 0);
+    send_res = rc_send(conn->sock, (uint8_t*)status->status_string, status_pdu_size - RPT_STATUS_HEADER_SIZE, 0);
     if (send_res < 0)
       return (etcpal_error_t)send_res;
   }
@@ -452,14 +453,14 @@ etcpal_error_t rc_rpt_send_notification(RCConnection*     conn,
     return res;
 
   PACK_NOTIFICATION_HEADER(notif_pdu_size, buf);
-  int send_res = etcpal_send(conn->sock, buf, REQUEST_NOTIF_PDU_HEADER_SIZE, 0);
+  int send_res = rc_send(conn->sock, buf, REQUEST_NOTIF_PDU_HEADER_SIZE, 0);
   if (send_res < 0)
     return (etcpal_error_t)send_res;
 
   for (const RdmBuffer* cur_cmd = cmd_arr; cur_cmd < cmd_arr + cmd_arr_size; ++cur_cmd)
   {
     PACK_RDM_CMD_PDU(cur_cmd, buf);
-    send_res = etcpal_send(conn->sock, buf, RDM_CMD_PDU_LEN(cur_cmd), 0);
+    send_res = rc_send(conn->sock, buf, RDM_CMD_PDU_LEN(cur_cmd), 0);
     if (send_res < 0)
       return (etcpal_error_t)send_res;
   }

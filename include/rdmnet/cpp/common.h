@@ -109,6 +109,7 @@ public:
   static RdmResponseAction SendNack(rdm_nack_reason_t nack_reason);
   static RdmResponseAction SendNack(uint16_t raw_nack_reason);
   static RdmResponseAction DeferResponse();
+  static RdmResponseAction RetryLater();
 
   constexpr const RdmnetSyncRdmResponse& get() const;
 
@@ -151,6 +152,14 @@ inline RdmResponseAction RdmResponseAction::DeferResponse()
 {
   RdmResponseAction to_return;
   RDMNET_SYNC_DEFER_RDM_RESPONSE(&to_return.response_);
+  return to_return;
+}
+
+/// @brief Trigger another notification for the (non-LLRP) RDM command on the next tick.
+inline RdmResponseAction RdmResponseAction::RetryLater()
+{
+  RdmResponseAction to_return;
+  RDMNET_SYNC_RETRY_LATER(&to_return.response_);
   return to_return;
 }
 

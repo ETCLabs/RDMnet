@@ -53,6 +53,8 @@ DECLARE_FAKE_VALUE_FUNC(etcpal_error_t,
                         RCPolledSocketInfo*);
 DECLARE_FAKE_VOID_FUNC(rc_remove_polled_socket, etcpal_socket_t);
 
+DECLARE_FAKE_VALUE_FUNC(int, rc_send, etcpal_socket_t, const void*, size_t, int);
+
 void rdmnet_mock_core_reset_and_init(void);
 void rdmnet_mock_core_reset(void);
 

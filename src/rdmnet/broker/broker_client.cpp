@@ -21,6 +21,7 @@
 
 #include "rdmnet/cpp/broker.h"
 #include "rdmnet/core/broker_prot.h"
+#include "rdmnet/core/common.h"
 #include "rdmnet/core/connection.h"
 #include "rdmnet/core/opts.h"
 
@@ -45,7 +46,7 @@ bool BrokerClient::Send(const etcpal::Uuid& broker_cid)
   if (!broker_msgs_.empty())
   {
     MessageRef& msg = broker_msgs_.front();
-    int         res = etcpal_send(socket_, &msg.data.get()[msg.size_sent], msg.size - msg.size_sent, 0);
+    int         res = rc_send(socket_, &msg.data.get()[msg.size_sent], msg.size - msg.size_sent, 0);
     if (res >= 0)
     {
       msg.size_sent += res;
@@ -148,7 +149,7 @@ bool BrokerClient::SendNull(const etcpal::Uuid& broker_cid)
 {
   auto   send_buf = std::unique_ptr<uint8_t[]>(new uint8_t[BROKER_NULL_FULL_MSG_SIZE]);
   size_t send_size = rc_broker_pack_null(send_buf.get(), BROKER_NULL_FULL_MSG_SIZE, &broker_cid.get());
-  return (etcpal_send(socket_, send_buf.get(), send_size, 0) >= 0);
+  return (rc_send(socket_, send_buf.get(), send_size, 0) >= 0);
 }
 
 void BrokerClient::ApplyDestroyAction(const etcpal::Uuid&        broker_cid,
@@ -331,7 +332,7 @@ bool RPTController::Send(const etcpal::Uuid& broker_cid)
   // Try to send the message.
   if (msg && q)
   {
-    int res = etcpal_send(socket_, &msg->data.get()[msg->size_sent], msg->size - msg->size_sent, 0);
+    int res = rc_send(socket_, &msg->data.get()[msg->size_sent], msg->size - msg->size_sent, 0);
     if (res >= 0)
     {
       msg->size_sent += res;
@@ -439,7 +440,7 @@ bool RPTDevice::Send(const etcpal::Uuid& broker_cid)
   // Try to send the message.
   if (msg)
   {
-    int res = etcpal_send(socket_, &msg->data.get()[msg->size_sent], msg->size - msg->size_sent, 0);
+    int res = rc_send(socket_, &msg->data.get()[msg->size_sent], msg->size - msg->size_sent, 0);
     if (res >= 0)
     {
       msg->size_sent += res;

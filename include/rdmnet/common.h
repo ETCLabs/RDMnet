@@ -197,7 +197,9 @@ typedef enum
   /** Send an RDM NACK with reason to the originating controller. */
   kRdmnetRdmResponseActionSendNack,
   /** Do nothing; the application will send the response later. Be sure to save the command. */
-  kRdmnetRdmResponseActionDefer
+  kRdmnetRdmResponseActionDefer,
+  /** The command cannot be processed at this time - trigger another notification for this (non-LLRP) command later. */
+  kRdmnetRdmResponseActionRetryLater
 } rdmnet_rdm_response_action_t;
 
 /**
@@ -206,9 +208,10 @@ typedef enum
  * - RDMNET_SYNC_SEND_RDM_ACK()
  * - RDMNET_SYNC_SEND_RDM_NACK()
  * - RDMNET_SYNC_DEFER_RDM_RESPONSE()
+ * - RDMNET_SYNC_RETRY_LATER()
  *
  * Contains information about an RDMnet RDM response to be sent synchronously from an RDMnet
- * callback.
+ * callback, or the notification that the (non-LLRP) command notification must be retried later.
  */
 typedef struct RdmnetSyncRdmResponse
 {
@@ -262,6 +265,12 @@ typedef struct RdmnetSyncRdmResponse
  * @param response_ptr Pointer to RdmnetSyncRdmResponse in which to set data.
  */
 #define RDMNET_SYNC_DEFER_RDM_RESPONSE(response_ptr) ((response_ptr)->response_action = kRdmnetRdmResponseActionDefer)
+
+/**
+ * @brief Trigger another notification for the (non-LLRP) RDM command on the next tick.
+ * @param response_ptr Pointer to RdmnetSyncRdmResponse in which to set data.
+ */
+#define RDMNET_SYNC_RETRY_LATER(response_ptr) ((response_ptr)->response_action = kRdmnetRdmResponseActionRetryLater)
 
 /**
  * Enumeration representing an action to take after an "EPT data received" callback completes.

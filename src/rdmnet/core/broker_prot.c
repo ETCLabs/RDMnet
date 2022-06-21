@@ -23,6 +23,7 @@
 #include "etcpal/common.h"
 #include "etcpal/pack.h"
 #include "rdmnet/core/util.h"
+#include "rdmnet/core/common.h"
 #include "rdmnet/core/connection.h"
 
 /***************************** Private macros ********************************/
@@ -102,7 +103,7 @@ etcpal_error_t send_broker_header(RCConnection*          conn,
   data_size = acn_pack_tcp_preamble(buf, buflen, data_size);
   if (data_size == 0)
     return kEtcPalErrProtocol;
-  int send_res = etcpal_send(conn->sock, buf, data_size, 0);
+  int send_res = rc_send(conn->sock, buf, data_size, 0);
   if (send_res < 0)
     return (etcpal_error_t)send_res;
 
@@ -110,13 +111,13 @@ etcpal_error_t send_broker_header(RCConnection*          conn,
   data_size = acn_pack_root_layer_header(buf, buflen, rlp);
   if (data_size == 0)
     return kEtcPalErrProtocol;
-  send_res = etcpal_send(conn->sock, buf, data_size, 0);
+  send_res = rc_send(conn->sock, buf, data_size, 0);
   if (send_res < 0)
     return (etcpal_error_t)send_res;
 
   // Pack and send the Broker PDU header
   PACK_BROKER_HEADER(rlp->data_len, vector, buf);
-  send_res = etcpal_send(conn->sock, buf, BROKER_PDU_HEADER_SIZE, 0);
+  send_res = rc_send(conn->sock, buf, BROKER_PDU_HEADER_SIZE, 0);
   if (send_res < 0)
     return (etcpal_error_t)send_res;
 
@@ -172,7 +173,7 @@ etcpal_error_t rc_broker_send_client_connect(RCConnection* conn, const BrokerCli
   rdmnet_safe_strncpy((char*)cur_ptr, data->search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
   cur_ptr += E133_DOMAIN_STRING_PADDED_LENGTH;
   *cur_ptr++ = data->connect_flags;
-  int send_res = etcpal_send(conn->sock, buf, (size_t)(cur_ptr - buf), 0);
+  int send_res = rc_send(conn->sock, buf, (size_t)(cur_ptr - buf), 0);
   if (send_res < 0)
     return (etcpal_error_t)send_res;
 
@@ -182,7 +183,7 @@ etcpal_error_t rc_broker_send_client_connect(RCConnection* conn, const BrokerCli
                                                 : &(GET_EPT_CLIENT_ENTRY(&data->client_entry)->cid));
   PACK_CLIENT_ENTRY_HEADER(rlp.data_len - (BROKER_PDU_HEADER_SIZE + CLIENT_CONNECT_COMMON_FIELD_SIZE),
                            data->client_entry.client_protocol, cid, buf);
-  send_res = etcpal_send(conn->sock, buf, CLIENT_ENTRY_HEADER_SIZE, 0);
+  send_res = rc_send(conn->sock, buf, CLIENT_ENTRY_HEADER_SIZE, 0);
 
   if (IS_RPT_CLIENT_ENTRY(&data->client_entry))
   {
@@ -196,7 +197,7 @@ etcpal_error_t rc_broker_send_client_connect(RCConnection* conn, const BrokerCli
     *cur_ptr++ = (uint8_t)(rpt_entry->type);
     memcpy(cur_ptr, rpt_entry->binding_cid.data, ETCPAL_UUID_BYTES);
     cur_ptr += ETCPAL_UUID_BYTES;
-    send_res = etcpal_send(conn->sock, buf, RPT_CLIENT_ENTRY_DATA_SIZE, 0);
+    send_res = rc_send(conn->sock, buf, RPT_CLIENT_ENTRY_DATA_SIZE, 0);
     if (send_res < 0)
       return (etcpal_error_t)send_res;
   }
@@ -214,7 +215,7 @@ etcpal_error_t rc_broker_send_client_connect(RCConnection* conn, const BrokerCli
       cur_ptr += 2;
       rdmnet_safe_strncpy((char*)cur_ptr, prot->protocol_string, EPT_PROTOCOL_STRING_PADDED_LENGTH);
       cur_ptr += EPT_PROTOCOL_STRING_PADDED_LENGTH;
-      send_res = etcpal_send(conn->sock, buf, EPT_PROTOCOL_ENTRY_SIZE, 0);
+      send_res = rc_send(conn->sock, buf, EPT_PROTOCOL_ENTRY_SIZE, 0);
       if (send_res < 0)
         return (etcpal_error_t)send_res;
     }
@@ -457,7 +458,7 @@ etcpal_error_t rc_broker_send_request_dynamic_uids(RCConnection*     conn,
     memcpy(&buf[6], cur_rid->data, ETCPAL_UUID_BYTES);
 
     // Send the segment
-    int send_res = etcpal_send(conn->sock, buf, DYNAMIC_UID_REQUEST_PAIR_SIZE, 0);
+    int send_res = rc_send(conn->sock, buf, DYNAMIC_UID_REQUEST_PAIR_SIZE, 0);
     if (send_res < 0)
       return (etcpal_error_t)send_res;
   }
@@ -573,7 +574,7 @@ etcpal_error_t rc_broker_send_fetch_uid_assignment_list(RCConnection*     conn,
     etcpal_pack_u32b(&buf[2], cur_uid->id);
 
     // Send the segment
-    int send_res = etcpal_send(conn->sock, buf, 6, 0);
+    int send_res = rc_send(conn->sock, buf, 6, 0);
     if (send_res < 0)
       return (etcpal_error_t)send_res;
   }
@@ -618,7 +619,7 @@ etcpal_error_t rc_broker_send_disconnect(RCConnection* conn, const BrokerDisconn
     return res;
 
   etcpal_pack_u16b(buf, (uint16_t)(data->disconnect_reason));
-  int send_res = etcpal_send(conn->sock, buf, 2, 0);
+  int send_res = rc_send(conn->sock, buf, 2, 0);
   if (send_res < 0)
     return (etcpal_error_t)send_res;
 

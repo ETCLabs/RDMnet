@@ -34,6 +34,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "etcpal_mock/common.h"
+#include "etcpal_mock/socket.h"
 #include "gtest/gtest.h"
 #include "rdmnet/core/message.h"
 #include "rdmnet/core/msg_buf.h"
@@ -58,10 +60,10 @@ const std::unordered_map<std::string, const std::vector<size_t>> kFixedChunkSize
 #endif
 
 // This test fixture is run on each file in the data file manifest; see tests/data
-class TestMsgBuf : public testing::Test, public testing::WithParamInterface<DataValidationPair>
+class TestMsgBufParsing : public testing::Test, public testing::WithParamInterface<DataValidationPair>
 {
 protected:
-  TestMsgBuf() { rc_msg_buf_init(&buf_); }
+  TestMsgBufParsing() { rc_msg_buf_init(&buf_); }
 
   std::vector<std::vector<uint8_t>> DivideIntoRandomChunks(const std::vector<uint8_t>& original, size_t num_chunks);
   std::vector<std::vector<uint8_t>> DivideIntoFixedChunks(const std::vector<uint8_t>& original,
@@ -73,8 +75,8 @@ protected:
 };
 
 // Divide a vector of uint8_t into num_chunks randomly-sized chunks.
-std::vector<std::vector<uint8_t>> TestMsgBuf::DivideIntoRandomChunks(const std::vector<uint8_t>& original,
-                                                                     size_t                      num_chunks)
+std::vector<std::vector<uint8_t>> TestMsgBufParsing::DivideIntoRandomChunks(const std::vector<uint8_t>& original,
+                                                                            size_t                      num_chunks)
 {
   assert(num_chunks > 0);
   assert(original.size() >= num_chunks);
@@ -110,8 +112,8 @@ std::vector<std::vector<uint8_t>> TestMsgBuf::DivideIntoRandomChunks(const std::
 
 // Divide a vector of uint8_t into fixed-size chunks specified by chunk_sizes. For debugging failed
 // tests only. Very little error checking.
-std::vector<std::vector<uint8_t>> TestMsgBuf::DivideIntoFixedChunks(const std::vector<uint8_t>& original,
-                                                                    const std::vector<size_t>&  chunk_sizes)
+std::vector<std::vector<uint8_t>> TestMsgBufParsing::DivideIntoFixedChunks(const std::vector<uint8_t>& original,
+                                                                           const std::vector<size_t>&  chunk_sizes)
 {
   std::vector<std::vector<uint8_t>> result;
   result.reserve(chunk_sizes.size());
@@ -128,7 +130,7 @@ std::vector<std::vector<uint8_t>> TestMsgBuf::DivideIntoFixedChunks(const std::v
 }
 
 // Test parsing the message as one full chunk.
-TEST_P(TestMsgBuf, ParseMessageInFull)
+TEST_P(TestMsgBufParsing, ParseMessageInFull)
 {
   SCOPED_TRACE(std::string{"While testing input file: "} + GetParam().first);
 
@@ -147,7 +149,7 @@ TEST_P(TestMsgBuf, ParseMessageInFull)
 // receiving each chunk at discrete times. This simulates the byte-stream nature of TCP. The number
 // of chunks is controlled by kNumChunksPerMessage, and this test case re-divides the message
 // randomly and iterates a number of times controlled by kNumRandomIterationsPerMessage.
-TEST_P(TestMsgBuf, ParseMessageInRandomChunks)
+TEST_P(TestMsgBufParsing, ParseMessageInRandomChunks)
 {
   SCOPED_TRACE(std::string{"While testing input file: "} + GetParam().first);
 
@@ -206,4 +208,82 @@ TEST_P(TestMsgBuf, ParseMessageInRandomChunks)
 #endif
 }
 
-INSTANTIATE_TEST_SUITE_P(TestValidInputData, TestMsgBuf, testing::ValuesIn(kRdmnetTestDataFiles));
+INSTANTIATE_TEST_SUITE_P(TestValidInputData, TestMsgBufParsing, testing::ValuesIn(kRdmnetTestDataFiles));
+
+class TestMsgBufReceiving : public testing::Test
+{
+protected:
+  static constexpr uint8_t     kTestRecvData[] = {0xD, 0xE, 0xA, 0xD, 0xB, 0xE, 0xE, 0xF};
+  static constexpr size_t      kTestRecvDataSize = sizeof(kTestRecvData);
+  static constexpr size_t      kRecvBufMaxSize = RC_MSG_BUF_SIZE;
+  static const etcpal_socket_t kTestSocket = static_cast<etcpal_socket_t>(0);
+
+  TestMsgBufReceiving()
+  {
+    etcpal_reset_all_fakes();
+    rc_msg_buf_init(&buf_);
+  }
+
+  RCMsgBuf buf_;
+};
+
+TEST_F(TestMsgBufReceiving, ReceivesOneByteAtATime)
+{
+  static size_t num_bytes_received = 0u;
+  etcpal_recv_fake.custom_fake = [](etcpal_socket_t, void* buffer, size_t, int) {
+    if (num_bytes_received == kTestRecvDataSize)
+      return static_cast<int>(kEtcPalErrWouldBlock);
+
+    reinterpret_cast<uint8_t*>(buffer)[0] = kTestRecvData[num_bytes_received];
+    ++num_bytes_received;
+    return 1;
+  };
+
+  EXPECT_EQ(rc_msg_buf_recv(&buf_, kTestSocket), kEtcPalErrOk);
+  EXPECT_EQ(memcmp(buf_.buf, kTestRecvData, kTestRecvDataSize), 0);
+  EXPECT_EQ(buf_.cur_data_size, kTestRecvDataSize);
+  EXPECT_EQ(etcpal_recv_fake.call_count, kTestRecvDataSize + 1u);
+}
+
+TEST_F(TestMsgBufReceiving, ReceivesTwoBytesAtATime)
+{
+  static size_t num_bytes_received = 0u;
+  etcpal_recv_fake.custom_fake = [](etcpal_socket_t, void* buffer, size_t, int) {
+    if (num_bytes_received == kTestRecvDataSize)
+      return static_cast<int>(kEtcPalErrWouldBlock);
+
+    reinterpret_cast<uint8_t*>(buffer)[0] = kTestRecvData[num_bytes_received];
+    reinterpret_cast<uint8_t*>(buffer)[1] = kTestRecvData[num_bytes_received + 1];
+    num_bytes_received += 2;
+    return 2;
+  };
+
+  EXPECT_EQ(rc_msg_buf_recv(&buf_, kTestSocket), kEtcPalErrOk);
+  EXPECT_EQ(memcmp(buf_.buf, kTestRecvData, kTestRecvDataSize), 0);
+  EXPECT_EQ(buf_.cur_data_size, kTestRecvDataSize);
+  EXPECT_EQ(etcpal_recv_fake.call_count, (kTestRecvDataSize / 2u) + 1u);
+}
+
+TEST_F(TestMsgBufReceiving, ReceivesZeroBytes)
+{
+  etcpal_recv_fake.return_val = kEtcPalErrWouldBlock;
+  EXPECT_EQ(rc_msg_buf_recv(&buf_, kTestSocket), kEtcPalErrWouldBlock);
+  EXPECT_EQ(etcpal_recv_fake.call_count, 1u);
+}
+
+TEST_F(TestMsgBufReceiving, ReceivesUntilBufferIsFull)
+{
+  etcpal_recv_fake.return_val = 1;
+  EXPECT_EQ(rc_msg_buf_recv(&buf_, kTestSocket), kEtcPalErrOk);
+  EXPECT_EQ(buf_.cur_data_size, kRecvBufMaxSize);
+  EXPECT_EQ(etcpal_recv_fake.call_count, kRecvBufMaxSize);
+}
+
+TEST_F(TestMsgBufReceiving, AvoidsReceiveIfBufferAlreadyFull)
+{
+  etcpal_recv_fake.return_val = 1;
+  buf_.cur_data_size = kRecvBufMaxSize;
+  EXPECT_EQ(rc_msg_buf_recv(&buf_, kTestSocket), kEtcPalErrWouldBlock);
+  EXPECT_EQ(buf_.cur_data_size, kRecvBufMaxSize);
+  EXPECT_EQ(etcpal_recv_fake.call_count, 0u);
+}

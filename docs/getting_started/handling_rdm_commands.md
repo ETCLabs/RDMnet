@@ -7,7 +7,7 @@ and an optional part of the functionality of RDMnet controllers.
 
 ## Interpreting RDM Commands
 
-RDM commands are delivered via a callback that looks like the below:
+RDM commands are delivered via a callback that looks like the following:
 
 <!-- CODE_BLOCK_START -->
 ```c
@@ -286,6 +286,57 @@ rdmnet::RdmResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::Device:
 my_device.SendRdmAck(saved_cmd, response_data, response_data_len);
 ```
 <!-- CODE_BLOCK_END -->
+
+#### Delaying Command Processing
+
+In the case where your application doesn't have the resources to process an RDM command, you can
+use the API-specific method to indicate that another notification should occur for the command at a
+later time:
+
+<!-- CODE_BLOCK_START -->
+```c
+void rdm_command_received(rdmnet_device_t handle, const RdmnetRdmCommand* cmd, RdmnetSyncRdmResponse* response,
+                          void* context)
+{
+  if(my_app.rdm_command_queue_has_room)
+  {
+    // Save command and add it to the queue...
+
+    // Ready for the next command, so just defer the response.
+    RDMNET_SYNC_DEFER_RDM_RESPONSE(response);
+  }
+  else
+  {
+    // There's no room to save the command, so retry this notification later.
+    RDMNET_SYNC_RETRY_LATER(response);
+  }
+}
+```
+<!-- CODE_BLOCK_MID -->
+```cpp
+rdmnet::RdmResponseAction MyRdmnetNotifyHander::HandleRdmCommand(rdmnet::Device::Handle handle,
+                                                                 const rdmnet::RdmCommand& cmd)
+{
+  if(my_app_.RdmCommandQueueHasRoom())
+  {
+    // Save command and add it to the queue...
+
+    // Ready for the next command, so just defer the response.
+    return rdmnet::RdmResponseAction::DeferResponse();
+  }
+
+  // There's no room to save the command, so retry this notification later.
+  return rdmnet::RdmResponseAction::RetryLater();
+}
+```
+<!-- CODE_BLOCK_END -->
+
+The application can do this consecutively for as long as needed, but keep in mind that this will
+delay the library's processing of future messages from the broker (ultimately delaying potential
+notifications), and may also narrow the TCP window of the connection with the broker, potentially
+resulting in backpressure.
+
+This is currently only supported for RDM commands received outside of LLRP.
 
 ## PIDs handled by the library
 

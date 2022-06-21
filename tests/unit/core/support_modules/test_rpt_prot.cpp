@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <memory>
 #include "etcpal_mock/socket.h"
+#include "rdmnet_mock/core/common.h"
 #include "gtest/gtest.h"
 #include "test_data_util.h"
 #include "load_test_data.h"
@@ -53,8 +54,8 @@ void TestSendStatus(const std::string& file_name)
   static std::vector<uint8_t> packed_msg;
   packed_msg.clear();
 
-  RESET_FAKE(etcpal_send);
-  etcpal_send_fake.custom_fake = [](etcpal_socket_t, const void* msg, size_t length, int) {
+  RESET_FAKE(rc_send);
+  rc_send_fake.custom_fake = [](etcpal_socket_t, const void* msg, size_t length, int) {
     const uint8_t* msg_bytes = reinterpret_cast<const uint8_t*>(msg);
     std::transform(msg_bytes, msg_bytes + length, std::back_inserter(packed_msg),
                    [](const uint8_t& byte) { return byte; });

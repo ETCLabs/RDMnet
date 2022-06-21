@@ -57,7 +57,7 @@ Of course, data can also be saved manually from the data members.
 
 <!-- CODE_BLOCK_START -->
 ```c
-void controller_rdm_response_callback(rdmnet_controller_t controller_handle, rdmnet_client_scope_t scope_handle,
+bool controller_rdm_response_callback(rdmnet_controller_t controller_handle, rdmnet_client_scope_t scope_handle,
                                       const RdmnetRdmResponse* resp, void* context)
 {
   // resp->rdm_data and resp->original_cmd_data are pointers to data buffers owned by the library.
@@ -72,11 +72,13 @@ void controller_rdm_response_callback(rdmnet_controller_t controller_handle, rdm
 
   // If you use this method, you must then free the saved_resp data when you're done with it:
   rdmnet_free_saved_rdm_response(&saved_resp);
+
+  return true;
 }
 ```
 <!-- CODE_BLOCK_MID -->
 ```cpp
-void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::Controller::Handle controller_handle,
+bool MyControllerNotifyHandler::HandleRdmResponse(rdmnet::Controller::Handle controller_handle,
                                                   rdmnet::ScopeHandle scope_handle,
                                                   const rdmnet::RdmResponse& resp)
 {
@@ -94,6 +96,8 @@ void MyControllerNotifyHandler::HandleRdmResponse(rdmnet::Controller::Handle con
 
   // The SavedRdmResponse class has allocating containers to hold the data - it will be cleaned up
   // when it goes out of scope.
+
+  return true;
 }
 ```
 <!-- CODE_BLOCK_END -->

@@ -53,6 +53,8 @@ DEFINE_FAKE_VALUE_FUNC(etcpal_error_t,
                        RCPolledSocketInfo*);
 DEFINE_FAKE_VOID_FUNC(rc_remove_polled_socket, etcpal_socket_t);
 
+DEFINE_FAKE_VALUE_FUNC(int, rc_send, etcpal_socket_t, const void*, size_t, int);
+
 const EtcPalLogParams* rdmnet_log_params = NULL;
 
 void rdmnet_mock_core_reset(void)
@@ -69,6 +71,8 @@ void rdmnet_mock_core_reset(void)
   RESET_FAKE(rc_add_polled_socket);
   RESET_FAKE(rc_modify_polled_socket);
   RESET_FAKE(rc_remove_polled_socket);
+
+  RESET_FAKE(rc_send);
 
 #if RDMNET_BUILDING_FULL_MOCK_CORE_LIB
   rc_broker_prot_reset_all_fakes();

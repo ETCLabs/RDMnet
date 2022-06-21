@@ -100,13 +100,15 @@ static void     cleanup_connection_resources(RCConnection* conn);
 static void destroy_connection(RCConnection* conn, const void* context);
 
 // Incoming message handling
-static void           socket_activity_callback(const EtcPalPollEvent* event, RCPolledSocketOpaqueData data);
-static void           handle_tcp_connection_established(RCConnection* conn);
-static void           handle_socket_error(RCConnection* conn, etcpal_error_t socket_err);
-static etcpal_error_t parse_single_message(RCConnection* conn);
-static void           handle_rdmnet_message(RCConnection* conn, RdmnetMessage* msg, RCConnEvent* event);
-static void           handle_rdmnet_connect_result(RCConnection* conn, RdmnetMessage* msg, RCConnEvent* event);
-static void           deliver_event_callback(RCConnection* conn, RCConnEvent* event);
+static void                socket_activity_callback(const EtcPalPollEvent* event, RCPolledSocketOpaqueData data);
+static void                receive_and_process_messages(RCConnection* conn);
+static rc_message_action_t process_message(RCConnection* conn);
+static void                handle_tcp_connection_established(RCConnection* conn);
+static void                handle_socket_error(RCConnection* conn, etcpal_error_t socket_err);
+static void                handle_message(RCConnection* conn, RdmnetMessage* msg, RCConnEvent* event);
+static void                handle_rdmnet_message(RCConnection* conn, RdmnetMessage* msg, RCConnEvent* event);
+static void                handle_rdmnet_connect_result(RCConnection* conn, RdmnetMessage* msg, RCConnEvent* event);
+static void                deliver_event_callback(RCConnection* conn, RCConnEvent* event, rc_message_action_t* action);
 
 /*************************** Function definitions ****************************/
 
@@ -156,6 +158,7 @@ etcpal_error_t rc_conn_register(RCConnection* conn)
   conn->sent_connected_notification = false;
 
   rc_msg_buf_init(&conn->recv_buf);
+  conn->retry_current_message = false;
 
   return kEtcPalErrOk;
 }
@@ -253,23 +256,6 @@ etcpal_error_t rc_conn_disconnect(RCConnection* conn, rdmnet_disconnect_reason_t
 }
 
 /*
- * Send data on an RDMnet connection. Thin wrapper over the underlying socket send function.
- * Blocking behavior of the send will be controlled by whether is_blocking was set to true when the
- * RCConnection structure was registered.
- */
-int rc_conn_send(RCConnection* conn, const uint8_t* data, size_t size)
-{
-  RDMNET_ASSERT(conn);
-  RDMNET_ASSERT(data);
-  RDMNET_ASSERT(size != 0);
-
-  if (conn->state != kRCConnStateHeartbeat)
-    return kEtcPalErrNotConn;
-  else
-    return etcpal_send(conn->sock, data, size, 0);
-}
-
-/*
  * Handle periodic RDMnet connection functionality.
  */
 void rc_conn_module_tick()
@@ -301,6 +287,10 @@ static void start_connection(RCConnection* conn, RCConnEvent* event)
 void process_connection_state(RCConnection* conn, const void* context)
 {
   ETCPAL_UNUSED_ARG(context);
+
+  // Some messages need to be retried on the next tick, which happens here.
+  receive_and_process_messages(conn);
+
   if (RC_CONN_LOCK(conn))
   {
     RCConnEvent event = RC_CONN_EVENT_INIT;
@@ -342,6 +332,7 @@ void process_connection_state(RCConnection* conn, const void* context)
       case kRCConnStateReconnectPending:
         cleanup_connection_resources(conn);
         rc_msg_buf_init(&conn->recv_buf);
+        conn->retry_current_message = false;
         if (conn->sent_connected_notification)
         {
           event.which = kRCConnEventDisconnected;
@@ -364,7 +355,9 @@ void process_connection_state(RCConnection* conn, const void* context)
     }
 
     RC_CONN_UNLOCK(conn);
-    deliver_event_callback(conn, &event);
+
+    rc_message_action_t action = kRCMessageActionProcessNext;
+    deliver_event_callback(conn, &event, &action);
   }
 }
 
@@ -446,9 +439,6 @@ void start_tcp_connection(RCConnection* conn, RCConnEvent* event)
 
 void start_rdmnet_connection(RCConnection* conn)
 {
-  if (conn->is_blocking)
-    etcpal_setblocking(conn->sock, true);
-
   // Update state
   conn->state = kRCConnStateRDMnetConnPending;
   rc_modify_polled_socket(conn->sock, ETCPAL_POLL_IN, &conn->poll_info);
@@ -461,6 +451,7 @@ void reset_connection(RCConnection* conn)
 {
   cleanup_connection_resources(conn);
   rc_msg_buf_init(&conn->recv_buf);
+  conn->retry_current_message = false;
   conn->state = kRCConnStateNotStarted;
 }
 
@@ -468,6 +459,7 @@ void retry_connection(RCConnection* conn)
 {
   cleanup_connection_resources(conn);
   rc_msg_buf_init(&conn->recv_buf);
+  conn->retry_current_message = false;
   conn->state = kRCConnStateConnectPending;
 }
 
@@ -489,6 +481,13 @@ void cleanup_connection_resources(RCConnection* conn)
     etcpal_close(conn->sock);
     conn->sock = ETCPAL_SOCKET_INVALID;
   }
+
+  if (conn->retry_current_message)
+  {
+    // In order to be available for a retry later, the current message's resources haven't been freed yet. The retry
+    // won't happen now, so free the resources.
+    rc_free_message_resources(&conn->recv_buf.msg);
+  }
 }
 
 void socket_activity_callback(const EtcPalPollEvent* event, RCPolledSocketOpaqueData data)
@@ -496,29 +495,68 @@ void socket_activity_callback(const EtcPalPollEvent* event, RCPolledSocketOpaque
   RCConnection* conn = (RCConnection*)data.ptr;
 
   if (event->events & ETCPAL_POLL_ERR)
-  {
     handle_socket_error(conn, event->err);
-  }
   else if (event->events & ETCPAL_POLL_IN)
+    receive_and_process_messages(conn);
+  else if (event->events & ETCPAL_POLL_CONNECT)
+    handle_tcp_connection_established(conn);
+}
+
+void receive_and_process_messages(RCConnection* conn)
+{
+  etcpal_error_t      recv_res = kEtcPalErrOk;
+  rc_message_action_t message_action = kRCMessageActionProcessNext;
+  bool                retry_current_message = conn->retry_current_message;
+
+  // This loop alternates between "receive as much data as possible" and "parse and process as much of the received data
+  // as possible". This is done in a loop in case the TCP queue has more data than can fit in our buffer in one receive.
+  do
   {
-    etcpal_error_t recv_res = rc_msg_buf_recv(&conn->recv_buf, event->socket);
-    if (recv_res == kEtcPalErrOk)
+    // No matter what, we should continue to fill our buffer if there's data to receive and there's room in the buffer.
+    recv_res = rc_msg_buf_recv(&conn->recv_buf, conn->sock);
+
+    if ((recv_res == kEtcPalErrOk) || retry_current_message)
     {
-      etcpal_error_t res = parse_single_message(conn);
-      while (res == kEtcPalErrOk)
+      // This next loop parses and processes as many messages from the buffer as possible, until all complete messages
+      // have been processed or we get RetryLater.
+      etcpal_error_t parse_res = kEtcPalErrOk;
+      do
       {
-        res = parse_single_message(conn);
-      }
+        // If we should retry the current message, don't parse because that would overwrite the message we're retrying.
+        if (retry_current_message)
+          retry_current_message = false;
+        else
+          parse_res = rc_msg_buf_parse_data(&conn->recv_buf);
+
+        if (parse_res == kEtcPalErrOk)
+          message_action = process_message(conn);
+      } while ((parse_res == kEtcPalErrOk) && (message_action == kRCMessageActionProcessNext));
     }
-    else
+    else if (recv_res != kEtcPalErrWouldBlock)
     {
       handle_socket_error(conn, recv_res);
     }
-  }
-  else if (event->events & ETCPAL_POLL_CONNECT)
+  } while ((recv_res == kEtcPalErrOk) && (message_action == kRCMessageActionProcessNext));
+
+  conn->retry_current_message = (message_action == kRCMessageActionRetryLater);
+}
+
+rc_message_action_t process_message(RCConnection* conn)
+{
+  rc_message_action_t action = kRCMessageActionProcessNext;
+
+  RCConnEvent event = RC_CONN_EVENT_INIT;
+  if (RC_CONN_LOCK(conn))
   {
-    handle_tcp_connection_established(conn);
+    if ((conn->state == kRCConnStateHeartbeat) || (conn->state == kRCConnStateRDMnetConnPending))
+      handle_message(conn, &conn->recv_buf.msg, &event);
+
+    RC_CONN_UNLOCK(conn);
   }
+
+  deliver_event_callback(conn, &event, &action);
+
+  return action;
 }
 
 void handle_tcp_connection_established(RCConnection* conn)
@@ -556,40 +594,18 @@ void handle_socket_error(RCConnection* conn, etcpal_error_t socket_err)
       reset_connection(conn);
     }
     RC_CONN_UNLOCK(conn);
-    deliver_event_callback(conn, &event);
+
+    rc_message_action_t action = kRCMessageActionProcessNext;
+    deliver_event_callback(conn, &event, &action);
   }
 }
 
-etcpal_error_t parse_single_message(RCConnection* conn)
+void handle_message(RCConnection* conn, RdmnetMessage* msg, RCConnEvent* event)
 {
-  etcpal_error_t res = kEtcPalErrSys;
-
-  if (RC_CONN_LOCK(conn))
-  {
-    RCConnEvent event = RC_CONN_EVENT_INIT;
-    if (conn->state == kRCConnStateHeartbeat || conn->state == kRCConnStateRDMnetConnPending)
-    {
-      res = rc_msg_buf_parse_data(&conn->recv_buf);
-      if (res == kEtcPalErrOk)
-      {
-        if (conn->state == kRCConnStateRDMnetConnPending)
-        {
-          handle_rdmnet_connect_result(conn, &conn->recv_buf.msg, &event);
-        }
-        else
-        {
-          handle_rdmnet_message(conn, &conn->recv_buf.msg, &event);
-        }
-      }
-    }
-    else
-    {
-      res = kEtcPalErrInvalid;
-    }
-    RC_CONN_UNLOCK(conn);
-    deliver_event_callback(conn, &event);
-  }
-  return res;
+  if (conn->state == kRCConnStateRDMnetConnPending)
+    handle_rdmnet_connect_result(conn, msg, event);
+  else
+    handle_rdmnet_message(conn, msg, event);
 }
 
 void handle_rdmnet_message(RCConnection* conn, RdmnetMessage* msg, RCConnEvent* event)
@@ -682,7 +698,7 @@ void handle_rdmnet_connect_result(RCConnection* conn, RdmnetMessage* msg, RCConn
   rc_free_message_resources(msg);
 }
 
-void deliver_event_callback(RCConnection* conn, RCConnEvent* event)
+void deliver_event_callback(RCConnection* conn, RCConnEvent* event, rc_message_action_t* action)
 {
   switch (event->which)
   {
@@ -700,8 +716,9 @@ void deliver_event_callback(RCConnection* conn, RCConnEvent* event)
       break;
     case kRCConnEventMsgReceived:
       if (conn->callbacks.message_received)
-        conn->callbacks.message_received(conn, event->arg.message);
-      rc_free_message_resources(event->arg.message);
+        *action = conn->callbacks.message_received(conn, event->arg.message);
+      if (*action == kRCMessageActionProcessNext)
+        rc_free_message_resources(event->arg.message);
       break;
     case kRCConnEventNone:
     default:
