@@ -120,7 +120,7 @@ deploy-docs:
 # Deploy versioned build
 include:
   - project: 'etc/common-tech/tools/gitlab-ci-util'
-    ref: v1.1.0
+    ref: v2.0.0
     file: '/ci-yml/deploy-versioned-build.yml'
 
 deploy-artifacts:
@@ -128,7 +128,7 @@ deploy-artifacts:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "web" && $NEW_BUILD_VERSION =~ /^\d+\.\d+\.\d+\.\d+$/ && $CI_COMMIT_REF_NAME == "main"'
   tags:
-    - ct-linux-docker
+    - etc-linux-docker
   image: etc-docker.artifactory.etcconnect.com/python:latest
   script:
     - pip config set global.index-url https://artifactory.etcconnect.com/artifactory/api/pypi/ETC-PyPI/simple
