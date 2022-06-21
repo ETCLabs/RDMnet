@@ -1,6 +1,6 @@
 # RDMnet
 
-*RDMnet* is an ANSI standard for entertainment technology by [ESTA](http://tsp.esta.org) for
+*RDMnet* is the ANSI standard for entertainment technology by [ESTA](http://tsp.esta.org) for
 transmission of [RDM](http://www.rdmprotocol.org) over IP networks. RDMnet leverages and extends
 the widely-adopted RDM message set and provides a standard method for configuring both IP-based
 entertainment equipment and interfaces between IP and DMX512 (commonly referred to as *gateways*).
