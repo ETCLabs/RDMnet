@@ -35,7 +35,7 @@
 
 #define MAX_RB_NODES (RDMNET_MAX_CONTROLLERS + RDMNET_MAX_DEVICES + RDMNET_MAX_LLRP_TARGETS + RDMNET_MAX_EPT_CLIENTS)
 
-#define DEVICE_INITIAL_ENDPOINTS_CAPACITY 4
+#define DEVICE_INITIAL_BUFFER_CAPACITY 4
 
 /***************************** Private macros ********************************/
 
@@ -438,35 +438,30 @@ RdmnetDevice* rdmnet_alloc_device_instance(void)
     return NULL;
 
   RdmnetDevice* new_device = ALLOC_RDMNET_DEVICE();
-  if (!new_device)
-    return NULL;
-
-  memset(new_device, 0, sizeof(RdmnetDevice));
-
-  if (!etcpal_mutex_create(&new_device->lock))
+  if (new_device)
   {
+    memset(new_device, 0, sizeof(RdmnetDevice));
+
+    if (etcpal_mutex_create(&new_device->lock))
+    {
+      if (DEVICE_INIT_ENDPOINTS(new_device, DEVICE_INITIAL_BUFFER_CAPACITY))
+      {
+        if (DEVICE_INIT_RESPONDERS(new_device, DEVICE_INITIAL_BUFFER_CAPACITY))
+        {
+          new_device->id.handle = new_handle;
+          new_device->id.type = kRdmnetStructTypeDevice;
+
+          if (etcpal_rbtree_insert(&handles, new_device) == kEtcPalErrOk)
+            return new_device;
+        }
+        DEVICE_DEINIT_ENDPOINTS(new_device);
+      }
+      etcpal_mutex_destroy(&new_device->lock);
+    }
     FREE_RDMNET_DEVICE(new_device);
-    return NULL;
   }
 
-  if (!DEVICE_INIT_ENDPOINTS(new_device, DEVICE_INITIAL_ENDPOINTS_CAPACITY))
-  {
-    etcpal_mutex_destroy(&new_device->lock);
-    FREE_RDMNET_DEVICE(new_device);
-    return NULL;
-  }
-
-  new_device->id.handle = new_handle;
-  new_device->id.type = kRdmnetStructTypeDevice;
-  etcpal_error_t res = etcpal_rbtree_insert(&handles, new_device);
-  if (res != kEtcPalErrOk)
-  {
-    DEVICE_DEINIT_ENDPOINTS(new_device);
-    etcpal_mutex_destroy(&new_device->lock);
-    FREE_RDMNET_DEVICE(new_device);
-    return NULL;
-  }
-  return new_device;
+  return NULL;
 }
 
 LlrpManager* rdmnet_alloc_llrp_manager_instance(void)
@@ -622,9 +617,10 @@ void free_device_resources(RdmnetDevice* device)
   etcpal_mutex_destroy(&device->lock);
   for (DeviceEndpoint* endpoint = device->endpoints; endpoint < device->endpoints + device->num_endpoints; ++endpoint)
   {
-    DEVICE_ENDPOINT_DEINIT_RESPONDERS(endpoint);
+    DEVICE_ENDPOINT_DEINIT_RESPONDER_REFS(endpoint);
   }
   DEVICE_DEINIT_ENDPOINTS(device);
+  DEVICE_DEINIT_RESPONDERS(device);
   FREE_RDMNET_DEVICE(device);
 }
 
