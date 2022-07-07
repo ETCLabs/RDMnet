@@ -221,7 +221,7 @@ TEST_F(TestDeviceApi, AddValidVirtualEndpointsWorks)
             kEtcPalErrOk);
 }
 
-TEST_F(TestDeviceApi, MaxResponderLimitWorks)
+TEST_F(TestDeviceApi, MaxResponderLimitWorksWithSingleEndpoint)
 {
   static constexpr RdmnetVirtualEndpointConfig kTestConfig = {1, nullptr, 0, nullptr, 0};
 
@@ -242,4 +242,48 @@ TEST_F(TestDeviceApi, MaxResponderLimitWorks)
   EXPECT_EQ(rdmnet_device_add_static_responders(default_device_handle_, kTestConfig.endpoint_id, &uid, 1u),
             kEtcPalErrNoMem);
 #endif
+
+  // The endpoint should still clean up successfully
+  EXPECT_EQ(rdmnet_device_remove_endpoint(default_device_handle_, kTestConfig.endpoint_id), kEtcPalErrOk);
+}
+
+TEST_F(TestDeviceApi, CombinedEndpointAndResponderLimitsWork)
+{
+  static constexpr int kTestNumEndpoints = RDMNET_MAX_ENDPOINTS_PER_DEVICE;
+  static constexpr int kTestNumRespondersPerEndpoint = RDMNET_MAX_RESPONDERS_PER_DEVICE / kTestNumEndpoints;
+
+  CreateDeviceWithDefaultConfig();
+
+  std::vector<uint16_t> endpoints;
+
+  uint16_t                    endpoint = 1u;
+  RdmUid                      uid = {0x6574, 0x1};
+  RdmnetVirtualEndpointConfig endpt_config = {endpoint, nullptr, 0, nullptr, 0};
+  for (int i = 0u; i < kTestNumEndpoints; ++i)
+  {
+    ASSERT_EQ(rdmnet_device_add_virtual_endpoint(default_device_handle_, &endpt_config), kEtcPalErrOk);
+    endpoints.push_back(endpoint);
+
+    for (int j = 0; j < kTestNumRespondersPerEndpoint; ++j)
+    {
+      EXPECT_EQ(rdmnet_device_add_static_responders(default_device_handle_, endpoint, &uid, 1u), kEtcPalErrOk)
+          << "i = " << i << ", j = " << j;
+      ++uid.id;
+    }
+
+    ++endpoint;
+    endpt_config.endpoint_id = endpoint;
+  }
+
+#if !RDMNET_DYNAMIC_MEM
+  // Previous endpoint should be out of room
+  EXPECT_EQ(rdmnet_device_add_static_responders(default_device_handle_, endpoint - 1u, &uid, 1u), kEtcPalErrNoMem);
+
+  // Shouldn't be able to create a new endpoint either
+  endpt_config.endpoint_id = endpoint;
+  EXPECT_EQ(rdmnet_device_add_virtual_endpoint(default_device_handle_, &endpt_config), kEtcPalErrNoMem);
+#endif
+
+  // The endpoints should still clean up successfully
+  EXPECT_EQ(rdmnet_device_remove_endpoints(default_device_handle_, endpoints.data(), endpoints.size()), kEtcPalErrOk);
 }
