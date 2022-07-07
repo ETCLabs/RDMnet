@@ -220,3 +220,26 @@ TEST_F(TestDeviceApi, AddValidVirtualEndpointsWorks)
                                                 kTestVirtualEndpointConfigs.size()),
             kEtcPalErrOk);
 }
+
+TEST_F(TestDeviceApi, MaxResponderLimitWorks)
+{
+  static constexpr RdmnetVirtualEndpointConfig kTestConfig = {1, nullptr, 0, nullptr, 0};
+
+  CreateDeviceWithDefaultConfig();
+
+  EXPECT_EQ(rdmnet_device_add_virtual_endpoint(default_device_handle_, &kTestConfig), kEtcPalErrOk);
+
+  RdmUid uid = {0x6574, 0x1};
+  for (int i = 0; i < RDMNET_MAX_RESPONDERS_PER_DEVICE; ++i)
+  {
+    EXPECT_EQ(rdmnet_device_add_static_responders(default_device_handle_, kTestConfig.endpoint_id, &uid, 1u),
+              kEtcPalErrOk)
+        << "i = " << i;
+    ++uid.id;
+  }
+
+#if !RDMNET_DYNAMIC_MEM
+  EXPECT_EQ(rdmnet_device_add_static_responders(default_device_handle_, kTestConfig.endpoint_id, &uid, 1u),
+            kEtcPalErrNoMem);
+#endif
+}

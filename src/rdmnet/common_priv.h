@@ -156,11 +156,11 @@ typedef struct RdmnetDevice
 #define DEVICE_INIT_RESPONDERS(device_ptr, initial_capacity) \
   RC_INIT_BUF(device_ptr, EndpointResponder, responders, initial_capacity, RDMNET_MAX_RESPONDERS_PER_DEVICE)
 #define DEVICE_DEINIT_RESPONDERS(device_ptr) RC_DEINIT_BUF(device_ptr, responders)
-#define DEVICE_CHECK_RESPONDERS_CAPACITY(device_ptr, endpoint_ptr, num_additional)                   \
-  RC_CHECK_BUF_CAPACITY(device_ptr, EndpointResponder, responders, RDMNET_MAX_RESPONDERS_PER_DEVICE, \
-                        num_additional) &&                                                           \
-      RC_CHECK_BUF_CAPACITY(endpoint_ptr, EndpointResponderRef, responder_refs,                      \
-                            RDMNET_MAX_RESPONDERS_PER_DEVICE_ENDPOINT, num_additional)
+#define DEVICE_CHECK_RESPONDERS_CAPACITY(device_ptr, endpoint_ptr, num_additional)                    \
+  (RC_CHECK_BUF_CAPACITY(device_ptr, EndpointResponder, responders, RDMNET_MAX_RESPONDERS_PER_DEVICE, \
+                         num_additional) &&                                                           \
+   RC_CHECK_BUF_CAPACITY(endpoint_ptr, EndpointResponderRef, responder_refs,                          \
+                         RDMNET_MAX_RESPONDERS_PER_DEVICE_ENDPOINT, num_additional))
 
 /******************************************************************************
  * LLRP Manager
