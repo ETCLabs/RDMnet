@@ -695,7 +695,11 @@ int responder_compare(const EtcPalRbTree* self, const void* value_a, const void*
 
   // Only compare UIDs when both RIDs are NULL.
   if ((res == 0) && ETCPAL_UUID_IS_NULL(&a->rid))
-    res = (a->uid.id > b->uid.id) - (a->uid.manu < b->uid.manu);
+  {
+    res = (a->uid.manu > b->uid.manu) - (a->uid.manu < b->uid.manu);
+    if ((res == 0))
+      res = (a->uid.id > b->uid.id) - (a->uid.id < b->uid.id);
+  }
 
   return res;
 }
