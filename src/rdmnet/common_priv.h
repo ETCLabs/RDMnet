@@ -203,21 +203,28 @@ void* rdmnet_find_struct_instance(int handle, rdmnet_struct_type_t type);
 void  rdmnet_unregister_struct_instance(void* instance);
 void  rdmnet_free_struct_instance(void* instance);
 
-bool           rdmnet_init_endpoint(DeviceEndpoint* endpoint);
-etcpal_error_t rdmnet_deinit_endpoint(DeviceEndpoint* endpoint);
+void rdmnet_init_endpoints(DeviceEndpoint* endpoints, size_t num_endpoints);
+void rdmnet_deinit_endpoints(DeviceEndpoint* endpoints, size_t num_endpoints);
 
-bool rdmnet_check_responder_capacity(RdmnetDevice* device, DeviceEndpoint* endpoint, size_t num_additional);
-
-etcpal_error_t rdmnet_add_static_responder(DeviceEndpoint* endpoint, const RdmUid* uid);
-etcpal_error_t rdmnet_add_dynamic_responder(DeviceEndpoint* endpoint, uint16_t manufacturer_id, const EtcPalUuid* rid);
-etcpal_error_t rdmnet_add_physical_responder(DeviceEndpoint*                        endpoint,
-                                             const RdmnetPhysicalEndpointResponder* responder_config);
+etcpal_error_t rdmnet_add_static_responders(RdmnetDevice*   device,
+                                            DeviceEndpoint* endpoint,
+                                            const RdmUid*   uids,
+                                            size_t          num_uids);
+etcpal_error_t rdmnet_add_dynamic_responders(RdmnetDevice*     device,
+                                             DeviceEndpoint*   endpoint,
+                                             uint16_t          manufacturer_id,
+                                             const EtcPalUuid* rids,
+                                             size_t            num_rids);
+etcpal_error_t rdmnet_add_physical_responders(RdmnetDevice*                          device,
+                                              DeviceEndpoint*                        endpoint,
+                                              const RdmnetPhysicalEndpointResponder* responders,
+                                              size_t                                 num_responders);
 
 EndpointResponder* rdmnet_find_responder_by_rid(DeviceEndpoint* endpoint, const EtcPalUuid* rid);
 EndpointResponder* rdmnet_find_responder_by_uid(DeviceEndpoint* endpoint, const RdmUid* uid);
 
-void rdmnet_remove_responder_by_rid(DeviceEndpoint* endpoint, const EtcPalUuid* rid);
-void rdmnet_remove_responder_by_uid(DeviceEndpoint* endpoint, const RdmUid* uid);
+void rdmnet_remove_responders_by_rid(DeviceEndpoint* endpoint, const EtcPalUuid* rids, size_t num_rids);
+void rdmnet_remove_responders_by_uid(DeviceEndpoint* endpoint, const RdmUid* uids, size_t num_uids);
 
 #ifdef __cplusplus
 }
