@@ -881,9 +881,6 @@ etcpal_error_t add_physical_responder(DeviceEndpoint* endpoint, const RdmnetPhys
 #if !RDMNET_DYNAMIC_MEM
 bool check_static_responder_limits(RdmnetDevice* device, DeviceEndpoint* endpoint, size_t num_additional)
 {
-  if ((etcpal_rbtree_size(&endpoint->responders) + num_additional) > RDMNET_MAX_RESPONDERS_PER_DEVICE_ENDPOINT)
-    return false;
-
   size_t combined_num_responders = 0;
   for (DeviceEndpoint* endpt = device->endpoints; endpt < device->endpoints + device->num_endpoints; ++endpt)
     combined_num_responders += etcpal_rbtree_size(&endpt->responders);

@@ -1195,10 +1195,6 @@ etcpal_error_t validate_physical_endpoints(const RdmnetPhysicalEndpointConfig* e
     {
       if (!ENDPOINT_ID_VALID(endpoint->endpoint_id))
         return kEtcPalErrInvalid;
-#if !RDMNET_DYNAMIC_MEM
-      if (endpoint->num_responders > RDMNET_MAX_RESPONDERS_PER_DEVICE_ENDPOINT)
-        return kEtcPalErrNoMem;
-#endif
     }
   }
   return kEtcPalErrOk;
@@ -1217,13 +1213,6 @@ etcpal_error_t validate_virtual_endpoints(const RdmnetVirtualEndpointConfig* end
     {
       if (!ENDPOINT_ID_VALID(endpoint->endpoint_id))
         return kEtcPalErrInvalid;
-#if !RDMNET_DYNAMIC_MEM
-      if (endpoint->num_static_responders + endpoint->num_dynamic_responders >
-          RDMNET_MAX_RESPONDERS_PER_DEVICE_ENDPOINT)
-      {
-        return kEtcPalErrNoMem;
-      }
-#endif
     }
   }
   return kEtcPalErrOk;
