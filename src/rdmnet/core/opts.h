@@ -183,8 +183,12 @@
 /**
  * @brief The maximum number of responders that can be added to each device endpoint.
  *
- * This can be set to be lower than #RDMNET_MAX_RESPONDERS_PER_DEVICE to save some memory for certain buffers. Otherwise
- * this just defaults to the maximum for the whole device.
+ * Currently the only buffer size this influences is that of an internal RDM response buffer used for storing endpoint
+ * responder list responses. Setting this to a lower value could potentially reduce the size of that buffer.
+ *
+ * This limit is enforced in addition to the device-wide limit (#RDMNET_MAX_RESPONDERS_PER_DEVICE), so it doesn't
+ * guarantee that responders will be able to be added to every endpoint up to the specified maximum, only that they will
+ * not be able to exceed it. By default this is set to the device-wide limit.
  *
  * Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
  */
