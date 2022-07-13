@@ -174,6 +174,12 @@
 /**
  * @brief The maximum number of responders that can be added to each device instance.
  *
+ * This directly determines the size of the memory pools that store responder data.
+ *
+ * This limit is enforced in addition to the per-endpoint limit (#RDMNET_MAX_RESPONDERS_PER_DEVICE_ENDPOINT), which
+ * defaults to the device-wide limit set here. If the per-endpoint limit ever configured to be lower, it may get hit
+ * before the device-wide limit. Otherwise the device-wide limit is the only limit enforced.
+ *
  * Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
  */
 #ifndef RDMNET_MAX_RESPONDERS_PER_DEVICE
