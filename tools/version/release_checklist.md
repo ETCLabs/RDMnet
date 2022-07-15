@@ -28,4 +28,4 @@
 - [ ] Update 3-digit versions to next planned version in all relevant places:
   - CMakeLists.txt
   - Doxyfile
-- [ ] Add the previous release to `docs.multiVersion` in `etclibtool_config.json`.
+- [ ] Add the previous release to `docs.multiVersion` in `etc_project.json`.

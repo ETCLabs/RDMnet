@@ -27,7 +27,6 @@ windows-build:
         VCVARSALL_PLATFORM: amd64
         ARTIFACT_TYPE: x64
   script:
-    - python tools\ci\update_artifact_version.py
     - mkdir build
     - cd build
     - cmake -G "$env:CMAKE_GENERATOR" "-DQTDIR=$env:QT_DIRECTORY" "-DCMAKE_INSTALL_PREFIX=$env:CMAKE_INSTALL" $env:GLOBAL_CMAKE_OPTIONS.Split(" ") -DRDMNET_BUILD_GUI_EXAMPLES=ON ..
@@ -50,7 +49,6 @@ macos-build:
   variables:
     QT_DIRECTORY: /Users/Shared/Qt/5.9.7/clang_64
   script:
-    - python3 tools/ci/update_artifact_version.py
     - mkdir build
     - cd build
     - cmake -G "Unix Makefiles" -DQTDIR=${QT_DIRECTORY} -DCMAKE_INSTALL_PREFIX=install ${GLOBAL_CMAKE_OPTIONS} -DRDMNET_BUILD_GUI_EXAMPLES=ON ..
@@ -99,7 +97,8 @@ docs-test:
   variables:
     GIT_DEPTH: 0
   script:
-    - etclibtool docs -c tools/ci/etclibtool_config.json . 1.9.1
+    - pip install --upgrade etcdevtool
+    - etcdevtool docs . 1.9.1
 
 deploy-docs:
   stage: build
@@ -114,6 +113,7 @@ deploy-docs:
     GH_REPO_REF: github.com/ETCLabs/RDMnetDocs.git
     GH_REPO_TOKEN: $SVC_ETCLABS_REPO_TOKEN
   script:
+    - pip install --upgrade etcdevtool
     - chmod +x tools/ci/publish_docs.sh
     - tools/ci/publish_docs.sh
 
@@ -131,7 +131,5 @@ deploy-artifacts:
     - etc-linux-docker
   image: etc-docker.artifactory.etcconnect.com/python:latest
   script:
-    - pip config set global.index-url https://artifactory.etcconnect.com/artifactory/api/pypi/ETC-PyPI/simple
-    - pip config set global.trusted-host artifactory.etcconnect.com
-    - pip install requests etclibtool PyGithub
+    - pip install requests PyGithub
     - python3 tools/ci/deploy_to_github_release.py ${NEW_BUILD_VERSION}

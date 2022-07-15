@@ -14,17 +14,91 @@
   "devToolConfig": {
     "version": {
       "fileTemplates": {
-        "tools/templates/version.h.in": "include/rdmnet/version.h"
+        "tools/ci/templates/version.h.in": "include/rdmnet/version.h",
+        "tools/ci/templates/vars.wxi.in": "tools/install/windows/vars.wxi"
       },
       "jira": {
         "project": "RDMNET"
       }
     },
     "docs": {
+      "extraStylesheets": [
+        "docs/rdmnet_dox_styles.css"
+      ],
+      "input": {
+        "unprocessed": [
+          "include/rdmnet",
+          "include/rdmnet/cpp",
+          "include/rdmnet/cpp/message_types",
+          "src/rdmnet",
+          "src/rdmnet/broker/broker_api.cpp",
+          "src/rdmnet/disc/common.c",
+          "src/rdmnet/core/opts.h",
+          "docs/mainpage.md"
+        ],
+        "processed": ["docs/getting_started", "docs/how_rdmnet_works"]
+      },
+      "multiVersion": {
+        "enabled": true,
+        "htmlRoot": "/RDMnetDocs",
+        "versions": [
+          {
+            "name": "0.1.0",
+            "ref": "v0.1.0.4",
+            "doxyfileDir": "doc",
+            "input": {
+              "unprocessed": [
+                "src",
+                "doc/mainpage.md",
+                "doc/how_it_works.md",
+                "doc/discovery.md",
+                "doc/devices_and_gateways.md",
+                "doc/roles_and_addressing.md"
+              ]
+            }
+          },
+          {
+            "name": "0.2.0",
+            "ref": "v0.2.0",
+            "input": {
+              "unprocessed": [
+                "src",
+                "include",
+                "docs/mainpage.md",
+                "docs/how_it_works.md",
+                "docs/discovery.md",
+                "docs/devices_and_gateways.md",
+                "docs/roles_and_addressing.md"
+              ]
+            }
+          },
+          {
+            "name": "0.3.0",
+            "ref": "v0.3.0",
+            "input": {
+              "unprocessed": [
+                "include/rdmnet",
+                "include/rdmnet/cpp",
+                "include/rdmnet/cpp/message_types",
+                "src/rdmnet",
+                "src/rdmnet/broker/broker_api.cpp",
+                "src/rdmnet/disc/common.c",
+                "src/rdmnet/core/opts.h",
+                "docs/mainpage.md"
+              ],
+              "processed": ["docs/getting_started", "docs/how_rdmnet_works"]
+            }
+          }
+        ]
+      },
       "tags": [
         {
           "name": "EtcPal",
           "site": "https://etclabs.github.io/EtcPalDocs"
+        },
+        {
+          "name": "RDM",
+          "site": "https://etclabs.github.io/RDMDocs"
         },
         {
           "webPath": "https://upload.cppreference.com/mwiki/images/f/f8/cppreference-doxygen-web.tag.xml",
