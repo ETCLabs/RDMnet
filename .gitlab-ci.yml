@@ -16,12 +16,12 @@ windows-build:
     - ct-windows
   parallel:
     matrix:
-      - CMAKE_GENERATOR: Visual Studio 15 2017
+      - CMAKE_GENERATOR: Visual Studio 15 2019
         QT_DIRECTORY: C:\Qt_os\5.12.11\msvc2017
         CMAKE_INSTALL: install_x86
         VCVARSALL_PLATFORM: x86
         ARTIFACT_TYPE: x86
-      - CMAKE_GENERATOR: Visual Studio 15 2017 Win64
+      - CMAKE_GENERATOR: Visual Studio 15 2019 Win64
         QT_DIRECTORY: C:\Qt_os\5.12.11\msvc2017_64
         CMAKE_INSTALL: install_x64
         VCVARSALL_PLATFORM: amd64
