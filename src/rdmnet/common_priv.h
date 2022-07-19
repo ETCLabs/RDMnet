@@ -119,15 +119,11 @@ typedef struct DeviceEndpoint
   uint16_t               id;
   device_endpoint_type_t type;
   uint32_t               responder_list_change_number;
-  RC_DECLARE_BUF(EndpointResponder, responders, RDMNET_MAX_RESPONDERS_PER_DEVICE_ENDPOINT);
+  EtcPalRbTree           responders;
 } DeviceEndpoint;
 
-#define DEVICE_ENDPOINT_INIT_RESPONDERS(endpoint_ptr, initial_capacity) \
-  RC_INIT_BUF(endpoint_ptr, EndpointResponder, responders, initial_capacity, RDMNET_MAX_RESPONDERS_PER_DEVICE_ENDPOINT)
-#define DEVICE_ENDPOINT_DEINIT_RESPONDERS(endpoint_ptr) RC_DEINIT_BUF(endpoint_ptr, responders)
-#define DEVICE_ENDPOINT_CHECK_RESPONDERS_CAPACITY(endpoint_ptr, num_additional)                                 \
-  RC_CHECK_BUF_CAPACITY(endpoint_ptr, EndpointResponder, responders, RDMNET_MAX_RESPONDERS_PER_DEVICE_ENDPOINT, \
-                        num_additional)
+#define DEVICE_ENDPOINT_INIT_RESPONDER_REFS(endpoint_ptr, initial_capacity) TODO_REMOVE
+#define DEVICE_ENDPOINT_DEINIT_RESPONDER_REFS(endpoint_ptr) TODO_REMOVE
 
 typedef struct RdmnetDevice
 {
@@ -151,6 +147,10 @@ typedef struct RdmnetDevice
 #define DEVICE_DEINIT_ENDPOINTS(device_ptr) RC_DEINIT_BUF(device_ptr, endpoints)
 #define DEVICE_CHECK_ENDPOINTS_CAPACITY(device_ptr, num_additional) \
   RC_CHECK_BUF_CAPACITY(device_ptr, DeviceEndpoint, endpoints, RDMNET_MAX_ENDPOINTS_PER_DEVICE, num_additional)
+
+#define DEVICE_INIT_RESPONDERS(device_ptr, initial_capacity) TODO_REMOVE
+#define DEVICE_DEINIT_RESPONDERS(device_ptr) TODO_REMOVE
+#define DEVICE_CHECK_RESPONDERS_CAPACITY(device_ptr, endpoint_ptr, num_additional) TODO_REMOVE
 
 /******************************************************************************
  * LLRP Manager
@@ -202,6 +202,29 @@ RdmnetEptClient*  rdmnet_alloc_ept_client_instance(void);
 void* rdmnet_find_struct_instance(int handle, rdmnet_struct_type_t type);
 void  rdmnet_unregister_struct_instance(void* instance);
 void  rdmnet_free_struct_instance(void* instance);
+
+void rdmnet_init_endpoints(DeviceEndpoint* endpoints, size_t num_endpoints);
+void rdmnet_deinit_endpoints(DeviceEndpoint* endpoints, size_t num_endpoints);
+
+etcpal_error_t rdmnet_add_static_responders(RdmnetDevice*   device,
+                                            DeviceEndpoint* endpoint,
+                                            const RdmUid*   uids,
+                                            size_t          num_uids);
+etcpal_error_t rdmnet_add_dynamic_responders(RdmnetDevice*     device,
+                                             DeviceEndpoint*   endpoint,
+                                             uint16_t          manufacturer_id,
+                                             const EtcPalUuid* rids,
+                                             size_t            num_rids);
+etcpal_error_t rdmnet_add_physical_responders(RdmnetDevice*                          device,
+                                              DeviceEndpoint*                        endpoint,
+                                              const RdmnetPhysicalEndpointResponder* responders,
+                                              size_t                                 num_responders);
+
+EndpointResponder* rdmnet_find_responder_by_rid(DeviceEndpoint* endpoint, const EtcPalUuid* rid);
+EndpointResponder* rdmnet_find_responder_by_uid(DeviceEndpoint* endpoint, const RdmUid* uid);
+
+void rdmnet_remove_responders_by_rid(DeviceEndpoint* endpoint, const EtcPalUuid* rids, size_t num_rids);
+void rdmnet_remove_responders_by_uid(DeviceEndpoint* endpoint, const RdmUid* uids, size_t num_uids);
 
 #ifdef __cplusplus
 }

@@ -172,12 +172,12 @@
 #endif
 
 /**
- * @brief The maximum number of responders that can be added to each device endpoint.
+ * @brief The maximum number of responders that can be added to each device instance.
  *
  * Meaningful only if #RDMNET_DYNAMIC_MEM is defined to 0.
  */
-#ifndef RDMNET_MAX_RESPONDERS_PER_DEVICE_ENDPOINT
-#define RDMNET_MAX_RESPONDERS_PER_DEVICE_ENDPOINT 1
+#ifndef RDMNET_MAX_RESPONDERS_PER_DEVICE
+#define RDMNET_MAX_RESPONDERS_PER_DEVICE 1
 #endif
 
 /**

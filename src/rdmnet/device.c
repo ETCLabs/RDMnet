@@ -30,6 +30,12 @@
 #include "rdmnet/core/common.h"
 #include "rdmnet/core/opts.h"
 
+#if RDMNET_DYNAMIC_MEM
+#include <stdlib.h>
+#else
+#include "etcpal/mempool.h"
+#endif
+
 /**************************** Private constants ******************************/
 
 #define INITIAL_ENDPOINT_RESPONDER_CAPACITY 8
@@ -64,9 +70,7 @@ static bool remove_endpoints(RdmnetDevice* device, const uint16_t* endpoint_ids,
 static void notify_endpoint_list_change(RdmnetDevice* device);
 static void notify_endpoint_responder_list_change(RdmnetDevice* device, DeviceEndpoint* endpoint);
 
-static DeviceEndpoint*    find_endpoint(RdmnetDevice* device, uint16_t endpoint_id);
-static EndpointResponder* find_dynamic_responder_by_rid(DeviceEndpoint* endpoint, const EtcPalUuid* rid);
-static EndpointResponder* find_static_responder(DeviceEndpoint* endpoint, const RdmUid* uid);
+static DeviceEndpoint* find_endpoint(RdmnetDevice* device, uint16_t endpoint_id);
 
 static void client_connected(RCClient*                        client,
                              rdmnet_client_scope_t            scope_handle,
@@ -745,23 +749,10 @@ etcpal_error_t rdmnet_device_add_static_responders(rdmnet_device_t handle,
     res = kEtcPalErrInvalid;
 
   if (res == kEtcPalErrOk)
-  {
-    if (!DEVICE_ENDPOINT_CHECK_RESPONDERS_CAPACITY(endpoint, num_responders))
-      res = kEtcPalErrNoMem;
-  }
+    res = rdmnet_add_static_responders(device, endpoint, responder_uids, num_responders);
 
   if (res == kEtcPalErrOk)
-  {
-    for (size_t i = 0; i < num_responders; ++i)
-    {
-      EndpointResponder* responder = &endpoint->responders[endpoint->num_responders + i];
-      responder->rid = kEtcPalNullUuid;
-      responder->uid = responder_uids[i];
-    }
-
     notify_endpoint_responder_list_change(device, endpoint);
-    endpoint->num_responders += num_responders;
-  }
 
   release_device(device);
   return res;
@@ -809,26 +800,13 @@ etcpal_error_t rdmnet_device_add_dynamic_responders(rdmnet_device_t   handle,
     res = kEtcPalErrInvalid;
 
   if (res == kEtcPalErrOk)
-  {
-    if (!DEVICE_ENDPOINT_CHECK_RESPONDERS_CAPACITY(endpoint, num_responders))
-      return kEtcPalErrNoMem;
-  }
+    res = rdmnet_add_dynamic_responders(device, endpoint, device->manufacturer_id, responder_ids, num_responders);
 
   if (res == kEtcPalErrOk)
   {
-    for (size_t i = 0; i < num_responders; ++i)
-    {
-      EndpointResponder* responder = &endpoint->responders[endpoint->num_responders + i];
-      responder->rid = responder_ids[i];
-      RDMNET_INIT_DYNAMIC_UID_REQUEST(&responder->uid, device->manufacturer_id);
-    }
-
     if (device->connected_to_broker)
       res = rc_client_request_dynamic_uids(&device->client, device->scope_handle, responder_ids, num_responders);
   }
-
-  if (res == kEtcPalErrOk)
-    endpoint->num_responders += num_responders;
 
   release_device(device);
   return res;
@@ -873,27 +851,10 @@ etcpal_error_t rdmnet_device_add_physical_responders(rdmnet_device_t            
     res = kEtcPalErrInvalid;
 
   if (res == kEtcPalErrOk)
-  {
-    if (!DEVICE_ENDPOINT_CHECK_RESPONDERS_CAPACITY(endpoint, num_responders))
-      res = kEtcPalErrNoMem;
-  }
+    res = rdmnet_add_physical_responders(device, endpoint, responders, num_responders);
 
   if (res == kEtcPalErrOk)
-  {
-    for (size_t i = 0; i < num_responders; ++i)
-    {
-      EndpointResponder*                     responder = &endpoint->responders[endpoint->num_responders + i];
-      const RdmnetPhysicalEndpointResponder* responder_config = &responders[i];
-
-      responder->rid = kEtcPalNullUuid;
-      responder->uid = responder_config->uid;
-      responder->binding_uid = responder_config->binding_uid;
-      responder->control_field = responder_config->control_field;
-    }
-
     notify_endpoint_responder_list_change(device, endpoint);
-    endpoint->num_responders += num_responders;
-  }
 
   release_device(device);
   return res;
@@ -941,7 +902,7 @@ etcpal_error_t rdmnet_device_remove_static_responders(rdmnet_device_t handle,
     // Make sure all of the responders exist
     for (const RdmUid* uid = responder_uids; uid < responder_uids + num_responders; ++uid)
     {
-      if (!find_static_responder(endpoint, uid))
+      if (!rdmnet_find_responder_by_uid(endpoint, uid))
       {
         res = kEtcPalErrNotFound;
         break;
@@ -951,17 +912,7 @@ etcpal_error_t rdmnet_device_remove_static_responders(rdmnet_device_t handle,
 
   if (res == kEtcPalErrOk)
   {
-    for (const RdmUid* uid = responder_uids; uid < responder_uids + num_responders; ++uid)
-    {
-      EndpointResponder* responder = find_static_responder(endpoint, uid);
-      size_t             responder_index = responder - endpoint->responders;
-      if (responder_index != endpoint->num_responders - 1)
-      {
-        memmove(responder, responder + 1,
-                (endpoint->num_responders - (responder_index + 1)) * sizeof(EndpointResponder));
-      }
-      --endpoint->num_responders;
-    }
+    rdmnet_remove_responders_by_uid(endpoint, responder_uids, num_responders);
 
     if (device->connected_to_broker)
     {
@@ -1023,7 +974,7 @@ etcpal_error_t rdmnet_device_remove_dynamic_responders(rdmnet_device_t   handle,
     // Make sure all of the responders exist
     for (const EtcPalUuid* rid = responder_ids; rid < responder_ids + num_responders; ++rid)
     {
-      if (!find_dynamic_responder_by_rid(endpoint, rid))
+      if (!rdmnet_find_responder_by_rid(endpoint, rid))
       {
         res = kEtcPalErrNotFound;
         break;
@@ -1033,18 +984,7 @@ etcpal_error_t rdmnet_device_remove_dynamic_responders(rdmnet_device_t   handle,
 
   if (res == kEtcPalErrOk)
   {
-    for (const EtcPalUuid* rid = responder_ids; rid < responder_ids + num_responders; ++rid)
-    {
-      EndpointResponder* responder = find_dynamic_responder_by_rid(endpoint, rid);
-      size_t             responder_index = responder - endpoint->responders;
-      if (responder_index != endpoint->num_responders - 1)
-      {
-        memmove(responder, responder + 1,
-                (endpoint->num_responders - (responder_index + 1)) * sizeof(EndpointResponder));
-      }
-      --endpoint->num_responders;
-    }
-
+    rdmnet_remove_responders_by_rid(endpoint, responder_ids, num_responders);
     notify_endpoint_responder_list_change(device, endpoint);
   }
 
@@ -1094,7 +1034,7 @@ etcpal_error_t rdmnet_device_remove_physical_responders(rdmnet_device_t handle,
     // Make sure all of the responders exist
     for (const RdmUid* uid = responder_uids; uid < responder_uids + num_responders; ++uid)
     {
-      if (!find_static_responder(endpoint, uid))
+      if (!rdmnet_find_responder_by_uid(endpoint, uid))
       {
         res = kEtcPalErrNotFound;
         break;
@@ -1104,17 +1044,7 @@ etcpal_error_t rdmnet_device_remove_physical_responders(rdmnet_device_t handle,
 
   if (res == kEtcPalErrOk)
   {
-    for (const RdmUid* uid = responder_uids; uid < responder_uids + num_responders; ++uid)
-    {
-      EndpointResponder* responder = find_static_responder(endpoint, uid);
-      size_t             responder_index = responder - endpoint->responders;
-      if (responder_index != endpoint->num_responders - 1)
-      {
-        memmove(responder, responder + 1,
-                (endpoint->num_responders - (responder_index + 1)) * sizeof(EndpointResponder));
-      }
-      --endpoint->num_responders;
-    }
+    rdmnet_remove_responders_by_uid(endpoint, responder_uids, num_responders);
 
     if (device->connected_to_broker)
     {
@@ -1265,10 +1195,6 @@ etcpal_error_t validate_physical_endpoints(const RdmnetPhysicalEndpointConfig* e
     {
       if (!ENDPOINT_ID_VALID(endpoint->endpoint_id))
         return kEtcPalErrInvalid;
-#if !RDMNET_DYNAMIC_MEM
-      if (endpoint->num_responders > RDMNET_MAX_RESPONDERS_PER_DEVICE_ENDPOINT)
-        return kEtcPalErrNoMem;
-#endif
     }
   }
   return kEtcPalErrOk;
@@ -1287,13 +1213,6 @@ etcpal_error_t validate_virtual_endpoints(const RdmnetVirtualEndpointConfig* end
     {
       if (!ENDPOINT_ID_VALID(endpoint->endpoint_id))
         return kEtcPalErrInvalid;
-#if !RDMNET_DYNAMIC_MEM
-      if (endpoint->num_static_responders + endpoint->num_dynamic_responders >
-          RDMNET_MAX_RESPONDERS_PER_DEVICE_ENDPOINT)
-      {
-        return kEtcPalErrNoMem;
-      }
-#endif
     }
   }
   return kEtcPalErrOk;
@@ -1400,52 +1319,40 @@ bool add_virtual_endpoints(RdmnetDevice* device, const RdmnetVirtualEndpointConf
   if (!DEVICE_CHECK_ENDPOINTS_CAPACITY(device, num_endpoints))
     return false;
 
+  rdmnet_init_endpoints(&device->endpoints[device->num_endpoints], num_endpoints);
+
   bool res = true;
   for (size_t i = 0; i < num_endpoints; ++i)
   {
     const RdmnetVirtualEndpointConfig* endpoint_config = &endpoints[i];
     DeviceEndpoint*                    new_endpoint = &device->endpoints[device->num_endpoints + i];
-    if (!DEVICE_ENDPOINT_INIT_RESPONDERS(new_endpoint, INITIAL_ENDPOINT_RESPONDER_CAPACITY))
+
+    if (res)
     {
-      res = false;
+      res = rdmnet_add_dynamic_responders(device, new_endpoint, device->manufacturer_id,
+                                          endpoint_config->dynamic_responders,
+                                          endpoint_config->num_dynamic_responders) == kEtcPalErrOk;
+    }
+
+    if (res)
+    {
+      res = rdmnet_add_static_responders(device, new_endpoint, endpoint_config->static_responders,
+                                         endpoint_config->num_static_responders) == kEtcPalErrOk;
+      // If this part failed, the dynamic responders will be cleaned up in the call to rdmnet_deinit_endpoints
+    }
+
+    if (!res)
       break;
-    }
-
-    for (size_t j = 0; j < endpoint_config->num_dynamic_responders; ++j)
-    {
-      EndpointResponder* responder = &new_endpoint->responders[j];
-      responder->rid = endpoint_config->dynamic_responders[j];
-      RDMNET_INIT_DYNAMIC_UID_REQUEST(&responder->uid, device->manufacturer_id);
-    }
-
-    size_t responder_index = endpoint_config->num_dynamic_responders;
-
-    for (size_t j = 0; j < endpoint_config->num_static_responders; ++j)
-    {
-      EndpointResponder* responder = &new_endpoint->responders[responder_index++];
-      responder->rid = kEtcPalNullUuid;
-      responder->uid = endpoint_config->static_responders[j];
-    }
 
     new_endpoint->id = endpoint_config->endpoint_id;
     new_endpoint->type = kDeviceEndpointTypeVirtual;
     new_endpoint->responder_list_change_number = 0;
-    new_endpoint->num_responders = endpoint_config->num_dynamic_responders + endpoint_config->num_static_responders;
   }
 
   if (res)
-  {
     device->num_endpoints += num_endpoints;
-  }
-  if (!res)
-  {
-    // Cleanup on failure
-    for (DeviceEndpoint* endpoint = &device->endpoints[device->num_endpoints];
-         endpoint < &device->endpoints[device->num_endpoints] + num_endpoints; ++endpoint)
-    {
-      DEVICE_ENDPOINT_DEINIT_RESPONDERS(endpoint);
-    }
-  }
+  else  // Cleanup on failure
+    rdmnet_deinit_endpoints(&device->endpoints[device->num_endpoints], num_endpoints);
 
   return res;
 }
@@ -1455,47 +1362,29 @@ bool add_physical_endpoints(RdmnetDevice* device, const RdmnetPhysicalEndpointCo
   if (!DEVICE_CHECK_ENDPOINTS_CAPACITY(device, num_endpoints))
     return false;
 
+  rdmnet_init_endpoints(&device->endpoints[device->num_endpoints], num_endpoints);
+
   bool res = true;
   for (size_t i = 0; i < num_endpoints; ++i)
   {
     const RdmnetPhysicalEndpointConfig* endpoint_config = &endpoints[i];
     DeviceEndpoint*                     new_endpoint = &device->endpoints[device->num_endpoints + i];
-    if (!DEVICE_ENDPOINT_INIT_RESPONDERS(new_endpoint, INITIAL_ENDPOINT_RESPONDER_CAPACITY))
-    {
-      res = false;
+
+    res = rdmnet_add_physical_responders(device, new_endpoint, endpoint_config->responders,
+                                         endpoint_config->num_responders) == kEtcPalErrOk;
+
+    if (!res)
       break;
-    }
-
-    for (size_t j = 0; j < endpoint_config->num_responders; ++j)
-    {
-      EndpointResponder*                     responder = &new_endpoint->responders[j];
-      const RdmnetPhysicalEndpointResponder* responder_config = &endpoint_config->responders[j];
-
-      responder->rid = kEtcPalNullUuid;
-      responder->uid = responder_config->uid;
-      responder->control_field = responder_config->control_field;
-      responder->binding_uid = responder_config->binding_uid;
-    }
 
     new_endpoint->id = endpoint_config->endpoint_id;
     new_endpoint->type = kDeviceEndpointTypePhysical;
     new_endpoint->responder_list_change_number = 0;
-    new_endpoint->num_responders = endpoint_config->num_responders;
   }
 
   if (res)
-  {
     device->num_endpoints += num_endpoints;
-  }
-  if (!res)
-  {
-    // Cleanup on failure
-    for (DeviceEndpoint* endpoint = &device->endpoints[device->num_endpoints];
-         endpoint < &device->endpoints[device->num_endpoints] + num_endpoints; ++endpoint)
-    {
-      DEVICE_ENDPOINT_DEINIT_RESPONDERS(endpoint);
-    }
-  }
+  else  // Cleanup on failure
+    rdmnet_deinit_endpoints(&device->endpoints[device->num_endpoints], num_endpoints);
 
   return res;
 }
@@ -1512,7 +1401,9 @@ bool remove_endpoints(RdmnetDevice* device, const uint16_t* endpoint_ids, size_t
   for (const uint16_t* endpoint_id = endpoint_ids; endpoint_id < endpoint_ids + num_endpoints; ++endpoint_id)
   {
     DeviceEndpoint* endpoint = find_endpoint(device, *endpoint_id);
-    DEVICE_ENDPOINT_DEINIT_RESPONDERS(endpoint);
+
+    rdmnet_deinit_endpoints(endpoint, 1);
+
     size_t endpoint_index = endpoint - device->endpoints;
     if (endpoint_index != device->num_endpoints - 1)
     {
@@ -1562,28 +1453,6 @@ DeviceEndpoint* find_endpoint(RdmnetDevice* device, uint16_t endpoint_id)
   return NULL;
 }
 
-EndpointResponder* find_dynamic_responder_by_rid(DeviceEndpoint* endpoint, const EtcPalUuid* rid)
-{
-  for (EndpointResponder* responder = endpoint->responders; responder < endpoint->responders + endpoint->num_responders;
-       ++responder)
-  {
-    if (ETCPAL_UUID_CMP(&responder->rid, rid) == 0)
-      return responder;
-  }
-  return NULL;
-}
-
-EndpointResponder* find_static_responder(DeviceEndpoint* endpoint, const RdmUid* uid)
-{
-  for (EndpointResponder* responder = endpoint->responders; responder < endpoint->responders + endpoint->num_responders;
-       ++responder)
-  {
-    if (ETCPAL_UUID_IS_NULL(&responder->rid) && RDM_UID_EQUAL(&responder->uid, uid))
-      return responder;
-  }
-  return NULL;
-}
-
 void client_connected(RCClient* client, rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo* info)
 {
   ETCPAL_UNUSED_ARG(scope_handle);
@@ -1625,8 +1494,10 @@ void client_disconnected(RCClient* client, rdmnet_client_scope_t scope_handle, c
     // Reset all dynamic UIDs on dynamic responders.
     for (DeviceEndpoint* endpoint = device->endpoints; endpoint < device->endpoints + device->num_endpoints; ++endpoint)
     {
-      for (EndpointResponder* responder = endpoint->responders;
-           responder < endpoint->responders + endpoint->num_responders; ++responder)
+      EtcPalRbIter iter;
+      etcpal_rbiter_init(&iter);
+      for (EndpointResponder* responder = etcpal_rbiter_first(&iter, &endpoint->responders); responder;
+           responder = etcpal_rbiter_next(&iter))
       {
         if (!ETCPAL_UUID_IS_NULL(&responder->rid))
           RDMNET_INIT_DYNAMIC_UID_REQUEST(&responder->uid, device->manufacturer_id);
@@ -1738,7 +1609,7 @@ bool handle_assigned_dynamic_uids(RdmnetDevice* device, const RdmnetDynamicUidAs
       {
         if (mapping->status_code == kRdmnetDynamicUidStatusOk)
         {
-          EndpointResponder* responder = find_dynamic_responder_by_rid(endpoint, &mapping->rid);
+          EndpointResponder* responder = rdmnet_find_responder_by_rid(endpoint, &mapping->rid);
           if (responder)
           {
             responder->uid = mapping->uid;
@@ -1876,7 +1747,7 @@ void handle_endpoint_responders(RdmnetDevice*           device,
     return;
   }
 
-  size_t   pd_len = (endpoint->num_responders * 6) + 6;
+  size_t   pd_len = (etcpal_rbtree_size(&endpoint->responders) * 6) + 6;
   uint8_t* buf = rc_client_get_internal_response_buf(pd_len);
   if (!buf)
   {
@@ -1890,8 +1761,10 @@ void handle_endpoint_responders(RdmnetDevice*           device,
   etcpal_pack_u32b(cur_ptr, endpoint->responder_list_change_number);
   cur_ptr += 4;
 
-  for (EndpointResponder* responder = endpoint->responders; responder < endpoint->responders + endpoint->num_responders;
-       ++responder)
+  EtcPalRbIter iter;
+  etcpal_rbiter_init(&iter);
+  for (EndpointResponder* responder = etcpal_rbiter_first(&iter, &endpoint->responders); responder;
+       responder = etcpal_rbiter_next(&iter))
   {
     if (RDMNET_UID_IS_DYNAMIC_UID_REQUEST(&responder->uid))
     {
@@ -1982,7 +1855,8 @@ void handle_binding_control_fields(RdmnetDevice*           device,
   RdmUid responder_uid;
   responder_uid.manu = etcpal_unpack_u16b(&data[2]);
   responder_uid.id = etcpal_unpack_u32b(&data[4]);
-  EndpointResponder* responder = find_static_responder(endpoint, &responder_uid);
+
+  EndpointResponder* responder = rdmnet_find_responder_by_uid(endpoint, &responder_uid);
   if (!responder)
   {
     RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRUnknownUid);
