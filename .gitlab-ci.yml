@@ -16,12 +16,12 @@ windows-build:
     - ct-windows
   parallel:
     matrix:
-      - CMAKE_GENERATOR: Visual Studio 15 2019
+      - CMAKE_GENERATOR_OPTIONS: -G "Visual Studio 16 2019" -A Win32
         QT_DIRECTORY: C:\Qt_os\5.12.11\msvc2017
         CMAKE_INSTALL: install_x86
         VCVARSALL_PLATFORM: x86
         ARTIFACT_TYPE: x86
-      - CMAKE_GENERATOR: Visual Studio 15 2019 Win64
+      - CMAKE_GENERATOR_OPTIONS: -G "Visual Studio 16 2019" -A x64
         QT_DIRECTORY: C:\Qt_os\5.12.11\msvc2017_64
         CMAKE_INSTALL: install_x64
         VCVARSALL_PLATFORM: amd64
@@ -30,7 +30,7 @@ windows-build:
     - python tools\ci\update_artifact_version.py
     - mkdir build
     - cd build
-    - cmake -G "$env:CMAKE_GENERATOR" "-DQTDIR=$env:QT_DIRECTORY" "-DCMAKE_INSTALL_PREFIX=$env:CMAKE_INSTALL" $env:GLOBAL_CMAKE_OPTIONS.Split(" ") -DRDMNET_BUILD_GUI_EXAMPLES=ON ..
+    - cmake $env:CMAKE_GENERATOR_OPTIONS.Split(" ") "-DQTDIR=$env:QT_DIRECTORY" "-DCMAKE_INSTALL_PREFIX=$env:CMAKE_INSTALL" $env:GLOBAL_CMAKE_OPTIONS.Split(" ") -DRDMNET_BUILD_GUI_EXAMPLES=ON ..
     - cmake --build . --config Release -j
     - ctest -C Release --output-on-failure
     - cmake -P cmake_install.cmake
