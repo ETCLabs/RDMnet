@@ -14,8 +14,6 @@ else()
 endif()
 
 if(PROJECT_SOURCE_DIR_LC STREQUAL CMAKE_SOURCE_DIR_LC)
-  set(BUILDING_RDMNET_STANDALONE TRUE)
-
   if (MSVC)
     add_compile_options(/W4 /permissive-)
   elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
