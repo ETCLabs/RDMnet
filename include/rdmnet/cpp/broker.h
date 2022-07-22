@@ -165,9 +165,9 @@ public:
     /// The RDMnet scope on which this broker should operate.
     std::string scope{E133_DEFAULT_SCOPE};
     /// Whether the broker should allow the scope to be changed via RDM commands.
-    bool allow_rdm_scope_change{true};
+    // bool allow_rdm_scope_change{false};  // (TODO: Not yet implemented)
     /// Whether the broker should allow being disabled and enabled via the BROKER_STATUS RDM command.
-    bool allow_rdm_disable{true};
+    // bool allow_rdm_disable{false};  // (TODO: Not yet implemented)
 
     /// The port on which this broker should listen for incoming connections (and advertise via DNS).
     /// 0 means use an ephemeral port.
