@@ -245,6 +245,19 @@ etcpal::Expected<etcpal_socket_t> BrokerCore::StartListening(const etcpal::IpAdd
     }
   }
 
+  // SO_REUSEADDR is used to help avoid "could not bind, address already in use" errors when restarting the Broker.
+  const int sockopt_val = 1;
+  res = etcpal_setsockopt(listen_sock, ETCPAL_SOL_SOCKET, ETCPAL_SO_REUSEADDR, &sockopt_val, sizeof sockopt_val);
+  if (!res)
+  {
+    etcpal_close(listen_sock);
+    BROKER_LOG_ERR("Broker: Failed to set REUSEADDR socket option on listen socket: %s.", res.ToCString());
+    return res.code();
+  }
+
+  // We also set SO_REUSEPORT but don't check the return, because it is not applicable on all platforms.
+  etcpal_setsockopt(listen_sock, ETCPAL_SOL_SOCKET, ETCPAL_SO_REUSEPORT, &sockopt_val, sizeof sockopt_val);
+
   res = etcpal_bind(listen_sock, &addr.get());
   if (!res)
   {
