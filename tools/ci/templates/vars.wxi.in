@@ -5,8 +5,8 @@
   <?include GeneratedFiles\vcredist.wxi ?>
   <?include GeneratedFiles\mdnsmerge.wxi ?>
 
-  <?define VcRedistMergeModulex64 = "$(var.VcRedistInstallLoc)\MergeModules\Microsoft_VC141_CRT_x64.msm" ?>
-  <?define VcRedistMergeModulex86 = "$(var.VcRedistInstallLoc)\MergeModules\Microsoft_VC141_CRT_x86.msm" ?>
+  <?define VcRedistMergeModulex64 = "$(var.VcRedistInstallLoc)\MergeModules\Microsoft_VC142_CRT_x64.msm" ?>
+  <?define VcRedistMergeModulex86 = "$(var.VcRedistInstallLoc)\MergeModules\Microsoft_VC142_CRT_x86.msm" ?>
 
   <?if $(var.Platform) = x64 ?>
     <?define ProgramFilesFolder = "ProgramFiles64Folder" ?>
