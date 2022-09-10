@@ -106,15 +106,10 @@ SendCommandGUI::SendCommandGUI(QWidget* parent, RDMnetNetworkItem* item, RDMnetN
 
   // Parameter
   m_parameterId = new QComboBox(this);
+  m_parameterId->setEditable(true);
+  m_parameterId->setInsertPolicy(QComboBox::NoInsert);
   addRdmCommands(m_parameterId);
   ui.sendCommandTable->setCellWidget(ROW_PARAMETER, 1, m_parameterId);
-
-  // Subdevice
-  m_subDevice = new QSpinBox(this);
-  m_subDevice->setMinimum(0);
-  m_subDevice->setMaximum(512);
-  m_subDevice->setValue(0);
-  ui.sendCommandTable->setCellWidget(ROW_SUBDEVICE, 1, m_subDevice);
 }
 
 void SendCommandGUI::resizeEvent(QResizeEvent* event)
@@ -296,12 +291,41 @@ void SendCommandGUI::setupRawDataEditor(int datatype, int row)
 
 void SendCommandGUI::removeDataRow()
 {
+  int rowToRemove = ui.sendCommandTable->rowCount() - 1;
+  if (rowToRemove < ROW_COUNT)
+    return;
+
+  ui.sendCommandTable->setRowCount(rowToRemove);
+  delete m_customPropCombo.takeLast();
+  delete m_customPropEdits.take(rowToRemove);
 }
 
 void SendCommandGUI::sendCommand()
 {
-  model_->sendArbitraryCommmand(item_, static_cast<uint8_t>(m_commandType->currentData().toInt()),
-                                static_cast<uint16_t>(m_parameterId->currentData().toInt()), composeCommand());
+  uint16_t pid = static_cast<uint16_t>(m_parameterId->currentData().toInt());
+  if (m_parameterId->currentText() != m_parameterId->itemText(m_parameterId->currentIndex()))
+  {
+    bool ok;
+    int  value;
+
+    QString string = m_parameterId->currentText();
+    if (string.startsWith("0x", Qt::CaseInsensitive))
+      string = string.remove(0, 2);
+    value = string.toInt(&ok, 16);
+    if (value < 0 || value > std::numeric_limits<uint16_t>::max())
+      ok = false;
+
+    if (!ok)
+    {
+      QMessageBox::warning(
+          this, tr("Invalid PID Value"),
+          tr("%1 is not a valid PID - enter a value in hex, e.g. 0x4100").arg(m_parameterId->currentText()));
+
+      return;
+    }
+  }
+  model_->sendArbitraryCommmand(item_, static_cast<uint8_t>(m_commandType->currentData().toInt()), pid,
+                                composeCommand());
   ui.rxTextEdit->clear();
 }
 
@@ -338,7 +362,7 @@ QByteArray SendCommandGUI::composeCommand()
 
   for (int i = 0; i < m_customPropCombo.count(); i++)
   {
-    int row = i + 3;
+    int row = i + ROW_COUNT;
     int type = m_customPropCombo[i]->currentIndex();
     switch (type)
     {

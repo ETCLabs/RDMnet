@@ -76,11 +76,6 @@
            <string>New Row</string>
           </property>
          </row>
-         <row>
-          <property name="text">
-           <string>New Row</string>
-          </property>
-         </row>
          <column>
           <property name="text">
            <string>New Column</string>
@@ -99,11 +94,6 @@
          <item row="1" column="0">
           <property name="text">
            <string>Parameter ID</string>
-          </property>
-         </item>
-         <item row="2" column="0">
-          <property name="text">
-           <string>Subdevice</string>
           </property>
          </item>
         </widget>

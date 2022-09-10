@@ -10,6 +10,7 @@ BEGIN_INCLUDE_QT_HEADERS()
 #include <QComboBox>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMessageBox>
 #include "ui_SendCommandGUI.h"
 END_INCLUDE_QT_HEADERS()
 
@@ -49,7 +50,7 @@ private:
   {
     ROW_COMMAND,
     ROW_PARAMETER,
-    ROW_SUBDEVICE
+    ROW_COUNT
   };
 
   void       addRdmCommands(QComboBox* combo);
