@@ -37,7 +37,8 @@ enum SupportedDeviceFeature
 {
   kNoSupport = 0x0,
   kResetDevice = 0x1,
-  kIdentifyDevice = 0x2
+  kIdentifyDevice = 0x2,
+  kArbitraryCommand = 0x3
 };
 
 inline SupportedDeviceFeature operator|(SupportedDeviceFeature a, SupportedDeviceFeature b)

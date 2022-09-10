@@ -328,6 +328,8 @@ void RDMnetNetworkModel::processAddRdmnetClients(BrokerItem*                    
         InitializeRptClientProperties(newRDMnetClientItem, rpt_entry.uid, rpt_entry.type);
         newRDMnetClientItem->enableFeature(kIdentifyDevice);
         emit featureSupportChanged(newRDMnetClientItem, kIdentifyDevice);
+        newRDMnetClientItem->enableFeature(kArbitraryCommand);
+        emit featureSupportChanged(newRDMnetClientItem, kArbitraryCommand);
       }
 
       newRDMnetClientItem->enableChildrenSearch();
@@ -472,6 +474,9 @@ void RDMnetNetworkModel::processNewResponderList(EndpointItem* treeEndpointItem,
 
       newResponderItem->enableFeature(kIdentifyDevice);
       emit featureSupportChanged(newResponderItem, kIdentifyDevice);
+
+      newResponderItem->enableFeature(kArbitraryCommand);
+      emit featureSupportChanged(newResponderItem, kArbitraryCommand);
     }
   }
 
@@ -1302,7 +1307,7 @@ bool RDMnetNetworkModel::HandleRdmResponse(rdmnet::Controller::Handle /* control
   {
     arbitrary_command_pending_ = false;
     QByteArray responseData(reinterpret_cast<const char*>(resp.data()), resp.data_len());
-    emit       arbitraryCommandComplete(resp.response_type(), responseData);
+    emit       arbitraryCommandComplete(static_cast<uint8_t>(resp.response_type()), responseData);
   }
 
   switch (resp.response_type())
@@ -2545,13 +2550,13 @@ void RDMnetNetworkModel::sendArbitraryCommmand(RDMnetNetworkItem* device, uint8_
     {
       case E120_GET_COMMAND:
         SendGetCommand(GetNearestParentItemOfType<BrokerItem>(device), device->uid(), pid,
-                       reinterpret_cast<const uint8_t*>(data.constData()), data.length());
+                       reinterpret_cast<const uint8_t*>(data.constData()), static_cast<uint8_t>(data.length()));
         arbitrary_command_pending_ = true;
         break;
 
       case E120_SET_COMMAND:
         SendSetCommand(GetNearestParentItemOfType<BrokerItem>(device), device->uid(), pid,
-                       reinterpret_cast<const uint8_t*>(data.constData()), data.length());
+                       reinterpret_cast<const uint8_t*>(data.constData()), static_cast<uint8_t>(data.length()));
         arbitrary_command_pending_ = true;
       default:
         break;

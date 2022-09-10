@@ -176,6 +176,7 @@ void RDMnetControllerGUI::networkTreeViewSelectionChanged(const QItemSelection& 
         currently_selected_network_item_ = netItem;
         ui.resetDeviceButton->setEnabled(netItem->supportsFeature(kResetDevice));
         ui.identifyDeviceButton->setEnabled(netItem->supportsFeature(kIdentifyDevice));
+        ui.sendCommandsButton->setEnabled(netItem->supportsFeature(kArbitraryCommand));
 
         identifyChanged(netItem, netItem->identifying());
       }
@@ -330,6 +331,11 @@ void RDMnetControllerGUI::processFeatureSupportChange(const RDMnetNetworkItem* i
       if (feature & kIdentifyDevice)
       {
         ui.identifyDeviceButton->setEnabled(item->supportsFeature(kIdentifyDevice) && item->isEnabled());
+      }
+
+      if (feature & kArbitraryCommand)
+      {
+        ui.sendCommandsButton->setEnabled(item->supportsFeature(kArbitraryCommand) && item->isEnabled());
       }
     }
   }
