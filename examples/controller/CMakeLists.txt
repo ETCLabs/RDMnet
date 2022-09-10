@@ -80,11 +80,16 @@ add_executable(${CONTROLLER_TARGET} ${CONTROLLER_EXE_PROPERTIES}
   src/SearchingStatusItem.h
   src/SimpleNetworkProxyModel.cpp
   src/SimpleNetworkProxyModel.h
+  src/SendCommandGUI.cpp
+  src/SendCommandGUI.h
+  src/HexLineEdit.cpp
+  src/HexLineEdit.h
 
   ui/AboutGUI.ui
   ui/BrokerStaticAddGUI.ui
   ui/LogWindowGUI.ui
   ui/RDMnetControllerGUI.ui
+  ui/SendCommandGUI.ui
 
   res/RDMnetControllerGUI.qrc
 )

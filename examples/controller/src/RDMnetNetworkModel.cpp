@@ -739,7 +739,8 @@ void RDMnetNetworkModel::activateFeature(RDMnetNetworkItem* device, SupportedDev
   }
 }
 
-RDMnetNetworkModel::RDMnetNetworkModel(rdmnet::Controller& library, etcpal::Logger& log) : log_(&log), rdmnet_(library)
+RDMnetNetworkModel::RDMnetNetworkModel(rdmnet::Controller& library, etcpal::Logger& log)
+    : log_(&log), rdmnet_(library), arbitrary_command_pending_(false)
 {
 }
 
@@ -1296,6 +1297,13 @@ bool RDMnetNetworkModel::HandleRdmResponse(rdmnet::Controller::Handle /* control
 {
   // Since we are compiling with RDMNET_DYNAMIC_MEM, we should never get partial responses.
   assert(!resp.more_coming());
+
+  if (arbitrary_command_pending_)
+  {
+    arbitrary_command_pending_ = false;
+    QByteArray responseData(reinterpret_cast<const char*>(resp.data()), resp.data_len());
+    emit       arbitraryCommandComplete(resp.response_type(), responseData);
+  }
 
   switch (resp.response_type())
   {
@@ -2526,5 +2534,27 @@ void RDMnetNetworkModel::RemoveScopeSlotItemsInRange(RDMnetNetworkItem*         
   {
     emit removePropertiesInRange(parent, properties, E133_COMPONENT_SCOPE, RDMnetNetworkItem::ScopeSlotRole, firstSlot,
                                  lastSlot);
+  }
+}
+
+void RDMnetNetworkModel::sendArbitraryCommmand(RDMnetNetworkItem* device, uint8_t getset, uint16_t pid, QByteArray data)
+{
+  if (device)
+  {
+    switch (getset)
+    {
+      case E120_GET_COMMAND:
+        SendGetCommand(GetNearestParentItemOfType<BrokerItem>(device), device->uid(), pid,
+                       reinterpret_cast<const uint8_t*>(data.constData()), data.length());
+        arbitrary_command_pending_ = true;
+        break;
+
+      case E120_SET_COMMAND:
+        SendSetCommand(GetNearestParentItemOfType<BrokerItem>(device), device->uid(), pid,
+                       reinterpret_cast<const uint8_t*>(data.constData()), data.length());
+        arbitrary_command_pending_ = true;
+      default:
+        break;
+    }
   }
 }

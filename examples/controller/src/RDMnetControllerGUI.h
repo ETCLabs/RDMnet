@@ -58,6 +58,7 @@ public slots:
   void openBrokerStaticAddDialog();
   void openLogWindowDialog();
   void openAboutDialog();
+  void openSendCommandDialog();
   void processBrokerItemTextUpdate(const class BrokerItem* item);
   void processFeatureSupportChange(const class RDMnetNetworkItem* item, SupportedDeviceFeature feature);
   void expandNewItem(const QModelIndex& index, int type);

@@ -292,6 +292,13 @@
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="QPushButton" name="sendCommandsButton">
+             <property name="text">
+              <string>Send Commands</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
         </item>

@@ -31,6 +31,7 @@ END_INCLUDE_QT_HEADERS()
 #include "PropertyEditorsDelegate.h"
 #include "PropertyItem.h"
 #include "LogWindowGUI.h"
+#include "SendCommandGUI.h"
 #include "AboutGUI.h"
 #include "etcpal/version.h"
 #include "rdmnet/version.h"
@@ -118,6 +119,8 @@ RDMnetControllerGUI* RDMnetControllerGUI::MakeRDMnetControllerGUI()
   connect(gui->ui.actionLogWindow, &QAction::triggered, gui, &RDMnetControllerGUI::openLogWindowDialog);
   connect(gui->ui.actionExit, &QAction::triggered, gui, &RDMnetControllerGUI::exitApplication);
   connect(gui->ui.actionAbout, &QAction::triggered, gui, &RDMnetControllerGUI::openAboutDialog);
+
+  connect(gui->ui.sendCommandsButton, &QPushButton::clicked, gui, &RDMnetControllerGUI::openSendCommandDialog);
 
   gui->main_network_model_->addScopeToMonitor(E133_DEFAULT_SCOPE);
 
@@ -359,6 +362,15 @@ void RDMnetControllerGUI::identifyChanged(const RDMnetNetworkItem* item, bool id
 void RDMnetControllerGUI::exitApplication()
 {
   QApplication::quit();
+}
+
+void RDMnetControllerGUI::openSendCommandDialog()
+{
+  if (currently_selected_network_item_ != NULL)
+  {
+    SendCommandGUI dialog(this, currently_selected_network_item_, main_network_model_);
+    dialog.exec();
+  }
 }
 
 RDMnetControllerGUI::RDMnetControllerGUI(QWidget* parent)
