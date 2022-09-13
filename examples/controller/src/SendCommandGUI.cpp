@@ -66,6 +66,7 @@ QString prettifyHex(const QByteArray& data)
     text.append("  ");
 
     for (int i = 0; i < 16; i++)
+    {
       if (line + i < data.length())
       {
         QChar c(data[line + i]);
@@ -74,6 +75,7 @@ QString prettifyHex(const QByteArray& data)
         else
           text.append(QString("."));
       }
+    }
 
     text += "\r\n";
     result += text;
