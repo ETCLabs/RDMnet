@@ -84,6 +84,7 @@ signals:
   void featureSupportChanged(const class RDMnetNetworkItem* item, SupportedDeviceFeature feature);
   void expandNewItem(const QModelIndex& index, int type);
   void identifyChanged(const RDMnetNetworkItem* item, bool identify);
+  void arbitraryCommandComplete(uint8_t response, QByteArray data);
 
 private:
   etcpal::Logger*     log_{nullptr};
@@ -96,6 +97,9 @@ private:
   // Keeps track of scope updates of other controllers
   std::map<rdm::Uid, uint16_t> previous_slot_;
 
+  // Keeps track of pending arbitrary commands
+  bool arbitrary_command_pending_;
+
 public slots:
   void addScopeToMonitor(QString scope);
   void directChildrenRevealed(const QModelIndex& parentIndex);
@@ -103,6 +107,7 @@ public slots:
   void removeBroker(BrokerItem* brokerItem);
   void removeAllBrokers();
   void activateFeature(RDMnetNetworkItem* device, SupportedDeviceFeature feature);
+  void sendArbitraryCommmand(RDMnetNetworkItem* device, uint8_t getset, uint16_t pid, QByteArray data = QByteArray());
 
 protected slots:
   void processAddRdmnetClients(BrokerItem* brokerItem, const std::vector<rdmnet::RptClientEntry>& list);
