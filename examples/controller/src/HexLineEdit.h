@@ -36,7 +36,6 @@ protected:
 
 private:
   QString fixupHex(const QString& input);
-  bool    m_valid;
 };
 
 #endif  // HEXLINEEDIT_H

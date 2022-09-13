@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "hexlineedit.h"
+#include "HexLineEdit.h"
 #include <QKeyEvent>
 
 static QList<int> ACCEPTED_KEYS = {Qt::Key_0, Qt::Key_1,      Qt::Key_2,         Qt::Key_3,    Qt::Key_4,
@@ -28,7 +28,6 @@ static QList<int> ACCEPTED_KEYS = {Qt::Key_0, Qt::Key_1,      Qt::Key_2,        
 
 HexLineEdit::HexLineEdit(QWidget* parent) : QLineEdit(parent)
 {
-  m_valid = true;
 }
 
 void HexLineEdit::keyPressEvent(QKeyEvent* event)
