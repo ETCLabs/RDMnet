@@ -77,6 +77,7 @@ August of 2019. You can download the standard document for free from the
 
 * Clang format is enabled – currently this follows the style guidelines established for our libraries,
  and it may be updated from time to time. See .clang-format for more details.
+* Non-conformance to .clang-format will result in pipeline failures.  The code is not automatically re-formatted.
 
 ### Continuous Integration
 
