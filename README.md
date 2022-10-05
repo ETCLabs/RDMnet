@@ -55,8 +55,45 @@ exceptions:
 * The "Request Dynamic UID Assignment" and "Fetch Dynamic UID Assignment List" Broker messages are
   not yet implemented
 
-## Standard Version
+## Standards Version
 
 The current version of this repository implements ANSI E1.33-2019, published in
 August of 2019. You can download the standard document for free from the
 [ESTA TSP downloads page](https://tsp.esta.org/tsp/documents/published_docs.php).
+
+## Quality Gates
+
+### Code Reviews
+
+* At least 2 developers must approve all code changes made before they can be merged into the integration branch.
+* API and major functionality reviews typically include application developers as well.
+
+### Automated Testing
+
+* This consists primarily of unit tests covering the individual API modules.
+* Some integration tests have also been made.
+
+### Automated Style Checking
+
+* Clang format is enabled – currently this follows the style guidelines established for our libraries,
+ and it may be updated from time to time. See .clang-format for more details.
+* Non-conformance to .clang-format will result in pipeline failures.  The code is not automatically re-formatted.
+
+### Continuous Integration
+
+* A GitLab CI pipeline is being used to run builds and tests that enforce all supported quality gates for all merge
+requests, and for generating new library builds from main. See .gitlab-ci.yml for details.
+
+### Automated Dynamic Analysis
+
+* ASAN is currently being used when running all automated tests on Linux to catch various memory errors during runtime.
+
+## Revision Control
+
+RDMnet development is using Git for revision control.
+
+## License
+
+RDMnet is licensed under the Apache License 2.0. RDMnet also incorporates some third-party software
+with different license terms, disclosed in ThirdPartySoftware.txt in the directory containing this
+README file.
