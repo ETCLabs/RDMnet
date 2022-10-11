@@ -70,8 +70,12 @@ bool ParseAndSetIfaceList(char* iface_list_str, BrokerShell& broker_shell)
 {
   std::vector<std::string> netint_names;
 
-  const EtcPalNetintInfo* netints = etcpal_netint_get_interfaces();
-  size_t                  num_netints = etcpal_netint_get_num_interfaces();
+  size_t                        num_netints = 4u;  // Start with estimate
+  std::vector<EtcPalNetintInfo> netints(num_netints);
+  while (etcpal_netint_get_interfaces(netints.data(), &num_netints) == kEtcPalErrBufSize)
+    netints.resize(num_netints);
+
+  netints.resize(num_netints);
 
   if (strlen(iface_list_str) != 0)
   {
@@ -80,9 +84,9 @@ bool ParseAndSetIfaceList(char* iface_list_str, BrokerShell& broker_shell)
     {
       std::string interface_name = p;
       bool        found = false;
-      for (const EtcPalNetintInfo* netint = netints; netint < netints + num_netints; ++netint)
+      for (const auto& netint : netints)
       {
-        if (interface_name == netint->id)
+        if (interface_name == netint.id)
         {
           found = true;
           if (std::find(netint_names.begin(), netint_names.end(), interface_name) == netint_names.end())
