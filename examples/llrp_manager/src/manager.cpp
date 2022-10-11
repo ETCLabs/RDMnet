@@ -50,22 +50,27 @@ bool LlrpManagerExample::Startup(const etcpal::Logger& logger)
     return false;
   }
 
-  size_t num_interfaces = etcpal_netint_get_num_interfaces();
+  size_t                        num_interfaces = 4u;  // Start with estimate
+  std::vector<EtcPalNetintInfo> netint_list(num_interfaces);
+  while (etcpal_netint_get_interfaces(netint_list.data(), &num_interfaces) == kEtcPalErrBufSize)
+    netint_list.resize(num_interfaces);
+
+  netint_list.resize(num_interfaces);
+
   if (num_interfaces > 0)
   {
-    const EtcPalNetintInfo* netint_list = etcpal_netint_get_interfaces();
-    for (const EtcPalNetintInfo* netint = netint_list; netint < netint_list + num_interfaces; ++netint)
+    for (const auto& netint : netint_list)
     {
       llrp::Manager manager;
-      auto          res = manager.Startup(*this, 0x6574, netint->index, netint->addr.type);
+      auto          res = manager.Startup(*this, 0x6574, netint.index, netint.addr.type);
       if (res)
       {
-        managers_.insert(std::make_pair(manager.handle(), ManagerInfo{std::move(manager), *netint}));
+        managers_.insert(std::make_pair(manager.handle(), ManagerInfo{std::move(manager), netint}));
       }
       else
       {
         printf("Warning: couldn't create LLRP Manager on network interface %s (error: '%s').\n",
-               etcpal::IpAddr(netint->addr).ToString().c_str(), res.ToCString());
+               etcpal::IpAddr(netint.addr).ToString().c_str(), res.ToCString());
       }
     }
 

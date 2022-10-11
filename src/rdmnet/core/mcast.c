@@ -85,18 +85,45 @@ etcpal_error_t rc_mcast_module_init(const RdmnetNetintConfig* netint_config)
   if (netint_config && !validate_netint_config(netint_config))
     return kEtcPalErrInvalid;
 
-  size_t num_sys_netints = etcpal_netint_get_num_interfaces();
-  if (num_sys_netints == 0)
-    return kEtcPalErrNoNetints;
+  etcpal_error_t get_interfaces_res = kEtcPalErrOk;
+#if RDMNET_DYNAMIC_MEM
+  size_t            num_sys_netints = 4;  // Start with estimate which eventually has the actual number written to it
+  EtcPalNetintInfo* netint_list = calloc(num_sys_netints, sizeof(EtcPalNetintInfo));
+  if (!netint_list)
+    return kEtcPalErrNoMem;
+
+  do
+  {
+    get_interfaces_res = etcpal_netint_get_interfaces(netint_list, &num_sys_netints);
+    if (get_interfaces_res == kEtcPalErrBufSize)
+      netint_list = realloc(netint_list, num_sys_netints * sizeof(EtcPalNetintInfo));
+  } while (get_interfaces_res == kEtcPalErrBufSize);
+#else
+  size_t           num_sys_netints = RDMNET_MAX_MCAST_NETINTS;
+  EtcPalNetintInfo netint_list[RDMNET_MAX_MCAST_NETINTS];
+  get_interfaces_res = etcpal_netint_get_interfaces(netint_list, &num_sys_netints);
+#endif
+
+  if (get_interfaces_res != kEtcPalErrOk)
+  {
+#if RDMNET_DYNAMIC_MEM
+    free(netint_list);
+#endif
+    return (num_sys_netints == 0) ? kEtcPalErrNoNetints : kEtcPalErrSys;
+  }
 
 #if RDMNET_DYNAMIC_MEM
   size_t num_netints_requested = (netint_config ? netint_config->num_netints : num_sys_netints);
   mcast_netint_arr = calloc(num_netints_requested, sizeof(EtcPalMcastNetintId));
   if (!mcast_netint_arr)
+  {
+    free(netint_list);
     return kEtcPalErrNoMem;
+  }
   netint_info_arr = calloc(num_netints_requested, sizeof(McastNetintInfo));
   if (!netint_info_arr)
   {
+    free(netint_list);
     free(mcast_netint_arr);
     return kEtcPalErrNoMem;
   }
@@ -106,7 +133,6 @@ etcpal_error_t rc_mcast_module_init(const RdmnetNetintConfig* netint_config)
   memset(lowest_mac.data, 0xff, ETCPAL_MAC_BYTES);
 
   RDMNET_LOG_INFO("Initializing multicast network interfaces...");
-  const EtcPalNetintInfo* netint_list = etcpal_netint_get_interfaces();
   for (const EtcPalNetintInfo* netint = netint_list; netint < netint_list + num_sys_netints; ++netint)
   {
     // Update the lowest MAC, if necessary.
@@ -146,8 +172,15 @@ etcpal_error_t rc_mcast_module_init(const RdmnetNetintConfig* netint_config)
   else
   {
     RDMNET_LOG_ERR("No usable multicast network interfaces found.");
+#if RDMNET_DYNAMIC_MEM
+    free(netint_list);
+#endif
     return kEtcPalErrNoNetints;
   }
+
+#if RDMNET_DYNAMIC_MEM
+  free(netint_list);
+#endif
   return kEtcPalErrOk;
 }
 
