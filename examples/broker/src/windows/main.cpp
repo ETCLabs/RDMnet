@@ -71,12 +71,10 @@ bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell& broker_shell
 {
   std::vector<std::string> netint_names;
 
-  size_t                        num_netints = 4u;  // Start with estimate
+  size_t                        num_netints = 0u;  // Actual size eventually filled in
   std::vector<EtcPalNetintInfo> netints(num_netints);
   while (etcpal_netint_get_interfaces(netints.data(), &num_netints) == kEtcPalErrBufSize)
     netints.resize(num_netints);
-
-  netints.resize(num_netints);
 
   if (wcslen(iface_list_str) != 0)
   {

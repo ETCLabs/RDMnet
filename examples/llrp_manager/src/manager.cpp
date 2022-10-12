@@ -50,12 +50,10 @@ bool LlrpManagerExample::Startup(const etcpal::Logger& logger)
     return false;
   }
 
-  size_t                        num_interfaces = 4u;  // Start with estimate
+  size_t                        num_interfaces = 0u;  // Actual size eventually filled in
   std::vector<EtcPalNetintInfo> netint_list(num_interfaces);
   while (etcpal_netint_get_interfaces(netint_list.data(), &num_interfaces) == kEtcPalErrBufSize)
     netint_list.resize(num_interfaces);
-
-  netint_list.resize(num_interfaces);
 
   if (num_interfaces > 0)
   {

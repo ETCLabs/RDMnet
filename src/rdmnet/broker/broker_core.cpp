@@ -195,12 +195,10 @@ std::set<etcpal::IpAddr> BrokerCore::GetInterfaceAddrs(const std::vector<std::st
   std::set<etcpal::IpAddr> to_return;
   std::set<unsigned int>   interface_indexes;
 
-  size_t                        num_netints = 4u;  // Start with estimate
+  size_t                        num_netints = 0u;  // Actual size eventually filled in
   std::vector<EtcPalNetintInfo> netint_list(num_netints);
   while (etcpal_netint_get_interfaces(netint_list.data(), &num_netints) == kEtcPalErrBufSize)
     netint_list.resize(num_netints);
-
-  netint_list.resize(num_netints);
 
   for (const auto& netint_name : interfaces)
   {
