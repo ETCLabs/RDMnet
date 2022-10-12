@@ -34,9 +34,11 @@
 
 class TestMcast : public testing::Test
 {
+public:
+  static std::vector<EtcPalNetintInfo> sys_netints;
+
 protected:
-  std::vector<EtcPalNetintInfo> sys_netints_;
-  bool                          initted_in_test_{true};
+  bool initted_in_test_{true};
 
   TestMcast()
   {
@@ -44,35 +46,44 @@ protected:
 
     EtcPalNetintInfo iface;
 
-    // Interface 1
-    iface.index = 1;
-    iface.addr = etcpal::IpAddr::FromString("10.101.1.20").get();
-    iface.mask = etcpal::IpAddr::FromString("255.255.0.0").get();
-    iface.mac = etcpal::MacAddr::FromString("10:00:00:00:00:01").get();
-    std::strcpy(iface.id, "if1");
-    std::strcpy(iface.friendly_name, "Interface 1");
-    sys_netints_.push_back(iface);
+    if (sys_netints.empty())
+    {
+      // Interface 1
+      iface.index = 1;
+      iface.addr = etcpal::IpAddr::FromString("10.101.1.20").get();
+      iface.mask = etcpal::IpAddr::FromString("255.255.0.0").get();
+      iface.mac = etcpal::MacAddr::FromString("10:00:00:00:00:01").get();
+      std::strcpy(iface.id, "if1");
+      std::strcpy(iface.friendly_name, "Interface 1");
+      sys_netints.push_back(iface);
 
-    // Interface 2
-    iface.index = 2;
-    iface.addr = etcpal::IpAddr::FromString("fe80::1:2:3:4").get();
-    iface.mask = etcpal::IpAddr::NetmaskV6(64).get();
-    iface.mac = etcpal::MacAddr::FromString("00:00:00:00:00:02").get();
-    std::strcpy(iface.id, "if2");
-    std::strcpy(iface.friendly_name, "Interface 2");
-    sys_netints_.push_back(iface);
+      // Interface 2
+      iface.index = 2;
+      iface.addr = etcpal::IpAddr::FromString("fe80::1:2:3:4").get();
+      iface.mask = etcpal::IpAddr::NetmaskV6(64).get();
+      iface.mac = etcpal::MacAddr::FromString("00:00:00:00:00:02").get();
+      std::strcpy(iface.id, "if2");
+      std::strcpy(iface.friendly_name, "Interface 2");
+      sys_netints.push_back(iface);
 
-    // Interface 3
-    iface.index = 3;
-    iface.addr = etcpal::IpAddr::FromString("192.168.30.4").get();
-    iface.mask = etcpal::IpAddr::FromString("255.255.255.0").get();
-    iface.mac = etcpal::MacAddr::FromString("00:10:00:00:00:01").get();
-    std::strcpy(iface.id, "if3");
-    std::strcpy(iface.friendly_name, "Interface 3");
-    sys_netints_.push_back(iface);
+      // Interface 3
+      iface.index = 3;
+      iface.addr = etcpal::IpAddr::FromString("192.168.30.4").get();
+      iface.mask = etcpal::IpAddr::FromString("255.255.255.0").get();
+      iface.mac = etcpal::MacAddr::FromString("00:10:00:00:00:01").get();
+      std::strcpy(iface.id, "if3");
+      std::strcpy(iface.friendly_name, "Interface 3");
+      sys_netints.push_back(iface);
+    }
 
-    etcpal_netint_get_interfaces_fake.return_val = sys_netints_.data();
-    etcpal_netint_get_num_interfaces_fake.return_val = sys_netints_.size();
+    etcpal_netint_get_interfaces_fake.custom_fake = [](EtcPalNetintInfo* netints, size_t* num_netints) {
+      bool buf_too_small = (*num_netints < sys_netints.size());
+      for (size_t i = 0; (i < *num_netints) && (i < sys_netints.size()); ++i)
+        netints[i] = sys_netints[i];
+
+      *num_netints = sys_netints.size();
+      return buf_too_small ? kEtcPalErrBufSize : kEtcPalErrOk;
+    };
   }
 
   ~TestMcast()
@@ -81,6 +92,8 @@ protected:
       rc_mcast_module_deinit();
   }
 };
+
+std::vector<EtcPalNetintInfo> TestMcast::sys_netints;
 
 TEST_F(TestMcast, InitWorksWithNoConfig)
 {
@@ -130,7 +143,7 @@ TEST_F(TestMcast, LowestHardwareAddrIsCorrect)
 
   // The lowest address
   EtcPalMacAddr lowest_mac =
-      std::min_element(sys_netints_.begin(), sys_netints_.end(),
+      std::min_element(sys_netints.begin(), sys_netints.end(),
                        [](const EtcPalNetintInfo& a, const EtcPalNetintInfo& b) { return a.mac < b.mac; })
           ->mac;
   EXPECT_EQ(*(rc_mcast_get_lowest_mac_addr()), lowest_mac);
@@ -142,17 +155,17 @@ TEST_F(TestMcast, ReportsCorrectNumberOfInterfacesWithNoConfig)
   ASSERT_EQ(kEtcPalErrOk, rc_mcast_module_init(nullptr));
 
   const EtcPalMcastNetintId* netint_array;
-  ASSERT_EQ(sys_netints_.size(), rc_mcast_get_netint_array(&netint_array));
+  ASSERT_EQ(sys_netints.size(), rc_mcast_get_netint_array(&netint_array));
 
-  for (size_t i = 0; i < sys_netints_.size(); ++i)
+  for (size_t i = 0; i < sys_netints.size(); ++i)
   {
     EXPECT_TRUE(rc_mcast_netint_is_valid(&netint_array[i]));
     // Make sure each interface in the returned array corresponds to one of our system interfaces.
-    EXPECT_NE(std::find_if(sys_netints_.begin(), sys_netints_.end(),
+    EXPECT_NE(std::find_if(sys_netints.begin(), sys_netints.end(),
                            [&](const EtcPalNetintInfo& info) {
                              return (info.addr.type == netint_array[i].ip_type && info.index == netint_array[i].index);
                            }),
-              sys_netints_.end());
+              sys_netints.end());
   }
 }
 

@@ -85,70 +85,101 @@ etcpal_error_t rc_mcast_module_init(const RdmnetNetintConfig* netint_config)
   if (netint_config && !validate_netint_config(netint_config))
     return kEtcPalErrInvalid;
 
-  size_t num_sys_netints = etcpal_netint_get_num_interfaces();
-  if (num_sys_netints == 0)
-    return kEtcPalErrNoNetints;
+  etcpal_error_t res = kEtcPalErrOk;
+#if RDMNET_DYNAMIC_MEM
+  size_t            num_sys_netints = 4;  // Start with estimate which eventually has the actual number written to it
+  EtcPalNetintInfo* netint_list = calloc(num_sys_netints, sizeof(EtcPalNetintInfo));
+  if (!netint_list)
+    return kEtcPalErrNoMem;
+
+  do
+  {
+    res = etcpal_netint_get_interfaces(netint_list, &num_sys_netints);
+    if (res == kEtcPalErrBufSize)
+      netint_list = realloc(netint_list, num_sys_netints * sizeof(EtcPalNetintInfo));
+  } while (res == kEtcPalErrBufSize);
+#else
+  size_t           num_sys_netints = RDMNET_MAX_MCAST_NETINTS;
+  EtcPalNetintInfo netint_list[RDMNET_MAX_MCAST_NETINTS];
+  res = etcpal_netint_get_interfaces(netint_list, &num_sys_netints);
+#endif
+
+  if (res != kEtcPalErrOk)
+    res = (num_sys_netints == 0) ? kEtcPalErrNoNetints : kEtcPalErrSys;
 
 #if RDMNET_DYNAMIC_MEM
   size_t num_netints_requested = (netint_config ? netint_config->num_netints : num_sys_netints);
-  mcast_netint_arr = calloc(num_netints_requested, sizeof(EtcPalMcastNetintId));
-  if (!mcast_netint_arr)
-    return kEtcPalErrNoMem;
-  netint_info_arr = calloc(num_netints_requested, sizeof(McastNetintInfo));
-  if (!netint_info_arr)
+  if (res == kEtcPalErrOk)
   {
-    free(mcast_netint_arr);
-    return kEtcPalErrNoMem;
+    mcast_netint_arr = calloc(num_netints_requested, sizeof(EtcPalMcastNetintId));
+    if (!mcast_netint_arr)
+      res = kEtcPalErrNoMem;
+  }
+
+  if (res == kEtcPalErrOk)
+  {
+    netint_info_arr = calloc(num_netints_requested, sizeof(McastNetintInfo));
+    if (!netint_info_arr)
+    {
+      free(mcast_netint_arr);
+      res = kEtcPalErrNoMem;
+    }
   }
 #endif
 
-  // Initialize the lowest mac address on the system.
-  memset(lowest_mac.data, 0xff, ETCPAL_MAC_BYTES);
-
-  RDMNET_LOG_INFO("Initializing multicast network interfaces...");
-  const EtcPalNetintInfo* netint_list = etcpal_netint_get_interfaces();
-  for (const EtcPalNetintInfo* netint = netint_list; netint < netint_list + num_sys_netints; ++netint)
+  if (res == kEtcPalErrOk)
   {
-    // Update the lowest MAC, if necessary.
-    if (!ETCPAL_MAC_IS_NULL(&netint->mac))
+    // Initialize the lowest mac address on the system.
+    memset(lowest_mac.data, 0xff, ETCPAL_MAC_BYTES);
+
+    RDMNET_LOG_INFO("Initializing multicast network interfaces...");
+    for (const EtcPalNetintInfo* netint = netint_list; netint < netint_list + num_sys_netints; ++netint)
     {
-      if (netint == netint_list)
-        lowest_mac = netint->mac;
-      else if (ETCPAL_MAC_CMP(&netint->mac, &lowest_mac) < 0)
-        lowest_mac = netint->mac;
+      // Update the lowest MAC, if necessary.
+      if (!ETCPAL_MAC_IS_NULL(&netint->mac))
+      {
+        if (netint == netint_list)
+          lowest_mac = netint->mac;
+        else if (ETCPAL_MAC_CMP(&netint->mac, &lowest_mac) < 0)
+          lowest_mac = netint->mac;
+      }
+
+      // Get the interface IP address for logging
+      char addr_str[ETCPAL_IP_STRING_BYTES];
+      addr_str[0] = '\0';
+      if (RDMNET_CAN_LOG(ETCPAL_LOG_INFO))
+        etcpal_ip_to_string(&netint->addr, addr_str);
+
+      // Create a test send and receive socket on each network interface. If either one fails, we
+      // remove that interface from the final set.
+      EtcPalMcastNetintId netint_id;
+      netint_id.index = netint->index;
+      netint_id.ip_type = netint->addr.type;
+
+      if (netint_config &&
+          (netint_id_index_in_array(&netint_id, netint_config->netints, netint_config->num_netints) == -1))
+      {
+        RDMNET_LOG_DEBUG("  Skipping network interface %s as it is not present in user configuration.", addr_str);
+        continue;
+      }
+
+      test_mcast_netint(&netint_id, addr_str);
     }
 
-    // Get the interface IP address for logging
-    char addr_str[ETCPAL_IP_STRING_BYTES];
-    addr_str[0] = '\0';
-    if (RDMNET_CAN_LOG(ETCPAL_LOG_INFO))
-      etcpal_ip_to_string(&netint->addr, addr_str);
-
-    // Create a test send and receive socket on each network interface. If either one fails, we
-    // remove that interface from the final set.
-    EtcPalMcastNetintId netint_id;
-    netint_id.index = netint->index;
-    netint_id.ip_type = netint->addr.type;
-
-    if (netint_config &&
-        (netint_id_index_in_array(&netint_id, netint_config->netints, netint_config->num_netints) == -1))
+    if (num_mcast_netints != 0)
     {
-      RDMNET_LOG_DEBUG("  Skipping network interface %s as it is not present in user configuration.", addr_str);
-      continue;
     }
-
-    test_mcast_netint(&netint_id, addr_str);
+    else
+    {
+      RDMNET_LOG_ERR("No usable multicast network interfaces found.");
+      res = kEtcPalErrNoNetints;
+    }
   }
 
-  if (num_mcast_netints != 0)
-  {
-  }
-  else
-  {
-    RDMNET_LOG_ERR("No usable multicast network interfaces found.");
-    return kEtcPalErrNoNetints;
-  }
-  return kEtcPalErrOk;
+#if RDMNET_DYNAMIC_MEM
+  free(netint_list);
+#endif
+  return res;
 }
 
 void rc_mcast_module_deinit(void)

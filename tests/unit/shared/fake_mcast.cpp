@@ -32,11 +32,6 @@ const std::vector<EtcPalMcastNetintId> kFakeNetints = {
 
 const etcpal::MacAddr kLowestMacAddr = etcpal::MacAddr::FromString("00:c0:16:a8:ec:82");
 
-bool operator==(const EtcPalMcastNetintId& a, const EtcPalMcastNetintId& b)
-{
-  return (a.index == b.index && a.ip_type == b.ip_type);
-}
-
 void SetUpFakeMcastEnvironment()
 {
   rc_mcast_get_netint_array_fake.custom_fake = [](const EtcPalMcastNetintId** array) {

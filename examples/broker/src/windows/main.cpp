@@ -71,8 +71,10 @@ bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell& broker_shell
 {
   std::vector<std::string> netint_names;
 
-  const EtcPalNetintInfo* netints = etcpal_netint_get_interfaces();
-  size_t                  num_netints = etcpal_netint_get_num_interfaces();
+  size_t                        num_netints = 0u;  // Actual size eventually filled in
+  std::vector<EtcPalNetintInfo> netints(num_netints);
+  while (etcpal_netint_get_interfaces(netints.data(), &num_netints) == kEtcPalErrBufSize)
+    netints.resize(num_netints);
 
   if (wcslen(iface_list_str) != 0)
   {
@@ -86,16 +88,16 @@ bool ParseAndSetIfaceList(const LPWSTR iface_list_str, BrokerShell& broker_shell
       interface_name.pop_back();
 
       std::string name_to_insert;
-      for (const EtcPalNetintInfo* netint = netints; netint < netints + num_netints; ++netint)
+      for (const auto& netint : netints)
       {
-        if (interface_name == netint->id)
+        if (interface_name == netint.id)
         {
           name_to_insert = interface_name;
           break;
         }
-        else if (interface_name == netint->friendly_name)
+        else if (interface_name == netint.friendly_name)
         {
-          name_to_insert = netint->id;
+          name_to_insert = netint.id;
           break;
         }
       }
