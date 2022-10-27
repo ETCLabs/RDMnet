@@ -95,7 +95,7 @@ docs-test:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   tags:
     - etc-linux-docker
-  image: etc-docker.artifactory.etcconnect.com/common-tech/doxygen:1.9.1
+  image: etc-docker.artifactory.etcconnect.com/etc/common-tech/doxygen:1.9.1
   variables:
     GIT_DEPTH: 0
   script:
@@ -107,7 +107,7 @@ deploy-docs:
     - if: '$CI_COMMIT_REF_NAME == "main"'
   tags:
     - etc-linux-docker
-  image: etc-docker.artifactory.etcconnect.com/common-tech/doxygen:1.9.1
+  image: etc-docker.artifactory.etcconnect.com/etc/common-tech/doxygen:1.9.1
   variables:
     GIT_DEPTH: 0
     GH_REPO_NAME: RDMnetDocs
