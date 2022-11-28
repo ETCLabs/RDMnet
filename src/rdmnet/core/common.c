@@ -298,6 +298,20 @@ void rdmnet_writeunlock(void)
   etcpal_rwlock_writeunlock(&rdmnet_lock);
 }
 
+bool rdmnet_assert_verify_fail(const char* exp, const char* file, const char* func, const int line)
+{
+#if !RDMNET_LOGGING_ENABLED
+  ETCPAL_UNUSED_ARG(exp);
+  ETCPAL_UNUSED_ARG(file);
+  ETCPAL_UNUSED_ARG(func);
+  ETCPAL_UNUSED_ARG(line);
+#endif
+  RDMNET_LOG_CRIT("ASSERTION \"%s\" FAILED (FILE: \"%s\" FUNCTION: \"%s\" LINE: %d)", exp ? exp : "", file ? file : "",
+                  func ? func : "", line);
+  RDMNET_ASSERT(false);
+  return false;
+}
+
 etcpal_error_t init_etcpal_dependencies(void)
 {
   etcpal_error_t res = etcpal_init(RDMNET_ETCPAL_FEATURES);

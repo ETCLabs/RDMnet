@@ -1,17 +1,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-void RdmnetTestingAssertHandler(const char* expression, const char* file, unsigned int line)
-#ifdef __clang__
-    __attribute__((analyzer_noreturn))
-#endif
-    ;
+
+bool RdmnetTestingAssertHandler(const char* expression, const char* file, const char* func, unsigned int line);
+
 #ifdef __cplusplus
 }
 #endif
 
-#define RDMNET_ASSERT(expr) \
-  if (!(expr))              \
-  RdmnetTestingAssertHandler(#expr, __FILE__, __LINE__)
+#define RDMNET_ASSERT_VERIFY(expr) ((expr) ? true : RdmnetTestingAssertHandler(#expr, __FILE__, __func__, __LINE__))
 
 #define RDMNET_DYNAMIC_MEM 1

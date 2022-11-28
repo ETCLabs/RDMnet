@@ -98,11 +98,27 @@
 #define RDMNET_LOG_MSG_PREFIX "RDMnet: "
 #endif
 
+/* Assertion failure handler */
+bool rdmnet_assert_verify_fail(const char* exp, const char* file, const char* func, const int line);
+
 /**
- * @brief The debug assert used by the RDMnet library.
+ * @brief The assertion handler used by the RDMnet library.
  *
- * By default, just uses the C library assert. If redefining this, it must be redefined as a macro
- * taking a single argument (the assertion expression).
+ * By default, evaluates to true on success, or false on failure (additionally asserting and logging). If redefining
+ * this, it must be redefined as a macro taking a single argument (the assertion expression).
+ */
+#ifndef RDMNET_ASSERT_VERIFY
+#define RDMNET_ASSERT_VERIFY(exp) ((exp) ? true : rdmnet_assert_verify_fail(#exp, __FILE__, __func__, __LINE__))
+#endif
+
+/**
+ * @brief The lower-level debug assert used by the RDMnet library.
+ *
+ * This is the assertion that gets called by #RDMNET_ASSERT_VERIFY on failure. Redefine this to retain the logging done
+ * by the default #RDMNET_ASSERT_VERIFY macro.
+ *
+ * By default, just uses the C library assert. If redefining this, it must be redefined as a macro taking a single
+ * argument (the assertion expression).
  */
 #ifndef RDMNET_ASSERT
 #include <assert.h>

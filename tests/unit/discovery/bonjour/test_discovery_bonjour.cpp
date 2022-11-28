@@ -33,10 +33,15 @@
 #include "gtest/gtest.h"
 #include "fff.h"
 
-extern "C" void RdmnetTestingAssertHandler(const char* expression, const char* file, unsigned int line)
+extern "C" bool RdmnetTestingAssertHandler(const char*  expression,
+                                           const char*  file,
+                                           const char*  func,
+                                           unsigned int line)
 {
-  FAIL() << "Assertion failure from inside RDMnet library. Expression: " << expression << " File: " << file
-         << " Line: " << line;
+  ADD_FAILURE() << "Assertion failure from inside RDMnet library. Expression: " << expression << " File: " << file
+                << " Function: " << func << " Line: " << line;
+
+  return false;
 }
 
 DEFINE_FFF_GLOBALS;
