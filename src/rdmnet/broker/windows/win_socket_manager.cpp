@@ -159,6 +159,9 @@ unsigned __stdcall SocketWorkerThread(void* arg)
         case MessageKey::kStartRecv:
           if (sock_data)
           {
+            if (!RDMNET_ASSERT_VERIFY(sock_data->recv_buf.cur_data_size <= RC_MSG_BUF_SIZE))
+              return 1;
+
             // Begin a new overlapped receive operation
             DWORD recv_flags = 0;
 
@@ -191,13 +194,14 @@ unsigned __stdcall SocketWorkerThread(void* arg)
 
 bool WinBrokerSocketManager::Startup()
 {
+  if (!RDMNET_ASSERT_VERIFY(thread_interface_))
+    return false;
+
   bool ok = true;
 
   WSADATA wsadata;
   if (0 != WSAStartup(MAKEWORD(2, 2), &wsadata))
-  {
     return false;
-  }
 
   iocp_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
   ok = (iocp_ != nullptr);
@@ -231,12 +235,18 @@ bool WinBrokerSocketManager::Startup()
 
 bool WinBrokerSocketManager::Shutdown()
 {
+  if (!RDMNET_ASSERT_VERIFY(thread_interface_))
+    return false;
+
   shutting_down_ = true;
 
   {  // Read lock scope
     etcpal::ReadGuard socket_read(socket_lock_);
     for (auto& sock_data : sockets_)
     {
+      if (!RDMNET_ASSERT_VERIFY(sock_data.second))
+        return false;
+
       // Trigger the worker thread to stop processing each socket.
       sock_data.second->close_requested = true;
       shutdown(sock_data.second->socket, SD_BOTH);
@@ -273,32 +283,36 @@ bool WinBrokerSocketManager::AddSocket(BrokerClient::Handle client_handle, etcpa
 
   // Create the data structure for the new socket
   std::unique_ptr<SocketData> new_sock_data(new SocketData(client_handle, socket));
-  if (new_sock_data)
+  if (!new_sock_data)
+    return false;
+
+  // Add it to the socket map
+  auto result = sockets_.insert(std::make_pair(client_handle, std::move(new_sock_data)));
+  if (!result.second)
+    return false;
+
+  // Add the socket to our I/O completion port
+  if (NULL != CreateIoCompletionPort((HANDLE)socket, iocp_, static_cast<ULONG_PTR>(MessageKey::kNormalRecv), 0))
   {
-    // Add it to the socket map
-    auto result = sockets_.insert(std::make_pair(client_handle, std::move(new_sock_data)));
-    if (result.second)
+    if (!RDMNET_ASSERT_VERIFY(result.first) || !RDMNET_ASSERT_VERIFY(result.first->second))
+      return false;
+
+    // Notify a worker thread to begin a receive operation
+    if (PostQueuedCompletionStatus(iocp_, 0, static_cast<ULONG_PTR>(MessageKey::kStartRecv),
+                                   &result.first->second->overlapped))
     {
-      // Add the socket to our I/O completion port
-      if (NULL != CreateIoCompletionPort((HANDLE)socket, iocp_, static_cast<ULONG_PTR>(MessageKey::kNormalRecv), 0))
-      {
-        // Notify a worker thread to begin a receive operation
-        if (PostQueuedCompletionStatus(iocp_, 0, static_cast<ULONG_PTR>(MessageKey::kStartRecv),
-                                       &result.first->second->overlapped))
-        {
-          return true;
-        }
-        else
-        {
-          sockets_.erase(client_handle);
-        }
-      }
-      else
-      {
-        sockets_.erase(client_handle);
-      }
+      return true;
+    }
+    else
+    {
+      sockets_.erase(client_handle);
     }
   }
+  else
+  {
+    sockets_.erase(client_handle);
+  }
+
   return false;
 }
 
@@ -307,16 +321,16 @@ void WinBrokerSocketManager::RemoveSocket(BrokerClient::Handle client_handle)
   etcpal::ReadGuard socket_read(socket_lock_);
 
   auto sock_data = sockets_.find(client_handle);
-  if (sock_data != sockets_.end())
+  if ((sock_data == sockets_.end()) || !RDMNET_ASSERT_VERIFY(sock_data->second))
+    return;
+
+  if (!sock_data->second->close_requested)
   {
-    if (!sock_data->second->close_requested)
-    {
-      sock_data->second->close_requested = true;
-      // This will cause a worker to wake up and notify that the socket was closed,
-      // triggering the rest of the destruction.
-      shutdown(sock_data->second->socket, SD_BOTH);
-      closesocket(sock_data->second->socket);
-    }
+    sock_data->second->close_requested = true;
+    // This will cause a worker to wake up and notify that the socket was closed,
+    // triggering the rest of the destruction.
+    shutdown(sock_data->second->socket, SD_BOTH);
+    closesocket(sock_data->second->socket);
   }
 }
 
@@ -328,15 +342,14 @@ void WinBrokerSocketManager::WorkerNotifySocketBad(BrokerClient::Handle client_h
     etcpal::WriteGuard socket_write(socket_lock_);
 
     auto sock_data = sockets_.find(client_handle);
-    if (sock_data != sockets_.end())
-    {
-      if (!sock_data->second->close_requested && !shutting_down_)
-      {
-        notify_socket_closed = true;
-      }
-      closesocket(sock_data->second->socket);
-      sockets_.erase(sock_data);
-    }
+    if ((sock_data == sockets_.end()) || !RDMNET_ASSERT_VERIFY(sock_data->second))
+      return;
+
+    if (!sock_data->second->close_requested && !shutting_down_)
+      notify_socket_closed = true;
+
+    closesocket(sock_data->second->socket);
+    sockets_.erase(sock_data);
   }
 
   if (notify_socket_closed && notify_)
@@ -348,24 +361,24 @@ void WinBrokerSocketManager::WorkerNotifyRecvData(BrokerClient::Handle client_ha
   etcpal::ReadGuard socket_read(socket_lock_);
 
   auto sock_data = sockets_.find(client_handle);
-  if (sock_data != sockets_.end())
-  {
-    sock_data->second->recv_buf.cur_data_size += size;
-    etcpal_error_t res = rc_msg_buf_parse_data(&sock_data->second->recv_buf);
-    while (res == kEtcPalErrOk)
-    {
-      if (!sock_data->second->close_requested && notify_)
-      {
-        while (notify_->HandleSocketMessageReceived(client_handle, sock_data->second->recv_buf.msg) ==
-               HandleMessageResult::kRetryLater)
-        {
-          Sleep(10);  // Sleep to avoid busy loop.
-        }
-      }
+  if ((sock_data == sockets_.end()) || !RDMNET_ASSERT_VERIFY(sock_data->second))
+    return;
 
-      rc_free_message_resources(&sock_data->second->recv_buf.msg);
-      res = rc_msg_buf_parse_data(&sock_data->second->recv_buf);
+  sock_data->second->recv_buf.cur_data_size += size;
+  etcpal_error_t res = rc_msg_buf_parse_data(&sock_data->second->recv_buf);
+  while (res == kEtcPalErrOk)
+  {
+    if (!sock_data->second->close_requested && notify_)
+    {
+      while (notify_->HandleSocketMessageReceived(client_handle, sock_data->second->recv_buf.msg) ==
+             HandleMessageResult::kRetryLater)
+      {
+        Sleep(10);  // Sleep to avoid busy loop.
+      }
     }
+
+    rc_free_message_resources(&sock_data->second->recv_buf.msg);
+    res = rc_msg_buf_parse_data(&sock_data->second->recv_buf);
   }
 }
 

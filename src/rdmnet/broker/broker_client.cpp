@@ -46,7 +46,11 @@ bool BrokerClient::Send(const etcpal::Uuid& broker_cid)
   if (!broker_msgs_.empty())
   {
     MessageRef& msg = broker_msgs_.front();
-    int         res = rc_send(socket_, &msg.data.get()[msg.size_sent], msg.size - msg.size_sent, 0);
+    auto        msg_data = msg.data.get();
+    if (!RDMNET_ASSERT_VERIFY(msg_data))
+      return false;
+
+    int res = rc_send(socket_, &msg_data[msg.size_sent], msg.size - msg.size_sent, 0);
     if (res >= 0)
     {
       msg.size_sent += res;
@@ -106,11 +110,18 @@ ClientPushResult BrokerClient::PushPostSizeCheck(const etcpal::Uuid& sender_cid,
     case VECTOR_BROKER_CLIENT_ADD:
     case VECTOR_BROKER_CLIENT_REMOVE:
     case VECTOR_BROKER_CLIENT_ENTRY_CHANGE: {
-      if (BROKER_GET_CLIENT_LIST(&msg)->client_protocol == kClientProtocolRPT)
+      auto client_list = BROKER_GET_CLIENT_LIST(&msg);
+      if (!RDMNET_ASSERT_VERIFY(client_list))
+        return ClientPushResult::Error;
+
+      if (client_list->client_protocol == kClientProtocolRPT)
       {
-        const RdmnetRptClientList* rpt_list = BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&msg));
-        size_t                     bufsize = rc_broker_get_rpt_client_list_buffer_size(rpt_list->num_client_entries);
-        MessageRef                 to_push(bufsize);
+        const RdmnetRptClientList* rpt_list = BROKER_GET_RPT_CLIENT_LIST(client_list);
+        if (!RDMNET_ASSERT_VERIFY(rpt_list))
+          return ClientPushResult::Error;
+
+        size_t     bufsize = rc_broker_get_rpt_client_list_buffer_size(rpt_list->num_client_entries);
+        MessageRef to_push(bufsize);
         if (to_push.data)
         {
           to_push.size = rc_broker_pack_rpt_client_list(to_push.data.get(), bufsize, &sender_cid.get(), msg.vector,
@@ -161,16 +172,28 @@ void BrokerClient::ApplyDestroyAction(const etcpal::Uuid&        broker_cid,
     case ClientDestroyAction::Action::SendConnectReply: {
       BrokerMessage msg{};
       msg.vector = VECTOR_BROKER_CONNECT_REPLY;
-      BROKER_GET_CONNECT_REPLY_MSG(&msg)->broker_uid = broker_uid.get();
-      BROKER_GET_CONNECT_REPLY_MSG(&msg)->connect_status = destroy_action.connect_status();
-      BROKER_GET_CONNECT_REPLY_MSG(&msg)->e133_version = E133_VERSION;
+
+      auto connect_reply_msg = BROKER_GET_CONNECT_REPLY_MSG(&msg);
+      if (!RDMNET_ASSERT_VERIFY(connect_reply_msg))
+        return;
+
+      connect_reply_msg->broker_uid = broker_uid.get();
+      connect_reply_msg->connect_status = destroy_action.connect_status();
+      connect_reply_msg->e133_version = E133_VERSION;
+
       Push(broker_cid, msg);
     }
     break;
     case ClientDestroyAction::Action::SendDisconnect: {
       BrokerMessage msg{};
       msg.vector = VECTOR_BROKER_DISCONNECT;
-      BROKER_GET_DISCONNECT_MSG(&msg)->disconnect_reason = destroy_action.disconnect_reason();
+
+      auto get_disconnect_msg = BROKER_GET_DISCONNECT_MSG(&msg);
+      if (!RDMNET_ASSERT_VERIFY(get_disconnect_msg))
+        return;
+
+      get_disconnect_msg->disconnect_reason = destroy_action.disconnect_reason();
+
       Push(broker_cid, msg);
     }
     break;
@@ -243,12 +266,16 @@ ClientPushResult RPTController::Push(BrokerClient::Handle /*from_client*/,
   switch (msg.vector)
   {
     case VECTOR_RPT_REQUEST: {
-      size_t     bufsize = rc_rpt_get_request_buffer_size(RPT_GET_RDM_BUF_LIST(&msg)->rdm_buffers);
+      auto rdm_buf_list = RPT_GET_RDM_BUF_LIST(&msg);
+      if (!RDMNET_ASSERT_VERIFY(rdm_buf_list))
+        return ClientPushResult::Error;
+
+      size_t     bufsize = rc_rpt_get_request_buffer_size(rdm_buf_list->rdm_buffers);
       MessageRef to_push(bufsize);
       if (to_push.data)
       {
-        to_push.size = rc_rpt_pack_request(to_push.data.get(), bufsize, &sender_cid.get(), &msg.header,
-                                           RPT_GET_RDM_BUF_LIST(&msg)->rdm_buffers);
+        to_push.size =
+            rc_rpt_pack_request(to_push.data.get(), bufsize, &sender_cid.get(), &msg.header, rdm_buf_list->rdm_buffers);
         if (to_push.size)
         {
           rpt_msgs_.push_back(std::move(to_push));
@@ -259,12 +286,20 @@ ClientPushResult RPTController::Push(BrokerClient::Handle /*from_client*/,
     break;
 
     case VECTOR_RPT_STATUS:
-      res = RPTClient::PushPostSizeCheck(sender_cid, msg.header, *RPT_GET_STATUS_MSG(&msg));
+      auto status_msg = RPT_GET_STATUS_MSG(&msg);
+      if (!RDMNET_ASSERT_VERIFY(status_msg))
+        return ClientPushResult::Error;
+
+      res = RPTClient::PushPostSizeCheck(sender_cid, msg.header, *status_msg);
       break;
 
     case VECTOR_RPT_NOTIFICATION: {
-      const RdmBuffer* buffers = RPT_GET_RDM_BUF_LIST(&msg)->rdm_buffers;
-      const size_t     num_buffers = RPT_GET_RDM_BUF_LIST(&msg)->num_rdm_buffers;
+      auto rdm_buf_list = RPT_GET_RDM_BUF_LIST(&msg);
+      if (!RDMNET_ASSERT_VERIFY(rdm_buf_list))
+        return ClientPushResult::Error;
+
+      const RdmBuffer* buffers = rdm_buf_list->rdm_buffers;
+      const size_t     num_buffers = rdm_buf_list->num_rdm_buffers;
 
       size_t     bufsize = rc_rpt_get_notification_buffer_size(buffers, num_buffers);
       MessageRef to_push(bufsize);
@@ -383,16 +418,24 @@ ClientPushResult RPTDevice::Push(BrokerClient::Handle from_client,
   switch (msg.vector)
   {
     case VECTOR_RPT_STATUS:
-      res = RPTClient::PushPostSizeCheck(sender_cid, msg.header, *RPT_GET_STATUS_MSG(&msg));
+      auto status_msg = RPT_GET_STATUS_MSG(&msg);
+      if (!RDMNET_ASSERT_VERIFY(status_msg))
+        return ClientPushResult::Error;
+
+      res = RPTClient::PushPostSizeCheck(sender_cid, msg.header, *status_msg);
       break;
 
     case VECTOR_RPT_REQUEST: {
-      size_t     bufsize = rc_rpt_get_request_buffer_size(RPT_GET_RDM_BUF_LIST(&msg)->rdm_buffers);
+      auto rdm_buf_list = RPT_GET_RDM_BUF_LIST(&msg);
+      if (!RDMNET_ASSERT_VERIFY(rdm_buf_list))
+        return ClientPushResult::Error;
+
+      size_t     bufsize = rc_rpt_get_request_buffer_size(rdm_buf_list->rdm_buffers);
       MessageRef to_push(bufsize);
       if (to_push.data)
       {
-        to_push.size = rc_rpt_pack_request(to_push.data.get(), bufsize, &sender_cid.get(), &msg.header,
-                                           RPT_GET_RDM_BUF_LIST(&msg)->rdm_buffers);
+        to_push.size =
+            rc_rpt_pack_request(to_push.data.get(), bufsize, &sender_cid.get(), &msg.header, rdm_buf_list->rdm_buffers);
         if (to_push.size)
         {
           rpt_msgs_.push_back(from_client, std::move(to_push));
@@ -440,7 +483,11 @@ bool RPTDevice::Send(const etcpal::Uuid& broker_cid)
   // Try to send the message.
   if (msg)
   {
-    int res = rc_send(socket_, &msg->data.get()[msg->size_sent], msg->size - msg->size_sent, 0);
+    auto msg_data = msg->data.get();
+    if (!RDMNET_ASSERT_VERIFY(msg_data))
+      return false;
+
+    int res = rc_send(socket_, &msg_data[msg->size_sent], msg->size - msg->size_sent, 0);
     if (res >= 0)
     {
       msg->size_sent += res;
@@ -493,6 +540,10 @@ MessageRef* RPTDevice::RptMsgQ::front()
   auto con_pair = rpt_msgs_.upper_bound(current_controller_);
   if (con_pair == rpt_msgs_.end())
     con_pair = rpt_msgs_.begin();
+
+  if (!RDMNET_ASSERT_VERIFY(con_pair != rpt_msgs_.end()))
+    return nullptr;
+
   while (con_pair->first != current_controller_)
   {
     if (!con_pair->second.empty())

@@ -73,7 +73,7 @@ etcpal::Error BrokerCore::Startup(const rdmnet::Broker::Settings& settings,
   if (!started_)
   {
     // Check the settings for validity
-    if (!settings.IsValid())
+    if (!settings.IsValid() || !components.socket_mgr || !components.threads || !components.disc)
       return kEtcPalErrInvalid;
 
     if (!rc_initialized())
@@ -96,10 +96,11 @@ etcpal::Error BrokerCore::Startup(const rdmnet::Broker::Settings& settings,
       components_.uids.SetNextDeviceId(2);
     }
 
-    if (!components_.socket_mgr->Startup())
-    {
+    if (!RDMNET_ASSERT_VERIFY(components_.socket_mgr))
       return kEtcPalErrSys;
-    }
+
+    if (!components_.socket_mgr->Startup())
+      return kEtcPalErrSys;
 
     auto err = StartBrokerServices();
     if (!err)
@@ -109,6 +110,9 @@ etcpal::Error BrokerCore::Startup(const rdmnet::Broker::Settings& settings,
     }
 
     started_ = true;
+
+    if (!RDMNET_ASSERT_VERIFY(components_.disc))
+      return kEtcPalErrSys;
 
     components_.disc->RegisterBroker(settings_, my_uid_, listen_interfaces_);
 
@@ -134,6 +138,9 @@ void BrokerCore::Shutdown(rdmnet_disconnect_reason_t disconnect_reason)
 {
   if (started_)
   {
+    if (!RDMNET_ASSERT_VERIFY(components_.disc) || !RDMNET_ASSERT_VERIFY(components_.socket_mgr))
+      return;
+
     components_.disc->UnregisterBroker();
     StopBrokerServices(disconnect_reason);
     components_.socket_mgr->Shutdown();
@@ -267,8 +274,8 @@ etcpal::Expected<etcpal_socket_t> BrokerCore::StartListening(const etcpal::IpAdd
     etcpal_close(listen_sock);
     if (BROKER_CAN_LOG(ETCPAL_LOG_ERR))
     {
-      log_->Error("Broker: Bind to %s failed on listen socket with error: %s.", addr.ToString().c_str(),
-                  res.ToCString());
+      BROKER_LOG_ERR("Broker: Bind to %s failed on listen socket with error: %s.", addr.ToString().c_str(),
+                     res.ToCString());
     }
     return res.code();
   }
@@ -302,6 +309,9 @@ etcpal::Expected<etcpal_socket_t> BrokerCore::StartListening(const etcpal::IpAdd
 
 etcpal::Error BrokerCore::StartBrokerServices()
 {
+  if (!RDMNET_ASSERT_VERIFY(components_.threads))
+    return kEtcPalErrSys;
+
   etcpal::Error res = components_.threads->AddClientServiceThread();
   if (!res)
     return res;
@@ -362,12 +372,18 @@ etcpal::Error BrokerCore::StartBrokerServices()
 
 void BrokerCore::StopBrokerServices(rdmnet_disconnect_reason_t disconnect_reason)
 {
+  if (!RDMNET_ASSERT_VERIFY(components_.threads))
+    return;
+
   components_.threads->StopThreads();
 
   // No new connections coming in, manually shut down the existing ones.
   etcpal::WriteGuard clients_write(client_lock_);
   for (auto& client_pair : clients_)
   {
+    if (!RDMNET_ASSERT_VERIFY(client_pair.second))
+      return;
+
     ClientWriteGuard client_write(*client_pair.second);
     MarkLockedClientForDestruction(*client_pair.second, ClientDestroyAction::SendDisconnect(disconnect_reason));
     client_pair.second->Send(settings_.cid);
@@ -378,18 +394,23 @@ void BrokerCore::StopBrokerServices(rdmnet_disconnect_reason_t disconnect_reason
 
 bool BrokerCore::HandleNewConnection(etcpal_socket_t new_sock, const etcpal::SockAddr& addr)
 {
+  if (!RDMNET_ASSERT_VERIFY(components_.socket_mgr))
+    return false;
+
   if (etcpal_setblocking(new_sock, false) != kEtcPalErrOk)
   {
     if (BROKER_CAN_LOG(ETCPAL_LOG_ERR))
     {
-      log_->Error("Error translating socket into non-blocking socket for new connection from %s",
-                  addr.ToString().c_str());
+      BROKER_LOG_ERROR("Error translating socket into non-blocking socket for new connection from %s",
+                       addr.ToString().c_str());
     }
     return false;
   }
 
   if (BROKER_CAN_LOG(ETCPAL_LOG_INFO))
-    log_->Info("Creating a new connection for address %s", addr.ToString().c_str());
+  {
+    BROKER_LOG_INFO("Creating a new connection for address %s", addr.ToString().c_str());
+  }
 
   BrokerClient::Handle new_handle = BrokerClient::kInvalidHandle;
   bool                 result = false;
@@ -439,6 +460,9 @@ bool BrokerCore::ServiceClients()
 
     for (auto& client : clients_)
     {
+      if (!RDMNET_ASSERT_VERIFY(client.second))
+        return false;
+
       ClientWriteGuard client_write(*client.second);
       if (client.second->TcpConnExpired())
         MarkLockedClientForDestruction(*client.second);
@@ -489,6 +513,9 @@ void BrokerCore::HandleOtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
     std::string addrs;
     for (size_t i = 0; i < broker_info.num_listen_addrs; ++i)
     {
+      if (!RDMNET_ASSERT_VERIFY(broker_info.listen_addrs))
+        return;
+
       char addr_string[ETCPAL_IP_STRING_BYTES];
       if (kEtcPalErrOk == etcpal_ip_to_string(&broker_info.listen_addrs[i], addr_string))
       {
@@ -498,8 +525,11 @@ void BrokerCore::HandleOtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
       }
     }
 
-    log_->Log(log_pri, "Broker \"%s\", ip[%s] found at same scope(\"%s\") as this broker.",
-              broker_info.service_instance_name, addrs.c_str(), broker_info.scope);
+    if (!RDMNET_ASSERT_VERIFY(broker_info.service_instance_name) || !RDMNET_ASSERT_VERIFY(broker_info.scope))
+      return;
+
+    BROKER_LOG(log_pri, "Broker \"%s\", ip[%s] found at same scope(\"%s\") as this broker.",
+               broker_info.service_instance_name, addrs.c_str(), broker_info.scope);
   }
   if (!service_registered_)
   {
@@ -534,6 +564,9 @@ std::vector<BrokerClient::Handle> BrokerCore::GetClientSnapshot(bool     include
       if (client.second)
       {
         RPTClient* rpt = static_cast<RPTClient*>(client.second.get());
+        if (!RDMNET_ASSERT_VERIFY(rpt))
+          return std::vector<BrokerClient::Handle>();
+
         if (((include_devices && (rpt->client_type_ == kRPTClientTypeDevice)) ||
              (include_controllers && (rpt->client_type_ == kRPTClientTypeController)) ||
              (include_unknown && (rpt->client_type_ == kRPTClientTypeUnknown))) &&
@@ -614,6 +647,9 @@ void BrokerCore::DestroyMarkedClientsLocked()
       auto client = clients_.find(to_destroy);
       if (client != clients_.end())
       {
+        if (!RDMNET_ASSERT_VERIFY(client->second) || !RDMNET_ASSERT_VERIFY(components_.socket_mgr))
+          return;
+
         if (client->second->socket_ != ETCPAL_SOCKET_INVALID)
           components_.socket_mgr->RemoveSocket(client->second->handle_);
 
@@ -655,6 +691,9 @@ HandleMessageResult BrokerCore::HandleSocketMessageReceived(BrokerClient::Handle
   {
     case ACN_VECTOR_ROOT_BROKER: {
       const BrokerMessage* bmsg = RDMNET_GET_BROKER_MSG(&message);
+      if (!RDMNET_ASSERT_VERIFY(bmsg))
+        return result;
+
       switch (bmsg->vector)
       {
         case VECTOR_BROKER_CONNECT:
@@ -665,8 +704,12 @@ HandleMessageResult BrokerCore::HandleSocketMessageReceived(BrokerClient::Handle
           BROKER_LOG_DEBUG("Received Fetch Client List from Client %d; sending Client List.", client_handle);
           break;
         case VECTOR_BROKER_DISCONNECT:
+          auto disconnect_msg = BROKER_GET_DISCONNECT_MSG(bmsg);
+          if (!RDMNET_ASSERT_VERIFY(disconnect_msg))
+            return result;
+
           BROKER_LOG_DEBUG("Client %d sent disconnect message with reason '%s'.", client_handle,
-                           rdmnet_disconnect_reason_to_string(BROKER_GET_DISCONNECT_MSG(bmsg)->disconnect_reason));
+                           rdmnet_disconnect_reason_to_string(disconnect_msg->disconnect_reason));
           MarkClientForDestruction(client_handle);
         case VECTOR_BROKER_NULL:
           // Do nothing - the heartbeat timer is already reset
@@ -692,6 +735,9 @@ HandleMessageResult BrokerCore::HandleSocketMessageReceived(BrokerClient::Handle
 
 void BrokerCore::ProcessConnectRequest(BrokerClient::Handle client_handle, const BrokerClientConnectMsg* cmsg)
 {
+  if (!RDMNET_ASSERT_VERIFY(cmsg))
+    return;
+
   bool                    deny_connection = true;
   rdmnet_connect_status_t connect_status = kRdmnetConnectScopeMismatch;
 
@@ -700,8 +746,11 @@ void BrokerCore::ProcessConnectRequest(BrokerClient::Handle client_handle, const
     switch (cmsg->client_entry.client_protocol)
     {
       case E133_CLIENT_PROTOCOL_RPT:
-        deny_connection =
-            !ProcessRPTConnectRequest(client_handle, *(GET_RPT_CLIENT_ENTRY(&cmsg->client_entry)), connect_status);
+        auto rpt_client_entry = GET_RPT_CLIENT_ENTRY(&cmsg->client_entry);
+        if (!RDMNET_ASSERT_VERIFY(rpt_client_entry))
+          return result;
+
+        deny_connection = !ProcessRPTConnectRequest(client_handle, *rpt_client_entry, connect_status);
         break;
       // TODO EPT
       default:
@@ -752,6 +801,9 @@ bool BrokerCore::ProcessRPTConnectRequest(BrokerClient::Handle        client_han
       }
       else
       {
+        if (!RDMNET_ASSERT_VERIFY(clients_[client_handle]))
+          return false;
+
         std::unique_ptr<RPTController> controller(
             new RPTController(settings_.limits.controller_messages, updated_client_entry, *clients_[client_handle]));
         if (controller)
@@ -775,6 +827,9 @@ bool BrokerCore::ProcessRPTConnectRequest(BrokerClient::Handle        client_han
       }
       else
       {
+        if (!RDMNET_ASSERT_VERIFY(clients_[client_handle]))
+          return false;
+
         std::unique_ptr<RPTDevice> device(
             new RPTDevice(settings_.limits.device_messages, updated_client_entry, *clients_[client_handle]));
         if (device)
@@ -793,7 +848,11 @@ bool BrokerCore::ProcessRPTConnectRequest(BrokerClient::Handle        client_han
     // Send the connect reply
     BrokerMessage msg;
     msg.vector = VECTOR_BROKER_CONNECT_REPLY;
+
     BrokerConnectReplyMsg* creply = BROKER_GET_CONNECT_REPLY_MSG(&msg);
+    if (!RDMNET_ASSERT_VERIFY(creply))
+      return false;
+
     creply->connect_status = kRdmnetConnectOk;
     creply->e133_version = E133_VERSION;
     creply->broker_uid = my_uid_.get();
@@ -865,10 +924,15 @@ HandleMessageResult BrokerCore::ProcessRPTMessage(BrokerClient::Handle client_ha
   etcpal::ReadGuard clients_read(client_lock_);
 
   HandleMessageResult result = HandleMessageResult::kGetNextMessage;
+  if (!RDMNET_ASSERT_VERIFY(msg))
+    return result;
 
   const RptMessage* rptmsg = RDMNET_GET_RPT_MSG(msg);
-  bool              route_msg = false;
-  auto              client = clients_.find(client_handle);
+  if (!RDMNET_ASSERT_VERIFY(rptmsg))
+    return result;
+
+  bool route_msg = false;
+  auto client = clients_.find(client_handle);
 
   if ((client != clients_.end()) && client->second)
   {
@@ -893,17 +957,24 @@ HandleMessageResult BrokerCore::ProcessRPTMessage(BrokerClient::Handle client_ha
                   "Received Request PDU addressed to invalid or not found UID %04x:%08x from Controller %d",
                   rptmsg->header.dest_uid.manu, rptmsg->header.dest_uid.id, client_handle);
             }
-            else if (RPT_GET_RDM_BUF_LIST(rptmsg)->num_rdm_buffers > 1)
-            {
-              // There should only ever be one RDM command in an RPT request.
-              result = SendStatus(controller, rptmsg->header, kRptStatusInvalidMessage);
-              BROKER_LOG_DEBUG(
-                  "Received Request PDU from Controller %d which incorrectly contains multiple RDM Command PDUs",
-                  client_handle);
-            }
             else
             {
-              route_msg = true;
+              auto rdm_buf_list = RPT_GET_RDM_BUF_LIST(rptmsg);
+              if (!RDMNET_ASSERT_VERIFY(rdm_buf_list))
+                return result;
+
+              if (rdm_buf_list->num_rdm_buffers > 1)
+              {
+                // There should only ever be one RDM command in an RPT request.
+                result = SendStatus(controller, rptmsg->header, kRptStatusInvalidMessage);
+                BROKER_LOG_DEBUG(
+                    "Received Request PDU from Controller %d which incorrectly contains multiple RDM Command PDUs",
+                    client_handle);
+              }
+              else
+              {
+                route_msg = true;
+              }
             }
           }
           else
@@ -917,7 +988,11 @@ HandleMessageResult BrokerCore::ProcessRPTMessage(BrokerClient::Handle client_ha
           {
             if (IsValidDeviceDestinationUID(rptmsg->header.dest_uid))
             {
-              if (RPT_GET_STATUS_MSG(rptmsg)->status_code != kRptStatusBroadcastComplete)
+              auto status_msg = RPT_GET_STATUS_MSG(rptmsg);
+              if (!RDMNET_ASSERT_VERIFY(status_msg))
+                return result;
+
+              if (status_msg->status_code != kRptStatusBroadcastComplete)
                 route_msg = true;
               else
                 BROKER_LOG_DEBUG("Device %d sent broadcast complete message.", client_handle);
@@ -971,8 +1046,14 @@ HandleMessageResult BrokerCore::ProcessRPTMessage(BrokerClient::Handle client_ha
 // Needs read lock on client_lock_
 HandleMessageResult BrokerCore::RouteRPTMessage(BrokerClient::Handle client_handle, const RdmnetMessage* msg)
 {
+  if (!RDMNET_ASSERT_VERIFY(msg))
+    return HandleMessageResult::kGetNextMessage;
+
   const RptMessage* rptmsg = RDMNET_GET_RPT_MSG(msg);
-  uint16_t          device_manu;
+  if (!RDMNET_ASSERT_VERIFY(rptmsg))
+    return HandleMessageResult::kGetNextMessage;
+
+  uint16_t device_manu;
 
   ClientPushResult push_result = ClientPushResult::Error;
 
@@ -1019,9 +1100,14 @@ ClientPushResult PushToRptClients(BrokerClient::Handle sender_handle,
                                   ClientMap&           dest_clients,
                                   FilterFunction       dest_filter)
 {
+  if (!RDMNET_ASSERT_VERIFY(msg))
+    return ClientPushResult::Error;
+
   ClientPushResult result = ClientPushResult::Ok;
 
   const RptMessage* rptmsg = RDMNET_GET_RPT_MSG(msg);
+  if (!RDMNET_ASSERT_VERIFY(rptmsg))
+    return ClientPushResult::Error;
 
   // Lock all destination clients
   int num_successful_locks = 0;
@@ -1029,6 +1115,9 @@ ClientPushResult PushToRptClients(BrokerClient::Handle sender_handle,
   {
     if (dest_filter(dest))
     {
+      if (!RDMNET_ASSERT_VERIFY(dest->second))
+        return ClientPushResult::Error;
+
       if (dest->second->lock_.WriteLock())
       {
         ++num_successful_locks;
@@ -1046,6 +1135,9 @@ ClientPushResult PushToRptClients(BrokerClient::Handle sender_handle,
   {
     for (auto dest = dest_clients.begin(); dest != dest_clients.end(); ++dest)
     {
+      if (!RDMNET_ASSERT_VERIFY(dest->second))
+        return ClientPushResult::Error;
+
       if (dest_filter(dest) && !dest->second->HasRoomToPush())
         result = ClientPushResult::QueueFull;
     }
@@ -1058,6 +1150,9 @@ ClientPushResult PushToRptClients(BrokerClient::Handle sender_handle,
     {
       if (dest_filter(dest))
       {
+        if (!RDMNET_ASSERT_VERIFY(dest->second))
+          return ClientPushResult::Error;
+
         auto push_res = dest->second->Push(sender_handle, msg->sender_cid, *rptmsg);
 
         if (result == ClientPushResult::Ok)
@@ -1074,6 +1169,9 @@ ClientPushResult PushToRptClients(BrokerClient::Handle sender_handle,
 
     if (dest_filter(dest))
     {
+      if (!RDMNET_ASSERT_VERIFY(dest->second))
+        return ClientPushResult::Error;
+
       dest->second->lock_.WriteUnlock();
       --num_successful_locks;
     }
@@ -1085,6 +1183,9 @@ ClientPushResult PushToRptClients(BrokerClient::Handle sender_handle,
 // Needs read lock on client_lock_
 ClientPushResult BrokerCore::PushToAllControllers(BrokerClient::Handle sender_handle, const RdmnetMessage* msg)
 {
+  if (!RDMNET_ASSERT_VERIFY(msg))
+    return ClientPushResult::Error;
+
   // Push to every controller in controllers_
   auto dest_filter = [](const RptControllerMap::iterator& /*dest*/) { return true; };
   return PushToRptClients(sender_handle, msg, controllers_, dest_filter);
@@ -1093,6 +1194,9 @@ ClientPushResult BrokerCore::PushToAllControllers(BrokerClient::Handle sender_ha
 // Needs read lock on client_lock_
 ClientPushResult BrokerCore::PushToAllDevices(BrokerClient::Handle sender_handle, const RdmnetMessage* msg)
 {
+  if (!RDMNET_ASSERT_VERIFY(msg))
+    return ClientPushResult::Error;
+
   // Push to every device in devices_
   auto dest_filter = [](const RptDeviceMap::iterator& /*dest*/) { return true; };
   return PushToRptClients(sender_handle, msg, devices_, dest_filter);
@@ -1103,19 +1207,35 @@ ClientPushResult BrokerCore::PushToManuSpecificDevices(BrokerClient::Handle send
                                                        const RdmnetMessage* msg,
                                                        uint16_t             manu)
 {
+  if (!RDMNET_ASSERT_VERIFY(msg))
+    return ClientPushResult::Error;
+
   // Push to each device in devices_ that matches manu
-  auto dest_filter = [&](const RptDeviceMap::iterator& dest) { return ((dest->second->uid_.manu & 0x7fffu) == manu); };
+  auto dest_filter = [&](const RptDeviceMap::iterator& dest) {
+    if (!RDMNET_ASSERT_VERIFY(dest->second))
+      return false;
+
+    return ((dest->second->uid_.manu & 0x7fffu) == manu);
+  };
   return PushToRptClients(sender_handle, msg, devices_, dest_filter);
 }
 
 // Needs read lock on client_lock_
 ClientPushResult BrokerCore::PushToSpecificRptClient(BrokerClient::Handle sender_handle, const RdmnetMessage* msg)
 {
+  if (!RDMNET_ASSERT_VERIFY(msg))
+    return ClientPushResult::Error;
+
   const RptMessage* rptmsg = RDMNET_GET_RPT_MSG(msg);
+  if (!RDMNET_ASSERT_VERIFY(rptmsg))
+    return ClientPushResult::Error;
 
   auto dest_client = FindRptClient(rptmsg->header.dest_uid);
   if (dest_client != rpt_clients_.end())
   {
+    if (!RDMNET_ASSERT_VERIFY(dest_client->second))
+      return ClientPushResult::Error;
+
     // For performance, since this is a single client, lock and call Push directly instead of calling PushToRptClients.
     ClientWriteGuard client_write(*dest_client->second);
     return dest_client->second->Push(sender_handle, msg->sender_cid, *rptmsg);
@@ -1156,11 +1276,19 @@ HandleMessageResult BrokerCore::HandleRPTClientBadPushResult(const RptHeader& he
   {
     auto dest_client = FindRptClient(header.dest_uid);
     if (dest_client == rpt_clients_.end())
+    {
       not_found = true;
-    else if (dest_client->second->client_type_ == kRPTClientTypeDevice)
-      dest_type = "Device";
-    else if (dest_client->second->client_type_ == kRPTClientTypeController)
-      dest_type = "Controller";
+    }
+    else
+    {
+      if (!RDMNET_ASSERT_VERIFY(dest_client->second))
+        return HandleMessageResult::kGetNextMessage;
+
+      if (dest_client->second->client_type_ == kRPTClientTypeDevice)
+        dest_type = "Device";
+      else if (dest_client->second->client_type_ == kRPTClientTypeController)
+        dest_type = "Controller";
+    }
   }
 
   if (not_found)
@@ -1192,6 +1320,9 @@ void BrokerCore::ResetClientHeartbeatTimer(BrokerClient::Handle client_handle)
   auto              client = clients_.find(client_handle);
   if (client != clients_.end())
   {
+    if (!RDMNET_ASSERT_VERIFY(client->second))
+      return;
+
     ClientWriteGuard client_write(*client->second);
     client->second->MessageReceived();
   }
@@ -1206,6 +1337,9 @@ void BrokerCore::SendClientList(BrokerClient::Handle client_handle)
   auto              to_client = clients_.find(client_handle);
   if (to_client != clients_.end())
   {
+    if (!RDMNET_ASSERT_VERIFY(to_client->second))
+      return;
+
     if (to_client->second->client_protocol_ == E133_CLIENT_PROTOCOL_RPT)
       SendRptClientList(bmsg, static_cast<RPTClient&>(*to_client->second));
     else
@@ -1219,6 +1353,9 @@ void BrokerCore::SendRptClientList(BrokerMessage& bmsg, RPTClient& to_cli)
   entries.reserve(rpt_clients_.size());
   for (auto& client : rpt_clients_)
   {
+    if (!RDMNET_ASSERT_VERIFY(client.second))
+      return;
+
     entries.emplace_back();
     RdmnetRptClientEntry& rpt_entry = entries.back();
     RPTClient&            rpt_cli = static_cast<RPTClient&>(*client.second);
@@ -1230,29 +1367,52 @@ void BrokerCore::SendRptClientList(BrokerMessage& bmsg, RPTClient& to_cli)
   }
   if (!entries.empty())
   {
-    BROKER_GET_CLIENT_LIST(&bmsg)->client_protocol = kClientProtocolRPT;
-    BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&bmsg))->client_entries = entries.data();
-    BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&bmsg))->num_client_entries = entries.size();
+    auto client_list = BROKER_GET_CLIENT_LIST(&bmsg);
+    if (!RDMNET_ASSERT_VERIFY(client_list))
+      return;
+
+    auto rpt_client_list = BROKER_GET_RPT_CLIENT_LIST(client_list);
+    if (!RDMNET_ASSERT_VERIFY(rpt_client_list))
+      return;
+
+    client_list->client_protocol = kClientProtocolRPT;
+    rpt_client_list->client_entries = entries.data();
+    rpt_client_list->num_client_entries = entries.size();
     to_cli.Push(settings_.cid, bmsg);
   }
 }
 
 void BrokerCore::SendEptClientList(BrokerMessage& /*bmsg*/, EPTClient& /*to_cli*/)
 {
+  // TODO
 }
 
 void BrokerCore::SendClientsAdded(BrokerClient::Handle handle_to_ignore, std::vector<RdmnetRptClientEntry>& entries)
 {
   BrokerMessage bmsg;
   bmsg.vector = VECTOR_BROKER_CLIENT_ADD;
-  BROKER_GET_CLIENT_LIST(&bmsg)->client_protocol = kClientProtocolRPT;
-  BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&bmsg))->client_entries = entries.data();
-  BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&bmsg))->num_client_entries = entries.size();
+
+  auto client_list = BROKER_GET_CLIENT_LIST(&bmsg);
+  if (!RDMNET_ASSERT_VERIFY(client_list))
+    return;
+
+  auto rpt_client_list = BROKER_GET_RPT_CLIENT_LIST(client_list);
+  if (!RDMNET_ASSERT_VERIFY(rpt_client_list))
+    return;
+
+  client_list->client_protocol = kClientProtocolRPT;
+  rpt_client_list->client_entries = entries.data();
+  rpt_client_list->num_client_entries = entries.size();
 
   for (const auto controller : controllers_)
   {
     if (controller.first != handle_to_ignore)
+    {
+      if (!RDMNET_ASSERT_VERIFY(controller.second))
+        return;
+
       controller.second->Push(settings_.cid, bmsg);
+    }
   }
 }
 
@@ -1260,12 +1420,24 @@ void BrokerCore::SendClientsRemoved(std::vector<RdmnetRptClientEntry>& entries)
 {
   BrokerMessage bmsg;
   bmsg.vector = VECTOR_BROKER_CLIENT_REMOVE;
-  BROKER_GET_CLIENT_LIST(&bmsg)->client_protocol = kClientProtocolRPT;
-  BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&bmsg))->client_entries = entries.data();
-  BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(&bmsg))->num_client_entries = entries.size();
+
+  auto client_list = BROKER_GET_CLIENT_LIST(&bmsg);
+  if (!RDMNET_ASSERT_VERIFY(client_list))
+    return;
+
+  auto rpt_client_list = BROKER_GET_RPT_CLIENT_LIST(client_list);
+  if (!RDMNET_ASSERT_VERIFY(rpt_client_list))
+    return;
+
+  client_list->client_protocol = kClientProtocolRPT;
+  rpt_client_list->client_entries = entries.data();
+  rpt_client_list->num_client_entries = entries.size();
 
   for (const auto controller : controllers_)
   {
+    if (!RDMNET_ASSERT_VERIFY(controller.second))
+      return;
+
     controller.second->Push(settings_.cid, bmsg);
   }
 }
@@ -1276,6 +1448,9 @@ HandleMessageResult BrokerCore::SendStatus(RPTController*     controller,
                                            rpt_status_code_t  status_code,
                                            const std::string& status_str)
 {
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return HandleMessageResult::kGetNextMessage;
+
   RptHeader new_header;
   new_header.dest_endpoint_id = header.source_endpoint_id;
   new_header.dest_uid = header.source_uid;
