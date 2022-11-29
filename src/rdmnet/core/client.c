@@ -81,11 +81,14 @@ typedef struct SupportedParameter
 
 /***************************** Private macros ********************************/
 
-#define GET_CLIENT_FROM_LLRP_TARGET(targetptr) (RCClient*)((char*)(targetptr)-offsetof(RCClient, llrp_target))
-#define GET_CLIENT_SCOPE_FROM_CONN(connptr) (RCClientScope*)((char*)(connptr)-offsetof(RCClientScope, conn))
+#define GET_CLIENT_FROM_LLRP_TARGET(targetptr) \
+  (RDMNET_ASSERT_VERIFY(targetptr) ? (RCClient*)((char*)(targetptr)-offsetof(RCClient, llrp_target)) : NULL)
+#define GET_CLIENT_SCOPE_FROM_CONN(connptr) \
+  (RDMNET_ASSERT_VERIFY(connptr) ? (RCClientScope*)((char*)(connptr)-offsetof(RCClientScope, conn)) : NULL)
 
-#define RC_CLIENT_LOCK(client_ptr) etcpal_mutex_lock((client_ptr)->lock)
-#define RC_CLIENT_UNLOCK(client_ptr) etcpal_mutex_unlock((client_ptr)->lock)
+#define RC_CLIENT_LOCK(client_ptr) (RDMNET_ASSERT_VERIFY(client_ptr) ? etcpal_mutex_lock((client_ptr)->lock) : false)
+#define RC_CLIENT_UNLOCK(client_ptr) \
+  (RDMNET_ASSERT_VERIFY(client_ptr) ? etcpal_mutex_unlock((client_ptr)->lock) : false)
 
 #define RDM_CC_IS_NON_DISC_RESPONSE(cc) (((cc) == E120_GET_COMMAND_RESPONSE) || ((cc) == E120_SET_COMMAND_RESPONSE))
 #define RDM_CC_IS_NON_DISC_COMMAND(cc) (((cc) == E120_GET_COMMAND) || ((cc) == E120_SET_COMMAND))
@@ -95,18 +98,24 @@ typedef struct SupportedParameter
     return kEtcPalErrInvalid;
 
 #if RDMNET_DYNAMIC_MEM
-#define BEGIN_FOR_EACH_CLIENT_SCOPE(client_ptr)                                                                       \
-  for (RCClientScope** scope_ptr = (client_ptr)->scopes; scope_ptr < (client_ptr)->scopes + (client_ptr)->num_scopes; \
-       ++scope_ptr)                                                                                                   \
-  {                                                                                                                   \
-    RCClientScope* scope = *scope_ptr;
+#define BEGIN_FOR_EACH_CLIENT_SCOPE(client_ptr)                                    \
+  if (RDMNET_ASSERT_VERIFY(client_ptr))                                            \
+  {                                                                                \
+    for (RCClientScope** scope_ptr = (client_ptr)->scopes;                         \
+         scope_ptr < (client_ptr)->scopes + (client_ptr)->num_scopes; ++scope_ptr) \
+    {                                                                              \
+      RCClientScope* scope = *scope_ptr;
 #else
-#define BEGIN_FOR_EACH_CLIENT_SCOPE(client_ptr)                                                                  \
-  for (RCClientScope* scope = (client_ptr)->scopes; scope < (client_ptr)->scopes + RDMNET_MAX_SCOPES_PER_CLIENT; \
-       ++scope)                                                                                                  \
-  {
+#define BEGIN_FOR_EACH_CLIENT_SCOPE(client_ptr)                                                                    \
+  if (RDMNET_ASSERT_VERIFY(client_ptr))                                                                            \
+  {                                                                                                                \
+    for (RCClientScope* scope = (client_ptr)->scopes; scope < (client_ptr)->scopes + RDMNET_MAX_SCOPES_PER_CLIENT; \
+         ++scope)                                                                                                  \
+    {
 #endif
-#define END_FOR_EACH_CLIENT_SCOPE(client_ptr) }
+#define END_FOR_EACH_CLIENT_SCOPE(client_ptr) \
+  }                                           \
+  }
 
 /**************************** Private variables ******************************/
 
@@ -309,7 +318,9 @@ etcpal_error_t rc_rpt_client_register(RCClient*                  client,
                                       const EtcPalMcastNetintId* llrp_netints,
                                       size_t                     num_llrp_netints)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client))
+    return kEtcPalErrSys;
+
   client->marked_for_destruction = false;
 
   init_int_handle_manager(&client->scope_handle_manager, -1, scope_handle_in_use, client);
@@ -363,7 +374,8 @@ etcpal_error_t rc_rpt_client_register(RCClient*                  client,
  */
 bool rc_client_unregister(RCClient* client, rdmnet_disconnect_reason_t disconnect_reason)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client))
+    return false;
 
   BEGIN_FOR_EACH_CLIENT_SCOPE(client)
   {
@@ -388,17 +400,19 @@ etcpal_error_t rc_client_add_scope(RCClient*                client,
                                    const RdmnetScopeConfig* scope_config,
                                    rdmnet_client_scope_t*   scope_handle)
 {
-  RDMNET_ASSERT(client);
-  RDMNET_ASSERT(scope_config);
-  RDMNET_ASSERT(scope_handle);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(scope_config) || !RDMNET_ASSERT_VERIFY(scope_handle))
+    return kEtcPalErrSys;
 
   if (get_scope_by_id(client, scope_config->scope) != NULL)
     return kEtcPalErrExists;
 
-  RCClientScope* new_entry;
+  RCClientScope* new_entry = NULL;
   etcpal_error_t res = create_and_add_scope_entry(client, scope_config, &new_entry);
   if (res == kEtcPalErrOk)
   {
+    if (!RDMNET_ASSERT_VERIFY(new_entry))
+      return kEtcPalErrSys;
+
     // Start discovery or connection on the new scope (depending on whether a static broker was
     // configured)
     if (ETCPAL_IP_IS_INVALID(&scope_config->static_broker_addr.ip))
@@ -428,7 +442,8 @@ etcpal_error_t rc_client_remove_scope(RCClient*                  client,
                                       rdmnet_client_scope_t      scope_handle,
                                       rdmnet_disconnect_reason_t disconnect_reason)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client))
+    return kEtcPalErrSys;
 
   CHECK_SCOPE_HANDLE(scope_handle);
   RCClientScope* scope = get_scope(client, scope_handle);
@@ -449,9 +464,11 @@ etcpal_error_t rc_client_change_scope(RCClient*                  client,
                                       const RdmnetScopeConfig*   new_scope_config,
                                       rdmnet_disconnect_reason_t disconnect_reason)
 {
-  RDMNET_ASSERT(client);
-  RDMNET_ASSERT(new_scope_config);
-  RDMNET_ASSERT(new_scope_config->scope);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(new_scope_config) ||
+      !RDMNET_ASSERT_VERIFY(new_scope_config->scope))
+  {
+    return kEtcPalErrSys;
+  }
 
   CHECK_SCOPE_HANDLE(scope_handle);
   RCClientScope* scope = get_scope(client, scope_handle);
@@ -507,7 +524,8 @@ etcpal_error_t rc_client_get_scope(RCClient*             client,
                                    char*                 scope_str_buf,
                                    EtcPalSockAddr*       static_broker_addr)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client))
+    return kEtcPalErrSys;
 
   CHECK_SCOPE_HANDLE(scope_handle);
   RCClientScope* scope = get_scope(client, scope_handle);
@@ -531,7 +549,8 @@ etcpal_error_t rc_client_change_search_domain(RCClient*                  client,
                                               const char*                new_search_domain,
                                               rdmnet_disconnect_reason_t disconnect_reason)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(new_search_domain))
+    return kEtcPalErrSys;
 
   if (strcmp(new_search_domain, client->search_domain) == 0)
   {
@@ -567,7 +586,9 @@ etcpal_error_t rc_client_change_search_domain(RCClient*                  client,
  */
 etcpal_error_t rc_client_request_client_list(RCClient* client, rdmnet_client_scope_t scope_handle)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client))
+    return kEtcPalErrSys;
+
   CHECK_SCOPE_HANDLE(scope_handle);
   RCClientScope* scope = get_scope(client, scope_handle);
   if (!scope)
@@ -585,13 +606,20 @@ etcpal_error_t rc_client_request_dynamic_uids(RCClient*             client,
                                               const EtcPalUuid*     responder_ids,
                                               size_t                num_responders)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(responder_ids))
+    return kEtcPalErrSys;
+
   CHECK_SCOPE_HANDLE(scope_handle);
   RCClientScope* scope = get_scope(client, scope_handle);
   if (!scope)
     return kEtcPalErrNotFound;
-  return rc_broker_send_request_dynamic_uids(&scope->conn, &client->cid, RC_RPT_CLIENT_DATA(client)->uid.manu,
-                                             responder_ids, num_responders);
+
+  const RCRptClientData* rpt_client_data = RC_RPT_CLIENT_DATA(client);
+  if (!RDMNET_ASSERT_VERIFY(rpt_client_data))
+    return kEtcPalErrSys;
+
+  return rc_broker_send_request_dynamic_uids(&scope->conn, &client->cid, rpt_client_data->uid.manu, responder_ids,
+                                             num_responders);
 }
 
 /*
@@ -604,7 +632,9 @@ etcpal_error_t rc_client_request_responder_ids(RCClient*             client,
                                                const RdmUid*         uids,
                                                size_t                num_uids)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(uids))
+    return kEtcPalErrSys;
+
   CHECK_SCOPE_HANDLE(scope_handle);
   RCClientScope* scope = get_scope(client, scope_handle);
   if (!scope)
@@ -626,7 +656,9 @@ etcpal_error_t rc_client_send_rdm_command(RCClient*                    client,
                                           uint8_t                      data_len,
                                           uint32_t*                    seq_num)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(destination))
+    return kEtcPalErrSys;
+
   CHECK_SCOPE_HANDLE(scope_handle);
   RCClientScope* scope = get_scope(client, scope_handle);
   if (!scope)
@@ -671,7 +703,9 @@ etcpal_error_t rc_client_send_rdm_ack(RCClient*                    client,
                                       const uint8_t*               response_data,
                                       size_t                       response_data_len)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(received_cmd))
+    return kEtcPalErrSys;
+
   CHECK_SCOPE_HANDLE(scope_handle);
   RCClientScope* scope = get_scope(client, scope_handle);
   if (!scope)
@@ -697,7 +731,9 @@ etcpal_error_t rc_client_send_rdm_nack(RCClient*                    client,
                                        const RdmnetSavedRdmCommand* received_cmd,
                                        rdm_nack_reason_t            nack_reason)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(received_cmd))
+    return kEtcPalErrSys;
+
   CHECK_SCOPE_HANDLE(scope_handle);
   RCClientScope* scope = get_scope(client, scope_handle);
   if (!scope)
@@ -722,7 +758,9 @@ etcpal_error_t rc_client_send_rdm_update(RCClient*             client,
                                          size_t                data_len)
 
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client))
+    return kEtcPalErrSys;
+
   CHECK_SCOPE_HANDLE(scope_handle);
   RCClientScope* scope = get_scope(client, scope_handle);
   if (!scope)
@@ -743,7 +781,9 @@ etcpal_error_t rc_client_send_rdm_update_from_responder(RCClient*               
                                                         const uint8_t*          data,
                                                         size_t                  data_len)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(source_addr))
+    return kEtcPalErrSys;
+
   CHECK_SCOPE_HANDLE(scope_handle);
   RCClientScope* scope = get_scope(client, scope_handle);
   if (!scope)

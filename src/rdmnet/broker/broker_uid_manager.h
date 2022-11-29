@@ -54,8 +54,11 @@ public:
 
   void SetNextDeviceId(uint32_t next_device_id)
   {
-    etcpal::WriteGuard write_guard(*lock_);
-    next_device_id_ = next_device_id;
+    if (lock_)
+    {
+      etcpal::WriteGuard write_guard(*lock_);
+      next_device_id_ = next_device_id;
+    }
   }
 
 private:

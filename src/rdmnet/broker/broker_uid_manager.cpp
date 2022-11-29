@@ -21,6 +21,9 @@
 
 BrokerUidManager::AddResult BrokerUidManager::AddStaticUid(BrokerClient::Handle client_handle, const RdmUid& static_uid)
 {
+  if (!lock_)
+    return BrokerUidManager::AddResult::kCapacityExceeded;
+
   etcpal::WriteGuard write_guard(*lock_);
 
   if (uid_lookup_.size() >= max_uid_capacity_)
@@ -37,6 +40,9 @@ BrokerUidManager::AddResult BrokerUidManager::AddDynamicUid(BrokerClient::Handle
                                                             const etcpal::Uuid&  cid_or_rid,
                                                             RdmUid&              new_dynamic_uid)
 {
+  if (!lock_)
+    return BrokerUidManager::AddResult::kCapacityExceeded;
+
   etcpal::WriteGuard write_guard(*lock_);
 
   if (uid_lookup_.size() >= max_uid_capacity_)
@@ -74,8 +80,11 @@ BrokerUidManager::AddResult BrokerUidManager::AddDynamicUid(BrokerClient::Handle
 
 void BrokerUidManager::RemoveUid(const RdmUid& uid)
 {
+  if (!lock_)
+    return;
+
   etcpal::WriteGuard write_guard(*lock_);
- 
+
   auto uid_data = uid_lookup_.find(uid);
   if (uid_data != uid_lookup_.end())
   {
@@ -89,8 +98,11 @@ void BrokerUidManager::RemoveUid(const RdmUid& uid)
 
 bool BrokerUidManager::UidToHandle(const RdmUid& uid, BrokerClient::Handle& client_handle) const
 {
+  if (!lock_)
+    return false;
+
   etcpal::ReadGuard read_guard(*lock_);
- 
+
   const auto uid_data = uid_lookup_.find(uid);
   if (uid_data != uid_lookup_.end())
   {

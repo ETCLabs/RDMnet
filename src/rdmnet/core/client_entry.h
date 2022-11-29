@@ -68,28 +68,30 @@ typedef struct ClientEntry
  * @param clientryptr Pointer to ClientEntry.
  * @return (bool) whether the ClientEntry contains an RdmnetRptClientEntry.
  */
-#define IS_RPT_CLIENT_ENTRY(clientryptr) ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_RPT)
+#define IS_RPT_CLIENT_ENTRY(clientryptr) \
+  (RDMNET_ASSERT_VERIFY(clientryptr) && ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_RPT))
 
 /**
  * @brief Get the encapsulated RdmnetRptClientEntry from a ClientEntry.
  * @param clientryptr Pointer to ClientEntry.
  * @return Pointer to encapsulated RdmnetRptClientEntry structure (RdmnetRptClientEntry*).
  */
-#define GET_RPT_CLIENT_ENTRY(clientryptr) (&(clientryptr)->data.rpt)
+#define GET_RPT_CLIENT_ENTRY(clientryptr) (RDMNET_ASSERT_VERIFY(clientryptr) ? &(clientryptr)->data.rpt : NULL)
 
 /**
  * @brief Determine whether a ClientEntry contains an RdmnetEptClientEntry.
  * @param clientryptr Pointer to ClientEntry.
  * @return (bool) whether the ClientEntry contains an RdmnetEptClientEntry.
  */
-#define IS_EPT_CLIENT_ENTRY(clientryptr) ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_EPT)
+#define IS_EPT_CLIENT_ENTRY(clientryptr) \
+  (RDMNET_ASSERT_VERIFY(clientryptr) && ((clientryptr)->client_protocol == E133_CLIENT_PROTOCOL_EPT))
 
 /**
  * @brief Get the encapsulated RdmnetEptClientEntry from a ClientEntry.
  * @param clientryptr Pointer to ClientEntry.
  * @return Pointer to encapsulated RdmnetEptClientEntry structure (RdmnetEptClientEntry*).
  */
-#define GET_EPT_CLIENT_ENTRY(clientryptr) (&(clientryptr)->data.ept)
+#define GET_EPT_CLIENT_ENTRY(clientryptr) (RDMNET_ASSERT_VERIFY(clientryptr) ? &(clientryptr)->data.ept : NULL)
 
 bool rc_create_rpt_client_entry(const EtcPalUuid*     cid,
                                 const RdmUid*         uid,

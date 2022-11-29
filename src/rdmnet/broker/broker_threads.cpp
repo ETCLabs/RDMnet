@@ -140,6 +140,8 @@ ClientServiceThread::~ClientServiceThread()
 etcpal::Error BrokerThreadManager::AddListenThread(etcpal_socket_t listen_sock)
 {
   std::unique_ptr<ListenThread> new_thread(new ListenThread(listen_sock, notify_, log_));
+  if (!new_thread)
+    return kEtcPalErrNoMem;
 
   auto start_res = new_thread->Start();
   if (start_res)
@@ -151,6 +153,8 @@ etcpal::Error BrokerThreadManager::AddListenThread(etcpal_socket_t listen_sock)
 etcpal::Error BrokerThreadManager::AddClientServiceThread()
 {
   std::unique_ptr<ClientServiceThread> new_thread(new ClientServiceThread(notify_));
+  if (!new_thread)
+    return kEtcPalErrNoMem;
 
   auto start_res = new_thread->Start();
   if (start_res)

@@ -64,9 +64,12 @@ struct BrokerComponents final
 
   void SetNotify(BrokerComponentNotify* notify)
   {
-    socket_mgr->SetNotify(notify);
-    threads->SetNotify(notify);
-    disc->SetNotify(notify);
+    if (socket_mgr)
+      socket_mgr->SetNotify(notify);
+    if (threads)
+      threads->SetNotify(notify);
+    if (disc)
+      disc->SetNotify(notify);
   }
 
   BrokerComponents(std::unique_ptr<BrokerSocketManager>   socket_mgr_in = CreateBrokerSocketManager(),

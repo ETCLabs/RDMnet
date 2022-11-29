@@ -30,6 +30,9 @@ extern "C" {
 
 void disccb_broker_registered(rdmnet_registered_broker_t handle, const char* assigned_service_name, void* context)
 {
+  if (!RDMNET_ASSERT_VERIFY(assigned_service_name))
+    return;
+
   BrokerDiscoveryManager* disc = static_cast<BrokerDiscoveryManager*>(context);
   if (disc)
   {
@@ -50,6 +53,9 @@ void disccb_other_broker_found(rdmnet_registered_broker_t  handle,
                                const RdmnetBrokerDiscInfo* broker_info,
                                void*                       context)
 {
+  if (!RDMNET_ASSERT_VERIFY(broker_info))
+    return;
+
   BrokerDiscoveryManager* disc = static_cast<BrokerDiscoveryManager*>(context);
   if (disc)
   {
@@ -62,6 +68,9 @@ void disccb_other_broker_lost(rdmnet_registered_broker_t handle,
                               const char*                service_name,
                               void*                      context)
 {
+  if (!RDMNET_ASSERT_VERIFY(scope) || !RDMNET_ASSERT_VERIFY(service_name))
+    return;
+
   BrokerDiscoveryManager* disc = static_cast<BrokerDiscoveryManager*>(context);
   if (disc)
   {
