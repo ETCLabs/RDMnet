@@ -798,7 +798,9 @@ etcpal_error_t rc_client_send_rpt_status(RCClient*                    client,
                                          rpt_status_code_t            status_code,
                                          const char*                  status_string)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(received_cmd))
+    return kEtcPalErrSys;
+
   CHECK_SCOPE_HANDLE(scope_handle);
   RCClientScope* scope = get_scope(client, scope_handle);
   if (!scope)
@@ -823,7 +825,9 @@ etcpal_error_t rc_client_send_llrp_ack(RCClient*                  client,
                                        const uint8_t*             response_data,
                                        uint8_t                    response_data_len)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(received_cmd))
+    return kEtcPalErrSys;
+
   return rc_llrp_target_send_ack(&client->llrp_target, received_cmd, response_data, response_data_len);
 }
 
@@ -831,7 +835,9 @@ etcpal_error_t rc_client_send_llrp_nack(RCClient*                  client,
                                         const LlrpSavedRdmCommand* received_cmd,
                                         rdm_nack_reason_t          nack_reason)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(received_cmd))
+    return kEtcPalErrSys;
+
   return rc_llrp_target_send_nack(&client->llrp_target, received_cmd, nack_reason);
 }
 
@@ -904,6 +910,9 @@ uint8_t* rc_client_get_internal_response_buf(size_t size)
 
 static bool copy_broker_listen_addrs(RCClientScope* scope, const RdmnetBrokerDiscInfo* broker_info)
 {
+  if (!RDMNET_ASSERT_VERIFY(scope) || !RDMNET_ASSERT_VERIFY(broker_info))
+    return false;
+
 #if RDMNET_DYNAMIC_MEM
   if (scope->num_broker_listen_addrs != broker_info->num_listen_addrs)
   {
@@ -936,6 +945,9 @@ static bool copy_broker_listen_addrs(RCClientScope* scope, const RdmnetBrokerDis
 
 void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info, void* context)
 {
+  if (!RDMNET_ASSERT_VERIFY(broker_info))
+    return;
+
   ETCPAL_UNUSED_ARG(handle);
   RDMNET_LOG_INFO("Broker '%s' for scope '%s' discovered.", broker_info->service_instance_name, broker_info->scope);
 
@@ -950,7 +962,8 @@ void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDis
         return;
       }
 
-      RDMNET_ASSERT(handle == scope->monitor_handle);
+      if (!RDMNET_ASSERT_VERIFY(handle == scope->monitor_handle))
+        return;
 
       if (!scope->broker_found)
       {
@@ -972,6 +985,9 @@ void monitorcb_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDis
 
 void monitorcb_broker_updated(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info, void* context)
 {
+  if (!RDMNET_ASSERT_VERIFY(broker_info))
+    return;
+
   ETCPAL_UNUSED_ARG(handle);
   RDMNET_LOG_DEBUG("Broker discovery info updated for broker '%s' on scope '%s'.", broker_info->service_instance_name,
                    broker_info->scope);
@@ -987,7 +1003,8 @@ void monitorcb_broker_updated(rdmnet_scope_monitor_t handle, const RdmnetBrokerD
         return;
       }
 
-      RDMNET_ASSERT(handle == scope->monitor_handle);
+      if (!RDMNET_ASSERT_VERIFY(handle == scope->monitor_handle))
+        return;
 
       if (scope->broker_found)
       {
@@ -1009,6 +1026,9 @@ void monitorcb_broker_lost(rdmnet_scope_monitor_t handle,
                            const char*            service_name,
                            void*                  context)
 {
+  if (!RDMNET_ASSERT_VERIFY(scope_str) || !RDMNET_ASSERT_VERIFY(service_name))
+    return;
+
   ETCPAL_UNUSED_ARG(handle);
   RCClientScope* scope = (RCClientScope*)context;
   if (scope)
@@ -1037,10 +1057,19 @@ void monitorcb_broker_lost(rdmnet_scope_monitor_t handle,
 
 void conncb_connected(RCConnection* conn, const RCConnectedInfo* connected_info)
 {
-  RCClientScope* scope = GET_CLIENT_SCOPE_FROM_CONN(conn);
-  RCClient*      client = scope->client;
+  if (!RDMNET_ASSERT_VERIFY(conn) || !RDMNET_ASSERT_VERIFY(connected_info))
+    return;
 
-  RDMNET_ASSERT(client->type == kClientProtocolRPT || client->type == kClientProtocolEPT);
+  RCClientScope* scope = GET_CLIENT_SCOPE_FROM_CONN(conn);
+  if (!RDMNET_ASSERT_VERIFY(scope))
+    return;
+
+  RCClient* client = scope->client;
+  if (!RDMNET_ASSERT_VERIFY(client))
+    return;
+
+  if (!RDMNET_ASSERT_VERIFY(client->type == kClientProtocolRPT || client->type == kClientProtocolEPT))
+    return;
 
   if (RC_CLIENT_LOCK(client))
   {
@@ -1049,7 +1078,11 @@ void conncb_connected(RCConnection* conn, const RCConnectedInfo* connected_info)
 
     if (client->type == kClientProtocolRPT)
     {
-      if (!RDMNET_UID_IS_STATIC(&RC_RPT_CLIENT_DATA(client)->uid))
+      const RCRptClientData* rpt_client_data = RC_RPT_CLIENT_DATA(client);
+      if (!RDMNET_ASSERT_VERIFY(rpt_client_data))
+        return;
+
+      if (!RDMNET_UID_IS_STATIC(&rpt_client_data->uid))
         scope->uid = connected_info->client_uid;
     }
 
@@ -1066,10 +1099,19 @@ void conncb_connected(RCConnection* conn, const RCConnectedInfo* connected_info)
 
 void conncb_connect_failed(RCConnection* conn, const RCConnectFailedInfo* failed_info)
 {
-  RCClientScope* scope = GET_CLIENT_SCOPE_FROM_CONN(conn);
-  RCClient*      client = scope->client;
+  if (!RDMNET_ASSERT_VERIFY(conn) || !RDMNET_ASSERT_VERIFY(failed_info))
+    return;
 
-  RDMNET_ASSERT(client->type == kClientProtocolRPT || client->type == kClientProtocolEPT);
+  RCClientScope* scope = GET_CLIENT_SCOPE_FROM_CONN(conn);
+  if (!RDMNET_ASSERT_VERIFY(scope))
+    return;
+
+  RCClient* client = scope->client;
+  if (!RDMNET_ASSERT_VERIFY(client))
+    return;
+
+  if (!RDMNET_ASSERT_VERIFY(client->type == kClientProtocolRPT || client->type == kClientProtocolEPT))
+    return;
 
   RdmnetClientConnectFailedInfo cli_conn_failed_info;
   cli_conn_failed_info.event = failed_info->event;
@@ -1120,10 +1162,19 @@ void conncb_connect_failed(RCConnection* conn, const RCConnectFailedInfo* failed
 
 void conncb_disconnected(RCConnection* conn, const RCDisconnectedInfo* disconn_info)
 {
-  RCClientScope* scope = GET_CLIENT_SCOPE_FROM_CONN(conn);
-  RCClient*      client = scope->client;
+  if (!RDMNET_ASSERT_VERIFY(conn) || !RDMNET_ASSERT_VERIFY(disconn_info))
+    return;
 
-  RDMNET_ASSERT(client->type == kClientProtocolRPT || client->type == kClientProtocolEPT);
+  RCClientScope* scope = GET_CLIENT_SCOPE_FROM_CONN(conn);
+  if (!RDMNET_ASSERT_VERIFY(scope))
+    return;
+
+  RCClient* client = scope->client;
+  if (!RDMNET_ASSERT_VERIFY(client))
+    return;
+
+  if (!RDMNET_ASSERT_VERIFY(client->type == kClientProtocolRPT || client->type == kClientProtocolEPT))
+    return;
 
   RdmnetClientDisconnectedInfo cli_disconn_info;
   cli_disconn_info.event = disconn_info->event;
@@ -1177,12 +1228,21 @@ void conncb_disconnected(RCConnection* conn, const RCDisconnectedInfo* disconn_i
 
 rc_message_action_t conncb_msg_received(RCConnection* conn, const RdmnetMessage* message)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn) || !RDMNET_ASSERT_VERIFY(message))
+    return kRCMessageActionProcessNext;
+
   rc_message_action_t action = kRCMessageActionProcessNext;
 
   RCClientScope* scope = GET_CLIENT_SCOPE_FROM_CONN(conn);
-  RCClient*      client = scope->client;
+  if (!RDMNET_ASSERT_VERIFY(scope))
+    return kRCMessageActionProcessNext;
 
-  RDMNET_ASSERT(client->type == kClientProtocolRPT || client->type == kClientProtocolEPT);
+  RCClient* client = scope->client;
+  if (!RDMNET_ASSERT_VERIFY(client))
+    return kRCMessageActionProcessNext;
+
+  if (!RDMNET_ASSERT_VERIFY(client->type == kClientProtocolRPT || client->type == kClientProtocolEPT))
+    return kRCMessageActionProcessNext;
 
   bool should_return = true;
   if (RC_CLIENT_LOCK(client))
@@ -1201,8 +1261,12 @@ rc_message_action_t conncb_msg_received(RCConnection* conn, const RdmnetMessage*
     case ACN_VECTOR_ROOT_RPT:
       if (client->type == kClientProtocolRPT)
       {
+        const RptMessage* rpt_msg = RDMNET_GET_RPT_MSG(message);
+        if (!RDMNET_ASSERT_VERIFY(rpt_msg))
+          return kRCMessageActionProcessNext;
+
         RptClientMessage client_msg;
-        if (parse_rpt_message(scope, RDMNET_GET_RPT_MSG(message), &client_msg))
+        if (parse_rpt_message(scope, rpt_msg, &client_msg))
         {
           RdmnetSyncRdmResponse resp = RDMNET_SYNC_RDM_RESPONSE_INIT;
           bool                  use_internal_buf_for_response = false;
@@ -1213,8 +1277,12 @@ rc_message_action_t conncb_msg_received(RCConnection* conn, const RdmnetMessage*
           }
           else
           {
-            RC_RPT_CLIENT_DATA(client)->callbacks.rpt_msg_received(client, scope->handle, &client_msg, &resp,
-                                                                   &use_internal_buf_for_response);
+            const RCRptClientData* rpt_client_data = RC_RPT_CLIENT_DATA(client);
+            if (!RDMNET_ASSERT_VERIFY(rpt_client_data))
+              return kRCMessageActionProcessNext;
+
+            rpt_client_data->callbacks.rpt_msg_received(client, scope->handle, &client_msg, &resp,
+                                                        &use_internal_buf_for_response);
 
             if (resp.response_action == kRdmnetRdmResponseActionRetryLater)
               action = kRCMessageActionRetryLater;
@@ -1243,8 +1311,16 @@ rc_message_action_t conncb_msg_received(RCConnection* conn, const RdmnetMessage*
 
 void conncb_destroyed(RCConnection* conn)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn))
+    return;
+
   RCClientScope* scope = GET_CLIENT_SCOPE_FROM_CONN(conn);
-  RCClient*      client = scope->client;
+  if (!RDMNET_ASSERT_VERIFY(scope))
+    return;
+
+  RCClient* client = scope->client;
+  if (!RDMNET_ASSERT_VERIFY(client))
+    return;
 
   bool send_destroyed_cb = false;
 
@@ -1263,6 +1339,9 @@ void conncb_destroyed(RCConnection* conn)
 
 bool parse_rpt_message(const RCClientScope* scope, const RptMessage* rmsg, RptClientMessage* msg_out)
 {
+  if (!RDMNET_ASSERT_VERIFY(scope) || !RDMNET_ASSERT_VERIFY(rmsg) || !RDMNET_ASSERT_VERIFY(msg_out))
+    return false;
+
   switch (rmsg->vector)
   {
     case VECTOR_RPT_REQUEST:
@@ -1278,8 +1357,16 @@ bool parse_rpt_message(const RCClientScope* scope, const RptMessage* rmsg, RptCl
 
 bool parse_rpt_request(const RptMessage* rmsg, RptClientMessage* msg_out)
 {
-  RdmnetRdmCommand*    cmd = RDMNET_GET_RDM_COMMAND(msg_out);
+  if (!RDMNET_ASSERT_VERIFY(rmsg) || !RDMNET_ASSERT_VERIFY(msg_out))
+    return false;
+
+  RdmnetRdmCommand* cmd = RDMNET_GET_RDM_COMMAND(msg_out);
+  if (!RDMNET_ASSERT_VERIFY(cmd))
+    return false;
+
   const RptRdmBufList* list = RPT_GET_RDM_BUF_LIST(rmsg);
+  if (!RDMNET_ASSERT_VERIFY(list))
+    return false;
 
   if (list->num_rdm_buffers == 1)  // Only one RDM command allowed in an RPT request
   {
@@ -1298,7 +1385,12 @@ bool parse_rpt_request(const RptMessage* rmsg, RptClientMessage* msg_out)
 
 bool parse_rpt_notification(const RCClientScope* scope, const RptMessage* rmsg, RptClientMessage* msg_out)
 {
+  if (!RDMNET_ASSERT_VERIFY(scope) || !RDMNET_ASSERT_VERIFY(rmsg) || !RDMNET_ASSERT_VERIFY(msg_out))
+    return false;
+
   RdmnetRdmResponse* resp = RDMNET_GET_RDM_RESPONSE(msg_out);
+  if (!RDMNET_ASSERT_VERIFY(resp))
+    return false;
 
   // Do some initialization
   msg_out->type = kRptClientMsgRdmResp;
@@ -1306,11 +1398,22 @@ bool parse_rpt_notification(const RCClientScope* scope, const RptMessage* rmsg, 
   resp->original_cmd_data = NULL;
   resp->original_cmd_data_len = 0;
   resp->rdm_data_len = 0;
-  resp->more_coming = RPT_GET_RDM_BUF_LIST(rmsg)->more_coming;
+
+  const RptRdmBufList* rdm_buf_list = RPT_GET_RDM_BUF_LIST(rmsg);
+  if (!RDMNET_ASSERT_VERIFY(rdm_buf_list))
+    return false;
+
+  resp->more_coming = rdm_buf_list->more_coming;
 
   const RptRdmBufList* list = RPT_GET_RDM_BUF_LIST(rmsg);
-  uint8_t*             resp_data_buf = NULL;
+  if (!RDMNET_ASSERT_VERIFY(list) || !RDMNET_ASSERT_VERIFY(list->rdm_buffers))
+    return false;
+
+  uint8_t* resp_data_buf = NULL;
   if (!get_rdm_response_data_buf(list, &resp_data_buf))
+    return false;
+
+  if (!RDMNET_ASSERT_VERIFY(resp_data_buf))
     return false;
 
   // Initialize some values
@@ -1347,8 +1450,16 @@ bool parse_rpt_notification(const RCClientScope* scope, const RptMessage* rmsg, 
 
 bool parse_rpt_status(const RptMessage* rmsg, RptClientMessage* msg_out)
 {
-  RdmnetRptStatus*    status_out = RDMNET_GET_RPT_STATUS(msg_out);
+  if (!RDMNET_ASSERT_VERIFY(rmsg) || !RDMNET_ASSERT_VERIFY(msg_out))
+    return false;
+
+  RdmnetRptStatus* status_out = RDMNET_GET_RPT_STATUS(msg_out);
+  if (!RDMNET_ASSERT_VERIFY(status_out))
+    return false;
+
   const RptStatusMsg* status = RPT_GET_STATUS_MSG(rmsg);
+  if (!RDMNET_ASSERT_VERIFY(status))
+    return false;
 
   // This one is quick and simple with no failure condition
   msg_out->type = kRptClientMsgStatus;
@@ -1365,6 +1476,12 @@ bool unpack_notification_rdm_buffer(const RdmBuffer*   buffer,
                                     uint8_t*           resp_data_buf,
                                     bool*              is_first_resp)
 {
+  if (!RDMNET_ASSERT_VERIFY(buffer) || !RDMNET_ASSERT_VERIFY(resp) || !RDMNET_ASSERT_VERIFY(resp_data_buf) ||
+      !RDMNET_ASSERT_VERIFY(is_first_resp))
+  {
+    return false;
+  }
+
   if (rdm_validate_msg(buffer))
   {
     if (*is_first_resp)
@@ -1431,6 +1548,12 @@ void send_rdm_response_if_requested(RCClient*               client,
                                     RdmnetSyncRdmResponse*  resp,
                                     bool                    use_internal_buf)
 {
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(scope) || !RDMNET_ASSERT_VERIFY(msg) ||
+      !RDMNET_ASSERT_VERIFY(resp))
+  {
+    return;
+  }
+
   if (RC_CLIENT_LOCK(client))
   {
     if (scope->state != kRCScopeStateConnected)
@@ -1440,7 +1563,10 @@ void send_rdm_response_if_requested(RCClient*               client,
     }
 
     const RdmnetRdmCommand* received_cmd = RDMNET_GET_RDM_COMMAND(msg);
-    etcpal_error_t          res = kEtcPalErrOk;
+    if (!RDMNET_ASSERT_VERIFY(received_cmd))
+      return;
+
+    etcpal_error_t res = kEtcPalErrOk;
 
     if (resp->response_action == kRdmnetRdmResponseActionSendAck)
     {
@@ -1487,10 +1613,19 @@ bool handle_rdm_command_internally(RCClient*               client,
                                    const RptClientMessage* msg,
                                    RdmnetSyncRdmResponse*  resp)
 {
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(scope) || !RDMNET_ASSERT_VERIFY(msg) ||
+      !RDMNET_ASSERT_VERIFY(resp))
+  {
+    return false;
+  }
+
   bool res = false;
   if (RC_CLIENT_LOCK(client))
   {
     const RdmnetRdmCommand* cmd = RDMNET_GET_RDM_COMMAND(msg);
+    if (!RDMNET_ASSERT_VERIFY(cmd))
+      return false;
+
     if (scope->state == kRCScopeStateConnected && msg->type == kRptClientMsgRdmCmd &&
         cmd->dest_endpoint == E133_NULL_ENDPOINT)
     {
@@ -1512,7 +1647,13 @@ bool handle_rdm_command_internally(RCClient*               client,
 
 void handle_tcp_comms_status(RCClient* client, const RdmnetRdmCommand* cmd, RdmnetSyncRdmResponse* resp)
 {
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(cmd) || !RDMNET_ASSERT_VERIFY(resp))
+    return;
+
   const RdmCommandHeader* cmd_header = &cmd->rdm_header;
+  if (!RDMNET_ASSERT_VERIFY(cmd_header))
+    return;
+
   if (cmd_header->command_class == kRdmCCGetCommand)
   {
 #if RDMNET_DYNAMIC_MEM
@@ -1559,6 +1700,9 @@ void handle_tcp_comms_status(RCClient* client, const RdmnetRdmCommand* cmd, Rdmn
   }
   else if (cmd_header->command_class == kRdmCCSetCommand)
   {
+    if (!RDMNET_ASSERT_VERIFY(cmd->data))
+      return;
+
     if (cmd->data_len != E133_SCOPE_STRING_PADDED_LENGTH || cmd->data[E133_SCOPE_STRING_PADDED_LENGTH - 1] != 0)
     {
       RDMNET_SYNC_SEND_RDM_NACK(resp, kRdmNRFormatError);
@@ -1582,8 +1726,17 @@ void handle_tcp_comms_status(RCClient* client, const RdmnetRdmCommand* cmd, Rdmn
 
 void free_rpt_client_message(RptClientMessage* msg)
 {
+  if (!RDMNET_ASSERT_VERIFY(msg))
+    return;
+
   if (msg->type == kRptClientMsgRdmResp)
-    free_rdm_response_data_buf((uint8_t*)RDMNET_GET_RDM_RESPONSE(msg)->rdm_data);
+  {
+    const RdmnetRdmResponse* rdm_resp = RDMNET_GET_RDM_RESPONSE(msg);
+    if (!RDMNET_ASSERT_VERIFY(rdm_resp))
+      return;
+
+    free_rdm_response_data_buf((uint8_t*)rdm_resp->rdm_data);
+  }
 }
 
 #if 0
