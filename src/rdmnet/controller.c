@@ -322,6 +322,9 @@ etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t      controller_h
                                            const RdmnetScopeConfig* scope_config,
                                            rdmnet_client_scope_t*   scope_handle)
 {
+  if (!scope_config || !scope_config->scope)
+    return kEtcPalErrInvalid;
+
   RdmnetController* controller;
   etcpal_error_t    res = get_controller(controller_handle, &controller);
   if (res != kEtcPalErrOk)

@@ -400,8 +400,11 @@ etcpal_error_t rc_client_add_scope(RCClient*                client,
                                    const RdmnetScopeConfig* scope_config,
                                    rdmnet_client_scope_t*   scope_handle)
 {
-  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(scope_config) || !RDMNET_ASSERT_VERIFY(scope_handle))
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(scope_config) ||
+      !RDMNET_ASSERT_VERIFY(scope_config->scope) || !RDMNET_ASSERT_VERIFY(scope_handle))
+  {
     return kEtcPalErrSys;
+  }
 
   if (get_scope_by_id(client, scope_config->scope) != NULL)
     return kEtcPalErrExists;
@@ -1749,11 +1752,20 @@ void free_ept_client_message(EptClientMessage* msg)
 
 void llrpcb_rdm_cmd_received(RCLlrpTarget* target, const LlrpRdmCommand* cmd, RCLlrpTargetSyncRdmResponse* response)
 {
-  RDMNET_ASSERT(target);
+  if (!RDMNET_ASSERT_VERIFY(target) || !RDMNET_ASSERT_VERIFY(cmd) || !RDMNET_ASSERT_VERIFY(response))
+    return;
+
   RCClient* client = GET_CLIENT_FROM_LLRP_TARGET(target);
+  if (!RDMNET_ASSERT_VERIFY(client))
+    return;
 
   bool use_internal_buf_for_response = false;
-  RC_RPT_CLIENT_DATA(client)->callbacks.llrp_msg_received(client, cmd, &response->resp, &use_internal_buf_for_response);
+
+  const RCRptClientData* rpt_client_data = RC_RPT_CLIENT_DATA(client);
+  if (!RDMNET_ASSERT_VERIFY(rpt_client_data))
+    return;
+
+  rpt_client_data->callbacks.llrp_msg_received(client, cmd, &response->resp, &use_internal_buf_for_response);
 
   if (use_internal_buf_for_response)
     response->response_buf = internal_pd_buf;
@@ -1763,8 +1775,12 @@ void llrpcb_rdm_cmd_received(RCLlrpTarget* target, const LlrpRdmCommand* cmd, RC
 
 void llrpcb_target_destroyed(RCLlrpTarget* target)
 {
-  RDMNET_ASSERT(target);
+  if (!RDMNET_ASSERT_VERIFY(target))
+    return;
+
   RCClient* client = GET_CLIENT_FROM_LLRP_TARGET(target);
+  if (!RDMNET_ASSERT_VERIFY(client))
+    return;
 
   bool send_destroy_cb = false;
 
@@ -1811,6 +1827,12 @@ bool disconnected_will_retry(rdmnet_disconnect_event_t event, rdmnet_disconnect_
  */
 etcpal_error_t create_and_add_scope_entry(RCClient* client, const RdmnetScopeConfig* config, RCClientScope** new_entry)
 {
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(config) || !RDMNET_ASSERT_VERIFY(config->scope) ||
+      !RDMNET_ASSERT_VERIFY(new_entry))
+  {
+    return kEtcPalErrSys;
+  }
+
   rdmnet_client_scope_t new_handle = get_next_int_handle(&client->scope_handle_manager);
   if (new_handle == RDMNET_CLIENT_SCOPE_INVALID)
     return kEtcPalErrNoMem;
@@ -1834,7 +1856,12 @@ etcpal_error_t create_and_add_scope_entry(RCClient* client, const RdmnetScopeCon
     new_scope->state = kRCScopeStateConnecting;
   else
     new_scope->state = kRCScopeStateDiscovery;
-  new_scope->uid = RC_RPT_CLIENT_DATA(client)->uid;
+
+  const RCRptClientData* rpt_client_data = RC_RPT_CLIENT_DATA(client);
+  if (!RDMNET_ASSERT_VERIFY(rpt_client_data))
+    return kEtcPalErrSys;
+
+  new_scope->uid = rpt_client_data->uid;
   // uid init is done at connection time
   new_scope->send_seq_num = 1;
   new_scope->monitor_handle = RDMNET_SCOPE_MONITOR_INVALID;
@@ -1856,6 +1883,9 @@ etcpal_error_t create_and_add_scope_entry(RCClient* client, const RdmnetScopeCon
 
 RCClientScope* get_scope(RCClient* client, rdmnet_client_scope_t scope_handle)
 {
+  if (!RDMNET_ASSERT_VERIFY(client))
+    return NULL;
+
   BEGIN_FOR_EACH_CLIENT_SCOPE(client)
   {
     if (scope->handle == scope_handle)
@@ -1870,6 +1900,9 @@ RCClientScope* get_scope(RCClient* client, rdmnet_client_scope_t scope_handle)
 
 RCClientScope* get_scope_by_id(RCClient* client, const char* scope_str)
 {
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(scope_str))
+    return NULL;
+
   BEGIN_FOR_EACH_CLIENT_SCOPE(client)
   {
     if ((scope->handle != RDMNET_CLIENT_SCOPE_INVALID && scope->state != kRCScopeStateMarkedForDestruction) &&
@@ -1885,9 +1918,15 @@ RCClientScope* get_scope_by_id(RCClient* client, const char* scope_str)
 
 RCClientScope* get_unused_scope_entry(RCClient* client)
 {
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(client->scopes))
+    return NULL;
+
 #if RDMNET_DYNAMIC_MEM
   for (RCClientScope** scope_ptr = client->scopes; scope_ptr < client->scopes + client->num_scopes; ++scope_ptr)
   {
+    if (!RDMNET_ASSERT_VERIFY(*scope_ptr))
+      return NULL;
+
     if ((*scope_ptr)->handle == RDMNET_CLIENT_SCOPE_INVALID)
       return *scope_ptr;
   }
@@ -1927,6 +1966,9 @@ RCClientScope* get_unused_scope_entry(RCClient* client)
 
 bool scope_handle_in_use(int handle_val, void* context)
 {
+  if (!RDMNET_ASSERT_VERIFY(context))
+    return false;
+
   RCClient* client = (RCClient*)context;
   BEGIN_FOR_EACH_CLIENT_SCOPE(client)
   {
@@ -1939,6 +1981,9 @@ bool scope_handle_in_use(int handle_val, void* context)
 
 void mark_scope_for_destruction(RCClientScope* scope, const rdmnet_disconnect_reason_t* disconnect_reason)
 {
+  if (!RDMNET_ASSERT_VERIFY(scope))
+    return;
+
   if (scope->monitor_handle != RDMNET_SCOPE_MONITOR_INVALID)
   {
     rdmnet_disc_stop_monitoring(scope->monitor_handle);
@@ -1951,6 +1996,9 @@ void mark_scope_for_destruction(RCClientScope* scope, const rdmnet_disconnect_re
 
 bool client_fully_destroyed(RCClient* client)
 {
+  if (!RDMNET_ASSERT_VERIFY(client))
+    return false;
+
   if (client->target_valid)
     return false;
 
@@ -1985,6 +2033,9 @@ bool client_fully_destroyed(RCClient* client)
 
 etcpal_error_t start_scope_discovery(RCClientScope* scope, const char* search_domain)
 {
+  if (!RDMNET_ASSERT_VERIFY(scope))
+    return kEtcPalErrSys;
+
   RdmnetScopeMonitorConfig config;
 
   config.scope = scope->id;
@@ -2008,6 +2059,9 @@ etcpal_error_t start_scope_discovery(RCClientScope* scope, const char* search_do
 
 void attempt_connection_on_listen_addrs(RCClientScope* scope)
 {
+  if (!RDMNET_ASSERT_VERIFY(scope) || !RDMNET_ASSERT_VERIFY(scope->broker_listen_addrs))
+    return;
+
   size_t listen_addr_index = scope->current_listen_addr;
 
   while (true)
@@ -2042,8 +2096,12 @@ void attempt_connection_on_listen_addrs(RCClientScope* scope)
         clear_discovered_broker_info(scope);
       }
 
+      const char* strerror = etcpal_strerror(connect_res);
+      if (!RDMNET_ASSERT_VERIFY(strerror))
+        return;
+
       RDMNET_LOG_WARNING("Connection to broker for scope '%s' at address %s:%d failed with error: '%s'. %s", scope->id,
-                         addr_str, connect_addr.port, etcpal_strerror(connect_res),
+                         addr_str, connect_addr.port, strerror,
                          scope->broker_found ? "Trying next address..." : "All addresses exhausted. Giving up.");
 
       if (!scope->broker_found)
@@ -2059,13 +2117,22 @@ etcpal_error_t start_connection_for_scope(RCClientScope*              scope,
                                           const EtcPalSockAddr*       broker_addr,
                                           rdmnet_disconnect_reason_t* disconnect_reason)
 {
+  if (!RDMNET_ASSERT_VERIFY(scope) || !RDMNET_ASSERT_VERIFY(broker_addr))
+    return kEtcPalErrSys;
+
   BrokerClientConnectMsg connect_msg;
-  RCClient*              client = scope->client;
+
+  RCClient* client = scope->client;
+  if (!RDMNET_ASSERT_VERIFY(client))
+    return kEtcPalErrSys;
 
   if (client->type == kClientProtocolRPT)
   {
     RCRptClientData* rpt_data = RC_RPT_CLIENT_DATA(client);
-    RdmUid           my_uid;
+    if (!RDMNET_ASSERT_VERIFY(rpt_data))
+      return kEtcPalErrSys;
+
+    RdmUid my_uid;
     if (RDMNET_UID_IS_STATIC(&rpt_data->uid))
     {
       my_uid = rpt_data->uid;
@@ -2113,6 +2180,9 @@ etcpal_error_t start_connection_for_scope(RCClientScope*              scope,
 
 void clear_discovered_broker_info(RCClientScope* scope)
 {
+  if (!RDMNET_ASSERT_VERIFY(scope))
+    return;
+
   scope->broker_found = false;
 #if RDMNET_DYNAMIC_MEM
   if (scope->broker_listen_addrs)
@@ -2135,6 +2205,12 @@ etcpal_error_t send_rdm_ack_internal(RCClient*               client,
                                      const uint8_t*          resp_data,
                                      size_t                  resp_data_len)
 {
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(scope) || !RDMNET_ASSERT_VERIFY(rpt_header) ||
+      !RDMNET_ASSERT_VERIFY(received_cmd_header))
+  {
+    return kEtcPalErrSys;
+  }
+
   // resp_size: The number of RDM command PDUs that make up the ACK or ACK_OVERFLOW response.
   // total_resp_size: resp_size + 1 more RDM command PDU for the original command.
   // We allocate total_resp_size + 1, to account for potentially adding more parameter data right
@@ -2184,6 +2260,12 @@ etcpal_error_t send_rdm_nack_internal(RCClient*               client,
                                       uint8_t                 received_cmd_data_len,
                                       rdm_nack_reason_t       nack_reason)
 {
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(scope) || !RDMNET_ASSERT_VERIFY(rpt_header) ||
+      !RDMNET_ASSERT_VERIFY(received_cmd_header))
+  {
+    return kEtcPalErrSys;
+  }
+
   RdmBuffer* resp_buf = NULL;
 #if RDMNET_DYNAMIC_MEM
   resp_buf = (RdmBuffer*)calloc(2, sizeof(RdmBuffer));
@@ -2216,6 +2298,9 @@ etcpal_error_t client_send_update_internal(RCClient*               client,
                                            const uint8_t*          data,
                                            size_t                  data_len)
 {
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(scope) || !RDMNET_ASSERT_VERIFY(source_addr))
+    return kEtcPalErrSys;
+
   // resp_size: The number of RDM command PDUs that make up the ACK or ACK_OVERFLOW response.
   // We allocate resp_size + 1, to account for potentially adding more parameter data right
   // before sending.
@@ -2278,6 +2363,9 @@ etcpal_error_t client_send_update_internal(RCClient*               client,
 
 static int supported_param_compare(const void* a, const void* b)
 {
+  if (!RDMNET_ASSERT_VERIFY(a) || !RDMNET_ASSERT_VERIFY(b))
+    return 0;
+
   const SupportedParameter* param_a = (const SupportedParameter*)a;
   const SupportedParameter* param_b = (const SupportedParameter*)b;
   return (param_a->pid > param_b->pid) - (param_a->pid < param_b->pid);
@@ -2289,10 +2377,12 @@ void append_to_supported_parameters(RCClient*               client,
                                     size_t                  param_num_buffers,
                                     size_t*                 total_resp_size)
 {
-  RDMNET_ASSERT(param_resp_buf);
-  RDMNET_ASSERT(param_num_buffers >= 1);
-  RDMNET_ASSERT(total_resp_size);
-  RDMNET_ASSERT(*total_resp_size >= 1);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(received_cmd_header) ||
+      !RDMNET_ASSERT_VERIFY(param_resp_buf) || !RDMNET_ASSERT_VERIFY(param_num_buffers >= 1) ||
+      !RDMNET_ASSERT_VERIFY(total_resp_size) || !RDMNET_ASSERT_VERIFY(*total_resp_size >= 1))
+  {
+    return;
+  }
 
   // Reset the checklist
   for (SupportedParameter* param = kSupportedParametersChecklist;
@@ -2327,11 +2417,15 @@ void append_to_supported_parameters(RCClient*               client,
   uint8_t params_to_append_buf[SUPPORTED_PARAMETERS_CHECKLIST_SIZE * 2];
   uint8_t params_to_append_size = 0;
 
+  const RCRptClientData* rpt_client_data = RC_RPT_CLIENT_DATA(client);
+  if (!RDMNET_ASSERT_VERIFY(rpt_client_data))
+    return;
+
   for (SupportedParameter* current_param = kSupportedParametersChecklist;
        current_param < kSupportedParametersChecklist + SUPPORTED_PARAMETERS_CHECKLIST_SIZE; ++current_param)
   {
-    if (!current_param->found && (current_param->client_type == RC_RPT_CLIENT_DATA(client)->type ||
-                                  current_param->client_type == kRPTClientTypeUnknown))
+    if (!current_param->found &&
+        (current_param->client_type == rpt_client_data->type || current_param->client_type == kRPTClientTypeUnknown))
     {
       etcpal_pack_u16b(&params_to_append_buf[params_to_append_size], current_param->pid);
       params_to_append_size += 2;
@@ -2364,8 +2458,8 @@ void append_to_supported_parameters(RCClient*               client,
 
 void change_destination_to_broadcast(RdmBuffer* resp_buf, size_t total_resp_size)
 {
-  RDMNET_ASSERT(resp_buf);
-  RDMNET_ASSERT(total_resp_size > 1);
+  if (!RDMNET_ASSERT_VERIFY(resp_buf) || !RDMNET_ASSERT_VERIFY(total_resp_size > 1))
+    return;
 
   for (RdmBuffer* rdm_buf = resp_buf + 1; rdm_buf < resp_buf + total_resp_size; ++rdm_buf)
   {
@@ -2382,8 +2476,8 @@ void change_destination_to_broadcast(RdmBuffer* resp_buf, size_t total_resp_size
 
 bool get_rdm_response_data_buf(const RptRdmBufList* buf_list, uint8_t** buf_ptr)
 {
-  RDMNET_ASSERT(buf_list);
-  RDMNET_ASSERT(buf_ptr);
+  if (!RDMNET_ASSERT_VERIFY(buf_list) || !RDMNET_ASSERT_VERIFY(buf_ptr))
+    return false;
 
   size_t size_needed = 0;
 
@@ -2417,6 +2511,9 @@ bool get_rdm_response_data_buf(const RptRdmBufList* buf_list, uint8_t** buf_ptr)
 
 void free_rdm_response_data_buf(uint8_t* buf)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf))
+    return;
+
 #if RDMNET_DYNAMIC_MEM
   free(buf);
 #else
