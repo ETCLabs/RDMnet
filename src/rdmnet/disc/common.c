@@ -25,6 +25,7 @@
 #include "rdmnet/disc/discovered_broker.h"
 #include "rdmnet/disc/monitored_scope.h"
 #include "rdmnet/disc/platform_api.h"
+#include "etcpal/netint.h"
 
 /***************************** Global variables ******************************/
 
@@ -40,6 +41,7 @@ static void           unregister_all_brokers(void);
 
 // Other helpers
 static void process_broker_state(RdmnetBrokerRegisterRef* broker_ref);
+static bool conflicting_broker_found(RdmnetBrokerRegisterRef* broker_ref);
 static bool validate_broker_register_config(const RdmnetBrokerRegisterConfig* config);
 
 /*************************** Function definitions ****************************/
@@ -418,20 +420,69 @@ void process_broker_state(RdmnetBrokerRegisterRef* broker_ref)
     if (!broker_ref->query_timeout_expired && etcpal_timer_is_expired(&broker_ref->query_timer))
       broker_ref->query_timeout_expired = true;
 
-    if (broker_ref->query_timeout_expired && !broker_ref->scope_monitor_handle->broker_list)
+    if (broker_ref->query_timeout_expired)
     {
-      // If the initial query timeout is expired and we haven't discovered any conflicting brokers,
-      // we can proceed.
-      broker_ref->state = kBrokerStateRegisterStarted;
-
-      int platform_error = 0;
-      if (rdmnet_disc_platform_register_broker(broker_ref, &platform_error) != kEtcPalErrOk)
+      if (conflicting_broker_found(broker_ref))
       {
-        broker_ref->state = kBrokerStateNotRegistered;
-        broker_ref->callbacks.broker_register_failed(broker_ref, platform_error, broker_ref->callbacks.context);
+        // Keep querying at the same interval until there are no longer any conflicting brokers.
+        etcpal_timer_reset(&broker_ref->query_timer);
+        broker_ref->query_timeout_expired = false;
+      }
+      else
+      {
+        // If at least the initial query timeout is expired and there aren't any conflicting brokers, we can proceed.
+        broker_ref->state = kBrokerStateRegisterStarted;
+
+        int platform_error = 0;
+        if (rdmnet_disc_platform_register_broker(broker_ref, &platform_error) != kEtcPalErrOk)
+        {
+          broker_ref->state = kBrokerStateNotRegistered;
+          broker_ref->callbacks.broker_register_failed(broker_ref, platform_error, broker_ref->callbacks.context);
+        }
       }
     }
   }
+}
+
+bool conflicting_broker_found(RdmnetBrokerRegisterRef* broker_ref)
+{
+  // Only brokers that are reachable on an enabled interface should be considered as conflicting. Iterate the list to
+  // check if it contains any such brokers. Otherwise return false.
+  for (const DiscoveredBroker* db = broker_ref->scope_monitor_handle->broker_list; db; db = db->next)
+  {
+    for (size_t i = 0; i < db->num_listen_addrs; ++i)
+    {
+      const EtcPalIpAddr* db_addr = &db->listen_addr_array[i];
+      unsigned int        local_netint = 0;
+      etcpal_error_t      local_netint_res = etcpal_netint_get_interface_for_dest(db_addr, &local_netint);
+
+      if (local_netint_res == kEtcPalErrOk)
+      {
+        // We got a netint. See if it's a netint this broker is currently enabled on - if there is, there's a conflict.
+        if (broker_ref->netints)
+        {
+          for (size_t j = 0; j < broker_ref->num_netints; ++i)
+          {
+            if (local_netint == broker_ref->netints[j])
+              return true;
+          }
+        }
+        else  // If all interfaces are enabled
+        {
+          return true;
+        }
+      }
+      else if ((local_netint_res != kEtcPalErrNotFound) && (local_netint_res != kEtcPalErrNoNetints))
+      {
+        // This is either an assertion or system failure. In either case, there's no way to prove that this isn't a
+        // conflicting broker, so return true.
+        RDMNET_ASSERT((local_netint_res != kEtcPalErrInvalid) && (local_netint_res != kEtcPalErrNotInit));
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 bool validate_broker_register_config(const RdmnetBrokerRegisterConfig* config)
