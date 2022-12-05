@@ -48,8 +48,10 @@ struct DiscoveredBroker
   uint16_t   port;
 #if RDMNET_DYNAMIC_MEM
   EtcPalIpAddr* listen_addr_array;
+  unsigned int* listen_addr_netint_array;
 #else
   EtcPalIpAddr             listen_addr_array[RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER];
+  unsigned int             listen_addr_netint_array[RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER];
 #endif
   size_t num_listen_addrs;
   char   scope[E133_SCOPE_STRING_PADDED_LENGTH];
@@ -82,16 +84,16 @@ DiscoveredBroker* discovered_broker_new(rdmnet_scope_monitor_t monitor_ref,
                                         const char*            service_name,
                                         const char*            full_service_name);
 void              discovered_broker_insert(DiscoveredBroker** list_head_ptr, DiscoveredBroker* new_db);
-bool              discovered_broker_add_listen_addr(DiscoveredBroker* db, const EtcPalIpAddr* addr);
-bool              discovered_broker_add_txt_record_item(DiscoveredBroker* db,
-                                                        const char*       key,
-                                                        const uint8_t*    value,
-                                                        uint8_t           value_len);
-bool              discovered_broker_add_binary_txt_record_item(DiscoveredBroker* db,
-                                                               const uint8_t*    key,
-                                                               uint8_t           key_len,
-                                                               const uint8_t*    value,
-                                                               uint8_t           value_len);
+bool discovered_broker_add_listen_addr(DiscoveredBroker* db, const EtcPalIpAddr* addr, unsigned int netint);
+bool discovered_broker_add_txt_record_item(DiscoveredBroker* db,
+                                           const char*       key,
+                                           const uint8_t*    value,
+                                           uint8_t           value_len);
+bool discovered_broker_add_binary_txt_record_item(DiscoveredBroker* db,
+                                                  const uint8_t*    key,
+                                                  uint8_t           key_len,
+                                                  const uint8_t*    value,
+                                                  uint8_t           value_len);
 
 void              discovered_broker_fill_disc_info(const DiscoveredBroker* db, RdmnetBrokerDiscInfo* broker_info);
 DiscoveredBroker* discovered_broker_find(DiscoveredBroker*                 list_head,

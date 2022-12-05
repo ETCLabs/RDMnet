@@ -89,6 +89,11 @@ DiscoveredBroker* discovered_broker_new(rdmnet_scope_monitor_t monitor_ref,
     new_db->monitor_ref = monitor_ref;
     rdmnet_safe_strncpy(new_db->service_instance_name, service_name, E133_SERVICE_NAME_STRING_PADDED_LENGTH);
     rdmnet_safe_strncpy(new_db->full_service_name, full_service_name, RDMNET_DISC_SERVICE_NAME_MAX_LENGTH);
+#if RDMNET_DYNAMIC_MEM
+    new_db->listen_addr_array = NULL;
+    new_db->listen_addr_netint_array = NULL;
+#endif
+    new_db->num_listen_addrs = 0;
     memset(&new_db->platform_data, 0, sizeof(RdmnetDiscoveredBrokerPlatformData));
     new_db->next = NULL;
   }
@@ -110,27 +115,35 @@ void discovered_broker_insert(DiscoveredBroker** list_head_ptr, DiscoveredBroker
   }
 }
 
-bool discovered_broker_add_listen_addr(DiscoveredBroker* db, const EtcPalIpAddr* addr)
+bool discovered_broker_add_listen_addr(DiscoveredBroker* db, const EtcPalIpAddr* addr, unsigned int netint)
 {
 #if RDMNET_DYNAMIC_MEM
   if (!db->listen_addr_array)
   {
+    RDMNET_ASSERT(!db->listen_addr_netint_array);
     db->listen_addr_array = (EtcPalIpAddr*)malloc(sizeof(EtcPalIpAddr));
-    if (db->listen_addr_array)
+    db->listen_addr_netint_array = (unsigned int*)malloc(sizeof(unsigned int));
+    if (db->listen_addr_array && db->listen_addr_netint_array)
     {
       db->listen_addr_array[0] = *addr;
+      db->listen_addr_netint_array[0] = netint;
       db->num_listen_addrs = 1;
       return true;
     }
   }
   else
   {
-    EtcPalIpAddr* new_arr =
+    EtcPalIpAddr* new_ip_arr =
         (EtcPalIpAddr*)realloc(db->listen_addr_array, sizeof(EtcPalIpAddr) * (db->num_listen_addrs + 1));
-    if (new_arr)
+    unsigned int* net_netint_arr =
+        (unsigned int*)realloc(db->listen_addr_netint_array, sizeof(unsigned int) * (db->num_listen_addrs + 1));
+    if (new_ip_arr && net_netint_arr)
     {
-      db->listen_addr_array = new_arr;
-      db->listen_addr_array[db->num_listen_addrs++] = *addr;
+      db->listen_addr_array = new_ip_arr;
+      db->listen_addr_netint_array = net_netint_arr;
+      db->listen_addr_array[db->num_listen_addrs] = *addr;
+      db->listen_addr_netint_array[db->num_listen_addrs] = netint;
+      ++db->num_listen_addrs;
       return true;
     }
   }
@@ -138,7 +151,9 @@ bool discovered_broker_add_listen_addr(DiscoveredBroker* db, const EtcPalIpAddr*
 #else
   if (db->num_listen_addrs < RDMNET_MAX_ADDRS_PER_DISCOVERED_BROKER)
   {
-    db->listen_addr_array[db->num_listen_addrs++] = *addr;
+    db->listen_addr_array[db->num_listen_addrs] = *addr;
+    db->listen_addr_netint_array[db->num_listen_addrs] = netint;
+    ++db->num_listen_addrs;
     return true;
   }
   return false;
@@ -234,6 +249,7 @@ void discovered_broker_fill_disc_info(const DiscoveredBroker* db, RdmnetBrokerDi
     broker_info->service_instance_name = db->service_instance_name;
     broker_info->port = db->port;
     broker_info->listen_addrs = db->listen_addr_array;
+    broker_info->listen_addr_netints = db->listen_addr_netint_array;
     broker_info->num_listen_addrs = db->num_listen_addrs;
     broker_info->scope = db->scope;
     broker_info->model = db->model;
@@ -298,6 +314,8 @@ void discovered_broker_delete(DiscoveredBroker* db)
     free(db->additional_txt_items_array);
   if (db->listen_addr_array)
     free(db->listen_addr_array);
+  if (db->listen_addr_netint_array)
+    free(db->listen_addr_netint_array);
 #endif
   discovered_broker_free_platform_resources(db);
   FREE_DISCOVERED_BROKER(db);

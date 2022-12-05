@@ -137,7 +137,7 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef          sdRef,
   {
     if (!etcpal_ip_is_loopback(&ip_addr.ip) && !etcpal_ip_is_wildcard(&ip_addr.ip))
     {
-      discovered_broker_add_listen_addr(db, &ip_addr.ip);
+      discovered_broker_add_listen_addr(db, &ip_addr.ip, interfaceIndex);
     }
   }
 

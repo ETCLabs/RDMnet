@@ -480,37 +480,84 @@ void BrokerCore::HandleBrokerRegisterError(int platform_specific_error)
 
 void BrokerCore::HandleOtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
 {
-  // If the broker is already registered with DNS-SD, the presence of another broker is an error
-  // condition. Otherwise, the system is still usable (this broker will not register)
-  int log_pri = (service_registered_ ? ETCPAL_LOG_ERR : ETCPAL_LOG_NOTICE);
-
-  if (BROKER_CAN_LOG(log_pri))
+  if (BROKER_CAN_LOG(ETCPAL_LOG_NOTICE))
   {
-    std::string addrs;
+    BROKER_LOG_NOTICE(
+        "Broker \"%s\", found at same scope(\"%s\") as this broker. Addresses were resolved on the following "
+        "interfaces:",
+        broker_info.service_instance_name, broker_info.scope);
+
+    size_t                        num_sys_netints = 4;  // Size estimate, eventually holds actual size
+    std::vector<EtcPalNetintInfo> sys_netints(num_sys_netints);
+    while (etcpal_netint_get_interfaces(sys_netints.data(), &num_sys_netints) == kEtcPalErrBufSize)
+    {
+      sys_netints.resize(num_sys_netints);
+    }
+    sys_netints.resize(num_sys_netints);  // Final size
+
+    std::unordered_map<std::string, std::vector<std::string>> nic_broker_addrs;
+    std::unordered_map<std::string, bool>                     nic_enabled;
     for (size_t i = 0; i < broker_info.num_listen_addrs; ++i)
     {
-      char addr_string[ETCPAL_IP_STRING_BYTES];
-      if (kEtcPalErrOk == etcpal_ip_to_string(&broker_info.listen_addrs[i], addr_string))
+      const EtcPalIpAddr& dest = broker_info.listen_addrs[i];
+      unsigned int        netint_for_dest = broker_info.listen_addr_netints[i];
+
+      for (const auto& sys_netint : sys_netints)
       {
-        addrs.append(addr_string);
-        if (i < broker_info.num_listen_addrs - 1)
-          addrs.append(", ");
+        auto sys_netint_addr_str = etcpal::IpAddr(sys_netint.addr).ToString();
+        nic_enabled[sys_netint_addr_str] = false;
+        for (auto listen_interface : listen_interfaces_)
+        {
+          if (sys_netint.index == listen_interface)
+          {
+            nic_enabled[sys_netint_addr_str] = true;
+            break;
+          }
+        }
+
+        if ((netint_for_dest == sys_netint.index) && (dest.type == sys_netint.addr.type))
+        {
+          auto dest_addr_str = etcpal::IpAddr(dest).ToString();
+          nic_broker_addrs[sys_netint_addr_str].push_back(dest_addr_str);
+        }
       }
     }
 
-    log_->Log(log_pri, "Broker \"%s\", ip[%s] found at same scope(\"%s\") as this broker.",
-              broker_info.service_instance_name, addrs.c_str(), broker_info.scope);
-  }
-  if (!service_registered_)
-  {
-    BROKER_LOG(log_pri, "This broker will remain unregistered with DNS-SD until all conflicting brokers are removed.");
-    // StopBrokerServices();
+    bool all_disabled = true;
+    for (const auto& addrs : nic_broker_addrs)
+    {
+      std::string addr_list_str;
+      for (size_t i = 0; i < addrs.second.size(); ++i)
+      {
+        addr_list_str.append(addrs.second[i]);
+        if (i < addrs.second.size() - 1)
+          addr_list_str.append(", ");
+      }
+
+      bool disabled = !nic_enabled[addrs.first];
+      all_disabled = all_disabled && disabled;
+
+      BROKER_LOG_NOTICE("On interface %s (%s): %s", addrs.first, disabled ? "disabled" : "enabled", addr_list_str);
+    }
+
+    if (all_disabled)
+    {
+      BROKER_LOG_NOTICE(
+          "Since broker \"%s\" was only found on disabled interfaces, %s.", broker_info.service_instance_name,
+          service_registered_ ? "this broker will remain active"
+                              : "if there aren't any conflicting brokers remaining on enabled interfaces, "
+                                "this broker will proceed with DNS-SD registration");
+    }
+    else if (!service_registered_)
+    {
+      BROKER_LOG_NOTICE("This broker will remain unregistered with DNS-SD until all conflicting brokers are removed.");
+    }
   }
 }
 
 void BrokerCore::HandleOtherBrokerLost(const std::string& scope, const std::string& service_name)
 {
-  BROKER_LOG_NOTICE("Conflicting broker %s on scope \"%s\" no longer discovered.", service_name.c_str(), scope.c_str());
+  BROKER_LOG_NOTICE("Broker %s on scope \"%s\" no longer discovered.", service_name.c_str(), scope.c_str());
 }
 
 // Returns the handles of clients that match the criteria.

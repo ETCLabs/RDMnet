@@ -40,6 +40,7 @@ static void           unregister_all_brokers(void);
 
 // Other helpers
 static void process_broker_state(RdmnetBrokerRegisterRef* broker_ref);
+static bool conflicting_broker_found(RdmnetBrokerRegisterRef* broker_ref);
 static bool validate_broker_register_config(const RdmnetBrokerRegisterConfig* config);
 
 /*************************** Function definitions ****************************/
@@ -418,19 +419,45 @@ void process_broker_state(RdmnetBrokerRegisterRef* broker_ref)
     if (!broker_ref->query_timeout_expired && etcpal_timer_is_expired(&broker_ref->query_timer))
       broker_ref->query_timeout_expired = true;
 
-    if (broker_ref->query_timeout_expired && !broker_ref->scope_monitor_handle->broker_list)
+    if (broker_ref->query_timeout_expired)
     {
-      // If at least the initial query timeout is expired and there aren't any conflicting brokers, we can proceed.
-      broker_ref->state = kBrokerStateRegisterStarted;
-
-      int platform_error = 0;
-      if (rdmnet_disc_platform_register_broker(broker_ref, &platform_error) != kEtcPalErrOk)
+      if (conflicting_broker_found(broker_ref))
       {
-        broker_ref->state = kBrokerStateNotRegistered;
-        broker_ref->callbacks.broker_register_failed(broker_ref, platform_error, broker_ref->callbacks.context);
+        // Keep querying at the same interval until there are no longer any conflicting brokers.
+        etcpal_timer_reset(&broker_ref->query_timer);
+        broker_ref->query_timeout_expired = false;
+      }
+      else
+      {
+        // If at least the initial query timeout is expired and there aren't any conflicting brokers, we can proceed.
+        broker_ref->state = kBrokerStateRegisterStarted;
+
+        int platform_error = 0;
+        if (rdmnet_disc_platform_register_broker(broker_ref, &platform_error) != kEtcPalErrOk)
+        {
+          broker_ref->state = kBrokerStateNotRegistered;
+          broker_ref->callbacks.broker_register_failed(broker_ref, platform_error, broker_ref->callbacks.context);
+        }
       }
     }
   }
+}
+
+bool conflicting_broker_found(RdmnetBrokerRegisterRef* broker_ref)
+{
+  for (const DiscoveredBroker* db = broker_ref->scope_monitor_handle->broker_list; db; db = db->next)
+  {
+    for (size_t i = 0; i < db->num_listen_addrs; ++i)
+    {
+      for (size_t j = 0; j < broker_ref->num_netints; ++j)
+      {
+        if (db->listen_addr_netint_array[i] == broker_ref->netints[j])
+          return true;  // This broker can be reached on one of our enabled interfaces
+      }
+    }
+  }
+
+  return false;
 }
 
 bool validate_broker_register_config(const RdmnetBrokerRegisterConfig* config)
