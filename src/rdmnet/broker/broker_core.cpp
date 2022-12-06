@@ -545,13 +545,30 @@ void BrokerCore::HandleOtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
     {
       BROKER_LOG_NOTICE(
           "Since broker \"%s\" was only found on disabled interfaces, %s.", broker_info.service_instance_name,
-          service_registered_ ? "this broker will remain active"
+          service_registered_ ? "this broker will remain enabled for this scope and registered with mDNS"
                               : "if there aren't any conflicting brokers remaining on enabled interfaces, "
-                                "this broker will proceed with DNS-SD registration");
+                                "this broker will proceed with mDNS registration");
     }
-    else if (!service_registered_)
+    else if (service_registered_)
     {
-      BROKER_LOG_NOTICE("This broker will remain unregistered with DNS-SD until all conflicting brokers are removed.");
+      if (components_.disc->BrokerShouldDeregister(settings_.cid, broker_info.cid))
+      {
+        BROKER_LOG_NOTICE(
+            "This broker will be disabled for this scope and unregistered from mDNS until all conflicting brokers are "
+            "removed.");
+      }
+      else
+      {
+        BROKER_LOG_NOTICE(
+            "This broker will remain enabled for this scope and registered with mDNS. The conflicting broker should be "
+            "disabled.");
+      }
+    }
+    else
+    {
+      BROKER_LOG_NOTICE(
+          "This broker will remain disabled for this scope and unregistered with mDNS until all conflicting brokers "
+          "are removed.");
     }
   }
 }

@@ -40,7 +40,7 @@ static void           unregister_all_brokers(void);
 
 // Other helpers
 static void process_broker_state(RdmnetBrokerRegisterRef* broker_ref);
-static bool conflicting_broker_found(RdmnetBrokerRegisterRef* broker_ref);
+static bool conflicting_broker_found(RdmnetBrokerRegisterRef* broker_ref, bool* should_deregister);
 static bool validate_broker_register_config(const RdmnetBrokerRegisterConfig* config);
 
 /*************************** Function definitions ****************************/
@@ -412,43 +412,56 @@ void rdmnet_disc_module_tick(void)
   rdmnet_disc_platform_tick();
 }
 
+bool rdmnet_disc_broker_should_deregister(const EtcPalUuid* this_broker_cid, const EtcPalUuid* other_broker_cid)
+{
+  return ETCPAL_UUID_CMP(this_broker_cid, other_broker_cid) < 0;
+}
+
 void process_broker_state(RdmnetBrokerRegisterRef* broker_ref)
 {
-  if (broker_ref->state == kBrokerStateQuerying)
+  if (etcpal_timer_is_expired(&broker_ref->query_timer))
   {
-    if (!broker_ref->query_timeout_expired && etcpal_timer_is_expired(&broker_ref->query_timer))
-      broker_ref->query_timeout_expired = true;
+    etcpal_timer_reset(&broker_ref->query_timer);
 
-    if (broker_ref->query_timeout_expired)
+    bool should_deregister = false;
+    if (conflicting_broker_found(broker_ref, &should_deregister))
     {
-      if (conflicting_broker_found(broker_ref))
+      if (should_deregister && (broker_ref->state == kBrokerStateRegistered))
       {
-        // Keep querying at the same interval until there are no longer any conflicting brokers.
-        etcpal_timer_reset(&broker_ref->query_timer);
-        broker_ref->query_timeout_expired = false;
+        rdmnet_disc_platform_unregister_broker(broker_ref);
+        broker_ref->state = kBrokerStateQuerying;
+      }
+    }
+    else if (broker_ref->state == kBrokerStateQuerying)
+    {
+      // If at least the initial query timeout is expired and there aren't any conflicting brokers, we can proceed.
+      int platform_error = 0;
+      if (rdmnet_disc_platform_register_broker(broker_ref, &platform_error) == kEtcPalErrOk)
+      {
+        broker_ref->state = kBrokerStateRegistered;
       }
       else
       {
-        // If at least the initial query timeout is expired and there aren't any conflicting brokers, we can proceed.
-        broker_ref->state = kBrokerStateRegisterStarted;
-
-        int platform_error = 0;
-        if (rdmnet_disc_platform_register_broker(broker_ref, &platform_error) != kEtcPalErrOk)
-        {
-          broker_ref->state = kBrokerStateNotRegistered;
-          broker_ref->callbacks.broker_register_failed(broker_ref, platform_error, broker_ref->callbacks.context);
-        }
+        broker_ref->state = kBrokerStateNotRegistered;
+        broker_ref->callbacks.broker_register_failed(broker_ref, platform_error, broker_ref->callbacks.context);
       }
     }
   }
 }
 
-bool conflicting_broker_found(RdmnetBrokerRegisterRef* broker_ref)
+bool conflicting_broker_found(RdmnetBrokerRegisterRef* broker_ref, bool* should_deregister)
 {
+  RDMNET_ASSERT(broker_ref && should_deregister);
+
+  *should_deregister = false;
   for (const DiscoveredBroker* db = broker_ref->scope_monitor_handle->broker_list; db; db = db->next)
   {
-    if (ETCPAL_UUID_CMP(&db->cid, &broker_ref->cid) != 0)
+    int cid_cmp = ETCPAL_UUID_CMP(&db->cid, &broker_ref->cid);
+    if (ETCPAL_UUID_CMP(&broker_ref->cid, &db->cid) != 0)
     {
+      if (rdmnet_disc_broker_should_deregister(&broker_ref->cid, &db->cid))
+        *should_deregister = true;
+
       if (!broker_ref->netints)
         return true;  // All interfaces enabled, so this broker already conflicts
 

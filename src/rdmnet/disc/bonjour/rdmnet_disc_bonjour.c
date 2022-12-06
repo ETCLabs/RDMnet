@@ -503,8 +503,7 @@ etcpal_error_t rdmnet_disc_platform_register_broker(RdmnetBrokerRegisterRef* bro
   etcpal_error_t result = kEtcPalErrOk;
   while ((current_netint < num_disc_netints) && (result == kEtcPalErrOk))
   {
-    RDMNET_ASSERT(current_netint < num_disc_netints);
-    uint32_t interfaceIndex = disc_netint_arr[current_netint].index;
+    uint32_t interface_index = disc_netint_arr[current_netint].index;
     ++current_netint;
 
     bool skip = false;
@@ -512,7 +511,7 @@ etcpal_error_t rdmnet_disc_platform_register_broker(RdmnetBrokerRegisterRef* bro
     {
       skip = true;
       for (size_t i = 0; (i < broker_ref->num_netints) && skip; ++i)
-        skip = (interfaceIndex != broker_ref->netints[i]);
+        skip = (interface_index != broker_ref->netints[i]);
     }
 
     if (!skip)
@@ -521,7 +520,7 @@ etcpal_error_t rdmnet_disc_platform_register_broker(RdmnetBrokerRegisterRef* bro
 
       DNSServiceRef       reg_ref;
       DNSServiceErrorType reg_res = DNSServiceRegister(
-          &reg_ref, 0, interfaceIndex, broker_ref->service_instance_name, reg_str, NULL, NULL, net_port,
+          &reg_ref, 0, interface_index, broker_ref->service_instance_name, reg_str, NULL, NULL, net_port,
           TXTRecordGetLength(&txt), TXTRecordGetBytesPtr(&txt), HandleDNSServiceRegisterReply, broker_ref);
 
       if (reg_res == kDNSServiceErr_NoError)
@@ -547,10 +546,17 @@ etcpal_error_t rdmnet_disc_platform_register_broker(RdmnetBrokerRegisterRef* bro
 
 void rdmnet_disc_platform_unregister_broker(rdmnet_registered_broker_t handle)
 {
-  for (size_t i = 0; i < handle->platform_data.num_dnssd_refs; ++i)
+  if (handle->platform_data.dnssd_refs)
   {
-    etcpal_poll_remove_socket(&poll_context, DNSServiceRefSockFD(handle->platform_data.dnssd_refs[i]));
-    DNSServiceRefDeallocate(handle->platform_data.dnssd_refs[i]);
+    for (size_t i = 0; i < handle->platform_data.num_dnssd_refs; ++i)
+    {
+      etcpal_poll_remove_socket(&poll_context, DNSServiceRefSockFD(handle->platform_data.dnssd_refs[i]));
+      DNSServiceRefDeallocate(handle->platform_data.dnssd_refs[i]);
+    }
+
+    free(handle->platform_data.dnssd_refs);
+    handle->platform_data.dnssd_refs = NULL;
+    handle->platform_data.num_dnssd_refs = 0;
   }
 }
 

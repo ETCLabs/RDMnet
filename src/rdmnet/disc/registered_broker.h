@@ -41,7 +41,6 @@ typedef enum
 {
   kBrokerStateNotRegistered,
   kBrokerStateQuerying,
-  kBrokerStateRegisterStarted,
   kBrokerStateRegistered
 } broker_state_t;
 
@@ -72,7 +71,6 @@ struct RdmnetBrokerRegisterRef
   char                   full_service_name[RDMNET_DISC_SERVICE_NAME_MAX_LENGTH];
 
   EtcPalTimer query_timer;
-  bool        query_timeout_expired;
 
   RdmnetBrokerRegisterPlatformData platform_data;
 };

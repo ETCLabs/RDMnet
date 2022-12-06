@@ -128,7 +128,6 @@ RdmnetBrokerRegisterRef* registered_broker_new(const RdmnetBrokerRegisterConfig*
     new_rb->scope_monitor_handle = NULL;
     new_rb->state = kBrokerStateNotRegistered;
     new_rb->full_service_name[0] = '\0';
-    new_rb->query_timeout_expired = false;
     memset(&new_rb->platform_data, 0, sizeof(RdmnetBrokerRegisterPlatformData));
   }
   return new_rb;
