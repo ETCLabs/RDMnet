@@ -65,7 +65,7 @@ void           rdmnet_disc_module_tick(void);
 void notify_scope_monitor_error(rdmnet_scope_monitor_t handle, int platform_specific_error);
 void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info);
 void notify_broker_updated(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info);
-void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name);
+void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name, const EtcPalUuid* broker_cid);
 
 #ifdef __cplusplus
 }

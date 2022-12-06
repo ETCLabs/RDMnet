@@ -505,7 +505,7 @@ void BrokerCore::HandleOtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
       for (const auto& sys_netint : sys_netints)
       {
         auto sys_netint_addr_str = etcpal::IpAddr(sys_netint.addr).ToString();
-        nic_enabled[sys_netint_addr_str] = false;
+        nic_enabled[sys_netint_addr_str] = listen_interfaces_.empty();
         for (auto listen_interface : listen_interfaces_)
         {
           if (sys_netint.index == listen_interface)
@@ -537,7 +537,8 @@ void BrokerCore::HandleOtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
       bool disabled = !nic_enabled[addrs.first];
       all_disabled = all_disabled && disabled;
 
-      BROKER_LOG_NOTICE("On interface %s (%s): %s", addrs.first, disabled ? "disabled" : "enabled", addr_list_str);
+      BROKER_LOG_NOTICE("On interface %s (%s): %s", addrs.first.c_str(), disabled ? "disabled" : "enabled",
+                        addr_list_str.c_str());
     }
 
     if (all_disabled)

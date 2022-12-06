@@ -24,6 +24,7 @@
 #include <string.h>
 #include "etcpal/common.h"
 #include "etcpal/inet.h"
+#include "etcpal/netint.h"
 #include "etcpal/pack.h"
 #include "rdmnet/core/util.h"
 #include "rdmnet/core/common.h"
@@ -44,10 +45,22 @@
 #define TXT_RECORD_BUFFER_LENGTH 663
 #define REGISTRATION_STRING_PADDED_LENGTH E133_DNSSD_SRV_TYPE_PADDED_LENGTH + E133_SCOPE_STRING_PADDED_LENGTH + 4
 
+/****************************** Private types ********************************/
+
+typedef struct DiscoveryNetint
+{
+  unsigned int index;
+  bool         ipv4_enabled;
+  bool         ipv6_enabled;
+} DiscoveryNetint;
+
 /**************************** Private variables ******************************/
 
 bool                     logged_poll_error = false;
 static EtcPalPollContext poll_context;
+
+static DiscoveryNetint* disc_netint_arr = NULL;
+static size_t           num_disc_netints = 0;
 
 /*********************** Private function prototypes *************************/
 
@@ -55,6 +68,8 @@ static DiscoveredBroker* discovered_broker_lookup_by_ref(DiscoveredBroker* list_
 static void              get_registration_string(const char* srv_type, const char* scope, char* reg_str);
 static void              broker_info_to_txt_record(const RdmnetBrokerRegisterRef* ref, TXTRecordRef* txt);
 static bool              txt_record_to_broker_info(const unsigned char* txt, uint16_t txt_len, DiscoveredBroker* db);
+static bool              validate_netint_config(const RdmnetNetintConfig* config);
+static etcpal_error_t    add_broker_dnssd_ref(RdmnetBrokerRegisterRef* broker_ref, const DNSServiceRef* dnssd_ref);
 
 /*************************** Function definitions ****************************/
 
@@ -77,17 +92,31 @@ void DNSSD_API HandleDNSServiceRegisterReply(DNSServiceRef       sdRef,
 
   if (broker_register_ref_is_valid(ref))
   {
-    if (flags & kDNSServiceFlagsAdd)
+    if ((flags & kDNSServiceFlagsAdd) && (errorCode == kDNSServiceErr_NoError))
     {
-      if (ref->callbacks.broker_registered)
+      ++ref->platform_data.num_successful_registers;
+
+      if (ref->platform_data.num_successful_registers == 1)
       {
-        ref->callbacks.broker_registered(ref, name, ref->callbacks.context);
+        strcpy(ref->platform_data.service_name, name);
+        DNSServiceConstructFullName(ref->full_service_name, name, regtype, domain);
       }
-      DNSServiceConstructFullName(ref->full_service_name, name, regtype, domain);
     }
-    else
+    else if (errorCode != kDNSServiceErr_NoError)
     {
-      if (ref->callbacks.broker_register_failed)
+      ++ref->platform_data.num_failed_registers;
+    }
+
+    size_t total_registers = ref->platform_data.num_successful_registers + ref->platform_data.num_failed_registers;
+    RDMNET_ASSERT(total_registers <= ref->platform_data.target_register_count);
+    if (total_registers == ref->platform_data.target_register_count)
+    {
+      if (ref->platform_data.num_successful_registers > 0)
+      {
+        if (ref->callbacks.broker_registered)
+          ref->callbacks.broker_registered(ref, ref->platform_data.service_name, ref->callbacks.context);
+      }
+      else if (ref->callbacks.broker_register_failed)
       {
         ref->callbacks.broker_register_failed(ref, errorCode, ref->callbacks.context);
       }
@@ -269,10 +298,10 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef       sdRef,
   else
   {
     // Service removal
-    notify_broker_lost(ref, serviceName);
     DiscoveredBroker* db = discovered_broker_find_by_name(ref->broker_list, full_name);
     if (db)
     {
+      notify_broker_lost(ref, serviceName, &db->cid);
       discovered_broker_remove(&ref->broker_list, db);
       discovered_broker_delete(db);
     }
@@ -285,13 +314,116 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef       sdRef,
 
 etcpal_error_t rdmnet_disc_platform_init(const RdmnetNetintConfig* netint_config)
 {
-  // TODO restrict network interfaces using netint_config
-  ETCPAL_UNUSED_ARG(netint_config);
-  return etcpal_poll_context_init(&poll_context);
+  RDMNET_ASSERT(num_disc_netints == 0);
+
+  if (netint_config && !validate_netint_config(netint_config))
+    return kEtcPalErrInvalid;
+
+  etcpal_error_t res = etcpal_poll_context_init(&poll_context);
+  if (res != kEtcPalErrOk)
+    return res;
+
+  size_t            num_sys_netints = 4;  // Start with estimate which eventually has the actual number written to it
+  EtcPalNetintInfo* netint_list = calloc(num_sys_netints, sizeof(EtcPalNetintInfo));
+  if (!netint_list)
+    return kEtcPalErrNoMem;
+
+  do
+  {
+    res = etcpal_netint_get_interfaces(netint_list, &num_sys_netints);
+    if (res == kEtcPalErrBufSize)
+      netint_list = realloc(netint_list, num_sys_netints * sizeof(EtcPalNetintInfo));
+  } while (res == kEtcPalErrBufSize);
+
+  if (res != kEtcPalErrOk)
+    res = (num_sys_netints == 0) ? kEtcPalErrNoNetints : kEtcPalErrSys;
+  size_t num_netints_requested = (netint_config ? netint_config->num_netints : num_sys_netints);
+  if (res == kEtcPalErrOk)
+  {
+    disc_netint_arr = calloc(num_netints_requested, sizeof(EtcPalMcastNetintId));
+    if (!disc_netint_arr)
+      res = kEtcPalErrNoMem;
+  }
+
+  if (res == kEtcPalErrOk)
+  {
+    RDMNET_LOG_INFO("Initializing discovery network interfaces...");
+    for (const EtcPalNetintInfo* netint = netint_list; netint < netint_list + num_sys_netints; ++netint)
+    {
+      // Get the interface IP address for logging
+      char addr_str[ETCPAL_IP_STRING_BYTES];
+      addr_str[0] = '\0';
+      if (RDMNET_CAN_LOG(ETCPAL_LOG_INFO))
+        etcpal_ip_to_string(&netint->addr, addr_str);
+
+      EtcPalMcastNetintId netint_id;
+      netint_id.index = netint->index;
+      netint_id.ip_type = netint->addr.type;
+
+      bool skip = false;
+      if (netint_config)
+      {
+        skip = true;
+        for (size_t i = 0; (i < netint_config->num_netints) && !skip; ++i)
+        {
+          if (netint_config->netints[i].index == netint_id.index &&
+              netint_config->netints[i].ip_type == netint_id.ip_type)
+          {
+            skip = false;
+          }
+        }
+      }
+
+      if (skip)
+      {
+        RDMNET_LOG_DEBUG("  Skipping network interface %s as it is not present in user configuration.", addr_str);
+      }
+      else
+      {
+        bool exists = false;
+        for (size_t i = 0; (i < num_disc_netints) && !exists; ++i)
+        {
+          if (disc_netint_arr[i].index == netint_id.index)
+          {
+            if (netint_id.ip_type == kEtcPalIpTypeV4)
+              disc_netint_arr[i].ipv4_enabled = true;
+            if (netint_id.ip_type == kEtcPalIpTypeV6)
+              disc_netint_arr[i].ipv6_enabled = true;
+
+            exists = true;
+          }
+        }
+
+        if (!exists)
+        {
+          disc_netint_arr[num_disc_netints].index = netint_id.index;
+          disc_netint_arr[num_disc_netints].ipv4_enabled = (netint_id.ip_type == kEtcPalIpTypeV4);
+          disc_netint_arr[num_disc_netints].ipv6_enabled = (netint_id.ip_type == kEtcPalIpTypeV6);
+          ++num_disc_netints;
+        }
+
+        RDMNET_LOG_DEBUG("  Set up discovery network interface %s.", addr_str);
+      }
+    }
+
+    if (num_disc_netints == 0)
+    {
+      RDMNET_LOG_ERR("No usable discovery network interfaces found.");
+      res = kEtcPalErrNoNetints;
+    }
+  }
+
+#if RDMNET_DYNAMIC_MEM
+  free(netint_list);
+#endif
+  return res;
 }
 
 void rdmnet_disc_platform_deinit(void)
 {
+  free(disc_netint_arr);
+  num_disc_netints = 0;
+
   etcpal_poll_context_deinit(&poll_context);
 }
 
@@ -361,32 +493,65 @@ etcpal_error_t rdmnet_disc_platform_register_broker(RdmnetBrokerRegisterRef* bro
   TXTRecordRef txt;
   broker_info_to_txt_record(broker_ref, &txt);
 
-  // TODO: If we want to register a device on a particular interface instead of all interfaces,
-  // we'll have to have multiple reg_refs and do a DNSServiceRegister on each interface. Not
-  // ideal.
-  DNSServiceErrorType result = DNSServiceRegister(
-      &broker_ref->platform_data.dnssd_ref, 0, 0, broker_ref->service_instance_name, reg_str, NULL, NULL, net_port,
-      TXTRecordGetLength(&txt), TXTRecordGetBytesPtr(&txt), HandleDNSServiceRegisterReply, broker_ref);
+  RDMNET_ASSERT(disc_netint_arr);
 
-  if (result == kDNSServiceErr_NoError)
+  broker_ref->platform_data.num_successful_registers = 0;
+  broker_ref->platform_data.num_failed_registers = 0;
+  broker_ref->platform_data.target_register_count = 0;
+
+  size_t         current_netint = 0;
+  etcpal_error_t result = kEtcPalErrOk;
+  while ((current_netint < num_disc_netints) && (result == kEtcPalErrOk))
   {
-    etcpal_poll_add_socket(&poll_context, DNSServiceRefSockFD(broker_ref->platform_data.dnssd_ref), ETCPAL_POLL_IN,
-                           broker_ref->platform_data.dnssd_ref);
+    RDMNET_ASSERT(current_netint < num_disc_netints);
+    uint32_t interfaceIndex = disc_netint_arr[current_netint].index;
+    ++current_netint;
+
+    bool skip = false;
+    if (broker_ref->netints)
+    {
+      skip = true;
+      for (size_t i = 0; (i < broker_ref->num_netints) && skip; ++i)
+        skip = (interfaceIndex != broker_ref->netints[i]);
+    }
+
+    if (!skip)
+    {
+      ++broker_ref->platform_data.target_register_count;
+
+      DNSServiceRef       reg_ref;
+      DNSServiceErrorType reg_res = DNSServiceRegister(
+          &reg_ref, 0, interfaceIndex, broker_ref->service_instance_name, reg_str, NULL, NULL, net_port,
+          TXTRecordGetLength(&txt), TXTRecordGetBytesPtr(&txt), HandleDNSServiceRegisterReply, broker_ref);
+
+      if (reg_res == kDNSServiceErr_NoError)
+      {
+        etcpal_poll_add_socket(&poll_context, DNSServiceRefSockFD(reg_ref), ETCPAL_POLL_IN, reg_ref);
+        result = add_broker_dnssd_ref(broker_ref, &reg_ref);
+      }
+      else
+      {
+        *platform_specific_error = reg_res;
+        ++broker_ref->platform_data.num_failed_registers;
+      }
+    }
   }
-  else
-  {
-    *platform_specific_error = result;
-  }
+
+  if (broker_ref->platform_data.num_failed_registers == broker_ref->platform_data.target_register_count)
+    result = kEtcPalErrSys;
 
   TXTRecordDeallocate(&txt);
 
-  return (result == kDNSServiceErr_NoError ? kEtcPalErrOk : kEtcPalErrSys);
+  return result;
 }
 
 void rdmnet_disc_platform_unregister_broker(rdmnet_registered_broker_t handle)
 {
-  etcpal_poll_remove_socket(&poll_context, DNSServiceRefSockFD(handle->platform_data.dnssd_ref));
-  DNSServiceRefDeallocate(handle->platform_data.dnssd_ref);
+  for (size_t i = 0; i < handle->platform_data.num_dnssd_refs; ++i)
+  {
+    etcpal_poll_remove_socket(&poll_context, DNSServiceRefSockFD(handle->platform_data.dnssd_refs[i]));
+    DNSServiceRefDeallocate(handle->platform_data.dnssd_refs[i]);
+  }
 }
 
 void discovered_broker_free_platform_resources(DiscoveredBroker* db)
@@ -555,5 +720,46 @@ bool txt_record_to_broker_info(const unsigned char* txt, uint16_t txt_len, Disco
       }
     }
   }
+  return true;
+}
+
+etcpal_error_t add_broker_dnssd_ref(RdmnetBrokerRegisterRef* broker_ref, const DNSServiceRef* dnssd_ref)
+{
+  ++broker_ref->platform_data.num_dnssd_refs;
+
+  if (broker_ref->platform_data.dnssd_refs)
+  {
+    RDMNET_ASSERT(broker_ref->platform_data.num_dnssd_refs > 1);
+    broker_ref->platform_data.dnssd_refs = (DNSServiceRef*)realloc(
+        broker_ref->platform_data.dnssd_refs, broker_ref->platform_data.num_dnssd_refs * sizeof(DNSServiceRef));
+  }
+  else
+  {
+    RDMNET_ASSERT(broker_ref->platform_data.num_dnssd_refs == 1);
+    broker_ref->platform_data.dnssd_refs =
+        (DNSServiceRef*)calloc(broker_ref->platform_data.num_dnssd_refs, sizeof(DNSServiceRef));
+  }
+
+  if (broker_ref->platform_data.dnssd_refs)
+  {
+    broker_ref->platform_data.dnssd_refs[broker_ref->platform_data.num_dnssd_refs - 1] = *dnssd_ref;
+    return kEtcPalErrOk;
+  }
+
+  return kEtcPalErrNoMem;
+}
+
+bool validate_netint_config(const RdmnetNetintConfig* config)
+{
+  if (!config->netints || !config->num_netints)
+    return false;
+
+  for (const EtcPalMcastNetintId* netint_id = config->netints; netint_id < config->netints + config->num_netints;
+       ++netint_id)
+  {
+    if (netint_id->index == 0 || (netint_id->ip_type != kEtcPalIpTypeV4 && netint_id->ip_type != kEtcPalIpTypeV6))
+      return false;
+  }
+
   return true;
 }

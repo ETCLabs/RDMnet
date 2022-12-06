@@ -447,12 +447,18 @@ bool conflicting_broker_found(RdmnetBrokerRegisterRef* broker_ref)
 {
   for (const DiscoveredBroker* db = broker_ref->scope_monitor_handle->broker_list; db; db = db->next)
   {
-    for (size_t i = 0; i < db->num_listen_addrs; ++i)
+    if (ETCPAL_UUID_CMP(&db->cid, &broker_ref->cid) != 0)
     {
-      for (size_t j = 0; j < broker_ref->num_netints; ++j)
+      if (!broker_ref->netints)
+        return true;  // All interfaces enabled, so this broker already conflicts
+
+      for (size_t i = 0; i < broker_ref->num_netints; ++i)
       {
-        if (db->listen_addr_netint_array[i] == broker_ref->netints[j])
-          return true;  // This broker can be reached on one of our enabled interfaces
+        for (size_t j = 0; j < db->num_listen_addrs; ++j)
+        {
+          if (db->listen_addr_netint_array[j] == broker_ref->netints[i])
+            return true;  // This broker can be reached on one of our enabled interfaces
+        }
       }
     }
   }
@@ -484,7 +490,8 @@ void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscIn
 {
   if (handle->broker_handle)
   {
-    if (handle->broker_handle->callbacks.other_broker_found)
+    if ((ETCPAL_UUID_CMP(&handle->broker_handle->cid, &broker_info->cid) != 0) &&
+        handle->broker_handle->callbacks.other_broker_found)
     {
       handle->broker_handle->callbacks.other_broker_found(handle->broker_handle, broker_info,
                                                           handle->broker_handle->callbacks.context);
@@ -504,11 +511,12 @@ void notify_broker_updated(rdmnet_scope_monitor_t handle, const RdmnetBrokerDisc
   }
 }
 
-void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name)
+void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name, const EtcPalUuid* broker_cid)
 {
   if (handle->broker_handle)
   {
-    if (handle->broker_handle->callbacks.other_broker_lost)
+    if ((ETCPAL_UUID_CMP(&handle->broker_handle->cid, broker_cid) != 0) &&
+        handle->broker_handle->callbacks.other_broker_lost)
     {
       handle->broker_handle->callbacks.other_broker_lost(handle->broker_handle, handle->scope, service_name,
                                                          handle->broker_handle->callbacks.context);

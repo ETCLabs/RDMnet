@@ -61,7 +61,7 @@ RdmnetBrokerRegisterRef* registered_broker_new(const RdmnetBrokerRegisterConfig*
   RDMNET_ASSERT(config);
 
 #if RDMNET_DYNAMIC_MEM
-  RdmnetBrokerRegisterRef* new_rb = (RdmnetBrokerRegisterRef*)malloc(sizeof(RdmnetBrokerRegisterRef));
+  RdmnetBrokerRegisterRef* new_rb = (RdmnetBrokerRegisterRef*)calloc(1, sizeof(RdmnetBrokerRegisterRef));
   if (new_rb)
   {
     if (config->num_netints != 0)
