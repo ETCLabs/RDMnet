@@ -238,10 +238,10 @@ static void browse_callback(AvahiServiceBrowser*                    b,
     else
     {
       // Service removal
-      notify_broker_lost(ref, name);
       DiscoveredBroker* db = discovered_broker_find_by_name(ref->broker_list, full_name);
       if (db)
       {
+        notify_broker_lost(ref, name, &db->cid);
         discovered_broker_remove(&ref->broker_list, db);
         discovered_broker_delete(db);
       }
