@@ -446,7 +446,7 @@ void handle_address_record(const DnsResourceRecord* rr)
         }
         EtcPalIpAddr addr;
         ETCPAL_IP_SET_V4_ADDRESS(&addr, v4_addr);
-        if (discovered_broker_add_listen_addr(db, &addr))
+        if (discovered_broker_add_listen_addr(db, &addr, 0))  // TODO - pass along interface instead of 0
         {
           if (db->platform_data.initial_notification_sent)
             db->platform_data.update_pending = true;
@@ -465,7 +465,7 @@ void handle_address_record(const DnsResourceRecord* rr)
         }
         EtcPalIpAddr addr;
         ETCPAL_IP_SET_V6_ADDRESS(&addr, rr->data_ptr);
-        if (discovered_broker_add_listen_addr(db, &addr))
+        if (discovered_broker_add_listen_addr(db, &addr, 0))  // TODO - pass along interface instead of 0
         {
           if (db->platform_data.initial_notification_sent)
             db->platform_data.update_pending = true;

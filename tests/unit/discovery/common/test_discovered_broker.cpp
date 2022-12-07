@@ -134,7 +134,7 @@ TEST_F(TestDiscoveredBroker, AddListenAddrWorks)
 
   const EtcPalIpAddr test_addr = etcpal::IpAddr::FromString("10.101.1.1").get();
   unsigned int       test_netint = 1u;
-  ASSERT_TRUE(discovered_broker_add_listen_addr(db.get(), &test_addr, test_netint));  // TODO: test netint
+  ASSERT_TRUE(discovered_broker_add_listen_addr(db.get(), &test_addr, test_netint));
 
   EXPECT_EQ(db->num_listen_addrs, 1u);
 

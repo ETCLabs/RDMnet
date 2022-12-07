@@ -469,6 +469,8 @@ bool conflicting_broker_found(RdmnetBrokerRegisterRef* broker_ref, bool* should_
       {
         for (size_t j = 0; j < db->num_listen_addrs; ++j)
         {
+          if (db->listen_addr_netint_array[j] == 0)
+            return true;  // TODO: Remove this case once interface support is added to Avahi & lwmdns impls.
           if (db->listen_addr_netint_array[j] == broker_ref->netints[i])
             return true;  // This broker can be reached on one of our enabled interfaces
         }

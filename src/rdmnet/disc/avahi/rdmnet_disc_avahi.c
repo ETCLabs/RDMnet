@@ -144,7 +144,7 @@ static void resolve_callback(AvahiServiceResolver*  r,
           (ETCPAL_IP_IS_V6(&ip_addr) && ipv6_valid(&ip_addr)))
       {
         // Add it to the info structure
-        discovered_broker_add_listen_addr(db, &ip_addr);
+        discovered_broker_add_listen_addr(db, &ip_addr, 0);  // TODO - pass along interface instead of 0
       }
 
       RdmnetBrokerDiscInfo notify_info;
