@@ -679,6 +679,8 @@ void BrokerCore::DestroyMarkedClientsLocked()
       auto client = clients_.find(to_destroy);
       if (client != clients_.end())
       {
+        auto client_ip = client->second->addr_;
+
         if (client->second->socket_ != ETCPAL_SOCKET_INVALID)
           components_.socket_mgr->RemoveSocket(client->second->handle_);
 
@@ -693,7 +695,8 @@ void BrokerCore::DestroyMarkedClientsLocked()
         }
         clients_.erase(client);
 
-        BROKER_LOG_INFO("Removing client %d marked for destruction.", to_destroy);
+        BROKER_LOG_INFO("Removing client %d at IP %s marked for destruction.", to_destroy,
+                        client_ip.ToString().c_str());
         BROKER_LOG_DEBUG("Clients: %zu Controllers: %zu Devices: %zu", clients_.size(), controllers_.size(),
                          devices_.size());
       }
@@ -867,9 +870,9 @@ bool BrokerCore::ProcessRPTConnectRequest(BrokerClient::Handle        client_han
 
     if (BROKER_CAN_LOG(ETCPAL_LOG_INFO))
     {
-      BROKER_LOG_INFO("Successfully processed RPT Connect request from %s (connection %d), UID %04x:%08x",
-                      new_client->client_type_ == kRPTClientTypeController ? "Controller" : "Device", client_handle,
-                      new_client->uid_.manu, new_client->uid_.id);
+      BROKER_LOG_INFO("Successfully processed RPT Connect request from %s at IP %s (connection %d), UID %04x:%08x",
+                      new_client->client_type_ == kRPTClientTypeController ? "Controller" : "Device",
+                      new_client->addr_.ToString().c_str(), client_handle, new_client->uid_.manu, new_client->uid_.id);
     }
 
     // Update everyone
