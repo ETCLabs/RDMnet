@@ -116,12 +116,12 @@ etcpal::Error BrokerCore::Startup(const rdmnet::Broker::Settings& settings,
     BROKER_LOG_INFO("Broker starting at scope \"%s\", listening on port %d.", settings_.scope.c_str(),
                     settings_.listen_port);
 
-    if (!settings_.listen_interfaces.empty())
+    if (!listen_interface_ips_.empty())
     {
       BROKER_LOG_INFO("Listening on manually-specified network interfaces:");
-      for (const auto& netint : settings.listen_interfaces)
+      for (const auto& ip : listen_interface_ips_)
       {
-        BROKER_LOG_INFO("%s", netint.c_str());
+        BROKER_LOG_INFO("%s", ip.c_str());
       }
     }
   }
@@ -188,8 +188,13 @@ size_t BrokerCore::GetNumClients() const
 // Convert a set of strings representing network interface names to a set of all IP addresses
 // currently assigned to those interfaces. Returns all interface IPs if interfaces is empty.
 //
-// Side-effects: Sets the listen_interfaces_ member with a list of interface indexes also resolved
+// Side-effects:
+//
+// Sets the listen_interfaces_ member with a list of interface indexes also resolved
 // from the interfaces parameter. This will be empty if interfaces is empty.
+//
+// Also sets the listen_interface_ips_ member in the same way as listen_interfaces_, except
+// with IP strings instead of indexes.
 std::set<etcpal::IpAddr> BrokerCore::GetInterfaceAddrs(const std::vector<std::string>& interfaces)
 {
   std::set<etcpal::IpAddr> to_return;
@@ -228,6 +233,8 @@ std::set<etcpal::IpAddr> BrokerCore::GetInterfaceAddrs(const std::vector<std::st
     listen_interfaces_.reserve(interface_indexes.size());
     std::transform(interface_indexes.begin(), interface_indexes.end(), std::back_inserter(listen_interfaces_),
                    [](unsigned int val) { return val; });
+
+    listen_interface_ips_ = interfaces;
   }
 
   return to_return;
