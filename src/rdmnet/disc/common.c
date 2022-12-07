@@ -92,6 +92,7 @@ void rdmnet_disc_module_deinit(void)
 {
   stop_monitoring_all_scopes();
   unregister_all_brokers();
+  rdmnet_disc_platform_deinit();
   etcpal_mutex_destroy(&rdmnet_disc_lock);
   registered_broker_module_deinit();
 }
