@@ -70,6 +70,7 @@ static void              broker_info_to_txt_record(const RdmnetBrokerRegisterRef
 static bool              txt_record_to_broker_info(const unsigned char* txt, uint16_t txt_len, DiscoveredBroker* db);
 static bool              validate_netint_config(const RdmnetNetintConfig* config);
 static etcpal_error_t    add_broker_dnssd_ref(RdmnetBrokerRegisterRef* broker_ref, const DNSServiceRef* dnssd_ref);
+static DiscoveryNetint*  lookup_discovery_netint(unsigned int index);
 
 /*************************** Function definitions ****************************/
 
@@ -161,12 +162,19 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef          sdRef,
   // Only copied to if addrs_done is true;
 
   // Update the broker info we're building
-  EtcPalSockAddr ip_addr;
-  if (sockaddr_os_to_etcpal(address, &ip_addr))
+  DiscoveryNetint* disc_netint = lookup_discovery_netint(interfaceIndex);
+  if (disc_netint)  // Filter by interface since we're getting all of them here
   {
-    if (!etcpal_ip_is_loopback(&ip_addr.ip) && !etcpal_ip_is_wildcard(&ip_addr.ip))
+    EtcPalSockAddr ip_addr;
+    if (sockaddr_os_to_etcpal(address, &ip_addr))
     {
-      discovered_broker_add_listen_addr(db, &ip_addr.ip, interfaceIndex);
+      // Also filter the addresses by IP protocol type
+      if (((ip_addr.ip.type == kEtcPalIpTypeV4) && disc_netint->ipv4_enabled) ||
+          ((ip_addr.ip.type == kEtcPalIpTypeV6) && disc_netint->ipv6_enabled))
+      {
+        if (!etcpal_ip_is_loopback(&ip_addr.ip) && !etcpal_ip_is_wildcard(&ip_addr.ip))
+          discovered_broker_add_listen_addr(db, &ip_addr.ip, interfaceIndex);
+      }
     }
   }
 
@@ -177,9 +185,17 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef          sdRef,
     etcpal_poll_remove_socket(&poll_context, DNSServiceRefSockFD(sdRef));
     DNSServiceRefDeallocate(sdRef);
 
-    RdmnetBrokerDiscInfo notify_info;
-    discovered_broker_fill_disc_info(db, &notify_info);
-    notify_broker_found(ref, &notify_info);
+    if (db->num_listen_addrs == 0)  // Perhaps all of the addrs were filtered
+    {
+      discovered_broker_remove(&ref->broker_list, db);
+      discovered_broker_delete(db);
+    }
+    else
+    {
+      RdmnetBrokerDiscInfo notify_info;
+      discovered_broker_fill_disc_info(db, &notify_info);
+      notify_broker_found(ref, &notify_info);
+    }
   }
 }
 
@@ -222,6 +238,7 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef        sdRef,
   etcpal_poll_remove_socket(&poll_context, DNSServiceRefSockFD(sdRef));
   DNSServiceRefDeallocate(sdRef);
 
+  // Resolve only comes in for one interface - get all addrs from all interfaces and filter them as they come in.
   DNSServiceRef addr_ref;
   getaddrinfo_err = DNSServiceGetAddrInfo(&addr_ref, 0, 0, 0, hosttarget, &HandleDNSServiceGetAddrInfoReply, context);
   if (getaddrinfo_err == kDNSServiceErr_NoError)
@@ -252,6 +269,10 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef       sdRef,
     // TODO log?
     return;
   }
+
+  // Filter out disabled interfaces
+  if (!lookup_discovery_netint(interfaceIndex))
+    return;
 
   RdmnetScopeMonitorRef* ref = (RdmnetScopeMonitorRef*)context;
   RDMNET_ASSERT(ref);
@@ -380,22 +401,18 @@ etcpal_error_t rdmnet_disc_platform_init(const RdmnetNetintConfig* netint_config
       }
       else
       {
-        bool exists = false;
-        for (size_t i = 0; (i < num_disc_netints) && !exists; ++i)
+        DiscoveryNetint* disc_netint = lookup_discovery_netint(netint_id.index);
+        if (disc_netint)
         {
-          if (disc_netint_arr[i].index == netint_id.index)
-          {
-            if (netint_id.ip_type == kEtcPalIpTypeV4)
-              disc_netint_arr[i].ipv4_enabled = true;
-            if (netint_id.ip_type == kEtcPalIpTypeV6)
-              disc_netint_arr[i].ipv6_enabled = true;
-
-            exists = true;
-          }
+          if (netint_id.ip_type == kEtcPalIpTypeV4)
+            disc_netint->ipv4_enabled = true;
+          if (netint_id.ip_type == kEtcPalIpTypeV6)
+            disc_netint->ipv6_enabled = true;
         }
-
-        if (!exists)
+        else
         {
+          RDMNET_ASSERT(num_disc_netints < num_netints_requested);
+
           disc_netint_arr[num_disc_netints].index = netint_id.index;
           disc_netint_arr[num_disc_netints].ipv4_enabled = (netint_id.ip_type == kEtcPalIpTypeV4);
           disc_netint_arr[num_disc_netints].ipv6_enabled = (netint_id.ip_type == kEtcPalIpTypeV6);
@@ -753,6 +770,17 @@ etcpal_error_t add_broker_dnssd_ref(RdmnetBrokerRegisterRef* broker_ref, const D
   }
 
   return kEtcPalErrNoMem;
+}
+
+DiscoveryNetint* lookup_discovery_netint(unsigned int index)
+{
+  for (size_t i = 0; i < num_disc_netints; ++i)
+  {
+    if (disc_netint_arr[i].index == index)
+      return &disc_netint_arr[i];
+  }
+
+  return NULL;
 }
 
 bool validate_netint_config(const RdmnetNetintConfig* config)
