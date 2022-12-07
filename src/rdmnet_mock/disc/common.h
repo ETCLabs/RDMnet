@@ -35,6 +35,7 @@ extern "C" {
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_module_init, const RdmnetNetintConfig*);
 DECLARE_FAKE_VOID_FUNC(rdmnet_disc_module_deinit);
 DECLARE_FAKE_VOID_FUNC(rdmnet_disc_module_tick);
+DECLARE_FAKE_VALUE_FUNC(bool, rdmnet_disc_broker_should_deregister, const EtcPalUuid*, const EtcPalUuid*);
 
 void rdmnet_disc_common_reset_all_fakes(void);
 
