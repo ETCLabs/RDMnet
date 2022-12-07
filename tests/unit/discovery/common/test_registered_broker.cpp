@@ -99,7 +99,6 @@ TEST_F(TestRegisteredBroker, NewInitializesFieldsProperly)
   EXPECT_EQ(ref->scope_monitor_handle, nullptr);
   EXPECT_EQ(ref->state, kBrokerStateNotRegistered);
   EXPECT_STREQ(ref->full_service_name, "");
-  EXPECT_EQ(ref->query_timeout_expired, false);
 
   ASSERT_EQ(ref->num_netints, default_config_.num_netints);
   for (size_t i = 0; i < ref->num_netints; ++i)
