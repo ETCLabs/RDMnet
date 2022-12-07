@@ -58,6 +58,10 @@ public:
                const std::vector<unsigned int>& resolved_interface_indexes),
               (override));
   MOCK_METHOD(void, UnregisterBroker, (), (override));
+  MOCK_METHOD(bool,
+              BrokerShouldDeregister,
+              (const etcpal::Uuid& this_broker_cid, const etcpal::Uuid& other_broker_cid),
+              (override));
 };
 
 class MockBrokerNotifyHandler : public rdmnet::Broker::NotifyHandler
