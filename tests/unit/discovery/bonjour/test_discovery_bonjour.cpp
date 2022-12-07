@@ -123,6 +123,7 @@ public:
     "Test Service Name",
     8888,
     nullptr,
+    nullptr,
     0,
     "default",
     "Test Broker",

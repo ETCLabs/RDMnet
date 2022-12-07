@@ -456,7 +456,6 @@ bool conflicting_broker_found(RdmnetBrokerRegisterRef* broker_ref, bool* should_
   *should_deregister = false;
   for (const DiscoveredBroker* db = broker_ref->scope_monitor_handle->broker_list; db; db = db->next)
   {
-    int cid_cmp = ETCPAL_UUID_CMP(&db->cid, &broker_ref->cid);
     if (ETCPAL_UUID_CMP(&broker_ref->cid, &db->cid) != 0)
     {
       if (rdmnet_disc_broker_should_deregister(&broker_ref->cid, &db->cid))
