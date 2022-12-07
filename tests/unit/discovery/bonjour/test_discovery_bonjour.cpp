@@ -20,6 +20,7 @@
 #include <string>
 #include <algorithm>
 
+#include "etcpal_mock/netint.h"
 #include "etcpal_mock/socket.h"
 #include "etcpal/cpp/inet.h"
 #include "etcpal/cpp/uuid.h"
@@ -133,6 +134,8 @@ public:
   };
   // clang-format on
 protected:
+  static EtcPalNetintInfo iface_;
+
   std::string                               default_full_service_name_;
   etcpal_error_t                            init_result_;
   TXTRecordRef                              txt_record_;
@@ -166,6 +169,26 @@ protected:
 
     FFF_RESET_HISTORY();
 
+    iface_.index = 1;
+    iface_.addr = etcpal::IpAddr::FromString("10.101.1.20").get();
+    iface_.mask = etcpal::IpAddr::FromString("255.255.0.0").get();
+    iface_.mac = etcpal::MacAddr::FromString("10:00:00:00:00:01").get();
+    std::strcpy(iface_.id, "if1");
+    std::strcpy(iface_.friendly_name, "Interface 1");
+
+    etcpal_netint_get_interfaces_fake.custom_fake = [](EtcPalNetintInfo* netints, size_t* num_netints) {
+      if (*num_netints < 1u)
+      {
+        *num_netints = 1u;
+        return kEtcPalErrBufSize;
+      }
+
+      netints[0] = iface_;
+      *num_netints = 1u;
+
+      return kEtcPalErrOk;
+    };
+
     init_result_ = rdmnet_disc_module_init(nullptr);
 
     CreateDefaultBroker();
@@ -183,6 +206,8 @@ protected:
   DNSServiceGetAddrInfoReply DriveResolveCallback(DNSServiceResolveReply resolve_cb);
   void                       DriveGetAddrInfoCallback(DNSServiceGetAddrInfoReply gai_cb);
 };
+
+EtcPalNetintInfo TestDiscoveryBonjour::iface_;
 
 void TestDiscoveryBonjour::CreateDefaultBroker()
 {
@@ -274,7 +299,7 @@ DNSServiceResolveReply TestDiscoveryBonjour::DriveBrowseCallback(DNSServiceBrows
     *ref = DEFAULT_MONITOR_DNS_REF;
     return kDNSServiceErr_NoError;
   };
-  browse_cb(DEFAULT_MONITOR_DNS_REF, kDNSServiceFlagsAdd, 0, kDNSServiceErr_NoError,
+  browse_cb(DEFAULT_MONITOR_DNS_REF, kDNSServiceFlagsAdd, iface_.index, kDNSServiceErr_NoError,
             default_discovered_broker_.service_instance_name, E133_DNSSD_SRV_TYPE, E133_DEFAULT_DOMAIN,
             DNSServiceBrowse_fake.arg6_val);
   EXPECT_EQ(DNSServiceResolve_fake.call_count, previous_call_count + 1);
@@ -290,8 +315,8 @@ DNSServiceGetAddrInfoReply TestDiscoveryBonjour::DriveResolveCallback(DNSService
     *ref = DEFAULT_MONITOR_DNS_REF;
     return kDNSServiceErr_NoError;
   };
-  resolve_cb(DEFAULT_MONITOR_DNS_REF, 0, 0, kDNSServiceErr_NoError, default_full_service_name_.c_str(), "testhost",
-             htons(default_discovered_broker_.port), TXTRecordGetLength(&txt_record_),
+  resolve_cb(DEFAULT_MONITOR_DNS_REF, 0, iface_.index, kDNSServiceErr_NoError, default_full_service_name_.c_str(),
+             "testhost", htons(default_discovered_broker_.port), TXTRecordGetLength(&txt_record_),
              reinterpret_cast<const unsigned char*>(TXTRecordGetBytesPtr(&txt_record_)),
              DNSServiceResolve_fake.arg7_val);
   EXPECT_EQ(DNSServiceGetAddrInfo_fake.call_count, previous_call_count + 1);
@@ -305,7 +330,7 @@ void TestDiscoveryBonjour::DriveGetAddrInfoCallback(DNSServiceGetAddrInfoReply g
   discovered_addr.ip = *default_listen_addr_;
   discovered_addr.port = 0;
   sockaddr_etcpal_to_os(&discovered_addr, &address);
-  gai_cb(DEFAULT_MONITOR_DNS_REF, 0, 0, kDNSServiceErr_NoError, "testhost", &address, 10,
+  gai_cb(DEFAULT_MONITOR_DNS_REF, 0, iface_.index, kDNSServiceErr_NoError, "testhost", &address, 10,
          DNSServiceGetAddrInfo_fake.arg6_val);
 }
 
@@ -376,7 +401,7 @@ TEST_F(TestDiscoveryBonjour, NormalResolveWorksCorrectly)
   auto resolve_cb = DriveBrowseCallback(browse_cb);
 
   ASSERT_EQ(DNSServiceResolve_fake.call_count, 1u);
-  EXPECT_EQ(DNSServiceResolve_fake.arg2_val, 0u);
+  EXPECT_EQ(DNSServiceResolve_fake.arg2_val, iface_.index);
   EXPECT_STREQ(DNSServiceResolve_fake.arg3_val, default_discovered_broker_.service_instance_name);
   EXPECT_STREQ(DNSServiceResolve_fake.arg4_val, E133_DNSSD_SRV_TYPE);
   EXPECT_STREQ(DNSServiceResolve_fake.arg5_val, E133_DEFAULT_DOMAIN);
