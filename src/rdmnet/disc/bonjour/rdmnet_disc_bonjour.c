@@ -579,8 +579,11 @@ void rdmnet_disc_platform_unregister_broker(rdmnet_registered_broker_t handle)
 
 void discovered_broker_free_platform_resources(DiscoveredBroker* db)
 {
-  etcpal_poll_remove_socket(&poll_context, DNSServiceRefSockFD(db->platform_data.dnssd_ref));
-  DNSServiceRefDeallocate(db->platform_data.dnssd_ref);
+  if (db->platform_data.state != kResolveStateDone)  // The ref is already cleaned up after resolving completes
+  {
+    etcpal_poll_remove_socket(&poll_context, DNSServiceRefSockFD(db->platform_data.dnssd_ref));
+    DNSServiceRefDeallocate(db->platform_data.dnssd_ref);
+  }
 }
 
 /******************************************************************************
