@@ -186,10 +186,10 @@ size_t BrokerCore::GetNumClients() const
 }
 
 // Convert a set of strings representing network interface names to a set of all IP addresses
-// currently assigned to those interfaces.
+// currently assigned to those interfaces. Returns all interface IPs if interfaces is empty.
 //
 // Side-effects: Sets the listen_interfaces_ member with a list of interface indexes also resolved
-// from the interfaces parameter.
+// from the interfaces parameter. This will be empty if interfaces is empty.
 std::set<etcpal::IpAddr> BrokerCore::GetInterfaceAddrs(const std::vector<std::string>& interfaces)
 {
   std::set<etcpal::IpAddr> to_return;
@@ -200,16 +200,25 @@ std::set<etcpal::IpAddr> BrokerCore::GetInterfaceAddrs(const std::vector<std::st
   while (etcpal_netint_get_interfaces(netint_list.data(), &num_netints) == kEtcPalErrBufSize)
     netint_list.resize(num_netints);
 
-  for (const auto& netint_name : interfaces)
+  netint_list.resize(num_netints);  // Final size
+
+  for (const auto& netint : netint_list)
   {
-    for (const auto& netint : netint_list)
+    if (interfaces.empty())
     {
-      if (std::strcmp(netint_name.c_str(), netint.id) == 0)
+      to_return.insert(netint.addr);
+    }
+    else
+    {
+      for (const auto& netint_name : interfaces)
       {
-        to_return.insert(netint.addr);
-        interface_indexes.insert(netint.index);
-        // There could be multiple addresses that have this name, we don't break here so we listen
-        // on all of them.
+        if (std::strcmp(netint_name.c_str(), netint.id) == 0)
+        {
+          to_return.insert(netint.addr);
+          interface_indexes.insert(netint.index);
+          // There could be multiple addresses that have this name, we don't break here so we listen
+          // on all of them.
+        }
       }
     }
   }
@@ -307,54 +316,35 @@ etcpal::Error BrokerCore::StartBrokerServices()
     return res;
 
   auto final_listen_addrs = GetInterfaceAddrs(settings_.listen_interfaces);
-  if (final_listen_addrs.empty())
+
+  // Listen on the set of enabled interfaces provided by GetInterfaceAddrs
+  auto addr_iter = final_listen_addrs.begin();
+  while (addr_iter != final_listen_addrs.end())
   {
-    // Listen on in6addr_any
-    const auto any_addr = etcpal::IpAddr::WildcardV6();
-    auto       listen_sock = StartListening(any_addr, settings_.listen_port);
+    auto listen_sock = StartListening(*addr_iter, settings_.listen_port);
     if (listen_sock)
     {
-      res = components_.threads->AddListenThread(*listen_sock);
-      if (!res)
-        etcpal_close(*listen_sock);
-    }
-    else
-    {
-      BROKER_LOG_CRIT("Could not bind a wildcard listening socket.");
-      res = listen_sock.error();
-    }
-  }
-  else
-  {
-    // Listen on a specific set of interfaces supplied by the library user
-    auto addr_iter = final_listen_addrs.begin();
-    while (addr_iter != final_listen_addrs.end())
-    {
-      auto listen_sock = StartListening(*addr_iter, settings_.listen_port);
-      if (listen_sock)
+      if (components_.threads->AddListenThread(*listen_sock))
       {
-        if (components_.threads->AddListenThread(*listen_sock))
-        {
-          ++addr_iter;
-        }
-        else
-        {
-          etcpal_close(*listen_sock);
-          addr_iter = final_listen_addrs.erase(addr_iter);
-        }
+        ++addr_iter;
       }
       else
       {
+        etcpal_close(*listen_sock);
         addr_iter = final_listen_addrs.erase(addr_iter);
       }
     }
-
-    // Errors on some interfaces are tolerated as long as we have at least one to listen on.
-    if (final_listen_addrs.empty())
+    else
     {
-      BROKER_LOG_CRIT("Could not listen on any provided IP addresses.");
-      res = kEtcPalErrSys;
+      addr_iter = final_listen_addrs.erase(addr_iter);
     }
+  }
+
+  // Errors on some interfaces are tolerated as long as we have at least one to listen on.
+  if (final_listen_addrs.empty())
+  {
+    BROKER_LOG_CRIT("Could not listen on any provided IP addresses.");
+    res = kEtcPalErrSys;
   }
 
   return res;
