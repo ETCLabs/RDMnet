@@ -55,6 +55,8 @@ public:
                                        const rdm::Uid&                  my_uid,
                                        const std::vector<unsigned int>& resolved_interface_indexes) = 0;
   virtual void          UnregisterBroker() = 0;
+
+  virtual bool BrokerShouldDeregister(const etcpal::Uuid& this_broker_cid, const etcpal::Uuid& other_broker_cid) = 0;
 };
 
 /// A wrapper for the RDMnet Discovery library for use by Brokers.
@@ -68,6 +70,8 @@ public:
                                const rdm::Uid&                  my_uid,
                                const std::vector<unsigned int>& resolved_interface_indexes) override;
   void          UnregisterBroker() override;
+
+  bool BrokerShouldDeregister(const etcpal::Uuid& this_broker_cid, const etcpal::Uuid& other_broker_cid);
 
   // Accessors
   std::string assigned_service_name() const { return assigned_service_name_; }

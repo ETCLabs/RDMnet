@@ -22,10 +22,12 @@
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_disc_module_init, const RdmnetNetintConfig*);
 DEFINE_FAKE_VOID_FUNC(rdmnet_disc_module_deinit);
 DEFINE_FAKE_VOID_FUNC(rdmnet_disc_module_tick);
+DEFINE_FAKE_VALUE_FUNC(bool, rdmnet_disc_broker_should_deregister, const EtcPalUuid*, const EtcPalUuid*);
 
 void rdmnet_disc_common_reset_all_fakes(void)
 {
   RESET_FAKE(rdmnet_disc_module_init);
   RESET_FAKE(rdmnet_disc_module_deinit);
   RESET_FAKE(rdmnet_disc_module_tick);
+  RESET_FAKE(rdmnet_disc_broker_should_deregister);
 }

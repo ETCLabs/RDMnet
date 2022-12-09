@@ -83,7 +83,11 @@ protected:
     rdmnet_registered_broker_t broker_handle;
     EXPECT_EQ(rdmnet_disc_register_broker(&default_register_config_, &broker_handle), kEtcPalErrOk);
 
-    // Advance time past the query timeout
+    // Advance time past the query timeout, initiating random backoff
+    etcpal_getms_fake.return_val += BROKER_REG_QUERY_TIMEOUT + 1000;
+    rdmnet_disc_module_tick();
+
+    // Advance time past the random backoff
     etcpal_getms_fake.return_val += BROKER_REG_QUERY_TIMEOUT + 1000;
     rdmnet_disc_module_tick();
 
@@ -126,7 +130,12 @@ TEST_F(TestDiscoveryCommon, BrokerRegisterSucceedsUnderNormalConditions)
   rdmnet_disc_module_tick();
   ASSERT_EQ(rdmnet_disc_platform_register_broker_fake.call_count, 0u);
 
-  // Advance time past the query timeout
+  // Advance time past the query timeout, initiating random backoff
+  etcpal_getms_fake.return_val += BROKER_REG_QUERY_TIMEOUT + 1000;
+  rdmnet_disc_module_tick();
+  ASSERT_EQ(rdmnet_disc_platform_register_broker_fake.call_count, 0u);
+
+  // Advance time past the random backoff
   etcpal_getms_fake.return_val += BROKER_REG_QUERY_TIMEOUT + 1000;
   rdmnet_disc_module_tick();
 

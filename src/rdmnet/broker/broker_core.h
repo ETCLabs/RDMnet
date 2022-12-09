@@ -116,6 +116,7 @@ private:
   // Attributes of this broker instance
   rdmnet::Broker::Settings  settings_;
   std::vector<unsigned int> listen_interfaces_;
+  std::vector<std::string>  listen_interface_ips_;
   rdm::Uid                  my_uid_;
 
   // External (non-owned) components

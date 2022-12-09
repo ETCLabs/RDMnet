@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <iterator>
 #include "etcpal/common.h"
+#include "rdmnet/disc/common.h"
 
 /*************************** Function definitions ****************************/
 
@@ -123,6 +124,12 @@ void BrokerDiscoveryManager::UnregisterBroker()
 {
   assigned_service_name_.clear();
   rdmnet_disc_unregister_broker(handle_);
+}
+
+bool BrokerDiscoveryManager::BrokerShouldDeregister(const etcpal::Uuid& this_broker_cid,
+                                                    const etcpal::Uuid& other_broker_cid)
+{
+  return rdmnet_disc_broker_should_deregister(&this_broker_cid.get(), &other_broker_cid.get());
 }
 
 void BrokerDiscoveryManager::LibNotifyBrokerRegistered(rdmnet_registered_broker_t handle,

@@ -116,12 +116,12 @@ etcpal::Error BrokerCore::Startup(const rdmnet::Broker::Settings& settings,
     BROKER_LOG_INFO("Broker starting at scope \"%s\", listening on port %d.", settings_.scope.c_str(),
                     settings_.listen_port);
 
-    if (!settings_.listen_interfaces.empty())
+    if (!listen_interface_ips_.empty())
     {
       BROKER_LOG_INFO("Listening on manually-specified network interfaces:");
-      for (const auto& netint : settings.listen_interfaces)
+      for (const auto& ip : listen_interface_ips_)
       {
-        BROKER_LOG_INFO("%s", netint.c_str());
+        BROKER_LOG_INFO("%s", ip.c_str());
       }
     }
   }
@@ -186,10 +186,15 @@ size_t BrokerCore::GetNumClients() const
 }
 
 // Convert a set of strings representing network interface names to a set of all IP addresses
-// currently assigned to those interfaces.
+// currently assigned to those interfaces. Returns all interface IPs if interfaces is empty.
 //
-// Side-effects: Sets the listen_interfaces_ member with a list of interface indexes also resolved
-// from the interfaces parameter.
+// Side-effects:
+//
+// Sets the listen_interfaces_ member with a list of interface indexes also resolved
+// from the interfaces parameter. This will be empty if interfaces is empty.
+//
+// Also sets the listen_interface_ips_ member in the same way as listen_interfaces_, except
+// with IP strings instead of indexes.
 std::set<etcpal::IpAddr> BrokerCore::GetInterfaceAddrs(const std::vector<std::string>& interfaces)
 {
   std::set<etcpal::IpAddr> to_return;
@@ -200,16 +205,25 @@ std::set<etcpal::IpAddr> BrokerCore::GetInterfaceAddrs(const std::vector<std::st
   while (etcpal_netint_get_interfaces(netint_list.data(), &num_netints) == kEtcPalErrBufSize)
     netint_list.resize(num_netints);
 
-  for (const auto& netint_name : interfaces)
+  netint_list.resize(num_netints);  // Final size
+
+  for (const auto& netint : netint_list)
   {
-    for (const auto& netint : netint_list)
+    if (interfaces.empty())
     {
-      if (std::strcmp(netint_name.c_str(), netint.id) == 0)
+      to_return.insert(netint.addr);
+    }
+    else
+    {
+      for (const auto& netint_name : interfaces)
       {
-        to_return.insert(netint.addr);
-        interface_indexes.insert(netint.index);
-        // There could be multiple addresses that have this name, we don't break here so we listen
-        // on all of them.
+        if (std::strcmp(netint_name.c_str(), netint.id) == 0)
+        {
+          to_return.insert(netint.addr);
+          interface_indexes.insert(netint.index);
+          // There could be multiple addresses that have this name, we don't break here so we listen
+          // on all of them.
+        }
       }
     }
   }
@@ -219,6 +233,8 @@ std::set<etcpal::IpAddr> BrokerCore::GetInterfaceAddrs(const std::vector<std::st
     listen_interfaces_.reserve(interface_indexes.size());
     std::transform(interface_indexes.begin(), interface_indexes.end(), std::back_inserter(listen_interfaces_),
                    [](unsigned int val) { return val; });
+
+    listen_interface_ips_ = interfaces;
   }
 
   return to_return;
@@ -307,54 +323,35 @@ etcpal::Error BrokerCore::StartBrokerServices()
     return res;
 
   auto final_listen_addrs = GetInterfaceAddrs(settings_.listen_interfaces);
-  if (final_listen_addrs.empty())
+
+  // Listen on the set of enabled interfaces provided by GetInterfaceAddrs
+  auto addr_iter = final_listen_addrs.begin();
+  while (addr_iter != final_listen_addrs.end())
   {
-    // Listen on in6addr_any
-    const auto any_addr = etcpal::IpAddr::WildcardV6();
-    auto       listen_sock = StartListening(any_addr, settings_.listen_port);
+    auto listen_sock = StartListening(*addr_iter, settings_.listen_port);
     if (listen_sock)
     {
-      res = components_.threads->AddListenThread(*listen_sock);
-      if (!res)
-        etcpal_close(*listen_sock);
-    }
-    else
-    {
-      BROKER_LOG_CRIT("Could not bind a wildcard listening socket.");
-      res = listen_sock.error();
-    }
-  }
-  else
-  {
-    // Listen on a specific set of interfaces supplied by the library user
-    auto addr_iter = final_listen_addrs.begin();
-    while (addr_iter != final_listen_addrs.end())
-    {
-      auto listen_sock = StartListening(*addr_iter, settings_.listen_port);
-      if (listen_sock)
+      if (components_.threads->AddListenThread(*listen_sock))
       {
-        if (components_.threads->AddListenThread(*listen_sock))
-        {
-          ++addr_iter;
-        }
-        else
-        {
-          etcpal_close(*listen_sock);
-          addr_iter = final_listen_addrs.erase(addr_iter);
-        }
+        ++addr_iter;
       }
       else
       {
+        etcpal_close(*listen_sock);
         addr_iter = final_listen_addrs.erase(addr_iter);
       }
     }
-
-    // Errors on some interfaces are tolerated as long as we have at least one to listen on.
-    if (final_listen_addrs.empty())
+    else
     {
-      BROKER_LOG_CRIT("Could not listen on any provided IP addresses.");
-      res = kEtcPalErrSys;
+      addr_iter = final_listen_addrs.erase(addr_iter);
     }
+  }
+
+  // Errors on some interfaces are tolerated as long as we have at least one to listen on.
+  if (final_listen_addrs.empty())
+  {
+    BROKER_LOG_CRIT("Could not listen on any provided IP addresses.");
+    res = kEtcPalErrSys;
   }
 
   return res;
@@ -480,37 +477,102 @@ void BrokerCore::HandleBrokerRegisterError(int platform_specific_error)
 
 void BrokerCore::HandleOtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
 {
-  // If the broker is already registered with DNS-SD, the presence of another broker is an error
-  // condition. Otherwise, the system is still usable (this broker will not register)
-  int log_pri = (service_registered_ ? ETCPAL_LOG_ERR : ETCPAL_LOG_NOTICE);
-
-  if (BROKER_CAN_LOG(log_pri))
+  if (BROKER_CAN_LOG(ETCPAL_LOG_NOTICE))
   {
-    std::string addrs;
+    BROKER_LOG_NOTICE(
+        "Broker \"%s\", found at same scope(\"%s\") as this broker. Addresses were resolved on the following "
+        "interfaces:",
+        broker_info.service_instance_name, broker_info.scope);
+
+    size_t                        num_sys_netints = 4;  // Size estimate, eventually holds actual size
+    std::vector<EtcPalNetintInfo> sys_netints(num_sys_netints);
+    while (etcpal_netint_get_interfaces(sys_netints.data(), &num_sys_netints) == kEtcPalErrBufSize)
+    {
+      sys_netints.resize(num_sys_netints);
+    }
+    sys_netints.resize(num_sys_netints);  // Final size
+
+    std::unordered_map<std::string, std::vector<std::string>> nic_broker_addrs;
+    std::unordered_map<std::string, bool>                     nic_enabled;
     for (size_t i = 0; i < broker_info.num_listen_addrs; ++i)
     {
-      char addr_string[ETCPAL_IP_STRING_BYTES];
-      if (kEtcPalErrOk == etcpal_ip_to_string(&broker_info.listen_addrs[i], addr_string))
+      const EtcPalIpAddr& dest = broker_info.listen_addrs[i];
+      unsigned int        netint_for_dest = broker_info.listen_addr_netints[i];
+
+      for (const auto& sys_netint : sys_netints)
       {
-        addrs.append(addr_string);
-        if (i < broker_info.num_listen_addrs - 1)
-          addrs.append(", ");
+        auto sys_netint_addr_str = etcpal::IpAddr(sys_netint.addr).ToString();
+        nic_enabled[sys_netint_addr_str] = listen_interfaces_.empty();
+        for (auto listen_interface : listen_interfaces_)
+        {
+          if (sys_netint.index == listen_interface)
+          {
+            nic_enabled[sys_netint_addr_str] = true;
+            break;
+          }
+        }
+
+        if ((netint_for_dest == sys_netint.index) && (dest.type == sys_netint.addr.type))
+        {
+          auto dest_addr_str = etcpal::IpAddr(dest).ToString();
+          nic_broker_addrs[sys_netint_addr_str].push_back(dest_addr_str);
+        }
       }
     }
 
-    log_->Log(log_pri, "Broker \"%s\", ip[%s] found at same scope(\"%s\") as this broker.",
-              broker_info.service_instance_name, addrs.c_str(), broker_info.scope);
-  }
-  if (!service_registered_)
-  {
-    BROKER_LOG(log_pri, "This broker will remain unregistered with DNS-SD until all conflicting brokers are removed.");
-    // StopBrokerServices();
+    bool all_disabled = true;
+    for (const auto& addrs : nic_broker_addrs)
+    {
+      std::string addr_list_str;
+      for (size_t i = 0; i < addrs.second.size(); ++i)
+      {
+        addr_list_str.append(addrs.second[i]);
+        if (i < addrs.second.size() - 1)
+          addr_list_str.append(", ");
+      }
+
+      bool disabled = !nic_enabled[addrs.first];
+      all_disabled = all_disabled && disabled;
+
+      BROKER_LOG_NOTICE("On interface %s (%s): %s", addrs.first.c_str(), disabled ? "disabled" : "enabled",
+                        addr_list_str.c_str());
+    }
+
+    if (all_disabled)
+    {
+      BROKER_LOG_NOTICE(
+          "Since broker \"%s\" was only found on disabled interfaces, %s.", broker_info.service_instance_name,
+          service_registered_ ? "this broker will remain enabled for this scope and registered with mDNS"
+                              : "if there aren't any conflicting brokers remaining on enabled interfaces, "
+                                "this broker will proceed with mDNS registration");
+    }
+    else if (service_registered_)
+    {
+      if (components_.disc->BrokerShouldDeregister(settings_.cid, broker_info.cid))
+      {
+        BROKER_LOG_NOTICE(
+            "This broker will be disabled for this scope and unregistered from mDNS until all conflicting brokers are "
+            "removed.");
+      }
+      else
+      {
+        BROKER_LOG_NOTICE(
+            "This broker will remain enabled for this scope and registered with mDNS. The conflicting broker should be "
+            "disabled.");
+      }
+    }
+    else
+    {
+      BROKER_LOG_NOTICE(
+          "This broker will remain disabled for this scope and unregistered with mDNS until all conflicting brokers "
+          "are removed.");
+    }
   }
 }
 
 void BrokerCore::HandleOtherBrokerLost(const std::string& scope, const std::string& service_name)
 {
-  BROKER_LOG_NOTICE("Conflicting broker %s on scope \"%s\" no longer discovered.", service_name.c_str(), scope.c_str());
+  BROKER_LOG_NOTICE("Broker %s on scope \"%s\" no longer discovered.", service_name.c_str(), scope.c_str());
 }
 
 // Returns the handles of clients that match the criteria.
@@ -614,6 +676,8 @@ void BrokerCore::DestroyMarkedClientsLocked()
       auto client = clients_.find(to_destroy);
       if (client != clients_.end())
       {
+        auto client_ip = client->second->addr_;
+
         if (client->second->socket_ != ETCPAL_SOCKET_INVALID)
           components_.socket_mgr->RemoveSocket(client->second->handle_);
 
@@ -628,7 +692,8 @@ void BrokerCore::DestroyMarkedClientsLocked()
         }
         clients_.erase(client);
 
-        BROKER_LOG_INFO("Removing client %d marked for destruction.", to_destroy);
+        BROKER_LOG_INFO("Removing client %d at IP %s marked for destruction.", to_destroy,
+                        client_ip.ToString().c_str());
         BROKER_LOG_DEBUG("Clients: %zu Controllers: %zu Devices: %zu", clients_.size(), controllers_.size(),
                          devices_.size());
       }
@@ -802,9 +867,9 @@ bool BrokerCore::ProcessRPTConnectRequest(BrokerClient::Handle        client_han
 
     if (BROKER_CAN_LOG(ETCPAL_LOG_INFO))
     {
-      BROKER_LOG_INFO("Successfully processed RPT Connect request from %s (connection %d), UID %04x:%08x",
-                      new_client->client_type_ == kRPTClientTypeController ? "Controller" : "Device", client_handle,
-                      new_client->uid_.manu, new_client->uid_.id);
+      BROKER_LOG_INFO("Successfully processed RPT Connect request from %s at IP %s (connection %d), UID %04x:%08x",
+                      new_client->client_type_ == kRPTClientTypeController ? "Controller" : "Device",
+                      new_client->addr_.ToString().c_str(), client_handle, new_client->uid_.manu, new_client->uid_.id);
     }
 
     // Update everyone

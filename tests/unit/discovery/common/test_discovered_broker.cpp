@@ -133,12 +133,14 @@ TEST_F(TestDiscoveredBroker, AddListenAddrWorks)
   auto db = MakeDefaultDiscoveredBroker();
 
   const EtcPalIpAddr test_addr = etcpal::IpAddr::FromString("10.101.1.1").get();
-  ASSERT_TRUE(discovered_broker_add_listen_addr(db.get(), &test_addr));
+  unsigned int       test_netint = 1u;
+  ASSERT_TRUE(discovered_broker_add_listen_addr(db.get(), &test_addr, test_netint));
 
   EXPECT_EQ(db->num_listen_addrs, 1u);
 
   ASSERT_NE(db->listen_addr_array, nullptr);
   EXPECT_EQ(db->listen_addr_array[0], test_addr);
+  EXPECT_EQ(db->listen_addr_netint_array[0], test_netint);
 }
 
 TEST_F(TestDiscoveredBroker, AddTxtRecordItemWorks)
@@ -289,7 +291,8 @@ TEST_F(TestDiscoveredBroker, FindByPredicateWorks)
 
 TEST_F(TestDiscoveredBroker, ConvertToDiscInfoWorks)
 {
-  auto listen_addr = etcpal::IpAddr::FromString("192.168.30.40").get();
+  auto         listen_addr = etcpal::IpAddr::FromString("192.168.30.40").get();
+  unsigned int listen_addr_netint = 1u;
   // clang-format off
   RdmnetDnsTxtRecordItem txt_item = {
     "Test Key",
@@ -303,6 +306,7 @@ TEST_F(TestDiscoveredBroker, ConvertToDiscInfoWorks)
     "Test Service Instance Name",
     8888,
     &listen_addr,
+    &listen_addr_netint,
     1,
     "Test Scope",
     "Test Model",
@@ -317,7 +321,7 @@ TEST_F(TestDiscoveredBroker, ConvertToDiscInfoWorks)
   db->e133_version = valid_disc_info.e133_version;
   strcpy(db->service_instance_name, valid_disc_info.service_instance_name);
   db->port = valid_disc_info.port;
-  discovered_broker_add_listen_addr(db.get(), &listen_addr);
+  discovered_broker_add_listen_addr(db.get(), &listen_addr, listen_addr_netint);
   strcpy(db->scope, valid_disc_info.scope);
   strcpy(db->model, valid_disc_info.model);
   strcpy(db->manufacturer, valid_disc_info.manufacturer);

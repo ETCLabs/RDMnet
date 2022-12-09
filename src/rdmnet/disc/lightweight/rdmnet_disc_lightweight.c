@@ -118,7 +118,7 @@ void process_monitored_scope(RdmnetScopeMonitorRef* monitor_ref)
     {
       // TODO more elegant deletion
       if (db->platform_data.initial_notification_sent)
-        notify_broker_lost(monitor_ref, db->service_instance_name);
+        notify_broker_lost(monitor_ref, db->service_instance_name, &db->cid);
       discovered_broker_remove(&monitor_ref->broker_list, db);
       discovered_broker_delete(db);
       break;

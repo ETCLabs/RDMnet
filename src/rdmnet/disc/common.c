@@ -19,7 +19,9 @@
 
 #include "rdmnet/disc/common.h"
 
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "rdmnet/core/util.h"
 #include "rdmnet/disc/registered_broker.h"
 #include "rdmnet/disc/discovered_broker.h"
@@ -40,6 +42,7 @@ static void           unregister_all_brokers(void);
 
 // Other helpers
 static void process_broker_state(RdmnetBrokerRegisterRef* broker_ref);
+static bool conflicting_broker_found(RdmnetBrokerRegisterRef* broker_ref, bool* should_deregister);
 static bool validate_broker_register_config(const RdmnetBrokerRegisterConfig* config);
 
 /*************************** Function definitions ****************************/
@@ -50,6 +53,8 @@ static bool validate_broker_register_config(const RdmnetBrokerRegisterConfig* co
  */
 etcpal_error_t rdmnet_disc_module_init(const RdmnetNetintConfig* netint_config)
 {
+  srand((unsigned int)time(NULL));  // Used for random broker query backoff
+
   etcpal_error_t res = discovered_broker_module_init();
 
   if (res == kEtcPalErrOk)
@@ -91,6 +96,7 @@ void rdmnet_disc_module_deinit(void)
 {
   stop_monitoring_all_scopes();
   unregister_all_brokers();
+  rdmnet_disc_platform_deinit();
   etcpal_mutex_destroy(&rdmnet_disc_lock);
   registered_broker_module_deinit();
 }
@@ -352,6 +358,7 @@ etcpal_error_t rdmnet_disc_register_broker(const RdmnetBrokerRegisterConfig* con
         broker_ref->state = kBrokerStateQuerying;
         broker_ref->scope_monitor_handle->broker_handle = broker_ref;
         etcpal_timer_start(&broker_ref->query_timer, BROKER_REG_QUERY_TIMEOUT);
+        broker_ref->using_random_backoff = false;
         *handle = broker_ref;
       }
       else
@@ -411,27 +418,86 @@ void rdmnet_disc_module_tick(void)
   rdmnet_disc_platform_tick();
 }
 
+bool rdmnet_disc_broker_should_deregister(const EtcPalUuid* this_broker_cid, const EtcPalUuid* other_broker_cid)
+{
+  return ETCPAL_UUID_CMP(this_broker_cid, other_broker_cid) < 0;
+}
+
 void process_broker_state(RdmnetBrokerRegisterRef* broker_ref)
 {
-  if (broker_ref->state == kBrokerStateQuerying)
+  if (etcpal_timer_is_expired(&broker_ref->query_timer))
   {
-    if (!broker_ref->query_timeout_expired && etcpal_timer_is_expired(&broker_ref->query_timer))
-      broker_ref->query_timeout_expired = true;
+    // If the timer expired and using_random_backoff is true, that means the random backoff period has elasped.
+    bool random_backoff_elapsed = broker_ref->using_random_backoff;
 
-    if (broker_ref->query_timeout_expired && !broker_ref->scope_monitor_handle->broker_list)
+    etcpal_timer_start(&broker_ref->query_timer, BROKER_REG_QUERY_TIMEOUT);
+    broker_ref->using_random_backoff = false;
+
+    bool should_deregister = false;
+    if (conflicting_broker_found(broker_ref, &should_deregister))
     {
-      // If the initial query timeout is expired and we haven't discovered any conflicting brokers,
-      // we can proceed.
-      broker_ref->state = kBrokerStateRegisterStarted;
-
-      int platform_error = 0;
-      if (rdmnet_disc_platform_register_broker(broker_ref, &platform_error) != kEtcPalErrOk)
+      if (should_deregister && (broker_ref->state == kBrokerStateRegistered))
       {
-        broker_ref->state = kBrokerStateNotRegistered;
-        broker_ref->callbacks.broker_register_failed(broker_ref, platform_error, broker_ref->callbacks.context);
+        rdmnet_disc_platform_unregister_broker(broker_ref);
+        broker_ref->state = kBrokerStateQuerying;
+      }
+    }
+    else if (broker_ref->state == kBrokerStateQuerying)
+    {
+      if (random_backoff_elapsed)
+      {
+        // If at least the initial query timeout & random backoff have expired and there aren't any conflicting brokers,
+        // we can proceed.
+        int platform_error = 0;
+        if (rdmnet_disc_platform_register_broker(broker_ref, &platform_error) == kEtcPalErrOk)
+        {
+          broker_ref->state = kBrokerStateRegistered;
+        }
+        else
+        {
+          broker_ref->state = kBrokerStateNotRegistered;
+          broker_ref->callbacks.broker_register_failed(broker_ref, platform_error, broker_ref->callbacks.context);
+        }
+      }
+      else
+      {
+        // Initiate random backoff to reduce the occurrences of broker conflict storms.
+        etcpal_timer_start(&broker_ref->query_timer, BROKER_REG_QUERY_TIMEOUT * rand() / RAND_MAX);
+        broker_ref->using_random_backoff = true;
       }
     }
   }
+}
+
+bool conflicting_broker_found(RdmnetBrokerRegisterRef* broker_ref, bool* should_deregister)
+{
+  RDMNET_ASSERT(broker_ref && should_deregister);
+
+  *should_deregister = false;
+  for (const DiscoveredBroker* db = broker_ref->scope_monitor_handle->broker_list; db; db = db->next)
+  {
+    if (ETCPAL_UUID_CMP(&broker_ref->cid, &db->cid) != 0)
+    {
+      if (rdmnet_disc_broker_should_deregister(&broker_ref->cid, &db->cid))
+        *should_deregister = true;
+
+      if (!broker_ref->netints)
+        return true;  // All interfaces enabled, so this broker already conflicts
+
+      for (size_t i = 0; i < broker_ref->num_netints; ++i)
+      {
+        for (size_t j = 0; j < db->num_listen_addrs; ++j)
+        {
+          if (db->listen_addr_netint_array[j] == 0)
+            return true;  // TODO: Remove this case once interface support is added to Avahi & lwmdns impls.
+          if (db->listen_addr_netint_array[j] == broker_ref->netints[i])
+            return true;  // This broker can be reached on one of our enabled interfaces
+        }
+      }
+    }
+  }
+
+  return false;
 }
 
 bool validate_broker_register_config(const RdmnetBrokerRegisterConfig* config)
@@ -458,7 +524,8 @@ void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscIn
 {
   if (handle->broker_handle)
   {
-    if (handle->broker_handle->callbacks.other_broker_found)
+    if ((ETCPAL_UUID_CMP(&handle->broker_handle->cid, &broker_info->cid) != 0) &&
+        handle->broker_handle->callbacks.other_broker_found)
     {
       handle->broker_handle->callbacks.other_broker_found(handle->broker_handle, broker_info,
                                                           handle->broker_handle->callbacks.context);
@@ -478,11 +545,12 @@ void notify_broker_updated(rdmnet_scope_monitor_t handle, const RdmnetBrokerDisc
   }
 }
 
-void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name)
+void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name, const EtcPalUuid* broker_cid)
 {
   if (handle->broker_handle)
   {
-    if (handle->broker_handle->callbacks.other_broker_lost)
+    if ((ETCPAL_UUID_CMP(&handle->broker_handle->cid, broker_cid) != 0) &&
+        handle->broker_handle->callbacks.other_broker_lost)
     {
       handle->broker_handle->callbacks.other_broker_lost(handle->broker_handle, handle->scope, service_name,
                                                          handle->broker_handle->callbacks.context);

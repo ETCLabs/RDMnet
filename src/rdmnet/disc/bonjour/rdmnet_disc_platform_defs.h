@@ -49,7 +49,14 @@ typedef struct RdmnetScopeMonitorPlatformData
 typedef struct RdmnetBrokerRegisterPlatformData
 {
   // For hooking up to the DNS-SD API
-  DNSServiceRef dnssd_ref;
+  DNSServiceRef* dnssd_refs;
+  size_t         num_dnssd_refs;
+
+  size_t num_successful_registers;
+  size_t num_failed_registers;
+  size_t target_register_count;
+
+  char service_name[RDMNET_DISC_SERVICE_NAME_MAX_LENGTH];
 } RdmnetBrokerRegisterPlatformData;
 
 #endif /* DISC_PLATFORM_DEFS_H_ */

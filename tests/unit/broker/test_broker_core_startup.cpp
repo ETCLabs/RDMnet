@@ -96,40 +96,9 @@ TEST_F(TestBrokerCoreStartup, DoesNotStartWhenClientServiceThreadFails)
   EXPECT_FALSE(StartBroker(DefaultBrokerSettings()));
 }
 
-// When no explicit listen interfaces are specified, the broker should create a single IPv6 socket
-// and bind it to in6addr_any with the V6ONLY option disabled.
-TEST_F(TestBrokerCoreStartup, SingleSocketWhenListeningOnAllInterfaces)
-{
-  static int v6only_call_count;  // Lambdas used must be stateless so this must be static
-  v6only_call_count = 0;
-
-  etcpal_setsockopt_fake.custom_fake = [](etcpal_socket_t, int level, int option, const void* value,
-                                          size_t value_size) {
-    if (level == ETCPAL_IPPROTO_IPV6 && option == ETCPAL_IPV6_V6ONLY)
-    {
-      EXPECT_EQ(value_size, sizeof(int));
-      EXPECT_EQ(*reinterpret_cast<const int*>(value), 0);
-      ++v6only_call_count;
-    }
-    return kEtcPalErrOk;
-  };
-  etcpal_bind_fake.custom_fake = [](etcpal_socket_t, const EtcPalSockAddr* addr) {
-    EXPECT_TRUE(ETCPAL_IP_IS_V6(&addr->ip));
-    EXPECT_TRUE(etcpal_ip_is_wildcard(&addr->ip));
-    EXPECT_EQ(addr->port, 0u);
-    return kEtcPalErrOk;
-  };
-
-  ASSERT_TRUE(StartBroker(DefaultBrokerSettings()));
-  EXPECT_EQ(etcpal_socket_fake.call_count, 1u);
-  EXPECT_EQ(etcpal_socket_fake.arg0_val, ETCPAL_AF_INET6);
-  EXPECT_EQ(etcpal_socket_fake.arg1_val, ETCPAL_SOCK_STREAM);
-  EXPECT_EQ(v6only_call_count, 1);
-  EXPECT_EQ(etcpal_listen_fake.call_count, 1u);
-}
-
 // When explicit listen interfaces are specified, the broker should create a socket per interface
 // with the appropriate IP protocol and bind it to the interface IP address.
+// TODO: Factor in if netints in settings = NULL for all interfaces - should still be individual sockets.
 // TEST_F(TestBrokerCoreStartup, IndividualSocketsWhenListeningOnMultipleInterfaces)
 //{
 //  static int v6only_call_count;  // Lambdas used must be stateless so this must be static

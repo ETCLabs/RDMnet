@@ -22,6 +22,7 @@
 
 #include <memory>
 #include "rdmnet/cpp/broker.h"
+#include "etcpal_mock/netint.h"
 #include "broker_socket_manager.h"
 #include "broker_threads.h"
 #include "broker_discovery.h"
@@ -58,6 +59,10 @@ public:
                const std::vector<unsigned int>& resolved_interface_indexes),
               (override));
   MOCK_METHOD(void, UnregisterBroker, (), (override));
+  MOCK_METHOD(bool,
+              BrokerShouldDeregister,
+              (const etcpal::Uuid& this_broker_cid, const etcpal::Uuid& other_broker_cid),
+              (override));
 };
 
 class MockBrokerNotifyHandler : public rdmnet::Broker::NotifyHandler
@@ -119,6 +124,27 @@ inline rdmnet::Broker::Settings DefaultBrokerSettings()
 
 inline etcpal::Error StartBroker(BrokerCore& broker, const rdmnet::Broker::Settings& settings, BrokerMocks& mocks)
 {
+  static EtcPalNetintInfo iface;
+  iface.index = 1;
+  iface.addr = etcpal::IpAddr::FromString("10.101.1.20").get();
+  iface.mask = etcpal::IpAddr::FromString("255.255.0.0").get();
+  iface.mac = etcpal::MacAddr::FromString("10:00:00:00:00:01").get();
+  std::strcpy(iface.id, "if1");
+  std::strcpy(iface.friendly_name, "Interface 1");
+
+  etcpal_netint_get_interfaces_fake.custom_fake = [](EtcPalNetintInfo* netints, size_t* num_netints) {
+    if (*num_netints < 1u)
+    {
+      *num_netints = 1u;
+      return kEtcPalErrBufSize;
+    }
+
+    netints[0] = iface;
+    *num_netints = 1u;
+
+    return kEtcPalErrOk;
+  };
+
   return broker.Startup(settings, mocks.notify.get(), nullptr,
                         BrokerComponents(std::unique_ptr<BrokerSocketManager>(mocks.socket_mgr),
                                          std::unique_ptr<BrokerThreadInterface>(mocks.threads),

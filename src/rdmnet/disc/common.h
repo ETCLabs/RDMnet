@@ -34,7 +34,8 @@
 extern "C" {
 #endif
 
-// How long we monitor the registered scope before doing the actual DNS registration of a broker.
+// The interval at which this broker checks for conflicting brokers. At least one of these must elapse before DNS
+// registration.
 #define BROKER_REG_QUERY_TIMEOUT 3000
 
 #define E133_TXT_VERS_KEY "TxtVers"
@@ -61,11 +62,13 @@ etcpal_error_t rdmnet_disc_module_init(const RdmnetNetintConfig* netint_config);
 void           rdmnet_disc_module_deinit(void);
 void           rdmnet_disc_module_tick(void);
 
+bool rdmnet_disc_broker_should_deregister(const EtcPalUuid* this_broker_cid, const EtcPalUuid* other_broker_cid);
+
 // Callbacks called from platform-specific code, must be called in a locked context
 void notify_scope_monitor_error(rdmnet_scope_monitor_t handle, int platform_specific_error);
 void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info);
 void notify_broker_updated(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info);
-void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name);
+void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name, const EtcPalUuid* broker_cid);
 
 #ifdef __cplusplus
 }

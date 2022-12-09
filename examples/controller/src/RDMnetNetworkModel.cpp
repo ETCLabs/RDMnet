@@ -233,7 +233,7 @@ void RDMnetNetworkModel::HandleConnectedToBroker(rdmnet::Controller::Handle /* c
     broker_itemIter->second->SetConnected(true, info.broker_addr());
     std::string utf8_scope = broker_itemIter->second->scope().toStdString();
 
-    log_->Info("Connected to broker on scope %s", utf8_scope.c_str());
+    log_->Info("Connected to broker on scope %s at IP %s", utf8_scope.c_str(), info.broker_addr().ToString().c_str());
     rdmnet_.RequestClientList(scope_handle);
   }
 }

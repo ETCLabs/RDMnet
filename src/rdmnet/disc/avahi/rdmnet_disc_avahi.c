@@ -144,7 +144,7 @@ static void resolve_callback(AvahiServiceResolver*  r,
           (ETCPAL_IP_IS_V6(&ip_addr) && ipv6_valid(&ip_addr)))
       {
         // Add it to the info structure
-        discovered_broker_add_listen_addr(db, &ip_addr);
+        discovered_broker_add_listen_addr(db, &ip_addr, 0);  // TODO - pass along interface instead of 0
       }
 
       RdmnetBrokerDiscInfo notify_info;
@@ -238,10 +238,10 @@ static void browse_callback(AvahiServiceBrowser*                    b,
     else
     {
       // Service removal
-      notify_broker_lost(ref, name);
       DiscoveredBroker* db = discovered_broker_find_by_name(ref->broker_list, full_name);
       if (db)
       {
+        notify_broker_lost(ref, name, &db->cid);
         discovered_broker_remove(&ref->broker_list, db);
         discovered_broker_delete(db);
       }

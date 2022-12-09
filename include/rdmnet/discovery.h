@@ -101,7 +101,9 @@ typedef struct RdmnetBrokerDiscInfo
   uint16_t port;
   /** An array of IP addresses at which the broker is listening for RDMnet connections. */
   const EtcPalIpAddr* listen_addrs;
-  /** Size of the listen_addrs array. */
+  /** An array of local network interface IDs for reaching each respective address in listen_addrs. */
+  const unsigned int* listen_addr_netints;
+  /** Size of the listen_addrs and listen_addr_netints arrays. */
   size_t num_listen_addrs;
   /** The broker's RDMnet scope. */
   const char* scope;
