@@ -462,6 +462,7 @@ void process_broker_state(RdmnetBrokerRegisterRef* broker_ref)
       {
         // Initiate random backoff to reduce the occurrences of broker conflict storms.
         etcpal_timer_start(&broker_ref->query_timer, BROKER_REG_QUERY_TIMEOUT * rand() / RAND_MAX);
+        broker_ref->using_random_backoff = true;
       }
     }
   }
