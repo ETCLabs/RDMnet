@@ -19,7 +19,9 @@
 
 #include "rdmnet/disc/common.h"
 
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "rdmnet/core/util.h"
 #include "rdmnet/disc/registered_broker.h"
 #include "rdmnet/disc/discovered_broker.h"
@@ -51,6 +53,8 @@ static bool validate_broker_register_config(const RdmnetBrokerRegisterConfig* co
  */
 etcpal_error_t rdmnet_disc_module_init(const RdmnetNetintConfig* netint_config)
 {
+  srand((unsigned int)time(NULL));  // Used for random broker query backoff
+
   etcpal_error_t res = discovered_broker_module_init();
 
   if (res == kEtcPalErrOk)
@@ -354,6 +358,7 @@ etcpal_error_t rdmnet_disc_register_broker(const RdmnetBrokerRegisterConfig* con
         broker_ref->state = kBrokerStateQuerying;
         broker_ref->scope_monitor_handle->broker_handle = broker_ref;
         etcpal_timer_start(&broker_ref->query_timer, BROKER_REG_QUERY_TIMEOUT);
+        broker_ref->using_random_backoff = false;
         *handle = broker_ref;
       }
       else
@@ -422,7 +427,10 @@ void process_broker_state(RdmnetBrokerRegisterRef* broker_ref)
 {
   if (etcpal_timer_is_expired(&broker_ref->query_timer))
   {
-    etcpal_timer_reset(&broker_ref->query_timer);
+    bool random_backoff_elapsed = broker_ref->using_random_backoff;
+
+    etcpal_timer_start(&broker_ref->query_timer, BROKER_REG_QUERY_TIMEOUT);
+    broker_ref->using_random_backoff = false;
 
     bool should_deregister = false;
     if (conflicting_broker_found(broker_ref, &should_deregister))
@@ -435,16 +443,25 @@ void process_broker_state(RdmnetBrokerRegisterRef* broker_ref)
     }
     else if (broker_ref->state == kBrokerStateQuerying)
     {
-      // If at least the initial query timeout is expired and there aren't any conflicting brokers, we can proceed.
-      int platform_error = 0;
-      if (rdmnet_disc_platform_register_broker(broker_ref, &platform_error) == kEtcPalErrOk)
+      if (random_backoff_elapsed)
       {
-        broker_ref->state = kBrokerStateRegistered;
+        // If at least the initial query timeout & random backoff have expired and there aren't any conflicting brokers,
+        // we can proceed.
+        int platform_error = 0;
+        if (rdmnet_disc_platform_register_broker(broker_ref, &platform_error) == kEtcPalErrOk)
+        {
+          broker_ref->state = kBrokerStateRegistered;
+        }
+        else
+        {
+          broker_ref->state = kBrokerStateNotRegistered;
+          broker_ref->callbacks.broker_register_failed(broker_ref, platform_error, broker_ref->callbacks.context);
+        }
       }
       else
       {
-        broker_ref->state = kBrokerStateNotRegistered;
-        broker_ref->callbacks.broker_register_failed(broker_ref, platform_error, broker_ref->callbacks.context);
+        // Initiate random backoff to reduce the occurrences of broker conflict storms.
+        etcpal_timer_start(&broker_ref->query_timer, BROKER_REG_QUERY_TIMEOUT * rand() / RAND_MAX);
       }
     }
   }
