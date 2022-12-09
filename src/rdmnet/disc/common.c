@@ -427,6 +427,7 @@ void process_broker_state(RdmnetBrokerRegisterRef* broker_ref)
 {
   if (etcpal_timer_is_expired(&broker_ref->query_timer))
   {
+    // If the timer expired and using_random_backoff is true, that means the random backoff period has elasped.
     bool random_backoff_elapsed = broker_ref->using_random_backoff;
 
     etcpal_timer_start(&broker_ref->query_timer, BROKER_REG_QUERY_TIMEOUT);
