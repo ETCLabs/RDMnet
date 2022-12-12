@@ -135,6 +135,8 @@ void BrokerCore::Shutdown(rdmnet_disconnect_reason_t disconnect_reason)
   if (started_)
   {
     components_.disc->UnregisterBroker();
+    service_registered_ = false;
+
     StopBrokerServices(disconnect_reason);
     components_.socket_mgr->Shutdown();
 

@@ -385,12 +385,13 @@ etcpal_error_t rdmnet_disc_platform_init(const RdmnetNetintConfig* netint_config
       if (netint_config)
       {
         skip = true;
-        for (size_t i = 0; (i < netint_config->num_netints) && !skip; ++i)
+        for (size_t i = 0; i < netint_config->num_netints; ++i)
         {
           if (netint_config->netints[i].index == netint_id.index &&
               netint_config->netints[i].ip_type == netint_id.ip_type)
           {
             skip = false;
+            break;
           }
         }
       }
