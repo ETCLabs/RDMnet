@@ -230,6 +230,9 @@ std::set<etcpal::IpAddr> BrokerCore::GetInterfaceAddrs(const std::vector<std::st
     }
   }
 
+  listen_interfaces_.clear();
+  listen_interface_ips_.clear();
+
   if (!interface_indexes.empty())
   {
     listen_interfaces_.reserve(interface_indexes.size());
