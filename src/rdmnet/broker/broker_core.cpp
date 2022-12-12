@@ -199,7 +199,7 @@ std::set<etcpal::IpAddr> BrokerCore::GetInterfaceAddrs(const std::vector<std::st
 {
   std::set<etcpal::IpAddr> to_return;
   std::set<unsigned int>   interface_indexes;
-  std::vector<std::string> listen_interface_ips;
+  std::vector<std::string> interface_ips;
 
   size_t                        num_netints = 0u;  // Actual size eventually filled in
   std::vector<EtcPalNetintInfo> netint_list(num_netints);
@@ -223,7 +223,7 @@ std::set<etcpal::IpAddr> BrokerCore::GetInterfaceAddrs(const std::vector<std::st
         {
           to_return.insert(netint.addr);
           interface_indexes.insert(netint.index);
-          listen_interface_ips.push_back(netint_addr.ToString());
+          interface_ips.push_back(netint_addr.ToString());
           break;  // This interface meets the criteria, move on to the next interface.
         }
       }
@@ -239,7 +239,7 @@ std::set<etcpal::IpAddr> BrokerCore::GetInterfaceAddrs(const std::vector<std::st
     std::transform(interface_indexes.begin(), interface_indexes.end(), std::back_inserter(listen_interfaces_),
                    [](unsigned int val) { return val; });
 
-    listen_interface_ips_ = listen_interface_ips;
+    listen_interface_ips_ = interface_ips;
   }
 
   return to_return;
