@@ -223,9 +223,13 @@ std::set<etcpal::IpAddr> BrokerCore::GetInterfaceAddrs(const std::vector<std::st
       {
         if (std::strcmp(netint_name.c_str(), netint.id) == 0)
         {
-          to_return.insert(netint.addr);
-          interface_indexes.insert(netint.index);
-          interface_ips.push_back(netint_addr.ToString());
+          bool new_ip = to_return.insert(netint.addr).second;
+          if (new_ip)
+          {
+            interface_indexes.insert(netint.index);
+            interface_ips.push_back(netint_addr.ToString());
+          }
+
           break;  // This interface meets the criteria, move on to the next interface.
         }
       }
