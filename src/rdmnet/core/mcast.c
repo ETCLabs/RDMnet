@@ -414,24 +414,23 @@ void test_mcast_netint(const EtcPalMcastNetintId* netint_id, const char* addr_st
 
 void add_mcast_netint(const EtcPalMcastNetintId* netint_id, const char* addr_str)
 {
-#if !RDMNET_DYNAMIC_MEM
-  // We've reached the configured maximum, in which case we have already given the user a stern
-  // warning.
-  if (num_mcast_netints >= RDMNET_MAX_MCAST_NETINTS)
-  {
-    RDMNET_LOG_WARNING(
-        "  WARNING: SKIPPING multicast network interface %s as the configured value %d for RDMNET_MAX_MCAST_NETINTS "
-        "has been reached.",
-        addr_str, RDMNET_MAX_MCAST_NETINTS);
-    RDMNET_LOG_WARNING(
-        "To fix this likely error, recompile RDMnet with a higher value for RDMNET_MAX_MCAST_NETINTS or with "
-        "RDMNET_DYNAMIC_MEM defined to 1.");
-    return;
-  }
-#endif
-
   if (!rc_mcast_netint_is_valid(netint_id))
   {
+#if !RDMNET_DYNAMIC_MEM
+    // We've reached the configured maximum, in which case we have already given the user a stern
+    // warning.
+    if (num_mcast_netints >= RDMNET_MAX_MCAST_NETINTS)
+    {
+      RDMNET_LOG_WARNING(
+          "  WARNING: SKIPPING multicast network interface %s as the configured value %d for RDMNET_MAX_MCAST_NETINTS "
+          "has been reached.",
+          addr_str, RDMNET_MAX_MCAST_NETINTS);
+      RDMNET_LOG_WARNING(
+          "To fix this likely error, recompile RDMnet with a higher value for RDMNET_MAX_MCAST_NETINTS or with "
+          "RDMNET_DYNAMIC_MEM defined to 1.");
+      return;
+    }
+#endif
     mcast_netint_arr[num_mcast_netints] = *netint_id;
 
     McastNetintInfo* netint_info = &netint_info_arr[num_mcast_netints];
