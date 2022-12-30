@@ -379,6 +379,15 @@ typedef struct RdmnetNetintConfig
   bool no_netints;
 } RdmnetNetintConfig;
 
+/**
+ * @brief A default-value initializer for an RdmnetNetintConfig struct.
+ *
+ * Usage:
+ * @code
+ * RdmnetNetintConfig config = RDMNET_NETINT_CONFIG_DEFAULT_INIT;
+ * // Now fill in the required portions as necessary with your data...
+ * @endcode
+ */
 #define RDMNET_NETINT_CONFIG_DEFAULT_INIT \
   {                                       \
     NULL, 0, false                        \
