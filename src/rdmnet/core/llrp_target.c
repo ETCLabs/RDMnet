@@ -279,7 +279,8 @@ etcpal_error_t setup_target_netints(RCLlrpTarget* target, const EtcPalMcastNetin
     size_t                     mcast_netint_arr_size = rc_mcast_get_netint_array(&mcast_netint_arr);
 
 #if RDMNET_DYNAMIC_MEM
-    target->netints = (RCLlrpTargetNetintInfo*)calloc(mcast_netint_arr_size, sizeof(RCLlrpTargetNetintInfo));
+    target->netints = (RCLlrpTargetNetintInfo*)calloc((mcast_netint_arr_size == 0) ? 1 : mcast_netint_arr_size,
+                                                      sizeof(RCLlrpTargetNetintInfo));
     if (!target->netints)
       return kEtcPalErrNoMem;
 #endif
@@ -528,8 +529,8 @@ void send_response_if_requested(RCLlrpTarget*                target,
 
     const LlrpRdmCommand* received_cmd = &event->rdm_cmd;
     etcpal_error_t        send_res = target_send_ack_internal(
-        target, &received_cmd->source_cid, received_cmd->seq_num, &received_cmd->rdm_header, &received_cmd->netint_id,
-        response->response_buf, (uint8_t)external_resp->response_data.response_data_len);
+               target, &received_cmd->source_cid, received_cmd->seq_num, &received_cmd->rdm_header, &received_cmd->netint_id,
+               response->response_buf, (uint8_t)external_resp->response_data.response_data_len);
     if (send_res != kEtcPalErrOk && RDMNET_CAN_LOG(ETCPAL_LOG_ERR))
     {
       char source_cid[ETCPAL_UUID_BYTES] = {'\0'};

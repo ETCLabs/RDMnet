@@ -108,17 +108,25 @@ etcpal_error_t rc_mcast_module_init(const RdmnetNetintConfig* netint_config)
     res = (num_sys_netints == 0) ? kEtcPalErrNoNetints : kEtcPalErrSys;
 
 #if RDMNET_DYNAMIC_MEM
-  size_t num_netints_requested = (netint_config ? netint_config->num_netints : num_sys_netints);
+  size_t num_netints_to_alloc = num_sys_netints;
+  if (netint_config)
+  {
+    if (netint_config->no_netints)
+      num_netints_to_alloc = 1;
+    else if (netint_config->netints)
+      num_netints_to_alloc = netint_config->num_netints;
+  }
+
   if (res == kEtcPalErrOk)
   {
-    mcast_netint_arr = calloc(num_netints_requested, sizeof(EtcPalMcastNetintId));
+    mcast_netint_arr = calloc(num_netints_to_alloc, sizeof(EtcPalMcastNetintId));
     if (!mcast_netint_arr)
       res = kEtcPalErrNoMem;
   }
 
   if (res == kEtcPalErrOk)
   {
-    netint_info_arr = calloc(num_netints_requested, sizeof(McastNetintInfo));
+    netint_info_arr = calloc(num_netints_to_alloc, sizeof(McastNetintInfo));
     if (!netint_info_arr)
     {
       free(mcast_netint_arr);
@@ -156,8 +164,9 @@ etcpal_error_t rc_mcast_module_init(const RdmnetNetintConfig* netint_config)
       netint_id.index = netint->index;
       netint_id.ip_type = netint->addr.type;
 
-      if (netint_config &&
-          (netint_id_index_in_array(&netint_id, netint_config->netints, netint_config->num_netints) == -1))
+      if (netint_config && (netint_config->no_netints ||
+                            (netint_config->netints && (netint_id_index_in_array(&netint_id, netint_config->netints,
+                                                                                 netint_config->num_netints) == -1))))
       {
         RDMNET_LOG_DEBUG("  Skipping network interface %s as it is not present in user configuration.", addr_str);
         continue;
@@ -166,10 +175,7 @@ etcpal_error_t rc_mcast_module_init(const RdmnetNetintConfig* netint_config)
       test_mcast_netint(&netint_id, addr_str);
     }
 
-    if (num_mcast_netints != 0)
-    {
-    }
-    else
+    if ((num_mcast_netints == 0) && (!netint_config || !netint_config->no_netints))
     {
       RDMNET_LOG_ERR("No usable multicast network interfaces found.");
       res = kEtcPalErrNoNetints;
@@ -355,14 +361,17 @@ etcpal_error_t rc_mcast_unsubscribe_recv_socket(etcpal_socket_t            socke
 
 bool validate_netint_config(const RdmnetNetintConfig* config)
 {
-  if (!config->netints || !config->num_netints)
+  if ((!config->netints && (config->num_netints > 0)) || (config->netints && (config->num_netints == 0)))
     return false;
 
-  for (const EtcPalMcastNetintId* netint_id = config->netints; netint_id < config->netints + config->num_netints;
-       ++netint_id)
+  if (config->netints)
   {
-    if (netint_id->index == 0 || (netint_id->ip_type != kEtcPalIpTypeV4 && netint_id->ip_type != kEtcPalIpTypeV6))
-      return false;
+    for (const EtcPalMcastNetintId* netint_id = config->netints; netint_id < config->netints + config->num_netints;
+         ++netint_id)
+    {
+      if (netint_id->index == 0 || (netint_id->ip_type != kEtcPalIpTypeV4 && netint_id->ip_type != kEtcPalIpTypeV6))
+        return false;
+    }
   }
 
   return true;

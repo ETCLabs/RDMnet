@@ -358,10 +358,11 @@ etcpal_error_t rdmnet_disc_platform_init(const RdmnetNetintConfig* netint_config
 
   if (res != kEtcPalErrOk)
     res = (num_sys_netints == 0) ? kEtcPalErrNoNetints : kEtcPalErrSys;
-  size_t num_netints_requested = (netint_config ? netint_config->num_netints : num_sys_netints);
+  size_t num_netints_requested =
+      ((netint_config && netint_config->netints) ? netint_config->num_netints : num_sys_netints);
   if (res == kEtcPalErrOk)
   {
-    disc_netint_arr = calloc(num_netints_requested, sizeof(EtcPalMcastNetintId));
+    disc_netint_arr = calloc((num_netints_requested == 0) ? 1 : num_netints_requested, sizeof(EtcPalMcastNetintId));
     if (!disc_netint_arr)
       res = kEtcPalErrNoMem;
   }
@@ -382,7 +383,7 @@ etcpal_error_t rdmnet_disc_platform_init(const RdmnetNetintConfig* netint_config
       netint_id.ip_type = netint->addr.type;
 
       bool skip = false;
-      if (netint_config)
+      if (netint_config && netint_config->netints)
       {
         skip = true;
         for (size_t i = 0; i < netint_config->num_netints; ++i)
@@ -789,14 +790,17 @@ DiscoveryNetint* lookup_discovery_netint(unsigned int index)
 
 bool validate_netint_config(const RdmnetNetintConfig* config)
 {
-  if (!config->netints || !config->num_netints)
+  if ((!config->netints && (config->num_netints > 0)) || (config->netints && (config->num_netints == 0)))
     return false;
 
-  for (const EtcPalMcastNetintId* netint_id = config->netints; netint_id < config->netints + config->num_netints;
-       ++netint_id)
+  if (config->netints)
   {
-    if (netint_id->index == 0 || (netint_id->ip_type != kEtcPalIpTypeV4 && netint_id->ip_type != kEtcPalIpTypeV6))
-      return false;
+    for (const EtcPalMcastNetintId* netint_id = config->netints; netint_id < config->netints + config->num_netints;
+         ++netint_id)
+    {
+      if (netint_id->index == 0 || (netint_id->ip_type != kEtcPalIpTypeV4 && netint_id->ip_type != kEtcPalIpTypeV6))
+        return false;
+    }
   }
 
   return true;

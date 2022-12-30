@@ -109,7 +109,7 @@ TEST_F(TestMcast, InitWorksWithConfigProvided)
   interface_1.index = 1;
   interface_1.ip_type = kEtcPalIpTypeV4;
 
-  RdmnetNetintConfig config;
+  RdmnetNetintConfig config = RDMNET_NETINT_CONFIG_DEFAULT_INIT;
   config.num_netints = 1;
   config.netints = &interface_1;
 
@@ -123,7 +123,7 @@ TEST_F(TestMcast, InvalidConfigFails)
   initted_in_test_ = false;
 
   EtcPalMcastNetintId interface_id;
-  RdmnetNetintConfig  config;
+  RdmnetNetintConfig  config = RDMNET_NETINT_CONFIG_DEFAULT_INIT;
   config.netints = nullptr;
   config.num_netints = 0;
 
@@ -176,7 +176,7 @@ TEST_F(TestMcast, ReportsCorrectNumberOfInterfacesWithConfig)
   interface_1.index = 1;
   interface_1.ip_type = kEtcPalIpTypeV4;
 
-  RdmnetNetintConfig config;
+  RdmnetNetintConfig config = RDMNET_NETINT_CONFIG_DEFAULT_INIT;
   config.num_netints = 1;
   config.netints = &interface_1;
 
