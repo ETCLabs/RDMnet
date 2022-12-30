@@ -310,7 +310,8 @@ typedef struct RdmnetControllerConfig
   /**
    * (optional) A set of network interfaces to use for the LLRP target associated with this
    * controller. If NULL, the set passed to rdmnet_init() will be used, or all network interfaces
-   * on the system if that was not provided.
+   * on the system if that was not provided. If non-NULL, this must be a subset of the interfaces
+   * passed to rdmnet_init() if any were passed in there.
    */
   const EtcPalMcastNetintId* llrp_netints;
   /** (optional) The size of the llrp_netints array. */
