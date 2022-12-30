@@ -124,12 +124,9 @@ TEST_F(TestMcast, InvalidConfigFails)
 
   EtcPalMcastNetintId interface_id;
   RdmnetNetintConfig  config = RDMNET_NETINT_CONFIG_DEFAULT_INIT;
-  config.netints = nullptr;
+  config.netints = &interface_id;
   config.num_netints = 0;
 
-  EXPECT_NE(kEtcPalErrOk, rc_mcast_module_init(&config));
-
-  config.netints = &interface_id;
   EXPECT_NE(kEtcPalErrOk, rc_mcast_module_init(&config));
 
   config.netints = nullptr;
