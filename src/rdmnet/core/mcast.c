@@ -112,7 +112,7 @@ etcpal_error_t rc_mcast_module_init(const RdmnetNetintConfig* netint_config)
   if (netint_config)
   {
     if (netint_config->no_netints)
-      num_netints_to_alloc = 1;
+      num_netints_to_alloc = 1;  // Better to avoid NULL pointers and allocate one entry
     else if (netint_config->netints)
       num_netints_to_alloc = netint_config->num_netints;
   }

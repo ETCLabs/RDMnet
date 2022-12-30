@@ -358,8 +358,16 @@ etcpal_error_t rdmnet_disc_platform_init(const RdmnetNetintConfig* netint_config
 
   if (res != kEtcPalErrOk)
     res = (num_sys_netints == 0) ? kEtcPalErrNoNetints : kEtcPalErrSys;
-  size_t num_netints_requested =
-      ((netint_config && netint_config->netints) ? netint_config->num_netints : num_sys_netints);
+
+  size_t num_netints_requested = num_sys_netints;
+  if (netint_config)
+  {
+    if (netint_config->no_netints)
+      num_netints_requested = 0;
+    else if (netint_config->netints)
+      num_netints_requested = netint_config->num_netints;
+  }
+
   if (res == kEtcPalErrOk)
   {
     disc_netint_arr = calloc((num_netints_requested == 0) ? 1 : num_netints_requested, sizeof(EtcPalMcastNetintId));
@@ -383,13 +391,24 @@ etcpal_error_t rdmnet_disc_platform_init(const RdmnetNetintConfig* netint_config
       netint_id.ip_type = netint->addr.type;
 
       bool skip = false;
-      if (netint_config && netint_config->netints)
+      if (netint_config)
       {
         skip = true;
-        for (size_t i = 0; i < netint_config->num_netints; ++i)
+        if (!netint_config->no_netints)
         {
-          if (netint_config->netints[i].index == netint_id.index &&
-              netint_config->netints[i].ip_type == netint_id.ip_type)
+          if (netint_config->netints)
+          {
+            for (size_t i = 0; i < netint_config->num_netints; ++i)
+            {
+              if (netint_config->netints[i].index == netint_id.index &&
+                  netint_config->netints[i].ip_type == netint_id.ip_type)
+              {
+                skip = false;
+                break;
+              }
+            }
+          }
+          else  // Use all interfaces
           {
             skip = false;
             break;
@@ -425,7 +444,7 @@ etcpal_error_t rdmnet_disc_platform_init(const RdmnetNetintConfig* netint_config
       }
     }
 
-    if (num_disc_netints == 0)
+    if ((num_disc_netints == 0) && (!netint_config || !netint_config->no_netints))
     {
       RDMNET_LOG_ERR("No usable discovery network interfaces found.");
       res = kEtcPalErrNoNetints;
