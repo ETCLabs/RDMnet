@@ -353,11 +353,18 @@ etcpal_error_t rdmnet_disc_platform_init(const RdmnetNetintConfig* netint_config
   {
     res = etcpal_netint_get_interfaces(netint_list, &num_sys_netints);
     if (res == kEtcPalErrBufSize)
-      netint_list = realloc(netint_list, num_sys_netints * sizeof(EtcPalNetintInfo));
+    {
+      EtcPalNetintInfo* new_netint_list = realloc(netint_list, num_sys_netints * sizeof(EtcPalNetintInfo));
+      if (new_netint_list)
+        netint_list = new_netint_list;
+      else
+        res = kEtcPalErrNoMem;
+    }
   } while (res == kEtcPalErrBufSize);
 
-  if (res != kEtcPalErrOk)
+  if ((res != kEtcPalErrOk) && (res != kEtcPalErrNoMem))
     res = (num_sys_netints == 0) ? kEtcPalErrNoNetints : kEtcPalErrSys;
+
   size_t num_netints_requested = (netint_config ? netint_config->num_netints : num_sys_netints);
   if (res == kEtcPalErrOk)
   {
@@ -757,8 +764,12 @@ etcpal_error_t add_broker_dnssd_ref(RdmnetBrokerRegisterRef* broker_ref, const D
   if (broker_ref->platform_data.dnssd_refs)
   {
     RDMNET_ASSERT(broker_ref->platform_data.num_dnssd_refs > 1);
-    broker_ref->platform_data.dnssd_refs = (DNSServiceRef*)realloc(
-        broker_ref->platform_data.dnssd_refs, broker_ref->platform_data.num_dnssd_refs * sizeof(DNSServiceRef));
+    DNSServiceRef* new_refs = (DNSServiceRef*)realloc(broker_ref->platform_data.dnssd_refs,
+                                                      broker_ref->platform_data.num_dnssd_refs * sizeof(DNSServiceRef));
+    if (new_refs)
+      broker_ref->platform_data.dnssd_refs = new_refs;
+    else
+      return kEtcPalErrNoMem;
   }
   else
   {

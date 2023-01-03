@@ -137,12 +137,21 @@ bool discovered_broker_add_listen_addr(DiscoveredBroker* db, const EtcPalIpAddr*
         (EtcPalIpAddr*)realloc(db->listen_addr_array, sizeof(EtcPalIpAddr) * (db->num_listen_addrs + 1));
     unsigned int* net_netint_arr =
         (unsigned int*)realloc(db->listen_addr_netint_array, sizeof(unsigned int) * (db->num_listen_addrs + 1));
-    if (new_ip_arr && net_netint_arr)
+
+    if (new_ip_arr)
     {
       db->listen_addr_array = new_ip_arr;
-      db->listen_addr_netint_array = net_netint_arr;
       db->listen_addr_array[db->num_listen_addrs] = *addr;
+    }
+
+    if (net_netint_arr)
+    {
+      db->listen_addr_netint_array = net_netint_arr;
       db->listen_addr_netint_array[db->num_listen_addrs] = netint;
+    }
+
+    if (new_ip_arr && net_netint_arr)
+    {
       ++db->num_listen_addrs;
       return true;
     }
