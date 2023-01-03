@@ -96,6 +96,9 @@ static etcpal_error_t target_send_nack_internal(RCLlrpTarget*              targe
 
 // Utilities
 static RCLlrpTarget* find_target_by_cid(const RCRefList* list, const EtcPalUuid* cid);
+static int           netint_id_index_in_llrp_array(const EtcPalMcastNetintId*    id,
+                                                   const RCLlrpTargetNetintInfo* array,
+                                                   size_t                        array_size);
 
 /*************************** Function definitions ****************************/
 
@@ -245,51 +248,28 @@ etcpal_error_t setup_target_netints(RCLlrpTarget* target, const EtcPalMcastNetin
 {
   etcpal_error_t res = kEtcPalErrOk;
 
-  if (netints && num_netints > 0)
-  {
-    // Check or initialize the target's network interface array.
-#if RDMNET_DYNAMIC_MEM
-    target->netints = (RCLlrpTargetNetintInfo*)calloc(num_netints, sizeof(RCLlrpTargetNetintInfo));
-    if (!target->netints)
-      return kEtcPalErrNoMem;
-#else
-    if (num_netints > RDMNET_MAX_MCAST_NETINTS)
-      return kEtcPalErrNoMem;
-#endif
-    target->num_netints = 0;
-
-    for (size_t i = 0; i < num_netints; ++i)
-    {
-      res = setup_target_netint(&netints[i], &target->netints[i]);
-      if (res == kEtcPalErrOk)
-        ++target->num_netints;
-      else
-        break;
-    }
-
-    if (res != kEtcPalErrOk)
-    {
-      cleanup_target_netints(target);
-    }
-  }
-  else
-  {
-    // Check or initialize the target's network interface array.
-    const EtcPalMcastNetintId* mcast_netint_arr;
-    size_t                     mcast_netint_arr_size = rc_mcast_get_netint_array(&mcast_netint_arr);
+  // Check or initialize the target's network interface array.
+  const EtcPalMcastNetintId* mcast_netint_arr;
+  size_t                     mcast_netint_arr_size = rc_mcast_get_netint_array(&mcast_netint_arr);
 
 #if RDMNET_DYNAMIC_MEM
-    target->netints = (RCLlrpTargetNetintInfo*)calloc(mcast_netint_arr_size, sizeof(RCLlrpTargetNetintInfo));
-    if (!target->netints)
-      return kEtcPalErrNoMem;
+  target->netints = (RCLlrpTargetNetintInfo*)calloc(mcast_netint_arr_size, sizeof(RCLlrpTargetNetintInfo));
+  if (!target->netints)
+    res = kEtcPalErrNoMem;
 #endif
 
-    target->num_netints = 0;
-    for (const EtcPalMcastNetintId* netint_id = mcast_netint_arr; netint_id < mcast_netint_arr + mcast_netint_arr_size;
-         ++netint_id)
+  target->num_netints = 0;
+  for (const EtcPalMcastNetintId* netint_id = mcast_netint_arr;
+       (res == kEtcPalErrOk) && (netint_id < (mcast_netint_arr + mcast_netint_arr_size)); ++netint_id)
+  {
+    bool skip = false;
+    if (netints)  // Skip interfaces not present in application's config
+      skip = (netint_id_index_in_mcast_array(netint_id, netints, num_netints) == -1);
+    if (!skip)  // Also skip interfaces that have already been added
+      skip = (netint_id_index_in_llrp_array(netint_id, target->netints, target->num_netints) != -1);
+
+    if (!skip)
     {
-      // If the user hasn't provided a list of network interfaces to operate on, failing to
-      // intialize on a network interface will be non-fatal and we will log it.
       res = setup_target_netint(netint_id, &target->netints[target->num_netints]);
       if (res == kEtcPalErrOk)
       {
@@ -297,9 +277,18 @@ etcpal_error_t setup_target_netints(RCLlrpTarget* target, const EtcPalMcastNetin
       }
       else
       {
-        RDMNET_LOG_WARNING("Failed to intiailize LLRP target for listening on network interface index %d: '%s'",
-                           netint_id->index, etcpal_strerror(res));
-        res = kEtcPalErrOk;
+        // If the user hasn't provided a list of network interfaces to operate on, failing to intialize on a network
+        // interface will be non-fatal and we will log it. Otherwise, clean up and return the error.
+        if (netints)
+        {
+          cleanup_target_netints(target);
+        }
+        else
+        {
+          RDMNET_LOG_WARNING("Failed to intiailize LLRP target for listening on network interface index %d: '%s'",
+                             netint_id->index, etcpal_strerror(res));
+          res = kEtcPalErrOk;
+        }
       }
     }
   }
@@ -528,8 +517,8 @@ void send_response_if_requested(RCLlrpTarget*                target,
 
     const LlrpRdmCommand* received_cmd = &event->rdm_cmd;
     etcpal_error_t        send_res = target_send_ack_internal(
-        target, &received_cmd->source_cid, received_cmd->seq_num, &received_cmd->rdm_header, &received_cmd->netint_id,
-        response->response_buf, (uint8_t)external_resp->response_data.response_data_len);
+               target, &received_cmd->source_cid, received_cmd->seq_num, &received_cmd->rdm_header, &received_cmd->netint_id,
+               response->response_buf, (uint8_t)external_resp->response_data.response_data_len);
     if (send_res != kEtcPalErrOk && RDMNET_CAN_LOG(ETCPAL_LOG_ERR))
     {
       char source_cid[ETCPAL_UUID_BYTES] = {'\0'};
@@ -629,4 +618,14 @@ static bool cid_is_equal_predicate(void* ref, const void* context)
 RCLlrpTarget* find_target_by_cid(const RCRefList* list, const EtcPalUuid* cid)
 {
   return (RCLlrpTarget*)rc_ref_list_find_ref(list, cid_is_equal_predicate, cid);
+}
+
+int netint_id_index_in_llrp_array(const EtcPalMcastNetintId* id, const RCLlrpTargetNetintInfo* array, size_t array_size)
+{
+  for (size_t i = 0; i < array_size; ++i)
+  {
+    if (array[i].id.index == id->index && array[i].id.ip_type == id->ip_type)
+      return (int)i;
+  }
+  return -1;
 }
