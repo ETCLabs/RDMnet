@@ -96,7 +96,13 @@ etcpal_error_t rc_mcast_module_init(const RdmnetNetintConfig* netint_config)
   {
     res = etcpal_netint_get_interfaces(netint_list, &num_sys_netints);
     if (res == kEtcPalErrBufSize)
-      netint_list = realloc(netint_list, num_sys_netints * sizeof(EtcPalNetintInfo));
+    {
+      EtcPalNetintInfo* new_netint_list = realloc(netint_list, num_sys_netints * sizeof(EtcPalNetintInfo));
+      if (new_netint_list)
+        netint_list = new_netint_list;
+      else
+        res = kEtcPalErrNoMem;
+    }
   } while (res == kEtcPalErrBufSize);
 #else
   size_t           num_sys_netints = RDMNET_MAX_MCAST_NETINTS;
@@ -104,7 +110,7 @@ etcpal_error_t rc_mcast_module_init(const RdmnetNetintConfig* netint_config)
   res = etcpal_netint_get_interfaces(netint_list, &num_sys_netints);
 #endif
 
-  if (res != kEtcPalErrOk)
+  if ((res != kEtcPalErrOk) && (res != kEtcPalErrNoMem))
     res = (num_sys_netints == 0) ? kEtcPalErrNoNetints : kEtcPalErrSys;
 
 #if RDMNET_DYNAMIC_MEM
