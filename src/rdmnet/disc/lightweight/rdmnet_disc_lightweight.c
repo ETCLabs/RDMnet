@@ -76,6 +76,10 @@ void rdmnet_disc_platform_deinit(void)
 etcpal_error_t rdmnet_disc_platform_start_monitoring(RdmnetScopeMonitorRef* handle, int* platform_specific_error)
 {
   ETCPAL_UNUSED_ARG(platform_specific_error);
+
+  if (!RDMNET_ASSERT_VERIFY(handle))
+    return kEtcPalErrSys;
+
   lwmdns_send_ptr_query(handle);
   handle->platform_data.sent_first_query = true;
   etcpal_timer_start(&handle->platform_data.query_timer, INITIAL_QUERY_INTERVAL);
@@ -106,6 +110,9 @@ etcpal_error_t rdmnet_disc_platform_register_broker(RdmnetBrokerRegisterRef* bro
 
 void process_monitored_scope(RdmnetScopeMonitorRef* monitor_ref)
 {
+  if (!RDMNET_ASSERT_VERIFY(monitor_ref))
+    return;
+
   if (etcpal_timer_is_expired(&monitor_ref->platform_data.query_timer))
   {
     lwmdns_send_ptr_query(monitor_ref);
@@ -192,6 +199,9 @@ void rdmnet_disc_platform_tick(void)
 
 void update_query_interval(EtcPalTimer* query_timer)
 {
+  if (!RDMNET_ASSERT_VERIFY(query_timer))
+    return;
+
   uint32_t new_interval = query_timer->interval * QUERY_BACKOFF_FACTOR;
   if (new_interval > 360000)
     new_interval = 360000;

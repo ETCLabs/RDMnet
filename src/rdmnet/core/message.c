@@ -46,13 +46,23 @@ void rc_free_message_resources(RdmnetMessage* msg)
   {
     switch (msg->vector)
     {
-      case ACN_VECTOR_ROOT_BROKER:
-        free_broker_message(RDMNET_GET_BROKER_MSG(msg));
-        break;
+      case ACN_VECTOR_ROOT_BROKER: {
+        BrokerMessage* broker_msg = RDMNET_GET_BROKER_MSG(msg);
+        if (!RDMNET_ASSERT_VERIFY(broker_msg))
+          return;
+
+        free_broker_message(broker_msg);
+      }
+      break;
 #if RDMNET_DYNAMIC_MEM
-      case ACN_VECTOR_ROOT_RPT:
-        free_rpt_message(RDMNET_GET_RPT_MSG(msg));
-        break;
+      case ACN_VECTOR_ROOT_RPT: {
+        RptMessage* rpt_msg = RDMNET_GET_RPT_MSG(msg);
+        if (!RDMNET_ASSERT_VERIFY(rpt_msg))
+          return;
+
+        free_rpt_message(rpt_msg);
+      }
+      break;
 #endif
       default:
         break;
@@ -62,6 +72,9 @@ void rc_free_message_resources(RdmnetMessage* msg)
 
 void free_broker_message(BrokerMessage* bmsg)
 {
+  if (!RDMNET_ASSERT_VERIFY(bmsg))
+    return;
+
   switch (bmsg->vector)
   {
     case VECTOR_BROKER_CLIENT_ADD:
@@ -69,10 +82,20 @@ void free_broker_message(BrokerMessage* bmsg)
     case VECTOR_BROKER_CLIENT_ENTRY_CHANGE:
     case VECTOR_BROKER_CONNECTED_CLIENT_LIST: {
       BrokerClientList* clist = BROKER_GET_CLIENT_LIST(bmsg);
+      if (!RDMNET_ASSERT_VERIFY(clist))
+        return;
+
       if (BROKER_IS_EPT_CLIENT_LIST(clist))
       {
-        RdmnetEptClientEntry* ept_entry_list = BROKER_GET_EPT_CLIENT_LIST(clist)->client_entries;
-        size_t                ept_entry_list_size = BROKER_GET_EPT_CLIENT_LIST(clist)->num_client_entries;
+        RdmnetEptClientList* ept_client_list = BROKER_GET_EPT_CLIENT_LIST(clist);
+        if (!RDMNET_ASSERT_VERIFY(ept_client_list))
+          return;
+
+        RdmnetEptClientEntry* ept_entry_list = ept_client_list->client_entries;
+        size_t                ept_entry_list_size = ept_client_list->num_client_entries;
+        if (!RDMNET_ASSERT_VERIFY(ept_entry_list))
+          return;
+
         for (RdmnetEptClientEntry* ept_entry = ept_entry_list; ept_entry < ept_entry_list + ept_entry_list_size;
              ++ept_entry)
         {
@@ -85,21 +108,40 @@ void free_broker_message(BrokerMessage* bmsg)
 #if RDMNET_DYNAMIC_MEM
       else if (BROKER_IS_RPT_CLIENT_LIST(clist))
       {
-        free(BROKER_GET_RPT_CLIENT_LIST(clist)->client_entries);
+        RdmnetRptClientList* rpt_client_list = BROKER_GET_RPT_CLIENT_LIST(clist);
+        if (!RDMNET_ASSERT_VERIFY(rpt_client_list))
+          return;
+
+        free(rpt_client_list->client_entries);
       }
 #endif
       break;
     }
 #if RDMNET_DYNAMIC_MEM
-    case VECTOR_BROKER_REQUEST_DYNAMIC_UIDS:
-      free(BROKER_GET_DYNAMIC_UID_REQUEST_LIST(bmsg)->requests);
-      break;
-    case VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS:
-      free(BROKER_GET_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg)->mappings);
-      break;
-    case VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST:
-      free(BROKER_GET_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg)->uids);
-      break;
+    case VECTOR_BROKER_REQUEST_DYNAMIC_UIDS: {
+      BrokerDynamicUidRequestList* req_list = BROKER_GET_DYNAMIC_UID_REQUEST_LIST(bmsg);
+      if (!RDMNET_ASSERT_VERIFY(req_list))
+        return;
+
+      free(req_list->requests);
+    }
+    break;
+    case VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS: {
+      RdmnetDynamicUidAssignmentList* assignment_list = BROKER_GET_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg);
+      if (!RDMNET_ASSERT_VERIFY(assignment_list))
+        return;
+
+      free(assignment_list->mappings);
+    }
+    break;
+    case VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST: {
+      BrokerFetchUidAssignmentList* fetch_list = BROKER_GET_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg);
+      if (!RDMNET_ASSERT_VERIFY(fetch_list))
+        return;
+
+      free(fetch_list->uids);
+    }
+    break;
 #endif
     default:
       break;
@@ -109,14 +151,25 @@ void free_broker_message(BrokerMessage* bmsg)
 #if RDMNET_DYNAMIC_MEM
 void free_rpt_message(RptMessage* rmsg)
 {
+  if (!RDMNET_ASSERT_VERIFY(rmsg))
+    return;
+
   switch (rmsg->vector)
   {
     case VECTOR_RPT_REQUEST:
-    case VECTOR_RPT_NOTIFICATION:
-      free(RPT_GET_RDM_BUF_LIST(rmsg)->rdm_buffers);
-      break;
+    case VECTOR_RPT_NOTIFICATION: {
+      RptRdmBufList* buf_list = RPT_GET_RDM_BUF_LIST(rmsg);
+      if (!RDMNET_ASSERT_VERIFY(buf_list))
+        return;
+
+      free(buf_list->rdm_buffers);
+    }
+    break;
     case VECTOR_RPT_STATUS: {
       RptStatusMsg* status = RPT_GET_STATUS_MSG(rmsg);
+      if (!RDMNET_ASSERT_VERIFY(status))
+        return;
+
       if (status->status_string)
       {
         free((char*)status->status_string);

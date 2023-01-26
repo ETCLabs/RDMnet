@@ -64,20 +64,21 @@ extern "C" {
   size_t name##_capacity;                           \
   size_t num_##name
 
-#define RC_INIT_BUF(containing_struct_ptr, type, name, initial_capacity, max_static_size)        \
-  rc_init_buf((void**)&(containing_struct_ptr)->name, &(containing_struct_ptr)->name##_capacity, \
-              &(containing_struct_ptr)->num_##name, sizeof(type), initial_capacity)
+#define RC_INIT_BUF(containing_struct_ptr, type, name, initial_capacity, max_static_size)         \
+  (RDMNET_ASSERT_VERIFY(containing_struct_ptr) &&                                                 \
+   rc_init_buf((void**)&(containing_struct_ptr)->name, &(containing_struct_ptr)->name##_capacity, \
+               &(containing_struct_ptr)->num_##name, sizeof(type), initial_capacity))
 
-#define RC_DEINIT_BUF(containing_struct_ptr, name) \
-  do                                               \
-  {                                                \
-    if ((containing_struct_ptr)->name)             \
-      free((containing_struct_ptr)->name);         \
-  } while (0)
+#define RC_DEINIT_BUF(containing_struct_ptr, name)                                  \
+  if (RDMNET_ASSERT_VERIFY(containing_struct_ptr) && (containing_struct_ptr)->name) \
+  {                                                                                 \
+    free((containing_struct_ptr)->name);                                            \
+  }
 
-#define RC_CHECK_BUF_CAPACITY(containing_struct_ptr, type, name, max_static_size, num_additional)          \
-  rc_check_buf_capacity((void**)&(containing_struct_ptr)->name, &(containing_struct_ptr)->name##_capacity, \
-                        (containing_struct_ptr)->num_##name, sizeof(type), (num_additional))
+#define RC_CHECK_BUF_CAPACITY(containing_struct_ptr, type, name, max_static_size, num_additional)           \
+  (RDMNET_ASSERT_VERIFY(containing_struct_ptr) &&                                                           \
+   rc_check_buf_capacity((void**)&(containing_struct_ptr)->name, &(containing_struct_ptr)->name##_capacity, \
+                         (containing_struct_ptr)->num_##name, sizeof(type), (num_additional)))
 
 bool rc_check_buf_capacity(void**  buf,
                            size_t* buf_capacity,
@@ -92,14 +93,16 @@ bool rc_init_buf(void** buf, size_t* buf_capacity, size_t* current_num, size_t e
   type   name[max_static_size];                     \
   size_t num_##name
 
-#define RC_INIT_BUF(containing_struct_ptr, type, name, initial_capacity, max_static_size) \
-  rc_init_buf((void*)(containing_struct_ptr)->name, &(containing_struct_ptr)->num_##name, \
-              (sizeof(type) * max_static_size))
+#define RC_INIT_BUF(containing_struct_ptr, type, name, initial_capacity, max_static_size)  \
+  (RDMNET_ASSERT_VERIFY(containing_struct_ptr) &&                                          \
+   rc_init_buf((void*)(containing_struct_ptr)->name, &(containing_struct_ptr)->num_##name, \
+               (sizeof(type) * max_static_size)))
 
 #define RC_DEINIT_BUF(containing_struct_ptr, name)
 
 #define RC_CHECK_BUF_CAPACITY(containing_struct_ptr, type, name, max_static_size, num_additional) \
-  (((containing_struct_ptr)->num_##name + (num_additional) <= (max_static_size)))
+  (RDMNET_ASSERT_VERIFY(containing_struct_ptr) &&                                                 \
+   ((containing_struct_ptr)->num_##name + (num_additional) <= (max_static_size)))
 
 bool rc_init_buf(void* buf, size_t* current_num, size_t buf_size_in_bytes);
 

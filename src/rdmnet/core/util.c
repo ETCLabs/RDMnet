@@ -40,6 +40,9 @@ bool rc_check_buf_capacity(void**  buf,
                            size_t  elem_size,
                            size_t  num_additional)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf) || !RDMNET_ASSERT_VERIFY(*buf) || !RDMNET_ASSERT_VERIFY(buf_capacity))
+    return false;
+
   size_t num_requested = current_num + num_additional;
   if (num_requested > *buf_capacity)
   {
@@ -69,6 +72,9 @@ bool rc_check_buf_capacity(void**  buf,
 
 bool rc_init_buf(void** buf, size_t* buf_capacity, size_t* current_num, size_t elem_size, size_t initial_capacity)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf) || !RDMNET_ASSERT_VERIFY(buf_capacity) || !RDMNET_ASSERT_VERIFY(current_num))
+    return false;
+
   *buf = calloc(initial_capacity, elem_size);
   if (*buf)
   {
@@ -85,6 +91,9 @@ bool rc_init_buf(void** buf, size_t* buf_capacity, size_t* current_num, size_t e
 #else
 bool rc_init_buf(void* buf, size_t* current_num, size_t buf_size_in_bytes)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf) || !RDMNET_ASSERT_VERIFY(current_num))
+    return false;
+
   memset(buf, 0, buf_size_in_bytes);
   *current_num = 0;
   return true;
@@ -97,6 +106,9 @@ bool rc_init_buf(void* buf, size_t* current_num, size_t buf_size_in_bytes)
 
 bool rc_ref_list_init(RCRefList* list)
 {
+  if (!RDMNET_ASSERT_VERIFY(list))
+    return false;
+
 #if RDMNET_DYNAMIC_MEM
   list->refs = (void**)calloc(INITIAL_REF_CAPACITY, sizeof(void*));
   if (list->refs)
@@ -117,6 +129,9 @@ bool rc_ref_list_init(RCRefList* list)
 
 void rc_ref_list_cleanup(RCRefList* list)
 {
+  if (!RDMNET_ASSERT_VERIFY(list))
+    return;
+
 #if RDMNET_DYNAMIC_MEM
   if (list->refs)
     free(list->refs);
@@ -127,6 +142,9 @@ void rc_ref_list_cleanup(RCRefList* list)
 
 bool rc_ref_lists_init(RCRefLists* lists)
 {
+  if (!RDMNET_ASSERT_VERIFY(lists))
+    return false;
+
   if (!rc_ref_list_init(&lists->active) || !rc_ref_list_init(&lists->pending) || !rc_ref_list_init(&lists->to_remove))
   {
     rc_ref_list_cleanup(&lists->active);
@@ -139,6 +157,9 @@ bool rc_ref_lists_init(RCRefLists* lists)
 
 void rc_ref_lists_cleanup(RCRefLists* lists)
 {
+  if (!RDMNET_ASSERT_VERIFY(lists))
+    return;
+
   rc_ref_list_cleanup(&lists->active);
   rc_ref_list_cleanup(&lists->pending);
   rc_ref_list_cleanup(&lists->to_remove);
@@ -146,8 +167,8 @@ void rc_ref_lists_cleanup(RCRefLists* lists)
 
 bool rc_ref_list_add_ref(RCRefList* list, void* to_add)
 {
-  RDMNET_ASSERT(list);
-  RDMNET_ASSERT(list->refs);
+  if (!RDMNET_ASSERT_VERIFY(list) || !RDMNET_ASSERT_VERIFY(list->refs) || !RDMNET_ASSERT_VERIFY(to_add))
+    return false;
 
 #if RDMNET_DYNAMIC_MEM
   if (list->num_refs < list->refs_capacity)
@@ -186,7 +207,9 @@ bool rc_ref_list_add_ref(RCRefList* list, void* to_add)
 
 void rc_ref_list_remove_ref(RCRefList* list, const void* to_remove)
 {
-  RDMNET_ASSERT(list);
+  if (!RDMNET_ASSERT_VERIFY(list) || !RDMNET_ASSERT_VERIFY(list->refs) || !RDMNET_ASSERT_VERIFY(to_remove))
+    return;
+
   if (!list->num_refs)
     return;
 
@@ -203,7 +226,8 @@ void rc_ref_list_remove_ref(RCRefList* list, const void* to_remove)
 
 void rc_ref_list_remove_all(RCRefList* list, RCRefFunction on_remove, const void* context)
 {
-  RDMNET_ASSERT(list);
+  if (!RDMNET_ASSERT_VERIFY(list) || !RDMNET_ASSERT_VERIFY(list->refs))
+    return;
 
   for (void** ref_ptr = list->refs; ref_ptr < list->refs + list->num_refs; ++ref_ptr)
   {
@@ -215,7 +239,8 @@ void rc_ref_list_remove_all(RCRefList* list, RCRefFunction on_remove, const void
 
 int rc_ref_list_find_ref_index(RCRefList* list, const void* to_find)
 {
-  RDMNET_ASSERT(list);
+  if (!RDMNET_ASSERT_VERIFY(list) || !RDMNET_ASSERT_VERIFY(list->refs) || !RDMNET_ASSERT_VERIFY(to_find))
+    return -1;
 
   for (size_t i = 0; i < list->num_refs; ++i)
   {
@@ -227,8 +252,8 @@ int rc_ref_list_find_ref_index(RCRefList* list, const void* to_find)
 
 void* rc_ref_list_find_ref(const RCRefList* list, RCRefPredicate predicate, const void* context)
 {
-  RDMNET_ASSERT(list);
-  RDMNET_ASSERT(predicate);
+  if (!RDMNET_ASSERT_VERIFY(list) || !RDMNET_ASSERT_VERIFY(list->refs) || !RDMNET_ASSERT_VERIFY(predicate))
+    return NULL;
 
   for (void** ref_ptr = list->refs; ref_ptr < list->refs + list->num_refs; ++ref_ptr)
   {
@@ -240,8 +265,8 @@ void* rc_ref_list_find_ref(const RCRefList* list, RCRefPredicate predicate, cons
 
 void rc_ref_list_for_each(RCRefList* list, RCRefFunction fn, const void* context)
 {
-  RDMNET_ASSERT(list);
-  RDMNET_ASSERT(fn);
+  if (!RDMNET_ASSERT_VERIFY(list) || !RDMNET_ASSERT_VERIFY(list->refs) || !RDMNET_ASSERT_VERIFY(fn))
+    return;
 
   for (void** ref_ptr = list->refs; ref_ptr < list->refs + list->num_refs; ++ref_ptr)
   {
@@ -251,10 +276,14 @@ void rc_ref_list_for_each(RCRefList* list, RCRefFunction fn, const void* context
 
 void rc_ref_lists_add_pending(RCRefLists* lists)
 {
-  RDMNET_ASSERT(lists);
+  if (!RDMNET_ASSERT_VERIFY(lists))
+    return;
 
   RCRefList* active = &lists->active;
   RCRefList* pending = &lists->pending;
+
+  if (!RDMNET_ASSERT_VERIFY(pending->refs))
+    return;
 
   for (void** ref_ptr = pending->refs; ref_ptr < pending->refs + pending->num_refs; ++ref_ptr)
   {
@@ -265,11 +294,15 @@ void rc_ref_lists_add_pending(RCRefLists* lists)
 
 void rc_ref_lists_remove_marked(RCRefLists* lists, RCRefFunction on_remove, const void* context)
 {
-  RDMNET_ASSERT(lists);
+  if (!RDMNET_ASSERT_VERIFY(lists))
+    return;
 
   RCRefList* active = &lists->active;
   RCRefList* pending = &lists->pending;
   RCRefList* to_remove = &lists->to_remove;
+
+  if (!RDMNET_ASSERT_VERIFY(to_remove->refs))
+    return;
 
   for (void** ref_ptr = to_remove->refs; ref_ptr < to_remove->refs + to_remove->num_refs; ++ref_ptr)
   {
@@ -288,7 +321,8 @@ void rc_ref_lists_remove_marked(RCRefLists* lists, RCRefFunction on_remove, cons
 
 void rc_ref_lists_remove_all(RCRefLists* lists, RCRefFunction on_remove, const void* context)
 {
-  RDMNET_ASSERT(lists);
+  if (!RDMNET_ASSERT_VERIFY(lists))
+    return;
 
   RCRefList* pending = &lists->pending;
   RCRefList* active = &lists->active;
@@ -309,6 +343,9 @@ void rc_ref_lists_remove_all(RCRefLists* lists, RCRefFunction on_remove, const v
  */
 char* rdmnet_safe_strncpy(char* destination, const char* source, size_t num)
 {
+  if (!RDMNET_ASSERT_VERIFY(source))
+    return NULL;
+
   if (!destination || num == 0)
     return NULL;
 

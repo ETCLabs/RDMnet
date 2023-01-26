@@ -27,38 +27,38 @@
 /***************************** Private macros ********************************/
 
 /* Helper macros for RDM Command PDUs */
-#define RDM_CMD_PDU_LEN(rdmbufptr) ((rdmbufptr)->data_len + 3)
+#define RDM_CMD_PDU_LEN(rdmbufptr) (RDMNET_ASSERT_VERIFY(rdmbufptr) ? ((rdmbufptr)->data_len + 3) : 0)
 #define PACK_RDM_CMD_PDU(rdmbufptr, buf)                                 \
-  do                                                                     \
+  if (RDMNET_ASSERT_VERIFY(rdmbufptr) && RDMNET_ASSERT_VERIFY(buf))      \
   {                                                                      \
     (buf)[0] = 0xf0;                                                     \
     ACN_PDU_PACK_EXT_LEN(buf, RDM_CMD_PDU_LEN(rdmbufptr));               \
     (buf)[3] = VECTOR_RDM_CMD_RDM_DATA;                                  \
     memcpy(&(buf)[4], &(rdmbufptr)->data[1], (rdmbufptr)->data_len - 1); \
-  } while (0)
+  }
 
 /* Helper macros to pack the various RPT headers */
 #define PACK_REQUEST_HEADER(length, buf)               \
-  do                                                   \
+  if (RDMNET_ASSERT_VERIFY(buf))                       \
   {                                                    \
     (buf)[0] = 0xf0;                                   \
     ACN_PDU_PACK_EXT_LEN(buf, length);                 \
     etcpal_pack_u32b(&buf[3], VECTOR_REQUEST_RDM_CMD); \
-  } while (0)
+  }
 #define PACK_STATUS_HEADER(length, vector, buf) \
-  do                                            \
+  if (RDMNET_ASSERT_VERIFY(buf))                \
   {                                             \
     (buf)[0] = 0xf0;                            \
     ACN_PDU_PACK_EXT_LEN(buf, length);          \
     etcpal_pack_u16b(&buf[3], vector);          \
-  } while (0)
+  }
 #define PACK_NOTIFICATION_HEADER(length, buf)               \
-  do                                                        \
+  if (RDMNET_ASSERT_VERIFY(buf))                            \
   {                                                         \
     (buf)[0] = 0xf0;                                        \
     ACN_PDU_PACK_EXT_LEN(buf, length);                      \
     etcpal_pack_u32b(&buf[3], VECTOR_NOTIFICATION_RDM_CMD); \
-  } while (0)
+  }
 
 /*********************** Private function prototypes *************************/
 
@@ -77,6 +77,9 @@ static size_t         calc_notification_pdu_size(const RdmBuffer* cmd_arr, size_
 
 void pack_rpt_header(size_t length, uint32_t vector, const RptHeader* header, uint8_t* buf)
 {
+  if (!RDMNET_ASSERT_VERIFY(header) || !RDMNET_ASSERT_VERIFY(buf))
+    return;
+
   buf[0] = 0xf0;
   ACN_PDU_PACK_EXT_LEN(buf, length);
   etcpal_pack_u32b(&buf[3], vector);
@@ -96,6 +99,9 @@ size_t pack_rpt_header_with_rlp(const AcnRootLayerPdu* rlp,
                                 uint32_t               vector,
                                 const RptHeader*       header)
 {
+  if (!RDMNET_ASSERT_VERIFY(rlp) || !RDMNET_ASSERT_VERIFY(buf) || !RDMNET_ASSERT_VERIFY(header))
+    return 0;
+
   uint8_t* cur_ptr = buf;
   size_t   data_size = acn_root_layer_buf_size(rlp, 1);
 
@@ -126,6 +132,12 @@ etcpal_error_t send_rpt_header(RCConnection*          conn,
                                uint8_t*               buf,
                                size_t                 buflen)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn) || !RDMNET_ASSERT_VERIFY(rlp) || !RDMNET_ASSERT_VERIFY(header) ||
+      !RDMNET_ASSERT_VERIFY(buf))
+  {
+    return kEtcPalErrSys;
+  }
+
   size_t data_size = acn_root_layer_buf_size(rlp, 1);
   if (data_size == 0)
     return kEtcPalErrProtocol;
@@ -159,6 +171,9 @@ etcpal_error_t send_rpt_header(RCConnection*          conn,
 
 size_t calc_request_pdu_size(const RdmBuffer* cmd)
 {
+  if (!RDMNET_ASSERT_VERIFY(cmd))
+    return 0;
+
   return REQUEST_NOTIF_PDU_HEADER_SIZE + RDM_CMD_PDU_LEN(cmd);
 }
 
@@ -226,6 +241,9 @@ etcpal_error_t rc_rpt_send_request(RCConnection*     conn,
                                    const RptHeader*  header,
                                    const RdmBuffer*  cmd)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn))
+    return kEtcPalErrSys;
+
   if (!local_cid || !header || !cmd)
     return kEtcPalErrInvalid;
 
@@ -254,6 +272,9 @@ etcpal_error_t rc_rpt_send_request(RCConnection*     conn,
 
 size_t calc_status_pdu_size(const RptStatusMsg* status)
 {
+  if (!RDMNET_ASSERT_VERIFY(status))
+    return 0;
+
   return (RPT_STATUS_HEADER_SIZE + (status->status_string ? strlen(status->status_string) : 0));
 }
 
@@ -323,6 +344,9 @@ etcpal_error_t rc_rpt_send_status(RCConnection*       conn,
                                   const RptHeader*    header,
                                   const RptStatusMsg* status)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn))
+    return kEtcPalErrSys;
+
   if (!local_cid || !header || !status)
     return kEtcPalErrInvalid;
 
@@ -355,6 +379,9 @@ etcpal_error_t rc_rpt_send_status(RCConnection*       conn,
 
 size_t calc_notification_pdu_size(const RdmBuffer* cmd_arr, size_t cmd_arr_size)
 {
+  if (!RDMNET_ASSERT_VERIFY(cmd_arr))
+    return 0;
+
   size_t res = REQUEST_NOTIF_PDU_HEADER_SIZE;
 
   for (const RdmBuffer* cur_cmd = cmd_arr; cur_cmd < cmd_arr + cmd_arr_size; ++cur_cmd)
@@ -437,6 +464,9 @@ etcpal_error_t rc_rpt_send_notification(RCConnection*     conn,
                                         const RdmBuffer*  cmd_arr,
                                         size_t            cmd_arr_size)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn))
+    return kEtcPalErrSys;
+
   if (!local_cid || !header || !cmd_arr || cmd_arr_size == 0)
     return kEtcPalErrInvalid;
 

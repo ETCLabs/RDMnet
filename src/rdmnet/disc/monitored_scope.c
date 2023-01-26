@@ -32,10 +32,18 @@
 
 #if RDMNET_DYNAMIC_MEM
 #define ALLOC_SCOPE_MONITOR_REF() (RdmnetScopeMonitorRef*)malloc(sizeof(RdmnetScopeMonitorRef))
-#define FREE_SCOPE_MONITOR_REF(ptr) free(ptr)
+#define FREE_SCOPE_MONITOR_REF(ptr) \
+  if (RDMNET_ASSERT_VERIFY(ptr))    \
+  {                                 \
+    free(ptr);                      \
+  }
 #elif RDMNET_MAX_MONITORED_SCOPES
 #define ALLOC_SCOPE_MONITOR_REF() (RdmnetScopeMonitorRef*)etcpal_mempool_alloc(scope_monitor_refs)
-#define FREE_SCOPE_MONITOR_REF(ptr) etcpal_mempool_free(scope_monitor_refs, ptr)
+#define FREE_SCOPE_MONITOR_REF(ptr)               \
+  if (RDMNET_ASSERT_VERIFY(ptr))                  \
+  {                                               \
+    etcpal_mempool_free(scope_monitor_refs, ptr); \
+  }
 #else
 #define ALLOC_SCOPE_MONITOR_REF() NULL
 #define FREE_SCOPE_MONITOR_REF(ptr)
@@ -73,7 +81,8 @@ void monitored_scope_module_deinit(void)
 /* Allocate and initialize a new scope monitor ref. */
 RdmnetScopeMonitorRef* scope_monitor_new(const RdmnetScopeMonitorConfig* config)
 {
-  RDMNET_ASSERT(config);
+  if (!RDMNET_ASSERT_VERIFY(config))
+    return NULL;
 
   RdmnetScopeMonitorRef* new_monitor = ALLOC_SCOPE_MONITOR_REF();
   if (new_monitor)
@@ -95,17 +104,24 @@ RdmnetScopeMonitorRef* scope_monitor_new(const RdmnetScopeMonitorConfig* config)
 /* Adds a new scope monitor ref to the global scope_ref_list. Assumes a lock is already taken. */
 void scope_monitor_insert(RdmnetScopeMonitorRef* scope_ref)
 {
+  if (!RDMNET_ASSERT_VERIFY(scope_ref))
+    return;
+
   rc_ref_list_add_ref(&scope_monitor_refs, scope_ref);
 }
 
 bool scope_monitor_ref_is_valid(const RdmnetScopeMonitorRef* ref)
 {
+  if (!RDMNET_ASSERT_VERIFY(ref))
+    return false;
+
   return (rc_ref_list_find_ref_index(&scope_monitor_refs, ref) != -1);
 }
 
 void scope_monitor_for_each(ScopeMonitorRefFunction func)
 {
-  RDMNET_ASSERT(func);
+  if (!RDMNET_ASSERT_VERIFY(func))
+    return;
 
   for (void** ref_ptr = scope_monitor_refs.refs; ref_ptr < scope_monitor_refs.refs + scope_monitor_refs.num_refs;
        ++ref_ptr)
@@ -116,11 +132,15 @@ void scope_monitor_for_each(ScopeMonitorRefFunction func)
 
 RdmnetScopeMonitorRef* scope_monitor_find(ScopeMonitorRefPredicateFunction predicate, const void* context)
 {
-  RDMNET_ASSERT(predicate);
+  if (!RDMNET_ASSERT_VERIFY(predicate))
+    return NULL;
 
   for (void** ref_ptr = scope_monitor_refs.refs; ref_ptr < scope_monitor_refs.refs + scope_monitor_refs.num_refs;
        ++ref_ptr)
   {
+    if (!RDMNET_ASSERT_VERIFY(ref_ptr))
+      return NULL;
+
     if (predicate(*ref_ptr, context))
       return *ref_ptr;
   }
@@ -132,14 +152,19 @@ bool scope_monitor_and_discovered_broker_find(ScopeMonitorAndDBPredicateFunction
                                               RdmnetScopeMonitorRef**            found_ref,
                                               DiscoveredBroker**                 found_db)
 {
-  RDMNET_ASSERT(predicate);
-  RDMNET_ASSERT(found_ref);
-  RDMNET_ASSERT(found_db);
+  if (!RDMNET_ASSERT_VERIFY(predicate) || !RDMNET_ASSERT_VERIFY(found_ref) || !RDMNET_ASSERT_VERIFY(found_db))
+    return false;
 
   for (void** ref_ptr = scope_monitor_refs.refs; ref_ptr < scope_monitor_refs.refs + scope_monitor_refs.num_refs;
        ++ref_ptr)
   {
+    if (!RDMNET_ASSERT_VERIFY(ref_ptr))
+      return false;
+
     RdmnetScopeMonitorRef* ref = *(RdmnetScopeMonitorRef**)ref_ptr;
+    if (!RDMNET_ASSERT_VERIFY(ref))
+      return false;
+
     for (DiscoveredBroker* db = ref->broker_list; db; db = db->next)
     {
       if (predicate(ref, db, context))
@@ -156,6 +181,9 @@ bool scope_monitor_and_discovered_broker_find(ScopeMonitorAndDBPredicateFunction
 /* Removes an entry from scope_ref_list. Assumes a lock is already taken. */
 void scope_monitor_remove(const RdmnetScopeMonitorRef* ref)
 {
+  if (!RDMNET_ASSERT_VERIFY(ref))
+    return;
+
   rc_ref_list_remove_ref(&scope_monitor_refs, ref);
 }
 
@@ -165,10 +193,11 @@ void scope_monitor_remove(const RdmnetScopeMonitorRef* ref)
  */
 void scope_monitor_delete(RdmnetScopeMonitorRef* ref)
 {
-  RDMNET_ASSERT(ref);
+  if (!RDMNET_ASSERT_VERIFY(ref))
+    return;
 
   DiscoveredBroker* db = ref->broker_list;
-  DiscoveredBroker* next_db;
+  DiscoveredBroker* next_db = NULL;
   while (db)
   {
     next_db = db->next;
@@ -181,6 +210,10 @@ void scope_monitor_delete(RdmnetScopeMonitorRef* ref)
 void scope_monitor_delete_ref_cb(void* ref, const void* context)
 {
   ETCPAL_UNUSED_ARG(context);
+
+  if (!RDMNET_ASSERT_VERIFY(ref))
+    return;
+
   scope_monitor_delete(ref);
 }
 

@@ -48,7 +48,7 @@ TEST_F(TestLwMdnsTxtRecordParsing, ParsesNormalTxtRecord)
       "\011TxtVers=1\021E133Scope=default\012E133Vers=1\044CID=da30bf9383174140a7714840483f71d7\020UID="
       "6574d574a27a\016Model=Test App\011Manuf=ETC\021XtraItem=BlahBlah\13XtraKeyOnly\14XtraNoValue=";
 
-  DiscoveredBroker* db = discovered_broker_new((rdmnet_scope_monitor_t)0, "service", "service");
+  DiscoveredBroker* db = discovered_broker_new((rdmnet_scope_monitor_t)1, "service", "service");
   ASSERT_NE(db, nullptr);
 
   auto txt_bytes = StringToBytes(kNormalTxtRecord);
@@ -103,7 +103,7 @@ TEST_F(TestLwMdnsTxtRecordParsing, RecognizesNoDataChanged)
       "\011TxtVers=1\021E133Scope=default\012E133Vers=1\044CID=da30bf9383174140a7714840483f71d7\020UID="
       "6574d574a27a\016Model=Test App\011Manuf=ETC\021XtraItem=BlahBlah";
 
-  DiscoveredBroker* db = discovered_broker_new((rdmnet_scope_monitor_t)0, "service", "service");
+  DiscoveredBroker* db = discovered_broker_new((rdmnet_scope_monitor_t)1, "service", "service");
   ASSERT_NE(db, nullptr);
 
   db->cid = etcpal::Uuid::FromString("da30bf9383174140a7714840483f71d7").get();
@@ -141,7 +141,7 @@ TEST_F(TestLwMdnsTxtRecordParsing, RecognizesStandardDataChanged)
       "\011TxtVers=1\025E133Scope=not default\012E133Vers=1\044CID=da30bf9383174140a7714840483f71d7\020UID="
       "6574d574a27a\016Model=Test App\011Manuf=ETC\021XtraItem=BlahBlah";
 
-  DiscoveredBroker* db = discovered_broker_new((rdmnet_scope_monitor_t)0, "service", "service");
+  DiscoveredBroker* db = discovered_broker_new((rdmnet_scope_monitor_t)1, "service", "service");
   ASSERT_NE(db, nullptr);
 
   db->cid = etcpal::Uuid::FromString("da30bf9383174140a7714840483f71d7").get();
@@ -178,7 +178,7 @@ TEST_F(TestLwMdnsTxtRecordParsing, RecognizesAdditionalDataChanged)
       "\011TxtVers=1\021E133Scope=default\012E133Vers=1\044CID=da30bf9383174140a7714840483f71d7\020UID="
       "6574d574a27a\016Model=Test App\011Manuf=ETC\021XtraItem=BlahBlah\011XtraItem2";
 
-  DiscoveredBroker* db = discovered_broker_new((rdmnet_scope_monitor_t)0, "service", "service");
+  DiscoveredBroker* db = discovered_broker_new((rdmnet_scope_monitor_t)1, "service", "service");
   ASSERT_NE(db, nullptr);
 
   db->cid = etcpal::Uuid::FromString("da30bf9383174140a7714840483f71d7").get();
@@ -218,7 +218,7 @@ TEST_F(TestLwMdnsTxtRecordParsing, MalformedStandardKey)
       "6574d574a27a\016Model=Test App\011Manuf=ETC\021XtraItem=BlahBlah\13XtraKeyOnly\14XtraNoValue=";
 
   auto              txt_bytes = StringToBytes(kTxtRecordMalformedStandardKey);
-  DiscoveredBroker* db = discovered_broker_new((rdmnet_scope_monitor_t)0, "service", "service");
+  DiscoveredBroker* db = discovered_broker_new((rdmnet_scope_monitor_t)1, "service", "service");
   ASSERT_NE(db, nullptr);
   EXPECT_EQ(lwmdns_txt_record_to_broker_info(txt_bytes.data(), static_cast<uint16_t>(txt_bytes.size()), db),
             kTxtRecordParseError);

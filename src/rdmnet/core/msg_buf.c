@@ -127,15 +127,17 @@ static RdmnetEptClientEntry* alloc_next_ept_client_entry(RdmnetEptClientList* cl
 
 void rc_msg_buf_init(RCMsgBuf* msg_buf)
 {
-  RDMNET_ASSERT(msg_buf);
+  if (!RDMNET_ASSERT_VERIFY(msg_buf))
+    return;
+
   msg_buf->cur_data_size = 0;
   msg_buf->have_preamble = false;
 }
 
 etcpal_error_t rc_msg_buf_recv(RCMsgBuf* msg_buf, etcpal_socket_t socket)
 {
-  RDMNET_ASSERT(msg_buf);
-  RDMNET_ASSERT(msg_buf->cur_data_size <= RC_MSG_BUF_SIZE);
+  if (!RDMNET_ASSERT_VERIFY(msg_buf) || !RDMNET_ASSERT_VERIFY(msg_buf->cur_data_size <= RC_MSG_BUF_SIZE))
+    return kEtcPalErrSys;
 
   size_t original_data_size = msg_buf->cur_data_size;
 
@@ -169,7 +171,8 @@ etcpal_error_t rc_msg_buf_recv(RCMsgBuf* msg_buf, etcpal_socket_t socket)
 
 etcpal_error_t rc_msg_buf_parse_data(RCMsgBuf* msg_buf)
 {
-  RDMNET_ASSERT(msg_buf);
+  if (!RDMNET_ASSERT_VERIFY(msg_buf))
+    return kEtcPalErrSys;
 
   // Unless we finish parsing a message in this function, we will return kEtcPalErrNoData to indicate
   // that the parse is still in progress.
@@ -218,7 +221,9 @@ etcpal_error_t rc_msg_buf_parse_data(RCMsgBuf* msg_buf)
     if (consumed > 0)
     {
       // Roll the buffer to discard the data we have already parsed.
-      RDMNET_ASSERT(msg_buf->cur_data_size >= consumed);
+      if (!RDMNET_ASSERT_VERIFY(msg_buf->cur_data_size >= consumed))
+        return kEtcPalErrSys;
+
       if (msg_buf->cur_data_size > consumed)
       {
         memmove(msg_buf->buf, &msg_buf->buf[consumed], msg_buf->cur_data_size - consumed);
@@ -232,6 +237,9 @@ etcpal_error_t rc_msg_buf_parse_data(RCMsgBuf* msg_buf)
 
 void initialize_rdmnet_message(RlpState* rlpstate, RdmnetMessage* msg, size_t pdu_data_len)
 {
+  if (!RDMNET_ASSERT_VERIFY(rlpstate) || !RDMNET_ASSERT_VERIFY(msg))
+    return;
+
   switch (msg->vector)
   {
     case ACN_VECTOR_ROOT_BROKER:
@@ -253,6 +261,12 @@ size_t parse_rlp_block(RlpState*          rlpstate,
                        RdmnetMessage*     msg,
                        rc_parse_result_t* result)
 {
+  if (!RDMNET_ASSERT_VERIFY(rlpstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(msg) ||
+      !RDMNET_ASSERT_VERIFY(result))
+  {
+    return 0;
+  }
+
   rc_parse_result_t res = kRCParseResNoData;
   size_t            bytes_parsed = 0;
 
@@ -328,8 +342,13 @@ size_t parse_rlp_block(RlpState*          rlpstate,
         next_layer_bytes_parsed = consume_bad_block(&rlpstate->data.unknown, data_len - bytes_parsed, &res);
         break;
     }
-    RDMNET_ASSERT(next_layer_bytes_parsed <= (data_len - bytes_parsed));
-    RDMNET_ASSERT(rlpstate->block.size_parsed + next_layer_bytes_parsed <= rlpstate->block.block_size);
+
+    if (!RDMNET_ASSERT_VERIFY(next_layer_bytes_parsed <= (data_len - bytes_parsed)) ||
+        !RDMNET_ASSERT_VERIFY(rlpstate->block.size_parsed + next_layer_bytes_parsed <= rlpstate->block.block_size))
+    {
+      return 0;
+    }
+
     rlpstate->block.size_parsed += next_layer_bytes_parsed;
     bytes_parsed += next_layer_bytes_parsed;
     res = check_for_full_parse(res, &rlpstate->block);
@@ -340,15 +359,22 @@ size_t parse_rlp_block(RlpState*          rlpstate,
 
 void initialize_broker_message(BrokerState* bstate, BrokerMessage* bmsg, size_t pdu_data_len)
 {
+  if (!RDMNET_ASSERT_VERIFY(bstate) || !RDMNET_ASSERT_VERIFY(bmsg))
+    return;
+
   bool bad_length = false;
 
   switch (bmsg->vector)
   {
     case VECTOR_BROKER_CONNECT:
       if (pdu_data_len >= CLIENT_CONNECT_DATA_MIN_SIZE)
+      {
         INIT_CLIENT_CONNECT_STATE(&bstate->data.client_connect, pdu_data_len, bmsg);
+      }
       else
+      {
         bad_length = true;
+      }
       break;
     case VECTOR_BROKER_CONNECT_REPLY:
       if (pdu_data_len != BROKER_CONNECT_REPLY_DATA_SIZE)
@@ -356,9 +382,13 @@ void initialize_broker_message(BrokerState* bstate, BrokerMessage* bmsg, size_t 
       break;
     case VECTOR_BROKER_CLIENT_ENTRY_UPDATE:
       if (pdu_data_len >= CLIENT_ENTRY_UPDATE_DATA_MIN_SIZE)
+      {
         INIT_CLIENT_ENTRY_UPDATE_STATE(&bstate->data.update, pdu_data_len, bmsg);
+      }
       else
+      {
         bad_length = true;
+      }
       break;
     case VECTOR_BROKER_REDIRECT_V4:
       if (pdu_data_len != REDIRECT_V4_DATA_SIZE)
@@ -379,6 +409,9 @@ void initialize_broker_message(BrokerState* bstate, BrokerMessage* bmsg, size_t 
       if (pdu_data_len > 0 && pdu_data_len % DYNAMIC_UID_REQUEST_PAIR_SIZE == 0)
       {
         BrokerDynamicUidRequestList* rlist = BROKER_GET_DYNAMIC_UID_REQUEST_LIST(bmsg);
+        if (!RDMNET_ASSERT_VERIFY(rlist))
+          return;
+
         rlist->requests = NULL;
         rlist->num_requests = 0;
         rlist->more_coming = false;
@@ -394,6 +427,9 @@ void initialize_broker_message(BrokerState* bstate, BrokerMessage* bmsg, size_t 
       if (pdu_data_len > 0 && pdu_data_len % DYNAMIC_UID_MAPPING_SIZE == 0)
       {
         RdmnetDynamicUidAssignmentList* alist = BROKER_GET_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg);
+        if (!RDMNET_ASSERT_VERIFY(alist))
+          return;
+
         alist->mappings = NULL;
         alist->num_mappings = 0;
         alist->more_coming = false;
@@ -409,6 +445,9 @@ void initialize_broker_message(BrokerState* bstate, BrokerMessage* bmsg, size_t 
       if (pdu_data_len > 0 && pdu_data_len % 6 /* Size of one packed UID */ == 0)
       {
         BrokerFetchUidAssignmentList* ulist = BROKER_GET_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg);
+        if (!RDMNET_ASSERT_VERIFY(ulist))
+          return;
+
         ulist->uids = NULL;
         ulist->num_uids = 0;
         ulist->more_coming = false;
@@ -453,6 +492,12 @@ size_t parse_broker_block(BrokerState*       bstate,
                           BrokerMessage*     bmsg,
                           rc_parse_result_t* result)
 {
+  if (!RDMNET_ASSERT_VERIFY(bstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(bmsg) ||
+      !RDMNET_ASSERT_VERIFY(result))
+  {
+    return 0;
+  }
+
   rc_parse_result_t res = kRCParseResNoData;
   size_t            bytes_parsed = 0;
 
@@ -508,15 +553,23 @@ size_t parse_broker_block(BrokerState*       bstate,
     size_t remaining_len = data_len - bytes_parsed;
     switch (bmsg->vector)
     {
-      case VECTOR_BROKER_CONNECT:
-        next_layer_bytes_parsed = parse_client_connect(&bstate->data.client_connect, &data[bytes_parsed], remaining_len,
-                                                       BROKER_GET_CLIENT_CONNECT_MSG(bmsg), &res);
-        break;
+      case VECTOR_BROKER_CONNECT: {
+        BrokerClientConnectMsg* ccmsg = BROKER_GET_CLIENT_CONNECT_MSG(bmsg);
+        if (!RDMNET_ASSERT_VERIFY(ccmsg))
+          return 0;
+
+        next_layer_bytes_parsed =
+            parse_client_connect(&bstate->data.client_connect, &data[bytes_parsed], remaining_len, ccmsg, &res);
+      }
+      break;
       case VECTOR_BROKER_CONNECT_REPLY:
         if (remaining_len >= BROKER_CONNECT_REPLY_DATA_SIZE)
         {
           BrokerConnectReplyMsg* crmsg = BROKER_GET_CONNECT_REPLY_MSG(bmsg);
-          const uint8_t*         cur_ptr = &data[bytes_parsed];
+          if (!RDMNET_ASSERT_VERIFY(crmsg))
+            return 0;
+
+          const uint8_t* cur_ptr = &data[bytes_parsed];
           crmsg->connect_status = (rdmnet_connect_status_t)etcpal_unpack_u16b(cur_ptr);
           cur_ptr += 2;
           crmsg->e133_version = etcpal_unpack_u16b(cur_ptr);
@@ -533,15 +586,23 @@ size_t parse_broker_block(BrokerState*       bstate,
           res = kRCParseResFullBlockParseOk;
         }
         break;
-      case VECTOR_BROKER_CLIENT_ENTRY_UPDATE:
-        next_layer_bytes_parsed = parse_client_entry_update(&bstate->data.update, &data[bytes_parsed], remaining_len,
-                                                            BROKER_GET_CLIENT_ENTRY_UPDATE_MSG(bmsg), &res);
-        break;
+      case VECTOR_BROKER_CLIENT_ENTRY_UPDATE: {
+        BrokerClientEntryUpdateMsg* ceumsg = BROKER_GET_CLIENT_ENTRY_UPDATE_MSG(bmsg);
+        if (!RDMNET_ASSERT_VERIFY(ceumsg))
+          return 0;
+
+        next_layer_bytes_parsed =
+            parse_client_entry_update(&bstate->data.update, &data[bytes_parsed], remaining_len, ceumsg, &res);
+      }
+      break;
       case VECTOR_BROKER_REDIRECT_V4:
         if (remaining_len >= REDIRECT_V4_DATA_SIZE)
         {
           BrokerClientRedirectMsg* crmsg = BROKER_GET_CLIENT_REDIRECT_MSG(bmsg);
-          const uint8_t*           cur_ptr = &data[bytes_parsed];
+          if (!RDMNET_ASSERT_VERIFY(crmsg))
+            return 0;
+
+          const uint8_t* cur_ptr = &data[bytes_parsed];
           ETCPAL_IP_SET_V4_ADDRESS(&crmsg->new_addr.ip, etcpal_unpack_u32b(cur_ptr));
           cur_ptr += 4;
           crmsg->new_addr.port = etcpal_unpack_u16b(cur_ptr);
@@ -554,7 +615,10 @@ size_t parse_broker_block(BrokerState*       bstate,
         if (remaining_len >= REDIRECT_V6_DATA_SIZE)
         {
           BrokerClientRedirectMsg* crmsg = BROKER_GET_CLIENT_REDIRECT_MSG(bmsg);
-          const uint8_t*           cur_ptr = &data[bytes_parsed];
+          if (!RDMNET_ASSERT_VERIFY(crmsg))
+            return 0;
+
+          const uint8_t* cur_ptr = &data[bytes_parsed];
           ETCPAL_IP_SET_V6_ADDRESS(&crmsg->new_addr.ip, cur_ptr);
           cur_ptr += 16;
           crmsg->new_addr.port = etcpal_unpack_u16b(cur_ptr);
@@ -566,25 +630,42 @@ size_t parse_broker_block(BrokerState*       bstate,
       case VECTOR_BROKER_CONNECTED_CLIENT_LIST:
       case VECTOR_BROKER_CLIENT_ADD:
       case VECTOR_BROKER_CLIENT_REMOVE:
-      case VECTOR_BROKER_CLIENT_ENTRY_CHANGE:
-        next_layer_bytes_parsed = parse_client_list(&bstate->data.client_list, &data[bytes_parsed], remaining_len,
-                                                    BROKER_GET_CLIENT_LIST(bmsg), &res);
-        break;
-      case VECTOR_BROKER_REQUEST_DYNAMIC_UIDS:
+      case VECTOR_BROKER_CLIENT_ENTRY_CHANGE: {
+        BrokerClientList* clist = BROKER_GET_CLIENT_LIST(bmsg);
+        if (!RDMNET_ASSERT_VERIFY(clist))
+          return 0;
+
         next_layer_bytes_parsed =
-            parse_request_dynamic_uid_assignment(&bstate->data.data_list, &data[bytes_parsed], remaining_len,
-                                                 BROKER_GET_DYNAMIC_UID_REQUEST_LIST(bmsg), &res);
-        break;
-      case VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS:
-        next_layer_bytes_parsed =
-            parse_dynamic_uid_assignment_list(&bstate->data.data_list, &data[bytes_parsed], remaining_len,
-                                              BROKER_GET_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg), &res);
-        break;
-      case VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST:
-        next_layer_bytes_parsed =
-            parse_fetch_dynamic_uid_assignment_list(&bstate->data.data_list, &data[bytes_parsed], remaining_len,
-                                                    BROKER_GET_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg), &res);
-        break;
+            parse_client_list(&bstate->data.client_list, &data[bytes_parsed], remaining_len, clist, &res);
+      }
+      break;
+      case VECTOR_BROKER_REQUEST_DYNAMIC_UIDS: {
+        BrokerDynamicUidRequestList* rlist = BROKER_GET_DYNAMIC_UID_REQUEST_LIST(bmsg);
+        if (!RDMNET_ASSERT_VERIFY(rlist))
+          return 0;
+
+        next_layer_bytes_parsed = parse_request_dynamic_uid_assignment(&bstate->data.data_list, &data[bytes_parsed],
+                                                                       remaining_len, rlist, &res);
+      }
+      break;
+      case VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS: {
+        RdmnetDynamicUidAssignmentList* dualist = BROKER_GET_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg);
+        if (!RDMNET_ASSERT_VERIFY(dualist))
+          return 0;
+
+        next_layer_bytes_parsed = parse_dynamic_uid_assignment_list(&bstate->data.data_list, &data[bytes_parsed],
+                                                                    remaining_len, dualist, &res);
+      }
+      break;
+      case VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST: {
+        BrokerFetchUidAssignmentList* ualist = BROKER_GET_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(bmsg);
+        if (!RDMNET_ASSERT_VERIFY(ualist))
+          return 0;
+
+        next_layer_bytes_parsed = parse_fetch_dynamic_uid_assignment_list(&bstate->data.data_list, &data[bytes_parsed],
+                                                                          remaining_len, ualist, &res);
+      }
+      break;
       case VECTOR_BROKER_NULL:
       case VECTOR_BROKER_FETCH_CLIENT_LIST:
         // These messages have no data, so we are at the end of the PDU.
@@ -593,8 +674,12 @@ size_t parse_broker_block(BrokerState*       bstate,
       case VECTOR_BROKER_DISCONNECT:
         if (remaining_len >= DISCONNECT_DATA_SIZE)
         {
+          BrokerDisconnectMsg* dmsg = BROKER_GET_DISCONNECT_MSG(bmsg);
+          if (!RDMNET_ASSERT_VERIFY(dmsg))
+            return 0;
+
           const uint8_t* cur_ptr = &data[bytes_parsed];
-          BROKER_GET_DISCONNECT_MSG(bmsg)->disconnect_reason = (rdmnet_disconnect_reason_t)etcpal_unpack_u16b(cur_ptr);
+          dmsg->disconnect_reason = (rdmnet_disconnect_reason_t)etcpal_unpack_u16b(cur_ptr);
           cur_ptr += 2;
           next_layer_bytes_parsed = (size_t)(cur_ptr - &data[bytes_parsed]);
           res = kRCParseResFullBlockParseOk;
@@ -605,8 +690,13 @@ size_t parse_broker_block(BrokerState*       bstate,
         next_layer_bytes_parsed = consume_bad_block(&bstate->data.unknown, remaining_len, &res);
         break;
     }
-    RDMNET_ASSERT(next_layer_bytes_parsed <= remaining_len);
-    RDMNET_ASSERT(bstate->block.size_parsed + next_layer_bytes_parsed <= bstate->block.block_size);
+
+    if (!RDMNET_ASSERT_VERIFY(next_layer_bytes_parsed <= remaining_len) ||
+        !RDMNET_ASSERT_VERIFY(bstate->block.size_parsed + next_layer_bytes_parsed <= bstate->block.block_size))
+    {
+      return 0;
+    }
+
     bstate->block.size_parsed += next_layer_bytes_parsed;
     bytes_parsed += next_layer_bytes_parsed;
     res = check_for_full_parse(res, &bstate->block);
@@ -617,6 +707,9 @@ size_t parse_broker_block(BrokerState*       bstate,
 
 void parse_client_connect_header(const uint8_t* data, BrokerClientConnectMsg* ccmsg)
 {
+  if (!RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(ccmsg))
+    return;
+
   const uint8_t* cur_ptr = data;
 
   BROKER_CLIENT_CONNECT_MSG_SET_SCOPE(ccmsg, (const char*)cur_ptr);
@@ -634,6 +727,12 @@ size_t parse_client_connect(ClientConnectState*     ccstate,
                             BrokerClientConnectMsg* ccmsg,
                             rc_parse_result_t*      result)
 {
+  if (!RDMNET_ASSERT_VERIFY(ccstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(ccmsg) ||
+      !RDMNET_ASSERT_VERIFY(result))
+  {
+    return 0;
+  }
+
   rc_parse_result_t res = kRCParseResNoData;
   size_t            bytes_parsed = 0;
 
@@ -656,7 +755,10 @@ size_t parse_client_connect(ClientConnectState*     ccstate,
     size_t next_layer_bytes_parsed =
         parse_single_client_entry(&ccstate->entry, &data[bytes_parsed], data_len - bytes_parsed,
                                   &ccmsg->client_entry.client_protocol, &ccmsg->client_entry.data, &res);
-    RDMNET_ASSERT(next_layer_bytes_parsed <= (data_len - bytes_parsed));
+
+    if (!RDMNET_ASSERT_VERIFY(next_layer_bytes_parsed <= (data_len - bytes_parsed)))
+      return 0;
+
     bytes_parsed += next_layer_bytes_parsed;
   }
 
@@ -670,6 +772,12 @@ size_t parse_client_entry_update(ClientEntryUpdateState*     ceustate,
                                  BrokerClientEntryUpdateMsg* ceumsg,
                                  rc_parse_result_t*          result)
 {
+  if (!RDMNET_ASSERT_VERIFY(ceustate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(ceumsg) ||
+      !RDMNET_ASSERT_VERIFY(result))
+  {
+    return 0;
+  }
+
   rc_parse_result_t res = kRCParseResNoData;
   size_t            bytes_parsed = 0;
 
@@ -692,7 +800,10 @@ size_t parse_client_entry_update(ClientEntryUpdateState*     ceustate,
     size_t next_layer_bytes_parsed =
         parse_single_client_entry(&ceustate->entry, &data[bytes_parsed], data_len - bytes_parsed,
                                   &ceumsg->client_entry.client_protocol, &ceumsg->client_entry.data, &res);
-    RDMNET_ASSERT(next_layer_bytes_parsed <= (data_len - bytes_parsed));
+
+    if (!RDMNET_ASSERT_VERIFY(next_layer_bytes_parsed <= (data_len - bytes_parsed)))
+      return 0;
+
     bytes_parsed += next_layer_bytes_parsed;
   }
 
@@ -700,9 +811,13 @@ size_t parse_client_entry_update(ClientEntryUpdateState*     ceustate,
   return bytes_parsed;
 }
 
-#define GET_LENGTH_FROM_CENTRY_HEADER(dataptr) ACN_PDU_LENGTH(dataptr)
-#define GET_CLIENT_PROTOCOL_FROM_CENTRY_HEADER(dataptr) (client_protocol_t)(etcpal_unpack_u32b((dataptr) + 3))
-#define COPY_CID_FROM_CENTRY_HEADER(dataptr, cid) memcpy((cid)->data, (dataptr) + 7, ETCPAL_UUID_BYTES)
+#define GET_LENGTH_FROM_CENTRY_HEADER(dataptr) (RDMNET_ASSERT_VERIFY(dataptr) ? ACN_PDU_LENGTH(dataptr) : 0)
+#define GET_CLIENT_PROTOCOL_FROM_CENTRY_HEADER(dataptr) \
+  (RDMNET_ASSERT_VERIFY(dataptr) ? (client_protocol_t)(etcpal_unpack_u32b((dataptr) + 3)) : kClientProtocolUnknown)
+#define COPY_CID_FROM_CENTRY_HEADER(dataptr, cid)               \
+  ((RDMNET_ASSERT_VERIFY(dataptr) && RDMNET_ASSERT_VERIFY(cid)) \
+       ? memcpy((cid)->data, (dataptr) + 7, ETCPAL_UUID_BYTES)  \
+       : NULL)
 
 size_t parse_single_client_entry(ClientEntryState*  cstate,
                                  const uint8_t*     data,
@@ -711,6 +826,12 @@ size_t parse_single_client_entry(ClientEntryState*  cstate,
                                  ClientEntryUnion*  entry,
                                  rc_parse_result_t* result)
 {
+  if (!RDMNET_ASSERT_VERIFY(cstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(client_protocol) ||
+      !RDMNET_ASSERT_VERIFY(entry) || !RDMNET_ASSERT_VERIFY(result))
+  {
+    return 0;
+  }
+
   size_t            bytes_parsed = 0;
   rc_parse_result_t res = kRCParseResNoData;
 
@@ -800,6 +921,12 @@ size_t parse_client_list(ClientListState*   clstate,
                          BrokerClientList*  clist,
                          rc_parse_result_t* result)
 {
+  if (!RDMNET_ASSERT_VERIFY(clstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(clist) ||
+      !RDMNET_ASSERT_VERIFY(result))
+  {
+    return 0;
+  }
+
   rc_parse_result_t res = kRCParseResNoData;
   size_t            bytes_parsed = 0;
 
@@ -819,7 +946,11 @@ size_t parse_client_list(ClientListState*   clstate,
 
     if (clist->client_protocol == kClientProtocolRPT)
     {
-      bytes_parsed += parse_rpt_client_list(clstate, data, data_len, BROKER_GET_RPT_CLIENT_LIST(clist), &res);
+      RdmnetRptClientList* rclist = BROKER_GET_RPT_CLIENT_LIST(clist);
+      if (!RDMNET_ASSERT_VERIFY(rclist))
+        return 0;
+
+      bytes_parsed += parse_rpt_client_list(clstate, data, data_len, rclist, &res);
     }
     else if (clist->client_protocol == kClientProtocolEPT)
     {
@@ -843,6 +974,12 @@ size_t parse_rpt_client_list(ClientListState*     clstate,
                              RdmnetRptClientList* clist,
                              rc_parse_result_t*   result)
 {
+  if (!RDMNET_ASSERT_VERIFY(clstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(clist) ||
+      !RDMNET_ASSERT_VERIFY(result))
+  {
+    return 0;
+  }
+
   size_t            bytes_parsed = 0;
   rc_parse_result_t res = kRCParseResNoData;
 
@@ -884,6 +1021,9 @@ size_t parse_rpt_client_list(ClientListState*     clstate,
     }
     else
     {
+      if (!RDMNET_ASSERT_VERIFY(clist->client_entries))
+        return 0;
+
       next_entry = &clist->client_entries[clist->num_client_entries - 1];
     }
 
@@ -895,8 +1035,12 @@ size_t parse_rpt_client_list(ClientListState*     clstate,
                                                                  (ClientEntryUnion*)next_entry, &res);
 
       // Check and advance the buffer pointers
-      RDMNET_ASSERT(next_layer_bytes_parsed <= remaining_len);
-      RDMNET_ASSERT(clstate->block.size_parsed + next_layer_bytes_parsed <= clstate->block.block_size);
+      if (!RDMNET_ASSERT_VERIFY(next_layer_bytes_parsed <= remaining_len) ||
+          !RDMNET_ASSERT_VERIFY(clstate->block.size_parsed + next_layer_bytes_parsed <= clstate->block.block_size))
+      {
+        return 0;
+      }
+
       bytes_parsed += next_layer_bytes_parsed;
       clstate->block.size_parsed += next_layer_bytes_parsed;
 
@@ -932,6 +1076,9 @@ size_t parse_rpt_client_list(ClientListState*     clstate,
 
 RdmnetRptClientEntry* alloc_next_rpt_client_entry(RdmnetRptClientList* clist)
 {
+  if (!RDMNET_ASSERT_VERIFY(clist))
+    return NULL;
+
   if (clist->client_entries)
   {
     RdmnetRptClientEntry* new_arr = REALLOC_RPT_CLIENT_ENTRY(clist->client_entries, clist->num_client_entries + 1);
@@ -957,6 +1104,9 @@ RdmnetRptClientEntry* alloc_next_rpt_client_entry(RdmnetRptClientList* clist)
 #if 0
 RdmnetEptClientEntry* alloc_next_ept_client_entry(RdmnetEptClientList* clist)
 {
+  if (!RDMNET_ASSERT_VERIFY(clist))
+    return NULL;
+
   if (clist->client_entries)
   {
     RdmnetEptClientEntry* new_arr = REALLOC_EPT_CLIENT_ENTRY(clist->client_entries, clist->num_client_entries + 1);
@@ -987,6 +1137,12 @@ size_t parse_request_dynamic_uid_assignment(GenericListState*            lstate,
                                             rc_parse_result_t*           result)
 {
   ETCPAL_UNUSED_ARG(rdmnet_log_params);
+
+  if (!RDMNET_ASSERT_VERIFY(lstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(rlist) ||
+      !RDMNET_ASSERT_VERIFY(result))
+  {
+    return 0;
+  }
 
   size_t            bytes_parsed = 0;
   rc_parse_result_t res = kRCParseResNoData;
@@ -1045,6 +1201,12 @@ size_t parse_dynamic_uid_assignment_list(GenericListState*               lstate,
                                          rc_parse_result_t*              result)
 {
   ETCPAL_UNUSED_ARG(rdmnet_log_params);
+
+  if (!RDMNET_ASSERT_VERIFY(lstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(alist) ||
+      !RDMNET_ASSERT_VERIFY(result))
+  {
+    return 0;
+  }
 
   size_t            bytes_parsed = 0;
   rc_parse_result_t res = kRCParseResNoData;
@@ -1110,6 +1272,12 @@ size_t parse_fetch_dynamic_uid_assignment_list(GenericListState*             lst
                                                BrokerFetchUidAssignmentList* alist,
                                                rc_parse_result_t*            result)
 {
+  if (!RDMNET_ASSERT_VERIFY(lstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(alist) ||
+      !RDMNET_ASSERT_VERIFY(result))
+  {
+    return 0;
+  }
+
   size_t            bytes_parsed = 0;
   rc_parse_result_t res = kRCParseResNoData;
 
@@ -1164,6 +1332,9 @@ size_t parse_fetch_dynamic_uid_assignment_list(GenericListState*             lst
 
 void initialize_rpt_message(RptState* rstate, RptMessage* rmsg, size_t pdu_data_len)
 {
+  if (!RDMNET_ASSERT_VERIFY(rstate) || !RDMNET_ASSERT_VERIFY(rmsg))
+    return;
+
   switch (rmsg->vector)
   {
     case VECTOR_RPT_REQUEST:
@@ -1208,6 +1379,12 @@ size_t parse_rpt_block(RptState*          rstate,
                        RptMessage*        rmsg,
                        rc_parse_result_t* result)
 {
+  if (!RDMNET_ASSERT_VERIFY(rstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(rmsg) ||
+      !RDMNET_ASSERT_VERIFY(result))
+  {
+    return 0;
+  }
+
   size_t            bytes_parsed = 0;
   rc_parse_result_t res = kRCParseResNoData;
 
@@ -1277,20 +1454,35 @@ size_t parse_rpt_block(RptState*          rstate,
     switch (rmsg->vector)
     {
       case VECTOR_RPT_REQUEST:
-      case VECTOR_RPT_NOTIFICATION:
-        next_layer_bytes_parsed = parse_rdm_list(&rstate->data.rdm_list, &data[bytes_parsed], remaining_len,
-                                                 RPT_GET_RDM_BUF_LIST(rmsg), &res);
-        break;
-      case VECTOR_RPT_STATUS:
+      case VECTOR_RPT_NOTIFICATION: {
+        RptRdmBufList* cmd_list = RPT_GET_RDM_BUF_LIST(rmsg);
+        if (!RDMNET_ASSERT_VERIFY(cmd_list))
+          return 0;
+
         next_layer_bytes_parsed =
-            parse_rpt_status(&rstate->data.status, &data[bytes_parsed], remaining_len, RPT_GET_STATUS_MSG(rmsg), &res);
-        break;
+            parse_rdm_list(&rstate->data.rdm_list, &data[bytes_parsed], remaining_len, cmd_list, &res);
+      }
+      break;
+      case VECTOR_RPT_STATUS: {
+        RptStatusMsg* smsg = RPT_GET_STATUS_MSG(rmsg);
+        if (!RDMNET_ASSERT_VERIFY(smsg))
+          return 0;
+
+        next_layer_bytes_parsed =
+            parse_rpt_status(&rstate->data.status, &data[bytes_parsed], remaining_len, smsg, &res);
+      }
+      break;
       default:
         // Unknown RPT vector - discard this RPT PDU.
         next_layer_bytes_parsed = consume_bad_block(&rstate->data.unknown, remaining_len, &res);
     }
-    RDMNET_ASSERT(next_layer_bytes_parsed <= remaining_len);
-    RDMNET_ASSERT(rstate->block.size_parsed + next_layer_bytes_parsed <= rstate->block.block_size);
+
+    if (!RDMNET_ASSERT_VERIFY(next_layer_bytes_parsed <= remaining_len) ||
+        !RDMNET_ASSERT_VERIFY(rstate->block.size_parsed + next_layer_bytes_parsed <= rstate->block.block_size))
+    {
+      return 0;
+    }
+
     rstate->block.size_parsed += next_layer_bytes_parsed;
     bytes_parsed += next_layer_bytes_parsed;
     res = check_for_full_parse(res, &rstate->block);
@@ -1305,6 +1497,12 @@ size_t parse_rdm_list(RdmListState*      rlstate,
                       RptRdmBufList*     cmd_list,
                       rc_parse_result_t* result)
 {
+  if (!RDMNET_ASSERT_VERIFY(rlstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(cmd_list) ||
+      !RDMNET_ASSERT_VERIFY(result))
+  {
+    return 0;
+  }
+
   rc_parse_result_t res = kRCParseResNoData;
   size_t            bytes_parsed = 0;
 
@@ -1411,6 +1609,12 @@ size_t parse_rpt_status(RptStatusState*    rsstate,
                         RptStatusMsg*      smsg,
                         rc_parse_result_t* result)
 {
+  if (!RDMNET_ASSERT_VERIFY(rsstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(smsg) ||
+      !RDMNET_ASSERT_VERIFY(result))
+  {
+    return 0;
+  }
+
   rc_parse_result_t res = kRCParseResNoData;
   size_t            bytes_parsed = 0;
 
@@ -1526,6 +1730,9 @@ size_t parse_rpt_status(RptStatusState*    rsstate,
 
 size_t locate_tcp_preamble(RCMsgBuf* msg_buf)
 {
+  if (!RDMNET_ASSERT_VERIFY(msg_buf))
+    return 0;
+
   if (msg_buf->cur_data_size < ACN_TCP_PREAMBLE_SIZE)
     return 0;
 
@@ -1557,6 +1764,9 @@ size_t locate_tcp_preamble(RCMsgBuf* msg_buf)
 
 size_t consume_bad_block(PduBlockState* block, size_t data_len, rc_parse_result_t* parse_res)
 {
+  if (!RDMNET_ASSERT_VERIFY(block) || !RDMNET_ASSERT_VERIFY(parse_res))
+    return 0;
+
   size_t size_remaining = block->block_size - block->size_parsed;
   if (data_len >= size_remaining)
   {
@@ -1575,7 +1785,11 @@ size_t consume_bad_block(PduBlockState* block, size_t data_len, rc_parse_result_
 
 rc_parse_result_t check_for_full_parse(rc_parse_result_t prev_res, PduBlockState* block)
 {
+  if (!RDMNET_ASSERT_VERIFY(block))
+    return prev_res;
+
   rc_parse_result_t res = prev_res;
+
   switch (prev_res)
   {
     case kRCParseResFullBlockParseOk:

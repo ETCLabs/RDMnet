@@ -67,7 +67,7 @@ typedef struct RdmnetRdmCommand
 } RdmnetRdmCommand;
 
 /** Whether an RdmnetRdmCommand is addressed to the default responder. */
-#define RDMNET_COMMAND_IS_TO_DEFAULT_RESPONDER(cmd_ptr) ((cmd_ptr)->dest_endpoint == E133_NULL_ENDPOINT)
+#define RDMNET_COMMAND_IS_TO_DEFAULT_RESPONDER(cmd_ptr) ((cmd_ptr) && ((cmd_ptr)->dest_endpoint == E133_NULL_ENDPOINT))
 
 /** An RDM command received by this component and saved for a later response. */
 typedef struct RdmnetSavedRdmCommand
@@ -178,7 +178,7 @@ typedef struct RdmnetSavedRdmResponse
  *
  * @param resp Pointer to RdmnetRdmResponse or RdmnetSavedRdmResponse to inspect.
  */
-#define RDMNET_RESP_ORIGINAL_COMMAND_INCLUDED(resp) ((resp)->seq_num == 0)
+#define RDMNET_RESP_ORIGINAL_COMMAND_INCLUDED(resp) ((resp) && ((resp)->seq_num == 0))
 
 /**
  * @}

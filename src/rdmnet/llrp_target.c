@@ -27,10 +27,15 @@
 
 /***************************** Private macros ********************************/
 
-#define GET_ENCOMPASSING_TARGET(target_ptr) (LlrpTarget*)((char*)(target_ptr)-offsetof(LlrpTarget, rc_target))
+#define GET_ENCOMPASSING_TARGET(target_ptr) \
+  (RDMNET_ASSERT_VERIFY(target_ptr) ? (LlrpTarget*)((char*)(target_ptr)-offsetof(LlrpTarget, rc_target)) : NULL)
 
-#define TARGET_LOCK(target_ptr) etcpal_mutex_lock(&(target_ptr)->lock)
-#define TARGET_UNLOCK(target_ptr) etcpal_mutex_unlock(&(target_ptr)->lock)
+#define TARGET_LOCK(target_ptr) (RDMNET_ASSERT_VERIFY(target_ptr) && etcpal_mutex_lock(&(target_ptr)->lock))
+#define TARGET_UNLOCK(target_ptr)             \
+  if (RDMNET_ASSERT_VERIFY(target_ptr))       \
+  {                                           \
+    etcpal_mutex_unlock(&(target_ptr)->lock); \
+  }
 
 /*********************** Private function prototypes *************************/
 
@@ -128,10 +133,13 @@ etcpal_error_t llrp_target_create(const LlrpTargetConfig* config, llrp_target_t*
  */
 etcpal_error_t llrp_target_destroy(llrp_target_t handle)
 {
-  LlrpTarget*    target;
+  LlrpTarget*    target = NULL;
   etcpal_error_t res = get_target(handle, &target);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(target))
+    return kEtcPalErrSys;
 
   rc_llrp_target_unregister(&target->rc_target);
   rdmnet_unregister_struct_instance(target);
@@ -157,10 +165,16 @@ etcpal_error_t llrp_target_send_ack(llrp_target_t              handle,
                                     const uint8_t*             response_data,
                                     uint8_t                    response_data_len)
 {
-  LlrpTarget*    target;
+  if (!received_cmd)
+    return kEtcPalErrInvalid;
+
+  LlrpTarget*    target = NULL;
   etcpal_error_t res = get_target(handle, &target);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(target))
+    return kEtcPalErrSys;
 
   res = rc_llrp_target_send_ack(&target->rc_target, received_cmd, response_data, response_data_len);
   release_target(target);
@@ -183,10 +197,16 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t              handle,
                                      const LlrpSavedRdmCommand* received_cmd,
                                      rdm_nack_reason_t          nack_reason)
 {
-  LlrpTarget*    target;
+  if (!received_cmd)
+    return kEtcPalErrInvalid;
+
+  LlrpTarget*    target = NULL;
   etcpal_error_t res = get_target(handle, &target);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(target))
+    return kEtcPalErrSys;
 
   res = rc_llrp_target_send_nack(&target->rc_target, received_cmd, nack_reason);
   release_target(target);
@@ -195,6 +215,9 @@ etcpal_error_t llrp_target_send_nack(llrp_target_t              handle,
 
 etcpal_error_t validate_llrp_target_config(const LlrpTargetConfig* config)
 {
+  if (!RDMNET_ASSERT_VERIFY(config))
+    return kEtcPalErrSys;
+
   if (ETCPAL_UUID_IS_NULL(&config->cid) || !config->callbacks.rdm_command_received ||
       (!RDMNET_UID_IS_DYNAMIC_UID_REQUEST(&config->uid) && (config->uid.manu & 0x8000)))
   {
@@ -205,6 +228,9 @@ etcpal_error_t validate_llrp_target_config(const LlrpTargetConfig* config)
 
 etcpal_error_t create_new_target(const LlrpTargetConfig* config, llrp_target_t* handle)
 {
+  if (!RDMNET_ASSERT_VERIFY(config) || !RDMNET_ASSERT_VERIFY(handle))
+    return kEtcPalErrSys;
+
   etcpal_error_t res = kEtcPalErrNoMem;
 
   LlrpTarget* new_target = rdmnet_alloc_llrp_target_instance();
@@ -233,6 +259,9 @@ etcpal_error_t create_new_target(const LlrpTargetConfig* config, llrp_target_t* 
 
 etcpal_error_t get_target(llrp_target_t handle, LlrpTarget** target)
 {
+  if (!RDMNET_ASSERT_VERIFY(target))
+    return kEtcPalErrSys;
+
   if (handle == LLRP_TARGET_INVALID)
     return kEtcPalErrInvalid;
   if (!rc_initialized())
@@ -259,6 +288,9 @@ etcpal_error_t get_target(llrp_target_t handle, LlrpTarget** target)
 
 void release_target(LlrpTarget* target)
 {
+  if (!RDMNET_ASSERT_VERIFY(target))
+    return;
+
   TARGET_UNLOCK(target);
   rdmnet_readunlock();
 }
@@ -267,15 +299,25 @@ void handle_rdm_command_received(RCLlrpTarget*                rc_target,
                                  const LlrpRdmCommand*        cmd,
                                  RCLlrpTargetSyncRdmResponse* response)
 {
-  RDMNET_ASSERT(rc_target);
+  if (!RDMNET_ASSERT_VERIFY(rc_target) || !RDMNET_ASSERT_VERIFY(cmd) || !RDMNET_ASSERT_VERIFY(response))
+    return;
+
   LlrpTarget* target = GET_ENCOMPASSING_TARGET(rc_target);
+  if (!RDMNET_ASSERT_VERIFY(target))
+    return;
+
   target->callbacks.rdm_command_received(target->id.handle, cmd, &response->resp, target->callbacks.context);
   response->response_buf = target->response_buf;
 }
 
 void handle_target_destroyed(RCLlrpTarget* rc_target)
 {
-  RDMNET_ASSERT(rc_target);
+  if (!RDMNET_ASSERT_VERIFY(rc_target))
+    return;
+
   LlrpTarget* target = GET_ENCOMPASSING_TARGET(rc_target);
+  if (!RDMNET_ASSERT_VERIFY(target))
+    return;
+
   rdmnet_free_struct_instance(target);
 }

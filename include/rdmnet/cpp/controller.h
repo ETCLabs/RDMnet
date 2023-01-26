@@ -417,7 +417,7 @@ extern "C" inline void ControllerLibCbRdmCommandReceived(rdmnet_controller_t    
                                                          RdmnetSyncRdmResponse*  response,
                                                          void*                   context)
 {
-  if (cmd && context)
+  if (cmd && response && context)
   {
     *response = static_cast<Controller::RdmCommandHandler*>(context)
                     ->HandleRdmCommand(Controller::Handle(controller_handle), ScopeHandle(scope_handle), *cmd)
@@ -430,7 +430,7 @@ extern "C" inline void ControllerLibCbLlrpRdmCommandReceived(rdmnet_controller_t
                                                              RdmnetSyncRdmResponse* response,
                                                              void*                  context)
 {
-  if (cmd && context)
+  if (cmd && response && context)
   {
     *response = static_cast<Controller::RdmCommandHandler*>(context)
                     ->HandleLlrpRdmCommand(Controller::Handle(controller_handle), *cmd)
@@ -470,13 +470,19 @@ inline Controller::RdmData::RdmData(uint16_t    new_model_id,
                                     const char* new_device_model_description,
                                     const char* new_software_version_label,
                                     const char* new_device_label)
-    : model_id(new_model_id)
-    , software_version_id(new_software_version_id)
-    , manufacturer_label(new_manufacturer_label)
-    , device_model_description(new_device_model_description)
-    , software_version_label(new_software_version_label)
-    , device_label(new_device_label)
+    : model_id(new_model_id), software_version_id(new_software_version_id)
 {
+  if (new_manufacturer_label)
+    manufacturer_label = std::string(new_manufacturer_label);
+
+  if (new_device_model_description)
+    device_model_description = std::string(new_device_model_description);
+
+  if (new_software_version_label)
+    software_version_label = std::string(new_software_version_label);
+
+  if (new_device_label)
+    device_label = std::string(new_device_label);
 }
 
 /// Create a controller RdmData instance by passing all members which do not have a default value.
@@ -662,9 +668,12 @@ inline void Controller::Shutdown(rdmnet_disconnect_reason_t disconnect_reason)
 /// @param static_broker_addr [optional] A static IP address and port at which to connect to the
 ///                           broker for this scope.
 /// @return On success, a handle to the new scope, to be used with subsequent API calls.
-/// @return On failure, error codes from rdmnet_controller_add_scope().
+/// @return On failure, error codes from rdmnet_controller_add_scope(), or #kEtcPalErrInvalid on invalid parameter.
 inline etcpal::Expected<ScopeHandle> Controller::AddScope(const char* id, const etcpal::SockAddr& static_broker_addr)
 {
+  if (!id)
+    return kEtcPalErrInvalid;
+
   RdmnetScopeConfig     scope_config = {id, static_broker_addr.get()};
   rdmnet_client_scope_t scope_handle;
   auto                  result = rdmnet_controller_add_scope(handle_.value(), &scope_config, &scope_handle);
@@ -752,6 +761,9 @@ inline etcpal::Error Controller::ChangeScope(ScopeHandle                scope_ha
                                              rdmnet_disconnect_reason_t disconnect_reason,
                                              const etcpal::SockAddr&    new_static_broker_addr)
 {
+  if (!new_scope_id_str)
+    return kEtcPalErrInvalid;
+
   RdmnetScopeConfig new_scope_config = {new_scope_id_str, new_static_broker_addr.get()};
   return rdmnet_controller_change_scope(handle_.value(), scope_handle.value(), &new_scope_config, disconnect_reason);
 }
@@ -792,6 +804,9 @@ inline etcpal::Error Controller::ChangeScope(ScopeHandle                scope_ha
 inline etcpal::Error Controller::ChangeSearchDomain(const char*                new_search_domain,
                                                     rdmnet_disconnect_reason_t disconnect_reason)
 {
+  if (!new_search_domain)
+    return kEtcPalErrInvalid;
+
   return rdmnet_controller_change_search_domain(handle_.value(), new_search_domain, disconnect_reason);
 }
 
@@ -897,10 +912,10 @@ inline etcpal::Error Controller::RequestClientList(ScopeHandle scope_handle)
 /// @param uids List of dynamic UIDs for which to request the corresponding responder ID.
 /// @param num_uids Size of the uids array.
 /// @return etcpal::Error::Ok(): Request sent successfully.
-/// @return Error codes from rdmnet_controller_request_responder_ids().
+/// @return Error codes from rdmnet_controller_request_responder_ids(), or #kEtcPalErrInvalid on invalid parameter.
 inline etcpal::Error Controller::RequestResponderIds(ScopeHandle scope_handle, const rdm::Uid* uids, size_t num_uids)
 {
-  if (num_uids == 0)
+  if (!uids || (num_uids == 0))
     return kEtcPalErrInvalid;
 
   std::vector<RdmUid> c_uids;
@@ -986,8 +1001,8 @@ inline etcpal::Error Controller::SendRdmNack(ScopeHandle            scope_handle
 ///
 /// @param scope_handle Handle to the scope on which to send the RDM update.
 /// @param param_id The RDM parameter ID that has been updated.
-/// @param data The updated parameter data, if any.
-/// @param data_len The length of the parameter data, if any.
+/// @param data [optional] The updated parameter data, if any.
+/// @param data_len [optional] The length of the parameter data, if any.
 /// @return etcpal::Error::Ok(): RDM update sent successfully.
 /// @return Error codes from rdmnet_controller_send_rdm_update().
 inline etcpal::Error Controller::SendRdmUpdate(ScopeHandle    scope_handle,

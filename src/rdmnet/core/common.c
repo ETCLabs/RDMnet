@@ -141,7 +141,9 @@ etcpal_error_t rc_init(const EtcPalLogParams* log_params, const RdmnetNetintConf
   etcpal_error_t res = kEtcPalErrOk;
   for (RdmnetCoreModule* module = modules; module < modules + NUM_RDMNET_CORE_MODULES; ++module)
   {
-    RDMNET_ASSERT(module->init_fn || module->netint_init_fn);
+    if (!RDMNET_ASSERT_VERIFY(module->init_fn || module->netint_init_fn))
+      return kEtcPalErrSys;
+
     if (module->init_fn)
       res = module->init_fn();
     else
@@ -164,7 +166,9 @@ etcpal_error_t rc_init(const EtcPalLogParams* log_params, const RdmnetNetintConf
     // Clean up in reverse order of initialization.
     for (RdmnetCoreModule* module = modules; module < modules + NUM_RDMNET_CORE_MODULES; ++module)
     {
-      RDMNET_ASSERT(module->deinit_fn);
+      if (!RDMNET_ASSERT_VERIFY(module->deinit_fn))
+        return kEtcPalErrSys;
+
       if (module->initted)
       {
         module->deinit_fn();
@@ -192,7 +196,9 @@ void rc_deinit(void)
     {
       for (RdmnetCoreModule* module = &modules[NUM_RDMNET_CORE_MODULES - 1]; module >= modules; --module)
       {
-        RDMNET_ASSERT(module->deinit_fn);
+        if (!RDMNET_ASSERT_VERIFY(module->deinit_fn))
+          return;
+
         module->deinit_fn();
         module->initted = false;
       }
@@ -212,11 +218,17 @@ bool rc_initialized(void)
 
 etcpal_error_t rc_add_polled_socket(etcpal_socket_t socket, etcpal_poll_events_t events, RCPolledSocketInfo* info)
 {
+  if (!RDMNET_ASSERT_VERIFY(info))
+    return kEtcPalErrSys;
+
   return etcpal_poll_add_socket(&core_state.poll_context, socket, events, info);
 }
 
 etcpal_error_t rc_modify_polled_socket(etcpal_socket_t socket, etcpal_poll_events_t events, RCPolledSocketInfo* info)
 {
+  if (!RDMNET_ASSERT_VERIFY(info))
+    return kEtcPalErrSys;
+
   return etcpal_poll_modify_socket(&core_state.poll_context, socket, events, info);
 }
 
@@ -231,6 +243,9 @@ void rc_remove_polled_socket(etcpal_socket_t socket)
  */
 int rc_send(etcpal_socket_t id, const void* message, size_t length, int flags)
 {
+  if (!RDMNET_ASSERT_VERIFY(message))
+    return (int)kEtcPalErrSys;
+
   int res = etcpal_send(id, message, length, flags);
   while ((etcpal_error_t)res == kEtcPalErrWouldBlock)
   {
@@ -255,7 +270,10 @@ void rc_tick(void)
   {
     RCPolledSocketInfo* info = (RCPolledSocketInfo*)event.user_data;
     if (info)
-      info->callback(&event, info->data);
+    {
+      if (RDMNET_ASSERT_VERIFY(info->callback))
+        info->callback(&event, info->data);
+    }
   }
   else if (poll_res != kEtcPalErrTimedOut)
   {
@@ -296,6 +314,20 @@ bool rdmnet_writelock(void)
 void rdmnet_writeunlock(void)
 {
   etcpal_rwlock_writeunlock(&rdmnet_lock);
+}
+
+bool rdmnet_assert_verify_fail(const char* exp, const char* file, const char* func, const int line)
+{
+#if !RDMNET_LOGGING_ENABLED
+  ETCPAL_UNUSED_ARG(exp);
+  ETCPAL_UNUSED_ARG(file);
+  ETCPAL_UNUSED_ARG(func);
+  ETCPAL_UNUSED_ARG(line);
+#endif
+  RDMNET_LOG_CRIT("ASSERTION \"%s\" FAILED (FILE: \"%s\" FUNCTION: \"%s\" LINE: %d)", exp ? exp : "", file ? file : "",
+                  func ? func : "", line);
+  RDMNET_ASSERT(false);
+  return false;
 }
 
 etcpal_error_t init_etcpal_dependencies(void)

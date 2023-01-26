@@ -10,11 +10,13 @@ add_executable(test_discovery_bonjour
   ${RDMNET_SRC}/rdmnet_mock/core/common.c
 )
 target_include_directories(test_discovery_bonjour PRIVATE
+  ${UNIT_TEST_DIR}/shared/configs/dynamic
   ${UNIT_TEST_DIR}/shared
   ${RDMNET_INCLUDE}
   ${RDMNET_SRC}
   ${RDMNET_DISC_PLATFORM_INCLUDE_DIRS}
 )
+target_compile_definitions(test_discovery_bonjour PRIVATE RDMNET_HAVE_CONFIG_H)
 target_link_libraries(test_discovery_bonjour PRIVATE
   ${RDMNET_BONJOUR_MOCK_LIB}
   EtcPalMock

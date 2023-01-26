@@ -128,8 +128,14 @@ void rc_llrp_module_deinit(void)
 
 etcpal_error_t rc_llrp_recv_netint_add(const EtcPalMcastNetintId* id, llrp_socket_t llrp_type)
 {
+  if (!RDMNET_ASSERT_VERIFY(id))
+    return kEtcPalErrSys;
+
   etcpal_error_t  res = kEtcPalErrNotFound;
   LlrpRecvSocket* recv_sock = get_llrp_recv_sock(llrp_type, id->ip_type);
+  if (!RDMNET_ASSERT_VERIFY(recv_sock) || !RDMNET_ASSERT_VERIFY(recv_sock->netints))
+    return kEtcPalErrSys;
+
   LlrpRecvNetint* netint = recv_sock->netints;
 
   // Find the requested network interface in the list
@@ -170,7 +176,13 @@ etcpal_error_t rc_llrp_recv_netint_add(const EtcPalMcastNetintId* id, llrp_socke
 
 void rc_llrp_recv_netint_remove(const EtcPalMcastNetintId* id, llrp_socket_t llrp_type)
 {
+  if (!RDMNET_ASSERT_VERIFY(id))
+    return;
+
   LlrpRecvSocket* recv_sock = get_llrp_recv_sock(llrp_type, id->ip_type);
+  if (!RDMNET_ASSERT_VERIFY(recv_sock) || !RDMNET_ASSERT_VERIFY(recv_sock->netints))
+    return;
+
   LlrpRecvNetint* netint = recv_sock->netints;
 
   // Find the requested network interface in the list
@@ -191,14 +203,20 @@ void rc_llrp_recv_netint_remove(const EtcPalMcastNetintId* id, llrp_socket_t llr
 
 void init_recv_socket(LlrpRecvSocket* sock_struct, llrp_socket_t llrp_type)
 {
+  if (!RDMNET_ASSERT_VERIFY(sock_struct))
+    return;
+
   // Initialize the network interface array from the global multicast network interface array.
-  const EtcPalMcastNetintId* mcast_array;
+  const EtcPalMcastNetintId* mcast_array = NULL;
   size_t                     array_size = rc_mcast_get_netint_array(&mcast_array);
+  if (!RDMNET_ASSERT_VERIFY(mcast_array))
+    return;
 
   sock_struct->num_netints = array_size;
 #if RDMNET_DYNAMIC_MEM
   sock_struct->netints = (LlrpRecvNetint*)calloc(sock_struct->num_netints, sizeof(LlrpRecvNetint));
-  RDMNET_ASSERT(sock_struct->netints);
+  if (!sock_struct->netints)
+    return;  // Out of memory
 #endif
 
   for (size_t i = 0; i < array_size; ++i)
@@ -215,6 +233,9 @@ void init_recv_socket(LlrpRecvSocket* sock_struct, llrp_socket_t llrp_type)
 
 void deinit_recv_socket(LlrpRecvSocket* sock_struct)
 {
+  if (!RDMNET_ASSERT_VERIFY(sock_struct) || !RDMNET_ASSERT_VERIFY(sock_struct->netints))
+    return;
+
   if (sock_struct->created)
   {
     for (LlrpRecvNetint* netint = sock_struct->netints; netint < sock_struct->netints + sock_struct->num_netints;
@@ -239,6 +260,9 @@ void deinit_recv_socket(LlrpRecvSocket* sock_struct)
 
 etcpal_error_t create_recv_socket(llrp_socket_t llrp_type, etcpal_iptype_t ip_type, LlrpRecvSocket* sock_struct)
 {
+  if (!RDMNET_ASSERT_VERIFY(sock_struct))
+    return kEtcPalErrSys;
+
   etcpal_error_t res =
       rc_mcast_create_recv_socket(get_llrp_mcast_addr(llrp_type, ip_type), LLRP_PORT, &sock_struct->socket);
 
@@ -263,6 +287,9 @@ etcpal_error_t create_recv_socket(llrp_socket_t llrp_type, etcpal_iptype_t ip_ty
 
 void llrp_socket_activity(const EtcPalPollEvent* event, RCPolledSocketOpaqueData data)
 {
+  if (!RDMNET_ASSERT_VERIFY(event))
+    return;
+
   static uint8_t llrp_recv_buf[LLRP_MAX_MESSAGE_SIZE];
 
   if (event->events & ETCPAL_POLL_ERR)

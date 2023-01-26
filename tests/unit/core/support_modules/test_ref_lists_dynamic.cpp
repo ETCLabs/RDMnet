@@ -41,11 +41,11 @@ protected:
   }
   void TearDown() override { rc_ref_lists_cleanup(&test_refs); }
 
-  void AddRefsZeroThroughTwo(RCRefList* list)
+  void AddRefsOneThroughThree(RCRefList* list)
   {
-    ASSERT_TRUE(rc_ref_list_add_ref(list, reinterpret_cast<void*>(0)));
     ASSERT_TRUE(rc_ref_list_add_ref(list, reinterpret_cast<void*>(1)));
     ASSERT_TRUE(rc_ref_list_add_ref(list, reinterpret_cast<void*>(2)));
+    ASSERT_TRUE(rc_ref_list_add_ref(list, reinterpret_cast<void*>(3)));
   }
 };
 
@@ -53,49 +53,49 @@ TEST_F(TestRefLists, AddRefWorks)
 {
   for (size_t i = 0; i < 50; ++i)
   {
-    void* ref = reinterpret_cast<void*>(i);
+    void* ref = reinterpret_cast<void*>(i + 1);
     ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.pending, ref)) << "Failed on iteration " << i;
   }
 
   EXPECT_EQ(test_refs.pending.num_refs, 50u);
   for (size_t i = 0; i < 50; ++i)
   {
-    EXPECT_EQ(test_refs.pending.refs[i], reinterpret_cast<void*>(i));
+    EXPECT_EQ(test_refs.pending.refs[i], reinterpret_cast<void*>(i + 1));
   }
 }
 
 TEST_F(TestRefLists, RemoveRefWorks)
 {
-  AddRefsZeroThroughTwo(&test_refs.pending);
+  AddRefsOneThroughThree(&test_refs.pending);
 
-  // Remove ref 1
-  rc_ref_list_remove_ref(&test_refs.pending, reinterpret_cast<void*>(1));
+  // Remove ref 2
+  rc_ref_list_remove_ref(&test_refs.pending, reinterpret_cast<void*>(2));
 
   EXPECT_EQ(test_refs.pending.num_refs, 2u);
-  EXPECT_EQ(test_refs.pending.refs[0], reinterpret_cast<void*>(0));
-  EXPECT_EQ(test_refs.pending.refs[1], reinterpret_cast<void*>(2));
+  EXPECT_EQ(test_refs.pending.refs[0], reinterpret_cast<void*>(1));
+  EXPECT_EQ(test_refs.pending.refs[1], reinterpret_cast<void*>(3));
 }
 
 TEST_F(TestRefLists, FindRefIndexWhenElementExists)
 {
-  AddRefsZeroThroughTwo(&test_refs.active);
+  AddRefsOneThroughThree(&test_refs.active);
 
-  EXPECT_EQ(rc_ref_list_find_ref_index(&test_refs.active, reinterpret_cast<void*>(2)), 2);
+  EXPECT_EQ(rc_ref_list_find_ref_index(&test_refs.active, reinterpret_cast<void*>(3)), 2);
 }
 
 TEST_F(TestRefLists, FindRefIndexWhenElementDoesNotExist)
 {
-  AddRefsZeroThroughTwo(&test_refs.to_remove);
+  AddRefsOneThroughThree(&test_refs.to_remove);
 
-  EXPECT_EQ(rc_ref_list_find_ref_index(&test_refs.to_remove, reinterpret_cast<void*>(3)), -1);
+  EXPECT_EQ(rc_ref_list_find_ref_index(&test_refs.to_remove, reinterpret_cast<void*>(4)), -1);
 }
 
 TEST_F(TestRefLists, FindRefWhenElementExists)
 {
-#define FIND_REF_WORKS_REF_TO_FIND reinterpret_cast<void*>(1)
+#define FIND_REF_WORKS_REF_TO_FIND reinterpret_cast<void*>(2)
 #define FIND_REF_WORKS_CONTEXT_PTR reinterpret_cast<const void*>(20)
 
-  AddRefsZeroThroughTwo(&test_refs.pending);
+  AddRefsOneThroughThree(&test_refs.pending);
 
   ref_predicate_fake.custom_fake = [](void* ref, const void* context) {
     EXPECT_EQ(context, FIND_REF_WORKS_CONTEXT_PTR);
@@ -110,7 +110,7 @@ TEST_F(TestRefLists, FindRefWhenElementExists)
 
 TEST_F(TestRefLists, FindRefWhenElementDoesNotExist)
 {
-  AddRefsZeroThroughTwo(&test_refs.pending);
+  AddRefsOneThroughThree(&test_refs.pending);
 
   ref_predicate_fake.custom_fake = [](void* /*ref*/, const void* context) {
     EXPECT_EQ(context, FIND_REF_WORKS_CONTEXT_PTR);
@@ -122,7 +122,7 @@ TEST_F(TestRefLists, FindRefWhenElementDoesNotExist)
 
 TEST_F(TestRefLists, AddPendingRefsWorks)
 {
-  AddRefsZeroThroughTwo(&test_refs.pending);
+  AddRefsOneThroughThree(&test_refs.pending);
 
   EXPECT_EQ(test_refs.pending.num_refs, 3u);
 
@@ -130,22 +130,22 @@ TEST_F(TestRefLists, AddPendingRefsWorks)
 
   EXPECT_EQ(test_refs.pending.num_refs, 0u);
   EXPECT_EQ(test_refs.active.num_refs, 3u);
-  EXPECT_EQ(test_refs.active.refs[0], reinterpret_cast<void*>(0));
-  EXPECT_EQ(test_refs.active.refs[1], reinterpret_cast<void*>(1));
-  EXPECT_EQ(test_refs.active.refs[2], reinterpret_cast<void*>(2));
+  EXPECT_EQ(test_refs.active.refs[0], reinterpret_cast<void*>(1));
+  EXPECT_EQ(test_refs.active.refs[1], reinterpret_cast<void*>(2));
+  EXPECT_EQ(test_refs.active.refs[2], reinterpret_cast<void*>(3));
 }
 
 #define DESTROY_MARKED_REFS_CONTEXT_PTR reinterpret_cast<const void*>(30)
 
 TEST_F(TestRefLists, RemoveMarkedRefFromOneElementPending)
 {
-  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.pending, reinterpret_cast<void*>(0)));
-  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.to_remove, reinterpret_cast<void*>(0)));
+  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.pending, reinterpret_cast<void*>(1)));
+  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.to_remove, reinterpret_cast<void*>(1)));
   ASSERT_EQ(test_refs.to_remove.num_refs, 1u);
 
   rc_ref_lists_remove_marked(&test_refs, ref_function, DESTROY_MARKED_REFS_CONTEXT_PTR);
   EXPECT_EQ(ref_function_fake.call_count, 1u);
-  EXPECT_EQ(ref_function_fake.arg0_val, reinterpret_cast<void*>(0));
+  EXPECT_EQ(ref_function_fake.arg0_val, reinterpret_cast<void*>(1));
   EXPECT_EQ(ref_function_fake.arg1_val, DESTROY_MARKED_REFS_CONTEXT_PTR);
   EXPECT_EQ(test_refs.pending.num_refs, 0u);
   EXPECT_EQ(test_refs.to_remove.num_refs, 0u);
@@ -153,14 +153,14 @@ TEST_F(TestRefLists, RemoveMarkedRefFromOneElementPending)
 
 TEST_F(TestRefLists, RemoveMarkedRefFromPending)
 {
-  AddRefsZeroThroughTwo(&test_refs.pending);
+  AddRefsOneThroughThree(&test_refs.pending);
 
-  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.to_remove, reinterpret_cast<void*>(1)));
+  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.to_remove, reinterpret_cast<void*>(2)));
   ASSERT_EQ(test_refs.to_remove.num_refs, 1u);
 
   rc_ref_lists_remove_marked(&test_refs, ref_function, DESTROY_MARKED_REFS_CONTEXT_PTR);
   EXPECT_EQ(ref_function_fake.call_count, 1u);
-  EXPECT_EQ(ref_function_fake.arg0_val, reinterpret_cast<void*>(1));
+  EXPECT_EQ(ref_function_fake.arg0_val, reinterpret_cast<void*>(2));
   EXPECT_EQ(ref_function_fake.arg1_val, DESTROY_MARKED_REFS_CONTEXT_PTR);
   EXPECT_EQ(test_refs.pending.num_refs, 2u);
   EXPECT_EQ(test_refs.to_remove.num_refs, 0u);
@@ -168,13 +168,13 @@ TEST_F(TestRefLists, RemoveMarkedRefFromPending)
 
 TEST_F(TestRefLists, RemoveMarkedRefFromOneElementActive)
 {
-  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.active, reinterpret_cast<void*>(0)));
-  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.to_remove, reinterpret_cast<void*>(0)));
+  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.active, reinterpret_cast<void*>(1)));
+  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.to_remove, reinterpret_cast<void*>(1)));
   ASSERT_EQ(test_refs.to_remove.num_refs, 1u);
 
   rc_ref_lists_remove_marked(&test_refs, ref_function, DESTROY_MARKED_REFS_CONTEXT_PTR);
   EXPECT_EQ(ref_function_fake.call_count, 1u);
-  EXPECT_EQ(ref_function_fake.arg0_val, reinterpret_cast<void*>(0));
+  EXPECT_EQ(ref_function_fake.arg0_val, reinterpret_cast<void*>(1));
   EXPECT_EQ(ref_function_fake.arg1_val, DESTROY_MARKED_REFS_CONTEXT_PTR);
   EXPECT_EQ(test_refs.active.num_refs, 0u);
   EXPECT_EQ(test_refs.to_remove.num_refs, 0u);
@@ -182,14 +182,14 @@ TEST_F(TestRefLists, RemoveMarkedRefFromOneElementActive)
 
 TEST_F(TestRefLists, RemoveMarkedRefFromActive)
 {
-  AddRefsZeroThroughTwo(&test_refs.active);
+  AddRefsOneThroughThree(&test_refs.active);
 
-  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.to_remove, reinterpret_cast<void*>(1)));
+  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.to_remove, reinterpret_cast<void*>(2)));
   ASSERT_EQ(test_refs.to_remove.num_refs, 1u);
 
   rc_ref_lists_remove_marked(&test_refs, ref_function, DESTROY_MARKED_REFS_CONTEXT_PTR);
   EXPECT_EQ(ref_function_fake.call_count, 1u);
-  EXPECT_EQ(ref_function_fake.arg0_val, reinterpret_cast<void*>(1));
+  EXPECT_EQ(ref_function_fake.arg0_val, reinterpret_cast<void*>(2));
   EXPECT_EQ(ref_function_fake.arg1_val, DESTROY_MARKED_REFS_CONTEXT_PTR);
   EXPECT_EQ(test_refs.active.num_refs, 2u);
   EXPECT_EQ(test_refs.to_remove.num_refs, 0u);
@@ -210,9 +210,9 @@ TEST_F(TestRefLists, RemoveMarkedRefWhenNotPendingOrActive)
 
 TEST_F(TestRefLists, RemoveAllRefs)
 {
-  AddRefsZeroThroughTwo(&test_refs.active);
-  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.pending, reinterpret_cast<void*>(3)));
-  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.to_remove, reinterpret_cast<void*>(1)));
+  AddRefsOneThroughThree(&test_refs.active);
+  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.pending, reinterpret_cast<void*>(4)));
+  ASSERT_TRUE(rc_ref_list_add_ref(&test_refs.to_remove, reinterpret_cast<void*>(2)));
 
   rc_ref_lists_remove_all(&test_refs, ref_function, DESTROY_ALL_REFS_CONTEXT_PTR);
 
@@ -220,16 +220,16 @@ TEST_F(TestRefLists, RemoveAllRefs)
   // time with the context pointer given.
   EXPECT_EQ(ref_function_fake.call_count, 4u);
   EXPECT_NE(
-      std::find(&ref_function_fake.arg0_history[0], &ref_function_fake.arg0_history[3], reinterpret_cast<void*>(0)),
-      &ref_function_fake.arg0_history[4]);
-  EXPECT_NE(
       std::find(&ref_function_fake.arg0_history[0], &ref_function_fake.arg0_history[3], reinterpret_cast<void*>(1)),
       &ref_function_fake.arg0_history[4]);
   EXPECT_NE(
-      std::find(&ref_function_fake.arg0_history[0], &ref_function_fake.arg0_history[4], reinterpret_cast<void*>(2)),
+      std::find(&ref_function_fake.arg0_history[0], &ref_function_fake.arg0_history[3], reinterpret_cast<void*>(2)),
       &ref_function_fake.arg0_history[4]);
   EXPECT_NE(
       std::find(&ref_function_fake.arg0_history[0], &ref_function_fake.arg0_history[4], reinterpret_cast<void*>(3)),
+      &ref_function_fake.arg0_history[4]);
+  EXPECT_NE(
+      std::find(&ref_function_fake.arg0_history[0], &ref_function_fake.arg0_history[4], reinterpret_cast<void*>(4)),
       &ref_function_fake.arg0_history[4]);
   EXPECT_TRUE(std::all_of(&ref_function_fake.arg1_history[0], &ref_function_fake.arg1_history[3],
                           [](const void* context) { return (context == DESTROY_ALL_REFS_CONTEXT_PTR); }));
@@ -244,13 +244,13 @@ TEST_F(TestRefLists, RemoveAllRefs)
 
 TEST_F(TestRefLists, ForEachRef)
 {
-  AddRefsZeroThroughTwo(&test_refs.pending);
+  AddRefsOneThroughThree(&test_refs.pending);
   rc_ref_list_for_each(&test_refs.pending, ref_function, FOR_EACH_REF_CONTEXT_PTR);
 
   EXPECT_EQ(ref_function_fake.call_count, 3u);
-  EXPECT_EQ(ref_function_fake.arg0_history[0], reinterpret_cast<void*>(0));
-  EXPECT_EQ(ref_function_fake.arg0_history[1], reinterpret_cast<void*>(1));
-  EXPECT_EQ(ref_function_fake.arg0_history[2], reinterpret_cast<void*>(2));
+  EXPECT_EQ(ref_function_fake.arg0_history[0], reinterpret_cast<void*>(1));
+  EXPECT_EQ(ref_function_fake.arg0_history[1], reinterpret_cast<void*>(2));
+  EXPECT_EQ(ref_function_fake.arg0_history[2], reinterpret_cast<void*>(3));
   EXPECT_TRUE(std::all_of(&ref_function_fake.arg1_history[0], &ref_function_fake.arg1_history[3],
                           [](const void* context) { return (context == FOR_EACH_REF_CONTEXT_PTR); }));
 }

@@ -80,7 +80,8 @@ static McastSendSocket* get_unused_send_socket(McastNetintInfo* netint_info);
 
 etcpal_error_t rc_mcast_module_init(const RdmnetNetintConfig* netint_config)
 {
-  RDMNET_ASSERT(num_mcast_netints == 0);
+  if (!RDMNET_ASSERT_VERIFY(num_mcast_netints == 0))
+    return kEtcPalErrSys;
 
   if (netint_config && !validate_netint_config(netint_config))
     return kEtcPalErrInvalid;
@@ -190,8 +191,14 @@ etcpal_error_t rc_mcast_module_init(const RdmnetNetintConfig* netint_config)
 
 void rc_mcast_module_deinit(void)
 {
+  if (!RDMNET_ASSERT_VERIFY(netint_info_arr))
+    return;
+
   for (McastNetintInfo* netint_info = netint_info_arr; netint_info < netint_info_arr + num_mcast_netints; ++netint_info)
   {
+    if (!RDMNET_ASSERT_VERIFY(netint_info->send_sockets))
+      return;
+
     for (McastSendSocket* send_socket = netint_info->send_sockets;
          send_socket < netint_info->send_sockets + MAX_SEND_NETINT_SOURCE_PORTS; ++send_socket)
     {
@@ -208,13 +215,18 @@ void rc_mcast_module_deinit(void)
 
 size_t rc_mcast_get_netint_array(const EtcPalMcastNetintId** array)
 {
-  RDMNET_ASSERT(array);
+  if (!RDMNET_ASSERT_VERIFY(array))
+    return 0;
+
   *array = mcast_netint_arr;
   return num_mcast_netints;
 }
 
 bool rc_mcast_netint_is_valid(const EtcPalMcastNetintId* id)
 {
+  if (!RDMNET_ASSERT_VERIFY(id))
+    return false;
+
   return (netint_id_index_in_array(id, mcast_netint_arr, num_mcast_netints) != -1);
 }
 
@@ -225,14 +237,21 @@ const EtcPalMacAddr* rc_mcast_get_lowest_mac_addr(void)
 
 etcpal_error_t rc_mcast_get_send_socket(const EtcPalMcastNetintId* id, uint16_t source_port, etcpal_socket_t* socket)
 {
+  if (!RDMNET_ASSERT_VERIFY(id) || !RDMNET_ASSERT_VERIFY(socket))
+    return kEtcPalErrSys;
+
   McastNetintInfo* netint_info = get_mcast_netint_info(id);
   if (netint_info)
   {
     McastSendSocket* send_sock = get_send_socket(netint_info, source_port);
     if (send_sock)
     {
-      RDMNET_ASSERT(send_sock->ref_count > 0);
-      RDMNET_ASSERT(send_sock->send_sock != ETCPAL_SOCKET_INVALID);
+      if (!RDMNET_ASSERT_VERIFY(send_sock->ref_count > 0) ||
+          !RDMNET_ASSERT_VERIFY(send_sock->send_sock != ETCPAL_SOCKET_INVALID))
+      {
+        return kEtcPalErrSys;
+      }
+
       ++send_sock->ref_count;
       *socket = send_sock->send_sock;
       return kEtcPalErrOk;
@@ -242,11 +261,15 @@ etcpal_error_t rc_mcast_get_send_socket(const EtcPalMcastNetintId* id, uint16_t 
       send_sock = get_unused_send_socket(netint_info);
       if (send_sock)
       {
-        RDMNET_ASSERT(send_sock->ref_count == 0);
+        if (!RDMNET_ASSERT_VERIFY(send_sock->ref_count == 0))
+          return kEtcPalErrSys;
+
         etcpal_error_t res = create_send_socket(id, source_port, &send_sock->send_sock);
         if (res == kEtcPalErrOk)
         {
-          RDMNET_ASSERT(send_sock->send_sock != ETCPAL_SOCKET_INVALID);
+          if (!RDMNET_ASSERT_VERIFY(send_sock->send_sock != ETCPAL_SOCKET_INVALID))
+            return kEtcPalErrSys;
+
           *socket = send_sock->send_sock;
           send_sock->source_port = source_port;
           ++send_sock->ref_count;
@@ -264,6 +287,9 @@ etcpal_error_t rc_mcast_get_send_socket(const EtcPalMcastNetintId* id, uint16_t 
 
 void rc_mcast_release_send_socket(const EtcPalMcastNetintId* id, uint16_t source_port)
 {
+  if (!RDMNET_ASSERT_VERIFY(id))
+    return;
+
   McastNetintInfo* netint_info = get_mcast_netint_info(id);
   if (netint_info)
   {
@@ -281,6 +307,9 @@ void rc_mcast_release_send_socket(const EtcPalMcastNetintId* id, uint16_t source
 
 etcpal_error_t rc_mcast_create_recv_socket(const EtcPalIpAddr* group, uint16_t port, etcpal_socket_t* socket)
 {
+  if (!RDMNET_ASSERT_VERIFY(group) || !RDMNET_ASSERT_VERIFY(socket))
+    return kEtcPalErrSys;
+
   etcpal_socket_t sock = ETCPAL_SOCKET_INVALID;
   etcpal_error_t  res =
       etcpal_socket(ETCPAL_IP_IS_V6(group) ? ETCPAL_AF_INET6 : ETCPAL_AF_INET, ETCPAL_SOCK_DGRAM, &sock);
@@ -331,9 +360,11 @@ etcpal_error_t rc_mcast_subscribe_recv_socket(etcpal_socket_t            socket,
                                               const EtcPalMcastNetintId* netint,
                                               const EtcPalIpAddr*        group)
 {
-  RDMNET_ASSERT(netint);
-  RDMNET_ASSERT(group);
-  RDMNET_ASSERT(netint->ip_type == group->type);
+  if (!RDMNET_ASSERT_VERIFY(netint) || !RDMNET_ASSERT_VERIFY(group) ||
+      !RDMNET_ASSERT_VERIFY(netint->ip_type == group->type))
+  {
+    return kEtcPalErrSys;
+  }
 
   EtcPalGroupReq group_req;
   group_req.ifindex = netint->index;
@@ -347,9 +378,11 @@ etcpal_error_t rc_mcast_unsubscribe_recv_socket(etcpal_socket_t            socke
                                                 const EtcPalMcastNetintId* netint,
                                                 const EtcPalIpAddr*        group)
 {
-  RDMNET_ASSERT(netint);
-  RDMNET_ASSERT(group);
-  RDMNET_ASSERT(netint->ip_type == group->type);
+  if (!RDMNET_ASSERT_VERIFY(netint) || !RDMNET_ASSERT_VERIFY(group) ||
+      !RDMNET_ASSERT_VERIFY(netint->ip_type == group->type))
+  {
+    return kEtcPalErrSys;
+  }
 
   EtcPalGroupReq group_req;
   group_req.ifindex = netint->index;
@@ -361,6 +394,9 @@ etcpal_error_t rc_mcast_unsubscribe_recv_socket(etcpal_socket_t            socke
 
 bool validate_netint_config(const RdmnetNetintConfig* config)
 {
+  if (!RDMNET_ASSERT_VERIFY(config))
+    return false;
+
   if (!config->netints || !config->num_netints)
     return false;
 
@@ -376,6 +412,9 @@ bool validate_netint_config(const RdmnetNetintConfig* config)
 
 void test_mcast_netint(const EtcPalMcastNetintId* netint_id, const char* addr_str)
 {
+  if (!RDMNET_ASSERT_VERIFY(netint_id) || !RDMNET_ASSERT_VERIFY(addr_str))
+    return;
+
   // create_send_socket() also tests setting the relevant send socket options and the
   // MULTICAST_IF on the relevant interface.
   etcpal_socket_t test_socket;
@@ -420,18 +459,24 @@ void test_mcast_netint(const EtcPalMcastNetintId* netint_id, const char* addr_st
 
 void add_mcast_netint(const EtcPalMcastNetintId* netint_id, const char* addr_str)
 {
-#if !RDMNET_DYNAMIC_MEM
+  if (!RDMNET_ASSERT_VERIFY(netint_id) || !RDMNET_ASSERT_VERIFY(addr_str))
+    return;
+
+#if RDMNET_DYNAMIC_MEM
+  if (!RDMNET_ASSERT_VERIFY(mcast_netint_arr) || !RDMNET_ASSERT_VERIFY(netint_info_arr))
+    return;
+#else
   // We've reached the configured maximum, in which case we have already given the user a stern
   // warning.
   if (num_mcast_netints >= RDMNET_MAX_MCAST_NETINTS)
   {
     RDMNET_LOG_WARNING(
-        "  WARNING: SKIPPING multicast network interface %s as the configured value %d for RDMNET_MAX_MCAST_NETINTS "
-        "has been reached.",
-        addr_str, RDMNET_MAX_MCAST_NETINTS);
+            "  WARNING: SKIPPING multicast network interface %s as the configured value %d for RDMNET_MAX_MCAST_NETINTS "
+                "has been reached.",
+            addr_str, RDMNET_MAX_MCAST_NETINTS);
     RDMNET_LOG_WARNING(
-        "To fix this likely error, recompile RDMnet with a higher value for RDMNET_MAX_MCAST_NETINTS or with "
-        "RDMNET_DYNAMIC_MEM defined to 1.");
+            "To fix this likely error, recompile RDMnet with a higher value for RDMNET_MAX_MCAST_NETINTS or with "
+                "RDMNET_DYNAMIC_MEM defined to 1.");
     return;
   }
 #endif
@@ -441,6 +486,9 @@ void add_mcast_netint(const EtcPalMcastNetintId* netint_id, const char* addr_str
     mcast_netint_arr[num_mcast_netints] = *netint_id;
 
     McastNetintInfo* netint_info = &netint_info_arr[num_mcast_netints];
+    if (!RDMNET_ASSERT_VERIFY(netint_info->send_sockets))
+      return;
+
     for (McastSendSocket* send_socket = netint_info->send_sockets;
          send_socket < netint_info->send_sockets + MAX_SEND_NETINT_SOURCE_PORTS; ++send_socket)
     {
@@ -455,6 +503,9 @@ void add_mcast_netint(const EtcPalMcastNetintId* netint_id, const char* addr_str
 
 etcpal_error_t create_send_socket(const EtcPalMcastNetintId* netint, uint16_t source_port, etcpal_socket_t* socket)
 {
+  if (!RDMNET_ASSERT_VERIFY(netint) || !RDMNET_ASSERT_VERIFY(socket))
+    return kEtcPalErrSys;
+
   etcpal_socket_t sock = ETCPAL_SOCKET_INVALID;
   int             sockopt_ip_level = (netint->ip_type == kEtcPalIpTypeV6 ? ETCPAL_IPPROTO_IPV6 : ETCPAL_IPPROTO_IP);
 
@@ -504,6 +555,9 @@ etcpal_error_t create_send_socket(const EtcPalMcastNetintId* netint, uint16_t so
 
 int netint_id_index_in_array(const EtcPalMcastNetintId* id, const EtcPalMcastNetintId* array, size_t array_size)
 {
+  if (!RDMNET_ASSERT_VERIFY(id) || !RDMNET_ASSERT_VERIFY(array))
+    return -1;
+
   for (size_t i = 0; i < array_size; ++i)
   {
     if (array[i].index == id->index && array[i].ip_type == id->ip_type)
@@ -514,7 +568,13 @@ int netint_id_index_in_array(const EtcPalMcastNetintId* id, const EtcPalMcastNet
 
 McastNetintInfo* get_mcast_netint_info(const EtcPalMcastNetintId* id)
 {
-  RDMNET_ASSERT(id);
+  if (!RDMNET_ASSERT_VERIFY(id))
+    return NULL;
+
+#if RDMNET_DYNAMIC_MEM
+  if (!RDMNET_ASSERT_VERIFY(mcast_netint_arr) || !RDMNET_ASSERT_VERIFY(netint_info_arr))
+    return NULL;
+#endif
 
   int index = netint_id_index_in_array(id, mcast_netint_arr, num_mcast_netints);
   return (index >= 0 ? &netint_info_arr[index] : NULL);
@@ -522,6 +582,9 @@ McastNetintInfo* get_mcast_netint_info(const EtcPalMcastNetintId* id)
 
 McastSendSocket* get_send_socket(McastNetintInfo* netint_info, uint16_t source_port)
 {
+  if (!RDMNET_ASSERT_VERIFY(netint_info) || !RDMNET_ASSERT_VERIFY(netint_info->send_sockets))
+    return NULL;
+
   for (McastSendSocket* send_socket = netint_info->send_sockets;
        send_socket < netint_info->send_sockets + MAX_SEND_NETINT_SOURCE_PORTS; ++send_socket)
   {
@@ -533,6 +596,9 @@ McastSendSocket* get_send_socket(McastNetintInfo* netint_info, uint16_t source_p
 
 McastSendSocket* get_unused_send_socket(McastNetintInfo* netint_info)
 {
+  if (!RDMNET_ASSERT_VERIFY(netint_info) || !RDMNET_ASSERT_VERIFY(netint_info->send_sockets))
+    return NULL;
+
   for (McastSendSocket* send_socket = netint_info->send_sockets;
        send_socket < netint_info->send_sockets + MAX_SEND_NETINT_SOURCE_PORTS; ++send_socket)
   {

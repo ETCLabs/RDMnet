@@ -28,10 +28,15 @@
 
 /***************************** Private macros ********************************/
 
-#define GET_ENCOMPASSING_MANAGER(manager_ptr) (LlrpManager*)((char*)(manager_ptr)-offsetof(LlrpManager, rc_manager))
+#define GET_ENCOMPASSING_MANAGER(manager_ptr) \
+  (RDMNET_ASSERT_VERIFY(manager_ptr) ? (LlrpManager*)((char*)(manager_ptr)-offsetof(LlrpManager, rc_manager)) : NULL)
 
-#define MANAGER_LOCK(manager_ptr) etcpal_mutex_lock(&(manager_ptr)->lock)
-#define MANAGER_UNLOCK(manager_ptr) etcpal_mutex_unlock(&(manager_ptr)->lock)
+#define MANAGER_LOCK(manager_ptr) (RDMNET_ASSERT_VERIFY(manager_ptr) && etcpal_mutex_lock(&(manager_ptr)->lock))
+#define MANAGER_UNLOCK(manager_ptr)            \
+  if (RDMNET_ASSERT_VERIFY(manager_ptr))       \
+  {                                            \
+    etcpal_mutex_unlock(&(manager_ptr)->lock); \
+  }
 
 /*********************** Private function prototypes *************************/
 
@@ -162,10 +167,13 @@ etcpal_error_t llrp_manager_create(const LlrpManagerConfig* config, llrp_manager
  */
 etcpal_error_t llrp_manager_destroy(llrp_manager_t handle)
 {
-  LlrpManager*   manager;
+  LlrpManager*   manager = NULL;
   etcpal_error_t res = get_manager(handle, &manager);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return kEtcPalErrSys;
 
   rc_llrp_manager_unregister(&manager->rc_manager);
   rdmnet_unregister_struct_instance(manager);
@@ -191,10 +199,13 @@ etcpal_error_t llrp_manager_destroy(llrp_manager_t handle)
  */
 etcpal_error_t llrp_manager_start_discovery(llrp_manager_t handle, uint16_t filter)
 {
-  LlrpManager*   manager;
+  LlrpManager*   manager = NULL;
   etcpal_error_t res = get_manager(handle, &manager);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return kEtcPalErrSys;
 
   res = rc_llrp_manager_start_discovery(&manager->rc_manager, filter);
   release_manager(manager);
@@ -214,10 +225,13 @@ etcpal_error_t llrp_manager_start_discovery(llrp_manager_t handle, uint16_t filt
  */
 etcpal_error_t llrp_manager_stop_discovery(llrp_manager_t handle)
 {
-  LlrpManager*   manager;
+  LlrpManager*   manager = NULL;
   etcpal_error_t res = get_manager(handle, &manager);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return kEtcPalErrSys;
 
   res = rc_llrp_manager_stop_discovery(&manager->rc_manager);
   release_manager(manager);
@@ -250,10 +264,16 @@ etcpal_error_t llrp_manager_send_rdm_command(llrp_manager_t             handle,
                                              uint8_t                    data_len,
                                              uint32_t*                  seq_num)
 {
-  LlrpManager*   manager;
+  if (!destination)
+    return kEtcPalErrInvalid;
+
+  LlrpManager*   manager = NULL;
   etcpal_error_t res = get_manager(handle, &manager);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return kEtcPalErrSys;
 
   res = rc_llrp_manager_send_rdm_command(&manager->rc_manager, destination, command_class, param_id, data, data_len,
                                          seq_num);
@@ -285,10 +305,16 @@ etcpal_error_t llrp_manager_send_get_command(llrp_manager_t             handle,
                                              uint8_t                    data_len,
                                              uint32_t*                  seq_num)
 {
-  LlrpManager*   manager;
+  if (!destination)
+    return kEtcPalErrInvalid;
+
+  LlrpManager*   manager = NULL;
   etcpal_error_t res = get_manager(handle, &manager);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return kEtcPalErrSys;
 
   res = rc_llrp_manager_send_rdm_command(&manager->rc_manager, destination, kRdmnetCCGetCommand, param_id, data,
                                          data_len, seq_num);
@@ -320,10 +346,16 @@ etcpal_error_t llrp_manager_send_set_command(llrp_manager_t             handle,
                                              uint8_t                    data_len,
                                              uint32_t*                  seq_num)
 {
-  LlrpManager*   manager;
+  if (!destination)
+    return kEtcPalErrInvalid;
+
+  LlrpManager*   manager = NULL;
   etcpal_error_t res = get_manager(handle, &manager);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return kEtcPalErrSys;
 
   res = rc_llrp_manager_send_rdm_command(&manager->rc_manager, destination, kRdmnetCCSetCommand, param_id, data,
                                          data_len, seq_num);
@@ -333,6 +365,9 @@ etcpal_error_t llrp_manager_send_set_command(llrp_manager_t             handle,
 
 etcpal_error_t validate_llrp_manager_config(const LlrpManagerConfig* config)
 {
+  if (!RDMNET_ASSERT_VERIFY(config))
+    return kEtcPalErrSys;
+
   if ((config->netint.ip_type != kEtcPalIpTypeV4 && config->netint.ip_type != kEtcPalIpTypeV6) ||
       ETCPAL_UUID_IS_NULL(&config->cid) || config->manu_id == 0 || !config->callbacks.target_discovered ||
       !config->callbacks.rdm_response_received || !config->callbacks.discovery_finished)
@@ -344,6 +379,9 @@ etcpal_error_t validate_llrp_manager_config(const LlrpManagerConfig* config)
 
 etcpal_error_t create_new_manager(const LlrpManagerConfig* config, llrp_manager_t* handle)
 {
+  if (!RDMNET_ASSERT_VERIFY(config) || !RDMNET_ASSERT_VERIFY(handle))
+    return kEtcPalErrSys;
+
   etcpal_error_t res = kEtcPalErrNoMem;
 
   LlrpManager* new_manager = rdmnet_alloc_llrp_manager_instance();
@@ -371,6 +409,9 @@ etcpal_error_t create_new_manager(const LlrpManagerConfig* config, llrp_manager_
 
 etcpal_error_t get_manager(llrp_manager_t handle, LlrpManager** manager)
 {
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return kEtcPalErrSys;
+
   if (handle == LLRP_MANAGER_INVALID)
     return kEtcPalErrInvalid;
   if (!rc_initialized())
@@ -398,34 +439,57 @@ etcpal_error_t get_manager(llrp_manager_t handle, LlrpManager** manager)
 
 void release_manager(LlrpManager* manager)
 {
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return;
+
   MANAGER_UNLOCK(manager);
   rdmnet_readunlock();
 }
 
 void handle_target_discovered(RCLlrpManager* rc_manager, const LlrpDiscoveredTarget* target)
 {
-  RDMNET_ASSERT(rc_manager);
+  if (!RDMNET_ASSERT_VERIFY(rc_manager) || !RDMNET_ASSERT_VERIFY(target))
+    return;
+
   LlrpManager* manager = GET_ENCOMPASSING_MANAGER(rc_manager);
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return;
+
   manager->callbacks.target_discovered(manager->id.handle, target, manager->callbacks.context);
 }
 
 void handle_rdm_response_received(RCLlrpManager* rc_manager, const LlrpRdmResponse* resp)
 {
-  RDMNET_ASSERT(rc_manager);
+  if (!RDMNET_ASSERT_VERIFY(rc_manager) || !RDMNET_ASSERT_VERIFY(resp))
+    return;
+
   LlrpManager* manager = GET_ENCOMPASSING_MANAGER(rc_manager);
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return;
+
   manager->callbacks.rdm_response_received(manager->id.handle, resp, manager->callbacks.context);
 }
 
 void handle_discovery_finished(RCLlrpManager* rc_manager)
 {
-  RDMNET_ASSERT(rc_manager);
+  if (!RDMNET_ASSERT_VERIFY(rc_manager))
+    return;
+
   LlrpManager* manager = GET_ENCOMPASSING_MANAGER(rc_manager);
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return;
+
   manager->callbacks.discovery_finished(manager->id.handle, manager->callbacks.context);
 }
 
 void handle_manager_destroyed(RCLlrpManager* rc_manager)
 {
-  RDMNET_ASSERT(rc_manager);
+  if (!RDMNET_ASSERT_VERIFY(rc_manager))
+    return;
+
   LlrpManager* manager = GET_ENCOMPASSING_MANAGER(rc_manager);
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return;
+
   rdmnet_free_struct_instance(manager);
 }

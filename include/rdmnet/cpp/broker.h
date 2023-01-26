@@ -65,14 +65,22 @@ struct DnsTxtRecordItem
 
 /// Construct a DnsTxtRecordItem from a C-string key and value.
 inline DnsTxtRecordItem::DnsTxtRecordItem(const char* new_key, const char* new_value)
-    : key(new_key), value(new_value, &new_value[std::strlen(new_value)])
 {
+  if (new_key)
+    key = std::string(new_key);
+
+  if (new_value)
+    value = std::vector<uint8_t>(new_value, &new_value[std::strlen(new_value)]);
 }
 
 /// Construct a DnsTxtRecordItem from a C-string key and a binary value.
 inline DnsTxtRecordItem::DnsTxtRecordItem(const char* new_key, const uint8_t* new_value, size_t new_value_len)
-    : key(new_key), value(new_value, new_value + new_value_len)
 {
+  if (new_key)
+    key = std::string(new_key);
+
+  if (new_value)
+    value = std::vector<uint8_t>(new_value, new_value + new_value_len);
 }
 
 /// Construct a DnsTxtRecordItem from a string key and value.
@@ -83,8 +91,10 @@ inline DnsTxtRecordItem::DnsTxtRecordItem(const std::string& new_key, const std:
 
 /// Construct a DnsTxtRecordItem from a string key and a binary value.
 inline DnsTxtRecordItem::DnsTxtRecordItem(const std::string& new_key, const uint8_t* new_value, size_t new_value_len)
-    : key(new_key), value(new_value, new_value + new_value_len)
+    : key(new_key)
 {
+  if (new_value)
+    value = std::vector<uint8_t>(new_value, new_value + new_value_len);
 }
 
 /// Construct a DnsTxtRecordItem from a string key and a binary value.

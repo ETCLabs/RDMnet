@@ -53,8 +53,12 @@ typedef struct LlrpTargetIncomingMessage
 
 /***************************** Private macros ********************************/
 
-#define TARGET_LOCK(target_ptr) etcpal_mutex_lock((target_ptr)->lock)
-#define TARGET_UNLOCK(target_ptr) etcpal_mutex_unlock((target_ptr)->lock)
+#define TARGET_LOCK(target_ptr) (RDMNET_ASSERT_VERIFY(target_ptr) && etcpal_mutex_lock((target_ptr)->lock))
+#define TARGET_UNLOCK(target_ptr)            \
+  if (RDMNET_ASSERT_VERIFY(target_ptr))      \
+  {                                          \
+    etcpal_mutex_unlock((target_ptr)->lock); \
+  }
 
 /**************************** Private variables ******************************/
 
@@ -126,7 +130,8 @@ void rc_llrp_target_module_deinit(void)
  */
 etcpal_error_t rc_llrp_target_register(RCLlrpTarget* target, const EtcPalMcastNetintId* netints, size_t num_netints)
 {
-  RDMNET_ASSERT(target);
+  if (!RDMNET_ASSERT_VERIFY(target))
+    return kEtcPalErrSys;
 
   if (!rc_initialized())
     return kEtcPalErrNotInit;
@@ -156,7 +161,9 @@ etcpal_error_t rc_llrp_target_register(RCLlrpTarget* target, const EtcPalMcastNe
  */
 void rc_llrp_target_unregister(RCLlrpTarget* target)
 {
-  RDMNET_ASSERT(target);
+  if (!RDMNET_ASSERT_VERIFY(target))
+    return;
+
   rc_ref_list_add_ref(&targets.to_remove, target);
 }
 
@@ -166,7 +173,9 @@ void rc_llrp_target_unregister(RCLlrpTarget* target)
  */
 void rc_llrp_target_update_connection_state(RCLlrpTarget* target, bool connected_to_broker)
 {
-  RDMNET_ASSERT(target);
+  if (!RDMNET_ASSERT_VERIFY(target))
+    return;
+
   target->connected_to_broker = connected_to_broker;
 }
 
@@ -175,8 +184,8 @@ etcpal_error_t rc_llrp_target_send_ack(RCLlrpTarget*              target,
                                        const uint8_t*             response_data,
                                        uint8_t                    response_data_len)
 {
-  RDMNET_ASSERT(target);
-  RDMNET_ASSERT(received_cmd);
+  if (!RDMNET_ASSERT_VERIFY(target) || !RDMNET_ASSERT_VERIFY(received_cmd))
+    return kEtcPalErrSys;
 
   return target_send_ack_internal(target, &received_cmd->source_cid, received_cmd->seq_num, &received_cmd->rdm_header,
                                   &received_cmd->netint_id, response_data, response_data_len);
@@ -186,8 +195,8 @@ etcpal_error_t rc_llrp_target_send_nack(RCLlrpTarget*              target,
                                         const LlrpSavedRdmCommand* received_cmd,
                                         rdm_nack_reason_t          nack_reason)
 {
-  RDMNET_ASSERT(target);
-  RDMNET_ASSERT(received_cmd);
+  if (!RDMNET_ASSERT_VERIFY(target) || !RDMNET_ASSERT_VERIFY(received_cmd))
+    return kEtcPalErrSys;
 
   return target_send_nack_internal(target, &received_cmd->source_cid, received_cmd->seq_num, &received_cmd->rdm_header,
                                    &received_cmd->netint_id, nack_reason);
@@ -207,6 +216,9 @@ void rc_llrp_target_module_tick(void)
 
 void rc_llrp_target_data_received(const uint8_t* data, size_t data_len, const EtcPalMcastNetintId* netint)
 {
+  if (!RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(netint))
+    return;
+
   EtcPalUuid dest_cid;
   if (rc_get_llrp_destination_cid(data, data_len, &dest_cid))
   {
@@ -243,6 +255,9 @@ void rc_llrp_target_data_received(const uint8_t* data, size_t data_len, const Et
 
 etcpal_error_t setup_target_netints(RCLlrpTarget* target, const EtcPalMcastNetintId* netints, size_t num_netints)
 {
+  if (!RDMNET_ASSERT_VERIFY(target))
+    return kEtcPalErrSys;
+
   etcpal_error_t res = kEtcPalErrOk;
 
   if (netints && num_netints > 0)
@@ -309,6 +324,9 @@ etcpal_error_t setup_target_netints(RCLlrpTarget* target, const EtcPalMcastNetin
 
 etcpal_error_t setup_target_netint(const EtcPalMcastNetintId* netint_id, RCLlrpTargetNetintInfo* netint)
 {
+  if (!RDMNET_ASSERT_VERIFY(netint_id) || !RDMNET_ASSERT_VERIFY(netint))
+    return kEtcPalErrSys;
+
   netint->id = *netint_id;
 
   etcpal_error_t res = rc_mcast_get_send_socket(netint_id, 0, &netint->send_sock);
@@ -329,6 +347,9 @@ etcpal_error_t setup_target_netint(const EtcPalMcastNetintId* netint_id, RCLlrpT
 
 void cleanup_target_netints(RCLlrpTarget* target)
 {
+  if (!RDMNET_ASSERT_VERIFY(target) || !RDMNET_ASSERT_VERIFY(target->netints))
+    return;
+
   for (const RCLlrpTargetNetintInfo* netint_info = target->netints; netint_info < target->netints + target->num_netints;
        ++netint_info)
   {
@@ -342,8 +363,8 @@ void cleanup_target_netints(RCLlrpTarget* target)
 
 RCLlrpTargetNetintInfo* get_target_netint(RCLlrpTarget* target, const EtcPalMcastNetintId* id)
 {
-  RDMNET_ASSERT(target);
-  RDMNET_ASSERT(id);
+  if (!RDMNET_ASSERT_VERIFY(target) || !RDMNET_ASSERT_VERIFY(target->netints) || !RDMNET_ASSERT_VERIFY(id))
+    return NULL;
 
   for (RCLlrpTargetNetintInfo* netint = target->netints; netint < target->netints + target->num_netints; ++netint)
   {
@@ -356,7 +377,9 @@ RCLlrpTargetNetintInfo* get_target_netint(RCLlrpTarget* target, const EtcPalMcas
 void cleanup_target_resources(RCLlrpTarget* target, const void* context)
 {
   ETCPAL_UNUSED_ARG(context);
-  RDMNET_ASSERT(target);
+
+  if (!RDMNET_ASSERT_VERIFY(target))
+    return;
 
   cleanup_target_netints(target);
   if (target->callbacks.destroyed)
@@ -366,8 +389,15 @@ void cleanup_target_resources(RCLlrpTarget* target, const void* context)
 void process_target_state(RCLlrpTarget* target, const void* context)
 {
   ETCPAL_UNUSED_ARG(context);
+
+  if (!RDMNET_ASSERT_VERIFY(target))
+    return;
+
   if (TARGET_LOCK(target))
   {
+    if (!RDMNET_ASSERT_VERIFY(target->netints))
+      return;
+
     for (RCLlrpTargetNetintInfo* netint = target->netints; netint < target->netints + target->num_netints; ++netint)
     {
       if (netint->reply_pending)
@@ -405,6 +435,9 @@ void process_target_state(RCLlrpTarget* target, const void* context)
 
 void target_handle_llrp_message(RCLlrpTarget* target, const LlrpTargetIncomingMessage* message)
 {
+  if (!RDMNET_ASSERT_VERIFY(target) || !RDMNET_ASSERT_VERIFY(message))
+    return;
+
   if (TARGET_LOCK(target))
   {
     RCLlrpTargetEvent event = RC_LLRP_TARGET_EVENT_INIT;
@@ -428,6 +461,9 @@ void target_handle_llrp_message(RCLlrpTarget* target, const LlrpTargetIncomingMe
         {
           case VECTOR_LLRP_PROBE_REQUEST: {
             const RemoteProbeRequest* request = LLRP_MSG_GET_PROBE_REQUEST(&msg);
+            if (!RDMNET_ASSERT_VERIFY(request))
+              return;
+
             // TODO allow multiple probe replies to be queued
             if (request->contains_my_uid && !target_netint->reply_pending)
             {
@@ -472,6 +508,9 @@ void target_handle_llrp_message(RCLlrpTarget* target, const LlrpTargetIncomingMe
 
 void deliver_event_callback(RCLlrpTarget* target, RCLlrpTargetEvent* event)
 {
+  if (!RDMNET_ASSERT_VERIFY(target) || !RDMNET_ASSERT_VERIFY(event))
+    return;
+
   switch (event->which)
   {
     case kRCLlrpTargetEventRdmCmdReceived:
@@ -492,6 +531,9 @@ void send_response_if_requested(RCLlrpTarget*                target,
                                 const RCLlrpTargetEvent*     event,
                                 RCLlrpTargetSyncRdmResponse* response)
 {
+  if (!RDMNET_ASSERT_VERIFY(target) || !RDMNET_ASSERT_VERIFY(event) || !RDMNET_ASSERT_VERIFY(response))
+    return;
+
   RdmnetSyncRdmResponse* external_resp = &response->resp;
   if (external_resp->response_action == kRdmnetRdmResponseActionSendAck)
   {
@@ -528,8 +570,8 @@ void send_response_if_requested(RCLlrpTarget*                target,
 
     const LlrpRdmCommand* received_cmd = &event->rdm_cmd;
     etcpal_error_t        send_res = target_send_ack_internal(
-        target, &received_cmd->source_cid, received_cmd->seq_num, &received_cmd->rdm_header, &received_cmd->netint_id,
-        response->response_buf, (uint8_t)external_resp->response_data.response_data_len);
+               target, &received_cmd->source_cid, received_cmd->seq_num, &received_cmd->rdm_header, &received_cmd->netint_id,
+               response->response_buf, (uint8_t)external_resp->response_data.response_data_len);
     if (send_res != kEtcPalErrOk && RDMNET_CAN_LOG(ETCPAL_LOG_ERR))
     {
       char source_cid[ETCPAL_UUID_BYTES] = {'\0'};
@@ -566,6 +608,12 @@ etcpal_error_t target_send_ack_internal(RCLlrpTarget*              target,
                                         const uint8_t*             response_data,
                                         uint8_t                    response_data_len)
 {
+  if (!RDMNET_ASSERT_VERIFY(target) || !RDMNET_ASSERT_VERIFY(dest_cid) || !RDMNET_ASSERT_VERIFY(received_rdm_header) ||
+      !RDMNET_ASSERT_VERIFY(received_netint_id))
+  {
+    return kEtcPalErrSys;
+  }
+
   RdmBuffer      resp_buf;
   etcpal_error_t res = rdm_pack_response(received_rdm_header, 0, response_data, response_data_len, &resp_buf);
   if (res != kEtcPalErrOk)
@@ -596,6 +644,12 @@ etcpal_error_t target_send_nack_internal(RCLlrpTarget*              target,
                                          const EtcPalMcastNetintId* received_netint_id,
                                          rdm_nack_reason_t          nack_reason)
 {
+  if (!RDMNET_ASSERT_VERIFY(target) || !RDMNET_ASSERT_VERIFY(dest_cid) || !RDMNET_ASSERT_VERIFY(received_rdm_header) ||
+      !RDMNET_ASSERT_VERIFY(received_netint_id))
+  {
+    return kEtcPalErrSys;
+  }
+
   RCLlrpTargetNetintInfo* netint = get_target_netint(target, received_netint_id);
   if (netint)
   {
@@ -621,6 +675,9 @@ etcpal_error_t target_send_nack_internal(RCLlrpTarget*              target,
 
 static bool cid_is_equal_predicate(void* ref, const void* context)
 {
+  if (!RDMNET_ASSERT_VERIFY(ref) || !RDMNET_ASSERT_VERIFY(context))
+    return false;
+
   RCLlrpTarget* target = (RCLlrpTarget*)ref;
   EtcPalUuid*   cid = (EtcPalUuid*)context;
   return (ETCPAL_UUID_CMP(&target->cid, cid) == 0);
@@ -628,5 +685,8 @@ static bool cid_is_equal_predicate(void* ref, const void* context)
 
 RCLlrpTarget* find_target_by_cid(const RCRefList* list, const EtcPalUuid* cid)
 {
+  if (!RDMNET_ASSERT_VERIFY(list) || !RDMNET_ASSERT_VERIFY(cid))
+    return NULL;
+
   return (RCLlrpTarget*)rc_ref_list_find_ref(list, cid_is_equal_predicate, cid);
 }

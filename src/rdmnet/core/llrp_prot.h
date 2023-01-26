@@ -114,9 +114,10 @@ typedef struct LlrpMessage
   } data;
 } LlrpMessage;
 
-#define LLRP_MSG_GET_RDM(llrpmsgptr) (&(llrpmsgptr)->data.rdm)
-#define LLRP_MSG_GET_PROBE_REPLY(llrpmsgptr) (&(llrpmsgptr)->data.probe_reply)
-#define LLRP_MSG_GET_PROBE_REQUEST(llrpmsgptr) (&(llrpmsgptr)->data.probe_request)
+#define LLRP_MSG_GET_RDM(llrpmsgptr) (RDMNET_ASSERT_VERIFY(llrpmsgptr) ? &(llrpmsgptr)->data.rdm : NULL)
+#define LLRP_MSG_GET_PROBE_REPLY(llrpmsgptr) (RDMNET_ASSERT_VERIFY(llrpmsgptr) ? &(llrpmsgptr)->data.probe_reply : NULL)
+#define LLRP_MSG_GET_PROBE_REQUEST(llrpmsgptr) \
+  (RDMNET_ASSERT_VERIFY(llrpmsgptr) ? &(llrpmsgptr)->data.probe_request : NULL)
 
 #ifdef __cplusplus
 extern "C" {

@@ -35,8 +35,11 @@
  * Private Macros
  *****************************************************************************/
 
-#define PACK_POINTER_TO(offset, ptr_offset) \
-  etcpal_pack_u16b((ptr_offset), (uint16_t)(0xc000 | (offset - mdns_send_buf)))
+#define PACK_POINTER_TO(offset, ptr_offset)                                        \
+  if (RDMNET_ASSERT_VERIFY(ptr_offset))                                            \
+  {                                                                                \
+    etcpal_pack_u16b((ptr_offset), (uint16_t)(0xc000 | (offset - mdns_send_buf))); \
+  }
 
 /******************************************************************************
  * Private Types
@@ -115,8 +118,11 @@ etcpal_error_t lwmdns_send_module_init(const RdmnetNetintConfig* netint_config)
   }
   else
   {
-    const EtcPalMcastNetintId* mcast_netint_arr;
+    const EtcPalMcastNetintId* mcast_netint_arr = NULL;
     size_t                     mcast_netint_arr_size = rc_mcast_get_netint_array(&mcast_netint_arr);
+
+    if (!RDMNET_ASSERT_VERIFY(mcast_netint_arr))
+      return kEtcPalErrSys;
 
 #if RDMNET_DYNAMIC_MEM
     send_sockets = (SendSocket*)calloc(mcast_netint_arr_size, sizeof(SendSocket));
@@ -167,7 +173,8 @@ void lwmdns_send_module_deinit(void)
 
 void lwmdns_send_ptr_query(const RdmnetScopeMonitorRef* ref)
 {
-  RDMNET_ASSERT(ref);
+  if (!RDMNET_ASSERT_VERIFY(ref))
+    return;
 
   // Start with a zeroed header
   uint8_t* cur_ptr = mdns_send_buf;
@@ -240,7 +247,8 @@ void lwmdns_send_ptr_query(const RdmnetScopeMonitorRef* ref)
 
 void lwmdns_send_any_query_on_service(const DiscoveredBroker* db)
 {
-  RDMNET_ASSERT(db);
+  if (!RDMNET_ASSERT_VERIFY(db))
+    return;
 
   // Start with a zeroed header
   uint8_t* cur_ptr = mdns_send_buf;
@@ -273,7 +281,8 @@ void lwmdns_send_any_query_on_service(const DiscoveredBroker* db)
 
 void lwmdns_send_any_query_on_hostname(const DiscoveredBroker* db)
 {
-  RDMNET_ASSERT(db);
+  if (!RDMNET_ASSERT_VERIFY(db))
+    return;
 
   // Start with a zeroed header
   uint8_t* cur_ptr = mdns_send_buf;
@@ -303,14 +312,23 @@ static void init_send_sockets_array(size_t array_size)
 {
   for (SendSocket* send_socket = send_sockets; send_socket < send_sockets + array_size; ++send_socket)
   {
+    if (!RDMNET_ASSERT_VERIFY(send_socket))
+      return;
+
     send_socket->socket = ETCPAL_SOCKET_INVALID;
   }
 }
 
 static void send_buf(size_t data_size)
 {
+  if (!RDMNET_ASSERT_VERIFY(kMdnsIpv4Address) || !RDMNET_ASSERT_VERIFY(kMdnsIpv6Address))
+    return;
+
   for (SendSocket* send_socket = send_sockets; send_socket < send_sockets + num_send_sockets; ++send_socket)
   {
+    if (!RDMNET_ASSERT_VERIFY(send_socket))
+      return;
+
     EtcPalSockAddr send_addr;
     send_addr.port = E133_MDNS_PORT;
     if (send_socket->netint_id.ip_type == kEtcPalIpTypeV4)

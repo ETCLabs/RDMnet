@@ -241,11 +241,11 @@ typedef struct RdmnetSyncRdmResponse
  * @param response_data_len_in Length of the RDM response parameter data provided.
  */
 #define RDMNET_SYNC_SEND_RDM_ACK(response_ptr, response_data_len_in)          \
-  do                                                                          \
+  if (response_ptr)                                                           \
   {                                                                           \
     (response_ptr)->response_action = kRdmnetRdmResponseActionSendAck;        \
     (response_ptr)->response_data.response_data_len = (response_data_len_in); \
-  } while (0)
+  }
 
 /**
  * @brief Indicate that an RDM NACK should be sent when this callback returns.
@@ -253,24 +253,32 @@ typedef struct RdmnetSyncRdmResponse
  * @param nack_reason_in RDM NACK reason code to send with the NACK response.
  */
 #define RDMNET_SYNC_SEND_RDM_NACK(response_ptr, nack_reason_in)         \
-  do                                                                    \
+  if (response_ptr)                                                     \
   {                                                                     \
     (response_ptr)->response_action = kRdmnetRdmResponseActionSendNack; \
     (response_ptr)->response_data.nack_reason = (nack_reason_in);       \
-  } while (0)
+  }
 
 /**
  * @brief Defer the RDM response to be sent later from another context.
  * @details Make sure to save any RDM command data for later processing using the appropriate API function.
  * @param response_ptr Pointer to RdmnetSyncRdmResponse in which to set data.
  */
-#define RDMNET_SYNC_DEFER_RDM_RESPONSE(response_ptr) ((response_ptr)->response_action = kRdmnetRdmResponseActionDefer)
+#define RDMNET_SYNC_DEFER_RDM_RESPONSE(response_ptr)                 \
+  if (response_ptr)                                                  \
+  {                                                                  \
+    (response_ptr)->response_action = kRdmnetRdmResponseActionDefer; \
+  }
 
 /**
  * @brief Trigger another notification for the (non-LLRP) RDM command on the next tick.
  * @param response_ptr Pointer to RdmnetSyncRdmResponse in which to set data.
  */
-#define RDMNET_SYNC_RETRY_LATER(response_ptr) ((response_ptr)->response_action = kRdmnetRdmResponseActionRetryLater)
+#define RDMNET_SYNC_RETRY_LATER(response_ptr)                             \
+  if (response_ptr)                                                       \
+  {                                                                       \
+    (response_ptr)->response_action = kRdmnetRdmResponseActionRetryLater; \
+  }
 
 /**
  * Enumeration representing an action to take after an "EPT data received" callback completes.
@@ -325,11 +333,11 @@ typedef struct RdmnetSyncEptResponse
  * @param response_data_len_in Length of the EPT response data provided - must be nonzero.
  */
 #define RDMNET_SYNC_SEND_EPT_DATA(response_ptr, response_data_len_in)         \
-  do                                                                          \
+  if (response_ptr)                                                           \
   {                                                                           \
     (response_ptr)->response_action = kRdmnetEptResponseActionSendData;       \
     (response_ptr)->response_data.response_data_len = (response_data_len_in); \
-  } while (0)
+  }
 
 /**
  * @brief Indicate that an EPT status message should be sent when this callback returns.
@@ -337,17 +345,21 @@ typedef struct RdmnetSyncEptResponse
  * @param status_code_in EPT status code to send with the response.
  */
 #define RDMNET_SYNC_SEND_EPT_STATUS(response_ptr, status_code_in)         \
-  do                                                                      \
+  if (response_ptr)                                                       \
   {                                                                       \
     (response_ptr)->response_action = kRdmnetEptResponseActionSendStatus; \
     (response_ptr)->response_data.status_code = (status_code_in);         \
-  } while (0)
+  }
 
 /**
  * @brief Defer the response to the EPT message, either to be sent later or because no response is necessary.
  * @param response_ptr Pointer to RdmnetSyncEptResponse in which to set data.
  */
-#define RDMNET_SYNC_DEFER_EPT_RESPONSE(response_ptr) ((response_ptr)->response_action = kRdmnetEptResponseActionDefer)
+#define RDMNET_SYNC_DEFER_EPT_RESPONSE(response_ptr)                 \
+  if (response_ptr)                                                  \
+  {                                                                  \
+    (response_ptr)->response_action = kRdmnetEptResponseActionDefer; \
+  }
 
 /**
  * @brief An RDM command class, for RDMnet purposes.

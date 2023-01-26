@@ -58,30 +58,38 @@ typedef struct BrokerClientConnectMsg
  * @param ccmsgptr Pointer to BrokerClientConnectMsg.
  * @param scope_str String to copy to the BrokerClientConnectMsg (const char *).
  */
-#define BROKER_CLIENT_CONNECT_MSG_SET_SCOPE(ccmsgptr, scope_str) \
-  rdmnet_safe_strncpy((ccmsgptr)->scope, scope_str, E133_SCOPE_STRING_PADDED_LENGTH)
+#define BROKER_CLIENT_CONNECT_MSG_SET_SCOPE(ccmsgptr, scope_str)                            \
+  ((RDMNET_ASSERT_VERIFY(ccmsgptr) && RDMNET_ASSERT_VERIFY(scope_str))                      \
+       ? rdmnet_safe_strncpy((ccmsgptr)->scope, scope_str, E133_SCOPE_STRING_PADDED_LENGTH) \
+       : NULL)
 
 /**
  * @brief Copy the default scope string to a BrokerClientConnectMsg.
  * @param ccmsgptr Pointer to BrokerClientConnectMsg.
  */
-#define BROKER_CLIENT_CONNECT_MSG_SET_DEFAULT_SCOPE(ccmsgptr) \
-  ETCPAL_MSVC_NO_DEP_WRN strncpy((ccmsgptr)->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH)
+#define BROKER_CLIENT_CONNECT_MSG_SET_DEFAULT_SCOPE(ccmsgptr)                                                  \
+  ETCPAL_MSVC_NO_DEP_WRN(RDMNET_ASSERT_VERIFY(ccmsgptr)                                                        \
+                             ? strncpy((ccmsgptr)->scope, E133_DEFAULT_SCOPE, E133_SCOPE_STRING_PADDED_LENGTH) \
+                             : NULL)
 
 /**
  * @brief Safely copy a search domain string to a BrokerClientConnectMsg.
  * @param ccmsgptr Pointer to BrokerClientConnectMsg.
  * @param search_domain_str String to copy to the BrokerClientConnectMsg (const char *).
  */
-#define BROKER_CLIENT_CONNECT_MSG_SET_SEARCH_DOMAIN(ccmsgptr, search_domain_str) \
-  rdmnet_safe_strncpy((ccmsgptr)->search_domain, search_domain_str, E133_DOMAIN_STRING_PADDED_LENGTH)
+#define BROKER_CLIENT_CONNECT_MSG_SET_SEARCH_DOMAIN(ccmsgptr, search_domain_str)                             \
+  ((RDMNET_ASSERT_VERIFY(ccmsgptr) && RDMNET_ASSERT_VERIFY(search_domain_str))                               \
+       ? rdmnet_safe_strncpy((ccmsgptr)->search_domain, search_domain_str, E133_DOMAIN_STRING_PADDED_LENGTH) \
+       : NULL)
 
 /**
  * @brief Copy the default search domain string to a BrokerClientConnectMsg.
  * @param ccmsgptr Pointer to BrokerClientConnectMsg.
  */
-#define BROKER_CLIENT_CONNECT_MSG_SET_DEFAULT_SEARCH_DOMAIN(ccmsgptr) \
-  ETCPAL_MSVC_NO_DEP_WRN strncpy((ccmsgptr)->search_domain, E133_DEFAULT_DOMAIN, E133_DOMAIN_STRING_PADDED_LENGTH)
+#define BROKER_CLIENT_CONNECT_MSG_SET_DEFAULT_SEARCH_DOMAIN(ccmsgptr)                                             \
+  ETCPAL_MSVC_NO_DEP_WRN(RDMNET_ASSERT_VERIFY(ccmsgptr) ? strncpy((ccmsgptr)->search_domain, E133_DEFAULT_DOMAIN, \
+                                                                  E133_DOMAIN_STRING_PADDED_LENGTH)               \
+                                                        : NULL)
 
 /** The Connect Reply message in the broker protocol. */
 typedef struct BrokerConnectReplyMsg
@@ -200,42 +208,48 @@ typedef struct BrokerMessage
  * @param brokermsgptr Pointer to BrokerMessage.
  * @return (bool) whether the message contains a Client Connect message.
  */
-#define BROKER_IS_CLIENT_CONNECT_MSG(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_CONNECT)
+#define BROKER_IS_CLIENT_CONNECT_MSG(brokermsgptr) \
+  (RDMNET_ASSERT_VERIFY(brokermsgptr) && ((brokermsgptr)->vector == VECTOR_BROKER_CONNECT))
 
 /**
  * @brief Get the encapsulated Client Connect message from a BrokerMessage.
  * @param brokermsgptr Pointer to BrokerMessage.
  * @return Pointer to encapsulated Client Connect message (BrokerClientConnectMsg*).
  */
-#define BROKER_GET_CLIENT_CONNECT_MSG(brokermsgptr) (&(brokermsgptr)->data.client_connect)
+#define BROKER_GET_CLIENT_CONNECT_MSG(brokermsgptr) \
+  (RDMNET_ASSERT_VERIFY(brokermsgptr) ? &(brokermsgptr)->data.client_connect : NULL)
 
 /**
  * @brief Determine whether a BrokerMessage contains a Connect Reply message.
  * @param brokermsgptr Pointer to BrokerMessage.
  * @return (bool) whether the message contains a Connect Reply message.
  */
-#define BROKER_IS_CONNECT_REPLY_MSG(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_CONNECT_REPLY)
+#define BROKER_IS_CONNECT_REPLY_MSG(brokermsgptr) \
+  (RDMNET_ASSERT_VERIFY(brokermsgptr) && ((brokermsgptr)->vector == VECTOR_BROKER_CONNECT_REPLY))
 
 /**
  * @brief Get the encapsulated Connect Reply message from a BrokerMessage.
  * @param brokermsgptr Pointer to BrokerMessage.
  * @return Pointer to encapsulated Connect Reply message (BrokerConnectReplyMsg*).
  */
-#define BROKER_GET_CONNECT_REPLY_MSG(brokermsgptr) (&(brokermsgptr)->data.connect_reply)
+#define BROKER_GET_CONNECT_REPLY_MSG(brokermsgptr) \
+  (RDMNET_ASSERT_VERIFY(brokermsgptr) ? &(brokermsgptr)->data.connect_reply : NULL)
 
 /**
  * @brief Determine whether a BrokerMessage contains a Client Entry Update message.
  * @param brokermsgptr Pointer to BrokerMessage.
  * @return (bool) whether the message contains a Client Entry Update message.
  */
-#define BROKER_IS_CLIENT_ENTRY_UPDATE_MSG(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_CLIENT_ENTRY_UPDATE)
+#define BROKER_IS_CLIENT_ENTRY_UPDATE_MSG(brokermsgptr) \
+  (RDMNET_ASSERT_VERIFY(brokermsgptr) && ((brokermsgptr)->vector == VECTOR_BROKER_CLIENT_ENTRY_UPDATE))
 
 /**
  * @brief Get the encapsulated Client Entry Update message from a BrokerMessage.
  * @param brokermsgptr Pointer to BrokerMessage.
  * @return Pointer to encapsulated Client Entry Update message (BrokerClientEntryUpdateMsg*).
  */
-#define BROKER_GET_CLIENT_ENTRY_UPDATE_MSG(brokermsgptr) (&(brokermsgptr)->data.client_entry_update)
+#define BROKER_GET_CLIENT_ENTRY_UPDATE_MSG(brokermsgptr) \
+  (RDMNET_ASSERT_VERIFY(brokermsgptr) ? &(brokermsgptr)->data.client_entry_update : NULL)
 
 /**
  * @brief Determine whether a BrokerMessage contains a Client Redirect message.
@@ -243,14 +257,16 @@ typedef struct BrokerMessage
  * @return (bool) whether the message contains a Client Redirect message.
  */
 #define BROKER_IS_CLIENT_REDIRECT_MSG(brokermsgptr) \
-  ((brokermsgptr)->vector == VECTOR_BROKER_REDIRECT_V4 || (brokermsgptr)->vector == VECTOR_BROKER_REDIRECT_V6)
+  (RDMNET_ASSERT_VERIFY(brokermsgptr) &&            \
+   ((brokermsgptr)->vector == VECTOR_BROKER_REDIRECT_V4 || (brokermsgptr)->vector == VECTOR_BROKER_REDIRECT_V6))
 
 /**
  * @brief Get the encapsulated Client Redirect message from a BrokerMessage.
  * @param brokermsgptr Pointer to BrokerMessage.
  * @return Pointer to encapsulated Client Redirect message (BrokerClientRedirectMsg*).
  */
-#define BROKER_GET_CLIENT_REDIRECT_MSG(brokermsgptr) (&(brokermsgptr)->data.client_redirect)
+#define BROKER_GET_CLIENT_REDIRECT_MSG(brokermsgptr) \
+  (RDMNET_ASSERT_VERIFY(brokermsgptr) ? &(brokermsgptr)->data.client_redirect : NULL)
 
 /**
  * @brief Determine whether a BrokerMessage contains a Client List. Multiple types of broker
@@ -258,45 +274,51 @@ typedef struct BrokerMessage
  * @param brokermsgptr Pointer to BrokerMessage.
  * @return (bool) whether the message contains a Client List.
  */
-#define BROKER_IS_CLIENT_LIST(brokermsgptr)                                                                       \
-  ((brokermsgptr)->vector == VECTOR_BROKER_CONNECTED_CLIENT_LIST ||                                               \
-   (brokermsgptr)->vector == VECTOR_BROKER_CLIENT_ADD || (brokermsgptr)->vector == VECTOR_BROKER_CLIENT_REMOVE || \
-   (brokermsgptr)->vector == VECTOR_BROKER_CLIENT_ENTRY_CHANGE)
+#define BROKER_IS_CLIENT_LIST(brokermsgptr)                                                                        \
+  (RDMNET_ASSERT_VERIFY(brokermsgptr) &&                                                                           \
+   ((brokermsgptr)->vector == VECTOR_BROKER_CONNECTED_CLIENT_LIST ||                                               \
+    (brokermsgptr)->vector == VECTOR_BROKER_CLIENT_ADD || (brokermsgptr)->vector == VECTOR_BROKER_CLIENT_REMOVE || \
+    (brokermsgptr)->vector == VECTOR_BROKER_CLIENT_ENTRY_CHANGE))
 
 /**
  * @brief Get the encapsulated Client List from a BrokerMessage.
  * @param brokermsgptr Pointer to BrokerMessage.
  * @return Pointer to encapsulated Client List (ClientList*).
  */
-#define BROKER_GET_CLIENT_LIST(brokermsgptr) (&(brokermsgptr)->data.client_list)
+#define BROKER_GET_CLIENT_LIST(brokermsgptr) \
+  (RDMNET_ASSERT_VERIFY(brokermsgptr) ? &(brokermsgptr)->data.client_list : NULL)
 
 /**
  * @brief Determine whether a BrokerClientList contains an RPT Client List.
  * @param clientlistptr Pointer to BrokerClientList.
  * @return (bool) whether the message contains an RPT Client List.
  */
-#define BROKER_IS_RPT_CLIENT_LIST(clientlistptr) ((clientlistptr)->client_protocol == E133_CLIENT_PROTOCOL_RPT)
+#define BROKER_IS_RPT_CLIENT_LIST(clientlistptr) \
+  (RDMNET_ASSERT_VERIFY(clientlistptr) && ((clientlistptr)->client_protocol == E133_CLIENT_PROTOCOL_RPT))
 
 /**
  * @brief Get the encapsulated RPT Client List from a BrokerClientList.
  * @param clientlistptr Pointer to BrokerClientList.
  * @return Pointer to encapsulated RPT Client List (RdmnetRptClientList*).
  */
-#define BROKER_GET_RPT_CLIENT_LIST(clientlistptr) (&(clientlistptr)->data.rpt)
+#define BROKER_GET_RPT_CLIENT_LIST(clientlistptr) \
+  (RDMNET_ASSERT_VERIFY(clientlistptr) ? &(clientlistptr)->data.rpt : NULL)
 
 /**
  * @brief Determine whether a BrokerClientList contains an EPT Client List.
  * @param clientlistptr Pointer to BrokerClientList.
  * @return (bool) whether the message contains an EPT Client List.
  */
-#define BROKER_IS_EPT_CLIENT_LIST(clientlistptr) ((clientlistptr)->client_protocol == E133_CLIENT_PROTOCOL_EPT)
+#define BROKER_IS_EPT_CLIENT_LIST(clientlistptr) \
+  (RDMNET_ASSERT_VERIFY(clientlistptr) && ((clientlistptr)->client_protocol == E133_CLIENT_PROTOCOL_EPT))
 
 /**
  * @brief Get the encapsulated EPT Client List from a BrokerClientList.
  * @param clientlistptr Pointer to BrokerClientList.
  * @return Pointer to encapsulated EPT Client List (RdmnetEptClientList*).
  */
-#define BROKER_GET_EPT_CLIENT_LIST(clientlistptr) (&(clientlistptr)->data.ept)
+#define BROKER_GET_EPT_CLIENT_LIST(clientlistptr) \
+  (RDMNET_ASSERT_VERIFY(clientlistptr) ? &(clientlistptr)->data.ept : NULL)
 
 /**
  * @brief Determine whether a BrokerMessage contains a Request Dynamic UID Assignment message.
@@ -304,14 +326,15 @@ typedef struct BrokerMessage
  * @return (bool) whether the message contains a Request Dynamic UID Assignment message.
  */
 #define BROKER_IS_REQUEST_DYNAMIC_UID_ASSIGNMENT(brokermsgptr) \
-  ((brokermsgptr)->vector == VECTOR_BROKER_REQUEST_DYNAMIC_UIDS)
+  (RDMNET_ASSERT_VERIFY(brokermsgptr) && ((brokermsgptr)->vector == VECTOR_BROKER_REQUEST_DYNAMIC_UIDS))
 
 /**
  * @brief Get the encapsulated Dynamic UID Request List from a BrokerMessage.
  * @param brokermsgptr Pointer to BrokerMessage.
  * @return Pointer to encapsulated Dynamic UID Request List (BrokerDynamicUidRequestList*).
  */
-#define BROKER_GET_DYNAMIC_UID_REQUEST_LIST(brokermsgptr) (&(brokermsgptr)->data.dynamic_uid_request_list)
+#define BROKER_GET_DYNAMIC_UID_REQUEST_LIST(brokermsgptr) \
+  (RDMNET_ASSERT_VERIFY(brokermsgptr) ? &(brokermsgptr)->data.dynamic_uid_request_list : NULL)
 
 /**
  * @brief Determine whether a BrokerMessage contains a Dynamic UID Assignment List message.
@@ -319,14 +342,15 @@ typedef struct BrokerMessage
  * @return (bool) whether the message contains a Dynamic UID Assignment List message.
  */
 #define BROKER_IS_DYNAMIC_UID_ASSIGNMENT_LIST(brokermsgptr) \
-  ((brokermsgptr)->vector == VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS)
+  (RDMNET_ASSERT_VERIFY(brokermsgptr) && ((brokermsgptr)->vector == VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS))
 
 /**
  * @brief Get the encapsulated Dynamic UID Assignment List from a BrokerMessage.
  * @param brokermsgptr Pointer to BrokerMessage.
  * @return Pointer to encapsulated Dynamic UID Assignment List (BrokerDynamicUidAssignmentList*).
  */
-#define BROKER_GET_DYNAMIC_UID_ASSIGNMENT_LIST(brokermsgptr) (&(brokermsgptr)->data.dynamic_uid_assignment_list)
+#define BROKER_GET_DYNAMIC_UID_ASSIGNMENT_LIST(brokermsgptr) \
+  (RDMNET_ASSERT_VERIFY(brokermsgptr) ? &(brokermsgptr)->data.dynamic_uid_assignment_list : NULL)
 
 /**
  * @brief Determine whether a BrokerMessage contains a Fetch Dynamic UID Assignment List message.
@@ -334,27 +358,30 @@ typedef struct BrokerMessage
  * @return (bool) whether the message contains a Fetch Dynamic UID Assignment List message.
  */
 #define BROKER_IS_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(brokermsgptr) \
-  ((brokermsgptr)->vector == VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST)
+  (RDMNET_ASSERT_VERIFY(brokermsgptr) && ((brokermsgptr)->vector == VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST))
 
 /**
  * @brief Get the encapsulated Fetch Dynamic UID Assignment List from a BrokerMessage.
  * @param brokermsgptr Pointer to BrokerMessage.
  * @return Pointer to encapsulated Fetch Dynamic UID Assignment List (BrokerFetchUidAssignmentList*).
  */
-#define BROKER_GET_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(brokermsgptr) (&(brokermsgptr)->data.fetch_uid_assignment_list)
+#define BROKER_GET_FETCH_DYNAMIC_UID_ASSIGNMENT_LIST(brokermsgptr) \
+  (RDMNET_ASSERT_VERIFY(brokermsgptr) ? &(brokermsgptr)->data.fetch_uid_assignment_list : NULL)
 
 /**
  * @brief Determine whether a BrokerMessage contains a Disconnect message.
  * @param brokermsgptr Pointer to BrokerMessage.
  * @return (bool) whether the message contains a Disconnect message.
  */
-#define BROKER_IS_DISCONNECT_MSG(brokermsgptr) ((brokermsgptr)->vector == VECTOR_BROKER_DISCONNECT)
+#define BROKER_IS_DISCONNECT_MSG(brokermsgptr) \
+  (RDMNET_ASSERT_VERIFY(brokermsgptr) && ((brokermsgptr)->vector == VECTOR_BROKER_DISCONNECT))
 
 /**
  * @brief Get the encapsulated Disconnect message from a BrokerMessage.
  * @param brokermsgptr Pointer to BrokerMessage.
  * @return Pointer to encapsulated Disconnect message (BrokerClientConnectMsg*).
  */
-#define BROKER_GET_DISCONNECT_MSG(brokermsgptr) (&(brokermsgptr)->data.disconnect)
+#define BROKER_GET_DISCONNECT_MSG(brokermsgptr) \
+  (RDMNET_ASSERT_VERIFY(brokermsgptr) ? &(brokermsgptr)->data.disconnect : NULL)
 
 #endif /* RDMNET_CORE_BROKER_MESSAGE_H_ */

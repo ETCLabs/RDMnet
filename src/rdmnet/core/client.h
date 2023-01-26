@@ -78,9 +78,11 @@ typedef struct RptClientMessage
   } payload;
 } RptClientMessage;
 
-#define RDMNET_GET_RDM_COMMAND(rptclimsgptr) (&(rptclimsgptr)->payload.cmd)
-#define RDMNET_GET_RDM_RESPONSE(rptclimsgptr) (&(rptclimsgptr)->payload.resp)
-#define RDMNET_GET_RPT_STATUS(rptclimsgptr) (&(rptclimsgptr)->payload.status)
+#define RDMNET_GET_RDM_COMMAND(rptclimsgptr) (RDMNET_ASSERT_VERIFY(rptclimsgptr) ? &(rptclimsgptr)->payload.cmd : NULL)
+#define RDMNET_GET_RDM_RESPONSE(rptclimsgptr) \
+  (RDMNET_ASSERT_VERIFY(rptclimsgptr) ? &(rptclimsgptr)->payload.resp : NULL)
+#define RDMNET_GET_RPT_STATUS(rptclimsgptr) \
+  (RDMNET_ASSERT_VERIFY(rptclimsgptr) ? &(rptclimsgptr)->payload.status : NULL)
 
 typedef enum
 {
@@ -290,8 +292,8 @@ struct RCClient
   bool         target_valid;
 };
 
-#define RC_RPT_CLIENT_DATA(clientptr) (&(clientptr)->data.rpt)
-#define RC_EPT_CLIENT_DATA(clientptr) (&(clientptr)->data.ept)
+#define RC_RPT_CLIENT_DATA(clientptr) (RDMNET_ASSERT_VERIFY(clientptr) ? &(clientptr)->data.rpt : NULL)
+#define RC_EPT_CLIENT_DATA(clientptr) (RDMNET_ASSERT_VERIFY(clientptr) ? &(clientptr)->data.ept : NULL)
 
 #define RC_CLIENT_INIT_SCOPES(clientptr, initial_capacity) \
   RC_INIT_BUF(clientptr, RCClientScope, scopes, initial_capacity, RDMNET_MAX_SCOPES_PER_CLIENT)

@@ -51,6 +51,9 @@ rdmnet::Broker::~Broker()
 /// @return Other codes translated from system error codes are possible.
 etcpal::Error rdmnet::Broker::Startup(const Settings& settings, etcpal::Logger* logger, NotifyHandler* notify)
 {
+  if (!RDMNET_ASSERT_VERIFY(core_))
+    return kEtcPalErrSys;
+
   return core_->Startup(settings, notify, logger);
 }
 
@@ -62,6 +65,9 @@ etcpal::Error rdmnet::Broker::Startup(const Settings& settings, etcpal::Logger* 
 /// @param disconnect_reason Disconnect reason code to send to all connected clients.
 void rdmnet::Broker::Shutdown(rdmnet_disconnect_reason_t disconnect_reason)
 {
+  if (!RDMNET_ASSERT_VERIFY(core_))
+    return;
+
   core_->Shutdown(disconnect_reason);
 }
 
@@ -81,6 +87,9 @@ void rdmnet::Broker::Shutdown(rdmnet_disconnect_reason_t disconnect_reason)
 /// @return #kEtcPalErrSys: An internal library or system call error occurred.
 etcpal::Error rdmnet::Broker::ChangeScope(const std::string& new_scope, rdmnet_disconnect_reason_t disconnect_reason)
 {
+  if (!RDMNET_ASSERT_VERIFY(core_))
+    return kEtcPalErrSys;
+
   return core_->ChangeScope(new_scope, disconnect_reason);
 }
 
@@ -90,5 +99,9 @@ etcpal::Error rdmnet::Broker::ChangeScope(const std::string& new_scope, rdmnet_d
 /// reason.
 const rdmnet::Broker::Settings& rdmnet::Broker::settings() const
 {
+  static const rdmnet::Broker::Settings kEmpty;
+  if (!RDMNET_ASSERT_VERIFY(core_))
+    return kEmpty;
+
   return core_->settings();
 }

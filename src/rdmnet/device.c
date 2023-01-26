@@ -42,11 +42,16 @@
 
 /***************************** Private macros ********************************/
 
-#define GET_DEVICE_FROM_CLIENT(clientptr) (RdmnetDevice*)((char*)(clientptr)-offsetof(RdmnetDevice, client))
+#define GET_DEVICE_FROM_CLIENT(clientptr) \
+  (RDMNET_ASSERT_VERIFY(clientptr) ? (RdmnetDevice*)((char*)(clientptr)-offsetof(RdmnetDevice, client)) : NULL)
 #define ENDPOINT_ID_VALID(id) (id != 0 && id < 64000)
 
-#define DEVICE_LOCK(device_ptr) etcpal_mutex_lock(&(device_ptr)->lock)
-#define DEVICE_UNLOCK(device_ptr) etcpal_mutex_unlock(&(device_ptr)->lock)
+#define DEVICE_LOCK(device_ptr) (RDMNET_ASSERT_VERIFY(device_ptr) && etcpal_mutex_lock(&(device_ptr)->lock))
+#define DEVICE_UNLOCK(device_ptr)             \
+  if (RDMNET_ASSERT_VERIFY(device_ptr))       \
+  {                                           \
+    etcpal_mutex_unlock(&(device_ptr)->lock); \
+  }
 
 /*********************** Private function prototypes *************************/
 
@@ -295,10 +300,13 @@ etcpal_error_t rdmnet_device_send_rdm_ack(rdmnet_device_t              handle,
   if (!received_cmd)
     return kEtcPalErrInvalid;
 
-  RdmnetDevice*  device;
+  RdmnetDevice*  device = NULL;
   etcpal_error_t res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   res = rc_client_send_rdm_ack(&device->client, device->scope_handle, received_cmd, response_data, response_data_len);
   release_device(device);
@@ -324,10 +332,13 @@ etcpal_error_t rdmnet_device_send_rdm_nack(rdmnet_device_t              handle,
   if (!received_cmd)
     return kEtcPalErrInvalid;
 
-  RdmnetDevice*  device;
+  RdmnetDevice*  device = NULL;
   etcpal_error_t res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   res = rc_client_send_rdm_nack(&device->client, device->scope_handle, received_cmd, nack_reason);
   release_device(device);
@@ -359,10 +370,13 @@ etcpal_error_t rdmnet_device_send_rdm_update(rdmnet_device_t handle,
                                              const uint8_t*  data,
                                              size_t          data_len)
 {
-  RdmnetDevice*  device;
+  RdmnetDevice*  device = NULL;
   etcpal_error_t res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   res = rc_client_send_rdm_update(&device->client, device->scope_handle, subdevice, param_id, data, data_len);
   release_device(device);
@@ -396,10 +410,13 @@ etcpal_error_t rdmnet_device_send_rdm_update_from_responder(rdmnet_device_t     
   if (!source_addr)
     return kEtcPalErrInvalid;
 
-  RdmnetDevice*  device;
+  RdmnetDevice*  device = NULL;
   etcpal_error_t res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   res = rc_client_send_rdm_update_from_responder(&device->client, device->scope_handle, source_addr, param_id, data,
                                                  data_len);
@@ -431,10 +448,13 @@ etcpal_error_t rdmnet_device_send_status(rdmnet_device_t              handle,
   if (!received_cmd)
     return kEtcPalErrInvalid;
 
-  RdmnetDevice*  device;
+  RdmnetDevice*  device = NULL;
   etcpal_error_t res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   res = rc_client_send_rpt_status(&device->client, device->scope_handle, received_cmd, status_code, status_string);
   release_device(device);
@@ -462,10 +482,13 @@ etcpal_error_t rdmnet_device_send_llrp_ack(rdmnet_device_t            handle,
   if (!received_cmd)
     return kEtcPalErrInvalid;
 
-  RdmnetDevice*  device;
+  RdmnetDevice*  device = NULL;
   etcpal_error_t res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   res = rc_client_send_llrp_ack(&device->client, received_cmd, response_data, response_data_len);
   release_device(device);
@@ -491,10 +514,13 @@ etcpal_error_t rdmnet_device_send_llrp_nack(rdmnet_device_t            handle,
   if (!received_cmd)
     return kEtcPalErrInvalid;
 
-  RdmnetDevice*  device;
+  RdmnetDevice*  device = NULL;
   etcpal_error_t res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   res = rc_client_send_llrp_nack(&device->client, received_cmd, nack_reason);
   release_device(device);
@@ -522,10 +548,13 @@ etcpal_error_t rdmnet_device_add_physical_endpoint(rdmnet_device_t              
   if (res != kEtcPalErrOk)
     return res;
 
-  RdmnetDevice* device;
+  RdmnetDevice* device = NULL;
   res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   if (add_physical_endpoints(device, endpoint_config, 1))
     notify_endpoint_list_change(device);
@@ -559,10 +588,13 @@ etcpal_error_t rdmnet_device_add_physical_endpoints(rdmnet_device_t             
   if (res != kEtcPalErrOk)
     return res;
 
-  RdmnetDevice* device;
+  RdmnetDevice* device = NULL;
   res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   if (add_physical_endpoints(device, endpoint_configs, num_endpoints))
     notify_endpoint_list_change(device);
@@ -594,10 +626,13 @@ etcpal_error_t rdmnet_device_add_virtual_endpoint(rdmnet_device_t               
   if (res != kEtcPalErrOk)
     return res;
 
-  RdmnetDevice* device;
+  RdmnetDevice* device = NULL;
   res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   if (add_virtual_endpoints(device, endpoint_config, 1))
     notify_endpoint_list_change(device);
@@ -631,10 +666,13 @@ etcpal_error_t rdmnet_device_add_virtual_endpoints(rdmnet_device_t              
   if (res != kEtcPalErrOk)
     return res;
 
-  RdmnetDevice* device;
+  RdmnetDevice* device = NULL;
   res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   if (add_virtual_endpoints(device, endpoint_configs, num_endpoints))
     notify_endpoint_list_change(device);
@@ -662,10 +700,13 @@ etcpal_error_t rdmnet_device_remove_endpoint(rdmnet_device_t handle, uint16_t en
   if (!ENDPOINT_ID_VALID(endpoint_id))
     return kEtcPalErrInvalid;
 
-  RdmnetDevice*  device;
+  RdmnetDevice*  device = NULL;
   etcpal_error_t res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   if (remove_endpoints(device, &endpoint_id, 1))
     notify_endpoint_list_change(device);
@@ -696,10 +737,13 @@ etcpal_error_t rdmnet_device_remove_endpoints(rdmnet_device_t handle,
   if (!endpoint_ids || num_endpoints == 0)
     return kEtcPalErrInvalid;
 
-  RdmnetDevice*  device;
+  RdmnetDevice*  device = NULL;
   etcpal_error_t res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   if (remove_endpoints(device, endpoint_ids, num_endpoints))
     notify_endpoint_list_change(device);
@@ -737,10 +781,13 @@ etcpal_error_t rdmnet_device_add_static_responders(rdmnet_device_t handle,
   if (!responder_uids || num_responders == 0)
     return kEtcPalErrInvalid;
 
-  RdmnetDevice*  device;
+  RdmnetDevice*  device = NULL;
   etcpal_error_t res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   DeviceEndpoint* endpoint = find_endpoint(device, endpoint_id);
   if (!endpoint)
@@ -788,10 +835,13 @@ etcpal_error_t rdmnet_device_add_dynamic_responders(rdmnet_device_t   handle,
   if (!responder_ids || num_responders == 0)
     return kEtcPalErrInvalid;
 
-  RdmnetDevice*  device;
+  RdmnetDevice*  device = NULL;
   etcpal_error_t res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   DeviceEndpoint* endpoint = find_endpoint(device, endpoint_id);
   if (!endpoint)
@@ -839,10 +889,13 @@ etcpal_error_t rdmnet_device_add_physical_responders(rdmnet_device_t            
   if (!responders || num_responders == 0)
     return kEtcPalErrInvalid;
 
-  RdmnetDevice*  device;
+  RdmnetDevice*  device = NULL;
   etcpal_error_t res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   DeviceEndpoint* endpoint = find_endpoint(device, endpoint_id);
   if (!endpoint)
@@ -886,10 +939,13 @@ etcpal_error_t rdmnet_device_remove_static_responders(rdmnet_device_t handle,
   if (!responder_uids || num_responders == 0)
     return kEtcPalErrInvalid;
 
-  RdmnetDevice*  device;
+  RdmnetDevice*  device = NULL;
   etcpal_error_t res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   DeviceEndpoint* endpoint = find_endpoint(device, endpoint_id);
   if (!endpoint)
@@ -958,10 +1014,13 @@ etcpal_error_t rdmnet_device_remove_dynamic_responders(rdmnet_device_t   handle,
   if (!responder_ids || num_responders == 0)
     return kEtcPalErrInvalid;
 
-  RdmnetDevice*  device;
+  RdmnetDevice*  device = NULL;
   etcpal_error_t res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   DeviceEndpoint* endpoint = find_endpoint(device, endpoint_id);
   if (!endpoint)
@@ -1018,10 +1077,13 @@ etcpal_error_t rdmnet_device_remove_physical_responders(rdmnet_device_t handle,
   if (!responder_uids || num_responders == 0)
     return kEtcPalErrInvalid;
 
-  RdmnetDevice*  device;
+  RdmnetDevice*  device = NULL;
   etcpal_error_t res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   DeviceEndpoint* endpoint = find_endpoint(device, endpoint_id);
   if (!endpoint)
@@ -1088,10 +1150,13 @@ etcpal_error_t rdmnet_device_change_scope(rdmnet_device_t            handle,
   if (!new_scope_config)
     return kEtcPalErrInvalid;
 
-  RdmnetDevice*  device;
+  RdmnetDevice*  device = NULL;
   etcpal_error_t res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   res = rc_client_change_scope(&device->client, device->scope_handle, new_scope_config, disconnect_reason);
 
@@ -1123,10 +1188,13 @@ etcpal_error_t rdmnet_device_change_search_domain(rdmnet_device_t            han
   if (!new_search_domain || strlen(new_search_domain) == 0)
     return kEtcPalErrInvalid;
 
-  RdmnetDevice*  device;
+  RdmnetDevice*  device = NULL;
   etcpal_error_t res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   res = rc_client_change_search_domain(&device->client, new_search_domain, disconnect_reason);
 
@@ -1151,10 +1219,13 @@ etcpal_error_t rdmnet_device_change_search_domain(rdmnet_device_t            han
  */
 etcpal_error_t rdmnet_device_get_scope(rdmnet_device_t handle, char* scope_str_buf, EtcPalSockAddr* static_broker_addr)
 {
-  RdmnetDevice*  device;
+  RdmnetDevice*  device = NULL;
   etcpal_error_t res = get_device(handle, &device);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
 
   res = rc_client_get_scope(&device->client, device->scope_handle, scope_str_buf, static_broker_addr);
   release_device(device);
@@ -1163,6 +1234,9 @@ etcpal_error_t rdmnet_device_get_scope(rdmnet_device_t handle, char* scope_str_b
 
 etcpal_error_t validate_device_config(const RdmnetDeviceConfig* config)
 {
+  if (!RDMNET_ASSERT_VERIFY(config))
+    return kEtcPalErrSys;
+
   if (ETCPAL_UUID_IS_NULL(&config->cid) || !validate_device_callbacks(&config->callbacks) ||
       !config->scope_config.scope || (!RDMNET_UID_IS_DYNAMIC_UID_REQUEST(&config->uid) && (config->uid.manu & 0x8000)))
   {
@@ -1178,6 +1252,9 @@ etcpal_error_t validate_device_config(const RdmnetDeviceConfig* config)
 
 bool validate_device_callbacks(const RdmnetDeviceCallbacks* callbacks)
 {
+  if (!RDMNET_ASSERT_VERIFY(callbacks))
+    return false;
+
   return (callbacks->connected && callbacks->connect_failed && callbacks->disconnected &&
           callbacks->rdm_command_received && callbacks->llrp_rdm_command_received);
 }
@@ -1220,6 +1297,9 @@ etcpal_error_t validate_virtual_endpoints(const RdmnetVirtualEndpointConfig* end
 
 etcpal_error_t create_new_device(const RdmnetDeviceConfig* config, rdmnet_device_t* handle)
 {
+  if (!RDMNET_ASSERT_VERIFY(config) || !RDMNET_ASSERT_VERIFY(handle))
+    return kEtcPalErrSys;
+
   etcpal_error_t res = kEtcPalErrNoMem;
 
   RdmnetDevice* new_device = rdmnet_alloc_device_instance();
@@ -1248,9 +1328,14 @@ etcpal_error_t create_new_device(const RdmnetDeviceConfig* config, rdmnet_device
   client->type = kClientProtocolRPT;
   client->cid = config->cid;
   client->callbacks = client_callbacks;
-  RC_RPT_CLIENT_DATA(client)->type = kRPTClientTypeDevice;
-  RC_RPT_CLIENT_DATA(client)->uid = config->uid;
-  RC_RPT_CLIENT_DATA(client)->callbacks = rpt_client_callbacks;
+
+  RCRptClientData* rpt_client = RC_RPT_CLIENT_DATA(client);
+  if (!RDMNET_ASSERT_VERIFY(rpt_client))
+    return kEtcPalErrSys;
+
+  rpt_client->type = kRPTClientTypeDevice;
+  rpt_client->uid = config->uid;
+  rpt_client->callbacks = rpt_client_callbacks;
   if (config->search_domain)
     rdmnet_safe_strncpy(client->search_domain, config->search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
   else
@@ -1283,6 +1368,9 @@ etcpal_error_t create_new_device(const RdmnetDeviceConfig* config, rdmnet_device
 
 etcpal_error_t get_device(rdmnet_device_t handle, RdmnetDevice** device)
 {
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
+
   if (handle == RDMNET_DEVICE_INVALID)
     return kEtcPalErrInvalid;
   if (!rc_initialized())
@@ -1310,12 +1398,18 @@ etcpal_error_t get_device(rdmnet_device_t handle, RdmnetDevice** device)
 
 void release_device(RdmnetDevice* device)
 {
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return;
+
   DEVICE_UNLOCK(device);
   rdmnet_readunlock();
 }
 
 bool add_virtual_endpoints(RdmnetDevice* device, const RdmnetVirtualEndpointConfig* endpoints, size_t num_endpoints)
 {
+  if (!RDMNET_ASSERT_VERIFY(device) || !RDMNET_ASSERT_VERIFY(device->endpoints))
+    return false;
+
   if (!DEVICE_CHECK_ENDPOINTS_CAPACITY(device, num_endpoints))
     return false;
 
@@ -1324,6 +1418,9 @@ bool add_virtual_endpoints(RdmnetDevice* device, const RdmnetVirtualEndpointConf
   bool res = true;
   for (size_t i = 0; i < num_endpoints; ++i)
   {
+    if (!RDMNET_ASSERT_VERIFY(endpoints))
+      return false;
+
     const RdmnetVirtualEndpointConfig* endpoint_config = &endpoints[i];
     DeviceEndpoint*                    new_endpoint = &device->endpoints[device->num_endpoints + i];
 
@@ -1359,6 +1456,11 @@ bool add_virtual_endpoints(RdmnetDevice* device, const RdmnetVirtualEndpointConf
 
 bool add_physical_endpoints(RdmnetDevice* device, const RdmnetPhysicalEndpointConfig* endpoints, size_t num_endpoints)
 {
+  if (!RDMNET_ASSERT_VERIFY(device) || !RDMNET_ASSERT_VERIFY(device->endpoints))
+  {
+    return false;
+  }
+
   if (!DEVICE_CHECK_ENDPOINTS_CAPACITY(device, num_endpoints))
     return false;
 
@@ -1367,6 +1469,9 @@ bool add_physical_endpoints(RdmnetDevice* device, const RdmnetPhysicalEndpointCo
   bool res = true;
   for (size_t i = 0; i < num_endpoints; ++i)
   {
+    if (!RDMNET_ASSERT_VERIFY(endpoints))
+      return false;
+
     const RdmnetPhysicalEndpointConfig* endpoint_config = &endpoints[i];
     DeviceEndpoint*                     new_endpoint = &device->endpoints[device->num_endpoints + i];
 
@@ -1391,6 +1496,9 @@ bool add_physical_endpoints(RdmnetDevice* device, const RdmnetPhysicalEndpointCo
 
 bool remove_endpoints(RdmnetDevice* device, const uint16_t* endpoint_ids, size_t num_endpoints)
 {
+  if (!RDMNET_ASSERT_VERIFY(device) || !RDMNET_ASSERT_VERIFY(endpoint_ids))
+    return false;
+
   // Make sure all of the endpoints exist
   for (const uint16_t* endpoint_id = endpoint_ids; endpoint_id < endpoint_ids + num_endpoints; ++endpoint_id)
   {
@@ -1401,6 +1509,8 @@ bool remove_endpoints(RdmnetDevice* device, const uint16_t* endpoint_ids, size_t
   for (const uint16_t* endpoint_id = endpoint_ids; endpoint_id < endpoint_ids + num_endpoints; ++endpoint_id)
   {
     DeviceEndpoint* endpoint = find_endpoint(device, *endpoint_id);
+    if (!RDMNET_ASSERT_VERIFY(endpoint))
+      return false;
 
     rdmnet_deinit_endpoints(endpoint, 1);
 
@@ -1417,6 +1527,9 @@ bool remove_endpoints(RdmnetDevice* device, const uint16_t* endpoint_ids, size_t
 
 void notify_endpoint_list_change(RdmnetDevice* device)
 {
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return;
+
   ++device->endpoint_list_change_number;
   if (device->connected_to_broker)
   {
@@ -1430,6 +1543,9 @@ void notify_endpoint_list_change(RdmnetDevice* device)
 
 void notify_endpoint_responder_list_change(RdmnetDevice* device, DeviceEndpoint* endpoint)
 {
+  if (!RDMNET_ASSERT_VERIFY(device) || !RDMNET_ASSERT_VERIFY(endpoint))
+    return;
+
   ++endpoint->responder_list_change_number;
   if (device->connected_to_broker)
   {
@@ -1445,8 +1561,14 @@ void notify_endpoint_responder_list_change(RdmnetDevice* device, DeviceEndpoint*
 
 DeviceEndpoint* find_endpoint(RdmnetDevice* device, uint16_t endpoint_id)
 {
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return NULL;
+
   for (DeviceEndpoint* endpoint = device->endpoints; endpoint < device->endpoints + device->num_endpoints; ++endpoint)
   {
+    if (!RDMNET_ASSERT_VERIFY(endpoint))
+      return NULL;
+
     if (endpoint->id == endpoint_id)
       return endpoint;
   }
@@ -1456,9 +1578,16 @@ DeviceEndpoint* find_endpoint(RdmnetDevice* device, uint16_t endpoint_id)
 void client_connected(RCClient* client, rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo* info)
 {
   ETCPAL_UNUSED_ARG(scope_handle);
-  RDMNET_ASSERT(client);
+
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(info))
+    return;
+
   RdmnetDevice* device = GET_DEVICE_FROM_CLIENT(client);
-  RDMNET_ASSERT(scope_handle == device->scope_handle);
+  if (!RDMNET_ASSERT_VERIFY(device) || !RDMNET_ASSERT_VERIFY(scope_handle == device->scope_handle) ||
+      !RDMNET_ASSERT_VERIFY(device->callbacks.connected))
+  {
+    return;
+  }
 
   if (DEVICE_LOCK(device))
   {
@@ -1474,18 +1603,33 @@ void client_connect_failed(RCClient*                            client,
                            const RdmnetClientConnectFailedInfo* info)
 {
   ETCPAL_UNUSED_ARG(scope_handle);
-  RDMNET_ASSERT(client);
+
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(info))
+    return;
+
   RdmnetDevice* device = GET_DEVICE_FROM_CLIENT(client);
-  RDMNET_ASSERT(scope_handle == device->scope_handle);
+  if (!RDMNET_ASSERT_VERIFY(device) || !RDMNET_ASSERT_VERIFY(scope_handle == device->scope_handle) ||
+      !RDMNET_ASSERT_VERIFY(device->callbacks.connect_failed))
+  {
+    return;
+  }
+
   device->callbacks.connect_failed(device->id.handle, info, device->callbacks.context);
 }
 
 void client_disconnected(RCClient* client, rdmnet_client_scope_t scope_handle, const RdmnetClientDisconnectedInfo* info)
 {
   ETCPAL_UNUSED_ARG(scope_handle);
-  RDMNET_ASSERT(client);
+
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(info))
+    return;
+
   RdmnetDevice* device = GET_DEVICE_FROM_CLIENT(client);
-  RDMNET_ASSERT(scope_handle == device->scope_handle);
+  if (!RDMNET_ASSERT_VERIFY(device) || !RDMNET_ASSERT_VERIFY(scope_handle == device->scope_handle) ||
+      !RDMNET_ASSERT_VERIFY(device->callbacks.disconnected))
+  {
+    return;
+  }
 
   if (DEVICE_LOCK(device))
   {
@@ -1494,6 +1638,9 @@ void client_disconnected(RCClient* client, rdmnet_client_scope_t scope_handle, c
     // Reset all dynamic UIDs on dynamic responders.
     for (DeviceEndpoint* endpoint = device->endpoints; endpoint < device->endpoints + device->num_endpoints; ++endpoint)
     {
+      if (!RDMNET_ASSERT_VERIFY(endpoint))
+        return;
+
       EtcPalRbIter iter;
       etcpal_rbiter_init(&iter);
       for (EndpointResponder* responder = etcpal_rbiter_first(&iter, &endpoint->responders); responder;
@@ -1512,22 +1659,28 @@ void client_disconnected(RCClient* client, rdmnet_client_scope_t scope_handle, c
 void client_broker_msg_received(RCClient* client, rdmnet_client_scope_t scope_handle, const BrokerMessage* msg)
 {
   ETCPAL_UNUSED_ARG(scope_handle);
-  RDMNET_ASSERT(client);
-  RDMNET_ASSERT(msg);
+
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(msg))
+    return;
 
   RdmnetDevice* device = GET_DEVICE_FROM_CLIENT(client);
-  RDMNET_ASSERT(scope_handle == device->scope_handle);
+  if (!RDMNET_ASSERT_VERIFY(device) || !RDMNET_ASSERT_VERIFY(scope_handle == device->scope_handle))
+    return;
 
   switch (msg->vector)
   {
-    case VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS:
-      if (handle_assigned_dynamic_uids(device, BROKER_GET_DYNAMIC_UID_ASSIGNMENT_LIST(msg)) &&
-          device->callbacks.dynamic_uid_status_received)
+    case VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS: {
+      const RdmnetDynamicUidAssignmentList* alist = BROKER_GET_DYNAMIC_UID_ASSIGNMENT_LIST(msg);
+      if (!RDMNET_ASSERT_VERIFY(alist))
+        return;
+
+      if (handle_assigned_dynamic_uids(device, alist) && device->callbacks.dynamic_uid_status_received)
       {
         device->callbacks.dynamic_uid_status_received(device->id.handle, BROKER_GET_DYNAMIC_UID_ASSIGNMENT_LIST(msg),
                                                       device->callbacks.context);
       }
-      break;
+    }
+    break;
 
     default:
       break;
@@ -1536,8 +1689,13 @@ void client_broker_msg_received(RCClient* client, rdmnet_client_scope_t scope_ha
 
 void client_destroyed(RCClient* client)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client))
+    return;
+
   RdmnetDevice* device = GET_DEVICE_FROM_CLIENT(client);
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return;
+
   rdmnet_free_struct_instance(device);
 }
 
@@ -1546,8 +1704,15 @@ void client_llrp_msg_received(RCClient*              client,
                               RdmnetSyncRdmResponse* response,
                               bool*                  use_internal_buf_for_response)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(cmd) || !RDMNET_ASSERT_VERIFY(response) ||
+      !RDMNET_ASSERT_VERIFY(use_internal_buf_for_response))
+  {
+    return;
+  }
+
   RdmnetDevice* device = GET_DEVICE_FROM_CLIENT(client);
+  if (!RDMNET_ASSERT_VERIFY(device) || !RDMNET_ASSERT_VERIFY(device->callbacks.llrp_rdm_command_received))
+    return;
 
   if (handle_rdm_command_internally(device, &cmd->rdm_header, cmd->data, cmd->data_len, response))
   {
@@ -1566,12 +1731,25 @@ void client_rpt_msg_received(RCClient*               client,
                              bool*                   use_internal_buf_for_response)
 {
   ETCPAL_UNUSED_ARG(scope_handle);
-  RDMNET_ASSERT(client);
+
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(msg) || !RDMNET_ASSERT_VERIFY(response) ||
+      !RDMNET_ASSERT_VERIFY(use_internal_buf_for_response))
+  {
+    return;
+  }
+
   RdmnetDevice* device = GET_DEVICE_FROM_CLIENT(client);
-  RDMNET_ASSERT(scope_handle == device->scope_handle);
+  if (!RDMNET_ASSERT_VERIFY(device) || !RDMNET_ASSERT_VERIFY(scope_handle == device->scope_handle) ||
+      !RDMNET_ASSERT_VERIFY(device->callbacks.rdm_command_received))
+  {
+    return;
+  }
+
   if (msg->type == kRptClientMsgRdmCmd)
   {
     const RdmnetRdmCommand* cmd = RDMNET_GET_RDM_COMMAND(msg);
+    if (!RDMNET_ASSERT_VERIFY(cmd))
+      return;
 
     if (cmd->dest_endpoint == E133_NULL_ENDPOINT &&
         handle_rdm_command_internally(device, &cmd->rdm_header, cmd->data, cmd->data_len, response))
@@ -1580,8 +1758,7 @@ void client_rpt_msg_received(RCClient*               client,
     }
     else
     {
-      device->callbacks.rdm_command_received(device->id.handle, RDMNET_GET_RDM_COMMAND(msg), response,
-                                             device->callbacks.context);
+      device->callbacks.rdm_command_received(device->id.handle, cmd, response, device->callbacks.context);
     }
   }
   else
@@ -1592,12 +1769,18 @@ void client_rpt_msg_received(RCClient*               client,
 
 bool handle_assigned_dynamic_uids(RdmnetDevice* device, const RdmnetDynamicUidAssignmentList* assignment_list)
 {
+  if (!RDMNET_ASSERT_VERIFY(device) || !RDMNET_ASSERT_VERIFY(assignment_list))
+    return false;
+
   size_t num_responders_found = 0;
 
   if (DEVICE_LOCK(device))
   {
     for (DeviceEndpoint* endpoint = device->endpoints; endpoint < device->endpoints + device->num_endpoints; ++endpoint)
     {
+      if (!RDMNET_ASSERT_VERIFY(endpoint))
+        return false;
+
       // No dynamic UIDs on physical endpoints
       if (endpoint->type == kDeviceEndpointTypePhysical)
         continue;
@@ -1607,6 +1790,9 @@ bool handle_assigned_dynamic_uids(RdmnetDevice* device, const RdmnetDynamicUidAs
       for (const RdmnetDynamicUidMapping* mapping = assignment_list->mappings;
            mapping < assignment_list->mappings + assignment_list->num_mappings; ++mapping)
       {
+        if (!RDMNET_ASSERT_VERIFY(mapping))
+          return false;
+
         if (mapping->status_code == kRdmnetDynamicUidStatusOk)
         {
           EndpointResponder* responder = rdmnet_find_responder_by_rid(endpoint, &mapping->rid);
@@ -1637,6 +1823,9 @@ bool handle_rdm_command_internally(RdmnetDevice*           device,
                                    uint8_t                 data_len,
                                    RdmnetSyncRdmResponse*  resp)
 {
+  if (!RDMNET_ASSERT_VERIFY(device) || !RDMNET_ASSERT_VERIFY(rdm_header) || !RDMNET_ASSERT_VERIFY(resp))
+    return false;
+
   bool res = false;
   if (DEVICE_LOCK(device))
   {
@@ -1669,6 +1858,9 @@ bool handle_rdm_command_internally(RdmnetDevice*           device,
 
 void handle_endpoint_list(RdmnetDevice* device, const RdmCommandHeader* rdm_header, RdmnetSyncRdmResponse* response)
 {
+  if (!RDMNET_ASSERT_VERIFY(device) || !RDMNET_ASSERT_VERIFY(rdm_header) || !RDMNET_ASSERT_VERIFY(response))
+    return;
+
   if (rdm_header->command_class != kRdmCCGetCommand)
   {
     RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRUnsupportedCommandClass);
@@ -1690,6 +1882,9 @@ void handle_endpoint_list(RdmnetDevice* device, const RdmCommandHeader* rdm_head
   for (const DeviceEndpoint* endpoint = device->endpoints; endpoint < device->endpoints + device->num_endpoints;
        ++endpoint)
   {
+    if (!RDMNET_ASSERT_VERIFY(endpoint))
+      return;
+
     etcpal_pack_u16b(cur_ptr, endpoint->id);
     cur_ptr += 2;
     *cur_ptr++ = endpoint->type;
@@ -1702,6 +1897,9 @@ void handle_endpoint_list_change(RdmnetDevice*           device,
                                  const RdmCommandHeader* rdm_header,
                                  RdmnetSyncRdmResponse*  response)
 {
+  if (!RDMNET_ASSERT_VERIFY(device) || !RDMNET_ASSERT_VERIFY(rdm_header) || !RDMNET_ASSERT_VERIFY(response))
+    return;
+
   if (rdm_header->command_class != kRdmCCGetCommand)
   {
     RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRUnsupportedCommandClass);
@@ -1727,6 +1925,9 @@ void handle_endpoint_responders(RdmnetDevice*           device,
                                 uint8_t                 data_len,
                                 RdmnetSyncRdmResponse*  response)
 {
+  if (!RDMNET_ASSERT_VERIFY(device) || !RDMNET_ASSERT_VERIFY(rdm_header) || !RDMNET_ASSERT_VERIFY(response))
+    return;
+
   if (rdm_header->command_class != kRdmCCGetCommand)
   {
     RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRUnsupportedCommandClass);
@@ -1789,6 +1990,9 @@ void handle_endpoint_responder_list_change(RdmnetDevice*           device,
                                            uint8_t                 data_len,
                                            RdmnetSyncRdmResponse*  response)
 {
+  if (!RDMNET_ASSERT_VERIFY(device) || !RDMNET_ASSERT_VERIFY(rdm_header) || !RDMNET_ASSERT_VERIFY(response))
+    return;
+
   if (rdm_header->command_class != kRdmCCGetCommand)
   {
     RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRUnsupportedCommandClass);
@@ -1832,6 +2036,9 @@ void handle_binding_control_fields(RdmnetDevice*           device,
                                    uint8_t                 data_len,
                                    RdmnetSyncRdmResponse*  response)
 {
+  if (!RDMNET_ASSERT_VERIFY(device) || !RDMNET_ASSERT_VERIFY(rdm_header) || !RDMNET_ASSERT_VERIFY(response))
+    return;
+
   if (rdm_header->command_class != kRdmCCGetCommand)
   {
     RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRUnsupportedCommandClass);

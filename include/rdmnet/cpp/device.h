@@ -103,8 +103,9 @@ private:
 
 /// @brief Create a virtual endpoint configuration with an optional set of virtual responders with dynamic UIDs.
 /// @param id Endpoint ID - must be between 1 and 63,999 inclusive.
-/// @param dynamic_responders Array of responder IDs identifying the initial virtual responders present on the endpoint.
-/// @param num_dynamic_responders Size of responders array.
+/// @param dynamic_responders (optional) Array of responder IDs identifying the initial virtual responders present on
+/// the endpoint.
+/// @param num_dynamic_responders (optional) Size of responders array.
 inline VirtualEndpointConfig::VirtualEndpointConfig(uint16_t            id,
                                                     const etcpal::Uuid* dynamic_responders,
                                                     size_t              num_dynamic_responders)
@@ -272,8 +273,8 @@ private:
 
 /// @brief Create a physical endpoint configuration with an optional set of RDM responders.
 /// @param id Endpoint ID - must be between 1 and 63,999 inclusive.
-/// @param responders Array of UIDs identifying the initial physical RDM responders present on the endpoint.
-/// @param num_responders Size of responders array.
+/// @param responders (optional) Array of UIDs identifying the initial physical RDM responders present on the endpoint.
+/// @param num_responders (optional) Size of responders array.
 inline PhysicalEndpointConfig::PhysicalEndpointConfig(uint16_t                         id,
                                                       const PhysicalEndpointResponder* responders,
                                                       size_t                           num_responders)
@@ -541,7 +542,7 @@ extern "C" inline void DeviceLibCbRdmCommandReceived(rdmnet_device_t         han
                                                      RdmnetSyncRdmResponse*  response,
                                                      void*                   context)
 {
-  if (cmd && context)
+  if (cmd && response && context)
   {
     *response = static_cast<Device::NotifyHandler*>(context)->HandleRdmCommand(Device::Handle(handle), *cmd).get();
   }
@@ -552,7 +553,7 @@ extern "C" inline void DeviceLibCbLlrpRdmCommandReceived(rdmnet_device_t        
                                                          RdmnetSyncRdmResponse* response,
                                                          void*                  context)
 {
-  if (cmd && context)
+  if (cmd && response && context)
   {
     *response = static_cast<Device::NotifyHandler*>(context)->HandleLlrpRdmCommand(Device::Handle(handle), *cmd).get();
   }
@@ -643,6 +644,9 @@ inline etcpal::Error Device::Startup(NotifyHandler&          notify_handler,
                                      const char*             scope_id_str,
                                      const etcpal::SockAddr& static_broker_addr)
 {
+  if (!scope_id_str)
+    return kEtcPalErrInvalid;
+
   TranslatedConfig config(settings, notify_handler, scope_id_str, static_broker_addr);
 
   rdmnet_device_t c_handle = RDMNET_DEVICE_INVALID;
@@ -703,11 +707,14 @@ inline void Device::Shutdown(rdmnet_disconnect_reason_t disconnect_reason)
 /// @param static_broker_addr [optional] A static IP address and port at which to connect to the
 ///                           broker for the new scope.
 /// @return etcpal::Error::Ok(): Scope changed successfully.
-/// @return Errors forwarded from rdmnet_device_change_scope().
+/// @return Errors forwarded from rdmnet_device_change_scope(), or #kEtcPalErrInvalid on invalid parameter.
 inline etcpal::Error Device::ChangeScope(const char*                new_scope_id_str,
                                          rdmnet_disconnect_reason_t disconnect_reason,
                                          const etcpal::SockAddr&    static_broker_addr)
 {
+  if (!new_scope_id_str)
+    return kEtcPalErrInvalid;
+
   RdmnetScopeConfig new_scope_config = {new_scope_id_str, static_broker_addr.get()};
   return rdmnet_device_change_scope(handle_.value(), &new_scope_config, disconnect_reason);
 }
@@ -747,6 +754,9 @@ inline etcpal::Error Device::ChangeScope(const Scope& new_scope_config, rdmnet_d
 inline etcpal::Error Device::ChangeSearchDomain(const char*                new_search_domain,
                                                 rdmnet_disconnect_reason_t disconnect_reason)
 {
+  if (!new_search_domain)
+    return kEtcPalErrInvalid;
+
   return rdmnet_device_change_search_domain(handle_.value(), new_search_domain, disconnect_reason);
 }
 

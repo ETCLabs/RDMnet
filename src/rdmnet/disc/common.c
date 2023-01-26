@@ -246,6 +246,9 @@ etcpal_error_t start_monitoring_internal(const RdmnetScopeMonitorConfig* config,
                                          rdmnet_scope_monitor_t*         handle,
                                          int*                            platform_specific_error)
 {
+  if (!RDMNET_ASSERT_VERIFY(config) || !RDMNET_ASSERT_VERIFY(handle) || !RDMNET_ASSERT_VERIFY(platform_specific_error))
+    return kEtcPalErrSys;
+
   RdmnetScopeMonitorRef* new_monitor = scope_monitor_new(config);
   if (!new_monitor)
     return kEtcPalErrNoMem;
@@ -352,6 +355,9 @@ etcpal_error_t rdmnet_disc_register_broker(const RdmnetBrokerRegisterConfig* con
       res = start_monitoring_internal(&monitor_config, &broker_ref->scope_monitor_handle, &mon_error);
       if (res == kEtcPalErrOk)
       {
+        if (!RDMNET_ASSERT_VERIFY(broker_ref->scope_monitor_handle))
+          return kEtcPalErrSys;
+
         // We wait for the timeout to make sure there are no other brokers around with the same
         // scope.
         registered_broker_insert(broker_ref);
@@ -420,11 +426,17 @@ void rdmnet_disc_module_tick(void)
 
 bool rdmnet_disc_broker_should_deregister(const EtcPalUuid* this_broker_cid, const EtcPalUuid* other_broker_cid)
 {
+  if (!RDMNET_ASSERT_VERIFY(this_broker_cid) || !RDMNET_ASSERT_VERIFY(other_broker_cid))
+    return false;
+
   return ETCPAL_UUID_CMP(this_broker_cid, other_broker_cid) < 0;
 }
 
 void process_broker_state(RdmnetBrokerRegisterRef* broker_ref)
 {
+  if (!RDMNET_ASSERT_VERIFY(broker_ref))
+    return;
+
   if (etcpal_timer_is_expired(&broker_ref->query_timer))
   {
     // If the timer expired and using_random_backoff is true, that means the random backoff period has elasped.
@@ -471,7 +483,11 @@ void process_broker_state(RdmnetBrokerRegisterRef* broker_ref)
 
 bool conflicting_broker_found(RdmnetBrokerRegisterRef* broker_ref, bool* should_deregister)
 {
-  RDMNET_ASSERT(broker_ref && should_deregister);
+  if (!RDMNET_ASSERT_VERIFY(broker_ref) || !RDMNET_ASSERT_VERIFY(broker_ref->scope_monitor_handle) ||
+      !RDMNET_ASSERT_VERIFY(should_deregister))
+  {
+    return false;
+  }
 
   *should_deregister = false;
   for (const DiscoveredBroker* db = broker_ref->scope_monitor_handle->broker_list; db; db = db->next)
@@ -488,6 +504,9 @@ bool conflicting_broker_found(RdmnetBrokerRegisterRef* broker_ref, bool* should_
       {
         for (size_t j = 0; j < db->num_listen_addrs; ++j)
         {
+          if (!RDMNET_ASSERT_VERIFY(db->listen_addr_netint_array))
+            return false;
+
           if (db->listen_addr_netint_array[j] == 0)
             return true;  // TODO: Remove this case once interface support is added to Avahi & lwmdns impls.
           if (db->listen_addr_netint_array[j] == broker_ref->netints[i])
@@ -502,6 +521,9 @@ bool conflicting_broker_found(RdmnetBrokerRegisterRef* broker_ref, bool* should_
 
 bool validate_broker_register_config(const RdmnetBrokerRegisterConfig* config)
 {
+  if (!RDMNET_ASSERT_VERIFY(config))
+    return false;
+
   // Make sure none of the broker info's fields are empty
   return !(ETCPAL_UUID_IS_NULL(&config->cid) || !config->service_instance_name ||
            strlen(config->service_instance_name) == 0 || !config->scope || strlen(config->scope) == 0 ||
@@ -522,6 +544,9 @@ void unregister_all_brokers(void)
 
 void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info)
 {
+  if (!RDMNET_ASSERT_VERIFY(handle) || !RDMNET_ASSERT_VERIFY(broker_info))
+    return;
+
   if (handle->broker_handle)
   {
     if ((ETCPAL_UUID_CMP(&handle->broker_handle->cid, &broker_info->cid) != 0) &&
@@ -539,6 +564,9 @@ void notify_broker_found(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscIn
 
 void notify_broker_updated(rdmnet_scope_monitor_t handle, const RdmnetBrokerDiscInfo* broker_info)
 {
+  if (!RDMNET_ASSERT_VERIFY(handle) || !RDMNET_ASSERT_VERIFY(broker_info))
+    return;
+
   if (!handle->broker_handle && handle->callbacks.broker_updated)
   {
     handle->callbacks.broker_updated(handle, broker_info, handle->callbacks.context);
@@ -547,6 +575,9 @@ void notify_broker_updated(rdmnet_scope_monitor_t handle, const RdmnetBrokerDisc
 
 void notify_broker_lost(rdmnet_scope_monitor_t handle, const char* service_name, const EtcPalUuid* broker_cid)
 {
+  if (!RDMNET_ASSERT_VERIFY(handle) || !RDMNET_ASSERT_VERIFY(service_name) || !RDMNET_ASSERT_VERIFY(broker_cid))
+    return;
+
   if (handle->broker_handle)
   {
     if ((ETCPAL_UUID_CMP(&handle->broker_handle->cid, broker_cid) != 0) &&

@@ -96,6 +96,9 @@ bool LinuxBrokerSocketManager::Shutdown()
   etcpal::MutexGuard socket_guard(socket_lock_);
   for (auto& sock_data : sockets_)
   {
+    if (!RDMNET_ASSERT_VERIFY(sock_data.second))
+      return false;
+
     shutdown(sock_data.second->socket, SHUT_RDWR);
     close(sock_data.second->socket);
   }
@@ -140,6 +143,9 @@ void LinuxBrokerSocketManager::RemoveSocket(BrokerClient::Handle client_handle)
   auto sock_data = sockets_.find(client_handle);
   if (sock_data != sockets_.end())
   {
+    if (!RDMNET_ASSERT_VERIFY(sock_data->second))
+      return;
+
     // Per the epoll man page, deregister is not necessary before closing the socket.
     shutdown(sock_data->second->socket, SHUT_RDWR);
     close(sock_data->second->socket);
@@ -155,6 +161,9 @@ void LinuxBrokerSocketManager::WorkerNotifySocketBad(BrokerClient::Handle client
     auto sock_data = sockets_.find(client_handle);
     if (sock_data != sockets_.end())
     {
+      if (!RDMNET_ASSERT_VERIFY(sock_data->second))
+        return;
+
       close(sock_data->second->socket);
       sockets_.erase(sock_data);
     }
@@ -169,40 +178,43 @@ void LinuxBrokerSocketManager::WorkerNotifySocketReadEvent(BrokerClient::Handle 
   etcpal::MutexGuard socket_guard(socket_lock_);
 
   auto sock_data_iter = sockets_.find(client_handle);
-  if (sock_data_iter != sockets_.end())
+  if (sock_data_iter == sockets_.end())
+    return;
+
+  SocketData* sock_data = sock_data_iter->second.get();
+  if (!RDMNET_ASSERT_VERIFY(sock_data) || !RDMNET_ASSERT_VERIFY(sock_data->recv_buf.cur_data_size <= RC_MSG_BUF_SIZE))
+    return;
+
+  void*  recv_buf = &sock_data->recv_buf.buf[sock_data->recv_buf.cur_data_size];
+  size_t recv_buf_size =
+      std::min<size_t>(RDMNET_RECV_DATA_MAX_SIZE, RC_MSG_BUF_SIZE - sock_data->recv_buf.cur_data_size);
+
+  ssize_t recv_result = recv(sock_data->socket, recv_buf, recv_buf_size, 0);
+  if (recv_result <= 0)
   {
-    SocketData* sock_data = sock_data_iter->second.get();
-    void*       recv_buf = &sock_data->recv_buf.buf[sock_data->recv_buf.cur_data_size];
-    size_t      recv_buf_size =
-        std::min<size_t>(RDMNET_RECV_DATA_MAX_SIZE, (RC_MSG_BUF_SIZE - sock_data->recv_buf.cur_data_size));
-
-    ssize_t recv_result = recv(sock_data->socket, recv_buf, recv_buf_size, 0);
-    if (recv_result <= 0)
+    // The socket was closed, either gracefully or ungracefully.
+    close(sock_data->socket);
+    sockets_.erase(sock_data_iter);
+    if (notify_)
+      notify_->HandleSocketClosed(client_handle, (recv_result == 0));
+  }
+  else
+  {
+    sock_data->recv_buf.cur_data_size += recv_result;
+    etcpal_error_t res = rc_msg_buf_parse_data(&sock_data->recv_buf);
+    while (res == kEtcPalErrOk)
     {
-      // The socket was closed, either gracefully or ungracefully.
-      close(sock_data->socket);
-      sockets_.erase(sock_data_iter);
       if (notify_)
-        notify_->HandleSocketClosed(client_handle, (recv_result == 0));
-    }
-    else
-    {
-      sock_data->recv_buf.cur_data_size += recv_result;
-      etcpal_error_t res = rc_msg_buf_parse_data(&sock_data->recv_buf);
-      while (res == kEtcPalErrOk)
       {
-        if (notify_)
+        while (notify_->HandleSocketMessageReceived(client_handle, sock_data->recv_buf.msg) ==
+               HandleMessageResult::kRetryLater)
         {
-          while (notify_->HandleSocketMessageReceived(client_handle, sock_data->recv_buf.msg) ==
-                 HandleMessageResult::kRetryLater)
-          {
-            sleep(10);  // Sleep to avoid busy loop.
-          }
+          sleep(10);  // Sleep to avoid busy loop.
         }
-
-        rc_free_message_resources(&sock_data->recv_buf.msg);
-        res = rc_msg_buf_parse_data(&sock_data->recv_buf);
       }
+
+      rc_free_message_resources(&sock_data->recv_buf.msg);
+      res = rc_msg_buf_parse_data(&sock_data->recv_buf);
     }
   }
 }

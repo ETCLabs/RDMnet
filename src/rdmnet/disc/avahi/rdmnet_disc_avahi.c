@@ -73,10 +73,10 @@ static bool ipv6_valid(EtcPalIpAddr* ip);
 
 static void entry_group_callback(AvahiEntryGroup* g, AvahiEntryGroupState state, void* userdata)
 {
-  ETCPAL_UNUSED_ARG(userdata);
-
   RdmnetBrokerRegisterRef* ref = (RdmnetBrokerRegisterRef*)userdata;
-  RDMNET_ASSERT(ref);
+
+  if (!RDMNET_ASSERT_VERIFY(ref))
+    return;
 
   if (g == ref->platform_data.avahi_entry_group)
   {
@@ -125,10 +125,12 @@ static void resolve_callback(AvahiServiceResolver*  r,
   if (address)
     avahi_address_snprint(addr_str, AVAHI_ADDRESS_STR_MAX, address);
   DiscoveredBroker* db = (DiscoveredBroker*)userdata;
-  RDMNET_ASSERT(db);
+  if (!RDMNET_ASSERT_VERIFY(db))
+    return;
 
   RdmnetScopeMonitorRef* ref = db->monitor_ref;
-  RDMNET_ASSERT(ref);
+  if (!RDMNET_ASSERT_VERIFY(ref))
+    return;
 
   if (event != AVAHI_RESOLVER_FAILURE && txt_record_to_broker_info(txt, db))
   {
@@ -175,7 +177,8 @@ static void browse_callback(AvahiServiceBrowser*                    b,
                             void*                                   userdata)
 {
   RdmnetScopeMonitorRef* ref = (RdmnetScopeMonitorRef*)userdata;
-  RDMNET_ASSERT(ref);
+  if (!RDMNET_ASSERT_VERIFY(ref) || !RDMNET_ASSERT_VERIFY(ref->broker_handle))
+    return;
 
   if (event == AVAHI_BROWSER_FAILURE)
   {
@@ -251,7 +254,9 @@ static void browse_callback(AvahiServiceBrowser*                    b,
 
 static void client_callback(AvahiClient* c, AvahiClientState state, AVAHI_GCC_UNUSED void* userdata)
 {
-  RDMNET_ASSERT(c);
+  if (!RDMNET_ASSERT_VERIFY(c))
+    return;
+
   // Called whenever the client or server state changes
   if (state == AVAHI_CLIENT_FAILURE)
   {
@@ -306,6 +311,9 @@ void rdmnet_disc_platform_tick()
 
 etcpal_error_t rdmnet_disc_platform_start_monitoring(RdmnetScopeMonitorRef* handle, int* platform_specific_error)
 {
+  if (!RDMNET_ASSERT_VERIFY(handle) || !RDMNET_ASSERT_VERIFY(platform_specific_error))
+    return kEtcPalErrSys;
+
   // Start the browse operation in the Avahi stack.
   char service_str[SERVICE_STR_PADDED_LENGTH];
   get_full_service_type(handle->scope, service_str);
@@ -326,6 +334,9 @@ etcpal_error_t rdmnet_disc_platform_start_monitoring(RdmnetScopeMonitorRef* hand
 
 void rdmnet_disc_platform_stop_monitoring(rdmnet_scope_monitor_t handle)
 {
+  if (!RDMNET_ASSERT_VERIFY(handle))
+    return;
+
   if (handle->platform_data.avahi_browser)
     avahi_service_browser_free(handle->platform_data.avahi_browser);
 }
@@ -333,6 +344,9 @@ void rdmnet_disc_platform_stop_monitoring(rdmnet_scope_monitor_t handle)
 /* If returns !0, this was an error from Avahi.  Reset the state and notify the callback. */
 etcpal_error_t rdmnet_disc_platform_register_broker(RdmnetBrokerRegisterRef* ref, int* platform_specific_error)
 {
+  if (!RDMNET_ASSERT_VERIFY(ref) || !RDMNET_ASSERT_VERIFY(platform_specific_error))
+    return kEtcPalErrSys;
+
   int res = 0;
 
   if (!ref->platform_data.avahi_entry_group)
@@ -356,7 +370,8 @@ etcpal_error_t rdmnet_disc_platform_register_broker(RdmnetBrokerRegisterRef* ref
     get_full_service_type(ref->scope, full_service_type);
 
     AvahiStringList* txt_list = broker_info_to_txt_record(ref);
-    RDMNET_ASSERT(txt_list);
+    if (!RDMNET_ASSERT_VERIFY(txt_list))
+      return kEtcPalErrSys;
 
     // Add the unqualified service type
     res =
@@ -382,6 +397,9 @@ etcpal_error_t rdmnet_disc_platform_register_broker(RdmnetBrokerRegisterRef* ref
 
 void rdmnet_disc_platform_unregister_broker(rdmnet_registered_broker_t handle)
 {
+  if (!RDMNET_ASSERT_VERIFY(handle))
+    return;
+
   if (handle->platform_data.avahi_entry_group)
   {
     avahi_entry_group_free(handle->platform_data.avahi_entry_group);
@@ -391,6 +409,9 @@ void rdmnet_disc_platform_unregister_broker(rdmnet_registered_broker_t handle)
 
 void discovered_broker_free_platform_resources(DiscoveredBroker* db)
 {
+  if (!RDMNET_ASSERT_VERIFY(db))
+    return;
+
   if (db->platform_data.resolvers)
   {
     for (AvahiServiceResolver** resolver = db->platform_data.resolvers;
@@ -408,6 +429,9 @@ void discovered_broker_free_platform_resources(DiscoveredBroker* db)
 
 void remove_resolver_from_list(RdmnetDiscoveredBrokerPlatformData* platform_data, AvahiServiceResolver* resolver)
 {
+  if (!RDMNET_ASSERT_VERIFY(platform_data) || !RDMNET_ASSERT_VERIFY(platform_data->resolvers))
+    return;
+
   if (platform_data->num_resolvers == 0)
     return;
 
@@ -427,6 +451,9 @@ void remove_resolver_from_list(RdmnetDiscoveredBrokerPlatformData* platform_data
 
 AvahiStringList* broker_info_to_txt_record(const RdmnetBrokerRegisterRef* ref)
 {
+  if (!RDMNET_ASSERT_VERIFY(ref))
+    return NULL;
+
   AvahiStringList* txt_list = NULL;
 
   char int_conversion[16];
@@ -494,6 +521,9 @@ AvahiStringList* broker_info_to_txt_record(const RdmnetBrokerRegisterRef* ref)
 
 bool txt_record_to_broker_info(AvahiStringList* txt, DiscoveredBroker* db)
 {
+  if (!RDMNET_ASSERT_VERIFY(txt) || !RDMNET_ASSERT_VERIFY(db))
+    return false;
+
   // Parse the TXT record
   char*  value = NULL;
   size_t value_len = 0;
@@ -572,6 +602,9 @@ bool txt_record_to_broker_info(AvahiStringList* txt, DiscoveredBroker* db)
 
 void ip_avahi_to_etcpal(const AvahiAddress* avahi_ip, EtcPalIpAddr* etcpal_ip, AvahiIfIndex if_index)
 {
+  if (!RDMNET_ASSERT_VERIFY(avahi_ip) || !RDMNET_ASSERT_VERIFY(etcpal_ip))
+    return;
+
   if (avahi_ip->proto == AVAHI_PROTO_INET)
   {
     ETCPAL_IP_SET_V4_ADDRESS(etcpal_ip, ntohl(avahi_ip->data.ipv4.address));
@@ -592,6 +625,9 @@ void ip_avahi_to_etcpal(const AvahiAddress* avahi_ip, EtcPalIpAddr* etcpal_ip, A
 // described in ANSI E1.33 Section 9.1.4.
 bool resolved_instance_matches_us(const DiscoveredBroker* their_info, const RdmnetBrokerRegisterRef* our_info)
 {
+  if (!RDMNET_ASSERT_VERIFY(their_info) || !RDMNET_ASSERT_VERIFY(our_info))
+    return false;
+
   // TODO: host name must also be included in this comparison.
   return ((their_info->port == our_info->port) && (0 == strcmp(their_info->scope, our_info->scope)) &&
           (0 == ETCPAL_UUID_CMP(&their_info->cid, &our_info->cid)));
@@ -599,6 +635,12 @@ bool resolved_instance_matches_us(const DiscoveredBroker* their_info, const Rdmn
 
 bool avahi_txt_record_find(AvahiStringList* txt_list, const char* key, char** value, size_t* value_len)
 {
+  if (!RDMNET_ASSERT_VERIFY(txt_list) || !RDMNET_ASSERT_VERIFY(key) || !RDMNET_ASSERT_VERIFY(value) ||
+      !RDMNET_ASSERT_VERIFY(value_len))
+  {
+    return false;
+  }
+
   AvahiStringList* found = avahi_string_list_find(txt_list, key);
   if (found)
   {
@@ -615,11 +657,17 @@ bool avahi_txt_record_find(AvahiStringList* txt_list, const char* key, char** va
 
 void get_full_service_type(const char* scope, char* reg_str)
 {
+  if (!RDMNET_ASSERT_VERIFY(scope) || !RDMNET_ASSERT_VERIFY(reg_str))
+    return;
+
   sprintf(reg_str, "_%s._sub.%s", scope, E133_DNSSD_SRV_TYPE);
 }
 
 // Test to make sure an address is not a loopback or wildcard address.
 bool ipv6_valid(EtcPalIpAddr* ip)
 {
+  if (!RDMNET_ASSERT_VERIFY(ip))
+    return false;
+
   return (!etcpal_ip_is_loopback(ip) && !etcpal_ip_is_wildcard(ip));
 }

@@ -33,10 +33,16 @@
 
 /***************************** Private macros ********************************/
 
-#define GET_CONTROLLER_FROM_CLIENT(clientptr) (RdmnetController*)((char*)(clientptr)-offsetof(RdmnetController, client))
+#define GET_CONTROLLER_FROM_CLIENT(clientptr) \
+  (RDMNET_ASSERT_VERIFY(clientptr) ? (RdmnetController*)((char*)(clientptr)-offsetof(RdmnetController, client)) : NULL)
 
-#define CONTROLLER_LOCK(controller_ptr) etcpal_mutex_lock(&(controller_ptr)->lock)
-#define CONTROLLER_UNLOCK(controller_ptr) etcpal_mutex_unlock(&(controller_ptr)->lock)
+#define CONTROLLER_LOCK(controller_ptr) \
+  (RDMNET_ASSERT_VERIFY(controller_ptr) && etcpal_mutex_lock(&(controller_ptr)->lock))
+#define CONTROLLER_UNLOCK(controller_ptr)         \
+  if (RDMNET_ASSERT_VERIFY(controller_ptr))       \
+  {                                               \
+    etcpal_mutex_unlock(&(controller_ptr)->lock); \
+  }
 
 /*********************** Private function prototypes *************************/
 
@@ -287,10 +293,13 @@ etcpal_error_t rdmnet_controller_create(const RdmnetControllerConfig* config, rd
 etcpal_error_t rdmnet_controller_destroy(rdmnet_controller_t        controller_handle,
                                          rdmnet_disconnect_reason_t disconnect_reason)
 {
-  RdmnetController* controller;
+  RdmnetController* controller = NULL;
   etcpal_error_t    res = get_controller(controller_handle, &controller);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return kEtcPalErrSys;
 
   bool destroy_immediately = rc_client_unregister(&controller->client, disconnect_reason);
   rdmnet_unregister_struct_instance(controller);
@@ -322,10 +331,16 @@ etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t      controller_h
                                            const RdmnetScopeConfig* scope_config,
                                            rdmnet_client_scope_t*   scope_handle)
 {
-  RdmnetController* controller;
+  if (!scope_config || !scope_config->scope || !scope_handle)
+    return kEtcPalErrInvalid;
+
+  RdmnetController* controller = NULL;
   etcpal_error_t    res = get_controller(controller_handle, &controller);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return kEtcPalErrSys;
 
   res = rc_client_add_scope(&controller->client, scope_config, scope_handle);
   release_controller(controller);
@@ -351,10 +366,16 @@ etcpal_error_t rdmnet_controller_add_scope(rdmnet_controller_t      controller_h
 etcpal_error_t rdmnet_controller_add_default_scope(rdmnet_controller_t    controller_handle,
                                                    rdmnet_client_scope_t* scope_handle)
 {
-  RdmnetController* controller;
+  if (!scope_handle)
+    return kEtcPalErrInvalid;
+
+  RdmnetController* controller = NULL;
   etcpal_error_t    res = get_controller(controller_handle, &controller);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return kEtcPalErrSys;
 
   RdmnetScopeConfig default_scope;
   RDMNET_CLIENT_SET_DEFAULT_SCOPE(&default_scope);
@@ -382,10 +403,13 @@ etcpal_error_t rdmnet_controller_remove_scope(rdmnet_controller_t        control
                                               rdmnet_client_scope_t      scope_handle,
                                               rdmnet_disconnect_reason_t disconnect_reason)
 {
-  RdmnetController* controller;
+  RdmnetController* controller = NULL;
   etcpal_error_t    res = get_controller(controller_handle, &controller);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return kEtcPalErrSys;
 
   res = rc_client_remove_scope(&controller->client, scope_handle, disconnect_reason);
   release_controller(controller);
@@ -414,10 +438,16 @@ etcpal_error_t rdmnet_controller_change_scope(rdmnet_controller_t        control
                                               const RdmnetScopeConfig*   new_scope_config,
                                               rdmnet_disconnect_reason_t disconnect_reason)
 {
-  RdmnetController* controller;
+  if (!new_scope_config)
+    return kEtcPalErrInvalid;
+
+  RdmnetController* controller = NULL;
   etcpal_error_t    res = get_controller(controller_handle, &controller);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return kEtcPalErrSys;
 
   res = rc_client_change_scope(&controller->client, scope_handle, new_scope_config, disconnect_reason);
   release_controller(controller);
@@ -446,10 +476,13 @@ etcpal_error_t rdmnet_controller_get_scope(rdmnet_controller_t   controller_hand
                                            char*                 scope_str_buf,
                                            EtcPalSockAddr*       static_broker_addr)
 {
-  RdmnetController* controller;
+  RdmnetController* controller = NULL;
   etcpal_error_t    res = get_controller(controller_handle, &controller);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return kEtcPalErrSys;
 
   res = rc_client_get_scope(&controller->client, scope_handle, scope_str_buf, static_broker_addr);
   release_controller(controller);
@@ -476,10 +509,16 @@ etcpal_error_t rdmnet_controller_change_search_domain(rdmnet_controller_t       
                                                       const char*                new_search_domain,
                                                       rdmnet_disconnect_reason_t disconnect_reason)
 {
-  RdmnetController* controller;
+  if (!new_search_domain)
+    return kEtcPalErrInvalid;
+
+  RdmnetController* controller = NULL;
   etcpal_error_t    res = get_controller(controller_handle, &controller);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return kEtcPalErrSys;
 
   res = rc_client_change_search_domain(&controller->client, new_search_domain, disconnect_reason);
   release_controller(controller);
@@ -503,10 +542,13 @@ etcpal_error_t rdmnet_controller_change_search_domain(rdmnet_controller_t       
 etcpal_error_t rdmnet_controller_request_client_list(rdmnet_controller_t   controller_handle,
                                                      rdmnet_client_scope_t scope_handle)
 {
-  RdmnetController* controller;
+  RdmnetController* controller = NULL;
   etcpal_error_t    res = get_controller(controller_handle, &controller);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return kEtcPalErrSys;
 
   res = rc_client_request_client_list(&controller->client, scope_handle);
   release_controller(controller);
@@ -534,10 +576,16 @@ etcpal_error_t rdmnet_controller_request_responder_ids(rdmnet_controller_t   con
                                                        const RdmUid*         uids,
                                                        size_t                num_uids)
 {
-  RdmnetController* controller;
+  if (!uids)
+    return kEtcPalErrInvalid;
+
+  RdmnetController* controller = NULL;
   etcpal_error_t    res = get_controller(controller_handle, &controller);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return kEtcPalErrSys;
 
   res = rc_client_request_responder_ids(&controller->client, scope_handle, uids, num_uids);
   release_controller(controller);
@@ -576,10 +624,16 @@ etcpal_error_t rdmnet_controller_send_rdm_command(rdmnet_controller_t          c
                                                   uint8_t                      data_len,
                                                   uint32_t*                    seq_num)
 {
-  RdmnetController* controller;
+  if (!destination)
+    return kEtcPalErrInvalid;
+
+  RdmnetController* controller = NULL;
   etcpal_error_t    res = get_controller(controller_handle, &controller);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return kEtcPalErrSys;
 
   res = rc_client_send_rdm_command(&controller->client, scope_handle, destination, command_class, param_id, data,
                                    data_len, seq_num);
@@ -617,10 +671,16 @@ etcpal_error_t rdmnet_controller_send_get_command(rdmnet_controller_t          c
                                                   uint8_t                      data_len,
                                                   uint32_t*                    seq_num)
 {
-  RdmnetController* controller;
+  if (!destination)
+    return kEtcPalErrInvalid;
+
+  RdmnetController* controller = NULL;
   etcpal_error_t    res = get_controller(controller_handle, &controller);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return kEtcPalErrSys;
 
   res = rc_client_send_rdm_command(&controller->client, scope_handle, destination, kRdmnetCCGetCommand, param_id, data,
                                    data_len, seq_num);
@@ -658,10 +718,16 @@ etcpal_error_t rdmnet_controller_send_set_command(rdmnet_controller_t          c
                                                   uint8_t                      data_len,
                                                   uint32_t*                    seq_num)
 {
-  RdmnetController* controller;
+  if (!destination)
+    return kEtcPalErrInvalid;
+
+  RdmnetController* controller = NULL;
   etcpal_error_t    res = get_controller(controller_handle, &controller);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return kEtcPalErrSys;
 
   res = rc_client_send_rdm_command(&controller->client, scope_handle, destination, kRdmnetCCSetCommand, param_id, data,
                                    data_len, seq_num);
@@ -693,10 +759,16 @@ etcpal_error_t rdmnet_controller_send_rdm_ack(rdmnet_controller_t          contr
                                               const uint8_t*               response_data,
                                               size_t                       response_data_len)
 {
-  RdmnetController* controller;
+  if (!received_cmd)
+    return kEtcPalErrInvalid;
+
+  RdmnetController* controller = NULL;
   etcpal_error_t    res = get_controller(controller_handle, &controller);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return kEtcPalErrSys;
 
   res = rc_client_send_rdm_ack(&controller->client, scope_handle, received_cmd, response_data, response_data_len);
   release_controller(controller);
@@ -725,10 +797,16 @@ etcpal_error_t rdmnet_controller_send_rdm_nack(rdmnet_controller_t          cont
                                                const RdmnetSavedRdmCommand* received_cmd,
                                                rdm_nack_reason_t            nack_reason)
 {
-  RdmnetController* controller;
+  if (!received_cmd)
+    return kEtcPalErrInvalid;
+
+  RdmnetController* controller = NULL;
   etcpal_error_t    res = get_controller(controller_handle, &controller);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return kEtcPalErrSys;
 
   res = rc_client_send_rdm_nack(&controller->client, scope_handle, received_cmd, nack_reason);
   release_controller(controller);
@@ -762,10 +840,13 @@ etcpal_error_t rdmnet_controller_send_rdm_update(rdmnet_controller_t   controlle
                                                  const uint8_t*        data,
                                                  size_t                data_len)
 {
-  RdmnetController* controller;
+  RdmnetController* controller = NULL;
   etcpal_error_t    res = get_controller(controller_handle, &controller);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return kEtcPalErrSys;
 
   res = rc_client_send_rdm_update(&controller->client, scope_handle, subdevice, param_id, data, data_len);
   release_controller(controller);
@@ -790,10 +871,16 @@ etcpal_error_t rdmnet_controller_send_llrp_ack(rdmnet_controller_t        contro
                                                const uint8_t*             response_data,
                                                uint8_t                    response_data_len)
 {
-  RdmnetController* controller;
+  if (!received_cmd)
+    return kEtcPalErrInvalid;
+
+  RdmnetController* controller = NULL;
   etcpal_error_t    res = get_controller(controller_handle, &controller);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return kEtcPalErrSys;
 
   res = rc_client_send_llrp_ack(&controller->client, received_cmd, response_data, response_data_len);
   release_controller(controller);
@@ -816,10 +903,16 @@ etcpal_error_t rdmnet_controller_send_llrp_nack(rdmnet_controller_t        contr
                                                 const LlrpSavedRdmCommand* received_cmd,
                                                 rdm_nack_reason_t          nack_reason)
 {
-  RdmnetController* controller;
+  if (!received_cmd)
+    return kEtcPalErrInvalid;
+
+  RdmnetController* controller = NULL;
   etcpal_error_t    res = get_controller(controller_handle, &controller);
   if (res != kEtcPalErrOk)
     return res;
+
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return kEtcPalErrSys;
 
   res = rc_client_send_llrp_nack(&controller->client, received_cmd, nack_reason);
   release_controller(controller);
@@ -828,17 +921,26 @@ etcpal_error_t rdmnet_controller_send_llrp_nack(rdmnet_controller_t        contr
 
 static bool validate_controller_callbacks(const RdmnetControllerCallbacks* callbacks)
 {
+  if (!RDMNET_ASSERT_VERIFY(callbacks))
+    return false;
+
   return (callbacks->connected && callbacks->connect_failed && callbacks->disconnected &&
           callbacks->client_list_update_received && callbacks->rdm_response_received && callbacks->status_received);
 }
 
 static bool validate_rdm_handler(const RdmnetControllerRdmCmdHandler* handler)
 {
+  if (!RDMNET_ASSERT_VERIFY(handler))
+    return false;
+
   return (handler->rdm_command_received && handler->llrp_rdm_command_received);
 }
 
 static bool validate_rdm_data(const RdmnetControllerRdmData* data)
 {
+  if (!RDMNET_ASSERT_VERIFY(data))
+    return false;
+
   return (data->manufacturer_label && (strlen(data->manufacturer_label) > 0) && data->device_model_description &&
           (strlen(data->device_model_description) > 0) && data->software_version_label &&
           (strlen(data->software_version_label) > 0) && data->device_label && (strlen(data->device_label) > 0));
@@ -846,6 +948,9 @@ static bool validate_rdm_data(const RdmnetControllerRdmData* data)
 
 static etcpal_error_t validate_controller_config(const RdmnetControllerConfig* config)
 {
+  if (!RDMNET_ASSERT_VERIFY(config))
+    return kEtcPalErrSys;
+
   if (ETCPAL_UUID_IS_NULL(&config->cid) || !validate_controller_callbacks(&config->callbacks) ||
       (!validate_rdm_handler(&config->rdm_handler) && !validate_rdm_data(&config->rdm_data)) ||
       (!RDMNET_UID_IS_DYNAMIC_UID_REQUEST(&config->uid) && (config->uid.manu & 0x8000)))
@@ -857,6 +962,9 @@ static etcpal_error_t validate_controller_config(const RdmnetControllerConfig* c
 
 etcpal_error_t create_new_controller(const RdmnetControllerConfig* config, rdmnet_controller_t* handle)
 {
+  if (!RDMNET_ASSERT_VERIFY(config) || !RDMNET_ASSERT_VERIFY(handle))
+    return kEtcPalErrSys;
+
   etcpal_error_t res = kEtcPalErrNoMem;
 
   RdmnetController* new_controller = rdmnet_alloc_controller_instance();
@@ -868,9 +976,14 @@ etcpal_error_t create_new_controller(const RdmnetControllerConfig* config, rdmne
   client->type = kClientProtocolRPT;
   client->cid = config->cid;
   client->callbacks = client_callbacks;
-  RC_RPT_CLIENT_DATA(client)->type = kRPTClientTypeController;
-  RC_RPT_CLIENT_DATA(client)->uid = config->uid;
-  RC_RPT_CLIENT_DATA(client)->callbacks = rpt_client_callbacks;
+
+  RCRptClientData* rpt_client = RC_RPT_CLIENT_DATA(client);
+  if (!RDMNET_ASSERT_VERIFY(rpt_client))
+    return kEtcPalErrSys;
+
+  rpt_client->type = kRPTClientTypeController;
+  rpt_client->uid = config->uid;
+  rpt_client->callbacks = rpt_client_callbacks;
   if (config->search_domain)
     rdmnet_safe_strncpy(client->search_domain, config->search_domain, E133_DOMAIN_STRING_PADDED_LENGTH);
   else
@@ -902,6 +1015,9 @@ etcpal_error_t create_new_controller(const RdmnetControllerConfig* config, rdmne
 
 etcpal_error_t get_controller(rdmnet_controller_t handle, RdmnetController** controller)
 {
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return kEtcPalErrSys;
+
   if (handle == RDMNET_CONTROLLER_INVALID)
     return kEtcPalErrInvalid;
   if (!rc_initialized())
@@ -930,12 +1046,18 @@ etcpal_error_t get_controller(rdmnet_controller_t handle, RdmnetController** con
 
 void release_controller(RdmnetController* controller)
 {
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return;
+
   etcpal_mutex_unlock(&controller->lock);
   rdmnet_readunlock();
 }
 
 void copy_rdm_data(const RdmnetControllerRdmData* config_data, ControllerRdmDataInternal* data)
 {
+  if (!RDMNET_ASSERT_VERIFY(config_data) || !RDMNET_ASSERT_VERIFY(data))
+    return;
+
   data->model_id = config_data->model_id;
   data->product_category = config_data->product_category;
   data->software_version_id = config_data->software_version_id;
@@ -950,8 +1072,13 @@ void copy_rdm_data(const RdmnetControllerRdmData* config_data, ControllerRdmData
 
 void client_connected(RCClient* client, rdmnet_client_scope_t scope_handle, const RdmnetClientConnectedInfo* info)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(info))
+    return;
+
   RdmnetController* controller = GET_CONTROLLER_FROM_CLIENT(client);
+  if (!RDMNET_ASSERT_VERIFY(controller) || !RDMNET_ASSERT_VERIFY(controller->callbacks.connected))
+    return;
+
   controller->callbacks.connected(controller->id.handle, scope_handle, info, controller->callbacks.context);
 }
 
@@ -959,36 +1086,55 @@ void client_connect_failed(RCClient*                            client,
                            rdmnet_client_scope_t                scope_handle,
                            const RdmnetClientConnectFailedInfo* info)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(info))
+    return;
+
   RdmnetController* controller = GET_CONTROLLER_FROM_CLIENT(client);
+  if (!RDMNET_ASSERT_VERIFY(controller) || !RDMNET_ASSERT_VERIFY(controller->callbacks.connect_failed))
+    return;
+
   controller->callbacks.connect_failed(controller->id.handle, scope_handle, info, controller->callbacks.context);
 }
 
 void client_disconnected(RCClient* client, rdmnet_client_scope_t scope_handle, const RdmnetClientDisconnectedInfo* info)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(info))
+    return;
+
   RdmnetController* controller = GET_CONTROLLER_FROM_CLIENT(client);
+  if (!RDMNET_ASSERT_VERIFY(controller) || !RDMNET_ASSERT_VERIFY(controller->callbacks.disconnected))
+    return;
+
   controller->callbacks.disconnected(controller->id.handle, scope_handle, info, controller->callbacks.context);
 }
 
 void client_broker_msg_received(RCClient* client, rdmnet_client_scope_t scope_handle, const BrokerMessage* msg)
 {
-  RDMNET_ASSERT(client);
-  RDMNET_ASSERT(msg);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(msg))
+    return;
 
   RdmnetController* controller = GET_CONTROLLER_FROM_CLIENT(client);
+  if (!RDMNET_ASSERT_VERIFY(controller) || !RDMNET_ASSERT_VERIFY(controller->callbacks.client_list_update_received))
+    return;
 
   switch (msg->vector)
   {
     case VECTOR_BROKER_CONNECTED_CLIENT_LIST:
     case VECTOR_BROKER_CLIENT_ADD:
     case VECTOR_BROKER_CLIENT_REMOVE:
-    case VECTOR_BROKER_CLIENT_ENTRY_CHANGE:
-      RDMNET_ASSERT(BROKER_GET_CLIENT_LIST(msg)->client_protocol == kClientProtocolRPT);
+    case VECTOR_BROKER_CLIENT_ENTRY_CHANGE: {
+      const BrokerClientList* bcl = BROKER_GET_CLIENT_LIST(msg);
+      if (!RDMNET_ASSERT_VERIFY(bcl) || !RDMNET_ASSERT_VERIFY(bcl->client_protocol == kClientProtocolRPT))
+        return;
+
+      const RdmnetRptClientList* rptcl = BROKER_GET_RPT_CLIENT_LIST(bcl);
+      if (!RDMNET_ASSERT_VERIFY(rptcl))
+        return;
+
       controller->callbacks.client_list_update_received(
-          controller->id.handle, scope_handle, (client_list_action_t)msg->vector,
-          BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(msg)), controller->callbacks.context);
-      break;
+          controller->id.handle, scope_handle, (client_list_action_t)msg->vector, rptcl, controller->callbacks.context);
+    }
+    break;
     default:
       break;
   }
@@ -996,8 +1142,13 @@ void client_broker_msg_received(RCClient* client, rdmnet_client_scope_t scope_ha
 
 void client_destroyed(RCClient* client)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client))
+    return;
+
   RdmnetController* controller = GET_CONTROLLER_FROM_CLIENT(client);
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return;
+
   rdmnet_free_struct_instance(controller);
 }
 
@@ -1006,7 +1157,11 @@ void client_llrp_msg_received(RCClient*              client,
                               RdmnetSyncRdmResponse* response,
                               bool*                  use_internal_buf_for_response)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(cmd) || !RDMNET_ASSERT_VERIFY(response) ||
+      !RDMNET_ASSERT_VERIFY(use_internal_buf_for_response))
+  {
+    return;
+  }
 
   RdmnetController* controller = GET_CONTROLLER_FROM_CLIENT(client);
   if (controller)
@@ -1014,6 +1169,10 @@ void client_llrp_msg_received(RCClient*              client,
     if (controller->rdm_handle_method == kRdmHandleMethodUseCallbacks)
     {
       RdmnetControllerRdmCmdHandler* handler = &controller->rdm_handler.handler;
+
+      if (!RDMNET_ASSERT_VERIFY(handler->llrp_rdm_command_received))
+        return;
+
       handler->llrp_rdm_command_received(controller->id.handle, cmd, response, handler->context);
     }
     else
@@ -1030,7 +1189,11 @@ void client_rpt_msg_received(RCClient*               client,
                              RdmnetSyncRdmResponse*  response,
                              bool*                   use_internal_buf_for_response)
 {
-  RDMNET_ASSERT(client);
+  if (!RDMNET_ASSERT_VERIFY(client) || !RDMNET_ASSERT_VERIFY(msg) || !RDMNET_ASSERT_VERIFY(response) ||
+      !RDMNET_ASSERT_VERIFY(use_internal_buf_for_response))
+  {
+    return;
+  }
 
   RdmnetController* controller = GET_CONTROLLER_FROM_CLIENT(client);
   if (controller)
@@ -1041,27 +1204,45 @@ void client_rpt_msg_received(RCClient*               client,
         if (controller->rdm_handle_method == kRdmHandleMethodUseCallbacks)
         {
           RdmnetControllerRdmCmdHandler* handler = &controller->rdm_handler.handler;
+          if (!RDMNET_ASSERT_VERIFY(handler->rdm_command_received))
+            return;
+
           handler->rdm_command_received(controller->id.handle, scope_handle, RDMNET_GET_RDM_COMMAND(msg), response,
                                         handler->context);
         }
         else
         {
           const RdmnetRdmCommand* cmd = RDMNET_GET_RDM_COMMAND(msg);
+          if (!RDMNET_ASSERT_VERIFY(cmd))
+            return;
+
           handle_rdm_command_internally(controller, &cmd->rdm_header, cmd->data, cmd->data_len, response);
           *use_internal_buf_for_response = true;
         }
         break;
-      case kRptClientMsgRdmResp:
-        if (!controller->callbacks.rdm_response_received(controller->id.handle, scope_handle,
-                                                         RDMNET_GET_RDM_RESPONSE(msg), controller->callbacks.context))
+      case kRptClientMsgRdmResp: {
+        const RdmnetRdmResponse* resp = RDMNET_GET_RDM_RESPONSE(msg);
+
+        if (!RDMNET_ASSERT_VERIFY(controller->callbacks.rdm_response_received) || !RDMNET_ASSERT_VERIFY(resp))
+          return;
+
+        if (!controller->callbacks.rdm_response_received(controller->id.handle, scope_handle, resp,
+                                                         controller->callbacks.context))
         {
           RDMNET_SYNC_RETRY_LATER(response);
         }
-        break;
-      case kRptClientMsgStatus:
-        controller->callbacks.status_received(controller->id.handle, scope_handle, RDMNET_GET_RPT_STATUS(msg),
+      }
+      break;
+      case kRptClientMsgStatus: {
+        const RdmnetRptStatus* status = RDMNET_GET_RPT_STATUS(msg);
+
+        if (!RDMNET_ASSERT_VERIFY(controller->callbacks.status_received) || !RDMNET_ASSERT_VERIFY(status))
+          return;
+
+        controller->callbacks.status_received(controller->id.handle, scope_handle, status,
                                               controller->callbacks.context);
-        break;
+      }
+      break;
       default:
         break;
     }
@@ -1074,10 +1255,17 @@ void handle_rdm_command_internally(RdmnetController*       controller,
                                    uint8_t                 data_len,
                                    RdmnetSyncRdmResponse*  response)
 {
+  if (!RDMNET_ASSERT_VERIFY(controller) || !RDMNET_ASSERT_VERIFY(rdm_header) || !RDMNET_ASSERT_VERIFY(response))
+    return;
+
   if (CONTROLLER_LOCK(controller))
   {
+    ControllerRdmDataInternal* rdm_data = CONTROLLER_RDM_DATA(controller);
+    if (!RDMNET_ASSERT_VERIFY(rdm_data))
+      return;
+
     if (rdm_header->command_class != kRdmCCGetCommand &&
-        !(rdm_header->param_id == E120_DEVICE_LABEL && CONTROLLER_RDM_DATA(controller)->device_label_settable))
+        !(rdm_header->param_id == E120_DEVICE_LABEL && rdm_data->device_label_settable))
     {
       RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRUnsupportedCommandClass);
       CONTROLLER_UNLOCK(controller);
@@ -1093,19 +1281,16 @@ void handle_rdm_command_internally(RdmnetController*       controller,
         handle_device_info(controller, rdm_header, response);
         break;
       case E120_DEVICE_MODEL_DESCRIPTION:
-        handle_generic_label_query(CONTROLLER_RDM_DATA(controller)->device_model_description, rdm_header, data,
-                                   data_len, response);
+        handle_generic_label_query(rdm_data->device_model_description, rdm_header, data, data_len, response);
         break;
       case E120_MANUFACTURER_LABEL:
-        handle_generic_label_query(CONTROLLER_RDM_DATA(controller)->manufacturer_label, rdm_header, data, data_len,
-                                   response);
+        handle_generic_label_query(rdm_data->manufacturer_label, rdm_header, data, data_len, response);
         break;
       case E120_DEVICE_LABEL:
-        handle_generic_label_query(CONTROLLER_RDM_DATA(controller)->device_label, rdm_header, data, data_len, response);
+        handle_generic_label_query(rdm_data->device_label, rdm_header, data, data_len, response);
         break;
       case E120_SOFTWARE_VERSION_LABEL:
-        handle_generic_label_query(CONTROLLER_RDM_DATA(controller)->software_version_label, rdm_header, data, data_len,
-                                   response);
+        handle_generic_label_query(rdm_data->software_version_label, rdm_header, data, data_len, response);
         break;
       case E133_COMPONENT_SCOPE:
         handle_component_scope(controller, rdm_header, data, data_len, response);
@@ -1131,6 +1316,9 @@ void handle_supported_parameters(RdmnetController*       controller,
   ETCPAL_UNUSED_ARG(controller);
   ETCPAL_UNUSED_ARG(rdm_header);
 
+  if (!RDMNET_ASSERT_VERIFY(response))
+    return;
+
   size_t   pd_len = NUM_INTERNAL_SUPPORTED_PARAMETERS * 2;
   uint8_t* buf = rc_client_get_internal_response_buf(pd_len);
   if (!buf)
@@ -1143,6 +1331,9 @@ void handle_supported_parameters(RdmnetController*       controller,
   for (const uint16_t* param = kControllerInternalSupportedParameters;
        param < kControllerInternalSupportedParameters + NUM_INTERNAL_SUPPORTED_PARAMETERS; ++param)
   {
+    if (!RDMNET_ASSERT_VERIFY(param))
+      return;
+
     etcpal_pack_u16b(cur_ptr, *param);
     cur_ptr += 2;
   }
@@ -1157,6 +1348,9 @@ void handle_device_info(RdmnetController*       controller,
   ETCPAL_UNUSED_ARG(controller);
   ETCPAL_UNUSED_ARG(rdm_header);
 
+  if (!RDMNET_ASSERT_VERIFY(response))
+    return;
+
   uint8_t* buf = rc_client_get_internal_response_buf(19);
   if (!buf)
   {
@@ -1165,7 +1359,10 @@ void handle_device_info(RdmnetController*       controller,
   }
 
   ControllerRdmDataInternal* rdm_data = CONTROLLER_RDM_DATA(controller);
-  uint8_t*                   cur_ptr = buf;
+  if (!RDMNET_ASSERT_VERIFY(rdm_data))
+    return;
+
+  uint8_t* cur_ptr = buf;
   etcpal_pack_u16b(cur_ptr, E120_PROTOCOL_VERSION);
   cur_ptr += 2;
   etcpal_pack_u16b(cur_ptr, rdm_data->model_id);
@@ -1190,6 +1387,12 @@ void handle_generic_label_query(char*                   label,
                                 uint8_t                 data_len,
                                 RdmnetSyncRdmResponse*  response)
 {
+  if (!RDMNET_ASSERT_VERIFY(label) || !RDMNET_ASSERT_VERIFY(rdm_header) || !RDMNET_ASSERT_VERIFY(data) ||
+      !RDMNET_ASSERT_VERIFY(response))
+  {
+    return;
+  }
+
   if (rdm_header->command_class == kRdmCCGetCommand)
   {
     size_t   pd_len = strlen(label);
@@ -1233,6 +1436,9 @@ void handle_component_scope(RdmnetController*       controller,
 {
   ETCPAL_UNUSED_ARG(rdm_header);
 
+  if (!RDMNET_ASSERT_VERIFY(controller) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(response))
+    return;
+
   if (data_len < 2)
   {
     RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRFormatError);
@@ -1258,6 +1464,9 @@ void handle_component_scope(RdmnetController*       controller,
     RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRDataOutOfRange);
     return;
   }
+
+  if (!RDMNET_ASSERT_VERIFY(client->scopes))
+    return;
 
   RCClientScope* scope = client->scopes[scope_slot - 1];
   while ((scope->handle == RDMNET_CLIENT_SCOPE_INVALID || scope->state == kRCScopeStateMarkedForDestruction))
@@ -1338,6 +1547,9 @@ void handle_search_domain(RdmnetController*       controller,
 {
   ETCPAL_UNUSED_ARG(rdm_header);
 
+  if (!RDMNET_ASSERT_VERIFY(controller) || !RDMNET_ASSERT_VERIFY(response))
+    return;
+
   // This is a bit of a hack and relies on knowledge of how the client struct works.
   RCClient* client = &controller->client;
   size_t    pd_len = strlen(client->search_domain);
@@ -1366,6 +1578,9 @@ void handle_identify_device(RdmnetController*       controller,
 {
   ETCPAL_UNUSED_ARG(controller);
   ETCPAL_UNUSED_ARG(rdm_header);
+
+  if (!RDMNET_ASSERT_VERIFY(response))
+    return;
 
   uint8_t* buf = rc_client_get_internal_response_buf(1);
   if (!buf)

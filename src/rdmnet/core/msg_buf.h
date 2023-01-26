@@ -57,13 +57,13 @@ typedef struct PduBlockState
 } PduBlockState;
 
 #define INIT_PDU_BLOCK_STATE(blockstateptr, blocksize) \
-  do                                                   \
+  if (RDMNET_ASSERT_VERIFY(blockstateptr))             \
   {                                                    \
     (blockstateptr)->block_size = blocksize;           \
     (blockstateptr)->size_parsed = 0;                  \
     (blockstateptr)->consuming_bad_block = false;      \
     (blockstateptr)->parsed_header = false;            \
-  } while (0)
+  }
 
 typedef struct GenericListState
 {
@@ -72,11 +72,11 @@ typedef struct GenericListState
 } GenericListState;
 
 #define INIT_GENERIC_LIST_STATE(liststateptr, list_size) \
-  do                                                     \
+  if (RDMNET_ASSERT_VERIFY(liststateptr))                \
   {                                                      \
     (liststateptr)->full_list_size = list_size;          \
     (liststateptr)->size_parsed = 0;                     \
-  } while (0)
+  }
 
 typedef struct RdmListState
 {
@@ -84,15 +84,19 @@ typedef struct RdmListState
   PduBlockState block;
 } RdmListState;
 
-#define INIT_RDM_LIST_STATE(rlstateptr, blocksize, rmsgptr) \
-  do                                                        \
-  {                                                         \
-    (rlstateptr)->parsed_request_notif_header = false;      \
-    INIT_PDU_BLOCK_STATE(&(rlstateptr)->block, blocksize);  \
-    RPT_GET_RDM_BUF_LIST(rmsgptr)->rdm_buffers = NULL;      \
-    RPT_GET_RDM_BUF_LIST(rmsgptr)->num_rdm_buffers = 0;     \
-    RPT_GET_RDM_BUF_LIST(rmsgptr)->more_coming = false;     \
-  } while (0)
+#define INIT_RDM_LIST_STATE(rlstateptr, blocksize, rmsgptr)              \
+  if (RDMNET_ASSERT_VERIFY(rlstateptr) && RDMNET_ASSERT_VERIFY(rmsgptr)) \
+  {                                                                      \
+    (rlstateptr)->parsed_request_notif_header = false;                   \
+    INIT_PDU_BLOCK_STATE(&(rlstateptr)->block, blocksize);               \
+    RptRdmBufList* rdm = RPT_GET_RDM_BUF_LIST(rmsgptr);                  \
+    if (RDMNET_ASSERT_VERIFY(rdm))                                       \
+    {                                                                    \
+      rdm->rdm_buffers = NULL;                                           \
+      rdm->num_rdm_buffers = 0;                                          \
+      rdm->more_coming = false;                                          \
+    }                                                                    \
+  }
 
 typedef struct RptStatusState
 {
@@ -100,10 +104,10 @@ typedef struct RptStatusState
 } RptStatusState;
 
 #define INIT_RPT_STATUS_STATE(rsstateptr, blocksize)       \
-  do                                                       \
+  if (RDMNET_ASSERT_VERIFY(rsstateptr))                    \
   {                                                        \
     INIT_PDU_BLOCK_STATE(&(rsstateptr)->block, blocksize); \
-  } while (0)
+  }
 
 typedef struct RptState
 {
@@ -117,10 +121,10 @@ typedef struct RptState
 } RptState;
 
 #define INIT_RPT_STATE(rstateptr, blocksize)              \
-  do                                                      \
+  if (RDMNET_ASSERT_VERIFY(rstateptr))                    \
   {                                                       \
     INIT_PDU_BLOCK_STATE(&(rstateptr)->block, blocksize); \
-  } while (0)
+  }
 
 typedef struct ClientEntryState
 {
@@ -131,12 +135,12 @@ typedef struct ClientEntryState
 } ClientEntryState;
 
 #define INIT_CLIENT_ENTRY_STATE(cstateptr, blocksize)      \
-  do                                                       \
+  if (RDMNET_ASSERT_VERIFY(cstateptr))                     \
   {                                                        \
     (cstateptr)->enclosing_block_size = (blocksize);       \
     (cstateptr)->parsed_entry_header = false;              \
     (cstateptr)->client_protocol = kClientProtocolUnknown; \
-  } while (0)
+  }
 
 typedef struct ClientListState
 {
@@ -144,18 +148,27 @@ typedef struct ClientListState
   ClientEntryState entry;
 } ClientListState;
 
-#define INIT_CLIENT_LIST_STATE(clstateptr, blocksize, bmsgptr)                           \
-  do                                                                                     \
-  {                                                                                      \
-    INIT_PDU_BLOCK_STATE(&(clstateptr)->block, blocksize);                               \
-    BROKER_GET_CLIENT_LIST(bmsgptr)->client_protocol = kClientProtocolUnknown;           \
-    BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(bmsgptr))->client_entries = NULL;  \
-    BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(bmsgptr))->num_client_entries = 0; \
-    BROKER_GET_RPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(bmsgptr))->more_coming = false;    \
-    BROKER_GET_EPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(bmsgptr))->client_entries = NULL;  \
-    BROKER_GET_EPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(bmsgptr))->num_client_entries = 0; \
-    BROKER_GET_EPT_CLIENT_LIST(BROKER_GET_CLIENT_LIST(bmsgptr))->more_coming = false;    \
-  } while (0)
+#define INIT_CLIENT_LIST_STATE(clstateptr, blocksize, bmsgptr)           \
+  if (RDMNET_ASSERT_VERIFY(clstateptr) && RDMNET_ASSERT_VERIFY(bmsgptr)) \
+  {                                                                      \
+    INIT_PDU_BLOCK_STATE(&(clstateptr)->block, blocksize);               \
+    BrokerClientList* clist = BROKER_GET_CLIENT_LIST(bmsgptr);           \
+    if (RDMNET_ASSERT_VERIFY(clist))                                     \
+    {                                                                    \
+      clist->client_protocol = kClientProtocolUnknown;                   \
+      RdmnetRptClientList* rcl = BROKER_GET_RPT_CLIENT_LIST(clist);      \
+      RdmnetEptClientList* ecl = BROKER_GET_EPT_CLIENT_LIST(clist);      \
+      if (RDMNET_ASSERT_VERIFY(rcl) && RDMNET_ASSERT_VERIFY(ecl))        \
+      {                                                                  \
+        rcl->client_entries = NULL;                                      \
+        rcl->num_client_entries = 0;                                     \
+        rcl->more_coming = false;                                        \
+        ecl->client_entries = NULL;                                      \
+        ecl->num_client_entries = 0;                                     \
+        ecl->more_coming = false;                                        \
+      }                                                                  \
+    }                                                                    \
+  }
 
 typedef struct ClientConnectState
 {
@@ -165,11 +178,11 @@ typedef struct ClientConnectState
 } ClientConnectState;
 
 #define INIT_CLIENT_CONNECT_STATE(cstateptr, blocksize, bmsgptr) \
-  do                                                             \
+  if (RDMNET_ASSERT_VERIFY(cstateptr))                           \
   {                                                              \
     (cstateptr)->pdu_data_size = blocksize;                      \
     (cstateptr)->common_data_parsed = false;                     \
-  } while (0)
+  }
 
 typedef struct ClientEntryUpdateState
 {
@@ -179,11 +192,11 @@ typedef struct ClientEntryUpdateState
 } ClientEntryUpdateState;
 
 #define INIT_CLIENT_ENTRY_UPDATE_STATE(ceustateptr, blocksize, bmsgptr) \
-  do                                                                    \
+  if (RDMNET_ASSERT_VERIFY(ceustateptr))                                \
   {                                                                     \
     (ceustateptr)->pdu_data_size = blocksize;                           \
     (ceustateptr)->common_data_parsed = false;                          \
-  } while (0)
+  }
 
 typedef struct BrokerState
 {
@@ -198,7 +211,11 @@ typedef struct BrokerState
   } data;
 } BrokerState;
 
-#define INIT_BROKER_STATE(bstateptr, blocksize, msgptr) INIT_PDU_BLOCK_STATE(&(bstateptr)->block, blocksize)
+#define INIT_BROKER_STATE(bstateptr, blocksize, msgptr)   \
+  if (RDMNET_ASSERT_VERIFY(bstateptr))                    \
+  {                                                       \
+    INIT_PDU_BLOCK_STATE(&(bstateptr)->block, blocksize); \
+  }
 
 typedef struct RlpState
 {
@@ -211,7 +228,11 @@ typedef struct RlpState
   } data;
 } RlpState;
 
-#define INIT_RLP_STATE(rlpstateptr, blocksize) INIT_PDU_BLOCK_STATE(&(rlpstateptr)->block, blocksize)
+#define INIT_RLP_STATE(rlpstateptr, blocksize)              \
+  if (RDMNET_ASSERT_VERIFY(rlpstateptr))                    \
+  {                                                         \
+    INIT_PDU_BLOCK_STATE(&(rlpstateptr)->block, blocksize); \
+  }
 
 #define RC_MSG_BUF_SIZE (RDMNET_RECV_DATA_MAX_SIZE * 2)
 

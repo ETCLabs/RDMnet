@@ -36,10 +36,18 @@
 
 #if RDMNET_DYNAMIC_MEM
 #define ALLOC_DISCOVERED_BROKER() (DiscoveredBroker*)malloc(sizeof(DiscoveredBroker))
-#define FREE_DISCOVERED_BROKER(ptr) free(ptr)
+#define FREE_DISCOVERED_BROKER(ptr) \
+  if (RDMNET_ASSERT_VERIFY(ptr))    \
+  {                                 \
+    free(ptr);                      \
+  }
 #elif RDMNET_MAX_DISCOVERED_BROKERS_PER_SCOPE
 #define ALLOC_DISCOVERED_BROKER() (DiscoveredBroker*)etcpal_mempool_alloc(discovered_brokers)
-#define FREE_DISCOVERED_BROKER(ptr) etcpal_mempool_free(discovered_brokers, ptr)
+#define FREE_DISCOVERED_BROKER(ptr)               \
+  if (RDMNET_ASSERT_VERIFY(ptr))                  \
+  {                                               \
+    etcpal_mempool_free(discovered_brokers, ptr); \
+  }
 #else
 #define ALLOC_DISCOVERED_BROKER() NULL
 #define FREE_DISCOVERED_BROKER(ptr)
@@ -82,6 +90,12 @@ DiscoveredBroker* discovered_broker_new(rdmnet_scope_monitor_t monitor_ref,
                                         const char*            service_name,
                                         const char*            full_service_name)
 {
+  if (!RDMNET_ASSERT_VERIFY(monitor_ref) || !RDMNET_ASSERT_VERIFY(service_name) ||
+      !RDMNET_ASSERT_VERIFY(full_service_name))
+  {
+    return NULL;
+  }
+
   DiscoveredBroker* new_db = ALLOC_DISCOVERED_BROKER();
   if (new_db)
   {
@@ -102,6 +116,9 @@ DiscoveredBroker* discovered_broker_new(rdmnet_scope_monitor_t monitor_ref,
 
 void discovered_broker_insert(DiscoveredBroker** list_head_ptr, DiscoveredBroker* new_db)
 {
+  if (!RDMNET_ASSERT_VERIFY(list_head_ptr) || !RDMNET_ASSERT_VERIFY(new_db))
+    return;
+
   if (*list_head_ptr)
   {
     DiscoveredBroker* cur = *list_head_ptr;
@@ -117,10 +134,15 @@ void discovered_broker_insert(DiscoveredBroker** list_head_ptr, DiscoveredBroker
 
 bool discovered_broker_add_listen_addr(DiscoveredBroker* db, const EtcPalIpAddr* addr, unsigned int netint)
 {
+  if (!RDMNET_ASSERT_VERIFY(db) || !RDMNET_ASSERT_VERIFY(addr))
+    return false;
+
 #if RDMNET_DYNAMIC_MEM
   if (!db->listen_addr_array)
   {
-    RDMNET_ASSERT(!db->listen_addr_netint_array);
+    if (!RDMNET_ASSERT_VERIFY(!db->listen_addr_netint_array))
+      return false;
+
     db->listen_addr_array = (EtcPalIpAddr*)malloc(sizeof(EtcPalIpAddr));
     db->listen_addr_netint_array = (unsigned int*)malloc(sizeof(unsigned int));
     if (db->listen_addr_array && db->listen_addr_netint_array)
@@ -133,6 +155,9 @@ bool discovered_broker_add_listen_addr(DiscoveredBroker* db, const EtcPalIpAddr*
   }
   else
   {
+    if (!RDMNET_ASSERT_VERIFY(db->listen_addr_netint_array))
+      return false;
+
     EtcPalIpAddr* new_ip_arr =
         (EtcPalIpAddr*)realloc(db->listen_addr_array, sizeof(EtcPalIpAddr) * (db->num_listen_addrs + 1));
     unsigned int* net_netint_arr =
@@ -174,12 +199,18 @@ bool discovered_broker_add_txt_record_item(DiscoveredBroker* db,
                                            const uint8_t*    value,
                                            uint8_t           value_len)
 {
+  if (!RDMNET_ASSERT_VERIFY(db) || !RDMNET_ASSERT_VERIFY(key) || !RDMNET_ASSERT_VERIFY(value))
+    return false;
+
   RdmnetDnsTxtRecordItem*   item = NULL;
   DnsTxtRecordItemInternal* item_data = NULL;
 
   // If the item already exists, just update its value
   if (find_txt_item(db, (const uint8_t*)key, (uint8_t)strlen(key), &item, &item_data))
   {
+    if (!RDMNET_ASSERT_VERIFY(item_data))
+      return false;
+
     if (value_len == item_data->value_len && memcmp(value, item_data->value, value_len) == 0)
     {
       // Same value
@@ -191,6 +222,9 @@ bool discovered_broker_add_txt_record_item(DiscoveredBroker* db,
   }
   else if (get_next_unused_txt_item(db, &item, &item_data))
   {
+    if (!RDMNET_ASSERT_VERIFY(item) || !RDMNET_ASSERT_VERIFY(item_data))
+      return false;
+
     rdmnet_safe_strncpy(item_data->key, key, DNS_TXT_RECORD_COMPONENT_MAX_LENGTH);
     memcpy(item_data->value, value, value_len);
     item_data->value_len = value_len;
@@ -210,6 +244,9 @@ bool discovered_broker_add_binary_txt_record_item(DiscoveredBroker* db,
                                                   const uint8_t*    value,
                                                   uint8_t           value_len)
 {
+  if (!RDMNET_ASSERT_VERIFY(db) || !RDMNET_ASSERT_VERIFY(key))
+    return false;
+
   // Key must be 100% PRINTUSASCII
   for (const uint8_t* key_char = key; key_char < key + key_len; ++key_char)
   {
@@ -223,20 +260,34 @@ bool discovered_broker_add_binary_txt_record_item(DiscoveredBroker* db,
   // If the item already exists, just update its value
   if (find_txt_item(db, key, key_len, &item, &item_data))
   {
-    if (value_len == item_data->value_len && memcmp(value, item_data->value, value_len) == 0)
+    if (!RDMNET_ASSERT_VERIFY(item_data))
+      return false;
+
+    if ((value_len == item_data->value_len) &&
+        ((value_len == 0) || (RDMNET_ASSERT_VERIFY(value) && (memcmp(value, item_data->value, value_len) == 0))))
     {
       // Same value
       return false;
     }
-    memcpy(item_data->value, value, value_len);
+
+    if (value_len > 0)
+      memcpy(item_data->value, value, value_len);
+
     item_data->value_len = value_len;
+
     return true;
   }
   else if (get_next_unused_txt_item(db, &item, &item_data))
   {
+    if (!RDMNET_ASSERT_VERIFY(item) || !RDMNET_ASSERT_VERIFY(item_data))
+      return false;
+
     memcpy(item_data->key, key, key_len);
     item_data->key[key_len] = '\0';
-    memcpy(item_data->value, value, value_len);
+
+    if (value_len > 0)
+      memcpy(item_data->value, value, value_len);
+
     item_data->value_len = value_len;
 
     // Assign the references from the RdmnetDnsTxtRecordItem
@@ -272,6 +323,9 @@ DiscoveredBroker* discovered_broker_find(DiscoveredBroker*                 list_
                                          DiscoveredBrokerPredicateFunction predicate,
                                          const void*                       context)
 {
+  if (!RDMNET_ASSERT_VERIFY(predicate))
+    return NULL;
+
   for (DiscoveredBroker* current = list_head; current; current = current->next)
   {
     if (predicate(current, context))
@@ -282,6 +336,9 @@ DiscoveredBroker* discovered_broker_find(DiscoveredBroker*                 list_
 
 DiscoveredBroker* discovered_broker_find_by_name(DiscoveredBroker* list_head, const char* full_name)
 {
+  if (!RDMNET_ASSERT_VERIFY(full_name))
+    return NULL;
+
   for (DiscoveredBroker* current = list_head; current; current = current->next)
   {
     if (strcmp(current->full_service_name, full_name) == 0)
@@ -292,6 +349,9 @@ DiscoveredBroker* discovered_broker_find_by_name(DiscoveredBroker* list_head, co
 
 void discovered_broker_remove(DiscoveredBroker** list_head_ptr, const DiscoveredBroker* db)
 {
+  if (!RDMNET_ASSERT_VERIFY(list_head_ptr) || !RDMNET_ASSERT_VERIFY(db))
+    return;
+
   if (!(*list_head_ptr))
     return;
 
@@ -316,6 +376,9 @@ void discovered_broker_remove(DiscoveredBroker** list_head_ptr, const Discovered
 
 void discovered_broker_delete(DiscoveredBroker* db)
 {
+  if (!RDMNET_ASSERT_VERIFY(db))
+    return;
+
 #if RDMNET_DYNAMIC_MEM
   if (db->additional_txt_items_data)
     free(db->additional_txt_items_data);
@@ -336,8 +399,17 @@ bool find_txt_item(DiscoveredBroker*          db,
                    RdmnetDnsTxtRecordItem**   item_ptr,
                    DnsTxtRecordItemInternal** item_data_ptr)
 {
+  if (!RDMNET_ASSERT_VERIFY(db) || !RDMNET_ASSERT_VERIFY(key) || !RDMNET_ASSERT_VERIFY(item_ptr) ||
+      !RDMNET_ASSERT_VERIFY(item_data_ptr))
+  {
+    return false;
+  }
+
   for (size_t i = 0; i < db->num_additional_txt_items; ++i)
   {
+    if (!RDMNET_ASSERT_VERIFY(db->additional_txt_items_data))
+      return false;
+
     DnsTxtRecordItemInternal* item_data = &db->additional_txt_items_data[i];
     if (key_len == strlen(item_data->key) && memcmp(item_data->key, key, key_len) == 0)
     {
@@ -353,9 +425,15 @@ bool get_next_unused_txt_item(DiscoveredBroker*          db,
                               RdmnetDnsTxtRecordItem**   item_ptr,
                               DnsTxtRecordItemInternal** item_data_ptr)
 {
+  if (!RDMNET_ASSERT_VERIFY(db) || !RDMNET_ASSERT_VERIFY(item_ptr) || !RDMNET_ASSERT_VERIFY(item_data_ptr))
+    return false;
+
 #if RDMNET_DYNAMIC_MEM
   if (expand_txt_record_arrays(db))
   {
+    if (!RDMNET_ASSERT_VERIFY(db->additional_txt_items_array))
+      return false;
+
     *item_ptr = &db->additional_txt_items_array[db->num_additional_txt_items - 1];
     *item_data_ptr = &db->additional_txt_items_data[db->num_additional_txt_items - 1];
     return true;
@@ -377,6 +455,9 @@ bool get_next_unused_txt_item(DiscoveredBroker*          db,
 #if RDMNET_DYNAMIC_MEM
 bool expand_txt_record_arrays(DiscoveredBroker* db)
 {
+  if (!RDMNET_ASSERT_VERIFY(db))
+    return false;
+
   if (!db->additional_txt_items_array)
   {
     db->additional_txt_items_array = (RdmnetDnsTxtRecordItem*)malloc(sizeof(RdmnetDnsTxtRecordItem));

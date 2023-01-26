@@ -129,6 +129,9 @@ void lwmdns_common_module_deinit(void)
 
 const uint8_t* lwmdns_parse_dns_header(const uint8_t* buf, int buf_len, DnsHeader* header)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf) || !RDMNET_ASSERT_VERIFY(header))
+    return NULL;
+
   if (buf_len < DNS_HEADER_BYTES)
     return NULL;
 
@@ -148,6 +151,9 @@ const uint8_t* lwmdns_parse_resource_record(const uint8_t*     buf_begin,
                                             int                total_remaining_length,
                                             DnsResourceRecord* rr)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf_begin) || !RDMNET_ASSERT_VERIFY(rr_ptr) || !RDMNET_ASSERT_VERIFY(rr))
+    return NULL;
+
   const uint8_t* cur_ptr = lwmdns_parse_domain_name(buf_begin, rr_ptr, total_remaining_length);
   if (!cur_ptr)
     return cur_ptr;
@@ -187,6 +193,9 @@ const uint8_t* lwmdns_parse_resource_record(const uint8_t*     buf_begin,
 
 const uint8_t* lwmdns_parse_domain_name(const uint8_t* buf_begin, const uint8_t* offset, int total_remaining_length)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf_begin) || !RDMNET_ASSERT_VERIFY(offset))
+    return NULL;
+
   int            remaining_length = total_remaining_length;
   const uint8_t* cur_ptr = offset;
 
@@ -230,6 +239,9 @@ const uint8_t* lwmdns_parse_domain_name(const uint8_t* buf_begin, const uint8_t*
 
 uint8_t lwmdns_copy_domain_name(const uint8_t* buf_begin, const uint8_t* name_ptr, uint8_t* buf)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf_begin) || !RDMNET_ASSERT_VERIFY(name_ptr) || !RDMNET_ASSERT_VERIFY(buf))
+    return 0;
+
   size_t          size_copied = 0;
   DomainNameLabel label = DOMAIN_NAME_LABEL_INIT;
   if (!get_domain_name_label(buf_begin, name_ptr, &label))
@@ -250,6 +262,9 @@ uint8_t lwmdns_copy_domain_name(const uint8_t* buf_begin, const uint8_t* name_pt
 
 uint8_t lwmdns_domain_name_length(const uint8_t* buf_begin, const uint8_t* name_ptr)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf_begin) || !RDMNET_ASSERT_VERIFY(name_ptr))
+    return 0;
+
   size_t          length = 0;
   DomainNameLabel label = DOMAIN_NAME_LABEL_INIT;
   if (!get_domain_name_label(buf_begin, name_ptr, &label))
@@ -269,6 +284,12 @@ bool lwmdns_domain_names_equal(const uint8_t* buf_begin_a,
                                const uint8_t* buf_begin_b,
                                const uint8_t* name_b)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf_begin_a) || !RDMNET_ASSERT_VERIFY(name_a) || !RDMNET_ASSERT_VERIFY(buf_begin_b) ||
+      !RDMNET_ASSERT_VERIFY(name_b))
+  {
+    return false;
+  }
+
   DomainNameLabel label_a = DOMAIN_NAME_LABEL_INIT;
   DomainNameLabel label_b = DOMAIN_NAME_LABEL_INIT;
 
@@ -318,7 +339,8 @@ bool lwmdns_domain_name_matches_service_subtype(const uint8_t* buf_begin, const 
   DomainNameLabel label = DOMAIN_NAME_LABEL_INIT;
   // Compare the scope - it should be prefixed with an underscore in the domain name
   if (!get_domain_name_label(buf_begin, name_ptr, &label) || label.length != ((uint8_t)scope_len) + 1 ||
-      label.label[0] != (uint8_t)'_' || memcmp(&label.label[1], scope, scope_len) != 0)
+      !RDMNET_ASSERT_VERIFY(label.label) || label.label[0] != (uint8_t)'_' ||
+      memcmp(&label.label[1], scope, scope_len) != 0)
   {
     return false;
   }
@@ -352,6 +374,9 @@ txt_record_parse_result_t lwmdns_txt_record_to_broker_info(const uint8_t*    txt
                                                            uint16_t          txt_data_len,
                                                            DiscoveredBroker* db)
 {
+  if (!RDMNET_ASSERT_VERIFY(txt_data) || !RDMNET_ASSERT_VERIFY(db))
+    return kTxtRecordParseError;
+
   txt_keys_found_mask_t keys_found = 0;
   bool                  data_changed = false;
 
@@ -423,6 +448,9 @@ txt_record_parse_result_t lwmdns_txt_record_to_broker_info(const uint8_t*    txt
 
 bool parse_txt_vers(const TxtRecordItemRef* item)
 {
+  if (!RDMNET_ASSERT_VERIFY(item))
+    return false;
+
   if (!txt_item_matches_key(item, E133_TXT_VERS_KEY, sizeof(E133_TXT_VERS_KEY)))
     return false;
 
@@ -434,6 +462,9 @@ bool parse_txt_vers(const TxtRecordItemRef* item)
 
 bool parse_txt_item(const TxtRecordItemRef* item, DiscoveredBroker* db, txt_keys_found_mask_t* found_mask)
 {
+  if (!RDMNET_ASSERT_VERIFY(item) || !RDMNET_ASSERT_VERIFY(db) || !RDMNET_ASSERT_VERIFY(found_mask))
+    return false;
+
   if (txt_item_matches_key(item, E133_TXT_SCOPE_KEY, sizeof(E133_TXT_SCOPE_KEY)))
     return parse_e133_scope_item(item, db, found_mask);
   else if (txt_item_matches_key(item, E133_TXT_E133VERS_KEY, sizeof(E133_TXT_E133VERS_KEY)))
@@ -452,6 +483,9 @@ bool parse_txt_item(const TxtRecordItemRef* item, DiscoveredBroker* db, txt_keys
 
 bool parse_e133_scope_item(const TxtRecordItemRef* item, DiscoveredBroker* db, txt_keys_found_mask_t* found_mask)
 {
+  if (!RDMNET_ASSERT_VERIFY(item) || !RDMNET_ASSERT_VERIFY(db) || !RDMNET_ASSERT_VERIFY(found_mask))
+    return false;
+
   if (item->value_len > 0 && item->value_len <= E133_SCOPE_STRING_PADDED_LENGTH - 1)
   {
     *found_mask |= TXT_KEY_E133SCOPE_FOUND_MASK;
@@ -467,6 +501,9 @@ bool parse_e133_scope_item(const TxtRecordItemRef* item, DiscoveredBroker* db, t
 
 bool parse_e133_vers_item(const TxtRecordItemRef* item, DiscoveredBroker* db, txt_keys_found_mask_t* found_mask)
 {
+  if (!RDMNET_ASSERT_VERIFY(item) || !RDMNET_ASSERT_VERIFY(db) || !RDMNET_ASSERT_VERIFY(found_mask))
+    return false;
+
   int e133_vers = binary_atoi(item->value, item->value_len);
   if (e133_vers != 0)
   {
@@ -482,6 +519,9 @@ bool parse_e133_vers_item(const TxtRecordItemRef* item, DiscoveredBroker* db, tx
 
 bool parse_cid_item(const TxtRecordItemRef* item, DiscoveredBroker* db, txt_keys_found_mask_t* found_mask)
 {
+  if (!RDMNET_ASSERT_VERIFY(item) || !RDMNET_ASSERT_VERIFY(db) || !RDMNET_ASSERT_VERIFY(found_mask))
+    return false;
+
   if (item->value_len >= 32 && item->value_len < ETCPAL_UUID_STRING_BYTES)
   {
     char cid_str[ETCPAL_UUID_STRING_BYTES];
@@ -504,6 +544,9 @@ bool parse_cid_item(const TxtRecordItemRef* item, DiscoveredBroker* db, txt_keys
 
 bool parse_uid_item(const TxtRecordItemRef* item, DiscoveredBroker* db, txt_keys_found_mask_t* found_mask)
 {
+  if (!RDMNET_ASSERT_VERIFY(item) || !RDMNET_ASSERT_VERIFY(db) || !RDMNET_ASSERT_VERIFY(found_mask))
+    return false;
+
   if (item->value_len >= 12 && item->value_len < RDM_UID_STRING_BYTES)
   {
     char uid_str[RDM_UID_STRING_BYTES];
@@ -526,6 +569,9 @@ bool parse_uid_item(const TxtRecordItemRef* item, DiscoveredBroker* db, txt_keys
 
 bool parse_model_item(const TxtRecordItemRef* item, DiscoveredBroker* db, txt_keys_found_mask_t* found_mask)
 {
+  if (!RDMNET_ASSERT_VERIFY(item) || !RDMNET_ASSERT_VERIFY(db) || !RDMNET_ASSERT_VERIFY(found_mask))
+    return false;
+
   if (item->value_len > 0 && item->value_len < E133_MODEL_STRING_PADDED_LENGTH)
   {
     *found_mask |= TXT_KEY_MODEL_FOUND_MASK;
@@ -541,6 +587,9 @@ bool parse_model_item(const TxtRecordItemRef* item, DiscoveredBroker* db, txt_ke
 
 bool parse_manufacturer_item(const TxtRecordItemRef* item, DiscoveredBroker* db, txt_keys_found_mask_t* found_mask)
 {
+  if (!RDMNET_ASSERT_VERIFY(item) || !RDMNET_ASSERT_VERIFY(db) || !RDMNET_ASSERT_VERIFY(found_mask))
+    return false;
+
   if (item->value_len > 0 && item->value_len < E133_MANUFACTURER_STRING_PADDED_LENGTH)
   {
     *found_mask |= TXT_KEY_MANUF_FOUND_MASK;
@@ -559,6 +608,9 @@ bool parse_manufacturer_item(const TxtRecordItemRef* item, DiscoveredBroker* db,
 // We give up immediately if the number is over 9 places
 int binary_atoi(const uint8_t* ascii_val, uint8_t ascii_val_len)
 {
+  if (!RDMNET_ASSERT_VERIFY(ascii_val))
+    return 0;
+
   int res = 0;
 
   if (ascii_val_len > 9)
@@ -582,16 +634,25 @@ int binary_atoi(const uint8_t* ascii_val, uint8_t ascii_val_len)
 
 bool txt_item_matches_key(const TxtRecordItemRef* item, const char* key, size_t key_static_size)
 {
+  if (!RDMNET_ASSERT_VERIFY(item) || !RDMNET_ASSERT_VERIFY(key))
+    return false;
+
   return (item->key_len == key_static_size - 1 && memcmp(item->key, key, key_static_size - 1) == 0);
 }
 
 bool txt_item_value_matches_string(const TxtRecordItemRef* item, const char* value)
 {
+  if (!RDMNET_ASSERT_VERIFY(item) || !RDMNET_ASSERT_VERIFY(value))
+    return false;
+
   return (strlen(value) == item->value_len && memcmp(item->value, value, item->value_len) == 0);
 }
 
 bool get_domain_name_label(const uint8_t* buf_begin, const uint8_t* name_ptr, DomainNameLabel* label)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf_begin) || !RDMNET_ASSERT_VERIFY(label))
+    return false;
+
   const uint8_t* next_length_offset = NULL;
   if (!label->label)
     next_length_offset = name_ptr;
@@ -612,11 +673,17 @@ bool get_domain_name_label(const uint8_t* buf_begin, const uint8_t* name_ptr, Do
 
 bool domain_name_label_matches_string(const DomainNameLabel* label, const char* string, size_t string_static_size)
 {
+  if (!RDMNET_ASSERT_VERIFY(label) || !RDMNET_ASSERT_VERIFY(string))
+    return false;
+
   return (label->length == string_static_size - 1 && memcmp(label->label, string, string_static_size - 1) == 0);
 }
 
 bool is_rdmnet_service_type_and_domain(const uint8_t* buf_begin, DomainNameLabel* last_non_service_label)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf_begin) || !RDMNET_ASSERT_VERIFY(last_non_service_label))
+    return false;
+
   DomainNameLabel label = *last_non_service_label;
 
   // Compare the service type (e.g. _rdmnet)

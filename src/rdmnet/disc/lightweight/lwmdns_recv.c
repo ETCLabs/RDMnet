@@ -143,6 +143,9 @@ etcpal_error_t init_recv_socket(MdnsRecvSocket*           sock_struct,
                                 const EtcPalIpAddr*       mcast_group,
                                 const RdmnetNetintConfig* netint_config)
 {
+  if (!RDMNET_ASSERT_VERIFY(sock_struct) || !RDMNET_ASSERT_VERIFY(mcast_group))
+    return kEtcPalErrSys;
+
   // Initialize the network interface array from the global multicast network interface array.
   const EtcPalMcastNetintId* mcast_array;
   size_t                     mcast_array_size = rc_mcast_get_netint_array(&mcast_array);
@@ -186,6 +189,9 @@ etcpal_error_t init_recv_socket(MdnsRecvSocket*           sock_struct,
 
 void deinit_recv_socket(MdnsRecvSocket* sock_struct, const EtcPalIpAddr* mcast_group)
 {
+  if (!RDMNET_ASSERT_VERIFY(sock_struct) || !RDMNET_ASSERT_VERIFY(mcast_group))
+    return;
+
   cleanup_recv_netints(sock_struct, mcast_group);
 
   rc_remove_polled_socket(sock_struct->socket);
@@ -198,10 +204,19 @@ etcpal_error_t setup_recv_netints(MdnsRecvSocket*            sock_struct,
                                   size_t                     mcast_netint_arr_size,
                                   const RdmnetNetintConfig*  netint_config)
 {
+  if (!RDMNET_ASSERT_VERIFY(sock_struct) || !RDMNET_ASSERT_VERIFY(sock_struct->netints) ||
+      !RDMNET_ASSERT_VERIFY(mcast_group) || !RDMNET_ASSERT_VERIFY(mcast_netint_arr))
+  {
+    return kEtcPalErrSys;
+  }
+
   etcpal_error_t res = kEtcPalErrNoNetints;
   sock_struct->num_netints = 0;
   if (netint_config)
   {
+    if (!RDMNET_ASSERT_VERIFY(netint_config->netints))
+      return kEtcPalErrSys;
+
     for (const EtcPalMcastNetintId* netint = netint_config->netints;
          netint < netint_config->netints + netint_config->num_netints; ++netint)
     {
@@ -233,6 +248,12 @@ etcpal_error_t setup_recv_netints(MdnsRecvSocket*            sock_struct,
 
 void cleanup_recv_netints(MdnsRecvSocket* sock_struct, const EtcPalIpAddr* mcast_group)
 {
+  if (!RDMNET_ASSERT_VERIFY(sock_struct) || !RDMNET_ASSERT_VERIFY(sock_struct->netints) ||
+      !RDMNET_ASSERT_VERIFY(mcast_group))
+  {
+    return;
+  }
+
   for (EtcPalMcastNetintId* netint = sock_struct->netints; netint < sock_struct->netints + sock_struct->num_netints;
        ++netint)
   {
@@ -246,6 +267,9 @@ void cleanup_recv_netints(MdnsRecvSocket* sock_struct, const EtcPalIpAddr* mcast
 void mdns_socket_activity(const EtcPalPollEvent* event, RCPolledSocketOpaqueData data)
 {
   ETCPAL_UNUSED_ARG(data);
+
+  if (!RDMNET_ASSERT_VERIFY(event))
+    return;
 
   if (event->events & ETCPAL_POLL_ERR)
   {
@@ -315,6 +339,9 @@ void handle_mdns_message(int message_size)
 
 const uint8_t* bypass_mdns_query(const uint8_t* offset, int remaining_length)
 {
+  if (!RDMNET_ASSERT_VERIFY(offset))
+    return NULL;
+
   const uint8_t* cur_ptr = lwmdns_parse_domain_name(mdns_recv_buf, offset, remaining_length);
   if (cur_ptr)
   {
@@ -329,6 +356,9 @@ const uint8_t* bypass_mdns_query(const uint8_t* offset, int remaining_length)
 
 const uint8_t* handle_resource_record(const uint8_t* offset, int remaining_length)
 {
+  if (!RDMNET_ASSERT_VERIFY(offset))
+    return NULL;
+
   DnsResourceRecord rr;
   const uint8_t*    next_ptr = lwmdns_parse_resource_record(mdns_recv_buf, offset, remaining_length, &rr);
   if (next_ptr)
@@ -357,6 +387,9 @@ const uint8_t* handle_resource_record(const uint8_t* offset, int remaining_lengt
 
 void handle_ptr_record(const DnsResourceRecord* rr)
 {
+  if (!RDMNET_ASSERT_VERIFY(rr))
+    return;
+
   if (lwmdns_parse_domain_name(mdns_recv_buf, rr->data_ptr, rr->data_len) != NULL)
   {
     RdmnetScopeMonitorRef* ref = scope_monitor_find(scope_monitor_matches_subtype, rr->name);
@@ -392,12 +425,15 @@ void handle_ptr_record(const DnsResourceRecord* rr)
 
 void handle_srv_record(const DnsResourceRecord* rr)
 {
+  if (!RDMNET_ASSERT_VERIFY(rr) || !RDMNET_ASSERT_VERIFY(rr->data_ptr))
+    return;
+
   if (rr->data_len > 7 && (lwmdns_parse_domain_name(mdns_recv_buf, &rr->data_ptr[6], rr->data_len - 6) != NULL))
   {
-    RdmnetScopeMonitorRef* ref;
-    DiscoveredBroker*      db;
+    RdmnetScopeMonitorRef* ref = NULL;
+    DiscoveredBroker*      db = NULL;
     if (scope_monitor_and_discovered_broker_find(scope_and_db_matches_service_instance, rr->name, &ref, &db) &&
-        !db->platform_data.destruction_pending)
+        RDMNET_ASSERT_VERIFY(db) && !db->platform_data.destruction_pending)
     {
       // uint16_t priority = etcpal_unpack_u16b(rr->data_ptr);
       // uint16_t weight = etcpal_unpack_u16b(&rr->data_ptr[2]);
@@ -424,13 +460,16 @@ void handle_srv_record(const DnsResourceRecord* rr)
 
 void handle_address_record(const DnsResourceRecord* rr)
 {
+  if (!RDMNET_ASSERT_VERIFY(rr) || !RDMNET_ASSERT_VERIFY(rr->data_ptr))
+    return;
+
   if ((rr->record_type == kDnsRecordTypeA && rr->data_len == 4) ||
       (rr->record_type == kDnsRecordTypeAAAA && rr->data_len == 16))
   {
-    RdmnetScopeMonitorRef* ref;
-    DiscoveredBroker*      db;
+    RdmnetScopeMonitorRef* ref = NULL;
+    DiscoveredBroker*      db = NULL;
     if (scope_monitor_and_discovered_broker_find(scope_and_db_matches_hostname, rr->name, &ref, &db) &&
-        !db->platform_data.destruction_pending)
+        RDMNET_ASSERT_VERIFY(db) && !db->platform_data.destruction_pending)
     {
       if (rr->record_type == kDnsRecordTypeA)
       {
@@ -438,6 +477,9 @@ void handle_address_record(const DnsResourceRecord* rr)
         for (const EtcPalIpAddr* addr = db->listen_addr_array; addr < db->listen_addr_array + db->num_listen_addrs;
              ++addr)
         {
+          if (!RDMNET_ASSERT_VERIFY(addr))
+            return;
+
           if (ETCPAL_IP_IS_V4(addr) && ETCPAL_IP_V4_ADDRESS(addr) == v4_addr)
           {
             // Already know about this address.
@@ -457,6 +499,9 @@ void handle_address_record(const DnsResourceRecord* rr)
         for (const EtcPalIpAddr* addr = db->listen_addr_array; addr < db->listen_addr_array + db->num_listen_addrs;
              ++addr)
         {
+          if (!RDMNET_ASSERT_VERIFY(addr))
+            return;
+
           if (ETCPAL_IP_IS_V6(addr) && memcmp(ETCPAL_IP_V6_ADDRESS(addr), rr->data_ptr, ETCPAL_IPV6_BYTES) == 0)
           {
             // Already know about this address.
@@ -477,10 +522,13 @@ void handle_address_record(const DnsResourceRecord* rr)
 
 void handle_txt_record(const DnsResourceRecord* rr)
 {
-  RdmnetScopeMonitorRef* ref;
-  DiscoveredBroker*      db;
+  if (!RDMNET_ASSERT_VERIFY(rr) || !RDMNET_ASSERT_VERIFY(rr->data_ptr))
+    return;
+
+  RdmnetScopeMonitorRef* ref = NULL;
+  DiscoveredBroker*      db = NULL;
   if (scope_monitor_and_discovered_broker_find(scope_and_db_matches_service_instance, rr->name, &ref, &db) &&
-      !db->platform_data.destruction_pending)
+      RDMNET_ASSERT_VERIFY(ref) && RDMNET_ASSERT_VERIFY(db) && !db->platform_data.destruction_pending)
   {
     txt_record_parse_result_t parse_result = lwmdns_txt_record_to_broker_info(rr->data_ptr, rr->data_len, db);
     if (parse_result != kTxtRecordParseError)
@@ -501,12 +549,18 @@ void handle_txt_record(const DnsResourceRecord* rr)
 
 bool scope_monitor_matches_subtype(const RdmnetScopeMonitorRef* ref, const void* context)
 {
+  if (!RDMNET_ASSERT_VERIFY(ref) || !RDMNET_ASSERT_VERIFY(context))
+    return false;
+
   const uint8_t* name = (const uint8_t*)context;
   return lwmdns_domain_name_matches_service_subtype(mdns_recv_buf, name, ref->scope);
 }
 
 bool db_matches_service_instance(const DiscoveredBroker* db, const void* context)
 {
+  if (!RDMNET_ASSERT_VERIFY(db) || !RDMNET_ASSERT_VERIFY(context))
+    return false;
+
   const uint8_t* name = (const uint8_t*)context;
   return lwmdns_domain_name_matches_service_instance(mdns_recv_buf, name, db->service_instance_name);
 }
@@ -516,6 +570,10 @@ bool scope_and_db_matches_service_instance(const RdmnetScopeMonitorRef* ref,
                                            const void*                  context)
 {
   ETCPAL_UNUSED_ARG(ref);
+
+  if (!RDMNET_ASSERT_VERIFY(db) || !RDMNET_ASSERT_VERIFY(context))
+    return false;
+
   const uint8_t* name = (const uint8_t*)context;
   return lwmdns_domain_name_matches_service_instance(mdns_recv_buf, name, db->service_instance_name);
 }
@@ -523,6 +581,10 @@ bool scope_and_db_matches_service_instance(const RdmnetScopeMonitorRef* ref,
 bool scope_and_db_matches_hostname(const RdmnetScopeMonitorRef* ref, const DiscoveredBroker* db, const void* context)
 {
   ETCPAL_UNUSED_ARG(ref);
+
+  if (!RDMNET_ASSERT_VERIFY(db) || !RDMNET_ASSERT_VERIFY(context))
+    return false;
+
   const uint8_t* name = (const uint8_t*)context;
   return lwmdns_domain_names_equal(mdns_recv_buf, name, db->platform_data.wire_host_name,
                                    db->platform_data.wire_host_name);

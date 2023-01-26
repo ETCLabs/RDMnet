@@ -70,8 +70,12 @@ typedef struct RCLlrpManagerKeys
 
 /***************************** Private macros ********************************/
 
-#define MANAGER_LOCK(mgr_ptr) etcpal_mutex_lock((mgr_ptr)->lock)
-#define MANAGER_UNLOCK(mgr_ptr) etcpal_mutex_unlock((mgr_ptr)->lock)
+#define MANAGER_LOCK(mgr_ptr) (RDMNET_ASSERT_VERIFY(mgr_ptr) && etcpal_mutex_lock((mgr_ptr)->lock))
+#define MANAGER_UNLOCK(mgr_ptr)           \
+  if (RDMNET_ASSERT_VERIFY(mgr_ptr))      \
+  {                                       \
+    etcpal_mutex_unlock((mgr_ptr)->lock); \
+  }
 
 /**************************** Private variables ******************************/
 
@@ -117,7 +121,8 @@ void rc_llrp_manager_module_deinit(void)
 
 etcpal_error_t rc_llrp_manager_register(RCLlrpManager* manager)
 {
-  RDMNET_ASSERT(manager);
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return kEtcPalErrSys;
 
   if (!rc_initialized())
     return kEtcPalErrNotInit;
@@ -145,14 +150,16 @@ etcpal_error_t rc_llrp_manager_register(RCLlrpManager* manager)
 
 void rc_llrp_manager_unregister(RCLlrpManager* manager)
 {
-  RDMNET_ASSERT(manager);
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return;
 
   rc_ref_list_add_ref(&managers.to_remove, manager);
 }
 
 etcpal_error_t rc_llrp_manager_start_discovery(RCLlrpManager* manager, uint16_t filter)
 {
-  RDMNET_ASSERT(manager);
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return kEtcPalErrSys;
 
   if (!manager->discovery_active)
   {
@@ -182,7 +189,8 @@ etcpal_error_t rc_llrp_manager_start_discovery(RCLlrpManager* manager, uint16_t 
 
 etcpal_error_t rc_llrp_manager_stop_discovery(RCLlrpManager* manager)
 {
-  RDMNET_ASSERT(manager);
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return kEtcPalErrSys;
 
   if (manager->discovery_active)
   {
@@ -204,6 +212,9 @@ etcpal_error_t rc_llrp_manager_send_rdm_command(RCLlrpManager*             manag
                                                 uint8_t                    data_len,
                                                 uint32_t*                  seq_num)
 {
+  if (!RDMNET_ASSERT_VERIFY(manager) || !RDMNET_ASSERT_VERIFY(destination))
+    return kEtcPalErrSys;
+
   RdmCommandHeader rdm_header;
   rdm_header.source_uid = manager->uid;
   rdm_header.dest_uid = destination->dest_uid;
@@ -245,6 +256,9 @@ void rc_llrp_manager_module_tick(void)
 
 void rc_llrp_manager_data_received(const uint8_t* data, size_t data_len, const EtcPalMcastNetintId* netint)
 {
+  if (!RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(data_len > 0) || !RDMNET_ASSERT_VERIFY(netint))
+    return;
+
   RCLlrpManagerEvent event = RC_LLRP_MANAGER_EVENT_INIT;
 
   RCLlrpManagerKeys keys;
@@ -282,6 +296,9 @@ void rc_llrp_manager_data_received(const uint8_t* data, size_t data_len, const E
 
 etcpal_error_t get_manager_sockets(RCLlrpManager* manager)
 {
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return kEtcPalErrSys;
+
   etcpal_error_t res = rc_mcast_get_send_socket(&manager->netint, 0, &manager->send_sock);
   if (res == kEtcPalErrOk)
   {
@@ -294,6 +311,9 @@ etcpal_error_t get_manager_sockets(RCLlrpManager* manager)
 
 void release_manager_sockets(RCLlrpManager* manager)
 {
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return;
+
   rc_llrp_recv_netint_remove(&manager->netint, kLlrpSocketTypeManager);
   rc_mcast_release_send_socket(&manager->netint, 0);
 }
@@ -301,7 +321,9 @@ void release_manager_sockets(RCLlrpManager* manager)
 void cleanup_manager_resources(RCLlrpManager* manager, const void* context)
 {
   ETCPAL_UNUSED_ARG(context);
-  RDMNET_ASSERT(manager);
+
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return;
 
   release_manager_sockets(manager);
   if (manager->discovery_active)
@@ -315,6 +337,10 @@ void cleanup_manager_resources(RCLlrpManager* manager, const void* context)
 void process_manager_state(RCLlrpManager* manager, const void* context)
 {
   ETCPAL_UNUSED_ARG(context);
+
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return;
+
   if (MANAGER_LOCK(manager))
   {
     RCLlrpManagerEvent event = RC_LLRP_MANAGER_EVENT_INIT;
@@ -348,6 +374,9 @@ void process_manager_state(RCLlrpManager* manager, const void* context)
 
 bool send_next_probe(RCLlrpManager* manager)
 {
+  if (!RDMNET_ASSERT_VERIFY(manager) || !RDMNET_ASSERT_VERIFY(kLlrpBroadcastCid))
+    return false;
+
   if (update_probe_range(manager))
   {
     LlrpHeader header;
@@ -384,6 +413,9 @@ bool send_next_probe(RCLlrpManager* manager)
 
 bool update_probe_range(RCLlrpManager* manager)
 {
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return false;
+
   if (manager->num_clean_sends >= 3)
   {
     // We are finished with a range; move on to the next range.
@@ -444,12 +476,17 @@ bool update_probe_range(RCLlrpManager* manager)
 
 void handle_llrp_message(RCLlrpManager* manager, const LlrpMessage* msg, RCLlrpManagerEvent* event)
 {
+  if (!RDMNET_ASSERT_VERIFY(manager) || !RDMNET_ASSERT_VERIFY(msg) || !RDMNET_ASSERT_VERIFY(event))
+    return;
+
   if (MANAGER_LOCK(manager))
   {
     switch (msg->vector)
     {
       case VECTOR_LLRP_PROBE_REPLY: {
         const LlrpDiscoveredTarget* target = LLRP_MSG_GET_PROBE_REPLY(msg);
+        if (!RDMNET_ASSERT_VERIFY(target))
+          return;
 
         if (manager->discovery_active && (ETCPAL_UUID_CMP(&msg->header.dest_cid, &manager->cid) == 0))
         {
@@ -504,8 +541,12 @@ void handle_llrp_message(RCLlrpManager* manager, const LlrpMessage* msg, RCLlrpM
       }
       case VECTOR_LLRP_RDM_CMD: {
         LlrpRdmResponse* resp = &event->args.rdm_response;
-        if (kEtcPalErrOk ==
-            rdm_unpack_response(LLRP_MSG_GET_RDM(msg), &resp->rdm_header, &resp->rdm_data, &resp->rdm_data_len))
+
+        const RdmBuffer* msg_rdm = LLRP_MSG_GET_RDM(msg);
+        if (!RDMNET_ASSERT_VERIFY(msg_rdm))
+          return;
+
+        if (kEtcPalErrOk == rdm_unpack_response(msg_rdm, &resp->rdm_header, &resp->rdm_data, &resp->rdm_data_len))
         {
           resp->seq_num = msg->header.transaction_number;
           resp->source_cid = msg->header.sender_cid;
@@ -520,6 +561,9 @@ void handle_llrp_message(RCLlrpManager* manager, const LlrpMessage* msg, RCLlrpM
 
 void deliver_event_callback(RCLlrpManager* manager, RCLlrpManagerEvent* event)
 {
+  if (!RDMNET_ASSERT_VERIFY(manager) || !RDMNET_ASSERT_VERIFY(event))
+    return;
+
   switch (event->which)
   {
     case kRCLlrpManagerEventTargetDiscovered:
@@ -552,6 +596,9 @@ EtcPalRbNode* discovered_target_node_alloc(void)
 
 void discovered_target_node_dealloc(EtcPalRbNode* node)
 {
+  if (!RDMNET_ASSERT_VERIFY(node))
+    return;
+
 #if RDMNET_DYNAMIC_MEM
   free(node);
 #else
@@ -563,6 +610,9 @@ void discovered_target_node_dealloc(EtcPalRbNode* node)
 int discovered_target_compare(const EtcPalRbTree* self, const void* value_a, const void* value_b)
 {
   ETCPAL_UNUSED_ARG(self);
+  if (!RDMNET_ASSERT_VERIFY(value_a) || !RDMNET_ASSERT_VERIFY(value_b))
+    return 0;
+
   const DiscoveredTargetInternal* a = (const DiscoveredTargetInternal*)value_a;
   const DiscoveredTargetInternal* b = (const DiscoveredTargetInternal*)value_b;
   return rdm_uid_compare(&a->uid, &b->uid);
@@ -571,6 +621,9 @@ int discovered_target_compare(const EtcPalRbTree* self, const void* value_a, con
 void discovered_target_clear_cb(const EtcPalRbTree* self, EtcPalRbNode* node)
 {
   ETCPAL_UNUSED_ARG(self);
+
+  if (!RDMNET_ASSERT_VERIFY(node))
+    return;
 
   DiscoveredTargetInternal* target = (DiscoveredTargetInternal*)node->value;
   while (target)
@@ -584,8 +637,13 @@ void discovered_target_clear_cb(const EtcPalRbTree* self, EtcPalRbNode* node)
 
 static bool cid_and_netint_equal_predicate(void* ref, const void* context)
 {
+  if (!RDMNET_ASSERT_VERIFY(ref) || !RDMNET_ASSERT_VERIFY(context))
+    return false;
+
   RCLlrpManager*           manager = (RCLlrpManager*)ref;
   const RCLlrpManagerKeys* keys = (const RCLlrpManagerKeys*)context;
+  if (!RDMNET_ASSERT_VERIFY(keys->netint))
+    return false;
 
   return ((manager->netint.ip_type == keys->netint->ip_type) && (manager->netint.index == keys->netint->index) &&
           (ETCPAL_UUID_CMP(&manager->cid, &keys->cid) == 0));
@@ -593,5 +651,8 @@ static bool cid_and_netint_equal_predicate(void* ref, const void* context)
 
 RCLlrpManager* find_manager_by_message_keys(const RCRefList* list, const RCLlrpManagerKeys* keys)
 {
+  if (!RDMNET_ASSERT_VERIFY(list) || !RDMNET_ASSERT_VERIFY(keys))
+    return NULL;
+
   return (RCLlrpManager*)rc_ref_list_find_ref(list, cid_and_netint_equal_predicate, keys);
 }

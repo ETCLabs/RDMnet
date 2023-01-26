@@ -93,27 +93,28 @@ typedef struct RptMessage
  * @return (bool) Whether the message contains an RDM Buffer List.
  */
 #define RPT_IS_RDM_BUF_LIST(rptmsgptr) \
-  ((rptmsgptr)->vector == VECTOR_RPT_REQUEST || (rptmsgptr)->vector == VECTOR_RPT_NOTIFICATION)
+  (RDMNET_ASSERT_VERIFY(rptmsgptr) &&  \
+   ((rptmsgptr)->vector == VECTOR_RPT_REQUEST || (rptmsgptr)->vector == VECTOR_RPT_NOTIFICATION))
 
 /**
  * @brief Get the encapsulated RDM Buffer List from an RptMessage.
  * @param rptmsgptr Pointer to RptMessage.
  * @return Pointer to encapsulated RDM Buffer List (RptRdmBufList*).
  */
-#define RPT_GET_RDM_BUF_LIST(rptmsgptr) (&(rptmsgptr)->data.rdm)
+#define RPT_GET_RDM_BUF_LIST(rptmsgptr) (RDMNET_ASSERT_VERIFY(rptmsgptr) ? &(rptmsgptr)->data.rdm : NULL)
 
 /**
  * @brief Determine whether an RptMessage contains an RPT Status Message.
  * @param rptmsgptr Pointer to RptMessage.
  * @return (bool) Whether the message contains an RPT Status Message.
  */
-#define RPT_IS_STATUS_MSG(rptmsgptr) ((rptmsgptr)->vector == VECTOR_RPT_STATUS)
+#define RPT_IS_STATUS_MSG(rptmsgptr) (RDMNET_ASSERT_VERIFY(rptmsgptr) && ((rptmsgptr)->vector == VECTOR_RPT_STATUS))
 
 /**
  * @brief Get the encapsulated RPT Status message from an RptMessage.
  * @param rptmsgptr Pointer to RptMessage.
  * @return Pointer to encapsulated RPT Status Message (RptStatusMsg*).
  */
-#define RPT_GET_STATUS_MSG(rptmsgptr) (&(rptmsgptr)->data.status)
+#define RPT_GET_STATUS_MSG(rptmsgptr) (RDMNET_ASSERT_VERIFY(rptmsgptr) ? &(rptmsgptr)->data.status : NULL)
 
 #endif /* RDMNET_CORE_RPT_MESSAGE_H_ */

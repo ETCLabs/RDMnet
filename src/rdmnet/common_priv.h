@@ -94,7 +94,8 @@ typedef struct RdmnetController
   RCClient client;
 } RdmnetController;
 
-#define CONTROLLER_RDM_DATA(controller_ptr) (&(controller_ptr)->rdm_handler.data)
+#define CONTROLLER_RDM_DATA(controller_ptr) \
+  (RDMNET_ASSERT_VERIFY(controller_ptr) ? &(controller_ptr)->rdm_handler.data : NULL)
 
 /******************************************************************************
  * Device
@@ -143,10 +144,16 @@ typedef struct RdmnetDevice
 } RdmnetDevice;
 
 #define DEVICE_INIT_ENDPOINTS(device_ptr, initial_capacity) \
-  RC_INIT_BUF(device_ptr, DeviceEndpoint, endpoints, initial_capacity, RDMNET_MAX_ENDPOINTS_PER_DEVICE)
-#define DEVICE_DEINIT_ENDPOINTS(device_ptr) RC_DEINIT_BUF(device_ptr, endpoints)
+  (RDMNET_ASSERT_VERIFY(device_ptr) &&                      \
+   RC_INIT_BUF(device_ptr, DeviceEndpoint, endpoints, initial_capacity, RDMNET_MAX_ENDPOINTS_PER_DEVICE))
+#define DEVICE_DEINIT_ENDPOINTS(device_ptr) \
+  if (RDMNET_ASSERT_VERIFY(device_ptr))     \
+  {                                         \
+    RC_DEINIT_BUF(device_ptr, endpoints);   \
+  }
 #define DEVICE_CHECK_ENDPOINTS_CAPACITY(device_ptr, num_additional) \
-  RC_CHECK_BUF_CAPACITY(device_ptr, DeviceEndpoint, endpoints, RDMNET_MAX_ENDPOINTS_PER_DEVICE, num_additional)
+  (RDMNET_ASSERT_VERIFY(device_ptr) &&                              \
+   RC_CHECK_BUF_CAPACITY(device_ptr, DeviceEndpoint, endpoints, RDMNET_MAX_ENDPOINTS_PER_DEVICE, num_additional))
 
 #define DEVICE_INIT_RESPONDERS(device_ptr, initial_capacity) TODO_REMOVE
 #define DEVICE_DEINIT_RESPONDERS(device_ptr) TODO_REMOVE

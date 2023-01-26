@@ -22,11 +22,14 @@
 extern "C" {
 bool IntHandleMgrValueInUse(int handle, void* context)
 {
+  if (!RDMNET_ASSERT_VERIFY(context))
+    return true;
+
   auto func = static_cast<ClientHandleGenerator*>(context)->GetValueInUseFunc();
   if (func)
     return func(handle);
-  else
-    return false;
+
+  return false;
 }
 }
 

@@ -49,16 +49,44 @@
 #define ALLOC_LLRP_MANAGER() (LlrpManager*)malloc(sizeof(LlrpManager))
 #define ALLOC_LLRP_TARGET() (LlrpTarget*)malloc(sizeof(LlrpTarget))
 #define ALLOC_RDMNET_EPT_CLIENT() (RdmnetEptClient*)malloc(sizeof(RdmnetEptClient))
-#define FREE_RDMNET_CONTROLLER(ptr) free(ptr)
-#define FREE_RDMNET_DEVICE(ptr) free(ptr)
-#define FREE_ENDPOINT_RESPONDER(ptr) free(ptr)
-#define FREE_LLRP_MANAGER(ptr) free(ptr)
-#define FREE_LLRP_TARGET(ptr) free(ptr)
-#define FREE_RDMNET_EPT_CLIENT(ptr) free(ptr)
+#define FREE_RDMNET_CONTROLLER(ptr) \
+  if (RDMNET_ASSERT_VERIFY(ptr))    \
+  {                                 \
+    free(ptr);                      \
+  }
+#define FREE_RDMNET_DEVICE(ptr)  \
+  if (RDMNET_ASSERT_VERIFY(ptr)) \
+  {                              \
+    free(ptr);                   \
+  }
+#define FREE_ENDPOINT_RESPONDER(ptr) \
+  if (RDMNET_ASSERT_VERIFY(ptr))     \
+  {                                  \
+    free(ptr);                       \
+  }
+#define FREE_LLRP_MANAGER(ptr)   \
+  if (RDMNET_ASSERT_VERIFY(ptr)) \
+  {                              \
+    free(ptr);                   \
+  }
+#define FREE_LLRP_TARGET(ptr)    \
+  if (RDMNET_ASSERT_VERIFY(ptr)) \
+  {                              \
+    free(ptr);                   \
+  }
+#define FREE_RDMNET_EPT_CLIENT(ptr) \
+  if (RDMNET_ASSERT_VERIFY(ptr))    \
+  {                                 \
+    free(ptr);                      \
+  }
 #else
 #if RDMNET_MAX_CONTROLLERS
 #define ALLOC_RDMNET_CONTROLLER() (RdmnetController*)etcpal_mempool_alloc(rdmnet_controllers)
-#define FREE_RDMNET_CONTROLLER(ptr) etcpal_mempool_free(rdmnet_controllers, ptr)
+#define FREE_RDMNET_CONTROLLER(ptr)               \
+  if (RDMNET_ASSERT_VERIFY(ptr))                  \
+  {                                               \
+    etcpal_mempool_free(rdmnet_controllers, ptr); \
+  }
 #else
 #define ALLOC_RDMNET_CONTROLLER() NULL
 #define FREE_RDMNET_CONTROLLER(ptr)
@@ -66,7 +94,11 @@
 
 #if RDMNET_MAX_DEVICES
 #define ALLOC_RDMNET_DEVICE() (RdmnetDevice*)etcpal_mempool_alloc(rdmnet_devices)
-#define FREE_RDMNET_DEVICE(ptr) etcpal_mempool_free(rdmnet_devices, ptr)
+#define FREE_RDMNET_DEVICE(ptr)               \
+  if (RDMNET_ASSERT_VERIFY(ptr))              \
+  {                                           \
+    etcpal_mempool_free(rdmnet_devices, ptr); \
+  }
 #else
 #define ALLOC_RDMNET_DEVICE() NULL
 #define FREE_RDMNET_DEVICE(ptr)
@@ -74,7 +106,11 @@
 
 #if MAX_RESPONDERS
 #define ALLOC_ENDPOINT_RESPONDER() (EndpointResponder*)etcpal_mempool_alloc(endpoint_responders)
-#define FREE_ENDPOINT_RESPONDER(ptr) etcpal_mempool_free(endpoint_responders, ptr)
+#define FREE_ENDPOINT_RESPONDER(ptr)               \
+  if (RDMNET_ASSERT_VERIFY(ptr))                   \
+  {                                                \
+    etcpal_mempool_free(endpoint_responders, ptr); \
+  }
 #else
 #define ALLOC_ENDPOINT_RESPONDER() NULL
 #define FREE_ENDPOINT_RESPONDER(ptr)
@@ -85,7 +121,11 @@
 
 #if RDMNET_MAX_LLRP_TARGETS
 #define ALLOC_LLRP_TARGET() (LlrpTarget*)etcpal_mempool_alloc(llrp_targets)
-#define FREE_LLRP_TARGET(ptr) etcpal_mempool_free(llrp_targets, ptr)
+#define FREE_LLRP_TARGET(ptr)               \
+  if (RDMNET_ASSERT_VERIFY(ptr))            \
+  {                                         \
+    etcpal_mempool_free(llrp_targets, ptr); \
+  }
 #else
 #define ALLOC_LLRP_TARGET() NULL
 #define FREE_LLRP_TARGET(ptr)
@@ -93,7 +133,11 @@
 
 #if RDMNET_MAX_EPT_CLIENTS
 #define ALLOC_RDMNET_EPT_CLIENT() (RdmnetEptClient) etcpal_mempool_alloc(ept_clients)
-#define FREE_RDMNET_EPT_CLIENT(ptr) etcpal_mempool_free(ept_clients, ptr)
+#define FREE_RDMNET_EPT_CLIENT(ptr)        \
+  if (RDMNET_ASSERT_VERIFY(ptr))           \
+  {                                        \
+    etcpal_mempool_free(ept_clients, ptr); \
+  }
 #else
 #define ALLOC_RDMNET_EPT_CLIENT() NULL
 #define FREE_RDMNET_EPT_CLIENT(ptr)
@@ -551,13 +595,17 @@ LlrpTarget* rdmnet_alloc_llrp_target_instance(void)
 
 void rdmnet_unregister_struct_instance(void* instance)
 {
-  RDMNET_ASSERT(instance);
+  if (!RDMNET_ASSERT_VERIFY(instance))
+    return;
+
   etcpal_rbtree_remove(&handles, instance);
 }
 
 void rdmnet_free_struct_instance(void* instance)
 {
-  RDMNET_ASSERT(instance);
+  if (!RDMNET_ASSERT_VERIFY(instance))
+    return;
+
   RdmnetStructId* id = (RdmnetStructId*)instance;
   switch (id->type)
   {
@@ -583,13 +631,23 @@ void rdmnet_free_struct_instance(void* instance)
 void rdmnet_init_endpoints(DeviceEndpoint* endpoints, size_t num_endpoints)
 {
   for (DeviceEndpoint* endpoint = endpoints; endpoint < (endpoints + num_endpoints); ++endpoint)
+  {
+    if (!RDMNET_ASSERT_VERIFY(endpoint))
+      return;
+
     etcpal_rbtree_init(&endpoint->responders, responder_compare, node_alloc, node_dealloc);
+  }
 }
 
 void rdmnet_deinit_endpoints(DeviceEndpoint* endpoints, size_t num_endpoints)
 {
   for (DeviceEndpoint* endpoint = endpoints; endpoint < (endpoints + num_endpoints); ++endpoint)
+  {
+    if (!RDMNET_ASSERT_VERIFY(endpoint))
+      return;
+
     etcpal_rbtree_clear_with_cb(&endpoint->responders, endpoint_responders_remove_cb);
+  }
 }
 
 etcpal_error_t rdmnet_add_static_responders(RdmnetDevice*   device,
@@ -597,11 +655,17 @@ etcpal_error_t rdmnet_add_static_responders(RdmnetDevice*   device,
                                             const RdmUid*   uids,
                                             size_t          num_uids)
 {
+  if (!RDMNET_ASSERT_VERIFY(endpoint))
+    return kEtcPalErrSys;
+
   etcpal_error_t res = kEtcPalErrOk;
 
 #if RDMNET_DYNAMIC_MEM
   ETCPAL_UNUSED_ARG(device);
 #else
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
+
   if (!check_static_responder_limits(device, endpoint, num_uids))
     return kEtcPalErrNoMem;
 #endif
@@ -609,9 +673,13 @@ etcpal_error_t rdmnet_add_static_responders(RdmnetDevice*   device,
   size_t num_added = 0;
   while ((num_added < num_uids) && (res == kEtcPalErrOk))
   {
+    if (!RDMNET_ASSERT_VERIFY(uids))
+      return kEtcPalErrSys;
+
     res = add_static_responder(endpoint, &uids[num_added]);
 #if !RDMNET_DYNAMIC_MEM
-    RDMNET_ASSERT(res != kEtcPalErrNoMem);
+    if (!RDMNET_ASSERT_VERIFY(res != kEtcPalErrNoMem))
+      return kEtcPalErrSys;
 #endif
     if (res == kEtcPalErrOk)
       ++num_added;
@@ -629,11 +697,17 @@ etcpal_error_t rdmnet_add_dynamic_responders(RdmnetDevice*     device,
                                              const EtcPalUuid* rids,
                                              size_t            num_rids)
 {
+  if (!RDMNET_ASSERT_VERIFY(endpoint))
+    return kEtcPalErrSys;
+
   etcpal_error_t res = kEtcPalErrOk;
 
 #if RDMNET_DYNAMIC_MEM
   ETCPAL_UNUSED_ARG(device);
 #else
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
+
   if (!check_static_responder_limits(device, endpoint, num_rids))
     return kEtcPalErrNoMem;
 #endif
@@ -641,9 +715,13 @@ etcpal_error_t rdmnet_add_dynamic_responders(RdmnetDevice*     device,
   size_t num_added = 0;
   while ((num_added < num_rids) && (res == kEtcPalErrOk))
   {
+    if (!RDMNET_ASSERT_VERIFY(rids))
+      return kEtcPalErrSys;
+
     res = add_dynamic_responder(endpoint, manufacturer_id, &rids[num_added]);
 #if !RDMNET_DYNAMIC_MEM
-    RDMNET_ASSERT(res != kEtcPalErrNoMem);
+    if (!RDMNET_ASSERT_VERIFY(res != kEtcPalErrNoMem))
+      return kEtcPalErrSys;
 #endif
     if (res == kEtcPalErrOk)
       ++num_added;
@@ -660,11 +738,17 @@ etcpal_error_t rdmnet_add_physical_responders(RdmnetDevice*                     
                                               const RdmnetPhysicalEndpointResponder* responders,
                                               size_t                                 num_responders)
 {
+  if (!RDMNET_ASSERT_VERIFY(endpoint))
+    return kEtcPalErrSys;
+
   etcpal_error_t res = kEtcPalErrOk;
 
 #if RDMNET_DYNAMIC_MEM
   ETCPAL_UNUSED_ARG(device);
 #else
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return kEtcPalErrSys;
+
   if (!check_static_responder_limits(device, endpoint, num_responders))
     return kEtcPalErrNoMem;
 #endif
@@ -672,9 +756,13 @@ etcpal_error_t rdmnet_add_physical_responders(RdmnetDevice*                     
   size_t num_added = 0;
   while ((num_added < num_responders) && (res == kEtcPalErrOk))
   {
+    if (!RDMNET_ASSERT_VERIFY(responders))
+      return kEtcPalErrSys;
+
     res = add_physical_responder(endpoint, &responders[num_added]);
 #if !RDMNET_DYNAMIC_MEM
-    RDMNET_ASSERT(res != kEtcPalErrNoMem);
+    if (!RDMNET_ASSERT_VERIFY(res != kEtcPalErrNoMem))
+      return kEtcPalErrSys;
 #endif
     if (res == kEtcPalErrOk)
       ++num_added;
@@ -683,7 +771,12 @@ etcpal_error_t rdmnet_add_physical_responders(RdmnetDevice*                     
   if (res != kEtcPalErrOk)
   {
     for (size_t i = 0; i < num_added; ++i)
+    {
+      if (!RDMNET_ASSERT_VERIFY(responders))
+        return kEtcPalErrSys;
+
       rdmnet_remove_responders_by_uid(endpoint, &responders[i].uid, 1);
+    }
   }
 
   return res;
@@ -691,6 +784,9 @@ etcpal_error_t rdmnet_add_physical_responders(RdmnetDevice*                     
 
 EndpointResponder* rdmnet_find_responder_by_rid(DeviceEndpoint* endpoint, const EtcPalUuid* rid)
 {
+  if (!RDMNET_ASSERT_VERIFY(endpoint) || !RDMNET_ASSERT_VERIFY(rid))
+    return NULL;
+
   EndpointResponder search_key;
   memcpy(search_key.rid.data, rid->data, ETCPAL_UUID_BYTES);  // Non-NULL RID means UIDs are ignored
   return (EndpointResponder*)etcpal_rbtree_find(&endpoint->responders, &search_key);
@@ -698,6 +794,9 @@ EndpointResponder* rdmnet_find_responder_by_rid(DeviceEndpoint* endpoint, const 
 
 EndpointResponder* rdmnet_find_responder_by_uid(DeviceEndpoint* endpoint, const RdmUid* uid)
 {
+  if (!RDMNET_ASSERT_VERIFY(endpoint) || !RDMNET_ASSERT_VERIFY(uid))
+    return NULL;
+
   EndpointResponder search_key;
   search_key.rid = kEtcPalNullUuid;  // Set RID to NULL to cause a search by UID
   search_key.uid = *uid;
@@ -706,8 +805,14 @@ EndpointResponder* rdmnet_find_responder_by_uid(DeviceEndpoint* endpoint, const 
 
 void rdmnet_remove_responders_by_rid(DeviceEndpoint* endpoint, const EtcPalUuid* rids, size_t num_rids)
 {
+  if (!RDMNET_ASSERT_VERIFY(endpoint))
+    return;
+
   for (const EtcPalUuid* rid = rids; rid < rids + num_rids; ++rid)
   {
+    if (!RDMNET_ASSERT_VERIFY(rid))
+      return;
+
     EndpointResponder search_key;
     memcpy(search_key.rid.data, rid->data, ETCPAL_UUID_BYTES);  // Non-NULL RID means UIDs are ignored
     etcpal_rbtree_remove_with_cb(&endpoint->responders, &search_key, endpoint_responders_remove_cb);
@@ -716,8 +821,14 @@ void rdmnet_remove_responders_by_rid(DeviceEndpoint* endpoint, const EtcPalUuid*
 
 void rdmnet_remove_responders_by_uid(DeviceEndpoint* endpoint, const RdmUid* uids, size_t num_uids)
 {
+  if (!RDMNET_ASSERT_VERIFY(endpoint))
+    return;
+
   for (const RdmUid* uid = uids; uid < uids + num_uids; ++uid)
   {
+    if (!RDMNET_ASSERT_VERIFY(uid))
+      return;
+
     EndpointResponder search_key;
     search_key.rid = kEtcPalNullUuid;  // Set RID to NULL to cause a search by UID
     search_key.uid = *uid;
@@ -745,6 +856,10 @@ void rdmnet_tick_thread(void* arg)
 int handle_compare(const EtcPalRbTree* self, const void* value_a, const void* value_b)
 {
   ETCPAL_UNUSED_ARG(self);
+
+  if (!RDMNET_ASSERT_VERIFY(value_a) || !RDMNET_ASSERT_VERIFY(value_b))
+    return 0;
+
   const RdmnetStructId* a = (const RdmnetStructId*)value_a;
   const RdmnetStructId* b = (const RdmnetStructId*)value_b;
   return (a->handle > b->handle) - (a->handle < b->handle);
@@ -753,6 +868,10 @@ int handle_compare(const EtcPalRbTree* self, const void* value_a, const void* va
 int responder_compare(const EtcPalRbTree* self, const void* value_a, const void* value_b)
 {
   ETCPAL_UNUSED_ARG(self);
+
+  if (!RDMNET_ASSERT_VERIFY(value_a) || !RDMNET_ASSERT_VERIFY(value_b))
+    return 0;
+
   const EndpointResponder* a = (const EndpointResponder*)value_a;
   const EndpointResponder* b = (const EndpointResponder*)value_b;
 
@@ -780,6 +899,9 @@ EtcPalRbNode* node_alloc(void)
 
 void node_dealloc(EtcPalRbNode* node)
 {
+  if (!RDMNET_ASSERT_VERIFY(node))
+    return;
+
 #if RDMNET_DYNAMIC_MEM
   free(node);
 #else
@@ -797,12 +919,18 @@ bool handle_in_use(int handle_val, void* context)
 
 void free_controller_resources(RdmnetController* controller)
 {
+  if (!RDMNET_ASSERT_VERIFY(controller))
+    return;
+
   etcpal_mutex_destroy(&controller->lock);
   FREE_RDMNET_CONTROLLER(controller);
 }
 
 void free_device_resources(RdmnetDevice* device)
 {
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return;
+
   etcpal_mutex_destroy(&device->lock);
   rdmnet_deinit_endpoints(device->endpoints, device->num_endpoints);
 
@@ -812,18 +940,27 @@ void free_device_resources(RdmnetDevice* device)
 
 void free_llrp_manager_resources(LlrpManager* manager)
 {
+  if (!RDMNET_ASSERT_VERIFY(manager))
+    return;
+
   etcpal_mutex_destroy(&manager->lock);
   FREE_LLRP_MANAGER(manager);
 }
 
 void free_llrp_target_resources(LlrpTarget* target)
 {
+  if (!RDMNET_ASSERT_VERIFY(target))
+    return;
+
   etcpal_mutex_destroy(&target->lock);
   FREE_LLRP_TARGET(target);
 }
 
 void free_ept_client_resources(RdmnetEptClient* ept_client)
 {
+  if (!RDMNET_ASSERT_VERIFY(ept_client))
+    return;
+
   etcpal_mutex_destroy(&ept_client->lock);
   FREE_RDMNET_EPT_CLIENT(ept_client);
 }
@@ -831,6 +968,10 @@ void free_ept_client_resources(RdmnetEptClient* ept_client)
 void tree_clear_cb(const EtcPalRbTree* self, EtcPalRbNode* node)
 {
   ETCPAL_UNUSED_ARG(self);
+
+  if (!RDMNET_ASSERT_VERIFY(node))
+    return;
+
   rdmnet_free_struct_instance(node->value);
   node_dealloc(node);
 }
@@ -838,12 +979,19 @@ void tree_clear_cb(const EtcPalRbTree* self, EtcPalRbNode* node)
 void endpoint_responders_remove_cb(const EtcPalRbTree* self, EtcPalRbNode* node)
 {
   ETCPAL_UNUSED_ARG(self);
+
+  if (!RDMNET_ASSERT_VERIFY(node))
+    return;
+
   FREE_ENDPOINT_RESPONDER(node->value);
   node_dealloc(node);
 }
 
 etcpal_error_t add_static_responder(DeviceEndpoint* endpoint, const RdmUid* uid)
 {
+  if (!RDMNET_ASSERT_VERIFY(endpoint) || !RDMNET_ASSERT_VERIFY(uid))
+    return kEtcPalErrSys;
+
   EndpointResponder* responder = ALLOC_ENDPOINT_RESPONDER();
   if (!responder)
     return kEtcPalErrNoMem;
@@ -855,6 +1003,9 @@ etcpal_error_t add_static_responder(DeviceEndpoint* endpoint, const RdmUid* uid)
 
 etcpal_error_t add_dynamic_responder(DeviceEndpoint* endpoint, uint16_t manufacturer_id, const EtcPalUuid* rid)
 {
+  if (!RDMNET_ASSERT_VERIFY(endpoint) || !RDMNET_ASSERT_VERIFY(rid))
+    return kEtcPalErrSys;
+
   EndpointResponder* responder = ALLOC_ENDPOINT_RESPONDER();
   if (!responder)
     return kEtcPalErrNoMem;
@@ -866,6 +1017,9 @@ etcpal_error_t add_dynamic_responder(DeviceEndpoint* endpoint, uint16_t manufact
 
 etcpal_error_t add_physical_responder(DeviceEndpoint* endpoint, const RdmnetPhysicalEndpointResponder* responder_config)
 {
+  if (!RDMNET_ASSERT_VERIFY(endpoint) || !RDMNET_ASSERT_VERIFY(responder_config))
+    return kEtcPalErrSys;
+
   EndpointResponder* responder = ALLOC_ENDPOINT_RESPONDER();
   if (!responder)
     return kEtcPalErrNoMem;
@@ -881,9 +1035,19 @@ etcpal_error_t add_physical_responder(DeviceEndpoint* endpoint, const RdmnetPhys
 #if !RDMNET_DYNAMIC_MEM
 bool check_static_responder_limits(RdmnetDevice* device, DeviceEndpoint* endpoint, size_t num_additional)
 {
+  ETCPAL_UNUSED_ARG(endpoint);
+
+  if (!RDMNET_ASSERT_VERIFY(device))
+    return false;
+
   size_t combined_num_responders = 0;
   for (DeviceEndpoint* endpt = device->endpoints; endpt < device->endpoints + device->num_endpoints; ++endpt)
+  {
+    if (!RDMNET_ASSERT_VERIFY(endpt))
+      return false;
+
     combined_num_responders += etcpal_rbtree_size(&endpt->responders);
+  }
 
   return (combined_num_responders + num_additional) <= RDMNET_MAX_RESPONDERS_PER_DEVICE;
 }

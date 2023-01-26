@@ -89,7 +89,8 @@ void DNSSD_API HandleDNSServiceRegisterReply(DNSServiceRef       sdRef,
   ETCPAL_UNUSED_ARG(sdRef);
 
   RdmnetBrokerRegisterRef* ref = (RdmnetBrokerRegisterRef*)context;
-  RDMNET_ASSERT(ref);
+  if (!RDMNET_ASSERT_VERIFY(ref))
+    return;
 
   if (broker_register_ref_is_valid(ref))
   {
@@ -109,7 +110,9 @@ void DNSSD_API HandleDNSServiceRegisterReply(DNSServiceRef       sdRef,
     }
 
     size_t total_registers = ref->platform_data.num_successful_registers + ref->platform_data.num_failed_registers;
-    RDMNET_ASSERT(total_registers <= ref->platform_data.target_register_count);
+    if (!RDMNET_ASSERT_VERIFY(total_registers <= ref->platform_data.target_register_count))
+      return;
+
     if (total_registers == ref->platform_data.target_register_count)
     {
       if (ref->platform_data.num_successful_registers > 0)
@@ -139,7 +142,8 @@ void DNSSD_API HandleDNSServiceGetAddrInfoReply(DNSServiceRef          sdRef,
   ETCPAL_UNUSED_ARG(ttl);
 
   RdmnetScopeMonitorRef* ref = (RdmnetScopeMonitorRef*)context;
-  RDMNET_ASSERT(ref);
+  if (!RDMNET_ASSERT_VERIFY(ref))
+    return;
 
   if (!scope_monitor_ref_is_valid(ref))
     return;
@@ -215,7 +219,8 @@ void DNSSD_API HandleDNSServiceResolveReply(DNSServiceRef        sdRef,
   ETCPAL_UNUSED_ARG(fullname);
 
   RdmnetScopeMonitorRef* ref = (RdmnetScopeMonitorRef*)context;
-  RDMNET_ASSERT(ref);
+  if (!RDMNET_ASSERT_VERIFY(ref))
+    return;
 
   if (!scope_monitor_ref_is_valid(ref))
     return;
@@ -275,7 +280,8 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef       sdRef,
     return;
 
   RdmnetScopeMonitorRef* ref = (RdmnetScopeMonitorRef*)context;
-  RDMNET_ASSERT(ref);
+  if (!RDMNET_ASSERT_VERIFY(ref))
+    return;
 
   char full_name[kDNSServiceMaxDomainName];
   if (DNSServiceConstructFullName(full_name, serviceName, regtype, replyDomain) != kDNSServiceErr_NoError)
@@ -335,7 +341,8 @@ void DNSSD_API HandleDNSServiceBrowseReply(DNSServiceRef       sdRef,
 
 etcpal_error_t rdmnet_disc_platform_init(const RdmnetNetintConfig* netint_config)
 {
-  RDMNET_ASSERT(num_disc_netints == 0);
+  if (!RDMNET_ASSERT_VERIFY(num_disc_netints == 0))
+    return kEtcPalErrSys;
 
   if (netint_config && !validate_netint_config(netint_config))
     return kEtcPalErrInvalid;
@@ -419,7 +426,8 @@ etcpal_error_t rdmnet_disc_platform_init(const RdmnetNetintConfig* netint_config
         }
         else
         {
-          RDMNET_ASSERT(num_disc_netints < num_netints_requested);
+          if (!RDMNET_ASSERT_VERIFY(num_disc_netints < num_netints_requested))
+            return kEtcPalErrSys;
 
           disc_netint_arr[num_disc_netints].index = netint_id.index;
           disc_netint_arr[num_disc_netints].ipv4_enabled = (netint_id.ip_type == kEtcPalIpTypeV4);
@@ -480,6 +488,9 @@ void rdmnet_disc_platform_tick()
 
 etcpal_error_t rdmnet_disc_platform_start_monitoring(RdmnetScopeMonitorRef* handle, int* platform_specific_error)
 {
+  if (!RDMNET_ASSERT_VERIFY(handle) || !RDMNET_ASSERT_VERIFY(platform_specific_error))
+    return kEtcPalErrSys;
+
   // Start the browse operation in the Bonjour stack.
   char reg_str[REGISTRATION_STRING_PADDED_LENGTH];
   get_registration_string(E133_DNSSD_SRV_TYPE, handle->scope, reg_str);
@@ -501,6 +512,9 @@ etcpal_error_t rdmnet_disc_platform_start_monitoring(RdmnetScopeMonitorRef* hand
 
 void rdmnet_disc_platform_stop_monitoring(RdmnetScopeMonitorRef* handle)
 {
+  if (!RDMNET_ASSERT_VERIFY(handle))
+    return;
+
   etcpal_poll_remove_socket(&poll_context, DNSServiceRefSockFD(handle->platform_data.dnssd_ref));
   DNSServiceRefDeallocate(handle->platform_data.dnssd_ref);
 }
@@ -508,6 +522,13 @@ void rdmnet_disc_platform_stop_monitoring(RdmnetScopeMonitorRef* handle)
 /* If returns !0, this was an error from Bonjour.  Reset the state and notify the callback.*/
 etcpal_error_t rdmnet_disc_platform_register_broker(RdmnetBrokerRegisterRef* broker_ref, int* platform_specific_error)
 {
+  if (!RDMNET_ASSERT_VERIFY(broker_ref) ||
+      !RDMNET_ASSERT_VERIFY((broker_ref->num_netints == 0) || broker_ref->netints) ||
+      !RDMNET_ASSERT_VERIFY(platform_specific_error))
+  {
+    return kEtcPalErrSys;
+  }
+
   // Before we start the registration, we have to massage a few parameters
   uint16_t net_port = 0;
   etcpal_pack_u16b((uint8_t*)&net_port, broker_ref->port);
@@ -518,7 +539,8 @@ etcpal_error_t rdmnet_disc_platform_register_broker(RdmnetBrokerRegisterRef* bro
   TXTRecordRef txt;
   broker_info_to_txt_record(broker_ref, &txt);
 
-  RDMNET_ASSERT(disc_netint_arr);
+  if (!RDMNET_ASSERT_VERIFY(disc_netint_arr))
+    return kEtcPalErrSys;
 
   broker_ref->platform_data.num_successful_registers = 0;
   broker_ref->platform_data.num_failed_registers = 0;
@@ -571,6 +593,9 @@ etcpal_error_t rdmnet_disc_platform_register_broker(RdmnetBrokerRegisterRef* bro
 
 void rdmnet_disc_platform_unregister_broker(rdmnet_registered_broker_t handle)
 {
+  if (!RDMNET_ASSERT_VERIFY(handle))
+    return;
+
   if (handle->platform_data.dnssd_refs)
   {
     for (size_t i = 0; i < handle->platform_data.num_dnssd_refs; ++i)
@@ -587,6 +612,9 @@ void rdmnet_disc_platform_unregister_broker(rdmnet_registered_broker_t handle)
 
 void discovered_broker_free_platform_resources(DiscoveredBroker* db)
 {
+  if (!RDMNET_ASSERT_VERIFY(db))
+    return;
+
   if (db->platform_data.state != kResolveStateDone)  // The ref is already cleaned up after resolving completes
   {
     etcpal_poll_remove_socket(&poll_context, DNSServiceRefSockFD(db->platform_data.dnssd_ref));
@@ -617,6 +645,9 @@ DiscoveredBroker* discovered_broker_lookup_by_ref(DiscoveredBroker* list_head, D
 
 void get_registration_string(const char* srv_type, const char* scope, char* reg_str)
 {
+  if (!RDMNET_ASSERT_VERIFY(srv_type) || !RDMNET_ASSERT_VERIFY(scope) || !RDMNET_ASSERT_VERIFY(reg_str))
+    return;
+
   ETCPAL_MSVC_BEGIN_NO_DEP_WARNINGS()
 
   // Bonjour adds in the _sub. for us.
@@ -630,6 +661,9 @@ void get_registration_string(const char* srv_type, const char* scope, char* reg_
 /* Create a TXT record with the required key/value pairs from E1.33 from the RdmnetBrokerDiscInfo */
 void broker_info_to_txt_record(const RdmnetBrokerRegisterRef* ref, TXTRecordRef* txt)
 {
+  if (!RDMNET_ASSERT_VERIFY(ref) || !RDMNET_ASSERT_VERIFY(txt))
+    return;
+
   static uint8_t txt_buffer[TXT_RECORD_BUFFER_LENGTH];
   TXTRecordCreate(txt, TXT_RECORD_BUFFER_LENGTH, txt_buffer);
 
@@ -687,6 +721,9 @@ void broker_info_to_txt_record(const RdmnetBrokerRegisterRef* ref, TXTRecordRef*
  */
 bool txt_record_to_broker_info(const unsigned char* txt, uint16_t txt_len, DiscoveredBroker* db)
 {
+  if (!RDMNET_ASSERT_VERIFY(txt) || !RDMNET_ASSERT_VERIFY(db))
+    return false;
+
   uint8_t     value_len = 0;
   const char* value = NULL;
 
@@ -759,11 +796,16 @@ bool txt_record_to_broker_info(const unsigned char* txt, uint16_t txt_len, Disco
 
 etcpal_error_t add_broker_dnssd_ref(RdmnetBrokerRegisterRef* broker_ref, const DNSServiceRef* dnssd_ref)
 {
+  if (!RDMNET_ASSERT_VERIFY(broker_ref) || !RDMNET_ASSERT_VERIFY(dnssd_ref))
+    return kEtcPalErrSys;
+
   ++broker_ref->platform_data.num_dnssd_refs;
 
   if (broker_ref->platform_data.dnssd_refs)
   {
-    RDMNET_ASSERT(broker_ref->platform_data.num_dnssd_refs > 1);
+    if (!RDMNET_ASSERT_VERIFY(broker_ref->platform_data.num_dnssd_refs > 1))
+      return kEtcPalErrSys;
+
     DNSServiceRef* new_refs = (DNSServiceRef*)realloc(broker_ref->platform_data.dnssd_refs,
                                                       broker_ref->platform_data.num_dnssd_refs * sizeof(DNSServiceRef));
     if (new_refs)
@@ -773,7 +815,9 @@ etcpal_error_t add_broker_dnssd_ref(RdmnetBrokerRegisterRef* broker_ref, const D
   }
   else
   {
-    RDMNET_ASSERT(broker_ref->platform_data.num_dnssd_refs == 1);
+    if (!RDMNET_ASSERT_VERIFY(broker_ref->platform_data.num_dnssd_refs == 1))
+      return kEtcPalErrSys;
+
     broker_ref->platform_data.dnssd_refs =
         (DNSServiceRef*)calloc(broker_ref->platform_data.num_dnssd_refs, sizeof(DNSServiceRef));
   }
@@ -789,6 +833,9 @@ etcpal_error_t add_broker_dnssd_ref(RdmnetBrokerRegisterRef* broker_ref, const D
 
 DiscoveryNetint* lookup_discovery_netint(unsigned int index)
 {
+  if (!RDMNET_ASSERT_VERIFY(disc_netint_arr))
+    return NULL;
+
   for (size_t i = 0; i < num_disc_netints; ++i)
   {
     if (disc_netint_arr[i].index == index)
@@ -800,6 +847,9 @@ DiscoveryNetint* lookup_discovery_netint(unsigned int index)
 
 bool validate_netint_config(const RdmnetNetintConfig* config)
 {
+  if (!RDMNET_ASSERT_VERIFY(config))
+    return false;
+
   if (!config->netints || !config->num_netints)
     return false;
 

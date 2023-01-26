@@ -58,7 +58,8 @@ void registered_broker_module_deinit(void)
 
 RdmnetBrokerRegisterRef* registered_broker_new(const RdmnetBrokerRegisterConfig* config)
 {
-  RDMNET_ASSERT(config);
+  if (!RDMNET_ASSERT_VERIFY(config))
+    return NULL;
 
 #if RDMNET_DYNAMIC_MEM
   RdmnetBrokerRegisterRef* new_rb = (RdmnetBrokerRegisterRef*)calloc(1, sizeof(RdmnetBrokerRegisterRef));
@@ -108,6 +109,9 @@ RdmnetBrokerRegisterRef* registered_broker_new(const RdmnetBrokerRegisterConfig*
     new_rb->num_additional_txt_items = 0;
     if (config->num_additional_txt_items != 0)
     {
+      if (!RDMNET_ASSERT_VERIFY(config->additional_txt_items))
+        return NULL;
+
       for (size_t i = 0; i < config->num_additional_txt_items; ++i)
       {
         const RdmnetDnsTxtRecordItem* txt_item = &config->additional_txt_items[i];
@@ -138,22 +142,31 @@ RdmnetBrokerRegisterRef* registered_broker_new(const RdmnetBrokerRegisterConfig*
 
 void registered_broker_insert(RdmnetBrokerRegisterRef* ref)
 {
-  RDMNET_ASSERT(ref);
+  if (!RDMNET_ASSERT_VERIFY(ref))
+    return;
+
   rc_ref_list_add_ref(&registered_brokers, ref);
 }
 
 bool broker_register_ref_is_valid(const RdmnetBrokerRegisterRef* ref)
 {
+  if (!RDMNET_ASSERT_VERIFY(ref))
+    return false;
+
   return (rc_ref_list_find_ref_index(&registered_brokers, ref) != -1);
 }
 
 void registered_broker_for_each(BrokerRefFunction func)
 {
-  RDMNET_ASSERT(func);
+  if (!RDMNET_ASSERT_VERIFY(func))
+    return;
 
   for (void** ref_ptr = registered_brokers.refs; ref_ptr < registered_brokers.refs + registered_brokers.num_refs;
        ++ref_ptr)
   {
+    if (!RDMNET_ASSERT_VERIFY(ref_ptr))
+      return;
+
     func(*ref_ptr);
   }
 }
@@ -161,13 +174,18 @@ void registered_broker_for_each(BrokerRefFunction func)
 /* Removes an entry from broker_ref_list. Assumes a lock is already taken. */
 void registered_broker_remove(const RdmnetBrokerRegisterRef* ref)
 {
+  if (!RDMNET_ASSERT_VERIFY(ref))
+    return;
+
   rc_ref_list_remove_ref(&registered_brokers, ref);
 }
 
 void registered_broker_delete(RdmnetBrokerRegisterRef* rb)
 {
 #if RDMNET_DYNAMIC_MEM
-  RDMNET_ASSERT(rb);
+  if (!RDMNET_ASSERT_VERIFY(rb))
+    return;
+
   if (rb->netints)
     free(rb->netints);
   if (rb->additional_txt_items)
@@ -181,6 +199,10 @@ void registered_broker_delete(RdmnetBrokerRegisterRef* rb)
 void registered_broker_delete_ref_cb(void* rb, const void* context)
 {
   ETCPAL_UNUSED_ARG(context);
+
+  if (!RDMNET_ASSERT_VERIFY(rb))
+    return;
+
   registered_broker_delete(rb);
 }
 

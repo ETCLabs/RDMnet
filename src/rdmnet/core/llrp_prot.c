@@ -24,6 +24,7 @@
 #include "etcpal/socket.h"
 #include "rdm/uid.h"
 #include "rdmnet/defs.h"
+#include "rdmnet/core/opts.h"
 #include "rdmnet/core/llrp.h"
 
 /**************************** Global variables *******************************/
@@ -86,6 +87,9 @@ bool rc_get_llrp_destination_cid(const uint8_t* buf, size_t buflen, EtcPalUuid* 
 
 bool rc_parse_llrp_message(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest, LlrpMessage* msg)
 {
+  if (!RDMNET_ASSERT_VERIFY(interest))
+    return false;
+
   if (!buf || !msg || buflen < LLRP_MIN_TOTAL_MESSAGE_SIZE)
     return false;
 
@@ -107,6 +111,12 @@ bool rc_parse_llrp_message(const uint8_t* buf, size_t buflen, const LlrpMessageI
 
 bool parse_llrp_pdu(const uint8_t* buf, size_t buflen, const LlrpMessageInterest* interest, LlrpMessage* msg)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf) || !RDMNET_ASSERT_VERIFY(interest) || !RDMNET_ASSERT_VERIFY(msg) ||
+      !RDMNET_ASSERT_VERIFY(kLlrpBroadcastCid))
+  {
+    return false;
+  }
+
   if (buflen < LLRP_MIN_PDU_SIZE)
     return false;
 
@@ -164,6 +174,9 @@ bool parse_llrp_probe_request(const uint8_t*             buf,
                               const LlrpMessageInterest* interest,
                               RemoteProbeRequest*        request)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf) || !RDMNET_ASSERT_VERIFY(interest) || !RDMNET_ASSERT_VERIFY(request))
+    return false;
+
   if (buflen < PROBE_REQUEST_PDU_MIN_SIZE)
     return false;
 
@@ -227,6 +240,9 @@ bool parse_llrp_probe_request(const uint8_t*             buf,
 
 bool parse_llrp_probe_reply(const uint8_t* buf, size_t buflen, LlrpDiscoveredTarget* reply)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf) || !RDMNET_ASSERT_VERIFY(reply))
+    return false;
+
   if (buflen < PROBE_REPLY_PDU_SIZE)
     return false;
 
@@ -252,6 +268,9 @@ bool parse_llrp_probe_reply(const uint8_t* buf, size_t buflen, LlrpDiscoveredTar
 
 bool parse_llrp_rdm_command(const uint8_t* buf, size_t buflen, RdmBuffer* cmd)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf) || !RDMNET_ASSERT_VERIFY(cmd))
+    return false;
+
   if (buflen < LLRP_RDM_CMD_PDU_MIN_SIZE)
     return false;
 
@@ -271,6 +290,9 @@ bool parse_llrp_rdm_command(const uint8_t* buf, size_t buflen, RdmBuffer* cmd)
 
 size_t pack_llrp_header(uint8_t* buf, size_t pdu_len, uint32_t vector, const LlrpHeader* header)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf) || !RDMNET_ASSERT_VERIFY(header))
+    return 0;
+
   uint8_t* cur_ptr = buf;
 
   *cur_ptr = 0xf0;
@@ -294,6 +316,12 @@ etcpal_error_t rc_send_llrp_probe_request(etcpal_socket_t          sock,
                                           const LlrpHeader*        header,
                                           const LocalProbeRequest* probe_request)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf) || !RDMNET_ASSERT_VERIFY(header) || !RDMNET_ASSERT_VERIFY(probe_request) ||
+      !RDMNET_ASSERT_VERIFY(probe_request->known_uids))
+  {
+    return kEtcPalErrSys;
+  }
+
   if (probe_request->num_known_uids > LLRP_KNOWN_UID_SIZE)
     return kEtcPalErrInvalid;
 
@@ -340,12 +368,15 @@ etcpal_error_t rc_send_llrp_probe_request(etcpal_socket_t          sock,
     cur_ptr += 4;
   }
 
-  int send_res =
-      etcpal_sendto(sock, buf, (size_t)(cur_ptr - buf), 0, ipv6 ? kLlrpIpv6RequestAddr : kLlrpIpv4RequestAddr);
+  const EtcPalSockAddr* dest_addr = ipv6 ? kLlrpIpv6RequestAddr : kLlrpIpv4RequestAddr;
+  if (!RDMNET_ASSERT_VERIFY(dest_addr))
+    return kEtcPalErrSys;
+
+  int send_res = etcpal_sendto(sock, buf, (size_t)(cur_ptr - buf), 0, dest_addr);
   if (send_res >= 0)
     return kEtcPalErrOk;
-  else
-    return (etcpal_error_t)send_res;
+
+  return (etcpal_error_t)send_res;
 }
 
 #define PROBE_REPLY_RLP_DATA_SIZE (LLRP_HEADER_SIZE + PROBE_REPLY_PDU_SIZE)
@@ -356,6 +387,9 @@ etcpal_error_t rc_send_llrp_probe_reply(etcpal_socket_t             sock,
                                         const LlrpHeader*           header,
                                         const LlrpDiscoveredTarget* target_info)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf) || !RDMNET_ASSERT_VERIFY(header) || !RDMNET_ASSERT_VERIFY(target_info))
+    return kEtcPalErrSys;
+
   uint8_t* cur_ptr = buf;
   uint8_t* buf_end = cur_ptr + LLRP_TARGET_MAX_MESSAGE_SIZE;
 
@@ -386,11 +420,15 @@ etcpal_error_t rc_send_llrp_probe_reply(etcpal_socket_t             sock,
   cur_ptr += 6;
   *cur_ptr++ = (uint8_t)target_info->component_type;
 
-  int send_res = etcpal_sendto(sock, buf, (size_t)(cur_ptr - buf), 0, ipv6 ? kLlrpIpv6RespAddr : kLlrpIpv4RespAddr);
+  const EtcPalSockAddr* dest_addr = ipv6 ? kLlrpIpv6RespAddr : kLlrpIpv4RespAddr;
+  if (!RDMNET_ASSERT_VERIFY(dest_addr))
+    return kEtcPalErrSys;
+
+  int send_res = etcpal_sendto(sock, buf, (size_t)(cur_ptr - buf), 0, dest_addr);
   if (send_res >= 0)
     return kEtcPalErrOk;
-  else
-    return (etcpal_error_t)send_res;
+
+  return (etcpal_error_t)send_res;
 }
 
 #define RDM_CMD_RLP_DATA_MIN_SIZE (LLRP_HEADER_SIZE + 3 /* RDM cmd PDU Flags + Length */)
@@ -401,6 +439,12 @@ etcpal_error_t send_llrp_rdm(etcpal_socket_t       sock,
                              const LlrpHeader*     header,
                              const RdmBuffer*      rdm_msg)
 {
+  if (!RDMNET_ASSERT_VERIFY(buf) || !RDMNET_ASSERT_VERIFY(dest_addr) || !RDMNET_ASSERT_VERIFY(header) ||
+      !RDMNET_ASSERT_VERIFY(rdm_msg))
+  {
+    return kEtcPalErrSys;
+  }
+
   uint8_t* cur_ptr = buf;
   uint8_t* buf_end = cur_ptr + LLRP_MAX_MESSAGE_SIZE;
 
@@ -428,8 +472,8 @@ etcpal_error_t send_llrp_rdm(etcpal_socket_t       sock,
   int send_res = etcpal_sendto(sock, buf, (size_t)(cur_ptr - buf), 0, dest_addr);
   if (send_res >= 0)
     return kEtcPalErrOk;
-  else
-    return (etcpal_error_t)send_res;
+
+  return (etcpal_error_t)send_res;
 }
 
 etcpal_error_t rc_send_llrp_rdm_command(etcpal_socket_t   sock,
@@ -438,7 +482,14 @@ etcpal_error_t rc_send_llrp_rdm_command(etcpal_socket_t   sock,
                                         const LlrpHeader* header,
                                         const RdmBuffer*  cmd)
 {
-  return send_llrp_rdm(sock, buf, ipv6 ? kLlrpIpv6RequestAddr : kLlrpIpv4RequestAddr, header, cmd);
+  if (!RDMNET_ASSERT_VERIFY(buf) || !RDMNET_ASSERT_VERIFY(header) || !RDMNET_ASSERT_VERIFY(cmd))
+    return kEtcPalErrSys;
+
+  const EtcPalSockAddr* dest_addr = ipv6 ? kLlrpIpv6RequestAddr : kLlrpIpv4RequestAddr;
+  if (!RDMNET_ASSERT_VERIFY(dest_addr))
+    return kEtcPalErrSys;
+
+  return send_llrp_rdm(sock, buf, dest_addr, header, cmd);
 }
 
 etcpal_error_t rc_send_llrp_rdm_response(etcpal_socket_t   sock,
@@ -447,5 +498,12 @@ etcpal_error_t rc_send_llrp_rdm_response(etcpal_socket_t   sock,
                                          const LlrpHeader* header,
                                          const RdmBuffer*  resp)
 {
-  return send_llrp_rdm(sock, buf, ipv6 ? kLlrpIpv6RespAddr : kLlrpIpv4RespAddr, header, resp);
+  if (!RDMNET_ASSERT_VERIFY(buf) || !RDMNET_ASSERT_VERIFY(header) || !RDMNET_ASSERT_VERIFY(resp))
+    return kEtcPalErrSys;
+
+  const EtcPalSockAddr* dest_addr = ipv6 ? kLlrpIpv6RespAddr : kLlrpIpv4RespAddr;
+  if (!RDMNET_ASSERT_VERIFY(dest_addr))
+    return kEtcPalErrSys;
+
+  return send_llrp_rdm(sock, buf, dest_addr, header, resp);
 }

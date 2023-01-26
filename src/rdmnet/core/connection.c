@@ -77,8 +77,12 @@ typedef struct RCConnEvent
 
 /***************************** Private macros ********************************/
 
-#define RC_CONN_LOCK(conn_ptr) etcpal_mutex_lock((conn_ptr)->lock)
-#define RC_CONN_UNLOCK(conn_ptr) etcpal_mutex_unlock((conn_ptr)->lock)
+#define RC_CONN_LOCK(conn_ptr) (RDMNET_ASSERT_VERIFY(conn_ptr) && etcpal_mutex_lock((conn_ptr)->lock))
+#define RC_CONN_UNLOCK(conn_ptr)           \
+  if (RDMNET_ASSERT_VERIFY(conn_ptr))      \
+  {                                        \
+    etcpal_mutex_unlock((conn_ptr)->lock); \
+  }
 
 /**************************** Private variables ******************************/
 
@@ -140,6 +144,9 @@ void rc_conn_module_deinit()
  */
 etcpal_error_t rc_conn_register(RCConnection* conn)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn))
+    return kEtcPalErrSys;
+
   if (!rc_initialized())
     return kEtcPalErrNotInit;
 
@@ -169,6 +176,9 @@ etcpal_error_t rc_conn_register(RCConnection* conn)
  */
 void rc_conn_unregister(RCConnection* conn, const rdmnet_disconnect_reason_t* disconnect_reason)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn))
+    return;
+
   if (conn->state == kRCConnStateHeartbeat && disconnect_reason)
   {
     BrokerDisconnectMsg dm;
@@ -191,9 +201,8 @@ etcpal_error_t rc_conn_connect(RCConnection*                 conn,
                                const EtcPalSockAddr*         remote_addr,
                                const BrokerClientConnectMsg* connect_data)
 {
-  RDMNET_ASSERT(conn);
-  RDMNET_ASSERT(remote_addr);
-  RDMNET_ASSERT(connect_data);
+  if (!RDMNET_ASSERT_VERIFY(conn) || !RDMNET_ASSERT_VERIFY(remote_addr) || !RDMNET_ASSERT_VERIFY(connect_data))
+    return kEtcPalErrSys;
 
   if (conn->state != kRCConnStateNotStarted && conn->state != kRCConnStateDisconnectPending)
     return kEtcPalErrIsConn;
@@ -214,11 +223,13 @@ etcpal_error_t rc_conn_reconnect(RCConnection*                 conn,
                                  const BrokerClientConnectMsg* new_connect_data,
                                  rdmnet_disconnect_reason_t    disconnect_reason)
 {
-  RDMNET_ASSERT(conn);
-  RDMNET_ASSERT(new_remote_addr);
-  RDMNET_ASSERT(conn->state != kRCConnStateNotStarted);
-  RDMNET_ASSERT(conn->state != kRCConnStateMarkedForDestruction);
-  RDMNET_ASSERT(conn->state != kRCConnStateDisconnectPending);
+  if (!RDMNET_ASSERT_VERIFY(conn) || !RDMNET_ASSERT_VERIFY(new_remote_addr) ||
+      !RDMNET_ASSERT_VERIFY(new_connect_data) || !RDMNET_ASSERT_VERIFY(conn->state != kRCConnStateNotStarted) ||
+      !RDMNET_ASSERT_VERIFY(conn->state != kRCConnStateMarkedForDestruction) ||
+      !RDMNET_ASSERT_VERIFY(conn->state != kRCConnStateDisconnectPending))
+  {
+    return kEtcPalErrSys;
+  }
 
   if (conn->state == kRCConnStateHeartbeat)
   {
@@ -238,9 +249,11 @@ etcpal_error_t rc_conn_reconnect(RCConnection*                 conn,
 
 etcpal_error_t rc_conn_disconnect(RCConnection* conn, rdmnet_disconnect_reason_t disconnect_reason)
 {
-  RDMNET_ASSERT(conn);
-  RDMNET_ASSERT(conn->state != kRCConnStateNotStarted);
-  RDMNET_ASSERT(conn->state != kRCConnStateMarkedForDestruction);
+  if (!RDMNET_ASSERT_VERIFY(conn) || !RDMNET_ASSERT_VERIFY(conn->state != kRCConnStateNotStarted) ||
+      !RDMNET_ASSERT_VERIFY(conn->state != kRCConnStateMarkedForDestruction))
+  {
+    return kEtcPalErrSys;
+  }
 
   if (conn->state == kRCConnStateHeartbeat)
   {
@@ -272,6 +285,9 @@ void rc_conn_module_tick()
 
 static void start_connection(RCConnection* conn, RCConnEvent* event)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn) || !RDMNET_ASSERT_VERIFY(event))
+    return;
+
   if (conn->rdmnet_conn_failed || conn->backoff_timer.interval != 0)
   {
     if (conn->rdmnet_conn_failed)
@@ -287,6 +303,9 @@ static void start_connection(RCConnection* conn, RCConnEvent* event)
 void process_connection_state(RCConnection* conn, const void* context)
 {
   ETCPAL_UNUSED_ARG(context);
+
+  if (!RDMNET_ASSERT_VERIFY(conn))
+    return;
 
   // Some messages need to be retried on the next tick, which happens here.
   receive_and_process_messages(conn);
@@ -374,6 +393,9 @@ uint32_t update_backoff(uint32_t previous_backoff)
 
 void start_tcp_connection(RCConnection* conn, RCConnEvent* event)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn) || !RDMNET_ASSERT_VERIFY(event))
+    return;
+
   bool ok = true;
 
   etcpal_error_t res = etcpal_socket(ETCPAL_IP_IS_V6(&conn->remote_addr.ip) ? ETCPAL_AF_INET6 : ETCPAL_AF_INET,
@@ -439,6 +461,9 @@ void start_tcp_connection(RCConnection* conn, RCConnEvent* event)
 
 void start_rdmnet_connection(RCConnection* conn)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn))
+    return;
+
   // Update state
   conn->state = kRCConnStateRDMnetConnPending;
   rc_modify_polled_socket(conn->sock, ETCPAL_POLL_IN, &conn->poll_info);
@@ -449,6 +474,9 @@ void start_rdmnet_connection(RCConnection* conn)
 
 void reset_connection(RCConnection* conn)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn))
+    return;
+
   cleanup_connection_resources(conn);
   rc_msg_buf_init(&conn->recv_buf);
   conn->retry_current_message = false;
@@ -457,6 +485,9 @@ void reset_connection(RCConnection* conn)
 
 void retry_connection(RCConnection* conn)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn))
+    return;
+
   cleanup_connection_resources(conn);
   rc_msg_buf_init(&conn->recv_buf);
   conn->retry_current_message = false;
@@ -466,6 +497,10 @@ void retry_connection(RCConnection* conn)
 void destroy_connection(RCConnection* conn, const void* context)
 {
   ETCPAL_UNUSED_ARG(context);
+
+  if (!RDMNET_ASSERT_VERIFY(conn))
+    return;
+
   cleanup_connection_resources(conn);
   if (conn->callbacks.destroyed)
     conn->callbacks.destroyed(conn);
@@ -473,7 +508,8 @@ void destroy_connection(RCConnection* conn, const void* context)
 
 void cleanup_connection_resources(RCConnection* conn)
 {
-  RDMNET_ASSERT(conn);
+  if (!RDMNET_ASSERT_VERIFY(conn))
+    return;
 
   if (conn->sock != ETCPAL_SOCKET_INVALID)
   {
@@ -492,7 +528,12 @@ void cleanup_connection_resources(RCConnection* conn)
 
 void socket_activity_callback(const EtcPalPollEvent* event, RCPolledSocketOpaqueData data)
 {
+  if (!RDMNET_ASSERT_VERIFY(event))
+    return;
+
   RCConnection* conn = (RCConnection*)data.ptr;
+  if (!RDMNET_ASSERT_VERIFY(conn))
+    return;
 
   if (event->events & ETCPAL_POLL_ERR)
     handle_socket_error(conn, event->err);
@@ -504,6 +545,9 @@ void socket_activity_callback(const EtcPalPollEvent* event, RCPolledSocketOpaque
 
 void receive_and_process_messages(RCConnection* conn)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn))
+    return;
+
   etcpal_error_t      recv_res = kEtcPalErrOk;
   rc_message_action_t message_action = kRCMessageActionProcessNext;
   bool                retry_current_message = conn->retry_current_message;
@@ -543,6 +587,9 @@ void receive_and_process_messages(RCConnection* conn)
 
 rc_message_action_t process_message(RCConnection* conn)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn))
+    return kRCMessageActionProcessNext;
+
   rc_message_action_t action = kRCMessageActionProcessNext;
 
   RCConnEvent event = RC_CONN_EVENT_INIT;
@@ -561,6 +608,9 @@ rc_message_action_t process_message(RCConnection* conn)
 
 void handle_tcp_connection_established(RCConnection* conn)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn))
+    return;
+
   if (RC_CONN_LOCK(conn))
   {
     // connected successfully!
@@ -571,6 +621,9 @@ void handle_tcp_connection_established(RCConnection* conn)
 
 void handle_socket_error(RCConnection* conn, etcpal_error_t socket_err)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn))
+    return;
+
   if (RC_CONN_LOCK(conn))
   {
     RCConnEvent event = RC_CONN_EVENT_INIT;
@@ -602,6 +655,9 @@ void handle_socket_error(RCConnection* conn, etcpal_error_t socket_err)
 
 void handle_message(RCConnection* conn, RdmnetMessage* msg, RCConnEvent* event)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn) || !RDMNET_ASSERT_VERIFY(msg) || !RDMNET_ASSERT_VERIFY(event))
+    return;
+
   if (conn->state == kRCConnStateRDMnetConnPending)
     handle_rdmnet_connect_result(conn, msg, event);
   else
@@ -610,6 +666,9 @@ void handle_message(RCConnection* conn, RdmnetMessage* msg, RCConnEvent* event)
 
 void handle_rdmnet_message(RCConnection* conn, RdmnetMessage* msg, RCConnEvent* event)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn) || !RDMNET_ASSERT_VERIFY(msg) || !RDMNET_ASSERT_VERIFY(event))
+    return;
+
   // Reset the heartbeat timer every time we receive any message.
   etcpal_timer_reset(&conn->hb_timer);
 
@@ -618,6 +677,9 @@ void handle_rdmnet_message(RCConnection* conn, RdmnetMessage* msg, RCConnEvent* 
   if (RDMNET_IS_BROKER_MSG(msg))
   {
     BrokerMessage* bmsg = RDMNET_GET_BROKER_MSG(msg);
+    if (!RDMNET_ASSERT_VERIFY(bmsg))
+      return;
+
     switch (bmsg->vector)
     {
       case VECTOR_BROKER_CONNECT_REPLY:
@@ -627,7 +689,12 @@ void handle_rdmnet_message(RCConnection* conn, RdmnetMessage* msg, RCConnEvent* 
         event->which = kRCConnEventDisconnected;
         event->arg.disconnected.event = kRdmnetDisconnectGracefulRemoteInitiated;
         event->arg.disconnected.socket_err = kEtcPalErrOk;
-        event->arg.disconnected.rdmnet_reason = BROKER_GET_DISCONNECT_MSG(bmsg)->disconnect_reason;
+
+        const BrokerDisconnectMsg* disconnect_msg = BROKER_GET_DISCONNECT_MSG(bmsg);
+        if (!RDMNET_ASSERT_VERIFY(disconnect_msg))
+          return;
+
+        event->arg.disconnected.rdmnet_reason = disconnect_msg->disconnect_reason;
 
         reset_connection(conn);
         break;
@@ -654,12 +721,18 @@ void handle_rdmnet_message(RCConnection* conn, RdmnetMessage* msg, RCConnEvent* 
 
 void handle_rdmnet_connect_result(RCConnection* conn, RdmnetMessage* msg, RCConnEvent* event)
 {
-  if (RDMNET_GET_BROKER_MSG(msg))
+  if (!RDMNET_ASSERT_VERIFY(conn) || !RDMNET_ASSERT_VERIFY(msg) || !RDMNET_ASSERT_VERIFY(event))
+    return;
+
+  BrokerMessage* bmsg = RDMNET_GET_BROKER_MSG(msg);
+  if (bmsg)
   {
-    BrokerMessage* bmsg = RDMNET_GET_BROKER_MSG(msg);
     if (BROKER_IS_CONNECT_REPLY_MSG(bmsg))
     {
       BrokerConnectReplyMsg* reply = BROKER_GET_CONNECT_REPLY_MSG(bmsg);
+      if (!RDMNET_ASSERT_VERIFY(reply))
+        return;
+
       switch (reply->connect_status)
       {
         case kRdmnetConnectOk:
@@ -691,7 +764,11 @@ void handle_rdmnet_connect_result(RCConnection* conn, RdmnetMessage* msg, RCConn
     }
     else if (BROKER_IS_CLIENT_REDIRECT_MSG(bmsg))
     {
-      conn->remote_addr = BROKER_GET_CLIENT_REDIRECT_MSG(bmsg)->new_addr;
+      const BrokerClientRedirectMsg* client_redirect_msg = BROKER_GET_CLIENT_REDIRECT_MSG(bmsg);
+      if (!RDMNET_ASSERT_VERIFY(client_redirect_msg))
+        return;
+
+      conn->remote_addr = client_redirect_msg->new_addr;
       retry_connection(conn);
     }
   }
@@ -700,6 +777,9 @@ void handle_rdmnet_connect_result(RCConnection* conn, RdmnetMessage* msg, RCConn
 
 void deliver_event_callback(RCConnection* conn, RCConnEvent* event, rc_message_action_t* action)
 {
+  if (!RDMNET_ASSERT_VERIFY(conn) || !RDMNET_ASSERT_VERIFY(event) || !RDMNET_ASSERT_VERIFY(action))
+    return;
+
   switch (event->which)
   {
     case kRCConnEventConnected:

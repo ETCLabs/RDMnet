@@ -260,11 +260,11 @@ typedef struct RdmnetScopeConfig
  *                  config exists.
  */
 #define RDMNET_CLIENT_SET_SCOPE(configptr, scope_str)           \
-  do                                                            \
+  if (configptr)                                                \
   {                                                             \
     (configptr)->scope = scope_str;                             \
     ETCPAL_IP_SET_INVALID(&(configptr)->static_broker_addr.ip); \
-  } while (0)
+  }
 
 /**
  * @brief Initialize an RdmnetScopeConfig struct with the default RDMnet scope.
@@ -275,11 +275,11 @@ typedef struct RdmnetScopeConfig
  * @param configptr Pointer to RdmnetScopeConfig.
  */
 #define RDMNET_CLIENT_SET_DEFAULT_SCOPE(configptr)              \
-  do                                                            \
+  if (configptr)                                                \
   {                                                             \
     (configptr)->scope = E133_DEFAULT_SCOPE;                    \
     ETCPAL_IP_SET_INVALID(&(configptr)->static_broker_addr.ip); \
-  } while (0)
+  }
 
 /**
  * @brief Initialize an RdmnetScopeConfig struct with a scope string and static broker address.
@@ -293,11 +293,11 @@ typedef struct RdmnetScopeConfig
  * @param broker_addr Address and port for a static broker (EtcPalSockAddr).
  */
 #define RDMNET_CLIENT_SET_STATIC_SCOPE(configptr, scope_str, broker_addr) \
-  do                                                                      \
+  if (configptr)                                                          \
   {                                                                       \
     (configptr)->scope = (scope_str);                                     \
     (configptr)->static_broker_addr = (broker_addr);                      \
-  } while (0)
+  }
 
 /**
  * @brief Initialize an RdmnetScopeConfig struct with the default RDMnet scope and a static broker
@@ -310,11 +310,11 @@ typedef struct RdmnetScopeConfig
  * @param broker_addr Address and port for a static broker (EtcPalSockAddr)
  */
 #define RDMNET_CLIENT_SET_STATIC_DEFAULT_SCOPE(configptr, broker_addr) \
-  do                                                                   \
+  if (configptr)                                                       \
   {                                                                    \
     (configptr)->scope = E133_DEFAULT_SCOPE;                           \
     (configptr)->static_broker_addr = (broker_addr);                   \
-  } while (0)
+  }
 
 /**
  * @}
