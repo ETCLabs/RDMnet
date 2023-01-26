@@ -175,6 +175,9 @@ public:
 
   /// @ingroup rdmnet_controller_cpp
   /// @brief A set of configuration settings that a controller needs to initialize.
+  ///
+  /// Note that network interfaces that the LLRP target of the controller should use are no longer specified here.
+  /// Instead, the set of interfaces passed to rdmnet::Init() is used.
   struct Settings
   {
     etcpal::Uuid cid;            ///< The controller's Component Identifier (CID).
@@ -183,10 +186,6 @@ public:
 
     /// (optional) Whether to create an LLRP target associated with this controller.
     bool create_llrp_target{false};
-    /// (optional) A set of network interfaces to use for the LLRP target associated with this
-    /// controller. If empty, the set passed to rdmnet::Init() will be used, or all network
-    /// interfaces on the system if that was not provided.
-    std::vector<EtcPalMcastNetintId> llrp_netints;
 
     /// Create an empty, invalid data structure by default.
     Settings() = default;
@@ -558,17 +557,8 @@ inline etcpal::Error Controller::Startup(NotifyHandler&  notify_handler,
     settings.uid.get(),             // UID
     settings.search_domain.c_str(), // Search domain
     settings.create_llrp_target,    // Create LLRP target
-    nullptr,
-    0
   };
   // clang-format on
-
-  // LLRP network interfaces
-  if (!settings.llrp_netints.empty())
-  {
-    config.llrp_netints = settings.llrp_netints.data();
-    config.num_llrp_netints = settings.llrp_netints.size();
-  }
 
   rdmnet_controller_t c_handle = RDMNET_CONTROLLER_INVALID;
   etcpal::Error       result = rdmnet_controller_create(&config, &c_handle);
@@ -626,17 +616,8 @@ inline etcpal::Error Controller::Startup(NotifyHandler&     notify_handler,
     settings.uid.get(),             // UID
     settings.search_domain.c_str(), // Search domain
     settings.create_llrp_target,    // Create LLRP target
-    nullptr,
-    0
   };
   // clang-format on
-
-  // LLRP network interfaces
-  if (!settings.llrp_netints.empty())
-  {
-    config.llrp_netints = settings.llrp_netints.data();
-    config.num_llrp_netints = settings.llrp_netints.size();
-  }
 
   rdmnet_controller_t c_handle = RDMNET_CONTROLLER_INVALID;
   etcpal::Error       result = rdmnet_controller_create(&config, &c_handle);

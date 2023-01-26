@@ -244,7 +244,7 @@ etcpal_error_t create_new_target(const LlrpTargetConfig* config, llrp_target_t* 
   rc_target->component_type = kLlrpCompNonRdmnet;
   rc_target->callbacks = kTargetCallbacks;
   rc_target->lock = &new_target->lock;
-  res = rc_llrp_target_register(rc_target, config->netints, config->num_netints);
+  res = rc_llrp_target_register(rc_target);
   if (res != kEtcPalErrOk)
   {
     rdmnet_free_struct_instance(new_target);

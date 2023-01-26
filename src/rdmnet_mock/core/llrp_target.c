@@ -21,7 +21,7 @@
 
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_llrp_target_module_init);
 DEFINE_FAKE_VOID_FUNC(rc_llrp_target_module_deinit);
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_llrp_target_register, RCLlrpTarget*, const EtcPalMcastNetintId*, size_t);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_llrp_target_register, RCLlrpTarget*);
 DEFINE_FAKE_VOID_FUNC(rc_llrp_target_unregister, RCLlrpTarget*);
 DEFINE_FAKE_VOID_FUNC(rc_llrp_target_update_connection_state, RCLlrpTarget*, bool);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t,

@@ -182,7 +182,7 @@ protected:
 
     // Create client
     ASSERT_EQ(kEtcPalErrOk, rc_client_module_init());
-    ASSERT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, false, nullptr, 0));
+    ASSERT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, false));
   }
 
   void TearDown() override

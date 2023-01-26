@@ -1342,7 +1342,7 @@ etcpal_error_t create_new_device(const RdmnetDeviceConfig* config, rdmnet_device
     client->search_domain[0] = '\0';
   client->sync_resp_buf = config->response_buf;
 
-  res = rc_rpt_client_register(client, true, config->llrp_netints, config->num_llrp_netints);
+  res = rc_rpt_client_register(client, true);
   if (res != kEtcPalErrOk)
   {
     rdmnet_unregister_struct_instance(new_device);

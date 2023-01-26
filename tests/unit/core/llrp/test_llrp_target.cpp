@@ -57,7 +57,7 @@ protected:
 
     ASSERT_EQ(kEtcPalErrOk, rc_llrp_module_init());
     ASSERT_EQ(kEtcPalErrOk, rc_llrp_target_module_init());
-    ASSERT_EQ(kEtcPalErrOk, rc_llrp_target_register(&target_, nullptr, 0));
+    ASSERT_EQ(kEtcPalErrOk, rc_llrp_target_register(&target_));
   }
 
   void TearDown() override

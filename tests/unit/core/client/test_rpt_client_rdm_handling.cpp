@@ -54,7 +54,7 @@ static etcpal_error_t register_and_save_conn(RCConnection* conn)
   return kEtcPalErrOk;
 }
 
-static etcpal_error_t register_and_save_llrp_target(RCLlrpTarget* target, const EtcPalMcastNetintId*, size_t)
+static etcpal_error_t register_and_save_llrp_target(RCLlrpTarget* target)
 {
   last_llrp_target = target;
   return kEtcPalErrOk;
@@ -112,7 +112,7 @@ protected:
 
     // Create client
     ASSERT_EQ(kEtcPalErrOk, rc_client_module_init());
-    ASSERT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, true, nullptr, 0));
+    ASSERT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, true));
 
     ConnectAndVerify();
   }

@@ -316,10 +316,7 @@ void rc_client_module_deinit(void)
  * Initialize the items marked in the struct before passing it to this function. The LLRP
  * information will be used to create an associated LLRP target.
  */
-etcpal_error_t rc_rpt_client_register(RCClient*                  client,
-                                      bool                       create_llrp_target,
-                                      const EtcPalMcastNetintId* llrp_netints,
-                                      size_t                     num_llrp_netints)
+etcpal_error_t rc_rpt_client_register(RCClient* client, bool create_llrp_target)
 {
   if (!RDMNET_ASSERT_VERIFY(client))
     return kEtcPalErrSys;
@@ -347,7 +344,7 @@ etcpal_error_t rc_rpt_client_register(RCClient*                  client,
     target->callbacks = kLlrpTargetCallbacks;
     target->lock = client->lock;
 
-    etcpal_error_t res = rc_llrp_target_register(&client->llrp_target, llrp_netints, num_llrp_netints);
+    etcpal_error_t res = rc_llrp_target_register(&client->llrp_target);
     if (res == kEtcPalErrOk)
     {
       client->target_valid = true;

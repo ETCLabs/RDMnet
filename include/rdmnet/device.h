@@ -223,7 +223,12 @@ typedef struct RdmnetPhysicalEndpointConfig
     (endpoint_num), NULL, 0                         \
   }
 
-/** A set of information that defines the startup parameters of an RDMnet Device. */
+/**
+ * @brief A set of information that defines the startup parameters of an RDMnet Device.
+ *
+ * Note that network interfaces that the LLRP target of the device should use are no longer specified here. Instead, the
+ * set of interfaces passed to rdmnet_init() is used.
+ */
 typedef struct RdmnetDeviceConfig
 {
   /************************************************************************************************
@@ -273,16 +278,6 @@ typedef struct RdmnetDeviceConfig
   const RdmnetVirtualEndpointConfig* virtual_endpoints;
   /** Size of the virtual_endpoints array. */
   size_t num_virtual_endpoints;
-
-  /**
-   * (optional) A set of network interfaces to use for the LLRP target associated with this device.
-   * If NULL, the set passed to rdmnet_init() will be used, or all network interfaces on the system
-   * if that was not provided. If non-NULL, this must be a subset of the interfaces passed to
-   * rdmnet_init() if any were passed in there.
-   */
-  const EtcPalMcastNetintId* llrp_netints;
-  /** (optional) The size of the llrp_netints array. */
-  size_t num_llrp_netints;
 } RdmnetDeviceConfig;
 
 /**
@@ -299,7 +294,7 @@ typedef struct RdmnetDeviceConfig
 #define RDMNET_DEVICE_CONFIG_DEFAULT_INIT(manu_id)                                             \
   {                                                                                            \
     {{0}}, {NULL, NULL, NULL, NULL, NULL, NULL, NULL}, NULL, RDMNET_SCOPE_CONFIG_DEFAULT_INIT, \
-        {(0x8000 | manu_id), 0}, NULL, NULL, 0, NULL, 0, NULL, 0                               \
+        {(0x8000 | manu_id), 0}, NULL, NULL, 0, NULL, 0                                        \
   }
 
 void rdmnet_device_config_init(RdmnetDeviceConfig* config, uint16_t manufacturer_id);

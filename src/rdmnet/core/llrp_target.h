@@ -96,7 +96,7 @@ typedef struct RCLlrpTarget
 etcpal_error_t rc_llrp_target_module_init(void);
 void           rc_llrp_target_module_deinit(void);
 
-etcpal_error_t rc_llrp_target_register(RCLlrpTarget* target, const EtcPalMcastNetintId* netints, size_t num_netints);
+etcpal_error_t rc_llrp_target_register(RCLlrpTarget* target);
 void           rc_llrp_target_unregister(RCLlrpTarget* target);
 void           rc_llrp_target_update_connection_state(RCLlrpTarget* target, bool connected_to_broker);
 

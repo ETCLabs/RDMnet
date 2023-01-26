@@ -75,20 +75,17 @@ protected:
 // Test that basic registration of an RDMnet client works
 TEST_F(TestRptClientApi, ClientRegisterWorks)
 {
-  EXPECT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, false, nullptr, 0));
+  EXPECT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, false));
   EXPECT_TRUE(rc_client_unregister(&client_, kRdmnetDisconnectShutdown));
 }
 
 // Test that the client registers an associated LLRP target when requested to do so.
 TEST_F(TestRptClientApi, ClientCreateLlrpTargetWorks)
 {
-  EtcPalMcastNetintId llrp_netint = {kEtcPalIpTypeV4, 1};
-  ASSERT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, true, &llrp_netint, 1));
+  ASSERT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, true));
 
   EXPECT_EQ(rc_llrp_target_register_fake.call_count, 1u);
   EXPECT_EQ(rc_llrp_target_register_fake.arg0_val, &client_.llrp_target);
-  EXPECT_EQ(rc_llrp_target_register_fake.arg1_val, &llrp_netint);
-  EXPECT_EQ(rc_llrp_target_register_fake.arg2_val, 1u);
 
   EXPECT_EQ(client_.cid, client_.llrp_target.cid);
   EXPECT_EQ(RC_RPT_CLIENT_DATA(&client_)->uid, client_.llrp_target.uid);
@@ -101,7 +98,7 @@ TEST_F(TestRptClientApi, ClientCreateLlrpTargetWorks)
 
 TEST_F(TestRptClientApi, ClientAddScopeWorks)
 {
-  ASSERT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, false, nullptr, 0));
+  ASSERT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, false));
 
   static RCConnection* conn;
   conn = nullptr;
@@ -125,7 +122,7 @@ TEST_F(TestRptClientApi, ClientAddScopeWorks)
 
 TEST_F(TestRptClientApi, ClientAddMultipleScopesWorks)
 {
-  ASSERT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, false, nullptr, 0));
+  ASSERT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, false));
 
   struct ScopeRef
   {
