@@ -28,6 +28,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include "rdmnet/core/opts.h"
+#include "etcpal/netint.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -183,6 +184,8 @@ void rc_ref_lists_remove_marked(RCRefLists* lists, RCRefFunction on_remove, cons
 void rc_ref_lists_remove_all(RCRefLists* lists, RCRefFunction on_remove, const void* context);
 
 char* rdmnet_safe_strncpy(char* destination, const char* source, size_t num);
+
+int netint_id_index_in_mcast_array(const EtcPalMcastNetintId* id, const EtcPalMcastNetintId* array, size_t array_size);
 
 #ifdef __cplusplus
 }

@@ -29,6 +29,7 @@
 #include "rdmnet/core/util.h"
 #include "rdmnet/core/common.h"
 #include "rdmnet/core/opts.h"
+#include "rdmnet/core/util.h"
 #include "rdmnet/disc/common.h"
 #include "rdmnet/disc/discovered_broker.h"
 #include "rdmnet/disc/registered_broker.h"
@@ -397,18 +398,7 @@ etcpal_error_t rdmnet_disc_platform_init(const RdmnetNetintConfig* netint_config
 
       bool skip = false;
       if (netint_config)
-      {
-        skip = true;
-        for (size_t i = 0; i < netint_config->num_netints; ++i)
-        {
-          if (netint_config->netints[i].index == netint_id.index &&
-              netint_config->netints[i].ip_type == netint_id.ip_type)
-          {
-            skip = false;
-            break;
-          }
-        }
-      }
+        skip = (netint_id_index_in_mcast_array(&netint_id, netint_config->netints, netint_config->num_netints) == -1);
 
       if (skip)
       {

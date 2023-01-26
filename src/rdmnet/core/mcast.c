@@ -25,6 +25,7 @@
 #include "rdmnet/defs.h"
 #include "rdmnet/core/common.h"
 #include "rdmnet/core/opts.h"
+#include "rdmnet/core/util.h"
 
 #if RDMNET_DYNAMIC_MEM
 #include <stdlib.h>
@@ -71,7 +72,6 @@ static etcpal_error_t create_send_socket(const EtcPalMcastNetintId* netint_id,
                                          uint16_t                   source_port,
                                          etcpal_socket_t*           socket);
 
-static int netint_id_index_in_array(const EtcPalMcastNetintId* id, const EtcPalMcastNetintId* array, size_t array_size);
 static McastNetintInfo* get_mcast_netint_info(const EtcPalMcastNetintId* id);
 static McastSendSocket* get_send_socket(McastNetintInfo* netint_info, uint16_t source_port);
 static McastSendSocket* get_unused_send_socket(McastNetintInfo* netint_info);
@@ -164,7 +164,7 @@ etcpal_error_t rc_mcast_module_init(const RdmnetNetintConfig* netint_config)
       netint_id.ip_type = netint->addr.type;
 
       if (netint_config &&
-          (netint_id_index_in_array(&netint_id, netint_config->netints, netint_config->num_netints) == -1))
+          (netint_id_index_in_mcast_array(&netint_id, netint_config->netints, netint_config->num_netints) == -1))
       {
         RDMNET_LOG_DEBUG("  Skipping network interface %s as it is not present in user configuration.", addr_str);
         continue;
@@ -227,7 +227,7 @@ bool rc_mcast_netint_is_valid(const EtcPalMcastNetintId* id)
   if (!RDMNET_ASSERT_VERIFY(id))
     return false;
 
-  return (netint_id_index_in_array(id, mcast_netint_arr, num_mcast_netints) != -1);
+  return (netint_id_index_in_mcast_array(id, mcast_netint_arr, num_mcast_netints) != -1);
 }
 
 const EtcPalMacAddr* rc_mcast_get_lowest_mac_addr(void)
@@ -465,24 +465,25 @@ void add_mcast_netint(const EtcPalMcastNetintId* netint_id, const char* addr_str
 #if RDMNET_DYNAMIC_MEM
   if (!RDMNET_ASSERT_VERIFY(mcast_netint_arr) || !RDMNET_ASSERT_VERIFY(netint_info_arr))
     return;
-#else
-  // We've reached the configured maximum, in which case we have already given the user a stern
-  // warning.
-  if (num_mcast_netints >= RDMNET_MAX_MCAST_NETINTS)
-  {
-    RDMNET_LOG_WARNING(
-            "  WARNING: SKIPPING multicast network interface %s as the configured value %d for RDMNET_MAX_MCAST_NETINTS "
-                "has been reached.",
-            addr_str, RDMNET_MAX_MCAST_NETINTS);
-    RDMNET_LOG_WARNING(
-            "To fix this likely error, recompile RDMnet with a higher value for RDMNET_MAX_MCAST_NETINTS or with "
-                "RDMNET_DYNAMIC_MEM defined to 1.");
-    return;
-  }
 #endif
 
   if (!rc_mcast_netint_is_valid(netint_id))
   {
+#if !RDMNET_DYNAMIC_MEM
+    // We've reached the configured maximum, in which case we have already given the user a stern
+    // warning.
+    if (num_mcast_netints >= RDMNET_MAX_MCAST_NETINTS)
+    {
+      RDMNET_LOG_WARNING(
+          "  WARNING: SKIPPING multicast network interface %s as the configured value %d for RDMNET_MAX_MCAST_NETINTS "
+          "has been reached.",
+          addr_str, RDMNET_MAX_MCAST_NETINTS);
+      RDMNET_LOG_WARNING(
+          "To fix this likely error, recompile RDMnet with a higher value for RDMNET_MAX_MCAST_NETINTS or with "
+          "RDMNET_DYNAMIC_MEM defined to 1.");
+      return;
+    }
+#endif
     mcast_netint_arr[num_mcast_netints] = *netint_id;
 
     McastNetintInfo* netint_info = &netint_info_arr[num_mcast_netints];
@@ -553,19 +554,6 @@ etcpal_error_t create_send_socket(const EtcPalMcastNetintId* netint, uint16_t so
   return res;
 }
 
-int netint_id_index_in_array(const EtcPalMcastNetintId* id, const EtcPalMcastNetintId* array, size_t array_size)
-{
-  if (!RDMNET_ASSERT_VERIFY(id) || !RDMNET_ASSERT_VERIFY(array))
-    return -1;
-
-  for (size_t i = 0; i < array_size; ++i)
-  {
-    if (array[i].index == id->index && array[i].ip_type == id->ip_type)
-      return (int)i;
-  }
-  return -1;
-}
-
 McastNetintInfo* get_mcast_netint_info(const EtcPalMcastNetintId* id)
 {
   if (!RDMNET_ASSERT_VERIFY(id))
@@ -576,7 +564,7 @@ McastNetintInfo* get_mcast_netint_info(const EtcPalMcastNetintId* id)
     return NULL;
 #endif
 
-  int index = netint_id_index_in_array(id, mcast_netint_arr, num_mcast_netints);
+  int index = netint_id_index_in_mcast_array(id, mcast_netint_arr, num_mcast_netints);
   return (index >= 0 ? &netint_info_arr[index] : NULL);
 }
 

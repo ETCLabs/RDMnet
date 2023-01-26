@@ -353,3 +353,16 @@ char* rdmnet_safe_strncpy(char* destination, const char* source, size_t num)
   destination[num - 1] = '\0';
   return destination;
 }
+
+int netint_id_index_in_mcast_array(const EtcPalMcastNetintId* id, const EtcPalMcastNetintId* array, size_t array_size)
+{
+  if (!RDMNET_ASSERT_VERIFY(id) || !RDMNET_ASSERT_VERIFY(array))
+    return -1;
+
+  for (size_t i = 0; i < array_size; ++i)
+  {
+    if (array[i].index == id->index && array[i].ip_type == id->ip_type)
+      return (int)i;
+  }
+  return -1;
+}
