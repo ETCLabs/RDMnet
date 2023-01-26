@@ -214,7 +214,8 @@ void init_recv_socket(LlrpRecvSocket* sock_struct, llrp_socket_t llrp_type)
 
   sock_struct->num_netints = array_size;
 #if RDMNET_DYNAMIC_MEM
-  sock_struct->netints = (LlrpRecvNetint*)calloc(sock_struct->num_netints, sizeof(LlrpRecvNetint));
+  sock_struct->netints =
+      (LlrpRecvNetint*)calloc((sock_struct->num_netints == 0) ? 1 : sock_struct->num_netints, sizeof(LlrpRecvNetint));
   if (!sock_struct->netints)
     return;  // Out of memory
 #endif

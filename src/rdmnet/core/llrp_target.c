@@ -268,7 +268,8 @@ etcpal_error_t setup_target_netints(RCLlrpTarget* target, const EtcPalMcastNetin
   size_t                     mcast_netint_arr_size = rc_mcast_get_netint_array(&mcast_netint_arr);
 
 #if RDMNET_DYNAMIC_MEM
-  target->netints = (RCLlrpTargetNetintInfo*)calloc(mcast_netint_arr_size, sizeof(RCLlrpTargetNetintInfo));
+  target->netints = (RCLlrpTargetNetintInfo*)calloc((mcast_netint_arr_size == 0) ? 1 : mcast_netint_arr_size,
+                                                    sizeof(RCLlrpTargetNetintInfo));
   if (!target->netints)
     res = kEtcPalErrNoMem;
 #endif

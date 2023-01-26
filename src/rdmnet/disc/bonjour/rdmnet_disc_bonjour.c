@@ -373,10 +373,18 @@ etcpal_error_t rdmnet_disc_platform_init(const RdmnetNetintConfig* netint_config
   if ((res != kEtcPalErrOk) && (res != kEtcPalErrNoMem))
     res = (num_sys_netints == 0) ? kEtcPalErrNoNetints : kEtcPalErrSys;
 
-  size_t num_netints_requested = (netint_config ? netint_config->num_netints : num_sys_netints);
+  size_t num_netints_requested = num_sys_netints;
+  if (netint_config)
+  {
+    if (netint_config->no_netints)
+      num_netints_requested = 0;
+    else if (netint_config->netints)
+      num_netints_requested = netint_config->num_netints;
+  }
+
   if (res == kEtcPalErrOk)
   {
-    disc_netint_arr = calloc(num_netints_requested, sizeof(EtcPalMcastNetintId));
+    disc_netint_arr = calloc((num_netints_requested == 0) ? 1 : num_netints_requested, sizeof(EtcPalMcastNetintId));
     if (!disc_netint_arr)
       res = kEtcPalErrNoMem;
   }
@@ -398,7 +406,21 @@ etcpal_error_t rdmnet_disc_platform_init(const RdmnetNetintConfig* netint_config
 
       bool skip = false;
       if (netint_config)
-        skip = (netint_id_index_in_mcast_array(&netint_id, netint_config->netints, netint_config->num_netints) == -1);
+      {
+        skip = true;
+        if (!netint_config->no_netints)
+        {
+          if (netint_config->netints)
+          {
+            skip =
+                (netint_id_index_in_mcast_array(&netint_id, netint_config->netints, netint_config->num_netints) == -1);
+          }
+          else  // Use all interfaces
+          {
+            skip = false;
+          }
+        }
+      }
 
       if (skip)
       {
@@ -429,7 +451,7 @@ etcpal_error_t rdmnet_disc_platform_init(const RdmnetNetintConfig* netint_config
       }
     }
 
-    if (num_disc_netints == 0)
+    if ((num_disc_netints == 0) && (!netint_config || !netint_config->no_netints))
     {
       RDMNET_LOG_ERR("No usable discovery network interfaces found.");
       res = kEtcPalErrNoNetints;
@@ -840,14 +862,17 @@ bool validate_netint_config(const RdmnetNetintConfig* config)
   if (!RDMNET_ASSERT_VERIFY(config))
     return false;
 
-  if (!config->netints || !config->num_netints)
+  if ((!config->netints && (config->num_netints > 0)) || (config->netints && (config->num_netints == 0)))
     return false;
 
-  for (const EtcPalMcastNetintId* netint_id = config->netints; netint_id < config->netints + config->num_netints;
-       ++netint_id)
+  if (config->netints)
   {
-    if (netint_id->index == 0 || (netint_id->ip_type != kEtcPalIpTypeV4 && netint_id->ip_type != kEtcPalIpTypeV6))
-      return false;
+    for (const EtcPalMcastNetintId* netint_id = config->netints; netint_id < config->netints + config->num_netints;
+         ++netint_id)
+    {
+      if (netint_id->index == 0 || (netint_id->ip_type != kEtcPalIpTypeV4 && netint_id->ip_type != kEtcPalIpTypeV6))
+        return false;
+    }
   }
 
   return true;

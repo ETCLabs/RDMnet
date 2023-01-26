@@ -111,7 +111,8 @@ typedef struct LlrpTargetConfig
   /**
    * (optional) A set of network interfaces on which to operate this LLRP target. If NULL, the set
    * passed to rdmnet_init() will be used, or all network interfaces on the system if that was not
-   * provided.
+   * provided. If non-NULL, this must be a subset of the interfaces passed to rdmnet_init() if any
+   * were passed in there.
    */
   const EtcPalMcastNetintId* netints;
   /** (optional) The size of the netints array. */

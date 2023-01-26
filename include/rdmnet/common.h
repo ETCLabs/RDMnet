@@ -381,11 +381,29 @@ typedef enum
  */
 typedef struct RdmnetNetintConfig
 {
-  /** An array of network interface IDs to which to restrict RDMnet traffic. */
+  /** An array of network interface IDs to which to restrict RDMnet traffic. If this is null, and no_netints is false,
+      all system interfaces will be used. */
   const EtcPalMcastNetintId* netints;
-  /** Size of netints array. */
+  /** Size of netints array. Must be 0 if netints is null. */
   size_t num_netints;
+  /** If this is true, no network interfaces will be used for multicast. If any are specified in netints, they will be
+      ignored. */
+  bool no_netints;
 } RdmnetNetintConfig;
+
+/**
+ * @brief A default-value initializer for an RdmnetNetintConfig struct.
+ *
+ * Usage:
+ * @code
+ * RdmnetNetintConfig config = RDMNET_NETINT_CONFIG_DEFAULT_INIT;
+ * // Now fill in the required portions as necessary with your data...
+ * @endcode
+ */
+#define RDMNET_NETINT_CONFIG_DEFAULT_INIT \
+  {                                       \
+    NULL, 0, false                        \
+  }
 
 etcpal_error_t rdmnet_init(const EtcPalLogParams* log_params, const RdmnetNetintConfig* netint_config);
 void           rdmnet_deinit(void);
