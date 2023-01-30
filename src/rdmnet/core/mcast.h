@@ -30,6 +30,7 @@ extern "C" {
 #endif
 
 etcpal_error_t rc_mcast_module_init(const RdmnetNetintConfig* netint_config);
+etcpal_error_t rc_mcast_module_net_reset(const RdmnetNetintConfig* netint_config);
 void           rc_mcast_module_deinit(void);
 
 size_t               rc_mcast_get_netint_array(const EtcPalMcastNetintId** array);

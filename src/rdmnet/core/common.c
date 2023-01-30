@@ -96,7 +96,7 @@ static void           deinit_etcpal_dependencies(void);
 // clang-format off
 static RdmnetCoreModule modules[] = {
   RDMNET_CORE_MODULE(init_etcpal_dependencies, NULL, deinit_etcpal_dependencies, NULL),
-  RDMNET_CORE_MODULE(rc_mcast_module_init, NULL, rc_mcast_module_deinit, NULL),
+  RDMNET_CORE_MODULE(rc_mcast_module_init, rc_mcast_module_net_reset, rc_mcast_module_deinit, NULL),
   RDMNET_CORE_MODULE(rc_conn_module_init, NULL, rc_conn_module_deinit, rc_conn_module_tick),
   RDMNET_CORE_MODULE(rdmnet_disc_module_init, NULL, rdmnet_disc_module_deinit, rdmnet_disc_module_tick),
   RDMNET_CORE_MODULE(rc_llrp_module_init, NULL, rc_llrp_module_deinit, NULL),

@@ -20,6 +20,7 @@
 #include "rdmnet_mock/core/mcast.h"
 
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_mcast_module_init, const RdmnetNetintConfig*);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_mcast_module_net_reset, const RdmnetNetintConfig*);
 DEFINE_FAKE_VOID_FUNC(rc_mcast_module_deinit);
 
 DEFINE_FAKE_VALUE_FUNC(size_t, rc_mcast_get_netint_array, const EtcPalMcastNetintId**);

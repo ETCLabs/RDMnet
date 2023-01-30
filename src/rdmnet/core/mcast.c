@@ -196,6 +196,13 @@ etcpal_error_t rc_mcast_module_init(const RdmnetNetintConfig* netint_config)
   return res;
 }
 
+etcpal_error_t rc_mcast_module_net_reset(const RdmnetNetintConfig* netint_config)
+{
+  // This module only encompasses networking resources, so we can just use deinit and init to refresh everything.
+  rc_mcast_module_deinit();
+  return rc_mcast_module_init(netint_config);
+}
+
 void rc_mcast_module_deinit(void)
 {
   if (!RDMNET_ASSERT_VERIFY(netint_info_arr))
