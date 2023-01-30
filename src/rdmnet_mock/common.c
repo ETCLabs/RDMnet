@@ -20,10 +20,12 @@
 #include "rdmnet_mock/common.h"
 
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_init, const EtcPalLogParams*, const RdmnetNetintConfig*);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_reset_networking, const RdmnetNetintConfig*);
 DEFINE_FAKE_VOID_FUNC(rdmnet_deinit);
 
 void rdmnet_mock_common_reset(void)
 {
   RESET_FAKE(rdmnet_init);
+  RESET_FAKE(rdmnet_reset_networking);
   RESET_FAKE(rdmnet_deinit);
 }

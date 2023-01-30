@@ -33,6 +33,7 @@ extern "C" {
 #endif
 
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rc_init, const EtcPalLogParams*, const RdmnetNetintConfig*);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rc_net_reset, const RdmnetNetintConfig*);
 DECLARE_FAKE_VOID_FUNC(rc_deinit);
 DECLARE_FAKE_VALUE_FUNC(bool, rc_initialized);
 DECLARE_FAKE_VOID_FUNC(rc_tick);

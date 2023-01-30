@@ -33,6 +33,7 @@ extern "C" {
 #endif
 
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_init, const EtcPalLogParams*, const RdmnetNetintConfig*);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rdmnet_reset_networking, const RdmnetNetintConfig*);
 DECLARE_FAKE_VOID_FUNC(rdmnet_deinit);
 
 void rdmnet_mock_common_reset(void);

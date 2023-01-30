@@ -93,6 +93,7 @@ bool rdmnet_writelock(void);
 void rdmnet_writeunlock(void);
 
 etcpal_error_t rc_init(const EtcPalLogParams* log_params, const RdmnetNetintConfig* mcast_netints);
+etcpal_error_t rc_net_reset(const RdmnetNetintConfig* mcast_netints);
 void           rc_deinit(void);
 bool           rc_initialized(void);
 

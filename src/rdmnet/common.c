@@ -173,7 +173,9 @@ static IntHandleManager handle_manager;
 
 /*********************** Private function prototypes *************************/
 
-static void rdmnet_tick_thread(void* arg);
+static void           rdmnet_tick_thread(void* arg);
+static etcpal_error_t start_tick_thread();
+static void           stop_tick_thread();
 
 static int           handle_compare(const EtcPalRbTree* self, const void* value_a, const void* value_b);
 static int           responder_compare(const EtcPalRbTree* self, const void* value_a, const void* value_b);
@@ -246,13 +248,7 @@ etcpal_error_t rdmnet_init(const EtcPalLogParams* log_params, const RdmnetNetint
   if (res != kEtcPalErrOk)
     return res;
 
-  EtcPalThreadParams thread_params;
-  thread_params.priority = RDMNET_TICK_THREAD_PRIORITY;
-  thread_params.stack_size = RDMNET_TICK_THREAD_STACK;
-  thread_params.thread_name = "RDMnet thread";
-  thread_params.platform_data = NULL;
-  tick_thread_running = true;
-  res = etcpal_thread_create(&tick_thread, &thread_params, rdmnet_tick_thread, NULL);
+  res = start_tick_thread();
 
   if (res == kEtcPalErrOk)
   {
@@ -267,6 +263,33 @@ etcpal_error_t rdmnet_init(const EtcPalLogParams* log_params, const RdmnetNetint
 }
 
 /**
+ * @brief Reset the network resources (sockets, etc.) of the RDMnet library, with a new set of network interfaces.
+ *
+ * Resets all networking resources while retaining the library state (controllers, devices, etc.). The RDMnet API
+ * functions will remain usable after this function is successfully called.
+ *
+ * If this call fails, the caller must call rdmnet_deinit, because the library is in an invalid state.
+ *
+ * @param[in] netint_config Optional: a set of network interfaces to which to restrict multicast
+ *                          operation.
+ * @return #kEtcPalErrOk: Initialization successful.
+ * @return #kEtcPalErrInvalid: Invalid argument.
+ * @return #kEtcPalErrNoNetints: No network interfaces found on the system.
+ * @return #kEtcPalErrSys: An internal library or system call error occurred.
+ */
+etcpal_error_t rdmnet_reset_networking(const RdmnetNetintConfig* netint_config)
+{
+  stop_tick_thread();
+
+  etcpal_error_t res = rc_net_reset(netint_config);
+
+  if (res == kEtcPalErrOk)
+    res = start_tick_thread();
+
+  return res;
+}
+
+/**
  * @brief Deinitialize the RDMnet library.
  *
  * Closes all connections, deallocates all resources and joins the background thread. No RDMnet API
@@ -274,8 +297,7 @@ etcpal_error_t rdmnet_init(const EtcPalLogParams* log_params, const RdmnetNetint
  */
 void rdmnet_deinit(void)
 {
-  tick_thread_running = false;
-  etcpal_thread_join(&tick_thread);
+  stop_tick_thread();
 
   rc_deinit();
 
@@ -851,6 +873,23 @@ void rdmnet_tick_thread(void* arg)
   {
     rc_tick();
   }
+}
+
+etcpal_error_t start_tick_thread()
+{
+  EtcPalThreadParams thread_params;
+  thread_params.priority = RDMNET_TICK_THREAD_PRIORITY;
+  thread_params.stack_size = RDMNET_TICK_THREAD_STACK;
+  thread_params.thread_name = "RDMnet thread";
+  thread_params.platform_data = NULL;
+  tick_thread_running = true;
+  return etcpal_thread_create(&tick_thread, &thread_params, rdmnet_tick_thread, NULL);
+}
+
+void stop_tick_thread()
+{
+  tick_thread_running = false;
+  etcpal_thread_join(&tick_thread);
 }
 
 int handle_compare(const EtcPalRbTree* self, const void* value_a, const void* value_b)

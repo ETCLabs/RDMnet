@@ -406,6 +406,7 @@ typedef struct RdmnetNetintConfig
   }
 
 etcpal_error_t rdmnet_init(const EtcPalLogParams* log_params, const RdmnetNetintConfig* netint_config);
+etcpal_error_t rdmnet_reset_networking(const RdmnetNetintConfig* netint_config);
 void           rdmnet_deinit(void);
 
 const char* rdmnet_rpt_status_code_to_string(rpt_status_code_t code);

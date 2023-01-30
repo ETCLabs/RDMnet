@@ -47,6 +47,7 @@
 typedef struct RdmnetCoreModule
 {
   etcpal_error_t (*init_fn)(const RdmnetNetintConfig* netint_config);
+  etcpal_error_t (*net_reset_fn)(const RdmnetNetintConfig* netint_config);
   void (*deinit_fn)(void);
   void (*tick_fn)(void);
   bool initted;
@@ -63,9 +64,9 @@ typedef struct RdmnetCoreModule
       return kEtcPalErrSys;                 \
   }
 
-#define RDMNET_CORE_MODULE(init_fn, deinit_fn, tick_fn) \
-  {                                                     \
-    init_fn, deinit_fn, tick_fn, false                  \
+#define RDMNET_CORE_MODULE(init_fn, net_reset_fn, deinit_fn, tick_fn) \
+  {                                                                   \
+    init_fn, net_reset_fn, deinit_fn, tick_fn, false                  \
   }
 
 /***************************** Global variables ******************************/
@@ -94,16 +95,16 @@ static void           deinit_etcpal_dependencies(void);
 
 // clang-format off
 static RdmnetCoreModule modules[] = {
-  RDMNET_CORE_MODULE(init_etcpal_dependencies, deinit_etcpal_dependencies, NULL),
-  RDMNET_CORE_MODULE(rc_mcast_module_init, rc_mcast_module_deinit, NULL),
-  RDMNET_CORE_MODULE(rc_conn_module_init, rc_conn_module_deinit, rc_conn_module_tick),
-  RDMNET_CORE_MODULE(rdmnet_disc_module_init, rdmnet_disc_module_deinit, rdmnet_disc_module_tick),
-  RDMNET_CORE_MODULE(rc_llrp_module_init, rc_llrp_module_deinit, NULL),
-  RDMNET_CORE_MODULE(rc_llrp_target_module_init, rc_llrp_target_module_deinit, rc_llrp_target_module_tick),
+  RDMNET_CORE_MODULE(init_etcpal_dependencies, NULL, deinit_etcpal_dependencies, NULL),
+  RDMNET_CORE_MODULE(rc_mcast_module_init, NULL, rc_mcast_module_deinit, NULL),
+  RDMNET_CORE_MODULE(rc_conn_module_init, NULL, rc_conn_module_deinit, rc_conn_module_tick),
+  RDMNET_CORE_MODULE(rdmnet_disc_module_init, NULL, rdmnet_disc_module_deinit, rdmnet_disc_module_tick),
+  RDMNET_CORE_MODULE(rc_llrp_module_init, NULL, rc_llrp_module_deinit, NULL),
+  RDMNET_CORE_MODULE(rc_llrp_target_module_init, NULL, rc_llrp_target_module_deinit, rc_llrp_target_module_tick),
 #if RDMNET_DYNAMIC_MEM
-  RDMNET_CORE_MODULE(rc_llrp_manager_module_init, rc_llrp_manager_module_deinit, rc_llrp_manager_module_tick),
+  RDMNET_CORE_MODULE(rc_llrp_manager_module_init, NULL, rc_llrp_manager_module_deinit, rc_llrp_manager_module_tick),
 #endif
-  RDMNET_CORE_MODULE(rc_client_module_init, rc_client_module_deinit, NULL)
+  RDMNET_CORE_MODULE(rc_client_module_init, NULL, rc_client_module_deinit, NULL)
 };
 #define NUM_RDMNET_CORE_MODULES (sizeof(modules) / sizeof(modules[0]))
 // clang-format on
@@ -170,6 +171,31 @@ etcpal_error_t rc_init(const EtcPalLogParams* log_params, const RdmnetNetintConf
     }
     rdmnet_log_params = NULL;
   }
+  return res;
+}
+
+/*
+ * Reset the network state of the RDMnet core library with a new set of interfaces.
+ *
+ * Resets the RDMnet core library's network resources while retaining the state of all controllers, devices, etc.
+ */
+etcpal_error_t rc_net_reset(const RdmnetNetintConfig* mcast_netints)
+{
+  etcpal_error_t res = kEtcPalErrOk;
+  if (rdmnet_writelock())
+  {
+    for (RdmnetCoreModule* module = modules; module < modules + NUM_RDMNET_CORE_MODULES; ++module)
+    {
+      if (module->net_reset_fn)
+        res = module->net_reset_fn(mcast_netints);
+
+      if (res != kEtcPalErrOk)
+        break;
+    }
+
+    rdmnet_writeunlock();
+  }
+
   return res;
 }
 

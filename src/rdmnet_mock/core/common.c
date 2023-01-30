@@ -33,6 +33,7 @@ static void           fake_deinit(void);
 
 // public mocks
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_init, const EtcPalLogParams*, const RdmnetNetintConfig*);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_net_reset, const RdmnetNetintConfig*);
 DEFINE_FAKE_VOID_FUNC(rc_deinit);
 DEFINE_FAKE_VALUE_FUNC(bool, rc_initialized);
 DEFINE_FAKE_VOID_FUNC(rc_tick);
@@ -60,6 +61,7 @@ const EtcPalLogParams* rdmnet_log_params = NULL;
 void rdmnet_mock_core_reset(void)
 {
   RESET_FAKE(rc_init);
+  RESET_FAKE(rc_net_reset);
   RESET_FAKE(rc_deinit);
   RESET_FAKE(rc_initialized);
   RESET_FAKE(rc_tick);
