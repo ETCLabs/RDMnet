@@ -44,7 +44,7 @@ extern const EtcPalSockAddr* kLlrpIpv4RequestAddr;
 extern const EtcPalSockAddr* kLlrpIpv6RequestAddr;
 extern const EtcPalUuid*     kLlrpBroadcastCid;
 
-etcpal_error_t rc_llrp_module_init(void);
+etcpal_error_t rc_llrp_module_init(const RdmnetNetintConfig* netint_config);
 void           rc_llrp_module_deinit(void);
 
 etcpal_error_t rc_llrp_recv_netint_add(const EtcPalMcastNetintId* netint, llrp_socket_t llrp_type);

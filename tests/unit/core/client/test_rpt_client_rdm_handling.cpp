@@ -111,7 +111,7 @@ protected:
     RDMNET_CLIENT_SET_STATIC_SCOPE(&default_static_scope_, kTestScope, static_broker.get());
 
     // Create client
-    ASSERT_EQ(kEtcPalErrOk, rc_client_module_init());
+    ASSERT_EQ(kEtcPalErrOk, rc_client_module_init(nullptr));
     ASSERT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, true));
 
     ConnectAndVerify();

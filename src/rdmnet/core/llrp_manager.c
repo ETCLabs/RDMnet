@@ -106,8 +106,10 @@ static RCLlrpManager* find_manager_by_message_keys(const RCRefList* list, const 
 
 /*************************** Function definitions ****************************/
 
-etcpal_error_t rc_llrp_manager_module_init(void)
+etcpal_error_t rc_llrp_manager_module_init(const RdmnetNetintConfig* netint_config)
 {
+  ETCPAL_UNUSED_ARG(netint_config);
+
   if (!rc_ref_lists_init(&managers))
     return kEtcPalErrNoMem;
   return kEtcPalErrOk;

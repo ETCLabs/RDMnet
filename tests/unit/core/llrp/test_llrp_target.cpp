@@ -55,8 +55,8 @@ protected:
     target_.callbacks.rdm_command_received = targetcb_rdm_cmd_received;
     target_.callbacks.destroyed = targetcb_destroyed;
 
-    ASSERT_EQ(kEtcPalErrOk, rc_llrp_module_init());
-    ASSERT_EQ(kEtcPalErrOk, rc_llrp_target_module_init());
+    ASSERT_EQ(kEtcPalErrOk, rc_llrp_module_init(nullptr));
+    ASSERT_EQ(kEtcPalErrOk, rc_llrp_target_module_init(nullptr));
     ASSERT_EQ(kEtcPalErrOk, rc_llrp_target_register(&target_));
   }
 

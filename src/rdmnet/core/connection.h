@@ -179,7 +179,7 @@ struct RCConnection
   bool     retry_current_message;  // recv_buf.msg couldn't be processed - retry processing it at a later time.
 };
 
-etcpal_error_t rc_conn_module_init(void);
+etcpal_error_t rc_conn_module_init(const RdmnetNetintConfig* netint_config);
 void           rc_conn_module_deinit(void);
 void           rc_conn_module_tick(void);
 

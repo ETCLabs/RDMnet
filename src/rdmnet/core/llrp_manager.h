@@ -87,7 +87,7 @@ struct RCLlrpManager
   size_t       num_known_uids;
 };
 
-etcpal_error_t rc_llrp_manager_module_init(void);
+etcpal_error_t rc_llrp_manager_module_init(const RdmnetNetintConfig* netint_config);
 void           rc_llrp_manager_module_deinit(void);
 
 etcpal_error_t rc_llrp_manager_register(RCLlrpManager* manager);

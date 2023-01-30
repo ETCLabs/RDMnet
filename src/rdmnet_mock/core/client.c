@@ -19,7 +19,7 @@
 
 #include "rdmnet_mock/core/client.h"
 
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_client_module_init);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_client_module_init, const RdmnetNetintConfig*);
 DEFINE_FAKE_VOID_FUNC(rc_client_module_deinit);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_rpt_client_register, RCClient*, bool);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_ept_client_register, RCClient*);

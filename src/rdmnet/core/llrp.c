@@ -95,8 +95,10 @@ static void llrp_socket_error(etcpal_error_t err);
 
 /*************************** Function definitions ****************************/
 
-etcpal_error_t rc_llrp_module_init(void)
+etcpal_error_t rc_llrp_module_init(const RdmnetNetintConfig* netint_config)
 {
+  ETCPAL_UNUSED_ARG(netint_config);
+
   etcpal_string_to_ip(kEtcPalIpTypeV4, LLRP_MULTICAST_IPV4_ADDRESS_RESPONSE, &kLlrpIpv4RespAddrInternal.ip);
   kLlrpIpv4RespAddrInternal.port = LLRP_PORT;
   init_recv_socket(&state.manager_recvsock_ipv4, kLlrpSocketTypeManager);

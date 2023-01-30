@@ -46,8 +46,7 @@
 
 typedef struct RdmnetCoreModule
 {
-  etcpal_error_t (*init_fn)(void);
-  etcpal_error_t (*netint_init_fn)(const RdmnetNetintConfig* netint_config);
+  etcpal_error_t (*init_fn)(const RdmnetNetintConfig* netint_config);
   void (*deinit_fn)(void);
   void (*tick_fn)(void);
   bool initted;
@@ -64,13 +63,9 @@ typedef struct RdmnetCoreModule
       return kEtcPalErrSys;                 \
   }
 
-#define RDMNET_CORE_MODULE_WITH_NETINTS(init_fn, deinit_fn, tick_fn) \
-  {                                                                  \
-    NULL, init_fn, deinit_fn, tick_fn, false                         \
-  }
 #define RDMNET_CORE_MODULE(init_fn, deinit_fn, tick_fn) \
   {                                                     \
-    init_fn, NULL, deinit_fn, tick_fn, false            \
+    init_fn, deinit_fn, tick_fn, false                  \
   }
 
 /***************************** Global variables ******************************/
@@ -92,7 +87,7 @@ static etcpal_rwlock_t rdmnet_lock;
 
 /*********************** Private function prototypes *************************/
 
-static etcpal_error_t init_etcpal_dependencies(void);
+static etcpal_error_t init_etcpal_dependencies(const RdmnetNetintConfig* netint_config);
 static void           deinit_etcpal_dependencies(void);
 
 /*************************** Function definitions ****************************/
@@ -100,9 +95,9 @@ static void           deinit_etcpal_dependencies(void);
 // clang-format off
 static RdmnetCoreModule modules[] = {
   RDMNET_CORE_MODULE(init_etcpal_dependencies, deinit_etcpal_dependencies, NULL),
-  RDMNET_CORE_MODULE_WITH_NETINTS(rc_mcast_module_init, rc_mcast_module_deinit, NULL),
+  RDMNET_CORE_MODULE(rc_mcast_module_init, rc_mcast_module_deinit, NULL),
   RDMNET_CORE_MODULE(rc_conn_module_init, rc_conn_module_deinit, rc_conn_module_tick),
-  RDMNET_CORE_MODULE_WITH_NETINTS(rdmnet_disc_module_init, rdmnet_disc_module_deinit, rdmnet_disc_module_tick),
+  RDMNET_CORE_MODULE(rdmnet_disc_module_init, rdmnet_disc_module_deinit, rdmnet_disc_module_tick),
   RDMNET_CORE_MODULE(rc_llrp_module_init, rc_llrp_module_deinit, NULL),
   RDMNET_CORE_MODULE(rc_llrp_target_module_init, rc_llrp_target_module_deinit, rc_llrp_target_module_tick),
 #if RDMNET_DYNAMIC_MEM
@@ -141,13 +136,11 @@ etcpal_error_t rc_init(const EtcPalLogParams* log_params, const RdmnetNetintConf
   etcpal_error_t res = kEtcPalErrOk;
   for (RdmnetCoreModule* module = modules; module < modules + NUM_RDMNET_CORE_MODULES; ++module)
   {
-    if (!RDMNET_ASSERT_VERIFY(module->init_fn || module->netint_init_fn))
+    if (!RDMNET_ASSERT_VERIFY(module->init_fn))
       return kEtcPalErrSys;
 
     if (module->init_fn)
-      res = module->init_fn();
-    else
-      res = module->netint_init_fn(netint_config);
+      res = module->init_fn(netint_config);
 
     if (res == kEtcPalErrOk)
       module->initted = true;
@@ -330,8 +323,10 @@ bool rdmnet_assert_verify_fail(const char* exp, const char* file, const char* fu
   return false;
 }
 
-etcpal_error_t init_etcpal_dependencies(void)
+etcpal_error_t init_etcpal_dependencies(const RdmnetNetintConfig* netint_config)
 {
+  ETCPAL_UNUSED_ARG(netint_config);
+
   etcpal_error_t res = etcpal_init(RDMNET_ETCPAL_FEATURES);
   if (res == kEtcPalErrOk)
   {

@@ -103,7 +103,7 @@ protected:
       return kEtcPalErrOk;
     };
 
-    ASSERT_EQ(kEtcPalErrOk, rc_conn_module_init());
+    ASSERT_EQ(kEtcPalErrOk, rc_conn_module_init(nullptr));
     ASSERT_EQ(kEtcPalErrOk, rc_conn_register(&conn_));
   }
 

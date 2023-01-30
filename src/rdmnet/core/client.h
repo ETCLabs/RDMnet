@@ -303,7 +303,7 @@ struct RCClient
 #define RC_CLIENT_CHECK_SCOPES_CAPACITY(clientptr, num_additional) \
   RC_CHECK_BUF_CAPACITY(clientptr, RCClientScope, scopes, RDMNET_MAX_SCOPES_PER_CLIENT, num_additional)
 
-etcpal_error_t rc_client_module_init(void);
+etcpal_error_t rc_client_module_init(const RdmnetNetintConfig* netint_config);
 void           rc_client_module_deinit(void);
 
 etcpal_error_t rc_rpt_client_register(RCClient* client, bool create_llrp_target);

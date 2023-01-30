@@ -181,7 +181,7 @@ protected:
     RC_RPT_CLIENT_DATA(&client_)->callbacks = kClientFakeRptCallbacks;
 
     // Create client
-    ASSERT_EQ(kEtcPalErrOk, rc_client_module_init());
+    ASSERT_EQ(kEtcPalErrOk, rc_client_module_init(nullptr));
     ASSERT_EQ(kEtcPalErrOk, rc_rpt_client_register(&client_, false));
   }
 

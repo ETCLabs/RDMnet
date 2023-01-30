@@ -19,7 +19,7 @@
 
 #include "rdmnet_mock/core/llrp.h"
 
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_llrp_module_init);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_llrp_module_init, const RdmnetNetintConfig*);
 DEFINE_FAKE_VOID_FUNC(rc_llrp_module_deinit);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_llrp_recv_netint_add, const EtcPalMcastNetintId*, llrp_socket_t);
 DEFINE_FAKE_VOID_FUNC(rc_llrp_recv_netint_remove, const EtcPalMcastNetintId*, llrp_socket_t);

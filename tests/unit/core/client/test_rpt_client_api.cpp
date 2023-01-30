@@ -66,7 +66,7 @@ protected:
     etcpal_reset_all_fakes();
 
     // Init
-    ASSERT_EQ(kEtcPalErrOk, rc_client_module_init());
+    ASSERT_EQ(kEtcPalErrOk, rc_client_module_init(nullptr));
   }
 
   void TearDown() override { rc_client_module_deinit(); }

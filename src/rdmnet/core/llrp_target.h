@@ -93,7 +93,7 @@ typedef struct RCLlrpTarget
   bool connected_to_broker;
 } RCLlrpTarget;
 
-etcpal_error_t rc_llrp_target_module_init(void);
+etcpal_error_t rc_llrp_target_module_init(const RdmnetNetintConfig* netint_config);
 void           rc_llrp_target_module_deinit(void);
 
 etcpal_error_t rc_llrp_target_register(RCLlrpTarget* target);

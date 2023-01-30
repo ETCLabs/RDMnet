@@ -120,8 +120,10 @@ static void                deliver_event_callback(RCConnection* conn, RCConnEven
  * Initialize the RDMnet Core Connection module. Do all necessary initialization before other
  * RDMnet Core Connection API functions can be called. This function is called from rdmnet_init().
  */
-etcpal_error_t rc_conn_module_init(void)
+etcpal_error_t rc_conn_module_init(const RdmnetNetintConfig* netint_config)
 {
+  ETCPAL_UNUSED_ARG(netint_config);
+
   if (!rc_ref_lists_init(&connections))
     return kEtcPalErrNoMem;
   return kEtcPalErrOk;

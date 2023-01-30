@@ -89,8 +89,8 @@ protected:
     manager_.callbacks.destroyed = managercb_destroyed;
     manager_.lock = &manager_lock_.get();
 
-    ASSERT_EQ(kEtcPalErrOk, rc_llrp_module_init());
-    ASSERT_EQ(kEtcPalErrOk, rc_llrp_manager_module_init());
+    ASSERT_EQ(kEtcPalErrOk, rc_llrp_module_init(nullptr));
+    ASSERT_EQ(kEtcPalErrOk, rc_llrp_manager_module_init(nullptr));
     ASSERT_EQ(kEtcPalErrOk, rc_llrp_manager_register(&manager_));
 
     llrp_network.SetNetint(manager_.netint);

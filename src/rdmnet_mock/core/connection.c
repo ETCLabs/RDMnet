@@ -19,7 +19,7 @@
 
 #include "rdmnet_mock/core/connection.h"
 
-DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_conn_module_init);
+DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_conn_module_init, const RdmnetNetintConfig*);
 DEFINE_FAKE_VOID_FUNC(rc_conn_module_deinit);
 DEFINE_FAKE_VOID_FUNC(rc_conn_module_tick);
 DEFINE_FAKE_VALUE_FUNC(etcpal_error_t, rc_conn_register, RCConnection*);

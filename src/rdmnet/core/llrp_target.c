@@ -108,8 +108,10 @@ static int           netint_id_index_in_llrp_array(const EtcPalMcastNetintId*   
  * Initialize the RDMnet Core LLRP Target module. Do all necessary initialization before other
  * RDMnet Core LLRP Target API functions can be called. This function is called from rdmnet_init().
  */
-etcpal_error_t rc_llrp_target_module_init(void)
+etcpal_error_t rc_llrp_target_module_init(const RdmnetNetintConfig* netint_config)
 {
+  ETCPAL_UNUSED_ARG(netint_config);
+
   if (!rc_ref_lists_init(&targets))
     return kEtcPalErrNoMem;
   return kEtcPalErrOk;

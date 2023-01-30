@@ -288,8 +288,10 @@ static void free_rdm_response_data_buf(uint8_t* buf);
 
 /*************************** Function definitions ****************************/
 
-etcpal_error_t rc_client_module_init(void)
+etcpal_error_t rc_client_module_init(const RdmnetNetintConfig* netint_config)
 {
+  ETCPAL_UNUSED_ARG(netint_config);
+
 #if RDMNET_DYNAMIC_MEM
   internal_pd_buf = (uint8_t*)malloc(INTERNAL_PD_BUF_INITIAL_CAPACITY);
   if (internal_pd_buf)

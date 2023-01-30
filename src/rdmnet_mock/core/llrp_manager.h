@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rc_llrp_manager_module_init);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rc_llrp_manager_module_init, const RdmnetNetintConfig*);
 DECLARE_FAKE_VOID_FUNC(rc_llrp_manager_module_deinit);
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rc_llrp_manager_register, RCLlrpManager*);
 DECLARE_FAKE_VOID_FUNC(rc_llrp_manager_unregister, RCLlrpManager*);
