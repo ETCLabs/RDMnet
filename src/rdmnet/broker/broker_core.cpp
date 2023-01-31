@@ -65,6 +65,46 @@ BrokerCore::~BrokerCore()
     Shutdown(kRdmnetDisconnectShutdown);
 }
 
+// Take a set of application-specified interfaces to use - parse this into a map of currently active listen interface
+// addresses and indexes.
+void BrokerCore::UpdateListenInterfaces(const std::vector<EtcPalMcastNetintId>& app_netints)
+{
+  size_t                        num_sys_netints = 0u;  // Actual size eventually filled in
+  std::vector<EtcPalNetintInfo> sys_netints(num_sys_netints);
+  while (etcpal_netint_get_interfaces(sys_netints.data(), &num_sys_netints) == kEtcPalErrBufSize)
+    sys_netints.resize(num_sys_netints);
+
+  sys_netints.resize(num_sys_netints);  // Final size
+
+  ListenInterfaceState listen_interfaces;
+  for (const auto& sys_netint : sys_netints)
+  {
+    bool add_sys_netint = false;
+    if (app_netints.empty())
+    {
+      add_sys_netint = true;
+    }
+    else
+    {
+      for (const auto& app_netint : app_netints)
+      {
+        if ((app_netint.index == sys_netint.index) && (app_netint.ip_type == sys_netint.addr.type))
+        {
+          add_sys_netint = true;
+          break;
+        }
+      }
+    }
+
+    if (add_sys_netint)
+      listen_interfaces.addr_to_index.insert(std::make_pair(sys_netint.addr, sys_netint.index));
+  }
+
+  listen_interfaces.manually_specified = !app_netints.empty();
+
+  SetListenInterfaceState(listen_interfaces);
+}
+
 etcpal::Error BrokerCore::Startup(const rdmnet::Broker::Settings& settings,
                                   rdmnet::Broker::NotifyHandler*  notify,
                                   etcpal::Logger*                 logger,
@@ -114,18 +154,19 @@ etcpal::Error BrokerCore::Startup(const rdmnet::Broker::Settings& settings,
     if (!RDMNET_ASSERT_VERIFY(components_.disc))
       return kEtcPalErrSys;
 
-    components_.disc->RegisterBroker(settings_, my_uid_, listen_interfaces_);
+    components_.disc->RegisterBroker(settings_, my_uid_);
 
     BROKER_LOG_INFO("%s RDMnet Broker Version %s", settings_.dns.manufacturer.c_str(), RDMNET_VERSION_STRING);
     BROKER_LOG_INFO("Broker starting at scope \"%s\", listening on port %d.", settings_.scope.c_str(),
                     settings_.listen_port);
 
-    if (!listen_interface_ips_.empty())
+    auto listen_interfaces = GetListenInterfaceState();
+    if (listen_interfaces.manually_specified)
     {
       BROKER_LOG_INFO("Listening on manually-specified network interfaces:");
-      for (const auto& ip : listen_interface_ips_)
+      for (const auto& addr_index : listen_interfaces.addr_to_index)
       {
-        BROKER_LOG_INFO("%s", ip.c_str());
+        BROKER_LOG_INFO("%s", addr_index.first.ToString().c_str());
       }
     }
   }
@@ -194,68 +235,16 @@ size_t BrokerCore::GetNumClients() const
   return clients_.size();
 }
 
-// Convert a set of strings representing network interface names to a set of all IP addresses
-// currently assigned to those interfaces. Returns all interface IPs if interfaces is empty.
-//
-// Side-effects:
-//
-// Sets the listen_interfaces_ member with a list of interface indexes also resolved
-// from the interfaces parameter. This will be empty if interfaces is empty.
-//
-// Also sets the listen_interface_ips_ member in the same way as listen_interfaces_, except
-// with IP strings instead of indexes.
-std::set<etcpal::IpAddr> BrokerCore::GetInterfaceAddrs(const std::vector<std::string>& interfaces)
+BrokerCore::ListenInterfaceState BrokerCore::GetListenInterfaceState()
 {
-  std::set<etcpal::IpAddr> to_return;
-  std::set<unsigned int>   interface_indexes;
-  std::vector<std::string> interface_ips;
+  etcpal::MutexGuard guard(listen_interface_state_lock_);
+  return listen_interface_state_;
+}
 
-  size_t                        num_netints = 0u;  // Actual size eventually filled in
-  std::vector<EtcPalNetintInfo> netint_list(num_netints);
-  while (etcpal_netint_get_interfaces(netint_list.data(), &num_netints) == kEtcPalErrBufSize)
-    netint_list.resize(num_netints);
-
-  netint_list.resize(num_netints);  // Final size
-
-  for (const auto& netint : netint_list)
-  {
-    if (interfaces.empty())
-    {
-      to_return.insert(netint.addr);
-    }
-    else
-    {
-      etcpal::IpAddr netint_addr = netint.addr;
-      for (const auto& netint_name : interfaces)
-      {
-        if (std::strcmp(netint_name.c_str(), netint.id) == 0)
-        {
-          bool new_ip = to_return.insert(netint.addr).second;
-          if (new_ip)
-          {
-            interface_indexes.insert(netint.index);
-            interface_ips.push_back(netint_addr.ToString());
-          }
-
-          break;  // This interface meets the criteria, move on to the next interface.
-        }
-      }
-    }
-  }
-
-  listen_interfaces_.clear();
-  listen_interface_ips_.clear();
-
-  if (!interface_indexes.empty())
-  {
-    listen_interfaces_.reserve(interface_indexes.size());
-    std::transform(interface_indexes.begin(), interface_indexes.end(), std::back_inserter(listen_interfaces_),
-                   [](unsigned int val) { return val; });
-
-    listen_interface_ips_ = interface_ips;
-  }
-
-  return to_return;
+void BrokerCore::SetListenInterfaceState(const ListenInterfaceState& state)
+{
+  etcpal::MutexGuard guard(listen_interface_state_lock_);
+  listen_interface_state_ = state;
 }
 
 etcpal::Expected<etcpal_socket_t> BrokerCore::StartListening(const etcpal::IpAddr& ip, uint16_t& port)
@@ -343,9 +332,13 @@ etcpal::Error BrokerCore::StartBrokerServices()
   if (!res)
     return res;
 
-  auto final_listen_addrs = GetInterfaceAddrs(settings_.listen_interfaces);
+  auto listen_interfaces = GetListenInterfaceState();
 
-  // Listen on the set of enabled interfaces provided by GetInterfaceAddrs
+  std::set<etcpal::IpAddr> final_listen_addrs;
+  for (const auto& addr_index : listen_interfaces.addr_to_index)
+    final_listen_addrs.insert(addr_index.first);
+
+  // Listen on the set of enabled interfaces
   auto addr_iter = final_listen_addrs.begin();
   while (addr_iter != final_listen_addrs.end())
   {
@@ -533,6 +526,8 @@ void BrokerCore::HandleOtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
     }
     sys_netints.resize(num_sys_netints);  // Final size
 
+    auto listen_interfaces = GetListenInterfaceState();
+
     std::unordered_map<std::string, std::vector<std::string>> nic_broker_addrs;
     std::unordered_map<std::string, bool>                     nic_enabled;
     for (size_t i = 0; i < broker_info.num_listen_addrs; ++i)
@@ -543,14 +538,20 @@ void BrokerCore::HandleOtherBrokerFound(const RdmnetBrokerDiscInfo& broker_info)
       for (const auto& sys_netint : sys_netints)
       {
         auto sys_netint_addr_str = etcpal::IpAddr(sys_netint.addr).ToString();
-        nic_enabled[sys_netint_addr_str] = listen_interfaces_.empty();
-        for (auto listen_interface : listen_interfaces_)
+        if (listen_interfaces.manually_specified)
         {
-          if (sys_netint.index == listen_interface)
+          for (const auto& addr_index : listen_interfaces.addr_to_index)
           {
-            nic_enabled[sys_netint_addr_str] = true;
-            break;
+            if (sys_netint.index == addr_index.second)
+            {
+              nic_enabled[sys_netint_addr_str] = true;
+              break;
+            }
           }
+        }
+        else
+        {
+          nic_enabled[sys_netint_addr_str] = true;
         }
 
         if ((netint_for_dest == sys_netint.index) && (dest.type == sys_netint.addr.type))

@@ -183,13 +183,6 @@ public:
     /// 0 means use an ephemeral port.
     uint16_t listen_port{0};
 
-    /// @brief A list of strings representing the system name of network interfaces to listen on.
-    ///
-    /// Each string represents the system name for a network interface. On *nix systems, this is
-    /// typically a short identifier ending with a number, e.g. "eth0". On Windows, it is typically
-    /// a GUID.
-    std::vector<std::string> listen_interfaces;
-
     Settings() = default;
     Settings(const etcpal::Uuid& cid_in, const rdm::Uid& static_uid_in);
     Settings(const etcpal::Uuid& cid_in, uint16_t rdm_manu_id_in);
@@ -225,6 +218,12 @@ public:
   Broker(Broker&& other) = default;
   /// Move an instance of broker functionality.
   Broker& operator=(Broker&& other) = default;
+
+  static etcpal::Error Init(const EtcPalLogParams*                  log_params = nullptr,
+                            const std::vector<EtcPalMcastNetintId>& netints = std::vector<EtcPalMcastNetintId>{});
+  static etcpal::Error Init(const etcpal::Logger&                   logger,
+                            const std::vector<EtcPalMcastNetintId>& netints = std::vector<EtcPalMcastNetintId>{});
+  static void          Deinit();
 
   etcpal::Error Startup(const Settings& settings, etcpal::Logger* logger = nullptr, NotifyHandler* notify = nullptr);
   void          Shutdown(rdmnet_disconnect_reason_t disconnect_reason = kRdmnetDisconnectShutdown);

@@ -202,13 +202,6 @@ typedef struct RdmnetBrokerRegisterConfig
   const char* service_instance_name;
   /** The port on which the broker is listening for RDMnet connections. */
   uint16_t port;
-  /**
-   * @brief An array of network interface indexes on which the broker should respond to mDNS queries.
-   * @details NULL = use all interfaces.
-   */
-  const unsigned int* netints;
-  /** Size of the netints array. */
-  size_t num_netints;
   /** The broker's RDMnet scope. */
   const char* scope;
   /** The broker's product model name. */
@@ -234,9 +227,9 @@ typedef struct RdmnetBrokerRegisterConfig
  * // Now fill in the required portions as necessary with your data...
  * @endcode
  */
-#define RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT                                            \
-  {                                                                                           \
-    {{0}}, {0}, NULL, 0, NULL, 0, NULL, NULL, NULL, NULL, 0, { NULL, NULL, NULL, NULL, NULL } \
+#define RDMNET_BROKER_REGISTER_CONFIG_DEFAULT_INIT                                   \
+  {                                                                                  \
+    {{0}}, {0}, NULL, 0, NULL, NULL, NULL, NULL, 0, { NULL, NULL, NULL, NULL, NULL } \
   }
 
 /** A handle to a monitored RDMnet scope. */

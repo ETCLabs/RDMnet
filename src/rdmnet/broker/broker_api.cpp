@@ -20,6 +20,7 @@
 // Implementation of the public rdmnet/cpp/broker API.
 
 #include "rdmnet/cpp/broker.h"
+#include "rdmnet/cpp/common.h"
 #include "broker_core.h"
 
 /*************************** Function definitions ****************************/
@@ -32,6 +33,55 @@ rdmnet::Broker::Broker() : core_(new BrokerCore)
 /// Destroys a broker instance. Call Broker::Shutdown() first.
 rdmnet::Broker::~Broker()
 {
+}
+
+/// @brief Initialize the RDMnet library & listen interfaces for all brokers.
+///
+/// Wraps rdmnet_init(). Does all initialization required before the RDMnet API modules can be
+/// used. Starts the message dispatch thread.
+///
+/// This also initializes the set of network interfaces used by all brokers.
+///
+/// @param log_params (optional) Log parameters for the RDMnet library to use to log messages. If
+///                   not provided, no logging will be performed.
+/// @param mcast_netints (optional) A set of network interfaces to which to restrict multicast
+///                      operation.
+/// @return etcpal::Error::Ok(): Initialization successful.
+/// @return Errors from rdmnet_init().
+etcpal::Error rdmnet::Broker::Init(const EtcPalLogParams* log_params, const std::vector<EtcPalMcastNetintId>& netints)
+{
+  auto res = rdmnet::Init(log_params, netints);
+
+  if (res)
+    BrokerCore::UpdateListenInterfaces(netints);
+
+  return res;
+}
+
+/// @brief Initialize the RDMnet library & listen interfaces for all brokers.
+///
+/// Wraps rdmnet_init(). Does all initialization required before the RDMnet API modules can be
+/// used. Starts the message dispatch thread.
+///
+/// This also initializes the set of network interfaces used by all brokers.
+///
+/// @param logger Logger instance for the RDMnet library to use to log messages.
+/// @param mcast_netints (optional) A set of network interfaces to which to restrict multicast
+///                      operation.
+/// @return etcpal::Error::Ok(): Initialization successful.
+/// @return Errors from rdmnet_init().
+etcpal::Error rdmnet::Broker::Init(const etcpal::Logger& logger, const std::vector<EtcPalMcastNetintId>& netints)
+{
+  return Broker::Init(&logger.log_params(), netints);
+}
+
+/// @brief Deinitialize the RDMnet library.
+///
+/// Closes all connections, deallocates all resources and joins the background thread. No RDMnet
+/// API functions are usable after this function is called.
+void rdmnet::Broker::Deinit()
+{
+  rdmnet::Deinit();
 }
 
 /// @brief Start all broker functionality and threads.

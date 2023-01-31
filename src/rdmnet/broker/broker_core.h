@@ -88,6 +88,8 @@ public:
   BrokerCore();
   virtual ~BrokerCore();
 
+  static void UpdateListenInterfaces(const std::vector<EtcPalMcastNetintId>& app_netints);
+
   etcpal::Logger*                 logger() const { return log_; }
   const rdmnet::Broker::Settings& settings() const { return settings_; }
 
@@ -112,15 +114,24 @@ private:
   using RptControllerMap = std::unordered_map<BrokerClient::Handle, RPTController*>;
   using RptDeviceMap = std::unordered_map<BrokerClient::Handle, RPTDevice*>;
 
+  // Network interface info for all broker instances
+  struct ListenInterfaceState
+  {
+    std::map<etcpal::IpAddr, unsigned int> addr_to_index;
+    bool                                   manually_specified;
+  };
+
+  // Don't access these directly - use GetListenInterfaceState & SetListenInterfaceState instead.
+  static ListenInterfaceState listen_interface_state_;
+  static etcpal::Mutex        listen_interface_state_lock_;
+
   // These are never modified between startup and shutdown, so they don't need to be locked.
   bool started_{false};
   bool service_registered_{false};
 
   // Attributes of this broker instance
-  rdmnet::Broker::Settings  settings_;
-  std::vector<unsigned int> listen_interfaces_;
-  std::vector<std::string>  listen_interface_ips_;
-  rdm::Uid                  my_uid_;
+  rdmnet::Broker::Settings settings_;
+  rdm::Uid                 my_uid_;
 
   // External (non-owned) components
 
@@ -147,7 +158,9 @@ private:
 
   std::unordered_set<BrokerClient::Handle> clients_to_destroy_;
 
-  std::set<etcpal::IpAddr>          GetInterfaceAddrs(const std::vector<std::string>& interfaces);
+  static ListenInterfaceState GetListenInterfaceState();
+  static void                 SetListenInterfaceState(const ListenInterfaceState& state);
+
   etcpal::Expected<etcpal_socket_t> StartListening(const etcpal::IpAddr& ip, uint16_t& port);
   etcpal::Error                     StartBrokerServices();
   void                              StopBrokerServices(rdmnet_disconnect_reason_t disconnect_reason);
