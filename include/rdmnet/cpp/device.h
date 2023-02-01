@@ -381,6 +381,9 @@ public:
 
   /// @ingroup rdmnet_device_cpp
   /// @brief A set of configuration settings that a device needs to initialize.
+  ///
+  /// Note that network interfaces that the LLRP target of the device should use are no longer specified here. Instead,
+  /// the set of interfaces passed to rdmnet::Init() is used.
   struct Settings
   {
     etcpal::Uuid cid;            ///< The device's Component Identifier (CID).
@@ -395,10 +398,6 @@ public:
     std::vector<VirtualEndpointConfig> virtual_endpoints;
     /// Array of configurations for physical endpoints that are present on the device at startup.
     std::vector<PhysicalEndpointConfig> physical_endpoints;
-    /// (optional) A set of network interfaces to use for the LLRP target associated with this
-    /// device. If empty, the set passed to rdmnet::Init() will be used, or all network interfaces on
-    /// the system if that was not provided.
-    std::vector<EtcPalMcastNetintId> llrp_netints;
 
     /// Create an empty, invalid data structure by default.
     Settings() = default;
@@ -1357,8 +1356,6 @@ inline Device::TranslatedConfig::TranslatedConfig(const Settings&         settin
       nullptr,
       0,
       nullptr,
-      0,
-      nullptr,
       0
     }
 {
@@ -1380,13 +1377,6 @@ inline Device::TranslatedConfig::TranslatedConfig(const Settings&         settin
     std::transform(settings.virtual_endpoints.begin(), settings.virtual_endpoints.end(),
                    std::back_inserter(virtual_endpoints_),
                    [](const VirtualEndpointConfig& config) { return config.get(); });
-  }
-
-  // LLRP network interfaces
-  if (!settings.llrp_netints.empty())
-  {
-    config_.llrp_netints = settings.llrp_netints.data();
-    config_.num_llrp_netints = settings.llrp_netints.size();
   }
 }
 

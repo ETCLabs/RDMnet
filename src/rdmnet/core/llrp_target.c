@@ -67,9 +67,7 @@ RC_DECLARE_REF_LISTS(targets, RC_MAX_LLRP_TARGETS);
 /*********************** Private function prototypes *************************/
 
 // Target setup and cleanup
-static etcpal_error_t setup_target_netints(RCLlrpTarget*              target,
-                                           const EtcPalMcastNetintId* netints,
-                                           size_t                     num_netints);
+static etcpal_error_t setup_target_netints(RCLlrpTarget* target);
 static etcpal_error_t setup_target_netint(const EtcPalMcastNetintId* netint_id, RCLlrpTargetNetintInfo* netint);
 static void           cleanup_target_netints(RCLlrpTarget* target);
 static RCLlrpTargetNetintInfo* get_target_netint(RCLlrpTarget* target, const EtcPalMcastNetintId* id);
@@ -131,7 +129,7 @@ void rc_llrp_target_module_deinit(void)
 /*
  * Initialize and add an RCLlrpTarget structure to the list to be processed as LLRP Targets.
  */
-etcpal_error_t rc_llrp_target_register(RCLlrpTarget* target, const EtcPalMcastNetintId* netints, size_t num_netints)
+etcpal_error_t rc_llrp_target_register(RCLlrpTarget* target)
 {
   if (!RDMNET_ASSERT_VERIFY(target))
     return kEtcPalErrSys;
@@ -142,7 +140,7 @@ etcpal_error_t rc_llrp_target_register(RCLlrpTarget* target, const EtcPalMcastNe
   if (!rc_ref_list_add_ref(&targets.pending, target))
     return kEtcPalErrNoMem;
 
-  etcpal_error_t res = setup_target_netints(target, netints, num_netints);
+  etcpal_error_t res = setup_target_netints(target);
   if (res != kEtcPalErrOk)
   {
     rc_ref_list_remove_ref(&targets.pending, target);
@@ -256,7 +254,7 @@ void rc_llrp_target_data_received(const uint8_t* data, size_t data_len, const Et
   }
 }
 
-etcpal_error_t setup_target_netints(RCLlrpTarget* target, const EtcPalMcastNetintId* netints, size_t num_netints)
+etcpal_error_t setup_target_netints(RCLlrpTarget* target)
 {
   if (!RDMNET_ASSERT_VERIFY(target))
     return kEtcPalErrSys;
@@ -278,13 +276,8 @@ etcpal_error_t setup_target_netints(RCLlrpTarget* target, const EtcPalMcastNetin
   for (const EtcPalMcastNetintId* netint_id = mcast_netint_arr;
        (res == kEtcPalErrOk) && (netint_id < (mcast_netint_arr + mcast_netint_arr_size)); ++netint_id)
   {
-    bool skip = false;
-    if (netints)  // Skip interfaces not present in application's config
-      skip = (netint_id_index_in_mcast_array(netint_id, netints, num_netints) == -1);
-    if (!skip)  // Also skip interfaces that have already been added
-      skip = (netint_id_index_in_llrp_array(netint_id, target->netints, target->num_netints) != -1);
-
-    if (!skip)
+    // Skip interfaces that have already been added
+    if (netint_id_index_in_llrp_array(netint_id, target->netints, target->num_netints) == -1)
     {
       res = setup_target_netint(netint_id, &target->netints[target->num_netints]);
       if (res == kEtcPalErrOk)
@@ -293,18 +286,10 @@ etcpal_error_t setup_target_netints(RCLlrpTarget* target, const EtcPalMcastNetin
       }
       else
       {
-        // If the user hasn't provided a list of network interfaces to operate on, failing to intialize on a network
-        // interface will be non-fatal and we will log it. Otherwise, clean up and return the error.
-        if (netints)
-        {
-          cleanup_target_netints(target);
-        }
-        else
-        {
-          RDMNET_LOG_WARNING("Failed to intiailize LLRP target for listening on network interface index %d: '%s'",
-                             netint_id->index, etcpal_strerror(res));
-          res = kEtcPalErrOk;
-        }
+        // Failing to intialize on a network interface is non-fatal - we will log it.
+        RDMNET_LOG_WARNING("Failed to intiailize LLRP target for listening on network interface index %d: '%s'",
+                           netint_id->index, etcpal_strerror(res));
+        res = kEtcPalErrOk;
       }
     }
   }

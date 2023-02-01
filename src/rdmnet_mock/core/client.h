@@ -34,7 +34,7 @@ extern "C" {
 
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rc_client_module_init);
 DECLARE_FAKE_VOID_FUNC(rc_client_module_deinit);
-DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rc_rpt_client_register, RCClient*, bool, const EtcPalMcastNetintId*, size_t);
+DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rc_rpt_client_register, RCClient*, bool);
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t, rc_ept_client_register, RCClient*);
 DECLARE_FAKE_VALUE_FUNC(bool, rc_client_unregister, RCClient*, rdmnet_disconnect_reason_t);
 DECLARE_FAKE_VALUE_FUNC(etcpal_error_t,

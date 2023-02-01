@@ -989,7 +989,7 @@ etcpal_error_t create_new_controller(const RdmnetControllerConfig* config, rdmne
   else
     client->search_domain[0] = '\0';
 
-  res = rc_rpt_client_register(client, config->create_llrp_target, config->llrp_netints, config->num_llrp_netints);
+  res = rc_rpt_client_register(client, config->create_llrp_target);
   if (res != kEtcPalErrOk)
   {
     rdmnet_unregister_struct_instance(new_controller);

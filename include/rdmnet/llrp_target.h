@@ -80,7 +80,12 @@ typedef struct LlrpTargetCallbacks
   void* context; /**< (optional) Pointer to opaque data passed back with each callback. */
 } LlrpTargetCallbacks;
 
-/** A set of information that defines the startup parameters of an LLRP Target. */
+/**
+ * @brief A set of information that defines the startup parameters of an LLRP Target.
+ *
+ * Note that network interfaces the target should use are no longer specified here. Instead, the set of interfaces
+ * passed to rdmnet_init() is used.
+ */
 typedef struct LlrpTargetConfig
 {
   /************************************************************************************************
@@ -107,16 +112,6 @@ typedef struct LlrpTargetConfig
    * UID instead, just fill this in with the static UID after initializing.
    */
   RdmUid uid;
-
-  /**
-   * (optional) A set of network interfaces on which to operate this LLRP target. If NULL, the set
-   * passed to rdmnet_init() will be used, or all network interfaces on the system if that was not
-   * provided. If non-NULL, this must be a subset of the interfaces passed to rdmnet_init() if any
-   * were passed in there.
-   */
-  const EtcPalMcastNetintId* netints;
-  /** (optional) The size of the netints array. */
-  size_t num_netints;
 } LlrpTargetConfig;
 
 /**
@@ -130,9 +125,9 @@ typedef struct LlrpTargetConfig
  *
  * @param manu_id Your ESTA manufacturer ID.
  */
-#define LLRP_TARGET_CONFIG_DEFAULT_INIT(manu_id)                \
-  {                                                             \
-    {{0}}, {NULL, NULL}, NULL, {(0x8000 | manu_id), 0}, NULL, 0 \
+#define LLRP_TARGET_CONFIG_DEFAULT_INIT(manu_id)         \
+  {                                                      \
+    {{0}}, {NULL, NULL}, NULL, { (0x8000 | manu_id), 0 } \
   }
 
 void llrp_target_config_init(LlrpTargetConfig* config, uint16_t manufacturer_id);

@@ -97,8 +97,7 @@ TEST_F(TestDeviceApi, CreateWorksWithValidConfig)
 
 TEST_F(TestDeviceApi, CreateRegistersClientCorrectly)
 {
-  rc_rpt_client_register_fake.custom_fake = [](RCClient* client, bool create_llrp_target,
-                                               const EtcPalMcastNetintId* llrp_netints, size_t num_llrp_netints) {
+  rc_rpt_client_register_fake.custom_fake = [](RCClient* client, bool create_llrp_target) {
     EXPECT_NE(client->lock, nullptr);
     EXPECT_EQ(client->type, kClientProtocolRPT);
     EXPECT_EQ(client->cid, current_test_fixture->config.cid);
@@ -111,8 +110,6 @@ TEST_F(TestDeviceApi, CreateRegistersClientCorrectly)
     EXPECT_EQ(client->sync_resp_buf, current_test_fixture->config.response_buf);
 
     EXPECT_TRUE(create_llrp_target);
-    EXPECT_EQ(llrp_netints, nullptr);
-    EXPECT_EQ(num_llrp_netints, 0u);
 
     return kEtcPalErrOk;
   };

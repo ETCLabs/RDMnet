@@ -263,7 +263,12 @@ typedef struct RdmnetControllerRdmData
     0, 0, NULL, NULL, NULL, NULL, E120_PRODUCT_CATEGORY_CONTROL_CONTROLLER, false \
   }
 
-/** A set of information that defines the startup parameters of an RDMnet Controller. */
+/**
+ * @brief A set of information that defines the startup parameters of an RDMnet Controller.
+ *
+ * Note that network interfaces that the LLRP target of the controller should use are no longer specified here. Instead,
+ * the set of interfaces passed to rdmnet_init() is used.
+ */
 typedef struct RdmnetControllerConfig
 {
   /************************************************************************************************
@@ -306,16 +311,6 @@ typedef struct RdmnetControllerConfig
    * (optional) Whether to create an LLRP target associated with this controller. Default is false.
    */
   bool create_llrp_target;
-
-  /**
-   * (optional) A set of network interfaces to use for the LLRP target associated with this
-   * controller. If NULL, the set passed to rdmnet_init() will be used, or all network interfaces
-   * on the system if that was not provided. If non-NULL, this must be a subset of the interfaces
-   * passed to rdmnet_init() if any were passed in there.
-   */
-  const EtcPalMcastNetintId* llrp_netints;
-  /** (optional) The size of the llrp_netints array. */
-  size_t num_llrp_netints;
 } RdmnetControllerConfig;
 
 /**
@@ -329,10 +324,10 @@ typedef struct RdmnetControllerConfig
  *
  * @param manu_id Your ESTA manufacturer ID.
  */
-#define RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT(manu_id)                                         \
-  {                                                                                            \
-    {{0}}, {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, {NULL, NULL, NULL, NULL},         \
-        RDMNET_CONTROLLER_RDM_DATA_DEFAULT_INIT, {(0x8000 | manu_id), 0}, NULL, false, NULL, 0 \
+#define RDMNET_CONTROLLER_CONFIG_DEFAULT_INIT(manu_id)                                 \
+  {                                                                                    \
+    {{0}}, {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, {NULL, NULL, NULL, NULL}, \
+        RDMNET_CONTROLLER_RDM_DATA_DEFAULT_INIT, {(0x8000 | manu_id), 0}, NULL, false  \
   }
 
 void rdmnet_controller_config_init(RdmnetControllerConfig* config, uint16_t manufacturer_id);
