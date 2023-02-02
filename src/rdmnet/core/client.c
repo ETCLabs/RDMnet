@@ -1416,9 +1416,6 @@ bool parse_rpt_notification(const RCClientScope* scope, const RptMessage* rmsg, 
   if (!get_rdm_response_data_buf(list, &resp_data_buf))
     return false;
 
-  if (!RDMNET_ASSERT_VERIFY(resp_data_buf))
-    return false;
-
   // Initialize some values
   resp->rdm_data = resp_data_buf;
 
@@ -1479,11 +1476,8 @@ bool unpack_notification_rdm_buffer(const RdmBuffer*   buffer,
                                     uint8_t*           resp_data_buf,
                                     bool*              is_first_resp)
 {
-  if (!RDMNET_ASSERT_VERIFY(buffer) || !RDMNET_ASSERT_VERIFY(resp) || !RDMNET_ASSERT_VERIFY(resp_data_buf) ||
-      !RDMNET_ASSERT_VERIFY(is_first_resp))
-  {
+  if (!RDMNET_ASSERT_VERIFY(buffer) || !RDMNET_ASSERT_VERIFY(resp) || !RDMNET_ASSERT_VERIFY(is_first_resp))
     return false;
-  }
 
   if (rdm_validate_msg(buffer))
   {
@@ -1503,7 +1497,7 @@ bool unpack_notification_rdm_buffer(const RdmBuffer*   buffer,
         etcpal_error_t unpack_res = rdm_unpack_response(buffer, &resp->rdm_header, &this_data, &this_data_len);
         if (unpack_res == kEtcPalErrOk)
         {
-          if (this_data && this_data_len)
+          if (this_data && this_data_len && RDMNET_ASSERT_VERIFY(resp_data_buf))
           {
             memcpy(&resp_data_buf[resp->rdm_data_len], this_data, this_data_len);
             resp->rdm_data_len += this_data_len;
@@ -1533,7 +1527,7 @@ bool unpack_notification_rdm_buffer(const RdmBuffer*   buffer,
         {
           return false;
         }
-        if (this_data && this_data_len)
+        if (this_data && this_data_len && RDMNET_ASSERT_VERIFY(resp_data_buf))
         {
           memcpy(&resp_data_buf[resp->rdm_data_len], this_data, this_data_len);
           resp->rdm_data_len += this_data_len;
@@ -2511,11 +2505,9 @@ bool get_rdm_response_data_buf(const RptRdmBufList* buf_list, uint8_t** buf_ptr)
 
 void free_rdm_response_data_buf(uint8_t* buf)
 {
-  if (!RDMNET_ASSERT_VERIFY(buf))
-    return;
-
 #if RDMNET_DYNAMIC_MEM
-  free(buf);
+  if (buf)
+    free(buf);
 #else
   ETCPAL_UNUSED_ARG(buf);
 #endif

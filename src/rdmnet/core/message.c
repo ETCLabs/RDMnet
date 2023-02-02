@@ -112,7 +112,8 @@ void free_broker_message(BrokerMessage* bmsg)
         if (!RDMNET_ASSERT_VERIFY(rpt_client_list))
           return;
 
-        free(rpt_client_list->client_entries);
+        if (rpt_client_list->client_entries)
+          free(rpt_client_list->client_entries);
       }
 #endif
       break;
@@ -123,7 +124,8 @@ void free_broker_message(BrokerMessage* bmsg)
       if (!RDMNET_ASSERT_VERIFY(req_list))
         return;
 
-      free(req_list->requests);
+      if (req_list->requests)
+        free(req_list->requests);
     }
     break;
     case VECTOR_BROKER_ASSIGNED_DYNAMIC_UIDS: {
@@ -131,7 +133,8 @@ void free_broker_message(BrokerMessage* bmsg)
       if (!RDMNET_ASSERT_VERIFY(assignment_list))
         return;
 
-      free(assignment_list->mappings);
+      if (assignment_list->mappings)
+        free(assignment_list->mappings);
     }
     break;
     case VECTOR_BROKER_FETCH_DYNAMIC_UID_LIST: {
@@ -139,7 +142,8 @@ void free_broker_message(BrokerMessage* bmsg)
       if (!RDMNET_ASSERT_VERIFY(fetch_list))
         return;
 
-      free(fetch_list->uids);
+      if (fetch_list->uids)
+        free(fetch_list->uids);
     }
     break;
 #endif
@@ -162,7 +166,8 @@ void free_rpt_message(RptMessage* rmsg)
       if (!RDMNET_ASSERT_VERIFY(buf_list))
         return;
 
-      free(buf_list->rdm_buffers);
+      if (buf_list->rdm_buffers)
+        free(buf_list->rdm_buffers);
     }
     break;
     case VECTOR_RPT_STATUS: {

@@ -214,8 +214,10 @@ void rc_mcast_module_deinit(void)
     }
   }
 #if RDMNET_DYNAMIC_MEM
-  free(mcast_netint_arr);
-  free(netint_info_arr);
+  if (mcast_netint_arr)
+    free(mcast_netint_arr);
+  if (netint_info_arr)
+    free(netint_info_arr);
 #endif
   num_mcast_netints = 0;
 }

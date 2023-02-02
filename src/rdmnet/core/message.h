@@ -140,7 +140,7 @@ extern char                rpt_status_string_buffer[RPT_STATUS_STRING_MAXLEN + 1
 #define REALLOC_EPT_SUBPROT_LIST(ptr, new_size) \
   (RDMNET_ASSERT_VERIFY(ptr), realloc((ptr), ((new_size) * sizeof(RdmnetEptSubProtocol))))
 #define FREE_EPT_SUBPROT_LIST(ptr) \
-  if (RDMNET_ASSERT_VERIFY(ptr))   \
+  if (ptr)                         \
   {                                \
     free(ptr);                     \
   }
@@ -148,7 +148,7 @@ extern char                rpt_status_string_buffer[RPT_STATUS_STRING_MAXLEN + 1
 #define ALLOC_RPT_STATUS_STR(size) malloc(size)
 
 #define FREE_MESSAGE_BUFFER(ptr) \
-  if (RDMNET_ASSERT_VERIFY(ptr)) \
+  if (ptr)                       \
   {                              \
     free(ptr);                   \
   }
