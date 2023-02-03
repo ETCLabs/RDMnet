@@ -39,7 +39,7 @@
 #define RDMNET_VERSION_MAJOR 1 /**< The major version. */
 #define RDMNET_VERSION_MINOR 0 /**< The minor version. */
 #define RDMNET_VERSION_PATCH 0 /**< The patch version. */
-#define RDMNET_VERSION_BUILD 1 /**< The build number. */
+#define RDMNET_VERSION_BUILD 2 /**< The build number. */
 /**
  * @}
  */
@@ -48,8 +48,8 @@
  * @name RDMnet version strings
  * @{
  */
-#define RDMNET_VERSION_STRING "1.0.0.1" /**< The version number as a string. */
-#define RDMNET_VERSION_DATESTR "02.Feb.2023" /**< The date this version was created. */
+#define RDMNET_VERSION_STRING "1.0.0.2" /**< The version number as a string. */
+#define RDMNET_VERSION_DATESTR "03.Feb.2023" /**< The date this version was created. */
 #define RDMNET_VERSION_COPYRIGHT "Copyright 2023 ETC Inc." /**< A copyright string for this library. */
 #define RDMNET_VERSION_PRODUCTNAME "RDMnet" /**< The name of the library as a string. */
 /**
