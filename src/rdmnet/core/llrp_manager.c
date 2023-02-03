@@ -256,7 +256,7 @@ void rc_llrp_manager_module_tick(void)
 
 void rc_llrp_manager_data_received(const uint8_t* data, size_t data_len, const EtcPalMcastNetintId* netint)
 {
-  if (!RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(data_len > 0) || !RDMNET_ASSERT_VERIFY(netint))
+  if (!RDMNET_ASSERT_VERIFY(netint))
     return;
 
   RCLlrpManagerEvent event = RC_LLRP_MANAGER_EVENT_INIT;

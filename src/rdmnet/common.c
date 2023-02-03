@@ -50,32 +50,32 @@
 #define ALLOC_LLRP_TARGET() (LlrpTarget*)malloc(sizeof(LlrpTarget))
 #define ALLOC_RDMNET_EPT_CLIENT() (RdmnetEptClient*)malloc(sizeof(RdmnetEptClient))
 #define FREE_RDMNET_CONTROLLER(ptr) \
-  if (RDMNET_ASSERT_VERIFY(ptr))    \
+  if (ptr)                          \
   {                                 \
     free(ptr);                      \
   }
-#define FREE_RDMNET_DEVICE(ptr)  \
-  if (RDMNET_ASSERT_VERIFY(ptr)) \
-  {                              \
-    free(ptr);                   \
+#define FREE_RDMNET_DEVICE(ptr) \
+  if (ptr)                      \
+  {                             \
+    free(ptr);                  \
   }
 #define FREE_ENDPOINT_RESPONDER(ptr) \
-  if (RDMNET_ASSERT_VERIFY(ptr))     \
+  if (ptr)                           \
   {                                  \
     free(ptr);                       \
   }
-#define FREE_LLRP_MANAGER(ptr)   \
-  if (RDMNET_ASSERT_VERIFY(ptr)) \
-  {                              \
-    free(ptr);                   \
+#define FREE_LLRP_MANAGER(ptr) \
+  if (ptr)                     \
+  {                            \
+    free(ptr);                 \
   }
-#define FREE_LLRP_TARGET(ptr)    \
-  if (RDMNET_ASSERT_VERIFY(ptr)) \
-  {                              \
-    free(ptr);                   \
+#define FREE_LLRP_TARGET(ptr) \
+  if (ptr)                    \
+  {                           \
+    free(ptr);                \
   }
 #define FREE_RDMNET_EPT_CLIENT(ptr) \
-  if (RDMNET_ASSERT_VERIFY(ptr))    \
+  if (ptr)                          \
   {                                 \
     free(ptr);                      \
   }

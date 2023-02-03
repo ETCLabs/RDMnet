@@ -261,11 +261,8 @@ size_t parse_rlp_block(RlpState*          rlpstate,
                        RdmnetMessage*     msg,
                        rc_parse_result_t* result)
 {
-  if (!RDMNET_ASSERT_VERIFY(rlpstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(msg) ||
-      !RDMNET_ASSERT_VERIFY(result))
-  {
+  if (!RDMNET_ASSERT_VERIFY(rlpstate) || !RDMNET_ASSERT_VERIFY(msg) || !RDMNET_ASSERT_VERIFY(result))
     return 0;
-  }
 
   rc_parse_result_t res = kRCParseResNoData;
   size_t            bytes_parsed = 0;
@@ -492,11 +489,8 @@ size_t parse_broker_block(BrokerState*       bstate,
                           BrokerMessage*     bmsg,
                           rc_parse_result_t* result)
 {
-  if (!RDMNET_ASSERT_VERIFY(bstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(bmsg) ||
-      !RDMNET_ASSERT_VERIFY(result))
-  {
+  if (!RDMNET_ASSERT_VERIFY(bstate) || !RDMNET_ASSERT_VERIFY(bmsg) || !RDMNET_ASSERT_VERIFY(result))
     return 0;
-  }
 
   rc_parse_result_t res = kRCParseResNoData;
   size_t            bytes_parsed = 0;
@@ -515,7 +509,7 @@ size_t parse_broker_block(BrokerState*       bstate,
     {
       parse_err = true;
     }
-    else if (data_len >= BROKER_PDU_HEADER_SIZE)
+    else if ((data_len >= BROKER_PDU_HEADER_SIZE) && RDMNET_ASSERT_VERIFY(data))
     {
       // We can parse a Broker PDU header.
       const uint8_t* cur_ptr = data;
@@ -826,8 +820,8 @@ size_t parse_single_client_entry(ClientEntryState*  cstate,
                                  ClientEntryUnion*  entry,
                                  rc_parse_result_t* result)
 {
-  if (!RDMNET_ASSERT_VERIFY(cstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(client_protocol) ||
-      !RDMNET_ASSERT_VERIFY(entry) || !RDMNET_ASSERT_VERIFY(result))
+  if (!RDMNET_ASSERT_VERIFY(cstate) || !RDMNET_ASSERT_VERIFY(client_protocol) || !RDMNET_ASSERT_VERIFY(entry) ||
+      !RDMNET_ASSERT_VERIFY(result))
   {
     return 0;
   }
@@ -837,7 +831,7 @@ size_t parse_single_client_entry(ClientEntryState*  cstate,
 
   if (cstate->client_protocol == kClientProtocolUnknown)
   {
-    if (data_len >= CLIENT_ENTRY_HEADER_SIZE)
+    if ((data_len >= CLIENT_ENTRY_HEADER_SIZE) && RDMNET_ASSERT_VERIFY(data))
     {
       // Parse the Client Entry header
       size_t cli_entry_pdu_len = GET_LENGTH_FROM_CENTRY_HEADER(data);
@@ -921,11 +915,8 @@ size_t parse_client_list(ClientListState*   clstate,
                          BrokerClientList*  clist,
                          rc_parse_result_t* result)
 {
-  if (!RDMNET_ASSERT_VERIFY(clstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(clist) ||
-      !RDMNET_ASSERT_VERIFY(result))
-  {
+  if (!RDMNET_ASSERT_VERIFY(clstate) || !RDMNET_ASSERT_VERIFY(clist) || !RDMNET_ASSERT_VERIFY(result))
     return 0;
-  }
 
   rc_parse_result_t res = kRCParseResNoData;
   size_t            bytes_parsed = 0;
@@ -938,7 +929,7 @@ size_t parse_client_list(ClientListState*   clstate,
   {
     if (clist->client_protocol == kClientProtocolUnknown)
     {
-      if (data_len >= CLIENT_ENTRY_HEADER_SIZE)
+      if ((data_len >= CLIENT_ENTRY_HEADER_SIZE) && RDMNET_ASSERT_VERIFY(data))
       {
         clist->client_protocol = GET_CLIENT_PROTOCOL_FROM_CENTRY_HEADER(data);
       }
@@ -1138,17 +1129,17 @@ size_t parse_request_dynamic_uid_assignment(GenericListState*            lstate,
 {
   ETCPAL_UNUSED_ARG(rdmnet_log_params);
 
-  if (!RDMNET_ASSERT_VERIFY(lstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(rlist) ||
-      !RDMNET_ASSERT_VERIFY(result))
-  {
+  if (!RDMNET_ASSERT_VERIFY(lstate) || !RDMNET_ASSERT_VERIFY(rlist) || !RDMNET_ASSERT_VERIFY(result))
     return 0;
-  }
 
   size_t            bytes_parsed = 0;
   rc_parse_result_t res = kRCParseResNoData;
 
   while (data_len - bytes_parsed >= DYNAMIC_UID_REQUEST_PAIR_SIZE)
   {
+    if (!RDMNET_ASSERT_VERIFY(data))
+      return 0;
+
     // We are starting at the beginning of a new Request Dynamic UID Assignment PDU.
     // Make room for a new struct at the end of the current array.
     if (rlist->requests)
@@ -1202,17 +1193,17 @@ size_t parse_dynamic_uid_assignment_list(GenericListState*               lstate,
 {
   ETCPAL_UNUSED_ARG(rdmnet_log_params);
 
-  if (!RDMNET_ASSERT_VERIFY(lstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(alist) ||
-      !RDMNET_ASSERT_VERIFY(result))
-  {
+  if (!RDMNET_ASSERT_VERIFY(lstate) || !RDMNET_ASSERT_VERIFY(alist) || !RDMNET_ASSERT_VERIFY(result))
     return 0;
-  }
 
   size_t            bytes_parsed = 0;
   rc_parse_result_t res = kRCParseResNoData;
 
   while (data_len - bytes_parsed >= DYNAMIC_UID_MAPPING_SIZE)
   {
+    if (!RDMNET_ASSERT_VERIFY(data))
+      return 0;
+
     // We are starting at the beginning of a new Dynamic UID Assignment PDU.
     // Make room for a new struct at the end of the current array.
     if (alist->mappings)
@@ -1272,11 +1263,8 @@ size_t parse_fetch_dynamic_uid_assignment_list(GenericListState*             lst
                                                BrokerFetchUidAssignmentList* alist,
                                                rc_parse_result_t*            result)
 {
-  if (!RDMNET_ASSERT_VERIFY(lstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(alist) ||
-      !RDMNET_ASSERT_VERIFY(result))
-  {
+  if (!RDMNET_ASSERT_VERIFY(lstate) || !RDMNET_ASSERT_VERIFY(alist) || !RDMNET_ASSERT_VERIFY(result))
     return 0;
-  }
 
   size_t            bytes_parsed = 0;
   rc_parse_result_t res = kRCParseResNoData;
@@ -1285,6 +1273,9 @@ size_t parse_fetch_dynamic_uid_assignment_list(GenericListState*             lst
 
   while (data_len - bytes_parsed >= 6)
   {
+    if (!RDMNET_ASSERT_VERIFY(data))
+      return 0;
+
     // We are starting at the beginning of a new Fetch Dynamic UID Assignment PDU.
     // Make room for a new struct at the end of the current array.
     if (alist->uids)
@@ -1379,11 +1370,8 @@ size_t parse_rpt_block(RptState*          rstate,
                        RptMessage*        rmsg,
                        rc_parse_result_t* result)
 {
-  if (!RDMNET_ASSERT_VERIFY(rstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(rmsg) ||
-      !RDMNET_ASSERT_VERIFY(result))
-  {
+  if (!RDMNET_ASSERT_VERIFY(rstate) || !RDMNET_ASSERT_VERIFY(rmsg) || !RDMNET_ASSERT_VERIFY(result))
     return 0;
-  }
 
   size_t            bytes_parsed = 0;
   rc_parse_result_t res = kRCParseResNoData;
@@ -1402,7 +1390,7 @@ size_t parse_rpt_block(RptState*          rstate,
     {
       parse_err = true;
     }
-    else if (data_len >= RPT_PDU_HEADER_SIZE)
+    else if ((data_len >= RPT_PDU_HEADER_SIZE) && RDMNET_ASSERT_VERIFY(data))
     {
       // We can parse an RPT PDU header.
       const uint8_t* cur_ptr = data;
@@ -1497,16 +1485,14 @@ size_t parse_rdm_list(RdmListState*      rlstate,
                       RptRdmBufList*     cmd_list,
                       rc_parse_result_t* result)
 {
-  if (!RDMNET_ASSERT_VERIFY(rlstate) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(cmd_list) ||
-      !RDMNET_ASSERT_VERIFY(result))
-  {
+  if (!RDMNET_ASSERT_VERIFY(rlstate) || !RDMNET_ASSERT_VERIFY(cmd_list) || !RDMNET_ASSERT_VERIFY(result))
     return 0;
-  }
 
   rc_parse_result_t res = kRCParseResNoData;
   size_t            bytes_parsed = 0;
 
-  if (!rlstate->parsed_request_notif_header && data_len >= REQUEST_NOTIF_PDU_HEADER_SIZE)
+  if (!rlstate->parsed_request_notif_header && (data_len >= REQUEST_NOTIF_PDU_HEADER_SIZE) &&
+      RDMNET_ASSERT_VERIFY(data))
   {
     const uint8_t* cur_ptr = data;
     size_t         pdu_len = ACN_PDU_LENGTH(cur_ptr);
@@ -1539,7 +1525,7 @@ size_t parse_rdm_list(RdmListState*      rlstate,
         size_t remaining_len = data_len - bytes_parsed;
 
         // We want to parse an entire RDM Command PDU at once.
-        if (remaining_len >= RDM_CMD_PDU_MIN_SIZE)
+        if ((remaining_len >= RDM_CMD_PDU_MIN_SIZE) && RDMNET_ASSERT_VERIFY(data))
         {
           const uint8_t* cur_ptr = &data[bytes_parsed];
           size_t         rdm_cmd_pdu_len = ACN_PDU_LENGTH(cur_ptr);
@@ -1632,7 +1618,7 @@ size_t parse_rpt_status(RptStatusState*    rsstate,
     {
       parse_err = true;
     }
-    else if (data_len >= RPT_STATUS_HEADER_SIZE)
+    else if ((data_len >= RPT_STATUS_HEADER_SIZE) && RDMNET_ASSERT_VERIFY(data))
     {
       // We can parse an RPT Status PDU header.
       const uint8_t* cur_ptr = data;
@@ -1698,7 +1684,7 @@ size_t parse_rpt_status(RptStatusState*    rsstate,
         {
           bytes_parsed += consume_bad_block(&rsstate->block, remaining_len, &res);
         }
-        else if (remaining_len >= str_len)
+        else if ((remaining_len >= str_len) && RDMNET_ASSERT_VERIFY(data))
         {
           char* str_buf = ALLOC_RPT_STATUS_STR(str_len + 1);
           if (str_buf)

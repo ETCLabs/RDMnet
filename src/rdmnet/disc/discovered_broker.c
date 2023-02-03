@@ -37,7 +37,7 @@
 #if RDMNET_DYNAMIC_MEM
 #define ALLOC_DISCOVERED_BROKER() (DiscoveredBroker*)malloc(sizeof(DiscoveredBroker))
 #define FREE_DISCOVERED_BROKER(ptr) \
-  if (RDMNET_ASSERT_VERIFY(ptr))    \
+  if (ptr)                          \
   {                                 \
     free(ptr);                      \
   }

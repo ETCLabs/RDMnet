@@ -1387,11 +1387,8 @@ void handle_generic_label_query(char*                   label,
                                 uint8_t                 data_len,
                                 RdmnetSyncRdmResponse*  response)
 {
-  if (!RDMNET_ASSERT_VERIFY(label) || !RDMNET_ASSERT_VERIFY(rdm_header) || !RDMNET_ASSERT_VERIFY(data) ||
-      !RDMNET_ASSERT_VERIFY(response))
-  {
+  if (!RDMNET_ASSERT_VERIFY(label) || !RDMNET_ASSERT_VERIFY(rdm_header) || !RDMNET_ASSERT_VERIFY(response))
     return;
-  }
 
   if (rdm_header->command_class == kRdmCCGetCommand)
   {
@@ -1409,15 +1406,15 @@ void handle_generic_label_query(char*                   label,
   else if (rdm_header->command_class == kRdmCCSetCommand)
   {
     // Whether the label is settable is handled before this function is called.
-    if (data_len < CONTROLLER_RDM_LABEL_BUF_LENGTH)
+    label[data_len] = '\0';
+    if ((data_len > 0) && RDMNET_ASSERT_VERIFY(data))
     {
-      memcpy(label, data, data_len);
-      label[data_len] = '\0';
+      if (data_len < CONTROLLER_RDM_LABEL_BUF_LENGTH)
+        memcpy(label, data, data_len);
+      else
+        rdmnet_safe_strncpy(label, (const char*)data, CONTROLLER_RDM_LABEL_BUF_LENGTH);
     }
-    else
-    {
-      rdmnet_safe_strncpy(label, (const char*)data, CONTROLLER_RDM_LABEL_BUF_LENGTH);
-    }
+
     RDMNET_SYNC_SEND_RDM_ACK(response, 0);
   }
   else
@@ -1436,7 +1433,7 @@ void handle_component_scope(RdmnetController*       controller,
 {
   ETCPAL_UNUSED_ARG(rdm_header);
 
-  if (!RDMNET_ASSERT_VERIFY(controller) || !RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(response))
+  if (!RDMNET_ASSERT_VERIFY(controller) || !RDMNET_ASSERT_VERIFY(response))
     return;
 
   if (data_len < 2)
@@ -1444,6 +1441,9 @@ void handle_component_scope(RdmnetController*       controller,
     RDMNET_SYNC_SEND_RDM_NACK(response, kRdmNRFormatError);
     return;
   }
+
+  if (!RDMNET_ASSERT_VERIFY(data))
+    return;
 
   uint8_t* buf = rc_client_get_internal_response_buf(COMPONENT_SCOPE_PD_SIZE);
   if (!buf)

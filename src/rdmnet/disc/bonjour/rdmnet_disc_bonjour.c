@@ -466,7 +466,9 @@ etcpal_error_t rdmnet_disc_platform_init(const RdmnetNetintConfig* netint_config
 
 void rdmnet_disc_platform_deinit(void)
 {
-  free(disc_netint_arr);
+  if (disc_netint_arr)
+    free(disc_netint_arr);
+
   num_disc_netints = 0;
 
   etcpal_poll_context_deinit(&poll_context);

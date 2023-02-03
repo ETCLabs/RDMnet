@@ -33,7 +33,7 @@
 #if RDMNET_DYNAMIC_MEM
 #define ALLOC_SCOPE_MONITOR_REF() (RdmnetScopeMonitorRef*)malloc(sizeof(RdmnetScopeMonitorRef))
 #define FREE_SCOPE_MONITOR_REF(ptr) \
-  if (RDMNET_ASSERT_VERIFY(ptr))    \
+  if (ptr)                          \
   {                                 \
     free(ptr);                      \
   }

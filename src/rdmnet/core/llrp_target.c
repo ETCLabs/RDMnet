@@ -217,7 +217,7 @@ void rc_llrp_target_module_tick(void)
 
 void rc_llrp_target_data_received(const uint8_t* data, size_t data_len, const EtcPalMcastNetintId* netint)
 {
-  if (!RDMNET_ASSERT_VERIFY(data) || !RDMNET_ASSERT_VERIFY(netint))
+  if (!RDMNET_ASSERT_VERIFY(netint))
     return;
 
   EtcPalUuid dest_cid;
