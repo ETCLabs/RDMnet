@@ -67,7 +67,7 @@ inline etcpal::Error Init(const EtcPalLogParams*                  log_params = n
   }
   else
   {
-    RdmnetNetintConfig config = {mcast_netints.data(), mcast_netints.size()};
+    RdmnetNetintConfig config = {mcast_netints.data(), mcast_netints.size(), false};
     return rdmnet_init(log_params, &config);
   }
 }
@@ -92,7 +92,7 @@ inline etcpal::Error Init(const etcpal::Logger&                   logger,
   }
   else
   {
-    RdmnetNetintConfig config = {mcast_netints.data(), mcast_netints.size()};
+    RdmnetNetintConfig config = {mcast_netints.data(), mcast_netints.size(), false};
     return rdmnet_init(&logger.log_params(), &config);
   }
 }
