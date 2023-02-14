@@ -110,7 +110,7 @@ inline etcpal::Error Init(const etcpal::Logger&                   logger,
 /// @return Errors from rdmnet_init().
 inline etcpal::Error Init(const EtcPalLogParams* log_params, McastMode mcast_mode)
 {
-  RdmnetNetintConfig config = {nullptr, 0u, (mcast_mode == kDisabledOnAllInterfaces)};
+  RdmnetNetintConfig config = {nullptr, 0u, (mcast_mode == McastMode::kDisabledOnAllInterfaces)};
   return rdmnet_init(log_params, &config);
 }
 
@@ -126,7 +126,7 @@ inline etcpal::Error Init(const EtcPalLogParams* log_params, McastMode mcast_mod
 /// @return Errors from rdmnet_init().
 inline etcpal::Error Init(const etcpal::Logger& logger, McastMode mcast_mode)
 {
-  RdmnetNetintConfig config = {nullptr, 0u, (mcast_mode == kDisabledOnAllInterfaces)};
+  RdmnetNetintConfig config = {nullptr, 0u, (mcast_mode == McastMode::kDisabledOnAllInterfaces)};
   return rdmnet_init(&logger.log_params(), &config);
 }
 
