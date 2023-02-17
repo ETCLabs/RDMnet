@@ -39,6 +39,13 @@
 /// @brief A namespace which contains all C++ language definitions in the RDMnet library.
 namespace rdmnet
 {
+/// @brief Determines whether multicast traffic is allowed through all interfaces or none.
+enum class McastMode
+{
+  kEnabledOnAllInterfaces,
+  kDisabledOnAllInterfaces
+};
+
 /// @ingroup rdmnet_cpp_common
 /// @brief Initialize the RDMnet library.
 ///
@@ -60,7 +67,7 @@ inline etcpal::Error Init(const EtcPalLogParams*                  log_params = n
   }
   else
   {
-    RdmnetNetintConfig config = {mcast_netints.data(), mcast_netints.size()};
+    RdmnetNetintConfig config = {mcast_netints.data(), mcast_netints.size(), false};
     return rdmnet_init(log_params, &config);
   }
 }
@@ -85,9 +92,42 @@ inline etcpal::Error Init(const etcpal::Logger&                   logger,
   }
   else
   {
-    RdmnetNetintConfig config = {mcast_netints.data(), mcast_netints.size()};
+    RdmnetNetintConfig config = {mcast_netints.data(), mcast_netints.size(), false};
     return rdmnet_init(&logger.log_params(), &config);
   }
+}
+
+/// @ingroup rdmnet_cpp_common
+/// @brief Initialize the RDMnet library.
+///
+/// Wraps rdmnet_init(). Does all initialization required before the RDMnet API modules can be
+/// used. Starts the message dispatch thread.
+///
+/// @param log_params Log parameters for the RDMnet library to use to log messages. If nullptr, no logging will be
+///                   performed.
+/// @param mcast_mode This controls whether multicast traffic should be allowed on all interfaces or no interfaces.
+/// @return etcpal::Error::Ok(): Initialization successful.
+/// @return Errors from rdmnet_init().
+inline etcpal::Error Init(const EtcPalLogParams* log_params, McastMode mcast_mode)
+{
+  RdmnetNetintConfig config = {nullptr, 0u, (mcast_mode == McastMode::kDisabledOnAllInterfaces)};
+  return rdmnet_init(log_params, &config);
+}
+
+/// @ingroup rdmnet_cpp_common
+/// @brief Initialize the RDMnet library.
+///
+/// Wraps rdmnet_init(). Does all initialization required before the RDMnet API modules can be
+/// used. Starts the message dispatch thread.
+///
+/// @param logger Logger instance for the RDMnet library to use to log messages.
+/// @param mcast_mode This controls whether multicast traffic should be allowed on all interfaces or no interfaces.
+/// @return etcpal::Error::Ok(): Initialization successful.
+/// @return Errors from rdmnet_init().
+inline etcpal::Error Init(const etcpal::Logger& logger, McastMode mcast_mode)
+{
+  RdmnetNetintConfig config = {nullptr, 0u, (mcast_mode == McastMode::kDisabledOnAllInterfaces)};
+  return rdmnet_init(&logger.log_params(), &config);
 }
 
 /// @ingroup rdmnet_cpp_common
