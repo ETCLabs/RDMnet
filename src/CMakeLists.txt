@@ -1,31 +1,3 @@
-################################# Dependencies ################################
-
-include(RdmnetAddDependency)
-
-if(RDMNET_BUILD_TESTS)
-  set(ETCPAL_BUILD_MOCK_LIB ON CACHE BOOL "Build the EtcPal mock library" FORCE)
-  set(RDM_BUILD_MOCK_LIB ON CACHE BOOL "Build the RDM mock library" FORCE)
-endif()
-rdmnet_add_dependency(EtcPal ETCPAL_DIR)
-rdmnet_add_dependency(RDM RDM_DIR)
-
-if(TARGET EtcPalMock)
-  set_target_properties(EtcPalMock PROPERTIES FOLDER dependencies)
-endif()
-if(TARGET RDMMock)
-  set_target_properties(RDMMock PROPERTIES FOLDER dependencies)
-endif()
-
-################################## Config file ################################
-
-if(DEFINED RDMNET_CONFIG_LOC)
-  get_filename_component(RDMNET_CONFIG_LOC ${RDMNET_CONFIG_LOC}
-    ABSOLUTE
-    BASE_DIR ${CMAKE_BINARY_DIR}
-  )
-endif()
-
-################################ RDMnet library ###############################
 
 set(RDMNET_LIB_TARGET_NAME RDMnet)
 set(RDMNET_BROKER_LIB_TARGET_NAME RDMnetBroker)
@@ -33,7 +5,7 @@ set(RDMNET_BROKER_LIB_TARGET_NAME RDMnetBroker)
 set(RDMNET_CONFIG_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/config)
 set(RDMNET_TARGETS_EXPORT_NAME ${PROJECT_NAME}Targets)
 
-################################## Libraries ##################################
+################################ RDMnet library ###############################
 
 # Get the local source variables
 include(rdmnet/sources.cmake)

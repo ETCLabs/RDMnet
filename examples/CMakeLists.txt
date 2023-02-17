@@ -5,7 +5,7 @@ endif()
 
 if(RDMNET_BUILD_CONSOLE_EXAMPLES)
   if(WIN32)
-    include(AddLibGadget)
+    include(${RDMNET_CMAKE}/AddLibGadget.cmake)
     add_subdirectory(fakeway)
   endif()
   add_subdirectory(broker)

@@ -50,12 +50,15 @@ macos-build:
   variables:
     QT_DIRECTORY: /Users/Shared/Qt/5.9.7/clang_64
   script:
+    - pip3 config set global.index-url https://artifactory.etcconnect.com/artifactory/api/pypi/ETC-PyPI/simple
+    - pip3 config set global.trusted-host artifactory.etcconnect.com
+    - pip3 install etcdevtool
     - python3 tools/ci/update_artifact_version.py
     - mkdir build
     - cd build
-    - cmake -G "Unix Makefiles" -DQTDIR=${QT_DIRECTORY} -DCMAKE_INSTALL_PREFIX=install ${GLOBAL_CMAKE_OPTIONS} -DRDMNET_BUILD_GUI_EXAMPLES=ON ..
-    - make -j
-    - make install
+    - cmake -DQTDIR=${QT_DIRECTORY} -DCMAKE_INSTALL_PREFIX=install ${GLOBAL_CMAKE_OPTIONS} -DRDMNET_BUILD_GUI_EXAMPLES=ON ..
+    - cmake --build . --config Release -j
+    - cmake -P cmake_install.cmake
     - ctest --output-on-failure
     - cd ..
     - python3 tools/install/macos/macos_build_package.py
@@ -71,8 +74,6 @@ linux-build:
   tags:
     - etc-linux-docker
   image: etc-docker.artifactory.etcconnect.com/rikorose/gcc-cmake:latest
-  variables:
-    CMAKE_LINUX_ASAN_OPTIONS: -DCMAKE_C_FLAGS="-fsanitize=address" -DCMAKE_CXX_FLAGS="-fsanitize=address" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address"
   parallel:
     matrix:
       - CMAKE_LINUX_OPTIONS: -DRDMNET_BUILD_TESTS_STATIC=OFF
@@ -81,13 +82,28 @@ linux-build:
     - apt-get update && apt-get install -y --no-install-recommends uuid-dev libavahi-client-dev
     - mkdir build
     - cd build
-    - cmake -G "Unix Makefiles" ${GLOBAL_CMAKE_OPTIONS} ${CMAKE_LINUX_ASAN_OPTIONS} ${CMAKE_LINUX_OPTIONS} ..
-    - make
+    - cmake ${GLOBAL_CMAKE_OPTIONS} ${CMAKE_LINUX_OPTIONS} -DRDMNET_ENABLE_ASAN=ON ..
+    - cmake --build .
     - ctest --output-on-failure
   artifacts:
     when: always
     reports:
       junit: build/tests/test-results/*.xml
+
+oss-build:
+  stage: build
+  tags:
+    - etc-linux-docker
+  image: etc-docker.artifactory.etcconnect.com/etc/common-tech/gcc-cmake:latest
+  script:
+    - apt-get update && apt-get install -y --no-install-recommends uuid-dev libavahi-client-dev
+    # Remove the .git folder to simulate building from P4/zip archive
+    - rm -rf .git/
+    - mkdir build
+    - cd build
+    # Use default config, no options
+    - cmake ..
+    - cmake --build .
 
 docs-test:
   stage: build
@@ -99,7 +115,8 @@ docs-test:
   variables:
     GIT_DEPTH: 0
   script:
-    - etclibtool docs -c tools/ci/etclibtool_config.json . 1.9.1
+    - pip install --upgrade etcdevtool
+    - etcdevtool docs . 1.9.1
 
 deploy-docs:
   stage: build
@@ -114,6 +131,7 @@ deploy-docs:
     GH_REPO_REF: github.com/ETCLabs/RDMnetDocs.git
     GH_REPO_TOKEN: $SVC_ETCLABS_REPO_TOKEN
   script:
+    - pip install --upgrade etcdevtool
     - chmod +x tools/ci/publish_docs.sh
     - tools/ci/publish_docs.sh
 
@@ -131,7 +149,5 @@ deploy-artifacts:
     - etc-linux-docker
   image: etc-docker.artifactory.etcconnect.com/python:latest
   script:
-    - pip config set global.index-url https://artifactory.etcconnect.com/artifactory/api/pypi/ETC-PyPI/simple
-    - pip config set global.trusted-host artifactory.etcconnect.com
-    - pip install requests etclibtool PyGithub
+    - pip install requests PyGithub
     - python3 tools/ci/deploy_to_github_release.py ${NEW_BUILD_VERSION}

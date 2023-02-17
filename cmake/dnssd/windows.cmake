@@ -135,7 +135,7 @@ macro(use_mdnswindows_from_install)
   set(RDMNET_BONJOUR_MOCK_LIB RDMnetMdnsWindowsMock)
 
   set(DNS_SD_DLL ${RDMNET_MDNSWINDOWS_INSTALL_LOC}/dll/dnssd.dll)
-  configure_file(${RDMNET_ROOT}/tools/ci/mdnsmerge.wxi.in
+  configure_file(${RDMNET_ROOT}/tools/templates/mdnsmerge.wxi.in
     ${RDMNET_ROOT}/tools/install/windows/GeneratedFiles/mdnsmerge.wxi
   )
 endmacro()

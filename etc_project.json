@@ -9,18 +9,41 @@
       "name": "RDM",
       "gitlabPath": "etc/common-tech/net/githubrdm",
       "version": "0.2.0"
+    },
+    {
+      "name": "googletest",
+      "gitlabPath": "mirrors/thirdparty/google/googletest",
+      "gitTag": "6b74da4757a549563d7c37c8fae3e704662a043b",
+      "devOnly": true
     }
   ],
   "devToolConfig": {
     "version": {
       "fileTemplates": {
-        "tools/templates/version.h.in": "include/rdmnet/version.h"
+        "tools/templates/version.h.in": "include/rdmnet/version.h",
+        "tools/templates/vars.wxi.in": "tools/install/windows/vars.wxi"
       },
       "jira": {
         "project": "RDMNET"
       }
     },
     "docs": {
+      "extraStylesheets": [
+        "docs/rdmnet_dox_styles.css"
+      ],
+      "input": {
+        "unprocessed": [
+          "include/rdmnet",
+          "include/rdmnet/cpp",
+          "include/rdmnet/cpp/message_types",
+          "src/rdmnet",
+          "src/rdmnet/broker/broker_api.cpp",
+          "src/rdmnet/disc/common.c",
+          "src/rdmnet/core/opts.h",
+          "docs/mainpage.md"
+        ],
+        "processed": ["docs/getting_started", "docs/how_rdmnet_works"]
+      },
       "tags": [
         {
           "name": "EtcPal",
@@ -30,7 +53,30 @@
           "webPath": "https://upload.cppreference.com/mwiki/images/f/f8/cppreference-doxygen-web.tag.xml",
           "site": "https://en.cppreference.com/w"
         }
-      ]
+      ],
+      "multiVersion": {
+        "enabled": true,
+        "htmlRoot": "RDMnetDocs",
+        "versions": [
+          {
+            "name": "0.3.0",
+            "ref": "v0.3.0",
+            "input": {
+              "unprocessed": [
+                "include/rdmnet",
+                "include/rdmnet/cpp",
+                "include/rdmnet/cpp/message_types",
+                "src/rdmnet",
+                "src/rdmnet/broker/broker_api.cpp",
+                "src/rdmnet/disc/common.c",
+                "src/rdmnet/core/opts.h",
+                "docs/mainpage.md"
+              ],
+              "processed": ["docs/getting_started", "docs/how_rdmnet_works"]
+            }
+          }
+        ]
+      }
     },
     "release-lib": {
       "projectName": "RDMnet",

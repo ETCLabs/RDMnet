@@ -1,6 +1,6 @@
 # Main test module. 
 
-include(RdmnetSourceManifest)
+include(${RDMNET_CMAKE}/RdmnetSourceManifest.cmake)
 
 set(TEST_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
