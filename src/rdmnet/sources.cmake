@@ -19,6 +19,23 @@ set(RDMNET_API_PUBLIC_HEADERS
   ${RDMNET_INCLUDE}/rdmnet/llrp.h
   ${RDMNET_INCLUDE}/rdmnet/message.h
   ${RDMNET_INCLUDE}/rdmnet/version.h
+  ${RDMNET_INCLUDE}/rdmnet/cpp/message_types/dynamic_uid.h
+  ${RDMNET_INCLUDE}/rdmnet/cpp/message_types/ept_client.h
+  ${RDMNET_INCLUDE}/rdmnet/cpp/message_types/ept_data.h
+  ${RDMNET_INCLUDE}/rdmnet/cpp/message_types/ept_status.h
+  ${RDMNET_INCLUDE}/rdmnet/cpp/message_types/llrp_rdm_command.h
+  ${RDMNET_INCLUDE}/rdmnet/cpp/message_types/llrp_rdm_response.h
+  ${RDMNET_INCLUDE}/rdmnet/cpp/message_types/rdm_command.h
+  ${RDMNET_INCLUDE}/rdmnet/cpp/message_types/rdm_response.h
+  ${RDMNET_INCLUDE}/rdmnet/cpp/message_types/rpt_client.h
+  ${RDMNET_INCLUDE}/rdmnet/cpp/message_types/rpt_status.h
+  ${RDMNET_INCLUDE}/rdmnet/cpp/client.h
+  ${RDMNET_INCLUDE}/rdmnet/cpp/common.h
+  ${RDMNET_INCLUDE}/rdmnet/cpp/controller.h
+  ${RDMNET_INCLUDE}/rdmnet/cpp/device.h
+  ${RDMNET_INCLUDE}/rdmnet/cpp/ept_client.h
+  ${RDMNET_INCLUDE}/rdmnet/cpp/llrp_manager.h
+  ${RDMNET_INCLUDE}/rdmnet/cpp/message.h
 )
 set(RDMNET_API_PRIVATE_HEADERS
   ${RDMNET_SRC}/rdmnet/common_priv.h
