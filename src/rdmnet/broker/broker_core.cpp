@@ -386,18 +386,23 @@ void BrokerCore::StopBrokerServices(rdmnet_disconnect_reason_t disconnect_reason
   components_.threads->StopThreads();
 
   // No new connections coming in, manually shut down the existing ones.
-  etcpal::WriteGuard clients_write(client_lock_);
-  for (auto& client_pair : clients_)
+  std::vector<BrokerClient::Handle> clients_for_socket_removal;
   {
-    if (!RDMNET_ASSERT_VERIFY(client_pair.second))
-      return;
+    etcpal::WriteGuard clients_write(client_lock_);
+    for (auto& client_pair : clients_)
+    {
+      if (!RDMNET_ASSERT_VERIFY(client_pair.second))
+        return;
 
-    ClientWriteGuard client_write(*client_pair.second);
-    MarkLockedClientForDestruction(*client_pair.second, ClientDestroyAction::SendDisconnect(disconnect_reason));
-    client_pair.second->Send(settings_.cid);
+      ClientWriteGuard client_write(*client_pair.second);
+      MarkLockedClientForDestruction(*client_pair.second, ClientDestroyAction::SendDisconnect(disconnect_reason));
+      client_pair.second->Send(settings_.cid);
+    }
+
+    DestroyMarkedClientsLocked(clients_for_socket_removal);
   }
 
-  DestroyMarkedClientsLocked();
+  RemoveClientSockets(clients_for_socket_removal);
 }
 
 bool BrokerCore::HandleNewConnection(etcpal_socket_t new_sock, const etcpal::SockAddr& addr)
@@ -438,7 +443,6 @@ bool BrokerCore::HandleNewConnection(etcpal_socket_t new_sock, const etcpal::Soc
       {
         client->addr_ = addr;
         clients_.insert(std::make_pair(new_handle, std::move(client)));
-        components_.socket_mgr->AddSocket(new_handle, new_sock);
         result = true;
       }
     }
@@ -446,6 +450,8 @@ bool BrokerCore::HandleNewConnection(etcpal_socket_t new_sock, const etcpal::Soc
 
   if (result)
   {
+    // Calling this outside of the client_lock_ to avoid deadlocking.
+    components_.socket_mgr->AddSocket(new_handle, new_sock);
     BROKER_LOG_DEBUG("New connection created with handle %d", new_handle);
   }
   else
@@ -481,7 +487,9 @@ bool BrokerCore::ServiceClients()
 
   if (client_destroy_timer_.IsExpired())
   {
-    DestroyMarkedClients();
+    std::vector<BrokerClient::Handle> clients_for_socket_removal;
+    DestroyMarkedClients(clients_for_socket_removal);
+    RemoveClientSockets(clients_for_socket_removal);
     client_destroy_timer_.Reset();
   }
 
@@ -708,13 +716,14 @@ bool BrokerCore::MarkLockedClientForDestruction(BrokerClient& client, const Clie
 }
 
 // These functions will take a write lock on client_lock_.
-void BrokerCore::DestroyMarkedClients()
+// RemoveClientSockets should immediately be called afterwards (outside client_lock_ to avoid deadlocking).
+void BrokerCore::DestroyMarkedClients(std::vector<BrokerClient::Handle>& clients_for_socket_removal)
 {
   etcpal::WriteGuard clients_write(client_lock_);
-  DestroyMarkedClientsLocked();
+  DestroyMarkedClientsLocked(clients_for_socket_removal);
 }
 
-void BrokerCore::DestroyMarkedClientsLocked()
+void BrokerCore::DestroyMarkedClientsLocked(std::vector<BrokerClient::Handle>& clients_for_socket_removal)
 {
   if (!clients_to_destroy_.empty())
   {
@@ -723,13 +732,13 @@ void BrokerCore::DestroyMarkedClientsLocked()
       auto client = clients_.find(to_destroy);
       if (client != clients_.end())
       {
-        if (!RDMNET_ASSERT_VERIFY(client->second) || !RDMNET_ASSERT_VERIFY(components_.socket_mgr))
+        if (!RDMNET_ASSERT_VERIFY(client->second))
           return;
 
         auto client_ip = client->second->addr_;
 
         if (client->second->socket_ != ETCPAL_SOCKET_INVALID)
-          components_.socket_mgr->RemoveSocket(client->second->handle_);
+          clients_for_socket_removal.push_back(client->second->handle_);
 
         if (client->second->client_protocol_ == E133_CLIENT_PROTOCOL_RPT)
         {
@@ -750,6 +759,16 @@ void BrokerCore::DestroyMarkedClientsLocked()
     }
     clients_to_destroy_.clear();
   }
+}
+
+// This must be called outside of client_lock_.
+void BrokerCore::RemoveClientSockets(const std::vector<BrokerClient::Handle>& clients)
+{
+  if (!RDMNET_ASSERT_VERIFY(components_.socket_mgr))
+    return;
+
+  for (auto client : clients)
+    components_.socket_mgr->RemoveSocket(client);
 }
 
 void BrokerCore::HandleSocketClosed(BrokerClient::Handle client_handle, bool /*graceful*/)

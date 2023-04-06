@@ -171,8 +171,9 @@ private:
                                 const ClientDestroyAction& destroy_action = ClientDestroyAction::DoNothing());
   bool MarkLockedClientForDestruction(BrokerClient&              client,
                                       const ClientDestroyAction& destroy_action = ClientDestroyAction::DoNothing());
-  void DestroyMarkedClients();
-  void DestroyMarkedClientsLocked();
+  void DestroyMarkedClients(std::vector<BrokerClient::Handle>& clients_for_socket_removal);
+  void DestroyMarkedClientsLocked(std::vector<BrokerClient::Handle>& clients_for_socket_removal);
+  void RemoveClientSockets(const std::vector<BrokerClient::Handle>& clients);
 
   // BrokerSocketNotify messages
   virtual void                HandleSocketClosed(BrokerClient::Handle client_handle, bool graceful) override;
