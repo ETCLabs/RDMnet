@@ -65,6 +65,7 @@ public:
   void SetNetint(const EtcPalMcastNetintId& netint) { netint_ = netint; }
   void SetLossiness(int lossiness) { lossiness_ = lossiness; }
   void DontRespondToProbeRequests(int num_probe_requests) { dont_respond_count_ = num_probe_requests; }
+  void SkipRangeCheck() { skip_range_check_ = true; }  // Simulate targets that don't comply with e1.33 s5.7.3
   int  num_probe_requests_received() const { return probe_requests_; }
   int  num_consecutive_clean_probe_requests() const { return consec_clean_probe_requests_; }
   int  elapsed_time_ms() const { return elapsed_time_ms_; }
@@ -78,6 +79,7 @@ private:
   EtcPalMcastNetintId         netint_{};
   int                         lossiness_{0};
   int                         dont_respond_count_{0};
+  bool                        skip_range_check_{false};
   int                         probe_requests_{0};
   int                         consec_clean_probe_requests_{0};
   int                         elapsed_time_ms_{0};

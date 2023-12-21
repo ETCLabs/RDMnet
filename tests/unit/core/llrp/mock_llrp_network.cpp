@@ -167,7 +167,7 @@ void MockLlrpNetwork::HandleMessageSent(const uint8_t* message, size_t length, c
     switch (msg.vector)
     {
       case VECTOR_LLRP_PROBE_REQUEST:
-        if (LLRP_MSG_GET_PROBE_REQUEST(&msg)->contains_my_uid)
+        if (LLRP_MSG_GET_PROBE_REQUEST(&msg)->contains_my_uid || skip_range_check_)
         {
           bool should_respond = true;
 

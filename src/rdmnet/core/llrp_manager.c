@@ -139,7 +139,7 @@ etcpal_error_t rc_llrp_manager_register(RCLlrpManager* manager)
 
   manager->transaction_number = 0;
   manager->discovery_active = false;
-  manager->response_received_since_last_probe = false;
+  manager->target_discovered_since_last_probe = false;
   manager->num_clean_sends = 0;
   manager->disc_filter = 0;
   manager->num_known_uids = 0;
@@ -166,7 +166,7 @@ etcpal_error_t rc_llrp_manager_start_discovery(RCLlrpManager* manager, uint16_t 
     manager->cur_range_low.manu = 0;
     manager->cur_range_low.id = 0;
     manager->cur_range_high = kRdmBroadcastUid;
-    manager->response_received_since_last_probe = false;
+    manager->target_discovered_since_last_probe = false;
     manager->num_clean_sends = 0;
     manager->discovery_active = true;
     manager->disc_filter = filter;
@@ -349,9 +349,9 @@ void process_manager_state(RCLlrpManager* manager, const void* context)
     {
       if (etcpal_timer_is_expired(&manager->disc_timer))
       {
-        if (manager->response_received_since_last_probe)
+        if (manager->target_discovered_since_last_probe)
         {
-          manager->response_received_since_last_probe = false;
+          manager->target_discovered_since_last_probe = false;
           manager->num_clean_sends = 0;
         }
         else
@@ -490,8 +490,6 @@ void handle_llrp_message(RCLlrpManager* manager, const LlrpMessage* msg, RCLlrpM
 
         if (manager->discovery_active && (ETCPAL_UUID_CMP(&msg->header.dest_cid, &manager->cid) == 0))
         {
-          manager->response_received_since_last_probe = true;
-
           DiscoveredTargetInternal* new_target = (DiscoveredTargetInternal*)malloc(sizeof(DiscoveredTargetInternal));
           if (new_target)
           {
@@ -510,6 +508,16 @@ void handle_llrp_message(RCLlrpManager* manager, const LlrpMessage* msg, RCLlrpM
                 if (ETCPAL_UUID_CMP(&found->cid, &new_target->cid) == 0)
                 {
                   // This target has already responded. It is not new.
+                  if (RDMNET_CAN_LOG(ETCPAL_LOG_WARNING))
+                  {
+                    char cid_str[ETCPAL_UUID_STRING_BYTES];
+                    etcpal_uuid_to_string(&found->cid, cid_str);
+                    RDMNET_LOG_WARNING(
+                        "Received a redundant response from LLRP target %s (it should have stopped responding once it "
+                        "was discovered)",
+                        cid_str);
+                  }
+
                   free(new_target);
                   new_target = NULL;
                   break;
@@ -534,6 +542,7 @@ void handle_llrp_message(RCLlrpManager* manager, const LlrpMessage* msg, RCLlrpM
             {
               event->which = kRCLlrpManagerEventTargetDiscovered;
               event->args.discovered_target = &msg->data.probe_reply;
+              manager->target_discovered_since_last_probe = true;
             }
           }
         }

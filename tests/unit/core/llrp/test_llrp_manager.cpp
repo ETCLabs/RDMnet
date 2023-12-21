@@ -233,6 +233,30 @@ TEST_F(TestLlrpManager, DiscoversResponderThatDoesntRespondAtFirst)
   EXPECT_EQ(managercb_discovery_finished_fake.call_count, 1u);
 }
 
+TEST_F(TestLlrpManager, HandlesResponderThatDoesntStopReplying)
+{
+  rdm::Uid responder_uid{0x6574, 0x12345678};
+  llrp_network.AddTarget(responder_uid);
+
+  target_discovered_cb = [&](RCLlrpManager*, const LlrpDiscoveredTarget* target) {
+    ASSERT_TRUE(target != nullptr);
+    EXPECT_EQ(target->uid, responder_uid);
+  };
+  discovery_finished_cb = [&](RCLlrpManager*) { EXPECT_GE(llrp_network.elapsed_time_ms(), 8000); };
+
+  llrp_network.SkipRangeCheck();
+  rc_llrp_manager_start_discovery(&manager_, 0);
+
+  // Tick forward 85 * 100ms = 8.5 seconds (4x LLRP_TIMEOUT plus some extra padding).
+  for (int i = 0; i < 85; ++i)
+    llrp_network.AdvanceTimeAndTick();
+
+  EXPECT_EQ(llrp_network.num_probe_requests_received(), 4);
+  EXPECT_EQ(llrp_network.num_consecutive_clean_probe_requests(), 0);
+  EXPECT_EQ(managercb_target_discovered_fake.call_count, 1u);
+  EXPECT_EQ(managercb_discovery_finished_fake.call_count, 1u);
+}
+
 class TestLlrpManagerAtScale : public TestLlrpManager, public testing::WithParamInterface<int>
 {
 };
