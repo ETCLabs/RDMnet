@@ -138,7 +138,7 @@ deploy-docs:
 # Deploy versioned build
 include:
   - project: 'etc/common-tech/tools/gitlab-ci-util'
-    ref: v2.0.1
+    ref: null-config-workaround
     file: '/ci-yml/deploy-versioned-build.yml'
 
 deploy-artifacts:
