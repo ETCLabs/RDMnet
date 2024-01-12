@@ -333,6 +333,14 @@ etcpal_error_t rc_mcast_create_recv_socket(const EtcPalIpAddr* group, uint16_t p
 
   if (res == kEtcPalErrOk)
   {
+    // Enable LLRP to obtain the network interface from etcpal_recvmsg.
+    const int value = 1;
+    res = etcpal_setsockopt(sock, ETCPAL_IP_IS_V6(group) ? ETCPAL_IPPROTO_IPV6 : ETCPAL_IPPROTO_IP,
+                            ETCPAL_IP_IS_V6(group) ? ETCPAL_IPV6_PKTINFO : ETCPAL_IP_PKTINFO, &value, sizeof value);
+  }
+
+  if (res == kEtcPalErrOk)
+  {
     // SO_REUSEADDR allows multiple sockets to bind to LLRP_PORT, which is very important for our
     // multicast needs.
     const int value = 1;

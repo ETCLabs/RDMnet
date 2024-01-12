@@ -17,6 +17,19 @@
  * https://github.com/ETCLabs/RDMnet
  *****************************************************************************/
 
+// These are defined before the includes to enable ETCPAL_MAX_CONTROL_SIZE_PKTINFO support on Mac & Linux.
+#if defined(__linux__) || defined(__APPLE__)
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif  // _GNU_SOURCE
+#endif  // defined(__linux__) || defined(__APPLE__)
+
+#if defined(__APPLE__)
+#ifndef __APPLE_USE_RFC_3542
+#define __APPLE_USE_RFC_3542
+#endif  // __APPLE_USE_RFC_3542
+#endif  // defined(__APPLE__)
+
 #include "rdmnet/core/llrp.h"
 
 #include "etcpal/netint.h"
@@ -89,6 +102,7 @@ static void deinit_recv_socket(LlrpRecvSocket* sock_struct);
 static const EtcPalIpAddr* get_llrp_mcast_addr(llrp_socket_t llrp_type, etcpal_iptype_t ip_type);
 static LlrpRecvSocket*     get_llrp_recv_sock(llrp_socket_t llrp_type, etcpal_iptype_t ip_type);
 static etcpal_error_t create_recv_socket(llrp_socket_t llrp_type, etcpal_iptype_t ip_type, LlrpRecvSocket* sock_struct);
+static bool           get_netint_id(EtcPalMsgHdr* msg, EtcPalMcastNetintId* netint_id);
 
 static void llrp_socket_activity(const EtcPalPollEvent* event, RCPolledSocketOpaqueData data);
 static void llrp_socket_error(etcpal_error_t err);
@@ -286,6 +300,31 @@ etcpal_error_t create_recv_socket(llrp_socket_t llrp_type, etcpal_iptype_t ip_ty
   return res;
 }
 
+bool get_netint_id(EtcPalMsgHdr* msg, EtcPalMcastNetintId* netint_id)
+{
+  if (!RDMNET_ASSERT_VERIFY(msg) || !RDMNET_ASSERT_VERIFY(netint_id))
+    return false;
+
+  EtcPalCMsgHdr cmsg = {0};
+  EtcPalPktInfo pktinfo = {{0}};
+  bool          pktinfo_found = false;
+  if (etcpal_cmsg_firsthdr(msg, &cmsg))
+  {
+    do
+    {
+      pktinfo_found = etcpal_cmsg_to_pktinfo(&cmsg, &pktinfo);
+    } while (!pktinfo_found && etcpal_cmsg_nxthdr(msg, &cmsg, &cmsg));
+  }
+
+  if (pktinfo_found)
+  {
+    netint_id->index = pktinfo.ifindex;
+    netint_id->ip_type = pktinfo.addr.type;
+  }
+
+  return pktinfo_found;
+}
+
 void llrp_socket_activity(const EtcPalPollEvent* event, RCPolledSocketOpaqueData data)
 {
   if (!RDMNET_ASSERT_VERIFY(event))
@@ -299,8 +338,15 @@ void llrp_socket_activity(const EtcPalPollEvent* event, RCPolledSocketOpaqueData
   }
   else if (event->events & ETCPAL_POLL_IN)
   {
-    EtcPalSockAddr from_addr;
-    int            recv_res = etcpal_recvfrom(event->socket, llrp_recv_buf, LLRP_MAX_MESSAGE_SIZE, 0, &from_addr);
+    uint8_t control_buf[ETCPAL_MAX_CONTROL_SIZE_PKTINFO];  // Ancillary data
+
+    EtcPalMsgHdr msg;
+    msg.buf = llrp_recv_buf;
+    msg.buflen = LLRP_MAX_MESSAGE_SIZE;
+    msg.control = control_buf;
+    msg.controllen = ETCPAL_MAX_CONTROL_SIZE_PKTINFO;
+
+    int recv_res = etcpal_recvmsg(event->socket, &msg, 0);
     if (recv_res <= 0)
     {
       if (recv_res != kEtcPalErrMsgSize)
@@ -308,24 +354,28 @@ void llrp_socket_activity(const EtcPalPollEvent* event, RCPolledSocketOpaqueData
         llrp_socket_error((etcpal_error_t)recv_res);
       }
     }
+    else if (msg.flags & ETCPAL_MSG_TRUNC)
+    {
+      // No LLRP packets should be bigger than LLRP_MAX_MESSAGE_SIZE.
+      llrp_socket_error(kEtcPalErrProtocol);
+    }
     else
     {
       EtcPalMcastNetintId netint_id;
-      if (kEtcPalErrOk == etcpal_netint_get_interface_for_dest(&from_addr.ip, &netint_id.index))
+      if (!(msg.flags & ETCPAL_MSG_CTRUNC) && get_netint_id(&msg, &netint_id))
       {
-        netint_id.ip_type = from_addr.ip.type;
-
         if ((llrp_socket_t)data.int_val == kLlrpSocketTypeManager)
           rc_llrp_manager_data_received(llrp_recv_buf, (size_t)recv_res, &netint_id);
         else
           rc_llrp_target_data_received(llrp_recv_buf, (size_t)recv_res, &netint_id);
       }
-      else if (RDMNET_CAN_LOG(ETCPAL_LOG_WARNING))
+      else
       {
         char addr_str[ETCPAL_IP_STRING_BYTES];
-        etcpal_ip_to_string(&from_addr.ip, addr_str);
-        RDMNET_LOG_WARNING("Couldn't reply to LLRP message from %s:%u because no reply route could be found.", addr_str,
-                           from_addr.port);
+        etcpal_ip_to_string(&msg.name.ip, addr_str);
+        RDMNET_LOG_WARNING(
+            "Couldn't receive LLRP message from %s:%u because the network interface couldn't be determined.", addr_str,
+            msg.name.port);
       }
     }
   }
