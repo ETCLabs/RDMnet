@@ -177,7 +177,7 @@ static void browse_callback(AvahiServiceBrowser*                    b,
                             void*                                   userdata)
 {
   RdmnetScopeMonitorRef* ref = (RdmnetScopeMonitorRef*)userdata;
-  if (!RDMNET_ASSERT_VERIFY(ref) || !RDMNET_ASSERT_VERIFY(ref->broker_handle))
+  if (!RDMNET_ASSERT_VERIFY(ref))
     return;
 
   if (event == AVAHI_BROWSER_FAILURE)
