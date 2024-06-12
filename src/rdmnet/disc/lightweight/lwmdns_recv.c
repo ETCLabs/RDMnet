@@ -522,7 +522,7 @@ void handle_address_record(const DnsResourceRecord* rr)
 
 void handle_txt_record(const DnsResourceRecord* rr)
 {
-  if (!RDMNET_ASSERT_VERIFY(rr) || !RDMNET_ASSERT_VERIFY(rr->data_ptr))
+  if (!RDMNET_ASSERT_VERIFY(rr))
     return;
 
   RdmnetScopeMonitorRef* ref = NULL;

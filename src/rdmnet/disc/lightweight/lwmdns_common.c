@@ -374,7 +374,7 @@ txt_record_parse_result_t lwmdns_txt_record_to_broker_info(const uint8_t*    txt
                                                            uint16_t          txt_data_len,
                                                            DiscoveredBroker* db)
 {
-  if (!RDMNET_ASSERT_VERIFY(txt_data) || !RDMNET_ASSERT_VERIFY(db))
+  if (!RDMNET_ASSERT_VERIFY(db))
     return kTxtRecordParseError;
 
   txt_keys_found_mask_t keys_found = 0;
