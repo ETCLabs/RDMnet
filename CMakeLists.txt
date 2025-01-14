@@ -22,6 +22,7 @@ option(RDMNET_BUILD_GUI_EXAMPLES "Build the RDMnet GUI example applications" OFF
 option(RDMNET_BUILD_CONSOLE_EXAMPLES "Build the RDMnet console example applications" OFF)
 option(RDMNET_BUILD_TEST_TOOLS "Build the RDMnet test tools (typically used in development only)" OFF)
 option(RDMNET_INSTALL_PDBS "Include PDBs in RDMnet install target" ON)
+option(RDMNET_INCLUDE_SIGN_TOOLS "Include scripts for signing built artifacts (used in development only)" OFF)
 
 ################################ DNS-SD SUPPORT ###############################
 

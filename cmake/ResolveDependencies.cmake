@@ -19,6 +19,11 @@ else()
   if(RDMNET_BUILD_TESTS)
     add_project_dependency(googletest)
   endif()
+
+  if(RDMNET_INCLUDE_SIGN_TOOLS)
+    add_project_dependency(ETC_Sign)
+    add_project_dependency(ETC_Mac_Notarize)
+  endif()
 endif()
 
 if(TARGET EtcPalMock)

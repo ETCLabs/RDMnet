@@ -15,6 +15,18 @@
       "gitlabPath": "mirrors/thirdparty/google/googletest",
       "gitTag": "6b74da4757a549563d7c37c8fae3e704662a043b",
       "devOnly": true
+    },
+    {
+      "name": "ETC_Sign",
+      "gitlabPath": "etc/common-tech/tools/etc_sign",
+      "version": "1.0.0.0",
+      "devOnly": true
+    },
+    {
+      "name": "ETC_Mac_Notarize",
+      "gitlabPath": "etc/common-tech/tools/etc_mac_notarize",
+      "version": "1.0.0.0",
+      "devOnly": true
     }
   ],
   "devToolConfig": {

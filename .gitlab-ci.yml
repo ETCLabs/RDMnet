@@ -9,6 +9,12 @@ variables:
   GIT_SUBMODULE_STRATEGY: normal
   GLOBAL_CMAKE_OPTIONS: -DRDMNET_BUILD_TESTS=ON -DRDMNET_BUILD_CONSOLE_EXAMPLES=ON
   PROJECT_BOT_USER: project_270_bot
+  SIGNTOOL: "C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.17763.0\\x86\\signtool.exe"
+  
+stages:
+  - build
+  - notarize
+  - deploy
 
 windows-build:
   stage: build
@@ -30,12 +36,16 @@ windows-build:
     - python tools\ci\update_artifact_version.py
     - mkdir build
     - cd build
-    - cmake -G "Visual Studio 16 2019" $env:CMAKE_GENERATOR_OPTIONS.Split(" ") "-DQTDIR=$env:QT_DIRECTORY" "-DCMAKE_INSTALL_PREFIX=$env:CMAKE_INSTALL" $env:GLOBAL_CMAKE_OPTIONS.Split(" ") -DRDMNET_BUILD_GUI_EXAMPLES=ON ..
+    - cmake -G "Visual Studio 16 2019" $env:CMAKE_GENERATOR_OPTIONS.Split(" ") "-DQTDIR=$env:QT_DIRECTORY" "-DCMAKE_INSTALL_PREFIX=$env:CMAKE_INSTALL" $env:GLOBAL_CMAKE_OPTIONS.Split(" ") -DRDMNET_BUILD_GUI_EXAMPLES=ON -DRDMNET_INCLUDE_SIGN_TOOLS=ON ..
     - cmake --build . --config Release -j
     - ctest -C Release --output-on-failure
     - cmake -P cmake_install.cmake
     - cd ..
     - .\tools\ci\windows_build_installer.bat
+    - echo "Signing Installer"
+    - $Env:ETC_SIGN_CREDS = "${NET_CODESIGN_USER}:${NET_CODESIGN_PASS}"
+    - Start-Process -NoNewWindow -Wait -FilePath "build\_deps\etc_sign-src\etc_sign.bat" -ArgumentList "--initcert"
+    - Start-Process -NoNewWindow -Wait -FilePath "build\_deps\etc_sign-src\etc_sign.bat" -ArgumentList "RDMnetSetup_$env:ARTIFACT_TYPE.msi"
   artifacts:
     when: always
     paths:
@@ -56,7 +66,7 @@ macos-build:
     - python3 tools/ci/update_artifact_version.py
     - mkdir build
     - cd build
-    - cmake -DQTDIR=${QT_DIRECTORY} -DCMAKE_INSTALL_PREFIX=install ${GLOBAL_CMAKE_OPTIONS} -DRDMNET_BUILD_GUI_EXAMPLES=ON ..
+    - cmake -DQTDIR=${QT_DIRECTORY} -DCMAKE_INSTALL_PREFIX=install ${GLOBAL_CMAKE_OPTIONS} -DRDMNET_BUILD_GUI_EXAMPLES=ON -DRDMNET_INCLUDE_SIGN_TOOLS=ON ..
     - cmake --build . --config Release -j
     - cmake -P cmake_install.cmake
     - ctest --output-on-failure
@@ -66,8 +76,24 @@ macos-build:
     when: always
     paths:
       - RDMnet.pkg
+      - build/_deps/etc_mac_notarize-src/
     reports:
       junit: build/tests/test-results/*.xml
+
+macos-notarize:
+ stage: notarize
+ tags:
+   - ct-mac-m2
+ dependencies:
+   - macos-build
+ script:
+   - echo 'Notarizing Installer'
+   - security unlock-keychain -p build /Users/gitlab-runner/Library/Keychains/login.keychain-db
+   - python3 build/_deps/etc_mac_notarize-src/notarize.py --PACKAGE_FILEPATH ./RDMnet.pkg --KEYCHAIN notarytool-password
+ artifacts:
+   when: always
+   paths:
+     - RDMnet.pkg
 
 linux-build:
   stage: build
@@ -153,6 +179,9 @@ deploy-artifacts:
     - if: '$CI_PIPELINE_SOURCE == "web" && $NEW_BUILD_VERSION =~ /^\d+\.\d+\.\d+\.\d+$/ && $CI_COMMIT_REF_NAME == "main"'
   tags:
     - etc-linux-docker
+  dependencies:
+    - windows-build
+    - macos-notarize
   image: etc-docker.artifactory.etcconnect.com/python:latest
   script:
     - pip install requests PyGithub
