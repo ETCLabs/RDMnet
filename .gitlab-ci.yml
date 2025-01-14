@@ -109,7 +109,7 @@ linux-build:
     - mkdir build
     - cd build
     - cmake ${GLOBAL_CMAKE_OPTIONS} ${CMAKE_LINUX_OPTIONS} -DRDMNET_ENABLE_ASAN=ON ..
-    - cmake --build .
+    - make -j `nproc`
     - ctest --output-on-failure
   artifacts:
     when: always
@@ -129,7 +129,7 @@ oss-build:
     - cd build
     # Use default config, no options
     - cmake ..
-    - cmake --build .
+    - make -j `nproc`
 
 docs:
   stage: build
