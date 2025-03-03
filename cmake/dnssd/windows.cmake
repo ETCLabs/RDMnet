@@ -20,7 +20,7 @@ set(RDMNET_DISC_PLATFORM_INCLUDE_DIRS ${RDMNET_SRC}/rdmnet/disc/bonjour)
 # Download the mDNSWindows binaries from the GitHub repository.
 ###################################################################################################
 function(download_mdnswindows_binaries)
-  set(MDNSWINDOWS_VERSION 1.3.1)
+  set(MDNSWINDOWS_VERSION 1.3.2)
 
   set(MDNSWINDOWS_MERGE_DOWNLOAD_URL "https://github.com/ETCLabs/mDNSWindows/releases/download/v${MDNSWINDOWS_VERSION}/ETC_mDNSInstall.msm")
   if(CMAKE_SIZEOF_VOID_P EQUAL 8)
