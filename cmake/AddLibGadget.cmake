@@ -1,6 +1,6 @@
 message(STATUS "Adding libGadget for Fakeway example...")
 
-set(LIBGADGET_FETCHCONTENT_VERSION 2.1.0.1)
+set(LIBGADGET_FETCHCONTENT_VERSION 3.0.0.1)
 
 include(FetchContent)
 FetchContent_Declare(
