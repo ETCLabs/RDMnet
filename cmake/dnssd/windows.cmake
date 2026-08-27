@@ -17,20 +17,24 @@ set(RDMNET_DISC_PLATFORM_SOURCES
 set(RDMNET_DISC_PLATFORM_INCLUDE_DIRS ${RDMNET_SRC}/rdmnet/disc/bonjour)
 
 ###################################################################################################
-# Download the mDNSWindows binaries from the GitHub repository.
+# Download the mDNSWindows files and installer from the GitHub repository.
 ###################################################################################################
 function(download_mdnswindows_binaries)
-  set(MDNSWINDOWS_VERSION 1.3.3)
+  set(MDNSWINDOWS_VERSION 1.3.5)
 
-  set(MDNSWINDOWS_MERGE_DOWNLOAD_URL "https://github.com/ETCLabs/mDNSWindows/releases/download/v${MDNSWINDOWS_VERSION}/ETC_mDNSInstall.msm")
   if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    set(MDNSWINDOWS_DOWNLOAD_URL "https://github.com/ETCLabs/mDNSWindows/releases/download/v${MDNSWINDOWS_VERSION}/mDNSWindows_x64.zip")
+    set(MDNSWINDOWS_INSTALLER ETC_mDNS_Install_x64.exe)
+    set(MDNSWINDOWS_ZIP_FILE mDNSWindows_x64.zip)
   else()
-    set(MDNSWINDOWS_DOWNLOAD_URL "https://github.com/ETCLabs/mDNSWindows/releases/download/v${MDNSWINDOWS_VERSION}/mDNSWindows_x86.zip")
+    set(MDNSWINDOWS_INSTALLER ETC_mDNS_Install_x86.exe)
+    set(MDNSWINDOWS_ZIP_FILE mDNSWindows_x86.zip)
   endif()
 
+  message(STATUS "Downloading mDSNWindows v${MDNSWINDOWS_VERSION} ${MDNSWINDOWS_INSTALLER} and ${MDNSWINDOWS_ZIP_FILE} from GitHub...")
+  set(MDNSWINDOWS_INSTALLER_DOWNLOAD_URL "https://github.com/ETCLabs/mDNSWindows/releases/download/v${MDNSWINDOWS_VERSION}/${MDNSWINDOWS_INSTALLER}")
+  set(MDNSWINDOWS_DOWNLOAD_URL "https://github.com/ETCLabs/mDNSWindows/releases/download/v${MDNSWINDOWS_VERSION}/${MDNSWINDOWS_ZIP_FILE}")
+
   message(STATUS "Neither RDMNET_MDNSWINDOWS_SRC_LOC or RDMNET_MDNSWINDOWS_INSTALL_LOC overrides provided.")
-  message(STATUS "Downloading the correct release from GitHub...")
 
   file(DOWNLOAD ${MDNSWINDOWS_DOWNLOAD_URL} ${CMAKE_BINARY_DIR}/mdnswindows.zip STATUS DOWNLOAD_STATUS)
   list(GET DOWNLOAD_STATUS 0 DOWNLOAD_STATUS_CODE)
@@ -39,21 +43,21 @@ function(download_mdnswindows_binaries)
     message(FATAL_ERROR "Error downloading from ${MDNSWINDOWS_DOWNLOAD_URL}: '${DOWNLOAD_STATUS_STR}'")
   endif()
 
-  message(STATUS "Done. Extracting...")
+  message(STATUS "Done downloading files. Extracting...")
 
   file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/mdnswindows_install)
   execute_process(COMMAND ${CMAKE_COMMAND} -E tar -xzf ${CMAKE_BINARY_DIR}/mdnswindows.zip WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/mdnswindows_install)
   set(RDMNET_MDNSWINDOWS_INSTALL_LOC ${CMAKE_BINARY_DIR}/mdnswindows_install CACHE STRING "Override location for mDNSWindows to build from source on Windows" FORCE)
 
-  message(STATUS "Done. Downloading merge module...")
+  message(STATUS "Done. Downloading installer...")
 
-  file(DOWNLOAD ${MDNSWINDOWS_MERGE_DOWNLOAD_URL} ${CMAKE_BINARY_DIR}/mdnswindows_install/ETC_mDNSInstall.msm STATUS DOWNLOAD_STATUS)
+  file(DOWNLOAD ${MDNSWINDOWS_INSTALLER_DOWNLOAD_URL} ${CMAKE_BINARY_DIR}/mdnswindows_install/ETC_mDNSInstall.exe STATUS DOWNLOAD_STATUS)
   list(GET DOWNLOAD_STATUS 0 DOWNLOAD_STATUS_CODE)
   list(GET DOWNLOAD_STATUS 1 DOWNLOAD_STATUS_STR)
   if(DOWNLOAD_STATUS_CODE EQUAL 0)
     message(STATUS "Done.")
   else()
-    message(FATAL_ERROR "Error downloading from ${MDNSWINDOWS_MERGE_DOWNLOAD_URL}: '${DOWNLOAD_STATUS_STR}'")
+    message(FATAL_ERROR "Error downloading from ${MDNSWINDOWS_INSTALLER_DOWNLOAD_URL}: '${DOWNLOAD_STATUS_STR}'")
   endif()
 endfunction()
 
