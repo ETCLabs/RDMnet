@@ -276,7 +276,7 @@
 
 # this value is written when .gitlab-ci.yml runs the command
 # - python tools\ci\update_artifact_version.py
-!define PRODUCT_VERSION "1.0.0.0"
+!define PRODUCT_VERSION "1.0.0.11"
 
 # the name of the installer
 Outfile "RDMnetSetup_$%ARTIFACT_TYPE%.exe"

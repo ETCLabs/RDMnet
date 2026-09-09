@@ -29,7 +29,7 @@
 
 !define PRODUCT_NAME "RDMnet"
 !define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\{9F1AE589-20F1-49BD-A8D7-83DCD5C01CC1}"
-!define PRODUCT_VERSION "1.0.0.0"
+!define PRODUCT_VERSION "1.0.0.11"
 
 # the name of the uninstaller
 Outfile "fake_install.exe"

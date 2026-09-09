@@ -49,7 +49,7 @@
  * @{
  */
 #define RDMNET_VERSION_STRING "1.0.0.11" /**< The version number as a string. */
-#define RDMNET_VERSION_DATESTR "2.Sep.2026" /**< The date this version was created.   TODO update this */
+#define RDMNET_VERSION_DATESTR "09.Sep.2026" /**< The date this version was created. */
 #define RDMNET_VERSION_COPYRIGHT "Copyright 2026 ETC Inc." /**< A copyright string for this library. */
 #define RDMNET_VERSION_PRODUCTNAME "RDMnet" /**< The name of the library as a string. */
 /**
