@@ -33,7 +33,9 @@
     "version": {
       "fileTemplates": {
         "tools/templates/version.h.in": "include/rdmnet/version.h",
-        "tools/templates/vars.wxi.in": "tools/install/windows/vars.wxi"
+        "tools/install/windows/install.nsi.in": "tools/install/windows/install.nsi",
+        "tools/install/windows/uninstall.nsi.in": "tools/install/windows/uninstall.nsi"
+
       },
       "jira": {
         "project": "RDMNET"

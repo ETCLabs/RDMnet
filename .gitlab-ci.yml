@@ -7,9 +7,7 @@ workflow:
 variables:
   GIT_STRATEGY: clone
   GIT_SUBMODULE_STRATEGY: normal
-  # COMMONTECH-81: Will revist when ready to move to Qt6
-  #GLOBAL_CMAKE_OPTIONS: -DRDMNET_BUILD_TESTS=ON -DRDMNET_BUILD_CONSOLE_EXAMPLES=ON
-  GLOBAL_CMAKE_OPTIONS: -DRDMNET_BUILD_TESTS=ON
+  GLOBAL_CMAKE_OPTIONS: -DRDMNET_BUILD_TESTS=ON -DRDMNET_BUILD_CONSOLE_EXAMPLES=ON
   PROJECT_BOT_USER: project_270_bot
   SIGNTOOL: "C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.17763.0\\x86\\signtool.exe"
   
@@ -39,24 +37,19 @@ windows-build:
     - python tools\ci\update_artifact_version.py
     - mkdir build
     - cd build
-    # COMMONTECH-81: Will revist when ready to move to Qt6
-    #- cmake -G "Visual Studio 16 2019" $env:CMAKE_GENERATOR_OPTIONS.Split(" ") "-DQTDIR=$env:QT_DIRECTORY" "-DCMAKE_INSTALL_PREFIX=$env:CMAKE_INSTALL" $env:GLOBAL_CMAKE_OPTIONS.Split(" ") -DRDMNET_BUILD_GUI_EXAMPLES=ON -DRDMNET_INCLUDE_SIGN_TOOLS=ON ..
-    - cmake -G "Visual Studio 16 2019" $env:CMAKE_GENERATOR_OPTIONS.Split(" ") "-DQTDIR=$env:QT_DIRECTORY" "-DCMAKE_INSTALL_PREFIX=$env:CMAKE_INSTALL" $env:GLOBAL_CMAKE_OPTIONS.Split(" ") -DRDMNET_INCLUDE_SIGN_TOOLS=ON ..
+    - cmake -G "Visual Studio 16 2019" $env:CMAKE_GENERATOR_OPTIONS.Split(" ") "-DQTDIR=$env:QT_DIRECTORY" "-DCMAKE_INSTALL_PREFIX=$env:CMAKE_INSTALL" $env:GLOBAL_CMAKE_OPTIONS.Split(" ") -DRDMNET_BUILD_GUI_EXAMPLES=ON -DRDMNET_INCLUDE_SIGN_TOOLS=ON ..
     - cmake --build . --config Release -j
     - ctest -C Release --output-on-failure
-    # COMMONTECH-81: Will revist when ready to move to Qt6
-    #- cmake -P cmake_install.cmake
-    #- cd ..
-    #- .\tools\ci\windows_build_installer.bat
-    #- echo "Signing Installer"
-    #- $Env:ETC_SIGN_CREDS = "${NET_CODESIGN_USER}:${NET_CODESIGN_PASS}"
-    #- Start-Process -NoNewWindow -Wait -FilePath "build\_deps\etc_sign-src\etc_sign.bat" -ArgumentList "--initcert"
-    #- Start-Process -NoNewWindow -Wait -FilePath "build\_deps\etc_sign-src\etc_sign.bat" -ArgumentList "RDMnetSetup_$env:ARTIFACT_TYPE.msi"
+    - cmake -P cmake_install.cmake
+    - cd ..
+    - cd tools\ci
+    - .\build_windows_installer.bat
+    - cd ..\..
+    - dir
   artifacts:
     when: always
     paths:
-      # COMMONTECH-81: Will revist when ready to move to Qt6
-      #- RDMnetSetup_$ARTIFACT_TYPE.msi
+      - RDMnetSetup_$ARTIFACT_TYPE.exe
     reports:
       junit: build/tests/test-results/*.xml
 
@@ -112,7 +105,7 @@ linux-build:
   stage: build
   tags:
     - etc-linux-docker
-  image: etc-docker.artifactory.etcconnect.com/rikorose/gcc-cmake:latest
+  image: etc-docker.artifactory.etcconnect.com/etc/common-tech-containers/gcc13-llvm21-cmake3.31.11:v1
   parallel:
     matrix:
       - CMAKE_LINUX_OPTIONS: -DRDMNET_BUILD_TESTS_STATIC=OFF
@@ -133,7 +126,7 @@ oss-build:
   stage: build
   tags:
     - etc-linux-docker
-  image: etc-docker.artifactory.etcconnect.com/etc/common-tech/gcc-cmake:latest
+  image: etc-docker.artifactory.etcconnect.com/etc/common-tech-containers/gcc13-llvm21-cmake3.31.11:v1
   script:
     - apt-get update && apt-get install -y --no-install-recommends uuid-dev libavahi-client-dev
     # Remove the .git folder to simulate building from P4/zip archive
@@ -186,17 +179,17 @@ include:
     ref: v2.2.3
     file: '/ci-yml/deploy-versioned-build.yml'
 
-# COMMONTECH-81: Will revist when ready to move to Qt6
-#deploy-artifacts:
-  #stage: deploy
-  #rules:
-    #- if: '$CI_PIPELINE_SOURCE == "web" && $NEW_BUILD_VERSION =~ /^\d+\.\d+\.\d+\.\d+$/ && $CI_COMMIT_REF_NAME == "main"'
-  #tags:
-    #- etc-linux-docker
-  #dependencies:
-    #- windows-build
+deploy-artifacts:
+  stage: deploy
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "web" && $NEW_BUILD_VERSION =~ /^\d+\.\d+\.\d+\.\d+$/ && $CI_COMMIT_REF_NAME == "main"'
+  tags:
+    - etc-linux-docker
+  dependencies:
+    - windows-build
+    # COMMONTECH-81: Will revist when ready to move to Qt6
     #- macos-notarize
-  #image: etc-docker.artifactory.etcconnect.com/python:latest
-  #script:
-    #- pip install requests PyGithub
-    #- python3 tools/ci/deploy_to_github_release.py ${NEW_BUILD_VERSION}
+  image: etc-docker.artifactory.etcconnect.com/python:latest
+  script:
+    - pip install requests PyGithub
+    - python3 tools/ci/deploy_to_github_release.py ${NEW_BUILD_VERSION}

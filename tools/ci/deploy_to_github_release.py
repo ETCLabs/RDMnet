@@ -33,8 +33,8 @@ def deploy_binaries(version: str):
         name=f"RDMnet v{version}",
         message=f"Automated release of RDMnet for v{version}",
     )
-    new_release.upload_asset("RDMnetSetup_x86.msi")
-    new_release.upload_asset("RDMnetSetup_x64.msi")
+    new_release.upload_asset("RDMnetSetup_x86.exe")
+    new_release.upload_asset("RDMnetSetup_x64.exe")
     new_release.upload_asset("RDMnet.pkg")
 
 

@@ -1,0 +1,415 @@
+# install.nsi
+#
+# Do not edit install.nsi, edit install.nsi.in
+#
+# Create the Windows installer for RDMnet
+#
+# Usage: "C:\Program Files (x86)\NSIS\makensis.exe" install.nsi
+
+# v1.0.0.8 snapshot of installed files
+# C:\Program Files\ETC\RDMnet
+# \bin
+#   \iconengines
+#    qsvgicon.dll
+#   \imageformats
+#    qgif.dll
+#    qicns.dll
+#    qico.dll
+#    qjpeg.dll
+#    qsvg.dll
+#    qtga.dll
+#    qtiff.dll
+#    qwbmp.dll
+#    qwebp.dll
+#   \platforms
+#    qwindows.dll
+#   \styles
+#    qwindowsvistastyle.dll
+#   \translations
+#    qt_ar.qm
+#    qt_bg.qm
+#    qt_ca.qm
+#    qt_cs.qm
+#    qt_da.qm
+#    qt_de.qm
+#    qt_en.qm
+#    qt_es.qm
+#    qt_fa.qm
+#    qt_fi.qm
+#    qt_fr.qm
+#    qt_gd.qm
+#    qt_he.qm
+#    qt_hu.qm
+#    qt_it.qm
+#    qt_ja.qm
+#    qt_ko.qm
+#    qt_lv.qm
+#    qt_nl.qm
+#    qt_pl.qm
+#    qt_pt_BR.qm
+#    qt_ru.qm
+#    qt_sk.qm
+#    qt_uk.qm
+#    qt_zh_CN.qm
+#    qt_zh_TW.qm
+#  D3Dcompiler_47.dll
+#  dnssd.dll
+#  GadgetDLL.dll
+#  libEGL.dll
+#  libGLESV2.dll
+#  llrp_manager_example.exe
+#  opengl32sw.dll
+#  Qt5Core.dll
+#  Qt5Gui.dll
+#  Qt5Svg.dll
+#  Qt5Widgets.dll
+#  rdmnet_broker_example.exe
+#  rdmnet_controller_example.exe
+#  rdmnet_device_example.exe
+#  rdmnet_gateway_example.exe
+#
+# C:\Program Files\ETC\RDMnet
+# \include
+#   \etcpal
+#     \cpp
+#      common.h
+#      error.h
+#      event_group.h
+#      hash.h
+#      inet.h
+#      log.h
+#      mutex.h
+#      opaque_id.h
+#      queue.h
+#      recursive_mutex.h
+#      rwlock.h
+#      sem.h
+#      signal.h
+#      thread.h
+#      timer.h
+#      uuid.h
+#    acn_pdu.h
+#    acn_prot.h
+#    acn_rlp.h
+#    common.h
+#    error.h
+#    event_group.h
+#    handle_manager.h
+#    inet.h
+#    log.h
+#    mempool.h
+#    mutex.h
+#    netint.h
+#    os_event_group.h
+#    os_inet.h
+#    os_mutex.h
+#    os_queue.h
+#    os_recursive_mutex.h
+#    os_rwlock.h
+#    os_sem.h
+#    os_signal.h
+#    os_socket.h
+#    os_thread.h
+#    pack.h
+#    pack64.h
+#    queue.h
+#    rbtree.h
+#    recursive_mutex.h
+#    rwlock.h
+#    sem.h
+#    signal.h
+#    socket.h
+#    thread.h
+#    timer.h
+#    uuid.h
+#    version.h
+#   \gmock
+#     \internal
+#       \custom
+#        gmock-generated-actions.h
+#        gmock-matchers.h
+#        gmock-port.h
+#        README.md
+#      gmock-internal-utils.h
+#      gmock-port.h
+#      gmock-pp.h
+#    gmock.h
+#    gmock-actions.h
+#    gmock-cardinalities.h
+#    gmock-function-mocker.h
+#    gmock-matchers.h
+#    gmock-more-actions.h
+#    gmock-more-matchers.h
+#    gmock-nice-strict.h
+#    gmock-spec-builders.h
+#   \gtest
+#     \internal
+#       \custom
+#        gtest.h
+#        gtest-port.h
+#        gtest-printers.h
+#        README.md
+#      gtest-death-test-internal.h
+#      gtest-filepath.h
+#      gtest-internal.h
+#      gtest-param-util.h
+#      gtest-port.h
+#      gtest-port-arch.h
+#      gtest-string.h
+#      gtest-type-util.h
+#    gtest.h
+#    gtest_pred_impl.h
+#    gtest_prod.h
+#    gtest-death-test.h
+#    gtest-matchers.h
+#    gtest-message.h
+#    gtest-param-test.h
+#    gtest-printers.h
+#    gtest-spi.h
+#    gtest-test-part.h
+#    gtest-typed-test.h
+#   \rdm
+#     \cpp
+#       \message_types
+#        command.h
+#        command_header.h
+#        nack_reason.h
+#        response.h
+#        response_header.h
+#      message.h
+#      uid.h
+#    controller.h
+#    defs.h
+#    message.h
+#    responder.h
+#    uid.h
+#    version.h
+#   \rdmnet
+#     \cpp
+#       \message_types
+#        dynamic_uid.h
+#        ept_client.h
+#        ept_data.h
+#        ept_status.h
+#        llep_rdm_command.h
+#        llrp_rdm_response.h
+#        rdm_command.h
+#        rdm_response.h
+#        rpt_client.h
+#        rpt_status.h
+#      broker.h
+#      client.h
+#      common.h
+#      controller.h
+#      device.h
+#      ept_client.h
+#      llrp_manager.h
+#      message.h
+#    client.h
+#    common.h
+#    controller.h
+#    defs.h
+#    device.h
+#    discovery.h
+#    ept_client.h
+#    llrp.h
+#    llrp_manager.h
+#    llrp_target
+#    message.h
+#    version.h
+#
+# C:\Program Files\ETC\RDMnet
+# \lib
+#   \cmake
+#     \GTest
+#      GTestConfig.cmake
+#      GTestConfigVersion.cmake
+#      GTestTargets.cmake
+#      GTestTargets-release.cmake
+#   \pkgconfig
+#    EtcPal.pc
+#    gmock.pc
+#    gmock_main.pc
+#    gtest.pc
+#    gtest_main.pc
+#    RDM.pc
+#    RDMnet.pc
+#    RDMnetBroker.pc
+#  EtcPal.lib
+#  gmock.lib
+#  gmock_main.lib
+#  gtest.lib
+#  gtest_main.lib
+#  RDM.lib
+#  RDMnet.lib
+#  RDMnetBroker.lib
+#
+# end v1.0.0.8 snapshot of installed files
+
+!include "WinVer.nsh"
+!include "WordFunc.nsh"
+!include "Registry.nsh"
+
+# ; MUI 1.67 compatible ------
+!include "MUI.nsh"
+
+# ; MUI Settings
+!define MUI_ABORTWARNING
+!define MUI_ICON "ETCIconDark_NSIS.ico"
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_LICENSE "license.rtf"
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_PAGE_FINISH
+!insertmacro MUI_LANGUAGE "English"
+# MUI end ------
+
+!if "$%ARTIFACT_TYPE%" == "${U+24}%ARTIFACT_TYPE%"
+  !error "Error environment variable ARTIFACT_TYPE not defined"
+!endif
+
+!if "$%CMAKE_INSTALL%" == "${U+24}%CMAKE_INSTALL%"
+  !error "Error environment variable CMAKE_INSTALL not defined"
+!endif
+
+!define PRODUCT_NAME "RDMnet"
+!define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\{9F1AE589-20F1-49BD-A8D7-83DCD5C01CC1}"
+
+# this value is written when .gitlab-ci.yml runs the command
+# - python tools\ci\update_artifact_version.py
+!define PRODUCT_VERSION "1.0.0.0"
+
+# the name of the installer
+Outfile "RDMnetSetup_$%ARTIFACT_TYPE%.exe"
+
+# Show install details
+ShowInstDetails show
+
+# Request application privileges for Windows Vista
+RequestExecutionLevel admin
+
+# define the friendly name displayed in the installer pages
+Name "ETC ${PRODUCT_NAME} ${PRODUCT_VERSION}"
+
+Function .onInit
+  # read the registry for the existing installed version of RDMnet (might be empty string)
+  ReadRegStr $R0 "HKLM" "${UNINSTALL_KEY}" "DisplayVersion"
+  ClearErrors
+  ${If} $R0 != ''
+    # a copy of RDMnet is already installed on this machine
+
+    # run NSIS 'VersionCompare' function
+    ${VersionCompare} $R0 ${PRODUCT_VERSION} $R1
+    
+    # Result:
+    #    $R1=0  Versions are equal
+    #    $R1=1  $R0 (existing) is newer
+    #    $R1=2  $PRODUCT_VERSION (installer) is newer
+    ${If} $R1 != '2'
+      # the installer version is not newer, do not overwrite
+      IfSilent abort_install
+      MessageBox MB_YESNO|MB_USERICON|MB_TOPMOST "A newer version of RDMnet is already installed. Do you want to downgrade to this version?" IDYES end_check_version IDNO abort_install
+
+abort_install:
+      Abort
+end_check_version:
+    ${EndIf}
+  
+  ${EndIf}
+FunctionEnd
+
+Function InstallVcRedist
+  SetOutPath "$TEMP"
+
+  File "vc_redist.$%ARTIFACT_TYPE%.exe"
+
+  DetailPrint       "$TEMP\vc_redist.$%ARTIFACT_TYPE%.exe /install /passive /norestart"
+  nsExec::Exec /OEM "$TEMP\vc_redist.$%ARTIFACT_TYPE%.exe /install /passive /norestart"
+  Delete "$TEMP\vc_redist.$%ARTIFACT_TYPE%.exe"
+FunctionEnd
+
+Function InstallmDNSWindows
+  SetOutPath "$TEMP"
+
+  File "ETC_mDNSInstall.exe"
+
+  DetailPrint       "$TEMP\ETC_mDNSInstall.exe /S"
+  nsExec::Exec /OEM "$TEMP\ETC_mDNSInstall.exe /S"
+  Delete "$TEMP\ETC_mDNSInstall.exe"
+FunctionEnd
+
+# default section
+Section "Application"
+  # this will affect all users
+  SetShellVarContext all
+
+  # Running the uninstaller using the 'ExecWait' command doesn't work
+  # because ExecWait returns when the command prompt is 're-displayed'
+  # even though the uninstaller itself is still running.
+  #
+  # Instead, run the individual uninstall steps needed to remove the
+  # previous version of RDMnet. (duplicating code from the uninstaller)
+
+  RMDir /r "$PROGRAMFILES64\ETC\RDMnet"
+
+  SetOutPath "$PROGRAMFILES64\ETC\RDMnet"
+
+  # recursively copy everything in rdmnet\build\install_x86 or rdmnet\build\install_x64
+  File /r "..\..\..\build\$%CMAKE_INSTALL%\bin"
+  File /r "..\..\..\build\$%CMAKE_INSTALL%\include"
+  File /r "..\..\..\build\$%CMAKE_INSTALL%\lib"
+
+  # copy the uninstaller, license file, and icon file
+  File "RDMnet_Uninstall.exe"
+  File "license.rtf"
+  File "ETCIconDark_NSIS.ico"
+
+  # mDNSWindows
+  Call InstallmDNSWindows
+  
+  # VC Redistributables
+  Call InstallVcRedist
+
+  # create firewall exceptions
+  # llrp_manager_example
+  DetailPrint "netsh advfirewall firewall add rule name=ETC RDMnet (TCP-in) dir=in action=allow program=$PROGRAMFILES64\ETC\RDMnet\bin\llrp_manager_example.exe enable=yes profile=domain,public,private protocol=TCP"
+  ExecWait 'netsh advfirewall firewall add rule name="ETC RDMnet (TCP-in)" dir=in action=allow program="$PROGRAMFILES64\ETC\RDMnet\bin\llrp_manager_example.exe" enable=yes profile=domain,public,private protocol=TCP'
+  DetailPrint "netsh advfirewall firewall add rule name=ETC RDMnet (UDP-in) dir=in action=allow program=$PROGRAMFILES64\ETC\RDMnet\bin\llrp_manager_example.exe enable=yes profile=domain,public,private protocol=UDP"
+  ExecWait 'netsh advfirewall firewall add rule name="ETC RDMnet (UDP-in)" dir=in action=allow program="$PROGRAMFILES64\ETC\RDMnet\bin\llrp_manager_example.exe" enable=yes profile=domain,public,private protocol=UDP'
+
+  # rdmnet_broker_example
+  DetailPrint "netsh advfirewall firewall add rule name=ETC RDMnet (TCP-in) dir=in action=allow program=$PROGRAMFILES64\ETC\RDMnet\bin\rdmnet_broker_example.exe enable=yes profile=domain,public,private protocol=TCP"
+  ExecWait 'netsh advfirewall firewall add rule name="ETC RDMnet (TCP-in)" dir=in action=allow program="$PROGRAMFILES64\ETC\RDMnet\bin\rdmnet_broker_example.exe" enable=yes profile=domain,public,private protocol=TCP'
+  DetailPrint "netsh advfirewall firewall add rule name=ETC RDMnet (UDP-in) dir=in action=allow program=$PROGRAMFILES64\ETC\RDMnet\bin\rdmnet_broker_example.exe enable=yes profile=domain,public,private protocol=UDP"
+  ExecWait 'netsh advfirewall firewall add rule name="ETC RDMnet (UDP-in)" dir=in action=allow program="$PROGRAMFILES64\ETC\RDMnet\bin\rdmnet_broker_example.exe" enable=yes profile=domain,public,private protocol=UDP'
+
+  # rdmnet_controller_example
+  DetailPrint "netsh advfirewall firewall add rule name=ETC RDMnet (TCP-in) dir=in action=allow program=$PROGRAMFILES64\ETC\RDMnet\bin\rdmnet_controller_example.exe enable=yes profile=domain,public,private protocol=TCP"
+  ExecWait 'netsh advfirewall firewall add rule name="ETC RDMnet (TCP-in)" dir=in action=allow program="$PROGRAMFILES64\ETC\RDMnet\bin\rdmnet_controller_example.exe" enable=yes profile=domain,public,private protocol=TCP'
+  DetailPrint "netsh advfirewall firewall add rule name=ETC RDMnet (UDP-in) dir=in action=allow program=$PROGRAMFILES64\ETC\RDMnet\bin\rdmnet_controller_example.exe enable=yes profile=domain,public,private protocol=UDP"
+  ExecWait 'netsh advfirewall firewall add rule name="ETC RDMnet (UDP-in)" dir=in action=allow program="$PROGRAMFILES64\ETC\RDMnet\bin\rdmnet_controller_example.exe" enable=yes profile=domain,public,private protocol=UDP'
+
+  # rdmnet_device_example
+  DetailPrint "netsh advfirewall firewall add rule name=ETC RDMnet (TCP-in) dir=in action=allow program=$PROGRAMFILES64\ETC\RDMnet\bin\rdmnet_device_example.exe enable=yes profile=domain,public,private protocol=TCP"
+  ExecWait 'netsh advfirewall firewall add rule name="ETC RDMnet (TCP-in)" dir=in action=allow program="$PROGRAMFILES64\ETC\RDMnet\bin\rdmnet_device_example.exe" enable=yes profile=domain,public,private protocol=TCP'
+  DetailPrint "netsh advfirewall firewall add rule name=ETC RDMnet (UDP-in) dir=in action=allow program=$PROGRAMFILES64\ETC\RDMnet\bin\rdmnet_device_example.exe enable=yes profile=domain,public,private protocol=UDP"
+  ExecWait 'netsh advfirewall firewall add rule name="ETC RDMnet (UDP-in)" dir=in action=allow program="$PROGRAMFILES64\ETC\RDMnet\bin\rdmnet_device_example.exe" enable=yes profile=domain,public,private protocol=UDP'
+
+  # rdmnet_gateway_example
+  DetailPrint "netsh advfirewall firewall add rule name=ETC RDMnet (TCP-in) dir=in action=allow program=$PROGRAMFILES64\ETC\RDMnet\bin\rdmnet_gateway_example.exe enable=yes profile=domain,public,private protocol=TCP"
+  ExecWait 'netsh advfirewall firewall add rule name="ETC RDMnet (TCP-in)" dir=in action=allow program="$PROGRAMFILES64\ETC\RDMnet\bin\rdmnet_gateway_example.exe" enable=yes profile=domain,public,private protocol=TCP'
+  DetailPrint "netsh advfirewall firewall add rule name=ETC RDMnet (UDP-in) dir=in action=allow program=$PROGRAMFILES64\ETC\RDMnet\bin\rdmnet_gateway_example.exe enable=yes profile=domain,public,private protocol=UDP"
+  ExecWait 'netsh advfirewall firewall add rule name="ETC RDMnet (UDP-in)" dir=in action=allow program="$PROGRAMFILES64\ETC\RDMnet\bin\rdmnet_gateway_example.exe" enable=yes profile=domain,public,private protocol=UDP'
+
+  !if "$%ARTIFACT_TYPE%" == "x64"  
+    SetRegView 64
+  !endif
+
+  # information for Control Panel "Add / Remove Programs"
+  WriteRegStr "HKLM" "${UNINSTALL_KEY}" "DisplayName" "${PRODUCT_NAME}"
+  WriteRegStr "HKLM" "${UNINSTALL_KEY}" "InstallLocation" "$PROGRAMFILES64\ETC\RDMnet"
+  WriteRegStr "HKLM" "${UNINSTALL_KEY}" "UninstallString" "$PROGRAMFILES64\ETC\RDMnet\RDMnet_Uninstall.exe"
+  WriteRegStr "HKLM" "${UNINSTALL_KEY}" "DisplayIcon" "$PROGRAMFILES64\ETC\RDMnet\ETCIconDark_NSIS.ico"
+  WriteRegStr "HKLM" "${UNINSTALL_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
+  WriteRegStr "HKLM" "${UNINSTALL_KEY}" "URLInfoAbout" "http://www.etcconnect.com"
+  WriteRegStr "HKLM" "${UNINSTALL_KEY}" "Publisher" "ETC"
+SectionEnd

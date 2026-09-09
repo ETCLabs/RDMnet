@@ -115,11 +115,11 @@ endif()
 
 if(WIN32)
   install(TARGETS ${CONTROLLER_TARGET}
-    RUNTIME DESTINATION controller
+    RUNTIME DESTINATION bin
   )
   get_filename_component(QTDIR_ESCAPED ${QTDIR} ABSOLUTE)
   install(CODE
-    "execute_process(COMMAND ${QTDIR_ESCAPED}/bin/windeployqt.exe --no-compiler-runtime ${CONTROLLER_TARGET}.exe WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/controller)"
+    "execute_process(COMMAND ${QTDIR_ESCAPED}/bin/windeployqt.exe --no-compiler-runtime ${CONTROLLER_TARGET}.exe WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)"
   )
 elseif(APPLE)
   set(CONTROLLER_OUTPUT_NAME "RDMnet Controller Example")
